@@ -24,6 +24,7 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 | **GitHub** | l'account GitHub del kit, uno per tutto: questa pagina, Git (anche nell'editor, nelle console e negli agenti) e GitHub CLI; i repository dell'account e delle sue organizzazioni, con clone in `projects\`, apertura nell'editor, rinomina ed eliminazione su GitHub |
 | **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
 | **Linguaggi e strumenti** | i componenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove |
+| **Database** | MariaDB (compatibile con MySQL) e MongoDB: avvio e arresto, stringa di connessione, porta, dati in `data\db`, solo su questo PC; SQLite senza server |
 | **Impostazioni** | lingua, terminale, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python e PHP, compilatore di Rust (GNU o MSVC), aggiornamenti dell'app |
 | **Rimuovi l'unità** | chiude tutto ciò che il kit ha aperto, riporta nel kit l'accesso di Antigravity e lascia espellere la chiavetta |
 

@@ -1,5 +1,14 @@
 # Novità
 
+## Database del kit (14/10/2026)
+
+**Fatto**
+- **MariaDB** (compatibile con MySQL), **MongoDB** con mongosh e **SQLite** fra i componenti, nel nuovo gruppo «Database», verificati con SHA-256 o SHA3-256 (D-73).
+- **Pagina «Database»**: avvio e arresto dei server, stringa di connessione da copiare, porta, cartella dei dati, log, «Avvia con Dev-Kit». Solo 127.0.0.1; dati in `data\db`. «Avvia» installa il database se manca; chiusura dell'app e «Rimuovi l'unità» li fermano in modo pulito.
+- I progetti che usano un database (`.env`, driver npm/pip/Composer, file `.sqlite`) lo segnalano e ricevono le estensioni dell'editor: SQLTools, MongoDB for VS Code, SQLite Viewer; nuovo linguaggio SQL.
+
+**Verificato**: 200 test Rust, 22 test dell'interfaccia; installazione reale dei tre componenti; avvio, query e arresto di MariaDB 12.3.3 e MongoDB 9.0.4 dall'app.
+
 ## Branding di app ed editor (14/10/2026)
 
 **Fatto**

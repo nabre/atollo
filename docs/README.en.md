@@ -24,6 +24,7 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 | **GitHub** | the kit's GitHub account, one for everything: this page, Git (in the editor, the consoles and the agents too) and GitHub CLI; the repositories of the account and its organizations, with clone into `projects\`, opening in the editor, rename and delete on GitHub |
 | **Agents** | the installed Claude Code, Codex and Antigravity: version, sign-in, plan limits and usage of today and of the last 7 days; instructions, skills and MCP servers shared in `data\agents` |
 | **Languages and tools** | the components with their logo, dependencies and disk space; install, update and remove |
+| **Databases** | MariaDB (MySQL-compatible) and MongoDB: start and stop, connection string, port, data in `data\db`, on this PC only; SQLite without a server |
 | **Settings** | language, terminal, network (proxy, certificates, local network), Gemini key, Python and PHP versions, Rust compiler (GNU or MSVC), app updates |
 | **Remove drive** | closes everything the kit opened, brings Antigravity's sign-in back into the kit and lets you eject the stick |
 

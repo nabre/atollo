@@ -25,6 +25,8 @@ pub enum Group {
     /// Tools tied to an operating system (Windows Terminal): shown in
     /// their own group of "Linguaggi e strumenti", chosen like the others.
     Os,
+    /// Database servers and tools (D-73), with their own group too.
+    Databases,
     /// Part of Dev-Kit itself (the editor): not in "Linguaggi e strumenti",
     /// always installed, at the version fixed in the catalog for this
     /// release (`version`, `sha256`).

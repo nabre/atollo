@@ -1,5 +1,6 @@
 //! Checksums of downloaded files (port of nabre/dev-kit
-//! `_prepare-helpers.ps1:60-130`): SHA-256, SHA-512, npm `sha512-<base64>`.
+//! `_prepare-helpers.ps1:60-130`): SHA-256, SHA-512, npm `sha512-<base64>`,
+//! and SHA3-256 (what sqlite.org publishes, D-73).
 //! A file that does not match is deleted, so it can never be installed later.
 //! Authenticode signatures (Claude Code, VC++ runtime) are in `signature.rs`.
 
@@ -10,6 +11,7 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 use base64::Engine;
 use sha2::{Digest, Sha256, Sha512};
+use sha3::Sha3_256;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expect {
@@ -17,6 +19,7 @@ pub enum Expect {
     Sha512(String),
     /// npm `dist.integrity`, e.g. `sha512-AbC…==`.
     NpmIntegrity(String),
+    Sha3_256(String),
 }
 
 fn hash_file<D: Digest>(path: &Path) -> Result<Vec<u8>> {
@@ -46,6 +49,9 @@ pub fn check(path: &Path, expect: &Expect) -> Result<()> {
     let ok = match expect {
         Expect::Sha256(want) => hex(&hash_file::<Sha256>(path)?).eq_ignore_ascii_case(want.trim()),
         Expect::Sha512(want) => hex(&hash_file::<Sha512>(path)?).eq_ignore_ascii_case(want.trim()),
+        Expect::Sha3_256(want) => {
+            hex(&hash_file::<Sha3_256>(path)?).eq_ignore_ascii_case(want.trim())
+        }
         Expect::NpmIntegrity(want) => match want.trim().strip_prefix("sha512-") {
             Some(b64) => {
                 base64::engine::general_purpose::STANDARD.encode(hash_file::<Sha512>(path)?) == b64
@@ -80,6 +86,8 @@ mod tests {
         assert_eq!(sha256_hex(&file).unwrap(), sha256);
         check(&file, &Expect::Sha256(sha256.to_uppercase())).unwrap();
         check(&file, &Expect::Sha512(sha512.into())).unwrap();
+        let sha3 = "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532";
+        check(&file, &Expect::Sha3_256(sha3.into())).unwrap();
         let integrity = format!(
             "sha512-{}",
             base64::engine::general_purpose::STANDARD.encode(hash_file::<Sha512>(&file).unwrap())

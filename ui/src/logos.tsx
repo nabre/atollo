@@ -28,6 +28,8 @@ import {
   SiJulia,
   SiKotlin,
   SiLatex,
+  SiMariadb,
+  SiMongodb,
   SiNodedotjs,
   SiOpenjdk,
   SiPhp,
@@ -36,6 +38,7 @@ import {
   SiR,
   SiRuby,
   SiRust,
+  SiSqlite,
   SiSvelte,
   SiTypescript,
   SiTypst,
@@ -96,6 +99,11 @@ const COMPONENTS: Record<string, Logo> = {
   cmake: { icon: SiCmake, color: "#064F8C" },
   cc: C,
   ruby: RUBY,
+  // MariaDB's #003545 is unreadable on dark: the text colour, as for black brands.
+  mariadb: { icon: SiMariadb },
+  mongodb: { icon: SiMongodb, color: "#47A248" },
+  // SQLite's #003B57 is unreadable on dark: the light blue of its logo.
+  sqlite: { icon: SiSqlite, color: "#0F80CC" },
   r: R,
 };
 

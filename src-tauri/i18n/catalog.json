@@ -1,4 +1,24 @@
 {
+  "La porta {0} è già usata da un altro programma: cambiala qui sotto.": {
+    "en": "Port {0} is already used by another program: change it below.",
+    "fr": "Le port {0} est déjà utilisé par un autre programme : changez-le ci-dessous.",
+    "de": "Port {0} wird bereits von einem anderen Programm verwendet: Ändere ihn unten."
+  },
+  "database compatibile con MySQL: server e client": {
+    "en": "MySQL-compatible database: server and client",
+    "fr": "base de données compatible MySQL : serveur et client",
+    "de": "MySQL-kompatible Datenbank: Server und Client"
+  },
+  "database a documenti: server e shell mongosh": {
+    "en": "document database: server and the mongosh shell",
+    "fr": "base de données documentaire : serveur et shell mongosh",
+    "de": "Dokumentendatenbank: Server und mongosh-Shell"
+  },
+  "database in un file: riga di comando sqlite3": {
+    "en": "database in a file: the sqlite3 command line",
+    "fr": "base de données dans un fichier : ligne de commande sqlite3",
+    "de": "Datenbank in einer Datei: Kommandozeile sqlite3"
+  },
   "Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.": {
     "en": "Portable development environment: languages, agents and editor in one folder.",
     "fr": "Environnement de développement portable : langages, agents et éditeur dans un dossier.",

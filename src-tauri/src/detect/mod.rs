@@ -248,7 +248,7 @@ fn ext_of(name: &str) -> String {
 
 /// The languages a project can have, by file extension, in the order the
 /// matrix of editor extensions shows them (`editor_ext.rs`).
-pub const LANGUAGES: [(&str, &[&str]); 26] = [
+pub const LANGUAGES: [(&str, &[&str]); 27] = [
     ("JavaScript", &[".js", ".mjs", ".cjs", ".jsx"]),
     ("TypeScript", &[".ts", ".tsx"]),
     ("Vue", &[".vue"]),
@@ -275,6 +275,7 @@ pub const LANGUAGES: [(&str, &[&str]); 26] = [
     ("Typst", &[".typ"]),
     ("PowerShell", &[".ps1", ".psm1"]),
     ("Shell", &[".sh", ".bash"]),
+    ("SQL", &[".sql"]),
 ];
 
 fn language_of(ext: &str) -> Option<&'static str> {
@@ -339,6 +340,78 @@ fn need_of_file(name: &str) -> Option<&'static str> {
     })
 }
 
+/// The database servers a project uses (D-73), from its root: SQLite files,
+/// `.env` (Laravel's `DB_CONNECTION`, `DATABASE_URL`) and the drivers in
+/// its manifests (npm, pip, Composer). MySQL means the kit's MariaDB.
+fn databases(dir: &Path) -> BTreeSet<&'static str> {
+    let mut found = BTreeSet::new();
+    let read = |name: &str| {
+        fs::read_to_string(dir.join(name))
+            .unwrap_or_default()
+            .to_ascii_lowercase()
+    };
+    let env = read(".env") + &read(".env.example");
+    for line in env.lines().map(str::trim) {
+        let value = line
+            .split_once('=')
+            .map_or("", |(_, v)| v.trim().trim_matches('"'));
+        if line.starts_with("db_connection=") || line.starts_with("database_url=") {
+            if value.starts_with("mysql") || value.starts_with("mariadb") {
+                found.insert("mariadb");
+            } else if value.starts_with("mongodb") {
+                found.insert("mongodb");
+            } else if value.starts_with("sqlite") {
+                found.insert("sqlite");
+            }
+        }
+    }
+    let manifests = read("package.json")
+        + &read("requirements.txt")
+        + &read("pyproject.toml")
+        + &read("composer.json");
+    let has = |words: &[&str]| {
+        words.iter().any(|w| {
+            manifests.match_indices(w).any(|(i, _)| {
+                let before = manifests[..i].chars().next_back();
+                let after = manifests[i + w.len()..].chars().next();
+                let edge = |c: Option<char>| {
+                    c.is_none_or(|c| !(c.is_ascii_alphanumeric() || c == '-' || c == '_'))
+                };
+                edge(before) && edge(after)
+            })
+        })
+    };
+    if has(&[
+        "mysql",
+        "mysql2",
+        "mariadb",
+        "pymysql",
+        "mysqlclient",
+        "aiomysql",
+    ]) {
+        found.insert("mariadb");
+    }
+    if has(&[
+        "mongodb",
+        "mongoose",
+        "pymongo",
+        "motor",
+        "mongoengine",
+        "mongodb/mongodb",
+    ]) {
+        found.insert("mongodb");
+    }
+    if has(&["sqlite3", "better-sqlite3", "aiosqlite"]) {
+        found.insert("sqlite");
+    }
+    walk_files(dir, &mut |name| {
+        if [".sqlite", ".sqlite3", ".db"].contains(&ext_of(name).as_str()) {
+            found.insert("sqlite");
+        }
+    });
+    found
+}
+
 /// Ids of the kit's components the project needs, sorted. Only ids that
 /// exist in the catalog are kept (all of the above are, today).
 pub fn requires(dir: &Path) -> Vec<String> {
@@ -360,6 +433,7 @@ pub fn requires(dir: &Path) -> Vec<String> {
             found.insert("cc");
         }
     });
+    found.extend(databases(dir));
     let catalog = crate::catalog::Catalog::get();
     found
         .into_iter()
@@ -476,6 +550,44 @@ pub(crate) mod tests {
             fs::write(p, text).unwrap();
         }
         tmp
+    }
+
+    #[test]
+    fn databases_a_project_uses() {
+        let laravel = project(
+            "db-laravel",
+            &[
+                (".env", "APP_NAME=x\nDB_CONNECTION=mysql\n"),
+                ("composer.json", "{}"),
+            ],
+        );
+        assert_eq!(databases(&laravel.0), BTreeSet::from(["mariadb"]));
+        let node = project(
+            "db-node",
+            &[(
+                "package.json",
+                r#"{"dependencies":{"mongoose":"^8","better-sqlite3":"^11"}}"#,
+            )],
+        );
+        assert_eq!(databases(&node.0), BTreeSet::from(["mongodb", "sqlite"]));
+        let py = project(
+            "db-py",
+            &[
+                ("requirements.txt", "flask\npymongo==4\n"),
+                ("data/app.sqlite3", ""),
+            ],
+        );
+        assert_eq!(databases(&py.0), BTreeSet::from(["mongodb", "sqlite"]));
+        // Words inside other names are not drivers.
+        let none = project(
+            "db-none",
+            &[(
+                "package.json",
+                r#"{"dependencies":{"mysqlish-ui":"1","notmongodb":"1"}}"#,
+            )],
+        );
+        assert!(databases(&none.0).is_empty());
+        assert!(requires(&laravel.0).contains(&"mariadb".to_owned()));
     }
 
     pub fn ids(p: &Project) -> Vec<&str> {

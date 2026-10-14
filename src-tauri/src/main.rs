@@ -37,6 +37,7 @@ mod relocate;
 mod run;
 mod self_update;
 mod serve;
+mod services;
 mod sessions;
 mod settings;
 mod setup_runner;
@@ -277,6 +278,7 @@ fn run() -> i32 {
         moved_from: moved_from.map(|p| p.display().to_string()),
         webview: webview_desc,
         editor: std::sync::Arc::new(editor::Editor::new(kit.clone(), kit_env.clone())),
+        services: std::sync::Arc::new(services::Services::new(kit.clone())),
         env: std::sync::RwLock::new(kit_env),
     };
     // The exe swap of a staged update happens on Exit (`run` may not return).
@@ -438,13 +440,29 @@ fn build_app<R: tauri::Runtime>(
             // Closing the app window ends the session: editor windows,
             // server and consoles go with it (they are in the job).
             if window.label() == MAIN && matches!(event, tauri::WindowEvent::Destroyed) {
-                window.app_handle().exit(0);
+                // The databases shut down cleanly first (D-73), off the UI thread.
+                let services =
+                    std::sync::Arc::clone(&window.app_handle().state::<AppState>().services);
+                let handle = window.app_handle().clone();
+                std::thread::spawn(move || {
+                    services.stop_all();
+                    handle.exit(0);
+                });
             }
         })
         .setup(move |app| {
             open_main_window(app.handle(), &kit.webview_data())?;
             // Extensions follow the projects open in the editor; the editor
             // windows offer to restart them (D-71).
+            // Databases marked "start with Dev-Kit" (D-73).
+            let (services, env) = {
+                let state = app.state::<AppState>();
+                (
+                    std::sync::Arc::clone(&state.services),
+                    state.env.read().map(|e| e.clone()).unwrap_or_default(),
+                )
+            };
+            std::thread::spawn(move || services.autostart(&env));
             let editor = std::sync::Arc::clone(&app.state::<AppState>().editor);
             let notify = app.handle().clone();
             editor.set_on_installed(std::sync::Arc::new(move |ids: &[String]| {
@@ -569,6 +587,7 @@ mod tests {
         AppState {
             setup,
             editor,
+            services: std::sync::Arc::new(services::Services::new(kit.clone())),
             kit,
             lang: std::sync::RwLock::new("it"),
             moved_from: None,

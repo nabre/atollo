@@ -385,6 +385,23 @@ impl KitEnv {
             &[apps.join(r"ruby\bin"), gem_home.join("bin")],
         );
         when(&mut path, r"r\bin\R.cmd", &[apps.join(r"r\bin")]);
+        // Databases (D-73): servers and clients.
+        when(
+            &mut path,
+            r"mariadb\bin\mariadb.exe",
+            &[apps.join(r"mariadb\bin")],
+        );
+        when(
+            &mut path,
+            r"mongodb\bin\mongod.exe",
+            &[apps.join(r"mongodb\bin")],
+        );
+        when(
+            &mut path,
+            r"mongosh\bin\mongosh.exe",
+            &[apps.join(r"mongosh\bin")],
+        );
+        when(&mut path, r"sqlite\sqlite3.exe", &[apps.join("sqlite")]);
         if has(r"git\bin\bash.exe") {
             env.set_path("CLAUDE_CODE_GIT_BASH_PATH", apps.join(r"git\bin\bash.exe"));
             path.push(apps.join(r"git\cmd"));

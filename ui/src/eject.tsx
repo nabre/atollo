@@ -9,7 +9,7 @@ import { ActionButton, ErrorLine, useAction } from "./pages";
 import { t } from "./i18n";
 
 function nothingOpen(o: OpenNow): boolean {
-  return o.processes.length === 0 && !o.editor && o.terminals === 0 && o.actions === 0 && !o.setup;
+  return o.processes.length === 0 && !o.editor && o.terminals === 0 && o.actions === 0 && !o.setup && o.databases === 0;
 }
 
 export function OpenList({ open }: { open: OpenNow }) {
@@ -20,6 +20,7 @@ export function OpenList({ open }: { open: OpenNow }) {
       {open.editor && <li>{t("L'editor")}</li>}
       {open.terminals > 0 && <li>{t("Console del kit: {0}", open.terminals)}</li>}
       {open.actions > 0 && <li>{t("Progetti avviati: {0}", open.actions)}</li>}
+      {open.databases > 0 && <li>{t("Database avviati: {0}", open.databases)}</li>}
       {open.processes.map((p) => (
         <li key={p.pid}>
           <span>{p.name}</span>{" "}

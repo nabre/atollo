@@ -632,7 +632,7 @@ mod tests {
                 .iter()
                 .map(|(id, _)| id.as_str())
                 .collect::<Vec<_>>(),
-            ["deno", "bun", "cmake"]
+            ["deno", "bun", "cmake", "mariadb", "mongodb", "sqlite"]
         );
     }
 
