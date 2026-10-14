@@ -44,7 +44,7 @@ export function ActionButton({
   busy?: boolean;
   disabled?: boolean;
   primary?: boolean;
-  title?: string;
+  title?: string | undefined;
 }) {
   return (
     <button

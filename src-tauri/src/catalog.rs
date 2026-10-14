@@ -50,6 +50,10 @@ pub struct Component {
     /// `@` = the kit root), removed with it.
     #[serde(default)]
     pub remove: Vec<String>,
+    /// Version command for the final check: program (relative to
+    /// `data\apps\<platform>`) and arguments.
+    #[serde(default)]
+    pub check: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]

@@ -120,6 +120,25 @@ pub fn kit_command(program: impl AsRef<std::ffi::OsStr>, env: &KitEnv) -> Comman
     cmd
 }
 
+/// A `.bat`/`.cmd` run as `cmd.exe /d /s /c ""<path>" <args>"`: the quoting
+/// that keeps paths with spaces, `&` and parentheses intact (DECISIONS.md
+/// D-17). `args` must be fixed words of the app, never text from the user:
+/// cmd would interpret `&`, `|` and `%` in them.
+pub fn batch_command(script: &std::path::Path, args: &[&str], env: &KitEnv) -> Command {
+    let system_root = env.get("SystemRoot").unwrap_or(r"C:\Windows");
+    let mut cmd = kit_command(
+        std::path::Path::new(system_root).join(r"System32\cmd.exe"),
+        env,
+    );
+    let mut line = format!("\"{}\"", script.display());
+    for a in args {
+        line.push(' ');
+        line.push_str(a);
+    }
+    cmd.raw_arg(format!("/d /s /c \"{line}\""));
+    cmd
+}
+
 /// Starts a program that belongs to the session: it ends with the app.
 #[allow(dead_code, reason = "first caller in phase 2 (installer)")]
 pub fn spawn(cmd: &mut Command) -> Result<Child> {
@@ -220,6 +239,25 @@ mod tests {
             assert!(start.elapsed() < Duration::from_secs(5), "still alive");
             std::thread::sleep(Duration::from_millis(50));
         }
+    }
+
+    #[test]
+    fn batch_files_in_odd_folders() {
+        let dir = std::env::temp_dir().join(format!("devkit-bat-{} (x) & y", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let bat = dir.join("hello.cmd");
+        std::fs::write(&bat, "@echo hi %1\r\n").unwrap();
+        let mut env_vars = vec![(
+            "SystemRoot".to_owned(),
+            std::env::var("SystemRoot").unwrap(),
+        )];
+        env_vars.push(("PATH".to_owned(), String::new()));
+        let out = batch_command(&bat, &["there"], &KitEnv::default())
+            .envs(env_vars)
+            .output()
+            .unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "hi there");
     }
 
     #[test]

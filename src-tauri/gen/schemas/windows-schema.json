@@ -183,6 +183,12 @@
           "markdownDescription": "Enables the app_info command without any pre-configured scope."
         },
         {
+          "description": "Enables the components_apply command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-components-apply",
+          "markdownDescription": "Enables the components_apply command without any pre-configured scope."
+        },
+        {
           "description": "Enables the components_list command without any pre-configured scope.",
           "type": "string",
           "const": "allow-components-list",
@@ -241,6 +247,12 @@
           "type": "string",
           "const": "deny-app-info",
           "markdownDescription": "Denies the app_info command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the components_apply command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-components-apply",
+          "markdownDescription": "Denies the components_apply command without any pre-configured scope."
         },
         {
           "description": "Denies the components_list command without any pre-configured scope.",

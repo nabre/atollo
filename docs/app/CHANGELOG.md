@@ -1,5 +1,39 @@
 # Novità
 
+## Fase 4: tutti i componenti, Linguaggi e strumenti, Primo avvio (14/10/2026)
+
+**Fatto**
+- Installatori di tutti i 31 componenti del catalogo (specifica in CATALOG.md): agenti (Claude Code con firma Anthropic, Codex, Antigravity), Git, Python (pacchetti dell'utente conservati), Node.js, uv, gh, PHP con Composer, `cacert.pem` e runtime VC++ estratto da `vc_redist` (firma Microsoft), Apache con `kit.conf`, Rust (rustup, voce di registro ripristinata), Go, Java con Maven e Gradle, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, TinyTeX, pnpm e yarn, CMake con Ninja, C/C++ (llvm-mingw), Ruby, R (micromamba), PowerShell 7, Windows Terminal, editor, VSCodium desktop (facoltativo).
+- Motore: parti multiple per componente, sostituzione di singoli file anche se in uso, firma Authenticode (`signature.rs`), installatori fatti di processi, rimozione di tutto ciò che un componente possiede (cartelle e file in `tools\` o `npm-global`).
+- Verifica finale (`checkup.rs`): `Dev-Kit.exe check`, e in fondo a `prepare` per ciò che è stato installato.
+- Pagina **Linguaggi e strumenti**: componenti per gruppo, spunte con dipendenze a cascata, dimensioni, versioni, riepilogo di cosa verrà installato e rimosso, "Aggiorna tutto", avanzamento con annullamento.
+- **Primo avvio**: senza una scelta salvata la Home mostra la scelta di agenti e linguaggi con l'avviso sull'attendibilità di `projects\`.
+- Estensioni consigliate dell'editor (60, regola `@programma`, proposta una volta sola, CodeLLDB da GitHub) installate in background dopo l'avvio dell'editor (D-36).
+- Impostazioni avanzate in `settings.json`: versione di Python, ramo di PHP, toolchain di Rust.
+
+**Verificato su questo PC** (kit nuovo in `kit3 (prova) & co`)
+- `cargo fmt`, `clippy -D warnings`: puliti; 83 test Rust, 8 test dell'interfaccia.
+- Tutti i 31 componenti installati da zero in circa 10 minuti; `Dev-Kit.exe check`: tutti rispondono (Claude Code 2.1.299, Python 3.13.16, PHP 8.5.11, Apache 2.4.69, Rust 1.99.0, Java 25 LTS, .NET 10, R 4.6.1…).
+- Rimozione di Java (Kotlin segue), Zig, Typst, pnpm, VSCodium desktop: cartelle, file in `tools\` e versioni tolti; il resto "già aggiornato" senza riscaricare.
+- Voce "Rustup" in HKCU: invariata (era del rustup dell'utente).
+- Installazione di estensioni con la riga di comando del server verificata (Open VSX).
+- Pagina Linguaggi e strumenti nella finestra reale.
+
+**Corretto durante la fase**
+- pnpm/yarn non si installavano con `&` nel percorso del kit (`cmd /c` toglie le virgolette): ora npm parte da `node.exe` senza `cmd`.
+- La verifica di R falliva (`0xc0000135`): ora usa il lanciatore `r\bin\Rscript.cmd`, che aggiunge le DLL di R.
+- pnpm 12 crea anche gli alias `pn` e `pnx`: aggiunti a ciò che si rimuove.
+
+**Limiti noti**
+- Rust su un kit in FAT32/exFAT non si installa (rustup vuole i collegamenti fisici); il ripiego del Dev-Kit (toolchain sul disco del PC) non è ancora portato.
+- WebView2 "Fixed Version" non si scarica dall'app (D-37).
+- Estensioni di un programma tolto restano installate (D-36).
+
+**Da provare a mano**
+1. Kit nuovo: al primo avvio compare la scelta; "Installa" scarica gli obbligatori e i linguaggi scelti, con l'avanzamento.
+2. Linguaggi e strumenti: togliere un linguaggio installato, "Applica" → riepilogo → "Conferma": viene rimosso.
+3. Da un prompt: `Dev-Kit.exe check`.
+
 ## Fase 3: editor e terminale (14/10/2026)
 
 **Fatto**

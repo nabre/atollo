@@ -8,10 +8,12 @@
 
 mod archive;
 mod catalog;
+mod checkup;
 mod cli;
 mod commands;
 mod editor;
 mod editor_cfg;
+mod editor_ext;
 mod editor_window;
 mod env;
 mod i18n;
@@ -122,6 +124,11 @@ fn run() -> i32 {
         Cli::Gui => {}
         Cli::Env => return cli::print_env(&kit_env, &mut *cli::output()).map_or(1, |()| 0),
         Cli::Prepare(args) => return prepare(&kit, &kit_env, &loaded.settings, &host, lang, &args),
+        Cli::Check => {
+            let checks = checkup::check_all(&kit, &kit_env);
+            let ok = checks.iter().all(|c| c.ok);
+            return cli::print_checks(&checks, &mut *cli::output()).map_or(1, |()| i32::from(!ok));
+        }
         Cli::Components => {
             return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0)
         }
@@ -289,6 +296,22 @@ fn prepare(
         }
     };
     let failed = results.iter().filter(|(_, o)| o.is_failure()).count();
+    // The final check of what this run installed (`Test-Installation`).
+    let touched: Vec<&str> = results
+        .iter()
+        .filter(|(_, o)| matches!(o, setup_runner::Outcome::Installed { .. }))
+        .map(|(id, _)| id.as_str())
+        .collect();
+    let checks: Vec<_> = catalog::Catalog::get()
+        .all()
+        .iter()
+        .filter(|c| touched.contains(&c.id.as_str()))
+        .filter_map(|c| checkup::check(kit, kit_env, c))
+        .collect();
+    if !checks.is_empty() {
+        let _ = writeln!(out, "\n── {} ──", i18n::t(lang, "Verifica", &[]));
+        let _ = cli::print_checks(&checks, &mut *out);
+    }
     for (id, outcome) in &results {
         log::info(&format!("prepare {id}: {outcome:?}"));
     }
@@ -296,7 +319,7 @@ fn prepare(
 }
 
 /// Help text of the command line (Italian source; translated by the catalog).
-const HELP: &str = "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Dev-Kit.";
+const HELP: &str = "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Dev-Kit.";
 
 fn help(lang: &str) -> String {
     i18n::t(lang, HELP, &[])

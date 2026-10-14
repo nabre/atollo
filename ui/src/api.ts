@@ -18,6 +18,8 @@ export interface AppInfo {
   pathEntries: number;
   /** A folder of the kit path that stops the editor noticing outside changes. */
   watcherUnsafeFolder: string | null;
+  /** No choice saved yet: first start. */
+  firstRun: boolean;
 }
 
 /** True when the page runs in the browser instead of the Dev-Kit window. */
@@ -34,6 +36,7 @@ const SAMPLE_INFO: AppInfo = {
   webview: "anteprima nel browser",
   pathEntries: 0,
   watcherUnsafeFolder: null,
+  firstRun: false,
 };
 
 export function appInfo(): Promise<AppInfo> {
@@ -127,6 +130,7 @@ export interface ComponentInfo {
   version: string | null;
   available: boolean;
   x64Only: boolean;
+  needs: string[];
 }
 
 const IDLE: SetupSnapshot = { running: false, cancelling: false, automatic: false, total: 0, steps: [], error: null };
@@ -154,4 +158,9 @@ export function setupStart(only: string[] | null, updateAll: boolean): Promise<v
 
 export function setupCancel(): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("setup_cancel");
+}
+
+/** Saves the choice (ids to keep installed) and installs/removes in the background. */
+export function componentsApply(chosen: string[], updateAll: boolean): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("components_apply", { chosen, updateAll });
 }

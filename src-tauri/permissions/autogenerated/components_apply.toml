@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-components-apply"
+description = "Enables the components_apply command without any pre-configured scope."
+commands.allow = ["components_apply"]
+
+[[permission]]
+identifier = "deny-components-apply"
+description = "Denies the components_apply command without any pre-configured scope."
+commands.deny = ["components_apply"]

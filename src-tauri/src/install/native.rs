@@ -327,20 +327,18 @@ impl Installer for Pnpm {
         _release: &Release,
         progress: &mut dyn Progress,
     ) -> Result<()> {
-        let npm = ctx.kit.apps().join(r"node\npm.cmd");
-        if !npm.is_file() {
+        // npm-cli.js with the kit's node, no cmd.exe: its quoting breaks on
+        // kit paths with `&` or parentheses (found in a test kit).
+        let node = ctx.kit.apps().join(r"node\node.exe");
+        let npm_cli = ctx.kit.apps().join(r"node\node_modules\npm\bin\npm-cli.js");
+        if !node.is_file() || !npm_cli.is_file() {
             bail!("the kit's Node.js is needed for pnpm and yarn");
         }
-        // npm.cmd needs cmd.exe; the arguments are fixed, nothing from the user.
-        let system_root = ctx.env.get("SystemRoot").unwrap_or(r"C:\Windows");
-        let cmd = Path::new(system_root).join(r"System32\cmd.exe");
         run(
             ctx,
-            &cmd,
+            &node,
             &[
-                "/d",
-                "/c",
-                &npm.display().to_string(),
+                &npm_cli.display().to_string(),
                 "install",
                 "--global",
                 "--no-fund",

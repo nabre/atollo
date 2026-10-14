@@ -39,11 +39,6 @@
     "fr": "Commande inconnue : {0}",
     "de": "Unbekannter Befehl: {0}"
   },
-  "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Dev-Kit.": {
-    "en": "Usage: Dev-Kit.exe [command]\n\nCommands:\n  env                     show the kit environment\n  components              list languages and tools, with the installed ones\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update the installed ones\n      --force             download again\n  version                 show the version\n  help                    show this help\n\nWithout a command it opens the Dev-Kit window.",
-    "fr": "Usage : Dev-Kit.exe [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n  components              liste les langages et outils, avec ceux installés\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, ouvre la fenêtre de Dev-Kit.",
-    "de": "Aufruf: Dev-Kit.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        auch bereits installierte aktualisieren\n      --force             erneut herunterladen\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Dev-Kit-Fenster."
-  },
   "installato": {
     "en": "installed",
     "fr": "installé",
@@ -88,5 +83,15 @@
     "en": "Another preparation is already running in this kit.",
     "fr": "Une autre préparation est déjà en cours dans ce kit.",
     "de": "In diesem Kit läuft bereits eine andere Vorbereitung."
+  },
+  "Verifica": {
+    "en": "Check",
+    "fr": "Vérification",
+    "de": "Prüfung"
+  },
+  "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Dev-Kit.": {
+    "en": "Usage: Dev-Kit.exe [command]\n\nCommands:\n  env                     show the kit environment\n  components              list languages and tools, with the installed ones\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update the installed ones\n      --force             download again\n  version                 show the version\n  help                    show this help\n\nWithout a command it opens the Dev-Kit window.",
+    "fr": "Usage : Dev-Kit.exe [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n  components              liste les langages et outils, avec ceux installés\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, ouvre la fenêtre de Dev-Kit.",
+    "de": "Aufruf: Dev-Kit.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        auch bereits installierte aktualisieren\n      --force             erneut herunterladen\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Dev-Kit-Fenster."
   }
 }

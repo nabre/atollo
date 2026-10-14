@@ -19,6 +19,7 @@
     "allow-components-list",
     "allow-setup-state",
     "allow-setup-start",
-    "allow-setup-cancel"
+    "allow-setup-cancel",
+    "allow-components-apply"
   ]
 }

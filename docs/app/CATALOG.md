@@ -40,7 +40,6 @@ Endpoint letti dal codice, non ancora interrogati: ogni installatore Rust ha un 
 | | `typst` | Typst | no | 50 | | |
 | | `tinytex` | TinyTeX | no | 280 | | |
 | facoltativi | `vscodium` | VSCodium desktop | no | 400 | | nel Dev-Kit era obbligatorio; qui l'editor è integrato |
-| | `webview2` | Runtime WebView2 fisso | no | 200 | | solo se il PC non ha WebView2 |
 
 I gruppi, i predefiniti e le dimensioni sono quelli di `components.json`, salvo le righe nuove e `vscodium`. Proposta del primo avvio: obbligatori + tre agenti + Python, PHP, Apache (~2,3 GB).
 
@@ -117,7 +116,7 @@ Abbreviazioni:
 | Dev-Kit | Nuovo kit | Motivo |
 | --- | --- | --- |
 | VSCodium desktop obbligatorio | facoltativo | editor integrato |
-| — | `vscodium-server`, `pwsh`, `terminal` obbligatori; `webview2` facoltativo | editor, terminale esclusivo, PC senza WebView2 |
+| — | `vscodium-server`, `pwsh`, `terminal` obbligatori | editor integrato, terminale esclusivo del kit |
 | Git SFX e TinyTeX SFX aprono la finestra di 7-Zip | estrazione 7z in Rust, nessuna finestra | interfaccia pulita |
 | Typst e TinyTeX non vengono rimossi quando si tolgono | rimossi | bug di `_prepare-migrate.ps1:128` |
 | `Test-Installation` con `rustc --version` ecc. | stessa verifica, risultati nella pagina Componenti | |
