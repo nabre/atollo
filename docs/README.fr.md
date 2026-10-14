@@ -12,7 +12,7 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 ## Utilisation
 
 1. Copiez `Dev-Kit.exe` dans un dossier vide : une clé USB, un disque externe ou un dossier de votre profil (espaces, parenthèses ou `&` dans le nom sont acceptés).
-2. Double-cliquez. Au premier démarrage, choisissez agents, langages et outils : l'application les télécharge et les vérifie (somme de contrôle ou signature), puis crée `projects\` et `data\`.
+2. Double-cliquez : l'application crée `projects\` et `data\`. Au premier démarrage, choisissez agents, langages et outils : l'application les télécharge et les vérifie (somme de contrôle ou signature).
 3. Créez ou clonez un projet dans la page **Projets**. L'éditeur, le terminal et les agents s'ouvrent toujours dans le dossier d'un projet, jamais ailleurs.
 
 ## Pages
@@ -23,14 +23,14 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 | **Projets** | nouveau projet, clonage depuis GitHub ou une adresse Git ; pour chaque projet son type, ses langages (avec leur logo) et les actions reconnues (`npm run dev`, `php -S`, `cargo run`, site statique…), avec port, sortie et ouverture dans le navigateur |
 | **Agents** | Claude Code, Codex et Antigravity installés : version, connexion, limites de l'abonnement et consommation du jour et des 7 derniers jours ; instructions, skills et serveurs MCP partagés dans `data\agents` |
 | **Langages et outils** | les composants avec leur logo, leurs dépendances et l'espace disque ; installer, mettre à jour, supprimer |
-| **Paramètres** | langue, réseau (proxy, certificats, réseau local), clé Gemini, versions de Python, PHP et Rust, mises à jour de l'application |
+| **Paramètres** | langue, terminal, réseau (proxy, certificats, réseau local), clé Gemini, versions de Python et PHP, compilateur Rust (GNU ou MSVC), mises à jour de l'application |
 | **Retirer le lecteur** | ferme tout ce que le kit a ouvert, ramène la connexion d'Antigravity dans le kit et permet d'éjecter la clé |
 
-La console du kit est le Windows Terminal portable du kit (ou, dans les Paramètres, la console classique de Windows) avec le PowerShell 7 du kit et seulement l'environnement du kit : les programmes installés sur le PC ne sont pas visibles.
+La console du kit est le Windows Terminal portable du kit (ou la console classique de Windows, si vous la choisissez dans les Paramètres ou si Windows Terminal n'est pas installé) avec le PowerShell 7 du kit et seulement l'environnement du kit : les programmes installés sur le PC ne sont pas visibles.
 
 ## Ce qui reste du Dev-Kit
 
-Le menu en console de [nabre/dev-kit](https://github.com/nabre/dev-kit) disparaît : chacune de ses entrées a une page dans l'application (« Proxy et paramètres » est la page Paramètres) et la logique des scripts est en Rust dans l'exe. Les composants sont les mêmes (plus PowerShell 7 et l'éditeur intégré, moins VSCodium desktop et Windows Terminal), tout comme l'alignement des instructions, skills et MCP entre les trois agents et la relocalisation quand le kit change de dossier ou de lettre de lecteur. Les kits du Dev-Kit ne sont pas importés.
+Le menu en console de [nabre/dev-kit](https://github.com/nabre/dev-kit) disparaît : chacune de ses entrées a une page dans l'application (« Proxy et paramètres » est la page Paramètres) et la logique des scripts est en Rust dans l'exe. Les composants sont les mêmes (plus PowerShell 7 et l'éditeur intégré, moins VSCodium desktop), tout comme l'alignement des instructions, skills et MCP entre les trois agents et la relocalisation quand le kit change de dossier ou de lettre de lecteur. Les kits du Dev-Kit ne sont pas importés.
 
 ## Limites connues
 

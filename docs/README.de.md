@@ -12,7 +12,7 @@ Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShel
 ## Verwendung
 
 1. `Dev-Kit.exe` in einen leeren Ordner kopieren: einen USB-Stick, eine externe Festplatte oder einen Ordner im eigenen Profil (Leerzeichen, Klammern oder `&` im Namen sind kein Problem).
-2. Doppelklicken. Beim ersten Start Agenten, Sprachen und Werkzeuge wählen: die App lädt sie herunter und prüft sie (Prüfsumme oder Signatur), dann legt sie `projects\` und `data\` an.
+2. Doppelklicken: die App legt `projects\` und `data\` an. Beim ersten Start Agenten, Sprachen und Werkzeuge wählen: die App lädt sie herunter und prüft sie (Prüfsumme oder Signatur).
 3. Auf der Seite **Projekte** ein Projekt anlegen oder klonen. Editor, Terminal und Agenten öffnen sich immer im Ordner eines Projekts, nie anderswo.
 
 ## Seiten
@@ -23,14 +23,14 @@ Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShel
 | **Projekte** | neues Projekt, Klonen von GitHub oder einer Git-Adresse; für jedes Projekt Typ, Sprachen (mit Logo) und erkannte Aktionen (`npm run dev`, `php -S`, `cargo run`, statische Website…), mit Port, Ausgabe und Öffnen im Browser |
 | **Agenten** | die installierten Claude Code, Codex und Antigravity: Version, Anmeldung, Tariflimits und Verbrauch von heute und der letzten 7 Tage; gemeinsame Anweisungen, Skills und MCP-Server in `data\agents` |
 | **Sprachen und Werkzeuge** | die Komponenten mit Logo, Abhängigkeiten und Speicherplatz; installieren, aktualisieren, entfernen |
-| **Einstellungen** | Sprache, Netzwerk (Proxy, Zertifikate, lokales Netz), Gemini-Schlüssel, Versionen von Python, PHP und Rust, Updates der App |
+| **Einstellungen** | Sprache, Terminal, Netzwerk (Proxy, Zertifikate, lokales Netz), Gemini-Schlüssel, Versionen von Python und PHP, Rust-Compiler (GNU oder MSVC), Updates der App |
 | **Laufwerk entfernen** | schließt alles, was das Kit geöffnet hat, holt die Anmeldung von Antigravity ins Kit zurück und lässt den Stick auswerfen |
 
-Die Konsole des Kits ist das portable Windows Terminal des Kits (oder, in den Einstellungen, die klassische Windows-Konsole) mit der PowerShell 7 des Kits und nur der Umgebung des Kits: auf dem PC installierte Programme sind nicht sichtbar.
+Die Konsole des Kits ist das portable Windows Terminal des Kits (oder die klassische Windows-Konsole, wenn sie in den Einstellungen gewählt ist oder Windows Terminal nicht installiert ist) mit der PowerShell 7 des Kits und nur der Umgebung des Kits: auf dem PC installierte Programme sind nicht sichtbar.
 
 ## Was vom Dev-Kit bleibt
 
-Das Konsolenmenü von [nabre/dev-kit](https://github.com/nabre/dev-kit) entfällt: jeder Eintrag hat eine Seite in der App („Proxy und Einstellungen“ ist die Seite Einstellungen), und die Logik der Skripte steckt in Rust in der exe. Die Komponenten sind dieselben (plus PowerShell 7 und der integrierte Editor, minus VSCodium Desktop und Windows Terminal), ebenso der Abgleich von Anweisungen, Skills und MCP zwischen den drei Agenten und das Umziehen, wenn das Kit Ordner oder Laufwerksbuchstaben wechselt. Kits des Dev-Kit werden nicht importiert.
+Das Konsolenmenü von [nabre/dev-kit](https://github.com/nabre/dev-kit) entfällt: jeder Eintrag hat eine Seite in der App („Proxy und Einstellungen“ ist die Seite Einstellungen), und die Logik der Skripte steckt in Rust in der exe. Die Komponenten sind dieselben (plus PowerShell 7 und der integrierte Editor, minus VSCodium Desktop), ebenso der Abgleich von Anweisungen, Skills und MCP zwischen den drei Agenten und das Umziehen, wenn das Kit Ordner oder Laufwerksbuchstaben wechselt. Kits des Dev-Kit werden nicht importiert.
 
 ## Bekannte Grenzen
 

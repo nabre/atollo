@@ -37,7 +37,6 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-#[allow(dead_code, reason = "integrity report, phase 6")]
 pub fn sha256_hex(path: &Path) -> Result<String> {
     hash_file::<Sha256>(path).map(|h| hex(&h))
 }

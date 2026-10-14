@@ -30,7 +30,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 - **Interfaccia dell'app**: colori dei temi predefiniti "Dark Modern" e "Light Modern" come variabili CSS (`ui\src\theme.css`), scelti da `prefers-color-scheme` (tema di Windows); struttura a barra delle attività, area di contenuto e barra di stato come VSCodium; carattere Segoe WPC/Segoe UI 13 px; focus visibile con il colore di VSCodium.
 - **Editor**: `window.autoDetectColorScheme` attivo, con Dark Modern / Light Modern come temi preferiti (fase 3).
 - **Icone**: Codicons (`react-icons/vsc`).
-- **Terminali**: colori di PSReadLine ricavati da `terminal.ansi*` degli stessi temi (fase 3). Le console dell'app usavano i colori del terminale di VSCodium in xterm.js (D-44, D-46); con la console classica (D-57) i colori sono quelli della console di Windows.
+- **Terminali**: i colori di PSReadLine ricavati da `terminal.ansi*` previsti per la fase 3 non si fanno (scelta dell'utente del 14/10/2026): bastano gli schemi del terminale. Le console dell'app usavano i colori del terminale di VSCodium in xterm.js (D-44, D-46); oggi Windows Terminal del kit usa gli schemi «VSCodium Dark Modern» / «VSCodium Light Modern» scritti dall'app (D-68), la console classica (D-57) i colori della console di Windows.
 - **Da verificare**: i valori in `theme.css` vanno confrontati con i file `dark_modern.json` / `light_modern.json` del server di VSCodium appena installato (fase 3); eventuali differenze si correggono lì.
 
 ## D-03 Tauri 2.12.0 fissato
@@ -51,11 +51,11 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 ## D-06 Nuove finestre e navigazione dell'editor
 
 - API verificate: `on_new_window(Fn(Url, NewWindowFeatures) -> NewWindowResponse)`, `on_navigation(Fn(&Url) -> bool)`.
-- `on_navigation`: solo `http://127.0.0.1:<porta>`. `on_new_window`: stessa origine → rifiuto e nuova finestra `editor` creata dal nostro costruttore; altri `http`/`https` → browser di sistema; altri schemi → bloccati.
+- `on_navigation`: solo `http://127.0.0.1:<porta>` dentro la cartella del progetto (D-62) e `about:`. `on_new_window`: stessa origine → rifiuto e nuova finestra `editor` creata dal nostro costruttore; altri `http`/`https` → browser di sistema; altri schemi → bloccati.
 
 ## D-07 Job Object: l'app entra nel job da sé
 
-- `KILL_ON_JOB_CLOSE | BREAKAWAY_OK`, handle non ereditabile, `AssignProcessToJobObject(GetCurrentProcess())`: ogni figlio nasce nel job. Sotto-job annidati per annullare una singola operazione.
+- `KILL_ON_JOB_CLOSE | BREAKAWAY_OK`, handle non ereditabile, `AssignProcessToJobObject(GetCurrentProcess())`: ogni figlio nasce nel job. Sotto-job annidati per fermare un albero di processi (server dell'editor, azioni dei progetti).
 - Browser ed Esplora risorse con `CREATE_BREAKAWAY_FROM_JOB`, altrimenti morirebbero con l'app.
 - Scartato: avvio sospeso + assegnazione per ogni processo (`std::process::Child` non espone l'handle del thread).
 
@@ -74,7 +74,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 ## D-11 Motore di installazione in Rust
 
-- Stessi passi e controlli degli script (`Prepare-DevKit.ps1` e helper): verifica prima di sostituire, componente in uso lasciato intatto, un componente fallito non ferma gli altri, 3 tentativi per download. Una preparazione alla volta (mutex per kit). Annullamento al termine del passo in corso; "Ferma subito" mai durante uno scambio di cartelle.
+- Stessi passi e controlli degli script (`Prepare-DevKit.ps1` e helper): verifica prima di sostituire, componente in uso lasciato intatto, un componente fallito non ferma gli altri, 3 tentativi per download. Una preparazione alla volta (mutex per kit). «Annulla» ferma subito un download, altrimenti al termine del passo in corso; mai durante un'estrazione o uno scambio di cartelle, che lascerebbero un componente a metà (scelta dell'utente del 14/10/2026: niente «Ferma subito»).
 - La rimozione copre **tutti** i componenti (gli script dimenticano Typst e TinyTeX).
 
 ## D-12 Rilevatori dei progetti in Rust
@@ -94,18 +94,18 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 ## D-15 Plugin
 
 - `tauri-plugin-dialog` (scelta cartelle) e `tauri-plugin-opener` usati solo da Rust. Nessun `tauri-plugin-shell`, nessun `single-instance`.
-- **Oggi**: nessun plugin di Tauri in `Cargo.toml`. Browser ed Esplora risorse si aprono con `explorer.exe` fuori dal job (`jobs::spawn_detached`, D-07); l'app non ha una finestra di scelta delle cartelle.
+- **Oggi**: nessun plugin di Tauri in `Cargo.toml`. Esplora risorse e i link della finestra principale si aprono con `explorer.exe`, i link dell'editor con `rundll32 url.dll,FileProtocolHandler`, sempre fuori dal job (`jobs::spawn_detached`, D-07); l'app non ha una finestra di scelta delle cartelle.
 
 ## D-16 Catalogo dei componenti incorporato
 
-- Il catalogo è un file JSON nel codice sorgente, incorporato con `include_str!` e validato da un test (id unici, `needs` esistenti, gruppi validi). Id liberi (il vincolo `^[a-z]+$` era degli script): `vscodium-server`, `pwsh` (`terminal`, Windows Terminal, tolto il 14/10/2026: D-44; WebView2 non è un componente: D-37).
+- Il catalogo è un file JSON nel codice sorgente, incorporato con `include_str!` e validato da un test (id unici, `needs` esistenti, gruppi validi). Id liberi (il vincolo `^[a-z]+$` era degli script): `vscodium-server`, `pwsh` (`terminal`, Windows Terminal: tolto con D-44, tornato con D-68; WebView2 non è un componente: D-37).
 - Campi oltre a quelli del Dev-Kit: `keys` (le altre parti: Maven, Ninja, Composer…; il componente è installato solo se ci sono tutte), `noArm64` (nessuna build per ARM64, nemmeno emulata: R), `remove` condiviso (`tools\vcruntime` di PHP e Apache se ne va con l'ultimo dei due), `version` e `sha256` per il gruppo `app` (D-58). Gruppi: `required`, `agents`, `languages`, `app`.
 - Scelta in `data\app\components.txt` (formato `id=1|0` del Dev-Kit: semplice e leggibile a mano); versioni in `data\app\versions\<id>.txt`.
 
 ## D-17 `cmd.exe` solo dove serve
 
-- Il motore non usa `cmd`. Restano solo il profilo "Dev-Kit - cmd" del terminale e gli strumenti installati come `.cmd`/`.bat` (per esempio `mvn.cmd`, `gradle.bat`): avvio con `raw_arg` da una sola funzione testata con `a b`, `(x)`, `a&b`, `50%`, `a!b`.
-- **Oggi** `cmd.exe` gira anche: per le azioni dei progetti (`cmd.exe /d /s /c`, come nel Dev-Kit, D-50); per `post-install.bat` di Git (D-29); per i `.cmd`/`.bat` della verifica finale (`jobs::batch_command`, D-38); per `data\kit\bin\agy.cmd` (D-41), che la console avvia dalla PowerShell del kit.
+- Il motore non usa `cmd`. Restano solo il profilo "Dev-Kit - cmd" del terminale e gli strumenti installati come `.cmd`/`.bat` (per esempio `mvn.cmd`, `gradle.bat`): avvio con `raw_arg` da una sola funzione (`jobs::batch_command`), che lancia `.\<nome>` dalla cartella dello script: il percorso non passa da `cmd`, che espanderebbe `%VAR%` anche fra virgolette (trovato il 14/10/2026: con una cartella `%SystemRoot%` lo script non partiva). Test `batch_files_in_odd_folders` con `a b (x) & y`, `50%`, `a!b`, `%SystemRoot%`, `%OS% & !OS!`.
+- **Oggi** `cmd.exe` gira anche: per le azioni dei progetti (`cmd.exe /d /s /c`, come nel Dev-Kit, D-50); per `post-install.bat` di Git (D-29); per i `.cmd`/`.bat` della verifica finale (`jobs::batch_command`, D-38); per `data\kit\bin\agy.cmd` (D-41), che la console avvia dalla PowerShell del kit e che il profilo «Antigravity» dell'editor usa. Questi ultimi passano il percorso completo a `cmd`: un percorso del kit con `%VAR%` di una variabile esistente non funziona (limite noto, come D-33).
 
 ## D-18 Testi
 
@@ -117,7 +117,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 ## D-20 Aggiornamento dell'exe
 
-- `data\app\update\`, SHA-256 dal file `.sha256` della release; alla chiusura `Dev-Kit.exe` → `Dev-Kit.old.exe` (Windows permette di rinominare un exe in esecuzione), nuovo al suo posto; eliminazione al primo avvio successivo. Disattivabile nelle impostazioni. Fonte delle release: Q3.
+- `data\app\update\`, SHA-256 dal digest di GitHub o dal file `.sha256` della release; alla chiusura `Dev-Kit.exe` → `Dev-Kit.old.exe` (Windows permette di rinominare un exe in esecuzione), nuovo al suo posto; eliminazione al primo avvio successivo. Disattivabile nelle impostazioni. Fonte delle release: `app-vX.Y.Z` di `nabre/dev-kit2` (D-52).
 
 ## D-21 Riga di comando nello stesso exe
 
@@ -145,7 +145,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 **Oggi** (`src-tauri\Cargo.toml`):
 - `toml_edit` non c'è: i blocchi del kit in `config.toml` di Codex si scrivono come blocchi di testo con marcatori, lasciando com'è il resto del file (D-40).
-- `portable-pty` è stato tolto con D-57: le console sono `conhost.exe` avviato con `CreateProcessW`.
+- `portable-pty` è stato tolto con D-57: le console sono Windows Terminal del kit (D-68) o `conhost.exe` avviato con `CreateProcessW`.
 - In più: `junction` 2.1 (giunzioni NTFS delle skill, D-40), `webview2-com` 0.39 (D-05), `native-tls` 0.2, `anyhow`, `thiserror`, `serde`, `serde_json`.
 
 ## D-29 Regole del motore di installazione (fase 2)
@@ -161,22 +161,22 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-23 Terminale esclusivo del kit
 
-- **Scelta.** Shell predefinita nell'editor: PowerShell 7 portabile, `-NoProfile` + profilo del kit in `data\kit\`; `PSModulePath` senza i moduli del PC (D-34); `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`. Git Bash e cmd come profili aggiuntivi. Console esterne: console classica di Windows (D-57; prima D-44).
+- **Scelta.** Shell predefinita nell'editor: PowerShell 7 portabile, `-NoProfile` + profilo del kit in `data\kit\`; `PSModulePath` senza i moduli del PC (D-34); `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`. Git Bash e cmd come profili aggiuntivi. Console esterne: Windows Terminal portabile del kit (D-68), console classica di Windows come alternativa e ripiego (D-57); prima D-44.
 - **Scartate.** Windows PowerShell 5.1 di sistema: carica moduli e profili del PC. Nushell: estranea agli agenti, che si aspettano PowerShell o Bash. Windows Terminal di sistema: pacchetto Store, fuori dal job, impostazioni in `%LOCALAPPDATA%`.
 - **Verificato il 14/10/2026.** PowerShell 7.6.7: `PowerShell-7.6.7-win-x64.zip` / `-win-arm64.zip`, SHA-256 in `hashes.sha256` e nel `digest` delle asset.
 
 ## D-24 Nessuna richiesta di amministratore
 
-- Manifesto incorporato con `requestedExecutionLevel level="asInvoker" uiAccess="false"` (senza, Windows applica il rilevamento degli installer, e un motore di installazione lo rischierebbe). Test in CI che legge il manifesto dall'exe compilato. Nessuna scrittura nel registro, nessun servizio, nessuna attività pianificata.
+- Manifesto incorporato con `requestedExecutionLevel level="asInvoker" uiAccess="false"` (senza, Windows applica il rilevamento degli installer, e un motore di installazione lo rischierebbe). Test in CI che legge il manifesto dall'exe compilato. Nessuna scrittura nel registro (eccezione: la voce `Uninstall\Rustup` che scrive rustup viene riportata com'era, D-38), nessun servizio, nessuna attività pianificata.
 
 ## D-25 File che i programmi vogliono su disco
 
-- `loopback.js` (per `NODE_OPTIONS=--require`), profilo PowerShell, `bashrc`: incorporati nell'exe, scritti in `data\kit\` al primo avvio di ogni versione (confronto di un hash), mai modificati dall'utente.
+- `loopback.js` (per `NODE_OPTIONS=--require`), `profile.ps1`, `console.ps1`, `bashrc`, `bin\agy.cmd`, `bin\agy`: incorporati nell'exe, riscritti in `data\kit\` a ogni avvio se mancano o sono diversi (confronto del contenuto); una modifica a mano viene sostituita.
 
 ## D-26 Server web dell'editor
 
 - Release VSCodium `vscodium-reh-web-win32-x64-<versione>.tar.gz` + `.sha256` (verificato: 1.140.06880). Nessun pacchetto ARM64: su ARM64 si usa x64 in emulazione, con avviso nell'interfaccia.
-- **Oggi** la versione non è più l'ultima: è fissata nel catalogo per ogni rilascio, con il suo SHA-256 (D-58).
+- **Oggi** la versione non è più l'ultima: è fissata nel catalogo per ogni rilascio, con il suo SHA-256 (D-58); oggi 1.135.06055.
 
 ## D-28 Interfaccia: React 19 + TypeScript + Tailwind 4 + react-icons
 
@@ -198,7 +198,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-33 Limite noto: cartelle del kit che iniziano con una cifra, `x` o `u`
 
-- VSCodium passa a `@parcel/watcher` esclusioni con percorsi Windows assoluti (`<kit>\data\vscodium-server\extensions/**`), che il watcher compila come espressioni regolari: dopo `\`, una cifra è un riferimento all'indietro e `x`/`u` iniziano escape esadecimali. Con il kit in `D:\2026\kit` il controllo dei file della cartella aperta fallisce (`regex_error`) e l'editor non vede i cambiamenti fatti fuori (per esempio dagli agenti). Parentesi, spazi e `&` non danno problemi (verificato con il watcher incluso in VSCodium 1.140).
+- VSCodium passa a `@parcel/watcher` esclusioni con percorsi Windows assoluti (`<kit>\data\vscodium-server\extensions/**`), che il watcher compila come espressioni regolari: dopo `\`, una cifra è un riferimento all'indietro e `x`/`u` iniziano escape esadecimali. Con il kit in `D:\2026\kit` il controllo dei file della cartella aperta fallisce (`regex_error`) e l'editor non vede i cambiamenti fatti fuori (per esempio dagli agenti). Parentesi, spazi e `&` non danno problemi (verificato con il watcher incluso in VSCodium 1.140 e di nuovo il 14/10/2026 con la 1.135.06055 installata dal kit, `@parcel/watcher` 2.5.6: cifra → `error_backref`, `x`/`u` → `error_escape`; vale per ogni cartella del percorso, non solo l'ultima).
 - Passare `--extensions-dir` con le barre normali non serve: VSCodium lo normalizza. L'app riconosce questi percorsi (`kit::watcher_unsafe_folder`) e lo dice nella Home, con il suggerimento di rinominare la cartella.
 
 ## D-34 PowerShell del kit isolato dal profilo del PC
@@ -233,7 +233,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-39 Verifica finale
 
-- `checkup.rs` (`Test-Installation` del kit): ogni componente installato risponde al suo comando di versione (campo `check` del catalogo), con l'ambiente del kit e 60 s di limite. `Dev-Kit.exe check`; dopo `prepare` per ciò che è stato installato.
+- `checkup.rs` (`Test-Installation` del kit): ogni componente installato risponde al suo comando di versione (campo `check` del catalogo, obbligatorio per tutti: test `every_check_names_an_installed_file`), con l'ambiente del kit e 60 s di limite. Un programma a finestra non si avvia: `"check": ["<programma>", "<file-version>"]` legge la versione dal file (`GetFileVersionInfoW`); oggi solo Windows Terminal. `Dev-Kit.exe check`; dopo `prepare` per ciò che è stato installato.
 
 ## D-40 Allineamento degli agenti in Rust
 
@@ -258,14 +258,14 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-44 Terminale integrato nell'app (sostituita da D-57)
 
-Superata il 14/10/2026: le console sono `conhost.exe` di Windows (D-57). Resta per la storia delle scelte.
+Superata il 14/10/2026 da D-57 (console classica di Windows), oggi alternativa a Windows Terminal del kit (D-68). Resta per la storia delle scelte.
 
 - **Scelta dell'utente** (14/10/2026): un terminale disponibile per tutti i sistemi operativi; tra un terminale esterno multipiattaforma e uno dentro l'app, l'utente ha scelto **dentro l'app**. Sostituisce Windows Terminal (D-13, D-23), che esiste solo per Windows ed era un eseguibile in più da scaricare.
 - **Come.** `terminal.rs`: il processo (PowerShell del kit, o un agente) parte su una pseudo console di `portable-pty` 0.9.0 (ConPTY su Windows, pty su macOS e Linux; D-22) con il solo ambiente del kit; una finestra `terminal-<n>` dell'app carica `terminal.html` (xterm.js 6.0.0 + `@xterm/addon-fit` 0.11.0, D-28) e la mostra. Stesso motore del terminale di VSCodium (xterm.js + PTY).
 - **Scartate.** WezTerm (multipiattaforma, portabile, configurazione Lua): resta un eseguibile esterno da scaricare e configurare, con le sue regole di ambiente. Alacritty: niente schede. Kitty: niente Windows. Ghostty: su Windows non maturo. Windows Terminal: solo Windows.
 - **Portata.** Il codice del terminale (`portable-pty`, xterm.js, finestre Tauri) è multipiattaforma; il resto dell'app usa ancora API di Windows (job, `windows`, WebView2, percorsi `win32-*`): il porting su macOS e Linux resta da fare, ma il terminale non lo ostacola.
 - **Il terminale di VSCodium resta il suo.** L'editor ha già un terminale integrato (xterm.js nella pagina, PTY nel server) sulle shell del kit (D-23); la console dell'app non lo sostituisce e non vi si può innestare, perché il PTY dell'editor è interno al suo server. Stesse shell, stesso profilo, stessi colori: i due terminali si comportano allo stesso modo.
-- **Kit esistenti.** La cartella `data\apps\<piattaforma>\terminal\` di Windows Terminal non è più usata e si può cancellare.
+- **Kit esistenti.** La cartella `data\apps\<piattaforma>\terminal\` è di nuovo usata da Windows Terminal del kit (D-68).
 
 ## D-45 Console: processo e pseudo console (sostituita da D-57)
 
@@ -303,7 +303,7 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 
 ## D-48 Prove dell'app con il debug remoto di WebView2
 
-- Per provare le finestre senza mani: `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9333` all'avvio dell'app di debug (con Vite su 5173), poi uno script Node che usa il protocollo DevTools (`/json/list`, `Runtime.evaluate`) per chiamare i comandi come la pagina (`window.__TAURI_INTERNALS__.invoke`) e leggere lo schermo di xterm (`.xterm-rows`). Le finestre si riconoscono dall'etichetta (`__TAURI_INTERNALS__.metadata.currentWindow.label`), non dall'URL: le console hanno tutte lo stesso.
+- Per provare le finestre senza mani: `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9333` all'avvio dell'app di debug (con Vite su 5173), poi uno script Node che usa il protocollo DevTools (`/json/list`, `Runtime.evaluate`) per chiamare i comandi come la pagina (`window.__TAURI_INTERNALS__.invoke`) e leggere il DOM delle finestre. Le finestre si riconoscono dall'etichetta (`__TAURI_INTERNALS__.metadata.currentWindow.label`): `main` ed `editor-<n>`; quelle dell'editor anche dall'URL (`folder=`).
 - Solo per lo sviluppo: la variabile non è mai impostata dall'app. Le prove passano dalle stesse capability della pagina, quindi verificano anche i permessi.
 - Più sessioni di lavoro sullo stesso PC: i processi di prova si chiudono per PID, mai per nome (`taskkill /IM Dev-Kit.exe` chiude anche le app degli altri).
 
@@ -342,11 +342,11 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 
 - Le sottocartelle di `projects` sono attendibili per Claude e Codex (comportamento del Dev-Kit, `trust.js`), così gli agenti non chiedono conferma a ogni progetto. È un rischio accettato: un progetto clonato da fonte sconosciuta ha subito i permessi di un progetto fidato. Lo ricordano la pagina Progetti e Linguaggi e strumenti al primo avvio. Scartato: l'attendibilità progetto per progetto, che il Dev-Kit aveva tolto perché gli agenti la chiedevano di continuo.
 - `keyring-before.json` contiene per pochi istanti le credenziali di Antigravity già presenti nel PC, per rimetterle com'erano dopo `agy`. Ora i loro segreti sono cifrati con DPAPI per l'utente di Windows (`CryptProtectData`, senza diritti di amministratore): una chiavetta persa o un file copiato non li rivela. Il file viene comunque cancellato al salvataggio successivo.
-- Windows Terminal interpretava `;` negli argomenti come separatore di comandi (una cartella chiamata `a; new-tab cmd` avrebbe aperto un altro programma). Il rischio è sparito senza Windows Terminal: prima con il terminale integrato (D-44), oggi con `conhost.exe` (D-57): la cartella è la cartella di lavoro del processo, non un argomento, e un argomento con le virgolette viene rifiutato.
+- Windows Terminal interpretava `;` negli argomenti come separatore di comandi (una cartella chiamata `a; new-tab cmd` avrebbe aperto un altro programma). Con Windows Terminal del kit (D-68) la cartella è un argomento: ogni `;` viene protetto (`\;`, `wterm::wt_arg`, test `semicolons_are_escaped`). Nella console classica (D-57) la cartella è la cartella di lavoro del processo e un argomento con le virgolette viene rifiutato.
 
 ## D-54 Impostazioni
 
-- La pagina Impostazioni scrive `data\app\settings.json` dopo aver controllato i valori: lingua, proxy `http(s)://`, file PEM esistente, Python `3.x`, PHP `8.x`, toolchain `gnu|msvc`. Un file illeggibile non viene sovrascritto finché l'utente non salva.
+- La pagina Impostazioni scrive `data\app\settings.json` dopo aver controllato i valori: lingua, proxy `http(s)://`, file PEM esistente, Python `3.x`, PHP `8.x`, toolchain `gnu|msvc`, terminale `classic` (console classica, D-68). Un file illeggibile non viene sovrascritto finché l'utente non salva.
 - La chiave di Gemini non torna mai all'interfaccia: questa riceve solo «salvata sì/no». `null` la conserva, `""` la toglie.
 - Al salvataggio l'ambiente del kit viene ricostruito dall'ambiente reale catturato all'avvio (`Host`): valgono subito per console, agenti, installazioni e progetti. Il server dell'editor già avviato tiene il suo ambiente fino al riavvio, e la pagina lo dice.
 
@@ -467,7 +467,7 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
 ## D-68 Windows Terminal portabile del kit, predefinito per le console
 
 - **Scelta dell'utente** (14/10/2026): un terminale portabile incluso nel kit, Windows Terminal, come predefinito; la console classica di Windows (D-57) resta come alternativa nelle Impostazioni. Riprende la scelta di D-13 tolta da D-44: Windows Terminal resta solo per Windows (il porting su macOS e Linux sceglierà il terminale di quei sistemi).
-- **Componente** `terminal` (gruppo `languages`, predefinito, dipende da `pwsh`): lo zip ufficiale `Microsoft.WindowsTerminal_<v>_(x64|arm64).zip` di `microsoft/terminal` con `.portable` accanto all'exe, così le impostazioni restano in `terminal\settings\` e non in `%LOCALAPPDATA%`. Prima di ogni console l'app riscrive i profili «Dev-Kit» e «Dev-Kit - Git Bash» e gli schemi di colori di VSCodium; il resto del file è dell'utente, e un file che non è JSON semplice resta com'è (`wterm.rs`).
+- **Componente** `terminal` (gruppo `languages`, predefinito, dipende da `pwsh`): lo zip ufficiale `Microsoft.WindowsTerminal_<v>_(x64|arm64).zip` di `microsoft/terminal` con `.portable` accanto all'exe, così le impostazioni restano in `terminal\settings\` e non in `%LOCALAPPDATA%`. Prima di ogni console l'app riscrive i profili «Dev-Kit» e «Dev-Kit - Git Bash» e gli schemi di colori di VSCodium; il resto del file è dell'utente, e un file che non è JSON semplice o che non si legge (per esempio UTF-16) resta com'è: si crea solo se manca (`wterm.rs`, test `settings_of_the_user_are_never_lost`).
 - **Un solo processo, un altro ambiente.** Windows Terminal tiene tutte le finestre in un processo: un secondo avvio passa la richiesta a quello già aperto ed esce subito, e la nuova scheda riceve l'ambiente del terminale, non quello di chi la chiede (verificato nello schema delle impostazioni: non esiste un modo «una finestra per processo»). Quindi l'app non può aspettare il processo che avvia né passargli l'ambiente.
 - **Come.** Ogni console è la PowerShell del kit con `data\kit\console.ps1` e il nome di una named pipe nuova (`Dev-Kit-Console-<64 cifre esadecimali casuali>`, solo locale, accesso al solo proprietario: la sicurezza predefinita delle pipe dà la lettura a Everyone, e sul disco senza permessi chiunque può avviare il `pwsh.exe` del kit). L'app aspetta la connessione (30 s), controlla con `GetNamedPipeClientProcessId` che dall'altra parte ci sia proprio `pwsh.exe` del kit, apre quel processo e gli manda l'ambiente del kit in JSON. Lo script tiene solo le variabili del kit, poi avvia l'agente (`& <percorso>`) o il profilo del kit. Quel processo è la console: contato fino alla fine, chiuso da «Chiudi tutto» e da «Rimuovi l'unità», e alla sua fine gli agenti si riallineano (D-40). Se l'ambiente non arriva, la scheda non avvia niente.
 - **Ripiego** sulla console classica quando le Impostazioni la chiedono, quando Windows Terminal non è installato, su Windows più vecchio di 10 2004 (build 19041, il minimo di Windows Terminal) o se la console di Windows Terminal non parte.
@@ -481,6 +481,6 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
   - **Trascinamento**: la barra di VSCodium web ha già `-webkit-app-region: drag` (menu, Command Center e pulsanti `no-drag`). wry accende le regioni non client di WebView2 (`IsNonClientRegionSupportEnabled`), quindi quelle zone si comportano come la barra di Windows: trascinamento, doppio clic per ingrandire, Aero Snap. Nessun codice del kit.
   - **Pulsanti**: VSCodium web crea a destra un `window-controls-container` vuoto (largo 0 senza Window Controls Overlay). Uno script iniettato (`initialization_script`, solo frame principale) lo porta a 138 px come in VSCodium desktop e ci mette tre elementi con le classi dell'editor (`window-icon`, `window-minimize`/`window-max-restore`/`window-close`, `codicon-chrome-*`): icone, colori del tema, rosso al passaggio su Chiudi, stato inattivo e schermo intero vengono dal CSS di VSCodium. Un clic apre `http://127.0.0.1:<porta>/__devkit/window/<azione>` come nuova finestra: `on_new_window` la rifiuta ed esegue l'azione sulla propria finestra. Una pagina può solo ridurre, ingrandire o chiudere la finestra in cui sta, come i pulsanti di Windows. «Chiudi» passa da CloseRequested come la X. L'icona Ingrandisci/Ripristina segue `Resized` (`sync_maximized`, da Rust con `eval`).
   - **Menu nella barra**: nel web VSCodium mette i menu nell'hamburger della barra delle attività (`window.menuBarVisibility` = `compact`). L'impostazione ha ambito «application» e `Machine\settings.json` la ignora (come in D-66); lo script la aggiunge a `configurationDefaults` della configurazione della pagina (`vscode-workbench-web-configuration`) quando il documento diventa «interactive», prima che parta `workbench.js` (script di modulo). Valore `classic`, come VSCodium desktop; resta un predefinito, le impostazioni dell'utente vincono.
-- **Ripiego.** Se per 1,5 s non c'è una barra dell'editor visibile (pagina d'errore di WebView2 con il server fermo, barra spenta dalle impostazioni) e la pagina non è a schermo intero, lo script mostra una barra semplice di 30 px con il titolo trascinabile e gli stessi tre pulsanti (glifi di Segoe Fluent Icons). Sparisce quando la barra dell'editor torna. Senza ripiego una finestra senza cornice non si potrebbe spostare né chiudere.
+- **Ripiego.** Se per circa 1 s (tre controlli ogni 0,5 s) non c'è una barra dell'editor visibile (pagina d'errore di WebView2 con il server fermo, barra spenta dalle impostazioni) e la pagina non è a schermo intero, lo script mostra una barra semplice di 30 px con il titolo trascinabile e gli stessi tre pulsanti (glifi di Segoe Fluent Icons). Sparisce quando la barra dell'editor torna. Senza ripiego una finestra senza cornice non si potrebbe spostare né chiudere.
 - **Limiti.** Niente menu dei layout di aggancio al passaggio su Ingrandisci (Windows lo offre solo ai pulsanti veri); Win+Z e Win+frecce funzionano. I pulsanti, come in VSCodium desktop, non si raggiungono con Tab.
 - **Prove.** Test `title_bar_buttons` (percorsi accettati, altre porte e percorsi rifiutati, testi tradotti, predefinito dei menu). Nell'app, con WebView2 in debug remoto: tre pulsanti nel contenitore largo 138 px, regione `drag`, menu File…Help nella barra e File che si apre, Ingrandisci e Ripristina con l'icona che cambia, Riduci (`IsIconic`), Chiudi (CloseRequested, poi Destroyed), ripiego che compare con la barra nascosta e sparisce al suo ritorno.

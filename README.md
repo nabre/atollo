@@ -12,7 +12,7 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 ## Come si usa
 
 1. Copia `Dev-Kit.exe` in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
-2. Doppio clic. Al primo avvio scegli agenti, linguaggi e strumenti: l'app li scarica e li verifica (checksum o firma), poi crea `projects\` e `data\`.
+2. Doppio clic: l'app crea `projects\` e `data\`. Al primo avvio scegli agenti, linguaggi e strumenti: l'app li scarica e li verifica (checksum o firma).
 3. Crea o clona un progetto nella pagina **Progetti**. Editor, terminale e agenti si aprono sempre nella cartella di un progetto, mai altrove.
 
 ## Pagine
@@ -23,14 +23,14 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 | **Progetti** | nuovo progetto, clone da GitHub o da un indirizzo Git; per ogni progetto il tipo, i linguaggi (con il loro logo) e le azioni riconosciute (`npm run dev`, `php -S`, `cargo run`, sito statico…), con porta, output e apertura nel browser |
 | **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
 | **Linguaggi e strumenti** | i componenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove |
-| **Impostazioni** | lingua, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python, PHP e Rust, aggiornamenti dell'app |
+| **Impostazioni** | lingua, terminale, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python e PHP, compilatore di Rust (GNU o MSVC), aggiornamenti dell'app |
 | **Rimuovi l'unità** | chiude tutto ciò che il kit ha aperto, riporta nel kit l'accesso di Antigravity e lascia espellere la chiavetta |
 
-La console del kit è Windows Terminal portabile del kit (o, nelle Impostazioni, la console classica di Windows) con PowerShell 7 del kit e il solo ambiente del kit: i programmi installati sul PC non si vedono.
+La console del kit è Windows Terminal portabile del kit (o la console classica di Windows, se la scegli nelle Impostazioni o se Windows Terminal non è installato) con PowerShell 7 del kit e il solo ambiente del kit: i programmi installati sul PC non si vedono.
 
 ## Cosa resta del Dev-Kit
 
-Il menu in console di [nabre/dev-kit](https://github.com/nabre/dev-kit) non c'è: ogni sua voce ha una pagina dell'app («Proxy e impostazioni» è la pagina Impostazioni) e la logica degli script è in Rust dentro l'exe. Restano gli stessi componenti (più PowerShell 7 e l'editor integrato, meno VSCodium desktop e Windows Terminal), lo stesso allineamento di istruzioni, skill e MCP fra i tre agenti, la stessa rilocazione quando il kit cambia cartella o lettera di unità. I kit del Dev-Kit non vengono importati.
+Il menu in console di [nabre/dev-kit](https://github.com/nabre/dev-kit) non c'è: ogni sua voce ha una pagina dell'app («Proxy e impostazioni» è la pagina Impostazioni) e la logica degli script è in Rust dentro l'exe. Restano gli stessi componenti (più PowerShell 7 e l'editor integrato, meno VSCodium desktop), lo stesso allineamento di istruzioni, skill e MCP fra i tre agenti, la stessa rilocazione quando il kit cambia cartella o lettera di unità. I kit del Dev-Kit non vengono importati.
 
 ## Limiti noti
 

@@ -44,7 +44,7 @@ I gruppi, i predefiniti e le dimensioni sono quelli di `components.json`. Propos
 
 Tolti dal catalogo il 14/10/2026: Windows Terminal (`terminal`), perché le console erano la console classica di Windows (DECISIONS.md D-57), poi tornato lo stesso giorno come terminale predefinito delle console (D-68); VSCodium desktop (`vscodium`), perché l'editor è integrato. Il componente `conpty` proposto in D-47 non è stato aggiunto.
 
-Campi del catalogo oltre a quelli del Dev-Kit: `keys` (le altre parti di un componente: Maven e Gradle di Java, Ninja di CMake, Composer di PHP, yarn di pnpm, `node.exe` dell'editor; installato solo se ci sono tutte), `x64Only` (build x64 anche su ARM64, in emulazione), `noArm64` (nessuna build per ARM64), `remove` (altri file posseduti; `tools\vcruntime` di PHP e Apache se ne va solo con l'ultimo dei due), `check` (comando della verifica finale), `version` e `sha256` (gruppo `app`).
+Campi del catalogo oltre a quelli del Dev-Kit: `keys` (le altre parti di un componente: Maven e Gradle di Java, Ninja di CMake, Composer di PHP, yarn di pnpm, `node.exe` dell'editor; installato solo se ci sono tutte), `x64Only` (build x64 anche su ARM64, in emulazione), `noArm64` (nessuna build per ARM64), `remove` (altri file posseduti; `tools\vcruntime` di PHP e Apache se ne va solo con l'ultimo dei due), `check` (comando della verifica finale, per tutti; `<file-version>` legge la versione dal file senza avviarlo, per Windows Terminal), `version` e `sha256` (gruppo `app`).
 
 ## 2. Come si installa ciascuno
 

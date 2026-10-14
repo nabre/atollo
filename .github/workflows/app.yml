@@ -111,27 +111,28 @@ jobs:
           }
           $names = (Get-ChildItem $kit -Force).Name | Sort-Object
           if (($names -join ',') -ne 'data,Dev-Kit.exe,projects') { throw "unexpected files: $names" }
-      - name: Real install of pwsh, node, git and the editor server (x64)
+      - name: Real install of pwsh, node, git, Windows Terminal and the editor server (x64)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
-          & "$kit/Dev-Kit.exe" prepare --only "pwsh,node,git,vscodium-server"
+          & "$kit/Dev-Kit.exe" prepare --only "pwsh,node,git,terminal,vscodium-server"
           if ($LASTEXITCODE -ne 0) { throw "prepare failed ($LASTEXITCODE)" }
           & "$kit/data/apps/win32-x64/pwsh/pwsh.exe" -NoProfile -Command '$PSVersionTable.PSVersion'
           & "$kit/data/apps/win32-x64/node/node.exe" -v
           & "$kit/data/apps/win32-x64/git/cmd/git.exe" --version
           if (-not (Test-Path "$kit/data/apps/win32-x64/vscodium-server/out/server-main.js")) { throw "editor server missing" }
+          if (-not (Test-Path "$kit/data/apps/win32-x64/terminal/WindowsTerminal.exe")) { throw "Windows Terminal missing" }
           & "$kit/Dev-Kit.exe" prepare --only "pwsh,node" --update-all
           if ($LASTEXITCODE -ne 0) { throw "update check failed" }
-      - name: Editor server test (token, redirect, no leftover processes)
+      - name: Real kit tests (editor server; Windows Terminal console with the kit environment)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
           $env:DEVKIT_TEST_KIT = Join-Path $env:RUNNER_TEMP "kit (1) & co"
-          cargo test --target ${{ matrix.target }} real_server -- --nocapture
+          cargo test --target ${{ matrix.target }} real_ -- --nocapture --test-threads=1
       - uses: actions/upload-artifact@v4
         with:
           name: Dev-Kit-${{ matrix.target }}

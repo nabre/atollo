@@ -1,5 +1,17 @@
 # Novità
 
+## Documentazione allineata al codice (14/10/2026)
+
+**Corretto**
+- **Impostazioni di Windows Terminal mai perse** (D-68): un `settings.json` che non si legge (per esempio salvato in UTF-16) veniva sovrascritto; ora si crea solo se manca.
+- **Script `.cmd` in cartelle con `%VAR%`** (D-17): la verifica finale passava il percorso a `cmd`, che espandeva le variabili anche fra virgolette (con una cartella `%SystemRoot%` lo script non partiva). Ora lo script parte dalla sua cartella come `.\<nome>`.
+- **Verifica finale di Windows Terminal** (D-39): l'unico componente senza controllo; ora legge la versione da `WindowsTerminal.exe` senza aprirlo. Tutti i componenti hanno un controllo (test).
+- **CI**: il kit di prova installa anche Windows Terminal ed esegue la prova reale delle sue console.
+- Documentazione allineata al codice: README nelle quattro lingue, PLAN, TESTING, CATALOG e 25 decisioni (Windows Terminal di nuovo predefinito, console xterm non più esistenti, file del kit, release, registro, navigazione dell'editor). Decisioni dell'utente: niente «Ferma subito» (D-11) né colori PSReadLine (D-27); limite del watcher riverificato sulla 1.135.06055 (D-33).
+- Tolti gli `allow(dead_code)` rimasti dalle fasi precedenti.
+
+**Verificato**: 183 test Rust, 20 test dell'interfaccia; `clippy -D warnings`, ESLint, Prettier puliti; `Dev-Kit.exe check` sul kit di sviluppo (Windows Terminal 1.25.2609.30003).
+
 ## Limiti d'uso, progetti e interfaccia (14/10/2026)
 
 **Fatto**
@@ -19,7 +31,7 @@
 - La barra «Applica» di Linguaggi e strumenti lasciava vedere sotto di sé una striscia della lista.
 
 **Verificato**
-- 174 test Rust (fra cui periodo locale, date ISO, `Retry-After`, finestre e crediti di Claude, conteggi delle sessioni di Codex senza doppioni, quote di Antigravity, cache con attesa dopo 429, editor che non esce dal progetto, `dev-settings.json`), 20 test dell'interfaccia; `clippy -D warnings`, ESLint, Prettier puliti.
+- 181 test Rust (fra cui periodo locale, date ISO, `Retry-After`, finestre e crediti di Claude, conteggi delle sessioni di Codex senza doppioni, quote di Antigravity, cache con attesa dopo 429, editor che non esce dal progetto, `dev-settings.json`), 20 test dell'interfaccia; `clippy -D warnings`, ESLint, Prettier puliti.
 
 **Da provare a mano** (checklist in [TESTING.md](TESTING.md))
 1. Agenti con accesso fatto: i limiti coincidono con `/usage` di Claude Code e `/status` di Codex.

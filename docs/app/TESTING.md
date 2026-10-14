@@ -18,7 +18,7 @@ Coprono, fra l'altro:
 - editor e server web reale (con il token e senza);
 - finestre dell'editor che non possono chiamare i comandi dell'app;
 - una console reale in `conhost.exe`, in una cartella con spazi;
-- due finestre reali di Windows Terminal del kit (la seconda passa al terminale già aperto) in una cartella con spazio e `;`: l'ambiente del kit arriva e l'app vede la fine (con `DEVKIT_TEST_KIT`);
+- due finestre reali di Windows Terminal del kit (la seconda passa al terminale già aperto) in una cartella con spazio e `;`: l'ambiente del kit arriva e l'app vede la fine (con `DEVKIT_TEST_KIT`; nella CI sul kit con `terminal`);
 - allineamento degli agenti e accesso di Antigravity con Gestione credenziali reale;
 - rilevamento dei progetti su esempi (Node, Next, Tauri, Electron, PHP, Laravel, Django, FastAPI, Flask, Streamlit, Rust, statico, progetti composti, `panel.json` e `pannello.json`);
 - porte ricordate e bloccate, avvio e arresto di un'azione attraverso il suo job;
@@ -45,7 +45,7 @@ Rispetto alla checklist del prompt:
 Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un PC che non ha mai visto il kit, quando la voce lo richiede.
 
 ### Installazione e portabilità
-- [ ] **Kit nuovo su chiavetta.** Doppio clic, primo avvio: PowerShell 7, GitHub CLI e l'editor si installano da soli; poi installazione dei predefiniti (con Git per Claude Code), editor aperto su un progetto.
+- [ ] **Kit nuovo su chiavetta.** Doppio clic, primo avvio: PowerShell 7, GitHub CLI (con Git) e l'editor si installano da soli; poi installazione dei predefiniti, editor aperto su un progetto.
 - [ ] **Editor alla versione del rilascio.** Con un kit preparato da un'altra versione dell'app (o con un numero diverso in `data\app\versions\vscodium-server.txt`), all'avvio l'editor viene installato di nuovo alla versione fissata, anche se era rimasto aperto, senza «Aggiorna tutto». Se un programma del PC tiene aperta la cartella dell'editor, l'aggiornamento finisce «in uso», ma Editor, Terminale e gli agenti si aprono lo stesso con l'editor già presente. In Linguaggi e strumenti l'editor è tra gli obbligatori, spuntato e non modificabile.
 - [ ] **Nessuna traccia fuori dal kit.** Dopo una sessione completa (editor, terminale, un agente, un progetto avviato) non c'è nessun file nuovo in `%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%` e nel registro. Confronto prima/dopo con Process Monitor o con un'istantanea delle cartelle. Eccezione documentata: le credenziali di Antigravity, che restano in Windows solo per la durata di `agy` e con persistenza di sessione (D-41).
 - [ ] **Kit spostato.** Su un'altra lettera di unità e in una cartella con spazi tutto funziona, lo stato dell'editor resta e Claude ritrova la cronologia.
@@ -69,7 +69,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 
 ### Agenti
 - [ ] **Claude Code, Codex e Antigravity.** Accesso, avvio dall'app e dall'editor, allineamento di istruzioni e skill fra i tre.
-- [ ] **Console di un agente.** Agenti › Apri su Claude Code: si apre Windows Terminal del kit (non quello del PC); con «Console classica di Windows» nelle Impostazioni, la console classica (non Windows Terminal, anche se è il terminale predefinito del PC). Claude Code riceve Invio, frecce e Ctrl+C. Chiudendo la console non resta nessun `claude.exe`.
+- [ ] **Console di un agente.** Home o Progetti › Agente con Claude Code: si apre Windows Terminal del kit (non quello del PC); con «Console classica di Windows» nelle Impostazioni, la console classica (non Windows Terminal, anche se è il terminale predefinito del PC). Claude Code riceve Invio, frecce e Ctrl+C. Chiudendo la console non resta nessun `claude.exe`.
 - [ ] **Windows Terminal del kit.** Con Windows Terminal già aperto da un'altra console del kit, Home › Terminale apre una nuova finestra con il profilo «Dev-Kit» e `$env:CP_ROOT` del kit; «Chiudi tutto» la chiude. Senza il componente `terminal`, o con «Console classica di Windows», si apre la console classica.
 - [ ] **Git con GitHub CLI.** Su un kit senza Git, all'avvio Git si installa con i componenti di sistema; in «Linguaggi e strumenti» è spuntato, non modificabile, con l'etichetta «per GitHub CLI».
 - [ ] **Editor aggiornato con una cartella aperta.** Con Esplora file aperto su `data\apps\win32-x64\vscodium-server\extensions`, l'editor di un'altra versione viene comunque sostituito all'avvio (D-60).

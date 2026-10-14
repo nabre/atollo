@@ -12,7 +12,7 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 ## How to use it
 
 1. Copy `Dev-Kit.exe` into an empty folder: a USB stick, an external drive or a folder in your profile (spaces, brackets or `&` in the name are fine).
-2. Double-click it. On first start choose agents, languages and tools: the app downloads and verifies them (checksum or signature), then creates `projects\` and `data\`.
+2. Double-click it: the app creates `projects\` and `data\`. On first start choose agents, languages and tools: the app downloads and verifies them (checksum or signature).
 3. Create or clone a project on the **Projects** page. The editor, the terminal and the agents always open in a project's folder, never anywhere else.
 
 ## Pages
@@ -23,14 +23,14 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 | **Projects** | new project, clone from GitHub or a Git URL; for each project its type, its languages (with their logo) and the recognised actions (`npm run dev`, `php -S`, `cargo run`, static site…), with port, output and opening in the browser |
 | **Agents** | the installed Claude Code, Codex and Antigravity: version, sign-in, plan limits and usage of today and of the last 7 days; instructions, skills and MCP servers shared in `data\agents` |
 | **Languages and tools** | the components with their logo, dependencies and disk space; install, update and remove |
-| **Settings** | language, network (proxy, certificates, local network), Gemini key, Python, PHP and Rust versions, app updates |
+| **Settings** | language, terminal, network (proxy, certificates, local network), Gemini key, Python and PHP versions, Rust compiler (GNU or MSVC), app updates |
 | **Remove drive** | closes everything the kit opened, brings Antigravity's sign-in back into the kit and lets you eject the stick |
 
-The kit console is the kit's portable Windows Terminal (or, in Settings, the classic Windows console) with the kit's PowerShell 7 and only the kit's environment: programs installed on the PC are not visible.
+The kit console is the kit's portable Windows Terminal (or the classic Windows console, if chosen in Settings or if Windows Terminal is not installed) with the kit's PowerShell 7 and only the kit's environment: programs installed on the PC are not visible.
 
 ## What is left of the Dev-Kit
 
-The console menu of [nabre/dev-kit](https://github.com/nabre/dev-kit) is gone: each of its entries has a page in the app ("Proxy and settings" is the Settings page) and the logic of the scripts is in Rust inside the exe. The components are the same (plus PowerShell 7 and the integrated editor, minus VSCodium desktop and Windows Terminal), and so are the alignment of instructions, skills and MCP across the three agents and the relocation when the kit changes folder or drive letter. Dev-Kit kits are not imported.
+The console menu of [nabre/dev-kit](https://github.com/nabre/dev-kit) is gone: each of its entries has a page in the app ("Proxy and settings" is the Settings page) and the logic of the scripts is in Rust inside the exe. The components are the same (plus PowerShell 7 and the integrated editor, minus VSCodium desktop), and so are the alignment of instructions, skills and MCP across the three agents and the relocation when the kit changes folder or drive letter. Dev-Kit kits are not imported.
 
 ## Known limits
 

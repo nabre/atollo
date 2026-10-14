@@ -88,7 +88,6 @@ impl Drop for Job {
 }
 
 /// The app's job, and whether the app itself is inside it.
-#[allow(dead_code, reason = "read by spawn(), used from phase 2")]
 struct AppJob {
     job: Job,
     self_assigned: bool,
@@ -114,7 +113,6 @@ pub fn init() -> Result<Option<String>> {
 
 /// A command for a kit program: the kit environment only, no inherited
 /// variables, no console window.
-#[allow(dead_code, reason = "first caller in phase 2 (installer)")]
 pub fn kit_command(program: impl AsRef<std::ffi::OsStr>, env: &KitEnv) -> Command {
     let mut cmd = Command::new(program);
     cmd.env_clear();
@@ -123,17 +121,23 @@ pub fn kit_command(program: impl AsRef<std::ffi::OsStr>, env: &KitEnv) -> Comman
     cmd
 }
 
-/// A `.bat`/`.cmd` run as `cmd.exe /d /s /c ""<path>" <args>"`: the quoting
-/// that keeps paths with spaces, `&` and parentheses intact (DECISIONS.md
-/// D-17). `args` must be fixed words of the app, never text from the user:
-/// cmd would interpret `&`, `|` and `%` in them.
+/// A `.bat`/`.cmd` run as `cmd.exe /d /s /c "".\<name>" <args>"` in its own
+/// folder (DECISIONS.md D-17): the folder never goes through cmd, which
+/// would expand `%VAR%` in it even inside quotes; the quoting keeps spaces,
+/// `&` and parentheses of the name intact. The current folder is the
+/// script's: do not change it. `args` must be fixed words of the app, never
+/// text from the user: cmd would interpret `&`, `|` and `%` in them.
 pub fn batch_command(script: &std::path::Path, args: &[&str], env: &KitEnv) -> Command {
     let system_root = env.get("SystemRoot").unwrap_or(r"C:\Windows");
     let mut cmd = kit_command(
         std::path::Path::new(system_root).join(r"System32\cmd.exe"),
         env,
     );
-    let mut line = format!("\"{}\"", script.display());
+    if let Some(dir) = script.parent().filter(|d| !d.as_os_str().is_empty()) {
+        cmd.current_dir(dir);
+    }
+    let name = script.file_name().unwrap_or(script.as_os_str());
+    let mut line = format!("\".\\{}\"", std::path::Path::new(name).display());
     for a in args {
         line.push(' ');
         line.push_str(a);
@@ -143,7 +147,6 @@ pub fn batch_command(script: &std::path::Path, args: &[&str], env: &KitEnv) -> C
 }
 
 /// Starts a program that belongs to the session: it ends with the app.
-#[allow(dead_code, reason = "first caller in phase 2 (installer)")]
 pub fn spawn(cmd: &mut Command) -> Result<Child> {
     let child = cmd
         .spawn()
@@ -337,7 +340,6 @@ fn resume_threads(pid: u32) -> Result<()> {
 }
 
 /// Starts a program that must stay open after the app (browser, Explorer).
-#[allow(dead_code, reason = "first caller in phase 6 (browser, Explorer)")]
 pub fn spawn_detached(cmd: &mut Command, flags: u32) -> Result<Child> {
     cmd.creation_flags(flags | CREATE_BREAKAWAY_FROM_JOB.0);
     cmd.spawn()
@@ -376,21 +378,29 @@ mod tests {
 
     #[test]
     fn batch_files_in_odd_folders() {
-        let dir = std::env::temp_dir().join(format!("devkit-bat-{} (x) & y", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let bat = dir.join("hello.cmd");
-        std::fs::write(&bat, "@echo hi %1\r\n").unwrap();
-        let mut env_vars = vec![(
-            "SystemRoot".to_owned(),
-            std::env::var("SystemRoot").unwrap(),
-        )];
-        env_vars.push(("PATH".to_owned(), String::new()));
-        let out = batch_command(&bat, &["there"], &KitEnv::default())
-            .envs(env_vars)
-            .output()
-            .unwrap();
-        let _ = std::fs::remove_dir_all(&dir);
-        assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "hi there");
+        let root = std::env::temp_dir().join(format!("devkit-bat-{}", std::process::id()));
+        for name in ["a b (x) & y", "50%", "a!b", "%SystemRoot%", "%OS% & !OS!"] {
+            let dir = root.join(name);
+            std::fs::create_dir_all(&dir).unwrap();
+            let bat = dir.join("hello.cmd");
+            std::fs::write(&bat, "@echo hi %1\r\n").unwrap();
+            let env_vars = [
+                ("SystemRoot", std::env::var("SystemRoot").unwrap()),
+                ("OS", "Windows_NT".to_owned()),
+                ("PATH", String::new()),
+            ];
+            let out = batch_command(&bat, &["there"], &KitEnv::default())
+                .envs(env_vars)
+                .output()
+                .unwrap();
+            assert_eq!(
+                String::from_utf8_lossy(&out.stdout).trim(),
+                "hi there",
+                "{name}: {}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+        }
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

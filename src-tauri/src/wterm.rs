@@ -246,7 +246,8 @@ fn merge(existing: &Map<String, Value>, kit: &Kit) -> Map<String, Value> {
     out
 }
 
-/// Writes the settings; a file that is not plain JSON is left alone.
+/// Writes the settings; a file that is not plain JSON, or cannot be read
+/// (UTF-16, locked...), is left alone. Only a missing file is created.
 fn write_settings(kit: &Kit) -> Result<()> {
     let path = settings_path(kit);
     let existing = match fs::read_to_string(&path) {
@@ -254,7 +255,8 @@ fn write_settings(kit: &Kit) -> Result<()> {
             Ok(Value::Object(map)) => map,
             _ => bail!("not plain JSON: {}", path.display()),
         },
-        Err(_) => Map::new(),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Map::new(),
+        Err(e) => bail!("cannot read {}: {e}", path.display()),
     };
     let merged = merge(&existing, kit);
     if merged != existing {
@@ -487,6 +489,27 @@ mod tests {
             false
         );
         assert_eq!(merge(&m, &kit), m, "stable");
+    }
+
+    #[test]
+    fn settings_of_the_user_are_never_lost() {
+        let tmp = TempDir::new("wt-settings");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let path = settings_path(&kit);
+        // missing: created
+        write_settings(&kit).unwrap();
+        assert!(fs::read_to_string(&path).unwrap().contains("Dev-Kit"));
+        // not readable as UTF-8 (UTF-16 from Notepad) or not plain JSON: untouched
+        let utf16: Vec<u8> = "\u{feff}{\"a\":1}"
+            .encode_utf16()
+            .flat_map(u16::to_le_bytes)
+            .collect();
+        for bytes in [utf16, b"// mine\n{\"a\":1}".to_vec()] {
+            fs::write(&path, &bytes).unwrap();
+            assert!(write_settings(&kit).is_err());
+            assert_eq!(fs::read(&path).unwrap(), bytes);
+        }
     }
 
     #[test]
