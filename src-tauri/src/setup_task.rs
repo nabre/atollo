@@ -252,9 +252,10 @@ mod tests {
             .filter(|c| c.group == Group::Required)
             .collect();
         for c in &required {
-            let key = c.key_path(&kit);
-            fs::create_dir_all(key.parent().unwrap()).unwrap();
-            fs::write(&key, b"").unwrap();
+            for key in c.key_paths(&kit) {
+                fs::create_dir_all(key.parent().unwrap()).unwrap();
+                fs::write(&key, b"").unwrap();
+            }
             c.save_version(&kit, "1.0").unwrap();
         }
 

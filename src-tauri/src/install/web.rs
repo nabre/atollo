@@ -230,21 +230,43 @@ pub fn pick_php(releases: &Value, branch: Option<&str>) -> Result<(String, Strin
     ))
 }
 
+/// `(version, URL)` of the newest stable Composer in getcomposer.org's
+/// `versions` (the list `composer self-update` reads, newest first).
+pub fn pick_composer(versions: &Value) -> Result<(String, String)> {
+    let stable = versions
+        .pointer("/stable/0")
+        .ok_or_else(|| anyhow!("Composer: no stable version"))?;
+    let get = |k: &str| {
+        stable
+            .get(k)
+            .and_then(Value::as_str)
+            .ok_or_else(|| anyhow!("Composer versions: no {k}"))
+    };
+    let path = get("path")?;
+    if !path.starts_with('/') {
+        bail!("Composer versions: unexpected path {path}");
+    }
+    Ok((
+        get("version")?.to_owned(),
+        format!("https://getcomposer.org{path}"),
+    ))
+}
+
 impl Installer for Php {
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
         let base = "https://windows.php.net/downloads/releases";
         let releases: Value = ctx.net.json(&format!("{base}/releases.json"))?;
         let branch = Settings::load(ctx.kit).settings.php_version;
         let (version, path, sha) = pick_php(&releases, branch.as_deref())?;
-        let composer = "https://getcomposer.org/download/latest-stable";
+        let (composer_version, composer) =
+            pick_composer(&ctx.net.json("https://getcomposer.org/versions")?)?;
         let composer_sha = hash_in_list(
-            &ctx.net
-                .text(&format!("{composer}/composer.phar.sha256sum"))?,
+            &ctx.net.text(&format!("{composer}.sha256sum"))?,
             "composer.phar",
         )
         .ok_or_else(|| anyhow!("Composer: no SHA-256"))?;
         Ok(Release {
-            version,
+            version: format!("{version} (Composer {composer_version})"),
             parts: vec![
                 Part {
                     url: format!("{base}/{path}"),
@@ -256,7 +278,7 @@ impl Installer for Php {
                     sign: None,
                 },
                 Part {
-                    url: format!("{composer}/composer.phar"),
+                    url: composer,
                     file_name: "composer.phar".into(),
                     expect: Expect::Sha256(composer_sha),
                     kind: Kind::File,
@@ -528,6 +550,29 @@ mod tests {
         );
         assert_eq!(pick_php(&releases, Some("8.3")).unwrap().0, "8.3.20");
         assert!(pick_php(&releases, Some("7.4")).is_err());
+    }
+
+    #[test]
+    fn composer_newest_stable() {
+        let versions = json!({
+            "stable": [
+                {"path": "/download/2.10.3/composer.phar", "version": "2.10.3"},
+                {"path": "/download/2.2.30/composer.phar", "version": "2.2.30"}
+            ],
+            "preview": [{"path": "/download/2.11.0-RC1/composer.phar", "version": "2.11.0-RC1"}]
+        });
+        assert_eq!(
+            pick_composer(&versions).unwrap(),
+            (
+                "2.10.3".into(),
+                "https://getcomposer.org/download/2.10.3/composer.phar".into()
+            )
+        );
+        assert!(pick_composer(&json!({"stable": []})).is_err());
+        assert!(pick_composer(
+            &json!({"stable": [{"path": "https://x/composer.phar", "version": "1"}]})
+        )
+        .is_err());
     }
 
     #[test]

@@ -262,10 +262,25 @@ pub fn installed_from_output(text: &str) -> BTreeSet<String> {
         .collect()
 }
 
+/// The platform package of CodeLLDB for this kit. Extensions run in the
+/// editor server's process, so the package follows the server: x64 on
+/// ARM64 too while the server is `x64Only` (emulated).
+fn codelldb_asset(kit: &Kit) -> String {
+    let server_x64 = Catalog::get()
+        .find("vscodium-server")
+        .is_some_and(|c| c.x64_only);
+    let arch = if server_x64 {
+        "x64"
+    } else {
+        kit.arch().as_str()
+    };
+    format!("codelldb-win32-{arch}.vsix")
+}
+
 /// CodeLLDB's platform package from GitHub, verified (`Install-CodeLldb`).
 fn codelldb_vsix(kit: &Kit, net: &Net, work: &Path) -> Result<PathBuf> {
     let rel = net.github_latest("vadimcn/codelldb")?;
-    let name = format!("codelldb-win32-{}.vsix", kit.arch().as_str());
+    let name = codelldb_asset(kit);
     let asset = rel
         .assets
         .iter()
@@ -342,6 +357,20 @@ mod tests {
         assert!(
             !p.contains(&"esbenp.prettier-vscode".to_owned()),
             "already installed"
+        );
+    }
+
+    #[test]
+    fn codelldb_follows_the_server() {
+        let tmp = TempDir::new("codelldb");
+        let x64 = Kit::at(tmp.0.clone(), Arch::X64);
+        assert_eq!(codelldb_asset(&x64), "codelldb-win32-x64.vsix");
+        let arm = Kit::at(tmp.0.clone(), Arch::Arm64);
+        assert!(Catalog::get().find("vscodium-server").unwrap().x64_only);
+        assert_eq!(
+            codelldb_asset(&arm),
+            "codelldb-win32-x64.vsix",
+            "the server is x64 only: its extensions too"
         );
     }
 

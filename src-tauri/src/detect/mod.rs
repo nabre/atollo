@@ -328,7 +328,7 @@ fn need_of_file(name: &str) -> Option<&'static str> {
 }
 
 /// Ids of the kit's components the project needs, sorted. Only ids that
-/// exist in the catalog are kept (Go and C/C++ may not be in it).
+/// exist in the catalog are kept (all of the above are, today).
 pub fn requires(dir: &Path) -> Vec<String> {
     let mut found = BTreeSet::new();
     walk_files(dir, &mut |name| {

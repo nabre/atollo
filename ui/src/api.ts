@@ -193,7 +193,7 @@ export interface SetupSnapshot {
   error: string | null;
 }
 
-export type Group = "required" | "agents" | "languages" | "optional";
+export type Group = "required" | "agents" | "languages";
 
 export interface ComponentInfo {
   id: string;
@@ -203,9 +203,14 @@ export interface ComponentInfo {
   mb: number;
   chosen: boolean;
   installed: boolean;
+  /** Something of it is on disk, even half installed: it can be removed. */
+  present: boolean;
   version: string | null;
+  /** This version of the app can install it on this kit. */
   available: boolean;
   x64Only: boolean;
+  /** No ARM64 build and this kit is ARM64: why it is not available. */
+  noArm64: boolean;
   needs: string[];
 }
 
@@ -246,6 +251,8 @@ export interface AgentInfo {
   id: AgentId;
   name: string;
   installed: boolean;
+  /** Something of it is on disk, even half installed: it can be removed. */
+  present: boolean;
   version: string | null;
   signedIn: boolean;
   /** "account" or "api key". */

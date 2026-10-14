@@ -19,7 +19,6 @@ function groups(): { id: Group; title: string; hint: string }[] {
       title: t("Linguaggi e strumenti"),
       hint: t("Scegli quelli che usi: si aggiungono e tolgono quando vuoi."),
     },
-    { id: "optional", title: t("Altro"), hint: "" },
   ];
 }
 
@@ -89,7 +88,7 @@ export function ComponentsPage({
   const plan = useMemo(() => {
     const items = list ?? [];
     const install = items.filter((c) => chosen.has(c.id) && !c.installed && c.available);
-    const remove = items.filter((c) => !chosen.has(c.id) && c.installed);
+    const remove = items.filter((c) => !chosen.has(c.id) && c.present);
     return { install, remove, mb: install.reduce((n, c) => n + c.mb, 0) };
   }, [list, chosen]);
 
@@ -160,7 +159,7 @@ export function ComponentsPage({
                       id={inputId}
                       type="checkbox"
                       checked={on}
-                      disabled={required || running}
+                      disabled={required || running || c.noArm64 || (!c.available && !on)}
                       onChange={(e) => {
                         setChosen(toggle(list, chosen, c.id, e.target.checked));
                       }}
@@ -187,6 +186,8 @@ export function ComponentsPage({
                           <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
                           {c.version ?? t("installato")}
                         </span>
+                      ) : c.noArm64 ? (
+                        <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
                       ) : (
                         <span className="text-vsc-desc">{t("non installato")}</span>
                       )}

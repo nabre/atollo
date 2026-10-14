@@ -291,7 +291,7 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             &[],
         ));
     }
-    if ["pnpm-lock.yaml", "yarn.lock", "bun.lockb"]
+    if ["pnpm-lock.yaml", "yarn.lock", "bun.lock", "bun.lockb"]
         .iter()
         .any(|f| exists(dir, f))
     {
@@ -409,5 +409,20 @@ mod tests {
         let p = detect_all(&electron.0, "it");
         assert_eq!(ids(&p), ["electron", "npm:install"]);
         assert_eq!(p.kind, Kind::Desktop);
+    }
+
+    #[test]
+    fn other_package_managers_warned() {
+        let uses_npm = |name: &str, lock: &str| {
+            let tmp = project(name, &[("package.json", "{}"), (lock, "")]);
+            !detect_all(&tmp.0, "it")
+                .warnings
+                .iter()
+                .any(|w| w.contains("pnpm, yarn o bun"))
+        };
+        for lock in ["pnpm-lock.yaml", "yarn.lock", "bun.lock", "bun.lockb"] {
+            assert!(!uses_npm(&format!("node-{lock}"), lock), "{lock}");
+        }
+        assert!(uses_npm("node-npm", "package-lock.json"));
     }
 }
