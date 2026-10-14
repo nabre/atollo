@@ -7,6 +7,7 @@
 //! kit (named mutex). Cancellation stops at once during a download and
 //! otherwise at the end of the current step, never in the middle of a swap.
 
+use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 
 use anyhow::{bail, Context, Result};
@@ -18,6 +19,7 @@ use windows::Win32::System::Threading::CreateMutexW;
 use crate::archive::{self, InUse};
 use crate::catalog::{Catalog, Choice, Component, Group};
 use crate::install::{self, Ctx, Progress};
+use crate::kit::Arch;
 use crate::net::Cancelled;
 
 #[derive(Debug, Clone, Default)]
@@ -113,26 +115,109 @@ pub struct Plan {
     pub remove: Vec<String>,
 }
 
+/// Nothing marked `noArm64` is ever planned on an ARM64 kit.
 pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Result<Plan> {
     for id in opts.only.iter().chain(&opts.skip) {
         if catalog.find(id).is_none() {
             bail!("unknown component: {id}");
         }
     }
+    let arm64 = ctx.kit.arch() == Arch::Arm64;
+    let installed: HashSet<&str> = catalog
+        .all()
+        .iter()
+        .filter(|c| c.is_installed(ctx.kit))
+        .map(|c| c.id.as_str())
+        .collect();
+    let wanted = if opts.only.is_empty() {
+        chosen_without_skipped(catalog, choice, &opts.skip, &installed, arm64)
+    } else {
+        only_with_needs(catalog, &opts.only, &installed, arm64)?
+    };
     let mut plan = Plan::default();
     for c in catalog.all() {
-        let wanted = if opts.only.is_empty() {
-            choice.is_chosen(&c.id) && (c.group == Group::Required || !opts.skip.contains(&c.id))
-        } else {
-            opts.only.contains(&c.id)
-        };
-        if wanted {
+        if wanted.contains(c.id.as_str()) {
             plan.handle.push(c.id.clone());
-        } else if opts.only.is_empty() && !choice.is_chosen(&c.id) && c.is_installed(ctx.kit) {
+        } else if opts.only.is_empty() && !choice.is_chosen(&c.id) && c.is_present(ctx.kit) {
+            // Also when only part of it is there (an installation that
+            // failed halfway).
             plan.remove.push(c.id.clone());
         }
     }
     Ok(plan)
+}
+
+/// `only`: the listed components plus, transitively, what they need and is
+/// not installed yet. On ARM64 a component marked `noArm64` is an error.
+fn only_with_needs<'a>(
+    catalog: &'a Catalog,
+    only: &[String],
+    installed: &HashSet<&str>,
+    arm64: bool,
+) -> Result<HashSet<&'a str>> {
+    let mut wanted = HashSet::new();
+    let mut todo: Vec<(&Component, Option<&str>)> = only
+        .iter()
+        .filter_map(|id| catalog.find(id))
+        .map(|c| (c, None))
+        .collect();
+    while let Some((c, needed_by)) = todo.pop() {
+        if arm64 && c.no_arm64 {
+            match needed_by {
+                None => bail!("{} is not available on ARM64", c.id),
+                Some(by) => bail!("{by} needs {}, which is not available on ARM64", c.id),
+            }
+        }
+        if !wanted.insert(c.id.as_str()) {
+            continue;
+        }
+        for need in c.needs.iter().filter_map(|n| catalog.find(n)) {
+            if !installed.contains(need.id.as_str()) {
+                todo.push((need, Some(c.id.as_str())));
+            }
+        }
+    }
+    Ok(wanted)
+}
+
+/// The choice without `skip` (required components cannot be skipped) and,
+/// on ARM64, without what is marked `noArm64`; then, transitively, without
+/// every component not installed yet (required ones aside) that needs one
+/// neither planned nor installed.
+fn chosen_without_skipped<'a>(
+    catalog: &'a Catalog,
+    choice: &Choice,
+    skip: &[String],
+    installed: &HashSet<&str>,
+    arm64: bool,
+) -> HashSet<&'a str> {
+    let mut wanted: HashSet<&str> = catalog
+        .all()
+        .iter()
+        .filter(|c| choice.is_chosen(&c.id) && !(arm64 && c.no_arm64))
+        .filter(|c| c.group == Group::Required || !skip.contains(&c.id))
+        .map(|c| c.id.as_str())
+        .collect();
+    loop {
+        let missing_need: Vec<&str> = catalog
+            .all()
+            .iter()
+            .filter(|c| wanted.contains(c.id.as_str()) && c.group != Group::Required)
+            .filter(|c| !installed.contains(c.id.as_str()))
+            .filter(|c| {
+                c.needs
+                    .iter()
+                    .any(|n| !wanted.contains(n.as_str()) && !installed.contains(n.as_str()))
+            })
+            .map(|c| c.id.as_str())
+            .collect();
+        if missing_need.is_empty() {
+            return wanted;
+        }
+        for id in missing_need {
+            wanted.remove(id);
+        }
+    }
 }
 
 struct StepProgress<'a> {
@@ -296,8 +381,12 @@ mod tests {
     use std::sync::atomic::AtomicBool;
 
     fn with_ctx(name: &str, f: impl FnOnce(&Ctx)) {
+        with_arch_ctx(name, Arch::X64, f);
+    }
+
+    fn with_arch_ctx(name: &str, arch: Arch, f: impl FnOnce(&Ctx)) {
         let tmp = TempDir::new(name);
-        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        let kit = Kit::at(tmp.0.clone(), arch);
         kit.prepare().unwrap();
         let net = Net::new(&Settings::default(), None).unwrap();
         let env = KitEnv::default();
@@ -312,9 +401,10 @@ mod tests {
 
     fn fake_install(ctx: &Ctx, id: &str) {
         let c = Catalog::get().find(id).unwrap();
-        let key = c.key_path(ctx.kit);
-        fs::create_dir_all(key.parent().unwrap()).unwrap();
-        fs::write(&key, b"").unwrap();
+        for key in c.key_paths(ctx.kit) {
+            fs::create_dir_all(key.parent().unwrap()).unwrap();
+            fs::write(&key, b"").unwrap();
+        }
         c.save_version(ctx.kit, "1.0").unwrap();
     }
 
@@ -380,6 +470,102 @@ mod tests {
                 }
             )
             .is_err());
+        });
+    }
+
+    fn plan_with(ctx: &Ctx, choice: &Choice, only: &[&str], skip: &[&str]) -> Result<Plan> {
+        let ids = |ids: &[&str]| ids.iter().map(|&id| id.to_owned()).collect();
+        plan(
+            ctx,
+            Catalog::get(),
+            choice,
+            &Options {
+                only: ids(only),
+                skip: ids(skip),
+                ..Options::default()
+            },
+        )
+    }
+
+    #[test]
+    fn only_adds_what_is_needed_and_missing() {
+        with_ctx("plan-only-needs", |ctx| {
+            let choice = Choice::defaults(Catalog::get());
+            let p = plan_with(ctx, &choice, &["kotlin"], &[]).unwrap();
+            assert_eq!(p.handle, ["java", "kotlin"], "catalog order");
+            assert!(p.remove.is_empty());
+            let p = plan_with(ctx, &choice, &["apache"], &[]).unwrap();
+            assert_eq!(p.handle, ["php", "apache"]);
+
+            fake_install(ctx, "java");
+            let p = plan_with(ctx, &choice, &["kotlin"], &[]).unwrap();
+            assert_eq!(p.handle, ["kotlin"], "java already installed");
+        });
+    }
+
+    #[test]
+    fn skip_also_skips_what_needs_it() {
+        with_ctx("plan-skip-needs", |ctx| {
+            let catalog = Catalog::get();
+            let mut choice = Choice::defaults(catalog);
+            choice.set(catalog, "pnpm", true);
+            assert!(choice.is_chosen("php") && choice.is_chosen("apache"));
+
+            let p = plan_with(ctx, &choice, &[], &["php"]).unwrap();
+            assert!(!p.handle.contains(&"php".into()));
+            assert!(!p.handle.contains(&"apache".into()), "apache needs php");
+            assert!(p.remove.is_empty(), "skipped, not removed");
+
+            let p = plan_with(ctx, &choice, &[], &["node"]).unwrap();
+            assert!(
+                p.handle.contains(&"node".into()) && p.handle.contains(&"pnpm".into()),
+                "required ones are never skipped"
+            );
+
+            fake_install(ctx, "php");
+            let p = plan_with(ctx, &choice, &[], &["php"]).unwrap();
+            assert!(!p.handle.contains(&"php".into()));
+            assert!(
+                p.handle.contains(&"apache".into()),
+                "php is there: apache can be installed"
+            );
+        });
+    }
+
+    #[test]
+    fn half_installed_components_are_removed() {
+        with_ctx("plan-half", |ctx| {
+            let catalog = Catalog::get();
+            let java = catalog.find("java").unwrap();
+            let key = &java.key_paths(ctx.kit)[0];
+            fs::create_dir_all(key.parent().unwrap()).unwrap();
+            fs::write(key, b"").unwrap();
+            assert!(!java.is_installed(ctx.kit) && java.is_present(ctx.kit));
+            let choice = Choice::defaults(catalog);
+            assert!(!choice.is_chosen("java"));
+            let p = plan_with(ctx, &choice, &[], &[]).unwrap();
+            assert!(p.remove.contains(&"java".into()), "maven missing, removed");
+        });
+    }
+
+    #[test]
+    fn no_arm64_components_are_never_planned_on_arm64() {
+        let catalog = Catalog::get();
+        assert!(catalog.find("r").unwrap().no_arm64);
+        let mut choice = Choice::defaults(catalog);
+        choice.set(catalog, "r", true);
+        with_arch_ctx("plan-arm64", Arch::Arm64, |ctx| {
+            let p = plan_with(ctx, &choice, &[], &[]).unwrap();
+            assert!(!p.handle.contains(&"r".into()), "not from the choice");
+            assert!(p.handle.contains(&"git".into()));
+            let e = plan_with(ctx, &choice, &["r"], &[]).unwrap_err();
+            assert_eq!(e.to_string(), "r is not available on ARM64");
+        });
+        with_ctx("plan-x64", |ctx| {
+            let p = plan_with(ctx, &choice, &[], &[]).unwrap();
+            assert!(p.handle.contains(&"r".into()), "x64: planned");
+            let p = plan_with(ctx, &choice, &["r"], &[]).unwrap();
+            assert_eq!(p.handle, ["r"]);
         });
     }
 

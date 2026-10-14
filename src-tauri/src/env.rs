@@ -154,7 +154,7 @@ impl KitEnv {
         env.set_path("CP_DATA", &data);
         env.set("CP_ARCH", arch);
         env.set_path("CP_APPS", &apps);
-        // The app itself, for the kit's wrappers (datakitinagy.cmd).
+        // The app itself, for the kit's wrappers (data\kit\bin\agy.cmd).
         if let Ok(exe) = std::env::current_exe() {
             env.set_path("DEVKIT_EXE", exe);
         }

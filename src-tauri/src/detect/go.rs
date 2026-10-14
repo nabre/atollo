@@ -21,13 +21,6 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
         || read(dir, "main.go").contains("net/http");
     let kind = if web { Kind::Web } else { Kind::Command };
     let mut warnings = Vec::new();
-    if crate::catalog::Catalog::get().find("go").is_none() {
-        warnings.push(tr(
-            lang,
-            "Go non è incluso nel kit: deve essere installato nel PC.",
-            &[],
-        ));
-    }
     if web {
         warnings.push(tr(
             lang,

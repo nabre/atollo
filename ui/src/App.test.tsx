@@ -279,9 +279,11 @@ describe("App", () => {
         mb: 350,
         chosen: true,
         installed: false,
+        present: false,
         version: null,
         available: true,
         x64Only: false,
+        noArm64: false,
         needs: [],
       },
       {
@@ -292,9 +294,11 @@ describe("App", () => {
         mb: 100,
         chosen: true,
         installed: false,
+        present: false,
         version: null,
         available: true,
         x64Only: true,
+        noArm64: false,
         needs: [],
       },
       {
@@ -305,9 +309,11 @@ describe("App", () => {
         mb: 45,
         chosen: true,
         installed: false,
+        present: false,
         version: null,
         available: true,
         x64Only: true,
+        noArm64: false,
         needs: ["php"],
       },
       {
@@ -318,9 +324,26 @@ describe("App", () => {
         mb: 250,
         chosen: false,
         installed: false,
+        present: false,
         version: null,
         available: true,
         x64Only: false,
+        noArm64: false,
+        needs: [],
+      },
+      {
+        id: "r",
+        name: "R",
+        group: "languages",
+        desc: "statistica",
+        mb: 1100,
+        chosen: false,
+        installed: false,
+        present: false,
+        version: null,
+        available: false,
+        x64Only: false,
+        noArm64: true,
         needs: [],
       },
     ];
@@ -330,6 +353,8 @@ describe("App", () => {
     render(<App />);
     expect(await screen.findByText("Benvenuto in Dev-Kit")).toBeTruthy();
     expect(screen.getByLabelText<HTMLInputElement>(/^Git/).disabled).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
+    expect(screen.getByText("non disponibile su PC ARM64")).toBeTruthy();
     fireEvent.click(screen.getByLabelText(/^PHP/));
     expect(screen.getByLabelText<HTMLInputElement>(/^Apache/).checked).toBe(false);
     fireEvent.click(screen.getByLabelText(/^Go/));

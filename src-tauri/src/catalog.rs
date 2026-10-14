@@ -8,7 +8,7 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use anyhow::{Context, Result};
@@ -22,7 +22,6 @@ pub enum Group {
     Required,
     Agents,
     Languages,
-    Optional,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,17 +40,25 @@ pub struct Component {
     pub desc: String,
     pub home: String,
     pub key: String,
+    /// The other parts (Maven, Ninja, Composer...), same rules as `key`:
+    /// installed only when the key and all of these exist.
+    #[serde(default)]
+    pub keys: Vec<String>,
     /// The folder of `data\apps\<platform>` the component owns, if any.
     #[serde(default)]
     pub folder: Option<String>,
     #[serde(default)]
     pub x64_only: bool,
+    /// No build runs on ARM64, not even emulated (R): not available there.
+    #[serde(default)]
+    pub no_arm64: bool,
     /// Other files or folders it owns (relative to `data\apps\<platform>`,
-    /// `@` = the kit root), removed with it.
+    /// `@` = the kit root), removed with it unless another installed
+    /// component lists them too.
     #[serde(default)]
     pub remove: Vec<String>,
     /// Version command for the final check: program (relative to
-    /// `data\apps\<platform>`) and arguments.
+    /// `data\apps\<platform>`, `@` = the kit root) and arguments.
     #[serde(default)]
     pub check: Vec<String>,
 }
@@ -89,34 +96,79 @@ impl Catalog {
     }
 }
 
+/// A path of the catalog: relative to `data\apps\<platform>`, or to the kit
+/// root with `@`.
+pub fn kit_path(kit: &Kit, rel: &str) -> PathBuf {
+    match rel.strip_prefix('@') {
+        Some(r) => kit.root().join(r.replace('/', "\\")),
+        None => kit.apps().join(rel.replace('/', "\\")),
+    }
+}
+
+/// A file, or a non-empty folder.
+fn exists(path: &Path) -> bool {
+    match fs::metadata(path) {
+        Ok(m) if m.is_file() => true,
+        Ok(m) if m.is_dir() => fs::read_dir(path).is_ok_and(|mut d| d.next().is_some()),
+        _ => false,
+    }
+}
+
 impl Component {
     /// Where the key lives: `data\apps\<platform>\…`, or the kit root with `@`.
+    #[cfg(test)]
     pub fn key_path(&self, kit: &Kit) -> PathBuf {
-        match self.key.strip_prefix('@') {
-            Some(rel) => kit.root().join(rel.replace('/', "\\")),
-            None => kit.apps().join(self.key.replace('/', "\\")),
-        }
+        kit_path(kit, &self.key)
     }
 
-    /// Installed: the key is a file, or a non-empty folder.
+    /// The key, then the other parts (`keys`).
+    pub fn key_paths(&self, kit: &Kit) -> Vec<PathBuf> {
+        std::iter::once(&self.key)
+            .chain(&self.keys)
+            .map(|k| kit_path(kit, k))
+            .collect()
+    }
+
+    /// Installed: the key and every other part are a file, or a non-empty
+    /// folder.
     pub fn is_installed(&self, kit: &Kit) -> bool {
-        let path = self.key_path(kit);
-        match fs::metadata(&path) {
-            Ok(m) if m.is_file() => true,
-            Ok(m) if m.is_dir() => fs::read_dir(&path).is_ok_and(|mut d| d.next().is_some()),
-            _ => false,
-        }
+        self.key_paths(kit).iter().all(|p| exists(p))
     }
 
-    /// Everything removed when the component is turned off.
+    /// Something of it is on disk (a part, or its folder), even if it is not
+    /// fully installed: what can be removed.
+    pub fn is_present(&self, kit: &Kit) -> bool {
+        self.key_paths(kit)
+            .iter()
+            .chain(&self.folder_path(kit))
+            .any(|p| exists(p))
+    }
+
+    /// The first part that is missing (the key, then `keys`).
+    pub fn missing_part(&self, kit: &Kit) -> Option<PathBuf> {
+        self.key_paths(kit).into_iter().find(|p| !exists(p))
+    }
+
+    /// Everything removed when the component is turned off, except what
+    /// another component still on disk owns too (`tools\vcruntime` of PHP
+    /// and Apache goes with the last of the two).
     pub fn owned_paths(&self, kit: &Kit) -> Vec<PathBuf> {
-        let resolve = |rel: &str| match rel.strip_prefix('@') {
-            Some(r) => kit.root().join(r.replace('/', "\\")),
-            None => kit.apps().join(rel.replace('/', "\\")),
-        };
+        let shared: Vec<PathBuf> = Catalog::get()
+            .all()
+            .iter()
+            .filter(|o| o.id != self.id && o.is_present(kit))
+            .flat_map(|o| o.all_owned(kit))
+            .collect();
+        self.all_owned(kit)
+            .into_iter()
+            .filter(|p| !shared.contains(p))
+            .collect()
+    }
+
+    fn all_owned(&self, kit: &Kit) -> Vec<PathBuf> {
         self.folder_path(kit)
             .into_iter()
-            .chain(self.remove.iter().map(|r| resolve(r)))
+            .chain(self.remove.iter().map(|r| kit_path(kit, r)))
             .collect()
     }
 
@@ -220,7 +272,10 @@ impl Choice {
         self.chosen.get(id).copied().unwrap_or(false)
     }
 
-    #[allow(dead_code, reason = "first caller: Components page, phase 4")]
+    #[allow(
+        dead_code,
+        reason = "first caller: Linguaggi e strumenti page, phase 4"
+    )]
     /// Turns a component on or off, following dependencies both ways, as the
     /// "Languages and tools" page of nabre/dev-kit does.
     pub fn set(&mut self, catalog: &Catalog, id: &str, on: bool) {
@@ -272,7 +327,7 @@ mod tests {
     #[test]
     fn catalog_is_valid() {
         let catalog = Catalog::get();
-        assert!(catalog.all().len() >= 30, "catalog did not load");
+        assert!(catalog.all().len() >= 29, "catalog did not load");
         let mut ids = HashSet::new();
         for c in catalog.all() {
             assert!(ids.insert(c.id.as_str()), "duplicate id {}", c.id);
@@ -281,6 +336,12 @@ mod tests {
                 "{}",
                 c.id
             );
+            assert!(
+                c.keys.iter().all(|k| !k.is_empty() && *k != c.key),
+                "{}: keys",
+                c.id
+            );
+            assert!(!(c.x64_only && c.no_arm64), "{}: x64Only or noArm64", c.id);
             if let Some(folder) = &c.folder {
                 assert!(
                     c.key == *folder || c.key.starts_with(&format!("{folder}/")),
@@ -308,7 +369,7 @@ mod tests {
         let catalog = Catalog::get();
         // As written by nabre/dev-kit Save-ComponentChoice (plus a BOM and LF).
         let text =
-            "\u{feff}# comment\napache=1\nphp=0\nrust=1\ngit=0\nunknown=1\nbad line\nkotlin = 1\n";
+            "\u{feff}# comment\napache=1\nphp=0\nrust=1\ngit=0\nunknown=1\nbad line\nkotlin = 1\nvscodium=1\n";
         let choice = Choice::parse(text, catalog);
         assert!(!choice.is_chosen("php"));
         assert!(!choice.is_chosen("apache"), "apache needs php");
@@ -322,6 +383,10 @@ mod tests {
 
         let rendered = choice.render(catalog);
         assert!(rendered.ends_with("\r\n") && !rendered.starts_with('\u{feff}'));
+        assert!(
+            !rendered.contains("unknown=") && !rendered.contains("\nvscodium="),
+            "ids no longer in the catalog (VSCodium desktop) are dropped"
+        );
         assert_eq!(Choice::parse(&rendered, catalog), choice);
     }
 
@@ -350,11 +415,15 @@ mod tests {
         fs::write(&exe, b"").unwrap();
         assert!(pwsh.is_installed(&kit));
 
-        let server = catalog.find("vscodium-server").unwrap();
-        fs::create_dir_all(server.key_path(&kit)).unwrap();
-        assert!(!server.is_installed(&kit), "empty folder is not installed");
-        fs::write(server.key_path(&kit).join("x"), b"").unwrap();
-        assert!(server.is_installed(&kit));
+        let folder: Component = serde_json::from_value(serde_json::json!({
+            "id": "f", "name": "F", "group": "languages", "def": false, "mb": 1,
+            "desc": "f", "home": "https://f", "key": "f"
+        }))
+        .unwrap();
+        fs::create_dir_all(folder.key_path(&kit)).unwrap();
+        assert!(!folder.is_installed(&kit), "empty folder is not installed");
+        fs::write(folder.key_path(&kit).join("x"), b"").unwrap();
+        assert!(folder.is_installed(&kit));
 
         let pnpm = catalog.find("pnpm").unwrap();
         assert!(pnpm
@@ -369,5 +438,93 @@ mod tests {
         assert!(Choice::read(&kit, catalog).is_none());
         Choice::defaults(catalog).write(&kit, catalog).unwrap();
         assert_eq!(Choice::read(&kit, catalog), Some(Choice::defaults(catalog)));
+    }
+
+    fn touch(path: &std::path::Path) {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, b"").unwrap();
+    }
+
+    #[test]
+    fn every_part_must_be_installed() {
+        let tmp = TempDir::new("catalog-parts");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let catalog = Catalog::get();
+        for (id, parts) in [
+            ("java", &["maven/bin/mvn.cmd", "gradle/bin/gradle.bat"][..]),
+            ("cmake", &["tools/ninja.exe"]),
+            ("php", &["tools/composer.phar"]),
+            ("pnpm", &["@data/npm-global/yarn.cmd"]),
+            ("vscodium-server", &["vscodium-server/node.exe"]),
+        ] {
+            let c = catalog.find(id).unwrap();
+            assert_eq!(c.keys, parts, "{id}");
+            touch(&c.key_path(&kit));
+            assert!(!c.is_installed(&kit), "{id}: main file only");
+            for p in &c.key_paths(&kit)[1..] {
+                touch(p);
+            }
+            assert!(c.is_installed(&kit), "{id}: every part");
+        }
+        let pnpm = catalog.find("pnpm").unwrap();
+        assert!(pnpm.key_paths(&kit)[1].starts_with(kit.data().join("npm-global")));
+    }
+
+    #[test]
+    fn editor_installed_means_the_files_started() {
+        let tmp = TempDir::new("catalog-editor");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let dir = crate::editor::server_dir(&kit);
+        touch(&dir.join(r"bin\codium-server.cmd"));
+        assert!(!crate::editor::is_installed(&kit));
+        touch(&dir.join(r"out\server-main.js"));
+        assert!(!crate::editor::is_installed(&kit), "node.exe missing");
+        touch(&dir.join("node.exe"));
+        assert!(crate::editor::is_installed(&kit));
+        assert!(Catalog::get()
+            .find("vscodium-server")
+            .unwrap()
+            .is_installed(&kit));
+    }
+
+    #[test]
+    fn shared_paths_go_with_the_last_owner() {
+        let tmp = TempDir::new("catalog-shared");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let catalog = Catalog::get();
+        let (php, apache) = (
+            catalog.find("php").unwrap(),
+            catalog.find("apache").unwrap(),
+        );
+        let vc = kit.apps().join(r"tools\vcruntime");
+        for c in [php, apache] {
+            for p in c.key_paths(&kit) {
+                touch(&p);
+            }
+        }
+        assert!(!php.owned_paths(&kit).contains(&vc), "Apache still uses it");
+        assert!(!apache.owned_paths(&kit).contains(&vc), "PHP still uses it");
+        assert!(php.owned_paths(&kit).contains(&kit.apps().join("php")));
+        // Half of PHP still there: it still counts as an owner.
+        fs::remove_file(php.key_path(&kit)).unwrap();
+        assert!(
+            !apache.owned_paths(&kit).contains(&vc),
+            "composer.phar left"
+        );
+        // PHP removed (what its removal deletes, vcruntime aside).
+        for p in php.owned_paths(&kit) {
+            if p.is_dir() {
+                fs::remove_dir_all(&p).unwrap();
+            } else if p.exists() {
+                fs::remove_file(&p).unwrap();
+            }
+        }
+        assert!(apache.owned_paths(&kit).contains(&vc), "last owner");
+        assert!(apache
+            .owned_paths(&kit)
+            .contains(&kit.apps().join("apache")));
     }
 }

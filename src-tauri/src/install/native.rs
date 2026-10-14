@@ -375,6 +375,7 @@ impl Installer for R {
         let sha = first_sha256(&ctx.net.text(&format!("{base}/micromamba-win-64.sha256"))?)
             .ok_or_else(|| anyhow!("micromamba: no SHA-256"))?;
         Ok(Release::single(
+            // r-base only: a new micromamba alone does not rebuild R.
             version.to_owned(),
             format!("{base}/micromamba-win-64"),
             "micromamba.exe".into(),

@@ -68,10 +68,14 @@ pub struct ComponentInfo {
     pub mb: u32,
     pub chosen: bool,
     pub installed: bool,
+    /// Something of it is on disk, even half installed: it can be removed.
+    pub present: bool,
     pub version: Option<String>,
-    /// This version of the app can install it.
+    /// This version of the app can install it on this kit.
     pub available: bool,
     pub x64_only: bool,
+    /// No ARM64 build and this kit is ARM64: why it is not available.
+    pub no_arm64: bool,
     /// Components it needs (Apache needs PHP, Kotlin needs Java).
     pub needs: Vec<String>,
 }
@@ -326,26 +330,37 @@ pub fn components_list<R: Runtime>(
     state: State<'_, AppState>,
 ) -> Result<Vec<ComponentInfo>, String> {
     ensure_main(&webview)?;
-    let kit = &state.kit;
+    Ok(component_infos(&state.kit))
+}
+
+/// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`
+/// component is not available on an ARM64 kit.
+fn component_infos(kit: &Kit) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
     let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
-    Ok(catalog
+    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
+    catalog
         .all()
         .iter()
-        .map(|c| ComponentInfo {
-            id: c.id.clone(),
-            name: c.name.clone(),
-            group: c.group,
-            desc: c.desc.clone(),
-            mb: c.mb,
-            chosen: choice.is_chosen(&c.id),
-            installed: c.is_installed(kit),
-            version: c.installed_version(kit),
-            available: install::installer(&c.id).is_some(),
-            x64_only: c.x64_only,
-            needs: c.needs.clone(),
+        .map(|c| {
+            let no_arm64 = c.no_arm64 && arm64;
+            ComponentInfo {
+                id: c.id.clone(),
+                name: c.name.clone(),
+                group: c.group,
+                desc: c.desc.clone(),
+                mb: c.mb,
+                chosen: choice.is_chosen(&c.id),
+                installed: c.is_installed(kit),
+                present: c.is_present(kit),
+                version: c.installed_version(kit),
+                available: install::installer(&c.id).is_some() && !no_arm64,
+                x64_only: c.x64_only,
+                no_arm64,
+                needs: c.needs.clone(),
+            }
         })
-        .collect())
+        .collect()
 }
 
 /// Sends every change of the preparation to the app window.
@@ -406,18 +421,7 @@ pub fn components_apply<R: Runtime>(
     if state.setup.snapshot().running {
         return Err("an installation is already running".into());
     }
-    let text: String = catalog
-        .all()
-        .iter()
-        .map(|c| {
-            format!(
-                "{}={}
-",
-                c.id,
-                u8::from(chosen.contains(&c.id))
-            )
-        })
-        .collect();
+    let text = choice_text(&state.kit, &chosen);
     let choice = Choice::parse(&text, catalog);
     choice
         .write(&state.kit, catalog)
@@ -427,6 +431,32 @@ pub fn components_apply<R: Runtime>(
         ..Options::default()
     };
     state.setup.start(opts, false, setup_notify(app))
+}
+
+/// `components.txt` for the ids in `chosen`. What this kit cannot install
+/// (`noArm64` on ARM64) keeps its saved choice: the same kit, back on an x64
+/// PC, must not lose it.
+fn choice_text(kit: &Kit, chosen: &[String]) -> String {
+    let catalog = Catalog::get();
+    let saved = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
+    catalog
+        .all()
+        .iter()
+        .map(|c| {
+            let on = if c.no_arm64 && arm64 {
+                saved.is_chosen(&c.id)
+            } else {
+                chosen.contains(&c.id)
+            };
+            format!(
+                "{}={}
+",
+                c.id,
+                u8::from(on)
+            )
+        })
+        .collect()
 }
 
 #[tauri::command]
@@ -1071,6 +1101,40 @@ mod tests {
         );
         for bad in ["..", r"..\data", "a/b", "C:\\x", "missing", "con"] {
             assert!(project_dir(&kit, Some(bad)).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn r_is_not_available_on_arm64() {
+        let tmp = TempDir::new("cmd-comps");
+        for (arch, arm64) in [(Arch::X64, false), (Arch::Arm64, true)] {
+            let kit = Kit::at(tmp.0.join(arch.as_str()), arch);
+            kit.prepare().unwrap();
+            let infos = component_infos(&kit);
+            let r = infos.iter().find(|c| c.id == "r").unwrap();
+            assert_eq!(
+                (r.available, r.no_arm64, r.x64_only),
+                (!arm64, arm64, false)
+            );
+            let php = infos.iter().find(|c| c.id == "php").unwrap();
+            assert!(php.available && !php.no_arm64 && php.x64_only, "emulated");
+        }
+    }
+
+    #[test]
+    fn unavailable_components_keep_their_choice() {
+        let tmp = TempDir::new("cmd-choice");
+        let catalog = Catalog::get();
+        for (arch, kept) in [(Arch::X64, false), (Arch::Arm64, true)] {
+            let kit = Kit::at(tmp.0.join(arch.as_str()), arch);
+            kit.prepare().unwrap();
+            let mut saved = Choice::defaults(catalog);
+            saved.set(catalog, "r", true);
+            saved.write(&kit, catalog).unwrap();
+            let text = choice_text(&kit, &["git".into(), "php".into()]);
+            let choice = Choice::parse(&text, catalog);
+            assert_eq!(choice.is_chosen("r"), kept, "{arch:?}");
+            assert!(choice.is_chosen("php") && !choice.is_chosen("go"));
         }
     }
 }

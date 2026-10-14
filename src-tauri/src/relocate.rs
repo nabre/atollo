@@ -403,7 +403,7 @@ fn targets(kit: &Kit, p: &Paths) -> Vec<PathBuf> {
     ] {
         out.extend(files_in(&d, |n| n.ends_with(".json")));
     }
-    // The integrated editor and the optional VSCodium desktop.
+    // The integrated editor.
     let server = data.join("vscodium-server");
     out.push(server.join(r"data\Machine\settings.json"));
     out.push(server.join(r"extensions\extensions.json"));
@@ -413,12 +413,6 @@ fn targets(kit: &Kit, p: &Paths) -> Vec<PathBuf> {
     out.extend(files_in(&server.join(r"data\User\globalStorage"), |n| {
         n.ends_with(".json")
     }));
-    let desktop = kit.apps().join(r"vscodium\data");
-    out.push(desktop.join("argv.json"));
-    out.push(desktop.join(r"extensions\extensions.json"));
-    out.push(desktop.join(r"user-data\User\settings.json"));
-    out.push(desktop.join(r"user-data\User\keybindings.json"));
-    out.push(desktop.join(r"user-data\User\globalStorage\storage.json"));
     // Python: pip --user and uv tool commands, and the projects' venvs.
     for d in subdirs(&data.join("python-user")) {
         out.extend(files_in(&d.join("Scripts"), |_| true));

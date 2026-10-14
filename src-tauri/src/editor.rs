@@ -68,9 +68,12 @@ pub fn server_dir(kit: &Kit) -> PathBuf {
     kit.apps().join("vscodium-server")
 }
 
+/// The files started (`out\server-main.js`, `node.exe`) are there: the
+/// catalog's key and keys of `vscodium-server`.
 pub fn is_installed(kit: &Kit) -> bool {
-    server_dir(kit).join(r"out\server-main.js").is_file()
-        && server_dir(kit).join("node.exe").is_file()
+    crate::catalog::Catalog::get()
+        .find("vscodium-server")
+        .is_some_and(|c| c.is_installed(kit))
 }
 
 impl Editor {

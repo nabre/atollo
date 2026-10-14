@@ -179,7 +179,6 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "r" => &native::R,
         "pwsh" => &editor::Pwsh,
         "vscodium-server" => &editor::Server,
-        "vscodium" => &editor::Vscodium,
         _ => return None,
     })
 }
@@ -249,6 +248,15 @@ pub fn install(
         } else {
             inst.finish(ctx, component, &ctx.kit.apps().join("tools"))?;
         }
+    }
+    // Every part, also those outside its folder (Maven, Ninja, Composer, the
+    // yarn shim): otherwise every preparation would install it again.
+    if let Some(part) = component.missing_part(ctx.kit) {
+        bail!(
+            "{}: {} missing after the installation",
+            component.id,
+            part.display()
+        );
     }
     component.save_version(ctx.kit, &release.version)?;
     Ok(())
@@ -351,20 +359,23 @@ pub fn find_file(dir: &Path, name: &str) -> Option<PathBuf> {
     None
 }
 
-/// The key file must be in the new tree before anything is replaced.
+/// The key file, and the other parts in the component's own folder, must be
+/// in the new tree before anything is replaced.
 fn check_key(component: &Component, folder: &Path, tree: &Path) -> Result<()> {
-    let key = PathBuf::from(component.key.replace('/', "\\"));
-    let Ok(rel) = key.strip_prefix(folder.file_name().unwrap_or_default()) else {
-        return Ok(());
-    };
-    let path = tree.join(rel);
-    let ok = if rel.as_os_str().is_empty() {
-        fs::read_dir(tree).is_ok_and(|mut d| d.next().is_some())
-    } else {
-        path.is_file()
-    };
-    if !ok {
-        bail!("the archive does not contain {}", component.key);
+    for k in std::iter::once(&component.key).chain(&component.keys) {
+        let key = PathBuf::from(k.replace('/', "\\"));
+        let Ok(rel) = key.strip_prefix(folder.file_name().unwrap_or_default()) else {
+            continue;
+        };
+        let path = tree.join(rel);
+        let ok = if rel.as_os_str().is_empty() {
+            fs::read_dir(tree).is_ok_and(|mut d| d.next().is_some())
+        } else {
+            path.is_file()
+        };
+        if !ok {
+            bail!("the archive does not contain {k}");
+        }
     }
     Ok(())
 }
@@ -435,5 +446,26 @@ mod tests {
         fs::write(deep.join("UV.EXE"), b"").unwrap();
         assert_eq!(find_file(&tmp.0, "uv.exe"), Some(deep.join("UV.EXE")));
         assert_eq!(find_file(&tmp.0, "gh.exe"), None);
+    }
+
+    #[test]
+    fn check_key_wants_every_part_of_the_folder() {
+        let tmp = TempDir::new("checkkey");
+        let server = Catalog::get().find("vscodium-server").unwrap();
+        let folder = tmp.0.join("vscodium-server");
+        let tree = tmp.0.join("tree");
+        fs::create_dir_all(tree.join("out")).unwrap();
+        fs::write(tree.join(r"out\server-main.js"), b"").unwrap();
+        let err = check_key(server, &folder, &tree).unwrap_err();
+        assert!(err.to_string().contains("node.exe"), "{err}");
+        fs::write(tree.join("node.exe"), b"").unwrap();
+        check_key(server, &folder, &tree).unwrap();
+
+        // Parts in other folders (Maven, Gradle) are not in this tree.
+        let java = Catalog::get().find("java").unwrap();
+        let tree = tmp.0.join("jdk");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join(r"bin\java.exe"), b"").unwrap();
+        check_key(java, &tmp.0.join("java"), &tree).unwrap();
     }
 }

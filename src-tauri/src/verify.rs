@@ -1,7 +1,7 @@
 //! Checksums of downloaded files (port of nabre/dev-kit
 //! `_prepare-helpers.ps1:60-130`): SHA-256, SHA-512, npm `sha512-<base64>`.
 //! A file that does not match is deleted, so it can never be installed later.
-//! Authenticode signatures (Claude Code, VC++ runtime) come with phase 4.
+//! Authenticode signatures (Claude Code, VC++ runtime) are in `signature.rs`.
 
 use std::fs::{self, File};
 use std::io::Read;
@@ -14,10 +14,8 @@ use sha2::{Digest, Sha256, Sha512};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expect {
     Sha256(String),
-    #[allow(dead_code, reason = "Antigravity, Maven, .NET: phase 4")]
     Sha512(String),
     /// npm `dist.integrity`, e.g. `sha512-AbC…==`.
-    #[allow(dead_code, reason = "Claude Code, Codex: phase 4")]
     NpmIntegrity(String),
 }
 

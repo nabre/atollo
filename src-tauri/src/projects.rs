@@ -54,10 +54,16 @@ fn folders(kit: &Kit) -> Vec<PathBuf> {
 pub fn info(kit: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
     let project = detect::detect(dir, lang);
     let catalog = Catalog::get();
+    // What can be added from "Linguaggi e strumenti": not R on ARM64.
+    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
     let missing = project
         .requires
         .iter()
-        .filter(|id| catalog.find(id).is_some_and(|c| !c.is_installed(kit)))
+        .filter(|id| {
+            catalog
+                .find(id)
+                .is_some_and(|c| !c.is_installed(kit) && !(c.no_arm64 && arm64))
+        })
         .cloned()
         .collect();
     let empty = fs::symlink_metadata(dir).is_ok_and(|m| m.is_dir())

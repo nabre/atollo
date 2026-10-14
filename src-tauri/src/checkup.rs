@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
 
-use crate::catalog::{Catalog, Component};
+use crate::catalog::{kit_path, Catalog, Component};
 use crate::env::KitEnv;
 use crate::jobs;
 use crate::kit::Kit;
@@ -26,14 +26,17 @@ pub struct Check {
 
 const LIMIT: Duration = Duration::from_secs(60);
 
-/// Runs the check command of `c`; `None` if it has none or is not installed.
+/// Runs the check command of `c`; `None` if it has none or nothing of it is
+/// on disk. Half installed (a part missing): failed, naming the part.
 pub fn check(kit: &Kit, env: &KitEnv, c: &Component) -> Option<Check> {
     let (program, args) = c.check.split_first()?;
-    if !c.is_installed(kit) {
+    if !c.is_present(kit) {
         return None;
     }
-    let exe = kit.apps().join(program.replace('/', "\\"));
-    let result = run(env, &exe, args);
+    let result = match c.missing_part(kit) {
+        Some(part) => Err(anyhow::anyhow!("{} not found", part.display())),
+        None => run(env, &kit_path(kit, program), args),
+    };
     Some(Check {
         id: c.id.clone(),
         name: c.name.clone(),
@@ -107,14 +110,55 @@ fn run(env: &KitEnv, exe: &std::path::Path, args: &[String]) -> Result<String> {
 mod tests {
     use super::*;
 
+    use crate::kit::{tests::TempDir, Arch};
+
     #[test]
     fn every_check_names_an_installed_file() {
         for c in Catalog::get().all() {
             if let Some((program, _)) = c.check.split_first() {
                 let top = program.split('/').next().unwrap_or_default();
-                let owned = c.folder.as_deref() == Some(top) || top == "tools" || c.id == "kotlin";
+                let owned = c.folder.as_deref() == Some(top)
+                    || top == "tools"
+                    || *program == c.key
+                    || c.keys.contains(program);
                 assert!(owned, "{}: check {program} outside its folder", c.id);
             }
         }
+        for id in ["vscodium-server", "pnpm"] {
+            let c = Catalog::get().find(id).unwrap();
+            assert!(!c.check.is_empty(), "{id}: no final check");
+        }
+    }
+
+    /// `@` in the check program is the kit root, as in the key.
+    #[test]
+    fn check_program_at_the_kit_root() {
+        let tmp = TempDir::new("checkup-root");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let pnpm = Catalog::get().find("pnpm").unwrap();
+        for p in pnpm.key_paths(&kit) {
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            std::fs::write(&p, b"@echo 10.0.0\r\n").unwrap();
+        }
+        let result = check(&kit, &KitEnv::default(), pnpm).unwrap();
+        assert!(result.ok, "{}", result.answer);
+        assert_eq!(result.answer, "10.0.0");
+    }
+
+    /// Half installed: in the check, failed, with the missing part.
+    #[test]
+    fn half_installed_fails_the_check() {
+        let tmp = TempDir::new("checkup-half");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let cmake = Catalog::get().find("cmake").unwrap();
+        assert!(check(&kit, &KitEnv::default(), cmake).is_none(), "absent");
+        let key = &cmake.key_paths(&kit)[0];
+        std::fs::create_dir_all(key.parent().unwrap()).unwrap();
+        std::fs::write(key, b"").unwrap();
+        let result = check(&kit, &KitEnv::default(), cmake).unwrap();
+        assert!(!result.ok);
+        assert!(result.answer.contains("ninja.exe"), "{}", result.answer);
     }
 }
