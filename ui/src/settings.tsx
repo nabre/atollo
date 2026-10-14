@@ -3,8 +3,9 @@
 // Python, PHP and Rust, and the app's updates. Replaces nabre/atollo's
 // proxy.cmd edited by hand.
 import { useCallback, useEffect, useState, type SyntheticEvent, type ReactNode } from "react";
-import { VscCheck, VscCloudDownload, VscSave } from "react-icons/vsc";
+import { VscCheck, VscCloudDownload, VscDebugRestart, VscSave } from "react-icons/vsc";
 import {
+  editorRestart,
   settingsGet,
   settingsSet,
   updateCheck,
@@ -241,6 +242,16 @@ export function SettingsPage({ onSaved, editorRunning }: { onSaved: () => void; 
               ? t("Salvato. Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.")
               : t("Salvato.")}
           </span>
+        )}
+        {saved && editorRunning && (
+          <ActionButton
+            icon={VscDebugRestart}
+            label={t("Riavvia l'editor")}
+            busy={busy === "restart"}
+            onClick={() => {
+              run("restart", editorRestart);
+            }}
+          />
         )}
       </div>
       <ErrorLine error={error} />

@@ -1,9 +1,10 @@
 //! `Atollo.exe serve <folder> <port>`: file server for HTML/CSS/JS-only
 //! projects (port of nabre/atollo `core/static-server.js`), on 127.0.0.1
-//! only.
+//! only, or on every interface with `ATOLLO_ALLOW_LAN=1` (Settings).
 //!
-//! - only requests addressed to localhost (a `Host` of another name that
-//!   points to 127.0.0.1, DNS rebinding, cannot read the project);
+//! - only requests addressed to localhost, or with the local network
+//!   allowed to an IP address (a `Host` of another name that points to the
+//!   PC, DNS rebinding, cannot read the project);
 //! - no hidden files or folders (`.git`, `.env`), except `.well-known`;
 //! - nothing outside the folder (`..`, links leading out);
 //! - a folder without the final `/` is redirected (relative links work).
@@ -128,7 +129,22 @@ pub fn resolve(root: &Path, target: &str) -> Answer {
     }
 }
 
-fn handle(root: &Path, mut stream: TcpStream) -> Result<()> {
+/// A `Host` that is an IP address (v4, or v6 in brackets), with or without a
+/// port: never a name.
+fn is_ip_host_header(host: &str) -> bool {
+    let host = host.trim();
+    if let Some(rest) = host.strip_prefix('[') {
+        return rest
+            .split(']')
+            .next()
+            .is_some_and(|h| h.parse::<std::net::Ipv6Addr>().is_ok());
+    }
+    host.split(':')
+        .next()
+        .is_some_and(|h| h.parse::<Ipv4Addr>().is_ok())
+}
+
+fn handle(root: &Path, lan: bool, mut stream: TcpStream) -> Result<()> {
     stream.set_read_timeout(Some(Duration::from_secs(10)))?;
     let mut reader = BufReader::new(stream.try_clone()?);
     let mut request = String::new();
@@ -148,7 +164,7 @@ fn handle(root: &Path, mut stream: TcpStream) -> Result<()> {
     let mut parts = request.split_whitespace();
     let (method, target) = (parts.next().unwrap_or(""), parts.next().unwrap_or(""));
     let head_only = method == "HEAD";
-    let answer = if !is_local_host_header(&host) {
+    let answer = if !is_local_host_header(&host) && !(lan && is_ip_host_header(&host)) {
         Answer::Status(403, "Forbidden")
     } else if method != "GET" && !head_only {
         Answer::Status(405, "Method Not Allowed")
@@ -193,11 +209,17 @@ fn handle(root: &Path, mut stream: TcpStream) -> Result<()> {
     Ok(())
 }
 
-/// Serves `root` on `127.0.0.1:port` until the process is ended.
+/// Serves `root` on `127.0.0.1:port` (every interface with the local
+/// network allowed) until the process is ended.
 pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
     let root = fs::canonicalize(root).with_context(|| root.display().to_string())?;
-    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port))
-        .with_context(|| format!("127.0.0.1:{port}"))?;
+    let lan = std::env::var("ATOLLO_ALLOW_LAN").is_ok_and(|v| v == "1");
+    let ip = if lan {
+        Ipv4Addr::UNSPECIFIED
+    } else {
+        Ipv4Addr::LOCALHOST
+    };
+    let listener = TcpListener::bind((ip, port)).with_context(|| format!("{ip}:{port}"))?;
     println!(
         "{}",
         crate::i18n::t(
@@ -212,7 +234,7 @@ pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
     for stream in listener.incoming().flatten() {
         let root = root.clone();
         std::thread::spawn(move || {
-            let _ = handle(&root, stream);
+            let _ = handle(&root, lan, stream);
         });
     }
     Ok(())
@@ -232,6 +254,13 @@ mod tests {
         assert!(!is_local_host_header("evil.example:7100"));
         assert!(!is_local_host_header("localhost.evil.example"));
         assert!(!is_local_host_header(""));
+
+        // With the local network allowed: IP addresses, never names.
+        assert!(is_ip_host_header("192.168.1.20:7100"));
+        assert!(is_ip_host_header("[fe80::1]:7100"));
+        assert!(!is_ip_host_header("pc.example:7100"));
+        assert!(!is_ip_host_header("1.2.3.4.evil.example"));
+        assert!(!is_ip_host_header(""));
     }
 
     #[test]

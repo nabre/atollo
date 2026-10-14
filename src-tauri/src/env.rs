@@ -9,7 +9,8 @@
 //!   only (`_env.cmd:228` appends the PC's whole PATH);
 //! - network settings come from `data\app\settings.json`, not `proxy.cmd`;
 //! - PowerShell 7 of the kit (`pwsh`) is on PATH, with telemetry and update
-//!   checks off (DECISIONS.md D-23).
+//!   checks off (DECISIONS.md D-23), and `PSModulePath` without the PC's
+//!   modules.
 
 use std::collections::BTreeMap;
 use std::ffi::OsString;
@@ -397,6 +398,18 @@ impl KitEnv {
             .map(|p| p.to_string_lossy().into_owned())
             .collect();
         env.set("PATH", path.join(";"));
+        // PowerShell modules: the kit's and Windows' own, never those
+        // installed in the PC (Documents, Program Files), for the PowerShell
+        // that agents start too. PowerShell 7 still adds its own folders at
+        // start; the kit's consoles narrow them further (profile.ps1).
+        env.set(
+            "PSModulePath",
+            format!(
+                "{};{}",
+                data.join(r"pwsh\Modules").display(),
+                system32.join(r"WindowsPowerShell\v1.0\Modules").display()
+            ),
+        );
 
         // Settings (replace data\proxy.cmd, _env.cmd:270-273)
         let net = &settings.network;
