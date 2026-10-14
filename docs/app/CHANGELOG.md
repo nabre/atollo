@@ -6,7 +6,7 @@
 - **Limiti d'uso e consumi degli agenti** (`stats/`, D-61): nella pagina Agenti, per ogni agente installato, i limiti del piano in «% usato» con l'ora in cui si azzerano, i crediti extra di Claude, i token e le sessioni di oggi e degli ultimi 7 giorni con il grafico per giorno. Server di Anthropic, OpenAI e Google con l'accesso del kit, letti al massimo ogni 2 minuti e mai prima di quanto chiede un 429. Pulsante «Aggiorna i consumi».
 - **Editor, terminale e agenti solo in un progetto** (D-62): la Home mostra i progetti recenti con Editor, Terminale e agente; la finestra dell'editor rifiuta un'altra cartella, un workspace o la finestra vuota.
 - **Impostazioni del kit per progetto** in `data\app\projects\<progetto>\dev-settings.json` (D-63): l'ultimo agente usato (predefinito nella scelta) e l'ultima apertura (ordine dei progetti).
-- **Barra del titolo dell'interfaccia** sulla finestra principale, senza la barra di Windows (D-64).
+- **Barra del titolo dell'interfaccia** sulla finestra principale, senza la barra di Windows (D-64). **Le finestre dell'editor usano la barra di VSCodium** con i suoi menu (File, Modifica…), il Command Center e i pulsanti di Windows nel suo stile; una barra semplice fa da ripiego se l'editor non risponde (D-69).
 - **Loghi ufficiali** di componenti e agenti; **etichette dei linguaggi** con il logo nella riga di ogni progetto (D-65).
 - **Solo gli agenti installati** nella pagina Agenti e nella scelta dell'agente.
 - **Windows Terminal portabile del kit** (componente `terminal`, D-68), predefinito per Terminale e agenti; la console classica di Windows resta in Impostazioni › Generale › Terminale e fa da ripiego. Ogni scheda riceve l'ambiente del kit dall'app attraverso una named pipe.

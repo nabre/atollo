@@ -286,8 +286,16 @@ pub async fn editor_open<R: Runtime>(
     .map_err(|e| fail("editor", e))??;
     let _ = app.emit_to(MAIN, "editor-status", state.editor.status());
     let url = editor::url(port, &token, Some(&dir));
-    editor_window::open(&app, &url, port, &title, &dir, &state.kit.webview_data())
-        .map_err(|e| fail("editor window", format!("{e:#}")))
+    editor_window::open(
+        &app,
+        &url,
+        port,
+        &title,
+        &dir,
+        &state.kit.webview_data(),
+        lang,
+    )
+    .map_err(|e| fail("editor window", format!("{e:#}")))
 }
 
 #[tauri::command]

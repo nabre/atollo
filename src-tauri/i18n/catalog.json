@@ -1,4 +1,24 @@
 {
+  "Riduci a icona": {
+    "en": "Minimize",
+    "fr": "Réduire",
+    "de": "Minimieren"
+  },
+  "Ingrandisci": {
+    "en": "Maximize",
+    "fr": "Agrandir",
+    "de": "Maximieren"
+  },
+  "Ripristina": {
+    "en": "Restore",
+    "fr": "Restaurer",
+    "de": "Wiederherstellen"
+  },
+  "Chiudi": {
+    "en": "Close",
+    "fr": "Fermer",
+    "de": "Schließen"
+  },
   "Atollo non può partire": {
     "en": "Atollo cannot start",
     "fr": "Atollo ne peut pas démarrer",
