@@ -207,9 +207,9 @@ export function ProjectsPage({
   return (
     // The whole content area, as the editor's side bar: never taller than the window.
     <div className="absolute inset-0 flex">
-      <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-r border-vsc-border bg-vsc-sidebar">
-        <div className="flex h-[35px] shrink-0 items-center gap-0.5 pr-2 pl-5">
-          <h2 className="min-w-0 flex-1 truncate text-[11px] font-normal tracking-wide uppercase">
+      <aside className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r border-vsc-border bg-vsc-sidebar">
+        <div className="flex h-8 shrink-0 items-center gap-0.5 pr-2 pl-3">
+          <h2 className="min-w-0 flex-1 truncate text-[12px] font-semibold text-vsc-sidebar-title">
             {t("Nuovo progetto")}
           </h2>
           <ToolbarIcon icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
@@ -501,7 +501,7 @@ export function ToolbarIcon({ icon: Icon, label, onClick }: { icon: IconType; la
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="rounded-sm p-1 text-vsc-fg hover:bg-vsc-list-hover"
+      className="flex size-[22px] items-center justify-center rounded p-[3px] text-vsc-icon hover:bg-vsc-toolbar-hover"
     >
       <Icon size={16} aria-hidden="true" />
     </button>
@@ -537,7 +537,7 @@ export function SidePane({
           type="button"
           aria-expanded={expanded}
           onClick={onToggle}
-          className="flex h-[22px] w-full items-center gap-0.5 px-0.5 text-left text-[11px] font-bold uppercase hover:bg-vsc-list-hover"
+          className="flex h-[22px] w-full items-center gap-0.5 rounded px-0.5 text-left text-[11px] font-semibold text-vsc-section-fg hover:bg-vsc-list-hover"
         >
           <VscChevronRight
             size={16}

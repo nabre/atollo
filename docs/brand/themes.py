@@ -113,6 +113,7 @@ BRAND = {
         "editorGutter.modifiedBackground": "#10B981",
         "editor.selectionBackground": "#10B9814D",
         "charts.orange": "#F97316",
+        "modernActivityBarItem.activeBackground": "#10B98133",
     },
     "light": {
         "focusBorder": "#047857",
@@ -144,6 +145,7 @@ BRAND = {
         "editorGutter.modifiedBackground": "#047857",
         "editor.selectionBackground": "#A7E3C6",
         "charts.orange": "#C2410C",
+        "modernActivityBarItem.activeBackground": "#D1F0E0",
     },
 }
 
@@ -185,6 +187,10 @@ TOKENS = {
     "statusbar-remote": "statusBarItem.remoteBackground",
     "statusbar-remote-fg": "statusBarItem.remoteForeground",
     "tab-border-top": "tab.activeBorderTop",
+    # VSCodium 1.140's "modern UI": floating parts on the workbench color
+    "surface-border": "modernActivityBar.border",
+    "activitybar-item-active": "modernActivityBarItem.activeBackground",
+    "activitybar-item-hover": "modernActivityBarItem.hoverBackground",
     # Controls
     "focus": "focusBorder",
     "button": "button.background",

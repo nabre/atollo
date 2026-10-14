@@ -240,7 +240,7 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
         <section key={g.key} aria-labelledby={`ext-${p.id}-${g.key}`} className="border-t border-vsc-border">
           <h3
             id={`ext-${p.id}-${g.key}`}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
+            className="flex h-8 items-center gap-1.5 px-3 text-[12px] font-semibold text-vsc-sidebar-title"
           >
             {g.icon}
             {g.title}
@@ -289,7 +289,7 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
       <section aria-labelledby={`ext-${p.id}-add`} className="border-t border-vsc-border">
         <h3
           id={`ext-${p.id}-add`}
-          className="px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
+          className="flex h-8 items-center px-3 text-[12px] font-semibold text-vsc-sidebar-title"
         >
           {t("Aggiungi un'estensione")}
         </h3>

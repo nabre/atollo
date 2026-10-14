@@ -58,7 +58,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
   return (
     <div
       data-tauri-drag-region
-      className="flex h-[30px] shrink-0 items-center border-b border-vsc-titlebar-border bg-vsc-titlebar text-vsc-titlebar-fg select-none"
+      className="flex h-[35px] shrink-0 items-center border-b border-vsc-titlebar-border bg-vsc-titlebar text-vsc-titlebar-fg select-none"
     >
       <span data-tauri-drag-region className="flex items-center gap-2 pl-3 text-[12px]">
         <BrandSymbol size={16} />

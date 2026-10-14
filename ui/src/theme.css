@@ -18,8 +18,11 @@
 
 :root {
   color-scheme: light dark;
-  --vsc-font: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-  --vsc-mono: "JetBrains Mono Variable", "Cascadia Mono", Consolas, "Courier New", monospace;
+  /* VSCodium's fonts on Windows, so sizes match the editor's; Inter only
+     for the brand's display text (.font-brand). */
+  --vsc-font: "Segoe WPC", "Segoe UI", sans-serif;
+  --vsc-mono: Consolas, "Courier New", monospace;
+  --brand-font: "Inter Variable", "Segoe UI", sans-serif;
   --brand-forest: #0f3d2e;
   --brand-emerald: #10b981;
   --brand-mint: #d1f0e0;
@@ -66,10 +69,11 @@ body,
 }
 
 body {
-  background: var(--vsc-bg);
+  background: var(--vsc-activitybar);
   color: var(--vsc-fg);
   font-family: var(--vsc-font);
   font-size: 13px;
+  line-height: 1.4;
   user-select: none;
 }
 
@@ -97,6 +101,10 @@ body {
 
 /* The brand cover, behind welcome and empty pages: content stays on the
    left, the strokes rise on the right. */
+.font-brand {
+  font-family: var(--brand-font);
+}
+
 .bg-hero {
   background:
     var(--vsc-hero) center / cover no-repeat,
@@ -126,24 +134,24 @@ body {
   outline-offset: -1px;
 }
 
-/* Text fields, lists and text areas, as VSCodium's inputs: 24px high,
+/* Text fields, lists and text areas, as VSCodium's inputs: 26px high,
    a thin border that takes the focus color. Width comes from utilities. */
 @layer components {
   .input {
-    height: 24px;
+    height: 26px;
     border: 1px solid var(--vsc-input-border);
-    border-radius: 2px;
+    border-radius: 4px;
     background: var(--vsc-input);
     color: var(--vsc-input-fg);
     padding: 0 6px;
     font: inherit;
-    line-height: 22px;
+    line-height: 24px;
     user-select: text;
   }
   textarea.input {
     height: auto;
-    padding: 3px 6px;
-    line-height: 1.45;
+    padding: 4px 6px;
+    line-height: 1.4;
     resize: vertical;
   }
   .input::placeholder {
@@ -162,7 +170,7 @@ body {
     border-color: var(--vsc-dropdown-border);
     background-color: var(--vsc-dropdown);
     appearance: none;
-    padding-right: 22px;
+    padding: 0 22px 0 6px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.4'/%3E%3C/svg%3E");
     background-position: right 4px center;
     background-repeat: no-repeat;

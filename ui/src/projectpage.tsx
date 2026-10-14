@@ -99,10 +99,7 @@ function Box({
 }) {
   return (
     <section className="min-w-0 border-t border-vsc-border" aria-labelledby={id}>
-      <h2
-        id={id}
-        className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
-      >
+      <h2 id={id} className="flex h-8 items-center gap-2 px-3 text-[12px] font-semibold text-vsc-sidebar-title">
         {title}
         {right && <span className="ml-auto text-[12px] font-normal tracking-normal normal-case">{right}</span>}
       </h2>
@@ -802,10 +799,10 @@ export function ProjectPage({
     // As the Projects page: a side bar with the project and its sections,
     // the section on the right with its own scroll.
     <div className="absolute inset-0 flex">
-      <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-r border-vsc-border bg-vsc-sidebar">
-        <div className="flex h-[35px] shrink-0 items-center gap-0.5 pr-2 pl-1">
+      <aside className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r border-vsc-border bg-vsc-sidebar">
+        <div className="flex h-8 shrink-0 items-center gap-0.5 pr-2 pl-1">
           <ToolbarIcon icon={VscArrowLeft} label={t("Progetti")} onClick={onBack} />
-          <h2 className="min-w-0 flex-1 truncate pl-1 text-[11px] font-normal tracking-wide uppercase" title={p.name}>
+          <h2 className="min-w-0 flex-1 truncate pl-1 text-[12px] font-semibold text-vsc-sidebar-title" title={p.name}>
             {p.name}
           </h2>
           <ToolbarIcon icon={VscRefresh} label={t("Aggiorna")} onClick={changed} />
