@@ -128,11 +128,7 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         };
         if wanted {
             plan.handle.push(c.id.clone());
-        } else if opts.only.is_empty()
-            && !choice.is_chosen(&c.id)
-            && c.folder.is_some()
-            && c.is_installed(ctx.kit)
-        {
+        } else if opts.only.is_empty() && !choice.is_chosen(&c.id) && c.is_installed(ctx.kit) {
             plan.remove.push(c.id.clone());
         }
     }
@@ -196,12 +192,12 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
             id: c.id.clone(),
             name: c.name.clone(),
         });
-        let outcome = match c.folder_path(ctx.kit).map(|f| archive::remove_dir(&f)) {
-            Some(Err(e)) if e.is::<InUse>() => Outcome::InUse,
-            Some(Err(e)) => Outcome::Failed {
+        let outcome = match remove_component(ctx, c) {
+            Err(e) if e.is::<InUse>() => Outcome::InUse,
+            Err(e) => Outcome::Failed {
                 message: format!("{e:#}"),
             },
-            _ => {
+            Ok(()) => {
                 c.forget_version(ctx.kit);
                 Outcome::Removed
             }
@@ -234,6 +230,19 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
         results.push((c.id.clone(), outcome));
     }
     Ok(results)
+}
+
+/// Removes the component's folder and the other files it owns. Folders
+/// are renamed first, so one in use is left untouched (`InUse`).
+fn remove_component(ctx: &Ctx, c: &Component) -> Result<()> {
+    for path in c.owned_paths(ctx.kit) {
+        if path.is_dir() {
+            archive::remove_dir(&path)?;
+        } else if path.exists() {
+            std::fs::remove_file(&path).map_err(|_| InUse(path.clone()))?;
+        }
+    }
+    Ok(())
 }
 
 fn step(ctx: &Ctx, c: &Component, update_all: bool, force: bool, sink: &mut dyn Sink) -> Outcome {

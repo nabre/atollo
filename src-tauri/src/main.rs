@@ -25,6 +25,7 @@ mod net;
 mod settings;
 mod setup_runner;
 mod setup_task;
+mod signature;
 mod terminal;
 mod verify;
 mod webview;

@@ -32,6 +32,13 @@ pub struct Settings {
     pub network: Network,
     pub gemini_api_key: Option<String>,
     pub auto_update: bool,
+    /// Python minor version (`3.13`); `None` = the kit default.
+    pub python_version: Option<String>,
+    /// PHP branch (`8.4`); `None` = the newest.
+    pub php_version: Option<String>,
+    /// Rust toolchain host on x64: `gnu` (default, own linker) or `msvc`
+    /// (needs Visual Studio Build Tools on the PC).
+    pub rust_toolchain: Option<String>,
 }
 
 impl Default for Settings {
@@ -41,6 +48,9 @@ impl Default for Settings {
             network: Network::default(),
             gemini_api_key: None,
             auto_update: true,
+            python_version: None,
+            php_version: None,
+            rust_toolchain: None,
         }
     }
 }

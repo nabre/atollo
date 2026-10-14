@@ -212,10 +212,10 @@ mod tests {
         let kit = Kit::at(tmp.0.clone(), Arch::X64);
         kit.prepare().unwrap();
         let missing = missing_required(&kit);
-        for id in ["git", "node", "pwsh", "terminal", "vscodium-server"] {
+        for id in ["git", "node", "uv", "gh", "pwsh", "terminal", "vscodium-server"] {
             assert!(missing.contains(&id.to_owned()), "{id}");
         }
-        assert!(!missing.contains(&"uv".to_owned()), "no installer yet");
+        assert!(missing.contains(&"uv".to_owned()) && missing.contains(&"gh".to_owned()));
         assert!(!missing.contains(&"python".to_owned()), "not required");
 
         let pwsh = Catalog::get().find("pwsh").unwrap().key_path(&kit);

@@ -46,6 +46,10 @@ pub struct Component {
     pub folder: Option<String>,
     #[serde(default)]
     pub x64_only: bool,
+    /// Other files or folders it owns (relative to `data\apps\<platform>`,
+    /// `@` = the kit root), removed with it.
+    #[serde(default)]
+    pub remove: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -98,6 +102,18 @@ impl Component {
             Ok(m) if m.is_dir() => fs::read_dir(&path).is_ok_and(|mut d| d.next().is_some()),
             _ => false,
         }
+    }
+
+    /// Everything removed when the component is turned off.
+    pub fn owned_paths(&self, kit: &Kit) -> Vec<PathBuf> {
+        let resolve = |rel: &str| match rel.strip_prefix('@') {
+            Some(r) => kit.root().join(r.replace('/', "\\")),
+            None => kit.apps().join(rel.replace('/', "\\")),
+        };
+        self.folder_path(kit)
+            .into_iter()
+            .chain(self.remove.iter().map(|r| resolve(r)))
+            .collect()
     }
 
     pub fn folder_path(&self, kit: &Kit) -> Option<PathBuf> {
