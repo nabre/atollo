@@ -22,6 +22,7 @@ Scelte non ovvie: [DECISIONS.md](DECISIONS.md). Domande aperte: §12.
 | 14/10 | Impostazioni del kit per ogni progetto in `data`, file `dev-settings.json` | `data\app\projects\<progetto>\dev-settings.json` (D-63) |
 | 14/10 | Barra di Windows della finestra spenta, barra dell'interfaccia | solo finestra principale (D-64) |
 | 14/10 | Loghi ufficiali degli strumenti; etichette del codice di ogni progetto; solo gli agenti installati | D-65 |
+| 14/10 | Gestione del terminale nel kit: predefinito il terminale del kit, portabile | Windows Terminal portabile (componente `terminal`), la console classica nelle Impostazioni (D-68) |
 
 Requisiti del prompt **superati** da queste indicazioni:
 - "Riusa, non riscrivere" gli script del kit → tutto in Rust dentro l'exe.
@@ -132,7 +133,8 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `editor_window.rs` | finestre `editor-<n>`: navigazione, nuove finestre, tasti e menu del browser spenti |
 | `editor_cfg.rs` | impostazioni, profili del terminale esclusivi |
 | `editor_ext.rs` | estensioni consigliate (`@programma`, proposta una volta sola, CodeLLDB); nessuna estensione propria (Q4 = a) |
-| `terminal.rs` | console del kit: PowerShell del kit o un agente in `conhost.exe` di Windows, nel job (D-57) |
+| `terminal.rs` | console del kit: PowerShell del kit o un agente in Windows Terminal del kit (`wterm.rs`, D-68) o in `conhost.exe` di Windows (D-57), nel job |
+| `wterm.rs` | Windows Terminal portabile: impostazioni («Dev-Kit», schemi di VSCodium), avvio, ambiente del kit e id del processo attraverso una named pipe (D-68) |
 | `projects.rs`, `detect/*.rs` | elenco, creazione, clone con il Git del kit, rilevamento del tipo, dei linguaggi e delle azioni (`npm run dev`, `php -S`, `cargo run`…), `panel.json` |
 | `run.rs` | avvio e arresto delle azioni dei progetti: porte 7100-7999 ricordate in `data\app\ports.json`, attesa del server, log, apertura nel browser, rete locale (D-50) |
 | `serve.rs` | server di file per i siti statici, `Dev-Kit.exe serve <cartella> <porta>`, al posto di `static-server.js` (D-51) |
@@ -160,7 +162,8 @@ React + TypeScript `strict` + Tailwind + react-icons (Codicons), con il tema di 
 | Componente | Cosa | Perché |
 | --- | --- | --- |
 | `pwsh` | PowerShell 7 portabile (zip ufficiale, x64 e ARM64, SHA-256), obbligatorio | shell predefinita dell'editor e delle console; PSReadLine incluso; isolabile dal PC |
-| (nessuno) | console classica di Windows: `conhost.exe` di System32 avviato direttamente (D-57); prima xterm.js e `portable-pty` (D-44), prima ancora Windows Terminal | console fuori dall'editor (agenti, Terminale), nel job; mai il terminale predefinito del PC |
+| `terminal` | Windows Terminal portabile (zip ufficiale, x64 e ARM64, `.portable`), predefinito (D-68); ogni scheda riceve l'ambiente del kit da una named pipe | console fuori dall'editor (agenti, Terminale), nel job; mai il terminale predefinito del PC |
+| (nessuno) | console classica di Windows: `conhost.exe` di System32 avviato direttamente (D-57), nelle Impostazioni e come ripiego; prima xterm.js e `portable-pty` (D-44) | stessa console, senza un programma in più |
 | `git` | Git Bash, installato quando serve (con Claude Code, per un clone: D-59) | shell dei comandi di Claude |
 
 Profili nell'editor (riscritti a ogni avvio; profili di sistema nascosti; quelli dell'utente conservati): **Dev-Kit** (pwsh, predefinito, anche per le attività), Dev-Kit - Git Bash, Dev-Kit - cmd, Claude Code / Codex / Antigravity (se installati).

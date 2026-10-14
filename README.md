@@ -26,7 +26,7 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 | **Impostazioni** | lingua, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python, PHP e Rust, aggiornamenti dell'app |
 | **Rimuovi l'unità** | chiude tutto ciò che il kit ha aperto, riporta nel kit l'accesso di Antigravity e lascia espellere la chiavetta |
 
-La console del kit è la console classica di Windows con PowerShell 7 del kit e il solo ambiente del kit: i programmi installati sul PC non si vedono.
+La console del kit è Windows Terminal portabile del kit (o, nelle Impostazioni, la console classica di Windows) con PowerShell 7 del kit e il solo ambiente del kit: i programmi installati sul PC non si vedono.
 
 ## Cosa resta del Dev-Kit
 

@@ -9,6 +9,7 @@
 - **Barra del titolo dell'interfaccia** sulla finestra principale, senza la barra di Windows (D-64).
 - **Loghi ufficiali** di componenti e agenti; **etichette dei linguaggi** con il logo nella riga di ogni progetto (D-65).
 - **Solo gli agenti installati** nella pagina Agenti e nella scelta dell'agente.
+- **Windows Terminal portabile del kit** (componente `terminal`, D-68), predefinito per Terminale e agenti; la console classica di Windows resta in Impostazioni › Generale › Terminale e fa da ripiego. Ogni scheda riceve l'ambiente del kit dall'app attraverso una named pipe.
 - **L'editor chiede se fidarsi** alla prima apertura di ogni progetto; quelli non attendibili si aprono in «Restricted Mode» (D-67, dopo la revisione di sicurezza che segnalava D-66).
 - **README in quattro lingue** (`README.md`, `docs/README.en.md`, `.fr.md`, `.de.md`): uso, pagine, cosa resta del Dev-Kit, limiti noti.
 - **CI: firma facoltativa dell'exe** con i segreti `SIGN_PFX_BASE64` e `SIGN_PFX_PASSWORD`; senza, l'exe resta non firmato e il passo si salta.

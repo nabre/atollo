@@ -25,10 +25,10 @@ use windows::Win32::System::JobObjects::{
     JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 };
 use windows::Win32::System::Threading::{
-    CreateProcessW, GetCurrentProcess, OpenThread, ResumeThread, TerminateProcess,
+    CreateProcessW, GetCurrentProcess, OpenProcess, OpenThread, ResumeThread, TerminateProcess,
     WaitForSingleObject, CREATE_BREAKAWAY_FROM_JOB, CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW,
-    CREATE_SUSPENDED, CREATE_UNICODE_ENVIRONMENT, INFINITE, PROCESS_INFORMATION, STARTUPINFOW,
-    THREAD_SUSPEND_RESUME,
+    CREATE_SUSPENDED, CREATE_UNICODE_ENVIRONMENT, INFINITE, PROCESS_INFORMATION,
+    PROCESS_SYNCHRONIZE, STARTUPINFOW, THREAD_SUSPEND_RESUME,
 };
 
 use crate::env::KitEnv;
@@ -154,7 +154,8 @@ pub fn spawn(cmd: &mut Command) -> Result<Child> {
     Ok(child)
 }
 
-/// A process started by [`spawn_console`]; the handle closes on drop.
+/// A process started by [`spawn_console`] or found by [`Console::open`]; the
+/// handle closes on drop.
 pub struct Console {
     process: HANDLE,
     pid: u32,
@@ -164,6 +165,14 @@ pub struct Console {
 unsafe impl Send for Console {}
 
 impl Console {
+    /// A process started by another one (a Windows Terminal tab), to wait for.
+    pub fn open(pid: u32) -> Result<Console> {
+        // SAFETY: wait-only handle, owned by the result and closed on drop.
+        let process = unsafe { OpenProcess(PROCESS_SYNCHRONIZE, false, pid) }
+            .with_context(|| format!("OpenProcess {pid}"))?;
+        Ok(Console { process, pid })
+    }
+
     pub fn id(&self) -> u32 {
         self.pid
     }
@@ -177,7 +186,7 @@ impl Console {
 
 impl Drop for Console {
     fn drop(&mut self) {
-        // SAFETY: returned by CreateProcessW, closed once.
+        // SAFETY: returned by CreateProcessW or OpenProcess, closed once.
         let _ = unsafe { CloseHandle(self.process) };
     }
 }

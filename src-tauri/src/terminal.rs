@@ -1,8 +1,10 @@
-//! Consoles outside the editor: the kit's PowerShell or an agent in a
-//! classic Windows console (DECISIONS.md D-13, D-23, D-57). Never a shell of
-//! the PC, and never the PC's terminal program: the console is hosted by
-//! Windows' own `conhost.exe`, started directly, so Windows does not hand it
-//! to Windows Terminal or another default terminal.
+//! Consoles outside the editor: the kit's PowerShell or an agent, in the
+//! kit's portable Windows Terminal (`wterm.rs`, D-68) or, when the settings
+//! ask for it or that terminal cannot run, in a classic Windows console
+//! (DECISIONS.md D-13, D-23, D-57). Never a shell of the PC, and never the
+//! PC's terminal program: the classic console is hosted by Windows' own
+//! `conhost.exe`, started directly, so Windows does not hand it to the PC's
+//! default terminal.
 //!
 //! The console is in the app's job: it ends with the app, and "Rimuovi
 //! l'unità" ends it.
@@ -20,7 +22,8 @@ use crate::env::KitEnv;
 use crate::jobs;
 use crate::kit::Kit;
 
-/// The consoles open now: process ids of their `conhost.exe`.
+/// The consoles open now: process ids of their `conhost.exe`, or of the
+/// kit's PowerShell in a Windows Terminal tab.
 #[derive(Default, Clone)]
 pub struct Consoles(Arc<Mutex<BTreeSet<u32>>>);
 
@@ -103,8 +106,20 @@ fn conhost(env: &KitEnv) -> PathBuf {
     Path::new(system_root).join(r"System32\conhost.exe")
 }
 
-/// Starts the console `line` in `dir`, in the job, and counts it until it
-/// closes; then `on_exit` runs.
+/// Counts `console` until it closes; then `on_exit` runs.
+fn track(consoles: &Consoles, console: jobs::Console, on_exit: Box<dyn FnOnce() + Send>) {
+    let pid = console.id();
+    consoles.lock().insert(pid);
+    let consoles = consoles.clone();
+    std::thread::spawn(move || {
+        console.wait();
+        consoles.lock().remove(&pid);
+        on_exit();
+    });
+}
+
+/// Starts the classic console `line` in `dir`, in the job, and counts it
+/// until it closes; then `on_exit` runs.
 fn start(
     consoles: &Consoles,
     env: &KitEnv,
@@ -118,15 +133,37 @@ fn start(
     // SAFETY: no handler routine; it only clears the flag of this process.
     let _ = unsafe { SetConsoleCtrlHandler(None, false) };
     let console = jobs::spawn_console(&line.conhost, &line.args, env, dir)?;
-    let pid = console.id();
-    consoles.lock().insert(pid);
-    let consoles = consoles.clone();
-    std::thread::spawn(move || {
-        console.wait();
-        consoles.lock().remove(&pid);
-        on_exit();
-    });
+    track(consoles, console, on_exit);
     Ok(())
+}
+
+/// Opens `program` (`None`: the kit's shell) in the kit's Windows Terminal,
+/// or in a classic console when the settings ask for it, that terminal
+/// cannot run or its console did not start.
+fn open<R: Runtime>(
+    app: &AppHandle<R>,
+    kit: &Kit,
+    env: &KitEnv,
+    dir: &Path,
+    program: Option<&Path>,
+    on_exit: Box<dyn FnOnce() + Send>,
+) -> Result<()> {
+    let consoles = app.state::<Consoles>();
+    let classic = crate::settings::Settings::load(kit)
+        .settings
+        .classic_console();
+    if !classic && crate::wterm::usable(kit) {
+        match crate::wterm::open(kit, env, dir, program) {
+            Ok(console) => {
+                track(&consoles, console, on_exit);
+                return Ok(());
+            }
+            Err(e) => crate::log::warn(&format!("windows terminal: {e:#}; classic console")),
+        }
+    }
+    let program = program.map_or(Program::Shell, Program::Command);
+    let line = line(kit, env, &program)?;
+    start(&consoles, env, dir, &line, on_exit)
 }
 
 /// Runs `command` (an agent, or a `.cmd` wrapper) in a new kit console in
@@ -139,8 +176,7 @@ pub fn open_command<R: Runtime>(
     command: &Path,
     on_exit: impl FnOnce() + Send + 'static,
 ) -> Result<()> {
-    let line = line(kit, env, &Program::Command(command))?;
-    start(&app.state::<Consoles>(), env, dir, &line, Box::new(on_exit))
+    open(app, kit, env, dir, Some(command), Box::new(on_exit))
 }
 
 /// Opens a kit console (the kit's PowerShell) in `dir`. Inside the job.
@@ -150,8 +186,7 @@ pub fn open_console<R: Runtime>(
     env: &KitEnv,
     dir: &Path,
 ) -> Result<()> {
-    let line = line(kit, env, &Program::Shell)?;
-    start(&app.state::<Consoles>(), env, dir, &line, Box::new(|| {}))
+    open(app, kit, env, dir, None, Box::new(|| {}))
 }
 
 #[cfg(test)]

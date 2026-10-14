@@ -89,6 +89,18 @@ export function SettingsPage({ onSaved, editorRunning }: { onSaved: () => void; 
             ))}
           </select>
         </Field>
+        <Field label={t("Terminale")}>
+          <select
+            value={s.terminal ?? ""}
+            onChange={(e) => {
+              set({ terminal: (empty(e.target.value) as Settings["terminal"]) ?? null });
+            }}
+            className="input"
+          >
+            <option value="">{t("Windows Terminal del kit (predefinito)")}</option>
+            <option value="classic">{t("Console classica di Windows")}</option>
+          </select>
+        </Field>
         <Check
           checked={s.autoUpdate}
           onChange={(v) => {

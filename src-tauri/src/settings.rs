@@ -39,6 +39,9 @@ pub struct Settings {
     /// Rust toolchain host on x64: `gnu` (default, own linker) or `msvc`
     /// (needs Visual Studio Build Tools on the PC).
     pub rust_toolchain: Option<String>,
+    /// Where consoles open: `None` = the kit's Windows Terminal, `classic` =
+    /// Windows' classic console (D-68).
+    pub terminal: Option<String>,
 }
 
 impl Default for Settings {
@@ -51,6 +54,7 @@ impl Default for Settings {
             python_version: None,
             php_version: None,
             rust_toolchain: None,
+            terminal: None,
         }
     }
 }
@@ -151,7 +155,17 @@ impl Settings {
                 return Err(("Valore non valido: {0}", t.clone()));
             }
         }
+        if let Some(t) = &self.terminal {
+            if t != "classic" {
+                return Err(("Valore non valido: {0}", t.clone()));
+            }
+        }
         Ok(())
+    }
+
+    /// Consoles in Windows' classic console instead of the kit's terminal.
+    pub fn classic_console(&self) -> bool {
+        self.terminal.as_deref() == Some("classic")
     }
 
     pub fn save(&self, kit: &Kit) -> anyhow::Result<()> {

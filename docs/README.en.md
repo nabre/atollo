@@ -26,7 +26,7 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 | **Settings** | language, network (proxy, certificates, local network), Gemini key, Python, PHP and Rust versions, app updates |
 | **Remove drive** | closes everything the kit opened, brings Antigravity's sign-in back into the kit and lets you eject the stick |
 
-The kit console is the classic Windows console with the kit's PowerShell 7 and only the kit's environment: programs installed on the PC are not visible.
+The kit console is the kit's portable Windows Terminal (or, in Settings, the classic Windows console) with the kit's PowerShell 7 and only the kit's environment: programs installed on the PC are not visible.
 
 ## What is left of the Dev-Kit
 

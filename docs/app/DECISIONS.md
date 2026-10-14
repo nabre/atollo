@@ -83,8 +83,8 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 ## D-13 Console fuori dall'editor
 
-- Console classica di Windows (D-57): `conhost.exe` di System32 avviato da noi, quindi nel job, con il solo ambiente del kit; Windows non la passa al terminale predefinito del PC.
-- Prima (fino al 14/10/2026): Windows Terminal portabile del kit, `WindowsTerminal.exe --window new -d <cartella> -- <comando>`, sostituito perché esiste solo per Windows (D-44); poi finestre dell'app con xterm.js e pseudo console (D-44…D-46), sostituite da D-57.
+- Windows Terminal portabile del kit (D-68), predefinito; la console classica di Windows (D-57) come alternativa nelle Impostazioni e come ripiego. Sempre con il solo ambiente del kit e nel job; mai il terminale predefinito del PC.
+- Prima (fino al 14/10/2026): Windows Terminal portabile del kit, `WindowsTerminal.exe --window new -d <cartella> -- <comando>`, sostituito perché esiste solo per Windows (D-44); poi finestre dell'app con xterm.js e pseudo console (D-44…D-46), sostituite da D-57; poi di nuovo Windows Terminal, predefinito (D-68).
 
 ## D-14 Comandi solo per la finestra `main`
 
@@ -379,6 +379,8 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 
 ## D-57 Console classica di Windows al posto di xterm.js
 
+Dal 14/10/2026 è l'alternativa a Windows Terminal del kit, che è il predefinito (D-68): resta valida per «Console classica di Windows» nelle Impostazioni e come ripiego.
+
 - **Scelta dell'utente** (14/10/2026): via la libreria del terminale «web» (xterm.js) dalle console dell'app; tutto ciò che il kit fa usa solo strumenti del kit o componenti di Windows, mai programmi del PC. Sostituisce D-44, D-45 e D-46; chiude D-47.
 - **Come.** `terminal.rs`: la PowerShell del kit, o un agente, parte in `conhost.exe` di System32 avviato direttamente, con il solo ambiente del kit e dentro il job dell'app. Avviata così, la console resta nella finestra classica e Windows non la passa al terminale predefinito del PC (Windows Terminal o altri): verificato su Windows 11 (`ConsoleWindowClass`, nessun `WindowsTerminal.exe`).
 - **Senza maniglie standard.** conhost che riceve stdin/stdout fa da pseudo console e scrive la console come testo VT su quelle maniglie, senza finestra. `std::process::Command` le passa sempre (`STARTF_USESTDHANDLES`), quindi `jobs::spawn_console` usa `CreateProcessW` senza maniglie, sospeso, assegnato al job e poi ripreso.
@@ -443,7 +445,7 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 ## D-65 Loghi ufficiali di componenti e linguaggi
 
 - **Scelta dell'utente** (14/10/2026): ogni strumento con il suo logo; ogni progetto con le etichette del codice che contiene.
-- **Come.** Simple Icons di `react-icons/si` (già una dipendenza), con il colore di ogni marchio; i marchi neri o bianchi prendono il colore del testo, così si leggono in entrambi i temi. Dove Simple Icons non ha il logo: PowerShell (icona Codicon di PowerShell), Codex (logo OpenAI di Remix Icon), Antigravity (un'icona neutra: nessun logo ufficiale nei pacchetti, e il sito non ne pubblica uno scaricabile). I linguaggi dei progetti (rilevati da `detect::languages`, i più usati prima) compaiono come etichette con il logo nella riga del progetto e nei progetti recenti della Home.
+- **Come.** Simple Icons di `react-icons/si` (già una dipendenza), con il colore di ogni marchio; i marchi neri o bianchi prendono il colore del testo, così si leggono in entrambi i temi. Dove Simple Icons non ha il logo: PowerShell (icona Codicon di PowerShell), Windows Terminal (icona Codicon del terminale, D-68), Codex (logo OpenAI di Remix Icon), Antigravity (un'icona neutra: nessun logo ufficiale nei pacchetti, e il sito non ne pubblica uno scaricabile). I linguaggi dei progetti (rilevati da `detect::languages`, i più usati prima) compaiono come etichette con il logo nella riga del progetto e nei progetti recenti della Home.
 
 ## D-66 Progetti attendibili anche nell'editor (sostituita da D-67)
 
@@ -461,3 +463,13 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
 - **Scartato: la risposta in `dev-settings.json`.** Con un solo server la fiducia è accesa o spenta per tutte le cartelle: una domanda del kit avrebbe chiesto due server (uno per modalità) oppure una doppia domanda, quella del kit e poi quella dell'editor.
 - **Limite.** La memoria del workbench dipende dall'origine `127.0.0.1:<porta>`: se la porta 7000 è occupata e il server ne prende un'altra, l'editor chiede di nuovo. Chiede, non si fida da solo.
 - Claude Code e Codex restano come in D-53: le cartelle di `projects` sono attendibili per loro.
+
+## D-68 Windows Terminal portabile del kit, predefinito per le console
+
+- **Scelta dell'utente** (14/10/2026): un terminale portabile incluso nel kit, Windows Terminal, come predefinito; la console classica di Windows (D-57) resta come alternativa nelle Impostazioni. Riprende la scelta di D-13 tolta da D-44: Windows Terminal resta solo per Windows (il porting su macOS e Linux sceglierà il terminale di quei sistemi).
+- **Componente** `terminal` (gruppo `languages`, predefinito, dipende da `pwsh`): lo zip ufficiale `Microsoft.WindowsTerminal_<v>_(x64|arm64).zip` di `microsoft/terminal` con `.portable` accanto all'exe, così le impostazioni restano in `terminal\settings\` e non in `%LOCALAPPDATA%`. Prima di ogni console l'app riscrive i profili «Dev-Kit» e «Dev-Kit - Git Bash» e gli schemi di colori di VSCodium; il resto del file è dell'utente, e un file che non è JSON semplice resta com'è (`wterm.rs`).
+- **Un solo processo, un altro ambiente.** Windows Terminal tiene tutte le finestre in un processo: un secondo avvio passa la richiesta a quello già aperto ed esce subito, e la nuova scheda riceve l'ambiente del terminale, non quello di chi la chiede (verificato nello schema delle impostazioni: non esiste un modo «una finestra per processo»). Quindi l'app non può aspettare il processo che avvia né passargli l'ambiente.
+- **Come.** Ogni console è la PowerShell del kit con `data\kit\console.ps1` e il nome di una named pipe nuova (`Dev-Kit-Console-<64 cifre esadecimali casuali>`, solo locale, sicurezza predefinita della sessione). L'app aspetta la connessione (30 s), controlla con `GetNamedPipeClientProcessId` che dall'altra parte ci sia proprio `pwsh.exe` del kit, apre quel processo e gli manda l'ambiente del kit in JSON. Lo script tiene solo le variabili del kit, poi avvia l'agente (`& <percorso>`) o il profilo del kit. Quel processo è la console: contato fino alla fine, chiuso da «Chiudi tutto» e da «Rimuovi l'unità», e alla sua fine gli agenti si riallineano (D-40). Se l'ambiente non arriva, la scheda non avvia niente.
+- **Ripiego** sulla console classica quando le Impostazioni la chiedono, quando Windows Terminal non è installato, su Windows più vecchio di 10 2004 (build 19041, il minimo di Windows Terminal) o se la console di Windows Terminal non parte.
+- **Limiti.** Le schede aperte dall'utente con «+» non passano dall'app: hanno l'ambiente con cui Windows Terminal è partito (quello del kit, ma senza i cambiamenti successivi, per esempio il PATH dopo un'installazione) e non sono contate. Una scheda di un programma che esce con un errore resta aperta su «processo terminato» finché l'utente non la chiude, come fa Windows Terminal.
+- **Prove.** `wterm.rs`: unione delle impostazioni, `;` nei percorsi (separa i comandi di Windows Terminal), scambio sulla pipe; con `DEVKIT_TEST_KIT`, due finestre vere (la seconda passa al terminale già aperto) in una cartella con spazio e `;`: l'ambiente del kit arriva e l'app vede la fine.
