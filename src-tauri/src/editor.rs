@@ -61,6 +61,9 @@ pub struct Editor {
     env: Mutex<KitEnv>,
     server: Mutex<Option<Server>>,
     extensions: std::sync::Arc<Mutex<crate::editor_ext::ExtState>>,
+    /// The background install of extensions: ends with the server, which
+    /// it shares the program folder with (an update could not replace it).
+    extensions_job: crate::editor_ext::JobSlot,
 }
 
 /// Where the server program is.
@@ -83,6 +86,7 @@ impl Editor {
             env: Mutex::new(env),
             server: Mutex::new(None),
             extensions: std::sync::Arc::default(),
+            extensions_job: crate::editor_ext::JobSlot::default(),
         }
     }
 
@@ -137,6 +141,7 @@ impl Editor {
             self.env().clone(),
             net,
             std::sync::Arc::clone(&self.extensions),
+            std::sync::Arc::clone(&self.extensions_job),
         );
         Ok(out)
     }
@@ -146,6 +151,14 @@ impl Editor {
         if let Some(mut s) = guard.take() {
             let _ = s.child.kill();
         }
+        // Closing the job ends the install and what it started; it is
+        // retried at the next start.
+        drop(
+            self.extensions_job
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .take(),
+        );
     }
 
     fn start(&self) -> Result<Server> {
