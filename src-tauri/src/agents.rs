@@ -146,13 +146,14 @@ pub fn status(kit: &Kit, env: &KitEnv) -> Vec<AgentInfo> {
 }
 
 /// The command that starts `id` (Antigravity through the kit's `agy.cmd`).
-fn command_of(kit: &Kit, id: &str) -> Result<PathBuf> {
+fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
     let Some(rel) = exe_of(id) else {
         bail!("unknown agent: {id}")
     };
     let exe = kit.apps().join(rel);
     if !exe.is_file() {
-        bail!("{id} is not installed");
+        let name = Catalog::get().find(id).map_or(id, |c| c.name.as_str());
+        bail!("{}", crate::i18n::t(lang, "{0} non è installato.", &[name]));
     }
     Ok(if id == "antigravity" {
         kit.kit_files().join(r"bin\agy.cmd")
@@ -169,8 +170,9 @@ pub fn launch<R: tauri::Runtime>(
     env: &KitEnv,
     id: &str,
     dir: &Path,
+    lang: &str,
 ) -> Result<()> {
-    let command = command_of(kit, id)?;
+    let command = command_of(kit, id, lang)?;
     let report = crate::agents_sync::run(kit, Some(dir));
     for w in &report.warnings {
         crate::log::warn(&format!("before {id}: {w}"));

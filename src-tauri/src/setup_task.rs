@@ -90,6 +90,12 @@ impl SetupTask {
         *self.settings.lock().unwrap_or_else(PoisonError::into_inner) = settings;
     }
 
+    /// The language of the interface (`CP_LANG` of the kit environment).
+    fn lang(&self) -> &'static str {
+        let env = self.env.lock().unwrap_or_else(PoisonError::into_inner);
+        crate::i18n::resolve(env.get("CP_LANG"), None, None)
+    }
+
     fn lock(&self) -> MutexGuard<'_, Snapshot> {
         self.state.lock().unwrap_or_else(PoisonError::into_inner)
     }
@@ -108,7 +114,11 @@ impl SetupTask {
         {
             let mut state = self.lock();
             if state.running {
-                return Err("an installation is already running".into());
+                return Err(crate::i18n::t(
+                    self.lang(),
+                    "C'è già un'installazione in corso.",
+                    &[],
+                ));
             }
             *state = Snapshot {
                 running: true,
@@ -157,7 +167,11 @@ impl SetupTask {
         let mut sink = TaskSink { task: self, notify };
         match setup_runner::run(&ctx, opts, &mut sink) {
             Ok(_) => Ok(()),
-            Err(e) if e.is::<Busy>() => Err("another installation is running in this kit".into()),
+            Err(e) if e.is::<Busy>() => Err(crate::i18n::t(
+                self.lang(),
+                "Un'altra installazione è in corso in questo kit (un'altra finestra di Dev-Kit o il menu del kit).",
+                &[],
+            )),
             Err(e) => Err(format!("{e:#}")),
         }
     }

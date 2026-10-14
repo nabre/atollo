@@ -141,6 +141,23 @@ mod tests {
         }
     }
 
+    /// The descriptions of the components (Italian in components.json) are
+    /// translated like the other texts.
+    #[test]
+    fn component_descriptions_are_in_the_catalog() {
+        for c in crate::catalog::Catalog::get().all() {
+            let tr = catalog().get(&c.desc);
+            for lang in ["en", "fr", "de"] {
+                assert!(
+                    tr.and_then(|t| t.get(lang)).is_some_and(|t| !t.is_empty()),
+                    "{}: {lang}",
+                    c.id
+                );
+            }
+        }
+        assert_eq!(t("en", "PHP e Composer", &[]), "PHP and Composer");
+    }
+
     /// Every literal Italian source passed to `tr(lang, "…")`, `i18n::t(lang,
     /// "…")` or `crate::i18n::t(lang, "…")`, and every source returned by
     /// `Settings::validate`, is in the catalog. Calls whose text is not a
