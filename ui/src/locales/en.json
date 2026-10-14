@@ -90,6 +90,8 @@
   "Legge di nuovo limiti e consumi degli agenti": "Reads the agents' limits and usage again",
   "Limiti del piano": "Plan limits",
   "Lingua": "Language",
+  "Windows Terminal del kit (predefinito)": "The kit's Windows Terminal (default)",
+  "Console classica di Windows": "Windows' classic console",
   "Lingua di Windows": "Windows language",
   "Linguaggi e strumenti": "Languages and tools",
   "MSVC (richiede Visual Studio Build Tools nel PC)": "MSVC (requires Visual Studio Build Tools on the PC)",

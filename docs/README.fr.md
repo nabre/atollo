@@ -26,7 +26,7 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 | **Paramètres** | langue, réseau (proxy, certificats, réseau local), clé Gemini, versions de Python, PHP et Rust, mises à jour de l'application |
 | **Retirer le lecteur** | ferme tout ce que le kit a ouvert, ramène la connexion d'Antigravity dans le kit et permet d'éjecter la clé |
 
-La console du kit est la console classique de Windows avec le PowerShell 7 du kit et seulement l'environnement du kit : les programmes installés sur le PC ne sont pas visibles.
+La console du kit est le Windows Terminal portable du kit (ou, dans les Paramètres, la console classique de Windows) avec le PowerShell 7 du kit et seulement l'environnement du kit : les programmes installés sur le PC ne sont pas visibles.
 
 ## Ce qui reste du Atollo
 

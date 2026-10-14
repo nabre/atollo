@@ -18,6 +18,7 @@ Coprono, fra l'altro:
 - editor e server web reale (con il token e senza);
 - finestre dell'editor che non possono chiamare i comandi dell'app;
 - una console reale in `conhost.exe`, in una cartella con spazi;
+- due finestre reali di Windows Terminal del kit (la seconda passa al terminale già aperto) in una cartella con spazio e `;`: l'ambiente del kit arriva e l'app vede la fine (con `ATOLLO_TEST_KIT`);
 - allineamento degli agenti e accesso di Antigravity con Gestione credenziali reale;
 - rilevamento dei progetti su esempi (Node, Next, Tauri, Electron, PHP, Laravel, Django, FastAPI, Flask, Streamlit, Rust, statico, progetti composti, `panel.json` e `pannello.json`);
 - porte ricordate e bloccate, avvio e arresto di un'azione attraverso il suo job;
@@ -52,7 +53,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Utente standard** senza diritti di amministratore: nessuna richiesta UAC in nessun passo.
 - [ ] **Proxy autenticato e ispezione SSL.** Impostazioni › Rete con proxy e file PEM: installazione, estensioni dell'editor e agenti funzionano.
 - [ ] **Senza rete.** L'app e l'editor partono, gli errori di download si leggono, il controllo degli aggiornamenti fallisce senza bloccare nulla.
-- [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, console del kit (`conhost.exe`, `pwsh.exe`) o server di progetto.
+- [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, console del kit (`WindowsTerminal.exe`, `conhost.exe`, `pwsh.exe`) o server di progetto.
 - [ ] **ARM64.** L'exe è nativo, l'editor gira in emulazione e l'avviso si vede.
 
 ### Progetti
@@ -68,7 +69,8 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 
 ### Agenti
 - [ ] **Claude Code, Codex e Antigravity.** Accesso, avvio dall'app e dall'editor, allineamento di istruzioni e skill fra i tre.
-- [ ] **Console di un agente.** Agenti › Apri su Claude Code: si apre una console classica di Windows (non Windows Terminal, anche se è il terminale predefinito del PC). Claude Code riceve Invio, frecce e Ctrl+C. Chiudendo la console non resta nessun `claude.exe`.
+- [ ] **Console di un agente.** Agenti › Apri su Claude Code: si apre Windows Terminal del kit (non quello del PC); con «Console classica di Windows» nelle Impostazioni, la console classica (non Windows Terminal, anche se è il terminale predefinito del PC). Claude Code riceve Invio, frecce e Ctrl+C. Chiudendo la console non resta nessun `claude.exe`.
+- [ ] **Windows Terminal del kit.** Con Windows Terminal già aperto da un'altra console del kit, Home › Terminale apre una nuova finestra con il profilo «Atollo» e `$env:CP_ROOT` del kit; «Chiudi tutto» la chiude. Senza il componente `terminal`, o con «Console classica di Windows», si apre la console classica.
 - [ ] **Git con GitHub CLI.** Su un kit senza Git, all'avvio Git si installa con i componenti di sistema; in «Linguaggi e strumenti» è spuntato, non modificabile, con l'etichetta «per GitHub CLI».
 - [ ] **Editor aggiornato con una cartella aperta.** Con Esplora file aperto su `data\apps\win32-x64\vscodium-server\extensions`, l'editor di un'altra versione viene comunque sostituito all'avvio (D-60).
 
@@ -80,7 +82,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 ### Linguaggi e strumenti
 - [ ] **Loghi.** Ogni componente ha il suo logo, leggibile nel tema chiaro e in quello scuro; i progetti mostrano le etichette dei linguaggi.
 - [ ] **Dipendenze.** Apache mostra la dipendenza «PHP»; con Claude Code scelto, Git mostra «per Claude Code». Togliendo PHP si toglie anche Apache.
-- [ ] **PATH dopo un'installazione.** Dopo l'installazione di un linguaggio da questa pagina, Home › Terminale apre la console classica con PowerShell 7 del kit e il programma nuovo è nel PATH, senza riavviare l'app.
+- [ ] **PATH dopo un'installazione.** Dopo l'installazione di un linguaggio da questa pagina, Home › Terminale apre Windows Terminal del kit con PowerShell 7 del kit e il programma nuovo è nel PATH, senza riavviare l'app.
 
 ### Impostazioni
 - [ ] **Lingua.** Passando a English, Français e Deutsch, tutta l'interfaccia cambia subito. Con «Lingua di Windows» vale quella del sistema.

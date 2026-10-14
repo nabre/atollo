@@ -45,6 +45,7 @@ mod stats;
 mod terminal;
 mod verify;
 mod webview;
+mod wterm;
 
 use std::path::Path;
 

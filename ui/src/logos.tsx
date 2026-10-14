@@ -2,7 +2,8 @@
 // the languages found in a project, from Simple Icons (react-icons/si) with
 // each brand's colour. A brand drawn in black or white takes the text colour,
 // so it reads in both themes. Where Simple Icons has no logo (PowerShell,
-// OpenAI, Antigravity) the closest icon of another set stands in.
+// Windows Terminal, OpenAI, Antigravity) the closest icon of another set
+// stands in.
 import type { IconType } from "react-icons";
 import { RiOpenaiFill } from "react-icons/ri";
 import {
@@ -42,7 +43,7 @@ import {
   SiVuedotjs,
   SiZig,
 } from "react-icons/si";
-import { VscSparkle, VscTerminalPowershell } from "react-icons/vsc";
+import { VscSparkle, VscTerminal, VscTerminalPowershell } from "react-icons/vsc";
 
 interface Logo {
   icon: IconType;
@@ -67,6 +68,7 @@ const C: Logo = { icon: SiC, color: "#A8B9CC" };
 const COMPONENTS: Record<string, Logo> = {
   gh: { icon: SiGithub },
   pwsh: { icon: VscTerminalPowershell, color: "#5391FE" },
+  terminal: { icon: VscTerminal },
   "vscodium-server": { icon: SiVscodium, color: "#2F80ED" },
   claude: { icon: SiClaude, color: "#D97757" },
   codex: { icon: RiOpenaiFill },

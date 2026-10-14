@@ -26,7 +26,7 @@ Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShel
 | **Einstellungen** | Sprache, Netzwerk (Proxy, Zertifikate, lokales Netz), Gemini-Schlüssel, Versionen von Python, PHP und Rust, Updates der App |
 | **Laufwerk entfernen** | schließt alles, was das Kit geöffnet hat, holt die Anmeldung von Antigravity ins Kit zurück und lässt den Stick auswerfen |
 
-Die Konsole des Kits ist die klassische Windows-Konsole mit der PowerShell 7 des Kits und nur der Umgebung des Kits: auf dem PC installierte Programme sind nicht sichtbar.
+Die Konsole des Kits ist das portable Windows Terminal des Kits (oder, in den Einstellungen, die klassische Windows-Konsole) mit der PowerShell 7 des Kits und nur der Umgebung des Kits: auf dem PC installierte Programme sind nicht sichtbar.
 
 ## Was vom Atollo bleibt
 

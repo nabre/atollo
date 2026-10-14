@@ -38,10 +38,11 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `cc` | C, C++ (llvm-mingw) | no | 720 | | |
 | | `ruby` | Ruby | no | 270 | | |
 | | `r` | R (conda-forge) | no | 1100 | | solo x64: non disponibile sui kit ARM64 (`noArm64`) |
+| | `terminal` | Windows Terminal | sì | 45 | `pwsh` | **nuovo**; il terminale del kit per le console fuori dall'editor (DECISIONS.md D-68); la console classica di Windows resta nelle Impostazioni |
 
-I gruppi, i predefiniti e le dimensioni sono quelli di `components.json`. Proposta del primo avvio: obbligatori, editor, tre agenti, Python, PHP, Apache, più Git che arriva con GitHub CLI (e con Claude Code): circa 1,8 GB (1845 MB, di cui 250 dell'editor).
+I gruppi, i predefiniti e le dimensioni sono quelli di `components.json`. Proposta del primo avvio: obbligatori, editor, tre agenti, Python, PHP, Apache, più Git che arriva con GitHub CLI (e con Claude Code): più Windows Terminal: circa 1,9 GB (1890 MB, di cui 250 dell'editor).
 
-Tolti dal catalogo il 14/10/2026: Windows Terminal (`terminal`), perché le console sono la console classica di Windows (DECISIONS.md D-57), e VSCodium desktop (`vscodium`), perché l'editor è integrato. Il componente `conpty` proposto in D-47 non è stato aggiunto.
+Tolti dal catalogo il 14/10/2026: Windows Terminal (`terminal`), perché le console erano la console classica di Windows (DECISIONS.md D-57), poi tornato lo stesso giorno come terminale predefinito delle console (D-68); VSCodium desktop (`vscodium`), perché l'editor è integrato. Il componente `conpty` proposto in D-47 non è stato aggiunto.
 
 Campi del catalogo oltre a quelli del Atollo: `keys` (le altre parti di un componente: Maven e Gradle di Java, Ninja di CMake, Composer di PHP, yarn di pnpm, `node.exe` dell'editor; installato solo se ci sono tutte), `x64Only` (build x64 anche su ARM64, in emulazione), `noArm64` (nessuna build per ARM64), `remove` (altri file posseduti; `tools\vcruntime` di PHP e Apache se ne va solo con l'ultimo dei due), `check` (comando della verifica finale), `version` e `sha256` (gruppo `app`).
 
@@ -64,6 +65,7 @@ Abbreviazioni:
 | gh | GHA `cli/cli` | `gh_<v>_windows_amd64.zip` / `_arm64.zip` | SHA-256 da `digest` | `gh.exe` → `A\tools\` | `tools/gh.exe` | `_prepare-core.ps1:307-335` |
 | vscodium-server | fissata nel catalogo (`version`, oggi 1.135.06055; D-58), mai l'ultima | `github.com/VSCodium/vscodium/releases/download/<v>/vscodium-reh-web-win32-x64-<v>.tar.gz`, solo x64 (anche su ARM64) | SHA-256 fissato nel catalogo (`sha256`, uguale a quello di VSCodium e al `digest` di GitHub) | tar.gz (radice: `bin\`, `node.exe`, `out\`, `extensions\`) → `A\vscodium-server\`; prima dello scambio si fermano i processi del vecchio editor | `vscodium-server/out/server-main.js` + `vscodium-server/node.exe` | nuovo |
 | pwsh | GHA `PowerShell/PowerShell`, `PowerShell-<v>-win-(x64\|arm64).zip` | nativo per entrambe | SHA-256 da `digest` | zip → `A\pwsh\` | `pwsh/pwsh.exe` | nuovo |
+| terminal | GHA `microsoft/terminal`, `Microsoft.WindowsTerminal_<v>_(x64\|arm64).zip` | nativo per entrambe | SHA-256 da `digest` | zip (unica cartella) → `A\terminal\` + `.portable` | `terminal/WindowsTerminal.exe` | nuovo (D-68) |
 | php | `windows.php.net/downloads/releases/releases.json`, ramo più recente (o scelto), build Thread Safe `ts-vs*-x64` (o `ts-vc*-x64`) | solo x64 (emulato su ARM64, con avviso) | SHA-256 di `releases.json` | zip; DLL VC++ accanto a `php.exe`; `cacert.pem` da curl.se con SHA-256 (se fallisce, solo avviso); `php.ini` creato una volta (§3); versione salvata insieme a quella di Composer | `php/php.exe` + `tools/composer.phar` | `_prepare-web.ps1:89-167` |
 | composer (parte di php) | `getcomposer.org/versions`, primo `stable` | `getcomposer.org<path>`, indipendente dall'architettura | SHA-256 da `<url>.sha256sum` | `A\tools\composer.phar` + `composer.cmd` (`@php "%~dp0composer.phar" %*`) e `composer` per Git Bash | `tools/composer.phar` | `_prepare-web.ps1:153-164` |
 | VC++ (per php, apache) | nessuna: estratto una volta in `A\tools\vcruntime\` e riusato finché c'è | `aka.ms/vc14/vc_redist.x64.exe` | Authenticode `O=Microsoft Corporation` obbligatorio, sull'exe e su `vcruntime140.dll` | CAB incorporati (firma `MSCF`) estratti con `expand.exe` di Windows, manifesto Burn, payload `vcRuntimeMinimum_amd64\cab1.cab`; `*.dll_amd64` → `*.dll` in `A\tools\vcruntime\` | `tools/vcruntime/vcruntime140.dll` | `_prepare-web.ps1:13-83` |
@@ -93,7 +95,7 @@ Abbreviazioni:
 
 ## 3. Regole trasversali
 
-- **Ordine**: quello di `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, rust, go, java (+maven, gradle), kotlin, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, pwsh, vscodium-server. Prima le rimozioni, poi le installazioni; configurazione Git e sito Apache sono passi finali di quei componenti. Da riga di comando, in fondo a `prepare`, la verifica finale di ciò che è stato installato. Estensioni dell'editor dopo l'avvio dell'editor; allineamento degli agenti all'avvio dell'app e intorno a ogni agente. (Nel Atollo: `Prepare-Atollo.ps1:250-285`.)
+- **Ordine**: quello di `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, rust, go, java (+maven, gradle), kotlin, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, pwsh, terminal, vscodium-server. Prima le rimozioni, poi le installazioni; configurazione Git e sito Apache sono passi finali di quei componenti. Da riga di comando, in fondo a `prepare`, la verifica finale di ciò che è stato installato. Estensioni dell'editor dopo l'avvio dell'editor; allineamento degli agenti all'avvio dell'app e intorno a ogni agente. (Nel Atollo: `Prepare-Atollo.ps1:250-285`.)
 - **Un errore non ferma gli altri**: ogni passo è isolato e finisce nel riepilogo; esito complessivo "con errori" se uno fallisce.
 - **Quando si installa**: file chiave o una parte di `keys` mancante, editor a una versione diversa da quella del rilascio (all'avvio dell'app, o in un `prepare` che lo comprende), oppure "Aggiorna tutto" (`--update-all`) / `--force`. `--only` installa o aggiorna i componenti elencati e ciò che serve loro e manca, obbligatori esclusi, senza rimuovere nulla; `--skip` salta anche ciò che ne dipende e non è ancora installato (mai gli obbligatori).
 - **Quando serve** (D-59): avvio di un agente, clone, azione di un progetto installano prima i componenti che servono e li segnano come scelti in `components.txt`.
@@ -117,7 +119,7 @@ Abbreviazioni:
 | --- | --- | --- |
 | VSCodium desktop obbligatorio | tolto | editor integrato |
 | Git, Node.js, uv obbligatori | installati quando servono (DECISIONS.md D-59) | obbligatori solo PowerShell 7 e GitHub CLI |
-| — | `pwsh` obbligatorio; `vscodium-server` parte dell'app con versione fissata (D-58) | terminale esclusivo del kit (console classica di Windows, D-57), editor integrato |
+| — | `pwsh` obbligatorio; `vscodium-server` parte dell'app con versione fissata (D-58) | terminale esclusivo del kit (Windows Terminal portabile, D-68, o la console classica di Windows, D-57), editor integrato |
 | Git: ripiego senza API (tag + Authenticode) | solo API di GitHub con `digest` | — |
 | Git SFX e TinyTeX SFX aprono la finestra di 7-Zip | estrazione 7z in Rust, nessuna finestra | interfaccia pulita |
 | Typst e TinyTeX non vengono rimossi quando si tolgono | rimossi | bug di `_prepare-migrate.ps1:128` |

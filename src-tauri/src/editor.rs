@@ -272,7 +272,7 @@ fn free_ports() -> impl Iterator<Item = u16> {
     PORTS.filter(|p| TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, *p)).is_ok())
 }
 
-fn random_token() -> Result<String> {
+pub fn random_token() -> Result<String> {
     let mut bytes = [0u8; 32];
     // SAFETY: the buffer is valid for its length; system RNG, no algorithm handle.
     unsafe { BCryptGenRandom(None, &mut bytes, BCRYPT_USE_SYSTEM_PREFERRED_RNG) }

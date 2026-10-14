@@ -523,6 +523,8 @@ export interface Settings {
   pythonVersion: string | null;
   phpVersion: string | null;
   rustToolchain: "gnu" | "msvc" | null;
+  /** `null` = the kit's Windows Terminal; `classic` = Windows' classic console. */
+  terminal: "classic" | null;
 }
 
 export interface SettingsView {
@@ -541,6 +543,7 @@ const SAMPLE_SETTINGS: SettingsView = {
     pythonVersion: null,
     phpVersion: null,
     rustToolchain: null,
+    terminal: null,
   },
   geminiKeySet: false,
   problem: null,
