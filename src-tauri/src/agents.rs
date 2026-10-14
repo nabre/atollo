@@ -175,11 +175,8 @@ pub fn launch<R: tauri::Runtime>(
     for w in &report.warnings {
         crate::log::warn(&format!("before {id}: {w}"));
     }
-    let title = Catalog::get()
-        .find(id)
-        .map_or_else(|| id.to_owned(), |c| c.name.clone());
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
-    crate::terminal::open_command(app, kit, env, dir, &title, &command, move || {
+    crate::terminal::open_command(app, kit, env, dir, &command, move || {
         let _ = crate::agents_sync::run(&after, Some(&after_dir));
     })
 }

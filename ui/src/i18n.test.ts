@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { CATALOGS } from "./i18n";
 
 const files = import.meta.glob<string>(
-  ["./**/*.ts", "./**/*.tsx", "!./**/*.test.ts", "!./**/*.test.tsx", "!./terminal.ts", "!./i18n.ts"],
+  ["./**/*.ts", "./**/*.tsx", "!./**/*.test.ts", "!./**/*.test.tsx", "!./i18n.ts"],
   { query: "?raw", import: "default", eager: true },
 );
 

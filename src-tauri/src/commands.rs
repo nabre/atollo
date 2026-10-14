@@ -9,7 +9,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde::Serialize;
-use tauri::ipc::{Channel, InvokeResponseBody};
 use tauri::{AppHandle, Emitter, Runtime, State, Webview};
 
 use crate::catalog::{Catalog, Choice, Group};
@@ -280,48 +279,6 @@ pub async fn terminal_open<R: Runtime>(
     })
     .await
     .map_err(|e| fail("terminal", e))?
-}
-
-/// The session of a console window: its own label only (D-14).
-fn terminal_label<R: Runtime>(webview: &Webview<R>) -> Result<&str, String> {
-    let label = webview.label();
-    if label.starts_with(terminal::LABEL_PREFIX) {
-        Ok(label)
-    } else {
-        Err("forbidden".into())
-    }
-}
-
-/// A console window connects to its process: past and new output on
-/// `output` (bytes), the exit code on `exit`. Returns the title.
-#[tauri::command]
-pub fn terminal_attach<R: Runtime>(
-    webview: Webview<R>,
-    terminals: State<'_, terminal::Terminals>,
-    output: Channel<InvokeResponseBody>,
-    exit: Channel<u32>,
-) -> Result<String, String> {
-    terminals.attach(terminal_label(&webview)?, output, exit)
-}
-
-/// Keys and pasted text of a console window, to its process.
-#[tauri::command]
-pub fn terminal_input<R: Runtime>(
-    webview: Webview<R>,
-    terminals: State<'_, terminal::Terminals>,
-    data: String,
-) -> Result<(), String> {
-    terminals.input(terminal_label(&webview)?, data.as_bytes())
-}
-
-#[tauri::command]
-pub fn terminal_resize<R: Runtime>(
-    webview: Webview<R>,
-    terminals: State<'_, terminal::Terminals>,
-    cols: u16,
-    rows: u16,
-) -> Result<(), String> {
-    terminals.resize(terminal_label(&webview)?, cols, rows)
 }
 
 #[tauri::command]
@@ -925,11 +882,7 @@ pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
     OpenNow {
         processes: crate::sessions::foreign_processes(&state.kit),
         editor: state.editor.status().running,
-        terminals: app
-            .webview_windows()
-            .keys()
-            .filter(|l| l.starts_with(terminal::LABEL_PREFIX))
-            .count(),
+        terminals: app.state::<terminal::Consoles>().count(),
         actions,
         setup: state.setup.snapshot().running,
     }
@@ -958,12 +911,11 @@ pub async fn eject_run<R: Runtime>(
         r.stop_all();
     }
     for (label, window) in app.webview_windows() {
-        if label.starts_with(terminal::LABEL_PREFIX)
-            || label.starts_with(editor_window::LABEL_PREFIX)
-        {
+        if label.starts_with(editor_window::LABEL_PREFIX) {
             let _ = window.destroy();
         }
     }
+    let consoles = app.state::<terminal::Consoles>().pids();
     let (kit, editor, setup) = (
         state.kit.clone(),
         Arc::clone(&state.editor),
@@ -972,6 +924,7 @@ pub async fn eject_run<R: Runtime>(
     let handle = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         editor.stop();
+        crate::sessions::stop(&consoles);
         let pids: Vec<u32> = crate::sessions::kit_processes(&kit)
             .iter()
             .map(|p| p.pid)
@@ -1047,9 +1000,6 @@ macro_rules! command_handler {
             $crate::commands::editor_restart,
             $crate::commands::projects_list,
             $crate::commands::terminal_open,
-            $crate::commands::terminal_attach,
-            $crate::commands::terminal_input,
-            $crate::commands::terminal_resize,
             $crate::commands::components_list,
             $crate::commands::setup_state,
             $crate::commands::setup_start,

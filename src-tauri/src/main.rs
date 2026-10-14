@@ -397,16 +397,10 @@ fn build_app<R: tauri::Runtime>(
 ) -> tauri::Builder<R> {
     builder
         .manage(state)
-        .manage(terminal::Terminals::default())
+        .manage(terminal::Consoles::default())
         .manage(commands::Quitting::default())
         .invoke_handler(command_handler!())
         .on_window_event(|window, event| {
-            // A console window closing ends its process.
-            if window.label().starts_with(terminal::LABEL_PREFIX)
-                && matches!(event, tauri::WindowEvent::Destroyed)
-            {
-                window.state::<terminal::Terminals>().close(window.label());
-            }
             if window.label().starts_with(editor_window::LABEL_PREFIX)
                 && matches!(
                     event,
@@ -560,60 +554,6 @@ mod tests {
             },
         )
         .map(|b| b.deserialize::<serde_json::Value>().unwrap())
-    }
-
-    fn invoke_cmd(
-        webview: &tauri::WebviewWindow<tauri::test::MockRuntime>,
-        cmd: &str,
-        body: serde_json::Value,
-    ) -> Result<serde_json::Value, serde_json::Value> {
-        get_ipc_response(
-            webview,
-            InvokeRequest {
-                cmd: cmd.into(),
-                callback: tauri::ipc::CallbackFn(0),
-                error: tauri::ipc::CallbackFn(1),
-                url: "http://tauri.localhost".parse().unwrap(),
-                body: tauri::ipc::InvokeBody::Json(body),
-                headers: Default::default(),
-                invoke_key: INVOKE_KEY.to_string(),
-            },
-        )
-        .map(|b| b.deserialize::<serde_json::Value>().unwrap())
-    }
-
-    /// DECISIONS.md D-13, D-14: a console window reaches only the console
-    /// commands, for its own label; other windows cannot use them.
-    #[test]
-    fn console_windows_reach_only_their_session() {
-        let app = mock_builder()
-            .manage(state())
-            .manage(terminal::Terminals::default())
-            .invoke_handler(command_handler!())
-            .build(tauri::generate_context!())
-            .unwrap();
-        let window = |label: &str| {
-            WebviewWindowBuilder::new(&app, label, WebviewUrl::App("terminal.html".into()))
-                .data_directory(std::env::temp_dir().join("atollo-ipc-test-webview"))
-                .build()
-                .unwrap()
-        };
-        let size = serde_json::json!({ "cols": 80, "rows": 24 });
-        let console = window("terminal-1");
-        assert!(invoke_cmd(&console, "app_info", serde_json::json!({})).is_err());
-        // Allowed, but no session with that label exists.
-        let r = invoke_cmd(&console, "terminal_resize", size.clone());
-        assert!(
-            r.as_ref()
-                .unwrap_err()
-                .to_string()
-                .contains("no terminal: terminal-1"),
-            "{r:?}"
-        );
-        let main = window(MAIN);
-        assert!(invoke_cmd(&main, "terminal_resize", size.clone()).is_err());
-        let editor = window("editor-9");
-        assert!(invoke_cmd(&editor, "terminal_resize", size).is_err());
     }
 
     #[test]

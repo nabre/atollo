@@ -113,7 +113,7 @@ impl KitEnv {
         self.vars.iter().map(|(k, v)| (k.as_str(), v.as_str()))
     }
 
-    fn set(&mut self, name: &str, value: impl Into<String>) {
+    pub(crate) fn set(&mut self, name: &str, value: impl Into<String>) {
         self.vars.retain(|k, _| !k.eq_ignore_ascii_case(name));
         self.vars.insert(name.to_owned(), value.into());
     }

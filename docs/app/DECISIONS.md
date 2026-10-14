@@ -351,3 +351,11 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
   - dialogo di chiusura con `role="alertdialog"`, focus su «Annulla» ed Esc;
   - nessuna animazione con «riduci animazioni»;
   - rosso degli errori del tema chiaro portato a un contrasto di almeno 4,5:1.
+
+## D-57 Console classica di Windows al posto di xterm.js
+
+- **Scelta dell'utente** (14/10/2026): via la libreria del terminale «web» (xterm.js) dalle console dell'app; tutto ciò che il kit fa usa solo strumenti del kit o componenti di Windows, mai programmi del PC. Sostituisce D-44, D-45 e D-46; chiude D-47.
+- **Come.** `terminal.rs`: la PowerShell del kit, o un agente, parte in `conhost.exe` di System32 avviato direttamente, con il solo ambiente del kit e dentro il job dell'app. Avviata così, la console resta nella finestra classica e Windows non la passa al terminale predefinito del PC (Windows Terminal o altri): verificato su Windows 11 (`ConsoleWindowClass`, nessun `WindowsTerminal.exe`).
+- **Senza maniglie standard.** conhost che riceve stdin/stdout fa da pseudo console e scrive la console come testo VT su quelle maniglie, senza finestra. `std::process::Command` le passa sempre (`STARTF_USESTDHANDLES`), quindi `jobs::spawn_console` usa `CreateProcessW` senza maniglie, sospeso, assegnato al job e poi ripreso.
+- **Tolti.** `portable-pty`, `@xterm/xterm`, `@xterm/addon-fit`, `terminal.html`, la capability `terminal` e i comandi `terminal_attach`, `terminal_input`, `terminal_resize`. Le finestre dell'app sono di nuovo solo `main` ed `editor-*`.
+- **Conseguenze.** Claude Code gira in una console normale di Windows, senza la pseudo console di D-47: i tasti dovrebbero arrivare, da provare a mano con l'app. «Chiudi tutto», la conferma alla chiusura e «Rimuovi l'unità» contano e chiudono le console dai processi `conhost.exe` avviati dall'app. Il titolo della finestra lo decide il programma. Il porting su macOS e Linux dovrà scegliere il terminale di quei sistemi.

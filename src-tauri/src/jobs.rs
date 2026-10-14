@@ -7,13 +7,14 @@
 //! however it ends) and `BREAKAWAY_OK`, used only for programs that must stay
 //! open after the app (the system browser, File Explorer).
 
+use std::os::windows::ffi::OsStrExt;
 use std::os::windows::io::AsRawHandle;
 use std::os::windows::process::CommandExt;
 use std::process::{Child, Command};
 use std::sync::OnceLock;
 
 use anyhow::{Context, Result};
-use windows::core::PCWSTR;
+use windows::core::{PCWSTR, PWSTR};
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Thread32First, Thread32Next, TH32CS_SNAPTHREAD, THREADENTRY32,
@@ -24,9 +25,10 @@ use windows::Win32::System::JobObjects::{
     JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 };
 use windows::Win32::System::Threading::{
-    GetCurrentProcess, OpenProcess, OpenThread, ResumeThread, CREATE_BREAKAWAY_FROM_JOB,
-    CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW, CREATE_SUSPENDED, PROCESS_SET_QUOTA,
-    PROCESS_TERMINATE, THREAD_SUSPEND_RESUME,
+    CreateProcessW, GetCurrentProcess, OpenThread, ResumeThread, TerminateProcess,
+    WaitForSingleObject, CREATE_BREAKAWAY_FROM_JOB, CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW,
+    CREATE_SUSPENDED, CREATE_UNICODE_ENVIRONMENT, INFINITE, PROCESS_INFORMATION, STARTUPINFOW,
+    THREAD_SUSPEND_RESUME,
 };
 
 use crate::env::KitEnv;
@@ -152,21 +154,125 @@ pub fn spawn(cmd: &mut Command) -> Result<Child> {
     Ok(child)
 }
 
-/// Puts a process started elsewhere (the pseudo console) in the app's job,
-/// when the app is not in it itself: its first children may escape, a
-/// limit of that rare case.
-pub fn assign_pid(pid: u32) -> Result<()> {
-    let Some(app) = APP_JOB.get().filter(|j| !j.self_assigned) else {
-        return Ok(());
-    };
-    // SAFETY: the handle is used for the assignment only, then closed.
-    unsafe {
-        let process = OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, false, pid)
-            .context("OpenProcess")?;
-        let result = AssignProcessToJobObject(app.job.handle, process);
-        let _ = CloseHandle(process);
-        result.context("AssignProcessToJobObject(pid)")
+/// A process started by [`spawn_console`]; the handle closes on drop.
+pub struct Console {
+    process: HANDLE,
+    pid: u32,
+}
+
+// SAFETY: a process handle is a kernel handle usable from any thread.
+unsafe impl Send for Console {}
+
+impl Console {
+    pub fn id(&self) -> u32 {
+        self.pid
     }
+
+    /// Waits until the process ends.
+    pub fn wait(&self) {
+        // SAFETY: the handle is valid until drop.
+        let _ = unsafe { WaitForSingleObject(self.process, INFINITE) };
+    }
+}
+
+impl Drop for Console {
+    fn drop(&mut self) {
+        // SAFETY: returned by CreateProcessW, closed once.
+        let _ = unsafe { CloseHandle(self.process) };
+    }
+}
+
+/// One argument of a Windows command line. No argument here contains a
+/// double quote (paths cannot): only spaces need quotes.
+fn quote(arg: &str) -> String {
+    if !arg.is_empty() && !arg.contains([' ', '\t']) {
+        return arg.to_owned();
+    }
+    // Backslashes before the closing quote are doubled.
+    let tail = arg.len() - arg.trim_end_matches('\\').len();
+    format!("\"{arg}{}\"", "\\".repeat(tail))
+}
+
+/// Starts `program` with `args`, the kit environment only, in `dir`, inside
+/// the app's job, without standard handles. A console host (`conhost.exe`)
+/// given standard handles writes the console to them as VT text instead of
+/// showing its window, and `std::process::Command` always passes them.
+pub fn spawn_console(
+    program: &std::path::Path,
+    args: &[String],
+    env: &KitEnv,
+    dir: &std::path::Path,
+) -> Result<Console> {
+    anyhow::ensure!(
+        args.iter().all(|a| !a.contains('"')),
+        "double quote in an argument"
+    );
+    let wide = |s: &std::ffi::OsStr| -> Vec<u16> { s.encode_wide().chain([0]).collect() };
+    let mut line: Vec<u16> = std::iter::once(quote(&program.display().to_string()))
+        .chain(args.iter().map(|a| quote(a)))
+        .collect::<Vec<_>>()
+        .join(" ")
+        .encode_utf16()
+        .chain([0])
+        .collect();
+    let mut vars: Vec<(&str, &str)> = env.iter().collect();
+    vars.sort_by_key(|(k, _)| k.to_uppercase());
+    let mut block: Vec<u16> = vars
+        .iter()
+        .flat_map(|(k, v)| {
+            format!("{k}={v}")
+                .encode_utf16()
+                .chain([0])
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    if block.is_empty() {
+        block.push(0);
+    }
+    block.push(0);
+    let (program, dir) = (wide(program.as_os_str()), wide(dir.as_os_str()));
+    let startup = STARTUPINFOW {
+        cb: size_of::<STARTUPINFOW>() as u32,
+        ..Default::default()
+    };
+    let mut info = PROCESS_INFORMATION::default();
+    // SAFETY: every buffer is NUL-terminated and outlives the call; the
+    // command line is writable, as CreateProcessW requires.
+    unsafe {
+        CreateProcessW(
+            PCWSTR(program.as_ptr()),
+            Some(PWSTR(line.as_mut_ptr())),
+            None,
+            None,
+            false,
+            CREATE_UNICODE_ENVIRONMENT | CREATE_SUSPENDED,
+            Some(block.as_ptr().cast()),
+            PCWSTR(dir.as_ptr()),
+            &startup,
+            &mut info,
+        )
+    }
+    .context("CreateProcessW")?;
+    let console = Console {
+        process: info.hProcess,
+        pid: info.dwProcessId,
+    };
+    let assigned = match APP_JOB.get().filter(|j| !j.self_assigned) {
+        // SAFETY: the process handle is valid (owned by `console`).
+        Some(app) => unsafe { AssignProcessToJobObject(app.job.handle, info.hProcess) }
+            .context("AssignProcessToJobObject"),
+        None => Ok(()),
+    };
+    // SAFETY: the main thread handle of the new process, closed once here.
+    unsafe {
+        if assigned.is_ok() {
+            ResumeThread(info.hThread);
+        } else {
+            let _ = TerminateProcess(info.hProcess, 1);
+        }
+        let _ = CloseHandle(info.hThread);
+    }
+    assigned.map(|()| console)
 }
 
 /// Starts a program in `job` (a job of its own, nested in the app's): it is
