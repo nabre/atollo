@@ -1,6 +1,6 @@
 # Atollo App: piano (fase 0, revisione 3)
 
-Stato: **approvato** (14/10/2026). Fasi 1 e 2 completate; prossima: fase 3 (editor e terminale).
+Stato: **approvato** (14/10/2026). Fasi 1, 2 e 3 completate; prossima: fase 4 (tutti i componenti, pagine Componenti e Primo avvio).
 Base letta: `nabre/atollo` al commit `a61a354` (main, 13/10/2026).
 Scelte non ovvie: [DECISIONS.md](DECISIONS.md). Domande aperte: §11.
 

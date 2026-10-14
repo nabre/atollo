@@ -196,6 +196,24 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
     })
 }
 
+/// The first folder of `path` whose name breaks VSCodium's file watcher, if
+/// any. VSCodium passes absolute Windows paths (`<kit>\data\vscodium-server\
+/// extensions/**`) to `@parcel/watcher` as glob excludes, which become
+/// regular expressions: after a backslash, a digit is a back reference and
+/// `x`/`u` start hex escapes, so `D:\2026\kit` fails with `regex_error` and
+/// changes made outside the editor are no longer noticed (verified with
+/// VSCodium 1.140, DECISIONS.md D-33). Parentheses, spaces and `&` are fine.
+pub fn watcher_unsafe_folder(path: &Path) -> Option<String> {
+    path.components().find_map(|c| match c {
+        std::path::Component::Normal(name) => {
+            let name = name.to_string_lossy();
+            let first = name.chars().next()?;
+            (first.is_ascii_digit() || first == 'x' || first == 'u').then(|| name.into_owned())
+        }
+        _ => None,
+    })
+}
+
 /// Why a project name is not accepted (rules of nabre/atollo
 /// `core/projects.js:37-44`).
 #[allow(dead_code, reason = "first caller in phase 6 (new project)")]
@@ -333,6 +351,31 @@ pub(crate) mod tests {
 
         let entries: Vec<_> = fs::read_dir(&tmp.0).unwrap().collect();
         assert_eq!(entries.len(), 1, "nothing created next to the kit");
+    }
+
+    #[test]
+    fn folders_that_break_the_editor_watcher() {
+        assert_eq!(watcher_unsafe_folder(Path::new(r"E:\Atollo")), None);
+        assert_eq!(
+            watcher_unsafe_folder(Path::new(r"E:\Atollo (1) & co")),
+            None
+        );
+        assert_eq!(
+            watcher_unsafe_folder(Path::new(r"C:\Users\Mario\code\kit")),
+            None
+        );
+        assert_eq!(
+            watcher_unsafe_folder(Path::new(r"D:\2026\kit")).as_deref(),
+            Some("2026")
+        );
+        assert_eq!(
+            watcher_unsafe_folder(Path::new(r"D:\x-kit")).as_deref(),
+            Some("x-kit")
+        );
+        assert_eq!(
+            watcher_unsafe_folder(Path::new(r"C:\users\a")).as_deref(),
+            Some("users")
+        );
     }
 
     #[test]

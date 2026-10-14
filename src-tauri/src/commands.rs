@@ -13,12 +13,13 @@ use std::time::UNIX_EPOCH;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Runtime, State, Webview};
 
-use crate::catalog::{Catalog, Group};
+use crate::catalog::{Catalog, Choice, Group};
 use crate::editor::{self, Editor};
 use crate::env::KitEnv;
 use crate::kit::{validate_project_name, Kit};
-use crate::setup_runner::{self, Event, Outcome};
-use crate::{editor_window, terminal};
+use crate::setup_runner::Options;
+use crate::setup_task::{self, Notify, SetupTask, Snapshot};
+use crate::{editor_window, install, terminal};
 
 /// Label of the app window; the only one allowed to call commands.
 pub const MAIN: &str = "main";
@@ -45,6 +46,8 @@ pub struct AppInfo {
     pub moved_from: Option<String>,
     pub webview: String,
     pub path_entries: usize,
+    /// A folder of the kit path that stops the editor noticing outside changes.
+    pub watcher_unsafe_folder: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -99,56 +102,47 @@ fn project_dir(kit: &Kit, project: Option<&str>) -> Result<PathBuf, String> {
     }
 }
 
-/// Forwards installer progress to the app window (`setup-event`).
-struct EmitSink<R: Runtime>(AppHandle<R>);
-
-impl<R: Runtime> setup_runner::Sink for EmitSink<R> {
-    fn emit(&mut self, event: Event) {
-        let _ = self.0.emit_to(MAIN, "setup-event", event);
-    }
-}
-
 /// Installs the required components that are missing (PowerShell 7, Git,
-/// Node.js, the editor...): the editor and the consoles never fall back to
-/// the shells of the PC. Blocking: call it off the UI thread.
-fn ensure_required<R: Runtime>(app: &AppHandle<R>, kit: &Kit, env: &KitEnv) -> anyhow::Result<()> {
-    let missing: Vec<String> = Catalog::get()
-        .all()
-        .iter()
-        .filter(|c| c.group == Group::Required && !c.is_installed(kit))
-        .map(|c| c.id.clone())
-        .collect();
+/// Node.js, the editor...) with the app's preparation task and waits for it:
+/// the editor and the consoles never fall back to the shells of the PC.
+/// Progress reaches the window as `setup` events. Blocking: call it off the
+/// UI thread.
+fn ensure_required<R: Runtime>(
+    app: &AppHandle<R>,
+    task: &Arc<SetupTask>,
+    kit: &Kit,
+) -> Result<(), String> {
+    let missing = setup_task::missing_required(kit);
     if missing.is_empty() {
         return Ok(());
     }
-    crate::log::info(&format!(
-        "installing missing required components: {missing:?}"
-    ));
-    let settings = crate::settings::Settings::load(kit).settings;
-    let net = crate::net::Net::new(&settings, None)?;
-    let cancel = std::sync::atomic::AtomicBool::new(false);
-    let ctx = crate::install::Ctx {
-        kit,
-        net: &net,
-        env,
-        cancel: &cancel,
-    };
-    let opts = setup_runner::Options {
-        only: missing,
-        ..Default::default()
-    };
-    let results = setup_runner::run(&ctx, &opts, &mut EmitSink(app.clone()))?;
-    let failed: Vec<String> = results
-        .iter()
-        .filter(|(_, o)| o.is_failure() || matches!(o, Outcome::Unsupported | Outcome::Cancelled))
-        .map(|(id, o)| format!("{id}: {o:?}"))
-        .collect();
-    anyhow::ensure!(
-        failed.is_empty(),
-        "componenti obbligatori non installati: {}",
-        failed.join("; ")
-    );
-    Ok(())
+    if !task.snapshot().running {
+        crate::log::info(&format!(
+            "installing missing required components: {missing:?}"
+        ));
+        let opts = Options {
+            only: missing,
+            ..Options::default()
+        };
+        // Refused only if a run started meanwhile: then that one is awaited.
+        let _ = task.start(opts, true, setup_notify(app.clone()));
+    }
+    while task.snapshot().running {
+        std::thread::sleep(std::time::Duration::from_millis(300));
+    }
+    let still = setup_task::missing_required(kit);
+    if still.is_empty() {
+        return Ok(());
+    }
+    let why = task
+        .snapshot()
+        .error
+        .map(|e| format!(" ({e})"))
+        .unwrap_or_default();
+    Err(format!(
+        "Componenti del kit non installati: {}{why}. Riprova da Linguaggi e strumenti.",
+        still.join(", ")
+    ))
 }
 
 #[tauri::command]
@@ -168,6 +162,7 @@ pub fn app_info<R: Runtime>(
         moved_from: state.moved_from.clone(),
         webview: state.webview.clone(),
         path_entries: state.env.path_entries().len(),
+        watcher_unsafe_folder: crate::kit::watcher_unsafe_folder(kit.root()),
     })
 }
 
@@ -193,14 +188,15 @@ pub async fn editor_open<R: Runtime>(
     let dir = project_dir(&state.kit, project.as_deref())?;
     let title = project.clone().unwrap_or_else(|| "projects".into());
     let editor = Arc::clone(&state.editor);
-    let (handle, kit, env) = (app.clone(), state.kit.clone(), state.env.clone());
+    let (handle, task, kit) = (app.clone(), Arc::clone(&state.setup), state.kit.clone());
     let (port, token) = tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&handle, &kit, &env)?;
-        editor.ensure_running()
+        ensure_required(&handle, &task, &kit)?;
+        editor
+            .ensure_running()
+            .map_err(|e| fail("editor start", format!("{e:#}")))
     })
     .await
-    .map_err(|e| fail("editor", e))?
-    .map_err(|e| fail("editor start", format!("{e:#}")))?;
+    .map_err(|e| fail("editor", e))??;
     let _ = app.emit_to(MAIN, "editor-status", state.editor.status());
     let url = editor::url(port, &token, Some(&dir));
     editor_window::open(&app, &url, port, &title, &state.kit.webview_data())
@@ -267,14 +263,17 @@ pub async fn terminal_open<R: Runtime>(
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, project.as_deref())?;
-    let (kit, env) = (state.kit.clone(), state.env.clone());
+    let (task, kit, env) = (
+        Arc::clone(&state.setup),
+        state.kit.clone(),
+        state.env.clone(),
+    );
     tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&app, &kit, &env)?;
-        terminal::open_console(&kit, &env, &dir)
+        ensure_required(&app, &task, &kit)?;
+        terminal::open_console(&kit, &env, &dir).map_err(|e| fail("terminal", format!("{e:#}")))
     })
     .await
     .map_err(|e| fail("terminal", e))?
-    .map_err(|e| fail("terminal", format!("{e:#}")))
 }
 
 #[tauri::command]

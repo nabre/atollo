@@ -14,9 +14,12 @@ import {
   VscCheck,
   VscRemote,
   VscCode,
+  VscLoading,
 } from "react-icons/vsc";
 import { appInfo, browserPreview, editorStatus, type AppInfo, type EditorStatus } from "./api";
 import { HomeActions, ProjectsPage } from "./pages";
+import { SetupProgress, setupStatusText, useSetup } from "./setup";
+import type { SetupSnapshot } from "./api";
 
 type PageId = "home" | "projects" | "agents" | "components" | "settings" | "eject";
 
@@ -42,6 +45,7 @@ export function App() {
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorStatus | null>(null);
+  const setup = useSetup();
 
   const refreshEditor = useCallback(() => {
     editorStatus().then(setEditor, () => {
@@ -81,7 +85,7 @@ export function App() {
           </header>
           <div className="min-h-0 flex-1 overflow-auto p-5">
             {page === "home" ? (
-              <Home info={info} error={error} editor={editor} onChanged={refreshEditor} />
+              <Home info={info} error={error} editor={editor} setup={setup} onChanged={refreshEditor} />
             ) : page === "projects" ? (
               <ProjectsPage status={editor} onChanged={refreshEditor} />
             ) : (
@@ -90,7 +94,7 @@ export function App() {
           </div>
         </main>
       </div>
-      <StatusBar info={info} editor={editor} />
+      <StatusBar info={info} editor={editor} setup={setup} />
     </div>
   );
 }
@@ -129,11 +133,13 @@ function Home({
   info,
   error,
   editor,
+  setup,
   onChanged,
 }: {
   info: AppInfo | null;
   error: string | null;
   editor: EditorStatus | null;
+  setup: SetupSnapshot | null;
   onChanged: () => void;
 }) {
   if (error) {
@@ -157,7 +163,15 @@ function Home({
           Atollo è pronto. Tutto ciò che scarica e salva resta in questa cartella.
         </Notice>
       )}
-      <HomeActions status={editor} onChanged={onChanged} />
+      {info.watcherUnsafeFolder && (
+        <Notice icon={VscWarning} tone="warning">
+          La cartella «{info.watcherUnsafeFolder}» nel percorso del kit impedisce all'editor di accorgersi dei file
+          cambiati fuori dall'editor (per esempio dagli agenti): rinominala in modo che non inizi con una cifra, «x» o
+          «u», oppure sposta il kit.
+        </Notice>
+      )}
+      <HomeActions status={editor} setupRunning={setup?.running ?? false} onChanged={onChanged} />
+      {setup && setup.steps.length > 0 && <SetupProgress snapshot={setup} />}
       <section aria-labelledby="where" className="rounded border border-vsc-border bg-vsc-sidebar">
         <h2 id="where" className="border-b border-vsc-border px-4 py-2 text-[13px] font-semibold">
           Dove si trova il kit
@@ -205,7 +219,16 @@ function Placeholder() {
   return <p className="text-vsc-desc">Questa pagina arriva nelle prossime fasi.</p>;
 }
 
-function StatusBar({ info, editor }: { info: AppInfo | null; editor: EditorStatus | null }) {
+function StatusBar({
+  info,
+  editor,
+  setup,
+}: {
+  info: AppInfo | null;
+  editor: EditorStatus | null;
+  setup: SetupSnapshot | null;
+}) {
+  const installing = setupStatusText(setup);
   return (
     <footer
       aria-label="Barra di stato"
@@ -222,6 +245,12 @@ function StatusBar({ info, editor }: { info: AppInfo | null; editor: EditorStatu
             <span className="flex items-center gap-1" title={`Server dell'editor su 127.0.0.1:${String(editor.port)}`}>
               <VscCode size={14} aria-hidden="true" />
               Editor attivo
+            </span>
+          )}
+          {installing && (
+            <span className="flex items-center gap-1" role="status">
+              <VscLoading size={14} aria-hidden="true" className="animate-spin" />
+              {installing}
             </span>
           )}
           <span className="ml-auto">v{info.version}</span>
