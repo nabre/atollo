@@ -92,7 +92,7 @@ export function relative(ms: number, now = Date.now()): string {
 function LimitBar({ w }: { w: LimitWindow }) {
   const p = w.percent ?? 0;
   return (
-    <li className="grid grid-cols-[minmax(8rem,14rem)_1fr_3.5rem] items-center gap-3 text-[12px]">
+    <li className="grid grid-cols-[minmax(8rem,14rem)_1fr_3.5rem] items-center gap-2 text-[12px]">
       <span className="truncate" title={w.label}>
         {w.label}
       </span>

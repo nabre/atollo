@@ -143,7 +143,7 @@ export function App() {
           }}
         />
         <main className="flex min-w-0 flex-1 flex-col bg-vsc-bg" aria-labelledby="page-title">
-          <header className="flex h-9 items-center gap-3 border-b border-vsc-border px-5">
+          <header className="flex h-9 items-center gap-2 border-b border-vsc-border px-5">
             <h1 id="page-title" className="text-[11px] font-normal tracking-wide uppercase text-vsc-desc">
               {current?.label}
             </h1>
@@ -153,33 +153,43 @@ export function App() {
               </span>
             )}
           </header>
-          <div id="content" tabIndex={-1} className="relative min-h-0 flex-1 overflow-auto p-5 outline-none">
-            {info?.firstRun ? (
-              <ComponentsPage setup={setup} firstRun onDone={loadInfo} />
-            ) : page === "projects" ? (
-              <div className="space-y-4">
-                <KitNotices info={info} error={error} />
-                <ProjectsPage
-                  key={projectsKey}
-                  status={editor}
-                  agents={agents}
-                  onChanged={refreshEditor}
-                  runs={runs}
-                  logs={logs}
-                  loadLog={loadLog}
-                  forget={forget}
-                />
-              </div>
-            ) : page === "agents" ? (
-              <AgentsPage />
-            ) : page === "components" ? (
-              <ComponentsPage setup={setup} />
-            ) : page === "databases" ? (
-              <DatabasesPage />
-            ) : page === "settings" ? (
-              <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} info={info} />
+          {/* Never scrolls itself: each page scrolls in its own box, as the
+              editor's views, so nothing slides under another. */}
+          <div id="content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
+            {!info?.firstRun && page === "projects" ? (
+              <>
+                <div className="shrink-0 space-y-2 px-3 pt-3 empty:hidden">
+                  <KitNotices info={info} error={error} />
+                </div>
+                <div className="relative min-h-0 flex-1">
+                  <ProjectsPage
+                    key={projectsKey}
+                    status={editor}
+                    agents={agents}
+                    onChanged={refreshEditor}
+                    runs={runs}
+                    logs={logs}
+                    loadLog={loadLog}
+                    forget={forget}
+                  />
+                </div>
+              </>
             ) : (
-              <EjectPage />
+              <div className="min-h-0 flex-1 overflow-auto p-3">
+                {info?.firstRun ? (
+                  <ComponentsPage setup={setup} firstRun onDone={loadInfo} />
+                ) : page === "agents" ? (
+                  <AgentsPage />
+                ) : page === "components" ? (
+                  <ComponentsPage setup={setup} />
+                ) : page === "databases" ? (
+                  <DatabasesPage />
+                ) : page === "settings" ? (
+                  <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} info={info} />
+                ) : (
+                  <EjectPage />
+                )}
+              </div>
             )}
           </div>
         </main>
@@ -305,7 +315,7 @@ function StatusBar({
   return (
     <footer
       aria-label={t("Barra di stato")}
-      className="flex h-[22px] items-center gap-3 border-t border-vsc-border bg-vsc-statusbar px-2 text-[12px] text-vsc-statusbar-fg"
+      className="flex h-[22px] items-center gap-2 border-t border-vsc-border bg-vsc-statusbar px-2 text-[12px] text-vsc-statusbar-fg"
     >
       <span className="flex h-full items-center gap-1 bg-vsc-button px-2 text-vsc-button-fg">
         <VscRemote size={14} aria-hidden="true" />

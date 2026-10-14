@@ -38,6 +38,7 @@ export function ActionButton({
   disabled = false,
   primary = false,
   submit = false,
+  compact = false,
   title,
 }: {
   icon: IconType;
@@ -48,6 +49,8 @@ export function ActionButton({
   primary?: boolean;
   /** The submit button of its form (onClick is not needed). */
   submit?: boolean;
+  /** The icon alone; the label stays its accessible name. */
+  compact?: boolean;
   title?: string | undefined;
 }) {
   return (
@@ -55,17 +58,19 @@ export function ActionButton({
       type={submit ? "submit" : "button"}
       onClick={submit ? undefined : onClick}
       disabled={disabled || busy}
-      title={title}
+      title={title ?? (compact ? label : undefined)}
+      aria-label={compact ? label : undefined}
       aria-busy={busy}
       className={[
-        "flex items-center gap-2 rounded-sm px-3 py-1.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-50",
+        "flex items-center gap-1.5 rounded-sm text-[13px] disabled:cursor-not-allowed disabled:opacity-50",
+        compact ? "p-[5px]" : "px-2 py-0.5",
         primary
           ? "bg-vsc-button text-vsc-button-fg enabled:hover:bg-vsc-button-hover"
           : "bg-vsc-button2 text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover",
       ].join(" ")}
     >
-      <Icon size={16} aria-hidden="true" className={busy ? "animate-pulse" : undefined} />
-      {busy ? `${label}…` : label}
+      <Icon size={14} aria-hidden="true" className={busy ? "animate-pulse" : undefined} />
+      {!compact && (busy ? `${label}…` : label)}
     </button>
   );
 }

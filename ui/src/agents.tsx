@@ -3,7 +3,7 @@
 // sign-out. Instructions, skills
 // and MCP servers are shared by the three (data\agents, aligned by the app).
 import { useCallback, useEffect, useState } from "react";
-import { VscCheck, VscFolderOpened, VscPlay, VscSignOut, VscWarning } from "react-icons/vsc";
+import { VscCheck, VscFolderOpened, VscHubot, VscPlay, VscSignOut, VscWarning } from "react-icons/vsc";
 import { agentLaunch, agentSignOut, agentsStatus, folderOpen, type AgentId, type AgentInfo } from "./api";
 import { rich, t } from "./i18n";
 import { ActionButton, useAction } from "./pages";
@@ -36,7 +36,7 @@ export function AgentsPage() {
 
   if (!agents) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
   return (
-    <div className="max-w-4xl space-y-5">
+    <div className="max-w-4xl space-y-3">
       <p>
         {rich(
           t(
@@ -75,12 +75,12 @@ export function AgentsPage() {
       <p className="text-vsc-desc">
         {t("Gli agenti si aprono sempre nella cartella di un progetto, dalla pagina Progetti.")}
       </p>
-      <ul className="space-y-3">
+      <ul className="space-y-2">
         {agents
           .filter((a) => a.installed)
           .map((a) => (
-            <li key={a.id} className="rounded border border-vsc-border bg-vsc-sidebar px-4 py-3">
-              <div className="flex flex-wrap items-center gap-3">
+            <li key={a.id} className="border-t border-vsc-border px-3 py-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="flex items-center gap-2 text-[14px] font-semibold">
                   <ComponentLogo id={a.id} size={18} />
                   {a.name}
@@ -100,7 +100,7 @@ export function AgentsPage() {
                   )}
                 </span>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-1.5 flex flex-wrap gap-2">
                 {a.signedIn &&
                   a.signInKind !== "api key" &&
                   (confirm === a.id ? (
@@ -156,9 +156,12 @@ export function AgentPicker({
   agents,
   project,
   preferred,
+  compact = false,
 }: {
   agents: AgentInfo[] | null;
   project: string;
+  /** Only the icon of the Agents page on the button (list of projects). */
+  compact?: boolean;
   /** The agent last opened in the project (its dev-settings.json). */
   preferred?: string | undefined;
 }) {
@@ -169,23 +172,30 @@ export function AgentPicker({
   const agent = chosen || installed.find((a) => a.id === preferred)?.id || installed[0]?.id || "claude";
   return (
     <span className="flex items-center gap-1" title={error ?? undefined}>
-      <select
-        aria-label={t("Agente per {0}", project)}
-        value={agent}
-        onChange={(e) => {
-          setChosen(e.target.value as AgentId);
-        }}
-        className="rounded-sm border border-vsc-input-border bg-vsc-input px-1 py-1 text-[12px]"
-      >
+      <span role="radiogroup" aria-label={t("Agente per {0}", project)} className="flex items-center">
         {installed.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.name}
-          </option>
+          <button
+            key={a.id}
+            type="button"
+            role="radio"
+            aria-checked={agent === a.id}
+            aria-label={a.name}
+            title={a.name}
+            onClick={() => {
+              setChosen(a.id);
+            }}
+            className={`rounded-sm p-1 ${
+              agent === a.id ? "bg-vsc-list-active outline-1 outline-vsc-focus" : "opacity-60 hover:opacity-100"
+            }`}
+          >
+            <ComponentLogo id={a.id} size={16} />
+          </button>
         ))}
-      </select>
+      </span>
       <ActionButton
-        icon={error ? VscWarning : VscPlay}
+        icon={error ? VscWarning : compact ? VscHubot : VscPlay}
         label={t("Agente")}
+        compact={compact}
         busy={busy === "launch"}
         title={error ?? t("Apre l'agente scelto nel progetto {0}", project)}
         onClick={() => {

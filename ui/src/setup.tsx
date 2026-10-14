@@ -56,6 +56,14 @@ function isProblem(o: Outcome | null): boolean {
   return o !== null && (o.kind === "failed" || o.kind === "inUse" || o.kind === "unsupported");
 }
 
+/** Running, or finished with an error or a component not installed: an
+ * installation that went well is not shown again. */
+export function setupToShow(s: SetupSnapshot | null): s is SetupSnapshot {
+  if (!s) return false;
+  if (s.running) return true;
+  return s.error !== null || s.steps.some((step) => isProblem(step.outcome));
+}
+
 function percent(step: SetupStep): number | null {
   if (step.done === null || !step.size) return null;
   return Math.min(100, Math.round((step.done / step.size) * 100));
@@ -90,12 +98,8 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
   const [cancelError, setCancelError] = useState<string | null>(null);
   const problems = snapshot.steps.filter((s) => isProblem(s.outcome));
   return (
-    <section
-      aria-labelledby="setup-title"
-      aria-live="polite"
-      className="rounded border border-vsc-border bg-vsc-sidebar"
-    >
-      <header className="flex items-center gap-3 border-b border-vsc-border px-4 py-2">
+    <section aria-labelledby="setup-title" aria-live="polite" className="border-t border-vsc-border">
+      <header className="flex items-center gap-2 px-3 py-1.5">
         <h2 id="setup-title" className="text-[13px] font-semibold">
           {title ??
             (snapshot.running
@@ -119,7 +123,7 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
           </button>
         )}
       </header>
-      <ol className="space-y-1 px-4 py-3">
+      <ol className="space-y-1 px-3 py-2">
         {snapshot.steps.map((step) => {
           const p = step.outcome ? null : percent(step);
           return (
@@ -155,12 +159,12 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
         {snapshot.running && snapshot.steps.length === 0 && <li className="text-vsc-desc">{t("Preparazione…")}</li>}
       </ol>
       {(snapshot.error ?? cancelError) && (
-        <p role="alert" className="border-t border-vsc-border px-4 py-2 text-vsc-error select-text">
+        <p role="alert" className="border-t border-vsc-border px-3 py-1.5 text-vsc-error select-text">
           {snapshot.error ?? cancelError}
         </p>
       )}
       {!snapshot.running && problems.length > 0 && (
-        <p className="border-t border-vsc-border px-4 py-2 text-vsc-warning">
+        <p className="border-t border-vsc-border px-3 py-1.5 text-vsc-warning">
           {problems.length === 1
             ? t("Un componente non è stato installato. Riprova da Strumenti.")
             : t("{0} componenti non sono stati installati. Riprova da Strumenti.", problems.length)}

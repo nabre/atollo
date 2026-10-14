@@ -91,7 +91,7 @@ export function SettingsPage({
               onChange={(e) => {
                 set({ lang: (empty(e.target.value) as Settings["lang"]) ?? null });
               }}
-              className="input"
+              className="input min-w-64"
             >
               <option value="">{t("Lingua di Windows")}</option>
               {LANGS.map((l) => (
@@ -107,7 +107,7 @@ export function SettingsPage({
               onChange={(e) => {
                 set({ terminal: (empty(e.target.value) as Settings["terminal"]) ?? null });
               }}
-              className="input"
+              className="input min-w-64"
             >
               <option value="">{t("Windows Terminal del kit (predefinito)")}</option>
               <option value="classic">{t("Console classica di Windows")}</option>
@@ -135,7 +135,7 @@ export function SettingsPage({
               onChange={(e) => {
                 net({ httpsProxy: empty(e.target.value) });
               }}
-              className="input"
+              className="input min-w-64"
             />
           </Field>
           <Field label={t("Proxy HTTP")}>
@@ -144,7 +144,7 @@ export function SettingsPage({
               onChange={(e) => {
                 net({ httpProxy: empty(e.target.value) });
               }}
-              className="input"
+              className="input min-w-64"
             />
           </Field>
           <Field label={t("Senza proxy per")}>
@@ -154,7 +154,7 @@ export function SettingsPage({
               onChange={(e) => {
                 net({ noProxy: empty(e.target.value) });
               }}
-              className="input"
+              className="input min-w-64"
             />
           </Field>
           <Field label={t("Certificati aggiuntivi (file PEM)")}>
@@ -164,7 +164,7 @@ export function SettingsPage({
               onChange={(e) => {
                 net({ extraCaCerts: empty(e.target.value) });
               }}
-              className="input"
+              className="input min-w-64"
             />
           </Field>
           <Check
@@ -192,7 +192,7 @@ export function SettingsPage({
                   setSaved(false);
                   setGemini(e.target.value === "" ? null : e.target.value);
                 }}
-                className="input"
+                className="input min-w-64"
               />
               {view.geminiKeySet && (
                 <button
@@ -220,7 +220,7 @@ export function SettingsPage({
               onChange={(e) => {
                 set({ pythonVersion: empty(e.target.value) });
               }}
-              className="input"
+              className="input min-w-64"
             />
           </Field>
           <Field label={t("PHP (vuoto = la più recente)")}>
@@ -230,7 +230,7 @@ export function SettingsPage({
               onChange={(e) => {
                 set({ phpVersion: empty(e.target.value) });
               }}
-              className="input"
+              className="input min-w-64"
             />
           </Field>
           <Field label={t("Compilatore di Rust")}>
@@ -239,7 +239,7 @@ export function SettingsPage({
               onChange={(e) => {
                 set({ rustToolchain: (empty(e.target.value) as Settings["rustToolchain"]) ?? null });
               }}
-              className="input"
+              className="input min-w-64"
             >
               <option value="">{t("GNU (predefinito, tutto nel kit)")}</option>
               <option value="gnu">GNU</option>
@@ -248,7 +248,7 @@ export function SettingsPage({
           </Field>
         </Section>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <ActionButton
             icon={VscSave}
             label={t("Salva")}
@@ -299,7 +299,7 @@ function KitInfo({ info }: { info: AppInfo }) {
   ];
   return (
     <Section id="s-kit" title={t("Il kit")}>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <img src={logo} alt="" width={40} height={40} draggable={false} />
         <p className="text-vsc-desc">
           {t("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.")}
@@ -349,7 +349,7 @@ function Updates() {
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section aria-labelledby={id} className="space-y-3">
+    <section aria-labelledby={id} className="space-y-2">
       <h2 id={id} className="border-b border-vsc-border pb-1 text-[13px] font-semibold">
         {title}
       </h2>

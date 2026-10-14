@@ -73,7 +73,6 @@
   "Collega il tuo account GitHub nelle Impostazioni per vedere qui i tuoi repository.": "Connect your GitHub account in Settings to see your repositories here.",
   "Comandi": "Commands",
   "Comando": "Command",
-  "Come": "How",
   "come l'editor": "as the editor",
   "Commit, push e l'elenco delle modifiche sono nell'editor o in un agente. Dev-Kit legge lo stato dai file di .git, senza eseguire Git nel progetto.": "Commits, pushes and the list of changes are in the editor or an agent. Dev-Kit reads the state from the files of .git, without running Git in the project.",
   "Compilatore di Rust": "Rust compiler",
@@ -414,5 +413,6 @@
   "Estensione da aggiungere": "Extension to add",
   "Aggiungi": "Add",
   "Le estensioni installate valgono in tutto l'editor; le nuove si installano quando l'editor è aperto.": "Installed extensions apply to the whole editor; new ones are installed while the editor is open.",
-  "Scrivi l'identificativo come editore.nome, per esempio ms-python.python.": "Write the id as publisher.name, for example ms-python.python."
+  "Scrivi l'identificativo come editore.nome, per esempio ms-python.python.": "Write the id as publisher.name, for example ms-python.python.",
+  "pubblico": "public"
 }

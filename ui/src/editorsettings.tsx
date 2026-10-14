@@ -54,23 +54,20 @@ export function EditorSettingsBox({ project }: { project: string }) {
       }),
     );
   };
-  const field = "rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1 text-vsc-fg";
+  const field = "input";
   return (
-    <section aria-labelledby="editor-settings" className="rounded-sm border border-vsc-border bg-vsc-sidebar">
-      <h2
-        id="editor-settings"
-        className="border-b border-vsc-border px-4 py-2 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
-      >
+    <section aria-labelledby="editor-settings" className="border-t border-vsc-border">
+      <h2 id="editor-settings" className="px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase">
         {t("Impostazioni dell'editor per questo progetto")}
       </h2>
       {view.readOnly ? (
-        <p className="px-4 py-3 text-vsc-desc">
+        <p className="px-3 py-2 text-vsc-desc">
           {t(
             ".vscode\\settings.json ha commenti o non è JSON semplice: Dev-Kit non lo riscrive. Modificalo nell'editor.",
           )}
         </p>
       ) : (
-        <form onSubmit={submit} className="space-y-3 px-4 py-3">
+        <form onSubmit={submit} className="space-y-2 px-3 py-2">
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2">
               {t("Formatta al salvataggio")}
@@ -117,7 +114,7 @@ export function EditorSettingsBox({ project }: { project: string }) {
           <p className="text-[12px] text-vsc-desc">
             {t("Si salvano in .vscode\\settings.json nel progetto; le altre impostazioni del file restano.")}
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <ActionButton
               icon={VscSave}
               label={t("Salva")}
