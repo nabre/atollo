@@ -302,7 +302,7 @@ const KIND_ICON: Record<ProjectInfo["type"], IconType> = {
 
 /** How the project starts (site, app with a window, command) and what it
  * was recognised as (Laravel, FastAPI, static site...). */
-function ProjectKind({ p }: { p: ProjectInfo }) {
+export function ProjectKind({ p }: { p: ProjectInfo }) {
   const Icon = KIND_ICON[p.type];
   return (
     <span className="flex min-w-0 items-center gap-1.5 text-vsc-desc" title={`${kindText(p.type)} · ${p.reason}`}>
@@ -315,7 +315,7 @@ function ProjectKind({ p }: { p: ProjectInfo }) {
 }
 
 /** Every language as its logo, in alphabetical order. */
-function LanguageIcons({ names }: { names: string[] }) {
+export function LanguageIcons({ names }: { names: string[] }) {
   return (
     <span className="flex items-center gap-1.5">
       {[...names]
@@ -517,7 +517,7 @@ function newWays(): { id: NewWay; label: string }[] {
 }
 
 /** An icon of a side bar's title, as in the editor. */
-function ToolbarIcon({ icon: Icon, label, onClick }: { icon: IconType; label: string; onClick: () => void }) {
+export function ToolbarIcon({ icon: Icon, label, onClick }: { icon: IconType; label: string; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -534,7 +534,7 @@ function ToolbarIcon({ icon: Icon, label, onClick }: { icon: IconType; label: st
 /** A collapsible pane of the side bar, as OPEN EDITORS or OUTLINE in the
  * editor. It opens with a slide and scrolls inside; a `fill` pane takes the
  * height left by the others. */
-function SidePane({
+export function SidePane({
   title,
   expanded,
   fill = false,
@@ -672,7 +672,11 @@ export function ProjectDetails({
                       {a.custom && <span className="ml-2 text-[11px] text-vsc-desc">panel.json</span>}
                     </div>
                     <div className="font-mono text-[11px] break-all text-vsc-desc select-text">
-                      {a.static !== null ? t("file server del kit: {0}", a.static) : a.command}
+                      {a.static !== null
+                        ? t("file server del kit: {0}", a.static)
+                        : a.apache !== null
+                          ? t("Apache del progetto: {0}", a.apache)
+                          : a.command}
                     </div>
                   </td>
                   <td className="py-1 pr-3 text-vsc-desc">
@@ -692,7 +696,7 @@ export function ProjectDetails({
                   </td>
                   <td className="py-1">
                     <div className="flex flex-wrap justify-end gap-2">
-                      {onlyRun && a.static === null && (
+                      {onlyRun && a.static === null && a.apache === null && (
                         <ActionButton
                           icon={VscEdit}
                           label={t("Modifica")}
@@ -712,7 +716,7 @@ export function ProjectDetails({
                           }}
                         />
                       )}
-                      {onlyRun && a.custom && a.static === null && (
+                      {onlyRun && a.custom && a.static === null && a.apache === null && (
                         <ActionButton
                           icon={VscDiscard}
                           label={t("Togli")}
@@ -847,8 +851,10 @@ function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Po
 /** "Servi come sito web": a folder of the project served on its own port. */
 function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () => void }) {
   const site = project.actions.find((a) => a.id === "site");
-  const [folder, setFolder] = useState(site?.static ?? ".");
-  const [kind, setKind] = useState<SiteKind>(site ? (site.static !== null ? "static" : "php") : "static");
+  const [folder, setFolder] = useState(site?.static ?? site?.apache ?? ".");
+  const [kind, setKind] = useState<SiteKind>(
+    site ? (site.static !== null ? "static" : site.apache !== null ? "apache" : "php") : "static",
+  );
   const { busy, error, run } = useAction(onChanged);
   const submit = (e: SyntheticEvent) => {
     e.preventDefault();
@@ -876,7 +882,8 @@ function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () 
           className="input"
         >
           <option value="static">{t("file statici")}</option>
-          <option value="php">PHP</option>
+          <option value="php">{t("PHP (server integrato)")}</option>
+          <option value="apache">{t("Apache dedicato")}</option>
         </select>
       </label>
       <ActionButton icon={VscGlobe} label={t("Salva")} busy={busy === "site"} onClick={() => undefined} submit />
@@ -889,6 +896,14 @@ function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () 
             run("none", () => projectSite(project.id, ".", "none"));
           }}
         />
+      )}
+      {kind === "apache" && (
+        <p className="w-full text-[12px] text-vsc-desc">
+          {t(
+            "Un Apache solo per questo progetto, sulla sua porta, con .htaccess e il PHP del kit. La configurazione è in data\\app\\projects\\{0}\\apache; le tue direttive vanno in conf.d.",
+            project.id,
+          )}
+        </p>
       )}
       <ErrorLine error={error} />
     </form>

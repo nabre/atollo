@@ -10,7 +10,9 @@
 //! - `folder`: a subfolder to run it in (composite projects);
 //! - `env`, `url`: optional, `{port}` replaced at start;
 //! - `static`: a folder of the project served by the exe's file server
-//!   (`Dev-Kit.exe serve`), instead of a command.
+//!   (`Dev-Kit.exe serve`), instead of a command;
+//! - `apache`: a folder of the project served by an Apache of its own
+//!   (`apache.rs`), instead of a command.
 //!
 //! `panel.json` in the project (old name `pannello.json`) corrects or
 //! replaces what was detected (`overrides.rs`). One file per platform.
@@ -72,6 +74,9 @@ pub struct Action {
     pub env: BTreeMap<String, String>,
     #[serde(rename = "static")]
     pub static_dir: Option<String>,
+    /// A folder served by the project's own Apache.
+    #[serde(rename = "apache")]
+    pub apache_dir: Option<String>,
     /// From panel.json.
     pub custom: bool,
 }
@@ -87,6 +92,7 @@ impl Action {
             url: None,
             env: BTreeMap::new(),
             static_dir: None,
+            apache_dir: None,
             custom: false,
         }
     }
@@ -100,6 +106,14 @@ impl Action {
     fn serve(id: &str, label: &str, folder: &str) -> Action {
         Action {
             static_dir: Some(folder.to_owned()),
+            ..Action::new(id, label, "", Kind::Web)
+        }
+    }
+
+    /// A folder of the project served by its own Apache.
+    fn apache(id: &str, label: &str, folder: &str) -> Action {
+        Action {
+            apache_dir: Some(folder.to_owned()),
             ..Action::new(id, label, "", Kind::Web)
         }
     }
@@ -527,6 +541,15 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         default: None,
     };
     overrides::apply(&mut project, dir, lang);
+    // An Apache of its own needs Apache and its PHP module.
+    if project.actions.iter().any(|a| a.apache_dir.is_some()) {
+        for id in ["apache", "php"] {
+            if !project.requires.iter().any(|r| r == id) {
+                project.requires.push(id.to_owned());
+            }
+        }
+        project.requires.sort();
+    }
     if project.default.is_none() {
         project.default = project
             .actions
