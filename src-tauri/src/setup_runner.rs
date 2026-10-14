@@ -180,10 +180,10 @@ fn only_with_needs<'a>(
     Ok(wanted)
 }
 
-/// The choice without `skip` (required components cannot be skipped) and,
-/// on ARM64, without what is marked `noArm64`; then, transitively, without
-/// every component not installed yet (required ones aside) that needs one
-/// neither planned nor installed.
+/// The choice without `skip` (system components and what they need cannot be
+/// skipped) and, on ARM64, without what is marked `noArm64`; then,
+/// transitively, without every component not installed yet (locked ones
+/// aside) that needs one neither planned nor installed.
 fn chosen_without_skipped<'a>(
     catalog: &'a Catalog,
     choice: &Choice,
@@ -191,18 +191,19 @@ fn chosen_without_skipped<'a>(
     installed: &HashSet<&str>,
     arm64: bool,
 ) -> HashSet<&'a str> {
+    let locked = catalog.locked();
     let mut wanted: HashSet<&str> = catalog
         .all()
         .iter()
         .filter(|c| choice.is_chosen(&c.id) && !(arm64 && c.no_arm64))
-        .filter(|c| c.group.always() || !skip.contains(&c.id))
+        .filter(|c| locked.contains(c.id.as_str()) || !skip.contains(&c.id))
         .map(|c| c.id.as_str())
         .collect();
     loop {
         let missing_need: Vec<&str> = catalog
             .all()
             .iter()
-            .filter(|c| wanted.contains(c.id.as_str()) && !c.group.always())
+            .filter(|c| wanted.contains(c.id.as_str()) && !locked.contains(c.id.as_str()))
             .filter(|c| !installed.contains(c.id.as_str()))
             .filter(|c| {
                 c.needs
@@ -586,7 +587,7 @@ mod tests {
             let required: Vec<String> = catalog
                 .all()
                 .iter()
-                .filter(|c| c.group.always())
+                .filter(|c| catalog.is_locked(&c.id))
                 .map(|c| c.id.clone())
                 .collect();
             for id in &required {

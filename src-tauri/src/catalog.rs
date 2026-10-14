@@ -6,7 +6,7 @@
 //! then `id=1` or `id=0` per component, UTF-8 without BOM, CRLF. Versions are
 //! `data\app\versions\<id>.txt`, plain text.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -110,6 +110,31 @@ impl Catalog {
 
     pub fn find(&self, id: &str) -> Option<&Component> {
         self.components.iter().find(|c| c.id == id)
+    }
+
+    /// Always installed: the system components (required, and the parts of
+    /// the app) and, transitively, what they need (GitHub CLI needs Git, the
+    /// editor needs PowerShell 7). Never turned off or skipped.
+    pub fn locked(&self) -> BTreeSet<&str> {
+        let mut out = BTreeSet::new();
+        let mut todo: Vec<&str> = self
+            .components
+            .iter()
+            .filter(|c| c.group.always())
+            .map(|c| c.id.as_str())
+            .collect();
+        while let Some(id) = todo.pop() {
+            if let Some(c) = self.find(id) {
+                if out.insert(c.id.as_str()) {
+                    todo.extend(c.needs.iter().map(String::as_str));
+                }
+            }
+        }
+        out
+    }
+
+    pub fn is_locked(&self, id: &str) -> bool {
+        self.locked().contains(id)
     }
 }
 
@@ -280,7 +305,7 @@ impl Choice {
     /// off is off too (`Repair-ComponentChoice`).
     pub fn repair(&mut self, catalog: &Catalog) {
         for c in catalog.all() {
-            if c.group.always() {
+            if catalog.is_locked(&c.id) {
                 self.chosen.insert(c.id.clone(), true);
             }
         }
@@ -302,15 +327,11 @@ impl Choice {
         self.chosen.get(id).copied().unwrap_or(false)
     }
 
-    #[allow(
-        dead_code,
-        reason = "first caller: Linguaggi e strumenti page, phase 4"
-    )]
     /// Turns a component on or off, following dependencies both ways, as the
     /// "Languages and tools" page of nabre/dev-kit does.
     pub fn set(&mut self, catalog: &Catalog, id: &str, on: bool) {
         let Some(c) = catalog.find(id) else { return };
-        if c.group.always() {
+        if catalog.is_locked(&c.id) {
             return;
         }
         self.chosen.insert(id.to_owned(), on);
@@ -452,7 +473,12 @@ mod tests {
         choice.set(catalog, "gh", false);
         assert!(choice.is_chosen("gh"), "required cannot be turned off");
         choice.set(catalog, "git", false);
-        assert!(!choice.is_chosen("claude"), "claude needs git");
+        assert!(
+            choice.is_chosen("git") && choice.is_chosen("claude"),
+            "git is needed by gh, a system component: locked"
+        );
+        assert!(catalog.is_locked("git") && catalog.is_locked("pwsh"));
+        assert!(!catalog.is_locked("node"));
     }
 
     #[test]

@@ -206,6 +206,8 @@ export interface ComponentInfo {
   installed: boolean;
   /** Something of it is on disk, even half installed: it can be removed. */
   present: boolean;
+  /** A system component, or needed by one (Git for GitHub CLI): always installed. */
+  locked: boolean;
   version: string | null;
   /** This version of the app can install it on this kit. */
   available: boolean;
@@ -260,8 +262,6 @@ export interface AgentInfo {
   id: AgentId;
   name: string;
   installed: boolean;
-  /** Something of it is on disk, even half installed: it can be removed. */
-  present: boolean;
   version: string | null;
   signedIn: boolean;
   /** "account" or "api key". */
