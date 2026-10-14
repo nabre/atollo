@@ -36,6 +36,7 @@ mod project_settings;
 mod projects;
 mod relocate;
 mod run;
+mod safe_path;
 mod self_update;
 mod serve;
 mod services;

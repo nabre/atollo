@@ -54,11 +54,11 @@ pub fn file_of(dir: &Path) -> Option<PathBuf> {
     OVERRIDE_FILES
         .iter()
         .map(|f| dir.join(f))
-        .find(|p| p.is_file())
+        .find(|p| crate::safe_path::is_file(dir, p))
 }
 
-fn read_object(path: &Path) -> Option<Map<String, Value>> {
-    let bytes = fs::read(path).ok()?;
+fn read_object(dir: &Path, path: &Path) -> Option<Map<String, Value>> {
+    let bytes = crate::safe_path::read(dir, path)?;
     let text = String::from_utf8_lossy(&bytes);
     match serde_json::from_str(text.trim_start_matches('\u{feff}')) {
         Ok(Value::Object(o)) => Some(o),
@@ -72,7 +72,7 @@ pub(super) fn apply(project: &mut Project, dir: &Path, lang: &str) {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let Some(o) = read_object(&path) else {
+    let Some(o) = read_object(dir, &path) else {
         project
             .warnings
             .insert(0, tr(lang, "{0} non è un JSON valido: ignorato.", &[&file]));
@@ -163,10 +163,11 @@ pub fn inside(project_dir: &Path, folder: &str) -> Result<(PathBuf, String)> {
     {
         bail!("folder outside the project: {folder}");
     }
-    let full = project_dir.join(rel);
-    let real = fs::canonicalize(&full).with_context(|| folder.to_owned())?;
-    let root = fs::canonicalize(project_dir)?;
-    if !real.starts_with(&root) || !real.is_dir() {
+    // Checked as text and without following links (D-77): canonicalize
+    // would follow a junction, possibly to a network share.
+    let full =
+        crate::safe_path::lexical(&project_dir.join(rel)).with_context(|| folder.to_owned())?;
+    if !crate::safe_path::is_dir(project_dir, &full) {
         bail!("folder outside the project: {folder}");
     }
     let shown = rel
@@ -192,8 +193,8 @@ pub enum SiteKind {
 /// the project's panel.json; the rest of the file stays as it is.
 pub fn set_site(project_dir: &Path, folder: &str, kind: SiteKind, lang: &str) -> Result<()> {
     let path = file_of(project_dir).unwrap_or_else(|| project_dir.join(OVERRIDE_FILES[0]));
-    let mut o = if path.is_file() {
-        match read_object(&path) {
+    let mut o = if crate::safe_path::is_file(project_dir, &path) {
+        match read_object(project_dir, &path) {
             Some(o) => o,
             None => bail!(
                 "{}",
