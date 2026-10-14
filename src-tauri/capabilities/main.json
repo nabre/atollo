@@ -20,6 +20,10 @@
     "allow-setup-state",
     "allow-setup-start",
     "allow-setup-cancel",
-    "allow-components-apply"
+    "allow-components-apply",
+    "allow-agents-status",
+    "allow-agent-launch",
+    "allow-agent-sign-out",
+    "allow-folder-open"
   ]
 }

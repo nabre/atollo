@@ -6,6 +6,8 @@
 #![cfg_attr(not(test), windows_subsystem = "windows")]
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
 
+mod agents;
+mod agents_sync;
 mod archive;
 mod catalog;
 mod checkup;
@@ -20,10 +22,13 @@ mod i18n;
 mod install;
 mod instance;
 mod jobs;
+mod keyring;
 mod kit;
 mod kit_files;
 mod log;
 mod net;
+mod processes;
+mod relocate;
 mod settings;
 mod setup_runner;
 mod setup_task;
@@ -124,6 +129,34 @@ fn run() -> i32 {
         Cli::Gui => {}
         Cli::Env => return cli::print_env(&kit_env, &mut *cli::output()).map_or(1, |()| 0),
         Cli::Prepare(args) => return prepare(&kit, &kit_env, &loaded.settings, &host, lang, &args),
+        Cli::Sync { project, verbose } => {
+            let report = agents_sync::run(&kit, project.as_deref());
+            let mut out = cli::output();
+            if verbose {
+                for n in &report.notes {
+                    let _ = writeln!(out, "  {n}");
+                }
+            }
+            for w in &report.warnings {
+                let _ = writeln!(out, "  [!] {w}");
+            }
+            return 0;
+        }
+        Cli::Keyring(action) => {
+            let result = if action == "restore" {
+                keyring::restore(&kit)
+            } else {
+                keyring::save_after_run(&kit)
+            };
+            return match result {
+                Ok(()) => 0,
+                Err(e) => {
+                    log::warn(&format!("keyring {action}: {e:#}"));
+                    let _ = writeln!(cli::output(), "  [!] Antigravity: {e:#}");
+                    1
+                }
+            };
+        }
         Cli::Check => {
             let checks = checkup::check_all(&kit, &kit_env);
             let ok = checks.iter().all(|c| c.ok);
@@ -352,6 +385,16 @@ fn build_app<R: tauri::Runtime>(
         .setup(move |app| {
             open_main_window(app.handle(), &kit.webview_data())?;
             start_missing_required(app.handle(), &kit);
+            // Antigravity's login left in Windows by a run that did not end
+            // cleanly, the kit moved, the agents aligned; then the watcher.
+            let background = kit.clone();
+            std::thread::spawn(move || {
+                if let Err(e) = keyring::save(&background) {
+                    log::warn(&format!("antigravity login: {e:#}"));
+                }
+                let _ = agents_sync::run(&background, None);
+                agents::watch(background);
+            });
             let handle = app.handle().clone();
             instance::listen(&kit, move |message| {
                 if message.trim() == "focus" {

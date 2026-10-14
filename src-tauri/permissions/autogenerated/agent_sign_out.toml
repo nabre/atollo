@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-sign-out"
+description = "Enables the agent_sign_out command without any pre-configured scope."
+commands.allow = ["agent_sign_out"]
+
+[[permission]]
+identifier = "deny-agent-sign-out"
+description = "Denies the agent_sign_out command without any pre-configured scope."
+commands.deny = ["agent_sign_out"]

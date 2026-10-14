@@ -19,8 +19,9 @@ import {
 import { appInfo, browserPreview, editorStatus, type AppInfo, type EditorStatus } from "./api";
 import { HomeActions, ProjectsPage } from "./pages";
 import { ComponentsPage } from "./components";
+import { AgentButtons, AgentsPage, useAgents } from "./agents";
 import { SetupProgress, setupStatusText, useSetup } from "./setup";
-import type { SetupSnapshot } from "./api";
+import type { AgentInfo, SetupSnapshot } from "./api";
 
 type PageId = "home" | "projects" | "agents" | "components" | "settings" | "eject";
 
@@ -47,6 +48,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorStatus | null>(null);
   const setup = useSetup();
+  const { agents } = useAgents();
 
   const refreshEditor = useCallback(() => {
     editorStatus().then(setEditor, () => {
@@ -89,9 +91,11 @@ export function App() {
             {page === "home" && info?.firstRun ? (
               <ComponentsPage setup={setup} firstRun onDone={loadInfo} />
             ) : page === "home" ? (
-              <Home info={info} error={error} editor={editor} setup={setup} onChanged={refreshEditor} />
+              <Home info={info} error={error} editor={editor} setup={setup} agents={agents} onChanged={refreshEditor} />
             ) : page === "projects" ? (
-              <ProjectsPage status={editor} onChanged={refreshEditor} />
+              <ProjectsPage status={editor} agents={agents} onChanged={refreshEditor} />
+            ) : page === "agents" ? (
+              <AgentsPage />
             ) : page === "components" ? (
               <ComponentsPage setup={setup} />
             ) : (
@@ -140,12 +144,14 @@ function Home({
   error,
   editor,
   setup,
+  agents,
   onChanged,
 }: {
   info: AppInfo | null;
   error: string | null;
   editor: EditorStatus | null;
   setup: SetupSnapshot | null;
+  agents: AgentInfo[] | null;
   onChanged: () => void;
 }) {
   if (error) {
@@ -177,6 +183,7 @@ function Home({
         </Notice>
       )}
       <HomeActions status={editor} setupRunning={setup?.running ?? false} onChanged={onChanged} />
+      <AgentButtons agents={agents} />
       {setup && setup.steps.length > 0 && <SetupProgress snapshot={setup} />}
       <section aria-labelledby="where" className="rounded border border-vsc-border bg-vsc-sidebar">
         <h2 id="where" className="border-b border-vsc-border px-4 py-2 text-[13px] font-semibold">

@@ -31,6 +31,7 @@ flate2 = "1.1.10"
 sevenz-rust2 = "0.23.0"
 base64 = "0.23.1"
 regex = "1.13.1"
+junction = "2.1.0"
 
 [dependencies.windows]
 version = "0.62.2"
@@ -42,6 +43,7 @@ features = [
     "Win32_Security_Cryptography",
     "Win32_Security_Cryptography_Catalog",
     "Win32_Security_Cryptography_Sip",
+    "Win32_Security_Credentials",
     "Win32_Security_WinTrust",
     "Win32_Storage_FileSystem",
     "Win32_System_Com",

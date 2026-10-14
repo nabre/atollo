@@ -1,5 +1,33 @@
 # Novità
 
+## Fase 5: agenti (14/10/2026)
+
+**Fatto**
+- Allineamento di Claude Code, Codex e Antigravity in Rust (`agents_sync/`, porting di `sync.js`): istruzioni globali, skill come giunzioni verso `data\agents\skills`, server MCP (Claude, `mcp.json`, Codex `config.toml`, Antigravity), regola del kit, cartelle attendibili, skill di progetto. `Atollo.exe sync [--project <cartella>] [--verbose]`.
+- Accesso di Antigravity tenuto nel kit (`keyring.rs`, porting di `agy-keyring.ps1`): `data\kit\bin\agy.cmd` lo porta in Windows (solo sessione) prima di agy e lo riporta nel kit dopo; `Atollo.exe keyring restore|save`.
+- Rilocazione (`relocate.rs`, porting di `moved.js`) quando il kit cambia cartella o lettera.
+- `agents.rs`: stato (installato, versione, accesso fatto, in esecuzione), lancio in Windows Terminal con allineamento prima e dopo, uscita; sorvegliante che riallinea e salva l'accesso di Antigravity quando un agente termina.
+- Interfaccia: pulsanti degli agenti in Home, pagina **Agenti** (stato, Apri, Esci con conferma, cartella condivisa), scelta dell'agente per progetto nella pagina Progetti.
+
+**Verificato su questo PC**
+- `cargo fmt`, `clippy -D warnings`: puliti; 105 test Rust (compreso quello col Gestore credenziali reale), 9 test dell'interfaccia.
+- Kit con tutti i componenti: skill creata in Codex spostata in `data\agents\skills` e collegata a Claude e Antigravity nello stesso allineamento; istruzione scritta in Claude arrivata ad Antigravity; `codex mcp list` del kit non vede nulla del Codex del PC; `agy --version` passa dal wrapper del kit e non lascia segnali in sospeso.
+- Kit rinominato: percorsi di Claude e Codex aggiornati, giunzioni rifatte.
+
+**Corretto durante la fase**
+- Con un agy brevissimo l'accesso restava in Windows fino al sorvegliante: il salvataggio a fine esecuzione ora toglie il segnale "in avvio" (D-41).
+- Skill nate in un agente arrivavano agli altri solo all'allineamento successivo: ora due passaggi (D-40).
+
+**Limiti noti**
+- Statistiche d'uso degli agenti (limiti del piano): non ancora nell'app (facoltative per il prompt).
+- "Esci" toglie l'accesso salvato nel kit; le sessioni sul sito del fornitore vanno revocate dalle impostazioni dell'account.
+
+**Da provare a mano**
+1. Agenti › Apri su Claude Code: si apre Windows Terminal del kit in `projects`; dopo l'accesso, la pagina mostra "accesso fatto".
+2. Creare una skill in Codex (`~/.codex/skills/<nome>/SKILL.md` del kit), chiudere Codex: compare anche in Claude e Antigravity.
+3. Nell'editor, terminale "Antigravity": a sessione chiusa, nessuna credenziale `antigravity` nuova in Gestione credenziali.
+4. Spostare la cartella del kit e riavviare: Claude ritrova la cronologia dei progetti.
+
 ## Fase 4: tutti i componenti, Linguaggi e strumenti, Primo avvio (14/10/2026)
 
 **Fatto**

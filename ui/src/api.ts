@@ -164,3 +164,34 @@ export function setupCancel(): Promise<void> {
 export function componentsApply(chosen: string[], updateAll: boolean): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("components_apply", { chosen, updateAll });
 }
+
+export type AgentId = "claude" | "codex" | "antigravity";
+
+export interface AgentInfo {
+  id: AgentId;
+  name: string;
+  installed: boolean;
+  version: string | null;
+  signedIn: boolean;
+  /** "account" or "api key". */
+  signInKind: string | null;
+  running: boolean;
+}
+
+export function agentsStatus(): Promise<AgentInfo[]> {
+  return browserPreview ? Promise.resolve([]) : invoke<AgentInfo[]>("agents_status");
+}
+
+/** Opens the agent in a kit console in the project (or `projects\`). */
+export function agentLaunch(agent: AgentId, project: string | null): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("agent_launch", { agent, project });
+}
+
+export function agentSignOut(agent: AgentId): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("agent_sign_out", { agent });
+}
+
+/** Opens a kit folder in File Explorer: "agents" or "projects" (+ project). */
+export function folderOpen(which: "agents" | "projects", project: string | null = null): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("folder_open", { which, project });
+}

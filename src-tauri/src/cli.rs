@@ -27,6 +27,13 @@ pub enum Cli {
     Components,
     /// Every installed program answers its version command.
     Check,
+    /// Aligns the agents (`--project <folder>`, `--verbose`).
+    Sync {
+        project: Option<std::path::PathBuf>,
+        verbose: bool,
+    },
+    /// Antigravity's login: `restore` before agy, `save` after.
+    Keyring(String),
     Version,
     Help,
     Unknown(String),
@@ -69,6 +76,27 @@ pub fn parse(args: &[OsString]) -> Cli {
         "env" => Cli::Env,
         "components" => Cli::Components,
         "check" => Cli::Check,
+        "sync" => {
+            let mut project = None;
+            let mut verbose = false;
+            let mut rest = args[1..].iter();
+            while let Some(arg) = rest.next() {
+                match arg.to_string_lossy().as_ref() {
+                    "--project" => project = rest.next().map(std::path::PathBuf::from),
+                    "--verbose" => verbose = true,
+                    other => return Cli::Unknown(other.to_owned()),
+                }
+            }
+            Cli::Sync { project, verbose }
+        }
+        "keyring" => match args
+            .get(1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .as_deref()
+        {
+            Some(a @ ("restore" | "save")) => Cli::Keyring(a.to_owned()),
+            other => Cli::Unknown(format!("keyring {}", other.unwrap_or_default())),
+        },
         "prepare" => {
             let mut p = PrepareArgs::default();
             let mut rest = args[1..].iter();

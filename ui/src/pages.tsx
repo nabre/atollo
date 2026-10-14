@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { IconType } from "react-icons";
 import { VscCode, VscFolder, VscRefresh, VscTerminal, VscWarning } from "react-icons/vsc";
-import { editorOpen, projectsList, terminalOpen, type EditorStatus, type ProjectEntry } from "./api";
+import { editorOpen, projectsList, terminalOpen, type AgentInfo, type EditorStatus, type ProjectEntry } from "./api";
+import { AgentPicker } from "./agents";
 
 /** Runs an action, keeping track of what is busy and of the last error. */
 export function useAction(onDone?: () => void) {
@@ -130,7 +131,15 @@ export function HomeActions({
 
 const DATE = new Intl.DateTimeFormat("it-IT", { dateStyle: "medium", timeStyle: "short" });
 
-export function ProjectsPage({ status, onChanged }: { status: EditorStatus | null; onChanged: () => void }) {
+export function ProjectsPage({
+  status,
+  agents,
+  onChanged,
+}: {
+  status: EditorStatus | null;
+  agents: AgentInfo[] | null;
+  onChanged: () => void;
+}) {
   const [projects, setProjects] = useState<ProjectEntry[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { busy, error, run } = useAction(onChanged);
@@ -182,6 +191,7 @@ export function ProjectsPage({ status, onChanged }: { status: EditorStatus | nul
                   run(`terminal:${p.name}`, () => terminalOpen(p.name));
                 }}
               />
+              <AgentPicker agents={agents} project={p.name} />
             </li>
           ))}
         </ul>

@@ -401,6 +401,79 @@ pub fn setup_cancel<R: Runtime>(
     Ok(())
 }
 
+#[tauri::command]
+pub fn agents_status<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> Result<Vec<crate::agents::AgentInfo>, String> {
+    ensure_main(&webview)?;
+    Ok(crate::agents::status(&state.kit, &state.env))
+}
+
+/// Opens an agent in a kit console in the project (or `projects\`).
+#[tauri::command]
+pub async fn agent_launch<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    agent: String,
+    project: Option<String>,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    if !crate::agents::IDS.contains(&agent.as_str()) {
+        return Err(format!("unknown agent: {agent}"));
+    }
+    let dir = project_dir(&state.kit, project.as_deref())?;
+    let (task, kit, env) = (
+        Arc::clone(&state.setup),
+        state.kit.clone(),
+        state.env.clone(),
+    );
+    tauri::async_runtime::spawn_blocking(move || {
+        ensure_required(&app, &task, &kit)?;
+        crate::agents::launch(&kit, &env, &agent, &dir).map_err(|e| fail("agent", format!("{e:#}")))
+    })
+    .await
+    .map_err(|e| fail("agent", e))?
+}
+
+#[tauri::command]
+pub fn agent_sign_out<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    agent: String,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    crate::agents::sign_out(&state.kit, &state.env, &agent)
+        .map_err(|e| fail("sign out", format!("{e:#}")))
+}
+
+/// Opens a folder of the kit in File Explorer: `agents` (shared
+/// instructions, skills, MCP), `projects` or one project.
+#[tauri::command]
+pub fn folder_open<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    which: String,
+    project: Option<String>,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let dir = match which.as_str() {
+        "agents" => state.kit.data().join("agents"),
+        "projects" => project_dir(&state.kit, project.as_deref())?,
+        _ => return Err(format!("unknown folder: {which}")),
+    };
+    std::fs::create_dir_all(&dir).map_err(|e| fail("folder", e))?;
+    let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
+    crate::jobs::spawn_detached(
+        std::process::Command::new(std::path::Path::new(&system_root).join("explorer.exe"))
+            .arg(&dir),
+        0,
+    )
+    .map(|_| ())
+    .map_err(|e| fail("explorer", format!("{e:#}")))
+}
+
 /// The handler with every command; keep in sync with `build.rs` COMMANDS.
 #[macro_export]
 macro_rules! command_handler {
@@ -416,7 +489,11 @@ macro_rules! command_handler {
             $crate::commands::setup_state,
             $crate::commands::setup_start,
             $crate::commands::setup_cancel,
-            $crate::commands::components_apply
+            $crate::commands::components_apply,
+            $crate::commands::agents_status,
+            $crate::commands::agent_launch,
+            $crate::commands::agent_sign_out,
+            $crate::commands::folder_open
         ]
     };
 }

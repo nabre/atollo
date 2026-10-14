@@ -1,6 +1,6 @@
 # Atollo App: piano (fase 0, revisione 3)
 
-Stato: **approvato** (14/10/2026). Fasi 1-4 completate; prossima: fase 5 (agenti: allineamento, accesso Antigravity, rilocazione, pagine Home e Agenti).
+Stato: **approvato** (14/10/2026). Fasi 1-5 completate; prossima: fase 6 (Impostazioni, Rimuovi l'unità, altre copie del kit, aggiornamento dell'app, quattro lingue, accessibilità).
 Base letta: `nabre/atollo` al commit `a61a354` (main, 13/10/2026).
 Scelte non ovvie: [DECISIONS.md](DECISIONS.md). Domande aperte: §11.
 

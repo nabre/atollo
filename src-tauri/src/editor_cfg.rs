@@ -93,7 +93,13 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
     ] {
         let exe = apps.join(rel);
         if exe.is_file() {
-            out.insert(name.into(), profile(&exe, &[], icon));
+            // Antigravity through the kit's agy.cmd: it carries the login.
+            let path = if name == "Antigravity" {
+                kit.kit_files().join(r"bin\agy.cmd")
+            } else {
+                exe
+            };
+            out.insert(name.into(), profile(&path, &[], icon));
         }
     }
     out
