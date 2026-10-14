@@ -1,0 +1,55 @@
+[package]
+name = "dev-kit"
+version = "0.1.0"
+description = "Dev-Kit: portable development environment with integrated editor and AI agents"
+authors = ["nabre"]
+license = "MIT"
+edition = "2021"
+rust-version = "1.85"
+publish = false
+
+[[bin]]
+name = "Dev-Kit"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "=2.7.0", features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.0", features = [] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+anyhow = "1.0.104"
+thiserror = "2.0.21"
+sha2 = "0.11.0"
+webview2-com = "0.39.1"
+ureq = { version = "3.4.2", default-features = false, features = ["native-tls", "json", "gzip", "win-system-proxy"] }
+native-tls = "0.2.18"
+zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+tar = "0.4.46"
+flate2 = "1.1.10"
+sevenz-rust2 = "0.23.0"
+base64 = "0.23.1"
+regex = "1.13.1"
+
+[dependencies.windows]
+version = "0.62.2"
+features = [
+    "Win32_Foundation",
+    "Win32_Globalization",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_Security_Cryptography",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Com",
+    "Win32_System_Console",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_JobObjects",
+    "Win32_System_Pipes",
+    "Win32_System_Threading",
+    "Win32_System_IO",
+    "Win32_UI_WindowsAndMessaging",
+]
+
+[dev-dependencies]
+tauri = { version = "=2.12.0", features = ["test"] }

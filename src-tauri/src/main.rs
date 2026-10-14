@@ -1,0 +1,467 @@
+//! Dev-Kit: portable development environment for Windows in one exe.
+//!
+//! Start order (docs/app/PLAN.md §3): kit root → folders and settings →
+//! environment of this process inside `data\` → command line or window →
+//! one instance per kit → Job Object → WebView2 → main window.
+#![cfg_attr(not(test), windows_subsystem = "windows")]
+#![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
+
+mod archive;
+mod catalog;
+mod cli;
+mod commands;
+mod editor;
+mod editor_cfg;
+mod editor_window;
+mod env;
+mod i18n;
+mod install;
+mod instance;
+mod jobs;
+mod kit;
+mod kit_files;
+mod log;
+mod net;
+mod settings;
+mod setup_runner;
+mod setup_task;
+mod terminal;
+mod verify;
+mod webview;
+
+use std::path::Path;
+
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use windows::core::HSTRING;
+use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+
+use crate::cli::Cli;
+use crate::commands::{AppState, MAIN};
+use crate::env::{Host, KitEnv};
+use crate::kit::Kit;
+use crate::settings::Settings;
+
+fn main() {
+    std::process::exit(run());
+}
+
+/// Message box for errors before (or instead of) the window.
+fn fatal(lang: &str, message: &str) {
+    let title = HSTRING::from(i18n::t(lang, "Dev-Kit non può partire", &[]));
+    let text = HSTRING::from(message);
+    // SAFETY: both strings outlive the modal call.
+    unsafe { MessageBoxW(None, &text, &title, MB_OK | MB_ICONERROR) };
+}
+
+fn run() -> i32 {
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    let command = cli::parse(&args);
+    let host = Host::capture();
+    let windows_lang = i18n::windows_locale();
+    // Language before settings exist: for the "cannot write" message.
+    let early_lang = i18n::resolve(None, host.get("DEVKIT_LANG"), windows_lang.as_deref());
+
+    let exe = match std::env::current_exe() {
+        Ok(exe) => exe,
+        Err(e) => {
+            fatal(
+                early_lang,
+                &i18n::t(early_lang, "Errore imprevisto: {0}", &[&e.to_string()]),
+            );
+            return 1;
+        }
+    };
+    let kit = match Kit::from_exe(&exe) {
+        Ok(kit) => kit,
+        Err(e) => {
+            fatal(
+                early_lang,
+                &i18n::t(early_lang, "Errore imprevisto: {0}", &[&e.to_string()]),
+            );
+            return 1;
+        }
+    };
+    let moved_from = match kit.prepare() {
+        Ok(moved) => moved,
+        Err(e) => {
+            let path = match &e {
+                kit::KitError::NotWritable { path, .. } => path.display().to_string(),
+                kit::KitError::NoRoot(path) => path.display().to_string(),
+            };
+            let text = format!(
+                "{}\n\n{}",
+                i18n::t(early_lang, "Impossibile scrivere nella cartella {0}.", &[&path]),
+                i18n::t(early_lang, "Sposta Dev-Kit.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
+            );
+            fatal(early_lang, &text);
+            return 1;
+        }
+    };
+
+    log::init(&kit.logs());
+    let loaded = Settings::load(&kit);
+    let lang = i18n::resolve(
+        loaded.settings.lang.as_deref(),
+        host.get("DEVKIT_LANG"),
+        windows_lang.as_deref(),
+    );
+    if let Some(problem) = &loaded.problem {
+        log::warn(&i18n::t("en", "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.", &[problem]));
+    }
+    let kit_env = KitEnv::build(&kit, &loaded.settings, lang, &host);
+    if let Err(e) = kit_env.create_dirs() {
+        log::warn(&format!("creating kit folders: {e}"));
+    }
+    env::apply_to_current_process(&kit_env, &kit);
+    if let Err(e) = kit_files::write_all(&kit) {
+        log::warn(&format!("writing kit files: {e:#}"));
+    }
+
+    match command {
+        Cli::Gui => {}
+        Cli::Env => return cli::print_env(&kit_env, &mut *cli::output()).map_or(1, |()| 0),
+        Cli::Prepare(args) => return prepare(&kit, &kit_env, &loaded.settings, &host, lang, &args),
+        Cli::Components => {
+            return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0)
+        }
+        Cli::Version => {
+            let _ = writeln!(cli::output(), "Dev-Kit {}", env!("CARGO_PKG_VERSION"));
+            return 0;
+        }
+        Cli::Help => {
+            let _ = writeln!(cli::output(), "{}", help(lang));
+            return 0;
+        }
+        Cli::Unknown(other) => {
+            let mut out = cli::output();
+            let _ = writeln!(
+                out,
+                "{}\n\n{}",
+                i18n::t(lang, "Comando sconosciuto: {0}", &[&other]),
+                help(lang)
+            );
+            return 2;
+        }
+    }
+
+    let guard = match instance::acquire(&kit) {
+        Ok(instance::Instance::Primary(guard)) => guard,
+        Ok(instance::Instance::Secondary) => {
+            if let Err(e) = instance::notify_primary(&kit, "focus") {
+                log::warn(&format!("second start, focus request failed: {e:#}"));
+            }
+            return 0;
+        }
+        Err(e) => {
+            log::error(&format!("single instance: {e:#}"));
+            fatal(
+                lang,
+                &i18n::t(lang, "Errore imprevisto: {0}", &[&format!("{e:#}")]),
+            );
+            return 1;
+        }
+    };
+
+    // WebView2 lookup sets a variable for the fixed runtime: still single-threaded here.
+    let runtime = webview::locate(&kit);
+    let Some(runtime) = runtime else {
+        log::error("WebView2 runtime not found");
+        let text = format!(
+            "{}\n\n{}",
+            i18n::t(lang, "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di Dev-Kit.", &[]),
+            i18n::t(
+                lang,
+                "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia Dev-Kit. Non serve installare nulla.",
+                &[kit.arch().as_str(), webview::DOWNLOAD_URL, &webview::fixed_folder(&kit).display().to_string()]
+            )
+        );
+        fatal(lang, &text);
+        return 1;
+    };
+    let webview_desc = match &runtime {
+        webview::Runtime::System(v) => format!("system {v}"),
+        webview::Runtime::Fixed { folder, version } => {
+            format!("fixed {version} ({})", folder.display())
+        }
+    };
+
+    match jobs::init() {
+        Ok(None) => {}
+        Ok(Some(note)) => log::warn(&format!("job object: {note}")),
+        Err(e) => log::error(&format!("job object: {e:#}")),
+    }
+    log::info(&format!(
+        "start {} root={} platform={} lang={lang} webview={webview_desc} moved_from={:?}",
+        env!("CARGO_PKG_VERSION"),
+        kit.root().display(),
+        kit.arch().platform(),
+        moved_from
+    ));
+
+    let setup = std::sync::Arc::new(setup_task::SetupTask::new(
+        kit.clone(),
+        kit_env.clone(),
+        loaded.settings.clone(),
+        github_token(&host),
+    ));
+    let state = AppState {
+        setup,
+        kit: kit.clone(),
+        lang,
+        moved_from: moved_from.map(|p| p.display().to_string()),
+        webview: webview_desc,
+        editor: std::sync::Arc::new(editor::Editor::new(kit.clone(), kit_env.clone())),
+        env: kit_env,
+    };
+    let result =
+        build_app(tauri::Builder::default(), state, kit.clone()).run(tauri::generate_context!());
+    drop(guard);
+    match result {
+        Ok(()) => 0,
+        Err(e) => {
+            log::error(&format!("tauri: {e:#}"));
+            fatal(
+                lang,
+                &i18n::t(lang, "Errore imprevisto: {0}", &[&e.to_string()]),
+            );
+            1
+        }
+    }
+}
+
+use std::io::Write as _;
+
+/// Raises GitHub's API limit when the user has a token.
+fn github_token(host: &Host) -> Option<String> {
+    host.get("GITHUB_TOKEN")
+        .or(host.get("GH_TOKEN"))
+        .map(str::to_owned)
+}
+
+/// `Dev-Kit.exe prepare`: 0 all good, 1 some component failed, 3 another
+/// preparation is running.
+fn prepare(
+    kit: &Kit,
+    kit_env: &KitEnv,
+    settings: &Settings,
+    host: &Host,
+    lang: &str,
+    args: &cli::PrepareArgs,
+) -> i32 {
+    let mut out = cli::output();
+    if let Err(e) = jobs::init() {
+        log::warn(&format!("job object: {e:#}"));
+    }
+    let net = match net::Net::new(settings, github_token(host)) {
+        Ok(net) => net,
+        Err(e) => {
+            let _ = writeln!(out, "  x {e:#}");
+            return 1;
+        }
+    };
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    let ctx = install::Ctx {
+        kit,
+        net: &net,
+        env: kit_env,
+        cancel: &cancel,
+    };
+    log::info(&format!("prepare {args:?}"));
+    let mut printer = cli::Printer::new(&mut *out, lang);
+    let results = match setup_runner::run(&ctx, &args.options(), &mut printer) {
+        Ok(results) => results,
+        Err(e) if e.is::<setup_runner::Busy>() => {
+            let _ = writeln!(
+                out,
+                "  x {}",
+                i18n::t(
+                    lang,
+                    "Un'altra preparazione è già in corso in questo kit.",
+                    &[]
+                )
+            );
+            return 3;
+        }
+        Err(e) => {
+            let _ = writeln!(out, "  x {e:#}");
+            return 1;
+        }
+    };
+    let failed = results.iter().filter(|(_, o)| o.is_failure()).count();
+    for (id, outcome) in &results {
+        log::info(&format!("prepare {id}: {outcome:?}"));
+    }
+    i32::from(failed > 0)
+}
+
+/// Help text of the command line (Italian source; translated by the catalog).
+const HELP: &str = "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Dev-Kit.";
+
+fn help(lang: &str) -> String {
+    i18n::t(lang, HELP, &[])
+}
+
+/// The app: state, commands, main window, focus requests from a second start.
+fn build_app<R: tauri::Runtime>(
+    builder: tauri::Builder<R>,
+    state: AppState,
+    kit: Kit,
+) -> tauri::Builder<R> {
+    builder
+        .manage(state)
+        .invoke_handler(command_handler!())
+        .on_window_event(|window, event| {
+            if window.label().starts_with(editor_window::LABEL_PREFIX)
+                && matches!(
+                    event,
+                    tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed
+                )
+            {
+                log::info(&format!("{}: {event:?}", window.label()));
+            }
+            // Closing the app window ends the session: editor windows,
+            // server and consoles go with it (they are in the job).
+            if window.label() == MAIN && matches!(event, tauri::WindowEvent::Destroyed) {
+                window.app_handle().exit(0);
+            }
+        })
+        .setup(move |app| {
+            open_main_window(app.handle(), &kit.webview_data())?;
+            start_missing_required(app.handle(), &kit);
+            let handle = app.handle().clone();
+            instance::listen(&kit, move |message| {
+                if message.trim() == "focus" {
+                    if let Some(window) = handle.get_webview_window(MAIN) {
+                        let _ = window.unminimize();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+            });
+            Ok(())
+        })
+}
+
+/// First start, or a required component deleted: install what is missing
+/// without asking; the "Linguaggi e strumenti" page shows the progress.
+fn start_missing_required<R: tauri::Runtime>(app: &tauri::AppHandle<R>, kit: &Kit) {
+    let missing = setup_task::missing_required(kit);
+    if missing.is_empty() {
+        return;
+    }
+    let opts = setup_runner::Options {
+        only: missing,
+        ..setup_runner::Options::default()
+    };
+    let state = app.state::<AppState>();
+    if let Err(e) = state
+        .setup
+        .start(opts, true, commands::setup_notify(app.clone()))
+    {
+        log::warn(&format!("automatic setup: {e}"));
+    }
+}
+
+fn open_main_window<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    data_dir: &Path,
+) -> tauri::Result<()> {
+    WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()))
+        .title("Dev-Kit")
+        .inner_size(1180.0, 760.0)
+        .min_inner_size(820.0, 560.0)
+        .data_directory(data_dir.to_path_buf())
+        .build()?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::kit::Arch;
+    use tauri::test::{get_ipc_response, mock_builder, INVOKE_KEY};
+    use tauri::webview::InvokeRequest;
+
+    fn state() -> AppState {
+        let kit = Kit::at(std::env::temp_dir().join("devkit-ipc-test"), Arch::X64);
+        let editor = std::sync::Arc::new(editor::Editor::new(kit.clone(), KitEnv::default()));
+        let setup = std::sync::Arc::new(setup_task::SetupTask::new(
+            kit.clone(),
+            KitEnv::default(),
+            Settings::default(),
+            None,
+        ));
+        AppState {
+            setup,
+            editor,
+            kit,
+            lang: "it",
+            moved_from: None,
+            webview: "test".into(),
+            env: KitEnv::default(),
+        }
+    }
+
+    fn invoke(
+        webview: &tauri::WebviewWindow<tauri::test::MockRuntime>,
+        url: &str,
+    ) -> Result<serde_json::Value, serde_json::Value> {
+        get_ipc_response(
+            webview,
+            InvokeRequest {
+                cmd: "app_info".into(),
+                callback: tauri::ipc::CallbackFn(0),
+                error: tauri::ipc::CallbackFn(1),
+                url: url.parse().unwrap(),
+                body: tauri::ipc::InvokeBody::default(),
+                headers: Default::default(),
+                invoke_key: INVOKE_KEY.to_string(),
+            },
+        )
+        .map(|b| b.deserialize::<serde_json::Value>().unwrap())
+    }
+
+    #[test]
+    fn help_is_translated() {
+        assert_ne!(i18n::t("en", HELP, &[]), HELP);
+    }
+
+    /// DECISIONS.md D-14: an editor window (local server URL) cannot call
+    /// the app's commands; the main window can.
+    #[test]
+    fn editor_windows_cannot_invoke_commands() {
+        let app = mock_builder()
+            .manage(state())
+            .invoke_handler(command_handler!())
+            .build(tauri::generate_context!())
+            .unwrap();
+        let main = WebviewWindowBuilder::new(&app, MAIN, WebviewUrl::App("index.html".into()))
+            .data_directory(std::env::temp_dir().join("devkit-ipc-test-webview"))
+            .build()
+            .unwrap();
+        let r = invoke(&main, "http://tauri.localhost");
+        assert!(r.is_ok(), "main window must work: {r:?}");
+
+        let editor_url = "http://127.0.0.1:7000/";
+        let editor = WebviewWindowBuilder::new(
+            &app,
+            "editor-1",
+            WebviewUrl::External(editor_url.parse().unwrap()),
+        )
+        .data_directory(std::env::temp_dir().join("devkit-ipc-test-webview"))
+        .build()
+        .unwrap();
+        assert!(
+            invoke(&editor, editor_url).is_err(),
+            "editor window must be refused"
+        );
+
+        // Even a window labelled like an editor but loading app pages is refused.
+        let other =
+            WebviewWindowBuilder::new(&app, "editor-2", WebviewUrl::App("index.html".into()))
+                .data_directory(std::env::temp_dir().join("devkit-ipc-test-webview"))
+                .build()
+                .unwrap();
+        assert!(invoke(&other, "http://tauri.localhost").is_err());
+    }
+}

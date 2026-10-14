@@ -1,0 +1,132 @@
+/*
+ * VSCodium look for every window of the app (user request, 14/10/2026):
+ * the colors of VSCodium's default themes "Dark Modern" and "Light Modern",
+ * chosen from the Windows light/dark setting, and the Codicons icon set
+ * (react-icons/vsc). Values to re-check against the theme files shipped in
+ * the VSCodium server (extensions/theme-defaults/themes) in phase 3.
+ */
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+  --vsc-font: "Segoe WPC", "Segoe UI", system-ui, sans-serif;
+  --vsc-mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+/* Dark Modern */
+:root,
+:root[data-theme="dark"] {
+  --vsc-bg: #1f1f1f;
+  --vsc-sidebar: #181818;
+  --vsc-activitybar: #181818;
+  --vsc-activitybar-fg: #d7d7d7;
+  --vsc-activitybar-inactive: #868686;
+  --vsc-activitybar-border: #0078d4;
+  --vsc-fg: #cccccc;
+  --vsc-desc: #9d9d9d;
+  --vsc-border: #2b2b2b;
+  --vsc-focus: #0078d4;
+  --vsc-button: #0078d4;
+  --vsc-button-hover: #026ec1;
+  --vsc-button-fg: #ffffff;
+  --vsc-button2: #313131;
+  --vsc-button2-hover: #3c3c3c;
+  --vsc-button2-fg: #cccccc;
+  --vsc-input: #313131;
+  --vsc-input-border: #3c3c3c;
+  --vsc-list-hover: #2a2d2e;
+  --vsc-list-active: #04395e;
+  --vsc-statusbar: #181818;
+  --vsc-statusbar-fg: #cccccc;
+  --vsc-badge: #616161;
+  --vsc-link: #4daafc;
+  --vsc-error: #f85149;
+  --vsc-warning: #cca700;
+  --vsc-success: #73c991;
+}
+
+/* Light Modern */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --vsc-bg: #ffffff;
+    --vsc-sidebar: #f8f8f8;
+    --vsc-activitybar: #f8f8f8;
+    --vsc-activitybar-fg: #1f1f1f;
+    --vsc-activitybar-inactive: #616161;
+    --vsc-activitybar-border: #005fb8;
+    --vsc-fg: #3b3b3b;
+    --vsc-desc: #616161;
+    --vsc-border: #e5e5e5;
+    --vsc-focus: #005fb8;
+    --vsc-button: #005fb8;
+    --vsc-button-hover: #0258a8;
+    --vsc-button-fg: #ffffff;
+    --vsc-button2: #e5e5e5;
+    --vsc-button2-hover: #cccccc;
+    --vsc-button2-fg: #3b3b3b;
+    --vsc-input: #ffffff;
+    --vsc-input-border: #cecece;
+    --vsc-list-hover: #f2f2f2;
+    --vsc-list-active: #e8e8e8;
+    --vsc-statusbar: #f8f8f8;
+    --vsc-statusbar-fg: #3b3b3b;
+    --vsc-badge: #cccccc;
+    --vsc-link: #005fb8;
+    --vsc-error: #f85149;
+    --vsc-warning: #bf8803;
+    --vsc-success: #388a34;
+  }
+}
+
+@theme inline {
+  --font-sans: var(--vsc-font);
+  --font-mono: var(--vsc-mono);
+  --color-vsc-bg: var(--vsc-bg);
+  --color-vsc-sidebar: var(--vsc-sidebar);
+  --color-vsc-activitybar: var(--vsc-activitybar);
+  --color-vsc-activitybar-fg: var(--vsc-activitybar-fg);
+  --color-vsc-activitybar-inactive: var(--vsc-activitybar-inactive);
+  --color-vsc-activitybar-border: var(--vsc-activitybar-border);
+  --color-vsc-fg: var(--vsc-fg);
+  --color-vsc-desc: var(--vsc-desc);
+  --color-vsc-border: var(--vsc-border);
+  --color-vsc-focus: var(--vsc-focus);
+  --color-vsc-button: var(--vsc-button);
+  --color-vsc-button-hover: var(--vsc-button-hover);
+  --color-vsc-button-fg: var(--vsc-button-fg);
+  --color-vsc-button2: var(--vsc-button2);
+  --color-vsc-button2-hover: var(--vsc-button2-hover);
+  --color-vsc-button2-fg: var(--vsc-button2-fg);
+  --color-vsc-input: var(--vsc-input);
+  --color-vsc-input-border: var(--vsc-input-border);
+  --color-vsc-list-hover: var(--vsc-list-hover);
+  --color-vsc-list-active: var(--vsc-list-active);
+  --color-vsc-statusbar: var(--vsc-statusbar);
+  --color-vsc-statusbar-fg: var(--vsc-statusbar-fg);
+  --color-vsc-badge: var(--vsc-badge);
+  --color-vsc-link: var(--vsc-link);
+  --color-vsc-error: var(--vsc-error);
+  --color-vsc-warning: var(--vsc-warning);
+  --color-vsc-success: var(--vsc-success);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--vsc-bg);
+  color: var(--vsc-fg);
+  font-family: var(--vsc-font);
+  font-size: 13px;
+  user-select: none;
+}
+
+/* Visible keyboard focus everywhere, as in VSCodium. */
+:focus-visible {
+  outline: 1px solid var(--vsc-focus);
+  outline-offset: -1px;
+}

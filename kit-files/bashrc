@@ -1,0 +1,13 @@
+# Dev-Kit: Git Bash of the kit (written by Dev-Kit.exe to data\kit\bashrc).
+# Started as: bash --rcfile <this file> -i. The PC's ~/.bashrc is not read:
+# HOME is data\home, so a ~/.bashrc there (yours) is loaded at the end.
+
+export HISTFILE="$HOME/.bash_history"
+export HISTSIZE=10000
+shopt -s histappend
+
+PS1='\[\e[38;5;75m\]Dev-Kit\[\e[0m\] \[\e[38;5;180m\]\w\[\e[0m\]\$ '
+
+if [ -f "$HOME/.bashrc" ]; then
+    . "$HOME/.bashrc"
+fi

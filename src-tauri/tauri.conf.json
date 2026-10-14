@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Dev-Kit",
+  "mainBinaryName": "Dev-Kit",
+  "version": "0.1.0",
+  "identifier": "io.github.nabre.devkit2",
+  "build": {
+    "beforeDevCommand": {
+      "script": "npm run dev",
+      "cwd": "../ui"
+    },
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeBuildCommand": {
+      "script": "npm run build",
+      "cwd": "../ui"
+    },
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [],
+    "withGlobalTauri": false,
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; frame-src 'none'; object-src 'none'; base-uri 'none'",
+      "capabilities": [
+        "main"
+      ],
+      "freezePrototype": false
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": [
+      "icons/icon.ico"
+    ]
+  }
+}

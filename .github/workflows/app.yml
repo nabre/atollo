@@ -1,0 +1,119 @@
+name: App
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint and test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Frontend dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Frontend lint, format, types, tests, build
+        run: |
+          npm -w ui run lint
+          npm -w ui run format:check
+          npm -w ui test
+          npm -w ui run build
+      - name: cargo fmt
+        run: cargo fmt --check
+      - name: cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: cargo test
+        run: cargo test
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: check
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: Frontend dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Build (no installer)
+        run: ./node_modules/.bin/tauri build --no-bundle --target ${{ matrix.target }}
+      - name: No elevation in the manifest
+        shell: pwsh
+        run: |
+          $exe = "target/${{ matrix.target }}/release/Dev-Kit.exe"
+          $text = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($exe))
+          if ($text -notmatch 'requestedExecutionLevel level="asInvoker"') { throw "asInvoker missing" }
+          if ($text -match 'requireAdministrator|highestAvailable') { throw "elevation requested" }
+      - name: Smoke test (x64)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        run: |
+          $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
+          New-Item -ItemType Directory -Force $kit | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/Dev-Kit.exe" $kit
+          $env_out = & "$kit/Dev-Kit.exe" env
+          if ($LASTEXITCODE -ne 0) { throw "env failed" }
+          $path = ($env_out | Where-Object { $_ -like 'PATH=*' }) -replace '^PATH=', ''
+          foreach ($entry in $path -split ';') {
+            if (-not ($entry.StartsWith("$kit\data") -or $entry -like "$env:SystemRoot\System32*")) { throw "foreign PATH entry: $entry" }
+          }
+          $names = (Get-ChildItem $kit -Force).Name | Sort-Object
+          if (($names -join ',') -ne 'data,Dev-Kit.exe,projects') { throw "unexpected files: $names" }
+      - name: Real install of the editor and terminal components (x64)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
+          & "$kit/Dev-Kit.exe" prepare --only "pwsh,terminal,node,git,vscodium-server"
+          if ($LASTEXITCODE -ne 0) { throw "prepare failed ($LASTEXITCODE)" }
+          & "$kit/data/apps/win32-x64/pwsh/pwsh.exe" -NoProfile -Command '$PSVersionTable.PSVersion'
+          & "$kit/data/apps/win32-x64/node/node.exe" -v
+          & "$kit/data/apps/win32-x64/git/cmd/git.exe" --version
+          if (-not (Test-Path "$kit/data/apps/win32-x64/vscodium-server/bin/codium-server.cmd")) { throw "editor server missing" }
+          if (-not (Test-Path "$kit/data/apps/win32-x64/terminal/.portable")) { throw "terminal not portable" }
+          & "$kit/Dev-Kit.exe" prepare --only "pwsh,node" --update-all
+          if ($LASTEXITCODE -ne 0) { throw "update check failed" }
+      - name: Editor server test (token, redirect, no leftover processes)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        run: |
+          $env:DEVKIT_TEST_KIT = Join-Path $env:RUNNER_TEMP "kit (1) & co"
+          cargo test --target ${{ matrix.target }} real_server -- --nocapture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Dev-Kit-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/Dev-Kit.exe
+          if-no-files-found: error
