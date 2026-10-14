@@ -1,5 +1,14 @@
 # Novità
 
+## Pagina del progetto (14/10/2026)
+
+**Fatto**
+- **Ogni progetto ha la sua pagina** (D-75), dal nome del progetto in Progetti o nella Home: Panoramica, Avvio, Database, Editor, Agenti, Git e GitHub.
+- **Database del progetto**: «Crea database e utente» (avvia il server se serve) e «Scrivi in .env» con l'elenco delle righe che cambiano.
+- **Stato Git letto dai file**, senza eseguire Git nel progetto; percorsi verso cartelle di rete e collegamenti rifiutati (tre correzioni dalla revisione di sicurezza).
+
+**Verificato**: 204 test Rust, 22 test dell'interfaccia; prova nell'app su un progetto Laravel di prova.
+
 ## Database del kit (14/10/2026)
 
 **Fatto**

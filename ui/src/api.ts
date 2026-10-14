@@ -604,6 +604,35 @@ export function serviceSet(id: ServiceInfo["id"], port: number | null, autostart
     : invoke<ServiceInfo[]>("service_set", { id, port, autostart });
 }
 
+// Git state and agent instructions of a project (src-tauri/src/projects.rs).
+
+export interface GitInfo {
+  branch: string | null;
+  upstream: string | null;
+  /** Same commit as its remote branch (last fetch); null without one. */
+  synced: boolean | null;
+  remote: string | null;
+}
+
+export interface ProjectStatus {
+  git: GitInfo | null;
+  instructions: string[];
+}
+
+export function projectStatus(project: string): Promise<ProjectStatus> {
+  return browserPreview
+    ? Promise.resolve({
+        git: {
+          branch: "main",
+          upstream: "origin/main",
+          synced: false,
+          remote: "https://github.com/nabre/negozio-online.git",
+        },
+        instructions: ["AGENTS.md"],
+      })
+    : invoke<ProjectStatus>("project_status", { project });
+}
+
 // Databases of a project (src-tauri/src/db_auth.rs, D-74).
 
 export interface ProjectDb {

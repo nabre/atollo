@@ -65,6 +65,8 @@ function pages(): Page[] {
 
 export function App() {
   const [page, setPage] = useState<PageId>("home");
+  /** A project whose page opens with the Projects page (from the Home). */
+  const [openProject, setOpenProject] = useState<string | null>(null);
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [lang, setLangState] = useState<Lang>("it");
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +137,14 @@ export function App() {
       </a>
       <TitleBar title={current?.label} />
       <div className="flex min-h-0 flex-1">
-        <ActivityBar pages={all} page={page} onSelect={setPage} />
+        <ActivityBar
+          pages={all}
+          page={page}
+          onSelect={(id) => {
+            setOpenProject(null);
+            setPage(id);
+          }}
+        />
         <main className="flex min-w-0 flex-1 flex-col bg-vsc-bg" aria-labelledby="page-title">
           <header className="flex h-9 items-center gap-3 border-b border-vsc-border px-5">
             <h1 id="page-title" className="text-[11px] font-normal tracking-wide uppercase text-vsc-desc">
@@ -159,11 +168,16 @@ export function App() {
                 agents={agents}
                 onChanged={refreshEditor}
                 onAllProjects={() => {
+                  setOpenProject(null);
+                  setPage("projects");
+                }}
+                onOpenProject={(id) => {
+                  setOpenProject(id);
                   setPage("projects");
                 }}
               />
             ) : page === "projects" ? (
-              <ProjectsPage status={editor} agents={agents} onChanged={refreshEditor} />
+              <ProjectsPage status={editor} agents={agents} onChanged={refreshEditor} initialOpen={openProject} />
             ) : page === "github" ? (
               <GithubPage editor={editor} onChanged={refreshEditor} />
             ) : page === "agents" ? (
@@ -231,6 +245,7 @@ function Home({
   agents,
   onChanged,
   onAllProjects,
+  onOpenProject,
 }: {
   info: AppInfo | null;
   error: string | null;
@@ -239,6 +254,7 @@ function Home({
   agents: AgentInfo[] | null;
   onChanged: () => void;
   onAllProjects: () => void;
+  onOpenProject: (project: string) => void;
 }) {
   if (error) {
     return (
@@ -292,6 +308,7 @@ function Home({
         agents={agents}
         onChanged={onChanged}
         onAll={onAllProjects}
+        onOpen={onOpenProject}
       />
       {setup && setup.steps.length > 0 && <SetupProgress snapshot={setup} />}
       <section aria-labelledby="where" className="rounded border border-vsc-border bg-vsc-sidebar">

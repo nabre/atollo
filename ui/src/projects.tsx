@@ -4,7 +4,6 @@
 import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
 import {
   VscAdd,
-  VscChevronDown,
   VscChevronRight,
   VscCloudDownload,
   VscCode,
@@ -48,13 +47,14 @@ import {
 } from "./api";
 import { AgentPicker } from "./agents";
 import { ProjectExtensions } from "./extensions";
+import { ProjectPage } from "./projectpage";
 import { ActionButton, editorHint, ErrorLine, useAction } from "./pages";
 import { locale, t } from "./i18n";
 import { LanguageTag } from "./logos";
 
 const MAX_LINES = 3000;
 
-const alive = (s: RunState | undefined) => s === "starting" || s === "running";
+export const alive = (s: RunState | undefined) => s === "starting" || s === "running";
 
 /** The actions started in this session, kept current by the "run" events. */
 export function useRuns() {
@@ -106,7 +106,7 @@ export function useRuns() {
   return { runs, logs, loadLog, forget };
 }
 
-function stateText(r: RunInfo): string {
+export function stateText(r: RunInfo): string {
   switch (r.state) {
     case "starting":
       return t("in avvio");
@@ -121,7 +121,7 @@ function stateText(r: RunInfo): string {
   }
 }
 
-function kindText(k: ProjectAction["type"]): string {
+export function kindText(k: ProjectAction["type"]): string {
   return { web: t("sito web"), desktop: t("app con finestra"), command: t("comando") }[k];
 }
 
@@ -129,14 +129,17 @@ export function ProjectsPage({
   status,
   agents,
   onChanged,
+  initialOpen = null,
 }: {
   status: EditorStatus | null;
   agents: AgentInfo[] | null;
   onChanged: () => void;
+  /** A project whose page opens first (from the Home). */
+  initialOpen?: string | null;
 }) {
   const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(initialOpen);
   const [form, setForm] = useState<"new" | "clone" | null>(null);
   const [ports, setPorts] = useState<Ports>({ ports: {}, locked: [] });
   const [shownLog, setShownLog] = useState<string | null>(null);
@@ -171,6 +174,37 @@ export function ProjectsPage({
     });
   };
   const active = Object.values(runs).sort((a, b) => b.start - a.start);
+  const page = open ? (projects ?? []).find((x) => x.id === open) : undefined;
+  if (page) {
+    return (
+      <ProjectPage
+        p={page}
+        agents={agents}
+        editor={status}
+        runs={runs}
+        logs={logs}
+        ports={ports}
+        busy={busy}
+        onStart={(a) => {
+          start(page, a);
+        }}
+        onStop={(key) => {
+          run(`stop:${key}`, () => runStop(key));
+        }}
+        onPorts={setPorts}
+        onShowLog={showLog}
+        shownLog={shownLog}
+        onForget={(key) => {
+          if (shownLog === key) setShownLog(null);
+          forget(key);
+        }}
+        onBack={() => {
+          setOpen(null);
+        }}
+        onChanged={load}
+      />
+    );
+  }
 
   return (
     <div className="max-w-5xl space-y-4">
@@ -247,24 +281,18 @@ export function ProjectsPage({
           {projects.map((p) => {
             const main = p.actions.find((a) => a.id === p.default) ?? null;
             const mainRun = main ? runs[`${p.id}|${main.id}`] : undefined;
-            const expanded = open === p.id;
             return (
               <li key={p.id}>
                 <div className="flex flex-wrap items-center gap-2 px-3 py-2 hover:bg-vsc-list-hover">
                   <button
                     type="button"
-                    aria-expanded={expanded}
-                    aria-controls={`project-${p.id}`}
+                    title={t("Apre la pagina di {0}", p.name)}
                     onClick={() => {
-                      setOpen(expanded ? null : p.id);
+                      setOpen(p.id);
                     }}
                     className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   >
-                    {expanded ? (
-                      <VscChevronDown size={16} aria-hidden="true" className="shrink-0" />
-                    ) : (
-                      <VscChevronRight size={16} aria-hidden="true" className="shrink-0" />
-                    )}
+                    <VscChevronRight size={16} aria-hidden="true" className="shrink-0" />
                     <span className="truncate font-semibold">{p.name}</span>
                     <span className="truncate text-[12px] text-vsc-desc">{p.platform}</span>
                     {p.languages.length > 0 && (
@@ -332,22 +360,6 @@ export function ProjectsPage({
                   />
                   <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
                 </div>
-                {expanded && (
-                  <ProjectDetails
-                    project={p}
-                    runs={runs}
-                    ports={ports}
-                    busy={busy}
-                    onStart={(a) => {
-                      start(p, a);
-                    }}
-                    onStop={(key) => {
-                      run(`stop:${key}`, () => runStop(key));
-                    }}
-                    onPorts={setPorts}
-                    onChanged={load}
-                  />
-                )}
               </li>
             );
           })}
@@ -357,7 +369,7 @@ export function ProjectsPage({
   );
 }
 
-function ProjectDetails({
+export function ProjectDetails({
   project: p,
   runs,
   ports,
@@ -366,7 +378,10 @@ function ProjectDetails({
   onStop,
   onPorts,
   onChanged,
+  onlyRun = false,
 }: {
+  /** Only what starts the project (its page shows the rest in other tabs). */
+  onlyRun?: boolean;
   project: ProjectInfo;
   runs: Record<string, RunInfo>;
   ports: Ports;
@@ -379,8 +394,8 @@ function ProjectDetails({
   const { busy: working, error, run } = useAction(onChanged);
   return (
     <div id={`project-${p.id}`} className="space-y-3 border-t border-vsc-border bg-vsc-sidebar px-4 py-3">
-      <p className="text-[12px] text-vsc-desc">{p.reason}</p>
-      {p.missing.length > 0 && (
+      {!onlyRun && <p className="text-[12px] text-vsc-desc">{p.reason}</p>}
+      {!onlyRun && p.missing.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <p role="status" className="flex items-start gap-2 text-vsc-warning">
             <VscWarning size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
@@ -398,7 +413,7 @@ function ProjectDetails({
           />
         </div>
       )}
-      {p.warnings.length > 0 && (
+      {!onlyRun && p.warnings.length > 0 && (
         <ul className="list-disc space-y-1 pl-5 text-vsc-desc">
           {p.warnings.map((w) => (
             <li key={w}>{w}</li>
@@ -485,7 +500,7 @@ function ProjectDetails({
         </table>
       )}
       <SiteForm project={p} onChanged={onChanged} />
-      <ProjectExtensions project={p} onChanged={onChanged} />
+      {!onlyRun && <ProjectExtensions project={p} onChanged={onChanged} />}
       {p.empty && (
         <ActionButton
           icon={VscTrash}
@@ -609,7 +624,7 @@ function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () 
   );
 }
 
-function RunsPanel({
+export function RunsPanel({
   runs,
   logs,
   shown,
@@ -807,12 +822,15 @@ export function RecentProjects({
   agents,
   onChanged,
   onAll,
+  onOpen,
 }: {
   status: EditorStatus | null;
   setupRunning: boolean;
   agents: AgentInfo[] | null;
   onChanged: () => void;
   onAll: () => void;
+  /** Opens the project's page. */
+  onOpen: (project: string) => void;
 }) {
   const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
   const { busy, error, run } = useAction(onChanged);
@@ -847,7 +865,16 @@ export function RecentProjects({
           {recent.map((p) => (
             <li key={p.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
               <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                <span className="truncate font-semibold">{p.name}</span>
+                <button
+                  type="button"
+                  className="truncate font-semibold hover:underline"
+                  title={t("Apre la pagina di {0}", p.name)}
+                  onClick={() => {
+                    onOpen(p.id);
+                  }}
+                >
+                  {p.name}
+                </button>
                 {p.languages.slice(0, 4).map((l) => (
                   <LanguageTag key={l} name={l} />
                 ))}

@@ -20,7 +20,7 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 | Page | What it has |
 | --- | --- |
 | **Home** | recent projects with Editor, Terminal and agent; notices (kit moved, another copy of the kit open, installations running); where the kit is |
-| **Projects** | new project, clone from GitHub or a Git URL; for each project its type, its languages (with their logo) and the recognised actions (`npm run dev`, `php -S`, `cargo run`, static site…), with port, output and opening in the browser |
+| **Projects** | new project, clone from GitHub or a Git URL; for each project its type, its languages (with their logo) and the recognised actions (`npm run dev`, `php -S`, `cargo run`, static site…), with port, output and opening in the browser; each project has its own page (run, databases, extensions, agent, Git) |
 | **GitHub** | the kit's GitHub account, one for everything: this page, Git (in the editor, the consoles and the agents too) and GitHub CLI; the repositories of the account and its organizations, with clone into `projects\`, opening in the editor, rename and delete on GitHub |
 | **Agents** | the installed Claude Code, Codex and Antigravity: version, sign-in, plan limits and usage of today and of the last 7 days; instructions, skills and MCP servers shared in `data\agents` |
 | **Languages and tools** | the components with their logo, dependencies and disk space; install, update and remove |

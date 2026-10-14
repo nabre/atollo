@@ -20,7 +20,7 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 | Page | Contenu |
 | --- | --- |
 | **Accueil** | projets récents avec Éditeur, Terminal et agent ; avis (kit déplacé, autre copie du kit ouverte, installations en cours) ; emplacement du kit |
-| **Projets** | nouveau projet, clonage depuis GitHub ou une adresse Git ; pour chaque projet son type, ses langages (avec leur logo) et les actions reconnues (`npm run dev`, `php -S`, `cargo run`, site statique…), avec port, sortie et ouverture dans le navigateur |
+| **Projets** | nouveau projet, clonage depuis GitHub ou une adresse Git ; pour chaque projet son type, ses langages (avec leur logo) et les actions reconnues (`npm run dev`, `php -S`, `cargo run`, site statique…), avec port, sortie et ouverture dans le navigateur ; chaque projet a sa page (lancement, bases de données, extensions, agent, Git) |
 | **GitHub** | le compte GitHub du kit, un seul pour tout : cette page, Git (y compris dans l'éditeur, les consoles et les agents) et GitHub CLI ; les dépôts du compte et de ses organisations, avec clonage dans `projects\`, ouverture dans l'éditeur, renommage et suppression sur GitHub |
 | **Agents** | Claude Code, Codex et Antigravity installés : version, connexion, limites de l'abonnement et consommation du jour et des 7 derniers jours ; instructions, skills et serveurs MCP partagés dans `data\agents` |
 | **Langages et outils** | les composants avec leur logo, leurs dépendances et l'espace disque ; installer, mettre à jour, supprimer |
