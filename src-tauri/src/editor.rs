@@ -125,6 +125,8 @@ impl Editor {
         let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(s) = guard.as_mut() {
             if matches!(s.child.try_wait(), Ok(None)) {
+                // A project opened: its extensions may be new.
+                self.sync_extensions_now(false);
                 return Ok((s.port, s.token.clone()));
             }
         }
@@ -132,18 +134,36 @@ impl Editor {
         let server = self.start()?;
         let out = (server.port, server.token.clone());
         *guard = Some(server);
+        self.sync_extensions_now(true);
+        Ok(out)
+    }
+
+    /// Installs the extensions the projects now want, if the server runs
+    /// (otherwise at its start).
+    pub fn sync_extensions(&self) {
+        let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
+        if guard
+            .as_mut()
+            .is_some_and(|s| matches!(s.child.try_wait(), Ok(None)))
+        {
+            self.sync_extensions_now(false);
+        }
+    }
+
+    /// `retry`: the server (re)started, failed extensions are tried again.
+    fn sync_extensions_now(&self, retry: bool) {
         let settings = crate::settings::Settings::load(&self.kit).settings;
         let net = crate::net::Net::new(&settings, None)
             .ok()
             .map(std::sync::Arc::new);
         crate::editor_ext::sync_in_background(
             self.kit.clone(),
-            self.env().clone(),
+            self.env(),
             net,
             std::sync::Arc::clone(&self.extensions),
             std::sync::Arc::clone(&self.extensions_job),
+            retry,
         );
-        Ok(out)
     }
 
     pub fn stop(&self) {

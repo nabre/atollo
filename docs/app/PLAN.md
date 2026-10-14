@@ -132,7 +132,7 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `editor.rs` | server web: porta, token, avvio, salute, riavvio |
 | `editor_window.rs` | finestre `editor-<n>`: navigazione, nuove finestre, tasti e menu del browser spenti; barra del titolo di VSCodium senza cornice di Windows, con ripiego (D-69) |
 | `editor_cfg.rs` | impostazioni, profili del terminale esclusivi |
-| `editor_ext.rs` | estensioni consigliate (`@programma`, proposta una volta sola, CodeLLDB); nessuna estensione propria (Q4 = a) |
+| `editor_ext.rs` | estensioni dell'editor dalla matrice linguaggio-estensione e dai progetti (D-71), proposta una volta sola, CodeLLDB; nessuna estensione propria (Q4 = a) |
 | `terminal.rs` | console del kit: PowerShell del kit o un agente in Windows Terminal del kit (`wterm.rs`, D-68) o in `conhost.exe` di Windows (D-57), nel job |
 | `wterm.rs` | Windows Terminal portabile: impostazioni («Atollo», schemi di VSCodium), avvio, ambiente del kit e id del processo attraverso una named pipe (D-68) |
 | `github.rs` | account GitHub del kit, uno per tutto (D-70): accesso con `gh auth login --web` e codice monouso, `credential.helper` di Git verso `gh` per github.com, repository dell'account (API), clone, rinomina, eliminazione |

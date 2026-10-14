@@ -35,6 +35,8 @@
     "allow-project-clone",
     "allow-project-site",
     "allow-project-install-missing",
+    "allow-project-extensions",
+    "allow-extensions-matrix",
     "allow-github-status",
     "allow-github-sign-in",
     "allow-github-sign-in-cancel",

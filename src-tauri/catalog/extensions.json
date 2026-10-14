@@ -1,0 +1,92 @@
+{
+  "about": [
+    "Estensioni dell'editor integrato (da Open VSX, il registro di VSCodium) e matrice linguaggio-estensione del kit (DECISIONS.md D-71).",
+    "languages: nomi dei linguaggi come li rileva detect/mod.rs (LANGUAGES); tools: id dei componenti che un progetto richiede (Deno, Bun, CMake).",
+    "Un'estensione con languages o tools è predefinita nei progetti che li hanno; senza nessuno dei due è generale: sempre installata.",
+    "programs: per le generali, solo quando quel componente è nel kit. optional: non predefinita, si aggiunge a mano a un progetto.",
+    "Ogni estensione viene proposta una volta sola: se la disinstalli non torna, a meno che un progetto non la aggiunga a mano.",
+    "Origine: nabre/atollo setup/vscodium/extensions.txt."
+  ],
+  "extensions": [
+    { "id": "anthropic.claude-code", "name": "Claude Code", "programs": ["claude"], "note": "usa accesso e impostazioni del kit (editor_cfg.rs)" },
+
+    { "id": "ms-python.python", "name": "Python", "languages": ["Python"] },
+    { "id": "ms-python.debugpy", "name": "Python Debugger", "languages": ["Python"] },
+    { "id": "charliermarsh.ruff", "name": "Ruff", "languages": ["Python"] },
+    { "id": "detachhead.basedpyright", "name": "BasedPyright", "languages": ["Python"], "note": "controllo dei tipi (Pylance non è su Open VSX)" },
+
+    { "id": "dbaeumer.vscode-eslint", "name": "ESLint", "languages": ["JavaScript", "TypeScript", "Vue", "Svelte", "Astro"] },
+    { "id": "esbenp.prettier-vscode", "name": "Prettier", "languages": ["JavaScript", "TypeScript", "Vue", "Svelte", "Astro", "HTML", "CSS"] },
+    { "id": "dsznajder.es7-react-js-snippets", "name": "React Snippets", "languages": ["JavaScript", "TypeScript"] },
+    { "id": "vue.volar", "name": "Vue", "languages": ["Vue"] },
+    { "id": "svelte.svelte-vscode", "name": "Svelte", "languages": ["Svelte"] },
+    { "id": "astro-build.astro-vscode", "name": "Astro", "languages": ["Astro"] },
+    { "id": "bradlc.vscode-tailwindcss", "name": "Tailwind CSS", "languages": ["HTML", "CSS", "Vue", "Svelte", "Astro"] },
+    { "id": "formulahendry.auto-rename-tag", "name": "Auto Rename Tag", "languages": ["HTML", "Vue", "Svelte", "Astro"] },
+    { "id": "christian-kohler.path-intellisense", "name": "Path Intellisense", "languages": ["JavaScript", "TypeScript", "Vue", "Svelte", "Astro", "HTML", "CSS"] },
+    { "id": "denoland.vscode-deno", "name": "Deno", "tools": ["deno"], "note": "si attiva solo nei progetti Deno" },
+    { "id": "oven.bun-vscode", "name": "Bun", "tools": ["bun"] },
+
+    { "id": "bmewburn.vscode-intelephense-client", "name": "Intelephense", "languages": ["PHP"], "note": "completamento, snippet e analisi PHP" },
+    { "id": "xdebug.php-debug", "name": "PHP Debug", "languages": ["PHP"] },
+    { "id": "mrmlnc.vscode-apache", "name": "Apache Conf", "languages": ["PHP"], "note": "sintassi di httpd.conf e .htaccess" },
+
+    { "id": "rust-lang.rust-analyzer", "name": "rust-analyzer", "languages": ["Rust"] },
+    { "id": "vadimcn.vscode-lldb", "name": "CodeLLDB", "languages": ["Rust", "Zig", "C", "C++"], "note": "dalla release GitHub (editor_ext.rs)" },
+    { "id": "tauri-apps.tauri-vscode", "name": "Tauri", "languages": ["Rust"] },
+
+    { "id": "golang.go", "name": "Go", "languages": ["Go"], "note": "gopls e debug con Delve" },
+
+    { "id": "redhat.java", "name": "Java", "languages": ["Java"] },
+    { "id": "vscjava.vscode-java-debug", "name": "Java Debugger", "languages": ["Java"] },
+    { "id": "vscjava.vscode-java-test", "name": "Java Test Runner", "languages": ["Java"], "note": "test JUnit e TestNG" },
+    { "id": "vscjava.vscode-maven", "name": "Maven", "languages": ["Java"] },
+    { "id": "vscjava.vscode-gradle", "name": "Gradle", "languages": ["Java", "Kotlin"] },
+    { "id": "fwcd.kotlin", "name": "Kotlin", "languages": ["Kotlin"] },
+
+    { "id": "muhammad-sammy.csharp", "name": "C#", "languages": ["C#"], "note": "C# libero (OmniSharp, netcoredbg): quello Microsoft non è su Open VSX" },
+    { "id": "ionide.ionide-fsharp", "name": "Ionide F#", "languages": ["F#"] },
+
+    { "id": "dart-code.dart-code", "name": "Dart", "languages": ["Dart"] },
+    { "id": "dart-code.flutter", "name": "Flutter", "languages": ["Dart"], "optional": true },
+    { "id": "ziglang.vscode-zig", "name": "Zig", "languages": ["Zig"], "note": "debug con CodeLLDB" },
+    { "id": "julialang.language-julia", "name": "Julia", "languages": ["Julia"], "note": "REPL, debug e grafici" },
+
+    { "id": "llvm-vs-code-extensions.vscode-clangd", "name": "clangd", "languages": ["C", "C++"], "note": "cpptools di Microsoft non è su Open VSX" },
+    { "id": "ms-vscode.cmake-tools", "name": "CMake Tools", "tools": ["cmake"] },
+
+    { "id": "shopify.ruby-lsp", "name": "Ruby LSP", "languages": ["Ruby"] },
+    { "id": "koichisasada.vscode-rdbg", "name": "Ruby Debugger", "languages": ["Ruby"] },
+    { "id": "reditorsupport.r", "name": "R", "languages": ["R"], "note": "il LSP richiede il pacchetto R languageserver" },
+    { "id": "rdebugger.r-debugger", "name": "R Debugger", "languages": ["R"] },
+
+    { "id": "myriad-dreamin.tinymist", "name": "Tinymist", "languages": ["Typst"], "note": "anteprima dal vivo, completamento, formattazione, PDF" },
+    { "id": "james-yu.latex-workshop", "name": "LaTeX Workshop", "languages": ["LaTeX"], "note": "compilazione, anteprima del PDF, SyncTeX, completamento" },
+
+    { "id": "ms-vscode.powershell", "name": "PowerShell", "languages": ["PowerShell"] },
+    { "id": "timonwong.shellcheck", "name": "ShellCheck", "languages": ["Shell"] },
+    { "id": "foxundermoon.shell-format", "name": "shell-format", "languages": ["Shell"] },
+
+    { "id": "redhat.vscode-yaml", "name": "YAML" },
+    { "id": "redhat.vscode-xml", "name": "XML" },
+    { "id": "tamasfe.even-better-toml", "name": "Even Better TOML" },
+    { "id": "editorconfig.editorconfig", "name": "EditorConfig" },
+    { "id": "ms-azuretools.vscode-docker", "name": "Docker" },
+    { "id": "mechatroner.rainbow-csv", "name": "Rainbow CSV" },
+    { "id": "mikestead.dotenv", "name": "DotENV", "note": "file .env" },
+    { "id": "fill-labs.dependi", "name": "Dependi", "languages": ["Rust", "JavaScript", "TypeScript", "Python", "Go", "PHP"], "note": "versioni aggiornate delle dipendenze" },
+
+    { "id": "yzhang.markdown-all-in-one", "name": "Markdown All in One" },
+    { "id": "streetsidesoftware.code-spell-checker", "name": "Code Spell Checker" },
+    { "id": "streetsidesoftware.code-spell-checker-italian", "name": "Italian - Code Spell Checker" },
+
+    { "id": "vscode-icons-team.vscode-icons", "name": "vscode-icons", "note": "icone per tipo di file" },
+    { "id": "usernamehw.errorlens", "name": "Error Lens", "note": "errori e avvisi sulla riga stessa" },
+    { "id": "mhutchie.git-graph", "name": "Git Graph", "programs": ["git"] },
+    { "id": "gruntfuggly.todo-tree", "name": "Todo Tree", "note": "TODO e FIXME del progetto in un pannello" },
+    { "id": "usernamehw.commands", "name": "Commands", "note": "pulsanti per comandi e script nella barra di stato" },
+
+    { "id": "eamodio.gitlens", "name": "GitLens", "optional": true, "note": "cronologia Git avanzata (pesante)" },
+    { "id": "humao.rest-client", "name": "REST Client", "optional": true, "note": "richieste HTTP da file .http" }
+  ]
+}

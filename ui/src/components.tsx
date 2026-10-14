@@ -26,6 +26,7 @@ import {
 import { locale, rich, t } from "./i18n";
 import { ActionButton } from "./pages";
 import { SetupProgress } from "./setup";
+import { ExtensionsMatrixSection } from "./extensions";
 import { ComponentLogo } from "./logos";
 
 function groups(): { id: Group; title: string; hint: string }[] {
@@ -298,6 +299,8 @@ export function ComponentsPage({
           </section>
         );
       })}
+
+      {!firstRun && <ExtensionsMatrixSection projects={projects} components={list} />}
 
       <div className="sticky -bottom-5 flex flex-wrap items-center gap-3 border-t border-vsc-border bg-vsc-bg pt-3 pb-8">
         {confirm ? (

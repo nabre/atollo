@@ -47,6 +47,7 @@ import {
   type SiteKind,
 } from "./api";
 import { AgentPicker } from "./agents";
+import { ProjectExtensions } from "./extensions";
 import { ActionButton, editorHint, ErrorLine, useAction } from "./pages";
 import { locale, t } from "./i18n";
 import { LanguageTag } from "./logos";
@@ -484,6 +485,7 @@ function ProjectDetails({
         </table>
       )}
       <SiteForm project={p} onChanged={onChanged} />
+      <ProjectExtensions project={p} onChanged={onChanged} />
       {p.empty && (
         <ActionButton
           icon={VscTrash}
