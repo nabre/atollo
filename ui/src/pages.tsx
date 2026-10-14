@@ -83,9 +83,19 @@ function editorHint(status: EditorStatus | null): string | undefined {
   return undefined;
 }
 
-export function HomeActions({ status, onChanged }: { status: EditorStatus | null; onChanged: () => void }) {
+export function HomeActions({
+  status,
+  setupRunning,
+  onChanged,
+}: {
+  status: EditorStatus | null;
+  setupRunning: boolean;
+  onChanged: () => void;
+}) {
   const { busy, error, run } = useAction(onChanged);
-  const hint = editorHint(status);
+  const hint = setupRunning
+    ? "Installazione dei componenti del kit in corso: editor e terminale si aprono quando finisce."
+    : editorHint(status);
   return (
     <section aria-labelledby="start" className="space-y-3">
       <h2 id="start" className="text-[13px] font-semibold">
@@ -97,7 +107,6 @@ export function HomeActions({ status, onChanged }: { status: EditorStatus | null
           label="Editor"
           primary
           busy={busy === "editor"}
-          disabled={status?.installed === false}
           title={hint ?? "Apre VSCodium sulla cartella dei progetti"}
           onClick={() => {
             run("editor", () => editorOpen(null));

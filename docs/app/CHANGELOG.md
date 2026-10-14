@@ -1,5 +1,42 @@
 # Novità
 
+## Fase 3: editor e terminale (14/10/2026)
+
+**Fatto**
+- `editor.rs`: server web di VSCodium su `127.0.0.1`, porta libera 7000-7099, token casuale di 32 byte per sessione in `data\vscodium-server\token` (solo il proprietario, dove il disco ha i permessi), mai sulla riga di comando; avviato come `node.exe out\server-main.js` senza `cmd.exe`, sospeso e messo in un job suo (fermarlo chiude anche extension host e terminali); controllo di salute entro 30 s; log in `data\app\logs\editor.log` con il token mascherato.
+- `editor_window.rs`: una finestra per progetto (`editor-<n>`, nessuna capability), cartella dati `data\webview2`, navigazione solo verso il server, `window.open` sul server → nuova finestra dell'editor, link `http(s)` esterni → browser di sistema fuori dal job, altri schemi bloccati; tasti acceleratori e menu contestuale del browser spenti, zoom gestito dall'editor.
+- `editor_cfg.rs`: impostazioni del server in `data\vscodium-server\data\Machine\settings.json`: profili del terminale del kit riscritti a ogni avvio ("Dev-Kit" con PowerShell 7, "Dev-Kit - Git Bash", "Dev-Kit - cmd", agenti installati), profili del PC nascosti, profili dell'utente conservati; valori predefiniti solo se mancano; file con commenti lasciato com'è.
+- `terminal.rs`: Windows Terminal portabile con il profilo PowerShell del kit e gli schemi "VSCodium Dark/Light Modern"; senza Windows Terminal, PowerShell del kit in una console classica; mai la shell del PC.
+- `kit-files/profile.ps1` e `kit-files/bashrc`: prompt "Dev-Kit", strumenti disponibili, moduli e cronologia nel kit.
+- Componenti obbligatori mancanti installati da soli prima di aprire editor o console (`SetupTask`); avanzamento in Home e nella barra di stato.
+- Interfaccia: Home con "Editor" e "Terminale", pagina Progetti (apri nell'editor, console nella cartella), stato dell'editor e dell'installazione nella barra di stato, avviso per i percorsi del kit che bloccano il controllo dei file (D-33).
+- CI: test del server reale (403 senza token, reindirizzamento con cookie, token mascherato, nessun processo rimasto).
+
+**Verificato su questo PC** (kit in `kit2 (prova) & co`)
+- `cargo fmt`, `clippy -D warnings`: puliti; 63 test Rust (più il test del server reale), 7 test dell'interfaccia.
+- Progetto `demo app (1)` aperto nell'editor integrato (tema Dark Modern); "Terminal: Create New Terminal" apre il profilo "Dev-Kit": PowerShell 7.6.7 del kit, `node` del kit, `USERPROFILE` = `data\home`.
+- Pulsante Terminale: Windows Terminal del kit, profilo Dev-Kit, colori VSCodium, `TEMP` nel kit; WT e pwsh figli dell'app.
+- Chiusura forzata dell'app: nessun processo rimasto (server, extension host, terminali, Windows Terminal, WebView2).
+- Nessuna scrittura di PowerShell nel profilo reale dopo la correzione (`StartupProfileData`, cronologia).
+
+**Corretto durante la fase**
+- Pagina bianca nell'editor: `freezePrototype` di Tauri era iniettato anche nelle finestre dell'editor (D-32).
+- Pulsante Terminale che apriva `cmd.exe` del PC quando il kit non aveva ancora PowerShell 7 (per esempio con `npm run dev`, dove il kit è `target\debug`): ora installa prima i componenti obbligatori e non ripiega mai su una shell del PC (D-35).
+- PowerShell scriveva la cache di avvio di .NET e la cronologia nel profilo reale (D-34).
+- Windows Terminal sposta `compatibility.reloadEnvironmentVariables` nei valori predefiniti dei profili: ora l'app la scrive lì.
+
+**Limiti noti**
+- Cartelle del kit che iniziano con una cifra, "x" o "u" (es. `D:\2026\kit`): l'editor non vede i file cambiati fuori (difetto di VSCodium/`@parcel/watcher`, D-33); la Home lo segnala.
+- Chiudendo una finestra dell'editor con file non salvati non compare la domanda: le modifiche restano nei backup dell'editor e ricompaiono alla riapertura. La domanda alla chiusura dell'app arriva nella fase 6.
+- Estensioni consigliate e CodeLLDB: fase 4.
+- Resta solo la cartella vuota `%LOCALAPPDATA%\Microsoft\PowerShell`, se non esiste già (D-34).
+
+**Da provare a mano**
+1. Home › Editor: si apre VSCodium nella finestra di Dev-Kit; se mancano componenti obbligatori, prima compare l'installazione.
+2. Nell'editor: Terminale › Nuovo terminale. Il profilo è "Dev-Kit", `$env:USERPROFILE` punta a `data\home`.
+3. Progetti › Terminale su un progetto: Windows Terminal del kit in quella cartella.
+4. Chiudere Dev-Kit da Gestione attività (Termina attività): non resta nessun `node.exe`, `pwsh.exe` o `WindowsTerminal.exe` del kit.
+
 ## Fase 2: motore di installazione (14/10/2026)
 
 **Fatto**

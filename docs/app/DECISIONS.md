@@ -166,3 +166,41 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 ## D-26 Server web dell'editor
 
 - Release VSCodium `vscodium-reh-web-win32-x64-<versione>.tar.gz` + `.sha256` (verificato: 1.140.06880). Nessun pacchetto ARM64: su ARM64 si usa x64 in emulazione, con avviso nell'interfaccia.
+
+## D-27 Tema VSCodium ovunque
+
+- Finestra dell'app con i colori di VSCodium "Default Dark Modern" / "Default Light Modern" (variabili CSS in `ui/src/theme.css`, scelte da `prefers-color-scheme`) e icone Codicons (`react-icons/vsc`). Editor: `window.autoDetectColorScheme` con gli stessi due temi. Windows Terminal: schemi "VSCodium Dark Modern" / "VSCodium Light Modern" con i colori del terminale di VSCodium, `theme: system`.
+
+## D-28 Interfaccia: React 19 + TypeScript + Tailwind 4 + react-icons
+
+- Indicazione dell'utente (14/10/2026); sostituisce Svelte di D-02. Versioni pubblicate da almeno due settimane, fissate in `package-lock.json`.
+
+## D-30 Server dell'editor avviato senza `cmd.exe`
+
+- `bin\codium-server.cmd` esegue solo `node.exe out\server-main.js <argomenti>`: l'app avvia direttamente quel comando, con gli argomenti a vettore. Così i percorsi con `&`, `%`, `!` o parentesi non passano mai da `cmd`.
+- Il server parte sospeso, entra in un Job Object suo (annidato in quello dell'app) e poi riprende: anche l'extension host e i terminali stanno nel job, e fermare il server chiude tutto l'albero (`jobs::spawn_in`). Verificato da `editor::tests::real_server_token_redirect_and_stop`.
+
+## D-31 Impostazioni dell'editor in `data\vscodium-server\data\Machine\settings.json`
+
+- Sono le impostazioni "Remote" del server, che il client web applica a ogni finestra; quelle dell'utente restano sue (nel browser). Verificato: con i profili scritti lì, "Terminal: Create New Terminal" apre il profilo "Dev-Kit" (PowerShell 7 del kit, `USERPROFILE` in `data\home`).
+- Profili di sistema (`PowerShell`, `Windows PowerShell`, `Command Prompt`, `Git Bash`, `JavaScript Debug Terminal`) messi a `null`; `automationProfile.windows` = PowerShell del kit, così anche attività e debug usano la shell del kit.
+
+## D-32 `freezePrototype` solo nella finestra dell'app
+
+- Tauri inietta `freezePrototype` in tutte le WebView, finestre dell'editor comprese, e VSCodium con `Object.prototype` congelato resta a pagina bianca. L'opzione è spenta in `tauri.conf.json` e la finestra dell'app congela il prototipo da sé (`ui/src/freeze.ts`, primo modulo importato).
+
+## D-33 Limite noto: cartelle del kit che iniziano con una cifra, `x` o `u`
+
+- VSCodium passa a `@parcel/watcher` esclusioni con percorsi Windows assoluti (`<kit>\data\vscodium-server\extensions/**`), che il watcher compila come espressioni regolari: dopo `\`, una cifra è un riferimento all'indietro e `x`/`u` iniziano escape esadecimali. Con il kit in `D:\2026\kit` il controllo dei file della cartella aperta fallisce (`regex_error`) e l'editor non vede i cambiamenti fatti fuori (per esempio dagli agenti). Parentesi, spazi e `&` non danno problemi (verificato con il watcher incluso in VSCodium 1.140).
+- Passare `--extensions-dir` con le barre normali non serve: VSCodium lo normalizza. L'app riconosce questi percorsi (`kit::watcher_unsafe_folder`) e lo dice nella Home, con il suggerimento di rinominare la cartella.
+
+## D-34 PowerShell del kit isolato dal profilo del PC
+
+- .NET chiede le cartelle a Windows e ignora `APPDATA`/`LOCALAPPDATA`: pwsh scriverebbe `StartupProfileData-*` in `%LOCALAPPDATA%\Microsoft\PowerShell` e la cronologia in `%APPDATA%`. Rimedi verificati: `DOTNET_MultiCoreJitNoProfileGather=1` nell'ambiente (nessun file di profilo JIT) e `Set-PSReadLineOption -HistorySavePath` nel profilo del kit (`kit-files/profile.ps1`).
+- Resta fuori dal kit solo la cartella vuota `%LOCALAPPDATA%\Microsoft\PowerShell` se non esiste già: pwsh la crea sempre all'avvio (codice di PowerShell, nessuna opzione per evitarlo). Eccezione documentata.
+- `PSModulePath` limitato ai moduli di pwsh e a `data\pwsh\Modules`: i moduli in Documenti e Program Files del PC non vengono caricati.
+
+## D-35 Mai una shell del PC
+
+- Prima di aprire editor o console, l'app installa (con la stessa preparazione della pagina "Linguaggi e strumenti", `SetupTask`) i componenti obbligatori mancanti e attende la fine; l'avanzamento compare in Home e nella barra di stato.
+- Se PowerShell 7 del kit manca comunque, la console non si apre e l'errore lo dice: nessun ripiego su `cmd.exe` o Windows PowerShell.

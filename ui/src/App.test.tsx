@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { AppInfo } from "./api";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { AppInfo, SetupSnapshot } from "./api";
 
 const info: AppInfo = {
   version: "0.1.0",
@@ -12,7 +12,25 @@ const info: AppInfo = {
   movedFrom: null,
   webview: "system 140.0",
   pathEntries: 5,
+  watcherUnsafeFolder: null,
 };
+
+const idle: SetupSnapshot = { running: false, cancelling: false, automatic: false, total: 0, steps: [], error: null };
+
+/** Default answer of every command; tests override single commands. */
+function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Promise<unknown> {
+  const base: Record<string, unknown> = {
+    app_info: info,
+    editor_status: { installed: true, running: false, port: null, emulated: false },
+    setup_state: idle,
+    projects_list: [],
+    components_list: [],
+    editor_open: null,
+    terminal_open: null,
+    ...overrides,
+  };
+  return (cmd) => (cmd in base ? Promise.resolve(base[cmd]) : Promise.reject(new Error(`unexpected ${cmd}`)));
+}
 
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
 vi.mock("@tauri-apps/api/core", () => ({
@@ -20,29 +38,44 @@ vi.mock("@tauri-apps/api/core", () => ({
   isTauri: () => true,
 }));
 
+let setupListener: ((e: { payload: SetupSnapshot }) => void) | null = null;
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: (name: string, handler: (e: { payload: SetupSnapshot }) => void) => {
+    if (name === "setup") setupListener = handler;
+    return Promise.resolve(() => undefined);
+  },
+}));
+
 const { App } = await import("./App");
 
 afterEach(() => {
   cleanup();
   invoke.mockReset();
+  setupListener = null;
 });
 
 describe("App", () => {
   it("shows where the kit lives", async () => {
-    invoke.mockResolvedValue(info);
+    invoke.mockImplementation(answers());
     render(<App />);
     expect(await screen.findByText("E:\\Dev Kit")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("app_info", undefined);
   });
 
   it("warns when the kit was moved", async () => {
-    invoke.mockResolvedValue({ ...info, movedFrom: "F:\\Old" });
+    invoke.mockImplementation(answers({ app_info: { ...info, movedFrom: "F:\\Old" } }));
     render(<App />);
     expect(await screen.findByText(/prima era in F:\\Old/)).toBeTruthy();
   });
 
+  it("warns about kit folders that break the editor watcher", async () => {
+    invoke.mockImplementation(answers({ app_info: { ...info, watcherUnsafeFolder: "2026" } }));
+    render(<App />);
+    expect(await screen.findByText(/La cartella «2026»/)).toBeTruthy();
+  });
+
   it("switches pages from the activity bar", () => {
-    invoke.mockResolvedValue(info);
+    invoke.mockImplementation(answers());
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Agenti");
@@ -50,23 +83,49 @@ describe("App", () => {
   });
 
   it("reports a failed command", async () => {
-    invoke.mockRejectedValue("forbidden");
+    invoke.mockImplementation((cmd) => (cmd === "app_info" ? Promise.reject(new Error("forbidden")) : answers()(cmd)));
     render(<App />);
     expect((await screen.findByRole("alert")).textContent).toContain("forbidden");
   });
 
   it("opens a project in the editor from the Projects page", async () => {
-    invoke.mockImplementation((cmd: string) => {
-      if (cmd === "projects_list") return Promise.resolve([{ name: "sito (1) & co", modified: 1_791_900_000 }]);
-      if (cmd === "editor_status")
-        return Promise.resolve({ installed: true, running: false, port: null, emulated: false });
-      if (cmd === "editor_open") return Promise.resolve(null);
-      return Promise.resolve(info);
-    });
+    invoke.mockImplementation(answers({ projects_list: [{ name: "sito (1) & co", modified: 1_791_900_000 }] }));
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Progetti" }));
     expect(await screen.findByText("sito (1) & co")).toBeTruthy();
     fireEvent.click(screen.getByTitle("Apre sito (1) & co nell'editor"));
     expect(invoke).toHaveBeenCalledWith("editor_open", { project: "sito (1) & co" });
+  });
+
+  it("shows the progress of an automatic installation", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    await screen.findByText("E:\\Dev Kit");
+    act(() => {
+      setupListener?.({
+        payload: {
+          running: true,
+          cancelling: false,
+          automatic: true,
+          total: 2,
+          error: null,
+          steps: [
+            {
+              id: "git",
+              name: "Git",
+              note: null,
+              done: null,
+              size: null,
+              outcome: { kind: "installed", version: "2.56" },
+            },
+            { id: "pwsh", name: "PowerShell 7", note: "download", done: 50, size: 100, outcome: null },
+          ],
+        },
+      });
+    });
+    expect(screen.getByText("Installazione dei componenti del kit")).toBeTruthy();
+    expect(screen.getByText("Installazione 2/2: PowerShell 7 50%")).toBeTruthy();
+    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
+    expect(screen.getByText("installato 2.56")).toBeTruthy();
   });
 });
