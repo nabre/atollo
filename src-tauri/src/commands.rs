@@ -1052,6 +1052,21 @@ pub struct ProjectDatabases {
     pub env_ignored: bool,
 }
 
+/// Git state and agent instructions of a project, for its page.
+#[tauri::command]
+pub async fn project_status<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<crate::projects::ProjectStatus, String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    let (kit, env) = (state.kit.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || crate::projects::status(&kit, &env, &dir))
+        .await
+        .map_err(|e| fail("project", e))
+}
+
 #[tauri::command]
 pub fn project_databases<R: Runtime>(
     webview: Webview<R>,
@@ -1607,6 +1622,7 @@ macro_rules! command_handler {
             $crate::commands::github_rename,
             $crate::commands::github_delete,
             $crate::commands::github_open,
+            $crate::commands::project_status,
             $crate::commands::project_databases,
             $crate::commands::project_db_create,
             $crate::commands::project_env_preview,

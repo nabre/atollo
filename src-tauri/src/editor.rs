@@ -330,7 +330,17 @@ pub fn random_token() -> Result<String> {
 /// Protected DACL with full access for the owner only. Fails on disks
 /// without permissions (FAT32/exFAT): the caller only logs it.
 pub(crate) fn restrict_to_owner(path: &Path) -> Result<()> {
-    let sddl = HSTRING::from("D:P(A;;FA;;;OW)");
+    set_dacl(path, "D:P(A;;FA;;;OW)")
+}
+
+/// The same for a folder, inherited by every file and folder created in it
+/// afterwards (temporary files included): they are private from the start.
+pub(crate) fn restrict_dir_to_owner(path: &Path) -> Result<()> {
+    set_dacl(path, "D:P(A;OICI;FA;;;OW)")
+}
+
+fn set_dacl(path: &Path, sddl: &str) -> Result<()> {
+    let sddl = HSTRING::from(sddl);
     let mut sd = PSECURITY_DESCRIPTOR::default();
     // SAFETY: valid SDDL string; `sd` receives a LocalAlloc'd descriptor freed below.
     unsafe {

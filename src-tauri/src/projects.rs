@@ -289,10 +289,112 @@ pub fn clone(
     Ok(dir)
 }
 
+/// Git state of a project for its page (read only: commits and pushes stay
+/// in the editor and the agents).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitInfo {
+    pub branch: Option<String>,
+    pub upstream: Option<String>,
+    pub ahead: u32,
+    pub behind: u32,
+    /// Changed, added, deleted or untracked files.
+    pub changes: u32,
+    pub remote: Option<String>,
+}
+
+/// From `git status --porcelain=v2 --branch`.
+pub fn parse_git_status(text: &str) -> GitInfo {
+    let mut info = GitInfo::default();
+    for line in text.lines() {
+        if let Some(head) = line.strip_prefix("# branch.head ") {
+            info.branch = (head != "(detached)").then(|| head.to_owned());
+        } else if let Some(up) = line.strip_prefix("# branch.upstream ") {
+            info.upstream = Some(up.to_owned());
+        } else if let Some(ab) = line.strip_prefix("# branch.ab ") {
+            for part in ab.split_whitespace() {
+                if let Some(n) = part.strip_prefix('+') {
+                    info.ahead = n.parse().unwrap_or(0);
+                } else if let Some(n) = part.strip_prefix('-') {
+                    info.behind = n.parse().unwrap_or(0);
+                }
+            }
+        } else if !line.starts_with('#') && !line.trim().is_empty() {
+            info.changes += 1;
+        }
+    }
+    info
+}
+
+/// What a project's page shows besides its detection.
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectStatus {
+    /// None: not a Git repository (or Git not installed).
+    pub git: Option<GitInfo>,
+    /// Instruction files for the agents found at its root.
+    pub instructions: Vec<String>,
+}
+
+pub fn status(kit: &Kit, env: &KitEnv, dir: &Path) -> ProjectStatus {
+    let instructions = [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "GEMINI.md",
+        ".github/copilot-instructions.md",
+    ]
+    .iter()
+    .filter(|f| dir.join(f).is_file())
+    .map(|f| (*f).to_owned())
+    .collect();
+    let git_exe = kit.apps().join(r"git\cmd\git.exe");
+    let git = |args: &[&str]| {
+        crate::jobs::kit_command(&git_exe, env)
+            .arg("-C")
+            .arg(dir)
+            .args(args)
+            .stdin(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .output()
+            .ok()
+            .filter(|o| o.status.success())
+            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+    };
+    let git_info = if dir.join(".git").exists() && git_exe.is_file() {
+        git(&["status", "--porcelain=v2", "--branch"]).map(|text| {
+            let mut info = parse_git_status(&text);
+            info.remote = git(&["remote", "get-url", "origin"])
+                .map(|u| u.trim().to_owned())
+                .filter(|u| !u.is_empty());
+            info
+        })
+    } else {
+        None
+    };
+    ProjectStatus {
+        git: git_info,
+        instructions,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::kit::{tests::TempDir, Arch};
+
+    #[test]
+    fn git_status_parsing() {
+        let text = "# branch.oid 1234\n# branch.head main\n# branch.upstream origin/main\n\
+                    # branch.ab +2 -1\n1 .M N... 100644 100644 100644 a b src/app.ts\n\
+                    ? notes.txt\n";
+        let info = parse_git_status(text);
+        assert_eq!(info.branch.as_deref(), Some("main"));
+        assert_eq!(info.upstream.as_deref(), Some("origin/main"));
+        assert_eq!((info.ahead, info.behind, info.changes), (2, 1, 2));
+        let detached = parse_git_status("# branch.head (detached)\n");
+        assert_eq!(detached.branch, None);
+        assert_eq!(detached.changes, 0);
+    }
 
     #[test]
     fn sources() {
