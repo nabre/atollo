@@ -228,6 +228,14 @@ export function onSetup(handler: (s: SetupSnapshot) => void): Promise<() => void
   });
 }
 
+/** The editor started, stopped or restarted; returns the function that stops listening. */
+export function onEditorStatus(handler: (s: EditorStatus) => void): Promise<() => void> {
+  if (browserPreview) return Promise.resolve(() => undefined);
+  return listen<EditorStatus>("editor-status", (e) => {
+    handler(e.payload);
+  });
+}
+
 export function componentsList(): Promise<ComponentInfo[]> {
   return browserPreview ? Promise.resolve([]) : invoke<ComponentInfo[]>("components_list");
 }

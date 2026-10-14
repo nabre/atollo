@@ -20,6 +20,7 @@ import {
   appInfo,
   browserPreview,
   editorStatus,
+  onEditorStatus,
   onCloseRequested,
   type AgentInfo,
   type AppInfo,
@@ -73,7 +74,15 @@ export function App() {
   useEffect(() => {
     refreshEditor();
     const timer = window.setInterval(refreshEditor, 5000);
+    let stop: (() => void) | null = null;
+    let gone = false;
+    void onEditorStatus(setEditor).then((f) => {
+      if (gone) f();
+      else stop = f;
+    });
     return () => {
+      gone = true;
+      stop?.();
       window.clearInterval(timer);
     };
   }, [refreshEditor]);

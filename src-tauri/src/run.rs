@@ -298,6 +298,17 @@ impl Runner {
                 if n < 1024 {
                     bail!("{}", tr(lang, "Porta tra {0} e {1}", &["1024", "65535"]));
                 }
+                if crate::editor::PORTS.contains(&n) {
+                    let (from, to) = (crate::editor::PORTS.start(), crate::editor::PORTS.end());
+                    bail!(
+                        "{}",
+                        tr(
+                            lang,
+                            "Le porte da {0} a {1} sono dell'editor",
+                            &[&from.to_string(), &to.to_string()]
+                        )
+                    );
+                }
                 if let Some((other, _)) = ports.ports.iter().find(|(k, v)| **v == n && *k != key) {
                     bail!(
                         "{}",
@@ -342,6 +353,9 @@ impl Runner {
             None
         };
         let fill = |s: &str| s.replace("{port}", &port.map(|p| p.to_string()).unwrap_or_default());
+        // Settings > "Permetti ai server dei progetti..." (DEVKIT_ALLOW_LAN).
+        let lan = env.get("DEVKIT_ALLOW_LAN") == Some("1");
+        let listen = |s: &str| on_network(fill(s), lan);
         let cwd = match &action.folder {
             Some(f) => detect::inside_dir(dir, f)?,
             None => dir.to_path_buf(),
@@ -359,7 +373,7 @@ impl Runner {
                 format!("Dev-Kit.exe serve {folder} {}", port.unwrap_or_default()),
             )
         } else {
-            let command = fill(&action.command);
+            let command = listen(&action.command);
             let system_root = env.get("SystemRoot").unwrap_or(r"C:\Windows");
             let mut cmd = jobs::kit_command(Path::new(system_root).join(r"System32\cmd.exe"), env);
             cmd.raw_arg(format!("/d /s /c \"{command}\""));
@@ -377,7 +391,7 @@ impl Runner {
                 .env("ROCKET_PORT", p.to_string());
         }
         for (k, v) in &action.env {
-            cmd.env(k, fill(v));
+            cmd.env(k, listen(v));
         }
 
         let url = (action.kind == Kind::Web)
@@ -696,11 +710,28 @@ fn tr(lang: &str, source: &str, args: &[&str]) -> String {
     crate::i18n::t(lang, source, args)
 }
 
+/// A command (or a variable) found by the app listens on 127.0.0.1; with
+/// the local network allowed, on every interface.
+fn on_network(s: String, lan: bool) -> String {
+    if lan {
+        s.replace("127.0.0.1", "0.0.0.0")
+    } else {
+        s
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::kit::{tests::TempDir, Arch};
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn local_network_setting() {
+        let cmd = "php -S 127.0.0.1:7101 -t public".to_owned();
+        assert_eq!(on_network(cmd.clone(), false), cmd);
+        assert_eq!(on_network(cmd, true), "php -S 0.0.0.0:7101 -t public");
+    }
 
     #[test]
     fn lines_and_colours() {
@@ -730,6 +761,10 @@ mod tests {
         assert_eq!(r2.ports().ports["p|b"], b);
         assert!(r2.set_port("p|c", Some(a), "it").is_err());
         assert!(r2.set_port("p|c", Some(80), "it").is_err());
+        assert!(
+            r2.set_port("p|c", Some(7050), "it").is_err(),
+            "the editor's"
+        );
         assert!(r2.set_port("nokey", Some(9000), "it").is_err());
         let p = r2.set_port("p|c", Some(PORT_TO), "it").unwrap();
         assert_eq!(p.locked, ["p|c"]);

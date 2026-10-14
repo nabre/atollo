@@ -373,5 +373,10 @@
     "en": "Detected from: {0}",
     "fr": "Détecté à partir de : {0}",
     "de": "Erkannt anhand von: {0}"
+  },
+  "Le porte da {0} a {1} sono dell'editor": {
+    "en": "Ports {0} to {1} belong to the editor",
+    "fr": "Les ports {0} à {1} sont réservés à l'éditeur",
+    "de": "Die Ports {0} bis {1} gehören dem Editor"
   }
 }

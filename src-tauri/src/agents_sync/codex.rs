@@ -249,6 +249,9 @@ pub fn sync_config(p: &Paths, servers: &Servers, report: &mut Report) -> Result<
         ),
         ("cli_auth_credentials_store", "\"file\"".to_owned()),
         ("check_for_update_on_startup", "false".to_owned()),
+        // A login shell would load the PC's PowerShell profiles (no
+        // -NoProfile): only the kit's shell, without them.
+        ("allow_login_shell", "false".to_owned()),
     ]
     .into_iter()
     .filter(|(k, _)| !user_keys.contains(*k))
