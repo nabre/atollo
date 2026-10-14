@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { AgentInfo, AppInfo, OpenNow, ProjectInfo, RunEvent, RunInfo, SetupSnapshot } from "./api";
 
 const info: AppInfo = {
@@ -95,6 +95,7 @@ function project(name: string): ProjectInfo {
         url: null,
         env: {},
         static: ".",
+        apache: null,
         custom: false,
       },
     ],
@@ -271,7 +272,7 @@ describe("App", () => {
     expect(invoke).not.toHaveBeenCalledWith("terminal_open", { project: null });
   });
 
-  it("opens a project's page with three tabs and creates its database", async () => {
+  it("opens a project's page with its sections and creates its database", async () => {
     invoke.mockImplementation(
       answers({
         projects_list: [{ ...project("negozio"), requires: ["php", "mariadb"], missing: ["mariadb"] }],
@@ -290,10 +291,16 @@ describe("App", () => {
     );
     render(<App />);
     fireEvent.click(await screen.findByTitle("Apre la pagina di negozio"));
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Riepilogo", "Risorse", "Avanzate"]);
+    const nav = screen.getByRole("navigation", { name: "Sezioni del progetto" });
+    expect(
+      within(nav)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["Avvio", "Componenti", "Database", "Estensioni", "Editor", "Git", "Agenti"]);
     expect(await screen.findByText("main")).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: /Risorse/ }));
+    fireEvent.click(within(nav).getByRole("button", { name: /Componenti/ }));
     expect(screen.getByText("da installare")).toBeTruthy();
+    fireEvent.click(within(nav).getByRole("button", { name: "Database" }));
     const creates = await screen.findAllByRole("button", { name: "Crea database e utente" });
     fireEvent.click(creates[0] as HTMLElement);
     await waitFor(() => {
