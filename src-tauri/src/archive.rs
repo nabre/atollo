@@ -31,7 +31,6 @@ pub enum Inner {
     /// The archive root.
     Root,
     /// Its only top-level folder (error if there is not exactly one).
-    #[allow(dead_code, reason = "used by the language installers of phase 4")]
     Single,
     /// The only top-level folder if there is exactly one, else the root.
     Auto,

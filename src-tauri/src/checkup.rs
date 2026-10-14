@@ -26,6 +26,10 @@ pub struct Check {
 
 const LIMIT: Duration = Duration::from_secs(60);
 
+/// As the only argument of a check: read the program's version resource
+/// instead of starting it (a window program, such as Windows Terminal).
+pub const FILE_VERSION: &str = "<file-version>";
+
 /// Runs the check command of `c`; `None` if it has none or nothing of it is
 /// on disk. Half installed (a part missing): failed, naming the part.
 pub fn check(kit: &Kit, env: &KitEnv, c: &Component) -> Option<Check> {
@@ -35,6 +39,7 @@ pub fn check(kit: &Kit, env: &KitEnv, c: &Component) -> Option<Check> {
     }
     let result = match c.missing_part(kit) {
         Some(part) => Err(anyhow::anyhow!("{} not found", part.display())),
+        None if args == [FILE_VERSION] => file_version(&kit_path(kit, program)),
         None => run(env, &kit_path(kit, program), args),
     };
     Some(Check {
@@ -52,6 +57,52 @@ pub fn check_all(kit: &Kit, env: &KitEnv) -> Vec<Check> {
         .iter()
         .filter_map(|c| check(kit, env, c))
         .collect()
+}
+
+/// The file version of `exe` (`a.b.c.d`), from its version resource.
+fn file_version(exe: &std::path::Path) -> Result<String> {
+    use windows::core::{HSTRING, PCWSTR};
+    use windows::Win32::Storage::FileSystem::{
+        GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW, VS_FIXEDFILEINFO,
+    };
+    if !exe.is_file() {
+        bail!("{} not found", exe.display());
+    }
+    let name = HSTRING::from(exe.as_os_str());
+    // SAFETY: the buffer has the size Windows asked for; the fixed info is
+    // read only after VerQueryValueW points inside it with the right length.
+    unsafe {
+        let size = GetFileVersionInfoSizeW(PCWSTR(name.as_ptr()), None);
+        if size == 0 {
+            bail!("no version resource");
+        }
+        let mut data = vec![0u8; size as usize];
+        GetFileVersionInfoW(PCWSTR(name.as_ptr()), None, size, data.as_mut_ptr().cast())
+            .context("version resource")?;
+        let mut info: *mut std::ffi::c_void = std::ptr::null_mut();
+        let mut len = 0u32;
+        let root = HSTRING::from("\\");
+        if !VerQueryValueW(
+            data.as_ptr().cast(),
+            PCWSTR(root.as_ptr()),
+            &mut info,
+            &mut len,
+        )
+        .as_bool()
+            || info.is_null()
+            || (len as usize) < std::mem::size_of::<VS_FIXEDFILEINFO>()
+        {
+            bail!("no version in the resource");
+        }
+        let f = &*(info as *const VS_FIXEDFILEINFO);
+        Ok(format!(
+            "{}.{}.{}.{}",
+            f.dwFileVersionMS >> 16,
+            f.dwFileVersionMS & 0xffff,
+            f.dwFileVersionLS >> 16,
+            f.dwFileVersionLS & 0xffff
+        ))
+    }
 }
 
 fn run(env: &KitEnv, exe: &std::path::Path, args: &[String]) -> Result<String> {
@@ -124,10 +175,22 @@ mod tests {
                 assert!(owned, "{}: check {program} outside its folder", c.id);
             }
         }
-        for id in ["vscodium-server", "pnpm"] {
-            let c = Catalog::get().find(id).unwrap();
-            assert!(!c.check.is_empty(), "{id}: no final check");
+        for c in Catalog::get().all() {
+            assert!(!c.check.is_empty(), "{}: no final check", c.id);
         }
+    }
+
+    /// A window program is checked by its version resource, not started.
+    #[test]
+    fn file_version_without_starting() {
+        let system = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
+        let notepad = std::path::Path::new(&system).join(r"System32\notepad.exe");
+        let v = file_version(&notepad).unwrap();
+        assert_eq!(v.split('.').count(), 4, "{v}");
+        assert!(v.split('.').all(|n| n.parse::<u16>().is_ok()), "{v}");
+        assert!(file_version(std::path::Path::new(r"C:\no\such.exe")).is_err());
+        let wt = Catalog::get().find("terminal").unwrap();
+        assert_eq!(wt.check[1..], [FILE_VERSION]);
     }
 
     /// `@` in the check program is the kit root, as in the key.

@@ -41,7 +41,7 @@ Il kit attuale diventa la **specifica di riferimento**: il comportamento si port
 | --- | --- | --- |
 | Ambiente portabile (~90 variabili, PATH del kit) | `setup/windows/_env.cmd` | `env.rs` |
 | Rilocazione dopo spostamento o cambio di lettera | `_env.cmd:238-267`, `setup/agents/moved.js` | `relocate.rs` |
-| Catalogo componenti (29: i 27 del Atollo senza VSCodium desktop, più `pwsh` e l'editor) | `setup/components.json` | `catalog.rs`, dati incorporati |
+| Catalogo componenti (30: i 27 del Atollo senza VSCodium desktop, più `pwsh`, `terminal` e l'editor) | `setup/components.json` | `catalog.rs`, dati incorporati |
 | Download, verifica (SHA-256/512, npm, Authenticode), estrazione, scambio cartelle | `_common.ps1`, `_prepare-*.ps1`, `_languages.ps1`, `_workarea.ps1` | `net.rs`, `verify.rs`, `signature.rs`, `archive.rs`, `install/*.rs` |
 | Allineamento di istruzioni, skill, MCP, regole, cartelle attendibili | `setup/agents/sync.js` + 8 moduli | `agents_sync/*.rs` |
 | Accesso Antigravity fuori da Gestione credenziali | `agy-keyring.ps1` | `keyring.rs` |
@@ -71,7 +71,7 @@ Atollo\                         qualsiasi cartella, anche con spazi, ( ) e &
     app\                         settings.json, components.txt, versions\, logs\, update\, ports.json,
                                  root.txt, old-root.txt, extensions.txt, extensions-offered.txt,
                                  projects\<progetto>\dev-settings.json (impostazioni del kit per progetto)
-    kit\                         file che i programmi vogliono su disco (loopback.js, profile.ps1, bashrc, bin\agy.cmd), riscritti dall'exe a ogni nuova versione
+    kit\                         file che i programmi vogliono su disco (loopback.js, profile.ps1, console.ps1, bashrc, bin\agy.cmd), riscritti dall'exe a ogni nuova versione
     webview2\                    dati di WebView2
     vscodium-server\             dati del server dell'editor e token
     … le altre cartelle dati di _env.cmd (npm-global, go, gradle, php, apache…)
@@ -90,7 +90,7 @@ Atollo.exe (Tauri 2, dentro un Job Object)
  ├─ finestre "editor"  http://127.0.0.1:<7000-7099>, nessuna capability
  ├─ motore Rust        tutto il resto (§4)
  └─ figli, tutti nel job:
-     codium-server · console conhost.exe (pwsh del kit, claude / codex / agy) · azioni dei progetti · installazioni
+     codium-server · console in Windows Terminal del kit o in conhost.exe (pwsh del kit, claude / codex / agy) · azioni dei progetti · installazioni
 ```
 
 Riga di comando dello stesso exe, senza finestra (D-21, `cli.rs`):
@@ -122,7 +122,7 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `archive.rs` | zip, tar.gz, 7z (anche dentro un `.7z.exe`), file singoli; scambio cartelle con ripristino; "file in uso" |
 | `catalog.rs` | catalogo incorporato (`keys`, `noArm64`, gruppo `app` con versione fissata), `data\app\components.txt`, `needs` a cascata, versioni installate |
 | `needs.rs` | cosa serve a un agente, a un clone o a un'azione di progetto, installato al momento (D-59) |
-| `install/*.rs` | un file per famiglia: `core` (git, python, node, uv, gh), `agents`, `web` (php, apache, VC++), `native` (rust, pnpm, r: installatori fatti di processi), `lang` (gli altri linguaggi), `editor` (pwsh, editor) |
+| `install/*.rs` | un file per famiglia: `core` (git, python, node, uv, gh), `agents`, `web` (php, apache, VC++), `native` (rust, pnpm, r: installatori fatti di processi), `lang` (gli altri linguaggi), `editor` (pwsh, Windows Terminal, editor) |
 | `setup_runner.rs` | piano e ordine dei passi, una preparazione alla volta, eventi, annullamento al termine del passo |
 | `setup_task.rs` | preparazione avviata dalla finestra, in un thread, con lo stato per l'interfaccia; obbligatori ed editor da installare |
 | `checkup.rs` | verifica finale: ogni programma installato risponde al suo comando di versione (D-39) |
@@ -130,7 +130,7 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `agents_sync/*.rs` | istruzioni, skill (giunzioni NTFS, copia su FAT32/exFAT), MCP per Claude/Codex/Antigravity, regole, cartelle attendibili, skill di progetto |
 | `keyring.rs` | accesso Antigravity: `CredEnumerateW`, `CredWriteW` (sessione), `CredDeleteW`; file in `data\antigravity\` |
 | `editor.rs` | server web: porta, token, avvio, salute, riavvio |
-| `editor_window.rs` | finestre `editor-<n>`: navigazione, nuove finestre, tasti e menu del browser spenti |
+| `editor_window.rs` | finestre `editor-<n>`: navigazione, nuove finestre, tasti e menu del browser spenti; barra del titolo di VSCodium senza cornice di Windows, con ripiego (D-69) |
 | `editor_cfg.rs` | impostazioni, profili del terminale esclusivi |
 | `editor_ext.rs` | estensioni consigliate (`@programma`, proposta una volta sola, CodeLLDB); nessuna estensione propria (Q4 = a) |
 | `terminal.rs` | console del kit: PowerShell del kit o un agente in Windows Terminal del kit (`wterm.rs`, D-68) o in `conhost.exe` di Windows (D-57), nel job |
@@ -192,7 +192,7 @@ Esclusa dalla prima versione (Q6 = no, 14/10). I formati di `data\app\` restano 
 | --- | --- | --- |
 | 0. Piano | questo documento | piano approvato |
 | 1. Scheletro | progetto Tauri, `kit.rs`, `env.rs`, `jobs.rs`, istanza singola, log, finestra vuota, `Atollo.exe env`, CI x64 + ARM64 | exe che parte da chiavetta, crea solo `data\`, nulla fuori |
-| 2. Motore di installazione | `net`, `verify`, `archive`, `catalog`, `setup_runner`; componenti `pwsh`, `terminal` (tolto il 14/10, D-44 e D-57), `git`, `node`, `vscodium-server` | `Atollo.exe prepare --only pwsh,node,git,vscodium-server` installa e verifica (come nella CI) |
+| 2. Motore di installazione | `net`, `verify`, `archive`, `catalog`, `setup_runner`; componenti `pwsh`, `terminal` (tolto e poi ripristinato il 14/10: D-57, D-68), `git`, `node`, `vscodium-server` | `Atollo.exe prepare --only pwsh,node,git,vscodium-server` installa e verifica (come nella CI) |
 | 3. Editor e terminale | `editor*`, `terminal.rs`, finestre `editor`, capability, estensioni consigliate | progetto aperto nell'editor con terminale Atollo esclusivo; nessuna IPC dalle finestre `editor` |
 | 4. Tutti i componenti | altri componenti, rimozione, verifica finale; pagina Linguaggi e strumenti e Primo avvio | ogni linguaggio installato e rimosso dall'app |
 | 5. Agenti | `agents.rs`, `agents_sync`, `keyring.rs`, `relocate.rs`; pagine Home e Agenti | tre agenti avviati, istruzioni e skill allineate, kit spostato che funziona |
@@ -208,7 +208,7 @@ Cargo.toml  Cargo.lock        workspace
 package.json                  workspace npm (ui), comandi dev, build, test, lint
 src-tauri\                    exe (moduli §4), catalogo e testi incorporati
 ui\                           interfaccia React + TypeScript + Tailwind (D-02)
-kit-files\                    file scritti in data\kit\ (loopback.js, profile.ps1, bashrc, bin\agy.cmd, bin\agy)
+kit-files\                    file scritti in data\kit\ (loopback.js, profile.ps1, console.ps1, bashrc, bin\agy.cmd, bin\agy)
 docs\app\                     piano, decisioni, catalogo, prove, novità
 .github\workflows\app.yml     CI e release
 Prompt.md                     il prompt iniziale

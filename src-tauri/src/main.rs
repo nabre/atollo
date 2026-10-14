@@ -2,7 +2,7 @@
 //!
 //! Start order (docs/app/PLAN.md §3): kit root → folders and settings →
 //! environment of this process inside `data\` → command line or window →
-//! one instance per kit → Job Object → WebView2 → main window.
+//! one instance per kit → WebView2 → Job Object → main window.
 #![cfg_attr(not(test), windows_subsystem = "windows")]
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
 

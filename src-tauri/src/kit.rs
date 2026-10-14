@@ -202,7 +202,7 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
 /// regular expressions: after a backslash, a digit is a back reference and
 /// `x`/`u` start hex escapes, so `D:\2026\kit` fails with `regex_error` and
 /// changes made outside the editor are no longer noticed (verified with
-/// VSCodium 1.140, DECISIONS.md D-33). Parentheses, spaces and `&` are fine.
+/// VSCodium 1.135.06055, @parcel/watcher 2.5.6, DECISIONS.md D-33). Parentheses, spaces and `&` are fine.
 pub fn watcher_unsafe_folder(path: &Path) -> Option<String> {
     path.components().find_map(|c| match c {
         std::path::Component::Normal(name) => {
@@ -216,7 +216,6 @@ pub fn watcher_unsafe_folder(path: &Path) -> Option<String> {
 
 /// Why a project name is not accepted (rules of nabre/atollo
 /// `core/projects.js:37-44`).
-#[allow(dead_code, reason = "first caller in phase 6 (new project)")]
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum NameError {
     #[error("empty name")]
@@ -231,7 +230,6 @@ pub enum NameError {
     TooLong,
 }
 
-#[allow(dead_code, reason = "first caller in phase 6 (new project)")]
 pub fn validate_project_name(name: &str) -> Result<(), NameError> {
     if name.is_empty() {
         return Err(NameError::Empty);
