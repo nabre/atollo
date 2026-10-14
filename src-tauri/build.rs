@@ -16,6 +16,10 @@ const COMMANDS: &[&str] = &[
     "setup_start",
     "setup_cancel",
     "components_apply",
+    "agents_status",
+    "agent_launch",
+    "agent_sign_out",
+    "folder_open",
 ];
 
 fn main() {

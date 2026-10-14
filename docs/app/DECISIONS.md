@@ -226,3 +226,24 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 ## D-39 Verifica finale
 
 - `checkup.rs` (`Test-Installation` del kit): ogni componente installato risponde al suo comando di versione (campo `check` del catalogo), con l'ambiente del kit e 60 s di limite. `Dev-Kit.exe check`; dopo `prepare` per ciò che è stato installato.
+
+## D-40 Allineamento degli agenti in Rust
+
+- Porting completo di `setup/agents/*.js` (`agents_sync/`): istruzioni (copia a tre vie con stato e conflitti), skill (giunzioni NTFS con il crate `junction`, copie su FAT32/exFAT), MCP (Claude ↔ `mcp.json`, Codex `config.toml` a blocchi di testo, Antigravity solo i server del kit), regola del kit, cartelle attendibili, skill di progetto. Stessi file di stato e stessi marcatori del Dev-Kit.
+- Miglioria: due passaggi di collegamento delle skill, così una skill nata in un agente arriva a tutti nello stesso allineamento (nel Dev-Kit serviva il giro successivo).
+- Messaggi in inglese nel log (`data\app\logs\app.log`); l'interfaccia mostra lo stato, non i dettagli.
+- Quando: all'avvio dell'app, prima di ogni agente lanciato dall'app e quando un agente del kit termina, ovunque sia stato aperto (sorvegliante ogni 3 s). Scartato: il wrapper `claude.cmd`/`codex.cmd` nel PATH, che avrebbe aggiunto la domanda "Terminare il processo batch?" di cmd a ogni Ctrl+C.
+
+## D-41 Accesso di Antigravity: `agy.cmd` del kit e sorvegliante dell'app
+
+- `data\kit\bin\agy.cmd` (primo nel PATH, anche per Git Bash con `bin\agy`): `Dev-Kit.exe keyring restore`, `agy.exe`, `Dev-Kit.exe keyring save`. In un file batch `cmd` aspetta la fine anche di un programma grafico. `agy.exe` non è nel PATH: non si scavalca il wrapper.
+- Il processo "watch" nascosto del Dev-Kit è sostituito dal sorvegliante dell'app; inoltre il `save` a fine esecuzione toglie il segnale "in avvio" quando nessun agy del kit gira (trovato in prova: con un agy brevissimo il login restava in Windows fino al sorvegliante).
+- Verificato con il Gestore credenziali reale: persistenza "solo sessione" al restore; dopo il save la credenziale del kit è sparita da Windows e il token aggiornato è nel kit; la credenziale `gemini:antigravity` dell'Antigravity installato sul PC non viene toccata.
+
+## D-42 `claudeCode.environmentVariables` non serve nel server web
+
+- Nel Dev-Kit l'estensione Dev-Kit le scriveva perché VSCodium desktop poteva partire senza l'ambiente del kit. Nel server web l'extension host eredita l'ambiente del server, che è quello del kit: l'estensione Claude Code vede già `CLAUDE_CONFIG_DIR`, `DISABLE_UPDATES`, `NODE_OPTIONS`, `CLAUDE_CODE_GIT_BASH_PATH`.
+
+## D-43 Rilocazione
+
+- Porting di `moved.js` (`relocate.rs`) sulla nuova struttura: radice precedente da `data\app\old-root.txt` (scritto da `kit.rs`), consumato a lavoro fatto; tra i file aggiornati anche impostazioni ed estensioni del server dell'editor. Verificato rinominando un kit con tutti i componenti: chiavi di `.claude.json` unite sotto il nuovo percorso, `config.toml` senza il vecchio percorso, giunzioni delle skill rifatte.

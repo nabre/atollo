@@ -26,6 +26,7 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
     setup_state: idle,
     projects_list: [],
     components_list: [],
+    agents_status: [],
     editor_open: null,
     terminal_open: null,
     ...overrides,
@@ -201,5 +202,40 @@ describe("App", () => {
     });
     const call = invoke.mock.calls.find((c) => c[0] === "components_apply");
     expect((call?.[1] as { chosen: string[] }).chosen).not.toContain("apache");
+  });
+
+  it("shows the agents and opens one", async () => {
+    const agents = [
+      {
+        id: "claude",
+        name: "Claude Code",
+        installed: true,
+        version: "2.1.299",
+        signedIn: true,
+        signInKind: "account",
+        running: false,
+      },
+      {
+        id: "codex",
+        name: "Codex",
+        installed: false,
+        version: null,
+        signedIn: false,
+        signInKind: null,
+        running: false,
+      },
+    ];
+    invoke.mockImplementation(answers({ agents_status: agents, agent_launch: null, agent_sign_out: null }));
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
+    expect(await screen.findByText("2.1.299")).toBeTruthy();
+    expect(screen.getByText("accesso fatto")).toBeTruthy();
+    const open = screen.getAllByRole("button", { name: "Apri" });
+    expect(open[1]?.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(open[0] as HTMLElement);
+    expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "claude", project: null });
+    fireEvent.click(screen.getByRole("button", { name: "Esci" }));
+    expect(screen.getByText("Togliere l'accesso salvato nel kit?")).toBeTruthy();
+    expect(invoke).not.toHaveBeenCalledWith("agent_sign_out", expect.anything());
   });
 });

@@ -154,6 +154,10 @@ impl KitEnv {
         env.set_path("CP_DATA", &data);
         env.set("CP_ARCH", arch);
         env.set_path("CP_APPS", &apps);
+        // The app itself, for the kit's wrappers (datakitinagy.cmd).
+        if let Ok(exe) = std::env::current_exe() {
+            env.set_path("DEVKIT_EXE", exe);
+        }
         env.set("CP_LANG", lang);
         env.set("CP_ROOT_FWD", fwd(root));
         env.set("CP_APPS_FWD", fwd(&apps));
@@ -278,7 +282,12 @@ impl KitEnv {
         env.set("DOTNET_MultiCoreJitNoProfileGather", "1");
 
         // PATH: kit tools in the order of _env.cmd:187-228, then the system
-        let mut path: Vec<PathBuf> = vec![apps.join("claude"), apps.join("tools")];
+        // The kit's own commands first (agy.cmd carries Antigravity's login).
+        let mut path: Vec<PathBuf> = vec![
+            kit.kit_files().join("bin"),
+            apps.join("claude"),
+            apps.join("tools"),
+        ];
         if has(r"pwsh\pwsh.exe") {
             path.push(apps.join("pwsh"));
         }
@@ -286,11 +295,8 @@ impl KitEnv {
             path.push(apps.join(r"codex\bin"));
             path.push(apps.join(r"codex\codex-path"));
         }
-        if has(r"antigravity\agy.exe") {
-            // The kit's own `agy` (it carries the sign-in, phase 5) will live in
-            // data\kit\bin; until then the CLI folder itself.
-            path.push(apps.join("antigravity"));
-        }
+        // Antigravity is not on the PATH itself: `agy` is data\kit\bin\agy.cmd,
+        // which carries its login in and out of Windows (keyring.rs).
         if has(r"python\python.exe") {
             path.push(apps.join("python"));
             path.push(apps.join(r"python\Scripts"));

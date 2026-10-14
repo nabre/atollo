@@ -177,6 +177,24 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the agent_launch command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agent-launch",
+          "markdownDescription": "Enables the agent_launch command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the agent_sign_out command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agent-sign-out",
+          "markdownDescription": "Enables the agent_sign_out command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the agents_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agents-status",
+          "markdownDescription": "Enables the agents_status command without any pre-configured scope."
+        },
+        {
           "description": "Enables the app_info command without any pre-configured scope.",
           "type": "string",
           "const": "allow-app-info",
@@ -213,6 +231,12 @@
           "markdownDescription": "Enables the editor_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the folder_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-folder-open",
+          "markdownDescription": "Enables the folder_open command without any pre-configured scope."
+        },
+        {
           "description": "Enables the projects_list command without any pre-configured scope.",
           "type": "string",
           "const": "allow-projects-list",
@@ -241,6 +265,24 @@
           "type": "string",
           "const": "allow-terminal-open",
           "markdownDescription": "Enables the terminal_open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the agent_launch command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agent-launch",
+          "markdownDescription": "Denies the agent_launch command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the agent_sign_out command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agent-sign-out",
+          "markdownDescription": "Denies the agent_sign_out command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the agents_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agents-status",
+          "markdownDescription": "Denies the agents_status command without any pre-configured scope."
         },
         {
           "description": "Denies the app_info command without any pre-configured scope.",
@@ -277,6 +319,12 @@
           "type": "string",
           "const": "deny-editor-status",
           "markdownDescription": "Denies the editor_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the folder_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-folder-open",
+          "markdownDescription": "Denies the folder_open command without any pre-configured scope."
         },
         {
           "description": "Denies the projects_list command without any pre-configured scope.",

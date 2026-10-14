@@ -12,6 +12,8 @@ const FILES: &[(&str, &str)] = &[
     ("loopback.js", include_str!("../../kit-files/loopback.js")),
     ("profile.ps1", include_str!("../../kit-files/profile.ps1")),
     ("bashrc", include_str!("../../kit-files/bashrc")),
+    (r"bin\agy.cmd", include_str!("../../kit-files/bin/agy.cmd")),
+    (r"bin\agy", include_str!("../../kit-files/bin/agy")),
 ];
 
 pub fn write_all(kit: &Kit) -> Result<()> {
@@ -19,7 +21,16 @@ pub fn write_all(kit: &Kit) -> Result<()> {
     fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
     for (name, content) in FILES {
         let path = dir.join(name);
+        // Batch files need CRLF, whatever the checkout did to the source.
+        let content = if name.ends_with(".cmd") {
+            content.replace("\r\n", "\n").replace('\n', "\r\n")
+        } else {
+            (*content).to_owned()
+        };
         if fs::read(&path).ok().as_deref() != Some(content.as_bytes()) {
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent)?;
+            }
             write_atomic(&path, content.as_bytes()).with_context(|| path.display().to_string())?;
         }
     }

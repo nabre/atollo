@@ -210,6 +210,47 @@ pub fn write_settings(kit: &Kit) -> Result<bool> {
     Ok(true)
 }
 
+/// Runs `command` (an agent, or a `.cmd` wrapper) in a new kit console in
+/// `dir`, titled `title`: Windows Terminal, or a classic console. Returns
+/// the process, to know when it ends. Inside the job.
+pub fn open_command(
+    kit: &Kit,
+    env: &KitEnv,
+    dir: &Path,
+    title: &str,
+    command: &Path,
+) -> Result<std::process::Child> {
+    let wt = terminal_exe(kit);
+    if wt.is_file() && write_settings(kit).unwrap_or(false) {
+        let mut cmd = jobs::kit_command(&wt, env);
+        cmd.args([
+            "--window",
+            "new",
+            "--profile",
+            PROFILE_PWSH,
+            "--title",
+            title,
+            "--startingDirectory",
+        ])
+        .arg(dir)
+        .arg("--")
+        .arg(command)
+        .current_dir(dir)
+        .creation_flags(0);
+        return jobs::spawn(&mut cmd);
+    }
+    let is_batch = command
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("cmd") || e.eq_ignore_ascii_case("bat"));
+    let mut cmd = if is_batch {
+        jobs::batch_command(command, &[], env)
+    } else {
+        jobs::kit_command(command, env)
+    };
+    cmd.current_dir(dir).creation_flags(CREATE_NEW_CONSOLE.0);
+    jobs::spawn(&mut cmd)
+}
+
 /// Opens a kit console in `dir`: Windows Terminal with the Dev-Kit profile,
 /// or the kit's PowerShell in a classic console. Inside the job.
 pub fn open_console(kit: &Kit, env: &KitEnv, dir: &Path) -> Result<()> {
