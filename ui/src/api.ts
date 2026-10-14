@@ -318,7 +318,7 @@ export interface SetupSnapshot {
 }
 
 /** `app`: part of Atollo (the editor), shown with the required ones. */
-export type Group = "required" | "app" | "agents" | "languages" | "os";
+export type Group = "required" | "app" | "agents" | "languages" | "os" | "databases";
 
 export interface ComponentInfo {
   id: string;
@@ -529,9 +529,73 @@ export function agentSignOut(agent: AgentId): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("agent_sign_out", { agent });
 }
 
-/** Opens a kit folder in File Explorer: "agents" or "projects" (+ project). */
-export function folderOpen(which: "agents" | "projects", project: string | null = null): Promise<void> {
+/** Opens a kit folder in File Explorer: "agents", "db" or "projects" (+ project). */
+export function folderOpen(which: "agents" | "db" | "projects", project: string | null = null): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("folder_open", { which, project });
+}
+
+// Database servers of the kit (src-tauri/src/services.rs, D-73).
+
+export type ServiceState = "stopped" | "starting" | "running" | "error";
+
+export interface ServiceInfo {
+  id: "mariadb" | "mongodb";
+  name: string;
+  installed: boolean;
+  state: ServiceState;
+  port: number;
+  autostart: boolean;
+  dataDir: string;
+  log: string;
+  url: string;
+  message: string | null;
+}
+
+const SAMPLE_SERVICES: ServiceInfo[] = [
+  {
+    id: "mariadb",
+    name: "MariaDB",
+    installed: true,
+    state: "running",
+    port: 3306,
+    autostart: true,
+    dataDir: "E:\\Atollo\\data\\db\\mariadb",
+    log: "E:\\Atollo\\data\\app\\logs\\mariadb.log",
+    url: "mysql://root@127.0.0.1:3306/",
+    message: null,
+  },
+  {
+    id: "mongodb",
+    name: "MongoDB",
+    installed: false,
+    state: "stopped",
+    port: 27017,
+    autostart: false,
+    dataDir: "E:\\Atollo\\data\\db\\mongodb",
+    log: "E:\\Atollo\\data\\app\\logs\\mongodb.log",
+    url: "mongodb://127.0.0.1:27017/",
+    message: null,
+  },
+];
+
+export function servicesList(): Promise<ServiceInfo[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_SERVICES) : invoke<ServiceInfo[]>("services_list");
+}
+
+/** Starts a server (installing it first if needed) and waits until it answers. */
+export function serviceStart(id: ServiceInfo["id"]): Promise<ServiceInfo[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_SERVICES) : invoke<ServiceInfo[]>("service_start", { id });
+}
+
+export function serviceStop(id: ServiceInfo["id"]): Promise<ServiceInfo[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_SERVICES) : invoke<ServiceInfo[]>("service_stop", { id });
+}
+
+/** Port (null: the default) and "start with Atollo"; the port applies at the next start. */
+export function serviceSet(id: ServiceInfo["id"], port: number | null, autostart: boolean): Promise<ServiceInfo[]> {
+  return browserPreview
+    ? Promise.resolve(SAMPLE_SERVICES)
+    : invoke<ServiceInfo[]>("service_set", { id, port, autostart });
 }
 
 // Projects (src-tauri/src/projects.rs) and their actions (run.rs).
@@ -848,9 +912,10 @@ export interface OpenNow {
   terminals: number;
   actions: number;
   setup: boolean;
+  databases: number;
 }
 
-const NOTHING_OPEN: OpenNow = { processes: [], editor: false, terminals: 0, actions: 0, setup: false };
+const NOTHING_OPEN: OpenNow = { processes: [], editor: false, terminals: 0, actions: 0, setup: false, databases: 0 };
 
 export function ejectList(): Promise<OpenNow> {
   return browserPreview ? Promise.resolve(NOTHING_OPEN) : invoke<OpenNow>("eject_list");

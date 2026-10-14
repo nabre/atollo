@@ -24,6 +24,7 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 | **GitHub** | le compte GitHub du kit, un seul pour tout : cette page, Git (y compris dans l'éditeur, les consoles et les agents) et GitHub CLI ; les dépôts du compte et de ses organisations, avec clonage dans `projects\`, ouverture dans l'éditeur, renommage et suppression sur GitHub |
 | **Agents** | Claude Code, Codex et Antigravity installés : version, connexion, limites de l'abonnement et consommation du jour et des 7 derniers jours ; instructions, skills et serveurs MCP partagés dans `data\agents` |
 | **Langages et outils** | les composants avec leur logo, leurs dépendances et l'espace disque ; installer, mettre à jour, supprimer |
+| **Bases de données** | MariaDB (compatible MySQL) et MongoDB : démarrage et arrêt, chaîne de connexion, port, données dans `data\db`, sur ce PC seulement ; SQLite sans serveur |
 | **Paramètres** | langue, terminal, réseau (proxy, certificats, réseau local), clé Gemini, versions de Python et PHP, compilateur Rust (GNU ou MSVC), mises à jour de l'application |
 | **Retirer le lecteur** | ferme tout ce que le kit a ouvert, ramène la connexion d'Antigravity dans le kit et permet d'éjecter la clé |
 

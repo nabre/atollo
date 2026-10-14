@@ -322,7 +322,9 @@ describe("App", () => {
     render(<App />);
     expect(await screen.findByRole("button", { name: "Projects" })).toBeTruthy();
     act(() => {
-      closeListener?.({ payload: { processes: [], editor: true, terminals: 1, actions: 0, setup: false } });
+      closeListener?.({
+        payload: { processes: [], editor: true, terminals: 1, actions: 0, setup: false, databases: 0 },
+      });
     });
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog.textContent).toContain("Kit consoles: 1");

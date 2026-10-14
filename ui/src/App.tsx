@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
   VscDebugDisconnect,
+  VscDatabase,
   VscExtensions,
   VscFolderLibrary,
   VscGithub,
@@ -39,8 +40,9 @@ import { SettingsPage } from "./settings";
 import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
 import logo from "./assets/logo-128.png";
+import { DatabasesPage } from "./databases";
 
-type PageId = "home" | "projects" | "github" | "agents" | "components" | "settings" | "eject";
+type PageId = "home" | "projects" | "github" | "agents" | "components" | "databases" | "settings" | "eject";
 
 interface Page {
   id: PageId;
@@ -55,6 +57,7 @@ function pages(): Page[] {
     { id: "github", label: "GitHub", icon: VscGithub },
     { id: "agents", label: t("Agenti"), icon: VscHubot },
     { id: "components", label: t("Linguaggi e strumenti"), icon: VscExtensions },
+    { id: "databases", label: t("Database"), icon: VscDatabase },
     { id: "settings", label: t("Impostazioni"), icon: VscSettingsGear },
     { id: "eject", label: t("Rimuovi l'unità"), icon: VscDebugDisconnect },
   ];
@@ -167,6 +170,8 @@ export function App() {
               <AgentsPage />
             ) : page === "components" ? (
               <ComponentsPage setup={setup} />
+            ) : page === "databases" ? (
+              <DatabasesPage />
             ) : page === "settings" ? (
               <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} />
             ) : (

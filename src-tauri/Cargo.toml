@@ -22,6 +22,7 @@ serde_json = "1.0.151"
 anyhow = "1.0.104"
 thiserror = "2.0.21"
 sha2 = "0.11.0"
+sha3 = "0.11.0"
 webview2-com = "0.39.1"
 ureq = { version = "3.4.2", default-features = false, features = ["native-tls", "json", "gzip", "win-system-proxy"] }
 native-tls = "0.2.18"

@@ -35,6 +35,8 @@ pub struct AppState {
     pub env: std::sync::RwLock<KitEnv>,
     pub editor: Arc<Editor>,
     pub setup: Arc<SetupTask>,
+    /// Database servers (D-73).
+    pub services: Arc<crate::services::Services>,
 }
 
 #[derive(Debug, Serialize)]
@@ -608,6 +610,7 @@ pub fn folder_open<R: Runtime>(
     ensure_main(&webview)?;
     let dir = match which.as_str() {
         "agents" => state.kit.data().join("agents"),
+        "db" => state.kit.data().join("db"),
         "projects" => project_dir(&state.kit, project.as_deref(), state.lang())?,
         _ => return Err(format!("unknown folder: {which}")),
     };
@@ -1037,6 +1040,83 @@ pub async fn run_start<R: Runtime>(
     .map_err(|e| fail("run", e))?
 }
 
+/// The database servers (D-73).
+#[tauri::command]
+pub fn services_list<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> Result<Vec<crate::services::ServiceInfo>, String> {
+    ensure_main(&webview)?;
+    Ok(state.services.list())
+}
+
+/// Starts a database server, installing it first if needed; waits until it
+/// answers.
+#[tauri::command]
+pub async fn service_start<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<Vec<crate::services::ServiceInfo>, String> {
+    ensure_main(&webview)?;
+    if !crate::services::SERVERS.contains(&id.as_str()) {
+        return Err(fail("service", format!("unknown server {id}")));
+    }
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        let env = ensure(&app, &task, &kit, lang, &[id.as_str()])?;
+        match services.start(&id, &env) {
+            Ok(_) => Ok(services.list()),
+            Err(e) => match e.downcast_ref::<crate::services::PortInUse>() {
+                Some(p) => Err(crate::i18n::t(
+                    lang,
+                    "La porta {0} è già usata da un altro programma: cambiala qui sotto.",
+                    &[&p.0.to_string()],
+                )),
+                None => Err(fail("service", format!("{e:#}"))),
+            },
+        }
+    })
+    .await
+    .map_err(|e| fail("service", e))?
+}
+
+#[tauri::command]
+pub async fn service_stop<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<Vec<crate::services::ServiceInfo>, String> {
+    ensure_main(&webview)?;
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        services.stop(&id);
+        services.list()
+    })
+    .await
+    .map_err(|e| fail("service", e))
+}
+
+/// Port (null: the default) and "start with Atollo" of a server; the port
+/// applies at the next start.
+#[tauri::command]
+pub fn service_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+    port: Option<u16>,
+    autostart: bool,
+) -> Result<Vec<crate::services::ServiceInfo>, String> {
+    ensure_main(&webview)?;
+    state
+        .services
+        .set(&id, port, autostart)
+        .map_err(|e| fail("service", format!("{e:#}")))?;
+    Ok(state.services.list())
+}
+
 #[tauri::command]
 pub fn run_stop<R: Runtime>(
     webview: Webview<R>,
@@ -1245,6 +1325,8 @@ pub struct OpenNow {
     pub terminals: usize,
     pub actions: usize,
     pub setup: bool,
+    /// Database servers started by the app.
+    pub databases: usize,
 }
 
 impl OpenNow {
@@ -1254,6 +1336,7 @@ impl OpenNow {
             || self.terminals > 0
             || self.actions > 0
             || self.setup
+            || self.databases > 0
     }
 }
 
@@ -1267,6 +1350,7 @@ pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
         terminals: app.state::<terminal::Consoles>().count(),
         actions,
         setup: state.setup.snapshot().running,
+        databases: state.services.running(),
     }
 }
 
@@ -1304,7 +1388,10 @@ pub async fn eject_run<R: Runtime>(
         Arc::clone(&state.setup),
     );
     let handle = app.clone();
+    let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
+        // Asked to shut down before the kit's processes are ended.
+        services.stop_all();
         editor.stop();
         crate::sessions::stop(&consoles);
         let pids: Vec<u32> = crate::sessions::kit_processes(&kit)
@@ -1344,7 +1431,13 @@ pub fn app_quit<R: Runtime>(
     if let Some(r) = app.try_state::<Arc<Runner>>() {
         r.stop_all();
     }
-    app.exit(0);
+    // The databases shut down cleanly first (D-73), off this thread.
+    let services = Arc::clone(&app.state::<AppState>().services);
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        services.stop_all();
+        handle.exit(0);
+    });
     Ok(())
 }
 
@@ -1408,6 +1501,10 @@ macro_rules! command_handler {
             $crate::commands::github_rename,
             $crate::commands::github_delete,
             $crate::commands::github_open,
+            $crate::commands::services_list,
+            $crate::commands::service_start,
+            $crate::commands::service_stop,
+            $crate::commands::service_set,
             $crate::commands::run_list,
             $crate::commands::run_start,
             $crate::commands::run_stop,

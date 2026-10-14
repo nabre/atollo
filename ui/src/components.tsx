@@ -41,6 +41,11 @@ function groups(): { id: Group; title: string; hint: string }[] {
       ),
     },
     {
+      id: "databases",
+      title: t("Database"),
+      hint: t("Server avviati dalla pagina Database, solo su questo PC (127.0.0.1); i dati restano in data\\db."),
+    },
+    {
       id: "os",
       title: t("Legati a un sistema operativo"),
       hint: t("Funzionano solo sul sistema per cui sono fatti, qui Windows."),

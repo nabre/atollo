@@ -24,6 +24,7 @@ Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShel
 | **GitHub** | das GitHub-Konto des Kits, eines für alles: diese Seite, Git (auch im Editor, in den Konsolen und in den Agenten) und GitHub CLI; die Repositorys des Kontos und seiner Organisationen, mit Klonen nach `projects\`, Öffnen im Editor, Umbenennen und Löschen auf GitHub |
 | **Agenten** | die installierten Claude Code, Codex und Antigravity: Version, Anmeldung, Tariflimits und Verbrauch von heute und der letzten 7 Tage; gemeinsame Anweisungen, Skills und MCP-Server in `data\agents` |
 | **Sprachen und Werkzeuge** | die Komponenten mit Logo, Abhängigkeiten und Speicherplatz; installieren, aktualisieren, entfernen |
+| **Datenbanken** | MariaDB (MySQL-kompatibel) und MongoDB: Starten und Stoppen, Verbindungszeichenfolge, Port, Daten in `data\db`, nur auf diesem PC; SQLite ohne Server |
 | **Einstellungen** | Sprache, Terminal, Netzwerk (Proxy, Zertifikate, lokales Netz), Gemini-Schlüssel, Versionen von Python und PHP, Rust-Compiler (GNU oder MSVC), Updates der App |
 | **Laufwerk entfernen** | schließt alles, was das Kit geöffnet hat, holt die Anmeldung von Antigravity ins Kit zurück und lässt den Stick auswerfen |
 

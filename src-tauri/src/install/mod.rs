@@ -11,6 +11,7 @@
 
 mod agents;
 mod core;
+mod db;
 mod editor;
 mod lang;
 mod native;
@@ -180,6 +181,9 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "pwsh" => &editor::Pwsh,
         "terminal" => &editor::Terminal,
         "vscodium-server" => &editor::Server,
+        "mariadb" => &db::MariaDb,
+        "mongodb" => &db::MongoDb,
+        "sqlite" => &db::Sqlite,
         _ => return None,
     })
 }

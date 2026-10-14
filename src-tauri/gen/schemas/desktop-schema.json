@@ -405,6 +405,30 @@
           "markdownDescription": "Enables the run_stop command without any pre-configured scope."
         },
         {
+          "description": "Enables the service_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-service-set",
+          "markdownDescription": "Enables the service_set command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the service_start command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-service-start",
+          "markdownDescription": "Enables the service_start command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the service_stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-service-stop",
+          "markdownDescription": "Enables the service_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the services_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-services-list",
+          "markdownDescription": "Enables the services_list command without any pre-configured scope."
+        },
+        {
           "description": "Enables the settings_get command without any pre-configured scope.",
           "type": "string",
           "const": "allow-settings-get",
@@ -685,6 +709,30 @@
           "type": "string",
           "const": "deny-run-stop",
           "markdownDescription": "Denies the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the service_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-service-set",
+          "markdownDescription": "Denies the service_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the service_start command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-service-start",
+          "markdownDescription": "Denies the service_start command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the service_stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-service-stop",
+          "markdownDescription": "Denies the service_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the services_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-services-list",
+          "markdownDescription": "Denies the services_list command without any pre-configured scope."
         },
         {
           "description": "Denies the settings_get command without any pre-configured scope.",

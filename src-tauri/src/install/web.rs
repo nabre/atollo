@@ -176,7 +176,7 @@ fn walk(dir: &Path) -> Vec<PathBuf> {
     out
 }
 
-fn copy_vc_runtime(ctx: &Ctx, dest: &Path) -> Result<()> {
+pub(super) fn copy_vc_runtime(ctx: &Ctx, dest: &Path) -> Result<()> {
     let vc = vc_runtime(ctx, false)?;
     for entry in fs::read_dir(vc)?.flatten() {
         if entry
