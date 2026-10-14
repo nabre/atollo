@@ -65,6 +65,8 @@
     "allow-service-start",
     "allow-service-stop",
     "allow-service-set",
+    "allow-db-browse-tree",
+    "allow-db-browse-rows",
     "allow-run-list",
     "allow-run-start",
     "allow-run-stop",

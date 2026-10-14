@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-db-browse-tree"
+description = "Enables the db_browse_tree command without any pre-configured scope."
+commands.allow = ["db_browse_tree"]
+
+[[permission]]
+identifier = "deny-db-browse-tree"
+description = "Denies the db_browse_tree command without any pre-configured scope."
+commands.deny = ["db_browse_tree"]

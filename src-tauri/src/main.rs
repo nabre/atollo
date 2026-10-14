@@ -15,6 +15,7 @@ mod checkup;
 mod cli;
 mod commands;
 mod db_auth;
+mod db_browse;
 mod detect;
 mod editor;
 mod editor_cfg;

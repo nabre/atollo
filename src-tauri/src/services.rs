@@ -125,7 +125,7 @@ fn installed(kit: &Kit, id: &str) -> bool {
     Catalog::get().find(id).is_some_and(|c| c.is_installed(kit))
 }
 
-fn bin(kit: &Kit, id: &str, exe: &str) -> PathBuf {
+pub(crate) fn bin(kit: &Kit, id: &str, exe: &str) -> PathBuf {
     match id {
         "mongosh" => kit.apps().join(r"mongosh\bin").join(exe),
         _ => kit.apps().join(id).join("bin").join(exe),
@@ -222,6 +222,10 @@ impl Services {
             running: Mutex::new(BTreeMap::new()),
             errors: Mutex::new(BTreeMap::new()),
         }
+    }
+
+    pub(crate) fn kit(&self) -> &Kit {
+        &self.kit
     }
 
     fn port(&self, id: &str) -> u16 {
@@ -365,7 +369,7 @@ impl Services {
     }
 
     /// A tool of MariaDB logged in as `root` (the kit's `[client]` login).
-    fn mariadb_tool(&self, exe: &str, env: &KitEnv) -> Command {
+    pub(crate) fn mariadb_tool(&self, exe: &str, env: &KitEnv) -> Command {
         let mut cmd = jobs::kit_command(bin(&self.kit, "mariadb", exe), env);
         // It must be the first option.
         cmd.arg(format!(
@@ -602,7 +606,7 @@ impl Services {
     }
 
     /// The server's port and environment, when it runs.
-    fn running_server(&self, engine: &str) -> Result<(u16, KitEnv)> {
+    pub(crate) fn running_server(&self, engine: &str) -> Result<(u16, KitEnv)> {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         match running.get_mut(engine) {
             Some(s) => match s.child.try_wait() {
@@ -937,6 +941,26 @@ mod tests {
                 n.parse::<u32>().is_ok_and(|n| n > 0),
                 "{id}: data written, count {n:?}"
             );
+            // The explorer sees the database, the table and its rows (D-79).
+            let dbs = crate::db_browse::tree(&s, id).unwrap();
+            let db = dbs
+                .iter()
+                .find(|d| d.name == "prova_kit")
+                .expect("database listed");
+            assert!(
+                db.tables.iter().any(|t| t.name == "t"),
+                "{id}: table listed"
+            );
+            assert!(
+                dbs.iter().any(|d| d.system),
+                "{id}: system databases listed"
+            );
+            let page = crate::db_browse::rows(&s, id, "prova_kit", "t", 0).unwrap();
+            assert!(page.total > 0 && !page.rows.is_empty(), "{id}: rows read");
+            assert!(page.columns.iter().any(|c| c.name == "x"), "{id}: column x");
+            if id == "mariadb" {
+                assert!(crate::db_browse::rows(&s, id, "prova_kit", "no`; DROP", 0).is_err());
+            }
             let file = s.export("Prova Kit", id).unwrap();
             assert!(file.is_file(), "{id}: copy written");
             admin(lose);
