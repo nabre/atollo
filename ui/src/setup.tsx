@@ -1,5 +1,5 @@
 // Progress of the preparation (installing, updating, removing components),
-// shared by the status bar, the Home and the "Linguaggi e strumenti" page.
+// shared by the status bar, the Activity panel and the Tools page.
 import { useEffect, useState } from "react";
 import { VscCheck, VscCircleSlash, VscError, VscLoading, VscWarning } from "react-icons/vsc";
 import { onSetup, setupCancel, setupState, type Outcome, type SetupSnapshot, type SetupStep } from "./api";
@@ -162,8 +162,8 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
       {!snapshot.running && problems.length > 0 && (
         <p className="border-t border-vsc-border px-4 py-2 text-vsc-warning">
           {problems.length === 1
-            ? t("Un componente non è stato installato. Riprova da Linguaggi e strumenti.")
-            : t("{0} componenti non sono stati installati. Riprova da Linguaggi e strumenti.", problems.length)}
+            ? t("Un componente non è stato installato. Riprova da Strumenti.")
+            : t("{0} componenti non sono stati installati. Riprova da Strumenti.", problems.length)}
         </p>
       )}
     </section>

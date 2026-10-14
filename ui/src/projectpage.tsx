@@ -7,6 +7,9 @@ import {
   VscArrowLeft,
   VscCloudDownload,
   VscCode,
+  VscDebugStart,
+  VscDebugStop,
+  VscGlobe,
   VscDatabase,
   VscFolderOpened,
   VscGithub,
@@ -43,16 +46,13 @@ import { ComponentLogo, LanguageTag } from "./logos";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { alive, ProjectDetails, RunsPanel, stateText } from "./projects";
 
-type Tab = "overview" | "run" | "db" | "editor" | "agents" | "git";
+type Tab = "summary" | "resources" | "advanced";
 
 function tabs(): { id: Tab; label: string }[] {
   return [
-    { id: "overview", label: t("Panoramica") },
-    { id: "run", label: t("Avvio") },
-    { id: "db", label: t("Database") },
-    { id: "editor", label: t("Editor") },
-    { id: "agents", label: t("Agenti") },
-    { id: "git", label: t("Git e GitHub") },
+    { id: "summary", label: t("Riepilogo") },
+    { id: "resources", label: t("Risorse") },
+    { id: "advanced", label: t("Avanzate") },
   ];
 }
 
@@ -118,114 +118,209 @@ const COMPONENT_NAMES: Record<string, string> = {
   "vscodium-server": "Editor",
 };
 
-function Overview({
+/** The components the project needs, with "Installa ciò che manca". */
+function Needs({ p, onChanged }: { p: ProjectInfo; onChanged: () => void }) {
+  const { busy, error, run } = useAction(onChanged);
+  return (
+    <Box
+      id="need"
+      title={t("Componenti")}
+      right={
+        p.missing.length > 0 ? (
+          <span className="text-vsc-warning">{t("Mancano: {0}", String(p.missing.length))}</span>
+        ) : undefined
+      }
+    >
+      <ul className="divide-y divide-vsc-border">
+        {p.requires.length === 0 && <li className="px-4 py-2 text-vsc-desc">{t("Nessun componente del kit.")}</li>}
+        {p.requires.map((id) => {
+          const missing = p.missing.includes(id);
+          return (
+            <li key={id} className="flex items-center gap-3 px-4 py-2">
+              <ComponentLogo id={id} />
+              <span className="min-w-0 flex-1">{COMPONENT_NAMES[id] ?? id}</span>
+              <span className={missing ? "text-vsc-warning" : "text-vsc-success"}>
+                {missing ? t("da installare") : t("installato")}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {p.missing.length > 0 && (
+        <div className="px-4 pb-3">
+          <ActionButton
+            icon={VscCloudDownload}
+            label={t("Installa ciò che manca")}
+            primary
+            busy={busy === "install"}
+            onClick={() => {
+              run("install", () => projectInstallMissing(p.id));
+            }}
+          />
+        </div>
+      )}
+      <p className="px-4 pb-3 text-[12px] text-vsc-desc">{p.reason}</p>
+      {p.warnings.length > 0 && (
+        <ul className="list-disc space-y-1 pr-4 pb-3 pl-9 text-[12px] text-vsc-desc">
+          {p.warnings.map((w) => (
+            <li key={w}>{w}</li>
+          ))}
+        </ul>
+      )}
+      <ErrorLine error={error} />
+    </Box>
+  );
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0 space-y-1 rounded-sm border border-vsc-border bg-vsc-sidebar px-4 py-3">
+      <h3 className="text-[12px] font-semibold tracking-wide text-vsc-desc uppercase">{title}</h3>
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
+}
+
+/** Riepilogo: the main action with its output first (what is done most),
+ * then languages, databases, agent and Git at a glance. */
+function Summary({
   p,
   status,
   dbs,
   runs,
-  onChanged,
+  logs,
+  busy,
+  onStart,
+  onStop,
+  onResources,
 }: {
   p: ProjectInfo;
   status: ProjectStatus | null;
   dbs: ProjectDatabases | null;
-  runs: RunInfo[];
-  onChanged: () => void;
+  runs: Record<string, RunInfo>;
+  logs: Record<string, string[]>;
+  busy: string | null;
+  onStart: (a: ProjectAction) => void;
+  onStop: (key: string) => void;
+  onResources: () => void;
 }) {
-  const { busy, error, run } = useAction(onChanged);
-  const running = runs.filter((r) => alive(r.state));
+  const main = p.actions.find((a) => a.id === p.default) ?? p.actions[0] ?? null;
+  const key = main ? `${p.id}|${main.id}` : "";
+  const r = main ? runs[key] : undefined;
+  const lines = r ? (logs[key] ?? []) : [];
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Box
-        id="need"
-        title={t("Cosa serve al progetto")}
-        right={
-          p.missing.length > 0 ? (
-            <span className="text-vsc-warning">{t("Mancano: {0}", String(p.missing.length))}</span>
-          ) : undefined
-        }
-      >
-        <ul className="divide-y divide-vsc-border">
-          {p.requires.length === 0 && <li className="px-4 py-2 text-vsc-desc">{t("Nessun componente del kit.")}</li>}
-          {p.requires.map((id) => {
-            const missing = p.missing.includes(id);
-            return (
-              <li key={id} className="flex items-center gap-3 px-4 py-2">
-                <ComponentLogo id={id} />
-                <span className="min-w-0 flex-1">{COMPONENT_NAMES[id] ?? id}</span>
-                <span className={missing ? "text-vsc-warning" : "text-vsc-success"}>
-                  {missing ? t("da installare") : t("installato")}
+    <div className="space-y-4">
+      <section aria-label={t("Avvio")} className="rounded-sm border border-vsc-border bg-vsc-sidebar">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+          {main ? (
+            <>
+              <span className="min-w-0 flex-1">
+                <span className="font-semibold">{main.label}</span>
+                <span className="ml-2 text-vsc-desc">
+                  {r ? stateText(r) : t("fermo")}
+                  {r?.url && r.state === "running" && ` · ${r.url}`}
                 </span>
-              </li>
-            );
-          })}
-        </ul>
-        {p.missing.length > 0 && (
-          <div className="px-4 pb-3">
-            <ActionButton
-              icon={VscCloudDownload}
-              label={t("Installa ciò che manca")}
-              primary
-              busy={busy === "install"}
-              onClick={() => {
-                run("install", () => projectInstallMissing(p.id));
-              }}
-            />
-          </div>
+              </span>
+              {r?.url && r.state === "running" && (
+                <ActionButton
+                  icon={VscGlobe}
+                  label={t("Apri nel browser")}
+                  onClick={() => {
+                    void urlOpen(r.url ?? "");
+                  }}
+                />
+              )}
+              {alive(r?.state) ? (
+                <ActionButton
+                  icon={VscDebugStop}
+                  label={t("Ferma")}
+                  busy={busy === `stop:${key}`}
+                  onClick={() => {
+                    onStop(key);
+                  }}
+                />
+              ) : (
+                <ActionButton
+                  icon={VscDebugStart}
+                  label={t("Avvia")}
+                  primary
+                  busy={busy === `run:${key}`}
+                  onClick={() => {
+                    onStart(main);
+                  }}
+                />
+              )}
+            </>
+          ) : (
+            <span className="text-vsc-desc">
+              {t("Nessuna azione riconosciuta: aggiungine in panel.json o servi una cartella come sito web.")}
+            </span>
+          )}
+        </div>
+        {lines.length > 0 && (
+          <pre
+            tabIndex={0}
+            aria-label={t("Output di {0}", main?.label ?? "")}
+            className="m-0 max-h-40 overflow-auto border-t border-vsc-border bg-vsc-bg px-4 py-2 font-mono text-[12px] leading-snug whitespace-pre-wrap select-text"
+          >
+            {lines.slice(-200).join("\n")}
+          </pre>
         )}
-        <p className="px-4 pb-3 text-[12px] text-vsc-desc">{p.reason}</p>
-        {p.warnings.length > 0 && (
-          <ul className="list-disc space-y-1 pr-4 pb-3 pl-9 text-[12px] text-vsc-desc">
-            {p.warnings.map((w) => (
-              <li key={w}>{w}</li>
-            ))}
-          </ul>
-        )}
-        <ErrorLine error={error} />
-      </Box>
-      <Box id="now" title={t("Adesso")}>
-        <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-5 gap-y-2 px-4 py-3">
-          <dt className="text-vsc-desc">{t("Avviati")}</dt>
-          <dd className="min-w-0">
-            {running.length === 0
-              ? t("niente")
-              : running.map((r) => (
-                  <div key={r.key}>
-                    {r.label}: {stateText(r)}
-                    {r.url && (
-                      <button
-                        type="button"
-                        className="ml-2 text-vsc-link hover:underline"
-                        onClick={() => {
-                          void urlOpen(r.url ?? "");
-                        }}
-                      >
-                        {r.url}
-                      </button>
-                    )}
-                  </div>
-                ))}
-          </dd>
-          <dt className="text-vsc-desc">{t("Database")}</dt>
-          <dd>
-            {dbs === null || dbs.dbs.length === 0
-              ? t("nessuno creato")
-              : dbs.dbs.map((d) => `${COMPONENT_NAMES[d.engine] ?? d.engine} · ${d.database}`).join(", ")}
-          </dd>
-          <dt className="text-vsc-desc">{t("Git")}</dt>
-          <dd>
-            {status?.git
-              ? `${status.git.branch ?? t("nessun ramo")}${status.git.synced === false ? ` · ${t("non sincronizzato")}` : ""}`
-              : t("non è un repository Git")}
-          </dd>
-          <dt className="text-vsc-desc">{t("Cartella")}</dt>
-          <dd className="truncate font-mono text-[12px]">projects\{p.id}</dd>
-          <dt className="text-vsc-desc">{t("Impostazioni del kit")}</dt>
-          <dd className="truncate font-mono text-[12px]">data\app\projects\{p.id}\dev-settings.json</dd>
-        </dl>
-      </Box>
+      </section>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card title={t("Linguaggi")}>
+          <span className="flex flex-wrap gap-1">
+            {p.languages.length === 0 ? (
+              <span className="text-vsc-desc">—</span>
+            ) : (
+              p.languages.map((l) => <LanguageTag key={l} name={l} />)
+            )}
+          </span>
+          {p.missing.length > 0 && (
+            <button type="button" className="mt-1 text-vsc-warning hover:underline" onClick={onResources}>
+              {t("Mancano: {0}", p.missing.map((m) => COMPONENT_NAMES[m] ?? m).join(", "))}
+            </button>
+          )}
+        </Card>
+        <Card title={t("Database")}>
+          {dbs === null || dbs.dbs.length === 0 ? (
+            <button type="button" className="text-vsc-link hover:underline" onClick={onResources}>
+              {dbs?.detected.some((d) => d !== "sqlite") ? t("da creare") : t("nessuno")}
+            </button>
+          ) : (
+            dbs.dbs.map((d) => (
+              <div key={d.engine} className="truncate">
+                {COMPONENT_NAMES[d.engine] ?? d.engine} · <span className="font-mono">{d.database}</span>
+              </div>
+            ))
+          )}
+        </Card>
+        <Card title={t("Agente")}>
+          <div>{p.settings.agent ? (AGENT_NAMES[p.settings.agent] ?? p.settings.agent) : t("da scegliere")}</div>
+          {status && status.instructions.length > 0 && (
+            <div className="truncate font-mono text-[12px] text-vsc-desc">{status.instructions.join(", ")}</div>
+          )}
+        </Card>
+        <Card title={t("Git")}>
+          {status?.git ? (
+            <>
+              <div className="font-mono">{status.git.branch ?? t("nessun ramo")}</div>
+              {status.git.synced === false && <div className="text-vsc-warning">{t("non sincronizzato")}</div>}
+            </>
+          ) : (
+            <span className="text-vsc-desc">{t("non è un repository Git")}</span>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }
+
+const AGENT_NAMES: Record<string, string> = {
+  claude: "Claude Code",
+  codex: "Codex",
+  antigravity: "Antigravity",
+};
 
 function EnvPreview({
   project,
@@ -378,28 +473,20 @@ function Databases({ p, dbs, onChanged }: { p: ProjectInfo; dbs: ProjectDatabase
   );
 }
 
-function Agents({ p, agents, status }: { p: ProjectInfo; agents: AgentInfo[] | null; status: ProjectStatus | null }) {
+function Agents({ status }: { status: ProjectStatus | null }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Box id="agent" title={t("Agente")}>
-        <div className="space-y-2 px-4 py-3">
-          <p className="text-vsc-desc">{t("Quello scelto qui è il predefinito per questo progetto.")}</p>
-          <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
-        </div>
-      </Box>
-      <Box id="instructions" title={t("Istruzioni del progetto")}>
-        <ul className="divide-y divide-vsc-border">
-          {(status?.instructions ?? []).map((f) => (
-            <li key={f} className="px-4 py-2 font-mono">
-              {f}
-            </li>
-          ))}
-          <li className="px-4 py-2 text-vsc-desc">
-            {t("Istruzioni, skill e MCP del kit valgono anche qui (data\\agents).")}
+    <Box id="instructions" title={t("Istruzioni per gli agenti")}>
+      <ul className="divide-y divide-vsc-border">
+        {(status?.instructions ?? []).map((f) => (
+          <li key={f} className="px-4 py-2 font-mono">
+            {f}
           </li>
-        </ul>
-      </Box>
-    </div>
+        ))}
+        <li className="px-4 py-2 text-vsc-desc">
+          {t("Istruzioni, skill e MCP del kit valgono anche qui (data\\agents).")}
+        </li>
+      </ul>
+    </Box>
   );
 }
 
@@ -479,7 +566,7 @@ export function ProjectPage({
   onBack: () => void;
   onChanged: () => void;
 }) {
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>("summary");
   const [status, setStatus] = useState<ProjectStatus | null>(null);
   const [dbs, setDbs] = useState<ProjectDatabases | null>(null);
   const { busy: opening, error, run } = useAction();
@@ -570,10 +657,10 @@ export function ProjectPage({
             }`}
           >
             {x.label}
-            {x.id === "overview" && p.missing.length > 0 && (
+            {x.id === "resources" && p.missing.length > 0 && (
               <VscWarning size={12} className="ml-1 inline text-vsc-warning" aria-label={t("Mancano componenti")} />
             )}
-            {x.id === "run" && mine.some((r) => alive(r.state)) && (
+            {x.id === "summary" && mine.some((r) => alive(r.state)) && (
               <span className="ml-1 text-vsc-success" aria-label={t("avviato")}>
                 ●
               </span>
@@ -582,19 +669,35 @@ export function ProjectPage({
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "overview" && (
-          <Overview
+        {tab === "summary" && (
+          <Summary
             p={p}
             status={status}
             dbs={dbs}
-            runs={mine}
-            onChanged={() => {
-              onChanged();
-              reload();
+            runs={runs}
+            logs={logs}
+            busy={busy}
+            onStart={onStart}
+            onStop={onStop}
+            onResources={() => {
+              setTab("resources");
             }}
           />
         )}
-        {tab === "run" && (
+        {tab === "resources" && (
+          <div className="space-y-4">
+            <Needs
+              p={p}
+              onChanged={() => {
+                onChanged();
+                reload();
+              }}
+            />
+            <Databases p={p} dbs={dbs} onChanged={reload} />
+            <ProjectExtensions project={p} onChanged={onChanged} />
+          </div>
+        )}
+        {tab === "advanced" && (
           <div className="space-y-4">
             <ProjectDetails
               project={p}
@@ -617,12 +720,10 @@ export function ProjectPage({
                 onForget={onForget}
               />
             )}
+            <Git status={status} />
+            <Agents status={status} />
           </div>
         )}
-        {tab === "db" && <Databases p={p} dbs={dbs} onChanged={reload} />}
-        {tab === "editor" && <ProjectExtensions project={p} onChanged={onChanged} />}
-        {tab === "agents" && <Agents p={p} agents={agents} status={status} />}
-        {tab === "git" && <Git status={status} />}
       </div>
     </div>
   );

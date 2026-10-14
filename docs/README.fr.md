@@ -4,7 +4,7 @@
 
 Un environnement de développement portable pour Windows en un seul fichier : `Atollo.exe`. Éditeur (VSCodium) intégré, agents Claude Code, Codex et Antigravity, langages et outils téléchargés à la demande. Aucune installation, aucun droit d'administrateur, aucun fichier hors du dossier du kit.
 
-Au premier démarrage, l'application télécharge d'elle-même les composants système : PowerShell 7, GitHub CLI, l'éditeur et ce dont ils ont besoin (Git pour GitHub CLI). Le reste se choisit dans la page « Langages et outils », ou arrive quand il sert : Node.js avec une action `npm`, uv avec un serveur MCP `uvx`, et ainsi de suite.
+Au premier démarrage, l'application télécharge d'elle-même les composants système : PowerShell 7, GitHub CLI, l'éditeur et ce dont ils ont besoin (Git pour GitHub CLI). Le reste se choisit dans la page « Outils », ou arrive quand il sert : Node.js avec une action `npm`, uv avec un serveur MCP `uvx`, et ainsi de suite.
 
 > En développement. État et plan (en italien) : [app/PLAN.md](app/PLAN.md), nouveautés : [app/CHANGELOG.md](app/CHANGELOG.md).
 > Inspiré de [nabre/atollo](https://github.com/nabre/atollo), dont il n'est pas une nouvelle version : c'est un produit distinct.
@@ -19,14 +19,14 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 
 | Page | Contenu |
 | --- | --- |
-| **Accueil** | projets récents avec Éditeur, Terminal et agent ; avis (kit déplacé, autre copie du kit ouverte, installations en cours) ; emplacement du kit |
-| **Projets** | nouveau projet, clonage depuis GitHub ou une adresse Git ; pour chaque projet son type, ses langages (avec leur logo) et les actions reconnues (`npm run dev`, `php -S`, `cargo run`, site statique…), avec port, sortie et ouverture dans le navigateur ; chaque projet a sa page (lancement, bases de données, extensions, agent, Git) |
-| **GitHub** | le compte GitHub du kit, un seul pour tout : cette page, Git (y compris dans l'éditeur, les consoles et les agents) et GitHub CLI ; les dépôts du compte et de ses organisations, avec clonage dans `projects\`, ouverture dans l'éditeur, renommage et suppression sur GitHub |
-| **Agents** | Claude Code, Codex et Antigravity installés : version, connexion, limites de l'abonnement et consommation du jour et des 7 derniers jours ; instructions, skills et serveurs MCP partagés dans `data\agents` |
-| **Langages et outils** | les composants avec leur logo, leurs dépendances et l'espace disque ; installer, mettre à jour, supprimer |
-| **Bases de données** | MariaDB (compatible MySQL) et MongoDB : démarrage et arrêt, chaîne de connexion, port, données dans `data\db`, sur ce PC seulement ; SQLite sans serveur |
-| **Paramètres** | langue, terminal, réseau (proxy, certificats, réseau local), clé Gemini, versions de Python et PHP, compilateur Rust (GNU ou MSVC), mises à jour de l'application |
+| **Projets** | les projets avec Lancer, Éditeur, Terminal et agent ; **Nouveau projet** : vide, depuis vos dépôts GitHub (avec clonage, renommage et suppression sur GitHub) ou depuis une adresse Git ; avis sur le kit. Chaque projet a sa page : **Résumé** (l'action principale avec sa sortie, langages, bases de données, agent, Git), **Ressources** (composants, base de données du projet avec utilisateur et mot de passe, extensions de l'éditeur), **Avancé** (actions, ports, site statique, Git, instructions des agents) |
+| **Agents** | Claude Code, Codex et Antigravity installés : version, connexion, limites du forfait et consommation du jour et des 7 derniers jours ; instructions, skills et serveurs MCP partagés dans `data\agents` |
+| **Bases de données** | les serveurs MariaDB (compatible MySQL) et MongoDB du kit : démarrage et arrêt, mot de passe de l'administrateur, port, données dans `data\db`, sur ce PC seulement ; SQLite sans serveur |
+| **Outils** | langages et outils avec leur logo, leurs dépendances et l'espace disque ; installer, mettre à jour, supprimer ; la matrice des extensions de l'éditeur |
+| **Paramètres** | langue, terminal, réseau (proxy, certificats, réseau local), clé Gemini, versions de Python et PHP, compilateur Rust (GNU ou MSVC), mises à jour de l'application ; le **compte GitHub** du kit, un seul pour tout (application, Git, éditeur, consoles, agents, GitHub CLI) ; où se trouve le kit |
 | **Retirer le lecteur** | ferme tout ce que le kit a ouvert, ramène la connexion d'Antigravity dans le kit et permet d'éjecter la clé |
+
+En bas de chaque page, le panneau **Activité** : ce qui tourne ou s'installe (projets, bases de données, composants), avec la sortie et les erreurs au même endroit.
 
 La console du kit est le Windows Terminal portable du kit (ou la console classique de Windows, si vous la choisissez dans les Paramètres ou si Windows Terminal n'est pas installé) avec le PowerShell 7 du kit et seulement l'environnement du kit : les programmes installés sur le PC ne sont pas visibles.
 
@@ -37,7 +37,7 @@ Le menu en console de [nabre/atollo](https://github.com/nabre/atollo) disparaît
 ## Limites connues
 
 - Windows 10 et 11 uniquement, x64 et ARM64 (sur ARM64, l'éditeur, PHP, Apache et TinyTeX tournent en émulation x64 ; R n'est pas disponible).
-- Hors du kit, il ne reste que les traces de Windows, la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle de la page GitHub reste dans le kit, dans `data\gh`) et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
+- Hors du kit, il ne reste que les traces de Windows, la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle faite dans les Paramètres reste dans le kit, dans `data\gh`) et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
 - Les dossiers de `projects\` sont considérés comme fiables par Claude Code et Codex : n'ouvrez que des projets de confiance. L'éditeur, lui, demande à la première ouverture de chaque projet et ouvre en « mode restreint » ceux auxquels vous ne faites pas confiance.
 - Les limites d'utilisation des agents viennent d'interfaces non documentées des fournisseurs et peuvent cesser de fonctionner après une de leurs mises à jour.
 - « Retirer le lecteur » ne voit pas les programmes du PC qui gardent seulement un fichier du kit ouvert.

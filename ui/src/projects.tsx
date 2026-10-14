@@ -48,7 +48,8 @@ import {
 import { AgentPicker } from "./agents";
 import { ProjectExtensions } from "./extensions";
 import { ProjectPage } from "./projectpage";
-import { ActionButton, editorHint, ErrorLine, useAction } from "./pages";
+import { GithubRepositories } from "./github";
+import { ActionButton, ErrorLine, useAction } from "./pages";
 import { locale, t } from "./i18n";
 import { LanguageTag } from "./logos";
 
@@ -129,21 +130,26 @@ export function ProjectsPage({
   status,
   agents,
   onChanged,
-  initialOpen = null,
+  runs,
+  logs,
+  loadLog,
+  forget,
 }: {
   status: EditorStatus | null;
   agents: AgentInfo[] | null;
   onChanged: () => void;
-  /** A project whose page opens first (from the Home). */
-  initialOpen?: string | null;
+  /** The actions started in this session (useRuns, kept by the app). */
+  runs: Record<string, RunInfo>;
+  logs: Record<string, string[]>;
+  loadLog: (key: string) => void;
+  forget: (key: string) => void;
 }) {
   const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [open, setOpen] = useState<string | null>(initialOpen);
-  const [form, setForm] = useState<"new" | "clone" | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [ports, setPorts] = useState<Ports>({ ports: {}, locked: [] });
   const [shownLog, setShownLog] = useState<string | null>(null);
-  const { runs, logs, loadLog, forget } = useRuns();
   const { busy, error, run } = useAction(onChanged);
 
   const load = useCallback(() => {
@@ -173,7 +179,6 @@ export function ProjectsPage({
       runPorts().then(setPorts, () => undefined);
     });
   };
-  const active = Object.values(runs).sort((a, b) => b.start - a.start);
   const page = open ? (projects ?? []).find((x) => x.id === open) : undefined;
   if (page) {
     return (
@@ -209,22 +214,15 @@ export function ProjectsPage({
   return (
     <div className="max-w-5xl space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <ActionButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
         <ActionButton
           icon={VscAdd}
           label={t("Nuovo progetto")}
+          primary
           onClick={() => {
-            setForm(form === "new" ? null : "new");
+            setCreating(!creating);
           }}
         />
-        <ActionButton
-          icon={VscCloudDownload}
-          label={t("Clona")}
-          title={t("Copia un progetto da GitHub o da un indirizzo Git")}
-          onClick={() => {
-            setForm(form === "clone" ? null : "clone");
-          }}
-        />
+        <ActionButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
         <ActionButton
           icon={VscFolderOpened}
           label={t("Apri la cartella")}
@@ -233,22 +231,15 @@ export function ProjectsPage({
           }}
         />
       </div>
-      {form === "new" && (
-        <NewProject
+      {creating && (
+        <NewProjectPanel
+          editor={status}
           onDone={(name) => {
-            setForm(null);
+            setCreating(false);
             setOpen(name);
             load();
           }}
-        />
-      )}
-      {form === "clone" && (
-        <CloneProject
-          onDone={(name) => {
-            setForm(null);
-            setOpen(name);
-            load();
-          }}
+          onChanged={onChanged}
         />
       )}
       <p className="text-vsc-desc">
@@ -257,21 +248,6 @@ export function ProjectsPage({
         )}
       </p>
       <ErrorLine error={loadError ?? error} />
-      {active.length > 0 && (
-        <RunsPanel
-          runs={active}
-          logs={logs}
-          shown={shownLog}
-          onShow={showLog}
-          onStop={(key) => {
-            run(`stop:${key}`, () => runStop(key));
-          }}
-          onForget={(key) => {
-            if (shownLog === key) setShownLog(null);
-            forget(key);
-          }}
-        />
-      )}
       {projects === null ? (
         <p className="text-vsc-desc">{t("Caricamento…")}</p>
       ) : projects.length === 0 ? (
@@ -406,7 +382,7 @@ export function ProjectDetails({
             label={t("Installa")}
             primary
             busy={working === "install"}
-            title={t("Installa {0} e li tiene in Linguaggi e strumenti", p.missing.join(", "))}
+            title={t("Installa {0} e li tiene in Strumenti", p.missing.join(", "))}
             onClick={() => {
               run("install", () => projectInstallMissing(p.id));
             }}
@@ -734,6 +710,55 @@ function LogView({ title, lines }: { title: string; lines: string[] }) {
   );
 }
 
+/** "Nuovo progetto" (D-76): empty, from the account's GitHub repositories
+ * or from any Git address, in one place. */
+function NewProjectPanel({
+  editor,
+  onDone,
+  onChanged,
+}: {
+  editor: EditorStatus | null;
+  onDone: (name: string) => void;
+  onChanged: () => void;
+}) {
+  const [way, setWay] = useState<"empty" | "github" | "url">("empty");
+  const ways: { id: typeof way; label: string }[] = [
+    { id: "empty", label: t("Vuoto") },
+    { id: "github", label: t("Dai tuoi repository GitHub") },
+    { id: "url", label: t("Da un indirizzo Git") },
+  ];
+  return (
+    <section
+      aria-label={t("Nuovo progetto")}
+      className="space-y-3 rounded-sm border border-vsc-border bg-vsc-sidebar p-4"
+    >
+      <div role="radiogroup" aria-label={t("Come")} className="flex flex-wrap gap-2">
+        {ways.map((w) => (
+          <button
+            key={w.id}
+            type="button"
+            role="radio"
+            aria-checked={way === w.id}
+            onClick={() => {
+              setWay(w.id);
+            }}
+            className={`rounded-sm border px-3 py-1.5 ${
+              way === w.id
+                ? "border-vsc-focus bg-vsc-list-active text-vsc-fg"
+                : "border-vsc-border text-vsc-desc hover:text-vsc-fg"
+            }`}
+          >
+            {w.label}
+          </button>
+        ))}
+      </div>
+      {way === "empty" && <NewProject onDone={onDone} />}
+      {way === "url" && <CloneProject onDone={onDone} />}
+      {way === "github" && <GithubRepositories editor={editor} onChanged={onChanged} />}
+    </section>
+  );
+}
+
 function NewProject({ onDone }: { onDone: (name: string) => void }) {
   const [name, setName] = useState("");
   const { busy, error, run } = useAction();
@@ -811,101 +836,5 @@ function CloneProject({ onDone }: { onDone: (name: string) => void }) {
         <ErrorLine error={error} />
       </div>
     </form>
-  );
-}
-
-/** Home: the projects opened or changed last, each with the editor, a
- * console and an agent. Editor, consoles and agents open only in a project. */
-export function RecentProjects({
-  status,
-  setupRunning,
-  agents,
-  onChanged,
-  onAll,
-  onOpen,
-}: {
-  status: EditorStatus | null;
-  setupRunning: boolean;
-  agents: AgentInfo[] | null;
-  onChanged: () => void;
-  onAll: () => void;
-  /** Opens the project's page. */
-  onOpen: (project: string) => void;
-}) {
-  const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
-  const { busy, error, run } = useAction(onChanged);
-  useEffect(() => {
-    projectsList().then(setProjects, () => {
-      setProjects([]);
-    });
-  }, []);
-  const hint = setupRunning
-    ? t("Installazione dei componenti del kit in corso: editor e terminale si aprono quando finisce.")
-    : editorHint(status);
-  const recent = (projects ?? []).slice(0, 5);
-  return (
-    <section aria-labelledby="recent" className="space-y-3">
-      <div className="flex items-center gap-3">
-        <h2 id="recent" className="text-[13px] font-semibold">
-          {t("Progetti recenti")}
-        </h2>
-        <button type="button" onClick={onAll} className="text-[12px] text-vsc-link hover:underline">
-          {t("Tutti i progetti")}
-        </button>
-      </div>
-      {projects !== null && recent.length === 0 && (
-        <p className="text-vsc-desc">
-          {t(
-            "Nessun progetto ancora: creane uno o clonane uno dalla pagina Progetti. Editor, terminale e agenti si aprono nella cartella di un progetto.",
-          )}
-        </p>
-      )}
-      {recent.length > 0 && (
-        <ul className="divide-y divide-vsc-border rounded border border-vsc-border bg-vsc-sidebar">
-          {recent.map((p) => (
-            <li key={p.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
-              <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  className="truncate font-semibold hover:underline"
-                  title={t("Apre la pagina di {0}", p.name)}
-                  onClick={() => {
-                    onOpen(p.id);
-                  }}
-                >
-                  {p.name}
-                </button>
-                {p.languages.slice(0, 4).map((l) => (
-                  <LanguageTag key={l} name={l} />
-                ))}
-              </span>
-              <ActionButton
-                icon={VscCode}
-                label={t("Editor")}
-                primary
-                busy={busy === `editor:${p.id}`}
-                disabled={status?.installed === false}
-                title={hint ?? t("Apre {0} nell'editor", p.name)}
-                onClick={() => {
-                  run(`editor:${p.id}`, () => editorOpen(p.id));
-                }}
-              />
-              <ActionButton
-                icon={VscTerminal}
-                label={t("Terminale")}
-                busy={busy === `terminal:${p.id}`}
-                title={t("Console del kit in {0}", p.name)}
-                onClick={() => {
-                  run(`terminal:${p.id}`, () => terminalOpen(p.id));
-                }}
-              />
-              <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
-            </li>
-          ))}
-        </ul>
-      )}
-      {hint && <p className="text-vsc-desc">{hint}</p>}
-      <ErrorLine error={error} />
-    </section>
   );
 }

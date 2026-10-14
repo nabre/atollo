@@ -4,7 +4,7 @@
 
 A portable development environment for Windows in a single file: `Atollo.exe`. Integrated editor (VSCodium), the Claude Code, Codex and Antigravity agents, languages and tools downloaded on demand. No installation, no administrator rights, no file outside the kit folder.
 
-On first start the app downloads the system components by itself: PowerShell 7, GitHub CLI, the editor and what they need (Git for GitHub CLI). Everything else is chosen on the "Languages and tools" page, or arrives when needed: Node.js with an `npm` action, uv with a `uvx` MCP server, and so on.
+On first start the app downloads the system components by itself: PowerShell 7, GitHub CLI, the editor and what they need (Git for GitHub CLI). Everything else is chosen on the "Tools" page, or arrives when needed: Node.js with an `npm` action, uv with a `uvx` MCP server, and so on.
 
 > In development. Status and plan (in Italian): [app/PLAN.md](app/PLAN.md), changes: [app/CHANGELOG.md](app/CHANGELOG.md).
 > Inspired by [nabre/atollo](https://github.com/nabre/atollo), of which it is not a new version: it is a separate product.
@@ -19,14 +19,14 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 
 | Page | What it has |
 | --- | --- |
-| **Home** | recent projects with Editor, Terminal and agent; notices (kit moved, another copy of the kit open, installations running); where the kit is |
-| **Projects** | new project, clone from GitHub or a Git URL; for each project its type, its languages (with their logo) and the recognised actions (`npm run dev`, `php -S`, `cargo run`, static site…), with port, output and opening in the browser; each project has its own page (run, databases, extensions, agent, Git) |
-| **GitHub** | the kit's GitHub account, one for everything: this page, Git (in the editor, the consoles and the agents too) and GitHub CLI; the repositories of the account and its organizations, with clone into `projects\`, opening in the editor, rename and delete on GitHub |
-| **Agents** | the installed Claude Code, Codex and Antigravity: version, sign-in, plan limits and usage of today and of the last 7 days; instructions, skills and MCP servers shared in `data\agents` |
-| **Languages and tools** | the components with their logo, dependencies and disk space; install, update and remove |
-| **Databases** | MariaDB (MySQL-compatible) and MongoDB: start and stop, connection string, port, data in `data\db`, on this PC only; SQLite without a server |
-| **Settings** | language, terminal, network (proxy, certificates, local network), Gemini key, Python and PHP versions, Rust compiler (GNU or MSVC), app updates |
+| **Projects** | the projects with Run, Editor, Terminal and agent; **New project**: empty, from your GitHub repositories (with clone, rename and delete on GitHub) or from a Git URL; notices about the kit. Each project has its own page: **Summary** (the main action with its output, languages, databases, agent, Git), **Resources** (components, the project's database with user and password, editor extensions), **Advanced** (actions, ports, static site, Git, agent instructions) |
+| **Agents** | the installed Claude Code, Codex and Antigravity: version, sign-in, plan limits and usage of today and the last 7 days; instructions, skills and MCP servers shared in `data\agents` |
+| **Databases** | the kit's MariaDB (MySQL-compatible) and MongoDB servers: start and stop, administrator password, port, data in `data\db`, on this PC only; SQLite without a server |
+| **Tools** | languages and tools with their logo, dependencies and disk space; install, update and remove; the editor extensions matrix |
+| **Settings** | language, terminal, network (proxy, certificates, local network), Gemini key, Python and PHP versions, Rust compiler (GNU or MSVC), app updates; the kit's **GitHub account**, one for everything (app, Git, editor, consoles, agents, GitHub CLI); where the kit is |
 | **Remove drive** | closes everything the kit opened, brings Antigravity's sign-in back into the kit and lets you eject the stick |
+
+At the bottom of every page, the **Activity** panel: what is running or installing (projects, databases, components), with output and errors in one place.
 
 The kit console is the kit's portable Windows Terminal (or the classic Windows console, if chosen in Settings or if Windows Terminal is not installed) with the kit's PowerShell 7 and only the kit's environment: programs installed on the PC are not visible.
 
@@ -37,7 +37,7 @@ The console menu of [nabre/atollo](https://github.com/nabre/atollo) is gone: eac
 ## Known limits
 
 - Windows 10 and 11 only, x64 and ARM64 (on ARM64 the editor, PHP, Apache and TinyTeX run under x64 emulation; R is not available).
-- Outside the kit there are only Windows' own traces, GitHub CLI's sign-in in the Credential Manager if you sign in from a console with `gh auth login` (the one of the GitHub page stays in the kit, in `data\gh`) and Antigravity's while `agy` is open (for the session only).
+- Outside the kit there are only Windows' own traces, GitHub CLI's sign-in in the Credential Manager if you sign in from a console with `gh auth login` (the one made in Settings stays in the kit, in `data\gh`) and Antigravity's while `agy` is open (for the session only).
 - The folders in `projects\` are trusted by Claude Code and Codex: open only projects you trust. The editor instead asks the first time it opens each project and opens the ones you don't trust in "Restricted Mode".
 - The agents' usage limits come from undocumented interfaces of the providers and may stop working after one of their updates.
 - "Remove drive" does not see PC programs that keep only a file of the kit open.

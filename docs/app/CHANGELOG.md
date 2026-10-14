@@ -1,5 +1,15 @@
 # Novità
 
+## Struttura più semplice (14/10/2026)
+
+**Fatto**
+- **Sei pagine** (D-76): Progetti, Agenti, Database, Strumenti, Impostazioni, Rimuovi l'unità. La Home e la pagina GitHub non ci sono più: i progetti sono la prima pagina, l'account GitHub è nelle Impostazioni, i repository in «Nuovo progetto».
+- **Nuovo progetto** in un posto: vuoto, dai tuoi repository GitHub o da un indirizzo Git.
+- **Pagina del progetto a tre schede**: Riepilogo (avvio e output in alto), Risorse (componenti, database, estensioni), Avanzate.
+- **Pannello Attività** in basso su ogni pagina: cosa è avviato o in installazione, output ed errori in un solo posto.
+
+**Verificato**: 23 test dell'interfaccia, 204 test Rust; prova nell'app.
+
 ## Pagina del progetto (14/10/2026)
 
 **Fatto**

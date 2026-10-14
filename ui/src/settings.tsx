@@ -13,13 +13,24 @@ import {
   type Settings,
   type SettingsView,
   type UpdateStatus,
+  type AppInfo,
 } from "./api";
+import { GithubAccount } from "./github";
+import logo from "./assets/logo-128.png";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { LANGS, t } from "./i18n";
 
 const empty = (s: string) => (s.trim() === "" ? null : s.trim());
 
-export function SettingsPage({ onSaved, editorRunning }: { onSaved: () => void; editorRunning: boolean }) {
+export function SettingsPage({
+  onSaved,
+  editorRunning,
+  info,
+}: {
+  onSaved: () => void;
+  editorRunning: boolean;
+  info: AppInfo | null;
+}) {
   const [view, setView] = useState<SettingsView | null>(null);
   const [s, setS] = useState<Settings | null>(null);
   const [gemini, setGemini] = useState<string | null>(null);
@@ -63,212 +74,246 @@ export function SettingsPage({ onSaved, editorRunning }: { onSaved: () => void; 
   };
 
   return (
-    <form onSubmit={submit} className="max-w-3xl space-y-6">
-      {view.problem && (
-        <ErrorLine
-          error={t(
-            "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.",
-            view.problem,
-          )}
-        />
-      )}
-      <Section id="s-general" title={t("Generale")}>
-        <Field label={t("Lingua")}>
-          <select
-            value={s.lang ?? ""}
-            onChange={(e) => {
-              set({ lang: (empty(e.target.value) as Settings["lang"]) ?? null });
-            }}
-            className="input"
-          >
-            <option value="">{t("Lingua di Windows")}</option>
-            {LANGS.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={t("Terminale")}>
-          <select
-            value={s.terminal ?? ""}
-            onChange={(e) => {
-              set({ terminal: (empty(e.target.value) as Settings["terminal"]) ?? null });
-            }}
-            className="input"
-          >
-            <option value="">{t("Windows Terminal del kit (predefinito)")}</option>
-            <option value="classic">{t("Console classica di Windows")}</option>
-          </select>
-        </Field>
-        <Check
-          checked={s.autoUpdate}
-          onChange={(v) => {
-            set({ autoUpdate: v });
-          }}
-          label={t("Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)")}
-        />
-      </Section>
-
-      <Section id="s-network" title={t("Rete")}>
-        <p className="text-vsc-desc">
-          {t(
-            "Solo se la rete passa da un proxy o ispeziona il traffico HTTPS: valgono per download, agenti e strumenti del kit.",
-          )}
-        </p>
-        <Field label={t("Proxy HTTPS")}>
-          <input
-            value={s.network.httpsProxy ?? ""}
-            placeholder="http://proxy.azienda.it:8080"
-            onChange={(e) => {
-              net({ httpsProxy: empty(e.target.value) });
-            }}
-            className="input"
+    <div className="max-w-3xl space-y-6">
+      <form onSubmit={submit} className="space-y-6">
+        {view.problem && (
+          <ErrorLine
+            error={t(
+              "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.",
+              view.problem,
+            )}
           />
-        </Field>
-        <Field label={t("Proxy HTTP")}>
-          <input
-            value={s.network.httpProxy ?? ""}
-            onChange={(e) => {
-              net({ httpProxy: empty(e.target.value) });
-            }}
-            className="input"
-          />
-        </Field>
-        <Field label={t("Senza proxy per")}>
-          <input
-            value={s.network.noProxy ?? ""}
-            placeholder="localhost,127.0.0.1,.azienda.it"
-            onChange={(e) => {
-              net({ noProxy: empty(e.target.value) });
-            }}
-            className="input"
-          />
-        </Field>
-        <Field label={t("Certificati aggiuntivi (file PEM)")}>
-          <input
-            value={s.network.extraCaCerts ?? ""}
-            placeholder="E:\certificati\azienda.pem"
-            onChange={(e) => {
-              net({ extraCaCerts: empty(e.target.value) });
-            }}
-            className="input"
-          />
-        </Field>
-        <Check
-          checked={s.network.allowLan}
-          onChange={(v) => {
-            net({ allowLan: v });
-          }}
-          label={t("Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete")}
-        />
-      </Section>
-
-      <Section id="s-agents" title={t("Agenti")}>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="gemini-key" className="text-[12px] text-vsc-desc">
-            {t("Chiave API di Gemini (Antigravity senza account Google)")}
-          </label>
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              id="gemini-key"
-              type="password"
-              autoComplete="off"
-              value={gemini ?? ""}
-              placeholder={view.geminiKeySet ? t("salvata: scrivi per sostituirla") : t("nessuna")}
+        )}
+        <Section id="s-general" title={t("Generale")}>
+          <Field label={t("Lingua")}>
+            <select
+              value={s.lang ?? ""}
               onChange={(e) => {
-                setSaved(false);
-                setGemini(e.target.value === "" ? null : e.target.value);
+                set({ lang: (empty(e.target.value) as Settings["lang"]) ?? null });
+              }}
+              className="input"
+            >
+              <option value="">{t("Lingua di Windows")}</option>
+              {LANGS.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("Terminale")}>
+            <select
+              value={s.terminal ?? ""}
+              onChange={(e) => {
+                set({ terminal: (empty(e.target.value) as Settings["terminal"]) ?? null });
+              }}
+              className="input"
+            >
+              <option value="">{t("Windows Terminal del kit (predefinito)")}</option>
+              <option value="classic">{t("Console classica di Windows")}</option>
+            </select>
+          </Field>
+          <Check
+            checked={s.autoUpdate}
+            onChange={(v) => {
+              set({ autoUpdate: v });
+            }}
+            label={t("Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)")}
+          />
+        </Section>
+
+        <Section id="s-network" title={t("Rete")}>
+          <p className="text-vsc-desc">
+            {t(
+              "Solo se la rete passa da un proxy o ispeziona il traffico HTTPS: valgono per download, agenti e strumenti del kit.",
+            )}
+          </p>
+          <Field label={t("Proxy HTTPS")}>
+            <input
+              value={s.network.httpsProxy ?? ""}
+              placeholder="http://proxy.azienda.it:8080"
+              onChange={(e) => {
+                net({ httpsProxy: empty(e.target.value) });
               }}
               className="input"
             />
-            {view.geminiKeySet && (
-              <button
-                type="button"
-                className="text-vsc-link underline"
-                onClick={() => {
+          </Field>
+          <Field label={t("Proxy HTTP")}>
+            <input
+              value={s.network.httpProxy ?? ""}
+              onChange={(e) => {
+                net({ httpProxy: empty(e.target.value) });
+              }}
+              className="input"
+            />
+          </Field>
+          <Field label={t("Senza proxy per")}>
+            <input
+              value={s.network.noProxy ?? ""}
+              placeholder="localhost,127.0.0.1,.azienda.it"
+              onChange={(e) => {
+                net({ noProxy: empty(e.target.value) });
+              }}
+              className="input"
+            />
+          </Field>
+          <Field label={t("Certificati aggiuntivi (file PEM)")}>
+            <input
+              value={s.network.extraCaCerts ?? ""}
+              placeholder="E:\certificati\azienda.pem"
+              onChange={(e) => {
+                net({ extraCaCerts: empty(e.target.value) });
+              }}
+              className="input"
+            />
+          </Field>
+          <Check
+            checked={s.network.allowLan}
+            onChange={(v) => {
+              net({ allowLan: v });
+            }}
+            label={t("Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete")}
+          />
+        </Section>
+
+        <Section id="s-agents" title={t("Agenti")}>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="gemini-key" className="text-[12px] text-vsc-desc">
+              {t("Chiave API di Gemini (Antigravity senza account Google)")}
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                id="gemini-key"
+                type="password"
+                autoComplete="off"
+                value={gemini ?? ""}
+                placeholder={view.geminiKeySet ? t("salvata: scrivi per sostituirla") : t("nessuna")}
+                onChange={(e) => {
                   setSaved(false);
-                  setGemini("");
+                  setGemini(e.target.value === "" ? null : e.target.value);
                 }}
-              >
-                {t("Togli la chiave")}
-              </button>
-            )}
+                className="input"
+              />
+              {view.geminiKeySet && (
+                <button
+                  type="button"
+                  className="text-vsc-link underline"
+                  onClick={() => {
+                    setSaved(false);
+                    setGemini("");
+                  }}
+                >
+                  {t("Togli la chiave")}
+                </button>
+              )}
+            </div>
+            {gemini === "" && <p className="text-vsc-warning">{t("La chiave verrà tolta al salvataggio.")}</p>}
           </div>
-          {gemini === "" && <p className="text-vsc-warning">{t("La chiave verrà tolta al salvataggio.")}</p>}
-        </div>
-      </Section>
+        </Section>
 
-      <Section id="s-langs" title={t("Versioni")}>
-        <p className="text-vsc-desc">
-          {t("Valgono dalla prossima installazione o aggiornamento in Linguaggi e strumenti.")}
-        </p>
-        <Field label={t("Python (vuoto = quella del kit)")}>
-          <input
-            value={s.pythonVersion ?? ""}
-            placeholder="3.13"
-            onChange={(e) => {
-              set({ pythonVersion: empty(e.target.value) });
-            }}
-            className="input"
-          />
-        </Field>
-        <Field label={t("PHP (vuoto = la più recente)")}>
-          <input
-            value={s.phpVersion ?? ""}
-            placeholder="8.4"
-            onChange={(e) => {
-              set({ phpVersion: empty(e.target.value) });
-            }}
-            className="input"
-          />
-        </Field>
-        <Field label={t("Compilatore di Rust")}>
-          <select
-            value={s.rustToolchain ?? ""}
-            onChange={(e) => {
-              set({ rustToolchain: (empty(e.target.value) as Settings["rustToolchain"]) ?? null });
-            }}
-            className="input"
-          >
-            <option value="">{t("GNU (predefinito, tutto nel kit)")}</option>
-            <option value="gnu">GNU</option>
-            <option value="msvc">{t("MSVC (richiede Visual Studio Build Tools nel PC)")}</option>
-          </select>
-        </Field>
-      </Section>
+        <Section id="s-langs" title={t("Versioni")}>
+          <p className="text-vsc-desc">{t("Valgono dalla prossima installazione o aggiornamento in Strumenti.")}</p>
+          <Field label={t("Python (vuoto = quella del kit)")}>
+            <input
+              value={s.pythonVersion ?? ""}
+              placeholder="3.13"
+              onChange={(e) => {
+                set({ pythonVersion: empty(e.target.value) });
+              }}
+              className="input"
+            />
+          </Field>
+          <Field label={t("PHP (vuoto = la più recente)")}>
+            <input
+              value={s.phpVersion ?? ""}
+              placeholder="8.4"
+              onChange={(e) => {
+                set({ phpVersion: empty(e.target.value) });
+              }}
+              className="input"
+            />
+          </Field>
+          <Field label={t("Compilatore di Rust")}>
+            <select
+              value={s.rustToolchain ?? ""}
+              onChange={(e) => {
+                set({ rustToolchain: (empty(e.target.value) as Settings["rustToolchain"]) ?? null });
+              }}
+              className="input"
+            >
+              <option value="">{t("GNU (predefinito, tutto nel kit)")}</option>
+              <option value="gnu">GNU</option>
+              <option value="msvc">{t("MSVC (richiede Visual Studio Build Tools nel PC)")}</option>
+            </select>
+          </Field>
+        </Section>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <ActionButton
-          icon={VscSave}
-          label={t("Salva")}
-          primary
-          submit
-          busy={busy === "save"}
-          onClick={() => undefined}
-        />
-        {saved && (
-          <span role="status" className="flex items-center gap-1 text-vsc-success">
-            <VscCheck size={16} aria-hidden="true" />
-            {editorRunning
-              ? t("Salvato. Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.")
-              : t("Salvato.")}
-          </span>
-        )}
-        {saved && editorRunning && (
+        <div className="flex flex-wrap items-center gap-3">
           <ActionButton
-            icon={VscDebugRestart}
-            label={t("Riavvia l'editor")}
-            busy={busy === "restart"}
-            onClick={() => {
-              run("restart", editorRestart);
-            }}
+            icon={VscSave}
+            label={t("Salva")}
+            primary
+            submit
+            busy={busy === "save"}
+            onClick={() => undefined}
           />
-        )}
+          {saved && (
+            <span role="status" className="flex items-center gap-1 text-vsc-success">
+              <VscCheck size={16} aria-hidden="true" />
+              {editorRunning
+                ? t("Salvato. Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.")
+                : t("Salvato.")}
+            </span>
+          )}
+          {saved && editorRunning && (
+            <ActionButton
+              icon={VscDebugRestart}
+              label={t("Riavvia l'editor")}
+              busy={busy === "restart"}
+              onClick={() => {
+                run("restart", editorRestart);
+              }}
+            />
+          )}
+        </div>
+        <ErrorLine error={error} />
+        <Updates />
+      </form>
+      <Section id="s-github" title={t("Account GitHub")}>
+        <GithubAccount />
+      </Section>
+      {info && <KitInfo info={info} />}
+    </div>
+  );
+}
+
+/** Where the kit is (was on the Home, D-76). */
+function KitInfo({ info }: { info: AppInfo }) {
+  const rows: [string, string][] = [
+    [t("Cartella del kit"), info.root],
+    [t("Progetti"), info.projects],
+    [t("Dati e programmi"), info.data],
+    [t("Piattaforma"), info.platform],
+    ["WebView2", info.webview],
+    [t("Versione"), info.version],
+  ];
+  return (
+    <Section id="s-kit" title={t("Il kit")}>
+      <div className="flex items-center gap-3">
+        <img src={logo} alt="" width={40} height={40} draggable={false} />
+        <p className="text-vsc-desc">
+          {t("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.")}
+        </p>
       </div>
-      <ErrorLine error={error} />
-      <Updates />
-    </form>
+      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-1.5">
+        {rows.map(([label, value]) => (
+          <div key={label} className="contents">
+            <dt className="text-vsc-desc">{label}</dt>
+            <dd className="m-0 font-mono text-[12px] break-all select-text">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </Section>
   );
 }
 
