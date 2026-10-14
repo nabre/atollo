@@ -25,7 +25,7 @@
 
 mod codex;
 mod links;
-mod mcp;
+pub(crate) mod mcp;
 mod project;
 mod tree;
 

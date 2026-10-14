@@ -92,7 +92,7 @@ streetsidesoftware.code-spell-checker-italian
 # --- Editor ----------------------------------------------------------------
 vscode-icons-team.vscode-icons        # icone per tipo di file
 usernamehw.errorlens                  # errori e avvisi sulla riga stessa
-mhutchie.git-graph
+mhutchie.git-graph @git
 Gruntfuggly.todo-tree                 # TODO e FIXME del progetto in un pannello
 usernamehw.commands                   # pulsanti per comandi e script (npm run dev...) nella barra di stato
 

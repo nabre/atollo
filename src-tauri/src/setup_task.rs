@@ -245,11 +245,13 @@ mod tests {
         let kit = Kit::at(tmp.0.clone(), Arch::X64);
         kit.prepare().unwrap();
         let missing = missing_required(&kit);
-        for id in ["git", "node", "uv", "gh", "pwsh", "vscodium-server"] {
-            assert!(missing.contains(&id.to_owned()), "{id}");
+        assert_eq!(missing, ["gh", "pwsh", "vscodium-server"]);
+        for id in ["git", "node", "uv", "python"] {
+            assert!(
+                !missing.contains(&id.to_owned()),
+                "{id}: installed when needed"
+            );
         }
-        assert!(missing.contains(&"uv".to_owned()) && missing.contains(&"gh".to_owned()));
-        assert!(!missing.contains(&"python".to_owned()), "not required");
 
         let pwsh = Catalog::get().find("pwsh").unwrap().key_path(&kit);
         fs::create_dir_all(pwsh.parent().unwrap()).unwrap();

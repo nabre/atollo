@@ -12,12 +12,14 @@ import { SetupProgress } from "./setup";
 
 function groups(): { id: Group; title: string; hint: string }[] {
   return [
-    { id: "required", title: t("Obbligatori"), hint: t("Sempre installati: servono al kit e agli agenti.") },
+    { id: "required", title: t("Obbligatori"), hint: t("Sempre installati: la shell del kit e GitHub CLI.") },
     { id: "agents", title: t("Agenti"), hint: t("Facoltativi: il kit funziona anche senza.") },
     {
       id: "languages",
       title: t("Linguaggi e strumenti"),
-      hint: t("Scegli quelli che usi: si aggiungono e tolgono quando vuoi."),
+      hint: t(
+        "Scegli quelli che usi: si aggiungono e tolgono quando vuoi. Quelli che servono a un agente o a un progetto si installano da soli.",
+      ),
     },
   ];
 }
