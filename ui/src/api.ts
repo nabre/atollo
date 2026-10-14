@@ -193,7 +193,8 @@ export interface SetupSnapshot {
   error: string | null;
 }
 
-export type Group = "required" | "agents" | "languages";
+/** `app`: part of Dev-Kit (the editor), shown with the required ones. */
+export type Group = "required" | "app" | "agents" | "languages";
 
 export interface ComponentInfo {
   id: string;

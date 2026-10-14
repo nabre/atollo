@@ -57,16 +57,27 @@ pub struct SetupTask {
 pub type Notify = Box<dyn Fn(&Snapshot) + Send>;
 
 /// Required components (and the parts of the app) this app can install that
-/// are not installed yet, or, for the parts of the app, not at the version of
-/// this release.
+/// are not installed yet. Without them the editor and the consoles do not
+/// open.
 pub fn missing_required(kit: &Kit) -> Vec<String> {
     Catalog::get()
         .all()
         .iter()
         .filter(|c| c.group.always())
-        .filter(|c| {
-            install::installer(&c.id).is_some() && (!c.is_installed(kit) || c.outdated(kit))
-        })
+        .filter(|c| install::installer(&c.id).is_some() && !c.is_installed(kit))
+        .map(|c| c.id.clone())
+        .collect()
+}
+
+/// Parts of the app installed at another version than this release's (the
+/// editor after an update of Dev-Kit). Brought to the fixed version once, at
+/// start; until then the installed one keeps working, so nothing waits for
+/// it (a folder in use must not block the editor).
+pub fn outdated_app(kit: &Kit) -> Vec<String> {
+    Catalog::get()
+        .all()
+        .iter()
+        .filter(|c| install::installer(&c.id).is_some() && c.is_installed(kit) && c.outdated(kit))
         .map(|c| c.id.clone())
         .collect()
 }
@@ -259,10 +270,10 @@ mod tests {
         assert!(!missing_required(&kit).contains(&"pwsh".to_owned()));
     }
 
-    /// The editor at another version than this release's counts as missing:
-    /// it is installed again at the fixed one.
+    /// The editor at another version than this release's is installed again
+    /// at start, but it does not block the editor and the consoles.
     #[test]
-    fn editor_of_another_release_is_missing() {
+    fn editor_of_another_release_is_updated_at_start() {
         let tmp = TempDir::new("task-pinned");
         let kit = Kit::at(tmp.0.clone(), Arch::X64);
         kit.prepare().unwrap();
@@ -273,11 +284,15 @@ mod tests {
         }
         editor.save_version(&kit, "1.0.0").unwrap();
         assert!(editor.is_installed(&kit) && editor.outdated(&kit));
-        assert!(missing_required(&kit).contains(&editor.id));
+        assert_eq!(outdated_app(&kit), [editor.id.as_str()]);
+        assert!(
+            !missing_required(&kit).contains(&editor.id),
+            "the installed one keeps working"
+        );
         editor
             .save_version(&kit, editor.version.as_deref().unwrap())
             .unwrap();
-        assert!(!missing_required(&kit).contains(&editor.id));
+        assert!(outdated_app(&kit).is_empty());
     }
 
     /// No network: every required component is already installed.

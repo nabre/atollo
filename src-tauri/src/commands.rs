@@ -357,8 +357,6 @@ fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     catalog
         .all()
         .iter()
-        // The editor is part of the app: not a choice of the page.
-        .filter(|c| c.group != Group::App)
         .map(|c| {
             let no_arm64 = c.no_arm64 && arm64;
             ComponentInfo {

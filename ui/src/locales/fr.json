@@ -131,7 +131,7 @@
   "Scegli agenti e linguaggi: verranno scaricati dalle fonti ufficiali, verificati e messi nella cartella {0} del kit. Niente installazione, niente diritti di amministratore.": "Choisissez les agents et les langages : ils seront téléchargés depuis les sources officielles, vérifiés et placés dans le dossier {0} du kit. Aucune installation, aucun droit d'administrateur.",
   "Scegli quelli che usi: si aggiungono e tolgono quando vuoi. Quelli che servono a un agente o a un progetto si installano da soli.": "Choisissez ceux que vous utilisez : vous pouvez les ajouter ou les retirer quand vous voulez. Ceux dont un agent ou un projet a besoin s'installent tout seuls.",
   "Segui": "Suivre",
-  "Sempre installati: la shell del kit e GitHub CLI.": "Toujours installés : le shell du kit et GitHub CLI.",
+  "Sempre installati: l'editor, la shell del kit e GitHub CLI.": "Toujours installés : l'éditeur, le shell du kit et GitHub CLI.",
   "Senza proxy per": "Pas de proxy pour",
   "Serve a {0}: resta installato finché serve.": "Nécessaire à {0} : reste installé tant qu'il le faut.",
   "Server dell'editor su 127.0.0.1:{0}": "Serveur de l'éditeur sur 127.0.0.1:{0}",
