@@ -57,6 +57,16 @@ pub struct ApiError {
     pub detail: String,
 }
 
+/// A successful `github_call`.
+#[derive(Debug, Clone)]
+pub struct GhAnswer {
+    pub json: serde_json::Value,
+    /// The `Link` header: where the next page of a list is.
+    pub link: String,
+    /// `X-OAuth-Scopes`: what the token may do (absent for fine-grained tokens).
+    pub scopes: Option<String>,
+}
+
 /// Cancellation requested by the user: stops a download at once.
 #[derive(Debug, thiserror::Error)]
 #[error("cancelled")]
@@ -194,6 +204,92 @@ impl Net {
                 detail: format!("HTTP {status}"),
             }),
         }
+    }
+
+    /// One call to the GitHub API with the kit's GitHub account
+    /// (`github.rs`): `method` is GET, PATCH or DELETE; the token goes to
+    /// `https://api.github.com/` only. A single attempt: renaming or deleting
+    /// twice is not the same as once.
+    pub fn github_call(
+        &self,
+        method: &str,
+        url: &str,
+        token: &str,
+        body: Option<&serde_json::Value>,
+    ) -> std::result::Result<GhAnswer, ApiError> {
+        let failed = |status: Option<u16>, detail: String| ApiError {
+            status,
+            retry_after: None,
+            detail,
+        };
+        if !url.starts_with("https://api.github.com/") {
+            return Err(failed(None, format!("not the GitHub API: {url}")));
+        }
+        let auth = format!("Bearer {token}");
+        let headers = [
+            ("Authorization", auth.as_str()),
+            ("Accept", "application/vnd.github+json"),
+            ("X-GitHub-Api-Version", "2022-11-28"),
+        ];
+        let timeout = Some(Duration::from_secs(30));
+        let response = match (method, body) {
+            ("PATCH", Some(body)) => {
+                let mut request = self.agent.patch(url);
+                for (name, value) in headers {
+                    request = request.header(name, value);
+                }
+                request
+                    .config()
+                    .http_status_as_error(false)
+                    .timeout_global(timeout)
+                    .build()
+                    .send_json(body)
+            }
+            ("GET" | "DELETE", None) => {
+                let mut request = if method == "GET" {
+                    self.agent.get(url)
+                } else {
+                    self.agent.delete(url)
+                };
+                for (name, value) in headers {
+                    request = request.header(name, value);
+                }
+                request
+                    .config()
+                    .http_status_as_error(false)
+                    .timeout_global(timeout)
+                    .build()
+                    .call()
+            }
+            _ => return Err(failed(None, format!("unsupported call {method} {url}"))),
+        }
+        .map_err(|e| failed(None, e.to_string()))?;
+        let status = response.status().as_u16();
+        let header = |name: &str| {
+            response
+                .headers()
+                .get(name)
+                .and_then(|v| v.to_str().ok())
+                .map(str::to_owned)
+        };
+        let link = header("link").unwrap_or_default();
+        let scopes = header("x-oauth-scopes");
+        let text = response
+            .into_body()
+            .with_config()
+            .limit(32 * 1024 * 1024)
+            .read_to_string()
+            .map_err(|e| failed(Some(status), e.to_string()))?;
+        let json = serde_json::from_str::<serde_json::Value>(&text).unwrap_or_default();
+        if (200..300).contains(&status) {
+            return Ok(GhAnswer { json, link, scopes });
+        }
+        // GitHub explains a refusal in `message`.
+        let detail = json
+            .get("message")
+            .and_then(|m| m.as_str())
+            .map_or_else(|| format!("HTTP {status}"), str::to_owned);
+        Err(failed(Some(status), detail))
     }
 
     /// Downloads `url` to `dest` through `dest.part`. `progress(done, total)`

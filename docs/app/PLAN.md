@@ -79,7 +79,7 @@ Dev-Kit\                         qualsiasi cartella, anche con spazi, ( ) e &
 
 Regole:
 - L'exe riconosce la sua radice dalla propria posizione. Se `data\` manca, la crea (primo avvio). Se la cartella non è scrivibile, finestra di messaggio e uscita.
-- Ogni file scritto da app, programmi e agenti finisce in `data\`. Eccezioni ammesse solo quelle del README attuale (tracce di Windows; `gh` senza `--insecure-storage`; Gestione credenziali per Antigravity mentre `agy` è aperto, con persistenza di sola sessione), elencate in `DECISIONS.md`.
+- Ogni file scritto da app, programmi e agenti finisce in `data\`. Eccezioni ammesse solo quelle del README attuale (tracce di Windows; `gh` senza `--insecure-storage`, cioè un accesso fatto in una console e non dalla pagina GitHub, D-70; Gestione credenziali per Antigravity mentre `agy` è aperto, con persistenza di sola sessione), elencate in `DECISIONS.md`.
 - Per fare un backup basta copiare `projects\` e `data\` (meno `data\apps\` e `data\cache\`, che si riscaricano).
 
 ## 3. Architettura
@@ -135,6 +135,7 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `editor_ext.rs` | estensioni consigliate (`@programma`, proposta una volta sola, CodeLLDB); nessuna estensione propria (Q4 = a) |
 | `terminal.rs` | console del kit: PowerShell del kit o un agente in Windows Terminal del kit (`wterm.rs`, D-68) o in `conhost.exe` di Windows (D-57), nel job |
 | `wterm.rs` | Windows Terminal portabile: impostazioni («Dev-Kit», schemi di VSCodium), avvio, ambiente del kit e id del processo attraverso una named pipe (D-68) |
+| `github.rs` | account GitHub del kit, uno per tutto (D-70): accesso con `gh auth login --web` e codice monouso, `credential.helper` di Git verso `gh` per github.com, repository dell'account (API), clone, rinomina, eliminazione |
 | `projects.rs`, `detect/*.rs` | elenco, creazione, clone con il Git del kit, rilevamento del tipo, dei linguaggi e delle azioni (`npm run dev`, `php -S`, `cargo run`…), `panel.json` |
 | `run.rs` | avvio e arresto delle azioni dei progetti: porte 7100-7999 ricordate in `data\app\ports.json`, attesa del server, log, apertura nel browser, rete locale (D-50) |
 | `serve.rs` | server di file per i siti statici, `Dev-Kit.exe serve <cartella> <porta>`, al posto di `static-server.js` (D-51) |
@@ -174,7 +175,7 @@ Isolamento: ambiente del kit; `PSModulePath` senza i moduli del PC (D-34); profi
 
 Server web di VSCodium in `data\apps\…\vscodium-server\`, parte dell'app: versione fissata a ogni rilascio (D-58). Avvio su `127.0.0.1`, porta 7000-7099, token in file, `--server-data-dir data\vscodium-server`, telemetria spenta. Finestre `editor` con cartella dati `data\webview2\`, navigazione solo verso il server, nuove finestre intercettate, tasti del browser e menu contestuale disattivati.
 
-**Editor pulito** (Q4 = a, 14/10): nessuna estensione propria nell'editor. Dentro ci sono VSCodium, le estensioni consigliate e i terminali del kit. Progetti, avvio dei server, agenti e componenti stanno nella finestra principale dell'app, scritti in Rust. Le impostazioni che nel Dev-Kit scriveva l'estensione (profili del terminale, `files.dialog.defaultPath`, `git.defaultCloneDirectory`) le scrive `editor_cfg.rs` prima di ogni avvio; `claudeCode.environmentVariables` non serve (D-42).
+**Editor pulito** (Q4 = a, 14/10): nessuna estensione propria nell'editor. Dentro ci sono VSCodium, le estensioni consigliate e i terminali del kit. Progetti, avvio dei server, agenti e componenti stanno nella finestra principale dell'app, scritti in Rust. Le impostazioni che nel Dev-Kit scriveva l'estensione (profili del terminale, `files.dialog.defaultPath`, `git.defaultCloneDirectory`) le scrive `editor_cfg.rs` prima di ogni avvio; `claudeCode.environmentVariables` non serve (D-42). Anche l'estensione `github-repos` del Dev-Kit diventa una pagina dell'app, «GitHub», con l'account GitHub del kit (D-70).
 
 Prototipo all'inizio della fase dell'editor: dove il server web tiene le impostazioni utente, nome dello script del server, `--install-extension` sul server, chiusura con file non salvati.
 

@@ -19,6 +19,7 @@ mod editor_cfg;
 mod editor_ext;
 mod editor_window;
 mod env;
+mod github;
 mod i18n;
 mod install;
 mod instance;
@@ -445,6 +446,7 @@ fn build_app<R: tauri::Runtime>(
                     let _ = events.emit_to(MAIN, "run", e);
                 }),
             )));
+            app.manage(std::sync::Arc::new(github::Login::default()));
             let updater = std::sync::Arc::new(self_update::Updater::new(kit.clone()));
             app.manage(std::sync::Arc::clone(&updater));
             let settings = Settings::load(&kit).settings;
@@ -469,9 +471,16 @@ fn build_app<R: tauri::Runtime>(
             // Antigravity's login left in Windows by a run that did not end
             // cleanly, the kit moved, the agents aligned; then the watcher.
             let background = kit.clone();
+            let env = app.state::<AppState>().env();
             std::thread::spawn(move || {
                 if let Err(e) = keyring::save(&background) {
                     log::warn(&format!("antigravity login: {e:#}"));
+                }
+                // Git follows the GitHub account, also after a sign-in or a
+                // sign-out made with gh in a console.
+                let signed_in = github::token(&background, &env).is_some();
+                if let Err(e) = github::sync_git(&background, &env, signed_in) {
+                    log::warn(&format!("github: git helper: {e:#}"));
                 }
                 let _ = agents_sync::run(&background, None);
                 agents::watch(background);

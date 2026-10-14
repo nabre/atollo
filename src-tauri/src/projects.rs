@@ -40,7 +40,7 @@ fn modified(path: &Path) -> u64 {
 }
 
 /// Folders (or links to folders) in `projects\`, not hidden.
-fn folders(kit: &Kit) -> Vec<PathBuf> {
+pub fn folders(kit: &Kit) -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = fs::read_dir(kit.projects())
         .into_iter()
         .flatten()
@@ -210,13 +210,17 @@ impl Source {
 }
 
 /// Clones `source` into `projects\<name>` with the kit's Git (and its
-/// credential helper: `gh` when signed in). Blocking.
+/// credential helper: the kit's GitHub account, `github.rs`). Blocking.
+/// `token`: the GitHub account's token, sent to github.com only as an HTTP
+/// header in the environment (`GIT_CONFIG_*`), so it is neither on the
+/// command line nor saved in `.git\config`.
 pub fn clone(
     kit: &Kit,
     env: &KitEnv,
     source: &str,
     name: Option<&str>,
     lang: &str,
+    token: Option<&str>,
 ) -> Result<PathBuf> {
     let Some(src) = Source::parse(source) else {
         bail!(
@@ -245,13 +249,23 @@ pub fn clone(
         bail!("{}", tr(lang, "Git del kit non è installato.", &[]));
     }
     fs::create_dir_all(kit.projects())?;
-    let out = crate::jobs::kit_command(&git, env)
-        .args(["clone", "--"])
+    let mut cmd = crate::jobs::kit_command(&git, env);
+    cmd.args(["clone", "--"])
         .arg(src.url())
         .arg(&dir)
-        .env("GIT_TERMINAL_PROMPT", "0")
-        .output()
-        .context("git clone")?;
+        .env("GIT_TERMINAL_PROMPT", "0");
+    if let Some(token) = token.filter(|_| matches!(src, Source::GitHub(_))) {
+        use base64::Engine;
+        let basic =
+            base64::engine::general_purpose::STANDARD.encode(format!("x-access-token:{token}"));
+        cmd.env("GIT_CONFIG_COUNT", "1")
+            .env("GIT_CONFIG_KEY_0", "http.https://github.com/.extraheader")
+            .env(
+                "GIT_CONFIG_VALUE_0",
+                format!("AUTHORIZATION: basic {basic}"),
+            );
+    }
+    let out = cmd.output().context("git clone")?;
     if !out.status.success() {
         let _ = fs::remove_dir_all(&dir);
         let err = String::from_utf8_lossy(&out.stderr);

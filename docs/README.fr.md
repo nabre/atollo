@@ -21,6 +21,7 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 | --- | --- |
 | **Accueil** | projets récents avec Éditeur, Terminal et agent ; avis (kit déplacé, autre copie du kit ouverte, installations en cours) ; emplacement du kit |
 | **Projets** | nouveau projet, clonage depuis GitHub ou une adresse Git ; pour chaque projet son type, ses langages (avec leur logo) et les actions reconnues (`npm run dev`, `php -S`, `cargo run`, site statique…), avec port, sortie et ouverture dans le navigateur |
+| **GitHub** | le compte GitHub du kit, un seul pour tout : cette page, Git (y compris dans l'éditeur, les consoles et les agents) et GitHub CLI ; les dépôts du compte et de ses organisations, avec clonage dans `projects\`, ouverture dans l'éditeur, renommage et suppression sur GitHub |
 | **Agents** | Claude Code, Codex et Antigravity installés : version, connexion, limites de l'abonnement et consommation du jour et des 7 derniers jours ; instructions, skills et serveurs MCP partagés dans `data\agents` |
 | **Langages et outils** | les composants avec leur logo, leurs dépendances et l'espace disque ; installer, mettre à jour, supprimer |
 | **Paramètres** | langue, terminal, réseau (proxy, certificats, réseau local), clé Gemini, versions de Python et PHP, compilateur Rust (GNU ou MSVC), mises à jour de l'application |
@@ -35,7 +36,7 @@ Le menu en console de [nabre/dev-kit](https://github.com/nabre/dev-kit) dispara�
 ## Limites connues
 
 - Windows 10 et 11 uniquement, x64 et ARM64 (sur ARM64, l'éditeur, PHP, Apache et TinyTeX tournent en émulation x64 ; R n'est pas disponible).
-- Hors du kit, il ne reste que les traces de Windows, la connexion de GitHub CLI dans le Gestionnaire d'identification et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
+- Hors du kit, il ne reste que les traces de Windows, la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle de la page GitHub reste dans le kit, dans `data\gh`) et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
 - Les dossiers de `projects\` sont considérés comme fiables par Claude Code et Codex : n'ouvrez que des projets de confiance. L'éditeur, lui, demande à la première ouverture de chaque projet et ouvre en « mode restreint » ceux auxquels vous ne faites pas confiance.
 - Les limites d'utilisation des agents viennent d'interfaces non documentées des fournisseurs et peuvent cesser de fonctionner après une de leurs mises à jour.
 - « Retirer le lecteur » ne voit pas les programmes du PC qui gardent seulement un fichier du kit ouvert.

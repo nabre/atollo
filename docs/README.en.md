@@ -21,6 +21,7 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 | --- | --- |
 | **Home** | recent projects with Editor, Terminal and agent; notices (kit moved, another copy of the kit open, installations running); where the kit is |
 | **Projects** | new project, clone from GitHub or a Git URL; for each project its type, its languages (with their logo) and the recognised actions (`npm run dev`, `php -S`, `cargo run`, static site…), with port, output and opening in the browser |
+| **GitHub** | the kit's GitHub account, one for everything: this page, Git (in the editor, the consoles and the agents too) and GitHub CLI; the repositories of the account and its organizations, with clone into `projects\`, opening in the editor, rename and delete on GitHub |
 | **Agents** | the installed Claude Code, Codex and Antigravity: version, sign-in, plan limits and usage of today and of the last 7 days; instructions, skills and MCP servers shared in `data\agents` |
 | **Languages and tools** | the components with their logo, dependencies and disk space; install, update and remove |
 | **Settings** | language, terminal, network (proxy, certificates, local network), Gemini key, Python and PHP versions, Rust compiler (GNU or MSVC), app updates |
@@ -35,7 +36,7 @@ The console menu of [nabre/dev-kit](https://github.com/nabre/dev-kit) is gone: e
 ## Known limits
 
 - Windows 10 and 11 only, x64 and ARM64 (on ARM64 the editor, PHP, Apache and TinyTeX run under x64 emulation; R is not available).
-- Outside the kit there are only Windows' own traces, GitHub CLI's sign-in in the Credential Manager and Antigravity's while `agy` is open (for the session only).
+- Outside the kit there are only Windows' own traces, GitHub CLI's sign-in in the Credential Manager if you sign in from a console with `gh auth login` (the one of the GitHub page stays in the kit, in `data\gh`) and Antigravity's while `agy` is open (for the session only).
 - The folders in `projects\` are trusted by Claude Code and Codex: open only projects you trust. The editor instead asks the first time it opens each project and opens the ones you don't trust in "Restricted Mode".
 - The agents' usage limits come from undocumented interfaces of the providers and may stop working after one of their updates.
 - "Remove drive" does not see PC programs that keep only a file of the kit open.

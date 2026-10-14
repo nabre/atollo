@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-github-delete"
+description = "Enables the github_delete command without any pre-configured scope."
+commands.allow = ["github_delete"]
+
+[[permission]]
+identifier = "deny-github-delete"
+description = "Denies the github_delete command without any pre-configured scope."
+commands.deny = ["github_delete"]

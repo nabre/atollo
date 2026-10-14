@@ -1,5 +1,14 @@
 # Novità
 
+## Pagina GitHub e account GitHub del kit (14/10/2026)
+
+**Fatto**
+- **Pagina GitHub** (`github.rs`, `github.tsx`, D-70), porting dell'estensione `github-repos` del Dev-Kit: i repository dell'account e delle sue organizzazioni con ricerca, clone in `projects\` con un clic, «Editor» sui repository già clonati, apertura su github.com, copia dell'indirizzo, rinomina (i remote del clone seguono) ed eliminazione su GitHub con conferma.
+- **Un solo account GitHub per tutto il kit**: l'accesso dalla pagina (codice monouso su github.com/login/device) è quello di GitHub CLI in `data\gh`. Git del kit lo usa per github.com, quindi push e pull nell'editor, nelle console e negli agenti usano lo stesso account; «Esci» lo toglie a tutti. Anche «Clona» della pagina Progetti usa l'account per i repository privati.
+- Il permesso di eliminare i repository si chiede solo quando serve («Concedi il permesso»).
+
+**Verificato**: 190 test Rust, 22 test dell'interfaccia; `clippy -D warnings`, ESLint, Prettier, `cargo fmt` puliti. Da provare con un account vero: la checklist «GitHub» di TESTING.md (accesso senza console di `gh`, push dall'editor).
+
 ## Documentazione allineata al codice (14/10/2026)
 
 **Corretto**
