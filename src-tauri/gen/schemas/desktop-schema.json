@@ -333,6 +333,12 @@
           "markdownDescription": "Enables the project_delete command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_install_missing command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-install-missing",
+          "markdownDescription": "Enables the project_install_missing command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_site command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-site",
@@ -595,6 +601,12 @@
           "type": "string",
           "const": "deny-project-delete",
           "markdownDescription": "Denies the project_delete command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_install_missing command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-install-missing",
+          "markdownDescription": "Denies the project_install_missing command without any pre-configured scope."
         },
         {
           "description": "Denies the project_site command without any pre-configured scope.",

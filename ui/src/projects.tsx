@@ -25,6 +25,7 @@ import {
   projectClone,
   projectCreate,
   projectDelete,
+  projectInstallMissing,
   projectSite,
   projectsList,
   runClear,
@@ -374,15 +375,27 @@ function ProjectDetails({
   onPorts: (p: Ports) => void;
   onChanged: () => void;
 }) {
-  const { busy: deleting, error, run } = useAction(onChanged);
+  const { busy: working, error, run } = useAction(onChanged);
   return (
     <div id={`project-${p.id}`} className="space-y-3 border-t border-vsc-border bg-vsc-sidebar px-4 py-3">
       <p className="text-[12px] text-vsc-desc">{p.reason}</p>
       {p.missing.length > 0 && (
-        <p role="status" className="flex items-start gap-2 text-vsc-warning">
-          <VscWarning size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
-          {t("Mancano componenti del kit: {0}. Aggiungili da Linguaggi e strumenti.", p.missing.join(", "))}
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p role="status" className="flex items-start gap-2 text-vsc-warning">
+            <VscWarning size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+            {t("Mancano componenti del kit: {0}.", p.missing.join(", "))}
+          </p>
+          <ActionButton
+            icon={VscCloudDownload}
+            label={t("Installa")}
+            primary
+            busy={working === "install"}
+            title={t("Installa {0} e li tiene in Linguaggi e strumenti", p.missing.join(", "))}
+            onClick={() => {
+              run("install", () => projectInstallMissing(p.id));
+            }}
+          />
+        </div>
       )}
       {p.warnings.length > 0 && (
         <ul className="list-disc space-y-1 pl-5 text-vsc-desc">
@@ -475,7 +488,7 @@ function ProjectDetails({
         <ActionButton
           icon={VscTrash}
           label={t("Elimina la cartella vuota")}
-          busy={deleting === "delete"}
+          busy={working === "delete"}
           onClick={() => {
             run("delete", () => projectDelete(p.id));
           }}

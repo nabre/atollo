@@ -34,6 +34,7 @@
     "allow-project-delete",
     "allow-project-clone",
     "allow-project-site",
+    "allow-project-install-missing",
     "allow-github-status",
     "allow-github-sign-in",
     "allow-github-sign-in-cancel",
