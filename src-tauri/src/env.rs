@@ -96,6 +96,16 @@ impl Host {
     }
 }
 
+/// `NODE_OPTIONS` of the kit: every Node.js loads `loopback.js`, so a server
+/// on all the network cards listens on this PC only (no Firewall prompt).
+pub fn node_options(kit: &Kit) -> String {
+    let loopback = kit.kit_files().join("loopback.js");
+    format!(
+        "--require \"{}\"",
+        loopback.to_string_lossy().replace('\\', "/")
+    )
+}
+
 /// The computed environment. Keys are unique ignoring case.
 #[derive(Debug, Clone, Default)]
 pub struct KitEnv {
@@ -211,13 +221,7 @@ impl KitEnv {
         env.set_path("NPM_CONFIG_PREFIX", &npm_prefix);
         env.set_path("NPM_CONFIG_CACHE", data.join(r"cache\npm"));
         env.set_path("NPM_CONFIG_USERCONFIG", home.join(".npmrc"));
-        env.set(
-            "NODE_OPTIONS",
-            format!(
-                "--require \"{}\"",
-                fwd(&kit.kit_files().join("loopback.js"))
-            ),
-        );
+        env.set("NODE_OPTIONS", node_options(kit));
         env.set_path("UV_CACHE_DIR", data.join(r"cache\uv"));
         env.set_path("UV_PYTHON_INSTALL_DIR", data.join(r"uv\python"));
         env.set_path("UV_TOOL_DIR", data.join(r"uv\tools"));

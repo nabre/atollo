@@ -1074,6 +1074,7 @@ pub fn extensions_matrix<R: Runtime>(
 /// languages; the new ones are installed now if the editor runs.
 #[tauri::command]
 pub async fn project_extensions<R: Runtime>(
+    app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
@@ -1084,6 +1085,7 @@ pub async fn project_extensions<R: Runtime>(
     project_dir(&state.kit, Some(&project), state.lang())?;
     let choice = crate::editor_ext::clean_choice(&added, &removed);
     crate::project_settings::update(&state.kit, &project, |s| s.extensions = choice);
+    crate::editor_window::refresh_hidden(&app, &state.kit);
     let editor = Arc::clone(&state.editor);
     // Busy installing: the watch of the open projects asks again (main.rs).
     tauri::async_runtime::spawn_blocking(move || {

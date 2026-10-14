@@ -105,11 +105,14 @@ fn data_uri(png: &[u8]) -> String {
 /// The script that sets the title bar defaults and fills the editor's title
 /// bar with the Windows buttons, with the editor's own classes, so its
 /// colors (codicons, red on close).
-fn controls_script(lang: &str, port: u16, project: &str) -> String {
+fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> String {
     let label =
         |it: &str| serde_json::to_string(&crate::i18n::t(lang, it, &[])).unwrap_or_default();
     let (logo32, logo256) = (data_uri(LOGO_32), data_uri(LOGO_256));
+    let hidden_key = serde_json::to_string(&hidden_key(project)).unwrap_or_default();
     let project = serde_json::to_string(project).unwrap_or_default();
+    let hidden = serde_json::to_string(hidden).unwrap_or_else(|_| "[]".into());
+    let stamp = now_ms();
     format!(
         r##"(() => {{
   if (window.top !== window) return;
@@ -129,6 +132,46 @@ fn controls_script(lang: &str, port: u16, project: &str) -> String {
     }} catch (e) {{}}
   }};
   document.addEventListener("readystatechange", configure);
+  // Extensions the project does not use (D-71): off in this window's
+  // workspace, written in the workspace's storage of the workbench before
+  // it reads it (the first transaction on the database wins). Which ones the
+  // kit turned off is kept apart: the user's own choices stay, and one the
+  // project wants again is turned back on. Atollo sends a newer list while
+  // the window is open (localStorage), used at the next reload.
+  const hidden = () => {{
+    let ids = {hidden};
+    try {{
+      const s = JSON.parse(localStorage.getItem({hidden_key}));
+      if (s && s.t > {stamp} && Array.isArray(s.ids)) ids = s.ids;
+    }} catch (e) {{}}
+    return ids.map((i) => String(i).toLowerCase());
+  }};
+  const turnOff = (db) => {{
+    const tx = db.transaction("ItemTable", "readwrite");
+    const store = tx.objectStore("ItemTable");
+    const KEY = "extensionsIdentifiers/disabled", MINE = "atollo/disabled";
+    const parse = (v) => {{ try {{ const x = JSON.parse(v); return Array.isArray(x) ? x : []; }} catch (e) {{ return []; }} }};
+    const now = store.get(KEY), mine = store.get(MINE);
+    mine.onsuccess = () => {{
+      const was = new Set(parse(mine.result).map((i) => String(i).toLowerCase()));
+      const keep = parse(now.result)
+        .filter((e) => e && typeof e.id === "string" && !was.has(e.id.toLowerCase()));
+      const user = new Set(keep.map((e) => e.id.toLowerCase()));
+      const add = hidden().filter((i) => !user.has(i));
+      store.put(JSON.stringify(keep.concat(add.map((id) => ({{ id }})))), KEY);
+      store.put(JSON.stringify(add), MINE);
+    }};
+  }};
+  const idbOpen = indexedDB.open.bind(indexedDB);
+  indexedDB.open = function (name, ...rest) {{
+    const req = idbOpen(name, ...rest);
+    if (typeof name === "string" && name.startsWith("vscode-web-state-db-")
+        && !name.startsWith("vscode-web-state-db-global")) {{
+      // Before the workbench's own handler, set after this returns.
+      req.addEventListener("success", () => {{ try {{ turnOff(req.result); }} catch (e) {{}} }});
+    }}
+    return req;
+  }};
   const open = window.open.bind(window);
   // The server's origin, also on WebView2's error page (server down).
   const send = (what) => open("http://127.0.0.1:{port}{CONTROL_PATH}" + what, "_blank");
@@ -323,6 +366,43 @@ fn controls_script(lang: &str, port: u16, project: &str) -> String {
     )
 }
 
+/// Where a window keeps the newer list of its hidden extensions.
+fn hidden_key(project: &str) -> String {
+    format!("atollo-hidden:{project}")
+}
+
+fn now_ms() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_millis())
+}
+
+/// Sends each open editor window the extensions its project hides now: a
+/// language or a choice changed. They apply at the window's next reload.
+pub fn refresh_hidden<R: Runtime>(app: &AppHandle<R>, kit: &crate::kit::Kit) {
+    let open: Vec<(String, std::path::PathBuf)> = OPEN
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .iter()
+        .map(|(l, d)| (l.clone(), d.clone()))
+        .collect();
+    for (label, dir) in open {
+        let Some(window) = app.get_webview_window(&label) else {
+            continue;
+        };
+        let name = dir
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let value = serde_json::json!({ "t": now_ms() as u64, "ids": crate::editor_ext::hidden_of(kit, &dir) });
+        let key = serde_json::to_string(&hidden_key(&name)).unwrap_or_default();
+        let value = serde_json::to_string(&value.to_string()).unwrap_or_default();
+        let _ = window.eval(format!(
+            "try {{ localStorage.setItem({key}, {value}); }} catch (e) {{}}"
+        ));
+    }
+}
+
 /// The project folder of each open editor window, by label.
 static OPEN: std::sync::Mutex<std::collections::BTreeMap<String, std::path::PathBuf>> =
     std::sync::Mutex::new(std::collections::BTreeMap::new());
@@ -365,7 +445,11 @@ fn extension_inputs(
 /// installs its extensions while the editor is open. Bounded reads (detect:
 /// 3 levels, 3000 files). A change seen while an install runs is kept and
 /// tried again at the next round.
-pub fn watch_projects(kit: crate::kit::Kit, editor: std::sync::Arc<crate::editor::Editor>) {
+pub fn watch_projects(
+    kit: crate::kit::Kit,
+    editor: std::sync::Arc<crate::editor::Editor>,
+    on_change: std::sync::Arc<dyn Fn() + Send + Sync>,
+) {
     const WATCH_EVERY: std::time::Duration = std::time::Duration::from_secs(15);
     std::thread::spawn(move || {
         let mut seen = std::collections::BTreeMap::new();
@@ -385,6 +469,7 @@ pub fn watch_projects(kit: crate::kit::Kit, editor: std::sync::Arc<crate::editor
                             "editor: {} changed, extensions synced",
                             dir.display()
                         ));
+                        on_change();
                         if editor.sync_extensions() {
                             seen.insert(dir, now);
                         }
@@ -486,7 +571,12 @@ pub fn open<R: Runtime>(
         // The editor's title bar is the window's (D-69).
         .decorations(false)
         .shadow(true)
-        .initialization_script(controls_script(lang, port, title))
+        .initialization_script(controls_script(
+            lang,
+            port,
+            title,
+            &crate::editor_ext::hidden_of(&app.state::<crate::commands::AppState>().kit, folder),
+        ))
         .data_directory(data_dir.to_path_buf())
         .zoom_hotkeys_enabled(false)
         .on_navigation(move |u| {
@@ -621,12 +711,17 @@ mod tests {
         assert_eq!(at("/?folder=/e:/p"), None);
         let other = u("http://127.0.0.1:7004/__atollo/window/close");
         assert_eq!(control(&other, 7003), None);
-        let js = controls_script("en", 7003, "my app");
+        let js = controls_script("en", 7003, "my app", &["a.b".into()]);
         assert!(js.contains(r#"close: "Close""#), "{js}");
         assert!(js.contains(r#"restart: "Restart extensions""#), "{js}");
         assert!(js.contains("window.__atolloExtensions = "), "{js}");
         assert!(js.contains(r#"c.productConfiguration = "#), "{js}");
         assert!(js.contains(r#"line("project", "my app")"#), "{js}");
+        assert!(js.contains(r#"let ids = ["a.b"];"#), "{js}");
+        assert!(
+            js.contains(r#"localStorage.getItem("atollo-hidden:my app")"#),
+            "{js}"
+        );
         assert!(js.contains("data:image/png;base64,iVBOR"), "logo embedded");
         assert!(
             js.contains(r#"{"window.menuBarVisibility":"classic"}"#),

@@ -473,7 +473,12 @@ fn build_app<R: tauri::Runtime>(
             editor.set_on_installed(std::sync::Arc::new(move |ids: &[String]| {
                 editor_window::notify_installed(&notify, ids);
             }));
-            editor_window::watch_projects(kit.clone(), editor);
+            let (refresh, refresh_kit) = (app.handle().clone(), kit.clone());
+            editor_window::watch_projects(
+                kit.clone(),
+                editor,
+                std::sync::Arc::new(move || editor_window::refresh_hidden(&refresh, &refresh_kit)),
+            );
             // Projects' actions: state and output go to the app window.
             let events = app.handle().clone();
             app.manage(std::sync::Arc::new(run::Runner::new(
