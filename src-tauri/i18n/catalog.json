@@ -219,11 +219,6 @@
     "fr": "Version non valide : {0}",
     "de": "Ungültige Version: {0}"
   },
-  "Go non è incluso nel kit: deve essere installato nel PC.": {
-    "en": "Go is not included in the kit: it must be installed on the PC.",
-    "fr": "Go n'est pas inclus dans le kit : il doit être installé sur le PC.",
-    "de": "Go ist nicht im Kit enthalten: Es muss auf dem PC installiert sein."
-  },
   "Il programma deve leggere la porta dalla variabile PORT.": {
     "en": "The program must read the port from the PORT variable.",
     "fr": "Le programme doit lire le port dans la variable PORT.",
@@ -378,5 +373,175 @@
     "en": "Ports {0} to {1} belong to the editor",
     "fr": "Les ports {0} à {1} sont réservés à l'éditeur",
     "de": "Die Ports {0} bis {1} gehören dem Editor"
+  },
+  "agente di Anthropic": {
+    "en": "Anthropic's agent",
+    "fr": "agent d'Anthropic",
+    "de": "Agent von Anthropic"
+  },
+  "agente di OpenAI": {
+    "en": "OpenAI's agent",
+    "fr": "agent d'OpenAI",
+    "de": "Agent von OpenAI"
+  },
+  "agente di Google": {
+    "en": "Google's agent",
+    "fr": "agent de Google",
+    "de": "Agent von Google"
+  },
+  "Git e Git Bash, la shell dei comandi degli agenti": {
+    "en": "Git and Git Bash, the command shell of the agents",
+    "fr": "Git et Git Bash, le shell de commandes des agents",
+    "de": "Git und Git Bash, die Befehlsshell der Agenten"
+  },
+  "Python e pip": {
+    "en": "Python and pip",
+    "fr": "Python et pip",
+    "de": "Python und pip"
+  },
+  "Node.js e npm: server MCP e strumenti JavaScript": {
+    "en": "Node.js and npm: MCP servers and JavaScript tools",
+    "fr": "Node.js et npm : serveurs MCP et outils JavaScript",
+    "de": "Node.js und npm: MCP-Server und JavaScript-Werkzeuge"
+  },
+  "ambienti e pacchetti Python, uvx per i server MCP": {
+    "en": "Python environments and packages, uvx for MCP servers",
+    "fr": "environnements et paquets Python, uvx pour les serveurs MCP",
+    "de": "Python-Umgebungen und -Pakete, uvx für MCP-Server"
+  },
+  "pull request, issue, accesso a GitHub": {
+    "en": "pull requests, issues, GitHub sign-in",
+    "fr": "pull requests, issues, connexion à GitHub",
+    "de": "Pull Requests, Issues, Anmeldung bei GitHub"
+  },
+  "PHP e Composer": {
+    "en": "PHP and Composer",
+    "fr": "PHP et Composer",
+    "de": "PHP und Composer"
+  },
+  "server web con PHP": {
+    "en": "web server with PHP",
+    "fr": "serveur web avec PHP",
+    "de": "Webserver mit PHP"
+  },
+  "rustc, cargo, rustfmt, clippy": {
+    "en": "rustc, cargo, rustfmt, clippy",
+    "fr": "rustc, cargo, rustfmt, clippy",
+    "de": "rustc, cargo, rustfmt, clippy"
+  },
+  "SDK ufficiale di Go": {
+    "en": "official Go SDK",
+    "fr": "SDK officiel de Go",
+    "de": "offizielles Go-SDK"
+  },
+  "JDK Temurin, Maven e Gradle": {
+    "en": "Temurin JDK, Maven and Gradle",
+    "fr": "JDK Temurin, Maven et Gradle",
+    "de": "Temurin-JDK, Maven und Gradle"
+  },
+  "compilatore Kotlin": {
+    "en": "Kotlin compiler",
+    "fr": "compilateur Kotlin",
+    "de": "Kotlin-Compiler"
+  },
+  ".NET SDK: C# e F#": {
+    "en": ".NET SDK: C# and F#",
+    "fr": "SDK .NET : C# et F#",
+    "de": ".NET SDK: C# und F#"
+  },
+  "Dart SDK": {
+    "en": "Dart SDK",
+    "fr": "SDK Dart",
+    "de": "Dart SDK"
+  },
+  "Zig; zig cc compila anche C e C++": {
+    "en": "Zig; zig cc also compiles C and C++",
+    "fr": "Zig ; zig cc compile aussi le C et le C++",
+    "de": "Zig; zig cc kompiliert auch C und C++"
+  },
+  "Julia": {
+    "en": "Julia",
+    "fr": "Julia",
+    "de": "Julia"
+  },
+  "JavaScript e TypeScript con Bun": {
+    "en": "JavaScript and TypeScript with Bun",
+    "fr": "JavaScript et TypeScript avec Bun",
+    "de": "JavaScript und TypeScript mit Bun"
+  },
+  "JavaScript e TypeScript con Deno": {
+    "en": "JavaScript and TypeScript with Deno",
+    "fr": "JavaScript et TypeScript avec Deno",
+    "de": "JavaScript und TypeScript mit Deno"
+  },
+  "documenti e PDF da testo, alternativa leggera a LaTeX": {
+    "en": "documents and PDFs from text, a light alternative to LaTeX",
+    "fr": "documents et PDF à partir de texte, alternative légère à LaTeX",
+    "de": "Dokumente und PDFs aus Text, schlanke Alternative zu LaTeX"
+  },
+  "LaTeX (TeX Live minimo): pdflatex, xelatex, lualatex, latexmk": {
+    "en": "LaTeX (minimal TeX Live): pdflatex, xelatex, lualatex, latexmk",
+    "fr": "LaTeX (TeX Live minimal) : pdflatex, xelatex, lualatex, latexmk",
+    "de": "LaTeX (minimales TeX Live): pdflatex, xelatex, lualatex, latexmk"
+  },
+  "gestori di pacchetti, con il Node.js del kit": {
+    "en": "package managers, with the kit's Node.js",
+    "fr": "gestionnaires de paquets, avec le Node.js du kit",
+    "de": "Paketmanager, mit dem Node.js des Kits"
+  },
+  "build di C e C++": {
+    "en": "C and C++ builds",
+    "fr": "compilation de C et C++",
+    "de": "Builds für C und C++"
+  },
+  "compilatore C e C++ (Clang, MinGW-w64): gcc, g++, make": {
+    "en": "C and C++ compiler (Clang, MinGW-w64): gcc, g++, make",
+    "fr": "compilateur C et C++ (Clang, MinGW-w64) : gcc, g++, make",
+    "de": "C- und C++-Compiler (Clang, MinGW-w64): gcc, g++, make"
+  },
+  "Ruby, gem e Bundler (RubyInstaller)": {
+    "en": "Ruby, gem and Bundler (RubyInstaller)",
+    "fr": "Ruby, gem et Bundler (RubyInstaller)",
+    "de": "Ruby, gem und Bundler (RubyInstaller)"
+  },
+  "R da conda-forge, con il compilatore per i pacchetti": {
+    "en": "R from conda-forge, with the compiler for packages",
+    "fr": "R de conda-forge, avec le compilateur pour les paquets",
+    "de": "R von conda-forge, mit dem Compiler für Pakete"
+  },
+  "la shell del terminale del kit": {
+    "en": "the shell of the kit's terminal",
+    "fr": "le shell du terminal du kit",
+    "de": "die Shell des Terminals des Kits"
+  },
+  "VSCodium integrato nella finestra di Atollo": {
+    "en": "VSCodium integrated in the Atollo window",
+    "fr": "VSCodium intégré à la fenêtre de Atollo",
+    "de": "VSCodium im Fenster von Atollo"
+  },
+  "C'è già un'installazione in corso.": {
+    "en": "An installation is already running.",
+    "fr": "Une installation est déjà en cours.",
+    "de": "Es läuft bereits eine Installation."
+  },
+  "Un'altra installazione è in corso in questo kit (un'altra finestra di Atollo o il menu del kit).": {
+    "en": "Another installation is running in this kit (another Atollo window or the kit's menu).",
+    "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre de Atollo ou le menu du kit).",
+    "de": "In diesem Kit läuft eine andere Installation (ein anderes Atollo-Fenster oder das Menü des Kits)."
+  },
+  "Progetto non trovato: {0}": {
+    "en": "Project not found: {0}",
+    "fr": "Projet introuvable : {0}",
+    "de": "Projekt nicht gefunden: {0}"
+  },
+  "{0} non è installato.": {
+    "en": "{0} is not installed.",
+    "fr": "{0} n'est pas installé.",
+    "de": "{0} ist nicht installiert."
+  },
+  "Componenti del kit non installati: {0}{1}. Riprova da Linguaggi e strumenti.": {
+    "en": "Kit components not installed: {0}{1}. Try again from Languages and tools.",
+    "fr": "Composants du kit non installés : {0}{1}. Réessayez depuis Langages et outils.",
+    "de": "Nicht installierte Komponenten des Kits: {0}{1}. Versuchen Sie es erneut unter Sprachen und Werkzeuge."
   }
 }

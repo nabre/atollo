@@ -110,7 +110,7 @@ fn fail(context: &str, e: impl std::fmt::Display) -> String {
 
 /// `None` = the projects folder itself; a name must be a valid project
 /// name of an existing folder (no paths, no `..`).
-fn project_dir(kit: &Kit, project: Option<&str>) -> Result<PathBuf, String> {
+fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> Result<PathBuf, String> {
     let Some(name) = project else {
         return Ok(kit.projects());
     };
@@ -119,7 +119,7 @@ fn project_dir(kit: &Kit, project: Option<&str>) -> Result<PathBuf, String> {
     if dir.is_dir() {
         Ok(dir)
     } else {
-        Err(format!("project not found: {name}"))
+        Err(crate::i18n::t(lang, "Progetto non trovato: {0}", &[name]))
     }
 }
 
@@ -132,6 +132,7 @@ fn ensure_required<R: Runtime>(
     app: &AppHandle<R>,
     task: &Arc<SetupTask>,
     kit: &Kit,
+    lang: &str,
 ) -> Result<(), String> {
     let missing = setup_task::missing_required(kit);
     if missing.is_empty() {
@@ -160,9 +161,10 @@ fn ensure_required<R: Runtime>(
         .error
         .map(|e| format!(" ({e})"))
         .unwrap_or_default();
-    Err(format!(
-        "Componenti del kit non installati: {}{why}. Riprova da Linguaggi e strumenti.",
-        still.join(", ")
+    Err(crate::i18n::t(
+        lang,
+        "Componenti del kit non installati: {0}{1}. Riprova da Linguaggi e strumenti.",
+        &[&still.join(", "), &why],
     ))
 }
 
@@ -211,12 +213,13 @@ pub async fn editor_open<R: Runtime>(
     project: Option<String>,
 ) -> Result<(), String> {
     ensure_main(&webview)?;
-    let dir = project_dir(&state.kit, project.as_deref())?;
+    let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
     let title = project.clone().unwrap_or_else(|| "projects".into());
     let editor = Arc::clone(&state.editor);
     let (handle, task, kit) = (app.clone(), Arc::clone(&state.setup), state.kit.clone());
+    let lang = state.lang();
     let (port, token) = tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&handle, &task, &kit)?;
+        ensure_required(&handle, &task, &kit, lang)?;
         editor
             .ensure_running()
             .map_err(|e| fail("editor start", format!("{e:#}")))
@@ -270,10 +273,11 @@ pub async fn terminal_open<R: Runtime>(
     project: Option<String>,
 ) -> Result<(), String> {
     ensure_main(&webview)?;
-    let dir = project_dir(&state.kit, project.as_deref())?;
+    let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
     let (task, kit, env) = (Arc::clone(&state.setup), state.kit.clone(), state.env());
+    let lang = state.lang();
     tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&app, &task, &kit)?;
+        ensure_required(&app, &task, &kit, lang)?;
         terminal::open_console(&app, &kit, &env, &dir)
             .map_err(|e| fail("terminal", format!("{e:#}")))
     })
@@ -287,12 +291,12 @@ pub fn components_list<R: Runtime>(
     state: State<'_, AppState>,
 ) -> Result<Vec<ComponentInfo>, String> {
     ensure_main(&webview)?;
-    Ok(component_infos(&state.kit))
+    Ok(component_infos(&state.kit, state.lang()))
 }
 
 /// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`
 /// component is not available on an ARM64 kit.
-fn component_infos(kit: &Kit) -> Vec<ComponentInfo> {
+fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
     let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
     let arm64 = kit.arch() == crate::kit::Arch::Arm64;
@@ -305,7 +309,7 @@ fn component_infos(kit: &Kit) -> Vec<ComponentInfo> {
                 id: c.id.clone(),
                 name: c.name.clone(),
                 group: c.group,
-                desc: c.desc.clone(),
+                desc: crate::i18n::t(lang, &c.desc, &[]),
                 mb: c.mb,
                 chosen: choice.is_chosen(&c.id),
                 installed: c.is_installed(kit),
@@ -376,7 +380,7 @@ pub fn components_apply<R: Runtime>(
         return Err(format!("unknown component: {bad}"));
     }
     if state.setup.snapshot().running {
-        return Err("an installation is already running".into());
+        return Err(tr(&state, "C'è già un'installazione in corso.", &[]));
     }
     let text = choice_text(&state.kit, &chosen);
     let choice = Choice::parse(&text, catalog);
@@ -449,11 +453,12 @@ pub async fn agent_launch<R: Runtime>(
     if !crate::agents::IDS.contains(&agent.as_str()) {
         return Err(format!("unknown agent: {agent}"));
     }
-    let dir = project_dir(&state.kit, project.as_deref())?;
+    let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
     let (task, kit, env) = (Arc::clone(&state.setup), state.kit.clone(), state.env());
+    let lang = state.lang();
     tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&app, &task, &kit)?;
-        crate::agents::launch(&app, &kit, &env, &agent, &dir)
+        ensure_required(&app, &task, &kit, lang)?;
+        crate::agents::launch(&app, &kit, &env, &agent, &dir, lang)
             .map_err(|e| fail("agent", format!("{e:#}")))
     })
     .await
@@ -483,7 +488,7 @@ pub fn folder_open<R: Runtime>(
     ensure_main(&webview)?;
     let dir = match which.as_str() {
         "agents" => state.kit.data().join("agents"),
-        "projects" => project_dir(&state.kit, project.as_deref())?,
+        "projects" => project_dir(&state.kit, project.as_deref(), state.lang())?,
         _ => return Err(format!("unknown folder: {which}")),
     };
     std::fs::create_dir_all(&dir).map_err(|e| fail("folder", e))?;
@@ -550,7 +555,7 @@ pub async fn project_clone<R: Runtime>(
         state.lang(),
     );
     tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&app, &task, &kit)?;
+        ensure_required(&app, &task, &kit, lang)?;
         crate::projects::clone(&kit, &env, &source, name.as_deref(), lang)
             .map(|d| {
                 d.file_name()
@@ -575,7 +580,7 @@ pub fn project_site<R: Runtime>(
     kind: crate::detect::SiteKind,
 ) -> Result<(), String> {
     ensure_main(&webview)?;
-    let dir = project_dir(&state.kit, Some(&project))?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let key = crate::run::key_of(&project, crate::detect::SITE_ACTION);
     if runner
         .list()
@@ -611,7 +616,7 @@ pub async fn run_start<R: Runtime>(
     action: String,
 ) -> Result<crate::run::RunInfo, String> {
     ensure_main(&webview)?;
-    let dir = project_dir(&state.kit, Some(&project))?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let (task, kit, env, lang) = (
         Arc::clone(&state.setup),
         state.kit.clone(),
@@ -620,7 +625,7 @@ pub async fn run_start<R: Runtime>(
     );
     let runner = Arc::clone(&runner);
     tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&app, &task, &kit)?;
+        ensure_required(&app, &task, &kit, lang)?;
         let detected = crate::detect::detect(&dir, lang);
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::i18n::t(
@@ -1044,13 +1049,13 @@ mod tests {
         let kit = Kit::at(tmp.0.clone(), Arch::X64);
         kit.prepare().unwrap();
         fs::create_dir_all(kit.projects().join("app")).unwrap();
-        assert_eq!(project_dir(&kit, None).unwrap(), kit.projects());
+        assert_eq!(project_dir(&kit, None, "it").unwrap(), kit.projects());
         assert_eq!(
-            project_dir(&kit, Some("app")).unwrap(),
+            project_dir(&kit, Some("app"), "it").unwrap(),
             kit.projects().join("app")
         );
         for bad in ["..", r"..\data", "a/b", "C:\\x", "missing", "con"] {
-            assert!(project_dir(&kit, Some(bad)).is_err(), "{bad}");
+            assert!(project_dir(&kit, Some(bad), "it").is_err(), "{bad}");
         }
     }
 
@@ -1060,7 +1065,7 @@ mod tests {
         for (arch, arm64) in [(Arch::X64, false), (Arch::Arm64, true)] {
             let kit = Kit::at(tmp.0.join(arch.as_str()), arch);
             kit.prepare().unwrap();
-            let infos = component_infos(&kit);
+            let infos = component_infos(&kit, "it");
             let r = infos.iter().find(|c| c.id == "r").unwrap();
             assert_eq!(
                 (r.available, r.no_arm64, r.x64_only),
