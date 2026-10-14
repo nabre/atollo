@@ -413,6 +413,14 @@ fn build_app<R: tauri::Runtime>(
             {
                 log::info(&format!("{}: {event:?}", window.label()));
             }
+            // The editor's title bar shows maximize or restore (D-69).
+            if window.label().starts_with(editor_window::LABEL_PREFIX)
+                && matches!(event, tauri::WindowEvent::Resized(_))
+            {
+                if let Some(w) = window.get_webview_window(window.label()) {
+                    editor_window::sync_maximized(&w);
+                }
+            }
             // With something open, the interface asks before closing.
             if window.label() == MAIN {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
