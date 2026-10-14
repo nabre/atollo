@@ -93,5 +93,285 @@
     "en": "Usage: Dev-Kit.exe [command]\n\nCommands:\n  env                     show the kit environment\n  components              list languages and tools, with the installed ones\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update the installed ones\n      --force             download again\n  version                 show the version\n  help                    show this help\n\nWithout a command it opens the Dev-Kit window.",
     "fr": "Usage : Dev-Kit.exe [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n  components              liste les langages et outils, avec ceux installés\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, ouvre la fenêtre de Dev-Kit.",
     "de": "Aufruf: Dev-Kit.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        auch bereits installierte aktualisieren\n      --force             erneut herunterladen\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Dev-Kit-Fenster."
+  },
+  "Ferma prima il sito web: la modifica vale dal prossimo avvio.": {
+    "en": "Stop the website first: the change applies from the next start.",
+    "fr": "Arrêtez d'abord le site web : la modification s'applique au prochain démarrage.",
+    "de": "Beenden Sie zuerst die Website: Die Änderung gilt ab dem nächsten Start."
+  },
+  "Azione non trovata: premi Aggiorna": {
+    "en": "Action not found: press Refresh",
+    "fr": "Action introuvable : cliquez sur Actualiser",
+    "de": "Aktion nicht gefunden: Klicken Sie auf Aktualisieren"
+  },
+  "Nome non valido: niente {0}, punto iniziale o finale, nomi riservati di Windows.": {
+    "en": "Invalid name: no {0}, no leading or trailing dot, no Windows reserved names.",
+    "fr": "Nom non valide : pas de {0}, ni de point au début ou à la fin, ni de noms réservés de Windows.",
+    "de": "Ungültiger Name: kein {0}, kein Punkt am Anfang oder Ende, keine reservierten Windows-Namen."
+  },
+  "Esiste già una cartella {0} in projects.": {
+    "en": "A folder {0} already exists in projects.",
+    "fr": "Un dossier {0} existe déjà dans projects.",
+    "de": "In projects gibt es bereits einen Ordner {0}."
+  },
+  "{0} è un collegamento: non viene eliminato da qui.": {
+    "en": "{0} is a link: it is not deleted from here.",
+    "fr": "{0} est un lien : il n'est pas supprimé d'ici.",
+    "de": "{0} ist eine Verknüpfung: Sie wird hier nicht gelöscht."
+  },
+  "La cartella {0} non è vuota: il progetto non viene eliminato.": {
+    "en": "The folder {0} is not empty: the project is not deleted.",
+    "fr": "Le dossier {0} n'est pas vide : le projet n'est pas supprimé.",
+    "de": "Der Ordner {0} ist nicht leer: Das Projekt wird nicht gelöscht."
+  },
+  "Scrivi owner/repository di GitHub o un indirizzo https:// di Git.": {
+    "en": "Enter a GitHub owner/repository or a Git https:// address.",
+    "fr": "Saisissez un owner/repository GitHub ou une adresse Git https://.",
+    "de": "Geben Sie ein GitHub-owner/repository oder eine Git-Adresse mit https:// ein."
+  },
+  "Git del kit non è installato.": {
+    "en": "The kit's Git is not installed.",
+    "fr": "Le Git du kit n'est pas installé.",
+    "de": "Das Git des Kits ist nicht installiert."
+  },
+  "La porta {0} è occupata da un altro programma. Chiudilo o cambia la porta.": {
+    "en": "Port {0} is in use by another program. Close it or change the port.",
+    "fr": "Le port {0} est utilisé par un autre programme. Fermez-le ou changez de port.",
+    "de": "Port {0} wird von einem anderen Programm verwendet. Schließen Sie es oder ändern Sie den Port."
+  },
+  "Nessuna porta libera tra {0} e {1}": {
+    "en": "No free port between {0} and {1}",
+    "fr": "Aucun port libre entre {0} et {1}",
+    "de": "Kein freier Port zwischen {0} und {1}"
+  },
+  "Porta tra {0} e {1}": {
+    "en": "Port between {0} and {1}",
+    "fr": "Port entre {0} et {1}",
+    "de": "Port zwischen {0} und {1}"
+  },
+  "Porta già assegnata a {0}": {
+    "en": "Port already assigned to {0}",
+    "fr": "Port déjà attribué à {0}",
+    "de": "Port bereits {0} zugewiesen"
+  },
+  "cartella: {0}": {
+    "en": "folder: {0}",
+    "fr": "dossier : {0}",
+    "de": "Ordner: {0}"
+  },
+  "porta: {0}": {
+    "en": "port: {0}",
+    "fr": "port : {0}",
+    "de": "Port: {0}"
+  },
+  "Avvio non riuscito: {0}": {
+    "en": "Start failed: {0}",
+    "fr": "Échec du démarrage : {0}",
+    "de": "Start fehlgeschlagen: {0}"
+  },
+  "il server usa la porta {0} invece della {1}": {
+    "en": "the server uses port {0} instead of {1}",
+    "fr": "le serveur utilise le port {0} au lieu du {1}",
+    "de": "der Server verwendet Port {0} statt {1}"
+  },
+  "server pronto: {0}": {
+    "en": "server ready: {0}",
+    "fr": "serveur prêt : {0}",
+    "de": "Server bereit: {0}"
+  },
+  "processo terminato, codice {0}": {
+    "en": "process exited, code {0}",
+    "fr": "processus terminé, code {0}",
+    "de": "Prozess beendet, Code {0}"
+  },
+  "processo terminato": {
+    "en": "process exited",
+    "fr": "processus terminé",
+    "de": "Prozess beendet"
+  },
+  "Sito statico: {0}   (cartella {1})": {
+    "en": "Static site: {0}   (folder {1})",
+    "fr": "Site statique : {0}   (dossier {1})",
+    "de": "Statische Website: {0}   (Ordner {1})"
+  },
+  "Lingua non valida: {0}": {
+    "en": "Invalid language: {0}",
+    "fr": "Langue non valide : {0}",
+    "de": "Ungültige Sprache: {0}"
+  },
+  "Proxy non valido (http://host:porta): {0}": {
+    "en": "Invalid proxy (http://host:port): {0}",
+    "fr": "Proxy non valide (http://hôte:port) : {0}",
+    "de": "Ungültiger Proxy (http://Host:Port): {0}"
+  },
+  "Valore non valido: {0}": {
+    "en": "Invalid value: {0}",
+    "fr": "Valeur non valide : {0}",
+    "de": "Ungültiger Wert: {0}"
+  },
+  "File dei certificati non trovato: {0}": {
+    "en": "Certificate file not found: {0}",
+    "fr": "Fichier de certificats introuvable : {0}",
+    "de": "Zertifikatsdatei nicht gefunden: {0}"
+  },
+  "Versione non valida: {0}": {
+    "en": "Invalid version: {0}",
+    "fr": "Version non valide : {0}",
+    "de": "Ungültige Version: {0}"
+  },
+  "Go non è incluso nel kit: deve essere installato nel PC.": {
+    "en": "Go is not included in the kit: it must be installed on the PC.",
+    "fr": "Go n'est pas inclus dans le kit : il doit être installé sur le PC.",
+    "de": "Go ist nicht im Kit enthalten: Es muss auf dem PC installiert sein."
+  },
+  "Il programma deve leggere la porta dalla variabile PORT.": {
+    "en": "The program must read the port from the PORT variable.",
+    "fr": "Le programme doit lire le port dans la variable PORT.",
+    "de": "Das Programm muss den Port aus der Variablen PORT lesen."
+  },
+  "Senza lo script npm \"tauri\" serve tauri-cli: cargo install tauri-cli": {
+    "en": "Without the npm script \"tauri\", tauri-cli is needed: cargo install tauri-cli",
+    "fr": "Sans le script npm « tauri », tauri-cli est nécessaire : cargo install tauri-cli",
+    "de": "Ohne das npm-Skript „tauri“ wird tauri-cli benötigt: cargo install tauri-cli"
+  },
+  "Tauri apre la sua finestra (WebView2) e usa la porta fissa di tauri.conf.json ({0}): qui vedi solo i log.": {
+    "en": "Tauri opens its own window (WebView2) and uses the fixed port from tauri.conf.json ({0}): here you only see the logs.",
+    "fr": "Tauri ouvre sa propre fenêtre (WebView2) et utilise le port fixe de tauri.conf.json ({0}) : ici, vous ne voyez que les journaux.",
+    "de": "Tauri öffnet ein eigenes Fenster (WebView2) und verwendet den festen Port aus tauri.conf.json ({0}): Hier sehen Sie nur die Logs."
+  },
+  "Tauri apre la sua finestra (WebView2): qui vedi solo i log.": {
+    "en": "Tauri opens its own window (WebView2): here you only see the logs.",
+    "fr": "Tauri ouvre sa propre fenêtre (WebView2) : ici, vous ne voyez que les journaux.",
+    "de": "Tauri öffnet ein eigenes Fenster (WebView2): Hier sehen Sie nur die Logs."
+  },
+  "{0} con {1}": {
+    "en": "{0} with {1}",
+    "fr": "{0} avec {1}",
+    "de": "{0} mit {1}"
+  },
+  "Script npm \"{0}\" ignorato: il nome contiene caratteri speciali per la shell.": {
+    "en": "npm script \"{0}\" ignored: the name contains characters that are special to the shell.",
+    "fr": "Script npm « {0} » ignoré : le nom contient des caractères spéciaux pour le shell.",
+    "de": "npm-Skript „{0}“ ignoriert: Der Name enthält Sonderzeichen der Shell."
+  },
+  "Dipendenze non installate: esegui prima \"npm install\".": {
+    "en": "Dependencies not installed: run \"npm install\" first.",
+    "fr": "Dépendances non installées : exécutez d'abord « npm install ».",
+    "de": "Abhängigkeiten nicht installiert: Führen Sie zuerst „npm install“ aus."
+  },
+  "Il progetto usa pnpm, yarn o bun: il pannello usa npm. Se serve, cambia i comandi in panel.json.": {
+    "en": "The project uses pnpm, yarn or bun: the panel uses npm. If needed, change the commands in panel.json.",
+    "fr": "Le projet utilise pnpm, yarn ou bun : le panneau utilise npm. Si nécessaire, modifiez les commandes dans panel.json.",
+    "de": "Das Projekt verwendet pnpm, yarn oder bun: Das Panel verwendet npm. Ändern Sie bei Bedarf die Befehle in panel.json."
+  },
+  "Electron apre la sua finestra: qui vedi solo i log.": {
+    "en": "Electron opens its own window: here you only see the logs.",
+    "fr": "Electron ouvre sa propre fenêtre : ici, vous ne voyez que les journaux.",
+    "de": "Electron öffnet ein eigenes Fenster: Hier sehen Sie nur die Logs."
+  },
+  "{0} non è un JSON valido: ignorato.": {
+    "en": "{0} is not valid JSON: ignored.",
+    "fr": "{0} n'est pas un JSON valide : ignoré.",
+    "de": "{0} ist kein gültiges JSON: ignoriert."
+  },
+  "personalizzato da {0}": {
+    "en": "customized by {0}",
+    "fr": "personnalisé par {0}",
+    "de": "angepasst durch {0}"
+  },
+  "{0} non è un JSON valido: correggilo prima.": {
+    "en": "{0} is not valid JSON: fix it first.",
+    "fr": "{0} n'est pas un JSON valide : corrigez-le d'abord.",
+    "de": "{0} ist kein gültiges JSON: Korrigieren Sie es zuerst."
+  },
+  "cartella del progetto": {
+    "en": "project folder",
+    "fr": "dossier du projet",
+    "de": "Projektordner"
+  },
+  "sito web ({0})": {
+    "en": "website ({0})",
+    "fr": "site web ({0})",
+    "de": "Website ({0})"
+  },
+  "file {0}": {
+    "en": "{0} files",
+    "fr": "fichiers {0}",
+    "de": "{0}-Dateien"
+  },
+  "WordPress richiede un database MySQL/MariaDB, non incluso nel kit.": {
+    "en": "WordPress needs a MySQL/MariaDB database, which is not included in the kit.",
+    "fr": "WordPress nécessite une base de données MySQL/MariaDB, non incluse dans le kit.",
+    "de": "WordPress benötigt eine MySQL/MariaDB-Datenbank, die nicht im Kit enthalten ist."
+  },
+  "php -S (cartella {0})": {
+    "en": "php -S (folder {0})",
+    "fr": "php -S (dossier {0})",
+    "de": "php -S (Ordner {0})"
+  },
+  "Dipendenze PHP non installate: esegui prima \"composer install\".": {
+    "en": "PHP dependencies not installed: run \"composer install\" first.",
+    "fr": "Dépendances PHP non installées : exécutez d'abord « composer install ».",
+    "de": "PHP-Abhängigkeiten nicht installiert: Führen Sie zuerst „composer install“ aus."
+  },
+  "dipendenze Python": {
+    "en": "Python dependencies",
+    "fr": "dépendances Python",
+    "de": "Python-Abhängigkeiten"
+  },
+  "{0} importa {1}": {
+    "en": "{0} imports {1}",
+    "fr": "{0} importe {1}",
+    "de": "{0} importiert {1}"
+  },
+  "{0} crea {1}": {
+    "en": "{0} creates {1}",
+    "fr": "{0} crée {1}",
+    "de": "{0} erstellt {1}"
+  },
+  "crea .venv e installa requirements.txt": {
+    "en": "create .venv and install requirements.txt",
+    "fr": "créer .venv et installer requirements.txt",
+    "de": ".venv erstellen und requirements.txt installieren"
+  },
+  "Nessun ambiente virtuale (.venv): le dipendenze devono essere installate nel Python del kit, oppure crea .venv.": {
+    "en": "No virtual environment (.venv): the dependencies must be installed in the kit's Python, or create .venv.",
+    "fr": "Aucun environnement virtuel (.venv) : les dépendances doivent être installées dans le Python du kit, ou créez .venv.",
+    "de": "Keine virtuelle Umgebung (.venv): Die Abhängigkeiten müssen im Python des Kits installiert sein, oder erstellen Sie .venv."
+  },
+  "Serve Trunk: cargo install trunk  e  rustup target add wasm32-unknown-unknown": {
+    "en": "Trunk is needed: cargo install trunk  and  rustup target add wasm32-unknown-unknown",
+    "fr": "Trunk est nécessaire : cargo install trunk  et  rustup target add wasm32-unknown-unknown",
+    "de": "Trunk wird benötigt: cargo install trunk  und  rustup target add wasm32-unknown-unknown"
+  },
+  "Il programma deve leggere la porta dalla variabile PORT (std::env::var(\"PORT\")). Rocket usa ROCKET_PORT, già impostata.": {
+    "en": "The program must read the port from the PORT variable (std::env::var(\"PORT\")). Rocket uses ROCKET_PORT, already set.",
+    "fr": "Le programme doit lire le port dans la variable PORT (std::env::var(\"PORT\")). Rocket utilise ROCKET_PORT, déjà définie.",
+    "de": "Das Programm muss den Port aus der Variablen PORT lesen (std::env::var(\"PORT\")). Rocket verwendet ROCKET_PORT, die bereits gesetzt ist."
+  },
+  "Sito statico": {
+    "en": "Static site",
+    "fr": "Site statique",
+    "de": "Statische Website"
+  },
+  "sito statico ({0})": {
+    "en": "static site ({0})",
+    "fr": "site statique ({0})",
+    "de": "statische Website ({0})"
+  },
+  "Sconosciuto": {
+    "en": "Unknown",
+    "fr": "Inconnu",
+    "de": "Unbekannt"
+  },
+  "Nessun file noto ({0})": {
+    "en": "No known file ({0})",
+    "fr": "Aucun fichier connu ({0})",
+    "de": "Keine bekannte Datei ({0})"
+  },
+  "Rilevato da: {0}": {
+    "en": "Detected from: {0}",
+    "fr": "Détecté à partir de : {0}",
+    "de": "Erkannt anhand von: {0}"
   }
 }

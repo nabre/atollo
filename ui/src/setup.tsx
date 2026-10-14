@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { VscCheck, VscCircleSlash, VscError, VscLoading, VscWarning } from "react-icons/vsc";
 import { onSetup, setupCancel, setupState, type Outcome, type SetupSnapshot, type SetupStep } from "./api";
+import { t } from "./i18n";
 
 /** The current preparation, kept up to date by the `setup` events. */
 export function useSetup(): SetupSnapshot | null {
@@ -34,19 +35,19 @@ export function useSetup(): SetupSnapshot | null {
 export function outcomeText(o: Outcome): string {
   switch (o.kind) {
     case "installed":
-      return `installato ${o.version}`;
+      return t("installato {0}", o.version);
     case "upToDate":
-      return o.version ? `già aggiornato (${o.version})` : "già presente";
+      return o.version ? t("già aggiornato ({0})", o.version) : t("già presente");
     case "removed":
-      return "rimosso";
+      return t("rimosso");
     case "inUse":
-      return "in uso: chiudi i programmi del kit e riprova";
+      return t("in uso: chiudi i programmi del kit e riprova");
     case "unsupported":
-      return "non ancora disponibile in questa versione";
+      return t("non ancora disponibile in questa versione");
     case "cancelled":
-      return "annullato";
+      return t("annullato");
     case "failed":
-      return `non riuscito: ${o.message}`;
+      return t("non riuscito: {0}", o.message);
   }
 }
 
@@ -63,24 +64,24 @@ function percent(step: SetupStep): number | null {
 export function setupStatusText(s: SetupSnapshot | null): string | null {
   if (!s?.running) return null;
   const current = s.steps.at(-1);
-  if (!current) return "Installazione in preparazione…";
+  if (!current) return t("Installazione in preparazione…");
   const p = current.outcome ? null : percent(current);
-  return `Installazione ${String(s.steps.length)}/${String(s.total)}: ${current.name}${p === null ? "" : ` ${String(p)}%`}`;
+  return t("Installazione {0}/{1}: {2}", s.steps.length, s.total, current.name) + (p === null ? "" : ` ${String(p)}%`);
 }
 
 function StepIcon({ step, running }: { step: SetupStep; running: boolean }) {
   const o = step.outcome;
   if (!o) {
     return running ? (
-      <VscLoading className="animate-spin text-vsc-link" size={16} aria-label="in corso" />
+      <VscLoading className="animate-spin text-vsc-link" size={16} aria-label={t("in corso")} />
     ) : (
-      <VscCircleSlash className="text-vsc-desc" size={16} aria-label="interrotto" />
+      <VscCircleSlash className="text-vsc-desc" size={16} aria-label={t("interrotto")} />
     );
   }
-  if (o.kind === "failed") return <VscError className="text-vsc-error" size={16} aria-label="errore" />;
-  if (isProblem(o)) return <VscWarning className="text-vsc-warning" size={16} aria-label="attenzione" />;
-  if (o.kind === "cancelled") return <VscCircleSlash className="text-vsc-desc" size={16} aria-label="annullato" />;
-  return <VscCheck className="text-vsc-success" size={16} aria-label="fatto" />;
+  if (o.kind === "failed") return <VscError className="text-vsc-error" size={16} aria-label={t("errore")} />;
+  if (isProblem(o)) return <VscWarning className="text-vsc-warning" size={16} aria-label={t("attenzione")} />;
+  if (o.kind === "cancelled") return <VscCircleSlash className="text-vsc-desc" size={16} aria-label={t("annullato")} />;
+  return <VscCheck className="text-vsc-success" size={16} aria-label={t("fatto")} />;
 }
 
 /** Steps of the current (or last) preparation, with cancel. */
@@ -98,9 +99,9 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
           {title ??
             (snapshot.running
               ? snapshot.automatic
-                ? "Installazione dei componenti del kit"
-                : "Installazione in corso"
-              : "Ultima installazione")}
+                ? t("Installazione dei componenti del kit")
+                : t("Installazione in corso")
+              : t("Ultima installazione"))}
         </h2>
         {snapshot.running && (
           <button
@@ -113,7 +114,7 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
             }}
             className="ml-auto rounded-sm bg-vsc-button2 px-2 py-0.5 text-[12px] text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover disabled:opacity-50"
           >
-            {snapshot.cancelling ? "Annullamento…" : "Annulla"}
+            {snapshot.cancelling ? t("Annullamento…") : t("Annulla")}
           </button>
         )}
       </header>
@@ -137,7 +138,7 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
                     aria-valuenow={p}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-label={`Download di ${step.name}`}
+                    aria-label={t("Download di {0}", step.name)}
                     className="mt-1 block h-0.5 w-full bg-vsc-border"
                   >
                     <span className="block h-full bg-vsc-button" style={{ width: `${String(p)}%` }} />
@@ -147,7 +148,7 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
             </li>
           );
         })}
-        {snapshot.running && snapshot.steps.length === 0 && <li className="text-vsc-desc">Preparazione…</li>}
+        {snapshot.running && snapshot.steps.length === 0 && <li className="text-vsc-desc">{t("Preparazione…")}</li>}
       </ol>
       {(snapshot.error ?? cancelError) && (
         <p role="alert" className="border-t border-vsc-border px-4 py-2 text-vsc-error select-text">
@@ -157,9 +158,8 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
       {!snapshot.running && problems.length > 0 && (
         <p className="border-t border-vsc-border px-4 py-2 text-vsc-warning">
           {problems.length === 1
-            ? "Un componente non è stato installato."
-            : `${String(problems.length)} componenti non sono stati installati.`}{" "}
-          Riprova da Linguaggi e strumenti.
+            ? t("Un componente non è stato installato. Riprova da Linguaggi e strumenti.")
+            : t("{0} componenti non sono stati installati. Riprova da Linguaggi e strumenti.", problems.length)}
         </p>
       )}
     </section>

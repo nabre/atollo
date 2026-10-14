@@ -4,8 +4,8 @@
 //!   `ANTHROPIC_API_KEY`; Codex `.codex\auth.json` (token or API key);
 //!   Antigravity a login saved in the kit (`keyring.rs`) or `GEMINI_API_KEY`
 //!   (same sources as nabre/dev-kit `core/stats/*.js`);
-//! - launch: the agents are aligned first, the agent opens in the kit's
-//!   Windows Terminal in the chosen folder, and they are aligned again when it
+//! - launch: the agents are aligned first, the agent opens in a console
+//!   window of the app in the chosen folder, and they are aligned again when it
 //!   ends (`_agent.cmd` of the kit). Antigravity runs through
 //!   `data\kit\bin\agy.cmd`, which carries the login in and out of Windows;
 //! - a watcher thread aligns when an agent of the kit ends anywhere (editor
@@ -163,7 +163,13 @@ fn command_of(kit: &Kit, id: &str) -> Result<PathBuf> {
 
 /// Aligns the agents, then opens `id` in a kit console in `dir`; aligns
 /// again when that console ends.
-pub fn launch(kit: &Kit, env: &KitEnv, id: &str, dir: &Path) -> Result<()> {
+pub fn launch<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    kit: &Kit,
+    env: &KitEnv,
+    id: &str,
+    dir: &Path,
+) -> Result<()> {
     let command = command_of(kit, id)?;
     let report = crate::agents_sync::run(kit, Some(dir));
     for w in &report.warnings {
@@ -172,13 +178,10 @@ pub fn launch(kit: &Kit, env: &KitEnv, id: &str, dir: &Path) -> Result<()> {
     let title = Catalog::get()
         .find(id)
         .map_or_else(|| id.to_owned(), |c| c.name.clone());
-    let mut child = crate::terminal::open_command(kit, env, dir, &title, &command)?;
-    let (kit, dir) = (kit.clone(), dir.to_path_buf());
-    std::thread::spawn(move || {
-        let _ = child.wait();
-        let _ = crate::agents_sync::run(&kit, Some(&dir));
-    });
-    Ok(())
+    let (after, after_dir) = (kit.clone(), dir.to_path_buf());
+    crate::terminal::open_command(app, kit, env, dir, &title, &command, move || {
+        let _ = crate::agents_sync::run(&after, Some(&after_dir));
+    })
 }
 
 /// Signs out in the kit: the saved login is removed (Claude's and Codex's

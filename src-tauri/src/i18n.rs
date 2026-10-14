@@ -105,6 +105,92 @@ mod tests {
         }
     }
 
+    /// The text of a Rust string literal: escapes resolved, `\` + newline
+    /// skips the line break and the indentation that follows.
+    fn unescape(raw: &str) -> String {
+        let mut out = String::new();
+        let mut chars = raw.chars().peekable();
+        while let Some(c) = chars.next() {
+            if c != '\\' {
+                out.push(c);
+                continue;
+            }
+            match chars.next() {
+                Some('n') => out.push('\n'),
+                Some('t') => out.push('\t'),
+                Some('\r' | '\n') => {
+                    while chars.peek().is_some_and(|c| c.is_whitespace()) {
+                        chars.next();
+                    }
+                }
+                Some(other) => out.push(other),
+                None => out.push('\\'),
+            }
+        }
+        out
+    }
+
+    fn rust_files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        for entry in std::fs::read_dir(dir).expect("src is readable").flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                rust_files(&path, out);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                out.push(path);
+            }
+        }
+    }
+
+    /// Every literal Italian source passed to `tr(lang, "…")`, `i18n::t(lang,
+    /// "…")` or `crate::i18n::t(lang, "…")`, and every source returned by
+    /// `Settings::validate`, is in the catalog. Calls whose text is not a
+    /// literal are skipped; `mod tests` blocks are ignored.
+    #[test]
+    fn sources_are_in_the_catalog() {
+        let calls = regex::Regex::new(
+            r#"\b(?:tr|i18n::t)\(\s*(?:"[^"]*"|[^,()"]+),\s*"((?:[^"\\]|\\.)*)""#,
+        )
+        .unwrap();
+        let validate = regex::Regex::new(r#"\bErr\(\(\s*"((?:[^"\\]|\\.)*)""#).unwrap();
+        let tests = regex::Regex::new(r"(?m)^#\[cfg\(test\)\]\s*\n\s*mod ").unwrap();
+        let mut files = Vec::new();
+        rust_files(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src"),
+            &mut files,
+        );
+        let mut missing = BTreeSet::new();
+        let mut found = 0;
+        for path in &files {
+            let code = std::fs::read_to_string(path).expect("source is readable");
+            let code = &code[..tests.find(&code).map_or(code.len(), |m| m.start())];
+            let mut sources: Vec<&str> = calls
+                .captures_iter(code)
+                .filter_map(|c| c.get(1))
+                .map(|m| m.as_str())
+                .collect();
+            if path.ends_with("settings.rs") {
+                sources.extend(
+                    validate
+                        .captures_iter(code)
+                        .filter_map(|c| c.get(1))
+                        .map(|m| m.as_str()),
+                );
+            }
+            for raw in sources {
+                found += 1;
+                let source = unescape(raw);
+                if !catalog().contains_key(&source) {
+                    missing.insert(format!("{}: {source:?}", path.display()));
+                }
+            }
+        }
+        assert!(found > 50, "too few texts found: {found}");
+        assert!(
+            missing.is_empty(),
+            "missing from i18n/catalog.json:\n{missing:#?}"
+        );
+    }
+
     #[test]
     fn language_choice() {
         assert_eq!(resolve(Some("de"), Some("fr"), Some("it-IT")), "de");

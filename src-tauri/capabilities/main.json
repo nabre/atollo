@@ -24,6 +24,25 @@
     "allow-agents-status",
     "allow-agent-launch",
     "allow-agent-sign-out",
-    "allow-folder-open"
+    "allow-folder-open",
+    "allow-project-create",
+    "allow-project-delete",
+    "allow-project-clone",
+    "allow-project-site",
+    "allow-run-list",
+    "allow-run-start",
+    "allow-run-stop",
+    "allow-run-log",
+    "allow-run-clear",
+    "allow-run-ports",
+    "allow-run-set-port",
+    "allow-url-open",
+    "allow-settings-get",
+    "allow-settings-set",
+    "allow-update-status",
+    "allow-update-check",
+    "allow-eject-list",
+    "allow-eject-run",
+    "allow-app-quit"
   ]
 }

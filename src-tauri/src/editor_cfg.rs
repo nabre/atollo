@@ -41,7 +41,7 @@ pub fn settings_path(kit: &Kit) -> PathBuf {
         .join(r"vscodium-server\data\Machine\settings.json")
 }
 
-/// How the kit's PowerShell is started (editor, Windows Terminal, tasks).
+/// How the kit's PowerShell is started (editor, console windows, tasks).
 pub fn pwsh_args(kit: &Kit) -> Vec<String> {
     vec![
         "-NoLogo".into(),

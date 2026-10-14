@@ -1,6 +1,6 @@
-//! Editor and terminal: VSCodium web server, PowerShell 7, Windows Terminal
-//! (new components, docs/app/CATALOG.md and DECISIONS.md D-23, D-26), and
-//! the optional VSCodium desktop.
+//! Editor and shell: VSCodium web server, PowerShell 7 (new components,
+//! docs/app/CATALOG.md and DECISIONS.md D-23, D-26), and the optional
+//! VSCodium desktop.
 
 use std::fs;
 use std::path::Path;
@@ -27,28 +27,6 @@ impl Installer for Pwsh {
             Kind::Zip,
             Inner::Auto,
         )
-    }
-}
-
-/// Windows Terminal, the unpackaged zip in portable mode.
-pub struct Terminal;
-
-impl Installer for Terminal {
-    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let arch = arch_of(ctx, component);
-        github_single(
-            ctx,
-            "microsoft/terminal",
-            &format!(r"^Microsoft\.WindowsTerminal_[\d.]+_{arch}\.zip$"),
-            Kind::Zip,
-            Inner::Auto,
-        )
-    }
-
-    /// `.portable` next to the exe: settings stay in the folder, not in
-    /// `%LOCALAPPDATA%` (Windows Terminal portable mode).
-    fn finish(&self, _ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
-        fs::write(dest.join(".portable"), b"").context("terminal .portable")
     }
 }
 

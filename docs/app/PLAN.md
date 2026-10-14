@@ -1,6 +1,6 @@
 # Dev-Kit App: piano (fase 0, revisione 3)
 
-Stato: **approvato** (14/10/2026). Fasi 1-5 completate; prossima: fase 6 (Impostazioni, Rimuovi l'unità, altre copie del kit, aggiornamento dell'app, quattro lingue, accessibilità).
+Stato: **approvato** (14/10/2026). Fasi 1-6 completate; prossima: fase 7 (componente `app`, workflow di release `app-v*`, documentazione in quattro lingue, release `app-v1.0.0`).
 Base letta: `nabre/dev-kit` al commit `a61a354` (main, 13/10/2026).
 Scelte non ovvie: [DECISIONS.md](DECISIONS.md). Domande aperte: §11.
 
@@ -10,7 +10,7 @@ Scelte non ovvie: [DECISIONS.md](DECISIONS.md). Domande aperte: §11.
 | --- | --- | --- |
 | 13/10 | 100% portabile, nessuna richiesta di amministratore o di permessi; si usano solo le cartelle accanto all'exe | requisiti 1-3 confermati e resi assoluti |
 | 14/10 | Tutta la logica di gestione in Rust, con le chiamate di sistema necessarie | niente script PowerShell, `cmd` o Node per la gestione |
-| 14/10 | Il terminale nell'editor è esclusivo del kit: scaricare il terminale migliore e metterci tutto il necessario | componenti `pwsh` e `terminal` (§6) |
+| 14/10 | Il terminale nell'editor è esclusivo del kit: scaricare il terminale migliore e metterci tutto il necessario | componente `pwsh` (§6); console come finestre dell'app con terminale integrato (DECISIONS.md D-44) |
 | 14/10 | Tutta la logica nel file portabile; una sola cartella `data` con i file scaricati, lo stato, i contenuti e le impostazioni | struttura nuova: **`Dev-Kit.exe` + `data\` + `projects\`** (§2) |
 | 14/10 | `projects\` deve stare nella radice | Q2 chiusa |
 | 14/10 | Prodotto **separato**, in un altro repository; `nabre/dev-kit` è solo un riferimento (linguaggi, agenti, comportamenti) | Q1 e Q3 chiuse; catalogo in [CATALOG.md](CATALOG.md) |
@@ -54,7 +54,7 @@ Dev-Kit\                         qualsiasi cartella, anche con spazi, ( ) e &
   projects\                      i progetti (contenuti), creata al primo avvio
   data\                          creata al primo avvio; tutto il resto è qui
     apps\win32-x64\              programmi scaricati (o win32-arm64)
-      git\ node\ python\ pwsh\ terminal\ vscodium-server\ claude\ codex\ antigravity\ …
+      git\ node\ python\ pwsh\ vscodium-server\ claude\ codex\ antigravity\ …
       webview2\                  facoltativo: runtime WebView2 "Fixed Version"
     home\                        profilo portabile: .claude .codex .gemini .gitconfig .ssh AppData\
     agents\                      istruzioni, skill, MCP condivisi dai tre agenti
@@ -77,9 +77,10 @@ Regole:
 Dev-Kit.exe (Tauri 2, dentro un Job Object)
  ├─ finestra "main"    interfaccia Svelte, unica con capability e comandi
  ├─ finestre "editor"  http://127.0.0.1:<7000-7099>, nessuna capability
+ ├─ finestre "terminal" terminal.html (xterm.js), solo i comandi della propria console
  ├─ motore Rust        tutto il resto (§4)
  └─ figli, tutti nel job:
-     codium-server · pwsh / Git Bash / cmd · claude / codex / agy · Windows Terminal portabile
+     codium-server · pwsh / Git Bash / cmd · claude / codex / agy (su pseudo console)
 ```
 
 Riga di comando dello stesso exe, senza finestra (D-21): `Dev-Kit.exe env`, `prepare --only …`, `sync`, `eject --list`, `agent claude <cartella>`. Serve a profili del terminale, test di integrazione e aggiornamento dell'exe. Esempio: il profilo "Claude Code" del terminale lancia `Dev-Kit.exe agent claude .`, che allinea gli agenti prima e dopo.
@@ -99,7 +100,7 @@ Avvio (finestra entro 1 s): radice → istanza singola per kit → ambiente del 
 | `verify.rs` | SHA-256, SHA-512, integrità npm, firma Authenticode con editore atteso |
 | `archive.rs` | zip, tar.gz, 7z, cab; scambio cartelle con ripristino; "file in uso" |
 | `catalog.rs` | catalogo incorporato, `data\app\components.txt`, `needs` a cascata, versioni installate |
-| `install/*.rs` | un file per famiglia: `core` (git, node, uv, gh, python), `agents`, `web` (php, apache, VC++), `rust`, `lang` (gli altri), `editor` (server, pwsh, terminal) |
+| `install/*.rs` | un file per famiglia: `core` (git, node, uv, gh, python), `agents`, `web` (php, apache, VC++), `rust`, `lang` (gli altri), `editor` (server, pwsh) |
 | `setup_runner.rs` | ordine dei passi, una preparazione alla volta, eventi, annullamento al termine del passo |
 | `agents.rs` | stato (installato, versione, accesso), lancio, uscita |
 | `agents_sync/*.rs` | istruzioni, skill (giunzioni NTFS, copia su FAT32/exFAT), MCP per Claude/Codex/Antigravity, regole, cartelle attendibili, skill di progetto |
@@ -107,9 +108,10 @@ Avvio (finestra entro 1 s): radice → istanza singola per kit → ambiente del 
 | `editor.rs` | server web: porta, token, avvio, salute, riavvio, finestre `editor` |
 | `editor_cfg.rs` | impostazioni, profili del terminale esclusivi, variabili per Claude Code |
 | `editor_ext.rs` | estensioni consigliate (`@programma`, proposta una volta sola, CodeLLDB); nessuna estensione propria (Q4 = a) |
-| `terminal.rs` | profilo PowerShell del kit, Git Bash, Windows Terminal portabile |
+| `terminal.rs` | console del kit: pseudo console (`portable-pty`) e finestre `terminal-<n>` con xterm.js (D-44…D-46) |
 | `projects.rs`, `detect/*.rs` | elenco, creazione, clone con `gh`, rilevamento del tipo, dei linguaggi e delle azioni (`npm run dev`, `php -S`, `cargo run`…), `panel.json` |
-| `run.rs` | avvio e arresto delle azioni dei progetti: porte 7100-7999 ricordate in `data\app\ports.json`, attesa del server, log, sito statico su `127.0.0.1` (oggi `static-server.js` del Dev-Kit), apertura nel browser |
+| `run.rs` | avvio e arresto delle azioni dei progetti: porte 7100-7999 ricordate in `data\app\ports.json`, attesa del server, log, apertura nel browser (D-50) |
+| `serve.rs` | server di file per i siti statici, `Dev-Kit.exe serve <cartella> <porta>`, al posto di `static-server.js` (D-51) |
 | `stats.rs` | (fase successiva) limiti d'uso degli agenti, come le statistiche del Dev-Kit |
 | `sessions.rs` | processi del kit aperti, altre copie del kit, espulsione |
 | `self_update.rs` | nuova versione dell'exe: download in `data\app\update\`, SHA-256, scambio alla chiusura |
@@ -131,7 +133,8 @@ React + TypeScript `strict` + Tailwind + react-icons (Codicons), con il tema di 
 | Componente | Cosa | Perché |
 | --- | --- | --- |
 | `pwsh` | PowerShell 7 portabile (zip ufficiale, x64 e ARM64, SHA-256) | shell predefinita dell'editor; PSReadLine incluso; isolabile dal PC |
-| `terminal` | Windows Terminal portabile (zip ufficiale, modalità `.portable`, SHA-256) | console fuori dall'editor (agenti, Terminale); impostazioni nel kit; nel job. Ripiego `conhost` su Windows 10 prima della 2004 |
+| (nessuno) | console come finestre dell'app: xterm.js + pseudo console di `portable-pty` (D-44); al posto di Windows Terminal dal 14/10 | console fuori dall'editor (agenti, Terminale); multipiattaforma; nel job. Ripiego `conhost` su Windows 10 prima della 1809 |
+| `conpty` (proposto) | `conpty.dll` + `OpenConsole.exe` dal pacchetto NuGet di Microsoft (D-47) | ConPTY aggiornato: Claude Code riceve i tasti; da provare |
 | `git` | Git Bash (già nel catalogo) | shell dei comandi di Claude |
 
 Profili nell'editor (riscritti a ogni avvio; profili di sistema nascosti; quelli dell'utente conservati): **Dev-Kit** (pwsh, predefinito, anche per le attività), Dev-Kit - Git Bash, Dev-Kit - cmd, Claude Code / Codex / Antigravity (se installati).
@@ -160,7 +163,7 @@ Esclusa dalla prima versione (Q6 = no, 14/10). I formati di `data\app\` restano 
 | --- | --- | --- |
 | 0. Piano | questo documento | piano approvato |
 | 1. Scheletro | progetto Tauri, `kit.rs`, `env.rs`, `jobs.rs`, istanza singola, log, finestra vuota, `Dev-Kit.exe env`, CI x64 + ARM64 | exe che parte da chiavetta, crea solo `data\`, nulla fuori |
-| 2. Motore di installazione | `net`, `verify`, `archive`, `catalog`, `setup_runner`; componenti `pwsh`, `terminal`, `git`, `node`, `vscodium-server` | `Dev-Kit.exe prepare --only pwsh,terminal` installa e verifica |
+| 2. Motore di installazione | `net`, `verify`, `archive`, `catalog`, `setup_runner`; componenti `pwsh`, `terminal` (tolto il 14/10, D-44), `git`, `node`, `vscodium-server` | `Dev-Kit.exe prepare --only pwsh,terminal` installa e verifica |
 | 3. Editor e terminale | `editor*`, `terminal.rs`, finestre `editor`, capability, estensioni consigliate | progetto aperto nell'editor con terminale Dev-Kit esclusivo; nessuna IPC dalle finestre `editor` |
 | 4. Tutti i componenti | altri componenti, rimozione, verifica finale; pagine Componenti e Primo avvio | ogni linguaggio installato e rimosso dall'app |
 | 5. Agenti | `agents.rs`, `agents_sync`, `keyring.rs`, `relocate.rs`; pagine Home e Agenti | tre agenti avviati, istruzioni e skill allineate, kit spostato che funziona |
@@ -174,7 +177,7 @@ Radice del nuovo repository: `D:\Projects\dev-kit2` (oggi `Prompt.md` e `docs\ap
 ```
 Cargo.toml  Cargo.lock        workspace
 src-tauri\                    exe (moduli §4), catalogo e testi incorporati
-ui\                           interfaccia Svelte
+ui\                           interfaccia React + TypeScript + Tailwind (D-27)
 kit-files\                    file scritti in data\kit\ (loopback.js, profilo PowerShell, bashrc)
 docs\app\                     piano, decisioni, catalogo, prove, novità
 .github\workflows\app.yml     CI e release
@@ -189,5 +192,9 @@ Nome del prodotto: **Dev-Kit** (exe `Dev-Kit.exe`), deciso il 14/10. Da quel rep
 Chiuse il 14/10: Q1 prodotto separato · Q2 `projects\` nella radice · Q3 repository nuovo · Q4 editor pulito · Q5 nessun modulo PowerShell in più · Q6 nessuna importazione · Q7 documenti in italiano · Q9 nome "Dev-Kit".
 
 10. ~~Nome del repository~~: chiusa (14/10), **`nabre/dev-kit2`**. Non ancora creato su GitHub: si crea quando l'utente lo chiede.
+11. **ConPTY aggiornato** (14/10, D-47): provare `conpty.dll` + `OpenConsole.exe` di Microsoft con Claude Code (serve il permesso dell'utente per eseguire i binari scaricati); se risolve, aggiungere il componente obbligatorio `conpty`, altrimenti cercare altrove la causa.
 
-Piano approvato il 14/10/2026. Fase 1 completata: vedi [CHANGELOG.md](CHANGELOG.md).
+12. **VSCodium desktop nel catalogo** (14/10): con l'editor integrato non serve; resta come componente facoltativo, non predefinito, per chi vuole l'editor come programma separato (CATALOG.md). Da decidere se toglierlo del tutto.
+13. **Commit della fase 6** (14/10): nel working tree le modifiche della fase 6 sono mescolate a quelle del terminale integrato (D-44…D-48), anche negli stessi file (`commands.rs`, `main.rs`, `build.rs`, `api.ts`, `App.test.tsx`). Scelte: un solo commit; due commit separati dividendo a mano i file condivisi; oppure attendere la decisione sul ConPTY (domanda 11).
+
+Piano approvato il 14/10/2026. Fasi 1-6 completate: vedi [CHANGELOG.md](CHANGELOG.md); prove in [TESTING.md](TESTING.md).

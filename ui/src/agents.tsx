@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { VscCheck, VscFolderOpened, VscPlay, VscSignOut, VscWarning } from "react-icons/vsc";
 import { agentLaunch, agentSignOut, agentsStatus, folderOpen, type AgentId, type AgentInfo } from "./api";
+import { rich, t } from "./i18n";
 import { ActionButton, useAction } from "./pages";
 
 /** The agents' state, refreshed every few seconds (running, signed in). */
@@ -16,9 +17,9 @@ export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } 
   }, []);
   useEffect(() => {
     reload();
-    const t = window.setInterval(reload, 5000);
+    const timer = window.setInterval(reload, 5000);
     return () => {
-      window.clearInterval(t);
+      window.clearInterval(timer);
     };
   }, [reload]);
   return { agents, reload };
@@ -40,8 +41,10 @@ export function AgentButtons({ agents, project = null }: { agents: AgentInfo[] |
             disabled={!a.installed}
             title={
               a.installed
-                ? `Apre ${a.name} in una console del kit${project ? ` nel progetto ${project}` : " nella cartella dei progetti"}`
-                : `${a.name} non è installato: aggiungilo da Linguaggi e strumenti`
+                ? project
+                  ? t("Apre {0} in una console del kit nel progetto {1}", a.name, project)
+                  : t("Apre {0} in una console del kit nella cartella dei progetti", a.name)
+                : t("{0} non è installato: aggiungilo da Linguaggi e strumenti", a.name)
             }
             onClick={() => {
               run(a.id, () => agentLaunch(a.id, project));
@@ -64,19 +67,22 @@ export function AgentsPage() {
   const { busy, error, run } = useAction(reload);
   const [confirm, setConfirm] = useState<AgentId | null>(null);
 
-  if (!agents) return <p className="text-vsc-desc">Caricamento…</p>;
+  if (!agents) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
   return (
     <div className="max-w-4xl space-y-5">
       <p>
-        Claude Code, Codex e Antigravity condividono istruzioni globali, skill e server MCP: il kit li allinea a ogni
-        avvio e quando un agente termina. Le istruzioni comuni sono in{" "}
-        <span className="font-mono">data\agents\AGENTS.md</span>, le skill in{" "}
-        <span className="font-mono">data\agents\skills</span>, i server MCP in{" "}
-        <span className="font-mono">data\agents\mcp.json</span>.
+        {rich(
+          t(
+            "Claude Code, Codex e Antigravity condividono istruzioni globali, skill e server MCP: il kit li allinea a ogni avvio e quando un agente termina. Le istruzioni comuni sono in {0}, le skill in {1}, i server MCP in {2}.",
+          ),
+          <span className="font-mono">data\agents\AGENTS.md</span>,
+          <span className="font-mono">data\agents\skills</span>,
+          <span className="font-mono">data\agents\mcp.json</span>,
+        )}
       </p>
       <ActionButton
         icon={VscFolderOpened}
-        label="Apri la cartella condivisa"
+        label={t("Apri la cartella condivisa")}
         onClick={() => {
           run("folder", () => folderOpen("agents"));
         }}
@@ -93,28 +99,28 @@ export function AgentsPage() {
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-[14px] font-semibold">{a.name}</h2>
               <span className="text-[12px] text-vsc-desc">
-                {a.installed ? (a.version ?? "installato") : "non installato"}
+                {a.installed ? (a.version ?? t("installato")) : t("non installato")}
               </span>
-              {a.running && <span className="rounded-sm bg-vsc-badge px-1.5 text-[11px]">in esecuzione</span>}
+              {a.running && <span className="rounded-sm bg-vsc-badge px-1.5 text-[11px]">{t("in esecuzione")}</span>}
               <span className="ml-auto flex items-center gap-1 text-[12px]">
                 {a.signedIn ? (
                   <>
                     <VscCheck className="text-vsc-success" size={14} aria-hidden="true" />
-                    {a.signInKind === "api key" ? "accesso con chiave API" : "accesso fatto"}
+                    {a.signInKind === "api key" ? t("accesso con chiave API") : t("accesso fatto")}
                   </>
                 ) : (
-                  <span className="text-vsc-desc">accesso non fatto: si fa al primo avvio dell'agente</span>
+                  <span className="text-vsc-desc">{t("accesso non fatto: si fa al primo avvio dell'agente")}</span>
                 )}
               </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               <ActionButton
                 icon={VscPlay}
-                label="Apri"
+                label={t("Apri")}
                 primary
                 busy={busy === `open:${a.id}`}
                 disabled={!a.installed}
-                title={a.installed ? `Apre ${a.name} nella cartella dei progetti` : "Non installato"}
+                title={a.installed ? t("Apre {0} nella cartella dei progetti", a.name) : t("Non installato")}
                 onClick={() => {
                   run(`open:${a.id}`, () => agentLaunch(a.id, null));
                 }}
@@ -123,10 +129,10 @@ export function AgentsPage() {
                 a.signInKind !== "api key" &&
                 (confirm === a.id ? (
                   <>
-                    <span className="self-center">Togliere l'accesso salvato nel kit?</span>
+                    <span className="self-center">{t("Togliere l'accesso salvato nel kit?")}</span>
                     <ActionButton
                       icon={VscSignOut}
-                      label="Esci"
+                      label={t("Esci")}
                       busy={busy === `out:${a.id}`}
                       onClick={() => {
                         setConfirm(null);
@@ -135,7 +141,7 @@ export function AgentsPage() {
                     />
                     <ActionButton
                       icon={VscCheck}
-                      label="Annulla"
+                      label={t("Annulla")}
                       onClick={() => {
                         setConfirm(null);
                       }}
@@ -144,9 +150,9 @@ export function AgentsPage() {
                 ) : (
                   <ActionButton
                     icon={VscSignOut}
-                    label="Esci"
+                    label={t("Esci")}
                     disabled={a.running}
-                    title={a.running ? "Chiudi prima l'agente" : "Toglie l'accesso salvato nel kit"}
+                    title={a.running ? t("Chiudi prima l'agente") : t("Toglie l'accesso salvato nel kit")}
                     onClick={() => {
                       setConfirm(a.id);
                     }}
@@ -157,8 +163,9 @@ export function AgentsPage() {
         ))}
       </ul>
       <p className="text-[12px] text-vsc-desc">
-        Uscire dal kit non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni
-        del tuo account.
+        {t(
+          "Uscire dal kit non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account.",
+        )}
       </p>
     </div>
   );
@@ -174,7 +181,7 @@ export function AgentPicker({ agents, project }: { agents: AgentInfo[] | null; p
   return (
     <span className="flex items-center gap-1" title={error ?? undefined}>
       <select
-        aria-label={`Agente per ${project}`}
+        aria-label={t("Agente per {0}", project)}
         value={agent}
         onChange={(e) => {
           setChosen(e.target.value as AgentId);
@@ -189,9 +196,9 @@ export function AgentPicker({ agents, project }: { agents: AgentInfo[] | null; p
       </select>
       <ActionButton
         icon={error ? VscWarning : VscPlay}
-        label="Agente"
+        label={t("Agente")}
         busy={busy === "launch"}
-        title={error ?? `Apre l'agente scelto nel progetto ${project}`}
+        title={error ?? t("Apre l'agente scelto nel progetto {0}", project)}
         onClick={() => {
           run("launch", () => agentLaunch(agent, project));
         }}

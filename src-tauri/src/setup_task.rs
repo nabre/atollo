@@ -46,8 +46,8 @@ pub struct Snapshot {
 
 pub struct SetupTask {
     kit: Kit,
-    env: KitEnv,
-    settings: Settings,
+    env: Mutex<KitEnv>,
+    settings: Mutex<Settings>,
     github_token: Option<String>,
     state: Mutex<Snapshot>,
     cancel: AtomicBool,
@@ -76,12 +76,18 @@ impl SetupTask {
     ) -> SetupTask {
         SetupTask {
             kit,
-            env,
-            settings,
+            env: Mutex::new(env),
+            settings: Mutex::new(settings),
             github_token,
             state: Mutex::new(Snapshot::default()),
             cancel: AtomicBool::new(false),
         }
+    }
+
+    /// New environment and settings (Settings page), for the next runs.
+    pub fn set_config(&self, env: KitEnv, settings: Settings) {
+        *self.env.lock().unwrap_or_else(PoisonError::into_inner) = env;
+        *self.settings.lock().unwrap_or_else(PoisonError::into_inner) = settings;
     }
 
     fn lock(&self) -> MutexGuard<'_, Snapshot> {
@@ -131,12 +137,21 @@ impl SetupTask {
     }
 
     fn run(&self, opts: &Options, notify: &Notify) -> Result<(), String> {
-        let net =
-            Net::new(&self.settings, self.github_token.clone()).map_err(|e| format!("{e:#}"))?;
+        let settings = self
+            .settings
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        let env = self
+            .env
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        let net = Net::new(&settings, self.github_token.clone()).map_err(|e| format!("{e:#}"))?;
         let ctx = Ctx {
             kit: &self.kit,
             net: &net,
-            env: &self.env,
+            env: &env,
             cancel: &self.cancel,
         };
         let mut sink = TaskSink { task: self, notify };
@@ -212,15 +227,7 @@ mod tests {
         let kit = Kit::at(tmp.0.clone(), Arch::X64);
         kit.prepare().unwrap();
         let missing = missing_required(&kit);
-        for id in [
-            "git",
-            "node",
-            "uv",
-            "gh",
-            "pwsh",
-            "terminal",
-            "vscodium-server",
-        ] {
+        for id in ["git", "node", "uv", "gh", "pwsh", "vscodium-server"] {
             assert!(missing.contains(&id.to_owned()), "{id}");
         }
         assert!(missing.contains(&"uv".to_owned()) && missing.contains(&"gh".to_owned()));

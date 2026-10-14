@@ -72,7 +72,8 @@
     --vsc-statusbar-fg: #3b3b3b;
     --vsc-badge: #cccccc;
     --vsc-link: #005fb8;
-    --vsc-error: #f85149;
+    /* Light Modern's #f85149 is under 4.5:1 on white: VS Code Light's error red. */
+    --vsc-error: #e51400;
     --vsc-warning: #bf8803;
     --vsc-success: #388a34;
   }
@@ -129,4 +130,32 @@ body {
 :focus-visible {
   outline: 1px solid var(--vsc-focus);
   outline-offset: -1px;
+}
+
+/* Text fields and lists, as VSCodium's inputs. */
+.input {
+  min-width: 16rem;
+  border: 1px solid var(--vsc-input-border);
+  border-radius: 2px;
+  background: var(--vsc-input);
+  color: var(--vsc-fg);
+  padding: 4px 8px;
+  user-select: text;
+}
+
+input,
+select,
+textarea,
+.select-text {
+  user-select: text;
+}
+
+/* Windows "show animations" off: no spinning or pulsing icons. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
