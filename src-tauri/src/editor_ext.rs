@@ -140,12 +140,16 @@ pub struct ExtState {
     pub failed: Vec<String>,
 }
 
+/// The job of a running install, closed by `Editor::stop`.
+pub type JobSlot = Arc<Mutex<Option<jobs::Job>>>;
+
 /// Installs the pending extensions in a background thread; `state` follows.
 pub fn sync_in_background(
     kit: Kit,
     env: KitEnv,
     net: Option<Arc<Net>>,
     state: Arc<Mutex<ExtState>>,
+    job: JobSlot,
 ) {
     let ids = pending(&kit);
     if ids.is_empty() {
@@ -163,7 +167,7 @@ pub fn sync_in_background(
         };
     }
     std::thread::spawn(move || {
-        let result = install(&kit, &env, net.as_deref(), &ids, &state);
+        let result = install(&kit, &env, net.as_deref(), &ids, &state, &job);
         let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.running = false;
         if let Err(e) = result {
@@ -188,6 +192,7 @@ fn install(
     net: Option<&Net>,
     ids: &[String],
     state: &Mutex<ExtState>,
+    job: &Mutex<Option<jobs::Job>>,
 ) -> Result<()> {
     let mut gallery: Vec<String> = Vec::new();
     let mut sources: Vec<(String, PathBuf)> = Vec::new();
@@ -213,10 +218,18 @@ fn install(
         cmd.arg("--install-extension").arg(vsix);
     }
     crate::log::info(&format!("editor extensions: installing {}", ids.join(", ")));
-    let out = cmd
-        .stdin(Stdio::null())
-        .output()
-        .context("server --install-extension")?;
+    let child = jobs::spawn(
+        cmd.stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped()),
+    )
+    .context("server --install-extension")?;
+    let own = jobs::Job::new()?;
+    own.assign(&child)?;
+    *job.lock().unwrap_or_else(|e| e.into_inner()) = Some(own);
+    let out = child.wait_with_output();
+    drop(job.lock().unwrap_or_else(|e| e.into_inner()).take());
+    let out = out.context("server --install-extension")?;
     let text = format!(
         "{}\n{}",
         String::from_utf8_lossy(&out.stdout),

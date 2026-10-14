@@ -217,6 +217,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 - Elenco del Atollo (`src-tauri/catalog/extensions.txt`, 60 estensioni) più `data\app\extensions.txt` dell'utente; `@programma` = solo se quel componente è nel kit; proposta una volta sola (`data\app\extensions-offered.txt`); una che fallisce viene ritentata all'avvio successivo; CodeLLDB dalla release GitHub (SHA-256).
 - Installate con la riga di comando del server (`--install-extension`, Open VSX) **dopo** l'avvio dell'editor, non prima come chiedeva il prompt: misurate circa 35 s per estensione al primo giro, l'editor non può aspettare minuti. Le estensioni compaiono ricaricando la finestra; lo stato è in `editor_status.extensions`.
+- **Si fermano con il server** (correzione del 14/10/2026, trovata dalla prova reale della CI su un kit nuovo): l'installazione usa `node.exe` della cartella del server e gira in un job suo, che `Editor::stop` chiude. Prima restava accesa dopo lo stop, e un aggiornamento dell'editor o «Riavvia editor» la trovavano ancora nella cartella del server. Le estensioni interrotte non risultano offerte e si riprovano alla partenza successiva.
 - Scartato: disattivare le estensioni di un programma tolto (il Atollo lo faceva scrivendo nel database SQLite di VSCodium). Restano installate: non fanno danni e si riattivano da sole se il programma torna.
 
 ## D-37 WebView2 "Fixed Version" non è un componente
