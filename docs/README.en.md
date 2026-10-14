@@ -73,6 +73,8 @@ Dev-Kit.exe version                  shows the version
 Dev-Kit.exe help                     shows the help
 ```
 
+From PowerShell add `| Out-Host` (for example `.\Dev-Kit.exe check | Out-Host`): `Dev-Kit.exe` is a window program, and without a pipe PowerShell neither waits for it nor reads its output or exit code.
+
 ## Building
 
 Prerequisites: stable Rust (at least 1.93) with the MSVC toolchain (Visual Studio Build Tools, C++ workload), Node.js LTS.
