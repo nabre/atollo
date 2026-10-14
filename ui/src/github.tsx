@@ -75,8 +75,16 @@ const byName = (a: GithubRepo, b: GithubRepo) =>
   a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true }) ||
   a.fullName.localeCompare(b.fullName);
 
-export function GithubPage({ editor, onChanged }: { editor: EditorStatus | null; onChanged: () => void }) {
+/** The GitHub account of the kit, in the Settings (D-76). */
+export function GithubAccount() {
   const { status, setStatus, reload } = useGithub();
+  const signIn = (deleteScope: boolean) => githubSignIn(deleteScope).then(setStatus);
+  return <Account status={status} onSignIn={signIn} onChanged={reload} />;
+}
+
+/** The account's repositories, to clone one as a new project (D-76). */
+export function GithubRepositories({ editor, onChanged }: { editor: EditorStatus | null; onChanged: () => void }) {
+  const { status, setStatus } = useGithub();
   const [repos, setRepos] = useState<GithubRepos | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -106,8 +114,14 @@ export function GithubPage({ editor, onChanged }: { editor: EditorStatus | null;
   const shown = repos && (account === "" || repos.login === account) ? repos : null;
 
   return (
-    <div className="max-w-5xl space-y-4">
-      <Account status={status} onSignIn={signIn} onChanged={reload} />
+    <div className="space-y-4">
+      {!signedIn && (
+        <p className="text-vsc-desc">
+          {status === null
+            ? t("Caricamento…")
+            : t("Collega il tuo account GitHub nelle Impostazioni per vedere qui i tuoi repository.")}
+        </p>
+      )}
       {signedIn && (
         <Repositories
           repos={shown}

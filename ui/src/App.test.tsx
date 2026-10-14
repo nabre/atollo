@@ -135,9 +135,10 @@ afterEach(() => {
 });
 
 describe("App", () => {
-  it("shows where the kit lives", async () => {
+  it("shows where the kit lives, in the settings", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
     expect(await screen.findByText("E:\\Dev Kit")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("app_info", undefined);
   });
@@ -180,7 +181,7 @@ describe("App", () => {
       return answers()(cmd);
     });
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
     fireEvent.click(await screen.findByRole("button", { name: "Accedi a GitHub" }));
     expect(await screen.findByText("1A2B-3C4D")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("github_sign_in", { delete: false });
@@ -216,8 +217,9 @@ describe("App", () => {
       }),
     );
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
-    expect(await screen.findByText("Accesso fatto come @me")).toBeTruthy();
+    // New project › from your GitHub repositories (the account is in the settings)
+    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Dai tuoi repository GitHub" }));
     const mine = await screen.findByRole("list", { name: "me" });
     // app2 before app10; the organization in its own group
     expect([...mine.querySelectorAll("li")].map((li) => li.querySelector(".font-semibold")?.textContent)).toEqual([
@@ -270,6 +272,39 @@ describe("App", () => {
     expect(invoke).not.toHaveBeenCalledWith("terminal_open", { project: null });
   });
 
+  it("opens a project's page with three tabs and creates its database", async () => {
+    invoke.mockImplementation(
+      answers({
+        projects_list: [{ ...project("negozio"), requires: ["php", "mariadb"], missing: ["mariadb"] }],
+        project_status: { git: { branch: "main", upstream: null, synced: null, remote: null }, instructions: [] },
+        project_databases: { dbs: [], detected: ["mariadb"], envExists: true, envIgnored: true },
+        project_db_create: {
+          engine: "mariadb",
+          database: "negozio",
+          user: "negozio",
+          password: "x",
+          host: "127.0.0.1",
+          port: 3306,
+          url: "mysql://negozio:x@127.0.0.1:3306/negozio",
+        },
+      }),
+    );
+    render(<App />);
+    fireEvent.click(await screen.findByTitle("Apre la pagina di negozio"));
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Riepilogo", "Risorse", "Avanzate"]);
+    expect(await screen.findByText("main")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: /Risorse/ }));
+    expect(screen.getByText("da installare")).toBeTruthy();
+    const creates = await screen.findAllByRole("button", { name: "Crea database e utente" });
+    fireEvent.click(creates[0] as HTMLElement);
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("project_db_create", { project: "negozio", engine: "mariadb" });
+    });
+    // The activity bar's Projects again: back to the list
+    fireEvent.click(screen.getAllByRole("button", { name: "Progetti" })[0] as HTMLElement);
+    expect(await screen.findByRole("button", { name: "Nuovo progetto" })).toBeTruthy();
+  });
+
   it("reports a failed command", async () => {
     invoke.mockImplementation((cmd) => (cmd === "app_info" ? Promise.reject(new Error("forbidden")) : answers()(cmd)));
     render(<App />);
@@ -285,7 +320,6 @@ describe("App", () => {
       }),
     );
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Progetti" }));
     expect(await screen.findByText("sito (1) & co")).toBeTruthy();
     fireEvent.click(screen.getByTitle("Apre sito (1) & co nell'editor"));
     expect(invoke).toHaveBeenCalledWith("editor_open", { project: "sito (1) & co" });
@@ -297,8 +331,10 @@ describe("App", () => {
       runListener?.({ payload: { kind: "state", ...running } });
       runListener?.({ payload: { kind: "log", key: running.key, lines: ["pronto"] } });
     });
-    expect(await screen.findByText("in ascolto")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "localhost:7100" }));
+    // Its state and output in the Activity panel
+    fireEvent.click(screen.getByRole("button", { name: /^Attività/ }));
+    expect(await screen.findByText(/in ascolto/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Apri nel browser" }));
     expect(invoke).toHaveBeenCalledWith("url_open", { url: "http://localhost:7100/" });
   });
 
@@ -353,7 +389,7 @@ describe("App", () => {
   it("shows the progress of an automatic installation", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
-    await screen.findByText("E:\\Dev Kit");
+    await screen.findByRole("button", { name: "Nuovo progetto" });
     act(() => {
       setupListener?.({
         payload: {
@@ -376,8 +412,11 @@ describe("App", () => {
         },
       });
     });
+    // In the status bar and in the Activity panel, where the details are
+    expect(screen.getAllByText("Installazione 2/2: PowerShell 7 50%").length).toBe(2);
+    fireEvent.click(screen.getByRole("button", { name: /^Attività/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Installazione" }));
     expect(screen.getByText("Installazione dei componenti del kit")).toBeTruthy();
-    expect(screen.getByText("Installazione 2/2: PowerShell 7 50%")).toBeTruthy();
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
     expect(screen.getByText("installato 2.56")).toBeTruthy();
   });

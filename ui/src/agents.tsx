@@ -70,10 +70,10 @@ export function AgentsPage() {
         </p>
       )}
       {agents.every((a) => !a.installed) && (
-        <p className="text-vsc-desc">{t("Nessun agente installato: aggiungili da Linguaggi e strumenti.")}</p>
+        <p className="text-vsc-desc">{t("Nessun agente installato: aggiungili da Strumenti.")}</p>
       )}
       <p className="text-vsc-desc">
-        {t("Gli agenti si aprono sempre nella cartella di un progetto: dalla Home o dalla pagina Progetti.")}
+        {t("Gli agenti si aprono sempre nella cartella di un progetto, dalla pagina Progetti.")}
       </p>
       <ul className="space-y-3">
         {agents

@@ -1,4 +1,6 @@
-// Main window, laid out like VSCodium: activity bar, content and status bar.
+// Main window, laid out like VSCodium: activity bar, content, the Activity
+// panel and the status bar. Six pages (D-76): what concerns one project is
+// on its page, what concerns the kit on the kit's pages.
 // Texts go through t() (i18n.ts) in the language of the settings or of
 // Windows, sent by app_info.
 import { useCallback, useEffect, useState, type ReactNode } from "react";
@@ -8,12 +10,9 @@ import {
   VscDatabase,
   VscExtensions,
   VscFolderLibrary,
-  VscGithub,
-  VscHome,
   VscHubot,
   VscSettingsGear,
   VscWarning,
-  VscCheck,
   VscRemote,
   VscCode,
   VscLoading,
@@ -24,25 +23,24 @@ import {
   editorStatus,
   onEditorStatus,
   onCloseRequested,
-  type AgentInfo,
   type AppInfo,
   type EditorStatus,
   type OpenNow,
   type SetupSnapshot,
 } from "./api";
-import { ProjectsPage, RecentProjects } from "./projects";
-import { GithubPage } from "./github";
+import { ProjectsPage, useRuns } from "./projects";
+import { ActivityPanel } from "./activity";
+import { runStop } from "./api";
 import { TitleBar } from "./titlebar";
 import { ComponentsPage } from "./components";
 import { AgentsPage, useAgents } from "./agents";
-import { SetupProgress, setupStatusText, useSetup } from "./setup";
+import { setupStatusText, useSetup } from "./setup";
 import { SettingsPage } from "./settings";
 import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
-import logo from "./assets/logo-128.png";
 import { DatabasesPage } from "./databases";
 
-type PageId = "home" | "projects" | "github" | "agents" | "components" | "databases" | "settings" | "eject";
+type PageId = "projects" | "agents" | "databases" | "components" | "settings" | "eject";
 
 interface Page {
   id: PageId;
@@ -52,21 +50,19 @@ interface Page {
 
 function pages(): Page[] {
   return [
-    { id: "home", label: t("Home"), icon: VscHome },
     { id: "projects", label: t("Progetti"), icon: VscFolderLibrary },
-    { id: "github", label: "GitHub", icon: VscGithub },
     { id: "agents", label: t("Agenti"), icon: VscHubot },
-    { id: "components", label: t("Linguaggi e strumenti"), icon: VscExtensions },
     { id: "databases", label: t("Database"), icon: VscDatabase },
+    { id: "components", label: t("Strumenti"), icon: VscExtensions },
     { id: "settings", label: t("Impostazioni"), icon: VscSettingsGear },
     { id: "eject", label: t("Rimuovi l'unità"), icon: VscDebugDisconnect },
   ];
 }
 
 export function App() {
-  const [page, setPage] = useState<PageId>("home");
-  /** A project whose page opens with the Projects page (from the Home). */
-  const [openProject, setOpenProject] = useState<string | null>(null);
+  const [page, setPage] = useState<PageId>("projects");
+  /** Bumped when the Projects page is chosen again: back to the list. */
+  const [projectsKey, setProjectsKey] = useState(0);
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [lang, setLangState] = useState<Lang>("it");
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +70,7 @@ export function App() {
   const [closing, setClosing] = useState<OpenNow | null>(null);
   const setup = useSetup();
   const { agents } = useAgents();
+  const { runs, logs, loadLog, forget } = useRuns();
 
   const refreshEditor = useCallback(() => {
     editorStatus().then(setEditor, () => {
@@ -141,7 +138,7 @@ export function App() {
           pages={all}
           page={page}
           onSelect={(id) => {
-            setOpenProject(null);
+            if (id === "projects") setProjectsKey((k) => k + 1);
             setPage(id);
           }}
         />
@@ -157,29 +154,22 @@ export function App() {
             )}
           </header>
           <div id="content" tabIndex={-1} className="relative min-h-0 flex-1 overflow-auto p-5 outline-none">
-            {page === "home" && info?.firstRun ? (
+            {info?.firstRun ? (
               <ComponentsPage setup={setup} firstRun onDone={loadInfo} />
-            ) : page === "home" ? (
-              <Home
-                info={info}
-                error={error}
-                editor={editor}
-                setup={setup}
-                agents={agents}
-                onChanged={refreshEditor}
-                onAllProjects={() => {
-                  setOpenProject(null);
-                  setPage("projects");
-                }}
-                onOpenProject={(id) => {
-                  setOpenProject(id);
-                  setPage("projects");
-                }}
-              />
             ) : page === "projects" ? (
-              <ProjectsPage status={editor} agents={agents} onChanged={refreshEditor} initialOpen={openProject} />
-            ) : page === "github" ? (
-              <GithubPage editor={editor} onChanged={refreshEditor} />
+              <div className="space-y-4">
+                <KitNotices info={info} error={error} />
+                <ProjectsPage
+                  key={projectsKey}
+                  status={editor}
+                  agents={agents}
+                  onChanged={refreshEditor}
+                  runs={runs}
+                  logs={logs}
+                  loadLog={loadLog}
+                  forget={forget}
+                />
+              </div>
             ) : page === "agents" ? (
               <AgentsPage />
             ) : page === "components" ? (
@@ -187,13 +177,23 @@ export function App() {
             ) : page === "databases" ? (
               <DatabasesPage />
             ) : page === "settings" ? (
-              <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} />
+              <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} info={info} />
             ) : (
               <EjectPage />
             )}
           </div>
         </main>
       </div>
+      <ActivityPanel
+        runs={runs}
+        logs={logs}
+        loadLog={loadLog}
+        onStop={(key) => {
+          void runStop(key);
+        }}
+        onForget={forget}
+        setup={setup}
+      />
       <StatusBar info={info} editor={editor} setup={setup} />
       {closing && (
         <CloseDialog
@@ -237,25 +237,8 @@ function ActivityBar({ pages: list, page, onSelect }: { pages: Page[]; page: Pag
   );
 }
 
-function Home({
-  info,
-  error,
-  editor,
-  setup,
-  agents,
-  onChanged,
-  onAllProjects,
-  onOpenProject,
-}: {
-  info: AppInfo | null;
-  error: string | null;
-  editor: EditorStatus | null;
-  setup: SetupSnapshot | null;
-  agents: AgentInfo[] | null;
-  onChanged: () => void;
-  onAllProjects: () => void;
-  onOpenProject: (project: string) => void;
-}) {
+/** Warnings about the kit itself, above the projects (were on the Home). */
+function KitNotices({ info, error }: { info: AppInfo | null; error: string | null }) {
   if (error) {
     return (
       <Notice icon={VscWarning} tone="error">
@@ -263,27 +246,12 @@ function Home({
       </Notice>
     );
   }
-  if (!info) {
-    return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
-  }
+  if (!info) return null;
   return (
-    <div className="max-w-3xl space-y-5">
-      <div className="flex items-center gap-4">
-        <img src={logo} alt="" width={56} height={56} draggable={false} />
-        <div>
-          <p className="text-xl font-semibold text-vsc-fg">Dev-Kit</p>
-          <p className="text-vsc-desc">
-            {t("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.")}
-          </p>
-        </div>
-      </div>
-      {info.movedFrom ? (
+    <>
+      {info.movedFrom && (
         <Notice icon={VscWarning} tone="warning">
           {t("Il kit è stato spostato: prima era in {0}, ora in {1}.", info.movedFrom, info.root)}
-        </Notice>
-      ) : (
-        <Notice icon={VscCheck} tone="success">
-          {t("Dev-Kit è pronto. Tutto ciò che scarica e salva resta in questa cartella.")}
         </Notice>
       )}
       {info.otherKits.length > 0 && (
@@ -302,36 +270,6 @@ function Home({
           )}
         </Notice>
       )}
-      <RecentProjects
-        status={editor}
-        setupRunning={setup?.running ?? false}
-        agents={agents}
-        onChanged={onChanged}
-        onAll={onAllProjects}
-        onOpen={onOpenProject}
-      />
-      {setup && setup.steps.length > 0 && <SetupProgress snapshot={setup} />}
-      <section aria-labelledby="where" className="rounded border border-vsc-border bg-vsc-sidebar">
-        <h2 id="where" className="border-b border-vsc-border px-4 py-2 text-[13px] font-semibold">
-          {t("Dove si trova il kit")}
-        </h2>
-        <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1.5 px-4 py-3">
-          <Row label={t("Cartella del kit")} value={info.root} />
-          <Row label={t("Progetti")} value={info.projects} />
-          <Row label={t("Dati e programmi")} value={info.data} />
-          <Row label={t("Piattaforma")} value={info.platform} />
-          <Row label="WebView2" value={info.webview} />
-        </dl>
-      </section>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <>
-      <dt className="text-vsc-desc">{label}</dt>
-      <dd className="m-0 font-mono text-[12px] break-all select-text">{value}</dd>
     </>
   );
 }

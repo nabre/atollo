@@ -259,7 +259,7 @@ export function DatabasesPage() {
         </div>
         <p className="mt-2 text-[13px] text-vsc-desc">
           {t(
-            "Nessun server: il database è un file del progetto. Nel terminale del kit c'è sqlite3; si installa da Linguaggi e strumenti.",
+            "Nessun server: il database è un file del progetto. Nel terminale del kit c'è sqlite3; si installa da Strumenti.",
           )}
         </p>
       </section>

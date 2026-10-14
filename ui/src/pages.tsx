@@ -1,6 +1,5 @@
 // Shared pieces of the pages (buttons, actions with their error) and the
-// Home actions: open the integrated editor and the kit's console on the
-// projects folder. The Projects page is in projects.tsx.
+// editor's state as a hint. The Projects page is in projects.tsx.
 import { useCallback, useState } from "react";
 import type { IconType } from "react-icons";
 import { VscWarning } from "react-icons/vsc";
@@ -83,7 +82,7 @@ export function ErrorLine({ error }: { error: string | null }) {
 
 export function editorHint(status: EditorStatus | null): string | undefined {
   if (!status) return undefined;
-  if (!status.installed) return t("L'editor non è installato: installalo da Linguaggi e strumenti.");
+  if (!status.installed) return t("L'editor non è installato: installalo da Strumenti.");
   if (status.emulated) return t("Su questo PC (ARM64) l'editor gira in emulazione x64: può essere più lento.");
   return undefined;
 }

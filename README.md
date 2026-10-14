@@ -4,7 +4,7 @@ Italiano · [English](docs/README.en.md) · [Français](docs/README.fr.md) · [D
 
 Ambiente di sviluppo portabile per Windows in un solo file: `Dev-Kit.exe`. Editor (VSCodium) integrato, agenti Claude Code, Codex e Antigravity, linguaggi e strumenti scaricati su richiesta. Niente installazione, niente diritti di amministratore, nessun file fuori dalla cartella del kit.
 
-Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitHub CLI, l'editor e quello che serve a loro (Git per GitHub CLI). Il resto si sceglie nella pagina «Linguaggi e strumenti», oppure arriva quando serve: Node.js con un'azione `npm`, uv con un server MCP `uvx`, e così via.
+Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitHub CLI, l'editor e quello che serve a loro (Git per GitHub CLI). Il resto si sceglie nella pagina «Strumenti», oppure arriva quando serve: Node.js con un'azione `npm`, uv con un server MCP `uvx`, e così via.
 
 > In sviluppo. Stato e piano: [docs/app/PLAN.md](docs/app/PLAN.md), novità: [docs/app/CHANGELOG.md](docs/app/CHANGELOG.md).
 > Prende spunto da [nabre/dev-kit](https://github.com/nabre/dev-kit), di cui non è una nuova versione: è un prodotto separato.
@@ -19,14 +19,14 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 
 | Pagina | Cosa c'è |
 | --- | --- |
-| **Home** | progetti recenti con Editor, Terminale e agente; avvisi (kit spostato, un'altra copia del kit aperta, installazioni in corso); dove si trova il kit |
-| **Progetti** | nuovo progetto, clone da GitHub o da un indirizzo Git; per ogni progetto il tipo, i linguaggi (con il loro logo) e le azioni riconosciute (`npm run dev`, `php -S`, `cargo run`, sito statico…), con porta, output e apertura nel browser; ogni progetto ha la sua pagina (avvio, database, estensioni, agente, Git) |
-| **GitHub** | l'account GitHub del kit, uno per tutto: questa pagina, Git (anche nell'editor, nelle console e negli agenti) e GitHub CLI; i repository dell'account e delle sue organizzazioni, con clone in `projects\`, apertura nell'editor, rinomina ed eliminazione su GitHub |
+| **Progetti** | i progetti con Avvia, Editor, Terminale e agente; **Nuovo progetto**: vuoto, dai tuoi repository GitHub (con clone, rinomina ed eliminazione su GitHub) o da un indirizzo Git; avvisi sul kit. Ogni progetto ha la sua pagina: **Riepilogo** (l'azione principale con il suo output, linguaggi, database, agente, Git), **Risorse** (componenti, database del progetto con utente e password, estensioni dell'editor), **Avanzate** (azioni, porte, sito statico, Git, istruzioni degli agenti) |
 | **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
-| **Linguaggi e strumenti** | i componenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove |
-| **Database** | MariaDB (compatibile con MySQL) e MongoDB: avvio e arresto, stringa di connessione, porta, dati in `data\db`, solo su questo PC; SQLite senza server |
-| **Impostazioni** | lingua, terminale, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python e PHP, compilatore di Rust (GNU o MSVC), aggiornamenti dell'app |
+| **Database** | i server MariaDB (compatibile con MySQL) e MongoDB del kit: avvio e arresto, password dell'amministratore, porta, dati in `data\db`, solo su questo PC; SQLite senza server |
+| **Strumenti** | linguaggi e strumenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove; la matrice delle estensioni dell'editor |
+| **Impostazioni** | lingua, terminale, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python e PHP, compilatore di Rust (GNU o MSVC), aggiornamenti dell'app; l'**account GitHub** del kit, uno per tutto (app, Git, editor, console, agenti, GitHub CLI); dove si trova il kit |
 | **Rimuovi l'unità** | chiude tutto ciò che il kit ha aperto, riporta nel kit l'accesso di Antigravity e lascia espellere la chiavetta |
+
+In basso, su ogni pagina, il pannello **Attività**: cosa è avviato o in installazione (progetti, database, componenti), con l'output e gli errori in un solo posto.
 
 La console del kit è Windows Terminal portabile del kit (o la console classica di Windows, se la scegli nelle Impostazioni o se Windows Terminal non è installato) con PowerShell 7 del kit e il solo ambiente del kit: i programmi installati sul PC non si vedono.
 
@@ -37,7 +37,7 @@ Il menu in console di [nabre/dev-kit](https://github.com/nabre/dev-kit) non c'è
 ## Limiti noti
 
 - Solo Windows 10 e 11, x64 e ARM64 (su ARM64 l'editor, PHP, Apache e TinyTeX girano in emulazione x64; R non c'è).
-- Fuori dal kit restano solo le tracce di Windows, l'accesso di GitHub CLI nella Gestione credenziali se lo fai in una console con `gh auth login` (quello della pagina GitHub resta nel kit, in `data\gh`) e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
+- Fuori dal kit restano solo le tracce di Windows, l'accesso di GitHub CLI nella Gestione credenziali se lo fai in una console con `gh auth login` (quello fatto nelle Impostazioni resta nel kit, in `data\gh`) e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
 - Le cartelle in `projects\` sono attendibili per Claude Code e Codex: apri solo progetti di cui ti fidi. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.
 - I limiti d'uso degli agenti vengono da interfacce non documentate dei fornitori e possono smettere di funzionare dopo un loro aggiornamento.
 - «Rimuovi l'unità» non vede i programmi del PC che tengono aperto solo un file del kit.
