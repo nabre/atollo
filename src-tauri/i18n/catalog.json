@@ -1,4 +1,24 @@
 {
+  "Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.": {
+    "en": "Portable development environment: languages, agents and editor in one folder.",
+    "fr": "Environnement de développement portable : langages, agents et éditeur dans un dossier.",
+    "de": "Portable Entwicklungsumgebung: Sprachen, Agenten und Editor in einem Ordner."
+  },
+  "Dev-Kit ha installato nuove estensioni: {0}. Riavvia le estensioni perché partano tutte.": {
+    "en": "Dev-Kit installed new extensions: {0}. Restart the extensions so that they all start.",
+    "fr": "Dev-Kit a installé de nouvelles extensions : {0}. Redémarrez les extensions pour qu'elles démarrent toutes.",
+    "de": "Dev-Kit hat neue Erweiterungen installiert: {0}. Starte die Erweiterungen neu, damit alle laufen."
+  },
+  "Riavvia le estensioni": {
+    "en": "Restart extensions",
+    "fr": "Redémarrer les extensions",
+    "de": "Erweiterungen neu starten"
+  },
+  "Più tardi": {
+    "en": "Later",
+    "fr": "Plus tard",
+    "de": "Später"
+  },
   "Riduci a icona": {
     "en": "Minimize",
     "fr": "Réduire",

@@ -85,18 +85,38 @@ pub fn sync_maximized<R: Runtime>(window: &WebviewWindow<R>) {
 /// they go in the page's `configurationDefaults`; the user's settings win.
 const TITLE_BAR_DEFAULTS: &str = r#"{"window.menuBarVisibility":"classic"}"#;
 
+/// Dev-Kit's logo (the app icon, ui/src/assets) in the editor's title bar
+/// and on the empty editor (D-72).
+const LOGO_32: &[u8] = include_bytes!("../../ui/src/assets/logo-32.png");
+const LOGO_256: &[u8] = include_bytes!("../../ui/src/assets/logo-256.png");
+
+/// The editor's name where VSCodium shows its own: window title, About
+/// (D-72). Merged by the workbench over its product, as `productConfiguration`.
+const PRODUCT: &str = r#"{"nameShort":"Dev-Kit","nameLong":"Dev-Kit"}"#;
+
+fn data_uri(png: &[u8]) -> String {
+    use base64::Engine;
+    format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(png)
+    )
+}
+
 /// The script that sets the title bar defaults and fills the editor's title
 /// bar with the Windows buttons, with the editor's own classes, so its
 /// colors (codicons, red on close).
-fn controls_script(lang: &str, port: u16) -> String {
+fn controls_script(lang: &str, port: u16, project: &str) -> String {
     let label =
         |it: &str| serde_json::to_string(&crate::i18n::t(lang, it, &[])).unwrap_or_default();
+    let (logo32, logo256) = (data_uri(LOGO_32), data_uri(LOGO_256));
+    let project = serde_json::to_string(project).unwrap_or_default();
     format!(
         r##"(() => {{
   if (window.top !== window) return;
   // Before the workbench reads its configuration: module scripts run after
   // the document turns "interactive".
   const defaults = {TITLE_BAR_DEFAULTS};
+  const product = {PRODUCT};
   const configure = () => {{
     const el = document.getElementById("vscode-workbench-web-configuration");
     if (!el || el.dataset.devkit) return;
@@ -104,6 +124,7 @@ fn controls_script(lang: &str, port: u16) -> String {
     try {{
       const c = JSON.parse(el.getAttribute("data-settings"));
       c.configurationDefaults = {{ ...defaults, ...(c.configurationDefaults || {{}}) }};
+      c.productConfiguration = {{ ...(c.productConfiguration || {{}}), ...product }};
       el.setAttribute("data-settings", JSON.stringify(c));
     }} catch (e) {{}}
   }};
@@ -111,7 +132,10 @@ fn controls_script(lang: &str, port: u16) -> String {
   const open = window.open.bind(window);
   // The server's origin, also on WebView2's error page (server down).
   const send = (what) => open("http://127.0.0.1:{port}{CONTROL_PATH}" + what, "_blank");
-  const text = {{ min: {min}, max: {max}, restore: {restore}, close: {close} }};
+  const text = {{
+    min: {min}, max: {max}, restore: {restore}, close: {close},
+    ext: {ext}, restart: {restart}, later: {later}, tagline: {tagline},
+  }};
   let maximized = false;
   const maxButtons = [];
   const paint = () => {{
@@ -177,6 +201,64 @@ fn controls_script(lang: &str, port: u16) -> String {
       paint();
     }}
   }};
+  // Welcome on the empty editor: VSCodium's watermark (logo, then its
+  // shortcuts) with Dev-Kit's logo, name, project and what the kit is.
+  const welcome = () => {{
+    for (const w of document.querySelectorAll(".editor-group-watermark")) {{
+      if (w.querySelector(".devkit-welcome")) continue;
+      const box = document.createElement("div");
+      box.className = "devkit-welcome";
+      const line = (cls, value) => {{
+        const d = document.createElement("div");
+        d.className = cls;
+        d.textContent = value;
+        box.appendChild(d);
+      }};
+      line("name", "Dev-Kit");
+      line("project", {project});
+      line("tagline", text.tagline);
+      const logo = w.querySelector(".letterpress");
+      if (logo) logo.after(box); else w.prepend(box);
+    }}
+  }};
+  // Extensions installed by Dev-Kit while the editor is open: a notice in
+  // the editor's own colors offers to restart them (a page reload: the
+  // page cannot run the editor's commands, D-14). Names grow while open.
+  const installed = new Set();
+  let notice = null;
+  window.__devkitExtensions = (names) => {{
+    for (const n of names) installed.add(n);
+    const list = [...installed].join(", ");
+    if (notice) {{
+      notice.msg.textContent = text.ext.replace("{{0}}", list);
+      return;
+    }}
+    notice = document.createElement("div");
+    notice.id = "devkit-notice";
+    notice.setAttribute("role", "alert");
+    notice.msg = document.createElement("div");
+    notice.msg.className = "msg";
+    notice.msg.textContent = text.ext.replace("{{0}}", list);
+    const icon = document.createElement("span");
+    icon.className = "codicon codicon-extensions";
+    const head = document.createElement("div");
+    head.className = "head";
+    head.append(icon, notice.msg);
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const button = (label, cls, act) => {{
+      const b = document.createElement("button");
+      b.className = cls;
+      b.textContent = label;
+      b.addEventListener("click", act);
+      actions.appendChild(b);
+    }};
+    const close = () => {{ notice.remove(); notice = null; installed.clear(); }};
+    button(text.later, "secondary", close);
+    button(text.restart, "primary", () => location.reload());
+    notice.append(head, actions);
+    (document.querySelector(".monaco-workbench") || document.body).appendChild(notice);
+  }};
   const start = () => {{
     const style = document.createElement("style");
     style.textContent = ".monaco-workbench.web .part.titlebar .titlebar-right "
@@ -190,10 +272,40 @@ fn controls_script(lang: &str, port: u16) -> String {
       + "#devkit-titlebar .btn{{width:46px;display:flex;align-items:center;justify-content:center;"
       + "font:10px 'Segoe Fluent Icons','Segoe MDL2 Assets';-webkit-app-region:no-drag}}"
       + "#devkit-titlebar .btn:hover{{background:#ffffff1a}}"
-      + "#devkit-titlebar .close:hover{{background:#e81123e6;color:#fff}}";
+      + "#devkit-titlebar .close:hover{{background:#e81123e6;color:#fff}}"
+      + ".monaco-workbench .part.titlebar>.titlebar-container>.titlebar-left"
+      + ">.window-appicon:not(.codicon){{background-image:url({logo32})!important}}"
+      + ".monaco-workbench .part.editor>.content .editor-group-container"
+      + " .editor-group-watermark .letterpress{{background-image:url({logo256})!important;"
+      + "max-width:128px!important}}"
+      + ".devkit-welcome{{text-align:center;margin:12px 0 24px;"
+      + "color:var(--vscode-editorWatermark-foreground,var(--vscode-descriptionForeground))}}"
+      + ".devkit-welcome .name{{font-size:26px;font-weight:600;"
+      + "color:var(--vscode-foreground)}}"
+      + ".devkit-welcome .project{{font-size:15px;margin-top:4px}}"
+      + ".devkit-welcome .tagline{{font-size:13px;margin-top:8px;opacity:.85}}"
+      + "#devkit-notice{{position:fixed;right:12px;bottom:34px;width:440px;z-index:3000;"
+      + "box-sizing:border-box;padding:12px 14px;border-radius:6px;font-size:13px;"
+      + "background:var(--vscode-notifications-background,#252526);"
+      + "color:var(--vscode-notifications-foreground,#ccc);"
+      + "border:1px solid var(--vscode-notificationToast-border,transparent);"
+      + "box-shadow:0 0 8px 2px var(--vscode-widget-shadow,#0000005c)}}"
+      + "#devkit-notice .head{{display:flex;gap:8px;align-items:flex-start;line-height:1.4}}"
+      + "#devkit-notice .codicon{{color:var(--vscode-notificationsInfoIcon-foreground,#3794ff);"
+      + "margin-top:2px}}"
+      + "#devkit-notice .actions{{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}}"
+      + "#devkit-notice button{{border:none;border-radius:2px;padding:4px 10px;font:inherit;"
+      + "cursor:pointer}}"
+      + "#devkit-notice .primary{{background:var(--vscode-button-background,#0e639c);"
+      + "color:var(--vscode-button-foreground,#fff)}}"
+      + "#devkit-notice .primary:hover{{background:var(--vscode-button-hoverBackground,#1177bb)}}"
+      + "#devkit-notice .secondary{{background:var(--vscode-button-secondaryBackground,#3a3d41);"
+      + "color:var(--vscode-button-secondaryForeground,#fff)}}";
     document.head.appendChild(style);
     fill();
-    new MutationObserver(fill).observe(document.body, {{ childList: true, subtree: true }});
+    welcome();
+    new MutationObserver(() => {{ fill(); welcome(); }})
+      .observe(document.body, {{ childList: true, subtree: true }});
     check();
     setInterval(check, 500);
   }};
@@ -204,7 +316,100 @@ fn controls_script(lang: &str, port: u16) -> String {
         max = label("Ingrandisci"),
         restore = label("Ripristina"),
         close = label("Chiudi"),
+        ext = label("Dev-Kit ha installato nuove estensioni: {0}. Riavvia le estensioni perché partano tutte."),
+        restart = label("Riavvia le estensioni"),
+        later = label("Più tardi"),
+        tagline = label("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella."),
     )
+}
+
+/// The project folder of each open editor window, by label.
+static OPEN: std::sync::Mutex<std::collections::BTreeMap<String, std::path::PathBuf>> =
+    std::sync::Mutex::new(std::collections::BTreeMap::new());
+
+/// The projects open in the editor (each once).
+pub fn open_projects() -> Vec<std::path::PathBuf> {
+    let open = OPEN.lock().unwrap_or_else(|e| e.into_inner());
+    let mut dirs: Vec<std::path::PathBuf> = open.values().cloned().collect();
+    dirs.sort();
+    dirs.dedup();
+    dirs
+}
+
+/// An editor window closed.
+pub fn closed(label: &str) {
+    OPEN.lock().unwrap_or_else(|e| e.into_inner()).remove(label);
+}
+
+/// What decides the extensions of a project: its languages, the tools it
+/// requires and its own choice (D-71).
+fn extension_inputs(
+    kit: &crate::kit::Kit,
+    dir: &Path,
+) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>) {
+    let name = dir
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let choice = crate::project_settings::load(kit, &name).extensions;
+    (
+        crate::detect::languages(dir),
+        crate::detect::requires(dir),
+        choice.added,
+        choice.removed,
+    )
+}
+
+/// Every `WATCH_EVERY`, the projects open in the editor are read again: a
+/// new language (the first `.py` written in the editor) or a changed choice
+/// installs its extensions while the editor is open. Bounded reads (detect:
+/// 3 levels, 3000 files). A change seen while an install runs is kept and
+/// tried again at the next round.
+pub fn watch_projects(kit: crate::kit::Kit, editor: std::sync::Arc<crate::editor::Editor>) {
+    const WATCH_EVERY: std::time::Duration = std::time::Duration::from_secs(15);
+    std::thread::spawn(move || {
+        let mut seen = std::collections::BTreeMap::new();
+        loop {
+            std::thread::sleep(WATCH_EVERY);
+            let open = open_projects();
+            seen.retain(|dir, _| open.contains(dir));
+            for dir in open {
+                let now = extension_inputs(&kit, &dir);
+                match seen.get(&dir) {
+                    // Opening the project already synced.
+                    None => {
+                        seen.insert(dir, now);
+                    }
+                    Some(before) if *before != now => {
+                        crate::log::info(&format!(
+                            "editor: {} changed, extensions synced",
+                            dir.display()
+                        ));
+                        if editor.sync_extensions() {
+                            seen.insert(dir, now);
+                        }
+                    }
+                    Some(_) => {}
+                }
+            }
+        }
+    });
+}
+
+/// Tells the editor windows which extensions Dev-Kit just installed.
+pub fn notify_installed<R: Runtime>(app: &AppHandle<R>, ids: &[String]) {
+    let names: Vec<String> = ids
+        .iter()
+        .map(|id| crate::editor_ext::name_of(id))
+        .collect();
+    let json = serde_json::to_string(&names).unwrap_or_else(|_| "[]".into());
+    for (label, window) in app.webview_windows() {
+        if label.starts_with(LABEL_PREFIX) {
+            let _ = window.eval(format!(
+                "window.__devkitExtensions && window.__devkitExtensions({json})"
+            ));
+        }
+    }
 }
 
 /// Only the server, exactly: scheme, host and port.
@@ -281,7 +486,7 @@ pub fn open<R: Runtime>(
         // The editor's title bar is the window's (D-69).
         .decorations(false)
         .shadow(true)
-        .initialization_script(controls_script(lang, port))
+        .initialization_script(controls_script(lang, port, title))
         .data_directory(data_dir.to_path_buf())
         .zoom_hotkeys_enabled(false)
         .on_navigation(move |u| {
@@ -338,6 +543,9 @@ pub fn open<R: Runtime>(
         })
         .build()
         .context("editor window")?;
+    OPEN.lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(label.clone(), folder.to_path_buf());
     quiet_webview(&window, "editor");
     Ok(())
 }
@@ -413,8 +621,13 @@ mod tests {
         assert_eq!(at("/?folder=/e:/p"), None);
         let other = u("http://127.0.0.1:7004/__devkit/window/close");
         assert_eq!(control(&other, 7003), None);
-        let js = controls_script("en", 7003);
+        let js = controls_script("en", 7003, "my app");
         assert!(js.contains(r#"close: "Close""#), "{js}");
+        assert!(js.contains(r#"restart: "Restart extensions""#), "{js}");
+        assert!(js.contains("window.__devkitExtensions = "), "{js}");
+        assert!(js.contains(r#"c.productConfiguration = "#), "{js}");
+        assert!(js.contains(r#"line("project", "my app")"#), "{js}");
+        assert!(js.contains("data:image/png;base64,iVBOR"), "logo embedded");
         assert!(
             js.contains(r#"{"window.menuBarVisibility":"classic"}"#),
             "{js}"

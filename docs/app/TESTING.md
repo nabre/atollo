@@ -104,6 +104,8 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 
 ### Barra del titolo
 - [ ] **Finestra principale senza cornice di Windows.** Trascinamento dalla barra, doppio clic per ingrandire, Riduci, Ingrandisci/Ripristina, Chiudi (con la conferma se qualcosa è aperto); ridimensionamento dai bordi; Win+frecce funzionano. I pulsanti si raggiungono con Tab e hanno un nome per l'Assistente vocale.
+- [ ] **Branding** (D-72). App: logo nella barra del titolo e nella Home, accento blu in tema scuro e chiaro, testo dei pulsanti leggibile. Editor: titolo «<progetto> - Dev-Kit», logo nella barra, benvenuto con logo e progetto nell'editor vuoto, anche in tema chiaro.
+- [ ] **Estensioni mentre si lavora** (D-71). Editor aperto su un progetto senza Ruby: si crea `app.rb`; entro circa 20 s (più il download) compare l'avviso con Ruby LSP e Ruby Debugger; «Riavvia le estensioni» ricarica l'editor sul progetto, «Più tardi» chiude l'avviso.
 - [ ] **Finestra dell'editor con la barra di VSCodium** (D-69). Menu File…Help nella barra; trascinamento dalle zone vuote, doppio clic per ingrandire, Aero Snap; Riduci, Ingrandisci/Ripristina (l'icona cambia anche con Win+frecce), Chiudi; ridimensionamento dai bordi; tema chiaro e scuro. Con il server dell'editor fermo compare la barra di ripiego, che sposta e chiude la finestra.
 
 ### Accessibilità
