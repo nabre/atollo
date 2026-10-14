@@ -307,16 +307,52 @@ pub struct GitInfo {
     pub remote: Option<String>,
 }
 
+/// `path` with `.` and `..` resolved by text only (nothing on disk is
+/// touched); None when `..` would climb above its root.
+fn lexical(path: &Path) -> Option<PathBuf> {
+    use std::path::Component;
+    let mut out = PathBuf::new();
+    for c in path.components() {
+        match c {
+            Component::ParentDir => {
+                if !out.pop() {
+                    return None;
+                }
+            }
+            Component::CurDir => {}
+            other => out.push(other.as_os_str()),
+        }
+    }
+    Some(out)
+}
+
 /// `.git` of `dir`: the folder, or the one a `.git` file points to
-/// (worktrees, submodules).
-fn git_dir(dir: &Path) -> Option<PathBuf> {
+/// (worktrees, submodules), only inside `root` (the kit's projects). A
+/// cloned repository chooses that text: a `\\server\share` there would make
+/// Windows send the user's NTLM credentials to that server as soon as the
+/// path is opened (security review, 14/10/2026), so it is checked as text
+/// before anything is read.
+fn git_dir(dir: &Path, root: &Path) -> Option<PathBuf> {
     let dot = dir.join(".git");
     if dot.is_dir() {
         return Some(dot);
     }
     let text = fs::read_to_string(&dot).ok()?;
     let target = text.trim().strip_prefix("gitdir:")?.trim();
-    let path = dir.join(target);
+    // Relative, or `X:\...`: no UNC, device (`\\?\`, `\\.\`) or stream path.
+    let drive = target.len() > 2
+        && target.as_bytes()[0].is_ascii_alphabetic()
+        && target.as_bytes()[1] == b':'
+        && matches!(target.as_bytes()[2], b'\\' | b'/');
+    let colons = target.matches(':').count();
+    if target.starts_with(['\\', '/']) || colons > usize::from(drive) || (colons == 1 && !drive) {
+        return None;
+    }
+    let path = lexical(&dir.join(target))?;
+    let root = lexical(root)?;
+    if !path.starts_with(&root) || path.to_string_lossy().starts_with(r"\\") {
+        return None;
+    }
     path.is_dir().then_some(path)
 }
 
@@ -353,8 +389,8 @@ fn ref_commit(git: &Path, reference: &str) -> Option<String> {
         })
 }
 
-pub fn git_info(dir: &Path) -> Option<GitInfo> {
-    let git = git_dir(dir)?;
+pub fn git_info(dir: &Path, root: &Path) -> Option<GitInfo> {
+    let git = git_dir(dir, root)?;
     let head = fs::read_to_string(git.join("HEAD")).ok()?;
     let branch = head
         .trim()
@@ -403,7 +439,7 @@ pub struct ProjectStatus {
     pub instructions: Vec<String>,
 }
 
-pub fn status(dir: &Path) -> ProjectStatus {
+pub fn status(dir: &Path, root: &Path) -> ProjectStatus {
     let instructions = [
         "AGENTS.md",
         "CLAUDE.md",
@@ -415,7 +451,7 @@ pub fn status(dir: &Path) -> ProjectStatus {
     .map(|f| (*f).to_owned())
     .collect();
     ProjectStatus {
-        git: git_info(dir),
+        git: git_info(dir, root),
         instructions,
     }
 }
@@ -448,16 +484,37 @@ mod tests {
             "# pack-refs\nbbb refs/remotes/origin/main\n",
         )
         .unwrap();
-        let info = git_info(&d).unwrap();
+        let info = git_info(&d, &tmp.0).unwrap();
         assert_eq!(info.branch.as_deref(), Some("main"));
         assert_eq!(info.upstream.as_deref(), Some("origin/main"));
         assert_eq!(info.remote.as_deref(), Some("https://github.com/a/b.git"));
         assert_eq!(info.synced, Some(false));
         fs::write(remotes.join("main"), "aaa\n").unwrap();
-        assert_eq!(git_info(&d).unwrap().synced, Some(true));
+        assert_eq!(git_info(&d, &tmp.0).unwrap().synced, Some(true));
         fs::write(g.join("HEAD"), "0123abcd\n").unwrap();
-        assert_eq!(git_info(&d).unwrap().branch, None);
-        assert!(git_info(&tmp.0).is_none(), "not a repository");
+        assert_eq!(git_info(&d, &tmp.0).unwrap().branch, None);
+        assert!(git_info(&tmp.0, &tmp.0).is_none(), "not a repository");
+        // A .git file may point only inside the projects folder, never to a share.
+        let wt = tmp.0.join("wt");
+        fs::create_dir_all(&wt).unwrap();
+        fs::write(
+            wt.join(".git"),
+            "gitdir: ../p/.git
+",
+        )
+        .unwrap();
+        assert!(git_info(&wt, &tmp.0).is_some(), "inside: followed");
+        for bad in [
+            r"gitdir: \\attacker\share\x",
+            "gitdir: //attacker/share/x",
+            r"gitdir: \\?\C:\Windows",
+            "gitdir: ../../../Windows",
+            "gitdir: C:x",
+            "gitdir: ../p/.git:stream",
+        ] {
+            fs::write(wt.join(".git"), bad).unwrap();
+            assert!(git_info(&wt, &tmp.0).is_none(), "{bad}");
+        }
     }
 
     #[test]

@@ -1061,7 +1061,8 @@ pub async fn project_status<R: Runtime>(
 ) -> Result<crate::projects::ProjectStatus, String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    tauri::async_runtime::spawn_blocking(move || crate::projects::status(&dir))
+    let root = state.kit.projects();
+    tauri::async_runtime::spawn_blocking(move || crate::projects::status(&dir, &root))
         .await
         .map_err(|e| fail("project", e))
 }
