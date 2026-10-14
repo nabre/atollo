@@ -2,9 +2,10 @@
 // the languages found in a project, from Simple Icons (react-icons/si) with
 // each brand's colour. A brand drawn in black or white takes the text colour,
 // so it reads in both themes. Where Simple Icons has no logo (PowerShell,
-// Windows Terminal, OpenAI, Antigravity) the closest icon of another set
-// stands in.
-import type { IconType } from "react-icons";
+// Windows Terminal, OpenAI) the closest icon of another set stands in;
+// Antigravity's arch is drawn here.
+import { useId } from "react";
+import type { IconBaseProps, IconType } from "react-icons";
 import { RiOpenaiFill } from "react-icons/ri";
 import {
   SiApache,
@@ -47,7 +48,32 @@ import {
   SiVuedotjs,
   SiZig,
 } from "react-icons/si";
-import { VscSparkle, VscTerminal, VscTerminalPowershell } from "react-icons/vsc";
+import { VscTerminal, VscTerminalPowershell } from "react-icons/vsc";
+
+/** Antigravity's logo: an arch in Google's colours, red at the top to blue
+ * at the feet. */
+function AntigravityIcon({ size = 16, className, style }: IconBaseProps) {
+  const id = useId();
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className={className} style={style}>
+      <defs>
+        <linearGradient id={id} x1="0.8" y1="0" x2="0.2" y2="1">
+          <stop offset="0" stopColor="#EA4335" />
+          <stop offset="0.3" stopColor="#FBBC04" />
+          <stop offset="0.5" stopColor="#34A853" />
+          <stop offset="0.75" stopColor="#4285F4" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M3 21.5C6.5 20.5 8 3.5 12 3.5S17.5 20.5 21 21.5"
+        fill="none"
+        stroke={`url(#${id})`}
+        strokeWidth="3.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 interface Logo {
   icon: IconType;
@@ -76,7 +102,7 @@ const COMPONENTS: Record<string, Logo> = {
   "vscodium-server": { icon: SiVscodium, color: "#2F80ED" },
   claude: { icon: SiClaude, color: "#D97757" },
   codex: { icon: RiOpenaiFill },
-  antigravity: { icon: VscSparkle, color: "#4285F4" },
+  antigravity: { icon: AntigravityIcon },
   git: { icon: SiGit, color: "#F05032" },
   python: PYTHON,
   node: { icon: SiNodedotjs, color: "#5FA04E" },
@@ -167,3 +193,13 @@ export function LanguageLogo({ name, size = 14 }: { name: string; size?: number 
 }
 
 export const hasLanguageLogo = (name: string): boolean => name in LANGUAGES;
+
+/** A language as its logo only, named on hover; the label when it has none. */
+export function LanguageIcon({ name }: { name: string }) {
+  if (!hasLanguageLogo(name)) return <LanguageTag name={name} />;
+  return (
+    <span role="img" aria-label={name} title={name} className="inline-flex">
+      <LogoIcon logo={LANGUAGES[name]} size={14} />
+    </span>
+  );
+}

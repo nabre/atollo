@@ -25,7 +25,7 @@ import {
 } from "./api";
 import { locale, rich, t } from "./i18n";
 import { ActionButton } from "./pages";
-import { SetupProgress } from "./setup";
+import { SetupProgress, setupToShow } from "./setup";
 import { ExtensionsMatrixSection } from "./extensions";
 import { ComponentLogo } from "./logos";
 
@@ -167,10 +167,13 @@ export function ComponentsPage({
     );
   }, []);
   useEffect(load, [load]);
-  // Reload when an installation ends: versions and "installed" change.
+  // Reload as each component of an installation ends, and when it ends:
+  // versions and "installed" change.
+  const finished = setup?.steps.filter((s) => s.outcome !== null).length ?? 0;
+  const ended = setup !== null && !setup.running && setup.steps.length > 0;
   useEffect(() => {
-    if (setup && !setup.running && setup.steps.length > 0) load();
-  }, [setup, load]);
+    if (finished > 0 || ended) load();
+  }, [finished, ended, load]);
 
   const plan = useMemo(() => {
     const items = list ?? [];
@@ -210,7 +213,7 @@ export function ComponentsPage({
   const changed = plan.install.length > 0 || plan.remove.length > 0;
 
   return (
-    <div className="max-w-4xl space-y-5">
+    <div className="max-w-4xl space-y-3">
       {firstRun && (
         <div className="space-y-1">
           <h2 className="text-[15px] font-semibold">{t("Benvenuto in Atollo")}</h2>
@@ -231,15 +234,15 @@ export function ComponentsPage({
         </div>
       )}
 
-      {setup && setup.steps.length > 0 && <SetupProgress snapshot={setup} />}
+      {setupToShow(setup) && <SetupProgress snapshot={setup} />}
 
       {groups().map((g) => {
         // The editor (part of the app) is listed with the required ones.
         const items = list.filter((c) => c.group === g.id || (g.id === "required" && c.group === "app"));
         if (items.length === 0) return null;
         return (
-          <section key={g.id} aria-labelledby={`group-${g.id}`} className="rounded border border-vsc-border">
-            <header className="border-b border-vsc-border bg-vsc-sidebar px-4 py-2">
+          <section key={g.id} aria-labelledby={`group-${g.id}`} className="border-t border-vsc-border">
+            <header className="px-3 py-1.5">
               <h2 id={`group-${g.id}`} className="text-[13px] font-semibold">
                 {g.title}
               </h2>
@@ -259,7 +262,7 @@ export function ComponentsPage({
                     ? "border-l-vsc-focus hover:bg-vsc-list-hover"
                     : "border-l-transparent hover:bg-vsc-list-hover";
                 return (
-                  <li key={c.id} className={`flex items-center gap-3 border-l-2 py-1.5 pr-4 pl-3.5 ${mark}`}>
+                  <li key={c.id} className={`flex items-center gap-2 border-l-2 py-1 pr-4 pl-3.5 ${mark}`}>
                     <input
                       id={inputId}
                       type="checkbox"
@@ -307,7 +310,7 @@ export function ComponentsPage({
 
       {!firstRun && <ExtensionsMatrixSection projects={projects} components={list} />}
 
-      <div className="sticky -bottom-5 flex flex-wrap items-center gap-3 border-t border-vsc-border bg-vsc-bg pt-3 pb-8">
+      <div className="sticky -bottom-5 flex flex-wrap items-center gap-2 border-t border-vsc-border bg-vsc-bg pt-3 pb-8">
         {confirm ? (
           <>
             <span role="status">

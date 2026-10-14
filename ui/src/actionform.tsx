@@ -67,14 +67,14 @@ export function ActionForm({
     };
     run("save", () => projectActionSave(project, edit));
   };
-  const field = "w-full rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1 text-vsc-fg";
+  const field = "w-full input";
   return (
     <form
       onSubmit={submit}
       aria-label={action ? t("Modifica {0}", action.label) : t("Nuova azione")}
-      className="space-y-3 rounded-sm border border-vsc-border bg-vsc-bg p-4"
+      className="space-y-2 border-t border-vsc-border p-3"
     >
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <label className="space-y-1">
           <span className="text-vsc-desc">{t("Nome")}</span>
           <input
@@ -116,7 +116,7 @@ export function ActionForm({
           {t("Parte con cmd.exe nella cartella indicata. {port} diventa la porta dell'azione.")}
         </span>
       </label>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <label className="space-y-1">
           <span className="text-vsc-desc">{t("Cartella (dentro il progetto)")}</span>
           <input

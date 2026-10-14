@@ -71,10 +71,10 @@ function Box({
   right?: React.ReactNode;
 }) {
   return (
-    <section className="min-w-0 rounded-sm border border-vsc-border bg-vsc-sidebar" aria-labelledby={id}>
+    <section className="min-w-0 border-t border-vsc-border" aria-labelledby={id}>
       <h2
         id={id}
-        className="flex items-center gap-2 border-b border-vsc-border px-4 py-2 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
+        className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
       >
         {title}
         {right && <span className="ml-auto text-[12px] font-normal tracking-normal normal-case">{right}</span>}
@@ -135,11 +135,11 @@ function Needs({ p, onChanged }: { p: ProjectInfo; onChanged: () => void }) {
       }
     >
       <ul className="divide-y divide-vsc-border">
-        {p.requires.length === 0 && <li className="px-4 py-2 text-vsc-desc">{t("Nessun componente del kit.")}</li>}
+        {p.requires.length === 0 && <li className="px-3 py-1.5 text-vsc-desc">{t("Nessun componente del kit.")}</li>}
         {p.requires.map((id) => {
           const missing = p.missing.includes(id);
           return (
-            <li key={id} className="flex items-center gap-3 px-4 py-2">
+            <li key={id} className="flex items-center gap-2 px-3 py-1.5">
               <ComponentLogo id={id} />
               <span className="min-w-0 flex-1">{COMPONENT_NAMES[id] ?? id}</span>
               <span className={missing ? "text-vsc-warning" : "text-vsc-success"}>
@@ -177,7 +177,7 @@ function Needs({ p, onChanged }: { p: ProjectInfo; onChanged: () => void }) {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="min-w-0 space-y-1 rounded-sm border border-vsc-border bg-vsc-sidebar px-4 py-3">
+    <div className="min-w-0 space-y-1 border-t border-vsc-border px-3 py-2">
       <h3 className="text-[12px] font-semibold tracking-wide text-vsc-desc uppercase">{title}</h3>
       <div className="min-w-0">{children}</div>
     </div>
@@ -212,9 +212,9 @@ function Summary({
   const r = main ? runs[key] : undefined;
   const lines = r ? (logs[key] ?? []) : [];
   return (
-    <div className="space-y-4">
-      <section aria-label={t("Avvio")} className="rounded-sm border border-vsc-border bg-vsc-sidebar">
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+    <div className="space-y-3">
+      <section aria-label={t("Avvio")} className="border-t border-vsc-border">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2">
           {main ? (
             <>
               <span className="min-w-0 flex-1">
@@ -264,13 +264,13 @@ function Summary({
           <pre
             tabIndex={0}
             aria-label={t("Output di {0}", main?.label ?? "")}
-            className="m-0 max-h-40 overflow-auto border-t border-vsc-border bg-vsc-bg px-4 py-2 font-mono text-[12px] leading-snug whitespace-pre-wrap select-text"
+            className="m-0 max-h-40 overflow-auto border-t border-vsc-border bg-vsc-bg px-3 py-1.5 font-mono text-[12px] leading-snug whitespace-pre-wrap select-text"
           >
             {lines.slice(-200).join("\n")}
           </pre>
         )}
       </section>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <Card title={t("Linguaggi")}>
           <span className="flex flex-wrap gap-1">
             {p.languages.length === 0 ? (
@@ -410,7 +410,7 @@ function Databases({ p, dbs, onChanged }: { p: ProjectInfo; dbs: ProjectDatabase
   if (dbs === null) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
   const engines: ProjectDb["engine"][] = ["mariadb", "mongodb"];
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {engines.map((engine) => {
         const db = dbs.dbs.find((d) => d.engine === engine);
         const used = dbs.detected.includes(engine);
@@ -423,7 +423,7 @@ function Databases({ p, dbs, onChanged }: { p: ProjectInfo; dbs: ProjectDatabase
           >
             {db ? (
               <>
-                <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-5 gap-y-2 px-4 py-3">
+                <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-5 gap-y-2 px-3 py-2">
                   <dt className="text-vsc-desc">{t("Database")}</dt>
                   <dd className="font-mono">{db.database}</dd>
                   <dt className="text-vsc-desc">{t("Utente")}</dt>
@@ -445,7 +445,7 @@ function Databases({ p, dbs, onChanged }: { p: ProjectInfo; dbs: ProjectDatabase
                 <DatabaseCopies project={p.id} engine={db.engine} />
               </>
             ) : (
-              <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2 px-3 py-2">
                 <p className="min-w-0 flex-1 text-vsc-desc">
                   {t("Un database e un utente solo per questo progetto, con una password generata dal kit.")}
                 </p>
@@ -467,7 +467,7 @@ function Databases({ p, dbs, onChanged }: { p: ProjectInfo; dbs: ProjectDatabase
       })}
       {dbs.detected.includes("sqlite") && (
         <Box id="pdb-sqlite" title="SQLite">
-          <p className="px-4 py-3 text-vsc-desc">
+          <p className="px-3 py-2 text-vsc-desc">
             {t("Il progetto usa SQLite: il database è un file del progetto, nessun server da avviare.")}
           </p>
         </Box>
@@ -482,11 +482,11 @@ function Agents({ status }: { status: ProjectStatus | null }) {
     <Box id="instructions" title={t("Istruzioni per gli agenti")}>
       <ul className="divide-y divide-vsc-border">
         {(status?.instructions ?? []).map((f) => (
-          <li key={f} className="px-4 py-2 font-mono">
+          <li key={f} className="px-3 py-1.5 font-mono">
             {f}
           </li>
         ))}
-        <li className="px-4 py-2 text-vsc-desc">
+        <li className="px-3 py-1.5 text-vsc-desc">
           {t("Istruzioni, skill e MCP del kit valgono anche qui (data\\agents).")}
         </li>
       </ul>
@@ -501,7 +501,7 @@ function Git({ status }: { status: ProjectStatus | null }) {
   const web = git.remote?.replace(/\.git$/, "").replace(/^git@github\.com:/, "https://github.com/") ?? null;
   return (
     <Box id="repo" title={t("Repository")}>
-      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-5 gap-y-2 px-4 py-3">
+      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-5 gap-y-2 px-3 py-2">
         <dt className="text-vsc-desc">{t("Remoto")}</dt>
         <dd className="truncate font-mono">{git.remote ?? t("nessuno")}</dd>
         <dt className="text-vsc-desc">{t("Ramo")}</dt>
@@ -594,142 +594,152 @@ export function ProjectPage({
     }
   };
   return (
-    <div className="max-w-5xl space-y-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <button type="button" className="flex items-center gap-1 text-vsc-link hover:underline" onClick={onBack}>
-          <VscArrowLeft size={14} aria-hidden="true" />
-          {t("Progetti")}
-        </button>
-        <h2 className="text-[20px] font-semibold text-vsc-fg">{p.name}</h2>
-        <span className="flex flex-wrap gap-1">
-          {p.languages.map((l) => (
-            <LanguageTag key={l} name={l} />
-          ))}
-        </span>
-        <span className="ml-auto flex flex-wrap gap-2">
-          <ActionButton
-            icon={VscCode}
-            label={t("Editor")}
-            primary
-            disabled={editor?.installed === false}
-            busy={opening === "editor"}
-            onClick={() => {
-              run("editor", () => editorOpen(p.id));
-            }}
-          />
-          <ActionButton
-            icon={VscTerminal}
-            label={t("Terminale")}
-            busy={opening === "terminal"}
-            onClick={() => {
-              run("terminal", () => terminalOpen(p.id));
-            }}
-          />
-          <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
-          <ActionButton
-            icon={VscFolderOpened}
-            label={t("Apri la cartella")}
-            onClick={() => {
-              run("folder", () => folderOpen("projects", p.id));
-            }}
-          />
-        </span>
-      </div>
-      <ErrorLine error={error} />
-      <div
-        role="tablist"
-        aria-label={t("Sezioni del progetto")}
-        className="flex gap-1 overflow-x-auto border-b border-vsc-border"
-      >
-        {list.map((x, i) => (
-          <button
-            key={x.id}
-            id={`tab-${x.id}`}
-            type="button"
-            role="tab"
-            aria-selected={tab === x.id}
-            aria-controls={`panel-${x.id}`}
-            tabIndex={tab === x.id ? 0 : -1}
-            onClick={() => {
-              setTab(x.id);
-            }}
-            onKeyDown={(e) => {
-              onKey(e, i);
-            }}
-            className={`border-b-2 px-3 py-2 whitespace-nowrap ${
-              tab === x.id ? "border-vsc-focus text-vsc-fg" : "border-transparent text-vsc-desc hover:text-vsc-fg"
-            }`}
-          >
-            {x.label}
-            {x.id === "resources" && p.missing.length > 0 && (
-              <VscWarning size={12} className="ml-1 inline text-vsc-warning" aria-label={t("Mancano componenti")} />
-            )}
-            {x.id === "summary" && mine.some((r) => alive(r.state)) && (
-              <span className="ml-1 text-vsc-success" aria-label={t("avviato")}>
-                ●
-              </span>
-            )}
+    // Title and tabs stay put, only the tab's content scrolls (as the editor's tabs).
+    <div className="absolute inset-0 flex flex-col">
+      <div className="max-w-5xl shrink-0 space-y-3 px-3 pt-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <button type="button" className="flex items-center gap-1 text-vsc-link hover:underline" onClick={onBack}>
+            <VscArrowLeft size={14} aria-hidden="true" />
+            {t("Progetti")}
           </button>
-        ))}
-      </div>
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "summary" && (
-          <Summary
-            p={p}
-            status={status}
-            dbs={dbs}
-            runs={runs}
-            logs={logs}
-            busy={busy}
-            onStart={onStart}
-            onStop={onStop}
-            onResources={() => {
-              setTab("resources");
-            }}
-          />
-        )}
-        {tab === "resources" && (
-          <div className="space-y-4">
-            <Needs
-              p={p}
-              onChanged={() => {
-                onChanged();
-                reload();
+          <h2 className="text-[20px] font-semibold text-vsc-fg">{p.name}</h2>
+          <span className="flex flex-wrap gap-1">
+            {p.languages.map((l) => (
+              <LanguageTag key={l} name={l} />
+            ))}
+          </span>
+          <span className="ml-auto flex flex-wrap gap-2">
+            <ActionButton
+              icon={VscCode}
+              label={t("Editor")}
+              primary
+              disabled={editor?.installed === false}
+              busy={opening === "editor"}
+              onClick={() => {
+                run("editor", () => editorOpen(p.id));
               }}
             />
-            <Databases p={p} dbs={dbs} onChanged={reload} />
-            <ProjectExtensions project={p} onChanged={onChanged} />
-          </div>
-        )}
-        {tab === "advanced" && (
-          <div className="space-y-4">
-            <ProjectDetails
-              project={p}
+            <ActionButton
+              icon={VscTerminal}
+              label={t("Terminale")}
+              busy={opening === "terminal"}
+              onClick={() => {
+                run("terminal", () => terminalOpen(p.id));
+              }}
+            />
+            <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
+            <ActionButton
+              icon={VscFolderOpened}
+              label={t("Apri la cartella")}
+              onClick={() => {
+                run("folder", () => folderOpen("projects", p.id));
+              }}
+            />
+          </span>
+        </div>
+        <ErrorLine error={error} />
+        <div
+          role="tablist"
+          aria-label={t("Sezioni del progetto")}
+          className="flex gap-1 overflow-x-auto border-b border-vsc-border"
+        >
+          {list.map((x, i) => (
+            <button
+              key={x.id}
+              id={`tab-${x.id}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === x.id}
+              aria-controls={`panel-${x.id}`}
+              tabIndex={tab === x.id ? 0 : -1}
+              onClick={() => {
+                setTab(x.id);
+              }}
+              onKeyDown={(e) => {
+                onKey(e, i);
+              }}
+              className={`border-b-2 px-3 py-2 whitespace-nowrap ${
+                tab === x.id ? "border-vsc-focus text-vsc-fg" : "border-transparent text-vsc-desc hover:text-vsc-fg"
+              }`}
+            >
+              {x.label}
+              {x.id === "resources" && p.missing.length > 0 && (
+                <VscWarning size={12} className="ml-1 inline text-vsc-warning" aria-label={t("Mancano componenti")} />
+              )}
+              {x.id === "summary" && mine.some((r) => alive(r.state)) && (
+                <span className="ml-1 text-vsc-success" aria-label={t("avviato")}>
+                  ●
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div
+        role="tabpanel"
+        id={`panel-${tab}`}
+        aria-labelledby={`tab-${tab}`}
+        className="min-h-0 flex-1 overflow-y-auto p-3"
+      >
+        <div className="max-w-5xl">
+          {tab === "summary" && (
+            <Summary
+              p={p}
+              status={status}
+              dbs={dbs}
               runs={runs}
-              ports={ports}
+              logs={logs}
               busy={busy}
               onStart={onStart}
               onStop={onStop}
-              onPorts={onPorts}
-              onChanged={onChanged}
-              onlyRun
+              onResources={() => {
+                setTab("resources");
+              }}
             />
-            {mine.length > 0 && (
-              <RunsPanel
-                runs={mine}
-                logs={logs}
-                shown={shownLog}
-                onShow={onShowLog}
-                onStop={onStop}
-                onForget={onForget}
+          )}
+          {tab === "resources" && (
+            <div className="space-y-3">
+              <Needs
+                p={p}
+                onChanged={() => {
+                  onChanged();
+                  reload();
+                }}
               />
-            )}
-            <EditorSettingsBox project={p.id} />
-            <Git status={status} />
-            <Agents status={status} />
-            <ProjectMcpBox project={p.id} />
-          </div>
-        )}
+              <Databases p={p} dbs={dbs} onChanged={reload} />
+              <ProjectExtensions project={p} onChanged={onChanged} />
+            </div>
+          )}
+          {tab === "advanced" && (
+            <div className="space-y-3">
+              <ProjectDetails
+                project={p}
+                runs={runs}
+                ports={ports}
+                busy={busy}
+                onStart={onStart}
+                onStop={onStop}
+                onPorts={onPorts}
+                onChanged={onChanged}
+                onlyRun
+              />
+              {mine.length > 0 && (
+                <RunsPanel
+                  runs={mine}
+                  logs={logs}
+                  shown={shownLog}
+                  onShow={onShowLog}
+                  onStop={onStop}
+                  onForget={onForget}
+                />
+              )}
+              <EditorSettingsBox project={p.id} />
+              <Git status={status} />
+              <Agents status={status} />
+              <ProjectMcpBox project={p.id} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

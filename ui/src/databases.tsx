@@ -99,8 +99,8 @@ function ServiceCard({
   const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
   const portId = `port-${s.id}`;
   return (
-    <section className="rounded-sm border border-vsc-border bg-vsc-sidebar" aria-labelledby={`db-${s.id}`}>
-      <div className="flex flex-wrap items-center gap-3 border-b border-vsc-border px-4 py-3">
+    <section className="border-t border-vsc-border" aria-labelledby={`db-${s.id}`}>
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2">
         <ComponentLogo id={s.id} size={22} />
         <h2 id={`db-${s.id}`} className="text-[14px] font-semibold text-vsc-fg">
           {s.name}
@@ -116,7 +116,7 @@ function ServiceCard({
           )}
         </span>
       </div>
-      <div className="grid gap-x-6 gap-y-2 px-4 py-3 text-[13px] sm:grid-cols-[max-content_1fr]">
+      <div className="grid gap-x-6 gap-y-2 px-3 py-2 text-[13px] sm:grid-cols-[max-content_1fr]">
         <span className="text-vsc-desc">{t("Connessione")}</span>
         <span className="flex min-w-0 items-center gap-2">
           <code className="truncate font-mono text-vsc-fg">{s.url}</code>
@@ -159,7 +159,7 @@ function ServiceCard({
               if (portValid && portValue !== s.port) onSet(portValue, s.autostart);
             }}
             aria-invalid={!portValid}
-            className="w-24 rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1 font-mono text-vsc-fg"
+            className="w-24 input font-mono text-vsc-fg"
           />
           <span className="text-vsc-desc">
             {portValid ? t("Vale dal prossimo avvio.") : t("Una porta fra 1024 e 65535.")}
@@ -222,7 +222,7 @@ export function DatabasesPage() {
     );
   };
   return (
-    <div className="max-w-3xl space-y-4">
+    <div className="max-w-3xl space-y-3">
       <p className="text-vsc-desc">
         {t(
           "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. MariaDB è compatibile con MySQL; nel terminale del kit il comando mariadb entra già come root. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
@@ -250,14 +250,14 @@ export function DatabasesPage() {
           />
         ))
       )}
-      <section className="rounded-sm border border-vsc-border bg-vsc-sidebar px-4 py-3" aria-labelledby="db-sqlite">
-        <div className="flex items-center gap-3">
+      <section className="border-t border-vsc-border px-3 py-2" aria-labelledby="db-sqlite">
+        <div className="flex items-center gap-2">
           <ComponentLogo id="sqlite" size={22} />
           <h2 id="db-sqlite" className="text-[14px] font-semibold text-vsc-fg">
             SQLite
           </h2>
         </div>
-        <p className="mt-2 text-[13px] text-vsc-desc">
+        <p className="mt-1.5 text-[13px] text-vsc-desc">
           {t(
             "Nessun server: il database è un file del progetto. Nel terminale del kit c'è sqlite3; si installa da Strumenti.",
           )}

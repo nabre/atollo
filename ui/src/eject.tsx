@@ -47,7 +47,7 @@ export function EjectPage() {
 
   if (done) {
     return (
-      <div className="max-w-3xl space-y-4">
+      <div className="max-w-3xl space-y-3">
         <p role="status" className="flex items-start gap-2 text-vsc-success">
           <VscCheck size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
           {t("Programmi del kit chiusi e accesso di Antigravity salvato nel kit.")}
@@ -73,7 +73,7 @@ export function EjectPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-4">
+    <div className="max-w-3xl space-y-3">
       <p>
         {t(
           "Prima di togliere la chiavetta o il disco del kit: chiude i programmi del kit ancora aperti e salva nel kit l'accesso di Antigravity, così non resta nulla in questo PC.",
@@ -137,7 +137,7 @@ export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () =>
         aria-modal="true"
         aria-labelledby="close-title"
         aria-describedby="close-desc"
-        className="w-[min(32rem,90vw)] space-y-3 rounded border border-vsc-border bg-vsc-sidebar p-5 shadow-lg"
+        className="w-[min(32rem,90vw)] space-y-2 rounded border border-vsc-border bg-vsc-sidebar p-3 shadow-lg"
       >
         <h2 id="close-title" className="text-[14px] font-semibold">
           {t("Chiudere Atollo?")}
@@ -151,7 +151,7 @@ export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () =>
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="rounded-sm bg-vsc-button2 px-3 py-1.5 text-vsc-button2-fg hover:bg-vsc-button2-hover"
+            className="rounded-sm bg-vsc-button2 px-2 py-1 text-vsc-button2-fg hover:bg-vsc-button2-hover"
           >
             {t("Annulla")}
           </button>

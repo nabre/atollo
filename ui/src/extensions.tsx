@@ -41,8 +41,8 @@ export function ExtensionsMatrixSection({
   const installed = matrix.extensions.filter((e) => e.installed).length;
   const cell = "border-l border-vsc-border px-0 text-center";
   return (
-    <section aria-labelledby="ext-matrix" className="rounded border border-vsc-border">
-      <header className="border-b border-vsc-border bg-vsc-sidebar px-4 py-2">
+    <section aria-labelledby="ext-matrix" className="border-t border-vsc-border">
+      <header className="px-3 py-1.5">
         <h2 id="ext-matrix" className="text-[13px] font-semibold">
           {t("Estensioni dell'editor")}
         </h2>
@@ -53,7 +53,7 @@ export function ExtensionsMatrixSection({
         </p>
       </header>
       <details>
-        <summary className="cursor-pointer px-4 py-2 text-[12px] text-vsc-desc hover:bg-vsc-list-hover">
+        <summary className="cursor-pointer px-3 py-1.5 text-[12px] text-vsc-desc hover:bg-vsc-list-hover">
           {t("Matrice linguaggio-estensione: {0} estensioni, {1} installate", matrix.extensions.length, installed)}
         </summary>
         <p className="px-4 pb-2 text-[12px] text-vsc-desc">
@@ -245,7 +245,7 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
             setAdding(e.target.value);
             setInvalid(false);
           }}
-          className="w-64 rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1 text-[12px]"
+          className="w-64 input text-[12px]"
         />
         <datalist id={listId}>
           {suggestions.map((e) => (

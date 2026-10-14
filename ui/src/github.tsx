@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useState, type SyntheticEvent } from "react";
 import {
   VscAccount,
+  VscArchive,
   VscCheck,
   VscChevronDown,
   VscChevronRight,
@@ -14,17 +15,18 @@ import {
   VscCopy,
   VscEdit,
   VscFolderActive,
+  VscGlobe,
   VscKey,
   VscLinkExternal,
   VscLock,
   VscOrganization,
   VscRefresh,
-  VscRepo,
   VscRepoForked,
   VscSignIn,
   VscSignOut,
   VscTrash,
 } from "react-icons/vsc";
+import type { IconType } from "react-icons";
 import {
   editorOpen,
   githubClone,
@@ -44,7 +46,6 @@ import {
 } from "./api";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { locale, rich, t } from "./i18n";
-import { LanguageTag } from "./logos";
 
 /** The account's state, kept current by the "github" events of the sign-in. */
 export function useGithub() {
@@ -114,7 +115,7 @@ export function GithubRepositories({ editor, onChanged }: { editor: EditorStatus
   const shown = repos && (account === "" || repos.login === account) ? repos : null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {!signedIn && (
         <p className="text-vsc-desc">
           {status === null
@@ -155,10 +156,7 @@ function Account({
   const [copied, setCopied] = useState(false);
   if (!status) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
   return (
-    <section
-      aria-labelledby="gh-account"
-      className="space-y-3 rounded border border-vsc-border bg-vsc-sidebar px-4 py-3"
-    >
+    <section aria-labelledby="gh-account" className="space-y-2 border-t border-vsc-border px-3 py-2">
       <h2 id="gh-account" className="text-[13px] font-semibold">
         {t("Account GitHub del kit")}
       </h2>
@@ -337,12 +335,11 @@ function Repositories({
   };
 
   return (
-    <section aria-labelledby="gh-repos" className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 id="gh-repos" className="text-[13px] font-semibold">
+    <section aria-labelledby="gh-repos" className="space-y-2">
+      <div className="sticky top-0 z-10 -mt-1 flex items-center gap-1 bg-vsc-sidebar py-1">
+        <h2 id="gh-repos" className="sr-only">
           {t("Repository")}
         </h2>
-        {repos && <span className="text-[12px] text-vsc-desc">{repos.repos.length}</span>}
         <input
           type="search"
           aria-label={t("Cerca nei repository")}
@@ -351,9 +348,9 @@ function Repositories({
           onChange={(e) => {
             setFilter(e.target.value);
           }}
-          className="ml-auto w-64 rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1"
+          className="min-w-0 flex-1 input"
         />
-        <ActionButton icon={VscRefresh} label={t("Aggiorna")} busy={loading} onClick={onReload} />
+        <ActionButton icon={VscRefresh} label={t("Aggiorna")} compact busy={loading} onClick={onReload} />
       </div>
       <ErrorLine error={error ?? actionError} />
       {note && (
@@ -381,19 +378,23 @@ function Repositories({
                 {g.owner} · {g.repos.length}
               </h3>
             ) : null}
-            <ul aria-label={g.owner} className="divide-y divide-vsc-border rounded border border-vsc-border">
+            <ul aria-label={g.owner} className="-mx-3">
               {g.repos.map((r) => {
                 const expanded = open === r.fullName;
                 return (
                   <li key={r.fullName}>
-                    <div className="flex flex-wrap items-center gap-2 px-3 py-2 hover:bg-vsc-list-hover">
+                    <div
+                      className={`flex h-[22px] items-center gap-0.5 border-l-2 pr-2 pl-2.5 hover:bg-vsc-list-hover ${
+                        r.local ? "border-l-vsc-success bg-vsc-success/5" : "border-l-transparent"
+                      }`}
+                    >
                       <button
                         type="button"
                         aria-expanded={expanded}
                         onClick={() => {
                           setOpen(expanded ? null : r.fullName);
                         }}
-                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
                       >
                         {expanded ? (
                           <VscChevronDown size={16} aria-hidden="true" className="shrink-0" />
@@ -401,24 +402,16 @@ function Repositories({
                           <VscChevronRight size={16} aria-hidden="true" className="shrink-0" />
                         )}
                         <RepoIcon repo={r} />
-                        <span className="truncate font-semibold">{r.name}</span>
-                        <span className="truncate text-[12px] text-vsc-desc">
-                          {[
-                            r.local ? t("clonato") : "",
-                            r.private ? t("privato") : "",
-                            r.fork ? t("fork") : "",
-                            r.archived ? t("archiviato") : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </span>
-                        {r.language && <LanguageTag name={r.language} />}
+                        <span className={`truncate ${r.local ? "text-vsc-success" : ""}`}>{r.name}</span>
+                        {r.local && <span className="sr-only">{t("clonato")}</span>}
+                        <RepoFlags repo={r} />
                       </button>
                       {r.local ? (
                         <ActionButton
                           icon={VscCode}
                           label={t("Editor")}
                           primary
+                          compact
                           busy={busy === `editor:${r.fullName}`}
                           disabled={editor?.installed === false}
                           title={t("Apre {0} nell'editor", r.local)}
@@ -435,6 +428,7 @@ function Repositories({
                           icon={VscCloudDownload}
                           label={t("Clona")}
                           primary
+                          compact
                           busy={busy === `clone:${r.fullName}`}
                           title={t("Copia {0} in projects", r.fullName)}
                           onClick={() => {
@@ -445,6 +439,7 @@ function Repositories({
                       <ActionButton
                         icon={VscLinkExternal}
                         label="GitHub"
+                        compact
                         title={t("Apre {0} su github.com", r.fullName)}
                         onClick={() => {
                           run(`web:${r.fullName}`, () => githubOpen(r.fullName));
@@ -496,9 +491,36 @@ function Repositories({
   );
 }
 
+/** Private or public; a cloned one is the folder in projects. */
 function RepoIcon({ repo }: { repo: GithubRepo }) {
-  const Icon = repo.local ? VscFolderActive : repo.private ? VscLock : repo.fork ? VscRepoForked : VscRepo;
-  return <Icon size={16} aria-hidden="true" className="shrink-0 text-vsc-desc" />;
+  if (repo.local) return <VscFolderActive size={16} aria-hidden="true" className="shrink-0 text-vsc-success" />;
+  const label = repo.private ? t("privato") : t("pubblico");
+  const Icon = repo.private ? VscLock : VscGlobe;
+  return (
+    <span role="img" aria-label={label} title={label} className="inline-flex shrink-0 text-vsc-desc">
+      <Icon size={16} aria-hidden="true" />
+    </span>
+  );
+}
+
+/** Fork and archived, as icons named on hover (private too when cloned). */
+function RepoFlags({ repo }: { repo: GithubRepo }) {
+  const flags: { on: boolean; icon: IconType; label: string }[] = [
+    { on: repo.local !== null && repo.private, icon: VscLock, label: t("privato") },
+    { on: repo.fork, icon: VscRepoForked, label: t("fork") },
+    { on: repo.archived, icon: VscArchive, label: t("archiviato") },
+  ];
+  return (
+    <>
+      {flags
+        .filter((f) => f.on)
+        .map(({ icon: Icon, label }) => (
+          <span key={label} role="img" aria-label={label} title={label} className="inline-flex shrink-0 text-vsc-desc">
+            <Icon size={14} aria-hidden="true" />
+          </span>
+        ))}
+    </>
+  );
 }
 
 function RepoDetails({
@@ -545,7 +567,7 @@ function RepoDetails({
   };
 
   return (
-    <div className="space-y-3 border-t border-vsc-border bg-vsc-sidebar px-4 py-3">
+    <div className="space-y-1.5 py-1.5 pr-3 pl-8">
       <p className="select-text">
         <span className="font-semibold">{r.fullName}</span>
         {r.description && <span className="text-vsc-desc"> — {r.description}</span>}
@@ -610,7 +632,7 @@ function RepoDetails({
               onChange={(e) => {
                 setName(e.target.value);
               }}
-              className="w-64 rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1"
+              className="w-64 input"
             />
           </label>
           <ActionButton

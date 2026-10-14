@@ -218,11 +218,10 @@ describe("App", () => {
     );
     render(<App />);
     // New project › from your GitHub repositories (the account is in the settings)
-    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto" }));
-    fireEvent.click(screen.getByRole("radio", { name: "Dai tuoi repository GitHub" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Dai tuoi repository GitHub" }));
     const mine = await screen.findByRole("list", { name: "me" });
     // app2 before app10; the organization in its own group
-    expect([...mine.querySelectorAll("li")].map((li) => li.querySelector(".font-semibold")?.textContent)).toEqual([
+    expect([...mine.querySelectorAll("li")].map((li) => li.querySelector("button .truncate")?.textContent)).toEqual([
       "app2",
       "app10",
       "sito",
@@ -260,12 +259,12 @@ describe("App", () => {
     );
     render(<App />);
     expect(await screen.findByText("app & co")).toBeTruthy();
-    expect(screen.getByText("TypeScript")).toBeTruthy();
+    expect(screen.getByRole("img", { name: "TypeScript" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Terminale" }));
     expect(invoke).toHaveBeenCalledWith("terminal_open", { project: "app & co" });
     // the agent last used in the project is the default
     await waitFor(() => {
-      expect(screen.getByLabelText<HTMLSelectElement>("Agente per app & co").value).toBe("codex");
+      expect(screen.getByRole("radio", { name: "Codex" }).getAttribute("aria-checked")).toBe("true");
     });
     fireEvent.click(screen.getByRole("button", { name: "Agente" }));
     expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "codex", project: "app & co" });
@@ -302,7 +301,7 @@ describe("App", () => {
     });
     // The activity bar's Projects again: back to the list
     fireEvent.click(screen.getAllByRole("button", { name: "Progetti" })[0] as HTMLElement);
-    expect(await screen.findByRole("button", { name: "Nuovo progetto" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Nuovo progetto" })).toBeTruthy();
   });
 
   it("reports a failed command", async () => {
@@ -311,7 +310,7 @@ describe("App", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("forbidden");
   });
 
-  it("opens a project in the editor and starts its main action", async () => {
+  it("opens a project in the editor and starts an action from its page", async () => {
     invoke.mockImplementation(
       answers({
         projects_list: [project("sito (1) & co")],
@@ -323,7 +322,10 @@ describe("App", () => {
     expect(await screen.findByText("sito (1) & co")).toBeTruthy();
     fireEvent.click(screen.getByTitle("Apre sito (1) & co nell'editor"));
     expect(invoke).toHaveBeenCalledWith("editor_open", { project: "sito (1) & co" });
-    fireEvent.click(screen.getByRole("button", { name: "Avvia" }));
+    // No Avvia in the list: the project's page starts it
+    expect(screen.queryByRole("button", { name: "Avvia" })).toBeNull();
+    fireEvent.click(screen.getByTitle("Apre la pagina di sito (1) & co"));
+    fireEvent.click((await screen.findAllByRole("button", { name: "Avvia" }))[0] as HTMLElement);
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("run_start", { project: "sito (1) & co", action: "static" });
     });
@@ -333,8 +335,8 @@ describe("App", () => {
     });
     // Its state and output in the Activity panel
     fireEvent.click(screen.getByRole("button", { name: /^Attività/ }));
-    expect(await screen.findByText(/in ascolto/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Apri nel browser" }));
+    expect((await screen.findAllByText(/in ascolto/)).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole("button", { name: "Apri nel browser" })[0] as HTMLElement);
     expect(invoke).toHaveBeenCalledWith("url_open", { url: "http://localhost:7100/" });
   });
 
@@ -389,7 +391,7 @@ describe("App", () => {
   it("shows the progress of an automatic installation", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
-    await screen.findByRole("button", { name: "Nuovo progetto" });
+    await screen.findByRole("heading", { name: "Nuovo progetto" });
     act(() => {
       setupListener?.({
         payload: {

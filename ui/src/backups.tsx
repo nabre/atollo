@@ -29,7 +29,7 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
   useEffect(load, [load]);
   const { busy, error, run } = useAction(load);
   return (
-    <div className="space-y-2 border-t border-vsc-border px-4 py-3">
+    <div className="space-y-2 border-t border-vsc-border px-3 py-2">
       <div className="flex flex-wrap items-center gap-2">
         <span className="min-w-0 flex-1 font-semibold">{t("Copie")}</span>
         <ActionButton
@@ -63,9 +63,9 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
           {t("Nessuna copia. Per ripristinare un file da fuori, copialo nella cartella delle copie.")}
         </p>
       ) : (
-        <ul className="divide-y divide-vsc-border rounded-sm border border-vsc-border">
+        <ul className="divide-y divide-vsc-border border-t border-vsc-border">
           {list.map((b) => (
-            <li key={b.file} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
+            <li key={b.file} className="flex flex-wrap items-center gap-2 px-2 py-1">
               <span className="min-w-0 flex-1 truncate font-mono text-[12px]">{b.file}</span>
               <span className="text-[12px] text-vsc-desc">{size(b.size)}</span>
               {confirm === b.file ? (

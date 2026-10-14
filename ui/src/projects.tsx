@@ -1,7 +1,7 @@
 // Projects page: what each project in projects\ is, how it starts (detected
 // by src-tauri/src/detect, corrected by panel.json) and its running actions
 // with their output. Web actions get their own port and open in the browser.
-import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import {
   VscAdd,
   VscChevronRight,
@@ -20,6 +20,7 @@ import {
   VscTrash,
   VscWarning,
 } from "react-icons/vsc";
+import type { IconType } from "react-icons";
 import {
   editorOpen,
   folderOpen,
@@ -56,8 +57,8 @@ import { ProjectPage } from "./projectpage";
 import { ActionForm } from "./actionform";
 import { GithubRepositories } from "./github";
 import { ActionButton, ErrorLine, useAction } from "./pages";
-import { locale, t } from "./i18n";
-import { LanguageTag } from "./logos";
+import { t } from "./i18n";
+import { LanguageIcon } from "./logos";
 
 const MAX_LINES = 3000;
 
@@ -153,7 +154,8 @@ export function ProjectsPage({
   const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  /** The open panes of the side bar. */
+  const [creating, setCreating] = useState<Set<NewWay>>(() => new Set(["empty"]));
   const [ports, setPorts] = useState<Ports>({ ports: {}, locked: [] });
   const [shownLog, setShownLog] = useState<string | null>(null);
   const { busy, error, run } = useAction(onChanged);
@@ -172,6 +174,10 @@ export function ProjectsPage({
   }, []);
   useEffect(load, [load]);
 
+  const created = (name: string) => {
+    setOpen(name);
+    load();
+  };
   const showLog = (key: string) => {
     setShownLog(key);
     loadLog(key);
@@ -218,136 +224,194 @@ export function ProjectsPage({
   }
 
   return (
-    <div className="max-w-5xl space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <ActionButton
-          icon={VscAdd}
-          label={t("Nuovo progetto")}
-          primary
-          onClick={() => {
-            setCreating(!creating);
-          }}
-        />
-        <ActionButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
-        <ActionButton
-          icon={VscFolderOpened}
-          label={t("Apri la cartella")}
-          onClick={() => {
-            run("folder", () => folderOpen("projects"));
-          }}
-        />
-      </div>
-      {creating && (
-        <NewProjectPanel
-          editor={status}
-          onDone={(name) => {
-            setCreating(false);
-            setOpen(name);
-            load();
-          }}
-          onChanged={onChanged}
-        />
-      )}
-      <p className="text-vsc-desc">
-        {t(
-          "Le cartelle in projects sono attendibili per Claude e Codex e i loro comandi partono dai pulsanti qui sotto: apri qui solo codice di cui ti fidi.",
+    // The whole content area, as the editor's side bar: never taller than the window.
+    <div className="absolute inset-0 flex">
+      <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-r border-vsc-border bg-vsc-sidebar">
+        <div className="flex h-[35px] shrink-0 items-center gap-0.5 pr-2 pl-5">
+          <h2 className="min-w-0 flex-1 truncate text-[11px] font-normal tracking-wide uppercase">
+            {t("Nuovo progetto")}
+          </h2>
+          <ToolbarIcon icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
+          <ToolbarIcon
+            icon={VscFolderOpened}
+            label={t("Apri la cartella")}
+            onClick={() => {
+              run("folder", () => folderOpen("projects"));
+            }}
+          />
+        </div>
+        {newWays().map((w) => (
+          <SidePane
+            key={w.id}
+            title={w.label}
+            fill={w.id === "github"}
+            expanded={creating.has(w.id)}
+            onToggle={() => {
+              const next = new Set(creating);
+              if (!next.delete(w.id)) next.add(w.id);
+              setCreating(next);
+            }}
+          >
+            {w.id === "empty" && <NewProject onDone={created} />}
+            {w.id === "url" && <CloneProject onDone={created} />}
+            {w.id === "github" && <GithubRepositories editor={status} onChanged={onChanged} />}
+          </SidePane>
+        ))}
+      </aside>
+      <div className="min-w-0 flex-1 space-y-3 overflow-y-auto p-3">
+        <p className="text-vsc-desc">
+          {t(
+            "Le cartelle in projects sono attendibili per Claude e Codex e i loro comandi partono dai pulsanti qui sotto: apri qui solo codice di cui ti fidi.",
+          )}
+        </p>
+        <ErrorLine error={loadError ?? error} />
+        {projects === null ? (
+          <p className="text-vsc-desc">{t("Caricamento…")}</p>
+        ) : projects.length === 0 ? (
+          <p className="text-vsc-desc">{t("Nessun progetto. Creane uno nuovo o clonane uno.")}</p>
+        ) : (
+          <ul aria-label={t("Progetti")} className="-mx-3">
+            {projects.map((p) => {
+              return (
+                <li key={p.id}>
+                  <div className="flex items-center gap-2 px-3 py-0.5 hover:bg-vsc-list-hover">
+                    <button
+                      type="button"
+                      title={t("Apre la pagina di {0}", p.name)}
+                      onClick={() => {
+                        setOpen(p.id);
+                      }}
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    >
+                      <VscChevronRight size={16} aria-hidden="true" className="shrink-0" />
+                      <span className="truncate font-semibold">{p.name}</span>
+                      <span className="truncate text-[12px] text-vsc-desc">{p.platform}</span>
+                      {p.languages.length > 0 && (
+                        <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          {p.languages.slice(0, 6).map((l) => (
+                            <LanguageIcon key={l} name={l} />
+                          ))}
+                          {p.languages.length > 6 && (
+                            <span className="text-[11px] text-vsc-desc">+{String(p.languages.length - 6)}</span>
+                          )}
+                        </span>
+                      )}
+                      {p.missing.length > 0 && (
+                        <VscWarning
+                          size={14}
+                          className="shrink-0 text-vsc-warning"
+                          aria-label={t("Mancano componenti: {0}", p.missing.join(", "))}
+                        />
+                      )}
+                    </button>
+                    <ActionButton
+                      icon={VscCode}
+                      label={t("Editor")}
+                      compact
+                      busy={busy === `editor:${p.id}`}
+                      disabled={status?.installed === false}
+                      title={t("Apre {0} nell'editor", p.name)}
+                      onClick={() => {
+                        run(`editor:${p.id}`, () => editorOpen(p.id));
+                      }}
+                    />
+                    <ActionButton
+                      icon={VscTerminal}
+                      label={t("Terminale")}
+                      compact
+                      busy={busy === `terminal:${p.id}`}
+                      title={t("Console del kit in {0}", p.name)}
+                      onClick={() => {
+                        run(`terminal:${p.id}`, () => terminalOpen(p.id));
+                      }}
+                    />
+                    <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} compact />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
-      </p>
-      <ErrorLine error={loadError ?? error} />
-      {projects === null ? (
-        <p className="text-vsc-desc">{t("Caricamento…")}</p>
-      ) : projects.length === 0 ? (
-        <p className="text-vsc-desc">{t("Nessun progetto. Creane uno nuovo o clonane uno.")}</p>
-      ) : (
-        <ul aria-label={t("Progetti")} className="divide-y divide-vsc-border rounded border border-vsc-border">
-          {projects.map((p) => {
-            const main = p.actions.find((a) => a.id === p.default) ?? null;
-            const mainRun = main ? runs[`${p.id}|${main.id}`] : undefined;
-            return (
-              <li key={p.id}>
-                <div className="flex flex-wrap items-center gap-2 px-3 py-2 hover:bg-vsc-list-hover">
-                  <button
-                    type="button"
-                    title={t("Apre la pagina di {0}", p.name)}
-                    onClick={() => {
-                      setOpen(p.id);
-                    }}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                  >
-                    <VscChevronRight size={16} aria-hidden="true" className="shrink-0" />
-                    <span className="truncate font-semibold">{p.name}</span>
-                    <span className="truncate text-[12px] text-vsc-desc">{p.platform}</span>
-                    {p.languages.length > 0 && (
-                      <span className="flex min-w-0 flex-wrap gap-1">
-                        {p.languages.slice(0, 6).map((l) => (
-                          <LanguageTag key={l} name={l} />
-                        ))}
-                        {p.languages.length > 6 && (
-                          <span className="text-[11px] text-vsc-desc">+{String(p.languages.length - 6)}</span>
-                        )}
-                      </span>
-                    )}
-                    {p.missing.length > 0 && (
-                      <VscWarning
-                        size={14}
-                        className="shrink-0 text-vsc-warning"
-                        aria-label={t("Mancano componenti: {0}", p.missing.join(", "))}
-                      />
-                    )}
-                  </button>
-                  <span className="text-[12px] text-vsc-desc">
-                    {new Intl.DateTimeFormat(locale(), { dateStyle: "medium" }).format(new Date(p.modified * 1000))}
-                  </span>
-                  {main &&
-                    (mainRun && alive(mainRun.state) ? (
-                      <ActionButton
-                        icon={VscDebugStop}
-                        label={t("Ferma")}
-                        title={main.label}
-                        busy={busy === `stop:${mainRun.key}`}
-                        onClick={() => {
-                          run(`stop:${mainRun.key}`, () => runStop(mainRun.key));
-                        }}
-                      />
-                    ) : (
-                      <ActionButton
-                        icon={VscDebugStart}
-                        label={t("Avvia")}
-                        primary
-                        title={main.label}
-                        busy={busy === `run:${p.id}|${main.id}`}
-                        onClick={() => {
-                          start(p, main);
-                        }}
-                      />
-                    ))}
-                  <ActionButton
-                    icon={VscCode}
-                    label={t("Editor")}
-                    busy={busy === `editor:${p.id}`}
-                    disabled={status?.installed === false}
-                    title={t("Apre {0} nell'editor", p.name)}
-                    onClick={() => {
-                      run(`editor:${p.id}`, () => editorOpen(p.id));
-                    }}
-                  />
-                  <ActionButton
-                    icon={VscTerminal}
-                    label={t("Terminale")}
-                    busy={busy === `terminal:${p.id}`}
-                    title={t("Console del kit in {0}", p.name)}
-                    onClick={() => {
-                      run(`terminal:${p.id}`, () => terminalOpen(p.id));
-                    }}
-                  />
-                  <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      </div>
     </div>
+  );
+}
+
+type NewWay = "empty" | "github" | "url";
+
+/** The ways to make a new project, each a pane of the side bar. */
+function newWays(): { id: NewWay; label: string }[] {
+  return [
+    { id: "empty", label: t("Vuoto") },
+    { id: "github", label: t("Dai tuoi repository GitHub") },
+    { id: "url", label: t("Da un indirizzo Git") },
+  ];
+}
+
+/** An icon of a side bar's title, as in the editor. */
+function ToolbarIcon({ icon: Icon, label, onClick }: { icon: IconType; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="rounded-sm p-1 text-vsc-fg hover:bg-vsc-list-hover"
+    >
+      <Icon size={16} aria-hidden="true" />
+    </button>
+  );
+}
+
+/** A collapsible pane of the side bar, as OPEN EDITORS or OUTLINE in the
+ * editor. It opens with a slide and scrolls inside; a `fill` pane takes the
+ * height left by the others. */
+function SidePane({
+  title,
+  expanded,
+  fill = false,
+  onToggle,
+  children,
+}: {
+  title: string;
+  expanded: boolean;
+  fill?: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      // Only the `fill` pane gives up height: the small forms stay whole.
+      className={`flex flex-col border-t border-vsc-border transition-[flex-grow] duration-200 ease-out ${
+        fill ? "min-h-[22px] shrink" : "shrink-0"
+      }`}
+      style={{ flexGrow: fill && expanded ? 1 : 0, flexBasis: fill && expanded ? 0 : "auto" }}
+    >
+      <h3 className="shrink-0">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={onToggle}
+          className="flex h-[22px] w-full items-center gap-0.5 px-0.5 text-left text-[11px] font-bold uppercase hover:bg-vsc-list-hover"
+        >
+          <VscChevronRight
+            size={16}
+            aria-hidden="true"
+            className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
+          />
+          <span className="truncate">{title}</span>
+        </button>
+      </h3>
+      <div
+        inert={!expanded}
+        className="grid min-h-0 flex-1 transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+      >
+        <div className="min-h-0 overflow-y-auto">
+          <div className="px-3 pt-1 pb-3">{children}</div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -377,7 +441,7 @@ export function ProjectDetails({
   /** The action being edited ("new": a new one). */
   const [editing, setEditing] = useState<string | null>(null);
   return (
-    <div id={`project-${p.id}`} className="space-y-3 border-t border-vsc-border bg-vsc-sidebar px-4 py-3">
+    <div id={`project-${p.id}`} className="space-y-2 border-t border-vsc-border bg-vsc-sidebar px-3 py-2">
       {!onlyRun && <p className="text-[12px] text-vsc-desc">{p.reason}</p>}
       {!onlyRun && p.missing.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
@@ -433,7 +497,7 @@ export function ProjectDetails({
               const r = runs[key];
               return (
                 <tr key={a.id} className="border-t border-vsc-border align-middle">
-                  <td className="py-1.5 pr-3">
+                  <td className="py-1 pr-3">
                     <div>
                       {a.label}
                       {p.default === a.id && <span className="ml-2 text-[11px] text-vsc-desc">{t("predefinita")}</span>}
@@ -443,11 +507,11 @@ export function ProjectDetails({
                       {a.static !== null ? t("file server del kit: {0}", a.static) : a.command}
                     </div>
                   </td>
-                  <td className="py-1.5 pr-3 text-vsc-desc">
+                  <td className="py-1 pr-3 text-vsc-desc">
                     {kindText(a.type)}
                     {r && ` · ${stateText(r)}`}
                   </td>
-                  <td className="py-1.5 pr-3">
+                  <td className="py-1 pr-3">
                     {a.type === "web" && (
                       // Remounted when the saved port changes: the field shows it.
                       <PortField
@@ -458,7 +522,7 @@ export function ProjectDetails({
                       />
                     )}
                   </td>
-                  <td className="py-1.5">
+                  <td className="py-1">
                     <div className="flex flex-wrap justify-end gap-2">
                       {onlyRun && a.static === null && (
                         <ActionButton
@@ -601,7 +665,7 @@ function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Po
             ? t("Porta scelta da te")
             : t("Porta automatica, la stessa a ogni avvio. Scrivi un numero per sceglierla.")
         }
-        className="w-24 rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-0.5"
+        className="w-24 input"
       />
       {error && (
         <p role="alert" className="text-[12px] text-vsc-error">
@@ -631,7 +695,7 @@ function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () 
           onChange={(e) => {
             setFolder(e.target.value);
           }}
-          className="w-48 rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1"
+          className="w-full input"
         />
       </label>
       <label className="flex flex-col gap-1">
@@ -641,7 +705,7 @@ function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () 
           onChange={(e) => {
             setKind(e.target.value as SiteKind);
           }}
-          className="rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1"
+          className="input"
         >
           <option value="static">{t("file statici")}</option>
           <option value="php">PHP</option>
@@ -658,9 +722,7 @@ function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () 
           }}
         />
       )}
-      <div className="basis-full">
-        <ErrorLine error={error} />
-      </div>
+      <ErrorLine error={error} />
     </form>
   );
 }
@@ -683,13 +745,13 @@ export function RunsPanel({
   const { error, run } = useAction();
   const current = runs.find((r) => r.key === shown) ?? null;
   return (
-    <section aria-labelledby="runs" className="rounded border border-vsc-border">
-      <h2 id="runs" className="border-b border-vsc-border px-3 py-2 text-[13px] font-semibold">
+    <section aria-labelledby="runs" className="border-t border-vsc-border">
+      <h2 id="runs" className="px-3 py-2 text-[13px] font-semibold">
         {t("Avviati")}
       </h2>
       <ul className="divide-y divide-vsc-border">
         {runs.map((r) => (
-          <li key={r.key} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
+          <li key={r.key} className="flex flex-wrap items-center gap-2 px-2 py-1">
             <span className="min-w-0 flex-1 truncate">
               {r.project}: {r.label}
             </span>
@@ -775,55 +837,6 @@ function LogView({ title, lines }: { title: string; lines: string[] }) {
   );
 }
 
-/** "Nuovo progetto" (D-76): empty, from the account's GitHub repositories
- * or from any Git address, in one place. */
-function NewProjectPanel({
-  editor,
-  onDone,
-  onChanged,
-}: {
-  editor: EditorStatus | null;
-  onDone: (name: string) => void;
-  onChanged: () => void;
-}) {
-  const [way, setWay] = useState<"empty" | "github" | "url">("empty");
-  const ways: { id: typeof way; label: string }[] = [
-    { id: "empty", label: t("Vuoto") },
-    { id: "github", label: t("Dai tuoi repository GitHub") },
-    { id: "url", label: t("Da un indirizzo Git") },
-  ];
-  return (
-    <section
-      aria-label={t("Nuovo progetto")}
-      className="space-y-3 rounded-sm border border-vsc-border bg-vsc-sidebar p-4"
-    >
-      <div role="radiogroup" aria-label={t("Come")} className="flex flex-wrap gap-2">
-        {ways.map((w) => (
-          <button
-            key={w.id}
-            type="button"
-            role="radio"
-            aria-checked={way === w.id}
-            onClick={() => {
-              setWay(w.id);
-            }}
-            className={`rounded-sm border px-3 py-1.5 ${
-              way === w.id
-                ? "border-vsc-focus bg-vsc-list-active text-vsc-fg"
-                : "border-vsc-border text-vsc-desc hover:text-vsc-fg"
-            }`}
-          >
-            {w.label}
-          </button>
-        ))}
-      </div>
-      {way === "empty" && <NewProject onDone={onDone} />}
-      {way === "url" && <CloneProject onDone={onDone} />}
-      {way === "github" && <GithubRepositories editor={editor} onChanged={onChanged} />}
-    </section>
-  );
-}
-
 function NewProject({ onDone }: { onDone: (name: string) => void }) {
   const [name, setName] = useState("");
   const { busy, error, run } = useAction();
@@ -834,23 +847,31 @@ function NewProject({ onDone }: { onDone: (name: string) => void }) {
     });
   };
   return (
-    <form onSubmit={submit} className="flex flex-wrap items-end gap-2 rounded border border-vsc-border p-3">
-      <label className="flex flex-col gap-1">
-        <span className="text-[12px] text-vsc-desc">{t("Nome della cartella")}</span>
+    <form onSubmit={submit} className="space-y-1">
+      <label htmlFor="new-project-name" className="block text-[12px] text-vsc-desc">
+        {t("Nome della cartella")}
+      </label>
+      <div className="flex items-center gap-1">
         <input
-          autoFocus
+          id="new-project-name"
           required
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
-          className="w-64 rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1"
+          className="input min-w-0 flex-1"
         />
-      </label>
-      <ActionButton icon={VscAdd} label={t("Crea")} primary submit busy={busy === "create"} onClick={() => undefined} />
-      <div className="basis-full">
-        <ErrorLine error={error} />
+        <ActionButton
+          icon={VscAdd}
+          label={t("Crea")}
+          primary
+          compact
+          submit
+          busy={busy === "create"}
+          onClick={() => undefined}
+        />
       </div>
+      <ErrorLine error={error} />
     </form>
   );
 }
@@ -866,17 +887,16 @@ function CloneProject({ onDone }: { onDone: (name: string) => void }) {
     });
   };
   return (
-    <form onSubmit={submit} className="flex flex-wrap items-end gap-2 rounded border border-vsc-border p-3">
+    <form onSubmit={submit} className="space-y-2">
       <label className="flex flex-col gap-1">
         <span className="text-[12px] text-vsc-desc">{t("owner/repository di GitHub o indirizzo https://")}</span>
         <input
-          autoFocus
           required
           value={source}
           onChange={(e) => {
             setSource(e.target.value);
           }}
-          className="w-80 rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1"
+          className="w-full input"
         />
       </label>
       <label className="flex flex-col gap-1">
@@ -886,7 +906,7 @@ function CloneProject({ onDone }: { onDone: (name: string) => void }) {
           onChange={(e) => {
             setName(e.target.value);
           }}
-          className="w-48 rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1"
+          className="w-full input"
         />
       </label>
       <ActionButton
@@ -897,9 +917,7 @@ function CloneProject({ onDone }: { onDone: (name: string) => void }) {
         busy={busy === "clone"}
         onClick={() => undefined}
       />
-      <div className="basis-full">
-        <ErrorLine error={error} />
-      </div>
+      <ErrorLine error={error} />
     </form>
   );
 }

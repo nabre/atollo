@@ -17,7 +17,7 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
   const [command, setCommand] = useState("");
   const [args, setArgs] = useState("");
   const [url, setUrl] = useState("");
-  const field = "w-full rounded-sm border border-vsc-input-border bg-vsc-input px-2 py-1 text-vsc-fg";
+  const field = "w-full input";
   const submit = (e: SyntheticEvent) => {
     e.preventDefault();
     onAdd({
@@ -39,9 +39,9 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
     <form
       onSubmit={submit}
       aria-label={t("Nuovo server MCP")}
-      className="space-y-3 border-t border-vsc-border px-4 py-3"
+      className="space-y-2 border-t border-vsc-border px-3 py-2"
     >
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <label className="space-y-1">
           <span className="text-vsc-desc">{t("Nome")}</span>
           <input
@@ -69,7 +69,7 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
         </label>
       </div>
       {kind === "stdio" ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           <label className="space-y-1">
             <span className="text-vsc-desc">{t("Programma")}</span>
             <input
@@ -130,25 +130,25 @@ export function ProjectMcpBox({ project }: { project: string }) {
     run("save", () => projectMcpSet(project, servers));
   };
   return (
-    <section aria-labelledby="project-mcp" className="rounded-sm border border-vsc-border bg-vsc-sidebar">
+    <section aria-labelledby="project-mcp" className="border-t border-vsc-border">
       <h2
         id="project-mcp"
-        className="flex items-center gap-2 border-b border-vsc-border px-4 py-2 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
+        className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
       >
         {t("Server MCP del progetto")}
       </h2>
       {view.readOnly ? (
-        <p className="px-4 py-3 text-vsc-desc">
+        <p className="px-3 py-2 text-vsc-desc">
           {t(".mcp.json non è JSON semplice: Atollo non lo riscrive. Modificalo nell'editor.")}
         </p>
       ) : (
         <>
           <ul className="divide-y divide-vsc-border">
             {view.servers.length === 0 && (
-              <li className="px-4 py-2 text-vsc-desc">{t("Nessuno: solo quelli del kit.")}</li>
+              <li className="px-3 py-1.5 text-vsc-desc">{t("Nessuno: solo quelli del kit.")}</li>
             )}
             {view.servers.map((s) => (
-              <li key={s.name} className="flex flex-wrap items-center gap-3 px-4 py-2">
+              <li key={s.name} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
                 <span className="font-semibold">{s.name}</span>
                 <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-vsc-desc">{describe(s)}</span>
                 <ActionButton
@@ -173,7 +173,7 @@ export function ProjectMcpBox({ project }: { project: string }) {
               }}
             />
           ) : (
-            <div className="px-4 py-3">
+            <div className="px-3 py-2">
               <ActionButton
                 icon={VscAdd}
                 label={t("Aggiungi un server")}

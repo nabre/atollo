@@ -136,21 +136,78 @@ body {
   user-select: none;
 }
 
+/* Scroll bars as VSCodium's: thin, no arrows, a translucent thumb. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(121 121 121 / 0.4);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(100 100 100 / 0.7);
+}
+::-webkit-scrollbar-thumb:active {
+  background: rgb(191 191 191 / 0.4);
+}
+
 /* Visible keyboard focus everywhere, as in VSCodium. */
 :focus-visible {
   outline: 1px solid var(--vsc-focus);
   outline-offset: -1px;
 }
 
-/* Text fields and lists, as VSCodium's inputs. */
-.input {
-  min-width: 16rem;
-  border: 1px solid var(--vsc-input-border);
-  border-radius: 2px;
-  background: var(--vsc-input);
-  color: var(--vsc-fg);
-  padding: 4px 8px;
-  user-select: text;
+/* Text fields, lists and text areas, as VSCodium's inputs: 24px high,
+   a thin border that turns blue on focus. Width comes from utilities. */
+@layer components {
+  .input {
+    height: 24px;
+    border: 1px solid var(--vsc-input-border);
+    border-radius: 2px;
+    background: var(--vsc-input);
+    color: var(--vsc-fg);
+    padding: 0 6px;
+    font: inherit;
+    line-height: 22px;
+    user-select: text;
+  }
+  textarea.input {
+    height: auto;
+    padding: 3px 6px;
+    line-height: 1.45;
+    resize: vertical;
+  }
+  .input::placeholder {
+    color: var(--vsc-desc);
+    opacity: 1;
+  }
+  .input:focus {
+    border-color: var(--vsc-focus);
+    outline: none;
+  }
+  .input:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  select.input {
+    appearance: none;
+    padding-right: 22px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.4'/%3E%3C/svg%3E");
+    background-position: right 4px center;
+    background-repeat: no-repeat;
+    background-size: 14px;
+  }
+  select.input option {
+    background: var(--vsc-input);
+    color: var(--vsc-fg);
+  }
 }
 
 input,
