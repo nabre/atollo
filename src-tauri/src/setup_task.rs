@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use serde::Serialize;
 
-use crate::catalog::{Catalog, Group};
+use crate::catalog::Catalog;
 use crate::env::KitEnv;
 use crate::install::{self, Ctx};
 use crate::kit::Kit;
@@ -56,13 +56,17 @@ pub struct SetupTask {
 /// Called with the new snapshot after every change.
 pub type Notify = Box<dyn Fn(&Snapshot) + Send>;
 
-/// Required components this app can install that are not installed yet.
+/// Required components (and the parts of the app) this app can install that
+/// are not installed yet, or, for the parts of the app, not at the version of
+/// this release.
 pub fn missing_required(kit: &Kit) -> Vec<String> {
     Catalog::get()
         .all()
         .iter()
-        .filter(|c| c.group == Group::Required)
-        .filter(|c| install::installer(&c.id).is_some() && !c.is_installed(kit))
+        .filter(|c| c.group.always())
+        .filter(|c| {
+            install::installer(&c.id).is_some() && (!c.is_installed(kit) || c.outdated(kit))
+        })
         .map(|c| c.id.clone())
         .collect()
 }
@@ -253,6 +257,27 @@ mod tests {
         assert!(!missing_required(&kit).contains(&"pwsh".to_owned()));
     }
 
+    /// The editor at another version than this release's counts as missing:
+    /// it is installed again at the fixed one.
+    #[test]
+    fn editor_of_another_release_is_missing() {
+        let tmp = TempDir::new("task-pinned");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let editor = Catalog::get().find("vscodium-server").unwrap();
+        for key in editor.key_paths(&kit) {
+            fs::create_dir_all(key.parent().unwrap()).unwrap();
+            fs::write(&key, b"").unwrap();
+        }
+        editor.save_version(&kit, "1.0.0").unwrap();
+        assert!(editor.is_installed(&kit) && editor.outdated(&kit));
+        assert!(missing_required(&kit).contains(&editor.id));
+        editor
+            .save_version(&kit, editor.version.as_deref().unwrap())
+            .unwrap();
+        assert!(!missing_required(&kit).contains(&editor.id));
+    }
+
     /// No network: every required component is already installed.
     #[test]
     fn run_reports_steps_and_ends() {
@@ -260,17 +285,14 @@ mod tests {
         let kit = Kit::at(tmp.0.clone(), Arch::X64);
         kit.prepare().unwrap();
         let catalog = Catalog::get();
-        let required: Vec<_> = catalog
-            .all()
-            .iter()
-            .filter(|c| c.group == Group::Required)
-            .collect();
+        let required: Vec<_> = catalog.all().iter().filter(|c| c.group.always()).collect();
         for c in &required {
             for key in c.key_paths(&kit) {
                 fs::create_dir_all(key.parent().unwrap()).unwrap();
                 fs::write(&key, b"").unwrap();
             }
-            c.save_version(&kit, "1.0").unwrap();
+            c.save_version(&kit, c.version.as_deref().unwrap_or("1.0"))
+                .unwrap();
         }
 
         let task = Arc::new(SetupTask::new(
@@ -298,7 +320,12 @@ mod tests {
         assert_eq!(last.steps.len(), required.len());
         assert!(last.steps.iter().all(|s| s.outcome
             == Some(Outcome::UpToDate {
-                version: Some("1.0".into())
+                version: Some(
+                    catalog
+                        .find(&s.id)
+                        .and_then(|c| c.version.clone())
+                        .unwrap_or_else(|| "1.0".into())
+                )
             })));
     }
 }

@@ -22,6 +22,17 @@ pub enum Group {
     Required,
     Agents,
     Languages,
+    /// Part of Dev-Kit itself (the editor): not in "Linguaggi e strumenti",
+    /// always installed, at the version fixed in the catalog for this
+    /// release (`version`, `sha256`).
+    App,
+}
+
+impl Group {
+    /// Always installed: never turned off or skipped.
+    pub fn always(self) -> bool {
+        matches!(self, Group::Required | Group::App)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -61,6 +72,12 @@ pub struct Component {
     /// `data\apps\<platform>`, `@` = the kit root) and arguments.
     #[serde(default)]
     pub check: Vec<String>,
+    /// Group `app`: the version this release of Dev-Kit installs, and the
+    /// SHA-256 of its download.
+    #[serde(default)]
+    pub version: Option<String>,
+    #[serde(default)]
+    pub sha256: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -187,6 +204,14 @@ impl Component {
             .filter(|v| !v.is_empty())
     }
 
+    /// A part of the app (fixed `version`) installed at another version: the
+    /// release of Dev-Kit changed, so it is installed again.
+    pub fn outdated(&self, kit: &Kit) -> bool {
+        self.version
+            .as_deref()
+            .is_some_and(|v| self.installed_version(kit).as_deref() != Some(v))
+    }
+
     pub fn save_version(&self, kit: &Kit, version: &str) -> Result<()> {
         let path = Self::version_file(kit, &self.id);
         if let Some(dir) = path.parent() {
@@ -250,7 +275,7 @@ impl Choice {
     /// off is off too (`Repair-ComponentChoice`).
     pub fn repair(&mut self, catalog: &Catalog) {
         for c in catalog.all() {
-            if c.group == Group::Required {
+            if c.group.always() {
                 self.chosen.insert(c.id.clone(), true);
             }
         }
@@ -280,7 +305,7 @@ impl Choice {
     /// "Languages and tools" page of nabre/dev-kit does.
     pub fn set(&mut self, catalog: &Catalog, id: &str, on: bool) {
         let Some(c) = catalog.find(id) else { return };
-        if c.group == Group::Required {
+        if c.group.always() {
             return;
         }
         self.chosen.insert(id.to_owned(), on);
@@ -355,13 +380,23 @@ mod tests {
                 assert!(ids.contains(n.as_str()), "{} needs unknown {n}", c.id);
             }
         }
-        for id in ["git", "node", "uv", "gh", "pwsh", "vscodium-server"] {
+        for id in ["git", "node", "uv", "gh", "pwsh"] {
             assert_eq!(
                 catalog.find(id).map(|c| c.group),
                 Some(Group::Required),
                 "{id}"
             );
         }
+        // Only the parts of the app have a fixed version, and all of them do.
+        for c in catalog.all() {
+            let app = c.group == Group::App;
+            assert_eq!(c.version.is_some(), app, "{}: version", c.id);
+            assert_eq!(c.sha256.is_some(), app, "{}: sha256", c.id);
+        }
+        assert_eq!(
+            catalog.find("vscodium-server").map(|c| c.group),
+            Some(Group::App)
+        );
     }
 
     #[test]

@@ -17,7 +17,7 @@ use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS
 use windows::Win32::System::Threading::CreateMutexW;
 
 use crate::archive::{self, InUse};
-use crate::catalog::{Catalog, Choice, Component, Group};
+use crate::catalog::{Catalog, Choice, Component};
 use crate::install::{self, Ctx, Progress};
 use crate::kit::Arch;
 use crate::net::Cancelled;
@@ -195,14 +195,14 @@ fn chosen_without_skipped<'a>(
         .all()
         .iter()
         .filter(|c| choice.is_chosen(&c.id) && !(arm64 && c.no_arm64))
-        .filter(|c| c.group == Group::Required || !skip.contains(&c.id))
+        .filter(|c| c.group.always() || !skip.contains(&c.id))
         .map(|c| c.id.as_str())
         .collect();
     loop {
         let missing_need: Vec<&str> = catalog
             .all()
             .iter()
-            .filter(|c| wanted.contains(c.id.as_str()) && c.group != Group::Required)
+            .filter(|c| wanted.contains(c.id.as_str()) && !c.group.always())
             .filter(|c| !installed.contains(c.id.as_str()))
             .filter(|c| {
                 c.needs
@@ -333,7 +333,9 @@ fn remove_component(ctx: &Ctx, c: &Component) -> Result<()> {
 fn step(ctx: &Ctx, c: &Component, update_all: bool, force: bool, sink: &mut dyn Sink) -> Outcome {
     let installed = c.is_installed(ctx.kit);
     let current = c.installed_version(ctx.kit);
-    if installed && !update_all && !force {
+    // A part of the app at another version than this release's: installed
+    // again without "update all", and never newer than the fixed one.
+    if installed && !update_all && !force && !c.outdated(ctx.kit) {
         return Outcome::UpToDate { version: current };
     }
     let Some(installer) = install::installer(&c.id) else {
@@ -405,7 +407,8 @@ mod tests {
             fs::create_dir_all(key.parent().unwrap()).unwrap();
             fs::write(&key, b"").unwrap();
         }
-        c.save_version(ctx.kit, "1.0").unwrap();
+        c.save_version(ctx.kit, c.version.as_deref().unwrap_or("1.0"))
+            .unwrap();
     }
 
     #[derive(Default)]
@@ -577,7 +580,7 @@ mod tests {
             let required: Vec<String> = catalog
                 .all()
                 .iter()
-                .filter(|c| c.group == Group::Required)
+                .filter(|c| c.group.always())
                 .map(|c| c.id.clone())
                 .collect();
             for id in &required {
@@ -595,9 +598,14 @@ mod tests {
                 required.iter().collect::<Vec<_>>(),
                 "required ones are never skipped"
             );
-            assert!(results.iter().all(|(_, o)| *o
+            assert!(results.iter().all(|(id, o)| *o
                 == Outcome::UpToDate {
-                    version: Some("1.0".into())
+                    version: Some(
+                        catalog
+                            .find(id)
+                            .and_then(|c| c.version.clone())
+                            .unwrap_or_else(|| "1.0".into())
+                    )
                 }));
             assert!(
                 ctx.kit.app_dir().join("components.txt").is_file(),
