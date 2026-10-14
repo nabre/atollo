@@ -289,54 +289,121 @@ pub fn clone(
     Ok(dir)
 }
 
-/// Git state of a project for its page (read only: commits and pushes stay
-/// in the editor and the agents).
+/// Git state of a project for its page, read from the files of `.git`
+/// without running Git: a cloned repository's own `.git/config` can make
+/// `git status` run commands (`core.fsmonitor`, `clean` filters), and the
+/// page is shown without asking (security review, 14/10/2026). Commits,
+/// pushes and the list of changes stay in the editor and the agents.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitInfo {
+    /// None: detached HEAD.
     pub branch: Option<String>,
+    /// `origin/main` when the branch follows a remote one.
     pub upstream: Option<String>,
-    pub ahead: u32,
-    pub behind: u32,
-    /// Changed, added, deleted or untracked files.
-    pub changes: u32,
+    /// The branch and its remote point to the same commit (as of the last
+    /// fetch); None without an upstream.
+    pub synced: Option<bool>,
     pub remote: Option<String>,
 }
 
-/// From `git status --porcelain=v2 --branch`.
-pub fn parse_git_status(text: &str) -> GitInfo {
-    let mut info = GitInfo::default();
-    for line in text.lines() {
-        if let Some(head) = line.strip_prefix("# branch.head ") {
-            info.branch = (head != "(detached)").then(|| head.to_owned());
-        } else if let Some(up) = line.strip_prefix("# branch.upstream ") {
-            info.upstream = Some(up.to_owned());
-        } else if let Some(ab) = line.strip_prefix("# branch.ab ") {
-            for part in ab.split_whitespace() {
-                if let Some(n) = part.strip_prefix('+') {
-                    info.ahead = n.parse().unwrap_or(0);
-                } else if let Some(n) = part.strip_prefix('-') {
-                    info.behind = n.parse().unwrap_or(0);
+/// `.git` of `dir`: the folder, or the one a `.git` file points to
+/// (worktrees, submodules).
+fn git_dir(dir: &Path) -> Option<PathBuf> {
+    let dot = dir.join(".git");
+    if dot.is_dir() {
+        return Some(dot);
+    }
+    let text = fs::read_to_string(&dot).ok()?;
+    let target = text.trim().strip_prefix("gitdir:")?.trim();
+    let path = dir.join(target);
+    path.is_dir().then_some(path)
+}
+
+/// `key` of section `[name "sub"]` in a Git config file (simple form only).
+fn config_value(config: &str, section: &str, key: &str) -> Option<String> {
+    let mut inside = false;
+    for line in config.lines().map(str::trim) {
+        if line.starts_with('[') {
+            inside = line.eq_ignore_ascii_case(section);
+            continue;
+        }
+        if inside {
+            if let Some((k, v)) = line.split_once('=') {
+                if k.trim().eq_ignore_ascii_case(key) {
+                    return Some(v.trim().trim_matches('"').to_owned());
                 }
             }
-        } else if !line.starts_with('#') && !line.trim().is_empty() {
-            info.changes += 1;
         }
     }
-    info
+    None
+}
+
+/// The commit of `reference` (`refs/heads/main`), loose or packed.
+fn ref_commit(git: &Path, reference: &str) -> Option<String> {
+    if let Ok(text) = fs::read_to_string(git.join(reference)) {
+        return Some(text.trim().to_owned());
+    }
+    fs::read_to_string(git.join("packed-refs"))
+        .ok()?
+        .lines()
+        .find_map(|l| {
+            let (sha, name) = l.split_once(' ')?;
+            (name.trim() == reference).then(|| sha.to_owned())
+        })
+}
+
+pub fn git_info(dir: &Path) -> Option<GitInfo> {
+    let git = git_dir(dir)?;
+    let head = fs::read_to_string(git.join("HEAD")).ok()?;
+    let branch = head
+        .trim()
+        .strip_prefix("ref: refs/heads/")
+        .map(str::to_owned);
+    let config = fs::read_to_string(git.join("config")).unwrap_or_default();
+    let remote = config_value(&config, "[remote \"origin\"]", "url");
+    let (upstream, synced) = match &branch {
+        Some(b) => {
+            let section = format!("[branch \"{b}\"]");
+            let r = config_value(&config, &section, "remote");
+            let merge = config_value(&config, &section, "merge");
+            match (
+                r,
+                merge.as_deref().and_then(|m| m.strip_prefix("refs/heads/")),
+            ) {
+                (Some(r), Some(m)) => {
+                    let local = ref_commit(&git, &format!("refs/heads/{b}"));
+                    let theirs = ref_commit(&git, &format!("refs/remotes/{r}/{m}"));
+                    let synced = match (local, theirs) {
+                        (Some(a), Some(b)) => Some(a == b),
+                        _ => None,
+                    };
+                    (Some(format!("{r}/{m}")), synced)
+                }
+                _ => (None, None),
+            }
+        }
+        None => (None, None),
+    };
+    Some(GitInfo {
+        branch,
+        upstream,
+        synced,
+        remote,
+    })
 }
 
 /// What a project's page shows besides its detection.
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectStatus {
-    /// None: not a Git repository (or Git not installed).
+    /// None: not a Git repository.
     pub git: Option<GitInfo>,
     /// Instruction files for the agents found at its root.
     pub instructions: Vec<String>,
 }
 
-pub fn status(kit: &Kit, env: &KitEnv, dir: &Path) -> ProjectStatus {
+pub fn status(dir: &Path) -> ProjectStatus {
     let instructions = [
         "AGENTS.md",
         "CLAUDE.md",
@@ -347,32 +414,8 @@ pub fn status(kit: &Kit, env: &KitEnv, dir: &Path) -> ProjectStatus {
     .filter(|f| dir.join(f).is_file())
     .map(|f| (*f).to_owned())
     .collect();
-    let git_exe = kit.apps().join(r"git\cmd\git.exe");
-    let git = |args: &[&str]| {
-        crate::jobs::kit_command(&git_exe, env)
-            .arg("-C")
-            .arg(dir)
-            .args(args)
-            .stdin(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .output()
-            .ok()
-            .filter(|o| o.status.success())
-            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
-    };
-    let git_info = if dir.join(".git").exists() && git_exe.is_file() {
-        git(&["status", "--porcelain=v2", "--branch"]).map(|text| {
-            let mut info = parse_git_status(&text);
-            info.remote = git(&["remote", "get-url", "origin"])
-                .map(|u| u.trim().to_owned())
-                .filter(|u| !u.is_empty());
-            info
-        })
-    } else {
-        None
-    };
     ProjectStatus {
-        git: git_info,
+        git: git_info(dir),
         instructions,
     }
 }
@@ -383,17 +426,38 @@ mod tests {
     use crate::kit::{tests::TempDir, Arch};
 
     #[test]
-    fn git_status_parsing() {
-        let text = "# branch.oid 1234\n# branch.head main\n# branch.upstream origin/main\n\
-                    # branch.ab +2 -1\n1 .M N... 100644 100644 100644 a b src/app.ts\n\
-                    ? notes.txt\n";
-        let info = parse_git_status(text);
+    fn git_state_from_files() {
+        let tmp = TempDir::new("gitinfo");
+        let d = tmp.0.join("p");
+        let g = d.join(".git");
+        let heads = g.join("refs").join("heads");
+        let remotes = g.join("refs").join("remotes").join("origin");
+        fs::create_dir_all(&heads).unwrap();
+        fs::create_dir_all(&remotes).unwrap();
+        fs::write(g.join("HEAD"), "ref: refs/heads/main\n").unwrap();
+        // A command in the repository's config must never run: it is only read.
+        fs::write(
+            g.join("config"),
+            "[core]\n\tfsmonitor = calc.exe\n[remote \"origin\"]\n\turl = https://github.com/a/b.git\n\
+             [branch \"main\"]\n\tremote = origin\n\tmerge = refs/heads/main\n",
+        )
+        .unwrap();
+        fs::write(heads.join("main"), "aaa\n").unwrap();
+        fs::write(
+            g.join("packed-refs"),
+            "# pack-refs\nbbb refs/remotes/origin/main\n",
+        )
+        .unwrap();
+        let info = git_info(&d).unwrap();
         assert_eq!(info.branch.as_deref(), Some("main"));
         assert_eq!(info.upstream.as_deref(), Some("origin/main"));
-        assert_eq!((info.ahead, info.behind, info.changes), (2, 1, 2));
-        let detached = parse_git_status("# branch.head (detached)\n");
-        assert_eq!(detached.branch, None);
-        assert_eq!(detached.changes, 0);
+        assert_eq!(info.remote.as_deref(), Some("https://github.com/a/b.git"));
+        assert_eq!(info.synced, Some(false));
+        fs::write(remotes.join("main"), "aaa\n").unwrap();
+        assert_eq!(git_info(&d).unwrap().synced, Some(true));
+        fs::write(g.join("HEAD"), "0123abcd\n").unwrap();
+        assert_eq!(git_info(&d).unwrap().branch, None);
+        assert!(git_info(&tmp.0).is_none(), "not a repository");
     }
 
     #[test]
