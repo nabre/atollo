@@ -37,7 +37,7 @@ export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, o
   const next = new Set(chosen);
   const visit = (cid: string, value: boolean) => {
     const c = list.find((x) => x.id === cid);
-    if (!c || c.group === "required" || c.group === "app") return;
+    if (!c || c.locked) return;
     if (value === next.has(cid)) return;
     if (value) {
       next.add(cid);
@@ -111,7 +111,7 @@ export function ComponentsPage({
     componentsList().then(
       (l) => {
         setList(l);
-        setChosen(new Set(l.filter((c) => c.chosen || c.group === "required" || c.group === "app").map((c) => c.id)));
+        setChosen(new Set(l.filter((c) => c.chosen || c.locked).map((c) => c.id)));
       },
       (e: unknown) => {
         setError(String(e));
@@ -190,7 +190,7 @@ export function ComponentsPage({
             </header>
             <ul className="divide-y divide-vsc-border">
               {items.map((c) => {
-                const required = c.group === "required" || c.group === "app";
+                const required = c.locked;
                 const on = chosen.has(c.id);
                 const inputId = `comp-${c.id}`;
                 return (

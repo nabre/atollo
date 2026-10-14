@@ -69,6 +69,8 @@ pub struct ComponentInfo {
     pub installed: bool,
     /// Something of it is on disk, even half installed: it can be removed.
     pub present: bool,
+    /// A system component, or needed by one: always installed.
+    pub locked: bool,
     pub version: Option<String>,
     /// This version of the app can install it on this kit.
     pub available: bool,
@@ -354,6 +356,7 @@ fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
     let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
     let arm64 = kit.arch() == crate::kit::Arch::Arm64;
+    let locked = catalog.locked();
     catalog
         .all()
         .iter()
@@ -368,6 +371,7 @@ fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 chosen: choice.is_chosen(&c.id),
                 installed: c.is_installed(kit),
                 present: c.is_present(kit),
+                locked: locked.contains(c.id.as_str()),
                 version: c.installed_version(kit),
                 available: install::installer(&c.id).is_some() && !no_arm64,
                 x64_only: c.x64_only,

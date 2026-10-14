@@ -56,14 +56,16 @@ pub struct SetupTask {
 /// Called with the new snapshot after every change.
 pub type Notify = Box<dyn Fn(&Snapshot) + Send>;
 
-/// Required components (and the parts of the app) this app can install that
-/// are not installed yet. Without them the editor and the consoles do not
-/// open.
+/// System components (required, the parts of the app, and what they need)
+/// this app can install that are not installed yet. Without them the editor
+/// and the consoles do not open.
 pub fn missing_required(kit: &Kit) -> Vec<String> {
-    Catalog::get()
+    let catalog = Catalog::get();
+    let locked = catalog.locked();
+    catalog
         .all()
         .iter()
-        .filter(|c| c.group.always())
+        .filter(|c| locked.contains(c.id.as_str()))
         .filter(|c| install::installer(&c.id).is_some() && !c.is_installed(kit))
         .map(|c| c.id.clone())
         .collect()
@@ -256,8 +258,12 @@ mod tests {
         let kit = Kit::at(tmp.0.clone(), Arch::X64);
         kit.prepare().unwrap();
         let missing = missing_required(&kit);
-        assert_eq!(missing, ["gh", "pwsh", "vscodium-server"]);
-        for id in ["git", "node", "uv", "python"] {
+        assert_eq!(
+            missing,
+            ["git", "gh", "pwsh", "vscodium-server"],
+            "git: for gh"
+        );
+        for id in ["node", "uv", "python"] {
             assert!(
                 !missing.contains(&id.to_owned()),
                 "{id}: installed when needed"
@@ -302,7 +308,11 @@ mod tests {
         let kit = Kit::at(tmp.0.clone(), Arch::X64);
         kit.prepare().unwrap();
         let catalog = Catalog::get();
-        let required: Vec<_> = catalog.all().iter().filter(|c| c.group.always()).collect();
+        let required: Vec<_> = catalog
+            .all()
+            .iter()
+            .filter(|c| catalog.is_locked(&c.id))
+            .collect();
         for c in &required {
             for key in c.key_paths(&kit) {
                 fs::create_dir_all(key.parent().unwrap()).unwrap();
