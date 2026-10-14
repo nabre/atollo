@@ -267,25 +267,77 @@ fn stamp() -> String {
 pub struct InUse(pub PathBuf);
 
 /// Puts `new` (a complete folder on the same disk) in place of `dest`. The
-/// old folder is renamed first: if Windows refuses (a file in use), nothing
-/// changes and `InUse` is returned.
+/// old folder is renamed first. Windows also refuses that when a program of
+/// the PC only keeps one of its folders open (an indexer, an antivirus, File
+/// Explorer): then, if no program runs from it, the old tree moves out entry
+/// by entry, and a folder that cannot move is emptied and stays, empty, for
+/// the new tree to fill. A program running from it, or a file locked, stops
+/// it: everything goes back and `InUse` is returned.
 pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
     if let Some(parent) = dest.parent() {
         fs::create_dir_all(parent)?;
     }
     let old = sibling(dest, "old");
     let had_old = dest.exists();
-    if had_old {
-        fs::rename(dest, &old).map_err(|_| InUse(dest.to_path_buf()))?;
+    if had_old && fs::rename(dest, &old).is_err() {
+        // A running program could be moved too (Windows allows renaming a
+        // running exe), and would then load the new files with the old ones.
+        if !crate::processes::running_from(&crate::processes::all(), dest).is_empty() {
+            return Err(InUse(dest.to_path_buf()).into());
+        }
+        if let Err(e) = move_tree(dest, &old) {
+            crate::log::info(&format!("{}: {e}", dest.display()));
+            let _ = move_tree(&old, dest);
+            let _ = fs::remove_dir_all(&old);
+            return Err(InUse(dest.to_path_buf()).into());
+        }
     }
-    if let Err(e) = fs::rename(new, dest) {
+    // `dest` is gone, or only empty folders held open are left in it.
+    let moved = if dest.exists() {
+        move_tree(new, dest).map(|()| {
+            let _ = fs::remove_dir_all(new);
+        })
+    } else {
+        fs::rename(new, dest)
+    };
+    if let Err(e) = moved {
         if had_old {
-            let _ = fs::rename(&old, dest);
+            let _ = fs::remove_dir_all(dest);
+            if fs::rename(&old, dest).is_err() {
+                let _ = move_tree(&old, dest);
+            }
         }
         return Err(e).with_context(|| format!("moving into {}", dest.display()));
     }
     if had_old {
         let _ = fs::remove_dir_all(&old);
+    }
+    Ok(())
+}
+
+/// Moves the content of `from` into `to` (created if needed), entry by
+/// entry: a folder that cannot be renamed is entered and emptied, and stays
+/// where it is if Windows does not let it go. A file that cannot move is an
+/// error (in use).
+fn move_tree(from: &Path, to: &Path) -> io::Result<()> {
+    fs::create_dir_all(to)?;
+    for entry in fs::read_dir(from)? {
+        let entry = entry?;
+        let source = entry.path();
+        let target = to.join(entry.file_name());
+        let is_dir = entry.file_type()?.is_dir();
+        if is_dir && target.is_dir() {
+            move_tree(&source, &target)?;
+            let _ = fs::remove_dir(&source);
+            continue;
+        }
+        if let Err(e) = fs::rename(&source, &target) {
+            if !is_dir {
+                return Err(e);
+            }
+            move_tree(&source, &target)?;
+            let _ = fs::remove_dir(&source);
+        }
     }
     Ok(())
 }
@@ -472,6 +524,74 @@ mod tests {
         );
     }
 
+    /// A program of the PC keeps a folder of the tree open (as Cloud Code's
+    /// indexer did with `extensions\terminal-suggest` of the editor): the
+    /// swap still works. A file really in use stops it, and nothing changes.
+    #[test]
+    fn replace_dir_with_a_folder_held_open() {
+        use std::os::windows::fs::OpenOptionsExt;
+        const SHARE_READ_WRITE: u32 = 1 | 2;
+        const BACKUP_SEMANTICS: u32 = 0x0200_0000;
+        let tmp = TempDir::new("replheld");
+        let dest = tmp.0.join("editor");
+        let make = |root: &Path, text: &str| {
+            fs::create_dir_all(root.join(r"extensions\held")).unwrap();
+            fs::write(root.join(r"extensions\held\a.txt"), text).unwrap();
+            fs::write(root.join("node.exe"), text).unwrap();
+        };
+        make(&dest, "old");
+        fs::write(dest.join("gone.txt"), "old").unwrap();
+        let held = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(SHARE_READ_WRITE)
+            .custom_flags(BACKUP_SEMANTICS)
+            .open(dest.join(r"extensions\held"))
+            .unwrap();
+        assert!(
+            fs::rename(&dest, tmp.0.join("x")).is_err(),
+            "Windows refuses the whole folder"
+        );
+
+        let new = tmp.0.join("new");
+        make(&new, "new");
+        fs::create_dir_all(new.join("out")).unwrap();
+        replace_dir(&new, &dest).unwrap();
+        assert_eq!(fs::read_to_string(dest.join("node.exe")).unwrap(), "new");
+        assert_eq!(
+            fs::read_to_string(dest.join(r"extensions\held\a.txt")).unwrap(),
+            "new"
+        );
+        assert!(dest.join("out").is_dir() && !dest.join("gone.txt").exists());
+        assert!(!new.exists());
+        drop(held);
+        let names: Vec<String> = fs::read_dir(&tmp.0)
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert!(
+            names.iter().all(|n| !n.starts_with("editor.old")),
+            "{names:?}"
+        );
+
+        // A file really in use: InUse, and the folder is as before.
+        let busy = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(dest.join("node.exe"))
+            .unwrap();
+        let newer = tmp.0.join("newer");
+        make(&newer, "newer");
+        let err = replace_dir(&newer, &dest).unwrap_err();
+        assert!(err.is::<InUse>(), "{err:#}");
+        drop(busy);
+        assert_eq!(fs::read_to_string(dest.join("node.exe")).unwrap(), "new");
+        assert_eq!(
+            fs::read_to_string(dest.join(r"extensions\held\a.txt")).unwrap(),
+            "new"
+        );
+        assert!(dest.join("out").is_dir());
+    }
+
     #[test]
     fn plain_file_kind() {
         let tmp = TempDir::new("kindfile");
@@ -507,8 +627,16 @@ mod tests {
             "old folder removed"
         );
 
-        // A file held open blocks the swap and leaves everything as it was.
-        let held = File::open(dest.join("v.txt")).unwrap();
+        // A file locked (open without FILE_SHARE_DELETE) blocks the swap and
+        // leaves everything as it was.
+        let held = {
+            use std::os::windows::fs::OpenOptionsExt;
+            fs::OpenOptions::new()
+                .read(true)
+                .share_mode(1)
+                .open(dest.join("v.txt"))
+                .unwrap()
+        };
         let new3 = tmp.0.join("new3");
         fs::create_dir_all(&new3).unwrap();
         let err = replace_dir(&new3, &dest).unwrap_err();

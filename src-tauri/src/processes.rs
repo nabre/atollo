@@ -21,6 +21,21 @@ pub struct Proc {
     pub path: PathBuf,
 }
 
+/// The processes in `all` whose program is in `folder`.
+pub fn running_from(all: &[Proc], folder: &Path) -> Vec<u32> {
+    let prefix = format!("{}\\", folder.display()).to_lowercase();
+    all.iter()
+        .filter(|p| {
+            p.path
+                .display()
+                .to_string()
+                .to_lowercase()
+                .starts_with(&prefix)
+        })
+        .map(|p| p.pid)
+        .collect()
+}
+
 /// Every process with its program path (those the user can query).
 pub fn all() -> Vec<Proc> {
     let mut out = Vec::new();

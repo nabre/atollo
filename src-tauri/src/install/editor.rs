@@ -46,7 +46,7 @@ impl Installer for Server {
         _tree: &Path,
         old: &Path,
     ) -> Result<()> {
-        let running = running_from(&crate::processes::all(), old);
+        let running = crate::processes::running_from(&crate::processes::all(), old);
         if !running.is_empty() {
             crate::log::info(&format!("editor update: stopping {running:?}"));
             crate::sessions::stop(&running);
@@ -54,21 +54,6 @@ impl Installer for Server {
         }
         Ok(())
     }
-}
-
-/// The processes whose program is in `folder`.
-fn running_from(all: &[crate::processes::Proc], folder: &Path) -> Vec<u32> {
-    let prefix = format!("{}\\", folder.display()).to_lowercase();
-    all.iter()
-        .filter(|p| {
-            p.path
-                .display()
-                .to_string()
-                .to_lowercase()
-                .starts_with(&prefix)
-        })
-        .map(|p| p.pid)
-        .collect()
 }
 
 fn pinned(component: &Component) -> Result<Release> {
@@ -109,7 +94,7 @@ mod tests {
             proc(4, r"E:\Kit\data\apps\win32-x64\node\node.exe"),
         ];
         let old = Path::new(r"E:\Kit\data\apps\win32-x64\vscodium-server");
-        assert_eq!(running_from(&all, old), [1, 2]);
+        assert_eq!(crate::processes::running_from(&all, old), [1, 2]);
     }
 
     #[test]
