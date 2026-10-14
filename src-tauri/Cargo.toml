@@ -1,6 +1,6 @@
 [package]
 name = "dev-kit"
-version = "0.1.0"
+version = "0.2.0"
 description = "Dev-Kit: portable development environment with integrated editor and AI agents"
 authors = ["nabre"]
 license = "MIT"
