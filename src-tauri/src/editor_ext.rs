@@ -404,6 +404,17 @@ pub fn sync_in_background(
         s.running = true;
         s.failed.iter().cloned().collect()
     };
+    // The job exists from now on, before the projects are read: a stop of
+    // the editor while they are read closes it, and the install then does
+    // not start (it ran on, outside any job, when the job was made later).
+    match jobs::Job::new() {
+        Ok(j) => *job.lock().unwrap_or_else(|e| e.into_inner()) = Some(j),
+        Err(e) => {
+            crate::log::warn(&format!("editor extensions: job: {e:#}"));
+            state.lock().unwrap_or_else(|e| e.into_inner()).running = false;
+            return true;
+        }
+    }
     std::thread::spawn(move || {
         // Reads every project: off the caller's thread.
         let ids = pending(&kit, &skip);
@@ -417,6 +428,7 @@ pub fn sync_in_background(
             }
             install(&kit, &env, net.as_deref(), &ids, &state, &job)
         };
+        drop(job.lock().unwrap_or_else(|e| e.into_inner()).take());
         state.lock().unwrap_or_else(|e| e.into_inner()).running = false;
         match result {
             Ok(done) if !done.is_empty() => {
@@ -473,18 +485,25 @@ fn install(
         cmd.arg("--install-extension").arg(vsix);
     }
     crate::log::info(&format!("editor extensions: installing {}", ids.join(", ")));
-    let child = jobs::spawn(
-        cmd.stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped()),
-    )
-    .context("server --install-extension")?;
-    let own = jobs::Job::new()?;
-    own.assign(&child)?;
-    *job.lock().unwrap_or_else(|e| e.into_inner()) = Some(own);
-    let out = child.wait_with_output();
-    drop(job.lock().unwrap_or_else(|e| e.into_inner()).take());
-    let out = out.context("server --install-extension")?;
+    // Started and put in the job under its lock: `Editor::stop` either came
+    // first (no job: nothing starts) or closes the job with it inside.
+    let child = {
+        let slot = job.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(own) = slot.as_ref() else {
+            anyhow::bail!("the editor stopped: install not started");
+        };
+        let child = jobs::spawn(
+            cmd.stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped()),
+        )
+        .context("server --install-extension")?;
+        own.assign(&child)?;
+        child
+    };
+    let out = child
+        .wait_with_output()
+        .context("server --install-extension")?;
     let text = format!(
         "{}\n{}",
         String::from_utf8_lossy(&out.stdout),
