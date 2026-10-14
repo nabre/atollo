@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { AppInfo, OpenNow, ProjectInfo, RunEvent, RunInfo, SetupSnapshot } from "./api";
+import type { AgentInfo, AppInfo, OpenNow, ProjectInfo, RunEvent, RunInfo, SetupSnapshot } from "./api";
 
 const info: AppInfo = {
   version: "0.1.0",
@@ -98,6 +98,7 @@ function project(name: string): ProjectInfo {
       },
     ],
     warnings: [],
+    settings: {},
     custom: false,
     default: "static",
   };
@@ -157,6 +158,40 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Agenti");
     expect(screen.getByRole("button", { name: "Agenti" }).getAttribute("aria-current")).toBe("page");
+  });
+
+  it("opens editor, console and agent only in a project from Home", async () => {
+    const agents: AgentInfo[] = [
+      {
+        id: "claude",
+        name: "Claude Code",
+        installed: true,
+        version: "2",
+        signedIn: true,
+        signInKind: "account",
+        running: false,
+      },
+      { id: "codex", name: "Codex", installed: true, version: "1", signedIn: false, signInKind: null, running: false },
+    ];
+    invoke.mockImplementation(
+      answers({
+        projects_list: [{ ...project("app & co"), languages: ["TypeScript", "CSS"], settings: { agent: "codex" } }],
+        agents_status: agents,
+        agent_launch: null,
+      }),
+    );
+    render(<App />);
+    expect(await screen.findByText("app & co")).toBeTruthy();
+    expect(screen.getByText("TypeScript")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Terminale" }));
+    expect(invoke).toHaveBeenCalledWith("terminal_open", { project: "app & co" });
+    // the agent last used in the project is the default
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLSelectElement>("Agente per app & co").value).toBe("codex");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Agente" }));
+    expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "codex", project: "app & co" });
+    expect(invoke).not.toHaveBeenCalledWith("terminal_open", { project: null });
   });
 
   it("reports a failed command", async () => {
@@ -401,10 +436,9 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
     expect(await screen.findByText("2.1.299")).toBeTruthy();
     expect(screen.getByText("accesso fatto")).toBeTruthy();
-    const open = screen.getAllByRole("button", { name: "Apri" });
-    expect(open[1]?.hasAttribute("disabled")).toBe(true);
-    fireEvent.click(open[0] as HTMLElement);
-    expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "claude", project: null });
+    // only the installed agents, and no launch outside a project
+    expect(screen.queryByText("Codex")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Apri" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(screen.getByText("Togliere l'accesso salvato nel kit?")).toBeTruthy();
     expect(invoke).not.toHaveBeenCalledWith("agent_sign_out", expect.anything());

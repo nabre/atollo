@@ -189,6 +189,12 @@
           "markdownDescription": "Enables the agent_sign_out command without any pre-configured scope."
         },
         {
+          "description": "Enables the agents_stats command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agents-stats",
+          "markdownDescription": "Enables the agents_stats command without any pre-configured scope."
+        },
+        {
           "description": "Enables the agents_status command without any pre-configured scope.",
           "type": "string",
           "const": "allow-agents-status",
@@ -391,6 +397,12 @@
           "type": "string",
           "const": "deny-agent-sign-out",
           "markdownDescription": "Denies the agent_sign_out command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the agents_stats command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agents-stats",
+          "markdownDescription": "Denies the agents_stats command without any pre-configured scope."
         },
         {
           "description": "Denies the agents_status command without any pre-configured scope.",

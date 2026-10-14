@@ -201,6 +201,11 @@ impl Editor {
             .arg("--server-data-dir")
             .arg(data_dir)
             .args(["--accept-server-license-terms", "--telemetry-level", "off"])
+            // Only project folders open here (D-62), trusted as Claude and
+            // Codex trust them: no Restricted Mode (D-66). The setting
+            // security.workspace.trust.enabled is application-scoped and the
+            // server's Machine settings ignore it.
+            .arg("--disable-workspace-trust")
             .env("ATOLLO_APP", "1")
             .current_dir(self.kit.projects())
             .stdin(Stdio::null())

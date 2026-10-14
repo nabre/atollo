@@ -1,5 +1,30 @@
 # Novità
 
+## Limiti d'uso, progetti e interfaccia (14/10/2026)
+
+**Fatto**
+- **Limiti d'uso e consumi degli agenti** (`stats/`, D-61): nella pagina Agenti, per ogni agente installato, i limiti del piano in «% usato» con l'ora in cui si azzerano, i crediti extra di Claude, i token e le sessioni di oggi e degli ultimi 7 giorni con il grafico per giorno. Server di Anthropic, OpenAI e Google con l'accesso del kit, letti al massimo ogni 2 minuti e mai prima di quanto chiede un 429. Pulsante «Aggiorna i consumi».
+- **Editor, terminale e agenti solo in un progetto** (D-62): la Home mostra i progetti recenti con Editor, Terminale e agente; la finestra dell'editor rifiuta un'altra cartella, un workspace o la finestra vuota.
+- **Impostazioni del kit per progetto** in `data\app\projects\<progetto>\dev-settings.json` (D-63): l'ultimo agente usato (predefinito nella scelta) e l'ultima apertura (ordine dei progetti).
+- **Barra del titolo dell'interfaccia** sulla finestra principale, senza la barra di Windows (D-64).
+- **Loghi ufficiali** di componenti e agenti; **etichette dei linguaggi** con il logo nella riga di ogni progetto (D-65).
+- **Solo gli agenti installati** nella pagina Agenti e nella scelta dell'agente.
+- **Progetti attendibili anche nell'editor**: niente «Restricted Mode» (D-66).
+- **README in quattro lingue** (`README.md`, `docs/README.en.md`, `.fr.md`, `.de.md`): uso, pagine, cosa resta del Atollo, limiti noti.
+- **CI: firma facoltativa dell'exe** con i segreti `SIGN_PFX_BASE64` e `SIGN_PFX_PASSWORD`; senza, l'exe resta non firmato e il passo si salta.
+
+**Corretto durante le prove sull'exe di release**
+- Sulle pagine lunghe scorreva anche la finestra intera, barra del titolo compresa: gli elementi solo per lettori di schermo uscivano dal contenitore. Ora scorre solo il contenuto.
+- La barra «Applica» di Linguaggi e strumenti lasciava vedere sotto di sé una striscia della lista.
+
+**Verificato**
+- 174 test Rust (fra cui periodo locale, date ISO, `Retry-After`, finestre e crediti di Claude, conteggi delle sessioni di Codex senza doppioni, quote di Antigravity, cache con attesa dopo 429, editor che non esce dal progetto, `dev-settings.json`), 20 test dell'interfaccia; `clippy -D warnings`, ESLint, Prettier puliti.
+
+**Da provare a mano** (checklist in [TESTING.md](TESTING.md))
+1. Agenti con accesso fatto: i limiti coincidono con `/usage` di Claude Code e `/status` di Codex.
+2. Editor su un progetto: File › Apri cartella su un'altra cartella non cambia la finestra.
+3. Barra del titolo: trascinamento, doppio clic, riduci, ingrandisci, chiudi con la conferma se qualcosa è aperto; ridimensionamento dai bordi.
+
 ## Correzioni e modifiche dopo la fase 6 (14/10/2026)
 
 Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.

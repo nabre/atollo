@@ -17,6 +17,7 @@ const COMMANDS: &[&str] = &[
     "setup_cancel",
     "components_apply",
     "agents_status",
+    "agents_stats",
     "agent_launch",
     "agent_sign_out",
     "folder_open",

@@ -1,6 +1,6 @@
 # Atollo App: piano (fase 0, revisione 3)
 
-Stato: **approvato** (14/10/2026). Fasi 1-6 completate, con le correzioni successive in [CHANGELOG.md](CHANGELOG.md). Fase 7 in corso: il job di release `app-v*` è già nella CI (`.github/workflows/app.yml`); restano la documentazione in quattro lingue e la release `app-v1.0.0`.
+Stato: **approvato** (14/10/2026). Fasi 1-6 completate, con le correzioni successive in [CHANGELOG.md](CHANGELOG.md). Fase 7 in corso: job di release `app-v*` con firma facoltativa nella CI (`.github/workflows/app.yml`) e README in quattro lingue fatti; resta la release `app-v1.0.0`.
 Base letta: `nabre/atollo` al commit `a61a354` (main, 13/10/2026).
 Scelte non ovvie: [DECISIONS.md](DECISIONS.md). Domande aperte: §12.
 
@@ -18,6 +18,10 @@ Scelte non ovvie: [DECISIONS.md](DECISIONS.md). Domande aperte: §12.
 | 14/10 | Solo strumenti del kit o componenti di Windows, mai programmi del PC; via xterm.js | console in `conhost.exe` di Windows (D-57) |
 | 14/10 | L'editor fa parte dell'app, non è un componente da scegliere | gruppo `app` del catalogo, versione fissata a ogni rilascio (D-58) |
 | 14/10 | Obbligatori solo PowerShell 7 e GitHub CLI; poi: componenti di sistema GitHub CLI, terminale ed editor, con le loro dipendenze obbligatorie | Git sempre presente perché serve a GitHub CLI; Node.js e uv installati quando servono (D-59) |
+| 14/10 | Terminale ed editor saldamente collegati alla cartella del progetto; nessun altro luogo per l'utente | editor, console e agenti solo in un progetto, editor bloccato sulla sua cartella (D-62) |
+| 14/10 | Impostazioni del kit per ogni progetto in `data`, file `dev-settings.json` | `data\app\projects\<progetto>\dev-settings.json` (D-63) |
+| 14/10 | Barra di Windows della finestra spenta, barra dell'interfaccia | solo finestra principale (D-64) |
+| 14/10 | Loghi ufficiali degli strumenti; etichette del codice di ogni progetto; solo gli agenti installati | D-65 |
 
 Requisiti del prompt **superati** da queste indicazioni:
 - "Riusa, non riscrivere" gli script del kit → tutto in Rust dentro l'exe.
@@ -64,7 +68,8 @@ Atollo\                         qualsiasi cartella, anche con spazi, ( ) e &
     antigravity\                 accesso di Antigravity salvato nel kit
     cache\  tmp\                 cache dei pacchetti, temporanei (anche quelli del sistema)
     app\                         settings.json, components.txt, versions\, logs\, update\, ports.json,
-                                 root.txt, old-root.txt, extensions.txt, extensions-offered.txt
+                                 root.txt, old-root.txt, extensions.txt, extensions-offered.txt,
+                                 projects\<progetto>\dev-settings.json (impostazioni del kit per progetto)
     kit\                         file che i programmi vogliono su disco (loopback.js, profile.ps1, bashrc, bin\agy.cmd), riscritti dall'exe a ogni nuova versione
     webview2\                    dati di WebView2
     vscodium-server\             dati del server dell'editor e token
@@ -139,15 +144,16 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `instance.rs` | istanza singola per kit (mutex + pipe) |
 | `webview.rs` | WebView2 di sistema o fisso, messaggio se manca |
 | `kit_files.rs` | file incorporati scritti in `data\kit\` |
+| `stats/*.rs` | limiti d'uso e consumi di Claude Code, Codex e Antigravity (porting di `core/stats`, D-61) |
+| `project_settings.rs` | impostazioni del kit di ogni progetto, `data\app\projects\<progetto>\dev-settings.json` (D-63) |
 | `cli.rs`, `commands.rs`, `log.rs` | riga di comando, comandi Tauri, log con segreti mascherati |
 
-Non ancora scritto: `stats.rs` (limiti d'uso degli agenti, come le statistiche del Atollo).
 
 Dipendenze (`src-tauri\Cargo.toml`): `tauri`, `serde`, `serde_json`, `anyhow`, `thiserror`, `windows`, `webview2-com`, `ureq` con `native-tls`, `sha2`, `base64`, `zip`, `tar`, `flate2`, `sevenz-rust2`, `regex`, `junction`. Motivi in D-22.
 
 ## 5. Interfaccia
 
-React + TypeScript `strict` + Tailwind + react-icons (Codicons), con il tema di VSCodium (D-02, D-27). Pagine: Home (con la scelta del primo avvio), Progetti, Agenti, Linguaggi e strumenti, Impostazioni, Rimuovi l'unità. Barra di stato. Tutte le funzioni del menu attuale hanno una pagina (tabella di corrispondenza nella revisione 1, invariata). "Proxy e impostazioni" diventa un modulo nella pagina Impostazioni (niente più `proxy.cmd` da modificare a mano).
+React + TypeScript `strict` + Tailwind + react-icons (Codicons), con il tema di VSCodium (D-02, D-27). Pagine: Home (con la scelta del primo avvio e i progetti recenti), Progetti, Agenti (con limiti d'uso e consumi), Linguaggi e strumenti, Impostazioni, Rimuovi l'unità. Barra del titolo disegnata dall'interfaccia (D-64), barra di stato. Editor, console e agenti si aprono solo in un progetto (D-62). Tutte le funzioni del menu attuale hanno una pagina (tabella di corrispondenza nella revisione 1, invariata). "Proxy e impostazioni" diventa un modulo nella pagina Impostazioni (niente più `proxy.cmd` da modificare a mano).
 
 ## 6. Terminale esclusivo del kit
 

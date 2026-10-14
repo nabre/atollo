@@ -46,8 +46,9 @@ import {
   type SiteKind,
 } from "./api";
 import { AgentPicker } from "./agents";
-import { ActionButton, ErrorLine, useAction } from "./pages";
+import { ActionButton, editorHint, ErrorLine, useAction } from "./pages";
 import { locale, t } from "./i18n";
+import { LanguageTag } from "./logos";
 
 const MAX_LINES = 3000;
 
@@ -264,6 +265,16 @@ export function ProjectsPage({
                     )}
                     <span className="truncate font-semibold">{p.name}</span>
                     <span className="truncate text-[12px] text-vsc-desc">{p.platform}</span>
+                    {p.languages.length > 0 && (
+                      <span className="flex min-w-0 flex-wrap gap-1">
+                        {p.languages.slice(0, 6).map((l) => (
+                          <LanguageTag key={l} name={l} />
+                        ))}
+                        {p.languages.length > 6 && (
+                          <span className="text-[11px] text-vsc-desc">+{String(p.languages.length - 6)}</span>
+                        )}
+                      </span>
+                    )}
                     {p.missing.length > 0 && (
                       <VscWarning
                         size={14}
@@ -317,7 +328,7 @@ export function ProjectsPage({
                       run(`terminal:${p.id}`, () => terminalOpen(p.id));
                     }}
                   />
-                  <AgentPicker agents={agents} project={p.id} />
+                  <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
                 </div>
                 {expanded && (
                   <ProjectDetails
@@ -366,10 +377,7 @@ function ProjectDetails({
   const { busy: deleting, error, run } = useAction(onChanged);
   return (
     <div id={`project-${p.id}`} className="space-y-3 border-t border-vsc-border bg-vsc-sidebar px-4 py-3">
-      <p className="text-[12px] text-vsc-desc">
-        {p.reason}
-        {p.languages.length > 0 && ` · ${p.languages.join(", ")}`}
-      </p>
+      <p className="text-[12px] text-vsc-desc">{p.reason}</p>
       {p.missing.length > 0 && (
         <p role="status" className="flex items-start gap-2 text-vsc-warning">
           <VscWarning size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
@@ -773,5 +781,89 @@ function CloneProject({ onDone }: { onDone: (name: string) => void }) {
         <ErrorLine error={error} />
       </div>
     </form>
+  );
+}
+
+/** Home: the projects opened or changed last, each with the editor, a
+ * console and an agent. Editor, consoles and agents open only in a project. */
+export function RecentProjects({
+  status,
+  setupRunning,
+  agents,
+  onChanged,
+  onAll,
+}: {
+  status: EditorStatus | null;
+  setupRunning: boolean;
+  agents: AgentInfo[] | null;
+  onChanged: () => void;
+  onAll: () => void;
+}) {
+  const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
+  const { busy, error, run } = useAction(onChanged);
+  useEffect(() => {
+    projectsList().then(setProjects, () => {
+      setProjects([]);
+    });
+  }, []);
+  const hint = setupRunning
+    ? t("Installazione dei componenti del kit in corso: editor e terminale si aprono quando finisce.")
+    : editorHint(status);
+  const recent = (projects ?? []).slice(0, 5);
+  return (
+    <section aria-labelledby="recent" className="space-y-3">
+      <div className="flex items-center gap-3">
+        <h2 id="recent" className="text-[13px] font-semibold">
+          {t("Progetti recenti")}
+        </h2>
+        <button type="button" onClick={onAll} className="text-[12px] text-vsc-link hover:underline">
+          {t("Tutti i progetti")}
+        </button>
+      </div>
+      {projects !== null && recent.length === 0 && (
+        <p className="text-vsc-desc">
+          {t(
+            "Nessun progetto ancora: creane uno o clonane uno dalla pagina Progetti. Editor, terminale e agenti si aprono nella cartella di un progetto.",
+          )}
+        </p>
+      )}
+      {recent.length > 0 && (
+        <ul className="divide-y divide-vsc-border rounded border border-vsc-border bg-vsc-sidebar">
+          {recent.map((p) => (
+            <li key={p.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
+              <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                <span className="truncate font-semibold">{p.name}</span>
+                {p.languages.slice(0, 4).map((l) => (
+                  <LanguageTag key={l} name={l} />
+                ))}
+              </span>
+              <ActionButton
+                icon={VscCode}
+                label={t("Editor")}
+                primary
+                busy={busy === `editor:${p.id}`}
+                disabled={status?.installed === false}
+                title={hint ?? t("Apre {0} nell'editor", p.name)}
+                onClick={() => {
+                  run(`editor:${p.id}`, () => editorOpen(p.id));
+                }}
+              />
+              <ActionButton
+                icon={VscTerminal}
+                label={t("Terminale")}
+                busy={busy === `terminal:${p.id}`}
+                title={t("Console del kit in {0}", p.name)}
+                onClick={() => {
+                  run(`terminal:${p.id}`, () => terminalOpen(p.id));
+                }}
+              />
+              <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {hint && <p className="text-vsc-desc">{hint}</p>}
+      <ErrorLine error={error} />
+    </section>
   );
 }

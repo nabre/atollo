@@ -28,10 +28,10 @@ import {
   type OpenNow,
   type SetupSnapshot,
 } from "./api";
-import { HomeActions } from "./pages";
-import { ProjectsPage } from "./projects";
+import { ProjectsPage, RecentProjects } from "./projects";
+import { TitleBar } from "./titlebar";
 import { ComponentsPage } from "./components";
-import { AgentButtons, AgentsPage, useAgents } from "./agents";
+import { AgentsPage, useAgents } from "./agents";
 import { SetupProgress, setupStatusText, useSetup } from "./setup";
 import { SettingsPage } from "./settings";
 import { CloseDialog, EjectPage } from "./eject";
@@ -126,6 +126,7 @@ export function App() {
       >
         {t("Vai al contenuto")}
       </a>
+      <TitleBar title={current?.label} />
       <div className="flex min-h-0 flex-1">
         <ActivityBar pages={all} page={page} onSelect={setPage} />
         <main className="flex min-w-0 flex-1 flex-col bg-vsc-bg" aria-labelledby="page-title">
@@ -139,11 +140,21 @@ export function App() {
               </span>
             )}
           </header>
-          <div id="content" tabIndex={-1} className="min-h-0 flex-1 overflow-auto p-5 outline-none">
+          <div id="content" tabIndex={-1} className="relative min-h-0 flex-1 overflow-auto p-5 outline-none">
             {page === "home" && info?.firstRun ? (
               <ComponentsPage setup={setup} firstRun onDone={loadInfo} />
             ) : page === "home" ? (
-              <Home info={info} error={error} editor={editor} setup={setup} agents={agents} onChanged={refreshEditor} />
+              <Home
+                info={info}
+                error={error}
+                editor={editor}
+                setup={setup}
+                agents={agents}
+                onChanged={refreshEditor}
+                onAllProjects={() => {
+                  setPage("projects");
+                }}
+              />
             ) : page === "projects" ? (
               <ProjectsPage status={editor} agents={agents} onChanged={refreshEditor} />
             ) : page === "agents" ? (
@@ -208,6 +219,7 @@ function Home({
   setup,
   agents,
   onChanged,
+  onAllProjects,
 }: {
   info: AppInfo | null;
   error: string | null;
@@ -215,6 +227,7 @@ function Home({
   setup: SetupSnapshot | null;
   agents: AgentInfo[] | null;
   onChanged: () => void;
+  onAllProjects: () => void;
 }) {
   if (error) {
     return (
@@ -253,8 +266,13 @@ function Home({
           )}
         </Notice>
       )}
-      <HomeActions status={editor} setupRunning={setup?.running ?? false} onChanged={onChanged} />
-      <AgentButtons agents={agents} />
+      <RecentProjects
+        status={editor}
+        setupRunning={setup?.running ?? false}
+        agents={agents}
+        onChanged={onChanged}
+        onAll={onAllProjects}
+      />
       {setup && setup.steps.length > 0 && <SetupProgress snapshot={setup} />}
       <section aria-labelledby="where" className="rounded border border-vsc-border bg-vsc-sidebar">
         <h2 id="where" className="border-b border-vsc-border px-4 py-2 text-[13px] font-semibold">

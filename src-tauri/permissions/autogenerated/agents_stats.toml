@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agents-stats"
+description = "Enables the agents_stats command without any pre-configured scope."
+commands.allow = ["agents_stats"]
+
+[[permission]]
+identifier = "deny-agents-stats"
+description = "Denies the agents_stats command without any pre-configured scope."
+commands.deny = ["agents_stats"]

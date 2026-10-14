@@ -48,6 +48,15 @@ impl GhRelease {
     }
 }
 
+/// A failed `api_json`: the HTTP status when the server answered
+/// (`None`: no answer, `Some(200)`: an answer that is not JSON).
+#[derive(Debug, Clone)]
+pub struct ApiError {
+    pub status: Option<u16>,
+    pub retry_after: Option<String>,
+    pub detail: String,
+}
+
 /// Cancellation requested by the user: stops a download at once.
 #[derive(Debug, thiserror::Error)]
 #[error("cancelled")]
@@ -120,6 +129,71 @@ impl Net {
         self.json(&format!(
             "https://api.github.com/repos/{repo}/releases/latest"
         ))
+    }
+
+    /// One JSON request to an agent's server (`stats.rs`): a single attempt,
+    /// the HTTP status and `Retry-After` kept for the caller. The headers go
+    /// to `url` only; a `User-Agent` among them replaces the app's.
+    pub fn api_json(
+        &self,
+        url: &str,
+        headers: &[(&str, &str)],
+        body: Option<&serde_json::Value>,
+        timeout: Duration,
+    ) -> std::result::Result<serde_json::Value, ApiError> {
+        let failed = |detail: String| ApiError {
+            status: None,
+            retry_after: None,
+            detail,
+        };
+        let response = match body {
+            Some(body) => {
+                let mut request = self.agent.post(url);
+                for (name, value) in headers {
+                    request = request.header(*name, *value);
+                }
+                request
+                    .config()
+                    .http_status_as_error(false)
+                    .timeout_global(Some(timeout))
+                    .build()
+                    .send_json(body)
+            }
+            None => {
+                let mut request = self.agent.get(url);
+                for (name, value) in headers {
+                    request = request.header(*name, *value);
+                }
+                request
+                    .config()
+                    .http_status_as_error(false)
+                    .timeout_global(Some(timeout))
+                    .build()
+                    .call()
+            }
+        }
+        .map_err(|e| failed(e.to_string()))?;
+        let status = response.status().as_u16();
+        let retry_after = response
+            .headers()
+            .get("retry-after")
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_owned);
+        let text = response
+            .into_body()
+            .with_config()
+            .limit(4 * 1024 * 1024)
+            .read_to_string()
+            .map_err(|e| failed(e.to_string()))?;
+        let json = serde_json::from_str::<serde_json::Value>(text.trim_start_matches('\u{feff}'));
+        match json {
+            Ok(value) if (200..300).contains(&status) => Ok(value),
+            _ => Err(ApiError {
+                status: Some(status),
+                retry_after,
+                detail: format!("HTTP {status}"),
+            }),
+        }
     }
 
     /// Downloads `url` to `dest` through `dest.part`. `progress(done, total)`
