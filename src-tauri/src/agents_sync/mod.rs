@@ -23,7 +23,7 @@
 //! Run at start, before and after every agent, and when an agent ends.
 //! Never blocks the agents: each step fails alone, as a warning.
 
-mod codex;
+pub(crate) mod codex;
 mod links;
 pub(crate) mod mcp;
 mod project;

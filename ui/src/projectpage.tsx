@@ -41,6 +41,9 @@ import {
 import { AgentPicker } from "./agents";
 import { SecretField } from "./databases";
 import { ProjectExtensions } from "./extensions";
+import { EditorSettingsBox } from "./editorsettings";
+import { DatabaseCopies } from "./backups";
+import { ProjectMcpBox } from "./projectmcp";
 import { t } from "./i18n";
 import { ComponentLogo, LanguageTag } from "./logos";
 import { ActionButton, ErrorLine, useAction } from "./pages";
@@ -439,6 +442,7 @@ function Databases({ p, dbs, onChanged }: { p: ProjectInfo; dbs: ProjectDatabase
                   </dd>
                 </dl>
                 <EnvPreview project={p.id} db={db} envIgnored={dbs.envIgnored} onDone={onChanged} />
+                <DatabaseCopies project={p.id} engine={db.engine} />
               </>
             ) : (
               <div className="flex flex-wrap items-center gap-3 px-4 py-3">
@@ -720,8 +724,10 @@ export function ProjectPage({
                 onForget={onForget}
               />
             )}
+            <EditorSettingsBox project={p.id} />
             <Git status={status} />
             <Agents status={status} />
+            <ProjectMcpBox project={p.id} />
           </div>
         )}
       </div>

@@ -1,4 +1,29 @@
 {
+  "Azione non valida: {0}.": {
+    "en": "Invalid action: {0}.",
+    "fr": "Action non valide : {0}.",
+    "de": "Ungültige Aktion: {0}."
+  },
+  "nome": {
+    "en": "name",
+    "fr": "nom",
+    "de": "Name"
+  },
+  "comando": {
+    "en": "command",
+    "fr": "commande",
+    "de": "Befehl"
+  },
+  "tipo": {
+    "en": "type",
+    "fr": "type",
+    "de": "Typ"
+  },
+  "variabile {0}": {
+    "en": "variable {0}",
+    "fr": "variable {0}",
+    "de": "Variable {0}"
+  },
   "Crea prima il database del progetto.": {
     "en": "Create the project database first.",
     "fr": "Créez d'abord la base de données du projet.",

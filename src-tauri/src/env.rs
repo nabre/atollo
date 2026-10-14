@@ -403,6 +403,11 @@ impl KitEnv {
             r"mongosh\bin\mongosh.exe",
             &[apps.join(r"mongosh\bin")],
         );
+        when(
+            &mut path,
+            r"mongodb-tools\bin\mongodump.exe",
+            &[apps.join(r"mongodb-tools\bin")],
+        );
         when(&mut path, r"sqlite\sqlite3.exe", &[apps.join("sqlite")]);
         if has(r"git\bin\bash.exe") {
             env.set_path("CLAUDE_CODE_GIT_BASH_PATH", apps.join(r"git\bin\bash.exe"));

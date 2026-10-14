@@ -69,6 +69,11 @@ fn write_private(path: &Path, text: &str) -> Result<()> {
     Ok(())
 }
 
+/// A private file of `data\app\db` (a tool's config with a password).
+pub fn write_private_text(path: &Path, text: &str) -> Result<()> {
+    write_private(path, text)
+}
+
 pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
     write_private(&secrets_path(kit), &serde_json::to_string_pretty(secrets)?)
 }

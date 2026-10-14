@@ -9,10 +9,13 @@ import {
   VscCode,
   VscDebugStart,
   VscDebugStop,
+  VscDiscard,
+  VscEdit,
   VscFolderOpened,
   VscGlobe,
   VscOutput,
   VscRefresh,
+  VscStarEmpty,
   VscTerminal,
   VscTrash,
   VscWarning,
@@ -24,6 +27,8 @@ import {
   projectClone,
   projectCreate,
   projectDelete,
+  projectActionDefault,
+  projectActionRemove,
   projectInstallMissing,
   projectSite,
   projectsList,
@@ -48,6 +53,7 @@ import {
 import { AgentPicker } from "./agents";
 import { ProjectExtensions } from "./extensions";
 import { ProjectPage } from "./projectpage";
+import { ActionForm } from "./actionform";
 import { GithubRepositories } from "./github";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { locale, t } from "./i18n";
@@ -368,6 +374,8 @@ export function ProjectDetails({
   onChanged: () => void;
 }) {
   const { busy: working, error, run } = useAction(onChanged);
+  /** The action being edited ("new": a new one). */
+  const [editing, setEditing] = useState<string | null>(null);
   return (
     <div id={`project-${p.id}`} className="space-y-3 border-t border-vsc-border bg-vsc-sidebar px-4 py-3">
       {!onlyRun && <p className="text-[12px] text-vsc-desc">{p.reason}</p>}
@@ -426,7 +434,11 @@ export function ProjectDetails({
               return (
                 <tr key={a.id} className="border-t border-vsc-border align-middle">
                   <td className="py-1.5 pr-3">
-                    <div>{a.label}</div>
+                    <div>
+                      {a.label}
+                      {p.default === a.id && <span className="ml-2 text-[11px] text-vsc-desc">{t("predefinita")}</span>}
+                      {a.custom && <span className="ml-2 text-[11px] text-vsc-desc">panel.json</span>}
+                    </div>
                     <div className="font-mono text-[11px] break-all text-vsc-desc select-text">
                       {a.static !== null ? t("file server del kit: {0}", a.static) : a.command}
                     </div>
@@ -447,7 +459,38 @@ export function ProjectDetails({
                     )}
                   </td>
                   <td className="py-1.5">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {onlyRun && a.static === null && (
+                        <ActionButton
+                          icon={VscEdit}
+                          label={t("Modifica")}
+                          onClick={() => {
+                            setEditing(editing === a.id ? null : a.id);
+                          }}
+                        />
+                      )}
+                      {onlyRun && p.default !== a.id && (
+                        <ActionButton
+                          icon={VscStarEmpty}
+                          label={t("Predefinita")}
+                          title={t("La avvia il pulsante Avvia del progetto")}
+                          busy={working === `default:${a.id}`}
+                          onClick={() => {
+                            run(`default:${a.id}`, () => projectActionDefault(p.id, a.id));
+                          }}
+                        />
+                      )}
+                      {onlyRun && a.custom && a.static === null && (
+                        <ActionButton
+                          icon={VscDiscard}
+                          label={t("Togli")}
+                          title={t("Toglie l'azione da panel.json; se era rilevata, torna quella rilevata")}
+                          busy={working === `remove:${a.id}`}
+                          onClick={() => {
+                            run(`remove:${a.id}`, () => projectActionRemove(p.id, a.id));
+                          }}
+                        />
+                      )}
                       {alive(r?.state) ? (
                         <ActionButton
                           icon={VscDebugStop}
@@ -474,6 +517,28 @@ export function ProjectDetails({
             })}
           </tbody>
         </table>
+      )}
+      {onlyRun && editing !== null && (
+        <ActionForm
+          project={p.id}
+          action={editing === "new" ? null : (p.actions.find((a) => a.id === editing) ?? null)}
+          onDone={() => {
+            setEditing(null);
+            onChanged();
+          }}
+          onCancel={() => {
+            setEditing(null);
+          }}
+        />
+      )}
+      {onlyRun && editing === null && (
+        <ActionButton
+          icon={VscAdd}
+          label={t("Nuova azione")}
+          onClick={() => {
+            setEditing("new");
+          }}
+        />
       )}
       <SiteForm project={p} onChanged={onChanged} />
       {!onlyRun && <ProjectExtensions project={p} onChanged={onChanged} />}

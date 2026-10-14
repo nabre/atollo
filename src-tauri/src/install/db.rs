@@ -138,6 +138,32 @@ fn mongodb_zip(current: &Value) -> Result<(String, String, String)> {
     Ok((number, url.to_owned(), sha.to_owned()))
 }
 
+/// The newest MongoDB Database Tools for Windows x64 from `release.json`
+/// (version, https link, SHA-256).
+fn mongodb_tools_zip(release: &Value) -> Result<(String, String, String)> {
+    let v = release["versions"]
+        .as_array()
+        .and_then(|a| a.first())
+        .ok_or_else(|| anyhow!("MongoDB tools: no versions"))?;
+    let number = v["version"].as_str().unwrap_or_default().to_owned();
+    let archive = v["downloads"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .find(|d| d["name"] == "windows" && d["arch"] == "x86_64")
+        .map(|d| &d["archive"])
+        .ok_or_else(|| anyhow!("MongoDB tools {number}: no Windows zip"))?;
+    let url = archive["url"]
+        .as_str()
+        .filter(|u| u.starts_with("https://") && u.ends_with(".zip"))
+        .ok_or_else(|| anyhow!("MongoDB tools {number}: no https zip"))?;
+    let sha = archive["sha256"]
+        .as_str()
+        .filter(|s| s.len() == 64)
+        .ok_or_else(|| anyhow!("MongoDB tools {number}: no SHA-256"))?;
+    Ok((number, url.to_owned(), sha.to_owned()))
+}
+
 pub struct MongoDb;
 
 impl Installer for MongoDb {
@@ -152,8 +178,19 @@ impl Installer for MongoDb {
             .ok_or_else(|| anyhow!("mongosh {}: no Windows zip", shell.tag_name))?;
         let shell_version = shell.tag_name.trim_start_matches('v').to_owned();
         let file_name = url.rsplit('/').next().unwrap_or("mongodb.zip").to_owned();
+        // mongodump and mongorestore: export and import of a project's
+        // database (D-78).
+        let (tools_version, tools_url, tools_sha) = mongodb_tools_zip(
+            &ctx.net
+                .json::<Value>("https://downloads.mongodb.org/tools/db/release.json")?,
+        )?;
+        let tools_file = tools_url
+            .rsplit('/')
+            .next()
+            .unwrap_or("mongodb-tools.zip")
+            .to_owned();
         Ok(Release {
-            version: format!("{version}+mongosh{shell_version}"),
+            version: format!("{version}+mongosh{shell_version}+tools{tools_version}"),
             parts: vec![
                 Part {
                     url,
@@ -171,6 +208,15 @@ impl Installer for MongoDb {
                     kind: Kind::Zip,
                     inner: Inner::Single,
                     dest: Dest::Folder("mongosh"),
+                    sign: None,
+                },
+                Part {
+                    url: tools_url,
+                    file_name: tools_file,
+                    expect: Expect::Sha256(tools_sha),
+                    kind: Kind::Zip,
+                    inner: Inner::Single,
+                    dest: Dest::Folder("mongodb-tools"),
                     sign: None,
                 },
             ],
@@ -263,6 +309,22 @@ mod tests {
         assert_eq!(v, "9.0.4");
         assert!(url.ends_with("mongodb-windows-x86_64-9.0.4.zip"));
         assert_eq!(sha, "b".repeat(64));
+    }
+
+    #[test]
+    fn mongodb_tools_from_release_json() {
+        let j: Value = serde_json::from_str(&format!(
+            r#"{{"versions":[{{"version":"100.19.1","downloads":[
+              {{"name":"ubuntu2204","arch":"x86_64","archive":{{"url":"https://x/u.tgz","sha256":"{u}"}}}},
+              {{"name":"windows","arch":"x86_64","archive":{{"url":"https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.19.1.zip","sha256":"{w}"}}}}]}}]}}"#,
+            u = "u".repeat(64),
+            w = "w".repeat(64)
+        ))
+        .unwrap();
+        let (v, url, sha) = mongodb_tools_zip(&j).unwrap();
+        assert_eq!(v, "100.19.1");
+        assert!(url.ends_with("windows-x86_64-100.19.1.zip"));
+        assert_eq!(sha, "w".repeat(64));
     }
 
     #[test]

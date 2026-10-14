@@ -321,6 +321,30 @@
           "markdownDescription": "Enables the github_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_action_default command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-action-default",
+          "markdownDescription": "Enables the project_action_default command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_action_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-action-remove",
+          "markdownDescription": "Enables the project_action_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_action_save command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-action-save",
+          "markdownDescription": "Enables the project_action_save command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_backups command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-backups",
+          "markdownDescription": "Enables the project_backups command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_clone command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-clone",
@@ -345,10 +369,34 @@
           "markdownDescription": "Enables the project_db_create command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_db_export command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-db-export",
+          "markdownDescription": "Enables the project_db_export command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_db_restore command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-db-restore",
+          "markdownDescription": "Enables the project_db_restore command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_delete command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-delete",
           "markdownDescription": "Enables the project_delete command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_editor_settings command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-editor-settings",
+          "markdownDescription": "Enables the project_editor_settings command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_editor_settings_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-editor-settings-set",
+          "markdownDescription": "Enables the project_editor_settings_set command without any pre-configured scope."
         },
         {
           "description": "Enables the project_env_apply command without any pre-configured scope.",
@@ -373,6 +421,18 @@
           "type": "string",
           "const": "allow-project-install-missing",
           "markdownDescription": "Enables the project_install_missing command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_mcp command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-mcp",
+          "markdownDescription": "Enables the project_mcp command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_mcp_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-mcp-set",
+          "markdownDescription": "Enables the project_mcp_set command without any pre-configured scope."
         },
         {
           "description": "Enables the project_site command without any pre-configured scope.",
@@ -657,6 +717,30 @@
           "markdownDescription": "Denies the github_status command without any pre-configured scope."
         },
         {
+          "description": "Denies the project_action_default command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-action-default",
+          "markdownDescription": "Denies the project_action_default command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_action_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-action-remove",
+          "markdownDescription": "Denies the project_action_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_action_save command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-action-save",
+          "markdownDescription": "Denies the project_action_save command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_backups command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-backups",
+          "markdownDescription": "Denies the project_backups command without any pre-configured scope."
+        },
+        {
           "description": "Denies the project_clone command without any pre-configured scope.",
           "type": "string",
           "const": "deny-project-clone",
@@ -681,10 +765,34 @@
           "markdownDescription": "Denies the project_db_create command without any pre-configured scope."
         },
         {
+          "description": "Denies the project_db_export command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-db-export",
+          "markdownDescription": "Denies the project_db_export command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_db_restore command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-db-restore",
+          "markdownDescription": "Denies the project_db_restore command without any pre-configured scope."
+        },
+        {
           "description": "Denies the project_delete command without any pre-configured scope.",
           "type": "string",
           "const": "deny-project-delete",
           "markdownDescription": "Denies the project_delete command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_editor_settings command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-editor-settings",
+          "markdownDescription": "Denies the project_editor_settings command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_editor_settings_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-editor-settings-set",
+          "markdownDescription": "Denies the project_editor_settings_set command without any pre-configured scope."
         },
         {
           "description": "Denies the project_env_apply command without any pre-configured scope.",
@@ -709,6 +817,18 @@
           "type": "string",
           "const": "deny-project-install-missing",
           "markdownDescription": "Denies the project_install_missing command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_mcp command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-mcp",
+          "markdownDescription": "Denies the project_mcp command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_mcp_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-mcp-set",
+          "markdownDescription": "Denies the project_mcp_set command without any pre-configured scope."
         },
         {
           "description": "Denies the project_site command without any pre-configured scope.",

@@ -189,10 +189,18 @@ pub enum SiteKind {
     None,
 }
 
-/// "Servi come sito web": writes (or removes, `None`) the action `site` in
-/// the project's panel.json; the rest of the file stays as it is.
-pub fn set_site(project_dir: &Path, folder: &str, kind: SiteKind, lang: &str) -> Result<()> {
+/// The project's panel.json changed by `edit` (its actions and its default
+/// action); every other key, and the Italian keys of old files, stay as
+/// they are. An object left empty removes the file.
+fn edit_panel(
+    project_dir: &Path,
+    lang: &str,
+    edit: impl FnOnce(&mut Vec<Value>, &mut Option<String>) -> Result<()>,
+) -> Result<()> {
     let path = file_of(project_dir).unwrap_or_else(|| project_dir.join(OVERRIDE_FILES[0]));
+    if crate::safe_path::is_link(&path) {
+        bail!("{}: link, left alone", path.display());
+    }
     let mut o = if crate::safe_path::is_file(project_dir, &path) {
         match read_object(project_dir, &path) {
             Some(o) => o,
@@ -224,38 +232,26 @@ pub fn set_site(project_dir: &Path, folder: &str, kind: SiteKind, lang: &str) ->
         .get(list_key)
         .and_then(Value::as_array)
         .cloned()
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|a| a.get("id").and_then(Value::as_str) != Some(SITE_ACTION))
-        .collect();
-    if kind == SiteKind::None {
-        if o.get(default_key).and_then(Value::as_str) == Some(SITE_ACTION) {
-            o.remove(default_key);
-        }
-    } else {
-        let (_, rel) = inside(project_dir, folder)?;
-        let shown = if rel == "." {
-            tr(lang, "cartella del progetto", &[])
-        } else {
-            rel.clone()
-        };
-        let label = tr(lang, "sito web ({0})", &[&shown]);
-        let action = if kind == SiteKind::Static {
-            serde_json::json!({ "id": SITE_ACTION, "label": label, "static": rel })
-        } else {
-            serde_json::json!({ "id": SITE_ACTION, "label": label, "type": "web",
-                "command": format!("php -S 127.0.0.1:{{port}} -t {}", quote(&rel)) })
-        };
-        actions.insert(0, action);
-        o.insert(default_key.into(), Value::String(SITE_ACTION.into()));
-    }
+        .unwrap_or_default();
+    let mut default = o
+        .get(default_key)
+        .and_then(Value::as_str)
+        .map(str::to_owned);
+    edit(&mut actions, &mut default)?;
     if actions.is_empty() {
         o.remove(list_key);
     } else {
         o.insert(list_key.into(), Value::Array(actions));
     }
+    match default {
+        Some(d) => {
+            o.insert(default_key.into(), Value::String(d));
+        }
+        None => {
+            o.remove(default_key);
+        }
+    }
     if o.is_empty() {
-        // A file written only for the site: removed.
         match fs::remove_file(&path) {
             Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e.into()),
             _ => {}
@@ -267,11 +263,245 @@ pub fn set_site(project_dir: &Path, folder: &str, kind: SiteKind, lang: &str) ->
     Ok(())
 }
 
+/// "Servi come sito web": writes (or removes, `None`) the action `site` in
+/// the project's panel.json; the rest of the file stays as it is.
+pub fn set_site(project_dir: &Path, folder: &str, kind: SiteKind, lang: &str) -> Result<()> {
+    let site = if kind == SiteKind::None {
+        None
+    } else {
+        let (_, rel) = inside(project_dir, folder)?;
+        let shown = if rel == "." {
+            tr(lang, "cartella del progetto", &[])
+        } else {
+            rel.clone()
+        };
+        let label = tr(lang, "sito web ({0})", &[&shown]);
+        Some(if kind == SiteKind::Static {
+            serde_json::json!({ "id": SITE_ACTION, "label": label, "static": rel })
+        } else {
+            serde_json::json!({ "id": SITE_ACTION, "label": label, "type": "web",
+                "command": format!("php -S 127.0.0.1:{{port}} -t {}", quote(&rel)) })
+        })
+    };
+    edit_panel(project_dir, lang, |actions, default| {
+        actions.retain(|a| a.get("id").and_then(Value::as_str) != Some(SITE_ACTION));
+        match site {
+            Some(action) => {
+                actions.insert(0, action);
+                *default = Some(SITE_ACTION.into());
+            }
+            None => {
+                if default.as_deref() == Some(SITE_ACTION) {
+                    *default = None;
+                }
+            }
+        }
+        Ok(())
+    })
+}
+
+/// An action as the project page edits it (D-78).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActionEdit {
+    pub id: String,
+    pub label: String,
+    pub command: String,
+    /// `web`, `command`, `desktop`.
+    pub kind: String,
+    #[serde(default)]
+    pub folder: Option<String>,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub env: std::collections::BTreeMap<String, String>,
+}
+
+fn valid_id(id: &str) -> bool {
+    let mut chars = id.chars();
+    chars
+        .next()
+        .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+        && id.len() <= 40
+        // `:` and `.` too: detected ids look like `npm:dev`, and the page
+        // corrects a detected action by saving one with its id.
+        && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || "-_:.".contains(c))
+}
+
+fn valid_env_name(name: &str) -> bool {
+    let mut chars = name.chars();
+    chars
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
+/// Adds or replaces (same id) an action in panel.json: a detected action
+/// with the same id is corrected by it.
+pub fn save_action(project_dir: &Path, a: &ActionEdit, lang: &str) -> Result<()> {
+    let bad = |what: &str| anyhow::anyhow!("{}", tr(lang, "Azione non valida: {0}.", &[what]));
+    if !valid_id(&a.id) {
+        return Err(bad("id"));
+    }
+    if a.label.trim().is_empty() || a.label.contains('\n') {
+        return Err(bad(&tr(lang, "nome", &[])));
+    }
+    let command = a.command.trim();
+    if command.is_empty() || command.contains(['\n', '\r']) {
+        return Err(bad(&tr(lang, "comando", &[])));
+    }
+    if Kind::parse(&a.kind).is_none() {
+        return Err(bad(&tr(lang, "tipo", &[])));
+    }
+    let folder = match a
+        .folder
+        .as_deref()
+        .map(str::trim)
+        .filter(|f| !f.is_empty() && *f != ".")
+    {
+        Some(f) => Some(inside(project_dir, f)?.1),
+        None => None,
+    };
+    for (k, v) in &a.env {
+        if !valid_env_name(k) || v.contains(['\n', '\r']) {
+            return Err(bad(&tr(lang, "variabile {0}", &[k])));
+        }
+    }
+    let mut action = serde_json::json!({
+        "id": a.id, "label": a.label.trim(), "type": a.kind, "command": command,
+    });
+    if let Some(f) = folder {
+        action["folder"] = Value::String(f);
+    }
+    if let Some(u) = a.url.as_deref().map(str::trim).filter(|u| !u.is_empty()) {
+        action["url"] = Value::String(u.to_owned());
+    }
+    if !a.env.is_empty() {
+        action["env"] = serde_json::to_value(&a.env)?;
+    }
+    edit_panel(project_dir, lang, |actions, _| {
+        match actions
+            .iter()
+            .position(|x| x.get("id").and_then(Value::as_str) == Some(&a.id))
+        {
+            Some(i) => actions[i] = action,
+            None => actions.push(action),
+        }
+        Ok(())
+    })
+}
+
+/// Removes an action from panel.json (a detected one with that id comes
+/// back as detected).
+pub fn remove_action(project_dir: &Path, id: &str, lang: &str) -> Result<()> {
+    edit_panel(project_dir, lang, |actions, default| {
+        actions.retain(|a| a.get("id").and_then(Value::as_str) != Some(id));
+        if default.as_deref() == Some(id) {
+            *default = None;
+        }
+        Ok(())
+    })
+}
+
+/// The action started by "Avvia" in the project list and its summary.
+pub fn set_default_action(project_dir: &Path, id: &str, lang: &str) -> Result<()> {
+    if !valid_id(id) && id != SITE_ACTION {
+        bail!("{}", tr(lang, "Azione non valida: {0}.", &["id"]));
+    }
+    edit_panel(project_dir, lang, |_, default| {
+        *default = Some(id.to_owned());
+        Ok(())
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::detect::detect;
     use crate::detect::tests::{ids, project};
+
+    fn edit(id: &str, command: &str) -> ActionEdit {
+        ActionEdit {
+            id: id.into(),
+            label: "API".into(),
+            command: command.into(),
+            kind: "web".into(),
+            folder: None,
+            url: None,
+            env: Default::default(),
+        }
+    }
+
+    #[test]
+    fn actions_edited_from_the_page() {
+        let tmp = project(
+            "edit-actions",
+            &[
+                ("package.json", r#"{"scripts":{"dev":"vite"}}"#),
+                ("api/main.py", "print(1)"),
+            ],
+        );
+        let mut a = edit("api", "python main.py --port {port}");
+        a.folder = Some("api".into());
+        a.env.insert("APP_ENV".into(), "local".into());
+        save_action(&tmp.0, &a, "it").unwrap();
+        let p = detect(&tmp.0, "it");
+        let api = p.actions.iter().find(|x| x.id == "api").unwrap();
+        assert_eq!(api.folder.as_deref(), Some("api"));
+        assert_eq!(api.env["APP_ENV"], "local");
+        assert!(api.custom);
+        // Same id: replaced, not added.
+        a.command = "uvicorn main:app --port {port}".into();
+        save_action(&tmp.0, &a, "it").unwrap();
+        let p = detect(&tmp.0, "it");
+        assert_eq!(p.actions.iter().filter(|x| x.id == "api").count(), 1);
+        // A detected action corrected, then back to the detected one.
+        save_action(&tmp.0, &edit("npm:dev", "npm run dev -- --host"), "it").unwrap();
+        let p = detect(&tmp.0, "it");
+        let dev: Vec<_> = p.actions.iter().filter(|x| x.id == "npm:dev").collect();
+        assert_eq!(dev.len(), 1);
+        assert_eq!(dev[0].command, "npm run dev -- --host");
+        assert!(dev[0].custom);
+        remove_action(&tmp.0, "npm:dev", "it").unwrap();
+        let p = detect(&tmp.0, "it");
+        assert!(
+            !p.actions.iter().find(|x| x.id == "npm:dev").unwrap().custom,
+            "detected again"
+        );
+        set_default_action(&tmp.0, "api", "it").unwrap();
+        assert_eq!(detect(&tmp.0, "it").default.as_deref(), Some("api"));
+        remove_action(&tmp.0, "api", "it").unwrap();
+        let p = detect(&tmp.0, "it");
+        assert!(!p.actions.iter().any(|x| x.id == "api"));
+        assert_ne!(p.default.as_deref(), Some("api"));
+        assert!(!tmp.0.join("panel.json").exists(), "empty file removed");
+        // Refused: bad id, two lines, outside folder, bad variable.
+        assert!(save_action(&tmp.0, &edit("A B", "x"), "it").is_err());
+        assert!(save_action(&tmp.0, &edit("x", "a\nb"), "it").is_err());
+        let mut out = edit("x", "y");
+        out.folder = Some("../..".into());
+        assert!(save_action(&tmp.0, &out, "it").is_err());
+        let mut var = edit("x", "y");
+        var.env.insert("1A".into(), "z".into());
+        assert!(save_action(&tmp.0, &var, "it").is_err());
+    }
+
+    #[test]
+    fn old_file_keeps_its_keys() {
+        let tmp = project(
+            "edit-old",
+            &[(
+                "pannello.json",
+                r#"{"nome":"Vecchio","azioni":[{"id":"a","etichetta":"A","comando":"x"}]}"#,
+            )],
+        );
+        save_action(&tmp.0, &edit("b", "y"), "it").unwrap();
+        let text = fs::read_to_string(tmp.0.join("pannello.json")).unwrap();
+        let v: Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(v["nome"], "Vecchio");
+        assert_eq!(v["azioni"].as_array().unwrap().len(), 2);
+        assert!(v.get("actions").is_none());
+    }
 
     #[test]
     fn overrides_and_old_file() {
