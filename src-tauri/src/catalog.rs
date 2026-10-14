@@ -236,14 +236,19 @@ impl Choice {
         kit.app_dir().join("components.txt")
     }
 
-    /// The defaults of the catalog.
+    /// The defaults of the catalog, with what they need (Claude Code is a
+    /// default, Git is not: Git comes with it).
     pub fn defaults(catalog: &Catalog) -> Choice {
-        let chosen = catalog
-            .all()
-            .iter()
-            .map(|c| (c.id.clone(), c.def))
-            .collect();
-        let mut choice = Choice { chosen };
+        let mut choice = Choice {
+            chosen: catalog
+                .all()
+                .iter()
+                .map(|c| (c.id.clone(), false))
+                .collect(),
+        };
+        for c in catalog.all().iter().filter(|c| c.def) {
+            choice.set(catalog, &c.id, true);
+        }
         choice.repair(catalog);
         choice
     }
@@ -380,13 +385,20 @@ mod tests {
                 assert!(ids.contains(n.as_str()), "{} needs unknown {n}", c.id);
             }
         }
-        for id in ["git", "node", "uv", "gh", "pwsh"] {
-            assert_eq!(
-                catalog.find(id).map(|c| c.group),
-                Some(Group::Required),
-                "{id}"
-            );
+        // Always installed: the kit's shell and GitHub CLI only; the rest
+        // comes when something needs it (D-59).
+        let required: Vec<&str> = catalog
+            .all()
+            .iter()
+            .filter(|c| c.group == Group::Required)
+            .map(|c| c.id.as_str())
+            .collect();
+        assert_eq!(required, ["gh", "pwsh"]);
+        for id in ["git", "node", "uv"] {
+            let c = catalog.find(id).unwrap();
+            assert!(c.group == Group::Languages && !c.def, "{id}");
         }
+        assert_eq!(catalog.find("claude").unwrap().needs, ["git"]);
         // Only the parts of the app have a fixed version, and all of them do.
         for c in catalog.all() {
             let app = c.group == Group::App;
@@ -404,12 +416,16 @@ mod tests {
         let catalog = Catalog::get();
         // As written by nabre/dev-kit Save-ComponentChoice (plus a BOM and LF).
         let text =
-            "\u{feff}# comment\napache=1\nphp=0\nrust=1\ngit=0\nunknown=1\nbad line\nkotlin = 1\nvscodium=1\n";
+            "\u{feff}# comment\napache=1\nphp=0\nrust=1\ngh=0\nunknown=1\nbad line\nkotlin = 1\nvscodium=1\n";
         let choice = Choice::parse(text, catalog);
         assert!(!choice.is_chosen("php"));
         assert!(!choice.is_chosen("apache"), "apache needs php");
         assert!(choice.is_chosen("rust"));
-        assert!(choice.is_chosen("git"), "required stays on");
+        assert!(choice.is_chosen("gh"), "required stays on");
+        assert!(
+            choice.is_chosen("claude") && choice.is_chosen("git"),
+            "a default comes with what it needs"
+        );
         assert!(
             !choice.is_chosen("kotlin"),
             "kotlin needs java, which is off by default"
@@ -433,8 +449,10 @@ mod tests {
         assert!(choice.is_chosen("java"));
         choice.set(catalog, "java", false);
         assert!(!choice.is_chosen("kotlin"));
+        choice.set(catalog, "gh", false);
+        assert!(choice.is_chosen("gh"), "required cannot be turned off");
         choice.set(catalog, "git", false);
-        assert!(choice.is_chosen("git"), "required cannot be turned off");
+        assert!(!choice.is_chosen("claude"), "claude needs git");
     }
 
     #[test]

@@ -519,10 +519,16 @@ mod tests {
             assert!(!p.handle.contains(&"apache".into()), "apache needs php");
             assert!(p.remove.is_empty(), "skipped, not removed");
 
+            let p = plan_with(ctx, &choice, &[], &["gh"]).unwrap();
+            assert!(
+                p.handle.contains(&"gh".into()),
+                "required ones are never skipped"
+            );
+            assert!(choice.is_chosen("node"), "pnpm needs node");
             let p = plan_with(ctx, &choice, &[], &["node"]).unwrap();
             assert!(
-                p.handle.contains(&"node".into()) && p.handle.contains(&"pnpm".into()),
-                "required ones are never skipped"
+                !p.handle.contains(&"node".into()) && !p.handle.contains(&"pnpm".into()),
+                "node is not required any more: skipped, and pnpm with it"
             );
 
             fake_install(ctx, "php");

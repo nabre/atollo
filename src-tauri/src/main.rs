@@ -27,6 +27,7 @@ mod keyring;
 mod kit;
 mod kit_files;
 mod log;
+mod needs;
 mod net;
 mod processes;
 mod projects;

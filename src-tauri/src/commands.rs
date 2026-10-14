@@ -123,30 +123,64 @@ fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> Result<PathBuf, 
     }
 }
 
-/// Installs the required components that are missing (PowerShell 7, Git,
-/// Node.js, the editor...) with the app's preparation task and waits for it:
-/// the editor and the consoles never fall back to the shells of the PC.
-/// Progress reaches the window as `setup` events. Blocking: call it off the
-/// UI thread. Returns the kit environment, built again if something was
-/// installed (see [`setup_notify`]).
-fn ensure_required<R: Runtime>(
+/// Installs what an action of the window needs and is missing, with the
+/// app's preparation task, and waits for it: the required components and
+/// the parts of the app (PowerShell 7, GitHub CLI, the editor), plus
+/// `wanted` (an agent, Git for a clone, Node.js for `npm`...) with what they
+/// need (DECISIONS.md D-59). `wanted` is saved as chosen in
+/// `components.txt`, so "Linguaggi e strumenti" keeps it. The editor and the
+/// consoles never fall back to the programs of the PC. Progress reaches the
+/// window as `setup` events. Blocking: call it off the UI thread. Returns
+/// the kit environment, built again if something was installed (see
+/// [`setup_notify`]).
+fn ensure<R: Runtime>(
     app: &AppHandle<R>,
     task: &Arc<SetupTask>,
     kit: &Kit,
     lang: &str,
+    wanted: &[&str],
 ) -> Result<KitEnv, String> {
     use tauri::Manager;
     let env = || app.state::<AppState>().env();
-    let missing = setup_task::missing_required(kit);
-    if missing.is_empty() {
+    let catalog = Catalog::get();
+    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
+    let needed = with_needs(catalog, wanted);
+    if let Some(c) = needed.iter().find(|c| arm64 && c.no_arm64) {
+        return Err(crate::i18n::t(
+            lang,
+            "{0} non è disponibile sui PC ARM64.",
+            &[&c.name],
+        ));
+    }
+    if !wanted.is_empty() {
+        let mut choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+        let before = choice.clone();
+        for id in wanted {
+            choice.set(catalog, id, true);
+        }
+        if choice != before {
+            if let Err(e) = choice.write(kit, catalog) {
+                crate::log::warn(&format!("components.txt: {e:#}"));
+            }
+        }
+    }
+    let missing = |kit: &Kit| -> Vec<String> {
+        let mut ids = setup_task::missing_required(kit);
+        for c in &needed {
+            if install::installer(&c.id).is_some() && !c.is_installed(kit) && !ids.contains(&c.id) {
+                ids.push(c.id.clone());
+            }
+        }
+        ids
+    };
+    let todo = missing(kit);
+    if todo.is_empty() {
         return Ok(env());
     }
     if !task.snapshot().running {
-        crate::log::info(&format!(
-            "installing missing required components: {missing:?}"
-        ));
+        crate::log::info(&format!("installing what is needed: {todo:?}"));
         let opts = Options {
-            only: missing,
+            only: todo,
             ..Options::default()
         };
         // Refused only if a run started meanwhile: then that one is awaited.
@@ -155,7 +189,7 @@ fn ensure_required<R: Runtime>(
     while task.snapshot().running {
         std::thread::sleep(std::time::Duration::from_millis(300));
     }
-    let still = setup_task::missing_required(kit);
+    let still = missing(kit);
     if still.is_empty() {
         return Ok(env());
     }
@@ -169,6 +203,24 @@ fn ensure_required<R: Runtime>(
         "Componenti del kit non installati: {0}{1}. Riprova da Linguaggi e strumenti.",
         &[&still.join(", "), &why],
     ))
+}
+
+/// `ids` and, transitively, what they need, in catalog order.
+fn with_needs<'a>(catalog: &'a Catalog, ids: &[&str]) -> Vec<&'a crate::catalog::Component> {
+    let mut found: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    let mut todo: Vec<&str> = ids.to_vec();
+    while let Some(id) = todo.pop() {
+        if let Some(c) = catalog.find(id) {
+            if found.insert(c.id.as_str()) {
+                todo.extend(c.needs.iter().map(String::as_str));
+            }
+        }
+    }
+    catalog
+        .all()
+        .iter()
+        .filter(|c| found.contains(c.id.as_str()))
+        .collect()
 }
 
 #[tauri::command]
@@ -222,7 +274,7 @@ pub async fn editor_open<R: Runtime>(
     let (handle, task, kit) = (app.clone(), Arc::clone(&state.setup), state.kit.clone());
     let lang = state.lang();
     let (port, token) = tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&handle, &task, &kit, lang)?;
+        ensure(&handle, &task, &kit, lang, &[])?;
         editor
             .ensure_running()
             .map_err(|e| fail("editor start", format!("{e:#}")))
@@ -279,7 +331,7 @@ pub async fn terminal_open<R: Runtime>(
     let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure_required(&app, &task, &kit, lang)?;
+        let env = ensure(&app, &task, &kit, lang, &[])?;
         terminal::open_console(&app, &kit, &env, &dir)
             .map_err(|e| fail("terminal", format!("{e:#}")))
     })
@@ -494,7 +546,8 @@ pub async fn agent_launch<R: Runtime>(
     let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure_required(&app, &task, &kit, lang)?;
+        let wanted: Vec<&str> = crate::needs::of_agent(&kit, &agent).into_iter().collect();
+        let env = ensure(&app, &task, &kit, lang, &wanted)?;
         crate::agents::launch(&app, &kit, &env, &agent, &dir, lang)
             .map_err(|e| fail("agent", format!("{e:#}")))
     })
@@ -587,7 +640,7 @@ pub async fn project_clone<R: Runtime>(
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure_required(&app, &task, &kit, lang)?;
+        let env = ensure(&app, &task, &kit, lang, &["git"])?;
         crate::projects::clone(&kit, &env, &source, name.as_deref(), lang)
             .map(|d| {
                 d.file_name()
@@ -652,7 +705,6 @@ pub async fn run_start<R: Runtime>(
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let runner = Arc::clone(&runner);
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure_required(&app, &task, &kit, lang)?;
         let detected = crate::detect::detect(&dir, lang);
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::i18n::t(
@@ -661,6 +713,8 @@ pub async fn run_start<R: Runtime>(
                 &[],
             ));
         };
+        let wanted: Vec<&str> = crate::needs::of_action(a).into_iter().collect();
+        let env = ensure(&app, &task, &kit, lang, &wanted)?;
         runner
             .start(&project, &dir, a, &env, lang)
             .map_err(|e| fail("run", format!("{e:#}")))

@@ -368,3 +368,15 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 - **Il processo resta.** Le estensioni, i terminali, la ricerca, Git e il debug dell'editor girano nella parte Node.js di VSCodium: senza quel processo resterebbe un editor «web» senza terminale né estensioni normali. Rifarlo in Rust, usare solo Monaco o collegarsi con una named pipe (il workbench usa WebSocket, che i protocolli personalizzati di WebView2 non gestiscono) sono stati scartati. Il processo parte e si ferma con l'app (job), ascolta solo su `127.0.0.1` con il token, e nell'interfaccia si chiama solo «editor».
 - **Non nell'exe.** Circa 130 MB compressi: incorporarli renderebbe enorme ogni aggiornamento dell'exe; si scaricano e si verificano al primo avvio, come prima.
 - **A ogni rilascio** si aggiornano `version` e `sha256` di `vscodium-server` in `components.json` (una versione di almeno due settimane, checksum di VSCodium uguale al digest di GitHub).
+
+## D-59 Obbligatori solo PowerShell 7 e GitHub CLI; il resto quando serve
+
+- **Scelta dell'utente** (14/10/2026): in «Linguaggi e strumenti» sono obbligatori solo GitHub CLI e il terminale (PowerShell 7 del kit); Git, Node.js e uv diventano dipendenze, installate quando servono. L'editor resta installato sempre come parte dell'app (D-58).
+- **Quando si installano** (`commands::ensure`, `needs.rs`):
+  - avvio di un agente: l'agente stesso, le sue dipendenze del catalogo (Claude Code → Git) e i programmi dei server MCP di `data\agents\mcp.json` (`npx`/`node` → Node.js, `uvx`/`uv` → uv, `python` → Python);
+  - clone di un progetto: Git;
+  - azione di un progetto: il componente del primo programma di ogni comando (`npm` → Node.js, `uv` → uv, `php`/`composer` → PHP, `cargo` → Rust...); `Dev-Kit.exe serve` non chiede niente;
+  - editor e console: solo gli obbligatori e l'editor.
+- **La scelta resta.** Quello che si installa così viene segnato come scelto in `components.txt`, così «Linguaggi e strumenti» non lo toglie al giro dopo. Le scelte predefinite portano con sé le loro dipendenze: Claude Code è predefinito, quindi Git viene installato con lui.
+- **ARM64.** Un componente `noArm64` richiesto da un comando dà un errore chiaro invece di un'installazione che fallisce.
+- **Kit esistenti.** I file `components.txt` scritti quando Git, Node.js e uv erano obbligatori li hanno a `1`: restano installati finché l'utente non li toglie.
