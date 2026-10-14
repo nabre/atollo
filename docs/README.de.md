@@ -1,0 +1,107 @@
+# Dev-Kit
+
+[Italiano](../README.md) · [English](README.en.md) · [Français](README.fr.md) · Deutsch
+
+Eine portable Entwicklungsumgebung für Windows in einer einzigen Datei: `Dev-Kit.exe`. Integrierter Editor (VSCodium), die Agenten Claude Code, Codex und Antigravity, Sprachen und Werkzeuge, die bei Bedarf heruntergeladen werden. Keine Installation, keine Administratorrechte, keine Datei außerhalb des Kit-Ordners.
+
+Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShell 7, GitHub CLI, den Editor und was diese brauchen (Git für GitHub CLI). Alles andere wird auf der Seite „Sprachen und Werkzeuge“ gewählt oder kommt, wenn es gebraucht wird: Node.js mit einer `npm`-Aktion, uv mit einem `uvx`-MCP-Server und so weiter.
+
+> In Entwicklung. Stand und Plan (auf Italienisch): [app/PLAN.md](app/PLAN.md), Neuigkeiten: [app/CHANGELOG.md](app/CHANGELOG.md).
+> Angelehnt an [nabre/dev-kit](https://github.com/nabre/dev-kit), aber keine neue Version davon: ein eigenständiges Produkt.
+
+## Verwendung
+
+1. `Dev-Kit.exe` in einen leeren Ordner kopieren: einen USB-Stick, eine externe Festplatte oder einen Ordner im eigenen Profil (Leerzeichen, Klammern oder `&` im Namen sind kein Problem).
+2. Doppelklicken. Beim ersten Start Agenten, Sprachen und Werkzeuge wählen: die App lädt sie herunter und prüft sie (Prüfsumme oder Signatur), dann legt sie `projects\` und `data\` an.
+3. Auf der Seite **Projekte** ein Projekt anlegen oder klonen. Editor, Terminal und Agenten öffnen sich immer im Ordner eines Projekts, nie anderswo.
+
+## Seiten
+
+| Seite | Inhalt |
+| --- | --- |
+| **Start** | letzte Projekte mit Editor, Terminal und Agent; Hinweise (Kit verschoben, andere Kopie des Kits geöffnet, laufende Installationen); wo das Kit liegt |
+| **Projekte** | neues Projekt, Klonen von GitHub oder einer Git-Adresse; für jedes Projekt Typ, Sprachen (mit Logo) und erkannte Aktionen (`npm run dev`, `php -S`, `cargo run`, statische Website…), mit Port, Ausgabe und Öffnen im Browser |
+| **Agenten** | die installierten Claude Code, Codex und Antigravity: Version, Anmeldung, Tariflimits und Verbrauch von heute und der letzten 7 Tage; gemeinsame Anweisungen, Skills und MCP-Server in `data\agents` |
+| **Sprachen und Werkzeuge** | die Komponenten mit Logo, Abhängigkeiten und Speicherplatz; installieren, aktualisieren, entfernen |
+| **Einstellungen** | Sprache, Netzwerk (Proxy, Zertifikate, lokales Netz), Gemini-Schlüssel, Versionen von Python, PHP und Rust, Updates der App |
+| **Laufwerk entfernen** | schließt alles, was das Kit geöffnet hat, holt die Anmeldung von Antigravity ins Kit zurück und lässt den Stick auswerfen |
+
+Die Konsole des Kits ist die klassische Windows-Konsole mit der PowerShell 7 des Kits und nur der Umgebung des Kits: auf dem PC installierte Programme sind nicht sichtbar.
+
+## Was vom Dev-Kit bleibt
+
+Das Konsolenmenü von [nabre/dev-kit](https://github.com/nabre/dev-kit) entfällt: jeder Eintrag hat eine Seite in der App („Proxy und Einstellungen“ ist die Seite Einstellungen), und die Logik der Skripte steckt in Rust in der exe. Die Komponenten sind dieselben (plus PowerShell 7 und der integrierte Editor, minus VSCodium Desktop und Windows Terminal), ebenso der Abgleich von Anweisungen, Skills und MCP zwischen den drei Agenten und das Umziehen, wenn das Kit Ordner oder Laufwerksbuchstaben wechselt. Kits des Dev-Kit werden nicht importiert.
+
+## Bekannte Grenzen
+
+- Nur Windows 10 und 11, x64 und ARM64 (auf ARM64 laufen Editor, PHP, Apache und TinyTeX in x64-Emulation; R ist nicht verfügbar).
+- Außerhalb des Kits bleiben nur die Spuren von Windows, die Anmeldung von GitHub CLI in der Anmeldeinformationsverwaltung und die von Antigravity, solange `agy` geöffnet ist (nur für die Sitzung).
+- Die Ordner in `projects\` gelten für Claude Code, Codex und den Editor als vertrauenswürdig (kein „eingeschränkter Modus“): nur Projekte öffnen, denen man vertraut.
+- Die Nutzungslimits der Agenten stammen aus nicht dokumentierten Schnittstellen der Anbieter und können nach einem ihrer Updates nicht mehr funktionieren.
+- „Laufwerk entfernen“ sieht keine PC-Programme, die nur eine Datei des Kits geöffnet halten.
+- Die exe ist nicht signiert (siehe unten).
+
+## Aufbau
+
+```
+Dev-Kit\
+  Dev-Kit.exe     die gesamte Logik
+  projects\       deine Projekte
+  data\           heruntergeladene Programme, Einstellungen, Anmeldungen, Cache, temporäre Dateien
+                  (die Kit-Einstellungen jedes Projekts: data\app\projects\<Projekt>\dev-settings.json)
+```
+
+Für eine Sicherung genügt es, `projects\` und `data\` zu kopieren (ohne `data\apps\` und `data\cache\`, die neu heruntergeladen werden).
+
+## Befehlszeile
+
+```
+Dev-Kit.exe                          öffnet das Fenster
+Dev-Kit.exe env                      zeigt die Umgebung der Programme des Kits
+Dev-Kit.exe components               listet Sprachen und Werkzeuge, mit den installierten
+Dev-Kit.exe check                    prüft, ob die installierten Programme antworten
+Dev-Kit.exe prepare [Optionen]       installiert, aktualisiert und entfernt die gewählten Komponenten
+    --only a,b                       nur diese (und was sie brauchen)
+    --skip a,b                       diese nicht
+    --update-all                     auch die bereits installierten aktualisieren
+    --force                          neu herunterladen
+Dev-Kit.exe sync [--project <Ordner>] [--verbose]
+                                     gleicht Anweisungen, Skills und MCP der drei Agenten ab
+Dev-Kit.exe keyring restore|save     Anmeldung von Antigravity (von agy.cmd des Kits benutzt)
+Dev-Kit.exe serve <Ordner> <Port>    Dateiserver für eine statische Website
+Dev-Kit.exe version                  zeigt die Version
+Dev-Kit.exe help                     zeigt die Hilfe
+```
+
+## Bauen
+
+Voraussetzungen: stabiles Rust (mindestens 1.93) mit der MSVC-Toolchain (Visual Studio Build Tools, Workload C++), Node.js LTS.
+
+```
+npm ci
+npm run build
+```
+
+Die JavaScript-Abhängigkeiten liegen nur im Stammordner (`node_modules` und `package-lock.json`): `ui` ist ein npm-Workspace.
+
+Die exe liegt in `target\release\Dev-Kit.exe`. Es wird kein Installer erzeugt (`--no-bundle`).
+
+Prüfungen vor einer Änderung:
+
+```
+npm run lint
+npm test
+npm -w ui run build
+```
+
+`npm run lint` führt `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, ESLint und Prettier aus; `npm test` führt `cargo test` und die Tests der Oberfläche aus; `npm -w ui run build` prüft die Typen und baut die Oberfläche. Einzelheiten (auf Italienisch) in [app/TESTING.md](app/TESTING.md).
+
+Entwicklung mit automatischem Neuladen: `npm run dev`.
+
+## Wenn Windows die exe blockiert
+
+Die exe ist noch nicht signiert. Zeigt SmartScreen „Der Computer wurde durch Windows geschützt“, **Weitere Informationen** › **Trotzdem ausführen** wählen. Wurde die exe aus dem Internet geladen: Rechtsklick › **Eigenschaften** › **Zulassen**. Auf Firmen-PCs mit AppLocker ist die Erlaubnis der IT-Abteilung nötig.
+
+## Lizenz
+
+MIT.

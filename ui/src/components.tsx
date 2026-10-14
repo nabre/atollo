@@ -17,6 +17,7 @@ import { componentsApply, componentsList, type ComponentInfo, type Group, type S
 import { locale, rich, t } from "./i18n";
 import { ActionButton } from "./pages";
 import { SetupProgress } from "./setup";
+import { ComponentLogo } from "./logos";
 
 function groups(): { id: Group; title: string; hint: string }[] {
   return [
@@ -205,6 +206,9 @@ export function ComponentsPage({
                       }}
                       className="size-4 accent-vsc-button"
                     />
+                    <span className="flex w-4 justify-center">
+                      <ComponentLogo id={c.id} />
+                    </span>
                     <label htmlFor={inputId} className="min-w-0 flex-1">
                       <span className="font-medium">{c.name}</span>
                       <span className="ml-2 text-vsc-desc">{c.desc}</span>
@@ -236,7 +240,7 @@ export function ComponentsPage({
         );
       })}
 
-      <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-vsc-border bg-vsc-bg py-3">
+      <div className="sticky -bottom-5 flex flex-wrap items-center gap-3 border-t border-vsc-border bg-vsc-bg pt-3 pb-8">
         {confirm ? (
           <>
             <span role="status">

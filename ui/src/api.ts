@@ -90,6 +90,8 @@ export interface ProjectInfo {
   warnings: string[];
   custom: boolean;
   default: string | null;
+  /** The kit's settings of the project (data\app\projects\<id>\dev-settings.json). */
+  settings: { agent?: string; lastOpened?: number };
 }
 
 function sampleAction(id: string, label: string, command: string, staticDir: string | null): ProjectAction {
@@ -112,6 +114,7 @@ const SAMPLE_PROJECTS: ProjectInfo[] = [
     warnings: [],
     custom: false,
     default: "static",
+    settings: { lastOpened: Math.floor(Date.now() / 1000) - 3600 },
   },
   {
     id: "api-python",
@@ -135,6 +138,7 @@ const SAMPLE_PROJECTS: ProjectInfo[] = [
     warnings: ["Nessun ambiente virtuale (.venv)."],
     custom: false,
     default: "py:uvicorn",
+    settings: { agent: "codex" },
   },
 ];
 
@@ -145,7 +149,7 @@ export function editorStatus(): Promise<EditorStatus> {
 }
 
 /** Opens the editor on a project (`null` = the projects folder). */
-export function editorOpen(project: string | null): Promise<void> {
+export function editorOpen(project: string): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("editor_open", { project });
 }
 
@@ -157,8 +161,8 @@ export function projectsList(): Promise<ProjectInfo[]> {
   return browserPreview ? Promise.resolve(SAMPLE_PROJECTS) : invoke<ProjectInfo[]>("projects_list");
 }
 
-/** Opens a kit console (a console window of the app) in a project or in `projects\`. */
-export function terminalOpen(project: string | null): Promise<void> {
+/** Opens a kit console (a console window of the app) in a project. */
+export function terminalOpen(project: string): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("terminal_open", { project });
 }
 
@@ -273,8 +277,131 @@ export function agentsStatus(): Promise<AgentInfo[]> {
   return browserPreview ? Promise.resolve([]) : invoke<AgentInfo[]>("agents_status");
 }
 
-/** Opens the agent in a kit console in the project (or `projects\`). */
-export function agentLaunch(agent: AgentId, project: string | null): Promise<void> {
+// Plan limits and usage of the agents (src-tauri/src/stats).
+
+export type Level = "none" | "ok" | "warning" | "critical";
+
+export interface LimitWindow {
+  label: string;
+  /** % used, 0-100. */
+  percent: number | null;
+  /** Milliseconds since 1970. */
+  resetsAt: number | null;
+  level: Level;
+}
+
+export interface Limits {
+  plan: string | null;
+  windows: LimitWindow[];
+  credits: { used: number; limit: number | null; currency: string; percent: number | null; level: Level } | null;
+  source: string | null;
+  note: string | null;
+  error: string | null;
+  updated: number | null;
+  limited: boolean;
+  retryAt: number | null;
+}
+
+export interface Tokens {
+  input: number;
+  cached: number;
+  output: number;
+  total: number;
+}
+
+export interface Usage {
+  /** False when the agent saves no token counts (Antigravity). */
+  tokens: boolean;
+  since: number;
+  today: Tokens;
+  week: Tokens;
+  sessionsToday: number;
+  sessionsWeek: number;
+  last: number | null;
+  models: Record<string, number>;
+  days: (Tokens & { start: number; sessions: number })[];
+  error?: string;
+}
+
+export interface AgentStats {
+  id: AgentId;
+  name: string;
+  account: "none" | "expired" | "apikey" | "ok";
+  limits: Limits;
+  usage: Usage;
+  peak: number | null;
+  peakLabel: string | null;
+  level: Level;
+}
+
+export interface StatsReport {
+  updated: number;
+  warning: number;
+  critical: number;
+  agents: AgentStats[];
+}
+
+function sampleStats(): StatsReport {
+  const day = 24 * 3600 * 1000;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tokens = (n: number): Tokens => ({ input: n, cached: n * 8, output: n / 4, total: n * 9.25 });
+  const days = Array.from({ length: 7 }, (_, i) => ({
+    start: today.getTime() - (6 - i) * day,
+    ...tokens((i + 1) * 20000),
+    sessions: i % 3,
+  }));
+  const usage: Usage = {
+    tokens: true,
+    since: days[0]?.start ?? 0,
+    today: tokens(140000),
+    week: tokens(560000),
+    sessionsToday: 2,
+    sessionsWeek: 6,
+    last: Date.now() - 600000,
+    models: { "claude-opus": 4000000, "claude-haiku": 1180000 },
+    days,
+  };
+  const limits = (windows: LimitWindow[]): Limits => ({
+    plan: "max",
+    windows,
+    credits: null,
+    source: "server di Anthropic",
+    note: null,
+    error: null,
+    updated: Date.now(),
+    limited: false,
+    retryAt: null,
+  });
+  return {
+    updated: Date.now(),
+    warning: 70,
+    critical: 90,
+    agents: [
+      {
+        id: "claude",
+        name: "Claude Code",
+        account: "ok",
+        limits: limits([
+          { label: "5 ore", percent: 34, resetsAt: Date.now() + 2 * 3600000, level: "ok" },
+          { label: "Settimana", percent: 76, resetsAt: Date.now() + 3 * day, level: "warning" },
+        ]),
+        usage,
+        peak: 76,
+        peakLabel: "Settimana",
+        level: "warning",
+      },
+    ],
+  };
+}
+
+/** Limits and usage of the installed agents; `force`: the Refresh button. */
+export function agentsStats(force: boolean): Promise<StatsReport> {
+  return browserPreview ? Promise.resolve(sampleStats()) : invoke<StatsReport>("agents_stats", { force });
+}
+
+/** Opens the agent in a kit console in the project (only there). */
+export function agentLaunch(agent: AgentId, project: string): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("agent_launch", { agent, project });
 }
 

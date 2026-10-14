@@ -267,11 +267,12 @@ pub async fn editor_open<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
-    project: Option<String>,
+    project: String,
 ) -> Result<(), String> {
     ensure_main(&webview)?;
-    let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
-    let title = project.clone().unwrap_or_else(|| "projects".into());
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::project_settings::opened(&state.kit, &project);
+    let title = project.clone();
     let editor = Arc::clone(&state.editor);
     let (handle, task, kit) = (app.clone(), Arc::clone(&state.setup), state.kit.clone());
     let lang = state.lang();
@@ -285,7 +286,7 @@ pub async fn editor_open<R: Runtime>(
     .map_err(|e| fail("editor", e))??;
     let _ = app.emit_to(MAIN, "editor-status", state.editor.status());
     let url = editor::url(port, &token, Some(&dir));
-    editor_window::open(&app, &url, port, &title, &state.kit.webview_data())
+    editor_window::open(&app, &url, port, &title, &dir, &state.kit.webview_data())
         .map_err(|e| fail("editor window", format!("{e:#}")))
 }
 
@@ -327,10 +328,11 @@ pub async fn terminal_open<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
-    project: Option<String>,
+    project: String,
 ) -> Result<(), String> {
     ensure_main(&webview)?;
-    let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::project_settings::opened(&state.kit, &project);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[])?;
@@ -532,20 +534,38 @@ pub fn agents_status<R: Runtime>(
     Ok(crate::agents::status(&state.kit, &state.env()))
 }
 
-/// Opens an agent in a kit console in the project (or `projects\`).
+/// Plan limits and usage of the installed agents (`stats.rs`). `force`:
+/// the "Refresh" button, which asks the servers sooner.
+#[tauri::command]
+pub async fn agents_stats<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    force: bool,
+) -> Result<crate::stats::Report, String> {
+    ensure_main(&webview)?;
+    let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || crate::stats::collect(&kit, &env, lang, force))
+        .await
+        .map_err(|e| fail("stats", e))
+}
+
+/// Opens an agent in a kit console in the project (never elsewhere).
 #[tauri::command]
 pub async fn agent_launch<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
     agent: String,
-    project: Option<String>,
+    project: String,
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     if !crate::agents::IDS.contains(&agent.as_str()) {
         return Err(format!("unknown agent: {agent}"));
     }
-    let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::project_settings::update(&state.kit, &project, |s| {
+        s.agent = Some(agent.clone());
+    });
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         let wanted: Vec<&str> = crate::needs::of_agent(&kit, &agent).into_iter().collect();
@@ -1076,6 +1096,7 @@ macro_rules! command_handler {
             $crate::commands::setup_cancel,
             $crate::commands::components_apply,
             $crate::commands::agents_status,
+            $crate::commands::agents_stats,
             $crate::commands::agent_launch,
             $crate::commands::agent_sign_out,
             $crate::commands::folder_open,

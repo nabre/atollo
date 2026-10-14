@@ -410,6 +410,15 @@ pub fn restore(kit: &Kit) -> Result<()> {
     Ok(())
 }
 
+/// The secrets (base64) of the login saved in `dir` (`data\antigravity`),
+/// read by `stats.rs` for the quotas.
+pub fn saved_secrets(dir: &std::path::Path) -> Vec<String> {
+    read(&dir.join("keyring.json"))
+        .into_iter()
+        .filter_map(|i| i.blob)
+        .collect()
+}
+
 /// Logged in with a Google account (a saved login in the kit).
 pub fn has_login(kit: &Kit) -> bool {
     !read(&files(kit).store).is_empty()

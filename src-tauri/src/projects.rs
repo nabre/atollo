@@ -25,6 +25,8 @@ pub struct ProjectInfo {
     pub empty: bool,
     /// Components it needs that are not installed.
     pub missing: Vec<String>,
+    /// The kit's settings of the project (`project_settings.rs`).
+    pub settings: crate::project_settings::ProjectSettings,
     #[serde(flatten)]
     pub project: Project,
 }
@@ -68,11 +70,13 @@ pub fn info(kit: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
         .collect();
     let empty = fs::symlink_metadata(dir).is_ok_and(|m| m.is_dir())
         && fs::read_dir(dir).is_ok_and(|mut d| d.next().is_none());
+    let id = dir
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
     ProjectInfo {
-        id: dir
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default(),
+        settings: crate::project_settings::load(kit, &id),
+        id,
         modified: modified(dir),
         empty,
         missing,
@@ -80,10 +84,11 @@ pub fn info(kit: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
     }
 }
 
-/// Every project, most recently changed first.
+/// Every project, most recently opened or changed first.
 pub fn list(kit: &Kit, lang: &str) -> Vec<ProjectInfo> {
     let mut out: Vec<ProjectInfo> = folders(kit).iter().map(|d| info(kit, d, lang)).collect();
-    out.sort_by(|a, b| b.modified.cmp(&a.modified).then_with(|| a.id.cmp(&b.id)));
+    let recent = |p: &ProjectInfo| p.modified.max(p.settings.last_opened.unwrap_or(0));
+    out.sort_by(|a, b| recent(b).cmp(&recent(a)).then_with(|| a.id.cmp(&b.id)));
     out
 }
 
@@ -147,7 +152,9 @@ pub fn delete_empty(kit: &Kit, name: &str, lang: &str) -> Result<()> {
             )
         );
     }
-    fs::remove_dir(&dir).with_context(|| dir.display().to_string())
+    fs::remove_dir(&dir).with_context(|| dir.display().to_string())?;
+    crate::project_settings::remove(kit, name);
+    Ok(())
 }
 
 /// What to clone: `owner/repo` (GitHub) or an `https://` Git URL.

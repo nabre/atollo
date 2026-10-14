@@ -1,13 +1,19 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The main window only: app commands and core events. Editor windows get no capability (DECISIONS.md D-14).",
+  "description": "The main window only: app commands, core events and the controls of its own title bar. Editor windows get no capability (DECISIONS.md D-14).",
   "local": true,
   "windows": [
     "main"
   ],
   "permissions": [
     "core:event:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-is-maximized",
+    "core:window:allow-close",
     "allow-app-info",
     "allow-editor-status",
     "allow-editor-open",
@@ -20,6 +26,7 @@
     "allow-setup-cancel",
     "allow-components-apply",
     "allow-agents-status",
+    "allow-agents-stats",
     "allow-agent-launch",
     "allow-agent-sign-out",
     "allow-folder-open",

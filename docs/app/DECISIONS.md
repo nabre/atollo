@@ -413,3 +413,40 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 - **Problema** (14/10/2026). L'aggiornamento dell'editor falliva sempre con «in uso»: lo scambio rinomina la cartella vecchia, e Windows lo rifiuta se un qualsiasi programma tiene aperta anche una sola sua sottocartella. Qui era l'indicizzatore di Cloud Code (`cloudcode_cli.exe`) su `vscodium-server\extensions\terminal-suggest`, trovato enumerando gli handle; un antivirus, l'indicizzatore di Windows o Esplora file aperto sulla cartella fanno lo stesso.
 - **Come** (`archive::replace_dir`). Se la rinomina viene rifiutata e nessun programma gira da quella cartella, la cartella vecchia si sposta voce per voce: una sottocartella che non si sposta viene svuotata e resta vuota al suo posto, e la versione nuova la riempie.
 - **Limite voluto.** Windows lascia rinominare un exe in esecuzione: senza il controllo dei processi, un programma del componente in esecuzione verrebbe spostato e poi caricherebbe i file nuovi insieme ai vecchi. Con un programma in esecuzione dalla cartella, o un file bloccato, resta `InUse` e tutto torna com'era.
+
+## D-61 Limiti d'uso e consumi degli agenti (`stats/`)
+
+- **Scelta.** Porting di `core/stats/*.js` del Dev-Kit in `src-tauri/src/stats/` (un file per agente, `util.rs` per periodo, token e file di sessione). La pagina Agenti mostra per ogni agente installato i limiti del piano come «% usato» con l'ora in cui si azzerano (soglie 70 e 90 %), i crediti extra di Claude a parte, e i consumi di oggi e degli ultimi 7 giorni locali (token nuovi, dalla cache, in uscita; sessioni; ultima attività; grafico per giorno). Comando `agents_stats` (con `force` per «Aggiorna i consumi»).
+- **Fonti, tutte nel kit.** Claude: `api.anthropic.com/api/oauth/usage` con l'accesso di `data\home\.claude\.credentials.json`; Codex: `chatgpt.com/backend-api/wham/usage` con `.codex\auth.json`, altrimenti l'ultimo evento `token_count` delle sessioni; Antigravity: `cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels` con l'accesso salvato in `data\antigravity\keyring.json`. Interfacce non documentate: possono smettere di funzionare dopo un aggiornamento di un agente, e allora la pagina mostra l'errore senza bloccare nulla.
+- **Accessi solo letti**, mai rinnovati (un rinnovo sostituirebbe il token che l'agente tiene); ogni token va solo al server del suo fornitore, mai nel log. Proxy e certificati come i download (`net::Net::api_json`, un solo tentativo, 15 s).
+- **Server interrogati con parsimonia:** al massimo ogni 2 minuti, ogni 20 s con «Aggiorna»; dopo un 429 nessuna richiesta prima di `Retry-After` (o di un'attesa che raddoppia da 2 a 30 minuti), e restano i limiti letti per ultimi. Il Dev-Kit condivideva questa cache fra le finestre di VSCodium con un file; nell'app c'è un solo processo, quindi resta in memoria.
+- **Scartato: il language server locale di Antigravity.** Il Dev-Kit chiedeva le quote anche ad Antigravity in esecuzione, trovandone il processo dalla riga di comando (PowerShell `Get-CimInstance`) e le porte (`netstat`), compreso un Antigravity installato sul PC con un altro account. Nell'app servirebbero letture della riga di comando di processi altrui e un TLS senza verifica verso 127.0.0.1, per dati che il server di Google dà già con l'accesso del kit. Limite: mentre `agy` è aperto il suo accesso sta in Windows e il token del kit può essere scaduto; le quote tornano dopo il salvataggio dell'accesso.
+- **Periodo.** I giorni sono quelli locali di Windows (`SystemTimeToTzSpecificLocalTime`), giusti anche al cambio dell'ora legale; niente crate per le date.
+
+## D-62 Editor, terminale e agenti solo nella cartella di un progetto
+
+- **Scelta dell'utente** (14/10/2026): terminale ed editor saldamente collegati alla cartella del progetto; nessun altro luogo offerto all'utente, nemmeno `projects\`.
+- **Come.** `editor_open`, `terminal_open` e `agent_launch` vogliono un progetto (prima `null` voleva dire `projects\`). La Home mostra i progetti recenti, ognuno con Editor, Terminale e la scelta dell'agente; la pagina Agenti non ha più «Apri». La finestra dell'editor accetta solo le pagine del server con `folder=` uguale alla cartella del suo progetto (`editor_window::in_project`): un'altra cartella, un workspace o la finestra vuota (`ew=`) vengono rifiutati, anche come nuova finestra. La redirezione del token del server conserva `folder=`.
+- **Limiti.** In una shell l'utente può sempre fare `cd` altrove, e nell'editor «Apri file» può ancora mostrare un file fuori dal progetto: la cartella di lavoro e quella aperta restano però quelle del progetto. «Apri la cartella» in Esplora file resta anche per `projects\` e `data\agents` (gestione dei file, non lavoro sul codice).
+
+## D-63 Impostazioni del kit per progetto in `data\app\projects\<progetto>\dev-settings.json`
+
+- **Scelta dell'utente** (14/10/2026): un luogo in `data` per le impostazioni del kit di ogni progetto, con il nome `dev-settings.json`.
+- **Perché in `data` e non nel progetto.** Il progetto resta com'è nel suo repository (nessun file nuovo da ignorare in Git), e un backup di `data\` le porta con sé.
+- **Contenuto oggi** (`project_settings.rs`): `agent` (l'ultimo agente aperto nel progetto, predefinito nella scelta dell'agente) e `lastOpened` (ordine dei progetti recenti). Le chiavi scritte da una versione più nuova restano. Se il progetto viene eliminato dall'app, la sua cartella in `data\app\projects\` se ne va con lui; le porte restano in `data\app\ports.json` (D-50).
+
+## D-64 Barra del titolo dell'app disegnata dall'interfaccia
+
+- **Scelta dell'utente** (14/10/2026): niente barra di Windows sulla finestra principale, al suo posto quella dell'interfaccia. Solo sulla finestra principale: le finestre dell'editor non hanno IPC (D-14) e tengono la cornice di Windows.
+- **Come.** `decorations(false)` con l'ombra di Windows; `ui/src/titlebar.tsx` con area di trascinamento (`data-tauri-drag-region`, doppio clic per ingrandire) e i tre pulsanti di Windows. Permessi aggiunti alla sola capability `main`: `core:window:allow-start-dragging`, `allow-internal-toggle-maximize`, `allow-minimize`, `allow-toggle-maximize`, `allow-is-maximized`, `allow-close`. «Chiudi» passa dalla stessa richiesta di chiusura del pulsante di Windows, quindi la conferma con qualcosa aperto resta.
+
+## D-65 Loghi ufficiali di componenti e linguaggi
+
+- **Scelta dell'utente** (14/10/2026): ogni strumento con il suo logo; ogni progetto con le etichette del codice che contiene.
+- **Come.** Simple Icons di `react-icons/si` (già una dipendenza), con il colore di ogni marchio; i marchi neri o bianchi prendono il colore del testo, così si leggono in entrambi i temi. Dove Simple Icons non ha il logo: PowerShell (icona Codicon di PowerShell), Codex (logo OpenAI di Remix Icon), Antigravity (un'icona neutra: nessun logo ufficiale nei pacchetti, e il sito non ne pubblica uno scaricabile). I linguaggi dei progetti (rilevati da `detect::languages`, i più usati prima) compaiono come etichette con il logo nella riga del progetto e nei progetti recenti della Home.
+
+## D-66 Progetti attendibili anche nell'editor
+
+- **Scelta dell'utente** (14/10/2026): niente «Restricted Mode» quando l'editor apre un progetto.
+- **Come.** Il server dell'editor parte con `--disable-workspace-trust` (`editor.rs`): il workbench web riceve `enableWorkspaceTrust: false`. Basta spegnere l'attendibilità invece di elencare le cartelle fidate, perché l'editor apre solo cartelle di progetto (D-62). Scartata l'impostazione `security.workspace.trust.enabled`: ha ambito «application» e le impostazioni Machine del server la ignorano (provato: il «Restricted Mode» restava).
+- **Rischio accettato**, lo stesso di D-53: le attività, il debug e le estensioni partono subito anche in un progetto clonato da una fonte sconosciuta. La pagina Progetti già avvisa di aprire solo codice di cui ci si fida.

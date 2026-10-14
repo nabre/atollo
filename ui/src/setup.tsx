@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { VscCheck, VscCircleSlash, VscError, VscLoading, VscWarning } from "react-icons/vsc";
 import { onSetup, setupCancel, setupState, type Outcome, type SetupSnapshot, type SetupStep } from "./api";
 import { t } from "./i18n";
+import { ComponentLogo } from "./logos";
 
 /** The current preparation, kept up to date by the `setup` events. */
 export function useSetup(): SetupSnapshot | null {
@@ -127,7 +128,10 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
                 <StepIcon step={step} running={snapshot.running} />
               </span>
               <span className="min-w-0 flex-1">
-                <span>{step.name}</span>
+                <span className="inline-flex items-center gap-1.5 align-top">
+                  <ComponentLogo id={step.id} size={14} />
+                  {step.name}
+                </span>
                 <span className="ml-2 text-vsc-desc select-text">
                   {step.outcome ? outcomeText(step.outcome) : (step.note ?? "")}
                   {p !== null && ` (${String(p)}%)`}

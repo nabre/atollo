@@ -1,11 +1,14 @@
-// Agents page and the agent buttons of Home: Claude Code, Codex,
-// Antigravity, with their state, launch and sign-out. Instructions, skills
+// Agents page and the agent choice of a project: Claude Code, Codex,
+// Antigravity, with their state, usage, launch (only in a project) and
+// sign-out. Instructions, skills
 // and MCP servers are shared by the three (data\agents, aligned by the app).
 import { useCallback, useEffect, useState } from "react";
 import { VscCheck, VscFolderOpened, VscPlay, VscSignOut, VscWarning } from "react-icons/vsc";
 import { agentLaunch, agentSignOut, agentsStatus, folderOpen, type AgentId, type AgentInfo } from "./api";
 import { rich, t } from "./i18n";
 import { ActionButton, useAction } from "./pages";
+import { ComponentLogo } from "./logos";
+import { AgentUsage, StatsRefresh, useStats } from "./stats";
 
 /** The agents' state, refreshed every few seconds (running, signed in). */
 export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } {
@@ -25,47 +28,11 @@ export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } 
   return { agents, reload };
 }
 
-/** Buttons that open each installed agent in `projects\` (Home). */
-export function AgentButtons({ agents, project = null }: { agents: AgentInfo[] | null; project?: string | null }) {
-  const { busy, error, run } = useAction();
-  if (!agents || agents.length === 0) return null;
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
-        {agents.map((a) => (
-          <ActionButton
-            key={a.id}
-            icon={VscPlay}
-            label={a.name}
-            busy={busy === a.id}
-            disabled={!a.installed}
-            title={
-              a.installed
-                ? project
-                  ? t("Apre {0} in una console del kit nel progetto {1}", a.name, project)
-                  : t("Apre {0} in una console del kit nella cartella dei progetti", a.name)
-                : t("{0} non è installato: aggiungilo da Linguaggi e strumenti", a.name)
-            }
-            onClick={() => {
-              run(a.id, () => agentLaunch(a.id, project));
-            }}
-          />
-        ))}
-      </div>
-      {error && (
-        <p role="alert" className="flex items-center gap-2 text-vsc-error">
-          <VscWarning size={16} aria-hidden="true" />
-          <span className="select-text">{error}</span>
-        </p>
-      )}
-    </div>
-  );
-}
-
 export function AgentsPage() {
   const { agents, reload } = useAgents();
   const { busy, error, run } = useAction(reload);
   const [confirm, setConfirm] = useState<AgentId | null>(null);
+  const stats = useStats();
 
   if (!agents) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
   return (
@@ -80,87 +47,100 @@ export function AgentsPage() {
           <span className="font-mono">data\agents\mcp.json</span>,
         )}
       </p>
-      <ActionButton
-        icon={VscFolderOpened}
-        label={t("Apri la cartella condivisa")}
-        onClick={() => {
-          run("folder", () => folderOpen("agents"));
-        }}
-      />
+      <div className="flex flex-wrap gap-2">
+        <ActionButton
+          icon={VscFolderOpened}
+          label={t("Apri la cartella condivisa")}
+          onClick={() => {
+            run("folder", () => folderOpen("agents"));
+          }}
+        />
+        {agents.some((a) => a.installed) && <StatsRefresh loading={stats.loading} onRefresh={stats.refresh} />}
+      </div>
+      {stats.error && (
+        <p role="alert" className="flex items-center gap-2 text-vsc-error">
+          <VscWarning size={16} aria-hidden="true" />
+          <span className="select-text">{stats.error}</span>
+        </p>
+      )}
       {error && (
         <p role="alert" className="flex items-center gap-2 text-vsc-error">
           <VscWarning size={16} aria-hidden="true" />
           <span className="select-text">{error}</span>
         </p>
       )}
+      {agents.every((a) => !a.installed) && (
+        <p className="text-vsc-desc">{t("Nessun agente installato: aggiungili da Linguaggi e strumenti.")}</p>
+      )}
+      <p className="text-vsc-desc">
+        {t("Gli agenti si aprono sempre nella cartella di un progetto: dalla Home o dalla pagina Progetti.")}
+      </p>
       <ul className="space-y-3">
-        {agents.map((a) => (
-          <li key={a.id} className="rounded border border-vsc-border bg-vsc-sidebar px-4 py-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-[14px] font-semibold">{a.name}</h2>
-              <span className="text-[12px] text-vsc-desc">
-                {a.installed ? (a.version ?? t("installato")) : t("non installato")}
-              </span>
-              {a.running && <span className="rounded-sm bg-vsc-badge px-1.5 text-[11px]">{t("in esecuzione")}</span>}
-              <span className="ml-auto flex items-center gap-1 text-[12px]">
-                {a.signedIn ? (
-                  <>
-                    <VscCheck className="text-vsc-success" size={14} aria-hidden="true" />
-                    {a.signInKind === "api key" ? t("accesso con chiave API") : t("accesso fatto")}
-                  </>
-                ) : (
-                  <span className="text-vsc-desc">{t("accesso non fatto: si fa al primo avvio dell'agente")}</span>
-                )}
-              </span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <ActionButton
-                icon={VscPlay}
-                label={t("Apri")}
-                primary
-                busy={busy === `open:${a.id}`}
-                disabled={!a.installed}
-                title={a.installed ? t("Apre {0} nella cartella dei progetti", a.name) : t("Non installato")}
-                onClick={() => {
-                  run(`open:${a.id}`, () => agentLaunch(a.id, null));
-                }}
-              />
-              {a.signedIn &&
-                a.signInKind !== "api key" &&
-                (confirm === a.id ? (
-                  <>
-                    <span className="self-center">{t("Togliere l'accesso salvato nel kit?")}</span>
+        {agents
+          .filter((a) => a.installed)
+          .map((a) => (
+            <li key={a.id} className="rounded border border-vsc-border bg-vsc-sidebar px-4 py-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="flex items-center gap-2 text-[14px] font-semibold">
+                  <ComponentLogo id={a.id} size={18} />
+                  {a.name}
+                </h2>
+                <span className="text-[12px] text-vsc-desc">
+                  {a.installed ? (a.version ?? t("installato")) : t("non installato")}
+                </span>
+                {a.running && <span className="rounded-sm bg-vsc-badge px-1.5 text-[11px]">{t("in esecuzione")}</span>}
+                <span className="ml-auto flex items-center gap-1 text-[12px]">
+                  {a.signedIn ? (
+                    <>
+                      <VscCheck className="text-vsc-success" size={14} aria-hidden="true" />
+                      {a.signInKind === "api key" ? t("accesso con chiave API") : t("accesso fatto")}
+                    </>
+                  ) : (
+                    <span className="text-vsc-desc">{t("accesso non fatto: si fa al primo avvio dell'agente")}</span>
+                  )}
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {a.signedIn &&
+                  a.signInKind !== "api key" &&
+                  (confirm === a.id ? (
+                    <>
+                      <span className="self-center">{t("Togliere l'accesso salvato nel kit?")}</span>
+                      <ActionButton
+                        icon={VscSignOut}
+                        label={t("Esci")}
+                        busy={busy === `out:${a.id}`}
+                        onClick={() => {
+                          setConfirm(null);
+                          run(`out:${a.id}`, () => agentSignOut(a.id));
+                        }}
+                      />
+                      <ActionButton
+                        icon={VscCheck}
+                        label={t("Annulla")}
+                        onClick={() => {
+                          setConfirm(null);
+                        }}
+                      />
+                    </>
+                  ) : (
                     <ActionButton
                       icon={VscSignOut}
                       label={t("Esci")}
-                      busy={busy === `out:${a.id}`}
+                      disabled={a.running}
+                      title={a.running ? t("Chiudi prima l'agente") : t("Toglie l'accesso salvato nel kit")}
                       onClick={() => {
-                        setConfirm(null);
-                        run(`out:${a.id}`, () => agentSignOut(a.id));
+                        setConfirm(a.id);
                       }}
                     />
-                    <ActionButton
-                      icon={VscCheck}
-                      label={t("Annulla")}
-                      onClick={() => {
-                        setConfirm(null);
-                      }}
-                    />
-                  </>
-                ) : (
-                  <ActionButton
-                    icon={VscSignOut}
-                    label={t("Esci")}
-                    disabled={a.running}
-                    title={a.running ? t("Chiudi prima l'agente") : t("Toglie l'accesso salvato nel kit")}
-                    onClick={() => {
-                      setConfirm(a.id);
-                    }}
-                  />
-                ))}
-            </div>
-          </li>
-        ))}
+                  ))}
+              </div>
+              {(() => {
+                const st = stats.report?.agents.find((x) => x.id === a.id);
+                return st ? <AgentUsage stats={st} /> : null;
+              })()}
+            </li>
+          ))}
       </ul>
       <p className="text-[12px] text-vsc-desc">
         {t(
@@ -172,12 +152,21 @@ export function AgentsPage() {
 }
 
 /** Compact choice of an agent to open in one project (Projects page). */
-export function AgentPicker({ agents, project }: { agents: AgentInfo[] | null; project: string }) {
+export function AgentPicker({
+  agents,
+  project,
+  preferred,
+}: {
+  agents: AgentInfo[] | null;
+  project: string;
+  /** The agent last opened in the project (its dev-settings.json). */
+  preferred?: string | undefined;
+}) {
   const installed = (agents ?? []).filter((a) => a.installed);
   const [chosen, setChosen] = useState<AgentId | "">("");
   const { busy, error, run } = useAction();
   if (installed.length === 0) return null;
-  const agent = chosen || installed[0]?.id || "claude";
+  const agent = chosen || installed.find((a) => a.id === preferred)?.id || installed[0]?.id || "claude";
   return (
     <span className="flex items-center gap-1" title={error ?? undefined}>
       <select

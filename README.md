@@ -1,11 +1,45 @@
 # Dev-Kit
 
+Italiano · [English](docs/README.en.md) · [Français](docs/README.fr.md) · [Deutsch](docs/README.de.md)
+
 Ambiente di sviluppo portabile per Windows in un solo file: `Dev-Kit.exe`. Editor (VSCodium) integrato, agenti Claude Code, Codex e Antigravity, linguaggi e strumenti scaricati su richiesta. Niente installazione, niente diritti di amministratore, nessun file fuori dalla cartella del kit.
 
 Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitHub CLI, l'editor e quello che serve a loro (Git per GitHub CLI). Il resto si sceglie nella pagina «Linguaggi e strumenti», oppure arriva quando serve: Node.js con un'azione `npm`, uv con un server MCP `uvx`, e così via.
 
 > In sviluppo. Stato e piano: [docs/app/PLAN.md](docs/app/PLAN.md), novità: [docs/app/CHANGELOG.md](docs/app/CHANGELOG.md).
 > Prende spunto da [nabre/dev-kit](https://github.com/nabre/dev-kit), di cui non è una nuova versione: è un prodotto separato.
+
+## Come si usa
+
+1. Copia `Dev-Kit.exe` in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
+2. Doppio clic. Al primo avvio scegli agenti, linguaggi e strumenti: l'app li scarica e li verifica (checksum o firma), poi crea `projects\` e `data\`.
+3. Crea o clona un progetto nella pagina **Progetti**. Editor, terminale e agenti si aprono sempre nella cartella di un progetto, mai altrove.
+
+## Pagine
+
+| Pagina | Cosa c'è |
+| --- | --- |
+| **Home** | progetti recenti con Editor, Terminale e agente; avvisi (kit spostato, un'altra copia del kit aperta, installazioni in corso); dove si trova il kit |
+| **Progetti** | nuovo progetto, clone da GitHub o da un indirizzo Git; per ogni progetto il tipo, i linguaggi (con il loro logo) e le azioni riconosciute (`npm run dev`, `php -S`, `cargo run`, sito statico…), con porta, output e apertura nel browser |
+| **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
+| **Linguaggi e strumenti** | i componenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove |
+| **Impostazioni** | lingua, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python, PHP e Rust, aggiornamenti dell'app |
+| **Rimuovi l'unità** | chiude tutto ciò che il kit ha aperto, riporta nel kit l'accesso di Antigravity e lascia espellere la chiavetta |
+
+La console del kit è la console classica di Windows con PowerShell 7 del kit e il solo ambiente del kit: i programmi installati sul PC non si vedono.
+
+## Cosa resta del Dev-Kit
+
+Il menu in console di [nabre/dev-kit](https://github.com/nabre/dev-kit) non c'è: ogni sua voce ha una pagina dell'app («Proxy e impostazioni» è la pagina Impostazioni) e la logica degli script è in Rust dentro l'exe. Restano gli stessi componenti (più PowerShell 7 e l'editor integrato, meno VSCodium desktop e Windows Terminal), lo stesso allineamento di istruzioni, skill e MCP fra i tre agenti, la stessa rilocazione quando il kit cambia cartella o lettera di unità. I kit del Dev-Kit non vengono importati.
+
+## Limiti noti
+
+- Solo Windows 10 e 11, x64 e ARM64 (su ARM64 l'editor, PHP, Apache e TinyTeX girano in emulazione x64; R non c'è).
+- Fuori dal kit restano solo le tracce di Windows, l'accesso di GitHub CLI nella Gestione credenziali e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
+- Le cartelle in `projects\` sono attendibili per Claude Code, Codex e l'editor (niente «Restricted Mode»): apri solo progetti di cui ti fidi.
+- I limiti d'uso degli agenti vengono da interfacce non documentate dei fornitori e possono smettere di funzionare dopo un loro aggiornamento.
+- «Rimuovi l'unità» non vede i programmi del PC che tengono aperto solo un file del kit.
+- L'exe non è firmato (vedi sotto).
 
 ## Struttura
 
@@ -14,6 +48,7 @@ Dev-Kit\
   Dev-Kit.exe     tutta la logica
   projects\       i tuoi progetti
   data\           programmi scaricati, impostazioni, accessi, cache, temporanei
+                  (le impostazioni del kit di ogni progetto: data\app\projects\<progetto>\dev-settings.json)
 ```
 
 Per un backup basta copiare `projects\` e `data\` (meno `data\apps\` e `data\cache\`, che si riscaricano).

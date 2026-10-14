@@ -116,6 +116,8 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  /* Only the page content scrolls, never the window with its title bar. */
+  overflow: hidden;
 }
 
 body {
