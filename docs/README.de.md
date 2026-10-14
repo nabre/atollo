@@ -20,7 +20,7 @@ Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShel
 | Seite | Inhalt |
 | --- | --- |
 | **Start** | letzte Projekte mit Editor, Terminal und Agent; Hinweise (Kit verschoben, andere Kopie des Kits geöffnet, laufende Installationen); wo das Kit liegt |
-| **Projekte** | neues Projekt, Klonen von GitHub oder einer Git-Adresse; für jedes Projekt Typ, Sprachen (mit Logo) und erkannte Aktionen (`npm run dev`, `php -S`, `cargo run`, statische Website…), mit Port, Ausgabe und Öffnen im Browser |
+| **Projekte** | neues Projekt, Klonen von GitHub oder einer Git-Adresse; für jedes Projekt Typ, Sprachen (mit Logo) und erkannte Aktionen (`npm run dev`, `php -S`, `cargo run`, statische Website…), mit Port, Ausgabe und Öffnen im Browser; jedes Projekt hat eine eigene Seite (Start, Datenbanken, Erweiterungen, Agent, Git) |
 | **GitHub** | das GitHub-Konto des Kits, eines für alles: diese Seite, Git (auch im Editor, in den Konsolen und in den Agenten) und GitHub CLI; die Repositorys des Kontos und seiner Organisationen, mit Klonen nach `projects\`, Öffnen im Editor, Umbenennen und Löschen auf GitHub |
 | **Agenten** | die installierten Claude Code, Codex und Antigravity: Version, Anmeldung, Tariflimits und Verbrauch von heute und der letzten 7 Tage; gemeinsame Anweisungen, Skills und MCP-Server in `data\agents` |
 | **Sprachen und Werkzeuge** | die Komponenten mit Logo, Abhängigkeiten und Speicherplatz; installieren, aktualisieren, entfernen |

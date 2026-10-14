@@ -20,7 +20,7 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 | Pagina | Cosa c'è |
 | --- | --- |
 | **Home** | progetti recenti con Editor, Terminale e agente; avvisi (kit spostato, un'altra copia del kit aperta, installazioni in corso); dove si trova il kit |
-| **Progetti** | nuovo progetto, clone da GitHub o da un indirizzo Git; per ogni progetto il tipo, i linguaggi (con il loro logo) e le azioni riconosciute (`npm run dev`, `php -S`, `cargo run`, sito statico…), con porta, output e apertura nel browser |
+| **Progetti** | nuovo progetto, clone da GitHub o da un indirizzo Git; per ogni progetto il tipo, i linguaggi (con il loro logo) e le azioni riconosciute (`npm run dev`, `php -S`, `cargo run`, sito statico…), con porta, output e apertura nel browser; ogni progetto ha la sua pagina (avvio, database, estensioni, agente, Git) |
 | **GitHub** | l'account GitHub del kit, uno per tutto: questa pagina, Git (anche nell'editor, nelle console e negli agenti) e GitHub CLI; i repository dell'account e delle sue organizzazioni, con clone in `projects\`, apertura nell'editor, rinomina ed eliminazione su GitHub |
 | **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
 | **Linguaggi e strumenti** | i componenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove |
