@@ -2,8 +2,10 @@
 //! one instance each for every project (as Laragon), started from the
 //! Database page or with Dev-Kit.
 //!
-//! - they listen on 127.0.0.1 only; MariaDB's `root` has no password, which
-//!   is acceptable only because nothing outside this PC can reach it;
+//! - they listen on 127.0.0.1 only and ask for a password (D-74): MariaDB's
+//!   `root` and MongoDB's `admin` get a random one at the first start, also
+//!   on data made by an older Dev-Kit (`db_auth.rs`); each project gets its
+//!   own database and user (`project_db_create`);
 //! - data in `data\db\<id>`, created at the first start (MariaDB with its
 //!   `mariadb-install-db`); output in `data\app\logs\<id>.log`;
 //! - each server runs in a job of its own, nested in the app's: closing the
@@ -26,6 +28,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::catalog::Catalog;
+use crate::db_auth;
 use crate::env::KitEnv;
 use crate::jobs::{self, Job};
 use crate::kit::{write_atomic, Kit};
@@ -75,8 +78,11 @@ pub struct ServiceInfo {
     pub autostart: bool,
     pub data_dir: String,
     pub log: String,
-    /// Connection string for the projects.
+    /// Connection string of the administrator (no password in it).
     pub url: String,
+    /// `root` or `admin`, and its password once set (first start).
+    pub user: String,
+    pub password: Option<String>,
     /// Why the last start failed.
     pub message: Option<String>,
 }
@@ -128,8 +134,54 @@ fn bin(kit: &Kit, id: &str, exe: &str) -> PathBuf {
 
 pub fn url(id: &str, port: u16) -> String {
     match id {
-        "mongodb" => format!("mongodb://127.0.0.1:{port}/"),
+        "mongodb" => format!("mongodb://admin@127.0.0.1:{port}/?authSource=admin"),
         _ => format!("mysql://root@127.0.0.1:{port}/"),
+    }
+}
+
+fn admin_user(id: &str) -> &'static str {
+    match id {
+        "mongodb" => "admin",
+        _ => "root",
+    }
+}
+
+fn admin_password(secrets: &db_auth::Secrets, id: &str) -> Option<String> {
+    match id {
+        "mongodb" => secrets.mongodb_admin.clone(),
+        _ => secrets.mariadb_root.clone(),
+    }
+}
+
+/// Runs a tool with `input` on its stdin (SQL with passwords: never on the
+/// command line) and waits at most `limit`; fails with its error output.
+fn run_with_input(mut cmd: Command, input: &str, limit: Duration) -> Result<()> {
+    use std::io::{Read, Write};
+    cmd.stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped());
+    let mut child = jobs::spawn(&mut cmd)?;
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(input.as_bytes())?;
+    }
+    let start = Instant::now();
+    loop {
+        if let Some(status) = child.try_wait()? {
+            let mut err = String::new();
+            if let Some(mut e) = child.stderr.take() {
+                let _ = e.read_to_string(&mut err);
+            }
+            return if status.success() {
+                Ok(())
+            } else {
+                Err(anyhow!("{}", err.trim()))
+            };
+        }
+        if start.elapsed() > limit {
+            let _ = child.kill();
+            bail!("{:?}: no answer", cmd.get_program());
+        }
+        std::thread::sleep(Duration::from_millis(100));
     }
 }
 
@@ -181,6 +233,7 @@ impl Services {
 
     pub fn list(&self) -> Vec<ServiceInfo> {
         let settings = load_settings(&self.kit);
+        let secrets = db_auth::load(&self.kit);
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         let mut errors = self.errors.lock().unwrap_or_else(|e| e.into_inner());
         SERVERS
@@ -220,6 +273,8 @@ impl Services {
                     data_dir: data_dir(&self.kit, id).display().to_string(),
                     log: log_path(&self.kit, id).display().to_string(),
                     url: url(id, port),
+                    user: admin_user(id).to_owned(),
+                    password: admin_password(&secrets, id),
                     message: errors.get(*id).cloned(),
                 }
             })
@@ -233,10 +288,15 @@ impl Services {
         running.len()
     }
 
-    /// Creates the data folder the first time.
-    fn prepare(&self, id: &str, env: &KitEnv, port: u16) -> Result<PathBuf> {
+    /// Creates the data folder the first time; true when it is new (no
+    /// password set in it yet).
+    fn prepare(&self, id: &str, env: &KitEnv, port: u16) -> Result<(PathBuf, bool)> {
         let data = data_dir(&self.kit, id);
-        if id == "mariadb" && !data.join("mysql").is_dir() {
+        let fresh = match id {
+            "mariadb" => !data.join("mysql").is_dir(),
+            _ => !data.join("WiredTiger").is_file(),
+        };
+        if id == "mariadb" && fresh {
             // mariadb-install-db wants a folder that does not exist yet.
             if data.is_dir() && fs::read_dir(&data)?.next().is_none() {
                 fs::remove_dir(&data)?;
@@ -250,7 +310,135 @@ impl Services {
             run_tool(cmd, Duration::from_secs(120)).context("mariadb-install-db")?;
         }
         fs::create_dir_all(&data)?;
-        Ok(data)
+        Ok((data, fresh))
+    }
+
+    /// The administrator's password, set on a new data folder or on one made
+    /// before D-74 (no password yet), and MariaDB's `[client]` login.
+    fn secure(&self, id: &str, env: &KitEnv, port: u16, fresh: bool) -> Result<()> {
+        let mut secrets = db_auth::load(&self.kit);
+        let known = admin_password(&secrets, id);
+        let password = match &known {
+            Some(p) => p.clone(),
+            None => db_auth::new_password()?,
+        };
+        if fresh || known.is_none() {
+            match id {
+                "mongodb" => {
+                    let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), env);
+                    cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
+                        .arg(port.to_string())
+                        .args(["--eval", db_auth::MONGO_ADMIN_JS])
+                        .env("DEVKIT_DB_PASSWORD", &password);
+                    run_with_input(cmd, "", Duration::from_secs(60)).context(
+                        "MongoDB already has users that Dev-Kit does not know: \
+                         its administrator could not be created",
+                    )?;
+                    secrets.mongodb_admin = Some(password.clone());
+                }
+                _ => {
+                    // No password yet: log in without one, ignoring my.ini.
+                    let mut cmd = jobs::kit_command(bin(&self.kit, id, "mariadb.exe"), env);
+                    cmd.args([
+                        "--no-defaults",
+                        "--user=root",
+                        "--host=127.0.0.1",
+                        "--protocol=tcp",
+                    ])
+                    .arg(format!("--port={port}"));
+                    run_with_input(
+                        cmd,
+                        &db_auth::root_password_sql(&password),
+                        Duration::from_secs(60),
+                    )
+                    .context("MariaDB: setting the password of root")?;
+                    secrets.mariadb_root = Some(password.clone());
+                }
+            }
+            db_auth::save(&self.kit, &secrets)?;
+            crate::log::info(&format!("{id}: administrator password set"));
+        }
+        if id == "mariadb" {
+            db_auth::write_client_ini(&self.kit, port, &password)?;
+        }
+        Ok(())
+    }
+
+    /// A tool of MariaDB logged in as `root` (the kit's `[client]` login).
+    fn mariadb_tool(&self, exe: &str, env: &KitEnv) -> Command {
+        let mut cmd = jobs::kit_command(bin(&self.kit, "mariadb", exe), env);
+        // It must be the first option.
+        cmd.arg(format!(
+            "--defaults-extra-file={}",
+            db_auth::client_ini(&self.kit).display()
+        ));
+        cmd
+    }
+
+    /// The project's databases already created, at the servers' ports.
+    pub fn project_dbs(&self, project: &str) -> Vec<db_auth::ProjectDb> {
+        db_auth::load(&self.kit)
+            .projects
+            .get(project)
+            .map(|engines| {
+                engines
+                    .iter()
+                    .map(|(engine, pw)| db_auth::project_db(engine, project, pw, self.port(engine)))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Creates (or repairs) the project's database and user on a running
+    /// server; the password stays the same once generated.
+    pub fn project_db_create(&self, project: &str, engine: &str) -> Result<db_auth::ProjectDb> {
+        let (port, env) = {
+            let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
+            match running.get_mut(engine) {
+                Some(s) => match s.child.try_wait() {
+                    Ok(None) => (s.port, s.env.clone()),
+                    _ => bail!("{engine} is not running"),
+                },
+                None => bail!("{engine} is not running"),
+            }
+        };
+        let mut secrets = db_auth::load(&self.kit);
+        let password = match secrets.projects.get(project).and_then(|e| e.get(engine)) {
+            Some(p) => p.clone(),
+            None => db_auth::new_password()?,
+        };
+        let name = db_auth::db_name(project);
+        match engine {
+            "mongodb" => {
+                let admin = secrets
+                    .mongodb_admin
+                    .clone()
+                    .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
+                let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), &env);
+                cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
+                    .arg(port.to_string())
+                    .args(["--eval", db_auth::MONGO_PROJECT_JS])
+                    .env("DEVKIT_DB_ADMIN", admin)
+                    .env("DEVKIT_DB_NAME", &name)
+                    .env("DEVKIT_DB_PASSWORD", &password);
+                run_with_input(cmd, "", Duration::from_secs(60))?;
+            }
+            _ => {
+                let cmd = self.mariadb_tool("mariadb.exe", &env);
+                run_with_input(
+                    cmd,
+                    &db_auth::project_sql(&name, &password),
+                    Duration::from_secs(60),
+                )?;
+            }
+        }
+        secrets
+            .projects
+            .entry(project.to_owned())
+            .or_default()
+            .insert(engine.to_owned(), password.clone());
+        db_auth::save(&self.kit, &secrets)?;
+        Ok(db_auth::project_db(engine, project, &password, port))
     }
 
     fn command(&self, id: &str, env: &KitEnv, data: &std::path::Path, port: u16) -> Command {
@@ -262,7 +450,8 @@ impl Services {
                     .arg("--port")
                     .arg(port.to_string())
                     .arg("--bind_ip")
-                    .arg("127.0.0.1");
+                    .arg("127.0.0.1")
+                    .arg("--auth");
                 cmd
             }
             _ => {
@@ -316,7 +505,7 @@ impl Services {
     }
 
     fn launch(&self, id: &str, env: &KitEnv, port: u16) -> Result<u16> {
-        let data = self.prepare(id, env, port)?;
+        let (data, fresh) = self.prepare(id, env, port)?;
         let log = log_path(&self.kit, id);
         let file = OpenOptions::new()
             .create(true)
@@ -370,6 +559,10 @@ impl Services {
             }
             std::thread::sleep(Duration::from_millis(250));
         }
+        if let Err(e) = self.secure(id, env, port, fresh) {
+            self.stop(id);
+            return Err(e);
+        }
         Ok(port)
     }
 
@@ -389,15 +582,16 @@ impl Services {
                     jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), &server.env);
                 cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                     .arg(server.port.to_string())
-                    .args(["--eval", "db.getSiblingDB('admin').shutdownServer()"]);
+                    .args(["--eval", db_auth::MONGO_SHUTDOWN_JS])
+                    .env(
+                        "DEVKIT_DB_ADMIN",
+                        db_auth::load(&self.kit).mongodb_admin.unwrap_or_default(),
+                    );
                 cmd
             }
             _ => {
-                let mut cmd =
-                    jobs::kit_command(bin(&self.kit, id, "mariadb-admin.exe"), &server.env);
-                cmd.args(["--user=root", "--host=127.0.0.1", "--protocol=tcp"])
-                    .arg(format!("--port={}", server.port))
-                    .arg("shutdown");
+                let mut cmd = self.mariadb_tool("mariadb-admin.exe", &server.env);
+                cmd.arg("shutdown");
                 cmd
             }
         };
@@ -494,7 +688,16 @@ mod tests {
         let list = s.list();
         assert_eq!(list[0].port, 3307);
         assert_eq!(list[0].url, "mysql://root@127.0.0.1:3307/");
-        assert_eq!(list[1].url, "mongodb://127.0.0.1:27017/");
+        assert_eq!(
+            list[1].url,
+            "mongodb://admin@127.0.0.1:27017/?authSource=admin"
+        );
+        assert!(list.iter().all(|i| i.password.is_none()), "no password yet");
+        assert!(s.project_dbs("shop").is_empty());
+        assert!(
+            s.project_db_create("shop", "mariadb").is_err(),
+            "server not running"
+        );
         assert!(list
             .iter()
             .all(|i| i.state == State::Stopped && !i.installed));
@@ -530,9 +733,19 @@ mod tests {
             s.set(id, Some(port), false).unwrap();
             assert_eq!(s.start(id, &env).unwrap(), port, "{id}");
             assert!(responds(port), "{id} answers");
+            let info = s.list().into_iter().find(|i| i.id == id).unwrap();
+            assert_eq!(info.state, State::Running);
+            assert!(info.password.is_some(), "{id}: administrator password set");
+            let db = s.project_db_create("Prova Kit", id).unwrap();
+            assert_eq!(db.database, "prova_kit");
+            let again = s.project_db_create("Prova Kit", id).unwrap();
+            assert_eq!(again.password, db.password, "{id}: same password");
             assert_eq!(
-                s.list().iter().find(|i| i.id == id).unwrap().state,
-                State::Running
+                s.project_dbs("Prova Kit")
+                    .iter()
+                    .filter(|d| d.engine == id)
+                    .count(),
+                1
             );
             s.stop(id);
             assert!(!responds(port), "{id} stopped");

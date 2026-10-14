@@ -1,7 +1,7 @@
 // The Database page (DECISIONS.md D-73): the kit's MariaDB and MongoDB
 // servers, one for every project, on 127.0.0.1 only; SQLite needs no server.
 import { useCallback, useEffect, useState } from "react";
-import { VscCopy, VscDebugStart, VscDebugStop, VscFolderOpened } from "react-icons/vsc";
+import { VscCopy, VscDebugStart, VscDebugStop, VscEye, VscEyeClosed, VscFolderOpened } from "react-icons/vsc";
 import {
   folderOpen,
   serviceSet,
@@ -37,6 +37,46 @@ function stateColor(state: ServiceState): string {
     default:
       return "text-vsc-desc";
   }
+}
+
+/** A password: hidden until shown, copied without showing it. */
+export function SecretField({ value, label }: { value: string; label: string }) {
+  const [shown, setShown] = useState(false);
+  const [copied, setCopied] = useState(false);
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <code className="truncate font-mono text-vsc-fg">{shown ? value : "••••••••••••"}</code>
+      <button
+        type="button"
+        className="rounded-sm p-1 text-vsc-fg hover:bg-vsc-list-hover"
+        aria-label={shown ? t("Nascondi {0}", label) : t("Mostra {0}", label)}
+        title={shown ? t("Nascondi") : t("Mostra")}
+        aria-pressed={shown}
+        onClick={() => {
+          setShown(!shown);
+        }}
+      >
+        {shown ? <VscEyeClosed size={14} aria-hidden="true" /> : <VscEye size={14} aria-hidden="true" />}
+      </button>
+      <button
+        type="button"
+        className="rounded-sm p-1 text-vsc-fg hover:bg-vsc-list-hover"
+        aria-label={t("Copia {0}", label)}
+        title={t("Copia")}
+        onClick={() => {
+          void navigator.clipboard.writeText(value).then(() => {
+            setCopied(true);
+            setTimeout(() => {
+              setCopied(false);
+            }, 1500);
+          });
+        }}
+      >
+        <VscCopy size={14} aria-hidden="true" />
+      </button>
+      {copied && <span className="text-vsc-desc">{t("Copiata")}</span>}
+    </span>
+  );
 }
 
 function ServiceCard({
@@ -98,6 +138,12 @@ function ServiceCard({
           </button>
           {copied && <span className="text-vsc-desc">{t("Copiata")}</span>}
         </span>
+        <span className="text-vsc-desc">{t("Password di {0}", s.user)}</span>
+        {s.password ? (
+          <SecretField value={s.password} label={t("la password di {0}", s.user)} />
+        ) : (
+          <span className="text-vsc-desc">{t("Generata al primo avvio.")}</span>
+        )}
         <label htmlFor={portId} className="text-vsc-desc">
           {t("Porta")}
         </label>
@@ -179,7 +225,7 @@ export function DatabasesPage() {
     <div className="max-w-3xl space-y-4">
       <p className="text-vsc-desc">
         {t(
-          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1). MariaDB è compatibile con MySQL: l'utente root non ha password.",
+          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. MariaDB è compatibile con MySQL; nel terminale del kit il comando mariadb entra già come root. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
         )}
       </p>
       <ErrorLine error={error} />

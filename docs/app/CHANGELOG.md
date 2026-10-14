@@ -3,6 +3,7 @@
 ## Database del kit (14/10/2026)
 
 **Fatto**
+- **Password per i database** (D-74, dopo la revisione di sicurezza): `root` di MariaDB e `admin` di MongoDB con una password casuale, anche sui dati già creati; ogni progetto con il suo database e il suo utente; scrittura della connessione nel `.env` con anteprima delle righe che cambiano. Nel terminale del kit `mariadb` entra già come root.
 - **MariaDB** (compatibile con MySQL), **MongoDB** con mongosh e **SQLite** fra i componenti, nel nuovo gruppo «Database», verificati con SHA-256 o SHA3-256 (D-73).
 - **Pagina «Database»**: avvio e arresto dei server, stringa di connessione da copiare, porta, cartella dei dati, log, «Avvia con Dev-Kit». Solo 127.0.0.1; dati in `data\db`. «Avvia» installa il database se manca; chiusura dell'app e «Rimuovi l'unità» li fermano in modo pulito.
 - I progetti che usano un database (`.env`, driver npm/pip/Composer, file `.sqlite`) lo segnalano e ricevono le estensioni dell'editor: SQLTools, MongoDB for VS Code, SQLite Viewer; nuovo linguaggio SQL.
