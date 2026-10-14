@@ -416,6 +416,11 @@ fn build_app<R: tauri::Runtime>(
             {
                 log::info(&format!("{}: {event:?}", window.label()));
             }
+            if window.label().starts_with(editor_window::LABEL_PREFIX)
+                && matches!(event, tauri::WindowEvent::Destroyed)
+            {
+                editor_window::closed(window.label());
+            }
             // The editor's title bar shows maximize or restore (D-69).
             if window.label().starts_with(editor_window::LABEL_PREFIX)
                 && matches!(event, tauri::WindowEvent::Resized(_))
@@ -438,6 +443,14 @@ fn build_app<R: tauri::Runtime>(
         })
         .setup(move |app| {
             open_main_window(app.handle(), &kit.webview_data())?;
+            // Extensions follow the projects open in the editor; the editor
+            // windows offer to restart them (D-71).
+            let editor = std::sync::Arc::clone(&app.state::<AppState>().editor);
+            let notify = app.handle().clone();
+            editor.set_on_installed(std::sync::Arc::new(move |ids: &[String]| {
+                editor_window::notify_installed(&notify, ids);
+            }));
+            editor_window::watch_projects(kit.clone(), editor);
             // Projects' actions: state and output go to the app window.
             let events = app.handle().clone();
             app.manage(std::sync::Arc::new(run::Runner::new(

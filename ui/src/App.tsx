@@ -38,6 +38,7 @@ import { SetupProgress, setupStatusText, useSetup } from "./setup";
 import { SettingsPage } from "./settings";
 import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
+import logo from "./assets/logo-128.png";
 
 type PageId = "home" | "projects" | "github" | "agents" | "components" | "settings" | "eject";
 
@@ -246,6 +247,15 @@ function Home({
   }
   return (
     <div className="max-w-3xl space-y-5">
+      <div className="flex items-center gap-4">
+        <img src={logo} alt="" width={56} height={56} draggable={false} />
+        <div>
+          <p className="text-xl font-semibold text-vsc-fg">Atollo</p>
+          <p className="text-vsc-desc">
+            {t("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.")}
+          </p>
+        </div>
+      </div>
       {info.movedFrom ? (
         <Notice icon={VscWarning} tone="warning">
           {t("Il kit è stato spostato: prima era in {0}, ora in {1}.", info.movedFrom, info.root)}

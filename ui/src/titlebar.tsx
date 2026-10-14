@@ -8,6 +8,7 @@ import { VscChromeClose, VscChromeMaximize, VscChromeMinimize, VscChromeRestore 
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { browserPreview } from "./api";
 import { t } from "./i18n";
+import logo from "./assets/logo-32.png";
 
 /** The window, or null in the browser preview and in the tests. */
 function current(): Window | null {
@@ -60,6 +61,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
       className="flex h-[30px] shrink-0 items-center border-b border-vsc-border bg-vsc-activitybar select-none"
     >
       <span data-tauri-drag-region className="flex items-center gap-2 pl-3 text-[12px]">
+        <img data-tauri-drag-region src={logo} alt="" width={16} height={16} draggable={false} />
         <span data-tauri-drag-region className="font-semibold">
           Atollo
         </span>

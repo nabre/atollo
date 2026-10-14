@@ -1,11 +1,19 @@
 # Novità
 
+## Branding di app ed editor (14/10/2026)
+
+**Fatto**
+- **Logo di Atollo** nella barra del titolo e nella Home dell'app; **accento blu del marchio** (`#3B6CF0`) per pulsanti, fuoco, selezioni e link, temi scuro e chiaro (D-72).
+- **Editor con il nome e il logo di Atollo**: titolo «<progetto> - Atollo», logo nella barra del titolo, benvenuto con logo, nome del progetto e sottotitolo nell'editor vuoto.
+- **Estensioni mentre lavori** (D-71): vedi sotto.
+
 ## Estensioni dell'editor per linguaggio (14/10/2026)
 
 **Fatto**
 - **Matrice linguaggio-estensione del kit** (`catalog/extensions.json`, D-71) al posto dell'elenco con `@programma`: 64 estensioni, 26 linguaggi e 3 strumenti (Deno, Bun, CMake). In «Linguaggi e strumenti» la sezione «Estensioni dell'editor» la mostra in sola lettura, con in evidenza le colonne dei linguaggi dei progetti e il segno delle estensioni installate.
 - **Estensioni del progetto**: ogni progetto riceve quelle dei suoi linguaggi; dal suo pannello se ne tolgono o se ne aggiungono altre (anche fuori dalla matrice, per `editore.nome`). Salvate in `dev-settings.json`, mai nel progetto.
 - Si installano le generali e quelle dei progetti: all'avvio dell'editor, all'apertura di un progetto e quando cambia l'elenco con l'editor acceso.
+- **L'editor si aggiorna mentre lavori**: ogni 15 s Atollo rilegge i progetti aperti; un linguaggio nuovo (il primo `.rb`, `.py`…) porta le sue estensioni senza riaprire il progetto, e nell'editor compare l'avviso «Atollo ha installato nuove estensioni» con «Riavvia le estensioni» (D-71).
 - Rilevamento dei linguaggi in una tabella unica, con LaTeX, Typst, PowerShell e Shell; un progetto con `.tex` o `.typ` chiede TinyTeX o Typst. Nuova estensione per Astro.
 
 **Verificato**: 194 test Rust, 22 test dell'interfaccia; clippy, ESLint, Prettier e `cargo fmt` puliti. Matrice e pannello del progetto controllati nell'anteprima nel browser. Da provare nell'app: un progetto nuovo con un linguaggio senza estensioni installate le riceve all'apertura nell'editor.

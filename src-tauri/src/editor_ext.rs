@@ -369,9 +369,21 @@ pub struct ExtState {
 /// The job of a running install, closed by `Editor::stop`.
 pub type JobSlot = Arc<Mutex<Option<jobs::Job>>>;
 
+/// Called with the ids just installed (never empty), from the install thread.
+pub type OnInstalled = Arc<dyn Fn(&[String]) + Send + Sync>;
+
+/// The matrix's name of an extension, or its id.
+pub fn name_of(id: &str) -> String {
+    matrix()
+        .iter()
+        .find(|e| e.id == id)
+        .map_or_else(|| id.to_owned(), |e| e.name.clone())
+}
+
 /// Installs the pending extensions in a background thread; `state` follows.
 /// `retry`: the editor (re)started, the failed ones are tried again;
-/// otherwise they wait for that.
+/// otherwise they wait for that. False when an install is already running:
+/// the caller asks again later.
 pub fn sync_in_background(
     kit: Kit,
     env: KitEnv,
@@ -379,11 +391,12 @@ pub fn sync_in_background(
     state: Arc<Mutex<ExtState>>,
     job: JobSlot,
     retry: bool,
-) {
+    on_installed: Option<OnInstalled>,
+) -> bool {
     let skip: BTreeSet<String> = {
         let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         if s.running {
-            return;
+            return false;
         }
         if retry {
             s.failed.clear();
@@ -395,7 +408,7 @@ pub fn sync_in_background(
         // Reads every project: off the caller's thread.
         let ids = pending(&kit, &skip);
         let result = if ids.is_empty() {
-            Ok(())
+            Ok(Vec::new())
         } else {
             {
                 let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -404,12 +417,18 @@ pub fn sync_in_background(
             }
             install(&kit, &env, net.as_deref(), &ids, &state, &job)
         };
-        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-        s.running = false;
-        if let Err(e) = result {
-            crate::log::warn(&format!("editor extensions: {e:#}"));
+        state.lock().unwrap_or_else(|e| e.into_inner()).running = false;
+        match result {
+            Ok(done) if !done.is_empty() => {
+                if let Some(f) = on_installed {
+                    f(&done);
+                }
+            }
+            Ok(_) => {}
+            Err(e) => crate::log::warn(&format!("editor extensions: {e:#}")),
         }
     });
+    true
 }
 
 fn server_cli(kit: &Kit, env: &KitEnv) -> std::process::Command {
@@ -429,7 +448,7 @@ fn install(
     ids: &[String],
     state: &Mutex<ExtState>,
     job: &Mutex<Option<jobs::Job>>,
-) -> Result<()> {
+) -> Result<Vec<String>> {
     let mut gallery: Vec<String> = Vec::new();
     let mut sources: Vec<(String, PathBuf)> = Vec::new();
     let work = kit.data().join(r"tmp\setup\extensions");
@@ -496,7 +515,7 @@ fn install(
         ));
     }
     s.failed.extend(failed);
-    Ok(())
+    Ok(succeeded)
 }
 
 /// Ids from lines like `Extension 'a.b' v1.0 was successfully installed.`

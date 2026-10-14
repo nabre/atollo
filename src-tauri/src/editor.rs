@@ -64,6 +64,8 @@ pub struct Editor {
     /// The background install of extensions: ends with the server, which
     /// it shares the program folder with (an update could not replace it).
     extensions_job: crate::editor_ext::JobSlot,
+    /// Told what was installed, to offer a restart in the editor windows.
+    on_installed: Mutex<Option<crate::editor_ext::OnInstalled>>,
 }
 
 /// Where the server program is.
@@ -87,6 +89,7 @@ impl Editor {
             server: Mutex::new(None),
             extensions: std::sync::Arc::default(),
             extensions_job: crate::editor_ext::JobSlot::default(),
+            on_installed: Mutex::new(None),
         }
     }
 
@@ -138,20 +141,26 @@ impl Editor {
         Ok(out)
     }
 
+    pub fn set_on_installed(&self, f: crate::editor_ext::OnInstalled) {
+        *self.on_installed.lock().unwrap_or_else(|e| e.into_inner()) = Some(f);
+    }
+
     /// Installs the extensions the projects now want, if the server runs
-    /// (otherwise at its start).
-    pub fn sync_extensions(&self) {
+    /// (otherwise at its start). False when an install is already running:
+    /// ask again later.
+    pub fn sync_extensions(&self) -> bool {
         let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
         if guard
             .as_mut()
             .is_some_and(|s| matches!(s.child.try_wait(), Ok(None)))
         {
-            self.sync_extensions_now(false);
+            return self.sync_extensions_now(false);
         }
+        true
     }
 
     /// `retry`: the server (re)started, failed extensions are tried again.
-    fn sync_extensions_now(&self, retry: bool) {
+    fn sync_extensions_now(&self, retry: bool) -> bool {
         let settings = crate::settings::Settings::load(&self.kit).settings;
         let net = crate::net::Net::new(&settings, None)
             .ok()
@@ -163,7 +172,11 @@ impl Editor {
             std::sync::Arc::clone(&self.extensions),
             std::sync::Arc::clone(&self.extensions_job),
             retry,
-        );
+            self.on_installed
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone(),
+        )
     }
 
     pub fn stop(&self) {

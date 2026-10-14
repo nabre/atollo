@@ -4,6 +4,9 @@
  * chosen from the Windows light/dark setting, and the Codicons icon set
  * (react-icons/vsc). Values to re-check against the theme files shipped in
  * the VSCodium server (extensions/theme-defaults/themes) in phase 3.
+ * Accent (focus, buttons, selection, links) in Atollo's brand blue, from
+ * the icon (user request, 14/10/2026, D-72): #3B6CF0 keeps 4.5:1 with white
+ * text; the icon's lighter #4F9DFE-#6684FB are for links on dark only.
  */
 @import "tailwindcss";
 
@@ -21,13 +24,13 @@
   --vsc-activitybar: #181818;
   --vsc-activitybar-fg: #d7d7d7;
   --vsc-activitybar-inactive: #868686;
-  --vsc-activitybar-border: #0078d4;
+  --vsc-activitybar-border: #3b6cf0;
   --vsc-fg: #cccccc;
   --vsc-desc: #9d9d9d;
   --vsc-border: #2b2b2b;
-  --vsc-focus: #0078d4;
-  --vsc-button: #0078d4;
-  --vsc-button-hover: #026ec1;
+  --vsc-focus: #3b6cf0;
+  --vsc-button: #3b6cf0;
+  --vsc-button-hover: #3360db;
   --vsc-button-fg: #ffffff;
   --vsc-button2: #313131;
   --vsc-button2-hover: #3c3c3c;
@@ -35,11 +38,11 @@
   --vsc-input: #313131;
   --vsc-input-border: #3c3c3c;
   --vsc-list-hover: #2a2d2e;
-  --vsc-list-active: #04395e;
+  --vsc-list-active: #1f2c5c;
   --vsc-statusbar: #181818;
   --vsc-statusbar-fg: #cccccc;
   --vsc-badge: #616161;
-  --vsc-link: #4daafc;
+  --vsc-link: #6e9cff;
   --vsc-error: #f85149;
   --vsc-warning: #cca700;
   /* charts.orange: a project needs a component that is not chosen. */
@@ -55,13 +58,13 @@
     --vsc-activitybar: #f8f8f8;
     --vsc-activitybar-fg: #1f1f1f;
     --vsc-activitybar-inactive: #616161;
-    --vsc-activitybar-border: #005fb8;
+    --vsc-activitybar-border: #3b6cf0;
     --vsc-fg: #3b3b3b;
     --vsc-desc: #616161;
     --vsc-border: #e5e5e5;
-    --vsc-focus: #005fb8;
-    --vsc-button: #005fb8;
-    --vsc-button-hover: #0258a8;
+    --vsc-focus: #3b6cf0;
+    --vsc-button: #3b6cf0;
+    --vsc-button-hover: #3360db;
     --vsc-button-fg: #ffffff;
     --vsc-button2: #e5e5e5;
     --vsc-button2-hover: #cccccc;
@@ -69,11 +72,11 @@
     --vsc-input: #ffffff;
     --vsc-input-border: #cecece;
     --vsc-list-hover: #f2f2f2;
-    --vsc-list-active: #e8e8e8;
+    --vsc-list-active: #e1e8fd;
     --vsc-statusbar: #f8f8f8;
     --vsc-statusbar-fg: #3b3b3b;
     --vsc-badge: #cccccc;
-    --vsc-link: #005fb8;
+    --vsc-link: #3b6cf0;
     /* Light Modern's #f85149 is under 4.5:1 on white: VS Code Light's error red. */
     --vsc-error: #e51400;
     --vsc-warning: #bf8803;
