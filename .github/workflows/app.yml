@@ -103,8 +103,13 @@ jobs:
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
           New-Item -ItemType Directory -Force $kit | Out-Null
           Copy-Item "target/${{ matrix.target }}/release/Atollo.exe" $kit
-          $env_out = & "$kit/Atollo.exe" env
-          if ($LASTEXITCODE -ne 0) { throw "env failed" }
+          # Atollo.exe is a window program: without a pipe PowerShell neither
+          # waits for it nor reads its output.
+          $env_out = & "$kit/Atollo.exe" env | Write-Output
+          if ($LASTEXITCODE -ne 0) {
+            Get-ChildItem "$kit/data/app/logs" -File -ErrorAction SilentlyContinue | Get-Content
+            throw "env failed ($LASTEXITCODE)"
+          }
           $path = ($env_out | Where-Object { $_ -like 'PATH=*' }) -replace '^PATH=', ''
           foreach ($entry in $path -split ';') {
             if (-not ($entry.StartsWith("$kit\data") -or $entry -like "$env:SystemRoot\System32*")) { throw "foreign PATH entry: $entry" }
@@ -118,14 +123,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
-          & "$kit/Atollo.exe" prepare --only "pwsh,node,git,terminal,vscodium-server"
+          & "$kit/Atollo.exe" prepare --only "pwsh,node,git,terminal,vscodium-server" | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "prepare failed ($LASTEXITCODE)" }
           & "$kit/data/apps/win32-x64/pwsh/pwsh.exe" -NoProfile -Command '$PSVersionTable.PSVersion'
           & "$kit/data/apps/win32-x64/node/node.exe" -v
           & "$kit/data/apps/win32-x64/git/cmd/git.exe" --version
           if (-not (Test-Path "$kit/data/apps/win32-x64/vscodium-server/out/server-main.js")) { throw "editor server missing" }
           if (-not (Test-Path "$kit/data/apps/win32-x64/terminal/WindowsTerminal.exe")) { throw "Windows Terminal missing" }
-          & "$kit/Atollo.exe" prepare --only "pwsh,node" --update-all
+          & "$kit/Atollo.exe" prepare --only "pwsh,node" --update-all | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "update check failed" }
       - name: Real kit tests (editor server; Windows Terminal console with the kit environment)
         if: matrix.target == 'x86_64-pc-windows-msvc'

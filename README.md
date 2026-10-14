@@ -73,6 +73,8 @@ Atollo.exe version                  mostra la versione
 Atollo.exe help                     mostra l'aiuto
 ```
 
+Da PowerShell aggiungi `| Out-Host` (per esempio `.\Atollo.exe check | Out-Host`): `Atollo.exe` è un programma a finestra, e senza una pipe PowerShell non lo aspetta e non ne legge l'output né il codice di uscita.
+
 ## Compilare
 
 Prerequisiti: Rust stabile (almeno 1.93) con il toolchain MSVC (Visual Studio Build Tools, carico di lavoro C++), Node.js LTS.

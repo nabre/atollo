@@ -9,6 +9,7 @@
 - **CI**: il kit di prova installa anche Windows Terminal ed esegue la prova reale delle sue console.
 - Documentazione allineata al codice: README nelle quattro lingue, PLAN, TESTING, CATALOG e 25 decisioni (Windows Terminal di nuovo predefinito, console xterm non più esistenti, file del kit, release, registro, navigazione dell'editor). Decisioni dell'utente: niente «Ferma subito» (D-11) né colori PSReadLine (D-27); limite del watcher riverificato sulla 1.135.06055 (D-33).
 - Tolti gli `allow(dead_code)` rimasti dalle fasi precedenti.
+- **CI rossa dal primo build**: lo smoke test leggeva `Atollo.exe env` senza pipe. `Atollo.exe` è un programma a finestra e PowerShell non lo aspettava, quindi «env failed» con `$LASTEXITCODE` vuoto. Ora ogni chiamata passa da una pipe (`| Write-Output`, `| Out-Host`); i README lo spiegano per chi usa la riga di comando da PowerShell. Gli errori di avvio vanno anche su stderr.
 
 **Verificato**: 183 test Rust, 20 test dell'interfaccia; `clippy -D warnings`, ESLint, Prettier puliti; `Atollo.exe check` sul kit di sviluppo (Windows Terminal 1.25.2609.30003).
 

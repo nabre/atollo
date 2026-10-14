@@ -63,8 +63,10 @@ fn main() {
     std::process::exit(run());
 }
 
-/// Message box for errors before (or instead of) the window.
+/// Message box for errors before (or instead of) the window; also on
+/// stderr, for the command line (a service session has no message box).
 fn fatal(lang: &str, message: &str) {
+    eprintln!("{message}");
     let title = HSTRING::from(i18n::t(lang, "Atollo non può partire", &[]));
     let text = HSTRING::from(message);
     // SAFETY: both strings outlive the modal call.
