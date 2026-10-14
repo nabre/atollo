@@ -8,6 +8,7 @@ import { BrandSymbol } from "./brand";
 import {
   VscCheck,
   VscCloudDownload,
+  VscExtensions,
   VscFolderLibrary,
   VscReferences,
   VscRefresh,
@@ -25,7 +26,9 @@ import {
   type SetupSnapshot,
 } from "./api";
 import { locale, rich, t } from "./i18n";
-import { ActionButton } from "./pages";
+import { ActionButton, ErrorLine } from "./pages";
+import { Checkbox, SettingsEditor, SettingsGroup, SingleEditor } from "./workbench";
+
 import { SetupProgress, setupToShow } from "./setup";
 import { ExtensionsMatrixSection } from "./extensions";
 import { ComponentLogo } from "./logos";
@@ -158,6 +161,7 @@ export function ComponentsPage({
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
+  const [search, setSearch] = useState("");
   const running = setup?.running ?? false;
 
   const load = useCallback(() => {
@@ -200,15 +204,24 @@ export function ComponentsPage({
     return map;
   }, [projects]);
 
+  const title = firstRun ? t("Benvenuto") : t("Strumenti");
+  const icon = <VscExtensions size={16} aria-hidden="true" />;
   if (error) {
     return (
-      <p role="alert" className="flex items-center gap-2 text-vsc-error">
-        <VscWarning size={16} aria-hidden="true" />
-        {error}
-      </p>
+      <SingleEditor title={title} icon={icon}>
+        <div className="p-5">
+          <ErrorLine error={error} />
+        </div>
+      </SingleEditor>
     );
   }
-  if (!list) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
+  if (!list) {
+    return (
+      <SingleEditor title={title} icon={icon}>
+        <p className="p-5 text-vsc-desc">{t("Caricamento…")}</p>
+      </SingleEditor>
+    );
+  }
 
   const apply = (updateAll: boolean) => {
     setConfirm(false);
@@ -220,11 +233,15 @@ export function ComponentsPage({
     );
   };
   const changed = plan.install.length > 0 || plan.remove.length > 0;
+  const words = search.toLowerCase().split(/\s+/).filter(Boolean);
+  const visible = (c: ComponentInfo) =>
+    words.length === 0 || words.every((w) => `${c.name} ${c.desc} ${c.id}`.toLowerCase().includes(w));
+  const all = groups();
 
   return (
-    <div className="max-w-4xl space-y-3">
+    <SingleEditor title={title} icon={icon}>
       {firstRun && (
-        <div className="bg-hero space-y-1 rounded-md border border-vsc-border px-5 py-4 pr-[30%]">
+        <div className="bg-hero shrink-0 space-y-1 border-b border-vsc-border px-5 py-4 pr-[30%]">
           <BrandSymbol size={40} />
           <h2 className="font-brand text-[18px] font-semibold tracking-tight">{t("Benvenuto in NEXKORA")}</h2>
           <p>
@@ -243,51 +260,72 @@ export function ComponentsPage({
           </p>
         </div>
       )}
+      <SettingsEditor
+        toc={[
+          ...all
+            .filter((g) =>
+              list.some((c) => (c.group === g.id || (g.id === "required" && c.group === "app")) && visible(c)),
+            )
+            .map((g) => ({ id: `group-${g.id}`, label: g.title })),
 
-      {setupToShow(setup) && <SetupProgress snapshot={setup} />}
-
-      {groups().map((g) => {
-        // The editor (part of the app) is listed with the required ones.
-        const items = list.filter((c) => c.group === g.id || (g.id === "required" && c.group === "app"));
-        if (items.length === 0) return null;
-        return (
-          <section key={g.id} aria-labelledby={`group-${g.id}`} className="border-t border-vsc-border">
-            <header className="px-3 py-1.5">
-              <h2 id={`group-${g.id}`} className="text-[13px] font-semibold">
-                {g.title}
-              </h2>
-              {g.hint && <p className="text-[12px] text-vsc-desc">{g.hint}</p>}
-            </header>
-            <ul className="divide-y divide-vsc-border">
+          ...(firstRun ? [] : [{ id: "ext-matrix", label: t("Estensioni dell'editor") }]),
+        ]}
+        search={search}
+        onSearch={setSearch}
+        placeholder={t("Cerca negli strumenti")}
+      >
+        {setupToShow(setup) && (
+          <div className="max-w-[880px] px-[14px] pt-3">
+            <SetupProgress snapshot={setup} />
+          </div>
+        )}
+        {all.map((g) => {
+          // The editor (part of the app) is listed with the required ones.
+          const items = list.filter(
+            (c) => (c.group === g.id || (g.id === "required" && c.group === "app")) && visible(c),
+          );
+          return (
+            <SettingsGroup key={g.id} id={`group-${g.id}`} title={g.title} description={g.hint}>
               {items.map((c) => {
                 const required = c.locked;
                 const on = chosen.has(c.id);
                 const inputId = `comp-${c.id}`;
                 const forProjects = neededBy.get(c.id) ?? [];
                 const unchosen = forProjects.length > 0 && !on;
-                // A left bar marks what a project needs: blue, orange when not chosen.
+                // A left bar marks what a project needs: emerald, orange when not chosen.
                 const mark = unchosen
-                  ? "border-l-vsc-orange bg-vsc-orange/10 hover:bg-vsc-orange/15"
+                  ? "border-l-vsc-orange bg-vsc-orange/10"
                   : forProjects.length > 0
-                    ? "border-l-vsc-focus hover:bg-vsc-list-hover"
-                    : "border-l-transparent hover:bg-vsc-list-hover";
+                    ? "border-l-vsc-focus"
+                    : on !== (c.chosen || c.locked)
+                      ? "border-l-vsc-settings-modified"
+                      : "border-l-transparent";
                 return (
-                  <li key={c.id} className={`flex items-center gap-2 border-l-2 py-1 pr-4 pl-3.5 ${mark}`}>
-                    <input
+                  <div
+                    key={c.id}
+                    data-setting
+                    className={`flex max-w-[880px] items-center gap-3 border-l-2 py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50 ${mark}`}
+                  >
+                    <Checkbox
                       id={inputId}
-                      type="checkbox"
                       checked={on}
                       disabled={required || running || c.noArm64 || (!c.available && !on)}
-                      onChange={(e) => {
-                        setChosen(toggle(list, chosen, c.id, e.target.checked));
+                      onChange={(v) => {
+                        setChosen(toggle(list, chosen, c.id, v));
                       }}
-                      className={`size-4 accent-vsc-button ${unchosen ? "rounded-sm outline-2 outline-offset-1 outline-vsc-orange" : ""}`}
+                      className={unchosen ? "rounded-sm outline-2 outline-offset-1 outline-vsc-orange" : ""}
                     />
-                    <span className="flex w-4 justify-center">
-                      <ComponentLogo id={c.id} />
+                    <span className="flex w-5 shrink-0 justify-center">
+                      <ComponentLogo id={c.id} size={20} />
                     </span>
-                    <label htmlFor={inputId} className="min-w-0 flex-1">
-                      <span className={unchosen ? "font-medium text-vsc-orange" : "font-medium"}>{c.name}</span>
+                    <label htmlFor={inputId} className="min-w-0 flex-1 cursor-pointer leading-[18px]">
+                      <span
+                        className={
+                          unchosen ? "font-semibold text-vsc-orange" : "font-semibold text-vsc-settings-header"
+                        }
+                      >
+                        {c.name}
+                      </span>
                       <span className="ml-2 text-vsc-desc">{c.desc}</span>
                       <ProjectsChip names={forProjects} on={on} />
                       <Dependencies c={c} list={list} chosen={chosen} />
@@ -297,8 +335,8 @@ export function ComponentsPage({
                         x64
                       </span>
                     )}
-                    <span className="w-20 text-right text-[12px] text-vsc-desc">{sizeText(c.mb)}</span>
-                    <span className="w-44 truncate text-right text-[12px]" title={c.version ?? undefined}>
+                    <span className="w-16 shrink-0 text-right text-[12px] text-vsc-desc">{sizeText(c.mb)}</span>
+                    <span className="w-40 shrink-0 truncate text-right text-[12px]" title={c.version ?? undefined}>
                       {c.installed ? (
                         <span className="text-vsc-success">
                           <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
@@ -310,20 +348,23 @@ export function ComponentsPage({
                         <span className="text-vsc-desc">{t("non installato")}</span>
                       )}
                     </span>
-                  </li>
+                  </div>
                 );
               })}
-            </ul>
-          </section>
-        );
-      })}
-
-      {!firstRun && <ExtensionsMatrixSection projects={projects} components={list} />}
-
-      <div className="sticky -bottom-5 flex flex-wrap items-center gap-2 border-t border-vsc-border bg-vsc-bg pt-3 pb-8">
+            </SettingsGroup>
+          );
+        })}
+        {!firstRun && words.length === 0 && (
+          <div className="max-w-[880px] px-[14px]" data-setting>
+            <ExtensionsMatrixSection projects={projects} components={list} />
+          </div>
+        )}
+      </SettingsEditor>
+      {/* As the editor's notification of a pending change: what Apply does. */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-vsc-border px-5 py-2">
         {confirm ? (
           <>
-            <span role="status">
+            <span role="status" className="min-w-0 flex-1">
               {plan.install.length > 0 &&
                 t("Da installare: {0} (circa {1}).", plan.install.map((c) => c.name).join(", "), sizeText(plan.mb)) +
                   " "}
@@ -347,19 +388,16 @@ export function ComponentsPage({
           </>
         ) : (
           <>
-            <ActionButton
-              icon={
-                firstRun ? VscCloudDownload : plan.remove.length > 0 && plan.install.length === 0 ? VscTrash : VscCheck
-              }
-              label={firstRun ? t("Installa") : t("Applica")}
-              primary
-              disabled={running || (!changed && !firstRun)}
-              title={running ? t("Un'installazione è già in corso") : undefined}
-              onClick={() => {
-                if (firstRun) apply(false);
-                else setConfirm(true);
-              }}
-            />
+            <span className="min-w-0 flex-1 text-vsc-desc">
+              {changed
+                ? t(
+                    "{0} da installare ({1}), {2} da rimuovere",
+                    plan.install.length,
+                    sizeText(plan.mb),
+                    plan.remove.length,
+                  )
+                : t("Nessuna modifica")}
+            </span>
             {!firstRun && (
               <ActionButton
                 icon={VscRefresh}
@@ -375,19 +413,22 @@ export function ComponentsPage({
                 }}
               />
             )}
-            <span className="text-vsc-desc">
-              {changed
-                ? t(
-                    "{0} da installare ({1}), {2} da rimuovere",
-                    plan.install.length,
-                    sizeText(plan.mb),
-                    plan.remove.length,
-                  )
-                : t("Nessuna modifica")}
-            </span>
+            <ActionButton
+              icon={
+                firstRun ? VscCloudDownload : plan.remove.length > 0 && plan.install.length === 0 ? VscTrash : VscCheck
+              }
+              label={firstRun ? t("Installa") : t("Applica")}
+              primary
+              disabled={running || (!changed && !firstRun)}
+              title={running ? t("Un'installazione è già in corso") : undefined}
+              onClick={() => {
+                if (firstRun) apply(false);
+                else setConfirm(true);
+              }}
+            />
           </>
         )}
       </div>
-    </div>
+    </SingleEditor>
   );
 }

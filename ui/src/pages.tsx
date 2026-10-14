@@ -1,10 +1,10 @@
 // Shared pieces of the pages (buttons, actions with their error) and the
-// editor's state as a hint. The Projects page is in projects.tsx.
+// editor's state as a hint. The controls themselves are in workbench/.
 import { useCallback, useState } from "react";
 import type { IconType } from "react-icons";
-import { VscWarning } from "react-icons/vsc";
 import type { EditorStatus } from "./api";
 import { t } from "./i18n";
+import { Button, IconButton, Notice } from "./workbench";
 
 /** Runs an action, keeping track of what is busy and of the last error. */
 export function useAction(onDone?: () => void) {
@@ -30,8 +30,10 @@ export function useAction(onDone?: () => void) {
   return { busy, error, run };
 }
 
+/** A button of the pages: a text button (Button), or with `compact` an
+ * icon action (IconButton) named by its label. */
 export function ActionButton({
-  icon: Icon,
+  icon,
   label,
   onClick,
   busy = false,
@@ -39,7 +41,7 @@ export function ActionButton({
   primary = false,
   submit = false,
   compact = false,
-  ghost = false,
+  small = false,
   title,
 }: {
   icon: IconType;
@@ -52,42 +54,33 @@ export function ActionButton({
   submit?: boolean;
   /** The icon alone; the label stays its accessible name. */
   compact?: boolean;
-  /** No background, as the inline actions of the editor's lists. */
+  /** The small button of a list row. */
+  small?: boolean;
+  /** Kept for the callers of the inline actions: compact is always ghost. */
   ghost?: boolean;
   title?: string | undefined;
 }) {
+  if (compact) {
+    return <IconButton icon={icon} label={label} onClick={onClick} busy={busy} disabled={disabled} title={title} />;
+  }
   return (
-    <button
-      type={submit ? "submit" : "button"}
-      onClick={submit ? undefined : onClick}
-      disabled={disabled || busy}
-      title={title ?? (compact ? label : undefined)}
-      aria-label={compact ? label : undefined}
-      aria-busy={busy}
-      className={[
-        "flex items-center gap-1.5 rounded text-[12px] leading-4 disabled:cursor-not-allowed disabled:opacity-50",
-        compact ? "size-[22px] justify-center p-[3px]" : "px-2 py-1",
-        ghost
-          ? "text-vsc-icon enabled:hover:bg-vsc-toolbar-hover"
-          : primary
-            ? "border border-vsc-button-border bg-vsc-button text-vsc-button-fg enabled:hover:bg-vsc-button-hover"
-            : "border border-vsc-button-border bg-vsc-button2 text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover",
-      ].join(" ")}
+    <Button
+      variant={primary ? "primary" : "secondary"}
+      small={small}
+      submit={submit}
+      onClick={onClick}
+      busy={busy}
+      disabled={disabled}
+      title={title}
     >
-      <Icon size={compact ? 16 : 14} aria-hidden="true" className={busy ? "animate-pulse" : undefined} />
-      {!compact && (busy ? `${label}…` : label)}
-    </button>
+      {busy ? `${label}…` : label}
+    </Button>
   );
 }
 
 export function ErrorLine({ error }: { error: string | null }) {
   if (!error) return null;
-  return (
-    <p role="alert" className="flex items-start gap-2 text-vsc-error">
-      <VscWarning className="mt-0.5 shrink-0" size={16} aria-hidden="true" />
-      <span className="select-text">{error}</span>
-    </p>
-  );
+  return <Notice tone="error">{error}</Notice>;
 }
 
 export function editorHint(status: EditorStatus | null): string | undefined {

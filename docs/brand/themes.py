@@ -7,12 +7,14 @@ leave to VS Code's built-in defaults, swaps the blue emphasis for the brand
 colors (make.py, brand.png) and writes:
 
 - ui/src/theme-colors.css: the app's color tokens, one per theme key;
-- src-tauri/src/editor_brand.json: the same brand emphasis for the editor,
-  as `workbench.colorCustomizations` (editor_cfg.rs).
+- src-tauri/editor-theme/: the editor's "NEXKORA Dark" and "NEXKORA Light",
+  the two themes whole (colors, token colors) with the same emphasis, as
+  the extension `nexkora.theme` that the kit installs (editor_theme.rs).
 
 Run `python docs/brand/themes.py` after changing anything here.
 """
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -47,6 +49,8 @@ BUILTIN = {
         "keybindingLabel.background": "#8080802B",
         "keybindingLabel.border": "#33333399",
         "keybindingLabel.bottomBorder": "#44444499",
+        "statusBarItem.errorBackground": "#C72E0F",
+        "statusBarItem.errorForeground": "#FFFFFF",
     },
     "light": {
         "list.activeSelectionBackground": "#0060C0",
@@ -72,13 +76,16 @@ BUILTIN = {
         "keybindingLabel.background": "#DDDDDD66",
         "keybindingLabel.border": "#CCCCCC66",
         "keybindingLabel.bottomBorder": "#BBBBBB66",
+        "statusBarItem.errorForeground": "#FFFFFF",
     },
 }
 
 # The brand emphasis: every blue of the themes, in emerald. On dark the
 # emerald buttons carry near-black text (white on #10B981 is 2.5:1), on
 # light the buttons are a deeper emerald with white text. Orange takes the
-# place of charts.orange: what needs a choice.
+# place of charts.orange: what needs a choice. The status bar is the brand's
+# band, as in themes like Meng Dark Pro: emerald, the remote item in Deep
+# Forest, debugging in orange.
 BRAND = {
     "dark": {
         "focusBorder": "#10B981",
@@ -98,12 +105,25 @@ BRAND = {
         "list.highlightForeground": "#34D399",
         "panelTitle.activeBorder": "#10B981",
         "progressBar.background": "#10B981",
-        "statusBar.debuggingBackground": "#10B981",
+        "statusBar.background": "#10B981",
+        "statusBar.foreground": "#04140D",
+        "statusBar.border": "#10B981",
+        "statusBar.noFolderBackground": "#10B981",
+        "statusBar.noFolderForeground": "#04140D",
+        "statusBar.debuggingBackground": "#F97316",
         "statusBar.debuggingForeground": "#04140D",
-        "statusBar.focusBorder": "#10B981",
-        "statusBarItem.focusBorder": "#10B981",
-        "statusBarItem.remoteBackground": "#10B981",
-        "statusBarItem.remoteForeground": "#04140D",
+        "statusBar.debuggingBorder": "#F97316",
+        "statusBar.focusBorder": "#04140D",
+        "statusBarItem.focusBorder": "#04140D",
+        "statusBarItem.hoverBackground": "#04140D26",
+        "statusBarItem.hoverForeground": "#04140D",
+        "statusBarItem.activeBackground": "#04140D40",
+        "statusBarItem.prominentBackground": "#04140D33",
+        "statusBarItem.prominentForeground": "#04140D",
+        "statusBarItem.remoteBackground": "#0F3D2E",
+        "statusBarItem.remoteForeground": "#D1F0E0",
+        "statusBarItem.remoteHoverBackground": "#14503C",
+        "statusBarItem.remoteHoverForeground": "#D1F0E0",
         "tab.activeBorderTop": "#10B981",
         "tab.selectedBorderTop": "#6EE7B7",
         "terminal.tab.activeBorder": "#10B981",
@@ -132,10 +152,25 @@ BRAND = {
         "list.highlightForeground": "#047857",
         "panelTitle.activeBorder": "#047857",
         "progressBar.background": "#047857",
-        "statusBar.focusBorder": "#047857",
-        "statusBarItem.focusBorder": "#047857",
-        "statusBarItem.remoteBackground": "#047857",
+        "statusBar.background": "#047857",
+        "statusBar.foreground": "#FFFFFF",
+        "statusBar.border": "#047857",
+        "statusBar.noFolderBackground": "#047857",
+        "statusBar.noFolderForeground": "#FFFFFF",
+        "statusBar.debuggingBackground": "#C2410C",
+        "statusBar.debuggingForeground": "#FFFFFF",
+        "statusBar.debuggingBorder": "#C2410C",
+        "statusBar.focusBorder": "#FFFFFF",
+        "statusBarItem.focusBorder": "#FFFFFF",
+        "statusBarItem.hoverBackground": "#FFFFFF26",
+        "statusBarItem.hoverForeground": "#FFFFFF",
+        "statusBarItem.activeBackground": "#FFFFFF40",
+        "statusBarItem.prominentBackground": "#FFFFFF33",
+        "statusBarItem.prominentForeground": "#FFFFFF",
+        "statusBarItem.remoteBackground": "#0F3D2E",
         "statusBarItem.remoteForeground": "#FFFFFF",
+        "statusBarItem.remoteHoverBackground": "#14503C",
+        "statusBarItem.remoteHoverForeground": "#FFFFFF",
         "tab.activeBorderTop": "#047857",
         "tab.selectedBorderTop": "#34D399",
         "terminal.tab.activeBorder": "#047857",
@@ -186,7 +221,20 @@ TOKENS = {
     "statusbar-hover-fg": "statusBarItem.hoverForeground",
     "statusbar-remote": "statusBarItem.remoteBackground",
     "statusbar-remote-fg": "statusBarItem.remoteForeground",
+    "statusbar-remote-hover": "statusBarItem.remoteHoverBackground",
+    "statusbar-active": "statusBarItem.activeBackground",
+    "statusbar-error": "statusBarItem.errorBackground",
+    "statusbar-error-fg": "statusBarItem.errorForeground",
     "tab-border-top": "tab.activeBorderTop",
+    "tab-active": "tab.activeBackground",
+    "tab-active-fg": "tab.activeForeground",
+    "tab-inactive": "tab.inactiveBackground",
+    "tab-inactive-fg": "tab.inactiveForeground",
+    "tab-border": "tab.border",
+    "tabs": "editorGroupHeader.tabsBackground",
+    "tabs-border": "editorGroupHeader.tabsBorder",
+    "settings-header": "settings.headerForeground",
+    "settings-modified": "settings.modifiedItemIndicator",
     # VSCodium 1.140's "modern UI": floating parts on the workbench color
     "surface-border": "modernActivityBar.border",
     "activitybar-item-active": "modernActivityBarItem.activeBackground",
@@ -263,13 +311,24 @@ TOKENS = {
 }
 
 
-def load(name):
+def chain(name):
+    """The theme with its `include`s resolved, as VS Code merges them: the
+    included theme first, colors and semantic colors overridden key by key,
+    token colors appended."""
     theme = json.loads((THEMES / name).read_text(encoding="utf-8"))
-    colors = {}
+    out = {"colors": {}, "tokenColors": [], "semanticTokenColors": {}}
     if "include" in theme:
-        colors.update(load(theme["include"].removeprefix("./")))
-    colors.update(theme.get("colors", {}))
-    return colors
+        out = chain(theme["include"].removeprefix("./"))
+    out["colors"].update(theme.get("colors", {}))
+    out["tokenColors"] += theme.get("tokenColors", [])
+    out["semanticTokenColors"].update(theme.get("semanticTokenColors", {}))
+    if "semanticHighlighting" in theme:
+        out["semanticHighlighting"] = theme["semanticHighlighting"]
+    return out
+
+
+def load(name):
+    return chain(name)["colors"]
 
 
 def resolve(kind):
@@ -287,6 +346,61 @@ def css_block(kind, colors):
             raise SystemExit(f"{kind}: no color for {key}")
         lines.append(f"  --vsc-{token}: {value.lower()}; /* {key} */")
     return "\n".join(lines)
+
+
+EXTENSION = ROOT / "src-tauri" / "editor-theme"
+LABELS = {"dark": "NEXKORA Dark", "light": "NEXKORA Light"}
+
+
+def editor_theme(kind):
+    theme = chain(f"{kind}_modern.json")
+    theme["colors"].update(BRAND[kind])
+    return {
+        "$schema": "vscode://schemas/color-theme",
+        "name": LABELS[kind],
+        "type": kind,
+        "semanticHighlighting": theme.get("semanticHighlighting", True),
+        "colors": dict(sorted(theme["colors"].items())),
+        "tokenColors": theme["tokenColors"],
+        "semanticTokenColors": theme["semanticTokenColors"],
+    }
+
+
+def write_extension():
+    themes = {
+        kind: json.dumps(editor_theme(kind), indent=2) + "\n"
+        for kind in ("dark", "light")
+    }
+    # The version follows the content: a new theme is a new version, and
+    # the kit reinstalls it (editor_theme.rs).
+    digest = hashlib.sha256("".join(themes.values()).encode()).hexdigest()
+    package = {
+        "name": "theme",
+        "displayName": "NEXKORA Theme",
+        "description": "VSCodium's Dark Modern and Light Modern with the NEXKORA colors.",
+        "publisher": "nexkora",
+        "version": f"1.0.{int(digest[:8], 16)}",
+        "license": "MIT",
+        "engines": {"vscode": "^1.80.0"},
+        "categories": ["Themes"],
+        "contributes": {
+            "themes": [
+                {
+                    "id": LABELS[kind],
+                    "label": LABELS[kind],
+                    "uiTheme": "vs-dark" if kind == "dark" else "vs",
+                    "path": f"./themes/{kind}.json",
+                }
+                for kind in ("dark", "light")
+            ]
+        },
+    }
+    (EXTENSION / "themes").mkdir(parents=True, exist_ok=True)
+    for kind, text in themes.items():
+        (EXTENSION / "themes" / f"{kind}.json").write_text(text, encoding="utf-8")
+    (EXTENSION / "package.json").write_text(
+        json.dumps(package, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 def main():
@@ -311,13 +425,7 @@ def main():
 }}
 """
     (ROOT / "ui" / "src" / "theme-colors.css").write_text(css, encoding="utf-8")
-    editor = {
-        "[Default Dark Modern]": dict(sorted(BRAND["dark"].items())),
-        "[Default Light Modern]": dict(sorted(BRAND["light"].items())),
-    }
-    (ROOT / "src-tauri" / "src" / "editor_brand.json").write_text(
-        json.dumps(editor, indent=2) + "\n", encoding="utf-8"
-    )
+    write_extension()
     print("ok")
 
 

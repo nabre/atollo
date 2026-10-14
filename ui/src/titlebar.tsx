@@ -70,6 +70,11 @@ export function TitleBar({ title }: { title: string | undefined }) {
         )}
       </span>
       <span data-tauri-drag-region className="h-full flex-1" />
+      {browserPreview && (
+        <span className="mr-2 rounded bg-vsc-badge px-1.5 text-[11px] leading-[18px] text-vsc-badge-fg">
+          {t("Anteprima nel browser: dati di esempio")}
+        </span>
+      )}
       <button
         type="button"
         aria-label={t("Riduci a icona")}

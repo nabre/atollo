@@ -19,6 +19,7 @@ mod detect;
 mod editor;
 mod editor_cfg;
 mod editor_ext;
+mod editor_theme;
 mod editor_window;
 mod env;
 mod github;

@@ -1,15 +1,32 @@
 // Agents page and the agent choice of a project: Claude Code, Codex,
-// Antigravity, with their state, usage, launch (only in a project) and
-// sign-out. Instructions, skills
-// and MCP servers are shared by the three (data\agents, aligned by the app).
+// Antigravity, as VSCodium's Extensions view: the installed agents in the
+// side bar, the chosen one's page in the editor with its state, usage and
+// sign-out. Launch happens only in a project. Instructions, skills and MCP
+// servers are shared by the three (data\agents, aligned by the app).
 import { useCallback, useEffect, useState } from "react";
-import { VscCheck, VscFolderOpened, VscHubot, VscPlay, VscSignOut, VscWarning } from "react-icons/vsc";
+import { VscFolderOpened, VscHubot, VscRefresh, VscWarning } from "react-icons/vsc";
 import { agentLaunch, agentSignOut, agentsStatus, folderOpen, type AgentId, type AgentInfo } from "./api";
 import { rich, t } from "./i18n";
-import { ActionButton, useAction } from "./pages";
+import { ActionButton, ErrorLine, useAction } from "./pages";
 import { ComponentLogo } from "./logos";
-import { Badge } from "./tags";
-import { AgentUsage, StatsRefresh, useStats } from "./stats";
+import { AgentUsage, useStats } from "./stats";
+import {
+  Button,
+  Dot,
+  EditorBody,
+  EditorHeader,
+  EditorSection,
+  IconButton,
+  List,
+  ListItem,
+  Notice,
+  PaneStack,
+  ProgressBar,
+  SideBarTitle,
+  ViewContainer,
+  ViewPane,
+  WelcomeView,
+} from "./workbench";
 
 /** The agents' state, refreshed every few seconds (running, signed in). */
 export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } {
@@ -29,140 +46,199 @@ export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } 
   return { agents, reload };
 }
 
+function signInText(a: AgentInfo): string {
+  if (!a.signedIn) return t("accesso non fatto: si fa al primo avvio dell'agente");
+  return a.signInKind === "api key" ? t("accesso con chiave API") : t("accesso fatto");
+}
+
 export function AgentsPage() {
   const { agents, reload } = useAgents();
   const { busy, error, run } = useAction(reload);
   const [confirm, setConfirm] = useState<AgentId | null>(null);
+  const [chosen, setChosen] = useState<AgentId | null>(null);
+  const [listOpen, setListOpen] = useState(true);
   const stats = useStats();
 
-  if (!agents) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
-  return (
-    <div className="max-w-4xl space-y-3">
-      <p>
-        {rich(
-          t(
-            "Claude Code, Codex e Antigravity condividono istruzioni globali, skill e server MCP: il kit li allinea a ogni avvio e quando un agente termina. Le istruzioni comuni sono in {0}, le skill in {1}, i server MCP in {2}.",
-          ),
-          <span className="font-mono">data\agents\AGENTS.md</span>,
-          <span className="font-mono">data\agents\skills</span>,
-          <span className="font-mono">data\agents\mcp.json</span>,
-        )}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <ActionButton
-          icon={VscFolderOpened}
-          label={t("Apri la cartella condivisa")}
-          onClick={() => {
-            run("folder", () => folderOpen("agents"));
+  const installed = (agents ?? []).filter((a) => a.installed);
+  const agent = installed.find((a) => a.id === chosen) ?? installed[0] ?? null;
+  const st = agent ? stats.report?.agents.find((x) => x.id === agent.id) : undefined;
+
+  const side = (
+    <>
+      <SideBarTitle
+        title={t("Agenti")}
+        actions={
+          <>
+            <IconButton
+              icon={VscRefresh}
+              label={t("Aggiorna i consumi")}
+              title={t("Legge di nuovo limiti e consumi degli agenti")}
+              busy={stats.loading}
+              disabled={installed.length === 0}
+              onClick={stats.refresh}
+            />
+            <IconButton
+              icon={VscFolderOpened}
+              label={t("Apri la cartella condivisa")}
+              onClick={() => {
+                run("folder", () => folderOpen("agents"));
+              }}
+            />
+          </>
+        }
+      />
+      <ProgressBar active={stats.loading && installed.length > 0} />
+      <PaneStack>
+        <ViewPane
+          first
+          fill
+          title={t("Installati")}
+          badge={installed.length > 0 ? installed.length : undefined}
+          expanded={listOpen}
+          onToggle={() => {
+            setListOpen(!listOpen);
           }}
-        />
-        {agents.some((a) => a.installed) && <StatsRefresh loading={stats.loading} onRefresh={stats.refresh} />}
-      </div>
-      {stats.error && (
-        <p role="alert" className="flex items-center gap-2 text-vsc-error">
-          <VscWarning size={16} aria-hidden="true" />
-          <span className="select-text">{stats.error}</span>
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="flex items-center gap-2 text-vsc-error">
-          <VscWarning size={16} aria-hidden="true" />
-          <span className="select-text">{error}</span>
-        </p>
-      )}
-      {agents.every((a) => !a.installed) && (
-        <p className="text-vsc-desc">{t("Nessun agente installato: aggiungili da Strumenti.")}</p>
-      )}
-      <p className="text-vsc-desc">
-        {t("Gli agenti si aprono sempre nella cartella di un progetto, dalla pagina Progetti.")}
-      </p>
-      <ul className="space-y-2">
-        {agents
-          .filter((a) => a.installed)
-          .map((a) => (
-            <li key={a.id} className="border-t border-vsc-border px-3 py-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="flex items-center gap-2 text-[14px] font-semibold">
-                  <ComponentLogo id={a.id} size={18} />
-                  {a.name}
-                </h2>
-                <span className="text-[12px] text-vsc-desc">
-                  {a.installed ? (a.version ?? t("installato")) : t("non installato")}
+        >
+          {agents === null ? (
+            <p className="px-5 py-1 text-vsc-desc">{t("Caricamento…")}</p>
+          ) : installed.length === 0 ? (
+            <WelcomeView>
+              <p>{t("Nessun agente installato: aggiungili da Strumenti.")}</p>
+            </WelcomeView>
+          ) : (
+            <List label={t("Agenti")}>
+              {installed.map((a) => (
+                <ListItem
+                  key={a.id}
+                  icon={<ComponentLogo id={a.id} size={32} />}
+                  name={a.name}
+                  meta={a.version ?? undefined}
+                  description={signInText(a)}
+                  footer={a.running ? t("in esecuzione") : undefined}
+                  selected={agent?.id === a.id}
+                  onSelect={() => {
+                    setChosen(a.id);
+                    setConfirm(null);
+                  }}
+                />
+              ))}
+            </List>
+          )}
+        </ViewPane>
+      </PaneStack>
+    </>
+  );
+
+  return (
+    <ViewContainer id="agents" side={side}>
+      {agent ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <EditorHeader
+            icon={<ComponentLogo id={agent.id} size={56} />}
+            title={agent.name}
+            meta={[
+              <span key="v">{agent.version ?? t("installato")}</span>,
+              agent.running ? (
+                <span key="run" className="flex items-center gap-1">
+                  <Dot tone="ok" />
+                  {t("in esecuzione")}
                 </span>
-                {a.running && <Badge>{t("in esecuzione")}</Badge>}
-                <span className="ml-auto flex items-center gap-1 text-[12px]">
-                  {a.signedIn ? (
-                    <>
-                      <VscCheck className="text-vsc-success" size={14} aria-hidden="true" />
-                      {a.signInKind === "api key" ? t("accesso con chiave API") : t("accesso fatto")}
-                    </>
-                  ) : (
-                    <span className="text-vsc-desc">{t("accesso non fatto: si fa al primo avvio dell'agente")}</span>
-                  )}
-                </span>
-              </div>
-              <div className="mt-1.5 flex flex-wrap gap-2">
-                {a.signedIn &&
-                  a.signInKind !== "api key" &&
-                  (confirm === a.id ? (
-                    <>
-                      <span className="self-center">{t("Togliere l'accesso salvato nel kit?")}</span>
-                      <ActionButton
-                        icon={VscSignOut}
-                        label={t("Esci")}
-                        busy={busy === `out:${a.id}`}
-                        onClick={() => {
-                          setConfirm(null);
-                          run(`out:${a.id}`, () => agentSignOut(a.id));
-                        }}
-                      />
-                      <ActionButton
-                        icon={VscCheck}
-                        label={t("Annulla")}
-                        onClick={() => {
-                          setConfirm(null);
-                        }}
-                      />
-                    </>
-                  ) : (
-                    <ActionButton
-                      icon={VscSignOut}
-                      label={t("Esci")}
-                      disabled={a.running}
-                      title={a.running ? t("Chiudi prima l'agente") : t("Toglie l'accesso salvato nel kit")}
-                      onClick={() => {
-                        setConfirm(a.id);
-                      }}
-                    />
-                  ))}
-              </div>
-              {(() => {
-                const st = stats.report?.agents.find((x) => x.id === a.id);
-                return st ? <AgentUsage stats={st} /> : null;
-              })()}
-            </li>
-          ))}
-      </ul>
-      <p className="text-[12px] text-vsc-desc">
-        {t(
-          "Uscire dal kit non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account.",
-        )}
-      </p>
-    </div>
+              ) : null,
+              <span key="in" className={agent.signedIn ? "" : "text-vsc-desc"}>
+                {signInText(agent)}
+              </span>,
+            ]}
+            description={t("Gli agenti si aprono sempre nella cartella di un progetto, dalla pagina Progetti.")}
+            actions={
+              agent.signedIn &&
+              agent.signInKind !== "api key" &&
+              (confirm === agent.id ? (
+                <>
+                  <span>{t("Togliere l'accesso salvato nel kit?")}</span>
+                  <ActionButton
+                    icon={VscWarning}
+                    label={t("Esci")}
+                    primary
+                    busy={busy === `out:${agent.id}`}
+                    onClick={() => {
+                      setConfirm(null);
+                      run(`out:${agent.id}`, () => agentSignOut(agent.id));
+                    }}
+                  />
+                  <ActionButton
+                    icon={VscWarning}
+                    label={t("Annulla")}
+                    onClick={() => {
+                      setConfirm(null);
+                    }}
+                  />
+                </>
+              ) : (
+                <ActionButton
+                  icon={VscWarning}
+                  label={t("Esci")}
+                  disabled={agent.running}
+                  title={agent.running ? t("Chiudi prima l'agente") : t("Toglie l'accesso salvato nel kit")}
+                  onClick={() => {
+                    setConfirm(agent.id);
+                  }}
+                />
+              ))
+            }
+          />
+          <EditorBody narrow>
+            <ErrorLine error={stats.error ?? error} />
+            <EditorSection id="agent-usage" title={t("Limiti e consumi")}>
+              {st ? <AgentUsage stats={st} /> : <p className="text-vsc-desc">{t("Caricamento…")}</p>}
+            </EditorSection>
+            <EditorSection id="agent-shared" title={t("Condiviso fra gli agenti")}>
+              <p>
+                {rich(
+                  t(
+                    "Claude Code, Codex e Antigravity condividono istruzioni globali, skill e server MCP: il kit li allinea a ogni avvio e quando un agente termina. Le istruzioni comuni sono in {0}, le skill in {1}, i server MCP in {2}.",
+                  ),
+                  <span className="font-mono">data\agents\AGENTS.md</span>,
+                  <span className="font-mono">data\agents\skills</span>,
+                  <span className="font-mono">data\agents\mcp.json</span>,
+                )}
+              </p>
+              <Button
+                onClick={() => {
+                  run("folder", () => folderOpen("agents"));
+                }}
+              >
+                {t("Apri la cartella condivisa")}
+              </Button>
+            </EditorSection>
+            <Notice tone="info" className="text-[12px] text-vsc-desc">
+              {t(
+                "Uscire dal kit non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account.",
+              )}
+            </Notice>
+          </EditorBody>
+        </div>
+      ) : (
+        <div className="p-5 text-vsc-desc">
+          {agents === null ? t("Caricamento…") : t("Nessun agente installato: aggiungili da Strumenti.")}
+        </div>
+      )}
+    </ViewContainer>
   );
 }
 
-/** Compact choice of an agent to open in one project (Projects page). */
+/** The agent last used in a project, else the first installed. */
+function pick(installed: AgentInfo[], chosen: AgentId | "", preferred: string | undefined): AgentId {
+  return chosen || installed.find((a) => a.id === preferred)?.id || installed[0]?.id || "claude";
+}
+
+/** The choice of an agent to open in one project (the project's page). */
 export function AgentPicker({
   agents,
   project,
   preferred,
-  compact = false,
 }: {
   agents: AgentInfo[] | null;
   project: string;
-  /** Only the icon of the Agents page on the button (list of projects). */
-  compact?: boolean;
   /** The agent last opened in the project (its dev-settings.json). */
   preferred?: string | undefined;
 }) {
@@ -170,10 +246,15 @@ export function AgentPicker({
   const [chosen, setChosen] = useState<AgentId | "">("");
   const { busy, error, run } = useAction();
   if (installed.length === 0) return null;
-  const agent = chosen || installed.find((a) => a.id === preferred)?.id || installed[0]?.id || "claude";
+  const agent = pick(installed, chosen, preferred);
   return (
     <span className="flex items-center gap-1" title={error ?? undefined}>
-      <span role="radiogroup" aria-label={t("Agente per {0}", project)} className="flex items-center">
+      {/* As a split button: the agent's logos, then Agente. */}
+      <span
+        role="radiogroup"
+        aria-label={t("Agente per {0}", project)}
+        className="flex h-[26px] items-center rounded border border-vsc-input-border px-px"
+      >
         {installed.map((a) => (
           <button
             key={a.id}
@@ -185,8 +266,8 @@ export function AgentPicker({
             onClick={() => {
               setChosen(a.id);
             }}
-            className={`rounded-sm p-1 ${
-              agent === a.id ? "bg-vsc-list-active outline-1 outline-vsc-list-focus" : "opacity-60 hover:opacity-100"
+            className={`flex size-[22px] items-center justify-center rounded-[3px] ${
+              agent === a.id ? "bg-vsc-option-active" : "opacity-60 hover:bg-vsc-toolbar-hover hover:opacity-100"
             }`}
           >
             <ComponentLogo id={a.id} size={16} />
@@ -194,9 +275,8 @@ export function AgentPicker({
         ))}
       </span>
       <ActionButton
-        icon={error ? VscWarning : compact ? VscHubot : VscPlay}
+        icon={error ? VscWarning : VscHubot}
         label={t("Agente")}
-        compact={compact}
         busy={busy === "launch"}
         title={error ?? t("Apre l'agente scelto nel progetto {0}", project)}
         onClick={() => {
@@ -204,5 +284,33 @@ export function AgentPicker({
         }}
       />
     </span>
+  );
+}
+
+/** The inline action of a project's row: opens the agent last used there. */
+export function AgentButton({
+  agents,
+  project,
+  preferred,
+}: {
+  agents: AgentInfo[] | null;
+  project: string;
+  preferred?: string | undefined;
+}) {
+  const installed = (agents ?? []).filter((a) => a.installed);
+  const { busy, error, run } = useAction();
+  if (installed.length === 0) return null;
+  const agent = pick(installed, "", preferred);
+  const name = installed.find((a) => a.id === agent)?.name ?? agent;
+  return (
+    <IconButton
+      icon={error ? VscWarning : VscHubot}
+      label={t("Agente")}
+      busy={busy === "launch"}
+      title={error ?? t("Apre {0} nel progetto {1}", name, project)}
+      onClick={() => {
+        run("launch", () => agentLaunch(agent, project));
+      }}
+    />
   );
 }

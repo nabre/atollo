@@ -499,7 +499,7 @@ pub fn sync_in_background(
     true
 }
 
-fn server_cli(kit: &Kit, env: &KitEnv) -> std::process::Command {
+pub fn server_cli(kit: &Kit, env: &KitEnv) -> std::process::Command {
     let dir = crate::editor::server_dir(kit);
     let mut cmd = jobs::kit_command(dir.join("node.exe"), env);
     cmd.arg(dir.join(r"out\server-main.js"))

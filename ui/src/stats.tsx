@@ -201,7 +201,7 @@ function UsageView({ u }: { u: Usage }) {
 export function AgentUsage({ stats: s }: { stats: AgentStats }) {
   const l = s.limits;
   return (
-    <div className="mt-3 space-y-2 border-t border-vsc-border pt-2">
+    <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2 text-[12px] text-vsc-desc">
         <span className="font-medium text-vsc-fg">{t("Limiti del piano")}</span>
         {l.plan && <Badge>{l.plan}</Badge>}

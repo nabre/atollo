@@ -1,0 +1,30 @@
+{
+  "name": "theme",
+  "displayName": "NEXKORA Theme",
+  "description": "VSCodium's Dark Modern and Light Modern with the NEXKORA colors.",
+  "publisher": "nexkora",
+  "version": "1.0.3903919045",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Themes"
+  ],
+  "contributes": {
+    "themes": [
+      {
+        "id": "NEXKORA Dark",
+        "label": "NEXKORA Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/dark.json"
+      },
+      {
+        "id": "NEXKORA Light",
+        "label": "NEXKORA Light",
+        "uiTheme": "vs",
+        "path": "./themes/light.json"
+      }
+    ]
+  }
+}

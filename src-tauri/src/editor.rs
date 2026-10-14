@@ -206,6 +206,9 @@ impl Editor {
             }
             other => crate::log::info(&format!("editor settings: {other:?}")),
         }
+        if let Err(e) = crate::editor_theme::ensure(&self.kit, &env) {
+            crate::log::warn(&format!("editor theme: {e:#}"));
+        }
         let data_dir = self.kit.data().join("vscodium-server");
         fs::create_dir_all(&data_dir)?;
         let token = random_token()?;
