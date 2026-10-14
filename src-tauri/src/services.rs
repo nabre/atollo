@@ -566,6 +566,147 @@ impl Services {
         Ok(port)
     }
 
+    /// Where a project's database copies go: `data\db\backup\<project>`.
+    pub fn backup_dir(&self, project: &str) -> PathBuf {
+        self.kit.data().join(r"db\backup").join(project)
+    }
+
+    /// The copies of a project's database, newest first.
+    pub fn backups(&self, project: &str) -> Vec<Backup> {
+        let mut out: Vec<Backup> = fs::read_dir(self.backup_dir(project))
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter(|e| {
+                e.metadata()
+                    .is_ok_and(|m| m.is_file() && !crate::safe_path::is_reparse(&m))
+            })
+            .filter_map(|e| {
+                let name = e.file_name().to_string_lossy().into_owned();
+                let engine = if name.ends_with(".sql") {
+                    "mariadb"
+                } else if name.ends_with(".archive.gz") {
+                    "mongodb"
+                } else {
+                    return None;
+                };
+                Some(Backup {
+                    file: name,
+                    engine: engine.to_owned(),
+                    size: e.metadata().map(|m| m.len()).unwrap_or(0),
+                })
+            })
+            .collect();
+        out.sort_by(|a, b| b.file.cmp(&a.file));
+        out
+    }
+
+    /// The server's port and environment, when it runs.
+    fn running_server(&self, engine: &str) -> Result<(u16, KitEnv)> {
+        let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
+        match running.get_mut(engine) {
+            Some(s) => match s.child.try_wait() {
+                Ok(None) => Ok((s.port, s.env.clone())),
+                _ => bail!("{engine} is not running"),
+            },
+            None => bail!("{engine} is not running"),
+        }
+    }
+
+    /// mongodump/mongorestore logged in as `admin`, the password in a config
+    /// file of the private folder (never on the command line), removed after.
+    fn mongo_tool(&self, exe: &str, env: &KitEnv, port: u16) -> Result<(Command, PathBuf)> {
+        let admin = db_auth::load(&self.kit)
+            .mongodb_admin
+            .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
+        let config = db_auth::dir(&self.kit).join(format!("{exe}-{}.yaml", std::process::id()));
+        db_auth::write_private_text(&config, &format!("password: {admin}\n"))?;
+        let mut cmd = jobs::kit_command(self.kit.apps().join(r"mongodb-tools\bin").join(exe), env);
+        cmd.arg(format!("--config={}", config.display()))
+            .args([
+                "--host=127.0.0.1",
+                "--username=admin",
+                "--authenticationDatabase=admin",
+            ])
+            .arg(format!("--port={port}"));
+        Ok((cmd, config))
+    }
+
+    /// A copy of the project's database in its backup folder (D-78); the
+    /// server must run.
+    pub fn export(&self, project: &str, engine: &str) -> Result<PathBuf> {
+        let (port, env) = self.running_server(engine)?;
+        let name = db_auth::db_name(project);
+        let dir = self.backup_dir(project);
+        fs::create_dir_all(&dir)?;
+        let stamp = crate::agents_sync::stamp();
+        match engine {
+            "mongodb" => {
+                let file = dir.join(format!("{name}-{stamp}.archive.gz"));
+                let (mut cmd, config) = self.mongo_tool("mongodump.exe", &env, port)?;
+                cmd.arg(format!("--db={name}"))
+                    .arg(format!("--archive={}", file.display()))
+                    .arg("--gzip");
+                let result = run_with_input(cmd, "", Duration::from_secs(600));
+                let _ = fs::remove_file(config);
+                result.context("mongodump")?;
+                Ok(file)
+            }
+            _ => {
+                let file = dir.join(format!("{name}-{stamp}.sql"));
+                let out = fs::File::create(&file)?;
+                let mut cmd = self.mariadb_tool("mariadb-dump.exe", &env);
+                cmd.args(["--single-transaction", "--routines", "--triggers"])
+                    .arg(&name)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::from(out))
+                    .stderr(Stdio::piped());
+                let child = jobs::spawn(&mut cmd)?;
+                let done = child.wait_with_output()?;
+                if !done.status.success() {
+                    let _ = fs::remove_file(&file);
+                    bail!(
+                        "mariadb-dump: {}",
+                        String::from_utf8_lossy(&done.stderr).trim()
+                    );
+                }
+                Ok(file)
+            }
+        }
+    }
+
+    /// Puts a copy back into the project's database (what is there now is
+    /// replaced by the copy's tables or collections).
+    pub fn restore(&self, project: &str, file: &str) -> Result<()> {
+        if file.contains(['\\', '/']) || file.starts_with('.') {
+            bail!("not a copy of this project: {file}");
+        }
+        let path = self.backup_dir(project).join(file);
+        if !crate::safe_path::is_file(&self.backup_dir(project), &path) {
+            bail!("copy not found: {file}");
+        }
+        let name = db_auth::db_name(project);
+        if file.ends_with(".archive.gz") {
+            let (port, env) = self.running_server("mongodb")?;
+            let (mut cmd, config) = self.mongo_tool("mongorestore.exe", &env, port)?;
+            cmd.arg(format!("--archive={}", path.display()))
+                .arg("--gzip")
+                .arg("--drop")
+                .arg(format!("--nsInclude={name}.*"));
+            let result = run_with_input(cmd, "", Duration::from_secs(600));
+            let _ = fs::remove_file(config);
+            result.context("mongorestore")
+        } else if file.ends_with(".sql") {
+            let (_, env) = self.running_server("mariadb")?;
+            let sql = fs::read_to_string(&path)?;
+            let mut cmd = self.mariadb_tool("mariadb.exe", &env);
+            cmd.arg(&name);
+            run_with_input(cmd, &sql, Duration::from_secs(600)).context("mariadb")
+        } else {
+            bail!("not a database copy: {file}")
+        }
+    }
+
     /// Asks the server to shut down, then ends whatever is left.
     pub fn stop(&self, id: &str) {
         let Some(mut server) = self
@@ -645,6 +786,15 @@ impl Services {
             }
         }
     }
+}
+
+/// A copy of a project's database (D-78).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Backup {
+    pub file: String,
+    pub engine: String,
+    pub size: u64,
 }
 
 /// The port of a server is taken by another program.
@@ -747,6 +897,59 @@ mod tests {
                     .count(),
                 1
             );
+            // Export, lose the data, restore: the data is back (D-78).
+            let admin = |script: &str| -> String {
+                match id {
+                    "mongodb" => {
+                        let mut cmd = jobs::kit_command(bin(&kit, "mongosh", "mongosh.exe"), &env);
+                        cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
+                            .arg(port.to_string())
+                            .args(["--eval", &format!(
+                                "db.getSiblingDB('admin').auth('admin', process.env.ATOLLO_DB_ADMIN); {script}"
+                            )])
+                            .env("ATOLLO_DB_ADMIN", db_auth::load(&kit).mongodb_admin.unwrap());
+                        let out = cmd.output().unwrap();
+                        String::from_utf8_lossy(&out.stdout).trim().to_owned()
+                    }
+                    _ => {
+                        let mut cmd = s.mariadb_tool("mariadb.exe", &env);
+                        cmd.args(["-N", "-e", script]);
+                        let out = cmd.output().unwrap();
+                        String::from_utf8_lossy(&out.stdout).trim().to_owned()
+                    }
+                }
+            };
+            let (fill, count, lose) = match id {
+                "mongodb" => (
+                    "db.getSiblingDB('prova_kit').t.insertOne({x: 7})",
+                    "print(db.getSiblingDB('prova_kit').t.countDocuments())",
+                    "db.getSiblingDB('prova_kit').t.drop()",
+                ),
+                _ => (
+                    "CREATE TABLE IF NOT EXISTS prova_kit.t (x INT); INSERT INTO prova_kit.t VALUES (7);",
+                    "SELECT COUNT(*) FROM prova_kit.t",
+                    "DROP TABLE prova_kit.t",
+                ),
+            };
+            admin(fill);
+            let n = admin(count);
+            assert!(
+                n.parse::<u32>().is_ok_and(|n| n > 0),
+                "{id}: data written, count {n:?}"
+            );
+            let file = s.export("Prova Kit", id).unwrap();
+            assert!(file.is_file(), "{id}: copy written");
+            admin(lose);
+            assert_ne!(admin(count), n, "{id}: data lost before restore");
+            let name = file.file_name().unwrap().to_string_lossy().into_owned();
+            assert!(s
+                .backups("Prova Kit")
+                .iter()
+                .any(|b| b.file == name && b.engine == id));
+            s.restore("Prova Kit", &name).unwrap();
+            assert_eq!(admin(count), n, "{id}: data back after restore");
+            assert!(s.restore("Prova Kit", r"..\x.sql").is_err());
+            let _ = fs::remove_file(&file);
             s.stop(id);
             assert!(!responds(port), "{id} stopped");
             assert_eq!(s.running(), 0);

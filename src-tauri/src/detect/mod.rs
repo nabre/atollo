@@ -29,7 +29,9 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-pub use overrides::{set_site, SiteKind, SITE_ACTION};
+pub use overrides::{
+    remove_action, save_action, set_default_action, set_site, ActionEdit, SiteKind, SITE_ACTION,
+};
 
 /// A folder inside the project (relative, no `..`, no link leading out).
 pub fn inside_dir(project_dir: &Path, folder: &str) -> anyhow::Result<std::path::PathBuf> {

@@ -530,7 +530,10 @@ export function agentSignOut(agent: AgentId): Promise<void> {
 }
 
 /** Opens a kit folder in File Explorer: "agents", "db" or "projects" (+ project). */
-export function folderOpen(which: "agents" | "db" | "projects", project: string | null = null): Promise<void> {
+export function folderOpen(
+  which: "agents" | "backup" | "db" | "projects",
+  project: string | null = null,
+): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("folder_open", { which, project });
 }
 
@@ -717,6 +720,112 @@ export function projectClone(source: string, name: string | null): Promise<strin
 }
 
 export type SiteKind = "static" | "php" | "none";
+
+/** A project's editor settings in .vscode\settings.json (D-78); null: not set. */
+export interface EditorSettings {
+  formatOnSave: boolean | null;
+  tabSize: number | null;
+  insertSpaces: boolean | null;
+  hidden: string[];
+}
+
+export interface EditorSettingsView {
+  settings: EditorSettings;
+  exists: boolean;
+  /** Comments or not plain JSON: shown, never written. */
+  readOnly: boolean;
+}
+
+export function projectEditorSettings(project: string): Promise<EditorSettingsView> {
+  return browserPreview
+    ? Promise.resolve({
+        settings: { formatOnSave: true, tabSize: 4, insertSpaces: true, hidden: ["**/vendor"] },
+        exists: true,
+        readOnly: false,
+      })
+    : invoke<EditorSettingsView>("project_editor_settings", { project });
+}
+
+export function projectEditorSettingsSet(project: string, settings: EditorSettings): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_editor_settings_set", { project, settings });
+}
+
+/** A copy of a project's database (data\db\backup\<project>, D-78). */
+export interface Backup {
+  file: string;
+  engine: "mariadb" | "mongodb";
+  size: number;
+}
+
+export function projectBackups(project: string): Promise<Backup[]> {
+  return browserPreview
+    ? Promise.resolve([{ file: "negozio_online-20261014-171500.sql", engine: "mariadb", size: 48211 }])
+    : invoke<Backup[]>("project_backups", { project });
+}
+
+/** A copy of the project's database; returns the file name. */
+export function projectDbExport(project: string, engine: Backup["engine"]): Promise<string> {
+  return browserPreview ? Promise.resolve("copia.sql") : invoke<string>("project_db_export", { project, engine });
+}
+
+export function projectDbRestore(project: string, file: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_db_restore", { project, file });
+}
+
+/** A project's own MCP server (.mcp.json, D-78). */
+export interface McpServer {
+  name: string;
+  kind: "stdio" | "http";
+  command: string | null;
+  args: string[];
+  url: string | null;
+  env: Record<string, string>;
+}
+
+export interface McpView {
+  servers: McpServer[];
+  /** .mcp.json is not plain JSON: never written. */
+  readOnly: boolean;
+}
+
+export function projectMcp(project: string): Promise<McpView> {
+  return browserPreview
+    ? Promise.resolve({
+        servers: [{ name: "playwright", kind: "stdio", command: "npx", args: ["@playwright/mcp"], url: null, env: {} }],
+        readOnly: false,
+      })
+    : invoke<McpView>("project_mcp", { project });
+}
+
+export function projectMcpSet(project: string, servers: McpServer[]): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_mcp_set", { project, servers });
+}
+
+/** An action as the project page edits it (panel.json, D-78). */
+export interface ActionEdit {
+  id: string;
+  label: string;
+  command: string;
+  kind: ActionKind;
+  folder: string | null;
+  url: string | null;
+  env: Record<string, string>;
+}
+
+/** Adds or changes an action in the project's panel.json (same id: replaced). */
+export function projectActionSave(project: string, action: ActionEdit): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_action_save", { project, action });
+}
+
+/** Removes an action written in panel.json; a detected one with that id comes back. */
+export function projectActionRemove(project: string, id: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_action_remove", { project, id });
+}
+
+/** The action that "Avvia" starts. */
+export function projectActionDefault(project: string, id: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_action_default", { project, id });
+}
 
 /** "Servi come sito web": writes the "site" action in the project's panel.json. */
 export function projectSite(project: string, folder: string, kind: SiteKind): Promise<void> {

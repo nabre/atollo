@@ -39,7 +39,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `ruby` | Ruby | no | 270 | | |
 | | `r` | R (conda-forge) | no | 1100 | | solo x64: non disponibile sui kit ARM64 (`noArm64`) |
 | database (`databases`) | `mariadb` | MariaDB | no | 230 | | **nuovo** (D-73); compatibile con MySQL; x64 anche su ARM64 |
-| | `mongodb` | MongoDB, mongosh | no | 470 | | **nuovo** (D-73); x64 anche su ARM64 |
+| | `mongodb` | MongoDB, mongosh, Database Tools | no | 570 | | **nuovo** (D-73); Database Tools per le copie (D-78); x64 anche su ARM64 |
 | | `sqlite` | SQLite (sqlite3) | no | 15 | | **nuovo** (D-73) |
 | legati a un sistema operativo (`os`) | `terminal` | Windows Terminal | sì | 45 | `pwsh` | **nuovo**; il terminale del kit per le console fuori dall'editor (DECISIONS.md D-68); la console classica di Windows resta nelle Impostazioni |
 
@@ -95,7 +95,7 @@ Abbreviazioni:
 | micromamba (per r) | tag dell'ultima release di `mamba-org/micromamba-releases` (API di GitHub) | `micromamba-win-64` (solo x64) | SHA-256 da `micromamba-win-64.sha256` della release | exe → `A\tools\micromamba.exe` | `tools/micromamba.exe` | `_languages.ps1:344-358` |
 | r | `api.anaconda.org/package/conda-forge/r-base` → `latest_version` | solo x64 (ARM64: non disponibile) | SHA-256 di ogni pacchetto (micromamba) | `micromamba create --no-rc -y -q -p <lavoro>\r -c conda-forge --override-channels r-base=<v> "libblas=*=*openblas"` con profilo e `MAMBA_ROOT_PREFIX` nell'area di lavoro; lanciatori `bin\R.cmd`, `bin\Rscript.cmd`; CRAN `cloud.r-project.org` in `Rprofile.site`; via `pkgs\` | `r/bin/R.cmd` | `_languages.ps1:368-429` |
 | mariadb | `downloads.mariadb.org/rest-api/mariadb/` → LTS stabile più recente → `/<major>/latest/` | `mariadb-<v>-winx64.zip` (via https) | SHA-256 dell'API | IA singola; via `.pdb` | `mariadb/bin/mariadbd.exe` + `mariadb/bin/mariadb.exe` | nuovo (D-73) |
-| mongodb | `downloads.mongodb.org/current.json`, produzione `x.0.y`; mongosh da GHA `mongodb-js/mongosh` | `mongodb-windows-x86_64-<v>.zip`, `mongosh-<v>-win32-x64.zip` in `mongosh\` | SHA-256 dell'elenco; `digest` | IA singola; via `.pdb` e `vc_redist`, VC++ del kit | `mongodb/bin/mongod.exe` + `mongosh/bin/mongosh.exe` | nuovo (D-73) |
+| mongodb | `downloads.mongodb.org/current.json`, produzione `x.0.y`; mongosh da GHA `mongodb-js/mongosh` | `mongodb-windows-x86_64-<v>.zip`, `mongosh-<v>-win32-x64.zip` in `mongosh\`, Database Tools da `release.json` in `mongodb-tools\` | SHA-256 dell'elenco; `digest` | IA singola; via `.pdb` e `vc_redist`, VC++ del kit | `mongodb/bin/mongod.exe` + `mongosh/bin/mongosh.exe` + `mongodb-tools/bin/mongodump.exe` | nuovo (D-73) |
 | sqlite | `sqlite.org/download.html`, righe `PRODUCT,` | `sqlite-tools-win-(x64\|arm64)-<n>.zip` | **SHA3-256** della pagina | IA | `sqlite/sqlite3.exe` | nuovo (D-73) |
 | CodeLLDB (estensione) | GHA `vadimcn/codelldb` | `codelldb-win32-<arch>.vsix`; x64 anche su ARM64, come il server dell'editor | `digest` obbligatorio | installata nel server dell'editor con `--install-extension`, se un progetto ha Rust, Zig, C o C++ (matrice `extensions.json`, D-71), una volta sola | cartella `vadimcn.vscode-lldb-*` in `data\vscodium-server\extensions\` | `_vscodium-extensions.ps1:162-206` |
 

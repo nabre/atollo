@@ -1,5 +1,15 @@
 # Novità
 
+## Impostazioni del progetto nei suoi file (14/10/2026)
+
+**Fatto**
+- **Azioni modificabili** dalla pagina del progetto › Avanzate (D-78): nuova azione, modifica, predefinita, togli; con cartella, indirizzo e **variabili d'ambiente**. Salvate in `panel.json` nel progetto.
+- **Impostazioni dell'editor del progetto**: formatta al salvataggio, rientro, cartelle nascoste, in `.vscode\settings.json` (le altre impostazioni del file restano).
+- **Server MCP del progetto** per Claude Code (`.mcp.json`) e Codex (`.codex\config.toml`).
+- **Copie dei database**: Esporta e Ripristina per MariaDB e MongoDB nella pagina del progetto › Risorse; copie in `data\dbackup\<progetto>`. MongoDB porta con sé i Database Tools.
+
+**Verificato**: 211 test Rust (con esportazione, cancellazione e ripristino reali su MariaDB e MongoDB), 23 test dell'interfaccia; prova nell'app: azione con variabile, impostazioni dell'editor e server MCP scritti nei file del progetto.
+
 ## Struttura più semplice (14/10/2026)
 
 **Fatto**

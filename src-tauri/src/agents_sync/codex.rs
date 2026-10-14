@@ -36,7 +36,7 @@ fn toml(v: &Value) -> String {
     }
 }
 
-fn strip_block(text: &str, begin: &str, end: &str) -> String {
+pub(crate) fn strip_block(text: &str, begin: &str, end: &str) -> String {
     let Some(i) = text.find(begin) else {
         return text.to_owned();
     };

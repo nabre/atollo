@@ -612,6 +612,11 @@ pub fn folder_open<R: Runtime>(
     let dir = match which.as_str() {
         "agents" => state.kit.data().join("agents"),
         "db" => state.kit.data().join("db"),
+        "backup" => {
+            let name = project.as_deref().ok_or("no project")?;
+            project_dir(&state.kit, Some(name), state.lang())?;
+            state.services.backup_dir(name)
+        }
         "projects" => project_dir(&state.kit, project.as_deref(), state.lang())?,
         _ => return Err(format!("unknown folder: {which}")),
     };
@@ -917,6 +922,95 @@ pub fn github_open<R: Runtime>(
     crate::github::open_web(&path).map_err(|e| fail("browser", format!("{e:#}")))
 }
 
+/// Adds or changes an action of the project in its panel.json (D-78); it
+/// applies from the next start of that action.
+#[tauri::command]
+pub fn project_action_save<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    action: crate::detect::ActionEdit,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::detect::save_action(&dir, &action, state.lang()).map_err(|e| format!("{e:#}"))
+}
+
+/// The project's editor settings in its .vscode\settings.json (D-78).
+#[tauri::command]
+pub fn project_editor_settings<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<crate::project_vscode::EditorSettingsView, String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    Ok(crate::project_vscode::get(&dir))
+}
+
+#[tauri::command]
+pub fn project_editor_settings_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    settings: crate::project_vscode::EditorSettings,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::project_vscode::set(&dir, &settings)
+        .map_err(|e| fail("editor settings", format!("{e:#}")))
+}
+
+/// The project's own MCP servers (.mcp.json, D-78).
+#[tauri::command]
+pub fn project_mcp<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<crate::project_mcp::McpView, String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    Ok(crate::project_mcp::get(&dir))
+}
+
+#[tauri::command]
+pub fn project_mcp_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    servers: Vec<crate::project_mcp::McpServer>,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::project_mcp::set(&dir, &servers).map_err(|e| fail("project mcp", format!("{e:#}")))
+}
+
+/// Removes an action written in panel.json (a detected one comes back).
+#[tauri::command]
+pub fn project_action_remove<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    id: String,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::detect::remove_action(&dir, &id, state.lang()).map_err(|e| format!("{e:#}"))
+}
+
+/// The action that "Avvia" starts.
+#[tauri::command]
+pub fn project_action_default<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    id: String,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::detect::set_default_action(&dir, &id, state.lang()).map_err(|e| format!("{e:#}"))
+}
+
 /// "Servi come sito web": a folder of the project served by the file server
 /// (`static`) or by PHP (`php`), or the site removed (`none`).
 #[tauri::command]
@@ -1160,6 +1254,82 @@ pub fn project_env_apply<R: Runtime>(
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let db = project_db_of(&state, &project, &engine)?;
     crate::db_auth::env_apply(&dir, &db).map_err(|e| fail(".env", format!("{e:#}")))
+}
+
+/// The copies of the project's databases (D-78), newest first.
+#[tauri::command]
+pub fn project_backups<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<Vec<crate::services::Backup>, String> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    Ok(state.services.backups(&project))
+}
+
+/// A copy of the project's database; starts the server if needed.
+#[tauri::command]
+pub async fn project_db_export<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    engine: String,
+) -> Result<String, String> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    if !crate::services::SERVERS.contains(&engine.as_str()) {
+        return Err(fail("database", format!("unknown server {engine}")));
+    }
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
+        services
+            .start(&engine, &env)
+            .map_err(|e| fail("database", format!("{e:#}")))?;
+        let file = services
+            .export(&project, &engine)
+            .map_err(|e| fail("export", format!("{e:#}")))?;
+        Ok(file
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default())
+    })
+    .await
+    .map_err(|e| fail("export", e))?
+}
+
+/// Puts a copy back into the project's database; starts the server if needed.
+#[tauri::command]
+pub async fn project_db_restore<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    file: String,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    let engine = if file.ends_with(".archive.gz") {
+        "mongodb"
+    } else {
+        "mariadb"
+    };
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        let env = ensure(&app, &task, &kit, lang, &[engine])?;
+        services
+            .start(engine, &env)
+            .map_err(|e| fail("database", format!("{e:#}")))?;
+        services
+            .restore(&project, &file)
+            .map_err(|e| fail("restore", format!("{e:#}")))
+    })
+    .await
+    .map_err(|e| fail("restore", e))?
 }
 
 /// The database servers (D-73).
@@ -1623,6 +1793,16 @@ macro_rules! command_handler {
             $crate::commands::github_rename,
             $crate::commands::github_delete,
             $crate::commands::github_open,
+            $crate::commands::project_backups,
+            $crate::commands::project_db_export,
+            $crate::commands::project_db_restore,
+            $crate::commands::project_mcp,
+            $crate::commands::project_mcp_set,
+            $crate::commands::project_editor_settings,
+            $crate::commands::project_editor_settings_set,
+            $crate::commands::project_action_save,
+            $crate::commands::project_action_remove,
+            $crate::commands::project_action_default,
             $crate::commands::project_status,
             $crate::commands::project_databases,
             $crate::commands::project_db_create,
