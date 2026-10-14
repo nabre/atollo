@@ -68,6 +68,8 @@ export interface ProjectAction {
   env: Record<string, string>;
   /** A folder served by the app's file server. */
   static: string | null;
+  /** A folder served by an Apache of the project's own. */
+  apache: string | null;
   custom: boolean;
 }
 
@@ -130,7 +132,18 @@ export interface ExtensionsMatrix {
 }
 
 function sampleAction(id: string, label: string, command: string, staticDir: string | null): ProjectAction {
-  return { id, label, command, type: "web", folder: null, url: null, env: {}, static: staticDir, custom: false };
+  return {
+    id,
+    label,
+    command,
+    type: "web",
+    folder: null,
+    url: null,
+    env: {},
+    static: staticDir,
+    apache: null,
+    custom: false,
+  };
 }
 
 const SAMPLE_PROJECTS: ProjectInfo[] = [
@@ -719,7 +732,7 @@ export function projectClone(source: string, name: string | null): Promise<strin
   return browserPreview ? Promise.resolve(name ?? "clone") : invoke<string>("project_clone", { source, name });
 }
 
-export type SiteKind = "static" | "php" | "none";
+export type SiteKind = "static" | "php" | "apache" | "none";
 
 /** A project's editor settings in .vscode\settings.json (D-78); null: not set. */
 export interface EditorSettings {

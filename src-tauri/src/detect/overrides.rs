@@ -11,7 +11,8 @@
 //! ```
 //!
 //! `static` (instead of `command`): that folder served by the exe's file
-//! server, always a web action. The old `pannello.json` (read only when
+//! server, always a web action; `apache` (instead of `command`): that folder
+//! served by an Apache of the project's own, always a web action. The old `pannello.json` (read only when
 //! `panel.json` is missing) uses the Italian keys `nome`, `tipo`,
 //! `piattaforma`, `sostituisci`, `predefinita`, `azioni`, `etichetta`,
 //! `comando`, `cartella`, `statico` and `{porta}`; both sets are accepted in
@@ -109,14 +110,18 @@ pub(super) fn apply(project: &mut Project, dir: &Path, lang: &str) {
             let served = pick(a, "static", "statico")
                 .and_then(Value::as_str)
                 .map(str::to_owned);
-            if command.is_none() && served.is_none() {
+            let apache = a.get("apache").and_then(Value::as_str).map(str::to_owned);
+            if command.is_none() && served.is_none() && apache.is_none() {
                 return None;
             }
             let a_kind = text(pick(a, "type", "tipo")).and_then(|t| Kind::parse(&t));
             let label = text(pick(a, "label", "etichetta")).unwrap_or_else(|| id.clone());
             let mut action = match &command {
                 Some(c) => Action::new(&id, &label, c, a_kind.unwrap_or(Kind::Command)),
-                None => Action::serve(&id, &label, served.as_deref().unwrap_or(".")),
+                None => match &apache {
+                    Some(folder) => Action::apache(&id, &label, folder),
+                    None => Action::serve(&id, &label, served.as_deref().unwrap_or(".")),
+                },
             };
             action.folder = text(pick(a, "folder", "cartella"));
             action.url = text(a.get("url")).map(|u| ports(&u));
@@ -186,6 +191,8 @@ pub fn inside(project_dir: &Path, folder: &str) -> Result<(PathBuf, String)> {
 pub enum SiteKind {
     Static,
     Php,
+    /// An Apache of the project's own (`apache.rs`).
+    Apache,
     None,
 }
 
@@ -276,11 +283,14 @@ pub fn set_site(project_dir: &Path, folder: &str, kind: SiteKind, lang: &str) ->
             rel.clone()
         };
         let label = tr(lang, "sito web ({0})", &[&shown]);
-        Some(if kind == SiteKind::Static {
-            serde_json::json!({ "id": SITE_ACTION, "label": label, "static": rel })
-        } else {
-            serde_json::json!({ "id": SITE_ACTION, "label": label, "type": "web",
-                "command": format!("php -S 127.0.0.1:{{port}} -t {}", quote(&rel)) })
+        Some(match kind {
+            SiteKind::Static => {
+                serde_json::json!({ "id": SITE_ACTION, "label": label, "static": rel })
+            }
+            SiteKind::Apache => serde_json::json!({ "id": SITE_ACTION,
+                "label": tr(lang, "sito web Apache ({0})", &[&shown]), "apache": rel }),
+            _ => serde_json::json!({ "id": SITE_ACTION, "label": label, "type": "web",
+                "command": format!("php -S 127.0.0.1:{{port}} -t {}", quote(&rel)) }),
         })
     };
     edit_panel(project_dir, lang, |actions, default| {
@@ -562,6 +572,14 @@ mod tests {
         assert_eq!(
             detect(&tmp.0, "it").actions[0].command,
             "php -S 127.0.0.1:{port} -t www"
+        );
+        set_site(&tmp.0, "www", SiteKind::Apache, "it").unwrap();
+        let p = detect(&tmp.0, "it");
+        assert_eq!(p.actions[0].apache_dir.as_deref(), Some("www"));
+        assert_eq!(p.actions[0].kind, Kind::Web);
+        assert!(p.actions[0].command.is_empty());
+        assert!(
+            p.requires.contains(&"apache".to_owned()) && p.requires.contains(&"php".to_owned())
         );
         set_site(&tmp.0, "", SiteKind::None, "it").unwrap();
         let left: Value =

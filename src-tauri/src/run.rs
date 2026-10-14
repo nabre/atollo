@@ -5,7 +5,8 @@
 //!   ends the whole tree (npm → node → esbuild…), closing the app ends all;
 //! - commands go through `cmd.exe /d /s /c` with the kit's environment plus
 //!   `PORT`, `ROCKET_PORT`, `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
-//!   action runs this exe as a file server (`Atollo.exe serve`);
+//!   action runs this exe as a file server (`Atollo.exe serve`), an
+//!   `apache` action the kit's httpd with a configuration of the project;
 //! - web actions keep their port from one start to the next (bookmarks,
 //!   cookies, localStorage stay valid): 7100-7999, remembered in
 //!   `data\app\ports.json`, or the one the user locked;
@@ -371,6 +372,14 @@ impl Runner {
             (
                 cmd,
                 format!("Atollo.exe serve {folder} {}", port.unwrap_or_default()),
+            )
+        } else if let Some(folder) = &action.apache_dir {
+            let root = detect::inside_dir(&cwd, folder)?;
+            let cmd =
+                crate::apache::command(&self.kit, id, &root, port.unwrap_or(PORT_FROM), lan, env)?;
+            (
+                cmd,
+                format!("httpd.exe -f data\\app\\projects\\{id}\\apache\\httpd.conf ({folder})"),
             )
         } else {
             let command = listen(&action.command);

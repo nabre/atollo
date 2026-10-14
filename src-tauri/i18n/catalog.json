@@ -374,6 +374,11 @@
     "fr": "site web ({0})",
     "de": "Website ({0})"
   },
+  "sito web Apache ({0})": {
+    "en": "Apache website ({0})",
+    "fr": "site web Apache ({0})",
+    "de": "Apache-Website ({0})"
+  },
   "file {0}": {
     "en": "{0} files",
     "fr": "fichiers {0}",

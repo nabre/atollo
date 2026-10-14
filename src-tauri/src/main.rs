@@ -8,6 +8,7 @@
 
 mod agents;
 mod agents_sync;
+mod apache;
 mod archive;
 mod catalog;
 mod checkup;
