@@ -42,6 +42,8 @@
   --vsc-link: #4daafc;
   --vsc-error: #f85149;
   --vsc-warning: #cca700;
+  /* charts.orange: a project needs a component that is not chosen. */
+  --vsc-orange: #d18616;
   --vsc-success: #73c991;
 }
 
@@ -75,6 +77,8 @@
     /* Light Modern's #f85149 is under 4.5:1 on white: VS Code Light's error red. */
     --vsc-error: #e51400;
     --vsc-warning: #bf8803;
+    /* charts.orange #d18616 is under 4.5:1 on white: a darker orange. */
+    --vsc-orange: #b35c00;
     --vsc-success: #388a34;
   }
 }
@@ -108,6 +112,7 @@
   --color-vsc-link: var(--vsc-link);
   --color-vsc-error: var(--vsc-error);
   --color-vsc-warning: var(--vsc-warning);
+  --color-vsc-orange: var(--vsc-orange);
   --color-vsc-success: var(--vsc-success);
 }
 

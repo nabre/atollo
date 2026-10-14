@@ -7,13 +7,22 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   VscCheck,
   VscCloudDownload,
+  VscFolderLibrary,
   VscReferences,
   VscRefresh,
   VscTrash,
   VscTypeHierarchySub,
   VscWarning,
 } from "react-icons/vsc";
-import { componentsApply, componentsList, type ComponentInfo, type Group, type SetupSnapshot } from "./api";
+import {
+  componentsApply,
+  componentsList,
+  projectsList,
+  type ComponentInfo,
+  type Group,
+  type ProjectInfo,
+  type SetupSnapshot,
+} from "./api";
 import { locale, rich, t } from "./i18n";
 import { ActionButton } from "./pages";
 import { SetupProgress } from "./setup";
@@ -29,6 +38,11 @@ function groups(): { id: Group; title: string; hint: string }[] {
       hint: t(
         "Scegli quelli che usi: si aggiungono e tolgono quando vuoi. Quelli che servono a un agente o a un progetto si installano da soli.",
       ),
+    },
+    {
+      id: "os",
+      title: t("Legati a un sistema operativo"),
+      hint: t("Funzionano solo sul sistema per cui sono fatti, qui Windows."),
     },
   ];
 }
@@ -58,8 +72,30 @@ export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, o
   return next;
 }
 
-const chip =
-  "ml-2 inline-flex items-center gap-1 rounded-sm border border-vsc-border px-1 align-middle text-[11px] leading-4 text-vsc-desc";
+const chipShape = "ml-2 inline-flex items-center gap-1 rounded-sm border px-1 align-middle text-[11px] leading-4";
+const chip = `${chipShape} border-vsc-border text-vsc-desc`;
+
+/** The projects that need `c`: blue when chosen, orange with a warning when not. */
+function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
+  if (names.length === 0) return null;
+  const list = names.join(", ");
+  return on ? (
+    <span className={`${chipShape} border-vsc-focus text-vsc-fg`} title={t("Serve ai progetti: {0}.", list)}>
+      <VscFolderLibrary size={11} aria-hidden="true" />
+      <span className="sr-only">{t("serve ai progetti")} </span>
+      {list}
+    </span>
+  ) : (
+    <span
+      className={`${chipShape} border-vsc-orange font-medium text-vsc-orange`}
+      title={t("Serve ai progetti: {0}. Non è scelto: sceglilo perché funzionino.", list)}
+    >
+      <VscWarning size={11} aria-hidden="true" />
+      <span className="sr-only">{t("attenzione: non scelto, serve ai progetti")} </span>
+      {list}
+    </span>
+  );
+}
 
 /** What `c` needs (installed with it) and, when chosen, what needs `c`. */
 function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentInfo[]; chosen: Set<string> }) {
@@ -104,11 +140,16 @@ export function ComponentsPage({
 }) {
   const [list, setList] = useState<ComponentInfo[] | null>(null);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const running = setup?.running ?? false;
 
   const load = useCallback(() => {
+    // Only for the highlight: the page works without the projects.
+    projectsList().then(setProjects, () => {
+      setProjects([]);
+    });
     componentsList().then(
       (l) => {
         setList(l);
@@ -131,6 +172,15 @@ export function ComponentsPage({
     const remove = items.filter((c) => !chosen.has(c.id) && c.present);
     return { install, remove, mb: install.reduce((n, c) => n + c.mb, 0) };
   }, [list, chosen]);
+
+  /** Component id → names of the projects that need it. */
+  const neededBy = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const p of projects) {
+      for (const id of p.requires) map.set(id, [...(map.get(id) ?? []), p.name]);
+    }
+    return map;
+  }, [projects]);
 
   if (error) {
     return (
@@ -194,8 +244,16 @@ export function ComponentsPage({
                 const required = c.locked;
                 const on = chosen.has(c.id);
                 const inputId = `comp-${c.id}`;
+                const forProjects = neededBy.get(c.id) ?? [];
+                const unchosen = forProjects.length > 0 && !on;
+                // A left bar marks what a project needs: blue, orange when not chosen.
+                const mark = unchosen
+                  ? "border-l-vsc-orange bg-vsc-orange/10 hover:bg-vsc-orange/15"
+                  : forProjects.length > 0
+                    ? "border-l-vsc-focus hover:bg-vsc-list-hover"
+                    : "border-l-transparent hover:bg-vsc-list-hover";
                 return (
-                  <li key={c.id} className="flex items-center gap-3 px-4 py-1.5 hover:bg-vsc-list-hover">
+                  <li key={c.id} className={`flex items-center gap-3 border-l-2 py-1.5 pr-4 pl-3.5 ${mark}`}>
                     <input
                       id={inputId}
                       type="checkbox"
@@ -204,14 +262,15 @@ export function ComponentsPage({
                       onChange={(e) => {
                         setChosen(toggle(list, chosen, c.id, e.target.checked));
                       }}
-                      className="size-4 accent-vsc-button"
+                      className={`size-4 accent-vsc-button ${unchosen ? "rounded-sm outline-2 outline-offset-1 outline-vsc-orange" : ""}`}
                     />
                     <span className="flex w-4 justify-center">
                       <ComponentLogo id={c.id} />
                     </span>
                     <label htmlFor={inputId} className="min-w-0 flex-1">
-                      <span className="font-medium">{c.name}</span>
+                      <span className={unchosen ? "font-medium text-vsc-orange" : "font-medium"}>{c.name}</span>
                       <span className="ml-2 text-vsc-desc">{c.desc}</span>
+                      <ProjectsChip names={forProjects} on={on} />
                       <Dependencies c={c} list={list} chosen={chosen} />
                     </label>
                     {c.x64Only && (

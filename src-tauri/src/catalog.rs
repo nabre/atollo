@@ -22,6 +22,9 @@ pub enum Group {
     Required,
     Agents,
     Languages,
+    /// Tools tied to an operating system (Windows Terminal): shown in
+    /// their own group of "Linguaggi e strumenti", chosen like the others.
+    Os,
     /// Part of Atollo itself (the editor): not in "Linguaggi e strumenti",
     /// always installed, at the version fixed in the catalog for this
     /// release (`version`, `sha256`).
