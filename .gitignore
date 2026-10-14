@@ -1,0 +1,16 @@
+# Build output
+/target/
+/node_modules/
+/dist/
+
+# Created by Atollo.exe when it runs from the repository folder
+/data/
+/projects/
+
+# Editors
+.vscode/
+*.swp
+
+# PowerShell/CLR profiling junk
+StartupProfileData-NonInteractive
+*.prof

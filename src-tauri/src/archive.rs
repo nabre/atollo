@@ -1,0 +1,452 @@
+//! Archives and folder swaps for the installer (port of nabre/atollo
+//! `Expand-Package`, `Replace-Dir` and `Replace-File`).
+//!
+//! Extraction refuses entries that would land outside the target (absolute
+//! paths, `..`, drive prefixes) and skips links. File times are not restored
+//! (exFAT rejects them; `tar -m` in the kit). Swaps are atomic from the
+//! user's point of view: the new folder is complete before the old one moves,
+//! and a failure puts the old one back.
+
+use std::fs::{self, File};
+use std::io::{self, Read, Seek, SeekFrom};
+use std::path::{Component, Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use anyhow::{bail, Context, Result};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Kind {
+    Zip,
+    TarGz,
+    /// A 7z archive, also inside a self-extracting `.7z.exe`.
+    SevenZip,
+}
+
+/// Which part of the extracted tree becomes the component folder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Inner {
+    /// The archive root.
+    Root,
+    /// Its only top-level folder (error if there is not exactly one).
+    #[allow(dead_code, reason = "used by the language installers of phase 4")]
+    Single,
+    /// The only top-level folder if there is exactly one, else the root.
+    Auto,
+    /// A named subfolder.
+    Named(String),
+}
+
+/// `base` + an archive entry name, or `None` if the name would escape `base`.
+pub fn safe_join(base: &Path, name: &str) -> Option<PathBuf> {
+    let mut out = base.to_path_buf();
+    let mut depth = 0usize;
+    for part in Path::new(&name.replace('/', "\\")).components() {
+        match part {
+            Component::Normal(p) => {
+                out.push(p);
+                depth += 1;
+            }
+            Component::CurDir => {}
+            _ => return None,
+        }
+    }
+    (depth > 0).then_some(out)
+}
+
+pub fn extract(archive: &Path, kind: Kind, dest: &Path) -> Result<()> {
+    fs::create_dir_all(dest)?;
+    match kind {
+        Kind::Zip => extract_zip(archive, dest),
+        Kind::TarGz => extract_tar_gz(archive, dest),
+        Kind::SevenZip => extract_7z(archive, dest),
+    }
+    .with_context(|| format!("extracting {}", archive.display()))
+}
+
+fn extract_zip(archive: &Path, dest: &Path) -> Result<()> {
+    let mut zip = zip::ZipArchive::new(File::open(archive)?)?;
+    for i in 0..zip.len() {
+        let mut entry = zip.by_index(i)?;
+        let Some(path) = safe_join(dest, entry.name()) else {
+            bail!("unsafe path in archive: {}", entry.name());
+        };
+        if entry.is_dir() {
+            fs::create_dir_all(&path)?;
+        } else if entry.is_symlink() {
+            continue;
+        } else {
+            if let Some(dir) = path.parent() {
+                fs::create_dir_all(dir)?;
+            }
+            io::copy(&mut entry, &mut File::create(&path)?)?;
+        }
+    }
+    Ok(())
+}
+
+fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
+    let gz = flate2::read::GzDecoder::new(io::BufReader::new(File::open(archive)?));
+    let mut tar = tar::Archive::new(gz);
+    tar.set_preserve_mtime(false);
+    tar.set_preserve_permissions(false);
+    for entry in tar.entries()? {
+        let mut entry = entry?;
+        let name = entry.path()?.to_string_lossy().into_owned();
+        let Some(path) = safe_join(dest, &name) else {
+            if name.trim_matches(['.', '/']).is_empty() {
+                continue; // "./"
+            }
+            bail!("unsafe path in archive: {name}");
+        };
+        match entry.header().entry_type() {
+            tar::EntryType::Directory => fs::create_dir_all(&path)?,
+            tar::EntryType::Regular | tar::EntryType::Continuous => {
+                if let Some(dir) = path.parent() {
+                    fs::create_dir_all(dir)?;
+                }
+                io::copy(&mut entry, &mut File::create(&path)?)?;
+            }
+            // Links, devices, pax headers: never followed or created.
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+/// 7z signature: `7z\xBC\xAF\x27\x1C`.
+const SEVEN_Z: [u8; 6] = [b'7', b'z', 0xBC, 0xAF, 0x27, 0x1C];
+
+/// A file seen from `offset` on, so a self-extractor's stub is skipped.
+struct Offset {
+    file: File,
+    offset: u64,
+}
+
+impl Read for Offset {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.file.read(buf)
+    }
+}
+
+impl Seek for Offset {
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        let abs = match pos {
+            SeekFrom::Start(n) => self.file.seek(SeekFrom::Start(self.offset + n))?,
+            other => self.file.seek(other)?,
+        };
+        abs.checked_sub(self.offset)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "seek before archive start"))
+    }
+}
+
+/// Offsets where a 7z signature starts (the stub of a self-extractor may
+/// contain the bytes too: each candidate is tried in turn).
+fn seven_z_offsets(path: &Path) -> Result<Vec<u64>> {
+    let mut file = File::open(path)?;
+    let mut found = Vec::new();
+    let mut buf = vec![0u8; 1024 * 1024];
+    let mut base = 0u64;
+    let mut carry: Vec<u8> = Vec::new();
+    loop {
+        let n = file.read(&mut buf)?;
+        if n == 0 {
+            break;
+        }
+        let mut window = std::mem::take(&mut carry);
+        let start = base - window.len() as u64;
+        window.extend_from_slice(&buf[..n]);
+        for (i, w) in window.windows(SEVEN_Z.len()).enumerate() {
+            if w == SEVEN_Z {
+                found.push(start + i as u64);
+            }
+        }
+        carry = window[window.len().saturating_sub(SEVEN_Z.len() - 1)..].to_vec();
+        base += n as u64;
+    }
+    found.dedup();
+    Ok(found)
+}
+
+fn extract_7z(archive: &Path, dest: &Path) -> Result<()> {
+    let mut last = None;
+    for offset in seven_z_offsets(archive)? {
+        let source = Offset {
+            file: File::open(archive)?,
+            offset,
+        };
+        let mut reader =
+            match sevenz_rust2::ArchiveReader::new(source, sevenz_rust2::Password::empty()) {
+                Ok(r) => r,
+                Err(e) => {
+                    last = Some(e.to_string());
+                    continue;
+                }
+            };
+        let mut failure: Option<anyhow::Error> = None;
+        let result = reader.for_each_entries(|entry, data| {
+            let Some(path) = safe_join(dest, entry.name()) else {
+                failure = Some(anyhow::anyhow!("unsafe path in archive: {}", entry.name()));
+                return Ok(false);
+            };
+            if entry.is_directory() {
+                fs::create_dir_all(&path)?;
+            } else {
+                if let Some(dir) = path.parent() {
+                    fs::create_dir_all(dir)?;
+                }
+                io::copy(data, &mut File::create(&path)?)?;
+            }
+            Ok(true)
+        });
+        if let Some(e) = failure {
+            return Err(e);
+        }
+        return result.map_err(|e| anyhow::anyhow!("7z: {e}"));
+    }
+    bail!("no 7z archive found ({})", last.unwrap_or_default())
+}
+
+/// The folder that `inner` designates inside an extracted tree.
+pub fn pick_inner(extracted: &Path, inner: &Inner) -> Result<PathBuf> {
+    let dirs = || -> Result<(Vec<PathBuf>, usize)> {
+        let mut dirs = Vec::new();
+        let mut total = 0;
+        for entry in fs::read_dir(extracted)? {
+            let entry = entry?;
+            total += 1;
+            if entry.file_type()?.is_dir() {
+                dirs.push(entry.path());
+            }
+        }
+        Ok((dirs, total))
+    };
+    match inner {
+        Inner::Root => Ok(extracted.to_path_buf()),
+        Inner::Named(name) => {
+            let path = extracted.join(name);
+            if !path.is_dir() {
+                bail!("the archive has no folder {name}");
+            }
+            Ok(path)
+        }
+        Inner::Single => match dirs()? {
+            (dirs, 1) if dirs.len() == 1 => Ok(dirs.into_iter().next().unwrap_or_default()),
+            (_, n) => bail!("expected one folder at the top of the archive, found {n} items"),
+        },
+        Inner::Auto => match dirs()? {
+            (dirs, 1) if dirs.len() == 1 => Ok(dirs.into_iter().next().unwrap_or_default()),
+            _ => Ok(extracted.to_path_buf()),
+        },
+    }
+}
+
+fn stamp() -> String {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis().to_string())
+        .unwrap_or_default()
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("{0} is in use: close the programs of the kit and try again")]
+pub struct InUse(pub PathBuf);
+
+/// Puts `new` (a complete folder on the same disk) in place of `dest`. The
+/// old folder is renamed first: if Windows refuses (a file in use), nothing
+/// changes and `InUse` is returned.
+pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let old = sibling(dest, "old");
+    let had_old = dest.exists();
+    if had_old {
+        fs::rename(dest, &old).map_err(|_| InUse(dest.to_path_buf()))?;
+    }
+    if let Err(e) = fs::rename(new, dest) {
+        if had_old {
+            let _ = fs::rename(&old, dest);
+        }
+        return Err(e).with_context(|| format!("moving into {}", dest.display()));
+    }
+    if had_old {
+        let _ = fs::remove_dir_all(&old);
+    }
+    Ok(())
+}
+
+/// Removes a component folder: renamed first, so a folder in use is left
+/// untouched (`InUse`).
+pub fn remove_dir(dest: &Path) -> Result<()> {
+    if !dest.exists() {
+        return Ok(());
+    }
+    let old = sibling(dest, "old");
+    fs::rename(dest, &old).map_err(|_| InUse(dest.to_path_buf()))?;
+    let _ = fs::remove_dir_all(&old);
+    Ok(())
+}
+
+fn sibling(dest: &Path, tag: &str) -> PathBuf {
+    let name = dest
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    dest.with_file_name(format!("{name}.{tag}-{}", stamp()))
+}
+
+/// Deletes leftovers of interrupted swaps (`*.old-*`, `*.new-*`) in `dir`.
+pub fn clean_leftovers(dir: &Path) {
+    for entry in fs::read_dir(dir).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name.contains(".old-") || name.contains(".new-") {
+            let _ = fs::remove_dir_all(entry.path());
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::kit::tests::TempDir;
+    use std::io::Write;
+
+    #[test]
+    fn unsafe_names_are_refused() {
+        let base = Path::new(r"D:\x");
+        assert_eq!(
+            safe_join(base, "a/b.txt"),
+            Some(PathBuf::from(r"D:\x\a\b.txt"))
+        );
+        assert_eq!(safe_join(base, "./a"), Some(PathBuf::from(r"D:\x\a")));
+        for bad in [
+            "../evil",
+            "a/../../evil",
+            "/abs",
+            r"C:\abs",
+            "C:rel",
+            r"\\server\share\x",
+            "",
+        ] {
+            assert_eq!(safe_join(base, bad), None, "{bad}");
+        }
+    }
+
+    fn make_zip(path: &Path, files: &[(&str, &str)]) {
+        let mut zip = zip::ZipWriter::new(File::create(path).unwrap());
+        for (name, content) in files {
+            zip.start_file(*name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(content.as_bytes()).unwrap();
+        }
+        zip.finish().unwrap();
+    }
+
+    #[test]
+    fn zip_extract_and_inner() {
+        let tmp = TempDir::new("zip");
+        let archive = tmp.0.join("a.zip");
+        make_zip(
+            &archive,
+            &[("top-1.0/bin/tool.exe", "x"), ("top-1.0/readme.txt", "r")],
+        );
+        let out = tmp.0.join("out");
+        extract(&archive, Kind::Zip, &out).unwrap();
+        let inner = pick_inner(&out, &Inner::Single).unwrap();
+        assert!(inner.join("bin").join("tool.exe").is_file());
+        assert_eq!(pick_inner(&out, &Inner::Auto).unwrap(), inner);
+        assert_eq!(pick_inner(&out, &Inner::Root).unwrap(), out);
+
+        let flat = tmp.0.join("flat.zip");
+        make_zip(&flat, &[("pwsh.exe", "x"), ("Modules/a.psd1", "m")]);
+        let out2 = tmp.0.join("out2");
+        extract(&flat, Kind::Zip, &out2).unwrap();
+        assert!(pick_inner(&out2, &Inner::Single).is_err());
+        assert_eq!(pick_inner(&out2, &Inner::Auto).unwrap(), out2);
+    }
+
+    #[test]
+    fn zip_slip_is_refused() {
+        let tmp = TempDir::new("zipslip");
+        let archive = tmp.0.join("evil.zip");
+        make_zip(&archive, &[("../evil.txt", "x")]);
+        assert!(extract(&archive, Kind::Zip, &tmp.0.join("out")).is_err());
+        assert!(!tmp.0.join("evil.txt").exists());
+    }
+
+    #[test]
+    fn tar_gz_extract() {
+        let tmp = TempDir::new("targz");
+        let archive = tmp.0.join("a.tar.gz");
+        {
+            let gz = flate2::write::GzEncoder::new(
+                File::create(&archive).unwrap(),
+                flate2::Compression::fast(),
+            );
+            let mut tar = tar::Builder::new(gz);
+            let mut header = tar::Header::new_gnu();
+            header.set_size(5);
+            header.set_mode(0o644);
+            header.set_cksum();
+            tar.append_data(&mut header, "server/bin/run.cmd", &b"hello"[..])
+                .unwrap();
+            tar.into_inner().unwrap().finish().unwrap();
+        }
+        let out = tmp.0.join("out");
+        extract(&archive, Kind::TarGz, &out).unwrap();
+        assert_eq!(
+            fs::read_to_string(out.join(r"server\bin\run.cmd")).unwrap(),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn seven_z_signature_search_spans_buffers() {
+        let tmp = TempDir::new("7zsig");
+        let file = tmp.0.join("stub.exe");
+        let mut bytes = vec![0u8; 1024 * 1024 - 3];
+        bytes.extend_from_slice(&SEVEN_Z);
+        bytes.extend_from_slice(b"rest");
+        fs::write(&file, &bytes).unwrap();
+        assert_eq!(seven_z_offsets(&file).unwrap(), vec![1024 * 1024 - 3]);
+    }
+
+    #[test]
+    fn replace_and_remove() {
+        let tmp = TempDir::new("replace");
+        let dest = tmp.0.join("apps").join("tool");
+        let new1 = tmp.0.join("new1");
+        fs::create_dir_all(&new1).unwrap();
+        fs::write(new1.join("v.txt"), "1").unwrap();
+        replace_dir(&new1, &dest).unwrap();
+        assert_eq!(fs::read_to_string(dest.join("v.txt")).unwrap(), "1");
+
+        let new2 = tmp.0.join("new2");
+        fs::create_dir_all(&new2).unwrap();
+        fs::write(new2.join("v.txt"), "2").unwrap();
+        replace_dir(&new2, &dest).unwrap();
+        assert_eq!(fs::read_to_string(dest.join("v.txt")).unwrap(), "2");
+        let names: Vec<_> = fs::read_dir(dest.parent().unwrap())
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name())
+            .collect();
+        assert_eq!(
+            names,
+            vec![std::ffi::OsString::from("tool")],
+            "old folder removed"
+        );
+
+        // A file held open blocks the swap and leaves everything as it was.
+        let held = File::open(dest.join("v.txt")).unwrap();
+        let new3 = tmp.0.join("new3");
+        fs::create_dir_all(&new3).unwrap();
+        let err = replace_dir(&new3, &dest).unwrap_err();
+        assert!(err.is::<InUse>(), "{err:#}");
+        assert!(new3.exists());
+        assert!(remove_dir(&dest).unwrap_err().is::<InUse>());
+        drop(held);
+        remove_dir(&dest).unwrap();
+        assert!(!dest.exists());
+    }
+}

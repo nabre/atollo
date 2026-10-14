@@ -1,0 +1,92 @@
+{
+  "Atollo non può partire": {
+    "en": "Atollo cannot start",
+    "fr": "Atollo ne peut pas démarrer",
+    "de": "Atollo kann nicht starten"
+  },
+  "Impossibile scrivere nella cartella {0}.": {
+    "en": "Cannot write in the folder {0}.",
+    "fr": "Impossible d'écrire dans le dossier {0}.",
+    "de": "Im Ordner {0} kann nicht geschrieben werden."
+  },
+  "Sposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.": {
+    "en": "Move Atollo.exe to a folder you can write to (for example a USB stick or a folder in your profile) and start it again.",
+    "fr": "Déplacez Atollo.exe dans un dossier où vous pouvez écrire (par exemple une clé USB ou un dossier de votre profil) et relancez-le.",
+    "de": "Verschieben Sie Atollo.exe in einen Ordner, in den Sie schreiben können (zum Beispiel einen USB-Stick oder einen Ordner in Ihrem Profil), und starten Sie es erneut."
+  },
+  "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di Atollo.": {
+    "en": "Microsoft Edge WebView2 is missing: Atollo needs it to show its windows.",
+    "fr": "Microsoft Edge WebView2 est absent : Atollo en a besoin pour afficher ses fenêtres.",
+    "de": "Microsoft Edge WebView2 fehlt: Atollo braucht es, um seine Fenster anzuzeigen."
+  },
+  "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia Atollo. Non serve installare nulla.": {
+    "en": "Download the \"Fixed Version\" for {0} from {1} and extract it to {2}, then start Atollo again. Nothing needs to be installed.",
+    "fr": "Téléchargez la « Fixed Version » pour {0} depuis {1} et extrayez-la dans {2}, puis relancez Atollo. Rien n'est à installer.",
+    "de": "Laden Sie die „Fixed Version“ für {0} von {1} herunter und entpacken Sie sie nach {2}, dann starten Sie Atollo erneut. Es muss nichts installiert werden."
+  },
+  "Errore imprevisto: {0}": {
+    "en": "Unexpected error: {0}",
+    "fr": "Erreur inattendue : {0}",
+    "de": "Unerwarteter Fehler: {0}"
+  },
+  "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.": {
+    "en": "The settings in {0} cannot be read: using the defaults and leaving the file as it is.",
+    "fr": "Les paramètres de {0} sont illisibles : les valeurs par défaut sont utilisées et le fichier n'est pas modifié.",
+    "de": "Die Einstellungen in {0} sind nicht lesbar: Es werden die Standardwerte verwendet, die Datei bleibt unverändert."
+  },
+  "Comando sconosciuto: {0}": {
+    "en": "Unknown command: {0}",
+    "fr": "Commande inconnue : {0}",
+    "de": "Unbekannter Befehl: {0}"
+  },
+  "Uso: Atollo.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.": {
+    "en": "Usage: Atollo.exe [command]\n\nCommands:\n  env                     show the kit environment\n  components              list languages and tools, with the installed ones\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update the installed ones\n      --force             download again\n  version                 show the version\n  help                    show this help\n\nWithout a command it opens the Atollo window.",
+    "fr": "Usage : Atollo.exe [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n  components              liste les langages et outils, avec ceux installés\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, ouvre la fenêtre de Atollo.",
+    "de": "Aufruf: Atollo.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        auch bereits installierte aktualisieren\n      --force             erneut herunterladen\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Atollo-Fenster."
+  },
+  "installato": {
+    "en": "installed",
+    "fr": "installé",
+    "de": "installiert"
+  },
+  "{0}: installato {1}": {
+    "en": "{0}: installed {1}",
+    "fr": "{0} : installé {1}",
+    "de": "{0}: {1} installiert"
+  },
+  "{0}: già aggiornato ({1})": {
+    "en": "{0}: already up to date ({1})",
+    "fr": "{0} : déjà à jour ({1})",
+    "de": "{0}: bereits aktuell ({1})"
+  },
+  "{0}: rimosso": {
+    "en": "{0}: removed",
+    "fr": "{0} : supprimé",
+    "de": "{0}: entfernt"
+  },
+  "{0}: in uso, chiudi i programmi del kit e riprova": {
+    "en": "{0}: in use, close the kit programs and try again",
+    "fr": "{0} : en cours d'utilisation, fermez les programmes du kit et réessayez",
+    "de": "{0}: in Verwendung, schließen Sie die Programme des Kits und versuchen Sie es erneut"
+  },
+  "{0}: non ancora disponibile in questa versione di Atollo": {
+    "en": "{0}: not yet available in this version of Atollo",
+    "fr": "{0} : pas encore disponible dans cette version de Atollo",
+    "de": "{0}: in dieser Version von Atollo noch nicht verfügbar"
+  },
+  "{0}: annullato": {
+    "en": "{0}: cancelled",
+    "fr": "{0} : annulé",
+    "de": "{0}: abgebrochen"
+  },
+  "{0}: non riuscito: {1}": {
+    "en": "{0}: failed: {1}",
+    "fr": "{0} : échec : {1}",
+    "de": "{0}: fehlgeschlagen: {1}"
+  },
+  "Un'altra preparazione è già in corso in questo kit.": {
+    "en": "Another preparation is already running in this kit.",
+    "fr": "Une autre préparation est déjà en cours dans ce kit.",
+    "de": "In diesem Kit läuft bereits eine andere Vorbereitung."
+  }
+}
