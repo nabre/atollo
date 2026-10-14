@@ -36,24 +36,70 @@ const HIDDEN: &[&str] = &[
 
 pub const DEFAULT_PROFILE: &str = "Atollo";
 
-/// The brand emphasis over "Default Dark Modern" / "Default Light Modern",
-/// the same as the app's (generated with theme-colors.css by
-/// docs/brand/themes.py): every blue of the two themes, in emerald.
-const EDITOR_BRAND: &str = include_str!("editor_brand.json");
+/// The kit's themes (editor_theme.rs) in place of VSCodium's own: a theme
+/// setting missing or on one of these becomes Atollo's; any other theme is
+/// the user's choice and stays. VSCodium 1.140 calls its themes "Dark
+/// Modern" and "Light Modern" (older ids: "Default ...").
+const THEMES: &[(&str, &[&str], &str)] = &[
+    (
+        "workbench.colorTheme",
+        &[
+            "Dark Modern",
+            "Default Dark Modern",
+            "Dark+",
+            "Default Dark+",
+        ],
+        crate::editor_theme::DARK,
+    ),
+    (
+        "workbench.preferredDarkColorTheme",
+        &[
+            "Dark Modern",
+            "Default Dark Modern",
+            "Dark+",
+            "Default Dark+",
+        ],
+        crate::editor_theme::DARK,
+    ),
+    (
+        "workbench.preferredLightColorTheme",
+        &[
+            "Light Modern",
+            "Default Light Modern",
+            "Light+",
+            "Default Light+",
+        ],
+        crate::editor_theme::LIGHT,
+    ),
+];
 
-/// `workbench.colorCustomizations` with the brand emphasis: the kit owns the
-/// two theme blocks and rewrites them; the user's other keys and blocks stay.
-fn brand_colors(existing: Option<&Value>) -> Value {
-    let mut out = match existing {
-        Some(Value::Object(m)) => m.clone(),
-        _ => Map::new(),
-    };
-    // A broken file fails the tests; at run time it means no emphasis.
-    let brand: Map<String, Value> = serde_json::from_str(EDITOR_BRAND).unwrap_or_default();
-    for (scope, colors) in brand {
-        out.insert(scope, colors);
+/// Color blocks the kit once wrote over VSCodium's themes, before the
+/// Atollo themes (`workbench.colorCustomizations`): removed, the user's
+/// other colors stay.
+const OLD_BLOCKS: &[&str] = &["[Default Dark Modern]", "[Default Light Modern]"];
+
+fn set_themes(existing: &Map<String, Value>, out: &mut Map<String, Value>) {
+    for (setting, codium, atollo) in THEMES {
+        let own = match existing.get(*setting) {
+            Some(Value::String(t)) => codium.contains(&t.as_str()),
+            _ => true,
+        };
+        if own {
+            out.insert((*setting).into(), json!(atollo));
+        }
     }
-    Value::Object(out)
+    let key = "workbench.colorCustomizations";
+    if let Some(Value::Object(colors)) = existing.get(key) {
+        let mut colors = colors.clone();
+        for block in OLD_BLOCKS {
+            colors.remove(*block);
+        }
+        if colors.is_empty() {
+            out.remove(key);
+        } else {
+            out.insert(key.into(), Value::Object(colors));
+        }
+    }
 }
 
 pub fn settings_path(kit: &Kit) -> PathBuf {
@@ -180,8 +226,7 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
     vars.insert("NODE_OPTIONS".into(), json!(crate::env::node_options(kit)));
     out.insert(env_key.into(), Value::Object(vars));
 
-    let colors_key = "workbench.colorCustomizations";
-    out.insert(colors_key.into(), brand_colors(existing.get(colors_key)));
+    set_themes(existing, &mut out);
 
     let projects = kit.projects().display().to_string();
     for (key, value) in [
@@ -191,14 +236,8 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
         ("workbench.startupEditor", json!("none")),
         ("telemetry.telemetryLevel", json!("off")),
         ("window.autoDetectColorScheme", json!(true)),
-        (
-            "workbench.preferredDarkColorTheme",
-            json!("Default Dark Modern"),
-        ),
-        (
-            "workbench.preferredLightColorTheme",
-            json!("Default Light Modern"),
-        ),
+        // VSCodium 1.140's floating parts, as the app's pages (off by default).
+        ("workbench.experimental.modernUI", json!(true)),
         ("update.mode", json!("none")),
         ("extensions.autoUpdate", json!(false)),
     ] {
@@ -357,22 +396,29 @@ mod tests {
     }
 
     #[test]
-    fn brand_emphasis_rewritten_user_colors_kept() {
+    fn codium_themes_become_atollo_user_choice_kept() {
         let (_t, kit) = kit_with("cfg-colors", &[]);
         let path = settings_path(&kit);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(
             &path,
-            r##"{"workbench.colorCustomizations":{"editor.background":"#000000","[Default Dark Modern]":{"focusBorder":"#FF0000"}}}"##,
+            r##"{"workbench.colorCustomizations":{"editor.background":"#000000","[Default Dark Modern]":{"focusBorder":"#10B981"},"[Default Light Modern]":{}},"workbench.preferredDarkColorTheme":"Dark Modern","workbench.preferredLightColorTheme":"Solarized Light"}"##,
         )
         .unwrap();
         write(&kit, Path::new(r"C:\Windows")).unwrap();
-        let colors = &read(&kit)["workbench.colorCustomizations"];
-        assert_eq!(colors["editor.background"], "#000000", "the user's own");
-        assert_eq!(colors["[Default Dark Modern]"]["focusBorder"], "#10B981");
-        assert_eq!(
-            colors["[Default Light Modern]"]["button.background"],
-            "#047857"
-        );
+        let s = read(&kit);
+        let colors = s["workbench.colorCustomizations"].as_object().unwrap();
+        assert_eq!(colors.len(), 1, "the user's own kept: {colors:?}");
+        assert_eq!(colors["editor.background"], "#000000");
+        assert_eq!(s["workbench.colorTheme"], "Atollo Dark");
+        assert_eq!(s["workbench.experimental.modernUI"], true);
+        assert_eq!(s["workbench.preferredDarkColorTheme"], "Atollo Dark");
+        assert_eq!(s["workbench.preferredLightColorTheme"], "Solarized Light");
+
+        fs::write(&path, r#"{"workbench.preferredLightColorTheme":"Default Light Modern","workbench.colorCustomizations":{"[Default Dark Modern]":{}}}"#).unwrap();
+        write(&kit, Path::new(r"C:\Windows")).unwrap();
+        let s = read(&kit);
+        assert_eq!(s["workbench.preferredLightColorTheme"], "Atollo Light");
+        assert!(s.get("workbench.colorCustomizations").is_none());
     }
 }

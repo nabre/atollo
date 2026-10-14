@@ -1,19 +1,18 @@
-// Projects page: what each project in projects\ is, how it starts (detected
-// by src-tauri/src/detect, corrected by panel.json) and its running actions
-// with their output. Web actions get their own port and open in the browser.
-import { useCallback, useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
+// Projects page, as VSCodium's Explorer: the side bar lists the projects in
+// projects\ (detected by src-tauri/src/detect, corrected by panel.json) with
+// their inline actions, and the ways to make a new one; the editor opens
+// each project in its own tab (projectpage.tsx). Web actions get their own
+// port and open in the browser.
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
 import {
-  VscAdd,
-  VscChevronDown,
-  VscChevronRight,
-  VscChevronUp,
   VscCloudDownload,
   VscCode,
   VscFolderOpened,
   VscGlobe,
+  VscNewFolder,
   VscRefresh,
+  VscRepoClone,
   VscTerminal,
-  VscTrash,
   VscWarning,
   VscWindow,
 } from "react-icons/vsc";
@@ -43,13 +42,30 @@ import {
   type RunState,
   type SiteKind,
 } from "./api";
-import { AgentPicker } from "./agents";
+import { AgentButton } from "./agents";
 import { ProjectPage } from "./projectpage";
 import { GithubRepositories } from "./github";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { t } from "./i18n";
 import { LanguageIcon } from "./logos";
 import { Mark } from "./tags";
+import { BrandSymbol } from "./brand";
+import {
+  Button,
+  Dot,
+  EditorTabs,
+  IconButton,
+  Link,
+  List,
+  ListRow,
+  PaneStack,
+  SearchBox,
+  SideBarTitle,
+  ViewContainer,
+  ViewPane,
+  Watermark,
+  type useTabs,
+} from "./workbench";
 
 const MAX_LINES = 3000;
 
@@ -124,153 +140,6 @@ export function kindText(k: ProjectAction["type"]): string {
   return { web: t("sito web"), desktop: t("app con finestra"), command: t("comando") }[k];
 }
 
-export function ProjectsPage({
-  status,
-  agents,
-  onChanged,
-  runs,
-  logs,
-  loadLog,
-  forget,
-}: {
-  status: EditorStatus | null;
-  agents: AgentInfo[] | null;
-  onChanged: () => void;
-  /** The actions started in this session (useRuns, kept by the app). */
-  runs: Record<string, RunInfo>;
-  logs: Record<string, string[]>;
-  loadLog: (key: string) => void;
-  forget: (key: string) => void;
-}) {
-  const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
-  /** The open panes of the side bar. */
-  const [creating, setCreating] = useState<Set<NewWay>>(() => new Set(["empty"]));
-  const [ports, setPorts] = useState<Ports>({ ports: {}, locked: [] });
-  const { busy, error, run } = useAction(onChanged);
-
-  const load = useCallback(() => {
-    projectsList().then(
-      (list) => {
-        setLoadError(null);
-        setProjects(list);
-      },
-      (e: unknown) => {
-        setLoadError(String(e));
-      },
-    );
-    runPorts().then(setPorts, () => undefined);
-  }, []);
-  useEffect(load, [load]);
-
-  const created = (name: string) => {
-    setOpen(name);
-    load();
-  };
-  const start = (p: ProjectInfo, a: ProjectAction) => {
-    const key = `${p.id}|${a.id}`;
-    run(`run:${key}`, async () => {
-      await runStart(p.id, a.id);
-      loadLog(key);
-      runPorts().then(setPorts, () => undefined);
-    });
-  };
-  const page = open ? (projects ?? []).find((x) => x.id === open) : undefined;
-  if (page) {
-    return (
-      <ProjectPage
-        p={page}
-        agents={agents}
-        editor={status}
-        runs={runs}
-        logs={logs}
-        ports={ports}
-        busy={busy}
-        onStart={(a) => {
-          start(page, a);
-        }}
-        onStop={(key) => {
-          run(`stop:${key}`, () => runStop(key));
-        }}
-        onPorts={setPorts}
-        onShowLog={loadLog}
-        onForget={forget}
-        onBack={() => {
-          setOpen(null);
-        }}
-        onChanged={load}
-      />
-    );
-  }
-
-  return (
-    // The whole content area, as the editor's side bar: never taller than the window.
-    <div className="absolute inset-0 flex">
-      <aside className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r border-vsc-border bg-vsc-sidebar">
-        <div className="flex h-8 shrink-0 items-center gap-0.5 pr-2 pl-3">
-          <h2 className="min-w-0 flex-1 truncate text-[12px] font-semibold text-vsc-sidebar-title">
-            {t("Nuovo progetto")}
-          </h2>
-          <ToolbarIcon icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
-          <ToolbarIcon
-            icon={VscFolderOpened}
-            label={t("Apri la cartella")}
-            onClick={() => {
-              run("folder", () => folderOpen("projects"));
-            }}
-          />
-        </div>
-        {newWays().map((w) => (
-          <SidePane
-            key={w.id}
-            title={w.label}
-            fill={w.id === "github"}
-            expanded={creating.has(w.id)}
-            onToggle={() => {
-              const next = new Set(creating);
-              if (!next.delete(w.id)) next.add(w.id);
-              setCreating(next);
-            }}
-          >
-            {w.id === "empty" && <NewProject onDone={created} />}
-            {w.id === "url" && <CloneProject onDone={created} />}
-            {w.id === "github" && <GithubRepositories editor={status} onChanged={onChanged} />}
-          </SidePane>
-        ))}
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <ErrorLine error={loadError ?? error} />
-        {projects === null ? (
-          <p className="p-3 text-vsc-desc">{t("Caricamento…")}</p>
-        ) : projects.length === 0 ? (
-          <p className="p-3 text-vsc-desc">{t("Nessun progetto. Creane uno nuovo o clonane uno.")}</p>
-        ) : (
-          <ProjectsTable
-            projects={projects}
-            runs={runs}
-            agents={agents}
-            editor={status}
-            busy={busy}
-            onOpen={setOpen}
-            onEditor={(p) => {
-              run(`editor:${p.id}`, () => editorOpen(p.id));
-            }}
-            onTerminal={(p) => {
-              run(`terminal:${p.id}`, () => terminalOpen(p.id));
-            }}
-          />
-        )}
-        <p className="shrink-0 border-t border-vsc-border px-3 py-1 text-[12px] text-vsc-desc">
-          {t(
-            "Le cartelle in projects sono attendibili per Claude e Codex e i loro comandi partono dai pulsanti qui sotto: apri qui solo codice di cui ti fidi.",
-          )}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export const KIND_ICON: Record<ProjectInfo["type"], IconType> = {
   web: VscGlobe,
   desktop: VscWindow,
@@ -282,7 +151,7 @@ export const KIND_ICON: Record<ProjectInfo["type"], IconType> = {
 export function ProjectKind({ p }: { p: ProjectInfo }) {
   const Icon = KIND_ICON[p.type];
   return (
-    <span className="flex min-w-0 items-center gap-1.5 text-vsc-desc" title={`${kindText(p.type)} · ${p.reason}`}>
+    <span className="flex min-w-0 items-center gap-1.5" title={`${kindText(p.type)} · ${p.reason}`}>
       <Mark label={kindText(p.type)}>
         <Icon size={14} aria-hidden="true" />
       </Mark>
@@ -304,259 +173,323 @@ export function LanguageIcons({ names }: { names: string[] }) {
   );
 }
 
-/** All the projects as a table, as the editor's lists: a filter, headers
- * that stay put and sort, one 26px row per project. */
-function ProjectsTable({
-  projects,
-  runs,
+/** The project's state as the decoration of its row: running, or missing
+ * components. */
+export function ProjectState({ p, runs }: { p: ProjectInfo; runs: Record<string, RunInfo> }) {
+  const live = Object.values(runs).filter((r) => r.project === p.id && alive(r.state));
+  if (live.length > 0) {
+    const text = live.some((r) => r.type === "web") ? t("in ascolto") : t("in esecuzione");
+    return <Dot tone="ok" label={`${text}: ${live.map((r) => r.label).join(", ")}`} />;
+  }
+  if (p.missing.length > 0) {
+    return (
+      <Mark label={t("Mancano componenti: {0}", p.missing.join(", "))} className="text-vsc-warning">
+        <VscWarning size={14} aria-hidden="true" />
+      </Mark>
+    );
+  }
+  return null;
+}
+
+type PaneId = "projects" | "new" | "github";
+
+export function ProjectsPage({
+  status,
   agents,
-  editor,
-  busy,
-  onOpen,
-  onEditor,
-  onTerminal,
+  onChanged,
+  runs,
+  logs,
+  loadLog,
+  forget,
+  tabs,
 }: {
-  projects: ProjectInfo[];
-  runs: Record<string, RunInfo>;
+  status: EditorStatus | null;
   agents: AgentInfo[] | null;
-  editor: EditorStatus | null;
-  busy: string | null;
-  onOpen: (id: string) => void;
-  onEditor: (p: ProjectInfo) => void;
-  onTerminal: (p: ProjectInfo) => void;
+  onChanged: () => void;
+  /** The actions started in this session (useRuns, kept by the app). */
+  runs: Record<string, RunInfo>;
+  logs: Record<string, string[]>;
+  loadLog: (key: string) => void;
+  forget: (key: string) => void;
+  /** The projects open in the editor (kept by the app across pages). */
+  tabs: ReturnType<typeof useTabs>;
 }) {
+  const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["projects"]));
   const [filter, setFilter] = useState("");
-  const [desc, setDesc] = useState(false);
+  const [ports, setPorts] = useState<Ports>({ ports: {}, locked: [] });
+  const newName = useRef<HTMLInputElement>(null);
+  const { busy, error, run } = useAction(onChanged);
+  const { keep } = tabs;
+
+  const load = useCallback(() => {
+    projectsList().then(
+      (list) => {
+        setLoadError(null);
+        setProjects(list);
+        keep(list.map((p) => p.id));
+      },
+      (e: unknown) => {
+        setLoadError(String(e));
+      },
+    );
+    runPorts().then(setPorts, () => undefined);
+  }, [keep]);
+  useEffect(load, [load]);
+
+  const toggle = (id: PaneId, open?: boolean) => {
+    setPanes((current) => {
+      const next = new Set(current);
+      if (open ?? !next.has(id)) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+  const created = (name: string) => {
+    tabs.show(name);
+    load();
+  };
+  const start = (p: ProjectInfo, a: ProjectAction) => {
+    const key = `${p.id}|${a.id}`;
+    run(`run:${key}`, async () => {
+      await runStart(p.id, a.id);
+      loadLog(key);
+      runPorts().then(setPorts, () => undefined);
+    });
+  };
+
   const words = filter.toLowerCase().split(/\s+/).filter(Boolean);
-  const shown = projects
+  const shown = (projects ?? [])
     .filter((p) => {
       const text = `${p.name} ${p.platform} ${p.languages.join(" ")}`.toLowerCase();
       return words.every((w) => text.includes(w));
     })
-    .sort((a, b) => {
-      const d = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
-      return desc ? -d : d;
-    });
-  return (
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+  const byId = (id: string) => (projects ?? []).find((p) => p.id === id);
+  const page = tabs.active ? byId(tabs.active) : undefined;
+
+  const side = (
     <>
-      <div className="flex shrink-0 items-center gap-2 px-3 py-2">
-        <input
-          type="search"
-          aria-label={t("Cerca nei progetti")}
-          placeholder={t("Cerca nei progetti")}
-          value={filter}
-          onChange={(e) => {
-            setFilter(e.target.value);
+      <SideBarTitle
+        title={t("Progetti")}
+        actions={
+          <>
+            <IconButton
+              icon={VscNewFolder}
+              label={t("Nuovo progetto")}
+              onClick={() => {
+                toggle("new", true);
+                window.setTimeout(() => newName.current?.focus(), 0);
+              }}
+            />
+            <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
+            <IconButton
+              icon={VscFolderOpened}
+              label={t("Apri la cartella")}
+              onClick={() => {
+                run("folder", () => folderOpen("projects"));
+              }}
+            />
+          </>
+        }
+      />
+      <PaneStack>
+        <ViewPane
+          first
+          fill
+          title={t("Progetti")}
+          badge={projects && projects.length > 0 ? projects.length : undefined}
+          expanded={panes.has("projects")}
+          onToggle={() => {
+            toggle("projects");
           }}
-          className="input w-64"
-        />
-        <span className="text-[12px] text-vsc-desc">
-          {shown.length === projects.length
-            ? t("{0} progetti", projects.length)
-            : t("{0} di {1} progetti", shown.length, projects.length)}
-        </span>
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto">
-        {shown.length === 0 ? (
-          <p className="px-3 text-vsc-desc">{t("Nessun progetto corrisponde alla ricerca.")}</p>
-        ) : (
-          <table aria-label={t("Progetti")} className="w-full border-collapse text-left">
-            <thead className="sticky top-0 z-10 bg-vsc-bg text-[12px] text-vsc-desc shadow-[inset_0_-1px_0_var(--vsc-border)]">
-              <tr>
-                <th scope="col" className="w-6 p-0" />
-                <th scope="col" aria-sort={desc ? "descending" : "ascending"} className="p-0 font-normal">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDesc(!desc);
-                    }}
-                    className="flex w-full items-center gap-1 px-2 py-1 text-left hover:text-vsc-fg"
-                  >
-                    {t("Nome")}
-                    {desc ? (
-                      <VscChevronUp size={12} aria-hidden="true" />
-                    ) : (
-                      <VscChevronDown size={12} aria-hidden="true" />
-                    )}
-                  </button>
-                </th>
-                <th scope="col" className="w-px px-2 py-1 font-normal whitespace-nowrap">
-                  {t("Tipo")}
-                </th>
-                <th scope="col" className="w-px px-2 py-1 font-normal whitespace-nowrap">
-                  {t("Linguaggi")}
-                </th>
-                <th scope="col" className="w-px px-2 py-1 font-normal whitespace-nowrap">
-                  {t("Stato")}
-                </th>
-                <th scope="col" className="w-px px-2 py-1 font-normal">
-                  <span className="sr-only">{t("Comandi")}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+        >
+          {projects && projects.length > 6 && (
+            <div className="px-3 pt-1 pb-1.5">
+              <SearchBox value={filter} onChange={setFilter} placeholder={t("Cerca nei progetti")} />
+            </div>
+          )}
+          <div className="px-3 empty:hidden">
+            <ErrorLine error={loadError ?? error} />
+          </div>
+          {projects === null ? (
+            <p className="px-5 py-1 text-vsc-desc">{t("Caricamento…")}</p>
+          ) : projects.length === 0 ? (
+            <div className="space-y-3 px-5 py-2">
+              <p>{t("Nessun progetto. Creane uno nuovo o clonane uno.")}</p>
+              <Button
+                variant="primary"
+                wide
+                onClick={() => {
+                  toggle("new", true);
+                  window.setTimeout(() => newName.current?.focus(), 0);
+                }}
+              >
+                {t("Nuovo progetto")}
+              </Button>
+            </div>
+          ) : shown.length === 0 ? (
+            <p className="px-5 py-1 text-vsc-desc">{t("Nessun progetto corrisponde alla ricerca.")}</p>
+          ) : (
+            <List label={t("Progetti")}>
               {shown.map((p) => {
-                const live = Object.values(runs).filter((r) => r.project === p.id && alive(r.state));
+                const Icon = KIND_ICON[p.type];
                 return (
-                  <tr
+                  <ListRow
                     key={p.id}
-                    onClick={(e) => {
-                      // The row opens the project; its buttons do their own thing.
-                      if (!(e.target as HTMLElement).closest("button, input, a")) onOpen(p.id);
+                    icon={<Icon size={16} aria-hidden="true" />}
+                    label={p.name}
+                    title={t("Apre la pagina di {0}", p.name)}
+                    selected={tabs.active === p.id}
+                    onSelect={() => {
+                      tabs.show(p.id);
                     }}
-                    className="group h-[26px] cursor-pointer hover:bg-vsc-list-hover"
-                  >
-                    <td className="p-0 pl-2">
-                      <VscChevronRight size={14} aria-hidden="true" className="text-vsc-desc" />
-                    </td>
-                    <td className="max-w-0 px-2">
-                      <span className="flex min-w-0 items-baseline gap-2">
-                        <button
-                          type="button"
-                          title={t("Apre la pagina di {0}", p.name)}
-                          onClick={() => {
-                            onOpen(p.id);
-                          }}
-                          className="min-w-0 shrink-0 truncate text-left font-semibold"
-                        >
-                          {p.name}
-                        </button>
-                      </span>
-                    </td>
-                    <td className="px-2 whitespace-nowrap">
-                      <ProjectKind p={p} />
-                    </td>
-                    <td className="px-2 whitespace-nowrap">
-                      <LanguageIcons names={p.languages} />
-                    </td>
-                    <td className="px-2 text-[12px] whitespace-nowrap">
-                      {live.length > 0 ? (
-                        <span className="text-vsc-success" title={live.map((r) => r.label).join(", ")}>
-                          ● {live.some((r) => r.type === "web") ? t("in ascolto") : t("in esecuzione")}
-                          {live.length > 1 && ` (${String(live.length)})`}
-                        </span>
-                      ) : p.missing.length > 0 ? (
-                        <span
-                          className="flex items-center gap-1 text-vsc-warning"
-                          title={t("Mancano componenti: {0}", p.missing.join(", "))}
-                        >
-                          <VscWarning size={12} aria-hidden="true" />
-                          {t("Mancano componenti: {0}", p.missing.join(", "))}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="px-2 whitespace-nowrap">
-                      <span className="flex items-center justify-end gap-1 opacity-70 group-focus-within:opacity-100 group-hover:opacity-100">
-                        <ActionButton
+                    actions={
+                      <>
+                        <IconButton
                           icon={VscCode}
                           label={t("Editor")}
-                          compact
                           busy={busy === `editor:${p.id}`}
-                          disabled={editor?.installed === false}
+                          disabled={status?.installed === false}
                           title={t("Apre {0} nell'editor", p.name)}
                           onClick={() => {
-                            onEditor(p);
+                            run(`editor:${p.id}`, () => editorOpen(p.id));
                           }}
                         />
-                        <ActionButton
+                        <IconButton
                           icon={VscTerminal}
                           label={t("Terminale")}
-                          compact
                           busy={busy === `terminal:${p.id}`}
                           title={t("Console del kit in {0}", p.name)}
                           onClick={() => {
-                            onTerminal(p);
+                            run(`terminal:${p.id}`, () => terminalOpen(p.id));
                           }}
                         />
-                        <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} compact />
-                      </span>
-                    </td>
-                  </tr>
+                        <AgentButton agents={agents} project={p.id} preferred={p.settings.agent} />
+                      </>
+                    }
+                    decorations={<ProjectState p={p} runs={runs} />}
+                  />
                 );
               })}
-            </tbody>
-          </table>
-        )}
-      </div>
+            </List>
+          )}
+        </ViewPane>
+        <ViewPane
+          title={t("Nuovo progetto")}
+          expanded={panes.has("new")}
+          onToggle={() => {
+            toggle("new");
+          }}
+        >
+          <div className="space-y-4 px-5 pt-1 pb-4">
+            <NewProject onDone={created} inputRef={newName} />
+            <CloneProject onDone={created} />
+          </div>
+        </ViewPane>
+        <ViewPane
+          fill
+          title={t("Dai tuoi repository GitHub")}
+          expanded={panes.has("github")}
+          onToggle={() => {
+            toggle("github");
+          }}
+        >
+          <div className="px-3 pt-1 pb-3">
+            <GithubRepositories editor={status} onChanged={onChanged} />
+          </div>
+        </ViewPane>
+      </PaneStack>
     </>
   );
-}
 
-type NewWay = "empty" | "github" | "url";
-
-/** The ways to make a new project, each a pane of the side bar. */
-function newWays(): { id: NewWay; label: string }[] {
-  return [
-    { id: "empty", label: t("Vuoto") },
-    { id: "github", label: t("Dai tuoi repository GitHub") },
-    { id: "url", label: t("Da un indirizzo Git") },
-  ];
-}
-
-/** An icon of a side bar's title, as in the editor. */
-export function ToolbarIcon({ icon: Icon, label, onClick }: { icon: IconType; label: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className="flex size-[22px] items-center justify-center rounded p-[3px] text-vsc-icon hover:bg-vsc-toolbar-hover"
-    >
-      <Icon size={16} aria-hidden="true" />
-    </button>
-  );
-}
-
-/** A collapsible pane of the side bar, as OPEN EDITORS or OUTLINE in the
- * editor. It opens with a slide and scrolls inside; a `fill` pane takes the
- * height left by the others. */
-export function SidePane({
-  title,
-  expanded,
-  fill = false,
-  onToggle,
-  children,
-}: {
-  title: string;
-  expanded: boolean;
-  fill?: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <section
-      // Only the `fill` pane gives up height: the small forms stay whole.
-      className={`flex flex-col border-t border-vsc-border transition-[flex-grow] duration-200 ease-out ${
-        fill ? "min-h-[22px] shrink" : "shrink-0"
-      }`}
-      style={{ flexGrow: fill && expanded ? 1 : 0, flexBasis: fill && expanded ? 0 : "auto" }}
-    >
-      <h3 className="shrink-0">
-        <button
-          type="button"
-          aria-expanded={expanded}
-          onClick={onToggle}
-          className="flex h-[22px] w-full items-center gap-0.5 rounded px-0.5 text-left text-[11px] font-semibold text-vsc-section-fg hover:bg-vsc-list-hover"
-        >
-          <VscChevronRight
-            size={16}
-            aria-hidden="true"
-            className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
-          />
-          <span className="truncate">{title}</span>
-        </button>
-      </h3>
-      <div
-        inert={!expanded}
-        className="grid min-h-0 flex-1 transition-[grid-template-rows] duration-200 ease-out"
-        style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
-      >
-        <div className="min-h-0 overflow-y-auto">
-          <div className="px-3 pt-1 pb-3">{children}</div>
-        </div>
-      </div>
-    </section>
+    <ViewContainer id="projects" side={side}>
+      {tabs.open.length > 0 && (
+        <EditorTabs
+          tabs={tabs.open.map((id) => {
+            const p = byId(id);
+            const Icon = p ? KIND_ICON[p.type] : VscGlobe;
+            return { id, label: p?.name ?? id, icon: <Icon size={16} aria-hidden="true" /> };
+          })}
+          active={tabs.active}
+          onSelect={tabs.setActive}
+          onClose={tabs.close}
+        />
+      )}
+      {page ? (
+        <ProjectPage
+          key={page.id}
+          p={page}
+          agents={agents}
+          editor={status}
+          runs={runs}
+          logs={logs}
+          ports={ports}
+          busy={busy}
+          onStart={(a) => {
+            start(page, a);
+          }}
+          onStop={(key) => {
+            run(`stop:${key}`, () => runStop(key));
+          }}
+          onPorts={setPorts}
+          onShowLog={loadLog}
+          onForget={forget}
+          onChanged={load}
+        />
+      ) : (
+        <Watermark>
+          <BrandSymbol size={96} />
+          <div className="w-full max-w-[420px] space-y-4">
+            <section aria-labelledby="start-title" className="space-y-1.5">
+              <h2 id="start-title" className="text-[13px] font-semibold text-vsc-settings-header">
+                {t("Inizia")}
+              </h2>
+              <ul className="m-0 list-none space-y-1 p-0">
+                <li className="flex items-center gap-2">
+                  <VscNewFolder size={16} aria-hidden="true" className="text-vsc-link" />
+                  <Link
+                    onClick={() => {
+                      toggle("new", true);
+                      window.setTimeout(() => newName.current?.focus(), 0);
+                    }}
+                  >
+                    {t("Nuovo progetto…")}
+                  </Link>
+                </li>
+                <li className="flex items-center gap-2">
+                  <VscRepoClone size={16} aria-hidden="true" className="text-vsc-link" />
+                  <Link
+                    onClick={() => {
+                      toggle("github", true);
+                    }}
+                  >
+                    {t("Clona dai tuoi repository GitHub…")}
+                  </Link>
+                </li>
+                <li className="flex items-center gap-2">
+                  <VscFolderOpened size={16} aria-hidden="true" className="text-vsc-link" />
+                  <Link
+                    onClick={() => {
+                      run("folder", () => folderOpen("projects"));
+                    }}
+                  >
+                    {t("Apri la cartella dei progetti")}
+                  </Link>
+                </li>
+              </ul>
+            </section>
+            <p className="text-[12px] text-vsc-desc">
+              {t(
+                "Le cartelle in projects sono attendibili per Claude e Codex e i loro comandi partono dai pulsanti dei progetti: apri qui solo codice di cui ti fidi.",
+              )}
+            </p>
+          </div>
+        </Watermark>
+      )}
+    </ViewContainer>
   );
 }
 
@@ -638,17 +571,17 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
   return (
     <form onSubmit={submit} className="flex flex-wrap items-end gap-2" aria-label={t("Servi come sito web")}>
       <label className="flex flex-col gap-1">
-        <span className="text-[12px] text-vsc-desc">{t("Servi come sito web la cartella")}</span>
+        <span className="text-vsc-desc">{t("Servi come sito web la cartella")}</span>
         <input
           value={folder}
           onChange={(e) => {
             setFolder(e.target.value);
           }}
-          className="w-full input"
+          className="w-64 input font-mono"
         />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-[12px] text-vsc-desc">{t("con")}</span>
+        <span className="text-vsc-desc">{t("con")}</span>
         <select
           value={kind}
           onChange={(e) => {
@@ -664,7 +597,7 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
       <ActionButton icon={VscGlobe} label={t("Salva")} busy={busy === "site"} onClick={() => undefined} submit />
       {site && (
         <ActionButton
-          icon={VscTrash}
+          icon={VscGlobe}
           label={t("Togli il sito")}
           busy={busy === "none"}
           onClick={() => {
@@ -680,11 +613,14 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
           )}
         </p>
       )}
-      <ErrorLine error={error} />
+      <div className="w-full empty:hidden">
+        <ErrorLine error={error} />
+      </div>
     </form>
   );
 }
 
+/** The output of an action, as the editor's Output view. */
 export function LogView({ title, lines }: { title: string; lines: string[] }) {
   const ref = useRef<HTMLPreElement>(null);
   const [follow, setFollow] = useState(true);
@@ -693,10 +629,10 @@ export function LogView({ title, lines }: { title: string; lines: string[] }) {
     if (el && follow) el.scrollTop = el.scrollHeight;
   }, [lines, follow]);
   return (
-    <div className="border-t border-vsc-border">
-      <div className="flex items-center gap-2 px-3 py-1 text-[12px] text-vsc-desc">
+    <div className="overflow-hidden rounded border border-vsc-border">
+      <div className="flex h-[26px] items-center gap-2 border-b border-vsc-border px-3 text-[11px] text-vsc-desc uppercase">
         <span className="flex-1 truncate">{t("Output di {0}", title)}</span>
-        <label className="flex items-center gap-1">
+        <label className="flex items-center gap-1 normal-case">
           <input
             type="checkbox"
             checked={follow}
@@ -711,7 +647,7 @@ export function LogView({ title, lines }: { title: string; lines: string[] }) {
         ref={ref}
         tabIndex={0}
         aria-label={t("Output di {0}", title)}
-        className="m-0 h-64 overflow-auto bg-vsc-bg px-3 py-2 font-mono text-[12px] leading-snug whitespace-pre-wrap select-text"
+        className="m-0 h-64 overflow-auto px-3 py-2 font-mono text-[12px] leading-[18px] whitespace-pre-wrap select-text"
       >
         {lines.join("\n")}
       </pre>
@@ -719,7 +655,13 @@ export function LogView({ title, lines }: { title: string; lines: string[] }) {
   );
 }
 
-function NewProject({ onDone }: { onDone: (name: string) => void }) {
+function NewProject({
+  onDone,
+  inputRef,
+}: {
+  onDone: (name: string) => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+}) {
   const [name, setName] = useState("");
   const { busy, error, run } = useAction();
   const submit = (e: SyntheticEvent) => {
@@ -729,30 +671,24 @@ function NewProject({ onDone }: { onDone: (name: string) => void }) {
     });
   };
   return (
-    <form onSubmit={submit} className="space-y-1">
-      <label htmlFor="new-project-name" className="block text-[12px] text-vsc-desc">
-        {t("Nome della cartella")}
+    <form onSubmit={submit} className="space-y-1.5" aria-label={t("Vuoto")}>
+      <label htmlFor="new-project-name" className="block font-semibold">
+        {t("Vuoto")}
       </label>
-      <div className="flex items-center gap-1">
-        <input
-          id="new-project-name"
-          required
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-          }}
-          className="input min-w-0 flex-1"
-        />
-        <ActionButton
-          icon={VscAdd}
-          label={t("Crea")}
-          primary
-          compact
-          submit
-          busy={busy === "create"}
-          onClick={() => undefined}
-        />
-      </div>
+      <p className="text-[12px] text-vsc-desc">{t("Nome della cartella")}</p>
+      <input
+        id="new-project-name"
+        ref={inputRef}
+        required
+        value={name}
+        onChange={(e) => {
+          setName(e.target.value);
+        }}
+        className="input w-full"
+      />
+      <Button variant="primary" wide submit busy={busy === "create"}>
+        {t("Crea")}
+      </Button>
       <ErrorLine error={error} />
     </form>
   );
@@ -769,7 +705,8 @@ function CloneProject({ onDone }: { onDone: (name: string) => void }) {
     });
   };
   return (
-    <form onSubmit={submit} className="space-y-2">
+    <form onSubmit={submit} className="space-y-1.5" aria-label={t("Da un indirizzo Git")}>
+      <p className="font-semibold">{t("Da un indirizzo Git")}</p>
       <label className="flex flex-col gap-1">
         <span className="text-[12px] text-vsc-desc">{t("owner/repository di GitHub o indirizzo https://")}</span>
         <input
@@ -791,14 +728,10 @@ function CloneProject({ onDone }: { onDone: (name: string) => void }) {
           className="w-full input"
         />
       </label>
-      <ActionButton
-        icon={VscCloudDownload}
-        label={t("Clona")}
-        primary
-        submit
-        busy={busy === "clone"}
-        onClick={() => undefined}
-      />
+      <Button wide submit busy={busy === "clone"}>
+        <VscCloudDownload size={14} aria-hidden="true" />
+        {t("Clona")}
+      </Button>
       <ErrorLine error={error} />
     </form>
   );

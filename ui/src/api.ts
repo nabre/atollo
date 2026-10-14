@@ -376,8 +376,65 @@ export function onEditorStatus(handler: (s: EditorStatus) => void): Promise<() =
   });
 }
 
+function sampleComponent(
+  id: string,
+  name: string,
+  group: Group,
+  desc: string,
+  mb: number,
+  extra: Partial<ComponentInfo> = {},
+): ComponentInfo {
+  return {
+    id,
+    name,
+    group,
+    desc,
+    mb,
+    chosen: false,
+    installed: false,
+    present: false,
+    locked: false,
+    version: null,
+    available: true,
+    x64Only: false,
+    noArm64: false,
+    needs: [],
+    ...extra,
+  };
+}
+
+const ON = { chosen: true, installed: true, present: true };
+
+const SAMPLE_COMPONENTS: ComponentInfo[] = [
+  sampleComponent("vscodium-server", "Editor", "app", "VSCodium nel browser", 180, {
+    ...ON,
+    locked: true,
+    version: "1.140.0",
+  }),
+  sampleComponent("git", "Git", "required", "controllo di versione", 350, { ...ON, locked: true, version: "2.56.0" }),
+  sampleComponent("gh", "GitHub CLI", "required", "GitHub dal terminale", 40, {
+    ...ON,
+    locked: true,
+    version: "2.83.0",
+    needs: ["git"],
+  }),
+  sampleComponent("claude", "Claude Code", "agents", "agente di Anthropic", 220, {
+    ...ON,
+    version: "2.1.299",
+    needs: ["node"],
+  }),
+  sampleComponent("codex", "Codex", "agents", "agente di OpenAI", 120, { needs: ["node"] }),
+  sampleComponent("node", "Node.js", "languages", "JavaScript e TypeScript", 90, { ...ON, version: "24.3.0" }),
+  sampleComponent("python", "Python", "languages", "con uv", 120),
+  sampleComponent("php", "PHP", "languages", "linguaggio per il web", 60, { ...ON, version: "8.4.12" }),
+  sampleComponent("apache", "Apache", "languages", "server web per PHP", 30, { needs: ["php"] }),
+  sampleComponent("mariadb", "MariaDB", "databases", "compatibile con MySQL", 210, { ...ON, version: "11.8.3" }),
+  sampleComponent("mongodb", "MongoDB", "databases", "database a documenti", 650, { x64Only: true }),
+  sampleComponent("terminal", "Windows Terminal", "os", "il terminale del kit", 25, { ...ON, version: "1.23" }),
+];
+
 export function componentsList(): Promise<ComponentInfo[]> {
-  return browserPreview ? Promise.resolve([]) : invoke<ComponentInfo[]>("components_list");
+  return browserPreview ? Promise.resolve(SAMPLE_COMPONENTS) : invoke<ComponentInfo[]>("components_list");
 }
 
 export function setupStart(only: string[] | null, updateAll: boolean): Promise<void> {
@@ -406,8 +463,30 @@ export interface AgentInfo {
   running: boolean;
 }
 
+const SAMPLE_AGENTS: AgentInfo[] = [
+  {
+    id: "claude",
+    name: "Claude Code",
+    installed: true,
+    version: "2.1.299",
+    signedIn: true,
+    signInKind: "account",
+    running: true,
+  },
+  { id: "codex", name: "Codex", installed: true, version: "0.98.0", signedIn: false, signInKind: null, running: false },
+  {
+    id: "antigravity",
+    name: "Antigravity",
+    installed: false,
+    version: null,
+    signedIn: false,
+    signInKind: null,
+    running: false,
+  },
+];
+
 export function agentsStatus(): Promise<AgentInfo[]> {
-  return browserPreview ? Promise.resolve([]) : invoke<AgentInfo[]>("agents_status");
+  return browserPreview ? Promise.resolve(SAMPLE_AGENTS) : invoke<AgentInfo[]>("agents_status");
 }
 
 // Plan limits and usage of the agents (src-tauri/src/stats).

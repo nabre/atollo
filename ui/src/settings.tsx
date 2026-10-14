@@ -1,9 +1,10 @@
-// Settings page (data\app\settings.json, src-tauri/src/settings.rs): language,
-// network (proxy, certificates, local network), Gemini key, versions of
-// Python, PHP and Rust, and the app's updates. Replaces nabre/atollo's
-// proxy.cmd edited by hand.
-import { useCallback, useEffect, useState, type SyntheticEvent, type ReactNode } from "react";
-import { VscCheck, VscCloudDownload, VscDebugRestart, VscSave } from "react-icons/vsc";
+// Settings page (data\app\settings.json, src-tauri/src/settings.rs) as
+// VSCodium's Settings editor: search, table of contents, one item per
+// setting. Language, network (proxy, certificates, local network), Gemini
+// key, versions of Python, PHP and Rust, the app's updates, the GitHub
+// account and where the kit is. Replaces nabre/atollo's proxy.cmd.
+import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
+import { VscSettingsGear } from "react-icons/vsc";
 import {
   editorRestart,
   settingsGet,
@@ -17,10 +18,54 @@ import {
 } from "./api";
 import { GithubAccount } from "./github";
 import { BrandSymbol } from "./brand";
-import { ActionButton, ErrorLine, useAction } from "./pages";
+import { ErrorLine, useAction } from "./pages";
 import { LANGS, t } from "./i18n";
+import {
+  Button,
+  CheckboxLabel,
+  Link,
+  Notice,
+  Properties,
+  SettingItem,
+  SettingsEditor,
+  SettingsGroup,
+  SingleEditor,
+} from "./workbench";
 
 const empty = (s: string) => (s.trim() === "" ? null : s.trim());
+
+/** A text setting: its title is the field's label. */
+function TextSetting({
+  category,
+  title,
+  description,
+  value,
+  placeholder,
+  onChange,
+}: {
+  category: string;
+  title: string;
+  description?: string;
+  value: string | null;
+  placeholder?: string;
+  onChange: (v: string | null) => void;
+}) {
+  const id = `set-${category}-${title}`.replace(/\W+/g, "-");
+  return (
+    <SettingItem category={category} title={title} description={description} modified={value !== null}>
+      <input
+        id={id}
+        aria-label={title}
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(e) => {
+          onChange(empty(e.target.value));
+        }}
+        className="input w-full"
+      />
+    </SettingItem>
+  );
+}
 
 export function SettingsPage({
   onSaved,
@@ -35,6 +80,8 @@ export function SettingsPage({
   const [s, setS] = useState<Settings | null>(null);
   const [gemini, setGemini] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const { busy, error, run } = useAction();
 
@@ -44,6 +91,7 @@ export function SettingsPage({
         setView(v);
         setS(v.settings);
         setGemini(null);
+        setDirty(false);
       },
       (e: unknown) => {
         setLoadError(String(e));
@@ -52,16 +100,32 @@ export function SettingsPage({
   }, []);
   useEffect(load, [load]);
 
-  if (loadError) return <ErrorLine error={loadError} />;
-  if (!s || !view) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
+  const title = t("Impostazioni");
+  const icon = <VscSettingsGear size={16} aria-hidden="true" />;
+  if (loadError) {
+    return (
+      <SingleEditor title={title} icon={icon}>
+        <div className="p-5">
+          <ErrorLine error={loadError} />
+        </div>
+      </SingleEditor>
+    );
+  }
+  if (!s || !view) {
+    return (
+      <SingleEditor title={title} icon={icon}>
+        <p className="p-5 text-vsc-desc">{t("Caricamento…")}</p>
+      </SingleEditor>
+    );
+  }
 
-  const net = (patch: Partial<Settings["network"]>) => {
-    setSaved(false);
-    setS({ ...s, network: { ...s.network, ...patch } });
-  };
   const set = (patch: Partial<Settings>) => {
     setSaved(false);
+    setDirty(true);
     setS({ ...s, ...patch });
+  };
+  const net = (patch: Partial<Settings["network"]>) => {
+    set({ network: { ...s.network, ...patch } });
   };
   const submit = (e: SyntheticEvent) => {
     e.preventDefault();
@@ -73,223 +137,267 @@ export function SettingsPage({
     });
   };
 
-  return (
-    <div className="max-w-3xl space-y-6">
-      <form onSubmit={submit} className="space-y-6">
-        {view.problem && (
-          <ErrorLine
-            error={t(
-              "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.",
-              view.problem,
-            )}
-          />
-        )}
-        <Section id="s-general" title={t("Generale")}>
-          <Field label={t("Lingua")}>
-            <select
-              value={s.lang ?? ""}
-              onChange={(e) => {
-                set({ lang: (empty(e.target.value) as Settings["lang"]) ?? null });
-              }}
-              className="input min-w-64"
-            >
-              <option value="">{t("Lingua di Windows")}</option>
-              {LANGS.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label={t("Terminale")}>
-            <select
-              value={s.terminal ?? ""}
-              onChange={(e) => {
-                set({ terminal: (empty(e.target.value) as Settings["terminal"]) ?? null });
-              }}
-              className="input min-w-64"
-            >
-              <option value="">{t("Windows Terminal del kit (predefinito)")}</option>
-              <option value="classic">{t("Console classica di Windows")}</option>
-            </select>
-          </Field>
-          <Check
-            checked={s.autoUpdate}
-            onChange={(v) => {
-              set({ autoUpdate: v });
-            }}
-            label={t("Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)")}
-          />
-        </Section>
+  const general = t("Generale");
+  const network = t("Rete");
+  const agents = t("Agenti");
+  const versions = t("Versioni");
+  const toc = [
+    { id: "s-general", label: general },
+    { id: "s-network", label: network },
+    { id: "s-agents", label: agents },
+    { id: "s-langs", label: versions },
+    { id: "s-update", label: t("Aggiornamenti") },
+    { id: "s-github", label: t("Account GitHub") },
+    { id: "s-kit", label: t("Il kit") },
+  ];
 
-        <Section id="s-network" title={t("Rete")}>
-          <p className="text-vsc-desc">
-            {t(
+  return (
+    <SingleEditor title={title} icon={icon}>
+      <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+        <SettingsEditor
+          toc={toc}
+          search={search}
+          onSearch={setSearch}
+          placeholder={t("Cerca nelle impostazioni")}
+          actions={
+            <>
+              {saved && (
+                <span role="status" className="text-vsc-success">
+                  {t("Salvato.")}
+                </span>
+              )}
+              <Button variant="primary" submit busy={busy === "save"} disabled={!dirty && gemini === null}>
+                {t("Salva")}
+              </Button>
+            </>
+          }
+        >
+          {(view.problem ?? error ?? (saved && editorRunning)) && (
+            <div className="max-w-[880px] space-y-2 px-[14px] pt-3">
+              {view.problem && (
+                <ErrorLine
+                  error={t(
+                    "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.",
+                    view.problem,
+                  )}
+                />
+              )}
+              <ErrorLine error={error} />
+              {saved && editorRunning && (
+                <Notice tone="info">
+                  {t("Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.")}{" "}
+                  <Link
+                    onClick={() => {
+                      run("restart", editorRestart);
+                    }}
+                  >
+                    {t("Riavvia l'editor")}
+                  </Link>
+                </Notice>
+              )}
+            </div>
+          )}
+
+          <SettingsGroup id="s-general" title={general}>
+            <SettingItem
+              category={general}
+              title={t("Lingua")}
+              description={t("La lingua di Atollo.")}
+              modified={s.lang !== null}
+            >
+              <select
+                aria-label={t("Lingua")}
+                value={s.lang ?? ""}
+                onChange={(e) => {
+                  set({ lang: (empty(e.target.value) as Settings["lang"]) ?? null });
+                }}
+                className="input w-full"
+              >
+                <option value="">{t("Lingua di Windows")}</option>
+                {LANGS.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            </SettingItem>
+            <SettingItem
+              category={general}
+              title={t("Terminale")}
+              description={t("Dove si aprono le console del kit.")}
+              modified={s.terminal !== null}
+            >
+              <select
+                aria-label={t("Terminale")}
+                value={s.terminal ?? ""}
+                onChange={(e) => {
+                  set({ terminal: (empty(e.target.value) as Settings["terminal"]) ?? null });
+                }}
+                className="input w-full"
+              >
+                <option value="">{t("Windows Terminal del kit (predefinito)")}</option>
+                <option value="classic">{t("Console classica di Windows")}</option>
+              </select>
+            </SettingItem>
+            <SettingItem category={general} title={t("Aggiornamento automatico")} modified={!s.autoUpdate} inline>
+              <CheckboxLabel
+                checked={s.autoUpdate}
+                onChange={(v) => {
+                  set({ autoUpdate: v });
+                }}
+              >
+                {t("Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)")}
+              </CheckboxLabel>
+            </SettingItem>
+          </SettingsGroup>
+
+          <SettingsGroup
+            id="s-network"
+            title={network}
+            description={t(
               "Solo se la rete passa da un proxy o ispeziona il traffico HTTPS: valgono per download, agenti e strumenti del kit.",
             )}
-          </p>
-          <Field label={t("Proxy HTTPS")}>
-            <input
-              value={s.network.httpsProxy ?? ""}
+          >
+            <TextSetting
+              category={network}
+              title={t("Proxy HTTPS")}
+              value={s.network.httpsProxy}
               placeholder="http://proxy.azienda.it:8080"
-              onChange={(e) => {
-                net({ httpsProxy: empty(e.target.value) });
+              onChange={(v) => {
+                net({ httpsProxy: v });
               }}
-              className="input min-w-64"
             />
-          </Field>
-          <Field label={t("Proxy HTTP")}>
-            <input
-              value={s.network.httpProxy ?? ""}
-              onChange={(e) => {
-                net({ httpProxy: empty(e.target.value) });
+            <TextSetting
+              category={network}
+              title={t("Proxy HTTP")}
+              value={s.network.httpProxy}
+              onChange={(v) => {
+                net({ httpProxy: v });
               }}
-              className="input min-w-64"
             />
-          </Field>
-          <Field label={t("Senza proxy per")}>
-            <input
-              value={s.network.noProxy ?? ""}
+            <TextSetting
+              category={network}
+              title={t("Senza proxy per")}
+              value={s.network.noProxy}
               placeholder="localhost,127.0.0.1,.azienda.it"
-              onChange={(e) => {
-                net({ noProxy: empty(e.target.value) });
+              onChange={(v) => {
+                net({ noProxy: v });
               }}
-              className="input min-w-64"
             />
-          </Field>
-          <Field label={t("Certificati aggiuntivi (file PEM)")}>
-            <input
-              value={s.network.extraCaCerts ?? ""}
+            <TextSetting
+              category={network}
+              title={t("Certificati aggiuntivi (file PEM)")}
+              value={s.network.extraCaCerts}
               placeholder="E:\certificati\azienda.pem"
-              onChange={(e) => {
-                net({ extraCaCerts: empty(e.target.value) });
+              onChange={(v) => {
+                net({ extraCaCerts: v });
               }}
-              className="input min-w-64"
             />
-          </Field>
-          <Check
-            checked={s.network.allowLan}
-            onChange={(v) => {
-              net({ allowLan: v });
-            }}
-            label={t("Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete")}
-          />
-        </Section>
+            <SettingItem category={network} title={t("Rete locale")} modified={s.network.allowLan} inline>
+              <CheckboxLabel
+                checked={s.network.allowLan}
+                onChange={(v) => {
+                  net({ allowLan: v });
+                }}
+              >
+                {t("Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete")}
+              </CheckboxLabel>
+            </SettingItem>
+          </SettingsGroup>
 
-        <Section id="s-agents" title={t("Agenti")}>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="gemini-key" className="text-[12px] text-vsc-desc">
-              {t("Chiave API di Gemini (Antigravity senza account Google)")}
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
+          <SettingsGroup id="s-agents" title={agents}>
+            <SettingItem
+              category={agents}
+              title={t("Chiave API di Gemini (Antigravity senza account Google)")}
+              modified={view.geminiKeySet}
+            >
               <input
                 id="gemini-key"
                 type="password"
                 autoComplete="off"
+                aria-label={t("Chiave API di Gemini (Antigravity senza account Google)")}
                 value={gemini ?? ""}
                 placeholder={view.geminiKeySet ? t("salvata: scrivi per sostituirla") : t("nessuna")}
                 onChange={(e) => {
                   setSaved(false);
+                  setDirty(true);
                   setGemini(e.target.value === "" ? null : e.target.value);
                 }}
-                className="input min-w-64"
+                className="input w-full"
               />
               {view.geminiKeySet && (
-                <button
-                  type="button"
-                  className="text-vsc-link underline"
-                  onClick={() => {
-                    setSaved(false);
-                    setGemini("");
-                  }}
-                >
-                  {t("Togli la chiave")}
-                </button>
+                <div className="mt-1.5">
+                  <Link
+                    onClick={() => {
+                      setSaved(false);
+                      setGemini("");
+                    }}
+                  >
+                    {t("Togli la chiave")}
+                  </Link>
+                </div>
               )}
-            </div>
-            {gemini === "" && <p className="text-vsc-warning">{t("La chiave verrà tolta al salvataggio.")}</p>}
-          </div>
-        </Section>
+              {gemini === "" && <p className="mt-1 text-vsc-warning">{t("La chiave verrà tolta al salvataggio.")}</p>}
+            </SettingItem>
+          </SettingsGroup>
 
-        <Section id="s-langs" title={t("Versioni")}>
-          <p className="text-vsc-desc">{t("Valgono dalla prossima installazione o aggiornamento in Strumenti.")}</p>
-          <Field label={t("Python (vuoto = quella del kit)")}>
-            <input
-              value={s.pythonVersion ?? ""}
+          <SettingsGroup
+            id="s-langs"
+            title={versions}
+            description={t("Valgono dalla prossima installazione o aggiornamento in Strumenti.")}
+          >
+            <TextSetting
+              category={versions}
+              title={t("Python (vuoto = quella del kit)")}
+              value={s.pythonVersion}
               placeholder="3.13"
-              onChange={(e) => {
-                set({ pythonVersion: empty(e.target.value) });
+              onChange={(v) => {
+                set({ pythonVersion: v });
               }}
-              className="input min-w-64"
             />
-          </Field>
-          <Field label={t("PHP (vuoto = la più recente)")}>
-            <input
-              value={s.phpVersion ?? ""}
+            <TextSetting
+              category={versions}
+              title={t("PHP (vuoto = la più recente)")}
+              value={s.phpVersion}
               placeholder="8.4"
-              onChange={(e) => {
-                set({ phpVersion: empty(e.target.value) });
+              onChange={(v) => {
+                set({ phpVersion: v });
               }}
-              className="input min-w-64"
             />
-          </Field>
-          <Field label={t("Compilatore di Rust")}>
-            <select
-              value={s.rustToolchain ?? ""}
-              onChange={(e) => {
-                set({ rustToolchain: (empty(e.target.value) as Settings["rustToolchain"]) ?? null });
-              }}
-              className="input min-w-64"
-            >
-              <option value="">{t("GNU (predefinito, tutto nel kit)")}</option>
-              <option value="gnu">GNU</option>
-              <option value="msvc">{t("MSVC (richiede Visual Studio Build Tools nel PC)")}</option>
-            </select>
-          </Field>
-        </Section>
+            <SettingItem category={versions} title={t("Compilatore di Rust")} modified={s.rustToolchain !== null}>
+              <select
+                aria-label={t("Compilatore di Rust")}
+                value={s.rustToolchain ?? ""}
+                onChange={(e) => {
+                  set({ rustToolchain: (empty(e.target.value) as Settings["rustToolchain"]) ?? null });
+                }}
+                className="input w-full"
+              >
+                <option value="">{t("GNU (predefinito, tutto nel kit)")}</option>
+                <option value="gnu">GNU</option>
+                <option value="msvc">{t("MSVC (richiede Visual Studio Build Tools nel PC)")}</option>
+              </select>
+            </SettingItem>
+          </SettingsGroup>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <ActionButton
-            icon={VscSave}
-            label={t("Salva")}
-            primary
-            submit
-            busy={busy === "save"}
-            onClick={() => undefined}
-          />
-          {saved && (
-            <span role="status" className="flex items-center gap-1 text-vsc-success">
-              <VscCheck size={16} aria-hidden="true" />
-              {editorRunning
-                ? t("Salvato. Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.")
-                : t("Salvato.")}
-            </span>
-          )}
-          {saved && editorRunning && (
-            <ActionButton
-              icon={VscDebugRestart}
-              label={t("Riavvia l'editor")}
-              busy={busy === "restart"}
-              onClick={() => {
-                run("restart", editorRestart);
-              }}
-            />
-          )}
-        </div>
-        <ErrorLine error={error} />
-        <Updates />
+          <Updates />
+
+          <SettingsGroup id="s-github" title={t("Account GitHub")}>
+            <SettingItem title={t("Account GitHub del kit")} keywords="github git gh login">
+              <GithubAccount />
+            </SettingItem>
+          </SettingsGroup>
+
+          {info && <KitInfo info={info} />}
+        </SettingsEditor>
       </form>
-      <Section id="s-github" title={t("Account GitHub")}>
-        <GithubAccount />
-      </Section>
-      {info && <KitInfo info={info} />}
-    </div>
+    </SingleEditor>
   );
 }
 
 /** Where the kit is (was on the Home, D-76). */
 function KitInfo({ info }: { info: AppInfo }) {
-  const rows: [string, string][] = [
+  const facts: [string, string][] = [
     [t("Cartella del kit"), info.root],
     [t("Progetti"), info.projects],
     [t("Dati e programmi"), info.data],
@@ -297,23 +405,23 @@ function KitInfo({ info }: { info: AppInfo }) {
     ["WebView2", info.webview],
     [t("Versione"), info.version],
   ];
+  const rows = facts.map(([k, v]): [string, React.ReactNode] => [
+    k,
+    <span className="font-mono text-[12px] break-all select-text">{v}</span>,
+  ]);
   return (
-    <Section id="s-kit" title={t("Il kit")}>
-      <div className="flex items-center gap-2">
-        <BrandSymbol size={40} />
-        <p className="text-vsc-desc">
-          {t("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.")}
-        </p>
-      </div>
-      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-1.5">
-        {rows.map(([label, value]) => (
-          <div key={label} className="contents">
-            <dt className="text-vsc-desc">{label}</dt>
-            <dd className="m-0 font-mono text-[12px] break-all select-text">{value}</dd>
-          </div>
-        ))}
-      </dl>
-    </Section>
+    <SettingsGroup id="s-kit" title={t("Il kit")}>
+      <SettingItem
+        title="Atollo"
+        description={t("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.")}
+        keywords={rows.map(([k]) => k).join(" ")}
+      >
+        <div className="flex items-start gap-4">
+          <BrandSymbol size={40} />
+          <Properties rows={rows} />
+        </div>
+      </SettingItem>
+    </SettingsGroup>
   );
 }
 
@@ -330,55 +438,20 @@ function Updates() {
   else if (st.latest && st.latest === st.current) text = t("Atollo {0} è la versione più recente.", st.current);
   else text = t("Versione installata: {0}", st.current);
   return (
-    <Section id="s-update" title={t("Aggiornamenti di Atollo")}>
-      <p role="status">{text}</p>
-      <ActionButton
-        icon={VscCloudDownload}
-        label={t("Cerca aggiornamenti")}
-        busy={busy === "check" || st.checking}
-        onClick={() => {
-          run("check", async () => {
-            setSt(await updateCheck());
-          });
-        }}
-      />
-      <ErrorLine error={error} />
-    </Section>
-  );
-}
-
-function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-  return (
-    <section aria-labelledby={id} className="space-y-2">
-      <h2 id={id} className="border-b border-vsc-border pb-1 text-[13px] font-semibold">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[12px] text-vsc-desc">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function Check({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
-  return (
-    <label className="flex items-start gap-2">
-      <input
-        type="checkbox"
-        className="mt-0.5"
-        checked={checked}
-        onChange={(e) => {
-          onChange(e.target.checked);
-        }}
-      />
-      <span>{label}</span>
-    </label>
+    <SettingsGroup id="s-update" title={t("Aggiornamenti")}>
+      <SettingItem title={t("Aggiornamenti di Atollo")} description={text}>
+        <Button
+          busy={busy === "check" || st.checking}
+          onClick={() => {
+            run("check", async () => {
+              setSt(await updateCheck());
+            });
+          }}
+        >
+          {t("Cerca aggiornamenti")}
+        </Button>
+        <ErrorLine error={error} />
+      </SettingItem>
+    </SettingsGroup>
   );
 }

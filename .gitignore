@@ -17,3 +17,6 @@ StartupProfileData-NonInteractive
 
 # TypeScript incremental build state
 *.tsbuildinfo
+
+# Python bytecode
+__pycache__/

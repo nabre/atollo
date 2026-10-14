@@ -29,14 +29,27 @@
   --vsc-panel-title: #cccccc; /* panelTitle.activeForeground */
   --vsc-panel-title-inactive: #9d9d9d; /* panelTitle.inactiveForeground */
   --vsc-panel-title-border: #10b981; /* panelTitle.activeBorder */
-  --vsc-statusbar: #181818; /* statusBar.background */
-  --vsc-statusbar-fg: #cccccc; /* statusBar.foreground */
-  --vsc-statusbar-border: #2b2b2b; /* statusBar.border */
-  --vsc-statusbar-hover: #f1f1f133; /* statusBarItem.hoverBackground */
-  --vsc-statusbar-hover-fg: #ffffff; /* statusBarItem.hoverForeground */
-  --vsc-statusbar-remote: #10b981; /* statusBarItem.remoteBackground */
-  --vsc-statusbar-remote-fg: #04140d; /* statusBarItem.remoteForeground */
+  --vsc-statusbar: #10b981; /* statusBar.background */
+  --vsc-statusbar-fg: #04140d; /* statusBar.foreground */
+  --vsc-statusbar-border: #10b981; /* statusBar.border */
+  --vsc-statusbar-hover: #04140d26; /* statusBarItem.hoverBackground */
+  --vsc-statusbar-hover-fg: #04140d; /* statusBarItem.hoverForeground */
+  --vsc-statusbar-remote: #0f3d2e; /* statusBarItem.remoteBackground */
+  --vsc-statusbar-remote-fg: #d1f0e0; /* statusBarItem.remoteForeground */
+  --vsc-statusbar-remote-hover: #14503c; /* statusBarItem.remoteHoverBackground */
+  --vsc-statusbar-active: #04140d40; /* statusBarItem.activeBackground */
+  --vsc-statusbar-error: #c72e0f; /* statusBarItem.errorBackground */
+  --vsc-statusbar-error-fg: #ffffff; /* statusBarItem.errorForeground */
   --vsc-tab-border-top: #10b981; /* tab.activeBorderTop */
+  --vsc-tab-active: #1f1f1f; /* tab.activeBackground */
+  --vsc-tab-active-fg: #ffffff; /* tab.activeForeground */
+  --vsc-tab-inactive: #181818; /* tab.inactiveBackground */
+  --vsc-tab-inactive-fg: #9d9d9d; /* tab.inactiveForeground */
+  --vsc-tab-border: #2b2b2b; /* tab.border */
+  --vsc-tabs: #181818; /* editorGroupHeader.tabsBackground */
+  --vsc-tabs-border: #2b2b2b; /* editorGroupHeader.tabsBorder */
+  --vsc-settings-header: #ffffff; /* settings.headerForeground */
+  --vsc-settings-modified: #bb800966; /* settings.modifiedItemIndicator */
   --vsc-surface-border: #252526; /* modernActivityBar.border */
   --vsc-activitybar-item-active: #10b98133; /* modernActivityBarItem.activeBackground */
   --vsc-activitybar-item-hover: #ffffff11; /* modernActivityBarItem.hoverBackground */
@@ -133,14 +146,27 @@
     --vsc-panel-title: #3b3b3b; /* panelTitle.activeForeground */
     --vsc-panel-title-inactive: #3b3b3b; /* panelTitle.inactiveForeground */
     --vsc-panel-title-border: #047857; /* panelTitle.activeBorder */
-    --vsc-statusbar: #f8f8f8; /* statusBar.background */
-    --vsc-statusbar-fg: #3b3b3b; /* statusBar.foreground */
-    --vsc-statusbar-border: #e5e5e5; /* statusBar.border */
-    --vsc-statusbar-hover: #1f1f1f11; /* statusBarItem.hoverBackground */
-    --vsc-statusbar-hover-fg: #000000; /* statusBarItem.hoverForeground */
-    --vsc-statusbar-remote: #047857; /* statusBarItem.remoteBackground */
+    --vsc-statusbar: #047857; /* statusBar.background */
+    --vsc-statusbar-fg: #ffffff; /* statusBar.foreground */
+    --vsc-statusbar-border: #047857; /* statusBar.border */
+    --vsc-statusbar-hover: #ffffff26; /* statusBarItem.hoverBackground */
+    --vsc-statusbar-hover-fg: #ffffff; /* statusBarItem.hoverForeground */
+    --vsc-statusbar-remote: #0f3d2e; /* statusBarItem.remoteBackground */
     --vsc-statusbar-remote-fg: #ffffff; /* statusBarItem.remoteForeground */
+    --vsc-statusbar-remote-hover: #14503c; /* statusBarItem.remoteHoverBackground */
+    --vsc-statusbar-active: #ffffff40; /* statusBarItem.activeBackground */
+    --vsc-statusbar-error: #c72e0f; /* statusBarItem.errorBackground */
+    --vsc-statusbar-error-fg: #ffffff; /* statusBarItem.errorForeground */
     --vsc-tab-border-top: #047857; /* tab.activeBorderTop */
+    --vsc-tab-active: #ffffff; /* tab.activeBackground */
+    --vsc-tab-active-fg: #3b3b3b; /* tab.activeForeground */
+    --vsc-tab-inactive: #f8f8f8; /* tab.inactiveBackground */
+    --vsc-tab-inactive-fg: #616161; /* tab.inactiveForeground */
+    --vsc-tab-border: #e5e5e5; /* tab.border */
+    --vsc-tabs: #f8f8f8; /* editorGroupHeader.tabsBackground */
+    --vsc-tabs-border: #e5e5e5; /* editorGroupHeader.tabsBorder */
+    --vsc-settings-header: #1f1f1f; /* settings.headerForeground */
+    --vsc-settings-modified: #bb800966; /* settings.modifiedItemIndicator */
     --vsc-surface-border: #e5e5e5; /* modernActivityBar.border */
     --vsc-activitybar-item-active: #d1f0e0; /* modernActivityBarItem.activeBackground */
     --vsc-activitybar-item-hover: #f2f2f2; /* modernActivityBarItem.hoverBackground */
@@ -245,7 +271,20 @@
   --color-vsc-statusbar-hover-fg: var(--vsc-statusbar-hover-fg);
   --color-vsc-statusbar-remote: var(--vsc-statusbar-remote);
   --color-vsc-statusbar-remote-fg: var(--vsc-statusbar-remote-fg);
+  --color-vsc-statusbar-remote-hover: var(--vsc-statusbar-remote-hover);
+  --color-vsc-statusbar-active: var(--vsc-statusbar-active);
+  --color-vsc-statusbar-error: var(--vsc-statusbar-error);
+  --color-vsc-statusbar-error-fg: var(--vsc-statusbar-error-fg);
   --color-vsc-tab-border-top: var(--vsc-tab-border-top);
+  --color-vsc-tab-active: var(--vsc-tab-active);
+  --color-vsc-tab-active-fg: var(--vsc-tab-active-fg);
+  --color-vsc-tab-inactive: var(--vsc-tab-inactive);
+  --color-vsc-tab-inactive-fg: var(--vsc-tab-inactive-fg);
+  --color-vsc-tab-border: var(--vsc-tab-border);
+  --color-vsc-tabs: var(--vsc-tabs);
+  --color-vsc-tabs-border: var(--vsc-tabs-border);
+  --color-vsc-settings-header: var(--vsc-settings-header);
+  --color-vsc-settings-modified: var(--vsc-settings-modified);
   --color-vsc-surface-border: var(--vsc-surface-border);
   --color-vsc-activitybar-item-active: var(--vsc-activitybar-item-active);
   --color-vsc-activitybar-item-hover: var(--vsc-activitybar-item-hover);

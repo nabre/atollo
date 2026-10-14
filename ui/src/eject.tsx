@@ -3,9 +3,11 @@
 // then closes the app so the drive can be removed safely. The same list is
 // shown when the window is closed with something open (CloseDialog).
 import { useCallback, useEffect, useRef, useState } from "react";
-import { VscCheck, VscClose, VscDebugDisconnect, VscRefresh, VscWarning } from "react-icons/vsc";
+import { VscClose, VscDebugDisconnect, VscRefresh } from "react-icons/vsc";
+
 import { appQuit, ejectList, ejectRun, type OpenNow } from "./api";
 import { ActionButton, ErrorLine, useAction } from "./pages";
+import { EditorBody, EditorSection, Notice, SingleEditor } from "./workbench";
 import { t } from "./i18n";
 
 function nothingOpen(o: OpenNow): boolean {
@@ -45,74 +47,71 @@ export function EjectPage() {
   }, []);
   useEffect(load, [load]);
 
+  const title = t("Rimuovi l'unità");
+  const icon = <VscDebugDisconnect size={16} aria-hidden="true" />;
   if (done) {
     return (
-      <div className="max-w-3xl space-y-3">
-        <p role="status" className="flex items-start gap-2 text-vsc-success">
-          <VscCheck size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
-          {t("Programmi del kit chiusi e accesso di Antigravity salvato nel kit.")}
-        </p>
-        {open && !nothingOpen(open) && (
-          <>
-            <p className="text-vsc-warning">{t("Ancora aperti (chiudili a mano):")}</p>
-            <OpenList open={open} />
-          </>
-        )}
-        <p>{t("Ora chiudi Atollo, poi rimuovi l'unità con «Rimozione sicura dell'hardware» di Windows.")}</p>
-        <ActionButton
-          icon={VscClose}
-          label={t("Chiudi Atollo")}
-          primary
-          onClick={() => {
-            run("quit", appQuit);
-          }}
-        />
-        <ErrorLine error={error} />
-      </div>
+      <SingleEditor title={title} icon={icon}>
+        <EditorBody narrow>
+          <Notice tone="success">{t("Programmi del kit chiusi e accesso di Antigravity salvato nel kit.")}</Notice>
+          {open && !nothingOpen(open) && (
+            <>
+              <p className="text-vsc-warning">{t("Ancora aperti (chiudili a mano):")}</p>
+              <OpenList open={open} />
+            </>
+          )}
+          <p>{t("Ora chiudi Atollo, poi rimuovi l'unità con «Rimozione sicura dell'hardware» di Windows.")}</p>
+          <ActionButton
+            icon={VscClose}
+            label={t("Chiudi Atollo")}
+            primary
+            onClick={() => {
+              run("quit", appQuit);
+            }}
+          />
+          <ErrorLine error={error} />
+        </EditorBody>
+      </SingleEditor>
     );
   }
 
   return (
-    <div className="max-w-3xl space-y-3">
-      <p>
-        {t(
-          "Prima di togliere la chiavetta o il disco del kit: chiude i programmi del kit ancora aperti e salva nel kit l'accesso di Antigravity, così non resta nulla in questo PC.",
-        )}
-      </p>
-      <ErrorLine error={loadError} />
-      {open === null ? (
-        <p className="text-vsc-desc">{t("Caricamento…")}</p>
-      ) : (
-        <section aria-labelledby="eject-open" className="space-y-2">
-          <h2 id="eject-open" className="text-[13px] font-semibold">
-            {t("Aperti adesso")}
-          </h2>
-          <OpenList open={open} />
-          {!nothingOpen(open) && (
-            <p className="flex items-start gap-2 text-vsc-warning">
-              <VscWarning size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
-              {t("I file non salvati in questi programmi andranno persi.")}
-            </p>
+    <SingleEditor title={title} icon={icon}>
+      <EditorBody narrow>
+        <p>
+          {t(
+            "Prima di togliere la chiavetta o il disco del kit: chiude i programmi del kit ancora aperti e salva nel kit l'accesso di Antigravity, così non resta nulla in questo PC.",
           )}
-        </section>
-      )}
-      <div className="flex flex-wrap gap-2">
-        <ActionButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
-        <ActionButton
-          icon={VscDebugDisconnect}
-          label={t("Chiudi tutto e prepara la rimozione")}
-          primary
-          busy={busy === "eject"}
-          onClick={() => {
-            run("eject", async () => {
-              setOpen(await ejectRun());
-              setDone(true);
-            });
-          }}
-        />
-      </div>
-      <ErrorLine error={error} />
-    </div>
+        </p>
+        <ErrorLine error={loadError} />
+        {open === null ? (
+          <p className="text-vsc-desc">{t("Caricamento…")}</p>
+        ) : (
+          <EditorSection id="eject-open" title={t("Aperti adesso")}>
+            <OpenList open={open} />
+            {!nothingOpen(open) && (
+              <Notice tone="warning">{t("I file non salvati in questi programmi andranno persi.")}</Notice>
+            )}
+          </EditorSection>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <ActionButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
+          <ActionButton
+            icon={VscDebugDisconnect}
+            label={t("Chiudi tutto e prepara la rimozione")}
+            primary
+            busy={busy === "eject"}
+            onClick={() => {
+              run("eject", async () => {
+                setOpen(await ejectRun());
+                setDone(true);
+              });
+            }}
+          />
+        </div>
+        <ErrorLine error={error} />
+      </EditorBody>
+    </SingleEditor>
   );
 }
 
@@ -151,7 +150,7 @@ export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () =>
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="rounded-sm border border-vsc-button-border bg-vsc-button2 px-2 py-1 text-vsc-button2-fg hover:bg-vsc-button2-hover"
+            className="min-h-[26px] rounded border border-vsc-button-border bg-vsc-button2 px-[11px] py-1 leading-[18px] text-vsc-button2-fg hover:bg-vsc-button2-hover"
           >
             {t("Annulla")}
           </button>

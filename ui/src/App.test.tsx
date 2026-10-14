@@ -260,16 +260,19 @@ describe("App", () => {
     );
     render(<App />);
     expect(await screen.findByText("app & co")).toBeTruthy();
-    expect(screen.getByRole("img", { name: "TypeScript" })).toBeTruthy();
+    // the list shows no language logos (the project's page does)
+    expect(screen.queryByRole("img", { name: "TypeScript" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Terminale" }));
     expect(invoke).toHaveBeenCalledWith("terminal_open", { project: "app & co" });
-    // the agent last used in the project is the default
+    // the row's agent is the one last used in the project
+    fireEvent.click(await screen.findByTitle("Apre Codex nel progetto app & co"));
+    expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "codex", project: "app & co" });
+    expect(invoke).not.toHaveBeenCalledWith("terminal_open", { project: null });
+    // on the project's page, the same agent is the one chosen
+    fireEvent.click(screen.getByTitle("Apre la pagina di app & co"));
     await waitFor(() => {
       expect(screen.getByRole("radio", { name: "Codex" }).getAttribute("aria-checked")).toBe("true");
     });
-    fireEvent.click(screen.getByRole("button", { name: "Agente" }));
-    expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "codex", project: "app & co" });
-    expect(invoke).not.toHaveBeenCalledWith("terminal_open", { project: null });
   });
 
   it("opens a project's page with its sections and creates its database", async () => {
@@ -296,7 +299,7 @@ describe("App", () => {
       within(nav)
         .getAllByRole("button")
         .map((b) => b.textContent),
-    ).toEqual(["Avvio", "Componenti", "Database", "Estensioni", "Editor", "Git"]);
+    ).toEqual(["Avvio", "Sito web", "Componenti", "Database", "Estensioni", "Editor", "Git"]);
     expect(await screen.findByText("main")).toBeTruthy();
     fireEvent.click(within(nav).getByRole("button", { name: /Componenti/ }));
     expect(screen.getByText("da installare")).toBeTruthy();
@@ -365,7 +368,7 @@ describe("App", () => {
   it("asks before closing with something open, and switches language", async () => {
     invoke.mockImplementation(answers({ app_info: { ...info, lang: "en" } }));
     render(<App />);
-    expect(await screen.findByRole("button", { name: "Projects" })).toBeTruthy();
+    expect((await screen.findAllByRole("button", { name: "Projects" })).length).toBeGreaterThan(0);
     act(() => {
       closeListener?.({
         payload: { processes: [], editor: true, terminals: 1, actions: 0, setup: false, databases: 0 },
@@ -421,8 +424,8 @@ describe("App", () => {
         },
       });
     });
-    // In the status bar and in the Activity panel, where the details are
-    expect(screen.getAllByText("Installazione 2/2: PowerShell 7 50%").length).toBe(2);
+    // In the status bar; the details are in the Activity panel
+    expect(screen.getAllByText("Installazione 2/2: PowerShell 7 50%").length).toBe(1);
     fireEvent.click(screen.getByRole("button", { name: /^Attività/ }));
     fireEvent.click(screen.getByRole("button", { name: "Installazione" }));
     expect(screen.getByText("Installazione dei componenti del kit")).toBeTruthy();
@@ -560,8 +563,9 @@ describe("App", () => {
     invoke.mockImplementation(answers({ agents_status: agents, agent_launch: null, agent_sign_out: null }));
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
-    expect(await screen.findByText("2.1.299")).toBeTruthy();
-    expect(screen.getByText("accesso fatto")).toBeTruthy();
+    expect((await screen.findAllByText("2.1.299")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("accesso fatto").length).toBeGreaterThan(0);
+
     // only the installed agents, and no launch outside a project
     expect(screen.queryByText("Codex")).toBeNull();
     expect(screen.queryByRole("button", { name: "Apri" })).toBeNull();

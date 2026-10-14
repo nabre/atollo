@@ -1,0 +1,30 @@
+{
+  "name": "theme",
+  "displayName": "Atollo Theme",
+  "description": "VSCodium's Dark Modern and Light Modern with the Atollo colors.",
+  "publisher": "atollo",
+  "version": "1.0.3903919045",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Themes"
+  ],
+  "contributes": {
+    "themes": [
+      {
+        "id": "Atollo Dark",
+        "label": "Atollo Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/dark.json"
+      },
+      {
+        "id": "Atollo Light",
+        "label": "Atollo Light",
+        "uiTheme": "vs",
+        "path": "./themes/light.json"
+      }
+    ]
+  }
+}
