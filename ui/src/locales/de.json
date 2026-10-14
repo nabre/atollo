@@ -414,5 +414,9 @@
   "Aggiungi": "Hinzufügen",
   "Le estensioni installate valgono in tutto l'editor; le nuove si installano quando l'editor è aperto.": "Installierte Erweiterungen gelten im ganzen Editor; neue werden installiert, während der Editor offen ist.",
   "Scrivi l'identificativo come editore.nome, per esempio ms-python.python.": "Schreibe die Kennung als herausgeber.name, zum Beispiel ms-python.python.",
-  "pubblico": "öffentlich"
+  "pubblico": "öffentlich",
+  "Cerca nei progetti": "Projekte durchsuchen",
+  "{0} progetti": "{0} Projekte",
+  "{0} di {1} progetti": "{0} von {1} Projekten",
+  "Nessun progetto corrisponde alla ricerca.": "Kein Projekt entspricht der Suche."
 }

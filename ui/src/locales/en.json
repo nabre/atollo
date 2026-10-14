@@ -414,5 +414,9 @@
   "Aggiungi": "Add",
   "Le estensioni installate valgono in tutto l'editor; le nuove si installano quando l'editor è aperto.": "Installed extensions apply to the whole editor; new ones are installed while the editor is open.",
   "Scrivi l'identificativo come editore.nome, per esempio ms-python.python.": "Write the id as publisher.name, for example ms-python.python.",
-  "pubblico": "public"
+  "pubblico": "public",
+  "Cerca nei progetti": "Search projects",
+  "{0} progetti": "{0} projects",
+  "{0} di {1} progetti": "{0} of {1} projects",
+  "Nessun progetto corrisponde alla ricerca.": "No project matches the search."
 }

@@ -8,6 +8,7 @@ import { agentLaunch, agentSignOut, agentsStatus, folderOpen, type AgentId, type
 import { rich, t } from "./i18n";
 import { ActionButton, useAction } from "./pages";
 import { ComponentLogo } from "./logos";
+import { Badge } from "./tags";
 import { AgentUsage, StatsRefresh, useStats } from "./stats";
 
 /** The agents' state, refreshed every few seconds (running, signed in). */
@@ -88,7 +89,7 @@ export function AgentsPage() {
                 <span className="text-[12px] text-vsc-desc">
                   {a.installed ? (a.version ?? t("installato")) : t("non installato")}
                 </span>
-                {a.running && <span className="rounded-sm bg-vsc-badge px-1.5 text-[11px]">{t("in esecuzione")}</span>}
+                {a.running && <Badge>{t("in esecuzione")}</Badge>}
                 <span className="ml-auto flex items-center gap-1 text-[12px]">
                   {a.signedIn ? (
                     <>

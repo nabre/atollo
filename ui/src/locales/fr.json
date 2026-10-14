@@ -414,5 +414,9 @@
   "Aggiungi": "Ajouter",
   "Le estensioni installate valgono in tutto l'editor; le nuove si installano quando l'editor è aperto.": "Les extensions installées valent pour tout l'éditeur ; les nouvelles s'installent quand l'éditeur est ouvert.",
   "Scrivi l'identificativo come editore.nome, per esempio ms-python.python.": "Écrivez l'identifiant sous la forme éditeur.nom, par exemple ms-python.python.",
-  "pubblico": "public"
+  "pubblico": "public",
+  "Cerca nei progetti": "Rechercher dans les projets",
+  "{0} progetti": "{0} projets",
+  "{0} di {1} progetti": "{0} sur {1} projets",
+  "Nessun progetto corrisponde alla ricerca.": "Aucun projet ne correspond à la recherche."
 }

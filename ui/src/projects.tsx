@@ -4,7 +4,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import {
   VscAdd,
+  VscChevronDown,
   VscChevronRight,
+  VscChevronUp,
   VscCloudDownload,
   VscCode,
   VscDebugStart,
@@ -19,6 +21,7 @@ import {
   VscTerminal,
   VscTrash,
   VscWarning,
+  VscWindow,
 } from "react-icons/vsc";
 import type { IconType } from "react-icons";
 import {
@@ -59,6 +62,7 @@ import { GithubRepositories } from "./github";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { t } from "./i18n";
 import { LanguageIcon } from "./logos";
+import { Mark } from "./tags";
 
 const MAX_LINES = 3000;
 
@@ -258,82 +262,246 @@ export function ProjectsPage({
           </SidePane>
         ))}
       </aside>
-      <div className="min-w-0 flex-1 space-y-3 overflow-y-auto p-3">
-        <p className="text-vsc-desc">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <ErrorLine error={loadError ?? error} />
+        {projects === null ? (
+          <p className="p-3 text-vsc-desc">{t("Caricamento…")}</p>
+        ) : projects.length === 0 ? (
+          <p className="p-3 text-vsc-desc">{t("Nessun progetto. Creane uno nuovo o clonane uno.")}</p>
+        ) : (
+          <ProjectsTable
+            projects={projects}
+            runs={runs}
+            agents={agents}
+            editor={status}
+            busy={busy}
+            onOpen={setOpen}
+            onEditor={(p) => {
+              run(`editor:${p.id}`, () => editorOpen(p.id));
+            }}
+            onTerminal={(p) => {
+              run(`terminal:${p.id}`, () => terminalOpen(p.id));
+            }}
+          />
+        )}
+        <p className="shrink-0 border-t border-vsc-border px-3 py-1 text-[12px] text-vsc-desc">
           {t(
             "Le cartelle in projects sono attendibili per Claude e Codex e i loro comandi partono dai pulsanti qui sotto: apri qui solo codice di cui ti fidi.",
           )}
         </p>
-        <ErrorLine error={loadError ?? error} />
-        {projects === null ? (
-          <p className="text-vsc-desc">{t("Caricamento…")}</p>
-        ) : projects.length === 0 ? (
-          <p className="text-vsc-desc">{t("Nessun progetto. Creane uno nuovo o clonane uno.")}</p>
-        ) : (
-          <ul aria-label={t("Progetti")} className="-mx-3">
-            {projects.map((p) => {
-              return (
-                <li key={p.id}>
-                  <div className="flex items-center gap-2 px-3 py-0.5 hover:bg-vsc-list-hover">
-                    <button
-                      type="button"
-                      title={t("Apre la pagina di {0}", p.name)}
-                      onClick={() => {
-                        setOpen(p.id);
-                      }}
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                    >
-                      <VscChevronRight size={16} aria-hidden="true" className="shrink-0" />
-                      <span className="truncate font-semibold">{p.name}</span>
-                      <span className="truncate text-[12px] text-vsc-desc">{p.platform}</span>
-                      {p.languages.length > 0 && (
-                        <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-                          {p.languages.slice(0, 6).map((l) => (
-                            <LanguageIcon key={l} name={l} />
-                          ))}
-                          {p.languages.length > 6 && (
-                            <span className="text-[11px] text-vsc-desc">+{String(p.languages.length - 6)}</span>
-                          )}
-                        </span>
-                      )}
-                      {p.missing.length > 0 && (
-                        <VscWarning
-                          size={14}
-                          className="shrink-0 text-vsc-warning"
-                          aria-label={t("Mancano componenti: {0}", p.missing.join(", "))}
-                        />
-                      )}
-                    </button>
-                    <ActionButton
-                      icon={VscCode}
-                      label={t("Editor")}
-                      compact
-                      busy={busy === `editor:${p.id}`}
-                      disabled={status?.installed === false}
-                      title={t("Apre {0} nell'editor", p.name)}
-                      onClick={() => {
-                        run(`editor:${p.id}`, () => editorOpen(p.id));
-                      }}
-                    />
-                    <ActionButton
-                      icon={VscTerminal}
-                      label={t("Terminale")}
-                      compact
-                      busy={busy === `terminal:${p.id}`}
-                      title={t("Console del kit in {0}", p.name)}
-                      onClick={() => {
-                        run(`terminal:${p.id}`, () => terminalOpen(p.id));
-                      }}
-                    />
-                    <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} compact />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
       </div>
     </div>
+  );
+}
+
+const KIND_ICON: Record<ProjectInfo["type"], IconType> = {
+  web: VscGlobe,
+  desktop: VscWindow,
+  command: VscTerminal,
+};
+
+/** How the project starts (site, app with a window, command) and what it
+ * was recognised as (Laravel, FastAPI, static site...). */
+function ProjectKind({ p }: { p: ProjectInfo }) {
+  const Icon = KIND_ICON[p.type];
+  return (
+    <span className="flex min-w-0 items-center gap-1.5 text-vsc-desc" title={`${kindText(p.type)} · ${p.reason}`}>
+      <Mark label={kindText(p.type)}>
+        <Icon size={14} aria-hidden="true" />
+      </Mark>
+      <span>{p.platform}</span>
+    </span>
+  );
+}
+
+/** Every language as its logo, in alphabetical order. */
+function LanguageIcons({ names }: { names: string[] }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      {[...names]
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+        .map((l) => (
+          <LanguageIcon key={l} name={l} />
+        ))}
+    </span>
+  );
+}
+
+/** All the projects as a table, as the editor's lists: a filter, headers
+ * that stay put and sort, one 26px row per project. */
+function ProjectsTable({
+  projects,
+  runs,
+  agents,
+  editor,
+  busy,
+  onOpen,
+  onEditor,
+  onTerminal,
+}: {
+  projects: ProjectInfo[];
+  runs: Record<string, RunInfo>;
+  agents: AgentInfo[] | null;
+  editor: EditorStatus | null;
+  busy: string | null;
+  onOpen: (id: string) => void;
+  onEditor: (p: ProjectInfo) => void;
+  onTerminal: (p: ProjectInfo) => void;
+}) {
+  const [filter, setFilter] = useState("");
+  const [desc, setDesc] = useState(false);
+  const words = filter.toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = projects
+    .filter((p) => {
+      const text = `${p.name} ${p.platform} ${p.languages.join(" ")}`.toLowerCase();
+      return words.every((w) => text.includes(w));
+    })
+    .sort((a, b) => {
+      const d = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      return desc ? -d : d;
+    });
+  return (
+    <>
+      <div className="flex shrink-0 items-center gap-2 px-3 py-2">
+        <input
+          type="search"
+          aria-label={t("Cerca nei progetti")}
+          placeholder={t("Cerca nei progetti")}
+          value={filter}
+          onChange={(e) => {
+            setFilter(e.target.value);
+          }}
+          className="input w-64"
+        />
+        <span className="text-[12px] text-vsc-desc">
+          {shown.length === projects.length
+            ? t("{0} progetti", projects.length)
+            : t("{0} di {1} progetti", shown.length, projects.length)}
+        </span>
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto">
+        {shown.length === 0 ? (
+          <p className="px-3 text-vsc-desc">{t("Nessun progetto corrisponde alla ricerca.")}</p>
+        ) : (
+          <table aria-label={t("Progetti")} className="w-full border-collapse text-left">
+            <thead className="sticky top-0 z-10 bg-vsc-bg text-[12px] text-vsc-desc shadow-[inset_0_-1px_0_var(--vsc-border)]">
+              <tr>
+                <th scope="col" className="w-6 p-0" />
+                <th scope="col" aria-sort={desc ? "descending" : "ascending"} className="p-0 font-normal">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDesc(!desc);
+                    }}
+                    className="flex w-full items-center gap-1 px-2 py-1 text-left hover:text-vsc-fg"
+                  >
+                    {t("Nome")}
+                    {desc ? (
+                      <VscChevronUp size={12} aria-hidden="true" />
+                    ) : (
+                      <VscChevronDown size={12} aria-hidden="true" />
+                    )}
+                  </button>
+                </th>
+                <th scope="col" className="w-px px-2 py-1 font-normal whitespace-nowrap">
+                  {t("Tipo")}
+                </th>
+                <th scope="col" className="w-px px-2 py-1 font-normal whitespace-nowrap">
+                  {t("Linguaggi")}
+                </th>
+                <th scope="col" className="w-px px-2 py-1 font-normal whitespace-nowrap">
+                  {t("Stato")}
+                </th>
+                <th scope="col" className="w-px px-2 py-1 font-normal">
+                  <span className="sr-only">{t("Comandi")}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((p) => {
+                const live = Object.values(runs).filter((r) => r.project === p.id && alive(r.state));
+                return (
+                  <tr
+                    key={p.id}
+                    onClick={(e) => {
+                      // The row opens the project; its buttons do their own thing.
+                      if (!(e.target as HTMLElement).closest("button, input, a")) onOpen(p.id);
+                    }}
+                    className="group h-[26px] cursor-pointer hover:bg-vsc-list-hover"
+                  >
+                    <td className="p-0 pl-2">
+                      <VscChevronRight size={14} aria-hidden="true" className="text-vsc-desc" />
+                    </td>
+                    <td className="max-w-0 px-2">
+                      <span className="flex min-w-0 items-baseline gap-2">
+                        <button
+                          type="button"
+                          title={t("Apre la pagina di {0}", p.name)}
+                          onClick={() => {
+                            onOpen(p.id);
+                          }}
+                          className="min-w-0 shrink-0 truncate text-left font-semibold"
+                        >
+                          {p.name}
+                        </button>
+                      </span>
+                    </td>
+                    <td className="px-2 whitespace-nowrap">
+                      <ProjectKind p={p} />
+                    </td>
+                    <td className="px-2 whitespace-nowrap">
+                      <LanguageIcons names={p.languages} />
+                    </td>
+                    <td className="px-2 text-[12px] whitespace-nowrap">
+                      {live.length > 0 ? (
+                        <span className="text-vsc-success" title={live.map((r) => r.label).join(", ")}>
+                          ● {live.some((r) => r.type === "web") ? t("in ascolto") : t("in esecuzione")}
+                          {live.length > 1 && ` (${String(live.length)})`}
+                        </span>
+                      ) : p.missing.length > 0 ? (
+                        <span
+                          className="flex items-center gap-1 text-vsc-warning"
+                          title={t("Mancano componenti: {0}", p.missing.join(", "))}
+                        >
+                          <VscWarning size={12} aria-hidden="true" />
+                          {t("Mancano componenti: {0}", p.missing.join(", "))}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-2 whitespace-nowrap">
+                      <span className="flex items-center justify-end gap-1 opacity-70 group-focus-within:opacity-100 group-hover:opacity-100">
+                        <ActionButton
+                          icon={VscCode}
+                          label={t("Editor")}
+                          compact
+                          busy={busy === `editor:${p.id}`}
+                          disabled={editor?.installed === false}
+                          title={t("Apre {0} nell'editor", p.name)}
+                          onClick={() => {
+                            onEditor(p);
+                          }}
+                        />
+                        <ActionButton
+                          icon={VscTerminal}
+                          label={t("Terminale")}
+                          compact
+                          busy={busy === `terminal:${p.id}`}
+                          title={t("Console del kit in {0}", p.name)}
+                          onClick={() => {
+                            onTerminal(p);
+                          }}
+                        />
+                        <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} compact />
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
   );
 }
 
