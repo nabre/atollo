@@ -246,32 +246,42 @@ fn ext_of(name: &str) -> String {
         .unwrap_or_default()
 }
 
+/// The languages a project can have, by file extension, in the order the
+/// matrix of editor extensions shows them (`editor_ext.rs`).
+pub const LANGUAGES: [(&str, &[&str]); 26] = [
+    ("JavaScript", &[".js", ".mjs", ".cjs", ".jsx"]),
+    ("TypeScript", &[".ts", ".tsx"]),
+    ("Vue", &[".vue"]),
+    ("Svelte", &[".svelte"]),
+    ("Astro", &[".astro"]),
+    ("HTML", &[".html"]),
+    ("CSS", &[".css", ".scss"]),
+    ("PHP", &[".php"]),
+    ("Python", &[".py"]),
+    ("Rust", &[".rs"]),
+    ("Go", &[".go"]),
+    ("Java", &[".java"]),
+    ("Kotlin", &[".kt", ".kts"]),
+    ("C#", &[".cs"]),
+    ("F#", &[".fs"]),
+    ("C", &[".c", ".h"]),
+    ("C++", &[".cpp", ".cc", ".hpp"]),
+    ("Zig", &[".zig"]),
+    ("Dart", &[".dart"]),
+    ("Ruby", &[".rb"]),
+    ("Julia", &[".jl"]),
+    ("R", &[".r"]),
+    ("LaTeX", &[".tex"]),
+    ("Typst", &[".typ"]),
+    ("PowerShell", &[".ps1", ".psm1"]),
+    ("Shell", &[".sh", ".bash"]),
+];
+
 fn language_of(ext: &str) -> Option<&'static str> {
-    Some(match ext {
-        ".js" | ".mjs" | ".cjs" | ".jsx" => "JavaScript",
-        ".ts" | ".tsx" => "TypeScript",
-        ".vue" => "Vue",
-        ".svelte" => "Svelte",
-        ".astro" => "Astro",
-        ".php" => "PHP",
-        ".py" => "Python",
-        ".rs" => "Rust",
-        ".go" => "Go",
-        ".html" => "HTML",
-        ".css" | ".scss" => "CSS",
-        ".java" => "Java",
-        ".kt" | ".kts" => "Kotlin",
-        ".cs" => "C#",
-        ".fs" => "F#",
-        ".rb" => "Ruby",
-        ".dart" => "Dart",
-        ".zig" => "Zig",
-        ".jl" => "Julia",
-        ".r" => "R",
-        ".c" | ".h" => "C",
-        ".cpp" | ".cc" | ".hpp" => "C++",
-        _ => return None,
-    })
+    LANGUAGES
+        .iter()
+        .find(|(_, exts)| exts.contains(&ext))
+        .map(|(name, _)| *name)
 }
 
 /// Languages by number of files, most used first.
@@ -302,6 +312,8 @@ fn need_of_ext(ext: &str) -> Option<&'static str> {
         ".rb" => "ruby",
         ".r" | ".rmd" => "r",
         ".c" | ".cc" | ".cpp" | ".cxx" | ".h" | ".hpp" => "cc",
+        ".tex" => "tinytex",
+        ".typ" => "typst",
         _ => return None,
     })
 }

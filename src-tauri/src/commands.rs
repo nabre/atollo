@@ -962,6 +962,36 @@ pub async fn project_install_missing<R: Runtime>(
     .map_err(|e| fail("install", e))?
 }
 
+/// The kit's matrix of editor extensions by language ("Linguaggi e strumenti").
+#[tauri::command]
+pub fn extensions_matrix<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> Result<crate::editor_ext::MatrixInfo, String> {
+    ensure_main(&webview)?;
+    Ok(crate::editor_ext::matrix_info(&state.kit))
+}
+
+/// The editor extensions added to or removed from those of the project's
+/// languages; the new ones are installed now if the editor runs.
+#[tauri::command]
+pub async fn project_extensions<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    added: Vec<String>,
+    removed: Vec<String>,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    let choice = crate::editor_ext::clean_choice(&added, &removed);
+    crate::project_settings::update(&state.kit, &project, |s| s.extensions = choice);
+    let editor = Arc::clone(&state.editor);
+    tauri::async_runtime::spawn_blocking(move || editor.sync_extensions())
+        .await
+        .map_err(|e| fail("extensions", e))
+}
+
 #[tauri::command]
 pub fn run_list<R: Runtime>(
     webview: Webview<R>,
@@ -1364,6 +1394,8 @@ macro_rules! command_handler {
             $crate::commands::project_clone,
             $crate::commands::project_site,
             $crate::commands::project_install_missing,
+            $crate::commands::project_extensions,
+            $crate::commands::extensions_matrix,
             $crate::commands::github_status,
             $crate::commands::github_sign_in,
             $crate::commands::github_sign_in_cancel,

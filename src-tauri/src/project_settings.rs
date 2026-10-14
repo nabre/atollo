@@ -2,7 +2,8 @@
 //! `data\app\projects\<project>\dev-settings.json` and never in the project's
 //! folder, so the project stays as its repository has it. Today: the agent
 //! last opened in it (the default of the agent choice) and when the editor,
-//! a console or an agent last opened it (the order of the projects).
+//! a console or an agent last opened it (the order of the projects), the
+//! editor extensions added to or removed from those of its languages.
 //! Keys written by a newer version of the app are kept as they are.
 
 use std::path::PathBuf;
@@ -20,8 +21,29 @@ pub struct ProjectSettings {
     /// Seconds since 1970 of the last editor, console or agent opened in it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_opened: Option<u64>,
+    /// Editor extensions changed from those of its languages (`editor_ext.rs`).
+    #[serde(default, skip_serializing_if = "Extensions::is_empty")]
+    pub extensions: Extensions,
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+/// Lower case `publisher.name` ids, sorted.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Extensions {
+    /// Wanted besides those of its languages.
+    #[serde(default)]
+    pub added: Vec<String>,
+    /// Of its languages, not wanted.
+    #[serde(default)]
+    pub removed: Vec<String>,
+}
+
+impl Extensions {
+    pub fn is_empty(&self) -> bool {
+        self.added.is_empty() && self.removed.is_empty()
+    }
 }
 
 /// The folder of the kit's files of `project` (`None`: not a valid name).

@@ -21,6 +21,7 @@ import {
   SiFsharp,
   SiGit,
   SiGithub,
+  SiGnubash,
   SiGo,
   SiHtml5,
   SiJavascript,
@@ -98,7 +99,7 @@ const COMPONENTS: Record<string, Logo> = {
   r: R,
 };
 
-/** Languages as named by src-tauri/src/detect/mod.rs `language_of`. */
+/** Languages as named by src-tauri/src/detect/mod.rs `LANGUAGES`. */
 const LANGUAGES: Record<string, Logo> = {
   JavaScript: { icon: SiJavascript, color: "#F7DF1E" },
   TypeScript: { icon: SiTypescript, color: "#3178C6" },
@@ -122,6 +123,10 @@ const LANGUAGES: Record<string, Logo> = {
   R: R,
   C: C,
   "C++": { icon: SiCplusplus, color: "#00599C" },
+  LaTeX: { icon: SiLatex, color: "#008080" },
+  Typst: { icon: SiTypst, color: "#239DAD" },
+  PowerShell: { icon: VscTerminalPowershell, color: "#5391FE" },
+  Shell: { icon: SiGnubash, color: "#4EAA25" },
 };
 
 function LogoIcon({ logo, size }: { logo: Logo | undefined; size: number }) {
@@ -148,4 +153,9 @@ export function LanguageTag({ name }: { name: string }) {
 }
 
 export const hasLogo = (id: string): boolean => id in COMPONENTS;
+/** The logo of a language alone (nothing if it has none). */
+export function LanguageLogo({ name, size = 14 }: { name: string; size?: number }) {
+  return <LogoIcon logo={LANGUAGES[name]} size={size} />;
+}
+
 export const hasLanguageLogo = (name: string): boolean => name in LANGUAGES;

@@ -91,7 +91,42 @@ export interface ProjectInfo {
   custom: boolean;
   default: string | null;
   /** The kit's settings of the project (data\app\projects\<id>\dev-settings.json). */
-  settings: { agent?: string; lastOpened?: number };
+  settings: { agent?: string; lastOpened?: number; extensions?: { added: string[]; removed: string[] } };
+  /** Editor extensions of its languages, then those added by hand. */
+  extensions: ProjectExtension[];
+}
+
+/** An editor extension of a project (src-tauri/src/editor_ext.rs). */
+export interface ProjectExtension {
+  /** `publisher.name`, lower case. */
+  id: string;
+  name: string;
+  /** One of its languages or tools brings it. */
+  byDefault: boolean;
+  /** Wanted: a default not removed, or added by hand. */
+  on: boolean;
+  installed: boolean;
+}
+
+/** A row of the kit's matrix language-extension. */
+export interface MatrixExtension {
+  id: string;
+  name: string;
+  languages: string[];
+  /** Ids of components a project requires (Deno, Bun, CMake). */
+  tools: string[];
+  /** General only: installed when one of these components is in the kit. */
+  programs: string[];
+  /** Not a default: only added by hand to a project. */
+  optional: boolean;
+  installed: boolean;
+}
+
+export interface ExtensionsMatrix {
+  /** Columns: the languages, then the tools as [id, name]. */
+  languages: string[];
+  tools: [string, string][];
+  extensions: MatrixExtension[];
 }
 
 function sampleAction(id: string, label: string, command: string, staticDir: string | null): ProjectAction {
@@ -115,6 +150,11 @@ const SAMPLE_PROJECTS: ProjectInfo[] = [
     custom: false,
     default: "static",
     settings: { lastOpened: Math.floor(Date.now() / 1000) - 3600 },
+    extensions: [
+      { id: "esbenp.prettier-vscode", name: "Prettier", byDefault: true, on: true, installed: true },
+      { id: "bradlc.vscode-tailwindcss", name: "Tailwind CSS", byDefault: true, on: false, installed: false },
+      { id: "humao.rest-client", name: "REST Client", byDefault: false, on: true, installed: false },
+    ],
   },
   {
     id: "api-python",
@@ -139,6 +179,10 @@ const SAMPLE_PROJECTS: ProjectInfo[] = [
     custom: false,
     default: "py:uvicorn",
     settings: { agent: "codex" },
+    extensions: [
+      { id: "ms-python.python", name: "Python", byDefault: true, on: true, installed: false },
+      { id: "charliermarsh.ruff", name: "Ruff", byDefault: true, on: true, installed: false },
+    ],
   },
 ];
 
@@ -164,6 +208,77 @@ export function projectsList(): Promise<ProjectInfo[]> {
 /** Installs the kit components the project needs and are missing; waits for the end. */
 export function projectInstallMissing(project: string): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("project_install_missing", { project });
+}
+
+/** Sets the editor extensions added to or removed from those of the project's languages. */
+export function projectExtensions(project: string, added: string[], removed: string[]): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_extensions", { project, added, removed });
+}
+
+const SAMPLE_MATRIX: ExtensionsMatrix = {
+  languages: ["JavaScript", "TypeScript", "HTML", "CSS", "Python"],
+  tools: [["deno", "Deno"]],
+  extensions: [
+    {
+      id: "ms-python.python",
+      name: "Python",
+      languages: ["Python"],
+      tools: [],
+      programs: [],
+      optional: false,
+      installed: false,
+    },
+    {
+      id: "esbenp.prettier-vscode",
+      name: "Prettier",
+      languages: ["JavaScript", "TypeScript", "HTML", "CSS"],
+      tools: [],
+      programs: [],
+      optional: false,
+      installed: true,
+    },
+    {
+      id: "denoland.vscode-deno",
+      name: "Deno",
+      languages: [],
+      tools: ["deno"],
+      programs: [],
+      optional: false,
+      installed: false,
+    },
+    {
+      id: "usernamehw.errorlens",
+      name: "Error Lens",
+      languages: [],
+      tools: [],
+      programs: [],
+      optional: false,
+      installed: true,
+    },
+    {
+      id: "mhutchie.git-graph",
+      name: "Git Graph",
+      languages: [],
+      tools: [],
+      programs: ["git"],
+      optional: false,
+      installed: true,
+    },
+    {
+      id: "eamodio.gitlens",
+      name: "GitLens",
+      languages: [],
+      tools: [],
+      programs: [],
+      optional: true,
+      installed: false,
+    },
+  ],
+};
+
+/** The kit's matrix of editor extensions by language. */
+export function extensionsMatrix(): Promise<ExtensionsMatrix> {
+  return browserPreview ? Promise.resolve(SAMPLE_MATRIX) : invoke<ExtensionsMatrix>("extensions_matrix");
 }
 
 /** Opens a kit console (a console window of the app) in a project. */

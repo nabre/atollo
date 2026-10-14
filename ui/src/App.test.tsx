@@ -100,6 +100,7 @@ function project(name: string): ProjectInfo {
     ],
     warnings: [],
     settings: {},
+    extensions: [],
     custom: false,
     default: "static",
   };

@@ -26,6 +26,8 @@ const COMMANDS: &[&str] = &[
     "project_clone",
     "project_site",
     "project_install_missing",
+    "project_extensions",
+    "extensions_matrix",
     "github_status",
     "github_sign_in",
     "github_sign_in_cancel",
