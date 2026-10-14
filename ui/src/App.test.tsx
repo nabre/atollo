@@ -355,6 +355,9 @@ describe("App", () => {
     expect(screen.getByLabelText<HTMLInputElement>(/^Git/).disabled).toBe(true);
     expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
     expect(screen.getByText("non disponibile su PC ARM64")).toBeTruthy();
+    // Dependencies: Apache shows what it needs, PHP what it is needed by.
+    expect(screen.getByTitle("Richiede PHP: si installa insieme.")).toBeTruthy();
+    expect(screen.getByText("per Apache")).toBeTruthy();
     fireEvent.click(screen.getByLabelText(/^PHP/));
     expect(screen.getByLabelText<HTMLInputElement>(/^Apache/).checked).toBe(false);
     fireEvent.click(screen.getByLabelText(/^Go/));
