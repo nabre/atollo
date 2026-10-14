@@ -1,6 +1,8 @@
 //! Editor and shell: VSCodium web server, PowerShell 7 (new components,
 //! docs/app/CATALOG.md and DECISIONS.md D-23, D-26).
 
+use std::path::Path;
+
 use anyhow::{bail, Result};
 
 use super::{arch_of, github_single, Ctx, Installer, Release};
@@ -33,6 +35,40 @@ impl Installer for Server {
     fn latest(&self, _ctx: &Ctx, component: &Component) -> Result<Release> {
         pinned(component)
     }
+
+    /// The editor of another release may still run (this app's, or one of a
+    /// previous start not yet ended): it is part of the app, so it is
+    /// stopped, or its folder could not be replaced.
+    fn before_swap(
+        &self,
+        _ctx: &Ctx,
+        _component: &Component,
+        _tree: &Path,
+        old: &Path,
+    ) -> Result<()> {
+        let running = running_from(&crate::processes::all(), old);
+        if !running.is_empty() {
+            crate::log::info(&format!("editor update: stopping {running:?}"));
+            crate::sessions::stop(&running);
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+        Ok(())
+    }
+}
+
+/// The processes whose program is in `folder`.
+fn running_from(all: &[crate::processes::Proc], folder: &Path) -> Vec<u32> {
+    let prefix = format!("{}\\", folder.display()).to_lowercase();
+    all.iter()
+        .filter(|p| {
+            p.path
+                .display()
+                .to_string()
+                .to_lowercase()
+                .starts_with(&prefix)
+        })
+        .map(|p| p.pid)
+        .collect()
 }
 
 fn pinned(component: &Component) -> Result<Release> {
@@ -54,6 +90,27 @@ fn pinned(component: &Component) -> Result<Release> {
 mod tests {
     use super::*;
     use crate::catalog::Catalog;
+
+    #[test]
+    fn processes_of_the_old_editor() {
+        let proc = |pid, path: &str| crate::processes::Proc {
+            pid,
+            parent: 0,
+            name: String::new(),
+            path: path.into(),
+        };
+        let all = [
+            proc(1, r"E:\Kit\data\apps\win32-x64\vscodium-server\node.exe"),
+            proc(2, r"E:\Kit\data\apps\win32-x64\VSCODIUM-SERVER\bin\x.exe"),
+            proc(
+                3,
+                r"E:\Kit\data\apps\win32-x64\vscodium-server-old\node.exe",
+            ),
+            proc(4, r"E:\Kit\data\apps\win32-x64\node\node.exe"),
+        ];
+        let old = Path::new(r"E:\Kit\data\apps\win32-x64\vscodium-server");
+        assert_eq!(running_from(&all, old), [1, 2]);
+    }
 
     #[test]
     fn the_editor_is_pinned() {
