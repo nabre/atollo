@@ -477,10 +477,12 @@ fn build_app<R: tauri::Runtime>(
         })
 }
 
-/// First start, or a required component deleted: install what is missing
-/// without asking; the "Linguaggi e strumenti" page shows the progress.
+/// First start, a required component deleted, or the editor of another
+/// release: install what is missing without asking; the "Linguaggi e
+/// strumenti" page shows the progress.
 fn start_missing_required<R: tauri::Runtime>(app: &tauri::AppHandle<R>, kit: &Kit) {
-    let missing = setup_task::missing_required(kit);
+    let mut missing = setup_task::missing_required(kit);
+    missing.extend(setup_task::outdated_app(kit));
     if missing.is_empty() {
         return;
     }

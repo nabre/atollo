@@ -20,7 +20,7 @@ import { SetupProgress } from "./setup";
 
 function groups(): { id: Group; title: string; hint: string }[] {
   return [
-    { id: "required", title: t("Obbligatori"), hint: t("Sempre installati: la shell del kit e GitHub CLI.") },
+    { id: "required", title: t("Obbligatori"), hint: t("Sempre installati: l'editor, la shell del kit e GitHub CLI.") },
     { id: "agents", title: t("Agenti"), hint: t("Facoltativi: il kit funziona anche senza.") },
     {
       id: "languages",
@@ -37,7 +37,7 @@ export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, o
   const next = new Set(chosen);
   const visit = (cid: string, value: boolean) => {
     const c = list.find((x) => x.id === cid);
-    if (!c || c.group === "required") return;
+    if (!c || c.group === "required" || c.group === "app") return;
     if (value === next.has(cid)) return;
     if (value) {
       next.add(cid);
@@ -111,7 +111,7 @@ export function ComponentsPage({
     componentsList().then(
       (l) => {
         setList(l);
-        setChosen(new Set(l.filter((c) => c.chosen || c.group === "required").map((c) => c.id)));
+        setChosen(new Set(l.filter((c) => c.chosen || c.group === "required" || c.group === "app").map((c) => c.id)));
       },
       (e: unknown) => {
         setError(String(e));
@@ -177,7 +177,8 @@ export function ComponentsPage({
       {setup && setup.steps.length > 0 && <SetupProgress snapshot={setup} />}
 
       {groups().map((g) => {
-        const items = list.filter((c) => c.group === g.id);
+        // The editor (part of the app) is listed with the required ones.
+        const items = list.filter((c) => c.group === g.id || (g.id === "required" && c.group === "app"));
         if (items.length === 0) return null;
         return (
           <section key={g.id} aria-labelledby={`group-${g.id}`} className="rounded border border-vsc-border">
@@ -189,7 +190,7 @@ export function ComponentsPage({
             </header>
             <ul className="divide-y divide-vsc-border">
               {items.map((c) => {
-                const required = c.group === "required";
+                const required = c.group === "required" || c.group === "app";
                 const on = chosen.has(c.id);
                 const inputId = `comp-${c.id}`;
                 return (
