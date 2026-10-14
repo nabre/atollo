@@ -36,7 +36,7 @@ Il menu in console di [nabre/dev-kit](https://github.com/nabre/dev-kit) non c'è
 
 - Solo Windows 10 e 11, x64 e ARM64 (su ARM64 l'editor, PHP, Apache e TinyTeX girano in emulazione x64; R non c'è).
 - Fuori dal kit restano solo le tracce di Windows, l'accesso di GitHub CLI nella Gestione credenziali e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
-- Le cartelle in `projects\` sono attendibili per Claude Code, Codex e l'editor (niente «Restricted Mode»): apri solo progetti di cui ti fidi.
+- Le cartelle in `projects\` sono attendibili per Claude Code e Codex: apri solo progetti di cui ti fidi. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.
 - I limiti d'uso degli agenti vengono da interfacce non documentate dei fornitori e possono smettere di funzionare dopo un loro aggiornamento.
 - «Rimuovi l'unità» non vede i programmi del PC che tengono aperto solo un file del kit.
 - L'exe non è firmato (vedi sotto).

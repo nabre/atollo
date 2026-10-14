@@ -36,7 +36,7 @@ Das Konsolenmenü von [nabre/dev-kit](https://github.com/nabre/dev-kit) entfäll
 
 - Nur Windows 10 und 11, x64 und ARM64 (auf ARM64 laufen Editor, PHP, Apache und TinyTeX in x64-Emulation; R ist nicht verfügbar).
 - Außerhalb des Kits bleiben nur die Spuren von Windows, die Anmeldung von GitHub CLI in der Anmeldeinformationsverwaltung und die von Antigravity, solange `agy` geöffnet ist (nur für die Sitzung).
-- Die Ordner in `projects\` gelten für Claude Code, Codex und den Editor als vertrauenswürdig (kein „eingeschränkter Modus“): nur Projekte öffnen, denen man vertraut.
+- Die Ordner in `projects\` gelten für Claude Code und Codex als vertrauenswürdig: nur Projekte öffnen, denen man vertraut. Der Editor fragt dagegen beim ersten Öffnen jedes Projekts und öffnet nicht vertrauenswürdige im „eingeschränkten Modus“.
 - Die Nutzungslimits der Agenten stammen aus nicht dokumentierten Schnittstellen der Anbieter und können nach einem ihrer Updates nicht mehr funktionieren.
 - „Laufwerk entfernen“ sieht keine PC-Programme, die nur eine Datei des Kits geöffnet halten.
 - Die exe ist nicht signiert (siehe unten).

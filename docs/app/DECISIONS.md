@@ -445,8 +445,19 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 - **Scelta dell'utente** (14/10/2026): ogni strumento con il suo logo; ogni progetto con le etichette del codice che contiene.
 - **Come.** Simple Icons di `react-icons/si` (già una dipendenza), con il colore di ogni marchio; i marchi neri o bianchi prendono il colore del testo, così si leggono in entrambi i temi. Dove Simple Icons non ha il logo: PowerShell (icona Codicon di PowerShell), Codex (logo OpenAI di Remix Icon), Antigravity (un'icona neutra: nessun logo ufficiale nei pacchetti, e il sito non ne pubblica uno scaricabile). I linguaggi dei progetti (rilevati da `detect::languages`, i più usati prima) compaiono come etichette con il logo nella riga del progetto e nei progetti recenti della Home.
 
-## D-66 Progetti attendibili anche nell'editor
+## D-66 Progetti attendibili anche nell'editor (sostituita da D-67)
+
+Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-67). Resta per la storia delle scelte.
+
 
 - **Scelta dell'utente** (14/10/2026): niente «Restricted Mode» quando l'editor apre un progetto.
 - **Come.** Il server dell'editor parte con `--disable-workspace-trust` (`editor.rs`): il workbench web riceve `enableWorkspaceTrust: false`. Basta spegnere l'attendibilità invece di elencare le cartelle fidate, perché l'editor apre solo cartelle di progetto (D-62). Scartata l'impostazione `security.workspace.trust.enabled`: ha ambito «application» e le impostazioni Machine del server la ignorano (provato: il «Restricted Mode» restava).
 - **Rischio accettato**, lo stesso di D-53: le attività, il debug e le estensioni partono subito anche in un progetto clonato da una fonte sconosciuta. La pagina Progetti già avvisa di aprire solo codice di cui ci si fida.
+
+## D-67 L'editor chiede se fidarsi alla prima apertura di un progetto
+
+- **Scelta dell'utente** (14/10/2026), dopo la revisione di sicurezza che segnalava D-66: niente fiducia automatica nell'editor, una conferma alla prima apertura di ogni progetto.
+- **Come.** Il server dell'editor parte senza `--disable-workspace-trust` (`editor.rs`): il workbench riceve `enableWorkspaceTrust: true`, chiede con la sua finestra «Ti fidi degli autori?» e apre in «Restricted Mode» i progetti non attendibili (niente attività, debug né estensioni del progetto finché non ci si fida). La risposta resta nella memoria del workbench, nel profilo WebView2 del kit (`data\webview2`); si cambia con «Gestisci attendibilità dell'area di lavoro». Il test del server reale controlla `enableWorkspaceTrust: true` nella pagina.
+- **Scartato: la risposta in `dev-settings.json`.** Con un solo server la fiducia è accesa o spenta per tutte le cartelle: una domanda del kit avrebbe chiesto due server (uno per modalità) oppure una doppia domanda, quella del kit e poi quella dell'editor.
+- **Limite.** La memoria del workbench dipende dall'origine `127.0.0.1:<porta>`: se la porta 7000 è occupata e il server ne prende un'altra, l'editor chiede di nuovo. Chiede, non si fida da solo.
+- Claude Code e Codex restano come in D-53: le cartelle di `projects` sono attendibili per loro.

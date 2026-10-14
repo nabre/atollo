@@ -36,7 +36,7 @@ Le menu en console de [nabre/dev-kit](https://github.com/nabre/dev-kit) dispara�
 
 - Windows 10 et 11 uniquement, x64 et ARM64 (sur ARM64, l'éditeur, PHP, Apache et TinyTeX tournent en émulation x64 ; R n'est pas disponible).
 - Hors du kit, il ne reste que les traces de Windows, la connexion de GitHub CLI dans le Gestionnaire d'identification et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
-- Les dossiers de `projects\` sont considérés comme fiables par Claude Code, Codex et l'éditeur (pas de « mode restreint ») : n'ouvrez que des projets de confiance.
+- Les dossiers de `projects\` sont considérés comme fiables par Claude Code et Codex : n'ouvrez que des projets de confiance. L'éditeur, lui, demande à la première ouverture de chaque projet et ouvre en « mode restreint » ceux auxquels vous ne faites pas confiance.
 - Les limites d'utilisation des agents viennent d'interfaces non documentées des fournisseurs et peuvent cesser de fonctionner après une de leurs mises à jour.
 - « Retirer le lecteur » ne voit pas les programmes du PC qui gardent seulement un fichier du kit ouvert.
 - L'exe n'est pas signé (voir plus bas).

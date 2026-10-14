@@ -36,7 +36,7 @@ The console menu of [nabre/dev-kit](https://github.com/nabre/dev-kit) is gone: e
 
 - Windows 10 and 11 only, x64 and ARM64 (on ARM64 the editor, PHP, Apache and TinyTeX run under x64 emulation; R is not available).
 - Outside the kit there are only Windows' own traces, GitHub CLI's sign-in in the Credential Manager and Antigravity's while `agy` is open (for the session only).
-- The folders in `projects\` are trusted by Claude Code, Codex and the editor (no "Restricted Mode"): open only projects you trust.
+- The folders in `projects\` are trusted by Claude Code and Codex: open only projects you trust. The editor instead asks the first time it opens each project and opens the ones you don't trust in "Restricted Mode".
 - The agents' usage limits come from undocumented interfaces of the providers and may stop working after one of their updates.
 - "Remove drive" does not see PC programs that keep only a file of the kit open.
 - The exe is not signed (see below).
