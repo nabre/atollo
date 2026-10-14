@@ -14,7 +14,7 @@ import {
   VscCode,
   VscCopy,
   VscEdit,
-  VscFolderActive,
+  VscRepo,
   VscGlobe,
   VscKey,
   VscLinkExternal,
@@ -45,6 +45,7 @@ import {
   type GithubStatus,
 } from "./api";
 import { ActionButton, ErrorLine, useAction } from "./pages";
+import { Mark } from "./tags";
 import { locale, rich, t } from "./i18n";
 
 /** The account's state, kept current by the "github" events of the sign-in. */
@@ -384,8 +385,8 @@ function Repositories({
                 return (
                   <li key={r.fullName}>
                     <div
-                      className={`flex h-[22px] items-center gap-0.5 border-l-2 pr-2 pl-2.5 hover:bg-vsc-list-hover ${
-                        r.local ? "border-l-vsc-success bg-vsc-success/5" : "border-l-transparent"
+                      className={`group flex h-[22px] items-center gap-0.5 border-l-2 pr-1 pl-2.5 hover:bg-vsc-list-hover ${
+                        r.local ? "border-l-vsc-success" : "border-l-transparent"
                       }`}
                     >
                       <button
@@ -410,7 +411,7 @@ function Repositories({
                         <ActionButton
                           icon={VscCode}
                           label={t("Editor")}
-                          primary
+                          ghost
                           compact
                           busy={busy === `editor:${r.fullName}`}
                           disabled={editor?.installed === false}
@@ -427,7 +428,7 @@ function Repositories({
                         <ActionButton
                           icon={VscCloudDownload}
                           label={t("Clona")}
-                          primary
+                          ghost
                           compact
                           busy={busy === `clone:${r.fullName}`}
                           title={t("Copia {0} in projects", r.fullName)}
@@ -440,6 +441,7 @@ function Repositories({
                         icon={VscLinkExternal}
                         label="GitHub"
                         compact
+                        ghost
                         title={t("Apre {0} su github.com", r.fullName)}
                         onClick={() => {
                           run(`web:${r.fullName}`, () => githubOpen(r.fullName));
@@ -491,34 +493,35 @@ function Repositories({
   );
 }
 
-/** Private or public; a cloned one is the folder in projects. */
+/** A repository, or a fork; green when it is cloned in projects. */
 function RepoIcon({ repo }: { repo: GithubRepo }) {
-  if (repo.local) return <VscFolderActive size={16} aria-hidden="true" className="shrink-0 text-vsc-success" />;
-  const label = repo.private ? t("privato") : t("pubblico");
-  const Icon = repo.private ? VscLock : VscGlobe;
+  const Icon = repo.fork ? VscRepoForked : VscRepo;
+  const label = repo.fork ? t("fork") : undefined;
   return (
-    <span role="img" aria-label={label} title={label} className="inline-flex shrink-0 text-vsc-desc">
+    <span
+      role={label ? "img" : undefined}
+      aria-label={label}
+      title={label}
+      className={`inline-flex shrink-0 ${repo.local ? "text-vsc-success" : "text-vsc-desc"}`}
+    >
       <Icon size={16} aria-hidden="true" />
     </span>
   );
 }
 
-/** Fork and archived, as icons named on hover (private too when cloned). */
+/** Private or public, and archived: small marks after the name. */
 function RepoFlags({ repo }: { repo: GithubRepo }) {
-  const flags: { on: boolean; icon: IconType; label: string }[] = [
-    { on: repo.local !== null && repo.private, icon: VscLock, label: t("privato") },
-    { on: repo.fork, icon: VscRepoForked, label: t("fork") },
-    { on: repo.archived, icon: VscArchive, label: t("archiviato") },
+  const flags: { icon: IconType; label: string }[] = [
+    repo.private ? { icon: VscLock, label: t("privato") } : { icon: VscGlobe, label: t("pubblico") },
+    ...(repo.archived ? [{ icon: VscArchive, label: t("archiviato") }] : []),
   ];
   return (
     <>
-      {flags
-        .filter((f) => f.on)
-        .map(({ icon: Icon, label }) => (
-          <span key={label} role="img" aria-label={label} title={label} className="inline-flex shrink-0 text-vsc-desc">
-            <Icon size={14} aria-hidden="true" />
-          </span>
-        ))}
+      {flags.map(({ icon: Icon, label }) => (
+        <Mark key={label} label={label} className="text-vsc-desc">
+          <Icon size={12} aria-hidden="true" />
+        </Mark>
+      ))}
     </>
   );
 }

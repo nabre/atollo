@@ -276,7 +276,7 @@ function Summary({
             {p.languages.length === 0 ? (
               <span className="text-vsc-desc">—</span>
             ) : (
-              p.languages.map((l) => <LanguageTag key={l} name={l} />)
+              [...p.languages].sort((a, b) => a.localeCompare(b)).map((l) => <LanguageTag key={l} name={l} />)
             )}
           </span>
           {p.missing.length > 0 && (
@@ -604,9 +604,11 @@ export function ProjectPage({
           </button>
           <h2 className="text-[20px] font-semibold text-vsc-fg">{p.name}</h2>
           <span className="flex flex-wrap gap-1">
-            {p.languages.map((l) => (
-              <LanguageTag key={l} name={l} />
-            ))}
+            {[...p.languages]
+              .sort((a, b) => a.localeCompare(b))
+              .map((l) => (
+                <LanguageTag key={l} name={l} />
+              ))}
           </span>
           <span className="ml-auto flex flex-wrap gap-2">
             <ActionButton

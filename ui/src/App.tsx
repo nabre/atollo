@@ -39,6 +39,7 @@ import { SettingsPage } from "./settings";
 import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
+import { Badge } from "./tags";
 
 type PageId = "projects" | "agents" | "databases" | "components" | "settings" | "eject";
 
@@ -147,11 +148,7 @@ export function App() {
             <h1 id="page-title" className="text-[11px] font-normal tracking-wide uppercase text-vsc-desc">
               {current?.label}
             </h1>
-            {browserPreview && (
-              <span className="ml-auto rounded-sm bg-vsc-badge px-1.5 text-[11px] text-vsc-fg">
-                {t("Anteprima nel browser: dati di esempio")}
-              </span>
-            )}
+            {browserPreview && <Badge className="ml-auto">{t("Anteprima nel browser: dati di esempio")}</Badge>}
           </header>
           {/* Never scrolls itself: each page scrolls in its own box, as the
               editor's views, so nothing slides under another. */}

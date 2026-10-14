@@ -14,6 +14,7 @@ import {
 } from "./api";
 import { locale, t } from "./i18n";
 import { ActionButton } from "./pages";
+import { Badge } from "./tags";
 
 /** Read again every 2 minutes, as often as the app asks the servers. */
 const EVERY = 2 * 60 * 1000;
@@ -203,7 +204,7 @@ export function AgentUsage({ stats: s }: { stats: AgentStats }) {
     <div className="mt-3 space-y-2 border-t border-vsc-border pt-2">
       <div className="flex flex-wrap items-center gap-2 text-[12px] text-vsc-desc">
         <span className="font-medium text-vsc-fg">{t("Limiti del piano")}</span>
-        {l.plan && <span className="rounded-sm bg-vsc-badge px-1.5 text-[11px] text-vsc-fg">{l.plan}</span>}
+        {l.plan && <Badge>{l.plan}</Badge>}
         {l.source && <span>· {l.source}</span>}
         {l.updated !== null && <span>· {t("letti {0}", relative(l.updated))}</span>}
       </div>

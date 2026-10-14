@@ -49,6 +49,7 @@ import {
   SiZig,
 } from "react-icons/si";
 import { VscTerminal, VscTerminalPowershell } from "react-icons/vsc";
+import { Mark, Tag } from "./tags";
 
 /** Antigravity's logo: an arch in Google's colours, red at the top to blue
  * at the feet. */
@@ -179,10 +180,9 @@ export function ComponentLogo({ id, size = 16 }: { id: string; size?: number }) 
 /** A label with the logo of a language found in a project. */
 export function LanguageTag({ name }: { name: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-sm border border-vsc-border px-1.5 py-px text-[11px] leading-4">
-      <LogoIcon logo={LANGUAGES[name]} size={11} />
+    <Tag icon={<LogoIcon logo={LANGUAGES[name]} size={11} />} className="text-vsc-fg">
       {name}
-    </span>
+    </Tag>
   );
 }
 
@@ -198,8 +198,8 @@ export const hasLanguageLogo = (name: string): boolean => name in LANGUAGES;
 export function LanguageIcon({ name }: { name: string }) {
   if (!hasLanguageLogo(name)) return <LanguageTag name={name} />;
   return (
-    <span role="img" aria-label={name} title={name} className="inline-flex">
+    <Mark label={name}>
       <LogoIcon logo={LANGUAGES[name]} size={14} />
-    </span>
+    </Mark>
   );
 }

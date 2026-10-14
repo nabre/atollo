@@ -28,6 +28,7 @@ import { ActionButton } from "./pages";
 import { SetupProgress, setupToShow } from "./setup";
 import { ExtensionsMatrixSection } from "./extensions";
 import { ComponentLogo } from "./logos";
+import { Tag } from "./tags";
 
 function groups(): { id: Group; title: string; hint: string }[] {
   return [
@@ -78,28 +79,30 @@ export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, o
   return next;
 }
 
-const chipShape = "ml-2 inline-flex items-center gap-1 rounded-sm border px-1 align-middle text-[11px] leading-4";
-const chip = `${chipShape} border-vsc-border text-vsc-desc`;
-
 /** The projects that need `c`: blue when chosen, orange with a warning when not. */
 function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
   if (names.length === 0) return null;
   const list = names.join(", ");
   return on ? (
-    <span className={`${chipShape} border-vsc-focus text-vsc-fg`} title={t("Serve ai progetti: {0}.", list)}>
-      <VscFolderLibrary size={11} aria-hidden="true" />
+    <Tag
+      tone="focus"
+      className="ml-2"
+      title={t("Serve ai progetti: {0}.", list)}
+      icon={<VscFolderLibrary size={11} aria-hidden="true" />}
+    >
       <span className="sr-only">{t("serve ai progetti")} </span>
       {list}
-    </span>
+    </Tag>
   ) : (
-    <span
-      className={`${chipShape} border-vsc-orange font-medium text-vsc-orange`}
+    <Tag
+      tone="warning"
+      className="ml-2"
       title={t("Serve ai progetti: {0}. Non è scelto: sceglilo perché funzionino.", list)}
+      icon={<VscWarning size={11} aria-hidden="true" />}
     >
-      <VscWarning size={11} aria-hidden="true" />
       <span className="sr-only">{t("attenzione: non scelto, serve ai progetti")} </span>
       {list}
-    </span>
+    </Tag>
   );
 }
 
@@ -110,20 +113,25 @@ function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentIn
   return (
     <>
       {c.needs.map((n) => (
-        <span key={n} className={chip} title={t("Richiede {0}: si installa insieme.", name(n))}>
-          <VscTypeHierarchySub size={11} aria-hidden="true" />
+        <Tag
+          key={n}
+          className="ml-2"
+          title={t("Richiede {0}: si installa insieme.", name(n))}
+          icon={<VscTypeHierarchySub size={11} aria-hidden="true" />}
+        >
           <span className="sr-only">{t("richiede")} </span>
           {name(n)}
-        </span>
+        </Tag>
       ))}
       {usedBy.length > 0 && (
-        <span
-          className={`${chip} border-dashed`}
+        <Tag
+          dashed
+          className="ml-2"
           title={t("Serve a {0}: resta installato finché serve.", usedBy.join(", "))}
+          icon={<VscReferences size={11} aria-hidden="true" />}
         >
-          <VscReferences size={11} aria-hidden="true" />
           {t("per {0}", usedBy.join(", "))}
-        </span>
+        </Tag>
       )}
     </>
   );

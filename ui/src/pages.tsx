@@ -39,6 +39,7 @@ export function ActionButton({
   primary = false,
   submit = false,
   compact = false,
+  ghost = false,
   title,
 }: {
   icon: IconType;
@@ -51,6 +52,8 @@ export function ActionButton({
   submit?: boolean;
   /** The icon alone; the label stays its accessible name. */
   compact?: boolean;
+  /** No background, as the inline actions of the editor's lists. */
+  ghost?: boolean;
   title?: string | undefined;
 }) {
   return (
@@ -64,9 +67,11 @@ export function ActionButton({
       className={[
         "flex items-center gap-1.5 rounded-sm text-[13px] disabled:cursor-not-allowed disabled:opacity-50",
         compact ? "p-[5px]" : "px-2 py-0.5",
-        primary
-          ? "bg-vsc-button text-vsc-button-fg enabled:hover:bg-vsc-button-hover"
-          : "bg-vsc-button2 text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover",
+        ghost
+          ? "text-vsc-fg enabled:hover:bg-vsc-list-active"
+          : primary
+            ? "bg-vsc-button text-vsc-button-fg enabled:hover:bg-vsc-button-hover"
+            : "bg-vsc-button2 text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover",
       ].join(" ")}
     >
       <Icon size={14} aria-hidden="true" className={busy ? "animate-pulse" : undefined} />
