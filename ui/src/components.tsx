@@ -4,7 +4,15 @@
 // component turned off is removed at the next installation. Also used as the
 // first-start page, before anything optional is installed.
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { VscCheck, VscCloudDownload, VscRefresh, VscTrash, VscWarning } from "react-icons/vsc";
+import {
+  VscCheck,
+  VscCloudDownload,
+  VscReferences,
+  VscRefresh,
+  VscTrash,
+  VscTypeHierarchySub,
+  VscWarning,
+} from "react-icons/vsc";
 import { componentsApply, componentsList, type ComponentInfo, type Group, type SetupSnapshot } from "./api";
 import { locale, rich, t } from "./i18n";
 import { ActionButton } from "./pages";
@@ -47,6 +55,35 @@ export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, o
   };
   visit(id, on);
   return next;
+}
+
+const chip =
+  "ml-2 inline-flex items-center gap-1 rounded-sm border border-vsc-border px-1 align-middle text-[11px] leading-4 text-vsc-desc";
+
+/** What `c` needs (installed with it) and, when chosen, what needs `c`. */
+function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentInfo[]; chosen: Set<string> }) {
+  const name = (id: string) => list.find((x) => x.id === id)?.name ?? id;
+  const usedBy = list.filter((x) => chosen.has(x.id) && x.needs.includes(c.id)).map((x) => x.name);
+  return (
+    <>
+      {c.needs.map((n) => (
+        <span key={n} className={chip} title={t("Richiede {0}: si installa insieme.", name(n))}>
+          <VscTypeHierarchySub size={11} aria-hidden="true" />
+          <span className="sr-only">{t("richiede")} </span>
+          {name(n)}
+        </span>
+      ))}
+      {usedBy.length > 0 && (
+        <span
+          className={`${chip} border-dashed`}
+          title={t("Serve a {0}: resta installato finché serve.", usedBy.join(", "))}
+        >
+          <VscReferences size={11} aria-hidden="true" />
+          {t("per {0}", usedBy.join(", "))}
+        </span>
+      )}
+    </>
+  );
 }
 
 function sizeText(mb: number): string {
@@ -170,11 +207,7 @@ export function ComponentsPage({
                     <label htmlFor={inputId} className="min-w-0 flex-1">
                       <span className="font-medium">{c.name}</span>
                       <span className="ml-2 text-vsc-desc">{c.desc}</span>
-                      {c.needs.length > 0 && (
-                        <span className="ml-2 text-[12px] text-vsc-desc">
-                          {t("(richiede {0})", c.needs.map((n) => list.find((x) => x.id === n)?.name ?? n).join(", "))}
-                        </span>
-                      )}
+                      <Dependencies c={c} list={list} chosen={chosen} />
                     </label>
                     {c.x64Only && (
                       <span className="text-[12px] text-vsc-desc" title={t("Su PC ARM64 gira in emulazione x64")}>
