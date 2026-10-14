@@ -5,7 +5,7 @@ description = "Atollo: portable development environment with integrated editor a
 authors = ["nabre"]
 license = "MIT"
 edition = "2021"
-rust-version = "1.85"
+rust-version = "1.93"
 publish = false
 
 [[bin]]
@@ -51,6 +51,7 @@ features = [
     "Win32_System_Console",
     "Win32_System_Diagnostics_ToolHelp",
     "Win32_System_JobObjects",
+    "Win32_System_LibraryLoader",
     "Win32_System_Pipes",
     "Win32_System_Registry",
     "Win32_System_Threading",
