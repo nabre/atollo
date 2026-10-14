@@ -22,7 +22,13 @@ use std::time::Duration;
 use anyhow::{bail, Context, Result};
 use serde_json::{json, Map, Value};
 use windows::core::HSTRING;
-use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_PIPE_CONNECTED, HANDLE};
+use windows::Win32::Foundation::{
+    CloseHandle, GetLastError, LocalFree, ERROR_PIPE_CONNECTED, HANDLE, HLOCAL,
+};
+use windows::Win32::Security::Authorization::{
+    ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
+};
+use windows::Win32::Security::{PSECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES};
 use windows::Win32::Storage::FileSystem::{
     FlushFileBuffers, WriteFile, FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_ACCESS_OUTBOUND,
 };
@@ -43,6 +49,8 @@ const SCHEME_DARK: &str = "VSCodium Dark Modern";
 const SCHEME_LIGHT: &str = "VSCodium Light Modern";
 /// Windows Terminal needs Windows 10 2004 or newer.
 const MIN_BUILD: u32 = 19041;
+/// Protected DACL, full access for the owner only.
+const PIPE_SDDL: &str = "D:P(A;;GA;;;OW)";
 /// How long the new tab has to ask for the kit's environment.
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -279,8 +287,23 @@ impl Drop for Pipe {
 
 fn create_pipe(name: &str) -> Result<Pipe> {
     let path = HSTRING::from(format!(r"\\.\pipe\{name}"));
-    // SAFETY: valid name; one outbound instance for this machine only, with
-    // the default security of the user's session.
+    // Owner only: the default security lets Everyone read, and the kit's
+    // environment holds secrets (the kit's pwsh.exe, checked on connect, can
+    // be started by anyone on a drive without permissions).
+    let sddl = HSTRING::from(PIPE_SDDL);
+    let mut sd = PSECURITY_DESCRIPTOR::default();
+    // SAFETY: valid SDDL string; `sd` receives a LocalAlloc'd descriptor freed below.
+    unsafe {
+        ConvertStringSecurityDescriptorToSecurityDescriptorW(&sddl, SDDL_REVISION_1, &mut sd, None)
+    }
+    .context("security descriptor")?;
+    let attributes = SECURITY_ATTRIBUTES {
+        nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
+        lpSecurityDescriptor: sd.0,
+        bInheritHandle: false.into(),
+    };
+    // SAFETY: valid name and attributes; one outbound instance for this
+    // machine only.
     let pipe = unsafe {
         CreateNamedPipeW(
             &path,
@@ -290,9 +313,11 @@ fn create_pipe(name: &str) -> Result<Pipe> {
             64 * 1024,
             0,
             0,
-            None,
+            Some(&attributes),
         )
     };
+    // SAFETY: frees the descriptor allocated above, once, after its use.
+    unsafe { LocalFree(Some(HLOCAL(sd.0))) };
     anyhow::ensure!(!pipe.is_invalid(), "CreateNamedPipeW {name}");
     Ok(Pipe(pipe))
 }
@@ -473,6 +498,48 @@ mod tests {
     #[test]
     fn build_of_windows_is_read() {
         assert!(windows_build().is_some_and(|b| b >= 10240));
+    }
+
+    /// The pipe's DACL has one entry, for its owner (not Everyone's read).
+    #[test]
+    fn pipe_is_owner_only() {
+        use windows::Win32::Security::Authorization::{
+            ConvertSecurityDescriptorToStringSecurityDescriptorW, GetSecurityInfo, SE_KERNEL_OBJECT,
+        };
+        use windows::Win32::Security::DACL_SECURITY_INFORMATION;
+        let pipe = create_pipe(&format!("Dev-Kit-Console-acl-{}", std::process::id())).unwrap();
+        let mut sd = PSECURITY_DESCRIPTOR::default();
+        let mut text = windows::core::PWSTR::null();
+        // SAFETY: valid pipe handle; both outputs LocalAlloc'd, freed below.
+        let sddl = unsafe {
+            GetSecurityInfo(
+                pipe.0,
+                SE_KERNEL_OBJECT,
+                DACL_SECURITY_INFORMATION,
+                None,
+                None,
+                None,
+                None,
+                Some(&mut sd),
+            )
+            .ok()
+            .unwrap();
+            ConvertSecurityDescriptorToStringSecurityDescriptorW(
+                sd,
+                SDDL_REVISION_1,
+                DACL_SECURITY_INFORMATION,
+                &mut text,
+                None,
+            )
+            .unwrap();
+            let s = text.to_string().unwrap();
+            LocalFree(Some(HLOCAL(text.0.cast())));
+            LocalFree(Some(HLOCAL(sd.0)));
+            s
+        };
+        assert!(sddl.starts_with("D:P"), "{sddl}");
+        assert_eq!(sddl.matches("(A;").count(), 1, "{sddl}");
+        assert!(!sddl.contains(";WD)") && !sddl.contains(";AN)"), "{sddl}");
     }
 
     /// The handshake with a real client: the kit's environment arrives, and
