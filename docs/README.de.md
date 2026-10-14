@@ -21,6 +21,7 @@ Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShel
 | --- | --- |
 | **Start** | letzte Projekte mit Editor, Terminal und Agent; Hinweise (Kit verschoben, andere Kopie des Kits geöffnet, laufende Installationen); wo das Kit liegt |
 | **Projekte** | neues Projekt, Klonen von GitHub oder einer Git-Adresse; für jedes Projekt Typ, Sprachen (mit Logo) und erkannte Aktionen (`npm run dev`, `php -S`, `cargo run`, statische Website…), mit Port, Ausgabe und Öffnen im Browser |
+| **GitHub** | das GitHub-Konto des Kits, eines für alles: diese Seite, Git (auch im Editor, in den Konsolen und in den Agenten) und GitHub CLI; die Repositorys des Kontos und seiner Organisationen, mit Klonen nach `projects\`, Öffnen im Editor, Umbenennen und Löschen auf GitHub |
 | **Agenten** | die installierten Claude Code, Codex und Antigravity: Version, Anmeldung, Tariflimits und Verbrauch von heute und der letzten 7 Tage; gemeinsame Anweisungen, Skills und MCP-Server in `data\agents` |
 | **Sprachen und Werkzeuge** | die Komponenten mit Logo, Abhängigkeiten und Speicherplatz; installieren, aktualisieren, entfernen |
 | **Einstellungen** | Sprache, Terminal, Netzwerk (Proxy, Zertifikate, lokales Netz), Gemini-Schlüssel, Versionen von Python und PHP, Rust-Compiler (GNU oder MSVC), Updates der App |
@@ -35,7 +36,7 @@ Das Konsolenmenü von [nabre/atollo](https://github.com/nabre/atollo) entfällt:
 ## Bekannte Grenzen
 
 - Nur Windows 10 und 11, x64 und ARM64 (auf ARM64 laufen Editor, PHP, Apache und TinyTeX in x64-Emulation; R ist nicht verfügbar).
-- Außerhalb des Kits bleiben nur die Spuren von Windows, die Anmeldung von GitHub CLI in der Anmeldeinformationsverwaltung und die von Antigravity, solange `agy` geöffnet ist (nur für die Sitzung).
+- Außerhalb des Kits bleiben nur die Spuren von Windows, die Anmeldung von GitHub CLI in der Anmeldeinformationsverwaltung, wenn Sie sich in einer Konsole mit `gh auth login` anmelden (die der GitHub-Seite bleibt im Kit, in `data\gh`), und die von Antigravity, solange `agy` geöffnet ist (nur für die Sitzung).
 - Die Ordner in `projects\` gelten für Claude Code und Codex als vertrauenswürdig: nur Projekte öffnen, denen man vertraut. Der Editor fragt dagegen beim ersten Öffnen jedes Projekts und öffnet nicht vertrauenswürdige im „eingeschränkten Modus“.
 - Die Nutzungslimits der Agenten stammen aus nicht dokumentierten Schnittstellen der Anbieter und können nach einem ihrer Updates nicht mehr funktionieren.
 - „Laufwerk entfernen“ sieht keine PC-Programme, die nur eine Datei des Kits geöffnet halten.

@@ -7,6 +7,7 @@ import {
   VscDebugDisconnect,
   VscExtensions,
   VscFolderLibrary,
+  VscGithub,
   VscHome,
   VscHubot,
   VscSettingsGear,
@@ -29,6 +30,7 @@ import {
   type SetupSnapshot,
 } from "./api";
 import { ProjectsPage, RecentProjects } from "./projects";
+import { GithubPage } from "./github";
 import { TitleBar } from "./titlebar";
 import { ComponentsPage } from "./components";
 import { AgentsPage, useAgents } from "./agents";
@@ -37,7 +39,7 @@ import { SettingsPage } from "./settings";
 import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
 
-type PageId = "home" | "projects" | "agents" | "components" | "settings" | "eject";
+type PageId = "home" | "projects" | "github" | "agents" | "components" | "settings" | "eject";
 
 interface Page {
   id: PageId;
@@ -49,6 +51,7 @@ function pages(): Page[] {
   return [
     { id: "home", label: t("Home"), icon: VscHome },
     { id: "projects", label: t("Progetti"), icon: VscFolderLibrary },
+    { id: "github", label: "GitHub", icon: VscGithub },
     { id: "agents", label: t("Agenti"), icon: VscHubot },
     { id: "components", label: t("Linguaggi e strumenti"), icon: VscExtensions },
     { id: "settings", label: t("Impostazioni"), icon: VscSettingsGear },
@@ -157,6 +160,8 @@ export function App() {
               />
             ) : page === "projects" ? (
               <ProjectsPage status={editor} agents={agents} onChanged={refreshEditor} />
+            ) : page === "github" ? (
+              <GithubPage editor={editor} onChanged={refreshEditor} />
             ) : page === "agents" ? (
               <AgentsPage />
             ) : page === "components" ? (

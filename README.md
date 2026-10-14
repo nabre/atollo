@@ -21,6 +21,7 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 | --- | --- |
 | **Home** | progetti recenti con Editor, Terminale e agente; avvisi (kit spostato, un'altra copia del kit aperta, installazioni in corso); dove si trova il kit |
 | **Progetti** | nuovo progetto, clone da GitHub o da un indirizzo Git; per ogni progetto il tipo, i linguaggi (con il loro logo) e le azioni riconosciute (`npm run dev`, `php -S`, `cargo run`, sito statico…), con porta, output e apertura nel browser |
+| **GitHub** | l'account GitHub del kit, uno per tutto: questa pagina, Git (anche nell'editor, nelle console e negli agenti) e GitHub CLI; i repository dell'account e delle sue organizzazioni, con clone in `projects\`, apertura nell'editor, rinomina ed eliminazione su GitHub |
 | **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
 | **Linguaggi e strumenti** | i componenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove |
 | **Impostazioni** | lingua, terminale, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python e PHP, compilatore di Rust (GNU o MSVC), aggiornamenti dell'app |
@@ -35,7 +36,7 @@ Il menu in console di [nabre/atollo](https://github.com/nabre/atollo) non c'è: 
 ## Limiti noti
 
 - Solo Windows 10 e 11, x64 e ARM64 (su ARM64 l'editor, PHP, Apache e TinyTeX girano in emulazione x64; R non c'è).
-- Fuori dal kit restano solo le tracce di Windows, l'accesso di GitHub CLI nella Gestione credenziali e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
+- Fuori dal kit restano solo le tracce di Windows, l'accesso di GitHub CLI nella Gestione credenziali se lo fai in una console con `gh auth login` (quello della pagina GitHub resta nel kit, in `data\gh`) e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
 - Le cartelle in `projects\` sono attendibili per Claude Code e Codex: apri solo progetti di cui ti fidi. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.
 - I limiti d'uso degli agenti vengono da interfacce non documentate dei fornitori e possono smettere di funzionare dopo un loro aggiornamento.
 - «Rimuovi l'unità» non vede i programmi del PC che tengono aperto solo un file del kit.

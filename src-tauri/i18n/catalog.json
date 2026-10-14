@@ -683,5 +683,35 @@
     "en": "no data yet: the limits arrive with Codex's next reply",
     "fr": "pas encore de données : les limites arrivent avec la prochaine réponse de Codex",
     "de": "noch keine Daten: die Limits kommen mit der nächsten Antwort von Codex"
+  },
+  "In projects esistono già le cartelle {0} e {1}.": {
+    "en": "The folders {0} and {1} already exist in projects.",
+    "fr": "Les dossiers {0} et {1} existent déjà dans projects.",
+    "de": "Die Ordner {0} und {1} gibt es in projects schon."
+  },
+  "GitHub ha rifiutato l'accesso: accedi di nuovo.": {
+    "en": "GitHub refused the sign-in: sign in again.",
+    "fr": "GitHub a refusé la connexion : connectez-vous de nouveau.",
+    "de": "GitHub hat die Anmeldung abgelehnt: Melden Sie sich erneut an."
+  },
+  "GitHub non risponde: {0}": {
+    "en": "GitHub does not answer: {0}",
+    "fr": "GitHub ne répond pas : {0}",
+    "de": "GitHub antwortet nicht: {0}"
+  },
+  "GitHub: {0}": {
+    "en": "GitHub: {0}",
+    "fr": "GitHub : {0}",
+    "de": "GitHub: {0}"
+  },
+  "Accedi prima a GitHub.": {
+    "en": "Sign in to GitHub first.",
+    "fr": "Connectez-vous d'abord à GitHub.",
+    "de": "Melden Sie sich zuerst bei GitHub an."
+  },
+  "Nome non valido: solo lettere, cifre, «.», «-» e «_».": {
+    "en": "Invalid name: only letters, digits, “.”, “-” and “_”.",
+    "fr": "Nom non valide : seulement des lettres, des chiffres, « . », « - » et « _ ».",
+    "de": "Ungültiger Name: nur Buchstaben, Ziffern, „.“, „-“ und „_“."
   }
 }

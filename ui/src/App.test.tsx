@@ -161,6 +161,80 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Agenti" }).getAttribute("aria-current")).toBe("page");
   });
 
+  it("signs in to GitHub with the one-time code", async () => {
+    let status = {
+      installed: true,
+      signedIn: false,
+      login: null,
+      signingIn: false,
+      code: null as string | null,
+      error: null,
+    };
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "github_status") return Promise.resolve(status);
+      if (cmd === "github_sign_in") {
+        status = { ...status, signingIn: true, code: "1A2B-3C4D" };
+        return Promise.resolve(status);
+      }
+      return answers()(cmd);
+    });
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Accedi a GitHub" }));
+    expect(await screen.findByText("1A2B-3C4D")).toBeTruthy();
+    expect(invoke).toHaveBeenCalledWith("github_sign_in", { delete: false });
+    expect(invoke).not.toHaveBeenCalledWith("github_repos", undefined);
+  });
+
+  it("lists the GitHub repositories, clones one and asks for the delete permission", async () => {
+    const repo = (owner: string, name: string, extra: object = {}) => ({
+      fullName: `${owner}/${name}`,
+      name,
+      owner,
+      private: false,
+      fork: false,
+      archived: false,
+      description: "",
+      language: "",
+      stars: 0,
+      pushedAt: null,
+      htmlUrl: `https://github.com/${owner}/${name}`,
+      admin: true,
+      local: null,
+      ...extra,
+    });
+    invoke.mockImplementation(
+      answers({
+        github_status: { installed: true, signedIn: true, login: "me", signingIn: false, code: null, error: null },
+        github_repos: {
+          login: "me",
+          canDelete: false,
+          repos: [repo("me", "sito", { local: "sito" }), repo("me", "app10"), repo("me", "app2"), repo("acme", "erp")],
+        },
+        github_clone: "app2",
+      }),
+    );
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
+    expect(await screen.findByText("Accesso fatto come @me")).toBeTruthy();
+    const mine = await screen.findByRole("list", { name: "me" });
+    // app2 before app10; the organization in its own group
+    expect([...mine.querySelectorAll("li")].map((li) => li.querySelector(".font-semibold")?.textContent)).toEqual([
+      "app2",
+      "app10",
+      "sito",
+    ]);
+    expect(screen.getByRole("list", { name: "acme" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Clona", description: "Copia me/app2 in projects" }));
+    expect(await screen.findByText("me/app2 clonato in projects\\app2.")).toBeTruthy();
+    expect(invoke).toHaveBeenCalledWith("github_clone", { fullName: "me/app2" });
+    fireEvent.click(screen.getByRole("button", { name: /^sito/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Elimina da GitHub" }));
+    fireEvent.click(screen.getByRole("button", { name: "Elimina" }));
+    expect(await screen.findByRole("button", { name: "Concedi il permesso" })).toBeTruthy();
+    expect(invoke).not.toHaveBeenCalledWith("github_delete", expect.anything());
+  });
+
   it("opens editor, console and agent only in a project from Home", async () => {
     const agents: AgentInfo[] = [
       {
@@ -393,7 +467,7 @@ describe("App", () => {
     );
     render(<App />);
     expect(await screen.findByText("Benvenuto in Atollo")).toBeTruthy();
-    expect(screen.getByLabelText<HTMLInputElement>(/^Git/).disabled).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/^Git(?!Hub)/).disabled).toBe(true);
     expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
     expect(screen.getByText("non disponibile su PC ARM64")).toBeTruthy();
     // Dependencies: Apache shows what it needs, PHP what it is needed by.

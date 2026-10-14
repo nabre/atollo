@@ -261,6 +261,60 @@
           "markdownDescription": "Enables the folder_open command without any pre-configured scope."
         },
         {
+          "description": "Enables the github_clone command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-github-clone",
+          "markdownDescription": "Enables the github_clone command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the github_delete command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-github-delete",
+          "markdownDescription": "Enables the github_delete command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the github_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-github-open",
+          "markdownDescription": "Enables the github_open command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the github_rename command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-github-rename",
+          "markdownDescription": "Enables the github_rename command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the github_repos command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-github-repos",
+          "markdownDescription": "Enables the github_repos command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the github_sign_in command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-github-sign-in",
+          "markdownDescription": "Enables the github_sign_in command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the github_sign_in_cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-github-sign-in-cancel",
+          "markdownDescription": "Enables the github_sign_in_cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the github_sign_out command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-github-sign-out",
+          "markdownDescription": "Enables the github_sign_out command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the github_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-github-status",
+          "markdownDescription": "Enables the github_status command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_clone command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-clone",
@@ -469,6 +523,60 @@
           "type": "string",
           "const": "deny-folder-open",
           "markdownDescription": "Denies the folder_open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the github_clone command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-github-clone",
+          "markdownDescription": "Denies the github_clone command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the github_delete command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-github-delete",
+          "markdownDescription": "Denies the github_delete command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the github_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-github-open",
+          "markdownDescription": "Denies the github_open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the github_rename command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-github-rename",
+          "markdownDescription": "Denies the github_rename command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the github_repos command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-github-repos",
+          "markdownDescription": "Denies the github_repos command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the github_sign_in command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-github-sign-in",
+          "markdownDescription": "Denies the github_sign_in command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the github_sign_in_cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-github-sign-in-cancel",
+          "markdownDescription": "Denies the github_sign_in_cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the github_sign_out command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-github-sign-out",
+          "markdownDescription": "Denies the github_sign_out command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the github_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-github-status",
+          "markdownDescription": "Denies the github_status command without any pre-configured scope."
         },
         {
           "description": "Denies the project_clone command without any pre-configured scope.",
