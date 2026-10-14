@@ -15,8 +15,9 @@
 //! - each extension is offered once (`data\app\extensions-offered.txt`): if
 //!   the user uninstalls it, it does not come back, unless a project adds it
 //!   by hand; a failure is retried at the next start of the editor;
-//! - installed extensions work in the whole editor: a language's ones only
-//!   start on its files. Nothing is uninstalled or disabled per project;
+//! - each editor window turns off, in its workspace only, the kit's
+//!   extensions its project does not use (`hidden`, editor_window.rs).
+//!   Nothing is uninstalled;
 //! - CodeLLDB comes from its GitHub release (Open VSX only has a bootstrap
 //!   that downloads at run time), checked with GitHub's SHA-256;
 //! - installed in the background after the editor starts and when a project
@@ -227,6 +228,61 @@ pub fn of_project(
         });
     }
     out
+}
+
+/// The extensions a project's editor window turns off, in its workspace
+/// only: the kit's for languages and tools, the optional ones and those
+/// added by hand to other projects, that this project does not want. The
+/// general ones, the user's list and any other extension stay on.
+pub fn hidden(
+    project: &[ProjectExtension],
+    others_added: &BTreeSet<String>,
+    user: &[Entry],
+) -> Vec<String> {
+    let on = |id: &str| project.iter().any(|e| e.on && e.id == id);
+    let kept = |id: &str| on(id) || user.iter().any(|e| e.id == id);
+    let mut ids: BTreeSet<String> = matrix()
+        .iter()
+        .filter(|e| !e.general() || e.optional)
+        .map(|e| e.id.clone())
+        .collect();
+    ids.extend(others_added.iter().cloned());
+    ids.retain(|id| {
+        !kept(id)
+            && !matrix()
+                .iter()
+                .any(|e| &e.id == id && e.general() && !e.optional)
+    });
+    ids.into_iter().collect()
+}
+
+/// [`hidden`] for the project in `dir`, reading the kit.
+pub fn hidden_of(kit: &Kit, dir: &Path) -> Vec<String> {
+    let name = dir
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let choice = crate::project_settings::load(kit, &name).extensions;
+    let project = of_project(
+        &crate::detect::languages(dir),
+        &crate::detect::requires(dir),
+        &choice,
+        &BTreeSet::new(),
+    );
+    let mut others = BTreeSet::new();
+    for other in crate::projects::folders(kit) {
+        if other.file_name() != dir.file_name() {
+            if let Some(n) = other.file_name() {
+                others.extend(
+                    crate::project_settings::load(kit, &n.to_string_lossy())
+                        .extensions
+                        .added,
+                );
+            }
+        }
+    }
+    let user = fs::read_to_string(kit.app_dir().join("extensions.txt")).unwrap_or_default();
+    hidden(&project, &others, &parse(&user))
 }
 
 /// The project's choice cleaned up: valid lower case ids, sorted, an added
@@ -701,6 +757,30 @@ mod tests {
         assert!(!flutter.by_default && flutter.on && flutter.name == "Flutter");
         let unknown = list.iter().find(|e| e.id == "x.unknown").unwrap();
         assert_eq!(unknown.name, "x.unknown", "not in the matrix: its id");
+    }
+
+    #[test]
+    fn a_project_hides_what_it_does_not_use() {
+        let langs = |l: &[&str]| l.iter().map(|s| (*s).to_owned()).collect::<Vec<_>>();
+        let none = BTreeSet::new();
+        let choice = clean_choice(&["eamodio.gitlens".into()], &["charliermarsh.ruff".into()]);
+        let project = of_project(&langs(&["Python"]), &[], &choice, &none);
+        let others: BTreeSet<String> =
+            ["x.other".to_owned(), "usernamehw.errorlens".to_owned()].into();
+        let user = parse("vue.volar\n");
+        let h = hidden(&project, &others, &user);
+        let has = |id: &str| h.iter().any(|x| x == id);
+        assert!(!has("ms-python.python"), "its language");
+        assert!(has("charliermarsh.ruff"), "removed from the project");
+        assert!(!has("eamodio.gitlens"), "added by hand");
+        assert!(
+            has("rust-lang.rust-analyzer") && has("dart-code.flutter"),
+            "other languages, optional"
+        );
+        assert!(has("x.other"), "added to another project");
+        assert!(!has("usernamehw.errorlens"), "general: always on");
+        assert!(!has("vue.volar"), "the user's list");
+        assert!(!has("y.installed-by-hand"));
     }
 
     #[test]

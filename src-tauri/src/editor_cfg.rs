@@ -147,6 +147,18 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
         );
     }
     out.insert("terminal.integrated.useWslProfiles".into(), json!(false));
+    // VSCodium drops NODE_OPTIONS from the terminals' environment (one of its
+    // "dangerous" variables): without `loopback.js` a dev server started in
+    // the editor's terminal or a task listens on the network and Windows
+    // Firewall asks for a consent that needs an administrator. The settings'
+    // variables are added after that cleanup; the user's others are kept.
+    let env_key = "terminal.integrated.env.windows";
+    let mut vars = match existing.get(env_key) {
+        Some(Value::Object(m)) => m.clone(),
+        _ => Map::new(),
+    };
+    vars.insert("NODE_OPTIONS".into(), json!(crate::env::node_options(kit)));
+    out.insert(env_key.into(), Value::Object(vars));
 
     let projects = kit.projects().display().to_string();
     for (key, value) in [
@@ -263,6 +275,10 @@ mod tests {
         );
         assert!(p["PowerShell"].is_null() && p["Command Prompt"].is_null());
         assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Dev-Kit");
+        assert!(s["terminal.integrated.env.windows"]["NODE_OPTIONS"]
+            .as_str()
+            .unwrap()
+            .ends_with("/data/kit/loopback.js\""));
         assert_eq!(s["editor.fontSize"], 15);
         assert_eq!(s["files.dialog.defaultPath"], r"D:\mine", "user value kept");
         assert!(s["git.defaultCloneDirectory"]

@@ -1,5 +1,14 @@
 # Novità
 
+## Editor per progetto e niente avvisi del Firewall (14/10/2026)
+
+**Fatto**
+- **Ogni finestra dell'editor mostra solo le estensioni del suo progetto** (D-71): quelle dei linguaggi e degli strumenti di altri progetti, le facoltative e quelle aggiunte a mano ad altri progetti risultano «disattivate in quest'area di lavoro». Restano attive le generali, quelle di `extensions.txt` e quelle installate a mano nell'editor; le disattivazioni fatte a mano dall'utente restano. Un linguaggio nuovo o un cambio nel pannello del progetto valgono dal prossimo ricaricamento della finestra.
+- **Niente richiesta del Firewall di Windows per Node.js dal terminale dell'editor**: VSCodium toglie `NODE_OPTIONS` ai suoi terminali, quindi `loopback.js` non si caricava; ora il kit la rimette con `terminal.integrated.env.windows`.
+- Pagina del progetto: via la sezione «Agenti» e la riga «Agente» nel riquadro del progetto; l'agente si sceglie in testa alla pagina.
+
+**Verificato**: test Rust di `editor_ext`, `editor_window`, `editor_cfg`, `env`; 23 test dell'interfaccia; clippy, ESLint, Prettier puliti. Scrittura dello stato nella IndexedDB provata in Chrome simulando il workbench (prima lettura, scelta dell'utente conservata, estensione riattivata). Da provare nell'app: progetto Python aperto, Rust Analyzer «disattivata (area di lavoro)».
+
 ## Impostazioni del progetto nei suoi file (14/10/2026)
 
 **Fatto**
