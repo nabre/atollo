@@ -20,6 +20,9 @@ pub enum Kind {
     TarGz,
     /// A 7z archive, also inside a self-extracting `.7z.exe`.
     SevenZip,
+    /// Not an archive: the download is the file itself (an exe), copied
+    /// into the target folder under its name.
+    File,
 }
 
 /// Which part of the extracted tree becomes the component folder.
@@ -34,6 +37,8 @@ pub enum Inner {
     Auto,
     /// A named subfolder.
     Named(String),
+    /// The only folder inside a named subfolder (`package/vendor/<target>`).
+    SingleUnder(String),
 }
 
 /// `base` + an archive entry name, or `None` if the name would escape `base`.
@@ -59,6 +64,12 @@ pub fn extract(archive: &Path, kind: Kind, dest: &Path) -> Result<()> {
         Kind::Zip => extract_zip(archive, dest),
         Kind::TarGz => extract_tar_gz(archive, dest),
         Kind::SevenZip => extract_7z(archive, dest),
+        Kind::File => {
+            let name = archive.file_name().context("file name")?;
+            fs::copy(archive, dest.join(name))
+                .map(|_| ())
+                .map_err(Into::into)
+        }
     }
     .with_context(|| format!("extracting {}", archive.display()))
 }
@@ -229,6 +240,10 @@ pub fn pick_inner(extracted: &Path, inner: &Inner) -> Result<PathBuf> {
             }
             Ok(path)
         }
+        Inner::SingleUnder(name) => {
+            let sub = extracted.join(name.replace('/', "\\"));
+            pick_inner(&sub, &Inner::Single).with_context(|| format!("in {name}"))
+        }
         Inner::Single => match dirs()? {
             (dirs, 1) if dirs.len() == 1 => Ok(dirs.into_iter().next().unwrap_or_default()),
             (_, n) => bail!("expected one folder at the top of the archive, found {n} items"),
@@ -277,6 +292,33 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
 
 /// Removes a component folder: renamed first, so a folder in use is left
 /// untouched (`InUse`).
+/// Puts `new` in place of the file `dest`. The old file is renamed to
+/// `<name>.old` first: Windows allows renaming a running exe, so a program in
+/// use can still be updated (`Replace-File` of the kit). Leftover `.old`
+/// files are deleted when possible.
+pub fn replace_file(new: &Path, dest: &Path) -> Result<()> {
+    let old = dest.with_file_name(format!(
+        "{}.old",
+        dest.file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default()
+    ));
+    let _ = fs::remove_file(&old);
+    let had_old = dest.exists();
+    if had_old {
+        fs::rename(dest, &old).map_err(|_| InUse(dest.to_path_buf()))?;
+    }
+    // Copy, not rename: `new` may be on another disk (PC temp folder).
+    if let Err(e) = fs::copy(new, dest) {
+        if had_old {
+            let _ = fs::rename(&old, dest);
+        }
+        return Err(e).with_context(|| format!("writing {}", dest.display()));
+    }
+    let _ = fs::remove_file(&old);
+    Ok(())
+}
+
 pub fn remove_dir(dest: &Path) -> Result<()> {
     if !dest.exists() {
         return Ok(());
@@ -409,6 +451,34 @@ mod tests {
         bytes.extend_from_slice(b"rest");
         fs::write(&file, &bytes).unwrap();
         assert_eq!(seven_z_offsets(&file).unwrap(), vec![1024 * 1024 - 3]);
+    }
+
+    #[test]
+    fn replace_file_works_while_in_use() {
+        let tmp = TempDir::new("replfile");
+        let dest = tmp.0.join("tool.exe");
+        fs::write(&dest, "1").unwrap();
+        let held = File::open(&dest).unwrap();
+        let new = tmp.0.join("new.exe");
+        fs::write(&new, "2").unwrap();
+        replace_file(&new, &dest).unwrap();
+        assert_eq!(fs::read_to_string(&dest).unwrap(), "2");
+        drop(held);
+        fs::write(&new, "3").unwrap();
+        replace_file(&new, &dest).unwrap();
+        assert!(
+            !tmp.0.join("tool.exe.old").exists(),
+            "old removed once free"
+        );
+    }
+
+    #[test]
+    fn plain_file_kind() {
+        let tmp = TempDir::new("kindfile");
+        let f = tmp.0.join("agy.exe");
+        fs::write(&f, "x").unwrap();
+        extract(&f, Kind::File, &tmp.0.join("out")).unwrap();
+        assert!(tmp.0.join("out").join("agy.exe").is_file());
     }
 
     #[test]

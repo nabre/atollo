@@ -14,3 +14,6 @@
 # PowerShell/CLR profiling junk
 StartupProfileData-NonInteractive
 *.prof
+
+# TypeScript incremental build state
+*.tsbuildinfo

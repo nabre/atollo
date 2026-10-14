@@ -1,42 +1,32 @@
 //! Editor and terminal: VSCodium web server, PowerShell 7, Windows Terminal
-//! (new components, docs/app/CATALOG.md and DECISIONS.md D-23, D-26).
+//! (new components, docs/app/CATALOG.md and DECISIONS.md D-23, D-26), and
+//! the optional VSCodium desktop.
 
 use std::fs;
 use std::path::Path;
 
 use anyhow::{anyhow, Context, Result};
-use regex::Regex;
+use serde_json::Value;
 
-use super::{arch_of, Ctx, Installer, Release};
+use super::{arch_of, github_single, Ctx, Installer, Release};
 use crate::archive::{Inner, Kind};
 use crate::catalog::Component;
 use crate::net::{first_sha256, github_digest};
 use crate::verify::Expect;
-
-fn pattern(re: &str) -> Result<Regex> {
-    Regex::new(re).context("asset pattern")
-}
 
 /// PowerShell 7, the official zip (not the "fxdependent" build).
 pub struct Pwsh;
 
 impl Installer for Pwsh {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let rel = ctx.net.github_latest("PowerShell/PowerShell")?;
         let arch = arch_of(ctx, component);
-        let asset = rel
-            .asset(&pattern(&format!(
-                r"^PowerShell-\d+\.\d+\.\d+-win-{arch}\.zip$"
-            ))?)
-            .ok_or_else(|| anyhow!("no PowerShell zip for {arch} in {}", rel.tag_name))?;
-        Ok(Release {
-            version: rel.tag_name.trim_start_matches('v').to_owned(),
-            url: asset.browser_download_url.clone(),
-            file_name: asset.name.clone(),
-            expect: Expect::Sha256(github_digest(asset)?),
-            kind: Kind::Zip,
-            inner: Inner::Auto,
-        })
+        github_single(
+            ctx,
+            "PowerShell/PowerShell",
+            &format!(r"^PowerShell-\d+\.\d+\.\d+-win-{arch}\.zip$"),
+            Kind::Zip,
+            Inner::Auto,
+        )
     }
 }
 
@@ -45,21 +35,14 @@ pub struct Terminal;
 
 impl Installer for Terminal {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let rel = ctx.net.github_latest("microsoft/terminal")?;
         let arch = arch_of(ctx, component);
-        let asset = rel
-            .asset(&pattern(&format!(
-                r"^Microsoft\.WindowsTerminal_[\d.]+_{arch}\.zip$"
-            ))?)
-            .ok_or_else(|| anyhow!("no Windows Terminal zip for {arch} in {}", rel.tag_name))?;
-        Ok(Release {
-            version: rel.tag_name.trim_start_matches('v').to_owned(),
-            url: asset.browser_download_url.clone(),
-            file_name: asset.name.clone(),
-            expect: Expect::Sha256(github_digest(asset)?),
-            kind: Kind::Zip,
-            inner: Inner::Auto,
-        })
+        github_single(
+            ctx,
+            "microsoft/terminal",
+            &format!(r"^Microsoft\.WindowsTerminal_[\d.]+_{arch}\.zip$"),
+            Kind::Zip,
+            Inner::Auto,
+        )
     }
 
     /// `.portable` next to the exe: settings stay in the folder, not in
@@ -94,13 +77,56 @@ impl Installer for Server {
                 return Err(anyhow!("{name}: VSCodium and GitHub checksums differ"));
             }
         }
-        Ok(Release {
-            version: rel.tag_name.clone(),
-            url: asset.browser_download_url.clone(),
-            file_name: name,
-            expect: Expect::Sha256(published),
-            kind: Kind::TarGz,
-            inner: Inner::Auto,
-        })
+        Ok(Release::single(
+            rel.tag_name.clone(),
+            asset.browser_download_url.clone(),
+            name,
+            Expect::Sha256(published),
+            Kind::TarGz,
+            Inner::Auto,
+        ))
+    }
+}
+
+/// VSCodium desktop (optional), the official zip in portable mode: its
+/// settings and extensions stay in `vscodium\data`, kept across updates.
+pub struct Vscodium;
+
+impl Installer for Vscodium {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let arch = arch_of(ctx, component);
+        let info: Value =
+            ctx.net.json(&format!("https://raw.githubusercontent.com/VSCodium/versions/master/stable/win32/{arch}/archive/latest.json"))?;
+        let get = |k: &str| {
+            info.get(k)
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+                .ok_or_else(|| anyhow!("VSCodium latest.json: no {k}"))
+        };
+        Ok(Release::single(
+            get("productVersion").or_else(|_| get("version"))?,
+            get("url")?,
+            get("name")?,
+            Expect::Sha256(get("sha256hash")?),
+            Kind::Zip,
+            Inner::Auto,
+        ))
+    }
+
+    /// The old `data` folder (portable settings and extensions) moves into
+    /// the new tree.
+    fn before_swap(
+        &self,
+        _ctx: &Ctx,
+        _component: &Component,
+        tree: &Path,
+        old: &Path,
+    ) -> Result<()> {
+        let data = old.join("data");
+        if data.is_dir() {
+            fs::rename(&data, tree.join("data")).context("VSCodium data")
+        } else {
+            fs::create_dir_all(tree.join("data").join("tmp")).map_err(Into::into)
+        }
     }
 }
