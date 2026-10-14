@@ -39,7 +39,9 @@ export function Tag({
 
 /** A filled pill: a state ("in esecuzione") or a plan. */
 export function Badge({ className = "", children }: { className?: string; children: ReactNode }) {
-  return <span className={`rounded-sm bg-vsc-badge px-1.5 text-[11px] text-vsc-fg ${className}`}>{children}</span>;
+  return (
+    <span className={`rounded-sm bg-vsc-badge px-1.5 text-[11px] text-vsc-badge-fg ${className}`}>{children}</span>
+  );
 }
 
 /** An icon that stands for a word: named on hover and for screen readers. */

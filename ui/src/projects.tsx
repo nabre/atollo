@@ -9,15 +9,9 @@ import {
   VscChevronUp,
   VscCloudDownload,
   VscCode,
-  VscDebugStart,
-  VscDebugStop,
-  VscDiscard,
-  VscEdit,
   VscFolderOpened,
   VscGlobe,
-  VscOutput,
   VscRefresh,
-  VscStarEmpty,
   VscTerminal,
   VscTrash,
   VscWarning,
@@ -30,10 +24,6 @@ import {
   onRun,
   projectClone,
   projectCreate,
-  projectDelete,
-  projectActionDefault,
-  projectActionRemove,
-  projectInstallMissing,
   projectSite,
   projectsList,
   runClear,
@@ -44,7 +34,6 @@ import {
   runStart,
   runStop,
   terminalOpen,
-  urlOpen,
   type AgentInfo,
   type EditorStatus,
   type Ports,
@@ -55,9 +44,7 @@ import {
   type SiteKind,
 } from "./api";
 import { AgentPicker } from "./agents";
-import { ProjectExtensions } from "./extensions";
 import { ProjectPage } from "./projectpage";
-import { ActionForm } from "./actionform";
 import { GithubRepositories } from "./github";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { t } from "./i18n";
@@ -161,7 +148,6 @@ export function ProjectsPage({
   /** The open panes of the side bar. */
   const [creating, setCreating] = useState<Set<NewWay>>(() => new Set(["empty"]));
   const [ports, setPorts] = useState<Ports>({ ports: {}, locked: [] });
-  const [shownLog, setShownLog] = useState<string | null>(null);
   const { busy, error, run } = useAction(onChanged);
 
   const load = useCallback(() => {
@@ -182,14 +168,9 @@ export function ProjectsPage({
     setOpen(name);
     load();
   };
-  const showLog = (key: string) => {
-    setShownLog(key);
-    loadLog(key);
-  };
   const start = (p: ProjectInfo, a: ProjectAction) => {
     const key = `${p.id}|${a.id}`;
     run(`run:${key}`, async () => {
-      setShownLog(key);
       await runStart(p.id, a.id);
       loadLog(key);
       runPorts().then(setPorts, () => undefined);
@@ -213,12 +194,8 @@ export function ProjectsPage({
           run(`stop:${key}`, () => runStop(key));
         }}
         onPorts={setPorts}
-        onShowLog={showLog}
-        shownLog={shownLog}
-        onForget={(key) => {
-          if (shownLog === key) setShownLog(null);
-          forget(key);
-        }}
+        onShowLog={loadLog}
+        onForget={forget}
         onBack={() => {
           setOpen(null);
         }}
@@ -294,7 +271,7 @@ export function ProjectsPage({
   );
 }
 
-const KIND_ICON: Record<ProjectInfo["type"], IconType> = {
+export const KIND_ICON: Record<ProjectInfo["type"], IconType> = {
   web: VscGlobe,
   desktop: VscWindow,
   command: VscTerminal,
@@ -583,218 +560,16 @@ export function SidePane({
   );
 }
 
-export function ProjectDetails({
-  project: p,
-  runs,
-  ports,
-  busy,
-  onStart,
-  onStop,
-  onPorts,
-  onChanged,
-  onlyRun = false,
-}: {
-  /** Only what starts the project (its page shows the rest in other tabs). */
-  onlyRun?: boolean;
-  project: ProjectInfo;
-  runs: Record<string, RunInfo>;
-  ports: Ports;
-  busy: string | null;
-  onStart: (a: ProjectAction) => void;
-  onStop: (key: string) => void;
-  onPorts: (p: Ports) => void;
-  onChanged: () => void;
-}) {
-  const { busy: working, error, run } = useAction(onChanged);
-  /** The action being edited ("new": a new one). */
-  const [editing, setEditing] = useState<string | null>(null);
-  return (
-    <div id={`project-${p.id}`} className="space-y-2 border-t border-vsc-border bg-vsc-sidebar px-3 py-2">
-      {!onlyRun && <p className="text-[12px] text-vsc-desc">{p.reason}</p>}
-      {!onlyRun && p.missing.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <p role="status" className="flex items-start gap-2 text-vsc-warning">
-            <VscWarning size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
-            {t("Mancano componenti del kit: {0}.", p.missing.join(", "))}
-          </p>
-          <ActionButton
-            icon={VscCloudDownload}
-            label={t("Installa")}
-            primary
-            busy={working === "install"}
-            title={t("Installa {0} e li tiene in Strumenti", p.missing.join(", "))}
-            onClick={() => {
-              run("install", () => projectInstallMissing(p.id));
-            }}
-          />
-        </div>
-      )}
-      {!onlyRun && p.warnings.length > 0 && (
-        <ul className="list-disc space-y-1 pl-5 text-vsc-desc">
-          {p.warnings.map((w) => (
-            <li key={w}>{w}</li>
-          ))}
-        </ul>
-      )}
-      {p.actions.length === 0 ? (
-        <p className="text-vsc-desc">
-          {t("Nessuna azione riconosciuta: aggiungine in panel.json o servi una cartella come sito web.")}
-        </p>
-      ) : (
-        <table className="w-full text-left text-[13px]">
-          <caption className="sr-only">{t("Azioni di {0}", p.name)}</caption>
-          <thead className="text-[12px] text-vsc-desc">
-            <tr>
-              <th scope="col" className="py-1 font-normal">
-                {t("Azione")}
-              </th>
-              <th scope="col" className="py-1 font-normal">
-                {t("Tipo")}
-              </th>
-              <th scope="col" className="py-1 font-normal">
-                {t("Porta")}
-              </th>
-              <th scope="col" className="py-1 font-normal">
-                <span className="sr-only">{t("Comandi")}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {p.actions.map((a) => {
-              const key = `${p.id}|${a.id}`;
-              const r = runs[key];
-              return (
-                <tr key={a.id} className="border-t border-vsc-border align-middle">
-                  <td className="py-1 pr-3">
-                    <div>
-                      {a.label}
-                      {p.default === a.id && <span className="ml-2 text-[11px] text-vsc-desc">{t("predefinita")}</span>}
-                      {a.custom && <span className="ml-2 text-[11px] text-vsc-desc">panel.json</span>}
-                    </div>
-                    <div className="font-mono text-[11px] break-all text-vsc-desc select-text">
-                      {a.static !== null
-                        ? t("file server del kit: {0}", a.static)
-                        : a.apache !== null
-                          ? t("Apache del progetto: {0}", a.apache)
-                          : a.command}
-                    </div>
-                  </td>
-                  <td className="py-1 pr-3 text-vsc-desc">
-                    {kindText(a.type)}
-                    {r && ` · ${stateText(r)}`}
-                  </td>
-                  <td className="py-1 pr-3">
-                    {a.type === "web" && (
-                      // Remounted when the saved port changes: the field shows it.
-                      <PortField
-                        key={`${key}:${String(ports.ports[key] ?? "")}`}
-                        actionKey={key}
-                        ports={ports}
-                        onPorts={onPorts}
-                      />
-                    )}
-                  </td>
-                  <td className="py-1">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      {onlyRun && a.static === null && a.apache === null && (
-                        <ActionButton
-                          icon={VscEdit}
-                          label={t("Modifica")}
-                          onClick={() => {
-                            setEditing(editing === a.id ? null : a.id);
-                          }}
-                        />
-                      )}
-                      {onlyRun && p.default !== a.id && (
-                        <ActionButton
-                          icon={VscStarEmpty}
-                          label={t("Predefinita")}
-                          title={t("La avvia il pulsante Avvia del progetto")}
-                          busy={working === `default:${a.id}`}
-                          onClick={() => {
-                            run(`default:${a.id}`, () => projectActionDefault(p.id, a.id));
-                          }}
-                        />
-                      )}
-                      {onlyRun && a.custom && a.static === null && a.apache === null && (
-                        <ActionButton
-                          icon={VscDiscard}
-                          label={t("Togli")}
-                          title={t("Toglie l'azione da panel.json; se era rilevata, torna quella rilevata")}
-                          busy={working === `remove:${a.id}`}
-                          onClick={() => {
-                            run(`remove:${a.id}`, () => projectActionRemove(p.id, a.id));
-                          }}
-                        />
-                      )}
-                      {alive(r?.state) ? (
-                        <ActionButton
-                          icon={VscDebugStop}
-                          label={t("Ferma")}
-                          busy={busy === `stop:${key}`}
-                          onClick={() => {
-                            onStop(key);
-                          }}
-                        />
-                      ) : (
-                        <ActionButton
-                          icon={VscDebugStart}
-                          label={t("Avvia")}
-                          busy={busy === `run:${key}`}
-                          onClick={() => {
-                            onStart(a);
-                          }}
-                        />
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-      {onlyRun && editing !== null && (
-        <ActionForm
-          project={p.id}
-          action={editing === "new" ? null : (p.actions.find((a) => a.id === editing) ?? null)}
-          onDone={() => {
-            setEditing(null);
-            onChanged();
-          }}
-          onCancel={() => {
-            setEditing(null);
-          }}
-        />
-      )}
-      {onlyRun && editing === null && (
-        <ActionButton
-          icon={VscAdd}
-          label={t("Nuova azione")}
-          onClick={() => {
-            setEditing("new");
-          }}
-        />
-      )}
-      <SiteForm project={p} onChanged={onChanged} />
-      {!onlyRun && <ProjectExtensions project={p} onChanged={onChanged} />}
-      {p.empty && (
-        <ActionButton
-          icon={VscTrash}
-          label={t("Elimina la cartella vuota")}
-          busy={working === "delete"}
-          onClick={() => {
-            run("delete", () => projectDelete(p.id));
-          }}
-        />
-      )}
-      <ErrorLine error={error} />
-    </div>
-  );
-}
-
 /** The port of a web action: automatic (kept between starts) or chosen. */
-function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Ports; onPorts: (p: Ports) => void }) {
+export function PortField({
+  actionKey,
+  ports,
+  onPorts,
+}: {
+  actionKey: string;
+  ports: Ports;
+  onPorts: (p: Ports) => void;
+}) {
   const current = ports.ports[actionKey];
   const locked = ports.locked.includes(actionKey);
   const [value, setValue] = useState(current === undefined ? "" : String(current));
@@ -849,7 +624,7 @@ function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Po
 }
 
 /** "Servi come sito web": a folder of the project served on its own port. */
-function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () => void }) {
+export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () => void }) {
   const site = project.actions.find((a) => a.id === "site");
   const [folder, setFolder] = useState(site?.static ?? site?.apache ?? ".");
   const [kind, setKind] = useState<SiteKind>(
@@ -910,83 +685,7 @@ function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () 
   );
 }
 
-export function RunsPanel({
-  runs,
-  logs,
-  shown,
-  onShow,
-  onStop,
-  onForget,
-}: {
-  runs: RunInfo[];
-  logs: Record<string, string[]>;
-  shown: string | null;
-  onShow: (key: string) => void;
-  onStop: (key: string) => void;
-  onForget: (key: string) => void;
-}) {
-  const { error, run } = useAction();
-  const current = runs.find((r) => r.key === shown) ?? null;
-  return (
-    <section aria-labelledby="runs" className="border-t border-vsc-border">
-      <h2 id="runs" className="px-3 py-2 text-[13px] font-semibold">
-        {t("Avviati")}
-      </h2>
-      <ul className="divide-y divide-vsc-border">
-        {runs.map((r) => (
-          <li key={r.key} className="flex flex-wrap items-center gap-2 px-2 py-1">
-            <span className="min-w-0 flex-1 truncate">
-              {r.project}: {r.label}
-            </span>
-            <span
-              className={r.state === "error" ? "text-vsc-error" : alive(r.state) ? "text-vsc-success" : "text-vsc-desc"}
-            >
-              {stateText(r)}
-            </span>
-            {r.url && r.state === "running" && (
-              <ActionButton
-                icon={VscGlobe}
-                label={r.url.replace(/^http:\/\//, "").replace(/\/$/, "")}
-                title={t("Apre nel browser")}
-                onClick={() => {
-                  run("open", () => urlOpen(r.url ?? ""));
-                }}
-              />
-            )}
-            <ActionButton
-              icon={VscOutput}
-              label={t("Output")}
-              onClick={() => {
-                onShow(r.key);
-              }}
-            />
-            {alive(r.state) ? (
-              <ActionButton
-                icon={VscDebugStop}
-                label={t("Ferma")}
-                onClick={() => {
-                  onStop(r.key);
-                }}
-              />
-            ) : (
-              <ActionButton
-                icon={VscTrash}
-                label={t("Togli")}
-                onClick={() => {
-                  onForget(r.key);
-                }}
-              />
-            )}
-          </li>
-        ))}
-      </ul>
-      <ErrorLine error={error} />
-      {current && <LogView title={`${current.project}: ${current.label}`} lines={logs[current.key] ?? []} />}
-    </section>
-  );
-}
-
-function LogView({ title, lines }: { title: string; lines: string[] }) {
+export function LogView({ title, lines }: { title: string; lines: string[] }) {
   const ref = useRef<HTMLPreElement>(null);
   const [follow, setFollow] = useState(true);
   useEffect(() => {

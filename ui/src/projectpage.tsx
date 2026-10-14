@@ -1,6 +1,6 @@
 // The page of one project (user request, 14/10/2026, D-75): every setting
 // and choice of the project in tabs. Starting it, its databases, its editor
-// extensions, its agent and its Git state; the kit's settings of the
+// extensions and its Git state; the kit's settings of the
 // project live in data\app\projects\<id>\dev-settings.json, never in it.
 import { useCallback, useEffect, useState } from "react";
 import type { IconType } from "react-icons";
@@ -11,11 +11,13 @@ import {
   VscDebugStart,
   VscDebugStop,
   VscExtensions,
+  VscStarEmpty,
+  VscStarFull,
+  VscTrash,
   VscGlobe,
   VscDatabase,
   VscFolderOpened,
   VscGithub,
-  VscHubot,
   VscPackage,
   VscRefresh,
   VscSettingsGear,
@@ -30,6 +32,8 @@ import {
   projectDbCreate,
   projectEnvApply,
   projectEnvPreview,
+  projectActionDefault,
+  projectDelete,
   projectInstallMissing,
   projectStatus,
   terminalOpen,
@@ -50,22 +54,25 @@ import { SecretField } from "./databases";
 import { ProjectExtensions } from "./extensions";
 import { EditorSettingsBox } from "./editorsettings";
 import { DatabaseCopies } from "./backups";
-import { ProjectMcpBox } from "./projectmcp";
 import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine, useAction } from "./pages";
+import { Mark } from "./tags";
 import {
   alive,
+  KIND_ICON,
+  kindText,
   LanguageIcons,
-  ProjectDetails,
+  LogView,
+  PortField,
   ProjectKind,
-  RunsPanel,
   SidePane,
+  SiteForm,
   stateText,
   ToolbarIcon,
 } from "./projects";
 
-type Section = "run" | "components" | "databases" | "extensions" | "editor" | "git" | "agents";
+type Section = "run" | "components" | "databases" | "extensions" | "editor" | "git";
 
 /** The sections of the page, listed in the side bar as the editor's views. */
 function sections(): { id: Section; label: string; icon: IconType }[] {
@@ -76,7 +83,6 @@ function sections(): { id: Section; label: string; icon: IconType }[] {
     { id: "extensions", label: t("Estensioni"), icon: VscExtensions },
     { id: "editor", label: t("Editor"), icon: VscSettingsGear },
     { id: "git", label: t("Git"), icon: VscSourceControl },
-    { id: "agents", label: t("Agenti"), icon: VscHubot },
   ];
 }
 
@@ -196,89 +202,253 @@ function Needs({ p, onChanged }: { p: ProjectInfo; onChanged: () => void }) {
   );
 }
 
-/** The default action with its output: what is done most in a project. */
-function MainAction({
+/** The actions of the project as rows of the side bar, as the editor's
+ * lists: the row selects the action, its button starts or stops it. */
+function ActionsList({
   p,
   runs,
-  logs,
   busy,
+  selected,
+  onSelect,
   onStart,
   onStop,
 }: {
   p: ProjectInfo;
   runs: Record<string, RunInfo>;
-  logs: Record<string, string[]>;
   busy: string | null;
+  selected: string | null;
+  onSelect: (id: string) => void;
   onStart: (a: ProjectAction) => void;
   onStop: (key: string) => void;
 }) {
-  const main = p.actions.find((a) => a.id === p.default) ?? p.actions[0] ?? null;
-  const key = main ? `${p.id}|${main.id}` : "";
-  const r = main ? runs[key] : undefined;
-  const lines = r ? (logs[key] ?? []) : [];
   return (
-    <section aria-label={t("Avvio")}>
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2">
-        {main ? (
-          <>
-            <span className="min-w-0 flex-1">
-              <span className="font-semibold">{main.label}</span>
-              <span className="ml-2 text-vsc-desc">
-                {r ? stateText(r) : t("fermo")}
-                {r?.url && r.state === "running" && ` · ${r.url}`}
+    <ul aria-label={t("Azioni di {0}", p.name)} className="-mx-3 -mt-1">
+      {p.actions.length === 0 && (
+        <li className="px-5 py-1 text-[12px] text-vsc-desc">
+          {t("Nessuna azione riconosciuta: aggiungine in panel.json o servi una cartella come sito web.")}
+        </li>
+      )}
+      {p.actions.map((a) => {
+        const key = `${p.id}|${a.id}`;
+        const r = runs[key];
+        const on = a.id === selected;
+        const Icon = KIND_ICON[a.type];
+        return (
+          <li
+            key={a.id}
+            className={`group flex h-[22px] items-center pr-1 pl-5 ${
+              on ? "bg-vsc-list-active text-vsc-list-active-fg" : "hover:bg-vsc-list-hover"
+            }`}
+          >
+            <button
+              type="button"
+              aria-current={on ? "true" : undefined}
+              title={a.static ?? a.apache ?? a.command}
+              onClick={() => {
+                onSelect(a.id);
+              }}
+              className="flex h-full min-w-0 flex-1 items-center gap-1.5 text-left"
+            >
+              <Icon size={16} aria-hidden="true" className="shrink-0" />
+              <span className="min-w-0 truncate">{a.label}</span>
+              {p.default === a.id && (
+                <Mark label={t("predefinita")} className="text-vsc-desc">
+                  <VscStarFull size={12} aria-hidden="true" />
+                </Mark>
+              )}
+            </button>
+            {r && (
+              <span
+                title={stateText(r)}
+                className={`px-1 text-[12px] ${
+                  r.state === "error" ? "text-vsc-error" : alive(r.state) ? "text-vsc-success" : "text-vsc-desc"
+                }`}
+              >
+                <span aria-hidden="true">●</span>
+                <span className="sr-only">{stateText(r)}</span>
               </span>
+            )}
+            <span className={alive(r?.state) ? "" : "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"}>
+              {alive(r?.state) ? (
+                <ActionButton
+                  icon={VscDebugStop}
+                  label={t("Ferma")}
+                  compact
+                  ghost
+                  busy={busy === `stop:${key}`}
+                  onClick={() => {
+                    onStop(key);
+                  }}
+                />
+              ) : (
+                <ActionButton
+                  icon={VscDebugStart}
+                  label={t("Avvia")}
+                  compact
+                  ghost
+                  busy={busy === `run:${key}`}
+                  onClick={() => {
+                    onSelect(a.id);
+                    onStart(a);
+                  }}
+                />
+              )}
             </span>
-            {r?.url && r.state === "running" && (
-              <ActionButton
-                icon={VscGlobe}
-                label={t("Apri nel browser")}
-                onClick={() => {
-                  void urlOpen(r.url ?? "");
-                }}
-              />
-            )}
-            {alive(r?.state) ? (
-              <ActionButton
-                icon={VscDebugStop}
-                label={t("Ferma")}
-                busy={busy === `stop:${key}`}
-                onClick={() => {
-                  onStop(key);
-                }}
-              />
-            ) : (
-              <ActionButton
-                icon={VscDebugStart}
-                label={t("Avvia")}
-                primary
-                busy={busy === `run:${key}`}
-                onClick={() => {
-                  onStart(main);
-                }}
-              />
-            )}
-          </>
-        ) : (
-          <span className="text-vsc-desc">
-            {t("Nessuna azione riconosciuta: aggiungine in panel.json o servi una cartella come sito web.")}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** The action chosen in the side bar: what it runs, its port, its commands
+ * and its output. */
+function ActionDetail({
+  p,
+  action: a,
+  runs,
+  logs,
+  ports,
+  busy,
+  onStart,
+  onStop,
+  onPorts,
+  onForget,
+  onChanged,
+}: {
+  p: ProjectInfo;
+  action: ProjectAction | null;
+  runs: Record<string, RunInfo>;
+  logs: Record<string, string[]>;
+  ports: Ports;
+  busy: string | null;
+  onStart: (a: ProjectAction) => void;
+  onStop: (key: string) => void;
+  onPorts: (p: Ports) => void;
+  onForget: (key: string) => void;
+  onChanged: () => void;
+}) {
+  const { busy: working, error, run } = useAction(onChanged);
+  if (!a) return null;
+  const key = `${p.id}|${a.id}`;
+  const r = runs[key];
+  return (
+    <section aria-label={a.label}>
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2">
+        <span className="min-w-0 flex-1">
+          <span className="font-semibold">{a.label}</span>
+          <span className="ml-2 text-vsc-desc">
+            {kindText(a.type)} · {r ? stateText(r) : t("fermo")}
+            {r?.url && r.state === "running" && ` · ${r.url}`}
           </span>
+        </span>
+        {r?.url && r.state === "running" && (
+          <ActionButton
+            icon={VscGlobe}
+            label={t("Apri nel browser")}
+            onClick={() => {
+              void urlOpen(r.url ?? "");
+            }}
+          />
+        )}
+        {alive(r?.state) ? (
+          <ActionButton
+            icon={VscDebugStop}
+            label={t("Ferma")}
+            busy={busy === `stop:${key}`}
+            onClick={() => {
+              onStop(key);
+            }}
+          />
+        ) : (
+          <ActionButton
+            icon={VscDebugStart}
+            label={t("Avvia")}
+            primary
+            busy={busy === `run:${key}`}
+            onClick={() => {
+              onStart(a);
+            }}
+          />
         )}
       </div>
-      {lines.length > 0 && (
-        <pre
-          tabIndex={0}
-          aria-label={t("Output di {0}", main?.label ?? "")}
-          className="m-0 max-h-40 overflow-auto border-t border-vsc-border bg-vsc-bg px-3 py-1.5 font-mono text-[12px] leading-snug whitespace-pre-wrap select-text"
-        >
-          {lines.slice(-200).join("\n")}
-        </pre>
-      )}
+      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-5 gap-y-2 px-3 pb-2">
+        <dt className="text-vsc-desc">{t("Comando")}</dt>
+        <dd className="flex min-w-0 items-start gap-1.5">
+          {/* The default action: the project's Avvia starts it. */}
+          <button
+            type="button"
+            aria-pressed={p.default === a.id}
+            aria-label={t("Predefinita")}
+            title={t("La avvia il pulsante Avvia del progetto")}
+            disabled={p.default === a.id || working === "default"}
+            onClick={() => {
+              run("default", () => projectActionDefault(p.id, a.id));
+            }}
+            className={`shrink-0 rounded-sm p-0.5 enabled:hover:bg-vsc-list-hover ${
+              p.default === a.id ? "text-vsc-warning" : "text-vsc-desc"
+            }`}
+          >
+            {p.default === a.id ? (
+              <VscStarFull size={14} aria-hidden="true" />
+            ) : (
+              <VscStarEmpty size={14} aria-hidden="true" />
+            )}
+          </button>
+          <span className="min-w-0 font-mono text-[12px] break-all select-text">
+            {a.static !== null
+              ? t("file server del kit: {0}", a.static)
+              : a.apache !== null
+                ? t("Apache del progetto: {0}", a.apache)
+                : a.command}
+          </span>
+        </dd>
+        {a.folder && (
+          <>
+            <dt className="text-vsc-desc">{t("Cartella")}</dt>
+            <dd className="font-mono text-[12px]">{a.folder}</dd>
+          </>
+        )}
+        {a.type === "web" && (
+          <>
+            <dt className="text-vsc-desc">{t("Porta")}</dt>
+            <dd>
+              {/* Remounted when the saved port changes: the field shows it. */}
+              <PortField
+                key={`${key}:${String(ports.ports[key] ?? "")}`}
+                actionKey={key}
+                ports={ports}
+                onPorts={onPorts}
+              />
+            </dd>
+          </>
+        )}
+        {a.custom && (
+          <>
+            <dt className="text-vsc-desc">{t("Origine")}</dt>
+            <dd className="text-vsc-desc">panel.json</dd>
+          </>
+        )}
+      </dl>
+      <div className="flex flex-wrap gap-2 px-3 pb-2">
+        {r && !alive(r.state) && (
+          <ActionButton
+            icon={VscTrash}
+            label={t("Togli l'output")}
+            onClick={() => {
+              onForget(key);
+            }}
+          />
+        )}
+      </div>
+      <ErrorLine error={error} />
+      {r && <LogView title={a.label} lines={logs[key] ?? []} />}
     </section>
   );
 }
 
 /** The project at a glance, in the side bar: as the columns of the list,
- * then agent, Git and databases. A value that needs work opens its section. */
+ * then Git and databases. A value that needs work opens its section. */
 function Overview({
   p,
   status,
@@ -333,12 +503,6 @@ function Overview({
         </dd>
       </div>
       <div className={row}>
-        <dt className="text-vsc-desc">{t("Agente")}</dt>
-        <dd className="truncate">
-          {p.settings.agent ? (AGENT_NAMES[p.settings.agent] ?? p.settings.agent) : t("da scegliere")}
-        </dd>
-      </div>
-      <div className={row}>
         <dt className="text-vsc-desc">{t("Git")}</dt>
         <dd className="truncate">
           {status?.git ? (
@@ -372,12 +536,6 @@ function Overview({
     </dl>
   );
 }
-
-const AGENT_NAMES: Record<string, string> = {
-  claude: "Claude Code",
-  codex: "Codex",
-  antigravity: "Antigravity",
-};
 
 function EnvPreview({
   project,
@@ -531,23 +689,6 @@ function Databases({ p, dbs, onChanged }: { p: ProjectInfo; dbs: ProjectDatabase
   );
 }
 
-function Agents({ status }: { status: ProjectStatus | null }) {
-  return (
-    <Box id="instructions" title={t("Istruzioni per gli agenti")}>
-      <ul className="divide-y divide-vsc-border">
-        {(status?.instructions ?? []).map((f) => (
-          <li key={f} className="px-3 py-1.5 font-mono">
-            {f}
-          </li>
-        ))}
-        <li className="px-3 py-1.5 text-vsc-desc">
-          {t("Istruzioni, skill e MCP del kit valgono anche qui (data\\agents).")}
-        </li>
-      </ul>
-    </Box>
-  );
-}
-
 function Git({ status }: { status: ProjectStatus | null }) {
   const git = status?.git;
   if (!status) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
@@ -603,7 +744,6 @@ export function ProjectPage({
   onStop,
   onPorts,
   onShowLog,
-  shownLog,
   onForget,
   onBack,
   onChanged,
@@ -619,14 +759,15 @@ export function ProjectPage({
   onStop: (key: string) => void;
   onPorts: (p: Ports) => void;
   onShowLog: (key: string) => void;
-  shownLog: string | null;
   onForget: (key: string) => void;
   onBack: () => void;
   onChanged: () => void;
 }) {
   const [section, setSection] = useState<Section>("run");
   /** The open panes of the side bar. */
-  const [panes, setPanes] = useState<Set<string>>(() => new Set(["overview", "sections"]));
+  const [panes, setPanes] = useState<Set<string>>(() => new Set(["overview", "actions", "sections"]));
+  /** The action shown in Avvio (null: the default one). */
+  const [chosen, setChosen] = useState<string | null>(null);
   const [status, setStatus] = useState<ProjectStatus | null>(null);
   const [dbs, setDbs] = useState<ProjectDatabases | null>(null);
   const { busy: opening, error, run } = useAction();
@@ -639,6 +780,13 @@ export function ProjectPage({
     .filter((r) => r.project === p.id)
     .sort((a, b) => b.start - a.start);
   const live = mine.filter((r) => alive(r.state));
+  const action =
+    p.actions.find((a) => a.id === chosen) ?? p.actions.find((a) => a.id === p.default) ?? p.actions[0] ?? null;
+  const select = (id: string) => {
+    setChosen(id);
+    setSection("run");
+    if (runs[`${p.id}|${id}`]) onShowLog(`${p.id}|${id}`);
+  };
   const list = sections();
   const current = list.find((x) => x.id === section) ?? list[0];
   const toggle = (id: string) => {
@@ -680,7 +828,6 @@ export function ProjectPage({
         </SidePane>
         <SidePane
           title={t("Sezioni del progetto")}
-          fill
           expanded={panes.has("sections")}
           onToggle={() => {
             toggle("sections");
@@ -700,7 +847,7 @@ export function ProjectPage({
                         setSection(x.id);
                       }}
                       className={`flex h-[22px] w-full items-center gap-1.5 pr-3 pl-5 text-left ${
-                        on ? "bg-vsc-list-active text-vsc-fg" : "hover:bg-vsc-list-hover"
+                        on ? "bg-vsc-list-active text-vsc-list-active-fg" : "hover:bg-vsc-list-hover"
                       }`}
                     >
                       <Icon size={16} aria-hidden="true" className="shrink-0" />
@@ -719,6 +866,24 @@ export function ProjectPage({
               })}
             </ul>
           </nav>
+        </SidePane>
+        <SidePane
+          title={t("Azioni")}
+          fill
+          expanded={panes.has("actions")}
+          onToggle={() => {
+            toggle("actions");
+          }}
+        >
+          <ActionsList
+            p={p}
+            runs={runs}
+            busy={busy}
+            selected={section === "run" ? (action?.id ?? null) : null}
+            onSelect={select}
+            onStart={onStart}
+            onStop={onStop}
+          />
         </SidePane>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
@@ -749,45 +914,43 @@ export function ProjectPage({
           <div className="max-w-5xl space-y-3 pb-3">
             {section === "run" && (
               <>
-                <MainAction p={p} runs={runs} logs={logs} busy={busy} onStart={onStart} onStop={onStop} />
-                <ProjectDetails
-                  project={p}
+                <ActionDetail
+                  p={p}
+                  action={action}
                   runs={runs}
+                  logs={logs}
                   ports={ports}
                   busy={busy}
                   onStart={onStart}
                   onStop={onStop}
                   onPorts={onPorts}
+                  onForget={onForget}
                   onChanged={onChanged}
-                  onlyRun
                 />
-                {mine.length > 0 && (
-                  <RunsPanel
-                    runs={mine}
-                    logs={logs}
-                    shown={shownLog}
-                    onShow={onShowLog}
-                    onStop={onStop}
-                    onForget={onForget}
-                  />
+                <Box id="site" title={t("Servi come sito web")}>
+                  <div className="px-3 py-2">
+                    <SiteForm project={p} onChanged={onChanged} />
+                  </div>
+                </Box>
+                {p.empty && (
+                  <div className="px-3">
+                    <ActionButton
+                      icon={VscTrash}
+                      label={t("Elimina la cartella vuota")}
+                      busy={opening === "delete"}
+                      onClick={() => {
+                        run("delete", () => projectDelete(p.id));
+                      }}
+                    />
+                  </div>
                 )}
               </>
             )}
             {section === "components" && <Needs p={p} onChanged={changed} />}
             {section === "databases" && <Databases p={p} dbs={dbs} onChanged={reload} />}
-            {section === "extensions" && (
-              <div className="px-3 py-2">
-                <ProjectExtensions project={p} onChanged={onChanged} />
-              </div>
-            )}
+            {section === "extensions" && <ProjectExtensions project={p} onChanged={onChanged} />}
             {section === "editor" && <EditorSettingsBox project={p.id} />}
             {section === "git" && <Git status={status} />}
-            {section === "agents" && (
-              <>
-                <Agents status={status} />
-                <ProjectMcpBox project={p.id} />
-              </>
-            )}
           </div>
         </div>
       </div>

@@ -186,7 +186,7 @@ export function AgentPicker({
               setChosen(a.id);
             }}
             className={`rounded-sm p-1 ${
-              agent === a.id ? "bg-vsc-list-active outline-1 outline-vsc-focus" : "opacity-60 hover:opacity-100"
+              agent === a.id ? "bg-vsc-list-active outline-1 outline-vsc-list-focus" : "opacity-60 hover:opacity-100"
             }`}
           >
             <ComponentLogo id={a.id} size={16} />

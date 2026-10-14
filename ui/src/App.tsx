@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
+  VscRemote,
   VscDebugDisconnect,
   VscDatabase,
   VscExtensions,
@@ -13,7 +14,6 @@ import {
   VscHubot,
   VscSettingsGear,
   VscWarning,
-  VscRemote,
   VscCode,
   VscLoading,
 } from "react-icons/vsc";
@@ -216,7 +216,10 @@ export function App() {
 
 function ActivityBar({ pages: list, page, onSelect }: { pages: Page[]; page: PageId; onSelect: (id: PageId) => void }) {
   return (
-    <nav aria-label={t("Pagine")} className="flex w-12 flex-col border-r border-vsc-border bg-vsc-activitybar">
+    <nav
+      aria-label={t("Pagine")}
+      className="flex w-12 flex-col border-r border-vsc-activitybar-edge bg-vsc-activitybar"
+    >
       {list.map(({ id, label, icon: Icon }) => {
         const active = id === page;
         return (
@@ -312,11 +315,17 @@ function StatusBar({
   return (
     <footer
       aria-label={t("Barra di stato")}
-      className="flex h-[22px] items-center gap-2 border-t border-vsc-border bg-vsc-statusbar px-2 text-[12px] text-vsc-statusbar-fg"
+      className="flex h-[22px] items-center gap-2 border-t border-vsc-statusbar-border bg-vsc-statusbar pr-2 text-[12px] leading-none text-vsc-statusbar-fg"
     >
-      <span className="flex h-full items-center gap-1 bg-vsc-button px-2 text-vsc-button-fg">
+      {/* Flush with the left edge, as VSCodium's remote indicator: the icon
+          only, the name is in the tooltip. */}
+      <span
+        role="img"
+        aria-label="Atollo"
+        title="Atollo"
+        className="-mt-px flex h-[calc(100%+1px)] items-center bg-vsc-statusbar-remote px-2 text-vsc-statusbar-remote-fg"
+      >
         <VscRemote size={14} aria-hidden="true" />
-        Atollo
       </span>
       {info && (
         <>

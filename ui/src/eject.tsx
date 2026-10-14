@@ -137,7 +137,7 @@ export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () =>
         aria-modal="true"
         aria-labelledby="close-title"
         aria-describedby="close-desc"
-        className="w-[min(32rem,90vw)] space-y-2 rounded border border-vsc-border bg-vsc-sidebar p-3 shadow-lg"
+        className="w-[min(32rem,90vw)] space-y-2 rounded border border-vsc-widget-border bg-vsc-widget p-3 shadow-[0_0_8px_2px_var(--vsc-shadow)]"
       >
         <h2 id="close-title" className="text-[14px] font-semibold">
           {t("Chiudere Atollo?")}
@@ -151,7 +151,7 @@ export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () =>
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="rounded-sm bg-vsc-button2 px-2 py-1 text-vsc-button2-fg hover:bg-vsc-button2-hover"
+            className="rounded-sm border border-vsc-button-border bg-vsc-button2 px-2 py-1 text-vsc-button2-fg hover:bg-vsc-button2-hover"
           >
             {t("Annulla")}
           </button>

@@ -68,10 +68,10 @@ export function ActionButton({
         "flex items-center gap-1.5 rounded-sm text-[13px] disabled:cursor-not-allowed disabled:opacity-50",
         compact ? "p-[5px]" : "px-2 py-0.5",
         ghost
-          ? "text-vsc-fg enabled:hover:bg-vsc-list-active"
+          ? "text-vsc-icon enabled:hover:bg-vsc-toolbar-hover"
           : primary
-            ? "bg-vsc-button text-vsc-button-fg enabled:hover:bg-vsc-button-hover"
-            : "bg-vsc-button2 text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover",
+            ? "border border-vsc-button-border bg-vsc-button text-vsc-button-fg enabled:hover:bg-vsc-button-hover"
+            : "border border-vsc-button-border bg-vsc-button2 text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover",
       ].join(" ")}
     >
       <Icon size={14} aria-hidden="true" className={busy ? "animate-pulse" : undefined} />

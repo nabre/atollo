@@ -16,7 +16,7 @@ import {
   type AppInfo,
 } from "./api";
 import { GithubAccount } from "./github";
-import logo from "./assets/logo-128.png";
+import { BrandSymbol } from "./brand";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { LANGS, t } from "./i18n";
 
@@ -300,7 +300,7 @@ function KitInfo({ info }: { info: AppInfo }) {
   return (
     <Section id="s-kit" title={t("Il kit")}>
       <div className="flex items-center gap-2">
-        <img src={logo} alt="" width={40} height={40} draggable={false} />
+        <BrandSymbol size={40} />
         <p className="text-vsc-desc">
           {t("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.")}
         </p>

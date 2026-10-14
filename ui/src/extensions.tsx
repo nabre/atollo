@@ -2,13 +2,14 @@
 // matrix, read only, in "Linguaggi e strumenti", and the extensions of a
 // project in its panel: those of its languages, ticked unless removed, and
 // those added by hand. Installed extensions work in the whole editor.
-import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
-import { VscAdd, VscCheck } from "react-icons/vsc";
+import { useEffect, useMemo, useState, type ReactNode, type SyntheticEvent } from "react";
+import { VscAdd, VscCheck, VscTools } from "react-icons/vsc";
 import {
   extensionsMatrix,
   projectExtensions,
   type ComponentInfo,
   type ExtensionsMatrix,
+  type ProjectExtension,
   type ProjectInfo,
 } from "./api";
 import { t } from "./i18n";
@@ -140,7 +141,44 @@ export function ExtensionsMatrixSection({
 
 const ID = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
-/** The extensions of a project: tick or untick, add one by its id. */
+interface ExtGroup {
+  key: string;
+  title: string;
+  icon: ReactNode;
+  items: ProjectExtension[];
+}
+
+/** The project's extensions grouped by what brings them: each of its
+ * languages (alphabetical), its tools, then those added by hand. */
+function groups(p: ProjectInfo, matrix: ExtensionsMatrix | null): ExtGroup[] {
+  const byLanguage = new Map<string, ProjectExtension[]>();
+  const tools: ProjectExtension[] = [];
+  const added: ProjectExtension[] = [];
+  const languages = [...p.languages].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  for (const x of p.extensions) {
+    if (!x.byDefault) {
+      added.push(x);
+      continue;
+    }
+    const row = matrix?.extensions.find((e) => e.id === x.id);
+    const language = languages.find((l) => row?.languages.includes(l));
+    if (language) byLanguage.set(language, [...(byLanguage.get(language) ?? []), x]);
+    else tools.push(x);
+  }
+  const out: ExtGroup[] = languages
+    .filter((l) => byLanguage.has(l))
+    .map((l) => ({ key: `l:${l}`, title: l, icon: <LanguageLogo name={l} />, items: byLanguage.get(l) ?? [] }));
+  if (tools.length > 0) {
+    out.push({ key: "tools", title: t("Strumenti"), icon: <VscTools size={14} aria-hidden="true" />, items: tools });
+  }
+  if (added.length > 0) {
+    out.push({ key: "added", title: t("Aggiunte da te"), icon: <VscAdd size={14} aria-hidden="true" />, items: added });
+  }
+  return out;
+}
+
+/** The extensions of a project, as the editor's Extensions view: grouped
+ * rows with a tick, name, id and state; one added by its id at the end. */
 export function ProjectExtensions({ project: p, onChanged }: { project: ProjectInfo; onChanged: () => void }) {
   const { busy, error, run } = useAction(onChanged);
   const [matrix, setMatrix] = useState<ExtensionsMatrix | null>(null);
@@ -185,89 +223,116 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
   };
   const suggestions = (matrix?.extensions ?? []).filter((e) => !p.extensions.some((x) => x.id === e.id));
   const listId = `ext-suggest-${p.id}`;
+  const on = p.extensions.filter((x) => x.on);
+  const toInstall = on.filter((x) => !x.installed).length;
   return (
-    <section aria-labelledby={`ext-${p.id}`} className="space-y-1.5">
-      <h3 id={`ext-${p.id}`} className="text-[12px] text-vsc-desc">
-        {t("Estensioni dell'editor")}
-      </h3>
-      {p.extensions.length === 0 ? (
-        <p className="text-[12px] text-vsc-desc">
-          {t("Solo le generali: nessun linguaggio del progetto ne ha altre.")}
-        </p>
-      ) : (
-        <ul className="flex flex-wrap gap-1.5">
-          {p.extensions.map((x) => {
-            const inputId = `ext-${p.id}-${x.id}`;
-            return (
-              <li
-                key={x.id}
-                className={`flex items-center gap-1.5 rounded-sm border px-1.5 py-0.5 text-[12px] ${
-                  x.on ? "border-vsc-border" : "border-dashed border-vsc-border text-vsc-desc"
-                }`}
-                title={x.id}
-              >
-                <input
-                  id={inputId}
-                  type="checkbox"
-                  checked={x.on}
-                  disabled={busy !== null}
-                  onChange={(e) => {
-                    toggle(x.id, x.byDefault, e.target.checked);
-                  }}
-                  className="size-3.5 accent-vsc-button"
-                />
-                <label htmlFor={inputId}>
-                  {x.name}
-                  {!x.byDefault && <span className="ml-1 text-vsc-desc">{t("(aggiunta)")}</span>}
-                </label>
-                {x.on &&
-                  (x.installed ? (
-                    <span className="text-vsc-success" title={t("installata")}>
-                      <VscCheck size={11} aria-hidden="true" />
-                      <span className="sr-only">{t("installata")}</span>
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-vsc-desc">{t("da installare")}</span>
-                  ))}
-              </li>
-            );
-          })}
-        </ul>
+    <div className="space-y-3">
+      <p className="px-3 pt-2 text-[12px] text-vsc-desc">
+        {t("{0} attive su {1}", on.length, p.extensions.length)}
+        {toInstall > 0 && ` · ${t("{0} da installare", toInstall)}`}
+        {" · "}
+        {t("Le estensioni installate valgono in tutto l'editor; le nuove si installano quando l'editor è aperto.")}
+      </p>
+      {p.extensions.length === 0 && (
+        <p className="px-3 text-vsc-desc">{t("Solo le generali: nessun linguaggio del progetto ne ha altre.")}</p>
       )}
-      <form onSubmit={add} className="flex flex-wrap items-center gap-2" aria-label={t("Aggiungi un'estensione")}>
-        <input
-          value={adding}
-          list={listId}
-          placeholder={t("editore.nome da Open VSX")}
-          aria-label={t("Estensione da aggiungere")}
-          aria-invalid={invalid}
-          onChange={(e) => {
-            setAdding(e.target.value);
-            setInvalid(false);
-          }}
-          className="w-64 input text-[12px]"
-        />
-        <datalist id={listId}>
-          {suggestions.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name}
-            </option>
-          ))}
-        </datalist>
-        <ActionButton
-          icon={VscAdd}
-          label={t("Aggiungi")}
-          busy={busy === "add"}
-          disabled={adding.trim() === ""}
-          onClick={() => undefined}
-          submit
-        />
-        <span className="text-[12px] text-vsc-desc">
-          {t("Le estensioni installate valgono in tutto l'editor; le nuove si installano quando l'editor è aperto.")}
-        </span>
-      </form>
-      {invalid && <ErrorLine error={t("Scrivi l'identificativo come editore.nome, per esempio ms-python.python.")} />}
-      <ErrorLine error={error} />
-    </section>
+      {groups(p, matrix).map((g) => (
+        <section key={g.key} aria-labelledby={`ext-${p.id}-${g.key}`} className="border-t border-vsc-border">
+          <h3
+            id={`ext-${p.id}-${g.key}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
+          >
+            {g.icon}
+            {g.title}
+            <span className="font-normal">({g.items.length})</span>
+          </h3>
+          <ul>
+            {g.items.map((x) => {
+              const inputId = `ext-${p.id}-${x.id}`;
+              return (
+                <li key={x.id} className="flex h-[26px] items-center gap-2 px-3 hover:bg-vsc-list-hover">
+                  <input
+                    id={inputId}
+                    type="checkbox"
+                    checked={x.on}
+                    disabled={busy !== null}
+                    onChange={(e) => {
+                      toggle(x.id, x.byDefault, e.target.checked);
+                    }}
+                    className="size-3.5 shrink-0 accent-vsc-button"
+                  />
+                  <label
+                    htmlFor={inputId}
+                    className={`flex min-w-0 flex-1 items-baseline gap-2 ${x.on ? "" : "text-vsc-desc"}`}
+                  >
+                    <span className="truncate">{x.name}</span>
+                    <span className="truncate font-mono text-[11px] text-vsc-desc">{x.id}</span>
+                  </label>
+                  <span className="shrink-0 text-[12px]">
+                    {!x.on ? (
+                      <span className="text-vsc-desc">{t("disattivata")}</span>
+                    ) : x.installed ? (
+                      <span className="flex items-center gap-1 text-vsc-success">
+                        <VscCheck size={12} aria-hidden="true" />
+                        {t("installata")}
+                      </span>
+                    ) : (
+                      <span className="text-vsc-warning">{t("da installare")}</span>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+      <section aria-labelledby={`ext-${p.id}-add`} className="border-t border-vsc-border">
+        <h3
+          id={`ext-${p.id}-add`}
+          className="px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
+        >
+          {t("Aggiungi un'estensione")}
+        </h3>
+        <form
+          onSubmit={add}
+          className="flex flex-wrap items-center gap-2 px-3"
+          aria-label={t("Aggiungi un'estensione")}
+        >
+          <input
+            value={adding}
+            list={listId}
+            placeholder={t("editore.nome da Open VSX")}
+            aria-label={t("Estensione da aggiungere")}
+            aria-invalid={invalid}
+            onChange={(e) => {
+              setAdding(e.target.value);
+              setInvalid(false);
+            }}
+            className="w-64 input text-[12px]"
+          />
+          <datalist id={listId}>
+            {suggestions.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </datalist>
+          <ActionButton
+            icon={VscAdd}
+            label={t("Aggiungi")}
+            busy={busy === "add"}
+            disabled={adding.trim() === ""}
+            onClick={() => undefined}
+            submit
+          />
+        </form>
+        <div className="px-3 pt-1">
+          {invalid && (
+            <ErrorLine error={t("Scrivi l'identificativo come editore.nome, per esempio ms-python.python.")} />
+          )}
+          <ErrorLine error={error} />
+        </div>
+      </section>
+    </div>
   );
 }
