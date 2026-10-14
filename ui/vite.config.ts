@@ -15,8 +15,6 @@ export default defineConfig({
     outDir: "../dist",
     emptyOutDir: true,
     sourcemap: false,
-    // The app window and the console windows (src-tauri/src/terminal.rs).
-    rolldownOptions: { input: { main: "index.html", terminal: "terminal.html" } },
   },
   test: { environment: "jsdom", include: ["src/**/*.test.tsx", "src/**/*.test.ts"] },
 });

@@ -357,28 +357,10 @@
           "markdownDescription": "Enables the setup_state command without any pre-configured scope."
         },
         {
-          "description": "Enables the terminal_attach command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-terminal-attach",
-          "markdownDescription": "Enables the terminal_attach command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the terminal_input command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-terminal-input",
-          "markdownDescription": "Enables the terminal_input command without any pre-configured scope."
-        },
-        {
           "description": "Enables the terminal_open command without any pre-configured scope.",
           "type": "string",
           "const": "allow-terminal-open",
           "markdownDescription": "Enables the terminal_open command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the terminal_resize command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-terminal-resize",
-          "markdownDescription": "Enables the terminal_resize command without any pre-configured scope."
         },
         {
           "description": "Enables the update_check command without any pre-configured scope.",
@@ -579,28 +561,10 @@
           "markdownDescription": "Denies the setup_state command without any pre-configured scope."
         },
         {
-          "description": "Denies the terminal_attach command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-terminal-attach",
-          "markdownDescription": "Denies the terminal_attach command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the terminal_input command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-terminal-input",
-          "markdownDescription": "Denies the terminal_input command without any pre-configured scope."
-        },
-        {
           "description": "Denies the terminal_open command without any pre-configured scope.",
           "type": "string",
           "const": "deny-terminal-open",
           "markdownDescription": "Denies the terminal_open command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the terminal_resize command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-terminal-resize",
-          "markdownDescription": "Denies the terminal_resize command without any pre-configured scope."
         },
         {
           "description": "Denies the update_check command without any pre-configured scope.",
