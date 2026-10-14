@@ -13,6 +13,7 @@ mod catalog;
 mod checkup;
 mod cli;
 mod commands;
+mod db_auth;
 mod detect;
 mod editor;
 mod editor_cfg;

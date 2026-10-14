@@ -1,4 +1,9 @@
 {
+  "Crea prima il database del progetto.": {
+    "en": "Create the project database first.",
+    "fr": "Créez d'abord la base de données du projet.",
+    "de": "Erstelle zuerst die Datenbank des Projekts."
+  },
   "La porta {0} è già usata da un altro programma: cambiala qui sotto.": {
     "en": "Port {0} is already used by another program: change it below.",
     "fr": "Le port {0} est déjà utilisé par un autre programme : changez-le ci-dessous.",

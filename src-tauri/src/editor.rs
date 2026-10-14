@@ -329,7 +329,7 @@ pub fn random_token() -> Result<String> {
 
 /// Protected DACL with full access for the owner only. Fails on disks
 /// without permissions (FAT32/exFAT): the caller only logs it.
-fn restrict_to_owner(path: &Path) -> Result<()> {
+pub(crate) fn restrict_to_owner(path: &Path) -> Result<()> {
     let sddl = HSTRING::from("D:P(A;;FA;;;OW)");
     let mut sd = PSECURITY_DESCRIPTOR::default();
     // SAFETY: valid SDDL string; `sd` receives a LocalAlloc'd descriptor freed below.

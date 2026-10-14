@@ -548,6 +548,8 @@ export interface ServiceInfo {
   dataDir: string;
   log: string;
   url: string;
+  user: string;
+  password: string | null;
   message: string | null;
 }
 
@@ -562,6 +564,8 @@ const SAMPLE_SERVICES: ServiceInfo[] = [
     dataDir: "E:\\Atollo\\data\\db\\mariadb",
     log: "E:\\Atollo\\data\\app\\logs\\mariadb.log",
     url: "mysql://root@127.0.0.1:3306/",
+    user: "root",
+    password: "3f9c2a71d8e04b6a9c51e2d7f0a8b346",
     message: null,
   },
   {
@@ -573,7 +577,9 @@ const SAMPLE_SERVICES: ServiceInfo[] = [
     autostart: false,
     dataDir: "E:\\Atollo\\data\\db\\mongodb",
     log: "E:\\Atollo\\data\\app\\logs\\mongodb.log",
-    url: "mongodb://127.0.0.1:27017/",
+    url: "mongodb://admin@127.0.0.1:27017/?authSource=admin",
+    user: "admin",
+    password: null,
     message: null,
   },
 ];
@@ -596,6 +602,72 @@ export function serviceSet(id: ServiceInfo["id"], port: number | null, autostart
   return browserPreview
     ? Promise.resolve(SAMPLE_SERVICES)
     : invoke<ServiceInfo[]>("service_set", { id, port, autostart });
+}
+
+// Databases of a project (src-tauri/src/db_auth.rs, D-74).
+
+export interface ProjectDb {
+  engine: "mariadb" | "mongodb";
+  database: string;
+  user: string;
+  password: string;
+  host: string;
+  port: number;
+  url: string;
+}
+
+export interface ProjectDatabases {
+  dbs: ProjectDb[];
+  /** "mariadb", "mongodb", "sqlite" the project seems to use. */
+  detected: string[];
+  envExists: boolean;
+  envIgnored: boolean;
+}
+
+export interface EnvChange {
+  key: string;
+  old: string | null;
+  new: string;
+}
+
+const SAMPLE_PROJECT_DATABASES: ProjectDatabases = {
+  dbs: [
+    {
+      engine: "mariadb",
+      database: "negozio_online",
+      user: "negozio_online",
+      password: "5be1c0d29a7f4e8b93c6d2a1f0e47b58",
+      host: "127.0.0.1",
+      port: 3306,
+      url: "mysql://negozio_online:5be1c0d29a7f4e8b93c6d2a1f0e47b58@127.0.0.1:3306/negozio_online",
+    },
+  ],
+  detected: ["mariadb", "sqlite"],
+  envExists: true,
+  envIgnored: true,
+};
+
+export function projectDatabases(project: string): Promise<ProjectDatabases> {
+  return browserPreview
+    ? Promise.resolve(SAMPLE_PROJECT_DATABASES)
+    : invoke<ProjectDatabases>("project_databases", { project });
+}
+
+/** Creates the project's database and user, installing and starting the server if needed. */
+export function projectDbCreate(project: string, engine: ProjectDb["engine"]): Promise<ProjectDb> {
+  return browserPreview
+    ? Promise.resolve(SAMPLE_PROJECT_DATABASES.dbs[0] as ProjectDb)
+    : invoke<ProjectDb>("project_db_create", { project, engine });
+}
+
+export function projectEnvPreview(project: string, engine: ProjectDb["engine"]): Promise<EnvChange[]> {
+  return browserPreview
+    ? Promise.resolve([{ key: "DB_DATABASE", old: "laravel", new: "negozio_online" }])
+    : invoke<EnvChange[]>("project_env_preview", { project, engine });
+}
+
+export function projectEnvApply(project: string, engine: ProjectDb["engine"]): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_env_apply", { project, engine });
 }
 
 // Projects (src-tauri/src/projects.rs) and their actions (run.rs).

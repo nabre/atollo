@@ -1040,6 +1040,112 @@ pub async fn run_start<R: Runtime>(
     .map_err(|e| fail("run", e))?
 }
 
+/// The databases of a project (D-74): those created, those it seems to use,
+/// and whether its `.env` is ignored by Git.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectDatabases {
+    pub dbs: Vec<crate::db_auth::ProjectDb>,
+    /// `mariadb`, `mongodb`, `sqlite` found by `detect::requires`.
+    pub detected: Vec<String>,
+    pub env_exists: bool,
+    pub env_ignored: bool,
+}
+
+#[tauri::command]
+pub fn project_databases<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<ProjectDatabases, String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    Ok(ProjectDatabases {
+        dbs: state.services.project_dbs(&project),
+        detected: crate::detect::requires(&dir)
+            .into_iter()
+            .filter(|id| matches!(id.as_str(), "mariadb" | "mongodb" | "sqlite"))
+            .collect(),
+        env_exists: dir.join(".env").is_file(),
+        env_ignored: crate::db_auth::env_ignored(&dir),
+    })
+}
+
+/// Creates the project's database and user: installs and starts the server
+/// first if needed.
+#[tauri::command]
+pub async fn project_db_create<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    engine: String,
+) -> Result<crate::db_auth::ProjectDb, String> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    if !crate::services::SERVERS.contains(&engine.as_str()) {
+        return Err(fail("database", format!("unknown server {engine}")));
+    }
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
+        services
+            .start(&engine, &env)
+            .map_err(|e| fail("database", format!("{e:#}")))?;
+        services
+            .project_db_create(&project, &engine)
+            .map_err(|e| fail("database", format!("{e:#}")))
+    })
+    .await
+    .map_err(|e| fail("database", e))?
+}
+
+fn project_db_of(
+    state: &AppState,
+    project: &str,
+    engine: &str,
+) -> Result<crate::db_auth::ProjectDb, String> {
+    state
+        .services
+        .project_dbs(project)
+        .into_iter()
+        .find(|d| d.engine == engine)
+        .ok_or_else(|| tr(state, "Crea prima il database del progetto.", &[]))
+}
+
+/// The lines of the project's `.env` that writing the connection changes.
+#[tauri::command]
+pub fn project_env_preview<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    engine: String,
+) -> Result<Vec<crate::db_auth::EnvChange>, String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    let db = project_db_of(&state, &project, &engine)?;
+    Ok(crate::db_auth::env_changes(
+        &crate::db_auth::env_source(&dir),
+        &db,
+    ))
+}
+
+/// Writes the connection into the project's `.env` (from `.env.example`
+/// when it has none); only the lines shown by the preview change.
+#[tauri::command]
+pub fn project_env_apply<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    engine: String,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    let db = project_db_of(&state, &project, &engine)?;
+    crate::db_auth::env_apply(&dir, &db).map_err(|e| fail(".env", format!("{e:#}")))
+}
+
 /// The database servers (D-73).
 #[tauri::command]
 pub fn services_list<R: Runtime>(
@@ -1501,6 +1607,10 @@ macro_rules! command_handler {
             $crate::commands::github_rename,
             $crate::commands::github_delete,
             $crate::commands::github_open,
+            $crate::commands::project_databases,
+            $crate::commands::project_db_create,
+            $crate::commands::project_env_preview,
+            $crate::commands::project_env_apply,
             $crate::commands::services_list,
             $crate::commands::service_start,
             $crate::commands::service_stop,
