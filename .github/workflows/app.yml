@@ -104,7 +104,7 @@ jobs:
           & "$kit/data/apps/win32-x64/pwsh/pwsh.exe" -NoProfile -Command '$PSVersionTable.PSVersion'
           & "$kit/data/apps/win32-x64/node/node.exe" -v
           & "$kit/data/apps/win32-x64/git/cmd/git.exe" --version
-          if (-not (Test-Path "$kit/data/apps/win32-x64/vscodium-server/bin/codium-server.cmd")) { throw "editor server missing" }
+          if (-not (Test-Path "$kit/data/apps/win32-x64/vscodium-server/out/server-main.js")) { throw "editor server missing" }
           & "$kit/Atollo.exe" prepare --only "pwsh,node" --update-all
           if ($LASTEXITCODE -ne 0) { throw "update check failed" }
       - name: Editor server test (token, redirect, no leftover processes)

@@ -1,5 +1,5 @@
-//! Command line of the same exe (DECISIONS.md D-21): `env`, `prepare`,
-//! `components`, `version`, `help`. The exe is a GUI program, so output goes
+//! Command line of the same exe (DECISIONS.md D-21): `env`, `components`,
+//! `check`, `prepare`, `sync`, `keyring`, `serve`, `version`, `help`. The exe is a GUI program, so output goes
 //! to the redirected handle when there is one, otherwise to the parent
 //! console. Step lines use the markers of nabre/atollo's setup output
 //! (`── N. Name ──`, `√`, `x`, `!`, `·`), so they read the same.
