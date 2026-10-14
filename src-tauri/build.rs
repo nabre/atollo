@@ -37,6 +37,7 @@ const COMMANDS: &[&str] = &[
     "github_rename",
     "github_delete",
     "github_open",
+    "project_status",
     "project_databases",
     "project_db_create",
     "project_env_preview",

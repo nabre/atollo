@@ -381,6 +381,12 @@
           "markdownDescription": "Enables the project_site command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-status",
+          "markdownDescription": "Enables the project_status command without any pre-configured scope."
+        },
+        {
           "description": "Enables the projects_list command without any pre-configured scope.",
           "type": "string",
           "const": "allow-projects-list",
@@ -709,6 +715,12 @@
           "type": "string",
           "const": "deny-project-site",
           "markdownDescription": "Denies the project_site command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-status",
+          "markdownDescription": "Denies the project_status command without any pre-configured scope."
         },
         {
           "description": "Denies the projects_list command without any pre-configured scope.",

@@ -46,6 +46,7 @@
     "allow-github-rename",
     "allow-github-delete",
     "allow-github-open",
+    "allow-project-status",
     "allow-project-databases",
     "allow-project-db-create",
     "allow-project-env-preview",
