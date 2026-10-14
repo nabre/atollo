@@ -127,16 +127,19 @@ fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> Result<PathBuf, 
 /// Node.js, the editor...) with the app's preparation task and waits for it:
 /// the editor and the consoles never fall back to the shells of the PC.
 /// Progress reaches the window as `setup` events. Blocking: call it off the
-/// UI thread.
+/// UI thread. Returns the kit environment, built again if something was
+/// installed (see [`setup_notify`]).
 fn ensure_required<R: Runtime>(
     app: &AppHandle<R>,
     task: &Arc<SetupTask>,
     kit: &Kit,
     lang: &str,
-) -> Result<(), String> {
+) -> Result<KitEnv, String> {
+    use tauri::Manager;
+    let env = || app.state::<AppState>().env();
     let missing = setup_task::missing_required(kit);
     if missing.is_empty() {
-        return Ok(());
+        return Ok(env());
     }
     if !task.snapshot().running {
         crate::log::info(&format!(
@@ -154,7 +157,7 @@ fn ensure_required<R: Runtime>(
     }
     let still = setup_task::missing_required(kit);
     if still.is_empty() {
-        return Ok(());
+        return Ok(env());
     }
     let why = task
         .snapshot()
@@ -274,10 +277,9 @@ pub async fn terminal_open<R: Runtime>(
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
-    let (task, kit, env) = (Arc::clone(&state.setup), state.kit.clone(), state.env());
-    let lang = state.lang();
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&app, &task, &kit, lang)?;
+        let env = ensure_required(&app, &task, &kit, lang)?;
         terminal::open_console(&app, &kit, &env, &dir)
             .map_err(|e| fail("terminal", format!("{e:#}")))
     })
@@ -325,10 +327,44 @@ fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
 }
 
 /// Sends every change of the preparation to the app window.
+/// At the end of a run the kit environment is built again: its PATH lists
+/// only the programs present (Git, Node.js...), so one just installed is
+/// seen by the editor, the consoles and the projects without a restart.
 pub fn setup_notify<R: Runtime>(app: AppHandle<R>) -> Notify {
     Box::new(move |snapshot: &Snapshot| {
+        if !snapshot.running && !snapshot.steps.is_empty() {
+            use tauri::Manager;
+            if let Some(state) = app.try_state::<AppState>() {
+                apply_env(&state, Settings::load(&state.kit).settings);
+            }
+        }
         let _ = app.emit_to(MAIN, "setup", snapshot);
     })
+}
+
+/// The kit environment from `settings` and what is installed now, given to
+/// the app, the editor and the preparation task. Returns the language.
+fn apply_env(state: &AppState, settings: Settings) -> &'static str {
+    let lang = crate::i18n::resolve(
+        settings.lang.as_deref(),
+        state.host.get("DEVKIT_LANG"),
+        crate::i18n::windows_locale().as_deref(),
+    );
+    let env = KitEnv::build(&state.kit, &settings, lang, &state.host);
+    if let Err(e) = env.create_dirs() {
+        crate::log::warn(&format!("creating kit folders: {e}"));
+    }
+    *state
+        .lang
+        .write()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = lang;
+    *state
+        .env
+        .write()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = env.clone();
+    state.editor.set_env(env.clone());
+    state.setup.set_config(env, settings);
+    lang
 }
 
 #[tauri::command]
@@ -454,10 +490,9 @@ pub async fn agent_launch<R: Runtime>(
         return Err(format!("unknown agent: {agent}"));
     }
     let dir = project_dir(&state.kit, project.as_deref(), state.lang())?;
-    let (task, kit, env) = (Arc::clone(&state.setup), state.kit.clone(), state.env());
-    let lang = state.lang();
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&app, &task, &kit, lang)?;
+        let env = ensure_required(&app, &task, &kit, lang)?;
         crate::agents::launch(&app, &kit, &env, &agent, &dir, lang)
             .map_err(|e| fail("agent", format!("{e:#}")))
     })
@@ -548,14 +583,9 @@ pub async fn project_clone<R: Runtime>(
     name: Option<String>,
 ) -> Result<String, String> {
     ensure_main(&webview)?;
-    let (task, kit, env, lang) = (
-        Arc::clone(&state.setup),
-        state.kit.clone(),
-        state.env(),
-        state.lang(),
-    );
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&app, &task, &kit, lang)?;
+        let env = ensure_required(&app, &task, &kit, lang)?;
         crate::projects::clone(&kit, &env, &source, name.as_deref(), lang)
             .map(|d| {
                 d.file_name()
@@ -617,15 +647,10 @@ pub async fn run_start<R: Runtime>(
 ) -> Result<crate::run::RunInfo, String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    let (task, kit, env, lang) = (
-        Arc::clone(&state.setup),
-        state.kit.clone(),
-        state.env(),
-        state.lang(),
-    );
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let runner = Arc::clone(&runner);
     tauri::async_runtime::spawn_blocking(move || {
-        ensure_required(&app, &task, &kit, lang)?;
+        let env = ensure_required(&app, &task, &kit, lang)?;
         let detected = crate::detect::detect(&dir, lang);
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::i18n::t(
@@ -800,25 +825,7 @@ pub fn settings_set<R: Runtime>(
     settings
         .save(kit)
         .map_err(|e| fail("settings", format!("{e:#}")))?;
-    let lang = crate::i18n::resolve(
-        settings.lang.as_deref(),
-        state.host.get("DEVKIT_LANG"),
-        crate::i18n::windows_locale().as_deref(),
-    );
-    let env = KitEnv::build(kit, &settings, lang, &state.host);
-    if let Err(e) = env.create_dirs() {
-        crate::log::warn(&format!("creating kit folders: {e}"));
-    }
-    *state
-        .lang
-        .write()
-        .unwrap_or_else(std::sync::PoisonError::into_inner) = lang;
-    *state
-        .env
-        .write()
-        .unwrap_or_else(std::sync::PoisonError::into_inner) = env.clone();
-    state.editor.set_env(env.clone());
-    state.setup.set_config(env, settings);
+    let lang = apply_env(&state, settings);
     crate::log::info(&format!("settings saved, lang={lang}"));
     Ok(())
 }
