@@ -1,19 +1,24 @@
 # Prove
 
-Le prove automatiche girano nella CI (`.github/workflows/app.yml`) e in locale:
+Le prove automatiche girano nella CI (`.github/workflows/app.yml`) e in locale, dalla radice del repository:
 
 ```
-cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
-cd ui && npx tsc -b && npx eslint src && npx prettier --check . && npx vitest run
+npm run lint
+npm test
+npm -w ui run build
 ```
+
+`npm run lint` controlla `cargo fmt`, `cargo clippy -D warnings`, ESLint e Prettier; `npm test` esegue `cargo test` e i test dell'interfaccia (Vitest); `npm -w ui run build` controlla i tipi (`tsc -b`) e compila l'interfaccia.
 
 Coprono, fra l'altro:
 - radice del kit, ambiente e PATH;
-- catalogo e dipendenze;
+- catalogo, dipendenze, parti (`keys`), limiti ARM64 e componenti che servono a comandi e agenti (`needs.rs`);
+- editor alla versione fissata del rilascio;
 - download con checksum e firme;
 - editor e server web reale (con il token e senza);
 - finestre dell'editor che non possono chiamare i comandi dell'app;
-- allineamento degli agenti e accesso di Antigravity con il Gestore credenziali reale;
+- una console reale in `conhost.exe`, in una cartella con spazi;
+- allineamento degli agenti e accesso di Antigravity con Gestione credenziali reale;
 - rilevamento dei progetti su esempi (Node, Next, Tauri, Electron, PHP, Laravel, Django, FastAPI, Flask, Streamlit, Rust, statico, progetti composti, `panel.json` e `pannello.json`);
 - porte ricordate e bloccate, avvio e arresto di un'azione attraverso il suo job;
 - server di file: host, file nascosti, `..`, collegamenti;
@@ -39,20 +44,22 @@ Rispetto alla checklist del prompt:
 Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un PC che non ha mai visto il kit, quando la voce lo richiede.
 
 ### Installazione e portabilità
-- [ ] **Kit nuovo su chiavetta.** Doppio clic, primo avvio, installazione dei predefiniti, editor aperto su un progetto.
+- [ ] **Kit nuovo su chiavetta.** Doppio clic, primo avvio: PowerShell 7, GitHub CLI e l'editor si installano da soli; poi installazione dei predefiniti (con Git per Claude Code), editor aperto su un progetto.
+- [ ] **Editor alla versione del rilascio.** Con un kit preparato da un'altra versione dell'app (o con un numero diverso in `data\app\versions\vscodium-server.txt`), all'avvio l'editor viene installato di nuovo alla versione fissata, anche se era rimasto aperto, senza «Aggiorna tutto». Se un programma del PC tiene aperta la cartella dell'editor, l'aggiornamento finisce «in uso», ma Editor, Terminale e gli agenti si aprono lo stesso con l'editor già presente. In Linguaggi e strumenti l'editor è tra gli obbligatori, spuntato e non modificabile.
 - [ ] **Nessuna traccia fuori dal kit.** Dopo una sessione completa (editor, terminale, un agente, un progetto avviato) non c'è nessun file nuovo in `%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%` e nel registro. Confronto prima/dopo con Process Monitor o con un'istantanea delle cartelle. Eccezione documentata: le credenziali di Antigravity, che restano in Windows solo per la durata di `agy` e con persistenza di sessione (D-41).
 - [ ] **Kit spostato.** Su un'altra lettera di unità e in una cartella con spazi tutto funziona, lo stato dell'editor resta e Claude ritrova la cronologia.
 - [ ] **PC senza WebView2** (Windows 10 LTSC o macchina virtuale). Il messaggio è chiaro e l'app funziona con il runtime fisso nel kit.
 - [ ] **Utente standard** senza diritti di amministratore: nessuna richiesta UAC in nessun passo.
 - [ ] **Proxy autenticato e ispezione SSL.** Impostazioni › Rete con proxy e file PEM: installazione, estensioni dell'editor e agenti funzionano.
 - [ ] **Senza rete.** L'app e l'editor partono, gli errori di download si leggono, il controllo degli aggiornamenti fallisce senza bloccare nulla.
-- [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, console del kit o server di progetto.
+- [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, console del kit (`conhost.exe`, `pwsh.exe`) o server di progetto.
 - [ ] **ARM64.** L'exe è nativo, l'editor gira in emulazione e l'avviso si vede.
 
 ### Progetti
 - [ ] **Nuovo progetto** «prova 1»: la cartella compare, ha il pulsante «Elimina la cartella vuota» e l'eliminazione funziona.
-- [ ] **Clona** `nabre/dev-kit` (o un repository privato con `gh auth login` fatto nel terminale del kit): la cartella ha il nome giusto. Con un indirizzo non valido (`-x/y`, `ssh://…`) l'errore si legge.
-- [ ] **Progetto Vite.** «Avvia», poi la porta 7100-7999 compare nell'output. Lo stato passa a «in ascolto» e il pulsante con l'indirizzo apre il browser del PC. Un secondo avvio riusa la stessa porta.
+- [ ] **Clona** `nabre/dev-kit` (o un repository privato con `gh auth login` fatto nel terminale del kit): la cartella ha il nome giusto. Su un kit senza Git, Git si installa prima del clone. Con un indirizzo non valido (`-x/y`, `ssh://…`) l'errore si legge.
+- [ ] **Progetto Vite.** «Avvia», poi la porta 7100-7999 compare nell'output. Lo stato passa a «in ascolto» e il pulsante con l'indirizzo apre il browser del PC. Un secondo avvio riusa la stessa porta. Su un kit senza Node.js, «Avvia» installa prima Node.js (avanzamento in Home e nella barra di stato) e poi parte; Node.js risulta scelto in Linguaggi e strumenti.
+- [ ] **Rete locale.** Con «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete», un altro PC apre il progetto avviato con l'indirizzo IP di questo PC; senza, no.
 - [ ] **Porta occupata.** Scelta a mano una porta già usata da un altro programma, l'avvio dà un errore chiaro e la porta non cambia da sola.
 - [ ] **Sito statico.** Una cartella con solo `index.html`: il server di file del kit lo serve. Un file `.env` non è raggiungibile (403).
 - [ ] **«Servi come sito web».** Con la cartella `public` e PHP: `panel.json` contiene l'azione `site` e le altre chiavi del file restano.
@@ -61,6 +68,13 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 
 ### Agenti
 - [ ] **Claude Code, Codex e Antigravity.** Accesso, avvio dall'app e dall'editor, allineamento di istruzioni e skill fra i tre.
+- [ ] **Console di un agente.** Agenti › Apri su Claude Code: si apre una console classica di Windows (non Windows Terminal, anche se è il terminale predefinito del PC). Claude Code riceve Invio, frecce e Ctrl+C. Chiudendo la console non resta nessun `claude.exe`.
+- [ ] **Git con GitHub CLI.** Su un kit senza Git, all'avvio Git si installa con i componenti di sistema; in «Linguaggi e strumenti» è spuntato, non modificabile, con l'etichetta «per GitHub CLI».
+- [ ] **Editor aggiornato con una cartella aperta.** Con Esplora file aperto su `data\apps\win32-x64\vscodium-server\extensions`, l'editor di un'altra versione viene comunque sostituito all'avvio (D-60).
+
+### Linguaggi e strumenti
+- [ ] **Dipendenze.** Apache mostra la dipendenza «PHP»; con Claude Code scelto, Git mostra «per Claude Code». Togliendo PHP si toglie anche Apache.
+- [ ] **PATH dopo un'installazione.** Dopo l'installazione di un linguaggio da questa pagina, Home › Terminale apre la console classica con PowerShell 7 del kit e il programma nuovo è nel PATH, senza riavviare l'app.
 
 ### Impostazioni
 - [ ] **Lingua.** Passando a English, Français e Deutsch, tutta l'interfaccia cambia subito. Con «Lingua di Windows» vale quella del sistema.

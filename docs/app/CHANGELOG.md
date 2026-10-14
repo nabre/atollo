@@ -1,5 +1,36 @@
 # Novità
 
+## Correzioni e modifiche dopo la fase 6 (14/10/2026)
+
+Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
+
+**Fatto**
+- **Console classica di Windows** (D-57): la PowerShell del kit e gli agenti girano in `conhost.exe` di System32, avviato direttamente, nel job dell'app e con il solo ambiente del kit; Windows non passa la console al terminale predefinito del PC. Tolti xterm.js, `portable-pty`, `terminal.html`, la capability `terminal` e i suoi tre comandi. D-44, D-45 e D-46 sono superate, D-47 è chiusa.
+- **Editor parte dell'app** (D-58): gruppo nuovo `app` nel catalogo, con `version` e `sha256` fissati per il rilascio (1.135.06055). All'avvio un editor di un'altra versione viene installato di nuovo alla versione fissata, dopo aver fermato i processi del vecchio; finché non è aggiornato, quello installato continua a funzionare. In Linguaggi e strumenti compare con gli obbligatori, spuntato e non modificabile.
+- **Obbligatori solo PowerShell 7 e GitHub CLI** (D-59, `needs.rs`): Git, Node.js e uv si installano quando servono. Avvio di un agente: l'agente, le sue dipendenze (Claude Code → Git) e i programmi dei server MCP. Clone: Git. Azione di un progetto: il componente del primo programma di ogni comando (`npm` → Node.js, `php` → PHP…). Quello che si installa così resta scelto in `components.txt`.
+- **Componenti di sistema con le loro dipendenze obbligatorie** (D-59): GitHub CLI, PowerShell 7 e l'editor, più quello che serve a loro: Git per GitHub CLI, PowerShell 7 per l'editor. Sempre installati, spuntati e non modificabili nella pagina.
+- **Scambio di una cartella tenuta aperta da un programma del PC** (D-60): l'aggiornamento dell'editor falliva sempre perché l'indicizzatore di Cloud Code teneva aperta una sua sottocartella. Ora, se nessun programma gira da quella cartella, la vecchia si sposta voce per voce; con un programma in esecuzione resta «in uso».
+- **Ambiente ricostruito dopo ogni installazione**: un programma appena installato è visto da editor, console, agenti e progetti senza riavviare l'app (D-49).
+- **Catalogo**: `keys` per i componenti fatti di più parti (Java con Maven e Gradle, CMake con Ninja, PHP con Composer, pnpm con yarn, l'editor con `node.exe`); `noArm64` per R; `tools\vcruntime` condiviso da PHP e Apache, tolto con l'ultimo dei due; Composer da `getcomposer.org/versions`; CodeLLDB x64 anche su ARM64, come l'editor; `--only` aggiunge ciò che serve e manca. VSCodium desktop tolto dal catalogo.
+- **Rete locale** per tutti i server dei progetti, non solo Node: i comandi trovati dall'app ascoltano su `0.0.0.0` e `Dev-Kit.exe serve` su tutte le interfacce, con un `Host` che sia un indirizzo IP (D-50, D-51). Le porte 7000-7099 dell'editor non si possono scegliere per un progetto.
+- **Isolamento di PowerShell**: `PSModulePath` nell'ambiente del kit senza i moduli del PC; Codex con `allow_login_shell = false` (D-34).
+- **Impostazioni**: dopo il salvataggio con l'editor aperto, pulsante «Riavvia l'editor».
+- **Traduzioni**: le descrizioni dei componenti e gli errori che arrivano all'interfaccia passano dai cataloghi delle quattro lingue.
+- **Dipendenze in Linguaggi e strumenti**: ogni componente mostra ciò che richiede in piccoli riquadri («Richiede PHP: si installa insieme.»), e un componente richiesto da uno scelto mostra «per Claude Code».
+- **CI**: niente più componente `terminal` nella prova reale; job di release sui tag `app-v*` (tag uguale alla versione di `Cargo.toml`, asset `Dev-Kit-x64.exe` e `Dev-Kit-arm64.exe` con i file `.sha256`); `rust-version` 1.93.
+
+**Verificato**
+- 155 test Rust, 19 test dell'interfaccia; lo scambio con una sottocartella aperta senza condivisione di cancellazione è provato da un test.
+- Console: avviata così resta nella finestra classica (`ConsoleWindowClass`), nessun `WindowsTerminal.exe`, su Windows 11 (D-57).
+- Editor 1.135.06055: lo SHA-256 pubblicato da VSCodium e il digest di GitHub sono uguali (D-58).
+
+**Da provare a mano** (checklist completa in [TESTING.md](TESTING.md))
+1. Agenti › Apri su Claude Code: si apre una console classica di Windows e Claude Code riceve i tasti (Invio, frecce, Ctrl+C).
+2. Avviare l'app su un kit con l'editor di un'altra versione: all'avvio viene installato di nuovo alla versione fissata; Editor e Terminale si aprono anche se l'aggiornamento non riesce.
+3. Su un kit senza Git: all'avvio Git si installa con GitHub CLI; in Linguaggi e strumenti è spuntato e non modificabile («per GitHub CLI»).
+4. Su un kit senza Node.js: «Avvia» su un'azione `npm` installa prima Node.js e poi parte.
+5. Linguaggi e strumenti: Apache mostra la dipendenza «PHP»; con Claude Code scelto, Git mostra «per Claude Code».
+
 ## Fase 6: progetti e rifinitura (14/10/2026)
 
 **Fatto**
@@ -31,7 +62,7 @@
 **Limiti noti**
 - «Rimuovi l'unità» non vede i programmi del PC che tengono aperto solo un file del kit (D-55).
 - L'aggiornamento dell'app non è ancora stato provato con una release vera: il repository e il workflow di release arrivano nella fase 7.
-- Fase non ancora committata: le sue modifiche sono nel working tree insieme a quelle del terminale integrato (PLAN, domanda 13).
+- Fase committata in `7187483`, insieme al terminale integrato (PLAN, domanda 13).
 
 **Da provare a mano** (checklist completa in [TESTING.md](TESTING.md))
 1. Progetti › Clona `nabre/dev-kit`: la cartella compare con il nome del repository.
@@ -60,7 +91,7 @@
 - App di debug guidata con il debug remoto di WebView2 (D-48): Terminale apre la finestra con il prompt del kit; `USERPROFILE` = `data\home`, `node` del kit, PowerShell 7.6.7, larghezza della console uguale a quella della finestra; Ctrl+C interrompe `ping -t`; `exit 7` mostra "Processo terminato (codice 7)"; chiudere la finestra termina `pwsh.exe` e `PING.EXE`; Node in modalità raw riceve tasti e frecce; una console ricaricata ritrova il suo output; la finestra console non può chiamare `app_info` né `terminal_open`.
 
 **Problema aperto**
-- Claude Code si apre e si disegna, ma non riceve i tasti. Causa probabile e rimedio (ConPTY aggiornato di Microsoft) in D-47; la prova aspetta il permesso dell'utente (PLAN.md §12, domanda 11).
+- Claude Code si apre e si disegna, ma non riceve i tasti. Causa probabile e rimedio (ConPTY aggiornato di Microsoft) in D-47; la prova aspetta il permesso dell'utente (PLAN.md §12, domanda 11). Chiuso dopo la fase 6: le console sono ora la console classica di Windows (D-57, sezione in alto).
 
 **Da provare a mano**
 1. Home › Terminale: si apre una finestra "projects - Dev-Kit" con PowerShell 7 del kit; `$env:USERPROFILE` punta a `data\home`.
@@ -79,7 +110,7 @@
 - Interfaccia: pulsanti degli agenti in Home, pagina **Agenti** (stato, Apri, Esci con conferma, cartella condivisa), scelta dell'agente per progetto nella pagina Progetti.
 
 **Verificato su questo PC**
-- `cargo fmt`, `clippy -D warnings`: puliti; 105 test Rust (compreso quello col Gestore credenziali reale), 9 test dell'interfaccia.
+- `cargo fmt`, `clippy -D warnings`: puliti; 105 test Rust (compreso quello con Gestione credenziali reale), 9 test dell'interfaccia.
 - Kit con tutti i componenti: skill creata in Codex spostata in `data\agents\skills` e collegata a Claude e Antigravity nello stesso allineamento; istruzione scritta in Claude arrivata ad Antigravity; `codex mcp list` del kit non vede nulla del Codex del PC; `agy --version` passa dal wrapper del kit e non lascia segnali in sospeso.
 - Kit rinominato: percorsi di Claude e Codex aggiornati, giunzioni rifatte.
 
