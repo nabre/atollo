@@ -126,7 +126,7 @@ export function App() {
 
   return (
     // The key re-renders every text when the language changes.
-    <div key={lang} className="flex h-full flex-col">
+    <div key={lang} className="flex h-full flex-col bg-vsc-activitybar">
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-1 focus:left-14 focus:z-50 focus:bg-vsc-button focus:px-2 focus:text-vsc-button-fg"
@@ -134,7 +134,8 @@ export function App() {
         {t("Vai al contenuto")}
       </a>
       <TitleBar title={current?.label} />
-      <div className="flex min-h-0 flex-1">
+      {/* VSCodium's floating parts: 4px apart on the workbench color. */}
+      <div className="flex min-h-0 flex-1 gap-1 px-1 pb-1">
         <ActivityBar
           pages={all}
           page={page}
@@ -143,9 +144,12 @@ export function App() {
             setPage(id);
           }}
         />
-        <main className="flex min-w-0 flex-1 flex-col bg-vsc-bg" aria-labelledby="page-title">
-          <header className="flex h-9 items-center gap-2 border-b border-vsc-border px-5">
-            <h1 id="page-title" className="text-[11px] font-normal tracking-wide uppercase text-vsc-desc">
+        <main
+          className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-vsc-surface-border bg-vsc-bg"
+          aria-labelledby="page-title"
+        >
+          <header className="flex h-8 shrink-0 items-center gap-2 border-b border-vsc-border px-3">
+            <h1 id="page-title" className="text-[12px] font-semibold text-vsc-sidebar-title">
               {current?.label}
             </h1>
             {browserPreview && <Badge className="ml-auto">{t("Anteprima nel browser: dati di esempio")}</Badge>}
@@ -191,16 +195,18 @@ export function App() {
           </div>
         </main>
       </div>
-      <ActivityPanel
-        runs={runs}
-        logs={logs}
-        loadLog={loadLog}
-        onStop={(key) => {
-          void runStop(key);
-        }}
-        onForget={forget}
-        setup={setup}
-      />
+      <div className="px-1 pb-1">
+        <ActivityPanel
+          runs={runs}
+          logs={logs}
+          loadLog={loadLog}
+          onStop={(key) => {
+            void runStop(key);
+          }}
+          onForget={forget}
+          setup={setup}
+        />
+      </div>
       <StatusBar info={info} editor={editor} setup={setup} />
       {closing && (
         <CloseDialog
@@ -218,7 +224,7 @@ function ActivityBar({ pages: list, page, onSelect }: { pages: Page[]; page: Pag
   return (
     <nav
       aria-label={t("Pagine")}
-      className="flex w-12 flex-col border-r border-vsc-activitybar-edge bg-vsc-activitybar"
+      className="flex w-11 shrink-0 flex-col items-center rounded-lg border border-vsc-surface-border bg-vsc-activitybar py-1"
     >
       {list.map(({ id, label, icon: Icon }) => {
         const active = id === page;
@@ -233,13 +239,16 @@ function ActivityBar({ pages: list, page, onSelect }: { pages: Page[]; page: Pag
               onSelect(id);
             }}
             className={[
-              "flex h-12 w-12 items-center justify-center border-l-2",
-              active
-                ? "border-vsc-activitybar-border text-vsc-activitybar-fg"
-                : "border-transparent text-vsc-activitybar-inactive hover:text-vsc-activitybar-fg",
+              // 36px items, a 32px rounded mark on the active one.
+              "flex size-9 items-center justify-center",
+              active ? "text-vsc-activitybar-fg" : "text-vsc-activitybar-inactive hover:text-vsc-activitybar-fg",
             ].join(" ")}
           >
-            <Icon size={24} aria-hidden="true" />
+            <span
+              className={`flex size-8 items-center justify-center rounded ${active ? "bg-vsc-activitybar-item-active" : "hover:bg-vsc-activitybar-item-hover"}`}
+            >
+              <Icon size={24} aria-hidden="true" />
+            </span>
           </button>
         );
       })}
@@ -315,24 +324,24 @@ function StatusBar({
   return (
     <footer
       aria-label={t("Barra di stato")}
-      className="flex h-[22px] items-center gap-2 border-t border-vsc-statusbar-border bg-vsc-statusbar pr-2 text-[12px] leading-none text-vsc-statusbar-fg"
+      className="flex h-7 shrink-0 items-center bg-vsc-statusbar px-1.5 pb-1 text-[12px] leading-none text-vsc-statusbar-fg"
     >
-      {/* Flush with the left edge, as VSCodium's remote indicator: the icon
-          only, the name is in the tooltip. */}
+      {/* First, as VSCodium's remote indicator: the icon only, the name is
+          in the tooltip. Items are 24px high and rounded, as the editor's. */}
       <span
         role="img"
         aria-label="NEXKORA"
         title="NEXKORA"
-        className="-mt-px flex h-[calc(100%+1px)] items-center bg-vsc-statusbar-remote px-2 text-vsc-statusbar-remote-fg"
+        className="flex h-6 items-center rounded bg-vsc-statusbar-remote px-1.5 text-vsc-statusbar-remote-fg"
       >
-        <VscRemote size={14} aria-hidden="true" />
+        <VscRemote size={16} aria-hidden="true" />
       </span>
       {info && (
         <>
-          <span>{info.platform}</span>
+          <span className="flex h-6 items-center rounded px-1.5">{info.platform}</span>
           {editor?.running && (
             <span
-              className="flex items-center gap-1"
+              className="flex h-6 items-center gap-1 rounded px-1.5"
               title={t("Server dell'editor su 127.0.0.1:{0}", String(editor.port))}
             >
               <VscCode size={14} aria-hidden="true" />
@@ -340,12 +349,12 @@ function StatusBar({
             </span>
           )}
           {installing && (
-            <span className="flex items-center gap-1" role="status">
+            <span className="flex h-6 items-center gap-1 rounded px-1.5" role="status">
               <VscLoading size={14} aria-hidden="true" className="animate-spin" />
               {installing}
             </span>
           )}
-          <span className="ml-auto">v{info.version}</span>
+          <span className="ml-auto flex h-6 items-center rounded px-1.5">v{info.version}</span>
         </>
       )}
     </footer>

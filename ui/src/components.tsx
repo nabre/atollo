@@ -226,7 +226,7 @@ export function ComponentsPage({
       {firstRun && (
         <div className="bg-hero space-y-1 rounded-md border border-vsc-border px-5 py-4 pr-[30%]">
           <BrandSymbol size={40} />
-          <h2 className="text-[18px] font-semibold tracking-tight">{t("Benvenuto in NEXKORA")}</h2>
+          <h2 className="font-brand text-[18px] font-semibold tracking-tight">{t("Benvenuto in NEXKORA")}</h2>
           <p>
             {rich(
               t(

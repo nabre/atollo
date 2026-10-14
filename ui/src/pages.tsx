@@ -65,8 +65,8 @@ export function ActionButton({
       aria-label={compact ? label : undefined}
       aria-busy={busy}
       className={[
-        "flex items-center gap-1.5 rounded-sm text-[13px] disabled:cursor-not-allowed disabled:opacity-50",
-        compact ? "p-[5px]" : "px-2 py-0.5",
+        "flex items-center gap-1.5 rounded text-[12px] leading-4 disabled:cursor-not-allowed disabled:opacity-50",
+        compact ? "size-[22px] justify-center p-[3px]" : "px-2 py-1",
         ghost
           ? "text-vsc-icon enabled:hover:bg-vsc-toolbar-hover"
           : primary
@@ -74,7 +74,7 @@ export function ActionButton({
             : "border border-vsc-button-border bg-vsc-button2 text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover",
       ].join(" ")}
     >
-      <Icon size={14} aria-hidden="true" className={busy ? "animate-pulse" : undefined} />
+      <Icon size={compact ? 16 : 14} aria-hidden="true" className={busy ? "animate-pulse" : undefined} />
       {!compact && (busy ? `${label}…` : label)}
     </button>
   );

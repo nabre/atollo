@@ -37,6 +37,9 @@
   --vsc-statusbar-remote: #10b981; /* statusBarItem.remoteBackground */
   --vsc-statusbar-remote-fg: #04140d; /* statusBarItem.remoteForeground */
   --vsc-tab-border-top: #10b981; /* tab.activeBorderTop */
+  --vsc-surface-border: #252526; /* modernActivityBar.border */
+  --vsc-activitybar-item-active: #10b98133; /* modernActivityBarItem.activeBackground */
+  --vsc-activitybar-item-hover: #ffffff11; /* modernActivityBarItem.hoverBackground */
   --vsc-focus: #10b981; /* focusBorder */
   --vsc-button: #10b981; /* button.background */
   --vsc-button-hover: #0ea572; /* button.hoverBackground */
@@ -138,6 +141,9 @@
     --vsc-statusbar-remote: #047857; /* statusBarItem.remoteBackground */
     --vsc-statusbar-remote-fg: #ffffff; /* statusBarItem.remoteForeground */
     --vsc-tab-border-top: #047857; /* tab.activeBorderTop */
+    --vsc-surface-border: #e5e5e5; /* modernActivityBar.border */
+    --vsc-activitybar-item-active: #d1f0e0; /* modernActivityBarItem.activeBackground */
+    --vsc-activitybar-item-hover: #f2f2f2; /* modernActivityBarItem.hoverBackground */
     --vsc-focus: #047857; /* focusBorder */
     --vsc-button: #047857; /* button.background */
     --vsc-button-hover: #065f46; /* button.hoverBackground */
@@ -240,6 +246,9 @@
   --color-vsc-statusbar-remote: var(--vsc-statusbar-remote);
   --color-vsc-statusbar-remote-fg: var(--vsc-statusbar-remote-fg);
   --color-vsc-tab-border-top: var(--vsc-tab-border-top);
+  --color-vsc-surface-border: var(--vsc-surface-border);
+  --color-vsc-activitybar-item-active: var(--vsc-activitybar-item-active);
+  --color-vsc-activitybar-item-hover: var(--vsc-activitybar-item-hover);
   --color-vsc-focus: var(--vsc-focus);
   --color-vsc-button: var(--vsc-button);
   --color-vsc-button-hover: var(--vsc-button-hover);

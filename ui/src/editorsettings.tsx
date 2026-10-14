@@ -57,7 +57,7 @@ export function EditorSettingsBox({ project }: { project: string }) {
   const field = "input";
   return (
     <section aria-labelledby="editor-settings" className="border-t border-vsc-border">
-      <h2 id="editor-settings" className="px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase">
+      <h2 id="editor-settings" className="flex h-8 items-center px-3 text-[12px] font-semibold text-vsc-sidebar-title">
         {t("Impostazioni dell'editor per questo progetto")}
       </h2>
       {view.readOnly ? (

@@ -133,7 +133,7 @@ export function ProjectMcpBox({ project }: { project: string }) {
     <section aria-labelledby="project-mcp" className="border-t border-vsc-border">
       <h2
         id="project-mcp"
-        className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold tracking-wide text-vsc-desc uppercase"
+        className="flex h-8 items-center gap-2 px-3 text-[12px] font-semibold text-vsc-sidebar-title"
       >
         {t("Server MCP del progetto")}
       </h2>
