@@ -161,6 +161,11 @@ export function projectsList(): Promise<ProjectInfo[]> {
   return browserPreview ? Promise.resolve(SAMPLE_PROJECTS) : invoke<ProjectInfo[]>("projects_list");
 }
 
+/** Installs the kit components the project needs and are missing; waits for the end. */
+export function projectInstallMissing(project: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_install_missing", { project });
+}
+
 /** Opens a kit console (a console window of the app) in a project. */
 export function terminalOpen(project: string): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("terminal_open", { project });

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-install-missing"
+description = "Enables the project_install_missing command without any pre-configured scope."
+commands.allow = ["project_install_missing"]
+
+[[permission]]
+identifier = "deny-project-install-missing"
+description = "Denies the project_install_missing command without any pre-configured scope."
+commands.deny = ["project_install_missing"]

@@ -941,6 +941,27 @@ pub fn project_site<R: Runtime>(
     crate::detect::set_site(&dir, &folder, kind, state.lang()).map_err(|e| format!("{e:#}"))
 }
 
+/// Installs the kit components a project needs and are missing (its
+/// `missing`), saved as chosen like those of an action. Waits for the end.
+#[tauri::command]
+pub async fn project_install_missing<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || {
+        let missing = crate::projects::info(&kit, &dir, lang).missing;
+        let wanted: Vec<&str> = missing.iter().map(String::as_str).collect();
+        ensure(&app, &task, &kit, lang, &wanted).map(|_| ())
+    })
+    .await
+    .map_err(|e| fail("install", e))?
+}
+
 #[tauri::command]
 pub fn run_list<R: Runtime>(
     webview: Webview<R>,
@@ -1342,6 +1363,7 @@ macro_rules! command_handler {
             $crate::commands::project_delete,
             $crate::commands::project_clone,
             $crate::commands::project_site,
+            $crate::commands::project_install_missing,
             $crate::commands::github_status,
             $crate::commands::github_sign_in,
             $crate::commands::github_sign_in_cancel,
