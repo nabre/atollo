@@ -9,7 +9,7 @@
 - **Barra del titolo dell'interfaccia** sulla finestra principale, senza la barra di Windows (D-64).
 - **Loghi ufficiali** di componenti e agenti; **etichette dei linguaggi** con il logo nella riga di ogni progetto (D-65).
 - **Solo gli agenti installati** nella pagina Agenti e nella scelta dell'agente.
-- **Progetti attendibili anche nell'editor**: niente «Restricted Mode» (D-66).
+- **L'editor chiede se fidarsi** alla prima apertura di ogni progetto; quelli non attendibili si aprono in «Restricted Mode» (D-67, dopo la revisione di sicurezza che segnalava D-66).
 - **README in quattro lingue** (`README.md`, `docs/README.en.md`, `.fr.md`, `.de.md`): uso, pagine, cosa resta del Atollo, limiti noti.
 - **CI: firma facoltativa dell'exe** con i segreti `SIGN_PFX_BASE64` e `SIGN_PFX_PASSWORD`; senza, l'exe resta non firmato e il passo si salta.
 

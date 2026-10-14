@@ -201,11 +201,8 @@ impl Editor {
             .arg("--server-data-dir")
             .arg(data_dir)
             .args(["--accept-server-license-terms", "--telemetry-level", "off"])
-            // Only project folders open here (D-62), trusted as Claude and
-            // Codex trust them: no Restricted Mode (D-66). The setting
-            // security.workspace.trust.enabled is application-scoped and the
-            // server's Machine settings ignore it.
-            .arg("--disable-workspace-trust")
+            // Workspace trust stays on (D-67): the editor asks once per
+            // project and opens the ones not trusted in Restricted Mode.
             .env("ATOLLO_APP", "1")
             .current_dir(self.kit.projects())
             .stdin(Stdio::null())
@@ -458,6 +455,20 @@ mod tests {
                 .iter()
                 .any(|c| c.to_str().unwrap_or("").contains(&token)),
             "cookie set"
+        );
+        // The workbench page, with the cookie the redirect set.
+        let page = no_redirect
+            .get(&format!("http://127.0.0.1:{port}/"))
+            .header("Cookie", format!("vscode-tkn={token}"))
+            .call()
+            .unwrap()
+            .body_mut()
+            .read_to_string()
+            .unwrap()
+            .replace("&quot;", "\"");
+        assert!(
+            page.contains("\"enableWorkspaceTrust\":true"),
+            "workspace trust on (D-67)"
         );
         assert!(
             !fs::read_to_string(kit.logs().join("editor.log"))
