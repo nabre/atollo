@@ -15,7 +15,6 @@ Endpoint letti dal codice, non ancora interrogati: ogni installatore Rust ha un 
 | | `gh` | GitHub CLI | sempre | 40 | | clone, accesso a GitHub |
 | | `vscodium-server` | Editor (server web di VSCodium) | sempre | 250 | | **nuovo**; x64 anche su ARM64 |
 | | `pwsh` | PowerShell 7 | sempre | 110 | | **nuovo**; terminale del kit |
-| | `terminal` | Windows Terminal | sempre | 40 | | **nuovo**; console fuori dall'editor |
 | agenti | `claude` | Claude Code | sì | 250 | `git` | |
 | | `codex` | Codex | sì | 440 | | |
 | | `antigravity` | Antigravity | sì | 190 | | accesso salvato nel kit (`keyring.rs`) |
@@ -43,6 +42,8 @@ Endpoint letti dal codice, non ancora interrogati: ogni installatore Rust ha un 
 
 I gruppi, i predefiniti e le dimensioni sono quelli di `components.json`, salvo le righe nuove e `vscodium`. Proposta del primo avvio: obbligatori + tre agenti + Python, PHP, Apache (~2,3 GB).
 
+**Proposto, non ancora nel catalogo** (DECISIONS.md D-47): `conpty`, ConPTY aggiornato di Microsoft (`conpty.dll` + `OpenConsole.exe`), obbligatorio, circa 1,2 MB, per le console dell'app. Windows Terminal (`terminal`) è stato tolto il 14/10/2026: le console sono finestre dell'app (D-44).
+
 ## 2. Come si installa ciascuno
 
 Abbreviazioni:
@@ -63,7 +64,6 @@ Abbreviazioni:
 | gh | Tag `cli/cli` | `gh_<v>_windows_amd64.zip` / `_arm64.zip` | SHA-256 da `gh_<v>_checksums.txt` | `gh.exe` → `A\tools\` | `tools/gh.exe` | `_prepare-core.ps1:307-335` |
 | vscodium-server | GHA `VSCodium/vscodium`, asset `vscodium-reh-web-win32-x64-<v>.tar.gz` | solo x64 (anche su ARM64) | SHA-256 da `<asset>.sha256`, confrontato con il `digest` di GitHub | tar.gz (radice: `bin\`, `node.exe`, `out\`, `extensions\`) → `A\vscodium-server\` | `vscodium-server/bin/codium-server.cmd` (verificato il 14/10) | nuovo |
 | pwsh | GHA `PowerShell/PowerShell`, `PowerShell-<v>-win-(x64\|arm64).zip` | nativo per entrambe | SHA-256 da `digest` (anche `hashes.sha256`) | zip → `A\pwsh\` | `pwsh/pwsh.exe` | nuovo |
-| terminal | GHA `microsoft/terminal`, `Microsoft.WindowsTerminal_<v>_(x64\|arm64).zip` | nativo per entrambe | SHA-256 da `digest` | zip, unica cartella → `A\terminal\`; file `.portable` accanto all'exe | `terminal/WindowsTerminal.exe` | nuovo |
 | php | `windows.php.net/downloads/releases/releases.json`, ramo più recente (o scelto), build `ts-vs*-x64` | solo x64 (emulato su ARM64, con avviso) | SHA-256 di `releases.json` | zip; DLL VC++ accanto a `php.exe`; `cacert.pem` da curl.se con SHA-256; `php.ini` creato una volta (§3) | `php/php.exe` | `_prepare-web.ps1:89-167` |
 | composer | `getcomposer.org/download/latest-stable/composer.phar` | indipendente dall'architettura | SHA-256 da `composer.phar.sha256sum` | `A\tools\composer.phar` + `composer.cmd` (`@php "%~dp0composer.phar" %*`) | `tools/composer.phar` | `_prepare-web.ps1:153-164` |
 | VC++ (per php, apache) | `aka.ms/vc14/vc_redist.x64.exe`, versione = `ProductVersion` | solo x64 | Authenticode `O=Microsoft Corporation` obbligatorio, sull'exe e su `vcruntime140.dll` | estrazione dei CAB incorporati (firma `MSCF`), manifesto Burn, payload `vcRuntimeMinimum_amd64\cab1.cab`; `*.dll_amd64` → `*.dll` in `A\tools\vcruntime\` | `tools/vcruntime/vcruntime140.dll` | `_prepare-web.ps1:13-83` |
@@ -94,7 +94,7 @@ Abbreviazioni:
 
 ## 3. Regole trasversali
 
-- **Ordine**: claude, codex, antigravity, git, python, node, uv, gh, php, apache, sito Apache, rust, configurazione Git, poi go, java (+maven, gradle), kotlin, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r; nel nuovo kit poi pwsh, terminal, vscodium-server, estensioni, allineamento agenti, verifica finale. (`Prepare-Atollo.ps1:250-285`)
+- **Ordine**: claude, codex, antigravity, git, python, node, uv, gh, php, apache, sito Apache, rust, configurazione Git, poi go, java (+maven, gradle), kotlin, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r; nel nuovo kit poi pwsh, vscodium-server, estensioni, allineamento agenti, verifica finale. (`Prepare-Atollo.ps1:250-285`)
 - **Un errore non ferma gli altri**: ogni passo è isolato e finisce nel riepilogo; esito complessivo "con errori" se uno fallisce.
 - **Quando si installa**: file chiave mancante, oppure "Aggiorna tutto" / "Riscarica". Componenti con più file (java, cmake, pnpm): se ne manca uno qualsiasi. "Solo questi" salta tutto il resto, obbligatori compresi.
 - **Parametri predefiniti**: Claude canale `latest`; Python `3.13` (`^3\.\d+$`); PHP ramo più recente (`^\d+\.\d+$`); Rust `gnu` su x64; architettura dell'host. Nell'app: pagina Impostazioni › Avanzate.
@@ -116,7 +116,7 @@ Abbreviazioni:
 | Atollo | Nuovo kit | Motivo |
 | --- | --- | --- |
 | VSCodium desktop obbligatorio | facoltativo | editor integrato |
-| — | `vscodium-server`, `pwsh`, `terminal` obbligatori | editor integrato, terminale esclusivo del kit |
+| — | `vscodium-server`, `pwsh` obbligatori | editor integrato, terminale esclusivo del kit (le console sono finestre dell'app, DECISIONS.md D-44) |
 | Git SFX e TinyTeX SFX aprono la finestra di 7-Zip | estrazione 7z in Rust, nessuna finestra | interfaccia pulita |
 | Typst e TinyTeX non vengono rimossi quando si tolgono | rimossi | bug di `_prepare-migrate.ps1:128` |
 | `Test-Installation` con `rustc --version` ecc. | stessa verifica, risultati nella pagina Componenti | |

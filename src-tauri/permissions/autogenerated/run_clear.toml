@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-run-clear"
+description = "Enables the run_clear command without any pre-configured scope."
+commands.allow = ["run_clear"]
+
+[[permission]]
+identifier = "deny-run-clear"
+description = "Denies the run_clear command without any pre-configured scope."
+commands.deny = ["run_clear"]

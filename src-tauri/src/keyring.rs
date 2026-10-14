@@ -6,7 +6,9 @@
 //! - `restore`: the login saved in `data\antigravity\keyring.json` goes back
 //!   into the Credential Manager with "logon session" persistence (never on
 //!   disk, gone at logoff); the Antigravity credentials already on the PC are
-//!   recorded in `keyring-before.json`;
+//!   recorded in `keyring-before.json`, their secrets encrypted with DPAPI
+//!   for the current Windows user (unreadable on other PCs or accounts; the
+//!   file is deleted at the next save);
 //! - `save`: credentials created or changed during the run go to the kit and
 //!   are deleted from Windows; the PC's own ones, if agy overwrote or removed
 //!   them, are put back as they were. Skipped while an agy of the kit runs
@@ -24,7 +26,8 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 use windows::core::{HSTRING, PCWSTR, PWSTR};
 use windows::Win32::Foundation::{
-    CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, WAIT_ABANDONED, WAIT_OBJECT_0,
+    CloseHandle, GetLastError, LocalFree, ERROR_ALREADY_EXISTS, HLOCAL, WAIT_ABANDONED,
+    WAIT_OBJECT_0,
 };
 use windows::Win32::Security::Credentials::{
     CredDeleteW, CredEnumerateW, CredFree, CredWriteW, CREDENTIALW, CRED_FLAGS, CRED_PERSIST,
@@ -172,6 +175,56 @@ fn read(path: &std::path::Path) -> Vec<Item> {
         .unwrap_or_default()
 }
 
+const DPAPI: &str = "dpapi:";
+
+/// DPAPI for the current user: a secret of the PC copied into the kit is
+/// unreadable on any other PC or account.
+fn protect(blob: &str) -> Result<String> {
+    use windows::Win32::Security::Cryptography::{CryptProtectData, CRYPT_INTEGER_BLOB};
+    let data = base64::engine::general_purpose::STANDARD.decode(blob)?;
+    let input = CRYPT_INTEGER_BLOB {
+        cbData: u32::try_from(data.len())?,
+        pbData: data.as_ptr().cast_mut(),
+    };
+    let mut out = CRYPT_INTEGER_BLOB::default();
+    // SAFETY: `input` points to `data`, alive for the call; the output is
+    // allocated by DPAPI and freed with LocalFree after the copy.
+    let bytes = unsafe {
+        CryptProtectData(&input, PCWSTR::null(), None, None, None, 0, &mut out)
+            .context("CryptProtectData")?;
+        let bytes = std::slice::from_raw_parts(out.pbData, out.cbData as usize).to_vec();
+        let _ = LocalFree(Some(HLOCAL(out.pbData.cast())));
+        bytes
+    };
+    Ok(format!(
+        "{DPAPI}{}",
+        base64::engine::general_purpose::STANDARD.encode(bytes)
+    ))
+}
+
+/// The secret saved by `protect` (a blob without the prefix as it is).
+fn unprotect(blob: &str) -> Result<String> {
+    use windows::Win32::Security::Cryptography::{CryptUnprotectData, CRYPT_INTEGER_BLOB};
+    let Some(rest) = blob.strip_prefix(DPAPI) else {
+        return Ok(blob.to_owned());
+    };
+    let data = base64::engine::general_purpose::STANDARD.decode(rest)?;
+    let input = CRYPT_INTEGER_BLOB {
+        cbData: u32::try_from(data.len())?,
+        pbData: data.as_ptr().cast_mut(),
+    };
+    let mut out = CRYPT_INTEGER_BLOB::default();
+    // SAFETY: as in `protect`.
+    let bytes = unsafe {
+        CryptUnprotectData(&input, None, None, None, None, 0, &mut out)
+            .context("CryptUnprotectData")?;
+        let bytes = std::slice::from_raw_parts(out.pbData, out.cbData as usize).to_vec();
+        let _ = LocalFree(Some(HLOCAL(out.pbData.cast())));
+        bytes
+    };
+    Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
+}
+
 fn save_file(path: &std::path::Path, items: &[Item]) -> Result<()> {
     if let Some(dir) = path.parent() {
         fs::create_dir_all(dir)?;
@@ -274,7 +327,8 @@ fn save_login(kit: &Kit, f: &Files) -> Result<()> {
     for t in to_delete {
         delete(&t);
     }
-    for o in to_restore {
+    for mut o in to_restore {
+        o.blob = o.blob.as_deref().map(unprotect).transpose()?;
         write(&o, o.persist.unwrap_or(CRED_PERSIST_SESSION.0))?;
     }
     fs::remove_file(&f.seen)?;
@@ -324,11 +378,14 @@ pub fn restore(kit: &Kit) -> Result<()> {
     let existing = list();
     let mut before: Vec<Item> = existing
         .iter()
-        .map(|c| Item {
-            kit: Some(false),
-            ..c.clone()
+        .map(|c| {
+            Ok(Item {
+                kit: Some(false),
+                blob: c.blob.as_deref().map(protect).transpose()?,
+                ..c.clone()
+            })
         })
-        .collect();
+        .collect::<Result<_>>()?;
     for c in read(&f.store) {
         // A credential with the same name already on this PC is not the kit's.
         if existing.iter().any(|e| e.target == c.target) {
@@ -362,6 +419,15 @@ pub fn has_login(kit: &Kit) -> bool {
 mod tests {
     use super::*;
     use crate::kit::{tests::TempDir, Arch};
+
+    #[test]
+    fn dpapi_roundtrip() {
+        let blob = base64::engine::general_purpose::STANDARD.encode(b"secret of the PC");
+        let sealed = protect(&blob).unwrap();
+        assert!(sealed.starts_with(DPAPI) && !sealed.contains(&blob));
+        assert_eq!(unprotect(&sealed).unwrap(), blob);
+        assert_eq!(unprotect(&blob).unwrap(), blob);
+    }
 
     #[test]
     fn names() {

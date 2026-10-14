@@ -6,19 +6,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { VscCheck, VscCloudDownload, VscRefresh, VscTrash, VscWarning } from "react-icons/vsc";
 import { componentsApply, componentsList, type ComponentInfo, type Group, type SetupSnapshot } from "./api";
+import { locale, rich, t } from "./i18n";
 import { ActionButton } from "./pages";
 import { SetupProgress } from "./setup";
 
-const GROUPS: { id: Group; title: string; hint: string }[] = [
-  { id: "required", title: "Obbligatori", hint: "Sempre installati: servono al kit e agli agenti." },
-  { id: "agents", title: "Agenti", hint: "Facoltativi: il kit funziona anche senza." },
-  {
-    id: "languages",
-    title: "Linguaggi e strumenti",
-    hint: "Scegli quelli che usi: si aggiungono e tolgono quando vuoi.",
-  },
-  { id: "optional", title: "Altro", hint: "" },
-];
+function groups(): { id: Group; title: string; hint: string }[] {
+  return [
+    { id: "required", title: t("Obbligatori"), hint: t("Sempre installati: servono al kit e agli agenti.") },
+    { id: "agents", title: t("Agenti"), hint: t("Facoltativi: il kit funziona anche senza.") },
+    {
+      id: "languages",
+      title: t("Linguaggi e strumenti"),
+      hint: t("Scegli quelli che usi: si aggiungono e tolgono quando vuoi."),
+    },
+    { id: "optional", title: t("Altro"), hint: "" },
+  ];
+}
 
 /** Turns `id` on or off following the dependencies both ways. */
 export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, on: boolean): Set<string> {
@@ -46,7 +49,9 @@ export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, o
 }
 
 function sizeText(mb: number): string {
-  return mb >= 1000 ? `${(mb / 1000).toFixed(1).replace(".", ",")} GB` : `${String(mb)} MB`;
+  if (mb < 1000) return `${String(mb)} MB`;
+  const gb = new Intl.NumberFormat(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(mb / 1000);
+  return `${gb} GB`;
 }
 
 export function ComponentsPage({
@@ -96,7 +101,7 @@ export function ComponentsPage({
       </p>
     );
   }
-  if (!list) return <p className="text-vsc-desc">Caricamento…</p>;
+  if (!list) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
 
   const apply = (updateAll: boolean) => {
     setConfirm(false);
@@ -113,21 +118,27 @@ export function ComponentsPage({
     <div className="max-w-4xl space-y-5">
       {firstRun && (
         <div className="space-y-1">
-          <h2 className="text-[15px] font-semibold">Benvenuto in Atollo</h2>
+          <h2 className="text-[15px] font-semibold">{t("Benvenuto in Atollo")}</h2>
           <p>
-            Scegli agenti e linguaggi: verranno scaricati dalle fonti ufficiali, verificati e messi nella cartella{" "}
-            <span className="font-mono">data</span> del kit. Niente installazione, niente diritti di amministratore.
+            {rich(
+              t(
+                "Scegli agenti e linguaggi: verranno scaricati dalle fonti ufficiali, verificati e messi nella cartella {0} del kit. Niente installazione, niente diritti di amministratore.",
+              ),
+              <span className="font-mono">data</span>,
+            )}
           </p>
           <p className="text-vsc-desc">
-            Le cartelle in <span className="font-mono">projects</span> sono attendibili per Claude e Codex: apri lì solo
-            codice di cui ti fidi.
+            {rich(
+              t("Le cartelle in {0} sono attendibili per Claude e Codex: apri lì solo codice di cui ti fidi."),
+              <span className="font-mono">projects</span>,
+            )}
           </p>
         </div>
       )}
 
       {setup && setup.steps.length > 0 && <SetupProgress snapshot={setup} />}
 
-      {GROUPS.map((g) => {
+      {groups().map((g) => {
         const items = list.filter((c) => c.group === g.id);
         if (items.length === 0) return null;
         return (
@@ -160,12 +171,12 @@ export function ComponentsPage({
                       <span className="ml-2 text-vsc-desc">{c.desc}</span>
                       {c.needs.length > 0 && (
                         <span className="ml-2 text-[12px] text-vsc-desc">
-                          (richiede {c.needs.map((n) => list.find((x) => x.id === n)?.name ?? n).join(", ")})
+                          {t("(richiede {0})", c.needs.map((n) => list.find((x) => x.id === n)?.name ?? n).join(", "))}
                         </span>
                       )}
                     </label>
                     {c.x64Only && (
-                      <span className="text-[12px] text-vsc-desc" title="Su PC ARM64 gira in emulazione x64">
+                      <span className="text-[12px] text-vsc-desc" title={t("Su PC ARM64 gira in emulazione x64")}>
                         x64
                       </span>
                     )}
@@ -174,10 +185,10 @@ export function ComponentsPage({
                       {c.installed ? (
                         <span className="text-vsc-success">
                           <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
-                          {c.version ?? "installato"}
+                          {c.version ?? t("installato")}
                         </span>
                       ) : (
-                        <span className="text-vsc-desc">non installato</span>
+                        <span className="text-vsc-desc">{t("non installato")}</span>
                       )}
                     </span>
                   </li>
@@ -193,12 +204,13 @@ export function ComponentsPage({
           <>
             <span role="status">
               {plan.install.length > 0 &&
-                `Da installare: ${plan.install.map((c) => c.name).join(", ")} (circa ${sizeText(plan.mb)}). `}
-              {plan.remove.length > 0 && `Da rimuovere: ${plan.remove.map((c) => c.name).join(", ")}.`}
+                t("Da installare: {0} (circa {1}).", plan.install.map((c) => c.name).join(", "), sizeText(plan.mb)) +
+                  " "}
+              {plan.remove.length > 0 && t("Da rimuovere: {0}.", plan.remove.map((c) => c.name).join(", "))}
             </span>
             <ActionButton
               icon={VscCheck}
-              label="Conferma"
+              label={t("Conferma")}
               primary
               onClick={() => {
                 apply(false);
@@ -206,7 +218,7 @@ export function ComponentsPage({
             />
             <ActionButton
               icon={VscRefresh}
-              label="Indietro"
+              label={t("Indietro")}
               onClick={() => {
                 setConfirm(false);
               }}
@@ -218,10 +230,10 @@ export function ComponentsPage({
               icon={
                 firstRun ? VscCloudDownload : plan.remove.length > 0 && plan.install.length === 0 ? VscTrash : VscCheck
               }
-              label={firstRun ? "Installa" : "Applica"}
+              label={firstRun ? t("Installa") : t("Applica")}
               primary
               disabled={running || (!changed && !firstRun)}
-              title={running ? "Un'installazione è già in corso" : undefined}
+              title={running ? t("Un'installazione è già in corso") : undefined}
               onClick={() => {
                 if (firstRun) apply(false);
                 else setConfirm(true);
@@ -230,12 +242,12 @@ export function ComponentsPage({
             {!firstRun && (
               <ActionButton
                 icon={VscRefresh}
-                label="Aggiorna tutto"
+                label={t("Aggiorna tutto")}
                 disabled={running}
                 title={
                   running
-                    ? "Un'installazione è già in corso"
-                    : "Scarica le versioni nuove di tutto ciò che è installato"
+                    ? t("Un'installazione è già in corso")
+                    : t("Scarica le versioni nuove di tutto ciò che è installato")
                 }
                 onClick={() => {
                   apply(true);
@@ -244,8 +256,13 @@ export function ComponentsPage({
             )}
             <span className="text-vsc-desc">
               {changed
-                ? `${String(plan.install.length)} da installare (${sizeText(plan.mb)}), ${String(plan.remove.length)} da rimuovere`
-                : "Nessuna modifica"}
+                ? t(
+                    "{0} da installare ({1}), {2} da rimuovere",
+                    plan.install.length,
+                    sizeText(plan.mb),
+                    plan.remove.length,
+                  )
+                : t("Nessuna modifica")}
             </span>
           </>
         )}

@@ -178,7 +178,6 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "ruby" => &lang::Ruby,
         "r" => &native::R,
         "pwsh" => &editor::Pwsh,
-        "terminal" => &editor::Terminal,
         "vscodium-server" => &editor::Server,
         "vscodium" => &editor::Vscodium,
         _ => return None,

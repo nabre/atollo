@@ -34,6 +34,11 @@ pub enum Cli {
     },
     /// Antigravity's login: `restore` before agy, `save` after.
     Keyring(String),
+    /// File server of a static site: `serve <folder> <port>` (run.rs).
+    Serve {
+        dir: std::path::PathBuf,
+        port: u16,
+    },
     Version,
     Help,
     Unknown(String),
@@ -96,6 +101,16 @@ pub fn parse(args: &[OsString]) -> Cli {
         {
             Some(a @ ("restore" | "save")) => Cli::Keyring(a.to_owned()),
             other => Cli::Unknown(format!("keyring {}", other.unwrap_or_default())),
+        },
+        "serve" => match (
+            args.get(1),
+            args.get(2).and_then(|p| p.to_str()?.parse().ok()),
+        ) {
+            (Some(dir), Some(port)) if args.len() == 3 => Cli::Serve {
+                dir: std::path::PathBuf::from(dir),
+                port,
+            },
+            _ => Cli::Unknown("serve".into()),
         },
         "prepare" => {
             let mut p = PrepareArgs::default();
@@ -294,7 +309,7 @@ mod tests {
         let parsed = parse(&args(&[
             "prepare",
             "--only",
-            "pwsh,Terminal",
+            "pwsh,Node",
             "--skip",
             "codex;rust",
             "--update-all",
@@ -303,7 +318,7 @@ mod tests {
         assert_eq!(
             parsed,
             Cli::Prepare(PrepareArgs {
-                only: vec!["pwsh".into(), "terminal".into()],
+                only: vec!["pwsh".into(), "node".into()],
                 skip: vec!["codex".into(), "rust".into()],
                 update_all: true,
                 force: true,

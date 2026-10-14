@@ -10,6 +10,13 @@ export default defineConfig({
   // Dependencies live in the root node_modules (npm workspace); keep the cache there too.
   cacheDir: "../node_modules/.vite",
   server: { host: "127.0.0.1", port: 5173, strictPort: true },
-  build: { target: "es2022", outDir: "../dist", emptyOutDir: true, sourcemap: false },
+  build: {
+    target: "es2022",
+    outDir: "../dist",
+    emptyOutDir: true,
+    sourcemap: false,
+    // The app window and the console windows (src-tauri/src/terminal.rs).
+    rolldownOptions: { input: { main: "index.html", terminal: "terminal.html" } },
+  },
   test: { environment: "jsdom", include: ["src/**/*.test.tsx", "src/**/*.test.ts"] },
 });

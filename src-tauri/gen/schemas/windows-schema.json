@@ -201,6 +201,12 @@
           "markdownDescription": "Enables the app_info command without any pre-configured scope."
         },
         {
+          "description": "Enables the app_quit command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-app-quit",
+          "markdownDescription": "Enables the app_quit command without any pre-configured scope."
+        },
+        {
           "description": "Enables the components_apply command without any pre-configured scope.",
           "type": "string",
           "const": "allow-components-apply",
@@ -231,16 +237,106 @@
           "markdownDescription": "Enables the editor_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the eject_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-eject-list",
+          "markdownDescription": "Enables the eject_list command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the eject_run command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-eject-run",
+          "markdownDescription": "Enables the eject_run command without any pre-configured scope."
+        },
+        {
           "description": "Enables the folder_open command without any pre-configured scope.",
           "type": "string",
           "const": "allow-folder-open",
           "markdownDescription": "Enables the folder_open command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_clone command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-clone",
+          "markdownDescription": "Enables the project_clone command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_create command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-create",
+          "markdownDescription": "Enables the project_create command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_delete command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-delete",
+          "markdownDescription": "Enables the project_delete command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_site command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-site",
+          "markdownDescription": "Enables the project_site command without any pre-configured scope."
+        },
+        {
           "description": "Enables the projects_list command without any pre-configured scope.",
           "type": "string",
           "const": "allow-projects-list",
           "markdownDescription": "Enables the projects_list command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the run_clear command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-run-clear",
+          "markdownDescription": "Enables the run_clear command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the run_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-run-list",
+          "markdownDescription": "Enables the run_list command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the run_log command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-run-log",
+          "markdownDescription": "Enables the run_log command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the run_ports command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-run-ports",
+          "markdownDescription": "Enables the run_ports command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the run_set_port command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-run-set-port",
+          "markdownDescription": "Enables the run_set_port command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the run_start command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-run-start",
+          "markdownDescription": "Enables the run_start command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the run_stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-run-stop",
+          "markdownDescription": "Enables the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the settings_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-settings-get",
+          "markdownDescription": "Enables the settings_get command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the settings_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-settings-set",
+          "markdownDescription": "Enables the settings_set command without any pre-configured scope."
         },
         {
           "description": "Enables the setup_cancel command without any pre-configured scope.",
@@ -261,10 +357,46 @@
           "markdownDescription": "Enables the setup_state command without any pre-configured scope."
         },
         {
+          "description": "Enables the terminal_attach command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-terminal-attach",
+          "markdownDescription": "Enables the terminal_attach command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the terminal_input command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-terminal-input",
+          "markdownDescription": "Enables the terminal_input command without any pre-configured scope."
+        },
+        {
           "description": "Enables the terminal_open command without any pre-configured scope.",
           "type": "string",
           "const": "allow-terminal-open",
           "markdownDescription": "Enables the terminal_open command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the terminal_resize command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-terminal-resize",
+          "markdownDescription": "Enables the terminal_resize command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the update_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-update-check",
+          "markdownDescription": "Enables the update_check command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the update_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-update-status",
+          "markdownDescription": "Enables the update_status command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the url_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-url-open",
+          "markdownDescription": "Enables the url_open command without any pre-configured scope."
         },
         {
           "description": "Denies the agent_launch command without any pre-configured scope.",
@@ -289,6 +421,12 @@
           "type": "string",
           "const": "deny-app-info",
           "markdownDescription": "Denies the app_info command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the app_quit command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-app-quit",
+          "markdownDescription": "Denies the app_quit command without any pre-configured scope."
         },
         {
           "description": "Denies the components_apply command without any pre-configured scope.",
@@ -321,16 +459,106 @@
           "markdownDescription": "Denies the editor_status command without any pre-configured scope."
         },
         {
+          "description": "Denies the eject_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-eject-list",
+          "markdownDescription": "Denies the eject_list command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the eject_run command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-eject-run",
+          "markdownDescription": "Denies the eject_run command without any pre-configured scope."
+        },
+        {
           "description": "Denies the folder_open command without any pre-configured scope.",
           "type": "string",
           "const": "deny-folder-open",
           "markdownDescription": "Denies the folder_open command without any pre-configured scope."
         },
         {
+          "description": "Denies the project_clone command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-clone",
+          "markdownDescription": "Denies the project_clone command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_create command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-create",
+          "markdownDescription": "Denies the project_create command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_delete command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-delete",
+          "markdownDescription": "Denies the project_delete command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_site command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-site",
+          "markdownDescription": "Denies the project_site command without any pre-configured scope."
+        },
+        {
           "description": "Denies the projects_list command without any pre-configured scope.",
           "type": "string",
           "const": "deny-projects-list",
           "markdownDescription": "Denies the projects_list command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the run_clear command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-run-clear",
+          "markdownDescription": "Denies the run_clear command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the run_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-run-list",
+          "markdownDescription": "Denies the run_list command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the run_log command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-run-log",
+          "markdownDescription": "Denies the run_log command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the run_ports command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-run-ports",
+          "markdownDescription": "Denies the run_ports command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the run_set_port command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-run-set-port",
+          "markdownDescription": "Denies the run_set_port command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the run_start command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-run-start",
+          "markdownDescription": "Denies the run_start command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the run_stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-run-stop",
+          "markdownDescription": "Denies the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the settings_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-settings-get",
+          "markdownDescription": "Denies the settings_get command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the settings_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-settings-set",
+          "markdownDescription": "Denies the settings_set command without any pre-configured scope."
         },
         {
           "description": "Denies the setup_cancel command without any pre-configured scope.",
@@ -351,10 +579,46 @@
           "markdownDescription": "Denies the setup_state command without any pre-configured scope."
         },
         {
+          "description": "Denies the terminal_attach command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-terminal-attach",
+          "markdownDescription": "Denies the terminal_attach command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the terminal_input command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-terminal-input",
+          "markdownDescription": "Denies the terminal_input command without any pre-configured scope."
+        },
+        {
           "description": "Denies the terminal_open command without any pre-configured scope.",
           "type": "string",
           "const": "deny-terminal-open",
           "markdownDescription": "Denies the terminal_open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the terminal_resize command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-terminal-resize",
+          "markdownDescription": "Denies the terminal_resize command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-update-check",
+          "markdownDescription": "Denies the update_check command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-update-status",
+          "markdownDescription": "Denies the update_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the url_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-url-open",
+          "markdownDescription": "Denies the url_open command without any pre-configured scope."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

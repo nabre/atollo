@@ -294,15 +294,7 @@ mod tests {
                 assert!(ids.contains(n.as_str()), "{} needs unknown {n}", c.id);
             }
         }
-        for id in [
-            "git",
-            "node",
-            "uv",
-            "gh",
-            "pwsh",
-            "terminal",
-            "vscodium-server",
-        ] {
+        for id in ["git", "node", "uv", "gh", "pwsh", "vscodium-server"] {
             assert_eq!(
                 catalog.find(id).map(|c| c.group),
                 Some(Group::Required),

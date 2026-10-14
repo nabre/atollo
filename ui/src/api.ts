@@ -5,6 +5,7 @@
 // not exist: the wrappers answer with sample data, so the pages can be
 // designed in the browser, and the interface shows a "preview" banner.
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 export interface AppInfo {
   version: string;
@@ -20,6 +21,8 @@ export interface AppInfo {
   watcherUnsafeFolder: string | null;
   /** No choice saved yet: first start. */
   firstRun: boolean;
+  /** Other copies of the kit with programs open on this PC. */
+  otherKits: string[];
 }
 
 /** True when the page runs in the browser instead of the Atollo window. */
@@ -37,6 +40,7 @@ const SAMPLE_INFO: AppInfo = {
   pathEntries: 0,
   watcherUnsafeFolder: null,
   firstRun: false,
+  otherKits: [],
 };
 
 export function appInfo(): Promise<AppInfo> {
@@ -51,15 +55,87 @@ export interface EditorStatus {
   emulated: boolean;
 }
 
-export interface ProjectEntry {
+export type ActionKind = "web" | "desktop" | "command";
+
+/** An action of a project (src-tauri/src/detect). */
+export interface ProjectAction {
+  id: string;
+  label: string;
+  command: string;
+  type: ActionKind;
+  folder: string | null;
+  url: string | null;
+  env: Record<string, string>;
+  /** A folder served by the app's file server. */
+  static: string | null;
+  custom: boolean;
+}
+
+export interface ProjectInfo {
+  /** Folder name in projects\. */
+  id: string;
+  /** Name shown (the folder, or "name" in panel.json). */
   name: string;
   /** Seconds since 1970. */
   modified: number;
+  empty: boolean;
+  /** Components it needs that are not installed. */
+  missing: string[];
+  platform: string;
+  type: ActionKind;
+  reason: string;
+  languages: string[];
+  requires: string[];
+  actions: ProjectAction[];
+  warnings: string[];
+  custom: boolean;
+  default: string | null;
 }
 
-const SAMPLE_PROJECTS: ProjectEntry[] = [
-  { name: "sito-vetrina", modified: 1_791_900_000 },
-  { name: "api-python", modified: 1_791_800_000 },
+function sampleAction(id: string, label: string, command: string, staticDir: string | null): ProjectAction {
+  return { id, label, command, type: "web", folder: null, url: null, env: {}, static: staticDir, custom: false };
+}
+
+const SAMPLE_PROJECTS: ProjectInfo[] = [
+  {
+    id: "sito-vetrina",
+    name: "sito-vetrina",
+    modified: 1_791_900_000,
+    empty: false,
+    missing: [],
+    platform: "Sito statico",
+    type: "web",
+    reason: "index.html",
+    languages: ["HTML", "CSS"],
+    requires: [],
+    actions: [sampleAction("static", "sito statico (cartella del progetto)", "", ".")],
+    warnings: [],
+    custom: false,
+    default: "static",
+  },
+  {
+    id: "api-python",
+    name: "api-python",
+    modified: 1_791_800_000,
+    empty: false,
+    missing: ["python"],
+    platform: "FastAPI",
+    type: "web",
+    reason: "Rilevato da: main.py crea FastAPI()",
+    languages: ["Python"],
+    requires: ["python"],
+    actions: [
+      sampleAction(
+        "py:uvicorn",
+        "uvicorn main:app",
+        "python -m uvicorn main:app --host 127.0.0.1 --port {port} --reload",
+        null,
+      ),
+    ],
+    warnings: ["Nessun ambiente virtuale (.venv)."],
+    custom: false,
+    default: "py:uvicorn",
+  },
 ];
 
 export function editorStatus(): Promise<EditorStatus> {
@@ -77,11 +153,11 @@ export function editorRestart(): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("editor_restart");
 }
 
-export function projectsList(): Promise<ProjectEntry[]> {
-  return browserPreview ? Promise.resolve(SAMPLE_PROJECTS) : invoke<ProjectEntry[]>("projects_list");
+export function projectsList(): Promise<ProjectInfo[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_PROJECTS) : invoke<ProjectInfo[]>("projects_list");
 }
 
-/** Opens a kit console (Windows Terminal) in a project or in `projects\`. */
+/** Opens a kit console (a console window of the app) in a project or in `projects\`. */
 export function terminalOpen(project: string | null): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("terminal_open", { project });
 }
@@ -140,9 +216,8 @@ export function setupState(): Promise<SetupSnapshot> {
 }
 
 /** Every change of the preparation; returns the function that stops listening. */
-export async function onSetup(handler: (s: SetupSnapshot) => void): Promise<() => void> {
-  if (browserPreview) return () => undefined;
-  const { listen } = await import("@tauri-apps/api/event");
+export function onSetup(handler: (s: SetupSnapshot) => void): Promise<() => void> {
+  if (browserPreview) return Promise.resolve(() => undefined);
   return listen<SetupSnapshot>("setup", (e) => {
     handler(e.payload);
   });
@@ -194,4 +269,205 @@ export function agentSignOut(agent: AgentId): Promise<void> {
 /** Opens a kit folder in File Explorer: "agents" or "projects" (+ project). */
 export function folderOpen(which: "agents" | "projects", project: string | null = null): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("folder_open", { which, project });
+}
+
+// Projects (src-tauri/src/projects.rs) and their actions (run.rs).
+
+/** A new empty project; returns its folder name. */
+export function projectCreate(name: string): Promise<string> {
+  return browserPreview ? Promise.resolve(name) : invoke<string>("project_create", { name });
+}
+
+/** Deletes a project whose folder is empty. */
+export function projectDelete(project: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_delete", { project });
+}
+
+/** Clones `owner/repo` or an https:// Git address; returns the folder name. */
+export function projectClone(source: string, name: string | null): Promise<string> {
+  return browserPreview ? Promise.resolve(name ?? "clone") : invoke<string>("project_clone", { source, name });
+}
+
+export type SiteKind = "static" | "php" | "none";
+
+/** "Servi come sito web": writes the "site" action in the project's panel.json. */
+export function projectSite(project: string, folder: string, kind: SiteKind): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("project_site", { project, folder, kind });
+}
+
+export type RunState = "starting" | "running" | "finished" | "error" | "stopped";
+
+export interface RunInfo {
+  /** "<project>|<action>". */
+  key: string;
+  project: string;
+  action: string;
+  label: string;
+  type: ActionKind;
+  command: string;
+  port: number | null;
+  url: string | null;
+  state: RunState;
+  start: number;
+  end: number | null;
+  code: number | null;
+  pid: number | null;
+}
+
+export type RunEvent = ({ kind: "state" } & RunInfo) | { kind: "log"; key: string; lines: string[] };
+
+export interface Ports {
+  ports: Record<string, number>;
+  locked: string[];
+}
+
+export function runList(): Promise<RunInfo[]> {
+  return browserPreview ? Promise.resolve([]) : invoke<RunInfo[]>("run_list");
+}
+
+export function runStart(project: string, action: string): Promise<RunInfo> {
+  return invoke<RunInfo>("run_start", { project, action });
+}
+
+export function runStop(key: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("run_stop", { key });
+}
+
+export function runLog(key: string): Promise<string[]> {
+  return browserPreview ? Promise.resolve([]) : invoke<string[]>("run_log", { key });
+}
+
+export function runClear(key: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("run_clear", { key });
+}
+
+export function runPorts(): Promise<Ports> {
+  return browserPreview ? Promise.resolve({ ports: {}, locked: [] }) : invoke<Ports>("run_ports");
+}
+
+/** The user's port for an action (`null`: automatic again). */
+export function runSetPort(key: string, port: number | null): Promise<Ports> {
+  return invoke<Ports>("run_set_port", { key, port });
+}
+
+/** State changes and output of the projects' actions. */
+export function onRun(handler: (e: RunEvent) => void): Promise<() => void> {
+  if (browserPreview) return Promise.resolve(() => undefined);
+  return listen<RunEvent>("run", (e) => {
+    handler(e.payload);
+  });
+}
+
+/** Opens a local address (http://localhost:<port>/) in the PC's browser. */
+export function urlOpen(url: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("url_open", { url });
+}
+
+// Settings (src-tauri/src/settings.rs).
+
+export interface Settings {
+  lang: "it" | "en" | "fr" | "de" | null;
+  network: {
+    httpsProxy: string | null;
+    httpProxy: string | null;
+    noProxy: string | null;
+    extraCaCerts: string | null;
+    allowLan: boolean;
+  };
+  /** Never sent to the interface: see `geminiKeySet`. */
+  geminiApiKey: string | null;
+  autoUpdate: boolean;
+  pythonVersion: string | null;
+  phpVersion: string | null;
+  rustToolchain: "gnu" | "msvc" | null;
+}
+
+export interface SettingsView {
+  settings: Settings;
+  geminiKeySet: boolean;
+  /** The file could not be read: defaults shown. */
+  problem: string | null;
+}
+
+const SAMPLE_SETTINGS: SettingsView = {
+  settings: {
+    lang: null,
+    network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
+    geminiApiKey: null,
+    autoUpdate: true,
+    pythonVersion: null,
+    phpVersion: null,
+    rustToolchain: null,
+  },
+  geminiKeySet: false,
+  problem: null,
+};
+
+export function settingsGet(): Promise<SettingsView> {
+  return browserPreview ? Promise.resolve(SAMPLE_SETTINGS) : invoke<SettingsView>("settings_get");
+}
+
+/** `gemini`: null keeps the saved key, "" removes it. */
+export function settingsSet(settings: Settings, gemini: string | null): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("settings_set", { settings, gemini });
+}
+
+export interface UpdateStatus {
+  current: string;
+  latest: string | null;
+  /** Downloaded: replaces the exe when the app closes. */
+  staged: string | null;
+  checking: boolean;
+  error: string | null;
+}
+
+export function updateStatus(): Promise<UpdateStatus> {
+  return browserPreview
+    ? Promise.resolve({ current: "0.1.0", latest: null, staged: null, checking: false, error: null })
+    : invoke<UpdateStatus>("update_status");
+}
+
+export function updateCheck(): Promise<UpdateStatus> {
+  return browserPreview ? updateStatus() : invoke<UpdateStatus>("update_check");
+}
+
+// Removing the drive and closing (src-tauri/src/sessions.rs).
+
+export interface KitProcess {
+  pid: number;
+  name: string;
+  /** Relative to the kit folder. */
+  program: string;
+}
+
+export interface OpenNow {
+  processes: KitProcess[];
+  editor: boolean;
+  terminals: number;
+  actions: number;
+  setup: boolean;
+}
+
+const NOTHING_OPEN: OpenNow = { processes: [], editor: false, terminals: 0, actions: 0, setup: false };
+
+export function ejectList(): Promise<OpenNow> {
+  return browserPreview ? Promise.resolve(NOTHING_OPEN) : invoke<OpenNow>("eject_list");
+}
+
+/** Stops every program of the kit and saves Antigravity's login in the kit. */
+export function ejectRun(): Promise<OpenNow> {
+  return browserPreview ? Promise.resolve(NOTHING_OPEN) : invoke<OpenNow>("eject_run");
+}
+
+/** Closes the app (after the user confirmed). */
+export function appQuit(): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("app_quit");
+}
+
+/** The window is closing with something open: the interface asks. */
+export function onCloseRequested(handler: (open: OpenNow) => void): Promise<() => void> {
+  if (browserPreview) return Promise.resolve(() => undefined);
+  return listen<OpenNow>("close-requested", (e) => {
+    handler(e.payload);
+  });
 }

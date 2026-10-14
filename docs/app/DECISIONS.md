@@ -20,7 +20,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 ## D-02 Frontend: React + TypeScript + Tailwind + react-icons
 
 - **Scelta dell'utente** (14/10/2026), al posto di Svelte proposto nella revisione 1.
-- **Versioni** (pubblicate da almeno due settimane, fissate in `ui\package.json` e `package-lock.json`): React 19.3.0, Vite 8.3.1, `@vitejs/plugin-react` 6.1.1, Tailwind 4.3.3 con `@tailwindcss/vite`, react-icons 5.7.0, Vitest 5.0.2 + jsdom + Testing Library, ESLint 10 + typescript-eslint 8.71 (`strictTypeChecked`), Prettier 3.9.
+- **Versioni** (pubblicate da almeno due settimane, fissate in `ui\package.json` e `package-lock.json`): React 19.3.0, Vite 8.3.1, `@vitejs/plugin-react` 6.1.1, Tailwind 4.3.3 con `@tailwindcss/vite`, react-icons 5.7.0, Vitest 5.0.2 + jsdom + Testing Library, ESLint 10 + typescript-eslint 8.71 (`strictTypeChecked`), Prettier 3.9, xterm.js 6.0.0 + `@xterm/addon-fit` 0.11.0 (console, D-44).
 - **TypeScript 6.0.3, non 7.** TypeScript 7 (luglio 2026) non è ancora supportato da typescript-eslint (`>=4.8.4 <6.1.0`).
 - **Icone**: `react-icons/vsc`, cioè le Codicons di VS Code, per lo stesso linguaggio visivo dell'editor (D-27).
 
@@ -29,7 +29,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 - **Scelta dell'utente** (14/10/2026): il tema di VSCodium per tutto.
 - **Interfaccia dell'app**: colori dei temi predefiniti "Dark Modern" e "Light Modern" come variabili CSS (`ui\src\theme.css`), scelti da `prefers-color-scheme` (tema di Windows); struttura a barra delle attività, area di contenuto e barra di stato come VSCodium; carattere Segoe WPC/Segoe UI 13 px; focus visibile con il colore di VSCodium.
 - **Editor**: `window.autoDetectColorScheme` attivo, con Dark Modern / Light Modern come temi preferiti (fase 3).
-- **Terminali**: schema di colori di Windows Terminal portabile e colori di PSReadLine ricavati da `terminal.ansi*` degli stessi temi (fase 3).
+- **Terminali**: colori di xterm.js nelle console dell'app (D-44) e colori di PSReadLine ricavati da `terminal.ansi*` degli stessi temi (fase 3).
 - **Da verificare**: i valori in `theme.css` vanno confrontati con i file `dark_modern.json` / `light_modern.json` del server di VSCodium appena installato (fase 3); eventuali differenze si correggono lì.
 
 ## D-28 Ambiente dei figli: elenco di variabili consentite
@@ -87,7 +87,8 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 ## D-13 Console fuori dall'editor
 
-- Windows Terminal portabile del kit, avviato da noi (quindi nel job): `WindowsTerminal.exe --window new -d <cartella> -- <comando>`. Ripiego `conhost` con `CREATE_NEW_CONSOLE`.
+- Finestre dell'app con un terminale integrato (D-44): pseudo console avviata da noi (quindi nel job), xterm.js nella finestra (D-45, D-46). Ripiego `conhost` con `CREATE_NEW_CONSOLE` dove la pseudo console non parte (Windows 10 prima della 1809).
+- Prima (fino al 14/10/2026): Windows Terminal portabile del kit, `WindowsTerminal.exe --window new -d <cartella> -- <comando>`; sostituito perché esiste solo per Windows (D-44).
 
 ## D-14 Comandi solo per la finestra `main`
 
@@ -100,7 +101,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 ## D-16 Catalogo dei componenti incorporato
 
-- Il catalogo è un file JSON nel codice sorgente, incorporato con `include_str!` e validato da un test (id unici, `needs` esistenti, gruppi validi). Id liberi (il vincolo `^[a-z]+$` era degli script): `vscodium-server`, `pwsh`, `terminal`, `webview2`.
+- Il catalogo è un file JSON nel codice sorgente, incorporato con `include_str!` e validato da un test (id unici, `needs` esistenti, gruppi validi). Id liberi (il vincolo `^[a-z]+$` era degli script): `vscodium-server`, `pwsh`, `webview2` (`terminal`, Windows Terminal, tolto il 14/10/2026: D-44).
 - Scelta in `data\app\components.txt` (formato `id=1|0` del Atollo: semplice e leggibile a mano); versioni in `data\app\versions\<id>.txt`.
 
 ## D-17 `cmd.exe` solo dove serve
@@ -135,6 +136,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 | `toml_edit` | (fase 5) blocchi del kit in `config.toml` di Codex senza toccare il resto | riscrittura a testo: perde la formattazione dell'utente |
 | `regex` 1.13 | nomi delle asset delle release | — |
 | `windows` 0.62 | job, mutex, pipe, credenziali, processi, finestre di messaggio | `windows-sys`: senza wrapper COM, che servono per WebView2 |
+| `portable-pty` 0.9.0 | pseudo console delle finestre console (D-44, D-45): ConPTY su Windows (con `conpty.dll` affiancato se c'è, D-47), pty su macOS e Linux | ConPTY scritto a mano con `windows`: solo Windows |
 
 Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
@@ -151,9 +153,9 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-23 Terminale esclusivo del kit
 
-- **Scelta.** Shell predefinita nell'editor: PowerShell 7 portabile, `-NoProfile` + profilo del kit in `data\kit\`; `PSModulePath` ristretto al kit; `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`. Git Bash e cmd come profili aggiuntivi. Console esterne: Windows Terminal portabile (file `.portable` → impostazioni nella sua cartella).
+- **Scelta.** Shell predefinita nell'editor: PowerShell 7 portabile, `-NoProfile` + profilo del kit in `data\kit\`; `PSModulePath` ristretto al kit; `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`. Git Bash e cmd come profili aggiuntivi. Console esterne: finestre dell'app con terminale integrato (D-44).
 - **Scartate.** Windows PowerShell 5.1 di sistema: carica moduli e profili del PC. Nushell: estranea agli agenti, che si aspettano PowerShell o Bash. Windows Terminal di sistema: pacchetto Store, fuori dal job, impostazioni in `%LOCALAPPDATA%`.
-- **Verificato il 14/10/2026.** PowerShell 7.6.7: `PowerShell-7.6.7-win-x64.zip` / `-win-arm64.zip`, SHA-256 in `hashes.sha256` e nel `digest` delle asset. Windows Terminal 1.25.2733.0: `Microsoft.WindowsTerminal_1.25.2733.0_x64.zip` / `_arm64.zip`, `digest` SHA-256. Requisito minimo di Windows Terminal (Windows 10 2004) da confermare in fase 2.
+- **Verificato il 14/10/2026.** PowerShell 7.6.7: `PowerShell-7.6.7-win-x64.zip` / `-win-arm64.zip`, SHA-256 in `hashes.sha256` e nel `digest` delle asset.
 
 ## D-24 Nessuna richiesta di amministratore
 
@@ -169,7 +171,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-27 Tema VSCodium ovunque
 
-- Finestra dell'app con i colori di VSCodium "Default Dark Modern" / "Default Light Modern" (variabili CSS in `ui/src/theme.css`, scelte da `prefers-color-scheme`) e icone Codicons (`react-icons/vsc`). Editor: `window.autoDetectColorScheme` con gli stessi due temi. Windows Terminal: schemi "VSCodium Dark Modern" / "VSCodium Light Modern" con i colori del terminale di VSCodium, `theme: system`.
+- Finestra dell'app con i colori di VSCodium "Default Dark Modern" / "Default Light Modern" (variabili CSS in `ui/src/theme.css`, scelte da `prefers-color-scheme`) e icone Codicons (`react-icons/vsc`). Editor: `window.autoDetectColorScheme` con gli stessi due temi. Console (D-44): i colori del terminale di VSCodium in xterm.js (`ui/src/terminal.ts`), scelti da `prefers-color-scheme`.
 
 ## D-28 Interfaccia: React 19 + TypeScript + Tailwind 4 + react-icons
 
@@ -247,3 +249,105 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 ## D-43 Rilocazione
 
 - Porting di `moved.js` (`relocate.rs`) sulla nuova struttura: radice precedente da `data\app\old-root.txt` (scritto da `kit.rs`), consumato a lavoro fatto; tra i file aggiornati anche impostazioni ed estensioni del server dell'editor. Verificato rinominando un kit con tutti i componenti: chiavi di `.claude.json` unite sotto il nuovo percorso, `config.toml` senza il vecchio percorso, giunzioni delle skill rifatte.
+
+## D-44 Terminale integrato nell'app
+
+- **Scelta dell'utente** (14/10/2026): un terminale disponibile per tutti i sistemi operativi; tra un terminale esterno multipiattaforma e uno dentro l'app, l'utente ha scelto **dentro l'app**. Sostituisce Windows Terminal (D-13, D-23), che esiste solo per Windows ed era un eseguibile in più da scaricare.
+- **Come.** `terminal.rs`: il processo (PowerShell del kit, o un agente) parte su una pseudo console di `portable-pty` 0.9.0 (ConPTY su Windows, pty su macOS e Linux; D-22) con il solo ambiente del kit; una finestra `terminal-<n>` dell'app carica `terminal.html` (xterm.js 6.0.0 + `@xterm/addon-fit` 0.11.0, D-28) e la mostra. Stesso motore del terminale di VSCodium (xterm.js + PTY).
+- **Scartate.** WezTerm (multipiattaforma, portabile, configurazione Lua): resta un eseguibile esterno da scaricare e configurare, con le sue regole di ambiente. Alacritty: niente schede. Kitty: niente Windows. Ghostty: su Windows non maturo. Windows Terminal: solo Windows.
+- **Portata.** Il codice del terminale (`portable-pty`, xterm.js, finestre Tauri) è multipiattaforma; il resto dell'app usa ancora API di Windows (job, `windows`, WebView2, percorsi `win32-*`): il porting su macOS e Linux resta da fare, ma il terminale non lo ostacola.
+- **Il terminale di VSCodium resta il suo.** L'editor ha già un terminale integrato (xterm.js nella pagina, PTY nel server) sulle shell del kit (D-23); la console dell'app non lo sostituisce e non vi si può innestare, perché il PTY dell'editor è interno al suo server. Stesse shell, stesso profilo, stessi colori: i due terminali si comportano allo stesso modo.
+- **Kit esistenti.** La cartella `data\apps\<piattaforma>\terminal\` di Windows Terminal non è più usata e si può cancellare.
+
+## D-45 Console: processo e pseudo console
+
+- **Avvio.** `CommandBuilder` con `env_clear` + ambiente del kit, cartella del progetto. Un `.cmd` (Antigravity, `agy.cmd`) passa dalla PowerShell del kit (`-Command "& '<percorso>'; exit $LASTEXITCODE"`, apici raddoppiati): `cmd` leggerebbe `&` e `%` nel percorso, come in D-17. Senza la PowerShell del kit, nessuna console (mai una shell del PC).
+- **Job.** Il processo nasce nel job dell'app (l'app ci sta dentro, D-07); se l'app non è nel job, `jobs::assign_pid` lo assegna subito dopo l'avvio (i suoi primi figli potrebbero sfuggire: limite di quel caso raro).
+- **ConPTY chiede la posizione del cursore** (`ESC[6n`) all'avvio, per l'opzione `INHERIT_CURSOR` di `portable-pty`, e non fa partire il programma finché non riceve risposta: la prima risposta (`ESC[1;1R`) la dà l'app, così il programma parte anche prima che la finestra si colleghi. Le domande di posizione non entrano nell'output conservato, altrimenti una finestra ricaricata risponderebbe a domande vecchie scrivendo testo nel programma.
+- **Ctrl+C.** Il flag "ignora Ctrl+C" passa dal processo ai figli: l'app avviata in un nuovo gruppo di processi (da uno script, da un altro programma) lo darebbe alla shell, e Ctrl+C non fermerebbe più i comandi (verificato: `ping -t` non si fermava). `SetConsoleCtrlHandler(None, false)` prima di ogni console.
+- **Senza ConPTY** (Windows 10 prima della 1809) `portable-pty` va in panic invece di restituire un errore: `catch_unwind`, poi ripiego sulla console classica (`CREATE_NEW_CONSOLE`) con lo stesso programma.
+- **Output.** Un thread legge la pseudo console e manda i byte alla finestra con un `Channel` di Tauri (`InvokeResponseBody::Raw`). Tauri consegna i messaggi sotto 1 KB con `eval` e quelli più grandi con il comando interno `plugin:__TAURI_CHANNEL__|fetch` (permesso anche alle finestre console; verificato), in ordine. Gli ultimi 512 KB restano in memoria per una finestra che si collega tardi o si ricarica.
+- **Input.** La pagina manda i tasti uno alla volta in ordine (una chiamata `terminal_input` per volta, i tasti battuti nel frattempo insieme): chiamate IPC parallele potrebbero arrivare in disordine.
+- **Fine.** Quando il processo termina, l'app chiude la pseudo console (così la lettura finisce), attende l'ultimo output, manda il codice di uscita; la finestra scrive "Processo terminato (codice N)" e si chiude al primo tasto. Chiudere la finestra termina il processo (`Destroyed` → `Terminals::close`). Per gli agenti, alla fine si riallineano (D-40).
+
+## D-46 Finestre console: sicurezza e tasti
+
+- **Capability `terminal`** per le finestre `terminal-*` (D-14): solo `terminal_attach`, `terminal_input`, `terminal_resize`, più `core:window:allow-set-title` e `allow-close` della propria finestra. Ogni comando trova la sessione dall'etichetta della finestra che chiama: una finestra raggiunge solo il suo processo. La finestra principale e quelle dell'editor non possono usare questi comandi; le console non possono usare quelli della finestra principale. Test `console_windows_reach_only_their_session`; verificato anche nell'app (`app_info` e `terminal_open` rifiutati da una console).
+- **Pagina separata** (`ui/terminal.html`, `ui/src/terminal.ts`, seconda voce di `build.rolldownOptions.input`): la console non carica l'interfaccia principale.
+- **`Object.prototype` non congelato** nella console: xterm.js assegna `toString` ai suoi oggetti e con `freeze.ts` non si carica (verificato: "Cannot assign to read only property 'toString'"). Rischio basso: la pagina non legge dati esterni, mostra solo i byte del proprio processo come testo.
+- **WebView2** come le finestre dell'editor (`editor_window::quiet_webview`): tasti del browser (F5, Ctrl+F, Ctrl+P), menu contestuale e barra di stato spenti, così i tasti arrivano alla shell; nuove finestre negate.
+- **Tasti come Windows Terminal.** Ctrl+C copia se c'è una selezione, altrimenti va al programma; Ctrl+V e Ctrl+Maiusc+V incollano; Ctrl+Maiusc+C copia; clic destro copia la selezione o incolla. Titolo della finestra dal programma (OSC 0/2), con "- Atollo".
+- **Colori** del terminale di VSCodium "Dark Modern" / "Light Modern" (gli stessi degli schemi che si scrivevano per Windows Terminal), scelti da `prefers-color-scheme` e aggiornati quando cambia il tema di Windows (D-27). Carattere Cascadia Mono / Consolas, 14 px.
+
+## D-47 ConPTY aggiornato (aperta)
+
+- **Problema.** Con il ConPTY di Windows, Claude Code si apre e si disegna ma non riceve i tasti (né Invio né frecce; Ctrl+C arriva solo come segnale). PowerShell e Node in modalità raw li ricevono. All'avvio Claude interroga il terminale: XTVERSION (`ESC[>0q`), protocollo tastiera kitty (`ESC[?u`), colore di sfondo (OSC 11); la conhost di sistema chiede anche `ESC[?9001h` (win32-input-mode). Ipotesi: la conhost di sistema non fa arrivare a Claude le risposte, e Claude resta in attesa.
+- **Rimedio previsto.** Il ConPTY aggiornato di Microsoft, come fanno Windows Terminal, VS Code e WezTerm: `conpty.dll` + `OpenConsole.exe` dal pacchetto NuGet ufficiale `Microsoft.Windows.Console.ConPTY` (firmati Microsoft, verificato con Authenticode). `portable-pty` carica `conpty.dll` con `LoadLibrary` se lo trova, e `conpty.dll` avvia `OpenConsole.exe` dalla propria cartella.
+- **Versione.** 1.24.260710001 (13/07/2026, x64 e ARM64): la stabile più recente, 1.25.260930003, è del 02/10/2026, meno di due settimane (regola delle versioni di D-22 e D-28).
+- **Come nel kit.** Il kit non mette file accanto all'exe (`Atollo.exe` + `data\`): componente obbligatorio `conpty` in `data\apps\<piattaforma>\conpty\` (circa 1,2 MB), SHA-256 dal catalogo NuGet e firma Microsoft; prima della prima console, `SetDllDirectoryW` su quella cartella, così `LoadLibrary("conpty.dll")` la trova. Senza il componente, ConPTY di Windows (comportamento attuale).
+- **Stato** (14/10/2026): pacchetto scaricato e firme verificate; la prova con l'app è ferma perché il sistema dei permessi di Claude Code ha bloccato l'esecuzione di binari scaricati: serve il permesso dell'utente (PLAN.md §12).
+
+## D-48 Prove dell'app con il debug remoto di WebView2
+
+- Per provare le finestre senza mani: `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9333` all'avvio dell'app di debug (con Vite su 5173), poi uno script Node che usa il protocollo DevTools (`/json/list`, `Runtime.evaluate`) per chiamare i comandi come la pagina (`window.__TAURI_INTERNALS__.invoke`) e leggere lo schermo di xterm (`.xterm-rows`). Le finestre si riconoscono dall'etichetta (`__TAURI_INTERNALS__.metadata.currentWindow.label`), non dall'URL: le console hanno tutte lo stesso.
+- Solo per lo sviluppo: la variabile non è mai impostata dall'app. Le prove passano dalle stesse capability della pagina, quindi verificano anche i permessi.
+- Più sessioni di lavoro sullo stesso PC: i processi di prova si chiudono per PID, mai per nome (`taskkill /IM Atollo.exe` chiude anche le app degli altri).
+
+## D-50 Progetti: rilevamento e avvio in Rust
+
+- Porting di `core/detectors`, `core/processes.js`, `core/panel/ports.js` e `site.js` del Atollo (`detect/`, `run.rs`, `projects.rs`). Restano le stesse regole: priorità desktop > web > comando, progetti composti (`frontend\`, `backend\`), `panel.json` e il vecchio `pannello.json` con le chiavi italiane e `{porta}`, argomenti di porta per Vite/Next/Nuxt/Angular/Astro e gli altri.
+- Le azioni girano con `cmd.exe /d /s /c` e l'ambiente del kit, come nel Atollo (`shell: true`). PowerShell è stato scartato: `npm.ps1` consuma il `--` di `npm run dev -- --port`. `cmd.exe` serve solo da interprete delle righe di comando dei progetti: il terminale dell'utente resta la PowerShell del kit.
+- Ogni azione gira in un job annidato in quello dell'app. «Ferma» chiude l'handle del job (`KILL_ON_JOB_CLOSE`): finisce tutto l'albero (npm → node → esbuild) senza `taskkill`, e chiudendo l'app si chiude tutto.
+- Porte 7100-7999 ricordate per azione in `data\app\ports.json`, così segnalibri, cookie e localStorage restano validi. La porta scelta dall'utente è bloccata: se è occupata l'avvio fallisce, non si sposta. Una porta è libera se nessuno risponde e se ci si può mettere in ascolto su `127.0.0.1` e su `::1`.
+- I comandi di `panel.json` sono comandi arbitrari del progetto. Partono solo con un clic su «Avvia», come nel Atollo; la pagina ricorda che le cartelle di `projects` sono attendibili (D-53).
+- Clonazione: con il Git del kit (`git clone -- <url> <cartella>`, `GIT_TERMINAL_PROMPT=0`), accettando solo `owner/repo` di GitHub o indirizzi `https://` senza caratteri speciali. Niente `ssh://`, `file://` né argomenti che iniziano con `-`. I repository privati usano l'accesso di `gh` del kit.
+
+## D-51 Server di file nell'exe
+
+- `Atollo.exe serve <cartella> <porta>` sostituisce `static-server.js`: niente Node per un sito statico. Ascolta solo su `127.0.0.1` e risponde solo a un `Host` locale (contro il DNS rebinding). Nega i file e le cartelle nascosti (eccetto `.well-known`), `..` e i collegamenti che portano fuori dalla cartella. Una cartella senza `/` finale viene reindirizzata e ogni risposta ha `Cache-Control: no-store`.
+
+## D-52 Aggiornamento dell'exe
+
+- Implementa D-20 (`self_update.rs`). La fonte sono le release `app-vX.Y.Z` di `nabre/atollo` (non bozze, non pre-release) con l'asset `Atollo-x64.exe` o `Atollo-arm64.exe`. Lo SHA-256 viene dal digest dell'API di GitHub o dal file `.sha256` della release; il workflow della fase 7 deve pubblicarli con questi nomi.
+- Il controllo parte 20 s dopo l'avvio, se «Aggiornamenti automatici» è attivo e `ATOLLO_NO_UPDATE` è assente; altrimenti si avvia da Impostazioni. Il file scaricato va in `data\app\update\` e solo un file completo e verificato viene registrato in `update.json`.
+- Lo scambio avviene su `RunEvent::Exit` (in Tauri `run()` può non tornare): l'hash viene ricontrollato, poi `Atollo.exe` diventa `Atollo.old.exe` e se lo spostamento fallisce il vecchio torna al suo posto. `Atollo.old.exe` viene eliminato all'avvio successivo; se è ancora in uso da un `sync` o `keyring`, si riprova la volta dopo.
+- La versione dell'app è scritta in `data\app\versions\app.txt`, come quella degli altri componenti.
+
+## D-53 Cartelle attendibili e sicurezza dei progetti (revisione di sicurezza)
+
+- Le sottocartelle di `projects` sono attendibili per Claude e Codex (comportamento del Atollo, `trust.js`), così gli agenti non chiedono conferma a ogni progetto. È un rischio accettato: un progetto clonato da fonte sconosciuta ha subito i permessi di un progetto fidato. Lo ricordano la pagina Progetti e Linguaggi e strumenti al primo avvio. Scartato: l'attendibilità progetto per progetto, che il Atollo aveva tolto perché gli agenti la chiedevano di continuo.
+- `keyring-before.json` contiene per pochi istanti le credenziali di Antigravity già presenti nel PC, per rimetterle com'erano dopo `agy`. Ora i loro segreti sono cifrati con DPAPI per l'utente di Windows (`CryptProtectData`, senza diritti di amministratore): una chiavetta persa o un file copiato non li rivela. Il file viene comunque cancellato al salvataggio successivo.
+- Windows Terminal interpretava `;` negli argomenti come separatore di comandi (una cartella chiamata `a; new-tab cmd` avrebbe aperto un altro programma). Il rischio è sparito con il terminale integrato (D-44).
+
+## D-54 Impostazioni
+
+- La pagina Impostazioni scrive `data\app\settings.json` dopo aver controllato i valori: lingua, proxy `http(s)://`, file PEM esistente, Python `3.x`, PHP `8.x`, toolchain `gnu|msvc`. Un file illeggibile non viene sovrascritto finché l'utente non salva.
+- La chiave di Gemini non torna mai all'interfaccia: questa riceve solo «salvata sì/no». `null` la conserva, `""` la toglie.
+- Al salvataggio l'ambiente del kit viene ricostruito dall'ambiente reale catturato all'avvio (`Host`): valgono subito per console, agenti, installazioni e progetti. Il server dell'editor già avviato tiene il suo ambiente fino al riavvio, e la pagina lo dice.
+
+## D-55 Chiusura e «Rimuovi l'unità»
+
+- Chiudendo la finestra con editor, console, progetti avviati o un'installazione in corso, l'app chiede conferma (`close-requested`) ed elenca cosa si chiude. Senza nulla aperto si chiude subito.
+- «Rimuovi l'unità» (porting di `Eject.ps1`) ferma installazione, progetti, finestre di editor e console, server dell'editor e ogni programma del kit (cime degli alberi di processi con l'eseguibile nel kit). Poi salva l'accesso di Antigravity e chiede di chiudere l'app, che tiene aperto il proprio exe. Non trova i programmi del PC che hanno solo un file del kit aperto: il Atollo li cercava nella riga di comando, che senza WMI non si legge. In quel caso Windows dirà «dispositivo in uso».
+- Il dialogo di chiusura e la pagina elencano per categoria ciò che l'app ha avviato (editor, console, progetti, installazione) e, come singoli programmi, solo quelli del kit che **non** discendono dall'app (avviati da altri strumenti o rimasti da una sessione precedente). Quelli dell'app finiscono comunque con il suo job; elencarli anche come processi li mostrava due volte (trovato in prova). L'arresto invece colpisce tutti i programmi del kit.
+- Altre copie del kit: processi con l'eseguibile in un `<radice>\data\apps\win32-*` diverso, oppure un altro `Atollo.exe` con `data\app` accanto. Sono segnalate nella Home.
+
+## D-56 Quattro lingue e accessibilità
+
+- L'interfaccia usa `t("testo italiano")` con i cataloghi `ui/src/locales/{en,fr,de}.json`, come `src-tauri/i18n/catalog.json` per i messaggi di Rust. Due test verificano che ogni testo usato sia in tutte le lingue con gli stessi segnaposto e che non restino voci inutilizzate. La lingua viene da Impostazioni, poi da `ATOLLO_LANG`, poi da Windows; cambiandola l'interfaccia si aggiorna senza riavvio.
+- Registro: «tu» in italiano, «you» in inglese, «vous» in francese, «Sie» in tedesco, come i messaggi Rust già tradotti e la localizzazione tedesca di VS Code.
+- Termini fissati per coerenza:
+  - «Linguaggi e strumenti»: Languages and tools, Langages et outils, Sprachen und Werkzeuge;
+  - «Esci» (da un agente): Sign out, Se déconnecter, Abmelden;
+  - virgolette «» in francese, “” in inglese, „“ in tedesco.
+- Frasi intere nei cataloghi, mai composte a pezzi. Una frase con parti in carattere monospaziato passa per `rich()` di `i18n.ts`, che inserisce gli elementi nei segnaposto. I testi che dipendono dalla lingua vengono calcolati al momento del disegno (per esempio i gruppi dei componenti sono una funzione, non una costante).
+- Test dei cataloghi:
+  - interfaccia: `i18n.test.ts` legge i sorgenti con `import.meta.glob` di Vite, perché `node:fs` richiederebbe `@types/node`;
+  - Rust: `i18n::tests::sources_are_in_the_catalog` legge `src\` e controlla anche le tuple `Err(("…", …))` di `settings::validate()`, che vengono tradotte da `settings_set`.
+- Accessibilità:
+  - focus sempre visibile come in VSCodium e collegamento «Vai al contenuto»;
+  - nomi per icone e pulsanti, titoli di pagina e di sezione;
+  - errori e stati annunciati (`role="alert"`/`role="status"`);
+  - dialogo di chiusura con `role="alertdialog"`, focus su «Annulla» ed Esc;
+  - nessuna animazione con «riduci animazioni»;
+  - rosso degli errori del tema chiaro portato a un contrasto di almeno 4,5:1.

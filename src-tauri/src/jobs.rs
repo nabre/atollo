@@ -24,8 +24,9 @@ use windows::Win32::System::JobObjects::{
     JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 };
 use windows::Win32::System::Threading::{
-    GetCurrentProcess, OpenThread, ResumeThread, CREATE_BREAKAWAY_FROM_JOB,
-    CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW, CREATE_SUSPENDED, THREAD_SUSPEND_RESUME,
+    GetCurrentProcess, OpenProcess, OpenThread, ResumeThread, CREATE_BREAKAWAY_FROM_JOB,
+    CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW, CREATE_SUSPENDED, PROCESS_SET_QUOTA,
+    PROCESS_TERMINATE, THREAD_SUSPEND_RESUME,
 };
 
 use crate::env::KitEnv;
@@ -149,6 +150,23 @@ pub fn spawn(cmd: &mut Command) -> Result<Child> {
         app.job.assign(&child)?;
     }
     Ok(child)
+}
+
+/// Puts a process started elsewhere (the pseudo console) in the app's job,
+/// when the app is not in it itself: its first children may escape, a
+/// limit of that rare case.
+pub fn assign_pid(pid: u32) -> Result<()> {
+    let Some(app) = APP_JOB.get().filter(|j| !j.self_assigned) else {
+        return Ok(());
+    };
+    // SAFETY: the handle is used for the assignment only, then closed.
+    unsafe {
+        let process = OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, false, pid)
+            .context("OpenProcess")?;
+        let result = AssignProcessToJobObject(app.job.handle, process);
+        let _ = CloseHandle(process);
+        result.context("AssignProcessToJobObject(pid)")
+    }
 }
 
 /// Starts a program in `job` (a job of its own, nested in the app's): it is

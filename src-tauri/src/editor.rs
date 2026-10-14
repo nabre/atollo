@@ -58,7 +58,7 @@ pub struct Status {
 
 pub struct Editor {
     kit: Kit,
-    env: KitEnv,
+    env: Mutex<KitEnv>,
     server: Mutex<Option<Server>>,
     extensions: std::sync::Arc<Mutex<crate::editor_ext::ExtState>>,
 }
@@ -77,10 +77,19 @@ impl Editor {
     pub fn new(kit: Kit, env: KitEnv) -> Editor {
         Editor {
             kit,
-            env,
+            env: Mutex::new(env),
             server: Mutex::new(None),
             extensions: std::sync::Arc::default(),
         }
+    }
+
+    fn env(&self) -> KitEnv {
+        self.env.lock().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+
+    /// New environment for the next start of the server.
+    pub fn set_env(&self, env: KitEnv) {
+        *self.env.lock().unwrap_or_else(|e| e.into_inner()) = env;
     }
 
     pub fn status(&self) -> Status {
@@ -122,7 +131,7 @@ impl Editor {
             .map(std::sync::Arc::new);
         crate::editor_ext::sync_in_background(
             self.kit.clone(),
-            self.env.clone(),
+            self.env().clone(),
             net,
             std::sync::Arc::clone(&self.extensions),
         );
@@ -140,7 +149,8 @@ impl Editor {
         if !is_installed(&self.kit) {
             bail!("the editor is not installed");
         }
-        let system_root = PathBuf::from(self.env.get("SystemRoot").unwrap_or(r"C:\Windows"));
+        let env = self.env();
+        let system_root = PathBuf::from(env.get("SystemRoot").unwrap_or(r"C:\Windows"));
         match editor_cfg::write(&self.kit, &system_root)? {
             editor_cfg::Outcome::LeftAlone(why) => {
                 crate::log::warn(&format!("editor settings left alone: {why}"))
@@ -180,7 +190,7 @@ impl Editor {
         log_path: &Path,
     ) -> Result<Server> {
         let dir = server_dir(&self.kit);
-        let mut cmd = jobs::kit_command(dir.join("node.exe"), &self.env);
+        let mut cmd = jobs::kit_command(dir.join("node.exe"), &self.env());
         cmd.arg(dir.join(r"out\server-main.js"))
             .args(["--host", "127.0.0.1", "--port", &port.to_string()])
             .arg("--connection-token-file")

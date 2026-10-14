@@ -13,6 +13,7 @@ mod catalog;
 mod checkup;
 mod cli;
 mod commands;
+mod detect;
 mod editor;
 mod editor_cfg;
 mod editor_ext;
@@ -28,7 +29,12 @@ mod kit_files;
 mod log;
 mod net;
 mod processes;
+mod projects;
 mod relocate;
+mod run;
+mod self_update;
+mod serve;
+mod sessions;
 mod settings;
 mod setup_runner;
 mod setup_task;
@@ -39,7 +45,7 @@ mod webview;
 
 use std::path::Path;
 
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 use windows::core::HSTRING;
 use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
 
@@ -107,6 +113,8 @@ fn run() -> i32 {
     };
 
     log::init(&kit.logs());
+    self_update::remove_old(&exe);
+    self_update::record_version(&kit);
     let loaded = Settings::load(&kit);
     let lang = i18n::resolve(
         loaded.settings.lang.as_deref(),
@@ -153,6 +161,15 @@ fn run() -> i32 {
                 Err(e) => {
                     log::warn(&format!("keyring {action}: {e:#}"));
                     let _ = writeln!(cli::output(), "  [!] Antigravity: {e:#}");
+                    1
+                }
+            };
+        }
+        Cli::Serve { dir, port } => {
+            return match serve::run(&dir, port, lang) {
+                Ok(()) => 0,
+                Err(e) => {
+                    eprintln!("{e:#}");
                     1
                 }
             };
@@ -248,14 +265,28 @@ fn run() -> i32 {
     let state = AppState {
         setup,
         kit: kit.clone(),
-        lang,
+        lang: std::sync::RwLock::new(lang),
+        host: host.clone(),
         moved_from: moved_from.map(|p| p.display().to_string()),
         webview: webview_desc,
         editor: std::sync::Arc::new(editor::Editor::new(kit.clone(), kit_env.clone())),
-        env: kit_env,
+        env: std::sync::RwLock::new(kit_env),
     };
-    let result =
-        build_app(tauri::Builder::default(), state, kit.clone()).run(tauri::generate_context!());
+    // The exe swap of a staged update happens on Exit (`run` may not return).
+    let (update_kit, update_exe) = (kit.clone(), exe.clone());
+    let result = build_app(tauri::Builder::default(), state, kit.clone())
+        .build(tauri::generate_context!())
+        .map(|app| {
+            app.run(move |_, event| {
+                if let tauri::RunEvent::Exit = event {
+                    match self_update::apply_staged(&update_kit, &update_exe) {
+                        Ok(true) => log::info("update applied"),
+                        Ok(false) => {}
+                        Err(e) => log::warn(&format!("update: {e:#}")),
+                    }
+                }
+            });
+        });
     drop(guard);
     match result {
         Ok(()) => 0,
@@ -366,8 +397,16 @@ fn build_app<R: tauri::Runtime>(
 ) -> tauri::Builder<R> {
     builder
         .manage(state)
+        .manage(terminal::Terminals::default())
+        .manage(commands::Quitting::default())
         .invoke_handler(command_handler!())
         .on_window_event(|window, event| {
+            // A console window closing ends its process.
+            if window.label().starts_with(terminal::LABEL_PREFIX)
+                && matches!(event, tauri::WindowEvent::Destroyed)
+            {
+                window.state::<terminal::Terminals>().close(window.label());
+            }
             if window.label().starts_with(editor_window::LABEL_PREFIX)
                 && matches!(
                     event,
@@ -375,6 +414,12 @@ fn build_app<R: tauri::Runtime>(
                 )
             {
                 log::info(&format!("{}: {event:?}", window.label()));
+            }
+            // With something open, the interface asks before closing.
+            if window.label() == MAIN {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    commands::on_main_close(window, api);
+                }
             }
             // Closing the app window ends the session: editor windows,
             // server and consoles go with it (they are in the job).
@@ -384,6 +429,34 @@ fn build_app<R: tauri::Runtime>(
         })
         .setup(move |app| {
             open_main_window(app.handle(), &kit.webview_data())?;
+            // Projects' actions: state and output go to the app window.
+            let events = app.handle().clone();
+            app.manage(std::sync::Arc::new(run::Runner::new(
+                kit.clone(),
+                std::sync::Arc::new(move |e: run::Event| {
+                    let _ = events.emit_to(MAIN, "run", e);
+                }),
+            )));
+            let updater = std::sync::Arc::new(self_update::Updater::new(kit.clone()));
+            app.manage(std::sync::Arc::clone(&updater));
+            let settings = Settings::load(&kit).settings;
+            // ATOLLO_NO_UPDATE: no automatic check (as for the kit's scripts).
+            if settings.auto_update
+                && app
+                    .state::<AppState>()
+                    .host
+                    .get("ATOLLO_NO_UPDATE")
+                    .is_none()
+            {
+                let token = github_token(&app.state::<AppState>().host);
+                std::thread::spawn(move || {
+                    // After the start, not competing with it.
+                    std::thread::sleep(std::time::Duration::from_secs(20));
+                    if let Ok(net) = net::Net::new(&settings, token) {
+                        updater.check(&net);
+                    }
+                });
+            }
             start_missing_required(app.handle(), &kit);
             // Antigravity's login left in Windows by a run that did not end
             // cleanly, the kit moved, the agents aligned; then the watcher.
@@ -462,10 +535,11 @@ mod tests {
             setup,
             editor,
             kit,
-            lang: "it",
+            lang: std::sync::RwLock::new("it"),
             moved_from: None,
             webview: "test".into(),
-            env: KitEnv::default(),
+            env: std::sync::RwLock::new(KitEnv::default()),
+            host: env::Host::default(),
         }
     }
 
@@ -486,6 +560,60 @@ mod tests {
             },
         )
         .map(|b| b.deserialize::<serde_json::Value>().unwrap())
+    }
+
+    fn invoke_cmd(
+        webview: &tauri::WebviewWindow<tauri::test::MockRuntime>,
+        cmd: &str,
+        body: serde_json::Value,
+    ) -> Result<serde_json::Value, serde_json::Value> {
+        get_ipc_response(
+            webview,
+            InvokeRequest {
+                cmd: cmd.into(),
+                callback: tauri::ipc::CallbackFn(0),
+                error: tauri::ipc::CallbackFn(1),
+                url: "http://tauri.localhost".parse().unwrap(),
+                body: tauri::ipc::InvokeBody::Json(body),
+                headers: Default::default(),
+                invoke_key: INVOKE_KEY.to_string(),
+            },
+        )
+        .map(|b| b.deserialize::<serde_json::Value>().unwrap())
+    }
+
+    /// DECISIONS.md D-13, D-14: a console window reaches only the console
+    /// commands, for its own label; other windows cannot use them.
+    #[test]
+    fn console_windows_reach_only_their_session() {
+        let app = mock_builder()
+            .manage(state())
+            .manage(terminal::Terminals::default())
+            .invoke_handler(command_handler!())
+            .build(tauri::generate_context!())
+            .unwrap();
+        let window = |label: &str| {
+            WebviewWindowBuilder::new(&app, label, WebviewUrl::App("terminal.html".into()))
+                .data_directory(std::env::temp_dir().join("atollo-ipc-test-webview"))
+                .build()
+                .unwrap()
+        };
+        let size = serde_json::json!({ "cols": 80, "rows": 24 });
+        let console = window("terminal-1");
+        assert!(invoke_cmd(&console, "app_info", serde_json::json!({})).is_err());
+        // Allowed, but no session with that label exists.
+        let r = invoke_cmd(&console, "terminal_resize", size.clone());
+        assert!(
+            r.as_ref()
+                .unwrap_err()
+                .to_string()
+                .contains("no terminal: terminal-1"),
+            "{r:?}"
+        );
+        let main = window(MAIN);
+        assert!(invoke_cmd(&main, "terminal_resize", size.clone()).is_err());
+        let editor = window("editor-9");
+        assert!(invoke_cmd(&editor, "terminal_resize", size).is_err());
     }
 
     #[test]
