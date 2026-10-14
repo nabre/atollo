@@ -41,15 +41,20 @@ fn modified(path: &Path) -> u64 {
         .map_or(0, |d| d.as_secs())
 }
 
-/// Folders (or links to folders) in `projects\`, not hidden.
+/// Folders in `projects\`, not hidden, not links.
 pub fn folders(kit: &Kit) -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = fs::read_dir(kit.projects())
         .into_iter()
         .flatten()
         .flatten()
         .filter(|e| !e.file_name().to_string_lossy().starts_with('.'))
+        // A link or junction is never a project: reading through it could
+        // reach a network share (D-77).
+        .filter(|e| {
+            e.metadata()
+                .is_ok_and(|m| m.is_dir() && !crate::safe_path::is_reparse(&m))
+        })
         .map(|e| e.path())
-        .filter(|p| p.is_dir())
         .collect();
     out.sort();
     out
@@ -307,60 +312,12 @@ pub struct GitInfo {
     pub remote: Option<String>,
 }
 
-/// `path` with `.` and `..` resolved by text only (nothing on disk is
-/// touched); None when `..` would climb above its root.
-fn lexical(path: &Path) -> Option<PathBuf> {
-    use std::path::Component;
-    let mut out = PathBuf::new();
-    for c in path.components() {
-        match c {
-            Component::ParentDir => {
-                if !out.pop() {
-                    return None;
-                }
-            }
-            Component::CurDir => {}
-            other => out.push(other.as_os_str()),
-        }
-    }
-    Some(out)
-}
-
-/// A symbolic link or a junction (reparse point), seen without following it.
-fn is_reparse(meta: &fs::Metadata) -> bool {
-    use std::os::windows::fs::MetadataExt;
-    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
-    meta.file_type().is_symlink() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
-}
-
-/// No link or junction from `root` down to `path`: a link to `\\server\…`
-/// would get past the text checks below (security review). Each step is
-/// looked at with `symlink_metadata`, which never follows a link; a step
-/// that does not exist ends the walk (nothing behind it can be read).
-fn no_links(root: &Path, path: &Path) -> bool {
-    let Ok(rest) = path.strip_prefix(root) else {
-        return false;
-    };
-    let mut cur = root.to_path_buf();
-    for c in rest.components() {
-        cur.push(c);
-        match fs::symlink_metadata(&cur) {
-            Ok(m) if is_reparse(&m) => return false,
-            Ok(_) => {}
-            Err(_) => return true,
-        }
-    }
-    true
-}
+use crate::safe_path::{lexical, no_links};
 
 /// A file of the repository, read only when it is inside `root` and no link
-/// leads to it.
+/// leads to it (`safe_path`).
 fn read_plain(root: &Path, path: &Path) -> Option<String> {
-    let path = lexical(path)?;
-    if !path.starts_with(root) || !no_links(root, &path) {
-        return None;
-    }
-    fs::read_to_string(path).ok()
+    crate::safe_path::read_text(root, path)
 }
 
 /// `.git` of `dir`: the folder, or the one a `.git` file points to
@@ -374,7 +331,7 @@ fn git_dir(dir: &Path, root: &Path) -> Option<PathBuf> {
     if !dot.starts_with(root) || !no_links(root, &dot) {
         return None;
     }
-    if dot.is_dir() {
+    if crate::safe_path::is_dir(root, &dot) {
         return Some(dot);
     }
     let text = read_plain(root, &dot)?;
@@ -395,7 +352,7 @@ fn git_dir(dir: &Path, root: &Path) -> Option<PathBuf> {
     {
         return None;
     }
-    path.is_dir().then_some(path)
+    crate::safe_path::is_dir(root, &path).then_some(path)
 }
 
 /// `key` of section `[name "sub"]` in a Git config file (simple form only).
@@ -489,7 +446,7 @@ pub fn status(dir: &Path, root: &Path) -> ProjectStatus {
         ".github/copilot-instructions.md",
     ]
     .iter()
-    .filter(|f| dir.join(f).is_file())
+    .filter(|f| crate::safe_path::is_file(dir, &dir.join(f)))
     .map(|f| (*f).to_owned())
     .collect();
     ProjectStatus {
@@ -502,6 +459,43 @@ pub fn status(dir: &Path, root: &Path) -> ProjectStatus {
 mod tests {
     use super::*;
     use crate::kit::{tests::TempDir, Arch};
+
+    /// A junction in projects\ is not a project, and a junction inside a
+    /// project is not read by the detection (D-77).
+    #[test]
+    fn junctions_are_not_projects_nor_read() {
+        let tmp = TempDir::new("proj-links");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let real = kit.projects().join("real");
+        fs::create_dir_all(&real).unwrap();
+        fs::write(real.join("index.html"), "<h1>x</h1>").unwrap();
+        let outside = tmp.0.join("outside");
+        fs::create_dir_all(&outside).unwrap();
+        fs::write(
+            outside.join("package.json"),
+            r#"{"dependencies":{"mongoose":"8"}}"#,
+        )
+        .unwrap();
+        fs::write(outside.join(".env"), "DB_CONNECTION=mysql\n").unwrap();
+        crate::safe_path::tests::junction(&kit.projects().join("linked"), &outside);
+        let names: Vec<String> = folders(&kit)
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(names, ["real"]);
+        // Inside a project: a junction named like a manifest folder.
+        crate::safe_path::tests::junction(&real.join("server"), &outside);
+        let req = crate::detect::requires(&real);
+        assert!(
+            !req.iter().any(|r| r == "mongodb" || r == "mariadb"),
+            "{req:?}"
+        );
+        let p = crate::detect::detect(&real, "it");
+        assert!(!p.reason.contains("server"), "{}", p.reason);
+        // The detection of the linked folder itself finds nothing.
+        assert!(crate::detect::requires(&kit.projects().join("linked")).is_empty());
+    }
 
     #[test]
     fn git_state_from_files() {

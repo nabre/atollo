@@ -170,18 +170,14 @@ fn tr(lang: &str, source: &str, args: &[&str]) -> String {
     crate::i18n::t(lang, source, args)
 }
 
+// Every look into a project goes through `safe_path`: never through a
+// symbolic link or a junction (D-77).
 fn exists(dir: &Path, rel: &str) -> bool {
-    dir.join(rel).exists()
+    crate::safe_path::exists(dir, &dir.join(rel))
 }
 
 fn read(dir: &Path, rel: &str) -> String {
-    fs::read(dir.join(rel))
-        .map(|b| {
-            String::from_utf8_lossy(&b)
-                .trim_start_matches('\u{feff}')
-                .to_owned()
-        })
-        .unwrap_or_default()
+    crate::safe_path::read_text(dir, &dir.join(rel)).unwrap_or_default()
 }
 
 fn read_json(dir: &Path, rel: &str) -> Option<serde_json::Value> {
@@ -189,6 +185,9 @@ fn read_json(dir: &Path, rel: &str) -> Option<serde_json::Value> {
 }
 
 fn list_dir(dir: &Path) -> Vec<String> {
+    if crate::safe_path::is_link(dir) {
+        return Vec::new();
+    }
     let mut names: Vec<String> = fs::read_dir(dir)
         .into_iter()
         .flatten()
@@ -213,7 +212,9 @@ fn quote(s: &str) -> String {
 /// One walk of the project: 3 levels, at most 3000 files, no IGNORED folders.
 fn walk_files(dir: &Path, on_file: &mut dyn FnMut(&str)) {
     fn walk(d: &Path, depth: u32, seen: &mut u32, on_file: &mut dyn FnMut(&str)) {
-        if depth > 3 || *seen > 3000 {
+        // Below the root, links are not entered (a DirEntry's type is the
+        // link's own); the root itself is checked here.
+        if depth > 3 || *seen > 3000 || (depth == 0 && crate::safe_path::is_link(d)) {
             return;
         }
         let Ok(entries) = fs::read_dir(d) else {
@@ -345,11 +346,7 @@ fn need_of_file(name: &str) -> Option<&'static str> {
 /// its manifests (npm, pip, Composer). MySQL means the kit's MariaDB.
 fn databases(dir: &Path) -> BTreeSet<&'static str> {
     let mut found = BTreeSet::new();
-    let read = |name: &str| {
-        fs::read_to_string(dir.join(name))
-            .unwrap_or_default()
-            .to_ascii_lowercase()
-    };
+    let read = |name: &str| read(dir, name).to_ascii_lowercase();
     let env = read(".env") + &read(".env.example");
     for line in env.lines().map(str::trim) {
         let value = line
@@ -474,7 +471,9 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             continue;
         }
         let sub_dir = dir.join(&sub);
-        if !sub_dir.is_dir() || !MANIFESTS.iter().any(|m| exists(&sub_dir, m)) {
+        if !crate::safe_path::is_dir(dir, &sub_dir)
+            || !MANIFESTS.iter().any(|m| exists(&sub_dir, m))
+        {
             continue;
         }
         for mut r in detect_folder(&sub_dir, lang) {
