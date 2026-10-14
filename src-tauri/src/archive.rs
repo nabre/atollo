@@ -10,7 +10,7 @@
 use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom};
 use std::path::{Component, Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use anyhow::{bail, Context, Result};
 
@@ -292,13 +292,15 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
         }
     }
     // `dest` is gone, or only empty folders held open are left in it.
-    let moved = if dest.exists() {
-        move_tree(new, dest).map(|()| {
-            let _ = fs::remove_dir_all(new);
-        })
-    } else {
-        fs::rename(new, dest)
-    };
+    let moved = retry_denied(|| {
+        if dest.exists() {
+            move_tree(new, dest).map(|()| {
+                let _ = fs::remove_dir_all(new);
+            })
+        } else {
+            fs::rename(new, dest)
+        }
+    });
     if let Err(e) = moved {
         if had_old {
             let _ = fs::remove_dir_all(dest);
@@ -312,6 +314,24 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
         let _ = fs::remove_dir_all(&old);
     }
     Ok(())
+}
+
+/// Runs `op` again while Windows answers "access denied", up to 30 s: the
+/// antivirus scans the files just extracted and, while it holds them, their
+/// folder cannot move (Java and Kotlin failed so on their first install).
+fn retry_denied(mut op: impl FnMut() -> io::Result<()>) -> io::Result<()> {
+    let start = Instant::now();
+    loop {
+        match op() {
+            Err(e)
+                if e.kind() == io::ErrorKind::PermissionDenied
+                    && start.elapsed() < Duration::from_secs(30) =>
+            {
+                std::thread::sleep(Duration::from_millis(250));
+            }
+            other => return other,
+        }
+    }
 }
 
 /// Moves the content of `from` into `to` (created if needed), entry by
@@ -589,6 +609,35 @@ mod tests {
             "new"
         );
         assert!(dest.join("out").is_dir());
+    }
+
+    /// The antivirus holds a file just extracted for a moment (as on the
+    /// first install of Java and Kotlin): the swap waits for it.
+    #[test]
+    fn replace_dir_waits_for_a_scan() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let tmp = TempDir::new("replscan");
+        let new = tmp.0.join(r"x\kotlinc");
+        fs::create_dir_all(new.join("lib")).unwrap();
+        fs::write(new.join(r"lib\a.jar"), "jar").unwrap();
+        let held = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(new.join(r"lib\a.jar"))
+            .unwrap();
+        let dest = tmp.0.join("kotlin");
+        assert!(
+            fs::rename(&new, &dest).is_err(),
+            "Windows refuses the folder while the file is open"
+        );
+        let scan = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(600));
+            drop(held);
+        });
+        replace_dir(&new, &dest).unwrap();
+        scan.join().unwrap();
+        assert_eq!(fs::read_to_string(dest.join(r"lib\a.jar")).unwrap(), "jar");
+        assert!(!new.exists());
     }
 
     #[test]
