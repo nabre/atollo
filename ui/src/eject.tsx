@@ -58,10 +58,10 @@ export function EjectPage() {
             <OpenList open={open} />
           </>
         )}
-        <p>{t("Ora chiudi Dev-Kit, poi rimuovi l'unità con «Rimozione sicura dell'hardware» di Windows.")}</p>
+        <p>{t("Ora chiudi NEXKORA, poi rimuovi l'unità con «Rimozione sicura dell'hardware» di Windows.")}</p>
         <ActionButton
           icon={VscClose}
-          label={t("Chiudi Dev-Kit")}
+          label={t("Chiudi NEXKORA")}
           primary
           onClick={() => {
             run("quit", appQuit);
@@ -137,10 +137,10 @@ export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () =>
         aria-modal="true"
         aria-labelledby="close-title"
         aria-describedby="close-desc"
-        className="w-[min(32rem,90vw)] space-y-2 rounded border border-vsc-border bg-vsc-sidebar p-3 shadow-lg"
+        className="w-[min(32rem,90vw)] space-y-2 rounded border border-vsc-widget-border bg-vsc-widget p-3 shadow-[0_0_8px_2px_var(--vsc-shadow)]"
       >
         <h2 id="close-title" className="text-[14px] font-semibold">
-          {t("Chiudere Dev-Kit?")}
+          {t("Chiudere NEXKORA?")}
         </h2>
         <div id="close-desc" className="space-y-2">
           <p>{t("Chiudendo si chiudono anche:")}</p>
@@ -151,7 +151,7 @@ export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () =>
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="rounded-sm bg-vsc-button2 px-2 py-1 text-vsc-button2-fg hover:bg-vsc-button2-hover"
+            className="rounded-sm border border-vsc-button-border bg-vsc-button2 px-2 py-1 text-vsc-button2-fg hover:bg-vsc-button2-hover"
           >
             {t("Annulla")}
           </button>

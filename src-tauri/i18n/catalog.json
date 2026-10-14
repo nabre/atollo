@@ -54,10 +54,10 @@
     "fr": "Environnement de développement portable : langages, agents et éditeur dans un dossier.",
     "de": "Portable Entwicklungsumgebung: Sprachen, Agenten und Editor in einem Ordner."
   },
-  "Dev-Kit ha installato nuove estensioni: {0}. Riavvia le estensioni perché partano tutte.": {
-    "en": "Dev-Kit installed new extensions: {0}. Restart the extensions so that they all start.",
-    "fr": "Dev-Kit a installé de nouvelles extensions : {0}. Redémarrez les extensions pour qu'elles démarrent toutes.",
-    "de": "Dev-Kit hat neue Erweiterungen installiert: {0}. Starte die Erweiterungen neu, damit alle laufen."
+  "NEXKORA ha installato nuove estensioni: {0}. Riavvia le estensioni perché partano tutte.": {
+    "en": "NEXKORA installed new extensions: {0}. Restart the extensions so that they all start.",
+    "fr": "NEXKORA a installé de nouvelles extensions : {0}. Redémarrez les extensions pour qu'elles démarrent toutes.",
+    "de": "NEXKORA hat neue Erweiterungen installiert: {0}. Starte die Erweiterungen neu, damit alle laufen."
   },
   "Riavvia le estensioni": {
     "en": "Restart extensions",
@@ -89,10 +89,10 @@
     "fr": "Fermer",
     "de": "Schließen"
   },
-  "Dev-Kit non può partire": {
-    "en": "Dev-Kit cannot start",
-    "fr": "Dev-Kit ne peut pas démarrer",
-    "de": "Dev-Kit kann nicht starten"
+  "NEXKORA non può partire": {
+    "en": "NEXKORA cannot start",
+    "fr": "NEXKORA ne peut pas démarrer",
+    "de": "NEXKORA kann nicht starten"
   },
   "Impossibile scrivere nella cartella {0}.": {
     "en": "Cannot write in the folder {0}.",
@@ -104,15 +104,15 @@
     "fr": "Déplacez Dev-Kit.exe dans un dossier où vous pouvez écrire (par exemple une clé USB ou un dossier de votre profil) et relancez-le.",
     "de": "Verschieben Sie Dev-Kit.exe in einen Ordner, in den Sie schreiben können (zum Beispiel einen USB-Stick oder einen Ordner in Ihrem Profil), und starten Sie es erneut."
   },
-  "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di Dev-Kit.": {
-    "en": "Microsoft Edge WebView2 is missing: Dev-Kit needs it to show its windows.",
-    "fr": "Microsoft Edge WebView2 est absent : Dev-Kit en a besoin pour afficher ses fenêtres.",
-    "de": "Microsoft Edge WebView2 fehlt: Dev-Kit braucht es, um seine Fenster anzuzeigen."
+  "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di NEXKORA.": {
+    "en": "Microsoft Edge WebView2 is missing: NEXKORA needs it to show its windows.",
+    "fr": "Microsoft Edge WebView2 est absent : NEXKORA en a besoin pour afficher ses fenêtres.",
+    "de": "Microsoft Edge WebView2 fehlt: NEXKORA braucht es, um seine Fenster anzuzeigen."
   },
-  "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia Dev-Kit. Non serve installare nulla.": {
-    "en": "Download the \"Fixed Version\" for {0} from {1} and extract it to {2}, then start Dev-Kit again. Nothing needs to be installed.",
-    "fr": "Téléchargez la « Fixed Version » pour {0} depuis {1} et extrayez-la dans {2}, puis relancez Dev-Kit. Rien n'est à installer.",
-    "de": "Laden Sie die „Fixed Version“ für {0} von {1} herunter und entpacken Sie sie nach {2}, dann starten Sie Dev-Kit erneut. Es muss nichts installiert werden."
+  "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia NEXKORA. Non serve installare nulla.": {
+    "en": "Download the \"Fixed Version\" for {0} from {1} and extract it to {2}, then start NEXKORA again. Nothing needs to be installed.",
+    "fr": "Téléchargez la « Fixed Version » pour {0} depuis {1} et extrayez-la dans {2}, puis relancez NEXKORA. Rien n'est à installer.",
+    "de": "Laden Sie die „Fixed Version“ für {0} von {1} herunter und entpacken Sie sie nach {2}, dann starten Sie NEXKORA erneut. Es muss nichts installiert werden."
   },
   "Errore imprevisto: {0}": {
     "en": "Unexpected error: {0}",
@@ -154,10 +154,10 @@
     "fr": "{0} : en cours d'utilisation, fermez les programmes du kit et réessayez",
     "de": "{0}: in Verwendung, schließen Sie die Programme des Kits und versuchen Sie es erneut"
   },
-  "{0}: non ancora disponibile in questa versione di Dev-Kit": {
-    "en": "{0}: not yet available in this version of Dev-Kit",
-    "fr": "{0} : pas encore disponible dans cette version de Dev-Kit",
-    "de": "{0}: in dieser Version von Dev-Kit noch nicht verfügbar"
+  "{0}: non ancora disponibile in questa versione di NEXKORA": {
+    "en": "{0}: not yet available in this version of NEXKORA",
+    "fr": "{0} : pas encore disponible dans cette version de NEXKORA",
+    "de": "{0}: in dieser Version von NEXKORA noch nicht verfügbar"
   },
   "{0}: annullato": {
     "en": "{0}: cancelled",
@@ -609,20 +609,20 @@
     "fr": "le terminal du kit pour les consoles hors de l'éditeur",
     "de": "das Terminal des Kits für die Konsolen außerhalb des Editors"
   },
-  "VSCodium integrato nella finestra di Dev-Kit": {
-    "en": "VSCodium integrated in the Dev-Kit window",
-    "fr": "VSCodium intégré à la fenêtre de Dev-Kit",
-    "de": "VSCodium im Fenster von Dev-Kit"
+  "VSCodium integrato nella finestra di NEXKORA": {
+    "en": "VSCodium integrated in the NEXKORA window",
+    "fr": "VSCodium intégré à la fenêtre de NEXKORA",
+    "de": "VSCodium im Fenster von NEXKORA"
   },
   "C'è già un'installazione in corso.": {
     "en": "An installation is already running.",
     "fr": "Une installation est déjà en cours.",
     "de": "Es läuft bereits eine Installation."
   },
-  "Un'altra installazione è in corso in questo kit (un'altra finestra di Dev-Kit o il menu del kit).": {
-    "en": "Another installation is running in this kit (another Dev-Kit window or the kit's menu).",
-    "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre de Dev-Kit ou le menu du kit).",
-    "de": "In diesem Kit läuft eine andere Installation (ein anderes Dev-Kit-Fenster oder das Menü des Kits)."
+  "Un'altra installazione è in corso in questo kit (un'altra finestra di NEXKORA o il menu del kit).": {
+    "en": "Another installation is running in this kit (another NEXKORA window or the kit's menu).",
+    "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre de NEXKORA ou le menu du kit).",
+    "de": "In diesem Kit läuft eine andere Installation (ein anderes NEXKORA-Fenster oder das Menü des Kits)."
   },
   "Progetto non trovato: {0}": {
     "en": "Project not found: {0}",
@@ -644,10 +644,10 @@
     "fr": "{0} n'est pas disponible sur les PC ARM64.",
     "de": "{0} ist auf ARM64-PCs nicht verfügbar."
   },
-  "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Dev-Kit.": {
-    "en": "Usage: Dev-Kit.exe [command]\n\nCommands:\n  env                     show the kit environment\n  components              list languages and tools, with the installed ones\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's agy.cmd)\n  serve <folder> <port>   file server for a static site\n  version                 show the version\n  help                    show this help\n\nWithout a command, the Dev-Kit window opens.",
-    "fr": "Utilisation : Dev-Kit.exe [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n  components              liste les langages et outils, avec ceux installés\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par agy.cmd du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre de Dev-Kit s'ouvre.",
-    "de": "Verwendung: Dev-Kit.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von agy.cmd des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von Dev-Kit."
+  "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di NEXKORA.": {
+    "en": "Usage: Dev-Kit.exe [command]\n\nCommands:\n  env                     show the kit environment\n  components              list languages and tools, with the installed ones\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's agy.cmd)\n  serve <folder> <port>   file server for a static site\n  version                 show the version\n  help                    show this help\n\nWithout a command, the NEXKORA window opens.",
+    "fr": "Utilisation : Dev-Kit.exe [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n  components              liste les langages et outils, avec ceux installés\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par agy.cmd du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre de NEXKORA s'ouvre.",
+    "de": "Verwendung: Dev-Kit.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von agy.cmd des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von NEXKORA."
   },
   "Limite": {
     "en": "Limit",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Dev-Kit",
+  "productName": "NEXKORA",
   "mainBinaryName": "Dev-Kit",
   "identifier": "io.github.nabre.devkit2",
   "build": {

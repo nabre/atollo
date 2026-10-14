@@ -4,6 +4,7 @@
 // component turned off is removed at the next installation. Also used as the
 // first-start page, before anything optional is installed.
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BrandSymbol } from "./brand";
 import {
   VscCheck,
   VscCloudDownload,
@@ -223,8 +224,9 @@ export function ComponentsPage({
   return (
     <div className="max-w-4xl space-y-3">
       {firstRun && (
-        <div className="space-y-1">
-          <h2 className="text-[15px] font-semibold">{t("Benvenuto in Dev-Kit")}</h2>
+        <div className="bg-hero space-y-1 rounded-md border border-vsc-border px-5 py-4 pr-[30%]">
+          <BrandSymbol size={40} />
+          <h2 className="text-[18px] font-semibold tracking-tight">{t("Benvenuto in NEXKORA")}</h2>
           <p>
             {rich(
               t(

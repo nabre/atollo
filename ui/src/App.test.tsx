@@ -296,7 +296,7 @@ describe("App", () => {
       within(nav)
         .getAllByRole("button")
         .map((b) => b.textContent),
-    ).toEqual(["Avvio", "Componenti", "Database", "Estensioni", "Editor", "Git", "Agenti"]);
+    ).toEqual(["Avvio", "Componenti", "Database", "Estensioni", "Editor", "Git"]);
     expect(await screen.findByText("main")).toBeTruthy();
     fireEvent.click(within(nav).getByRole("button", { name: /Componenti/ }));
     expect(screen.getByText("da installare")).toBeTruthy();
@@ -390,7 +390,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Rimuovi l'unità" }));
     expect(await screen.findByText("node.exe")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Chiudi tutto e prepara la rimozione" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Chiudi Dev-Kit" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Chiudi NEXKORA" }));
     expect(invoke).toHaveBeenCalledWith("eject_run", undefined);
     expect(invoke).toHaveBeenCalledWith("app_quit", undefined);
   });
@@ -517,7 +517,7 @@ describe("App", () => {
       answers({ app_info: { ...info, firstRun: true }, components_list: comps, components_apply: null }),
     );
     render(<App />);
-    expect(await screen.findByText("Benvenuto in Dev-Kit")).toBeTruthy();
+    expect(await screen.findByText("Benvenuto in NEXKORA")).toBeTruthy();
     expect(screen.getByLabelText<HTMLInputElement>(/^Git(?!Hub)/).disabled).toBe(true);
     expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
     expect(screen.getByText("non disponibile su PC ARM64")).toBeTruthy();

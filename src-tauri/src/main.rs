@@ -74,7 +74,7 @@ fn main() {
 /// stderr, for the command line (a service session has no message box).
 fn fatal(lang: &str, message: &str) {
     eprintln!("{message}");
-    let title = HSTRING::from(i18n::t(lang, "Dev-Kit non può partire", &[]));
+    let title = HSTRING::from(i18n::t(lang, "NEXKORA non può partire", &[]));
     let text = HSTRING::from(message);
     // SAFETY: both strings outlive the modal call.
     unsafe { MessageBoxW(None, &text, &title, MB_OK | MB_ICONERROR) };
@@ -196,7 +196,7 @@ fn run() -> i32 {
             return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0)
         }
         Cli::Version => {
-            let _ = writeln!(cli::output(), "Dev-Kit {}", env!("CARGO_PKG_VERSION"));
+            let _ = writeln!(cli::output(), "NEXKORA {}", env!("CARGO_PKG_VERSION"));
             return 0;
         }
         Cli::Help => {
@@ -239,10 +239,10 @@ fn run() -> i32 {
         log::error("WebView2 runtime not found");
         let text = format!(
             "{}\n\n{}",
-            i18n::t(lang, "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di Dev-Kit.", &[]),
+            i18n::t(lang, "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di NEXKORA.", &[]),
             i18n::t(
                 lang,
-                "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia Dev-Kit. Non serve installare nulla.",
+                "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia NEXKORA. Non serve installare nulla.",
                 &[kit.arch().as_str(), webview::DOWNLOAD_URL, &webview::fixed_folder(&kit).display().to_string()]
             )
         );
@@ -397,7 +397,7 @@ fn prepare(
 }
 
 /// Help text of the command line (Italian source; translated by the catalog).
-const HELP: &str = "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Dev-Kit.";
+const HELP: &str = "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di NEXKORA.";
 
 fn help(lang: &str) -> String {
     i18n::t(lang, HELP, &[])
@@ -567,7 +567,7 @@ fn open_main_window<R: tauri::Runtime>(
     data_dir: &Path,
 ) -> tauri::Result<()> {
     WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()))
-        .title("Dev-Kit")
+        .title("NEXKORA")
         .inner_size(1180.0, 760.0)
         .min_inner_size(820.0, 560.0)
         // The interface draws its own title bar (ui/src/titlebar.tsx).

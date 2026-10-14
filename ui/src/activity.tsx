@@ -86,7 +86,7 @@ export function ActivityPanel({
   const nothing = list.length === 0 && liveServices.length === 0 && !installing;
 
   return (
-    <section aria-label={t("Attività")} className="border-t border-vsc-border bg-vsc-sidebar">
+    <section aria-label={t("Attività")} className="border-t border-vsc-panel-border bg-vsc-panel">
       <button
         type="button"
         aria-expanded={open}

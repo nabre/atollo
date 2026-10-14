@@ -36,6 +36,26 @@ const HIDDEN: &[&str] = &[
 
 pub const DEFAULT_PROFILE: &str = "Dev-Kit";
 
+/// The brand emphasis over "Default Dark Modern" / "Default Light Modern",
+/// the same as the app's (generated with theme-colors.css by
+/// docs/brand/themes.py): every blue of the two themes, in emerald.
+const EDITOR_BRAND: &str = include_str!("editor_brand.json");
+
+/// `workbench.colorCustomizations` with the brand emphasis: the kit owns the
+/// two theme blocks and rewrites them; the user's other keys and blocks stay.
+fn brand_colors(existing: Option<&Value>) -> Value {
+    let mut out = match existing {
+        Some(Value::Object(m)) => m.clone(),
+        _ => Map::new(),
+    };
+    // A broken file fails the tests; at run time it means no emphasis.
+    let brand: Map<String, Value> = serde_json::from_str(EDITOR_BRAND).unwrap_or_default();
+    for (scope, colors) in brand {
+        out.insert(scope, colors);
+    }
+    Value::Object(out)
+}
+
 pub fn settings_path(kit: &Kit) -> PathBuf {
     kit.data()
         .join(r"vscodium-server\data\Machine\settings.json")
@@ -159,6 +179,9 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
     };
     vars.insert("NODE_OPTIONS".into(), json!(crate::env::node_options(kit)));
     out.insert(env_key.into(), Value::Object(vars));
+
+    let colors_key = "workbench.colorCustomizations";
+    out.insert(colors_key.into(), brand_colors(existing.get(colors_key)));
 
     let projects = kit.projects().display().to_string();
     for (key, value) in [
@@ -331,5 +354,25 @@ mod tests {
             Outcome::LeftAlone(_)
         ));
         assert_eq!(fs::read_to_string(&path).unwrap(), text);
+    }
+
+    #[test]
+    fn brand_emphasis_rewritten_user_colors_kept() {
+        let (_t, kit) = kit_with("cfg-colors", &[]);
+        let path = settings_path(&kit);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(
+            &path,
+            r##"{"workbench.colorCustomizations":{"editor.background":"#000000","[Default Dark Modern]":{"focusBorder":"#FF0000"}}}"##,
+        )
+        .unwrap();
+        write(&kit, Path::new(r"C:\Windows")).unwrap();
+        let colors = &read(&kit)["workbench.colorCustomizations"];
+        assert_eq!(colors["editor.background"], "#000000", "the user's own");
+        assert_eq!(colors["[Default Dark Modern]"]["focusBorder"], "#10B981");
+        assert_eq!(
+            colors["[Default Light Modern]"]["button.background"],
+            "#047857"
+        );
     }
 }

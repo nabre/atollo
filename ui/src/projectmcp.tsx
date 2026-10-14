@@ -139,7 +139,7 @@ export function ProjectMcpBox({ project }: { project: string }) {
       </h2>
       {view.readOnly ? (
         <p className="px-3 py-2 text-vsc-desc">
-          {t(".mcp.json non è JSON semplice: Dev-Kit non lo riscrive. Modificalo nell'editor.")}
+          {t(".mcp.json non è JSON semplice: NEXKORA non lo riscrive. Modificalo nell'editor.")}
         </p>
       ) : (
         <>
@@ -185,7 +185,7 @@ export function ProjectMcpBox({ project }: { project: string }) {
           )}
           <p className="px-4 pb-3 text-[12px] text-vsc-desc">
             {t(
-              "Solo in questo progetto, oltre a quelli del kit. Claude Code li legge da .mcp.json (chiede conferma al primo uso), Codex da .codex\\config.toml (Dev-Kit lo tiene allineato); Antigravity usa solo i server del kit.",
+              "Solo in questo progetto, oltre a quelli del kit. Claude Code li legge da .mcp.json (chiede conferma al primo uso), Codex da .codex\\config.toml (NEXKORA lo tiene allineato); Antigravity usa solo i server del kit.",
             )}
           </p>
         </>

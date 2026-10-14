@@ -178,7 +178,7 @@ function ServiceCard({
               onSet(portValid ? portValue : null, e.target.checked);
             }}
           />
-          {t("Avvia con Dev-Kit")}
+          {t("Avvia con NEXKORA")}
         </label>
       </div>
       {s.state === "error" && s.message && (

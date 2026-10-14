@@ -622,7 +622,7 @@ impl Runner {
             let mut line = Vec::new();
             if let Some(a) = actual {
                 line.push(format!(
-                    "[Dev-Kit] {}",
+                    "[NEXKORA] {}",
                     tr(
                         lang,
                         "il server usa la porta {0} invece della {1}",
@@ -633,7 +633,7 @@ impl Runner {
             }
             e.info.state = State::Running;
             line.push(format!(
-                "[Dev-Kit] {}",
+                "[NEXKORA] {}",
                 tr(
                     lang,
                     "server pronto: {0}",

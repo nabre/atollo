@@ -16,7 +16,7 @@ import {
   type AppInfo,
 } from "./api";
 import { GithubAccount } from "./github";
-import logo from "./assets/logo-128.png";
+import { BrandSymbol } from "./brand";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { LANGS, t } from "./i18n";
 
@@ -118,7 +118,7 @@ export function SettingsPage({
             onChange={(v) => {
               set({ autoUpdate: v });
             }}
-            label={t("Scarica da solo le nuove versioni di Dev-Kit (sostituiscono l'exe alla chiusura)")}
+            label={t("Scarica da solo le nuove versioni di NEXKORA (sostituiscono l'exe alla chiusura)")}
           />
         </Section>
 
@@ -300,7 +300,7 @@ function KitInfo({ info }: { info: AppInfo }) {
   return (
     <Section id="s-kit" title={t("Il kit")}>
       <div className="flex items-center gap-2">
-        <img src={logo} alt="" width={40} height={40} draggable={false} />
+        <BrandSymbol size={40} />
         <p className="text-vsc-desc">
           {t("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.")}
         </p>
@@ -325,12 +325,12 @@ function Updates() {
   }, []);
   if (!st) return null;
   let text: string;
-  if (st.staged) text = t("La versione {0} è pronta: sostituisce questa alla chiusura di Dev-Kit.", st.staged);
+  if (st.staged) text = t("La versione {0} è pronta: sostituisce questa alla chiusura di NEXKORA.", st.staged);
   else if (st.error) text = t("Controllo non riuscito: {0}", st.error);
-  else if (st.latest && st.latest === st.current) text = t("Dev-Kit {0} è la versione più recente.", st.current);
+  else if (st.latest && st.latest === st.current) text = t("NEXKORA {0} è la versione più recente.", st.current);
   else text = t("Versione installata: {0}", st.current);
   return (
-    <Section id="s-update" title={t("Aggiornamenti di Dev-Kit")}>
+    <Section id="s-update" title={t("Aggiornamenti di NEXKORA")}>
       <p role="status">{text}</p>
       <ActionButton
         icon={VscCloudDownload}

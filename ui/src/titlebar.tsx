@@ -8,7 +8,7 @@ import { VscChromeClose, VscChromeMaximize, VscChromeMinimize, VscChromeRestore 
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { browserPreview } from "./api";
 import { t } from "./i18n";
-import logo from "./assets/logo-32.png";
+import { BrandSymbol, BrandWordmark } from "./brand";
 
 /** The window, or null in the browser preview and in the tests. */
 function current(): Window | null {
@@ -54,17 +54,15 @@ export function TitleBar({ title }: { title: string | undefined }) {
     };
   }, []);
   const button =
-    "flex h-full w-11 items-center justify-center text-vsc-fg hover:bg-vsc-list-hover focus-visible:bg-vsc-list-hover";
+    "flex h-full w-11 items-center justify-center text-vsc-titlebar-fg hover:bg-vsc-toolbar-hover focus-visible:bg-vsc-toolbar-hover";
   return (
     <div
       data-tauri-drag-region
-      className="flex h-[30px] shrink-0 items-center border-b border-vsc-border bg-vsc-activitybar select-none"
+      className="flex h-[30px] shrink-0 items-center border-b border-vsc-titlebar-border bg-vsc-titlebar text-vsc-titlebar-fg select-none"
     >
       <span data-tauri-drag-region className="flex items-center gap-2 pl-3 text-[12px]">
-        <img data-tauri-drag-region src={logo} alt="" width={16} height={16} draggable={false} />
-        <span data-tauri-drag-region className="font-semibold">
-          Dev-Kit
-        </span>
+        <BrandSymbol size={16} />
+        <BrandWordmark height={11} />
         {title && (
           <span data-tauri-drag-region className="text-vsc-desc">
             — {title}
@@ -102,7 +100,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
         type="button"
         aria-label={t("Chiudi")}
         title={t("Chiudi")}
-        className="flex h-full w-11 items-center justify-center text-vsc-fg hover:bg-[#e81123] hover:text-white focus-visible:bg-[#e81123] focus-visible:text-white"
+        className="flex h-full w-11 items-center justify-center text-vsc-titlebar-fg hover:bg-[#e81123] hover:text-white focus-visible:bg-[#e81123] focus-visible:text-white"
         onClick={() => {
           // Same path as the Windows button: the app asks first if something is open.
           act((w) => w.close());

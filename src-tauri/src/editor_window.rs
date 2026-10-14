@@ -92,7 +92,7 @@ const LOGO_256: &[u8] = include_bytes!("../../ui/src/assets/logo-256.png");
 
 /// The editor's name where VSCodium shows its own: window title, About
 /// (D-72). Merged by the workbench over its product, as `productConfiguration`.
-const PRODUCT: &str = r#"{"nameShort":"Dev-Kit","nameLong":"Dev-Kit"}"#;
+const PRODUCT: &str = r#"{"nameShort":"NEXKORA","nameLong":"NEXKORA"}"#;
 
 fn data_uri(png: &[u8]) -> String {
     use base64::Engine;
@@ -257,7 +257,7 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
         d.textContent = value;
         box.appendChild(d);
       }};
-      line("name", "Dev-Kit");
+      line("name", "NEXKORA");
       line("project", {project});
       line("tagline", text.tagline);
       const logo = w.querySelector(".letterpress");
@@ -359,7 +359,7 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
         max = label("Ingrandisci"),
         restore = label("Ripristina"),
         close = label("Chiudi"),
-        ext = label("Dev-Kit ha installato nuove estensioni: {0}. Riavvia le estensioni perché partano tutte."),
+        ext = label("NEXKORA ha installato nuove estensioni: {0}. Riavvia le estensioni perché partano tutte."),
         restart = label("Riavvia le estensioni"),
         later = label("Più tardi"),
         tagline = label("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella."),
@@ -565,7 +565,7 @@ pub fn open<R: Runtime>(
     let name = title.to_owned();
     let this = label.clone();
     let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::External(target))
-        .title(format!("{title} - Dev-Kit"))
+        .title(format!("{title} - NEXKORA"))
         .inner_size(1280.0, 820.0)
         .min_inner_size(640.0, 400.0)
         // The editor's title bar is the window's (D-69).

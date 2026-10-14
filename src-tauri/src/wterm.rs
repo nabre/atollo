@@ -240,7 +240,7 @@ fn merge(existing: &Map<String, Value>, kit: &Kit) -> Map<String, Value> {
     out.insert(
         "$help".into(),
         json!(
-            "Dev-Kit rewrites the Dev-Kit profiles and the VSCodium schemes before each console."
+            "NEXKORA rewrites the Dev-Kit profiles and the VSCodium schemes before each console."
         ),
     );
     out

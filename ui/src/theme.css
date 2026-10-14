@@ -1,122 +1,59 @@
 /*
- * VSCodium look for every window of the app (user request, 14/10/2026):
- * the colors of VSCodium's default themes "Dark Modern" and "Light Modern",
- * chosen from the Windows light/dark setting, and the Codicons icon set
- * (react-icons/vsc). Values to re-check against the theme files shipped in
- * the VSCodium server (extensions/theme-defaults/themes) in phase 3.
- * Accent (focus, buttons, selection, links) in Dev-Kit's brand blue, from
- * the icon (user request, 14/10/2026, D-72): #3B6CF0 keeps 4.5:1 with white
- * text; the icon's lighter #4F9DFE-#6684FB are for links on dark only.
+ * NEXKORA look for every window of the app (user request, 14/10/2026):
+ * VSCodium's layout and Codicons (react-icons/vsc), the neutral grays of its
+ * classic themes "Dark Modern" and "Light Modern" (chosen from the Windows
+ * light/dark setting), and the brand board's colors (brand.png, docs/brand/)
+ * only for the emphasis: focus, buttons, selection, links, the active page,
+ * what needs a choice. Every text color is checked at 4.5:1 or more on the
+ * backgrounds it sits on; the focus ring and the page indicator at 3:1.
+ *
+ *   Deep Forest #0F3D2E  Emerald #10B981  Soft Mint #D1F0E0
+ *   Burnt Orange #F97316  Warm Amber #FBBF24  Charcoal #111827  Cloud #F8FAFC
+ *
+ * On dark, emerald buttons carry near-black text (white on #10B981 is
+ * 2.5:1); on light, the buttons are a deeper emerald with white text.
+ * Orange marks what needs a choice, as the triangle in the logo's A.
  */
 @import "tailwindcss";
 
 :root {
   color-scheme: light dark;
-  --vsc-font: "Segoe WPC", "Segoe UI", system-ui, sans-serif;
-  --vsc-mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+  --vsc-font: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --vsc-mono: "JetBrains Mono Variable", "Cascadia Mono", Consolas, "Courier New", monospace;
+  --brand-forest: #0f3d2e;
+  --brand-emerald: #10b981;
+  --brand-mint: #d1f0e0;
+  --brand-orange: #f97316;
+  --brand-amber: #fbbf24;
+  --brand-charcoal: #111827;
+  --brand-cloud: #f8fafc;
 }
 
-/* Dark Modern */
+/* The colors of VSCodium's Dark Modern and Light Modern, key by key, with
+   the brand emphasis (generated: docs/brand/themes.py). */
+@import "./theme-colors.css";
+
+/* The brand covers (docs/brand/make.py). */
 :root,
 :root[data-theme="dark"] {
-  --vsc-bg: #1f1f1f;
-  --vsc-sidebar: #181818;
-  --vsc-activitybar: #181818;
-  --vsc-activitybar-fg: #d7d7d7;
-  --vsc-activitybar-inactive: #868686;
-  --vsc-activitybar-border: #3b6cf0;
-  --vsc-fg: #cccccc;
-  --vsc-desc: #9d9d9d;
-  --vsc-border: #2b2b2b;
-  --vsc-focus: #3b6cf0;
-  --vsc-button: #3b6cf0;
-  --vsc-button-hover: #3360db;
-  --vsc-button-fg: #ffffff;
-  --vsc-button2: #313131;
-  --vsc-button2-hover: #3c3c3c;
-  --vsc-button2-fg: #cccccc;
-  --vsc-input: #313131;
-  --vsc-input-border: #3c3c3c;
-  --vsc-list-hover: #2a2d2e;
-  --vsc-list-active: #1f2c5c;
-  --vsc-statusbar: #181818;
-  --vsc-statusbar-fg: #cccccc;
-  --vsc-badge: #616161;
-  --vsc-link: #6e9cff;
-  --vsc-error: #f85149;
-  --vsc-warning: #cca700;
-  /* charts.orange: a project needs a component that is not chosen. */
-  --vsc-orange: #d18616;
-  --vsc-success: #73c991;
+  --vsc-hero: url("./assets/brand/hero-dark.svg");
 }
-
-/* Light Modern */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --vsc-bg: #ffffff;
-    --vsc-sidebar: #f8f8f8;
-    --vsc-activitybar: #f8f8f8;
-    --vsc-activitybar-fg: #1f1f1f;
-    --vsc-activitybar-inactive: #616161;
-    --vsc-activitybar-border: #3b6cf0;
-    --vsc-fg: #3b3b3b;
-    --vsc-desc: #616161;
-    --vsc-border: #e5e5e5;
-    --vsc-focus: #3b6cf0;
-    --vsc-button: #3b6cf0;
-    --vsc-button-hover: #3360db;
-    --vsc-button-fg: #ffffff;
-    --vsc-button2: #e5e5e5;
-    --vsc-button2-hover: #cccccc;
-    --vsc-button2-fg: #3b3b3b;
-    --vsc-input: #ffffff;
-    --vsc-input-border: #cecece;
-    --vsc-list-hover: #f2f2f2;
-    --vsc-list-active: #e1e8fd;
-    --vsc-statusbar: #f8f8f8;
-    --vsc-statusbar-fg: #3b3b3b;
-    --vsc-badge: #cccccc;
-    --vsc-link: #3b6cf0;
-    /* Light Modern's #f85149 is under 4.5:1 on white: VS Code Light's error red. */
-    --vsc-error: #e51400;
-    --vsc-warning: #bf8803;
-    /* charts.orange #d18616 is under 4.5:1 on white: a darker orange. */
-    --vsc-orange: #b35c00;
-    --vsc-success: #388a34;
+    --vsc-hero: url("./assets/brand/hero-light.svg");
   }
 }
 
 @theme inline {
   --font-sans: var(--vsc-font);
   --font-mono: var(--vsc-mono);
-  --color-vsc-bg: var(--vsc-bg);
-  --color-vsc-sidebar: var(--vsc-sidebar);
-  --color-vsc-activitybar: var(--vsc-activitybar);
-  --color-vsc-activitybar-fg: var(--vsc-activitybar-fg);
-  --color-vsc-activitybar-inactive: var(--vsc-activitybar-inactive);
-  --color-vsc-activitybar-border: var(--vsc-activitybar-border);
-  --color-vsc-fg: var(--vsc-fg);
-  --color-vsc-desc: var(--vsc-desc);
-  --color-vsc-border: var(--vsc-border);
-  --color-vsc-focus: var(--vsc-focus);
-  --color-vsc-button: var(--vsc-button);
-  --color-vsc-button-hover: var(--vsc-button-hover);
-  --color-vsc-button-fg: var(--vsc-button-fg);
-  --color-vsc-button2: var(--vsc-button2);
-  --color-vsc-button2-hover: var(--vsc-button2-hover);
-  --color-vsc-button2-fg: var(--vsc-button2-fg);
-  --color-vsc-input: var(--vsc-input);
-  --color-vsc-input-border: var(--vsc-input-border);
-  --color-vsc-list-hover: var(--vsc-list-hover);
-  --color-vsc-list-active: var(--vsc-list-active);
-  --color-vsc-statusbar: var(--vsc-statusbar);
-  --color-vsc-statusbar-fg: var(--vsc-statusbar-fg);
-  --color-vsc-badge: var(--vsc-badge);
-  --color-vsc-link: var(--vsc-link);
-  --color-vsc-error: var(--vsc-error);
-  --color-vsc-warning: var(--vsc-warning);
-  --color-vsc-orange: var(--vsc-orange);
-  --color-vsc-success: var(--vsc-success);
+  --color-brand-forest: var(--brand-forest);
+  --color-brand-emerald: var(--brand-emerald);
+  --color-brand-mint: var(--brand-mint);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-charcoal: var(--brand-charcoal);
+  --color-brand-cloud: var(--brand-cloud);
 }
 
 html,
@@ -149,13 +86,38 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgb(121 121 121 / 0.4);
+  background: var(--vsc-scrollbar);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(100 100 100 / 0.7);
+  background: var(--vsc-scrollbar-hover);
 }
 ::-webkit-scrollbar-thumb:active {
-  background: rgb(191 191 191 / 0.4);
+  background: var(--vsc-scrollbar-active);
+}
+
+/* The brand cover, behind welcome and empty pages: content stays on the
+   left, the strokes rise on the right. */
+.bg-hero {
+  background:
+    var(--vsc-hero) center / cover no-repeat,
+    var(--vsc-bg);
+}
+
+/* Marks drawn twice, for light and for dark (brand.tsx). */
+.only-light {
+  display: none;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .only-light {
+    display: inline;
+  }
+  :root:not([data-theme="dark"]) .only-dark {
+    display: none;
+  }
+}
+
+::selection {
+  background: var(--vsc-selection);
 }
 
 /* Visible keyboard focus everywhere, as in VSCodium. */
@@ -165,14 +127,14 @@ body {
 }
 
 /* Text fields, lists and text areas, as VSCodium's inputs: 24px high,
-   a thin border that turns blue on focus. Width comes from utilities. */
+   a thin border that takes the focus color. Width comes from utilities. */
 @layer components {
   .input {
     height: 24px;
     border: 1px solid var(--vsc-input-border);
     border-radius: 2px;
     background: var(--vsc-input);
-    color: var(--vsc-fg);
+    color: var(--vsc-input-fg);
     padding: 0 6px;
     font: inherit;
     line-height: 22px;
@@ -185,7 +147,7 @@ body {
     resize: vertical;
   }
   .input::placeholder {
-    color: var(--vsc-desc);
+    color: var(--vsc-placeholder);
     opacity: 1;
   }
   .input:focus {
@@ -197,6 +159,8 @@ body {
     opacity: 0.5;
   }
   select.input {
+    border-color: var(--vsc-dropdown-border);
+    background-color: var(--vsc-dropdown);
     appearance: none;
     padding-right: 22px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.4'/%3E%3C/svg%3E");
@@ -205,8 +169,8 @@ body {
     background-size: 14px;
   }
   select.input option {
-    background: var(--vsc-input);
-    color: var(--vsc-fg);
+    background: var(--vsc-dropdown-list);
+    color: var(--vsc-input-fg);
   }
 }
 

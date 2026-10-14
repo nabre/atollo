@@ -117,7 +117,7 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
                 setCancelError(String(e));
               });
             }}
-            className="ml-auto rounded-sm bg-vsc-button2 px-2 py-0.5 text-[12px] text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover disabled:opacity-50"
+            className="ml-auto rounded-sm border border-vsc-button-border bg-vsc-button2 px-2 py-0.5 text-[12px] text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover disabled:opacity-50"
           >
             {snapshot.cancelling ? t("Annullamento…") : t("Annulla")}
           </button>
@@ -149,7 +149,7 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
                     aria-label={t("Download di {0}", step.name)}
                     className="mt-1 block h-0.5 w-full bg-vsc-border"
                   >
-                    <span className="block h-full bg-vsc-button" style={{ width: `${String(p)}%` }} />
+                    <span className="block h-full bg-vsc-progress" style={{ width: `${String(p)}%` }} />
                   </span>
                 )}
               </span>
