@@ -1,5 +1,15 @@
 # Novità
 
+## Contenuto dei database e pagine più chiare (15/10/2026)
+
+**Fatto**
+- **Contenuto dei server** (D-79): nella pagina Database ogni server avviato ha la scheda «Contenuto»: database, tabelle o collezioni con il numero di righe, e le righe 100 alla volta, in sola lettura. Connessione, impostazioni e file nella scheda «Dettagli».
+- **Click della pagina Database pronti**: elenco dei server, stato degli agenti e impostazioni dei server si leggono fuori dal thread della finestra (prima, ogni 3-5 secondi, la finestra restava ferma finché non rispondevano). L'esploratore non si chiude più se un controllo dello stato manca una volta.
+- SQLite non compare più fra i server: non ne ha uno. Stato dei server con il pallino colorato.
+- **Pagina Agenti**: limiti del piano in riquadri con percentuale e azzeramento, consumi di oggi e della settimana in riquadri, nuova sezione «Accesso» con «Esci»; nella lista il limite più usato di ogni agente.
+
+**Verificato**: test Rust di `db_browse` e test reale su MariaDB e MongoDB del kit di sviluppo (albero, righe, nome malevolo rifiutato); 23 test dell'interfaccia; anteprima nel browser in tema chiaro e scuro.
+
 ## Editor per progetto e niente avvisi del Firewall (14/10/2026)
 
 **Fatto**

@@ -699,6 +699,105 @@ export function serviceSet(id: ServiceInfo["id"], port: number | null, autostart
     : invoke<ServiceInfo[]>("service_set", { id, port, autostart });
 }
 
+// What is inside a running server, read only (src-tauri/src/db_browse.rs, D-79).
+
+export interface DbTable {
+  name: string;
+  /** Estimated; null for views or when the server does not say. */
+  rows: number | null;
+  view: boolean;
+}
+
+export interface DbDatabase {
+  name: string;
+  /** The server's own (mysql, information_schema, admin, local…). */
+  system: boolean;
+  tables: DbTable[];
+}
+
+export interface DbRows {
+  /** kind: MariaDB's column type, empty for MongoDB. */
+  columns: { name: string; kind: string }[];
+  /** JSON values; binary data as {"$bytes": n}, MongoDB's as Extended JSON. */
+  rows: unknown[][];
+  total: number;
+  offset: number;
+}
+
+/** Rows of one page (db_browse::PAGE). */
+export const DB_PAGE = 100;
+
+const SAMPLE_TREE: DbDatabase[] = [
+  {
+    name: "api_python",
+    system: false,
+    tables: [
+      { name: "orders", rows: 1240, view: false },
+      { name: "products", rows: 87, view: false },
+      { name: "users", rows: 3, view: false },
+      { name: "top_products", rows: null, view: true },
+    ],
+  },
+  { name: "sito_vetrina", system: false, tables: [] },
+  { name: "information_schema", system: true, tables: [{ name: "TABLES", rows: null, view: true }] },
+  { name: "mysql", system: true, tables: [{ name: "user", rows: 5, view: false }] },
+];
+
+function sampleRows(table: string, offset: number): DbRows {
+  const users = [
+    [1, "ada", "ada@example.com", "2026-10-01 09:12:00", null, { $bytes: 2048 }],
+    [2, "linus", "linus@example.com", "2026-10-03 18:40:12", "admin", null],
+    [3, "grace", "grace@example.com", "2026-10-14 07:05:55", "editor", { $bytes: 512 }],
+  ];
+  if (table === "users")
+    return {
+      columns: [
+        { name: "id", kind: "int(11)" },
+        { name: "name", kind: "varchar(64)" },
+        { name: "email", kind: "varchar(255)" },
+        { name: "created_at", kind: "datetime" },
+        { name: "role", kind: "varchar(16)" },
+        { name: "avatar", kind: "blob" },
+      ],
+      rows: users,
+      total: 3,
+      offset: 0,
+    };
+  const total = table === "orders" ? 1240 : 87;
+  const rows = Array.from({ length: Math.max(0, Math.min(DB_PAGE, total - offset)) }, (_, i) => [
+    offset + i + 1,
+    1 + ((offset + i) % 3),
+    Math.round((offset + i) * 7.3 * 100) / 100,
+    "2026-10-14",
+  ]);
+  return {
+    columns: [
+      { name: "id", kind: "int(11)" },
+      { name: "user_id", kind: "int(11)" },
+      { name: "total", kind: "decimal(10,2)" },
+      { name: "day", kind: "date" },
+    ],
+    rows,
+    total,
+    offset,
+  };
+}
+
+export function dbBrowseTree(engine: ServiceInfo["id"]): Promise<DbDatabase[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_TREE) : invoke<DbDatabase[]>("db_browse_tree", { engine });
+}
+
+export function dbBrowseRows(
+  engine: ServiceInfo["id"],
+  database: string,
+  table: string,
+  offset: number,
+): Promise<DbRows> {
+  return browserPreview
+    ? Promise.resolve(sampleRows(table, offset))
+    : invoke<DbRows>("db_browse_rows", { engine, database, table, offset });
+}
+
 // Git state and agent instructions of a project (src-tauri/src/projects.rs).
 
 export interface GitInfo {

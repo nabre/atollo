@@ -1,5 +1,6 @@
 // The Database page (DECISIONS.md D-73): the kit's MariaDB and MongoDB
-// servers, one for every project, on 127.0.0.1 only; SQLite needs no server.
+// servers, one for every project, on 127.0.0.1 only. SQLite needs no server:
+// it is a tool (Tools) and a section of the project's page, not listed here.
 // As the Extensions view: the servers in the side bar, the chosen one's
 // page in the editor.
 
@@ -23,17 +24,20 @@ import {
   type ServiceState,
 } from "./api";
 import { t } from "./i18n";
+import { DbBrowser } from "./dbbrowser";
 import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine } from "./pages";
 import {
   Button,
   CheckboxLabel,
+  Dot,
   EditorBody,
   EditorHeader,
   EditorSection,
   IconButton,
   List,
   ListItem,
+  NavBar,
   Notice,
   PaneStack,
   Properties,
@@ -55,15 +59,28 @@ function stateLabel(state: ServiceState): string {
   }
 }
 
-function stateColor(state: ServiceState): string {
+function stateTone(state: ServiceState): "ok" | "warn" | "err" | "off" {
   switch (state) {
     case "running":
-      return "text-vsc-success";
+      return "ok";
+    case "starting":
+      return "warn";
     case "error":
-      return "text-vsc-error";
+      return "err";
     default:
-      return "text-vsc-desc";
+      return "off";
   }
+}
+
+/** The state of a server with its dot, or "not installed". */
+function StateText({ s }: { s: ServiceInfo }) {
+  if (!s.installed) return <>{t("Non installato: si installa al primo avvio")}</>;
+  return (
+    <span className="flex items-center gap-1.5">
+      <Dot tone={stateTone(s.state)} />
+      {stateLabel(s.state)}
+    </span>
+  );
 }
 
 /** A password: hidden until shown, copied without showing it. */
@@ -124,6 +141,12 @@ function ServiceDetails({
   const portValue = Number(port);
   const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
   const portId = `port-${s.id}`;
+  const [section, setSection] = useState<"content" | "details">(s.state === "running" ? "content" : "details");
+  // The explorer stays while the server is on: a check that misses once
+  // ("starting" for a moment) must not close it and lose the table chosen.
+  const [browsable, setBrowsable] = useState(s.state === "running");
+  if (s.state === "running" && !browsable) setBrowsable(true);
+  if (!on && browsable) setBrowsable(false);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <EditorHeader
@@ -131,8 +154,8 @@ function ServiceDetails({
         title={s.name}
         titleId={`db-${s.id}`}
         meta={[
-          <span key="state" role="status" className={stateColor(s.state)}>
-            {s.installed ? stateLabel(s.state) : t("Non installato: si installa al primo avvio")}
+          <span key="state" role="status">
+            <StateText s={s} />
           </span>,
           <span key="addr" className="font-mono">
             127.0.0.1:{String(s.port)}
@@ -146,70 +169,90 @@ function ServiceDetails({
           )
         }
       />
-      <EditorBody narrow>
-        {s.state === "error" && s.message && (
-          <Notice tone="error">
-            <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap">{s.message}</pre>
-          </Notice>
-        )}
-        <EditorSection id={`db-conn-${s.id}`} title={t("Connessione")}>
-          <Properties
-            rows={[
-              [t("Stringa"), <SecretField value={s.url} label={t("la stringa di connessione")} />],
-
-              [
-                t("Password di {0}", s.user),
-                s.password ? (
-                  <SecretField value={s.password} label={t("la password di {0}", s.user)} />
-                ) : (
-                  <span className="text-vsc-desc">{t("Generata al primo avvio.")}</span>
-                ),
-              ],
-            ]}
-          />
-        </EditorSection>
-        <EditorSection id={`db-set-${s.id}`} title={t("Impostazioni")}>
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <label htmlFor={portId} className="block font-semibold">
-                {t("Porta")}
-              </label>
-              <p className="text-vsc-desc">
-                {portValid ? t("Vale dal prossimo avvio.") : t("Una porta fra 1024 e 65535.")}
-              </p>
-              <input
-                id={portId}
-                inputMode="numeric"
-                value={port}
-                onChange={(e) => {
-                  setPort(e.target.value.replace(/\D/g, ""));
-                }}
-                onBlur={() => {
-                  if (portValid && portValue !== s.port) onSet(portValue, s.autostart);
-                }}
-                aria-invalid={!portValid}
-                className="w-24 input font-mono"
-              />
-            </div>
-            <CheckboxLabel
-              checked={s.autostart}
-              onChange={(v) => {
-                onSet(portValid ? portValue : null, v);
-              }}
-            >
-              {t("Avvia con Atollo")}
-            </CheckboxLabel>
+      <NavBar
+        label={t("Sezioni del server")}
+        items={[
+          { id: "content", label: t("Contenuto") },
+          { id: "details", label: t("Dettagli") },
+        ]}
+        active={section}
+        onSelect={setSection}
+      />
+      {section === "content" &&
+        (browsable ? (
+          <DbBrowser engine={s.id} />
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-vsc-desc">
+            <p>{t("Avvia il server per vederne il contenuto.")}</p>
+            {!on && <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />}
           </div>
-        </EditorSection>
-        <EditorSection id={`db-files-${s.id}`} title={t("File")}>
-          <Properties
-            rows={[
-              [t("Dati"), <code className="font-mono text-[12px] break-all select-text">{s.dataDir}</code>],
-              [t("Log"), <code className="font-mono text-[12px] break-all select-text">{s.log}</code>],
-            ]}
-          />
-        </EditorSection>
-      </EditorBody>
+        ))}
+      {section === "details" && (
+        <EditorBody narrow>
+          {s.state === "error" && s.message && (
+            <Notice tone="error">
+              <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap">{s.message}</pre>
+            </Notice>
+          )}
+          <EditorSection id={`db-conn-${s.id}`} title={t("Connessione")}>
+            <Properties
+              rows={[
+                [t("Stringa"), <SecretField value={s.url} label={t("la stringa di connessione")} />],
+
+                [
+                  t("Password di {0}", s.user),
+                  s.password ? (
+                    <SecretField value={s.password} label={t("la password di {0}", s.user)} />
+                  ) : (
+                    <span className="text-vsc-desc">{t("Generata al primo avvio.")}</span>
+                  ),
+                ],
+              ]}
+            />
+          </EditorSection>
+          <EditorSection id={`db-set-${s.id}`} title={t("Impostazioni")}>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label htmlFor={portId} className="block font-semibold">
+                  {t("Porta")}
+                </label>
+                <p className="text-vsc-desc">
+                  {portValid ? t("Vale dal prossimo avvio.") : t("Una porta fra 1024 e 65535.")}
+                </p>
+                <input
+                  id={portId}
+                  inputMode="numeric"
+                  value={port}
+                  onChange={(e) => {
+                    setPort(e.target.value.replace(/\D/g, ""));
+                  }}
+                  onBlur={() => {
+                    if (portValid && portValue !== s.port) onSet(portValue, s.autostart);
+                  }}
+                  aria-invalid={!portValid}
+                  className="w-24 input font-mono"
+                />
+              </div>
+              <CheckboxLabel
+                checked={s.autostart}
+                onChange={(v) => {
+                  onSet(portValid ? portValue : null, v);
+                }}
+              >
+                {t("Avvia con Atollo")}
+              </CheckboxLabel>
+            </div>
+          </EditorSection>
+          <EditorSection id={`db-files-${s.id}`} title={t("File")}>
+            <Properties
+              rows={[
+                [t("Dati"), <code className="font-mono text-[12px] break-all select-text">{s.dataDir}</code>],
+                [t("Log"), <code className="font-mono text-[12px] break-all select-text">{s.log}</code>],
+              ]}
+            />
+          </EditorSection>
+        </EditorBody>
+      )}
     </div>
   );
 }
@@ -247,8 +290,9 @@ export function DatabasesPage() {
       },
     );
   };
-  const current = chosen ?? list?.[0]?.id ?? "sqlite";
+  const current = chosen ?? list?.[0]?.id;
   const service = list?.find((s) => s.id === current);
+  const running = (list ?? []).filter((s) => s.state === "running").length;
 
   const side = (
     <>
@@ -272,6 +316,7 @@ export function DatabasesPage() {
           first
           fill
           title={t("Server")}
+          badge={running > 0 ? running : undefined}
           expanded={listOpen}
           onToggle={() => {
             setListOpen(!listOpen);
@@ -289,7 +334,7 @@ export function DatabasesPage() {
                     icon={<ComponentLogo id={s.id} size={32} />}
                     name={s.name}
                     meta={`:${String(s.port)}`}
-                    description={s.installed ? stateLabel(s.state) : t("Non installato: si installa al primo avvio")}
+                    description={<StateText s={s} />}
                     footer={s.autostart ? t("Avvia con Atollo") : undefined}
                     selected={current === s.id}
                     onSelect={() => {
@@ -310,15 +355,6 @@ export function DatabasesPage() {
                   />
                 );
               })}
-              <ListItem
-                icon={<ComponentLogo id="sqlite" size={32} />}
-                name="SQLite"
-                description={t("Nessun server: un file del progetto")}
-                selected={current === "sqlite"}
-                onSelect={() => {
-                  setChosen("sqlite");
-                }}
-              />
             </List>
           )}
         </ViewPane>
@@ -348,16 +384,7 @@ export function DatabasesPage() {
           }}
         />
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <EditorHeader
-            icon={<ComponentLogo id="sqlite" size={56} />}
-            title="SQLite"
-            titleId="db-sqlite"
-            description={t(
-              "Nessun server: il database è un file del progetto. Nel terminale del kit c'è sqlite3; si installa da Strumenti.",
-            )}
-          />
-        </div>
+        <div className="flex-1 p-5 text-vsc-desc">{list === null ? t("Caricamento…") : null}</div>
       )}
       <p className="shrink-0 border-t border-vsc-border px-5 py-2 text-[12px] text-vsc-desc">
         {t(

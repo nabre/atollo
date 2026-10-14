@@ -4,8 +4,17 @@
 // sign-out. Launch happens only in a project. Instructions, skills and MCP
 // servers are shared by the three (data\agents, aligned by the app).
 import { useCallback, useEffect, useState } from "react";
-import { VscFolderOpened, VscHubot, VscRefresh, VscWarning } from "react-icons/vsc";
-import { agentLaunch, agentSignOut, agentsStatus, folderOpen, type AgentId, type AgentInfo } from "./api";
+import { VscFolderOpened, VscHubot, VscRefresh, VscSignOut, VscWarning } from "react-icons/vsc";
+import {
+  agentLaunch,
+  agentSignOut,
+  agentsStatus,
+  folderOpen,
+  type AgentId,
+  type AgentInfo,
+  type AgentStats,
+  type Level,
+} from "./api";
 import { rich, t } from "./i18n";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { ComponentLogo } from "./logos";
@@ -49,6 +58,30 @@ export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } 
 function signInText(a: AgentInfo): string {
   if (!a.signedIn) return t("accesso non fatto: si fa al primo avvio dell'agente");
   return a.signInKind === "api key" ? t("accesso con chiave API") : t("accesso fatto");
+}
+
+const TONE: Record<Level, "ok" | "warn" | "err" | "off"> = { none: "off", ok: "ok", warning: "warn", critical: "err" };
+
+/** The footer of an agent's row: running, and its most used limit. */
+function AgentFooter({ agent, stats }: { agent: AgentInfo; stats: AgentStats | undefined }) {
+  const peak = stats?.peak ?? null;
+  if (!agent.running && peak === null) return null;
+  return (
+    <span className="flex items-center gap-2">
+      {agent.running && (
+        <span className="flex items-center gap-1">
+          <Dot tone="ok" />
+          {t("in esecuzione")}
+        </span>
+      )}
+      {peak !== null && stats && (
+        <span className="flex items-center gap-1 tabular-nums">
+          <Dot tone={TONE[stats.level]} />
+          {stats.peakLabel ? `${stats.peakLabel} ${String(peak)}%` : `${String(peak)}%`}
+        </span>
+      )}
+    </span>
+  );
 }
 
 export function AgentsPage() {
@@ -114,7 +147,7 @@ export function AgentsPage() {
                   name={a.name}
                   meta={a.version ?? undefined}
                   description={signInText(a)}
-                  footer={a.running ? t("in esecuzione") : undefined}
+                  footer={<AgentFooter agent={a} stats={stats.report?.agents.find((x) => x.id === a.id)} />}
                   selected={agent?.id === a.id}
                   onSelect={() => {
                     setChosen(a.id);
@@ -149,47 +182,59 @@ export function AgentsPage() {
               </span>,
             ]}
             description={t("Gli agenti si aprono sempre nella cartella di un progetto, dalla pagina Progetti.")}
-            actions={
-              agent.signedIn &&
-              agent.signInKind !== "api key" &&
-              (confirm === agent.id ? (
-                <>
-                  <span>{t("Togliere l'accesso salvato nel kit?")}</span>
-                  <ActionButton
-                    icon={VscWarning}
-                    label={t("Esci")}
-                    primary
-                    busy={busy === `out:${agent.id}`}
-                    onClick={() => {
-                      setConfirm(null);
-                      run(`out:${agent.id}`, () => agentSignOut(agent.id));
-                    }}
-                  />
-                  <ActionButton
-                    icon={VscWarning}
-                    label={t("Annulla")}
-                    onClick={() => {
-                      setConfirm(null);
-                    }}
-                  />
-                </>
-              ) : (
-                <ActionButton
-                  icon={VscWarning}
-                  label={t("Esci")}
-                  disabled={agent.running}
-                  title={agent.running ? t("Chiudi prima l'agente") : t("Toglie l'accesso salvato nel kit")}
-                  onClick={() => {
-                    setConfirm(agent.id);
-                  }}
-                />
-              ))
-            }
           />
           <EditorBody narrow>
             <ErrorLine error={stats.error ?? error} />
             <EditorSection id="agent-usage" title={t("Limiti e consumi")}>
               {st ? <AgentUsage stats={st} /> : <p className="text-vsc-desc">{t("Caricamento…")}</p>}
+            </EditorSection>
+            <EditorSection id="agent-account" title={t("Accesso")}>
+              <p className="flex items-center gap-2">
+                <Dot tone={agent.signedIn ? "ok" : "off"} />
+                {signInText(agent)}
+              </p>
+              {agent.signedIn && agent.signInKind !== "api key" && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {confirm === agent.id ? (
+                    <>
+                      <span>{t("Togliere l'accesso salvato nel kit?")}</span>
+                      <ActionButton
+                        icon={VscSignOut}
+                        label={t("Esci")}
+                        primary
+                        busy={busy === `out:${agent.id}`}
+                        onClick={() => {
+                          setConfirm(null);
+                          run(`out:${agent.id}`, () => agentSignOut(agent.id));
+                        }}
+                      />
+                      <Button
+                        onClick={() => {
+                          setConfirm(null);
+                        }}
+                      >
+                        {t("Annulla")}
+                      </Button>
+                    </>
+                  ) : (
+                    <ActionButton
+                      icon={VscSignOut}
+                      label={t("Esci")}
+                      disabled={agent.running}
+                      title={agent.running ? t("Chiudi prima l'agente") : t("Toglie l'accesso salvato nel kit")}
+                      onClick={() => {
+                        setConfirm(agent.id);
+                      }}
+                    />
+                  )}
+                  {agent.running && <span className="text-[12px] text-vsc-desc">{t("Chiudi prima l'agente")}</span>}
+                </div>
+              )}
+              <Notice tone="info" className="text-[12px] text-vsc-desc">
+                {t(
+                  "Uscire dal kit non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account.",
+                )}
+              </Notice>
             </EditorSection>
             <EditorSection id="agent-shared" title={t("Condiviso fra gli agenti")}>
               <p>
@@ -210,11 +255,6 @@ export function AgentsPage() {
                 {t("Apri la cartella condivisa")}
               </Button>
             </EditorSection>
-            <Notice tone="info" className="text-[12px] text-vsc-desc">
-              {t(
-                "Uscire dal kit non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account.",
-              )}
-            </Notice>
           </EditorBody>
         </div>
       ) : (

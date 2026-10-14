@@ -536,13 +536,19 @@ pub fn setup_cancel<R: Runtime>(
     Ok(())
 }
 
+/// Async, so off the window's thread: the page asks every few seconds and
+/// the processes and sign-ins take a moment (a sync command would hold the
+/// window's clicks meanwhile).
 #[tauri::command]
-pub fn agents_status<R: Runtime>(
+pub async fn agents_status<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
 ) -> Result<Vec<crate::agents::AgentInfo>, String> {
     ensure_main(&webview)?;
-    Ok(crate::agents::status(&state.kit, &state.env()))
+    let (kit, env) = (state.kit.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || crate::agents::status(&kit, &env))
+        .await
+        .map_err(|e| fail("agents", e))
 }
 
 /// Plan limits and usage of the installed agents (`stats.rs`). `force`:
@@ -1334,14 +1340,19 @@ pub async fn project_db_restore<R: Runtime>(
     .map_err(|e| fail("restore", e))?
 }
 
-/// The database servers (D-73).
+/// The database servers (D-73). Async, so off the window's thread: the
+/// pages ask every few seconds and a server that does not answer yet takes
+/// up to 0.8 s (a sync command would hold the window's clicks meanwhile).
 #[tauri::command]
-pub fn services_list<R: Runtime>(
+pub async fn services_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
 ) -> Result<Vec<crate::services::ServiceInfo>, String> {
     ensure_main(&webview)?;
-    Ok(state.services.list())
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || services.list())
+        .await
+        .map_err(|e| fail("service", e))
 }
 
 /// Starts a database server, installing it first if needed; waits until it
@@ -1396,7 +1407,7 @@ pub async fn service_stop<R: Runtime>(
 /// Port (null: the default) and "start with Atollo" of a server; the port
 /// applies at the next start.
 #[tauri::command]
-pub fn service_set<R: Runtime>(
+pub async fn service_set<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
@@ -1404,11 +1415,58 @@ pub fn service_set<R: Runtime>(
     autostart: bool,
 ) -> Result<Vec<crate::services::ServiceInfo>, String> {
     ensure_main(&webview)?;
-    state
-        .services
-        .set(&id, port, autostart)
-        .map_err(|e| fail("service", format!("{e:#}")))?;
-    Ok(state.services.list())
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        services
+            .set(&id, port, autostart)
+            .map_err(|e| fail("service", format!("{e:#}")))?;
+        Ok(services.list())
+    })
+    .await
+    .map_err(|e| fail("service", e))?
+}
+
+/// The databases of a running server with their tables or collections
+/// (D-79), read only.
+#[tauri::command]
+pub async fn db_browse_tree<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    engine: String,
+) -> Result<Vec<crate::db_browse::Database>, String> {
+    ensure_main(&webview)?;
+    if !crate::services::SERVERS.contains(&engine.as_str()) {
+        return Err(fail("browse", format!("unknown server {engine}")));
+    }
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::db_browse::tree(&services, &engine).map_err(|e| fail("browse", format!("{e:#}")))
+    })
+    .await
+    .map_err(|e| fail("browse", e))?
+}
+
+/// One page of rows of a table or collection, from `offset` (D-79).
+#[tauri::command]
+pub async fn db_browse_rows<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    engine: String,
+    database: String,
+    table: String,
+    offset: u64,
+) -> Result<crate::db_browse::Rows, String> {
+    ensure_main(&webview)?;
+    if !crate::services::SERVERS.contains(&engine.as_str()) {
+        return Err(fail("browse", format!("unknown server {engine}")));
+    }
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::db_browse::rows(&services, &engine, &database, &table, offset)
+            .map_err(|e| fail("browse", format!("{e:#}")))
+    })
+    .await
+    .map_err(|e| fail("browse", e))?
 }
 
 #[tauri::command]
@@ -1814,6 +1872,8 @@ macro_rules! command_handler {
             $crate::commands::service_start,
             $crate::commands::service_stop,
             $crate::commands::service_set,
+            $crate::commands::db_browse_tree,
+            $crate::commands::db_browse_rows,
             $crate::commands::run_list,
             $crate::commands::run_start,
             $crate::commands::run_stop,

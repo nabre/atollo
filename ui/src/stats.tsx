@@ -90,13 +90,25 @@ export function relative(ms: number, now = Date.now()): string {
   return f.format(Math.round(s / 86400), "day");
 }
 
+const TEXT: Record<Level, string> = {
+  none: "",
+  ok: "",
+  warning: "text-vsc-warning",
+  critical: "text-vsc-error",
+};
+
 function LimitBar({ w }: { w: LimitWindow }) {
   const p = w.percent ?? 0;
   return (
-    <li className="grid grid-cols-[minmax(8rem,14rem)_1fr_3.5rem] items-center gap-2 text-[12px]">
-      <span className="truncate" title={w.label}>
-        {w.label}
-      </span>
+    <li className="space-y-1 rounded border border-vsc-border px-3 py-2 text-[12px]">
+      <div className="flex items-baseline gap-2">
+        <span className="min-w-0 flex-1 truncate" title={w.label}>
+          {w.label}
+        </span>
+        <span className={`text-[16px] font-semibold tabular-nums ${TEXT[w.level]}`}>
+          {w.percent === null ? "—" : `${String(p)}%`}
+        </span>
+      </div>
       <span
         role="meter"
         aria-label={w.label}
@@ -104,17 +116,27 @@ function LimitBar({ w }: { w: LimitWindow }) {
         aria-valuemax={100}
         aria-valuenow={p}
         aria-valuetext={t("{0}% usato", String(p))}
-        className="h-2 overflow-hidden rounded-sm bg-vsc-input"
+        className="block h-1.5 overflow-hidden rounded-full bg-vsc-border"
       >
-        <span className={`block h-full ${BAR[w.level]}`} style={{ width: `${String(p)}%` }} />
+        <span className={`block h-full rounded-full ${BAR[w.level]}`} style={{ width: `${String(p)}%` }} />
       </span>
-      <span className="text-right tabular-nums">{w.percent === null ? "—" : `${String(p)}%`}</span>
-      {w.resetsAt !== null && (
-        <span className="col-start-2 col-end-4 -mt-1 text-[11px] text-vsc-desc">
-          {t("si azzera {0}", relative(w.resetsAt))}
-        </span>
-      )}
+      <p className="h-4 text-[11px] text-vsc-desc">{w.resetsAt !== null && t("si azzera {0}", relative(w.resetsAt))}</p>
     </li>
+  );
+}
+
+/** A figure with its label, as a tile: the big number, today; the week under it. */
+function Tile({ label, today, week, title }: { label: string; today: string; week: string; title?: string }) {
+  return (
+    <div className="min-w-28 rounded border border-vsc-border px-3 py-2" title={title}>
+      <p className="text-[11px] text-vsc-desc">
+        {label} · {t("Oggi")}
+      </p>
+      <p className="text-[16px] font-semibold tabular-nums">{today}</p>
+      <p className="text-[11px] text-vsc-desc tabular-nums">
+        {t("7 giorni")}: {week}
+      </p>
+    </div>
   );
 }
 
@@ -123,64 +145,44 @@ function UsageView({ u }: { u: Usage }) {
   const weekday = new Intl.DateTimeFormat(locale(), { weekday: "short" });
   const models = Object.entries(u.models).sort((a, b) => b[1] - a[1]);
   return (
-    <div className="flex flex-wrap items-end gap-x-6 gap-y-2 text-[12px]">
-      <table className="text-left tabular-nums">
-        <caption className="sr-only">{t("Consumi")}</caption>
-        <thead className="text-vsc-desc">
-          <tr>
-            <td />
-            <th scope="col" className="px-2 font-normal">
-              {t("Oggi")}
-            </th>
-            <th scope="col" className="px-2 font-normal">
-              {t("7 giorni")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {u.tokens && (
-            <tr>
-              <th scope="row" className="pr-2 font-normal text-vsc-desc">
-                {t("Token")}
-              </th>
-              <td className="px-2" title={detail(u.today)}>
-                {count(u.today.total)}
-              </td>
-              <td className="px-2" title={detail(u.week)}>
-                {count(u.week.total)}
-              </td>
-            </tr>
-          )}
-          <tr>
-            <th scope="row" className="pr-2 font-normal text-vsc-desc">
-              {t("Sessioni")}
-            </th>
-            <td className="px-2">{u.sessionsToday}</td>
-            <td className="px-2">{u.sessionsWeek}</td>
-          </tr>
-        </tbody>
-      </table>
-      <figure className="flex items-end gap-1" aria-label={u.tokens ? t("Token per giorno") : t("Sessioni per giorno")}>
-        {u.days.map((d) => {
-          const v = u.tokens ? d.total : d.sessions;
-          const day = weekday.format(new Date(d.start));
-          return (
-            <span
-              key={d.start}
-              className="flex flex-col items-center gap-0.5"
-              title={`${day}: ${u.tokens ? count(v) : String(v)}`}
-            >
-              <span className="flex h-10 w-3 items-end rounded-sm bg-vsc-input">
-                <span
-                  className="block w-full rounded-sm bg-vsc-button"
-                  style={{ height: `${String((v / max) * 100)}%` }}
-                />
+    <div className="space-y-2 text-[12px]">
+      <span className="font-medium">{t("Consumi")}</span>
+      <div className="flex flex-wrap items-stretch gap-2">
+        {u.tokens && (
+          <Tile
+            label={t("Token")}
+            today={count(u.today.total)}
+            week={count(u.week.total)}
+            title={`${t("Oggi")}: ${detail(u.today)}
+${t("7 giorni")}: ${detail(u.week)}`}
+          />
+        )}
+        <Tile label={t("Sessioni")} today={String(u.sessionsToday)} week={String(u.sessionsWeek)} />
+        <figure
+          className="m-0 flex items-end gap-1.5 rounded border border-vsc-border px-3 py-2"
+          aria-label={u.tokens ? t("Token per giorno") : t("Sessioni per giorno")}
+        >
+          {u.days.map((d) => {
+            const v = u.tokens ? d.total : d.sessions;
+            const day = weekday.format(new Date(d.start));
+            return (
+              <span
+                key={d.start}
+                className="flex flex-col items-center gap-0.5"
+                title={`${day}: ${u.tokens ? count(v) : String(v)}`}
+              >
+                <span className="flex h-11 w-3.5 items-end rounded-sm bg-vsc-input">
+                  <span
+                    className="block w-full rounded-sm bg-vsc-button"
+                    style={{ height: `${String((v / max) * 100)}%` }}
+                  />
+                </span>
+                <span className="text-[10px] text-vsc-desc">{day}</span>
               </span>
-              <span className="text-[10px] text-vsc-desc">{day}</span>
-            </span>
-          );
-        })}
-      </figure>
+            );
+          })}
+        </figure>
+      </div>
       <div className="text-vsc-desc">
         {u.last !== null && <p>{t("Ultima attività {0}", relative(u.last))}</p>}
         {models.length > 0 && (
@@ -201,45 +203,49 @@ function UsageView({ u }: { u: Usage }) {
 export function AgentUsage({ stats: s }: { stats: AgentStats }) {
   const l = s.limits;
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 text-[12px] text-vsc-desc">
-        <span className="font-medium text-vsc-fg">{t("Limiti del piano")}</span>
-        {l.plan && <Badge>{l.plan}</Badge>}
-        {l.source && <span>· {l.source}</span>}
-        {l.updated !== null && <span>· {t("letti {0}", relative(l.updated))}</span>}
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2 text-[12px] text-vsc-desc">
+          <span className="font-medium text-vsc-fg">{t("Limiti del piano")}</span>
+          {l.plan && <Badge>{l.plan}</Badge>}
+          {l.source && <span>· {l.source}</span>}
+          {l.updated !== null && <span>· {t("letti {0}", relative(l.updated))}</span>}
+        </div>
+        {l.error && (
+          <p className="flex items-center gap-2 text-[12px] text-vsc-desc">
+            <VscWarning size={14} aria-hidden="true" className="shrink-0 text-vsc-warning" />
+            <span className="select-text">{l.error}</span>
+          </p>
+        )}
+        {l.note && <p className="text-[12px] text-vsc-desc">{l.note}</p>}
+        {l.limited && l.retryAt !== null && (
+          <p className="text-[12px] text-vsc-desc">
+            {t("Il server chiede di aspettare: nuova lettura {0}.", relative(l.retryAt))}
+          </p>
+        )}
+        {l.windows.length > 0 && (
+          <ul className="m-0 grid max-w-2xl list-none grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2 p-0">
+            {l.windows.map((w) => (
+              <LimitBar key={w.label} w={w} />
+            ))}
+          </ul>
+        )}
+        {l.credits && (
+          <p className="text-[12px]">
+            {t(
+              "Crediti extra: {0} di {1}",
+              new Intl.NumberFormat(locale(), { style: "currency", currency: l.credits.currency }).format(
+                l.credits.used,
+              ),
+              l.credits.limit === null
+                ? "—"
+                : new Intl.NumberFormat(locale(), { style: "currency", currency: l.credits.currency }).format(
+                    l.credits.limit,
+                  ),
+            )}
+          </p>
+        )}
       </div>
-      {l.error && (
-        <p className="flex items-center gap-2 text-[12px] text-vsc-desc">
-          <VscWarning size={14} aria-hidden="true" className="shrink-0 text-vsc-warning" />
-          <span className="select-text">{l.error}</span>
-        </p>
-      )}
-      {l.note && <p className="text-[12px] text-vsc-desc">{l.note}</p>}
-      {l.limited && l.retryAt !== null && (
-        <p className="text-[12px] text-vsc-desc">
-          {t("Il server chiede di aspettare: nuova lettura {0}.", relative(l.retryAt))}
-        </p>
-      )}
-      {l.windows.length > 0 && (
-        <ul className="max-w-xl space-y-2">
-          {l.windows.map((w) => (
-            <LimitBar key={w.label} w={w} />
-          ))}
-        </ul>
-      )}
-      {l.credits && (
-        <p className="text-[12px]">
-          {t(
-            "Crediti extra: {0} di {1}",
-            new Intl.NumberFormat(locale(), { style: "currency", currency: l.credits.currency }).format(l.credits.used),
-            l.credits.limit === null
-              ? "—"
-              : new Intl.NumberFormat(locale(), { style: "currency", currency: l.credits.currency }).format(
-                  l.credits.limit,
-                ),
-          )}
-        </p>
-      )}
       <UsageView u={s.usage} />
     </div>
   );

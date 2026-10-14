@@ -225,6 +225,18 @@
           "markdownDescription": "Enables the components_list command without any pre-configured scope."
         },
         {
+          "description": "Enables the db_browse_rows command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-db-browse-rows",
+          "markdownDescription": "Enables the db_browse_rows command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the db_browse_tree command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-db-browse-tree",
+          "markdownDescription": "Enables the db_browse_tree command without any pre-configured scope."
+        },
+        {
           "description": "Enables the editor_open command without any pre-configured scope.",
           "type": "string",
           "const": "allow-editor-open",
@@ -619,6 +631,18 @@
           "type": "string",
           "const": "deny-components-list",
           "markdownDescription": "Denies the components_list command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the db_browse_rows command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-db-browse-rows",
+          "markdownDescription": "Denies the db_browse_rows command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the db_browse_tree command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-db-browse-tree",
+          "markdownDescription": "Denies the db_browse_tree command without any pre-configured scope."
         },
         {
           "description": "Denies the editor_open command without any pre-configured scope.",

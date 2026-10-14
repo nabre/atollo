@@ -56,6 +56,8 @@ const COMMANDS: &[&str] = &[
     "service_start",
     "service_stop",
     "service_set",
+    "db_browse_tree",
+    "db_browse_rows",
     "run_list",
     "run_start",
     "run_stop",
