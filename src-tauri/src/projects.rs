@@ -326,18 +326,58 @@ fn lexical(path: &Path) -> Option<PathBuf> {
     Some(out)
 }
 
+/// A symbolic link or a junction (reparse point), seen without following it.
+fn is_reparse(meta: &fs::Metadata) -> bool {
+    use std::os::windows::fs::MetadataExt;
+    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+    meta.file_type().is_symlink() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+}
+
+/// No link or junction from `root` down to `path`: a link to `\\server\…`
+/// would get past the text checks below (security review). Each step is
+/// looked at with `symlink_metadata`, which never follows a link; a step
+/// that does not exist ends the walk (nothing behind it can be read).
+fn no_links(root: &Path, path: &Path) -> bool {
+    let Ok(rest) = path.strip_prefix(root) else {
+        return false;
+    };
+    let mut cur = root.to_path_buf();
+    for c in rest.components() {
+        cur.push(c);
+        match fs::symlink_metadata(&cur) {
+            Ok(m) if is_reparse(&m) => return false,
+            Ok(_) => {}
+            Err(_) => return true,
+        }
+    }
+    true
+}
+
+/// A file of the repository, read only when it is inside `root` and no link
+/// leads to it.
+fn read_plain(root: &Path, path: &Path) -> Option<String> {
+    let path = lexical(path)?;
+    if !path.starts_with(root) || !no_links(root, &path) {
+        return None;
+    }
+    fs::read_to_string(path).ok()
+}
+
 /// `.git` of `dir`: the folder, or the one a `.git` file points to
 /// (worktrees, submodules), only inside `root` (the kit's projects). A
 /// cloned repository chooses that text: a `\\server\share` there would make
 /// Windows send the user's NTLM credentials to that server as soon as the
 /// path is opened (security review, 14/10/2026), so it is checked as text
-/// before anything is read.
+/// before anything is read, and no link may lead there.
 fn git_dir(dir: &Path, root: &Path) -> Option<PathBuf> {
-    let dot = dir.join(".git");
+    let dot = lexical(&dir.join(".git"))?;
+    if !dot.starts_with(root) || !no_links(root, &dot) {
+        return None;
+    }
     if dot.is_dir() {
         return Some(dot);
     }
-    let text = fs::read_to_string(&dot).ok()?;
+    let text = read_plain(root, &dot)?;
     let target = text.trim().strip_prefix("gitdir:")?.trim();
     // Relative, or `X:\...`: no UNC, device (`\\?\`, `\\.\`) or stream path.
     let drive = target.len() > 2
@@ -349,8 +389,10 @@ fn git_dir(dir: &Path, root: &Path) -> Option<PathBuf> {
         return None;
     }
     let path = lexical(&dir.join(target))?;
-    let root = lexical(root)?;
-    if !path.starts_with(&root) || path.to_string_lossy().starts_with(r"\\") {
+    if !path.starts_with(root)
+        || path.to_string_lossy().starts_with(r"\\")
+        || !no_links(root, &path)
+    {
         return None;
     }
     path.is_dir().then_some(path)
@@ -376,12 +418,11 @@ fn config_value(config: &str, section: &str, key: &str) -> Option<String> {
 }
 
 /// The commit of `reference` (`refs/heads/main`), loose or packed.
-fn ref_commit(git: &Path, reference: &str) -> Option<String> {
-    if let Ok(text) = fs::read_to_string(git.join(reference)) {
+fn ref_commit(root: &Path, git: &Path, reference: &str) -> Option<String> {
+    if let Some(text) = read_plain(root, &git.join(reference)) {
         return Some(text.trim().to_owned());
     }
-    fs::read_to_string(git.join("packed-refs"))
-        .ok()?
+    read_plain(root, &git.join("packed-refs"))?
         .lines()
         .find_map(|l| {
             let (sha, name) = l.split_once(' ')?;
@@ -390,13 +431,14 @@ fn ref_commit(git: &Path, reference: &str) -> Option<String> {
 }
 
 pub fn git_info(dir: &Path, root: &Path) -> Option<GitInfo> {
+    let root = &lexical(root)?;
     let git = git_dir(dir, root)?;
-    let head = fs::read_to_string(git.join("HEAD")).ok()?;
+    let head = read_plain(root, &git.join("HEAD"))?;
     let branch = head
         .trim()
         .strip_prefix("ref: refs/heads/")
         .map(str::to_owned);
-    let config = fs::read_to_string(git.join("config")).unwrap_or_default();
+    let config = read_plain(root, &git.join("config")).unwrap_or_default();
     let remote = config_value(&config, "[remote \"origin\"]", "url");
     let (upstream, synced) = match &branch {
         Some(b) => {
@@ -408,8 +450,8 @@ pub fn git_info(dir: &Path, root: &Path) -> Option<GitInfo> {
                 merge.as_deref().and_then(|m| m.strip_prefix("refs/heads/")),
             ) {
                 (Some(r), Some(m)) => {
-                    let local = ref_commit(&git, &format!("refs/heads/{b}"));
-                    let theirs = ref_commit(&git, &format!("refs/remotes/{r}/{m}"));
+                    let local = ref_commit(root, &git, &format!("refs/heads/{b}"));
+                    let theirs = ref_commit(root, &git, &format!("refs/remotes/{r}/{m}"));
                     let synced = match (local, theirs) {
                         (Some(a), Some(b)) => Some(a == b),
                         _ => None,
@@ -515,6 +557,20 @@ mod tests {
             fs::write(wt.join(".git"), bad).unwrap();
             assert!(git_info(&wt, &tmp.0).is_none(), "{bad}");
         }
+        // A junction (no admin rights needed) is never followed, whatever
+        // it points to: here the real repository of `p`.
+        let linked = tmp.0.join("linked");
+        fs::create_dir_all(&linked).unwrap();
+        let status = std::process::Command::new("cmd")
+            .args(["/d", "/c", "mklink", "/J"])
+            .arg(linked.join(".git"))
+            .arg(&g)
+            .stdout(std::process::Stdio::null())
+            .status()
+            .unwrap();
+        assert!(status.success(), "mklink /J");
+        assert!(git_dir(&linked, &tmp.0).is_none(), "junction .git refused");
+        assert!(git_info(&linked, &tmp.0).is_none());
     }
 
     #[test]
