@@ -38,7 +38,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `cc` | C, C++ (llvm-mingw) | no | 720 | | |
 | | `ruby` | Ruby | no | 270 | | |
 | | `r` | R (conda-forge) | no | 1100 | | solo x64: non disponibile sui kit ARM64 (`noArm64`) |
-| | `terminal` | Windows Terminal | sì | 45 | `pwsh` | **nuovo**; il terminale del kit per le console fuori dall'editor (DECISIONS.md D-68); la console classica di Windows resta nelle Impostazioni |
+| legati a un sistema operativo (`os`) | `terminal` | Windows Terminal | sì | 45 | `pwsh` | **nuovo**; il terminale del kit per le console fuori dall'editor (DECISIONS.md D-68); la console classica di Windows resta nelle Impostazioni |
 
 I gruppi, i predefiniti e le dimensioni sono quelli di `components.json`. Proposta del primo avvio: obbligatori, editor, tre agenti, Python, PHP, Apache, più Git che arriva con GitHub CLI (e con Claude Code): più Windows Terminal: circa 1,9 GB (1890 MB, di cui 250 dell'editor).
 

@@ -261,5 +261,11 @@
   "{0} eliminato da GitHub. La copia locale resta in projects\\{1}.": "{0} von GitHub gelöscht. Die lokale Kopie bleibt in projects\\{1}.",
   "{0} rinominato in {1}.": "{0} in {1} umbenannt.",
   "{0} rinominato in {1}. La copia locale projects\\{2} ora punta al nuovo nome.": "{0} in {1} umbenannt. Die lokale Kopie projects\\{2} zeigt jetzt auf den neuen Namen.",
-  "{0}% usato": "{0} % verbraucht"
+  "{0}% usato": "{0} % verbraucht",
+  "Serve ai progetti: {0}.": "Wird von den Projekten benötigt: {0}.",
+  "serve ai progetti": "von den Projekten benötigt",
+  "Serve ai progetti: {0}. Non è scelto: sceglilo perché funzionino.": "Wird von den Projekten benötigt: {0}. Nicht ausgewählt: wähle es aus, damit sie funktionieren.",
+  "attenzione: non scelto, serve ai progetti": "Achtung: nicht ausgewählt, von den Projekten benötigt",
+  "Legati a un sistema operativo": "An ein Betriebssystem gebunden",
+  "Funzionano solo sul sistema per cui sono fatti, qui Windows.": "Sie funktionieren nur auf dem System, für das sie gemacht sind, hier Windows."
 }

@@ -261,5 +261,11 @@
   "{0} eliminato da GitHub. La copia locale resta in projects\\{1}.": "{0} supprimé de GitHub. La copie locale reste dans projects\\{1}.",
   "{0} rinominato in {1}.": "{0} renommé en {1}.",
   "{0} rinominato in {1}. La copia locale projects\\{2} ora punta al nuovo nome.": "{0} renommé en {1}. La copie locale projects\\{2} pointe maintenant vers le nouveau nom.",
-  "{0}% usato": "{0} % utilisé"
+  "{0}% usato": "{0} % utilisé",
+  "Serve ai progetti: {0}.": "Nécessaire aux projets : {0}.",
+  "serve ai progetti": "nécessaire aux projets",
+  "Serve ai progetti: {0}. Non è scelto: sceglilo perché funzionino.": "Nécessaire aux projets : {0}. Non choisi : choisissez-le pour qu'ils fonctionnent.",
+  "attenzione: non scelto, serve ai progetti": "attention : non choisi, nécessaire aux projets",
+  "Legati a un sistema operativo": "Liés à un système d'exploitation",
+  "Funzionano solo sul sistema per cui sono fatti, qui Windows.": "Ils ne fonctionnent que sur le système pour lequel ils sont faits, ici Windows."
 }
