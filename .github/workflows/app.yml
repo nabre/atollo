@@ -3,6 +3,7 @@ name: App
 on:
   push:
     branches: [main]
+    tags: ['app-v*']
   pull_request:
   workflow_dispatch:
 
@@ -11,7 +12,8 @@ permissions:
 
 concurrency:
   group: app-${{ github.ref }}
-  cancel-in-progress: true
+  # A release run is never cancelled: each ref has its own group anyway.
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   check:
@@ -90,20 +92,19 @@ jobs:
           }
           $names = (Get-ChildItem $kit -Force).Name | Sort-Object
           if (($names -join ',') -ne 'data,Dev-Kit.exe,projects') { throw "unexpected files: $names" }
-      - name: Real install of the editor and terminal components (x64)
+      - name: Real install of pwsh, node, git and the editor server (x64)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
-          & "$kit/Dev-Kit.exe" prepare --only "pwsh,terminal,node,git,vscodium-server"
+          & "$kit/Dev-Kit.exe" prepare --only "pwsh,node,git,vscodium-server"
           if ($LASTEXITCODE -ne 0) { throw "prepare failed ($LASTEXITCODE)" }
           & "$kit/data/apps/win32-x64/pwsh/pwsh.exe" -NoProfile -Command '$PSVersionTable.PSVersion'
           & "$kit/data/apps/win32-x64/node/node.exe" -v
           & "$kit/data/apps/win32-x64/git/cmd/git.exe" --version
           if (-not (Test-Path "$kit/data/apps/win32-x64/vscodium-server/bin/codium-server.cmd")) { throw "editor server missing" }
-          if (-not (Test-Path "$kit/data/apps/win32-x64/terminal/.portable")) { throw "terminal not portable" }
           & "$kit/Dev-Kit.exe" prepare --only "pwsh,node" --update-all
           if ($LASTEXITCODE -ne 0) { throw "update check failed" }
       - name: Editor server test (token, redirect, no leftover processes)
@@ -117,3 +118,49 @@ jobs:
           name: Dev-Kit-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/Dev-Kit.exe
           if-no-files-found: error
+
+  release:
+    name: Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/app-v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag matches the app version
+        shell: pwsh
+        run: |
+          # The self-updater compares app-vX.Y.Z with the exe's CARGO_PKG_VERSION.
+          $manifest = Get-Content src-tauri/Cargo.toml -Raw
+          $package = [regex]::Match($manifest, '(?ms)^\[package\][^\n]*\n(.*?)(?=^\[|\z)').Groups[1].Value
+          $version = [regex]::Match($package, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "version '$version' is not X.Y.Z: the updater would ignore it" }
+          # The tag is read from the environment, never pasted into the script.
+          if ($env:GITHUB_REF_NAME -ne "app-v$version") { throw "tag $env:GITHUB_REF_NAME does not match app-v$version" }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Dev-Kit-*
+          path: artifacts
+      - name: Release assets
+        shell: pwsh
+        run: |
+          # Names and .sha256 files as read by src-tauri/src/self_update.rs.
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $assets = @{ 'x86_64-pc-windows-msvc' = 'Dev-Kit-x64.exe'; 'aarch64-pc-windows-msvc' = 'Dev-Kit-arm64.exe' }
+          foreach ($target in $assets.Keys) {
+            $name = $assets[$target]
+            Move-Item "artifacts/Dev-Kit-$target/Dev-Kit.exe" "dist/$name"
+            $hash = (Get-FileHash "dist/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
+            Set-Content "dist/$name.sha256" "$hash  $name" -Encoding ascii
+          }
+          Get-ChildItem dist | Format-Table Name, Length
+      - name: GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $version = $tag.Substring('app-v'.Length)
+          gh release create $tag (Get-ChildItem dist).FullName --verify-tag --title "Dev-Kit $version" --notes "Dev-Kit $version for Windows x64 and arm64: replace Dev-Kit.exe, or let the app update itself."
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed ($LASTEXITCODE)" }

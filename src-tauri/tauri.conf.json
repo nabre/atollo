@@ -2,7 +2,6 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Dev-Kit",
   "mainBinaryName": "Dev-Kit",
-  "version": "0.1.0",
   "identifier": "io.github.nabre.devkit2",
   "build": {
     "beforeDevCommand": {

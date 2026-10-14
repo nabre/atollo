@@ -4,7 +4,7 @@
 //! D-23). Never a shell of the PC. When the pseudo console cannot start
 //! (Windows 10 before 1809), the kit's PowerShell in a classic console.
 //!
-//! Rules (D-14): windows `terminal-<n>` have the `terminal` capability only:
+//! Rules (D-46): windows `terminal-<n>` have the `terminal` capability only:
 //! three commands, and each window reaches only the session of its label.
 //! The process is in the app's job; closing the window ends it.
 
@@ -20,7 +20,9 @@ use portable_pty::{native_pty_system, ChildKiller, CommandBuilder, MasterPty, Pt
 use tauri::ipc::{Channel, InvokeResponseBody};
 use tauri::webview::NewWindowResponse;
 use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindowBuilder};
+use windows::core::{s, w};
 use windows::Win32::System::Console::SetConsoleCtrlHandler;
+use windows::Win32::System::LibraryLoader::{GetModuleHandleW, GetProcAddress};
 use windows::Win32::System::Threading::CREATE_NEW_CONSOLE;
 
 use crate::editor_cfg::pwsh_args;
@@ -154,6 +156,25 @@ fn find(hay: &[u8], needle: &[u8]) -> Option<usize> {
     hay.windows(needle.len()).position(|w| w == needle)
 }
 
+/// Whether kernel32 exports the ConPTY functions that portable-pty loads
+/// (all three arrived together, in Windows 10 1809).
+fn has_conpty() -> bool {
+    // SAFETY: kernel32 is loaded in every process; the handle is not freed,
+    // and the names are NUL-terminated literals.
+    unsafe {
+        let Ok(kernel) = GetModuleHandleW(w!("kernel32.dll")) else {
+            return false;
+        };
+        [
+            s!("CreatePseudoConsole"),
+            s!("ResizePseudoConsole"),
+            s!("ClosePseudoConsole"),
+        ]
+        .into_iter()
+        .all(|name| GetProcAddress(kernel, name).is_some())
+    }
+}
+
 fn size(cols: u16, rows: u16) -> PtySize {
     PtySize {
         cols: cols.clamp(2, 1000),
@@ -230,9 +251,13 @@ fn start(
     // SAFETY: no handler routine; it only clears the flag of this process.
     let _ = unsafe { SetConsoleCtrlHandler(None, false) };
     // portable-pty panics instead of failing when Windows has no ConPTY
-    // (before Windows 10 1809): that must reach the classic console.
-    let pair = std::panic::catch_unwind(|| native_pty_system().openpty(size(120, 30)))
-        .map_err(|_| anyhow::anyhow!("this Windows has no pseudo console"))?
+    // (before Windows 10 1809), and a panic aborts the app (release profile):
+    // asked first, so that this case reaches the classic console.
+    if !has_conpty() {
+        anyhow::bail!("this Windows has no pseudo console");
+    }
+    let pair = native_pty_system()
+        .openpty(size(120, 30))
         .context("pseudo console")?;
     let mut child = pair
         .slave
@@ -479,6 +504,12 @@ mod tests {
         drop(out);
         terminals.close("terminal-t");
         assert!(terminals.get("terminal-t").is_err());
+    }
+
+    #[test]
+    fn this_windows_has_conpty() {
+        // Windows 10 1809 or later on every machine that builds the app.
+        assert!(has_conpty());
     }
 
     #[test]
