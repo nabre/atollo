@@ -204,3 +204,25 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 - Prima di aprire editor o console, l'app installa (con la stessa preparazione della pagina "Linguaggi e strumenti", `SetupTask`) i componenti obbligatori mancanti e attende la fine; l'avanzamento compare in Home e nella barra di stato.
 - Se PowerShell 7 del kit manca comunque, la console non si apre e l'errore lo dice: nessun ripiego su `cmd.exe` o Windows PowerShell.
+
+## D-36 Estensioni consigliate in background dopo l'avvio dell'editor
+
+- Elenco del Atollo (`src-tauri/catalog/extensions.txt`, 60 estensioni) più `data\app\extensions.txt` dell'utente; `@programma` = solo se quel componente è nel kit; proposta una volta sola (`data\app\extensions-offered.txt`); una che fallisce viene ritentata all'avvio successivo; CodeLLDB dalla release GitHub (SHA-256).
+- Installate con la riga di comando del server (`--install-extension`, Open VSX) **dopo** l'avvio dell'editor, non prima come chiedeva il prompt: misurate circa 35 s per estensione al primo giro, l'editor non può aspettare minuti. Le estensioni compaiono ricaricando la finestra; lo stato è in `editor_status.extensions`.
+- Scartato: disattivare le estensioni di un programma tolto (il Atollo lo faceva scrivendo nel database SQLite di VSCodium). Restano installate: non fanno danni e si riattivano da sole se il programma torna.
+
+## D-37 WebView2 "Fixed Version" non è un componente
+
+- Microsoft la pubblica solo da una pagina web, con indirizzi che cambiano e senza checksum: non c'è una fonte da cui scaricarla e verificarla come gli altri componenti. Resta il supporto all'avvio (D-05): se manca il WebView2 di sistema, la finestra di messaggio spiega dove scaricarla e in quale cartella del kit estrarla.
+
+## D-38 Motore di installazione: parti, firme, processi
+
+- `Release` = una o più parti (Java + Maven + Gradle, CMake + Ninja, PHP + Composer), ognuna con destinazione: cartella propria, altra cartella, file in `tools\`, file singolo sostituito (Claude, Antigravity: il vecchio exe rinominato `.old`, così si aggiorna anche se l'agente è aperto). La versione salvata unisce le versioni delle parti.
+- Firma Authenticode (`signature.rs`, `WinVerifyTrust` + soggetto del firmatario): Claude Code (`Anthropic`, revoca non verificabile = avviso), runtime VC++ (`O=Microsoft Corporation`, obbligatoria sull'exe e sulla DLL).
+- Installatori fatti di processi (`custom`): Rust (`rustup-init`, poi `rustup update` sul posto per non perdere crate e `cargo install`; voce "Rustup" in HKCU ripristinata com'era: verificato con il rustup dell'utente già presente), pnpm/yarn (`node npm-cli.js`, senza `cmd.exe`), R (micromamba con profilo nell'area di lavoro).
+- File `.bat`/`.cmd` (verifica di Kotlin): `jobs::batch_command`, `cmd /d /s /c ""percorso" argomenti"` con `raw_arg`; trovato in prova che `cmd /c` con un percorso tra virgolette e `&` si rompe.
+- Limite: Rust su un kit FAT32/exFAT non si installa (rustup richiede i collegamenti fisici); il Atollo installava la toolchain sul disco del PC e copiava solo `rustup\`. Da portare (vedi CHANGELOG).
+
+## D-39 Verifica finale
+
+- `checkup.rs` (`Test-Installation` del kit): ogni componente installato risponde al suo comando di versione (campo `check` del catalogo), con l'ambiente del kit e 60 s di limite. `Atollo.exe check`; dopo `prepare` per ciò che è stato installato.

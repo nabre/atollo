@@ -48,6 +48,8 @@ pub struct AppInfo {
     pub path_entries: usize,
     /// A folder of the kit path that stops the editor noticing outside changes.
     pub watcher_unsafe_folder: Option<String>,
+    /// No choice saved yet: the interface shows the first-start page.
+    pub first_run: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -72,6 +74,8 @@ pub struct ComponentInfo {
     /// This version of the app can install it.
     pub available: bool,
     pub x64_only: bool,
+    /// Components it needs (Apache needs PHP, Kotlin needs Java).
+    pub needs: Vec<String>,
 }
 
 fn ensure_main<R: Runtime>(webview: &Webview<R>) -> Result<(), String> {
@@ -163,6 +167,7 @@ pub fn app_info<R: Runtime>(
         webview: state.webview.clone(),
         path_entries: state.env.path_entries().len(),
         watcher_unsafe_folder: crate::kit::watcher_unsafe_folder(kit.root()),
+        first_run: Choice::read(kit, Catalog::get()).is_none(),
     })
 }
 
@@ -299,6 +304,7 @@ pub fn components_list<R: Runtime>(
             version: c.installed_version(kit),
             available: install::installer(&c.id).is_some(),
             x64_only: c.x64_only,
+            needs: c.needs.clone(),
         })
         .collect())
 }
@@ -342,6 +348,48 @@ pub fn setup_start<R: Runtime>(
     state.setup.start(opts, false, setup_notify(app))
 }
 
+/// The choice of the "Linguaggi e strumenti" page: `chosen` are the ids to
+/// keep installed (required ones always are, dependencies follow). Saved in
+/// `components.txt`, then installed and removed in the background.
+#[tauri::command]
+pub fn components_apply<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    chosen: Vec<String>,
+    update_all: bool,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let catalog = Catalog::get();
+    if let Some(bad) = chosen.iter().find(|id| catalog.find(id).is_none()) {
+        return Err(format!("unknown component: {bad}"));
+    }
+    if state.setup.snapshot().running {
+        return Err("an installation is already running".into());
+    }
+    let text: String = catalog
+        .all()
+        .iter()
+        .map(|c| {
+            format!(
+                "{}={}
+",
+                c.id,
+                u8::from(chosen.contains(&c.id))
+            )
+        })
+        .collect();
+    let choice = Choice::parse(&text, catalog);
+    choice
+        .write(&state.kit, catalog)
+        .map_err(|e| fail("components", format!("{e:#}")))?;
+    let opts = Options {
+        update_all,
+        ..Options::default()
+    };
+    state.setup.start(opts, false, setup_notify(app))
+}
+
 #[tauri::command]
 pub fn setup_cancel<R: Runtime>(
     app: AppHandle<R>,
@@ -367,7 +415,8 @@ macro_rules! command_handler {
             $crate::commands::components_list,
             $crate::commands::setup_state,
             $crate::commands::setup_start,
-            $crate::commands::setup_cancel
+            $crate::commands::setup_cancel,
+            $crate::commands::components_apply
         ]
     };
 }

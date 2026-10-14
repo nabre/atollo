@@ -1,0 +1,102 @@
+# Estensioni consigliate dell'editor integrato (da Open VSX, il registro di
+# VSCodium), installate in background dopo l'avvio dell'editor. Ogni
+# estensione viene proposta una volta sola: se la disinstalli non torna.
+# Per aggiungerne altre scrivile in data\app\extensions.txt (stesso formato).
+# Formato: un identificativo editore.nome per riga; "#" inizia un commento.
+# "@programma" (id del catalogo dei componenti, più d'uno separati da
+# virgole): l'estensione si installa solo quando quel programma è nel kit.
+# Origine: nabre/atollo setup/vscodium/extensions.txt.
+# --- Agenti AI -------------------------------------------------------------
+anthropic.claude-code @claude         # Claude Code ufficiale; usa accesso e impostazioni del kit (editor_cfg.rs)
+
+# --- Python (sintassi, completamento, debug, lint e formattazione) ---------
+ms-python.python @python
+ms-python.debugpy @python
+charliermarsh.ruff @python
+detachhead.basedpyright @python       # controllo dei tipi (Pylance non è su Open VSX)
+
+# --- JavaScript / TypeScript e web -----------------------------------------
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+dsznajder.es7-react-js-snippets       # snippet React/JS
+Vue.volar
+svelte.svelte-vscode
+bradlc.vscode-tailwindcss
+formulahendry.auto-rename-tag
+christian-kohler.path-intellisense
+denoland.vscode-deno @deno            # si attiva solo nei progetti Deno
+oven.bun-vscode @bun
+
+# --- PHP e Apache ----------------------------------------------------------
+bmewburn.vscode-intelephense-client @php # completamento, snippet e analisi PHP
+xdebug.php-debug @php
+mrmlnc.vscode-apache @apache          # sintassi di httpd.conf e .htaccess
+
+# --- Rust e Tauri ----------------------------------------------------------
+rust-lang.rust-analyzer @rust
+vadimcn.vscode-lldb @rust,zig,cc      # debug di Rust
+tauri-apps.tauri-vscode @rust
+
+# --- Go ----------------------------------------------------------------------
+golang.go @go                         # gopls e debug con Delve
+
+# --- Java e Kotlin -----------------------------------------------------------
+redhat.java @java
+vscjava.vscode-java-debug @java
+vscjava.vscode-java-test @java        # test JUnit e TestNG
+vscjava.vscode-maven @java
+vscjava.vscode-gradle @java
+fwcd.kotlin @kotlin
+
+# --- .NET: C# e F# -----------------------------------------------------------
+muhammad-sammy.csharp @dotnet         # C# libero (OmniSharp, netcoredbg): quello Microsoft non è su Open VSX
+Ionide.Ionide-fsharp @dotnet
+
+# --- Dart, Zig, Julia --------------------------------------------------------
+Dart-Code.dart-code @dart
+ziglang.vscode-zig @zig               # debug con CodeLLDB
+julialang.language-julia @julia       # REPL, debug e grafici
+
+# --- C, C++ e CMake ----------------------------------------------------------
+llvm-vs-code-extensions.vscode-clangd @cc # cpptools di Microsoft non è su Open VSX
+ms-vscode.cmake-tools @cmake
+
+# --- Ruby e R ----------------------------------------------------------------
+Shopify.ruby-lsp @ruby
+KoichiSasada.vscode-rdbg @ruby        # debug di Ruby
+REditorSupport.r @r                   # il LSP richiede il pacchetto R languageserver
+RDebugger.r-debugger @r
+
+# --- Typst e LaTeX -----------------------------------------------------------
+myriad-dreamin.tinymist @typst        # Typst: anteprima dal vivo, completamento, formattazione, PDF
+James-Yu.latex-workshop @tinytex      # LaTeX: compilazione, anteprima del PDF, SyncTeX, completamento
+
+# --- Script e configurazioni ------------------------------------------------
+ms-vscode.powershell
+timonwong.shellcheck
+foxundermoon.shell-format
+redhat.vscode-yaml
+redhat.vscode-xml
+tamasfe.even-better-toml
+EditorConfig.EditorConfig
+ms-azuretools.vscode-docker
+mechatroner.rainbow-csv
+mikestead.dotenv                      # file .env
+fill-labs.dependi                     # versioni aggiornate delle dipendenze (Cargo, npm, Go, Python)
+
+# --- Markdown e testi ------------------------------------------------------
+yzhang.markdown-all-in-one
+streetsidesoftware.code-spell-checker
+streetsidesoftware.code-spell-checker-italian
+
+# --- Editor ----------------------------------------------------------------
+vscode-icons-team.vscode-icons        # icone per tipo di file
+usernamehw.errorlens                  # errori e avvisi sulla riga stessa
+mhutchie.git-graph
+Gruntfuggly.todo-tree                 # TODO e FIXME del progetto in un pannello
+usernamehw.commands                   # pulsanti per comandi e script (npm run dev...) nella barra di stato
+
+# --- Facoltative: togli il "#" per installarle -------------------------------
+# eamodio.gitlens                     # cronologia Git avanzata (pesante)
+# humao.rest-client                   # richieste HTTP da file .http
+# Dart-Code.flutter @dart             # Flutter, per chi lo usa

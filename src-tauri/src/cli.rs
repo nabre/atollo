@@ -25,6 +25,8 @@ pub enum Cli {
     Env,
     Prepare(PrepareArgs),
     Components,
+    /// Every installed program answers its version command.
+    Check,
     Version,
     Help,
     Unknown(String),
@@ -66,6 +68,7 @@ pub fn parse(args: &[OsString]) -> Cli {
     match first.to_string_lossy().as_ref() {
         "env" => Cli::Env,
         "components" => Cli::Components,
+        "check" => Cli::Check,
         "prepare" => {
             let mut p = PrepareArgs::default();
             let mut rest = args[1..].iter();
@@ -112,6 +115,20 @@ pub fn print_env(env: &KitEnv, out: &mut dyn Write) -> io::Result<()> {
 }
 
 /// The catalog with the choice and what is installed.
+/// The final check, one line per component: `√ Name   answer`.
+pub fn print_checks(checks: &[crate::checkup::Check], out: &mut dyn Write) -> io::Result<()> {
+    let width = checks
+        .iter()
+        .map(|c| c.name.chars().count())
+        .max()
+        .unwrap_or(0);
+    for c in checks {
+        let mark = if c.ok { "√" } else { "x" };
+        writeln!(out, "  {mark} {:<width$}  {}", c.name, c.answer)?;
+    }
+    out.flush()
+}
+
 pub fn print_components(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Result<()> {
     let catalog = Catalog::get();
     let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));

@@ -18,6 +18,7 @@ import {
 } from "react-icons/vsc";
 import { appInfo, browserPreview, editorStatus, type AppInfo, type EditorStatus } from "./api";
 import { HomeActions, ProjectsPage } from "./pages";
+import { ComponentsPage } from "./components";
 import { SetupProgress, setupStatusText, useSetup } from "./setup";
 import type { SetupSnapshot } from "./api";
 
@@ -60,11 +61,12 @@ export function App() {
     };
   }, [refreshEditor]);
 
-  useEffect(() => {
+  const loadInfo = useCallback(() => {
     appInfo().then(setInfo, (e: unknown) => {
       setError(String(e));
     });
   }, []);
+  useEffect(loadInfo, [loadInfo]);
 
   const current = PAGES.find((p) => p.id === page) ?? HOME;
 
@@ -84,10 +86,14 @@ export function App() {
             )}
           </header>
           <div className="min-h-0 flex-1 overflow-auto p-5">
-            {page === "home" ? (
+            {page === "home" && info?.firstRun ? (
+              <ComponentsPage setup={setup} firstRun onDone={loadInfo} />
+            ) : page === "home" ? (
               <Home info={info} error={error} editor={editor} setup={setup} onChanged={refreshEditor} />
             ) : page === "projects" ? (
               <ProjectsPage status={editor} onChanged={refreshEditor} />
+            ) : page === "components" ? (
+              <ComponentsPage setup={setup} />
             ) : (
               <Placeholder />
             )}

@@ -52,12 +52,15 @@ pub struct Status {
     pub port: Option<u16>,
     /// The server is x64 only: emulated on ARM64.
     pub emulated: bool,
+    /// Recommended extensions being installed in the background.
+    pub extensions: crate::editor_ext::ExtState,
 }
 
 pub struct Editor {
     kit: Kit,
     env: KitEnv,
     server: Mutex<Option<Server>>,
+    extensions: std::sync::Arc<Mutex<crate::editor_ext::ExtState>>,
 }
 
 /// Where the server program is.
@@ -76,6 +79,7 @@ impl Editor {
             kit,
             env,
             server: Mutex::new(None),
+            extensions: std::sync::Arc::default(),
         }
     }
 
@@ -92,6 +96,11 @@ impl Editor {
             running: alive,
             port: guard.as_ref().map(|s| s.port),
             emulated: self.kit.arch() == crate::kit::Arch::Arm64,
+            extensions: self
+                .extensions
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone(),
         }
     }
 
@@ -107,6 +116,16 @@ impl Editor {
         let server = self.start()?;
         let out = (server.port, server.token.clone());
         *guard = Some(server);
+        let settings = crate::settings::Settings::load(&self.kit).settings;
+        let net = crate::net::Net::new(&settings, None)
+            .ok()
+            .map(std::sync::Arc::new);
+        crate::editor_ext::sync_in_background(
+            self.kit.clone(),
+            self.env.clone(),
+            net,
+            std::sync::Arc::clone(&self.extensions),
+        );
         Ok(out)
     }
 

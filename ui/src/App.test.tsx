@@ -13,6 +13,7 @@ const info: AppInfo = {
   webview: "system 140.0",
   pathEntries: 5,
   watcherUnsafeFolder: null,
+  firstRun: false,
 };
 
 const idle: SetupSnapshot = { running: false, cancelling: false, automatic: false, total: 0, steps: [], error: null };
@@ -127,5 +128,78 @@ describe("App", () => {
     expect(screen.getByText("Installazione 2/2: PowerShell 7 50%")).toBeTruthy();
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
     expect(screen.getByText("installato 2.56")).toBeTruthy();
+  });
+
+  it("shows the first-start choice and applies it", async () => {
+    const comps = [
+      {
+        id: "git",
+        name: "Git",
+        group: "required",
+        desc: "Git",
+        mb: 350,
+        chosen: true,
+        installed: false,
+        version: null,
+        available: true,
+        x64Only: false,
+        needs: [],
+      },
+      {
+        id: "php",
+        name: "PHP",
+        group: "languages",
+        desc: "PHP",
+        mb: 100,
+        chosen: true,
+        installed: false,
+        version: null,
+        available: true,
+        x64Only: true,
+        needs: [],
+      },
+      {
+        id: "apache",
+        name: "Apache",
+        group: "languages",
+        desc: "web",
+        mb: 45,
+        chosen: true,
+        installed: false,
+        version: null,
+        available: true,
+        x64Only: true,
+        needs: ["php"],
+      },
+      {
+        id: "go",
+        name: "Go",
+        group: "languages",
+        desc: "Go",
+        mb: 250,
+        chosen: false,
+        installed: false,
+        version: null,
+        available: true,
+        x64Only: false,
+        needs: [],
+      },
+    ];
+    invoke.mockImplementation(
+      answers({ app_info: { ...info, firstRun: true }, components_list: comps, components_apply: null }),
+    );
+    render(<App />);
+    expect(await screen.findByText("Benvenuto in Atollo")).toBeTruthy();
+    expect(screen.getByLabelText<HTMLInputElement>(/^Git/).disabled).toBe(true);
+    fireEvent.click(screen.getByLabelText(/^PHP/));
+    expect(screen.getByLabelText<HTMLInputElement>(/^Apache/).checked).toBe(false);
+    fireEvent.click(screen.getByLabelText(/^Go/));
+    fireEvent.click(screen.getByRole("button", { name: "Installa" }));
+    expect(invoke).toHaveBeenCalledWith("components_apply", {
+      chosen: expect.arrayContaining(["git", "go"]) as unknown,
+      updateAll: false,
+    });
+    const call = invoke.mock.calls.find((c) => c[0] === "components_apply");
+    expect((call?.[1] as { chosen: string[] }).chosen).not.toContain("apache");
   });
 });

@@ -15,6 +15,7 @@ const COMMANDS: &[&str] = &[
     "setup_state",
     "setup_start",
     "setup_cancel",
+    "components_apply",
 ];
 
 fn main() {
