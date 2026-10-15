@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import type { EnvVar, FrameworkAction, FrameworkVariant } from "../api";
 import { t } from "../i18n";
 import { VscAdd } from "react-icons/vsc";
-import { IconButton, Link, Select } from "../workbench";
+import { IconButton, Link, Select, TextArea, TextField as InputField } from "../workbench";
 import { useComponents } from "./model";
 import { ToolTag } from "./tags";
 
-/** Lines of commands in a textarea, one per line. The text is kept as typed
+/** Commands in a text area: the editor's font at 12px, the full width. */
+const CODE = "w-full [--vscode-editor-font-size:12px]";
+
+/** Lines of commands in a text area, one per line. The text is kept as typed
  * and only replaced when the value changes from outside (Ripristina). */
 export function LinesField({
   label,
@@ -32,19 +35,20 @@ export function LinesField({
   return (
     <label className="block">
       <span className="mb-1 block text-vsc-desc">{label}</span>
-      <textarea
+      <TextArea
+        label={label}
         value={text}
         placeholder={placeholder}
         spellCheck={false}
-        wrap="off"
+        mono
         rows={Math.min(8, Math.max(2, text.split("\n").length + 1))}
-        onChange={(e) => {
-          setText(e.target.value);
-          const next = e.target.value.split("\n");
+        onChange={(v) => {
+          setText(v);
+          const next = v.split("\n");
           sent.current = next;
           onChange(next);
         }}
-        className="input w-full font-mono text-[12px]"
+        className={CODE}
       />
     </label>
   );
@@ -73,6 +77,7 @@ export function ActionsField({
   value: FrameworkAction[] | undefined;
   onChange: (v: FrameworkAction[]) => void;
 }) {
+  const label = t("Azioni del progetto (Nome: comando)");
   const [text, setText] = useState(formatActions(value));
   const sent = useRef(value);
   useEffect(() => {
@@ -83,20 +88,21 @@ export function ActionsField({
   }, [value]);
   return (
     <label className="block">
-      <span className="mb-1 block text-vsc-desc">{t("Azioni del progetto (Nome: comando)")}</span>
-      <textarea
+      <span className="mb-1 block text-vsc-desc">{label}</span>
+      <TextArea
+        label={label}
         value={text}
         placeholder="Avvia: npm run dev"
         spellCheck={false}
-        wrap="off"
+        mono
         rows={Math.min(6, Math.max(2, text.split("\n").length + 1))}
-        onChange={(e) => {
-          setText(e.target.value);
-          const next = parseActions(e.target.value);
+        onChange={(v) => {
+          setText(v);
+          const next = parseActions(v);
           sent.current = next;
           onChange(next);
         }}
-        className="input w-full font-mono text-[12px]"
+        className={CODE}
       />
     </label>
   );
@@ -176,6 +182,7 @@ function parseEnv(text: string): EnvVar[] {
 
 /** The variables of .env, one per line as «CHIAVE=valore». */
 export function EnvField({ value, onChange }: { value: EnvVar[] | undefined; onChange: (v: EnvVar[]) => void }) {
+  const label = t("Variabili del file .env (CHIAVE=valore)");
   const [text, setText] = useState(formatEnv(value));
   const sent = useRef(value);
   useEffect(() => {
@@ -186,20 +193,21 @@ export function EnvField({ value, onChange }: { value: EnvVar[] | undefined; onC
   }, [value]);
   return (
     <label className="block">
-      <span className="mb-1 block text-vsc-desc">{t("Variabili del file .env (CHIAVE=valore)")}</span>
-      <textarea
+      <span className="mb-1 block text-vsc-desc">{label}</span>
+      <TextArea
+        label={label}
         value={text}
         placeholder="APP_NAME={name}"
         spellCheck={false}
-        wrap="off"
+        mono
         rows={Math.min(6, Math.max(2, text.split("\n").length + 1))}
-        onChange={(e) => {
-          setText(e.target.value);
-          const next = parseEnv(e.target.value);
+        onChange={(v) => {
+          setText(v);
+          const next = parseEnv(v);
           sent.current = next;
           onChange(next);
         }}
-        className="input w-full font-mono text-[12px]"
+        className={CODE}
       />
     </label>
   );
@@ -211,6 +219,7 @@ function DatabaseField({ value, onChange }: { value: string | undefined; onChang
     <label className="block">
       <span className="mb-1 block text-vsc-desc">{t("Database del kit per il progetto")}</span>
       <Select
+        label={t("Database del kit per il progetto")}
         value={value ?? ""}
         onChange={(v) => {
           onChange(v || undefined);
@@ -230,13 +239,7 @@ export function TextField({ label, value, onChange }: { label: string; value: st
   return (
     <label className="block">
       <span className="mb-1 block text-vsc-desc">{label}</span>
-      <input
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-        className="input w-full"
-      />
+      <InputField label={label} value={value} onChange={onChange} className="w-full" />
     </label>
   );
 }

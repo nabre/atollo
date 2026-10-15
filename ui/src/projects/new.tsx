@@ -6,14 +6,15 @@ import { projectClone, projectCreate } from "../api";
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { Button } from "../workbench";
+import { Button, TextField } from "../workbench";
 
 export function NewProject({
   onDone,
-  inputRef,
+  focus,
 }: {
   onDone: (name: string) => void;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  /** Raised to put the focus on the name (the side bar's «Nuovo progetto»). */
+  focus: number;
 }) {
   const [name, setName] = useState("");
   const { busy, error, run } = useAction();
@@ -29,17 +30,18 @@ export function NewProject({
         {t("Vuoto")}
       </label>
       <p className="text-[12px] text-vsc-desc">{t("Nome della cartella")}</p>
-      <input
+      {/* Remounted on each request, so that it takes the focus again. */}
+      <TextField
+        key={focus}
         id="new-project-name"
-        ref={inputRef}
-        required
+        label={t("Vuoto")}
+        autoFocus={focus > 0}
         value={name}
-        onChange={(e) => {
-          setName(e.target.value);
-        }}
-        className="input w-full"
+        onChange={setName}
+        className="w-full"
       />
-      <Button variant="primary" wide submit busy={busy === "create"}>
+      {/* Required, as the native field was: nothing to submit while empty. */}
+      <Button variant="primary" wide submit disabled={name === ""} busy={busy === "create"}>
         {t("Crea")}
       </Button>
       <ErrorLine error={error} />
@@ -57,31 +59,20 @@ export function CloneProject({ onDone }: { onDone: (name: string) => void }) {
       onDone(await projectClone(source, name.trim() === "" ? null : name));
     });
   };
+  const sourceLabel = t("owner/repository di GitHub o indirizzo https://");
+  const nameLabel = t("Nome della cartella (facoltativo)");
   return (
     <form onSubmit={submit} className="space-y-1.5" aria-label={t("Da un indirizzo Git")}>
       <p className="font-semibold">{t("Da un indirizzo Git")}</p>
       <label className="flex flex-col gap-1">
-        <span className="text-[12px] text-vsc-desc">{t("owner/repository di GitHub o indirizzo https://")}</span>
-        <input
-          required
-          value={source}
-          onChange={(e) => {
-            setSource(e.target.value);
-          }}
-          className="w-full input"
-        />
+        <span className="text-[12px] text-vsc-desc">{sourceLabel}</span>
+        <TextField label={sourceLabel} value={source} onChange={setSource} className="w-full" />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-[12px] text-vsc-desc">{t("Nome della cartella (facoltativo)")}</span>
-        <input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-          }}
-          className="w-full input"
-        />
+        <span className="text-[12px] text-vsc-desc">{nameLabel}</span>
+        <TextField label={nameLabel} value={name} onChange={setName} className="w-full" />
       </label>
-      <Button wide submit busy={busy === "clone"}>
+      <Button wide submit disabled={source === ""} busy={busy === "clone"}>
         <VscCloudDownload size={14} aria-hidden="true" />
         {t("Clona")}
       </Button>

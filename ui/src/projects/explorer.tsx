@@ -3,7 +3,7 @@
 // their inline actions, and the ways to make a new one; the editor opens
 // each project in its own tab (page.tsx). Web actions get their own
 // port and open in the browser.
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   VscCode,
   VscFolderOpened,
@@ -78,7 +78,8 @@ export function ProjectsPage({
 }) {
   const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["projects"]));
   const [filter, setFilter] = useState("");
-  const newName = useRef<HTMLInputElement>(null);
+  /** Raised to focus the new project's name (NewProject). */
+  const [focusNew, setFocusNew] = useState(0);
   const { busy, error, run } = useAction(onChanged);
   const { keep } = tabs;
 
@@ -113,6 +114,10 @@ export function ProjectsPage({
       return next;
     });
   };
+  const openNew = () => {
+    toggle("new", true);
+    setFocusNew((n) => n + 1);
+  };
   const created = (name: string) => {
     tabs.show(name);
     load();
@@ -146,8 +151,7 @@ export function ProjectsPage({
               icon={VscNewFolder}
               label={t("Nuovo progetto")}
               onClick={() => {
-                toggle("new", true);
-                window.setTimeout(() => newName.current?.focus(), 0);
+                openNew();
               }}
             />
             <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
@@ -189,8 +193,7 @@ export function ProjectsPage({
                 variant="primary"
                 wide
                 onClick={() => {
-                  toggle("new", true);
-                  window.setTimeout(() => newName.current?.focus(), 0);
+                  openNew();
                 }}
               >
                 {t("Nuovo progetto")}
@@ -251,7 +254,7 @@ export function ProjectsPage({
           }}
         >
           <div className="space-y-4 px-5 pt-1 pb-4">
-            <NewProject onDone={created} inputRef={newName} />
+            <NewProject onDone={created} focus={focusNew} />
             <CloneProject onDone={created} />
           </div>
         </ViewPane>
@@ -319,8 +322,7 @@ export function ProjectsPage({
                   <VscNewFolder size={16} aria-hidden="true" className="text-vsc-link" />
                   <Link
                     onClick={() => {
-                      toggle("new", true);
-                      window.setTimeout(() => newName.current?.focus(), 0);
+                      openNew();
                     }}
                   >
                     {t("Nuovo progetto…")}
