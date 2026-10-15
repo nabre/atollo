@@ -89,7 +89,7 @@ pub fn folder_open<R: Runtime>(
         "backup" => {
             let name = project.as_deref().ok_or("no project")?;
             project_dir(&state.kit, Some(name), state.lang())?;
-            state.services.backup_dir(name)
+            state.services.backup_dir(name).or_fail_chain("folder")?
         }
         "projects" => project_dir(&state.kit, project.as_deref(), state.lang())?,
         _ => return Err(format!("unknown folder: {which}").into()),
