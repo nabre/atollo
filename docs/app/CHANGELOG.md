@@ -1,5 +1,22 @@
 # Novità
 
+## Adminer per MariaDB, come phpMyAdmin (15/10/2026)
+
+**Fatto** (D-85)
+- **«Apri Adminer»** nella pagina di MariaDB: il database nel browser, come phpMyAdmin di EasyPHP e XAMPP (tabelle, righe da modificare, query SQL, importazione ed esportazione), già entrato come `root`. Al primo clic installa Adminer (1 MB, nuovo componente nel gruppo database) e avvia MariaDB se è fermo.
+- La pagina di MariaDB non ha più la scheda «Contenuto»: c'è Adminer. Resta per MongoDB.
+- Lo serve il PHP del kit solo su 127.0.0.1, con un token nuovo a ogni avvio: senza token nessuno entra, nemmeno gli altri utenti del PC. La password di `root` non passa dal browser. Si ferma con MariaDB o con l'app.
+
+**Verificato**: 264 test Rust, clippy e fmt puliti; tipi, ESLint e 27 test dell'interfaccia. Installazione reale da GitHub (SHA-256 e controllo `php -l`: 6.1.2) e test reale con MariaDB 12.3 del kit: 403 senza token o con quello sbagliato, ingresso con il token, elenco dei database, server riusato, fermato con MariaDB. Da provare nell'app: il pulsante e il browser che si apre.
+
+## SDK di Android nel kit e Capacitor (15/10/2026)
+
+**Fatto** (D-84)
+- **Android SDK** in Strumenti: strumenti a riga di comando ufficiali, `adb`, ultima piattaforma e build-tools, tutto in `datapps`; `ANDROID_HOME` impostato per Gradle. Serve Java. Sceglierlo accetta i termini dell'SDK di Google.
+- Nel wizard le basi **Android** e **NativePHP Mobile** usano l'SDK del kit; nuova aggiunta **Android**: con Vite è Capacitor (la stessa app web come app Android), con Tauri è Tauri mobile (con l'NDK, scaricato solo per questa combinazione).
+
+**Verificato**: 261 test Rust (nuovi: zip e SHA-256 dalla pagina di download, scelta dei pacchetti stabili, Capacitor nelle combinazioni) e lettura reale della pagina di Google; clippy, fmt, tipi, ESLint e 27 test dell'interfaccia. Da provare nell'app: l'installazione reale (circa 600 MB) e una build con un telefono collegato.
+
 ## Nuovo progetto da framework (15/10/2026)
 
 **Fatto** (D-83)

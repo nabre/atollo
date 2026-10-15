@@ -6,6 +6,7 @@
 #![cfg_attr(not(test), windows_subsystem = "windows")]
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
 
+mod adminer;
 mod agents;
 mod agents_sync;
 mod apache;

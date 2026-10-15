@@ -824,8 +824,19 @@ mod tests {
             .needs
             .contains(&"node".to_owned()));
 
+        let web_app = plan(p, "vite", &ids(&["react", "tailwind", "capacitor"])).unwrap();
+        assert!(web_app.needs.contains(&"android".to_owned()));
+        assert!(web_app.steps.iter().any(|s| s.contains("cap add android")));
+
+        let tauri_android = plan(p, "tauri", &ids(&["react", "capacitor"])).unwrap();
+        assert!(tauri_android
+            .steps
+            .iter()
+            .any(|s| s.contains("tauri android init")));
+        assert!(tauri_android.needs.contains(&"android".to_owned()));
+
         let mobile = plan(p, "laravel", &ids(&["nativephp-mobile"])).unwrap();
-        assert_eq!(mobile.needs, ["php", "node", "java"]);
+        assert_eq!(mobile.needs, ["php", "node", "java", "android"]);
 
         assert_eq!(
             plan(p, "laravel", &ids(&["react", "vue"])).unwrap_err().0,

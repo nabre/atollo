@@ -231,6 +231,12 @@
           "markdownDescription": "Enables the components_sync command without any pre-configured scope."
         },
         {
+          "description": "Enables the db_admin_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-db-admin-open",
+          "markdownDescription": "Enables the db_admin_open command without any pre-configured scope."
+        },
+        {
           "description": "Enables the db_browse_rows command without any pre-configured scope.",
           "type": "string",
           "const": "allow-db-browse-rows",
@@ -745,6 +751,12 @@
           "type": "string",
           "const": "deny-components-sync",
           "markdownDescription": "Denies the components_sync command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the db_admin_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-db-admin-open",
+          "markdownDescription": "Denies the db_admin_open command without any pre-configured scope."
         },
         {
           "description": "Denies the db_browse_rows command without any pre-configured scope.",

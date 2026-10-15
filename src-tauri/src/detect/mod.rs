@@ -353,6 +353,7 @@ fn need_of_file(name: &str) -> Option<&'static str> {
         "CMakeLists.txt" => "cmake",
         "Gemfile" | "Gemfile.lock" => "ruby",
         "renv.lock" => "r",
+        "AndroidManifest.xml" => "android",
         _ => return None,
     })
 }

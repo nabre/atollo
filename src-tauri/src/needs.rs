@@ -32,6 +32,7 @@ fn component_of(program: &str) -> Option<&'static str> {
         "go" | "gofmt" => "go",
         "java" | "javac" | "jar" | "mvn" | "gradle" => "java",
         "kotlin" | "kotlinc" => "kotlin",
+        "sdkmanager" | "adb" | "avdmanager" => "android",
         "dotnet" => "dotnet",
         "dart" => "dart",
         "zig" => "zig",

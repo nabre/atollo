@@ -87,6 +87,7 @@ const COMPONENT_NAMES: Record<string, string> = {
   go: "Go",
   java: "Java",
   kotlin: "Kotlin",
+  android: "Android SDK",
   dotnet: ".NET",
   dart: "Dart",
   zig: "Zig",

@@ -1141,6 +1141,12 @@ export function dbBrowseRows(
     : invoke<DbRows>("db_browse_rows", { engine, database, table, offset });
 }
 
+/** Adminer on the kit's MariaDB, in the browser (D-85): installed the first
+ * time, MariaDB started when it is off. */
+export function dbAdminOpen(): Promise<ServiceInfo[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_SERVICES) : invoke<ServiceInfo[]>("db_admin_open");
+}
+
 // Git state and agent instructions of a project (src-tauri/src/projects.rs).
 
 export interface GitInfo {

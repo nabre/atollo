@@ -25,6 +25,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `go` | Go | no | 250 | | |
 | | `java` | Java (Temurin, Maven, Gradle) | no | 300 | | |
 | | `kotlin` | Kotlin | no | 80 | `java` | |
+| | `android` | Android SDK | no | 600 | `java` | **nuovo** (D-84); strumenti a riga di comando, platform-tools, piattaforma e build-tools, senza emulatore; sceglierlo accetta le licenze dell'SDK di Google; x64 anche su ARM64 |
 | | `dotnet` | .NET SDK | no | 250 | | |
 | | `dart` | Dart | no | 200 | | |
 | | `zig` | Zig | no | 200 | | |
@@ -40,6 +41,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `r` | R (conda-forge) | no | 1100 | | solo x64: non disponibile sui kit ARM64 (`noArm64`) |
 | database (`databases`) | `mariadb` | MariaDB | no | 230 | | **nuovo** (D-73); compatibile con MySQL; x64 anche su ARM64 |
 | | `mongodb` | MongoDB, mongosh, Database Tools | no | 570 | | **nuovo** (D-73); Database Tools per le copie (D-78); x64 anche su ARM64 |
+| | `adminer` | Adminer | no | 1 | `php`, `mariadb` | **nuovo** (D-85); MariaDB nel browser, come phpMyAdmin |
 | | `sqlite` | SQLite (sqlite3) | no | 15 | | **nuovo** (D-73) |
 | legati a un sistema operativo (`os`) | `terminal` | Windows Terminal | sì | 45 | `pwsh` | **nuovo**; il terminale del kit per le console fuori dall'editor (DECISIONS.md D-68); la console classica di Windows resta nelle Impostazioni |
 
@@ -79,6 +81,7 @@ Abbreviazioni:
 | maven (parte di java) | `repo.maven.apache.org/…/apache-maven/maven-metadata.xml`, versione numerica più alta | `apache-maven-<v>-bin.zip` | SHA-512 da `.sha512` | IA `apache-maven-<v>`; `conf\settings.xml`: `<localRepository>${env.CP_DATA}/maven/repository</localRepository>` | `maven/bin/mvn.cmd` | `_languages.ps1:107-120` |
 | gradle (parte di java) | `services.gradle.org/versions/current` | `downloadUrl` | SHA-256 da `checksumUrl` | IA `gradle-<v>` | `gradle/bin/gradle.bat` | `_languages.ps1:122-125` |
 | kotlin | GHA `JetBrains/kotlin`, `kotlin-compiler-*.zip` | indipendente | `digest` | IA `kotlinc` | `kotlin/bin/kotlinc.bat` | `_languages.ps1:130-136` |
+| android | pagina `developer.android.com/studio`: `commandlinetools-win-<build>_latest.zip` da `dl.google.com/android/repository/` | indipendente | SHA-256 della pagina (il repository XML ha solo SHA-1) | in `android\cmdline-tools\latest`, poi `sdkmanager --licenses`, `--install platform-tools`, ultima `platforms;android-N` e `build-tools;X.Y.Z` stabili, `--update` agli aggiornamenti (Java 17+ del kit) | `android/cmdline-tools/latest/bin/sdkmanager.bat` + `android/platform-tools/adb.exe` | **nuovo** |
 | dotnet | `builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json`, canale LTS attivo → `latest-sdk` → `releases.json` | `rid=win-x64\|win-arm64`, `.zip` | SHA-512 `hash` | IA `''` | `dotnet/dotnet.exe` | `_languages.ps1:139-157` |
 | dart | `storage.googleapis.com/dart-archive/channels/stable/release/latest/VERSION` | `dartsdk-windows-<x64\|arm64>-release.zip` | SHA-256 da `.sha256sum` | IA `dart-sdk` | `dart/bin/dart.exe` | `_languages.ps1:160-168` |
 | zig | `ziglang.org/download/index.json`, versione numerica più alta | `x86_64-windows` / `aarch64-windows` | SHA-256 `shasum` | IA `*` | `zig/zig.exe` | `_languages.ps1:171-181` |
@@ -97,11 +100,12 @@ Abbreviazioni:
 | mariadb | `downloads.mariadb.org/rest-api/mariadb/` → LTS stabile più recente → `/<major>/latest/` | `mariadb-<v>-winx64.zip` (via https) | SHA-256 dell'API | IA singola; via `.pdb` | `mariadb/bin/mariadbd.exe` + `mariadb/bin/mariadb.exe` | nuovo (D-73) |
 | mongodb | `downloads.mongodb.org/current.json`, produzione `x.0.y`; mongosh da GHA `mongodb-js/mongosh` | `mongodb-windows-x86_64-<v>.zip`, `mongosh-<v>-win32-x64.zip` in `mongosh\`, Database Tools da `release.json` in `mongodb-tools\` | SHA-256 dell'elenco; `digest` | IA singola; via `.pdb` e `vc_redist`, VC++ del kit | `mongodb/bin/mongod.exe` + `mongosh/bin/mongosh.exe` + `mongodb-tools/bin/mongodump.exe` | nuovo (D-73) |
 | sqlite | `sqlite.org/download.html`, righe `PRODUCT,` | `sqlite-tools-win-(x64\|arm64)-<n>.zip` | **SHA3-256** della pagina | IA | `sqlite/sqlite3.exe` | nuovo (D-73) |
+| adminer | GHA `vrana/adminer` | `adminer-<v>-mysql.php` (un file, tutte le lingue) | `digest` | file → `adminer\adminer.php`; controllo `php -l` col PHP del kit | `adminer/adminer.php` | nuovo (D-85) |
 | CodeLLDB (estensione) | GHA `vadimcn/codelldb` | `codelldb-win32-<arch>.vsix`; x64 anche su ARM64, come il server dell'editor | `digest` obbligatorio | installata nel server dell'editor con `--install-extension`, se un progetto ha Rust, Zig, C o C++ (matrice `extensions.json`, D-71), una volta sola | cartella `vadimcn.vscode-lldb-*` in `data\vscodium-server\extensions\` | `_vscodium-extensions.ps1:162-206` |
 
 ## 3. Regole trasversali
 
-- **Ordine**: quello di `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, rust, go, java (+maven, gradle), kotlin, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, pwsh, terminal, vscodium-server. Prima le rimozioni, poi le installazioni; configurazione Git e sito Apache sono passi finali di quei componenti. Da riga di comando, in fondo a `prepare`, la verifica finale di ciò che è stato installato. Estensioni dell'editor dopo l'avvio dell'editor; allineamento degli agenti all'avvio dell'app e intorno a ogni agente. (Nel Atollo: `Prepare-Atollo.ps1:250-285`.)
+- **Ordine**: quello di `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, rust, go, java (+maven, gradle), kotlin, android, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, pwsh, terminal, vscodium-server. Prima le rimozioni, poi le installazioni; configurazione Git e sito Apache sono passi finali di quei componenti. Da riga di comando, in fondo a `prepare`, la verifica finale di ciò che è stato installato. Estensioni dell'editor dopo l'avvio dell'editor; allineamento degli agenti all'avvio dell'app e intorno a ogni agente. (Nel Atollo: `Prepare-Atollo.ps1:250-285`.)
 - **Un errore non ferma gli altri**: ogni passo è isolato e finisce nel riepilogo; esito complessivo "con errori" se uno fallisce.
 - **Quando si installa**: file chiave o una parte di `keys` mancante, editor a una versione diversa da quella del rilascio (all'avvio dell'app, o in un `prepare` che lo comprende), oppure "Aggiorna tutto" (`--update-all`) / `--force`. `--only` installa o aggiorna i componenti elencati e ciò che serve loro e manca, obbligatori esclusi, senza rimuovere nulla; `--skip` salta anche ciò che ne dipende e non è ancora installato (mai gli obbligatori).
 - **Quando serve** (D-59): avvio di un agente, clone, azione di un progetto installano prima i componenti che servono e li segnano come scelti in `components.txt`.

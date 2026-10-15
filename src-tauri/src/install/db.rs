@@ -341,6 +341,26 @@ impl Installer for Sqlite {
     }
 }
 
+/// Adminer (D-85): the one-file build for MySQL and MariaDB, with every
+/// language, as `adminer\adminer.php`.
+pub struct Adminer;
+
+impl Installer for Adminer {
+    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
+        let mut release = super::github_single(
+            ctx,
+            "vrana/adminer",
+            r"^adminer-[\d.]+-mysql\.php$",
+            Kind::File,
+            Inner::Root,
+        )?;
+        for part in &mut release.parts {
+            part.file_name = "adminer.php".into();
+        }
+        Ok(release)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
