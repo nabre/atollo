@@ -72,7 +72,7 @@ impl Services {
     /// server must run.
     pub fn export(&self, project: &str, engine: &str) -> Result<PathBuf> {
         let (port, env) = self.running_server(engine)?;
-        let name = auth::db_name(project);
+        let name = auth::project_db_name(&self.kit, project, engine)?;
         let dir = self.backup_dir(project)?;
         let stamp = crate::agents::sync::stamp();
         match engine {
@@ -121,8 +121,14 @@ impl Services {
         if !crate::os::safe_path::is_file(&dir, &path) {
             bail!("copy not found: {file}");
         }
-        let name = auth::db_name(project);
+        // Never over a database that another project uses as well.
+        let name = |engine| -> Result<String> {
+            let name = auth::project_db_name(&self.kit, project, engine)?;
+            auth::check_name_free(&self.kit, project, engine, &name)?;
+            Ok(name)
+        };
         if file.ends_with(".archive.gz") {
+            let name = name("mongodb")?;
             let (port, env) = self.running_server("mongodb")?;
             let (mut cmd, config) = self.mongo_tool("mongorestore.exe", &env, port)?;
             cmd.arg(format!("--archive={}", path.display()))
@@ -133,6 +139,7 @@ impl Services {
             let _ = fs::remove_file(config);
             result.context("mongorestore")
         } else if file.ends_with(".sql") {
+            let name = name("mariadb")?;
             let (_, env) = self.running_server("mariadb")?;
             let sql = fs::read_to_string(&path)?;
             let mut cmd = self.mariadb_tool("mariadb.exe", &env);

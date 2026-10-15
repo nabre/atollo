@@ -550,8 +550,8 @@ impl crate::projects::ProjectDatabases for ProjectDrops<'_> {
         installed(&self.services.kit, engine)
     }
 
-    fn drop_db(&self, project: &str, engine: &str) -> Result<()> {
-        self.services.project_db_drop(project, engine, &self.env)
+    fn drop_db(&self, engine: &str, database: &str) -> Result<()> {
+        self.services.db_drop(engine, database, &self.env)
     }
 }
 

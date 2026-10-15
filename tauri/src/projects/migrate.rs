@@ -332,7 +332,10 @@ fn split_passwords(kit: &Kit) -> Result<()> {
 }
 
 /// The passwords of one project added to its `db.json` (its folder made
-/// private first); returns those that differ from one already there.
+/// private first); returns those that differ from one already there. The
+/// databases of layout 1 were named by the rule of that time: `names` gets
+/// it for each engine with a password and no name (`auth::add_legacy_names`,
+/// never over a name already there).
 fn merge_passwords(
     state: &ProjectState,
     project: &str,
@@ -357,6 +360,9 @@ fn merge_passwords(
                 conflicts.insert(engine.clone(), password.clone());
             }
         }
+    }
+    if auth::add_legacy_names(&mut now, project)? {
+        changed = true;
     }
     if changed {
         auth::write_private_text(&file, &serde_json::to_string_pretty(&now)?)?;
@@ -546,6 +552,19 @@ pub(super) mod tests {
         assert_eq!(pw("shop", "mongodb").as_deref(), Some("pw-shop-mongo"));
         assert_eq!(pw("blog", "mariadb").as_deref(), Some("pw-blog"));
         assert_owner_only(&new.join(r"shop\private\db.json"));
+        // with the names their databases were created with (layout 1)
+        assert_eq!(
+            json_of(&new.join(r"shop\private\db.json"))["names"],
+            json!({"mariadb": "shop", "mongodb": "shop"})
+        );
+        assert_eq!(
+            json_of(&new.join(r"blog\private\db.json"))["names"],
+            json!({"mariadb": "blog"})
+        );
+        assert_eq!(
+            auth::project_db_name(kit, "blog", "mariadb").unwrap(),
+            "blog"
+        );
         // copies, owner-only after the move
         let backups = new.join(r"shop\private\backups");
         assert_eq!(read(&backups.join("shop-mariadb-1.sql")), "CREATE TABLE t;");
@@ -637,7 +656,10 @@ pub(super) mod tests {
             &shop.ports_file(),
             r#"{"ports":{"web":9000},"locked":[],"future":1}"#,
         );
-        auth::set_project_password(&kit, "shop", "mariadb", "pw-newer").unwrap();
+        write(
+            &shop.db_file().unwrap(),
+            r#"{"mariadb":"pw-newer","names":{"mariadb":"kept"}}"#,
+        );
         write(
             &shop.backups_dir().unwrap().join("shop-mariadb-1.sql"),
             "newer",
@@ -662,6 +684,11 @@ pub(super) mod tests {
         let pw = |e| auth::project_password(&kit, "shop", e);
         assert_eq!(pw("mariadb").as_deref(), Some("pw-newer"));
         assert_eq!(pw("mongodb").as_deref(), Some("pw-shop-mongo"));
+        // a name already there is never replaced; the missing one added
+        assert_eq!(
+            json_of(&shop.db_file().unwrap())["names"],
+            json!({"mariadb": "kept", "mongodb": "shop"})
+        );
         assert_eq!(
             json_of(&secrets_file(&kit))["projects"],
             json!({"shop": {"mariadb": "pw-shop-maria"}, ".old": {"mariadb": "pw-old"}})
