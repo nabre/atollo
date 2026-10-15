@@ -79,6 +79,23 @@ if (!("innerText" in HTMLElement.prototype)) {
   });
 }
 
+// The document's constructed style sheets (vscode-form-helper adds its
+// light DOM rules there): jsdom has none, so a plain list that styles nothing.
+if (!("adoptedStyleSheets" in Document.prototype)) {
+  const sheets = new WeakMap<Document, CSSStyleSheet[]>();
+  Object.defineProperty(Document.prototype, "adoptedStyleSheets", {
+    configurable: true,
+    get(this: Document) {
+      const list = sheets.get(this) ?? [];
+      sheets.set(this, list);
+      return list;
+    },
+    set(this: Document, v: CSSStyleSheet[]) {
+      sheets.set(this, v);
+    },
+  });
+}
+
 // Layout observers (vscode-scrollable, vscode-form-container): jsdom has no
 // layout, so nothing ever resizes.
 if (!("ResizeObserver" in globalThis)) {

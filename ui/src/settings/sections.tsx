@@ -1,6 +1,5 @@
 // The sections of Settings that are fields: general, network, agents,
 // versions of the languages.
-import { useEffect, useRef } from "react";
 import { LANGS, t } from "../i18n";
 import type { Settings, SettingsView } from "../api";
 import { CheckboxLabel, Link, Select, SettingItem, SettingsGroup, TextField } from "../workbench";
@@ -171,13 +170,6 @@ export function AgentSettings({
   onRemoveKey: () => void;
 }) {
   const agents = t("Agenti");
-  // No saved passwords for the key: TextField has no autoComplete, so the
-  // component's property is set here.
-  const keyBox = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const field = keyBox.current?.querySelector("vscode-textfield");
-    if (field) field.autocomplete = "off";
-  }, []);
   return (
     <SettingsGroup id="s-agents" title={agents}>
       <SettingItem
@@ -185,19 +177,19 @@ export function AgentSettings({
         title={t("Chiave API di Gemini (Antigravity senza account Google)")}
         modified={view.geminiKeySet}
       >
-        <span ref={keyBox} className="contents">
-          <TextField
-            id="gemini-key"
-            type="password"
-            label={t("Chiave API di Gemini (Antigravity senza account Google)")}
-            value={gemini ?? ""}
-            placeholder={view.geminiKeySet ? t("salvata: scrivi per sostituirla") : t("nessuna")}
-            onChange={(v) => {
-              onGemini(v === "" ? null : v);
-            }}
-            className="w-full"
-          />
-        </span>
+        <TextField
+          id="gemini-key"
+          type="password"
+          // No saved passwords for the key.
+          autoComplete="off"
+          label={t("Chiave API di Gemini (Antigravity senza account Google)")}
+          value={gemini ?? ""}
+          placeholder={view.geminiKeySet ? t("salvata: scrivi per sostituirla") : t("nessuna")}
+          onChange={(v) => {
+            onGemini(v === "" ? null : v);
+          }}
+          className="w-full"
+        />
         {view.geminiKeySet && (
           <div className="mt-1.5">
             <Link onClick={onRemoveKey}>{t("Togli la chiave")}</Link>

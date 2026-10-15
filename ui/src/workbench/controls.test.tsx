@@ -278,4 +278,18 @@ describe("workbench controls", () => {
     fireEvent.keyDown(select, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  it("gives autocomplete to a TextField again when it is drawn again", () => {
+    const field = () => (
+      <TextField label="Chiave" type="password" autoComplete="off" value="" onChange={() => undefined} />
+    );
+    const { rerender } = render(field());
+    const first = document.querySelector("vscode-textfield");
+    expect(first?.autocomplete).toBe("off");
+    rerender(<></>);
+    rerender(field());
+    const second = document.querySelector("vscode-textfield");
+    expect(second).not.toBe(first);
+    expect(second?.autocomplete).toBe("off");
+  });
 });
