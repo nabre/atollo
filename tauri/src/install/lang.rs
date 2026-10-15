@@ -9,8 +9,8 @@ use serde_json::Value;
 
 use super::{arch_of, github_single, pattern, triple_arch, Ctx, Dest, Installer, Part, Release};
 use crate::archive::{Inner, Kind};
-use crate::catalog::Component;
 use crate::net::{first_sha256, github_digest, GhRelease};
+use crate::setup::catalog::Component;
 use crate::verify::Expect;
 
 /// Numeric parts of a version, for "newest" comparisons (`1.10.2` > `1.9`).

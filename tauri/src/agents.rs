@@ -20,9 +20,9 @@ use anyhow::{bail, Context, Result};
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::catalog::Catalog;
 use crate::env::KitEnv;
 use crate::kit::Kit;
+use crate::setup::catalog::Catalog;
 
 pub const IDS: [&str; 3] = ["claude", "codex", "antigravity"];
 

@@ -209,7 +209,7 @@ pub fn settings_set<R: Runtime>(
 pub fn update_status<R: Runtime>(
     webview: Webview<R>,
     updater: State<'_, Arc<Updater>>,
-) -> Result<crate::self_update::Status, String> {
+) -> Result<crate::setup::self_update::Status, String> {
     ensure_main(&webview)?;
     Ok(updater.status())
 }
@@ -221,7 +221,7 @@ pub async fn update_check<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     updater: State<'_, Arc<Updater>>,
-) -> Result<crate::self_update::Status, String> {
+) -> Result<crate::setup::self_update::Status, String> {
     ensure_main(&webview)?;
     let (kit, host, updater) = (state.kit.clone(), state.host.clone(), Arc::clone(&updater));
     tauri::async_runtime::spawn_blocking(move || {

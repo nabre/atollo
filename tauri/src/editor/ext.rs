@@ -33,13 +33,13 @@ use std::sync::{Arc, Mutex, OnceLock};
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::catalog::Catalog;
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::jobs;
 use crate::kit::Kit;
 use crate::net::{github_digest, Net};
 use crate::projects::settings::Extensions;
+use crate::setup::catalog::Catalog;
 use crate::verify::Expect;
 
 const MATRIX: &str = include_str!("../../catalog/extensions.json");

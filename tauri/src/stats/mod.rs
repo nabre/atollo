@@ -40,10 +40,10 @@ use std::time::Duration;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::catalog::Catalog;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::net::Net;
+use crate::setup::catalog::Catalog;
 use util::{clamp_percent, level, now_ms, Period, Usage, CRITICAL, WARN};
 
 /// Servers asked at most every `ONLINE_EVERY`, at most every

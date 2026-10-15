@@ -38,7 +38,7 @@ use windows::Win32::System::Pipes::{
 };
 use windows::Win32::System::Registry::{RegGetValueW, HKEY_LOCAL_MACHINE, RRF_RT_REG_SZ};
 
-use crate::editor::cfg::pwsh_args;
+use super::cfg::pwsh_args;
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::jobs::{self, Console};
@@ -601,7 +601,7 @@ mod tests {
         };
         let kit = Kit::at(PathBuf::from(root), Arch::detect());
         kit.prepare().unwrap();
-        crate::kit_files::write_all(&kit).unwrap();
+        crate::setup::kit_files::write_all(&kit).unwrap();
         assert!(usable(&kit), "terminal and PowerShell installed");
         let mut env = KitEnv::build(
             &kit,

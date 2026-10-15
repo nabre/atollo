@@ -23,10 +23,10 @@ use std::time::UNIX_EPOCH;
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
 
-use crate::catalog::Catalog;
 use crate::detect::{self, Project};
 use crate::env::KitEnv;
 use crate::kit::{validate_project_name, Kit};
+use crate::setup::catalog::Catalog;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -23,11 +23,11 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, bail, Context, Result};
 
 use super::auth;
-use crate::catalog;
 use crate::env::KitEnv;
 use crate::jobs::{self, Job};
 use crate::kit::Kit;
 use crate::projects::run::responds;
+use crate::setup::catalog;
 
 const READY_WITHIN: Duration = Duration::from_secs(15);
 
@@ -98,7 +98,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
     }
     let router = kit.kit_files().join("adminer.php");
     if !router.is_file() {
-        crate::kit_files::write_all(kit)?;
+        crate::setup::kit_files::write_all(kit)?;
     }
     let password = auth::load(kit)
         .mariadb_root

@@ -30,10 +30,10 @@ use std::sync::atomic::AtomicBool;
 use anyhow::{bail, Context, Result};
 
 use crate::archive::{self, Inner, Kind};
-use crate::catalog::Component;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::net::Net;
+use crate::setup::catalog::Component;
 use crate::verify::{self, Expect};
 
 pub use lang::{make_launchers, version_key};
@@ -247,7 +247,7 @@ pub fn work_dir(ctx: &Ctx, component: &Component) -> Result<PathBuf> {
 }
 
 /// Downloads and verifies one file into `work`; the same file added by hand
-/// (`downloads.rs`) is used instead, and a failed download says where to
+/// (`setup/downloads.rs`) is used instead, and a failed download says where to
 /// get it in the browser (`ByHand`).
 pub fn fetch(
     ctx: &Ctx,
@@ -258,7 +258,7 @@ pub fn fetch(
     progress: &mut dyn Progress,
 ) -> Result<PathBuf> {
     let file = work.join(file_name);
-    if crate::downloads::take(ctx.kit, file_name, expect, &file)? {
+    if crate::setup::downloads::take(ctx.kit, file_name, expect, &file)? {
         progress.note("file added by hand, checksum ok");
         return Ok(file);
     }
@@ -604,8 +604,8 @@ fn github_single(ctx: &Ctx, repo: &str, re: &str, kind: Kind, inner: Inner) -> R
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::catalog::Catalog;
     use crate::kit::tests::TempDir;
+    use crate::setup::catalog::Catalog;
 
     #[test]
     fn every_catalog_component_has_an_installer() {

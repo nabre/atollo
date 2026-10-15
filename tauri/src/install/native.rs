@@ -14,11 +14,11 @@ use windows::Win32::System::Registry::{
 };
 
 use super::{fetch, triple_arch, work_dir, Ctx, Installer, Progress, Release};
-use crate::catalog::Component;
 use crate::fsx::write_atomic;
 use crate::jobs;
 use crate::net::first_sha256;
 use crate::settings::Settings;
+use crate::setup::catalog::Component;
 use crate::verify::Expect;
 
 /// Runs a kit program, sending its output lines to the progress notes.
@@ -333,8 +333,9 @@ impl Installer for Pnpm {
     ) -> Result<()> {
         // npm-cli.js with the kit's node, no cmd.exe: its quoting breaks on
         // kit paths with `&` or parentheses (found in a test kit).
-        let node = crate::catalog::kit_path(ctx.kit, r"node\node.exe");
-        let npm_cli = crate::catalog::kit_path(ctx.kit, r"node\node_modules\npm\bin\npm-cli.js");
+        let node = crate::setup::catalog::kit_path(ctx.kit, r"node\node.exe");
+        let npm_cli =
+            crate::setup::catalog::kit_path(ctx.kit, r"node\node_modules\npm\bin\npm-cli.js");
         if !node.is_file() || !npm_cli.is_file() {
             bail!("the kit's Node.js is needed for pnpm and yarn");
         }

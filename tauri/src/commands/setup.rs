@@ -220,7 +220,7 @@ pub fn setup_cancel<R: Runtime>(
     Ok(())
 }
 
-/// Files downloaded by hand (downloads.rs, D-82), dropped on the window:
+/// Files downloaded by hand (setup/downloads.rs, D-82), dropped on the window:
 /// kept in `data\downloads` for the next installation. Their names.
 #[tauri::command]
 pub async fn downloads_add<R: Runtime>(
@@ -232,7 +232,7 @@ pub async fn downloads_add<R: Runtime>(
     let kit = state.kit.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let files: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
-        crate::downloads::add(&kit, &files)
+        crate::setup::downloads::add(&kit, &files)
     })
     .await
     .map_err(|e| fail("downloads", e))?
@@ -250,11 +250,11 @@ pub async fn downloads_pick<R: Runtime>(
     let title = crate::i18n::t(state.lang(), "Scegli il file scaricato", &[]);
     let kit = state.kit.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let files = crate::downloads::pick(owner, &title)?;
+        let files = crate::setup::downloads::pick(owner, &title)?;
         if files.is_empty() {
             return Ok(Vec::new());
         }
-        crate::downloads::add(&kit, &files)
+        crate::setup::downloads::add(&kit, &files)
     })
     .await
     .map_err(|e| fail("downloads", e))?
@@ -278,7 +278,7 @@ pub fn setup_by_hand_open<R: Runtime>(
         .into_iter()
         .rfind(|s| s.id == id && s.name == name)
         .and_then(|s| match s.outcome {
-            Some(crate::setup_runner::Outcome::Failed {
+            Some(crate::setup::runner::Outcome::Failed {
                 by_hand: Some(b), ..
             }) => Some(b.url),
             _ => None,

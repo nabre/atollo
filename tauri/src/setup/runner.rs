@@ -16,8 +16,8 @@ use windows::core::HSTRING;
 use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, HANDLE};
 use windows::Win32::System::Threading::CreateMutexW;
 
+use super::catalog::{Catalog, Choice, Component};
 use crate::archive::{self, InUse};
-use crate::catalog::{Catalog, Choice, Component};
 use crate::install::{self, Ctx, Progress};
 use crate::kit::Arch;
 use crate::net::Cancelled;

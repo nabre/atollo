@@ -86,7 +86,7 @@ pub fn server_dir(kit: &Kit) -> PathBuf {
 /// The files started (`out\server-main.js`, `node.exe`) are there: the
 /// catalog's key and keys of `vscodium-server`.
 pub fn is_installed(kit: &Kit) -> bool {
-    crate::catalog::Catalog::get()
+    crate::setup::catalog::Catalog::get()
         .find("vscodium-server")
         .is_some_and(|c| c.is_installed(kit))
 }
@@ -487,7 +487,7 @@ mod tests {
         };
         let kit = Kit::at(PathBuf::from(root), crate::kit::Arch::detect());
         kit.prepare().unwrap();
-        crate::kit_files::write_all(&kit).unwrap();
+        crate::setup::kit_files::write_all(&kit).unwrap();
         let env = KitEnv::build(
             &kit,
             &crate::settings::Settings::default(),

@@ -5,7 +5,7 @@
 //! Embedded in the exe and installed with the server's own command line
 //! before the server starts, whenever the installed version is not the
 //! embedded one: the windows open with the theme already there. The kit owns
-//! it, like the files of kit_files.rs: uninstalled, it comes back.
+//! it, like the files of setup/kit_files.rs: uninstalled, it comes back.
 
 use std::fs;
 use std::io::Write;

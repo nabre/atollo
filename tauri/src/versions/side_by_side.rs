@@ -16,9 +16,9 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::catalog::{Catalog, Component};
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
+use crate::setup::catalog::{Catalog, Component};
 
 /// Every folder of a versioned component on disk (the default first).
 fn line_dirs(kit: &Kit, c: &Component) -> Vec<(String, PathBuf)> {
@@ -37,7 +37,7 @@ pub fn refresh(kit: &Kit) {
         crate::log::warn(&format!(".NET side by side: {e:#}"));
     }
     // `make` for a C/C++ installed before the kit wrote it.
-    let cc_bin = crate::catalog::kit_path(kit, "cc/bin");
+    let cc_bin = crate::setup::catalog::kit_path(kit, "cc/bin");
     if let Err(e) = crate::install::make_launchers(&cc_bin) {
         crate::log::warn(&format!("make for C/C++: {e:#}"));
     }

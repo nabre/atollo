@@ -10,11 +10,11 @@ use serde_json::Value;
 
 use super::{arch_of, github_single, pattern, triple_arch, Ctx, Dest, Installer, Release};
 use crate::archive::{Inner, Kind};
-use crate::catalog::Component;
 use crate::fsx::write_atomic;
 use crate::jobs;
 use crate::net::{github_digest, hash_in_list};
 use crate::settings::Settings;
+use crate::setup::catalog::Component;
 use crate::verify::Expect;
 
 /// Git for Windows Portable: a self-extracting 7z, read directly (no 7-Zip

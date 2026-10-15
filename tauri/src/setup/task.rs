@@ -10,13 +10,13 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use serde::Serialize;
 
-use crate::catalog::Catalog;
+use super::catalog::Catalog;
+use super::runner::{self, Busy, Event, Options, Outcome, Sink};
 use crate::env::KitEnv;
 use crate::install::{self, Ctx};
 use crate::kit::Kit;
 use crate::net::Net;
 use crate::settings::Settings;
-use crate::setup_runner::{self, Busy, Event, Options, Outcome, Sink};
 
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -201,7 +201,7 @@ impl SetupTask {
             cancel: &self.cancel,
         };
         let mut sink = TaskSink { task: self, notify };
-        match setup_runner::run(&ctx, opts, &mut sink) {
+        match runner::run(&ctx, opts, &mut sink) {
             Ok(_) => Ok(()),
             Err(e) if e.is::<Busy>() => Err(crate::i18n::t(
                 self.lang(),
