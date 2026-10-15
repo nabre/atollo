@@ -102,6 +102,30 @@ body {
   background: var(--vsc-scrollbar-active);
 }
 
+/* A native disclosure with VSCodium's twistie (the Codicon chevron of
+   codicon.css, linked by workbench/elements.ts), not the browser's
+   triangle; it turns down when open. */
+@layer base {
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary::before {
+    content: "\eab6";
+    flex-shrink: 0;
+    font: normal normal normal 16px/1 codicon;
+    transition: rotate 0.1s;
+  }
+  details[open] > summary::before {
+    rotate: 90deg;
+  }
+}
+
 /* The brand cover, behind welcome and empty pages: content stays on the
    left, the strokes rise on the right. */
 .font-brand {
