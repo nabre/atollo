@@ -170,7 +170,7 @@ export function projectEnvApply(project: string, engine: ProjectDb["engine"]): P
   return act("project_env_apply", { project, engine });
 }
 
-/** A copy of a project's database (data\db\backup\<project>, D-78). */
+/** A copy of a project's database (data\projects\<project>\private\backups, D-78). */
 export interface Backup {
   file: string;
   engine: "mariadb" | "mongodb";

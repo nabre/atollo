@@ -20,6 +20,11 @@ export interface AppInfo {
   firstRun: boolean;
   /** Other copies of the kit with programs open on this PC. */
   otherKits: string[];
+  /** File system of the kit's disk; `null` when it could not be read. */
+  diskFs: "NTFS" | "ReFS" | "FAT32" | "exFAT" | "other" | null;
+  diskKind: "fixed" | "removable" | "remote" | "other" | null;
+  /** The host's temporary folder when the programs use it; `null`: `data\tmp`. */
+  systemTemp: string | null;
 }
 
 const SAMPLE_INFO: AppInfo = {
@@ -35,6 +40,9 @@ const SAMPLE_INFO: AppInfo = {
   watcherUnsafeFolder: null,
   firstRun: false,
   otherKits: [],
+  diskFs: "NTFS",
+  diskKind: "fixed",
+  systemTemp: null,
 };
 
 export function appInfo(): Promise<AppInfo> {
@@ -71,6 +79,8 @@ export interface Settings {
   rustToolchain: "gnu" | "msvc" | null;
   /** `null` = the kit's Windows Terminal; `classic` = Windows' classic console. */
   terminal: "classic" | null;
+  /** `TEMP` of the programs; applies to the consoles opened after saving. */
+  programTemp: "auto" | "kit" | "system";
 }
 
 export interface SettingsView {
@@ -90,6 +100,7 @@ const SAMPLE_SETTINGS: SettingsView = {
     phpVersion: null,
     rustToolchain: null,
     terminal: null,
+    programTemp: "auto",
   },
   geminiKeySet: false,
   problem: null,

@@ -17,6 +17,14 @@ export function KitInfo({ info }: { info: AppInfo }) {
     ["WebView2", info.webview],
     [t("Versione"), info.version],
   ];
+  facts.splice(3, 0, [t("Cartella temporanea dei programmi"), info.systemTemp ?? "data\\tmp"]);
+  if (info.diskFs !== null) {
+    const kind = { fixed: t("fisso"), removable: t("rimovibile"), remote: t("di rete"), other: t("altro") };
+    facts.splice(3, 0, [
+      t("Disco del kit"),
+      info.diskKind === null ? info.diskFs : `${info.diskFs}, ${kind[info.diskKind]}`,
+    ]);
+  }
   const rows = facts.map(([k, v]): [string, React.ReactNode] => [
     k,
     <span className="font-mono text-[12px] break-all select-text">{v}</span>,
