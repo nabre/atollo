@@ -6,6 +6,7 @@ import { projectEditorSettings, projectEditorSettingsSet, type EditorSettingsVie
 import { t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction } from "./hooks";
+import { Select } from "./workbench";
 
 type Tri = "default" | "yes" | "no";
 const toTri = (v: boolean | null): Tri => (v === null ? "default" : v ? "yes" : "no");
@@ -72,32 +73,28 @@ export function EditorSettingsBox({ project }: { project: string }) {
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2">
               {t("Formatta al salvataggio")}
-              <select
-                className={field}
+              <Select
                 value={format}
-                onChange={(e) => {
-                  setFormat(e.target.value as Tri);
-                }}
-              >
-                <option value="default">{t("come l'editor")}</option>
-                <option value="yes">{t("sì")}</option>
-                <option value="no">{t("no")}</option>
-              </select>
+                onChange={setFormat}
+                options={[
+                  { value: "default", label: t("come l'editor") },
+                  { value: "yes", label: t("sì") },
+                  { value: "no", label: t("no") },
+                ]}
+              />
             </label>
             <label className="flex items-center gap-2">
               {t("Rientro")}
-              <select
-                className={field}
+              <Select
                 value={indent}
-                onChange={(e) => {
-                  setIndent(e.target.value);
-                }}
-              >
-                <option value="default">{t("come l'editor")}</option>
-                <option value="2">{t("2 spazi")}</option>
-                <option value="4">{t("4 spazi")}</option>
-                <option value="tab">{t("tabulazione")}</option>
-              </select>
+                onChange={setIndent}
+                options={[
+                  { value: "default", label: t("come l'editor") },
+                  { value: "2", label: t("2 spazi") },
+                  { value: "4", label: t("4 spazi") },
+                  { value: "tab", label: t("tabulazione") },
+                ]}
+              />
             </label>
           </div>
           <label className="block space-y-1">

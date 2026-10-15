@@ -11,7 +11,7 @@ import {
   onGithub,
   type GithubStatus,
 } from "../api";
-import { useAction } from "../hooks";
+import { useAction, useCopy } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { useSubscription } from "../hooks";
 import { rich, t } from "../i18n";
@@ -47,7 +47,7 @@ function Account({
 }) {
   const { busy, error, run } = useAction(onChanged);
   const [confirm, setConfirm] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy, reset: resetCopied } = useCopy();
   if (!status) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
   return (
     <section aria-labelledby="gh-account" className="space-y-2 border-t border-vsc-border px-3 py-2">
@@ -79,9 +79,7 @@ function Account({
                   icon={copied ? VscCheck : VscCopy}
                   label={copied ? t("Codice copiato") : t("Copia il codice")}
                   onClick={() => {
-                    void navigator.clipboard.writeText(status.code ?? "").then(() => {
-                      setCopied(true);
-                    });
+                    copy(status.code ?? "");
                   }}
                 />
                 <ActionButton
@@ -147,7 +145,7 @@ function Account({
             primary
             busy={busy === "in"}
             onClick={() => {
-              setCopied(false);
+              resetCopied();
               run("in", () => onSignIn(false));
             }}
           />

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import type { FrameworkPiece, FrameworkPlan, FrameworksView } from "../api";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { CheckboxLabel, Notice, SettingItem, SettingsGroup } from "../workbench";
+import { CheckboxLabel, Notice, Select, SettingItem, SettingsGroup } from "../workbench";
 import { bases, slotLabel, textOf, useCombination, useComponents, usePlan, type Frameworks } from "./model";
 import { PieceLogo, ToolTag } from "./tags";
 
@@ -182,20 +182,13 @@ function TryPlan({ view, pieces }: { view: FrameworksView | null; pieces: Framew
   const { plan, error } = usePlan(pieces, base, addons);
   return (
     <div className="space-y-3">
-      <select
-        aria-label={t("Base")}
+      <Select
+        label={t("Base")}
         value={base}
-        onChange={(e) => {
-          setBase(e.target.value);
-        }}
-        className="input w-full"
-      >
-        {bases(pieces).map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
+        onChange={setBase}
+        options={bases(pieces).map((b) => ({ value: b.id, label: b.name }))}
+        className="w-full"
+      />
       <AddonChoice view={view} base={base} available={available} addons={addons} toggle={toggle} />
       <PlanView view={view} plan={plan} error={error} />
     </div>

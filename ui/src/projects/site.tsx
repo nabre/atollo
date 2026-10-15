@@ -6,6 +6,7 @@ import { projectSite, type ProjectInfo, type SiteKind } from "../api";
 import { useAction } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
+import { Select } from "../workbench";
 
 /** "Servi come sito web": a folder of the project served on its own port. */
 export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () => void }) {
@@ -33,17 +34,15 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-vsc-desc">{t("con")}</span>
-        <select
+        <Select<SiteKind>
           value={kind}
-          onChange={(e) => {
-            setKind(e.target.value as SiteKind);
-          }}
-          className="input"
-        >
-          <option value="static">{t("file statici")}</option>
-          <option value="php">{t("PHP (server integrato)")}</option>
-          <option value="apache">{t("Apache dedicato")}</option>
-        </select>
+          onChange={setKind}
+          options={[
+            { value: "static", label: t("file statici") },
+            { value: "php", label: t("PHP (server integrato)") },
+            { value: "apache", label: t("Apache dedicato") },
+          ]}
+        />
       </label>
       <ActionButton icon={VscGlobe} label={t("Salva")} busy={busy === "site"} onClick={() => undefined} submit />
       {site && (

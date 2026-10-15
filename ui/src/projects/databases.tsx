@@ -17,7 +17,7 @@ import {
 } from "../api";
 import { SecretField } from "../databases";
 import { DatabaseCopies } from "../backups";
-import { EditorSection, Notice, Properties } from "../workbench";
+import { DataTable, EditorSection, Notice, Properties } from "../workbench";
 import { COMPONENT_NAMES } from "./needs";
 
 function EnvPreview({
@@ -52,19 +52,17 @@ function EnvPreview({
         <>
           <p className="text-vsc-desc">{t("Righe di .env che cambiano:")}</p>
           <div className="overflow-x-auto rounded border border-vsc-border">
-            <table className="w-full text-[12px]">
-              <tbody>
-                {changes.map((c) => (
-                  <tr key={c.key} className="border-t border-vsc-border first:border-t-0">
-                    <td className="px-2 py-1 font-mono">{c.key}</td>
-                    <td className="px-2 py-1 font-mono text-vsc-desc line-through">{c.old ?? ""}</td>
-                    <td className="px-2 py-1 font-mono">
-                      {c.key.includes("PASSWORD") || c.key.includes("URI") || c.key.includes("URL") ? "••••" : c.new}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <DataTable className="w-full text-[12px]">
+              {changes.map((c) => (
+                <tr key={c.key} className="border-t border-vsc-border first:border-t-0">
+                  <td className="px-2 py-1 font-mono">{c.key}</td>
+                  <td className="px-2 py-1 font-mono text-vsc-desc line-through">{c.old ?? ""}</td>
+                  <td className="px-2 py-1 font-mono">
+                    {c.key.includes("PASSWORD") || c.key.includes("URI") || c.key.includes("URL") ? "••••" : c.new}
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
           </div>
           {!envIgnored && (
             <Notice tone="warning">

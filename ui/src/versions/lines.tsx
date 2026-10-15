@@ -4,7 +4,7 @@ import { VscRefresh } from "react-icons/vsc";
 import type { SetupSnapshot, VersionedTool } from "../api";
 import { t } from "../i18n";
 import { ActionButton } from "../common";
-import { Link, Notice } from "../workbench";
+import { Link, Notice, Select } from "../workbench";
 import { isPresent, offered, present, stepOf } from "./model";
 
 /** The list of a tool's lines: those on disk, then those to download by
@@ -31,35 +31,23 @@ export function LineSelect({
   const groups = offered(tool);
   const known = value === first?.value || disk.some((o) => o.line === value) || tool.available.includes(value);
   return (
-    <select
+    <Select
       id={id}
-      aria-label={label}
+      label={label}
       value={value}
       disabled={disabled}
-      onChange={(e) => {
-        onChange(e.target.value);
-      }}
-      className="input min-w-0 flex-1"
-    >
-      {first && <option value={first.value}>{first.label}</option>}
-      <optgroup label={t("Scaricate")}>
-        {disk.map((o) => (
-          <option key={o.line} value={o.line}>
-            {o.label}
-          </option>
-        ))}
-      </optgroup>
-      {groups.map((g) => (
-        <optgroup key={g.major} label={t("Da scaricare: {0}.x", g.major)}>
-          {g.lines.map((l) => (
-            <option key={l} value={l}>
-              {t("{0} (da scaricare)", l)}
-            </option>
-          ))}
-        </optgroup>
-      ))}
-      {!known && <option value={value}>{t("{0} (non scaricata)", value)}</option>}
-    </select>
+      onChange={onChange}
+      options={[
+        ...(first ? [first] : []),
+        { group: t("Scaricate"), options: disk.map((o) => ({ value: o.line, label: o.label })) },
+        ...groups.map((g) => ({
+          group: t("Da scaricare: {0}.x", g.major),
+          options: g.lines.map((l) => ({ value: l, label: t("{0} (da scaricare)", l) })),
+        })),
+        ...(known ? [] : [{ value, label: t("{0} (non scaricata)", value) }]),
+      ]}
+      className="min-w-0 flex-1"
+    />
   );
 }
 

@@ -21,6 +21,7 @@ import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction } from "./hooks";
 import { Tag } from "./tags";
+import { DataTable } from "./workbench";
 
 /** The matrix, read again when the preparation finishes a step or `key`
  * (the components on disk) changes; the backend rebuilds it only when what
@@ -252,103 +253,74 @@ export function RelationsSection({
           {t("Matrice delle relazioni: {0} attive, {1} da sistemare", active.length, problems)}
         </summary>
         <div className="overflow-x-auto px-4 pb-3">
-          <table className="w-full border-collapse text-[12px]">
-            <caption className="sr-only">{t("Relazioni fra gli strumenti")}</caption>
-            <thead>
-              <tr className="text-vsc-desc">
-                <th scope="col" className="px-2 text-left font-normal">
-                  {t("Strumento")}
-                </th>
-                <th scope="col" className="px-2 text-left font-normal">
-                  {t("Richiede")}
-                </th>
-                <th scope="col" className="px-2 text-left font-normal">
-                  {t("Versioni")}
-                </th>
-                <th scope="col" className="px-2 text-left font-normal">
-                  {t("Stato")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {matrix.links.map((l) => {
-                const s = linkStatus(l);
-                return (
-                  <tr key={`${l.from}>${l.to}`} className="hover:bg-vsc-list-hover" title={l.note ?? undefined}>
-                    <th scope="row" className={`${cell} font-normal whitespace-nowrap`}>
-                      <span className="inline-flex items-center gap-1.5">
-                        <ComponentLogo id={component(l.from)} size={12} />
-                        {l.fromName}
-                      </span>
+          <DataTable
+            caption={t("Relazioni fra gli strumenti")}
+            columns={[t("Strumento"), t("Richiede"), t("Versioni"), t("Stato")]}
+            className="w-full border-collapse text-[12px]"
+          >
+            {matrix.links.map((l) => {
+              const s = linkStatus(l);
+              return (
+                <tr key={`${l.from}>${l.to}`} className="hover:bg-vsc-list-hover" title={l.note ?? undefined}>
+                  <th scope="row" className={`${cell} font-normal whitespace-nowrap`}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <ComponentLogo id={component(l.from)} size={12} />
+                      {l.fromName}
+                    </span>
+                  </th>
+                  <td className={`${cell} whitespace-nowrap`}>
+                    {l.toName}
+                    {l.optional && <span className="ml-1 text-vsc-desc">{t("(facoltativo)")}</span>}
+                  </td>
+                  <td className={`${cell} font-mono`}>{l.range ?? "—"}</td>
+                  <td className={`${cell} ${s.tone}`}>
+                    {s.text}
+                    {l.outside.length > 0 && l.status !== "inactive" && (
+                      <span className="ml-1 text-vsc-desc">{t("(non con {0})", l.outside.join(", "))}</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </DataTable>
+          {matrix.projects.length > 0 && (
+            <DataTable
+              caption={t("Versioni chieste dai progetti")}
+              captionVisible
+              columns={[t("Progetto"), t("Chiede"), t("Stato"), null]}
+              className="mt-3 w-full border-collapse text-[12px]"
+            >
+              {matrix.projects.flatMap((p) =>
+                p.needs.map((n) => (
+                  <tr key={`${p.project}:${n.source}`} className="hover:bg-vsc-list-hover">
+                    <th scope="row" className={`${cell} font-normal`}>
+                      {p.project}
                     </th>
-                    <td className={`${cell} whitespace-nowrap`}>
-                      {l.toName}
-                      {l.optional && <span className="ml-1 text-vsc-desc">{t("(facoltativo)")}</span>}
+                    <td className={cell}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <ComponentLogo id={n.component} size={12} />
+                        {n.name} <span className="font-mono">{n.declared}</span>
+                      </span>
+                      <span className="ml-1 text-vsc-desc">({n.source})</span>
                     </td>
-                    <td className={`${cell} font-mono`}>{l.range ?? "—"}</td>
-                    <td className={`${cell} ${s.tone}`}>
-                      {s.text}
-                      {l.outside.length > 0 && l.status !== "inactive" && (
-                        <span className="ml-1 text-vsc-desc">{t("(non con {0})", l.outside.join(", "))}</span>
-                      )}
+                    <td className={`${cell} ${n.status === "ok" ? "text-vsc-success" : "text-vsc-orange"}`}>
+                      {needText(n)}
+                    </td>
+                    <td className={`${cell} text-right`}>
+                      <NeedAction
+                        project={p.project}
+                        need={n}
+                        busy={busy === `${p.project}:${n.source}`}
+                        running={running}
+                        onRun={(task) => {
+                          run(`${p.project}:${n.source}`, () => task().then(() => undefined));
+                        }}
+                      />
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {matrix.projects.length > 0 && (
-            <table className="mt-3 w-full border-collapse text-[12px]">
-              <caption className="pb-1 text-left text-[12px] font-semibold">
-                {t("Versioni chieste dai progetti")}
-              </caption>
-              <thead>
-                <tr className="text-vsc-desc">
-                  <th scope="col" className="px-2 text-left font-normal">
-                    {t("Progetto")}
-                  </th>
-                  <th scope="col" className="px-2 text-left font-normal">
-                    {t("Chiede")}
-                  </th>
-                  <th scope="col" className="px-2 text-left font-normal">
-                    {t("Stato")}
-                  </th>
-                  <th scope="col" className="px-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {matrix.projects.flatMap((p) =>
-                  p.needs.map((n) => (
-                    <tr key={`${p.project}:${n.source}`} className="hover:bg-vsc-list-hover">
-                      <th scope="row" className={`${cell} font-normal`}>
-                        {p.project}
-                      </th>
-                      <td className={cell}>
-                        <span className="inline-flex items-center gap-1.5">
-                          <ComponentLogo id={n.component} size={12} />
-                          {n.name} <span className="font-mono">{n.declared}</span>
-                        </span>
-                        <span className="ml-1 text-vsc-desc">({n.source})</span>
-                      </td>
-                      <td className={`${cell} ${n.status === "ok" ? "text-vsc-success" : "text-vsc-orange"}`}>
-                        {needText(n)}
-                      </td>
-                      <td className={`${cell} text-right`}>
-                        <NeedAction
-                          project={p.project}
-                          need={n}
-                          busy={busy === `${p.project}:${n.source}`}
-                          running={running}
-                          onRun={(task) => {
-                            run(`${p.project}:${n.source}`, () => task().then(() => undefined));
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  )),
-                )}
-              </tbody>
-            </table>
+                )),
+              )}
+            </DataTable>
           )}
           <ErrorLine error={error} />
           <p className="mt-2 text-[11px] text-vsc-desc">

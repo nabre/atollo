@@ -2,13 +2,13 @@
 // open from the kit, stops it, puts Antigravity's login back into the kit,
 // then closes the app so the drive can be removed safely. The same list is
 // shown when the window is closed with something open (CloseDialog).
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { VscClose, VscDebugDisconnect, VscRefresh } from "react-icons/vsc";
 
 import { appQuit, ejectList, ejectRun, type OpenNow } from "./api";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction } from "./hooks";
-import { EditorBody, EditorSection, Notice, SingleEditor } from "./workbench";
+import { ConfirmDialog, EditorBody, EditorSection, Notice, SingleEditor } from "./workbench";
 import { t } from "./i18n";
 
 function nothingOpen(o: OpenNow): boolean {
@@ -119,54 +119,26 @@ export function EjectPage() {
 /** Asked when the window is closed with something still open. */
 export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () => void }) {
   const { busy, error, run } = useAction();
-  const cancelRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    cancelRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [onCancel]);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="close-title"
-        aria-describedby="close-desc"
-        className="w-[min(32rem,90vw)] space-y-2 rounded border border-vsc-widget-border bg-vsc-widget p-3 shadow-[0_0_8px_2px_var(--vsc-shadow)]"
-      >
-        <h2 id="close-title" className="text-[14px] font-semibold">
-          {t("Chiudere Atollo?")}
-        </h2>
-        <div id="close-desc" className="space-y-2">
-          <p>{t("Chiudendo si chiudono anche:")}</p>
-          <OpenList open={open} />
-        </div>
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            ref={cancelRef}
-            type="button"
-            onClick={onCancel}
-            className="min-h-[26px] rounded border border-vsc-button-border bg-vsc-button2 px-[11px] py-1 leading-[18px] text-vsc-button2-fg hover:bg-vsc-button2-hover"
-          >
-            {t("Annulla")}
-          </button>
-          <ActionButton
-            icon={VscClose}
-            label={t("Chiudi tutto")}
-            primary
-            busy={busy === "quit"}
-            onClick={() => {
-              run("quit", appQuit);
-            }}
-          />
-        </div>
-        <ErrorLine error={error} />
-      </div>
-    </div>
+    <ConfirmDialog
+      title={t("Chiudere Atollo?")}
+      cancelLabel={t("Annulla")}
+      onCancel={onCancel}
+      actions={
+        <ActionButton
+          icon={VscClose}
+          label={t("Chiudi tutto")}
+          primary
+          busy={busy === "quit"}
+          onClick={() => {
+            run("quit", appQuit);
+          }}
+        />
+      }
+      footer={<ErrorLine error={error} />}
+    >
+      <p>{t("Chiudendo si chiudono anche:")}</p>
+      <OpenList open={open} />
+    </ConfirmDialog>
   );
 }

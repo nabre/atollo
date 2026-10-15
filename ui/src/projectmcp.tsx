@@ -7,6 +7,7 @@ import { projectMcp, projectMcpSet, type McpServer, type McpView } from "./api";
 import { t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction } from "./hooks";
+import { Select } from "./workbench";
 
 function describe(s: McpServer): string {
   return s.kind === "http" ? (s.url ?? "") : [s.command ?? "", ...s.args].join(" ");
@@ -57,16 +58,15 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
         </label>
         <label className="space-y-1">
           <span className="text-vsc-desc">{t("Tipo")}</span>
-          <select
-            className={field}
+          <Select<McpServer["kind"]>
             value={kind}
-            onChange={(e) => {
-              setKind(e.target.value as McpServer["kind"]);
-            }}
-          >
-            <option value="stdio">{t("programma")}</option>
-            <option value="http">{t("indirizzo (http)")}</option>
-          </select>
+            onChange={setKind}
+            options={[
+              { value: "stdio", label: t("programma") },
+              { value: "http", label: t("indirizzo (http)") },
+            ]}
+            className="w-full"
+          />
         </label>
       </div>
       {kind === "stdio" ? (
