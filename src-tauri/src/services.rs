@@ -111,6 +111,7 @@ pub struct Services {
     kit: Kit,
     running: Mutex<BTreeMap<String, Server>>,
     errors: Mutex<BTreeMap<String, String>>,
+    adminer: crate::adminer::Adminer,
 }
 
 /// The version of `id` the server runs: the one in its settings while it is
@@ -371,6 +372,7 @@ impl Services {
             kit,
             running: Mutex::new(BTreeMap::new()),
             errors: Mutex::new(BTreeMap::new()),
+            adminer: crate::adminer::Adminer::default(),
         }
     }
 
@@ -903,8 +905,18 @@ impl Services {
         }
     }
 
+    /// The address that opens Adminer logged in to the running MariaDB
+    /// (D-85).
+    pub fn adminer_url(&self) -> Result<String> {
+        let (port, env) = self.running_server("mariadb")?;
+        self.adminer.open(&self.kit, &env, port)
+    }
+
     /// Asks the server to shut down, then ends whatever is left.
     pub fn stop(&self, id: &str) {
+        if id == "mariadb" {
+            self.adminer.stop();
+        }
         let Some(mut server) = self
             .running
             .lock()
@@ -1266,6 +1278,13 @@ mod tests {
             if id == "mariadb" {
                 assert!(crate::db_browse::rows(&s, id, "prova_kit", "no`; DROP", 0).is_err());
             }
+            // Adminer logged in with the token only, ended with MariaDB (D-85).
+            let adminer = (id == "mariadb" && installed(&kit, "adminer")).then(|| {
+                let url = s.adminer_url().unwrap();
+                crate::adminer::tests::assert_logs_in(&url);
+                assert_eq!(s.adminer_url().unwrap(), url, "the same Adminer");
+                url
+            });
             let file = s.export("Prova Kit", id).unwrap();
             assert!(file.is_file(), "{id}: copy written");
             admin(lose);
@@ -1281,6 +1300,9 @@ mod tests {
             let _ = fs::remove_file(&file);
             s.stop(id);
             assert!(!responds(port), "{id} stopped");
+            if let Some(url) = adminer {
+                assert!(ureq::get(&url).call().is_err(), "Adminer stopped");
+            }
             assert_eq!(s.running(), 0);
             s.set(id, before.port, before.autostart).unwrap();
         }

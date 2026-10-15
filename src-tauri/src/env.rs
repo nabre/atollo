@@ -112,6 +112,26 @@ pub struct KitEnv {
     vars: BTreeMap<String, String>,
 }
 
+/// The newest version folder in `ndk` (`30.0.16248370`), if any.
+fn newest_ndk(ndk: &Path) -> Option<PathBuf> {
+    let key = |p: &PathBuf| -> Vec<u64> {
+        p.file_name()
+            .map(|n| {
+                n.to_string_lossy()
+                    .split('.')
+                    .filter_map(|x| x.parse().ok())
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    std::fs::read_dir(ndk)
+        .ok()?
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.join("source.properties").is_file())
+        .max_by_key(key)
+}
+
 impl KitEnv {
     pub fn get(&self, name: &str) -> Option<&str> {
         self.vars
@@ -369,6 +389,18 @@ impl KitEnv {
         when(&mut path, r"maven\bin\mvn.cmd", &[app(r"maven\bin")]);
         when(&mut path, r"gradle\bin\gradle.bat", &[app(r"gradle\bin")]);
         when(&mut path, r"kotlin\bin\kotlinc.bat", &[app(r"kotlin\bin")]);
+        // The Android SDK (D-84): Gradle finds it through ANDROID_HOME.
+        if has(r"android\cmdline-tools\latest\bin\sdkmanager.bat") {
+            env.set_path("ANDROID_HOME", app("android"));
+            env.set_path("ANDROID_SDK_ROOT", app("android"));
+            path.push(app(r"android\cmdline-tools\latest\bin"));
+            path.push(app(r"android\platform-tools"));
+            // The newest NDK installed by sdkmanager (Tauri mobile).
+            if let Some(ndk) = newest_ndk(&app(r"android\ndk")) {
+                env.set_path("NDK_HOME", &ndk);
+                env.set_path("ANDROID_NDK_HOME", &ndk);
+            }
+        }
         when(
             &mut path,
             r"dotnet\dotnet.exe",

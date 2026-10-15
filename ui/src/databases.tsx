@@ -12,9 +12,11 @@ import {
   VscEye,
   VscEyeClosed,
   VscFolderOpened,
+  VscLinkExternal,
   VscRefresh,
 } from "react-icons/vsc";
 import {
+  dbAdminOpen,
   folderOpen,
   serviceLine,
   serviceSet,
@@ -131,11 +133,14 @@ function ServiceDetails({
   onStop,
   onSet,
   onLine,
+  onAdminer,
 }: {
   s: ServiceInfo;
   busy: boolean;
   onStart: () => void;
   onStop: () => void;
+  /** MariaDB only: Adminer in the browser. */
+  onAdminer?: (() => void) | undefined;
   onSet: (port: number | null, autostart: boolean) => void;
   onLine: (line: string | null) => void;
 }) {
@@ -144,7 +149,10 @@ function ServiceDetails({
   const portValue = Number(port);
   const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
   const portId = `port-${s.id}`;
-  const [section, setSection] = useState<"content" | "details">(s.state === "running" ? "content" : "details");
+  // MariaDB's content is in Adminer (D-85): no explorer, only the details.
+  const explorer = s.id !== "mariadb";
+  const [chosen, setSection] = useState<"content" | "details">(s.state === "running" ? "content" : "details");
+  const section = explorer ? chosen : "details";
   // The explorer stays while the server is on: a check that misses once
   // ("starting" for a moment) must not close it and lose the table chosen.
   const [browsable, setBrowsable] = useState(s.state === "running");
@@ -172,22 +180,35 @@ function ServiceDetails({
             : []),
         ]}
         actions={
-          on ? (
-            <ActionButton icon={VscDebugStop} label={t("Ferma")} busy={busy} onClick={onStop} />
-          ) : (
-            <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />
-          )
+          <>
+            {on ? (
+              <ActionButton icon={VscDebugStop} label={t("Ferma")} busy={busy} onClick={onStop} />
+            ) : (
+              <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />
+            )}
+            {onAdminer && (
+              <ActionButton
+                icon={VscLinkExternal}
+                label={t("Apri Adminer")}
+                title={t("MariaDB nel browser, come phpMyAdmin; al primo uso si installa e il server si avvia")}
+                busy={busy}
+                onClick={onAdminer}
+              />
+            )}
+          </>
         }
       />
-      <NavBar
-        label={t("Sezioni del server")}
-        items={[
-          { id: "content", label: t("Contenuto") },
-          { id: "details", label: t("Dettagli") },
-        ]}
-        active={section}
-        onSelect={setSection}
-      />
+      {explorer && (
+        <NavBar
+          label={t("Sezioni del server")}
+          items={[
+            { id: "content", label: t("Contenuto") },
+            { id: "details", label: t("Dettagli") },
+          ]}
+          active={section}
+          onSelect={setSection}
+        />
+      )}
       {section === "content" &&
         (browsable ? (
           <DbBrowser engine={s.id} />
@@ -425,13 +446,20 @@ export function DatabasesPage() {
           onLine={(line) => {
             act(service.id, () => serviceLine(service.id, line));
           }}
+          onAdminer={
+            service.id === "mariadb"
+              ? () => {
+                  act(service.id, dbAdminOpen);
+                }
+              : undefined
+          }
         />
       ) : (
         <div className="flex-1 p-5 text-vsc-desc">{list === null ? t("Caricamento…") : null}</div>
       )}
       <p className="shrink-0 border-t border-vsc-border px-5 py-2 text-[12px] text-vsc-desc">
         {t(
-          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. MariaDB è compatibile con MySQL; nel terminale del kit il comando mariadb entra già come root. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
+          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. MariaDB è compatibile con MySQL; nel terminale del kit il comando mariadb entra già come root, e «Apri Adminer» lo apre nel browser, come phpMyAdmin. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
         )}
       </p>
     </ViewContainer>

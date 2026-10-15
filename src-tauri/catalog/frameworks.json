@@ -116,7 +116,7 @@
         "node"
       ],
       "create": [
-        "npx --yes create-electron-app@8 {name} --template=vite-typescript"
+        "npx --yes create-electron-app@8 {name} --template=vite --typescript"
       ],
       "steps": [],
       "actions": [
@@ -166,7 +166,8 @@
       "home": "https://github.com/android/architecture-templates",
       "needs": [
         "git",
-        "java"
+        "java",
+        "android"
       ],
       "create": [
         "git clone --depth 1 --branch base https://github.com/android/architecture-templates.git {name}"
@@ -181,8 +182,7 @@
           "name": "Build",
           "command": ".\\gradlew.bat assembleDebug"
         }
-      ],
-      "note": "Serve l'SDK di Android (ANDROID_HOME), che non è ancora nel kit."
+      ]
     },
     {
       "id": "vite-bundle",
@@ -396,7 +396,7 @@
         "electron": {
           "steps": [
             "npm install -D tailwindcss@4 @tailwindcss/vite@4",
-            "$f = if (Test-Path electron.vite.config.ts) { 'electron.vite.config.ts' } else { 'vite.renderer.config.ts' }; if (Test-Path $f) { $c = Get-Content $f -Raw; if ($c -match 'plugins:\\s*\\[') { $c = $c -replace 'plugins:\\s*\\[', 'plugins: [tailwindcss(), ' } else { $c = $c -replace 'defineConfig\\((\\s*async\\s*\\(\\)\\s*=>\\s*\\()?\\s*\\{', '$0 plugins: [tailwindcss()],' }; Set-Content $f (\"import tailwindcss from '@tailwindcss/vite'`n\" + $c) } else { Set-Content $f \"import { defineConfig } from 'vite'`nimport tailwindcss from '@tailwindcss/vite'`n`nexport default defineConfig({ plugins: [tailwindcss()] })\" }",
+            "$f = if (Test-Path electron.vite.config.ts) { 'electron.vite.config.ts' } elseif (Test-Path vite.renderer.config.mts) { 'vite.renderer.config.mts' } else { 'vite.renderer.config.ts' }; if (Test-Path $f) { $c = Get-Content $f -Raw; if ($c -match 'plugins:\\s*\\[') { $c = $c -replace 'plugins:\\s*\\[', 'plugins: [tailwindcss(), ' } else { $c = $c -replace 'defineConfig\\((\\s*async\\s*\\(\\)\\s*=>\\s*\\()?\\s*\\{', '$0 plugins: [tailwindcss()],' }; Set-Content $f (\"import tailwindcss from '@tailwindcss/vite'`n\" + $c) } else { Set-Content $f \"import { defineConfig } from 'vite'`nimport tailwindcss from '@tailwindcss/vite'`n`nexport default defineConfig({ plugins: [tailwindcss()] })\" }",
             "foreach ($f in 'src/index.css', 'src/renderer/src/assets/main.css') { if (Test-Path $f) { Set-Content $f (\"@import `\"tailwindcss`\";`n\" + (Get-Content $f -Raw)); break } }"
           ]
         },
@@ -598,7 +598,8 @@
       "on": {
         "laravel": {
           "needs": [
-            "java"
+            "java",
+            "android"
           ],
           "env": [
             {
@@ -615,8 +616,63 @@
               "name": "Android",
               "command": "php artisan native:run android"
             }
+          ]
+        }
+      }
+    },
+    {
+      "id": "capacitor",
+      "kind": "addon",
+      "slot": "mobile",
+      "name": "Android",
+      "desc": "La stessa app anche come app Android: Capacitor con Vite, Tauri mobile con Tauri",
+      "home": "https://capacitorjs.com/docs/getting-started",
+      "on": {
+        "vite": {
+          "needs": [
+            "java",
+            "android"
           ],
-          "note": "Serve l'SDK di Android (ANDROID_HOME), che non è ancora nel kit."
+          "steps": [
+            "npm install @capacitor/core@8 @capacitor/android@8",
+            "npm install -D @capacitor/cli@8",
+            "npx cap init {name} {package} --web-dir dist",
+            "npm run build",
+            "npx cap add android"
+          ],
+          "actions": [
+            {
+              "name": "Android",
+              "command": "npx cap run android"
+            },
+            {
+              "name": "Sincronizza Android",
+              "command": "npm run build && npx cap sync android"
+            }
+          ],
+          "note": "Con Capacitor. Prova l'app su un telefono collegato con il debug USB."
+        },
+        "tauri": {
+          "needs": [
+            "java",
+            "android"
+          ],
+          "steps": [
+            "sdkmanager --install \"ndk;30.0.16248370\"",
+            "rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android",
+            "npm run tauri android init -- --ci"
+          ],
+          "actions": [
+            {
+              "name": "Android",
+              "command": "npm run tauri android dev"
+            },
+            {
+              "name": "APK",
+              "command": "npm run tauri android build -- --apk"
+            }
+          ],
+          "note": "Scarica anche l'NDK di Android (circa 2 GB) e i target Rust per Android."
         }
       }
     },

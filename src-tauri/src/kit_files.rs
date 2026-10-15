@@ -10,6 +10,7 @@ use crate::kit::{write_atomic, Kit};
 
 const FILES: &[(&str, &str)] = &[
     ("loopback.js", include_str!("../../kit-files/loopback.js")),
+    ("adminer.php", include_str!("../../kit-files/adminer.php")),
     ("profile.ps1", include_str!("../../kit-files/profile.ps1")),
     ("console.ps1", include_str!("../../kit-files/console.ps1")),
     ("bashrc", include_str!("../../kit-files/bashrc")),

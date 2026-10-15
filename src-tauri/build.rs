@@ -76,6 +76,7 @@ const COMMANDS: &[&str] = &[
     "service_line",
     "db_browse_tree",
     "db_browse_rows",
+    "db_admin_open",
     "run_list",
     "run_start",
     "run_stop",

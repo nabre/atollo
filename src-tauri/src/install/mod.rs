@@ -15,6 +15,7 @@
 //! (`lines`, `release_line`).
 
 mod agents;
+mod android;
 mod core;
 mod db;
 mod editor;
@@ -206,6 +207,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "go" => &lang::Go,
         "java" => &lang::Java,
         "kotlin" => &lang::Kotlin,
+        "android" => &android::Android,
         "dotnet" => &lang::Dotnet,
         "dart" => &lang::Dart,
         "zig" => &lang::Zig,
@@ -225,6 +227,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "mariadb" => &db::MariaDb,
         "mongodb" => &db::MongoDb,
         "sqlite" => &db::Sqlite,
+        "adminer" => &db::Adminer,
         _ => return None,
     })
 }

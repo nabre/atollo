@@ -54,6 +54,11 @@
     "fr": "base de données documentaire : serveur et shell mongosh",
     "de": "Dokumentendatenbank: Server und mongosh-Shell"
   },
+  "MariaDB nel browser, come phpMyAdmin: tabelle, righe, query SQL, importazione ed esportazione": {
+    "en": "MariaDB in the browser, like phpMyAdmin: tables, rows, SQL queries, import and export",
+    "fr": "MariaDB dans le navigateur, comme phpMyAdmin : tables, lignes, requêtes SQL, import et export",
+    "de": "MariaDB im Browser, wie phpMyAdmin: Tabellen, Zeilen, SQL-Abfragen, Import und Export"
+  },
   "database in un file: riga di comando sqlite3": {
     "en": "database in a file: the sqlite3 command line",
     "fr": "base de données dans un fichier : ligne de commande sqlite3",
@@ -934,11 +939,6 @@
     "fr": "Application Android en Kotlin avec Jetpack Compose (modèle officiel de Google)",
     "de": "Android-App in Kotlin mit Jetpack Compose (offizielle Vorlage von Google)"
   },
-  "Serve l'SDK di Android (ANDROID_HOME), che non è ancora nel kit.": {
-    "en": "Needs the Android SDK (ANDROID_HOME), which is not in the kit yet.",
-    "fr": "Nécessite le SDK Android (ANDROID_HOME), qui n'est pas encore dans le kit.",
-    "de": "Benötigt das Android SDK (ANDROID_HOME), das noch nicht im Kit ist."
-  },
   "Interfaccia in React con TypeScript": {
     "en": "React interface with TypeScript",
     "fr": "Interface en React avec TypeScript",
@@ -1213,5 +1213,25 @@
     "en": "{0} is already a Git repository: choose another name.",
     "fr": "{0} est déjà un dépôt Git : choisissez un autre nom.",
     "de": "{0} ist bereits ein Git-Repository: Wähle einen anderen Namen."
+  },
+  "SDK di Android: sdkmanager, adb, piattaforma e build-tools; installandolo accetti i termini dell'SDK di Android di Google": {
+    "en": "Android SDK: sdkmanager, adb, platform and build-tools; installing it you accept Google's Android SDK terms",
+    "fr": "SDK Android : sdkmanager, adb, plateforme et build-tools ; en l'installant, vous acceptez les conditions du SDK Android de Google",
+    "de": "Android SDK: sdkmanager, adb, Plattform und Build-Tools; mit der Installation akzeptierst du die Bedingungen des Android SDK von Google"
+  },
+  "La stessa app anche come app Android: Capacitor con Vite, Tauri mobile con Tauri": {
+    "en": "The same app as an Android app too: Capacitor with Vite, Tauri mobile with Tauri",
+    "fr": "La même application aussi en application Android : Capacitor avec Vite, Tauri mobile avec Tauri",
+    "de": "Dieselbe App auch als Android-App: Capacitor mit Vite, Tauri mobile mit Tauri"
+  },
+  "Con Capacitor. Prova l'app su un telefono collegato con il debug USB.": {
+    "en": "With Capacitor. Try the app on a phone connected with USB debugging.",
+    "fr": "Avec Capacitor. Essayez l'application sur un téléphone connecté avec le débogage USB.",
+    "de": "Mit Capacitor. Teste die App auf einem Telefon, das mit USB-Debugging verbunden ist."
+  },
+  "Scarica anche l'NDK di Android (circa 2 GB) e i target Rust per Android.": {
+    "en": "Also downloads the Android NDK (about 2 GB) and the Rust targets for Android.",
+    "fr": "Télécharge aussi le NDK Android (environ 2 Go) et les cibles Rust pour Android.",
+    "de": "Lädt auch das Android NDK (etwa 2 GB) und die Rust-Ziele für Android herunter."
   }
 }

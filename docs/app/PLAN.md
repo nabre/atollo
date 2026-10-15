@@ -138,6 +138,7 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `github.rs` | account GitHub del kit, uno per tutto (D-70): accesso con `gh auth login --web` e codice monouso, `credential.helper` di Git verso `gh` per github.com, repository dell'account (API), clone, rinomina, eliminazione |
 | `projects.rs`, `detect/*.rs` | elenco, creazione, clone con il Git del kit, rilevamento del tipo, dei linguaggi e delle azioni (`npm run dev`, `php -S`, `cargo run`…), `panel.json` |
 | `services.rs` | server dei database del kit (MariaDB, MongoDB): avvio, attesa della porta, arresto pulito, impostazioni in `data\app\services.json` (D-73) |
+| `adminer.rs` | Adminer sul MariaDB del kit: server di PHP su 127.0.0.1 con token, router `data\kit\adminer.php`, fermato con MariaDB (D-85) |
 | `run.rs` | avvio e arresto delle azioni dei progetti: porte 7100-7999 ricordate in `data\app\ports.json`, attesa del server, log, apertura nel browser, rete locale (D-50) |
 | `serve.rs` | server di file per i siti statici, `Dev-Kit.exe serve <cartella> <porta>`, al posto di `static-server.js` (D-51) |
 | `processes.rs` | processi del PC con il programma in una cartella data |

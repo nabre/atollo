@@ -2001,20 +2001,24 @@ pub async fn service_start<R: Runtime>(
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[id.as_str()])?;
-        match services.start(&id, &env) {
-            Ok(_) => Ok(services.list()),
-            Err(e) => match e.downcast_ref::<crate::services::PortInUse>() {
-                Some(p) => Err(crate::i18n::t(
-                    lang,
-                    "La porta {0} è già usata da un altro programma: cambiala qui sotto.",
-                    &[&p.0.to_string()],
-                )),
-                None => Err(fail("service", format!("{e:#}"))),
-            },
-        }
+        services
+            .start(&id, &env)
+            .map_err(|e| start_error(lang, &e))?;
+        Ok(services.list())
     })
     .await
     .map_err(|e| fail("service", e))?
+}
+
+fn start_error(lang: &str, e: &anyhow::Error) -> String {
+    match e.downcast_ref::<crate::services::PortInUse>() {
+        Some(p) => crate::i18n::t(
+            lang,
+            "La porta {0} è già usata da un altro programma: cambiala qui sotto.",
+            &[&p.0.to_string()],
+        ),
+        None => fail("service", format!("{e:#}")),
+    }
 }
 
 #[tauri::command]
@@ -2119,6 +2123,32 @@ pub async fn db_browse_rows<R: Runtime>(
     .map_err(|e| fail("browse", e))?
 }
 
+/// Adminer on the kit's MariaDB in the browser (D-85): Adminer (with PHP
+/// and MariaDB) installed the first time, MariaDB started when it is off.
+#[tauri::command]
+pub async fn db_admin_open<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> Result<Vec<crate::services::ServiceInfo>, String> {
+    ensure_main(&webview)?;
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        let env = ensure(&app, &task, &kit, lang, &["mariadb", "adminer"])?;
+        services
+            .start("mariadb", &env)
+            .map_err(|e| start_error(lang, &e))?;
+        let url = services
+            .adminer_url()
+            .map_err(|e| fail("adminer", format!("{e:#}")))?;
+        open_in_browser(&url)?;
+        Ok(services.list())
+    })
+    .await
+    .map_err(|e| fail("adminer", e))?
+}
+
 #[tauri::command]
 pub fn run_stop<R: Runtime>(
     webview: Webview<R>,
@@ -2184,10 +2214,15 @@ pub fn url_open<R: Runtime>(webview: Webview<R>, url: String) -> Result<(), Stri
     if !is_local_url(&url) {
         return Err(format!("not a local address: {url}"));
     }
+    open_in_browser(&url)
+}
+
+/// The PC's browser, through Explorer.
+fn open_in_browser(url: &str) -> Result<(), String> {
     let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
     crate::jobs::spawn_detached(
         std::process::Command::new(std::path::Path::new(&system_root).join("explorer.exe"))
-            .arg(&url),
+            .arg(url),
         0,
     )
     .map(|_| ())
@@ -2542,6 +2577,7 @@ macro_rules! command_handler {
             $crate::commands::service_line,
             $crate::commands::db_browse_tree,
             $crate::commands::db_browse_rows,
+            $crate::commands::db_admin_open,
             $crate::commands::run_list,
             $crate::commands::run_start,
             $crate::commands::run_stop,

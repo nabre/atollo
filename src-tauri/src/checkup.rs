@@ -29,6 +29,9 @@ const LIMIT: Duration = Duration::from_secs(60);
 /// As the only argument of a check: read the program's version resource
 /// instead of starting it (a window program, such as Windows Terminal).
 pub const FILE_VERSION: &str = "<file-version>";
+/// As the only argument of a check: a PHP script (Adminer), compiled by the
+/// kit's PHP (`php -l`); the answer is the `@version` of its header.
+pub const PHP_SCRIPT: &str = "<php>";
 
 /// Runs the check command of `c`; `None` if it has none or nothing of it is
 /// on disk. Half installed (a part missing): failed, naming the part.
@@ -40,6 +43,7 @@ pub fn check(kit: &Kit, env: &KitEnv, c: &Component) -> Option<Check> {
     let result = match c.missing_part(kit) {
         Some(part) => Err(anyhow::anyhow!("{} not found", part.display())),
         None if args == [FILE_VERSION] => file_version(&kit_path(kit, program)),
+        None if args == [PHP_SCRIPT] => php_script(kit, env, &kit_path(kit, program)),
         None => run(env, &kit_path(kit, program), args),
     };
     Some(Check {
@@ -103,6 +107,28 @@ fn file_version(exe: &std::path::Path) -> Result<String> {
             f.dwFileVersionLS & 0xffff
         ))
     }
+}
+
+fn php_script(kit: &Kit, env: &KitEnv, script: &std::path::Path) -> Result<String> {
+    if !script.is_file() {
+        bail!("{} not found", script.display());
+    }
+    run(
+        env,
+        &kit_path(kit, "php/php.exe"),
+        &["-l".to_owned(), script.display().to_string()],
+    )?;
+    let head = std::fs::read(script)?;
+    let head = String::from_utf8_lossy(&head[..head.len().min(2048)]);
+    Ok(header_version(&head).unwrap_or("compiled").to_owned())
+}
+
+/// `x.y.z` of the `@version x.y.z` line of a PHP header.
+fn header_version(head: &str) -> Option<&str> {
+    head.lines()
+        .find_map(|l| l.split("@version").nth(1))
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
 }
 
 fn run(env: &KitEnv, exe: &std::path::Path, args: &[String]) -> Result<String> {
@@ -178,6 +204,13 @@ mod tests {
         for c in Catalog::get().all() {
             assert!(!c.check.is_empty(), "{}: no final check", c.id);
         }
+    }
+
+    #[test]
+    fn php_header_version() {
+        let head = "<?php\n/** Adminer\n* @license x\n* @version 6.1.2\n*/namespace\n";
+        assert_eq!(header_version(head), Some("6.1.2"));
+        assert_eq!(header_version("<?php echo 1;"), None);
     }
 
     /// A window program is checked by its version resource, not started.

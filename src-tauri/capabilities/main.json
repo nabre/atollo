@@ -85,6 +85,7 @@
     "allow-service-line",
     "allow-db-browse-tree",
     "allow-db-browse-rows",
+    "allow-db-admin-open",
     "allow-run-list",
     "allow-run-start",
     "allow-run-stop",

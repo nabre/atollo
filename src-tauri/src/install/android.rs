@@ -1,0 +1,266 @@
+//! The Android SDK (D-84): the command-line tools of developer.android.com
+//! in `android\cmdline-tools\latest`, so sdkmanager finds the SDK by itself
+//! (`android\`), then platform-tools, the newest platform and build-tools
+//! through sdkmanager, Google's own installer. Its licenses are accepted
+//! when the component is chosen (its description says so); they are files
+//! in `android\licenses`, nothing on the PC. No emulator.
+//!
+//! The SHA-256 of the zip is the one on the download page: Google's
+//! repository XML has only SHA-1.
+
+use std::fs;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::process::Stdio;
+
+use anyhow::{anyhow, bail, Context, Result};
+
+use super::{fetch, work_dir, Ctx, Installer, Progress, Release};
+use crate::archive::{self, Inner, Kind};
+use crate::catalog::{Catalog, Component};
+use crate::kit::Kit;
+use crate::verify::Expect;
+
+pub struct Android;
+
+const STUDIO: &str = "https://developer.android.com/studio";
+const REPOSITORY: &str = "https://dl.google.com/android/repository/";
+
+/// The Windows zip of the command-line tools on the download page: its
+/// name, build number and SHA-256.
+pub fn tools_on_page(page: &str) -> Option<(String, String, String)> {
+    let re = regex::Regex::new(
+        r#">\s*(commandlinetools-win-(\d+)_latest\.zip)\s*</button>\s*</td>\s*<td>[^<]*</td>\s*<td>\s*([0-9a-f]{64})\s*</td>"#,
+    )
+    .ok()?;
+    let c = re.captures(page)?;
+    Some((c[1].to_owned(), c[2].to_owned(), c[3].to_owned()))
+}
+
+/// The newest stable platform and build-tools in `sdkmanager --list`.
+pub fn newest_packages(list: &str) -> (Option<String>, Option<String>) {
+    let platform = regex::Regex::new(r"^platforms;android-(\d+)$").ok();
+    let build = regex::Regex::new(r"^build-tools;(\d+)\.(\d+)\.(\d+)$").ok();
+    let mut best_platform: Option<(u32, String)> = None;
+    let mut best_build: Option<((u32, u32, u32), String)> = None;
+    for line in list.lines() {
+        let name = line.split('|').next().unwrap_or("").trim();
+        if let Some(c) = platform.as_ref().and_then(|re| re.captures(name)) {
+            let n: u32 = c[1].parse().unwrap_or(0);
+            if best_platform.as_ref().is_none_or(|(b, _)| n > *b) {
+                best_platform = Some((n, name.to_owned()));
+            }
+        }
+        if let Some(c) = build.as_ref().and_then(|re| re.captures(name)) {
+            let v = (
+                c[1].parse().unwrap_or(0),
+                c[2].parse().unwrap_or(0),
+                c[3].parse().unwrap_or(0),
+            );
+            if best_build.as_ref().is_none_or(|(b, _)| v > *b) {
+                best_build = Some((v, name.to_owned()));
+            }
+        }
+    }
+    (best_platform.map(|(_, n)| n), best_build.map(|(_, n)| n))
+}
+
+/// The kit's newest JDK, if it is 17 or newer (sdkmanager's minimum).
+fn java_home(kit: &Kit) -> Option<PathBuf> {
+    let java = Catalog::get().find("java")?;
+    let line = crate::versions::newest_line(kit, java)?;
+    let major: u32 = line.split('.').next()?.parse().ok()?;
+    if major < 17 {
+        return None;
+    }
+    let dir = crate::versions::dir_for(kit, java, Some(&line))?;
+    dir.join(r"bin\java.exe").is_file().then_some(dir)
+}
+
+/// Runs sdkmanager with fixed arguments (package names checked by
+/// `newest_packages`), `input` on its standard input; returns its output.
+fn sdkmanager(
+    ctx: &Ctx,
+    sdk: &Path,
+    java: &Path,
+    args: &[&str],
+    input: &str,
+    progress: &mut dyn Progress,
+) -> Result<String> {
+    let script = sdk.join(r"cmdline-tools\latest\bin\sdkmanager.bat");
+    let quoted: Vec<String> = args.iter().map(|a| format!("\"{a}\"")).collect();
+    let quoted: Vec<&str> = quoted.iter().map(String::as_str).collect();
+    let mut cmd = crate::jobs::batch_command(&script, &quoted, ctx.env);
+    cmd.env("JAVA_HOME", java)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let mut child = cmd.spawn().context("sdkmanager")?;
+    if let Some(mut stdin) = child.stdin.take() {
+        let _ = stdin.write_all(input.as_bytes());
+    }
+    let out = child.wait_with_output().context("sdkmanager")?;
+    let text = String::from_utf8_lossy(&out.stdout).into_owned();
+    let err = String::from_utf8_lossy(&out.stderr);
+    // The progress bars are lines ending in \r: only what is not one.
+    for line in text.lines().chain(err.lines()) {
+        let line = line.rsplit('\r').next().unwrap_or(line).trim();
+        if !line.is_empty() && !line.starts_with('[') {
+            progress.note(line);
+        }
+    }
+    if !out.status.success() {
+        let last = err
+            .lines()
+            .chain(text.lines())
+            .rev()
+            .map(str::trim)
+            .find(|l| !l.is_empty())
+            .unwrap_or("")
+            .to_owned();
+        bail!(
+            "sdkmanager {} failed ({}): {last}",
+            args.join(" "),
+            out.status
+        );
+    }
+    Ok(text)
+}
+
+impl Installer for Android {
+    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
+        let page = ctx.net.text(STUDIO)?;
+        let (name, build, sha) = tools_on_page(&page)
+            .ok_or_else(|| anyhow!("Android command-line tools: not found on {STUDIO}"))?;
+        Ok(Release::single(
+            build,
+            format!("{REPOSITORY}{name}"),
+            name,
+            Expect::Sha256(sha),
+            Kind::Zip,
+            Inner::Single,
+        ))
+    }
+
+    fn custom(&self) -> bool {
+        true
+    }
+
+    /// The new tools replace `cmdline-tools\latest` only: the packages
+    /// already there stay (no new download), sdkmanager adds what is
+    /// missing and updates the rest. A first installation that fails
+    /// leaves nothing behind.
+    fn install_custom(
+        &self,
+        ctx: &Ctx,
+        component: &Component,
+        release: &Release,
+        progress: &mut dyn Progress,
+    ) -> Result<()> {
+        let sdk = component
+            .folder_path(ctx.kit)
+            .ok_or_else(|| anyhow!("android: no folder"))?;
+        let java = java_home(ctx.kit)
+            .ok_or_else(|| anyhow!("the Android SDK needs Java 17 or newer: install Java first"))?;
+        let work = work_dir(ctx, component)?;
+        let first = !sdk.exists();
+        let result = (|| -> Result<()> {
+            let part = &release.parts[0];
+            let file = fetch(
+                ctx,
+                &part.url,
+                &part.file_name,
+                &part.expect,
+                &work,
+                progress,
+            )?;
+            let extracted = work.join("x");
+            archive::extract(&file, Kind::Zip, &extracted)?;
+            let tree = archive::pick_inner(&extracted, &Inner::Single)?;
+            if !tree.join(r"bin\sdkmanager.bat").is_file() {
+                bail!("the archive does not contain bin\\sdkmanager.bat");
+            }
+            fs::create_dir_all(sdk.join("cmdline-tools"))?;
+            archive::replace_dir(&tree, &sdk.join(r"cmdline-tools\latest"))?;
+
+            progress.note("sdkmanager: licenses");
+            sdkmanager(
+                ctx,
+                &sdk,
+                &java,
+                &["--licenses"],
+                &"y\n".repeat(64),
+                progress,
+            )?;
+            let list = sdkmanager(ctx, &sdk, &java, &["--list"], "", progress)?;
+            let (platform, build) = newest_packages(&list);
+            let mut packages = vec!["platform-tools".to_owned()];
+            packages.extend(platform);
+            packages.extend(build);
+            progress.note(&format!("sdkmanager: {}", packages.join(", ")));
+            let mut args = vec!["--install"];
+            args.extend(packages.iter().map(String::as_str));
+            sdkmanager(ctx, &sdk, &java, &args, &"y\n".repeat(8), progress)?;
+            if !first {
+                sdkmanager(ctx, &sdk, &java, &["--update"], &"y\n".repeat(8), progress)?;
+            }
+            if !sdk.join(r"platform-tools\adb.exe").is_file() {
+                bail!("adb.exe not found after the installation");
+            }
+            Ok(())
+        })();
+        let _ = fs::remove_dir_all(&work);
+        if result.is_err() && first {
+            let _ = archive::remove_dir(&sdk);
+        }
+        result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tools_from_the_download_page() {
+        let page = r#"<tr><td><nobr>Windows</nobr></td>
+      <td>
+        <button class="devsite-dialog-button button-white button-regular"
+            data-modal-dialog-id="sdk_win_download"
+            >commandlinetools-win-15859902_latest.zip</button>
+      </td>
+      <td>155.7 MB</td>
+      <td>90ae805d20434428bffcb699c290860f19bb5f66a67e6b330067e3de801fb04a</td>
+    </tr>"#;
+        let (name, build, sha) = tools_on_page(page).unwrap();
+        assert_eq!(name, "commandlinetools-win-15859902_latest.zip");
+        assert_eq!(build, "15859902");
+        assert!(sha.starts_with("90ae805d"));
+        assert!(tools_on_page("<td>commandlinetools-mac-1_latest.zip</td>").is_none());
+    }
+
+    #[test]
+    fn newest_stable_packages() {
+        let list = "Installed packages:\n  Path | Version | Description | Location\n\
+            Available Packages:\n  Path                 | Version | Description\n  -------              | ------- | -------\n\
+            build-tools;35.0.1   | 35.0.1  | Android SDK Build-Tools 35.0.1\n\
+            build-tools;36.0.0   | 36.0.0  | Android SDK Build-Tools 36\n\
+            build-tools;37.0.0-rc1 | 37.0.0 rc1 | Android SDK Build-Tools 37-rc1\n\
+            platforms;android-35 | 2       | Android SDK Platform 35\n\
+            platforms;android-36 | 2       | Android SDK Platform 36\n\
+            platforms;android-36-ext18 | 1 | Android SDK Platform 36-ext18\n\
+            platforms;android-CinnamonBun | 1 | Android SDK Platform CinnamonBun\n";
+        let (platform, build) = newest_packages(list);
+        assert_eq!(platform.as_deref(), Some("platforms;android-36"));
+        assert_eq!(build.as_deref(), Some("build-tools;36.0.0"));
+        assert_eq!(newest_packages(""), (None, None));
+    }
+
+    /// The real download page (`cargo test -- --ignored`).
+    #[test]
+    #[ignore]
+    fn real_download_page() {
+        let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+        assert!(tools_on_page(&net.text(STUDIO).unwrap()).is_some());
+    }
+}
