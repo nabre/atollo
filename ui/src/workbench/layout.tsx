@@ -4,6 +4,11 @@
 // extension's page), the panel, and the welcome view of an empty view.
 // Parts float 4px apart on the workbench color, as VSCodium 1.140's modern
 // layout; the app composes them per page (ViewContainer).
+// Not vscode-elements here: vscode-collapsible and vscode-tabs draw the
+// classic 22px uppercase pane and panel headers, not the modern ones; the
+// collapsible's header has no button role nor aria-expanded, the tabs keep
+// their tablist inside the shadow root and have no close button for the
+// editor's tabs, and the details editor's bar is navigation, not tabs.
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import { VscChevronRight, VscClose } from "react-icons/vsc";
