@@ -106,6 +106,8 @@ fn run() -> i32 {
     };
 
     log::init(&kit.logs());
+    // The projects' data in data\projects (D-89), before anything reads it.
+    projects::migrate::run(&kit);
     // Before the environment points at them: one folder per version.
     versions::migrate(&kit);
     // The versions side by side, known to Gradle, Maven and dotnet.

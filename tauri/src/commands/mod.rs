@@ -36,6 +36,7 @@ pub(crate) mod editing;
 mod error;
 pub(crate) mod frameworks;
 pub(crate) mod github;
+pub(crate) mod orphans;
 pub(crate) mod projects;
 pub(crate) mod runs;
 pub(crate) mod servers;
@@ -346,6 +347,8 @@ macro_rules! command_handler {
             $crate::commands::servers::server_stop,
             $crate::commands::servers::server_reload,
             $crate::commands::servers::server_assign_project,
+            $crate::commands::orphans::projects_orphans,
+            $crate::commands::orphans::project_orphan_adopt,
             $crate::commands::databases::db_browse_tree,
             $crate::commands::databases::db_browse_rows,
             $crate::commands::databases::db_admin_open,

@@ -507,6 +507,12 @@
           "markdownDescription": "Enables the project_mcp_set command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_orphan_adopt command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-orphan-adopt",
+          "markdownDescription": "Enables the project_orphan_adopt command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_site command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-site",
@@ -535,6 +541,12 @@
           "type": "string",
           "const": "allow-projects-list",
           "markdownDescription": "Enables the projects_list command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the projects_orphans command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-projects-orphans",
+          "markdownDescription": "Enables the projects_orphans command without any pre-configured scope."
         },
         {
           "description": "Enables the relations_matrix command without any pre-configured scope.",
@@ -1071,6 +1083,12 @@
           "markdownDescription": "Denies the project_mcp_set command without any pre-configured scope."
         },
         {
+          "description": "Denies the project_orphan_adopt command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-orphan-adopt",
+          "markdownDescription": "Denies the project_orphan_adopt command without any pre-configured scope."
+        },
+        {
           "description": "Denies the project_site command without any pre-configured scope.",
           "type": "string",
           "const": "deny-project-site",
@@ -1099,6 +1117,12 @@
           "type": "string",
           "const": "deny-projects-list",
           "markdownDescription": "Denies the projects_list command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the projects_orphans command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-projects-orphans",
+          "markdownDescription": "Denies the projects_orphans command without any pre-configured scope."
         },
         {
           "description": "Denies the relations_matrix command without any pre-configured scope.",
