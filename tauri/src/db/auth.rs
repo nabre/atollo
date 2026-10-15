@@ -93,12 +93,25 @@ pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
 /// of its user; other keys kept as they are.
 type ProjectSecrets = BTreeMap<String, serde_json::Value>;
 
-/// The project's `db.json`, its folder made private first.
+fn project_state(kit: &Kit, project: &str) -> Result<ProjectState> {
+    match ProjectState::of(kit, project) {
+        Some(state) => Ok(state),
+        None => bail!("not a project name: {project}"),
+    }
+}
+
+/// The project's `db.json`, its folder made private first (to write it).
 fn project_file(kit: &Kit, project: &str) -> Result<PathBuf> {
-    let Some(state) = ProjectState::of(kit, project) else {
-        bail!("not a project name: {project}");
-    };
-    Ok(state.db_file()?)
+    Ok(project_state(kit, project)?.db_file()?)
+}
+
+/// The project's `db.json` to read: nothing is created (a project without
+/// databases gets no `private\`, PLAN-DATA.md WP-7).
+fn project_file_to_read(kit: &Kit, project: &str) -> Result<PathBuf> {
+    Ok(project_state(kit, project)?
+        .dir()
+        .join("private")
+        .join("db.json"))
 }
 
 /// `None` for a missing file; an error for one that cannot be read, so it
@@ -124,21 +137,46 @@ fn passwords(secrets: &ProjectSecrets) -> BTreeMap<String, String> {
         .collect()
 }
 
-/// The passwords of the project's users, by engine (empty when none).
-pub fn project_passwords(kit: &Kit, project: &str) -> BTreeMap<String, String> {
-    let read = project_file(kit, project).and_then(|path| read_project(&path));
-    match read {
-        Ok(secrets) => passwords(&secrets.unwrap_or_default()),
-        Err(e) => {
-            crate::log::warn(&format!("{project}: passwords: {e:#}"));
-            BTreeMap::new()
-        }
-    }
+/// The passwords of the project's users, by engine (empty when none); an
+/// error when `db.json` is there but cannot be read (a link, not JSON, the
+/// DACL of another PC's user): the caller must not take it for "none".
+pub fn try_project_passwords(kit: &Kit, project: &str) -> Result<BTreeMap<String, String>> {
+    let path = project_file_to_read(kit, project)?;
+    Ok(passwords(&read_project(&path)?.unwrap_or_default()))
 }
 
-/// The password of the project's user on `engine`, once created.
+/// The passwords of the project's users, by engine (empty when none or
+/// unreadable: only a warning, for the pages that show them).
+pub fn project_passwords(kit: &Kit, project: &str) -> BTreeMap<String, String> {
+    try_project_passwords(kit, project).unwrap_or_else(|e| {
+        crate::log::warn(&format!("{project}: passwords: {e:#}"));
+        BTreeMap::new()
+    })
+}
+
+/// The password of the project's user on `engine`, once created (lenient,
+/// for showing it; anything that writes uses [`try_project_password`]).
+#[allow(dead_code)] // the tests and callers on other branches
 pub fn project_password(kit: &Kit, project: &str, engine: &str) -> Option<String> {
     project_passwords(kit, project).remove(engine)
+}
+
+/// [`project_password`] that fails when `db.json` cannot be read.
+pub fn try_project_password(kit: &Kit, project: &str, engine: &str) -> Result<Option<String>> {
+    Ok(try_project_passwords(kit, project)?.remove(engine))
+}
+
+/// The password the project's user on `engine` gets: the stored one, or a
+/// new one stored before any server hears of it. A `db.json` that cannot be
+/// read stops here, so a server never gets a password stored nowhere; a
+/// server call that fails after can be repeated with the stored one.
+pub fn ensure_project_password(kit: &Kit, project: &str, engine: &str) -> Result<String> {
+    if let Some(password) = try_project_password(kit, project, engine)? {
+        return Ok(password);
+    }
+    let password = new_password()?;
+    set_project_password(kit, project, engine, &password)?;
+    Ok(password)
 }
 
 /// Stores the password of the project's user on `engine`.
@@ -150,11 +188,10 @@ pub fn set_project_password(kit: &Kit, project: &str, engine: &str, password: &s
 }
 
 /// Removes the project's `db.json` and returns its passwords by engine, so
-/// the users can be dropped from the servers (PLAN-DATA.md WP-5).
-// Used by WP-5 (deleting a project with its databases), wave 2.
-#[allow(dead_code)]
+/// the users can be dropped from the servers (PLAN-DATA.md WP-5). Nothing is
+/// created: after the project's folder of the kit is gone it stays gone.
 pub fn drop_project(kit: &Kit, project: &str) -> Result<BTreeMap<String, String>> {
-    let path = project_file(kit, project)?;
+    let path = project_file_to_read(kit, project)?;
     let Some(secrets) = read_project(&path)? else {
         return Ok(BTreeMap::new());
     };
@@ -227,6 +264,24 @@ pub const MONGO_PROJECT_JS: &str = "const a = db.getSiblingDB('admin'); \
     const d = db.getSiblingDB(n); \
     if (d.getUser(n)) { d.updateUser(n, { pwd: p }); } \
     else { d.createUser({ user: n, pwd: p, roles: [{ role: 'dbOwner', db: n }] }); }";
+
+/// SQL that drops a project's database and user (PLAN-DATA.md WP-5); both
+/// may be missing already.
+pub fn project_drop_sql(name: &str) -> String {
+    format!(
+        "DROP DATABASE IF EXISTS `{name}`;\n\
+         DROP USER IF EXISTS '{name}'@'localhost', '{name}'@'127.0.0.1', '{name}'@'::1';\n\
+         FLUSH PRIVILEGES;\n"
+    )
+}
+
+/// mongosh script that drops a project's user and database (names and the
+/// administrator's password from the environment, as `MONGO_PROJECT_JS`).
+pub const MONGO_DROP_JS: &str = "const a = db.getSiblingDB('admin'); \
+    a.auth('admin', process.env.DEVKIT_DB_ADMIN); \
+    const n = process.env.DEVKIT_DB_NAME, d = db.getSiblingDB(n); \
+    if (d.getUser(n)) { d.dropUser(n); } \
+    d.dropDatabase();";
 
 /// mongosh script for the first `admin` (MongoDB's localhost exception: it
 /// works while the server has no users).
@@ -622,5 +677,63 @@ pub(crate) mod tests {
         assert!(set_project_password(&kit, "shop", "mariadb", "x").is_err());
         assert!(drop_project(&kit, "shop").is_err());
         assert_eq!(fs::read_to_string(&file).unwrap(), "{ not json");
+    }
+
+    /// A `db.json` that cannot be read is an error, never "no password":
+    /// otherwise a new one would reach the server and be stored nowhere.
+    #[test]
+    fn unreadable_passwords_stop_the_creation() {
+        let tmp = crate::kit::tests::TempDir::new("db-auth-unreadable");
+        let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+        kit.prepare().unwrap();
+        let private = tmp.0.join(r"data\projects\shop\private");
+
+        // reading creates nothing
+        assert_eq!(try_project_password(&kit, "shop", "mariadb").unwrap(), None);
+        assert!(try_project_passwords(&kit, "shop").unwrap().is_empty());
+        assert!(!private.exists(), "reading made private\\");
+        assert!(try_project_password(&kit, "..", "mariadb").is_err());
+
+        // a new password is stored before it is returned (to the server)
+        let pw = ensure_project_password(&kit, "shop", "mariadb").unwrap();
+        assert_eq!(pw.len(), 32);
+        assert_eq!(project_password(&kit, "shop", "mariadb"), Some(pw.clone()));
+        assert_eq!(
+            ensure_project_password(&kit, "shop", "mariadb").unwrap(),
+            pw
+        );
+
+        // not JSON: an error, the file untouched
+        let file = private.join("db.json");
+        fs::write(&file, "{ not json").unwrap();
+        assert!(try_project_password(&kit, "shop", "mariadb").is_err());
+        assert!(try_project_passwords(&kit, "shop").is_err());
+        assert_eq!(project_password(&kit, "shop", "mariadb"), None, "lenient");
+        assert!(ensure_project_password(&kit, "shop", "mariadb").is_err());
+        assert!(ensure_project_password(&kit, "shop", "mongodb").is_err());
+        assert_eq!(fs::read_to_string(&file).unwrap(), "{ not json");
+
+        // a folder where the file should be: cannot be read either
+        fs::remove_file(&file).unwrap();
+        fs::create_dir(&file).unwrap();
+        assert!(try_project_password(&kit, "shop", "mariadb").is_err());
+        assert!(ensure_project_password(&kit, "shop", "mariadb").is_err());
+        fs::remove_dir(&file).unwrap();
+
+        // dropping reads without creating: nothing comes back after
+        assert!(drop_project(&kit, "shop").unwrap().is_empty());
+        fs::remove_dir_all(tmp.0.join(r"data\projects\shop")).unwrap();
+        assert!(drop_project(&kit, "shop").unwrap().is_empty());
+        assert!(!private.exists());
+    }
+
+    #[test]
+    fn drop_scripts() {
+        let sql = project_drop_sql("shop");
+        assert!(sql.starts_with("DROP DATABASE IF EXISTS `shop`;"));
+        assert!(sql
+            .contains("DROP USER IF EXISTS 'shop'@'localhost', 'shop'@'127.0.0.1', 'shop'@'::1';"));
+        assert!(MONGO_DROP_JS.contains("dropUser(n)") && MONGO_DROP_JS.contains("dropDatabase()"));
+        assert!(!MONGO_DROP_JS.contains("DEVKIT_DB_PASSWORD"));
     }
 }
