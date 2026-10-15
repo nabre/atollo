@@ -13,6 +13,7 @@ use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
+use crate::projects::alias::{self, valid_domain, SiteAlias};
 use crate::projects::apache::fwd;
 
 /// Resolves the Nginx installation directory from `env` (`CP_NGINX`) or the kit's default line.
@@ -56,45 +57,15 @@ pub fn prepare_dirs(run_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Resolves a portable relative alias target (`storage/media` or `../other/assets`)
-/// to a forward-slash path inside `projects_root`.
-pub fn resolve_alias_path(project_root: &Path, projects_root: &Path, rel_target: &str) -> String {
-    let clean = rel_target.replace('\\', "/");
-    let clean = clean.trim_matches('/');
-    let resolved = if let Some(rest) = clean.strip_prefix("../") {
-        let rest = rest.trim_matches('/');
-        if rest.is_empty() {
-            projects_root.to_path_buf()
-        } else {
-            projects_root.join(rest.replace('/', "\\"))
-        }
-    } else if clean.is_empty() {
-        project_root.to_path_buf()
-    } else {
-        project_root.join(clean.replace('/', "\\"))
-    };
-    let mut s = fwd(&resolved);
-    if !s.ends_with('/') {
-        s.push('/');
-    }
-    s
-}
-
-/// Generates Nginx `location` blocks for portable path aliases.
-pub fn alias_locations(
-    project_root: &Path,
-    projects_root: &Path,
-    aliases: &BTreeMap<String, String>,
-    indent: &str,
-) -> Vec<String> {
+/// Generates Nginx `location` blocks for checked path aliases.
+pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     let mut lines = Vec::new();
-    for (url_path, rel_target) in aliases {
-        let url_clean = url_path.trim_end_matches('/');
-        if url_clean.is_empty() || !url_clean.starts_with('/') {
-            continue;
+    for alias in aliases {
+        let mut target = fwd(&alias.dir);
+        if !target.ends_with('/') {
+            target.push('/');
         }
-        let target = resolve_alias_path(project_root, projects_root, rel_target);
-        lines.push(format!("{indent}location {url_clean}/ {{"));
+        lines.push(format!("{indent}location {}/ {{", alias.url));
         lines.push(format!("{indent}    alias \"{target}\";"));
         lines.push(format!("{indent}    autoindex on;"));
         lines.push(format!("{indent}}}"));
@@ -107,15 +78,13 @@ pub fn alias_locations(
 pub fn vhost_block(
     nginx_install: &Path,
     project: Option<&str>,
-    project_root: &Path,
-    projects_root: &Path,
     doc_root: &Path,
     conf_d_dir: Option<&Path>,
     port: u16,
     fcgi_port: Option<u16>,
     lan: bool,
     domains: &[String],
-    aliases: &BTreeMap<String, String>,
+    aliases: &[SiteAlias],
     default_server: bool,
 ) -> String {
     let listen = if lan {
@@ -134,7 +103,7 @@ pub fn vhost_block(
     }
     for d in domains {
         let d = d.trim().to_ascii_lowercase();
-        if !d.is_empty() && !names.contains(&d) {
+        if valid_domain(&d) && !names.contains(&d) {
             names.push(d);
         }
     }
@@ -164,12 +133,7 @@ pub fn vhost_block(
             "        }".to_owned(),
         ]);
     }
-    lines.extend(alias_locations(
-        project_root,
-        projects_root,
-        aliases,
-        "        ",
-    ));
+    lines.extend(alias_locations(aliases, "        "));
     if let Some(fp) = fcgi_port {
         lines.extend([
             "        location ~ \\.php$ {".to_owned(),
@@ -194,23 +158,19 @@ pub fn vhost_block(
 pub fn project_conf(
     nginx_install: &Path,
     project: Option<&str>,
-    project_root: &Path,
-    projects_root: &Path,
     doc_root: &Path,
     run_dir: &Path,
     port: u16,
     fcgi_port: Option<u16>,
     lan: bool,
     domains: &[String],
-    aliases: &BTreeMap<String, String>,
+    aliases: &[SiteAlias],
 ) -> String {
     let run_fwd = fwd(run_dir);
     let nginx_fwd = fwd(nginx_install);
     let server = vhost_block(
         nginx_install,
         project,
-        project_root,
-        projects_root,
         doc_root,
         Some(run_dir),
         port,
@@ -292,15 +252,13 @@ pub fn command(
     let content = project_conf(
         &nginx,
         Some(project),
-        project_root,
-        &kit.projects(),
         doc_root,
         &run_dir,
         port,
         fcgi_port,
         lan,
         domains,
-        aliases,
+        &alias::resolve(project_root, &kit.projects(), aliases),
     );
     write_atomic(&conf, content.as_bytes())?;
     let mut cmd = jobs::kit_command(&exe, env);
@@ -320,32 +278,36 @@ mod tests {
     #[test]
     fn nginx_conf_with_aliases_and_php() {
         let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
-        let proj = Path::new(r"D:\kit\projects\shop");
-        let projs = Path::new(r"D:\kit\projects");
         let doc = Path::new(r"D:\kit\projects\shop\public");
         let run = Path::new(r"D:\kit\data\app\projects\shop\nginx");
+        let tmp = crate::kit::tests::TempDir::new("nginx-alias");
+        let projs = tmp.0.join("projects");
+        fs::create_dir_all(projs.join(r"shop\storage\media")).unwrap();
+        fs::create_dir_all(projs.join(r"common\assets")).unwrap();
         let mut aliases = BTreeMap::new();
         aliases.insert("/media".into(), "storage/media".into());
-        aliases.insert("/shared".into(), "../common/assets".into());
+        aliases.insert("/shared".into(), "@common/assets".into());
+        aliases.insert("/up".into(), "../common/assets".into());
+        let aliases = alias::resolve(&projs.join("shop"), &projs, &aliases);
         let conf = project_conf(
             nginx,
             Some("shop"),
-            proj,
-            projs,
             doc,
             run,
             7106,
             Some(9123),
             false,
-            &["api.shop.localhost".into()],
+            &["api.shop.localhost".into(), "x;y.localhost".into()],
             &aliases,
         );
+        let projs_fwd = fwd(&projs);
         assert!(conf.contains("listen 127.0.0.1:7106 default_server;"));
         assert!(conf.contains("server_name shop.localhost api.shop.localhost localhost;"));
         assert!(conf.contains("root \"D:/kit/projects/shop/public\";"));
         assert!(conf.contains("fastcgi_pass 127.0.0.1:9123;"));
         assert!(conf.contains("location /media/ {"));
-        assert!(conf.contains("alias \"D:/kit/projects/shop/storage/media/\";"));
-        assert!(conf.contains("alias \"D:/kit/projects/common/assets/\";"));
+        assert!(conf.contains(&format!("alias \"{projs_fwd}/shop/storage/media/\";")));
+        assert!(conf.contains(&format!("alias \"{projs_fwd}/common/assets/\";")));
+        assert!(!conf.contains("location /up/") && !conf.contains("x;y"));
     }
 }

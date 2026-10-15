@@ -179,56 +179,18 @@ pub(super) fn apply(project: &mut Project, dir: &Path, lang: &str) {
 
 /// Validates an RFC 6761 `.localhost` domain alias (`mio-sito.localhost`).
 pub fn valid_domain(d: &str) -> bool {
-    let d = d.trim();
-    let Some(prefix) = d.strip_suffix(".localhost") else {
-        return false;
-    };
-    !prefix.is_empty()
-        && d.len() <= 120
-        && prefix.split('.').all(|part| {
-            !part.is_empty()
-                && !part.starts_with('-')
-                && !part.ends_with('-')
-                && part
-                    .chars()
-                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
-        })
+    crate::projects::alias::valid_domain(d)
 }
 
 /// Validates a URL path prefix for an alias (`/media`, `/uploads`).
 pub fn valid_alias_url(u: &str) -> bool {
-    let u = u.trim();
-    u.starts_with('/')
-        && u.len() >= 2
-        && u.len() <= 80
-        && !u.ends_with('/')
-        && !u.contains("..")
-        && u.chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '/' | '-' | '_' | '.'))
+    crate::projects::alias::valid_url(u)
 }
 
-/// Validates a portable relative path alias target (`storage/uploads` or `@other/public`).
-/// Rejects any absolute path, drive letter, or `..` traversal.
+/// Validates a portable relative path alias target (`storage/uploads` or
+/// `@other/public`): plain names only, no absolute path, drive or `..`.
 pub fn valid_alias_target(target: &str) -> bool {
-    let t = target.trim().replace('\\', "/");
-    if t.is_empty()
-        || t.len() > 160
-        || t.starts_with('/')
-        || t.contains(':')
-        || t.contains("..")
-    {
-        return false;
-    }
-    let body = t.strip_prefix('@').unwrap_or(&t);
-    !body.is_empty()
-        && body.split('/').all(|part| {
-            part == "."
-                || (!part.is_empty()
-                    && !part.starts_with('.')
-                    && part
-                        .chars()
-                        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')))
-        })
+    crate::projects::alias::Target::parse(target).is_some()
 }
 
 /// A folder inside the project: relative, no `..`, existing, not through a

@@ -22,6 +22,7 @@ use crate::env::KitEnv;
 use crate::fsx::{read_json, write_atomic, write_json};
 use crate::kit::{validate_project_name, Kit};
 use crate::os::jobs::{self, Job};
+use crate::projects::alias;
 use crate::projects::apache::{self, fwd};
 use crate::projects::nginx;
 use crate::projects::run::{is_port_free, responds};
@@ -187,12 +188,18 @@ fn component_dir(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
 }
 
 /// Generates Apache VirtualHost file content for one attached project in a pool.
-fn apache_vhost_conf(port: u16, project_root: &Path, doc_root: &Path, site: &AttachedSite) -> String {
+fn apache_vhost_conf(
+    port: u16,
+    project_root: &Path,
+    projects_root: &Path,
+    doc_root: &Path,
+    site: &AttachedSite,
+) -> String {
     let doc_fwd = fwd(doc_root);
     let mut aliases_list = vec![site.server_name.clone()];
     for d in &site.domains {
         let d = d.trim().to_ascii_lowercase();
-        if !d.is_empty() && !aliases_list.contains(&d) {
+        if alias::valid_domain(&d) && !aliases_list.contains(&d) {
             aliases_list.push(d);
         }
     }
@@ -211,32 +218,11 @@ fn apache_vhost_conf(port: u16, project_root: &Path, doc_root: &Path, site: &Att
         "        Require all granted".to_owned(),
         "    </Directory>".to_owned(),
     ]);
-    for (url_path, rel_target) in &site.aliases {
-        let url_clean = url_path.trim_end_matches('/');
-        if url_clean.is_empty() || !url_clean.starts_with('/') {
-            continue;
-        }
-        let clean = rel_target.replace('\\', "/");
-        let clean = clean.trim_matches('/');
-        let target = if let Some(rest) = clean.strip_prefix("../") {
-            let rest = rest.trim_matches('/');
-            if rest.is_empty() {
-                "${CP_PROJECTS_FWD}".to_owned()
-            } else {
-                format!("${{CP_PROJECTS_FWD}}/{rest}")
-            }
-        } else if clean.is_empty() {
-            fwd(project_root)
-        } else {
-            format!("${{CP_PROJECTS_FWD}}/{}/{clean}", site.project)
-        };
-        lines.push(format!("    Alias \"{url_clean}\" \"{target}\""));
-        lines.push(format!("    <Directory \"{target}\">"));
-        lines.push("        Options Indexes FollowSymLinks".to_owned());
-        lines.push("        AllowOverride All".to_owned());
-        lines.push("        Require all granted".to_owned());
-        lines.push("    </Directory>".to_owned());
-    }
+    lines.extend(apache::alias_directives(
+        &format!("${{CP_PROJECTS_FWD}}/{}", site.project),
+        &alias::resolve(project_root, projects_root, &site.aliases),
+        "    ",
+    ));
     lines.push("</VirtualHost>".to_owned());
     lines.push(String::new());
     lines.join("\r\n")
@@ -267,7 +253,11 @@ fn apache_pool_conf(base: &str, pool_dir: &Path, port: u16, lan: bool) -> Result
     site.extend(apache::php_module_blocks("CP_PHP_FWD"));
     site.push(format!("IncludeOptional \"{dir_fwd}/vhosts/*.conf\""));
     site.push(format!("IncludeOptional \"{dir_fwd}/conf.d/*.conf\""));
-    Ok(format!("{}\r\n\r\n{}\r\n", kit_part.trim_end(), site.join("\r\n")))
+    Ok(format!(
+        "{}\r\n\r\n{}\r\n",
+        kit_part.trim_end(),
+        site.join("\r\n")
+    ))
 }
 
 /// Generates the master `nginx.conf` for an Nginx pool.
@@ -405,8 +395,10 @@ impl WebServers {
                     continue;
                 };
 
-                let target_pool_id = if let Some(explicit) =
-                    action.server.as_deref().filter(|s| pools_map.contains_key(*s))
+                let target_pool_id = if let Some(explicit) = action
+                    .server
+                    .as_deref()
+                    .filter(|s| pools_map.contains_key(*s))
                 {
                     explicit.to_owned()
                 } else {
@@ -522,7 +514,10 @@ impl WebServers {
     pub fn save_profile(&self, mut input: WebServerProfileInput, lang: &str) -> Result<()> {
         let name = input.name.trim().to_owned();
         if name.is_empty() {
-            bail!("{}", crate::i18n::t(lang, "Scrivi un nome per il profilo server.", &[]));
+            bail!(
+                "{}",
+                crate::i18n::t(lang, "Scrivi un nome per il profilo server.", &[])
+            );
         }
         let id = if input.id.trim().is_empty() {
             slug(&name)
@@ -530,11 +525,17 @@ impl WebServers {
             slug(&input.id)
         };
         if id.is_empty() {
-            bail!("{}", crate::i18n::t(lang, "Identificativo del server non valido.", &[]));
+            bail!(
+                "{}",
+                crate::i18n::t(lang, "Identificativo del server non valido.", &[])
+            );
         }
         if let Some(p) = input.port {
             if p < 1024 {
-                bail!("{}", crate::i18n::t(lang, "Porta tra {0} e {1}", &["1024", "65535"]));
+                bail!(
+                    "{}",
+                    crate::i18n::t(lang, "Porta tra {0} e {1}", &["1024", "65535"])
+                );
             }
         }
         input.id = id.clone();
@@ -593,10 +594,19 @@ impl WebServers {
                     .context("Apache httpd.conf")?;
                 for site in &pool.sites {
                     let proj_root = self.kit.projects().join(&site.project);
-                    let doc_root =
-                        detect::inside_dir(&proj_root, &site.folder).unwrap_or_else(|_| proj_root.clone());
-                    let vhost = apache_vhost_conf(pool.port, &proj_root, &doc_root, site);
-                    write_atomic(&vhosts_dir.join(format!("{}.conf", site.project)), vhost.as_bytes())?;
+                    let doc_root = detect::inside_dir(&proj_root, &site.folder)
+                        .unwrap_or_else(|_| proj_root.clone());
+                    let vhost = apache_vhost_conf(
+                        pool.port,
+                        &proj_root,
+                        &self.kit.projects(),
+                        &doc_root,
+                        site,
+                    );
+                    write_atomic(
+                        &vhosts_dir.join(format!("{}.conf", site.project)),
+                        vhost.as_bytes(),
+                    )?;
                 }
                 let main_conf = apache_pool_conf(&base, &pool_dir, pool.port, lan)?;
                 let conf_path = pool_dir.join("httpd.conf");
@@ -608,20 +618,18 @@ impl WebServers {
                 let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
                 for (idx, site) in pool.sites.iter().enumerate() {
                     let proj_root = self.kit.projects().join(&site.project);
-                    let doc_root =
-                        detect::inside_dir(&proj_root, &site.folder).unwrap_or_else(|_| proj_root.clone());
+                    let doc_root = detect::inside_dir(&proj_root, &site.folder)
+                        .unwrap_or_else(|_| proj_root.clone());
                     let vhost = nginx::vhost_block(
                         &nginx_dir,
                         Some(&site.project),
-                        &proj_root,
-                        &self.kit.projects(),
                         &doc_root,
                         None,
                         pool.port,
                         fcgi_port,
                         lan,
                         &site.domains,
-                        &site.aliases,
+                        &alias::resolve(&proj_root, &self.kit.projects(), &site.aliases),
                         idx == 0,
                     );
                     write_atomic(
@@ -795,7 +803,10 @@ impl WebServers {
         validate_project_name(project).map_err(|e| anyhow!(e.to_string()))?;
         let proj_dir = self.kit.projects().join(project);
         if !crate::os::safe_path::is_dir(&self.kit.projects(), &proj_dir) {
-            bail!("{}", crate::i18n::t(lang, "Progetto non trovato: {0}", &[project]));
+            bail!(
+                "{}",
+                crate::i18n::t(lang, "Progetto non trovato: {0}", &[project])
+            );
         }
         let detected = detect::detect(&proj_dir, lang);
         let existing = detected
@@ -865,28 +876,35 @@ mod tests {
         assert_eq!(view.pools[0].port, 8095);
         assert!(view.pools[0].manual);
 
+        let projects = kit.projects();
+        fs::create_dir_all(projects.join(r"portale\storage\uploads")).unwrap();
+        fs::create_dir_all(projects.join(r"common\assets")).unwrap();
         let mut aliases = BTreeMap::new();
         aliases.insert("/media".into(), "storage/uploads".into());
-        aliases.insert("/shared".into(), "../common/assets".into());
+        aliases.insert("/shared".into(), "@common/assets".into());
+        aliases.insert("/up".into(), "../../Windows".into());
+        aliases.insert("/q".into(), "a\"\r\nInclude x".into());
         let site = AttachedSite {
             project: "portale".into(),
             folder: "public".into(),
             server_name: "portale.localhost".into(),
-            domains: vec!["admin.portale.localhost".into()],
+            domains: vec!["admin.portale.localhost".into(), "x\r\nListen 80".into()],
             aliases,
             url: "http://portale.localhost:8095".into(),
         };
         let vhost = apache_vhost_conf(
             8095,
-            Path::new(r"D:\kit\projects\portale"),
-            Path::new(r"D:\kit\projects\portale\public"),
+            &projects.join("portale"),
+            &projects,
+            &projects.join(r"portale\public"),
             &site,
         );
         assert!(vhost.contains("<VirtualHost *:8095>"));
         assert!(vhost.contains("ServerName portale.localhost"));
-        assert!(vhost.contains("ServerAlias admin.portale.localhost"));
+        assert!(vhost.contains("ServerAlias admin.portale.localhost\r\n"));
         assert!(vhost.contains("Alias \"/media\" \"${CP_PROJECTS_FWD}/portale/storage/uploads\""));
         assert!(vhost.contains("Alias \"/shared\" \"${CP_PROJECTS_FWD}/common/assets\""));
+        assert!(!vhost.contains("..") && !vhost.contains("Include") && !vhost.contains("Listen"));
 
         servers.remove_profile("legacy-apache-5.6").unwrap();
         assert!(servers.list("it").pools.is_empty());

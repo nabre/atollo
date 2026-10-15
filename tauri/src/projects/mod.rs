@@ -8,6 +8,7 @@
 //! list with what each one is, new empty project, delete an empty one,
 //! clone from GitHub or a Git URL.
 
+pub mod alias;
 pub mod apache;
 pub mod frameworks;
 pub mod mcp;
