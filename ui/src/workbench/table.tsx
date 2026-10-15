@@ -26,13 +26,14 @@ export function DataTable({
   /** The body rows. */
   children: ReactNode;
 }) {
+  const headClass = stickyHead ? "sticky top-0 z-10 bg-vsc-bg" : undefined;
   return (
     <table className={className}>
       {caption !== undefined && (
         <caption className={captionVisible ? "pb-1 text-left text-[12px] font-semibold" : "sr-only"}>{caption}</caption>
       )}
       {columns ? (
-        <thead>
+        <thead className={headClass}>
           <tr className="text-vsc-desc">
             {columns.map((c, i) =>
               c === null ? (
@@ -47,7 +48,7 @@ export function DataTable({
         </thead>
       ) : (
         head !== undefined && (
-          <thead className={stickyHead ? "sticky top-0 z-10 bg-vsc-bg" : undefined}>
+          <thead className={headClass}>
             <tr>{head}</tr>
           </thead>
         )
