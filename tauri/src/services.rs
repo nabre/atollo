@@ -36,7 +36,7 @@ use crate::db_auth;
 use crate::env::KitEnv;
 use crate::jobs::{self, Job};
 use crate::kit::Kit;
-use crate::run::{is_port_free, responds};
+use crate::projects::run::{is_port_free, responds};
 
 /// The servers, in the order of the page.
 pub const SERVERS: [&str; 2] = ["mariadb", "mongodb"];

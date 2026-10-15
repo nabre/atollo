@@ -22,7 +22,7 @@ use crate::editor::{self, terminal, Editor};
 use crate::env::KitEnv;
 use crate::install;
 use crate::kit::{validate_project_name, Kit};
-use crate::run::{Runner, State as RunState};
+use crate::projects::run::{Runner, State as RunState};
 use crate::self_update::Updater;
 use crate::settings::Settings;
 use crate::setup_runner::Options;

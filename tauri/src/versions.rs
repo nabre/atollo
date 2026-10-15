@@ -236,7 +236,7 @@ pub fn pin_newest(kit: &Kit, project: &str) {
     if lines.is_empty() {
         return;
     }
-    crate::project_settings::update(kit, project, |s| {
+    crate::projects::settings::update(kit, project, |s| {
         for (id, line) in &lines {
             s.versions.entry(id.clone()).or_insert_with(|| line.clone());
         }
@@ -340,7 +340,7 @@ pub fn apply_kit_choice(kit: &Kit, env: &mut KitEnv) {
 
 /// The lines chosen in `project`.
 pub fn project_choice(kit: &Kit, project: &str) -> Choice {
-    clean(crate::project_settings::load(kit, project).versions)
+    clean(crate::projects::settings::load(kit, project).versions)
 }
 
 fn project_swaps(kit: &Kit, project: &str) -> Vec<Swap> {
@@ -355,7 +355,7 @@ pub fn project_env(kit: &Kit, project: &str, mut env: KitEnv) -> KitEnv {
 
 pub fn set_project_choice(kit: &Kit, project: &str, id: &str, line: Option<&str>) -> Result<()> {
     check(id, line)?;
-    crate::project_settings::update(kit, project, |s| {
+    crate::projects::settings::update(kit, project, |s| {
         match line {
             Some(l) => s.versions.insert(id.to_owned(), l.to_owned()),
             None => s.versions.remove(id),
@@ -369,7 +369,7 @@ pub fn set_project_choice(kit: &Kit, project: &str, id: &str, line: Option<&str>
 /// (profile.ps1), and `versions.txt` (`from<TAB>to` lines) for Git Bash
 /// (bashrc); removed when the project has no rewrite.
 pub fn write_project_file(kit: &Kit, project: &str) {
-    let Some(dir) = crate::project_settings::dir(kit, project) else {
+    let Some(dir) = crate::projects::settings::dir(kit, project) else {
         return;
     };
     let (json, txt) = (dir.join("versions.json"), dir.join("versions.txt"));
@@ -529,7 +529,7 @@ pub fn migrate(kit: &Kit) {
     if let Err(e) = crate::install::adopt_composer(kit) {
         crate::log::warn(&format!("Composer of the older kit: {e:#}"));
     }
-    if let Err(e) = crate::apache::fix_kit_conf(kit) {
+    if let Err(e) = crate::projects::apache::fix_kit_conf(kit) {
         crate::log::warn(&format!("Apache kit.conf: {e:#}"));
     }
 }
@@ -930,7 +930,7 @@ mod tests {
         assert_eq!(all["node"].lines, ["24.1", "20.18"]);
         assert!(all["node"].checked > 0);
 
-        crate::project_settings::update(&kit, "app", |s| {
+        crate::projects::settings::update(&kit, "app", |s| {
             s.versions.insert("node".into(), "20.18".into());
         });
         let tool = tools(&kit).into_iter().find(|t| t.id == "node").unwrap();

@@ -27,7 +27,7 @@ use crate::db_auth;
 use crate::env::KitEnv;
 use crate::jobs::{self, Job};
 use crate::kit::Kit;
-use crate::run::responds;
+use crate::projects::run::responds;
 
 const READY_WITHIN: Duration = Duration::from_secs(15);
 

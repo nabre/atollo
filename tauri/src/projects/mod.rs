@@ -1,6 +1,20 @@
+//! Projects: the list and its operations (this file), the kit's settings of
+//! a project (`settings`, `dev-settings.json`), its MCP servers (`mcp`) and
+//! editor settings (`vscode`), new projects from frameworks (`frameworks`),
+//! the actions started by the kit (`run`), the static file server (`serve`)
+//! and a project's own Apache (`apache`). What a project is: `detect`.
+//!
 //! The projects in `projects\` (port of nabre/atollo `core/projects.js`):
 //! list with what each one is, new empty project, delete an empty one,
 //! clone from GitHub or a Git URL.
+
+pub mod apache;
+pub mod frameworks;
+pub mod mcp;
+pub mod run;
+pub mod serve;
+pub mod settings;
+pub mod vscode;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -25,8 +39,8 @@ pub struct ProjectInfo {
     pub empty: bool,
     /// Components it needs that are not installed.
     pub missing: Vec<String>,
-    /// The kit's settings of the project (`project_settings.rs`).
-    pub settings: crate::project_settings::ProjectSettings,
+    /// The kit's settings of the project (`projects/settings.rs`).
+    pub settings: settings::ProjectSettings,
     /// Editor extensions of its languages and added by hand (`editor/ext.rs`).
     pub extensions: Vec<crate::editor::ext::ProjectExtension>,
     #[serde(flatten)]
@@ -81,7 +95,7 @@ pub fn info(kit: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let settings = crate::project_settings::load(kit, &id);
+    let settings = settings::load(kit, &id);
     let extensions = crate::editor::ext::of_project(
         &project.languages,
         &project.requires,
@@ -173,7 +187,7 @@ pub fn delete_empty(kit: &Kit, name: &str, lang: &str) -> Result<()> {
         );
     }
     fs::remove_dir(&dir).with_context(|| dir.display().to_string())?;
-    crate::project_settings::remove(kit, name);
+    settings::remove(kit, name);
     Ok(())
 }
 

@@ -1,4 +1,4 @@
-//! New project from frameworks (frameworks.rs, DECISIONS.md D-83).
+//! New project from frameworks (projects/frameworks.rs, DECISIONS.md D-83).
 
 use super::*;
 
@@ -6,16 +6,19 @@ use super::*;
 #[serde(rename_all = "camelCase")]
 pub struct FrameworksView {
     /// In use: the official ones with the changes, then the user's own.
-    pub pieces: Vec<crate::frameworks::Piece>,
+    pub pieces: Vec<crate::projects::frameworks::Piece>,
     /// The official instructions (to restore a piece).
-    pub official: &'static [crate::frameworks::Piece],
+    pub official: &'static [crate::projects::frameworks::Piece],
     /// Descriptions and notes of the official pieces in the app's language,
     /// by Italian source.
     pub texts: std::collections::BTreeMap<String, String>,
     pub problem: Option<String>,
 }
 
-pub(super) fn problem_text(lang: &str, (source, args): crate::frameworks::Problem) -> String {
+pub(super) fn problem_text(
+    lang: &str,
+    (source, args): crate::projects::frameworks::Problem,
+) -> String {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     crate::i18n::t(lang, source, &args)
 }
@@ -27,8 +30,8 @@ pub fn frameworks_get<R: Runtime>(
 ) -> Result<FrameworksView, String> {
     ensure_main(&webview)?;
     let lang = state.lang();
-    let loaded = crate::frameworks::load(&state.kit);
-    let official = crate::frameworks::official();
+    let loaded = crate::projects::frameworks::load(&state.kit);
+    let official = crate::projects::frameworks::official();
     let mut texts = std::collections::BTreeMap::new();
     for p in official {
         let notes = p.on.values().filter_map(|v| v.note.as_ref());
@@ -48,10 +51,10 @@ pub fn frameworks_get<R: Runtime>(
 pub fn frameworks_set<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-    pieces: Vec<crate::frameworks::Piece>,
+    pieces: Vec<crate::projects::frameworks::Piece>,
 ) -> Result<(), String> {
     ensure_main(&webview)?;
-    crate::frameworks::save(&state.kit, pieces).map_err(|p| problem_text(state.lang(), p))
+    crate::projects::frameworks::save(&state.kit, pieces).map_err(|p| problem_text(state.lang(), p))
 }
 
 /// What a base with its additions would run (`pieces`: as edited, even if
@@ -60,13 +63,16 @@ pub fn frameworks_set<R: Runtime>(
 pub fn frameworks_plan<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-    mut pieces: Vec<crate::frameworks::Piece>,
+    mut pieces: Vec<crate::projects::frameworks::Piece>,
     base: String,
     addons: Vec<String>,
-) -> Result<crate::frameworks::Plan, String> {
+) -> Result<crate::projects::frameworks::Plan, String> {
     ensure_main(&webview)?;
-    pieces.iter_mut().for_each(crate::frameworks::clean);
-    crate::frameworks::plan(&pieces, &base, &addons).map_err(|p| problem_text(state.lang(), p))
+    pieces
+        .iter_mut()
+        .for_each(crate::projects::frameworks::clean);
+    crate::projects::frameworks::plan(&pieces, &base, &addons)
+        .map_err(|p| problem_text(state.lang(), p))
 }
 
 /// Progress of a creation (`framework` event): a command starting, or a
@@ -114,23 +120,24 @@ pub async fn frameworks_create<R: Runtime>(
     base: String,
     addons: Vec<String>,
     name: String,
-    env: Vec<crate::frameworks::EnvVar>,
+    env: Vec<crate::projects::frameworks::EnvVar>,
 ) -> Result<String, String> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
-    crate::frameworks::check_env(&env).map_err(|p| problem_text(lang, p))?;
+    crate::projects::frameworks::check_env(&env).map_err(|p| problem_text(lang, p))?;
     let wanted_env = env;
     let services = Arc::clone(&state.services);
-    let busy = crate::frameworks::begin()
+    let busy = crate::projects::frameworks::begin()
         .ok_or_else(|| tr(&state, "È già in corso la creazione di un progetto.", &[]))?;
     let name = name.trim().to_owned();
-    let existing = crate::frameworks::existing(&kit, &name).map_err(|p| problem_text(lang, p))?;
+    let existing =
+        crate::projects::frameworks::existing(&kit, &name).map_err(|p| problem_text(lang, p))?;
     let dir = kit.projects().join(&name);
-    let pieces = crate::frameworks::load(&kit).pieces;
-    let plan =
-        crate::frameworks::plan(&pieces, &base, &addons).map_err(|p| problem_text(lang, p))?;
+    let pieces = crate::projects::frameworks::load(&kit).pieces;
+    let plan = crate::projects::frameworks::plan(&pieces, &base, &addons)
+        .map_err(|p| problem_text(lang, p))?;
     tauri::async_runtime::spawn_blocking(move || {
-        use crate::frameworks::Existing;
+        use crate::projects::frameworks::Existing;
         let _busy = busy;
         let total = plan.create.len() + plan.steps.len();
         let emit = |step: usize, command: Option<String>, line: Option<String>| {
@@ -169,14 +176,14 @@ pub async fn frameworks_create<R: Runtime>(
             )
         };
         let run = |step: usize, line: &str, at: &std::path::Path| -> Result<(), String> {
-            if crate::frameworks::cancelled() {
+            if crate::projects::frameworks::cancelled() {
                 return Err(crate::i18n::t(lang, "Creazione annullata.", &[]));
             }
-            let command = crate::frameworks::fill(line, &name);
+            let command = crate::projects::frameworks::fill(line, &name);
             emit(step, Some(command.clone()), None);
             let out = |l: &str| emit(step, None, Some(l.to_owned()));
-            crate::frameworks::run_line(&kit, &env, at, &command, &out).map_err(|last| {
-                if crate::frameworks::cancelled() {
+            crate::projects::frameworks::run_line(&kit, &env, at, &command, &out).map_err(|last| {
+                if crate::projects::frameworks::cancelled() {
                     return crate::i18n::t(lang, "Creazione annullata.", &[]);
                 }
                 crate::log::warn(&format!("frameworks: {command}: {last}"));
@@ -193,7 +200,7 @@ pub async fn frameworks_create<R: Runtime>(
                     return Err(no_folder());
                 }
                 let mut kept = Vec::new();
-                crate::frameworks::merge_into(&made, &dir, &mut kept)
+                crate::projects::frameworks::merge_into(&made, &dir, &mut kept)
                     .map_err(|e| fail("frameworks", e))?;
                 for k in kept {
                     let text = crate::i18n::t(lang, "Già nel progetto, lasciato com'è: {0}", &[&k]);
@@ -215,7 +222,12 @@ pub async fn frameworks_create<R: Runtime>(
             let vars: Vec<(String, String)> = wanted_env
                 .iter()
                 .filter(|v| !v.key.is_empty())
-                .map(|v| (v.key.clone(), crate::frameworks::env_value(&v.value, &name)))
+                .map(|v| {
+                    (
+                        v.key.clone(),
+                        crate::projects::frameworks::env_value(&v.value, &name),
+                    )
+                })
                 .collect();
             if !vars.is_empty() {
                 let keys: Vec<&str> = vars.iter().map(|(k, _)| k.as_str()).collect();
@@ -262,15 +274,15 @@ pub async fn frameworks_create<R: Runtime>(
 pub fn frameworks_targets<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<crate::frameworks::Target>, String> {
+) -> Result<Vec<crate::projects::frameworks::Target>, String> {
     ensure_main(&webview)?;
-    Ok(crate::frameworks::targets(&state.kit))
+    Ok(crate::projects::frameworks::targets(&state.kit))
 }
 
 /// Stops the creation running now.
 #[tauri::command]
 pub fn frameworks_cancel<R: Runtime>(webview: Webview<R>) -> Result<(), String> {
     ensure_main(&webview)?;
-    crate::frameworks::cancel();
+    crate::projects::frameworks::cancel();
     Ok(())
 }

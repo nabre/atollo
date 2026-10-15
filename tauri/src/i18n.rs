@@ -161,7 +161,7 @@ mod tests {
     /// The descriptions and notes of the frameworks (frameworks.json) too.
     #[test]
     fn framework_texts_are_in_the_catalog() {
-        for p in crate::frameworks::official() {
+        for p in crate::projects::frameworks::official() {
             let notes = p.on.values().filter_map(|v| v.note.as_ref());
             for s in std::iter::once(&p.desc).chain(&p.note).chain(notes) {
                 let tr = catalog().get(s);
