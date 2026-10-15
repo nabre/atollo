@@ -1,5 +1,26 @@
 # Novità
 
+## Dati per progetto e file di passaggio nel temp del sistema (16/10/2026)
+
+Ciò che il kit tiene per un progetto sta in una cartella sola, e download ed estrazioni non scrivono più sulla chiavetta (D-89, D-90, [PLAN-DATA.md](PLAN-DATA.md)).
+
+**Fatto**
+- **`data\projects\<progetto>\`** al posto di cinque posti: impostazioni, porte, configurazioni di Apache e Nginx, e in `private\` (solo il proprietario, protetta prima di scrivere) le password e le copie dei database. La migrazione parte da sola al primo avvio dell'app, si può ripetere e conserva `ports.json` e `secrets.json` in `data\app\pre-v2\`.
+- **Eliminare un progetto** toglie anche i suoi database e l'utente dai server, dopo una conferma che elenca cosa sparisce; «Elimina senza i database» se un server non risponde.
+- **Dati senza progetto**: una cartella di `data\projects\` il cui progetto è stato rinominato o tolto fuori dall'app compare nella pagina Progetti, con «Collega a…» ed «Elimina». Mai cancellata da sola.
+- **Database più sicuri.** Il nome del database si salva (prima si ricavava dal nome del progetto, e due progetti potevano contendersi lo stesso: eliminarne uno cancellava l'altro); nomi uguali rifiutati, nomi dei server riservati (`mysql`, `root`, `admin`…). Una copia `.sql` si ripristina come utente del progetto, non come `root`. Il `_` nel `GRANT` di MariaDB è escapato.
+- **Alias dei siti** (`/media` → `storage/uploads`, `/shared` → `@common/assets`) validati e risolti in un punto solo: niente `..`, nessun collegamento seguito, controllo anche al momento di scrivere la configurazione; con `@altro/cartella` funzionano per Apache, Nginx e i pool. Un alias saltato è detto nella pagina del sito.
+- **File di passaggio nel temp del sistema** (`<TEMP>\Atollo\<id>\`): download, estrazioni, framework in creazione, file scaricati a mano, caricamenti di Adminer. Un kit su FAT32/exFAT non ha più il limite di 4 GiB né la lentezza della chiavetta durante questi passi; il risultato si copia in `data\apps` accanto alla destinazione e si scambia in un colpo solo. Con meno di 4 GiB liberi nel temp o senza temp l'installazione ripiega su `data\tmp`, con un avviso nel log. Cartelle dimenticate da un'app chiusa male si tolgono all'avvio dopo 24 ore.
+- **Impostazioni › «Temporanei dei programmi»**: Automatico, Nel kit, Nel sistema (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`). Automatico sceglie secondo il disco: fisso NTFS/ReFS nel kit (con permessi); rimovibile, di rete, FAT32 o exFAT nel sistema. La pagina mostra file system e tipo del disco del kit.
+- **Rust su FAT32/exFAT** si installa e si aggiorna (voce aperta chiusa): rustup lavora nel temp e l'albero si copia nel kit, con le copie al posto dei collegamenti fisici. Un file oltre 4 GiB su FAT32 ferma l'installazione con un errore che dice quale, senza toccare la versione installata.
+
+**Cambia**
+- **Una versione precedente dell'app non legge `data\projects`**: tornare indietro non è automatico. Per farlo a mano si usano le copie in `data\app\pre-v2\` (`ports.json`, `secrets.json`) e si rimettono i dati in `data\app\projects\` e `data\db\backup\`.
+- **Da riga di comando su un kit vecchio** (`Atollo.exe` senza finestra, prima del primo avvio dell'app) i dati dei progetti non si vedono: la migrazione gira solo come unica copia dell'app del kit, al primo avvio.
+- I file aggiunti a mano ora sono nel temp del sistema; `data\downloads` si accetta ancora e il suo contenuto si sposta al primo uso.
+
+**Verificato**: 322 test Rust e 66 test dell'interfaccia; clippy, fmt e lint puliti. Da provare a mano: migrazione di un kit reale, chiavetta exFAT e FAT32, eliminazione con database veri, alias con un collegamento ([TESTING.md](TESTING.md)).
+
 ## Interfaccia con i componenti di VSCodium (15/10/2026)
 
 L'app usa gli stessi controlli di VSCodium e gli stessi colori dell'editor, chiave per chiave, con il brand Atollo (D-88, [ARCHITECTURE.md](ARCHITECTURE.md)).
@@ -428,7 +449,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - pnpm 12 crea anche gli alias `pn` e `pnx`: aggiunti a ciò che si rimuove.
 
 **Limiti noti**
-- Rust su un kit in FAT32/exFAT non si installa (rustup vuole i collegamenti fisici); il ripiego del Atollo (toolchain sul disco del PC) non è ancora portato.
+- Rust su un kit in FAT32/exFAT non si installa (rustup vuole i collegamenti fisici); il ripiego del Atollo (toolchain sul disco del PC) non è ancora portato. **Chiuso il 16/10/2026** (D-90): rustup lavora nel temp del sistema e l'albero si copia nel kit.
 - WebView2 "Fixed Version" non si scarica dall'app (D-37).
 - Estensioni di un programma tolto restano installate (D-36).
 

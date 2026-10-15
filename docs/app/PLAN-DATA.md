@@ -22,6 +22,8 @@ Avanzamento sul branch `feature/data-layout`:
     320 test Rust e 59 Vitest superati.
   - Migrazione eseguita anche dalla riga di comando o da un secondo avvio, in gara con l'app aperta: spostata dopo l'acquisizione dell'istanza unica (`b1090ed`). Conseguenza: su un kit vecchio, i comandi da riga di comando prima del primo avvio dell'app non vedono i dati dei progetti.
   - Minore: `adopt` passava attraverso una giunzione; corretto nello stesso commit.
+- Ondata 3 fusa il 16/10/2026: A5 (WP-5 e WP-7 interfaccia, T8.5, T11.4, TS.6) in `6ab799c`: impostazione «Temporanei dei programmi» (Automatico / Nel kit / Nel sistema), file system e tipo di disco del kit nelle Impostazioni, sezione «Dati senza progetto» con «Collega a…» ed «Elimina», avviso di un alias saltato nella pagina del sito. 322 test Rust e 66 Vitest superati.
+- Ondata 4, parte D (WP-13) fatta il 16/10/2026: D-89 e D-90 in DECISIONS.md, note **Oggi** su D-00, D-04, D-63, D-74, D-77, D-78, D-82, D-83, ARCHITECTURE.md, CHANGELOG.md e TESTING.md (§6). Resta WP-14 (verifica finale).
 - Note dai rapporti dell'ondata 2:
   - Orfani adottati: database e utente restano quelli del vecchio nome (`db_name`), quindi la `.env` del progetto continua a funzionare. La pagina del database però proporrebbe un database nuovo e vuoto col nome nuovo. Correzione: salvare il nome del database in `db.json`, oppure tenere il vecchio nome nel progetto adottato. Da fare con WP-7 interfaccia.
   - MongoDB: per la creazione e l'eliminazione la password dell'amministratore passa a `mongosh` in una variabile d'ambiente, come già oggi; `mongodump`/`mongorestore` usano un file di configurazione.
@@ -397,6 +399,8 @@ Ogni pacchetto (WP) ha: obiettivo, dipendenze, file, compiti numerati, criteri d
 - **Test.** Manuale su chiavetta exFAT (TESTING.md): installazione, aggiornamento, `cargo build` di un progetto di prova.
 
 ### WP-13 Documenti
+
+**Stato: fatto il 16/10/2026.** Scostamenti dal piano che la documentazione registra come il codice li ha fatti: `CLAUDE_CODE_TMPDIR` sta in `<temp>\claude`, non in `<temp>\system` (la pulizia alla chiusura toglie tutte e due); «Automatico» manda nel sistema anche i file system senza permessi diversi da FAT32/exFAT; `Kit::project_states()` esiste ancora (serve alla migrazione) e `projects/state.rs` ha ancora `#![allow(dead_code)]` (da togliere in WP-14).
 
 - **Dipende da.** Tutti.
 - **File.** `docs/app/DECISIONS.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `TESTING.md`, questo piano (stato «completato»).
