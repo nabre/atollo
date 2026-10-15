@@ -1,12 +1,12 @@
 // A repository opened in the list: its facts, its address, rename and
 // delete on GitHub.
-import { useState, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { VscCheck, VscClose, VscCopy, VscEdit, VscKey, VscTrash } from "react-icons/vsc";
 import { githubDelete, githubRename, type GithubRepo } from "../api";
 import { useAction, useCopy } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { locale, t } from "../i18n";
-import { InlineConfirm } from "../workbench";
+import { InlineConfirm, TextField } from "../workbench";
 
 export function RepoDetails({
   repo: r,
@@ -25,6 +25,13 @@ export function RepoDetails({
   const [name, setName] = useState(r.name);
   const { copied, copy } = useCopy();
   const { busy, error, run } = useAction();
+  // The new name can't be empty: TextField has no `required`, so the
+  // component's property is set here (the form then refuses to submit).
+  const renameForm = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const field = renameForm.current?.querySelector("vscode-textfield");
+    if (field) field.required = true;
+  }, [mode]);
 
   const rename = (e: SyntheticEvent) => {
     e.preventDefault();
@@ -104,18 +111,21 @@ export function RepoDetails({
         )}
       </div>
       {mode === "rename" && (
-        <form onSubmit={rename} className="flex flex-wrap items-end gap-2" aria-label={t("Rinomina {0}", r.fullName)}>
+        <form
+          ref={renameForm}
+          onSubmit={rename}
+          className="flex flex-wrap items-end gap-2"
+          aria-label={t("Rinomina {0}", r.fullName)}
+        >
           <label className="flex flex-col gap-1">
             <span className="text-[12px] text-vsc-desc">{t("Nuovo nome del repository su GitHub")}</span>
-            <input
+            <TextField
               autoFocus
-              required
+              label={t("Nuovo nome del repository su GitHub")}
               pattern="[A-Za-z0-9._\-]+"
               value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-              }}
-              className="w-64 input"
+              onChange={setName}
+              className="w-64"
             />
           </label>
           <ActionButton

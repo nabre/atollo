@@ -1,8 +1,9 @@
 // The sections of Settings that are fields: general, network, agents,
 // versions of the languages.
+import { useEffect, useRef } from "react";
 import { LANGS, t } from "../i18n";
 import type { Settings, SettingsView } from "../api";
-import { CheckboxLabel, Link, Select, SettingItem, SettingsGroup } from "../workbench";
+import { CheckboxLabel, Link, Select, SettingItem, SettingsGroup, TextField } from "../workbench";
 
 const empty = (s: string) => (s.trim() === "" ? null : s.trim());
 
@@ -25,15 +26,15 @@ function TextSetting({
   const id = `set-${category}-${title}`.replace(/\W+/g, "-");
   return (
     <SettingItem category={category} title={title} description={description} modified={value !== null}>
-      <input
+      <TextField
         id={id}
-        aria-label={title}
+        label={title}
         value={value ?? ""}
         placeholder={placeholder}
-        onChange={(e) => {
-          onChange(empty(e.target.value));
+        onChange={(v) => {
+          onChange(empty(v));
         }}
-        className="input w-full"
+        className="w-full"
       />
     </SettingItem>
   );
@@ -170,6 +171,13 @@ export function AgentSettings({
   onRemoveKey: () => void;
 }) {
   const agents = t("Agenti");
+  // No saved passwords for the key: TextField has no autoComplete, so the
+  // component's property is set here.
+  const keyBox = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const field = keyBox.current?.querySelector("vscode-textfield");
+    if (field) field.autocomplete = "off";
+  }, []);
   return (
     <SettingsGroup id="s-agents" title={agents}>
       <SettingItem
@@ -177,18 +185,19 @@ export function AgentSettings({
         title={t("Chiave API di Gemini (Antigravity senza account Google)")}
         modified={view.geminiKeySet}
       >
-        <input
-          id="gemini-key"
-          type="password"
-          autoComplete="off"
-          aria-label={t("Chiave API di Gemini (Antigravity senza account Google)")}
-          value={gemini ?? ""}
-          placeholder={view.geminiKeySet ? t("salvata: scrivi per sostituirla") : t("nessuna")}
-          onChange={(e) => {
-            onGemini(e.target.value === "" ? null : e.target.value);
-          }}
-          className="input w-full"
-        />
+        <span ref={keyBox} className="contents">
+          <TextField
+            id="gemini-key"
+            type="password"
+            label={t("Chiave API di Gemini (Antigravity senza account Google)")}
+            value={gemini ?? ""}
+            placeholder={view.geminiKeySet ? t("salvata: scrivi per sostituirla") : t("nessuna")}
+            onChange={(v) => {
+              onGemini(v === "" ? null : v);
+            }}
+            className="w-full"
+          />
+        </span>
         {view.geminiKeySet && (
           <div className="mt-1.5">
             <Link onClick={onRemoveKey}>{t("Togli la chiave")}</Link>
