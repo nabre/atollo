@@ -11,8 +11,6 @@
 //! ```
 //!
 //! Deleting, renaming or saving a project is an operation on one folder.
-// Contract of PLAN-DATA.md WP-0, used from wave 1 on; removed in WP-14.
-#![allow(dead_code)]
 
 use std::fs;
 use std::io;

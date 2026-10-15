@@ -3,8 +3,6 @@
 //! removable, network) and its free space. Read when the app starts for the
 //! kit's root (PLAN-DATA.md §4.2.3) and before an installation copies
 //! between two disks.
-// Contract of PLAN-DATA.md WP-0, used from wave 1 on; removed in WP-14.
-#![allow(dead_code)]
 
 use std::io;
 use std::path::{Path, PathBuf};

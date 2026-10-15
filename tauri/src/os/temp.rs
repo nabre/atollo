@@ -5,8 +5,6 @@
 //! while they are written; `data\tmp` when the host gave no temporary folder
 //! or it cannot be written. Each folder holds an open `.lock` while it is in
 //! use and is removed when its `TempWork` is dropped.
-// Contract of PLAN-DATA.md WP-0 (WP-8 adds the sweep at start); removed in WP-14.
-#![allow(dead_code)]
 
 use std::fs::{self, File};
 use std::io;
