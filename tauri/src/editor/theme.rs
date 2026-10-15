@@ -22,14 +22,17 @@ pub const DARK: &str = "NEXKORA Dark";
 pub const LIGHT: &str = "NEXKORA Light";
 
 const FILES: &[(&str, &str)] = &[
-    ("package.json", include_str!("../editor-theme/package.json")),
+    (
+        "package.json",
+        include_str!("../../editor-theme/package.json"),
+    ),
     (
         "themes/dark.json",
-        include_str!("../editor-theme/themes/dark.json"),
+        include_str!("../../editor-theme/themes/dark.json"),
     ),
     (
         "themes/light.json",
-        include_str!("../editor-theme/themes/light.json"),
+        include_str!("../../editor-theme/themes/light.json"),
     ),
 ];
 
@@ -44,7 +47,7 @@ fn version() -> String {
 /// The embedded version is in the server's extensions folder
 /// (`<id>-<version>`, a local package has no platform suffix).
 fn is_current(kit: &Kit) -> bool {
-    let dir = crate::editor_ext::extensions_dir(kit).join(format!("{ID}-{}", version()));
+    let dir = crate::editor::ext::extensions_dir(kit).join(format!("{ID}-{}", version()));
     dir.join("package.json").is_file()
 }
 
@@ -76,7 +79,7 @@ pub fn ensure(kit: &Kit, env: &KitEnv) -> Result<()> {
     let vsix = work.join("nexkora-theme.vsix");
     write_vsix(&vsix)?;
     let job = crate::jobs::Job::new()?;
-    let mut cmd = crate::editor_ext::server_cli(kit, env);
+    let mut cmd = crate::editor::ext::server_cli(kit, env);
     // --force: also over a newer or equal version left by another build.
     cmd.arg("--install-extension")
         .arg(&vsix)
@@ -141,7 +144,7 @@ mod tests {
         assert!(zip.by_name("extension/package.json").is_ok());
         assert!(zip.by_name("extension/themes/dark.json").is_ok());
         assert!(!is_current(&kit));
-        let dir = crate::editor_ext::extensions_dir(&kit).join(format!("{ID}-{}", version()));
+        let dir = crate::editor::ext::extensions_dir(&kit).join(format!("{ID}-{}", version()));
         fs::create_dir_all(&dir).unwrap();
         fs::write(dir.join("package.json"), FILES[0].1).unwrap();
         assert!(is_current(&kit));

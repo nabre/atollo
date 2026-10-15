@@ -1,3 +1,7 @@
+//! Editor and consoles: the VSCodium web server (this file), its windows
+//! (`window`), settings (`cfg`), extensions (`ext`) and theme (`theme`), the
+//! consoles (`terminal`) and the kit's Windows Terminal (`wterm`).
+//!
 //! The integrated editor: the VSCodium web server, one per session.
 //!
 //! - listens on 127.0.0.1 only, on a free port in 7000-7099 (the projects'
@@ -9,6 +13,13 @@
 //!   does, without cmd.exe and its quoting), with the kit environment, in a
 //!   job of its own: stopping the server ends its whole tree;
 //! - output in `data\app\logs\editor.log`, with the token masked.
+
+pub mod cfg;
+pub mod ext;
+pub mod terminal;
+pub mod theme;
+pub mod window;
+pub mod wterm;
 
 use std::fs::{self, OpenOptions};
 use std::io::{BufRead, BufReader, Read, Write};
@@ -28,7 +39,6 @@ use windows::Win32::Security::Authorization::{
 use windows::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
 use windows::Win32::Security::{SetFileSecurityW, DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
 
-use crate::editor_cfg;
 use crate::env::{mask_secrets, KitEnv};
 use crate::jobs::{self, Job};
 use crate::kit::Kit;
@@ -53,19 +63,19 @@ pub struct Status {
     /// The server is x64 only: emulated on ARM64.
     pub emulated: bool,
     /// Recommended extensions being installed in the background.
-    pub extensions: crate::editor_ext::ExtState,
+    pub extensions: ext::ExtState,
 }
 
 pub struct Editor {
     kit: Kit,
     env: Mutex<KitEnv>,
     server: Mutex<Option<Server>>,
-    extensions: std::sync::Arc<Mutex<crate::editor_ext::ExtState>>,
+    extensions: std::sync::Arc<Mutex<ext::ExtState>>,
     /// The background install of extensions: ends with the server, which
     /// it shares the program folder with (an update could not replace it).
-    extensions_job: crate::editor_ext::JobSlot,
+    extensions_job: ext::JobSlot,
     /// Told what was installed, to offer a restart in the editor windows.
-    on_installed: Mutex<Option<crate::editor_ext::OnInstalled>>,
+    on_installed: Mutex<Option<ext::OnInstalled>>,
 }
 
 /// Where the server program is.
@@ -88,7 +98,7 @@ impl Editor {
             env: Mutex::new(env),
             server: Mutex::new(None),
             extensions: std::sync::Arc::default(),
-            extensions_job: crate::editor_ext::JobSlot::default(),
+            extensions_job: ext::JobSlot::default(),
             on_installed: Mutex::new(None),
         }
     }
@@ -141,7 +151,7 @@ impl Editor {
         Ok(out)
     }
 
-    pub fn set_on_installed(&self, f: crate::editor_ext::OnInstalled) {
+    pub fn set_on_installed(&self, f: ext::OnInstalled) {
         *self.on_installed.lock().unwrap_or_else(|e| e.into_inner()) = Some(f);
     }
 
@@ -165,7 +175,7 @@ impl Editor {
         let net = crate::net::Net::new(&settings, None)
             .ok()
             .map(std::sync::Arc::new);
-        crate::editor_ext::sync_in_background(
+        ext::sync_in_background(
             self.kit.clone(),
             self.env(),
             net,
@@ -200,13 +210,13 @@ impl Editor {
         }
         let env = self.env();
         let system_root = PathBuf::from(env.get("SystemRoot").unwrap_or(r"C:\Windows"));
-        match editor_cfg::write(&self.kit, &system_root)? {
-            editor_cfg::Outcome::LeftAlone(why) => {
+        match cfg::write(&self.kit, &system_root)? {
+            cfg::Outcome::LeftAlone(why) => {
                 crate::log::warn(&format!("editor settings left alone: {why}"))
             }
             other => crate::log::info(&format!("editor settings: {other:?}")),
         }
-        if let Err(e) = crate::editor_theme::ensure(&self.kit, &env) {
+        if let Err(e) = theme::ensure(&self.kit, &env) {
             crate::log::warn(&format!("editor theme: {e:#}"));
         }
         let data_dir = self.kit.data().join("vscodium-server");

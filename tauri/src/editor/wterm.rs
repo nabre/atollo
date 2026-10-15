@@ -38,7 +38,7 @@ use windows::Win32::System::Pipes::{
 };
 use windows::Win32::System::Registry::{RegGetValueW, HKEY_LOCAL_MACHINE, RRF_RT_REG_SZ};
 
-use crate::editor_cfg::pwsh_args;
+use crate::editor::cfg::pwsh_args;
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::jobs::{self, Console};

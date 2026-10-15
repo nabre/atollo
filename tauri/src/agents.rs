@@ -173,7 +173,7 @@ pub fn launch<R: tauri::Runtime>(
         crate::log::warn(&format!("before {id}: {w}"));
     }
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
-    crate::terminal::open_command(app, kit, env, dir, &command, move || {
+    crate::editor::terminal::open_command(app, kit, env, dir, &command, move || {
         let _ = crate::agents_sync::run(&after, Some(&after_dir));
     })
 }

@@ -20,10 +20,6 @@ mod db_browse;
 mod detect;
 mod downloads;
 mod editor;
-mod editor_cfg;
-mod editor_ext;
-mod editor_theme;
-mod editor_window;
 mod env;
 mod frameworks;
 mod fsx;
@@ -58,11 +54,9 @@ mod setup_task;
 mod side_by_side;
 mod signature;
 mod stats;
-mod terminal;
 mod verify;
 mod versions;
 mod webview;
-mod wterm;
 
 use std::path::Path;
 
@@ -473,11 +467,11 @@ fn build_app<R: tauri::Runtime>(
 ) -> tauri::Builder<R> {
     builder
         .manage(state)
-        .manage(terminal::Consoles::default())
+        .manage(editor::terminal::Consoles::default())
         .manage(commands::Quitting::default())
         .invoke_handler(command_handler!())
         .on_window_event(|window, event| {
-            if window.label().starts_with(editor_window::LABEL_PREFIX)
+            if window.label().starts_with(editor::window::LABEL_PREFIX)
                 && matches!(
                     event,
                     tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed
@@ -485,17 +479,17 @@ fn build_app<R: tauri::Runtime>(
             {
                 log::info(&format!("{}: {event:?}", window.label()));
             }
-            if window.label().starts_with(editor_window::LABEL_PREFIX)
+            if window.label().starts_with(editor::window::LABEL_PREFIX)
                 && matches!(event, tauri::WindowEvent::Destroyed)
             {
-                editor_window::closed(window.label());
+                editor::window::closed(window.label());
             }
             // The editor's title bar shows maximize or restore (D-69).
-            if window.label().starts_with(editor_window::LABEL_PREFIX)
+            if window.label().starts_with(editor::window::LABEL_PREFIX)
                 && matches!(event, tauri::WindowEvent::Resized(_))
             {
                 if let Some(w) = window.get_webview_window(window.label()) {
-                    editor_window::sync_maximized(&w);
+                    editor::window::sync_maximized(&w);
                 }
             }
             // With something open, the interface asks before closing.
@@ -533,13 +527,13 @@ fn build_app<R: tauri::Runtime>(
             let editor = std::sync::Arc::clone(&app.state::<AppState>().editor);
             let notify = app.handle().clone();
             editor.set_on_installed(std::sync::Arc::new(move |ids: &[String]| {
-                editor_window::notify_installed(&notify, ids);
+                editor::window::notify_installed(&notify, ids);
             }));
             let (refresh, refresh_kit) = (app.handle().clone(), kit.clone());
-            editor_window::watch_projects(
+            editor::window::watch_projects(
                 kit.clone(),
                 editor,
-                std::sync::Arc::new(move || editor_window::refresh_hidden(&refresh, &refresh_kit)),
+                std::sync::Arc::new(move || editor::window::refresh_hidden(&refresh, &refresh_kit)),
             );
             // Projects' actions: state and output go to the app window.
             let events = app.handle().clone();
