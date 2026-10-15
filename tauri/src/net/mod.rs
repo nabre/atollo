@@ -1,3 +1,7 @@
+//! Downloads and what is checked on them: the network (this file), the
+//! checksums (`verify`), the Authenticode signatures (`signature`) and the
+//! archives with the folder swaps of the installer (`archive`).
+//!
 //! Downloads for the installer (port of nabre/dev-kit `_common.ps1`
 //! Initialize-Network / Get-Download and `_prepare-helpers.ps1` Get-LatestTag).
 //!
@@ -6,6 +10,10 @@
 //! browser. Proxy: the one in Settings, else `HTTPS_PROXY`/`HTTP_PROXY`, else
 //! the Windows proxy setting (read-only). Every download goes to `<file>.part`
 //! and is renamed only when complete; 3 attempts, waiting 5 s then 10 s.
+
+pub mod archive;
+pub mod signature;
+pub mod verify;
 
 use std::fs::{self, File};
 use std::io::{Read, Write};

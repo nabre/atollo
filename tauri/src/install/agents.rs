@@ -5,9 +5,9 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
 use super::{arch_of, Ctx, Dest, Installer, Part, Release, Sign};
-use crate::archive::{Inner, Kind};
+use crate::net::archive::{Inner, Kind};
+use crate::net::verify::Expect;
 use crate::setup::catalog::Component;
-use crate::verify::Expect;
 
 fn str_at<'a>(v: &'a Value, path: &[&str]) -> Result<&'a str> {
     let mut cur = v;

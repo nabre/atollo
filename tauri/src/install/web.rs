@@ -15,12 +15,12 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
 use super::{fetch, pattern, Ctx, Dest, Installer, Part, Progress, Release};
-use crate::archive::{Inner, Kind};
 use crate::fsx::write_atomic;
+use crate::net::archive::{Inner, Kind};
 use crate::net::hash_in_list;
+use crate::net::verify::Expect;
 use crate::settings::Settings;
 use crate::setup::catalog::Component;
-use crate::verify::Expect;
 
 /// A progress sink that only logs, for steps that run inside hooks.
 struct LogProgress;
@@ -104,7 +104,7 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
             &mut |_, _| {},
         )?;
         let microsoft = pattern("O=Microsoft Corporation")?;
-        crate::signature::check(&exe, &microsoft, true)?;
+        crate::net::signature::check(&exe, &microsoft, true)?;
         let bytes = fs::read(&exe)?;
         let cabs = find_cabs(&bytes);
         if cabs.len() < 2 {
@@ -154,8 +154,8 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
         if !key.is_file() {
             bail!("vcruntime140.dll not found in the Microsoft package");
         }
-        crate::signature::check(&key, &microsoft, true)?;
-        crate::archive::replace_dir(&dlls, &folder)
+        crate::net::signature::check(&key, &microsoft, true)?;
+        crate::net::archive::replace_dir(&dlls, &folder)
     })();
     let _ = fs::remove_dir_all(&work);
     result.map(|()| folder)

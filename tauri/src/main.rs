@@ -7,7 +7,6 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
 
 mod agents;
-mod archive;
 mod cli;
 mod commands;
 mod db;
@@ -29,8 +28,6 @@ mod safe_path;
 mod sessions;
 mod settings;
 mod setup;
-mod signature;
-mod verify;
 mod versions;
 mod webview;
 

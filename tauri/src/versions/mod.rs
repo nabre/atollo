@@ -425,7 +425,7 @@ pub fn remove(kit: &Kit, id: &str, line: &str) -> Result<()> {
         bail!("{id} {line}: used by {}", users.join(", "));
     }
     if default_line(kit, c).as_deref() != Some(line) {
-        return crate::archive::remove_dir(&saved_dir(kit, c, line));
+        return crate::net::archive::remove_dir(&saved_dir(kit, c, line));
     }
     let Some(next) = saved(kit, c).into_iter().next() else {
         bail!("{id} {line}: the only version, it goes with the component");
@@ -436,7 +436,7 @@ pub fn remove(kit: &Kit, id: &str, line: &str) -> Result<()> {
     if dir != saved_dir(kit, c, line) {
         bail!("{id} {line}: not in its own folder yet");
     }
-    crate::archive::remove_dir(&dir)?;
+    crate::net::archive::remove_dir(&dir)?;
     promote(kit, c, &next)
 }
 
@@ -521,7 +521,7 @@ pub fn migrate(kit: &Kit) {
         let id = entry.file_name().to_string_lossy().into_owned();
         let result = match find(&id) {
             Some(c) => migrate_saved(kit, c, &entry.path()),
-            None => crate::archive::remove_dir(&entry.path()),
+            None => crate::net::archive::remove_dir(&entry.path()),
         };
         if let Err(e) = result {
             crate::log::warn(&format!("{id}: saved versions not moved ({e:#})"));
@@ -581,7 +581,7 @@ fn migrate_saved(kit: &Kit, c: &Component, old: &Path) -> Result<()> {
         let line = entry.file_name().to_string_lossy().into_owned();
         let to = saved_dir(kit, c, &line);
         if !valid_line(&line) || has_key(c, &to) {
-            crate::archive::remove_dir(&entry.path())?;
+            crate::net::archive::remove_dir(&entry.path())?;
             continue;
         }
         fs::create_dir_all(store(kit, c))?;

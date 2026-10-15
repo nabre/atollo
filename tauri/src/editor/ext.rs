@@ -37,10 +37,10 @@ use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::jobs;
 use crate::kit::Kit;
+use crate::net::verify::Expect;
 use crate::net::{github_digest, Net};
 use crate::projects::settings::Extensions;
 use crate::setup::catalog::Catalog;
-use crate::verify::Expect;
 
 const MATRIX: &str = include_str!("../../catalog/extensions.json");
 pub const CODELLDB: &str = "vadimcn.vscode-lldb";
@@ -634,7 +634,7 @@ fn codelldb_vsix(kit: &Kit, net: &Net, work: &Path) -> Result<PathBuf> {
     let file = work.join(&name);
     let cancel = std::sync::atomic::AtomicBool::new(false);
     net.download(&asset.browser_download_url, &file, &cancel, &mut |_, _| {})?;
-    crate::verify::check(&file, &Expect::Sha256(github_digest(asset)?))?;
+    crate::net::verify::check(&file, &Expect::Sha256(github_digest(asset)?))?;
     Ok(file)
 }
 
