@@ -282,21 +282,29 @@ pub fn set_project_choice(kit: &Kit, project: &str, id: &str, line: Option<&str>
     Ok(())
 }
 
-/// `versions.json` of `project` for the editor's terminals (profile.ps1);
-/// removed when the project has no rewrite.
+/// `versions.json` of `project` for the editor's PowerShell terminals
+/// (profile.ps1), and `versions.txt` (`from<TAB>to` lines) for Git Bash
+/// (bashrc); removed when the project has no rewrite.
 pub fn write_project_file(kit: &Kit, project: &str) {
     let Some(dir) = crate::project_settings::dir(kit, project) else {
         return;
     };
-    let file = dir.join("versions.json");
+    let (json, txt) = (dir.join("versions.json"), dir.join("versions.txt"));
     let swaps = project_swaps(kit, project);
     if swaps.is_empty() {
-        let _ = fs::remove_file(file);
+        let _ = fs::remove_file(json);
+        let _ = fs::remove_file(txt);
         return;
     }
     let text =
         serde_json::to_string_pretty(&serde_json::json!({ "swaps": swaps })).unwrap_or_default();
-    let result = fs::create_dir_all(&dir).and_then(|()| write_atomic(&file, text.as_bytes()));
+    let lines: String = swaps
+        .iter()
+        .map(|s| format!("{}\t{}\n", s.from, s.to))
+        .collect();
+    let result = fs::create_dir_all(&dir)
+        .and_then(|()| write_atomic(&json, text.as_bytes()))
+        .and_then(|()| write_atomic(&txt, lines.as_bytes()));
     if let Err(e) = result {
         crate::log::warn(&format!("versions of {project}: {e}"));
     }
@@ -440,9 +448,14 @@ mod tests {
         write_project_file(&kit, "app");
         let file = kit.app_dir().join(r"projects\app\versions.json");
         assert!(fs::read_to_string(&file).unwrap().contains("swaps"));
+        let txt = kit.app_dir().join(r"projects\app\versions.txt");
+        assert_eq!(
+            fs::read_to_string(&txt).unwrap(),
+            format!("{}\t{}\n", old.display(), main.display())
+        );
         // Same as the kit: no rewrite, no file.
         set_project_choice(&kit, "app", "node", Some("20.18")).unwrap();
-        assert!(!file.exists());
+        assert!(!file.exists() && !txt.exists());
 
         assert!(set_kit_choice(&kit, "claude", Some("1.0")).is_err());
         assert!(set_kit_choice(&kit, "node", Some(r"..\x")).is_err());

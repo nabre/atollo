@@ -1,5 +1,5 @@
 //! Command line of the same exe (DECISIONS.md D-21): `env`, `components`,
-//! `check`, `prepare`, `sync`, `keyring`, `serve`, `version`, `help`. The exe is a GUI program, so output goes
+//! `versions`, `check`, `prepare`, `sync`, `keyring`, `serve`, `version`, `help`. The exe is a GUI program, so output goes
 //! to the redirected handle when there is one, otherwise to the parent
 //! console. Step lines use the markers of nabre/dev-kit's setup output
 //! (`── N. Name ──`, `√`, `x`, `!`, `·`), so they read the same.
@@ -22,9 +22,14 @@ use crate::setup_runner::{Event, Options, Outcome, Sink};
 pub enum Cli {
     /// No command: open the window.
     Gui,
-    Env,
+    /// The kit environment; with `--project <name>`, the one of its programs.
+    Env {
+        project: Option<String>,
+    },
     Prepare(PrepareArgs),
     Components,
+    /// The saved versions; with an id, the lines that can be downloaded.
+    Versions(Option<String>),
     /// Every installed program answers its version command.
     Check,
     /// Aligns the agents (`--project <folder>`, `--verbose`).
@@ -50,6 +55,8 @@ pub struct PrepareArgs {
     pub skip: Vec<String>,
     pub update_all: bool,
     pub force: bool,
+    /// `--line node=22.21`: only these lines, saved next to the default.
+    pub lines: Vec<(String, String)>,
 }
 
 impl PrepareArgs {
@@ -59,7 +66,7 @@ impl PrepareArgs {
             skip: self.skip.clone(),
             update_all: self.update_all,
             force: self.force,
-            ..Options::default()
+            lines: self.lines.clone(),
         }
     }
 }
@@ -79,8 +86,21 @@ pub fn parse(args: &[OsString]) -> Cli {
         return Cli::Gui;
     };
     match first.to_string_lossy().as_ref() {
-        "env" => Cli::Env,
+        "env" => match args
+            .get(1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .as_deref()
+        {
+            None => Cli::Env { project: None },
+            Some("--project") if args.len() == 3 => Cli::Env {
+                project: Some(args[2].to_string_lossy().into_owned()),
+            },
+            Some(other) => Cli::Unknown(format!("env {other}")),
+        },
         "components" => Cli::Components,
+        "versions" if args.len() <= 2 => {
+            Cli::Versions(args.get(1).map(|a| a.to_string_lossy().to_lowercase()))
+        }
         "check" => Cli::Check,
         "sync" => {
             let mut project = None;
@@ -122,6 +142,13 @@ pub fn parse(args: &[OsString]) -> Cli {
                     "--skip" => p.skip.extend(ids(rest.next())),
                     "--update-all" => p.update_all = true,
                     "--force" => p.force = true,
+                    "--line" => {
+                        let value = rest.next().map(|v| v.to_string_lossy().to_lowercase());
+                        match value.as_deref().and_then(|v| v.split_once('=')) {
+                            Some((id, line)) => p.lines.push((id.to_owned(), line.to_owned())),
+                            None => return Cli::Unknown("prepare --line".into()),
+                        }
+                    }
                     other => return Cli::Unknown(format!("prepare {other}")),
                 }
             }
@@ -159,6 +186,37 @@ pub fn print_env(env: &KitEnv, out: &mut dyn Write) -> io::Result<()> {
 }
 
 /// The catalog with the choice and what is installed.
+/// The saved versions of the languages: `* ` marks the one the kit uses.
+pub fn print_versions(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Result<()> {
+    for tool in crate::versions::tools(kit).iter().filter(|x| x.installed) {
+        let used = tool
+            .preferred
+            .clone()
+            .or_else(|| tool.default.as_ref().map(|d| d.line.clone()));
+        let row = |line: &str, version: Option<&String>, note: String| {
+            let mark = if used.as_deref() == Some(line) {
+                "*"
+            } else {
+                " "
+            };
+            format!(
+                "  {mark} {:<16} {:<8} {}{note}",
+                tool.id,
+                line,
+                version.map_or("", String::as_str)
+            )
+        };
+        if let Some(d) = &tool.default {
+            let note = format!("  ({})", t(lang, "predefinita", &[]));
+            writeln!(out, "{}", row(&d.line, d.version.as_ref(), note))?;
+        }
+        for s in &tool.saved {
+            writeln!(out, "{}", row(&s.line, s.version.as_ref(), String::new()))?;
+        }
+    }
+    out.flush()
+}
+
 /// The final check, one line per component: `√ Name   answer`.
 pub fn print_checks(checks: &[crate::checkup::Check], out: &mut dyn Write) -> io::Result<()> {
     let width = checks
@@ -298,7 +356,18 @@ mod tests {
     #[test]
     fn commands() {
         assert_eq!(parse(&[]), Cli::Gui);
-        assert_eq!(parse(&args(&["env"])), Cli::Env);
+        assert_eq!(parse(&args(&["env"])), Cli::Env { project: None });
+        assert_eq!(
+            parse(&args(&["env", "--project", "app"])),
+            Cli::Env {
+                project: Some("app".into())
+            }
+        );
+        assert_eq!(parse(&args(&["versions"])), Cli::Versions(None));
+        assert_eq!(
+            parse(&args(&["versions", "Node"])),
+            Cli::Versions(Some("node".into()))
+        );
         assert_eq!(parse(&args(&["--version"])), Cli::Version);
         assert_eq!(parse(&args(&["/?"])), Cli::Help);
         assert_eq!(parse(&args(&["components"])), Cli::Components);
@@ -323,8 +392,29 @@ mod tests {
                 skip: vec!["codex".into(), "rust".into()],
                 update_all: true,
                 force: true,
+                lines: Vec::new(),
             })
         );
+        let Cli::Prepare(p) = parse(&args(&[
+            "prepare",
+            "--line",
+            "Node=22.21",
+            "--line",
+            "go=1.24",
+        ])) else {
+            panic!("prepare")
+        };
+        assert_eq!(
+            p.lines,
+            [
+                ("node".into(), "22.21".into()),
+                ("go".into(), "1.24".into())
+            ]
+        );
+        assert!(matches!(
+            parse(&args(&["prepare", "--line", "node"])),
+            Cli::Unknown(_)
+        ));
         assert_eq!(
             parse(&args(&["prepare", "--bogus"])),
             Cli::Unknown("prepare --bogus".into())

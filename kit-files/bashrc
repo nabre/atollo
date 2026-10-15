@@ -6,6 +6,47 @@ export HISTFILE="$HOME/.bash_history"
 export HISTSIZE=10000
 shopt -s histappend
 
+# Versions of the languages chosen for the project (data\app\projects\<project>\
+# versions.txt, "from<TAB>to" lines written by Dev-Kit.exe), as profile.ps1
+# does for PowerShell (DECISIONS.md D-80): PATH in POSIX form, the other
+# variables as Windows paths.
+__devkit_versions() {
+    local projects here project file from to fu tu name value entry out
+    [ -n "$CP_ROOT" ] && [ -n "$CP_DATA" ] || return 0
+    projects="$(cygpath -u "$CP_ROOT")/projects/"
+    here="$PWD/"
+    case "${here,,}" in "${projects,,}"?*) ;; *) return 0 ;; esac
+    project="${here:${#projects}}"
+    project="${project%%/*}"
+    file="$(cygpath -u "$CP_DATA")/app/projects/$project/versions.txt"
+    [ -f "$file" ] || return 0
+    while IFS=$'\t' read -r from to; do
+        to="${to%$'\r'}"
+        [ -n "$from" ] && [ -n "$to" ] || continue
+        fu="$(cygpath -u "$from")"
+        tu="$(cygpath -u "$to")"
+        out=""
+        local IFS=':'
+        for entry in $PATH; do
+            case "${entry,,}" in
+                "${fu,,}" | "${fu,,}"/*) entry="$tu${entry:${#fu}}" ;;
+            esac
+            out="${out:+$out:}$entry"
+        done
+        unset IFS
+        PATH="$out"
+        for name in JAVA_HOME DOTNET_ROOT CP_PHP; do
+            value="${!name}"
+            case "${value,,}" in
+                "${from,,}" | "${from,,}"\\*) export "$name=$to${value:${#from}}" ;;
+            esac
+        done
+    done < "$file"
+    export PATH
+}
+__devkit_versions
+unset -f __devkit_versions
+
 PS1='\[\e[38;5;75m\]Dev-Kit\[\e[0m\] \[\e[38;5;180m\]\w\[\e[0m\]\$ '
 
 if [ -f "$HOME/.bashrc" ]; then

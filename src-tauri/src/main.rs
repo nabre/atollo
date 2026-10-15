@@ -151,7 +151,19 @@ fn run() -> i32 {
 
     match command {
         Cli::Gui => {}
-        Cli::Env => return cli::print_env(&kit_env, &mut *cli::output()).map_or(1, |()| 0),
+        Cli::Env { project } => {
+            let env = match project {
+                Some(p) => versions::project_env(&kit, &p, kit_env.clone()),
+                None => kit_env.clone(),
+            };
+            return cli::print_env(&env, &mut *cli::output()).map_or(1, |()| 0);
+        }
+        Cli::Versions(None) => {
+            return cli::print_versions(&kit, lang, &mut *cli::output()).map_or(1, |()| 0)
+        }
+        Cli::Versions(Some(id)) => {
+            return version_lines(&kit, &kit_env, &loaded.settings, &host, &id)
+        }
         Cli::Prepare(args) => return prepare(&kit, &kit_env, &loaded.settings, &host, lang, &args),
         Cli::Sync { project, verbose } => {
             let report = agents_sync::run(&kit, project.as_deref());
@@ -400,7 +412,40 @@ fn prepare(
 }
 
 /// Help text of the command line (Italian source; translated by the catalog).
-const HELP: &str = "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n  components              elenca linguaggi e strumenti, con quelli installati\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di NEXKORA.";
+const HELP: &str = "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di NEXKORA.";
+
+/// `versions <id>`: the lines of `id` its source offers.
+fn version_lines(kit: &Kit, kit_env: &KitEnv, settings: &Settings, host: &Host, id: &str) -> i32 {
+    let mut out = cli::output();
+    let result = (|| -> anyhow::Result<Vec<String>> {
+        versions::check(id, None)?;
+        let c = catalog::Catalog::get()
+            .find(id)
+            .ok_or_else(|| anyhow::anyhow!("{id}"))?;
+        let installer = install::installer(id).ok_or_else(|| anyhow::anyhow!("{id}"))?;
+        let net = net::Net::new(settings, github_token(host))?;
+        let cancel = std::sync::atomic::AtomicBool::new(false);
+        let ctx = install::Ctx {
+            kit,
+            net: &net,
+            env: kit_env,
+            cancel: &cancel,
+        };
+        installer.lines(&ctx, c)
+    })();
+    match result {
+        Ok(lines) => {
+            for l in lines {
+                let _ = writeln!(out, "  {l}");
+            }
+            0
+        }
+        Err(e) => {
+            let _ = writeln!(out, "  x {e:#}");
+            1
+        }
+    }
+}
 
 fn help(lang: &str) -> String {
     i18n::t(lang, HELP, &[])
