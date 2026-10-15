@@ -72,7 +72,9 @@ impl Services {
     /// server must run.
     pub fn export(&self, project: &str, engine: &str) -> Result<PathBuf> {
         let (port, env) = self.running_server(engine)?;
-        let name = auth::project_db_name(&self.kit, project, engine)?;
+        // The dump runs as root/admin: only the database the kit made for
+        // this project, never one another project (or someone else) uses.
+        let name = self.own_database(project, engine)?;
         let dir = self.backup_dir(project)?;
         let stamp = crate::agents::sync::stamp();
         match engine {
@@ -121,14 +123,8 @@ impl Services {
         if !crate::os::safe_path::is_file(&dir, &path) {
             bail!("copy not found: {file}");
         }
-        // Never over a database that another project uses as well.
-        let name = |engine| -> Result<String> {
-            let name = auth::project_db_name(&self.kit, project, engine)?;
-            auth::check_name_free(&self.kit, project, engine, &name)?;
-            Ok(name)
-        };
         if file.ends_with(".archive.gz") {
-            let name = name("mongodb")?;
+            let name = self.own_database(project, "mongodb")?;
             let (port, env) = self.running_server("mongodb")?;
             let (mut cmd, config) = self.mongo_tool("mongorestore.exe", &env, port)?;
             cmd.arg(format!("--archive={}", path.display()))
@@ -139,13 +135,11 @@ impl Services {
             let _ = fs::remove_file(config);
             result.context("mongorestore")
         } else if file.ends_with(".sql") {
-            let name = name("mariadb")?;
+            let name = self.own_database(project, "mariadb")?;
             // As the project's user, never root: the file may come from
             // outside (D-78) and name other databases or `mysql.*`.
-            let password =
-                auth::try_project_password(&self.kit, project, "mariadb")?.ok_or_else(|| {
-                    anyhow!("the project has no MariaDB database yet: create it first")
-                })?;
+            let password = auth::try_project_password(&self.kit, project, "mariadb")?
+                .ok_or_else(|| anyhow!("the project has no MariaDB database yet"))?;
             let (port, env) = self.running_server("mariadb")?;
             let sql = fs::read_to_string(&path)?;
             let (mut cmd, login) =
@@ -157,6 +151,19 @@ impl Services {
         } else {
             bail!("not a database copy: {file}")
         }
+    }
+
+    /// The name of the database the kit made for `project` on `engine`, for
+    /// a dump or a restore that runs with the server's administrator: only
+    /// when the project has one (a stored password) and no other project
+    /// uses the same name; never a database the kit did not make for it.
+    fn own_database(&self, project: &str, engine: &str) -> Result<String> {
+        if auth::try_project_password(&self.kit, project, engine)?.is_none() {
+            bail!("the project has no {engine} database yet: create it first");
+        }
+        let name = auth::project_db_name(&self.kit, project, engine)?;
+        auth::check_name_free(&self.kit, project, engine, &name)?;
+        Ok(name)
     }
 }
 
@@ -218,5 +225,29 @@ mod tests {
         // a copy that is there gets past the check (then: no server)
         let e = s.restore("shop", "shop-1.sql").unwrap_err().to_string();
         assert!(!e.contains("not a copy") && !e.contains("not found"), "{e}");
+    }
+
+    /// Dumps and restores run with the server's administrator: only on the
+    /// database the kit made for the project, never one it shares.
+    #[test]
+    fn only_the_projects_own_database() {
+        let tmp = TempDir::new("db-backups-own");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let s = Services::new(kit.clone());
+        let db_json = |p: &str, json: &str| {
+            let file = kit.project_data().join(p).join(r"private\db.json");
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(file, json).unwrap();
+        };
+        // no database made by the kit: nothing, whatever exists on the server
+        let e = s.own_database("shop", "mariadb").unwrap_err().to_string();
+        assert!(e.contains("no mariadb database"), "{e}");
+        db_json("shop", r#"{"mariadb":"pw","names":{"mariadb":"shop"}}"#);
+        assert_eq!(s.own_database("shop", "mariadb").unwrap(), "shop");
+        // another project with the same name: refused
+        db_json("other", r#"{"mariadb":"pw","names":{"mariadb":"shop"}}"#);
+        let e = format!("{:#}", s.own_database("shop", "mariadb").unwrap_err());
+        assert!(e.contains("other"), "{e}");
     }
 }
