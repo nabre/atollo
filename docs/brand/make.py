@@ -2,7 +2,7 @@
 
 One source for every mark: run `python docs/brand/make.py` to rewrite the
 SVGs in docs/brand/ and ui/src/assets/brand/, the PNG logos in ui/src/assets/
-and the window icon src-tauri/icons/icon.ico. The PNGs need resvg-py
+and the window icon tauri/icons/icon.ico. The PNGs need resvg-py
 (`pip install resvg-py`) and Pillow.
 """
 
@@ -217,7 +217,7 @@ def write_rasters():
     sizes = [16, 20, 24, 32, 40, 48, 64, 128, 256]
     big = render(sym, 256)
     big.save(
-        ROOT / "src-tauri" / "icons" / "icon.ico",
+        ROOT / "tauri" / "icons" / "icon.ico",
         sizes=[(s, s) for s in sizes],
         append_images=[render(sym, s) for s in sizes[:-1]],
     )

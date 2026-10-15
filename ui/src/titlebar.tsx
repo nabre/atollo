@@ -1,5 +1,5 @@
 // Title bar of the app window, drawn by the interface: the window has no
-// Windows frame (src-tauri/src/main.rs, `decorations(false)`). The empty part
+// Windows frame (tauri/src/main.rs, `decorations(false)`). The empty part
 // drags the window and a double click maximizes it (`data-tauri-drag-region`);
 // the three buttons are those of Windows. Only the main window has the
 // permissions they use (capabilities/main.json).

@@ -1,5 +1,5 @@
 // The interface's only way to Rust, one file per domain: the same split as
-// src-tauri/src/commands/. Pages import from "./api"; the helpers of core.ts
+// tauri/src/commands/. Pages import from "./api"; the helpers of core.ts
 // stay inside this folder.
 export { browserPreview } from "./core";
 export * from "./app";

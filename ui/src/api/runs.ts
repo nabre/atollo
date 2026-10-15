@@ -1,5 +1,5 @@
-// The projects' actions started by the kit (src-tauri/src/run.rs): state,
-// output, ports. Rust: src-tauri/src/commands/runs.rs.
+// The projects' actions started by the kit (tauri/src/run.rs): state,
+// output, ports. Rust: tauri/src/commands/runs.rs.
 
 import { invoke } from "@tauri-apps/api/core";
 import { act, query, subscribe } from "./core";

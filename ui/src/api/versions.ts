@@ -1,5 +1,5 @@
 // Saved versions of the languages (D-80) and the relations matrix (D-81).
-// Rust: src-tauri/src/commands/versions.rs.
+// Rust: tauri/src/commands/versions.rs.
 
 import { act, query } from "./core";
 

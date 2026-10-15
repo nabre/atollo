@@ -7,7 +7,7 @@ leave to VS Code's built-in defaults, swaps the blue emphasis for the brand
 colors (make.py, brand.png) and writes:
 
 - ui/src/theme-colors.css: the app's color tokens, one per theme key;
-- src-tauri/editor-theme/: the editor's "NEXKORA Dark" and "NEXKORA Light",
+- tauri/editor-theme/: the editor's "NEXKORA Dark" and "NEXKORA Light",
   the two themes whole (colors, token colors) with the same emphasis, as
   the extension `nexkora.theme` that the kit installs (editor_theme.rs).
 
@@ -348,7 +348,7 @@ def css_block(kind, colors):
     return "\n".join(lines)
 
 
-EXTENSION = ROOT / "src-tauri" / "editor-theme"
+EXTENSION = ROOT / "tauri" / "editor-theme"
 LABELS = {"dark": "NEXKORA Dark", "light": "NEXKORA Light"}
 
 

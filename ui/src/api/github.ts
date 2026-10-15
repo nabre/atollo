@@ -1,6 +1,6 @@
-// The kit's GitHub account (src-tauri/src/github.rs): one sign-in for this
+// The kit's GitHub account (tauri/src/github.rs): one sign-in for this
 // page, the kit's Git (editor, consoles, agents) and GitHub CLI.
-// Rust: src-tauri/src/commands/github.rs.
+// Rust: tauri/src/commands/github.rs.
 
 import { invoke } from "@tauri-apps/api/core";
 import { act, query, subscribe } from "./core";

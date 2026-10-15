@@ -1,6 +1,6 @@
 # Dev-Kit App: catalogo di agenti, linguaggi e strumenti
 
-Fonte: `nabre/dev-kit` al commit `a61a354` (`setup/components.json` e script di `setup/windows/`). È la specifica che il motore Rust (`catalog.rs`, `install/*.rs`) segue; il catalogo dell'app è `src-tauri/catalog/components.json`. I riferimenti `file:riga` puntano agli script originali.
+Fonte: `nabre/dev-kit` al commit `a61a354` (`setup/components.json` e script di `setup/windows/`). È la specifica che il motore Rust (`catalog.rs`, `install/*.rs`) segue; il catalogo dell'app è `tauri/catalog/components.json`. I riferimenti `file:riga` puntano agli script originali.
 
 Percorsi nel nuovo kit (PLAN §2): `A` = `data\apps\win32-<arch>\`; versioni in `data\app\versions\<id>.txt`; aree di lavoro in `data\tmp\setup\`.
 Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i componenti sono stati installati e rimossi a mano nella fase 4 (CHANGELOG.md).

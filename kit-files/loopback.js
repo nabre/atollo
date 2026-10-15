@@ -1,7 +1,7 @@
 'use strict';
 // From nabre/dev-kit (setup/node/loopback.js, MIT). Written by Dev-Kit.exe to
 // data\kit\loopback.js and loaded into every Node.js of the kit
-// (NODE_OPTIONS=--require, see src-tauri/src/env.rs). A server that listens on all
+// (NODE_OPTIONS=--require, see tauri/src/env.rs). A server that listens on all
 // the network cards (no address, 0.0.0.0 or ::, the default of most dev
 // servers) listens on this PC only (127.0.0.1) instead: Windows Firewall
 // (and the macOS one, if on) asks to allow a program only when it listens on

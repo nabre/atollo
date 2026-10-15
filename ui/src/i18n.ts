@@ -1,5 +1,5 @@
 // Texts of the interface: Italian source, as in the Rust code
-// (src-tauri/i18n/catalog.json), with English, French and German catalogs in
+// (tauri/i18n/catalog.json), with English, French and German catalogs in
 // locales/. `t("Testo {0}", x)` returns the text in the current language with
 // {0}, {1}… replaced; a text missing from a catalog stays Italian (the test
 // i18n.test.ts fails before that can ship).

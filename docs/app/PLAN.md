@@ -107,7 +107,7 @@ Servono a `agy.cmd`, alle azioni dei progetti, alla CI e alle prove a mano.
 
 Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, controllo di scrittura, spostamento del kit (`root.txt`) → log, pulizia di `Dev-Kit.old.exe`, versione dell'app → impostazioni → ambiente del kit, applicato al processo → file in `data\kit\` → se c'è un comando, lo esegue ed esce → istanza singola per kit → WebView2 (sistema, fissa in `data\apps\…\webview2\`, o messaggio) → Job Object → finestra `main` → poi: installazione degli obbligatori e dell'editor mancanti o di un'altra versione; in background accesso Antigravity in sospeso, allineamento agenti (con la rilocazione), sorvegliante degli agenti; controllo aggiornamento dopo 20 s. Le altre copie del kit aperte le cerca la Home.
 
-## 4. Moduli Rust (`src-tauri\src\`)
+## 4. Moduli Rust (`tauri\src\`)
 
 Organizzazione per livelli e per area, regole comuni per file, processi e comandi: [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -169,7 +169,7 @@ Organizzazione per livelli e per area, regole comuni per file, processi e comand
 | `cli.rs`, `log.rs` | riga di comando, log con segreti mascherati |
 
 
-Dipendenze (`src-tauri\Cargo.toml`): `tauri`, `serde`, `serde_json`, `anyhow`, `thiserror`, `windows`, `webview2-com`, `ureq` con `native-tls`, `sha2`, `base64`, `zip`, `tar`, `flate2`, `sevenz-rust2`, `regex`, `junction`. Motivi in D-22.
+Dipendenze (`tauri\Cargo.toml`): `tauri`, `serde`, `serde_json`, `anyhow`, `thiserror`, `windows`, `webview2-com`, `ureq` con `native-tls`, `sha2`, `base64`, `zip`, `tar`, `flate2`, `sevenz-rust2`, `regex`, `junction`. Motivi in D-22.
 
 ## 5. Interfaccia
 
@@ -224,7 +224,7 @@ Radice: la radice del repository `nabre/dev-kit2`. Struttura:
 ```
 Cargo.toml  Cargo.lock        workspace
 package.json                  workspace npm (ui), comandi dev, build, test, lint
-src-tauri\                    exe (moduli §4), catalogo e testi incorporati
+tauri\                    exe (moduli §4), catalogo e testi incorporati
 ui\                           interfaccia React + TypeScript + Tailwind (D-02)
 kit-files\                    file scritti in data\kit\ (loopback.js, profile.ps1, console.ps1, bashrc, bin\agy.cmd, bin\agy)
 docs\app\                     piano, decisioni, architettura, catalogo, prove, novità

@@ -1,4 +1,4 @@
-// Typed wrappers of the Rust commands (src-tauri/src/commands/). The
+// Typed wrappers of the Rust commands (tauri/src/commands/). The
 // interface calls nothing else: no generic "run this" command exists.
 //
 // Outside Tauri (`npm run dev` in ui\ opened in a browser) the commands do

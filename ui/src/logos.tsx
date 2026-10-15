@@ -154,7 +154,7 @@ const COMPONENTS: Record<string, Logo> = {
   r: R,
 };
 
-/** Languages as named by src-tauri/src/detect/mod.rs `LANGUAGES`. */
+/** Languages as named by tauri/src/detect/mod.rs `LANGUAGES`. */
 const LANGUAGES: Record<string, Logo> = {
   JavaScript: { icon: SiJavascript, color: "#F7DF1E" },
   TypeScript: { icon: SiTypescript, color: "#3178C6" },

@@ -1,7 +1,7 @@
-// Preparation (src-tauri/src/setup_task.rs): one run at a time, started by
+// Preparation (tauri/src/setup_task.rs): one run at a time, started by
 // the app at launch when a required component is missing, by the editor and
 // console buttons, or by the Tools page; files downloaded by hand (D-82).
-// Rust: src-tauri/src/commands/setup.rs.
+// Rust: tauri/src/commands/setup.rs.
 
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { act, browserPreview, query, subscribe } from "./core";
@@ -16,7 +16,7 @@ export type Outcome =
   | { kind: "failed"; message: string; byHand: ByHand | null };
 
 /** A download that failed: its address, to download it in the browser and
- * drop the file on the app (src-tauri/src/downloads.rs). */
+ * drop the file on the app (tauri/src/downloads.rs). */
 export interface ByHand {
   url: string;
   fileName: string;
