@@ -1,7 +1,8 @@
 // Hooks shared by the pages, for the two ways Rust keeps them current:
 // events it sends (`useSubscription`) and state read again every few seconds
-// (`useEvery`); an action with its wait and its error (`useAction`); a copy
-// to the clipboard (`useCopy`).
+// (`useEvery`); a value read once or every few seconds, with what a failed
+// read does (`useLoad`); an action with its wait and its error (`useAction`);
+// a copy to the clipboard (`useCopy`).
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** One of the `on…` functions of ./api: starts listening, resolves to the
@@ -49,6 +50,70 @@ export function useEvery(read: () => void, ms: number): void {
       window.clearInterval(timer);
     };
   }, [read, ms]);
+}
+
+/** What a failed read does: `"keep"` leaves the value as it was, `"show"`
+ * leaves it too and puts the error in `error` (cleared by the next read that
+ * works), `{ fallback }` replaces the value. */
+export type OnLoadError<T> = "keep" | "show" | { fallback: T };
+
+export interface LoadOptions<T> {
+  onError: OnLoadError<T>;
+  /** Read again every `every` milliseconds, as `useEvery`. */
+  every?: number;
+  /** False: nothing is read (`reload` does nothing either). */
+  enabled?: boolean;
+  /** Read again when it changes, besides when `load` changes. */
+  key?: unknown;
+}
+
+/**
+ * A value read with `load` when the component mounts and again when `load`
+ * changes (keep it stable with useCallback), or on `reload`. `setData`
+ * changes it in between, as events do. Nothing is set once the component
+ * is gone.
+ */
+export function useLoad<T>(load: () => Promise<T>, initial: T, options: LoadOptions<T>) {
+  const { onError, every, enabled = true, key } = options;
+  const [data, setData] = useState<T>(initial);
+  const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  // Read when the answer comes: a new policy is no reason to read again.
+  const policy = useRef(onError);
+  useEffect(() => {
+    policy.current = onError;
+  });
+  const reload = useCallback(() => {
+    if (!enabled) return;
+    load().then(
+      (value) => {
+        if (!mounted.current) return;
+        setData(value);
+        setError(null);
+      },
+      (e: unknown) => {
+        if (!mounted.current) return;
+        const p = policy.current;
+        if (p === "show") setError(String(e));
+        else if (p !== "keep") setData(p.fallback);
+      },
+    );
+  }, [load, enabled]);
+  useEffect(() => {
+    reload();
+    if (every === undefined) return;
+    const timer = window.setInterval(reload, every);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [reload, every, key]);
+  return { data, error, reload, setData };
 }
 
 /** Runs an action, keeping track of what is busy and of the last error. */
