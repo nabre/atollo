@@ -41,6 +41,8 @@ pub struct Settings {
     /// Where consoles open: `None` = the kit's Windows Terminal, `classic` =
     /// Windows' classic console (D-68).
     pub terminal: Option<String>,
+    /// `TEMP` of the programs: `auto`, `kit` or `system`.
+    pub program_temp: ProgramTemp,
 }
 
 impl Default for Settings {
@@ -54,7 +56,31 @@ impl Default for Settings {
             php_version: None,
             rust_toolchain: None,
             terminal: None,
+            program_temp: ProgramTemp::Auto,
         }
+    }
+}
+
+/// Where the kit's programs keep `TEMP` (PLAN-DATA 4.2.5): `Auto` decides by
+/// the kit's disk, `Kit` is `data\tmp`, `System` the host's temporary folder.
+/// An unknown value in the file reads as `Auto`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ProgramTemp {
+    #[default]
+    Auto,
+    Kit,
+    System,
+}
+
+impl<'de> Deserialize<'de> for ProgramTemp {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(d)?;
+        Ok(match s.to_ascii_lowercase().as_str() {
+            "kit" => ProgramTemp::Kit,
+            "system" => ProgramTemp::System,
+            _ => ProgramTemp::Auto,
+        })
     }
 }
 
@@ -163,6 +189,25 @@ mod tests {
         assert_eq!(loaded.settings, Settings::default());
         assert!(loaded.problem.is_none());
         assert!(loaded.settings.auto_update);
+    }
+
+    #[test]
+    fn program_temp_default_and_unknown() {
+        assert_eq!(Settings::default().program_temp, ProgramTemp::Auto);
+        let read = |json: &str| {
+            let tmp = TempDir::new("settings-ptemp");
+            let path = tmp.0.join("settings.json");
+            fs::write(&path, json).unwrap();
+            Settings::load_from(&path).settings.program_temp
+        };
+        assert_eq!(read("{\"lang\":\"it\"}"), ProgramTemp::Auto);
+        assert_eq!(read("{\"programTemp\":\"kit\"}"), ProgramTemp::Kit);
+        assert_eq!(read("{\"programTemp\":\"system\"}"), ProgramTemp::System);
+        assert_eq!(read("{\"programTemp\":\"banana\"}"), ProgramTemp::Auto);
+        assert_eq!(
+            serde_json::to_string(&ProgramTemp::System).unwrap(),
+            "\"system\""
+        );
     }
 
     #[test]

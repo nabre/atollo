@@ -18,7 +18,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::kit::Kit;
-use crate::settings::Settings;
+use crate::os::volume::{DriveKind, VolumeInfo};
+use crate::settings::{ProgramTemp, Settings};
 
 /// System variables kept from the real environment: what Windows programs
 /// need to run, nothing that points into the user's profile.
@@ -110,6 +111,42 @@ pub fn node_options(kit: &Kit) -> String {
 #[derive(Debug, Clone, Default)]
 pub struct KitEnv {
     vars: BTreeMap<String, String>,
+    /// `data\tmp` when the programs' temp is in the kit on a disk with
+    /// permissions: `create_dirs` gives it an owner-only DACL.
+    private_tmp: Option<PathBuf>,
+}
+
+/// Where the programs' temp (`TEMP`, `TMP`) or Claude's (`CLAUDE_CODE_TMPDIR`,
+/// `claude = true`) goes, PLAN-DATA 4.2.5. `data` is the kit's data folder.
+/// `Auto` is the host's temp when the kit is on a removable or remote disk or
+/// on a file system without permissions; with the disk unknown it is the kit.
+pub(crate) fn program_temp_dir(
+    choice: ProgramTemp,
+    volume: Option<VolumeInfo>,
+    system_temp: Option<&Path>,
+    data: &Path,
+    claude: bool,
+) -> PathBuf {
+    let in_kit = if claude {
+        data.join("tmp")
+    } else {
+        data.join("tmp").join("system")
+    };
+    let Some(host) = system_temp else {
+        return in_kit;
+    };
+    let system = match choice {
+        ProgramTemp::Kit => false,
+        ProgramTemp::System => true,
+        ProgramTemp::Auto => volume.is_some_and(|v| {
+            matches!(v.drive, DriveKind::Removable | DriveKind::Remote) || !v.fs.has_permissions()
+        }),
+    };
+    if system {
+        host.join(if claude { "claude" } else { "system" })
+    } else {
+        in_kit
+    }
 }
 
 /// The newest version folder in `ndk` (`30.0.16248370`), if any.
@@ -201,7 +238,20 @@ impl KitEnv {
 
         // Claude Code, Codex, Antigravity (_env.cmd:55-73)
         env.set_path("CLAUDE_CONFIG_DIR", home.join(".claude"));
-        env.set_path("CLAUDE_CODE_TMPDIR", data.join("tmp"));
+        let temp_for = |claude| {
+            program_temp_dir(
+                settings.program_temp,
+                kit.volume(),
+                kit.system_temp(),
+                &data,
+                claude,
+            )
+        };
+        let (program_tmp, claude_tmp) = (temp_for(false), temp_for(true));
+        if claude_tmp == data.join("tmp") && kit.volume().is_some_and(|v| v.fs.has_permissions()) {
+            env.private_tmp = Some(claude_tmp.clone());
+        }
+        env.set_path("CLAUDE_CODE_TMPDIR", claude_tmp);
         env.set("DISABLE_UPDATES", "1");
         env.set_path("CODEX_HOME", home.join(".codex"));
         env.set("AGY_CLI_DISABLE_AUTO_UPDATE", "true");
@@ -221,8 +271,8 @@ impl KitEnv {
         let localappdata = home.join("AppData").join("Local");
         env.set_path("APPDATA", &appdata);
         env.set_path("LOCALAPPDATA", &localappdata);
-        env.set_path("TEMP", data.join("tmp").join("system"));
-        env.set_path("TMP", data.join("tmp").join("system"));
+        env.set_path("TEMP", &program_tmp);
+        env.set_path("TMP", &program_tmp);
         env.set_path("NODE_REPL_HISTORY", home.join(".node_repl_history"));
         env.set_path("PYTHON_HISTORY", home.join(".python_history"));
         env.set_path(
@@ -540,6 +590,12 @@ impl KitEnv {
                 fs::create_dir_all(dir)?;
             }
         }
+        // Kit mode on NTFS/ReFS: the programs' leftovers are for the owner only.
+        if let Some(tmp) = &self.private_tmp {
+            if let Err(e) = crate::editor::restrict_dir_to_owner(tmp) {
+                crate::log::warn(&format!("{}: owner-only access: {e:#}", tmp.display()));
+            }
+        }
         Ok(())
     }
 }
@@ -681,6 +737,88 @@ mod tests {
         assert_eq!(
             env.get("HOMEPATH").map(|p| p.ends_with(r"\data\home")),
             Some(true)
+        );
+    }
+
+    #[test]
+    fn program_temp_decision_table() {
+        use crate::os::volume::FsKind;
+        let vol = |fs, drive| Some(VolumeInfo { fs, drive, free: 1 });
+        let data = Path::new(r"E:\Kit\data");
+        let host = Path::new(r"C:\Users\me\AppData\Local\Temp\Dev-Kit\abc");
+        let in_kit = PathBuf::from(r"E:\Kit\data\tmp\system");
+        let in_sys = host.join("system");
+        let ntfs_fixed = vol(FsKind::Ntfs, DriveKind::Fixed);
+        let get = |choice, v, h: Option<&Path>| program_temp_dir(choice, v, h, data, false);
+        let table = [
+            (ProgramTemp::Auto, ntfs_fixed, &in_kit),
+            (
+                ProgramTemp::Auto,
+                vol(FsKind::ExFat, DriveKind::Removable),
+                &in_sys,
+            ),
+            (
+                ProgramTemp::Auto,
+                vol(FsKind::Fat32, DriveKind::Fixed),
+                &in_sys,
+            ),
+            (
+                ProgramTemp::Auto,
+                vol(FsKind::Ntfs, DriveKind::Removable),
+                &in_sys,
+            ),
+            (
+                ProgramTemp::Auto,
+                vol(FsKind::Ntfs, DriveKind::Remote),
+                &in_sys,
+            ),
+            (
+                ProgramTemp::Auto,
+                vol(FsKind::Other, DriveKind::Fixed),
+                &in_sys,
+            ),
+            (ProgramTemp::Auto, None, &in_kit),
+            (
+                ProgramTemp::Kit,
+                vol(FsKind::ExFat, DriveKind::Removable),
+                &in_kit,
+            ),
+            (ProgramTemp::System, ntfs_fixed, &in_sys),
+            (ProgramTemp::System, None, &in_sys),
+        ];
+        for (choice, v, want) in table {
+            assert_eq!(&get(choice, v, Some(host)), want, "{choice:?} {v:?}");
+        }
+        // no host temp: always the kit
+        assert_eq!(
+            get(
+                ProgramTemp::System,
+                vol(FsKind::ExFat, DriveKind::Removable),
+                None
+            ),
+            in_kit
+        );
+        // Claude's folder follows the same rule
+        let claude = |c| program_temp_dir(c, ntfs_fixed, Some(host), data, true);
+        assert_eq!(claude(ProgramTemp::Auto), data.join("tmp"));
+        assert_eq!(claude(ProgramTemp::System), host.join("claude"));
+    }
+
+    #[test]
+    fn system_temp_reaches_the_environment() {
+        let (tmp, kit) = fake_kit("env-systemtemp", &[]);
+        let kit = kit.with_host(Some(&tmp.0.join("host")));
+        let s = Settings {
+            program_temp: ProgramTemp::System,
+            ..Settings::default()
+        };
+        let env = KitEnv::build(&kit, &s, "it", &host());
+        let sys = kit.system_temp().unwrap();
+        assert_eq!(Path::new(env.get("TEMP").unwrap()), sys.join("system"));
+        assert_eq!(Path::new(env.get("TMP").unwrap()), sys.join("system"));
+        assert_eq!(
+            Path::new(env.get("CLAUDE_CODE_TMPDIR").unwrap()),
+            sys.join("claude")
         );
     }
 
