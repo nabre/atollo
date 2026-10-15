@@ -1,5 +1,7 @@
-//! Copies of the projects' databases (D-78), in `data\db\backup\<project>`:
-//! export and restore with the servers' own tools.
+//! Copies of the projects' databases (D-78), in
+//! `data\projects\<project>\private\backups` (D-89): export and restore with
+//! the servers' own tools. The folder is owner-only before anything is
+//! written in it, so every copy is private from the start (by inheritance).
 
 use std::fs;
 use std::path::PathBuf;
@@ -12,6 +14,7 @@ use serde::Serialize;
 use super::tools::run_with_input;
 use super::{auth, Services};
 use crate::os::jobs;
+use crate::projects::state::ProjectState;
 
 /// A copy of a project's database (D-78).
 #[derive(Debug, Clone, Serialize)]
@@ -23,14 +26,21 @@ pub struct Backup {
 }
 
 impl Services {
-    /// Where a project's database copies go: `data\db\backup\<project>`.
-    pub fn backup_dir(&self, project: &str) -> PathBuf {
-        self.kit.data().join(r"db\backup").join(project)
+    /// Where a project's database copies go, created and private: also the
+    /// folder a copy from outside is put in by hand to restore it (D-78).
+    pub fn backup_dir(&self, project: &str) -> Result<PathBuf> {
+        let Some(state) = ProjectState::of(&self.kit, project) else {
+            bail!("not a project name: {project}");
+        };
+        Ok(state.backups_dir()?)
     }
 
     /// The copies of a project's database, newest first.
     pub fn backups(&self, project: &str) -> Vec<Backup> {
-        let mut out: Vec<Backup> = fs::read_dir(self.backup_dir(project))
+        let Ok(dir) = self.backup_dir(project) else {
+            return Vec::new();
+        };
+        let mut out: Vec<Backup> = fs::read_dir(dir)
             .into_iter()
             .flatten()
             .flatten()
@@ -63,8 +73,7 @@ impl Services {
     pub fn export(&self, project: &str, engine: &str) -> Result<PathBuf> {
         let (port, env) = self.running_server(engine)?;
         let name = auth::db_name(project);
-        let dir = self.backup_dir(project);
-        fs::create_dir_all(&dir)?;
+        let dir = self.backup_dir(project)?;
         let stamp = crate::agents::sync::stamp();
         match engine {
             "mongodb" => {
@@ -107,8 +116,9 @@ impl Services {
         if file.contains(['\\', '/']) || file.starts_with('.') {
             bail!("not a copy of this project: {file}");
         }
-        let path = self.backup_dir(project).join(file);
-        if !crate::os::safe_path::is_file(&self.backup_dir(project), &path) {
+        let dir = self.backup_dir(project)?;
+        let path = dir.join(file);
+        if !crate::os::safe_path::is_file(&dir, &path) {
             bail!("copy not found: {file}");
         }
         let name = auth::db_name(project);
@@ -131,5 +141,66 @@ impl Services {
         } else {
             bail!("not a database copy: {file}")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::auth::tests::assert_owner_only;
+    use crate::kit::{tests::TempDir, Arch, Kit};
+
+    #[test]
+    fn copies_in_the_private_folder() {
+        let tmp = TempDir::new("db-backups");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let s = Services::new(kit);
+        assert!(s.backup_dir("..").is_err());
+        assert!(s.backups(r"..\x").is_empty());
+
+        let dir = s.backup_dir("shop").unwrap();
+        assert_eq!(dir, tmp.0.join(r"data\projects\shop\private\backups"));
+        assert!(s.backups("shop").is_empty());
+        // a copy written there (as mariadb-dump's output) is private by
+        // inheritance from private\
+        for name in ["shop-1.sql", "shop-2.archive.gz", "notes.txt"] {
+            fs::write(dir.join(name), "x").unwrap();
+        }
+        assert_owner_only(&dir.join("shop-1.sql"));
+        let list = s.backups("shop");
+        let names: Vec<(&str, &str)> = list
+            .iter()
+            .map(|b| (b.file.as_str(), b.engine.as_str()))
+            .collect();
+        assert_eq!(
+            names,
+            [("shop-2.archive.gz", "mongodb"), ("shop-1.sql", "mariadb")]
+        );
+        assert!(s.backups("other").is_empty(), "one folder per project");
+
+        // no server: export fails before writing anything
+        assert!(s.export("shop", "mariadb").is_err());
+        assert_eq!(fs::read_dir(&dir).unwrap().count(), 3);
+
+        // names outside the folder are refused before any server is asked
+        let outside = tmp.0.join(r"data\projects\shop\private\x.sql");
+        fs::write(&outside, "x").unwrap();
+        for bad in [
+            r"..\x.sql",
+            "../x.sql",
+            r"C:\x.sql",
+            ".hidden.sql",
+            "missing.sql",
+        ] {
+            let e = s.restore("shop", bad).unwrap_err().to_string();
+            assert!(
+                e.contains("not a copy") || e.contains("not found"),
+                "{bad}: {e}"
+            );
+        }
+        // a copy that is there gets past the check (then: no server)
+        let e = s.restore("shop", "shop-1.sql").unwrap_err().to_string();
+        assert!(!e.contains("not a copy") && !e.contains("not found"), "{e}");
     }
 }
