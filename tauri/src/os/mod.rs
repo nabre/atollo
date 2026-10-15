@@ -10,4 +10,6 @@ pub mod jobs;
 pub mod processes;
 pub mod safe_path;
 pub mod sessions;
+pub mod temp;
+pub mod volume;
 pub mod webview;

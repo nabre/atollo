@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 use crate::fsx::write_atomic;
+use crate::os::volume::VolumeInfo;
 
 /// Processor platform of the downloaded programs (`data\apps\win32-<arch>`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
@@ -68,6 +69,10 @@ pub enum KitError {
 pub struct Kit {
     root: PathBuf,
     arch: Arch,
+    /// `<host TEMP>\Dev-Kit\<id>`, for files in transit (PLAN-DATA.md §4.2).
+    system_temp: Option<PathBuf>,
+    /// The disk of the root, read once at start.
+    volume: Option<VolumeInfo>,
 }
 
 impl Kit {
@@ -85,7 +90,21 @@ impl Kit {
         Kit {
             root: strip_verbatim(&root),
             arch,
+            system_temp: None,
+            volume: None,
         }
+    }
+
+    /// The kit with what the host gives at start: its temporary folder
+    /// (`TEMP`/`TMP` of the real process, read before D-04 moves them into
+    /// `data\`) and the disk of the root. Without them the kit works as before:
+    /// every temporary file in `data\tmp`.
+    pub fn with_host(mut self, host_temp: Option<&Path>) -> Kit {
+        self.system_temp = host_temp
+            .filter(|t| t.is_absolute())
+            .map(|t| strip_verbatim(t).join("Dev-Kit").join(self.id()));
+        self.volume = crate::os::volume::info(&self.root).ok();
+        self
     }
 
     pub fn root(&self) -> &Path {
@@ -99,6 +118,22 @@ impl Kit {
     }
     pub fn projects(&self) -> PathBuf {
         self.root.join("projects")
+    }
+    /// The kit's files of each project, one folder per project (D-89).
+    #[allow(dead_code)] // PLAN-DATA.md WP-0 contract, used from wave 1; removed in WP-14
+    pub fn project_data(&self) -> PathBuf {
+        self.data().join("projects")
+    }
+    /// `<host TEMP>\Dev-Kit\<id>`: files in transit only (D-90); `None` when
+    /// the host gave no temporary folder.
+    #[allow(dead_code)] // PLAN-DATA.md WP-0 contract, used from wave 1; removed in WP-14
+    pub fn system_temp(&self) -> Option<&Path> {
+        self.system_temp.as_deref()
+    }
+    /// The disk of the root, when it could be read.
+    #[allow(dead_code)] // PLAN-DATA.md WP-0 contract, used from wave 1; removed in WP-14
+    pub fn volume(&self) -> Option<VolumeInfo> {
+        self.volume
     }
     /// Downloaded programs for this processor: `data\apps\win32-<arch>`.
     pub fn apps(&self) -> PathBuf {
@@ -125,7 +160,7 @@ impl Kit {
     pub fn settings_file(&self) -> PathBuf {
         self.app_dir().join("settings.json")
     }
-    /// The kit's files of each project, one folder per project (D-63).
+    /// Before D-89: `data\app\projects`. Read only by the migration (WP-6).
     pub fn project_states(&self) -> PathBuf {
         self.app_dir().join("projects")
     }
@@ -324,6 +359,24 @@ pub(crate) mod tests {
         let b = Kit::at(PathBuf::from(r"e:\kit"), Arch::X64);
         assert_eq!(a.id(), b.id());
         assert_eq!(a.id().len(), 16);
+    }
+
+    #[test]
+    fn host_temp_and_disk() {
+        let tmp = TempDir::new("with-host");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        assert_eq!(kit.system_temp(), None);
+        assert_eq!(kit.project_data(), tmp.0.join(r"data\projects"));
+        let host = kit
+            .clone()
+            .with_host(Some(Path::new(r"C:\Users\u\AppData\Local\Temp")));
+        assert_eq!(
+            host.system_temp().unwrap(),
+            Path::new(r"C:\Users\u\AppData\Local\Temp\Dev-Kit").join(kit.id())
+        );
+        assert!(host.volume().is_some_and(|v| v.free > 0));
+        // a relative TEMP is not used: everything stays in data\tmp
+        assert_eq!(kit.with_host(Some(Path::new("Temp"))).system_temp(), None);
     }
 
     #[test]

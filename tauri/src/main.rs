@@ -72,7 +72,8 @@ fn run() -> i32 {
         }
     };
     let kit = match Kit::from_exe(&exe) {
-        Ok(kit) => kit,
+        // The host's TEMP, before the profile folders move into data\ (D-04, D-90).
+        Ok(kit) => kit.with_host(host.get("TEMP").or(host.get("TMP")).map(Path::new)),
         Err(e) => {
             fatal(
                 early_lang,
