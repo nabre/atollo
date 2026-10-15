@@ -1,7 +1,7 @@
 // A download that failed, done in the browser instead (tauri/src/setup/downloads.rs,
 // DECISIONS.md D-82): the link to the file, and a box where the downloaded
-// file is dropped or picked. The app keeps it in data\downloads and tries
-// again; the file is used only with the checksum the source publishes.
+// file is dropped or picked. The app keeps it in the host's temp folder
+// (data\downloads is still accepted: moved there on use) and tries again; the file is used only with the checksum the source publishes.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { VscCloudDownload } from "react-icons/vsc";
 import { downloadsAdd, downloadsPick, onFileDrag, setupByHandOpen, type ByHand } from "./api";

@@ -158,6 +158,20 @@ pub fn resolve(
         .collect()
 }
 
+/// The URLs of the aliases [`resolve`] leaves out, for the interface to say
+/// so (without the log warning: `resolve` already wrote it).
+pub fn skipped(
+    project_root: &Path,
+    projects_root: &Path,
+    aliases: &BTreeMap<String, String>,
+) -> Vec<String> {
+    aliases
+        .iter()
+        .filter(|(url, target)| resolve_one(project_root, projects_root, url, target).is_none())
+        .map(|(url, _)| url.trim().to_owned())
+        .collect()
+}
+
 fn resolve_one(
     project_root: &Path,
     projects_root: &Path,
@@ -284,6 +298,10 @@ mod tests {
         let found = resolve(&shop, &projects, &aliases);
         let urls: Vec<&str> = found.iter().map(|a| a.url.as_str()).collect();
         assert_eq!(urls, ["/media", "/root", "/shared"]);
+        assert_eq!(
+            skipped(&shop, &projects, &aliases),
+            ["/ghost", "/leak", "/missing", "/up", "bad"]
+        );
         let by_url = |u: &str| found.iter().find(|a| a.url == u).unwrap();
         assert_eq!(by_url("/media").dir, shop.join(r"storage\uploads"));
         assert_eq!(

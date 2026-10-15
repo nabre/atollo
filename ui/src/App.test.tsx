@@ -15,6 +15,9 @@ const info: AppInfo = {
   watcherUnsafeFolder: null,
   firstRun: false,
   otherKits: [],
+  diskFs: "NTFS",
+  diskKind: "fixed",
+  systemTemp: null,
 };
 
 const idle: SetupSnapshot = {
@@ -83,6 +86,7 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
         phpVersion: null,
         rustToolchain: null,
         terminal: null,
+        programTemp: "auto",
       },
       geminiKeySet: true,
       problem: null,
@@ -178,6 +182,7 @@ const running: RunInfo = {
   end: null,
   code: null,
   pid: 7,
+  skippedAliases: [],
 };
 
 const { App } = await import("./App");

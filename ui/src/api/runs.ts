@@ -22,6 +22,8 @@ export interface RunInfo {
   end: number | null;
   code: number | null;
   pid: number | null;
+  /** URLs of the site's aliases left out of its configuration. */
+  skippedAliases: string[];
 }
 
 export type RunEvent = ({ kind: "state" } & RunInfo) | { kind: "log"; key: string; lines: string[] };
