@@ -3,7 +3,8 @@
 // buttons, a navigation bar, one section at a time. Starting it, its
 // components, databases, editor extensions and settings, its Git state; the
 // kit's settings of the project live in
-// data\app\projects\<id>\dev-settings.json, never in it.
+// data\projects\<id>\dev-settings.json, never in it. Deleting an empty
+// project asks first, with what goes with it (./delete.tsx).
 import { useCallback, useState } from "react";
 import { VscFolderOpened, VscRefresh, VscWarning } from "react-icons/vsc";
 import {
@@ -22,7 +23,7 @@ import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
 import { Button, Dot, IconButton } from "../workbench";
 import { VscGithub, VscTrash } from "react-icons/vsc";
-import { projectDatabases, projectDelete, projectStatus, type ProjectDatabases, type ProjectStatus } from "../api";
+import { projectDatabases, projectStatus, type ProjectDatabases, type ProjectStatus } from "../api";
 import { AgentPicker } from "../agents";
 import { ProjectExtensions } from "../extensions";
 import { EditorSettingsBox } from "../editorsettings";
@@ -35,6 +36,7 @@ import { SiteForm } from "./site";
 import { COMPONENT_NAMES, Needs } from "./needs";
 import { Databases } from "./databases";
 import { Git } from "./git";
+import { DeleteProjectDialog } from "./delete";
 
 type Section = "run" | "site" | "components" | "databases" | "extensions" | "editor" | "git";
 
@@ -70,6 +72,8 @@ export function ProjectPage({
   const [section, setSection] = useState<Section>("run");
   /** The action shown in Avvio (null: the default one). */
   const [chosen, setChosen] = useState<string | null>(null);
+  /** The confirmation of the deletion is open. */
+  const [deleting, setDeleting] = useState(false);
   const readStatus = useCallback(() => projectStatus(p.id), [p.id]);
   const readDbs = useCallback(() => projectDatabases(p.id), [p.id]);
   const { data: status, reload: reloadStatus } = useLoad<ProjectStatus | null>(readStatus, null, { onError: "keep" });
@@ -238,9 +242,20 @@ export function ProjectPage({
               <ActionButton
                 icon={VscTrash}
                 label={t("Elimina la cartella vuota")}
-                busy={opening === "delete"}
                 onClick={() => {
-                  run("delete", () => projectDelete(p.id));
+                  setDeleting(true);
+                }}
+              />
+            )}
+            {deleting && (
+              <DeleteProjectDialog
+                project={p.id}
+                onCancel={() => {
+                  setDeleting(false);
+                }}
+                onDeleted={() => {
+                  setDeleting(false);
+                  onChanged();
                 }}
               />
             )}

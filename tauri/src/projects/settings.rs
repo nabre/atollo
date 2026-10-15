@@ -86,10 +86,13 @@ pub fn opened(kit: &Kit, project: &str) {
     update(kit, project, |s| s.last_opened = Some(now));
 }
 
-/// The project's folder is gone: its settings go with it.
-pub fn remove(kit: &Kit, project: &str) {
-    if let Some(state) = ProjectState::of(kit, project) {
-        let _ = state.remove();
+/// The project's folder is gone: its settings go with it, and everything
+/// else the kit keeps for it (`data\projects\<project>\`, passwords and
+/// database copies included: the caller drops the databases first).
+pub fn remove(kit: &Kit, project: &str) -> std::io::Result<()> {
+    match ProjectState::of(kit, project) {
+        Some(state) => state.remove(),
+        None => Ok(()),
     }
 }
 
@@ -120,7 +123,9 @@ mod tests {
             update(&kit, bad, |s| s.agent = Some("x".into()));
             assert!(dir(&kit, bad).is_none(), "{bad}");
         }
-        remove(&kit, "app");
+        remove(&kit, "app").unwrap();
         assert!(!file.exists());
+        remove(&kit, "app").unwrap();
+        remove(&kit, "..").unwrap();
     }
 }
