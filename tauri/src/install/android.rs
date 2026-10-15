@@ -162,7 +162,8 @@ impl Installer for Android {
             .ok_or_else(|| anyhow!("android: no folder"))?;
         let java = java_home(ctx.kit)
             .ok_or_else(|| anyhow!("the Android SDK needs Java 17 or newer: install Java first"))?;
-        let work = work_dir(ctx, component)?;
+        let guard = work_dir(ctx, component)?;
+        let work = guard.path();
         let first = !sdk.exists();
         let result = (|| -> Result<()> {
             let part = &release.parts[0];
@@ -171,7 +172,7 @@ impl Installer for Android {
                 &part.url,
                 &part.file_name,
                 &part.expect,
-                &work,
+                work,
                 progress,
             )?;
             let extracted = work.join("x");
@@ -181,7 +182,7 @@ impl Installer for Android {
                 bail!("the archive does not contain bin\\sdkmanager.bat");
             }
             fs::create_dir_all(sdk.join("cmdline-tools"))?;
-            archive::replace_dir(&tree, &sdk.join(r"cmdline-tools\latest"))?;
+            archive::stage_into(&tree, &sdk.join(r"cmdline-tools\latest"))?;
 
             progress.note("sdkmanager: licenses");
             sdkmanager(
@@ -209,7 +210,7 @@ impl Installer for Android {
             }
             Ok(())
         })();
-        let _ = fs::remove_dir_all(&work);
+        drop(guard);
         if result.is_err() && first {
             let _ = archive::remove_dir(&sdk);
         }

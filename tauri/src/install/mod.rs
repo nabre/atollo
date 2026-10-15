@@ -4,8 +4,10 @@
 //! Each component says where its latest build is and how to verify it
 //! (`latest`): a release made of one or more parts (Java with Maven and
 //! Gradle, CMake with Ninja...). The shared path installs each part:
-//! download into `data\tmp\setup\<id>`, checksum, extraction, check of the
-//! key file, then the swap into `data\apps\<platform>`. The saved version
+//! download into `setup\<id>` of the PC's temporary folder (`data\tmp`
+//! without one, D-90), checksum, extraction, check of the key file, then the
+//! swap into `data\apps\<platform>` (`archive::stage_into`, a copy first when
+//! the kit is on another disk). The saved version
 //! joins the versions of the parts, so a new build of any part is noticed.
 //! Installers made of processes (Rust, pnpm, R) implement `custom`.
 //!
@@ -34,6 +36,7 @@ use crate::kit::Kit;
 use crate::net::archive::{self, Inner, Kind};
 use crate::net::verify::{self, Expect};
 use crate::net::Net;
+use crate::os::temp::TempWork;
 use crate::setup::catalog::Component;
 
 pub use lang::{make_launchers, version_key};
@@ -239,12 +242,12 @@ pub trait Progress {
     fn bytes(&mut self, done: u64, total: Option<u64>);
 }
 
-/// The work folder of a component: `data\tmp\setup\<id>`, emptied.
-pub fn work_dir(ctx: &Ctx, component: &Component) -> Result<PathBuf> {
-    let work = ctx.kit.data().join("tmp").join("setup").join(&component.id);
-    let _ = fs::remove_dir_all(&work);
-    fs::create_dir_all(&work).with_context(|| work.display().to_string())?;
-    Ok(work)
+/// The work folder of a component, `setup\<id>` in the PC's temporary folder
+/// (D-90; `data\tmp\setup\<id>` without one), emptied. It lives as long as
+/// the guard: keep it for the whole installation.
+pub fn work_dir(ctx: &Ctx, component: &Component) -> Result<TempWork> {
+    let rel = format!("setup/{}", component.id);
+    TempWork::new(ctx.kit, &rel).with_context(|| format!("work folder {rel}"))
 }
 
 /// Downloads and verifies one file into `work`; the same file added by hand
@@ -321,11 +324,11 @@ pub fn install(
                 component,
                 part,
                 own.as_deref(),
-                &work.join(i.to_string()),
+                &work.path().join(i.to_string()),
                 progress,
             )
         });
-        let _ = fs::remove_dir_all(&work);
+        drop(work);
         result?;
         match &own {
             Some(folder) => inst.finish(ctx, component, folder)?,
@@ -405,11 +408,11 @@ pub fn install_line(
                 component,
                 part,
                 Some(&target),
-                &work.join(i.to_string()),
+                &work.path().join(i.to_string()),
                 progress,
             )
         });
-    let _ = fs::remove_dir_all(&work);
+    drop(work);
     result?;
     inst.finish(ctx, component, &target)?;
     if !crate::versions::has_key(component, &target) {
@@ -473,12 +476,14 @@ fn install_part(
             if let Some(parent) = folder.parent() {
                 archive::clean_leftovers(parent);
             }
-            archive::replace_dir(&tree, folder)
+            // From the PC's temporary folder: checked, copied next to the
+            // folder, then swapped (on the same disk, renamed as before).
+            archive::stage_into(&tree, folder)
         }
         Dest::Folder(name) => {
             let folder = apps.join(name);
             archive::clean_leftovers(&apps);
-            archive::replace_dir(&tree, &folder)
+            archive::stage_into(&tree, &folder)
         }
         Dest::Tools(names) => {
             let tools = apps.join("tools");
@@ -486,7 +491,7 @@ fn install_part(
             for name in names {
                 let found = find_file(&tree, name)
                     .with_context(|| format!("{name} not found in {}", part.file_name))?;
-                archive::replace_file(&found, &tools.join(name))?;
+                put_file(&found, &tools.join(name))?;
             }
             Ok(())
         }
@@ -497,7 +502,7 @@ fn install_part(
             }
             let dir = apps.join(folder);
             fs::create_dir_all(&dir)?;
-            archive::replace_file(&src, &dir.join(name))
+            put_file(&src, &dir.join(name))
         }
         Dest::Inside(name) => {
             let Some(folder) = own else {
@@ -505,9 +510,18 @@ fn install_part(
             };
             let found = find_file(&tree, name)
                 .with_context(|| format!("{name} not found in {}", part.file_name))?;
-            archive::replace_file(&found, &folder.join(name))
+            put_file(&found, &folder.join(name))
         }
     }
+}
+
+/// One file of the new tree in place of `dest`, always copied: checked
+/// against the disk of `dest` first, so the installed one stays when it
+/// cannot fit.
+fn put_file(new: &Path, dest: &Path) -> Result<()> {
+    archive::check_fits(new, dest)?;
+    archive::check_space(new, dest)?;
+    archive::replace_file(new, dest)
 }
 
 /// First file called `name` (case-insensitive) under `dir`.

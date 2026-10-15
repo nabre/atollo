@@ -245,14 +245,15 @@ impl Installer for Rust {
                 )?;
                 return Ok(());
             }
-            let work = work_dir(ctx, component)?;
+            let guard = work_dir(ctx, component)?;
+            let work = guard.path();
             let part = &release.parts[0];
             let init = fetch(
                 ctx,
                 &part.url,
                 &part.file_name,
                 &part.expect,
-                &work,
+                work,
                 progress,
             )?;
             let root = work.join("rust");
@@ -286,8 +287,7 @@ impl Installer for Rust {
                 &envs,
                 progress,
             )?;
-            crate::net::archive::replace_dir(&root, &rust)?;
-            let _ = fs::remove_dir_all(&work);
+            crate::net::archive::stage_into(&root, &rust)?;
             Ok(())
         })();
         restore_rustup_key(before, &owned);
@@ -493,7 +493,8 @@ impl Installer for R {
         if ctx.kit.arch() != crate::kit::Arch::X64 {
             bail!("conda-forge has no R for Windows ARM64");
         }
-        let work = work_dir(ctx, component)?;
+        let guard = work_dir(ctx, component)?;
+        let work = guard.path();
         let result = (|| -> Result<()> {
             let part = &release.parts[0];
             let mm_new = fetch(
@@ -501,7 +502,7 @@ impl Installer for R {
                 &part.url,
                 &part.file_name,
                 &part.expect,
-                &work,
+                work,
                 progress,
             )?;
             let tools = ctx.kit.apps().join("tools");
@@ -564,7 +565,7 @@ impl Installer for R {
             let _ = fs::remove_dir_all(target.join("pkgs"));
             Ok(())
         })();
-        let _ = fs::remove_dir_all(&work);
+        drop(guard);
         result
     }
 }
