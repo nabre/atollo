@@ -183,6 +183,12 @@ pub fn try_project_password(kit: &Kit, project: &str, engine: &str) -> Result<Op
 /// project's password, its database would be shared). A server call that
 /// fails after can be repeated with what is stored.
 pub fn ensure_project_db(kit: &Kit, project: &str, engine: &str) -> Result<(String, String)> {
+    // The check of the other projects' names and the write are one step:
+    // two creations at once (`my-app`, `my_app`) cannot both pass.
+    static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _one = ONE_AT_A_TIME
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let mut secrets = read_project(&project_file_to_read(kit, project)?)?.unwrap_or_default();
     let name = name_in(&secrets, project, engine)?;
     check_name_free(kit, project, engine, &name)?;

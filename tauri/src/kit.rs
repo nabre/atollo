@@ -131,18 +131,15 @@ impl Kit {
         self.root.join("projects")
     }
     /// The kit's files of each project, one folder per project (D-89).
-    #[allow(dead_code)] // PLAN-DATA.md WP-0 contract, used from wave 1; removed in WP-14
     pub fn project_data(&self) -> PathBuf {
         self.data().join("projects")
     }
     /// `<host TEMP>\Dev-Kit\<id>`: files in transit only (D-90); `None` when
     /// the host gave no temporary folder.
-    #[allow(dead_code)] // PLAN-DATA.md WP-0 contract, used from wave 1; removed in WP-14
     pub fn system_temp(&self) -> Option<&Path> {
         self.system_temp.as_deref()
     }
     /// The disk of the root, when it could be read.
-    #[allow(dead_code)] // PLAN-DATA.md WP-0 contract, used from wave 1; removed in WP-14
     pub fn volume(&self) -> Option<VolumeInfo> {
         self.volume
     }
@@ -172,7 +169,6 @@ impl Kit {
         self.app_dir().join("settings.json")
     }
     /// Before D-89: `data\app\projects`. Read only by the migration (WP-6).
-    #[allow(dead_code)] // until WP-6 reads it
     pub fn project_states(&self) -> PathBuf {
         self.app_dir().join("projects")
     }
