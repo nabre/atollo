@@ -17,7 +17,7 @@ pub async fn agents_status<R: Runtime>(
         .map_err(|e| fail("agents", e))
 }
 
-/// Plan limits and usage of the installed agents (`stats.rs`). `force`:
+/// Plan limits and usage of the installed agents (`agents/stats/`). `force`:
 /// the "Refresh" button, which asks the servers sooner.
 #[tauri::command]
 pub async fn agents_stats<R: Runtime>(
