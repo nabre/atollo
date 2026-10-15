@@ -5,7 +5,8 @@ Stato: **in esecuzione** (15/10/2026), domande del §3 chiuse dall'utente. Revis
 Avanzamento sul branch `feature/data-layout`:
 
 - Ondata 0 fatta: WP-S `7f70e3d`, WP-0 `73adb32`.
-- Ondata 1 fusa il 16/10/2026: A6 (WP-8, WP-11 backend) `41e9efe`, A2 (WP-1, WP-2) `0c83512`, A3 (WP-3, WP-4) `6687822`, A7 (WP-9, WP-10) `349c10f`, correzioni del coordinatore `68ddfbb`, `20cd6a6`. 302 test superati, clippy pulito. Revisione R in corso.
+- Ondata 1 fusa il 16/10/2026: A6 (WP-8, WP-11 backend) `41e9efe`, A2 (WP-1, WP-2) `0c83512`, A3 (WP-3, WP-4) `6687822`, A7 (WP-9, WP-10) `349c10f`, correzioni del coordinatore `68ddfbb`, `20cd6a6`. 302 test superati, clippy pulito. Revisione R: non approvata con 4 problemi. Corretti dal coordinatore in `57c21ee`: `CP_HOST_TEMP` e `TEMP` dentro il kit ignorato (un `Atollo.exe` lanciato da una console del kit non trovava il temp vero); i programmi del kit chiusi prima della pulizia all'uscita; 4 GiB liberi richiesti nel temp per un'installazione, altrimenti `data\tmp`. Il quarto (password nuova applicata al server e persa se `db.json` è illeggibile) passa ad A3 nell'ondata 2.
+- Ondata 2 in corso: A3 (WP-5 e la correzione della revisione), A4 (WP-6, WP-7 backend), A8 (WP-12).
 - Note per le ondate successive, dai rapporti:
   - **WP-6 prima di qualsiasi rilascio**: finché non migra, le password dei progetti in `secrets.json` non si leggono; «Crea» nella pagina del database ne farebbe una nuova e la `.env` esistente smetterebbe di funzionare.
   - WP-5: `auth::drop_project` cancella `db.json`; chiamarlo solo dopo aver tolto gli utenti dai server, o rimettere le password se un drop fallisce.
