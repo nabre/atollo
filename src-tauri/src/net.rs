@@ -184,10 +184,10 @@ impl Net {
                     .read_to_string()
                     .with_context(|| format!("reading {url}"))?;
                 if std::fs::create_dir_all(dir).is_ok() {
-                    let _ = crate::kit::write_atomic(&body_path, body.as_bytes());
+                    let _ = crate::fsx::write_atomic(&body_path, body.as_bytes());
                     match new_tag {
                         Some(tag) => {
-                            let _ = crate::kit::write_atomic(&etag_path, tag.as_bytes());
+                            let _ = crate::fsx::write_atomic(&etag_path, tag.as_bytes());
                         }
                         None => {
                             let _ = std::fs::remove_file(&etag_path);
@@ -367,7 +367,7 @@ impl Net {
             .limit(4 * 1024 * 1024)
             .read_to_string()
             .map_err(|e| failed(e.to_string()))?;
-        let json = serde_json::from_str::<serde_json::Value>(text.trim_start_matches('\u{feff}'));
+        let json = serde_json::from_str::<serde_json::Value>(crate::fsx::strip_bom(&text));
         match json {
             Ok(value) if (200..300).contains(&status) => Ok(value),
             _ => Err(ApiError {

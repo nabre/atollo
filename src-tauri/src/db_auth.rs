@@ -19,7 +19,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::kit::{write_atomic, Kit};
+use crate::fsx::write_atomic;
+use crate::kit::Kit;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

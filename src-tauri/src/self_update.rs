@@ -20,7 +20,8 @@ use std::sync::{Mutex, PoisonError};
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::kit::{write_atomic, Kit};
+use crate::fsx::write_atomic;
+use crate::kit::Kit;
 use crate::net::{GhAsset, Net};
 use crate::verify::{self, Expect};
 
@@ -82,7 +83,7 @@ fn staged_info(kit: &Kit) -> PathBuf {
 }
 
 fn read_staged(kit: &Kit) -> Option<Staged> {
-    let info: Staged = serde_json::from_str(&fs::read_to_string(staged_info(kit)).ok()?).ok()?;
+    let info: Staged = crate::fsx::read_json(&staged_info(kit))?;
     staged_exe(kit).is_file().then_some(info)
 }
 
@@ -204,10 +205,7 @@ impl Updater {
             version: version.clone(),
             sha256: hash,
         };
-        write_atomic(
-            &staged_info(&self.kit),
-            serde_json::to_string_pretty(&info)?.as_bytes(),
-        )?;
+        crate::fsx::write_json(&staged_info(&self.kit), &info)?;
         crate::log::info(&format!("update {version} staged"));
         Ok((version.clone(), Some(version)))
     }

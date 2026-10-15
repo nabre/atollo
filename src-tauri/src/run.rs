@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 use crate::detect::{self, Action, Kind};
 use crate::env::KitEnv;
 use crate::jobs::{self, Job};
-use crate::kit::{write_atomic, Kit};
+use crate::kit::Kit;
 
 const MAX_LINES: usize = 3000;
 pub const PORT_FROM: u16 = 7100;
@@ -175,10 +175,7 @@ pub(crate) fn split_lines(rest: &mut String, chunk: &str) -> Vec<String> {
 
 impl Runner {
     pub fn new(kit: Kit, notify: Notify) -> Runner {
-        let ports = std::fs::read_to_string(ports_file(&kit))
-            .ok()
-            .and_then(|t| serde_json::from_str(&t).ok())
-            .unwrap_or_default();
+        let ports = crate::fsx::read_json(&ports_file(&kit)).unwrap_or_default();
         Runner {
             kit,
             entries: Mutex::new(HashMap::new()),
@@ -213,11 +210,7 @@ impl Runner {
     }
 
     fn save_ports(&self, ports: &Ports) -> Result<()> {
-        write_atomic(
-            &ports_file(&self.kit),
-            serde_json::to_string_pretty(ports)?.as_bytes(),
-        )?;
-        Ok(())
+        crate::fsx::write_json(&ports_file(&self.kit), ports)
     }
 
     fn alive(&self, key: &str) -> bool {

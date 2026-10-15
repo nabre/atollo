@@ -14,7 +14,8 @@ use std::sync::OnceLock;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::kit::{write_atomic, Kit};
+use crate::fsx::write_atomic;
+use crate::kit::Kit;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

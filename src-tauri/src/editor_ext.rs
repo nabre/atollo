@@ -35,8 +35,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::catalog::Catalog;
 use crate::env::KitEnv;
+use crate::fsx::write_atomic;
 use crate::jobs;
-use crate::kit::{write_atomic, Kit};
+use crate::kit::Kit;
 use crate::net::{github_digest, Net};
 use crate::project_settings::Extensions;
 use crate::verify::Expect;

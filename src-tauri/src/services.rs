@@ -35,7 +35,7 @@ use crate::catalog::Catalog;
 use crate::db_auth;
 use crate::env::KitEnv;
 use crate::jobs::{self, Job};
-use crate::kit::{write_atomic, Kit};
+use crate::kit::Kit;
 use crate::run::{is_port_free, responds};
 
 /// The servers, in the order of the page.
@@ -260,10 +260,7 @@ fn settings_path(kit: &Kit) -> PathBuf {
 }
 
 pub fn load_settings(kit: &Kit) -> BTreeMap<String, Setting> {
-    fs::read_to_string(settings_path(kit))
-        .ok()
-        .and_then(|t| serde_json::from_str(&t).ok())
-        .unwrap_or_default()
+    crate::fsx::read_json(&settings_path(kit)).unwrap_or_default()
 }
 
 fn installed(kit: &Kit, id: &str) -> bool {
@@ -981,9 +978,7 @@ impl Services {
                 line,
             },
         );
-        let text = serde_json::to_string_pretty(&all)?;
-        write_atomic(&settings_path(&self.kit), text.as_bytes())?;
-        Ok(())
+        crate::fsx::write_json(&settings_path(&self.kit), &all)
     }
 
     /// The version `id` runs (None: the newest on disk), while it is
@@ -1009,9 +1004,7 @@ impl Services {
         let mut all = load_settings(&self.kit);
         let entry = all.entry(id.to_owned()).or_default();
         entry.line = line.map(str::to_owned);
-        let text = serde_json::to_string_pretty(&all)?;
-        write_atomic(&settings_path(&self.kit), text.as_bytes())?;
-        Ok(())
+        crate::fsx::write_json(&settings_path(&self.kit), &all)
     }
 
     /// The installed servers marked "start with Dev-Kit".

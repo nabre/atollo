@@ -1,0 +1,66 @@
+// The projects' actions started by the kit (src-tauri/src/run.rs): state,
+// output, ports. Rust: src-tauri/src/commands/runs.rs.
+
+import { invoke } from "@tauri-apps/api/core";
+import { act, query, subscribe } from "./core";
+import type { ActionKind } from "./projects";
+
+export type RunState = "starting" | "running" | "finished" | "error" | "stopped";
+
+export interface RunInfo {
+  /** "<project>|<action>". */
+  key: string;
+  project: string;
+  action: string;
+  label: string;
+  type: ActionKind;
+  command: string;
+  port: number | null;
+  url: string | null;
+  state: RunState;
+  start: number;
+  end: number | null;
+  code: number | null;
+  pid: number | null;
+}
+
+export type RunEvent = ({ kind: "state" } & RunInfo) | { kind: "log"; key: string; lines: string[] };
+
+export interface Ports {
+  ports: Record<string, number>;
+  locked: string[];
+}
+
+export function runList(): Promise<RunInfo[]> {
+  return query<RunInfo[]>("run_list", []);
+}
+
+export function runStart(project: string, action: string): Promise<RunInfo> {
+  return invoke<RunInfo>("run_start", { project, action });
+}
+
+export function runStop(key: string): Promise<void> {
+  return act("run_stop", { key });
+}
+
+export function runLog(key: string): Promise<string[]> {
+  return query<string[]>("run_log", [], { key });
+}
+
+export function runClear(key: string): Promise<void> {
+  return act("run_clear", { key });
+}
+
+export function runPorts(): Promise<Ports> {
+  return query<Ports>("run_ports", { ports: {}, locked: [] });
+}
+
+/** The user's port for an action (`null`: automatic again). */
+export function runSetPort(key: string, port: number | null): Promise<Ports> {
+  return invoke<Ports>("run_set_port", { key, port });
+}
+
+/** State changes and output of the projects' actions. */
+export function onRun(handler: (e: RunEvent) => void): Promise<() => void> {
+  return subscribe<RunEvent>("run", handler);
+}

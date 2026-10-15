@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::agents_sync::codex::{codex_server, strip_block};
-use crate::kit::write_atomic;
+use crate::fsx::write_atomic;
 
 const CODEX_BEGIN: &str =
     "# >>> Dev-Kit: server MCP del progetto da .mcp.json (non modificare: usa la pagina del progetto) >>>";

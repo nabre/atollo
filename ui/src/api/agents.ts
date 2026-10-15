@@ -1,0 +1,174 @@
+// Claude Code, Codex and Antigravity: state, plan limits and usage
+// (src-tauri/src/stats), launch. Rust: src-tauri/src/commands/agents.rs.
+
+import { invoke } from "@tauri-apps/api/core";
+import { act, browserPreview, query } from "./core";
+
+export type AgentId = "claude" | "codex" | "antigravity";
+
+export interface AgentInfo {
+  id: AgentId;
+  name: string;
+  installed: boolean;
+  version: string | null;
+  signedIn: boolean;
+  /** "account" or "api key". */
+  signInKind: string | null;
+  running: boolean;
+}
+
+const SAMPLE_AGENTS: AgentInfo[] = [
+  {
+    id: "claude",
+    name: "Claude Code",
+    installed: true,
+    version: "2.1.299",
+    signedIn: true,
+    signInKind: "account",
+    running: true,
+  },
+  { id: "codex", name: "Codex", installed: true, version: "0.98.0", signedIn: false, signInKind: null, running: false },
+  {
+    id: "antigravity",
+    name: "Antigravity",
+    installed: false,
+    version: null,
+    signedIn: false,
+    signInKind: null,
+    running: false,
+  },
+];
+
+export function agentsStatus(): Promise<AgentInfo[]> {
+  return query<AgentInfo[]>("agents_status", SAMPLE_AGENTS);
+}
+
+export type Level = "none" | "ok" | "warning" | "critical";
+
+export interface LimitWindow {
+  label: string;
+  /** % used, 0-100. */
+  percent: number | null;
+  /** Milliseconds since 1970. */
+  resetsAt: number | null;
+  level: Level;
+}
+
+export interface Limits {
+  plan: string | null;
+  windows: LimitWindow[];
+  credits: { used: number; limit: number | null; currency: string; percent: number | null; level: Level } | null;
+  source: string | null;
+  note: string | null;
+  error: string | null;
+  updated: number | null;
+  limited: boolean;
+  retryAt: number | null;
+}
+
+export interface Tokens {
+  input: number;
+  cached: number;
+  output: number;
+  total: number;
+}
+
+export interface Usage {
+  /** False when the agent saves no token counts (Antigravity). */
+  tokens: boolean;
+  since: number;
+  today: Tokens;
+  week: Tokens;
+  sessionsToday: number;
+  sessionsWeek: number;
+  last: number | null;
+  models: Record<string, number>;
+  days: (Tokens & { start: number; sessions: number })[];
+  error?: string;
+}
+
+export interface AgentStats {
+  id: AgentId;
+  name: string;
+  account: "none" | "expired" | "apikey" | "ok";
+  limits: Limits;
+  usage: Usage;
+  peak: number | null;
+  peakLabel: string | null;
+  level: Level;
+}
+
+export interface StatsReport {
+  updated: number;
+  warning: number;
+  critical: number;
+  agents: AgentStats[];
+}
+
+function sampleStats(): StatsReport {
+  const day = 24 * 3600 * 1000;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tokens = (n: number): Tokens => ({ input: n, cached: n * 8, output: n / 4, total: n * 9.25 });
+  const days = Array.from({ length: 7 }, (_, i) => ({
+    start: today.getTime() - (6 - i) * day,
+    ...tokens((i + 1) * 20000),
+    sessions: i % 3,
+  }));
+  const usage: Usage = {
+    tokens: true,
+    since: days[0]?.start ?? 0,
+    today: tokens(140000),
+    week: tokens(560000),
+    sessionsToday: 2,
+    sessionsWeek: 6,
+    last: Date.now() - 600000,
+    models: { "claude-opus": 4000000, "claude-haiku": 1180000 },
+    days,
+  };
+  const limits = (windows: LimitWindow[]): Limits => ({
+    plan: "max",
+    windows,
+    credits: null,
+    source: "server di Anthropic",
+    note: null,
+    error: null,
+    updated: Date.now(),
+    limited: false,
+    retryAt: null,
+  });
+  return {
+    updated: Date.now(),
+    warning: 70,
+    critical: 90,
+    agents: [
+      {
+        id: "claude",
+        name: "Claude Code",
+        account: "ok",
+        limits: limits([
+          { label: "5 ore", percent: 34, resetsAt: Date.now() + 2 * 3600000, level: "ok" },
+          { label: "Settimana", percent: 76, resetsAt: Date.now() + 3 * day, level: "warning" },
+        ]),
+        usage,
+        peak: 76,
+        peakLabel: "Settimana",
+        level: "warning",
+      },
+    ],
+  };
+}
+
+/** Limits and usage of the installed agents; `force`: the Refresh button. */
+export function agentsStats(force: boolean): Promise<StatsReport> {
+  return browserPreview ? Promise.resolve(sampleStats()) : invoke<StatsReport>("agents_stats", { force });
+}
+
+/** Opens the agent in a kit console in the project (only there). */
+export function agentLaunch(agent: AgentId, project: string): Promise<void> {
+  return act("agent_launch", { agent, project });
+}
+
+export function agentSignOut(agent: AgentId): Promise<void> {
+  return act("agent_sign_out", { agent });
+}

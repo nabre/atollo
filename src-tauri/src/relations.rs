@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::catalog::{Catalog, Component};
-use crate::kit::{write_atomic, Kit};
+use crate::kit::Kit;
 use crate::ranges::{Bare, Range, Version};
 
 const KNOWN: &str = include_str!("../catalog/relations.json");
@@ -419,8 +419,8 @@ fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) -> Vec<Runtim
 
 /// The version text `spec` reads in `dir`, if the file says one.
 fn declared(dir: &Path, spec: &ProjectSpec) -> Option<String> {
-    let text = fs::read_to_string(dir.join(&spec.file)).ok()?;
-    let text = text.trim_start_matches('\u{feff}');
+    let text = crate::fsx::read_text(&dir.join(&spec.file)).ok()?;
+    let text = text.as_str();
     let found = if let Some(path) = &spec.json {
         let v: Value = serde_json::from_str(text).ok()?;
         let pointer = format!("/{}", path.replace('.', "/"));
@@ -584,7 +584,7 @@ fn fingerprint(kit: &Kit, lang: &str) -> String {
         }
     }
     read(&kit.app_dir().join("tool-versions.json")).hash(&mut h);
-    read(&kit.app_dir().join("version-lines.json")).hash(&mut h);
+    read(&crate::versions::offered_file(kit)).hash(&mut h);
     kit.apps()
         .join(r"tools\vcruntime\vcruntime140.dll")
         .is_file()
@@ -673,15 +673,13 @@ pub fn settle(kit: &Kit, lang: &str, project: &str) -> Vec<(String, String)> {
 pub fn matrix(kit: &Kit, lang: &str, force: bool) -> Result<Matrix> {
     let fp = fingerprint(kit, lang);
     if !force {
-        let saved = fs::read_to_string(file(kit))
-            .ok()
-            .and_then(|t| serde_json::from_str::<Matrix>(&t).ok());
+        let saved = crate::fsx::read_json::<Matrix>(&file(kit));
         if let Some(m) = saved.filter(|m| m.fingerprint == fp) {
             return Ok(m);
         }
     }
     let m = build(kit, lang);
-    write_atomic(&file(kit), serde_json::to_string_pretty(&m)?.as_bytes())?;
+    crate::fsx::write_json(&file(kit), &m)?;
     Ok(m)
 }
 

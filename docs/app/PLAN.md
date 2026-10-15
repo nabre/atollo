@@ -109,6 +109,8 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 
 ## 4. Moduli Rust (`src-tauri\src\`)
 
+Organizzazione per livelli e per area, regole comuni per file, processi e comandi: [ARCHITECTURE.md](ARCHITECTURE.md).
+
 | Modulo | Responsabilità |
 | --- | --- |
 | `main.rs` | avvio, finestre, riga di comando, chiusura |
@@ -116,13 +118,19 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `env.rs` | ambiente del kit; PATH = programmi del kit presenti + `System32`, `Wbem`, `WindowsPowerShell\v1.0`; `PSModulePath` senza i moduli del PC; impostazioni di rete da `data\app\settings.json` (proxy, certificati, chiave Gemini, lingua, rete locale); ricostruito dopo ogni installazione e a ogni salvataggio delle impostazioni |
 | `relocate.rs` | radice precedente da `data\app\old-root.txt` (scritto da `kit.rs` confrontando `root.txt`); sostituzione nei file di agenti, editor, Python, uv, `.venv` (regole di `moved.js`) |
 | `jobs.rs` | Job Object, avvio con l'ambiente del kit, job annidati, console `conhost.exe` (`spawn_console`), `.cmd`/`.bat` (`batch_command`), uscita dal job per browser ed Esplora risorse |
+| `fsx.rs` | file del kit: lettura senza BOM, JSON mancante, vuoto o danneggiato, scrittura atomica con la cartella creata |
+| `safe_path.rs` | lettura dentro un progetto senza seguire collegamenti (D-77) |
 | `net.rs` | HTTPS con il TLS e i certificati di Windows, proxy, 3 tentativi, `.part`, API di GitHub (`digest` delle asset) |
 | `verify.rs` | SHA-256, SHA-512, integrità npm |
 | `signature.rs` | firma Authenticode con editore atteso (`WinVerifyTrust`) |
 | `archive.rs` | zip, tar.gz, 7z (anche dentro un `.7z.exe`), file singoli; scambio cartelle con ripristino; "file in uso" |
 | `catalog.rs` | catalogo incorporato (`keys`, `noArm64`, gruppo `app` con versione fissata), `data\app\components.txt`, `needs` a cascata, versioni installate |
 | `needs.rs` | cosa serve a un agente, a un clone o a un'azione di progetto, installato al momento (D-59) |
-| `install/*.rs` | un file per famiglia: `core` (git, python, node, uv, gh), `agents`, `web` (php, apache, VC++), `native` (rust, pnpm, r: installatori fatti di processi), `lang` (gli altri linguaggi), `editor` (pwsh, Windows Terminal, editor) |
+| `install/*.rs` | un file per famiglia: `core` (git, python, node, uv, gh), `agents`, `web` (php, apache, VC++), `native` (rust, pnpm, r: installatori fatti di processi), `lang` (gli altri linguaggi), `editor` (pwsh, Windows Terminal, editor), `db` (MariaDB, MongoDB, SQLite, Adminer: D-73, D-85), `android` (SDK di Android: D-84) |
+| `downloads.rs` | file scaricati a mano e lasciati sull'app, usati se il checksum è quello della fonte (D-82) |
+| `versions.rs` | versioni salvate dei linguaggi, una cartella per versione minore; scelta del kit e dei progetti (D-80) |
+| `side_by_side.rs` | versioni fianco a fianco rese note agli strumenti: JDK per Gradle e Maven, SDK di .NET (D-81) |
+| `relations.rs`, `ranges.rs` | matrice delle relazioni fra componenti, versioni e progetti; intervalli di versione di npm, Composer, PEP 440 (D-81) |
 | `setup_runner.rs` | piano e ordine dei passi, una preparazione alla volta, eventi, annullamento al termine del passo |
 | `setup_task.rs` | preparazione avviata dalla finestra, in un thread, con lo stato per l'interfaccia; obbligatori ed editor da installare |
 | `checkup.rs` | verifica finale: ogni programma installato risponde al suo comando di versione (D-39) |
@@ -132,12 +140,17 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `editor.rs` | server web: porta, token, avvio, salute, riavvio |
 | `editor_window.rs` | finestre `editor-<n>`: navigazione, nuove finestre, tasti e menu del browser spenti; barra del titolo di VSCodium senza cornice di Windows, con ripiego (D-69) |
 | `editor_cfg.rs` | impostazioni, profili del terminale esclusivi |
+| `editor_theme.rs` | tema NEXKORA dell'editor, incorporato e installato prima dell'avvio del server |
 | `editor_ext.rs` | estensioni dell'editor dalla matrice linguaggio-estensione e dai progetti (D-71), proposta una volta sola, CodeLLDB; nessuna estensione propria (Q4 = a) |
 | `terminal.rs` | console del kit: PowerShell del kit o un agente in Windows Terminal del kit (`wterm.rs`, D-68) o in `conhost.exe` di Windows (D-57), nel job |
 | `wterm.rs` | Windows Terminal portabile: impostazioni («Dev-Kit», schemi di VSCodium), avvio, ambiente del kit e id del processo attraverso una named pipe (D-68) |
 | `github.rs` | account GitHub del kit, uno per tutto (D-70): accesso con `gh auth login --web` e codice monouso, `credential.helper` di Git verso `gh` per github.com, repository dell'account (API), clone, rinomina, eliminazione |
+| `frameworks.rs` | basi e aggiunte della procedura «Nuovo progetto», con le istruzioni modificabili nelle Impostazioni (D-83) |
 | `projects.rs`, `detect/*.rs` | elenco, creazione, clone con il Git del kit, rilevamento del tipo, dei linguaggi e delle azioni (`npm run dev`, `php -S`, `cargo run`…), `panel.json` |
 | `services.rs` | server dei database del kit (MariaDB, MongoDB): avvio, attesa della porta, arresto pulito, impostazioni in `data\app\services.json` (D-73) |
+| `db_auth.rs` | password dei database del kit e dei progetti, `.env` dopo l'anteprima (D-74) |
+| `db_browse.rs` | contenuto dei server, in sola lettura (D-79) |
+| `apache.rs` | Apache di un progetto, con la configurazione in `data\app\projects\<progetto>\apache\` |
 | `adminer.rs` | Adminer sul MariaDB del kit: server di PHP su 127.0.0.1 con token, router `data\kit\adminer.php`, fermato con MariaDB (D-85) |
 | `run.rs` | avvio e arresto delle azioni dei progetti: porte 7100-7999 ricordate in `data\app\ports.json`, attesa del server, log, apertura nel browser, rete locale (D-50) |
 | `serve.rs` | server di file per i siti statici, `Dev-Kit.exe serve <cartella> <porta>`, al posto di `static-server.js` (D-51) |
@@ -151,14 +164,16 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 | `kit_files.rs` | file incorporati scritti in `data\kit\` |
 | `stats/*.rs` | limiti d'uso e consumi di Claude Code, Codex e Antigravity (porting di `core/stats`, D-61) |
 | `project_settings.rs` | impostazioni del kit di ogni progetto, `data\app\projects\<progetto>\dev-settings.json` (D-63) |
-| `cli.rs`, `commands.rs`, `log.rs` | riga di comando, comandi Tauri, log con segreti mascherati |
+| `project_mcp.rs`, `project_vscode.rs` | server MCP del progetto (`.mcp.json`, `.codex\config.toml`) e impostazioni dell'editor in `.vscode\settings.json` (D-78) |
+| `commands/*.rs` | comandi Tauri, un file per area dell'interfaccia (`app`, `window`, `editing`, `setup`, `versions`, `agents`, `projects`, `frameworks`, `github`, `databases`, `services`, `runs`) |
+| `cli.rs`, `log.rs` | riga di comando, log con segreti mascherati |
 
 
 Dipendenze (`src-tauri\Cargo.toml`): `tauri`, `serde`, `serde_json`, `anyhow`, `thiserror`, `windows`, `webview2-com`, `ureq` con `native-tls`, `sha2`, `base64`, `zip`, `tar`, `flate2`, `sevenz-rust2`, `regex`, `junction`. Motivi in D-22.
 
 ## 5. Interfaccia
 
-React + TypeScript `strict` + Tailwind + react-icons (Codicons), con il tema di VSCodium (D-02, D-27). Pagine: Home (con la scelta del primo avvio e i progetti recenti), Progetti, Agenti (con limiti d'uso e consumi), Linguaggi e strumenti, Impostazioni, Rimuovi l'unità. Barra del titolo disegnata dall'interfaccia (D-64), barra di stato. Editor, console e agenti si aprono solo in un progetto (D-62). Tutte le funzioni del menu attuale hanno una pagina (tabella di corrispondenza nella revisione 1, invariata). "Proxy e impostazioni" diventa un modulo nella pagina Impostazioni (niente più `proxy.cmd` da modificare a mano).
+React + TypeScript `strict` + Tailwind + react-icons (Codicons), con il tema di VSCodium (D-02, D-27). Chiamate a Rust solo da `ui/src/api/`, un file per area come `commands/`; componenti di base in `ui/src/workbench/`; hook comuni in `ui/src/hooks.ts` ([ARCHITECTURE.md](ARCHITECTURE.md)). Pagine: Home (con la scelta del primo avvio e i progetti recenti), Progetti, Agenti (con limiti d'uso e consumi), Linguaggi e strumenti, Impostazioni, Rimuovi l'unità. Barra del titolo disegnata dall'interfaccia (D-64), barra di stato. Editor, console e agenti si aprono solo in un progetto (D-62). Tutte le funzioni del menu attuale hanno una pagina (tabella di corrispondenza nella revisione 1, invariata). "Proxy e impostazioni" diventa un modulo nella pagina Impostazioni (niente più `proxy.cmd` da modificare a mano).
 
 ## 6. Terminale esclusivo del kit
 
@@ -212,7 +227,7 @@ package.json                  workspace npm (ui), comandi dev, build, test, lint
 src-tauri\                    exe (moduli §4), catalogo e testi incorporati
 ui\                           interfaccia React + TypeScript + Tailwind (D-02)
 kit-files\                    file scritti in data\kit\ (loopback.js, profile.ps1, console.ps1, bashrc, bin\agy.cmd, bin\agy)
-docs\app\                     piano, decisioni, catalogo, prove, novità
+docs\app\                     piano, decisioni, architettura, catalogo, prove, novità
 .github\workflows\app.yml     CI e release
 Prompt.md                     il prompt iniziale
 ```

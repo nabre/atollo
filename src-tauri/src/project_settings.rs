@@ -12,7 +12,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::kit::{validate_project_name, write_atomic, Kit};
+use crate::kit::{validate_project_name, Kit};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,13 +55,12 @@ impl Extensions {
 /// The folder of the kit's files of `project` (`None`: not a valid name).
 pub fn dir(kit: &Kit, project: &str) -> Option<PathBuf> {
     validate_project_name(project).ok()?;
-    Some(kit.app_dir().join("projects").join(project))
+    Some(kit.project_states().join(project))
 }
 
 pub fn load(kit: &Kit, project: &str) -> ProjectSettings {
     dir(kit, project)
-        .and_then(|d| std::fs::read_to_string(d.join("dev-settings.json")).ok())
-        .and_then(|t| serde_json::from_str(t.trim_start_matches('\u{feff}')).ok())
+        .and_then(|d| crate::fsx::read_json(&d.join("dev-settings.json")))
         .unwrap_or_default()
 }
 
@@ -71,11 +70,7 @@ pub fn update(kit: &Kit, project: &str, change: impl FnOnce(&mut ProjectSettings
     let Some(d) = dir(kit, project) else { return };
     let mut s = load(kit, project);
     change(&mut s);
-    let result = std::fs::create_dir_all(&d).and_then(|()| {
-        let text = serde_json::to_string_pretty(&s).unwrap_or_else(|_| "{}".into());
-        write_atomic(&d.join("dev-settings.json"), text.as_bytes())
-    });
-    if let Err(e) = result {
+    if let Err(e) = crate::fsx::write_json(&d.join("dev-settings.json"), &s) {
         crate::log::warn(&format!("project settings of {project}: {e}"));
     }
 }

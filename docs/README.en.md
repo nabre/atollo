@@ -98,7 +98,7 @@ npm test
 npm -w ui run build
 ```
 
-`npm run lint` runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, ESLint and Prettier; `npm test` runs `cargo test` and the interface tests; `npm -w ui run build` checks the types and builds the interface. Details (in Italian) in [app/TESTING.md](app/TESTING.md).
+`npm run lint` runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, ESLint and Prettier; `npm test` runs `cargo test` and the interface tests; `npm -w ui run build` checks the types and builds the interface. Details (in Italian) in [app/TESTING.md](app/TESTING.md). How the code is organized and where a change goes (in Italian): [app/ARCHITECTURE.md](app/ARCHITECTURE.md).
 
 Development with live reload: `npm run dev`.
 

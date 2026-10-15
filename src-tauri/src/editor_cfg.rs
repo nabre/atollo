@@ -15,7 +15,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde_json::{json, Map, Value};
 
-use crate::kit::{write_atomic, Kit};
+use crate::fsx::write_atomic;
+use crate::kit::Kit;
 
 /// Profiles owned by the kit (rewritten) and the PC profiles hidden.
 pub const KIT_PROFILES: &[&str] = &[
@@ -252,7 +253,7 @@ pub fn write(kit: &Kit, system_root: &Path) -> Result<Outcome> {
     let path = settings_path(kit);
     let existing = match fs::read_to_string(&path) {
         Ok(text) => {
-            let text = text.trim_start_matches('\u{feff}');
+            let text = crate::fsx::strip_bom(&text);
             if text.trim().is_empty() {
                 Map::new()
             } else {

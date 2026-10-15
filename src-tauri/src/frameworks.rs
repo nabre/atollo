@@ -18,8 +18,9 @@ use std::sync::{Mutex, OnceLock};
 use serde::{Deserialize, Serialize};
 
 use crate::env::KitEnv;
+use crate::fsx::write_atomic;
 use crate::jobs::{self, Job};
-use crate::kit::{write_atomic, Kit};
+use crate::kit::Kit;
 use crate::run::split_lines;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -132,19 +133,9 @@ pub struct Loaded {
 /// Official pieces with the user's changes, then the user's own pieces.
 pub fn load(kit: &Kit) -> Loaded {
     let path = user_file(kit);
-    let (own, problem) = match fs::read(&path) {
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => (Vec::new(), None),
-        Err(e) => (Vec::new(), Some(format!("{}: {e}", path.display()))),
-        Ok(bytes) => {
-            let text = String::from_utf8_lossy(&bytes);
-            match serde_json::from_str::<File>(text.trim_start_matches('\u{feff}')) {
-                Ok(f) => (f.pieces, None),
-                Err(e) => (Vec::new(), Some(format!("{}: {e}", path.display()))),
-            }
-        }
-    };
+    let (own, problem) = crate::fsx::load_json::<File>(&path);
     Loaded {
-        pieces: merge(official(), own),
+        pieces: merge(official(), own.pieces),
         problem,
     }
 }

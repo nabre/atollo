@@ -26,6 +26,7 @@ mod editor_theme;
 mod editor_window;
 mod env;
 mod frameworks;
+mod fsx;
 mod github;
 mod i18n;
 mod install;

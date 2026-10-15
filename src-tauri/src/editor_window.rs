@@ -538,8 +538,7 @@ pub fn open_in_browser(url: &Url) -> Result<()> {
     if classify_external(url) != Leave::Browser {
         anyhow::bail!("blocked link scheme: {}", url.scheme());
     }
-    let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
-    let rundll = Path::new(&system_root).join(r"System32\rundll32.exe");
+    let rundll = jobs::system_root().join(r"System32\rundll32.exe");
     jobs::spawn_detached(
         Command::new(rundll).args(["url.dll,FileProtocolHandler", url.as_str()]),
         0,

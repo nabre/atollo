@@ -778,7 +778,7 @@ impl Installer for TinyTex {
         if let Some(list) = tlmgr_packages(ctx, old) {
             let file = tinytex_list(ctx);
             fs::create_dir_all(file.parent().unwrap_or(&file))?;
-            crate::kit::write_atomic(&file, list.join("\n").as_bytes())?;
+            crate::fsx::write_atomic(&file, list.join("\n").as_bytes())?;
         }
         Ok(())
     }
@@ -904,7 +904,7 @@ pub fn make_launchers(bin: &Path) -> Result<()> {
     for (name, content) in files {
         let path = bin.join(name);
         if fs::read(&path).ok().as_deref() != Some(content) {
-            crate::kit::write_atomic(&path, content)?;
+            crate::fsx::write_atomic(&path, content)?;
         }
     }
     Ok(())

@@ -17,7 +17,7 @@ use serde_json::Value;
 use super::{fetch, pattern, Ctx, Dest, Installer, Part, Progress, Release};
 use crate::archive::{Inner, Kind};
 use crate::catalog::Component;
-use crate::kit::write_atomic;
+use crate::fsx::write_atomic;
 use crate::net::hash_in_list;
 use crate::settings::Settings;
 use crate::verify::Expect;

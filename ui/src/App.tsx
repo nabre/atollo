@@ -26,6 +26,7 @@ import {
   editorStatus,
   onEditorStatus,
   onCloseRequested,
+  runStop,
   type AppInfo,
   type EditorStatus,
   type OpenNow,
@@ -34,7 +35,6 @@ import {
 } from "./api";
 import { alive, ProjectsPage, useRuns } from "./projects";
 import { ActivityPanel } from "./activity";
-import { runStop } from "./api";
 import { TitleBar } from "./titlebar";
 import { ComponentsPage } from "./components";
 import { AgentsPage, useAgents } from "./agents";
@@ -45,6 +45,7 @@ import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
 import { NewProjectPage } from "./wizard";
 import { Notice, Sash, useStoredSize, useTabs } from "./workbench";
+import { useEvery, useSubscription } from "./hooks";
 
 type PageId = "new" | "projects" | "agents" | "databases" | "components" | "settings" | "eject";
 
@@ -85,21 +86,8 @@ export function App() {
       setEditor(null);
     });
   }, []);
-  useEffect(() => {
-    refreshEditor();
-    const timer = window.setInterval(refreshEditor, 5000);
-    let stop: (() => void) | null = null;
-    let gone = false;
-    void onEditorStatus(setEditor).then((f) => {
-      if (gone) f();
-      else stop = f;
-    });
-    return () => {
-      gone = true;
-      stop?.();
-      window.clearInterval(timer);
-    };
-  }, [refreshEditor]);
+  useEvery(refreshEditor, 5000);
+  useSubscription(onEditorStatus, setEditor);
 
   const loadInfo = useCallback(() => {
     appInfo().then(
@@ -115,18 +103,7 @@ export function App() {
   }, []);
   useEffect(loadInfo, [loadInfo]);
 
-  useEffect(() => {
-    let stop: (() => void) | null = null;
-    let gone = false;
-    void onCloseRequested(setClosing).then((f) => {
-      if (gone) f();
-      else stop = f;
-    });
-    return () => {
-      gone = true;
-      stop?.();
-    };
-  }, []);
+  useSubscription(onCloseRequested, setClosing);
 
   const all = pages();
   const current = all.find((p) => p.id === page) ?? all[0];

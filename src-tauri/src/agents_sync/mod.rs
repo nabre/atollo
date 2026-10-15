@@ -36,7 +36,8 @@ use std::time::{Duration, SystemTime};
 use anyhow::{bail, Context, Result};
 use serde_json::Value;
 
-use crate::kit::{write_atomic, Kit};
+use crate::fsx::write_atomic;
+use crate::kit::Kit;
 
 /// Folders of the kit and of the three agents.
 #[derive(Debug, Clone)]
@@ -93,18 +94,7 @@ impl Report {
 
 /// Missing or empty file: `None`. Damaged: an error that says where.
 pub fn read_json(file: &Path) -> Result<Option<Value>> {
-    let text = match fs::read_to_string(file) {
-        Ok(t) => t,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(e) => return Err(e).with_context(|| file.display().to_string()),
-    };
-    let text = text.trim_start_matches('\u{feff}');
-    if text.trim().is_empty() {
-        return Ok(None);
-    }
-    serde_json::from_str(text)
-        .map(Some)
-        .with_context(|| format!("{}: invalid JSON", file.display()))
+    crate::fsx::try_read_json(file)
 }
 
 /// State of the last sync: rebuilt (empty) if damaged.
@@ -116,11 +106,7 @@ pub fn read_state(file: &Path) -> Value {
 }
 
 pub fn write_json(file: &Path, v: &Value) -> Result<()> {
-    if let Some(dir) = file.parent() {
-        fs::create_dir_all(dir)?;
-    }
-    write_atomic(file, serde_json::to_string_pretty(v)?.as_bytes())
-        .with_context(|| file.display().to_string())
+    crate::fsx::write_json(file, v)
 }
 
 /// JSON with sorted keys: two servers are equal when their settings are.

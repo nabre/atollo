@@ -7,9 +7,11 @@
 //! however it ends) and `BREAKAWAY_OK`, used only for programs that must stay
 //! open after the app (the system browser, File Explorer).
 
+use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::io::AsRawHandle;
 use std::os::windows::process::CommandExt;
+use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::sync::OnceLock;
 
@@ -344,6 +346,21 @@ pub fn spawn_detached(cmd: &mut Command, flags: u32) -> Result<Child> {
     cmd.creation_flags(flags | CREATE_BREAKAWAY_FROM_JOB.0);
     cmd.spawn()
         .with_context(|| format!("starting {:?}", cmd.get_program()))
+}
+
+/// The PC's Windows folder, from this process (`C:\Windows` when unset).
+pub fn system_root() -> PathBuf {
+    PathBuf::from(std::env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into()))
+}
+
+/// Opens a web address in the PC's browser, or a folder in File Explorer,
+/// through Explorer and outside the job: both stay open after the app.
+pub fn open_with_explorer(target: impl AsRef<OsStr>) -> Result<()> {
+    spawn_detached(
+        Command::new(system_root().join("explorer.exe")).arg(target),
+        0,
+    )
+    .map(|_| ())
 }
 
 #[cfg(test)]

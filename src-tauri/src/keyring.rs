@@ -35,7 +35,8 @@ use windows::Win32::Security::Credentials::{
 };
 use windows::Win32::System::Threading::{CreateMutexW, ReleaseMutex, WaitForSingleObject};
 
-use crate::kit::{write_atomic, Kit};
+use crate::fsx::write_atomic;
+use crate::kit::Kit;
 
 /// One credential. `blob`: base64 of the secret (as in the kit's files).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -159,9 +160,9 @@ fn files(kit: &Kit) -> Files {
 }
 
 fn read(path: &std::path::Path) -> Vec<Item> {
-    fs::read_to_string(path)
+    crate::fsx::read_text(path)
         .ok()
-        .map(|t| t.trim_start_matches('\u{feff}').trim().to_owned())
+        .map(|t| t.trim().to_owned())
         .filter(|t| !t.is_empty())
         .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
         .map(|v| {

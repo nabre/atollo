@@ -29,7 +29,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::catalog::{Catalog, Component};
 use crate::env::KitEnv;
-use crate::kit::{write_atomic, Kit};
+use crate::fsx::write_atomic;
+use crate::kit::Kit;
 
 /// The file with the full version, inside a saved folder.
 const VERSION_FILE: &str = ".devkit-version";
@@ -395,8 +396,11 @@ pub fn write_project_file(kit: &Kit, project: &str) {
 /// Every project's `versions.json`, after a change of the kit's lines or of
 /// what is installed.
 pub fn write_project_files(kit: &Kit) {
-    let projects = kit.app_dir().join("projects");
-    for entry in fs::read_dir(projects).into_iter().flatten().flatten() {
+    for entry in fs::read_dir(kit.project_states())
+        .into_iter()
+        .flatten()
+        .flatten()
+    {
         write_project_file(kit, &entry.file_name().to_string_lossy());
     }
 }
@@ -585,16 +589,14 @@ pub struct Offered {
     pub checked: u64,
 }
 
-fn offered_file(kit: &Kit) -> PathBuf {
+pub(crate) fn offered_file(kit: &Kit) -> PathBuf {
     kit.app_dir().join("version-lines.json")
 }
 
 /// Every component's offered lines (only valid ones, newest first).
 pub fn offered(kit: &Kit) -> BTreeMap<String, Offered> {
-    let mut all: BTreeMap<String, Offered> = fs::read_to_string(offered_file(kit))
-        .ok()
-        .and_then(|t| serde_json::from_str(t.trim_start_matches('\u{feff}')).ok())
-        .unwrap_or_default();
+    let mut all: BTreeMap<String, Offered> =
+        crate::fsx::read_json(&offered_file(kit)).unwrap_or_default();
     all.retain(|id, _| find(id).is_some());
     for o in all.values_mut() {
         o.lines.retain(|l| valid_line(l));
@@ -623,11 +625,7 @@ pub fn save_offered(kit: &Kit, id: &str, lines: &[String]) -> Result<()> {
             checked,
         },
     );
-    write_atomic(
-        &offered_file(kit),
-        serde_json::to_string_pretty(&all)?.as_bytes(),
-    )?;
-    Ok(())
+    crate::fsx::write_json(&offered_file(kit), &all)
 }
 
 /// `line` of `c` is on disk: the default folder or a saved one.
@@ -652,7 +650,7 @@ pub fn to_download(kit: &Kit, id: &str, line: &str) -> Result<bool> {
 /// The projects that chose a line, per component id and line.
 fn project_users(kit: &Kit) -> BTreeMap<(String, String), Vec<String>> {
     let mut out: BTreeMap<(String, String), Vec<String>> = BTreeMap::new();
-    for entry in fs::read_dir(kit.app_dir().join("projects"))
+    for entry in fs::read_dir(kit.project_states())
         .into_iter()
         .flatten()
         .flatten()

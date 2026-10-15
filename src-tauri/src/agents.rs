@@ -50,12 +50,7 @@ pub struct AgentInfo {
 }
 
 fn json(path: &Path) -> Option<Value> {
-    serde_json::from_str(
-        fs::read_to_string(path)
-            .ok()?
-            .trim_start_matches('\u{feff}'),
-    )
-    .ok()
+    crate::fsx::read_json(path)
 }
 
 fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {

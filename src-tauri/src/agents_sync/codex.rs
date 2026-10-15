@@ -11,7 +11,7 @@ use serde_json::Value;
 
 use super::mcp::{server_type, Servers};
 use super::{trusted_folders, Paths, Report, KIT_RULE_TEXT};
-use crate::kit::write_atomic;
+use crate::fsx::write_atomic;
 
 const TOP_BEGIN: &str = "# >>> Dev-Kit: impostazioni del kit (non modificare questo blocco) >>>";
 const TOP_END: &str = "# <<< Dev-Kit <<<";

@@ -7,6 +7,7 @@ import { VscCloudDownload } from "react-icons/vsc";
 import { downloadsAdd, downloadsPick, onFileDrag, setupByHandOpen, type ByHand } from "./api";
 import { t } from "./i18n";
 import { Link } from "./workbench";
+import { useSubscription } from "./hooks";
 
 export function ByHandBox({
   id,
@@ -46,37 +47,21 @@ export function ByHandBox({
     }
   }, []);
 
-  useEffect(() => {
-    let stop: (() => void) | undefined;
-    let alive = true;
-    const inside = (x: number, y: number) => {
-      const r = box.current?.getBoundingClientRect();
-      return r !== undefined && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-    };
-    onFileDrag((d) => {
-      if (d.kind === "leave") {
-        setOver(false);
-        return;
-      }
-      const hit = inside(d.x, d.y) && !latest.current.disabled;
-      if (d.kind === "over") {
-        setOver(hit);
-        return;
-      }
+  useSubscription(onFileDrag, (d) => {
+    if (d.kind === "leave") {
       setOver(false);
-      if (hit) void take(() => downloadsAdd(d.paths));
-    }).then(
-      (unlisten) => {
-        if (alive) stop = unlisten;
-        else unlisten();
-      },
-      () => undefined,
-    );
-    return () => {
-      alive = false;
-      stop?.();
-    };
-  }, [take]);
+      return;
+    }
+    const r = box.current?.getBoundingClientRect();
+    const inside = r !== undefined && d.x >= r.left && d.x <= r.right && d.y >= r.top && d.y <= r.bottom;
+    const hit = inside && !disabled;
+    if (d.kind === "over") {
+      setOver(hit);
+      return;
+    }
+    setOver(false);
+    if (hit) void take(() => downloadsAdd(d.paths));
+  });
 
   return (
     <div
