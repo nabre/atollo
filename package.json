@@ -8,6 +8,7 @@
   "scripts": {
     "setup": "npm ci --no-fund --no-audit",
     "dev": "tauri dev",
+    "start": "tauri build --debug --no-bundle && start \"\" target\\debug\\Dev-Kit.exe",
     "build": "tauri build --no-bundle",
     "test": "cargo test && npm -w ui test",
     "lint": "cargo fmt --check && cargo clippy --all-targets -- -D warnings && npm -w ui run lint && npm -w ui run format:check"
