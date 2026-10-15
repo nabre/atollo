@@ -41,7 +41,7 @@
   --vscode-agentsPanel-border: #303031;
   --vscode-badge-background: #616161;
   --vscode-badge-foreground: #f8f8f8;
-  --vscode-banner-background: #04395e;
+  --vscode-banner-background: #0b3d2c;
   --vscode-banner-foreground: #ffffff;
   --vscode-banner-iconForeground: #3794ff;
   --vscode-breadcrumb-activeSelectionForeground: #e0e0e0;
@@ -76,8 +76,8 @@
   --vscode-chat-linesRemovedForeground: #fc6a6a;
   --vscode-chat-requestBackground: rgba(31, 31, 31, 0.62);
   --vscode-chat-requestBorder: rgba(255, 255, 255, 0.1);
-  --vscode-chat-requestBubbleBackground: rgba(38, 79, 120, 0.3);
-  --vscode-chat-requestBubbleHoverBackground: #264f78;
+  --vscode-chat-requestBubbleBackground: #10b98117;
+  --vscode-chat-requestBubbleHoverBackground: #10b9814d;
   --vscode-chat-requestCodeBorder: rgba(0, 73, 114, 0.72);
   --vscode-chat-slashCommandBackground: #26477866;
   --vscode-chat-slashCommandForeground: #85b6ff;
@@ -93,7 +93,7 @@
   --vscode-commandCenter-activeForeground: #cccccc;
   --vscode-commandCenter-background: rgba(255, 255, 255, 0.05);
   --vscode-commandCenter-border: rgba(204, 204, 204, 0.2);
-  --vscode-commandCenter-debuggingBackground: rgba(0, 120, 212, 0.26);
+  --vscode-commandCenter-debuggingBackground: #f9731642;
   --vscode-commandCenter-foreground: #cccccc;
   --vscode-commandCenter-inactiveBorder: rgba(157, 157, 157, 0.25);
   --vscode-commandCenter-inactiveForeground: #9d9d9d;
@@ -158,7 +158,7 @@
   --vscode-editor-findMatchHighlightBackground: rgba(234, 92, 0, 0.33);
   --vscode-editor-findRangeHighlightBackground: rgba(58, 61, 65, 0.4);
   --vscode-editor-focusedStackFrameHighlightBackground: rgba(122, 189, 122, 0.3);
-  --vscode-editor-foldBackground: rgba(38, 79, 120, 0.3);
+  --vscode-editor-foldBackground: #10b98117;
   --vscode-editor-foldPlaceholderForeground: #808080;
   --vscode-editor-foreground: #cccccc;
   --vscode-editor-hoverHighlightBackground: rgba(38, 79, 120, 0.25);
@@ -205,8 +205,8 @@
   --vscode-editorBracketPairGuide-background5: rgba(0, 0, 0, 0);
   --vscode-editorBracketPairGuide-background6: rgba(0, 0, 0, 0);
   --vscode-editorCodeLens-foreground: #999999;
-  --vscode-editorCommentsWidget-rangeActiveBackground: rgba(0, 120, 212, 0.1);
-  --vscode-editorCommentsWidget-rangeBackground: rgba(0, 120, 212, 0.1);
+  --vscode-editorCommentsWidget-rangeActiveBackground: #10b9811a;
+  --vscode-editorCommentsWidget-rangeBackground: #10b9811a;
   --vscode-editorCommentsWidget-replyInputBackground: #252526;
   --vscode-editorCommentsWidget-resolvedBorder: rgba(204, 204, 204, 0.5);
   --vscode-editorCommentsWidget-unresolvedBorder: #10b981;
@@ -291,7 +291,7 @@
   --vscode-editorOverviewRuler-infoForeground: #3794ff;
   --vscode-editorOverviewRuler-inlineChatInserted: rgba(156, 204, 44, 0.12);
   --vscode-editorOverviewRuler-inlineChatRemoved: rgba(255, 0, 0, 0.12);
-  --vscode-editorOverviewRuler-modifiedForeground: rgba(0, 120, 212, 0.6);
+  --vscode-editorOverviewRuler-modifiedForeground: #10b98199;
   --vscode-editorOverviewRuler-rangeHighlightForeground: rgba(0, 122, 204, 0.6);
   --vscode-editorOverviewRuler-selectionHighlightForeground: rgba(160, 160, 160, 0.8);
   --vscode-editorOverviewRuler-warningForeground: #cca700;
@@ -335,7 +335,7 @@
   --vscode-extensionIcon-privateForeground: rgba(255, 255, 255, 0.38);
   --vscode-extensionIcon-sponsorForeground: #d758b3;
   --vscode-extensionIcon-starForeground: #ff8e00;
-  --vscode-extensionIcon-verifiedForeground: #4daafc;
+  --vscode-extensionIcon-verifiedForeground: #34d399;
   --vscode-focusBorder: #10b981;
   --vscode-foreground: #cccccc;
   --vscode-gauge-background: #007acc;
@@ -358,15 +358,15 @@
   --vscode-inlineChatInput-focusBorder: #10b981;
   --vscode-inlineChatInput-placeholderForeground: #989898;
   --vscode-inlineEdit-gutterIndicator\.background: rgba(24, 24, 24, 0.5);
-  --vscode-inlineEdit-gutterIndicator\.primaryBackground: rgba(0, 120, 212, 0.4);
+  --vscode-inlineEdit-gutterIndicator\.primaryBackground: #10b98166;
   --vscode-inlineEdit-gutterIndicator\.primaryBorder: #10b981;
-  --vscode-inlineEdit-gutterIndicator\.primaryForeground: #ffffff;
+  --vscode-inlineEdit-gutterIndicator\.primaryForeground: #04140d;
   --vscode-inlineEdit-gutterIndicator\.secondaryBackground: #313131;
   --vscode-inlineEdit-gutterIndicator\.secondaryBorder: #313131;
   --vscode-inlineEdit-gutterIndicator\.secondaryForeground: #cccccc;
   --vscode-inlineEdit-gutterIndicator\.successfulBackground: #10b981;
   --vscode-inlineEdit-gutterIndicator\.successfulBorder: #10b981;
-  --vscode-inlineEdit-gutterIndicator\.successfulForeground: #ffffff;
+  --vscode-inlineEdit-gutterIndicator\.successfulForeground: #04140d;
   --vscode-inlineEdit-modifiedBackground: rgba(156, 204, 44, 0.06);
   --vscode-inlineEdit-modifiedBorder: rgba(156, 204, 44, 0.2);
   --vscode-inlineEdit-modifiedChangedLineBackground: rgba(155, 185, 85, 0.14);
@@ -880,8 +880,8 @@
     --vscode-chat-linesRemovedForeground: #bc2f32;
     --vscode-chat-requestBackground: rgba(255, 255, 255, 0.62);
     --vscode-chat-requestBorder: rgba(0, 0, 0, 0.1);
-    --vscode-chat-requestBubbleBackground: rgba(173, 214, 255, 0.3);
-    --vscode-chat-requestBubbleHoverBackground: #add6ff;
+    --vscode-chat-requestBubbleBackground: #a7e3c64c;
+    --vscode-chat-requestBubbleHoverBackground: #a7e3c6;
     --vscode-chat-requestCodeBorder: rgba(14, 99, 156, 0.25);
     --vscode-chat-slashCommandBackground: #adceff7a;
     --vscode-chat-slashCommandForeground: #26569e;
@@ -897,7 +897,7 @@
     --vscode-commandCenter-activeForeground: #1e1e1e;
     --vscode-commandCenter-background: rgba(0, 0, 0, 0.05);
     --vscode-commandCenter-border: rgba(30, 30, 30, 0.2);
-    --vscode-commandCenter-debuggingBackground: rgba(253, 113, 108, 0.26);
+    --vscode-commandCenter-debuggingBackground: #c2410c42;
     --vscode-commandCenter-foreground: #1e1e1e;
     --vscode-commandCenter-inactiveBorder: rgba(139, 148, 158, 0.25);
     --vscode-commandCenter-inactiveForeground: #8b949e;
@@ -962,7 +962,7 @@
     --vscode-editor-findMatchHighlightBackground: rgba(234, 92, 0, 0.33);
     --vscode-editor-findRangeHighlightBackground: rgba(180, 180, 180, 0.3);
     --vscode-editor-focusedStackFrameHighlightBackground: rgba(206, 231, 206, 0.45);
-    --vscode-editor-foldBackground: rgba(173, 214, 255, 0.3);
+    --vscode-editor-foldBackground: #a7e3c64c;
     --vscode-editor-foldPlaceholderForeground: #808080;
     --vscode-editor-foreground: #3b3b3b;
     --vscode-editor-hoverHighlightBackground: rgba(173, 214, 255, 0.15);
@@ -1009,8 +1009,8 @@
     --vscode-editorBracketPairGuide-background5: rgba(0, 0, 0, 0);
     --vscode-editorBracketPairGuide-background6: rgba(0, 0, 0, 0);
     --vscode-editorCodeLens-foreground: #919191;
-    --vscode-editorCommentsWidget-rangeActiveBackground: rgba(0, 95, 184, 0.1);
-    --vscode-editorCommentsWidget-rangeBackground: rgba(0, 95, 184, 0.1);
+    --vscode-editorCommentsWidget-rangeActiveBackground: #0478571a;
+    --vscode-editorCommentsWidget-rangeBackground: #0478571a;
     --vscode-editorCommentsWidget-replyInputBackground: #f3f3f3;
     --vscode-editorCommentsWidget-resolvedBorder: rgba(97, 97, 97, 0.5);
     --vscode-editorCommentsWidget-unresolvedBorder: #047857;
@@ -1095,7 +1095,7 @@
     --vscode-editorOverviewRuler-infoForeground: #1a85ff;
     --vscode-editorOverviewRuler-inlineChatInserted: rgba(156, 204, 44, 0.2);
     --vscode-editorOverviewRuler-inlineChatRemoved: rgba(255, 0, 0, 0.16);
-    --vscode-editorOverviewRuler-modifiedForeground: rgba(0, 95, 184, 0.6);
+    --vscode-editorOverviewRuler-modifiedForeground: #04785799;
     --vscode-editorOverviewRuler-rangeHighlightForeground: rgba(0, 122, 204, 0.6);
     --vscode-editorOverviewRuler-selectionHighlightForeground: rgba(160, 160, 160, 0.8);
     --vscode-editorOverviewRuler-warningForeground: #bf8803;
@@ -1139,7 +1139,7 @@
     --vscode-extensionIcon-privateForeground: rgba(0, 0, 0, 0.38);
     --vscode-extensionIcon-sponsorForeground: #b51e78;
     --vscode-extensionIcon-starForeground: #df6100;
-    --vscode-extensionIcon-verifiedForeground: #005fb8;
+    --vscode-extensionIcon-verifiedForeground: #047857;
     --vscode-focusBorder: #047857;
     --vscode-foreground: #3b3b3b;
     --vscode-gauge-background: #007acc;
@@ -1162,7 +1162,7 @@
     --vscode-inlineChatInput-focusBorder: #047857;
     --vscode-inlineChatInput-placeholderForeground: #767676;
     --vscode-inlineEdit-gutterIndicator\.background: rgba(95, 95, 95, 0.09);
-    --vscode-inlineEdit-gutterIndicator\.primaryBackground: rgba(0, 95, 184, 0.5);
+    --vscode-inlineEdit-gutterIndicator\.primaryBackground: #04785780;
     --vscode-inlineEdit-gutterIndicator\.primaryBorder: #047857;
     --vscode-inlineEdit-gutterIndicator\.primaryForeground: #ffffff;
     --vscode-inlineEdit-gutterIndicator\.secondaryBackground: #e5e5e5;
