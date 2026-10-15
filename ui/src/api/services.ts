@@ -1,4 +1,4 @@
-// Database servers of the kit (tauri/src/services.rs, D-73).
+// Database servers of the kit (tauri/src/db/services/, D-73).
 // Rust: tauri/src/commands/services.rs.
 
 import { query } from "./core";

@@ -1,4 +1,4 @@
-// The instructions of the new-project wizard in Settings (frameworks.rs,
+// The instructions of the new-project wizard in Settings (projects/frameworks/,
 // D-83): a tree in the side bar, one tab per base (Laravel, Vite,
 // Electron…) and per addition (React, Tailwind CSS, NativePHP…), with the
 // commands that install it, one per line, the kit's tools as tags with their

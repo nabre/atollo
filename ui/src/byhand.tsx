@@ -1,4 +1,4 @@
-// A download that failed, done in the browser instead (tauri/src/downloads.rs,
+// A download that failed, done in the browser instead (tauri/src/setup/downloads.rs,
 // DECISIONS.md D-82): the link to the file, and a box where the downloaded
 // file is dropped or picked. The app keeps it in data\downloads and tries
 // again; the file is used only with the checksum the source publishes.
