@@ -1,6 +1,6 @@
 # Dev-Kit App: catalogo di agenti, linguaggi e strumenti
 
-Fonte: `nabre/dev-kit` al commit `a61a354` (`setup/components.json` e script di `setup/windows/`). È la specifica che il motore Rust (`catalog.rs`, `install/*.rs`) segue; il catalogo dell'app è `tauri/catalog/components.json`. I riferimenti `file:riga` puntano agli script originali.
+Fonte: `nabre/dev-kit` al commit `a61a354` (`setup/components.json` e script di `setup/windows/`). È la specifica che il motore Rust (`setup/catalog.rs`, `install/`) segue; il catalogo dell'app è `tauri/catalog/components.json`. I riferimenti `file:riga` puntano agli script originali.
 
 Percorsi nel nuovo kit (PLAN §2): `A` = `data\apps\win32-<arch>\`; versioni in `data\app\versions\<id>.txt`; aree di lavoro in `data\tmp\setup\`.
 Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i componenti sono stati installati e rimossi a mano nella fase 4 (CHANGELOG.md).
@@ -14,7 +14,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | app (`app`) | `vscodium-server` | Editor (server web di VSCodium) | sempre | 250 | `pwsh` | **nuovo**; parte dell'app, versione fissata a ogni rilascio (DECISIONS.md D-58); in Linguaggi e strumenti compare con gli obbligatori, spuntato e non modificabile; x64 anche su ARM64 |
 | agenti (`agents`) | `claude` | Claude Code | sì | 250 | `git` | |
 | | `codex` | Codex | sì | 440 | | |
-| | `antigravity` | Antigravity | sì | 190 | | accesso salvato nel kit (`keyring.rs`) |
+| | `antigravity` | Antigravity | sì | 190 | | accesso salvato nel kit (`agents/keyring.rs`) |
 | linguaggi e strumenti (`languages`) | `git` | Git (Git Bash) | sempre (per GitHub CLI) | 350 | | shell dei comandi degli agenti; dipendenza obbligatoria di GitHub CLI (D-59) |
 | | `python` | Python + pip | sì | 70 | | 3.13 predefinito |
 | | `node` | Node.js LTS + npm | no | 110 | | quando serve: azioni con `npm`, server MCP con `npx` (D-59) |

@@ -40,16 +40,16 @@ Il kit attuale diventa la **specifica di riferimento**: il comportamento si port
 | Comportamento | Origine | Destinazione Rust |
 | --- | --- | --- |
 | Ambiente portabile (~90 variabili, PATH del kit) | `setup/windows/_env.cmd` | `env.rs` |
-| Rilocazione dopo spostamento o cambio di lettera | `_env.cmd:238-267`, `setup/agents/moved.js` | `relocate.rs` |
-| Catalogo componenti (30: i 27 del Dev-Kit senza VSCodium desktop, più `pwsh`, `terminal` e l'editor) | `setup/components.json` | `catalog.rs`, dati incorporati |
-| Download, verifica (SHA-256/512, npm, Authenticode), estrazione, scambio cartelle | `_common.ps1`, `_prepare-*.ps1`, `_languages.ps1`, `_workarea.ps1` | `net.rs`, `verify.rs`, `signature.rs`, `archive.rs`, `install/*.rs` |
-| Allineamento di istruzioni, skill, MCP, regole, cartelle attendibili | `setup/agents/sync.js` + 8 moduli | `agents_sync/*.rs` |
-| Accesso Antigravity fuori da Gestione credenziali | `agy-keyring.ps1` | `keyring.rs` |
+| Rilocazione dopo spostamento o cambio di lettera | `_env.cmd:238-267`, `setup/agents/moved.js` | `agents/relocate.rs` |
+| Catalogo componenti (30: i 27 del Dev-Kit senza VSCodium desktop, più `pwsh`, `terminal` e l'editor) | `setup/components.json` | `setup/catalog.rs`, dati incorporati |
+| Download, verifica (SHA-256/512, npm, Authenticode), estrazione, scambio cartelle | `_common.ps1`, `_prepare-*.ps1`, `_languages.ps1`, `_workarea.ps1` | `net/`, `install/` |
+| Allineamento di istruzioni, skill, MCP, regole, cartelle attendibili | `setup/agents/sync.js` + 8 moduli | `agents/sync/` |
+| Accesso Antigravity fuori da Gestione credenziali | `agy-keyring.ps1` | `agents/keyring.rs` |
 | Server su 127.0.0.1 per Node | `setup/node/loopback.js` | file incorporato, scritto in `data\kit\` (Node lo richiede come file) |
-| Espulsione e altre copie aperte | `Eject.ps1`, `Test-Sessions.ps1` | `sessions.rs` |
-| Estensioni consigliate, `@programma`, proposta una volta sola, CodeLLDB | `setup/vscodium/*`, `_vscodium-extensions.ps1` | `editor_ext.rs` |
-| Profili del terminale (`claudeCode.environmentVariables` non serve più: D-42) | `setup/extensions/dev-kit/kit.js:163-220` | `editor_cfg.rs` |
-| Regole dei nomi dei progetti, rilevatori | `core/projects.js:37-44`, `core/detectors` | `projects.rs`, `detect/*.rs` |
+| Espulsione e altre copie aperte | `Eject.ps1`, `Test-Sessions.ps1` | `os/sessions.rs` |
+| Estensioni consigliate, `@programma`, proposta una volta sola, CodeLLDB | `setup/vscodium/*`, `_vscodium-extensions.ps1` | `editor/ext.rs` |
+| Profili del terminale (`claudeCode.environmentVariables` non serve più: D-42) | `setup/extensions/dev-kit/kit.js:163-220` | `editor/cfg.rs` |
+| Regole dei nomi dei progetti, rilevatori | `core/projects.js:37-44`, `core/detectors` | `projects/`, `detect/` |
 | Testi it/en/fr/de | `setup/lang/parts/*.json` | cataloghi incorporati |
 
 Bug trovato e da non riportare: rimozione di Typst e TinyTeX mai eseguita (`_prepare-migrate.ps1:128`).
@@ -100,7 +100,7 @@ Riga di comando dello stesso exe, senza finestra (D-21, `cli.rs`):
 - `prepare [--only a,b] [--skip a,b] [--update-all] [--force]`: installa, aggiorna e rimuove i componenti;
 - `sync [--project <cartella>] [--verbose]`: allinea gli agenti;
 - `keyring restore|save`: accesso di Antigravity, usati da `data\kit\bin\agy.cmd`;
-- `serve <cartella> <porta>`: server di file dei siti statici, usato da `run.rs`;
+- `serve <cartella> <porta>`: server di file dei siti statici, usato da `projects/run.rs`;
 - `version`, `help`.
 
 Servono a `agy.cmd`, alle azioni dei progetti, alla CI e alle prove a mano.
@@ -109,65 +109,26 @@ Avvio (`main.rs`): riga di comando letta → radice → creazione di `data\`, co
 
 ## 4. Moduli Rust (`tauri\src\`)
 
-Organizzazione per livelli e per area, regole comuni per file, processi e comandi: [ARCHITECTURE.md](ARCHITECTURE.md).
+Una cartella per area; l'elenco dei file, i livelli e le regole comuni per file, processi, comandi ed errori sono in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | Modulo | Responsabilità |
 | --- | --- |
-| `main.rs` | avvio, finestre, riga di comando, chiusura |
+| `main.rs`, `cli.rs`, `log.rs` | avvio, finestre, riga di comando, chiusura; log con segreti mascherati |
 | `kit.rs` | radice, piattaforma, percorsi, primo avvio, spostamento, validazione di percorsi e nomi |
 | `env.rs` | ambiente del kit; PATH = programmi del kit presenti + `System32`, `Wbem`, `WindowsPowerShell\v1.0`; `PSModulePath` senza i moduli del PC; impostazioni di rete da `data\app\settings.json` (proxy, certificati, chiave Gemini, lingua, rete locale); ricostruito dopo ogni installazione e a ogni salvataggio delle impostazioni |
-| `relocate.rs` | radice precedente da `data\app\old-root.txt` (scritto da `kit.rs` confrontando `root.txt`); sostituzione nei file di agenti, editor, Python, uv, `.venv` (regole di `moved.js`) |
-| `jobs.rs` | Job Object, avvio con l'ambiente del kit, job annidati, console `conhost.exe` (`spawn_console`), `.cmd`/`.bat` (`batch_command`), uscita dal job per browser ed Esplora risorse |
 | `fsx.rs` | file del kit: lettura senza BOM, JSON mancante, vuoto o danneggiato, scrittura atomica con la cartella creata |
-| `safe_path.rs` | lettura dentro un progetto senza seguire collegamenti (D-77) |
-| `net.rs` | HTTPS con il TLS e i certificati di Windows, proxy, 3 tentativi, `.part`, API di GitHub (`digest` delle asset) |
-| `verify.rs` | SHA-256, SHA-512, integrità npm |
-| `signature.rs` | firma Authenticode con editore atteso (`WinVerifyTrust`) |
-| `archive.rs` | zip, tar.gz, 7z (anche dentro un `.7z.exe`), file singoli; scambio cartelle con ripristino; "file in uso" |
-| `catalog.rs` | catalogo incorporato (`keys`, `noArm64`, gruppo `app` con versione fissata), `data\app\components.txt`, `needs` a cascata, versioni installate |
-| `needs.rs` | cosa serve a un agente, a un clone o a un'azione di progetto, installato al momento (D-59) |
-| `install/*.rs` | un file per famiglia: `core` (git, python, node, uv, gh), `agents`, `web` (php, apache, VC++), `native` (rust, pnpm, r: installatori fatti di processi), `lang` (gli altri linguaggi), `editor` (pwsh, Windows Terminal, editor), `db` (MariaDB, MongoDB, SQLite, Adminer: D-73, D-85), `android` (SDK di Android: D-84) |
-| `downloads.rs` | file scaricati a mano e lasciati sull'app, usati se il checksum è quello della fonte (D-82) |
-| `versions.rs` | versioni salvate dei linguaggi, una cartella per versione minore; scelta del kit e dei progetti (D-80) |
-| `side_by_side.rs` | versioni fianco a fianco rese note agli strumenti: JDK per Gradle e Maven, SDK di .NET (D-81) |
-| `relations.rs`, `ranges.rs` | matrice delle relazioni fra componenti, versioni e progetti; intervalli di versione di npm, Composer, PEP 440 (D-81) |
-| `setup_runner.rs` | piano e ordine dei passi, una preparazione alla volta, eventi, annullamento al termine del passo |
-| `setup_task.rs` | preparazione avviata dalla finestra, in un thread, con lo stato per l'interfaccia; obbligatori ed editor da installare |
-| `checkup.rs` | verifica finale: ogni programma installato risponde al suo comando di versione (D-39) |
-| `agents.rs` | stato (installato, versione, accesso), lancio in una console del kit, uscita, sorvegliante |
-| `agents_sync/*.rs` | istruzioni, skill (giunzioni NTFS, copia su FAT32/exFAT), MCP per Claude/Codex/Antigravity, regole, cartelle attendibili, skill di progetto |
-| `keyring.rs` | accesso Antigravity: `CredEnumerateW`, `CredWriteW` (sessione), `CredDeleteW`; file in `data\antigravity\` |
-| `editor.rs` | server web: porta, token, avvio, salute, riavvio |
-| `editor_window.rs` | finestre `editor-<n>`: navigazione, nuove finestre, tasti e menu del browser spenti; barra del titolo di VSCodium senza cornice di Windows, con ripiego (D-69) |
-| `editor_cfg.rs` | impostazioni, profili del terminale esclusivi |
-| `editor_theme.rs` | tema NEXKORA dell'editor, incorporato e installato prima dell'avvio del server |
-| `editor_ext.rs` | estensioni dell'editor dalla matrice linguaggio-estensione e dai progetti (D-71), proposta una volta sola, CodeLLDB; nessuna estensione propria (Q4 = a) |
-| `terminal.rs` | console del kit: PowerShell del kit o un agente in Windows Terminal del kit (`wterm.rs`, D-68) o in `conhost.exe` di Windows (D-57), nel job |
-| `wterm.rs` | Windows Terminal portabile: impostazioni («Dev-Kit», schemi di VSCodium), avvio, ambiente del kit e id del processo attraverso una named pipe (D-68) |
-| `github.rs` | account GitHub del kit, uno per tutto (D-70): accesso con `gh auth login --web` e codice monouso, `credential.helper` di Git verso `gh` per github.com, repository dell'account (API), clone, rinomina, eliminazione |
-| `frameworks.rs` | basi e aggiunte della procedura «Nuovo progetto», con le istruzioni modificabili nelle Impostazioni (D-83) |
-| `projects.rs`, `detect/*.rs` | elenco, creazione, clone con il Git del kit, rilevamento del tipo, dei linguaggi e delle azioni (`npm run dev`, `php -S`, `cargo run`…), `panel.json` |
-| `services.rs` | server dei database del kit (MariaDB, MongoDB): avvio, attesa della porta, arresto pulito, impostazioni in `data\app\services.json` (D-73) |
-| `db_auth.rs` | password dei database del kit e dei progetti, `.env` dopo l'anteprima (D-74) |
-| `db_browse.rs` | contenuto dei server, in sola lettura (D-79) |
-| `apache.rs` | Apache di un progetto, con la configurazione in `data\app\projects\<progetto>\apache\` |
-| `adminer.rs` | Adminer sul MariaDB del kit: server di PHP su 127.0.0.1 con token, router `data\kit\adminer.php`, fermato con MariaDB (D-85) |
-| `run.rs` | avvio e arresto delle azioni dei progetti: porte 7100-7999 ricordate in `data\app\ports.json`, attesa del server, log, apertura nel browser, rete locale (D-50) |
-| `serve.rs` | server di file per i siti statici, `Dev-Kit.exe serve <cartella> <porta>`, al posto di `static-server.js` (D-51) |
-| `processes.rs` | processi del PC con il programma in una cartella data |
-| `sessions.rs` | programmi del kit aperti, altre copie del kit, «Rimuovi l'unità» |
-| `self_update.rs` | nuova versione dell'exe: download in `data\app\update\`, SHA-256, scambio alla chiusura |
-| `i18n.rs` | lingua e cataloghi incorporati |
-| `settings.rs` | `data\app\settings.json` (al posto di `proxy.cmd`) |
-| `instance.rs` | istanza singola per kit (mutex + pipe) |
-| `webview.rs` | WebView2 di sistema o fisso, messaggio se manca |
-| `kit_files.rs` | file incorporati scritti in `data\kit\` |
-| `stats/*.rs` | limiti d'uso e consumi di Claude Code, Codex e Antigravity (porting di `core/stats`, D-61) |
-| `project_settings.rs` | impostazioni del kit di ogni progetto, `data\app\projects\<progetto>\dev-settings.json` (D-63) |
-| `project_mcp.rs`, `project_vscode.rs` | server MCP del progetto (`.mcp.json`, `.codex\config.toml`) e impostazioni dell'editor in `.vscode\settings.json` (D-78) |
-| `commands/*.rs` | comandi Tauri, un file per area dell'interfaccia (`app`, `window`, `editing`, `setup`, `versions`, `agents`, `projects`, `frameworks`, `github`, `databases`, `services`, `runs`) |
-| `cli.rs`, `log.rs` | riga di comando, log con segreti mascherati |
-
+| `settings.rs`, `i18n.rs` | `data\app\settings.json` (al posto di `proxy.cmd`); lingua e cataloghi incorporati |
+| `os\` | Job Object, avvio con l'ambiente del kit, console `conhost.exe`, `.cmd`/`.bat`, uscita dal job per browser ed Esplora risorse (`jobs`); processi del PC per cartella; programmi del kit aperti, altre copie, «Rimuovi l'unità» (`sessions`); istanza singola per kit (mutex + pipe); WebView2 di sistema o fisso; lettura dentro un progetto senza seguire collegamenti (`safe_path`, D-77) |
+| `net\` | HTTPS con il TLS e i certificati di Windows, proxy, 3 tentativi, `.part`, API di GitHub (`digest` delle asset); SHA-256, SHA-512, integrità npm (`verify`); Authenticode con editore atteso (`signature`); zip, tar.gz, 7z, scambio cartelle con ripristino, "file in uso" (`archive`) |
+| `setup\` | catalogo incorporato (`keys`, `noArm64`, gruppo `app` con versione fissata), `data\app\components.txt`, `needs` a cascata; cosa serve a un agente, a un clone o a un'azione (D-59); piano e ordine dei passi, annullamento al termine del passo (`runner`); preparazione avviata dalla finestra (`task`); verifica finale (`checkup`, D-39); download a mano (`downloads`, D-82); file in `data\kit\` (`kit_files`); aggiornamento dell'exe in `data\app\update\`, SHA-256, scambio alla chiusura (`self_update`) |
+| `install\` | un installatore per famiglia: `core` (git, python, node, uv, gh), `agents`, `web` (php, apache, VC++), `native` (rust, pnpm, r), `lang\` (gli altri linguaggi, un file per famiglia), `editor` (pwsh, Windows Terminal, editor), `db` (MariaDB, MongoDB, SQLite, Adminer: D-73, D-85), `android` (D-84) |
+| `versions\` | versioni salvate, una cartella per versione minore, scelta del kit e dei progetti (D-80); versioni fianco a fianco per Gradle, Maven e .NET (`side_by_side`, D-81); matrice delle relazioni e intervalli di versione di npm, Composer, PEP 440 (`relations\`, `ranges`, D-81) |
+| `projects\`, `detect\` | elenco, creazione, clone con il Git del kit, rilevamento del tipo, dei linguaggi e delle azioni, `panel.json`; `dev-settings.json` (`settings`, D-63); MCP e `.vscode\settings.json` (`mcp`, `vscode`, D-78); «Nuovo progetto» da framework (`frameworks\`, D-83); azioni con porte 7100-7999 in `data\app\ports.json`, log, browser, rete locale (`run`, D-50); server di file `Dev-Kit.exe serve` (`serve`, D-51); Apache del progetto (`apache`) |
+| `editor\` | server web: porta, token, avvio, salute, riavvio; finestre `editor-<n>` con la barra di VSCodium (`window`, D-69); impostazioni e profili del terminale (`cfg`); estensioni dalla matrice linguaggio-estensione e dai progetti, CodeLLDB (`ext`, D-71; nessuna estensione propria, Q4 = a); tema NEXKORA (`theme`); console del kit in Windows Terminal portabile o in `conhost.exe` (`terminal`, `wterm`, D-57, D-68) |
+| `agents\` | stato, lancio in una console del kit, uscita, sorvegliante; allineamento di istruzioni, skill, MCP, regole e cartelle attendibili (`sync\`); limiti d'uso e consumi di Claude Code, Codex e Antigravity (`stats\`, D-61); accesso di Antigravity con Gestione credenziali (`keyring`); rilocazione dopo uno spostamento, regole di `moved.js` (`relocate`) |
+| `db\` | server MariaDB e MongoDB del kit, impostazioni in `data\app\services.json`, dati per versione, copie (`services\`, D-73); password e `.env` (`auth`, D-74); contenuto in sola lettura (`browse`, D-79); Adminer (`adminer`, D-85) |
+| `github\` | account GitHub del kit, uno per tutto (D-70): `gh auth login --web`, `credential.helper` di Git verso `gh`; repository dell'account, clone, rinomina, eliminazione (`repos`) |
+| `commands\` | comandi Tauri, un file per area dell'interfaccia (`app`, `window`, `editing`, `setup`, `versions`, `agents`, `projects`, `frameworks`, `github`, `databases`, `services`, `runs`), errore comune `CmdError` |
 
 Dipendenze (`tauri\Cargo.toml`): `tauri`, `serde`, `serde_json`, `anyhow`, `thiserror`, `windows`, `webview2-com`, `ureq` con `native-tls`, `sha2`, `base64`, `zip`, `tar`, `flate2`, `sevenz-rust2`, `regex`, `junction`. Motivi in D-22.
 
@@ -192,7 +153,7 @@ Isolamento: ambiente del kit; `PSModulePath` senza i moduli del PC (D-34); profi
 
 Server web di VSCodium in `data\apps\…\vscodium-server\`, parte dell'app: versione fissata a ogni rilascio (D-58). Avvio su `127.0.0.1`, porta 7000-7099, token in file, `--server-data-dir data\vscodium-server`, telemetria spenta. Finestre `editor` con cartella dati `data\webview2\`, navigazione solo verso il server, nuove finestre intercettate, tasti del browser e menu contestuale disattivati.
 
-**Editor pulito** (Q4 = a, 14/10): nessuna estensione propria nell'editor. Dentro ci sono VSCodium, le estensioni consigliate e i terminali del kit. Progetti, avvio dei server, agenti e componenti stanno nella finestra principale dell'app, scritti in Rust. Le impostazioni che nel Dev-Kit scriveva l'estensione (profili del terminale, `files.dialog.defaultPath`, `git.defaultCloneDirectory`) le scrive `editor_cfg.rs` prima di ogni avvio; `claudeCode.environmentVariables` non serve (D-42). Anche l'estensione `github-repos` del Dev-Kit diventa una pagina dell'app, «GitHub», con l'account GitHub del kit (D-70).
+**Editor pulito** (Q4 = a, 14/10): nessuna estensione propria nell'editor. Dentro ci sono VSCodium, le estensioni consigliate e i terminali del kit. Progetti, avvio dei server, agenti e componenti stanno nella finestra principale dell'app, scritti in Rust. Le impostazioni che nel Dev-Kit scriveva l'estensione (profili del terminale, `files.dialog.defaultPath`, `git.defaultCloneDirectory`) le scrive `editor/cfg.rs` prima di ogni avvio; `claudeCode.environmentVariables` non serve (D-42). Anche l'estensione `github-repos` del Dev-Kit diventa una pagina dell'app, «GitHub», con l'account GitHub del kit (D-70).
 
 Prototipo all'inizio della fase dell'editor: dove il server web tiene le impostazioni utente, nome dello script del server, `--install-extension` sul server, chiusura con file non salvati.
 
@@ -224,13 +185,16 @@ Radice: la radice del repository `nabre/dev-kit2`. Struttura:
 ```
 Cargo.toml  Cargo.lock        workspace
 package.json                  workspace npm (ui), comandi dev, build, test, lint
-tauri\                    exe (moduli §4), catalogo e testi incorporati
+tauri\                        exe (moduli §4), catalogo e testi incorporati
 ui\                           interfaccia React + TypeScript + Tailwind (D-02)
 kit-files\                    file scritti in data\kit\ (loopback.js, profile.ps1, console.ps1, bashrc, bin\agy.cmd, bin\agy)
 docs\app\                     piano, decisioni, architettura, catalogo, prove, novità
+docs\brand\                   logo, temi, script che li generano
 .github\workflows\app.yml     CI e release
 Prompt.md                     il prompt iniziale
 ```
+
+Le cartelle di `tauri\src\` e `ui\src\`: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 Nome del prodotto: **Dev-Kit** (exe `Dev-Kit.exe`), deciso il 14/10. Da quel repository l'exe scarica i propri aggiornamenti.
 

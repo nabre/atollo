@@ -1,5 +1,22 @@
 # Novità
 
+## Struttura del codice, seconda parte (15/10/2026)
+
+Nessun cambiamento per chi usa l'app: stessi testi, comandi, eventi, log e file su disco (D-87, [ARCHITECTURE.md](ARCHITECTURE.md)).
+
+**Fatto**
+- **Moduli Rust in cartelle per area**: `setup\`, `versions\`, `projects\`, `editor\`, `agents\` (con `sync\` e `stats\`), `db\`, `github\`, `net\`, `os\`, accanto a `commands\`, `install\` e `detect\`. In cima a `tauri\src` restano `main`, `cli`, `kit`, `env`, `fsx`, `log`, `i18n` e `settings`. Spostamenti con `git mv`; i prefissi spariscono (`editor_cfg.rs` → `editor\cfg.rs`, `db_auth.rs` → `db\auth.rs`, `setup_task.rs` → `setup\task.rs`).
+- **File grandi divisi**: `db\services` (1303 righe: impostazioni e avvio, dati per versione, accessi, copie, strumenti), `install\lang` (1162: un file per linguaggio o famiglia), `versions` (1022: scelta, righe offerte, disco), `projects\frameworks` (1022: controlli, piano, destinazione, esecuzione), `versions\relations` (933: conoscenza, controlli, progetti), `github` (840: account e repository). Nessun file supera più le 900 righe.
+- **Un errore per i comandi**: `CmdError` e `CmdResult` in `commands\error.rs`; `or_fail` e `or_fail_chain` al posto dei `map_err(|e| fail(…))`, `?` al posto dei `map_err(|e| format!("{e:#}"))`. L'interfaccia riceve la stessa stringa di prima.
+- **Interfaccia, pagine grandi in cartelle**: `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`. Sparisce il ciclo di import fra le due pagine dei progetti; `pages.tsx` diventa `common.tsx` e `useAction` va in `hooks.ts`.
+- **`useLoad`** in `hooks.ts` (dato, errore, ricarica, lettura periodica) per 16 letture in 14 file, con la politica d'errore scritta a ogni lettura: tenere il valore, mostrare l'errore o un valore di ripiego.
+- **Componenti di `workbench\`**: `Select` al posto di 13 `<select>`, `DataTable` di 5 `<table>`, `ConfirmDialog` e `InlineConfirm` per la chiusura dell'app e l'eliminazione di un repository GitHub; `useCopy` per le 3 copie negli appunti.
+- **Commenti**: i percorsi dei file Rust citati nell'interfaccia e nella CI puntano alle cartelle nuove; tolti i caratteri di controllo lasciati da escape sbagliati in tre commenti.
+
+**Non fatto** (elenco in ARCHITECTURE.md): 12 letture restano senza `useLoad` perché cambierebbe ciò che l'utente vede (un errore che oggi resta dopo una lettura riuscita); quattro conferme sì/no nella pagina restano senza il ruolo `alertdialog`.
+
+**Verificato**: 274 test Rust (3 nuovi per `CmdError`, 3 in più dalla prova delle righe di versione divisa per linguaggio), 2 ignorati; clippy e fmt puliti; tipi, ESLint, Prettier e 36 test dell'interfaccia (9 nuovi per `useLoad`); nessun ciclo di import in `ui\src`. La build dell'interfaccia riesce, con un avviso: il file principale supera 500 kB (761 kB).
+
 ## Struttura del codice (15/10/2026)
 
 Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile da leggere e da cambiare (D-86, [ARCHITECTURE.md](ARCHITECTURE.md)).
