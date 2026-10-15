@@ -30,8 +30,8 @@ impl OpenNow {
 pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
     use tauri::Manager;
     let state = app.state::<AppState>();
-    let actions = app.try_state::<Arc<Runner>>().map_or(0, |r| r.running())
-        + state.servers.running_count();
+    let actions =
+        app.try_state::<Arc<Runner>>().map_or(0, |r| r.running()) + state.servers.running_count();
     OpenNow {
         processes: crate::os::sessions::foreign_processes(&state.kit),
         editor: state.editor.status().running,
