@@ -25,21 +25,20 @@ pub(super) fn github_error(lang: &str, e: &crate::net::ApiError) -> String {
 }
 
 /// The account's token, or the text asking to sign in.
-pub(super) fn github_token_of(kit: &Kit, env: &KitEnv, lang: &str) -> Result<String, String> {
+pub(super) fn github_token_of(kit: &Kit, env: &KitEnv, lang: &str) -> CmdResult<String> {
     crate::github::token(kit, env)
-        .ok_or_else(|| crate::i18n::t(lang, "Accedi prima a GitHub.", &[]))
+        .ok_or_else(|| crate::i18n::t(lang, "Accedi prima a GitHub.", &[]).into())
 }
 
-pub(super) fn github_net(kit: &Kit) -> Result<crate::net::Net, String> {
-    crate::net::Net::new(&Settings::load(kit).settings, None)
-        .map_err(|e| fail("github", format!("{e:#}")))
+pub(super) fn github_net(kit: &Kit) -> CmdResult<crate::net::Net> {
+    crate::net::Net::new(&Settings::load(kit).settings, None).or_fail_chain("github")
 }
 
-pub(super) fn check_full_name(full_name: &str) -> Result<(), String> {
+pub(super) fn check_full_name(full_name: &str) -> CmdResult<()> {
     if crate::github::valid_full_name(full_name) {
         Ok(())
     } else {
-        Err(format!("not a GitHub repository: {full_name}"))
+        Err(format!("not a GitHub repository: {full_name}").into())
     }
 }
 
@@ -48,12 +47,12 @@ pub async fn github_status<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     login: GithubLogin<'_>,
-) -> Result<crate::github::Status, String> {
+) -> CmdResult<crate::github::Status> {
     ensure_main(&webview)?;
     let (kit, env, login) = (state.kit.clone(), state.env(), Arc::clone(&login));
     tauri::async_runtime::spawn_blocking(move || login.status(&kit, &env))
         .await
-        .map_err(|e| fail("github", e))
+        .or_fail("github")
 }
 
 /// Starts the sign-in (`delete`: with the permission to delete
@@ -66,7 +65,7 @@ pub async fn github_sign_in<R: Runtime>(
     state: State<'_, AppState>,
     login: GithubLogin<'_>,
     delete: bool,
-) -> Result<crate::github::Status, String> {
+) -> CmdResult<crate::github::Status> {
     ensure_main(&webview)?;
     let (task, kit, lang, login) = (
         Arc::clone(&state.setup),
@@ -78,7 +77,7 @@ pub async fn github_sign_in<R: Runtime>(
         let env = ensure(&app, &task, &kit, lang, &["gh"])?;
         login
             .start(&kit, &env, delete, github_notify(app.clone()))
-            .map_err(|e| fail("github sign-in", format!("{e:#}")))?;
+            .or_fail_chain("github sign-in")?;
         let until = std::time::Instant::now() + std::time::Duration::from_secs(30);
         loop {
             let status = login.status(&kit, &env);
@@ -89,14 +88,14 @@ pub async fn github_sign_in<R: Runtime>(
         }
     })
     .await
-    .map_err(|e| fail("github", e))?
+    .or_fail("github")?
 }
 
 #[tauri::command]
 pub fn github_sign_in_cancel<R: Runtime>(
     webview: Webview<R>,
     login: GithubLogin<'_>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     login.cancel();
     Ok(())
@@ -106,28 +105,29 @@ pub fn github_sign_in_cancel<R: Runtime>(
 pub async fn github_sign_out<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let (kit, env) = (state.kit.clone(), state.env());
     tauri::async_runtime::spawn_blocking(move || crate::github::sign_out(&kit, &env))
         .await
-        .map_err(|e| fail("github", e))?
-        .map_err(|e| fail("github sign-out", format!("{e:#}")))
+        .or_fail("github")?
+        .or_fail_chain("github sign-out")
 }
 
 #[tauri::command]
 pub async fn github_repos<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<crate::github::Repos, String> {
+) -> CmdResult<crate::github::Repos> {
     ensure_main(&webview)?;
     let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         let token = github_token_of(&kit, &env, lang)?;
-        crate::github::repos(&kit, &github_net(&kit)?, &token).map_err(|e| github_error(lang, &e))
+        Ok(crate::github::repos(&kit, &github_net(&kit)?, &token)
+            .map_err(|e| github_error(lang, &e))?)
     })
     .await
-    .map_err(|e| fail("github", e))?
+    .or_fail("github")?
 }
 
 /// Clones a repository of the account into `projects\`; returns the project.
@@ -137,7 +137,7 @@ pub async fn github_clone<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     full_name: String,
-) -> Result<String, String> {
+) -> CmdResult<String> {
     ensure_main(&webview)?;
     check_full_name(&full_name)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
@@ -145,10 +145,10 @@ pub async fn github_clone<R: Runtime>(
         let env = ensure(&app, &task, &kit, lang, &["git"])?;
         let token = crate::github::token(&kit, &env);
         crate::github::clone_repo(&kit, &env, &full_name, token.as_deref(), lang)
-            .map_err(|e| fail("clone", format!("{e:#}")))
+            .or_fail_chain("clone")
     })
     .await
-    .map_err(|e| fail("clone", e))?
+    .or_fail("clone")?
 }
 
 #[tauri::command]
@@ -157,7 +157,7 @@ pub async fn github_rename<R: Runtime>(
     state: State<'_, AppState>,
     full_name: String,
     name: String,
-) -> Result<crate::github::Renamed, String> {
+) -> CmdResult<crate::github::Renamed> {
     ensure_main(&webview)?;
     check_full_name(&full_name)?;
     let name = name.trim().to_owned();
@@ -166,16 +166,19 @@ pub async fn github_rename<R: Runtime>(
             &state,
             "Nome non valido: solo lettere, cifre, «.», «-» e «_».",
             &[],
-        ));
+        )
+        .into());
     }
     let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         let token = github_token_of(&kit, &env, lang)?;
-        crate::github::rename(&kit, &env, &github_net(&kit)?, &token, &full_name, &name)
-            .map_err(|e| github_error(lang, &e))
+        Ok(
+            crate::github::rename(&kit, &env, &github_net(&kit)?, &token, &full_name, &name)
+                .map_err(|e| github_error(lang, &e))?,
+        )
     })
     .await
-    .map_err(|e| fail("github", e))?
+    .or_fail("github")?
 }
 
 #[derive(Debug, Serialize)]
@@ -192,7 +195,7 @@ pub async fn github_delete<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     full_name: String,
-) -> Result<Deleted, String> {
+) -> CmdResult<Deleted> {
     ensure_main(&webview)?;
     check_full_name(&full_name)?;
     let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
@@ -204,20 +207,17 @@ pub async fn github_delete<R: Runtime>(
                 Ok(Deleted::Deleted)
             }
             Err(e) if matches!(e.status, Some(403 | 404)) => Ok(Deleted::NeedsPermission),
-            Err(e) => Err(github_error(lang, &e)),
+            Err(e) => Err(github_error(lang, &e).into()),
         }
     })
     .await
-    .map_err(|e| fail("github", e))?
+    .or_fail("github")?
 }
 
 /// Opens a repository on github.com (`None`: the page where the sign-in
 /// code goes) in the PC's browser.
 #[tauri::command]
-pub fn github_open<R: Runtime>(
-    webview: Webview<R>,
-    full_name: Option<String>,
-) -> Result<(), String> {
+pub fn github_open<R: Runtime>(webview: Webview<R>, full_name: Option<String>) -> CmdResult<()> {
     ensure_main(&webview)?;
     let path = match full_name {
         Some(f) => {
@@ -226,5 +226,5 @@ pub fn github_open<R: Runtime>(
         }
         None => crate::github::DEVICE_PATH.to_owned(),
     };
-    crate::github::open_web(&path).map_err(|e| fail("browser", format!("{e:#}")))
+    crate::github::open_web(&path).or_fail_chain("browser")
 }

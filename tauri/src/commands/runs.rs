@@ -6,7 +6,7 @@ use super::*;
 pub fn run_list<R: Runtime>(
     webview: Webview<R>,
     runner: State<'_, Arc<Runner>>,
-) -> Result<Vec<crate::projects::run::RunInfo>, String> {
+) -> CmdResult<Vec<crate::projects::run::RunInfo>> {
     ensure_main(&webview)?;
     Ok(runner.list())
 }
@@ -20,7 +20,7 @@ pub async fn run_start<R: Runtime>(
     runner: State<'_, Arc<Runner>>,
     project: String,
     action: String,
-) -> Result<crate::projects::run::RunInfo, String> {
+) -> CmdResult<crate::projects::run::RunInfo> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
@@ -28,21 +28,17 @@ pub async fn run_start<R: Runtime>(
     tauri::async_runtime::spawn_blocking(move || {
         let detected = crate::detect::detect(&dir, lang);
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
-            return Err(crate::i18n::t(
-                lang,
-                "Azione non trovata: premi Aggiorna",
-                &[],
-            ));
+            return Err(crate::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
         };
         let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
         runner
             .start(&project, &dir, a, &env, lang)
-            .map_err(|e| fail("run", format!("{e:#}")))
+            .or_fail_chain("run")
     })
     .await
-    .map_err(|e| fail("run", e))?
+    .or_fail("run")?
 }
 
 #[tauri::command]
@@ -50,7 +46,7 @@ pub fn run_stop<R: Runtime>(
     webview: Webview<R>,
     runner: State<'_, Arc<Runner>>,
     key: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     runner.stop(&key);
     Ok(())
@@ -61,7 +57,7 @@ pub fn run_log<R: Runtime>(
     webview: Webview<R>,
     runner: State<'_, Arc<Runner>>,
     key: String,
-) -> Result<Vec<String>, String> {
+) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
     Ok(runner.log(&key))
 }
@@ -71,7 +67,7 @@ pub fn run_clear<R: Runtime>(
     webview: Webview<R>,
     runner: State<'_, Arc<Runner>>,
     key: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     runner.clear(&key);
     Ok(())
@@ -82,7 +78,7 @@ pub fn run_clear<R: Runtime>(
 pub fn run_ports<R: Runtime>(
     webview: Webview<R>,
     runner: State<'_, Arc<Runner>>,
-) -> Result<crate::projects::run::Ports, String> {
+) -> CmdResult<crate::projects::run::Ports> {
     ensure_main(&webview)?;
     Ok(runner.ports())
 }
@@ -95,9 +91,7 @@ pub fn run_set_port<R: Runtime>(
     runner: State<'_, Arc<Runner>>,
     key: String,
     port: Option<u16>,
-) -> Result<crate::projects::run::Ports, String> {
+) -> CmdResult<crate::projects::run::Ports> {
     ensure_main(&webview)?;
-    runner
-        .set_port(&key, port, state.lang())
-        .map_err(|e| format!("{e:#}"))
+    Ok(runner.set_port(&key, port, state.lang())?)
 }

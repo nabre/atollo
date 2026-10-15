@@ -7,7 +7,7 @@ use super::*;
 pub fn editor_status<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<editor::Status, String> {
+) -> CmdResult<editor::Status> {
     ensure_main(&webview)?;
     Ok(state.editor.status())
 }
@@ -20,7 +20,7 @@ pub async fn editor_open<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     crate::projects::settings::opened(&state.kit, &project);
@@ -30,12 +30,10 @@ pub async fn editor_open<R: Runtime>(
     let lang = state.lang();
     let (port, token) = tauri::async_runtime::spawn_blocking(move || {
         ensure(&handle, &task, &kit, lang, &[])?;
-        editor
-            .ensure_running()
-            .map_err(|e| fail("editor start", format!("{e:#}")))
+        editor.ensure_running().or_fail_chain("editor start")
     })
     .await
-    .map_err(|e| fail("editor", e))??;
+    .or_fail("editor")??;
     let _ = app.emit_to(MAIN, "editor-status", state.editor.status());
     let url = editor::url(port, &token, Some(&dir));
     editor::window::open(
@@ -47,7 +45,7 @@ pub async fn editor_open<R: Runtime>(
         &state.kit.webview_data(),
         lang,
     )
-    .map_err(|e| fail("editor window", format!("{e:#}")))
+    .or_fail_chain("editor window")
 }
 
 #[tauri::command]
@@ -55,7 +53,7 @@ pub async fn editor_restart<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let editor = Arc::clone(&state.editor);
     tauri::async_runtime::spawn_blocking(move || {
@@ -63,8 +61,8 @@ pub async fn editor_restart<R: Runtime>(
         editor.ensure_running().map(|_| ())
     })
     .await
-    .map_err(|e| fail("editor", e))?
-    .map_err(|e| fail("editor restart", format!("{e:#}")))?;
+    .or_fail("editor")?
+    .or_fail_chain("editor restart")?;
     let _ = app.emit_to(MAIN, "editor-status", state.editor.status());
     Ok(())
 }
@@ -75,7 +73,7 @@ pub async fn terminal_open<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     crate::projects::settings::opened(&state.kit, &project);
@@ -83,11 +81,10 @@ pub async fn terminal_open<R: Runtime>(
     tauri::async_runtime::spawn_blocking(move || {
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &[])?);
-        terminal::open_console(&app, &kit, &env, &dir)
-            .map_err(|e| fail("terminal", format!("{e:#}")))
+        terminal::open_console(&app, &kit, &env, &dir).or_fail_chain("terminal")
     })
     .await
-    .map_err(|e| fail("terminal", e))?
+    .or_fail("terminal")?
 }
 
 /// The project's editor settings in its .vscode\settings.json (D-78).
@@ -96,7 +93,7 @@ pub fn project_editor_settings<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> Result<crate::projects::vscode::EditorSettingsView, String> {
+) -> CmdResult<crate::projects::vscode::EditorSettingsView> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     Ok(crate::projects::vscode::get(&dir))
@@ -108,11 +105,10 @@ pub fn project_editor_settings_set<R: Runtime>(
     state: State<'_, AppState>,
     project: String,
     settings: crate::projects::vscode::EditorSettings,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    crate::projects::vscode::set(&dir, &settings)
-        .map_err(|e| fail("editor settings", format!("{e:#}")))
+    crate::projects::vscode::set(&dir, &settings).or_fail_chain("editor settings")
 }
 
 /// The kit's matrix of editor extensions by language ("Linguaggi e strumenti").
@@ -120,7 +116,7 @@ pub fn project_editor_settings_set<R: Runtime>(
 pub fn extensions_matrix<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<crate::editor::ext::MatrixInfo, String> {
+) -> CmdResult<crate::editor::ext::MatrixInfo> {
     ensure_main(&webview)?;
     Ok(crate::editor::ext::matrix_info(&state.kit))
 }
@@ -135,7 +131,7 @@ pub async fn project_extensions<R: Runtime>(
     project: String,
     added: Vec<String>,
     removed: Vec<String>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
     let choice = crate::editor::ext::clean_choice(&added, &removed);
@@ -147,5 +143,5 @@ pub async fn project_extensions<R: Runtime>(
         editor.sync_extensions();
     })
     .await
-    .map_err(|e| fail("extensions", e))
+    .or_fail("extensions")
 }

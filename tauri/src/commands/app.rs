@@ -24,10 +24,7 @@ pub struct AppInfo {
 }
 
 #[tauri::command]
-pub fn app_info<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-) -> Result<AppInfo, String> {
+pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> CmdResult<AppInfo> {
     ensure_main(&webview)?;
     let kit = &state.kit;
     Ok(AppInfo {
@@ -84,7 +81,7 @@ pub fn folder_open<R: Runtime>(
     state: State<'_, AppState>,
     which: String,
     project: Option<String>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let dir = match which.as_str() {
         "agents" => state.kit.data().join("agents"),
@@ -95,26 +92,26 @@ pub fn folder_open<R: Runtime>(
             state.services.backup_dir(name)
         }
         "projects" => project_dir(&state.kit, project.as_deref(), state.lang())?,
-        _ => return Err(format!("unknown folder: {which}")),
+        _ => return Err(format!("unknown folder: {which}").into()),
     };
-    std::fs::create_dir_all(&dir).map_err(|e| fail("folder", e))?;
-    crate::os::jobs::open_with_explorer(&dir).map_err(|e| fail("explorer", format!("{e:#}")))
+    std::fs::create_dir_all(&dir).or_fail("folder")?;
+    crate::os::jobs::open_with_explorer(&dir).or_fail_chain("explorer")
 }
 
 /// Opens a local address (a project's server) in the PC's browser, outside
 /// the job: it stays open after the app.
 #[tauri::command]
-pub fn url_open<R: Runtime>(webview: Webview<R>, url: String) -> Result<(), String> {
+pub fn url_open<R: Runtime>(webview: Webview<R>, url: String) -> CmdResult<()> {
     ensure_main(&webview)?;
     if !is_local_url(&url) {
-        return Err(format!("not a local address: {url}"));
+        return Err(format!("not a local address: {url}").into());
     }
     open_in_browser(&url)
 }
 
 /// The PC's browser, through Explorer.
-pub(super) fn open_in_browser(url: &str) -> Result<(), String> {
-    crate::os::jobs::open_with_explorer(url).map_err(|e| fail("browser", format!("{e:#}")))
+pub(super) fn open_in_browser(url: &str) -> CmdResult<()> {
+    crate::os::jobs::open_with_explorer(url).or_fail_chain("browser")
 }
 
 /// `http://localhost:<port>/…` or `http://127.0.0.1:<port>/…` only.
@@ -146,7 +143,7 @@ pub struct SettingsView {
 pub fn settings_get<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<SettingsView, String> {
+) -> CmdResult<SettingsView> {
     ensure_main(&webview)?;
     let loaded = Settings::load(&state.kit);
     let mut settings = loaded.settings;
@@ -171,7 +168,7 @@ pub fn settings_set<R: Runtime>(
     state: State<'_, AppState>,
     mut settings: Settings,
     gemini: Option<String>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let kit = &state.kit;
     settings.gemini_api_key = match gemini {
@@ -195,11 +192,9 @@ pub fn settings_set<R: Runtime>(
             .filter(|s| !s.is_empty());
     }
     if let Err((source, arg)) = settings.validate() {
-        return Err(tr(&state, source, &[&arg]));
+        return Err(tr(&state, source, &[&arg]).into());
     }
-    settings
-        .save(kit)
-        .map_err(|e| fail("settings", format!("{e:#}")))?;
+    settings.save(kit).or_fail_chain("settings")?;
     let lang = apply_env(&state, settings);
     crate::log::info(&format!("settings saved, lang={lang}"));
     Ok(())
@@ -209,7 +204,7 @@ pub fn settings_set<R: Runtime>(
 pub fn update_status<R: Runtime>(
     webview: Webview<R>,
     updater: State<'_, Arc<Updater>>,
-) -> Result<crate::setup::self_update::Status, String> {
+) -> CmdResult<crate::setup::self_update::Status> {
     ensure_main(&webview)?;
     Ok(updater.status())
 }
@@ -221,17 +216,16 @@ pub async fn update_check<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     updater: State<'_, Arc<Updater>>,
-) -> Result<crate::setup::self_update::Status, String> {
+) -> CmdResult<crate::setup::self_update::Status> {
     ensure_main(&webview)?;
     let (kit, host, updater) = (state.kit.clone(), state.host.clone(), Arc::clone(&updater));
     tauri::async_runtime::spawn_blocking(move || {
         let settings = Settings::load(&kit).settings;
-        let net =
-            crate::net::Net::new(&settings, github_token(&host)).map_err(|e| format!("{e:#}"))?;
+        let net = crate::net::Net::new(&settings, github_token(&host))?;
         Ok(updater.check(&net))
     })
     .await
-    .map_err(|e| fail("update", e))?
+    .or_fail("update")?
 }
 
 /// Raises GitHub's API limit when the user has a token.

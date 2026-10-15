@@ -9,12 +9,12 @@ use super::*;
 pub async fn services_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<crate::db::services::ServiceInfo>, String> {
+) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || services.list())
         .await
-        .map_err(|e| fail("service", e))
+        .or_fail("service")
 }
 
 /// Starts a database server, installing it first if needed; waits until it
@@ -25,7 +25,7 @@ pub async fn service_start<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
-) -> Result<Vec<crate::db::services::ServiceInfo>, String> {
+) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     if !crate::db::services::SERVERS.contains(&id.as_str()) {
         return Err(fail("service", format!("unknown server {id}")));
@@ -40,16 +40,17 @@ pub async fn service_start<R: Runtime>(
         Ok(services.list())
     })
     .await
-    .map_err(|e| fail("service", e))?
+    .or_fail("service")?
 }
 
-pub(super) fn start_error(lang: &str, e: &anyhow::Error) -> String {
+pub(super) fn start_error(lang: &str, e: &anyhow::Error) -> CmdError {
     match e.downcast_ref::<crate::db::services::PortInUse>() {
         Some(p) => crate::i18n::t(
             lang,
             "La porta {0} è già usata da un altro programma: cambiala qui sotto.",
             &[&p.0.to_string()],
-        ),
+        )
+        .into(),
         None => fail("service", format!("{e:#}")),
     }
 }
@@ -59,7 +60,7 @@ pub async fn service_stop<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
-) -> Result<Vec<crate::db::services::ServiceInfo>, String> {
+) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
@@ -67,7 +68,7 @@ pub async fn service_stop<R: Runtime>(
         services.list()
     })
     .await
-    .map_err(|e| fail("service", e))
+    .or_fail("service")
 }
 
 /// Port (null: the default) and "start with Atollo" of a server; the port
@@ -80,17 +81,17 @@ pub async fn service_line<R: Runtime>(
     state: State<'_, AppState>,
     id: String,
     line: Option<String>,
-) -> Result<Vec<crate::db::services::ServiceInfo>, String> {
+) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         services
             .set_line(&id, line.as_deref())
-            .map_err(|e| fail("service", format!("{e:#}")))?;
+            .or_fail_chain("service")?;
         Ok(services.list())
     })
     .await
-    .map_err(|e| fail("service", e))?
+    .or_fail("service")?
 }
 
 #[tauri::command]
@@ -100,15 +101,15 @@ pub async fn service_set<R: Runtime>(
     id: String,
     port: Option<u16>,
     autostart: bool,
-) -> Result<Vec<crate::db::services::ServiceInfo>, String> {
+) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         services
             .set(&id, port, autostart)
-            .map_err(|e| fail("service", format!("{e:#}")))?;
+            .or_fail_chain("service")?;
         Ok(services.list())
     })
     .await
-    .map_err(|e| fail("service", e))?
+    .or_fail("service")?
 }

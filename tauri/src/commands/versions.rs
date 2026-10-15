@@ -8,7 +8,7 @@ use super::*;
 pub fn versions_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<crate::versions::Tool>, String> {
+) -> CmdResult<Vec<crate::versions::Tool>> {
     ensure_main(&webview)?;
     Ok(crate::versions::tools(&state.kit))
 }
@@ -20,7 +20,7 @@ pub async fn versions_available<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
-) -> Result<Vec<String>, String> {
+) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
     crate::versions::check(&id, None).map_err(|e| e.to_string())?;
     let (kit, env) = (state.kit.clone(), state.env());
@@ -32,7 +32,7 @@ pub async fn versions_available<R: Runtime>(
         // there is no token of the PC, as the installations do.
         let token = token.or_else(|| crate::github::token(&kit, &env));
         let net = crate::net::Net::new(&Settings::load(&kit).settings, token)
-            .map_err(|e| fail("versions", format!("{e:#}")))?
+            .or_fail_chain("versions")?
             .with_github_cache(kit.data().join("cache").join("github"));
         let cancel = std::sync::atomic::AtomicBool::new(false);
         let ctx = install::Ctx {
@@ -41,16 +41,14 @@ pub async fn versions_available<R: Runtime>(
             env: &env,
             cancel: &cancel,
         };
-        let lines = installer
-            .lines(&ctx, c)
-            .map_err(|e| fail("versions", format!("{e:#}")))?;
+        let lines = installer.lines(&ctx, c).or_fail_chain("versions")?;
         if let Err(e) = crate::versions::save_offered(&kit, &id, &lines) {
             crate::log::warn(&format!("versions of {id}: {e:#}"));
         }
         Ok(lines)
     })
     .await
-    .map_err(|e| fail("versions", e))?
+    .or_fail("versions")?
 }
 
 /// Downloads `line` of `id` next to the default folder, with the app's
@@ -62,7 +60,7 @@ pub fn versions_add<R: Runtime>(
     state: State<'_, AppState>,
     id: String,
     line: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
     download_line(app, &state, id, line)
@@ -73,12 +71,12 @@ pub(super) fn download_line<R: Runtime>(
     state: &AppState,
     id: String,
     line: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     let opts = Options {
         lines: vec![(id, line)],
         ..Options::default()
     };
-    state.setup.start(opts, false, setup_notify(app))
+    Ok(state.setup.start(opts, false, setup_notify(app))?)
 }
 
 /// A line chosen and not on disk is downloaded first (progress as
@@ -88,11 +86,9 @@ pub(super) fn download_chosen<R: Runtime>(
     state: &AppState,
     id: &str,
     line: Option<&str>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     let Some(line) = line else { return Ok(()) };
-    if crate::versions::to_download(&state.kit, id, line)
-        .map_err(|e| fail("versions", format!("{e:#}")))?
-    {
+    if crate::versions::to_download(&state.kit, id, line).or_fail_chain("versions")? {
         download_line(app, state, id.to_owned(), line.to_owned())?;
     }
     Ok(())
@@ -105,10 +101,10 @@ pub fn versions_remove<R: Runtime>(
     state: State<'_, AppState>,
     id: String,
     line: String,
-) -> Result<Vec<crate::versions::Tool>, String> {
+) -> CmdResult<Vec<crate::versions::Tool>> {
     ensure_main(&webview)?;
     if state.setup.snapshot().running {
-        return Err(tr(&state, "C'è già un'installazione in corso.", &[]));
+        return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
     }
     crate::versions::remove(&state.kit, &id, &line).map_err(|e| {
         if e.is::<crate::net::archive::InUse>() {
@@ -117,6 +113,7 @@ pub fn versions_remove<R: Runtime>(
                 "La versione {0} è in uso: chiudi i programmi che la usano e riprova.",
                 &[&line],
             )
+            .into()
         } else {
             fail("versions", format!("{e:#}"))
         }
@@ -145,7 +142,7 @@ pub fn project_versions<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> Result<ProjectVersions, String> {
+) -> CmdResult<ProjectVersions> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
     Ok(project_versions_of(&state.kit, &project))
@@ -161,12 +158,12 @@ pub fn project_versions_set<R: Runtime>(
     project: String,
     id: String,
     line: Option<String>,
-) -> Result<ProjectVersions, String> {
+) -> CmdResult<ProjectVersions> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
     download_chosen(app, &state, &id, line.as_deref())?;
     crate::versions::set_project_choice(&state.kit, &project, &id, line.as_deref())
-        .map_err(|e| fail("versions", format!("{e:#}")))?;
+        .or_fail_chain("versions")?;
     Ok(project_versions_of(&state.kit, &project))
 }
 
@@ -178,13 +175,12 @@ pub async fn relations_matrix<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     force: bool,
-) -> Result<crate::versions::relations::Matrix, String> {
+) -> CmdResult<crate::versions::relations::Matrix> {
     ensure_main(&webview)?;
     let (kit, lang) = (state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        crate::versions::relations::matrix(&kit, lang, force)
-            .map_err(|e| fail("relations", format!("{e:#}")))
+        crate::versions::relations::matrix(&kit, lang, force).or_fail_chain("relations")
     })
     .await
-    .map_err(|e| fail("relations", e))?
+    .or_fail("relations")?
 }
