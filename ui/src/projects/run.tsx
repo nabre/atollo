@@ -225,11 +225,6 @@ function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Po
   return (
     // Enter in the field submits its form: the port is saved.
     <form
-      title={
-        locked
-          ? t("Porta scelta da te")
-          : t("Porta automatica, la stessa a ogni avvio. Scrivi un numero per sceglierla.")
-      }
       onSubmit={(e) => {
         e.preventDefault();
         save();
@@ -238,6 +233,11 @@ function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Po
       <TextField
         label={t("Porta")}
         inputMode="numeric"
+        title={
+          locked
+            ? t("Porta scelta da te")
+            : t("Porta automatica, la stessa a ogni avvio. Scrivi un numero per sceglierla.")
+        }
         placeholder={t("automatica")}
         value={value}
         invalid={error !== null}

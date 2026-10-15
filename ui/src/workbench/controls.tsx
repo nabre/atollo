@@ -302,6 +302,7 @@ export function TextField({
   autoFocus = false,
   pattern,
   autoComplete,
+  title,
   onBlur,
   className = "",
   children,
@@ -324,6 +325,8 @@ export function TextField({
   pattern?: string | undefined;
   /** "off": no saved or suggested values (keys, tokens). */
   autoComplete?: "on" | "off" | undefined;
+  /** Tooltip, and the description of the inner input. */
+  title?: string | undefined;
   onBlur?: () => void;
   className?: string;
   /** Before or after the text, with slot="content-before" / "content-after". */
@@ -345,11 +348,13 @@ export function TextField({
       else input.removeAttribute("aria-invalid");
       if (inputMode) input.setAttribute("inputmode", inputMode);
       else input.removeAttribute("inputmode");
+      if (title) input.title = title;
+      else input.removeAttribute("title");
     });
     return () => {
       live = false;
     };
-  }, [ref, invalid, inputMode]);
+  }, [ref, invalid, inputMode, title]);
   return (
     <VscodeTextfield
       ref={ref}
@@ -366,6 +371,7 @@ export function TextField({
       invalid={invalid}
       pattern={pattern}
       autocomplete={autoComplete}
+      title={title}
       onInput={read}
       onChange={read}
       onBlur={onBlur && leaving(onBlur)}
@@ -616,6 +622,7 @@ export function Radio({
   checked,
   onSelect,
   disabled = false,
+  plain = false,
   children,
 }: {
   /** The group: radios with one name move with the arrows. */
@@ -623,6 +630,9 @@ export function Radio({
   checked: boolean;
   onSelect: () => void;
   disabled?: boolean;
+  /** Content with its own look (a card's name and description): not
+   * dimmed, its own line heights. */
+  plain?: boolean;
   children: ReactNode;
 }) {
   const id = useId();
@@ -643,7 +653,7 @@ export function Radio({
           className="pointer-events-none absolute top-[5px] left-[5px] hidden size-2 rounded-full bg-(--vscode-settings-checkboxForeground) peer-checked:block"
         />
       </span>
-      <label htmlFor={id} className="min-w-0 cursor-pointer leading-[18px] opacity-90">
+      <label htmlFor={id} className={`min-w-0 cursor-pointer ${plain ? "" : "leading-[18px] opacity-90"}`}>
         {children}
       </label>
     </span>
