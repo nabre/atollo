@@ -15,7 +15,12 @@ describe("workbench controls", () => {
       const [on, setOn] = useState(false);
       return (
         <>
-          <button type="button" onClick={() => setOn(true)}>
+          <button
+            type="button"
+            onClick={() => {
+              setOn(true);
+            }}
+          >
             mostra
           </button>
           {on && (
