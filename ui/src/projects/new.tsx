@@ -73,8 +73,10 @@ export function CloneProject({ onDone }: { onDone: (name: string) => void }) {
         <TextField label={nameLabel} value={name} onChange={setName} className="w-full" />
       </label>
       <Button wide submit disabled={source === ""} busy={busy === "clone"}>
-        <VscCloudDownload size={14} aria-hidden="true" />
-        {t("Clona")}
+        <span className="inline-flex items-center gap-1">
+          <VscCloudDownload size={14} aria-hidden="true" />
+          {t("Clona")}
+        </span>
       </Button>
       <ErrorLine error={error} />
     </form>
