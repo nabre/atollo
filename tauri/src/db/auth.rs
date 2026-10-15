@@ -2,8 +2,9 @@
 //! MongoDB's `admin` and one user per project and database, each with a
 //! random password.
 //!
-//! - kept in `data\app\db\secrets.json`, readable by the owner only where
-//!   the disk has permissions (NTFS; FAT32/exFAT sticks have none);
+//! - the administrators' in `data\app\db\secrets.json`, a project's in
+//!   `data\projects\<project>\private\db.json` (D-89), readable by the owner
+//!   only where the disk has permissions (NTFS; FAT32/exFAT sticks have none);
 //! - `data\app\db\my.ini` holds the `[client]` login of `root`: the kit's
 //!   `MYSQL_HOME` points there, so `mariadb` in the kit's terminal and the
 //!   app's own tools log in without a password on the command line;
@@ -21,7 +22,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
+use crate::projects::state::ProjectState;
 
+/// The administrators' passwords. The projects' are in their own `db.json`;
+/// keys this version does not know stay as they are, the `projects` of an
+/// older kit included (moved to the projects' files by the migration).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Secrets {
@@ -29,9 +34,8 @@ pub struct Secrets {
     pub mariadb_root: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mongodb_admin: Option<String>,
-    /// project → engine (`mariadb`, `mongodb`) → password of its user.
-    #[serde(default)]
-    pub projects: BTreeMap<String, BTreeMap<String, String>>,
+    #[serde(flatten)]
+    pub other: BTreeMap<String, serde_json::Value>,
 }
 
 pub fn dir(kit: &Kit) -> PathBuf {
@@ -63,6 +67,12 @@ fn write_private(path: &Path, text: &str) -> Result<()> {
             crate::log::warn(&format!("{}: permissions: {e:#}", parent.display()));
         }
     }
+    write_in_private(path, text)
+}
+
+/// The atomic write and the file's own DACL, in a folder already private
+/// (`ProjectState::private_dir` sets its DACL before returning it).
+fn write_in_private(path: &Path, text: &str) -> Result<()> {
     write_atomic(path, text.as_bytes())?;
     if let Err(e) = crate::editor::restrict_to_owner(path) {
         crate::log::warn(&format!("{}: permissions: {e:#}", path.display()));
@@ -77,6 +87,79 @@ pub fn write_private_text(path: &Path, text: &str) -> Result<()> {
 
 pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
     write_private(&secrets_path(kit), &serde_json::to_string_pretty(secrets)?)
+}
+
+/// A project's `private\db.json`: engine (`mariadb`, `mongodb`) → password
+/// of its user; other keys kept as they are.
+type ProjectSecrets = BTreeMap<String, serde_json::Value>;
+
+/// The project's `db.json`, its folder made private first.
+fn project_file(kit: &Kit, project: &str) -> Result<PathBuf> {
+    let Some(state) = ProjectState::of(kit, project) else {
+        bail!("not a project name: {project}");
+    };
+    Ok(state.db_file()?)
+}
+
+/// `None` for a missing file; an error for one that cannot be read, so it
+/// is never overwritten and its passwords lost.
+fn read_project(path: &Path) -> Result<Option<ProjectSecrets>> {
+    if crate::os::safe_path::is_link(path) {
+        bail!("{}: a link, left alone", path.display());
+    }
+    match fs::read_to_string(path) {
+        // serde_json's errors name a position, never the text read.
+        Ok(text) => Ok(Some(serde_json::from_str(&text).map_err(|e| {
+            anyhow::anyhow!("{}: not valid JSON ({e})", path.display())
+        })?)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e.into()),
+    }
+}
+
+fn passwords(secrets: &ProjectSecrets) -> BTreeMap<String, String> {
+    secrets
+        .iter()
+        .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_owned())))
+        .collect()
+}
+
+/// The passwords of the project's users, by engine (empty when none).
+pub fn project_passwords(kit: &Kit, project: &str) -> BTreeMap<String, String> {
+    let read = project_file(kit, project).and_then(|path| read_project(&path));
+    match read {
+        Ok(secrets) => passwords(&secrets.unwrap_or_default()),
+        Err(e) => {
+            crate::log::warn(&format!("{project}: passwords: {e:#}"));
+            BTreeMap::new()
+        }
+    }
+}
+
+/// The password of the project's user on `engine`, once created.
+pub fn project_password(kit: &Kit, project: &str, engine: &str) -> Option<String> {
+    project_passwords(kit, project).remove(engine)
+}
+
+/// Stores the password of the project's user on `engine`.
+pub fn set_project_password(kit: &Kit, project: &str, engine: &str, password: &str) -> Result<()> {
+    let path = project_file(kit, project)?;
+    let mut secrets = read_project(&path)?.unwrap_or_default();
+    secrets.insert(engine.to_owned(), password.into());
+    write_in_private(&path, &serde_json::to_string_pretty(&secrets)?)
+}
+
+/// Removes the project's `db.json` and returns its passwords by engine, so
+/// the users can be dropped from the servers (PLAN-DATA.md WP-5).
+// Used by WP-5 (deleting a project with its databases), wave 2.
+#[allow(dead_code)]
+pub fn drop_project(kit: &Kit, project: &str) -> Result<BTreeMap<String, String>> {
+    let path = project_file(kit, project)?;
+    let Some(secrets) = read_project(&path)? else {
+        return Ok(BTreeMap::new());
+    };
+    fs::remove_file(&path)?;
+    Ok(passwords(&secrets))
 }
 
 /// 32 hex characters: nothing to escape in SQL, ini files or URLs.
@@ -323,7 +406,7 @@ pub fn env_set(project_dir: &Path, wanted: &[(String, String)]) -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     #[test]
@@ -392,10 +475,6 @@ mod tests {
         let mut s = load(&kit);
         assert_eq!(s, Secrets::default());
         s.mariadb_root = Some(new_password().unwrap());
-        s.projects
-            .entry("shop".into())
-            .or_default()
-            .insert("mariadb".into(), "x".into());
         save(&kit, &s).unwrap();
         assert_eq!(load(&kit), s);
         assert_eq!(s.mariadb_root.as_ref().unwrap().len(), 32);
@@ -413,5 +492,135 @@ mod tests {
         assert!(fs::read_to_string(p.join(".env"))
             .unwrap()
             .contains("DB_PASSWORD=z"));
+    }
+
+    /// The DACL of `path` as SDDL text (`D:P(A;;FA;;;OW)`).
+    pub(crate) fn dacl(path: &Path) -> String {
+        use windows::core::{HSTRING, PWSTR};
+        use windows::Win32::Foundation::{LocalFree, HLOCAL};
+        use windows::Win32::Security::Authorization::{
+            ConvertSecurityDescriptorToStringSecurityDescriptorW, SDDL_REVISION_1,
+        };
+        use windows::Win32::Security::{
+            GetFileSecurityW, DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR,
+        };
+        let file = HSTRING::from(path.as_os_str());
+        let mut needed = 0u32;
+        // SAFETY: a size query, no buffer; fails with the size needed.
+        let _ =
+            unsafe { GetFileSecurityW(&file, DACL_SECURITY_INFORMATION.0, None, 0, &mut needed) };
+        assert!(needed > 0, "{}: no security descriptor", path.display());
+        let mut buf = vec![0u8; needed as usize];
+        let sd = PSECURITY_DESCRIPTOR(buf.as_mut_ptr().cast());
+        let mut text = PWSTR::null();
+        // SAFETY: `buf` is `needed` bytes and outlives `sd`; `text` is
+        // LocalAlloc'd by the conversion and freed once below.
+        unsafe {
+            GetFileSecurityW(
+                &file,
+                DACL_SECURITY_INFORMATION.0,
+                Some(sd),
+                needed,
+                &mut needed,
+            )
+            .ok()
+            .unwrap();
+            ConvertSecurityDescriptorToStringSecurityDescriptorW(
+                sd,
+                SDDL_REVISION_1,
+                DACL_SECURITY_INFORMATION,
+                &mut text,
+                None,
+            )
+            .unwrap();
+            let s = text.to_string().unwrap();
+            LocalFree(Some(HLOCAL(text.0.cast())));
+            s
+        }
+    }
+
+    /// One entry, for the owner, nobody else (the test folder is on NTFS).
+    pub(crate) fn assert_owner_only(path: &Path) {
+        let sddl = dacl(path);
+        assert_eq!(sddl.matches("(A;").count(), 1, "{}: {sddl}", path.display());
+        assert!(sddl.ends_with(";FA;;;OW)"), "{}: {sddl}", path.display());
+    }
+
+    #[test]
+    fn project_passwords_in_private_folder() {
+        let tmp = crate::kit::tests::TempDir::new("db-auth-project");
+        let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+        kit.prepare().unwrap();
+        assert_eq!(project_password(&kit, "shop", "mariadb"), None);
+        assert!(set_project_password(&kit, "..", "mariadb", "x").is_err());
+        assert!(project_passwords(&kit, r"..\x").is_empty());
+
+        // private\ is owner-only before db.json exists: a file created in it
+        // by anyone (here a plain write) inherits that DACL.
+        let state = ProjectState::of(&kit, "shop").unwrap();
+        let private = state.private_dir().unwrap();
+        assert!(!private.join("db.json").exists());
+        let sddl = dacl(&private);
+        assert!(sddl.starts_with("D:P") && sddl.contains("OICI"), "{sddl}");
+        assert_owner_only(&private);
+        fs::write(private.join("probe"), "").unwrap();
+        assert_owner_only(&private.join("probe"));
+        fs::remove_file(private.join("probe")).unwrap();
+
+        let pw = new_password().unwrap();
+        set_project_password(&kit, "shop", "mariadb", &pw).unwrap();
+        set_project_password(&kit, "shop", "mongodb", "m1").unwrap();
+        let file = tmp.0.join(r"data\projects\shop\private\db.json");
+        assert_owner_only(&file);
+        assert_eq!(project_password(&kit, "shop", "mariadb"), Some(pw.clone()));
+        assert_eq!(project_password(&kit, "other", "mariadb"), None);
+
+        // keys of a newer version stay; a file that is not JSON is never
+        // overwritten
+        let mut json: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&file).unwrap()).unwrap();
+        json["future"] = serde_json::json!({ "a": 1 });
+        fs::write(&file, json.to_string()).unwrap();
+        set_project_password(&kit, "shop", "mongodb", "m2").unwrap();
+        let text = fs::read_to_string(&file).unwrap();
+        assert!(
+            text.contains("\"future\"") && text.contains("\"m2\""),
+            "{text}"
+        );
+        let projects = project_passwords(&kit, "shop");
+        assert_eq!(projects.len(), 2, "only the passwords: {projects:?}");
+
+        // secrets.json keeps the administrators and an old `projects`
+        // untouched (for the migration), never the new passwords
+        let old = r#"{"mariadbRoot":"r1","projects":{"old":{"mariadb":"o1"}}}"#;
+        fs::create_dir_all(dir(&kit)).unwrap();
+        fs::write(secrets_path(&kit), old).unwrap();
+        let mut s = load(&kit);
+        assert_eq!(s.mariadb_root.as_deref(), Some("r1"));
+        s.mongodb_admin = Some("a1".into());
+        save(&kit, &s).unwrap();
+        let saved: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(secrets_path(&kit)).unwrap()).unwrap();
+        assert_eq!(
+            saved["projects"],
+            serde_json::json!({ "old": { "mariadb": "o1" } })
+        );
+        assert_eq!(saved["mongodbAdmin"], "a1");
+        let text = saved.to_string();
+        assert!(!text.contains(&pw) && !text.contains("m2"), "{text}");
+
+        // dropped: the passwords come back once, the file goes
+        let dropped = drop_project(&kit, "shop").unwrap();
+        assert_eq!(dropped.get("mariadb"), Some(&pw));
+        assert_eq!(dropped.get("mongodb").map(String::as_str), Some("m2"));
+        assert_eq!(dropped.len(), 2);
+        assert!(!file.exists());
+        assert!(drop_project(&kit, "shop").unwrap().is_empty());
+        assert_eq!(project_password(&kit, "shop", "mariadb"), None);
+
+        fs::write(&file, "{ not json").unwrap();
+        assert!(set_project_password(&kit, "shop", "mariadb", "x").is_err());
+        assert!(drop_project(&kit, "shop").is_err());
+        assert_eq!(fs::read_to_string(&file).unwrap(), "{ not json");
     }
 }

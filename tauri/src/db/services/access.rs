@@ -78,16 +78,10 @@ impl Services {
 
     /// The project's databases already created, at the servers' ports.
     pub fn project_dbs(&self, project: &str) -> Vec<auth::ProjectDb> {
-        auth::load(&self.kit)
-            .projects
-            .get(project)
-            .map(|engines| {
-                engines
-                    .iter()
-                    .map(|(engine, pw)| auth::project_db(engine, project, pw, self.port(engine)))
-                    .collect()
-            })
-            .unwrap_or_default()
+        auth::project_passwords(&self.kit, project)
+            .iter()
+            .map(|(engine, pw)| auth::project_db(engine, project, pw, self.port(engine)))
+            .collect()
     }
 
     /// Creates (or repairs) the project's database and user on a running
@@ -103,17 +97,15 @@ impl Services {
                 None => bail!("{engine} is not running"),
             }
         };
-        let mut secrets = auth::load(&self.kit);
-        let password = match secrets.projects.get(project).and_then(|e| e.get(engine)) {
-            Some(p) => p.clone(),
+        let password = match auth::project_password(&self.kit, project, engine) {
+            Some(p) => p,
             None => auth::new_password()?,
         };
         let name = auth::db_name(project);
         match engine {
             "mongodb" => {
-                let admin = secrets
+                let admin = auth::load(&self.kit)
                     .mongodb_admin
-                    .clone()
                     .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
                 let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), &env);
                 cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
@@ -133,12 +125,7 @@ impl Services {
                 )?;
             }
         }
-        secrets
-            .projects
-            .entry(project.to_owned())
-            .or_default()
-            .insert(engine.to_owned(), password.clone());
-        auth::save(&self.kit, &secrets)?;
+        auth::set_project_password(&self.kit, project, engine, &password)?;
         Ok(auth::project_db(engine, project, &password, port))
     }
 }
