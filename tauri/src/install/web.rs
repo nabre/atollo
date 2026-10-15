@@ -387,9 +387,7 @@ impl Installer for Php {
     }
 
     fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
-        let mut out = php_lines(
-            &ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?,
-        );
+        let mut out = php_lines(&ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?);
         for (line, _, _, _) in PHP_ARCHIVES {
             if !out.iter().any(|l| l == line) {
                 out.push((*line).to_owned());

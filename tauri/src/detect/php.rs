@@ -52,8 +52,8 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
         } else {
             root.to_owned()
         };
-        let has_htaccess = exists(dir, ".htaccess")
-            || (root != "." && exists(dir, &format!(r"{root}\.htaccess")));
+        let has_htaccess =
+            exists(dir, ".htaccess") || (root != "." && exists(dir, &format!(r"{root}\.htaccess")));
         let has_nginx = exists(dir, "nginx.conf")
             || (root != "." && exists(dir, &format!(r"{root}\nginx.conf")));
         if has_htaccess || is_wp {
@@ -121,7 +121,10 @@ mod tests {
 
         let ht = project(
             "php-apache",
-            &[("public/index.php", "<?php"), ("public/.htaccess", "RewriteEngine On")],
+            &[
+                ("public/index.php", "<?php"),
+                ("public/.htaccess", "RewriteEngine On"),
+            ],
         );
         let p = detect(&ht.0, "it");
         assert_eq!(p.default.as_deref(), Some("apache"));

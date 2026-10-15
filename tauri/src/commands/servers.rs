@@ -61,7 +61,9 @@ pub async fn server_start<R: Runtime>(
             wanted.push("php");
         }
         let env = ensure(&app, &task, &kit, lang, &wanted)?;
-        servers.start(&id, &env, lang).map_err(|e| CmdError::from(e.to_string()))
+        servers
+            .start(&id, &env, lang)
+            .map_err(|e| CmdError::from(e.to_string()))
     })
     .await
     .or_fail("servers")?
