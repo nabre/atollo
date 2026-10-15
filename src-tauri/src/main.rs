@@ -431,7 +431,9 @@ fn version_lines(kit: &Kit, kit_env: &KitEnv, settings: &Settings, host: &Host, 
             env: kit_env,
             cancel: &cancel,
         };
-        installer.lines(&ctx, c)
+        let lines = installer.lines(&ctx, c)?;
+        let _ = versions::save_offered(kit, id, &lines);
+        Ok(lines)
     })();
     match result {
         Ok(lines) => {

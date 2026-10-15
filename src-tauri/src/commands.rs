@@ -538,7 +538,8 @@ pub fn versions_list<R: Runtime>(
     Ok(crate::versions::tools(&state.kit))
 }
 
-/// The lines of `id` that can be downloaded (asks its source).
+/// The lines of `id` that can be downloaded (asks its source); kept for the
+/// lists (`versions_list`).
 #[tauri::command]
 pub async fn versions_available<R: Runtime>(
     webview: Webview<R>,
@@ -560,9 +561,13 @@ pub async fn versions_available<R: Runtime>(
             env: &env,
             cancel: &cancel,
         };
-        installer
+        let lines = installer
             .lines(&ctx, c)
-            .map_err(|e| fail("versions", format!("{e:#}")))
+            .map_err(|e| fail("versions", format!("{e:#}")))?;
+        if let Err(e) = crate::versions::save_offered(&kit, &id, &lines) {
+            crate::log::warn(&format!("versions of {id}: {e:#}"));
+        }
+        Ok(lines)
     })
     .await
     .map_err(|e| fail("versions", e))?
@@ -580,11 +585,37 @@ pub fn versions_add<R: Runtime>(
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
+    download_line(app, &state, id, line)
+}
+
+fn download_line<R: Runtime>(
+    app: AppHandle<R>,
+    state: &AppState,
+    id: String,
+    line: String,
+) -> Result<(), String> {
     let opts = Options {
         lines: vec![(id, line)],
         ..Options::default()
     };
     state.setup.start(opts, false, setup_notify(app))
+}
+
+/// A line chosen and not on disk is downloaded first (progress as
+/// `setup`); until then the default folder is used.
+fn download_chosen<R: Runtime>(
+    app: AppHandle<R>,
+    state: &AppState,
+    id: &str,
+    line: Option<&str>,
+) -> Result<(), String> {
+    let Some(line) = line else { return Ok(()) };
+    if crate::versions::to_download(&state.kit, id, line)
+        .map_err(|e| fail("versions", format!("{e:#}")))?
+    {
+        download_line(app, state, id.to_owned(), line.to_owned())?;
+    }
+    Ok(())
 }
 
 /// Removes a saved line (the default folder goes with the component).
@@ -614,16 +645,19 @@ pub fn versions_remove<R: Runtime>(
     Ok(crate::versions::tools(&state.kit))
 }
 
-/// The line of `id` the kit uses (`None`: the default folder). Consoles,
-/// actions and agents opened from now on use it; the editor after a restart.
+/// The line of `id` the kit uses (`None`: the default folder), downloaded
+/// when it is not on disk. Consoles, actions and agents opened from now on
+/// use it; the editor after a restart.
 #[tauri::command]
 pub fn versions_prefer<R: Runtime>(
+    app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
     line: Option<String>,
 ) -> Result<Vec<crate::versions::Tool>, String> {
     ensure_main(&webview)?;
+    download_chosen(app, &state, &id, line.as_deref())?;
     crate::versions::set_kit_choice(&state.kit, &id, line.as_deref())
         .map_err(|e| fail("versions", format!("{e:#}")))?;
     apply_env(&state, Settings::load(&state.kit).settings);
@@ -656,9 +690,11 @@ pub fn project_versions<R: Runtime>(
     Ok(project_versions_of(&state.kit, &project))
 }
 
-/// The line of `id` for the project (`None`: the kit's).
+/// The line of `id` for the project (`None`: the kit's), downloaded when it
+/// is not on disk.
 #[tauri::command]
 pub fn project_versions_set<R: Runtime>(
+    app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
@@ -667,6 +703,7 @@ pub fn project_versions_set<R: Runtime>(
 ) -> Result<ProjectVersions, String> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
+    download_chosen(app, &state, &id, line.as_deref())?;
     crate::versions::set_project_choice(&state.kit, &project, &id, line.as_deref())
         .map_err(|e| fail("versions", format!("{e:#}")))?;
     Ok(project_versions_of(&state.kit, &project))
