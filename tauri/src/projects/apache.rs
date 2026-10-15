@@ -1,4 +1,3 @@
-//! A project's own Apache (user request, 14/10/2026): the kit's httpd with a
 //! configuration of the project, written again at every start in
 //! `data\app\projects\<project>\apache\` (never in the project, which holds
 //! no path of the kit): the action's port, the folder as DocumentRoot with
@@ -19,6 +18,7 @@ use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::os::jobs;
+use crate::projects::alias::{self, valid_domain, SiteAlias};
 
 /// `C:\a\b` as Apache wants it: `C:/a/b`.
 pub fn fwd(p: &Path) -> String {
@@ -84,39 +84,13 @@ pub fn php_module_blocks(php_var: &str) -> Vec<String> {
     out
 }
 
-/// Resolves a portable relative alias target (`storage/media` or `../other/assets`)
-/// to an Apache configuration path using `${CP_PROJECT_FWD}` or `${CP_PROJECTS_FWD}`.
-pub fn alias_target_expr(project_var: &str, rel_target: &str) -> String {
-    let clean = rel_target.replace('\\', "/");
-    let clean = clean.trim_matches('/');
-    if let Some(rest) = clean.strip_prefix("../") {
-        let rest = rest.trim_matches('/');
-        if rest.is_empty() {
-            "${CP_PROJECTS_FWD}".to_owned()
-        } else {
-            format!("${{CP_PROJECTS_FWD}}/{rest}")
-        }
-    } else if clean.is_empty() {
-        format!("${{{project_var}}}")
-    } else {
-        format!("${{{project_var}}}/{clean}")
-    }
-}
-
-/// Directives (`Alias` + `<Directory>`) for portable path aliases.
-pub fn alias_directives(
-    project_var: &str,
-    aliases: &BTreeMap<String, String>,
-    indent: &str,
-) -> Vec<String> {
+/// Directives (`Alias` + `<Directory>`) for checked path aliases; `own` is
+/// the expression of the project's folder (`${CP_PROJECT_FWD}`).
+pub fn alias_directives(own: &str, aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     let mut lines = Vec::new();
-    for (url_path, rel_target) in aliases {
-        let url_clean = url_path.trim_end_matches('/');
-        if url_clean.is_empty() || !url_clean.starts_with('/') {
-            continue;
-        }
-        let target = alias_target_expr(project_var, rel_target);
-        lines.push(format!("{indent}Alias \"{url_clean}\" \"{target}\""));
+    for alias in aliases {
+        let target = alias.apache_path(own);
+        lines.push(format!("{indent}Alias \"{}\" \"{target}\"", alias.url));
         lines.push(format!("{indent}<Directory \"{target}\">"));
         lines.push(format!("{indent}    Options Indexes FollowSymLinks"));
         lines.push(format!("{indent}    AllowOverride All"));
@@ -142,7 +116,7 @@ pub fn strip_kit_tail(base: &str) -> Result<String> {
 /// without its Dev-Kit tail, then the project's site.
 #[cfg(test)]
 pub fn project_conf(base: &str, root: &Path, dir: &Path, port: u16, lan: bool) -> Result<String> {
-    project_conf_with_site(base, None, root, dir, port, lan, &[], &BTreeMap::new())
+    project_conf_with_site(base, None, root, dir, port, lan, &[], &[])
 }
 
 /// Like [`project_conf`], with optional project id (`.localhost` alias),
@@ -156,7 +130,7 @@ pub fn project_conf_with_site(
     port: u16,
     lan: bool,
     domains: &[String],
-    aliases: &BTreeMap<String, String>,
+    aliases: &[SiteAlias],
 ) -> Result<String> {
     let kit_part = strip_kit_tail(base)?;
     let (root, dir) = (fwd(root), fwd(dir));
@@ -174,7 +148,7 @@ pub fn project_conf_with_site(
     }
     for d in domains {
         let d = d.trim().to_ascii_lowercase();
-        if !d.is_empty() && !server_aliases.contains(&d) {
+        if valid_domain(&d) && !server_aliases.contains(&d) {
             server_aliases.push(d);
         }
     }
@@ -200,7 +174,7 @@ pub fn project_conf_with_site(
         "    Require all granted".to_owned(),
         "</Directory>".to_owned(),
     ]);
-    site.extend(alias_directives("CP_PROJECT_FWD", aliases, ""));
+    site.extend(alias_directives("${CP_PROJECT_FWD}", aliases, ""));
     site.push("DirectoryIndex index.php index.html".to_owned());
     site.extend(php_module_blocks("CP_PHP_FWD"));
     site.push(format!("IncludeOptional \"{dir}/conf.d/*.conf\""));
@@ -262,7 +236,7 @@ pub fn command(
             port,
             lan,
             domains,
-            aliases,
+            &alias::resolve(project_root, &kit.projects(), aliases),
         )?
         .as_bytes(),
     )?;
@@ -301,9 +275,15 @@ mod tests {
         assert!(lan.contains("Listen 7105\r\n"));
         assert!(project_conf("Listen 80", root, dir, 7105, false).is_err());
 
+        let tmp = crate::kit::tests::TempDir::new("apache-alias");
+        let projects = tmp.0.join("projects");
+        fs::create_dir_all(projects.join(r"shop\storage\media")).unwrap();
+        fs::create_dir_all(projects.join(r"common\assets")).unwrap();
         let mut aliases = BTreeMap::new();
         aliases.insert("/media".into(), "storage/media".into());
-        aliases.insert("/shared".into(), "../common/assets".into());
+        aliases.insert("/shared".into(), "@common/assets".into());
+        aliases.insert("/up".into(), "../common/assets".into());
+        let aliases = alias::resolve(&projects.join("shop"), &projects, &aliases);
         let with_site = project_conf_with_site(
             base,
             Some("shop"),
@@ -311,12 +291,13 @@ mod tests {
             dir,
             7105,
             false,
-            &["api.shop.localhost".into()],
+            &["api.shop.localhost".into(), "bad\"domain.localhost".into()],
             &aliases,
         )
         .unwrap();
         assert!(with_site.contains("ServerAlias shop.localhost api.shop.localhost\r\n"));
         assert!(with_site.contains("Alias \"/media\" \"${CP_PROJECT_FWD}/storage/media\""));
         assert!(with_site.contains("Alias \"/shared\" \"${CP_PROJECTS_FWD}/common/assets\""));
+        assert!(!with_site.contains("/up") && !with_site.contains(".."));
     }
 }
