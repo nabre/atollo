@@ -140,7 +140,7 @@ function DiskLines({
  * only a label and a keybinding, not the groups and tags these show. */
 const MENU =
   "absolute top-full right-0 z-20 mt-1 rounded-[5px] border border-vsc-menu-border bg-vsc-menu py-1 text-vsc-menu-fg shadow-[0_2px_8px_var(--vsc-shadow)]";
-const MENU_ITEM = "mx-1 flex h-[2em] items-center gap-2 rounded-[3px] px-2 text-[12px]";
+const MENU_ITEM = "mx-1 flex h-[2em] items-center gap-2 rounded-[3px] px-2 text-[12px] whitespace-nowrap";
 
 /** "locked": a version some projects use, so it cannot go; its small menu
  * lists them. The counterpart of the bin. A native button, drawn as a
