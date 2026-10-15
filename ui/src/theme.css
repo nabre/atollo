@@ -18,10 +18,10 @@
 
 :root {
   color-scheme: light dark;
-  /* VSCodium's fonts on Windows, so sizes match the editor's; Inter only
-     for the brand's display text (.font-brand). */
-  --vsc-font: "Segoe WPC", "Segoe UI", sans-serif;
-  --vsc-mono: Consolas, "Courier New", monospace;
+  /* VSCodium's fonts on Windows (theme-vscode.css), so sizes match the
+     editor's; Inter only for the brand's display text (.font-brand). */
+  --vsc-font: var(--vscode-font-family);
+  --vsc-mono: var(--vscode-editor-font-family);
   --brand-font: "Inter Variable", "Segoe UI", sans-serif;
   --brand-forest: #0f3d2e;
   --brand-emerald: #10b981;
@@ -32,8 +32,11 @@
   --brand-cloud: #f8fafc;
 }
 
-/* The colors of VSCodium's Dark Modern and Light Modern, key by key, with
-   the brand emphasis (generated: docs/brand/themes.py). */
+/* The colors of VSCodium's Dark Modern and Light Modern with the brand
+   emphasis, as the --vscode-* variables of a webview (read by the
+   vscode-elements components) and the app's --vsc-* aliases of them
+   (generated: docs/brand/themes.py). */
+@import "./theme-vscode.css";
 @import "./theme-colors.css";
 
 /* The brand covers (docs/brand/make.py). */
@@ -72,7 +75,7 @@ body {
   background: var(--vsc-activitybar);
   color: var(--vsc-fg);
   font-family: var(--vsc-font);
-  font-size: 13px;
+  font-size: var(--vscode-font-size);
   line-height: 1.4;
   user-select: none;
 }
