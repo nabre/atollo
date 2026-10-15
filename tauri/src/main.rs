@@ -223,6 +223,10 @@ fn run() -> i32 {
         }
     };
 
+    // Leftovers of files in transit (D-90): only here, as the one app of the
+    // kit (D-08); a command line run would race the open app's programs.
+    os::temp::sweep(&kit);
+
     // WebView2 lookup sets a variable for the fixed runtime: still single-threaded here.
     let runtime = os::webview::locate(&kit);
     let Some(runtime) = runtime else {
@@ -284,6 +288,9 @@ fn run() -> i32 {
         .map(|app| {
             app.run(move |_, event| {
                 if let tauri::RunEvent::Exit = event {
+                    // The programs' temp left on the PC goes (D-90); what a
+                    // program still holds is removed by the next sweep.
+                    os::temp::cleanup_at_exit(&update_kit);
                     match setup::self_update::apply_staged(&update_kit, &update_exe) {
                         Ok(true) => log::info("update applied"),
                         Ok(false) => {}
