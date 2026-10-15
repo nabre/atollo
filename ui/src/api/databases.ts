@@ -1,5 +1,5 @@
-// Databases of a project (tauri/src/db_auth.rs, D-74), their backups, and
-// what is inside a running server, read only (db_browse.rs, D-79).
+// Databases of a project (tauri/src/db/auth.rs, D-74), their backups, and
+// what is inside a running server, read only (db/browse.rs, D-79).
 // Rust: tauri/src/commands/databases.rs.
 
 import { invoke } from "@tauri-apps/api/core";

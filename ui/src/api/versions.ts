@@ -9,7 +9,7 @@ export interface VersionLine {
   version: string | null;
 }
 
-/** A language or tool whose versions can be kept side by side (versions.rs). */
+/** A language or tool whose versions can be kept side by side (versions/). */
 export interface VersionedTool {
   id: string;
   name: string;
@@ -108,7 +108,7 @@ export function projectVersions(project: string): Promise<ProjectVersions> {
 
 /** The line of `id` for the project; null = the kit's. One not on disk is
  * downloaded (progress as `setup` events). */
-/** A relation of the matrix (relations.rs, D-81): `from` needs or uses
+/** A relation of the matrix (versions/relations/, D-81): `from` needs or uses
  * `to`, at the versions `range`; parts are `component/part`. */
 export interface RelationLink {
   from: string;

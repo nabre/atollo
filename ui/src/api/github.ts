@@ -1,4 +1,4 @@
-// The kit's GitHub account (tauri/src/github.rs): one sign-in for this
+// The kit's GitHub account (tauri/src/github/): one sign-in for this
 // page, the kit's Git (editor, consoles, agents) and GitHub CLI.
 // Rust: tauri/src/commands/github.rs.
 

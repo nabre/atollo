@@ -1,4 +1,4 @@
-// Projects (tauri/src/projects.rs): list, creation, clone, status, actions
+// Projects (tauri/src/projects/): list, creation, clone, status, actions
 // (panel.json), site and MCP servers. Rust: tauri/src/commands/projects.rs.
 
 import { act, query } from "./core";
@@ -46,7 +46,7 @@ export interface ProjectInfo {
   extensions: ProjectExtension[];
 }
 
-/** An editor extension of a project (tauri/src/editor_ext.rs). */
+/** An editor extension of a project (tauri/src/editor/ext.rs). */
 export interface ProjectExtension {
   /** `publisher.name`, lower case. */
   id: string;

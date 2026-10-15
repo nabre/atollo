@@ -83,7 +83,7 @@ export function RefreshLines({
 
 /** What happens to a chosen line not on disk: its download, its failure, or
  * a link to download it; until then the default folder (`fallback`) is used,
- * as versions.rs does. */
+ * as versions/mod.rs does. */
 export function LineState({
   tool,
   line,

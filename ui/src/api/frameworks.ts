@@ -1,4 +1,4 @@
-// Frameworks of the new-project wizard (frameworks.rs, D-83).
+// Frameworks of the new-project wizard (projects/frameworks/, D-83).
 // Rust: tauri/src/commands/frameworks.rs.
 
 import { invoke } from "@tauri-apps/api/core";
