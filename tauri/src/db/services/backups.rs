@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use std::time::Duration;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
 
 use super::tools::run_with_input;
@@ -140,11 +140,20 @@ impl Services {
             result.context("mongorestore")
         } else if file.ends_with(".sql") {
             let name = name("mariadb")?;
-            let (_, env) = self.running_server("mariadb")?;
+            // As the project's user, never root: the file may come from
+            // outside (D-78) and name other databases or `mysql.*`.
+            let password =
+                auth::try_project_password(&self.kit, project, "mariadb")?.ok_or_else(|| {
+                    anyhow!("the project has no MariaDB database yet: create it first")
+                })?;
+            let (port, env) = self.running_server("mariadb")?;
             let sql = fs::read_to_string(&path)?;
-            let mut cmd = self.mariadb_tool("mariadb.exe", &env);
+            let (mut cmd, login) =
+                self.mariadb_as_project("mariadb.exe", &env, port, &name, &password)?;
             cmd.arg(&name);
-            run_with_input(cmd, &sql, Duration::from_secs(600)).context("mariadb")
+            let result = run_with_input(cmd, &sql, Duration::from_secs(600));
+            let _ = fs::remove_file(login);
+            result.context("mariadb")
         } else {
             bail!("not a database copy: {file}")
         }

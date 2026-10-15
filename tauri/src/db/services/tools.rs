@@ -78,6 +78,32 @@ impl Services {
         cmd
     }
 
+    /// A tool of MariaDB logged in as the project's own user, which has
+    /// rights on its database only: for SQL the kit did not write (a copy
+    /// brought from outside), so a `USE other` or `mysql.*` in it fails. Its
+    /// login is in a file of the private folder read instead of every other
+    /// (`--defaults-file`: root's `my.ini` is not read), removed after.
+    pub(super) fn mariadb_as_project(
+        &self,
+        exe: &str,
+        env: &KitEnv,
+        port: u16,
+        user: &str,
+        password: &str,
+    ) -> Result<(Command, PathBuf)> {
+        let login = auth::dir(&self.kit).join(format!("{exe}-{}.cnf", std::process::id()));
+        auth::write_private_text(
+            &login,
+            &format!(
+                "[client]\r\nuser={user}\r\npassword={password}\r\nhost=127.0.0.1\r\nport={port}\r\n"
+            ),
+        )?;
+        let mut cmd = jobs::kit_command(bin(&self.kit, "mariadb", exe), env);
+        // It must be the first option.
+        cmd.arg(format!("--defaults-file={}", login.display()));
+        Ok((cmd, login))
+    }
+
     /// mongodump/mongorestore logged in as `admin`, the password in a config
     /// file of the private folder (never on the command line), removed after.
     pub(super) fn mongo_tool(

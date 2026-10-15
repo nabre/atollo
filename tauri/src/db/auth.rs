@@ -170,7 +170,6 @@ pub fn project_password(kit: &Kit, project: &str, engine: &str) -> Option<String
 }
 
 /// [`project_password`] that fails when `db.json` cannot be read.
-#[allow(dead_code)] // the tests
 pub fn try_project_password(kit: &Kit, project: &str, engine: &str) -> Result<Option<String>> {
     Ok(try_project_passwords(kit, project)?.remove(engine))
 }
@@ -286,6 +285,20 @@ fn names_mut(secrets: &mut ProjectSecrets) -> Result<&mut ProjectSecrets> {
 /// of the time), if any. A `db.json` that cannot be read is an error: what
 /// it names is unknown.
 pub fn name_used_by(kit: &Kit, project: &str, engine: &str, name: &str) -> Result<Option<String>> {
+    // Passwords left in secrets.json by the migration (a conflict, a name
+    // that is not a project's): their databases exist, by the rule of before.
+    if let Some(serde_json::Value::Object(left)) = load(kit).other.get("projects") {
+        for (other, engines) in left {
+            if !other.eq_ignore_ascii_case(project)
+                && engines
+                    .get(engine)
+                    .is_some_and(serde_json::Value::is_string)
+                && legacy_db_name(other).eq_ignore_ascii_case(name)
+            {
+                return Ok(Some(other.clone()));
+            }
+        }
+    }
     for other in crate::projects::state::all(kit) {
         // One folder on Windows, whatever the case.
         if other.eq_ignore_ascii_case(project) {
@@ -303,8 +316,15 @@ pub fn name_used_by(kit: &Kit, project: &str, engine: &str, name: &str) -> Resul
 
 /// Refused when another project of the kit uses `name` on `engine`
 /// ([`name_used_by`]): creating would give its user this project's password,
-/// dropping would take its database away.
+/// dropping would take its database away. Refused as well while the data of
+/// layout 1 is not all moved: some names would be unseen.
 pub fn check_name_free(kit: &Kit, project: &str, engine: &str, name: &str) -> Result<()> {
+    if crate::projects::migrate::pending(kit) {
+        bail!(
+            "the projects' data of an earlier version is not all moved yet (see the log): \
+             nothing done on the databases until the next start moves it"
+        );
+    }
     if let Some(other) = name_used_by(kit, project, engine, name)? {
         bail!(
             "the database and user {name} on {engine} belong to the project {other} as well: \
@@ -457,14 +477,25 @@ pub fn db_name(project: &str, engine: &str) -> String {
 }
 
 /// SQL that creates (or brings back to `password`) a project's database and
-/// user, with every right on that database only.
+/// user, with every right on that database only. In a database-level GRANT
+/// `_` is a wildcard (`my_app` would also match `my2app`): escaped there.
 pub fn project_sql(name: &str, password: &str) -> String {
     let mut sql = format!("CREATE DATABASE IF NOT EXISTS `{name}` CHARACTER SET utf8mb4;\n");
+    let pattern = name.replace('_', "\\_");
     for host in ["localhost", "127.0.0.1", "::1"] {
         sql.push_str(&format!(
             "CREATE USER IF NOT EXISTS '{name}'@'{host}' IDENTIFIED BY '{password}';\n\
-             ALTER USER '{name}'@'{host}' IDENTIFIED BY '{password}';\n\
-             GRANT ALL PRIVILEGES ON `{name}`.* TO '{name}'@'{host}';\n"
+             ALTER USER '{name}'@'{host}' IDENTIFIED BY '{password}';\n"
+        ));
+        if name.contains('_') {
+            // The wildcard grant of earlier versions (no REVOKE IF EXISTS);
+            // `name` is only [a-z0-9_] (`is_valid_name`).
+            sql.push_str(&format!(
+                "DELETE FROM mysql.db WHERE Db = '{name}' AND User = '{name}' AND Host = '{host}';\n"
+            ));
+        }
+        sql.push_str(&format!(
+            "GRANT ALL PRIVILEGES ON `{pattern}`.* TO '{name}'@'{host}';\n"
         ));
     }
     sql.push_str("FLUSH PRIVILEGES;\n");
@@ -721,6 +752,12 @@ pub(crate) mod tests {
         let sql = project_sql("shop", pw);
         assert!(sql.contains("CREATE DATABASE IF NOT EXISTS `shop`"));
         assert!(sql.contains("GRANT ALL PRIVILEGES ON `shop`.* TO 'shop'@'127.0.0.1'"));
+        // `_` is a wildcard in a database-level GRANT: only my_app, never my2app
+        let sql = project_sql("my_app", pw);
+        assert!(sql.contains("CREATE DATABASE IF NOT EXISTS `my_app`"));
+        assert!(sql.contains(r"GRANT ALL PRIVILEGES ON `my\_app`.* TO 'my_app'@'::1'"));
+        assert!(sql.contains("DELETE FROM mysql.db WHERE Db = 'my_app' AND User = 'my_app'"));
+        assert!(!project_sql("shop", pw).contains("mysql.db"));
         assert!(root_password_sql(pw).contains("'root'@'::1' IDENTIFIED BY"));
     }
 
@@ -1084,6 +1121,36 @@ pub(crate) mod tests {
         );
         keep_legacy_names(&kit, "nothing").unwrap();
         assert!(!kit.project_data().join("nothing").exists());
+    }
+
+    /// Passwords not yet moved by the migration, or left in secrets.json by
+    /// it, name databases too: nothing is done while data of layout 1 waits,
+    /// and what stays in secrets.json is seen by the collision check.
+    #[test]
+    fn data_of_before_is_never_unseen() {
+        let tmp = crate::kit::tests::TempDir::new("db-auth-pending");
+        let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+        kit.prepare().unwrap();
+        // layout 1 still there: refused, nothing stored
+        fs::create_dir_all(kit.project_states().join("my-app")).unwrap();
+        let err = ensure_project_db(&kit, "my_app", "mariadb").unwrap_err();
+        assert!(format!("{err:#}").contains("not all moved"), "{err:#}");
+        assert!(!kit.project_data().join("my_app").exists());
+        fs::remove_dir_all(kit.project_states()).unwrap();
+        fs::write(kit.app_dir().join("layout.txt"), "2").unwrap();
+        // left in secrets.json (a conflict, a name that is no project's)
+        let secrets = Secrets {
+            other: [(
+                "projects".to_owned(),
+                serde_json::json!({ "my-app": { "mariadb": "pw" } }),
+            )]
+            .into(),
+            ..Secrets::default()
+        };
+        save(&kit, &secrets).unwrap();
+        let err = ensure_project_db(&kit, "my_app", "mariadb").unwrap_err();
+        assert!(format!("{err:#}").contains("my-app"), "{err:#}");
+        assert!(ensure_project_db(&kit, "my_app", "mongodb").is_ok());
     }
 
     /// Two projects that would get the same name: the second one's creation
