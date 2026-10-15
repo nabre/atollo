@@ -178,7 +178,7 @@ impl KitEnv {
         let platform = kit.arch().platform();
         let fwd = |p: &Path| p.to_string_lossy().replace('\\', "/");
         // In the folder of a versioned component: that of its default
-        // version (versions.rs).
+        // version (versions/mod.rs).
         let app = |rel: &str| crate::catalog::kit_path(kit, rel);
         let has = |rel: &str| app(rel).is_file();
 
@@ -262,7 +262,7 @@ impl KitEnv {
         env.set_path("GH_CONFIG_DIR", data.join("gh"));
         env.set_path("PHPRC", data.join("php"));
         // The PHP in use: php.ini finds its extensions through it, so a
-        // saved version of PHP loads its own (versions.rs).
+        // saved version of PHP loads its own (versions/mod.rs).
         env.set_path("CP_PHP", app("php"));
         // Apache's PHP, with `/`: it follows CP_PHP when a version is chosen
         // for the kit or a project (versions::apply).

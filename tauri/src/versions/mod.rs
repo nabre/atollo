@@ -1,3 +1,8 @@
+//! Versions: the saved versions of the languages and tools (this file), the
+//! versions side by side known to Gradle, Maven and dotnet (`side_by_side`,
+//! D-81) and the relations matrix (`relations`) with its version ranges
+//! (`ranges`).
+//!
 //! Saved versions of the languages and tools (DECISIONS.md D-80).
 //!
 //! Every version has its folder inside the component's own, one per minor
@@ -19,6 +24,10 @@
 //! start from the shared editor server, so each project with a choice gets
 //! `data\app\projects\<project>\versions.json` (the rewrites), which the
 //! kit's PowerShell profile applies.
+
+pub mod ranges;
+pub mod relations;
+pub mod side_by_side;
 
 use std::collections::BTreeMap;
 use std::fs;

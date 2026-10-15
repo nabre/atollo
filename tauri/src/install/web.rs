@@ -304,7 +304,7 @@ pub fn php_lines(releases: &Value) -> Vec<String> {
         .map(|(k, _)| k.clone())
         // PHP 8 and later: Apache's configuration loads `php8apache2_4.dll`.
         .filter(|k| crate::versions::valid_line(k) && pick_php(releases, Some(k)).is_ok())
-        .filter(|k| crate::ranges::Version::parse(k).is_some_and(|v| v.0 >= 8))
+        .filter(|k| crate::versions::ranges::Version::parse(k).is_some_and(|v| v.0 >= 8))
         .collect();
     out.sort_by_key(|l| std::cmp::Reverse(super::lang::version_key(l)));
     out

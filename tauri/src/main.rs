@@ -34,8 +34,6 @@ mod needs;
 mod net;
 mod processes;
 mod projects;
-mod ranges;
-mod relations;
 mod relocate;
 mod safe_path;
 mod self_update;
@@ -44,7 +42,6 @@ mod sessions;
 mod settings;
 mod setup_runner;
 mod setup_task;
-mod side_by_side;
 mod signature;
 mod stats;
 mod verify;
@@ -126,7 +123,7 @@ fn run() -> i32 {
     // Before the environment points at them: one folder per version.
     versions::migrate(&kit);
     // The versions side by side, known to Gradle, Maven and dotnet.
-    side_by_side::refresh(&kit);
+    versions::side_by_side::refresh(&kit);
     self_update::remove_old(&exe);
     self_update::record_version(&kit);
     let loaded = Settings::load(&kit);

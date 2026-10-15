@@ -33,7 +33,7 @@ pub struct Options {
     /// Download again even when up to date.
     pub force: bool,
     /// Only these lines (`major.minor`) of versioned components, saved next
-    /// to the default folder (`versions.rs`); nothing else is done.
+    /// to the default folder (`versions/mod.rs`); nothing else is done.
     pub lines: Vec<(String, String)>,
 }
 
