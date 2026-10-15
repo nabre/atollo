@@ -645,5 +645,14 @@
   "Linguaggi attivi nel progetto ({0})": "Im Projekt aktive Sprachen ({0})",
   "Nessun linguaggio versionabile rilevato nel progetto.": "Keine versionierbaren Sprachen im Projekt erkannt.",
   "Linguaggi non presenti nel progetto ({0})": "Im Projekt nicht vorhandene Sprachen ({0})",
-  "Clicca per espandere se vuoi impostare altri linguaggi per il terminale o gli script.": "Klicke zum Aufklappen, wenn du weitere Sprachen für das Terminal oder Skripte festlegen möchtest."
+  "Clicca per espandere se vuoi impostare altri linguaggi per il terminale o gli script.": "Klicke zum Aufklappen, wenn du weitere Sprachen für das Terminal oder Skripte festlegen möchtest.",
+  "Eliminare {0}?": "{0} löschen?",
+  "Vengono eliminati:": "Gelöscht werden:",
+  "La cartella vuota del progetto e le impostazioni del kit": "Der leere Projektordner und die Einstellungen des Kits",
+  "Il database {0} e il suo utente su {1}": "Die Datenbank {0} und ihr Benutzer auf {1}",
+  "{0} non è installato: il database {1} resta nei suoi dati": "{0} ist nicht installiert: Die Datenbank {1} bleibt in seinen Daten",
+  "Copie dei database: {0} ({1})": "Datenbankkopien: {0} ({1})",
+  "Un server fermo viene avviato per eliminare il database.": "Ein angehaltener Server wird gestartet, um die Datenbank zu löschen.",
+  "Elimina senza i database": "Ohne die Datenbanken löschen",
+  "«Elimina senza i database» lascia database e utenti sui server.": "„Ohne die Datenbanken löschen“ lässt Datenbanken und Benutzer auf den Servern."
 }

@@ -3,15 +3,7 @@
 // VirtualHosts and portable relative path aliases.
 
 import { useCallback, useState } from "react";
-import {
-  VscAdd,
-  VscDebugStart,
-  VscDebugStop,
-  VscGlobe,
-  VscLinkExternal,
-  VscRefresh,
-  VscTrash,
-} from "react-icons/vsc";
+import { VscAdd, VscDebugStart, VscDebugStop, VscGlobe, VscLinkExternal, VscRefresh, VscTrash } from "react-icons/vsc";
 import {
   serverReload,
   serverRemove,
@@ -91,20 +83,8 @@ function PoolDetails({
             ) : (
               <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />
             )}
-            <ActionButton
-              icon={VscRefresh}
-              label={t("Ricarica configurazione")}
-              busy={busy}
-              onClick={onReload}
-            />
-            {onRemove && (
-              <ActionButton
-                icon={VscTrash}
-                label={t("Elimina profilo")}
-                busy={busy}
-                onClick={onRemove}
-              />
-            )}
+            <ActionButton icon={VscRefresh} label={t("Ricarica configurazione")} busy={busy} onClick={onReload} />
+            {onRemove && <ActionButton icon={VscTrash} label={t("Elimina profilo")} busy={busy} onClick={onRemove} />}
           </>
         }
       />
@@ -147,10 +127,7 @@ function PoolDetails({
                       <VscGlobe className="shrink-0" />
                       <code className="font-mono text-vsc-fg">{site.serverName}</code>
                       {site.domains.map((d) => (
-                        <code
-                          key={d}
-                          className="rounded border border-vsc-border px-1.5 py-0.5 font-mono text-[11px]"
-                        >
+                        <code key={d} className="rounded border border-vsc-border px-1.5 py-0.5 font-mono text-[11px]">
                           {d}
                         </code>
                       ))}
@@ -159,10 +136,7 @@ function PoolDetails({
                       <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
                         <span className="text-vsc-desc">{t("Alias di percorso:")}</span>
                         {aliasEntries.map(([u, target]) => (
-                          <code
-                            key={u}
-                            className="rounded bg-vsc-input px-1.5 py-0.5 font-mono text-vsc-fg"
-                          >
+                          <code key={u} className="rounded bg-vsc-input px-1.5 py-0.5 font-mono text-vsc-fg">
                             {u} → {target}
                           </code>
                         ))}
@@ -282,8 +256,7 @@ export function ServersPage() {
                   description={
                     <span className="flex items-center gap-1.5">
                       <Dot tone={p.running ? "ok" : "off"} />
-                      {p.running ? t("Avviato") : t("Fermo")} ·{" "}
-                      {t("{0} siti", String(p.sites.length))}
+                      {p.running ? t("Avviato") : t("Fermo")} · {t("{0} siti", String(p.sites.length))}
                     </span>
                   }
                   selected={activePool?.id === p.id}
@@ -334,7 +307,7 @@ export function ServersPage() {
                 id="srv-new-engine"
                 value={newEngine}
                 onChange={(v) => {
-                  setNewEngine(v as WebServerEngine);
+                  setNewEngine(v);
                   setNewServerLine("");
                 }}
                 options={[

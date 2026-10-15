@@ -28,6 +28,7 @@ const COMMANDS: &[&str] = &[
     "folder_open",
     "project_create",
     "project_delete",
+    "project_delete_plan",
     "frameworks_get",
     "frameworks_set",
     "frameworks_plan",
