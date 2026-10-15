@@ -2,7 +2,7 @@
 // their ES modules (never dist/bundled.js: the React wrappers of
 // @vscode-elements/react-elements import the same modules, so each tag is
 // defined once). They read the --vscode-* variables of theme-vscode.css.
-import type { DetailedHTMLProps, HTMLAttributes } from "react";
+import { useCallback, useRef, type DetailedHTMLProps, type HTMLAttributes } from "react";
 import "@vscode-elements/elements";
 import codiconHref from "@vscode/codicons/dist/codicon.css?url";
 
@@ -26,6 +26,27 @@ type VscTag = Extract<keyof HTMLElementTagNameMap, `vscode-${string}`>;
 type VscProps<E extends HTMLElement> = DetailedHTMLProps<HTMLAttributes<E>, E> &
   Partial<Omit<E, keyof HTMLElement>> & { class?: string; for?: string };
 type VscIntrinsicElements = { [T in VscTag]: VscProps<HTMLElementTagNameMap[T]> };
+
+/** A ref for a component that keeps its role (and tab stop) as a property:
+ * Lit writes the attribute on its first update, a microtask after React's
+ * commit. Written here at once, it is there for what runs in the same
+ * commit (a focus() in an effect, a query in a test); the component then
+ * writes the same value, or its own (tabindex -1 when disabled). Gives the
+ * callback for `ref` and the element. */
+export function useHost<E extends HTMLElement>(role: string, tabStop = false) {
+  const element = useRef<E | null>(null);
+  const ref = useCallback(
+    (el: E | null) => {
+      if (el) {
+        if (!el.hasAttribute("role")) el.setAttribute("role", role);
+        if (tabStop && !el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+      }
+      element.current = el;
+    },
+    [role, tabStop],
+  );
+  return [ref, element] as const;
+}
 
 declare module "react" {
   // eslint-disable-next-line @typescript-eslint/no-namespace
