@@ -1,0 +1,894 @@
+//! Shared Web Server pools (Apache and Nginx VirtualHost pooling):
+//! - Automatic pools grouped by `(engine, serverLine, phpLine)` from the
+//!   projects in `projects\`, plus user-defined profiles in `data\app\servers.json`.
+//! - Each pool writes its configuration and VirtualHost files in
+//!   `data\servers\<pool_id>\` at every start or reload (never inside projects).
+//! - Every attached project gets its own `.localhost` VirtualHost
+//!   (`<project>.localhost` plus any custom `.localhost` domains) and portable
+//!   relative `Alias` / `location` mappings.
+
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::{Child, Stdio};
+use std::sync::{Mutex, PoisonError};
+use std::time::{Duration, Instant};
+
+use anyhow::{anyhow, bail, Context, Result};
+use serde::{Deserialize, Serialize};
+
+use crate::detect::{self, set_site_with_options, SiteKind, SiteOptions};
+use crate::env::KitEnv;
+use crate::fsx::{read_json, write_atomic, write_json};
+use crate::kit::{validate_project_name, Kit};
+use crate::os::jobs::{self, Job};
+use crate::projects::apache::{self, fwd};
+use crate::projects::nginx;
+use crate::projects::run::{is_port_free, responds};
+use crate::setup::catalog::Catalog;
+
+const POOL_PORT_FROM: u16 = 8081;
+const POOL_PORT_TO: u16 = 8999;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WebServerEngine {
+    Apache,
+    Nginx,
+}
+
+impl WebServerEngine {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            WebServerEngine::Apache => "apache",
+            WebServerEngine::Nginx => "nginx",
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            WebServerEngine::Apache => "Apache",
+            WebServerEngine::Nginx => "Nginx",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachedSite {
+    pub project: String,
+    pub folder: String,
+    pub server_name: String,
+    pub domains: Vec<String>,
+    pub aliases: BTreeMap<String, String>,
+    pub url: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebServerPool {
+    pub id: String,
+    pub name: String,
+    pub engine: WebServerEngine,
+    pub server_line: Option<String>,
+    pub php_line: Option<String>,
+    pub port: u16,
+    pub running: bool,
+    pub pid: Option<u32>,
+    pub manual: bool,
+    pub sites: Vec<AttachedSite>,
+    pub conf_dir: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebServerProfileInput {
+    #[serde(default)]
+    pub id: String,
+    pub name: String,
+    pub engine: WebServerEngine,
+    #[serde(default)]
+    pub server_line: Option<String>,
+    #[serde(default)]
+    pub php_line: Option<String>,
+    #[serde(default)]
+    pub port: Option<u16>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebServersView {
+    pub pools: Vec<WebServerPool>,
+    pub apache_lines: Vec<String>,
+    pub nginx_lines: Vec<String>,
+    pub php_lines: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StoredServers {
+    #[serde(default)]
+    profiles: Vec<WebServerProfileInput>,
+    #[serde(default)]
+    ports: BTreeMap<String, u16>,
+}
+
+struct RunningPool {
+    child: Child,
+    port: u16,
+    fcgi_port: Option<u16>,
+    _job: Job,
+}
+
+pub struct WebServers {
+    kit: Kit,
+    running: Mutex<BTreeMap<String, RunningPool>>,
+}
+
+fn store_path(kit: &Kit) -> PathBuf {
+    kit.app_dir().join("servers.json")
+}
+
+fn load_store(kit: &Kit) -> StoredServers {
+    read_json(&store_path(kit)).unwrap_or_default()
+}
+
+fn save_store(kit: &Kit, store: &StoredServers) -> Result<()> {
+    write_json(&store_path(kit), store)
+}
+
+fn slug(s: &str) -> String {
+    let mut out = String::new();
+    for ch in s.trim().chars() {
+        if ch.is_ascii_alphanumeric() || ch == '.' || ch == '_' {
+            out.push(ch.to_ascii_lowercase());
+        } else if (ch == '-' || ch.is_whitespace()) && !out.ends_with('-') && !out.is_empty() {
+            out.push('-');
+        }
+    }
+    out.trim_matches('-').to_owned()
+}
+
+fn auto_pool_id(
+    engine: WebServerEngine,
+    server_line: Option<&str>,
+    php_line: Option<&str>,
+) -> String {
+    let srv = server_line.unwrap_or("default");
+    match php_line {
+        Some(php) => format!("{}-{srv}-php-{php}", engine.as_str()),
+        None => format!("{}-{srv}", engine.as_str()),
+    }
+}
+
+fn auto_pool_name(
+    engine: WebServerEngine,
+    server_line: Option<&str>,
+    php_line: Option<&str>,
+) -> String {
+    let srv = match server_line {
+        Some(l) => format!("{} {l}", engine.label()),
+        None => engine.label().to_owned(),
+    };
+    match php_line {
+        Some(p) => format!("{srv} · PHP {p}"),
+        None => srv,
+    }
+}
+
+/// Resolves the directory of a versioned component (`apache`, `nginx`, `php`) for `line`.
+fn component_dir(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
+    if let Some(c) = Catalog::get().find(id) {
+        if let Some(dir) = crate::versions::dir_for(kit, c, line) {
+            return dir;
+        }
+    }
+    kit.apps().join(id)
+}
+
+/// Generates Apache VirtualHost file content for one attached project in a pool.
+fn apache_vhost_conf(port: u16, project_root: &Path, doc_root: &Path, site: &AttachedSite) -> String {
+    let doc_fwd = fwd(doc_root);
+    let mut aliases_list = vec![site.server_name.clone()];
+    for d in &site.domains {
+        let d = d.trim().to_ascii_lowercase();
+        if !d.is_empty() && !aliases_list.contains(&d) {
+            aliases_list.push(d);
+        }
+    }
+    let mut lines = vec![
+        format!("<VirtualHost *:{port}>"),
+        format!("    ServerName {}", site.server_name),
+    ];
+    if aliases_list.len() > 1 {
+        lines.push(format!("    ServerAlias {}", aliases_list[1..].join(" ")));
+    }
+    lines.extend([
+        format!("    DocumentRoot \"{doc_fwd}\""),
+        format!("    <Directory \"{doc_fwd}\">"),
+        "        Options Indexes FollowSymLinks".to_owned(),
+        "        AllowOverride All".to_owned(),
+        "        Require all granted".to_owned(),
+        "    </Directory>".to_owned(),
+    ]);
+    for (url_path, rel_target) in &site.aliases {
+        let url_clean = url_path.trim_end_matches('/');
+        if url_clean.is_empty() || !url_clean.starts_with('/') {
+            continue;
+        }
+        let clean = rel_target.replace('\\', "/");
+        let clean = clean.trim_matches('/');
+        let target = if let Some(rest) = clean.strip_prefix("../") {
+            let rest = rest.trim_matches('/');
+            if rest.is_empty() {
+                "${CP_PROJECTS_FWD}".to_owned()
+            } else {
+                format!("${{CP_PROJECTS_FWD}}/{rest}")
+            }
+        } else if clean.is_empty() {
+            fwd(project_root)
+        } else {
+            format!("${{CP_PROJECTS_FWD}}/{}/{clean}", site.project)
+        };
+        lines.push(format!("    Alias \"{url_clean}\" \"{target}\""));
+        lines.push(format!("    <Directory \"{target}\">"));
+        lines.push("        Options Indexes FollowSymLinks".to_owned());
+        lines.push("        AllowOverride All".to_owned());
+        lines.push("        Require all granted".to_owned());
+        lines.push("    </Directory>".to_owned());
+    }
+    lines.push("</VirtualHost>".to_owned());
+    lines.push(String::new());
+    lines.join("\r\n")
+}
+
+/// Generates the master `httpd.conf` for an Apache pool.
+fn apache_pool_conf(base: &str, pool_dir: &Path, port: u16, lan: bool) -> Result<String> {
+    let kit_part = apache::strip_kit_tail(base)?;
+    let dir_fwd = fwd(pool_dir);
+    let listen = if lan {
+        port.to_string()
+    } else {
+        format!("127.0.0.1:{port}")
+    };
+    let default_htdocs = "${SRVROOT}/htdocs";
+    let mut site = vec![
+        "# --- Atollo: shared Apache VirtualHost pool (written at every start) ---".to_owned(),
+        format!("Listen {listen}"),
+        format!("ServerName localhost:{port}"),
+        format!("PidFile \"{dir_fwd}/httpd.pid\""),
+        format!("ErrorLog \"{dir_fwd}/error.log\""),
+        "<IfModule log_config_module>".to_owned(),
+        format!("    CustomLog \"{dir_fwd}/access.log\" common"),
+        "</IfModule>".to_owned(),
+        format!("DocumentRoot \"{default_htdocs}\""),
+        "DirectoryIndex index.php index.html".to_owned(),
+    ];
+    site.extend(apache::php_module_blocks("CP_PHP_FWD"));
+    site.push(format!("IncludeOptional \"{dir_fwd}/vhosts/*.conf\""));
+    site.push(format!("IncludeOptional \"{dir_fwd}/conf.d/*.conf\""));
+    Ok(format!("{}\r\n\r\n{}\r\n", kit_part.trim_end(), site.join("\r\n")))
+}
+
+/// Generates the master `nginx.conf` for an Nginx pool.
+fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) -> String {
+    let run_fwd = fwd(pool_dir);
+    let nginx_fwd = fwd(nginx_install);
+    let listen = if lan {
+        port.to_string()
+    } else {
+        format!("127.0.0.1:{port}")
+    };
+    [
+        "# --- Atollo: shared Nginx VirtualHost pool (written at every start) ---".to_owned(),
+        "worker_processes 1;".to_owned(),
+        format!("pid \"{run_fwd}/nginx.pid\";"),
+        format!("error_log \"{run_fwd}/error.log\";"),
+        "events {".to_owned(),
+        "    worker_connections 1024;".to_owned(),
+        "}".to_owned(),
+        "http {".to_owned(),
+        format!("    include \"{nginx_fwd}/conf/mime.types\";"),
+        "    default_type application/octet-stream;".to_owned(),
+        format!("    access_log \"{run_fwd}/access.log\";"),
+        format!("    client_body_temp_path \"{run_fwd}/temp/client_body\";"),
+        format!("    proxy_temp_path \"{run_fwd}/temp/proxy\";"),
+        format!("    fastcgi_temp_path \"{run_fwd}/temp/fastcgi\";"),
+        format!("    uwsgi_temp_path \"{run_fwd}/temp/uwsgi\";"),
+        format!("    scgi_temp_path \"{run_fwd}/temp/scgi\";"),
+        "    sendfile on;".to_owned(),
+        "    keepalive_timeout 65;".to_owned(),
+        "    server_names_hash_bucket_size 64;".to_owned(),
+        format!("    include \"{run_fwd}/vhosts/*.conf\";"),
+        format!("    include \"{run_fwd}/conf.d/*.conf\";"),
+        "    server {".to_owned(),
+        format!("        listen {listen};"),
+        "        server_name localhost;".to_owned(),
+        format!("        root \"{nginx_fwd}/html\";"),
+        "        index index.html index.htm;".to_owned(),
+        "    }".to_owned(),
+        "}".to_owned(),
+        String::new(),
+    ]
+    .join("\r\n")
+}
+
+impl WebServers {
+    pub fn new(kit: Kit) -> Self {
+        Self {
+            kit,
+            running: Mutex::new(BTreeMap::new()),
+        }
+    }
+
+    pub fn running_count(&self) -> usize {
+        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+        running.retain(|_, r| matches!(r.child.try_wait(), Ok(None)));
+        running.len()
+    }
+
+    pub fn stop_all(&self) {
+        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+        running.clear();
+    }
+
+    fn assign_or_get_port(&self, store: &mut StoredServers, id: &str, manual: Option<u16>) -> u16 {
+        if let Some(p) = manual.filter(|p| *p >= 1024) {
+            store.ports.insert(id.to_owned(), p);
+            return p;
+        }
+        if let Some(&p) = store.ports.get(id) {
+            return p;
+        }
+        let used: std::collections::BTreeSet<u16> = store.ports.values().copied().collect();
+        for p in POOL_PORT_FROM..=POOL_PORT_TO {
+            if !used.contains(&p) && is_port_free(p) {
+                store.ports.insert(id.to_owned(), p);
+                let _ = save_store(&self.kit, store);
+                return p;
+            }
+        }
+        POOL_PORT_FROM
+    }
+
+    pub fn list(&self, lang: &str) -> WebServersView {
+        let apache_lines = crate::db::services::server_lines(&self.kit, "apache");
+        let nginx_lines = crate::db::services::server_lines(&self.kit, "nginx");
+        let php_lines = crate::db::services::server_lines(&self.kit, "php");
+
+        let mut store = load_store(&self.kit);
+        let mut pools_map: BTreeMap<String, WebServerPool> = BTreeMap::new();
+
+        for p in store.profiles.clone() {
+            let port = self.assign_or_get_port(&mut store, &p.id, p.port);
+            let server_line = p.server_line.clone().or_else(|| match p.engine {
+                WebServerEngine::Apache => apache_lines.first().cloned(),
+                WebServerEngine::Nginx => nginx_lines.first().cloned(),
+            });
+            let php_line = p.php_line.clone().or_else(|| php_lines.first().cloned());
+            pools_map.insert(
+                p.id.clone(),
+                WebServerPool {
+                    id: p.id.clone(),
+                    name: p.name.clone(),
+                    engine: p.engine,
+                    server_line,
+                    php_line,
+                    port,
+                    running: false,
+                    pid: None,
+                    manual: true,
+                    sites: Vec::new(),
+                    conf_dir: format!(r"data\servers\{}", p.id),
+                },
+            );
+        }
+
+        for proj_dir in crate::projects::folders(&self.kit) {
+            let Some(proj_id) = proj_dir
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+            else {
+                continue;
+            };
+            let detected = detect::detect(&proj_dir, lang);
+            let choice = crate::versions::project_choice(&self.kit, &proj_id);
+            let needs_php =
+                detected.requires.iter().any(|r| r == "php") || choice.contains_key("php");
+
+            for action in &detected.actions {
+                let (engine, folder) = if let Some(f) = &action.apache_dir {
+                    (WebServerEngine::Apache, f.clone())
+                } else if let Some(f) = &action.nginx_dir {
+                    (WebServerEngine::Nginx, f.clone())
+                } else {
+                    continue;
+                };
+
+                let target_pool_id = if let Some(explicit) =
+                    action.server.as_deref().filter(|s| pools_map.contains_key(*s))
+                {
+                    explicit.to_owned()
+                } else {
+                    let srv_line = choice
+                        .get(engine.as_str())
+                        .cloned()
+                        .or_else(|| match engine {
+                            WebServerEngine::Apache => apache_lines.first().cloned(),
+                            WebServerEngine::Nginx => nginx_lines.first().cloned(),
+                        });
+                    let php_line = if needs_php {
+                        choice
+                            .get("php")
+                            .cloned()
+                            .or_else(|| php_lines.first().cloned())
+                    } else {
+                        None
+                    };
+                    let pid = auto_pool_id(engine, srv_line.as_deref(), php_line.as_deref());
+                    if !pools_map.contains_key(&pid) {
+                        let port = self.assign_or_get_port(&mut store, &pid, None);
+                        let name = auto_pool_name(engine, srv_line.as_deref(), php_line.as_deref());
+                        pools_map.insert(
+                            pid.clone(),
+                            WebServerPool {
+                                id: pid.clone(),
+                                name,
+                                engine,
+                                server_line: srv_line,
+                                php_line,
+                                port,
+                                running: false,
+                                pid: None,
+                                manual: false,
+                                sites: Vec::new(),
+                                conf_dir: format!(r"data\servers\{pid}"),
+                            },
+                        );
+                    }
+                    pid
+                };
+
+                if let Some(pool) = pools_map.get_mut(&target_pool_id) {
+                    let server_name = format!("{proj_id}.localhost");
+                    let url = format!("http://{server_name}:{}", pool.port);
+                    pool.sites.push(AttachedSite {
+                        project: proj_id.clone(),
+                        folder,
+                        server_name,
+                        domains: action.domains.clone(),
+                        aliases: action.aliases.clone(),
+                        url,
+                    });
+                }
+            }
+        }
+
+        // If no pools exist yet but Apache or Nginx is installed, expose the default pool so the
+        // user can start/inspect it from the "Server Web" page immediately.
+        if pools_map.is_empty() && (!apache_lines.is_empty() || !nginx_lines.is_empty()) {
+            let engine = if !apache_lines.is_empty() {
+                WebServerEngine::Apache
+            } else {
+                WebServerEngine::Nginx
+            };
+            let srv_line = match engine {
+                WebServerEngine::Apache => apache_lines.first().cloned(),
+                WebServerEngine::Nginx => nginx_lines.first().cloned(),
+            };
+            let php_line = php_lines.first().cloned();
+            let pid = auto_pool_id(engine, srv_line.as_deref(), php_line.as_deref());
+            let port = self.assign_or_get_port(&mut store, &pid, None);
+            let name = auto_pool_name(engine, srv_line.as_deref(), php_line.as_deref());
+            pools_map.insert(
+                pid.clone(),
+                WebServerPool {
+                    id: pid.clone(),
+                    name,
+                    engine,
+                    server_line: srv_line,
+                    php_line,
+                    port,
+                    running: false,
+                    pid: None,
+                    manual: false,
+                    sites: Vec::new(),
+                    conf_dir: format!(r"data\servers\{pid}"),
+                },
+            );
+        }
+
+        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+        running.retain(|_, r| matches!(r.child.try_wait(), Ok(None)));
+        for (id, r) in running.iter() {
+            if let Some(pool) = pools_map.get_mut(id) {
+                pool.running = true;
+                pool.pid = Some(r.child.id());
+                pool.port = r.port;
+                for s in &mut pool.sites {
+                    s.url = format!("http://{}:{}", s.server_name, r.port);
+                }
+            }
+        }
+
+        WebServersView {
+            pools: pools_map.into_values().collect(),
+            apache_lines,
+            nginx_lines,
+            php_lines,
+        }
+    }
+
+    pub fn save_profile(&self, mut input: WebServerProfileInput, lang: &str) -> Result<()> {
+        let name = input.name.trim().to_owned();
+        if name.is_empty() {
+            bail!("{}", crate::i18n::t(lang, "Scrivi un nome per il profilo server.", &[]));
+        }
+        let id = if input.id.trim().is_empty() {
+            slug(&name)
+        } else {
+            slug(&input.id)
+        };
+        if id.is_empty() {
+            bail!("{}", crate::i18n::t(lang, "Identificativo del server non valido.", &[]));
+        }
+        if let Some(p) = input.port {
+            if p < 1024 {
+                bail!("{}", crate::i18n::t(lang, "Porta tra {0} e {1}", &["1024", "65535"]));
+            }
+        }
+        input.id = id.clone();
+        input.name = name;
+
+        let mut store = load_store(&self.kit);
+        if let Some(p) = input.port {
+            store.ports.insert(id.clone(), p);
+        }
+        if let Some(existing) = store.profiles.iter_mut().find(|p| p.id == id) {
+            *existing = input;
+        } else {
+            store.profiles.push(input);
+        }
+        save_store(&self.kit, &store)
+    }
+
+    pub fn remove_profile(&self, id: &str) -> Result<()> {
+        self.stop(id);
+        let mut store = load_store(&self.kit);
+        store.profiles.retain(|p| p.id != id);
+        store.ports.remove(id);
+        save_store(&self.kit, &store)
+    }
+
+    /// Writes `httpd.conf` / `nginx.conf` and all `vhosts/*.conf` for `pool`.
+    fn write_pool_configs(
+        &self,
+        pool: &WebServerPool,
+        fcgi_port: Option<u16>,
+        lan: bool,
+    ) -> Result<PathBuf> {
+        let pool_dir = self.kit.data().join("servers").join(&pool.id);
+        let vhosts_dir = pool_dir.join("vhosts");
+        let conf_d_dir = pool_dir.join("conf.d");
+        fs::create_dir_all(&vhosts_dir)?;
+        fs::create_dir_all(&conf_d_dir)?;
+
+        // Clear old generated vhost files before writing current ones.
+        if let Ok(entries) = fs::read_dir(&vhosts_dir) {
+            for entry in entries.flatten() {
+                if entry
+                    .path()
+                    .extension()
+                    .is_some_and(|e| e.eq_ignore_ascii_case("conf"))
+                {
+                    let _ = fs::remove_file(entry.path());
+                }
+            }
+        }
+
+        match pool.engine {
+            WebServerEngine::Apache => {
+                let apache_dir = component_dir(&self.kit, "apache", pool.server_line.as_deref());
+                let base = fs::read_to_string(apache_dir.join(r"conf\httpd.conf"))
+                    .context("Apache httpd.conf")?;
+                for site in &pool.sites {
+                    let proj_root = self.kit.projects().join(&site.project);
+                    let doc_root =
+                        detect::inside_dir(&proj_root, &site.folder).unwrap_or_else(|_| proj_root.clone());
+                    let vhost = apache_vhost_conf(pool.port, &proj_root, &doc_root, site);
+                    write_atomic(&vhosts_dir.join(format!("{}.conf", site.project)), vhost.as_bytes())?;
+                }
+                let main_conf = apache_pool_conf(&base, &pool_dir, pool.port, lan)?;
+                let conf_path = pool_dir.join("httpd.conf");
+                write_atomic(&conf_path, main_conf.as_bytes())?;
+                Ok(conf_path)
+            }
+            WebServerEngine::Nginx => {
+                nginx::prepare_dirs(&pool_dir)?;
+                let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
+                for (idx, site) in pool.sites.iter().enumerate() {
+                    let proj_root = self.kit.projects().join(&site.project);
+                    let doc_root =
+                        detect::inside_dir(&proj_root, &site.folder).unwrap_or_else(|_| proj_root.clone());
+                    let vhost = nginx::vhost_block(
+                        &nginx_dir,
+                        Some(&site.project),
+                        &proj_root,
+                        &self.kit.projects(),
+                        &doc_root,
+                        None,
+                        pool.port,
+                        fcgi_port,
+                        lan,
+                        &site.domains,
+                        &site.aliases,
+                        idx == 0,
+                    );
+                    write_atomic(
+                        &vhosts_dir.join(format!("{}.conf", site.project)),
+                        format!("{vhost}\r\n").as_bytes(),
+                    )?;
+                }
+                let main_conf = nginx_pool_conf(&nginx_dir, &pool_dir, pool.port, lan);
+                let conf_path = pool_dir.join("nginx.conf");
+                write_atomic(&conf_path, main_conf.as_bytes())?;
+                Ok(conf_path)
+            }
+        }
+    }
+
+    pub fn start(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
+        let view = self.list(lang);
+        let pool = view
+            .pools
+            .into_iter()
+            .find(|p| p.id == id)
+            .ok_or_else(|| anyhow!("Server pool not found: {id}"))?;
+        if pool.running {
+            return Ok(());
+        }
+        if !is_port_free(pool.port) {
+            bail!(
+                "{}",
+                crate::i18n::t(
+                    lang,
+                    "La porta {0} è già usata da un altro programma: cambiala qui sotto.",
+                    &[&pool.port.to_string()]
+                )
+            );
+        }
+
+        let mut env = base_env.clone();
+        if let Some(php_line) = &pool.php_line {
+            let php_dir = component_dir(&self.kit, "php", Some(php_line));
+            env.set("CP_PHP", php_dir.display().to_string());
+            env.set("CP_PHP_FWD", fwd(&php_dir));
+        }
+        env.set("CP_PROJECTS_FWD", fwd(&self.kit.projects()));
+        let lan = env.get("ATOLLO_ALLOW_LAN") == Some("1");
+
+        let job = Job::new()?;
+        let (mut cmd, fcgi_port) = match pool.engine {
+            WebServerEngine::Apache => {
+                let apache_dir = component_dir(&self.kit, "apache", pool.server_line.as_deref());
+                let exe = apache_dir.join(r"bin\httpd.exe");
+                if !exe.is_file() {
+                    bail!("Apache is not installed");
+                }
+                env.set("CP_APACHE", apache_dir.display().to_string());
+                env.set("CP_APACHE_FWD", fwd(&apache_dir));
+                let conf_path = self.write_pool_configs(&pool, None, lan)?;
+                let mut cmd = jobs::kit_command(&exe, &env);
+                cmd.arg("-f").arg(&conf_path);
+                (cmd, None)
+            }
+            WebServerEngine::Nginx => {
+                let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
+                let exe = nginx_dir.join("nginx.exe");
+                if !exe.is_file() {
+                    bail!("Nginx is not installed");
+                }
+                env.set("CP_NGINX", nginx_dir.display().to_string());
+                env.set("CP_NGINX_FWD", fwd(&nginx_dir));
+                let fcgi = nginx::spawn_php_cgi_if_present(&self.kit, &env, &job);
+                let conf_path = self.write_pool_configs(&pool, fcgi, lan)?;
+                let pool_dir = self.kit.data().join("servers").join(&pool.id);
+                let mut cmd = jobs::kit_command(&exe, &env);
+                cmd.arg("-p")
+                    .arg(&pool_dir)
+                    .arg("-c")
+                    .arg(&conf_path)
+                    .arg("-g")
+                    .arg("daemon off;");
+                (cmd, fcgi)
+            }
+        };
+
+        cmd.stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        let child = jobs::spawn_in(&mut cmd, &job)?;
+
+        let deadline = Instant::now() + Duration::from_secs(6);
+        while Instant::now() < deadline {
+            if responds(pool.port) {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(120));
+        }
+
+        self.running
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(
+                id.to_owned(),
+                RunningPool {
+                    child,
+                    port: pool.port,
+                    fcgi_port,
+                    _job: job,
+                },
+            );
+        Ok(())
+    }
+
+    pub fn stop(&self, id: &str) {
+        let removed = self
+            .running
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .remove(id);
+        drop(removed);
+    }
+
+    pub fn reload(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
+        let view = self.list(lang);
+        let pool = view
+            .pools
+            .into_iter()
+            .find(|p| p.id == id)
+            .ok_or_else(|| anyhow!("Server pool not found: {id}"))?;
+        let lan = base_env.get("ATOLLO_ALLOW_LAN") == Some("1");
+        let existing_fcgi = self
+            .running
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(id)
+            .and_then(|r| r.fcgi_port);
+
+        let conf_path = self.write_pool_configs(&pool, existing_fcgi, lan)?;
+        if !pool.running {
+            return Ok(());
+        }
+
+        if pool.engine == WebServerEngine::Nginx {
+            let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
+            let exe = nginx_dir.join("nginx.exe");
+            let pool_dir = self.kit.data().join("servers").join(&pool.id);
+            let status = jobs::kit_command(&exe, base_env)
+                .arg("-p")
+                .arg(&pool_dir)
+                .arg("-c")
+                .arg(&conf_path)
+                .args(["-s", "reload"])
+                .status();
+            if status.is_ok_and(|s| s.success()) {
+                return Ok(());
+            }
+        }
+
+        // Clean restart when graceful signal is unavailable (Apache standalone on Windows).
+        self.stop(id);
+        std::thread::sleep(Duration::from_millis(120));
+        self.start(id, base_env, lang)
+    }
+
+    pub fn assign_project(
+        &self,
+        project: &str,
+        folder: &str,
+        engine: WebServerEngine,
+        server_id: Option<String>,
+        base_env: &KitEnv,
+        lang: &str,
+    ) -> Result<()> {
+        validate_project_name(project).map_err(|e| anyhow!(e.to_string()))?;
+        let proj_dir = self.kit.projects().join(project);
+        if !crate::os::safe_path::is_dir(&self.kit.projects(), &proj_dir) {
+            bail!("{}", crate::i18n::t(lang, "Progetto non trovato: {0}", &[project]));
+        }
+        let detected = detect::detect(&proj_dir, lang);
+        let existing = detected
+            .actions
+            .iter()
+            .find(|a| a.apache_dir.is_some() || a.nginx_dir.is_some());
+        let opts = SiteOptions {
+            server: server_id.filter(|s| !s.trim().is_empty()),
+            domains: existing.map(|a| a.domains.clone()).unwrap_or_default(),
+            aliases: existing.map(|a| a.aliases.clone()).unwrap_or_default(),
+        };
+        let kind = match engine {
+            WebServerEngine::Apache => SiteKind::Apache,
+            WebServerEngine::Nginx => SiteKind::Nginx,
+        };
+        let folder_clean = if folder.trim().is_empty() {
+            "."
+        } else {
+            folder.trim()
+        };
+        set_site_with_options(&proj_dir, folder_clean, kind, &opts, lang)?;
+
+        // Reload any running pools so the new VirtualHost routing takes effect immediately.
+        let running_ids: Vec<String> = self
+            .running
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .keys()
+            .cloned()
+            .collect();
+        for rid in running_ids {
+            let _ = self.reload(&rid, base_env, lang);
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::kit::{tests::TempDir, Arch};
+
+    #[test]
+    fn profile_crud_and_vhost_generation() {
+        let tmp = TempDir::new("servers-pool");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let servers = WebServers::new(kit.clone());
+
+        servers
+            .save_profile(
+                WebServerProfileInput {
+                    id: String::new(),
+                    name: "Legacy Apache 5.6".into(),
+                    engine: WebServerEngine::Apache,
+                    server_line: Some("2.4".into()),
+                    php_line: Some("5.6".into()),
+                    port: Some(8095),
+                },
+                "it",
+            )
+            .unwrap();
+
+        let view = servers.list("it");
+        assert_eq!(view.pools.len(), 1);
+        assert_eq!(view.pools[0].id, "legacy-apache-5.6");
+        assert_eq!(view.pools[0].port, 8095);
+        assert!(view.pools[0].manual);
+
+        let mut aliases = BTreeMap::new();
+        aliases.insert("/media".into(), "storage/uploads".into());
+        aliases.insert("/shared".into(), "../common/assets".into());
+        let site = AttachedSite {
+            project: "portale".into(),
+            folder: "public".into(),
+            server_name: "portale.localhost".into(),
+            domains: vec!["admin.portale.localhost".into()],
+            aliases,
+            url: "http://portale.localhost:8095".into(),
+        };
+        let vhost = apache_vhost_conf(
+            8095,
+            Path::new(r"D:\kit\projects\portale"),
+            Path::new(r"D:\kit\projects\portale\public"),
+            &site,
+        );
+        assert!(vhost.contains("<VirtualHost *:8095>"));
+        assert!(vhost.contains("ServerName portale.localhost"));
+        assert!(vhost.contains("ServerAlias admin.portale.localhost"));
+        assert!(vhost.contains("Alias \"/media\" \"${CP_PROJECTS_FWD}/portale/storage/uploads\""));
+        assert!(vhost.contains("Alias \"/shared\" \"${CP_PROJECTS_FWD}/common/assets\""));
+
+        servers.remove_profile("legacy-apache-5.6").unwrap();
+        assert!(servers.list("it").pools.is_empty());
+    }
+}

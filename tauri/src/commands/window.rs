@@ -30,7 +30,8 @@ impl OpenNow {
 pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
     use tauri::Manager;
     let state = app.state::<AppState>();
-    let actions = app.try_state::<Arc<Runner>>().map_or(0, |r| r.running());
+    let actions = app.try_state::<Arc<Runner>>().map_or(0, |r| r.running())
+        + state.servers.running_count();
     OpenNow {
         processes: crate::os::sessions::foreign_processes(&state.kit),
         editor: state.editor.status().running,
@@ -63,6 +64,7 @@ pub async fn eject_run<R: Runtime>(
     if let Some(r) = app.try_state::<Arc<Runner>>() {
         r.stop_all();
     }
+    state.servers.stop_all();
     for (label, window) in app.webview_windows() {
         if label.starts_with(editor::window::LABEL_PREFIX) {
             let _ = window.destroy();
@@ -118,6 +120,7 @@ pub fn app_quit<R: Runtime>(
     if let Some(r) = app.try_state::<Arc<Runner>>() {
         r.stop_all();
     }
+    app.state::<AppState>().servers.stop_all();
     // The databases shut down cleanly first (D-73), off this thread.
     let services = Arc::clone(&app.state::<AppState>().services);
     let handle = app.clone();

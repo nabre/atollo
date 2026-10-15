@@ -38,6 +38,7 @@ pub(crate) mod frameworks;
 pub(crate) mod github;
 pub(crate) mod projects;
 pub(crate) mod runs;
+pub(crate) mod servers;
 pub(crate) mod services;
 pub(crate) mod setup;
 pub(crate) mod versions;
@@ -68,6 +69,8 @@ pub struct AppState {
     pub setup: Arc<SetupTask>,
     /// Database servers (D-73).
     pub services: Arc<crate::db::services::Services>,
+    /// Shared Apache and Nginx VirtualHost server pools.
+    pub servers: Arc<crate::servers::WebServers>,
 }
 
 impl AppState {
@@ -336,6 +339,13 @@ macro_rules! command_handler {
             $crate::commands::services::service_stop,
             $crate::commands::services::service_set,
             $crate::commands::services::service_line,
+            $crate::commands::servers::servers_list,
+            $crate::commands::servers::server_save,
+            $crate::commands::servers::server_remove,
+            $crate::commands::servers::server_start,
+            $crate::commands::servers::server_stop,
+            $crate::commands::servers::server_reload,
+            $crate::commands::servers::server_assign_project,
             $crate::commands::databases::db_browse_tree,
             $crate::commands::databases::db_browse_rows,
             $crate::commands::databases::db_admin_open,

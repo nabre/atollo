@@ -33,10 +33,11 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             Kind::Web,
         ));
     } else {
+        let is_wp = exists(dir, "wp-config.php") || exists(dir, "wp-settings.php");
         if exists(dir, r"bin\console") {
             platform = "Symfony".into();
             reason = "bin/console".into();
-        } else if exists(dir, "wp-config.php") || exists(dir, "wp-settings.php") {
+        } else if is_wp {
             platform = "WordPress".into();
             reason = "wp-settings.php".into();
             warnings.push(tr(
@@ -46,6 +47,29 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             ));
         }
         let root = docroot.unwrap_or(".");
+        let shown = if root == "." {
+            tr(lang, "cartella del progetto", &[])
+        } else {
+            root.to_owned()
+        };
+        let has_htaccess = exists(dir, ".htaccess")
+            || (root != "." && exists(dir, &format!(r"{root}\.htaccess")));
+        let has_nginx = exists(dir, "nginx.conf")
+            || (root != "." && exists(dir, &format!(r"{root}\nginx.conf")));
+        if has_htaccess || is_wp {
+            actions.push(Action::apache(
+                "apache",
+                &tr(lang, "sito web Apache ({0})", &[&shown]),
+                root,
+            ));
+        }
+        if has_nginx {
+            actions.push(Action::nginx(
+                "nginx",
+                &tr(lang, "sito web Nginx ({0})", &[&shown]),
+                root,
+            ));
+        }
         actions.push(Action::new(
             "php:server",
             &tr(lang, "php -S (cartella {0})", &[root]),
@@ -94,5 +118,14 @@ mod tests {
         let p = detect(&plain.0, "it");
         assert_eq!(p.kind, Kind::Web);
         assert_eq!(p.actions[0].command, "php -S 127.0.0.1:{port} -t public");
+
+        let ht = project(
+            "php-apache",
+            &[("public/index.php", "<?php"), ("public/.htaccess", "RewriteEngine On")],
+        );
+        let p = detect(&ht.0, "it");
+        assert_eq!(p.default.as_deref(), Some("apache"));
+        assert_eq!(p.actions[0].apache_dir.as_deref(), Some("public"));
+        assert!(p.requires.contains(&"apache".to_owned()));
     }
 }

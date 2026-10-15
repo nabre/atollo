@@ -1233,5 +1233,45 @@
     "en": "Also downloads the Android NDK (about 2 GB) and the Rust targets for Android.",
     "fr": "Télécharge aussi le NDK Android (environ 2 Go) et les cibles Rust pour Android.",
     "de": "Lädt auch das Android NDK (etwa 2 GB) und die Rust-Ziele für Android herunter."
+  },
+  "server web e reverse proxy, con PHP-CGI": {
+    "en": "web server and reverse proxy, with PHP-CGI",
+    "fr": "serveur web et proxy inverse, avec PHP-CGI",
+    "de": "Webserver und Reverse-Proxy, mit PHP-CGI"
+  },
+  "modulo php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64": {
+    "en": "php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll module, PHP Thread Safe x64",
+    "fr": "module php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64",
+    "de": "Modul php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64"
+  },
+  "PHP via FastCGI (php-cgi.exe)": {
+    "en": "PHP via FastCGI (php-cgi.exe)",
+    "fr": "PHP via FastCGI (php-cgi.exe)",
+    "de": "PHP über FastCGI (php-cgi.exe)"
+  },
+  "Alias non valido: usa un percorso /url e una cartella relativa (niente percorsi assoluti o ..).": {
+    "en": "Invalid alias: use a /url path and a relative folder (no absolute paths or ..).",
+    "fr": "Alias non valide : utilisez un chemin /url et un dossier relatif (pas de chemins absolus ni de ..).",
+    "de": "Ungültiger Alias: Verwende einen /url-Pfad und einen relativen Ordner (keine absoluten Pfade oder ..)."
+  },
+  "Dominio non valido: usa un nome che termina con .localhost (es. mio-sito.localhost).": {
+    "en": "Invalid domain: use a name ending with .localhost (e.g. my-site.localhost).",
+    "fr": "Domaine non valide : utilisez un nom se terminant par .localhost (ex. mon-site.localhost).",
+    "de": "Ungültige Domain: Verwende einen Namen mit der Endung .localhost (z. B. meine-seite.localhost)."
+  },
+  "sito web Nginx ({0})": {
+    "en": "Nginx website ({0})",
+    "fr": "site web Nginx ({0})",
+    "de": "Nginx-Website ({0})"
+  },
+  "Identificativo del server non valido.": {
+    "en": "Invalid server identifier.",
+    "fr": "Identifiant de serveur non valide.",
+    "de": "Ungültige Serverkennung."
+  },
+  "Scrivi un nome per il profilo server.": {
+    "en": "Enter a name for the server profile.",
+    "fr": "Écrivez un nom pour le profil de serveur.",
+    "de": "Gib einen Namen für das Serverprofil ein."
   }
 }

@@ -11,6 +11,7 @@
 pub mod apache;
 pub mod frameworks;
 pub mod mcp;
+pub mod nginx;
 pub mod run;
 pub mod serve;
 pub mod settings;

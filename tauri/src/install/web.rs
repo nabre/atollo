@@ -302,9 +302,7 @@ pub fn php_lines(releases: &Value) -> Vec<String> {
         .into_iter()
         .flatten()
         .map(|(k, _)| k.clone())
-        // PHP 8 and later: Apache's configuration loads `php8apache2_4.dll`.
         .filter(|k| crate::versions::valid_line(k) && pick_php(releases, Some(k)).is_ok())
-        .filter(|k| crate::versions::ranges::Version::parse(k).is_some_and(|v| v.0 >= 8))
         .collect();
     out.sort_by_key(|l| std::cmp::Reverse(super::lang::version_key(l)));
     out
@@ -312,11 +310,64 @@ pub fn php_lines(releases: &Value) -> Vec<String> {
 
 const PHP_RELEASES: &str = "https://windows.php.net/downloads/releases";
 
+/// Final EOL Thread Safe x64 builds archived on windows.php.net (`(line, version, path, sha256)`).
+const PHP_ARCHIVES: &[(&str, &str, &str, &str)] = &[
+    (
+        "8.1",
+        "8.1.34",
+        "archives/php-8.1.34-Win32-vs16-x64.zip",
+        "8e17e0804fe48d3a032c9bef16f0f922996e0b1b237061b7ce94485394db5d1b",
+    ),
+    (
+        "8.0",
+        "8.0.30",
+        "archives/php-8.0.30-Win32-vs16-x64.zip",
+        "8697972b5f704885e3444422ede2b5c25d025f614ea96dc67de74dc582471562",
+    ),
+    (
+        "7.4",
+        "7.4.33",
+        "archives/php-7.4.33-Win32-vc15-x64.zip",
+        "cdbb85b45f38f282f05764ca08648b5f92db99c75b2fb3848eb4a559f6553b48",
+    ),
+    (
+        "7.3",
+        "7.3.33",
+        "archives/php-7.3.33-Win32-VC15-x64.zip",
+        "eabf265d817ea534eeeeb51995693a8fd215bc6cfc42d5fcd5e5cd56a1d5da53",
+    ),
+    (
+        "7.2",
+        "7.2.34",
+        "archives/php-7.2.34-Win32-VC15-x64.zip",
+        "3a3d026aacf8da57ff01ace2f78f8f57494744bfb669f8545cc8f9c4ff0450a5",
+    ),
+    (
+        "7.1",
+        "7.1.33",
+        "archives/php-7.1.33-Win32-VC14-x64.zip",
+        "2f6b0c6b62de88cf5cc16e68ac6d5e3b73fc01bcb03b51fe8c8534965b8e808c",
+    ),
+    (
+        "7.0",
+        "7.0.33",
+        "archives/php-7.0.33-Win32-VC14-x64.zip",
+        "8a22c93732b576507888e011b147df80beee7b7e24f527cb6e1282b5228350c2",
+    ),
+    (
+        "5.6",
+        "5.6.40",
+        "archives/php-5.6.40-Win32-VC11-x64.zip",
+        "b312df0b16ec645adfd7ad39ce6f9dd294a4dfeb8130ee8041f8af0f89f62904",
+    ),
+];
+
 /// The PHP zip of a branch, the part that becomes the `php` folder.
 fn php_part(path: String, sha: String) -> Part {
+    let file_name = path.rsplit('/').next().unwrap_or(&path).to_owned();
     Part {
         url: format!("{PHP_RELEASES}/{path}"),
-        file_name: path,
+        file_name,
         expect: Expect::Sha256(sha),
         kind: Kind::Zip,
         inner: Inner::Root,
@@ -336,21 +387,42 @@ impl Installer for Php {
     }
 
     fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
-        Ok(php_lines(
+        let mut out = php_lines(
             &ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?,
-        ))
+        );
+        for (line, _, _, _) in PHP_ARCHIVES {
+            if !out.iter().any(|l| l == line) {
+                out.push((*line).to_owned());
+            }
+        }
+        out.sort_by_key(|l| std::cmp::Reverse(super::lang::version_key(l)));
+        Ok(out)
     }
 
     fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
         let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
-        let (version, path, sha) = pick_php(&releases, Some(line))?;
+        let (version, path, sha) = match pick_php(&releases, Some(line)) {
+            Ok(found) => found,
+            Err(e) => PHP_ARCHIVES
+                .iter()
+                .find(|(l, _, _, _)| *l == line)
+                .map(|(_, v, p, s)| ((*v).to_owned(), (*p).to_owned(), (*s).to_owned()))
+                .ok_or(e)?,
+        };
         php_release(ctx, version, path, sha)
     }
 
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
         let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
         let branch = Settings::load(ctx.kit).settings.php_version;
-        let (version, path, sha) = pick_php(&releases, branch.as_deref())?;
+        let (version, path, sha) = match pick_php(&releases, branch.as_deref()) {
+            Ok(found) => found,
+            Err(e) => branch
+                .as_deref()
+                .and_then(|b| PHP_ARCHIVES.iter().find(|(l, _, _, _)| *l == b))
+                .map(|(_, v, p, s)| ((*v).to_owned(), (*p).to_owned(), (*s).to_owned()))
+                .ok_or(e)?,
+        };
         php_release(ctx, version, path, sha)
     }
 
@@ -504,6 +576,35 @@ pub fn php_ini(template: &str) -> Result<String> {
 pub struct Apache;
 
 impl Installer for Apache {
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        let site = "https://www.apachelounge.com";
+        let page = ctx.net.text(&format!("{site}/download/"))?;
+        let re = pattern(
+            r#"(?i)href="/download/VS\d+/binaries/httpd-(\d+\.\d+)\.\d+-\d+-Win64-VS\d+\.zip""#,
+        )?;
+        let mut out: Vec<String> = Vec::new();
+        for c in re.captures_iter(&page) {
+            let line = c[1].to_owned();
+            if crate::versions::valid_line(&line) && !out.contains(&line) {
+                out.push(line);
+            }
+        }
+        out.sort_by_key(|l| std::cmp::Reverse(super::lang::version_key(l)));
+        Ok(out)
+    }
+
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        let rel = self.latest(ctx, component)?;
+        if crate::versions::line_of(&rel.version).as_deref() == Some(line) {
+            return Ok(rel);
+        }
+        bail!("Apache {line} not available")
+    }
+
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
         let site = "https://www.apachelounge.com";
         let page = ctx.net.text(&format!("{site}/download/"))?;
@@ -548,11 +649,101 @@ impl Installer for Apache {
     }
 }
 
+/// Official Windows build of Nginx from `nginx/nginx` GitHub releases.
+pub struct Nginx;
+
+const NGINX_REPO: &str = "nginx/nginx";
+const NGINX_ASSET: &str = r"^nginx-\d+\.\d+\.\d+\.zip$";
+
+fn nginx_version(tag: &str) -> &str {
+    tag.trim_start_matches("release-").trim_start_matches('v')
+}
+
+fn nginx_releases(ctx: &Ctx) -> Result<Vec<crate::net::GhRelease>> {
+    let all: Vec<crate::net::GhRelease> = ctx.net.json(&format!(
+        "https://api.github.com/repos/{NGINX_REPO}/releases?per_page=100"
+    ))?;
+    let re = pattern(NGINX_ASSET)?;
+    let mut out: Vec<crate::net::GhRelease> = all
+        .into_iter()
+        .filter(|r| !r.prerelease && super::lang::is_release(nginx_version(&r.tag_name)))
+        .filter(|r| r.asset(&re).is_some())
+        .collect();
+    out.sort_by_key(|r| std::cmp::Reverse(super::lang::version_key(nginx_version(&r.tag_name))));
+    Ok(out)
+}
+
+fn nginx_release_from(rel: &crate::net::GhRelease) -> Result<Release> {
+    let file = rel
+        .asset(&pattern(NGINX_ASSET)?)
+        .ok_or_else(|| anyhow!("Nginx {}: no Windows zip asset", rel.tag_name))?;
+    Ok(Release::single(
+        nginx_version(&rel.tag_name).to_owned(),
+        file.browser_download_url.clone(),
+        file.name.clone(),
+        Expect::Sha256(crate::net::github_digest(file)?),
+        Kind::Zip,
+        Inner::Single,
+    ))
+}
+
+impl Installer for Nginx {
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        let mut out = Vec::new();
+        for r in nginx_releases(ctx)? {
+            if let Some(line) = crate::versions::line_of(nginx_version(&r.tag_name)) {
+                if !out.contains(&line) {
+                    out.push(line);
+                }
+            }
+        }
+        Ok(out)
+    }
+
+    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
+        let releases = nginx_releases(ctx)?;
+        let rel = releases
+            .iter()
+            .find(|r| crate::versions::line_of(nginx_version(&r.tag_name)).as_deref() == Some(line))
+            .ok_or_else(|| anyhow!("Nginx {line} not available"))?;
+        nginx_release_from(rel)
+    }
+
+    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
+        if let Ok(rel) = ctx.net.github_latest(NGINX_REPO) {
+            if let Ok(r) = nginx_release_from(&rel) {
+                return Ok(r);
+            }
+        }
+        let releases = nginx_releases(ctx)?;
+        let rel = releases
+            .first()
+            .ok_or_else(|| anyhow!("no Nginx release found"))?;
+        nginx_release_from(rel)
+    }
+
+    fn before_swap(
+        &self,
+        _ctx: &Ctx,
+        _component: &Component,
+        tree: &Path,
+        _old: &Path,
+    ) -> Result<()> {
+        fs::create_dir_all(tree.join("logs"))?;
+        fs::create_dir_all(tree.join("temp"))?;
+        Ok(())
+    }
+}
+
 /// httpd.conf of the kit: root from the kit variables, no port 80 (it is
 /// in kit.conf), mod_rewrite on, kit.conf included.
 pub fn httpd_conf(text: &str) -> Result<String> {
     let mut t = pattern(r"(?m)^Define SRVROOT [^\r\n]*")?
-        .replace(text, r#"Define SRVROOT "$${CP_APPS_FWD}/apache""#)
+        .replace(text, r#"Define SRVROOT "$${CP_APACHE_FWD}""#)
         .into_owned();
     t = pattern(r"(?m)^Listen 80[ \t]*(\r?)$")?
         .replace(&t, "#Listen 80   (port in data\\apache\\kit.conf)$1")
@@ -560,7 +751,7 @@ pub fn httpd_conf(text: &str) -> Result<String> {
     t = pattern(r"(?m)^#(LoadModule rewrite_module [^\r\n]*)")?
         .replace(&t, "$1")
         .into_owned();
-    if !t.contains("${CP_APPS_FWD}/apache") {
+    if !t.contains("${CP_APACHE_FWD}") {
         bail!("httpd.conf in an unexpected format (no Define SRVROOT)");
     }
     Ok(format!(
@@ -599,6 +790,22 @@ pub fn apache_site(dir: &Path) -> Result<()> {
             "<IfFile \"${CP_PHP_FWD}/php8apache2_4.dll\">",
             "    LoadFile \"${CP_PHP_FWD}/php8ts.dll\"",
             "    LoadModule php_module \"${CP_PHP_FWD}/php8apache2_4.dll\"",
+            "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"",
+            "    <FilesMatch \"\\.php$\">",
+            "        SetHandler application/x-httpd-php",
+            "    </FilesMatch>",
+            "</IfFile>",
+            "<IfFile \"${CP_PHP_FWD}/php7apache2_4.dll\">",
+            "    LoadFile \"${CP_PHP_FWD}/php7ts.dll\"",
+            "    LoadModule php7_module \"${CP_PHP_FWD}/php7apache2_4.dll\"",
+            "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"",
+            "    <FilesMatch \"\\.php$\">",
+            "        SetHandler application/x-httpd-php",
+            "    </FilesMatch>",
+            "</IfFile>",
+            "<IfFile \"${CP_PHP_FWD}/php5apache2_4.dll\">",
+            "    LoadFile \"${CP_PHP_FWD}/php5ts.dll\"",
+            "    LoadModule php5_module \"${CP_PHP_FWD}/php5apache2_4.dll\"",
             "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"",
             "    <FilesMatch \"\\.php$\">",
             "        SetHandler application/x-httpd-php",
@@ -674,10 +881,10 @@ mod tests {
         assert!(pick_php(&releases, Some("7.4")).is_err());
         assert_eq!(php_lines(&releases), ["8.4", "8.3"]);
 
-        // PHP 7 has a build, but Apache's configuration loads PHP 8's module.
+        // PHP 7 and 5.6 builds are supported alongside PHP 8.
         let mut with_7 = releases.clone();
         with_7["7.4"] = json!({"version": "7.4.33", "ts-vc15-x64": {"zip": {"path": "php-7.4.33.zip", "sha256": "dd"}}});
-        assert_eq!(php_lines(&with_7), ["8.4", "8.3"]);
+        assert_eq!(php_lines(&with_7), ["8.4", "8.3", "7.4"]);
     }
 
     #[test]
@@ -720,7 +927,7 @@ mod tests {
     fn httpd_conf_changes() {
         let text = "Define SRVROOT \"c:/Apache24\"\r\nListen 80\r\n#LoadModule rewrite_module modules/mod_rewrite.so\r\n";
         let out = httpd_conf(text).unwrap();
-        assert!(out.starts_with("Define SRVROOT \"${CP_APPS_FWD}/apache\"\r\n"));
+        assert!(out.starts_with("Define SRVROOT \"${CP_APACHE_FWD}\"\r\n"));
         assert!(out.contains("#Listen 80"));
         assert!(out.contains("\r\nLoadModule rewrite_module"));
         assert!(out.ends_with("Include \"${CP_ROOT_FWD}/data/apache/kit.conf\"\r\n"));

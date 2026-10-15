@@ -32,7 +32,8 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 pub use overrides::{
-    remove_action, save_action, set_default_action, set_site, ActionEdit, SiteKind, SITE_ACTION,
+    remove_action, save_action, set_default_action, set_site_with_options, ActionEdit, SiteKind,
+    SiteOptions, SITE_ACTION,
 };
 
 /// A folder inside the project (relative, no `..`, no link leading out).
@@ -77,6 +78,18 @@ pub struct Action {
     /// A folder served by the project's own Apache.
     #[serde(rename = "apache")]
     pub apache_dir: Option<String>,
+    /// A folder served by the project's own Nginx.
+    #[serde(rename = "nginx")]
+    pub nginx_dir: Option<String>,
+    /// Web server profile id, or `auto`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server: Option<String>,
+    /// RFC 6761 `.localhost` domain aliases.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub domains: Vec<String>,
+    /// Portable relative path aliases (`/url` -> `relative/folder` or `@other/folder`).
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub aliases: BTreeMap<String, String>,
     /// From panel.json.
     pub custom: bool,
 }
@@ -93,6 +106,10 @@ impl Action {
             env: BTreeMap::new(),
             static_dir: None,
             apache_dir: None,
+            nginx_dir: None,
+            server: None,
+            domains: Vec::new(),
+            aliases: BTreeMap::new(),
             custom: false,
         }
     }
@@ -114,6 +131,14 @@ impl Action {
     fn apache(id: &str, label: &str, folder: &str) -> Action {
         Action {
             apache_dir: Some(folder.to_owned()),
+            ..Action::new(id, label, "", Kind::Web)
+        }
+    }
+
+    /// A folder of the project served by its own Nginx.
+    fn nginx(id: &str, label: &str, folder: &str) -> Action {
+        Action {
+            nginx_dir: Some(folder.to_owned()),
             ..Action::new(id, label, "", Kind::Web)
         }
     }
@@ -354,6 +379,7 @@ fn need_of_file(name: &str) -> Option<&'static str> {
         "Gemfile" | "Gemfile.lock" => "ruby",
         "renv.lock" => "r",
         "AndroidManifest.xml" => "android",
+        "nginx.conf" => "nginx",
         _ => return None,
     })
 }
@@ -447,6 +473,31 @@ pub fn requires(dir: &Path) -> Vec<String> {
             found.insert("cc");
         }
     });
+    if [
+        ".htaccess",
+        r"public\.htaccess",
+        r"web\.htaccess",
+        r"htdocs\.htaccess",
+    ]
+    .iter()
+    .any(|f| exists(dir, f))
+    {
+        found.insert("apache");
+        found.insert("php");
+    }
+    for compose in ["compose.yaml", "docker-compose.yml"] {
+        let text = read(dir, compose).to_ascii_lowercase();
+        if text.contains("image: httpd")
+            || text.contains("image: apache")
+            || (text.contains("php:") && text.contains("-apache"))
+        {
+            found.insert("apache");
+            found.insert("php");
+        }
+        if text.contains("image: nginx") {
+            found.insert("nginx");
+        }
+    }
     found.extend(databases(dir));
     let catalog = crate::setup::catalog::Catalog::get();
     found
@@ -548,6 +599,12 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             if !project.requires.iter().any(|r| r == id) {
                 project.requires.push(id.to_owned());
             }
+        }
+        project.requires.sort();
+    }
+    if project.actions.iter().any(|a| a.nginx_dir.is_some()) {
+        if !project.requires.iter().any(|r| r == "nginx") {
+            project.requires.push("nginx".to_owned());
         }
         project.requires.sort();
     }

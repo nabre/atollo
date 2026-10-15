@@ -13,6 +13,7 @@ import {
   VscError,
   VscExtensions,
   VscFolderLibrary,
+  VscGlobe,
   VscHubot,
   VscLayoutPanel,
   VscPlay,
@@ -42,11 +43,20 @@ import { SettingsPage } from "./settings";
 import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
+import { ServersPage } from "./servers";
 import { NewProjectPage } from "./wizard";
 import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./hooks";
 
-type PageId = "new" | "projects" | "agents" | "databases" | "components" | "settings" | "eject";
+type PageId =
+  | "new"
+  | "projects"
+  | "agents"
+  | "databases"
+  | "servers"
+  | "components"
+  | "settings"
+  | "eject";
 
 interface Page {
   id: PageId;
@@ -60,6 +70,7 @@ function pages(): Page[] {
     { id: "projects", label: t("Progetti"), icon: VscFolderLibrary },
     { id: "agents", label: t("Agenti"), icon: VscHubot },
     { id: "databases", label: t("Database"), icon: VscDatabase },
+    { id: "servers", label: t("Server Web"), icon: VscGlobe },
     { id: "components", label: t("Strumenti"), icon: VscExtensions },
     { id: "settings", label: t("Impostazioni"), icon: VscSettingsGear },
     { id: "eject", label: t("Rimuovi l'unità"), icon: VscDebugDisconnect },
@@ -156,6 +167,8 @@ export function App() {
             <ComponentsPage setup={setup} />
           ) : page === "databases" ? (
             <DatabasesPage />
+          ) : page === "servers" ? (
+            <ServersPage />
           ) : page === "settings" ? (
             <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} info={info} />
           ) : (

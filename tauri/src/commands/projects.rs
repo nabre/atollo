@@ -144,7 +144,7 @@ pub fn project_action_default<R: Runtime>(
 }
 
 /// "Servi come sito web": a folder of the project served by the file server
-/// (`static`) or by PHP (`php`), or the site removed (`none`).
+/// (`static`), PHP (`php`), Apache (`apache`) or Nginx (`nginx`), or the site removed (`none`).
 #[tauri::command]
 pub fn project_site<R: Runtime>(
     webview: Webview<R>,
@@ -153,6 +153,7 @@ pub fn project_site<R: Runtime>(
     project: String,
     folder: String,
     kind: crate::detect::SiteKind,
+    options: Option<crate::detect::SiteOptions>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
@@ -169,7 +170,13 @@ pub fn project_site<R: Runtime>(
         )
         .into());
     }
-    Ok(crate::detect::set_site(&dir, &folder, kind, state.lang())?)
+    Ok(crate::detect::set_site_with_options(
+        &dir,
+        &folder,
+        kind,
+        &options.unwrap_or_default(),
+        state.lang(),
+    )?)
 }
 
 /// Installs the kit components a project needs and are missing (its

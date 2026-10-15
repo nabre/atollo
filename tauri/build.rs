@@ -75,6 +75,13 @@ const COMMANDS: &[&str] = &[
     "service_stop",
     "service_set",
     "service_line",
+    "servers_list",
+    "server_save",
+    "server_remove",
+    "server_start",
+    "server_stop",
+    "server_reload",
+    "server_assign_project",
     "db_browse_tree",
     "db_browse_rows",
     "db_admin_open",
@@ -97,6 +104,9 @@ const COMMANDS: &[&str] = &[
 
 fn main() {
     println!("cargo:rerun-if-changed=windows-app.manifest");
+    println!("cargo:rerun-if-changed=i18n/catalog.json");
+    println!("cargo:rerun-if-changed=catalog/components.json");
+    println!("cargo:rerun-if-changed=catalog/relations.json");
     let windows =
         tauri_build::WindowsAttributes::new().app_manifest(include_str!("windows-app.manifest"));
     let attributes = tauri_build::Attributes::new()

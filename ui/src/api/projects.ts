@@ -18,6 +18,14 @@ export interface ProjectAction {
   static: string | null;
   /** A folder served by an Apache of the project's own. */
   apache: string | null;
+  /** A folder served by an Nginx of the project's own. */
+  nginx?: string | null;
+  /** Web server profile id, or "auto". */
+  server?: string | null;
+  /** RFC 6761 .localhost domain aliases. */
+  domains?: string[];
+  /** Portable relative path aliases (/url -> folder). */
+  aliases?: Record<string, string>;
   custom: boolean;
 }
 
@@ -69,6 +77,7 @@ function sampleAction(id: string, label: string, command: string, staticDir: str
     env: {},
     static: staticDir,
     apache: null,
+    nginx: null,
     custom: false,
   };
 }
@@ -179,7 +188,13 @@ export function projectClone(source: string, name: string | null): Promise<strin
   return query<string>("project_clone", name ?? "clone", { source, name });
 }
 
-export type SiteKind = "static" | "php" | "apache" | "none";
+export type SiteKind = "static" | "php" | "apache" | "nginx" | "none";
+
+export interface SiteOptions {
+  server?: string | null;
+  domains?: string[];
+  aliases?: Record<string, string>;
+}
 
 /** A project's own MCP server (.mcp.json, D-78). */
 export interface McpServer {
@@ -239,6 +254,6 @@ export function projectActionDefault(project: string, id: string): Promise<void>
 }
 
 /** "Servi come sito web": writes the "site" action in the project's panel.json. */
-export function projectSite(project: string, folder: string, kind: SiteKind): Promise<void> {
-  return act("project_site", { project, folder, kind });
+export function projectSite(project: string, folder: string, kind: SiteKind, options?: SiteOptions): Promise<void> {
+  return act("project_site", { project, folder, kind, options });
 }

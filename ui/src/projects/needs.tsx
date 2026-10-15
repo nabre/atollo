@@ -22,6 +22,7 @@ export const COMPONENT_NAMES: Record<string, string> = {
   gh: "GitHub CLI",
   php: "PHP",
   apache: "Apache",
+  nginx: "Nginx",
   rust: "Rust",
   go: "Go",
   java: "Java",

@@ -203,6 +203,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "gh" => &core::Gh,
         "php" => &web::Php,
         "apache" => &web::Apache,
+        "nginx" => &web::Nginx,
         "rust" => &native::Rust,
         "go" => &lang::Go,
         "java" => &lang::Java,

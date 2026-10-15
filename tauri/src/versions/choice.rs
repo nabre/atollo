@@ -137,10 +137,16 @@ fn apply(env: &mut KitEnv, swaps: &[Swap]) {
     for (k, v) in changed {
         env.set(&k, v);
     }
-    // Apache's PHP (`/` paths, not rewritten above) is the PHP in use: its
-    // module and php.ini's `${CP_PHP}\ext` must be the same version.
-    if let Some(php) = env.get("CP_PHP").map(|p| p.replace('\\', "/")) {
-        env.set("CP_PHP_FWD", php);
+    // Apache's PHP (`/` paths, not rewritten above) and the web servers
+    // follow the version in use.
+    for (from, to) in [
+        ("CP_PHP", "CP_PHP_FWD"),
+        ("CP_APACHE", "CP_APACHE_FWD"),
+        ("CP_NGINX", "CP_NGINX_FWD"),
+    ] {
+        if let Some(p) = env.get(from).map(|p| p.replace('\\', "/")) {
+            env.set(to, p);
+        }
     }
 }
 
