@@ -203,7 +203,8 @@ BRAND = {
 # Colors VS Code computes from another key when the theme doesn't set them
 # (the colorRegistry's defaults): with the brand emphasis they follow it,
 # as in the editor. Each pair is checked against vscode-defaults/, where
-# both keys hold the same value in Dark Modern and Light Modern.
+# the key holds the source's value (with the alpha, if any) in Dark Modern
+# and Light Modern.
 DERIVED = {
     "sash.hoverBorder": "focusBorder",
     "settings.focusedRowBorder": "focusBorder",
@@ -230,6 +231,8 @@ DERIVED = {
     "inlineEdit.gutterIndicator.primaryBorder": "button.background",
     "inlineEdit.gutterIndicator.successfulBorder": "button.background",
     "inlineEdit.gutterIndicator.successfulBackground": "button.background",
+    "inlineEdit.gutterIndicator.primaryForeground": "button.foreground",
+    "inlineEdit.gutterIndicator.successfulForeground": "button.foreground",
     "extensionBadge.remoteBackground": "activityBarBadge.background",
     "extensionBadge.remoteForeground": "activityBarBadge.foreground",
     "panelTitleBadge.background": "activityBarBadge.background",
@@ -254,6 +257,36 @@ DERIVED = {
     "settings.numberInputBackground": "input.background",
     "settings.numberInputBorder": "input.border",
     "settings.numberInputForeground": "input.foreground",
+    "extensionIcon.verifiedForeground": "textLink.foreground",
+    "chat.requestBubbleHoverBackground": "editor.selectionBackground",
+    # transparent(source, alpha): the source's alpha times this one
+    "editorOverviewRuler.modifiedForeground": ("editorGutter.modifiedBackground", 0.6),
+    "editorCommentsWidget.rangeBackground": ("editorCommentsWidget.unresolvedBorder", 0.1),
+    "editorCommentsWidget.rangeActiveBackground": (
+        "editorCommentsWidget.unresolvedBorder",
+        0.1,
+    ),
+    "commandCenter.debuggingBackground": ("statusBar.debuggingBackground", 0.258),
+    "editor.foldBackground": ("editor.selectionBackground", 0.3),
+    "chat.requestBubbleBackground": ("editor.selectionBackground", 0.3),
+}
+
+# The same, where the registry derives a key in one theme kind only (or
+# with a different alpha per kind).
+DERIVED_KIND = {
+    "dark": {
+        "banner.background": "list.activeSelectionBackground",
+        "inlineEdit.gutterIndicator.primaryBackground": (
+            "inlineEdit.gutterIndicator.primaryBorder",
+            0.4,
+        ),
+    },
+    "light": {
+        "inlineEdit.gutterIndicator.primaryBackground": (
+            "inlineEdit.gutterIndicator.primaryBorder",
+            0.5,
+        ),
+    },
 }
 
 # Keys VS Code leaves without a value outside high contrast: a webview has
@@ -468,11 +501,49 @@ def defaults(kind):
     return data["variables"]
 
 
+def derived(kind):
+    """DERIVED and DERIVED_KIND for a theme kind, as key -> (source, alpha)."""
+    pairs = {**DERIVED, **DERIVED_KIND[kind]}
+    return {k: v if isinstance(v, tuple) else (v, 1) for k, v in pairs.items()}
+
+
+def rgba(value):
+    """A `#rgb[a]`, `#rrggbb[aa]` or `rgb[a](...)` color as (r, g, b, a)."""
+    m = re.fullmatch(r"rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)", value)
+    if m:
+        r, g, b, a = m.groups()
+        return int(r), int(g), int(b), float(a or 1)
+    digits = value.removeprefix("#")
+    if len(digits) in (3, 4):
+        digits = "".join(c * 2 for c in digits)
+    a = int(digits[6:8], 16) / 255 if len(digits) == 8 else 1
+    return *(int(digits[i : i + 2], 16) for i in (0, 2, 4)), a
+
+
+def transparent(value, alpha):
+    """VS Code's transparent(): the color with its alpha scaled."""
+    if alpha == 1:
+        return value
+    r, g, b, a = rgba(value)
+    return f"#{r:02x}{g:02x}{b:02x}{round(a * alpha * 255):02x}"
+
+
+def same_color(a, b):
+    """Equal up to the rounding of the alpha in vscode-defaults."""
+    if a is None or b is None:
+        return a == b
+    (*x, xa), (*y, ya) = rgba(a), rgba(b)
+    return x == y and abs(xa - ya) < 0.01
+
+
 def check_derived():
     for kind in ("dark", "light"):
         base = defaults(kind)
-        for key, source in DERIVED.items():
-            if base.get(var_name(key)) != base.get(var_name(source)):
+        for key, (source, alpha) in derived(kind).items():
+            value = base.get(var_name(source))
+            if value is None or not same_color(
+                base.get(var_name(key)), transparent(value, alpha)
+            ):
                 raise SystemExit(f"{kind}: {key} is not {source} in vscode-defaults")
 
 
@@ -487,9 +558,10 @@ def vscode_vars(kind):
     for key, value in BUILTIN[kind].items():
         out[var_name(key)] = value
     theme = editor_theme(kind)["colors"]
-    for key, source in DERIVED.items():
+    for key, (source, alpha) in derived(kind).items():
         if key not in theme:
-            out[var_name(key)] = theme.get(source, out.get(var_name(source)))
+            value = theme.get(source, out[var_name(source)])
+            out[var_name(key)] = transparent(value, alpha)
     for key, value in theme.items():
         out[var_name(key)] = value
     for key in UNSET:
