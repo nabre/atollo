@@ -52,6 +52,20 @@ fn old_backups(kit: &Kit) -> PathBuf {
     kit.data().join(r"db\backup")
 }
 
+/// Data of layout 1 still waiting to move (the migration failed somewhere and
+/// retries at the next start). Until then the passwords of some projects are
+/// only in the old places, unseen by the checks of database names: creating,
+/// dropping and restoring databases wait (`db::auth::check_name_free`).
+pub fn pending(kit: &Kit) -> bool {
+    if fs::read_to_string(layout_file(kit)).is_ok_and(|t| t.trim() == LAYOUT) {
+        return false;
+    }
+    kit.project_states().exists()
+        || old_ports(kit).exists()
+        || old_backups(kit).exists()
+        || auth::load(kit).other.contains_key("projects")
+}
+
 /// Migrates once; never panics, logs what it did not do.
 pub fn run(kit: &Kit) {
     if fs::read_to_string(layout_file(kit)).is_ok_and(|t| t.trim() == LAYOUT) {
