@@ -75,6 +75,8 @@ pub struct RunInfo {
     pub end: Option<u64>,
     pub code: Option<i32>,
     pub pid: Option<u32>,
+    /// URLs of the site's aliases that were left out of its configuration.
+    pub skipped_aliases: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -537,6 +539,11 @@ impl Runner {
             end: None,
             code: None,
             pid: None,
+            skipped_aliases: if action.apache_dir.is_some() || action.nginx_dir.is_some() {
+                crate::projects::alias::skipped(dir, &self.kit.projects(), &action.aliases)
+            } else {
+                Vec::new()
+            },
         };
         let mut header = vec![format!("> {shown}")];
         header.push(match port {

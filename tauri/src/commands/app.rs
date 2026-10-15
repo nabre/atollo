@@ -21,12 +21,28 @@ pub struct AppInfo {
     pub first_run: bool,
     /// Other copies of the kit with programs open (two kits on one PC).
     pub other_kits: Vec<String>,
+    /// File system of the kit's disk (`NTFS`, `ReFS`, `FAT32`, `exFAT`,
+    /// `other`); `None` when it could not be read.
+    pub disk_fs: Option<&'static str>,
+    /// `fixed`, `removable`, `remote` or `other`.
+    pub disk_kind: Option<&'static str>,
+    /// The host's temporary folder when the programs' `TEMP` is in it;
+    /// `None` when it is `data\tmp` in the kit.
+    pub system_temp: Option<String>,
 }
 
 #[tauri::command]
 pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> CmdResult<AppInfo> {
     ensure_main(&webview)?;
     let kit = &state.kit;
+    let env = state.env();
+    let system_temp = kit
+        .system_temp()
+        .filter(|host| {
+            env.get("TEMP")
+                .is_some_and(|t| std::path::Path::new(t).starts_with(host))
+        })
+        .map(|host| host.display().to_string());
     Ok(AppInfo {
         version: env!("CARGO_PKG_VERSION"),
         root: kit.root().display().to_string(),
@@ -36,13 +52,16 @@ pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> 
         lang: state.lang(),
         moved_from: state.moved_from.clone(),
         webview: state.webview.clone(),
-        path_entries: state.env().path_entries().len(),
+        path_entries: env.path_entries().len(),
         watcher_unsafe_folder: crate::kit::watcher_unsafe_folder(kit.root()),
         first_run: Choice::read(kit, Catalog::get()).is_none(),
         other_kits: crate::os::sessions::other_kits(kit)
             .iter()
             .map(|p| p.display().to_string())
             .collect(),
+        disk_fs: kit.volume().map(|v| v.fs.as_str()),
+        disk_kind: kit.volume().map(|v| v.drive.as_str()),
+        system_temp,
     })
 }
 

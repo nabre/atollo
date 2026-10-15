@@ -52,8 +52,12 @@ import {
 import { ProjectPage } from "./page";
 import { KIND_ICON, ProjectState } from "./kind";
 import { CloneProject, NewProject } from "./new";
+import { Orphans } from "./orphans";
 
 type PaneId = "projects" | "new" | "github";
+
+/** Stable while the list is loading (Orphans reads again when it changes). */
+const NO_PROJECTS: ProjectInfo[] = [];
 
 export function ProjectsPage({
   status,
@@ -249,6 +253,7 @@ export function ProjectsPage({
             </List>
           )}
         </ViewPane>
+        <Orphans projects={projects ?? NO_PROJECTS} onChanged={load} />
         <ViewPane
           title={t("Nuovo progetto")}
           expanded={panes.has("new")}

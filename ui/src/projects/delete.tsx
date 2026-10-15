@@ -89,7 +89,11 @@ export function DeleteProjectDialog({
     >
       <p>{t("Vengono eliminati:")}</p>
       <ul className="list-disc space-y-1 pl-5">
-        <li>{t("La cartella vuota del progetto e le impostazioni del kit")}</li>
+        <li>
+          {plan?.folderExists === false
+            ? t("Le impostazioni e i dati del kit di questo progetto")
+            : t("La cartella vuota del progetto e le impostazioni del kit")}
+        </li>
         {plan?.databases.map((db) =>
           db.installed ? (
             <li key={db.engine}>{t("Il database {0} e il suo utente su {1}", db.database, ENGINE_NAMES[db.engine])}</li>

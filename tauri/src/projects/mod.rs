@@ -293,7 +293,15 @@ pub fn delete(
 ) -> Result<()> {
     check_name(name, lang)?;
     let dir = kit.projects().join(name);
-    check_deletable(&dir, name, lang)?;
+    // No folder at all: the data of the kit left by a project that is gone
+    // (an orphan, WP-7) is deleted with its databases.
+    let no_folder = matches!(
+        fs::symlink_metadata(&dir),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound
+    );
+    if !no_folder {
+        check_deletable(&dir, name, lang)?;
+    }
     let databases = match databases_of(kit, name) {
         Ok(databases) => databases,
         Err(e) if force_without_db => {
@@ -328,7 +336,9 @@ pub fn delete(
             left.join(", ")
         ));
     }
-    fs::remove_dir(&dir).with_context(|| dir.display().to_string())?;
+    if !no_folder {
+        fs::remove_dir(&dir).with_context(|| dir.display().to_string())?;
+    }
     let removed = settings::remove(kit, name);
     // The users are gone (or given up): their passwords go too, even when
     // another file of the folder stayed.
@@ -1044,6 +1054,21 @@ mod tests {
         delete(&kit, "shop", "it", &dbs, false).unwrap();
         assert_eq!(dbs.calls(), ["start mongodb", "drop mongodb shop"]);
         assert!(!kit.projects().join("shop").exists() && !state.dir().exists());
+    }
+
+    #[test]
+    fn an_orphan_without_a_folder_is_deleted_with_its_databases() {
+        let tmp = TempDir::new("projects-delete-orphan");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let state = project_with_dbs(&kit, "gone");
+        fs::remove_dir(kit.projects().join("gone")).unwrap();
+        let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+        delete(&kit, "gone", "it", &dbs, false).unwrap();
+        assert_eq!(dbs.calls().len(), 4, "{:?}", dbs.calls());
+        assert!(!state.dir().exists(), "nothing left in data\\projects");
+        // a link or a missing project name is still refused where it was
+        assert!(delete(&kit, "..", "it", &dbs, false).is_err());
     }
 
     #[test]

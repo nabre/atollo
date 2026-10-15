@@ -50,7 +50,7 @@ Atollo\
   Atollo.exe     tutta la logica
   projects\       i tuoi progetti
   data\           programmi scaricati, impostazioni, accessi, cache, temporanei
-                  (le impostazioni del kit di ogni progetto: data\app\projects\<progetto>\dev-settings.json)
+                  (le impostazioni del kit di ogni progetto: data\projects\<progetto>\dev-settings.json)
 ```
 
 Per un backup basta copiare `projects\` e `data\` (meno `data\apps\` e `data\cache\`, che si riscaricano).
