@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use super::{arch_of, Ctx, Dest, Installer, Part, Release, Sign};
 use crate::archive::{Inner, Kind};
-use crate::catalog::Component;
+use crate::setup::catalog::Component;
 use crate::verify::Expect;
 
 fn str_at<'a>(v: &'a Value, path: &[&str]) -> Result<&'a str> {

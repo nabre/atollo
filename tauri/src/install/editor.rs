@@ -7,7 +7,7 @@ use anyhow::{bail, Context, Result};
 
 use super::{arch_of, github_single, Ctx, Installer, Release};
 use crate::archive::{Inner, Kind};
-use crate::catalog::Component;
+use crate::setup::catalog::Component;
 use crate::verify::Expect;
 
 /// PowerShell 7, the official zip (not the "fxdependent" build).
@@ -96,7 +96,7 @@ fn pinned(component: &Component) -> Result<Release> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::catalog::Catalog;
+    use crate::setup::catalog::Catalog;
 
     #[test]
     fn processes_of_the_old_editor() {

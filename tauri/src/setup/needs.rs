@@ -6,7 +6,7 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use crate::catalog::Catalog;
+use super::catalog::Catalog;
 use crate::detect::Action;
 use crate::kit::Kit;
 

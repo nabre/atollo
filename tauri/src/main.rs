@@ -9,13 +9,10 @@
 mod agents;
 mod agents_sync;
 mod archive;
-mod catalog;
-mod checkup;
 mod cli;
 mod commands;
 mod db;
 mod detect;
-mod downloads;
 mod editor;
 mod env;
 mod fsx;
@@ -26,19 +23,15 @@ mod instance;
 mod jobs;
 mod keyring;
 mod kit;
-mod kit_files;
 mod log;
-mod needs;
 mod net;
 mod processes;
 mod projects;
 mod relocate;
 mod safe_path;
-mod self_update;
 mod sessions;
 mod settings;
-mod setup_runner;
-mod setup_task;
+mod setup;
 mod signature;
 mod stats;
 mod verify;
@@ -121,8 +114,8 @@ fn run() -> i32 {
     versions::migrate(&kit);
     // The versions side by side, known to Gradle, Maven and dotnet.
     versions::side_by_side::refresh(&kit);
-    self_update::remove_old(&exe);
-    self_update::record_version(&kit);
+    setup::self_update::remove_old(&exe);
+    setup::self_update::record_version(&kit);
     let loaded = Settings::load(&kit);
     let lang = i18n::resolve(
         loaded.settings.lang.as_deref(),
@@ -137,7 +130,7 @@ fn run() -> i32 {
         log::warn(&format!("creating kit folders: {e}"));
     }
     env::apply_to_current_process(&kit_env, &kit);
-    if let Err(e) = kit_files::write_all(&kit) {
+    if let Err(e) = setup::kit_files::write_all(&kit) {
         log::warn(&format!("writing kit files: {e:#}"));
     }
 
@@ -195,7 +188,7 @@ fn run() -> i32 {
             };
         }
         Cli::Check => {
-            let checks = checkup::check_all(&kit, &kit_env);
+            let checks = setup::checkup::check_all(&kit, &kit_env);
             let ok = checks.iter().all(|c| c.ok);
             return cli::print_checks(&checks, &mut *cli::output()).map_or(1, |()| i32::from(!ok));
         }
@@ -276,7 +269,7 @@ fn run() -> i32 {
         moved_from
     ));
 
-    let setup = std::sync::Arc::new(setup_task::SetupTask::new(
+    let setup = std::sync::Arc::new(setup::task::SetupTask::new(
         kit.clone(),
         kit_env.clone(),
         loaded.settings.clone(),
@@ -300,7 +293,7 @@ fn run() -> i32 {
         .map(|app| {
             app.run(move |_, event| {
                 if let tauri::RunEvent::Exit = event {
-                    match self_update::apply_staged(&update_kit, &update_exe) {
+                    match setup::self_update::apply_staged(&update_kit, &update_exe) {
                         Ok(true) => log::info("update applied"),
                         Ok(false) => {}
                         Err(e) => log::warn(&format!("update: {e:#}")),
@@ -361,9 +354,9 @@ fn prepare(
     };
     log::info(&format!("prepare {args:?}"));
     let mut printer = cli::Printer::new(&mut *out, lang);
-    let results = match setup_runner::run(&ctx, &args.options(), &mut printer) {
+    let results = match setup::runner::run(&ctx, &args.options(), &mut printer) {
         Ok(results) => results,
-        Err(e) if e.is::<setup_runner::Busy>() => {
+        Err(e) if e.is::<setup::runner::Busy>() => {
             let _ = writeln!(
                 out,
                 "  x {}",
@@ -384,14 +377,14 @@ fn prepare(
     // The final check of what this run installed (`Test-Installation`).
     let touched: Vec<&str> = results
         .iter()
-        .filter(|(_, o)| matches!(o, setup_runner::Outcome::Installed { .. }))
+        .filter(|(_, o)| matches!(o, setup::runner::Outcome::Installed { .. }))
         .map(|(id, _)| id.as_str())
         .collect();
-    let checks: Vec<_> = catalog::Catalog::get()
+    let checks: Vec<_> = setup::catalog::Catalog::get()
         .all()
         .iter()
         .filter(|c| touched.contains(&c.id.as_str()))
-        .filter_map(|c| checkup::check(kit, kit_env, c))
+        .filter_map(|c| setup::checkup::check(kit, kit_env, c))
         .collect();
     if !checks.is_empty() {
         let _ = writeln!(out, "\n── {} ──", i18n::t(lang, "Verifica", &[]));
@@ -411,7 +404,7 @@ fn version_lines(kit: &Kit, kit_env: &KitEnv, settings: &Settings, host: &Host, 
     let mut out = cli::output();
     let result = (|| -> anyhow::Result<Vec<String>> {
         versions::check(id, None)?;
-        let c = catalog::Catalog::get()
+        let c = setup::catalog::Catalog::get()
             .find(id)
             .ok_or_else(|| anyhow::anyhow!("{id}"))?;
         let installer = install::installer(id).ok_or_else(|| anyhow::anyhow!("{id}"))?;
@@ -531,7 +524,7 @@ fn build_app<R: tauri::Runtime>(
                 }),
             )));
             app.manage(std::sync::Arc::new(github::Login::default()));
-            let updater = std::sync::Arc::new(self_update::Updater::new(kit.clone()));
+            let updater = std::sync::Arc::new(setup::self_update::Updater::new(kit.clone()));
             app.manage(std::sync::Arc::clone(&updater));
             let settings = Settings::load(&kit).settings;
             // DEVKIT_NO_UPDATE: no automatic check (as for the kit's scripts).
@@ -587,14 +580,14 @@ fn build_app<R: tauri::Runtime>(
 /// release: install what is missing without asking; the "Linguaggi e
 /// strumenti" page shows the progress.
 fn start_missing_required<R: tauri::Runtime>(app: &tauri::AppHandle<R>, kit: &Kit) {
-    let mut missing = setup_task::missing_required(kit);
-    missing.extend(setup_task::outdated_app(kit));
+    let mut missing = setup::task::missing_required(kit);
+    missing.extend(setup::task::outdated_app(kit));
     if missing.is_empty() {
         return;
     }
-    let opts = setup_runner::Options {
+    let opts = setup::runner::Options {
         only: missing,
-        ..setup_runner::Options::default()
+        ..setup::runner::Options::default()
     };
     let state = app.state::<AppState>();
     if let Err(e) = state
@@ -631,7 +624,7 @@ mod tests {
     fn state() -> AppState {
         let kit = Kit::at(std::env::temp_dir().join("devkit-ipc-test"), Arch::X64);
         let editor = std::sync::Arc::new(editor::Editor::new(kit.clone(), KitEnv::default()));
-        let setup = std::sync::Arc::new(setup_task::SetupTask::new(
+        let setup = std::sync::Arc::new(setup::task::SetupTask::new(
             kit.clone(),
             KitEnv::default(),
             Settings::default(),

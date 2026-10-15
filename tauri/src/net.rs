@@ -78,7 +78,7 @@ pub struct GhAnswer {
 pub struct Cancelled;
 
 /// A download that failed and can be done in the browser instead: the
-/// interface shows `url`, and the file added by hand (`downloads.rs`) is
+/// interface shows `url`, and the file added by hand (`setup/downloads.rs`) is
 /// used at the next attempt when its checksum is the expected one.
 #[derive(Debug)]
 pub struct ByHand {

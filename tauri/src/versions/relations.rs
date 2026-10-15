@@ -17,9 +17,9 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::catalog::{Catalog, Component};
+use super::ranges::{Bare, Range, Version};
 use crate::kit::Kit;
-use crate::versions::ranges::{Bare, Range, Version};
+use crate::setup::catalog::{Catalog, Component};
 
 const KNOWN: &str = include_str!("../../catalog/relations.json");
 

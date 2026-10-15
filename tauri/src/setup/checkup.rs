@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
 
-use crate::catalog::{kit_path, Catalog, Component};
+use super::catalog::{kit_path, Catalog, Component};
 use crate::env::KitEnv;
 use crate::jobs;
 use crate::kit::Kit;

@@ -51,7 +51,9 @@ pub async fn agent_launch<R: Runtime>(
     });
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        let wanted: Vec<&str> = crate::needs::of_agent(&kit, &agent).into_iter().collect();
+        let wanted: Vec<&str> = crate::setup::needs::of_agent(&kit, &agent)
+            .into_iter()
+            .collect();
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
         crate::agents::launch(&app, &kit, &env, &agent, &dir, lang)

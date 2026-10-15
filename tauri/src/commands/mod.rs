@@ -17,16 +17,16 @@ use std::sync::Arc;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Runtime, State, Webview};
 
-use crate::catalog::{Catalog, Choice, Group};
 use crate::editor::{self, terminal, Editor};
 use crate::env::KitEnv;
 use crate::install;
 use crate::kit::{validate_project_name, Kit};
 use crate::projects::run::{Runner, State as RunState};
-use crate::self_update::Updater;
 use crate::settings::Settings;
-use crate::setup_runner::Options;
-use crate::setup_task::{self, Notify, SetupTask, Snapshot};
+use crate::setup::catalog::{Catalog, Choice, Group};
+use crate::setup::runner::Options;
+use crate::setup::self_update::Updater;
+use crate::setup::task::{Notify, SetupTask, Snapshot};
 
 pub(crate) mod agents;
 pub(crate) mod app;
@@ -163,7 +163,7 @@ fn ensure<R: Runtime>(
         }
     }
     let missing = |kit: &Kit| -> Vec<String> {
-        let mut ids = setup_task::missing_required(kit);
+        let mut ids = crate::setup::task::missing_required(kit);
         for c in &needed {
             if install::installer(&c.id).is_some() && !c.is_installed(kit) && !ids.contains(&c.id) {
                 ids.push(c.id.clone());
@@ -240,7 +240,7 @@ fn settle_project<R: Runtime>(
 }
 
 /// `ids` and, transitively, what they need, in catalog order.
-fn with_needs<'a>(catalog: &'a Catalog, ids: &[&str]) -> Vec<&'a crate::catalog::Component> {
+fn with_needs<'a>(catalog: &'a Catalog, ids: &[&str]) -> Vec<&'a crate::setup::catalog::Component> {
     let mut found: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
     let mut todo: Vec<&str> = ids.to_vec();
     while let Some(id) = todo.pop() {

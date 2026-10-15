@@ -17,7 +17,7 @@ use anyhow::Result;
 use tauri::{AppHandle, Manager, Runtime};
 use windows::Win32::System::Console::SetConsoleCtrlHandler;
 
-use crate::editor::cfg::pwsh_args;
+use super::cfg::pwsh_args;
 use crate::env::KitEnv;
 use crate::jobs;
 use crate::kit::Kit;

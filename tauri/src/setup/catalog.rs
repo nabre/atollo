@@ -104,7 +104,7 @@ impl Catalog {
         static CATALOG: OnceLock<Catalog> = OnceLock::new();
         CATALOG.get_or_init(|| {
             // Validated by the tests; a broken file would ship an empty catalog.
-            let file: File = serde_json::from_str(include_str!("../catalog/components.json"))
+            let file: File = serde_json::from_str(include_str!("../../catalog/components.json"))
                 .unwrap_or(File {
                     components: Vec::new(),
                 });

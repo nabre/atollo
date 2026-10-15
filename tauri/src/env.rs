@@ -179,7 +179,7 @@ impl KitEnv {
         let fwd = |p: &Path| p.to_string_lossy().replace('\\', "/");
         // In the folder of a versioned component: that of its default
         // version (versions/mod.rs).
-        let app = |rel: &str| crate::catalog::kit_path(kit, rel);
+        let app = |rel: &str| crate::setup::catalog::kit_path(kit, rel);
         let has = |rel: &str| app(rel).is_file();
 
         // Kit folders (_env.cmd:7-16, 22)
@@ -290,7 +290,7 @@ impl KitEnv {
         // Gradle 9 runs on Java 17 to 27: the kit's gradle (data\kit\bin)
         // starts it on the newest JDK, whatever Java a project uses (its
         // toolchain compiles). With `/`: the versions' rewrites leave it.
-        if let Some(java) = crate::catalog::Catalog::get().find("java") {
+        if let Some(java) = crate::setup::catalog::Catalog::get().find("java") {
             let newest = crate::versions::newest_line(kit, java);
             let fits = newest
                 .as_deref()
@@ -809,7 +809,7 @@ mod tests {
                 r"java\21.0\bin\java.exe",
             ],
         );
-        let catalog = crate::catalog::Catalog::get();
+        let catalog = crate::setup::catalog::Catalog::get();
         for (id, version) in [
             ("node", "v22.11.0"),
             ("php", "8.4.13"),

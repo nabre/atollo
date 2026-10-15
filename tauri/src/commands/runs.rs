@@ -34,7 +34,7 @@ pub async fn run_start<R: Runtime>(
                 &[],
             ));
         };
-        let wanted: Vec<&str> = crate::needs::of_action(a).into_iter().collect();
+        let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
         runner

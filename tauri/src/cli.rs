@@ -12,11 +12,11 @@ use windows::Win32::System::Console::{
     AttachConsole, GetStdHandle, ATTACH_PARENT_PROCESS, STD_OUTPUT_HANDLE,
 };
 
-use crate::catalog::{Catalog, Choice};
 use crate::env::KitEnv;
 use crate::i18n::t;
 use crate::kit::Kit;
-use crate::setup_runner::{Event, Options, Outcome, Sink};
+use crate::setup::catalog::{Catalog, Choice};
+use crate::setup::runner::{Event, Options, Outcome, Sink};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Cli {
@@ -218,7 +218,10 @@ pub fn print_versions(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Result<
 }
 
 /// The final check, one line per component: `√ Name   answer`.
-pub fn print_checks(checks: &[crate::checkup::Check], out: &mut dyn Write) -> io::Result<()> {
+pub fn print_checks(
+    checks: &[crate::setup::checkup::Check],
+    out: &mut dyn Write,
+) -> io::Result<()> {
     let width = checks
         .iter()
         .map(|c| c.name.chars().count())

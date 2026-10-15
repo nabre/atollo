@@ -32,11 +32,11 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use super::auth;
-use crate::catalog::Catalog;
 use crate::env::KitEnv;
 use crate::jobs::{self, Job};
 use crate::kit::Kit;
 use crate::projects::run::{is_port_free, responds};
+use crate::setup::catalog::Catalog;
 
 /// The servers, in the order of the page.
 pub const SERVERS: [&str; 2] = ["mariadb", "mongodb"];

@@ -36,10 +36,10 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::catalog::{Catalog, Component};
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
+use crate::setup::catalog::{Catalog, Component};
 
 /// The file with the full version, inside a saved folder.
 const VERSION_FILE: &str = ".devkit-version";
@@ -461,7 +461,7 @@ pub fn sync_with_disk(kit: &Kit) -> Result<Vec<String>> {
             crate::log::warn(&format!("{}: no default version ({e:#})", c.id));
         }
     }
-    let Some(mut choice) = crate::catalog::Choice::read(kit, catalog) else {
+    let Some(mut choice) = crate::setup::catalog::Choice::read(kit, catalog) else {
         return Ok(Vec::new());
     };
     let gone: Vec<&Component> = catalog
@@ -770,7 +770,7 @@ mod tests {
         assert_eq!(default_line(&kit, node).as_deref(), Some("22.11"));
         assert_eq!(default_dir(&kit, node), main);
         assert_eq!(
-            crate::catalog::kit_path(&kit, "node/node.exe"),
+            crate::setup::catalog::kit_path(&kit, "node/node.exe"),
             main.join("node.exe")
         );
         assert!(node.is_installed(&kit));
@@ -890,7 +890,7 @@ mod tests {
         let main = install_dir(&kit, node, "v22.11.0");
         install_fake(&kit, node, &main);
         node.save_version(&kit, "v22.11.0").unwrap();
-        let mut choice = crate::catalog::Choice::defaults(catalog);
+        let mut choice = crate::setup::catalog::Choice::defaults(catalog);
         choice.set(catalog, "pnpm", true);
         choice.write(&kit, catalog).unwrap();
         assert!(sync_with_disk(&kit).unwrap().is_empty(), "all there");
@@ -899,13 +899,13 @@ mod tests {
         fs::remove_dir_all(node.folder_path(&kit).unwrap()).unwrap();
         let off = sync_with_disk(&kit).unwrap();
         assert!(off.contains(&"Node.js".to_owned()) && off.contains(&"pnpm, yarn".to_owned()));
-        let now = crate::catalog::Choice::read(&kit, catalog).unwrap();
+        let now = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
         assert!(!now.is_chosen("node") && !now.is_chosen("pnpm"));
         assert!(node.installed_version(&kit).is_none());
         assert!(sync_with_disk(&kit).unwrap().is_empty(), "once");
 
         // Chosen and never installed (waiting for Apply): left alone.
-        let mut choice = crate::catalog::Choice::read(&kit, catalog).unwrap();
+        let mut choice = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
         choice.set(catalog, "go", true);
         choice.write(&kit, catalog).unwrap();
         assert!(sync_with_disk(&kit).unwrap().is_empty());

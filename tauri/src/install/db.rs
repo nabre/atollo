@@ -10,8 +10,8 @@ use serde_json::Value;
 
 use super::{arch_of, pattern, Ctx, Dest, Installer, Part, Release};
 use crate::archive::{Inner, Kind};
-use crate::catalog::Component;
 use crate::net::github_digest;
+use crate::setup::catalog::Component;
 use crate::verify::Expect;
 
 use super::lang::version_key;

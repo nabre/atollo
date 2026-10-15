@@ -448,7 +448,7 @@ pub fn requires(dir: &Path) -> Vec<String> {
         }
     });
     found.extend(databases(dir));
-    let catalog = crate::catalog::Catalog::get();
+    let catalog = crate::setup::catalog::Catalog::get();
     found
         .into_iter()
         .filter(|id| catalog.find(id).is_some())

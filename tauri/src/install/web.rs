@@ -16,10 +16,10 @@ use serde_json::Value;
 
 use super::{fetch, pattern, Ctx, Dest, Installer, Part, Progress, Release};
 use crate::archive::{Inner, Kind};
-use crate::catalog::Component;
 use crate::fsx::write_atomic;
 use crate::net::hash_in_list;
 use crate::settings::Settings;
+use crate::setup::catalog::Component;
 use crate::verify::Expect;
 
 /// A progress sink that only logs, for steps that run inside hooks.
@@ -423,7 +423,7 @@ impl Installer for Php {
 pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
     let tools = kit.apps().join("tools");
     let old = tools.join("composer.phar");
-    let Some(php) = crate::catalog::Catalog::get().find("php") else {
+    let Some(php) = crate::setup::catalog::Catalog::get().find("php") else {
         return Ok(());
     };
     if !old.is_file() {
