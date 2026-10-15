@@ -17,19 +17,14 @@ mod fsx;
 mod github;
 mod i18n;
 mod install;
-mod instance;
-mod jobs;
 mod kit;
 mod log;
 mod net;
-mod processes;
+mod os;
 mod projects;
-mod safe_path;
-mod sessions;
 mod settings;
 mod setup;
 mod versions;
-mod webview;
 
 use std::path::Path;
 
@@ -208,10 +203,10 @@ fn run() -> i32 {
         }
     }
 
-    let guard = match instance::acquire(&kit) {
-        Ok(instance::Instance::Primary(guard)) => guard,
-        Ok(instance::Instance::Secondary) => {
-            if let Err(e) = instance::notify_primary(&kit, "focus") {
+    let guard = match os::instance::acquire(&kit) {
+        Ok(os::instance::Instance::Primary(guard)) => guard,
+        Ok(os::instance::Instance::Secondary) => {
+            if let Err(e) = os::instance::notify_primary(&kit, "focus") {
                 log::warn(&format!("second start, focus request failed: {e:#}"));
             }
             return 0;
@@ -227,7 +222,7 @@ fn run() -> i32 {
     };
 
     // WebView2 lookup sets a variable for the fixed runtime: still single-threaded here.
-    let runtime = webview::locate(&kit);
+    let runtime = os::webview::locate(&kit);
     let Some(runtime) = runtime else {
         log::error("WebView2 runtime not found");
         let text = format!(
@@ -236,20 +231,20 @@ fn run() -> i32 {
             i18n::t(
                 lang,
                 "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia Atollo. Non serve installare nulla.",
-                &[kit.arch().as_str(), webview::DOWNLOAD_URL, &webview::fixed_folder(&kit).display().to_string()]
+                &[kit.arch().as_str(), os::webview::DOWNLOAD_URL, &os::webview::fixed_folder(&kit).display().to_string()]
             )
         );
         fatal(lang, &text);
         return 1;
     };
     let webview_desc = match &runtime {
-        webview::Runtime::System(v) => format!("system {v}"),
-        webview::Runtime::Fixed { folder, version } => {
+        os::webview::Runtime::System(v) => format!("system {v}"),
+        os::webview::Runtime::Fixed { folder, version } => {
             format!("fixed {version} ({})", folder.display())
         }
     };
 
-    match jobs::init() {
+    match os::jobs::init() {
         Ok(None) => {}
         Ok(Some(note)) => log::warn(&format!("job object: {note}")),
         Err(e) => log::error(&format!("job object: {e:#}")),
@@ -328,7 +323,7 @@ fn prepare(
     args: &cli::PrepareArgs,
 ) -> i32 {
     let mut out = cli::output();
-    if let Err(e) = jobs::init() {
+    if let Err(e) = os::jobs::init() {
         log::warn(&format!("job object: {e:#}"));
     }
     let net = match net::Net::new(settings, github_token(host)) {
@@ -556,7 +551,7 @@ fn build_app<R: tauri::Runtime>(
                 agents::watch(background);
             });
             let handle = app.handle().clone();
-            instance::listen(&kit, move |message| {
+            os::instance::listen(&kit, move |message| {
                 if message.trim() == "focus" {
                     if let Some(window) = handle.get_webview_window(MAIN) {
                         let _ = window.unminimize();

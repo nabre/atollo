@@ -78,7 +78,7 @@ pub fn ensure(kit: &Kit, env: &KitEnv) -> Result<()> {
     fs::create_dir_all(&work)?;
     let vsix = work.join("atollo-theme.vsix");
     write_vsix(&vsix)?;
-    let job = crate::jobs::Job::new()?;
+    let job = crate::os::jobs::Job::new()?;
     let mut cmd = crate::editor::ext::server_cli(kit, env);
     // --force: also over a newer or equal version left by another build.
     cmd.arg("--install-extension")
@@ -87,7 +87,7 @@ pub fn ensure(kit: &Kit, env: &KitEnv) -> Result<()> {
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    let child = crate::jobs::spawn_in(&mut cmd, &job).context("server --install-extension")?;
+    let child = crate::os::jobs::spawn_in(&mut cmd, &job).context("server --install-extension")?;
     let out = child
         .wait_with_output()
         .context("server --install-extension")?;

@@ -41,8 +41,8 @@ use windows::Win32::System::Registry::{RegGetValueW, HKEY_LOCAL_MACHINE, RRF_RT_
 use super::cfg::pwsh_args;
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
-use crate::jobs::{self, Console};
 use crate::kit::Kit;
+use crate::os::jobs::{self, Console};
 
 const PROFILE_PWSH: &str = "{6e0f3c1a-4b7d-4d39-9a41-5f2d0c6b7a01}";
 const PROFILE_BASH: &str = "{6e0f3c1a-4b7d-4d39-9a41-5f2d0c6b7a02}";
@@ -427,7 +427,7 @@ pub fn open(kit: &Kit, env: &KitEnv, dir: &Path, program: Option<&Path>) -> Resu
     jobs::spawn(&mut cmd)?;
 
     let pid = accept(&pipe, &name)?;
-    let image = crate::processes::image(pid).unwrap_or_default();
+    let image = crate::os::processes::image(pid).unwrap_or_default();
     if !same_file(&image, &pwsh) {
         // SAFETY: valid connected pipe.
         let _ = unsafe { DisconnectNamedPipe(pipe.0) };
@@ -635,15 +635,15 @@ mod tests {
         }
         let ran = fs::read_to_string(dir.join("ran.txt")).unwrap();
         assert_eq!(ran.trim(), "kit-env");
-        crate::sessions::stop(&[shell.id()]);
+        crate::os::sessions::stop(&[shell.id()]);
         shell.wait();
         // The shell's tab stays on "process exited": the test's terminal
         // would keep cargo's output pipe open.
-        let terminal: Vec<u32> = crate::processes::running_under(&exe(&kit).with_file_name(""))
+        let terminal: Vec<u32> = crate::os::processes::running_under(&exe(&kit).with_file_name(""))
             .iter()
             .map(|p| p.pid)
             .collect();
-        crate::sessions::stop(&terminal);
+        crate::os::sessions::stop(&terminal);
         let _ = fs::remove_dir_all(&dir);
     }
 }

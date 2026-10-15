@@ -26,9 +26,9 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::env::KitEnv;
-use crate::jobs;
 use crate::kit::Kit;
 use crate::net::{ApiError, Net};
+use crate::os::jobs;
 use crate::projects::{self, Source};
 
 /// Where the one-time code of the sign-in is typed.

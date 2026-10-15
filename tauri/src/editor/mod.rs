@@ -40,8 +40,8 @@ use windows::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_
 use windows::Win32::Security::{SetFileSecurityW, DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
 
 use crate::env::{mask_secrets, KitEnv};
-use crate::jobs::{self, Job};
 use crate::kit::Kit;
+use crate::os::jobs::{self, Job};
 
 pub const PORTS: std::ops::RangeInclusive<u16> = 7000..=7099;
 const START_TIMEOUT: Duration = Duration::from_secs(30);

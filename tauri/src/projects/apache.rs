@@ -16,8 +16,8 @@ use anyhow::{anyhow, bail, Context, Result};
 
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
-use crate::jobs;
 use crate::kit::Kit;
+use crate::os::jobs;
 
 /// `C:\a\b` as Apache wants it: `C:/a/b`.
 fn fwd(p: &Path) -> String {

@@ -55,7 +55,7 @@ fn mcp_path(dir: &Path) -> std::path::PathBuf {
 }
 
 fn read_object(dir: &Path) -> Result<Option<Map<String, Value>>> {
-    match crate::safe_path::read_text(dir, &mcp_path(dir)) {
+    match crate::os::safe_path::read_text(dir, &mcp_path(dir)) {
         None => Ok(None),
         Some(text) => match serde_json::from_str::<Value>(&text) {
             Ok(Value::Object(o)) => Ok(Some(o)),
@@ -197,7 +197,7 @@ pub fn set(dir: &Path, servers: &[McpServer]) -> Result<()> {
         dir.join(".codex"),
         dir.join(".codex").join("config.toml"),
     ] {
-        if crate::safe_path::is_link(&p) {
+        if crate::os::safe_path::is_link(&p) {
             bail!("{}: link, left alone", p.display());
         }
     }
@@ -217,7 +217,7 @@ pub fn set(dir: &Path, servers: &[McpServer]) -> Result<()> {
         o.insert("mcpServers".into(), Value::Object(new.clone()));
     }
     if o.is_empty() {
-        if crate::safe_path::is_file(dir, &mcp_path(dir)) {
+        if crate::os::safe_path::is_file(dir, &mcp_path(dir)) {
             std::fs::remove_file(mcp_path(dir))?;
         }
     } else {
@@ -229,7 +229,7 @@ pub fn set(dir: &Path, servers: &[McpServer]) -> Result<()> {
 
 fn write_codex(dir: &Path, servers: &Map<String, Value>) -> Result<()> {
     let file = dir.join(".codex").join("config.toml");
-    let old = crate::safe_path::read_text(dir, &file).unwrap_or_default();
+    let old = crate::os::safe_path::read_text(dir, &file).unwrap_or_default();
     let mut text = strip_block(&old, CODEX_BEGIN, CODEX_END);
     let tables: Vec<String> = servers
         .iter()
@@ -245,7 +245,7 @@ fn write_codex(dir: &Path, servers: &Map<String, Value>) -> Result<()> {
         ));
     }
     if text.trim().is_empty() {
-        if crate::safe_path::is_file(dir, &file) {
+        if crate::os::safe_path::is_file(dir, &file) {
             std::fs::remove_file(&file)?;
         }
         return Ok(());

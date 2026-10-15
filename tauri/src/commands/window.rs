@@ -7,7 +7,7 @@ use super::*;
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenNow {
-    pub processes: Vec<crate::sessions::KitProcess>,
+    pub processes: Vec<crate::os::sessions::KitProcess>,
     pub editor: bool,
     pub terminals: usize,
     pub actions: usize,
@@ -32,7 +32,7 @@ pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
     let state = app.state::<AppState>();
     let actions = app.try_state::<Arc<Runner>>().map_or(0, |r| r.running());
     OpenNow {
-        processes: crate::sessions::foreign_processes(&state.kit),
+        processes: crate::os::sessions::foreign_processes(&state.kit),
         editor: state.editor.status().running,
         terminals: app.state::<terminal::Consoles>().count(),
         actions,
@@ -80,12 +80,12 @@ pub async fn eject_run<R: Runtime>(
         // Asked to shut down before the kit's processes are ended.
         services.stop_all();
         editor.stop();
-        crate::sessions::stop(&consoles);
-        let pids: Vec<u32> = crate::sessions::kit_processes(&kit)
+        crate::os::sessions::stop(&consoles);
+        let pids: Vec<u32> = crate::os::sessions::kit_processes(&kit)
             .iter()
             .map(|p| p.pid)
             .collect();
-        crate::sessions::stop(&pids);
+        crate::os::sessions::stop(&pids);
         // The installation ends at the end of its step: waited a little.
         for _ in 0..100 {
             if !setup.snapshot().running {

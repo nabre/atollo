@@ -24,8 +24,8 @@ use anyhow::{anyhow, bail, Context, Result};
 
 use super::auth;
 use crate::env::KitEnv;
-use crate::jobs::{self, Job};
 use crate::kit::Kit;
+use crate::os::jobs::{self, Job};
 use crate::projects::run::responds;
 use crate::setup::catalog;
 

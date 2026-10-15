@@ -36,7 +36,7 @@ fn expand_cab(ctx: &Ctx, cab: &Path, dest: &Path) -> Result<()> {
     fs::create_dir_all(dest)?;
     let system_root = ctx.env.get("SystemRoot").unwrap_or(r"C:\Windows");
     let status =
-        crate::jobs::kit_command(Path::new(system_root).join(r"System32\expand.exe"), ctx.env)
+        crate::os::jobs::kit_command(Path::new(system_root).join(r"System32\expand.exe"), ctx.env)
             .arg(cab)
             .arg("-F:*")
             .arg(dest)

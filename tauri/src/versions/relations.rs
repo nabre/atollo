@@ -391,9 +391,11 @@ fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) -> Vec<Runtim
                     let dll = kit.apps().join(r"tools\vcruntime\vcruntime140.dll");
                     (dll.is_file(), None)
                 }
-                "webview2" => match crate::webview::found(kit) {
-                    Some(crate::webview::Runtime::System(v)) => (true, Some(v)),
-                    Some(crate::webview::Runtime::Fixed { version, .. }) => (true, Some(version)),
+                "webview2" => match crate::os::webview::found(kit) {
+                    Some(crate::os::webview::Runtime::System(v)) => (true, Some(v)),
+                    Some(crate::os::webview::Runtime::Fixed { version, .. }) => {
+                        (true, Some(version))
+                    }
                     None => (false, None),
                 },
                 "x64-emulation" => {

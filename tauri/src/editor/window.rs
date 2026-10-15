@@ -26,7 +26,7 @@ use tauri::{AppHandle, Manager, Runtime, Url, WebviewUrl, WebviewWindow, Webview
 use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
 use windows::core::Interface;
 
-use crate::jobs;
+use crate::os::jobs;
 
 pub const LABEL_PREFIX: &str = "editor-";
 

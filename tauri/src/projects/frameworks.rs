@@ -20,8 +20,8 @@ use serde::{Deserialize, Serialize};
 use super::run::split_lines;
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
-use crate::jobs::{self, Job};
 use crate::kit::Kit;
+use crate::os::jobs::{self, Job};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -543,7 +543,7 @@ pub fn existing(kit: &Kit, name: &str) -> Result<Existing, Problem> {
     crate::kit::validate_project_name(name)
         .map_err(|e| ("Nome non valido: {0}", vec![e.to_string()]))?;
     let dir = kit.projects().join(name);
-    if dir.exists() && !crate::safe_path::is_dir(&kit.projects(), &dir) {
+    if dir.exists() && !crate::os::safe_path::is_dir(&kit.projects(), &dir) {
         return Err((
             "{0} non è una cartella dei progetti.",
             vec![name.to_owned()],
@@ -574,7 +574,7 @@ fn merge_at(from: &Path, to: &Path, rel: &Path, kept: &mut Vec<String>) -> std::
             Err(e) => return Err(e),
             Ok(m)
                 if m.is_dir()
-                    && !crate::safe_path::is_reparse(&m)
+                    && !crate::os::safe_path::is_reparse(&m)
                     && entry.file_type()?.is_dir() =>
             {
                 merge_at(&src, &dst, &rel, kept)?;

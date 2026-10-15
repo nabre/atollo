@@ -281,7 +281,7 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
     if had_old && fs::rename(dest, &old).is_err() {
         // A running program could be moved too (Windows allows renaming a
         // running exe), and would then load the new files with the old ones.
-        if !crate::processes::running_from(&crate::processes::all(), dest).is_empty() {
+        if !crate::os::processes::running_from(&crate::os::processes::all(), dest).is_empty() {
             return Err(InUse(dest.to_path_buf()).into());
         }
         if let Err(e) = move_tree(dest, &old) {
