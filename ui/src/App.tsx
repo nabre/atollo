@@ -48,15 +48,7 @@ import { NewProjectPage } from "./wizard";
 import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./hooks";
 
-type PageId =
-  | "new"
-  | "projects"
-  | "agents"
-  | "databases"
-  | "servers"
-  | "components"
-  | "settings"
-  | "eject";
+type PageId = "new" | "projects" | "agents" | "databases" | "servers" | "components" | "settings" | "eject";
 
 interface Page {
   id: PageId;
