@@ -530,9 +530,11 @@ Contraddizioni con questo piano, risolte così:
 - Direttive dell'utente: `conf.d\*.conf` del progetto oggi sono ignorate quando il progetto è servito da un pool; il VirtualHost del pool le includerà (WEB-1).
 - Variabili: nei pool `${CP_PROJECTS_FWD}/<p>` al posto di `${CP_PROJECT_FWD}`, necessario perché un processo serve più progetti.
 
-### 9.2 Scostamenti da confermare con l'utente
+### 9.2 Scostamenti dalla specifica
 
-| | S chiede | Oggi | Proposta |
+Scelte dell'utente del 15/10/2026: SC-1 tabella fissa, SC-2 e SC-4 allineati a S, SC-5 una porta per progetto, WEB-8 collegamenti non seguiti solo negli alias. SC-3 resta com'è (`<IfFile>`), come proposto.
+
+| | S chiede | Oggi | Scelta |
 | --- | --- | --- | --- |
 | SC-1 | Scansione di `windows.php.net/downloads/releases/archives/` | Tabella fissa con SHA-256 | Tenere la tabella: ogni archivio ha la sua impronta verificata; la scansione darebbe file senza impronta pubblicata |
 | SC-2 | Id del pool `apache-2.4_php-7.4` | `apache-2.4-php-7.4` | Allineare a S (con migrazione delle porte salvate) |
@@ -600,7 +602,7 @@ Contraddizioni con questo piano, risolte così:
 
 - **Dipende da.** WEB-1.
 - **File.** `projects/apache.rs`, `servers/mod.rs`.
-- **Compiti.** `Options FollowSymLinks` → `Options Indexes SymLinksIfOwnerMatch` nelle cartelle degli alias, oppure niente collegamenti seguiti; per la `DocumentRoot` valutare l'effetto su Laravel (`public/storage` è un collegamento): da decidere con l'utente.
+- **Compiti.** Nelle cartelle degli alias `Options Indexes` senza `FollowSymLinks` (Apache) e `disable_symlinks on` (Nginx): nessun collegamento seguito. La `DocumentRoot` resta com'è, perché Laravel serve `public/storage` attraverso un collegamento (scelta dell'utente del 15/10/2026).
 
 ### 9.4 Agenti e ondate (dopo l'ondata 4)
 
@@ -619,4 +621,4 @@ Ondata 7   W5 (WEB-7)                                                    → mer
 Ondata 8   D (documenti di §9: D-91 pool legati ai progetti, CHANGELOG, TESTING) │ C (verifica completa)
 ```
 
-Prima dell'ondata 5 servono le risposte a SC-1…SC-5 e a WEB-8.
+Le risposte a SC-1…SC-5 e a WEB-8 sono arrivate (§9.2): l'ondata 5 può partire dopo l'ondata 4.
