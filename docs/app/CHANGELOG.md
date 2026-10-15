@@ -1,5 +1,15 @@
 # Novità
 
+## Menu delle versioni propositivo (15/10/2026)
+
+**Fatto**
+- **Versioni da scaricare nei menu** (D-80): il menu della versione, nel kit e in ogni progetto, propone oltre alle versioni scaricate anche le minori offerte dalla fonte, raggruppate per versione maggiore («da scaricare»). Sceglierne una la scarica subito e la imposta; fino alla fine del download si usa la predefinita, e sotto il menu c'è lo stato (in corso con percentuale, non riuscito con «Riprova», «Scarica»).
+- **Elenco delle versioni conservato** in `datappersion-lines.json`: i menu funzionano anche offline; si aggiorna da solo se ha più di un giorno, o col pulsante accanto al menu.
+- **Chi usa cosa**: in Strumenti › Versioni ogni versione scaricata mostra predefinita, quella del kit e i progetti che l'hanno scelta; rimuoverne una avvisa chi la usa.
+- La pagina del progetto mostra tutti i linguaggi installati che hanno più versioni, non solo quelli con versioni già conservate.
+
+**Verificato**: test Rust delle versioni (nuovo `offered_lines_and_downloads`), clippy e fmt puliti; tipi, ESLint e 23 test dell'interfaccia; anteprima nel browser. Da provare nell'app: scelta di una versione da scaricare da un progetto.
+
 ## Versioni dei linguaggi per il kit e per ogni progetto (15/10/2026)
 
 **Fatto**

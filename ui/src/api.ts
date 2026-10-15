@@ -469,6 +469,13 @@ export interface VersionedTool {
   preferred: string | null;
   /** Other lines can be downloaded. */
   downloadable: boolean;
+  /** The lines its source offered the last time it was asked, newest first
+   * (also those on disk). */
+  available: string[];
+  /** When the source was asked (Unix seconds); null = never. */
+  checked: number | null;
+  /** The projects that chose each line. */
+  projects: Record<string, string[]>;
 }
 
 export interface ProjectVersions {
@@ -489,6 +496,9 @@ const SAMPLE_VERSIONS: VersionedTool[] = [
     ],
     preferred: null,
     downloadable: true,
+    available: ["25.1", "24.11", "24.10", "22.21", "22.20", "20.19", "18.20"],
+    checked: 1760500000,
+    projects: { "20.19": ["shop"] },
   },
   {
     id: "php",
@@ -498,6 +508,9 @@ const SAMPLE_VERSIONS: VersionedTool[] = [
     saved: [],
     preferred: null,
     downloadable: true,
+    available: [],
+    checked: null,
+    projects: {},
   },
   {
     id: "python",
@@ -507,6 +520,9 @@ const SAMPLE_VERSIONS: VersionedTool[] = [
     saved: [],
     preferred: null,
     downloadable: true,
+    available: [],
+    checked: null,
+    projects: {},
   },
 ];
 
@@ -514,10 +530,11 @@ export function versionsList(): Promise<VersionedTool[]> {
   return browserPreview ? Promise.resolve(SAMPLE_VERSIONS) : invoke<VersionedTool[]>("versions_list");
 }
 
-/** The lines of `id` that can be downloaded, newest first (asks its source). */
+/** The lines of `id` that can be downloaded, newest first (asks its source;
+ * versionsList keeps them in `available`). */
 export function versionsAvailable(id: string): Promise<string[]> {
   return browserPreview
-    ? Promise.resolve(["24.11", "24.10", "22.21", "22.20", "20.19", "18.20"])
+    ? Promise.resolve(id === "php" ? ["8.5", "8.4", "8.3", "8.2", "8.1"] : ["24.11", "22.21", "20.19", "18.20"])
     : invoke<string[]>("versions_available", { id });
 }
 
@@ -530,7 +547,8 @@ export function versionsRemove(id: string, line: string): Promise<VersionedTool[
   return browserPreview ? Promise.resolve(SAMPLE_VERSIONS) : invoke<VersionedTool[]>("versions_remove", { id, line });
 }
 
-/** The line the kit uses; null = the default folder. */
+/** The line the kit uses; null = the default folder. One not on disk is
+ * downloaded (progress as `setup` events). */
 export function versionsPrefer(id: string, line: string | null): Promise<VersionedTool[]> {
   return browserPreview ? Promise.resolve(SAMPLE_VERSIONS) : invoke<VersionedTool[]>("versions_prefer", { id, line });
 }
@@ -541,7 +559,8 @@ export function projectVersions(project: string): Promise<ProjectVersions> {
     : invoke<ProjectVersions>("project_versions", { project });
 }
 
-/** The line of `id` for the project; null = the kit's. */
+/** The line of `id` for the project; null = the kit's. One not on disk is
+ * downloaded (progress as `setup` events). */
 export function projectVersionsSet(project: string, id: string, line: string | null): Promise<ProjectVersions> {
   return browserPreview
     ? Promise.resolve({ tools: SAMPLE_VERSIONS, chosen: line ? { [id]: line } : {} })
