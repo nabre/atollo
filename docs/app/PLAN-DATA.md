@@ -2,7 +2,18 @@
 
 Stato: **in esecuzione** (15/10/2026), domande del §3 chiuse dall'utente. Revisione 2: piano sviluppato in pacchetti di lavoro (§5) e struttura di uno sciame di agenti per eseguirlo (§7). Revisione 3: correzione degli alias dei siti (§1.3, WP-S), dalla revisione di sicurezza automatica del 15/10/2026, eseguita nell'ondata 0. Revisione 4: verifica e sviluppo della specifica [web_servers_and_versioning_spec.md](../../web_servers_and_versioning_spec.md), accodati dopo il piano dei dati (§9, indicazione dell'utente del 15/10/2026).
 
-Avanzamento: ondata 0 fatta (WP-S `7f70e3d`, WP-0 `73adb32` sul branch `feature/data-layout`); ondata 1 in corso.
+Avanzamento sul branch `feature/data-layout`:
+
+- Ondata 0 fatta: WP-S `7f70e3d`, WP-0 `73adb32`.
+- Ondata 1 fusa il 16/10/2026: A6 (WP-8, WP-11 backend) `41e9efe`, A2 (WP-1, WP-2) `0c83512`, A3 (WP-3, WP-4) `6687822`, A7 (WP-9, WP-10) `349c10f`, correzioni del coordinatore `68ddfbb`, `20cd6a6`. 302 test superati, clippy pulito. Revisione R in corso.
+- Note per le ondate successive, dai rapporti:
+  - **WP-6 prima di qualsiasi rilascio**: finché non migra, le password dei progetti in `secrets.json` non si leggono; «Crea» nella pagina del database ne farebbe una nuova e la `.env` esistente smetterebbe di funzionare.
+  - WP-5: `auth::drop_project` cancella `db.json`; chiamarlo solo dopo aver tolto gli utenti dai server, o rimettere le password se un drop fallisce.
+  - WP-7: leggere password o copie crea `private\` vuota; un orfano va riconosciuto dai file, non dalla cartella.
+  - WP-12 (A8): `can_hard_link` prova ancora `data\tmp` (`install/native.rs:216`); Rust già passa da `stage_into`.
+  - `projects/frameworks/target.rs::merge_into` usa `rename`: A7 ha aggiunto una copia in `commands/frameworks.rs` quando il progetto è su un altro disco; da riportare dentro `target.rs`.
+  - Commenti con i vecchi percorsi per D/A5: `README.md:53`, `ui/src/api/projects.ts:51`, `ui/src/projects/page.tsx:6`, `ui/src/api/databases.ts:173`, `ui/src/backups.tsx:2`, `ui/src/byhand.tsx`, `cli.rs:352` (`data\downloads`, che funziona ancora: i file vengono spostati al primo uso).
+  - Testi nuovi per A5 (T11.4): «Temporanei dei programmi», «Automatico», «Nel kit», «Nel sistema» e l'aiuto proposto da A6; errori di `check_fits`/`check_space` in inglese da tradurre se arrivano all'interfaccia.
 Base: branch `refactor/code-structure`, commit `3df7ca3`.
 
 Due obiettivi, dall'indicazione dell'utente del 15/10/2026:
