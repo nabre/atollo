@@ -21,6 +21,7 @@ import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { ItemBar, ItemStatus, itemState, useSetup } from "./setup";
+import { ByHandBox } from "./byhand";
 import { Tag } from "./tags";
 import { EditorSection, Link, Notice } from "./workbench";
 
@@ -295,7 +296,8 @@ function DiskLines({
     .filter((line, i, all) => all.indexOf(line) === i && !isPresent(tool, line))
     .filter((line) => {
       const state = itemState(setup, tool.id, prefix + line);
-      return state !== null && state.kind !== "problem";
+      // A failed download stays, to be done in the browser.
+      return state !== null && (state.kind !== "problem" || Boolean(state.byHand));
     });
   if (rows.length === 0 && coming.length === 0) return null;
   return (
@@ -344,6 +346,15 @@ function DiskLines({
             </div>
             {state && <ItemBar state={state} label={prefix + r.line} />}
             {state?.kind === "problem" && <p className="text-[12px] text-vsc-error select-text">{state.text}</p>}
+            {state?.kind === "problem" && state.byHand && (
+              <ByHandBox
+                id={tool.id}
+                name={prefix + r.line}
+                byHand={state.byHand}
+                disabled={running}
+                onRetry={() => versionsAdd(tool.id, r.line)}
+              />
+            )}
           </li>
         );
       })}
@@ -361,6 +372,18 @@ function DiskLines({
               )}
             </div>
             {state && <ItemBar state={state} label={prefix + line} />}
+            {state?.kind === "problem" && state.byHand && (
+              <>
+                <p className="text-[12px] text-vsc-error select-text">{state.text}</p>
+                <ByHandBox
+                  id={tool.id}
+                  name={prefix + line}
+                  byHand={state.byHand}
+                  disabled={running}
+                  onRetry={() => versionsAdd(tool.id, line)}
+                />
+              </>
+            )}
           </li>
         );
       })}

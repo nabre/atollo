@@ -20,7 +20,9 @@ import {
 import {
   componentsApply,
   componentsList,
+  componentsSync,
   setupCancel,
+  setupStart,
   projectsList,
   type ComponentInfo,
   type Group,
@@ -30,10 +32,11 @@ import {
 } from "./api";
 import { locale, rich, t } from "./i18n";
 import { ActionButton, ErrorLine } from "./pages";
-import { Checkbox, SettingsEditor, SettingsGroup, SingleEditor } from "./workbench";
+import { Checkbox, Notice, SettingsEditor, SettingsGroup, SingleEditor } from "./workbench";
 
 import { ItemBar, ItemStatus, itemState, setupStatusText, type ItemState } from "./setup";
 import { ExtensionsMatrixSection } from "./extensions";
+import { ByHandBox } from "./byhand";
 import { composerOf, splitVersion, ToolVersions, useKitVersions } from "./versions";
 import { ComponentLogo } from "./logos";
 import { LinkProblems, outsideOf, RelationsSection, RuntimeRows, useRelations } from "./relations";
@@ -291,7 +294,24 @@ export function ComponentsPage({
       },
     );
   }, []);
-  useEffect(load, [load]);
+  // Opening the page: first what was deleted by hand from the kit's
+  // folder, then the list as it is on disk.
+  const [synced, setSynced] = useState<string[]>([]);
+  useEffect(() => {
+    if (firstRun) {
+      load();
+      return;
+    }
+    componentsSync().then(
+      (off) => {
+        setSynced(off);
+        load();
+      },
+      () => {
+        load();
+      },
+    );
+  }, [firstRun, load]);
   // Reload as each component of an installation ends, and when it ends:
   // versions and "installed" change.
   const finished = setup?.steps.filter((s) => s.outcome !== null).length ?? 0;
@@ -389,6 +409,13 @@ export function ComponentsPage({
         onSearch={setSearch}
         placeholder={t("Cerca negli strumenti")}
       >
+        {synced.length > 0 && (
+          <div className="max-w-[880px] px-[14px] pt-3">
+            <Notice tone="info">
+              {t("Non più nella cartella del kit, tolti dalla scelta: {0}.", synced.join(", "))}
+            </Notice>
+          </div>
+        )}
         {all.map((g) => {
           const items = list.filter((c) => g.has(c) && visible(c));
           if (items.length === 0 && words.length > 0) return null;
@@ -466,6 +493,8 @@ export function ComponentsPage({
                             </span>
                           ) : c.noArm64 ? (
                             <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
+                          ) : c.needsWindows11 ? (
+                            <span className="text-vsc-desc">{t("richiede Windows 11 su ARM64")}</span>
                           ) : (
                             <span className="text-vsc-desc">{t("non installato")}</span>
                           )}
@@ -474,6 +503,17 @@ export function ComponentsPage({
                       {state && <ItemBar state={state} label={c.name} className="mt-1.5 ml-[62px]" />}
                       {state?.kind === "problem" && (
                         <p className="mt-1 ml-[62px] text-[12px] text-vsc-error select-text">{state.text}</p>
+                      )}
+                      {state?.kind === "problem" && state.byHand && (
+                        <div className="ml-[62px]">
+                          <ByHandBox
+                            id={c.id}
+                            name={c.name}
+                            byHand={state.byHand}
+                            disabled={running}
+                            onRetry={() => setupStart([c.id], false)}
+                          />
+                        </div>
                       )}
                       {versions && (
                         <div className="pl-[62px]">

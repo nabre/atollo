@@ -40,18 +40,44 @@ pub struct Options {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Outcome {
-    Installed { version: String },
-    UpToDate { version: Option<String> },
+    Installed {
+        version: String,
+    },
+    UpToDate {
+        version: Option<String>,
+    },
     Removed,
     InUse,
     Unsupported,
     Cancelled,
-    Failed { message: String },
+    Failed {
+        message: String,
+        #[serde(rename = "byHand")]
+        by_hand: Option<ByHand>,
+    },
+}
+
+/// Where to download in the browser the file that failed (`net::ByHand`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ByHand {
+    pub url: String,
+    pub file_name: String,
 }
 
 impl Outcome {
     pub fn is_failure(&self) -> bool {
         matches!(self, Outcome::Failed { .. } | Outcome::InUse)
+    }
+
+    pub fn failed(e: &anyhow::Error) -> Outcome {
+        Outcome::Failed {
+            message: format!("{e:#}"),
+            by_hand: e.downcast_ref::<crate::net::ByHand>().map(|b| ByHand {
+                url: b.url.clone(),
+                file_name: b.file_name.clone(),
+            }),
+        }
     }
 }
 
@@ -143,7 +169,8 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         only_with_needs(catalog, &opts.only, &installed, arm64)?
     };
     let mut plan = Plan::default();
-    for c in catalog.all() {
+    // In the order of the Tools page: the progress goes down the list.
+    for c in catalog.in_page_order() {
         if wanted.contains(c.id.as_str()) {
             plan.handle.push(c.id.clone());
         } else if opts.only.is_empty() && !choice.is_chosen(&c.id) && c.is_present(ctx.kit) {
@@ -311,9 +338,7 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
         });
         let outcome = match remove_component(ctx, c) {
             Err(e) if e.is::<InUse>() => Outcome::InUse,
-            Err(e) => Outcome::Failed {
-                message: format!("{e:#}"),
-            },
+            Err(e) => Outcome::failed(&e),
             Ok(()) => {
                 c.forget_version(ctx.kit);
                 Outcome::Removed
@@ -453,9 +478,7 @@ fn line_step(
         Ok(outcome) => outcome,
         Err(e) if e.is::<Cancelled>() => Outcome::Cancelled,
         Err(e) if e.is::<InUse>() => Outcome::InUse,
-        Err(e) => Outcome::Failed {
-            message: format!("{e:#}"),
-        },
+        Err(e) => Outcome::failed(&e),
     };
     sink.emit(Event::Done {
         id: c.id.clone(),
@@ -513,9 +536,7 @@ fn step(ctx: &Ctx, c: &Component, update_all: bool, force: bool, sink: &mut dyn 
         Ok(outcome) => outcome,
         Err(e) if e.is::<Cancelled>() => Outcome::Cancelled,
         Err(e) if e.is::<InUse>() => Outcome::InUse,
-        Err(e) => Outcome::Failed {
-            message: format!("{e:#}"),
-        },
+        Err(e) => Outcome::failed(&e),
     }
 }
 
@@ -745,12 +766,11 @@ mod tests {
             };
             let mut sink = Collect::default();
             let results = run(ctx, &opts, &mut sink).unwrap();
-            let ids: Vec<&String> = results.iter().map(|(id, _)| id).collect();
-            assert_eq!(
-                ids,
-                required.iter().collect::<Vec<_>>(),
-                "required ones are never skipped"
-            );
+            let mut ids: Vec<&String> = results.iter().map(|(id, _)| id).collect();
+            ids.sort();
+            let mut want: Vec<&String> = required.iter().collect();
+            want.sort();
+            assert_eq!(ids, want, "required ones are never skipped");
             assert!(results.iter().all(|(id, o)| *o
                 == Outcome::UpToDate {
                     version: Some(

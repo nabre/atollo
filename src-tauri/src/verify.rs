@@ -46,7 +46,21 @@ pub fn sha256_hex(path: &Path) -> Result<String> {
 
 /// Checks `path`; deletes it and fails when it does not match.
 pub fn check(path: &Path, expect: &Expect) -> Result<()> {
-    let ok = match expect {
+    if !matches(path, expect)? {
+        let _ = fs::remove_file(path);
+        bail!(
+            "{}: the checksum does not match, the file was deleted",
+            path.file_name()
+                .map(|n| n.to_string_lossy())
+                .unwrap_or_default()
+        );
+    }
+    Ok(())
+}
+
+/// Whether `path` has the checksum `expect`; the file is left as it is.
+pub fn matches(path: &Path, expect: &Expect) -> Result<bool> {
+    Ok(match expect {
         Expect::Sha256(want) => hex(&hash_file::<Sha256>(path)?).eq_ignore_ascii_case(want.trim()),
         Expect::Sha512(want) => hex(&hash_file::<Sha512>(path)?).eq_ignore_ascii_case(want.trim()),
         Expect::Sha3_256(want) => {
@@ -58,17 +72,7 @@ pub fn check(path: &Path, expect: &Expect) -> Result<()> {
             }
             None => bail!("unsupported npm integrity: {want}"),
         },
-    };
-    if !ok {
-        let _ = fs::remove_file(path);
-        bail!(
-            "{}: the checksum does not match, the file was deleted",
-            path.file_name()
-                .map(|n| n.to_string_lossy())
-                .unwrap_or_default()
-        );
-    }
-    Ok(())
+    })
 }
 
 #[cfg(test)]

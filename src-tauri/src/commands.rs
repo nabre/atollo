@@ -81,6 +81,9 @@ pub struct ComponentInfo {
     pub no_arm64: bool,
     /// Components it needs (Apache needs PHP, Kotlin needs Java).
     pub needs: Vec<String>,
+    /// x64 only, on an ARM64 PC with Windows 10: only Windows 11 runs x64
+    /// programs there (D-81). Not available.
+    pub needs_windows11: bool,
     /// One folder per minor line, side by side (versions.rs); the others
     /// are always at their latest version.
     pub versioned: bool,
@@ -157,6 +160,16 @@ fn ensure<R: Runtime>(
         return Err(crate::i18n::t(
             lang,
             "{0} non è disponibile sui PC ARM64.",
+            &[&c.name],
+        ));
+    }
+    if let Some(c) = needed
+        .iter()
+        .find(|c| arm64 && c.x64_only && !emulates_x64())
+    {
+        return Err(crate::i18n::t(
+            lang,
+            "{0} gira solo con Windows 11 sui PC ARM64.",
             &[&c.name],
         ));
     }
@@ -394,6 +407,26 @@ pub async fn terminal_open<R: Runtime>(
     .map_err(|e| fail("terminal", e))?
 }
 
+/// When the Tools page opens: what was deleted by hand from the kit's
+/// folder is no longer chosen (versions::sync_with_disk); the names of
+/// those. Not while an installation runs (its folders come and go).
+#[tauri::command]
+pub fn components_sync<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    ensure_main(&webview)?;
+    if state.setup.snapshot().running {
+        return Ok(Vec::new());
+    }
+    let off = crate::versions::sync_with_disk(&state.kit)
+        .map_err(|e| fail("components", format!("{e:#}")))?;
+    if !off.is_empty() {
+        apply_env(&state, Settings::load(&state.kit).settings);
+    }
+    Ok(off)
+}
+
 #[tauri::command]
 pub fn components_list<R: Runtime>(
     webview: Webview<R>,
@@ -403,6 +436,12 @@ pub fn components_list<R: Runtime>(
     Ok(component_infos(&state.kit, state.lang()))
 }
 
+/// The PC runs x64 programs: x64 itself, or Windows 11 on ARM64 (Windows 10
+/// on ARM emulates x86 only). An unknown build counts as yes.
+fn emulates_x64() -> bool {
+    crate::wterm::windows_build().is_none_or(|b| b >= 22000)
+}
+
 /// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`
 /// component is not available on an ARM64 kit.
 fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
@@ -410,11 +449,13 @@ fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
     let arm64 = kit.arch() == crate::kit::Arch::Arm64;
     let locked = catalog.locked();
+    // The order of the page, which an installation follows too.
     catalog
-        .all()
-        .iter()
+        .in_page_order()
+        .into_iter()
         .map(|c| {
             let no_arm64 = c.no_arm64 && arm64;
+            let needs_windows11 = arm64 && c.x64_only && !emulates_x64();
             ComponentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
@@ -426,10 +467,11 @@ fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 present: c.is_present(kit),
                 locked: locked.contains(c.id.as_str()),
                 version: c.installed_version(kit),
-                available: install::installer(&c.id).is_some() && !no_arm64,
+                available: install::installer(&c.id).is_some() && !no_arm64 && !needs_windows11,
                 x64_only: c.x64_only,
                 no_arm64,
                 needs: c.needs.clone(),
+                needs_windows11,
                 versioned: c.versioned,
             }
         })
@@ -475,6 +517,7 @@ fn apply_env(state: &AppState, settings: Settings) -> &'static str {
     state.editor.set_env(env.clone());
     state.setup.set_config(env, settings);
     crate::versions::write_project_files(&state.kit);
+    crate::side_by_side::refresh(&state.kit);
     lang
 }
 
@@ -597,7 +640,8 @@ pub async fn versions_available<R: Runtime>(
         // there is no token of the PC, as the installations do.
         let token = token.or_else(|| crate::github::token(&kit, &env));
         let net = crate::net::Net::new(&Settings::load(&kit).settings, token)
-            .map_err(|e| fail("versions", format!("{e:#}")))?;
+            .map_err(|e| fail("versions", format!("{e:#}")))?
+            .with_github_cache(kit.data().join("cache").join("github"));
         let cancel = std::sync::atomic::AtomicBool::new(false);
         let ctx = install::Ctx {
             kit: &kit,
@@ -761,6 +805,81 @@ pub fn setup_cancel<R: Runtime>(
     ensure_main(&webview)?;
     state.setup.cancel(&setup_notify(app));
     Ok(())
+}
+
+/// Files downloaded by hand (downloads.rs, D-82), dropped on the window:
+/// kept in `data\downloads` for the next installation. Their names.
+#[tauri::command]
+pub async fn downloads_add<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    paths: Vec<String>,
+) -> Result<Vec<String>, String> {
+    ensure_main(&webview)?;
+    let kit = state.kit.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let files: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
+        crate::downloads::add(&kit, &files)
+    })
+    .await
+    .map_err(|e| fail("downloads", e))?
+    .map_err(|e| fail("downloads", format!("{e:#}")))
+}
+
+/// The same, picked in Windows' "Open" window; empty when closed.
+#[tauri::command]
+pub async fn downloads_pick<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    ensure_main(&webview)?;
+    let owner = webview.window().hwnd().map_err(|e| fail("window", e))?.0 as isize;
+    let title = crate::i18n::t(state.lang(), "Scegli il file scaricato", &[]);
+    let kit = state.kit.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let files = crate::downloads::pick(owner, &title)?;
+        if files.is_empty() {
+            return Ok(Vec::new());
+        }
+        crate::downloads::add(&kit, &files)
+    })
+    .await
+    .map_err(|e| fail("downloads", e))?
+    .map_err(|e| fail("downloads", format!("{e:#}")))
+}
+
+/// Opens in the PC's browser the address of the download that failed in
+/// the step `name` of `id`: only one the preparation reported.
+#[tauri::command]
+pub fn setup_by_hand_open<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+    name: String,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    let url = state
+        .setup
+        .snapshot()
+        .steps
+        .into_iter()
+        .rfind(|s| s.id == id && s.name == name)
+        .and_then(|s| match s.outcome {
+            Some(crate::setup_runner::Outcome::Failed {
+                by_hand: Some(b), ..
+            }) => Some(b.url),
+            _ => None,
+        })
+        .filter(|u| u.starts_with("https://") || u.starts_with("http://"))
+        .ok_or_else(|| format!("{id}: no download to do by hand"))?;
+    let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
+    crate::jobs::spawn_detached(
+        std::process::Command::new(std::path::Path::new(&system_root).join("explorer.exe"))
+            .arg(&url),
+        0,
+    )
+    .map(|_| ())
+    .map_err(|e| fail("browser", format!("{e:#}")))
 }
 
 /// Async, so off the window's thread: the page asks every few seconds and
@@ -2084,9 +2203,13 @@ macro_rules! command_handler {
             $crate::commands::projects_list,
             $crate::commands::terminal_open,
             $crate::commands::components_list,
+            $crate::commands::components_sync,
             $crate::commands::setup_state,
             $crate::commands::setup_start,
             $crate::commands::setup_cancel,
+            $crate::commands::downloads_add,
+            $crate::commands::downloads_pick,
+            $crate::commands::setup_by_hand_open,
             $crate::commands::components_apply,
             $crate::commands::agents_status,
             $crate::commands::agents_stats,

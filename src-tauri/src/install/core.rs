@@ -179,8 +179,25 @@ impl Python {
 }
 
 impl Installer for Python {
+    /// The newest minor (the line marked "latest"), unless one is chosen in
+    /// the settings.
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        Python::release(ctx, component, &python_minor(ctx))
+        let chosen = Settings::load(ctx.kit)
+            .settings
+            .python_version
+            .filter(|v| pattern(r"^3\.\d+$").is_ok_and(|re| re.is_match(v)));
+        let minor = match chosen {
+            Some(m) => m,
+            None => {
+                let (_, sums) = python_sums(ctx)?;
+                let triple = format!("{}-pc-windows-msvc", triple_arch(ctx, component));
+                python_lines(&sums, &triple)
+                    .into_iter()
+                    .next()
+                    .unwrap_or_else(|| PYTHON_DEFAULT.to_owned())
+            }
+        };
+        Python::release(ctx, component, &minor)
     }
 
     fn has_lines(&self) -> bool {
@@ -309,8 +326,6 @@ pub struct NodeEntry {
     version: String,
     #[serde(default)]
     files: Vec<String>,
-    #[serde(default)]
-    lts: Value,
 }
 
 /// Node.js: the newest LTS with a Windows zip for this platform.
@@ -354,10 +369,8 @@ impl Node {
             .iter()
             .find(|e| {
                 e.files.contains(&wanted)
-                    && match line {
-                        Some(l) => crate::versions::line_of(&e.version).as_deref() == Some(l),
-                        None => !matches!(e.lts, Value::Bool(false) | Value::Null),
-                    }
+                    // None: the newest release (the line marked "latest").
+                    && line.is_none_or(|l| crate::versions::line_of(&e.version).as_deref() == Some(l))
             })
             .ok_or_else(|| anyhow!("no Node.js {} for win-{arch}", line.unwrap_or("LTS")))?;
         let v = &entry.version;

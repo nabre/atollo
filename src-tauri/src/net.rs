@@ -24,6 +24,8 @@ use crate::settings::Settings;
 pub struct Net {
     agent: Agent,
     github_token: Option<String>,
+    /// Answers of the GitHub API kept with their ETag (`data\cache\github`).
+    github_cache: Option<std::path::PathBuf>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -75,6 +77,30 @@ pub struct GhAnswer {
 #[error("cancelled")]
 pub struct Cancelled;
 
+/// A download that failed and can be done in the browser instead: the
+/// interface shows `url`, and the file added by hand (`downloads.rs`) is
+/// used at the next attempt when its checksum is the expected one.
+#[derive(Debug)]
+pub struct ByHand {
+    pub url: String,
+    pub file_name: String,
+    pub cause: anyhow::Error,
+}
+
+impl std::fmt::Display for ByHand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#}", self.cause)
+    }
+}
+
+impl std::error::Error for ByHand {}
+
+/// GitHub's limit of API calls (60 an hour without a token) reached, with no
+/// answer kept for that address.
+#[derive(Debug, thiserror::Error)]
+#[error("GitHub API limit reached: sign in to GitHub in the kit, or try again in an hour")]
+pub struct GithubLimit;
+
 impl Net {
     pub fn new(settings: &Settings, github_token: Option<String>) -> Result<Net> {
         let proxy = match settings
@@ -103,7 +129,87 @@ impl Net {
         Ok(Net {
             agent: config.new_agent(),
             github_token: github_token.filter(|t| !t.is_empty()),
+            github_cache: None,
         })
+    }
+
+    /// Keeps the answers of the GitHub API in `dir` (D-81): asked again with
+    /// `If-None-Match`, an unchanged one costs nothing (a 304 does not count
+    /// in GitHub's limit of 60 calls an hour without a token), and when the
+    /// limit is reached (403, 429) the last answer is used.
+    pub fn with_github_cache(mut self, dir: std::path::PathBuf) -> Net {
+        self.github_cache = Some(dir);
+        self
+    }
+
+    fn github_cached(&self, url: &str, dir: &std::path::Path) -> Result<String> {
+        use std::hash::{Hash, Hasher};
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        url.hash(&mut h);
+        let body_path = dir.join(format!("{:016x}.json", h.finish()));
+        let etag_path = body_path.with_extension("etag");
+        let cached = std::fs::read_to_string(&body_path).ok();
+        let etag = std::fs::read_to_string(&etag_path)
+            .ok()
+            .filter(|_| cached.is_some());
+        let mut request = self
+            .agent
+            .get(url)
+            .header("Accept", "application/vnd.github+json");
+        if let Some(token) = &self.github_token {
+            request = request.header("Authorization", format!("Bearer {token}"));
+        }
+        if let Some(tag) = &etag {
+            request = request.header("If-None-Match", tag.trim());
+        }
+        let response = request
+            .config()
+            .http_status_as_error(false)
+            .build()
+            .call()
+            .with_context(|| format!("GET {url}"))?;
+        let status = response.status().as_u16();
+        let new_tag = response
+            .headers()
+            .get("etag")
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_owned);
+        match (status, cached) {
+            (304, Some(body)) => Ok(body),
+            (200..=299, _) => {
+                let body = response
+                    .into_body()
+                    .with_config()
+                    .limit(32 * 1024 * 1024)
+                    .read_to_string()
+                    .with_context(|| format!("reading {url}"))?;
+                if std::fs::create_dir_all(dir).is_ok() {
+                    let _ = crate::kit::write_atomic(&body_path, body.as_bytes());
+                    match new_tag {
+                        Some(tag) => {
+                            let _ = crate::kit::write_atomic(&etag_path, tag.as_bytes());
+                        }
+                        None => {
+                            let _ = std::fs::remove_file(&etag_path);
+                        }
+                    }
+                }
+                Ok(body)
+            }
+            (403 | 429, Some(body)) => {
+                crate::log::warn(&format!(
+                    "GitHub API limit reached: the last answer kept for {url}"
+                ));
+                Ok(body)
+            }
+            (403 | 429, None) => Err(anyhow::Error::new(ureq::Error::StatusCode(status))
+                .context(GithubLimit)
+                .context(format!("GET {url}"))),
+            _ => {
+                Err(anyhow::Error::new(ureq::Error::StatusCode(status))
+                    .context(format!("GET {url}")))
+            }
+        }
     }
 
     fn get(&self, url: &str) -> Result<ureq::http::Response<ureq::Body>> {
@@ -123,6 +229,13 @@ impl Net {
     }
 
     pub fn text(&self, url: &str) -> Result<String> {
+        if let Some(dir) = self
+            .github_cache
+            .as_deref()
+            .filter(|_| url.starts_with("https://api.github.com/"))
+        {
+            return retry(|| self.github_cached(url, dir));
+        }
         retry(|| {
             self.get(url)?
                 .into_body()
@@ -138,10 +251,66 @@ impl Net {
         serde_json::from_str(&text).with_context(|| format!("unexpected answer from {url}"))
     }
 
+    /// The latest release of `repo`. When the API's limit is reached and no
+    /// answer is kept, the same from github.com's pages (`github_latest_page`).
     pub fn github_latest(&self, repo: &str) -> Result<GhRelease> {
-        self.json(&format!(
+        let api = self.json(&format!(
             "https://api.github.com/repos/{repo}/releases/latest"
-        ))
+        ));
+        match api {
+            Err(e) if is_github_limit(&e) => self.github_latest_page(repo).map_err(|page| {
+                crate::log::warn(&format!("{repo}: release page: {page:#}"));
+                e
+            }),
+            other => other,
+        }
+    }
+
+    /// `releases/latest` without the API, which github.com's pages do not
+    /// count: the address redirects to the tag, and the list of assets
+    /// (`expanded_assets`) has each asset's SHA-256 as the API gives it.
+    fn github_latest_page(&self, repo: &str) -> Result<GhRelease> {
+        let url = format!("https://github.com/{repo}/releases/latest");
+        let location = retry(|| {
+            let response = self
+                .agent
+                .get(&url)
+                .config()
+                .max_redirects(0)
+                .http_status_as_error(false)
+                .build()
+                .call()
+                .with_context(|| format!("GET {url}"))?;
+            let status = response.status().as_u16();
+            response
+                .headers()
+                .get("location")
+                .and_then(|v| v.to_str().ok())
+                .map(str::to_owned)
+                .filter(|_| response.status().is_redirection())
+                .ok_or_else(|| {
+                    anyhow::Error::new(ureq::Error::StatusCode(status))
+                        .context(format!("GET {url}: no release"))
+                })
+        })?;
+        // The repository as GitHub names it now (renamed, other case).
+        let (canonical, tag) = location
+            .strip_prefix("https://github.com/")
+            .and_then(|path| path.split_once("/releases/tag/"))
+            .filter(|(r, t)| r.split('/').count() == 2 && !t.is_empty() && !t.contains('/'))
+            .ok_or_else(|| anyhow!("GET {url}: unexpected redirect to {location}"))?;
+        let html = self.text(&format!(
+            "https://github.com/{canonical}/releases/expanded_assets/{tag}"
+        ))?;
+        let assets = expanded_assets(&html, canonical, tag);
+        if assets.is_empty() {
+            bail!("{canonical} {tag}: no assets on the release page");
+        }
+        Ok(GhRelease {
+            tag_name: percent_decode(tag).unwrap_or_else(|| tag.to_owned()),
+            assets,
+            prerelease: false,
+        })
     }
 
     /// One JSON request to an agent's server (`stats.rs`): a single attempt,
@@ -384,6 +553,71 @@ fn is_permanent(e: &anyhow::Error) -> bool {
     })
 }
 
+/// GitHub's API refused for its limit (403 and 429 without a token).
+fn is_github_limit(e: &anyhow::Error) -> bool {
+    e.downcast_ref::<GithubLimit>().is_some()
+        || e.chain().any(|cause| {
+            matches!(
+                cause.downcast_ref::<ureq::Error>(),
+                Some(ureq::Error::StatusCode(403 | 429))
+            )
+        })
+}
+
+/// The assets of a release page's `expanded_assets`: each download link,
+/// with the first `sha256:` before the next one in its row. The source archives are
+/// not assets (they are under `/archive/`).
+fn expanded_assets(html: &str, repo: &str, tag: &str) -> Vec<GhAsset> {
+    let prefix = format!("href=\"/{repo}/releases/download/{tag}/");
+    let mut assets: Vec<GhAsset> = Vec::new();
+    for part in html.split(prefix.as_str()).skip(1) {
+        let Some((raw, rest)) = part.split_once('"') else {
+            continue;
+        };
+        let Some(name) = percent_decode(raw).filter(|n| !n.is_empty() && !n.contains('/')) else {
+            continue;
+        };
+        let row = rest.split("</li>").next().unwrap_or(rest);
+        let digest = row.split("sha256:").nth(1).and_then(|d| {
+            let hex = d.get(..64)?;
+            hex.chars()
+                .all(|c| c.is_ascii_hexdigit())
+                .then(|| format!("sha256:{}", hex.to_ascii_lowercase()))
+        });
+        match assets.iter_mut().find(|a| a.name == name) {
+            Some(known) => {
+                if known.digest.is_none() {
+                    known.digest = digest;
+                }
+            }
+            None => assets.push(GhAsset {
+                browser_download_url: format!(
+                    "https://github.com/{repo}/releases/download/{tag}/{raw}"
+                ),
+                name,
+                digest,
+            }),
+        }
+    }
+    assets
+}
+
+fn percent_decode(s: &str) -> Option<String> {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' {
+            out.push(u8::from_str_radix(s.get(i + 1..i + 3)?, 16).ok()?);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).ok()
+}
+
 /// First run of 64 hex characters in a checksum file (`hash  name` or `hash`).
 pub fn first_sha256(text: &str) -> Option<String> {
     text.split(|c: char| !c.is_ascii_hexdigit())
@@ -446,6 +680,101 @@ mod tests {
         );
         assert!(github_digest(&asset(None)).is_err());
         assert!(github_digest(&asset(Some("sha512:00"))).is_err());
+    }
+
+    /// A server answering, in order: 200 with an ETag, 304 when asked with
+    /// it, then 403 (the limit of GitHub's API).
+    #[test]
+    fn github_answers_kept_with_their_etag() {
+        use std::io::{BufRead, BufReader, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/repos/x/y", listener.local_addr().unwrap());
+        let server = std::thread::spawn(move || {
+            let mut asked_with_tag = Vec::new();
+            for answer in 0..3 {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut reader = BufReader::new(stream.try_clone().unwrap());
+                let mut tagged = false;
+                loop {
+                    let mut line = String::new();
+                    reader.read_line(&mut line).unwrap();
+                    if line
+                        .to_ascii_lowercase()
+                        .starts_with("if-none-match: \"v1\"")
+                    {
+                        tagged = true;
+                    }
+                    if line == "\r\n" || line.is_empty() {
+                        break;
+                    }
+                }
+                asked_with_tag.push(tagged);
+                let reply = match answer {
+                    0 => "HTTP/1.1 200 OK\r\nETag: \"v1\"\r\nContent-Length: 7\r\nConnection: close\r\n\r\n{\"a\":1}",
+                    1 => "HTTP/1.1 304 Not Modified\r\nConnection: close\r\n\r\n",
+                    _ => "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                };
+                stream.write_all(reply.as_bytes()).unwrap();
+            }
+            asked_with_tag
+        });
+        let tmp = crate::kit::tests::TempDir::new("github-cache");
+        let net = Net::new(&Settings::default(), None).unwrap();
+        for _ in 0..3 {
+            assert_eq!(net.github_cached(&url, &tmp.0).unwrap(), "{\"a\":1}");
+        }
+        assert_eq!(server.join().unwrap(), [false, true, true]);
+    }
+
+    /// The shape of github.com's `expanded_assets` (October 2026): two
+    /// links per asset, then its digest; an asset without a digest.
+    #[test]
+    fn release_page_assets() {
+        let hex = "AE".repeat(32);
+        let html = format!(
+            r#"<li><a href="/cli/cli/releases/download/v2.1/gh_2.1_windows_amd64.zip" rel="nofollow">
+            <span>GitHub CLI</span></a>
+            <a href="/cli/cli/releases/download/v2.1/gh_2.1_windows_amd64.zip" rel="nofollow"></a>
+            <span class="Truncate-text">sha256:{hex}</span>
+            <clipboard-copy value="sha256:{hex}"></clipboard-copy></li>
+            <li><a href="/cli/cli/releases/download/v2.1/notes%20v2.txt" rel="nofollow"></a></li>
+            <li><a href="/cli/cli/archive/refs/tags/v2.1.zip" rel="nofollow"></a>
+            <span>sha256:{}</span></li>"#,
+            "00".repeat(32)
+        );
+        let assets = expanded_assets(&html, "cli/cli", "v2.1");
+        assert_eq!(assets.len(), 2);
+        assert_eq!(assets[0].name, "gh_2.1_windows_amd64.zip");
+        assert_eq!(
+            assets[0].browser_download_url,
+            "https://github.com/cli/cli/releases/download/v2.1/gh_2.1_windows_amd64.zip"
+        );
+        assert_eq!(github_digest(&assets[0]).unwrap(), hex.to_ascii_lowercase());
+        assert_eq!(assets[1].name, "notes v2.txt");
+        assert_eq!(assets[1].digest, None);
+    }
+
+    #[test]
+    fn limit_errors_are_recognised() {
+        let limit = anyhow::Error::new(ureq::Error::StatusCode(403))
+            .context(GithubLimit)
+            .context("GET x");
+        assert!(is_github_limit(&limit));
+        assert!(is_permanent(&limit));
+        let missing = anyhow::Error::new(ureq::Error::StatusCode(404)).context("GET x");
+        assert!(!is_github_limit(&missing));
+    }
+
+    /// The real github.com (`cargo test -- --ignored`).
+    #[test]
+    #[ignore]
+    fn release_page_live() {
+        let net = Net::new(&Settings::default(), None).unwrap();
+        let rel = net.github_latest_page("PowerShell/PowerShell").unwrap();
+        let zip = rel
+            .asset(&regex::Regex::new(r"^PowerShell-.+-win-x64\.zip$").unwrap())
+            .unwrap();
+        assert_eq!(github_digest(zip).unwrap().len(), 64);
     }
 
     #[test]

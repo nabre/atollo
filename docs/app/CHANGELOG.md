@@ -1,5 +1,28 @@
 # Novità
 
+## Rilasci di GitHub senza limite e download a mano (15/10/2026)
+
+**Fatto** (D-82)
+- **Limite dell'API di GitHub**: quando le 60 chiamate l'ora sono finite, l'ultima versione e lo SHA-256 dei file si leggono dalle pagine di github.com. GitHub CLI e PowerShell 7 si installano anche senza accesso a GitHub.
+- **Download a mano**: se un download non riesce, sotto «non riuscito» compare il link al file; scaricato dal browser, si trascina nel riquadro o si sceglie con «sfoglia…». Il kit lo conserva in `data\downloads`, riprova da solo e lo usa solo se il suo SHA-256 è quello pubblicato.
+
+**Verificato**: 247 test Rust (nuovi: asset dalla pagina dei rilasci, limite riconosciuto, file aggiunti a mano), clippy e fmt puliti; tipi, ESLint e 23 test dell'interfaccia; lettura reale della pagina di PowerShell. Da provare nell'app: trascinare un file nel riquadro e «sfoglia…».
+
+## Versioni affiancate per Java, .NET, Ruby e altri (15/10/2026)
+
+**Fatto** (D-81)
+- **Java su PC ARM64**: si installa la JDK LTS che esiste per ARM64 (oggi la 21); Maven resta alla 3.x.
+- **Gradle con ogni Java**: il comando `gradle` del kit parte con la JDK più recente; il progetto compila con la sua tramite le toolchain, che trovano le JDK del kit (anche Maven, con `toolchains.xml`) e mai quelle del PC.
+- **.NET**: ogni versione vede SDK e runtime delle altre, così un'app net8 parte anche sotto l'SDK 10.
+- **CMake** usa Ninja e configura anche i progetti vecchi; **`make`** c'è con C/C++.
+- **uv** usa solo i suoi Python, dentro il kit; mai quelli del PC.
+- **Ruby**: le gem stanno con la loro versione di Ruby (e passano agli aggiornamenti di patch); versioni di Ruby da scaricare.
+- **TinyTeX** rimette i pacchetti aggiunti dopo ogni aggiornamento.
+- Sui PC ARM64 con Windows 10 i programmi solo x64 risultano «richiede Windows 11 su ARM64»; Julia è solo x64.
+- **Git** non è più obbligatorio: arriva quando serve (Claude Code, un clone, un progetto).
+
+**Verificato**: 241 test Rust (nuovi: JDK per Gradle e Maven, .NET affiancato con junction, rimozione che non segue le junction), clippy e fmt puliti; tipi, ESLint e 23 test dell'interfaccia; `gradle.cmd` provato senza Gradle. Da provare nell'app: un progetto Gradle su Java 11, un'app net8 con .NET 10 predefinito, `make` in un progetto C, l'aggiornamento di TinyTeX.
+
 ## Matrice delle relazioni (15/10/2026)
 
 **Fatto**

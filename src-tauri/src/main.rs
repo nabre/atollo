@@ -17,6 +17,7 @@ mod commands;
 mod db_auth;
 mod db_browse;
 mod detect;
+mod downloads;
 mod editor;
 mod editor_cfg;
 mod editor_ext;
@@ -51,6 +52,7 @@ mod sessions;
 mod settings;
 mod setup_runner;
 mod setup_task;
+mod side_by_side;
 mod signature;
 mod stats;
 mod terminal;
@@ -133,6 +135,8 @@ fn run() -> i32 {
     log::init(&kit.logs());
     // Before the environment points at them: one folder per version.
     versions::migrate(&kit);
+    // The versions side by side, known to Gradle, Maven and dotnet.
+    side_by_side::refresh(&kit);
     self_update::remove_old(&exe);
     self_update::record_version(&kit);
     let loaded = Settings::load(&kit);
@@ -358,7 +362,7 @@ fn prepare(
         log::warn(&format!("job object: {e:#}"));
     }
     let net = match net::Net::new(settings, github_token(host)) {
-        Ok(net) => net,
+        Ok(net) => net.with_github_cache(kit.data().join("cache").join("github")),
         Err(e) => {
             let _ = writeln!(out, "  x {e:#}");
             return 1;
@@ -427,7 +431,8 @@ fn version_lines(kit: &Kit, kit_env: &KitEnv, settings: &Settings, host: &Host, 
             .find(id)
             .ok_or_else(|| anyhow::anyhow!("{id}"))?;
         let installer = install::installer(id).ok_or_else(|| anyhow::anyhow!("{id}"))?;
-        let net = net::Net::new(settings, github_token(host))?;
+        let net = net::Net::new(settings, github_token(host))?
+            .with_github_cache(kit.data().join("cache").join("github"));
         let cancel = std::sync::atomic::AtomicBool::new(false);
         let ctx = install::Ctx {
             kit,

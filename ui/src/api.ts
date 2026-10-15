@@ -6,6 +6,7 @@
 // designed in the browser, and the interface shows a "preview" banner.
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 export interface AppInfo {
   version: string;
@@ -310,7 +311,14 @@ export type Outcome =
   | { kind: "inUse" }
   | { kind: "unsupported" }
   | { kind: "cancelled" }
-  | { kind: "failed"; message: string };
+  | { kind: "failed"; message: string; byHand: ByHand | null };
+
+/** A download that failed: its address, to download it in the browser and
+ * drop the file on the app (src-tauri/src/downloads.rs). */
+export interface ByHand {
+  url: string;
+  fileName: string;
+}
 
 export interface SetupStep {
   id: string;
@@ -354,6 +362,8 @@ export interface ComponentInfo {
   /** No ARM64 build and this kit is ARM64: why it is not available. */
   noArm64: boolean;
   needs: string[];
+  /** x64 only, on an ARM64 PC with Windows 10 (no x64 emulation there). */
+  needsWindows11: boolean;
   /** One folder per minor version, side by side; the others are always at
    * their latest version. */
   versioned: boolean;
@@ -412,6 +422,7 @@ function sampleComponent(
     x64Only: false,
     noArm64: false,
     needs: [],
+    needsWindows11: false,
     versioned: ["python", "node", "php", "go", "java"].includes(id),
     ...extra,
   };
@@ -449,12 +460,53 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
   sampleComponent("terminal", "Windows Terminal", "os", "il terminale del kit", 25, { ...ON, version: "1.23" }),
 ];
 
+/** When the Tools page opens: what was deleted by hand from the kit's
+ * folder is no longer chosen; the names of those. */
+export function componentsSync(): Promise<string[]> {
+  return browserPreview ? Promise.resolve([]) : invoke<string[]>("components_sync");
+}
+
 export function componentsList(): Promise<ComponentInfo[]> {
   return browserPreview ? Promise.resolve(SAMPLE_COMPONENTS) : invoke<ComponentInfo[]>("components_list");
 }
 
 export function setupStart(only: string[] | null, updateAll: boolean): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>("setup_start", { only, updateAll });
+}
+
+/** Files downloaded by hand, kept for the next installation: their names. */
+export function downloadsAdd(paths: string[]): Promise<string[]> {
+  return browserPreview ? Promise.resolve(paths) : invoke<string[]>("downloads_add", { paths });
+}
+
+/** The same, picked in Windows' "Open" window; empty when closed. */
+export function downloadsPick(): Promise<string[]> {
+  return browserPreview ? Promise.resolve([]) : invoke<string[]>("downloads_pick");
+}
+
+/** Opens in the browser the address of the failed download of a step. */
+export function setupByHandOpen(id: string, name: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("setup_by_hand_open", { id, name });
+}
+
+/** Files dragged over the window: `over` with the position in CSS pixels,
+ * `drop` with their paths, `leave`. */
+export type FileDrag =
+  { kind: "over"; x: number; y: number } | { kind: "drop"; x: number; y: number; paths: string[] } | { kind: "leave" };
+
+export function onFileDrag(handler: (d: FileDrag) => void): Promise<() => void> {
+  if (browserPreview) return Promise.resolve(() => undefined);
+  return getCurrentWebview().onDragDropEvent((e) => {
+    const p = e.payload;
+    if (p.type === "leave") {
+      handler({ kind: "leave" });
+      return;
+    }
+    const scale = window.devicePixelRatio || 1;
+    const x = p.position.x / scale;
+    const y = p.position.y / scale;
+    handler(p.type === "drop" ? { kind: "drop", x, y, paths: p.paths } : { kind: "over", x, y });
+  });
 }
 
 export function setupCancel(): Promise<void> {

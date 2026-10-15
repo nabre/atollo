@@ -39,6 +39,10 @@ struct LinkSpec {
     range: Option<String>,
     #[serde(default)]
     optional: bool,
+    /// Only the version of `to` the kit uses counts: `from` picks it
+    /// whatever a project uses (Gradle on the newest JDK, Composer per PHP).
+    #[serde(default)]
+    kit: bool,
     #[serde(default)]
     note: Option<String>,
 }
@@ -308,8 +312,8 @@ fn links(lang: &str, haves: &BTreeMap<String, Have>) -> Vec<Link> {
                 .range
                 .as_deref()
                 .and_then(|r| Range::parse(r, Bare::Exact));
-            // Composer is chosen for each PHP folder: it always fits.
-            let per_line = s.from == "php/composer";
+            // Only the kit's version counts: no lines "outside".
+            let per_line = s.kit;
             let uses = to
                 .kit
                 .clone()
@@ -331,10 +335,12 @@ fn links(lang: &str, haves: &BTreeMap<String, Have>) -> Vec<Link> {
                 } else {
                     LinkStatus::Missing
                 }
-            } else if uses
-                .as_deref()
-                .is_some_and(|l| outside.iter().any(|o| o == l))
-            {
+            } else if uses.as_deref().is_some_and(|l| match &range {
+                // Composer is chosen for each PHP folder: it always fits.
+                _ if s.from == "php/composer" => false,
+                Some(r) => !admits(r, to, l),
+                None => false,
+            }) {
                 LinkStatus::Incompatible
             } else {
                 LinkStatus::Ok
@@ -537,7 +543,13 @@ fn projects(kit: &Kit, haves: &BTreeMap<String, Have>) -> Vec<ProjectNeeds> {
         })
         .filter(|p| !p.needs.is_empty())
         .collect();
-    out.sort_by(|a, b| a.project.cmp(&b.project));
+    // Alphabetical, as every list of the page.
+    out.sort_by_key(|p| p.project.to_lowercase());
+    for p in &mut out {
+        // By component; for one component, the order of the knowledge
+        // (package.json before .nvmrc: the first declaration wins).
+        p.needs.sort_by_key(|n| n.name.to_lowercase());
+    }
     out
 }
 
@@ -593,6 +605,12 @@ fn file(kit: &Kit) -> std::path::PathBuf {
     kit.app_dir().join("relations.json")
 }
 
+/// Alphabetical by the component, then by what it needs.
+fn sorted_links(mut links: Vec<Link>) -> Vec<Link> {
+    links.sort_by_key(|l| (l.from_name.to_lowercase(), l.to_name.to_lowercase()));
+    links
+}
+
 /// Builds the matrix from the state of the kit now.
 pub fn build(kit: &Kit, lang: &str) -> Matrix {
     let catalog = Catalog::get();
@@ -607,8 +625,12 @@ pub fn build(kit: &Kit, lang: &str) -> Matrix {
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs()),
         platform: kit.arch().platform(),
-        links: links(lang, &haves),
-        runtimes: runtimes(kit, lang, &haves),
+        links: sorted_links(links(lang, &haves)),
+        runtimes: {
+            let mut r = runtimes(kit, lang, &haves);
+            r.sort_by_key(|x| x.name.to_lowercase());
+            r
+        },
         projects: projects(kit, &haves),
     }
 }
@@ -745,7 +767,7 @@ mod tests {
             LinkStatus::Incompatible,
             "Gradle 9 on Java 11"
         );
-        assert_eq!(gradle.outside, ["11.0"]);
+        assert!(gradle.outside.is_empty(), "the kit's JDK only counts");
         let kotlin = m.links.iter().find(|l| l.from == "kotlin").unwrap();
         assert_eq!(kotlin.status, LinkStatus::Inactive);
         let pnpm = m.links.iter().find(|l| l.from == "pnpm").unwrap();

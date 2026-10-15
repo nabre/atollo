@@ -232,6 +232,10 @@ impl KitEnv {
         env.set("NODE_OPTIONS", node_options(kit));
         env.set_path("UV_CACHE_DIR", data.join(r"cache\uv"));
         env.set_path("UV_PYTHON_INSTALL_DIR", data.join(r"uv\python"));
+        // uv's own Pythons only (downloaded into the kit): never one of the
+        // PC's, found through the registry, and none written into it.
+        env.set("UV_PYTHON_PREFERENCE", "only-managed");
+        env.set("UV_PYTHON_INSTALL_REGISTRY", "0");
         env.set_path("UV_TOOL_DIR", data.join(r"uv\tools"));
         let uv_bin = data.join(r"uv\bin");
         env.set_path("UV_TOOL_BIN_DIR", &uv_bin);
@@ -263,6 +267,22 @@ impl KitEnv {
             env.set_path("JAVA_HOME", app("java"));
         }
         env.set_path("GRADLE_USER_HOME", data.join("gradle"));
+        // Gradle 9 runs on Java 17 to 27: the kit's gradle (data\kit\bin)
+        // starts it on the newest JDK, whatever Java a project uses (its
+        // toolchain compiles). With `/`: the versions' rewrites leave it.
+        if let Some(java) = crate::catalog::Catalog::get().find("java") {
+            let newest = crate::versions::newest_line(kit, java);
+            let fits = newest
+                .as_deref()
+                .and_then(|l| l.split('.').next())
+                .and_then(|m| m.parse::<u32>().ok())
+                .is_some_and(|m| m >= 17);
+            if let (true, Some(dir)) =
+                (fits, crate::versions::dir_for(kit, java, newest.as_deref()))
+            {
+                env.set("DEVKIT_GRADLE_JAVA", fwd(&dir));
+            }
+        }
         let dotnet_home = data.join("dotnet").join(&platform);
         env.set_path("DOTNET_ROOT", app("dotnet"));
         env.set_path("DOTNET_CLI_HOME", &dotnet_home);
@@ -290,8 +310,6 @@ impl KitEnv {
         env.set_path("PNPM_HOME", &pnpm);
         env.set_path("pnpm_config_store_dir", data.join(r"cache\pnpm-store"));
         env.set_path("YARN_CACHE_FOLDER", data.join(r"cache\yarn"));
-        let gem_home = data.join("ruby").join(&platform);
-        env.set_path("GEM_HOME", &gem_home);
         // One library per minor version of R (`%v` = 4.6): packages
         // compiled for one do not load in another (D-81).
         env.set(
@@ -379,11 +397,20 @@ impl KitEnv {
             path.push(pnpm);
         }
         when(&mut path, r"cmake\bin\cmake.exe", &[app(r"cmake\bin")]);
+        if has(r"cmake\bin\cmake.exe") {
+            // The kit's Ninja, never a Visual Studio or NMake of the PC;
+            // CMake 4 configures projects written for CMake < 3.5 too.
+            if has(r"tools\ninja.exe") {
+                env.set("CMAKE_GENERATOR", "Ninja");
+            }
+            env.set("CMAKE_POLICY_VERSION_MINIMUM", "3.5");
+        }
         when(&mut path, r"cc\bin\clang.exe", &[app(r"cc\bin")]);
         when(
             &mut path,
             r"ruby\bin\ruby.exe",
-            &[app(r"ruby\bin"), gem_home.join("bin")],
+            // Gems and their commands live in the folder of their Ruby.
+            &[app(r"ruby\bin")],
         );
         when(&mut path, r"r\bin\R.cmd", &[app(r"r\bin")]);
         // Databases (D-73): servers and clients.

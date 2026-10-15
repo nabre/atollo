@@ -225,6 +225,12 @@
           "markdownDescription": "Enables the components_list command without any pre-configured scope."
         },
         {
+          "description": "Enables the components_sync command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-components-sync",
+          "markdownDescription": "Enables the components_sync command without any pre-configured scope."
+        },
+        {
           "description": "Enables the db_browse_rows command without any pre-configured scope.",
           "type": "string",
           "const": "allow-db-browse-rows",
@@ -235,6 +241,18 @@
           "type": "string",
           "const": "allow-db-browse-tree",
           "markdownDescription": "Enables the db_browse_tree command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the downloads_add command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-downloads-add",
+          "markdownDescription": "Enables the downloads_add command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the downloads_pick command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-downloads-pick",
+          "markdownDescription": "Enables the downloads_pick command without any pre-configured scope."
         },
         {
           "description": "Enables the editor_open command without any pre-configured scope.",
@@ -567,6 +585,12 @@
           "markdownDescription": "Enables the settings_set command without any pre-configured scope."
         },
         {
+          "description": "Enables the setup_by_hand_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-setup-by-hand-open",
+          "markdownDescription": "Enables the setup_by_hand_open command without any pre-configured scope."
+        },
+        {
           "description": "Enables the setup_cancel command without any pre-configured scope.",
           "type": "string",
           "const": "allow-setup-cancel",
@@ -681,6 +705,12 @@
           "markdownDescription": "Denies the components_list command without any pre-configured scope."
         },
         {
+          "description": "Denies the components_sync command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-components-sync",
+          "markdownDescription": "Denies the components_sync command without any pre-configured scope."
+        },
+        {
           "description": "Denies the db_browse_rows command without any pre-configured scope.",
           "type": "string",
           "const": "deny-db-browse-rows",
@@ -691,6 +721,18 @@
           "type": "string",
           "const": "deny-db-browse-tree",
           "markdownDescription": "Denies the db_browse_tree command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the downloads_add command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-downloads-add",
+          "markdownDescription": "Denies the downloads_add command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the downloads_pick command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-downloads-pick",
+          "markdownDescription": "Denies the downloads_pick command without any pre-configured scope."
         },
         {
           "description": "Denies the editor_open command without any pre-configured scope.",
@@ -1021,6 +1063,12 @@
           "type": "string",
           "const": "deny-settings-set",
           "markdownDescription": "Denies the settings_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the setup_by_hand_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-setup-by-hand-open",
+          "markdownDescription": "Denies the setup_by_hand_open command without any pre-configured scope."
         },
         {
           "description": "Denies the setup_cancel command without any pre-configured scope.",

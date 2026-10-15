@@ -191,7 +191,9 @@ impl SetupTask {
             .github_token
             .clone()
             .or_else(|| crate::github::token(&self.kit, &env));
-        let net = Net::new(&settings, token).map_err(|e| format!("{e:#}"))?;
+        let net = Net::new(&settings, token)
+            .map_err(|e| format!("{e:#}"))?
+            .with_github_cache(self.kit.data().join("cache").join("github"));
         let ctx = Ctx {
             kit: &self.kit,
             net: &net,
@@ -290,8 +292,8 @@ mod tests {
         let missing = missing_required(&kit);
         assert_eq!(
             missing,
-            ["git", "gh", "pwsh", "vscodium-server"],
-            "git: for gh"
+            ["gh", "pwsh", "vscodium-server"],
+            "git only when needed (D-81)"
         );
         for id in ["node", "uv", "python"] {
             assert!(
