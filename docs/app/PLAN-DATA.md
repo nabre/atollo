@@ -13,7 +13,13 @@ Avanzamento sul branch `feature/data-layout`:
     - nomi riservati per motore;
     - la migrazione e `adopt` scrivono i nomi della regola vecchia; un nome riservato della regola vecchia va corretto a mano.
 
-    319 test Rust e 59 Vitest superati. Seconda revisione mirata in corso.
+    319 test Rust e 59 Vitest superati. Seconda revisione mirata: altri tre problemi, corretti in `3071169`:
+    - **ripristino di una copia `.sql` come `root`**: un file portato da fuori poteva toccare un altro database o `mysql.*` (password di root persa); ora gira come utente del progetto, con un file di accesso privato letto al posto di `my.ini`;
+    - **migrazione a metà**: le password non ancora spostate sfuggivano al controllo delle collisioni; creazione, eliminazione e ripristino aspettano finché ci sono dati della versione 1, e le voci rimaste in `secrets.json` contano;
+    - **`_` jolly nel `GRANT` di MariaDB**: `my_app` aveva diritti anche su `my2app`; ora escapato, e la vecchia grant viene tolta.
+    - Resta, minore: due creazioni nello stesso istante per `my-app` e `my_app` possono superare entrambe il controllo (manca un lock fra controllo e scrittura). Da chiudere con WP-14.
+
+    320 test Rust e 59 Vitest superati.
   - Migrazione eseguita anche dalla riga di comando o da un secondo avvio, in gara con l'app aperta: spostata dopo l'acquisizione dell'istanza unica (`b1090ed`). Conseguenza: su un kit vecchio, i comandi da riga di comando prima del primo avvio dell'app non vedono i dati dei progetti.
   - Minore: `adopt` passava attraverso una giunzione; corretto nello stesso commit.
 - Note dai rapporti dell'ondata 2:
@@ -413,6 +419,8 @@ Ogni pacchetto (WP) ha: obiettivo, dipendenze, file, compiti numerati, criteri d
   - kit FAT32/exFAT con Rust: aggiornamento («rustup update (copy in the temp folder)»), strumenti di `cargo install` presenti, nessun `rust.devkit-new` rimasto;
   - `TEMP` su un disco FAT/exFAT: errore chiaro sul temp senza collegamenti fisici, kit intatto.
 - [ ] Eliminazione di un progetto con MariaDB e MongoDB: server fermo, database e utente tolti.
+- [ ] Ripristino di una copia `.sql` fatta altrove con `mysqldump --databases altro`: rifiutato dal server (accesso negato), il database `altro` intatto; una copia del proprio database ripristinata.
+- [ ] Progetto `my-app` (database `my_app`) e progetto `my2app`: l'utente `my_app` non vede `my2app` (`SHOW GRANTS`).
 - [ ] Progetto rinominato in Esplora file: compare fra gli orfani, «Collega a…» lo riporta.
 - [ ] C: quasi pieno: le installazioni ripiegano su `data\tmp` con avviso.
 - [ ] Sito con alias `/media` → `storage/uploads` e `/shared` → `@common/assets`, con Apache, con Nginx e in un pool: i file si aprono nel browser.
