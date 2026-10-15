@@ -6,6 +6,7 @@ import { onSetup, setupCancel, setupState, type ByHand, type Outcome, type Setup
 import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
 import { useSubscription } from "./hooks";
+import { Button } from "./workbench";
 
 /** The current preparation, kept up to date by the `setup` events. */
 export function useSetup(): SetupSnapshot | null {
@@ -122,21 +123,28 @@ export function ItemStatus({ state }: { state: ItemState }) {
   );
 }
 
-/** The download's bar under an element, while it runs. */
-export function ItemBar({ state, label, className = "" }: { state: ItemState; label: string; className?: string }) {
-  if (state.kind !== "running" || state.percent === null) return null;
+/** A download's bar: vscode-progress-bar, determinate, 2px in the
+ * progressBar color. The role, value and name sit on the span around it,
+ * in the page; the component's own (inside its shadow root) is hidden. */
+function DownloadBar({ percent, label, className = "" }: { percent: number; label: string; className?: string }) {
   return (
     <span
       role="progressbar"
-      aria-valuenow={state.percent}
+      aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={t("Download di {0}", label)}
-      className={`block h-0.5 bg-vsc-border ${className}`}
+      className={`block ${className}`}
     >
-      <span className="block h-full bg-vsc-progress" style={{ width: `${String(state.percent)}%` }} />
+      <vscode-progress-bar value={percent} max={100} aria-hidden="true" />
     </span>
   );
+}
+
+/** The download's bar under an element, while it runs. */
+export function ItemBar({ state, label, className = "" }: { state: ItemState; label: string; className?: string }) {
+  if (state.kind !== "running" || state.percent === null) return null;
+  return <DownloadBar percent={state.percent} label={label} className={className} />;
 }
 
 function StepIcon({ step, running }: { step: SetupStep; running: boolean }) {
@@ -170,18 +178,17 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
               : t("Ultima installazione"))}
         </h2>
         {snapshot.running && (
-          <button
-            type="button"
+          <Button
             disabled={snapshot.cancelling}
             onClick={() => {
               setupCancel().catch((e: unknown) => {
                 setCancelError(String(e));
               });
             }}
-            className="ml-auto rounded-sm border border-vsc-button-border bg-vsc-button2 px-2 py-0.5 text-[12px] text-vsc-button2-fg enabled:hover:bg-vsc-button2-hover disabled:opacity-50"
+            className="ml-auto"
           >
             {snapshot.cancelling ? t("Annullamento…") : t("Annulla")}
-          </button>
+          </Button>
         )}
       </header>
       <ol className="space-y-1 px-3 py-2">
@@ -201,18 +208,7 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
                   {step.outcome ? outcomeText(step.outcome) : (step.note ?? "")}
                   {p !== null && ` (${String(p)}%)`}
                 </span>
-                {p !== null && (
-                  <span
-                    role="progressbar"
-                    aria-valuenow={p}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={t("Download di {0}", step.name)}
-                    className="mt-1 block h-0.5 w-full bg-vsc-border"
-                  >
-                    <span className="block h-full bg-vsc-progress" style={{ width: `${String(p)}%` }} />
-                  </span>
-                )}
+                {p !== null && <DownloadBar percent={p} label={step.name} className="mt-1 w-full" />}
               </span>
             </li>
           );

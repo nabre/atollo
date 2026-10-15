@@ -16,7 +16,7 @@ import { t } from "./i18n";
 import { ComponentLogo, LanguageLogo } from "./logos";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction, useLoad } from "./hooks";
-import { DataTable } from "./workbench";
+import { Checkbox, DataTable } from "./workbench";
 
 /** The matrix: one row per extension, one column per language or tool, then "all". */
 export function ExtensionsMatrixSection({
@@ -246,15 +246,13 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
               const inputId = `ext-${p.id}-${x.id}`;
               return (
                 <li key={x.id} className="flex h-[26px] items-center gap-2 px-3 hover:bg-vsc-list-hover">
-                  <input
+                  <Checkbox
                     id={inputId}
-                    type="checkbox"
                     checked={x.on}
                     disabled={busy !== null}
-                    onChange={(e) => {
-                      toggle(x.id, x.byDefault, e.target.checked);
+                    onChange={(on) => {
+                      toggle(x.id, x.byDefault, on);
                     }}
-                    className="size-3.5 shrink-0 accent-vsc-button"
                   />
                   <label
                     htmlFor={inputId}
@@ -293,6 +291,9 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
           className="flex flex-wrap items-center gap-2 px-3"
           aria-label={t("Aggiungi un'estensione")}
         >
+          {/* Native, drawn as a vscode-textfield (.input): the datalist of
+              suggestions must be in the input's own tree, which the
+              component's shadow root is not. */}
           <input
             value={adding}
             list={listId}
