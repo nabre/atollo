@@ -1,7 +1,7 @@
 // Main window, laid out like VSCodium: the banner, the activity bar, the
 // page (side bar and editor, workbench/), the Activity panel and the
-// status bar. Six pages (D-76): what concerns one project is
-// on its page, what concerns the kit on the kit's pages.
+// status bar. Seven pages (D-76, D-83): the new-project wizard, then what
+// concerns one project on its page, what concerns the kit on the kit's pages.
 // Texts go through t() (i18n.ts) in the language of the settings or of
 // Windows, sent by app_info.
 import { useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
@@ -19,6 +19,7 @@ import {
   VscPlay,
   VscRemote,
   VscSettingsGear,
+  VscWand,
 } from "react-icons/vsc";
 import {
   appInfo,
@@ -42,9 +43,10 @@ import { SettingsPage } from "./settings";
 import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
+import { NewProjectPage } from "./wizard";
 import { Notice, Sash, useStoredSize, useTabs } from "./workbench";
 
-type PageId = "projects" | "agents" | "databases" | "components" | "settings" | "eject";
+type PageId = "new" | "projects" | "agents" | "databases" | "components" | "settings" | "eject";
 
 interface Page {
   id: PageId;
@@ -54,6 +56,7 @@ interface Page {
 
 function pages(): Page[] {
   return [
+    { id: "new", label: t("Nuovo progetto"), icon: VscWand },
     { id: "projects", label: t("Progetti"), icon: VscFolderLibrary },
     { id: "agents", label: t("Agenti"), icon: VscHubot },
     { id: "databases", label: t("Database"), icon: VscDatabase },
@@ -152,6 +155,16 @@ export function App() {
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {info?.firstRun ? (
             <ComponentsPage setup={setup} firstRun onDone={loadInfo} />
+          ) : page === "new" ? (
+            <NewProjectPage
+              onOpen={(project) => {
+                projectTabs.show(project);
+                setPage("projects");
+              }}
+              onSettings={() => {
+                setPage("settings");
+              }}
+            />
           ) : page === "projects" ? (
             <ProjectsPage
               tabs={projectTabs}

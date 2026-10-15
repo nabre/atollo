@@ -125,9 +125,8 @@ fn check_name(name: &str, lang: &str) -> Result<()> {
     Ok(())
 }
 
-/// A new, empty project folder.
-pub fn create(kit: &Kit, name: &str, lang: &str) -> Result<PathBuf> {
-    let name = name.trim();
+/// The folder of a new project: a valid name, not there yet.
+pub fn new_dir(kit: &Kit, name: &str, lang: &str) -> Result<PathBuf> {
     check_name(name, lang)?;
     let dir = kit.projects().join(name);
     if dir.exists() {
@@ -136,6 +135,12 @@ pub fn create(kit: &Kit, name: &str, lang: &str) -> Result<PathBuf> {
             tr(lang, "Esiste già una cartella {0} in projects.", &[name])
         );
     }
+    Ok(dir)
+}
+
+/// A new, empty project folder.
+pub fn create(kit: &Kit, name: &str, lang: &str) -> Result<PathBuf> {
+    let dir = new_dir(kit, name.trim(), lang)?;
     fs::create_dir_all(kit.projects())?;
     fs::create_dir(&dir).with_context(|| dir.display().to_string())?;
     Ok(dir)

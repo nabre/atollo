@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-frameworks-cancel"
+description = "Enables the frameworks_cancel command without any pre-configured scope."
+commands.allow = ["frameworks_cancel"]
+
+[[permission]]
+identifier = "deny-frameworks-cancel"
+description = "Denies the frameworks_cancel command without any pre-configured scope."
+commands.deny = ["frameworks_cancel"]

@@ -158,6 +158,23 @@ mod tests {
         assert_eq!(t("en", "PHP e Composer", &[]), "PHP and Composer");
     }
 
+    /// The descriptions and notes of the frameworks (frameworks.json) too.
+    #[test]
+    fn framework_texts_are_in_the_catalog() {
+        for p in crate::frameworks::official() {
+            let notes = p.on.values().filter_map(|v| v.note.as_ref());
+            for s in std::iter::once(&p.desc).chain(&p.note).chain(notes) {
+                let tr = catalog().get(s);
+                for lang in ["en", "fr", "de"] {
+                    assert!(
+                        tr.and_then(|t| t.get(lang)).is_some_and(|t| !t.is_empty()),
+                        "{s}: {lang}"
+                    );
+                }
+            }
+        }
+    }
+
     /// The notes of the relations matrix (relations.json) too.
     #[test]
     fn relation_notes_are_in_the_catalog() {
@@ -199,7 +216,7 @@ mod tests {
                 .filter_map(|c| c.get(1))
                 .map(|m| m.as_str())
                 .collect();
-            if path.ends_with("settings.rs") {
+            if path.ends_with("settings.rs") || path.ends_with("frameworks.rs") {
                 sources.extend(
                     validate
                         .captures_iter(code)

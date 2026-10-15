@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-frameworks-plan"
+description = "Enables the frameworks_plan command without any pre-configured scope."
+commands.allow = ["frameworks_plan"]
+
+[[permission]]
+identifier = "deny-frameworks-plan"
+description = "Denies the frameworks_plan command without any pre-configured scope."
+commands.deny = ["frameworks_plan"]

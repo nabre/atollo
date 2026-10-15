@@ -103,6 +103,13 @@ export function SettingsEditor({
   );
 }
 
+/** The search of a settings view kept elsewhere (a side bar): the items
+ * inside hide what does not match `search`, as in SettingsEditor. */
+export function SettingsSearch({ search, children }: { search: string; children: ReactNode }) {
+  const words = search.toLowerCase().split(/\s+/).filter(Boolean);
+  return <Query.Provider value={words}>{children}</Query.Provider>;
+}
+
 /** A group of settings with its title; hidden when the search leaves it empty. */
 export function SettingsGroup({
   id,
