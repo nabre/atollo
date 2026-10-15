@@ -1,0 +1,6 @@
+#!/bin/sh
+# Atollo: the kit's Gradle on the newest JDK of the kit (see gradle.cmd).
+if [ -n "$ATOLLO_GRADLE_JAVA" ]; then
+    export JAVA_HOME="$ATOLLO_GRADLE_JAVA"
+fi
+exec "$CP_APPS/gradle/bin/gradle" "$@"

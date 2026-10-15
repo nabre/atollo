@@ -516,5 +516,12 @@
   "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.": "One server for every project. Each version has its own data: the first start of a newer one copies those of the previous one, which stay as they were.",
   "{0} (la più recente)": "{0} (the newest)",
   "Scarica {0}": "Download {0}",
-  "Server su {0}": "Server on {0}"
+  "Server su {0}": "Server on {0}",
+  "richiede Windows 11 su ARM64": "needs Windows 11 on ARM64",
+  "Non più nella cartella del kit, tolti dalla scelta: {0}.": "No longer in the kit's folder, removed from the choice: {0}.",
+  "Scaricalo dal browser:": "Download it in the browser:",
+  "Poi trascina qui il file scaricato o": "Then drag the downloaded file here or",
+  "sfoglia…": "browse…",
+  "Il kit lo conserva e lo usa solo se il suo SHA-256 è quello pubblicato.": "The kit keeps it and uses it only if its SHA-256 is the published one.",
+  "Aggiunto {0}: nuovo tentativo.": "Added {0}: trying again."
 }

@@ -2,7 +2,7 @@
 // shared by the status bar, the Activity panel and the Tools page.
 import { useEffect, useState } from "react";
 import { VscCheck, VscCircleSlash, VscError, VscHistory, VscLoading, VscWarning } from "react-icons/vsc";
-import { onSetup, setupCancel, setupState, type Outcome, type SetupSnapshot, type SetupStep } from "./api";
+import { onSetup, setupCancel, setupState, type ByHand, type Outcome, type SetupSnapshot, type SetupStep } from "./api";
 import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
 
@@ -83,7 +83,7 @@ export function setupStatusText(s: SetupSnapshot | null): string | null {
 export type ItemState =
   | { kind: "queued" }
   | { kind: "running"; percent: number | null; note: string | null }
-  | { kind: "problem"; text: string };
+  | { kind: "problem"; text: string; byHand?: ByHand | null };
 
 /** The state of the step `name` of component `id`; null when the
  * preparation does not touch it or it went well. */
@@ -99,7 +99,8 @@ export function itemState(s: SetupSnapshot | null, id: string, name: string): It
       ? { kind: "running", percent: percent(step), note: step.note }
       : { kind: "problem", text: t("interrotto") };
   }
-  return isProblem(o) ? { kind: "problem", text: outcomeText(o) } : null;
+  if (!isProblem(o)) return null;
+  return { kind: "problem", text: outcomeText(o), byHand: o.kind === "failed" ? o.byHand : null };
 }
 
 /** The short state of an element, in its row. */

@@ -335,10 +335,24 @@ impl Sink for Printer<'_> {
                         )
                     ),
                     Outcome::Cancelled => format!("  ! {}", t(lang, "{0}: annullato", &[&name])),
-                    Outcome::Failed { message } => format!(
-                        "  x {}",
-                        t(lang, "{0}: non riuscito: {1}", &[&name, &message])
-                    ),
+                    Outcome::Failed { message, by_hand } => {
+                        let mut line = format!(
+                            "  x {}",
+                            t(lang, "{0}: non riuscito: {1}", &[&name, &message])
+                        );
+                        if let Some(b) = by_hand {
+                            line.push_str(&format!(
+                                "
+    {}",
+                                t(
+                                    lang,
+                                    "Scaricalo dal browser ({0}), mettilo nella cartella data\\downloads del kit e riprova.",
+                                    &[&b.url]
+                                )
+                            ));
+                        }
+                        line
+                    }
                 }
             }
         };
@@ -444,6 +458,7 @@ mod tests {
                 id: "pwsh".into(),
                 outcome: Outcome::Failed {
                     message: "boom".into(),
+                    by_hand: None,
                 },
             });
         }

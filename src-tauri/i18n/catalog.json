@@ -1,4 +1,9 @@
 {
+  "Scegli il file scaricato": {
+    "en": "Choose the downloaded file",
+    "fr": "Choisissez le fichier téléchargé",
+    "de": "Heruntergeladene Datei wählen"
+  },
   "La versione {0} è in uso: chiudi i programmi che la usano e riprova.": {
     "en": "Version {0} is in use: close the programs using it and try again.",
     "fr": "La version {0} est utilisée : fermez les programmes qui l'utilisent et réessayez.",
@@ -173,6 +178,11 @@
     "en": "{0}: failed: {1}",
     "fr": "{0} : échec : {1}",
     "de": "{0}: fehlgeschlagen: {1}"
+  },
+  "Scaricalo dal browser ({0}), mettilo nella cartella data\\downloads del kit e riprova.": {
+    "en": "Download it in the browser ({0}), put it in the kit's data\\downloads folder and try again.",
+    "fr": "Téléchargez-le dans le navigateur ({0}), placez-le dans le dossier data\\downloads du kit et réessayez.",
+    "de": "Lade es im Browser herunter ({0}), lege es in den Ordner data\\downloads des Kits und versuche es erneut."
   },
   "Un'altra preparazione è già in corso in questo kit.": {
     "en": "Another preparation is already running in this kit.",
@@ -804,11 +814,6 @@
     "fr": "module php8apache2_4.dll, PHP Thread Safe x64",
     "de": "Modul php8apache2_4.dll, PHP Thread Safe x64"
   },
-  "Gradle 9 parte con Java dal 17 al 27": {
-    "en": "Gradle 9 starts with Java 17 to 27",
-    "fr": "Gradle 9 démarre avec Java 17 à 27",
-    "de": "Gradle 9 startet mit Java 17 bis 27"
-  },
   "Maven 3.9; Maven 4 vorrà Java 17": {
     "en": "Maven 3.9; Maven 4 will want Java 17",
     "fr": "Maven 3.9 ; Maven 4 demandera Java 17",
@@ -883,5 +888,15 @@
     "en": "yarn goes through corepack, which wants Node.js 22.22, 24.15 or 26 and later; pnpm is a program of its own",
     "fr": "yarn passe par corepack, qui veut Node.js 22.22, 24.15 ou 26 et suivants ; pnpm est un programme à part",
     "de": "yarn läuft über corepack, das Node.js 22.22, 24.15 oder 26 und neuer verlangt; pnpm ist ein eigenes Programm"
+  },
+  "Gradle 9 parte con la JDK più recente del kit (dal 17 al 27); il progetto compila con la sua": {
+    "en": "Gradle 9 starts on the kit's newest JDK (17 to 27); the project compiles with its own",
+    "fr": "Gradle 9 démarre sur le JDK le plus récent du kit (17 à 27) ; le projet compile avec le sien",
+    "de": "Gradle 9 startet auf dem neuesten JDK des Kits (17 bis 27); das Projekt kompiliert mit seinem eigenen"
+  },
+  "{0} gira solo con Windows 11 sui PC ARM64.": {
+    "en": "{0} runs only on Windows 11 on ARM64 PCs.",
+    "fr": "{0} ne fonctionne qu'avec Windows 11 sur les PC ARM64.",
+    "de": "{0} läuft auf ARM64-PCs nur mit Windows 11."
   }
 }

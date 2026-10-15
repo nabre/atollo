@@ -637,17 +637,40 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
   - **R** è versionato: le versioni di conda-forge per win-64 (prima `latest_version` poteva essere di un'altra piattaforma); l'ambiente conda nasce nella cartella della sua versione, non più in quella di lavoro e poi spostato (conda scrive la sua cartella in alcuni file); `R_LIBS_USER` = `data\r\<piattaforma>\%v`, una libreria per versione minore (`%v` lo espande R). Gli installatori custom versionati hanno `install_custom_at` (la cartella della versione). La matrice legge `renv.lock` e `DESCRIPTION` (`Depends: R (>= …)`).
   - **MariaDB e MongoDB** sono versionati: le LTS stabili di MariaDB e le maggiori di produzione di MongoDB (mongosh e gli strumenti restano condivisi, all'ultima versione). Il server resta uno per motore, per tutti i progetti; la versione che gira è un'impostazione del server (pagina Database, a server fermo; di default la più recente installata). Ogni versione ha i suoi dati in `data\db\<id>\<versione>`: al primo avvio di una versione i dati si copiano da quella precedente più vicina, solo in avanti (MongoDB al massimo una maggiore, poi `setFeatureCompatibilityVersion`; MariaDB annota nel log di eseguire `mariadb-upgrade`), e la copia vecchia resta per la sua versione. I dati di un kit precedente (`data\db\<id>` stesso) vanno nella cartella della versione installata (`services::migrate_data`). La matrice legge le immagini `mariadb:` e `mongo:` di `compose.yaml` e `docker-compose.yml`; per un server «Server su x» cambia la versione del server, non quella del progetto.
   - **Typst** di nuovo versionato (sopra).
-- **Da fare, trovati dalla ricerca** (non ancora nel codice):
-  - Java non si installa su ARM64 (la LTS 25 non ha build aarch64; solo la 21);
-  - Gradle 9 non parte con Java 8 e 11, e i wrapper vecchi non partono su Java 25;
-  - .NET ha un solo runtime per cartella;
-  - `CMAKE_GENERATOR=Ninja` non è impostato e `make` non c'è nel PATH (serve anche alle gem native e ai pacchetti R da sorgente);
-  - uv può usare i Python del PC (registro) e scrivere nel registro (`UV_PYTHON_INSTALL_REGISTRY=0`);
-  - `GEM_HOME` non è per versione minore;
-  - Julia su ARM64;
-  - i pacchetti di TinyTeX persi a ogni aggiornamento;
-  - controllo di Windows 11 per l'emulazione x64;
-  - Git sempre installato per via di GitHub CLI.
-  - Il rapporto completo è nella conversazione del 15/10/2026.
+- **Correzioni dei punti aperti della ricerca** (15/10/2026):
+  - **Java su ARM64**: la JDK predefinita è la LTS più recente con una build per l'architettura (Temurin per Windows aarch64 ha solo la 21), e su ARM64 l'elenco delle versioni offre solo quelle che esistono.
+  - **Gradle e Maven**:
+    - Maven resta alla 3.x (la 4 vuole Java 17).
+    - Gradle parte dal lanciatore del kit `data\kit\bin\gradle.cmd` (e `gradle` per Git Bash), che usa la JDK più recente del kit (`ATOLLO_GRADLE_JAVA`, con `/` perché le riscritture delle versioni non lo tocchino). Così Gradle 9 gira anche in un progetto su Java 8 o 11.
+    - Il progetto compila con la sua versione grazie alle toolchain: `side_by_side.rs` elenca le JDK del kit in `data\gradle\gradle.properties` (`org.gradle.java.installations.paths`, `auto-detect=false`, mai quelle del PC) e in `~\.m2\toolchains.xml`.
+    - Nella matrice il legame Gradle → Java conta solo la JDK del kit (`kit: true`).
+  - **.NET affiancato**: ogni cartella di versione riceve, come junction, gli SDK e i runtime delle altre (`sdk\`, `shared\Microsoft.NETCore.App`, `Microsoft.AspNetCore.App`, `Microsoft.WindowsDesktop.App`), come fa `dotnet` con più versioni nella stessa cartella. Un'app net8 parte sotto l'SDK 10, e un `global.json` sull'8.0 trova il suo SDK. Le junction che puntano a versioni rimosse si tolgono; rimuovere una cartella non segue le junction (provato).
+  - **CMake e make**:
+    - `CMAKE_GENERATOR=Ninja` (mai Visual Studio o NMake del PC) e `CMAKE_POLICY_VERSION_MINIMUM=3.5` (CMake 4 configura i progetti vecchi).
+    - `make.cmd` e `make` accanto a `mingw32-make.exe` di C/C++, scritti anche all'avvio per un C/C++ già installato: servono anche alle gem native e ai pacchetti R da sorgente.
+    - `cc`, `c++` e `windres` richiamano C/C++.
+  - **uv**: `UV_PYTHON_PREFERENCE=only-managed` e `UV_PYTHON_INSTALL_REGISTRY=0`. uv usa solo i suoi Python, scaricati nel kit; mai quelli del PC trovati nel registro, e non scrive nel registro.
+  - **Ruby**:
+    - Niente più `GEM_HOME` condiviso: le gem stanno nella cartella della loro versione (`lib\ruby\gems`, comandi in `bin\`), quindi seguono anche la versione del progetto.
+    - Un aggiornamento di patch le porta nella cartella nuova (`before_swap`).
+    - Le versioni di RubyInstaller si scaricano con il «+».
+    - Le gem già in `data\ruby\<piattaforma>` non vengono spostate: si reinstallano con `bundle install`.
+  - **TinyTeX**: prima della sostituzione l'elenco dei pacchetti (`tlmgr info --list --only-installed`) va in `data\texlive\packages.txt`, e dopo `tlmgr install` rimette quelli che mancano. Se fallisce (per esempio offline) lo scrive nel log, e l'elenco resta.
+  - **Windows 11 su ARM64**: su un PC ARM64 con Windows 10, che non emula x64, i componenti solo x64 non sono disponibili («richiede Windows 11 su ARM64»), e chi li chiede riceve lo stesso messaggio. Julia è segnato solo x64 (non ha build ARM64).
+  - **Git non più obbligatorio**: GitHub CLI non lo richiede più nel catalogo (funziona senza; il kit usa Git solo se c'è). Git arriva quando serve: Claude Code, un clone, un progetto.
+  - Il rapporto completo della ricerca è nella conversazione del 15/10/2026.
 - **Locked** (15/10/2026). Nella lista delle versioni una versione usata da progetti mostra «locked» con il lucchetto e, in un piccolo menu, i progetti; non si può rimuovere (anche `versions::remove` lo rifiuta). Le altre hanno il cestino. Niente più tag dei progetti.
 - **Prove.** Test di `ranges` (npm, Composer, PEP 440, minimi, linee), di `relations` (conoscenza valida, legami e stati, versioni dichiarate dai file anche di R e Typst, scelta e download proposti, `settle` dei progetti clonati, matrice salvata e riletta, impronta che cambia con un file del progetto), di `versions` (più recente per il kit, `pin_newest`, «locked»), dei server (dati per versione, copia in avanti, MongoDB una maggiore alla volta, migrazione dei dati, versione del server) e degli elenchi di MariaDB, MongoDB, R e Kotlin; traduzioni delle note; installazione di pnpm e yarn provata davvero in una cartella di prova (installazione e aggiornamento); anteprima nel browser delle pagine Strumenti e Database.
+
+## D-82 Rilasci di GitHub senza API e download a mano
+
+- **Problema** (15/10/2026): senza accesso a GitHub l'API concede 60 chiamate l'ora; esaurite (elenchi delle versioni, «Aggiorna tutto»), GitHub CLI e PowerShell 7 fallivano con «GitHub API limit reached» se non c'era una risposta conservata (D-81).
+- **Ripiego senza API** (`net::github_latest`). Con il limite raggiunto e nessuna risposta conservata, l'ultima release si legge dalle pagine di github.com, che non contano nel limite: `/<repo>/releases/latest` rimanda al tag (nome del repository attuale, anche se rinominato), `/<repo>/releases/expanded_assets/<tag>` elenca gli asset con il loro `sha256:` (lo stesso digest dell'API). Le prerelease non sono mai «latest». Se la pagina cambia forma, resta l'errore dell'API.
+- **Download a mano** (scelta dell'utente: «offrire il link e trascinarlo in un apposito box/sfoglia; tu ti occupi dell'archiviazione»).
+  - Un download non riuscito (`install::fetch`) diventa `net::ByHand`: l'esito «non riuscito» porta l'indirizzo e il nome del file (`byHand`).
+  - Nella riga del componente (e della versione) un riquadro tratteggiato: il nome del file apre l'indirizzo nel browser (`setup_by_hand_open`, solo l'indirizzo riportato dall'installazione), poi si trascina il file nel riquadro (eventi di trascinamento della finestra di Tauri) o si sceglie con «sfoglia…» (finestra «Apri» di Windows, `IFileOpenDialog`, nella cartella Download).
+  - Il file si copia in `data\downloads` (`downloads.rs`), l'originale resta dov'è, e l'installazione riparte da sola.
+  - `fetch` cerca lì prima di scaricare: prima il nome atteso, poi gli altri file (il browser può aggiungere « (1)»). Si usa solo un file con l'impronta pubblicata dalla fonte (`verify::matches`, che non cancella i file degli altri); usato, si sposta nell'installazione. Ciò che nessuna installazione usa si toglie dopo 30 giorni.
+  - Da riga di comando l'errore indica l'indirizzo e la cartella `data\downloads`.
+  - Se non si conosce la release (fonte irraggiungibile anche senza API) non c'è riquadro: senza impronta pubblicata un file non si può verificare.
+- **Prove.** Test della lettura degli asset dalla pagina, del riconoscimento del limite, dei file aggiunti a mano (nome cambiato, file estraneo conservato, cartella rifiutata); test reale su `PowerShell/PowerShell` (`--ignored`).

@@ -35,7 +35,7 @@ use crate::kit::Kit;
 use crate::net::Net;
 use crate::verify::{self, Expect};
 
-pub use lang::version_key;
+pub use lang::{make_launchers, version_key};
 pub use web::adopt_composer;
 
 /// What a step needs from the app.
@@ -243,7 +243,9 @@ pub fn work_dir(ctx: &Ctx, component: &Component) -> Result<PathBuf> {
     Ok(work)
 }
 
-/// Downloads and verifies one file into `work`.
+/// Downloads and verifies one file into `work`; the same file added by hand
+/// (`downloads.rs`) is used instead, and a failed download says where to
+/// get it in the browser (`ByHand`).
 pub fn fetch(
     ctx: &Ctx,
     url: &str,
@@ -253,11 +255,27 @@ pub fn fetch(
     progress: &mut dyn Progress,
 ) -> Result<PathBuf> {
     let file = work.join(file_name);
+    if crate::downloads::take(ctx.kit, file_name, expect, &file)? {
+        progress.note("file added by hand, checksum ok");
+        return Ok(file);
+    }
     progress.note(&format!("download {url}"));
-    ctx.net
+    let downloaded = ctx
+        .net
         .download(url, &file, ctx.cancel, &mut |done, total| {
             progress.bytes(done, total)
-        })?;
+        });
+    match downloaded {
+        Err(e) if !e.is::<crate::net::Cancelled>() => {
+            return Err(crate::net::ByHand {
+                url: url.to_owned(),
+                file_name: file_name.to_owned(),
+                cause: e,
+            }
+            .into())
+        }
+        other => other?,
+    }
     verify::check(&file, expect)?;
     progress.note("checksum ok");
     Ok(file)

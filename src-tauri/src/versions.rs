@@ -435,6 +435,51 @@ fn promote(kit: &Kit, c: &Component, line: &Line) -> Result<()> {
     Ok(())
 }
 
+/// What was deleted by hand from `data\apps` (D-81), when the Tools page
+/// opens: a component installed before (its version is known) of which
+/// nothing is on disk is no longer chosen (with what needs it) and its
+/// version is forgotten; a versioned one whose default folder went takes
+/// the newest line left. Required components stay chosen: they come back
+/// at the next start. Returns the names no longer chosen.
+pub fn sync_with_disk(kit: &Kit) -> Result<Vec<String>> {
+    let catalog = Catalog::get();
+    for c in versioned() {
+        if let Err(e) = repair_default(kit, c) {
+            crate::log::warn(&format!("{}: no default version ({e:#})", c.id));
+        }
+    }
+    let Some(mut choice) = crate::catalog::Choice::read(kit, catalog) else {
+        return Ok(Vec::new());
+    };
+    let gone: Vec<&Component> = catalog
+        .all()
+        .iter()
+        .filter(|c| c.installed_version(kit).is_some() && !c.is_present(kit))
+        .collect();
+    let before = choice.clone();
+    for c in &gone {
+        c.forget_version(kit);
+        if !catalog.is_locked(&c.id) {
+            choice.set(catalog, &c.id, false);
+        }
+    }
+    if choice == before {
+        return Ok(Vec::new());
+    }
+    choice.write(kit, catalog)?;
+    let off: Vec<String> = catalog
+        .all()
+        .iter()
+        .filter(|c| before.is_chosen(&c.id) && !choice.is_chosen(&c.id))
+        .map(|c| c.name.clone())
+        .collect();
+    crate::log::info(&format!(
+        "deleted by hand, no longer chosen: {}",
+        off.join(", ")
+    ));
+    Ok(off)
+}
+
 /// The default's folder is gone (removed by hand) and other lines are
 /// there: the newest becomes the default.
 fn repair_default(kit: &Kit, c: &Component) -> Result<()> {
@@ -826,6 +871,37 @@ mod tests {
             remove(&kit, "node", "20.18").is_err(),
             "the last goes with the component"
         );
+    }
+
+    #[test]
+    fn deleted_by_hand_is_no_longer_chosen() {
+        let tmp = TempDir::new("versions-sync");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let catalog = Catalog::get();
+        let node = catalog.find("node").unwrap();
+        let main = install_dir(&kit, node, "v22.11.0");
+        install_fake(&kit, node, &main);
+        node.save_version(&kit, "v22.11.0").unwrap();
+        let mut choice = crate::catalog::Choice::defaults(catalog);
+        choice.set(catalog, "pnpm", true);
+        choice.write(&kit, catalog).unwrap();
+        assert!(sync_with_disk(&kit).unwrap().is_empty(), "all there");
+
+        // The user deletes Node.js: it and pnpm (which needs it) go off.
+        fs::remove_dir_all(node.folder_path(&kit).unwrap()).unwrap();
+        let off = sync_with_disk(&kit).unwrap();
+        assert!(off.contains(&"Node.js".to_owned()) && off.contains(&"pnpm, yarn".to_owned()));
+        let now = crate::catalog::Choice::read(&kit, catalog).unwrap();
+        assert!(!now.is_chosen("node") && !now.is_chosen("pnpm"));
+        assert!(node.installed_version(&kit).is_none());
+        assert!(sync_with_disk(&kit).unwrap().is_empty(), "once");
+
+        // Chosen and never installed (waiting for Apply): left alone.
+        let mut choice = crate::catalog::Choice::read(&kit, catalog).unwrap();
+        choice.set(catalog, "go", true);
+        choice.write(&kit, catalog).unwrap();
+        assert!(sync_with_disk(&kit).unwrap().is_empty());
     }
 
     #[test]

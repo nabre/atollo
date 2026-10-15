@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-downloads-pick"
+description = "Enables the downloads_pick command without any pre-configured scope."
+commands.allow = ["downloads_pick"]
+
+[[permission]]
+identifier = "deny-downloads-pick"
+description = "Denies the downloads_pick command without any pre-configured scope."
+commands.deny = ["downloads_pick"]

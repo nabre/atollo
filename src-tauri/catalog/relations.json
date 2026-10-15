@@ -1,10 +1,10 @@
 {
   "_doc": "Relations between the components (docs/app/DECISIONS.md D-81). links: from needs/uses to, with the versions of `to` it runs on (`range`, npm syntax); parts are named `component/part`. runtimes: what the PC must provide for some components. projects: files of a project that declare the version of a component. Read by relations.rs, which builds the matrix in data\\app\\relations.json.",
   "links": [
-    { "from": "php/composer", "to": "php", "kind": "runs-on", "range": ">=7.2.5", "note": "Composer 2.3 e successivi; per PHP più vecchi il kit sceglie il 2.2 LTS" },
+    { "from": "php/composer", "to": "php", "kind": "runs-on", "range": ">=7.2.5", "kit": true, "note": "Composer 2.3 e successivi; per PHP più vecchi il kit sceglie il 2.2 LTS" },
     { "from": "apache", "to": "php", "kind": "loads", "range": ">=8.0 <9", "note": "modulo php8apache2_4.dll, PHP Thread Safe x64" },
     { "from": "kotlin", "to": "java", "kind": "runs-on", "range": ">=8" },
-    { "from": "java/gradle", "to": "java", "kind": "runs-on", "range": ">=17 <28", "note": "Gradle 9 parte con Java dal 17 al 27" },
+    { "from": "java/gradle", "to": "java", "kind": "runs-on", "range": ">=17 <28", "kit": true, "note": "Gradle 9 parte con la JDK più recente del kit (dal 17 al 27); il progetto compila con la sua" },
     { "from": "java/maven", "to": "java", "kind": "runs-on", "range": ">=8", "note": "Maven 3.9; Maven 4 vorrà Java 17" },
     { "from": "pnpm", "to": "node", "kind": "runs-on", "range": "^22.22.2 || ^24.15.0 || >=26", "note": "yarn passa da corepack, che vuole Node.js 22.22, 24.15 o 26 e successivi; pnpm è un programma a sé" },
     { "from": "claude", "to": "git", "kind": "uses", "optional": true, "note": "Git Bash per lo strumento Bash; senza, Claude usa PowerShell" },

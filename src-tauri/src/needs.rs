@@ -41,7 +41,8 @@ fn component_of(program: &str) -> Option<&'static str> {
         "typst" => "typst",
         "pdflatex" | "xelatex" | "lualatex" | "latexmk" | "tlmgr" => "tinytex",
         "cmake" | "ninja" => "cmake",
-        "gcc" | "g++" | "clang" | "clang++" | "make" | "mingw32-make" => "cc",
+        "gcc" | "g++" | "cc" | "c++" | "clang" | "clang++" | "make" | "mingw32-make"
+        | "windres" => "cc",
         "ruby" | "gem" | "bundle" | "bundler" | "rails" | "rake" => "ruby",
         "r" | "rscript" => "r",
         "mariadb" | "mariadbd" | "mysql" | "mysqld" | "mariadb-dump" | "mysqldump" => "mariadb",

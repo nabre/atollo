@@ -15,6 +15,11 @@ const FILES: &[(&str, &str)] = &[
     ("bashrc", include_str!("../../kit-files/bashrc")),
     (r"bin\agy.cmd", include_str!("../../kit-files/bin/agy.cmd")),
     (r"bin\agy", include_str!("../../kit-files/bin/agy")),
+    (
+        r"bin\gradle.cmd",
+        include_str!("../../kit-files/bin/gradle.cmd"),
+    ),
+    (r"bin\gradle", include_str!("../../kit-files/bin/gradle")),
 ];
 
 pub fn write_all(kit: &Kit) -> Result<()> {

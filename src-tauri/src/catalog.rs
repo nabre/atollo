@@ -145,6 +145,16 @@ impl Catalog {
     pub fn is_locked(&self, id: &str) -> bool {
         self.locked().contains(id)
     }
+
+    /// The components in the order of the Tools page: by section, then by
+    /// name (case aside). An installation runs in this order too, as the
+    /// user sees the list (D-81). The only need at installation time (pnpm
+    /// installed with the kit's Node.js) holds: languages come before tools.
+    pub fn in_page_order(&self) -> Vec<&Component> {
+        let mut out: Vec<&Component> = self.components.iter().collect();
+        out.sort_by_key(|c| (c.page_section(), c.name.to_lowercase()));
+        out
+    }
 }
 
 /// A path of the catalog: relative to `data\apps\<platform>`, or to the kit
@@ -168,6 +178,20 @@ fn exists(path: &Path) -> bool {
 }
 
 impl Component {
+    /// Its section of the Tools page: required (and the editor), agents,
+    /// languages (several versions), tools (one, the latest), databases,
+    /// tied to an operating system.
+    pub fn page_section(&self) -> u8 {
+        match self.group {
+            Group::Required | Group::App => 0,
+            Group::Agents => 1,
+            Group::Languages if self.versioned => 2,
+            Group::Languages => 3,
+            Group::Databases => 4,
+            Group::Os => 5,
+        }
+    }
+
     /// Where the key lives: `data\apps\<platform>\…`, or the kit root with `@`.
     #[cfg(test)]
     pub fn key_path(&self, kit: &Kit) -> PathBuf {
@@ -500,13 +524,36 @@ mod tests {
         assert!(!choice.is_chosen("kotlin"));
         choice.set(catalog, "gh", false);
         assert!(choice.is_chosen("gh"), "required cannot be turned off");
+        // Git is not locked (GitHub CLI works without it, D-81): turned off,
+        // what needs it (Claude Code) goes with it.
         choice.set(catalog, "git", false);
-        assert!(
-            choice.is_chosen("git") && choice.is_chosen("claude"),
-            "git is needed by gh, a system component: locked"
-        );
-        assert!(catalog.is_locked("git") && catalog.is_locked("pwsh"));
+        assert!(!choice.is_chosen("git") && !choice.is_chosen("claude"));
+        assert!(!catalog.is_locked("git") && catalog.is_locked("pwsh"));
         assert!(!catalog.is_locked("node"));
+    }
+
+    #[test]
+    fn page_order_is_by_section_then_name() {
+        let catalog = Catalog::get();
+        let order = catalog.in_page_order();
+        assert_eq!(order.len(), catalog.all().len(), "every component once");
+        let pos = |id: &str| order.iter().position(|c| c.id == id).unwrap();
+        // Sections in the order of the page; inside one, by name.
+        for w in order.windows(2) {
+            let (a, b) = (w[0], w[1]);
+            assert!(a.page_section() <= b.page_section(), "{} / {}", a.id, b.id);
+            if a.page_section() == b.page_section() {
+                assert!(
+                    a.name.to_lowercase() <= b.name.to_lowercase(),
+                    "{} / {}",
+                    a.name,
+                    b.name
+                );
+            }
+        }
+        // pnpm is installed with the kit's Node.js: languages come first.
+        assert!(pos("node") < pos("pnpm"));
+        assert!(pos("python") < pos("uv"), "languages before tools");
     }
 
     #[test]

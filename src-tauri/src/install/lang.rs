@@ -131,7 +131,8 @@ impl Installer for Go {
     }
 }
 
-/// Java: Temurin JDK (latest LTS), with Maven and Gradle in their folders.
+/// Java: Temurin JDK (the newest with a build for the kit), with Maven and
+/// Gradle in their folders.
 pub struct Java;
 
 /// The newest Temurin JDK zip of `feature` (21, 25...) for this kit:
@@ -199,11 +200,25 @@ impl Installer for Java {
         true
     }
 
-    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+    /// On ARM64 only the versions with a Windows aarch64 build (Temurin has
+    /// few: 21 today).
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
         let info: Value = ctx
             .net
             .json("https://api.adoptium.net/v3/info/available_releases")?;
-        Ok(java_lines(&info))
+        let lines = java_lines(&info);
+        if arch_of(ctx, component) != "arm64" {
+            return Ok(lines);
+        }
+        Ok(lines
+            .into_iter()
+            .filter(|l| {
+                l.split('.')
+                    .next()
+                    .and_then(|f| f.parse::<u64>().ok())
+                    .is_some_and(|f| temurin(ctx, component, f).is_ok())
+            })
+            .collect())
     }
 
     /// The JDK only: Maven and Gradle stay those of the default.
@@ -224,21 +239,25 @@ impl Installer for Java {
         let info: Value = ctx
             .net
             .json("https://api.adoptium.net/v3/info/available_releases")?;
-        let lts = info
-            .get("most_recent_lts")
-            .and_then(Value::as_u64)
-            .ok_or_else(|| anyhow!("Adoptium: no LTS"))?;
-        let (java_version, jdk) = temurin(ctx, component, lts)?;
+        // The newest version with a build for this kit (the line marked
+        // "latest"; no Windows aarch64 build of 25 or 27: an ARM64 kit
+        // gets 21).
+        let (java_version, jdk) = java_lines(&info)
+            .iter()
+            .filter_map(|l| l.split('.').next().and_then(|f| f.parse::<u64>().ok()))
+            .find_map(|f| temurin(ctx, component, f).ok())
+            .ok_or_else(|| anyhow!("Adoptium: no JDK for this PC"))?;
 
         let meta = ctx.net.text(
             "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml",
         )?;
+        // Maven 3: Maven 4 wants Java 17 and the kit keeps 8 and 11 too.
         let maven = pattern(r"<version>([^<]+)</version>")?
             .captures_iter(&meta)
             .map(|c| c[1].to_owned())
-            .filter(|v| is_release(v))
+            .filter(|v| is_release(v) && v.starts_with("3."))
             .max_by_key(|v| version_key(v))
-            .ok_or_else(|| anyhow!("no Maven version"))?;
+            .ok_or_else(|| anyhow!("no Maven 3 version"))?;
         let maven_zip = format!("apache-maven-{maven}-bin.zip");
         let maven_url = format!("https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/{maven}/{maven_zip}");
         let maven_sha = ctx.net.text(&format!("{maven_url}.sha512"))?;
@@ -439,14 +458,16 @@ impl Installer for Dotnet {
         dotnet_release(ctx, component, channel)
     }
 
+    /// The newest channel that is not a preview (the line marked "latest").
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let index: Value = ctx.net.json(DOTNET_INDEX)?;
+        let newest = dotnet_lines(&index)
+            .into_iter()
+            .next()
+            .ok_or_else(|| anyhow!(".NET: no channel"))?;
         let channel = dotnet_channels(&index)
-            .find(|c| {
-                c.get("release-type").and_then(Value::as_str) == Some("lts")
-                    && c.get("support-phase").and_then(Value::as_str) == Some("active")
-            })
-            .ok_or_else(|| anyhow!(".NET: no active LTS channel"))?;
+            .find(|c| c.get("channel-version").and_then(Value::as_str) == Some(newest.as_str()))
+            .ok_or_else(|| anyhow!(".NET {newest}: no channel"))?;
         dotnet_release(ctx, component, channel)
     }
 }
@@ -706,6 +727,36 @@ impl Installer for Typst {
 /// TinyTeX-1 (x64 build, also on ARM64): a self-extracting 7z, read directly.
 pub struct TinyTex;
 
+/// The packages a TinyTeX has (`tlmgr info --list --only-installed`).
+fn tlmgr_packages(ctx: &Ctx, root: &Path) -> Option<Vec<String>> {
+    let tlmgr = root.join(r"bin\windows\tlmgr.bat");
+    if !tlmgr.is_file() {
+        return None;
+    }
+    let out = crate::jobs::kit_command(&tlmgr, ctx.env)
+        .args(["info", "--list", "--only-installed", "--data", "name"])
+        .stdin(std::process::Stdio::null())
+        .output()
+        .ok()
+        .filter(|o| o.status.success())?;
+    Some(
+        String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .map(str::trim)
+            // `xetex.windows`: the binaries of a package, which comes with it.
+            .filter(|l| !l.is_empty() && !l.contains('.'))
+            .map(str::to_owned)
+            .collect(),
+    )
+}
+
+/// The packages of the TinyTeX being replaced: TeX Live accepts updates only
+/// from its own year, so the yearly release is a new TinyTeX, and the
+/// packages added with tlmgr (or by R Markdown, latexmk…) come back.
+fn tinytex_list(ctx: &Ctx) -> std::path::PathBuf {
+    ctx.kit.data().join(r"texlive\packages.txt")
+}
+
 impl Installer for TinyTex {
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
         github_single(
@@ -715,6 +766,53 @@ impl Installer for TinyTex {
             Kind::SevenZip,
             Inner::Named("TinyTeX".into()),
         )
+    }
+
+    fn before_swap(
+        &self,
+        ctx: &Ctx,
+        _component: &Component,
+        _tree: &Path,
+        old: &Path,
+    ) -> Result<()> {
+        if let Some(list) = tlmgr_packages(ctx, old) {
+            let file = tinytex_list(ctx);
+            fs::create_dir_all(file.parent().unwrap_or(&file))?;
+            crate::kit::write_atomic(&file, list.join("\n").as_bytes())?;
+        }
+        Ok(())
+    }
+
+    /// The packages of the old TinyTeX it does not have, installed again; a
+    /// failure (offline) only goes to the log: the list stays for next time.
+    fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
+        let Ok(text) = fs::read_to_string(tinytex_list(ctx)) else {
+            return Ok(());
+        };
+        let have = tlmgr_packages(ctx, dest).unwrap_or_default();
+        let missing: Vec<&str> = text
+            .lines()
+            .map(str::trim)
+            .filter(|p| !p.is_empty() && !have.iter().any(|h| h == p))
+            .collect();
+        if missing.is_empty() {
+            return Ok(());
+        }
+        let ok = crate::jobs::kit_command(dest.join(r"bin\windows\tlmgr.bat"), ctx.env)
+            .arg("install")
+            .args(&missing)
+            .stdin(std::process::Stdio::null())
+            .output()
+            .is_ok_and(|o| o.status.success());
+        if ok {
+            crate::log::info(&format!("TinyTeX: {} packages back", missing.len()));
+        } else {
+            crate::log::warn(&format!(
+                "TinyTeX: packages not installed again ({}): tlmgr install them by hand",
+                missing.join(" ")
+            ));
+        }
+        Ok(())
     }
 }
 
@@ -785,21 +883,63 @@ impl Installer for Cc {
                 fs::remove_file(entry.path())?;
             }
         }
-        Ok(())
+        make_launchers(&dest.join("bin"))
     }
+}
+
+/// `make` is mingw32-make in llvm-mingw (make.exe is only in busybox, not
+/// on the PATH): Makefiles, Ruby's native gems and R's source packages
+/// call `make`. Also at start, for a C/C++ installed before (D-81).
+pub fn make_launchers(bin: &Path) -> Result<()> {
+    if !bin.join("mingw32-make.exe").is_file() {
+        return Ok(());
+    }
+    let files: [(&str, &[u8]); 2] = [
+        ("make.cmd", b"@\"%~dp0mingw32-make.exe\" %*\r\n"),
+        (
+            "make",
+            b"#!/bin/sh\nexec \"$(dirname \"$0\")/mingw32-make.exe\" \"$@\"\n",
+        ),
+    ];
+    for (name, content) in files {
+        let path = bin.join(name);
+        if fs::read(&path).ok().as_deref() != Some(content) {
+            crate::kit::write_atomic(&path, content)?;
+        }
+    }
+    Ok(())
 }
 
 /// Ruby: RubyInstaller2 7z (without the MSYS2 atollo), highest version and
 /// build among the non-prerelease releases.
 pub struct Ruby;
 
-/// The best `rubyinstaller-X.Y.Z-N-<arch>.7z` among release assets:
-/// (version `X.Y.Z-N`, asset object).
-pub fn pick_ruby<'a>(releases: &'a [Value], arch: &str) -> Option<(String, &'a Value)> {
-    let re = regex::Regex::new(&format!(
+/// The best `rubyinstaller-X.Y.Z-N-<arch>.7z` among release assets, of
+/// `line` (`3.4`) or of any line: (version `X.Y.Z-N`, asset object).
+pub fn pick_ruby_line<'a>(
+    releases: &'a [Value],
+    arch: &str,
+    line: Option<&str>,
+) -> Option<(String, &'a Value)> {
+    ruby_assets(releases, arch)
+        .into_iter()
+        .filter(|(v, _, _)| line.is_none_or(|l| crate::versions::line_of(v).as_deref() == Some(l)))
+        .max_by(|a, b| {
+            version_key(&a.0)
+                .cmp(&version_key(&b.0))
+                .then(a.1.cmp(&b.1))
+        })
+        .map(|(v, n, a)| (format!("{v}-{n}"), a))
+}
+
+/// `(version, build, asset)` of every `rubyinstaller-X.Y.Z-N-<arch>.7z`
+/// among the releases that are not previews.
+fn ruby_assets<'a>(releases: &'a [Value], arch: &str) -> Vec<(String, u64, &'a Value)> {
+    let Ok(re) = regex::Regex::new(&format!(
         r"^rubyinstaller-(\d+\.\d+\.\d+)-(\d+)-{arch}\.7z$"
-    ))
-    .ok()?;
+    )) else {
+        return Vec::new();
+    };
     releases
         .iter()
         .filter(|r| {
@@ -817,40 +957,104 @@ pub fn pick_ruby<'a>(releases: &'a [Value], arch: &str) -> Option<(String, &'a V
             let c = re.captures(name)?;
             Some((c[1].to_owned(), c[2].parse::<u64>().ok()?, a))
         })
-        .max_by(|a, b| {
-            version_key(&a.0)
-                .cmp(&version_key(&b.0))
-                .then(a.1.cmp(&b.1))
-        })
-        .map(|(v, n, a)| (format!("{v}-{n}"), a))
+        .collect()
 }
 
+/// The minor lines RubyInstaller has for `arch`, newest first (3.3 has no
+/// ARM64 build).
+pub fn ruby_lines(releases: &[Value], arch: &str) -> Vec<String> {
+    let mut out: Vec<String> = ruby_assets(releases, arch)
+        .into_iter()
+        .filter_map(|(v, _, _)| crate::versions::line_of(&v))
+        .collect();
+    out.sort_by_key(|l| std::cmp::Reverse(version_key(l)));
+    out.dedup();
+    out
+}
+
+fn ruby_arch(ctx: &Ctx, component: &Component) -> &'static str {
+    if arch_of(ctx, component) == "arm64" {
+        "arm"
+    } else {
+        "x64"
+    }
+}
+
+fn ruby_releases(ctx: &Ctx) -> Result<Vec<Value>> {
+    ctx.net
+        .json("https://api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=30")
+}
+
+fn ruby_release(ctx: &Ctx, component: &Component, line: Option<&str>) -> Result<Release> {
+    let arch = ruby_arch(ctx, component);
+    let releases = ruby_releases(ctx)?;
+    let (version, asset) = pick_ruby_line(&releases, arch, line)
+        .ok_or_else(|| anyhow!("no RubyInstaller {} for {arch}", line.unwrap_or("")))?;
+    let digest = asset
+        .get("digest")
+        .and_then(Value::as_str)
+        .and_then(|d| d.strip_prefix("sha256:"))
+        .ok_or_else(|| anyhow!("RubyInstaller: no SHA-256"))?;
+    Ok(Release::single(
+        version,
+        s(asset, "browser_download_url")?.to_owned(),
+        s(asset, "name")?.to_owned(),
+        Expect::Sha256(digest.to_owned()),
+        Kind::SevenZip,
+        Inner::Single,
+    ))
+}
+
+/// Gems live in the folder of their Ruby (`lib\ruby\gems\3.4.0`, commands
+/// in `bin\`), one set per minor version (D-81): no GEM_HOME shared by all.
 impl Installer for Ruby {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let arch = if arch_of(ctx, component) == "arm64" {
-            "arm"
-        } else {
-            "x64"
-        };
-        let releases: Vec<Value> = ctx
-            .net
-            .json("https://api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=30")?;
-        let (version, asset) =
-            pick_ruby(&releases, arch).ok_or_else(|| anyhow!("no RubyInstaller for {arch}"))?;
-        let digest = asset
-            .get("digest")
-            .and_then(Value::as_str)
-            .and_then(|d| d.strip_prefix("sha256:"))
-            .ok_or_else(|| anyhow!("RubyInstaller: no SHA-256"))?;
-        Ok(Release::single(
-            version,
-            s(asset, "browser_download_url")?.to_owned(),
-            s(asset, "name")?.to_owned(),
-            Expect::Sha256(digest.to_owned()),
-            Kind::SevenZip,
-            Inner::Single,
-        ))
+        ruby_release(ctx, component, None)
     }
+
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        Ok(ruby_lines(&ruby_releases(ctx)?, ruby_arch(ctx, component)))
+    }
+
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        ruby_release(ctx, component, Some(line))
+    }
+
+    /// A new patch of the same line replaces the folder: the gems installed
+    /// in the old one (and their commands) move to the new tree.
+    fn before_swap(
+        &self,
+        _ctx: &Ctx,
+        _component: &Component,
+        tree: &Path,
+        old: &Path,
+    ) -> Result<()> {
+        for sub in [r"lib\ruby\gems", "bin"] {
+            copy_missing(&old.join(sub), &tree.join(sub))?;
+        }
+        Ok(())
+    }
+}
+
+/// Files and folders of `from` that `to` does not have, copied.
+fn copy_missing(from: &Path, to: &Path) -> Result<()> {
+    let Ok(entries) = fs::read_dir(from) else {
+        return Ok(());
+    };
+    fs::create_dir_all(to)?;
+    for entry in entries.flatten() {
+        let target = to.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_missing(&entry.path(), &target)?;
+        } else if !target.exists() {
+            fs::copy(entry.path(), &target).with_context(|| target.display().to_string())?;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -947,11 +1151,11 @@ mod tests {
             rel(true, &["rubyinstaller-3.5.0-1-x64.7z"]),
         ];
         assert_eq!(
-            pick_ruby(&releases, "x64").map(|(v, _)| v),
+            pick_ruby_line(&releases, "x64", None).map(|(v, _)| v),
             Some("3.4.5-2".into())
         );
         assert_eq!(
-            pick_ruby(&releases, "arm").map(|(v, _)| v),
+            pick_ruby_line(&releases, "arm", None).map(|(v, _)| v),
             Some("3.3.9-1".into())
         );
     }
