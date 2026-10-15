@@ -1,10 +1,11 @@
 // Confirmations: the modal one over the whole window (VSCodium's dialog
 // box) and the inline one under the button that asked it.
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, type ReactNode } from "react";
+import { Button } from "./controls";
 
-/** A modal question: the cancel button has the focus, Esc cancels. The
- * confirming buttons and an error line come from the caller (`actions`,
- * `footer`). */
+/** A modal question: the cancel button (a vscode-button) has the focus,
+ * Esc cancels. The confirming buttons and an error line come from the
+ * caller (`actions`, `footer`). */
 export function ConfirmDialog({
   title,
   children,
@@ -22,9 +23,7 @@ export function ConfirmDialog({
   footer?: ReactNode;
 }) {
   const id = useId();
-  const cancelRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    cancelRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
     };
@@ -34,13 +33,14 @@ export function ConfirmDialog({
     };
   }, [onCancel]);
   return (
+    // The dimmed window: no theme color for it in VSCodium either.
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div
         role="alertdialog"
         aria-modal="true"
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-desc`}
-        className="w-[min(32rem,90vw)] space-y-2 rounded border border-vsc-widget-border bg-vsc-widget p-3 shadow-[0_0_8px_2px_var(--vsc-shadow)]"
+        className="w-[min(32rem,90vw)] space-y-2 rounded border border-vsc-widget-border bg-vsc-widget p-3 text-(--vscode-editorWidget-foreground) shadow-[0_0_8px_2px_var(--vsc-shadow)]"
       >
         <h2 id={`${id}-title`} className="text-[14px] font-semibold">
           {title}
@@ -49,14 +49,9 @@ export function ConfirmDialog({
           {children}
         </div>
         <div className="flex justify-end gap-2 pt-2">
-          <button
-            ref={cancelRef}
-            type="button"
-            onClick={onCancel}
-            className="min-h-[26px] rounded border border-vsc-button-border bg-vsc-button2 px-[11px] py-1 leading-[18px] text-vsc-button2-fg hover:bg-vsc-button2-hover"
-          >
+          <Button autoFocus onClick={onCancel}>
             {cancelLabel}
-          </button>
+          </Button>
           {actions}
         </div>
         {footer}
