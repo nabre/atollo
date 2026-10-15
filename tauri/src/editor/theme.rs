@@ -9,7 +9,7 @@
 
 use std::fs;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Stdio;
 
 use anyhow::{bail, Context, Result};
@@ -73,10 +73,9 @@ pub fn ensure(kit: &Kit, env: &KitEnv) -> Result<()> {
     if is_current(kit) {
         return Ok(());
     }
-    let work: PathBuf = kit.data().join(r"tmp\setup\theme");
-    let _ = fs::remove_dir_all(&work);
-    fs::create_dir_all(&work)?;
-    let vsix = work.join("atollo-theme.vsix");
+    // In the host's temporary folder (D-90), removed when `work` is dropped.
+    let work = crate::os::temp::TempWork::new(kit, "theme")?;
+    let vsix = work.path().join("atollo-theme.vsix");
     write_vsix(&vsix)?;
     let job = crate::os::jobs::Job::new()?;
     let mut cmd = crate::editor::ext::server_cli(kit, env);
@@ -91,7 +90,7 @@ pub fn ensure(kit: &Kit, env: &KitEnv) -> Result<()> {
     let out = child
         .wait_with_output()
         .context("server --install-extension")?;
-    let _ = fs::remove_dir_all(&work);
+    drop(work);
     if !is_current(kit) {
         bail!(
             "{ID} {} not installed: {}{}",
