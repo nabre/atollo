@@ -3,7 +3,8 @@
 // Without `AppManifest::commands`, Tauri allows every registered command
 // from every window, including the editor windows (see DECISIONS.md D-14).
 
-/// Every Tauri command of the app. Keep in sync with `commands::handler()`.
+/// Every Tauri command of the app. Keep in sync with `command_handler!` in
+/// `src/commands/mod.rs`.
 const COMMANDS: &[&str] = &[
     "app_info",
     "editor_status",

@@ -17,7 +17,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 use crate::catalog::{Catalog, Component};
-use crate::kit::{write_atomic, Kit};
+use crate::fsx::write_atomic;
+use crate::kit::Kit;
 
 /// Every folder of a versioned component on disk (the default first).
 fn line_dirs(kit: &Kit, c: &Component) -> Vec<(String, PathBuf)> {

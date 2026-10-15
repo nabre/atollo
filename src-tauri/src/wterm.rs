@@ -40,8 +40,9 @@ use windows::Win32::System::Registry::{RegGetValueW, HKEY_LOCAL_MACHINE, RRF_RT_
 
 use crate::editor_cfg::pwsh_args;
 use crate::env::KitEnv;
+use crate::fsx::write_atomic;
 use crate::jobs::{self, Console};
-use crate::kit::{write_atomic, Kit};
+use crate::kit::Kit;
 
 const PROFILE_PWSH: &str = "{6e0f3c1a-4b7d-4d39-9a41-5f2d0c6b7a01}";
 const PROFILE_BASH: &str = "{6e0f3c1a-4b7d-4d39-9a41-5f2d0c6b7a02}";
@@ -251,7 +252,7 @@ fn merge(existing: &Map<String, Value>, kit: &Kit) -> Map<String, Value> {
 fn write_settings(kit: &Kit) -> Result<()> {
     let path = settings_path(kit);
     let existing = match fs::read_to_string(&path) {
-        Ok(text) => match serde_json::from_str::<Value>(text.trim_start_matches('\u{feff}')) {
+        Ok(text) => match serde_json::from_str::<Value>(crate::fsx::strip_bom(&text)) {
             Ok(Value::Object(map)) => map,
             _ => bail!("not plain JSON: {}", path.display()),
         },

@@ -6,7 +6,8 @@ use std::fs;
 
 use anyhow::{Context, Result};
 
-use crate::kit::{write_atomic, Kit};
+use crate::fsx::write_atomic;
+use crate::kit::Kit;
 
 const FILES: &[(&str, &str)] = &[
     ("loopback.js", include_str!("../../kit-files/loopback.js")),

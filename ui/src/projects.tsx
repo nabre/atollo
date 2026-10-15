@@ -50,6 +50,7 @@ import { t } from "./i18n";
 import { LanguageIcon } from "./logos";
 import { Mark } from "./tags";
 import { BrandSymbol } from "./brand";
+import { useSubscription } from "./hooks";
 import {
   Button,
   Dot,
@@ -83,28 +84,17 @@ export function useRuns() {
       () => undefined,
     );
   }, []);
-  useEffect(() => {
-    reload();
-    let stop: (() => void) | null = null;
-    let gone = false;
-    void onRun((e) => {
-      if (e.kind === "state") {
-        setRuns((r) => ({ ...r, [e.key]: e }));
-      } else {
-        setLogs((l) => {
-          const lines = [...(l[e.key] ?? []), ...e.lines];
-          return { ...l, [e.key]: lines.length > MAX_LINES ? lines.slice(-MAX_LINES) : lines };
-        });
-      }
-    }).then((f) => {
-      if (gone) f();
-      else stop = f;
-    });
-    return () => {
-      gone = true;
-      stop?.();
-    };
-  }, [reload]);
+  useEffect(reload, [reload]);
+  useSubscription(onRun, (e) => {
+    if (e.kind === "state") {
+      setRuns((r) => ({ ...r, [e.key]: e }));
+    } else {
+      setLogs((l) => {
+        const lines = [...(l[e.key] ?? []), ...e.lines];
+        return { ...l, [e.key]: lines.length > MAX_LINES ? lines.slice(-MAX_LINES) : lines };
+      });
+    }
+  });
   const loadLog = useCallback((key: string) => {
     runLog(key).then(
       (lines) => {

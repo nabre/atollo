@@ -5,20 +5,14 @@ import { VscCheck, VscCircleSlash, VscError, VscHistory, VscLoading, VscWarning 
 import { onSetup, setupCancel, setupState, type ByHand, type Outcome, type SetupSnapshot, type SetupStep } from "./api";
 import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
+import { useSubscription } from "./hooks";
 
 /** The current preparation, kept up to date by the `setup` events. */
 export function useSetup(): SetupSnapshot | null {
   const [snapshot, setSnapshot] = useState<SetupSnapshot | null>(null);
+  useSubscription(onSetup, setSnapshot);
   useEffect(() => {
-    let stop: (() => void) | undefined;
     let alive = true;
-    onSetup(setSnapshot).then(
-      (unlisten) => {
-        if (alive) stop = unlisten;
-        else unlisten();
-      },
-      () => undefined,
-    );
     setupState().then(
       (s) => {
         if (alive) setSnapshot((current) => current ?? s);
@@ -27,7 +21,6 @@ export function useSetup(): SetupSnapshot | null {
     );
     return () => {
       alive = false;
-      stop?.();
     };
   }, []);
   return snapshot;

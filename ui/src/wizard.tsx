@@ -26,6 +26,7 @@ import {
   usePlan,
 } from "./frameworks";
 import { ErrorLine } from "./pages";
+import { useSubscription } from "./hooks";
 import { t } from "./i18n";
 import { Button, IconButton, Link, Notice, ProgressBar, SingleEditor } from "./workbench";
 
@@ -127,23 +128,11 @@ export function NewProjectPage({ onOpen, onSettings }: { onOpen: (project: strin
   }, []);
   useEffect(loadTargets, [loadTargets]);
 
-  useEffect(() => {
-    let stop: (() => void) | null = null;
-    let gone = false;
-    const handle = (e: FrameworkEvent) => {
-      if (e.command !== null || e.line === null) setProgress({ step: e.step, total: e.total });
-      const text = e.command !== null ? `> ${e.command}` : e.line;
-      if (text !== null) setLog((l) => [...l, text].slice(-MAX_LOG));
-    };
-    void onFramework(handle).then((f) => {
-      if (gone) f();
-      else stop = f;
-    });
-    return () => {
-      gone = true;
-      stop?.();
-    };
-  }, []);
+  useSubscription(onFramework, (e: FrameworkEvent) => {
+    if (e.command !== null || e.line === null) setProgress({ step: e.step, total: e.total });
+    const text = e.command !== null ? `> ${e.command}` : e.line;
+    if (text !== null) setLog((l) => [...l, text].slice(-MAX_LOG));
+  });
   useEffect(() => {
     const box = logBox.current;
     if (box) box.scrollTop = box.scrollHeight;

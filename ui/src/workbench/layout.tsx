@@ -251,7 +251,8 @@ const TAB_BAR = "flex h-8 shrink-0 pl-0.5";
 
 /** A tab: its fill is a 24px pill 2px in from the sides, rounded; the active
  * one on the list's selection color, the others on hover (modern UI). */
-const TAB = "group/tab relative flex h-full max-w-60 min-w-0 shrink-0 items-center before:absolute before:inset-x-0.5 before:inset-y-1 before:rounded";
+const TAB =
+  "group/tab relative flex h-full max-w-60 min-w-0 shrink-0 items-center before:absolute before:inset-x-0.5 before:inset-y-1 before:rounded";
 
 /** The editor's tabs (modern UI): pills, the active one filled; close on
  * hover and on the active tab. */
@@ -556,9 +557,7 @@ export function EditorBody({
 }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <div
-        className={`px-5 py-4 ${fill ? "flex h-full flex-col gap-6" : "space-y-6"} ${narrow ? "max-w-4xl" : ""}`}
-      >
+      <div className={`px-5 py-4 ${fill ? "flex h-full flex-col gap-6" : "space-y-6"} ${narrow ? "max-w-4xl" : ""}`}>
         {children}
       </div>
     </div>

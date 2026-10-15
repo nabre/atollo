@@ -5,12 +5,11 @@
 //! cannot be read is never overwritten: the defaults are used and the problem
 //! is reported, so a hand edit with a typo does not lose the other values.
 
-use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::kit::{write_atomic, Kit};
+use crate::kit::Kit;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -71,30 +70,8 @@ impl Settings {
     }
 
     fn load_from(path: &Path) -> Loaded {
-        match fs::read(path) {
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Loaded {
-                settings: Settings::default(),
-                problem: None,
-            },
-            Err(e) => Loaded {
-                settings: Settings::default(),
-                problem: Some(format!("{}: {e}", path.display())),
-            },
-            Ok(bytes) => {
-                let text = String::from_utf8_lossy(&bytes);
-                let text = text.trim_start_matches('\u{feff}');
-                match serde_json::from_str(text) {
-                    Ok(settings) => Loaded {
-                        settings,
-                        problem: None,
-                    },
-                    Err(e) => Loaded {
-                        settings: Settings::default(),
-                        problem: Some(format!("{}: {e}", path.display())),
-                    },
-                }
-            }
-        }
+        let (settings, problem) = crate::fsx::load_json(path);
+        Loaded { settings, problem }
     }
 
     /// What the Settings page sends, checked before it is saved. Returns the
@@ -169,9 +146,7 @@ impl Settings {
     }
 
     pub fn save(&self, kit: &Kit) -> anyhow::Result<()> {
-        let json = serde_json::to_string_pretty(self)?;
-        write_atomic(&kit.settings_file(), json.as_bytes())?;
-        Ok(())
+        crate::fsx::write_json(&kit.settings_file(), self)
     }
 }
 
@@ -179,6 +154,7 @@ impl Settings {
 mod tests {
     use super::*;
     use crate::kit::{tests::TempDir, Arch};
+    use std::fs;
 
     #[test]
     fn missing_file_gives_defaults() {

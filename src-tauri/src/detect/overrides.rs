@@ -25,7 +25,7 @@ use anyhow::{bail, Context, Result};
 use serde_json::{Map, Value};
 
 use super::{quote, tr, Action, Kind, Project, OVERRIDE_FILES};
-use crate::kit::write_atomic;
+use crate::fsx::write_atomic;
 
 /// Id of the action written by "Servi come sito web".
 pub const SITE_ACTION: &str = "site";
@@ -59,9 +59,8 @@ pub fn file_of(dir: &Path) -> Option<PathBuf> {
 }
 
 fn read_object(dir: &Path, path: &Path) -> Option<Map<String, Value>> {
-    let bytes = crate::safe_path::read(dir, path)?;
-    let text = String::from_utf8_lossy(&bytes);
-    match serde_json::from_str(text.trim_start_matches('\u{feff}')) {
+    let text = crate::safe_path::read_text(dir, path)?;
+    match serde_json::from_str(&text) {
         Ok(Value::Object(o)) => Some(o),
         _ => None,
     }

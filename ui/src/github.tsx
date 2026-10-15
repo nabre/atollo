@@ -46,6 +46,7 @@ import {
 } from "./api";
 import { ActionButton, ErrorLine, useAction } from "./pages";
 import { Mark } from "./tags";
+import { useSubscription } from "./hooks";
 import { locale, rich, t } from "./i18n";
 
 /** The account's state, kept current by the "github" events of the sign-in. */
@@ -56,19 +57,8 @@ export function useGithub() {
       setStatus(null);
     });
   }, []);
-  useEffect(() => {
-    reload();
-    let stop: (() => void) | null = null;
-    let gone = false;
-    void onGithub(setStatus).then((f) => {
-      if (gone) f();
-      else stop = f;
-    });
-    return () => {
-      gone = true;
-      stop?.();
-    };
-  }, [reload]);
+  useEffect(reload, [reload]);
+  useSubscription(onGithub, setStatus);
   return { status, setStatus, reload };
 }
 

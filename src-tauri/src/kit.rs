@@ -13,6 +13,8 @@ use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
+use crate::fsx::write_atomic;
+
 /// Processor platform of the downloaded programs (`data\apps\win32-<arch>`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -123,6 +125,10 @@ impl Kit {
     pub fn settings_file(&self) -> PathBuf {
         self.app_dir().join("settings.json")
     }
+    /// The kit's files of each project, one folder per project (D-63).
+    pub fn project_states(&self) -> PathBuf {
+        self.app_dir().join("projects")
+    }
 
     /// First 16 hex chars of SHA-256 of the lower-case root: the same scheme
     /// nabre/atollo uses for its per-kit mutex names.
@@ -184,16 +190,6 @@ fn strip_verbatim(path: &Path) -> PathBuf {
         Some(rest) if rest.as_bytes().get(1) == Some(&b':') => PathBuf::from(rest),
         _ => path.to_path_buf(),
     }
-}
-
-/// Writes through a temporary file in the same folder, then renames it over
-/// the target, so a crash never leaves a half-written file.
-pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let tmp = path.with_extension(format!("tmp-{}", std::process::id()));
-    fs::write(&tmp, bytes)?;
-    fs::rename(&tmp, path).inspect_err(|_| {
-        let _ = fs::remove_file(&tmp);
-    })
 }
 
 /// The first folder of `path` whose name breaks VSCodium's file watcher, if

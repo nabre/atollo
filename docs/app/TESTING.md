@@ -12,6 +12,7 @@ npm -w ui run build
 
 Coprono, fra l'altro:
 - radice del kit, ambiente e PATH;
+- file del kit (`fsx.rs`): BOM, byte non UTF-8, file mancante, vuoto o danneggiato, scrittura atomica senza file temporanei rimasti;
 - catalogo, dipendenze, parti (`keys`), limiti ARM64 e componenti che servono a comandi e agenti (`needs.rs`);
 - editor alla versione fissata del rilascio;
 - download con checksum e firme;

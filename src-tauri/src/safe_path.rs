@@ -80,11 +80,7 @@ pub fn read(root: &Path, path: &Path) -> Option<Vec<u8>> {
 }
 
 pub fn read_text(root: &Path, path: &Path) -> Option<String> {
-    read(root, path).map(|b| {
-        String::from_utf8_lossy(&b)
-            .trim_start_matches('\u{feff}')
-            .to_owned()
-    })
+    read(root, path).map(|b| crate::fsx::strip_bom(&String::from_utf8_lossy(&b)).to_owned())
 }
 
 fn meta(root: &Path, path: &Path) -> Option<fs::Metadata> {

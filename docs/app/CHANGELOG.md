@@ -1,5 +1,23 @@
 # Novità
 
+## Struttura del codice (15/10/2026)
+
+Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile da leggere e da cambiare (D-86, [ARCHITECTURE.md](ARCHITECTURE.md)).
+
+**Fatto**
+- **Comandi divisi per area**: `commands.rs` (2655 righe, 87 comandi) diventa la cartella `commands\` con un file per pagina o area (`app`, `window`, `editing`, `setup`, `versions`, `agents`, `projects`, `frameworks`, `github`, `databases`, `services`, `runs`); in `mod.rs` restano lo stato condiviso, i controlli comuni e l'elenco per Tauri.
+- **File del kit in un posto solo** (`fsx.rs`): lettura senza BOM e con i byte non UTF-8 sostituiti, JSON mancante, vuoto o danneggiato, scrittura atomica con la cartella creata. Prende il posto di 17 letture e una decina di scritture ripetute nei moduli (impostazioni, impostazioni dei progetti, servizi, porte, versioni offerte, framework, matrice delle relazioni, aggiornamento). `write_atomic` passa da `kit.rs` a `fsx.rs`.
+- **Browser ed Esplora risorse** da una sola funzione, `jobs::open_with_explorer` (prima cinque copie), con `jobs::system_root`.
+- **Percorsi**: `Kit::project_states()` per `data\app\projects`, `versions::offered_file` usato anche dalla matrice delle relazioni.
+- **Interfaccia**: `api.ts` (1877 righe) diventa la cartella `api\`, un file per area con gli stessi nomi di `commands\`; i 92 `browserPreview ? … : invoke(…)` diventano `query`, `act` e `subscribe` di `api\core.ts`. Gli import `./api` delle pagine restano gli stessi.
+- **Hook comuni** in `hooks.ts`: `useSubscription` (eventi di Rust, prima sette copie dello stesso codice di registrazione e rimozione) e `useEvery` (letture periodiche, prima quattro copie).
+
+**Cambia un poco**
+- Un file JSON vuoto del kit vale come mancante: le Impostazioni non mostrano più un errore per un `settings.json` vuoto.
+- `services.json` scritto a mano con il BOM ora si legge (prima si ignorava).
+
+**Verificato**: 268 test Rust (4 nuovi per `fsx`), clippy e fmt puliti; tipi, ESLint, Prettier e 27 test dell'interfaccia.
+
 ## Adminer per MariaDB, come phpMyAdmin (15/10/2026)
 
 **Fatto** (D-85)
@@ -12,7 +30,7 @@
 ## SDK di Android nel kit e Capacitor (15/10/2026)
 
 **Fatto** (D-84)
-- **Android SDK** in Strumenti: strumenti a riga di comando ufficiali, `adb`, ultima piattaforma e build-tools, tutto in `datapps`; `ANDROID_HOME` impostato per Gradle. Serve Java. Sceglierlo accetta i termini dell'SDK di Google.
+- **Android SDK** in Strumenti: strumenti a riga di comando ufficiali, `adb`, ultima piattaforma e build-tools, tutto in `data\apps`; `ANDROID_HOME` impostato per Gradle. Serve Java. Sceglierlo accetta i termini dell'SDK di Google.
 - Nel wizard le basi **Android** e **NativePHP Mobile** usano l'SDK del kit; nuova aggiunta **Android**: con Vite è Capacitor (la stessa app web come app Android), con Tauri è Tauri mobile (con l'NDK, scaricato solo per questa combinazione).
 
 **Verificato**: 261 test Rust (nuovi: zip e SHA-256 dalla pagina di download, scelta dei pacchetti stabili, Capacitor nelle combinazioni) e lettura reale della pagina di Google; clippy, fmt, tipi, ESLint e 27 test dell'interfaccia. Da provare nell'app: l'installazione reale (circa 600 MB) e una build con un telefono collegato.

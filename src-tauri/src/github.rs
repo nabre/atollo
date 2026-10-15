@@ -110,13 +110,7 @@ fn login_name(kit: &Kit) -> Option<String> {
 /// Opens `https://github.com/<path>` in the PC's browser, outside the job.
 /// `path`: [`DEVICE_PATH`] or an `owner/repo` already validated.
 pub fn open_web(path: &str) -> Result<()> {
-    let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
-    jobs::spawn_detached(
-        Command::new(Path::new(&system_root).join("explorer.exe"))
-            .arg(format!("https://github.com/{path}")),
-        0,
-    )
-    .map(|_| ())
+    jobs::open_with_explorer(format!("https://github.com/{path}"))
 }
 
 // --- Git: the account for github.com ----------------------------------------

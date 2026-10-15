@@ -1,0 +1,51 @@
+// Hooks shared by the pages, for the two ways Rust keeps them current:
+// events it sends (`useSubscription`) and state read again every few seconds
+// (`useEvery`).
+import { useEffect, useRef } from "react";
+
+/** One of the `on…` functions of ./api: starts listening, resolves to the
+ * function that stops. */
+export type Subscribe<T> = (handler: (value: T) => void) => Promise<() => void>;
+
+/**
+ * Sends every event of `subscribe` to `handler` while the component is
+ * mounted. The listener is registered once (per `subscribe`): `handler` can
+ * be a new function at every render, the latest one receives the events.
+ * When the component goes away before listening started, the listener is
+ * removed as soon as it exists.
+ */
+export function useSubscription<T>(subscribe: Subscribe<T>, handler: (value: T) => void): void {
+  const latest = useRef(handler);
+  useEffect(() => {
+    latest.current = handler;
+  });
+  useEffect(() => {
+    let stop: (() => void) | null = null;
+    let gone = false;
+    subscribe((value) => {
+      latest.current(value);
+    }).then(
+      (unlisten) => {
+        if (gone) unlisten();
+        else stop = unlisten;
+      },
+      () => undefined,
+    );
+    return () => {
+      gone = true;
+      stop?.();
+    };
+  }, [subscribe]);
+}
+
+/** Calls `read` now and every `ms` milliseconds while the component is
+ * mounted, and again when `read` changes (keep it stable with useCallback). */
+export function useEvery(read: () => void, ms: number): void {
+  useEffect(() => {
+    read();
+    const timer = window.setInterval(read, ms);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [read, ms]);
+}

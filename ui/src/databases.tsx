@@ -4,7 +4,7 @@
 // As the Extensions view: the servers in the side bar, the chosen one's
 // page in the editor.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   VscCopy,
   VscDebugStart,
@@ -30,6 +30,7 @@ import { t } from "./i18n";
 import { DbBrowser } from "./dbbrowser";
 import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine } from "./pages";
+import { useEvery } from "./hooks";
 import {
   Button,
   CheckboxLabel,
@@ -329,13 +330,7 @@ export function DatabasesPage() {
       setError(String(e));
     });
   }, []);
-  useEffect(() => {
-    refresh();
-    const timer = setInterval(refresh, 3000);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [refresh]);
+  useEvery(refresh, 3000);
   const act = (id: string, action: () => Promise<ServiceInfo[]>) => {
     setBusy(id);
     setError(null);

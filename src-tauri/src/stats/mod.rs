@@ -278,8 +278,7 @@ fn host_of(url: &str) -> &str {
 }
 
 pub fn read_json(path: &Path) -> Option<Value> {
-    let text = std::fs::read_to_string(path).ok()?;
-    serde_json::from_str(text.trim_start_matches('\u{feff}')).ok()
+    crate::fsx::read_json(path)
 }
 
 /// The last reading of one server.
