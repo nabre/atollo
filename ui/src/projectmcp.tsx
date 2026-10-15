@@ -1,7 +1,7 @@
 // A project's own MCP servers (DECISIONS.md D-78): in its .mcp.json for
 // Claude Code, copied to .codex\config.toml for Codex; Antigravity has only
 // the kit's servers.
-import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
+import { useCallback, useState, type SyntheticEvent } from "react";
 import { VscAdd, VscClose, VscSave, VscTrash } from "react-icons/vsc";
 import { projectMcp, projectMcpSet, type McpServer, type McpView } from "./api";
 import { t } from "./i18n";
@@ -19,14 +19,12 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
   const [command, setCommand] = useState("");
   const [args, setArgs] = useState("");
   const [url, setUrl] = useState("");
-  // TextField has no `required`: set on the components, which then stop
-  // the form's submit as a native input does. Every text field here is.
-  const form = useRef<HTMLFormElement>(null);
-  useEffect(() => {
-    for (const f of form.current?.querySelectorAll("vscode-textfield") ?? []) f.required = true;
-  });
+  // Every text field is needed: Add waits for them rather than marking the
+  // untouched ones `required`, which the components paint as errors at once.
+  const complete = name.trim() !== "" && (kind === "stdio" ? command : url).trim() !== "";
   const submit = (e: SyntheticEvent) => {
     e.preventDefault();
+    if (!complete) return;
     onAdd({
       name: name.trim(),
       kind,
@@ -44,7 +42,6 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
   };
   return (
     <form
-      ref={form}
       onSubmit={submit}
       aria-label={t("Nuovo server MCP")}
       className="space-y-2 border-t border-vsc-border px-3 py-2"
@@ -85,7 +82,14 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
         </label>
       )}
       <div className="flex gap-2">
-        <ActionButton icon={VscSave} label={t("Aggiungi")} primary submit onClick={() => undefined} />
+        <ActionButton
+          icon={VscSave}
+          label={t("Aggiungi")}
+          primary
+          submit
+          disabled={!complete}
+          onClick={() => undefined}
+        />
         <ActionButton icon={VscClose} label={t("Annulla")} onClick={onCancel} />
       </div>
     </form>

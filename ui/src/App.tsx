@@ -243,7 +243,7 @@ function ActivityBar({
     e.preventDefault();
     all[next]?.focus();
   };
-  const item = ({ id, label, icon: Icon }: Page) => {
+  const item = ({ id, label, icon: Glyph }: Page) => {
     const active = id === page;
     const badge = badges[id];
     const shown = badge && badge.count > 0 ? badge : null;
@@ -274,16 +274,17 @@ function ActivityBar({
             active ? "bg-vsc-activitybar-item-active" : "group-hover:bg-vsc-activitybar-item-hover",
           ].join(" ")}
         >
-          <Icon size={24} aria-hidden="true" />
+          <Glyph size={24} aria-hidden="true" />
         </span>
         {shown && (
-          <vscode-badge
-            variant="activity-bar-counter"
+          // Not vscode-badge: its activity-bar-counter keeps an 18px minimum
+          // and a 1px border, where the editor's badge is 16px high.
+          <span
             aria-label={shown.label}
-            className="pointer-events-none absolute right-0.5 bottom-0.5"
+            className="pointer-events-none absolute right-0.5 bottom-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-vsc-activitybar-badge px-1 text-[9px] leading-none font-semibold text-vsc-activitybar-badge-fg"
           >
             {shown.count > 99 ? "99+" : shown.count}
-          </vscode-badge>
+          </span>
         )}
       </button>
     );
@@ -437,7 +438,8 @@ function StatusBar({
       </StatusItem>
       {installing && (
         <StatusItem onClick={onPanel}>
-          <Icon name="loading" spin size={14} />
+          {/* The item's color, as the editor's status-bar codicons. */}
+          <Icon name="loading" spin size={14} className="[--vscode-icon-foreground:currentColor]" />
           <span role="status">{installing}</span>
         </StatusItem>
       )}
