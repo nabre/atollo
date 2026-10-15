@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 
 use super::tools::run_with_input;
 use super::{auth, bin, Services};
@@ -77,22 +77,30 @@ impl Services {
     }
 
     /// The project's databases already created, at the servers' ports.
+    /// A database whose name cannot be resolved ([`auth::project_db_name`])
+    /// is left out, with a warning.
     pub fn project_dbs(&self, project: &str) -> Vec<auth::ProjectDb> {
         auth::project_passwords(&self.kit, project)
             .iter()
-            .map(|(engine, pw)| auth::project_db(engine, project, pw, self.port(engine)))
+            .filter_map(|(engine, pw)| {
+                let name = auth::project_db_name(&self.kit, project, engine)
+                    .map_err(|e| crate::log::warn(&format!("{project}: {engine}: {e:#}")))
+                    .ok()?;
+                Some(auth::project_db(engine, &name, pw, self.port(engine)))
+            })
             .collect()
     }
 
     /// Creates (or repairs) the project's database and user on a running
-    /// server; the password stays the same once generated. It is stored
-    /// before the server gets it, and an unreadable `db.json` stops here: a
-    /// failed call is repaired by running again, never a password lost.
+    /// server; name and password stay the same once generated. They are
+    /// stored before the server gets them, and an unreadable `db.json`, a
+    /// name of the server's own or one another project uses stop here
+    /// (`auth::ensure_project_db`): a failed call is repaired by running
+    /// again, never a password lost nor another project's user altered.
     pub fn project_db_create(&self, project: &str, engine: &str) -> Result<auth::ProjectDb> {
         let (port, env) = self.running_server(engine)?;
-        let password = auth::ensure_project_password(&self.kit, project, engine)
+        let (name, password) = auth::ensure_project_db(&self.kit, project, engine)
             .context("the passwords of the project's databases")?;
-        let name = auth::db_name(project);
         match engine {
             "mongodb" => {
                 let admin = auth::load(&self.kit)
@@ -116,25 +124,39 @@ impl Services {
                 )?;
             }
         }
-        Ok(auth::project_db(engine, project, &password, port))
+        Ok(auth::project_db(engine, &name, &password, port))
     }
 
     /// Drops the project's database and user from `engine` (PLAN-DATA.md
     /// WP-5), as the administrator: the server is started first when it is
     /// stopped, and stopped again after. Database and user may be missing.
+    /// Their name is the project's ([`auth::project_db_name`]); refused when
+    /// another project of the kit uses it too.
+    #[allow(dead_code)] // the tests; `projects::delete` resolves the names first
     pub fn project_db_drop(&self, project: &str, engine: &str, env: &KitEnv) -> Result<()> {
+        let name = auth::project_db_name(&self.kit, project, engine)?;
+        auth::check_name_free(&self.kit, project, engine, &name)?;
+        self.db_drop(engine, &name, env)
+    }
+
+    /// Drops the database and user `name` from `engine`, a name already
+    /// resolved and checked by the caller (`projects::delete`); a server's
+    /// own name or one that is not a name is refused here as well.
+    pub fn db_drop(&self, engine: &str, name: &str, env: &KitEnv) -> Result<()> {
+        if !auth::is_valid_name(name) || auth::is_reserved(engine, name) {
+            bail!("{engine}: {name} is not a project's database: not dropped");
+        }
         let was_running = self.running_server(engine).is_ok();
         self.start(engine, env)?;
-        let result = self.drop_on_running(project, engine);
+        let result = self.drop_on_running(engine, name);
         if !was_running {
             self.stop(engine);
         }
         result
     }
 
-    fn drop_on_running(&self, project: &str, engine: &str) -> Result<()> {
+    fn drop_on_running(&self, engine: &str, name: &str) -> Result<()> {
         let (port, env) = self.running_server(engine)?;
-        let name = auth::db_name(project);
         match engine {
             "mongodb" => {
                 let admin = auth::load(&self.kit)
@@ -145,12 +167,12 @@ impl Services {
                     .arg(port.to_string())
                     .args(["--eval", auth::MONGO_DROP_JS])
                     .env("ATOLLO_DB_ADMIN", admin)
-                    .env("ATOLLO_DB_NAME", &name);
+                    .env("ATOLLO_DB_NAME", name);
                 run_with_input(cmd, "", Duration::from_secs(60))?;
             }
             _ => {
                 let cmd = self.mariadb_tool("mariadb.exe", &env);
-                run_with_input(cmd, &auth::project_drop_sql(&name), Duration::from_secs(60))?;
+                run_with_input(cmd, &auth::project_drop_sql(name), Duration::from_secs(60))?;
             }
         }
         crate::log::info(&format!("{engine}: database and user {name} dropped"));

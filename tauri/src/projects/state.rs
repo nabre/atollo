@@ -205,14 +205,26 @@ pub fn holdings(kit: &Kit, project: &str) -> Option<Holdings> {
 /// (empty folders are not files: they are removed first).
 ///
 /// The databases on the servers keep their name and user, made from the
-/// old name (`db::auth::db_name`): the passwords stay valid for them and
-/// the project's `.env` keeps working as it is. The kit itself derives the
-/// names from the new one, so its database page would create a new, empty
-/// database with the same password.
+/// old name: the passwords stay valid for them and the project's `.env`
+/// keeps working as it is. The names travel in `db.json` (`names`); data
+/// from before they were stored gets them first, by the rule of the old
+/// name (`db::auth::keep_legacy_names`), so the kit goes on using, and on
+/// deletion drops, those databases and not new ones named after `project`.
+///
+/// A link (junction) in place of either folder is refused before anything
+/// is read or moved (D-77).
 pub fn adopt(kit: &Kit, orphan: &str, project: &str) -> io::Result<ProjectState> {
     let invalid = |m: &str| io::Error::new(io::ErrorKind::InvalidInput, m.to_owned());
     let from = ProjectState::of(kit, orphan).ok_or_else(|| invalid("not a project name"))?;
     let to = ProjectState::of(kit, project).ok_or_else(|| invalid("not a project name"))?;
+    for state in [&from, &to] {
+        if crate::os::safe_path::is_link(state.dir()) {
+            return Err(invalid(&format!(
+                "{}: a link, left alone",
+                state.dir().display()
+            )));
+        }
+    }
     if !orphans(kit).iter().any(|o| o == orphan) {
         return Err(invalid(&format!("{orphan}: not data without a project")));
     }
@@ -225,6 +237,9 @@ pub fn adopt(kit: &Kit, orphan: &str, project: &str) -> io::Result<ProjectState>
             format!("{project} already has files of the kit"),
         ));
     }
+    // Before anything moves: a `db.json` that cannot be read stops here.
+    crate::db::auth::keep_legacy_names(kit, orphan)
+        .map_err(|e| io::Error::other(format!("{orphan}: databases: {e:#}")))?;
     if to.dir.exists() && !remove_empty_dirs(&to.dir) {
         return Err(io::Error::other(format!(
             "{}: not removed",
@@ -348,6 +363,18 @@ mod tests {
             crate::db::auth::project_password(&kit, "shop", "mariadb").as_deref(),
             Some("pw")
         );
+        // the name of before travels with the passwords, other keys kept
+        let db: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(shop.dir().join(r"private\db.json")).unwrap())
+                .unwrap();
+        assert_eq!(
+            db,
+            serde_json::json!({ "mariadb": "pw", "future": {}, "names": { "mariadb": "old" } })
+        );
+        assert_eq!(
+            crate::db::auth::project_db_name(&kit, "shop", "mariadb").unwrap(),
+            "old"
+        );
         assert!(!kit.project_data().join("old").exists());
         assert!(orphans(&kit).is_empty());
 
@@ -362,5 +389,56 @@ mod tests {
         assert_eq!(saved["ports"]["web"], 8001, "{text}");
         assert_eq!(saved["ports"]["api"], 45678, "{text}");
         assert!(!kit.project_data().join("old").exists());
+    }
+
+    /// A junction in place of the project's folder of `data\projects` (or
+    /// the orphan's) is refused before anything is read or moved; so is an
+    /// orphan whose `db.json` cannot be read.
+    #[test]
+    fn adopt_refuses_links_and_unreadable_passwords() {
+        use crate::os::safe_path::tests::junction;
+        let tmp = TempDir::new("project-adopt-links");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let write = |p: &str, rel: &str, text: &str| {
+            let path = kit.project_data().join(p).join(rel);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(path, text).unwrap();
+        };
+        write("old", r"private\db.json", r#"{"mariadb":"pw"}"#);
+        fs::create_dir_all(kit.projects().join("shop")).unwrap();
+        // data\projects\shop is a junction to a folder outside
+        let outside = tmp.0.join("outside");
+        fs::create_dir_all(outside.join("private")).unwrap();
+        junction(&kit.project_data().join("shop"), &outside);
+        let e = adopt(&kit, "old", "shop").unwrap_err();
+        assert!(e.to_string().contains("link"), "{e}");
+        assert!(kit.project_data().join(r"old\private\db.json").is_file());
+        assert!(
+            outside.join("private").is_dir(),
+            "nothing cleaned through it"
+        );
+        fs::remove_dir(kit.project_data().join("shop")).unwrap();
+
+        // the orphan a junction: refused, its target untouched
+        let target = tmp.0.join("target");
+        fs::create_dir_all(&target).unwrap();
+        fs::write(target.join("dev-settings.json"), "{}").unwrap();
+        junction(&kit.project_data().join("linked"), &target);
+        assert!(adopt(&kit, "linked", "shop").is_err());
+        assert!(target.join("dev-settings.json").is_file());
+        fs::remove_dir(kit.project_data().join("linked")).unwrap();
+
+        // unreadable passwords: nothing moves
+        write("old", r"private\db.json", "{ not json");
+        assert!(adopt(&kit, "old", "shop").is_err());
+        assert!(kit.project_data().join(r"old\private\db.json").is_file());
+        assert!(!kit.project_data().join("shop").exists());
+        write("old", r"private\db.json", r#"{"mariadb":"pw"}"#);
+        adopt(&kit, "old", "shop").unwrap();
+        assert_eq!(
+            crate::db::auth::project_db_name(&kit, "shop", "mariadb").unwrap(),
+            "old"
+        );
     }
 }
