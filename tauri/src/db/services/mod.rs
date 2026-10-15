@@ -20,6 +20,15 @@
 //!   date by hand with `mariadb-upgrade` (run automatically it hung at
 //!   "Fixing views", tried 14/10/2026);
 //! - port and "start with Dev-Kit" of each server in `data\app\services.json`.
+//!
+//! Here the settings and the life of a server (start, state, stop); the data
+//! folders per version in `data`, the passwords and the projects' databases
+//! in `access`, the copies in `backups`, the command-line tools in `tools`.
+
+mod access;
+mod backups;
+mod data;
+mod tools;
 
 use std::collections::BTreeMap;
 use std::fs::{self, OpenOptions};
@@ -28,7 +37,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use super::auth;
@@ -37,6 +46,11 @@ use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
 use crate::projects::run::{is_port_free, responds};
 use crate::setup::catalog::Catalog;
+use access::{admin_password, admin_user};
+pub use backups::Backup;
+use data::seed;
+pub use data::{data_dir, migrate_data};
+use tools::run_tool;
 
 /// The servers, in the order of the page.
 pub const SERVERS: [&str; 2] = ["mariadb", "mongodb"];
@@ -138,119 +152,6 @@ pub fn server_lines(kit: &Kit, id: &str) -> Vec<String> {
     lines
 }
 
-/// `data\db\<id>`: the data of every version of the server.
-fn data_root(kit: &Kit, id: &str) -> PathBuf {
-    kit.data().join("db").join(id)
-}
-
-/// The data of the version the server runs, `data\db\<id>\<line>`: data
-/// of a newer version does not open in an older one (D-81).
-pub fn data_dir(kit: &Kit, id: &str) -> PathBuf {
-    match server_line(kit, id) {
-        Some(line) => data_root(kit, id).join(line),
-        None => data_root(kit, id),
-    }
-}
-
-/// The data of a version that has it yet (MariaDB's `mysql`, MongoDB's
-/// `WiredTiger`).
-fn has_data(id: &str, dir: &std::path::Path) -> bool {
-    match id {
-        "mariadb" => dir.join("mysql").is_dir(),
-        _ => dir.join("WiredTiger").is_file(),
-    }
-}
-
-/// The data of `line` the first time it starts: a copy of that of the
-/// nearest older version, if the server can take it (MariaDB from any
-/// older one; MongoDB from the same or the previous major only). The old
-/// data stays as it was, for its own version. Returns the version copied.
-fn seed(kit: &Kit, id: &str, line: &str) -> Result<Option<String>> {
-    let root = data_root(kit, id);
-    let target = root.join(line);
-    if has_data(id, &target) {
-        return Ok(None);
-    }
-    let wanted = crate::install::version_key(line);
-    let mut older: Vec<(Vec<u64>, String)> = fs::read_dir(&root)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .filter_map(|e| {
-            let name = e.file_name().to_string_lossy().into_owned();
-            let key = crate::install::version_key(&name);
-            (crate::versions::valid_line(&name) && key < wanted && has_data(id, &e.path()))
-                .then_some((key, name))
-        })
-        .collect();
-    older.sort();
-    let Some((key, from)) = older.pop() else {
-        return Ok(None);
-    };
-    if id == "mongodb"
-        && wanted.first().copied().unwrap_or(0) > key.first().copied().unwrap_or(0) + 1
-    {
-        crate::log::warn(&format!(
-            "mongodb {line}: the data of {from} cannot jump more than one major version; \
-             starting with empty data (the {from} data stays)"
-        ));
-        return Ok(None);
-    }
-    if target.exists() {
-        crate::net::archive::remove_dir(&target)?;
-    }
-    copy_dir(&root.join(&from), &target)?;
-    crate::log::info(&format!("{id}: data of {from} copied for {line}"));
-    Ok(Some(from))
-}
-
-fn copy_dir(from: &std::path::Path, to: &std::path::Path) -> Result<()> {
-    fs::create_dir_all(to)?;
-    for entry in fs::read_dir(from)?.flatten() {
-        let target = to.join(entry.file_name());
-        if entry.file_type()?.is_dir() {
-            copy_dir(&entry.path(), &target)?;
-        } else {
-            fs::copy(entry.path(), &target).with_context(|| target.display().to_string())?;
-        }
-    }
-    Ok(())
-}
-
-/// Data of an older kit, `data\db\<id>` itself: into the folder of the
-/// installed version, `data\db\<id>\<line>`. At start (versions::migrate).
-pub fn migrate_data(kit: &Kit) {
-    for id in SERVERS {
-        let root = data_root(kit, id);
-        if !has_data(id, &root) {
-            continue;
-        }
-        let Some(line) = Catalog::get()
-            .find(id)
-            .and_then(|c| crate::versions::default_line(kit, c))
-        else {
-            continue;
-        };
-        let moving = kit.data().join("db").join(format!("{id}.devkit-move"));
-        let moved = fs::rename(&root, &moving)
-            .and_then(|()| fs::create_dir_all(&root))
-            .and_then(|()| fs::rename(&moving, root.join(&line)));
-        match moved {
-            Ok(()) => crate::log::info(&format!(
-                "{id}: data moved to {}",
-                root.join(&line).display()
-            )),
-            Err(e) => {
-                if moving.exists() && !root.join(&line).exists() {
-                    let _ = fs::remove_dir(&root);
-                    let _ = fs::rename(&moving, &root);
-                }
-                crate::log::warn(&format!("{id}: data not moved ({e})"));
-            }
-        }
-    }
-}
-
 fn log_path(kit: &Kit, id: &str) -> PathBuf {
     kit.logs().join(format!("{id}.log"))
 }
@@ -287,80 +188,11 @@ pub fn url(id: &str, port: u16) -> String {
     }
 }
 
-fn admin_user(id: &str) -> &'static str {
-    match id {
-        "mongodb" => "admin",
-        _ => "root",
-    }
-}
-
-fn admin_password(secrets: &auth::Secrets, id: &str) -> Option<String> {
-    match id {
-        "mongodb" => secrets.mongodb_admin.clone(),
-        _ => secrets.mariadb_root.clone(),
-    }
-}
-
-/// Runs a tool with `input` on its stdin (SQL with passwords: never on the
-/// command line) and waits at most `limit`; fails with its error output.
-fn run_with_input(mut cmd: Command, input: &str, limit: Duration) -> Result<()> {
-    use std::io::{Read, Write};
-    cmd.stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::piped());
-    let mut child = jobs::spawn(&mut cmd)?;
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(input.as_bytes())?;
-    }
-    let start = Instant::now();
-    loop {
-        if let Some(status) = child.try_wait()? {
-            let mut err = String::new();
-            if let Some(mut e) = child.stderr.take() {
-                let _ = e.read_to_string(&mut err);
-            }
-            return if status.success() {
-                Ok(())
-            } else {
-                Err(anyhow!("{}", err.trim()))
-            };
-        }
-        if start.elapsed() > limit {
-            let _ = child.kill();
-            bail!("{:?}: no answer", cmd.get_program());
-        }
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
 /// The last lines of a server's log, to tell why it stopped.
 fn log_tail(kit: &Kit, id: &str) -> String {
     let text = fs::read_to_string(log_path(kit, id)).unwrap_or_default();
     let lines: Vec<&str> = text.lines().filter(|l| !l.trim().is_empty()).collect();
     lines[lines.len().saturating_sub(3)..].join("\n")
-}
-
-/// Runs a tool of a server and waits at most `limit`.
-fn run_tool(mut cmd: Command, limit: Duration) -> Result<()> {
-    cmd.stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
-    let mut child = jobs::spawn(&mut cmd)?;
-    let start = Instant::now();
-    loop {
-        if let Some(status) = child.try_wait()? {
-            return if status.success() {
-                Ok(())
-            } else {
-                Err(anyhow!("{:?}: exit {status}", cmd.get_program()))
-            };
-        }
-        if start.elapsed() > limit {
-            let _ = child.kill();
-            bail!("{:?}: no answer", cmd.get_program());
-        }
-        std::thread::sleep(Duration::from_millis(100));
-    }
 }
 
 impl Services {
@@ -441,159 +273,6 @@ impl Services {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         running.retain(|_, s| matches!(s.child.try_wait(), Ok(None)));
         running.len()
-    }
-
-    /// Creates the data folder the first time; true when it is new (no
-    /// password set in it yet).
-    fn prepare(&self, id: &str, env: &KitEnv, port: u16) -> Result<(PathBuf, bool)> {
-        let data = data_dir(&self.kit, id);
-        let fresh = match id {
-            "mariadb" => !data.join("mysql").is_dir(),
-            _ => !data.join("WiredTiger").is_file(),
-        };
-        if id == "mariadb" && fresh {
-            // mariadb-install-db wants a folder that does not exist yet.
-            if data.is_dir() && fs::read_dir(&data)?.next().is_none() {
-                fs::remove_dir(&data)?;
-            }
-            if let Some(parent) = data.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            let mut cmd = jobs::kit_command(bin(&self.kit, id, "mariadb-install-db.exe"), env);
-            cmd.arg(format!("--datadir={}", data.display()))
-                .arg(format!("--port={port}"));
-            run_tool(cmd, Duration::from_secs(120)).context("mariadb-install-db")?;
-        }
-        fs::create_dir_all(&data)?;
-        Ok((data, fresh))
-    }
-
-    /// The administrator's password, set on a new data folder or on one made
-    /// before D-74 (no password yet), and MariaDB's `[client]` login.
-    fn secure(&self, id: &str, env: &KitEnv, port: u16, fresh: bool) -> Result<()> {
-        let mut secrets = auth::load(&self.kit);
-        let known = admin_password(&secrets, id);
-        let password = match &known {
-            Some(p) => p.clone(),
-            None => auth::new_password()?,
-        };
-        if fresh || known.is_none() {
-            match id {
-                "mongodb" => {
-                    let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), env);
-                    cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
-                        .arg(port.to_string())
-                        .args(["--eval", auth::MONGO_ADMIN_JS])
-                        .env("DEVKIT_DB_PASSWORD", &password);
-                    run_with_input(cmd, "", Duration::from_secs(60)).context(
-                        "MongoDB already has users that NEXKORA does not know: \
-                         its administrator could not be created",
-                    )?;
-                    secrets.mongodb_admin = Some(password.clone());
-                }
-                _ => {
-                    // No password yet: log in without one, ignoring my.ini.
-                    let mut cmd = jobs::kit_command(bin(&self.kit, id, "mariadb.exe"), env);
-                    cmd.args([
-                        "--no-defaults",
-                        "--user=root",
-                        "--host=127.0.0.1",
-                        "--protocol=tcp",
-                    ])
-                    .arg(format!("--port={port}"));
-                    run_with_input(
-                        cmd,
-                        &auth::root_password_sql(&password),
-                        Duration::from_secs(60),
-                    )
-                    .context("MariaDB: setting the password of root")?;
-                    secrets.mariadb_root = Some(password.clone());
-                }
-            }
-            auth::save(&self.kit, &secrets)?;
-            crate::log::info(&format!("{id}: administrator password set"));
-        }
-        if id == "mariadb" {
-            auth::write_client_ini(&self.kit, port, &password)?;
-        }
-        Ok(())
-    }
-
-    /// A tool of MariaDB logged in as `root` (the kit's `[client]` login).
-    pub(crate) fn mariadb_tool(&self, exe: &str, env: &KitEnv) -> Command {
-        let mut cmd = jobs::kit_command(bin(&self.kit, "mariadb", exe), env);
-        // It must be the first option.
-        cmd.arg(format!(
-            "--defaults-extra-file={}",
-            auth::client_ini(&self.kit).display()
-        ));
-        cmd
-    }
-
-    /// The project's databases already created, at the servers' ports.
-    pub fn project_dbs(&self, project: &str) -> Vec<auth::ProjectDb> {
-        auth::load(&self.kit)
-            .projects
-            .get(project)
-            .map(|engines| {
-                engines
-                    .iter()
-                    .map(|(engine, pw)| auth::project_db(engine, project, pw, self.port(engine)))
-                    .collect()
-            })
-            .unwrap_or_default()
-    }
-
-    /// Creates (or repairs) the project's database and user on a running
-    /// server; the password stays the same once generated.
-    pub fn project_db_create(&self, project: &str, engine: &str) -> Result<auth::ProjectDb> {
-        let (port, env) = {
-            let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
-            match running.get_mut(engine) {
-                Some(s) => match s.child.try_wait() {
-                    Ok(None) => (s.port, s.env.clone()),
-                    _ => bail!("{engine} is not running"),
-                },
-                None => bail!("{engine} is not running"),
-            }
-        };
-        let mut secrets = auth::load(&self.kit);
-        let password = match secrets.projects.get(project).and_then(|e| e.get(engine)) {
-            Some(p) => p.clone(),
-            None => auth::new_password()?,
-        };
-        let name = auth::db_name(project);
-        match engine {
-            "mongodb" => {
-                let admin = secrets
-                    .mongodb_admin
-                    .clone()
-                    .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
-                let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), &env);
-                cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
-                    .arg(port.to_string())
-                    .args(["--eval", auth::MONGO_PROJECT_JS])
-                    .env("DEVKIT_DB_ADMIN", admin)
-                    .env("DEVKIT_DB_NAME", &name)
-                    .env("DEVKIT_DB_PASSWORD", &password);
-                run_with_input(cmd, "", Duration::from_secs(60))?;
-            }
-            _ => {
-                let cmd = self.mariadb_tool("mariadb.exe", &env);
-                run_with_input(
-                    cmd,
-                    &auth::project_sql(&name, &password),
-                    Duration::from_secs(60),
-                )?;
-            }
-        }
-        secrets
-            .projects
-            .entry(project.to_owned())
-            .or_default()
-            .insert(engine.to_owned(), password.clone());
-        auth::save(&self.kit, &secrets)?;
-        Ok(auth::project_db(engine, project, &password, port))
     }
 
     fn command(&self, id: &str, env: &KitEnv, data: &std::path::Path, port: u16) -> Command {
@@ -730,72 +409,6 @@ impl Services {
         Ok(port)
     }
 
-    /// After the data of `from` was copied for `line`: MongoDB takes the
-    /// features of the new major (its next one needs it); MariaDB's system
-    /// tables are brought up to date by hand (`mariadb-upgrade`, D-73).
-    fn after_copy(&self, id: &str, env: &KitEnv, port: u16, from: &str, line: &str) {
-        let major = |l: &str| l.split('.').next().unwrap_or("").to_owned();
-        if major(from) == major(line) {
-            return;
-        }
-        if id != "mongodb" {
-            crate::log::info(&format!(
-                "mariadb {line}: data of {from}; run mariadb-upgrade to update the system tables"
-            ));
-            return;
-        }
-        let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), env);
-        cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
-            .arg(port.to_string())
-            .args(["--eval", auth::MONGO_FCV_JS])
-            .env(
-                "DEVKIT_DB_ADMIN",
-                auth::load(&self.kit).mongodb_admin.unwrap_or_default(),
-            )
-            .env("DEVKIT_DB_FCV", line);
-        match run_tool(cmd, Duration::from_secs(60)) {
-            Ok(_) => crate::log::info(&format!("mongodb {line}: feature compatibility {line}")),
-            Err(e) => crate::log::warn(&format!(
-                "mongodb {line}: setFeatureCompatibilityVersion: {e:#}"
-            )),
-        }
-    }
-
-    /// Where a project's database copies go: `data\db\backup\<project>`.
-    pub fn backup_dir(&self, project: &str) -> PathBuf {
-        self.kit.data().join(r"db\backup").join(project)
-    }
-
-    /// The copies of a project's database, newest first.
-    pub fn backups(&self, project: &str) -> Vec<Backup> {
-        let mut out: Vec<Backup> = fs::read_dir(self.backup_dir(project))
-            .into_iter()
-            .flatten()
-            .flatten()
-            .filter(|e| {
-                e.metadata()
-                    .is_ok_and(|m| m.is_file() && !crate::os::safe_path::is_reparse(&m))
-            })
-            .filter_map(|e| {
-                let name = e.file_name().to_string_lossy().into_owned();
-                let engine = if name.ends_with(".sql") {
-                    "mariadb"
-                } else if name.ends_with(".archive.gz") {
-                    "mongodb"
-                } else {
-                    return None;
-                };
-                Some(Backup {
-                    file: name,
-                    engine: engine.to_owned(),
-                    size: e.metadata().map(|m| m.len()).unwrap_or(0),
-                })
-            })
-            .collect();
-        out.sort_by(|a, b| b.file.cmp(&a.file));
-        out
-    }
-
     /// The server's port and environment, when it runs.
     pub(crate) fn running_server(&self, engine: &str) -> Result<(u16, KitEnv)> {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
@@ -805,100 +418,6 @@ impl Services {
                 _ => bail!("{engine} is not running"),
             },
             None => bail!("{engine} is not running"),
-        }
-    }
-
-    /// mongodump/mongorestore logged in as `admin`, the password in a config
-    /// file of the private folder (never on the command line), removed after.
-    fn mongo_tool(&self, exe: &str, env: &KitEnv, port: u16) -> Result<(Command, PathBuf)> {
-        let admin = auth::load(&self.kit)
-            .mongodb_admin
-            .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
-        let config = auth::dir(&self.kit).join(format!("{exe}-{}.yaml", std::process::id()));
-        auth::write_private_text(&config, &format!("password: {admin}\n"))?;
-        let mut cmd = jobs::kit_command(self.kit.apps().join(r"mongodb-tools\bin").join(exe), env);
-        cmd.arg(format!("--config={}", config.display()))
-            .args([
-                "--host=127.0.0.1",
-                "--username=admin",
-                "--authenticationDatabase=admin",
-            ])
-            .arg(format!("--port={port}"));
-        Ok((cmd, config))
-    }
-
-    /// A copy of the project's database in its backup folder (D-78); the
-    /// server must run.
-    pub fn export(&self, project: &str, engine: &str) -> Result<PathBuf> {
-        let (port, env) = self.running_server(engine)?;
-        let name = auth::db_name(project);
-        let dir = self.backup_dir(project);
-        fs::create_dir_all(&dir)?;
-        let stamp = crate::agents::sync::stamp();
-        match engine {
-            "mongodb" => {
-                let file = dir.join(format!("{name}-{stamp}.archive.gz"));
-                let (mut cmd, config) = self.mongo_tool("mongodump.exe", &env, port)?;
-                cmd.arg(format!("--db={name}"))
-                    .arg(format!("--archive={}", file.display()))
-                    .arg("--gzip");
-                let result = run_with_input(cmd, "", Duration::from_secs(600));
-                let _ = fs::remove_file(config);
-                result.context("mongodump")?;
-                Ok(file)
-            }
-            _ => {
-                let file = dir.join(format!("{name}-{stamp}.sql"));
-                let out = fs::File::create(&file)?;
-                let mut cmd = self.mariadb_tool("mariadb-dump.exe", &env);
-                cmd.args(["--single-transaction", "--routines", "--triggers"])
-                    .arg(&name)
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::from(out))
-                    .stderr(Stdio::piped());
-                let child = jobs::spawn(&mut cmd)?;
-                let done = child.wait_with_output()?;
-                if !done.status.success() {
-                    let _ = fs::remove_file(&file);
-                    bail!(
-                        "mariadb-dump: {}",
-                        String::from_utf8_lossy(&done.stderr).trim()
-                    );
-                }
-                Ok(file)
-            }
-        }
-    }
-
-    /// Puts a copy back into the project's database (what is there now is
-    /// replaced by the copy's tables or collections).
-    pub fn restore(&self, project: &str, file: &str) -> Result<()> {
-        if file.contains(['\\', '/']) || file.starts_with('.') {
-            bail!("not a copy of this project: {file}");
-        }
-        let path = self.backup_dir(project).join(file);
-        if !crate::os::safe_path::is_file(&self.backup_dir(project), &path) {
-            bail!("copy not found: {file}");
-        }
-        let name = auth::db_name(project);
-        if file.ends_with(".archive.gz") {
-            let (port, env) = self.running_server("mongodb")?;
-            let (mut cmd, config) = self.mongo_tool("mongorestore.exe", &env, port)?;
-            cmd.arg(format!("--archive={}", path.display()))
-                .arg("--gzip")
-                .arg("--drop")
-                .arg(format!("--nsInclude={name}.*"));
-            let result = run_with_input(cmd, "", Duration::from_secs(600));
-            let _ = fs::remove_file(config);
-            result.context("mongorestore")
-        } else if file.ends_with(".sql") {
-            let (_, env) = self.running_server("mariadb")?;
-            let sql = fs::read_to_string(&path)?;
-            let mut cmd = self.mariadb_tool("mariadb.exe", &env);
-            cmd.arg(&name);
-            run_with_input(cmd, &sql, Duration::from_secs(600)).context("mariadb")
-        } else {
-            bail!("not a database copy: {file}")
         }
     }
 
@@ -1019,15 +538,6 @@ impl Services {
     }
 }
 
-/// A copy of a project's database (D-78).
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Backup {
-    pub file: String,
-    pub engine: String,
-    pub size: u64,
-}
-
 /// The port of a server is taken by another program.
 #[derive(Debug)]
 pub struct PortInUse(pub u16);
@@ -1044,88 +554,6 @@ impl std::error::Error for PortInUse {}
 mod tests {
     use super::*;
     use crate::kit::{tests::TempDir, Arch};
-
-    /// `id` installed at `version`, the default folder of its line.
-    fn fake_server(kit: &Kit, id: &str, version: &str) {
-        let c = Catalog::get().find(id).unwrap();
-        let dir = crate::versions::install_dir(kit, c, version);
-        let folder = c.folder.as_deref().unwrap();
-        for k in std::iter::once(&c.key).chain(&c.keys) {
-            if let Some(rel) = k.strip_prefix(folder) {
-                let file = dir.join(rel.trim_start_matches('/').replace('/', "\\"));
-                fs::create_dir_all(file.parent().unwrap()).unwrap();
-                fs::write(&file, b"").unwrap();
-            }
-        }
-        c.save_version(kit, version).unwrap();
-    }
-
-    #[test]
-    fn each_version_has_its_data() {
-        let tmp = TempDir::new("services-lines");
-        let kit = Kit::at(tmp.0.clone(), Arch::X64);
-        kit.prepare().unwrap();
-        // Data of an older kit, then the server's own folder per version.
-        fake_server(&kit, "mariadb", "11.8.3");
-        let root = kit.data().join(r"db\mariadb");
-        fs::create_dir_all(root.join("mysql")).unwrap();
-        fs::write(root.join("ibdata1"), b"x").unwrap();
-        migrate_data(&kit);
-        assert!(root.join(r"11.8\mysql").is_dir() && !root.join("mysql").exists());
-        assert_eq!(data_dir(&kit, "mariadb"), root.join("11.8"));
-
-        // A newer version starts with a copy; the old data stays.
-        let c = Catalog::get().find("mariadb").unwrap();
-        let newer = crate::versions::saved_dir(&kit, c, "12.3");
-        fs::create_dir_all(newer.join("bin")).unwrap();
-        for k in ["mariadbd.exe", "mariadb.exe"] {
-            fs::write(newer.join("bin").join(k), b"").unwrap();
-        }
-        assert_eq!(server_line(&kit, "mariadb").as_deref(), Some("12.3"));
-        assert_eq!(server_lines(&kit, "mariadb"), ["12.3", "11.8"]);
-        assert_eq!(
-            seed(&kit, "mariadb", "12.3").unwrap().as_deref(),
-            Some("11.8")
-        );
-        assert!(root.join(r"12.3\ibdata1").is_file() && root.join(r"11.8\ibdata1").is_file());
-        assert_eq!(
-            seed(&kit, "mariadb", "12.3").unwrap(),
-            None,
-            "only the first time"
-        );
-        // Back to the older version: its own data, a setting of the server.
-        let s = Services::new(kit.clone());
-        s.set_line("mariadb", Some("11.8")).unwrap();
-        assert_eq!(data_dir(&kit, "mariadb"), root.join("11.8"));
-        assert!(
-            s.set_line("mariadb", Some("10.6")).is_err(),
-            "not installed"
-        );
-        assert_eq!(
-            bin(&kit, "mariadb", "mariadbd.exe")
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .file_name()
-                .unwrap(),
-            "11.8"
-        );
-
-        // MongoDB: one major at a time.
-        let mongo = kit.data().join(r"db\mongodb");
-        fs::create_dir_all(mongo.join("7.0")).unwrap();
-        fs::write(mongo.join(r"7.0\WiredTiger"), b"").unwrap();
-        assert_eq!(
-            seed(&kit, "mongodb", "9.0").unwrap(),
-            None,
-            "7.0 cannot jump to 9.0"
-        );
-        assert_eq!(
-            seed(&kit, "mongodb", "8.0").unwrap().as_deref(),
-            Some("7.0")
-        );
-    }
 
     #[test]
     fn settings_round_trip_and_defaults() {
