@@ -42,7 +42,7 @@ pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
 }
 
 #[tauri::command]
-pub fn eject_list<R: Runtime>(app: AppHandle<R>, webview: Webview<R>) -> Result<OpenNow, String> {
+pub fn eject_list<R: Runtime>(app: AppHandle<R>, webview: Webview<R>) -> CmdResult<OpenNow> {
     ensure_main(&webview)?;
     Ok(open_now(&app))
 }
@@ -56,7 +56,7 @@ pub async fn eject_run<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<OpenNow, String> {
+) -> CmdResult<OpenNow> {
     ensure_main(&webview)?;
     use tauri::Manager;
     state.setup.cancel(&setup_notify(app.clone()));
@@ -102,7 +102,7 @@ pub async fn eject_run<R: Runtime>(
         Ok(open_now(&handle))
     })
     .await
-    .map_err(|e| fail("eject", e))?
+    .or_fail("eject")?
 }
 
 /// Closes the app after the user confirmed (close question, eject).
@@ -111,7 +111,7 @@ pub fn app_quit<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     quit: State<'_, Quitting>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     quit.0.store(true, std::sync::atomic::Ordering::SeqCst);
     use tauri::Manager;

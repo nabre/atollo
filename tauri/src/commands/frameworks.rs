@@ -27,7 +27,7 @@ pub(super) fn problem_text(
 pub fn frameworks_get<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<FrameworksView, String> {
+) -> CmdResult<FrameworksView> {
     ensure_main(&webview)?;
     let lang = state.lang();
     let loaded = crate::projects::frameworks::load(&state.kit);
@@ -52,9 +52,10 @@ pub fn frameworks_set<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     pieces: Vec<crate::projects::frameworks::Piece>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
-    crate::projects::frameworks::save(&state.kit, pieces).map_err(|p| problem_text(state.lang(), p))
+    Ok(crate::projects::frameworks::save(&state.kit, pieces)
+        .map_err(|p| problem_text(state.lang(), p))?)
 }
 
 /// What a base with its additions would run (`pieces`: as edited, even if
@@ -66,13 +67,13 @@ pub fn frameworks_plan<R: Runtime>(
     mut pieces: Vec<crate::projects::frameworks::Piece>,
     base: String,
     addons: Vec<String>,
-) -> Result<crate::projects::frameworks::Plan, String> {
+) -> CmdResult<crate::projects::frameworks::Plan> {
     ensure_main(&webview)?;
     pieces
         .iter_mut()
         .for_each(crate::projects::frameworks::clean);
-    crate::projects::frameworks::plan(&pieces, &base, &addons)
-        .map_err(|p| problem_text(state.lang(), p))
+    Ok(crate::projects::frameworks::plan(&pieces, &base, &addons)
+        .map_err(|p| problem_text(state.lang(), p))?)
 }
 
 /// Progress of a creation (`framework` event): a command starting, or a
@@ -121,7 +122,7 @@ pub async fn frameworks_create<R: Runtime>(
     addons: Vec<String>,
     name: String,
     env: Vec<crate::projects::frameworks::EnvVar>,
-) -> Result<String, String> {
+) -> CmdResult<String> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     crate::projects::frameworks::check_env(&env).map_err(|p| problem_text(lang, p))?;
@@ -152,21 +153,21 @@ pub async fn frameworks_create<R: Runtime>(
         emit(0, None, None);
         let needs: Vec<&str> = plan.needs.iter().map(String::as_str).collect();
         let env = ensure(&app, &task, &kit, lang, &needs)?;
-        std::fs::create_dir_all(kit.projects()).map_err(|e| fail("frameworks", e))?;
+        std::fs::create_dir_all(kit.projects()).or_fail("frameworks")?;
         // A project with files: the framework is made aside, then added to it.
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_nanos());
         let staging = kit.data().join(r"tmp\frameworks").join(stamp.to_string());
         let make_at = if existing == Existing::Files {
-            std::fs::create_dir_all(&staging).map_err(|e| fail("frameworks", e))?;
+            std::fs::create_dir_all(&staging).or_fail("frameworks")?;
             staging.clone()
         } else {
             kit.projects()
         };
         // An empty project: its folder is made again by the creation.
         if existing == Existing::Empty {
-            std::fs::remove_dir(&dir).map_err(|e| fail("frameworks", e))?;
+            std::fs::remove_dir(&dir).or_fail("frameworks")?;
         }
         let no_folder = || {
             crate::i18n::t(
@@ -175,40 +176,40 @@ pub async fn frameworks_create<R: Runtime>(
                 &[&name],
             )
         };
-        let run = |step: usize, line: &str, at: &std::path::Path| -> Result<(), String> {
+        let run = |step: usize, line: &str, at: &std::path::Path| -> CmdResult<()> {
             if crate::projects::frameworks::cancelled() {
-                return Err(crate::i18n::t(lang, "Creazione annullata.", &[]));
+                return Err(crate::i18n::t(lang, "Creazione annullata.", &[]).into());
             }
             let command = crate::projects::frameworks::fill(line, &name);
             emit(step, Some(command.clone()), None);
             let out = |l: &str| emit(step, None, Some(l.to_owned()));
             crate::projects::frameworks::run_line(&kit, &env, at, &command, &out).map_err(|last| {
                 if crate::projects::frameworks::cancelled() {
-                    return crate::i18n::t(lang, "Creazione annullata.", &[]);
+                    return crate::i18n::t(lang, "Creazione annullata.", &[]).into();
                 }
                 crate::log::warn(&format!("frameworks: {command}: {last}"));
-                crate::i18n::t(lang, "Comando non riuscito: {0}\n{1}", &[&command, &last])
+                crate::i18n::t(lang, "Comando non riuscito: {0}\n{1}", &[&command, &last]).into()
             })
         };
-        let result = (|| -> Result<(), String> {
+        let result = (|| -> CmdResult<()> {
             for (i, line) in plan.create.iter().enumerate() {
                 run(i + 1, line, &make_at)?;
             }
             if existing == Existing::Files {
                 let made = staging.join(&name);
                 if !made.is_dir() {
-                    return Err(no_folder());
+                    return Err(no_folder().into());
                 }
                 let mut kept = Vec::new();
                 crate::projects::frameworks::merge_into(&made, &dir, &mut kept)
-                    .map_err(|e| fail("frameworks", e))?;
+                    .or_fail("frameworks")?;
                 for k in kept {
                     let text = crate::i18n::t(lang, "Già nel progetto, lasciato com'è: {0}", &[&k]);
                     emit(plan.create.len(), None, Some(text));
                 }
             }
             if !dir.is_dir() {
-                return Err(no_folder());
+                return Err(no_folder().into());
             }
             if let Some(engine) = &plan.database {
                 let text = crate::i18n::t(lang, "Creo il database del progetto in {0}…", &[engine]);
@@ -216,9 +217,8 @@ pub async fn frameworks_create<R: Runtime>(
                 let db = services
                     .start(engine, &env)
                     .and_then(|_port| services.project_db_create(&name, engine))
-                    .map_err(|e| fail("database", format!("{e:#}")))?;
-                crate::db::auth::env_apply(&dir, &db)
-                    .map_err(|e| fail(".env", format!("{e:#}")))?;
+                    .or_fail_chain("database")?;
+                crate::db::auth::env_apply(&dir, &db).or_fail_chain(".env")?;
             }
             let vars: Vec<(String, String)> = wanted_env
                 .iter()
@@ -234,8 +234,7 @@ pub async fn frameworks_create<R: Runtime>(
                 let keys: Vec<&str> = vars.iter().map(|(k, _)| k.as_str()).collect();
                 let text = crate::i18n::t(lang, "Scrivo nel file .env: {0}", &[&keys.join(", ")]);
                 emit(plan.create.len(), None, Some(text));
-                crate::db::auth::env_set(&dir, &vars)
-                    .map_err(|e| fail(".env", format!("{e:#}")))?;
+                crate::db::auth::env_set(&dir, &vars).or_fail_chain(".env")?;
             }
             for (i, line) in plan.steps.iter().enumerate() {
                 run(plan.create.len() + i + 1, line, &dir)?;
@@ -268,7 +267,7 @@ pub async fn frameworks_create<R: Runtime>(
         Ok(name)
     })
     .await
-    .map_err(|e| fail("frameworks", e))?
+    .or_fail("frameworks")?
 }
 
 /// The projects' folders and what is in them, for the wizard's name.
@@ -276,14 +275,14 @@ pub async fn frameworks_create<R: Runtime>(
 pub fn frameworks_targets<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<crate::projects::frameworks::Target>, String> {
+) -> CmdResult<Vec<crate::projects::frameworks::Target>> {
     ensure_main(&webview)?;
     Ok(crate::projects::frameworks::targets(&state.kit))
 }
 
 /// Stops the creation running now.
 #[tauri::command]
-pub fn frameworks_cancel<R: Runtime>(webview: Webview<R>) -> Result<(), String> {
+pub fn frameworks_cancel<R: Runtime>(webview: Webview<R>) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::projects::frameworks::cancel();
     Ok(())

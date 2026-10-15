@@ -20,7 +20,7 @@ pub fn project_databases<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> Result<ProjectDatabases, String> {
+) -> CmdResult<ProjectDatabases> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     Ok(ProjectDatabases {
@@ -43,7 +43,7 @@ pub async fn project_db_create<R: Runtime>(
     state: State<'_, AppState>,
     project: String,
     engine: String,
-) -> Result<crate::db::auth::ProjectDb, String> {
+) -> CmdResult<crate::db::auth::ProjectDb> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
     if !crate::db::services::SERVERS.contains(&engine.as_str()) {
@@ -53,28 +53,26 @@ pub async fn project_db_create<R: Runtime>(
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
-        services
-            .start(&engine, &env)
-            .map_err(|e| fail("database", format!("{e:#}")))?;
+        services.start(&engine, &env).or_fail_chain("database")?;
         services
             .project_db_create(&project, &engine)
-            .map_err(|e| fail("database", format!("{e:#}")))
+            .or_fail_chain("database")
     })
     .await
-    .map_err(|e| fail("database", e))?
+    .or_fail("database")?
 }
 
 pub(super) fn project_db_of(
     state: &AppState,
     project: &str,
     engine: &str,
-) -> Result<crate::db::auth::ProjectDb, String> {
+) -> CmdResult<crate::db::auth::ProjectDb> {
     state
         .services
         .project_dbs(project)
         .into_iter()
         .find(|d| d.engine == engine)
-        .ok_or_else(|| tr(state, "Crea prima il database del progetto.", &[]))
+        .ok_or_else(|| tr(state, "Crea prima il database del progetto.", &[]).into())
 }
 
 /// The lines of the project's `.env` that writing the connection changes.
@@ -84,7 +82,7 @@ pub fn project_env_preview<R: Runtime>(
     state: State<'_, AppState>,
     project: String,
     engine: String,
-) -> Result<Vec<crate::db::auth::EnvChange>, String> {
+) -> CmdResult<Vec<crate::db::auth::EnvChange>> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let db = project_db_of(&state, &project, &engine)?;
@@ -102,11 +100,11 @@ pub fn project_env_apply<R: Runtime>(
     state: State<'_, AppState>,
     project: String,
     engine: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let db = project_db_of(&state, &project, &engine)?;
-    crate::db::auth::env_apply(&dir, &db).map_err(|e| fail(".env", format!("{e:#}")))
+    crate::db::auth::env_apply(&dir, &db).or_fail_chain(".env")
 }
 
 /// The copies of the project's databases (D-78), newest first.
@@ -115,7 +113,7 @@ pub fn project_backups<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> Result<Vec<crate::db::services::Backup>, String> {
+) -> CmdResult<Vec<crate::db::services::Backup>> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
     Ok(state.services.backups(&project))
@@ -129,7 +127,7 @@ pub async fn project_db_export<R: Runtime>(
     state: State<'_, AppState>,
     project: String,
     engine: String,
-) -> Result<String, String> {
+) -> CmdResult<String> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
     if !crate::db::services::SERVERS.contains(&engine.as_str()) {
@@ -139,19 +137,15 @@ pub async fn project_db_export<R: Runtime>(
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
-        services
-            .start(&engine, &env)
-            .map_err(|e| fail("database", format!("{e:#}")))?;
-        let file = services
-            .export(&project, &engine)
-            .map_err(|e| fail("export", format!("{e:#}")))?;
+        services.start(&engine, &env).or_fail_chain("database")?;
+        let file = services.export(&project, &engine).or_fail_chain("export")?;
         Ok(file
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default())
     })
     .await
-    .map_err(|e| fail("export", e))?
+    .or_fail("export")?
 }
 
 /// Puts a copy back into the project's database; starts the server if needed.
@@ -162,7 +156,7 @@ pub async fn project_db_restore<R: Runtime>(
     state: State<'_, AppState>,
     project: String,
     file: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
     let engine = if file.ends_with(".archive.gz") {
@@ -174,15 +168,11 @@ pub async fn project_db_restore<R: Runtime>(
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[engine])?;
-        services
-            .start(engine, &env)
-            .map_err(|e| fail("database", format!("{e:#}")))?;
-        services
-            .restore(&project, &file)
-            .map_err(|e| fail("restore", format!("{e:#}")))
+        services.start(engine, &env).or_fail_chain("database")?;
+        services.restore(&project, &file).or_fail_chain("restore")
     })
     .await
-    .map_err(|e| fail("restore", e))?
+    .or_fail("restore")?
 }
 
 /// The databases of a running server with their tables or collections
@@ -192,17 +182,17 @@ pub async fn db_browse_tree<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     engine: String,
-) -> Result<Vec<crate::db::browse::Database>, String> {
+) -> CmdResult<Vec<crate::db::browse::Database>> {
     ensure_main(&webview)?;
     if !crate::db::services::SERVERS.contains(&engine.as_str()) {
         return Err(fail("browse", format!("unknown server {engine}")));
     }
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        crate::db::browse::tree(&services, &engine).map_err(|e| fail("browse", format!("{e:#}")))
+        crate::db::browse::tree(&services, &engine).or_fail_chain("browse")
     })
     .await
-    .map_err(|e| fail("browse", e))?
+    .or_fail("browse")?
 }
 
 /// One page of rows of a table or collection, from `offset` (D-79).
@@ -214,7 +204,7 @@ pub async fn db_browse_rows<R: Runtime>(
     database: String,
     table: String,
     offset: u64,
-) -> Result<crate::db::browse::Rows, String> {
+) -> CmdResult<crate::db::browse::Rows> {
     ensure_main(&webview)?;
     if !crate::db::services::SERVERS.contains(&engine.as_str()) {
         return Err(fail("browse", format!("unknown server {engine}")));
@@ -222,10 +212,10 @@ pub async fn db_browse_rows<R: Runtime>(
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         crate::db::browse::rows(&services, &engine, &database, &table, offset)
-            .map_err(|e| fail("browse", format!("{e:#}")))
+            .or_fail_chain("browse")
     })
     .await
-    .map_err(|e| fail("browse", e))?
+    .or_fail("browse")?
 }
 
 /// Adminer on the kit's MariaDB in the browser (D-85): Adminer (with PHP
@@ -235,7 +225,7 @@ pub async fn db_admin_open<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<crate::db::services::ServiceInfo>, String> {
+) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
@@ -244,12 +234,10 @@ pub async fn db_admin_open<R: Runtime>(
         services
             .start("mariadb", &env)
             .map_err(|e| start_error(lang, &e))?;
-        let url = services
-            .adminer_url()
-            .map_err(|e| fail("adminer", format!("{e:#}")))?;
+        let url = services.adminer_url().or_fail_chain("adminer")?;
         open_in_browser(&url)?;
         Ok(services.list())
     })
     .await
-    .map_err(|e| fail("adminer", e))?
+    .or_fail("adminer")?
 }

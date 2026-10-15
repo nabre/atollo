@@ -3,7 +3,8 @@
 //! Three locks keep editor windows out (DECISIONS.md D-14): the commands are
 //! listed in `build.rs` (`AppManifest::commands`), only the `main` capability
 //! allows them, and each command checks the calling window's label.
-//! Errors reach the interface as short text; details go to the log.
+//! Errors reach the interface as short text ([`CmdError`]); details go to
+//! the log.
 //!
 //! One file per page or domain of the interface (the same split as
 //! `ui/src/api`); this file keeps the state shared by all of them, the checks
@@ -32,6 +33,7 @@ pub(crate) mod agents;
 pub(crate) mod app;
 pub(crate) mod databases;
 pub(crate) mod editing;
+mod error;
 pub(crate) mod frameworks;
 pub(crate) mod github;
 pub(crate) mod projects;
@@ -40,6 +42,8 @@ pub(crate) mod services;
 pub(crate) mod setup;
 pub(crate) mod versions;
 pub(crate) mod window;
+
+use error::{fail, CmdError, CmdResult, OrFail};
 
 // Helpers shared by more than one group of commands.
 use app::{apply_env, github_token, open_in_browser};
@@ -82,7 +86,7 @@ impl AppState {
     }
 }
 
-fn ensure_main<R: Runtime>(webview: &Webview<R>) -> Result<(), String> {
+fn ensure_main<R: Runtime>(webview: &Webview<R>) -> CmdResult<()> {
     if webview.label() == MAIN {
         Ok(())
     } else {
@@ -90,14 +94,9 @@ fn ensure_main<R: Runtime>(webview: &Webview<R>) -> Result<(), String> {
     }
 }
 
-fn fail(context: &str, e: impl std::fmt::Display) -> String {
-    crate::log::error(&format!("{context}: {e}"));
-    e.to_string()
-}
-
 /// `None` = the projects folder itself; a name must be a valid project
 /// name of an existing folder (no paths, no `..`).
-fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> Result<PathBuf, String> {
+fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> CmdResult<PathBuf> {
     let Some(name) = project else {
         return Ok(kit.projects());
     };
@@ -107,7 +106,7 @@ fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> Result<PathBuf, 
     if crate::os::safe_path::is_dir(&kit.projects(), &dir) {
         Ok(dir)
     } else {
-        Err(crate::i18n::t(lang, "Progetto non trovato: {0}", &[name]))
+        Err(crate::i18n::t(lang, "Progetto non trovato: {0}", &[name]).into())
     }
 }
 
@@ -127,18 +126,14 @@ fn ensure<R: Runtime>(
     kit: &Kit,
     lang: &str,
     wanted: &[&str],
-) -> Result<KitEnv, String> {
+) -> CmdResult<KitEnv> {
     use tauri::Manager;
     let env = || app.state::<AppState>().env();
     let catalog = Catalog::get();
     let arm64 = kit.arch() == crate::kit::Arch::Arm64;
     let needed = with_needs(catalog, wanted);
     if let Some(c) = needed.iter().find(|c| arm64 && c.no_arm64) {
-        return Err(crate::i18n::t(
-            lang,
-            "{0} non è disponibile sui PC ARM64.",
-            &[&c.name],
-        ));
+        return Err(crate::i18n::t(lang, "{0} non è disponibile sui PC ARM64.", &[&c.name]).into());
     }
     if let Some(c) = needed
         .iter()
@@ -148,7 +143,8 @@ fn ensure<R: Runtime>(
             lang,
             "{0} gira solo con Windows 11 sui PC ARM64.",
             &[&c.name],
-        ));
+        )
+        .into());
     }
     if !wanted.is_empty() {
         let mut choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
@@ -200,7 +196,8 @@ fn ensure<R: Runtime>(
         lang,
         "Componenti del kit non installati: {0}{1}. Riprova da Linguaggi e strumenti.",
         &[&still.join(", "), &why],
-    ))
+    )
+    .into())
 }
 
 /// A project just copied (clone) gets what its code needs, waiting for the

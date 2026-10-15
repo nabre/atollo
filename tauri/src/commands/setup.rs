@@ -40,13 +40,12 @@ pub struct ComponentInfo {
 pub fn components_sync<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<String>, String> {
+) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
     if state.setup.snapshot().running {
         return Ok(Vec::new());
     }
-    let off = crate::versions::sync_with_disk(&state.kit)
-        .map_err(|e| fail("components", format!("{e:#}")))?;
+    let off = crate::versions::sync_with_disk(&state.kit).or_fail_chain("components")?;
     if !off.is_empty() {
         apply_env(&state, Settings::load(&state.kit).settings);
     }
@@ -57,7 +56,7 @@ pub fn components_sync<R: Runtime>(
 pub fn components_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<ComponentInfo>, String> {
+) -> CmdResult<Vec<ComponentInfo>> {
     ensure_main(&webview)?;
     Ok(component_infos(&state.kit, state.lang()))
 }
@@ -124,7 +123,7 @@ pub fn setup_notify<R: Runtime>(app: AppHandle<R>) -> Notify {
 pub fn setup_state<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Snapshot, String> {
+) -> CmdResult<Snapshot> {
     ensure_main(&webview)?;
     Ok(state.setup.snapshot())
 }
@@ -138,18 +137,18 @@ pub fn setup_start<R: Runtime>(
     state: State<'_, AppState>,
     only: Option<Vec<String>>,
     update_all: bool,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let only = only.unwrap_or_default();
     if let Some(bad) = only.iter().find(|id| Catalog::get().find(id).is_none()) {
-        return Err(format!("unknown component: {bad}"));
+        return Err(format!("unknown component: {bad}").into());
     }
     let opts = Options {
         only,
         update_all,
         ..Options::default()
     };
-    state.setup.start(opts, false, setup_notify(app))
+    Ok(state.setup.start(opts, false, setup_notify(app))?)
 }
 
 /// The choice of the "Linguaggi e strumenti" page: `chosen` are the ids to
@@ -162,25 +161,25 @@ pub fn components_apply<R: Runtime>(
     state: State<'_, AppState>,
     chosen: Vec<String>,
     update_all: bool,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let catalog = Catalog::get();
     if let Some(bad) = chosen.iter().find(|id| catalog.find(id).is_none()) {
-        return Err(format!("unknown component: {bad}"));
+        return Err(format!("unknown component: {bad}").into());
     }
     if state.setup.snapshot().running {
-        return Err(tr(&state, "C'è già un'installazione in corso.", &[]));
+        return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
     }
     let text = choice_text(&state.kit, &chosen);
     let choice = Choice::parse(&text, catalog);
     choice
         .write(&state.kit, catalog)
-        .map_err(|e| fail("components", format!("{e:#}")))?;
+        .or_fail_chain("components")?;
     let opts = Options {
         update_all,
         ..Options::default()
     };
-    state.setup.start(opts, false, setup_notify(app))
+    Ok(state.setup.start(opts, false, setup_notify(app))?)
 }
 
 /// `components.txt` for the ids in `chosen`. What this kit cannot install
@@ -214,7 +213,7 @@ pub fn setup_cancel<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     state.setup.cancel(&setup_notify(app));
     Ok(())
@@ -227,7 +226,7 @@ pub async fn downloads_add<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     paths: Vec<String>,
-) -> Result<Vec<String>, String> {
+) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
     let kit = state.kit.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -235,8 +234,8 @@ pub async fn downloads_add<R: Runtime>(
         crate::setup::downloads::add(&kit, &files)
     })
     .await
-    .map_err(|e| fail("downloads", e))?
-    .map_err(|e| fail("downloads", format!("{e:#}")))
+    .or_fail("downloads")?
+    .or_fail_chain("downloads")
 }
 
 /// The same, picked in Windows' "Open" window; empty when closed.
@@ -244,9 +243,9 @@ pub async fn downloads_add<R: Runtime>(
 pub async fn downloads_pick<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<String>, String> {
+) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
-    let owner = webview.window().hwnd().map_err(|e| fail("window", e))?.0 as isize;
+    let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
     let title = crate::i18n::t(state.lang(), "Scegli il file scaricato", &[]);
     let kit = state.kit.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -257,8 +256,8 @@ pub async fn downloads_pick<R: Runtime>(
         crate::setup::downloads::add(&kit, &files)
     })
     .await
-    .map_err(|e| fail("downloads", e))?
-    .map_err(|e| fail("downloads", format!("{e:#}")))
+    .or_fail("downloads")?
+    .or_fail_chain("downloads")
 }
 
 /// Opens in the PC's browser the address of the download that failed in
@@ -269,7 +268,7 @@ pub fn setup_by_hand_open<R: Runtime>(
     state: State<'_, AppState>,
     id: String,
     name: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     let url = state
         .setup
@@ -285,7 +284,7 @@ pub fn setup_by_hand_open<R: Runtime>(
         })
         .filter(|u| u.starts_with("https://") || u.starts_with("http://"))
         .ok_or_else(|| format!("{id}: no download to do by hand"))?;
-    crate::os::jobs::open_with_explorer(&url).map_err(|e| fail("browser", format!("{e:#}")))
+    crate::os::jobs::open_with_explorer(&url).or_fail_chain("browser")
 }
 
 #[cfg(test)]

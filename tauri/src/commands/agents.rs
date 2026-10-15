@@ -9,12 +9,12 @@ use super::*;
 pub async fn agents_status<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<crate::agents::AgentInfo>, String> {
+) -> CmdResult<Vec<crate::agents::AgentInfo>> {
     ensure_main(&webview)?;
     let (kit, env) = (state.kit.clone(), state.env());
     tauri::async_runtime::spawn_blocking(move || crate::agents::status(&kit, &env))
         .await
-        .map_err(|e| fail("agents", e))
+        .or_fail("agents")
 }
 
 /// Plan limits and usage of the installed agents (`agents/stats/`). `force`:
@@ -24,14 +24,14 @@ pub async fn agents_stats<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     force: bool,
-) -> Result<crate::agents::stats::Report, String> {
+) -> CmdResult<crate::agents::stats::Report> {
     ensure_main(&webview)?;
     let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         crate::agents::stats::collect(&kit, &env, lang, force)
     })
     .await
-    .map_err(|e| fail("stats", e))
+    .or_fail("stats")
 }
 
 /// Opens an agent in a kit console in the project (never elsewhere).
@@ -42,10 +42,10 @@ pub async fn agent_launch<R: Runtime>(
     state: State<'_, AppState>,
     agent: String,
     project: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
     if !crate::agents::IDS.contains(&agent.as_str()) {
-        return Err(format!("unknown agent: {agent}"));
+        return Err(format!("unknown agent: {agent}").into());
     }
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     crate::projects::settings::update(&state.kit, &project, |s| {
@@ -58,11 +58,10 @@ pub async fn agent_launch<R: Runtime>(
             .collect();
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
-        crate::agents::launch(&app, &kit, &env, &agent, &dir, lang)
-            .map_err(|e| fail("agent", format!("{e:#}")))
+        crate::agents::launch(&app, &kit, &env, &agent, &dir, lang).or_fail_chain("agent")
     })
     .await
-    .map_err(|e| fail("agent", e))?
+    .or_fail("agent")?
 }
 
 #[tauri::command]
@@ -70,8 +69,7 @@ pub fn agent_sign_out<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     agent: String,
-) -> Result<(), String> {
+) -> CmdResult<()> {
     ensure_main(&webview)?;
-    crate::agents::sign_out(&state.kit, &state.env(), &agent)
-        .map_err(|e| fail("sign out", format!("{e:#}")))
+    crate::agents::sign_out(&state.kit, &state.env(), &agent).or_fail_chain("sign out")
 }
