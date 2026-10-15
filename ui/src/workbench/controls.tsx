@@ -3,14 +3,26 @@
 // with their sizes and --vscode-* colors. Icon actions, checkboxes and radios
 // stay native elements drawn as those components: their role and name must
 // be in the page (light DOM), where the pages' <label for> reach them.
-import { useEffect, useId, useRef, type CSSProperties, type FocusEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+  type FocusEvent,
+  type HTMLAttributes,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import { flushSync } from "react-dom";
 import type { IconType } from "react-icons";
 import { VscCheck, VscError, VscInfo, VscSearch, VscWarning } from "react-icons/vsc";
 import { VscodeOption, VscodeSingleSelect, VscodeTextarea, VscodeTextfield } from "@vscode-elements/react-elements";
 import { t } from "../i18n";
 import { useHost } from "./elements";
 
-type FieldElement = HTMLElementTagNameMap["vscode-textfield" | "vscode-textarea" | "vscode-single-select"];
+type TextElement = HTMLElementTagNameMap["vscode-textfield" | "vscode-textarea"];
+type FieldElement = TextElement | HTMLElementTagNameMap["vscode-single-select"];
 
 /** The text of the <label> that names a field: <label for> its id, or the
  * label around it (without the field's own text, as a select's options). */
@@ -35,6 +47,48 @@ function useFieldLabel<E extends FieldElement>(label: string | undefined) {
     if (el && label === undefined) el.label = labelText(el);
   });
   return ref;
+}
+
+/** The input/change handler of a text component, controlled as a native
+ * input in React: the typed text goes to `onChange`, and when the page
+ * keeps another value (it rejects or normalizes the text, so nothing
+ * renders and the wrapper never sets `value` again) the field shows the
+ * kept one at once. */
+function useControlled(value: string, onChange: (v: string) => void) {
+  const latest = useRef(value);
+  useLayoutEffect(() => {
+    latest.current = value;
+  });
+  return (e: Event) => {
+    const el = e.currentTarget as TextElement;
+    if (el.value === latest.current) return;
+    flushSync(() => {
+      onChange(el.value);
+    });
+    const kept = latest.current;
+    if (el.value === kept) return;
+    el.value = kept;
+    // Lit compares with the value it drew last, not with the input's own.
+    const inner = el.wrappedElement as HTMLInputElement | HTMLTextAreaElement | undefined;
+    if (inner) inner.value = kept;
+  };
+}
+
+/** The default button of a form, the one Enter clicks in its fields. */
+function defaultButton(form: HTMLFormElement) {
+  for (const el of form.elements)
+    if ((el instanceof HTMLButtonElement || el instanceof HTMLInputElement) && el.type === "submit") return el;
+  return undefined;
+}
+
+/** Enter in a vscode-textfield calls its form's requestSubmit() itself,
+ * past the browser's implicit submission: stopped before it gets there
+ * when the browser would not submit, with the form's default button
+ * disabled (a busy Button) or while an IME composes. */
+function guardEnter(e: KeyboardEvent<HTMLElement>) {
+  if (e.key !== "Enter") return;
+  const form = (e.currentTarget as HTMLElementTagNameMap["vscode-textfield"]).form;
+  if (e.nativeEvent.isComposing || (form && defaultButton(form)?.disabled)) e.stopPropagation();
 }
 
 /** A text button (vscode-button): primary, secondary, or the small one of the
@@ -92,6 +146,17 @@ export function Button({
           if (submit) native.current?.click();
           else onClick?.();
         }}
+        // The component clicks on the keydown of Enter and Space, as a
+        // native button but without its default handling: no page scroll
+        // on Space, and one click per press, not one per key repeat.
+        onKeyDownCapture={(e) => {
+          if (e.key !== " " && e.key !== "Enter") return;
+          if (e.key === " ") e.preventDefault();
+          if (e.repeat) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
         className={[
           "shrink-0",
           small
@@ -103,7 +168,9 @@ export function Button({
         {busy ? <span className="animate-pulse">{children}</span> : children}
       </vscode-button>
       {/* The form's default button, a native one: it submits the clicks
-          above and Enter in the form's fields, as the browser does. */}
+          above, and Enter in the form's native fields, as the browser
+          does. A TextField submits by itself, and checks this button's
+          disabled state first (guardEnter). */}
       {submit && <button ref={native} type="submit" hidden disabled={off} tabIndex={-1} />}
     </>
   );
@@ -185,12 +252,11 @@ export function SearchBox({
   large?: boolean;
   className?: string;
 }) {
-  const read = (e: Event) => {
-    onChange((e.currentTarget as FieldElement).value);
-  };
+  const read = useControlled(value, onChange);
   return (
     <VscodeTextfield
       type="search"
+      onKeyDownCapture={guardEnter}
       label={placeholder}
       // The name on the host too, for what reads the page's own tree.
       aria-label={placeholder}
@@ -231,6 +297,7 @@ export function TextField({
   disabled = false,
   readOnly = false,
   invalid = false,
+  inputMode,
   mono = false,
   autoFocus = false,
   pattern,
@@ -248,6 +315,8 @@ export function TextField({
   readOnly?: boolean;
   /** Error colors (inputValidation), with aria-invalid. */
   invalid?: boolean;
+  /** The keyboard of a touch screen, as the native attribute. */
+  inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
   /** The editor's font, for paths, commands and keys. */
   mono?: boolean;
   autoFocus?: boolean;
@@ -259,9 +328,29 @@ export function TextField({
 }) {
   const ref = useFieldLabel<HTMLElementTagNameMap["vscode-textfield"]>(label);
   useAutoFocus(ref, autoFocus);
+  const read = useControlled(value, onChange);
+  // The focus goes to the input inside the component, which the component
+  // doesn't give these: set on it once it is drawn.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let live = true;
+    void el.updateComplete.then(() => {
+      const input = el.wrappedElement as HTMLInputElement | undefined;
+      if (!live || !input) return;
+      if (invalid) input.setAttribute("aria-invalid", "true");
+      else input.removeAttribute("aria-invalid");
+      if (inputMode) input.setAttribute("inputmode", inputMode);
+      else input.removeAttribute("inputmode");
+    });
+    return () => {
+      live = false;
+    };
+  }, [ref, invalid, inputMode]);
   return (
     <VscodeTextfield
       ref={ref}
+      onKeyDownCapture={guardEnter}
       id={id}
       type={type}
       label={label ?? ""}
@@ -273,12 +362,8 @@ export function TextField({
       readonly={readOnly}
       invalid={invalid}
       pattern={pattern}
-      onInput={(e) => {
-        onChange((e.currentTarget as FieldElement).value);
-      }}
-      onChange={(e) => {
-        onChange((e.currentTarget as FieldElement).value);
-      }}
+      onInput={read}
+      onChange={read}
       onBlur={onBlur && leaving(onBlur)}
       style={mono ? MONO : undefined}
       className={className}
@@ -316,6 +401,7 @@ export function TextArea({
   className?: string;
 }) {
   const ref = useFieldLabel<HTMLElementTagNameMap["vscode-textarea"]>(label);
+  const read = useControlled(value, onChange);
   // A property (spellCheck as an attribute would read "false" as true).
   useEffect(() => {
     if (ref.current && spellCheck !== undefined) ref.current.spellcheck = spellCheck;
@@ -333,12 +419,8 @@ export function TextArea({
       disabled={disabled}
       readonly={readOnly}
       monospace={mono}
-      onInput={(e) => {
-        onChange((e.currentTarget as FieldElement).value);
-      }}
-      onChange={(e) => {
-        onChange((e.currentTarget as FieldElement).value);
-      }}
+      onInput={read}
+      onChange={read}
       className={className}
     />
   );
@@ -408,8 +490,13 @@ export function Select<T extends string>({
 }) {
   const ref = useFieldLabel<HTMLElementTagNameMap["vscode-single-select"]>(label);
   useAutoFocus(ref, autoFocus);
+  // A value no option has shows the first option, as a native select in
+  // React: not the component's own fallback, its first item, which can be
+  // a group's (disabled) header.
+  const flat = options.flatMap((o) => ("group" in o ? o.options : [o]));
+  const shown = flat.some((o) => o.value === value) ? value : flat[0]?.value;
   const option = (o: SelectOption<T>, description = "") => (
-    <VscodeOption key={o.value} value={o.value} description={description} selected={o.value === value}>
+    <VscodeOption key={o.value} value={o.value} description={description} selected={o.value === shown}>
       {o.label}
     </VscodeOption>
   );
@@ -419,8 +506,19 @@ export function Select<T extends string>({
       id={id}
       label={label ?? ""}
       aria-label={label}
-      value={value}
+      value={shown ?? ""}
       disabled={disabled}
+      // Closed, the component still stops Escape (and the arrows, Space):
+      // the page's own Esc (a dialog's cancel, a menu's close) gets it again
+      // from the parent. Open, Escape only closes the list.
+      onKeyDownCapture={(e) => {
+        const el = e.currentTarget;
+        if (e.key !== "Escape" || el.open) return;
+        e.stopPropagation();
+        (el.parentElement ?? document).dispatchEvent(
+          new globalThis.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true, composed: true }),
+        );
+      }}
       onChange={(e) => {
         onChange((e.currentTarget as FieldElement).value as T);
       }}
