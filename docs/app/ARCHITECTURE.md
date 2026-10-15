@@ -55,9 +55,12 @@ tauri\src\
     side_by_side  ranges      JDK, .NET e simili fianco a fianco (D-81); intervalli npm, Composer, PEP 440
     relations\                matrice delle relazioni (D-81): mod, known (relations.json), checks, projects
   projects\                   progetti
-    mod                       elenco, creazione, clone, eliminazione, stato Git
+    mod                       elenco, creazione, clone, eliminazione (con i database, D-89), stato Git
+    state  migrate            data\projects\<p>\ (D-89): percorsi, orfani, adozione; migrazione 1 → 2 all'avvio
+    alias                     alias dei siti: URL e destinazione validati, un solo risolutore (D-77)
     settings  mcp  vscode     dev-settings.json (D-63), server MCP, .vscode\settings.json (D-78)
     run  serve  apache        azioni avviate e porte (D-50); server di file (D-51); Apache del progetto
+    nginx                     Nginx del progetto
     frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner
   detect\                     tipo, linguaggi e azioni di un progetto
   editor\                     editor e console
@@ -77,8 +80,30 @@ tauri\src\
   net\                        rete: mod (HTTPS, proxy, API di GitHub), verify (SHA), signature (Authenticode),
                               archive (estrazione, scambio cartelle)
   os\                         Windows e processi: jobs (Job Object, D-07), processes, sessions («Rimuovi
-                              l'unità», altre copie), instance (D-08), webview (D-05), safe_path (D-77)
+                              l'unità», altre copie), instance (D-08), webview (D-05), safe_path (D-77),
+                              temp (TempWork, pulizia: file di passaggio nel temp del sistema, D-90),
+                              volume (file system e tipo di disco, spazio libero, stesso disco)
 ```
+
+### Dati del kit (`data\`)
+
+```
+data\
+  apps\win32-<arch>\          programmi installati
+  app\                        stato del kit: settings.json, services.json, components.txt, versions\,
+                              frameworks.json, servers.json, logs\, layout.txt (2 = dati per progetto)
+    db\                       secrets.json (solo root e admin), my.ini; la cartella ha il DACL del proprietario
+    pre-v2\                   copia di ports.json e secrets.json prima della migrazione (D-89)
+  projects\<progetto>\        tutto ciò che il kit tiene per un progetto (D-89)
+    dev-settings.json  ports.json  apache\  nginx\
+    private\                  DACL del proprietario prima di ogni scrittura
+      db.json                 password e nomi dei database del progetto
+      backups\                copie dei database (D-78)
+  servers\<pool>\             configurazioni generate dei pool Apache/Nginx
+  tmp\                        passaggio nel kit quando il temp del sistema non c'è o non basta; TEMP dei programmi nel kit
+```
+
+Nel temp del sistema, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `adminer\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `os\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`os::temp::sweep`); alla chiusura, dopo il job, `os::temp::cleanup_at_exit`.
 
 Regole delle cartelle:
 - un modulo con il nome della sua area è il `mod.rs` della cartella (`editor\mod.rs`, non `editor\editor.rs`: clippy lo rifiuta), così `crate::editor::Editor` e `crate::versions::*` restano brevi; le cartelle senza logica propria (`db\`, `setup\`, `os\`) hanno in `mod.rs` solo la descrizione dell'area;
@@ -102,6 +127,7 @@ Un file per pagina o area dell'interfaccia, con gli stessi nomi dei file di `ui\
 | `versions.rs` | versioni salvate, versioni dei progetti, matrice delle relazioni |
 | `agents.rs` | stato, consumi, avvio e uscita degli agenti |
 | `projects.rs` | elenco, creazione, clone, eliminazione, azioni, sito, stato, MCP |
+| `orphans.rs` | dati senza progetto: elenco e «Collega a…» (D-89) |
 | `frameworks.rs` | nuovo progetto da framework |
 | `github.rs` | account e repository GitHub |
 | `databases.rs` | database dei progetti, copie, `.env`, contenuto, Adminer |
@@ -122,7 +148,7 @@ Un aiuto usato da più aree (per esempio `apply_env`, `open_in_browser`) resta n
 
 Ogni modulo segue le stesse regole per i suoi file in `data\`:
 
-- **percorsi** dai metodi di `Kit` (`data()`, `apps()`, `app_dir()`, `settings_file()`, `project_states()`…) o da una funzione del modulo che possiede il file (`db::services::settings_path`, `versions::offered_file`); mai lo stesso nome di file scritto in due moduli;
+- **percorsi** dai metodi di `Kit` (`data()`, `apps()`, `app_dir()`, `settings_file()`, `project_data()`, `system_temp()`…; i file di un progetto da `projects::state::ProjectState`) o da una funzione del modulo che possiede il file (`db::services::settings_path`, `versions::offered_file`); mai lo stesso nome di file scritto in due moduli;
 - **lettura**: `fsx::read_text` (UTF-8 con sostituzione dei byte non validi, senza BOM); per il JSON `fsx::read_json` (mancante o danneggiato: `None`, per lo stato che il kit ricostruisce), `fsx::load_json` (il valore predefinito più il problema da mostrare, per le impostazioni dell'utente) o `fsx::try_read_json` (errore con il percorso). Un file vuoto vale come mancante;
 - **scrittura**: `fsx::write_json` (crea la cartella, JSON indentato, atomico) o `fsx::write_atomic` per il testo; mai `fs::write` su un file che il kit rilegge;
 - **file di altri programmi** (impostazioni dell'editor e di Windows Terminal, file degli agenti, `.mcp.json`) come `serde_json::Value`, con le regole del loro modulo: un file con commenti o non valido non si sovrascrive;
