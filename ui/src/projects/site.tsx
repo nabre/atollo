@@ -6,7 +6,7 @@ import { projectSite, type ProjectInfo, type SiteKind } from "../api";
 import { useAction } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
-import { Select } from "../workbench";
+import { Select, TextField } from "../workbench";
 
 /** "Servi come sito web": a folder of the project served on its own port. */
 export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () => void }) {
@@ -24,17 +24,18 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
     <form onSubmit={submit} className="flex flex-wrap items-end gap-2" aria-label={t("Servi come sito web")}>
       <label className="flex flex-col gap-1">
         <span className="text-vsc-desc">{t("Servi come sito web la cartella")}</span>
-        <input
+        <TextField
+          label={t("Servi come sito web la cartella")}
           value={folder}
-          onChange={(e) => {
-            setFolder(e.target.value);
-          }}
-          className="w-64 input font-mono"
+          onChange={setFolder}
+          mono
+          className="w-64"
         />
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-vsc-desc">{t("con")}</span>
         <Select<SiteKind>
+          label={t("con")}
           value={kind}
           onChange={setKind}
           options={[

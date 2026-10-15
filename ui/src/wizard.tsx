@@ -28,9 +28,12 @@ import {
 import { ErrorLine } from "./common";
 import { useLoad, useSubscription } from "./hooks";
 import { t } from "./i18n";
-import { Button, IconButton, Link, Notice, ProgressBar, SingleEditor } from "./workbench";
+import { Button, IconButton, Link, Notice, ProgressBar, Radio, SingleEditor, TextField } from "./workbench";
 
 const MAX_LOG = 600;
+
+/** 12px text in a field (the component reads the variable). */
+const SMALL = "[--vscode-font-size:12px]";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -62,28 +65,28 @@ function EnvRows({
     <div className="space-y-1.5">
       {rows.map((r) => (
         <div key={(r.added ? "+" : "") + String(r.index)} className="flex max-w-160 items-center gap-1.5">
-          <input
-            aria-label={t("Variabile")}
+          <TextField
+            label={t("Variabile")}
             value={r.key}
             readOnly={!r.added}
             disabled={disabled}
             placeholder="CHIAVE"
-            spellCheck={false}
-            onChange={(e) => {
-              onValue(r, { key: e.target.value });
+            mono
+            onChange={(key) => {
+              onValue(r, { key });
             }}
-            className="input w-55 font-mono text-[12px]"
+            className={`w-55 ${SMALL}`}
           />
           <span className="text-vsc-desc">=</span>
-          <input
-            aria-label={t("Valore di {0}", r.key)}
+          <TextField
+            label={t("Valore di {0}", r.key)}
             value={r.value}
             disabled={disabled}
-            spellCheck={false}
-            onChange={(e) => {
-              onValue(r, { value: e.target.value });
+            mono
+            onChange={(value) => {
+              onValue(r, { value });
             }}
-            className="input min-w-0 flex-1 font-mono text-[12px]"
+            className={`min-w-0 flex-1 ${SMALL}`}
           />
           <IconButton
             icon={VscClose}
@@ -193,26 +196,27 @@ export function NewProjectPage({ onOpen, onSettings }: { onOpen: (project: strin
             >
               {bases(pieces).map((b) => {
                 const on = b.id === base;
+                const pick = () => {
+                  setBase(b.id);
+                };
                 return (
-                  <button
+                  // A card around a radio: the whole card picks it with the
+                  // mouse; the keyboard moves on the radios (arrows).
+                  <div
                     key={b.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    disabled={running}
-                    onClick={() => {
-                      setBase(b.id);
-                    }}
-                    className={`rounded-md border p-3 text-left hover:bg-vsc-list-hover disabled:opacity-60 ${
-                      on ? "border-vsc-focus bg-vsc-list-inactive" : "border-vsc-border"
-                    }`}
+                    onClick={running ? undefined : pick}
+                    className={`rounded-md border p-3 ${
+                      running ? "opacity-60" : "cursor-pointer hover:bg-vsc-list-hover"
+                    } ${on ? "border-vsc-focus bg-vsc-list-inactive" : "border-vsc-border"}`}
                   >
-                    <div className="flex items-center gap-2 font-semibold">
-                      <PieceLogo piece={b} size={18} />
-                      {b.name}
-                    </div>
-                    <div className="mt-0.5 text-vsc-desc">{textOf(view, b.desc)}</div>
-                  </button>
+                    <Radio name="wizard-base" checked={on} disabled={running} onSelect={pick}>
+                      <span className="flex items-center gap-2 font-semibold">
+                        <PieceLogo piece={b} size={18} />
+                        {b.name}
+                      </span>
+                      <span className="mt-0.5 block font-normal text-vsc-desc">{textOf(view, b.desc)}</span>
+                    </Radio>
+                  </div>
                 );
               })}
             </div>
@@ -230,19 +234,19 @@ export function NewProjectPage({ onOpen, onSettings }: { onOpen: (project: strin
           </Section>
 
           <Section title={t("3. Nome")}>
-            <input
-              aria-label={t("Nome del progetto")}
+            <TextField
+              label={t("Nome del progetto")}
               value={name}
               disabled={running}
               placeholder={t("nome-del-progetto")}
-              onChange={(e) => {
-                setName(e.target.value);
-              }}
-              className="input w-full max-w-[420px]"
+              onChange={setName}
+              className="w-full max-w-[420px]"
             />
             {usable.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-vsc-desc">{t("Oppure usa un progetto esistente:")}</span>
+                {/* Toggle chips (aria-pressed), drawn as the app's tags: no
+                    vscode-elements component has a pressed state. */}
                 {usable.map((x) => (
                   <button
                     key={x.name}

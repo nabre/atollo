@@ -6,7 +6,7 @@ import { runSetPort, type Ports, type ProjectAction, type ProjectInfo, type RunI
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { Dot, IconButton, List, ListRow } from "../workbench";
+import { CheckboxLabel, Dot, IconButton, Link, List, ListRow, TextField } from "../workbench";
 import { VscDebugStart, VscDebugStop, VscStarEmpty, VscStarFull, VscTrash } from "react-icons/vsc";
 import { projectActionDefault, urlOpen } from "../api";
 import { ActionBar, EditorSection, Properties } from "../workbench";
@@ -143,15 +143,13 @@ export function ActionDetail({
   if (r?.url && r.state === "running") {
     rows.push([
       t("Indirizzo"),
-      <button
-        type="button"
-        className="text-vsc-link hover:underline"
+      <Link
         onClick={() => {
           void urlOpen(r.url ?? "");
         }}
       >
         {r.url}
-      </button>,
+      </Link>,
     ]);
   }
   if (a.custom) rows.push([t("Origine"), "panel.json"]);
@@ -225,33 +223,34 @@ function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Po
     );
   };
   return (
-    <div>
-      <input
-        type="text"
+    // Enter in the field submits its form: the port is saved.
+    <form
+      title={
+        locked
+          ? t("Porta scelta da te")
+          : t("Porta automatica, la stessa a ogni avvio. Scrivi un numero per sceglierla.")
+      }
+      onSubmit={(e) => {
+        e.preventDefault();
+        save();
+      }}
+    >
+      <TextField
+        label={t("Porta")}
         inputMode="numeric"
-        aria-label={t("Porta")}
         placeholder={t("automatica")}
         value={value}
-        onChange={(e) => {
-          setValue(e.target.value);
-        }}
+        invalid={error !== null}
+        onChange={setValue}
         onBlur={save}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") save();
-        }}
-        title={
-          locked
-            ? t("Porta scelta da te")
-            : t("Porta automatica, la stessa a ogni avvio. Scrivi un numero per sceglierla.")
-        }
-        className="w-24 input"
+        className="w-24"
       />
       {error && (
         <p role="alert" className="text-[12px] text-vsc-error">
           {error}
         </p>
       )}
-    </div>
+    </form>
   );
 }
 
@@ -267,16 +266,11 @@ function LogView({ title, lines }: { title: string; lines: string[] }) {
     <div className="overflow-hidden rounded border border-vsc-border">
       <div className="flex h-[26px] items-center gap-2 border-b border-vsc-border px-3 text-[11px] text-vsc-desc uppercase">
         <span className="flex-1 truncate">{t("Output di {0}", title)}</span>
-        <label className="flex items-center gap-1 normal-case">
-          <input
-            type="checkbox"
-            checked={follow}
-            onChange={(e) => {
-              setFollow(e.target.checked);
-            }}
-          />
-          {t("Segui")}
-        </label>
+        <span className="normal-case">
+          <CheckboxLabel checked={follow} onChange={setFollow}>
+            {t("Segui")}
+          </CheckboxLabel>
+        </span>
       </div>
       <pre
         ref={ref}

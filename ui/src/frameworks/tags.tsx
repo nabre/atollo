@@ -5,6 +5,7 @@ import { t } from "../i18n";
 import { VscClose, VscExtensions, VscPackage } from "react-icons/vsc";
 import { ComponentLogo, FrameworkLogo } from "../logos";
 import { Tag } from "../tags";
+import { IconButton } from "../workbench";
 
 /** A tool of the kit as a tag: its logo and its name in the catalog. */
 export function ToolTag({
@@ -21,15 +22,13 @@ export function ToolTag({
     <Tag icon={<ComponentLogo id={id} size={12} />} className="text-vsc-fg">
       {name}
       {onRemove && (
-        <button
-          type="button"
-          aria-label={t("Togli {0}", name)}
-          title={t("Togli {0}", name)}
+        // The toolbar button's look, at the tag's height (16px, a 12px glyph).
+        <IconButton
+          icon={VscClose}
+          label={t("Togli {0}", name)}
           onClick={onRemove}
-          className="-mr-1 flex size-4 items-center justify-center rounded hover:bg-vsc-toolbar-hover"
-        >
-          <VscClose size={12} aria-hidden="true" />
-        </button>
+          className="-mr-1 size-4! [&>svg]:size-3"
+        />
       )}
     </Tag>
   );
