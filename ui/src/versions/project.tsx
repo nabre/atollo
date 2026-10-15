@@ -50,11 +50,7 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
       (x.installed || x.downloadable || x.saved.length > 0),
   );
   const inactiveTools = allTools.filter(
-    (x) =>
-      !p.requires.includes(x.id) &&
-      !data?.chosen[x.id] &&
-      x.installed &&
-      (x.downloadable || x.saved.length > 0),
+    (x) => !p.requires.includes(x.id) && !data?.chosen[x.id] && x.installed && (x.downloadable || x.saved.length > 0),
   );
   const projectNeeds = matrix?.projects.find((x) => x.project === project)?.needs ?? [];
 
@@ -96,9 +92,7 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
         </div>
         <div className="pl-[136px]">
           {need && (
-            <p className="mt-0.5 text-[12px] text-vsc-desc">
-              {t("Richiesto da {0}: {1}", need.source, need.declared)}
-            </p>
+            <p className="mt-0.5 text-[12px] text-vsc-desc">{t("Richiesto da {0}: {1}", need.source, need.declared)}</p>
           )}
           <LineState
             tool={tool}
