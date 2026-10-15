@@ -22,8 +22,8 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 
+use super::auth;
 use crate::catalog;
-use crate::db_auth;
 use crate::env::KitEnv;
 use crate::jobs::{self, Job};
 use crate::kit::Kit;
@@ -100,7 +100,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
     if !router.is_file() {
         crate::kit_files::write_all(kit)?;
     }
-    let password = db_auth::load(kit)
+    let password = auth::load(kit)
         .mariadb_root
         .ok_or_else(|| anyhow!("MariaDB has no password of root yet"))?;
     let dir = kit.app_dir().join("adminer");
@@ -166,7 +166,7 @@ pub(crate) mod tests {
 
     /// Adminer of the kit given by ATOLLO_TEST_KIT on its MariaDB already
     /// running at ATOLLO_TEST_MARIADB_PORT (an open Atollo, whose data the
-    /// real test of `services.rs` must not start a second server on).
+    /// real test of `db/services.rs` must not start a second server on).
     #[test]
     fn real_adminer_on_running_mariadb() {
         let (Ok(root), Ok(db_port)) = (
@@ -190,7 +190,7 @@ pub(crate) mod tests {
         assert!(ureq::get(&url).call().is_err(), "stopped");
     }
 
-    /// The checks of a real Adminer at `url` (the real test of `services.rs`):
+    /// The checks of a real Adminer at `url` (the real test of `db/services.rs`):
     /// 403 without the token, then logged in as root with it.
     pub fn assert_logs_in(url: &str) {
         let port = url

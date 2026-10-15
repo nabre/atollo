@@ -477,7 +477,7 @@ mod tests {
             assert!(
                 c.folder.is_some()
                     && (c.group == Group::Languages
-                        || crate::services::SERVERS.contains(&c.id.as_str())),
+                        || crate::db::services::SERVERS.contains(&c.id.as_str())),
                 "{}: versioned",
                 c.id
             );

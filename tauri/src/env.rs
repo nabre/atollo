@@ -186,7 +186,7 @@ impl KitEnv {
         env.set_path("ATOLLO", root);
         env.set_path("CP_ROOT", root);
         env.set_path("CP_DATA", &data);
-        // The `[client]` login of the kit's MariaDB (db_auth.rs, D-74).
+        // The `[client]` login of the kit's MariaDB (db/auth.rs, D-74).
         env.set_path("MYSQL_HOME", data.join("app").join("db"));
         env.set("CP_ARCH", arch);
         env.set_path("CP_APPS", &apps);

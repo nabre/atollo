@@ -491,7 +491,7 @@ fn need(
         status: NeedStatus::Unknown,
         uses: None,
         line: None,
-        server: crate::services::SERVERS.contains(&c.id.as_str()),
+        server: crate::db::services::SERVERS.contains(&c.id.as_str()),
     };
     let Some(range) = Range::parse(&wanted, bare) else {
         return Some(need);
@@ -499,7 +499,7 @@ fn need(
     let fits = |l: &String| admits(&range, have, l);
     let chosen = crate::versions::project_choice(kit, project).remove(&c.id);
     need.uses = if need.server {
-        crate::services::server_line(kit, &c.id)
+        crate::db::services::server_line(kit, &c.id)
     } else {
         chosen
             .clone()

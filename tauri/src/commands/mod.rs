@@ -63,7 +63,7 @@ pub struct AppState {
     pub editor: Arc<Editor>,
     pub setup: Arc<SetupTask>,
     /// Database servers (D-73).
-    pub services: Arc<crate::services::Services>,
+    pub services: Arc<crate::db::services::Services>,
 }
 
 impl AppState {

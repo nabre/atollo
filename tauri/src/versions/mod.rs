@@ -534,7 +534,7 @@ pub fn migrate(kit: &Kit) {
         }
     }
     // The databases' data, one folder per version too.
-    crate::services::migrate_data(kit);
+    crate::db::services::migrate_data(kit);
     if let Err(e) = crate::install::adopt_composer(kit) {
         crate::log::warn(&format!("Composer of the older kit: {e:#}"));
     }
