@@ -201,15 +201,7 @@ export function ActionDetail({
 }
 
 /** The port of a web action: automatic (kept between starts) or chosen. */
-export function PortField({
-  actionKey,
-  ports,
-  onPorts,
-}: {
-  actionKey: string;
-  ports: Ports;
-  onPorts: (p: Ports) => void;
-}) {
+function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Ports; onPorts: (p: Ports) => void }) {
   const current = ports.ports[actionKey];
   const locked = ports.locked.includes(actionKey);
   const [value, setValue] = useState(current === undefined ? "" : String(current));
@@ -264,7 +256,7 @@ export function PortField({
 }
 
 /** The output of an action, as the editor's Output view. */
-export function LogView({ title, lines }: { title: string; lines: string[] }) {
+function LogView({ title, lines }: { title: string; lines: string[] }) {
   const ref = useRef<HTMLPreElement>(null);
   const [follow, setFollow] = useState(true);
   useEffect(() => {
