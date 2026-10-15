@@ -64,7 +64,7 @@ pub async fn eject_run<R: Runtime>(
         r.stop_all();
     }
     for (label, window) in app.webview_windows() {
-        if label.starts_with(editor_window::LABEL_PREFIX) {
+        if label.starts_with(editor::window::LABEL_PREFIX) {
             let _ = window.destroy();
         }
     }

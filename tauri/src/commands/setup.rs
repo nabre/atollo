@@ -65,7 +65,7 @@ pub fn components_list<R: Runtime>(
 /// The PC runs x64 programs: x64 itself, or Windows 11 on ARM64 (Windows 10
 /// on ARM emulates x86 only). An unknown build counts as yes.
 pub(super) fn emulates_x64() -> bool {
-    crate::wterm::windows_build().is_none_or(|b| b >= 22000)
+    crate::editor::wterm::windows_build().is_none_or(|b| b >= 22000)
 }
 
 /// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`

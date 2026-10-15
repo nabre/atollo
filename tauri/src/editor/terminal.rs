@@ -1,5 +1,5 @@
 //! Consoles outside the editor: the kit's PowerShell or an agent, in the
-//! kit's portable Windows Terminal (`wterm.rs`, D-68) or, when the settings
+//! kit's portable Windows Terminal (`editor/wterm.rs`, D-68) or, when the settings
 //! ask for it or that terminal cannot run, in a classic Windows console
 //! (DECISIONS.md D-13, D-23, D-57). Never a shell of the PC, and never the
 //! PC's terminal program: the classic console is hosted by Windows' own
@@ -17,7 +17,7 @@ use anyhow::Result;
 use tauri::{AppHandle, Manager, Runtime};
 use windows::Win32::System::Console::SetConsoleCtrlHandler;
 
-use crate::editor_cfg::pwsh_args;
+use crate::editor::cfg::pwsh_args;
 use crate::env::KitEnv;
 use crate::jobs;
 use crate::kit::Kit;
@@ -152,8 +152,8 @@ fn open<R: Runtime>(
     let classic = crate::settings::Settings::load(kit)
         .settings
         .classic_console();
-    if !classic && crate::wterm::usable(kit) {
-        match crate::wterm::open(kit, env, dir, program) {
+    if !classic && crate::editor::wterm::usable(kit) {
+        match crate::editor::wterm::open(kit, env, dir, program) {
             Ok(console) => {
                 track(&consoles, console, on_exit);
                 return Ok(());

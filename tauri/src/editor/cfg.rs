@@ -37,7 +37,7 @@ const HIDDEN: &[&str] = &[
 
 pub const DEFAULT_PROFILE: &str = "Atollo";
 
-/// The kit's themes (editor_theme.rs) in place of VSCodium's own: a theme
+/// The kit's themes (editor/theme.rs) in place of VSCodium's own: a theme
 /// setting missing or on one of these becomes Atollo's; any other theme is
 /// the user's choice and stays. VSCodium 1.140 calls its themes "Dark
 /// Modern" and "Light Modern" (older ids: "Default ...").
@@ -50,7 +50,7 @@ const THEMES: &[(&str, &[&str], &str)] = &[
             "Dark+",
             "Default Dark+",
         ],
-        crate::editor_theme::DARK,
+        crate::editor::theme::DARK,
     ),
     (
         "workbench.preferredDarkColorTheme",
@@ -60,7 +60,7 @@ const THEMES: &[(&str, &[&str], &str)] = &[
             "Dark+",
             "Default Dark+",
         ],
-        crate::editor_theme::DARK,
+        crate::editor::theme::DARK,
     ),
     (
         "workbench.preferredLightColorTheme",
@@ -70,7 +70,7 @@ const THEMES: &[(&str, &[&str], &str)] = &[
             "Light+",
             "Default Light+",
         ],
-        crate::editor_theme::LIGHT,
+        crate::editor::theme::LIGHT,
     ),
 ];
 

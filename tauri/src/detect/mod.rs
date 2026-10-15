@@ -264,7 +264,7 @@ fn ext_of(name: &str) -> String {
 }
 
 /// The languages a project can have, by file extension, in the order the
-/// matrix of editor extensions shows them (`editor_ext.rs`).
+/// matrix of editor extensions shows them (`editor/ext.rs`).
 pub const LANGUAGES: [(&str, &[&str]); 27] = [
     ("JavaScript", &[".js", ".mjs", ".cjs", ".jsx"]),
     ("TypeScript", &[".ts", ".tsx"]),

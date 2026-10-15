@@ -16,7 +16,7 @@
 //!   the user uninstalls it, it does not come back, unless a project adds it
 //!   by hand; a failure is retried at the next start of the editor;
 //! - each editor window turns off, in its workspace only, the kit's
-//!   extensions its project does not use (`hidden`, editor_window.rs).
+//!   extensions its project does not use (`hidden`, editor/window.rs).
 //!   Nothing is uninstalled;
 //! - CodeLLDB comes from its GitHub release (Open VSX only has a bootstrap
 //!   that downloads at run time), checked with GitHub's SHA-256;
@@ -42,7 +42,7 @@ use crate::net::{github_digest, Net};
 use crate::project_settings::Extensions;
 use crate::verify::Expect;
 
-const MATRIX: &str = include_str!("../catalog/extensions.json");
+const MATRIX: &str = include_str!("../../catalog/extensions.json");
 pub const CODELLDB: &str = "vadimcn.vscode-lldb";
 
 /// A row of the kit's matrix.

@@ -38,7 +38,7 @@ pub async fn editor_open<R: Runtime>(
     .map_err(|e| fail("editor", e))??;
     let _ = app.emit_to(MAIN, "editor-status", state.editor.status());
     let url = editor::url(port, &token, Some(&dir));
-    editor_window::open(
+    editor::window::open(
         &app,
         &url,
         port,
@@ -120,9 +120,9 @@ pub fn project_editor_settings_set<R: Runtime>(
 pub fn extensions_matrix<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<crate::editor_ext::MatrixInfo, String> {
+) -> Result<crate::editor::ext::MatrixInfo, String> {
     ensure_main(&webview)?;
-    Ok(crate::editor_ext::matrix_info(&state.kit))
+    Ok(crate::editor::ext::matrix_info(&state.kit))
 }
 
 /// The editor extensions added to or removed from those of the project's
@@ -138,9 +138,9 @@ pub async fn project_extensions<R: Runtime>(
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    let choice = crate::editor_ext::clean_choice(&added, &removed);
+    let choice = crate::editor::ext::clean_choice(&added, &removed);
     crate::project_settings::update(&state.kit, &project, |s| s.extensions = choice);
-    crate::editor_window::refresh_hidden(&app, &state.kit);
+    crate::editor::window::refresh_hidden(&app, &state.kit);
     let editor = Arc::clone(&state.editor);
     // Busy installing: the watch of the open projects asks again (main.rs).
     tauri::async_runtime::spawn_blocking(move || {

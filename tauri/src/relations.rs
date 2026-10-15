@@ -397,7 +397,7 @@ fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) -> Vec<Runtim
                     None => (false, None),
                 },
                 "x64-emulation" => {
-                    let build = crate::wterm::windows_build();
+                    let build = crate::editor::wterm::windows_build();
                     (
                         build.is_none_or(|b| b >= 22000),
                         build.map(|b| format!("Windows build {b}")),

@@ -18,15 +18,15 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Runtime, State, Webview};
 
 use crate::catalog::{Catalog, Choice, Group};
-use crate::editor::{self, Editor};
+use crate::editor::{self, terminal, Editor};
 use crate::env::KitEnv;
+use crate::install;
 use crate::kit::{validate_project_name, Kit};
 use crate::run::{Runner, State as RunState};
 use crate::self_update::Updater;
 use crate::settings::Settings;
 use crate::setup_runner::Options;
 use crate::setup_task::{self, Notify, SetupTask, Snapshot};
-use crate::{editor_window, install, terminal};
 
 pub(crate) mod agents;
 pub(crate) mod app;

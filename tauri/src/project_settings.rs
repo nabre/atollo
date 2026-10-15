@@ -23,7 +23,7 @@ pub struct ProjectSettings {
     /// Seconds since 1970 of the last editor, console or agent opened in it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_opened: Option<u64>,
-    /// Editor extensions changed from those of its languages (`editor_ext.rs`).
+    /// Editor extensions changed from those of its languages (`editor/ext.rs`).
     #[serde(default, skip_serializing_if = "Extensions::is_empty")]
     pub extensions: Extensions,
     /// Lines of the languages chosen for the project, by component id

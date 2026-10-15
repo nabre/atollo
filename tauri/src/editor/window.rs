@@ -87,8 +87,8 @@ const TITLE_BAR_DEFAULTS: &str = r#"{"window.menuBarVisibility":"classic"}"#;
 
 /// Atollo's logo (the app icon, ui/src/assets) in the editor's title bar
 /// and on the empty editor (D-72).
-const LOGO_32: &[u8] = include_bytes!("../../ui/src/assets/logo-32.png");
-const LOGO_256: &[u8] = include_bytes!("../../ui/src/assets/logo-256.png");
+const LOGO_32: &[u8] = include_bytes!("../../../ui/src/assets/logo-32.png");
+const LOGO_256: &[u8] = include_bytes!("../../../ui/src/assets/logo-256.png");
 
 /// The editor's name where VSCodium shows its own: window title, About
 /// (D-72). Merged by the workbench over its product, as `productConfiguration`.
@@ -394,7 +394,7 @@ pub fn refresh_hidden<R: Runtime>(app: &AppHandle<R>, kit: &crate::kit::Kit) {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let value = serde_json::json!({ "t": now_ms() as u64, "ids": crate::editor_ext::hidden_of(kit, &dir) });
+        let value = serde_json::json!({ "t": now_ms() as u64, "ids": crate::editor::ext::hidden_of(kit, &dir) });
         let key = serde_json::to_string(&hidden_key(&name)).unwrap_or_default();
         let value = serde_json::to_string(&value.to_string()).unwrap_or_default();
         let _ = window.eval(format!(
@@ -485,7 +485,7 @@ pub fn watch_projects(
 pub fn notify_installed<R: Runtime>(app: &AppHandle<R>, ids: &[String]) {
     let names: Vec<String> = ids
         .iter()
-        .map(|id| crate::editor_ext::name_of(id))
+        .map(|id| crate::editor::ext::name_of(id))
         .collect();
     let json = serde_json::to_string(&names).unwrap_or_else(|_| "[]".into());
     for (label, window) in app.webview_windows() {
@@ -574,7 +574,7 @@ pub fn open<R: Runtime>(
             lang,
             port,
             title,
-            &crate::editor_ext::hidden_of(&app.state::<crate::commands::AppState>().kit, folder),
+            &crate::editor::ext::hidden_of(&app.state::<crate::commands::AppState>().kit, folder),
         ))
         .data_directory(data_dir.to_path_buf())
         .zoom_hotkeys_enabled(false)

@@ -27,8 +27,8 @@ pub struct ProjectInfo {
     pub missing: Vec<String>,
     /// The kit's settings of the project (`project_settings.rs`).
     pub settings: crate::project_settings::ProjectSettings,
-    /// Editor extensions of its languages and added by hand (`editor_ext.rs`).
-    pub extensions: Vec<crate::editor_ext::ProjectExtension>,
+    /// Editor extensions of its languages and added by hand (`editor/ext.rs`).
+    pub extensions: Vec<crate::editor::ext::ProjectExtension>,
     #[serde(flatten)]
     pub project: Project,
 }
@@ -82,11 +82,11 @@ pub fn info(kit: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
     let settings = crate::project_settings::load(kit, &id);
-    let extensions = crate::editor_ext::of_project(
+    let extensions = crate::editor::ext::of_project(
         &project.languages,
         &project.requires,
         &settings.extensions,
-        &crate::editor_ext::installed(kit),
+        &crate::editor::ext::installed(kit),
     );
     ProjectInfo {
         settings,
