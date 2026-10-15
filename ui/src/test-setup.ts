@@ -65,6 +65,20 @@ if (!("setFormValue" in proto)) {
   });
 }
 
+// The text of an element as drawn (vscode-single-select reads its options'
+// labels so): without layout, the plain text.
+if (!("innerText" in HTMLElement.prototype)) {
+  Object.defineProperty(HTMLElement.prototype, "innerText", {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.textContent;
+    },
+    set(this: HTMLElement, v: string) {
+      this.textContent = v;
+    },
+  });
+}
+
 // Layout observers (vscode-scrollable, vscode-form-container): jsdom has no
 // layout, so nothing ever resizes.
 if (!("ResizeObserver" in globalThis)) {

@@ -136,6 +136,10 @@ body {
   outline: 1px solid var(--vsc-focus);
   outline-offset: -1px;
 }
+/* The vscode-elements components draw their own, inside. */
+:is(vscode-button, vscode-textfield, vscode-textarea, vscode-single-select):focus-visible {
+  outline: none;
+}
 
 /* Text fields, lists and text areas, as VSCodium's inputs: 26px high,
    a thin border that takes the focus color. Width comes from utilities. */

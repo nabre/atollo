@@ -430,7 +430,8 @@ describe("App", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
     expect(await screen.findByLabelText("Lingua")).toBeTruthy();
-    fireEvent.change(screen.getByPlaceholderText("Cerca nelle impostazioni"), { target: { value: "proxy" } });
+    // The field draws its placeholder inside the component: found by its name.
+    fireEvent.change(screen.getByLabelText("Cerca nelle impostazioni"), { target: { value: "proxy" } });
     expect(await screen.findByLabelText("Proxy HTTPS")).toBeTruthy();
     expect(screen.queryByLabelText("Lingua")).toBeNull();
   });
