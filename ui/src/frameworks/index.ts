@@ -6,21 +6,8 @@
 // the app; a changed one shows the bar of a modified setting and goes back
 // with «Ripristina». Also the plan of a combination, shown here to try the
 // instructions and in the wizard.
-export {
-  addonsFor,
-  addPiece,
-  bases,
-  pieceTab,
-  slotLabel,
-  textOf,
-  TRY_TAB,
-  useCombination,
-  useComponents,
-  useFrameworks,
-  usePlan,
-  type Frameworks,
-} from "./model";
-export { PieceLogo, ToolTag } from "./tags";
+export { addPiece, bases, pieceTab, textOf, TRY_TAB, useCombination, useFrameworks, usePlan } from "./model";
+export { PieceLogo } from "./tags";
 export { PieceGroup } from "./editor";
 export { FrameworksTree } from "./tree";
-export { AddonChoice, PlanSummary, PlanView, TryGroup } from "./plan";
+export { AddonChoice, PlanSummary, TryGroup } from "./plan";

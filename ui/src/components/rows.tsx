@@ -13,7 +13,7 @@ import { ComponentLogo } from "../logos";
 import { Badge, Tag } from "../tags";
 
 /** The projects that need `c`: blue when chosen, orange with a warning when not. */
-export function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
+function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
   if (names.length === 0) return null;
   const list = names.join(", ");
   return on ? (
@@ -40,7 +40,7 @@ export function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
 }
 
 /** What `c` needs (installed with it) and, when chosen, what needs `c`. */
-export function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentInfo[]; chosen: Set<string> }) {
+function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentInfo[]; chosen: Set<string> }) {
   const name = (id: string) => list.find((x) => x.id === id)?.name ?? id;
   const usedBy = list.filter((x) => chosen.has(x.id) && x.needs.includes(c.id)).map((x) => x.name);
   return (
@@ -73,7 +73,7 @@ export function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: Comp
 /** Composer: a tool of its own with its version, but one per version of
  * PHP and compatible with it, installed and updated with it; its checkbox
  * follows PHP's. */
-export function ComposerRow({
+function ComposerRow({
   php,
   tool,
   on,
