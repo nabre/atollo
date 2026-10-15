@@ -585,6 +585,48 @@
           "markdownDescription": "Enables the run_stop command without any pre-configured scope."
         },
         {
+          "description": "Enables the server_assign_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-server-assign-project",
+          "markdownDescription": "Enables the server_assign_project command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the server_reload command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-server-reload",
+          "markdownDescription": "Enables the server_reload command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the server_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-server-remove",
+          "markdownDescription": "Enables the server_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the server_save command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-server-save",
+          "markdownDescription": "Enables the server_save command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the server_start command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-server-start",
+          "markdownDescription": "Enables the server_start command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the server_stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-server-stop",
+          "markdownDescription": "Enables the server_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the servers_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-servers-list",
+          "markdownDescription": "Enables the servers_list command without any pre-configured scope."
+        },
+        {
           "description": "Enables the service_line command without any pre-configured scope.",
           "type": "string",
           "const": "allow-service-line",
@@ -1105,6 +1147,48 @@
           "type": "string",
           "const": "deny-run-stop",
           "markdownDescription": "Denies the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the server_assign_project command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-server-assign-project",
+          "markdownDescription": "Denies the server_assign_project command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the server_reload command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-server-reload",
+          "markdownDescription": "Denies the server_reload command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the server_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-server-remove",
+          "markdownDescription": "Denies the server_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the server_save command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-server-save",
+          "markdownDescription": "Denies the server_save command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the server_start command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-server-start",
+          "markdownDescription": "Denies the server_start command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the server_stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-server-stop",
+          "markdownDescription": "Denies the server_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the servers_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-servers-list",
+          "markdownDescription": "Denies the servers_list command without any pre-configured scope."
         },
         {
           "description": "Denies the service_line command without any pre-configured scope.",

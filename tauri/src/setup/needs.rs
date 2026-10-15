@@ -26,8 +26,9 @@ fn component_of(program: &str) -> Option<&'static str> {
         "pnpm" | "pnpx" | "yarn" | "yarnpkg" | "corepack" => "pnpm",
         "uv" | "uvx" => "uv",
         "python" | "python3" | "py" | "pythonw" | "pip" | "pip3" => "python",
-        "php" | "composer" => "php",
+        "php" | "php-cgi" | "composer" => "php",
         "httpd" => "apache",
+        "nginx" => "nginx",
         "cargo" | "rustc" | "rustup" | "trunk" => "rust",
         "go" | "gofmt" => "go",
         "java" | "javac" | "jar" | "mvn" | "gradle" => "java",
@@ -75,13 +76,16 @@ fn first_program(command: &str) -> Option<&str> {
 }
 
 /// The components a project action needs (`Dev-Kit.exe serve` needs none,
-/// the project's own Apache needs Apache and PHP).
+/// the project's own Apache/Nginx needs the web server and PHP).
 pub fn of_action(action: &Action) -> BTreeSet<&'static str> {
     if action.static_dir.is_some() {
         return BTreeSet::new();
     }
     if action.apache_dir.is_some() {
         return BTreeSet::from(["apache", "php"]);
+    }
+    if action.nginx_dir.is_some() {
+        return BTreeSet::from(["nginx", "php"]);
     }
     of_command(&action.command)
 }

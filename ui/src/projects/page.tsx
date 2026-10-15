@@ -254,7 +254,7 @@ export function ProjectPage({
         {section === "components" && (
           <>
             <Needs p={p} onChanged={changed} />
-            <ProjectVersions project={p.id} />
+            <ProjectVersions p={p} />
           </>
         )}
         {section === "databases" && <Databases p={p} dbs={dbs} onChanged={reload} />}

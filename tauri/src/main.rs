@@ -22,6 +22,7 @@ mod log;
 mod net;
 mod os;
 mod projects;
+mod servers;
 mod settings;
 mod setup;
 mod versions;
@@ -272,6 +273,7 @@ fn run() -> i32 {
         webview: webview_desc,
         editor: std::sync::Arc::new(editor::Editor::new(kit.clone(), kit_env.clone())),
         services: std::sync::Arc::new(db::services::Services::new(kit.clone())),
+        servers: std::sync::Arc::new(servers::WebServers::new(kit.clone())),
         env: std::sync::RwLock::new(kit_env),
     };
     // The exe swap of a staged update happens on Exit (`run` may not return).
@@ -472,8 +474,11 @@ fn build_app<R: tauri::Runtime>(
                 // The databases shut down cleanly first (D-73), off the UI thread.
                 let services =
                     std::sync::Arc::clone(&window.app_handle().state::<AppState>().services);
+                let servers =
+                    std::sync::Arc::clone(&window.app_handle().state::<AppState>().servers);
                 let handle = window.app_handle().clone();
                 std::thread::spawn(move || {
+                    servers.stop_all();
                     services.stop_all();
                     handle.exit(0);
                 });
@@ -622,6 +627,7 @@ mod tests {
             setup,
             editor,
             services: std::sync::Arc::new(db::services::Services::new(kit.clone())),
+            servers: std::sync::Arc::new(servers::WebServers::new(kit.clone())),
             kit,
             lang: std::sync::RwLock::new("it"),
             moved_from: None,

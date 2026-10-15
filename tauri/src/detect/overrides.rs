@@ -110,20 +110,41 @@ pub(super) fn apply(project: &mut Project, dir: &Path, lang: &str) {
                 .and_then(Value::as_str)
                 .map(str::to_owned);
             let apache = a.get("apache").and_then(Value::as_str).map(str::to_owned);
-            if command.is_none() && served.is_none() && apache.is_none() {
+            let nginx = a.get("nginx").and_then(Value::as_str).map(str::to_owned);
+            if command.is_none() && served.is_none() && apache.is_none() && nginx.is_none() {
                 return None;
             }
             let a_kind = text(pick(a, "type", "tipo")).and_then(|t| Kind::parse(&t));
             let label = text(pick(a, "label", "etichetta")).unwrap_or_else(|| id.clone());
             let mut action = match &command {
                 Some(c) => Action::new(&id, &label, c, a_kind.unwrap_or(Kind::Command)),
-                None => match &apache {
-                    Some(folder) => Action::apache(&id, &label, folder),
-                    None => Action::serve(&id, &label, served.as_deref().unwrap_or(".")),
+                None => match (&apache, &nginx) {
+                    (Some(folder), _) => Action::apache(&id, &label, folder),
+                    (None, Some(folder)) => Action::nginx(&id, &label, folder),
+                    (None, None) => Action::serve(&id, &label, served.as_deref().unwrap_or(".")),
                 },
             };
             action.folder = text(pick(a, "folder", "cartella"));
             action.url = text(a.get("url")).map(|u| ports(&u));
+            action.server = text(a.get("server"));
+            if let Some(Value::Array(domains)) = a.get("domains") {
+                action.domains = domains
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .map(str::trim)
+                    .filter(|d| valid_domain(d))
+                    .map(str::to_owned)
+                    .collect();
+            }
+            if let Some(Value::Object(aliases)) = a.get("aliases") {
+                for (k, v) in aliases {
+                    if let Some(v) = v.as_str() {
+                        if valid_alias_url(k) && valid_alias_target(v) {
+                            action.aliases.insert(k.clone(), v.trim().to_owned());
+                        }
+                    }
+                }
+            }
             if let Some(Value::Object(env)) = a.get("env") {
                 for (k, v) in env {
                     if let Some(v) = text(Some(v)) {
@@ -154,6 +175,60 @@ pub(super) fn apply(project: &mut Project, dir: &Path, lang: &str) {
             project.kind = k;
         }
     }
+}
+
+/// Validates an RFC 6761 `.localhost` domain alias (`mio-sito.localhost`).
+pub fn valid_domain(d: &str) -> bool {
+    let d = d.trim();
+    let Some(prefix) = d.strip_suffix(".localhost") else {
+        return false;
+    };
+    !prefix.is_empty()
+        && d.len() <= 120
+        && prefix.split('.').all(|part| {
+            !part.is_empty()
+                && !part.starts_with('-')
+                && !part.ends_with('-')
+                && part
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        })
+}
+
+/// Validates a URL path prefix for an alias (`/media`, `/uploads`).
+pub fn valid_alias_url(u: &str) -> bool {
+    let u = u.trim();
+    u.starts_with('/')
+        && u.len() >= 2
+        && u.len() <= 80
+        && !u.ends_with('/')
+        && !u.contains("..")
+        && u.chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '/' | '-' | '_' | '.'))
+}
+
+/// Validates a portable relative path alias target (`storage/uploads` or `@other/public`).
+/// Rejects any absolute path, drive letter, or `..` traversal.
+pub fn valid_alias_target(target: &str) -> bool {
+    let t = target.trim().replace('\\', "/");
+    if t.is_empty()
+        || t.len() > 160
+        || t.starts_with('/')
+        || t.contains(':')
+        || t.contains("..")
+    {
+        return false;
+    }
+    let body = t.strip_prefix('@').unwrap_or(&t);
+    !body.is_empty()
+        && body.split('/').all(|part| {
+            part == "."
+                || (!part.is_empty()
+                    && !part.starts_with('.')
+                    && part
+                        .chars()
+                        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')))
+        })
 }
 
 /// A folder inside the project: relative, no `..`, existing, not through a
@@ -190,9 +265,22 @@ pub fn inside(project_dir: &Path, folder: &str) -> Result<(PathBuf, String)> {
 pub enum SiteKind {
     Static,
     Php,
-    /// An Apache of the project's own (`projects/apache.rs`).
+    /// An Apache of the project's own (`projects/apache.rs` or pooled server).
     Apache,
+    /// An Nginx of the project's own or pooled server.
+    Nginx,
     None,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SiteOptions {
+    #[serde(default)]
+    pub server: Option<String>,
+    #[serde(default)]
+    pub domains: Vec<String>,
+    #[serde(default)]
+    pub aliases: std::collections::BTreeMap<String, String>,
 }
 
 /// The project's panel.json changed by `edit` (its actions and its default
@@ -271,7 +359,19 @@ fn edit_panel(
 
 /// "Servi come sito web": writes (or removes, `None`) the action `site` in
 /// the project's panel.json; the rest of the file stays as it is.
+#[cfg(test)]
 pub fn set_site(project_dir: &Path, folder: &str, kind: SiteKind, lang: &str) -> Result<()> {
+    set_site_with_options(project_dir, folder, kind, &SiteOptions::default(), lang)
+}
+
+/// "Servi come sito web" with optional server profile, `.localhost` domains and path aliases.
+pub fn set_site_with_options(
+    project_dir: &Path,
+    folder: &str,
+    kind: SiteKind,
+    options: &SiteOptions,
+    lang: &str,
+) -> Result<()> {
     let site = if kind == SiteKind::None {
         None
     } else {
@@ -282,15 +382,75 @@ pub fn set_site(project_dir: &Path, folder: &str, kind: SiteKind, lang: &str) ->
             rel.clone()
         };
         let label = tr(lang, "sito web ({0})", &[&shown]);
-        Some(match kind {
+        let mut obj = match kind {
             SiteKind::Static => {
                 serde_json::json!({ "id": SITE_ACTION, "label": label, "static": rel })
             }
             SiteKind::Apache => serde_json::json!({ "id": SITE_ACTION,
                 "label": tr(lang, "sito web Apache ({0})", &[&shown]), "apache": rel }),
-            _ => serde_json::json!({ "id": SITE_ACTION, "label": label, "type": "web",
-                "command": format!("php -S 127.0.0.1:{{port}} -t {}", quote(&rel)) }),
-        })
+            SiteKind::Nginx => serde_json::json!({ "id": SITE_ACTION,
+                "label": tr(lang, "sito web Nginx ({0})", &[&shown]), "nginx": rel }),
+            SiteKind::Php | SiteKind::None => {
+                serde_json::json!({ "id": SITE_ACTION, "label": label, "type": "web",
+                    "command": format!("php -S 127.0.0.1:{{port}} -t {}", quote(&rel)) })
+            }
+        };
+        if matches!(kind, SiteKind::Apache | SiteKind::Nginx) {
+            if let Some(s) = options
+                .server
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty() && *s != "auto")
+            {
+                obj["server"] = Value::String(s.to_owned());
+            }
+            let mut domains = Vec::new();
+            for d in &options.domains {
+                let d = d.trim().to_ascii_lowercase();
+                if d.is_empty() {
+                    continue;
+                }
+                if !valid_domain(&d) {
+                    bail!(
+                        "{}",
+                        tr(
+                            lang,
+                            "Dominio non valido: usa un nome che termina con .localhost (es. mio-sito.localhost).",
+                            &[]
+                        )
+                    );
+                }
+                if !domains.contains(&d) {
+                    domains.push(d);
+                }
+            }
+            if !domains.is_empty() {
+                obj["domains"] = serde_json::to_value(domains)?;
+            }
+            let mut aliases = std::collections::BTreeMap::new();
+            for (url_path, target) in &options.aliases {
+                let u = url_path.trim();
+                let t = target.trim().replace('\\', "/");
+                if u.is_empty() && t.is_empty() {
+                    continue;
+                }
+                if !valid_alias_url(u) || !valid_alias_target(&t) {
+                    bail!(
+                        "{}",
+                        tr(
+                            lang,
+                            "Alias non valido: usa un percorso /url e una cartella relativa (niente percorsi assoluti o ..).",
+                            &[]
+                        )
+                    );
+                }
+                aliases.insert(u.to_owned(), t);
+            }
+            if !aliases.is_empty() {
+                obj["aliases"] = serde_json::to_value(aliases)?;
+            }
+        }
+        Some(obj)
     };
     edit_panel(project_dir, lang, |actions, default| {
         actions.retain(|a| a.get("id").and_then(Value::as_str) != Some(SITE_ACTION));

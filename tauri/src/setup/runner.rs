@@ -666,7 +666,7 @@ mod tests {
             assert_eq!(p.handle, ["java", "kotlin"], "catalog order");
             assert!(p.remove.is_empty());
             let p = plan_with(ctx, &choice, &["apache"], &[]).unwrap();
-            assert_eq!(p.handle, ["php", "apache"]);
+            assert_eq!(p.handle, ["apache", "php"]);
 
             fake_install(ctx, "java");
             let p = plan_with(ctx, &choice, &["kotlin"], &[]).unwrap();

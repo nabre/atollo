@@ -355,6 +355,7 @@ impl Runner {
             None => dir.to_path_buf(),
         };
 
+        let job = Job::new()?;
         let (mut cmd, shown) = if let Some(folder) = &action.static_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             let exe = std::env::current_exe()?;
@@ -371,14 +372,36 @@ impl Runner {
             let cmd = crate::projects::apache::command(
                 &self.kit,
                 id,
+                dir,
                 &root,
                 port.unwrap_or(PORT_FROM),
                 lan,
+                &action.domains,
+                &action.aliases,
                 env,
             )?;
             (
                 cmd,
                 format!("httpd.exe -f data\\app\\projects\\{id}\\apache\\httpd.conf ({folder})"),
+            )
+        } else if let Some(folder) = &action.nginx_dir {
+            let root = detect::inside_dir(&cwd, folder)?;
+            let fcgi_port = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job);
+            let cmd = crate::projects::nginx::command(
+                &self.kit,
+                id,
+                dir,
+                &root,
+                port.unwrap_or(PORT_FROM),
+                fcgi_port,
+                lan,
+                &action.domains,
+                &action.aliases,
+                env,
+            )?;
+            (
+                cmd,
+                format!("nginx.exe -c data\\app\\projects\\{id}\\nginx\\nginx.conf ({folder})"),
             )
         } else {
             let command = listen(&action.command);
@@ -437,7 +460,6 @@ impl Runner {
         });
         header.push(String::new());
 
-        let job = Job::new()?;
         let spawned = jobs::spawn_in(&mut cmd, &job);
         let mut child: Child = match spawned {
             Ok(c) => c,

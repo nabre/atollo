@@ -197,6 +197,7 @@ impl KitEnv {
         env.set("CP_LANG", lang);
         env.set("CP_ROOT_FWD", fwd(root));
         env.set("CP_APPS_FWD", fwd(&apps));
+        env.set("CP_PROJECTS_FWD", fwd(&kit.projects()));
 
         // Claude Code, Codex, Antigravity (_env.cmd:55-73)
         env.set_path("CLAUDE_CONFIG_DIR", home.join(".claude"));
@@ -267,6 +268,10 @@ impl KitEnv {
         // Apache's PHP, with `/`: it follows CP_PHP when a version is chosen
         // for the kit or a project (versions::apply).
         env.set("CP_PHP_FWD", fwd(&app("php")));
+        env.set_path("CP_APACHE", app("apache"));
+        env.set("CP_APACHE_FWD", fwd(&app("apache")));
+        env.set_path("CP_NGINX", app("nginx"));
+        env.set("CP_NGINX_FWD", fwd(&app("nginx")));
         let composer = data.join("composer");
         env.set_path("COMPOSER_HOME", &composer);
         env.set_path("COMPOSER_CACHE_DIR", data.join(r"cache\composer"));
@@ -369,6 +374,12 @@ impl KitEnv {
         if has(r"php\php.exe") {
             path.push(app("php"));
             path.push(composer.join(r"vendor\bin"));
+        }
+        if has(r"apache\bin\httpd.exe") {
+            path.push(app(r"apache\bin"));
+        }
+        if has(r"nginx\nginx.exe") {
+            path.push(app("nginx"));
         }
         if !cargo.join(r"bin\cargo.exe").is_file() {
             path.extend(

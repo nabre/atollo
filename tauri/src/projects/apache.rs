@@ -8,6 +8,7 @@
 //! the user: `.conf` files in `conf.d\` next to it, which the kit never
 //! touches.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -20,46 +21,173 @@ use crate::kit::Kit;
 use crate::os::jobs;
 
 /// `C:\a\b` as Apache wants it: `C:/a/b`.
-fn fwd(p: &Path) -> String {
+pub fn fwd(p: &Path) -> String {
     p.display().to_string().replace('\\', "/")
 }
 
 /// PHP in `kit.conf` of an older kit, `${CP_APPS_FWD}/php/`: its folder now
 /// holds one folder per version (versions/mod.rs), the default is
-/// `${CP_PHP_FWD}`. The only change the kit makes to that file.
+/// `${CP_PHP_FWD}`. Also updates migrated `httpd.conf` files from
+/// `${CP_APPS_FWD}/apache` to `${CP_APACHE_FWD}`.
 pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
     let conf = kit.data().join(r"apache\kit.conf");
-    let Ok(text) = fs::read_to_string(&conf) else {
-        return Ok(());
-    };
-    let fixed = text.replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/");
-    if fixed != text {
-        write_atomic(&conf, fixed.as_bytes()).with_context(|| conf.display().to_string())?;
+    if let Ok(text) = fs::read_to_string(&conf) {
+        let fixed = text.replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/");
+        if fixed != text {
+            write_atomic(&conf, fixed.as_bytes()).with_context(|| conf.display().to_string())?;
+        }
+    }
+    let store = kit.apps().join("apache");
+    let mut dirs = vec![store.clone()];
+    if let Ok(entries) = fs::read_dir(&store) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                dirs.push(entry.path());
+            }
+        }
+    }
+    for dir in dirs {
+        let httpd = dir.join(r"conf\httpd.conf");
+        if let Ok(text) = fs::read_to_string(&httpd) {
+            let fixed = text.replace(
+                "Define SRVROOT \"${CP_APPS_FWD}/apache\"",
+                "Define SRVROOT \"${CP_APACHE_FWD}\"",
+            );
+            if fixed != text {
+                write_atomic(&httpd, fixed.as_bytes())
+                    .with_context(|| httpd.display().to_string())?;
+            }
+        }
     }
     Ok(())
 }
 
-/// The project's configuration: the kit's httpd.conf (modules, MIME types)
-/// without its Dev-Kit tail, then the project's site.
-pub fn project_conf(base: &str, root: &Path, dir: &Path, port: u16, lan: bool) -> Result<String> {
+/// Dynamic `<IfFile>` blocks for PHP 8, PHP 7, and PHP 5 Thread-Safe Apache modules.
+pub fn php_module_blocks(php_var: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    for (dll, ts, module) in [
+        ("php8apache2_4.dll", "php8ts.dll", "php_module"),
+        ("php7apache2_4.dll", "php7ts.dll", "php7_module"),
+        ("php5apache2_4.dll", "php5ts.dll", "php5_module"),
+    ] {
+        out.extend([
+            format!("<IfFile \"${{{php_var}}}/{dll}\">"),
+            format!("    LoadFile \"${{{php_var}}}/{ts}\""),
+            format!("    LoadModule {module} \"${{{php_var}}}/{dll}\""),
+            "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"".to_owned(),
+            "    <FilesMatch \"\\.php$\">".to_owned(),
+            "        SetHandler application/x-httpd-php".to_owned(),
+            "    </FilesMatch>".to_owned(),
+            "</IfFile>".to_owned(),
+        ]);
+    }
+    out
+}
+
+/// Resolves a portable relative alias target (`storage/media` or `../other/assets`)
+/// to an Apache configuration path using `${CP_PROJECT_FWD}` or `${CP_PROJECTS_FWD}`.
+pub fn alias_target_expr(project_var: &str, rel_target: &str) -> String {
+    let clean = rel_target.replace('\\', "/");
+    let clean = clean.trim_matches('/');
+    if let Some(rest) = clean.strip_prefix("../") {
+        let rest = rest.trim_matches('/');
+        if rest.is_empty() {
+            "${CP_PROJECTS_FWD}".to_owned()
+        } else {
+            format!("${{CP_PROJECTS_FWD}}/{rest}")
+        }
+    } else if clean.is_empty() {
+        format!("${{{project_var}}}")
+    } else {
+        format!("${{{project_var}}}/{clean}")
+    }
+}
+
+/// Directives (`Alias` + `<Directory>`) for portable path aliases.
+pub fn alias_directives(
+    project_var: &str,
+    aliases: &BTreeMap<String, String>,
+    indent: &str,
+) -> Vec<String> {
+    let mut lines = Vec::new();
+    for (url_path, rel_target) in aliases {
+        let url_clean = url_path.trim_end_matches('/');
+        if url_clean.is_empty() || !url_clean.starts_with('/') {
+            continue;
+        }
+        let target = alias_target_expr(project_var, rel_target);
+        lines.push(format!("{indent}Alias \"{url_clean}\" \"{target}\""));
+        lines.push(format!("{indent}<Directory \"{target}\">"));
+        lines.push(format!("{indent}    Options Indexes FollowSymLinks"));
+        lines.push(format!("{indent}    AllowOverride All"));
+        lines.push(format!("{indent}    Require all granted"));
+        lines.push(format!("{indent}</Directory>"));
+    }
+    lines
+}
+
+/// Strips the Dev-Kit tail from `conf\httpd.conf`.
+pub fn strip_kit_tail(base: &str) -> Result<String> {
     if !base.contains("Define SRVROOT") {
         bail!("httpd.conf in an unexpected format (no Define SRVROOT)");
     }
-    let kit_part = base
+    Ok(base
         .lines()
         .filter(|l| !l.contains("# --- Dev-Kit ---") && !l.contains("/data/apache/kit.conf"))
         .collect::<Vec<_>>()
-        .join("\r\n");
+        .join("\r\n"))
+}
+
+/// The project's configuration: the kit's httpd.conf (modules, MIME types)
+/// without its Dev-Kit tail, then the project's site.
+#[cfg(test)]
+pub fn project_conf(base: &str, root: &Path, dir: &Path, port: u16, lan: bool) -> Result<String> {
+    project_conf_with_site(base, None, root, dir, port, lan, &[], &BTreeMap::new())
+}
+
+/// Like [`project_conf`], with optional project id (`.localhost` alias),
+/// extra `.localhost` domains, and portable path aliases.
+#[allow(clippy::too_many_arguments)]
+pub fn project_conf_with_site(
+    base: &str,
+    project: Option<&str>,
+    root: &Path,
+    dir: &Path,
+    port: u16,
+    lan: bool,
+    domains: &[String],
+    aliases: &BTreeMap<String, String>,
+) -> Result<String> {
+    let kit_part = strip_kit_tail(base)?;
     let (root, dir) = (fwd(root), fwd(dir));
     let listen = if lan {
         port.to_string()
     } else {
         format!("127.0.0.1:{port}")
     };
-    let site = [
+    let mut server_aliases: Vec<String> = Vec::new();
+    if let Some(p) = project.filter(|p| !p.is_empty()) {
+        let def = format!("{p}.localhost");
+        if !server_aliases.contains(&def) {
+            server_aliases.push(def);
+        }
+    }
+    for d in domains {
+        let d = d.trim().to_ascii_lowercase();
+        if !d.is_empty() && !server_aliases.contains(&d) {
+            server_aliases.push(d);
+        }
+    }
+
+    let mut site = vec![
         "# --- Dev-Kit: this project's Apache (written at every start) ---".to_owned(),
         format!("Listen {listen}"),
         format!("ServerName localhost:{port}"),
+    ];
+    if !server_aliases.is_empty() {
+        site.push(format!("ServerAlias {}", server_aliases.join(" ")));
+    }
+    site.extend([
         format!("PidFile \"{dir}/httpd.pid\""),
         format!("ErrorLog \"{dir}/error.log\""),
         "<IfModule log_config_module>".to_owned(),
@@ -71,19 +199,13 @@ pub fn project_conf(base: &str, root: &Path, dir: &Path, port: u16, lan: bool) -
         "    AllowOverride All".to_owned(),
         "    Require all granted".to_owned(),
         "</Directory>".to_owned(),
-        "DirectoryIndex index.php index.html".to_owned(),
-        "<IfFile \"${CP_PHP_FWD}/php8apache2_4.dll\">".to_owned(),
-        "    LoadFile \"${CP_PHP_FWD}/php8ts.dll\"".to_owned(),
-        "    LoadModule php_module \"${CP_PHP_FWD}/php8apache2_4.dll\"".to_owned(),
-        "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"".to_owned(),
-        "    <FilesMatch \"\\.php$\">".to_owned(),
-        "        SetHandler application/x-httpd-php".to_owned(),
-        "    </FilesMatch>".to_owned(),
-        "</IfFile>".to_owned(),
-        format!("IncludeOptional \"{dir}/conf.d/*.conf\""),
-    ]
-    .join("\r\n");
-    Ok(format!("{}\r\n\r\n{site}\r\n", kit_part.trim_end()))
+    ]);
+    site.extend(alias_directives("CP_PROJECT_FWD", aliases, ""));
+    site.push("DirectoryIndex index.php index.html".to_owned());
+    site.extend(php_module_blocks("CP_PHP_FWD"));
+    site.push(format!("IncludeOptional \"{dir}/conf.d/*.conf\""));
+    let joined = site.join("\r\n");
+    Ok(format!("{}\r\n\r\n{joined}\r\n", kit_part.trim_end()))
 }
 
 /// The folder of the project's Apache files.
@@ -93,16 +215,35 @@ pub fn dir(kit: &Kit, project: &str) -> Result<PathBuf> {
         .ok_or_else(|| anyhow!("not a project name: {project}"))
 }
 
+/// Resolves the Apache installation directory from `env` (`CP_APACHE`) or the kit's default line.
+pub fn apache_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
+    env.get("CP_APACHE")
+        .map(PathBuf::from)
+        .filter(|d| d.join(r"bin\httpd.exe").is_file())
+        .unwrap_or_else(|| {
+            let resolved = crate::setup::catalog::kit_path(kit, "apache");
+            if resolved.join(r"bin\httpd.exe").is_file() {
+                resolved
+            } else {
+                kit.apps().join("apache")
+            }
+        })
+}
+
 /// `httpd.exe -f <project conf>`, the configuration written for `root`.
+#[allow(clippy::too_many_arguments)]
 pub fn command(
     kit: &Kit,
     project: &str,
-    root: &Path,
+    project_root: &Path,
+    doc_root: &Path,
     port: u16,
     lan: bool,
+    domains: &[String],
+    aliases: &BTreeMap<String, String>,
     env: &KitEnv,
 ) -> Result<Command> {
-    let apache = kit.apps().join("apache");
+    let apache = apache_dir(kit, env);
     let exe = apache.join(r"bin\httpd.exe");
     if !exe.is_file() {
         bail!("Apache is not installed (Strumenti > Apache)");
@@ -113,10 +254,25 @@ pub fn command(
     let conf = dir.join("httpd.conf");
     write_atomic(
         &conf,
-        project_conf(&base, root, &dir, port, lan)?.as_bytes(),
+        project_conf_with_site(
+            &base,
+            Some(project),
+            doc_root,
+            &dir,
+            port,
+            lan,
+            domains,
+            aliases,
+        )?
+        .as_bytes(),
     )?;
     let mut cmd = jobs::kit_command(&exe, env);
-    cmd.arg("-f").arg(&conf);
+    cmd.env("CP_APACHE", apache.display().to_string())
+        .env("CP_APACHE_FWD", fwd(&apache))
+        .env("CP_PROJECT_FWD", fwd(project_root))
+        .env("CP_PROJECTS_FWD", fwd(&kit.projects()))
+        .arg("-f")
+        .arg(&conf);
     Ok(cmd)
 }
 
@@ -126,7 +282,7 @@ mod tests {
 
     #[test]
     fn conf_of_a_project() {
-        let base = "Define SRVROOT \"${CP_APPS_FWD}/apache\"\r\nServerRoot \"${SRVROOT}\"\r\n\r\n# --- Dev-Kit ---\r\nInclude \"${CP_ROOT_FWD}/data/apache/kit.conf\"\r\n";
+        let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\nServerRoot \"${SRVROOT}\"\r\n\r\n# --- Dev-Kit ---\r\nInclude \"${CP_ROOT_FWD}/data/apache/kit.conf\"\r\n";
         let root = Path::new(r"D:\kit\projects\shop\public");
         let dir = Path::new(r"D:\kit\data\app\projects\shop\apache");
         let c = project_conf(base, root, dir, 7105, false).unwrap();
@@ -135,11 +291,32 @@ mod tests {
         assert!(c.contains("Listen 127.0.0.1:7105\r\n"));
         assert!(c.contains("DocumentRoot \"D:/kit/projects/shop/public\""));
         assert!(c.contains("PidFile \"D:/kit/data/app/projects/shop/apache/httpd.pid\""));
+        assert!(c.contains("php8apache2_4.dll"));
+        assert!(c.contains("php7apache2_4.dll"));
+        assert!(c.contains("php5apache2_4.dll"));
         assert!(
             c.contains("IncludeOptional \"D:/kit/data/app/projects/shop/apache/conf.d/*.conf\"")
         );
         let lan = project_conf(base, root, dir, 7105, true).unwrap();
         assert!(lan.contains("Listen 7105\r\n"));
         assert!(project_conf("Listen 80", root, dir, 7105, false).is_err());
+
+        let mut aliases = BTreeMap::new();
+        aliases.insert("/media".into(), "storage/media".into());
+        aliases.insert("/shared".into(), "../common/assets".into());
+        let with_site = project_conf_with_site(
+            base,
+            Some("shop"),
+            root,
+            dir,
+            7105,
+            false,
+            &["api.shop.localhost".into()],
+            &aliases,
+        )
+        .unwrap();
+        assert!(with_site.contains("ServerAlias shop.localhost api.shop.localhost\r\n"));
+        assert!(with_site.contains("Alias \"/media\" \"${CP_PROJECT_FWD}/storage/media\""));
+        assert!(with_site.contains("Alias \"/shared\" \"${CP_PROJECTS_FWD}/common/assets\""));
     }
 }
