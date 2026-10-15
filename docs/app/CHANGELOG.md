@@ -1,5 +1,15 @@
 # Novità
 
+## Versioni dei linguaggi per il kit e per ogni progetto (15/10/2026)
+
+**Fatto**
+- **Versioni conservate** (D-80): per Python, Node.js, PHP, Go, Java, .NET e gli altri linguaggi, un aggiornamento che cambia la versione minore conserva la vecchia in `datapps\<piattaforma>ersions\<id>\<major.minor>`; una patch sostituisce come prima.
+- **Scaricare altre versioni** dalla pagina Strumenti › Versioni (Node.js, Python, Go, Java, .NET, Zig, PHP), rimuoverle e scegliere quella che usa tutto il kit.
+- **Versione per progetto**: pagina del progetto › Componenti › Versioni. Vale per terminale, azioni e agenti del progetto e per i terminali PowerShell dell'editor (`versions.json` letto da `profile.ps1`).
+- `php.ini` trova le estensioni con `${CP_PHP}`, la cartella del PHP in uso.
+
+**Verificato**: 224 test Rust, clippy e fmt puliti; ESLint, tipi e 23 test dell'interfaccia; profilo provato in PowerShell; anteprima nel browser. Da provare nell'app: download reale di una linea e terminale dell'editor in un progetto con versione scelta.
+
 ## Contenuto dei database e pagine più chiare (15/10/2026)
 
 **Fatto**

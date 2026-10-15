@@ -31,6 +31,7 @@ import { Checkbox, SettingsEditor, SettingsGroup, SingleEditor } from "./workben
 
 import { SetupProgress, setupToShow } from "./setup";
 import { ExtensionsMatrixSection } from "./extensions";
+import { VersionsSection } from "./versions";
 import { ComponentLogo } from "./logos";
 import { Tag } from "./tags";
 
@@ -268,7 +269,12 @@ export function ComponentsPage({
             )
             .map((g) => ({ id: `group-${g.id}`, label: g.title })),
 
-          ...(firstRun ? [] : [{ id: "ext-matrix", label: t("Estensioni dell'editor") }]),
+          ...(firstRun
+            ? []
+            : [
+                { id: "group-versions", label: t("Versioni") },
+                { id: "ext-matrix", label: t("Estensioni dell'editor") },
+              ]),
         ]}
         search={search}
         onSearch={setSearch}
@@ -354,6 +360,7 @@ export function ComponentsPage({
             </SettingsGroup>
           );
         })}
+        {!firstRun && <VersionsSection setup={setup} />}
         {!firstRun && words.length === 0 && (
           <div className="max-w-[880px] px-[14px]" data-setting>
             <ExtensionsMatrixSection projects={projects} components={list} />

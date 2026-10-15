@@ -48,6 +48,7 @@ import { SecretField } from "./databases";
 import { ProjectExtensions } from "./extensions";
 import { EditorSettingsBox } from "./editorsettings";
 import { DatabaseCopies } from "./backups";
+import { ProjectVersions } from "./versions";
 import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine, useAction } from "./pages";
@@ -758,7 +759,12 @@ export function ProjectPage({
             <SiteForm project={p} onChanged={onChanged} />
           </EditorSection>
         )}
-        {section === "components" && <Needs p={p} onChanged={changed} />}
+        {section === "components" && (
+          <>
+            <Needs p={p} onChanged={changed} />
+            <ProjectVersions project={p.id} />
+          </>
+        )}
         {section === "databases" && <Databases p={p} dbs={dbs} onChanged={reload} />}
         {section === "extensions" && <ProjectExtensions project={p} onChanged={onChanged} />}
         {section === "editor" && <EditorSettingsBox project={p.id} />}

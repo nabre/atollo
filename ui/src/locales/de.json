@@ -445,5 +445,20 @@
   "La lingua di NEXKORA.": "Die Sprache von NEXKORA.",
   "Apri la cartella dei progetti": "Projektordner öffnen",
   "Mostra il pannello": "Panel anzeigen",
-  "Nascondi il pannello": "Panel ausblenden"
+  "Nascondi il pannello": "Panel ausblenden",
+  "{0}, predefinita": "{0}, Standard",
+  "Scarica un'altra versione": "Andere Version herunterladen",
+  "Versione da scaricare": "Herunterzuladende Version",
+  "Nessuna altra versione": "Keine andere Version",
+  "Scarica": "Herunterladen",
+  "Un aggiornamento che cambia la versione minore conserva quella vecchia. La versione scelta qui vale per tutto il kit; ogni progetto può sceglierne un'altra nella sua pagina.": "Ein Update, das die Minor-Version ändert, behält die alte. Die hier gewählte Version gilt für das ganze Kit; jedes Projekt kann auf seiner Seite eine andere wählen.",
+  "versione": "Version",
+  "Versione di {0} per il kit": "Version von {0} für das Kit",
+  "Versioni conservate di {0}": "Behaltene Versionen von {0}",
+  "Rimuovi {0} {1}": "{0} {1} entfernen",
+  "Nessun linguaggio con più versioni installato.": "Keine Sprache mit mehreren Versionen installiert.",
+  "Valgono per terminale, azioni e agenti del progetto, e per i terminali dell'editor aperti da adesso. Altre versioni si scaricano in Strumenti.": "Sie gelten für Terminal, Aktionen und Agenten des Projekts sowie für ab jetzt geöffnete Terminals des Editors. Weitere Versionen werden unter Werkzeuge heruntergeladen.",
+  "Nessun linguaggio ha altre versioni conservate.": "Keine Sprache hat weitere behaltene Versionen.",
+  "Come il kit ({0})": "Wie das Kit ({0})",
+  "{0} (non più presente: si usa la predefinita)": "{0} (nicht mehr vorhanden: die Standardversion wird verwendet)"
 }

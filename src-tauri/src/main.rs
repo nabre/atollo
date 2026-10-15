@@ -53,6 +53,7 @@ mod signature;
 mod stats;
 mod terminal;
 mod verify;
+mod versions;
 mod webview;
 mod wterm;
 

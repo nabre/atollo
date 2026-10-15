@@ -252,10 +252,57 @@ pub fn pick_composer(versions: &Value) -> Result<(String, String)> {
     ))
 }
 
+/// The branches of `releases.json` with a Thread Safe x64 build, newest first.
+pub fn php_lines(releases: &Value) -> Vec<String> {
+    let mut out: Vec<String> = releases
+        .as_object()
+        .into_iter()
+        .flatten()
+        .map(|(k, _)| k.clone())
+        .filter(|k| crate::versions::valid_line(k) && pick_php(releases, Some(k)).is_ok())
+        .collect();
+    out.sort_by_key(|l| std::cmp::Reverse(super::lang::version_key(l)));
+    out
+}
+
+const PHP_RELEASES: &str = "https://windows.php.net/downloads/releases";
+
+/// The PHP zip of a branch, the part that becomes the `php` folder.
+fn php_part(path: String, sha: String) -> Part {
+    Part {
+        url: format!("{PHP_RELEASES}/{path}"),
+        file_name: path,
+        expect: Expect::Sha256(sha),
+        kind: Kind::Zip,
+        inner: Inner::Root,
+        dest: Dest::Own,
+        sign: None,
+    }
+}
+
 impl Installer for Php {
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        Ok(php_lines(
+            &ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?,
+        ))
+    }
+
+    /// PHP only: Composer stays the default's.
+    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
+        let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
+        let (version, path, sha) = pick_php(&releases, Some(line))?;
+        Ok(Release {
+            version,
+            parts: vec![php_part(path, sha)],
+        })
+    }
+
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
-        let base = "https://windows.php.net/downloads/releases";
-        let releases: Value = ctx.net.json(&format!("{base}/releases.json"))?;
+        let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
         let branch = Settings::load(ctx.kit).settings.php_version;
         let (version, path, sha) = pick_php(&releases, branch.as_deref())?;
         let (composer_version, composer) =
@@ -268,15 +315,7 @@ impl Installer for Php {
         Ok(Release {
             version: format!("{version} (Composer {composer_version})"),
             parts: vec![
-                Part {
-                    url: format!("{base}/{path}"),
-                    file_name: path,
-                    expect: Expect::Sha256(sha),
-                    kind: Kind::Zip,
-                    inner: Inner::Root,
-                    dest: Dest::Own,
-                    sign: None,
-                },
+                php_part(path, sha),
                 Part {
                     url: composer,
                     file_name: "composer.phar".into(),
@@ -335,6 +374,13 @@ impl Installer for Php {
                 .context("php.ini-development")?;
             fs::create_dir_all(ini.parent().unwrap_or(dest))?;
             write_atomic(&ini, php_ini(&template)?.as_bytes())?;
+        } else if let Ok(text) = fs::read_to_string(&ini) {
+            // Written before the saved versions (D-80): the paths follow the
+            // PHP in use, not the default folder.
+            let new = php_ini_paths(&text);
+            if new != text {
+                write_atomic(&ini, new.as_bytes())?;
+            }
         }
         let tools = ctx.kit.apps().join("tools");
         write_atomic(
@@ -349,6 +395,11 @@ impl Installer for Php {
     }
 }
 
+/// `${CP_APPS}\php\…` of an older kit's `php.ini` as `${CP_PHP}\…`.
+pub fn php_ini_paths(text: &str) -> String {
+    text.replace(r"${CP_APPS}\php\", r"${CP_PHP}\")
+}
+
 /// The kit's `php.ini` from `php.ini-development`: paths through the kit
 /// variables (valid on any drive letter), common extensions on,
 /// Europe/Rome, CA bundle for curl and OpenSSL.
@@ -357,7 +408,7 @@ pub fn php_ini(template: &str) -> Result<String> {
     let swaps: [(&str, &str); 5] = [
         (
             r#"(?m)^;\s*extension_dir\s*=\s*"ext"[ \t]*(\r?)$"#,
-            r#"extension_dir = "$${CP_APPS}\php\ext"$1"#,
+            r#"extension_dir = "$${CP_PHP}\ext"$1"#,
         ),
         (
             r"(?m)^;(extension=(?:curl|fileinfo|gd|intl|mbstring|mysqli|openssl|pdo_mysql|pdo_sqlite|sodium|sqlite3|zip))[ \t]*(\r?)$",
@@ -369,11 +420,11 @@ pub fn php_ini(template: &str) -> Result<String> {
         ),
         (
             r"(?m)^;curl\.cainfo\s*=[^\r\n]*",
-            r#"curl.cainfo = "$${CP_APPS}\php\extras\ssl\cacert.pem""#,
+            r#"curl.cainfo = "$${CP_PHP}\extras\ssl\cacert.pem""#,
         ),
         (
             r"(?m)^;openssl\.cafile\s*=[^\r\n]*",
-            r#"openssl.cafile = "$${CP_APPS}\php\extras\ssl\cacert.pem""#,
+            r#"openssl.cafile = "$${CP_PHP}\extras\ssl\cacert.pem""#,
         ),
     ];
     for (re, with) in swaps {
@@ -521,7 +572,7 @@ mod tests {
         let template = ";extension_dir = \"ext\"\r\n;extension=curl\r\n;extension=ldap\r\n;date.timezone =\r\n;curl.cainfo =\r\n;openssl.cafile=\r\n";
         let ini = php_ini(template).unwrap();
         assert!(
-            ini.contains("extension_dir = \"${CP_APPS}\\php\\ext\"\r\n"),
+            ini.contains("extension_dir = \"${CP_PHP}\\ext\"\r\n"),
             "{ini}"
         );
         assert!(ini.contains("\r\nextension=curl\r\n"));
@@ -530,8 +581,13 @@ mod tests {
             "not in the list: stays off"
         );
         assert!(ini.contains("date.timezone = Europe/Rome"));
-        assert!(ini.contains("curl.cainfo = \"${CP_APPS}\\php\\extras\\ssl\\cacert.pem\""));
-        assert!(ini.contains("openssl.cafile = \"${CP_APPS}\\php\\extras\\ssl\\cacert.pem\""));
+        assert!(ini.contains("curl.cainfo = \"${CP_PHP}\\extras\\ssl\\cacert.pem\""));
+        assert!(ini.contains("openssl.cafile = \"${CP_PHP}\\extras\\ssl\\cacert.pem\""));
+        // The php.ini of an older kit follows the PHP in use too.
+        assert_eq!(
+            php_ini_paths("extension_dir = \"${CP_APPS}\\php\\ext\"\r\n"),
+            "extension_dir = \"${CP_PHP}\\ext\"\r\n"
+        );
     }
 
     #[test]
@@ -550,6 +606,7 @@ mod tests {
         );
         assert_eq!(pick_php(&releases, Some("8.3")).unwrap().0, "8.3.20");
         assert!(pick_php(&releases, Some("7.4")).is_err());
+        assert_eq!(php_lines(&releases), ["8.4", "8.3"]);
     }
 
     #[test]

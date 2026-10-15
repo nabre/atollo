@@ -46,30 +46,60 @@ fn file_name_of(url: &str) -> String {
 
 pub struct Go;
 
-impl Installer for Go {
-    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let arch = if arch_of(ctx, component) == "arm64" {
-            "arm64"
+/// The Windows archive for `arch` of a release of go.dev's list.
+fn go_file<'a>(rel: &'a Value, arch: &str) -> Option<&'a Value> {
+    rel.get("files")?.as_array()?.iter().find(|f| {
+        f.get("os").and_then(Value::as_str) == Some("windows")
+            && f.get("arch").and_then(Value::as_str) == Some(arch)
+            && f.get("kind").and_then(Value::as_str) == Some("archive")
+    })
+}
+
+fn go_arch(ctx: &Ctx, component: &Component) -> &'static str {
+    if arch_of(ctx, component) == "arm64" {
+        "arm64"
+    } else {
+        "amd64"
+    }
+}
+
+/// The stable lines of go.dev's full list (`include=all`), newest first.
+pub fn go_lines(list: &[Value], arch: &str) -> Vec<String> {
+    let mut out: Vec<String> = list
+        .iter()
+        .filter(|r| r.get("stable") == Some(&Value::Bool(true)) && go_file(r, arch).is_some())
+        .filter_map(|r| crate::versions::line_of(r.get("version")?.as_str()?))
+        .collect();
+    out.sort_by_key(|l| std::cmp::Reverse(version_key(l)));
+    out.dedup();
+    out
+}
+
+impl Go {
+    fn release(ctx: &Ctx, component: &Component, line: Option<&str>) -> Result<Release> {
+        let arch = go_arch(ctx, component);
+        let url = if line.is_some() {
+            "https://go.dev/dl/?mode=json&include=all"
         } else {
-            "amd64"
+            "https://go.dev/dl/?mode=json"
         };
-        let list: Vec<Value> = ctx.net.json("https://go.dev/dl/?mode=json")?;
+        let list: Vec<Value> = ctx.net.json(url)?;
+        // Newest first in the list; the full list is checked anyway.
         let rel = list
             .iter()
-            .find(|r| r.get("stable") == Some(&Value::Bool(true)))
-            .ok_or_else(|| anyhow!("no stable Go"))?;
-        let files = rel
-            .get("files")
-            .and_then(Value::as_array)
-            .ok_or_else(|| anyhow!("Go: no files"))?;
-        let f = files
-            .iter()
-            .find(|f| {
-                f.get("os").and_then(Value::as_str) == Some("windows")
-                    && f.get("arch").and_then(Value::as_str) == Some(arch)
-                    && f.get("kind").and_then(Value::as_str) == Some("archive")
+            .filter(|r| r.get("stable") == Some(&Value::Bool(true)) && go_file(r, arch).is_some())
+            .filter(|r| {
+                line.is_none_or(|l| {
+                    r.get("version")
+                        .and_then(Value::as_str)
+                        .and_then(crate::versions::line_of)
+                        .as_deref()
+                        == Some(l)
+                })
             })
-            .ok_or_else(|| anyhow!("no Go archive for windows/{arch}"))?;
+            .max_by_key(|r| version_key(r.get("version").and_then(Value::as_str).unwrap_or("")))
+            .ok_or_else(|| anyhow!("no stable Go {}", line.unwrap_or("")))?;
+        let f = go_file(rel, arch).ok_or_else(|| anyhow!("no Go archive for windows/{arch}"))?;
         let name = s(f, "filename")?;
         Ok(Release::single(
             s(rel, "version")?.trim_start_matches("go").to_owned(),
@@ -82,16 +112,115 @@ impl Installer for Go {
     }
 }
 
+impl Installer for Go {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        Go::release(ctx, component, None)
+    }
+
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        let list: Vec<Value> = ctx.net.json("https://go.dev/dl/?mode=json&include=all")?;
+        Ok(go_lines(&list, go_arch(ctx, component)))
+    }
+
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        Go::release(ctx, component, Some(line))
+    }
+}
+
 /// Java: Temurin JDK (latest LTS), with Maven and Gradle in their folders.
 pub struct Java;
 
+/// The newest Temurin JDK zip of `feature` (21, 25...) for this kit:
+/// its version and the part that becomes the `java` folder.
+fn temurin(ctx: &Ctx, component: &Component, feature: u64) -> Result<(String, Part)> {
+    let arch = if arch_of(ctx, component) == "arm64" {
+        "aarch64"
+    } else {
+        "x64"
+    };
+    let assets: Vec<Value> = ctx.net.json(&format!(
+        "https://api.adoptium.net/v3/assets/latest/{feature}/hotspot?architecture={arch}&image_type=jdk&os=windows&vendor=eclipse"
+    ))?;
+    let jdk = assets
+        .iter()
+        .find(|a| {
+            a.pointer("/binary/package/name")
+                .and_then(Value::as_str)
+                .is_some_and(|n| n.ends_with(".zip"))
+        })
+        .ok_or_else(|| anyhow!("no Temurin {feature} zip for {arch}"))?;
+    let pkg = jdk
+        .pointer("/binary/package")
+        .ok_or_else(|| anyhow!("Adoptium: no package"))?;
+    let version = jdk
+        .pointer("/version/semver")
+        .and_then(Value::as_str)
+        .unwrap_or("?")
+        .to_owned();
+    Ok((
+        version,
+        Part {
+            url: s(pkg, "link")?.to_owned(),
+            file_name: s(pkg, "name")?.to_owned(),
+            expect: Expect::Sha256(s(pkg, "checksum")?.to_owned()),
+            kind: Kind::Zip,
+            inner: Inner::Single,
+            dest: Dest::Own,
+            sign: None,
+        },
+    ))
+}
+
+/// The feature versions of Adoptium's `available_releases`: LTS ones and the
+/// newest, as lines (`25.0`), newest first.
+pub fn java_lines(info: &Value) -> Vec<String> {
+    let list = |key: &str| -> Vec<u64> {
+        info.get(key)
+            .and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(Value::as_u64).collect())
+            .unwrap_or_default()
+    };
+    let mut features = list("available_lts_releases");
+    features.extend(
+        info.get("most_recent_feature_release")
+            .and_then(Value::as_u64),
+    );
+    features.sort_unstable_by(|a, b| b.cmp(a));
+    features.dedup();
+    features.iter().map(|f| format!("{f}.0")).collect()
+}
+
 impl Installer for Java {
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        let info: Value = ctx
+            .net
+            .json("https://api.adoptium.net/v3/info/available_releases")?;
+        Ok(java_lines(&info))
+    }
+
+    /// The JDK only: Maven and Gradle stay those of the default.
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        let feature = line
+            .split('.')
+            .next()
+            .and_then(|f| f.parse::<u64>().ok())
+            .ok_or_else(|| anyhow!("Java {line}"))?;
+        let (version, part) = temurin(ctx, component, feature)?;
+        Ok(Release {
+            version,
+            parts: vec![part],
+        })
+    }
+
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let arch = if arch_of(ctx, component) == "arm64" {
-            "aarch64"
-        } else {
-            "x64"
-        };
         let info: Value = ctx
             .net
             .json("https://api.adoptium.net/v3/info/available_releases")?;
@@ -99,25 +228,7 @@ impl Installer for Java {
             .get("most_recent_lts")
             .and_then(Value::as_u64)
             .ok_or_else(|| anyhow!("Adoptium: no LTS"))?;
-        let assets: Vec<Value> = ctx.net.json(&format!(
-            "https://api.adoptium.net/v3/assets/latest/{lts}/hotspot?architecture={arch}&image_type=jdk&os=windows&vendor=eclipse"
-        ))?;
-        let jdk = assets
-            .iter()
-            .find(|a| {
-                a.pointer("/binary/package/name")
-                    .and_then(Value::as_str)
-                    .is_some_and(|n| n.ends_with(".zip"))
-            })
-            .ok_or_else(|| anyhow!("no Temurin {lts} zip for {arch}"))?;
-        let pkg = jdk
-            .pointer("/binary/package")
-            .ok_or_else(|| anyhow!("Adoptium: no package"))?;
-        let java_version = jdk
-            .pointer("/version/semver")
-            .and_then(Value::as_str)
-            .unwrap_or("?")
-            .to_owned();
+        let (java_version, jdk) = temurin(ctx, component, lts)?;
 
         let meta = ctx.net.text(
             "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml",
@@ -147,15 +258,7 @@ impl Installer for Java {
         Ok(Release {
             version: format!("{java_version} (Maven {maven}, Gradle {gradle_version})"),
             parts: vec![
-                Part {
-                    url: s(pkg, "link")?.to_owned(),
-                    file_name: s(pkg, "name")?.to_owned(),
-                    expect: Expect::Sha256(s(pkg, "checksum")?.to_owned()),
-                    kind: Kind::Zip,
-                    inner: Inner::Single,
-                    dest: Dest::Own,
-                    sign: None,
-                },
+                jdk,
                 Part {
                     url: maven_url,
                     file_name: maven_zip,
@@ -217,63 +320,105 @@ impl Installer for Kotlin {
 /// .NET SDK of the active LTS channel.
 pub struct Dotnet;
 
+const DOTNET_INDEX: &str =
+    "https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json";
+
+fn dotnet_channels(index: &Value) -> impl Iterator<Item = &Value> {
+    index
+        .get("releases-index")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+}
+
+/// The channels of .NET that are not previews (`10.0`, `9.0`...), newest first.
+pub fn dotnet_lines(index: &Value) -> Vec<String> {
+    let mut out: Vec<String> = dotnet_channels(index)
+        .filter(|c| {
+            !matches!(
+                c.get("support-phase").and_then(Value::as_str),
+                Some("preview" | "go-live")
+            )
+        })
+        .filter_map(|c| c.get("channel-version")?.as_str().map(str::to_owned))
+        .filter(|v| crate::versions::valid_line(v))
+        .collect();
+    out.sort_by_key(|l| std::cmp::Reverse(version_key(l)));
+    out
+}
+
 impl Installer for Dotnet {
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        Ok(dotnet_lines(&ctx.net.json(DOTNET_INDEX)?))
+    }
+
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        let index: Value = ctx.net.json(DOTNET_INDEX)?;
+        let channel = dotnet_channels(&index)
+            .find(|c| c.get("channel-version").and_then(Value::as_str) == Some(line))
+            .ok_or_else(|| anyhow!(".NET {line}: no channel"))?;
+        dotnet_release(ctx, component, channel)
+    }
+
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let rid = if arch_of(ctx, component) == "arm64" {
-            "win-arm64"
-        } else {
-            "win-x64"
-        };
-        let index: Value = ctx.net.json(
-            "https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json",
-        )?;
-        let channel = index
-            .get("releases-index")
-            .and_then(Value::as_array)
-            .and_then(|l| {
-                l.iter().find(|c| {
-                    c.get("release-type").and_then(Value::as_str) == Some("lts")
-                        && c.get("support-phase").and_then(Value::as_str) == Some("active")
-                })
+        let index: Value = ctx.net.json(DOTNET_INDEX)?;
+        let channel = dotnet_channels(&index)
+            .find(|c| {
+                c.get("release-type").and_then(Value::as_str) == Some("lts")
+                    && c.get("support-phase").and_then(Value::as_str) == Some("active")
             })
             .ok_or_else(|| anyhow!(".NET: no active LTS channel"))?;
-        let sdk = s(channel, "latest-sdk")?.to_owned();
-        let releases: Value = ctx.net.json(s(channel, "releases.json")?)?;
-        let file = releases
-            .get("releases")
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-            .flat_map(|r| {
-                r.get("sdks")
-                    .and_then(Value::as_array)
-                    .into_iter()
-                    .flatten()
-                    .chain(r.get("sdk"))
-            })
-            .filter(|x| x.get("version").and_then(Value::as_str) == Some(sdk.as_str()))
-            .flat_map(|x| {
-                x.get("files")
-                    .and_then(Value::as_array)
-                    .into_iter()
-                    .flatten()
-            })
-            .find(|f| {
-                f.get("rid").and_then(Value::as_str) == Some(rid)
-                    && f.get("name")
-                        .and_then(Value::as_str)
-                        .is_some_and(|n| n.ends_with(".zip"))
-            })
-            .ok_or_else(|| anyhow!(".NET SDK {sdk}: no zip for {rid}"))?;
-        Ok(Release::single(
-            sdk.clone(),
-            s(file, "url")?.to_owned(),
-            format!("dotnet-sdk-{sdk}-{rid}.zip"),
-            Expect::Sha512(s(file, "hash")?.to_owned()),
-            Kind::Zip,
-            Inner::Root,
-        ))
+        dotnet_release(ctx, component, channel)
     }
+}
+
+/// The newest SDK of a channel of `releases-index.json`.
+fn dotnet_release(ctx: &Ctx, component: &Component, channel: &Value) -> Result<Release> {
+    let rid = if arch_of(ctx, component) == "arm64" {
+        "win-arm64"
+    } else {
+        "win-x64"
+    };
+    let sdk = s(channel, "latest-sdk")?.to_owned();
+    let releases: Value = ctx.net.json(s(channel, "releases.json")?)?;
+    let file = releases
+        .get("releases")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .flat_map(|r| {
+            r.get("sdks")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .chain(r.get("sdk"))
+        })
+        .filter(|x| x.get("version").and_then(Value::as_str) == Some(sdk.as_str()))
+        .flat_map(|x| {
+            x.get("files")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+        })
+        .find(|f| {
+            f.get("rid").and_then(Value::as_str) == Some(rid)
+                && f.get("name")
+                    .and_then(Value::as_str)
+                    .is_some_and(|n| n.ends_with(".zip"))
+        })
+        .ok_or_else(|| anyhow!(".NET SDK {sdk}: no zip for {rid}"))?;
+    Ok(Release::single(
+        sdk.clone(),
+        s(file, "url")?.to_owned(),
+        format!("dotnet-sdk-{sdk}-{rid}.zip"),
+        Expect::Sha512(s(file, "hash")?.to_owned()),
+        Kind::Zip,
+        Inner::Root,
+    ))
 }
 
 pub struct Dart;
@@ -304,16 +449,51 @@ impl Installer for Dart {
 
 pub struct Zig;
 
+/// The release lines of Zig's index with a build for `key`, newest first.
+pub fn zig_lines(index: &Value, key: &str) -> Vec<String> {
+    let mut out: Vec<String> = index
+        .as_object()
+        .into_iter()
+        .flatten()
+        .filter(|(k, v)| is_release(k) && v.get(key).is_some())
+        .filter_map(|(k, _)| crate::versions::line_of(k))
+        .collect();
+    out.sort_by_key(|l| std::cmp::Reverse(version_key(l)));
+    out.dedup();
+    out
+}
+
 impl Installer for Zig {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        Zig::release(ctx, component, None)
+    }
+
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        let key = format!("{}-windows", triple_arch(ctx, component));
+        let index: Value = ctx.net.json("https://ziglang.org/download/index.json")?;
+        Ok(zig_lines(&index, &key))
+    }
+
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        Zig::release(ctx, component, Some(line))
+    }
+}
+
+impl Zig {
+    fn release(ctx: &Ctx, component: &Component, line: Option<&str>) -> Result<Release> {
         let key = format!("{}-windows", triple_arch(ctx, component));
         let index: Value = ctx.net.json("https://ziglang.org/download/index.json")?;
         let obj = index.as_object().ok_or_else(|| anyhow!("Zig index"))?;
         let v = obj
             .keys()
             .filter(|k| is_release(k))
+            .filter(|k| line.is_none_or(|l| crate::versions::line_of(k).as_deref() == Some(l)))
             .max_by_key(|k| version_key(k))
-            .ok_or_else(|| anyhow!("no Zig release"))?;
+            .ok_or_else(|| anyhow!("no Zig release {}", line.unwrap_or("")))?;
         let f = obj[v]
             .get(&key)
             .ok_or_else(|| anyhow!("Zig {v}: no {key}"))?;
@@ -573,6 +753,47 @@ impl Installer for Ruby {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn lines_of_the_sources() {
+        let go = |v: &str, stable: bool, arch: &str| {
+            json!({"version": v, "stable": stable, "files": [
+                {"os": "windows", "arch": arch, "kind": "archive", "filename": "x.zip", "sha256": "a"}
+            ]})
+        };
+        let list = [
+            go("go1.25.3", true, "amd64"),
+            go("go1.26rc1", false, "amd64"),
+            go("go1.24.9", true, "amd64"),
+            go("go1.24.10", true, "amd64"),
+            go("go1.23.1", true, "arm64"),
+        ];
+        assert_eq!(go_lines(&list, "amd64"), ["1.25", "1.24"]);
+        assert_eq!(go_lines(&list, "arm64"), ["1.23"]);
+
+        let info = json!({"available_lts_releases": [8, 11, 17, 21, 25], "most_recent_feature_release": 26});
+        assert_eq!(
+            java_lines(&info),
+            ["26.0", "25.0", "21.0", "17.0", "11.0", "8.0"]
+        );
+
+        let index = json!({"releases-index": [
+            {"channel-version": "11.0", "support-phase": "preview"},
+            {"channel-version": "10.0", "support-phase": "active"},
+            {"channel-version": "9.0", "support-phase": "active"},
+            {"channel-version": "6.0", "support-phase": "eol"}
+        ]});
+        assert_eq!(dotnet_lines(&index), ["10.0", "9.0", "6.0"]);
+
+        let zig = json!({
+            "master": {"x86_64-windows": {}},
+            "0.15.2": {"x86_64-windows": {}},
+            "0.15.1": {"x86_64-windows": {}},
+            "0.14.1": {"x86_64-windows": {}, "aarch64-windows": {}}
+        });
+        assert_eq!(zig_lines(&zig, "x86_64-windows"), ["0.15", "0.14"]);
+        assert_eq!(zig_lines(&zig, "aarch64-windows"), ["0.14"]);
+    }
 
     #[test]
     fn versions() {

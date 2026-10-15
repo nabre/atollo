@@ -445,5 +445,20 @@
   "La lingua di NEXKORA.": "La langue de NEXKORA.",
   "Apri la cartella dei progetti": "Ouvrir le dossier des projets",
   "Mostra il pannello": "Afficher le panneau",
-  "Nascondi il pannello": "Masquer le panneau"
+  "Nascondi il pannello": "Masquer le panneau",
+  "{0}, predefinita": "{0}, par défaut",
+  "Scarica un'altra versione": "Télécharger une autre version",
+  "Versione da scaricare": "Version à télécharger",
+  "Nessuna altra versione": "Aucune autre version",
+  "Scarica": "Télécharger",
+  "Un aggiornamento che cambia la versione minore conserva quella vecchia. La versione scelta qui vale per tutto il kit; ogni progetto può sceglierne un'altra nella sua pagina.": "Une mise à jour qui change la version mineure conserve l'ancienne. La version choisie ici vaut pour tout le kit ; chaque projet peut en choisir une autre sur sa page.",
+  "versione": "version",
+  "Versione di {0} per il kit": "Version de {0} pour le kit",
+  "Versioni conservate di {0}": "Versions conservées de {0}",
+  "Rimuovi {0} {1}": "Supprimer {0} {1}",
+  "Nessun linguaggio con più versioni installato.": "Aucun langage à plusieurs versions installé.",
+  "Valgono per terminale, azioni e agenti del progetto, e per i terminali dell'editor aperti da adesso. Altre versioni si scaricano in Strumenti.": "Elles valent pour le terminal, les actions et les agents du projet, et pour les terminaux de l'éditeur ouverts à partir de maintenant. Les autres versions se téléchargent dans Outils.",
+  "Nessun linguaggio ha altre versioni conservate.": "Aucun langage n'a d'autres versions conservées.",
+  "Come il kit ({0})": "Comme le kit ({0})",
+  "{0} (non più presente: si usa la predefinita)": "{0} (plus présente : la version par défaut est utilisée)"
 }

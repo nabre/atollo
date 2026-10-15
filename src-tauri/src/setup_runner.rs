@@ -32,6 +32,9 @@ pub struct Options {
     pub update_all: bool,
     /// Download again even when up to date.
     pub force: bool,
+    /// Only these lines (`major.minor`) of versioned components, saved next
+    /// to the default folder (`versions.rs`); nothing else is done.
+    pub lines: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -255,6 +258,9 @@ impl Progress for StepProgress<'_> {
 pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String, Outcome)>> {
     let _lock = lock(&ctx.kit.id())?;
     let catalog = Catalog::get();
+    if !opts.lines.is_empty() {
+        return Ok(run_lines(ctx, catalog, &opts.lines, sink));
+    }
     let choice = match Choice::read(ctx.kit, catalog) {
         Some(choice) => choice,
         None => {
@@ -316,6 +322,58 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
         results.push((c.id.clone(), outcome));
     }
     Ok(results)
+}
+
+/// Downloads saved lines of versioned components, one step each.
+fn run_lines(
+    ctx: &Ctx,
+    catalog: &Catalog,
+    lines: &[(String, String)],
+    sink: &mut dyn Sink,
+) -> Vec<(String, Outcome)> {
+    let mut results = Vec::new();
+    for (index, (id, line)) in lines.iter().enumerate() {
+        let Some(c) = catalog.find(id) else { continue };
+        if ctx.cancel.load(Ordering::Relaxed) {
+            results.push((c.id.clone(), Outcome::Cancelled));
+            continue;
+        }
+        sink.emit(Event::Step {
+            index: index + 1,
+            total: lines.len(),
+            id: c.id.clone(),
+            name: format!("{} {line}", c.name),
+        });
+        let result = (|| -> Result<Outcome> {
+            let Some(installer) = install::installer(&c.id) else {
+                return Ok(Outcome::Unsupported);
+            };
+            let release = installer.release_line(ctx, c, line)?;
+            let mut progress = StepProgress {
+                id: &c.id,
+                sink: &mut *sink,
+                last_percent: None,
+            };
+            install::install_line(ctx, c, &release, &mut progress)?;
+            Ok(Outcome::Installed {
+                version: release.version,
+            })
+        })();
+        let outcome = match result {
+            Ok(outcome) => outcome,
+            Err(e) if e.is::<Cancelled>() => Outcome::Cancelled,
+            Err(e) if e.is::<InUse>() => Outcome::InUse,
+            Err(e) => Outcome::Failed {
+                message: format!("{e:#}"),
+            },
+        };
+        sink.emit(Event::Done {
+            id: c.id.clone(),
+            outcome: outcome.clone(),
+        });
+        results.push((c.id.clone(), outcome));
+    }
+    results
 }
 
 /// Removes the component's folder and the other files it owns. Folders

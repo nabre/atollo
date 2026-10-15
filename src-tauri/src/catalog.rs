@@ -83,6 +83,10 @@ pub struct Component {
     pub version: Option<String>,
     #[serde(default)]
     pub sha256: Option<String>,
+    /// Other minor lines can be kept next to the default folder, and chosen
+    /// for the kit or a project (`versions.rs`, D-80).
+    #[serde(default)]
+    pub versioned: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -216,6 +220,11 @@ impl Component {
         self.folder_path(kit)
             .into_iter()
             .chain(self.remove.iter().map(|r| kit_path(kit, r)))
+            // The saved lines go with the component.
+            .chain(
+                self.versioned
+                    .then(|| kit.apps().join("versions").join(&self.id)),
+            )
             .collect()
     }
 
@@ -435,6 +444,15 @@ mod tests {
             catalog.find("vscodium-server").map(|c| c.group),
             Some(Group::App)
         );
+        // Saved lines are copies of the component's own folder.
+        for c in catalog.all().iter().filter(|c| c.versioned) {
+            assert!(
+                c.folder.is_some() && c.group == Group::Languages,
+                "{}: versioned",
+                c.id
+            );
+        }
+        assert!(catalog.find("node").unwrap().versioned);
     }
 
     #[test]

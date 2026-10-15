@@ -18,6 +18,39 @@ if (Get-Module -ListAvailable PSReadLine) {
     Set-PSReadLineOption -HistorySavePath $history -PredictionSource History
 }
 
+# Versions of the languages chosen for the project (data\app\projects\<project>\
+# versions.json, written by Dev-Kit.exe): the editor's terminals start from
+# the editor server, shared by every project, so the folders of the
+# project's versions take the place of the kit's here (DECISIONS.md D-80).
+$projects = Join-Path $env:CP_ROOT 'projects'
+$here = (Get-Location).ProviderPath
+if ($here.StartsWith($projects + '\', [StringComparison]::OrdinalIgnoreCase)) {
+    $project = $here.Substring($projects.Length + 1).Split('\')[0]
+    $file = Join-Path $env:CP_DATA "app\projects\$project\versions.json"
+    if (Test-Path -LiteralPath $file) {
+        try {
+            $swaps = @((Get-Content -LiteralPath $file -Raw | ConvertFrom-Json).swaps)
+            foreach ($name in @([Environment]::GetEnvironmentVariables().Keys)) {
+                $value = [Environment]::GetEnvironmentVariable($name)
+                $new = @($value -split ';' | ForEach-Object {
+                    $entry = $_
+                    foreach ($s in $swaps) {
+                        if ($entry -ieq $s.from -or $entry.StartsWith($s.from + '\', [StringComparison]::OrdinalIgnoreCase)) {
+                            $entry = $s.to + $entry.Substring($s.from.Length)
+                            break
+                        }
+                    }
+                    $entry
+                }) -join ';'
+                if ($new -cne $value) { [Environment]::SetEnvironmentVariable($name, $new) }
+            }
+        } catch {
+            Write-Host "Dev-Kit: versions of $project not applied ($_)." -ForegroundColor Yellow
+        }
+    }
+}
+Remove-Variable projects, here, project, file, swaps, name, value, new -ErrorAction Ignore
+
 function global:prompt {
     $here = $ExecutionContext.SessionState.Path.CurrentLocation.ProviderPath
     $projects = Join-Path $env:CP_ROOT 'projects'
