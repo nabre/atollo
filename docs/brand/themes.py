@@ -6,20 +6,36 @@ This script resolves their `include` chain, fills the colors the themes
 leave to VS Code's built-in defaults, swaps the blue emphasis for the brand
 colors (make.py, brand.png) and writes:
 
-- ui/src/theme-colors.css: the app's color tokens, one per theme key;
 - tauri/editor-theme/: the editor's "Atollo Dark" and "Atollo Light",
   the two themes whole (colors, token colors) with the same emphasis, as
-  the extension `atollo.theme` that the kit installs (editor_theme.rs).
+  the extension `atollo.theme` that the kit installs (editor_theme.rs);
+- ui/src/theme-vscode.css: the same colors as the `--vscode-*` variables
+  that VS Code gives a webview, which @vscode-elements/elements reads;
+- ui/src/theme-colors.css: the app's short tokens (`--vsc-*`), each an
+  alias of one of those variables, and their Tailwind utilities.
+
+The colors a theme leaves to VS Code's defaults come from vscode-defaults/,
+the "Dark Modern" and "Light Modern" variables of a VS Code webview as
+published in @vscode-elements/webview-playground 1.9.0 (dist/themes/
+dark-v2.js and light-v2.js, MIT license, LICENSE there). To refresh them:
+
+  npm pack @vscode-elements/webview-playground@1.9.0
+  tar -xzf vscode-elements-webview-playground-1.9.0.tgz
+  python docs/brand/themes.py --vendor package
 
 Run `python docs/brand/themes.py` after changing anything here.
 """
 
 import hashlib
 import json
+import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 THEMES = Path(__file__).with_name("vscodium-themes")
+DEFAULTS = Path(__file__).with_name("vscode-defaults")
+PLAYGROUND = "@vscode-elements/webview-playground 1.9.0"
 
 # Colors the theme files don't set: VS Code's registered defaults (the
 # workbench's colorRegistry), for the keys the app uses.
@@ -184,6 +200,84 @@ BRAND = {
     },
 }
 
+# Colors VS Code computes from another key when the theme doesn't set them
+# (the colorRegistry's defaults): with the brand emphasis they follow it,
+# as in the editor. Each pair is checked against vscode-defaults/, where
+# both keys hold the same value in Dark Modern and Light Modern.
+DERIVED = {
+    "sash.hoverBorder": "focusBorder",
+    "settings.focusedRowBorder": "focusBorder",
+    "notebook.focusedCellBorder": "focusBorder",
+    "notebook.focusedEditorBorder": "focusBorder",
+    "notebook.cellInsertionIndicator": "focusBorder",
+    "inlineChatInput.focusBorder": "focusBorder",
+    "editorCommentsWidget.unresolvedBorder": "focusBorder",
+    "commentsView.unresolvedIcon": "focusBorder",
+    "welcomePage.progress.foreground": "focusBorder",
+    "list.focusHighlightForeground": "list.highlightForeground",
+    "editorSuggestWidget.highlightForeground": "list.highlightForeground",
+    "editorSuggestWidget.focusHighlightForeground": "list.focusHighlightForeground",
+    "editorHoverWidget.highlightForeground": "list.highlightForeground",
+    "editorSuggestWidget.selectedBackground": "list.activeSelectionBackground",
+    "quickInputList.focusBackground": "list.activeSelectionBackground",
+    "editorActionList.focusBackground": "list.activeSelectionBackground",
+    "extensionButton.background": "button.background",
+    "extensionButton.foreground": "button.foreground",
+    "extensionButton.hoverBackground": "button.hoverBackground",
+    "extensionButton.prominentBackground": "button.background",
+    "extensionButton.prominentForeground": "button.foreground",
+    "extensionButton.prominentHoverBackground": "button.hoverBackground",
+    "inlineEdit.gutterIndicator.primaryBorder": "button.background",
+    "inlineEdit.gutterIndicator.successfulBorder": "button.background",
+    "inlineEdit.gutterIndicator.successfulBackground": "button.background",
+    "extensionBadge.remoteBackground": "activityBarBadge.background",
+    "extensionBadge.remoteForeground": "activityBarBadge.foreground",
+    "panelTitleBadge.background": "activityBarBadge.background",
+    "panelTitleBadge.foreground": "activityBarBadge.foreground",
+    "radio.activeBackground": "inputOption.activeBackground",
+    "radio.activeBorder": "inputOption.activeBorder",
+    "radio.activeForeground": "inputOption.activeForeground",
+    "notificationLink.foreground": "textLink.foreground",
+    "minimapGutter.modifiedBackground": "editorGutter.modifiedBackground",
+    "terminal.selectionBackground": "editor.selectionBackground",
+    "minimap.selectionHighlight": "editor.selectionBackground",
+    "settings.checkboxBackground": "checkbox.background",
+    "settings.checkboxBorder": "checkbox.border",
+    "settings.checkboxForeground": "checkbox.foreground",
+    "settings.dropdownBackground": "dropdown.background",
+    "settings.dropdownBorder": "dropdown.border",
+    "settings.dropdownForeground": "dropdown.foreground",
+    "settings.dropdownListBorder": "editorWidget.border",
+    "settings.textInputBackground": "input.background",
+    "settings.textInputBorder": "input.border",
+    "settings.textInputForeground": "input.foreground",
+    "settings.numberInputBackground": "input.background",
+    "settings.numberInputBorder": "input.border",
+    "settings.numberInputForeground": "input.foreground",
+}
+
+# Keys VS Code leaves without a value outside high contrast: a webview has
+# no variable for them. Declared `initial` (the guaranteed-invalid value),
+# a var() of them falls back exactly as there.
+UNSET = [
+    "contrastBorder",
+    "list.hoverForeground",
+    "menu.selectionBorder",
+    "toolbar.hoverOutline",
+]
+
+# VS Code's fonts on Windows, the same in both themes; the defaults hold the
+# sizes and weights too, and main() checks that they agree.
+FONTS = {
+    "--vscode-font-family": '"Segoe WPC", "Segoe UI", sans-serif',
+    "--vscode-font-weight": "normal",
+    "--vscode-font-size": "13px",
+    "--vscode-editor-font-family": 'Consolas, "Courier New", monospace',
+    "--vscode-editor-font-weight": "normal",
+    "--vscode-editor-font-size": "14px",
+    "--vscode-editor-font-feature-settings": '"liga" off, "calt" off',
+}
+
 # App token -> theme key. Names kept short; each token is the color VSCodium
 # gives that element, so a component styled as VSCodium's picks the key.
 TOKENS = {
@@ -327,25 +421,91 @@ def chain(name):
     return out
 
 
-def load(name):
-    return chain(name)["colors"]
+def var_name(key):
+    """VS Code's variable for a color key, as a webview gets it: the first
+    dot becomes a dash, any other dot stays (`--vscode-welcomePage-progress.
+    foreground`)."""
+    return "--vscode-" + key.replace(".", "-", 1)
 
 
-def resolve(kind):
-    colors = dict(BUILTIN[kind])
-    colors.update(load(f"{kind}_modern.json"))
-    colors.update(BRAND[kind])
-    return colors
+def css_name(name):
+    return name.replace(".", "\\.")
 
 
-def css_block(kind, colors):
-    lines = []
-    for token, key in TOKENS.items():
-        value = colors.get(key)
-        if value is None:
-            raise SystemExit(f"{kind}: no color for {key}")
-        lines.append(f"  --vsc-{token}: {value.lower()}; /* {key} */")
-    return "\n".join(lines)
+def write(path, text):
+    """UTF-8 with LF endings, as the repository keeps them."""
+    path.write_text(text, encoding="utf-8", newline="\n")
+
+
+def unescape(text):
+    return re.sub(r"\\(.)", r"\1", text)
+
+
+def vendor(package):
+    """Copies the Dark Modern and Light Modern tables of an unpacked
+    webview-playground into vscode-defaults/ (see the module notes)."""
+    package = Path(package)
+    meta = json.loads((package / "package.json").read_text(encoding="utf-8"))
+    found = f"{meta['name']} {meta['version']}"
+    if found != PLAYGROUND:
+        raise SystemExit(f"expected {PLAYGROUND}, found {found}")
+    DEFAULTS.mkdir(exist_ok=True)
+    write(DEFAULTS / "LICENSE", (package / "LICENSE").read_text(encoding="utf-8"))
+    for kind in ("dark", "light"):
+        source = f"dist/themes/{kind}-v2.js"
+        text = (package / source).read_text(encoding="utf-8")
+        # [name, value] pairs of JavaScript strings (`\.`, `\"` escaped).
+        pairs = re.findall(r'\["((?:[^"\\]|\\.)*)",\s*"((?:[^"\\]|\\.)*)"\]', text)
+        data = {
+            "_source": f"{PLAYGROUND}, {source} (MIT, LICENSE)",
+            "variables": {unescape(n): unescape(v) for n, v in pairs},
+        }
+        write(DEFAULTS / f"{kind}.json", json.dumps(data, indent=2) + "\n")
+
+
+def defaults(kind):
+    data = json.loads((DEFAULTS / f"{kind}.json").read_text(encoding="utf-8"))
+    return data["variables"]
+
+
+def check_derived():
+    for kind in ("dark", "light"):
+        base = defaults(kind)
+        for key, source in DERIVED.items():
+            if base.get(var_name(key)) != base.get(var_name(source)):
+                raise SystemExit(f"{kind}: {key} is not {source} in vscode-defaults")
+
+
+def vscode_vars(kind):
+    """Every color variable of a webview, by name: VS Code's defaults, the
+    registry defaults in BUILTIN, the derived keys, and over them the
+    editor theme whole (the `include` chain with BRAND)."""
+    out = {n: v for n, v in defaults(kind).items() if n not in FONTS}
+    leftover = [n for n in out if "-font-" in n]
+    if leftover:
+        raise SystemExit(f"{kind}: font variables missing from FONTS: {leftover}")
+    for key, value in BUILTIN[kind].items():
+        out[var_name(key)] = value
+    theme = editor_theme(kind)["colors"]
+    for key, source in DERIVED.items():
+        if key not in theme:
+            out[var_name(key)] = theme.get(source, out.get(var_name(source)))
+    for key, value in theme.items():
+        out[var_name(key)] = value
+    for key in UNSET:
+        out.setdefault(var_name(key), "initial")
+    return {n: v.lower() if v.startswith("#") else v for n, v in out.items()}
+
+
+def check_fonts():
+    for kind in ("dark", "light"):
+        for name, value in defaults(kind).items():
+            if name in FONTS and FONTS[name] != value:
+                raise SystemExit(f"{kind}: {name} is {value} in vscode-defaults")
+
+
+def var_lines(values, indent):
+    return "\n".join(f"{indent}{css_name(n)}: {v};" for n, v in values.items())
 
 
 EXTENSION = ROOT / "tauri" / "editor-theme"
@@ -397,26 +557,62 @@ def write_extension():
     }
     (EXTENSION / "themes").mkdir(parents=True, exist_ok=True)
     for kind, text in themes.items():
-        (EXTENSION / "themes" / f"{kind}.json").write_text(text, encoding="utf-8")
-    (EXTENSION / "package.json").write_text(
-        json.dumps(package, indent=2) + "\n", encoding="utf-8"
-    )
+        write(EXTENSION / "themes" / f"{kind}.json", text)
+    write(EXTENSION / "package.json", json.dumps(package, indent=2) + "\n")
 
 
-def main():
-    dark, light = resolve("dark"), resolve("light")
-    css = f"""/* Generated by docs/brand/themes.py from VSCodium's Dark Modern and Light
-   Modern with the Atollo emphasis: do not edit, run the script. */
+HEADER = """/* Generated by docs/brand/themes.py from VSCodium's Dark Modern and Light
+   Modern with the Atollo emphasis: do not edit, run the script. */"""
+
+
+def write_vscode_css():
+    check_derived()
+    check_fonts()
+    dark, light = vscode_vars("dark"), vscode_vars("light")
+    # Both themes declare the same names: a light value never falls through
+    # to the dark one.
+    names = sorted(dark.keys() | light.keys())
+    dark = {n: dark.get(n, "initial") for n in names}
+    light = {n: light.get(n, "initial") for n in names}
+    css = f"""{HEADER}
+
+/* The variables VS Code gives a webview, read by @vscode-elements/elements
+   and by the app's tokens (theme-colors.css). Defaults from
+   {PLAYGROUND} (MIT, docs/brand/vscode-defaults/LICENSE). */
+
+:root {{
+{var_lines(FONTS, "  ")}
+}}
 
 :root,
 :root[data-theme="dark"] {{
-{css_block("dark", dark)}
+{var_lines(dark, "  ")}
 }}
 
 @media (prefers-color-scheme: light) {{
   :root:not([data-theme="dark"]) {{
-{css_block("light", light).replace(chr(10), chr(10) + "  ").replace("  --", "    --", 1)}
+{var_lines(light, "    ")}
   }}
+}}
+"""
+    write(ROOT / "ui" / "src" / "theme-vscode.css", css)
+    return dark, light
+
+
+def write_tokens_css(dark, light):
+    for token, key in TOKENS.items():
+        for kind, values in (("dark", dark), ("light", light)):
+            if values.get(var_name(key), "initial") == "initial":
+                raise SystemExit(f"{kind}: no color for {key}")
+    tokens = "\n".join(
+        f"  --vsc-{t}: var({css_name(var_name(k))});" for t, k in TOKENS.items()
+    )
+    css = f"""{HEADER}
+
+/* The app's tokens, one per theme key: aliases of the variables in
+   theme-vscode.css, so they follow its theme. */
+:root {{
+{tokens}
 }}
 
 /* Tailwind utilities: bg-vsc-bg, text-vsc-desc, border-vsc-border... */
@@ -424,7 +620,13 @@ def main():
 {chr(10).join(f"  --color-vsc-{t}: var(--vsc-{t});" for t in TOKENS)}
 }}
 """
-    (ROOT / "ui" / "src" / "theme-colors.css").write_text(css, encoding="utf-8")
+    write(ROOT / "ui" / "src" / "theme-colors.css", css)
+
+
+def main():
+    if sys.argv[1:2] == ["--vendor"]:
+        vendor(sys.argv[2])
+    write_tokens_css(*write_vscode_css())
     write_extension()
     print("ok")
 
