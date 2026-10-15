@@ -9,7 +9,7 @@
 //!   `apache` action the kit's httpd with a configuration of the project;
 //! - web actions keep their port from one start to the next (bookmarks,
 //!   cookies, localStorage stay valid): 7100-7999, remembered in
-//!   `data\app\ports.json`, or the one the user locked;
+//!   `data\projects\<project>\ports.json`, or the one the user locked;
 //! - output: last 3000 lines per action, without ANSI colours; a web action
 //!   is "running" once its port answers, or the port it prints if it ignores
 //!   the one assigned.
@@ -18,7 +18,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Read;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, TcpStream};
 use std::os::windows::process::CommandExt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Child, Stdio};
 use std::sync::{Arc, LazyLock, Mutex, PoisonError};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -31,6 +31,7 @@ use crate::detect::{self, Action, Kind};
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
+use crate::projects::state::{self, ProjectState};
 
 const MAX_LINES: usize = 3000;
 pub const PORT_FROM: u16 = 7100;
@@ -103,10 +104,23 @@ pub struct Ports {
     pub locked: Vec<String>,
 }
 
+/// `ports.json` of one project (`data\projects\<project>\`): its actions'
+/// ports, by action id, and those locked. Keys of a newer version stay.
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+struct ProjectPorts {
+    ports: BTreeMap<String, u16>,
+    locked: Vec<String>,
+    #[serde(flatten)]
+    other: serde_json::Map<String, serde_json::Value>,
+}
+
 pub struct Runner {
     kit: Kit,
     entries: Mutex<HashMap<String, Entry>>,
     ports: Mutex<Ports>,
+    /// What the project files hold now, to write only those that changed.
+    saved: Mutex<BTreeMap<String, ProjectPorts>>,
     /// Ports being probed for a start: two actions started together differ.
     pending: Mutex<HashSet<u16>>,
     notify: Notify,
@@ -122,8 +136,32 @@ fn now_ms() -> u64 {
         .map_or(0, |d| d.as_millis() as u64)
 }
 
-fn ports_file(kit: &Kit) -> PathBuf {
-    kit.app_dir().join("ports.json")
+/// The ports files of all projects, in memory under `project|action` keys,
+/// and as they are on disk.
+fn load_ports(kit: &Kit) -> (Ports, BTreeMap<String, ProjectPorts>) {
+    let mut ports = Ports::default();
+    let mut saved = BTreeMap::new();
+    for project in state::all(kit) {
+        let Some(file) = ProjectState::of(kit, &project).map(|s| s.ports_file()) else {
+            continue;
+        };
+        let Some(p) = crate::fsx::read_json::<ProjectPorts>(&file) else {
+            continue;
+        };
+        for (action, &port) in &p.ports {
+            ports.ports.insert(key_of(&project, action), port);
+        }
+        ports
+            .locked
+            .extend(p.locked.iter().map(|a| key_of(&project, a)));
+        saved.insert(project, p);
+    }
+    (ports, saved)
+}
+
+/// `project|action` keys split by project: `(project, action)`.
+fn split_key(key: &str) -> Option<(&str, &str)> {
+    key.split_once('|')
 }
 
 /// Something answers on the port (IPv4 or IPv6 loopback).
@@ -175,11 +213,12 @@ pub(crate) fn split_lines(rest: &mut String, chunk: &str) -> Vec<String> {
 
 impl Runner {
     pub fn new(kit: Kit, notify: Notify) -> Runner {
-        let ports = crate::fsx::read_json(&ports_file(&kit)).unwrap_or_default();
+        let (ports, saved) = load_ports(&kit);
         Runner {
             kit,
             entries: Mutex::new(HashMap::new()),
             ports: Mutex::new(ports),
+            saved: Mutex::new(saved),
             pending: Mutex::new(HashSet::new()),
             notify,
         }
@@ -209,8 +248,63 @@ impl Runner {
             .clone()
     }
 
-    fn save_ports(&self, ports: &Ports) -> Result<()> {
-        crate::fsx::write_json(&ports_file(&self.kit), ports)
+    /// Writes the `ports.json` of the projects whose ports changed since the
+    /// last save, each atomically; the others are not touched. The first
+    /// failure is returned after trying them all.
+    fn save_ports(&self) -> Result<()> {
+        // `saved` is held while writing, so saves never overtake each other
+        // and always write the ports as they are now.
+        let mut saved = self.saved.lock().unwrap_or_else(PoisonError::into_inner);
+        let ports = self.ports();
+        let mut now: BTreeMap<String, ProjectPorts> = BTreeMap::new();
+        for (key, &port) in &ports.ports {
+            if let Some((project, action)) = split_key(key) {
+                now.entry(project.to_owned())
+                    .or_default()
+                    .ports
+                    .insert(action.to_owned(), port);
+            }
+        }
+        for key in &ports.locked {
+            if let Some((project, action)) = split_key(key) {
+                now.entry(project.to_owned())
+                    .or_default()
+                    .locked
+                    .push(action.to_owned());
+            }
+        }
+        // a project that lost all its ports is written empty
+        for project in saved.keys() {
+            now.entry(project.clone()).or_default();
+        }
+        let mut result = Ok(());
+        for (project, mut p) in now {
+            let before = saved.get(&project);
+            p.other = before.map(|b| b.other.clone()).unwrap_or_default();
+            if before == Some(&p) || (before.is_none() && p == ProjectPorts::default()) {
+                continue;
+            }
+            let Some(state) = ProjectState::of(&self.kit, &project) else {
+                continue;
+            };
+            // nothing left to say and no folder: not created just for that
+            if p.ports.is_empty() && p.locked.is_empty() && !state.dir().exists() {
+                saved.remove(&project);
+                continue;
+            }
+            match crate::fsx::write_json(&state.ports_file(), &p) {
+                Ok(()) => {
+                    saved.insert(project, p);
+                }
+                Err(e) => {
+                    crate::log::warn(&format!("ports of {project}: {e:#}"));
+                    if result.is_ok() {
+                        result = Err(e);
+                    }
+                }
+            }
+        }
+        result
     }
 
     fn alive(&self, key: &str) -> bool {
@@ -252,11 +346,9 @@ impl Runner {
             if free {
                 let mut ports = self.ports.lock().unwrap_or_else(PoisonError::into_inner);
                 ports.ports.insert(key.to_owned(), n);
-                let snapshot = ports.clone();
                 drop(ports);
-                if let Err(e) = self.save_ports(&snapshot) {
-                    crate::log::warn(&format!("ports.json: {e:#}"));
-                }
+                // a failure is already in the log
+                let _ = self.save_ports();
             }
             self.pending
                 .lock()
@@ -319,7 +411,7 @@ impl Runner {
         }
         let snapshot = ports.clone();
         drop(ports);
-        self.save_ports(&snapshot)?;
+        self.save_ports()?;
         Ok(snapshot)
     }
 
@@ -382,7 +474,7 @@ impl Runner {
             )?;
             (
                 cmd,
-                format!("httpd.exe -f data\\app\\projects\\{id}\\apache\\httpd.conf ({folder})"),
+                format!("httpd.exe -f data\\projects\\{id}\\apache\\httpd.conf ({folder})"),
             )
         } else if let Some(folder) = &action.nginx_dir {
             let root = detect::inside_dir(&cwd, folder)?;
@@ -401,7 +493,7 @@ impl Runner {
             )?;
             (
                 cmd,
-                format!("nginx.exe -c data\\app\\projects\\{id}\\nginx\\nginx.conf ({folder})"),
+                format!("nginx.exe -c data\\projects\\{id}\\nginx\\nginx.conf ({folder})"),
             )
         } else {
             let command = listen(&action.command);
@@ -807,6 +899,56 @@ mod tests {
         }
         r2.set_port("p|c", None, "it").unwrap();
         assert!(!r2.ports().ports.contains_key("p|c"));
+    }
+
+    #[test]
+    fn ports_per_project_file() {
+        let tmp = TempDir::new("run-ports-files");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let file = |p: &str| tmp.0.join(format!(r"data\projects\{p}\ports.json"));
+        // no ports.json: nothing loaded, nothing written
+        std::fs::create_dir_all(kit.project_data().join("empty")).unwrap();
+        let r = Runner::new(kit.clone(), Arc::new(|_| {}));
+        assert!(r.ports().ports.is_empty() && !file("empty").exists());
+        r.save_ports().unwrap();
+        assert!(!file("empty").exists());
+
+        // two projects never get the same port
+        let a = r.assign_port("one|web", "it").unwrap();
+        let b = r.assign_port("two|web", "it").unwrap();
+        assert_ne!(a, b);
+        let text = std::fs::read_to_string(file("one")).unwrap();
+        assert!(text.contains("\"web\"") && !text.contains("two"), "{text}");
+        assert!(!file("empty").exists());
+
+        // a locked port survives save + reload; unknown keys stay
+        let locked = r.set_port("one|api", Some(PORT_TO), "it").unwrap();
+        assert_eq!(locked.locked, ["one|api"]);
+        std::fs::write(
+            file("two"),
+            format!(r#"{{"ports":{{"web":{b}}},"future":{{"x":1}}}}"#),
+        )
+        .unwrap();
+        let r2 = Runner::new(kit.clone(), Arc::new(|_| {}));
+        let p = r2.ports();
+        assert_eq!(p.ports["one|api"], PORT_TO);
+        assert_eq!(p.ports["two|web"], b);
+        assert_eq!(p.locked, ["one|api"]);
+        r2.set_port("two|api", Some(PORT_TO - 1), "it").unwrap();
+        let two = std::fs::read_to_string(file("two")).unwrap();
+        assert!(two.contains("future") && two.contains("api"), "{two}");
+
+        // only the projects that changed are written again
+        let untouched = std::fs::read_to_string(file("one")).unwrap();
+        std::fs::write(file("one"), "kept as is").unwrap();
+        r2.set_port("two|api", None, "it").unwrap();
+        assert_eq!(std::fs::read_to_string(file("one")).unwrap(), "kept as is");
+        assert!(!std::fs::read_to_string(file("two"))
+            .unwrap()
+            .contains("api"));
+        r2.set_port("one|api", None, "it").unwrap();
+        assert_ne!(std::fs::read_to_string(file("one")).unwrap(), untouched);
     }
 
     #[test]

@@ -1,5 +1,5 @@
 //! The kit's settings of each project, kept in
-//! `data\app\projects\<project>\dev-settings.json` and never in the project's
+//! `data\projects\<project>\dev-settings.json` and never in the project's
 //! folder, so the project stays as its repository has it. Today: the agent
 //! last opened in it (the default of the agent choice) and when the editor,
 //! a console or an agent last opened it (the order of the projects), the
@@ -12,7 +12,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::kit::{validate_project_name, Kit};
+use crate::kit::Kit;
+use crate::projects::state::ProjectState;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -53,24 +54,26 @@ impl Extensions {
 }
 
 /// The folder of the kit's files of `project` (`None`: not a valid name).
+#[allow(dead_code)] // kept for callers on other branches; `ProjectState` is the way
 pub fn dir(kit: &Kit, project: &str) -> Option<PathBuf> {
-    validate_project_name(project).ok()?;
-    Some(kit.project_states().join(project))
+    ProjectState::of(kit, project).map(|s| s.dir().clone())
 }
 
 pub fn load(kit: &Kit, project: &str) -> ProjectSettings {
-    dir(kit, project)
-        .and_then(|d| crate::fsx::read_json(&d.join("dev-settings.json")))
+    ProjectState::of(kit, project)
+        .and_then(|s| crate::fsx::read_json(&s.settings_file()))
         .unwrap_or_default()
 }
 
 /// Changes the settings of `project` and saves them; a failure only goes to
 /// the log (the settings help, they never stop an action).
 pub fn update(kit: &Kit, project: &str, change: impl FnOnce(&mut ProjectSettings)) {
-    let Some(d) = dir(kit, project) else { return };
+    let Some(state) = ProjectState::of(kit, project) else {
+        return;
+    };
     let mut s = load(kit, project);
     change(&mut s);
-    if let Err(e) = crate::fsx::write_json(&d.join("dev-settings.json"), &s) {
+    if let Err(e) = crate::fsx::write_json(&state.settings_file(), &s) {
         crate::log::warn(&format!("project settings of {project}: {e}"));
     }
 }
@@ -85,8 +88,8 @@ pub fn opened(kit: &Kit, project: &str) {
 
 /// The project's folder is gone: its settings go with it.
 pub fn remove(kit: &Kit, project: &str) {
-    if let Some(d) = dir(kit, project) {
-        let _ = std::fs::remove_dir_all(d);
+    if let Some(state) = ProjectState::of(kit, project) {
+        let _ = state.remove();
     }
 }
 
@@ -103,7 +106,7 @@ mod tests {
         assert_eq!(load(&kit, "app"), ProjectSettings::default());
         update(&kit, "app", |s| s.agent = Some("codex".into()));
         opened(&kit, "app");
-        let file = kit.data().join(r"app\projects\app\dev-settings.json");
+        let file = kit.data().join(r"projects\app\dev-settings.json");
         let text = std::fs::read_to_string(&file).unwrap();
         assert!(text.contains("\"agent\": \"codex\"") && text.contains("lastOpened"));
         // a key of a newer version stays
@@ -112,7 +115,7 @@ mod tests {
         let s = load(&kit, "app");
         assert_eq!(s.agent.as_deref(), Some("claude"));
         assert!(s.other.contains_key("future") && s.last_opened.is_some());
-        // never outside data\app\projects
+        // never outside data\projects
         for bad in ["..", r"..\x", "a/b", "con"] {
             update(&kit, bad, |s| s.agent = Some("x".into()));
             assert!(dir(&kit, bad).is_none(), "{bad}");
