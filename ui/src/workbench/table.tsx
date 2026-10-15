@@ -1,6 +1,15 @@
 // A table of data at 12px, as the matrices and the grids of the pages: an
-// optional caption, a header row, the body rows from the caller.
-import type { ReactNode } from "react";
+// optional caption, a header row, the body rows from the caller. Drawn as
+// vscode-table (the Keyboard Shortcuts editor's table): the header on
+// keybindingTable.headerBackground in bold, a line under it. A native
+// <table>: vscode-table has no caption nor row headers, and gives every
+// column the same share instead of fitting its content.
+import type { CSSProperties, ReactNode } from "react";
+
+const HEAD = "var(--vscode-keybindingTable-headerBackground)";
+/** Translucent: on the editor's color when it stays over the rows. */
+const STICKY: CSSProperties = { background: `linear-gradient(${HEAD}, ${HEAD}), var(--vsc-bg)` };
+const PLAIN: CSSProperties = { background: HEAD };
 
 export function DataTable({
   caption,
@@ -15,8 +24,8 @@ export function DataTable({
   caption?: string;
   /** The caption as a small bold title above the table. */
   captionVisible?: boolean;
-  /** Plain header cells, left-aligned in the description color; `null` is
-   * an unlabelled column (actions). */
+  /** Plain header cells, left-aligned and bold; `null` is an unlabelled
+   * column (actions). */
   columns?: (string | null)[];
   /** A header row of the caller's own cells, in place of `columns`. */
   head?: ReactNode;
@@ -26,20 +35,21 @@ export function DataTable({
   /** The body rows. */
   children: ReactNode;
 }) {
-  const headClass = stickyHead ? "sticky top-0 z-10 bg-vsc-bg" : undefined;
+  const headClass = `border-b border-(--vscode-editorGroup-border) ${stickyHead ? "sticky top-0 z-10" : ""}`;
+  const headStyle = stickyHead ? STICKY : PLAIN;
   return (
     <table className={className}>
       {caption !== undefined && (
         <caption className={captionVisible ? "pb-1 text-left text-[12px] font-semibold" : "sr-only"}>{caption}</caption>
       )}
       {columns ? (
-        <thead className={headClass}>
-          <tr className="text-vsc-desc">
+        <thead className={headClass} style={headStyle}>
+          <tr>
             {columns.map((c, i) =>
               c === null ? (
-                <th key={i} scope="col" className="px-2" />
+                <th key={i} scope="col" className="px-2 py-[5px]" />
               ) : (
-                <th key={i} scope="col" className="px-2 text-left font-normal">
+                <th key={i} scope="col" className="px-2 py-[5px] text-left leading-5 font-bold whitespace-nowrap">
                   {c}
                 </th>
               ),
@@ -48,7 +58,7 @@ export function DataTable({
         </thead>
       ) : (
         head !== undefined && (
-          <thead className={headClass}>
+          <thead className={headClass} style={headStyle}>
             <tr>{head}</tr>
           </thead>
         )

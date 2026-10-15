@@ -136,6 +136,57 @@ body {
   outline: 1px solid var(--vsc-focus);
   outline-offset: -1px;
 }
+/* Tailwind's reset (margin, padding, border on every element) is outside
+   the components' shadow roots, so it would win over their :host and
+   ::slotted rules: on them it rolls back, and the components keep their
+   own spacing. A utility class on a component still applies. */
+@layer base {
+  :is(
+    vscode-badge,
+    vscode-button,
+    vscode-button-group,
+    vscode-checkbox,
+    vscode-checkbox-group,
+    vscode-collapsible,
+    vscode-context-menu,
+    vscode-context-menu-item,
+    vscode-divider,
+    vscode-form-container,
+    vscode-form-group,
+    vscode-form-helper,
+    vscode-icon,
+    vscode-label,
+    vscode-multi-select,
+    vscode-option,
+    vscode-progress-bar,
+    vscode-progress-ring,
+    vscode-radio,
+    vscode-radio-group,
+    vscode-scrollable,
+    vscode-single-select,
+    vscode-split-layout,
+    vscode-tab-header,
+    vscode-tab-panel,
+    vscode-table,
+    vscode-table-body,
+    vscode-table-cell,
+    vscode-table-header,
+    vscode-table-header-cell,
+    vscode-table-row,
+    vscode-tabs,
+    vscode-textarea,
+    vscode-textfield,
+    vscode-toolbar-button,
+    vscode-toolbar-container,
+    vscode-tree,
+    vscode-tree-item
+  ) {
+    margin: revert-layer;
+    padding: revert-layer;
+    border: revert-layer;
+  }
+}
+
 /* The vscode-elements components draw their own, inside. */
 :is(vscode-button, vscode-textfield, vscode-textarea, vscode-single-select):focus-visible {
   outline: none;
