@@ -1,6 +1,8 @@
 # Dev-Kit App: piano per la cartella `data`
 
-Stato: **approvato** (15/10/2026), domande del §3 chiuse dall'utente. Revisione 2: piano sviluppato in pacchetti di lavoro (§5) e struttura di uno sciame di agenti per eseguirlo (§7). Revisione 3: correzione degli alias dei siti (§1.3, WP-S), dalla revisione di sicurezza automatica del 15/10/2026, eseguita nell'ondata 0.
+Stato: **in esecuzione** (15/10/2026), domande del §3 chiuse dall'utente. Revisione 2: piano sviluppato in pacchetti di lavoro (§5) e struttura di uno sciame di agenti per eseguirlo (§7). Revisione 3: correzione degli alias dei siti (§1.3, WP-S), dalla revisione di sicurezza automatica del 15/10/2026, eseguita nell'ondata 0. Revisione 4: verifica e sviluppo della specifica [web_servers_and_versioning_spec.md](../../web_servers_and_versioning_spec.md), accodati dopo il piano dei dati (§9, indicazione dell'utente del 15/10/2026).
+
+Avanzamento: ondata 0 fatta (WP-S `7f70e3d`, WP-0 `73adb32` sul branch `feature/data-layout`); ondata 1 in corso.
 Base: branch `refactor/code-structure`, commit `3df7ca3`.
 
 Due obiettivi, dall'indicazione dell'utente del 15/10/2026:
@@ -57,6 +59,8 @@ Limiti di FAT32/exFAT che oggi colpiscono questi passaggi:
 
 ### 1.3 Alias dei siti (revisione di sicurezza)
 
+Stato **prima** di WP-S, conservato per memoria: oggi tutti gli alias passano da `projects/alias.rs` (§5 WP-S).
+
 Un sito servito da Apache o Nginx può avere alias: `"/media": "storage/uploads"` nel `panel.json` del progetto, cioè in un file del repository, quindi non fidato (stesso principio di D-77). Gli alias finiscono nella configurazione del server in tre punti, ognuno con il suo codice di risoluzione:
 
 | Dove | Funzione | Forma accettata per un altro progetto |
@@ -103,7 +107,8 @@ La correzione è WP-S (§5).
 data\projects\<p>\
   dev-settings.json      agente, lastOpened, estensioni, versioni (formato di oggi, D-63)
   ports.json             { "ports": { "<azione>": porta }, "locked": ["<azione>"] }
-  apache\                httpd.conf e file del sito
+  apache\                httpd.conf del sito dedicato, conf.d\ con le direttive dell'utente
+  nginx\                 nginx.conf del sito dedicato
   private\               DACL protetto ed ereditabile (solo il proprietario)
     db.json              { "mariadb": "<password>", "mongodb": "<password>" }
     backups\             copie dei database (.sql, .archive.gz)
@@ -208,6 +213,8 @@ Ogni pacchetto (WP) ha: obiettivo, dipendenze, file, compiti numerati, criteri d
 - **Test.** Rifiutati da `parse`: `../x`, `../../Windows`, `C:/x`, `\\srv\x`, `/x`, `@../x`, `@altro/../x`, `@con/x`, `a"b`, `a\nb`, `${X}`, `a;b`, `a{b`. Rifiutati da `resolve`: cartella inesistente; giunzione nel progetto verso una cartella fuori (crate `junction`, già usato in `agents/sync`); altro progetto inesistente. Accettati: `storage/uploads`, `.`, `@common/assets`. Configurazioni generate di Apache, Nginx e pool senza `..` né caratteri fuori dall'insieme ammesso (controllo sul testo completo).
 
 ### WP-0 Contratti comuni
+
+**Stato: fatto il 15/10/2026** (`73adb32`): `Kit::project_data`, `Kit::with_host` (chiamato in `main.rs` con il `TEMP` dell'host), `projects/state.rs` (anche `nginx_dir` e `db_file`), `os/volume.rs`, e già `os/temp.rs` con `TempWork` funzionante, così A6 e A7 non dipendono l'uno dall'altro. I contratti hanno `#[allow(dead_code)]` finché non sono usati: si tolgono in WP-14. 284 test superati.
 
 - **Obiettivo.** Fissare le API che gli altri pacchetti usano, così possono lavorare in parallelo.
 - **Dipende da.** Nulla.
@@ -473,3 +480,143 @@ Lo sciame si avvia con la richiesta esplicita dell'utente («usa un workflow» o
 | Conflitti di merge fra agenti | Lavoro perso | Proprietà esclusiva dei file; file condivisi solo al coordinatore |
 | Alias dei siti verso fuori da `projects\` | File del disco serviti dal server del kit (anche in LAN con `DEVKIT_ALLOW_LAN`) | WP-S: tipi validati, risolutore unico con percorso canonico e senza collegamenti |
 | `panel.json` esistenti con alias non più accettati | Alias saltati dopo l'aggiornamento | Nessuno possibile oggi (`valid_alias_target` già rifiuta `../`); avviso nel log e nella pagina del sito |
+
+## 9. Server web e versioni: verifica e sviluppo della specifica (accodati)
+
+Fonte: [web_servers_and_versioning_spec.md](../../web_servers_and_versioning_spec.md) (S nel seguito). Indicazione dell'utente del 15/10/2026: includere la verifica e lo sviluppo della specifica, accodati al piano dei dati. Gran parte di S è nel commit `6a8f8e8`; la verifica del 15/10/2026 (agente di sola lettura, confronto punto per punto) ha dato l'esito qui sotto.
+
+### 9.1 Esito della verifica
+
+| S | Requisito | Stato | Cosa manca |
+| --- | --- | --- | --- |
+| 1.1 | Pool per (motore, linea server, linea PHP), un processo per pool, un VirtualHost per progetto | parziale | Id `apache-2.4-php-7.4` invece di `apache-2.4_php-7.4`. **Una sola porta per pool** con VirtualHost per nome, mentre S dà a ogni progetto la sua porta nello stesso processo: `127.0.0.1:<porta>` raggiunge solo il primo sito. Il pool elenca ogni progetto con un'azione Apache/Nginx, non solo quelli avviati |
+| 1.2a | Avvia progetto → aggancia al pool, avvia il pool se fermo | **manca** | `projects/run.rs:370-405` avvia ancora un httpd/nginx **dedicato** al progetto; nulla fuori dalla pagina Server Web usa i pool |
+| 1.2b | Pool già avviato → `Include` + `Listen` e ricarica senza nuovi processi | parziale | Solo dalla pagina; Apache fa ferma + 120 ms + avvia (interruzione), mai una ricarica morbida |
+| 1.2c | Ferma progetto → toglie il sito e ricarica; pool automatico vuoto si spegne; manuale o «Mantieni attivo» resta | **manca** | `stop` ferma solo il job; niente «Mantieni attivo» |
+| 1.3a | Apache e Nginx versionati nel catalogo | fatto | Nginx nel gruppo `languages`; Apache scarica solo l'ultima linea |
+| 1.3b | PHP < 8.0 (7.4…7.0, 5.6) | fatto, altro meccanismo | Tabella fissa `PHP_ARCHIVES` con SHA-256 invece della scansione di `archives/`. PHP 5.6 è compilato con VC11 e 7.0/7.1 con VC14: il kit fornisce solo il runtime VC++ 2015+, 5.6 probabilmente non parte (da verificare) |
+| 1.3c | DLL del modulo PHP per versione | fatto | Scelta con `<IfFile>` sulla DLL presente, non per versione: funziona |
+| 1.3d | Più linee di MariaDB/MongoDB accese insieme su porte diverse, `DB_PORT` nell'ambiente del progetto | **manca** | Una linea per motore |
+| 2 | Rilevamento: Node, Python/Go/Rust, statico | fatto | — |
+| 2 | PHP con `.htaccess` o CMS → Apache + `requires` (+ MariaDB per i CMS) | parziale | Solo WordPress (non PrestaShop, Drupal, Joomla); WordPress non aggiunge `mariadb` e l'avviso dice ancora «MariaDB non incluso nel kit»; Laravel con `public/.htaccess` non riceve l'azione Apache |
+| 2 | `nginx.conf` → Nginx | parziale | Solo nei progetti PHP; `.nginx` ignorato |
+| 2 | Compose: motore e linea esatta | parziale | Confronto a sottostringa (`image: httpd`), niente `compose.yml`/`docker-compose.yaml`, niente `Dockerfile` |
+| 2 | PHP semplice: proporre Apache accanto a `php -S` | **manca** | Solo `php -S` |
+| 3.1 | Pagina Server Web | parziale | Nessun contatore nella barra delle attività; motore/linee non modificabili; niente «Mantieni attivo», «Avvia con NEXKORA», registro, «+ Associa progetto», «rendi permanente» |
+| 3.2 | Tre modi di assegnazione | parziale | Automatico solo per l'elenco, non all'avvio; il selettore del sito onora solo i profili manuali e chi esegue il progetto lo ignora; `serverAssignProject` non è chiamato dall'interfaccia |
+| 3.3a | `<progetto>.localhost` + domini | fatto | Il sito dedicato usa `ServerName localhost:<porta>` |
+| 3.3b | Alias relativi, `@progetto/…` | fatto (WP-S) | `Options FollowSymLinks` nelle cartelle degli alias: un collegamento **dentro** la cartella viene seguito da Apache al momento della richiesta |
+| 4 | Versioni del progetto in due zone | fatto | `p.missing` non considerato esplicitamente; testo introduttivo senza i server web; nessun test Vitest |
+| 5.1 | `servers.json` con `keepAlive`, `autostart`, `manual`; pool automatici promuovibili | parziale | Mancano i tre campi e la promozione |
+| 5.2 | Comandi con stato `starting/error`, PID, registro, `server_reload` | parziale | Stato solo acceso/spento, nessun registro |
+| 6 | `CP_APACHE`, `CP_NGINX` nell'ambiente | fatto, altro meccanismo | — |
+
+Difetti trovati nel codice dei pool (`servers/mod.rs`, salvo dove indicato):
+
+1. **Due avvii insieme uccidono il pool buono** (`:648-740`): controllo «già avviato» e inserimento non sotto lo stesso lock; il secondo `RunningPool` sostituisce il primo e la chiusura del suo job uccide il processo funzionante.
+2. **Ricarica di Apache fallisce sulla porta** (`:788-791`): 120 ms non bastano perché la porta si liberi; il pool resta fermo.
+3. **Avvio fallito in silenzio** (`:715-740`): output su null, nessun errore se il server non risponde.
+4. **Linea sbagliata senza avviso** (`:180-188`, `versions/mod.rs:211-224`): una linea non installata ripiega su quella predefinita; un pool «PHP 7.4» può girare con 8.x.
+5. **Pool orfani**: l'id dei pool automatici dipende dall'ultima linea installata; dopo un'installazione un pool avviato sparisce dall'elenco ma resta acceso.
+6. **Porte**: nessun controllo di unicità fra profili; il ripiego dà 8081 anche se occupata; `list()` scrive `servers.json` e rileva tutti i progetti ogni 3 s.
+7. **Agganci doppi**: un progetto con l'azione `apache` rilevata e l'azione `site` viene agganciato due volte; può stare in un pool Apache e in uno Nginx insieme.
+8. **`assign_project` riavvia tutti i pool** e ignora gli errori (`:833-842`).
+9. **Nginx**: due `default_server`/`localhost` in conflitto; un solo `php-cgi` senza riavvio; porta FastCGI scelta e poi rilasciata prima dell'avvio (`nginx.rs:213-216`).
+10. **`php.ini` unico** (`data\php`) per tutte le versioni di PHP, 5.6 compresa.
+
+Contraddizioni con questo piano, risolte così:
+
+- File del sito: S li vuole in `data\app\projects\<p>\apache\vhost.conf`; vale D-89: `data\projects\<p>\apache\` (e `nginx\`). I file del pool restano in `data\servers\<pool>\`.
+- Direttive dell'utente: `conf.d\*.conf` del progetto oggi sono ignorate quando il progetto è servito da un pool; il VirtualHost del pool le includerà (WEB-1).
+- Variabili: nei pool `${CP_PROJECTS_FWD}/<p>` al posto di `${CP_PROJECT_FWD}`, necessario perché un processo serve più progetti.
+
+### 9.2 Scostamenti da confermare con l'utente
+
+| | S chiede | Oggi | Proposta |
+| --- | --- | --- | --- |
+| SC-1 | Scansione di `windows.php.net/downloads/releases/archives/` | Tabella fissa con SHA-256 | Tenere la tabella: ogni archivio ha la sua impronta verificata; la scansione darebbe file senza impronta pubblicata |
+| SC-2 | Id del pool `apache-2.4_php-7.4` | `apache-2.4-php-7.4` | Allineare a S (con migrazione delle porte salvate) |
+| SC-3 | DLL del modulo scelta per versione | `<IfFile>` sulla DLL presente | Tenere: stesso risultato, meno codice |
+| SC-4 | Nginx con `category: "web"` | gruppo `languages` | Allineare a S |
+| SC-5 | Una porta per progetto dentro il pool | Una porta per pool | Allineare a S: la porta del progetto da `data\projects\<p>\ports.json` (WP-2) |
+
+### 9.3 Pacchetti di lavoro
+
+#### WEB-1 Ciclo di vita dei pool legato ad Avvia/Ferma (S 1.1, 1.2, 3.2)
+
+- **Dipende da.** WP-2 (porte per progetto), WP-1 (cartelle del progetto).
+- **File.** `servers/mod.rs`, `projects/run.rs`, `commands/servers.rs`.
+- **Compiti.**
+  - TW1.1 Avvia di un'azione Apache/Nginx: calcola il pool (profilo esplicito di `panel.json`, compresi gli id automatici, altrimenti dalle versioni del progetto), aggancia il progetto con la **sua** porta (`Listen 127.0.0.1:<porta>` per progetto, SC-5), avvia il pool se fermo o lo ricarica.
+  - TW1.2 Ferma: stacca il sito e ricarica; un pool automatico senza progetti avviati si spegne; un pool manuale o con «Mantieni attivo» resta.
+  - TW1.3 Il pool contiene solo i progetti **avviati** (e quelli associati a mano a un pool manuale), una volta sola ciascuno, in un solo motore.
+  - TW1.4 Ricarica morbida: Nginx `-s reload`; Apache su Windows: **da verificare** se `httpd -k restart` funziona per un processo in console (è pensato per il servizio) o se va segnalato l'evento `ap<PID>_restart`; altrimenti ferma/avvia con attesa della porta libera.
+  - TW1.5 Il VirtualHost include `data\projects\<p>\apache\conf.d\*.conf`.
+  - TW1.6 Il sito dedicato di oggi resta solo come ripiego quando il pool non può partire, con avviso.
+- **Test.** Due progetti nello stesso pool su due porte; avvia/ferma con pool automatico che si spegne; pool manuale che resta; ricarica senza nuovo processo (Nginx).
+
+#### WEB-2 Robustezza dei pool (difetti 1-10)
+
+- **Dipende da.** WEB-1.
+- **File.** `servers/mod.rs`, `projects/nginx.rs`, `projects/apache.rs`, `install/web.rs` (php.ini).
+- **Compiti.** Un lock unico per avvio/arresto/ricarica (1); attesa della porta libera con limite (2); output del server in `data\app\logs\server-<pool>.log` e errore se non risponde (3); linee del pool installate prima dell'avvio, mai ripiego silenzioso (4); id stabili e pulizia delle porte di id scomparsi (5); unicità delle porte, `list()` senza scritture e con rilevamento in cache (6); `assign_project` ricarica solo il pool interessato e riporta gli errori (8); un solo `default_server` in Nginx, `php-cgi` sorvegliato, porta FastCGI tenuta fino all'avvio (9); `php.ini` per linea di PHP (10).
+- **Test.** Avvio concorrente (un solo processo); ricarica Apache con porta occupata qualche secondo; linea mancante → errore chiaro.
+
+#### WEB-3 `servers.json`, stato e comandi (S 5.1, 5.2)
+
+- **Dipende da.** WEB-1.
+- **File.** `servers/mod.rs`, `commands/servers.rs`, `ui/src/api/servers.ts`, `main.rs` (avvio automatico, coordinatore).
+- **Compiti.** Campi `keepAlive`, `autostart`, `manual` (chiavi sconosciute conservate); «rendi permanente» per un pool automatico; stato `starting | running | stopped | error` con messaggio; registro (ultime righe); `server_reload`; avvio dei pool `autostart` all'apertura dell'app.
+
+#### WEB-4 Rilevamento (S 2)
+
+- **Dipende da.** Nulla del piano dei dati.
+- **File.** `detect/php.rs`, `detect/mod.rs`, `detect/site.rs`, `tauri/catalog/relations.json`.
+- **Compiti.** CMS: PrestaShop, Drupal, Joomla accanto a WordPress, con `mariadb` in `requires` e avviso corretto; Laravel con `public/.htaccess` → azione Apache; `nginx.conf`/`.nginx` anche fuori dai progetti PHP; PHP semplice → azione Apache proposta accanto a `php -S`/`artisan serve`; Compose: `compose.yml`, `docker-compose.yaml`, valori fra virgolette, regole `Dockerfile` (`FROM php:7.4-apache` e simili).
+- **Test.** Un progetto di prova per ogni riga della tabella di S 2.1.
+
+#### WEB-5 PHP legacy e catalogo (S 1.3a-c, SC-1…SC-4)
+
+- **Dipende da.** WP-10 (installazioni nel temp).
+- **File.** `install/web.rs`, `tauri/catalog/components.json`.
+- **Compiti.** Runtime VC11 per PHP 5.6 (e verifica di 7.0/7.1 con VC14) scaricato con impronta, oppure 5.6 tolto se il runtime non è ridistribuibile in modo portabile; Apache con più linee; Nginx `category: web` (SC-4); id dei pool secondo SC-2.
+- **Test.** `php -v` di 5.6, 7.4 e 8.x installati nel kit (prova manuale).
+
+#### WEB-6 Più linee di database insieme (S 1.3d)
+
+- **Dipende da.** WP-3, WP-5 (password per progetto).
+- **File.** `db/services/mod.rs`, `db/services/data.rs`, `db/auth.rs`, `env.rs`.
+- **Compiti.** Servizi indicizzati per (motore, linea) con porta propria (3306 la predefinita, poi 3307…); il progetto con una linea scelta diversa usa quel servizio; `DB_PORT` (e `MYSQL_HOME` per linea) nell'ambiente del progetto; utenti e password del progetto creati in ogni linea che usa.
+- **Test.** Due linee di MariaDB accese insieme; progetto con la linea secondaria che si connette.
+
+#### WEB-7 Interfaccia (S 3.1, 3.2, 4)
+
+- **Dipende da.** WEB-1, WEB-3, WEB-6.
+- **File.** `ui/src/servers.tsx`, `ui/src/projects/site.tsx`, `ui/src/versions/project.tsx`, `ui/src/App.tsx`, `ui/src/locales/*` (coordinatore).
+- **Compiti.** Contatore dei server avviati nella barra delle attività; motore e linee modificabili; «Mantieni attivo», «Avvia con NEXKORA»; registro; «+ Associa progetto» con cartella pubblica; «Rendi permanente»; testi del sito corretti (pool per entrambi i motori); messaggio degli alias saltati (TS.6); versioni: `p.missing` nella zona 1 con «Scarica», testo introduttivo con i server web.
+- **Test.** Vitest per `servers.tsx`, `site.tsx`, `ProjectVersions`.
+
+#### WEB-8 Sicurezza dei siti, seguito di WP-S
+
+- **Dipende da.** WEB-1.
+- **File.** `projects/apache.rs`, `servers/mod.rs`.
+- **Compiti.** `Options FollowSymLinks` → `Options Indexes SymLinksIfOwnerMatch` nelle cartelle degli alias, oppure niente collegamenti seguiti; per la `DocumentRoot` valutare l'effetto su Laravel (`public/storage` è un collegamento): da decidere con l'utente.
+
+### 9.4 Agenti e ondate (dopo l'ondata 4)
+
+| Id | Ruolo | Pacchetti | Scrive | Modello / sforzo |
+| --- | --- | --- | --- | --- |
+| **W1** | Pool | WEB-1, WEB-2, WEB-3 (backend), WEB-8 | `servers/mod.rs`, `projects/run.rs`, `projects/apache.rs`, `projects/nginx.rs`, `commands/servers.rs` | Opus, alto |
+| **W2** | Rilevamento | WEB-4 | `detect/*`, `tauri/catalog/relations.json` | Sonnet, medio |
+| **W3** | PHP legacy e catalogo | WEB-5 | `install/web.rs`, `tauri/catalog/components.json` | Opus, medio |
+| **W4** | Database a più linee | WEB-6 | `db/services/*`, `db/auth.rs`, `env.rs` | Opus, alto |
+| **W5** | Interfaccia web | WEB-7 | `ui/src/servers.tsx`, `ui/src/projects/site.tsx`, `ui/src/versions/project.tsx`, `ui/src/App.tsx`, `ui/src/api/servers.ts` | Sonnet, medio |
+
+```text
+Ondata 5   W1 (WEB-1 → WEB-2 → WEB-3, WEB-8) │ W2 (WEB-4) │ W3 (WEB-5)   → merge W2, W3, W1; R e V
+Ondata 6   W4 (WEB-6)                                                    → merge, R, V
+Ondata 7   W5 (WEB-7)                                                    → merge, R, V
+Ondata 8   D (documenti di §9: D-91 pool legati ai progetti, CHANGELOG, TESTING) │ C (verifica completa)
+```
+
+Prima dell'ondata 5 servono le risposte a SC-1…SC-5 e a WEB-8.
