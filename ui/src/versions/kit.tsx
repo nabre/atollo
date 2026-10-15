@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VscAdd, VscCloudDownload, VscLock, VscTrash } from "react-icons/vsc";
 import { versionsAdd, versionsList, versionsRemove, type SetupSnapshot, type VersionedTool } from "../api";
 import { t } from "../i18n";
-import { useAction } from "../hooks";
+import { useAction, useLoad } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { ItemBar, ItemStatus, itemState } from "../setup";
 import { ByHandBox } from "../byhand";
@@ -279,18 +279,15 @@ function AddLine({
  * them in its own row (ToolVersions). `enabled` false (first start) asks
  * nothing. */
 export function useKitVersions(setup: SetupSnapshot | null, enabled: boolean) {
-  const [tools, setTools] = useState<VersionedTool[] | null>(null);
-  const load = useCallback(() => {
-    if (!enabled) return;
-    versionsList().then(setTools, () => {
-      setTools([]);
-    });
-  }, [enabled]);
+  const {
+    data: tools,
+    setData: setTools,
+    reload: load,
+  } = useLoad<VersionedTool[] | null>(versionsList, null, { onError: { fallback: [] }, enabled });
   const { busy, error, run: runAction } = useAction(load);
   // The tool of the last action, the one that shows its error.
   const [last, setLast] = useState<string | null>(null);
   const offers = useOffers(tools, load);
-  useEffect(load, [load]);
   useReloadOnSteps(setup, load);
   const run = useCallback(
     (id: string, key: string, task: () => Promise<void>) => {

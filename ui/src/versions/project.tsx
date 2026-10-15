@@ -1,10 +1,10 @@
 // The versions of the project page: the kit's line of each language, or
 // another one.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { projectVersions, projectVersionsSet, versionsAdd, type ProjectVersions as ProjectVersionsData } from "../api";
 import { t } from "../i18n";
 import { ComponentLogo } from "../logos";
-import { useAction } from "../hooks";
+import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { useSetup } from "../setup";
 import { EditorSection } from "../workbench";
@@ -14,16 +14,15 @@ import { LineSelect, LineState, RefreshLines } from "./lines";
 /** The versions of the project page: for each installed language, the
  * kit's line, another one on disk or one to download. */
 export function ProjectVersions({ project }: { project: string }) {
-  const [data, setData] = useState<ProjectVersionsData | null>(null);
   const setup = useSetup();
-  const load = useCallback(() => {
-    projectVersions(project).then(setData, () => {
-      setData(null);
-    });
-  }, [project]);
+  const read = useCallback(() => projectVersions(project), [project]);
+  const {
+    data,
+    setData,
+    reload: load,
+  } = useLoad<ProjectVersionsData | null>(read, null, { onError: { fallback: null } });
   const { busy, error, run } = useAction();
   const offers = useOffers(data?.tools ?? null, load);
-  useEffect(load, [load]);
   useReloadOnSteps(setup, load);
   const running = setup?.running ?? false;
   const tools = (data?.tools ?? []).filter((x) => x.installed && (x.downloadable || x.saved.length > 0));

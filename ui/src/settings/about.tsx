@@ -1,9 +1,8 @@
 // The sections of Settings about Atollo itself: its updates, where the kit
 // is.
-import { useEffect, useState } from "react";
 import { updateCheck, updateStatus, type UpdateStatus, type AppInfo } from "../api";
 import { BrandSymbol } from "../brand";
-import { useAction } from "../hooks";
+import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
 import { Button, Properties, SettingItem, SettingsGroup } from "../workbench";
@@ -39,11 +38,8 @@ export function KitInfo({ info }: { info: AppInfo }) {
 }
 
 export function Updates() {
-  const [st, setSt] = useState<UpdateStatus | null>(null);
+  const { data: st, setData: setSt } = useLoad<UpdateStatus | null>(updateStatus, null, { onError: "keep" });
   const { busy, error, run } = useAction();
-  useEffect(() => {
-    updateStatus().then(setSt, () => undefined);
-  }, []);
   if (!st) return null;
   let text: string;
   if (st.staged) text = t("La versione {0} è pronta: sostituisce questa alla chiusura di Atollo.", st.staged);

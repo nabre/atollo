@@ -1,12 +1,12 @@
 // A project's own MCP servers (DECISIONS.md D-78): in its .mcp.json for
 // Claude Code, copied to .codex\config.toml for Codex; Antigravity has only
 // the kit's servers.
-import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
+import { useCallback, useState, type SyntheticEvent } from "react";
 import { VscAdd, VscClose, VscSave, VscTrash } from "react-icons/vsc";
 import { projectMcp, projectMcpSet, type McpServer, type McpView } from "./api";
 import { t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
-import { useAction } from "./hooks";
+import { useAction, useLoad } from "./hooks";
 import { Select } from "./workbench";
 
 function describe(s: McpServer): string {
@@ -119,12 +119,9 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
 }
 
 export function ProjectMcpBox({ project }: { project: string }) {
-  const [view, setView] = useState<McpView | null>(null);
+  const read = useCallback(() => projectMcp(project), [project]);
+  const { data: view, reload: load } = useLoad<McpView | null>(read, null, { onError: "keep" });
   const [adding, setAdding] = useState(false);
-  const load = useCallback(() => {
-    projectMcp(project).then(setView, () => undefined);
-  }, [project]);
-  useEffect(load, [load]);
   const { busy, error, run } = useAction(load);
   if (!view) return null;
   const save = (servers: McpServer[]) => {

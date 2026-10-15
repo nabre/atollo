@@ -2,14 +2,14 @@
 // panel, what is running or installing in the kit (projects' actions,
 // database servers, the setup) and its output or error. The status bar's
 // Activity item opens and closes it.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VscClearAll, VscClose, VscDebugStop, VscGlobe } from "react-icons/vsc";
 import { servicesList, serviceStop, urlOpen, type RunInfo, type ServiceInfo, type SetupSnapshot } from "./api";
 import { t } from "./i18n";
 import { alive, stateText } from "./projects";
 import { SetupProgress, setupStatusText } from "./setup";
 import { ActionBar, Dot, IconButton, List, ListRow, Panel } from "./workbench";
-import { useEvery } from "./hooks";
+import { useLoad } from "./hooks";
 
 type Selected = { kind: "run"; key: string } | { kind: "service"; id: string } | { kind: "setup" } | null;
 
@@ -39,13 +39,11 @@ export function ActivityPanel({
   onClose: () => void;
 }) {
   const [selected, setSelected] = useState<Selected>(null);
-  const [services, setServices] = useState<ServiceInfo[]>([]);
+  const { data: services, setData: setServices } = useLoad<ServiceInfo[]>(servicesList, [], {
+    onError: "keep",
+    every: 4000,
+  });
   const logRef = useRef<HTMLPreElement>(null);
-
-  const readServices = useCallback(() => {
-    servicesList().then(setServices, () => undefined);
-  }, []);
-  useEvery(readServices, 4000);
 
   const list = Object.values(runs).sort((a, b) => b.start - a.start);
   const liveServices = services.filter((s) => s.state !== "stopped");

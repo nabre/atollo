@@ -4,7 +4,7 @@
 // the variables of .env. The summary shows the kit's tools and the commands;
 // «Crea il progetto» installs the tools, runs the commands with their output
 // here and opens the project. The instructions are in Settings.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VscAdd, VscClose, VscWand } from "react-icons/vsc";
 import {
   frameworksCancel,
@@ -26,7 +26,7 @@ import {
   usePlan,
 } from "./frameworks";
 import { ErrorLine } from "./common";
-import { useSubscription } from "./hooks";
+import { useLoad, useSubscription } from "./hooks";
 import { t } from "./i18n";
 import { Button, IconButton, Link, Notice, ProgressBar, SingleEditor } from "./workbench";
 
@@ -112,7 +112,6 @@ export function NewProjectPage({ onOpen, onSettings }: { onOpen: (project: strin
   const { base, setBase, addons, toggle, available } = useCombination(pieces);
   const { plan, error: planError } = usePlan(pieces, base, addons);
   const [name, setName] = useState("");
-  const [targets, setTargets] = useState<FrameworkTarget[]>([]);
   /** Values changed (or null: removed) of the plan's variables, by key. */
   const [envEdits, setEnvEdits] = useState<Record<string, string | null>>({});
   const [envAdded, setEnvAdded] = useState<EnvVar[]>([]);
@@ -123,10 +122,9 @@ export function NewProjectPage({ onOpen, onSettings }: { onOpen: (project: strin
   const [created, setCreated] = useState<string | null>(null);
   const logBox = useRef<HTMLDivElement>(null);
 
-  const loadTargets = useCallback(() => {
-    frameworksTargets().then(setTargets, () => undefined);
-  }, []);
-  useEffect(loadTargets, [loadTargets]);
+  const { data: targets, reload: loadTargets } = useLoad<FrameworkTarget[]>(frameworksTargets, [], {
+    onError: "keep",
+  });
 
   useSubscription(onFramework, (e: FrameworkEvent) => {
     if (e.command !== null || e.line === null) setProgress({ step: e.step, total: e.total });

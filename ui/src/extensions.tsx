@@ -2,7 +2,7 @@
 // matrix, read only, in "Linguaggi e strumenti", and the extensions of a
 // project in its panel: those of its languages, ticked unless removed, and
 // those added by hand. Installed extensions work in the whole editor.
-import { useEffect, useMemo, useState, type ReactNode, type SyntheticEvent } from "react";
+import { useMemo, useState, type ReactNode, type SyntheticEvent } from "react";
 import { VscAdd, VscCheck, VscTools } from "react-icons/vsc";
 import {
   extensionsMatrix,
@@ -15,7 +15,7 @@ import {
 import { t } from "./i18n";
 import { ComponentLogo, LanguageLogo } from "./logos";
 import { ActionButton, ErrorLine } from "./common";
-import { useAction } from "./hooks";
+import { useAction, useLoad } from "./hooks";
 import { DataTable } from "./workbench";
 
 /** The matrix: one row per extension, one column per language or tool, then "all". */
@@ -27,12 +27,10 @@ export function ExtensionsMatrixSection({
   /** A new list when the page reloads: the installed marks follow. */
   components: ComponentInfo[];
 }) {
-  const [matrix, setMatrix] = useState<ExtensionsMatrix | null>(null);
-  useEffect(() => {
-    extensionsMatrix().then(setMatrix, () => {
-      setMatrix(null);
-    });
-  }, [components]);
+  const { data: matrix } = useLoad<ExtensionsMatrix | null>(extensionsMatrix, null, {
+    onError: { fallback: null },
+    key: components,
+  });
   /** Languages and tools of the projects: their columns are highlighted. */
   const used = useMemo(() => new Set(projects.flatMap((p) => [...p.languages, ...p.requires])), [projects]);
   if (!matrix) return null;
@@ -183,14 +181,9 @@ function groups(p: ProjectInfo, matrix: ExtensionsMatrix | null): ExtGroup[] {
  * rows with a tick, name, id and state; one added by its id at the end. */
 export function ProjectExtensions({ project: p, onChanged }: { project: ProjectInfo; onChanged: () => void }) {
   const { busy, error, run } = useAction(onChanged);
-  const [matrix, setMatrix] = useState<ExtensionsMatrix | null>(null);
+  const { data: matrix } = useLoad<ExtensionsMatrix | null>(extensionsMatrix, null, { onError: { fallback: null } });
   const [adding, setAdding] = useState("");
   const [invalid, setInvalid] = useState(false);
-  useEffect(() => {
-    extensionsMatrix().then(setMatrix, () => {
-      setMatrix(null);
-    });
-  }, []);
   const choice = p.settings.extensions ?? { added: [], removed: [] };
   const save = (key: string, added: string[], removed: string[]) => {
     run(key, () => projectExtensions(p.id, added, removed));
