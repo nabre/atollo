@@ -1,7 +1,7 @@
 // GitHub page: the kit's GitHub account and its repositories (port of
 // nabre/atollo setup/extensions/github-repos). One sign-in for everything:
 // this page, the kit's Git (editor, consoles, agents) and GitHub CLI, saved
-// in data\gh (src-tauri/src/github.rs, DECISIONS.md D-70).
+// in data\gh (tauri/src/github.rs, DECISIONS.md D-70).
 import { useCallback, useEffect, useMemo, useState, type SyntheticEvent } from "react";
 import {
   VscAccount,

@@ -1,5 +1,5 @@
 // The app: its information, settings and updates, and what it opens outside
-// (the PC's browser, File Explorer). Rust: src-tauri/src/commands/app.rs.
+// (the PC's browser, File Explorer). Rust: tauri/src/commands/app.rs.
 
 import { invoke } from "@tauri-apps/api/core";
 import { act, browserPreview, query } from "./core";

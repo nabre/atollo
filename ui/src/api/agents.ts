@@ -1,5 +1,5 @@
 // Claude Code, Codex and Antigravity: state, plan limits and usage
-// (src-tauri/src/stats), launch. Rust: src-tauri/src/commands/agents.rs.
+// (tauri/src/stats), launch. Rust: tauri/src/commands/agents.rs.
 
 import { invoke } from "@tauri-apps/api/core";
 import { act, browserPreview, query } from "./core";

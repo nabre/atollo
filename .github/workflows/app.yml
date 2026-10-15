@@ -157,7 +157,7 @@ jobs:
         shell: pwsh
         run: |
           # The self-updater compares app-vX.Y.Z with the exe's CARGO_PKG_VERSION.
-          $manifest = Get-Content src-tauri/Cargo.toml -Raw
+          $manifest = Get-Content tauri/Cargo.toml -Raw
           $package = [regex]::Match($manifest, '(?ms)^\[package\][^\n]*\n(.*?)(?=^\[|\z)').Groups[1].Value
           $version = [regex]::Match($package, '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "version '$version' is not X.Y.Z: the updater would ignore it" }
@@ -170,7 +170,7 @@ jobs:
       - name: Release assets
         shell: pwsh
         run: |
-          # Names and .sha256 files as read by src-tauri/src/self_update.rs.
+          # Names and .sha256 files as read by tauri/src/self_update.rs.
           New-Item -ItemType Directory -Force dist | Out-Null
           $assets = @{ 'x86_64-pc-windows-msvc' = 'Atollo-x64.exe'; 'aarch64-pc-windows-msvc' = 'Atollo-arm64.exe' }
           foreach ($target in $assets.Keys) {

@@ -1,4 +1,4 @@
-// Editor extensions by language (src-tauri/src/editor_ext.rs): the kit's
+// Editor extensions by language (tauri/src/editor_ext.rs): the kit's
 // matrix, read only, in "Linguaggi e strumenti", and the extensions of a
 // project in its panel: those of its languages, ticked unless removed, and
 // those added by hand. Installed extensions work in the whole editor.

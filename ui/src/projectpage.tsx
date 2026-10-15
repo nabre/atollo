@@ -71,7 +71,7 @@ import {
 
 type Section = "run" | "site" | "components" | "databases" | "extensions" | "editor" | "git";
 
-/** Names of the kit's components (src-tauri/catalog/components.json). */
+/** Names of the kit's components (tauri/catalog/components.json). */
 const COMPONENT_NAMES: Record<string, string> = {
   claude: "Claude Code",
   codex: "Codex",

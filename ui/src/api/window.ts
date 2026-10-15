@@ -1,5 +1,5 @@
-// Removing the drive and closing (src-tauri/src/sessions.rs).
-// Rust: src-tauri/src/commands/window.rs.
+// Removing the drive and closing (tauri/src/sessions.rs).
+// Rust: tauri/src/commands/window.rs.
 
 import { act, query, subscribe } from "./core";
 

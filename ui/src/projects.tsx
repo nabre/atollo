@@ -1,5 +1,5 @@
 // Projects page, as VSCodium's Explorer: the side bar lists the projects in
-// projects\ (detected by src-tauri/src/detect, corrected by panel.json) with
+// projects\ (detected by tauri/src/detect, corrected by panel.json) with
 // their inline actions, and the ways to make a new one; the editor opens
 // each project in its own tab (projectpage.tsx). Web actions get their own
 // port and open in the browser.

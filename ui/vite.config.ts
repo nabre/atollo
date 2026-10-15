@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 // The app window loads the built files from the exe; no CDN, no remote
-// resources (CSP in src-tauri/tauri.conf.json).
+// resources (CSP in tauri/tauri.conf.json).
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   clearScreen: false,

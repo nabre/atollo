@@ -1,5 +1,5 @@
 // Frameworks of the new-project wizard (frameworks.rs, D-83).
-// Rust: src-tauri/src/commands/frameworks.rs.
+// Rust: tauri/src/commands/frameworks.rs.
 
 import { invoke } from "@tauri-apps/api/core";
 import { act, browserPreview, query, subscribe } from "./core";

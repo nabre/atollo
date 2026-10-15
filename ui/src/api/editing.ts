@@ -1,5 +1,5 @@
 // The editor, the kit's console, a project's editor settings and extensions.
-// Rust: src-tauri/src/commands/editing.rs.
+// Rust: tauri/src/commands/editing.rs.
 
 import { act, query, subscribe } from "./core";
 
