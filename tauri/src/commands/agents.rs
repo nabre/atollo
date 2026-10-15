@@ -24,12 +24,14 @@ pub async fn agents_stats<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     force: bool,
-) -> Result<crate::stats::Report, String> {
+) -> Result<crate::agents::stats::Report, String> {
     ensure_main(&webview)?;
     let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
-    tauri::async_runtime::spawn_blocking(move || crate::stats::collect(&kit, &env, lang, force))
-        .await
-        .map_err(|e| fail("stats", e))
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::agents::stats::collect(&kit, &env, lang, force)
+    })
+    .await
+    .map_err(|e| fail("stats", e))
 }
 
 /// Opens an agent in a kit console in the project (never elsewhere).

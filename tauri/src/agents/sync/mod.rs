@@ -398,7 +398,7 @@ pub fn run(kit: &Kit, project: Option<&Path>) -> Report {
     };
 
     step("kit moved", &mut report, &mut |r| {
-        crate::relocate::relocate(kit, r)
+        crate::agents::relocate::relocate(kit, r)
     });
     let tools = tools(&p);
     // Second pass on Claude and Codex: they get what came from the later ones.

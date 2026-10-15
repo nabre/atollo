@@ -320,7 +320,7 @@ pub fn sync_tree(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agents_sync::tests::kit;
+    use crate::agents::sync::tests::kit;
     use std::time::Duration;
 
     #[test]

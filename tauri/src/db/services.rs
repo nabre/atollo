@@ -834,7 +834,7 @@ impl Services {
         let name = auth::db_name(project);
         let dir = self.backup_dir(project);
         fs::create_dir_all(&dir)?;
-        let stamp = crate::agents_sync::stamp();
+        let stamp = crate::agents::sync::stamp();
         match engine {
             "mongodb" => {
                 let file = dir.join(format!("{name}-{stamp}.archive.gz"));

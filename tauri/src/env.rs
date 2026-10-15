@@ -356,7 +356,7 @@ impl KitEnv {
             path.push(app(r"codex\codex-path"));
         }
         // Antigravity is not on the PATH itself: `agy` is data\kit\bin\agy.cmd,
-        // which carries its login in and out of Windows (keyring.rs).
+        // which carries its login in and out of Windows (agents/keyring.rs).
         if has(r"python\python.exe") {
             path.push(app("python"));
             path.push(app(r"python\Scripts"));

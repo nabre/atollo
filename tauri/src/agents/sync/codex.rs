@@ -336,7 +336,7 @@ pub fn sync_config(p: &Paths, servers: &Servers, report: &mut Report) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agents_sync::tests::kit;
+    use crate::agents::sync::tests::kit;
     use serde_json::json;
 
     #[test]

@@ -19,7 +19,7 @@ use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::agents_sync::codex::{codex_server, strip_block};
+use crate::agents::sync::codex::{codex_server, strip_block};
 use crate::fsx::write_atomic;
 
 const CODEX_BEGIN: &str =
@@ -68,7 +68,7 @@ fn server_of(name: &str, v: &Value) -> McpServer {
     let s = |k: &str| v.get(k).and_then(Value::as_str).map(str::to_owned);
     McpServer {
         name: name.to_owned(),
-        kind: crate::agents_sync::mcp::server_type(v),
+        kind: crate::agents::sync::mcp::server_type(v),
         command: s("command"),
         args: v
             .get("args")

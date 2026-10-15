@@ -95,7 +95,7 @@ pub fn of_agent(kit: &Kit, id: &str) -> BTreeSet<&'static str> {
         out.insert(c.id.as_str());
     }
     let servers =
-        crate::agents_sync::mcp::load(&crate::agents_sync::Paths::of(kit)).unwrap_or_default();
+        crate::agents::sync::mcp::load(&crate::agents::sync::Paths::of(kit)).unwrap_or_default();
     for server in servers.values() {
         if let Some(program) = server.get("command").and_then(|c| c.as_str()) {
             out.extend(component_of(program));
@@ -150,7 +150,7 @@ mod tests {
             of_agent(&kit, "codex").into_iter().collect::<Vec<_>>(),
             ["codex"]
         );
-        let file = crate::agents_sync::Paths::of(&kit).mcp_file();
+        let file = crate::agents::sync::Paths::of(&kit).mcp_file();
         std::fs::create_dir_all(file.parent().unwrap()).unwrap();
         std::fs::write(
             &file,
