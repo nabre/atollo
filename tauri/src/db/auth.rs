@@ -90,8 +90,16 @@ pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
 }
 
 /// A project's `private\db.json`: engine (`mariadb`, `mongodb`) → password
-/// of its user; other keys kept as they are.
-type ProjectSecrets = BTreeMap<String, serde_json::Value>;
+/// of its user, and `names`: engine → name of its database and user (an
+/// object, so the readers of passwords skip it); other keys kept as they are.
+///
+/// ```json
+/// { "mariadb": "<password>", "names": { "mariadb": "shop" } }
+/// ```
+pub(crate) type ProjectSecrets = serde_json::Map<String, serde_json::Value>;
+
+/// The key of the names in `db.json`.
+const NAMES: &str = "names";
 
 fn project_state(kit: &Kit, project: &str) -> Result<ProjectState> {
     match ProjectState::of(kit, project) {
@@ -162,24 +170,189 @@ pub fn project_password(kit: &Kit, project: &str, engine: &str) -> Option<String
 }
 
 /// [`project_password`] that fails when `db.json` cannot be read.
+#[allow(dead_code)] // the tests
 pub fn try_project_password(kit: &Kit, project: &str, engine: &str) -> Result<Option<String>> {
     Ok(try_project_passwords(kit, project)?.remove(engine))
 }
 
-/// The password the project's user on `engine` gets: the stored one, or a
-/// new one stored before any server hears of it. A `db.json` that cannot be
-/// read stops here, so a server never gets a password stored nowhere; a
-/// server call that fails after can be repeated with the stored one.
-pub fn ensure_project_password(kit: &Kit, project: &str, engine: &str) -> Result<String> {
-    if let Some(password) = try_project_password(kit, project, engine)? {
-        return Ok(password);
-    }
-    let password = new_password()?;
-    set_project_password(kit, project, engine, &password)?;
-    Ok(password)
+/// Name and password of the project's database and user on `engine`, as
+/// the server must get them: those stored, or new ones stored (both in one
+/// write) before any server hears of them. Refused, before anything is
+/// written, when `db.json` cannot be read (a server never gets a password
+/// stored nowhere), when the name is one of the server's own, or when
+/// another project of the kit already uses it (its user would get this
+/// project's password, its database would be shared). A server call that
+/// fails after can be repeated with what is stored.
+pub fn ensure_project_db(kit: &Kit, project: &str, engine: &str) -> Result<(String, String)> {
+    let mut secrets = read_project(&project_file_to_read(kit, project)?)?.unwrap_or_default();
+    let name = name_in(&secrets, project, engine)?;
+    check_name_free(kit, project, engine, &name)?;
+    let stored_name = stored_name(&secrets, engine)?.is_some();
+    let password = match secrets.get(engine).and_then(|v| v.as_str()) {
+        Some(password) if stored_name => return Ok((name, password.to_owned())),
+        Some(password) => password.to_owned(),
+        None => new_password()?,
+    };
+    secrets.insert(engine.to_owned(), password.clone().into());
+    names_mut(&mut secrets)?.insert(engine.to_owned(), name.clone().into());
+    let path = project_file(kit, project)?;
+    write_in_private(&path, &serde_json::to_string_pretty(&secrets)?)?;
+    Ok((name, password))
 }
 
-/// Stores the password of the project's user on `engine`.
+/// The name of the project's database and user on `engine`: the one stored
+/// in its `db.json`; for data created before names were stored (a password,
+/// no name) the rule of that time ([`legacy_db_name`]); with nothing stored,
+/// the name a creation gives ([`db_name`]). An error when `db.json` cannot
+/// be read (never taken for "nothing stored") and when the name is one of
+/// the server's own: the kit never creates, alters or drops those, the user
+/// renames them by hand.
+pub fn project_db_name(kit: &Kit, project: &str, engine: &str) -> Result<String> {
+    let secrets = read_project(&project_file_to_read(kit, project)?)?.unwrap_or_default();
+    name_in(&secrets, project, engine)
+}
+
+/// [`project_db_name`] on a `db.json` already read.
+fn name_in(secrets: &ProjectSecrets, project: &str, engine: &str) -> Result<String> {
+    let Some(name) = used_name(secrets, project, engine)? else {
+        return Ok(db_name(project, engine));
+    };
+    if is_reserved(engine, &name) {
+        bail!(
+            "{project}: its database and user on {engine} are named {name}, like one of the \
+             server's own: the kit leaves them alone. Rename database and user by hand and \
+             write the new name in data\\projects\\{project}\\private\\db.json \
+             (\"names\": {{ \"{engine}\": \"<name>\" }})"
+        );
+    }
+    if !is_valid_name(&name) {
+        bail!("{project}: the name of its database on {engine} in db.json is not valid");
+    }
+    Ok(name)
+}
+
+/// A name the kit gives: lower case letters, digits and `_`, at most 64
+/// characters; nothing to escape in SQL or mongosh.
+pub fn is_valid_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 64
+        && name
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+}
+
+/// The name stored for `engine`; an error when `names` is not what this
+/// version writes (never guessed over).
+fn stored_name(secrets: &ProjectSecrets, engine: &str) -> Result<Option<String>> {
+    let Some(names) = secrets.get(NAMES) else {
+        return Ok(None);
+    };
+    let Some(names) = names.as_object() else {
+        bail!("db.json: \"{NAMES}\" is not an object");
+    };
+    match names.get(engine) {
+        None => Ok(None),
+        Some(serde_json::Value::String(name)) => Ok(Some(name.clone())),
+        Some(_) => bail!("db.json: the name for {engine} is not text"),
+    }
+}
+
+/// The name the project already uses on `engine`: stored, or the rule of
+/// the time for data with a password and no name; `None` when it has
+/// nothing there (no server knows a name of it).
+fn used_name(secrets: &ProjectSecrets, project: &str, engine: &str) -> Result<Option<String>> {
+    if let Some(name) = stored_name(secrets, engine)? {
+        return Ok(Some(name));
+    }
+    Ok(secrets
+        .get(engine)
+        .is_some_and(serde_json::Value::is_string)
+        .then(|| legacy_db_name(project)))
+}
+
+/// `names` of `db.json`, added when missing.
+fn names_mut(secrets: &mut ProjectSecrets) -> Result<&mut ProjectSecrets> {
+    match secrets
+        .entry(NAMES)
+        .or_insert_with(|| serde_json::Value::Object(Default::default()))
+    {
+        serde_json::Value::Object(names) => Ok(names),
+        _ => bail!("db.json: \"{NAMES}\" is not an object"),
+    }
+}
+
+/// The other project of the kit (a folder of `data\projects\`) whose
+/// database and user on `engine` are named `name` (stored, or by the rule
+/// of the time), if any. A `db.json` that cannot be read is an error: what
+/// it names is unknown.
+pub fn name_used_by(kit: &Kit, project: &str, engine: &str, name: &str) -> Result<Option<String>> {
+    for other in crate::projects::state::all(kit) {
+        // One folder on Windows, whatever the case.
+        if other.eq_ignore_ascii_case(project) {
+            continue;
+        }
+        let used = read_project(&project_file_to_read(kit, &other)?)
+            .and_then(|s| used_name(&s.unwrap_or_default(), &other, engine))
+            .map_err(|e| anyhow::anyhow!("the databases of the project {other}: {e:#}"))?;
+        if used.is_some_and(|n| n.eq_ignore_ascii_case(name)) {
+            return Ok(Some(other));
+        }
+    }
+    Ok(None)
+}
+
+/// Refused when another project of the kit uses `name` on `engine`
+/// ([`name_used_by`]): creating would give its user this project's password,
+/// dropping would take its database away.
+pub fn check_name_free(kit: &Kit, project: &str, engine: &str, name: &str) -> Result<()> {
+    if let Some(other) = name_used_by(kit, project, engine, name)? {
+        bail!(
+            "the database and user {name} on {engine} belong to the project {other} as well: \
+             nothing done on the server. Rename one of the projects' databases by hand"
+        );
+    }
+    Ok(())
+}
+
+/// Data created before names were stored (passwords, no names) gets the
+/// names its databases were created with, from `project`: for one given to
+/// another project (`projects::state::adopt`) and for the migration of a
+/// kit of layout 1. A name already there is never replaced; one of the
+/// server's own is left out ([`project_db_name`] reports it). True when
+/// something was added.
+pub(crate) fn add_legacy_names(secrets: &mut ProjectSecrets, project: &str) -> Result<bool> {
+    let engines: Vec<String> = secrets
+        .iter()
+        .filter(|(k, v)| v.is_string() && crate::db::services::SERVERS.contains(&k.as_str()))
+        .map(|(k, _)| k.clone())
+        .collect();
+    let mut added = false;
+    for engine in engines {
+        let name = legacy_db_name(project);
+        if stored_name(secrets, &engine)?.is_none() && !is_reserved(&engine, &name) {
+            names_mut(secrets)?.insert(engine, name.into());
+            added = true;
+        }
+    }
+    Ok(added)
+}
+
+/// [`add_legacy_names`] on the `db.json` of `project`, written back (in
+/// its private folder) only when something was added.
+pub(crate) fn keep_legacy_names(kit: &Kit, project: &str) -> Result<()> {
+    let path = project_file_to_read(kit, project)?;
+    let Some(mut secrets) = read_project(&path)? else {
+        return Ok(());
+    };
+    if add_legacy_names(&mut secrets, project)? {
+        write_private(&path, &serde_json::to_string_pretty(&secrets)?)?;
+    }
+    Ok(())
+}
+
+/// Stores the password of the project's user on `engine` (no name: as a
+/// `db.json` of before the names; creations use [`ensure_project_db`]).
+#[allow(dead_code)] // the tests
 pub fn set_project_password(kit: &Kit, project: &str, engine: &str, password: &str) -> Result<()> {
     let path = project_file(kit, project)?;
     let mut secrets = read_project(&path)?.unwrap_or_default();
@@ -226,25 +399,39 @@ pub fn root_password_sql(password: &str) -> String {
     )
 }
 
-/// Databases and users of the servers themselves: a project named after one
-/// would create, alter or drop it (`DROP DATABASE mysql`, the `root` user,
-/// MongoDB's `admin` with every user in it).
-const RESERVED: &[&str] = &[
+/// Databases and users of MariaDB itself: a project named after one would
+/// create, alter or drop it (`DROP DATABASE mysql`, the `root` user).
+const MARIADB_RESERVED: &[&str] = &[
     "mysql",
     "information_schema",
     "performance_schema",
     "sys",
     "root",
     "mariadb_sys",
-    "admin",
-    "local",
-    "config",
 ];
 
-/// Name of a project's database and user: lower case letters, digits and
-/// `_`, at most 64 characters (MariaDB's limit for databases); never one of
-/// the servers' own names, which get `_db` after them.
-pub fn db_name(project: &str) -> String {
+/// MongoDB's own databases (`admin` holds every user of the server).
+const MONGODB_RESERVED: &[&str] = &["admin", "local", "config"];
+
+/// `name` is a database or user of the server of `engine` itself (of
+/// either server for an engine this version does not know).
+pub fn is_reserved(engine: &str, name: &str) -> bool {
+    let lists: &[&[&str]] = match engine {
+        "mariadb" => &[MARIADB_RESERVED],
+        "mongodb" => &[MONGODB_RESERVED],
+        _ => &[MARIADB_RESERVED, MONGODB_RESERVED],
+    };
+    lists
+        .iter()
+        .flat_map(|l| l.iter())
+        .any(|r| r.eq_ignore_ascii_case(name))
+}
+
+/// The rule of the names before they were stored: lower case letters,
+/// digits and `_`, at most 64 characters (MariaDB's limit for databases).
+/// Many projects give the same name (`my-app`, `my_app`), so it is only
+/// read for data created with it; [`project_db_name`] is the name in use.
+fn legacy_db_name(project: &str) -> String {
     let mut name: String = project
         .to_ascii_lowercase()
         .chars()
@@ -254,7 +441,16 @@ pub fn db_name(project: &str) -> String {
     if name.trim_matches('_').is_empty() {
         name = "progetto".into();
     }
-    if RESERVED.contains(&name.as_str()) {
+    name
+}
+
+/// The name a new database and user of the project on `engine` gets (then
+/// stored in `db.json`): [`legacy_db_name`], never one of that server's own
+/// names, which get `_db` after them. Only for what is not created yet:
+/// anything that reaches a server uses [`project_db_name`].
+pub fn db_name(project: &str, engine: &str) -> String {
+    let mut name = legacy_db_name(project);
+    if is_reserved(engine, &name) {
         name.push_str("_db");
     }
     name
@@ -330,8 +526,9 @@ pub struct ProjectDb {
     pub url: String,
 }
 
-pub fn project_db(engine: &str, project: &str, password: &str, port: u16) -> ProjectDb {
-    let name = db_name(project);
+/// The connection to the database and user `name` ([`project_db_name`]).
+pub fn project_db(engine: &str, name: &str, password: &str, port: u16) -> ProjectDb {
+    let name = name.to_owned();
     let url = match engine {
         "mongodb" => {
             format!("mongodb://{name}:{password}@127.0.0.1:{port}/{name}?authSource={name}")
@@ -485,26 +682,41 @@ pub(crate) mod tests {
 
     #[test]
     fn names_and_sql() {
-        assert_eq!(db_name("Negozio-Online"), "negozio_online");
-        assert_eq!(db_name("app & co (1)"), "app___co__1_");
-        assert_eq!(db_name("---"), "progetto");
-        // never the servers' own databases or users
-        for (project, name) in [
-            ("mysql", "mysql_db"),
-            ("MySQL", "mysql_db"),
-            ("sys", "sys_db"),
-            ("information_schema", "information_schema_db"),
-            ("root", "root_db"),
-            ("mariadb.sys", "mariadb_sys_db"),
-            ("admin", "admin_db"),
-            ("local", "local_db"),
-            ("config", "config_db"),
-        ] {
-            assert_eq!(db_name(project), name, "{project}");
-            assert!(project_drop_sql(&db_name(project)).contains(&format!("`{name}`")));
+        for engine in ["mariadb", "mongodb"] {
+            assert_eq!(db_name("Negozio-Online", engine), "negozio_online");
+            assert_eq!(db_name("app & co (1)", engine), "app___co__1_");
+            assert_eq!(db_name("---", engine), "progetto");
+            assert_eq!(db_name("mysql2", engine), "mysql2");
+            assert_eq!(db_name(&"x".repeat(80), engine).len(), 64);
         }
-        assert_eq!(db_name("mysql2"), "mysql2");
-        assert_eq!(db_name(&"x".repeat(80)).len(), 64);
+        // never the server's own databases or users; those of the other
+        // server are ordinary names
+        for (project, maria, mongo) in [
+            ("mysql", "mysql_db", "mysql"),
+            ("MySQL", "mysql_db", "mysql"),
+            ("sys", "sys_db", "sys"),
+            (
+                "information_schema",
+                "information_schema_db",
+                "information_schema",
+            ),
+            (
+                "performance_schema",
+                "performance_schema_db",
+                "performance_schema",
+            ),
+            ("root", "root_db", "root"),
+            ("mariadb.sys", "mariadb_sys_db", "mariadb_sys"),
+            ("admin", "admin", "admin_db"),
+            ("local", "local", "local_db"),
+            ("Config", "config", "config_db"),
+        ] {
+            assert_eq!(db_name(project, "mariadb"), maria, "{project}");
+            assert_eq!(db_name(project, "mongodb"), mongo, "{project}");
+            assert!(project_drop_sql(&db_name(project, "mariadb")).contains(&format!("`{maria}`")));
+        }
+        assert!(is_reserved("other", "admin") && is_reserved("other", "mysql"));
+        assert_eq!(legacy_db_name("mysql"), "mysql");
         let pw = "0123456789abcdef0123456789abcdef";
         let sql = project_sql("shop", pw);
         assert!(sql.contains("CREATE DATABASE IF NOT EXISTS `shop`"));
@@ -729,13 +941,18 @@ pub(crate) mod tests {
         assert!(!private.exists(), "reading made private\\");
         assert!(try_project_password(&kit, "..", "mariadb").is_err());
 
-        // a new password is stored before it is returned (to the server)
-        let pw = ensure_project_password(&kit, "shop", "mariadb").unwrap();
+        // a new password and its name are stored before they are returned
+        // (to the server)
+        let (name, pw) = ensure_project_db(&kit, "shop", "mariadb").unwrap();
+        assert_eq!(name, "shop");
         assert_eq!(pw.len(), 32);
         assert_eq!(project_password(&kit, "shop", "mariadb"), Some(pw.clone()));
+        let json: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(private.join("db.json")).unwrap()).unwrap();
+        assert_eq!(json["names"]["mariadb"], "shop");
         assert_eq!(
-            ensure_project_password(&kit, "shop", "mariadb").unwrap(),
-            pw
+            ensure_project_db(&kit, "shop", "mariadb").unwrap(),
+            (name, pw)
         );
 
         // not JSON: an error, the file untouched
@@ -744,15 +961,21 @@ pub(crate) mod tests {
         assert!(try_project_password(&kit, "shop", "mariadb").is_err());
         assert!(try_project_passwords(&kit, "shop").is_err());
         assert_eq!(project_password(&kit, "shop", "mariadb"), None, "lenient");
-        assert!(ensure_project_password(&kit, "shop", "mariadb").is_err());
-        assert!(ensure_project_password(&kit, "shop", "mongodb").is_err());
+        assert!(ensure_project_db(&kit, "shop", "mariadb").is_err());
+        assert!(ensure_project_db(&kit, "shop", "mongodb").is_err());
+        assert!(project_db_name(&kit, "shop", "mariadb").is_err());
         assert_eq!(fs::read_to_string(&file).unwrap(), "{ not json");
+
+        // another project's unreadable file stops a creation too: what it
+        // names is unknown
+        assert!(ensure_project_db(&kit, "blog", "mariadb").is_err());
+        assert!(!tmp.0.join(r"data\projects\blog").exists());
 
         // a folder where the file should be: cannot be read either
         fs::remove_file(&file).unwrap();
         fs::create_dir(&file).unwrap();
         assert!(try_project_password(&kit, "shop", "mariadb").is_err());
-        assert!(ensure_project_password(&kit, "shop", "mariadb").is_err());
+        assert!(ensure_project_db(&kit, "shop", "mariadb").is_err());
         fs::remove_dir(&file).unwrap();
 
         // dropping reads without creating: nothing comes back after
@@ -760,6 +983,144 @@ pub(crate) mod tests {
         fs::remove_dir_all(tmp.0.join(r"data\projects\shop")).unwrap();
         assert!(drop_project(&kit, "shop").unwrap().is_empty());
         assert!(!private.exists());
+    }
+
+    fn write_db_json(kit: &Kit, project: &str, json: &str) {
+        let file = kit.project_data().join(project).join(r"private\db.json");
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(file, json).unwrap();
+    }
+
+    fn db_json(kit: &Kit, project: &str) -> serde_json::Value {
+        let file = kit.project_data().join(project).join(r"private\db.json");
+        serde_json::from_str(&fs::read_to_string(file).unwrap()).unwrap()
+    }
+
+    /// The stored name wins; data from before names were stored keeps the
+    /// rule of its time; a new database gets the server's reserved names
+    /// with `_db`, only for that server.
+    #[test]
+    fn names_stored_legacy_and_new() {
+        let tmp = crate::kit::tests::TempDir::new("db-auth-names");
+        let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+        kit.prepare().unwrap();
+
+        // nothing stored: the new rule, per server, nothing created
+        assert_eq!(
+            project_db_name(&kit, "admin", "mongodb").unwrap(),
+            "admin_db"
+        );
+        assert_eq!(project_db_name(&kit, "admin", "mariadb").unwrap(), "admin");
+        assert_eq!(
+            project_db_name(&kit, "mysql", "mariadb").unwrap(),
+            "mysql_db"
+        );
+        assert!(!kit.project_data().join("admin").exists());
+        let (name, _) = ensure_project_db(&kit, "admin", "mongodb").unwrap();
+        assert_eq!(name, "admin_db");
+        let (name, _) = ensure_project_db(&kit, "admin", "mariadb").unwrap();
+        assert_eq!(name, "admin");
+        assert_eq!(
+            db_json(&kit, "admin")["names"],
+            serde_json::json!({ "mongodb": "admin_db", "mariadb": "admin" })
+        );
+        // the passwords' readers skip the names
+        assert_eq!(project_passwords(&kit, "admin").len(), 2);
+
+        // a project of before the names (a password, no name): the rule of
+        // its time, `config` on MariaDB kept; on MongoDB never touched
+        write_db_json(&kit, "config", r#"{"mariadb":"pw1","mongodb":"pw2"}"#);
+        assert_eq!(
+            project_db_name(&kit, "config", "mariadb").unwrap(),
+            "config"
+        );
+        let err = project_db_name(&kit, "config", "mongodb").unwrap_err();
+        assert!(format!("{err:#}").contains("by hand"), "{err:#}");
+        assert!(ensure_project_db(&kit, "config", "mongodb").is_err());
+        let (name, pw) = ensure_project_db(&kit, "config", "mariadb").unwrap();
+        assert_eq!((name.as_str(), pw.as_str()), ("config", "pw1"));
+        assert_eq!(db_json(&kit, "config")["names"]["mariadb"], "config");
+        assert!(db_json(&kit, "config")["names"].get("mongodb").is_none());
+
+        // a stored name wins over the project's name; one of the server's
+        // own, or not a name, is refused even when stored
+        write_db_json(
+            &kit,
+            "renamed",
+            r#"{"mariadb":"pw","names":{"mariadb":"old_name"},"future":1}"#,
+        );
+        assert_eq!(
+            project_db_name(&kit, "renamed", "mariadb").unwrap(),
+            "old_name"
+        );
+        write_db_json(
+            &kit,
+            "bad",
+            r#"{"mariadb":"pw","names":{"mariadb":"mysql"}}"#,
+        );
+        assert!(project_db_name(&kit, "bad", "mariadb").is_err());
+        write_db_json(&kit, "bad", r#"{"mariadb":"pw","names":{"mariadb":"a`b"}}"#);
+        assert!(project_db_name(&kit, "bad", "mariadb").is_err());
+        write_db_json(&kit, "bad", r#"{"mariadb":"pw","names":"x"}"#);
+        assert!(project_db_name(&kit, "bad", "mariadb").is_err());
+        fs::remove_dir_all(kit.project_data().join("bad")).unwrap();
+
+        // the names of before are pinned (adopt, migration); never replaced
+        write_db_json(
+            &kit,
+            "old",
+            r#"{"mariadb":"pw","mongodb":"pw2","names":{"mongodb":"kept"}}"#,
+        );
+        keep_legacy_names(&kit, "old").unwrap();
+        assert_eq!(
+            db_json(&kit, "old")["names"],
+            serde_json::json!({ "mariadb": "old", "mongodb": "kept" })
+        );
+        let mut s = ProjectSecrets::new();
+        s.insert("mongodb".into(), "pw".into());
+        assert!(
+            !add_legacy_names(&mut s, "admin").unwrap(),
+            "reserved: left out"
+        );
+        keep_legacy_names(&kit, "nothing").unwrap();
+        assert!(!kit.project_data().join("nothing").exists());
+    }
+
+    /// Two projects that would get the same name: the second one's creation
+    /// is refused before anything is stored or sent to a server.
+    #[test]
+    fn same_name_refused_on_creation() {
+        let tmp = crate::kit::tests::TempDir::new("db-auth-collision");
+        let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+        kit.prepare().unwrap();
+        ensure_project_db(&kit, "my-app", "mariadb").unwrap();
+        let err = ensure_project_db(&kit, "my_app", "mariadb").unwrap_err();
+        assert!(format!("{err:#}").contains("my-app"), "{err:#}");
+        assert!(
+            !kit.project_data().join("my_app").exists(),
+            "nothing stored"
+        );
+        assert_eq!(
+            name_used_by(&kit, "my_app", "mariadb", "my_app")
+                .unwrap()
+                .as_deref(),
+            Some("my-app")
+        );
+        // another server, another name space
+        ensure_project_db(&kit, "my_app", "mongodb").unwrap();
+
+        // a project of before the names counts with the rule of its time
+        write_db_json(&kit, "città", r#"{"mariadb":"pw"}"#);
+        assert!(ensure_project_db(&kit, "cittè", "mariadb").is_err());
+        assert!(check_name_free(&kit, "città", "mariadb", "citt_").is_ok());
+        // a name stored by an adopted project counts too
+        write_db_json(
+            &kit,
+            "new-name",
+            r#"{"mariadb":"pw","names":{"mariadb":"shop"}}"#,
+        );
+        assert!(ensure_project_db(&kit, "shop", "mariadb").is_err());
+        assert!(ensure_project_db(&kit, "SHOP", "mongodb").is_ok());
     }
 
     #[test]
