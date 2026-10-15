@@ -170,7 +170,7 @@ jobs:
       - name: Release assets
         shell: pwsh
         run: |
-          # Names and .sha256 files as read by tauri/src/self_update.rs.
+          # Names and .sha256 files as read by tauri/src/setup/self_update.rs.
           New-Item -ItemType Directory -Force dist | Out-Null
           $assets = @{ 'x86_64-pc-windows-msvc' = 'Dev-Kit-x64.exe'; 'aarch64-pc-windows-msvc' = 'Dev-Kit-arm64.exe' }
           foreach ($target in $assets.Keys) {
