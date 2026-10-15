@@ -826,6 +826,28 @@ impl Runner {
             entries.remove(key);
         }
     }
+
+    /// The ports of `from` are now `to`'s, whose files were moved on disk
+    /// (`state::adopt`): nothing is written, and a later save does not
+    /// replace the moved `ports.json`.
+    #[allow(dead_code)] // commands/orphans.rs, registered by the coordinator (WP-7)
+    pub fn rename_project(&self, from: &str, to: &str) {
+        // Same order as `save_ports`: `saved`, then `ports`.
+        let mut saved = self.saved.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut ports = self.ports.lock().unwrap_or_else(PoisonError::into_inner);
+        let rekey = |key: &String| match split_key(key) {
+            Some((p, action)) if p == from => key_of(to, action),
+            _ => key.clone(),
+        };
+        ports.ports = std::mem::take(&mut ports.ports)
+            .into_iter()
+            .map(|(k, port)| (rekey(&k), port))
+            .collect();
+        ports.locked = ports.locked.iter().map(rekey).collect();
+        if let Some(p) = saved.remove(from) {
+            saved.insert(to.to_owned(), p);
+        }
+    }
 }
 
 fn tr(lang: &str, source: &str, args: &[&str]) -> String {

@@ -16,7 +16,9 @@
 
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+use serde::Serialize;
 
 use crate::kit::{validate_project_name, Kit};
 
@@ -115,6 +117,123 @@ pub fn all(kit: &Kit) -> Vec<String> {
     out
 }
 
+/// At least one file (or link) anywhere under `dir`: folders alone are not
+/// data (reading passwords or copies creates an empty `private\`). Links
+/// count as files and are never followed.
+pub fn has_files(dir: &Path) -> bool {
+    fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .any(|e| match e.file_type() {
+            Ok(t) if t.is_dir() => has_files(&e.path()),
+            _ => true,
+        })
+}
+
+/// Removes `dir` and the folders in it that hold no file, bottom up; a file
+/// or a link is never removed (nor the folders above it). True when `dir`
+/// itself went.
+pub fn remove_empty_dirs(dir: &Path) -> bool {
+    for e in fs::read_dir(dir).into_iter().flatten().flatten() {
+        if e.file_type().is_ok_and(|t| t.is_dir()) {
+            remove_empty_dirs(&e.path());
+        }
+    }
+    // Refused by Windows while anything is left in it.
+    fs::remove_dir(dir).is_ok()
+}
+
+/// The folders of `data\projects\` whose project is gone from `projects\`
+/// (renamed or deleted outside the app) and that still hold files of the
+/// kit, sorted (PLAN-DATA.md WP-7). Never deleted automatically.
+pub fn orphans(kit: &Kit) -> Vec<String> {
+    all(kit)
+        .into_iter()
+        .filter(|p| !kit.projects().join(p).is_dir())
+        .filter(|p| has_files(&kit.project_data().join(p)))
+        .collect()
+}
+
+/// What the kit keeps for a project, without creating anything (`private\`
+/// is only read) and without a password.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Holdings {
+    pub project: String,
+    /// `dev-settings.json` is there.
+    pub settings: bool,
+    /// Ports remembered for its actions.
+    pub ports: usize,
+    /// Engines with a user of the project (`mariadb`, `mongodb`).
+    pub databases: Vec<String>,
+    /// Copies of its databases.
+    pub backups: usize,
+}
+
+pub fn holdings(kit: &Kit, project: &str) -> Option<Holdings> {
+    let state = ProjectState::of(kit, project)?;
+    let private = state.dir.join("private");
+    let json = |path: &Path| crate::fsx::read_json::<serde_json::Value>(path);
+    let ports = json(&state.ports_file())
+        .and_then(|v| v.get("ports")?.as_object().map(|m| m.len()))
+        .unwrap_or(0);
+    let databases = json(&private.join("db.json"))
+        .and_then(|v| {
+            let engines = v.as_object()?.iter().filter(|(_, pw)| pw.is_string());
+            Some(engines.map(|(k, _)| k.clone()).collect())
+        })
+        .unwrap_or_default();
+    let backups = fs::read_dir(private.join("backups"))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_file()))
+        .count();
+    Some(Holdings {
+        project: project.to_owned(),
+        settings: state.settings_file().is_file(),
+        ports,
+        databases,
+        backups,
+    })
+}
+
+/// Gives the files of `orphan` to `project` (the same project renamed
+/// outside the app): refused when `orphan` is not an orphan, when
+/// `project` has no folder in `projects\` or already has files of the kit
+/// (empty folders are not files: they are removed first).
+///
+/// The databases on the servers keep their name and user, made from the
+/// old name (`db::auth::db_name`): the passwords stay valid for them and
+/// the project's `.env` keeps working as it is. The kit itself derives the
+/// names from the new one, so its database page would create a new, empty
+/// database with the same password.
+pub fn adopt(kit: &Kit, orphan: &str, project: &str) -> io::Result<ProjectState> {
+    let invalid = |m: &str| io::Error::new(io::ErrorKind::InvalidInput, m.to_owned());
+    let from = ProjectState::of(kit, orphan).ok_or_else(|| invalid("not a project name"))?;
+    let to = ProjectState::of(kit, project).ok_or_else(|| invalid("not a project name"))?;
+    if !orphans(kit).iter().any(|o| o == orphan) {
+        return Err(invalid(&format!("{orphan}: not data without a project")));
+    }
+    if !kit.projects().join(project).is_dir() {
+        return Err(invalid(&format!("{project}: no such project")));
+    }
+    if has_files(&to.dir) {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!("{project} already has files of the kit"),
+        ));
+    }
+    if to.dir.exists() && !remove_empty_dirs(&to.dir) {
+        return Err(io::Error::other(format!(
+            "{}: not removed",
+            to.dir.display()
+        )));
+    }
+    from.rename(kit, project)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -158,5 +277,90 @@ mod tests {
         s.remove().unwrap();
         ProjectState::of(&kit, "never").unwrap().remove().unwrap();
         assert_eq!(all(&kit), ["other"]);
+    }
+
+    #[test]
+    fn orphans_by_files_and_adopted() {
+        let tmp = TempDir::new("project-orphans");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let write = |p: &str, rel: &str, text: &str| {
+            let path = kit.project_data().join(p).join(rel);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(path, text).unwrap();
+        };
+        // a project with its files; one gone with only empty folders (made
+        // by reading its passwords or copies); one gone with its files
+        fs::create_dir_all(kit.projects().join("app")).unwrap();
+        write("app", "dev-settings.json", "{}");
+        ProjectState::of(&kit, "empty")
+            .unwrap()
+            .backups_dir()
+            .unwrap();
+        write("old", "dev-settings.json", r#"{"agent":"claude"}"#);
+        write(
+            "old",
+            "ports.json",
+            r#"{"ports":{"web":8001},"locked":["web"]}"#,
+        );
+        write("old", r"private\db.json", r#"{"mariadb":"pw","future":{}}"#);
+        write("old", r"private\backups\old-mariadb-1.sql", "x");
+        assert_eq!(orphans(&kit), ["old"]);
+        assert_eq!(
+            holdings(&kit, "old").unwrap(),
+            Holdings {
+                project: "old".into(),
+                settings: true,
+                ports: 1,
+                databases: vec!["mariadb".into()],
+                backups: 1,
+            }
+        );
+        let json = serde_json::to_string(&holdings(&kit, "old").unwrap()).unwrap();
+        assert!(!json.contains("\"pw\""), "no password: {json}");
+        assert!(holdings(&kit, "..").is_none());
+
+        // refused: a project with files, a missing project, not an orphan
+        assert!(adopt(&kit, "old", "app").is_err());
+        assert!(adopt(&kit, "old", "missing").is_err());
+        assert!(adopt(&kit, "empty", "app").is_err());
+        assert!(adopt(&kit, "old", "..").is_err());
+        assert!(kit.project_data().join(r"old\dev-settings.json").is_file());
+
+        // renamed outside the app: its empty folders are not data
+        let runner = crate::projects::run::Runner::new(kit.clone(), std::sync::Arc::new(|_| {}));
+        fs::create_dir_all(kit.projects().join("shop")).unwrap();
+        ProjectState::of(&kit, "shop")
+            .unwrap()
+            .private_dir()
+            .unwrap();
+        let shop = adopt(&kit, "old", "shop").unwrap();
+        runner.rename_project("old", "shop");
+        assert_eq!(
+            fs::read_to_string(shop.settings_file()).unwrap(),
+            r#"{"agent":"claude"}"#
+        );
+        assert!(shop
+            .dir()
+            .join(r"private\backups\old-mariadb-1.sql")
+            .is_file());
+        assert_eq!(
+            crate::db::auth::project_password(&kit, "shop", "mariadb").as_deref(),
+            Some("pw")
+        );
+        assert!(!kit.project_data().join("old").exists());
+        assert!(orphans(&kit).is_empty());
+
+        // the runner knows the ports under the new name: a new one is added
+        // to the moved file, never written over it
+        let ports = runner.ports();
+        assert_eq!(ports.ports.get("shop|web"), Some(&8001));
+        assert_eq!(ports.locked, ["shop|web"]);
+        runner.set_port("shop|api", Some(45678), "it").unwrap();
+        let text = fs::read_to_string(shop.ports_file()).unwrap();
+        let saved: serde_json::Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(saved["ports"]["web"], 8001, "{text}");
+        assert_eq!(saved["ports"]["api"], 45678, "{text}");
+        assert!(!kit.project_data().join("old").exists());
     }
 }
