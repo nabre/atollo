@@ -830,7 +830,6 @@ impl Runner {
     /// The ports of `from` are now `to`'s, whose files were moved on disk
     /// (`state::adopt`): nothing is written, and a later save does not
     /// replace the moved `ports.json`.
-    #[allow(dead_code)] // commands/orphans.rs, registered by the coordinator (WP-7)
     pub fn rename_project(&self, from: &str, to: &str) {
         // Same order as `save_ports`: `saved`, then `ports`.
         let mut saved = self.saved.lock().unwrap_or_else(PoisonError::into_inner);

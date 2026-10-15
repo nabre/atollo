@@ -90,6 +90,8 @@
     "allow-server-stop",
     "allow-server-reload",
     "allow-server-assign-project",
+    "allow-projects-orphans",
+    "allow-project-orphan-adopt",
     "allow-db-browse-tree",
     "allow-db-browse-rows",
     "allow-db-admin-open",

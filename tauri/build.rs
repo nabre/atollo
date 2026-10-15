@@ -82,6 +82,8 @@ const COMMANDS: &[&str] = &[
     "server_stop",
     "server_reload",
     "server_assign_project",
+    "projects_orphans",
+    "project_orphan_adopt",
     "db_browse_tree",
     "db_browse_rows",
     "db_admin_open",
