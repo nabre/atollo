@@ -6,7 +6,6 @@
 #![cfg_attr(not(test), windows_subsystem = "windows")]
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
 
-mod adminer;
 mod agents;
 mod agents_sync;
 mod archive;
@@ -14,8 +13,7 @@ mod catalog;
 mod checkup;
 mod cli;
 mod commands;
-mod db_auth;
-mod db_browse;
+mod db;
 mod detect;
 mod downloads;
 mod editor;
@@ -37,7 +35,6 @@ mod projects;
 mod relocate;
 mod safe_path;
 mod self_update;
-mod services;
 mod sessions;
 mod settings;
 mod setup_runner;
@@ -293,7 +290,7 @@ fn run() -> i32 {
         moved_from: moved_from.map(|p| p.display().to_string()),
         webview: webview_desc,
         editor: std::sync::Arc::new(editor::Editor::new(kit.clone(), kit_env.clone())),
-        services: std::sync::Arc::new(services::Services::new(kit.clone())),
+        services: std::sync::Arc::new(db::services::Services::new(kit.clone())),
         env: std::sync::RwLock::new(kit_env),
     };
     // The exe swap of a staged update happens on Exit (`run` may not return).
@@ -643,7 +640,7 @@ mod tests {
         AppState {
             setup,
             editor,
-            services: std::sync::Arc::new(services::Services::new(kit.clone())),
+            services: std::sync::Arc::new(db::services::Services::new(kit.clone())),
             kit,
             lang: std::sync::RwLock::new("it"),
             moved_from: None,

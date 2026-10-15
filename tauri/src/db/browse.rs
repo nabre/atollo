@@ -2,7 +2,7 @@
 //! the databases with their tables or collections, then one page of rows.
 //!
 //! - through the kit's own clients, logged in as the administrator as the
-//!   rest of `services.rs`: `mariadb` with the kit's `[client]` login and the
+//!   rest of `db/services.rs`: `mariadb` with the kit's `[client]` login and the
 //!   SQL on stdin, mongosh with the password and the names in its
 //!   environment (`DEVKIT_DB_*`); never a password or a name on the command
 //!   line;
@@ -20,9 +20,9 @@ use anyhow::{anyhow, bail, Result};
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::db_auth;
+use super::auth;
+use crate::db::services::{bin, Services};
 use crate::jobs;
-use crate::services::{bin, Services};
 
 /// Rows of one page.
 pub const PAGE: u64 = 100;
@@ -159,7 +159,7 @@ fn mariadb(services: &Services, sql: &str) -> Result<String> {
 
 fn mongosh(services: &Services, script: &str, vars: &[(&str, &str)]) -> Result<Value> {
     let (port, env) = services.running_server("mongodb")?;
-    let admin = db_auth::load(services.kit())
+    let admin = auth::load(services.kit())
         .mongodb_admin
         .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
     let mut cmd = jobs::kit_command(bin(services.kit(), "mongosh", "mongosh.exe"), &env);

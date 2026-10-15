@@ -316,7 +316,7 @@ pub fn validate(pieces: &[Piece]) -> Result<(), Problem> {
                     }
                     check_needs(&v.needs)?;
                     if let Some(db) = &v.database {
-                        if !crate::services::SERVERS.contains(&db.as_str()) {
+                        if !crate::db::services::SERVERS.contains(&db.as_str()) {
                             return Err(("Server di database sconosciuto: {0}", vec![db.clone()]));
                         }
                     }

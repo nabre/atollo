@@ -217,7 +217,8 @@ pub async fn frameworks_create<R: Runtime>(
                     .start(engine, &env)
                     .and_then(|_port| services.project_db_create(&name, engine))
                     .map_err(|e| fail("database", format!("{e:#}")))?;
-                crate::db_auth::env_apply(&dir, &db).map_err(|e| fail(".env", format!("{e:#}")))?;
+                crate::db::auth::env_apply(&dir, &db)
+                    .map_err(|e| fail(".env", format!("{e:#}")))?;
             }
             let vars: Vec<(String, String)> = wanted_env
                 .iter()
@@ -233,7 +234,8 @@ pub async fn frameworks_create<R: Runtime>(
                 let keys: Vec<&str> = vars.iter().map(|(k, _)| k.as_str()).collect();
                 let text = crate::i18n::t(lang, "Scrivo nel file .env: {0}", &[&keys.join(", ")]);
                 emit(plan.create.len(), None, Some(text));
-                crate::db_auth::env_set(&dir, &vars).map_err(|e| fail(".env", format!("{e:#}")))?;
+                crate::db::auth::env_set(&dir, &vars)
+                    .map_err(|e| fail(".env", format!("{e:#}")))?;
             }
             for (i, line) in plan.steps.iter().enumerate() {
                 run(plan.create.len() + i + 1, line, &dir)?;

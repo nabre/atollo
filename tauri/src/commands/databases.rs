@@ -8,7 +8,7 @@ use super::*;
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectDatabases {
-    pub dbs: Vec<crate::db_auth::ProjectDb>,
+    pub dbs: Vec<crate::db::auth::ProjectDb>,
     /// `mariadb`, `mongodb`, `sqlite` found by `detect::requires`.
     pub detected: Vec<String>,
     pub env_exists: bool,
@@ -30,7 +30,7 @@ pub fn project_databases<R: Runtime>(
             .filter(|id| matches!(id.as_str(), "mariadb" | "mongodb" | "sqlite"))
             .collect(),
         env_exists: dir.join(".env").is_file(),
-        env_ignored: crate::db_auth::env_ignored(&dir),
+        env_ignored: crate::db::auth::env_ignored(&dir),
     })
 }
 
@@ -43,10 +43,10 @@ pub async fn project_db_create<R: Runtime>(
     state: State<'_, AppState>,
     project: String,
     engine: String,
-) -> Result<crate::db_auth::ProjectDb, String> {
+) -> Result<crate::db::auth::ProjectDb, String> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    if !crate::services::SERVERS.contains(&engine.as_str()) {
+    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
         return Err(fail("database", format!("unknown server {engine}")));
     }
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
@@ -68,7 +68,7 @@ pub(super) fn project_db_of(
     state: &AppState,
     project: &str,
     engine: &str,
-) -> Result<crate::db_auth::ProjectDb, String> {
+) -> Result<crate::db::auth::ProjectDb, String> {
     state
         .services
         .project_dbs(project)
@@ -84,12 +84,12 @@ pub fn project_env_preview<R: Runtime>(
     state: State<'_, AppState>,
     project: String,
     engine: String,
-) -> Result<Vec<crate::db_auth::EnvChange>, String> {
+) -> Result<Vec<crate::db::auth::EnvChange>, String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let db = project_db_of(&state, &project, &engine)?;
-    Ok(crate::db_auth::env_changes(
-        &crate::db_auth::env_source(&dir),
+    Ok(crate::db::auth::env_changes(
+        &crate::db::auth::env_source(&dir),
         &db,
     ))
 }
@@ -106,7 +106,7 @@ pub fn project_env_apply<R: Runtime>(
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let db = project_db_of(&state, &project, &engine)?;
-    crate::db_auth::env_apply(&dir, &db).map_err(|e| fail(".env", format!("{e:#}")))
+    crate::db::auth::env_apply(&dir, &db).map_err(|e| fail(".env", format!("{e:#}")))
 }
 
 /// The copies of the project's databases (D-78), newest first.
@@ -115,7 +115,7 @@ pub fn project_backups<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> Result<Vec<crate::services::Backup>, String> {
+) -> Result<Vec<crate::db::services::Backup>, String> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
     Ok(state.services.backups(&project))
@@ -132,7 +132,7 @@ pub async fn project_db_export<R: Runtime>(
 ) -> Result<String, String> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    if !crate::services::SERVERS.contains(&engine.as_str()) {
+    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
         return Err(fail("database", format!("unknown server {engine}")));
     }
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
@@ -192,14 +192,14 @@ pub async fn db_browse_tree<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     engine: String,
-) -> Result<Vec<crate::db_browse::Database>, String> {
+) -> Result<Vec<crate::db::browse::Database>, String> {
     ensure_main(&webview)?;
-    if !crate::services::SERVERS.contains(&engine.as_str()) {
+    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
         return Err(fail("browse", format!("unknown server {engine}")));
     }
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        crate::db_browse::tree(&services, &engine).map_err(|e| fail("browse", format!("{e:#}")))
+        crate::db::browse::tree(&services, &engine).map_err(|e| fail("browse", format!("{e:#}")))
     })
     .await
     .map_err(|e| fail("browse", e))?
@@ -214,14 +214,14 @@ pub async fn db_browse_rows<R: Runtime>(
     database: String,
     table: String,
     offset: u64,
-) -> Result<crate::db_browse::Rows, String> {
+) -> Result<crate::db::browse::Rows, String> {
     ensure_main(&webview)?;
-    if !crate::services::SERVERS.contains(&engine.as_str()) {
+    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
         return Err(fail("browse", format!("unknown server {engine}")));
     }
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        crate::db_browse::rows(&services, &engine, &database, &table, offset)
+        crate::db::browse::rows(&services, &engine, &database, &table, offset)
             .map_err(|e| fail("browse", format!("{e:#}")))
     })
     .await
@@ -235,7 +235,7 @@ pub async fn db_admin_open<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> Result<Vec<crate::services::ServiceInfo>, String> {
+) -> Result<Vec<crate::db::services::ServiceInfo>, String> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
