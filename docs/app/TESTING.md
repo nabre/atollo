@@ -13,7 +13,9 @@ npm -w ui run build
 Coprono, fra l'altro:
 - radice del kit, ambiente e PATH;
 - file del kit (`fsx.rs`): BOM, byte non UTF-8, file mancante, vuoto o danneggiato, scrittura atomica senza file temporanei rimasti;
-- catalogo, dipendenze, parti (`keys`), limiti ARM64 e componenti che servono a comandi e agenti (`needs.rs`);
+- errore dei comandi (`commands\error.rs`): Tauri manda per `CmdError` lo stesso valore di una stringa, `or_fail` manda il testo breve e `or_fail_chain` tutta la catena;
+- catalogo, dipendenze, parti (`keys`), limiti ARM64 e componenti che servono a comandi e agenti (`setup\needs.rs`);
+- righe di versione lette dalle fonti di ogni linguaggio (Go, Java, .NET, Zig: ogni prova accanto al suo installatore in `install\lang\`);
 - editor alla versione fissata del rilascio;
 - download con checksum e firme;
 - editor e server web reale (con il token e senza);
@@ -26,7 +28,8 @@ Coprono, fra l'altro:
 - server di file: host, file nascosti, `..`, collegamenti;
 - scambio dell'exe in aggiornamento;
 - DPAPI di `keyring-before.json`;
-- cataloghi delle quattro lingue (Rust e interfaccia), completi e con gli stessi segnaposto.
+- cataloghi delle quattro lingue (Rust e interfaccia), completi e con gli stessi segnaposto;
+- `useLoad` (`ui\src\hooks.test.ts`): prima lettura, le tre politiche d'errore, nuova lettura quando cambiano `load` o `key` ma non la politica, `enabled`, lettura periodica fermata allo smontaggio, `setData`.
 
 ## Prove sull'interfaccia reale
 
