@@ -184,8 +184,8 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agents_sync::tests::kit;
-    use crate::agents_sync::{run, tools};
+    use crate::agents::sync::tests::kit;
+    use crate::agents::sync::{run, tools};
 
     #[test]
     fn skills_become_junctions_and_deletions_are_kept() {

@@ -94,7 +94,7 @@ pub async fn eject_run<R: Runtime>(
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
         std::thread::sleep(std::time::Duration::from_millis(500));
-        if let Err(e) = crate::keyring::save_after_run(&kit) {
+        if let Err(e) = crate::agents::keyring::save_after_run(&kit) {
             crate::log::warn(&format!("eject, antigravity login: {e:#}"));
         }
         crate::log::info("eject: programs of the kit stopped");

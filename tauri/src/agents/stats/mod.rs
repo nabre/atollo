@@ -232,7 +232,7 @@ impl Ctx {
     }
 
     pub fn antigravity_blobs(&self) -> Vec<String> {
-        crate::keyring::saved_secrets(&self.data.join("antigravity"))
+        crate::agents::keyring::saved_secrets(&self.data.join("antigravity"))
     }
 
     /// A JSON request to an agent's server, errors in the user's language.

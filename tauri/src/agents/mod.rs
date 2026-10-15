@@ -1,8 +1,13 @@
+//! Agents: their state, launch and sign-out (this file), the alignment of
+//! instructions, skills and MCP servers (`sync`), the paths rewritten when
+//! the kit moves (`relocate`), Antigravity's login (`keyring`) and the
+//! usage of each agent (`stats`).
+//!
 //! Claude Code, Codex and Antigravity: state, launch, sign-out.
 //!
 //! - signed in: Claude `.claude\.credentials.json` (OAuth token) or
 //!   `ANTHROPIC_API_KEY`; Codex `.codex\auth.json` (token or API key);
-//!   Antigravity a login saved in the kit (`keyring.rs`) or `GEMINI_API_KEY`
+//!   Antigravity a login saved in the kit (`agents/keyring.rs`) or `GEMINI_API_KEY`
 //!   (same sources as nabre/dev-kit `core/stats/*.js`);
 //! - launch: the agents are aligned first, the agent opens in a console
 //!   window of the app in the chosen folder, and they are aligned again when it
@@ -10,6 +15,11 @@
 //!   `data\kit\bin\agy.cmd`, which carries the login in and out of Windows;
 //! - a watcher thread aligns when an agent of the kit ends anywhere (editor
 //!   terminals, consoles) and saves Antigravity's login left in Windows.
+
+pub mod keyring;
+pub mod relocate;
+pub mod stats;
+pub mod sync;
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -91,7 +101,7 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
             }
         }
         "antigravity" => {
-            if crate::keyring::has_login(kit) {
+            if keyring::has_login(kit) {
                 Some("account")
             } else if has(env.get("GEMINI_API_KEY")) {
                 Some("api key")
@@ -168,13 +178,13 @@ pub fn launch<R: tauri::Runtime>(
     lang: &str,
 ) -> Result<()> {
     let command = command_of(kit, id, lang)?;
-    let report = crate::agents_sync::run(kit, Some(dir));
+    let report = sync::run(kit, Some(dir));
     for w in &report.warnings {
         crate::log::warn(&format!("before {id}: {w}"));
     }
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
     crate::editor::terminal::open_command(app, kit, env, dir, &command, move || {
-        let _ = crate::agents_sync::run(&after, Some(&after_dir));
+        let _ = sync::run(&after, Some(&after_dir));
     })
 }
 
@@ -199,7 +209,7 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
             remove_if_exists(&home.join(r".codex\auth.json"))
         }
         "antigravity" => {
-            crate::keyring::save(kit)?;
+            keyring::save(kit)?;
             remove_if_exists(&kit.data().join(r"antigravity\keyring.json"))
         }
         _ => bail!("unknown agent: {id}"),
@@ -226,12 +236,12 @@ pub fn watch(kit: Kit) {
             let ended: Vec<&String> = before.difference(&now).collect();
             if !ended.is_empty() {
                 crate::log::info(&format!("agents ended: {ended:?}"));
-                let _ = crate::agents_sync::run(&kit, None);
+                let _ = sync::run(&kit, None);
             }
             // Antigravity's login still in Windows and no agy of the kit
             // running: saved now (save waits for a fresh "starting" mark).
-            if crate::keyring::pending(&kit) && !now.contains("antigravity") {
-                if let Err(e) = crate::keyring::save(&kit) {
+            if keyring::pending(&kit) && !now.contains("antigravity") {
+                if let Err(e) = keyring::save(&kit) {
                     crate::log::warn(&format!("antigravity login: {e:#}"));
                 }
             }

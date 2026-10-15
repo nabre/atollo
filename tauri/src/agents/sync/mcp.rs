@@ -259,8 +259,8 @@ pub fn sync_antigravity(p: &Paths, servers: &Servers, report: &mut Report) -> Re
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agents_sync::run;
-    use crate::agents_sync::tests::kit;
+    use crate::agents::sync::run;
+    use crate::agents::sync::tests::kit;
     use std::fs;
 
     #[test]

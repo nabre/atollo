@@ -12,7 +12,7 @@ use serde_json::Value;
 use super::util::{recent_files, summarize, to_time, Period, Usage};
 use super::{Ctx, Fail, Limits, Login, Window};
 
-/// The Google login in the saved credentials (`keyring.rs`): a token in
+/// The Google login in the saved credentials (`agents/keyring.rs`): a token in
 /// one of the secrets (base64 of JSON, or of a JSON string of JSON).
 pub fn read_login(blobs: &[String]) -> Option<Login> {
     blobs.iter().find_map(|b| {

@@ -19,7 +19,7 @@ use anyhow::Result;
 use regex::bytes::{Captures, Regex};
 use serde_json::Value;
 
-use crate::agents_sync::{read_json, write_json, Paths, Report};
+use super::sync::{read_json, write_json, Paths, Report};
 use crate::kit::Kit;
 
 const TEXT_MAX: u64 = 8 * 1024 * 1024;

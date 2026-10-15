@@ -82,7 +82,7 @@ pub fn sync(p: &Paths, dir: &Path, report: &mut Report) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agents_sync::tests::kit;
+    use crate::agents::sync::tests::kit;
 
     #[test]
     fn project_skills_both_ways() {

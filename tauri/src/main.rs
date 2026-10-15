@@ -7,7 +7,6 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
 
 mod agents;
-mod agents_sync;
 mod archive;
 mod cli;
 mod commands;
@@ -21,19 +20,16 @@ mod i18n;
 mod install;
 mod instance;
 mod jobs;
-mod keyring;
 mod kit;
 mod log;
 mod net;
 mod processes;
 mod projects;
-mod relocate;
 mod safe_path;
 mod sessions;
 mod settings;
 mod setup;
 mod signature;
-mod stats;
 mod verify;
 mod versions;
 mod webview;
@@ -151,7 +147,7 @@ fn run() -> i32 {
         }
         Cli::Prepare(args) => return prepare(&kit, &kit_env, &loaded.settings, &host, lang, &args),
         Cli::Sync { project, verbose } => {
-            let report = agents_sync::run(&kit, project.as_deref());
+            let report = agents::sync::run(&kit, project.as_deref());
             let mut out = cli::output();
             if verbose {
                 for n in &report.notes {
@@ -165,9 +161,9 @@ fn run() -> i32 {
         }
         Cli::Keyring(action) => {
             let result = if action == "restore" {
-                keyring::restore(&kit)
+                agents::keyring::restore(&kit)
             } else {
-                keyring::save_after_run(&kit)
+                agents::keyring::save_after_run(&kit)
             };
             return match result {
                 Ok(()) => 0,
@@ -550,7 +546,7 @@ fn build_app<R: tauri::Runtime>(
             let background = kit.clone();
             let env = app.state::<AppState>().env();
             std::thread::spawn(move || {
-                if let Err(e) = keyring::save(&background) {
+                if let Err(e) = agents::keyring::save(&background) {
                     log::warn(&format!("antigravity login: {e:#}"));
                 }
                 // Git follows the GitHub account, also after a sign-in or a
@@ -559,7 +555,7 @@ fn build_app<R: tauri::Runtime>(
                 if let Err(e) = github::sync_git(&background, &env, signed_in) {
                     log::warn(&format!("github: git helper: {e:#}"));
                 }
-                let _ = agents_sync::run(&background, None);
+                let _ = agents::sync::run(&background, None);
                 agents::watch(background);
             });
             let handle = app.handle().clone();
