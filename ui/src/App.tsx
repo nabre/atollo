@@ -15,7 +15,6 @@ import {
   VscFolderLibrary,
   VscHubot,
   VscLayoutPanel,
-  VscLoading,
   VscPlay,
   VscRemote,
   VscSettingsGear,
@@ -44,7 +43,7 @@ import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
 import { NewProjectPage } from "./wizard";
-import { Notice, Sash, useStoredSize, useTabs } from "./workbench";
+import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./hooks";
 
 type PageId = "new" | "projects" | "agents" | "databases" | "components" | "settings" | "eject";
@@ -278,12 +277,13 @@ function ActivityBar({
           <Icon size={24} aria-hidden="true" />
         </span>
         {shown && (
-          <span
+          <vscode-badge
+            variant="activity-bar-counter"
             aria-label={shown.label}
-            className="absolute right-0.5 bottom-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-vsc-activitybar-badge px-1 text-[9px] leading-none font-semibold text-vsc-activitybar-badge-fg"
+            className="pointer-events-none absolute right-0.5 bottom-0.5"
           >
             {shown.count > 99 ? "99+" : shown.count}
-          </span>
+          </vscode-badge>
         )}
       </button>
     );
@@ -437,7 +437,7 @@ function StatusBar({
       </StatusItem>
       {installing && (
         <StatusItem onClick={onPanel}>
-          <VscLoading size={14} aria-hidden="true" className="animate-spin" />
+          <Icon name="loading" spin size={14} />
           <span role="status">{installing}</span>
         </StatusItem>
       )}

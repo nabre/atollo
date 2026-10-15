@@ -6,7 +6,7 @@ import { projectEditorSettings, projectEditorSettingsSet, type EditorSettingsVie
 import { t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction } from "./hooks";
-import { Select } from "./workbench";
+import { Select, TextArea } from "./workbench";
 
 type Tri = "default" | "yes" | "no";
 const toTri = (v: boolean | null): Tri => (v === null ? "default" : v ? "yes" : "no");
@@ -56,7 +56,6 @@ export function EditorSettingsBox({ project }: { project: string }) {
       }),
     );
   };
-  const field = "input";
   return (
     <section aria-labelledby="editor-settings" className="border-t border-vsc-border">
       <h2 id="editor-settings" className="flex h-8 items-center px-3 text-[12px] font-semibold text-vsc-sidebar-title">
@@ -81,6 +80,7 @@ export function EditorSettingsBox({ project }: { project: string }) {
                   { value: "yes", label: t("sì") },
                   { value: "no", label: t("no") },
                 ]}
+                className="w-44"
               />
             </label>
             <label className="flex items-center gap-2">
@@ -94,20 +94,13 @@ export function EditorSettingsBox({ project }: { project: string }) {
                   { value: "4", label: t("4 spazi") },
                   { value: "tab", label: t("tabulazione") },
                 ]}
+                className="w-44"
               />
             </label>
           </div>
           <label className="block space-y-1">
             <span className="text-vsc-desc">{t("Cartelle nascoste nell'editor, una per riga (es. **/vendor)")}</span>
-            <textarea
-              className={`${field} w-full font-mono`}
-              rows={3}
-              value={hidden}
-              spellCheck={false}
-              onChange={(e) => {
-                setHidden(e.target.value);
-              }}
-            />
+            <TextArea mono rows={3} value={hidden} spellCheck={false} onChange={setHidden} className="w-full" />
           </label>
           <p className="text-[12px] text-vsc-desc">
             {t("Si salvano in .vscode\\settings.json nel progetto; le altre impostazioni del file restano.")}
