@@ -36,19 +36,47 @@ pub fn project_create<R: Runtime>(
     Ok(project)
 }
 
-/// Deletes a project whose folder is empty.
+/// What deleting a project takes away: its folder, its databases on the
+/// kit's servers, the copies of them (PLAN-DATA.md WP-5).
+// Registered in commands/mod.rs by the coordinator (PLAN-DATA.md §7.1).
+#[allow(dead_code)]
 #[tauri::command]
-pub fn project_delete<R: Runtime>(
+pub fn project_delete_plan<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> CmdResult<()> {
+) -> CmdResult<crate::projects::DeletePlan> {
     ensure_main(&webview)?;
-    Ok(crate::projects::delete_empty(
+    Ok(crate::projects::delete_plan(
         &state.kit,
         &project,
         state.lang(),
     )?)
+}
+
+/// Deletes a project whose folder is empty, with its databases and users on
+/// the kit's servers (started if stopped; off the UI thread). A failed drop
+/// deletes nothing; `force_without_db` deletes without touching the servers.
+#[tauri::command]
+pub async fn project_delete<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    force_without_db: Option<bool>,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let (kit, lang, env) = (state.kit.clone(), state.lang(), state.env());
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        let dbs = crate::db::services::ProjectDrops {
+            services: &services,
+            env,
+        };
+        crate::projects::delete(&kit, &project, lang, &dbs, force_without_db == Some(true))
+            .or_fail_chain("project delete")
+    })
+    .await
+    .or_fail("project delete")?
 }
 
 /// Clones `owner/repo` or an `https://` Git URL into `projects\<name>`.

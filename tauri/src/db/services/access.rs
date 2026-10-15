@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 
 use super::tools::run_with_input;
 use super::{auth, bin, Services};
@@ -85,22 +85,13 @@ impl Services {
     }
 
     /// Creates (or repairs) the project's database and user on a running
-    /// server; the password stays the same once generated.
+    /// server; the password stays the same once generated. It is stored
+    /// before the server gets it, and an unreadable `db.json` stops here: a
+    /// failed call is repaired by running again, never a password lost.
     pub fn project_db_create(&self, project: &str, engine: &str) -> Result<auth::ProjectDb> {
-        let (port, env) = {
-            let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
-            match running.get_mut(engine) {
-                Some(s) => match s.child.try_wait() {
-                    Ok(None) => (s.port, s.env.clone()),
-                    _ => bail!("{engine} is not running"),
-                },
-                None => bail!("{engine} is not running"),
-            }
-        };
-        let password = match auth::project_password(&self.kit, project, engine) {
-            Some(p) => p,
-            None => auth::new_password()?,
-        };
+        let (port, env) = self.running_server(engine)?;
+        let password = auth::ensure_project_password(&self.kit, project, engine)
+            .context("the passwords of the project's databases")?;
         let name = auth::db_name(project);
         match engine {
             "mongodb" => {
@@ -125,7 +116,44 @@ impl Services {
                 )?;
             }
         }
-        auth::set_project_password(&self.kit, project, engine, &password)?;
         Ok(auth::project_db(engine, project, &password, port))
+    }
+
+    /// Drops the project's database and user from `engine` (PLAN-DATA.md
+    /// WP-5), as the administrator: the server is started first when it is
+    /// stopped, and stopped again after. Database and user may be missing.
+    pub fn project_db_drop(&self, project: &str, engine: &str, env: &KitEnv) -> Result<()> {
+        let was_running = self.running_server(engine).is_ok();
+        self.start(engine, env)?;
+        let result = self.drop_on_running(project, engine);
+        if !was_running {
+            self.stop(engine);
+        }
+        result
+    }
+
+    fn drop_on_running(&self, project: &str, engine: &str) -> Result<()> {
+        let (port, env) = self.running_server(engine)?;
+        let name = auth::db_name(project);
+        match engine {
+            "mongodb" => {
+                let admin = auth::load(&self.kit)
+                    .mongodb_admin
+                    .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
+                let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), &env);
+                cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
+                    .arg(port.to_string())
+                    .args(["--eval", auth::MONGO_DROP_JS])
+                    .env("DEVKIT_DB_ADMIN", admin)
+                    .env("DEVKIT_DB_NAME", &name);
+                run_with_input(cmd, "", Duration::from_secs(60))?;
+            }
+            _ => {
+                let cmd = self.mariadb_tool("mariadb.exe", &env);
+                run_with_input(cmd, &auth::project_drop_sql(&name), Duration::from_secs(60))?;
+            }
+        }
+        crate::log::info(&format!("{engine}: database and user {name} dropped"));
+        Ok(())
     }
 }

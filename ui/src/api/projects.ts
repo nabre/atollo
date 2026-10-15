@@ -178,9 +178,46 @@ export function projectCreate(name: string): Promise<string> {
   return query<string>("project_create", name, { name });
 }
 
-/** Deletes a project whose folder is empty. */
-export function projectDelete(project: string): Promise<void> {
-  return act("project_delete", { project });
+/** A database a project's deletion drops (tauri/src/projects/mod.rs). */
+export interface PlannedDb {
+  engine: "mariadb" | "mongodb";
+  /** Name of the database and of its user. */
+  database: string;
+  /** Not installed: skipped, the database stays in the server's data. */
+  installed: boolean;
+}
+
+/** What deleting a project takes away (PLAN-DATA.md WP-5). */
+export interface DeletePlan {
+  folderExists: boolean;
+  /** Only an empty folder is deleted from the app. */
+  folderEmpty: boolean;
+  /** Its databases on the kit's servers, dropped first. */
+  databases: PlannedDb[];
+  /** The copies of its databases and their bytes. */
+  backups: number;
+  backupsSize: number;
+}
+
+export function projectDeletePlan(project: string): Promise<DeletePlan> {
+  return query<DeletePlan>(
+    "project_delete_plan",
+    {
+      folderExists: true,
+      folderEmpty: true,
+      databases: [{ engine: "mariadb", database: project.toLowerCase(), installed: true }],
+      backups: 2,
+      backupsSize: 3_400_000,
+    },
+    { project },
+  );
+}
+
+/** Deletes a project whose folder is empty, with its databases and users on
+ * the kit's servers (started if stopped). A failed drop deletes nothing;
+ * `forceWithoutDb` deletes without touching the servers. */
+export function projectDelete(project: string, forceWithoutDb = false): Promise<void> {
+  return act("project_delete", { project, forceWithoutDb });
 }
 
 /** Clones `owner/repo` or an https:// Git address; returns the folder name. */

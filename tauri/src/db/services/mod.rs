@@ -23,7 +23,7 @@
 //!
 //! Here the settings and the life of a server (start, state, stop); the data
 //! folders per version in `data`, the passwords and the projects' databases
-//! in `access`, the copies in `backups`, the command-line tools in `tools`.
+//! (created, and dropped with the project) in `access`, the copies in `backups`, the command-line tools in `tools`.
 
 mod access;
 mod backups;
@@ -538,6 +538,23 @@ impl Services {
     }
 }
 
+/// The kit's servers for the deletion of a project (PLAN-DATA.md WP-5),
+/// started with `env` when stopped.
+pub struct ProjectDrops<'a> {
+    pub services: &'a Services,
+    pub env: KitEnv,
+}
+
+impl crate::projects::ProjectDatabases for ProjectDrops<'_> {
+    fn installed(&self, engine: &str) -> bool {
+        installed(&self.services.kit, engine)
+    }
+
+    fn drop_db(&self, project: &str, engine: &str) -> Result<()> {
+        self.services.project_db_drop(project, engine, &self.env)
+    }
+}
+
 /// The port of a server is taken by another program.
 #[derive(Debug)]
 pub struct PortInUse(pub u16);
@@ -597,6 +614,12 @@ mod tests {
             s.start("mariadb", &KitEnv::default()).is_err(),
             "not installed"
         );
+        assert!(
+            s.project_db_drop("shop", "mariadb", &KitEnv::default())
+                .is_err(),
+            "not installed: nothing dropped"
+        );
+        assert_eq!(s.running(), 0);
     }
 
     /// A real MariaDB and MongoDB of the kit given by DEVKIT_TEST_KIT, on
@@ -719,6 +742,21 @@ mod tests {
             assert_eq!(admin(count), n, "{id}: data back after restore");
             assert!(s.restore("Prova Kit", r"..\x.sql").is_err());
             let _ = fs::remove_file(&file);
+            // Deleting the project drops its database and user: a stopped
+            // server is started for it and stopped again (PLAN-DATA.md WP-5).
+            s.stop(id);
+            s.project_db_drop("Prova Kit", id, &env).unwrap();
+            assert!(!responds(port), "{id}: stopped again after the drop");
+            s.start(id, &env).unwrap();
+            assert!(
+                !crate::db::browse::tree(&s, id)
+                    .unwrap()
+                    .iter()
+                    .any(|d| d.name == "prova_kit"),
+                "{id}: database dropped"
+            );
+            s.project_db_drop("Prova Kit", id, &env).unwrap();
+            assert!(responds(port), "{id}: a running server stays running");
             s.stop(id);
             assert!(!responds(port), "{id} stopped");
             if let Some(url) = adminer {
