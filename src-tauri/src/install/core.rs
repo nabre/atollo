@@ -128,21 +128,44 @@ pub fn pick_python(sums: &str, minor: &str, triple: &str) -> Option<(String, Str
         .map(|c| (c[2].to_owned(), c[3].to_owned(), c[1].to_owned()))
 }
 
-impl Installer for Python {
-    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let info: Value = ctx
-            .net
-            .json("https://raw.githubusercontent.com/astral-sh/python-build-standalone/latest-release/latest-release.json")?;
-        let prefix = info
-            .get("asset_url_prefix")
-            .and_then(Value::as_str)
-            .ok_or_else(|| anyhow!("python-build-standalone: no asset_url_prefix"))?
-            .trim_end_matches('/')
-            .to_owned();
-        let sums = ctx.net.text(&format!("{prefix}/SHA256SUMS"))?;
-        let minor = python_minor(ctx);
+/// The newest python-build-standalone release: its URL prefix and SHA256SUMS.
+fn python_sums(ctx: &Ctx) -> Result<(String, String)> {
+    let info: Value = ctx
+        .net
+        .json("https://raw.githubusercontent.com/astral-sh/python-build-standalone/latest-release/latest-release.json")?;
+    let prefix = info
+        .get("asset_url_prefix")
+        .and_then(Value::as_str)
+        .ok_or_else(|| anyhow!("python-build-standalone: no asset_url_prefix"))?
+        .trim_end_matches('/')
+        .to_owned();
+    let sums = ctx.net.text(&format!("{prefix}/SHA256SUMS"))?;
+    Ok((prefix, sums))
+}
+
+/// The minor versions with a build for `triple` in a SHA256SUMS file,
+/// newest first.
+pub fn python_lines(sums: &str, triple: &str) -> Vec<String> {
+    let Ok(re) = regex::Regex::new(&format!(
+        r"cpython-(\d+\.\d+)\.\d+\+\d+-{}-install_only_stripped\.tar\.gz$",
+        regex::escape(triple)
+    )) else {
+        return Vec::new();
+    };
+    let mut lines: Vec<String> = sums
+        .lines()
+        .filter_map(|l| re.captures(l.trim()).map(|c| c[1].to_owned()))
+        .collect();
+    lines.sort_by_key(|l| std::cmp::Reverse(super::version_key(l)));
+    lines.dedup();
+    lines
+}
+
+impl Python {
+    fn release(ctx: &Ctx, component: &Component, minor: &str) -> Result<Release> {
+        let (prefix, sums) = python_sums(ctx)?;
         let triple = format!("{}-pc-windows-msvc", triple_arch(ctx, component));
-        let (file, version, sha) = pick_python(&sums, &minor, &triple)
+        let (file, version, sha) = pick_python(&sums, minor, &triple)
             .ok_or_else(|| anyhow!("no Python {minor} for {triple}"))?;
         Ok(Release::single(
             version,
@@ -152,6 +175,26 @@ impl Installer for Python {
             Kind::TarGz,
             Inner::Named("python".into()),
         ))
+    }
+}
+
+impl Installer for Python {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        Python::release(ctx, component, &python_minor(ctx))
+    }
+
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        let (_, sums) = python_sums(ctx)?;
+        let triple = format!("{}-pc-windows-msvc", triple_arch(ctx, component));
+        Ok(python_lines(&sums, &triple))
+    }
+
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        Python::release(ctx, component, line)
     }
 
     /// Keeps the user's packages: the list is saved in
@@ -262,7 +305,7 @@ fn copy_tree(from: &Path, to: &Path) -> Result<()> {
 }
 
 #[derive(Deserialize)]
-struct NodeEntry {
+pub struct NodeEntry {
     version: String,
     #[serde(default)]
     files: Vec<String>,
@@ -273,17 +316,50 @@ struct NodeEntry {
 /// Node.js: the newest LTS with a Windows zip for this platform.
 pub struct Node;
 
-impl Installer for Node {
-    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+/// The lines of Node.js with a Windows zip for `arch` (`win-x64-zip`) in
+/// `index.json` (newest first, as the index): the even majors (LTS lines)
+/// from 18 on, the others only for their newest major.
+pub fn node_lines(index: &[NodeEntry], wanted: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for e in index.iter().filter(|e| e.files.iter().any(|f| f == wanted)) {
+        let Some(line) = crate::versions::line_of(&e.version) else {
+            continue;
+        };
+        if !out.contains(&line) {
+            out.push(line);
+        }
+    }
+    let newest_major = out
+        .first()
+        .and_then(|l| l.split('.').next())
+        .map(str::to_owned);
+    out.retain(|l| {
+        let major: u32 = l
+            .split('.')
+            .next()
+            .and_then(|m| m.parse().ok())
+            .unwrap_or(0);
+        (major >= 18 && major.is_multiple_of(2))
+            || newest_major.as_deref() == Some(&major.to_string())
+    });
+    out
+}
+
+impl Node {
+    fn release(ctx: &Ctx, component: &Component, line: Option<&str>) -> Result<Release> {
         let arch = arch_of(ctx, component);
         let index: Vec<NodeEntry> = ctx.net.json("https://nodejs.org/dist/index.json")?;
         let wanted = format!("win-{arch}-zip");
         let entry = index
             .iter()
             .find(|e| {
-                !matches!(e.lts, Value::Bool(false) | Value::Null) && e.files.contains(&wanted)
+                e.files.contains(&wanted)
+                    && match line {
+                        Some(l) => crate::versions::line_of(&e.version).as_deref() == Some(l),
+                        None => !matches!(e.lts, Value::Bool(false) | Value::Null),
+                    }
             })
-            .ok_or_else(|| anyhow!("no Node.js LTS for win-{arch}"))?;
+            .ok_or_else(|| anyhow!("no Node.js {} for win-{arch}", line.unwrap_or("LTS")))?;
         let v = &entry.version;
         let file_name = format!("node-{v}-win-{arch}.zip");
         let sums = ctx
@@ -299,6 +375,28 @@ impl Installer for Node {
             Kind::Zip,
             Inner::Named(format!("node-{v}-win-{arch}")),
         ))
+    }
+}
+
+impl Installer for Node {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        Node::release(ctx, component, None)
+    }
+
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        let index: Vec<NodeEntry> = ctx.net.json("https://nodejs.org/dist/index.json")?;
+        Ok(node_lines(
+            &index,
+            &format!("win-{}-zip", arch_of(ctx, component)),
+        ))
+    }
+
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        Node::release(ctx, component, Some(line))
     }
 }
 
@@ -363,5 +461,31 @@ mod tests {
         assert_eq!(version, "3.13.10");
         assert!(file.contains("x86_64") && file.ends_with("install_only_stripped.tar.gz"));
         assert_eq!(pick_python(&sums, "3.12", "x86_64-pc-windows-msvc"), None);
+        assert_eq!(
+            python_lines(&sums, "x86_64-pc-windows-msvc"),
+            ["3.14", "3.13"]
+        );
+        assert_eq!(python_lines(&sums, "aarch64-pc-windows-msvc"), ["3.13"]);
+    }
+
+    #[test]
+    fn node_lines_are_lts_majors_and_the_newest() {
+        let index: Vec<NodeEntry> = serde_json::from_value(serde_json::json!([
+            {"version": "v25.1.0", "files": ["win-x64-zip"], "lts": false},
+            {"version": "v25.0.0", "files": ["win-x64-zip"], "lts": false},
+            {"version": "v24.11.0", "files": ["win-x64-zip"], "lts": "Krypton"},
+            {"version": "v24.10.0", "files": ["win-x64-zip"], "lts": false},
+            {"version": "v23.11.1", "files": ["win-x64-zip"], "lts": false},
+            {"version": "v22.21.1", "files": ["win-x64-zip"], "lts": "Jod"},
+            {"version": "v22.21.0", "files": ["win-x64-zip"], "lts": "Jod"},
+            {"version": "v20.19.5", "files": ["win-arm64-zip"], "lts": "Iron"},
+            {"version": "v16.20.2", "files": ["win-x64-zip"], "lts": "Gallium"}
+        ]))
+        .unwrap();
+        assert_eq!(
+            node_lines(&index, "win-x64-zip"),
+            ["25.1", "25.0", "24.11", "24.10", "22.21"]
+        );
+        assert_eq!(node_lines(&index, "win-arm64-zip"), ["20.19"]);
     }
 }

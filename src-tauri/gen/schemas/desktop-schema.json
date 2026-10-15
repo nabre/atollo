@@ -459,6 +459,18 @@
           "markdownDescription": "Enables the project_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_versions command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-versions",
+          "markdownDescription": "Enables the project_versions command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_versions_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-versions-set",
+          "markdownDescription": "Enables the project_versions_set command without any pre-configured scope."
+        },
+        {
           "description": "Enables the projects_list command without any pre-configured scope.",
           "type": "string",
           "const": "allow-projects-list",
@@ -583,6 +595,36 @@
           "type": "string",
           "const": "allow-url-open",
           "markdownDescription": "Enables the url_open command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the versions_add command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-versions-add",
+          "markdownDescription": "Enables the versions_add command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the versions_available command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-versions-available",
+          "markdownDescription": "Enables the versions_available command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the versions_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-versions-list",
+          "markdownDescription": "Enables the versions_list command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the versions_prefer command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-versions-prefer",
+          "markdownDescription": "Enables the versions_prefer command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the versions_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-versions-remove",
+          "markdownDescription": "Enables the versions_remove command without any pre-configured scope."
         },
         {
           "description": "Denies the agent_launch command without any pre-configured scope.",
@@ -867,6 +909,18 @@
           "markdownDescription": "Denies the project_status command without any pre-configured scope."
         },
         {
+          "description": "Denies the project_versions command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-versions",
+          "markdownDescription": "Denies the project_versions command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_versions_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-versions-set",
+          "markdownDescription": "Denies the project_versions_set command without any pre-configured scope."
+        },
+        {
           "description": "Denies the projects_list command without any pre-configured scope.",
           "type": "string",
           "const": "deny-projects-list",
@@ -991,6 +1045,36 @@
           "type": "string",
           "const": "deny-url-open",
           "markdownDescription": "Denies the url_open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the versions_add command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-versions-add",
+          "markdownDescription": "Denies the versions_add command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the versions_available command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-versions-available",
+          "markdownDescription": "Denies the versions_available command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the versions_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-versions-list",
+          "markdownDescription": "Denies the versions_list command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the versions_prefer command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-versions-prefer",
+          "markdownDescription": "Denies the versions_prefer command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the versions_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-versions-remove",
+          "markdownDescription": "Denies the versions_remove command without any pre-configured scope."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

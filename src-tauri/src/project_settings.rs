@@ -3,9 +3,11 @@
 //! folder, so the project stays as its repository has it. Today: the agent
 //! last opened in it (the default of the agent choice) and when the editor,
 //! a console or an agent last opened it (the order of the projects), the
-//! editor extensions added to or removed from those of its languages.
+//! editor extensions added to or removed from those of its languages, the
+//! versions of its languages.
 //! Keys written by a newer version of the app are kept as they are.
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -24,6 +26,10 @@ pub struct ProjectSettings {
     /// Editor extensions changed from those of its languages (`editor_ext.rs`).
     #[serde(default, skip_serializing_if = "Extensions::is_empty")]
     pub extensions: Extensions,
+    /// Lines of the languages chosen for the project, by component id
+    /// (`versions.rs`); missing = the kit's.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub versions: BTreeMap<String, String>,
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
 }

@@ -346,7 +346,8 @@ pub async fn terminal_open<R: Runtime>(
     crate::project_settings::opened(&state.kit, &project);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure(&app, &task, &kit, lang, &[])?;
+        let env =
+            crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &[])?);
         terminal::open_console(&app, &kit, &env, &dir)
             .map_err(|e| fail("terminal", format!("{e:#}")))
     })
@@ -433,6 +434,7 @@ fn apply_env(state: &AppState, settings: Settings) -> &'static str {
         .unwrap_or_else(std::sync::PoisonError::into_inner) = env.clone();
     state.editor.set_env(env.clone());
     state.setup.set_config(env, settings);
+    crate::versions::write_project_files(&state.kit);
     lang
 }
 
@@ -525,6 +527,151 @@ fn choice_text(kit: &Kit, chosen: &[String]) -> String {
         .collect()
 }
 
+/// The versioned languages and tools: default folder, saved lines, the
+/// kit's preferred line (`versions.rs`).
+#[tauri::command]
+pub fn versions_list<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> Result<Vec<crate::versions::Tool>, String> {
+    ensure_main(&webview)?;
+    Ok(crate::versions::tools(&state.kit))
+}
+
+/// The lines of `id` that can be downloaded (asks its source).
+#[tauri::command]
+pub async fn versions_available<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<Vec<String>, String> {
+    ensure_main(&webview)?;
+    crate::versions::check(&id, None).map_err(|e| e.to_string())?;
+    let (kit, env) = (state.kit.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || {
+        let c = Catalog::get().find(&id).ok_or("unknown component")?;
+        let installer = install::installer(&id).ok_or("no installer")?;
+        let net = crate::net::Net::new(&Settings::load(&kit).settings, None)
+            .map_err(|e| fail("versions", format!("{e:#}")))?;
+        let cancel = std::sync::atomic::AtomicBool::new(false);
+        let ctx = install::Ctx {
+            kit: &kit,
+            net: &net,
+            env: &env,
+            cancel: &cancel,
+        };
+        installer
+            .lines(&ctx, c)
+            .map_err(|e| fail("versions", format!("{e:#}")))
+    })
+    .await
+    .map_err(|e| fail("versions", e))?
+}
+
+/// Downloads `line` of `id` next to the default folder, with the app's
+/// preparation task (progress as `setup`).
+#[tauri::command]
+pub fn versions_add<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+    line: String,
+) -> Result<(), String> {
+    ensure_main(&webview)?;
+    crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
+    let opts = Options {
+        lines: vec![(id, line)],
+        ..Options::default()
+    };
+    state.setup.start(opts, false, setup_notify(app))
+}
+
+/// Removes a saved line (the default folder goes with the component).
+#[tauri::command]
+pub fn versions_remove<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+    line: String,
+) -> Result<Vec<crate::versions::Tool>, String> {
+    ensure_main(&webview)?;
+    if state.setup.snapshot().running {
+        return Err(tr(&state, "C'è già un'installazione in corso.", &[]));
+    }
+    crate::versions::remove(&state.kit, &id, &line).map_err(|e| {
+        if e.is::<crate::archive::InUse>() {
+            tr(
+                &state,
+                "La versione {0} è in uso: chiudi i programmi che la usano e riprova.",
+                &[&line],
+            )
+        } else {
+            fail("versions", format!("{e:#}"))
+        }
+    })?;
+    apply_env(&state, Settings::load(&state.kit).settings);
+    Ok(crate::versions::tools(&state.kit))
+}
+
+/// The line of `id` the kit uses (`None`: the default folder). Consoles,
+/// actions and agents opened from now on use it; the editor after a restart.
+#[tauri::command]
+pub fn versions_prefer<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+    line: Option<String>,
+) -> Result<Vec<crate::versions::Tool>, String> {
+    ensure_main(&webview)?;
+    crate::versions::set_kit_choice(&state.kit, &id, line.as_deref())
+        .map_err(|e| fail("versions", format!("{e:#}")))?;
+    apply_env(&state, Settings::load(&state.kit).settings);
+    Ok(crate::versions::tools(&state.kit))
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectVersions {
+    pub tools: Vec<crate::versions::Tool>,
+    /// The lines chosen for the project; the others follow the kit.
+    pub chosen: crate::versions::Choice,
+}
+
+fn project_versions_of(kit: &Kit, project: &str) -> ProjectVersions {
+    ProjectVersions {
+        tools: crate::versions::tools(kit),
+        chosen: crate::versions::project_choice(kit, project),
+    }
+}
+
+#[tauri::command]
+pub fn project_versions<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<ProjectVersions, String> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    Ok(project_versions_of(&state.kit, &project))
+}
+
+/// The line of `id` for the project (`None`: the kit's).
+#[tauri::command]
+pub fn project_versions_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    id: String,
+    line: Option<String>,
+) -> Result<ProjectVersions, String> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::versions::set_project_choice(&state.kit, &project, &id, line.as_deref())
+        .map_err(|e| fail("versions", format!("{e:#}")))?;
+    Ok(project_versions_of(&state.kit, &project))
+}
+
 #[tauri::command]
 pub fn setup_cancel<R: Runtime>(
     app: AppHandle<R>,
@@ -586,7 +733,8 @@ pub async fn agent_launch<R: Runtime>(
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         let wanted: Vec<&str> = crate::needs::of_agent(&kit, &agent).into_iter().collect();
-        let env = ensure(&app, &task, &kit, lang, &wanted)?;
+        let env =
+            crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
         crate::agents::launch(&app, &kit, &env, &agent, &dir, lang)
             .map_err(|e| fail("agent", format!("{e:#}")))
     })
@@ -1134,7 +1282,8 @@ pub async fn run_start<R: Runtime>(
             ));
         };
         let wanted: Vec<&str> = crate::needs::of_action(a).into_iter().collect();
-        let env = ensure(&app, &task, &kit, lang, &wanted)?;
+        let env =
+            crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
         runner
             .start(&project, &dir, a, &env, lang)
             .map_err(|e| fail("run", format!("{e:#}")))
@@ -1843,6 +1992,13 @@ macro_rules! command_handler {
             $crate::commands::project_site,
             $crate::commands::project_install_missing,
             $crate::commands::project_extensions,
+            $crate::commands::versions_list,
+            $crate::commands::versions_available,
+            $crate::commands::versions_add,
+            $crate::commands::versions_remove,
+            $crate::commands::versions_prefer,
+            $crate::commands::project_versions,
+            $crate::commands::project_versions_set,
             $crate::commands::extensions_matrix,
             $crate::commands::github_status,
             $crate::commands::github_sign_in,

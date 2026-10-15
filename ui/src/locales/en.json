@@ -445,5 +445,20 @@
   "La lingua di Atollo.": "The language of Atollo.",
   "Apri la cartella dei progetti": "Open the projects folder",
   "Mostra il pannello": "Show Panel",
-  "Nascondi il pannello": "Hide Panel"
+  "Nascondi il pannello": "Hide Panel",
+  "{0}, predefinita": "{0}, default",
+  "Scarica un'altra versione": "Download another version",
+  "Versione da scaricare": "Version to download",
+  "Nessuna altra versione": "No other version",
+  "Scarica": "Download",
+  "Un aggiornamento che cambia la versione minore conserva quella vecchia. La versione scelta qui vale per tutto il kit; ogni progetto può sceglierne un'altra nella sua pagina.": "An update that changes the minor version keeps the old one. The version chosen here applies to the whole kit; each project can choose another one on its page.",
+  "versione": "version",
+  "Versione di {0} per il kit": "{0} version for the kit",
+  "Versioni conservate di {0}": "Kept versions of {0}",
+  "Rimuovi {0} {1}": "Remove {0} {1}",
+  "Nessun linguaggio con più versioni installato.": "No language with several versions installed.",
+  "Valgono per terminale, azioni e agenti del progetto, e per i terminali dell'editor aperti da adesso. Altre versioni si scaricano in Strumenti.": "They apply to the project's terminal, actions and agents, and to the editor terminals opened from now on. Other versions are downloaded in Tools.",
+  "Nessun linguaggio ha altre versioni conservate.": "No language has other kept versions.",
+  "Come il kit ({0})": "Same as the kit ({0})",
+  "{0} (non più presente: si usa la predefinita)": "{0} (no longer present: the default is used)"
 }

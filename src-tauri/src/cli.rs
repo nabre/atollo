@@ -59,6 +59,7 @@ impl PrepareArgs {
             skip: self.skip.clone(),
             update_all: self.update_all,
             force: self.force,
+            ..Options::default()
         }
     }
 }

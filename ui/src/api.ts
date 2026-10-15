@@ -450,6 +450,104 @@ export function componentsApply(chosen: string[], updateAll: boolean): Promise<v
   return browserPreview ? Promise.resolve() : invoke<undefined>("components_apply", { chosen, updateAll });
 }
 
+/** A minor line (`22.11`) of a language, with its full version when known. */
+export interface VersionLine {
+  line: string;
+  version: string | null;
+}
+
+/** A language or tool whose versions can be kept side by side (versions.rs). */
+export interface VersionedTool {
+  id: string;
+  name: string;
+  installed: boolean;
+  /** The default folder, replaced by updates. */
+  default: VersionLine | null;
+  /** The other lines kept, newest first. */
+  saved: VersionLine[];
+  /** The kit's preferred line; null = the default folder. */
+  preferred: string | null;
+  /** Other lines can be downloaded. */
+  downloadable: boolean;
+}
+
+export interface ProjectVersions {
+  tools: VersionedTool[];
+  /** Lines chosen for the project, by component id; the others follow the kit. */
+  chosen: Record<string, string>;
+}
+
+const SAMPLE_VERSIONS: VersionedTool[] = [
+  {
+    id: "node",
+    name: "Node.js",
+    installed: true,
+    default: { line: "24.11", version: "v24.11.0" },
+    saved: [
+      { line: "22.21", version: "v22.21.1" },
+      { line: "20.19", version: "v20.19.5" },
+    ],
+    preferred: null,
+    downloadable: true,
+  },
+  {
+    id: "php",
+    name: "PHP",
+    installed: true,
+    default: { line: "8.4", version: "8.4.12 (Composer 2.8.12)" },
+    saved: [],
+    preferred: null,
+    downloadable: true,
+  },
+  {
+    id: "python",
+    name: "Python",
+    installed: false,
+    default: null,
+    saved: [],
+    preferred: null,
+    downloadable: true,
+  },
+];
+
+export function versionsList(): Promise<VersionedTool[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_VERSIONS) : invoke<VersionedTool[]>("versions_list");
+}
+
+/** The lines of `id` that can be downloaded, newest first (asks its source). */
+export function versionsAvailable(id: string): Promise<string[]> {
+  return browserPreview
+    ? Promise.resolve(["24.11", "24.10", "22.21", "22.20", "20.19", "18.20"])
+    : invoke<string[]>("versions_available", { id });
+}
+
+/** Downloads `line` next to the default folder; progress as `setup` events. */
+export function versionsAdd(id: string, line: string): Promise<void> {
+  return browserPreview ? Promise.resolve() : invoke<undefined>("versions_add", { id, line });
+}
+
+export function versionsRemove(id: string, line: string): Promise<VersionedTool[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_VERSIONS) : invoke<VersionedTool[]>("versions_remove", { id, line });
+}
+
+/** The line the kit uses; null = the default folder. */
+export function versionsPrefer(id: string, line: string | null): Promise<VersionedTool[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_VERSIONS) : invoke<VersionedTool[]>("versions_prefer", { id, line });
+}
+
+export function projectVersions(project: string): Promise<ProjectVersions> {
+  return browserPreview
+    ? Promise.resolve({ tools: SAMPLE_VERSIONS, chosen: { node: "20.19" } })
+    : invoke<ProjectVersions>("project_versions", { project });
+}
+
+/** The line of `id` for the project; null = the kit's. */
+export function projectVersionsSet(project: string, id: string, line: string | null): Promise<ProjectVersions> {
+  return browserPreview
+    ? Promise.resolve({ tools: SAMPLE_VERSIONS, chosen: line ? { [id]: line } : {} })
+    : invoke<ProjectVersions>("project_versions_set", { project, id, line });
+}
+
 export type AgentId = "claude" | "codex" | "antigravity";
 
 export interface AgentInfo {

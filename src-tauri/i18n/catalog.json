@@ -1,4 +1,9 @@
 {
+  "La versione {0} è in uso: chiudi i programmi che la usano e riprova.": {
+    "en": "Version {0} is in use: close the programs using it and try again.",
+    "fr": "La version {0} est utilisée : fermez les programmes qui l'utilisent et réessayez.",
+    "de": "Version {0} wird verwendet: Schließe die Programme, die sie verwenden, und versuche es erneut."
+  },
   "Azione non valida: {0}.": {
     "en": "Invalid action: {0}.",
     "fr": "Action non valide : {0}.",

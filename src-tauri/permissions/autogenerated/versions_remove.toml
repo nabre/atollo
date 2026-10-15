@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-versions-remove"
+description = "Enables the versions_remove command without any pre-configured scope."
+commands.allow = ["versions_remove"]
+
+[[permission]]
+identifier = "deny-versions-remove"
+description = "Denies the versions_remove command without any pre-configured scope."
+commands.deny = ["versions_remove"]

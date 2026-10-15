@@ -8,6 +8,10 @@
 //! key file, then the swap into `data\apps\<platform>`. The saved version
 //! joins the versions of the parts, so a new build of any part is noticed.
 //! Installers made of processes (Rust, pnpm, R) implement `custom`.
+//!
+//! Versioned components (`versions.rs`) keep the old folder when an update
+//! changes the minor line, and can install another line into
+//! `data\apps\<platform>\versions\<id>\<line>` (`lines`, `release_line`).
 
 mod agents;
 mod core;
@@ -29,6 +33,8 @@ use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::net::Net;
 use crate::verify::{self, Expect};
+
+pub use lang::version_key;
 
 /// What a step needs from the app.
 pub struct Ctx<'a> {
@@ -146,6 +152,19 @@ pub trait Installer: Sync {
     ) -> Result<()> {
         bail!("no custom installer")
     }
+    /// Other lines (`major.minor`) can be downloaded: `lines` and
+    /// `release_line` are implemented.
+    fn has_lines(&self) -> bool {
+        false
+    }
+    /// The lines available for this kit's platform, newest first.
+    fn lines(&self, _ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        Ok(Vec::new())
+    }
+    /// The newest build of `line`; only its `Own` part is installed.
+    fn release_line(&self, _ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        bail!("{}: no version {line} to download", component.id)
+    }
 }
 
 /// The installer of `id`, if this version of the app has one.
@@ -236,12 +255,16 @@ pub fn install(
         inst.install_custom(ctx, component, release, progress)?;
     } else {
         let work = work_dir(ctx, component)?;
+        let own = component.folder_path(ctx.kit);
+        let keep = keep_old(ctx, component, release);
         let result = release.parts.iter().enumerate().try_for_each(|(i, part)| {
             install_part(
                 ctx,
                 inst,
                 component,
                 part,
+                own.as_deref(),
+                keep.as_ref(),
                 &work.join(i.to_string()),
                 progress,
             )
@@ -267,11 +290,105 @@ pub fn install(
     Ok(())
 }
 
+/// A versioned component whose update changes the minor line: where its
+/// folder goes (with its version) instead of being replaced.
+fn keep_old(ctx: &Ctx, component: &Component, release: &Release) -> Option<(PathBuf, String)> {
+    if !component.versioned || !component.is_installed(ctx.kit) {
+        return None;
+    }
+    let current = component.installed_version(ctx.kit)?;
+    let old = crate::versions::line_of(&current)?;
+    if crate::versions::line_of(&release.version).as_deref() == Some(old.as_str()) {
+        return None;
+    }
+    Some((
+        crate::versions::saved_dir(ctx.kit, component, &old),
+        current,
+    ))
+}
+
+/// Moves the default folder to the saved lines. A failure (the folder in
+/// use) only goes to the log: the update replaces it as before.
+fn save_old(component: &Component, folder: &Path, to: &Path, version: &str) {
+    let moved = (|| -> Result<()> {
+        if to.exists() {
+            // That line is saved already: the copy of the default is newer.
+            archive::remove_dir(to)?;
+        }
+        fs::create_dir_all(to.parent().unwrap_or(to))?;
+        fs::rename(folder, to).with_context(|| folder.display().to_string())?;
+        crate::versions::write_version(to, version)
+    })();
+    match moved {
+        Ok(()) => crate::log::info(&format!(
+            "{}: {version} kept in {}",
+            component.id,
+            to.display()
+        )),
+        Err(e) => crate::log::warn(&format!(
+            "{}: {version} not kept ({e:#}), replaced",
+            component.id
+        )),
+    }
+}
+
+/// Installs `release` of a versioned component as a saved line: only its
+/// own folder (not Maven, Gradle or Composer), into
+/// `data\apps\<platform>\versions\<id>\<line>`. Returns the line.
+pub fn install_line(
+    ctx: &Ctx,
+    component: &Component,
+    release: &Release,
+    progress: &mut dyn Progress,
+) -> Result<String> {
+    let Some(inst) = installer(&component.id) else {
+        bail!("{}: no installer", component.id);
+    };
+    let line = crate::versions::line_of(&release.version)
+        .ok_or_else(|| anyhow::anyhow!("{}: version {}", component.id, release.version))?;
+    if !component.versioned || inst.custom() {
+        bail!("{}: versions cannot be saved", component.id);
+    }
+    if crate::versions::default_line(ctx.kit, component).as_deref() == Some(line.as_str()) {
+        bail!("{} {line}: it is the default version", component.id);
+    }
+    let Some(part) = release.parts.iter().find(|p| p.dest == Dest::Own) else {
+        bail!("{}: nothing to install", component.id);
+    };
+    let target = crate::versions::saved_dir(ctx.kit, component, &line);
+    let work = work_dir(ctx, component)?;
+    let result = install_part(
+        ctx,
+        inst,
+        component,
+        part,
+        Some(&target),
+        None,
+        &work.join("0"),
+        progress,
+    );
+    let _ = fs::remove_dir_all(&work);
+    result?;
+    inst.finish(ctx, component, &target)?;
+    if !crate::versions::has_key(component, &target) {
+        bail!(
+            "{}: {} missing after the installation",
+            component.id,
+            component.key
+        );
+    }
+    crate::versions::write_version(&target, &release.version)?;
+    Ok(line)
+}
+
+#[allow(clippy::too_many_arguments)]
 fn install_part(
     ctx: &Ctx,
     inst: &dyn Installer,
     component: &Component,
     part: &Part,
+    own: Option<&Path>,
+    keep: Option<&(PathBuf, String)>,
     work: &Path,
     progress: &mut dyn Progress,
 ) -> Result<()> {
@@ -307,15 +424,18 @@ fn install_part(
     let apps = ctx.kit.apps();
     match &part.dest {
         Dest::Own => {
-            let Some(folder) = component.folder_path(ctx.kit) else {
+            let Some(folder) = own else {
                 bail!("{} has no folder of its own", component.id);
             };
-            check_key(component, &folder, &tree)?;
-            inst.before_swap(ctx, component, &tree, &folder)?;
+            check_key(component, &tree)?;
+            inst.before_swap(ctx, component, &tree, folder)?;
             if let Some(parent) = folder.parent() {
                 archive::clean_leftovers(parent);
             }
-            archive::replace_dir(&tree, &folder)
+            if let Some((to, version)) = keep {
+                save_old(component, folder, to, version);
+            }
+            archive::replace_dir(&tree, folder)
         }
         Dest::Folder(name) => {
             let folder = apps.join(name);
@@ -366,10 +486,13 @@ pub fn find_file(dir: &Path, name: &str) -> Option<PathBuf> {
 
 /// The key file, and the other parts in the component's own folder, must be
 /// in the new tree before anything is replaced.
-fn check_key(component: &Component, folder: &Path, tree: &Path) -> Result<()> {
+fn check_key(component: &Component, tree: &Path) -> Result<()> {
+    let Some(folder) = &component.folder else {
+        return Ok(());
+    };
     for k in std::iter::once(&component.key).chain(&component.keys) {
         let key = PathBuf::from(k.replace('/', "\\"));
-        let Ok(rel) = key.strip_prefix(folder.file_name().unwrap_or_default()) else {
+        let Ok(rel) = key.strip_prefix(folder) else {
             continue;
         };
         let path = tree.join(rel);
@@ -457,20 +580,19 @@ mod tests {
     fn check_key_wants_every_part_of_the_folder() {
         let tmp = TempDir::new("checkkey");
         let server = Catalog::get().find("vscodium-server").unwrap();
-        let folder = tmp.0.join("vscodium-server");
         let tree = tmp.0.join("tree");
         fs::create_dir_all(tree.join("out")).unwrap();
         fs::write(tree.join(r"out\server-main.js"), b"").unwrap();
-        let err = check_key(server, &folder, &tree).unwrap_err();
+        let err = check_key(server, &tree).unwrap_err();
         assert!(err.to_string().contains("node.exe"), "{err}");
         fs::write(tree.join("node.exe"), b"").unwrap();
-        check_key(server, &folder, &tree).unwrap();
+        check_key(server, &tree).unwrap();
 
         // Parts in other folders (Maven, Gradle) are not in this tree.
         let java = Catalog::get().find("java").unwrap();
         let tree = tmp.0.join("jdk");
         fs::create_dir_all(tree.join("bin")).unwrap();
         fs::write(tree.join(r"bin\java.exe"), b"").unwrap();
-        check_key(java, &tmp.0.join("java"), &tree).unwrap();
+        check_key(java, &tree).unwrap();
     }
 }

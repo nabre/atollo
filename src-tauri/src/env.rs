@@ -229,6 +229,9 @@ impl KitEnv {
         env.set_path("UV_TOOL_BIN_DIR", &uv_bin);
         env.set_path("GH_CONFIG_DIR", data.join("gh"));
         env.set_path("PHPRC", data.join("php"));
+        // The PHP in use: php.ini finds its extensions through it, so a
+        // saved version of PHP loads its own (versions.rs).
+        env.set_path("CP_PHP", apps.join("php"));
         let composer = data.join("composer");
         env.set_path("COMPOSER_HOME", &composer);
         env.set_path("COMPOSER_CACHE_DIR", data.join(r"cache\composer"));
@@ -456,6 +459,8 @@ impl KitEnv {
         if net.allow_lan {
             env.set("ATOLLO_ALLOW_LAN", "1");
         }
+        // The versions preferred for the kit instead of the default folders.
+        crate::versions::apply_kit_choice(kit, &mut env);
         env
     }
 

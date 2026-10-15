@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-versions-add"
+description = "Enables the versions_add command without any pre-configured scope."
+commands.allow = ["versions_add"]
+
+[[permission]]
+identifier = "deny-versions-add"
+description = "Denies the versions_add command without any pre-configured scope."
+commands.deny = ["versions_add"]
