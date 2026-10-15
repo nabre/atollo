@@ -209,7 +209,7 @@ export function NewProjectPage({ onOpen, onSettings }: { onOpen: (project: strin
                       running ? "opacity-60" : "cursor-pointer hover:bg-vsc-list-hover"
                     } ${on ? "border-vsc-focus bg-vsc-list-inactive" : "border-vsc-border"}`}
                   >
-                    <Radio name="wizard-base" checked={on} disabled={running} onSelect={pick}>
+                    <Radio name="wizard-base" checked={on} disabled={running} onSelect={pick} plain>
                       <span className="flex items-center gap-2 font-semibold">
                         <PieceLogo piece={b} size={18} />
                         {b.name}

@@ -113,6 +113,9 @@ export function ProjectsPage({
       else next.delete(id);
       return next;
     });
+    // A collapsed pane drops its content: reopened from its header, the
+    // name must not take the focus again.
+    if (id === "new" && open !== true) setFocusNew(0);
   };
   const openNew = () => {
     toggle("new", true);
