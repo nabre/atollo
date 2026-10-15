@@ -1,12 +1,12 @@
 // Copies of a project's database (DECISIONS.md D-78): export into
 // data\db\backup\<project>, restore one of them (a file from elsewhere is
 // copied into that folder first: the app has no file picker, D-15).
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { VscCheck, VscCloudUpload, VscDiscard, VscFolderOpened } from "react-icons/vsc";
 import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "./api";
 import { locale, t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
-import { useAction } from "./hooks";
+import { useAction, useLoad } from "./hooks";
 
 function size(bytes: number): string {
   const kb = bytes / 1024;
@@ -16,18 +16,13 @@ function size(bytes: number): string {
 }
 
 export function DatabaseCopies({ project, engine }: { project: string; engine: Backup["engine"] }) {
-  const [list, setList] = useState<Backup[]>([]);
   const [confirm, setConfirm] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  const load = useCallback(() => {
-    projectBackups(project).then(
-      (all) => {
-        setList(all.filter((b) => b.engine === engine));
-      },
-      () => undefined,
-    );
-  }, [project, engine]);
-  useEffect(load, [load]);
+  const read = useCallback(
+    () => projectBackups(project).then((all) => all.filter((b) => b.engine === engine)),
+    [project, engine],
+  );
+  const { data: list, reload: load } = useLoad<Backup[]>(read, [], { onError: "keep" });
   const { busy, error, run } = useAction(load);
   return (
     <div className="space-y-2 border-t border-vsc-border px-3 py-2">

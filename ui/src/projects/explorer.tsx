@@ -3,7 +3,7 @@
 // their inline actions, and the ways to make a new one; the editor opens
 // each project in its own tab (page.tsx). Web actions get their own
 // port and open in the browser.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   VscCode,
   VscFolderOpened,
@@ -30,7 +30,7 @@ import {
 } from "../api";
 import { AgentButton } from "../agents";
 import { GithubRepositories } from "../github";
-import { useAction } from "../hooks";
+import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
 import { BrandSymbol } from "../brand";
@@ -76,29 +76,34 @@ export function ProjectsPage({
   /** The projects open in the editor (kept by the app across pages). */
   tabs: ReturnType<typeof useTabs>;
 }) {
-  const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["projects"]));
   const [filter, setFilter] = useState("");
-  const [ports, setPorts] = useState<Ports>({ ports: {}, locked: [] });
   const newName = useRef<HTMLInputElement>(null);
   const { busy, error, run } = useAction(onChanged);
   const { keep } = tabs;
 
-  const load = useCallback(() => {
-    projectsList().then(
-      (list) => {
-        setLoadError(null);
-        setProjects(list);
+  const readProjects = useCallback(
+    () =>
+      projectsList().then((list) => {
         keep(list.map((p) => p.id));
-      },
-      (e: unknown) => {
-        setLoadError(String(e));
-      },
-    );
-    runPorts().then(setPorts, () => undefined);
-  }, [keep]);
-  useEffect(load, [load]);
+        return list;
+      }),
+    [keep],
+  );
+  const {
+    data: projects,
+    error: loadError,
+    reload: reloadProjects,
+  } = useLoad<ProjectInfo[] | null>(readProjects, null, { onError: "show" });
+  const {
+    data: ports,
+    setData: setPorts,
+    reload: reloadPorts,
+  } = useLoad<Ports>(runPorts, { ports: {}, locked: [] }, { onError: "keep" });
+  const load = useCallback(() => {
+    reloadProjects();
+    reloadPorts();
+  }, [reloadProjects, reloadPorts]);
 
   const toggle = (id: PaneId, open?: boolean) => {
     setPanes((current) => {
@@ -117,7 +122,7 @@ export function ProjectsPage({
     run(`run:${key}`, async () => {
       await runStart(p.id, a.id);
       loadLog(key);
-      runPorts().then(setPorts, () => undefined);
+      reloadPorts();
     });
   };
 

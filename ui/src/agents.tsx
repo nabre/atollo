@@ -3,7 +3,7 @@
 // side bar, the chosen one's page in the editor with its state, usage and
 // sign-out. Launch happens only in a project. Instructions, skills and MCP
 // servers are shared by the three (data\agents, aligned by the app).
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { VscFolderOpened, VscHubot, VscRefresh, VscSignOut, VscWarning } from "react-icons/vsc";
 import {
   agentLaunch,
@@ -19,7 +19,7 @@ import { rich, t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
 import { ComponentLogo } from "./logos";
 import { AgentUsage, useStats } from "./stats";
-import { useAction, useEvery } from "./hooks";
+import { useAction, useLoad } from "./hooks";
 import {
   Button,
   Dot,
@@ -40,13 +40,10 @@ import {
 
 /** The agents' state, refreshed every few seconds (running, signed in). */
 export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } {
-  const [agents, setAgents] = useState<AgentInfo[] | null>(null);
-  const reload = useCallback(() => {
-    agentsStatus().then(setAgents, () => {
-      setAgents([]);
-    });
-  }, []);
-  useEvery(reload, 5000);
+  const { data: agents, reload } = useLoad<AgentInfo[] | null>(agentsStatus, null, {
+    onError: { fallback: [] },
+    every: 5000,
+  });
   return { agents, reload };
 }
 

@@ -45,7 +45,7 @@ import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
 import { NewProjectPage } from "./wizard";
 import { Notice, Sash, useStoredSize, useTabs } from "./workbench";
-import { useEvery, useSubscription } from "./hooks";
+import { useLoad, useSubscription } from "./hooks";
 
 type PageId = "new" | "projects" | "agents" | "databases" | "components" | "settings" | "eject";
 
@@ -74,19 +74,17 @@ export function App() {
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [lang, setLangState] = useState<Lang>("it");
   const [error, setError] = useState<string | null>(null);
-  const [editor, setEditor] = useState<EditorStatus | null>(null);
   const [closing, setClosing] = useState<OpenNow | null>(null);
   const setup = useSetup();
   const { agents } = useAgents();
   const { runs, logs, loadLog, forget } = useRuns();
   const live = Object.values(runs).filter((r) => alive(r.state)).length;
 
-  const refreshEditor = useCallback(() => {
-    editorStatus().then(setEditor, () => {
-      setEditor(null);
-    });
-  }, []);
-  useEvery(refreshEditor, 5000);
+  const {
+    data: editor,
+    setData: setEditor,
+    reload: refreshEditor,
+  } = useLoad<EditorStatus | null>(editorStatus, null, { onError: { fallback: null }, every: 5000 });
   useSubscription(onEditorStatus, setEditor);
 
   const loadInfo = useCallback(() => {

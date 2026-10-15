@@ -4,7 +4,7 @@
 // components, databases, editor extensions and settings, its Git state; the
 // kit's settings of the project live in
 // data\app\projects\<id>\dev-settings.json, never in it.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { VscFolderOpened, VscRefresh, VscWarning } from "react-icons/vsc";
 import {
   editorOpen,
@@ -17,7 +17,7 @@ import {
   type ProjectInfo,
   type RunInfo,
 } from "../api";
-import { useAction } from "../hooks";
+import { useAction, useLoad } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
 import { Button, Dot, IconButton } from "../workbench";
@@ -70,14 +70,15 @@ export function ProjectPage({
   const [section, setSection] = useState<Section>("run");
   /** The action shown in Avvio (null: the default one). */
   const [chosen, setChosen] = useState<string | null>(null);
-  const [status, setStatus] = useState<ProjectStatus | null>(null);
-  const [dbs, setDbs] = useState<ProjectDatabases | null>(null);
+  const readStatus = useCallback(() => projectStatus(p.id), [p.id]);
+  const readDbs = useCallback(() => projectDatabases(p.id), [p.id]);
+  const { data: status, reload: reloadStatus } = useLoad<ProjectStatus | null>(readStatus, null, { onError: "keep" });
+  const { data: dbs, reload: reloadDbs } = useLoad<ProjectDatabases | null>(readDbs, null, { onError: "keep" });
   const { busy: opening, error, run } = useAction();
   const reload = useCallback(() => {
-    projectStatus(p.id).then(setStatus, () => undefined);
-    projectDatabases(p.id).then(setDbs, () => undefined);
-  }, [p.id]);
-  useEffect(reload, [reload]);
+    reloadStatus();
+    reloadDbs();
+  }, [reloadStatus, reloadDbs]);
   const live = Object.values(runs).filter((r) => r.project === p.id && alive(r.state));
   const action =
     p.actions.find((a) => a.id === chosen) ?? p.actions.find((a) => a.id === p.default) ?? p.actions[0] ?? null;

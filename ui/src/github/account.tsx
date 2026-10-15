@@ -1,6 +1,6 @@
 // The kit's GitHub account in Settings: sign-in with a code shown here,
 // sign-out.
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { VscCheck, VscClose, VscCopy, VscLinkExternal, VscSignIn, VscSignOut } from "react-icons/vsc";
 import {
   githubOpen,
@@ -11,20 +11,18 @@ import {
   onGithub,
   type GithubStatus,
 } from "../api";
-import { useAction, useCopy } from "../hooks";
+import { useAction, useCopy, useLoad } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { useSubscription } from "../hooks";
 import { rich, t } from "../i18n";
 
 /** The account's state, kept current by the "github" events of the sign-in. */
 export function useGithub() {
-  const [status, setStatus] = useState<GithubStatus | null>(null);
-  const reload = useCallback(() => {
-    githubStatus().then(setStatus, () => {
-      setStatus(null);
-    });
-  }, []);
-  useEffect(reload, [reload]);
+  const {
+    data: status,
+    setData: setStatus,
+    reload,
+  } = useLoad<GithubStatus | null>(githubStatus, null, { onError: { fallback: null } });
   useSubscription(onGithub, setStatus);
   return { status, setStatus, reload };
 }
