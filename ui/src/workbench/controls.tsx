@@ -301,6 +301,7 @@ export function TextField({
   mono = false,
   autoFocus = false,
   pattern,
+  autoComplete,
   onBlur,
   className = "",
   children,
@@ -321,6 +322,8 @@ export function TextField({
   mono?: boolean;
   autoFocus?: boolean;
   pattern?: string | undefined;
+  /** "off": no saved or suggested values (keys, tokens). */
+  autoComplete?: "on" | "off" | undefined;
   onBlur?: () => void;
   className?: string;
   /** Before or after the text, with slot="content-before" / "content-after". */
@@ -362,6 +365,7 @@ export function TextField({
       readonly={readOnly}
       invalid={invalid}
       pattern={pattern}
+      autocomplete={autoComplete}
       onInput={read}
       onChange={read}
       onBlur={onBlur && leaving(onBlur)}

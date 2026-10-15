@@ -341,7 +341,9 @@ function RepoFlags({ repo }: { repo: GithubRepo }) {
   return (
     <>
       {flags.map(({ icon: Icon, label }) => (
-        <Mark key={label} label={label} className="text-vsc-desc">
+        // In the row's description, dimmed by it as in VS Code: no second
+        // dimming color (it would fall under 4.5:1).
+        <Mark key={label} label={label}>
           <Icon size={12} aria-hidden="true" />
         </Mark>
       ))}
