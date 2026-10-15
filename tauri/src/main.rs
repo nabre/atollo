@@ -9,7 +9,6 @@
 mod adminer;
 mod agents;
 mod agents_sync;
-mod apache;
 mod archive;
 mod catalog;
 mod checkup;
@@ -21,7 +20,6 @@ mod detect;
 mod downloads;
 mod editor;
 mod env;
-mod frameworks;
 mod fsx;
 mod github;
 mod i18n;
@@ -35,17 +33,12 @@ mod log;
 mod needs;
 mod net;
 mod processes;
-mod project_mcp;
-mod project_settings;
-mod project_vscode;
 mod projects;
 mod ranges;
 mod relations;
 mod relocate;
-mod run;
 mod safe_path;
 mod self_update;
-mod serve;
 mod services;
 mod sessions;
 mod settings;
@@ -199,7 +192,7 @@ fn run() -> i32 {
             };
         }
         Cli::Serve { dir, port } => {
-            return match serve::run(&dir, port, lang) {
+            return match projects::serve::run(&dir, port, lang) {
                 Ok(()) => 0,
                 Err(e) => {
                     eprintln!("{e:#}");
@@ -537,9 +530,9 @@ fn build_app<R: tauri::Runtime>(
             );
             // Projects' actions: state and output go to the app window.
             let events = app.handle().clone();
-            app.manage(std::sync::Arc::new(run::Runner::new(
+            app.manage(std::sync::Arc::new(projects::run::Runner::new(
                 kit.clone(),
-                std::sync::Arc::new(move |e: run::Event| {
+                std::sync::Arc::new(move |e: projects::run::Event| {
                     let _ = events.emit_to(MAIN, "run", e);
                 }),
             )));

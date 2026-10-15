@@ -97,10 +97,10 @@ pub fn project_mcp<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> Result<crate::project_mcp::McpView, String> {
+) -> Result<crate::projects::mcp::McpView, String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    Ok(crate::project_mcp::get(&dir))
+    Ok(crate::projects::mcp::get(&dir))
 }
 
 #[tauri::command]
@@ -108,11 +108,11 @@ pub fn project_mcp_set<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-    servers: Vec<crate::project_mcp::McpServer>,
+    servers: Vec<crate::projects::mcp::McpServer>,
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    crate::project_mcp::set(&dir, &servers).map_err(|e| fail("project mcp", format!("{e:#}")))
+    crate::projects::mcp::set(&dir, &servers).map_err(|e| fail("project mcp", format!("{e:#}")))
 }
 
 /// Removes an action written in panel.json (a detected one comes back).
@@ -154,7 +154,7 @@ pub fn project_site<R: Runtime>(
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    let key = crate::run::key_of(&project, crate::detect::SITE_ACTION);
+    let key = crate::projects::run::key_of(&project, crate::detect::SITE_ACTION);
     if runner
         .list()
         .iter()

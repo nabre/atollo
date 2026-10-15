@@ -21,7 +21,7 @@ use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::jobs::{self, Job};
 use crate::kit::Kit;
-use crate::run::split_lines;
+use crate::projects::run::split_lines;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -114,7 +114,7 @@ pub fn official() -> &'static [Piece] {
     static PIECES: OnceLock<Vec<Piece>> = OnceLock::new();
     PIECES.get_or_init(|| {
         // A broken catalog fails the tests; at run time the list is empty.
-        serde_json::from_str::<File>(include_str!("../catalog/frameworks.json"))
+        serde_json::from_str::<File>(include_str!("../../catalog/frameworks.json"))
             .map(|f| f.pieces)
             .unwrap_or_default()
     })

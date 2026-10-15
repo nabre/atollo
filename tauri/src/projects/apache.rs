@@ -88,7 +88,7 @@ pub fn project_conf(base: &str, root: &Path, dir: &Path, port: u16, lan: bool) -
 
 /// The folder of the project's Apache files.
 pub fn dir(kit: &Kit, project: &str) -> Result<PathBuf> {
-    crate::project_settings::dir(kit, project)
+    crate::projects::settings::dir(kit, project)
         .map(|d| d.join("apache"))
         .ok_or_else(|| anyhow!("not a project name: {project}"))
 }

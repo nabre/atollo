@@ -23,7 +23,7 @@ pub async fn editor_open<R: Runtime>(
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    crate::project_settings::opened(&state.kit, &project);
+    crate::projects::settings::opened(&state.kit, &project);
     let title = project.clone();
     let editor = Arc::clone(&state.editor);
     let (handle, task, kit) = (app.clone(), Arc::clone(&state.setup), state.kit.clone());
@@ -78,7 +78,7 @@ pub async fn terminal_open<R: Runtime>(
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    crate::project_settings::opened(&state.kit, &project);
+    crate::projects::settings::opened(&state.kit, &project);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         let env =
@@ -96,10 +96,10 @@ pub fn project_editor_settings<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-) -> Result<crate::project_vscode::EditorSettingsView, String> {
+) -> Result<crate::projects::vscode::EditorSettingsView, String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    Ok(crate::project_vscode::get(&dir))
+    Ok(crate::projects::vscode::get(&dir))
 }
 
 #[tauri::command]
@@ -107,11 +107,11 @@ pub fn project_editor_settings_set<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
-    settings: crate::project_vscode::EditorSettings,
+    settings: crate::projects::vscode::EditorSettings,
 ) -> Result<(), String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    crate::project_vscode::set(&dir, &settings)
+    crate::projects::vscode::set(&dir, &settings)
         .map_err(|e| fail("editor settings", format!("{e:#}")))
 }
 
@@ -139,7 +139,7 @@ pub async fn project_extensions<R: Runtime>(
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
     let choice = crate::editor::ext::clean_choice(&added, &removed);
-    crate::project_settings::update(&state.kit, &project, |s| s.extensions = choice);
+    crate::projects::settings::update(&state.kit, &project, |s| s.extensions = choice);
     crate::editor::window::refresh_hidden(&app, &state.kit);
     let editor = Arc::clone(&state.editor);
     // Busy installing: the watch of the open projects asks again (main.rs).

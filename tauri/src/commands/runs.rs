@@ -1,4 +1,4 @@
-//! Projects' actions started by the kit (run.rs): start, stop, log, ports.
+//! Projects' actions started by the kit (projects/run.rs): start, stop, log, ports.
 
 use super::*;
 
@@ -6,7 +6,7 @@ use super::*;
 pub fn run_list<R: Runtime>(
     webview: Webview<R>,
     runner: State<'_, Arc<Runner>>,
-) -> Result<Vec<crate::run::RunInfo>, String> {
+) -> Result<Vec<crate::projects::run::RunInfo>, String> {
     ensure_main(&webview)?;
     Ok(runner.list())
 }
@@ -20,7 +20,7 @@ pub async fn run_start<R: Runtime>(
     runner: State<'_, Arc<Runner>>,
     project: String,
     action: String,
-) -> Result<crate::run::RunInfo, String> {
+) -> Result<crate::projects::run::RunInfo, String> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
@@ -82,7 +82,7 @@ pub fn run_clear<R: Runtime>(
 pub fn run_ports<R: Runtime>(
     webview: Webview<R>,
     runner: State<'_, Arc<Runner>>,
-) -> Result<crate::run::Ports, String> {
+) -> Result<crate::projects::run::Ports, String> {
     ensure_main(&webview)?;
     Ok(runner.ports())
 }
@@ -95,7 +95,7 @@ pub fn run_set_port<R: Runtime>(
     runner: State<'_, Arc<Runner>>,
     key: String,
     port: Option<u16>,
-) -> Result<crate::run::Ports, String> {
+) -> Result<crate::projects::run::Ports, String> {
     ensure_main(&webview)?;
     runner
         .set_port(&key, port, state.lang())

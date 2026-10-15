@@ -368,8 +368,14 @@ impl Runner {
             )
         } else if let Some(folder) = &action.apache_dir {
             let root = detect::inside_dir(&cwd, folder)?;
-            let cmd =
-                crate::apache::command(&self.kit, id, &root, port.unwrap_or(PORT_FROM), lan, env)?;
+            let cmd = crate::projects::apache::command(
+                &self.kit,
+                id,
+                &root,
+                port.unwrap_or(PORT_FROM),
+                lan,
+                env,
+            )?;
             (
                 cmd,
                 format!("httpd.exe -f data\\app\\projects\\{id}\\apache\\httpd.conf ({folder})"),

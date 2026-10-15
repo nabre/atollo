@@ -9,7 +9,7 @@
 //!   have them; one with neither is general, always installed (`programs`:
 //!   only when one of those components is in the kit); `optional` ones are
 //!   only added by hand;
-//! - each project adds or removes extensions (`project_settings.rs`);
+//! - each project adds or removes extensions (`projects/settings.rs`);
 //! - the user's `data\app\extensions.txt` adds general ones, format
 //!   `publisher.name [@program,...]`;
 //! - each extension is offered once (`data\app\extensions-offered.txt`): if
@@ -39,7 +39,7 @@ use crate::fsx::write_atomic;
 use crate::jobs;
 use crate::kit::Kit;
 use crate::net::{github_digest, Net};
-use crate::project_settings::Extensions;
+use crate::projects::settings::Extensions;
 use crate::verify::Expect;
 
 const MATRIX: &str = include_str!("../../catalog/extensions.json");
@@ -263,7 +263,7 @@ pub fn hidden_of(kit: &Kit, dir: &Path) -> Vec<String> {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let choice = crate::project_settings::load(kit, &name).extensions;
+    let choice = crate::projects::settings::load(kit, &name).extensions;
     let project = of_project(
         &crate::detect::languages(dir),
         &crate::detect::requires(dir),
@@ -275,7 +275,7 @@ pub fn hidden_of(kit: &Kit, dir: &Path) -> Vec<String> {
         if other.file_name() != dir.file_name() {
             if let Some(n) = other.file_name() {
                 others.extend(
-                    crate::project_settings::load(kit, &n.to_string_lossy())
+                    crate::projects::settings::load(kit, &n.to_string_lossy())
                         .extensions
                         .added,
                 );
@@ -332,7 +332,7 @@ fn wanted(kit: &Kit) -> Wanted {
     for dir in crate::projects::folders(kit) {
         let choice = dir
             .file_name()
-            .map(|n| crate::project_settings::load(kit, &n.to_string_lossy()).extensions)
+            .map(|n| crate::projects::settings::load(kit, &n.to_string_lossy()).extensions)
             .unwrap_or_default();
         let languages = crate::detect::languages(&dir);
         let tools = crate::detect::requires(&dir);
@@ -810,7 +810,7 @@ mod tests {
         assert!(has(&p, "anthropic.claude-code") && has(&p, "ms-python.python"));
         assert!(!has(&p, "vue.volar"), "not a language of a project");
 
-        crate::project_settings::update(&kit, "app", |s| {
+        crate::projects::settings::update(&kit, "app", |s| {
             s.extensions =
                 clean_choice(&["eamodio.gitlens".into()], &["charliermarsh.ruff".into()]);
         });

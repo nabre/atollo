@@ -39,7 +39,7 @@ pub enum Cli {
     },
     /// Antigravity's login: `restore` before agy, `save` after.
     Keyring(String),
-    /// File server of a static site: `serve <folder> <port>` (run.rs).
+    /// File server of a static site: `serve <folder> <port>` (projects/run.rs).
     Serve {
         dir: std::path::PathBuf,
         port: u16,

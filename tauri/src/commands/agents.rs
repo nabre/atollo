@@ -46,7 +46,7 @@ pub async fn agent_launch<R: Runtime>(
         return Err(format!("unknown agent: {agent}"));
     }
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    crate::project_settings::update(&state.kit, &project, |s| {
+    crate::projects::settings::update(&state.kit, &project, |s| {
         s.agent = Some(agent.clone());
     });
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());

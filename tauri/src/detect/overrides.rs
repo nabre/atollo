@@ -190,7 +190,7 @@ pub fn inside(project_dir: &Path, folder: &str) -> Result<(PathBuf, String)> {
 pub enum SiteKind {
     Static,
     Php,
-    /// An Apache of the project's own (`apache.rs`).
+    /// An Apache of the project's own (`projects/apache.rs`).
     Apache,
     None,
 }

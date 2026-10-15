@@ -431,7 +431,7 @@ fn extension_inputs(
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let choice = crate::project_settings::load(kit, &name).extensions;
+    let choice = crate::projects::settings::load(kit, &name).extensions;
     (
         crate::detect::languages(dir),
         crate::detect::requires(dir),
