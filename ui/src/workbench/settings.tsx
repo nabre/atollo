@@ -136,7 +136,8 @@ export function SettingsGroup({
   );
 }
 
-/** One setting: "Category: Name", its description and its control. A
+/** One setting, as vscode-form-group's "settings-group": the label
+ * "Category: Name", the description (vscode-form-helper) and the control. A
  * boolean puts its checkbox before the description (`inline`). */
 export function SettingItem({
   category,
@@ -164,22 +165,26 @@ export function SettingItem({
   return (
     <div
       data-setting
-      className={`relative max-w-[880px] rounded-md border-l-2 py-3 pr-[14px] pb-[18px] pl-3 hover:bg-vsc-list-hover/50 ${
+      className={`relative max-w-[880px] rounded-md border-l-2 hover:bg-(--vscode-settings-rowHoverBackground) ${
         modified ? "border-l-vsc-settings-modified" : "border-l-transparent"
       }`}
     >
-      <div className="font-semibold text-vsc-settings-header">
-        {category && <span className="font-normal opacity-90">{category}: </span>}
-        {title}
-      </div>
-      {inline ? (
-        <div className="mt-[9px]">{children}</div>
-      ) : (
-        <>
-          {description && <div className="mt-[3px] text-vsc-desc">{description}</div>}
-          {children && <div className="mt-[9px] max-w-[500px]">{children}</div>}
-        </>
-      )}
+      {/* The bar takes 2px of the group's 14px on the left. */}
+      <vscode-form-group variant="settings-group" className="max-w-none pl-3">
+        {/* The title in the header color, "Category:" lightened. */}
+        <vscode-label className="[--vscode-foreground:var(--vscode-settings-headerForeground)]">
+          {category && <span className="normal lightened">{category}: </span>}
+          {title}
+        </vscode-label>
+        {inline ? (
+          <div className="mt-[9px]">{children}</div>
+        ) : (
+          <>
+            {description && <vscode-form-helper>{description}</vscode-form-helper>}
+            {children && <div className="mt-[9px] max-w-[500px]">{children}</div>}
+          </>
+        )}
+      </vscode-form-group>
     </div>
   );
 }
