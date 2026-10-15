@@ -1,4 +1,4 @@
-//! The lines each source offers, kept in `datappersion-lines.json`,
+//! The lines each source offers, kept in `data\app\version-lines.json`,
 //! and whether a chosen line has to be downloaded.
 
 use std::collections::BTreeMap;

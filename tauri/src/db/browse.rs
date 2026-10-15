@@ -2,7 +2,7 @@
 //! the databases with their tables or collections, then one page of rows.
 //!
 //! - through the kit's own clients, logged in as the administrator as the
-//!   rest of `db/services.rs`: `mariadb` with the kit's `[client]` login and the
+//!   rest of `db/services/`: `mariadb` with the kit's `[client]` login and the
 //!   SQL on stdin, mongosh with the password and the names in its
 //!   environment (`DEVKIT_DB_*`); never a password or a name on the command
 //!   line;

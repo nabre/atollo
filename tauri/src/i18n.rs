@@ -216,7 +216,9 @@ mod tests {
                 .filter_map(|c| c.get(1))
                 .map(|m| m.as_str())
                 .collect();
-            if path.ends_with("settings.rs") || path.ends_with("frameworks.rs") {
+            if path.ends_with("settings.rs")
+                || path.components().any(|c| c.as_os_str() == "frameworks")
+            {
                 sources.extend(
                     validate
                         .captures_iter(code)

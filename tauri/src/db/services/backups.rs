@@ -1,4 +1,4 @@
-//! Copies of the projects' databases (D-78), in `data\dbackup\<project>`:
+//! Copies of the projects' databases (D-78), in `data\db\backup\<project>`:
 //! export and restore with the servers' own tools.
 
 use std::fs;

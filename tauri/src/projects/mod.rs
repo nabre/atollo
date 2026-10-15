@@ -244,7 +244,7 @@ impl Source {
 }
 
 /// Clones `source` into `projects\<name>` with the kit's Git (and its
-/// credential helper: the kit's GitHub account, `github.rs`). Blocking.
+/// credential helper: the kit's GitHub account, `github/`). Blocking.
 /// `token`: the GitHub account's token, sent to github.com only as an HTTP
 /// header in the environment (`GIT_CONFIG_*`), so it is neither on the
 /// command line nor saved in `.git\config`.

@@ -166,7 +166,7 @@ pub(crate) mod tests {
 
     /// Adminer of the kit given by DEVKIT_TEST_KIT on its MariaDB already
     /// running at DEVKIT_TEST_MARIADB_PORT (an open Dev-Kit, whose data the
-    /// real test of `db/services.rs` must not start a second server on).
+    /// real test of `db/services/` must not start a second server on).
     #[test]
     fn real_adminer_on_running_mariadb() {
         let (Ok(root), Ok(db_port)) = (
@@ -190,7 +190,7 @@ pub(crate) mod tests {
         assert!(ureq::get(&url).call().is_err(), "stopped");
     }
 
-    /// The checks of a real Adminer at `url` (the real test of `db/services.rs`):
+    /// The checks of a real Adminer at `url` (the real test of `db/services/`):
     /// 403 without the token, then logged in as root with it.
     pub fn assert_logs_in(url: &str) {
         let port = url
