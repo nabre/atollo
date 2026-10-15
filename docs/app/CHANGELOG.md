@@ -1,5 +1,17 @@
 # Novità
 
+## Interfaccia con i componenti di VSCodium (15/10/2026)
+
+L'app usa gli stessi controlli di VSCodium e gli stessi colori dell'editor, chiave per chiave, con il brand Atollo (D-88, [ARCHITECTURE.md](ARCHITECTURE.md)).
+
+**Fatto**
+- **Controlli di VSCodium** (`@vscode-elements/elements`): pulsanti, campi, aree di testo, select, badge, barre di avanzamento, divisori, icone codicon, voci delle impostazioni. Checkbox, radio, pulsanti a icona, tabelle, riquadri e schede restano elementi propri disegnati come i componenti, perché quelli dei componenti nasconderebbero etichette e ruoli all'Assistente vocale.
+- **Un solo tema**: `themes.py` genera dal tema Atollo dell'editor tutte le variabili `--vscode-*` (circa 800 per tema) che i componenti leggono; i colori dell'app ne derivano. Cambiare un colore in un posto lo cambia nell'editor e nell'app.
+- **Pagine**: i controlli scritti a mano sono passati ai componenti comuni; restano nativi, con il motivo scritto, pochi casi (pulsanti della finestra, barra delle attività e di stato, scelta dell'agente, misuratore dei limiti, campo con suggerimenti delle estensioni).
+- **Contrasto** corretto dopo la verifica visiva nei due temi: barra di stato (anche nel tema chiaro dell'editor), errori e avvisi, righe arancioni, procedura guidata. Freccia di VSCodium nelle sezioni comprimibili.
+
+**Verificato**: 274 test Rust; tipi, ESLint e build puliti; 56 test dell'interfaccia (nuovi: controlli, registrazione dei componenti, copertura delle variabili). Pagine controllate nel browser in scuro e in chiaro. Da provare nell'app: l'aspetto nella finestra di Tauri accanto all'editor.
+
 ## Struttura del codice, seconda parte (15/10/2026)
 
 Nessun cambiamento per chi usa l'app: stessi testi, comandi, eventi, log e file su disco (D-87, [ARCHITECTURE.md](ARCHITECTURE.md)).

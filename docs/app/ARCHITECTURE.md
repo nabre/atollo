@@ -148,7 +148,8 @@ Nei moduli `anyhow::Result`, con il contesto che serve al log. I comandi rispond
 | Verso Rust | `api\` | un file per area, come `commands\` (sopra); `index.ts` li riesporta, le pagine importano da `./api` |
 | Hook comuni | `hooks.ts` | `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (sotto) |
 | Pezzi comuni | `common.tsx` | `ActionButton`, `ErrorLine`, `editorHint` |
-| Componenti di base | `workbench\` | controlli, layout, liste, impostazioni, `Select`, `DataTable`, `ConfirmDialog` nello stile di VSCodium; dal resto dell'app importa solo `i18n` |
+| Componenti di base | `workbench\` | i controlli di VSCodium (`@vscode-elements/elements`) e le parti del workbench (sotto); dal resto dell'app importa solo `i18n` |
+| Tema | `theme.css`, `theme-colors.css`, `theme-vscode.css` | font e note del brand; `--vsc-*` per Tailwind; tutte le variabili `--vscode-*` di VS Code, generate (sotto) |
 | Pagine grandi | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\` | una cartella per pagina, con `index.ts` che esporta solo ciò che usano le altre pagine |
 | Altre pagine | `wizard.tsx`, `agents.tsx`, `databases.tsx`, `dbbrowser.tsx`, `relations.tsx`, `extensions.tsx`, `eject.tsx`, … | una pagina o una sezione per file |
 | Testi | `i18n.ts`, `locales\*.json` | `t("frase italiana")`; il test controlla le quattro lingue |
@@ -184,16 +185,48 @@ Letture ancora scritte a mano, perché `useLoad` cambierebbe ciò che l'utente v
 
 ### `workbench\`
 
-- `Select` (`controls.tsx`): `value` e `onChange` tipati sui valori delle opzioni, `options` con opzioni singole e gruppi (`<optgroup>`), `label` come nome accessibile. Nessun `<select>` fuori da qui.
-- `DataTable` (`table.tsx`): didascalia nascosta o visibile, intestazione da `columns` (celle semplici) o da `head` (celle proprie), `stickyHead`; le righe come figli. Nessun `<table>` fuori da qui.
-- `ConfirmDialog` (`dialog.tsx`): dialogo modale `alertdialog` con titolo e descrizione, focus sul pulsante che annulla (`cancelLabel`), Esc annulla; i pulsanti che confermano e la riga d'errore li dà chi lo usa (chiusura dell'app in `eject.tsx`). `InlineConfirm`: la stessa domanda dentro la pagina (eliminazione di un repository GitHub).
+I controlli sono quelli di VSCodium: `@vscode-elements/elements` (D-88), registrati una volta in `elements.ts` con i loro moduli ES, mai con `dist/bundled.js` (i wrapper React importano gli stessi moduli). Le pagine usano solo i componenti di `workbench\`, con le stesse props di prima.
+
+| Componente | Disegnato con |
+| --- | --- |
+| `Button` | `vscode-button` (secondario, largo, piccolo); con `submit` un `<button type=submit>` nascosto accanto resta il pulsante predefinito del modulo, così Invio in un campo invia |
+| `TextField`, `TextArea`, `SearchBox` | `VscodeTextfield`, `VscodeTextarea` (wrapper di `@vscode-elements/react-elements`); valore controllato con `useControlled` |
+| `Select` | `VscodeSingleSelect` + `VscodeOption`; i gruppi diventano un'opzione d'intestazione spenta |
+| `CountBadge`, `ProgressBar`, `Divider`, `Icon` | `vscode-badge`, `vscode-progress-bar`, `vscode-divider`, `vscode-icon` (codicon) |
+| `SettingItem` | `vscode-form-group` con la variante «settings-group» |
+| `IconButton`, `Checkbox`, `CheckboxLabel`, `Radio` | nativi, disegnati come `vscode-toolbar-button`, `vscode-checkbox`, `vscode-radio` con le loro variabili: nei componenti il pulsante o la casella stanno nello shadow root, dove `<label for>`, il clic sull'etichetta e i ruoli cercati dai test non arrivano, e `vscode-toolbar-button` non ha lo stato spento |
+| `DataTable` | `<table>` nativa, disegnata come `vscode-table`: il componente non ha didascalia né intestazioni di riga e divide le colonne in parti uguali |
+| `ConfirmDialog`, `InlineConfirm` | dialogo proprio, pulsanti `vscode-button` |
+| parti (`layout.tsx`: riquadri, schede, barra dei dettagli, pannello) | proprie: `vscode-collapsible` e `vscode-tabs` disegnano le intestazioni classiche, non quelle moderne di VSCodium 1.140, e tengono ruoli e `tablist` nello shadow root |
+
+Regole per chi aggiunge un controllo:
+- campi e select mandano un `change` che non risale: `onChange` di React su un tag `<vscode-*>` scritto a mano non scatta mai. Si usano i wrapper (`VscodeTextfield`…) o un primitivo di `workbench\`;
+- su un tag `<vscode-*>` scritto a mano si scrive `class` e `for`, non `className` e `htmlFor`; i tipi JSX sono in `elements.ts`;
+- `vscode-icon` vuole il CSS dei codicon con l'id `vscode-codicon-stylesheet` (lo aggiunge `elements.ts`) e prende il colore da `--vscode-icon-foreground`: per il colore del testo intorno, `[--vscode-icon-foreground:currentColor]`;
+- un colore viene sempre da una variabile del tema (`--vscode-*` o un token `vsc-*`), mai scritto a mano; fanno eccezione i valori fissi di VSCodium (il rosso del pulsante Chiudi) e i colori dei loghi.
+
+Restano nativi, con il perché nel file: i pulsanti della finestra (`titlebar.tsx`), barra delle attività e barra di stato (`App.tsx`), la scelta dell'agente con i loghi (`agents.tsx`, ruolo `radio`), il misuratore dei limiti (`stats.tsx`, ruolo `meter`), il campo con suggerimenti di `extensions.tsx` (`<datalist>`, che non attraversa lo shadow root), il pulsante del menu bloccato di `versions\kit.tsx`, le scelte a pulsante della procedura guidata (`wizard.tsx`, `aria-pressed`).
+
+Prove: `workbench\controls.test.tsx` (eventi che scattano davvero, valori controllati, Invio, nomi accessibili), `workbench\elements.test.tsx` (registrazione, codicon). jsdom non ha `adoptedStyleSheets`: `test-setup.ts` ne dà una versione vuota, che non disegna nulla.
+
+### Tema
+
+Una sola fonte: `docs\brand\themes.py` risolve Dark Modern e Light Modern di VSCodium con l'enfasi Atollo e scrive tre file.
+
+- `tauri\editor-theme\`: i temi «Atollo Dark» e «Atollo Light» dell'editor;
+- `ui\src\theme-vscode.css`: per ciascun tema circa 800 variabili `--vscode-*`, come VS Code le dà alle sue webview, con i font di Windows. I valori, dal più debole al più forte: le tabelle di `docs\brand\vscode-defaults\` (da `@vscode-elements/webview-playground` 1.9.0, licenza MIT), `BUILTIN`, `DERIVED` (i colori che VS Code calcola da una chiave cambiata dal brand, controllati sulle tabelle), il tema dell'editor intero. Nome come nelle webview: solo il primo punto diventa `-`;
+- `ui\src\theme-colors.css`: i token `--vsc-*` per Tailwind, ciascuno un `var(--vscode-…)`.
+
+Così app ed editor hanno gli stessi colori, chiave per chiave. Un colore si cambia in `themes.py` (in `BRAND`), poi `python docs/brand/themes.py`. Un test controlla che ogni variabile letta dai componenti di `@vscode-elements/elements` sia definita in tutti e due i temi.
 
 ## Opportunità individuate, non ancora fatte
 
-Dall'analisi del 15/10/2026. Fatte: comandi per area e regole dei file (D-86); cartelle per area, file grandi divisi, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, ciclo fra le pagine dei progetti (D-87). Restano:
+Dall'analisi del 15/10/2026. Fatte: comandi per area e regole dei file (D-86); cartelle per area, file grandi divisi, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, ciclo fra le pagine dei progetti (D-87); controlli e tema di VSCodium (D-88). Restano:
 
 1. **Errore di lettura che resta sullo schermo**: in `App.tsx` (informazioni), `eject.tsx`, `settings\page.tsx` e `databases.tsx` un errore di lettura resta anche dopo una lettura riuscita. Va deciso se è voluto; se no, quelle letture passano a `useLoad` con `"show"`.
 2. **Conferme nella pagina senza `alertdialog`**: `agents.tsx`, `backups.tsx`, `components\page.tsx` e l'uscita da GitHub (`github\account.tsx`) hanno ancora i loro sì/no. Con `InlineConfirm` prenderebbero il ruolo `alertdialog` e un nome, che l'Assistente vocale annuncia: è una scelta di prodotto, non un riordino.
 3. **Anteprima riusata dai test**: `App.test.tsx` ricostruisce a mano progetti e risposte che `api\` ha già come anteprima.
 4. **`versions\relations\mod.rs`** include ancora `data\app\tool-versions.json` nell'impronta della matrice, file che dal 15/10/2026 nessuno scrive più (D-80): innocuo, da togliere. Insieme si può aggiornare il `_doc` di `tauri\catalog\relations.json` («Read by relations.rs»): il file entra nell'impronta, che cambierebbe una volta.
-5. **Pacchetto dell'interfaccia**: la build avvisa che il file principale supera 500 kB (761 kB, 248 kB compresso); le pagine meno usate (Impostazioni, procedura guidata, matrice) si possono caricare quando servono.
+5. **Pacchetto dell'interfaccia**: la build avvisa che il file principale supera 500 kB (circa 1 MB, 300 kB compresso, da quando registra tutti i componenti di `vscode-elements`); si possono registrare solo i componenti usati e caricare quando servono le pagine meno usate (Impostazioni, procedura guidata, matrice).
+6. **Controlli ancora nativi** (sopra, «Restano nativi»): servirebbero un `TextField` con suggerimenti, un pulsante con `aria-pressed` e testo, un misuratore con valore.
+7. **`projectmcp.tsx`** non è importato da nessuna pagina: da collegare o da togliere.
