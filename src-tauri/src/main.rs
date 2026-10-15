@@ -24,6 +24,7 @@ mod editor_ext;
 mod editor_theme;
 mod editor_window;
 mod env;
+mod frameworks;
 mod github;
 mod i18n;
 mod install;

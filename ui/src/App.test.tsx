@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { AgentInfo, AppInfo, OpenNow, ProjectInfo, RunEvent, RunInfo, SetupSnapshot } from "./api";
+import type { AgentInfo, AppInfo, FrameworkPiece, OpenNow, ProjectInfo, RunEvent, RunInfo, SetupSnapshot } from "./api";
 
 const info: AppInfo = {
   version: "0.1.0",
@@ -26,6 +26,38 @@ const idle: SetupSnapshot = {
   queue: [],
   error: null,
 };
+
+const PIECES: FrameworkPiece[] = [
+  {
+    id: "laravel",
+    kind: "base",
+    name: "Laravel",
+    desc: "Framework PHP per applicazioni web",
+    home: "https://laravel.com/docs/13.x/installation",
+    needs: ["php", "node"],
+    create: ["composer create-project laravel/laravel:^13.0 {name} --prefer-dist"],
+    steps: ["npm install"],
+  },
+  {
+    id: "vite",
+    kind: "base",
+    name: "Vite",
+    desc: "Sito o applicazione web in TypeScript",
+    home: "https://vite.dev/guide/",
+    needs: ["node"],
+    create: ["npm create vite@9 {name} -- --template vanilla-ts"],
+    steps: ["npm install"],
+  },
+  {
+    id: "react",
+    kind: "addon",
+    slot: "frontend",
+    name: "React",
+    desc: "Interfaccia in React con TypeScript",
+    home: "https://react.dev/",
+    on: { vite: { create: ["npm create vite@9 {name} -- --template react-ts"] } },
+  },
+];
 
 /** Default answer of every command; tests override single commands. */
 function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Promise<unknown> {
@@ -56,6 +88,23 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
       problem: null,
     },
     settings_set: null,
+    frameworks_get: { pieces: PIECES, official: PIECES, texts: {}, problem: null },
+    frameworks_set: null,
+    frameworks_plan: {
+      needs: ["node"],
+      create: ["npm create vite@9 {name} -- --template react-ts"],
+      steps: ["npm install"],
+      actions: [{ name: "Avvia", command: "npm run dev" }],
+      database: null,
+      env: [{ key: "APP_NAME", value: "{name}" }],
+      notes: [],
+    },
+    frameworks_create: "app",
+    frameworks_targets: [
+      { name: "vuoto", state: "empty" },
+      { name: "appunti", state: "files" },
+      { name: "repo", state: "git" },
+    ],
     update_status: { current: "0.1.0", latest: null, staged: null, checking: false, error: null },
     app_quit: null,
     ...overrides,
@@ -148,6 +197,7 @@ describe("App", () => {
     invoke.mockImplementation(answers());
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Il kit" }));
     expect(await screen.findByText("E:\\Atollo")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("app_info", undefined);
   });
@@ -191,6 +241,7 @@ describe("App", () => {
     });
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Account GitHub" }));
     fireEvent.click(await screen.findByRole("button", { name: "Accedi a GitHub" }));
     expect(await screen.findByText("1A2B-3C4D")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("github_sign_in", { delete: false });
@@ -362,6 +413,7 @@ describe("App", () => {
     invoke.mockImplementation(answers());
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Rete" }));
     const proxy = await screen.findByLabelText("Proxy HTTPS");
     fireEvent.change(proxy, { target: { value: " http://proxy:8080 " } });
     fireEvent.click(screen.getByRole("button", { name: "Salva" }));
@@ -371,6 +423,84 @@ describe("App", () => {
     const call = invoke.mock.calls.find((c) => c[0] === "settings_set");
     expect(JSON.stringify(call?.[1])).toContain('"httpsProxy":"http://proxy:8080"');
     expect(await screen.findByText("Salvato.")).toBeTruthy();
+  });
+
+  it("finds a setting with the search of the side bar", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    expect(await screen.findByLabelText("Lingua")).toBeTruthy();
+    fireEvent.change(screen.getByPlaceholderText("Cerca nelle impostazioni"), { target: { value: "proxy" } });
+    expect(await screen.findByLabelText("Proxy HTTPS")).toBeTruthy();
+    expect(screen.queryByLabelText("Lingua")).toBeNull();
+  });
+
+  it("edits the instructions of a framework and saves only them", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Laravel" }));
+    const steps = await screen.findByLabelText("Poi, nella cartella del progetto");
+    fireEvent.change(steps, { target: { value: "npm install\nnpm run build" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("frameworks_set", expect.anything());
+    });
+    const call = invoke.mock.calls.find((c) => c[0] === "frameworks_set");
+    expect(JSON.stringify(call?.[1])).toContain('"steps":["npm install","npm run build"]');
+    expect(invoke).not.toHaveBeenCalledWith("settings_set", expect.anything());
+  });
+
+  it("creates a project with the wizard", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Nuovo progetto" })[0] as HTMLElement);
+    fireEvent.click(await screen.findByRole("radio", { name: /Vite/ }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: /React/ }));
+    fireEvent.change(screen.getByLabelText("Nome del progetto"), { target: { value: " app " } });
+    expect(await screen.findByText("npm create vite@9 {name} -- --template react-ts")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Crea il progetto" }));
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("frameworks_create", {
+        base: "vite",
+        addons: ["react"],
+        name: "app",
+        env: [{ key: "APP_NAME", value: "{name}" }],
+      });
+    });
+    expect(await screen.findByText(/Progetto app creato/)).toBeTruthy();
+  });
+
+  it("offers the empty projects and those without Git, never a repository", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Nuovo progetto" })[0] as HTMLElement);
+    fireEvent.click(await screen.findByRole("button", { name: /appunti/ }));
+    expect(await screen.findByText(/contiene già dei file/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^repo/ })).toBeNull();
+    fireEvent.change(screen.getByLabelText("Nome del progetto"), { target: { value: "repo" } });
+    expect(await screen.findByText(/è già un repository Git/)).toBeTruthy();
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Crea il progetto" }).disabled).toBe(true);
+    // The .env: a value changed, a variable added.
+    fireEvent.change(screen.getByLabelText("Nome del progetto"), { target: { value: "vuoto" } });
+    fireEvent.change(await screen.findByLabelText("Valore di APP_NAME"), { target: { value: "Il mio sito" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aggiungi una variabile" }));
+    const keys = screen.getAllByLabelText("Variabile");
+    fireEvent.change(keys[keys.length - 1] as HTMLElement, { target: { value: "APP_URL" } });
+    fireEvent.change(screen.getByLabelText("Valore di APP_URL"), { target: { value: "http://localhost:8000" } });
+    fireEvent.click(screen.getByRole("button", { name: "Crea il progetto" }));
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith(
+        "frameworks_create",
+        expect.objectContaining({
+          name: "vuoto",
+          env: [
+            { key: "APP_NAME", value: "Il mio sito" },
+            { key: "APP_URL", value: "http://localhost:8000" },
+          ],
+        }),
+      );
+    });
   });
 
   it("asks before closing with something open, and switches language", async () => {

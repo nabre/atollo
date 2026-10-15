@@ -1,10 +1,26 @@
-// Settings page (data\app\settings.json, src-tauri/src/settings.rs) as
-// VSCodium's Settings editor: search, table of contents, one item per
-// setting. Language, network (proxy, certificates, local network), Gemini
-// key, versions of Python, PHP and Rust, the app's updates, the GitHub
-// account and where the kit is. Replaces nabre/atollo's proxy.cmd.
-import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
-import { VscSettingsGear } from "react-icons/vsc";
+// Settings page (datapp\settings.json, src-tauri/src/settings.rs), laid
+// out as the Projects page: the side bar lists the sections (language,
+// network, Gemini key, versions of Python, PHP and Rust, the app's updates,
+// the GitHub account, where the kit is) and the tree of the new-project
+// wizard's frameworks (frameworks.tsx); each opens in a tab of the editor,
+// Save is on the tab bar. The search on top shows every setting that
+// matches. Replaces nabre/atollo's proxy.cmd.
+import { useCallback, useEffect, useState, type ReactNode, type SyntheticEvent } from "react";
+import type { IconType } from "react-icons";
+import {
+  VscAdd,
+  VscBeaker,
+  VscCloudDownload,
+  VscExtensions,
+  VscGithub,
+  VscGlobe,
+  VscHubot,
+  VscInfo,
+  VscNewFolder,
+  VscPackage,
+  VscSettings,
+  VscVersions,
+} from "react-icons/vsc";
 import {
   editorRestart,
   settingsGet,
@@ -19,17 +35,29 @@ import {
 import { GithubAccount } from "./github";
 import { BrandSymbol } from "./brand";
 import { ErrorLine, useAction } from "./pages";
+import { addPiece, FrameworksTree, PieceGroup, pieceTab, TRY_TAB, TryGroup, useFrameworks } from "./frameworks";
 import { LANGS, t } from "./i18n";
 import {
   Button,
   CheckboxLabel,
+  EditorTabs,
+  IconButton,
   Link,
+  List,
+  ListRow,
   Notice,
+  PaneStack,
   Properties,
+  SearchBox,
   SettingItem,
-  SettingsEditor,
   SettingsGroup,
-  SingleEditor,
+  SettingsSearch,
+  SideBarTitle,
+  useTabs,
+  ViewContainer,
+  ViewPane,
+  Watermark,
+  type Tab,
 } from "./workbench";
 
 const empty = (s: string) => (s.trim() === "" ? null : s.trim());
@@ -67,6 +95,22 @@ function TextSetting({
   );
 }
 
+type SectionId = "general" | "network" | "agents" | "langs" | "update" | "github" | "kit";
+
+function sections(): { id: SectionId; label: string; icon: IconType }[] {
+  return [
+    { id: "general", label: t("Generale"), icon: VscSettings },
+    { id: "network", label: t("Rete"), icon: VscGlobe },
+    { id: "agents", label: t("Agenti"), icon: VscHubot },
+    { id: "langs", label: t("Versioni"), icon: VscVersions },
+    { id: "update", label: t("Aggiornamenti"), icon: VscCloudDownload },
+    { id: "github", label: t("Account GitHub"), icon: VscGithub },
+    { id: "kit", label: t("Il kit"), icon: VscInfo },
+  ];
+}
+
+type PaneId = "settings" | "frameworks";
+
 export function SettingsPage({
   onSaved,
   editorRunning,
@@ -83,7 +127,12 @@ export function SettingsPage({
   const [dirty, setDirty] = useState(false);
   const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["settings", "frameworks"]));
+  const tabs = useTabs(["general"]);
   const { busy, error, run } = useAction();
+  const fw = useFrameworks();
+  const loadFrameworks = fw.load;
+  useEffect(loadFrameworks, [loadFrameworks]);
 
   const load = useCallback(() => {
     settingsGet().then(
@@ -100,105 +149,51 @@ export function SettingsPage({
   }, []);
   useEffect(load, [load]);
 
-  const title = t("Impostazioni");
-  const icon = <VscSettingsGear size={16} aria-hidden="true" />;
-  if (loadError) {
-    return (
-      <SingleEditor title={title} icon={icon}>
-        <div className="p-5">
-          <ErrorLine error={loadError} />
-        </div>
-      </SingleEditor>
-    );
-  }
-  if (!s || !view) {
-    return (
-      <SingleEditor title={title} icon={icon}>
-        <p className="p-5 text-vsc-desc">{t("Caricamento…")}</p>
-      </SingleEditor>
-    );
-  }
-
+  const toggle = (id: PaneId) => {
+    setPanes((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const open = (tab: string) => {
+    tabs.show(tab);
+    setSearch("");
+  };
   const set = (patch: Partial<Settings>) => {
+    if (!s) return;
     setSaved(false);
     setDirty(true);
     setS({ ...s, ...patch });
   };
   const net = (patch: Partial<Settings["network"]>) => {
-    set({ network: { ...s.network, ...patch } });
+    if (s) set({ network: { ...s.network, ...patch } });
   };
   const submit = (e: SyntheticEvent) => {
     e.preventDefault();
     run("save", async () => {
-      await settingsSet(s, gemini);
+      if (s && (dirty || gemini !== null)) await settingsSet(s, gemini);
+      await fw.save();
       setSaved(true);
       load();
       onSaved();
     });
   };
 
+  const all = sections();
   const general = t("Generale");
   const network = t("Rete");
   const agents = t("Agenti");
   const versions = t("Versioni");
-  const toc = [
-    { id: "s-general", label: general },
-    { id: "s-network", label: network },
-    { id: "s-agents", label: agents },
-    { id: "s-langs", label: versions },
-    { id: "s-update", label: t("Aggiornamenti") },
-    { id: "s-github", label: t("Account GitHub") },
-    { id: "s-kit", label: t("Il kit") },
-  ];
 
-  return (
-    <SingleEditor title={title} icon={icon}>
-      <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
-        <SettingsEditor
-          toc={toc}
-          search={search}
-          onSearch={setSearch}
-          placeholder={t("Cerca nelle impostazioni")}
-          actions={
-            <>
-              {saved && (
-                <span role="status" className="text-vsc-success">
-                  {t("Salvato.")}
-                </span>
-              )}
-              <Button variant="primary" submit busy={busy === "save"} disabled={!dirty && gemini === null}>
-                {t("Salva")}
-              </Button>
-            </>
-          }
-        >
-          {(view.problem ?? error ?? (saved && editorRunning)) && (
-            <div className="max-w-[880px] space-y-2 px-[14px] pt-3">
-              {view.problem && (
-                <ErrorLine
-                  error={t(
-                    "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.",
-                    view.problem,
-                  )}
-                />
-              )}
-              <ErrorLine error={error} />
-              {saved && editorRunning && (
-                <Notice tone="info">
-                  {t("Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.")}{" "}
-                  <Link
-                    onClick={() => {
-                      run("restart", editorRestart);
-                    }}
-                  >
-                    {t("Riavvia l'editor")}
-                  </Link>
-                </Notice>
-              )}
-            </div>
-          )}
-
-          <SettingsGroup id="s-general" title={general}>
+  /** A section of the settings as its group (a tab, or a search result). */
+  const group = (id: SectionId): ReactNode => {
+    if (!s || !view) return null;
+    switch (id) {
+      case "general":
+        return (
+          <SettingsGroup key={id} id="s-general" title={general}>
             <SettingItem
               category={general}
               title={t("Lingua")}
@@ -250,8 +245,11 @@ export function SettingsPage({
               </CheckboxLabel>
             </SettingItem>
           </SettingsGroup>
-
+        );
+      case "network":
+        return (
           <SettingsGroup
+            key={id}
             id="s-network"
             title={network}
             description={t(
@@ -304,8 +302,10 @@ export function SettingsPage({
               </CheckboxLabel>
             </SettingItem>
           </SettingsGroup>
-
-          <SettingsGroup id="s-agents" title={agents}>
+        );
+      case "agents":
+        return (
+          <SettingsGroup key={id} id="s-agents" title={agents}>
             <SettingItem
               category={agents}
               title={t("Chiave API di Gemini (Antigravity senza account Google)")}
@@ -340,8 +340,11 @@ export function SettingsPage({
               {gemini === "" && <p className="mt-1 text-vsc-warning">{t("La chiave verrà tolta al salvataggio.")}</p>}
             </SettingItem>
           </SettingsGroup>
-
+        );
+      case "langs":
+        return (
           <SettingsGroup
+            key={id}
             id="s-langs"
             title={versions}
             description={t("Valgono dalla prossima installazione o aggiornamento in Strumenti.")}
@@ -379,19 +382,194 @@ export function SettingsPage({
               </select>
             </SettingItem>
           </SettingsGroup>
-
-          <Updates />
-
-          <SettingsGroup id="s-github" title={t("Account GitHub")}>
+        );
+      case "update":
+        return <Updates key={id} />;
+      case "github":
+        return (
+          <SettingsGroup key={id} id="s-github" title={t("Account GitHub")}>
             <SettingItem title={t("Account GitHub del kit")} keywords="github git gh login">
               <GithubAccount />
             </SettingItem>
           </SettingsGroup>
+        );
+      case "kit":
+        return info ? <KitInfo key={id} info={info} /> : null;
+    }
+  };
 
-          {info && <KitInfo info={info} />}
-        </SettingsEditor>
+  /** What a tab shows: a section, a framework or the trial. */
+  const content = (tab: string): ReactNode => {
+    if (tab === TRY_TAB) return <TryGroup fw={fw} />;
+    if (tab.startsWith("fw:")) {
+      return (
+        <PieceGroup
+          key={tab}
+          fw={fw}
+          id={tab.slice(3)}
+          onRemoved={() => {
+            tabs.close(tab);
+          }}
+        />
+      );
+    }
+    return all.some((x) => x.id === tab) ? group(tab as SectionId) : null;
+  };
+  const tabOf = (id: string): Tab => {
+    const section = all.find((x) => x.id === id);
+    if (section) {
+      const Icon = section.icon;
+      return { id, label: section.label, icon: <Icon size={16} aria-hidden="true" /> };
+    }
+    if (id === TRY_TAB) {
+      return { id, label: t("Prova una combinazione"), icon: <VscBeaker size={16} aria-hidden="true" /> };
+    }
+    const piece = fw.pieces.find((p) => pieceTab(p.id) === id);
+    const Icon = piece?.kind === "addon" ? VscExtensions : VscPackage;
+    return { id, label: piece?.name ?? id, icon: <Icon size={16} aria-hidden="true" /> };
+  };
+
+  const side = (
+    <>
+      <SideBarTitle title={t("Impostazioni")} />
+      <div className="px-3 pb-1.5">
+        <SearchBox value={search} onChange={setSearch} placeholder={t("Cerca nelle impostazioni")} />
+      </div>
+      <PaneStack>
+        <ViewPane
+          first
+          title={t("Impostazioni")}
+          expanded={panes.has("settings")}
+          onToggle={() => {
+            toggle("settings");
+          }}
+        >
+          <List label={t("Impostazioni")}>
+            {all.map(({ id, label, icon: Icon }) => (
+              <ListRow
+                key={id}
+                icon={<Icon size={16} aria-hidden="true" />}
+                label={label}
+                selected={!search && tabs.active === id}
+                current="page"
+                onSelect={() => {
+                  open(id);
+                }}
+              />
+            ))}
+          </List>
+        </ViewPane>
+        <ViewPane
+          fill
+          title={t("Framework")}
+          expanded={panes.has("frameworks")}
+          onToggle={() => {
+            toggle("frameworks");
+          }}
+          badge={fw.pieces.length > 0 ? fw.pieces.length : undefined}
+          actions={
+            <>
+              <IconButton
+                icon={VscNewFolder}
+                label={t("Aggiungi una base")}
+                onClick={() => {
+                  open(pieceTab(addPiece(fw, "base")));
+                }}
+              />
+              <IconButton
+                icon={VscAdd}
+                label={t("Aggiungi un'aggiunta")}
+                onClick={() => {
+                  open(pieceTab(addPiece(fw, "addon")));
+                }}
+              />
+            </>
+          }
+        >
+          <FrameworksTree fw={fw} selected={search ? null : tabs.active} onSelect={open} />
+        </ViewPane>
+      </PaneStack>
+    </>
+  );
+
+  const unsaved = dirty || gemini !== null || fw.dirty;
+  return (
+    <ViewContainer id="settings" side={side}>
+      <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+        <EditorTabs
+          tabs={tabs.open.map(tabOf)}
+          active={search ? null : tabs.active}
+          onSelect={open}
+          onClose={tabs.close}
+          actions={
+            <>
+              {saved && !unsaved && (
+                <span role="status" className="px-1 text-vsc-success">
+                  {t("Salvato.")}
+                </span>
+              )}
+              <Button variant="primary" small submit busy={busy === "save"} disabled={!unsaved}>
+                {t("Salva")}
+              </Button>
+            </>
+          }
+        />
+        <div className="min-h-0 flex-1 overflow-y-auto pb-10">
+          {(loadError ?? view?.problem ?? error ?? (saved && editorRunning)) && (
+            <div className="max-w-[880px] space-y-2 px-[14px] pt-3">
+              <ErrorLine error={loadError} />
+              {view?.problem && (
+                <ErrorLine
+                  error={t(
+                    "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.",
+                    view.problem,
+                  )}
+                />
+              )}
+              <ErrorLine error={error} />
+              {saved && editorRunning && (
+                <Notice tone="info">
+                  {t("Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.")}{" "}
+                  <Link
+                    onClick={() => {
+                      run("restart", editorRestart);
+                    }}
+                  >
+                    {t("Riavvia l'editor")}
+                  </Link>
+                </Notice>
+              )}
+            </div>
+          )}
+          {!s && !loadError && <p className="p-5 text-vsc-desc">{t("Caricamento…")}</p>}
+          <SettingsSearch search={search}>
+            {search ? (
+              <>
+                {all.map((x) => group(x.id))}
+                {fw.pieces.map((p) => (
+                  <PieceGroup
+                    key={p.id}
+                    fw={fw}
+                    id={p.id}
+                    onRemoved={() => {
+                      tabs.close(pieceTab(p.id));
+                    }}
+                  />
+                ))}
+                <TryGroup fw={fw} />
+              </>
+            ) : tabs.active ? (
+              content(tabs.active)
+            ) : (
+              <Watermark>
+                <BrandSymbol size={96} />
+                <p className="text-vsc-desc">{t("Scegli un'impostazione nella barra laterale.")}</p>
+              </Watermark>
+            )}
+          </SettingsSearch>
+        </div>
       </form>
-    </SingleEditor>
+    </ViewContainer>
   );
 }
 

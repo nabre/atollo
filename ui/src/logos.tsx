@@ -3,13 +3,16 @@
 // each brand's colour. A brand drawn in black or white takes the text colour,
 // so it reads in both themes. Where Simple Icons has no logo (PowerShell,
 // Windows Terminal, OpenAI) the closest icon of another set stands in;
-// Antigravity's arch is drawn here.
-import { useId } from "react";
+// Antigravity's arch is drawn here. Also the frameworks of the wizard.
+import { useId, type ReactNode } from "react";
 import type { IconBaseProps, IconType } from "react-icons";
 import { RiOpenaiFill } from "react-icons/ri";
 import {
+  SiAndroid,
   SiApache,
   SiAstro,
+  SiBootstrap,
+  SiBulma,
   SiBun,
   SiC,
   SiClaude,
@@ -20,6 +23,8 @@ import {
   SiDart,
   SiDeno,
   SiDotnet,
+  SiElectron,
+  SiFilament,
   SiFsharp,
   SiGit,
   SiGithub,
@@ -29,22 +34,33 @@ import {
   SiJavascript,
   SiJulia,
   SiKotlin,
+  SiLaravel,
   SiLatex,
+  SiLivewire,
   SiMariadb,
   SiMongodb,
+  SiMysql,
+  SiNextdotjs,
   SiNodedotjs,
   SiOpenjdk,
   SiPhp,
   SiPnpm,
+  SiPrettier,
   SiPython,
   SiR,
+  SiReact,
   SiRuby,
   SiRust,
   SiSqlite,
   SiSvelte,
+  SiSymfony,
+  SiTailwindcss,
+  SiTauri,
   SiTypescript,
   SiTypst,
   SiUv,
+  SiVite,
+  SiVitest,
   SiVscodium,
   SiVuedotjs,
   SiZig,
@@ -166,6 +182,33 @@ const LANGUAGES: Record<string, Logo> = {
   Shell: { icon: SiGnubash, color: "#4EAA25" },
 };
 
+/** The frameworks of the new-project wizard, by id (catalog/frameworks.json). */
+const FRAMEWORKS: Record<string, Logo> = {
+  laravel: { icon: SiLaravel, color: "#FF2D20" },
+  symfony: { icon: SiSymfony },
+  vite: { icon: SiVite, color: "#646CFF" },
+  "vite-bundle": { icon: SiVite, color: "#646CFF" },
+  nextjs: { icon: SiNextdotjs },
+  electron: { icon: SiElectron, color: "#47848F" },
+  tauri: { icon: SiTauri, color: "#24C8D8" },
+  android: { icon: SiAndroid, color: "#3DDC84" },
+  react: { icon: SiReact, color: "#61DAFB" },
+  vue: { icon: SiVuedotjs, color: "#4FC08D" },
+  svelte: { icon: SiSvelte, color: "#FF3E00" },
+  livewire: { icon: SiLivewire, color: "#FB70A9" },
+  tailwind: { icon: SiTailwindcss, color: "#06B6D4" },
+  bootstrap: { icon: SiBootstrap, color: "#7952B3" },
+  bulma: { icon: SiBulma, color: "#00D1B2" },
+  sqlite: { icon: SiSqlite, color: "#0F80CC" },
+  mysql: { icon: SiMysql, color: "#4479A1" },
+  mongodb: { icon: SiMongodb, color: "#47A248" },
+  nativephp: PHP,
+  "nativephp-mobile": { icon: SiAndroid, color: "#3DDC84" },
+  filament: { icon: SiFilament, color: "#FDAE4B" },
+  vitest: { icon: SiVitest, color: "#6E9F18" },
+  prettier: { icon: SiPrettier, color: "#F7B93E" },
+};
+
 function LogoIcon({ logo, size }: { logo: Logo | undefined; size: number }) {
   if (!logo) return null;
   const Icon = logo.icon;
@@ -189,6 +232,12 @@ export function LanguageTag({ name }: { name: string }) {
 }
 
 export const hasLogo = (id: string): boolean => id in COMPONENTS;
+
+/** The logo of a framework of the wizard, or `fallback` when it has none. */
+export function FrameworkLogo({ id, size = 16, fallback }: { id: string; size?: number; fallback?: ReactNode }) {
+  const logo = FRAMEWORKS[id];
+  return logo ? <LogoIcon logo={logo} size={size} /> : <>{fallback}</>;
+}
 /** The logo of a language alone (nothing if it has none). */
 export function LanguageLogo({ name, size = 14 }: { name: string; size?: number }) {
   return <LogoIcon logo={LANGUAGES[name]} size={size} />;

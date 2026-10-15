@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-frameworks-get"
+description = "Enables the frameworks_get command without any pre-configured scope."
+commands.allow = ["frameworks_get"]
+
+[[permission]]
+identifier = "deny-frameworks-get"
+description = "Denies the frameworks_get command without any pre-configured scope."
+commands.deny = ["frameworks_get"]

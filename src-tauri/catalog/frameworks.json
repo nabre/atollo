@@ -1,0 +1,731 @@
+{
+  "about": "Framework of the new-project wizard (DECISIONS.md D-83): a base and the additions combined with it. Official instructions, versions checked on npm, Packagist and GitHub on 15/10/2026. Every base with a web interface has the CSS frameworks (slot css); development goes through Vite or its equivalent (Turbopack for Next.js). env: variables written in .env before the steps ({name}, {package} filled in). database: a server of the kit (mariadb, mongodb) where the project gets its database, its connection written in .env, before the steps. Each line is one command run with the kit's PowerShell and environment: 'create' in projects\\ (it makes the folder {name}), 'steps' inside projects\\{name}. {name} = project name, {package} = com.example.<name in lower case letters and digits>. needs: components of the kit, installed first. actions: name and command, saved as the project's actions. An addition has one entry in 'on' per base it works with: its 'create' replaces the base's (a starter kit, a template), its steps come after the base's, its actions replace those of the base with the same name. Two additions of the same 'slot' do not go together. desc and note: Italian, translated by i18n/catalog.json.",
+  "pieces": [
+    {
+      "id": "laravel",
+      "kind": "base",
+      "name": "Laravel",
+      "desc": "Framework PHP per applicazioni web",
+      "home": "https://laravel.com/docs/13.x/installation",
+      "needs": [
+        "php",
+        "node"
+      ],
+      "create": [
+        "composer create-project laravel/laravel:^13.0 {name} --prefer-dist"
+      ],
+      "steps": [
+        "npm install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "composer run dev"
+        },
+        {
+          "name": "Prove",
+          "command": "php artisan test"
+        }
+      ],
+      "env": [
+        {
+          "key": "APP_NAME",
+          "value": "{name}"
+        }
+      ]
+    },
+    {
+      "id": "symfony",
+      "kind": "base",
+      "name": "Symfony",
+      "desc": "Framework PHP per applicazioni web",
+      "home": "https://symfony.com/doc/current/setup.html",
+      "needs": [
+        "php"
+      ],
+      "create": [
+        "composer create-project symfony/skeleton:^8.1 {name}"
+      ],
+      "steps": [
+        "composer require webapp --no-interaction"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "php -S 127.0.0.1:8000 -t public"
+        }
+      ]
+    },
+    {
+      "id": "vite",
+      "kind": "base",
+      "name": "Vite",
+      "desc": "Sito o applicazione web in TypeScript",
+      "home": "https://vite.dev/guide/",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npm create vite@9 {name} -- --template vanilla-ts --no-interactive"
+      ],
+      "steps": [
+        "npm install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ]
+    },
+    {
+      "id": "nextjs",
+      "kind": "base",
+      "name": "Next.js",
+      "desc": "Applicazione web React con server, già con Tailwind CSS",
+      "home": "https://nextjs.org/docs/app/getting-started/installation",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes create-next-app@16 {name} --ts --tailwind --eslint --app --use-npm --disable-git --yes"
+      ],
+      "steps": [],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ]
+    },
+    {
+      "id": "electron",
+      "kind": "base",
+      "name": "Electron",
+      "desc": "App desktop con tecnologie web (Electron Forge)",
+      "home": "https://www.electronforge.io/",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes create-electron-app@8 {name} --template=vite-typescript"
+      ],
+      "steps": [],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm start"
+        },
+        {
+          "name": "Pacchetto",
+          "command": "npm run make"
+        }
+      ]
+    },
+    {
+      "id": "tauri",
+      "kind": "base",
+      "name": "Tauri",
+      "desc": "App desktop leggera: interfaccia web, motore in Rust",
+      "home": "https://v2.tauri.app/start/create-project/",
+      "needs": [
+        "rust",
+        "node"
+      ],
+      "create": [
+        "npm create tauri-app@4 {name} -- --template vanilla-ts --manager npm --identifier {package} --yes"
+      ],
+      "steps": [
+        "npm install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run tauri dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run tauri build"
+        }
+      ],
+      "note": "Da provare con il compilatore GNU del kit: la guida di Tauri chiede MSVC."
+    },
+    {
+      "id": "android",
+      "kind": "base",
+      "name": "Android",
+      "desc": "App Android in Kotlin con Jetpack Compose (modello ufficiale di Google)",
+      "home": "https://github.com/android/architecture-templates",
+      "needs": [
+        "git",
+        "java"
+      ],
+      "create": [
+        "git clone --depth 1 --branch base https://github.com/android/architecture-templates.git {name}"
+      ],
+      "steps": [
+        "Remove-Item -Recurse -Force .git",
+        "bash customizer.sh {package} Item {name}",
+        "git init"
+      ],
+      "actions": [
+        {
+          "name": "Build",
+          "command": ".\\gradlew.bat assembleDebug"
+        }
+      ],
+      "note": "Serve l'SDK di Android (ANDROID_HOME), che non è ancora nel kit."
+    },
+    {
+      "id": "vite-bundle",
+      "kind": "addon",
+      "slot": "bundler",
+      "name": "Vite",
+      "desc": "Vite per JavaScript e CSS, con ricarica automatica durante lo sviluppo",
+      "home": "https://symfony-vite.pentatrion.com/guide/installation.html",
+      "on": {
+        "symfony": {
+          "steps": [
+            "composer config extra.symfony.allow-contrib true",
+            "composer require pentatrion/vite-bundle:^8.2",
+            "npm install"
+          ],
+          "needs": [
+            "node"
+          ],
+          "actions": [
+            {
+              "name": "Vite",
+              "command": "npm run dev"
+            },
+            {
+              "name": "Build",
+              "command": "npm run build"
+            }
+          ],
+          "note": "Prende il posto di AssetMapper per JavaScript e CSS."
+        }
+      }
+    },
+    {
+      "id": "react",
+      "kind": "addon",
+      "slot": "frontend",
+      "name": "React",
+      "desc": "Interfaccia in React con TypeScript",
+      "home": "https://react.dev/learn/creating-a-react-app",
+      "on": {
+        "laravel": {
+          "create": [
+            "composer create-project laravel/react-starter-kit {name} --prefer-dist --stability=dev"
+          ],
+          "note": "Starter kit ufficiale: Inertia, React, Tailwind CSS e accesso utenti."
+        },
+        "vite": {
+          "create": [
+            "npm create vite@9 {name} -- --template react-ts --no-interactive"
+          ]
+        },
+        "electron": {
+          "create": [
+            "npm create @quick-start/electron@1 {name} -- --template react-ts --skip"
+          ],
+          "steps": [
+            "npm install"
+          ],
+          "actions": [
+            {
+              "name": "Avvia",
+              "command": "npm run dev"
+            },
+            {
+              "name": "Pacchetto",
+              "command": "npm run build:win"
+            }
+          ],
+          "note": "Con electron-vite al posto di Electron Forge."
+        },
+        "tauri": {
+          "create": [
+            "npm create tauri-app@4 {name} -- --template react-ts --manager npm --identifier {package} --yes"
+          ]
+        }
+      }
+    },
+    {
+      "id": "vue",
+      "kind": "addon",
+      "slot": "frontend",
+      "name": "Vue",
+      "desc": "Interfaccia in Vue con TypeScript",
+      "home": "https://vuejs.org/guide/quick-start",
+      "on": {
+        "laravel": {
+          "create": [
+            "composer create-project laravel/vue-starter-kit {name} --prefer-dist --stability=dev"
+          ],
+          "note": "Starter kit ufficiale: Inertia, Vue, Tailwind CSS e accesso utenti."
+        },
+        "vite": {
+          "create": [
+            "npm create vite@9 {name} -- --template vue-ts --no-interactive"
+          ]
+        },
+        "electron": {
+          "create": [
+            "npm create @quick-start/electron@1 {name} -- --template vue-ts --skip"
+          ],
+          "steps": [
+            "npm install"
+          ],
+          "actions": [
+            {
+              "name": "Avvia",
+              "command": "npm run dev"
+            },
+            {
+              "name": "Pacchetto",
+              "command": "npm run build:win"
+            }
+          ],
+          "note": "Con electron-vite al posto di Electron Forge."
+        },
+        "tauri": {
+          "create": [
+            "npm create tauri-app@4 {name} -- --template vue-ts --manager npm --identifier {package} --yes"
+          ]
+        }
+      }
+    },
+    {
+      "id": "svelte",
+      "kind": "addon",
+      "slot": "frontend",
+      "name": "Svelte",
+      "desc": "Interfaccia in Svelte con TypeScript",
+      "home": "https://svelte.dev/docs/svelte/getting-started",
+      "on": {
+        "vite": {
+          "create": [
+            "npm create vite@9 {name} -- --template svelte-ts --no-interactive"
+          ]
+        },
+        "electron": {
+          "create": [
+            "npm create @quick-start/electron@1 {name} -- --template svelte-ts --skip"
+          ],
+          "steps": [
+            "npm install"
+          ],
+          "actions": [
+            {
+              "name": "Avvia",
+              "command": "npm run dev"
+            },
+            {
+              "name": "Pacchetto",
+              "command": "npm run build:win"
+            }
+          ],
+          "note": "Con electron-vite al posto di Electron Forge."
+        },
+        "tauri": {
+          "create": [
+            "npm create tauri-app@4 {name} -- --template svelte-ts --manager npm --identifier {package} --yes"
+          ]
+        }
+      }
+    },
+    {
+      "id": "livewire",
+      "kind": "addon",
+      "slot": "frontend",
+      "name": "Livewire",
+      "desc": "Interfaccia dinamica in PHP, senza scrivere JavaScript",
+      "home": "https://livewire.laravel.com/docs/quickstart",
+      "on": {
+        "laravel": {
+          "create": [
+            "composer create-project laravel/livewire-starter-kit {name} --prefer-dist --stability=dev"
+          ],
+          "note": "Starter kit ufficiale: Livewire, Flux, Tailwind CSS e accesso utenti."
+        }
+      }
+    },
+    {
+      "id": "tailwind",
+      "kind": "addon",
+      "slot": "css",
+      "name": "Tailwind CSS",
+      "desc": "Stili con le classi di utilità di Tailwind CSS 4",
+      "home": "https://tailwindcss.com/docs/installation/using-vite",
+      "on": {
+        "laravel": {
+          "note": "Già incluso in Laravel e nei suoi starter kit."
+        },
+        "symfony": {
+          "steps": [
+            "composer require symfonycasts/tailwind-bundle:^1.0",
+            "php bin/console tailwind:init"
+          ],
+          "actions": [
+            {
+              "name": "CSS",
+              "command": "php bin/console tailwind:build --watch"
+            }
+          ]
+        },
+        "vite": {
+          "steps": [
+            "npm install -D tailwindcss@4 @tailwindcss/vite@4",
+            "$f = 'vite.config.ts'; if (Test-Path $f) { $c = Get-Content $f -Raw; if ($c -match 'plugins:\\s*\\[') { $c = $c -replace 'plugins:\\s*\\[', 'plugins: [tailwindcss(), ' } else { $c = $c -replace 'defineConfig\\((\\s*async\\s*\\(\\)\\s*=>\\s*\\()?\\s*\\{', '$0 plugins: [tailwindcss()],' }; Set-Content $f (\"import tailwindcss from '@tailwindcss/vite'`n\" + $c) } else { Set-Content $f \"import { defineConfig } from 'vite'`nimport tailwindcss from '@tailwindcss/vite'`n`nexport default defineConfig({ plugins: [tailwindcss()] })\" }",
+            "foreach ($f in 'src/style.css', 'src/index.css', 'src/app.css') { if (Test-Path $f) { Set-Content $f (\"@import `\"tailwindcss`\";`n\" + (Get-Content $f -Raw)); break } }"
+          ]
+        },
+        "nextjs": {
+          "note": "Già incluso dalla creazione di Next.js."
+        },
+        "electron": {
+          "steps": [
+            "npm install -D tailwindcss@4 @tailwindcss/vite@4",
+            "$f = if (Test-Path electron.vite.config.ts) { 'electron.vite.config.ts' } else { 'vite.renderer.config.ts' }; if (Test-Path $f) { $c = Get-Content $f -Raw; if ($c -match 'plugins:\\s*\\[') { $c = $c -replace 'plugins:\\s*\\[', 'plugins: [tailwindcss(), ' } else { $c = $c -replace 'defineConfig\\((\\s*async\\s*\\(\\)\\s*=>\\s*\\()?\\s*\\{', '$0 plugins: [tailwindcss()],' }; Set-Content $f (\"import tailwindcss from '@tailwindcss/vite'`n\" + $c) } else { Set-Content $f \"import { defineConfig } from 'vite'`nimport tailwindcss from '@tailwindcss/vite'`n`nexport default defineConfig({ plugins: [tailwindcss()] })\" }",
+            "foreach ($f in 'src/index.css', 'src/renderer/src/assets/main.css') { if (Test-Path $f) { Set-Content $f (\"@import `\"tailwindcss`\";`n\" + (Get-Content $f -Raw)); break } }"
+          ]
+        },
+        "tauri": {
+          "steps": [
+            "npm install -D tailwindcss@4 @tailwindcss/vite@4",
+            "$f = 'vite.config.ts'; if (Test-Path $f) { $c = Get-Content $f -Raw; if ($c -match 'plugins:\\s*\\[') { $c = $c -replace 'plugins:\\s*\\[', 'plugins: [tailwindcss(), ' } else { $c = $c -replace 'defineConfig\\((\\s*async\\s*\\(\\)\\s*=>\\s*\\()?\\s*\\{', '$0 plugins: [tailwindcss()],' }; Set-Content $f (\"import tailwindcss from '@tailwindcss/vite'`n\" + $c) } else { Set-Content $f \"import { defineConfig } from 'vite'`nimport tailwindcss from '@tailwindcss/vite'`n`nexport default defineConfig({ plugins: [tailwindcss()] })\" }",
+            "foreach ($f in 'src/styles.css', 'src/style.css', 'src/index.css', 'src/app.css', 'src/App.css') { if (Test-Path $f) { Set-Content $f (\"@import `\"tailwindcss`\";`n\" + (Get-Content $f -Raw)); break } }"
+          ]
+        }
+      }
+    },
+    {
+      "id": "bootstrap",
+      "kind": "addon",
+      "slot": "css",
+      "name": "Bootstrap",
+      "desc": "Componenti e griglia di Bootstrap 5",
+      "home": "https://getbootstrap.com/docs/5.3/getting-started/vite/",
+      "on": {
+        "laravel": {
+          "steps": [
+            "npm install bootstrap@5",
+            "Set-Content resources/css/app.css (\"@import 'bootstrap/dist/css/bootstrap.min.css';`n\" + (Get-Content resources/css/app.css -Raw))"
+          ],
+          "note": "Tailwind CSS resta: fa parte di Laravel."
+        },
+        "symfony": {
+          "steps": [
+            "php bin/console importmap:require bootstrap bootstrap/dist/css/bootstrap.min.css",
+            "Set-Content assets/app.js (\"import 'bootstrap/dist/css/bootstrap.min.css';`n\" + (Get-Content assets/app.js -Raw))"
+          ]
+        },
+        "vite": {
+          "steps": [
+            "npm install bootstrap@5",
+            "foreach ($f in 'src/main.ts', 'src/main.tsx', 'src/main.js', 'src/renderer.ts', 'src/renderer/src/main.ts', 'src/renderer/src/main.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bootstrap/dist/css/bootstrap.min.css';`n\" + (Get-Content $f -Raw)); break } }"
+          ]
+        },
+        "nextjs": {
+          "steps": [
+            "npm install bootstrap@5",
+            "foreach ($f in 'src/app/layout.tsx', 'app/layout.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bootstrap/dist/css/bootstrap.min.css';`n\" + (Get-Content $f -Raw)); break } }"
+          ],
+          "note": "Tailwind CSS resta: fa parte della creazione di Next.js."
+        },
+        "electron": {
+          "steps": [
+            "npm install bootstrap@5",
+            "foreach ($f in 'src/main.ts', 'src/main.tsx', 'src/main.js', 'src/renderer.ts', 'src/renderer/src/main.ts', 'src/renderer/src/main.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bootstrap/dist/css/bootstrap.min.css';`n\" + (Get-Content $f -Raw)); break } }"
+          ]
+        },
+        "tauri": {
+          "steps": [
+            "npm install bootstrap@5",
+            "foreach ($f in 'src/main.ts', 'src/main.tsx', 'src/main.js', 'src/renderer.ts', 'src/renderer/src/main.ts', 'src/renderer/src/main.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bootstrap/dist/css/bootstrap.min.css';`n\" + (Get-Content $f -Raw)); break } }"
+          ]
+        }
+      }
+    },
+    {
+      "id": "bulma",
+      "kind": "addon",
+      "slot": "css",
+      "name": "Bulma",
+      "desc": "Stili di Bulma, solo CSS senza JavaScript",
+      "home": "https://bulma.io/documentation/start/installation/",
+      "on": {
+        "laravel": {
+          "steps": [
+            "npm install bulma@1",
+            "Set-Content resources/css/app.css (\"@import 'bulma/css/bulma.min.css';`n\" + (Get-Content resources/css/app.css -Raw))"
+          ],
+          "note": "Tailwind CSS resta: fa parte di Laravel."
+        },
+        "symfony": {
+          "steps": [
+            "php bin/console importmap:require bulma/css/bulma.min.css",
+            "Set-Content assets/app.js (\"import 'bulma/css/bulma.min.css';`n\" + (Get-Content assets/app.js -Raw))"
+          ]
+        },
+        "vite": {
+          "steps": [
+            "npm install bulma@1",
+            "foreach ($f in 'src/main.ts', 'src/main.tsx', 'src/main.js', 'src/renderer.ts', 'src/renderer/src/main.ts', 'src/renderer/src/main.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bulma/css/bulma.min.css';`n\" + (Get-Content $f -Raw)); break } }"
+          ]
+        },
+        "nextjs": {
+          "steps": [
+            "npm install bulma@1",
+            "foreach ($f in 'src/app/layout.tsx', 'app/layout.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bulma/css/bulma.min.css';`n\" + (Get-Content $f -Raw)); break } }"
+          ],
+          "note": "Tailwind CSS resta: fa parte della creazione di Next.js."
+        },
+        "electron": {
+          "steps": [
+            "npm install bulma@1",
+            "foreach ($f in 'src/main.ts', 'src/main.tsx', 'src/main.js', 'src/renderer.ts', 'src/renderer/src/main.ts', 'src/renderer/src/main.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bulma/css/bulma.min.css';`n\" + (Get-Content $f -Raw)); break } }"
+          ]
+        },
+        "tauri": {
+          "steps": [
+            "npm install bulma@1",
+            "foreach ($f in 'src/main.ts', 'src/main.tsx', 'src/main.js', 'src/renderer.ts', 'src/renderer/src/main.ts', 'src/renderer/src/main.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bulma/css/bulma.min.css';`n\" + (Get-Content $f -Raw)); break } }"
+          ]
+        }
+      }
+    },
+    {
+      "id": "sqlite",
+      "kind": "addon",
+      "slot": "database",
+      "name": "SQLite",
+      "desc": "Database in un file del progetto, senza server",
+      "home": "https://laravel.com/docs/13.x/database#sqlite-configuration",
+      "on": {
+        "laravel": {
+          "needs": [
+            "sqlite"
+          ],
+          "note": "Predefinito di Laravel: database/database.sqlite c'è già."
+        }
+      }
+    },
+    {
+      "id": "mysql",
+      "kind": "addon",
+      "slot": "database",
+      "name": "MySQL (MariaDB)",
+      "desc": "Il server MariaDB del kit, compatibile con MySQL",
+      "home": "https://laravel.com/docs/13.x/database#configuration",
+      "on": {
+        "laravel": {
+          "database": "mariadb",
+          "steps": [
+            "php artisan migrate --force"
+          ],
+          "note": "Il kit crea il database del progetto e scrive la connessione nel file .env."
+        }
+      }
+    },
+    {
+      "id": "mongodb",
+      "kind": "addon",
+      "slot": "database",
+      "name": "MongoDB",
+      "desc": "Il server MongoDB del kit, con il pacchetto ufficiale per Laravel",
+      "home": "https://www.mongodb.com/docs/drivers/php/laravel-mongodb/current/quick-start/",
+      "on": {
+        "laravel": {
+          "database": "mongodb",
+          "steps": [
+            "composer require mongodb/laravel-mongodb:^5.11",
+            "$c = Get-Content config/database.php -Raw; Set-Content config/database.php ($c -replace \"'connections' => \\[\", \"'connections' => [`n`n        'mongodb' => ['driver' => 'mongodb', 'dsn' => env('MONGODB_URI'), 'database' => env('DB_DATABASE')],`n\")"
+          ],
+          "note": "Serve l'estensione mongodb di PHP, che il kit non installa ancora: senza, il comando composer si ferma."
+        }
+      }
+    },
+    {
+      "id": "nativephp",
+      "kind": "addon",
+      "slot": "desktop",
+      "name": "Electron (NativePHP)",
+      "desc": "La stessa app Laravel anche come app desktop, con Electron",
+      "home": "https://nativephp.com/docs/desktop/2/getting-started/installation",
+      "on": {
+        "laravel": {
+          "env": [
+            {
+              "key": "NATIVEPHP_APP_ID",
+              "value": "{package}"
+            }
+          ],
+          "steps": [
+            "composer require nativephp/desktop:^2.3",
+            "php artisan native:install --no-interaction"
+          ],
+          "actions": [
+            {
+              "name": "App desktop",
+              "command": "php artisan native:run"
+            },
+            {
+              "name": "Pacchetto",
+              "command": "php artisan native:build win"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "nativephp-mobile",
+      "kind": "addon",
+      "slot": "mobile",
+      "name": "Android (NativePHP Mobile)",
+      "desc": "La stessa app Laravel anche come app Android",
+      "home": "https://nativephp.com/docs/mobile/3/getting-started/installation",
+      "on": {
+        "laravel": {
+          "needs": [
+            "java"
+          ],
+          "env": [
+            {
+              "key": "NATIVEPHP_APP_ID",
+              "value": "{package}"
+            }
+          ],
+          "steps": [
+            "composer require nativephp/mobile:^4.6",
+            "php artisan native:install --no-interaction"
+          ],
+          "actions": [
+            {
+              "name": "Android",
+              "command": "php artisan native:run android"
+            }
+          ],
+          "note": "Serve l'SDK di Android (ANDROID_HOME), che non è ancora nel kit."
+        }
+      }
+    },
+    {
+      "id": "pest",
+      "kind": "addon",
+      "slot": "tests",
+      "name": "Pest",
+      "desc": "Prove automatiche con Pest al posto di PHPUnit",
+      "home": "https://pestphp.com/docs/installation",
+      "on": {
+        "laravel": {
+          "steps": [
+            "composer remove phpunit/phpunit --dev --no-update",
+            "composer require pestphp/pest:^5.3 pestphp/pest-plugin-laravel --dev --with-all-dependencies",
+            "vendor\\bin\\pest --init"
+          ],
+          "actions": [
+            {
+              "name": "Prove",
+              "command": "vendor\\bin\\pest"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "filament",
+      "kind": "addon",
+      "slot": "admin",
+      "name": "Filament",
+      "desc": "Pannello di amministrazione per Laravel",
+      "home": "https://filamentphp.com/docs/5.x/introduction/installation",
+      "on": {
+        "laravel": {
+          "steps": [
+            "composer require filament/filament:^5.10 --with-all-dependencies",
+            "php artisan filament:install --panels --no-interaction"
+          ]
+        }
+      }
+    },
+    {
+      "id": "vitest",
+      "kind": "addon",
+      "slot": "tests",
+      "name": "Vitest",
+      "desc": "Prove automatiche per il codice TypeScript",
+      "home": "https://vitest.dev/guide/",
+      "on": {
+        "vite": {
+          "steps": [
+            "npm install -D vitest@5",
+            "npm pkg set scripts.test=vitest"
+          ],
+          "actions": [
+            {
+              "name": "Prove",
+              "command": "npm test"
+            }
+          ]
+        },
+        "tauri": {
+          "steps": [
+            "npm install -D vitest@5",
+            "npm pkg set scripts.test=vitest"
+          ],
+          "actions": [
+            {
+              "name": "Prove",
+              "command": "npm test"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "prettier",
+      "kind": "addon",
+      "slot": "format",
+      "name": "Prettier",
+      "desc": "Formattazione automatica del codice",
+      "home": "https://prettier.io/docs/install",
+      "on": {
+        "vite": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "nextjs": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "electron": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "tauri": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        }
+      }
+    }
+  ]
+}

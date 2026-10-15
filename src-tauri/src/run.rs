@@ -152,7 +152,7 @@ pub fn is_port_free(port: u16) -> bool {
 
 /// Text without colours, split in lines (`\r\n`, `\n`, `\r`); the last,
 /// incomplete piece stays in `rest`.
-fn split_lines(rest: &mut String, chunk: &str) -> Vec<String> {
+pub(crate) fn split_lines(rest: &mut String, chunk: &str) -> Vec<String> {
     rest.push_str(chunk);
     let mut lines: Vec<String> = rest.split(['\n', '\r']).map(str::to_owned).collect();
     *rest = lines.pop().unwrap_or_default();

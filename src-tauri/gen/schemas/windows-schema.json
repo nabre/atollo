@@ -297,6 +297,42 @@
           "markdownDescription": "Enables the folder_open command without any pre-configured scope."
         },
         {
+          "description": "Enables the frameworks_cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-frameworks-cancel",
+          "markdownDescription": "Enables the frameworks_cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the frameworks_create command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-frameworks-create",
+          "markdownDescription": "Enables the frameworks_create command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the frameworks_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-frameworks-get",
+          "markdownDescription": "Enables the frameworks_get command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the frameworks_plan command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-frameworks-plan",
+          "markdownDescription": "Enables the frameworks_plan command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the frameworks_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-frameworks-set",
+          "markdownDescription": "Enables the frameworks_set command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the frameworks_targets command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-frameworks-targets",
+          "markdownDescription": "Enables the frameworks_targets command without any pre-configured scope."
+        },
+        {
           "description": "Enables the github_clone command without any pre-configured scope.",
           "type": "string",
           "const": "allow-github-clone",
@@ -775,6 +811,42 @@
           "type": "string",
           "const": "deny-folder-open",
           "markdownDescription": "Denies the folder_open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the frameworks_cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-frameworks-cancel",
+          "markdownDescription": "Denies the frameworks_cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the frameworks_create command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-frameworks-create",
+          "markdownDescription": "Denies the frameworks_create command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the frameworks_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-frameworks-get",
+          "markdownDescription": "Denies the frameworks_get command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the frameworks_plan command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-frameworks-plan",
+          "markdownDescription": "Denies the frameworks_plan command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the frameworks_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-frameworks-set",
+          "markdownDescription": "Denies the frameworks_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the frameworks_targets command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-frameworks-targets",
+          "markdownDescription": "Denies the frameworks_targets command without any pre-configured scope."
         },
         {
           "description": "Denies the github_clone command without any pre-configured scope.",

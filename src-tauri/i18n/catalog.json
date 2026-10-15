@@ -898,5 +898,320 @@
     "en": "{0} runs only on Windows 11 on ARM64 PCs.",
     "fr": "{0} ne fonctionne qu'avec Windows 11 sur les PC ARM64.",
     "de": "{0} läuft auf ARM64-PCs nur mit Windows 11."
+  },
+  "Framework PHP per applicazioni web": {
+    "en": "PHP framework for web applications",
+    "fr": "Framework PHP pour applications web",
+    "de": "PHP-Framework für Webanwendungen"
+  },
+  "Sito o applicazione web in TypeScript": {
+    "en": "Website or web application in TypeScript",
+    "fr": "Site ou application web en TypeScript",
+    "de": "Website oder Webanwendung in TypeScript"
+  },
+  "Applicazione web React con server, già con Tailwind CSS": {
+    "en": "React web application with a server, Tailwind CSS included",
+    "fr": "Application web React avec serveur, Tailwind CSS inclus",
+    "de": "React-Webanwendung mit Server, Tailwind CSS inklusive"
+  },
+  "App desktop con tecnologie web (Electron Forge)": {
+    "en": "Desktop app with web technologies (Electron Forge)",
+    "fr": "Application de bureau avec des technologies web (Electron Forge)",
+    "de": "Desktop-App mit Webtechnologien (Electron Forge)"
+  },
+  "App desktop leggera: interfaccia web, motore in Rust": {
+    "en": "Lightweight desktop app: web interface, Rust core",
+    "fr": "Application de bureau légère : interface web, moteur en Rust",
+    "de": "Schlanke Desktop-App: Weboberfläche, Kern in Rust"
+  },
+  "Da provare con il compilatore GNU del kit: la guida di Tauri chiede MSVC.": {
+    "en": "To be tried with the kit's GNU compiler: Tauri's guide asks for MSVC.",
+    "fr": "À essayer avec le compilateur GNU du kit : le guide de Tauri demande MSVC.",
+    "de": "Mit dem GNU-Compiler des Kits noch zu testen: Die Anleitung von Tauri verlangt MSVC."
+  },
+  "App Android in Kotlin con Jetpack Compose (modello ufficiale di Google)": {
+    "en": "Android app in Kotlin with Jetpack Compose (Google's official template)",
+    "fr": "Application Android en Kotlin avec Jetpack Compose (modèle officiel de Google)",
+    "de": "Android-App in Kotlin mit Jetpack Compose (offizielle Vorlage von Google)"
+  },
+  "Serve l'SDK di Android (ANDROID_HOME), che non è ancora nel kit.": {
+    "en": "Needs the Android SDK (ANDROID_HOME), which is not in the kit yet.",
+    "fr": "Nécessite le SDK Android (ANDROID_HOME), qui n'est pas encore dans le kit.",
+    "de": "Benötigt das Android SDK (ANDROID_HOME), das noch nicht im Kit ist."
+  },
+  "Interfaccia in React con TypeScript": {
+    "en": "React interface with TypeScript",
+    "fr": "Interface en React avec TypeScript",
+    "de": "Oberfläche in React mit TypeScript"
+  },
+  "Starter kit ufficiale: Inertia, React, Tailwind CSS e accesso utenti.": {
+    "en": "Official starter kit: Inertia, React, Tailwind CSS and user sign-in.",
+    "fr": "Starter kit officiel : Inertia, React, Tailwind CSS et connexion des utilisateurs.",
+    "de": "Offizielles Starter-Kit: Inertia, React, Tailwind CSS und Benutzeranmeldung."
+  },
+  "Con electron-vite al posto di Electron Forge.": {
+    "en": "With electron-vite instead of Electron Forge.",
+    "fr": "Avec electron-vite à la place d'Electron Forge.",
+    "de": "Mit electron-vite statt Electron Forge."
+  },
+  "Interfaccia in Vue con TypeScript": {
+    "en": "Vue interface with TypeScript",
+    "fr": "Interface en Vue avec TypeScript",
+    "de": "Oberfläche in Vue mit TypeScript"
+  },
+  "Starter kit ufficiale: Inertia, Vue, Tailwind CSS e accesso utenti.": {
+    "en": "Official starter kit: Inertia, Vue, Tailwind CSS and user sign-in.",
+    "fr": "Starter kit officiel : Inertia, Vue, Tailwind CSS et connexion des utilisateurs.",
+    "de": "Offizielles Starter-Kit: Inertia, Vue, Tailwind CSS und Benutzeranmeldung."
+  },
+  "Interfaccia in Svelte con TypeScript": {
+    "en": "Svelte interface with TypeScript",
+    "fr": "Interface en Svelte avec TypeScript",
+    "de": "Oberfläche in Svelte mit TypeScript"
+  },
+  "Interfaccia dinamica in PHP, senza scrivere JavaScript": {
+    "en": "Dynamic interface in PHP, without writing JavaScript",
+    "fr": "Interface dynamique en PHP, sans écrire de JavaScript",
+    "de": "Dynamische Oberfläche in PHP, ohne JavaScript zu schreiben"
+  },
+  "Starter kit ufficiale: Livewire, Flux, Tailwind CSS e accesso utenti.": {
+    "en": "Official starter kit: Livewire, Flux, Tailwind CSS and user sign-in.",
+    "fr": "Starter kit officiel : Livewire, Flux, Tailwind CSS et connexion des utilisateurs.",
+    "de": "Offizielles Starter-Kit: Livewire, Flux, Tailwind CSS und Benutzeranmeldung."
+  },
+  "Stili con le classi di utilità di Tailwind CSS 4": {
+    "en": "Styles with Tailwind CSS 4 utility classes",
+    "fr": "Styles avec les classes utilitaires de Tailwind CSS 4",
+    "de": "Stile mit den Utility-Klassen von Tailwind CSS 4"
+  },
+  "Già incluso in Laravel e nei suoi starter kit.": {
+    "en": "Already included in Laravel and its starter kits.",
+    "fr": "Déjà inclus dans Laravel et ses starter kits.",
+    "de": "Bereits in Laravel und seinen Starter-Kits enthalten."
+  },
+  "Già incluso dalla creazione di Next.js.": {
+    "en": "Already included when Next.js is created.",
+    "fr": "Déjà inclus à la création de Next.js.",
+    "de": "Bereits beim Erstellen von Next.js enthalten."
+  },
+  "La stessa app Laravel anche come app desktop, con Electron": {
+    "en": "The same Laravel app as a desktop app too, with Electron",
+    "fr": "La même application Laravel aussi en application de bureau, avec Electron",
+    "de": "Dieselbe Laravel-App auch als Desktop-App, mit Electron"
+  },
+  "La stessa app Laravel anche come app Android": {
+    "en": "The same Laravel app as an Android app too",
+    "fr": "La même application Laravel aussi en application Android",
+    "de": "Dieselbe Laravel-App auch als Android-App"
+  },
+  "Prove automatiche con Pest al posto di PHPUnit": {
+    "en": "Automated tests with Pest instead of PHPUnit",
+    "fr": "Tests automatiques avec Pest à la place de PHPUnit",
+    "de": "Automatische Tests mit Pest statt PHPUnit"
+  },
+  "Pannello di amministrazione per Laravel": {
+    "en": "Admin panel for Laravel",
+    "fr": "Panneau d'administration pour Laravel",
+    "de": "Admin-Panel für Laravel"
+  },
+  "Prove automatiche per il codice TypeScript": {
+    "en": "Automated tests for TypeScript code",
+    "fr": "Tests automatiques pour le code TypeScript",
+    "de": "Automatische Tests für TypeScript-Code"
+  },
+  "Formattazione automatica del codice": {
+    "en": "Automatic code formatting",
+    "fr": "Mise en forme automatique du code",
+    "de": "Automatische Codeformatierung"
+  },
+  "Comando non valido: {0}": {
+    "en": "Invalid command: {0}",
+    "fr": "Commande non valide : {0}",
+    "de": "Ungültiger Befehl: {0}"
+  },
+  "Azione senza nome: {0}": {
+    "en": "Action without a name: {0}",
+    "fr": "Action sans nom : {0}",
+    "de": "Aktion ohne Namen: {0}"
+  },
+  "Azione senza comando: {0}": {
+    "en": "Action without a command: {0}",
+    "fr": "Action sans commande : {0}",
+    "de": "Aktion ohne Befehl: {0}"
+  },
+  "Strumento del kit sconosciuto: {0}": {
+    "en": "Unknown kit tool: {0}",
+    "fr": "Outil du kit inconnu : {0}",
+    "de": "Unbekanntes Werkzeug des Kits: {0}"
+  },
+  "Identificativo non valido: {0}": {
+    "en": "Invalid identifier: {0}",
+    "fr": "Identifiant non valide : {0}",
+    "de": "Ungültige Kennung: {0}"
+  },
+  "Identificativo ripetuto: {0}": {
+    "en": "Repeated identifier: {0}",
+    "fr": "Identifiant répété : {0}",
+    "de": "Doppelte Kennung: {0}"
+  },
+  "Nome non valido: {0}": {
+    "en": "Invalid name: {0}",
+    "fr": "Nom non valide : {0}",
+    "de": "Ungültiger Name: {0}"
+  },
+  "Indirizzo non valido: {0}": {
+    "en": "Invalid address: {0}",
+    "fr": "Adresse non valide : {0}",
+    "de": "Ungültige Adresse: {0}"
+  },
+  "{0}: manca il comando che crea il progetto.": {
+    "en": "{0}: the command that creates the project is missing.",
+    "fr": "{0} : il manque la commande qui crée le projet.",
+    "de": "{0}: Der Befehl, der das Projekt erstellt, fehlt."
+  },
+  "{0}: scegli almeno una base.": {
+    "en": "{0}: choose at least one base.",
+    "fr": "{0} : choisissez au moins une base.",
+    "de": "{0}: Wähle mindestens eine Basis."
+  },
+  "Base sconosciuta: {0}": {
+    "en": "Unknown base: {0}",
+    "fr": "Base inconnue : {0}",
+    "de": "Unbekannte Basis: {0}"
+  },
+  "Salvataggio non riuscito: {0}": {
+    "en": "Saving failed: {0}",
+    "fr": "Échec de l'enregistrement : {0}",
+    "de": "Speichern fehlgeschlagen: {0}"
+  },
+  "{0} non si usa con questa base.": {
+    "en": "{0} does not work with this base.",
+    "fr": "{0} ne s'utilise pas avec cette base.",
+    "de": "{0} funktioniert nicht mit dieser Basis."
+  },
+  "Aggiunta sconosciuta: {0}": {
+    "en": "Unknown addition: {0}",
+    "fr": "Ajout inconnu : {0}",
+    "de": "Unbekannte Ergänzung: {0}"
+  },
+  "{0} e {1} non vanno insieme.": {
+    "en": "{0} and {1} do not go together.",
+    "fr": "{0} et {1} ne vont pas ensemble.",
+    "de": "{0} und {1} passen nicht zusammen."
+  },
+  "È già in corso la creazione di un progetto.": {
+    "en": "A project is already being created.",
+    "fr": "Un projet est déjà en cours de création.",
+    "de": "Es wird bereits ein Projekt erstellt."
+  },
+  "Creazione annullata.": {
+    "en": "Creation cancelled.",
+    "fr": "Création annulée.",
+    "de": "Erstellung abgebrochen."
+  },
+  "Il comando di creazione non ha fatto la cartella {0}.": {
+    "en": "The creation command did not make the folder {0}.",
+    "fr": "La commande de création n'a pas créé le dossier {0}.",
+    "de": "Der Erstellungsbefehl hat den Ordner {0} nicht angelegt."
+  },
+  "Comando non riuscito: {0}\n{1}": {
+    "en": "Command failed: {0}\n{1}",
+    "fr": "Échec de la commande : {0}\n{1}",
+    "de": "Befehl fehlgeschlagen: {0}\n{1}"
+  },
+  "Vite per JavaScript e CSS, con ricarica automatica durante lo sviluppo": {
+    "en": "Vite for JavaScript and CSS, with automatic reload during development",
+    "fr": "Vite pour JavaScript et CSS, avec rechargement automatique pendant le développement",
+    "de": "Vite für JavaScript und CSS, mit automatischem Neuladen während der Entwicklung"
+  },
+  "Prende il posto di AssetMapper per JavaScript e CSS.": {
+    "en": "Takes the place of AssetMapper for JavaScript and CSS.",
+    "fr": "Remplace AssetMapper pour JavaScript et CSS.",
+    "de": "Ersetzt AssetMapper für JavaScript und CSS."
+  },
+  "Componenti e griglia di Bootstrap 5": {
+    "en": "Bootstrap 5 components and grid",
+    "fr": "Composants et grille de Bootstrap 5",
+    "de": "Komponenten und Raster von Bootstrap 5"
+  },
+  "Tailwind CSS resta: fa parte di Laravel.": {
+    "en": "Tailwind CSS stays: it is part of Laravel.",
+    "fr": "Tailwind CSS reste : il fait partie de Laravel.",
+    "de": "Tailwind CSS bleibt: Es gehört zu Laravel."
+  },
+  "Tailwind CSS resta: fa parte della creazione di Next.js.": {
+    "en": "Tailwind CSS stays: it comes with the creation of Next.js.",
+    "fr": "Tailwind CSS reste : il fait partie de la création de Next.js.",
+    "de": "Tailwind CSS bleibt: Es gehört zum Erstellen von Next.js."
+  },
+  "Stili di Bulma, solo CSS senza JavaScript": {
+    "en": "Bulma styles, CSS only without JavaScript",
+    "fr": "Styles de Bulma, uniquement du CSS sans JavaScript",
+    "de": "Stile von Bulma, nur CSS ohne JavaScript"
+  },
+  "Database in un file del progetto, senza server": {
+    "en": "Database in a file of the project, without a server",
+    "fr": "Base de données dans un fichier du projet, sans serveur",
+    "de": "Datenbank in einer Datei des Projekts, ohne Server"
+  },
+  "Predefinito di Laravel: database/database.sqlite c'è già.": {
+    "en": "Laravel's default: database/database.sqlite is already there.",
+    "fr": "Par défaut dans Laravel : database/database.sqlite existe déjà.",
+    "de": "Standard von Laravel: database/database.sqlite ist schon da."
+  },
+  "Il server MariaDB del kit, compatibile con MySQL": {
+    "en": "The kit's MariaDB server, compatible with MySQL",
+    "fr": "Le serveur MariaDB du kit, compatible avec MySQL",
+    "de": "Der MariaDB-Server des Kits, kompatibel mit MySQL"
+  },
+  "Il kit crea il database del progetto e scrive la connessione nel file .env.": {
+    "en": "The kit creates the project's database and writes the connection in the .env file.",
+    "fr": "Le kit crée la base de données du projet et écrit la connexion dans le fichier .env.",
+    "de": "Das Kit erstellt die Datenbank des Projekts und schreibt die Verbindung in die Datei .env."
+  },
+  "Il server MongoDB del kit, con il pacchetto ufficiale per Laravel": {
+    "en": "The kit's MongoDB server, with the official package for Laravel",
+    "fr": "Le serveur MongoDB du kit, avec le paquet officiel pour Laravel",
+    "de": "Der MongoDB-Server des Kits, mit dem offiziellen Paket für Laravel"
+  },
+  "Serve l'estensione mongodb di PHP, che il kit non installa ancora: senza, il comando composer si ferma.": {
+    "en": "Needs PHP's mongodb extension, which the kit does not install yet: without it, the composer command stops.",
+    "fr": "Nécessite l'extension mongodb de PHP, que le kit n'installe pas encore : sans elle, la commande composer s'arrête.",
+    "de": "Benötigt die PHP-Erweiterung mongodb, die das Kit noch nicht installiert: Ohne sie bricht der composer-Befehl ab."
+  },
+  "Creo il database del progetto in {0}…": {
+    "en": "Creating the project's database in {0}…",
+    "fr": "Création de la base de données du projet dans {0}…",
+    "de": "Die Datenbank des Projekts wird in {0} erstellt…"
+  },
+  "Già nel progetto, lasciato com'è: {0}": {
+    "en": "Already in the project, left as it is: {0}",
+    "fr": "Déjà dans le projet, laissé tel quel : {0}",
+    "de": "Schon im Projekt, unverändert gelassen: {0}"
+  },
+  "Server di database sconosciuto: {0}": {
+    "en": "Unknown database server: {0}",
+    "fr": "Serveur de base de données inconnu : {0}",
+    "de": "Unbekannter Datenbankserver: {0}"
+  },
+  "Variabile non valida: {0}": {
+    "en": "Invalid variable: {0}",
+    "fr": "Variable non valide : {0}",
+    "de": "Ungültige Variable: {0}"
+  },
+  "Scrivo nel file .env: {0}": {
+    "en": "Writing in the .env file: {0}",
+    "fr": "Écriture dans le fichier .env : {0}",
+    "de": "Wird in die Datei .env geschrieben: {0}"
+  },
+  "{0} non è una cartella dei progetti.": {
+    "en": "{0} is not a folder of the projects.",
+    "fr": "{0} n'est pas un dossier des projets.",
+    "de": "{0} ist kein Ordner der Projekte."
+  },
+  "{0} è già un repository Git: scegli un altro nome.": {
+    "en": "{0} is already a Git repository: choose another name.",
+    "fr": "{0} est déjà un dépôt Git : choisissez un autre nom.",
+    "de": "{0} ist bereits ein Git-Repository: Wähle einen anderen Namen."
   }
 }

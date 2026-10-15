@@ -214,6 +214,11 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
         .lines()
         .any(|l| l.trim_start().starts_with("DB_CONNECTION="));
     let pairs: Vec<(&str, String)> = match db.engine.as_str() {
+        "mongodb" if laravel => vec![
+            ("DB_CONNECTION", "mongodb".into()),
+            ("DB_DATABASE", db.database.clone()),
+            ("MONGODB_URI", db.url.clone()),
+        ],
         "mongodb" => vec![("MONGODB_URI", db.url.clone())],
         _ if laravel => vec![
             ("DB_CONNECTION", "mysql".into()),
@@ -241,7 +246,12 @@ pub fn env_changes(text: &str, db: &ProjectDb) -> Vec<EnvChange> {
 /// `text` with the keys of `db` set: lines replaced where they are,
 /// missing keys added at the end; comments and other lines untouched.
 pub fn env_apply_text(text: &str, db: &ProjectDb) -> String {
-    let wanted = env_wanted(text, db);
+    env_set_text(text, &env_wanted(text, db))
+}
+
+/// `text` with the keys of `wanted` set: a line with the key is replaced
+/// (comments stay), a missing key is added at the end.
+pub fn env_set_text(text: &str, wanted: &[(String, String)]) -> String {
     let mut done: Vec<bool> = vec![false; wanted.len()];
     let newline = if text.contains("\r\n") { "\r\n" } else { "\n" };
     let mut out: Vec<String> = text
@@ -298,6 +308,19 @@ pub fn env_apply(project_dir: &Path, db: &ProjectDb) -> Result<()> {
     Ok(())
 }
 
+/// Sets `wanted` in the project's `.env` (made from `.env.example`, or new).
+pub fn env_set(project_dir: &Path, wanted: &[(String, String)]) -> Result<()> {
+    if !project_dir.is_dir() {
+        bail!("no project folder");
+    }
+    if crate::safe_path::is_link(&project_dir.join(".env")) {
+        bail!(".env is a link: left alone");
+    }
+    let text = env_set_text(&env_source(project_dir), wanted);
+    write_atomic(&project_dir.join(".env"), text.as_bytes())?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -313,6 +336,18 @@ mod tests {
         assert!(sql.contains("CREATE DATABASE IF NOT EXISTS `shop`"));
         assert!(sql.contains("GRANT ALL PRIVILEGES ON `shop`.* TO 'shop'@'127.0.0.1'"));
         assert!(root_password_sql(pw).contains("'root'@'::1' IDENTIFIED BY"));
+    }
+
+    #[test]
+    fn env_for_laravel_with_mongodb() {
+        let db = project_db("mongodb", "shop", "pw1", 27018);
+        let out = env_apply_text("DB_CONNECTION=sqlite\n", &db);
+        assert!(out.contains("DB_CONNECTION=mongodb"), "{out}");
+        assert!(out.contains("DB_DATABASE=shop"), "{out}");
+        assert!(
+            out.contains("MONGODB_URI=mongodb://shop:pw1@127.0.0.1:27018/shop"),
+            "{out}"
+        );
     }
 
     #[test]

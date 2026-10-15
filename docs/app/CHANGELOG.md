@@ -1,5 +1,14 @@
 # Novità
 
+## Nuovo progetto da framework (15/10/2026)
+
+**Fatto** (D-83)
+- **Wizard «Nuovo progetto»** (icona sopra Progetti): una base (Laravel, Symfony, Vite, Next.js, Electron, Tauri, Android) e le aggiunte che vanno con lei: interfaccia (React, Vue, Svelte, Livewire), stili (Tailwind CSS, Bootstrap, Bulma), database (SQLite, MySQL/MariaDB, MongoDB), app desktop e Android con NativePHP, prove, formattazione, Vite per Symfony. Il kit installa gli strumenti che servono, esegue i comandi ufficiali mostrandone l'output, crea il database e scrive il `.env`, salva le azioni del progetto.
+- **Progetti esistenti**: si può riempire un progetto vuoto o uno con file ma senza Git (i file che ci sono restano).
+- **Impostazioni come Progetti**: sezioni e framework nella barra laterale, ogni voce in una scheda, ricerca; le istruzioni di ogni framework si modificano e si ripristinano.
+
+**Verificato**: 259 test Rust (nuovi: catalogo valido, combinazioni, salvataggio delle sole modifiche, progetti esistenti, unione dei file, `.env`), clippy e fmt puliti; tipi, ESLint e 27 test dell'interfaccia. Da provare nell'app: la creazione reale di ciascuna base (scarica da npm, Packagist, GitHub).
+
 ## Rilasci di GitHub senza limite e download a mano (15/10/2026)
 
 **Fatto** (D-82)
