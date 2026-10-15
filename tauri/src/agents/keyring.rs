@@ -236,7 +236,7 @@ fn save_file(path: &std::path::Path, items: &[Item]) -> Result<()> {
 
 /// An `agy.exe` of this kit is running.
 pub fn kit_agy_running(kit: &Kit) -> bool {
-    crate::processes::running_under(&kit.apps())
+    crate::os::processes::running_under(&kit.apps())
         .iter()
         .any(|p| p.name.eq_ignore_ascii_case("agy.exe"))
 }

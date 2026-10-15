@@ -19,8 +19,8 @@ use windows::Win32::System::Console::SetConsoleCtrlHandler;
 
 use super::cfg::pwsh_args;
 use crate::env::KitEnv;
-use crate::jobs;
 use crate::kit::Kit;
+use crate::os::jobs;
 
 /// The consoles open now: process ids of their `conhost.exe`, or of the
 /// kit's PowerShell in a Windows Terminal tab.

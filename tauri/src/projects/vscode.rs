@@ -40,7 +40,7 @@ fn path(project_dir: &Path) -> std::path::PathBuf {
 }
 
 fn read(project_dir: &Path) -> Option<String> {
-    crate::safe_path::read_text(project_dir, &path(project_dir))
+    crate::os::safe_path::read_text(project_dir, &path(project_dir))
 }
 
 pub fn get(project_dir: &Path) -> EditorSettingsView {
@@ -97,7 +97,7 @@ fn set_or_remove(o: &mut Map<String, Value>, key: &str, value: Option<Value>) {
 pub fn set(project_dir: &Path, s: &EditorSettings) -> Result<()> {
     let file = path(project_dir);
     let folder = project_dir.join(".vscode");
-    if crate::safe_path::is_link(&folder) || crate::safe_path::is_link(&file) {
+    if crate::os::safe_path::is_link(&folder) || crate::os::safe_path::is_link(&file) {
         bail!(".vscode is a link: left alone");
     }
     if s.tab_size.is_some_and(|n| n == 0 || n > 16) {

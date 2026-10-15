@@ -283,14 +283,14 @@ pub fn env_set_text(text: &str, wanted: &[(String, String)]) -> String {
 
 /// The project's `.env`, created from `.env.example` when missing.
 pub fn env_source(project_dir: &Path) -> String {
-    crate::safe_path::read_text(project_dir, &project_dir.join(".env"))
-        .or_else(|| crate::safe_path::read_text(project_dir, &project_dir.join(".env.example")))
+    crate::os::safe_path::read_text(project_dir, &project_dir.join(".env"))
+        .or_else(|| crate::os::safe_path::read_text(project_dir, &project_dir.join(".env.example")))
         .unwrap_or_default()
 }
 
 /// `.env` is listed in the project's `.gitignore` (it will hold a password).
 pub fn env_ignored(project_dir: &Path) -> bool {
-    crate::safe_path::read_text(project_dir, &project_dir.join(".gitignore"))
+    crate::os::safe_path::read_text(project_dir, &project_dir.join(".gitignore"))
         .unwrap_or_default()
         .lines()
         .map(str::trim)
@@ -301,7 +301,7 @@ pub fn env_apply(project_dir: &Path, db: &ProjectDb) -> Result<()> {
     if !project_dir.is_dir() {
         bail!("no project folder");
     }
-    if crate::safe_path::is_link(&project_dir.join(".env")) {
+    if crate::os::safe_path::is_link(&project_dir.join(".env")) {
         bail!(".env is a link: left alone");
     }
     let text = env_apply_text(&env_source(project_dir), db);
@@ -314,7 +314,7 @@ pub fn env_set(project_dir: &Path, wanted: &[(String, String)]) -> Result<()> {
     if !project_dir.is_dir() {
         bail!("no project folder");
     }
-    if crate::safe_path::is_link(&project_dir.join(".env")) {
+    if crate::os::safe_path::is_link(&project_dir.join(".env")) {
         bail!(".env is a link: left alone");
     }
     let text = env_set_text(&env_source(project_dir), wanted);

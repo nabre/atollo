@@ -68,10 +68,10 @@ impl Installer for Server {
         _tree: &Path,
         old: &Path,
     ) -> Result<()> {
-        let running = crate::processes::running_from(&crate::processes::all(), old);
+        let running = crate::os::processes::running_from(&crate::os::processes::all(), old);
         if !running.is_empty() {
             crate::log::info(&format!("editor update: stopping {running:?}"));
-            crate::sessions::stop(&running);
+            crate::os::sessions::stop(&running);
             std::thread::sleep(std::time::Duration::from_millis(500));
         }
         Ok(())
@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn processes_of_the_old_editor() {
-        let proc = |pid, path: &str| crate::processes::Proc {
+        let proc = |pid, path: &str| crate::os::processes::Proc {
             pid,
             parent: 0,
             name: String::new(),
@@ -116,7 +116,7 @@ mod tests {
             proc(4, r"E:\Kit\data\apps\win32-x64\node\node.exe"),
         ];
         let old = Path::new(r"E:\Kit\data\apps\win32-x64\vscodium-server");
-        assert_eq!(crate::processes::running_from(&all, old), [1, 2]);
+        assert_eq!(crate::os::processes::running_from(&all, old), [1, 2]);
     }
 
     #[test]

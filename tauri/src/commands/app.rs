@@ -42,7 +42,7 @@ pub fn app_info<R: Runtime>(
         path_entries: state.env().path_entries().len(),
         watcher_unsafe_folder: crate::kit::watcher_unsafe_folder(kit.root()),
         first_run: Choice::read(kit, Catalog::get()).is_none(),
-        other_kits: crate::sessions::other_kits(kit)
+        other_kits: crate::os::sessions::other_kits(kit)
             .iter()
             .map(|p| p.display().to_string())
             .collect(),
@@ -98,7 +98,7 @@ pub fn folder_open<R: Runtime>(
         _ => return Err(format!("unknown folder: {which}")),
     };
     std::fs::create_dir_all(&dir).map_err(|e| fail("folder", e))?;
-    crate::jobs::open_with_explorer(&dir).map_err(|e| fail("explorer", format!("{e:#}")))
+    crate::os::jobs::open_with_explorer(&dir).map_err(|e| fail("explorer", format!("{e:#}")))
 }
 
 /// Opens a local address (a project's server) in the PC's browser, outside
@@ -114,7 +114,7 @@ pub fn url_open<R: Runtime>(webview: Webview<R>, url: String) -> Result<(), Stri
 
 /// The PC's browser, through Explorer.
 pub(super) fn open_in_browser(url: &str) -> Result<(), String> {
-    crate::jobs::open_with_explorer(url).map_err(|e| fail("browser", format!("{e:#}")))
+    crate::os::jobs::open_with_explorer(url).map_err(|e| fail("browser", format!("{e:#}")))
 }
 
 /// `http://localhost:<port>/…` or `http://127.0.0.1:<port>/…` only.

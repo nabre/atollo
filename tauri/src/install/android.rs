@@ -90,7 +90,7 @@ fn sdkmanager(
     let script = sdk.join(r"cmdline-tools\latest\bin\sdkmanager.bat");
     let quoted: Vec<String> = args.iter().map(|a| format!("\"{a}\"")).collect();
     let quoted: Vec<&str> = quoted.iter().map(String::as_str).collect();
-    let mut cmd = crate::jobs::batch_command(&script, &quoted, ctx.env);
+    let mut cmd = crate::os::jobs::batch_command(&script, &quoted, ctx.env);
     cmd.env("JAVA_HOME", java)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

@@ -285,7 +285,7 @@ pub fn setup_by_hand_open<R: Runtime>(
         })
         .filter(|u| u.starts_with("https://") || u.starts_with("http://"))
         .ok_or_else(|| format!("{id}: no download to do by hand"))?;
-    crate::jobs::open_with_explorer(&url).map_err(|e| fail("browser", format!("{e:#}")))
+    crate::os::jobs::open_with_explorer(&url).map_err(|e| fail("browser", format!("{e:#}")))
 }
 
 #[cfg(test)]

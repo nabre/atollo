@@ -33,8 +33,8 @@ use serde::{Deserialize, Serialize};
 
 use super::auth;
 use crate::env::KitEnv;
-use crate::jobs::{self, Job};
 use crate::kit::Kit;
+use crate::os::jobs::{self, Job};
 use crate::projects::run::{is_port_free, responds};
 use crate::setup::catalog::Catalog;
 
@@ -774,7 +774,7 @@ impl Services {
             .flatten()
             .filter(|e| {
                 e.metadata()
-                    .is_ok_and(|m| m.is_file() && !crate::safe_path::is_reparse(&m))
+                    .is_ok_and(|m| m.is_file() && !crate::os::safe_path::is_reparse(&m))
             })
             .filter_map(|e| {
                 let name = e.file_name().to_string_lossy().into_owned();
@@ -877,7 +877,7 @@ impl Services {
             bail!("not a copy of this project: {file}");
         }
         let path = self.backup_dir(project).join(file);
-        if !crate::safe_path::is_file(&self.backup_dir(project), &path) {
+        if !crate::os::safe_path::is_file(&self.backup_dir(project), &path) {
             bail!("copy not found: {file}");
         }
         let name = auth::db_name(project);

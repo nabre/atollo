@@ -15,9 +15,9 @@ use windows::Win32::System::Registry::{
 
 use super::{fetch, triple_arch, work_dir, Ctx, Installer, Progress, Release};
 use crate::fsx::write_atomic;
-use crate::jobs;
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
+use crate::os::jobs;
 use crate::settings::Settings;
 use crate::setup::catalog::Component;
 

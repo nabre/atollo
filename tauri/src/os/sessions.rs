@@ -13,8 +13,8 @@ use serde::Serialize;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
 
+use super::processes::{self, Proc};
 use crate::kit::Kit;
-use crate::processes::{self, Proc};
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -49,7 +49,7 @@ pub fn kit_processes(kit: &Kit) -> Vec<KitProcess> {
         .filter(|&pid| pid != me)
         .collect();
     let server = crate::editor::server_dir(kit);
-    let webview = crate::webview::fixed_folder(kit);
+    let webview = crate::os::webview::fixed_folder(kit);
     ours.iter()
         .filter(|p| p.pid != me && !pids.contains(&p.parent))
         .filter(|p| !p.path.starts_with(&server) && !p.path.starts_with(&webview))

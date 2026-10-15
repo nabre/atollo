@@ -11,8 +11,8 @@ use serde::Serialize;
 
 use super::catalog::{kit_path, Catalog, Component};
 use crate::env::KitEnv;
-use crate::jobs;
 use crate::kit::Kit;
+use crate::os::jobs;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]

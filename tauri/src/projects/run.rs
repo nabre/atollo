@@ -29,8 +29,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::detect::{self, Action, Kind};
 use crate::env::KitEnv;
-use crate::jobs::{self, Job};
 use crate::kit::Kit;
+use crate::os::jobs::{self, Job};
 
 const MAX_LINES: usize = 3000;
 pub const PORT_FROM: u16 = 7100;

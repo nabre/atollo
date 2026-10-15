@@ -22,7 +22,7 @@ use serde_json::Value;
 
 use super::auth;
 use super::services::{bin, Services};
-use crate::jobs;
+use crate::os::jobs;
 
 /// Rows of one page.
 pub const PAGE: u64 = 100;

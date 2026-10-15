@@ -115,7 +115,7 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
 
 /// Ids of the agents of this kit running now.
 pub fn running(kit: &Kit) -> BTreeSet<String> {
-    let procs = crate::processes::running_under(&kit.apps());
+    let procs = crate::os::processes::running_under(&kit.apps());
     IDS.iter()
         .filter(|id| {
             let exe = kit.apps().join(exe_of(id).unwrap_or_default());
@@ -198,7 +198,7 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
         "codex" => {
             let codex = kit.apps().join(r"codex\bin\codex.exe");
             if codex.is_file() {
-                let status = crate::jobs::kit_command(&codex, env)
+                let status = crate::os::jobs::kit_command(&codex, env)
                     .arg("logout")
                     .status()
                     .context("codex logout")?;

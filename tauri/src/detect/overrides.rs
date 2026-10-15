@@ -55,11 +55,11 @@ pub fn file_of(dir: &Path) -> Option<PathBuf> {
     OVERRIDE_FILES
         .iter()
         .map(|f| dir.join(f))
-        .find(|p| crate::safe_path::is_file(dir, p))
+        .find(|p| crate::os::safe_path::is_file(dir, p))
 }
 
 fn read_object(dir: &Path, path: &Path) -> Option<Map<String, Value>> {
-    let text = crate::safe_path::read_text(dir, path)?;
+    let text = crate::os::safe_path::read_text(dir, path)?;
     match serde_json::from_str(&text) {
         Ok(Value::Object(o)) => Some(o),
         _ => None,
@@ -170,8 +170,8 @@ pub fn inside(project_dir: &Path, folder: &str) -> Result<(PathBuf, String)> {
     // Checked as text and without following links (D-77): canonicalize
     // would follow a junction, possibly to a network share.
     let full =
-        crate::safe_path::lexical(&project_dir.join(rel)).with_context(|| folder.to_owned())?;
-    if !crate::safe_path::is_dir(project_dir, &full) {
+        crate::os::safe_path::lexical(&project_dir.join(rel)).with_context(|| folder.to_owned())?;
+    if !crate::os::safe_path::is_dir(project_dir, &full) {
         bail!("folder outside the project: {folder}");
     }
     let shown = rel
@@ -204,10 +204,10 @@ fn edit_panel(
     edit: impl FnOnce(&mut Vec<Value>, &mut Option<String>) -> Result<()>,
 ) -> Result<()> {
     let path = file_of(project_dir).unwrap_or_else(|| project_dir.join(OVERRIDE_FILES[0]));
-    if crate::safe_path::is_link(&path) {
+    if crate::os::safe_path::is_link(&path) {
         bail!("{}: link, left alone", path.display());
     }
-    let mut o = if crate::safe_path::is_file(project_dir, &path) {
+    let mut o = if crate::os::safe_path::is_file(project_dir, &path) {
         match read_object(project_dir, &path) {
             Some(o) => o,
             None => bail!(

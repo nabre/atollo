@@ -189,11 +189,11 @@ fn tr(lang: &str, source: &str, args: &[&str]) -> String {
 // Every look into a project goes through `safe_path`: never through a
 // symbolic link or a junction (D-77).
 fn exists(dir: &Path, rel: &str) -> bool {
-    crate::safe_path::exists(dir, &dir.join(rel))
+    crate::os::safe_path::exists(dir, &dir.join(rel))
 }
 
 fn read(dir: &Path, rel: &str) -> String {
-    crate::safe_path::read_text(dir, &dir.join(rel)).unwrap_or_default()
+    crate::os::safe_path::read_text(dir, &dir.join(rel)).unwrap_or_default()
 }
 
 fn read_json(dir: &Path, rel: &str) -> Option<serde_json::Value> {
@@ -201,7 +201,7 @@ fn read_json(dir: &Path, rel: &str) -> Option<serde_json::Value> {
 }
 
 fn list_dir(dir: &Path) -> Vec<String> {
-    if crate::safe_path::is_link(dir) {
+    if crate::os::safe_path::is_link(dir) {
         return Vec::new();
     }
     let mut names: Vec<String> = fs::read_dir(dir)
@@ -230,7 +230,7 @@ fn walk_files(dir: &Path, on_file: &mut dyn FnMut(&str)) {
     fn walk(d: &Path, depth: u32, seen: &mut u32, on_file: &mut dyn FnMut(&str)) {
         // Below the root, links are not entered (a DirEntry's type is the
         // link's own); the root itself is checked here.
-        if depth > 3 || *seen > 3000 || (depth == 0 && crate::safe_path::is_link(d)) {
+        if depth > 3 || *seen > 3000 || (depth == 0 && crate::os::safe_path::is_link(d)) {
             return;
         }
         let Ok(entries) = fs::read_dir(d) else {
@@ -488,7 +488,7 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             continue;
         }
         let sub_dir = dir.join(&sub);
-        if !crate::safe_path::is_dir(dir, &sub_dir)
+        if !crate::os::safe_path::is_dir(dir, &sub_dir)
             || !MANIFESTS.iter().any(|m| exists(&sub_dir, m))
         {
             continue;
