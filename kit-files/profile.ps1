@@ -18,7 +18,7 @@ if (Get-Module -ListAvailable PSReadLine) {
     Set-PSReadLineOption -HistorySavePath $history -PredictionSource History
 }
 
-# Versions of the languages chosen for the project (data\app\projects\<project>\
+# Versions of the languages chosen for the project (data\projects\<project>\
 # versions.json, written by Atollo.exe): the editor's terminals start from
 # the editor server, shared by every project, so the folders of the
 # project's versions take the place of the kit's here (DECISIONS.md D-80).
@@ -26,7 +26,7 @@ $projects = Join-Path $env:CP_ROOT 'projects'
 $here = (Get-Location).ProviderPath
 if ($here.StartsWith($projects + '\', [StringComparison]::OrdinalIgnoreCase)) {
     $project = $here.Substring($projects.Length + 1).Split('\')[0]
-    $file = Join-Path $env:CP_DATA "app\projects\$project\versions.json"
+    $file = Join-Path $env:CP_DATA "projects\$project\versions.json"
     if (Test-Path -LiteralPath $file) {
         try {
             $swaps = @((Get-Content -LiteralPath $file -Raw | ConvertFrom-Json).swaps)

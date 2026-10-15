@@ -109,6 +109,8 @@ pub fn sweep(kit: &Kit) {
             let name = entry.file_name().map(|n| n.to_ascii_lowercase());
             match name.as_deref().and_then(|n| n.to_str()) {
                 Some("setup" | "frameworks") => children(&entry).for_each(|c| sweep_one(&c)),
+                // Files added by hand: kept 30 days by `setup/downloads.rs` (D-82).
+                Some("downloads") => {}
                 _ => sweep_one(&entry),
             }
         }
@@ -224,12 +226,18 @@ mod tests {
         let fresh = base.join(r"frameworks\fresh");
         fs::create_dir_all(&fresh).unwrap();
         fs::write(fresh.join(".lock"), "").unwrap();
+        // files added by hand: their own 30 days, never swept
+        let downloads = base.join("downloads");
+        fs::create_dir_all(&downloads).unwrap();
+        fs::write(downloads.join(".lock"), "").unwrap();
+        age(&downloads, 48);
 
         sweep(&host);
         assert!(live.path().join(".lock").is_file(), "live work kept");
         assert!(!dead.exists(), "old unlocked removed");
         assert!(!old_data.exists());
         assert!(fresh.is_dir(), "new kept");
+        assert!(downloads.is_dir(), "downloads kept");
         drop(live);
     }
 
