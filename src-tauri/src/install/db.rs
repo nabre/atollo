@@ -35,18 +35,45 @@ fn remove_debug_symbols(tree: &Path) -> Result<()> {
 
 const MARIADB_API: &str = "https://downloads.mariadb.org/rest-api/mariadb";
 
-/// The newest major release that is stable and has long-term support.
-fn mariadb_major(index: &Value) -> Result<String> {
-    index["major_releases"]
+/// The stable releases with long-term support (`12.3`, `11.8`, `11.4`…),
+/// newest first: the lines a project can follow (D-81).
+pub fn mariadb_lines(index: &Value) -> Vec<String> {
+    let mut out: Vec<String> = index["major_releases"]
         .as_array()
         .into_iter()
         .flatten()
         .filter(|m| m["release_status"] == "Stable")
         .filter(|m| m["release_support_type"] == "Long Term Support")
         .filter_map(|m| m["release_id"].as_str())
-        .max_by_key(|id| version_key(id))
+        .filter(|id| crate::versions::valid_line(id))
         .map(str::to_owned)
+        .collect();
+    out.sort_by_key(|id| std::cmp::Reverse(version_key(id)));
+    out
+}
+
+/// The newest major release that is stable and has long-term support.
+fn mariadb_major(index: &Value) -> Result<String> {
+    mariadb_lines(index)
+        .into_iter()
+        .next()
         .ok_or_else(|| anyhow!("MariaDB: no stable long-term release"))
+}
+
+fn mariadb_release(ctx: &Ctx, major: &str) -> Result<Release> {
+    let latest = ctx
+        .net
+        .json::<Value>(&format!("{MARIADB_API}/{major}/latest/"))?;
+    let (version, name, sha) = mariadb_zip(&latest)?;
+    Ok(Release::single(
+        version.clone(),
+        // The API lists http:// links: the same file over https.
+        format!("{MARIADB_API}/{version}/{name}"),
+        name,
+        Expect::Sha256(sha),
+        Kind::Zip,
+        Inner::Single,
+    ))
 }
 
 /// Version, file name and SHA-256 of the Windows x64 zip in the answer of
@@ -85,19 +112,21 @@ pub struct MariaDb;
 impl Installer for MariaDb {
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
         let major = mariadb_major(&ctx.net.json::<Value>(&format!("{MARIADB_API}/"))?)?;
-        let latest = ctx
-            .net
-            .json::<Value>(&format!("{MARIADB_API}/{major}/latest/"))?;
-        let (version, name, sha) = mariadb_zip(&latest)?;
-        Ok(Release::single(
-            version.clone(),
-            // The API lists http:// links: the same file over https.
-            format!("{MARIADB_API}/{version}/{name}"),
-            name,
-            Expect::Sha256(sha),
-            Kind::Zip,
-            Inner::Single,
+        mariadb_release(ctx, &major)
+    }
+
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        Ok(mariadb_lines(
+            &ctx.net.json::<Value>(&format!("{MARIADB_API}/"))?,
         ))
+    }
+
+    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
+        mariadb_release(ctx, line)
     }
 
     fn before_swap(&self, _ctx: &Ctx, _c: &Component, tree: &Path, _old: &Path) -> Result<()> {
@@ -107,18 +136,19 @@ impl Installer for MariaDb {
 
 /// The newest production release of a major version (`x.0.y`: minor
 /// releases are rapid releases), its Windows x64 zip and SHA-256.
-fn mongodb_zip(current: &Value) -> Result<(String, String, String)> {
+fn mongodb_zip(current: &Value, line: Option<&str>) -> Result<(String, String, String)> {
     let version = current["versions"]
         .as_array()
         .into_iter()
         .flatten()
         .filter(|v| v["production_release"] == true)
         .find(|v| {
-            v["version"]
-                .as_str()
-                .is_some_and(|s| s.split('.').nth(1) == Some("0"))
+            v["version"].as_str().is_some_and(|s| {
+                s.split('.').nth(1) == Some("0")
+                    && line.is_none_or(|l| crate::versions::line_of(s).as_deref() == Some(l))
+            })
         })
-        .ok_or_else(|| anyhow!("MongoDB: no production release"))?;
+        .ok_or_else(|| anyhow!("MongoDB {}: no production release", line.unwrap_or("")))?;
     let number = version["version"].as_str().unwrap_or_default().to_owned();
     let archive = version["downloads"]
         .as_array()
@@ -164,14 +194,63 @@ fn mongodb_tools_zip(release: &Value) -> Result<(String, String, String)> {
     Ok((number, url.to_owned(), sha.to_owned()))
 }
 
+/// The major versions in production (`9.0`, `8.0`, `7.0`), newest first:
+/// the lines a project can follow (D-81). Rapid releases (`8.3`) are not.
+pub fn mongodb_lines(current: &Value) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for v in current["versions"].as_array().into_iter().flatten() {
+        let Some(number) = v["version"].as_str() else {
+            continue;
+        };
+        if v["production_release"] != true || number.split('.').nth(1) != Some("0") {
+            continue;
+        }
+        if let Some(line) = crate::versions::line_of(number) {
+            if !out.contains(&line) {
+                out.push(line);
+            }
+        }
+    }
+    out.sort_by_key(|l| std::cmp::Reverse(version_key(l)));
+    out
+}
+
+const MONGODB_CURRENT: &str = "https://downloads.mongodb.org/current.json";
+
 pub struct MongoDb;
 
 impl Installer for MongoDb {
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        Ok(mongodb_lines(&ctx.net.json::<Value>(MONGODB_CURRENT)?))
+    }
+
+    /// The server of `line` only: mongosh and the tools are shared, at their
+    /// latest (they support every server in production).
+    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
+        let (version, url, sha) =
+            mongodb_zip(&ctx.net.json::<Value>(MONGODB_CURRENT)?, Some(line))?;
+        let file_name = url.rsplit('/').next().unwrap_or("mongodb.zip").to_owned();
+        Ok(Release {
+            version,
+            parts: vec![Part {
+                url,
+                file_name,
+                expect: Expect::Sha256(sha),
+                kind: Kind::Zip,
+                inner: Inner::Single,
+                dest: Dest::Own,
+                sign: None,
+            }],
+        })
+    }
+
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
-        let current = ctx
-            .net
-            .json::<Value>("https://downloads.mongodb.org/current.json")?;
-        let (version, url, sha) = mongodb_zip(&current)?;
+        let current = ctx.net.json::<Value>(MONGODB_CURRENT)?;
+        let (version, url, sha) = mongodb_zip(&current, None)?;
         let shell = ctx.net.github_latest("mongodb-js/mongosh")?;
         let asset = shell
             .asset(&pattern(r"^mongosh-[\d.]+-win32-x64\.zip$")?)
@@ -305,10 +384,28 @@ mod tests {
             b = "b".repeat(64)
         ))
         .unwrap();
-        let (v, url, sha) = mongodb_zip(&current).unwrap();
+        let (v, url, sha) = mongodb_zip(&current, None).unwrap();
         assert_eq!(v, "9.0.4");
         assert!(url.ends_with("mongodb-windows-x86_64-9.0.4.zip"));
         assert_eq!(sha, "b".repeat(64));
+        assert_eq!(mongodb_zip(&current, Some("9.0")).unwrap().0, "9.0.4");
+        assert!(
+            mongodb_zip(&current, Some("8.0")).is_err(),
+            "8.3 is a rapid release"
+        );
+        assert_eq!(mongodb_lines(&current), ["9.0"]);
+    }
+
+    #[test]
+    fn mariadb_lines_are_the_stable_lts() {
+        let index = serde_json::json!({"major_releases": [
+            {"release_id": "13.0", "release_status": "Stable", "release_support_type": "Short Term Support"},
+            {"release_id": "12.3", "release_status": "Stable", "release_support_type": "Long Term Support"},
+            {"release_id": "10.11", "release_status": "Stable", "release_support_type": "Long Term Support"},
+            {"release_id": "11.8", "release_status": "Stable", "release_support_type": "Long Term Support"},
+            {"release_id": "13.1", "release_status": "RC", "release_support_type": "Long Term Support"}
+        ]});
+        assert_eq!(mariadb_lines(&index), ["12.3", "11.8", "10.11"]);
     }
 
     #[test]

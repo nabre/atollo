@@ -1,14 +1,14 @@
 //! Saved versions of the languages and tools (DECISIONS.md D-80).
 //!
-//! The component's own folder (`data\apps\<platform>\node`) stays the kit's
-//! default and is what updates replace. Other versions are kept one per
-//! minor line (`major.minor`) in `data\apps\<platform>\versions\<id>\<line>`,
-//! with the full version in `.atollo-version`:
-//! - an update that changes the minor line moves the old folder there
-//!   instead of replacing it (a new patch of the same line still replaces);
+//! Every version has its folder inside the component's own, one per minor
+//! line (`major.minor`): `data\apps\<platform>\node\<line>`, with the full
+//! version in `.atollo-version`. The default is the folder of the installed
+//! version (`data\app\versions\<id>.txt`), the one updates replace:
+//! - an update that changes the minor line installs next to the old one,
+//!   which stays as a saved line (a new patch of the same line replaces);
 //! - a line can be downloaded there from the Tools page;
-//! - the preferred line of the kit is in `data\app\tool-versions.json`, the
-//!   one of a project in its `dev-settings.json` (`versions`);
+//! - the kit uses the newest line on disk; a project the one in its
+//!   `dev-settings.json` (`versions`), the newest when it was created;
 //! - the lines each source offers are kept in `data\app\version-lines.json`,
 //!   so the lists propose them also offline; choosing one that is not saved
 //!   downloads it.
@@ -63,14 +63,65 @@ fn find(id: &str) -> Option<&'static Component> {
     Catalog::get().find(id).filter(|c| c.versioned)
 }
 
-/// `data\apps\<platform>\versions\<id>`.
+/// `data\apps\<platform>\<folder>`: the folder of every version.
 fn store(kit: &Kit, c: &Component) -> PathBuf {
-    kit.apps().join("versions").join(&c.id)
+    c.folder_path(kit).unwrap_or_else(|| kit.apps().join(&c.id))
 }
 
-/// Where `line` of `c` is (or goes) when it is not the default.
+/// The folder of `version`: its line, or the version itself (safe
+/// characters only) when it has no `major.minor`.
+pub fn dir_name(version: &str) -> String {
+    line_of(version).unwrap_or_else(|| {
+        version
+            .trim()
+            .chars()
+            .map(|ch| {
+                if ch.is_ascii_alphanumeric() || ch == '.' || ch == '-' {
+                    ch
+                } else {
+                    '_'
+                }
+            })
+            .collect()
+    })
+}
+
+/// Where `line` of `c` is (or goes).
 pub fn saved_dir(kit: &Kit, c: &Component, line: &str) -> PathBuf {
     store(kit, c).join(line)
+}
+
+/// Where `version` of `c` is installed as the default.
+pub fn install_dir(kit: &Kit, c: &Component, version: &str) -> PathBuf {
+    saved_dir(kit, c, &dir_name(version))
+}
+
+/// The default folder of `c`: that of the installed version; the
+/// component's folder itself while it has the layout of an older kit
+/// (`migrate` not done yet) or nothing is installed.
+pub fn default_dir(kit: &Kit, c: &Component) -> PathBuf {
+    let store = store(kit, c);
+    if let Some(version) = c.installed_version(kit) {
+        let dir = store.join(dir_name(&version));
+        if has_key(c, &dir) {
+            return dir;
+        }
+    }
+    store
+}
+
+/// `rel` of the catalog (`node/node.exe`) inside the default folder of the
+/// versioned component it starts with; `None` for the others.
+pub fn resolve(kit: &Kit, rel: &str) -> Option<PathBuf> {
+    let rel = rel.replace('/', "\\");
+    let (head, rest) = rel.split_once('\\').unwrap_or((rel.as_str(), ""));
+    let c = versioned().find(|c| {
+        c.folder
+            .as_deref()
+            .is_some_and(|f| f.eq_ignore_ascii_case(head))
+    })?;
+    let dir = default_dir(kit, c);
+    Some(if rest.is_empty() { dir } else { dir.join(rest) })
 }
 
 /// The key of `c` is in `dir`, a copy of its own folder.
@@ -103,15 +154,17 @@ pub struct Line {
     pub version: Option<String>,
 }
 
-/// The saved lines of `c`, newest first.
+/// The saved lines of `c` (not the default), newest first.
 pub fn saved(kit: &Kit, c: &Component) -> Vec<Line> {
+    let default = default_line(kit, c);
     let mut out: Vec<Line> = fs::read_dir(store(kit, c))
         .into_iter()
         .flatten()
         .flatten()
         .filter_map(|e| {
             let line = e.file_name().to_string_lossy().into_owned();
-            (valid_line(&line) && has_key(c, &e.path())).then(|| Line {
+            let other = valid_line(&line) && default.as_deref() != Some(line.as_str());
+            (other && has_key(c, &e.path())).then(|| Line {
                 version: fs::read_to_string(e.path().join(VERSION_FILE))
                     .ok()
                     .map(|v| v.trim().to_owned())
@@ -132,7 +185,8 @@ pub fn write_version(dir: &Path, version: &str) -> Result<()> {
 /// The folder used for `line` of `c`: the saved one, or the default folder
 /// when `line` is the default's, is not chosen or is not saved (any more).
 pub fn dir_for(kit: &Kit, c: &Component, line: Option<&str>) -> Option<PathBuf> {
-    let main = c.folder_path(kit)?;
+    c.folder.as_ref()?;
+    let main = default_dir(kit, c);
     Some(match line {
         Some(l) if Some(l) != default_line(kit, c).as_deref() => {
             let dir = saved_dir(kit, c, l);
@@ -149,17 +203,44 @@ pub fn dir_for(kit: &Kit, c: &Component, line: Option<&str>) -> Option<PathBuf> 
 /// Lines chosen per component id.
 pub type Choice = BTreeMap<String, String>;
 
-fn prefs_file(kit: &Kit) -> PathBuf {
-    kit.app_dir().join("tool-versions.json")
+/// The newest line of `c` on disk (the default or a saved one).
+pub fn newest_line(kit: &Kit, c: &Component) -> Option<String> {
+    default_line(kit, c)
+        .into_iter()
+        .chain(saved(kit, c).into_iter().map(|l| l.line))
+        .max_by_key(|l| crate::install::version_key(l))
 }
 
-/// The lines preferred for the whole kit.
+/// The lines the whole kit uses: for each versioned component, the newest
+/// on disk where it is not the default folder (a newer line downloaded
+/// with "+"). No choice of the user (15/10/2026): the kit always uses the
+/// newest, each project its own.
 pub fn kit_choice(kit: &Kit) -> Choice {
-    fs::read_to_string(prefs_file(kit))
-        .ok()
-        .and_then(|t| serde_json::from_str::<Choice>(t.trim_start_matches('\u{feff}')).ok())
-        .map(clean)
-        .unwrap_or_default()
+    versioned()
+        .filter_map(|c| {
+            let newest = newest_line(kit, c)?;
+            (default_line(kit, c).as_deref() != Some(newest.as_str()))
+                .then(|| (c.id.clone(), newest))
+        })
+        .collect()
+}
+
+/// A new project keeps the newest version on disk of every language: newer
+/// versions installed later do not change it (its code was written for
+/// these). Languages installed later follow the kit until chosen.
+pub fn pin_newest(kit: &Kit, project: &str) {
+    let lines: Choice = versioned()
+        .filter_map(|c| Some((c.id.clone(), newest_line(kit, c)?)))
+        .collect();
+    if lines.is_empty() {
+        return;
+    }
+    crate::project_settings::update(kit, project, |s| {
+        for (id, line) in &lines {
+            s.versions.entry(id.clone()).or_insert_with(|| line.clone());
+        }
+    });
+    write_project_file(kit, project);
 }
 
 /// Only versioned components and valid lines.
@@ -183,18 +264,6 @@ pub fn check(id: &str, line: Option<&str>) -> Result<()> {
     Ok(())
 }
 
-pub fn set_kit_choice(kit: &Kit, id: &str, line: Option<&str>) -> Result<()> {
-    check(id, line)?;
-    let mut choice = kit_choice(kit);
-    match line {
-        Some(l) => choice.insert(id.to_owned(), l.to_owned()),
-        None => choice.remove(id),
-    };
-    let text = serde_json::to_string_pretty(&choice)?;
-    write_atomic(&prefs_file(kit), text.as_bytes())?;
-    Ok(())
-}
-
 /// A rewrite of the environment: values in `from` point into `to`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Swap {
@@ -208,6 +277,11 @@ fn swaps(kit: &Kit, base: &Choice, choice: &Choice) -> Vec<Swap> {
         .iter()
         .filter_map(|(id, line)| {
             let c = find(id)?;
+            // A line chosen and not on disk (removed, or still downloading):
+            // the base stays, the kit's default for a project.
+            if !is_present(kit, c, line) {
+                return None;
+            }
             let from = dir_for(kit, c, base.get(id).map(String::as_str))?;
             let to = dir_for(kit, c, Some(line))?;
             (from != to).then(|| Swap {
@@ -250,10 +324,15 @@ fn apply(env: &mut KitEnv, swaps: &[Swap]) {
     for (k, v) in changed {
         env.set(&k, v);
     }
+    // Apache's PHP (`/` paths, not rewritten above) is the PHP in use: its
+    // module and php.ini's `${CP_PHP}\ext` must be the same version.
+    if let Some(php) = env.get("CP_PHP").map(|p| p.replace('\\', "/")) {
+        env.set("CP_PHP_FWD", php);
+    }
 }
 
-/// The kit's preferred lines, applied to an environment built on the
-/// default folders.
+/// The kit's lines (the newest on disk), applied to an environment built
+/// on the default folders.
 pub fn apply_kit_choice(kit: &Kit, env: &mut KitEnv) {
     apply(env, &swaps(kit, &Choice::new(), &kit_choice(kit)));
 }
@@ -322,11 +401,136 @@ pub fn write_project_files(kit: &Kit) {
     }
 }
 
-/// Removes a saved line (never the default folder).
+/// Removes a line. The default goes only while another one stays, which
+/// becomes the default (the newest); the last one goes with the component
+/// (the Tools page, which follows what needs it).
 pub fn remove(kit: &Kit, id: &str, line: &str) -> Result<()> {
     check(id, Some(line))?;
     let Some(c) = find(id) else { return Ok(()) };
-    crate::archive::remove_dir(&saved_dir(kit, c, line))
+    // Locked: the projects that use it keep it.
+    if let Some(users) = project_users(kit).get(&(id.to_owned(), line.to_owned())) {
+        bail!("{id} {line}: used by {}", users.join(", "));
+    }
+    if default_line(kit, c).as_deref() != Some(line) {
+        return crate::archive::remove_dir(&saved_dir(kit, c, line));
+    }
+    let Some(next) = saved(kit, c).into_iter().next() else {
+        bail!("{id} {line}: the only version, it goes with the component");
+    };
+    let dir = default_dir(kit, c);
+    // Never the component's folder (an older kit's layout, not moved yet):
+    // it holds every version.
+    if dir != saved_dir(kit, c, line) {
+        bail!("{id} {line}: not in its own folder yet");
+    }
+    crate::archive::remove_dir(&dir)?;
+    promote(kit, c, &next)
+}
+
+/// `line` becomes the default: the installed version is its own.
+fn promote(kit: &Kit, c: &Component, line: &Line) -> Result<()> {
+    let version = line.version.clone().unwrap_or_else(|| line.line.clone());
+    c.save_version(kit, &version)?;
+    crate::log::info(&format!("{}: {version} is the default", c.id));
+    Ok(())
+}
+
+/// The default's folder is gone (removed by hand) and other lines are
+/// there: the newest becomes the default.
+fn repair_default(kit: &Kit, c: &Component) -> Result<()> {
+    if c.installed_version(kit).is_none() || has_key(c, &default_dir(kit, c)) {
+        return Ok(());
+    }
+    match saved(kit, c).into_iter().next() {
+        Some(next) => promote(kit, c, &next),
+        None => Ok(()),
+    }
+}
+
+/// Brings the folders of an older kit to one folder per version, at start
+/// before anything uses them: the default `node\` into `node\<line>`, the
+/// saved `versions\<id>\<line>` into `node\<line>`. The saved lines of
+/// components no longer versioned go. A folder in use stays as it is (the
+/// kit works with it) and is moved at the next start.
+pub fn migrate(kit: &Kit) {
+    for c in versioned() {
+        if let Err(e) = migrate_default(kit, c) {
+            crate::log::warn(&format!("{}: default folder not moved ({e:#})", c.id));
+        }
+    }
+    let old = kit.apps().join("versions");
+    for entry in fs::read_dir(&old).into_iter().flatten().flatten() {
+        let id = entry.file_name().to_string_lossy().into_owned();
+        let result = match find(&id) {
+            Some(c) => migrate_saved(kit, c, &entry.path()),
+            None => crate::archive::remove_dir(&entry.path()),
+        };
+        if let Err(e) = result {
+            crate::log::warn(&format!("{id}: saved versions not moved ({e:#})"));
+        }
+    }
+    let _ = fs::remove_dir(&old);
+    for c in versioned() {
+        if let Err(e) = repair_default(kit, c) {
+            crate::log::warn(&format!("{}: no default version ({e:#})", c.id));
+        }
+    }
+    // The databases' data, one folder per version too.
+    crate::services::migrate_data(kit);
+    if let Err(e) = crate::install::adopt_composer(kit) {
+        crate::log::warn(&format!("Composer of the older kit: {e:#}"));
+    }
+    if let Err(e) = crate::apache::fix_kit_conf(kit) {
+        crate::log::warn(&format!("Apache kit.conf: {e:#}"));
+    }
+}
+
+/// `node\node.exe` → `node\<line>\node.exe`, through `node.atollo-move`
+/// (left by an interrupted start: taken back first).
+fn migrate_default(kit: &Kit, c: &Component) -> Result<()> {
+    if c.folder.is_none() {
+        return Ok(());
+    }
+    let store = store(kit, c);
+    let mut moving = store.clone().into_os_string();
+    moving.push(".atollo-move");
+    let moving = PathBuf::from(moving);
+    if moving.exists() && !store.exists() {
+        fs::rename(&moving, &store).context("taking back the folder being moved")?;
+    }
+    if !has_key(c, &store) {
+        return Ok(());
+    }
+    let Some(version) = c.installed_version(kit) else {
+        return Ok(()); // no version to name its folder: it stays
+    };
+    let to = install_dir(kit, c, &version);
+    fs::rename(&store, &moving).with_context(|| store.display().to_string())?;
+    let moved = fs::create_dir_all(&store).and_then(|()| fs::rename(&moving, &to));
+    if let Err(e) = moved {
+        let _ = fs::remove_dir(&store);
+        let _ = fs::rename(&moving, &store);
+        return Err(e.into());
+    }
+    write_version(&to, &version)?;
+    crate::log::info(&format!("{}: {version} moved to {}", c.id, to.display()));
+    Ok(())
+}
+
+/// `versions\<id>\<line>` → `<folder>\<line>`; a line already there wins.
+fn migrate_saved(kit: &Kit, c: &Component, old: &Path) -> Result<()> {
+    for entry in fs::read_dir(old)?.flatten() {
+        let line = entry.file_name().to_string_lossy().into_owned();
+        let to = saved_dir(kit, c, &line);
+        if !valid_line(&line) || has_key(c, &to) {
+            crate::archive::remove_dir(&entry.path())?;
+            continue;
+        }
+        fs::create_dir_all(store(kit, c))?;
+        fs::rename(entry.path(), &to).with_context(|| to.display().to_string())?;
+    }
+    fs::remove_dir(old)?;
+    Ok(())
 }
 
 /// The lines a source offered for a component, and when (Unix seconds).
@@ -425,7 +629,7 @@ pub struct Tool {
     /// The default folder.
     pub default: Option<Line>,
     pub saved: Vec<Line>,
-    /// The kit's preferred line; `None` = the default folder.
+    /// The line the kit uses when newer than the default folder's.
     pub preferred: Option<String>,
     /// Lines can be downloaded (the installer knows the older ones).
     pub downloadable: bool,
@@ -507,10 +711,17 @@ mod tests {
         let kit = Kit::at(tmp.0.clone(), Arch::X64);
         kit.prepare().unwrap();
         let node = Catalog::get().find("node").unwrap();
-        let main = node.folder_path(&kit).unwrap();
+        let main = install_dir(&kit, node, "v22.11.0");
+        assert!(main.ends_with(r"node\22.11"));
         install_fake(&kit, node, &main);
         node.save_version(&kit, "v22.11.0").unwrap();
         assert_eq!(default_line(&kit, node).as_deref(), Some("22.11"));
+        assert_eq!(default_dir(&kit, node), main);
+        assert_eq!(
+            crate::catalog::kit_path(&kit, "node/node.exe"),
+            main.join("node.exe")
+        );
+        assert!(node.is_installed(&kit));
         let old = saved_dir(&kit, node, "20.18");
         install_fake(&kit, node, &old);
         write_version(&old, "v20.18.1").unwrap();
@@ -536,11 +747,32 @@ mod tests {
         env.set("PATH", path);
         let base = env.clone();
 
-        // The kit prefers 20.18.
-        set_kit_choice(&kit, "node", Some("20.18")).unwrap();
-        apply_kit_choice(&kit, &mut env);
+        // Apache's PHP follows the PHP in use (its module and php.ini's
+        // ext folder must be the same version).
+        let mut php_env = KitEnv::default();
+        php_env.set("CP_PHP", main.display().to_string());
+        apply(
+            &mut php_env,
+            &[Swap {
+                from: main.display().to_string(),
+                to: old.display().to_string(),
+            }],
+        );
         assert_eq!(
-            env.get("PATH").unwrap(),
+            php_env.get("CP_PHP_FWD"),
+            Some(old.display().to_string().replace('\\', "/").as_str())
+        );
+
+        // The kit uses the newest line on disk: the default, no rewrite.
+        assert!(kit_choice(&kit).is_empty());
+        apply_kit_choice(&kit, &mut env);
+        assert_eq!(env.get("PATH"), base.get("PATH"));
+
+        // A project on 20.18.
+        set_project_choice(&kit, "app", "node", Some("20.18")).unwrap();
+        let p = project_env(&kit, "app", env.clone());
+        assert_eq!(
+            p.get("PATH").unwrap(),
             format!(
                 "{};{}\\x;{}x;C:\\W",
                 old.display(),
@@ -549,30 +781,51 @@ mod tests {
             ),
             "only entries under the folder"
         );
-        // A project goes back to the default.
-        crate::project_settings::update(&kit, "app", |s| {
-            s.versions.insert("node".into(), "22.11".into());
-        });
-        let p = project_env(&kit, "app", env.clone());
-        assert_eq!(p.get("PATH"), base.get("PATH"));
-        write_project_file(&kit, "app");
         let file = kit.app_dir().join(r"projects\app\versions.json");
         assert!(fs::read_to_string(&file).unwrap().contains("swaps"));
         let txt = kit.app_dir().join(r"projects\app\versions.txt");
         assert_eq!(
             fs::read_to_string(&txt).unwrap(),
-            format!("{}\t{}\n", old.display(), main.display())
+            format!("{}\t{}\n", main.display(), old.display())
         );
-        // Same as the kit: no rewrite, no file.
-        set_project_choice(&kit, "app", "node", Some("20.18")).unwrap();
+        // Back to the kit's: no rewrite, no file.
+        set_project_choice(&kit, "app", "node", None).unwrap();
         assert!(!file.exists() && !txt.exists());
 
-        assert!(set_kit_choice(&kit, "claude", Some("1.0")).is_err());
-        assert!(set_kit_choice(&kit, "node", Some(r"..\x")).is_err());
-        set_kit_choice(&kit, "node", None).unwrap();
+        // A newer line downloaded with "+": the kit uses it, and a new
+        // project keeps it even when newer ones come.
+        let newer = saved_dir(&kit, node, "24.1");
+        install_fake(&kit, node, &newer);
+        write_version(&newer, "v24.1.0").unwrap();
+        assert_eq!(
+            kit_choice(&kit).get("node").map(String::as_str),
+            Some("24.1")
+        );
+        pin_newest(&kit, "fresh");
+        assert_eq!(
+            project_choice(&kit, "fresh")
+                .get("node")
+                .map(String::as_str),
+            Some("24.1")
+        );
+        // Locked by the project that uses it; free once it chooses another.
+        assert!(remove(&kit, "node", "24.1").is_err());
+        set_project_choice(&kit, "fresh", "node", None).unwrap();
+        remove(&kit, "node", "24.1").unwrap();
         assert!(kit_choice(&kit).is_empty());
-        remove(&kit, "node", "20.18").unwrap();
-        assert!(saved(&kit, node).is_empty());
+
+        assert!(check("claude", Some("1.0")).is_err());
+        assert!(check("node", Some(r"..\x")).is_err());
+        // The default goes while another stays: the newest left takes over.
+        remove(&kit, "node", "22.11").unwrap();
+        assert_eq!(default_line(&kit, node).as_deref(), Some("20.18"));
+        assert_eq!(node.installed_version(&kit).as_deref(), Some("v20.18.1"));
+        assert_eq!(default_dir(&kit, node), old);
+        assert!(saved(&kit, node).is_empty() && !main.exists());
+        assert!(
+            remove(&kit, "node", "20.18").is_err(),
+            "the last goes with the component"
+        );
     }
 
     #[test]
@@ -585,7 +838,7 @@ mod tests {
         // Nothing installed: nothing to download.
         assert!(!to_download(&kit, "node", "20.18").unwrap());
 
-        let main = node.folder_path(&kit).unwrap();
+        let main = install_dir(&kit, node, "v22.11.0");
         install_fake(&kit, node, &main);
         node.save_version(&kit, "v22.11.0").unwrap();
         let old = saved_dir(&kit, node, "20.18");
@@ -610,5 +863,77 @@ mod tests {
         assert_eq!(tool.available, ["24.1", "20.18"]);
         assert!(tool.checked.is_some());
         assert_eq!(tool.projects.get("20.18").map(Vec::len), Some(1));
+    }
+
+    #[test]
+    fn folders_of_an_older_kit_move() {
+        let tmp = TempDir::new("versions-migrate");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let node = Catalog::get().find("node").unwrap();
+        // Older kit: node\node.exe the default, versions\node\20.18 saved,
+        // versions\typst\0.13 of a component no longer versioned.
+        let store = node.folder_path(&kit).unwrap();
+        install_fake(&kit, node, &store);
+        node.save_version(&kit, "v22.11.0").unwrap();
+        install_fake(&kit, node, &kit.apps().join(r"versions\node\20.18"));
+        fs::create_dir_all(kit.apps().join(r"versions\typst\0.13")).unwrap();
+        assert_eq!(default_dir(&kit, node), store, "works before moving");
+        assert!(node.is_installed(&kit));
+        let conf = kit.data().join(r"apache\kit.conf");
+        fs::create_dir_all(conf.parent().unwrap()).unwrap();
+        fs::write(&conf, "LoadFile \"${CP_APPS_FWD}/php/php8ts.dll\"\r\n").unwrap();
+
+        migrate(&kit);
+        let main = store.join("22.11");
+        assert_eq!(default_dir(&kit, node), main);
+        assert!(main.join("node.exe").is_file() && !store.join("node.exe").exists());
+        assert_eq!(
+            fs::read_to_string(main.join(VERSION_FILE)).unwrap(),
+            "v22.11.0"
+        );
+        assert_eq!(saved(&kit, node).len(), 1);
+        assert!(has_key(node, &store.join("20.18")));
+        assert!(!kit.apps().join("versions").exists());
+        assert_eq!(
+            fs::read_to_string(&conf).unwrap(),
+            "LoadFile \"${CP_PHP_FWD}/php8ts.dll\"\r\n"
+        );
+        // Nothing left to do the second time.
+        migrate(&kit);
+        assert_eq!(default_dir(&kit, node), main);
+        // The default removed by hand: the newest line left takes over.
+        fs::remove_dir_all(&main).unwrap();
+        migrate(&kit);
+        assert_eq!(default_dir(&kit, node), store.join("20.18"));
+        assert!(node.is_installed(&kit));
+
+        // The older kit's Composer, one in tools\: into each folder of PHP.
+        let php = Catalog::get().find("php").unwrap();
+        let version = "8.4.13 (Composer 2.8.12)";
+        let php_dir = install_dir(&kit, php, version);
+        install_fake(&kit, php, &php_dir);
+        php.save_version(&kit, version).unwrap();
+        let tools = kit.apps().join("tools");
+        fs::create_dir_all(&tools).unwrap();
+        fs::write(tools.join("composer.phar"), b"phar").unwrap();
+        assert!(!php.is_installed(&kit), "no Composer in its folder");
+        migrate(&kit);
+        assert!(php_dir.join("composer.phar").is_file() && php_dir.join("composer.cmd").is_file());
+        assert!(!tools.join("composer.phar").exists());
+        assert!(php.is_installed(&kit));
+
+        // Interrupted after the first rename: taken back, then moved.
+        let python = Catalog::get().find("python").unwrap();
+        let py = python.folder_path(&kit).unwrap();
+        let mut moving = py.clone().into_os_string();
+        moving.push(".atollo-move");
+        install_fake(&kit, python, &PathBuf::from(&moving));
+        python.save_version(&kit, "3.13.10").unwrap();
+        migrate(&kit);
+        assert!(has_key(python, &py.join("3.13")));
+        assert!(!PathBuf::from(moving).exists());
+
+        assert_eq!(dir_name("20251104 build"), "20251104_build");
     }
 }

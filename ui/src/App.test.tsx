@@ -17,7 +17,15 @@ const info: AppInfo = {
   otherKits: [],
 };
 
-const idle: SetupSnapshot = { running: false, cancelling: false, automatic: false, total: 0, steps: [], error: null };
+const idle: SetupSnapshot = {
+  running: false,
+  cancelling: false,
+  automatic: false,
+  total: 0,
+  steps: [],
+  queue: [],
+  error: null,
+};
 
 /** Default answer of every command; tests override single commands. */
 function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Promise<unknown> {
@@ -410,6 +418,7 @@ describe("App", () => {
           automatic: true,
           total: 2,
           error: null,
+          queue: [],
           steps: [
             {
               id: "git",

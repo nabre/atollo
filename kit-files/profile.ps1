@@ -62,23 +62,11 @@ function global:prompt {
 }
 
 if (-not $env:ATOLLO_QUIET) {
-    $tools = [ordered]@{
-        'claude'  = 'claude\claude.exe'
-        'codex'   = 'codex\bin\codex.exe'
-        'agy'     = 'antigravity\agy.exe'
-        'git'     = 'git\cmd\git.exe'
-        'node'    = 'node\node.exe'
-        'python'  = 'python\python.exe'
-        'uv'      = 'tools\uv.exe'
-        'gh'      = 'tools\gh.exe'
-        'php'     = 'php\php.exe'
-        'cargo'   = 'rust\cargo\bin\cargo.exe'
-        'go'      = 'go\bin\go.exe'
-        'java'    = 'java\bin\java.exe'
-        'dotnet'  = 'dotnet\dotnet.exe'
-    }
-    $found = foreach ($name in $tools.Keys) {
-        if (Test-Path -LiteralPath (Join-Path $env:CP_APPS $tools[$name])) { $name }
+    # On the kit's PATH: the languages are in the folder of the version in
+    # use (data\apps\<platform>\node\<line>), not at a fixed path.
+    $tools = 'claude', 'codex', 'agy', 'git', 'node', 'python', 'uv', 'gh', 'php', 'cargo', 'go', 'java', 'dotnet'
+    $found = foreach ($name in $tools) {
+        if (Get-Command -Name $name -CommandType Application -ErrorAction Ignore) { $name }
     }
     Write-Host "Atollo" -ForegroundColor Cyan -NoNewline
     Write-Host ("  " + ($found -join '  ')) -ForegroundColor DarkGray

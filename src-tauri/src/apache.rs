@@ -23,6 +23,21 @@ fn fwd(p: &Path) -> String {
     p.display().to_string().replace('\\', "/")
 }
 
+/// PHP in `kit.conf` of an older kit, `${CP_APPS_FWD}/php/`: its folder now
+/// holds one folder per version (versions.rs), the default is
+/// `${CP_PHP_FWD}`. The only change the kit makes to that file.
+pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
+    let conf = kit.data().join(r"apache\kit.conf");
+    let Ok(text) = fs::read_to_string(&conf) else {
+        return Ok(());
+    };
+    let fixed = text.replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/");
+    if fixed != text {
+        write_atomic(&conf, fixed.as_bytes()).with_context(|| conf.display().to_string())?;
+    }
+    Ok(())
+}
+
 /// The project's configuration: the kit's httpd.conf (modules, MIME types)
 /// without its Atollo tail, then the project's site.
 pub fn project_conf(base: &str, root: &Path, dir: &Path, port: u16, lan: bool) -> Result<String> {
@@ -56,9 +71,9 @@ pub fn project_conf(base: &str, root: &Path, dir: &Path, port: u16, lan: bool) -
         "    Require all granted".to_owned(),
         "</Directory>".to_owned(),
         "DirectoryIndex index.php index.html".to_owned(),
-        "<IfFile \"${CP_APPS_FWD}/php/php8apache2_4.dll\">".to_owned(),
-        "    LoadFile \"${CP_APPS_FWD}/php/php8ts.dll\"".to_owned(),
-        "    LoadModule php_module \"${CP_APPS_FWD}/php/php8apache2_4.dll\"".to_owned(),
+        "<IfFile \"${CP_PHP_FWD}/php8apache2_4.dll\">".to_owned(),
+        "    LoadFile \"${CP_PHP_FWD}/php8ts.dll\"".to_owned(),
+        "    LoadModule php_module \"${CP_PHP_FWD}/php8apache2_4.dll\"".to_owned(),
         "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"".to_owned(),
         "    <FilesMatch \"\\.php$\">".to_owned(),
         "        SetHandler application/x-httpd-php".to_owned(),

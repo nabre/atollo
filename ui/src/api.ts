@@ -327,6 +327,8 @@ export interface SetupSnapshot {
   automatic: boolean;
   total: number;
   steps: SetupStep[];
+  /** The steps not started yet, in order (empty when the run ends). */
+  queue: { id: string; name: string }[];
   error: string | null;
 }
 
@@ -352,9 +354,20 @@ export interface ComponentInfo {
   /** No ARM64 build and this kit is ARM64: why it is not available. */
   noArm64: boolean;
   needs: string[];
+  /** One folder per minor version, side by side; the others are always at
+   * their latest version. */
+  versioned: boolean;
 }
 
-const IDLE: SetupSnapshot = { running: false, cancelling: false, automatic: false, total: 0, steps: [], error: null };
+const IDLE: SetupSnapshot = {
+  running: false,
+  cancelling: false,
+  automatic: false,
+  total: 0,
+  steps: [],
+  queue: [],
+  error: null,
+};
 
 export function setupState(): Promise<SetupSnapshot> {
   return browserPreview ? Promise.resolve(IDLE) : invoke<SetupSnapshot>("setup_state");
@@ -399,6 +412,7 @@ function sampleComponent(
     x64Only: false,
     noArm64: false,
     needs: [],
+    versioned: ["python", "node", "php", "go", "java"].includes(id),
     ...extra,
   };
 }
@@ -428,6 +442,8 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
   sampleComponent("python", "Python", "languages", "con uv", 120),
   sampleComponent("php", "PHP", "languages", "linguaggio per il web", 60, { ...ON, version: "8.4.12" }),
   sampleComponent("apache", "Apache", "languages", "server web per PHP", 30, { needs: ["php"] }),
+  sampleComponent("uv", "uv", "languages", "ambienti e pacchetti Python", 40, { ...ON, version: "0.9.5" }),
+  sampleComponent("typst", "Typst", "languages", "documenti e PDF da testo", 50),
   sampleComponent("mariadb", "MariaDB", "databases", "compatibile con MySQL", 210, { ...ON, version: "11.8.3" }),
   sampleComponent("mongodb", "MongoDB", "databases", "database a documenti", 650, { x64Only: true }),
   sampleComponent("terminal", "Windows Terminal", "os", "il terminale del kit", 25, { ...ON, version: "1.23" }),
@@ -505,7 +521,7 @@ const SAMPLE_VERSIONS: VersionedTool[] = [
     name: "PHP",
     installed: true,
     default: { line: "8.4", version: "8.4.12 (Composer 2.8.12)" },
-    saved: [],
+    saved: [{ line: "8.3", version: "8.3.26 (Composer 2.8.12)" }],
     preferred: null,
     downloadable: true,
     available: [],
@@ -547,12 +563,6 @@ export function versionsRemove(id: string, line: string): Promise<VersionedTool[
   return browserPreview ? Promise.resolve(SAMPLE_VERSIONS) : invoke<VersionedTool[]>("versions_remove", { id, line });
 }
 
-/** The line the kit uses; null = the default folder. One not on disk is
- * downloaded (progress as `setup` events). */
-export function versionsPrefer(id: string, line: string | null): Promise<VersionedTool[]> {
-  return browserPreview ? Promise.resolve(SAMPLE_VERSIONS) : invoke<VersionedTool[]>("versions_prefer", { id, line });
-}
-
 export function projectVersions(project: string): Promise<ProjectVersions> {
   return browserPreview
     ? Promise.resolve({ tools: SAMPLE_VERSIONS, chosen: { node: "20.19" } })
@@ -561,6 +571,157 @@ export function projectVersions(project: string): Promise<ProjectVersions> {
 
 /** The line of `id` for the project; null = the kit's. One not on disk is
  * downloaded (progress as `setup` events). */
+/** A relation of the matrix (relations.rs, D-81): `from` needs or uses
+ * `to`, at the versions `range`; parts are `component/part`. */
+export interface RelationLink {
+  from: string;
+  fromName: string;
+  to: string;
+  toName: string;
+  kind: "needs" | "uses" | "runs-on" | "loads";
+  optional: boolean;
+  range: string | null;
+  note: string | null;
+  status: "inactive" | "ok" | "missing" | "optional" | "incompatible";
+  /** The version of `to` the kit uses. */
+  uses: string | null;
+  /** Lines of `to` on disk outside `range`. */
+  outside: string[];
+}
+
+/** What the PC must provide for some components. */
+export interface RelationRuntime {
+  id: string;
+  name: string;
+  note: string | null;
+  neededBy: string[];
+  present: boolean;
+  detail: string | null;
+}
+
+/** A version a project declares, and what the kit can do for it. */
+export interface RelationNeed {
+  component: string;
+  name: string;
+  /** `package.json engines.node`. */
+  source: string;
+  declared: string;
+  status: "ok" | "choose" | "download" | "unavailable" | "notInstalled" | "unknown";
+  uses: string | null;
+  /** For choose and download: the line that fits. */
+  line: string | null;
+  /** A database server (one for every project): choose sets the version
+   * the server runs. */
+  server: boolean;
+}
+
+export interface RelationsMatrix {
+  fingerprint: string;
+  generated: number;
+  platform: string;
+  links: RelationLink[];
+  runtimes: RelationRuntime[];
+  projects: { project: string; needs: RelationNeed[] }[];
+}
+
+const SAMPLE_RELATIONS: RelationsMatrix = {
+  fingerprint: "sample",
+  generated: 1760500000,
+  platform: "win32-x64",
+  links: [
+    {
+      from: "php/composer",
+      fromName: "Composer",
+      to: "php",
+      toName: "PHP",
+      kind: "runs-on",
+      optional: false,
+      range: ">=7.2.5",
+      note: "Composer 2.3 e successivi; per PHP più vecchi il kit sceglie il 2.2 LTS",
+      status: "ok",
+      uses: "8.4.12 (Composer 2.8.12)",
+      outside: [],
+    },
+    {
+      from: "pnpm",
+      fromName: "pnpm, yarn",
+      to: "node",
+      toName: "Node.js",
+      kind: "runs-on",
+      optional: false,
+      range: ">=18.12",
+      note: "pnpm e yarn usano il Node.js del kit",
+      status: "inactive",
+      uses: "v24.11.0",
+      outside: [],
+    },
+    {
+      from: "claude",
+      fromName: "Claude Code",
+      to: "git",
+      toName: "Git",
+      kind: "uses",
+      optional: true,
+      range: null,
+      note: "Git Bash per lo strumento Bash; senza, Claude usa PowerShell",
+      status: "ok",
+      uses: "2.56.0",
+      outside: [],
+    },
+  ],
+  runtimes: [
+    {
+      id: "vcruntime",
+      name: "Visual C++ 2015-2026 x64",
+      note: "DLL copiate dal kit accanto ai programmi",
+      neededBy: ["PHP"],
+      present: true,
+      detail: null,
+    },
+    {
+      id: "webview2",
+      name: "WebView2",
+      note: "la finestra di Atollo",
+      neededBy: ["Atollo"],
+      present: true,
+      detail: "141.0.3537.71",
+    },
+  ],
+  projects: [
+    {
+      project: "shop",
+      needs: [
+        {
+          component: "node",
+          name: "Node.js",
+          source: "package.json engines.node",
+          declared: ">=22",
+          status: "choose",
+          uses: "20.19",
+          line: "22.21",
+          server: false,
+        },
+        {
+          component: "php",
+          name: "PHP",
+          source: "composer.json require.php",
+          declared: "^8.2",
+          status: "ok",
+          uses: "8.4",
+          line: null,
+          server: false,
+        },
+      ],
+    },
+  ],
+};
+
+/** The relations matrix: the saved one while nothing it is made from
+ * changed; `force` builds it again. */
+export function relationsMatrix(force = false): Promise<RelationsMatrix> {
+  return browserPreview ? Promise.resolve(SAMPLE_RELATIONS) : invoke<RelationsMatrix>("relations_matrix", { force });
+}
+
 export function projectVersionsSet(project: string, id: string, line: string | null): Promise<ProjectVersions> {
   return browserPreview
     ? Promise.resolve({ tools: SAMPLE_VERSIONS, chosen: line ? { [id]: line } : {} })
@@ -763,6 +924,9 @@ export interface ServiceInfo {
   user: string;
   password: string | null;
   message: string | null;
+  /** The version it runs, and those installed, newest first (D-81). */
+  line: string | null;
+  lines: string[];
 }
 
 const SAMPLE_SERVICES: ServiceInfo[] = [
@@ -779,6 +943,8 @@ const SAMPLE_SERVICES: ServiceInfo[] = [
     user: "root",
     password: "3f9c2a71d8e04b6a9c51e2d7f0a8b346",
     message: null,
+    line: "12.3",
+    lines: ["12.3", "11.4"],
   },
   {
     id: "mongodb",
@@ -793,6 +959,8 @@ const SAMPLE_SERVICES: ServiceInfo[] = [
     user: "admin",
     password: null,
     message: null,
+    line: null,
+    lines: [],
   },
 ];
 
@@ -814,6 +982,12 @@ export function serviceSet(id: ServiceInfo["id"], port: number | null, autostart
   return browserPreview
     ? Promise.resolve(SAMPLE_SERVICES)
     : invoke<ServiceInfo[]>("service_set", { id, port, autostart });
+}
+
+/** The version a server runs (null: the newest installed), while stopped;
+ * each version keeps its own data, the first start copies the older one's. */
+export function serviceLine(id: ServiceInfo["id"], line: string | null): Promise<ServiceInfo[]> {
+  return browserPreview ? Promise.resolve(SAMPLE_SERVICES) : invoke<ServiceInfo[]>("service_line", { id, line });
 }
 
 // What is inside a running server, read only (src-tauri/src/db_browse.rs, D-79).

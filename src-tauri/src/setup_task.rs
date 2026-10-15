@@ -31,6 +31,14 @@ pub struct Step {
     pub outcome: Option<Outcome>,
 }
 
+/// A step waiting: the component and the name its step will have.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Queued {
+    pub id: String,
+    pub name: String,
+}
+
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Snapshot {
@@ -40,6 +48,8 @@ pub struct Snapshot {
     pub automatic: bool,
     pub total: usize,
     pub steps: Vec<Step>,
+    /// The steps not started yet, in order (empty when the run ends).
+    pub queue: Vec<Queued>,
     /// Why the run could not start or stopped early.
     pub error: Option<String>,
 }
@@ -154,6 +164,7 @@ impl SetupTask {
             let mut state = task.lock();
             state.running = false;
             state.cancelling = false;
+            state.queue.clear();
             state.error = error;
             for step in &state.steps {
                 crate::log::info(&format!("setup {}: {:?}", step.id, step.outcome));
@@ -174,7 +185,13 @@ impl SetupTask {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone();
-        let net = Net::new(&settings, self.github_token.clone()).map_err(|e| format!("{e:#}"))?;
+        // The PC's token, or the kit's GitHub account: GitHub allows 60
+        // anonymous API calls an hour, and "Update all" asks for many.
+        let token = self
+            .github_token
+            .clone()
+            .or_else(|| crate::github::token(&self.kit, &env));
+        let net = Net::new(&settings, token).map_err(|e| format!("{e:#}"))?;
         let ctx = Ctx {
             kit: &self.kit,
             net: &net,
@@ -213,10 +230,23 @@ impl Sink for TaskSink<'_> {
     fn emit(&mut self, event: Event) {
         let mut state = self.task.lock();
         match event {
+            Event::Queue { steps } => {
+                state.queue = steps
+                    .into_iter()
+                    .map(|(id, name)| Queued { id, name })
+                    .collect();
+            }
             Event::Step {
                 total, id, name, ..
             } => {
                 state.total = total;
+                if let Some(i) = state
+                    .queue
+                    .iter()
+                    .position(|q| q.id == id && q.name == name)
+                {
+                    state.queue.remove(i);
+                }
                 state.steps.push(Step {
                     id,
                     name,

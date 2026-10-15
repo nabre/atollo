@@ -39,6 +39,8 @@ mod project_mcp;
 mod project_settings;
 mod project_vscode;
 mod projects;
+mod ranges;
+mod relations;
 mod relocate;
 mod run;
 mod safe_path;
@@ -129,6 +131,8 @@ fn run() -> i32 {
     };
 
     log::init(&kit.logs());
+    // Before the environment points at them: one folder per version.
+    versions::migrate(&kit);
     self_update::remove_old(&exe);
     self_update::record_version(&kit);
     let loaded = Settings::load(&kit);

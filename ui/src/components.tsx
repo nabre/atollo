@@ -3,10 +3,11 @@
 // dependencies follow both ways (Apache with PHP, Kotlin with Java), a
 // component turned off is removed at the next installation. Also used as the
 // first-start page, before anything optional is installed.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { BrandSymbol } from "./brand";
 import {
   VscCheck,
+  VscCircleSlash,
   VscCloudDownload,
   VscExtensions,
   VscFolderLibrary,
@@ -19,42 +20,71 @@ import {
 import {
   componentsApply,
   componentsList,
+  setupCancel,
   projectsList,
   type ComponentInfo,
   type Group,
   type ProjectInfo,
   type SetupSnapshot,
+  type VersionedTool,
 } from "./api";
 import { locale, rich, t } from "./i18n";
 import { ActionButton, ErrorLine } from "./pages";
 import { Checkbox, SettingsEditor, SettingsGroup, SingleEditor } from "./workbench";
 
-import { SetupProgress, setupToShow } from "./setup";
+import { ItemBar, ItemStatus, itemState, setupStatusText, type ItemState } from "./setup";
 import { ExtensionsMatrixSection } from "./extensions";
-import { VersionsSection } from "./versions";
+import { composerOf, splitVersion, ToolVersions, useKitVersions } from "./versions";
 import { ComponentLogo } from "./logos";
-import { Tag } from "./tags";
+import { LinkProblems, outsideOf, RelationsSection, RuntimeRows, useRelations } from "./relations";
+import { Badge, Tag } from "./tags";
 
-function groups(): { id: Group; title: string; hint: string }[] {
+/** The sections of the page. The catalog's "languages" are split: those
+ * with one folder per minor version, side by side, and the tools that are
+ * always at their latest version. */
+function groups(): { id: string; title: string; hint: string; has: (c: ComponentInfo) => boolean }[] {
+  const of = (group: Group) => (c: ComponentInfo) => c.group === group;
   return [
-    { id: "required", title: t("Obbligatori"), hint: t("Sempre installati: l'editor, la shell del kit e GitHub CLI.") },
-    { id: "agents", title: t("Agenti"), hint: t("Facoltativi: il kit funziona anche senza.") },
+    {
+      id: "required",
+      title: t("Obbligatori"),
+      hint: t("Sempre installati: l'editor, la shell del kit e GitHub CLI."),
+      // The editor (part of the app) is listed with the required ones.
+      has: (c) => c.group === "required" || c.group === "app",
+    },
+    {
+      id: "agents",
+      title: t("Agenti"),
+      hint: t("Facoltativi: il kit funziona anche senza. Sempre all'ultima versione."),
+      has: of("agents"),
+    },
     {
       id: "languages",
-      title: t("Linguaggi e strumenti"),
+      title: t("Linguaggi"),
       hint: t(
-        "Scegli quelli che usi: si aggiungono e tolgono quando vuoi. Quelli che servono a un agente o a un progetto si installano da soli.",
+        "Più versioni una accanto all'altra, una per versione minore: «Aggiorna tutto» porta ognuna all'ultima patch, una versione minore nuova si aggiunge senza togliere le altre. Il kit usa la più recente; un progetto tiene quella che c'era quando è stato creato (o quella che chiede il suo codice) e può cambiarla nella sua pagina.",
       ),
+      has: (c) => c.group === "languages" && c.versioned,
+    },
+    {
+      id: "tools",
+      title: t("Strumenti"),
+      hint: t(
+        "Una sola versione, sempre l'ultima: «Aggiorna tutto» la sostituisce. Quelli che servono a un agente o a un progetto si installano da soli.",
+      ),
+      has: (c) => c.group === "languages" && !c.versioned,
     },
     {
       id: "databases",
       title: t("Database"),
       hint: t("Server avviati dalla pagina Database, solo su questo PC (127.0.0.1); i dati restano in data\\db."),
+      has: of("databases"),
     },
     {
       id: "os",
       title: t("Legati a un sistema operativo"),
       hint: t("Funzionano solo sul sistema per cui sono fatti, qui Windows."),
+      has: of("os"),
     },
   ];
 }
@@ -142,6 +172,83 @@ function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentIn
   );
 }
 
+/** The versions on disk of a versioned tool: the default, then the saved. */
+function linesOf(tool: VersionedTool | undefined): string[] {
+  if (!tool) return [];
+  return [...(tool.default ? [tool.default.line] : []), ...tool.saved.map((s) => s.line)];
+}
+
+/** Composer: a tool of its own with its version, but one per version of
+ * PHP and compatible with it, installed and updated with it; its checkbox
+ * follows PHP's. */
+function ComposerRow({
+  php,
+  tool,
+  on,
+  state,
+}: {
+  php: ComponentInfo;
+  tool: VersionedTool | undefined;
+  on: boolean;
+  state: ItemState | null;
+}) {
+  const kitLine = tool?.preferred ?? tool?.default?.line;
+  const all = [...(tool?.default ? [tool.default] : []), ...(tool?.saved ?? [])]
+    .map((l) => ({ line: l.line, composer: composerOf(l.version) }))
+    .filter((l): l is { line: string; composer: string } => l.composer !== null);
+  const kit = all.find((l) => l.line === kitLine) ?? all[0];
+  return (
+    <div
+      data-setting
+      className="max-w-[880px] border-l-2 border-l-transparent py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50"
+    >
+      <div className="flex items-center gap-3">
+        <Checkbox id="comp-composer" checked={on} disabled onChange={() => undefined} />
+        <span className="flex w-5 shrink-0 justify-center">
+          <ComponentLogo id="composer" size={20} />
+        </span>
+        <label
+          htmlFor="comp-composer"
+          className="min-w-0 flex-1 leading-[18px]"
+          title={t("Si installa, si aggiorna e si toglie con PHP.")}
+        >
+          <span className="font-semibold text-vsc-settings-header">Composer</span>
+          <span className="ml-2 text-vsc-desc">
+            {t("pacchetti PHP, uno per ogni versione di PHP e compatibile con quella")}
+          </span>
+          <Tag dashed className="ml-2" icon={<VscReferences size={11} aria-hidden="true" />}>
+            {t("con {0}", php.name)}
+          </Tag>
+        </label>
+        <span className="w-16 shrink-0" />
+        <span className="w-40 shrink-0 truncate text-right text-[12px]">
+          {state ? (
+            <ItemStatus state={state} />
+          ) : all.length > 1 ? null /* its versions are in the list below */ : kit ? (
+            <span className="text-vsc-success">
+              <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
+              {kit.composer}
+            </span>
+          ) : (
+            <span className="text-vsc-desc">{t("non installato")}</span>
+          )}
+        </span>
+      </div>
+      {all.length > 1 && (
+        <ul className="mt-1.5 space-y-0.5 pl-[62px]" aria-label={t("Versioni di Composer")}>
+          {all.map((l) => (
+            <li key={l.line} className="flex min-h-[22px] items-center gap-2 font-mono text-[12px]">
+              <span className="text-vsc-desc">{t("con {0} {1}", php.name, l.line)}</span>
+              <span>{l.composer}</span>
+              {l.line === kitLine && <Badge>{t("in uso")}</Badge>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function sizeText(mb: number): string {
   if (mb < 1000) return `${String(mb)} MB`;
   const gb = new Intl.NumberFormat(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(mb / 1000);
@@ -163,7 +270,11 @@ export function ComponentsPage({
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [search, setSearch] = useState("");
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const running = setup?.running ?? false;
+  const kit = useKitVersions(setup, !firstRun);
+  const relations = useRelations(setup, list, true);
+  const links = relations.matrix?.links ?? [];
 
   const load = useCallback(() => {
     // Only for the highlight: the page works without the projects.
@@ -264,32 +375,23 @@ export function ComponentsPage({
       <SettingsEditor
         toc={[
           ...all
-            .filter((g) =>
-              list.some((c) => (c.group === g.id || (g.id === "required" && c.group === "app")) && visible(c)),
-            )
+            .filter((g) => list.some((c) => g.has(c) && visible(c)))
             .map((g) => ({ id: `group-${g.id}`, label: g.title })),
 
           ...(firstRun
             ? []
             : [
-                { id: "group-versions", label: t("Versioni") },
                 { id: "ext-matrix", label: t("Estensioni dell'editor") },
+                { id: "relations", label: t("Relazioni") },
               ]),
         ]}
         search={search}
         onSearch={setSearch}
         placeholder={t("Cerca negli strumenti")}
       >
-        {setupToShow(setup) && (
-          <div className="max-w-[880px] px-[14px] pt-3">
-            <SetupProgress snapshot={setup} />
-          </div>
-        )}
         {all.map((g) => {
-          // The editor (part of the app) is listed with the required ones.
-          const items = list.filter(
-            (c) => (c.group === g.id || (g.id === "required" && c.group === "app")) && visible(c),
-          );
+          const items = list.filter((c) => g.has(c) && visible(c));
+          if (items.length === 0 && words.length > 0) return null;
           return (
             <SettingsGroup key={g.id} id={`group-${g.id}`} title={g.title} description={g.hint}>
               {items.map((c) => {
@@ -298,6 +400,11 @@ export function ComponentsPage({
                 const inputId = `comp-${c.id}`;
                 const forProjects = neededBy.get(c.id) ?? [];
                 const unchosen = forProjects.length > 0 && !on;
+                // Versions only of what is installed and stays.
+                const versioned = kit.byId.get(c.id);
+                const versions = versioned?.installed && on ? versioned : null;
+                // Its step in the preparation: waiting, downloading, failed.
+                const state = itemState(setup, c.id, c.name);
                 // A left bar marks what a project needs: emerald, orange when not chosen.
                 const mark = unchosen
                   ? "border-l-vsc-orange bg-vsc-orange/10"
@@ -306,64 +413,87 @@ export function ComponentsPage({
                     : on !== (c.chosen || c.locked)
                       ? "border-l-vsc-settings-modified"
                       : "border-l-transparent";
+                // PHP's version without its Composer, which has its row.
+                const shown = composerOf(c.version) ? splitVersion(c.version).main : c.version;
                 return (
-                  <div
-                    key={c.id}
-                    data-setting
-                    className={`flex max-w-[880px] items-center gap-3 border-l-2 py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50 ${mark}`}
-                  >
-                    <Checkbox
-                      id={inputId}
-                      checked={on}
-                      disabled={required || running || c.noArm64 || (!c.available && !on)}
-                      onChange={(v) => {
-                        setChosen(toggle(list, chosen, c.id, v));
-                      }}
-                      className={unchosen ? "rounded-sm outline-2 outline-offset-1 outline-vsc-orange" : ""}
-                    />
-                    <span className="flex w-5 shrink-0 justify-center">
-                      <ComponentLogo id={c.id} size={20} />
-                    </span>
-                    <label htmlFor={inputId} className="min-w-0 flex-1 cursor-pointer leading-[18px]">
-                      <span
-                        className={
-                          unchosen ? "font-semibold text-vsc-orange" : "font-semibold text-vsc-settings-header"
-                        }
-                      >
-                        {c.name}
-                      </span>
-                      <span className="ml-2 text-vsc-desc">{c.desc}</span>
-                      <ProjectsChip names={forProjects} on={on} />
-                      <Dependencies c={c} list={list} chosen={chosen} />
-                    </label>
-                    {c.x64Only && (
-                      <span className="text-[12px] text-vsc-desc" title={t("Su PC ARM64 gira in emulazione x64")}>
-                        x64
-                      </span>
-                    )}
-                    <span className="w-16 shrink-0 text-right text-[12px] text-vsc-desc">{sizeText(c.mb)}</span>
-                    <span className="w-40 shrink-0 truncate text-right text-[12px]" title={c.version ?? undefined}>
-                      {c.installed ? (
-                        <span className="text-vsc-success">
-                          <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
-                          {c.version ?? t("installato")}
+                  <Fragment key={c.id}>
+                    <div
+                      data-setting
+                      className={`max-w-[880px] border-l-2 py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50 ${mark}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={inputId}
+                          checked={on}
+                          disabled={required || running || c.noArm64 || (!c.available && !on)}
+                          onChange={(v) => {
+                            setChosen(toggle(list, chosen, c.id, v));
+                          }}
+                          className={unchosen ? "rounded-sm outline-2 outline-offset-1 outline-vsc-orange" : ""}
+                        />
+                        <span className="flex w-5 shrink-0 justify-center">
+                          <ComponentLogo id={c.id} size={20} />
                         </span>
-                      ) : c.noArm64 ? (
-                        <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
-                      ) : (
-                        <span className="text-vsc-desc">{t("non installato")}</span>
+                        <label htmlFor={inputId} className="min-w-0 flex-1 cursor-pointer leading-[18px]">
+                          <span
+                            className={
+                              unchosen ? "font-semibold text-vsc-orange" : "font-semibold text-vsc-settings-header"
+                            }
+                          >
+                            {c.name}
+                          </span>
+                          <span className="ml-2 text-vsc-desc">{c.desc}</span>
+                          <ProjectsChip names={forProjects} on={on} />
+                          <Dependencies c={c} list={list} chosen={chosen} />
+                          <LinkProblems id={c.id} links={links} />
+                        </label>
+                        {c.x64Only && (
+                          <span className="text-[12px] text-vsc-desc" title={t("Su PC ARM64 gira in emulazione x64")}>
+                            x64
+                          </span>
+                        )}
+                        <span className="w-16 shrink-0 text-right text-[12px] text-vsc-desc">{sizeText(c.mb)}</span>
+                        <span
+                          className="w-40 shrink-0 truncate text-right text-[12px]"
+                          title={versions ? undefined : (c.version ?? undefined)}
+                        >
+                          {state ? (
+                            <ItemStatus state={state} />
+                          ) : versions ? null /* its versions are in the list below */ : c.installed ? (
+                            <span className="text-vsc-success">
+                              <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
+                              {shown ?? t("installato")}
+                            </span>
+                          ) : c.noArm64 ? (
+                            <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
+                          ) : (
+                            <span className="text-vsc-desc">{t("non installato")}</span>
+                          )}
+                        </span>
+                      </div>
+                      {state && <ItemBar state={state} label={c.name} className="mt-1.5 ml-[62px]" />}
+                      {state?.kind === "problem" && (
+                        <p className="mt-1 ml-[62px] text-[12px] text-vsc-error select-text">{state.text}</p>
                       )}
-                    </span>
-                  </div>
+                      {versions && (
+                        <div className="pl-[62px]">
+                          <ToolVersions tool={versions} kit={kit} setup={setup} outside={outsideOf(links, c.id)} />
+                        </div>
+                      )}
+                    </div>
+                    {c.id === "php" && <ComposerRow php={c} tool={versioned} on={on} state={state} />}
+                  </Fragment>
                 );
               })}
+              {/* What the PC must provide, with the required components. */}
+              {g.id === "required" && <RuntimeRows runtimes={relations.matrix?.runtimes ?? []} />}
             </SettingsGroup>
           );
         })}
-        {!firstRun && <VersionsSection setup={setup} />}
         {!firstRun && words.length === 0 && (
           <div className="max-w-[880px] px-[14px]" data-setting>
             <ExtensionsMatrixSection projects={projects} components={list} />
+            {relations.matrix && <RelationsSection matrix={relations.matrix} setup={setup} onReload={relations.load} />}
           </div>
         )}
       </SettingsEditor>
@@ -375,7 +505,16 @@ export function ComponentsPage({
               {plan.install.length > 0 &&
                 t("Da installare: {0} (circa {1}).", plan.install.map((c) => c.name).join(", "), sizeText(plan.mb)) +
                   " "}
-              {plan.remove.length > 0 && t("Da rimuovere: {0}.", plan.remove.map((c) => c.name).join(", "))}
+              {plan.remove.length > 0 &&
+                t(
+                  "Da rimuovere: {0}.",
+                  plan.remove
+                    .map((c) => {
+                      const n = linesOf(kit.byId.get(c.id)).length;
+                      return n > 1 ? `${c.name} (${t("{0} versioni", n)})` : c.name;
+                    })
+                    .join(", "),
+                )}
             </span>
             <ActionButton
               icon={VscCheck}
@@ -395,16 +534,36 @@ export function ComponentsPage({
           </>
         ) : (
           <>
-            <span className="min-w-0 flex-1 text-vsc-desc">
-              {changed
-                ? t(
-                    "{0} da installare ({1}), {2} da rimuovere",
-                    plan.install.length,
-                    sizeText(plan.mb),
-                    plan.remove.length,
-                  )
-                : t("Nessuna modifica")}
+            <span
+              role="status"
+              className={`min-w-0 flex-1 ${setup?.error || cancelError ? "text-vsc-error" : "text-vsc-desc"}`}
+            >
+              {running
+                ? setupStatusText(setup)
+                : (setup?.error ?? cancelError)
+                  ? (setup?.error ?? cancelError)
+                  : changed
+                    ? t(
+                        "{0} da installare ({1}), {2} da rimuovere",
+                        plan.install.length,
+                        sizeText(plan.mb),
+                        plan.remove.length,
+                      )
+                    : t("Nessuna modifica")}
             </span>
+            {running && (
+              <ActionButton
+                icon={VscCircleSlash}
+                label={setup?.cancelling ? t("Annullamento…") : t("Annulla")}
+                disabled={setup?.cancelling ?? false}
+                onClick={() => {
+                  setCancelError(null);
+                  setupCancel().catch((e: unknown) => {
+                    setCancelError(String(e));
+                  });
+                }}
+              />
+            )}
             {!firstRun && (
               <ActionButton
                 icon={VscRefresh}

@@ -311,7 +311,11 @@ impl Installer for Pnpm {
                 .ok_or_else(|| anyhow!("{p}: no version"))
         };
         Ok(Release {
-            version: format!("pnpm {}, yarn {}", version("pnpm")?, version("yarn")?),
+            version: format!(
+                "pnpm {}, corepack {}",
+                version("pnpm")?,
+                version("corepack")?
+            ),
             parts: Vec::new(),
         })
     }
@@ -329,25 +333,47 @@ impl Installer for Pnpm {
     ) -> Result<()> {
         // npm-cli.js with the kit's node, no cmd.exe: its quoting breaks on
         // kit paths with `&` or parentheses (found in a test kit).
-        let node = ctx.kit.apps().join(r"node\node.exe");
-        let npm_cli = ctx.kit.apps().join(r"node\node_modules\npm\bin\npm-cli.js");
+        let node = crate::catalog::kit_path(ctx.kit, r"node\node.exe");
+        let npm_cli = crate::catalog::kit_path(ctx.kit, r"node\node_modules\npm\bin\npm-cli.js");
         if !node.is_file() || !npm_cli.is_file() {
             bail!("the kit's Node.js is needed for pnpm and yarn");
         }
+        let npm = |args: &[&str], progress: &mut dyn Progress| -> Result<()> {
+            let cli = npm_cli.display().to_string();
+            let mut all = vec![cli.as_str(), "--global", "--no-fund", "--no-audit"];
+            all.extend_from_slice(args);
+            run(ctx, &node, &all, &[], progress)
+        };
+        // yarn through corepack: the version a project asks for
+        // (`packageManager`: Yarn 4, 3…), classic 1.22 otherwise. Installed
+        // again at every update, with the yarn package of an older kit gone.
+        let _ = npm(&["uninstall", "yarn", "corepack"], progress);
+        npm(
+            &["install", "--ignore-scripts", "corepack@latest"],
+            progress,
+        )?;
+        let prefix = ctx.kit.data().join("npm-global");
+        let corepack = prefix.join(r"node_modules\corepack\dist\corepack.js");
         run(
             ctx,
             &node,
             &[
-                &npm_cli.display().to_string(),
-                "install",
-                "--global",
-                "--no-fund",
-                "--no-audit",
-                "--ignore-scripts",
-                "pnpm@latest",
-                "yarn@latest",
+                &corepack.display().to_string(),
+                "enable",
+                "yarn",
+                "--install-directory",
+                &prefix.display().to_string(),
             ],
             &[],
+            progress,
+        )?;
+        // pnpm last, over corepack's own pnpm commands (--force), with its
+        // install script, which puts the native pnpm.exe in place: without
+        // it pnpm.cmd does not start (tried 15/10/2026); recent npm runs it
+        // only when allowed. pnpm then runs the version a project asks for
+        // (`packageManager`), downloaded into PNPM_HOME.
+        npm(
+            &["install", "--force", "--allow-scripts=pnpm", "pnpm@latest"],
             progress,
         )
     }
@@ -358,31 +384,83 @@ impl Installer for Pnpm {
 /// put R's DLLs on the PATH of R only. x64 only (no conda-forge R for ARM64).
 pub struct R;
 
+/// The versions of r-base built for Windows x64 (`win-64`), newest first:
+/// `latest_version` of the package can be one of another platform.
+pub fn r_versions(info: &Value) -> Vec<String> {
+    let mut out: Vec<String> = info
+        .get("files")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter(|f| f.pointer("/attrs/subdir").and_then(Value::as_str) == Some("win-64"))
+        .filter_map(|f| f.get("version").and_then(Value::as_str))
+        .filter(|v| super::lang::is_release(v))
+        .map(str::to_owned)
+        .collect();
+    out.sort_by_key(|v| std::cmp::Reverse(super::lang::version_key(v)));
+    out.dedup();
+    out
+}
+
+fn r_info(ctx: &Ctx) -> Result<Value> {
+    ctx.net
+        .json("https://api.anaconda.org/package/conda-forge/r-base")
+}
+
+/// `version` of R with the newest micromamba that installs it.
+fn r_release(ctx: &Ctx, version: &str) -> Result<Release> {
+    let mm = ctx.net.github_latest("mamba-org/micromamba-releases")?;
+    let base = format!(
+        "https://github.com/mamba-org/micromamba-releases/releases/download/{}",
+        mm.tag_name
+    );
+    let sha = first_sha256(&ctx.net.text(&format!("{base}/micromamba-win-64.sha256"))?)
+        .ok_or_else(|| anyhow!("micromamba: no SHA-256"))?;
+    Ok(Release::single(
+        // r-base only: a new micromamba alone does not rebuild R.
+        version.to_owned(),
+        format!("{base}/micromamba-win-64"),
+        "micromamba.exe".into(),
+        Expect::Sha256(sha),
+        crate::archive::Kind::File,
+        crate::archive::Inner::Root,
+    ))
+}
+
+/// Packages compiled for one minor version of R do not load in another:
+/// one folder per line (versioned, D-81), `renv.lock` declares R's version.
 impl Installer for R {
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
-        let info: Value = ctx
-            .net
-            .json("https://api.anaconda.org/package/conda-forge/r-base")?;
-        let version = info
-            .get("latest_version")
-            .and_then(Value::as_str)
-            .ok_or_else(|| anyhow!("r-base: no version"))?;
-        let mm = ctx.net.github_latest("mamba-org/micromamba-releases")?;
-        let base = format!(
-            "https://github.com/mamba-org/micromamba-releases/releases/download/{}",
-            mm.tag_name
-        );
-        let sha = first_sha256(&ctx.net.text(&format!("{base}/micromamba-win-64.sha256"))?)
-            .ok_or_else(|| anyhow!("micromamba: no SHA-256"))?;
-        Ok(Release::single(
-            // r-base only: a new micromamba alone does not rebuild R.
-            version.to_owned(),
-            format!("{base}/micromamba-win-64"),
-            "micromamba.exe".into(),
-            Expect::Sha256(sha),
-            crate::archive::Kind::File,
-            crate::archive::Inner::Root,
-        ))
+        let versions = r_versions(&r_info(ctx)?);
+        let version = versions
+            .first()
+            .ok_or_else(|| anyhow!("r-base: no version for win-64"))?;
+        r_release(ctx, version)
+    }
+
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        let mut lines: Vec<String> = Vec::new();
+        for v in r_versions(&r_info(ctx)?) {
+            if let Some(line) = crate::versions::line_of(&v) {
+                if !lines.contains(&line) {
+                    lines.push(line);
+                }
+            }
+        }
+        Ok(lines)
+    }
+
+    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
+        let versions = r_versions(&r_info(ctx)?);
+        let version = versions
+            .iter()
+            .find(|v| crate::versions::line_of(v).as_deref() == Some(line))
+            .ok_or_else(|| anyhow!("R {line} not available for win-64"))?;
+        r_release(ctx, version)
     }
 
     fn custom(&self) -> bool {
@@ -394,6 +472,21 @@ impl Installer for R {
         ctx: &Ctx,
         component: &Component,
         release: &Release,
+        progress: &mut dyn Progress,
+    ) -> Result<()> {
+        let target = crate::versions::install_dir(ctx.kit, component, &release.version);
+        self.install_custom_at(ctx, component, release, &target, progress)
+    }
+
+    /// The conda environment is created where it stays: conda writes its
+    /// folder into some files (Makeconf, pkgconfig), so a moved one points at
+    /// a folder that no longer exists.
+    fn install_custom_at(
+        &self,
+        ctx: &Ctx,
+        component: &Component,
+        release: &Release,
+        target: &Path,
         progress: &mut dyn Progress,
     ) -> Result<()> {
         if ctx.kit.arch() != crate::kit::Arch::X64 {
@@ -415,7 +508,10 @@ impl Installer for R {
             let mm = tools.join("micromamba.exe");
             crate::archive::replace_file(&mm_new, &mm)?;
             let home = work.join("mamba-home");
-            let target = work.join("r");
+            // The same line again (a patch): the old folder goes first.
+            if target.exists() {
+                crate::archive::remove_dir(target)?;
+            }
             let envs = [
                 ("HOME", home.clone()),
                 ("USERPROFILE", home.clone()),
@@ -465,7 +561,7 @@ impl Installer for R {
             text.push_str("\n# Atollo: CRAN without asking for a mirror\nlocal({ r <- getOption('repos'); if (is.null(r) || identical(unname(r['CRAN']), '@CRAN@')) options(repos = c(CRAN = 'https://cloud.r-project.org')) })\n");
             fs::write(&site, text)?;
             let _ = fs::remove_dir_all(target.join("pkgs"));
-            crate::archive::replace_dir(&target, &ctx.kit.apps().join("r"))
+            Ok(())
         })();
         let _ = fs::remove_dir_all(&work);
         result
@@ -476,6 +572,18 @@ impl Installer for R {
 mod tests {
     use super::*;
     use crate::kit::tests::TempDir;
+
+    #[test]
+    fn r_versions_of_windows_only() {
+        let info = serde_json::json!({"files": [
+            {"version": "4.6.1", "attrs": {"subdir": "linux-64"}},
+            {"version": "4.6.0", "attrs": {"subdir": "win-64"}},
+            {"version": "4.5.3", "attrs": {"subdir": "win-64"}},
+            {"version": "4.6.0", "attrs": {"subdir": "win-64"}},
+            {"version": "4.7.0rc1", "attrs": {"subdir": "win-64"}}
+        ]});
+        assert_eq!(r_versions(&info), ["4.6.0", "4.5.3"]);
+    }
 
     #[test]
     fn hard_links_on_the_test_disk() {

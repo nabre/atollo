@@ -579,11 +579,6 @@
     "fr": "LaTeX (TeX Live minimal) : pdflatex, xelatex, lualatex, latexmk",
     "de": "LaTeX (minimales TeX Live): pdflatex, xelatex, lualatex, latexmk"
   },
-  "gestori di pacchetti, con il Node.js del kit": {
-    "en": "package managers, with the kit's Node.js",
-    "fr": "gestionnaires de paquets, avec le Node.js du kit",
-    "de": "Paketmanager, mit dem Node.js des Kits"
-  },
   "build di C e C++": {
     "en": "C and C++ builds",
     "fr": "compilation de C et C++",
@@ -798,5 +793,95 @@
     "en": "default",
     "fr": "par défaut",
     "de": "Standard"
+  },
+  "Composer 2.3 e successivi; per PHP più vecchi il kit sceglie il 2.2 LTS": {
+    "en": "Composer 2.3 and later; for older PHP the kit picks 2.2 LTS",
+    "fr": "Composer 2.3 et suivants ; pour un PHP plus ancien le kit choisit la 2.2 LTS",
+    "de": "Composer 2.3 und neuer; für ältere PHP-Versionen wählt das Kit 2.2 LTS"
+  },
+  "modulo php8apache2_4.dll, PHP Thread Safe x64": {
+    "en": "php8apache2_4.dll module, PHP Thread Safe x64",
+    "fr": "module php8apache2_4.dll, PHP Thread Safe x64",
+    "de": "Modul php8apache2_4.dll, PHP Thread Safe x64"
+  },
+  "Gradle 9 parte con Java dal 17 al 27": {
+    "en": "Gradle 9 starts with Java 17 to 27",
+    "fr": "Gradle 9 démarre avec Java 17 à 27",
+    "de": "Gradle 9 startet mit Java 17 bis 27"
+  },
+  "Maven 3.9; Maven 4 vorrà Java 17": {
+    "en": "Maven 3.9; Maven 4 will want Java 17",
+    "fr": "Maven 3.9 ; Maven 4 demandera Java 17",
+    "de": "Maven 3.9; Maven 4 wird Java 17 verlangen"
+  },
+  "Git Bash per lo strumento Bash; senza, Claude usa PowerShell": {
+    "en": "Git Bash for the Bash tool; without it, Claude uses PowerShell",
+    "fr": "Git Bash pour l'outil Bash ; sans lui, Claude utilise PowerShell",
+    "de": "Git Bash für das Bash-Werkzeug; ohne es verwendet Claude PowerShell"
+  },
+  "solo per clone, checkout e setup-git": {
+    "en": "only for clone, checkout and setup-git",
+    "fr": "seulement pour clone, checkout et setup-git",
+    "de": "nur für clone, checkout und setup-git"
+  },
+  "terminale integrato dell'editor": {
+    "en": "the editor's integrated terminal",
+    "fr": "terminal intégré de l'éditeur",
+    "de": "integriertes Terminal des Editors"
+  },
+  "senza un Python adatto uv ne scarica uno suo": {
+    "en": "without a suitable Python, uv downloads its own",
+    "fr": "sans Python adapté, uv en télécharge un à lui",
+    "de": "ohne passendes Python lädt uv ein eigenes herunter"
+  },
+  "serve un compilatore C/C++ per compilare": {
+    "en": "a C/C++ compiler is needed to build",
+    "fr": "un compilateur C/C++ est nécessaire pour compiler",
+    "de": "zum Kompilieren wird ein C/C++-Compiler benötigt"
+  },
+  "solo per cgo": {
+    "en": "only for cgo",
+    "fr": "seulement pour cgo",
+    "de": "nur für cgo"
+  },
+  "crate con codice C": {
+    "en": "crates with C code",
+    "fr": "crates avec du code C",
+    "de": "Crates mit C-Code"
+  },
+  "gem con estensioni native": {
+    "en": "gems with native extensions",
+    "fr": "gems avec extensions natives",
+    "de": "Gems mit nativen Erweiterungen"
+  },
+  "documenti PDF da R Markdown": {
+    "en": "PDF documents from R Markdown",
+    "fr": "documents PDF depuis R Markdown",
+    "de": "PDF-Dokumente aus R Markdown"
+  },
+  "DLL copiate dal kit accanto ai programmi": {
+    "en": "DLLs copied by the kit next to the programs",
+    "fr": "DLL copiées par le kit à côté des programmes",
+    "de": "DLLs, die das Kit neben die Programme kopiert"
+  },
+  "la finestra di Atollo": {
+    "en": "the Atollo window",
+    "fr": "la fenêtre de Atollo",
+    "de": "das Fenster von Atollo"
+  },
+  "su PC ARM64 i programmi solo x64 e Git Bash girano emulati, solo con Windows 11": {
+    "en": "on ARM64 PCs, x64-only programs and Git Bash run emulated, only on Windows 11",
+    "fr": "sur PC ARM64, les programmes x64 seulement et Git Bash tournent émulés, uniquement sous Windows 11",
+    "de": "auf ARM64-PCs laufen reine x64-Programme und Git Bash emuliert, nur unter Windows 11"
+  },
+  "gestori di pacchetti, alla versione chiesta da ogni progetto": {
+    "en": "package managers, at the version each project asks for",
+    "fr": "gestionnaires de paquets, à la version demandée par chaque projet",
+    "de": "Paketmanager, in der Version, die jedes Projekt verlangt"
+  },
+  "yarn passa da corepack, che vuole Node.js 22.22, 24.15 o 26 e successivi; pnpm è un programma a sé": {
+    "en": "yarn goes through corepack, which wants Node.js 22.22, 24.15 or 26 and later; pnpm is a program of its own",
+    "fr": "yarn passe par corepack, qui veut Node.js 22.22, 24.15 ou 26 et suivants ; pnpm est un programme à part",
+    "de": "yarn läuft über corepack, das Node.js 22.22, 24.15 oder 26 und neuer verlangt; pnpm ist ein eigenes Programm"
   }
 }

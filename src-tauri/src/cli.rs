@@ -286,6 +286,8 @@ impl Sink for Printer<'_> {
     fn emit(&mut self, event: Event) {
         let lang = self.lang;
         let line = match event {
+            // The steps say themselves one by one.
+            Event::Queue { .. } => return,
             Event::Step {
                 index, id, name, ..
             } => {

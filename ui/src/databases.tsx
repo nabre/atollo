@@ -16,6 +16,7 @@ import {
 } from "react-icons/vsc";
 import {
   folderOpen,
+  serviceLine,
   serviceSet,
   serviceStart,
   serviceStop,
@@ -129,12 +130,14 @@ function ServiceDetails({
   onStart,
   onStop,
   onSet,
+  onLine,
 }: {
   s: ServiceInfo;
   busy: boolean;
   onStart: () => void;
   onStop: () => void;
   onSet: (port: number | null, autostart: boolean) => void;
+  onLine: (line: string | null) => void;
 }) {
   const [port, setPort] = useState(String(s.port));
   const on = s.state === "running" || s.state === "starting";
@@ -160,6 +163,13 @@ function ServiceDetails({
           <span key="addr" className="font-mono">
             127.0.0.1:{String(s.port)}
           </span>,
+          ...(s.line
+            ? [
+                <span key="line" className="font-mono">
+                  {s.line}
+                </span>,
+              ]
+            : []),
         ]}
         actions={
           on ? (
@@ -212,6 +222,36 @@ function ServiceDetails({
           </EditorSection>
           <EditorSection id={`db-set-${s.id}`} title={t("Impostazioni")}>
             <div className="space-y-4">
+              {s.lines.length > 1 && (
+                <div className="space-y-1">
+                  <label htmlFor={`line-${s.id}`} className="block font-semibold">
+                    {t("Versione")}
+                  </label>
+                  <p className="text-vsc-desc">
+                    {on
+                      ? t("Ferma il server per cambiarla.")
+                      : t(
+                          "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.",
+                        )}
+                  </p>
+                  <select
+                    id={`line-${s.id}`}
+                    value={s.line ?? ""}
+                    disabled={on || busy}
+                    onChange={(e) => {
+                      const line = e.target.value;
+                      onLine(line === s.lines[0] ? null : line);
+                    }}
+                    className="input w-40"
+                  >
+                    {s.lines.map((l, i) => (
+                      <option key={l} value={l}>
+                        {i === 0 ? t("{0} (la più recente)", l) : l}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="space-y-1">
                 <label htmlFor={portId} className="block font-semibold">
                   {t("Porta")}
@@ -381,6 +421,9 @@ export function DatabasesPage() {
           }}
           onSet={(port, autostart) => {
             act(service.id, () => serviceSet(service.id, port, autostart));
+          }}
+          onLine={(line) => {
+            act(service.id, () => serviceLine(service.id, line));
           }}
         />
       ) : (

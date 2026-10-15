@@ -72,7 +72,7 @@ pub fn usable(kit: &Kit) -> bool {
 }
 
 /// The build of Windows (`26200`); `None` when it cannot be read.
-fn windows_build() -> Option<u32> {
+pub fn windows_build() -> Option<u32> {
     let key = HSTRING::from(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
     let value = HSTRING::from("CurrentBuildNumber");
     let mut buf = [0u16; 32];

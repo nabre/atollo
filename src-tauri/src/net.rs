@@ -40,6 +40,9 @@ pub struct GhRelease {
     pub tag_name: String,
     #[serde(default)]
     pub assets: Vec<GhAsset>,
+    /// Betas and release candidates.
+    #[serde(default)]
+    pub prerelease: bool,
 }
 
 impl GhRelease {

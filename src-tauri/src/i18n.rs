@@ -158,6 +158,20 @@ mod tests {
         assert_eq!(t("en", "PHP e Composer", &[]), "PHP and Composer");
     }
 
+    /// The notes of the relations matrix (relations.json) too.
+    #[test]
+    fn relation_notes_are_in_the_catalog() {
+        for note in crate::relations::notes() {
+            let tr = catalog().get(note);
+            for lang in ["en", "fr", "de"] {
+                assert!(
+                    tr.and_then(|t| t.get(lang)).is_some_and(|t| !t.is_empty()),
+                    "{note}: {lang}"
+                );
+            }
+        }
+    }
+
     /// Every literal Italian source passed to `tr(lang, "…")`, `i18n::t(lang,
     /// "…")` or `crate::i18n::t(lang, "…")`, and every source returned by
     /// `Settings::validate`, is in the catalog. Calls whose text is not a

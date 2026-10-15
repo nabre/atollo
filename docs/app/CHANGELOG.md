@@ -1,10 +1,44 @@
 # Novità
 
+## Matrice delle relazioni (15/10/2026)
+
+**Fatto**
+- **Relazioni fra strumenti** (D-81): una funzione dell'app genera la matrice di ciò che ogni strumento richiede e con quali versioni (Composer → PHP ≥ 7.2.5, Gradle → Java 17-27, Apache → PHP 8, pnpm → Node.js ≥ 18.12, CMake → compilatore C…), dei runtime che il PC deve fornire e delle versioni chieste dai progetti (`package.json`, `.nvmrc`, `.python-version`, `pyproject.toml`, `composer.json`, `go.mod`, `global.json`, `pom.xml`, `pubspec.yaml`, `Project.toml`, `CMakeLists.txt`…). Salvata in `data\app\relations.json`, si ricalcola solo quando cambia qualcosa.
+- **Nel punto giusto**: Visual C++ x64 e WebView2 (e l'emulazione x64 su ARM64) in «Obbligatori»; un legame non soddisfatto nella riga dello strumento; «non per Gradle» accanto alle versioni su cui un altro strumento non gira; la matrice completa nella sezione «Relazioni», con «Usa» o «Scarica e usa» per le versioni chieste dai progetti.
+- **Il kit usa la versione più recente**, senza scelta. **Un progetto nuovo la fissa** alla creazione, così non cambia quando ne arrivano di nuove; **un progetto clonato** installa i linguaggi che usa e prende (o scarica) la versione compatibile con quelle che dichiara.
+- «latest» sulla versione più recente offerta; colonna della versione vuota per i linguaggi con più versioni.
+- Apache carica il PHP in uso (modulo ed estensioni della stessa versione); PHP solo dalla 8.
+- **Typst di nuovo con più versioni** (le 0.x cambiano la sintassi; la matrice legge `typst.toml`), con l'elenco delle versioni da scaricare come Kotlin.
+- **pnpm e yarn alla versione del progetto**: pnpm 12 nativo usa da solo la versione di `packageManager`; yarn passa da corepack (Yarn 4 dove serve, la classica altrove). Corretto: con il vecchio installatore `pnpm.cmd` di pnpm 12 non partiva.
+- **R con più versioni**, ognuna con la sua libreria di pacchetti; l'ambiente nasce nella sua cartella finale; la matrice legge `renv.lock` e `DESCRIPTION`.
+- **MariaDB e MongoDB con più versioni**: nella pagina Database la versione del server (a server fermo); ogni versione ha i suoi dati, copiati in avanti dalla precedente al primo avvio (MongoDB una maggiore alla volta, con la FCV aggiornata); i dati esistenti passano nella cartella della loro versione. La matrice legge le immagini di `compose.yaml`.
+- **«locked»**: una versione usata da progetti ha il lucchetto con l'elenco dei progetti e non si rimuove; le altre hanno il cestino.
+
+**Verificato**: 239 test Rust (nuovi: intervalli di versione, matrice, versioni dei progetti, dati dei server per versione), clippy e fmt puliti; tipi, ESLint e 23 test dell'interfaccia; installazione di pnpm e yarn provata in una cartella di prova; anteprima nel browser. Da provare nell'app: la matrice su un kit reale con progetti, il primo avvio con i dati di MariaDB già presenti, R scaricato in due versioni.
+
+## Una cartella per versione, Linguaggi e Strumenti separati (15/10/2026)
+
+**Fatto**
+- **Una cartella per versione** (D-80): ogni versione di un linguaggio sta in `data\apps\<piattaforma>\<id>\<major.minor>`, predefinita compresa; niente più `versions\`. Un aggiornamento a una minore nuova si installa accanto e la vecchia resta, senza spostare cartelle in uso; una patch sostituisce la cartella della sua linea. Al primo avvio il kit sposta da solo le cartelle della struttura precedente (una cartella in uso viene spostata all'avvio dopo) e corregge il PHP in `data\apache\kit.conf` (`${CP_PHP_FWD}`).
+- **«Aggiorna tutto» aggiorna ogni versione** alla sua ultima patch, non solo la predefinita.
+- **Linguaggi e Strumenti** nella pagina Strumenti: i linguaggi con più versioni (Python, Node.js, PHP, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Ruby) separati dagli strumenti sempre all'ultima versione. Typst, CMake/Ninja e C/C++ passano fra questi: le loro versioni salvate si tolgono.
+- **Versioni nella riga del linguaggio**: la versione del kit, quelle scaricate (predefinita, del kit, progetti che le usano), il download di un'altra; «N versioni» nella colonna della versione. Il gruppo «Versioni» non c'è più.
+- **La casella vale «almeno una versione»**: ogni versione si toglie anche da sola, predefinita compresa (la più recente rimasta prende il suo posto); l'ultima se ne va togliendo la spunta.
+- **Avanzamento nella lista**: niente più riquadro in cima alla pagina Strumenti. Ogni riga mostra il suo stato («in coda», «download N%» con la barra, «non riuscito» con il motivo), anche le versioni in download nella lista delle versioni; in basso il passo in corso e «Annulla».
+- **Composer con ogni versione di PHP**: ogni cartella di PHP ha il suo Composer, compatibile con quella versione, e nel terminale `composer` usa quello del PHP in uso. Nei kit esistenti quello di `tools\` viene copiato in ogni versione di PHP all'avvio.
+- **Riga «Composer»** sotto PHP, con la sua versione e l'elenco «con PHP 8.4 → 2.8.12»: si installa, si aggiorna e si toglie con PHP.
+- **«+» per aggiungere una versione**: sopra la lista delle versioni, apre l'elenco delle versioni offerte e non ancora scaricate, per versione maggiore; al posto del menu con «Scarica».
+- **La lista è la scelta**: niente più menu a tendina per la versione del kit; ogni versione della lista ha la sua scelta, sempre visibile anche con una versione sola.
+- **Versioni di Kotlin da scaricare** (release stabili di JetBrains/kotlin su GitHub).
+- **Meno «http status: 403» da GitHub**: installazioni ed elenchi delle versioni usano anche l'account GitHub del kit (GitHub CLI), non solo `GITHUB_TOKEN` del PC; senza accesso GitHub concede 60 richieste l'ora, e «Aggiorna tutto» ne fa molte.
+
+**Verificato**: 227 test Rust (nuovi: migrazione anche interrotta, ripristino della predefinita, rimozione della predefinita, ambiente dalla cartella della versione, Composer per versione di PHP e dai kit precedenti), clippy e fmt puliti; tipi, ESLint e 23 test dell'interfaccia; elenco degli strumenti di `profile.ps1` provato in PowerShell; anteprima nel browser della pagina Strumenti, anche con un task in corso. Da provare nell'app: avvio su un kit con la struttura precedente (Node.js e PHP con Composer installati, Apache del kit), «Aggiorna tutto» con una versione salvata, `composer --version` nel terminale di un progetto con un altro PHP.
+
 ## Menu delle versioni propositivo (15/10/2026)
 
 **Fatto**
 - **Versioni da scaricare nei menu** (D-80): il menu della versione, nel kit e in ogni progetto, propone oltre alle versioni scaricate anche le minori offerte dalla fonte, raggruppate per versione maggiore («da scaricare»). Sceglierne una la scarica subito e la imposta; fino alla fine del download si usa la predefinita, e sotto il menu c'è lo stato (in corso con percentuale, non riuscito con «Riprova», «Scarica»).
-- **Elenco delle versioni conservato** in `datappersion-lines.json`: i menu funzionano anche offline; si aggiorna da solo se ha più di un giorno, o col pulsante accanto al menu.
+- **Elenco delle versioni conservato** in `data\app\version-lines.json`: i menu funzionano anche offline; si aggiorna da solo se ha più di un giorno, o col pulsante accanto al menu.
 - **Chi usa cosa**: in Strumenti › Versioni ogni versione scaricata mostra predefinita, quella del kit e i progetti che l'hanno scelta; rimuoverne una avvisa chi la usa.
 - La pagina del progetto mostra tutti i linguaggi installati che hanno più versioni, non solo quelli con versioni già conservate.
 
@@ -13,7 +47,7 @@
 ## Versioni dei linguaggi per il kit e per ogni progetto (15/10/2026)
 
 **Fatto**
-- **Versioni conservate** (D-80): per Python, Node.js, PHP, Go, Java, .NET e gli altri linguaggi, un aggiornamento che cambia la versione minore conserva la vecchia in `datapps\<piattaforma>ersions\<id>\<major.minor>`; una patch sostituisce come prima.
+- **Versioni conservate** (D-80): per Python, Node.js, PHP, Go, Java, .NET e gli altri linguaggi, un aggiornamento che cambia la versione minore conserva la vecchia in `data\apps\<piattaforma>\versions\<id>\<major.minor>`; una patch sostituisce come prima.
 - **Scaricare altre versioni** dalla pagina Strumenti › Versioni (Node.js, Python, Go, Java, .NET, Zig, PHP), rimuoverle e scegliere quella che usa tutto il kit.
 - **Versione per progetto**: pagina del progetto › Componenti › Versioni. Vale per terminale, azioni e agenti del progetto e per i terminali PowerShell dell'editor (`versions.json` letto da `profile.ps1`).
 - `php.ini` trova le estensioni con `${CP_PHP}`, la cartella del PHP in uso.
@@ -45,7 +79,7 @@
 - **Azioni modificabili** dalla pagina del progetto › Avanzate (D-78): nuova azione, modifica, predefinita, togli; con cartella, indirizzo e **variabili d'ambiente**. Salvate in `panel.json` nel progetto.
 - **Impostazioni dell'editor del progetto**: formatta al salvataggio, rientro, cartelle nascoste, in `.vscode\settings.json` (le altre impostazioni del file restano).
 - **Server MCP del progetto** per Claude Code (`.mcp.json`) e Codex (`.codex\config.toml`).
-- **Copie dei database**: Esporta e Ripristina per MariaDB e MongoDB nella pagina del progetto › Risorse; copie in `data\dbackup\<progetto>`. MongoDB porta con sé i Database Tools.
+- **Copie dei database**: Esporta e Ripristina per MariaDB e MongoDB nella pagina del progetto › Risorse; copie in `data\db\backup\<progetto>`. MongoDB porta con sé i Database Tools.
 
 **Verificato**: 211 test Rust (con esportazione, cancellazione e ripristino reali su MariaDB e MongoDB), 23 test dell'interfaccia; prova nell'app: azione con variabile, impostazioni dell'editor e server MCP scritti nei file del progetto.
 

@@ -22,8 +22,8 @@ fn component_of(program: &str) -> Option<&'static str> {
         .find_map(|ext| name.strip_suffix(ext))
         .unwrap_or(&name);
     Some(match stem {
-        "node" | "npm" | "npx" | "corepack" => "node",
-        "pnpm" | "pnpx" | "yarn" | "yarnpkg" => "pnpm",
+        "node" | "npm" | "npx" => "node",
+        "pnpm" | "pnpx" | "yarn" | "yarnpkg" | "corepack" => "pnpm",
         "uv" | "uvx" => "uv",
         "python" | "python3" | "py" | "pythonw" | "pip" | "pip3" => "python",
         "php" | "composer" => "php",

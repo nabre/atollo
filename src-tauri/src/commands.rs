@@ -81,6 +81,9 @@ pub struct ComponentInfo {
     pub no_arm64: bool,
     /// Components it needs (Apache needs PHP, Kotlin needs Java).
     pub needs: Vec<String>,
+    /// One folder per minor line, side by side (versions.rs); the others
+    /// are always at their latest version.
+    pub versioned: bool,
 }
 
 impl AppState {
@@ -208,6 +211,42 @@ fn ensure<R: Runtime>(
         "Componenti del kit non installati: {0}{1}. Riprova da Linguaggi e strumenti.",
         &[&still.join(", "), &why],
     ))
+}
+
+/// A project just copied (clone) gets what its code needs, waiting for the
+/// downloads: the languages it uses are installed, each version it declares
+/// gets the newest line that fits (downloaded if none is on disk), the
+/// other languages the newest on disk. A failure only goes to the log: the
+/// project is there, its page tells what is missing.
+fn settle_project<R: Runtime>(
+    app: &AppHandle<R>,
+    task: &Arc<SetupTask>,
+    kit: &Kit,
+    lang: &str,
+    project: &str,
+    dir: &std::path::Path,
+) {
+    let requires = crate::detect::requires(dir);
+    let ids: Vec<&str> = requires.iter().map(String::as_str).collect();
+    if let Err(e) = ensure(app, task, kit, lang, &ids) {
+        crate::log::warn(&format!("{project}: {e}"));
+    }
+    let lines = crate::relations::settle(kit, lang, project);
+    if !lines.is_empty() {
+        let opts = Options {
+            lines,
+            ..Options::default()
+        };
+        while task.snapshot().running {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+        }
+        if task.start(opts, true, setup_notify(app.clone())).is_ok() {
+            while task.snapshot().running {
+                std::thread::sleep(std::time::Duration::from_millis(300));
+            }
+        }
+    }
+    crate::versions::pin_newest(kit, project);
 }
 
 /// `ids` and, transitively, what they need, in catalog order.
@@ -391,6 +430,7 @@ fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 x64_only: c.x64_only,
                 no_arm64,
                 needs: c.needs.clone(),
+                versioned: c.versioned,
             }
         })
         .collect()
@@ -549,10 +589,14 @@ pub async fn versions_available<R: Runtime>(
     ensure_main(&webview)?;
     crate::versions::check(&id, None).map_err(|e| e.to_string())?;
     let (kit, env) = (state.kit.clone(), state.env());
+    let token = github_token(&state.host);
     tauri::async_runtime::spawn_blocking(move || {
         let c = Catalog::get().find(&id).ok_or("unknown component")?;
         let installer = install::installer(&id).ok_or("no installer")?;
-        let net = crate::net::Net::new(&Settings::load(&kit).settings, None)
+        // Some lists come from GitHub's API (Python): the kit's account if
+        // there is no token of the PC, as the installations do.
+        let token = token.or_else(|| crate::github::token(&kit, &env));
+        let net = crate::net::Net::new(&Settings::load(&kit).settings, token)
             .map_err(|e| fail("versions", format!("{e:#}")))?;
         let cancel = std::sync::atomic::AtomicBool::new(false);
         let ctx = install::Ctx {
@@ -645,25 +689,6 @@ pub fn versions_remove<R: Runtime>(
     Ok(crate::versions::tools(&state.kit))
 }
 
-/// The line of `id` the kit uses (`None`: the default folder), downloaded
-/// when it is not on disk. Consoles, actions and agents opened from now on
-/// use it; the editor after a restart.
-#[tauri::command]
-pub fn versions_prefer<R: Runtime>(
-    app: AppHandle<R>,
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-    id: String,
-    line: Option<String>,
-) -> Result<Vec<crate::versions::Tool>, String> {
-    ensure_main(&webview)?;
-    download_chosen(app, &state, &id, line.as_deref())?;
-    crate::versions::set_kit_choice(&state.kit, &id, line.as_deref())
-        .map_err(|e| fail("versions", format!("{e:#}")))?;
-    apply_env(&state, Settings::load(&state.kit).settings);
-    Ok(crate::versions::tools(&state.kit))
-}
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectVersions {
@@ -707,6 +732,24 @@ pub fn project_versions_set<R: Runtime>(
     crate::versions::set_project_choice(&state.kit, &project, &id, line.as_deref())
         .map_err(|e| fail("versions", format!("{e:#}")))?;
     Ok(project_versions_of(&state.kit, &project))
+}
+
+/// The relations matrix (relations.rs, D-81): the saved one while nothing
+/// it was made from changed; `force` builds it again. Off the window's
+/// thread: it reads every project's files and asks WebView2 its version.
+#[tauri::command]
+pub async fn relations_matrix<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    force: bool,
+) -> Result<crate::relations::Matrix, String> {
+    ensure_main(&webview)?;
+    let (kit, lang) = (state.kit.clone(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::relations::matrix(&kit, lang, force).map_err(|e| fail("relations", format!("{e:#}")))
+    })
+    .await
+    .map_err(|e| fail("relations", e))?
 }
 
 #[tauri::command]
@@ -838,13 +881,17 @@ pub fn project_create<R: Runtime>(
     name: String,
 ) -> Result<String, String> {
     ensure_main(&webview)?;
-    crate::projects::create(&state.kit, &name, state.lang())
+    let project = crate::projects::create(&state.kit, &name, state.lang())
         .map(|d| {
             d.file_name()
                 .map(|n| n.to_string_lossy().into_owned())
                 .unwrap_or_default()
         })
-        .map_err(|e| format!("{e:#}"))
+        .map_err(|e| format!("{e:#}"))?;
+    // It keeps the newest version of each language: its code is written
+    // for those, newer ones installed later do not change it.
+    crate::versions::pin_newest(&state.kit, &project);
+    Ok(project)
 }
 
 /// Deletes a project whose folder is empty.
@@ -872,13 +919,15 @@ pub async fn project_clone<R: Runtime>(
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &["git"])?;
         let token = crate::github::token(&kit, &env);
-        crate::projects::clone(&kit, &env, &source, name.as_deref(), lang, token.as_deref())
-            .map(|d| {
-                d.file_name()
-                    .map(|n| n.to_string_lossy().into_owned())
-                    .unwrap_or_default()
-            })
-            .map_err(|e| fail("clone", format!("{e:#}")))
+        let dir =
+            crate::projects::clone(&kit, &env, &source, name.as_deref(), lang, token.as_deref())
+                .map_err(|e| fail("clone", format!("{e:#}")))?;
+        let project = dir
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        settle_project(&app, &task, &kit, lang, &project, &dir);
+        Ok(project)
     })
     .await
     .map_err(|e| fail("clone", e))?
@@ -1592,6 +1641,27 @@ pub async fn service_stop<R: Runtime>(
 
 /// Port (null: the default) and "start with Atollo" of a server; the port
 /// applies at the next start.
+/// The version a database server runs (None: the newest installed), while
+/// it is stopped; each version keeps its own data (D-81).
+#[tauri::command]
+pub async fn service_line<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+    line: Option<String>,
+) -> Result<Vec<crate::services::ServiceInfo>, String> {
+    ensure_main(&webview)?;
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        services
+            .set_line(&id, line.as_deref())
+            .map_err(|e| fail("service", format!("{e:#}")))?;
+        Ok(services.list())
+    })
+    .await
+    .map_err(|e| fail("service", e))?
+}
+
 #[tauri::command]
 pub async fn service_set<R: Runtime>(
     webview: Webview<R>,
@@ -2033,9 +2103,9 @@ macro_rules! command_handler {
             $crate::commands::versions_available,
             $crate::commands::versions_add,
             $crate::commands::versions_remove,
-            $crate::commands::versions_prefer,
             $crate::commands::project_versions,
             $crate::commands::project_versions_set,
+            $crate::commands::relations_matrix,
             $crate::commands::extensions_matrix,
             $crate::commands::github_status,
             $crate::commands::github_sign_in,
@@ -2065,6 +2135,7 @@ macro_rules! command_handler {
             $crate::commands::service_start,
             $crate::commands::service_stop,
             $crate::commands::service_set,
+            $crate::commands::service_line,
             $crate::commands::db_browse_tree,
             $crate::commands::db_browse_rows,
             $crate::commands::run_list,

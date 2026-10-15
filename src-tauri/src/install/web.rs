@@ -191,7 +191,7 @@ pub(super) fn copy_vc_runtime(ctx: &Ctx, dest: &Path) -> Result<()> {
 }
 
 /// PHP Thread Safe x64 (the Apache module needs it), newest branch or the
-/// one in the settings; Composer in `tools\`.
+/// one in the settings; in each of its folders, the Composer that runs on it.
 pub struct Php;
 
 /// `(version, zip path, sha256)` of the TS x64 build of `branch` (or the
@@ -230,14 +230,30 @@ pub fn pick_php(releases: &Value, branch: Option<&str>) -> Result<(String, Strin
     ))
 }
 
-/// `(version, URL)` of the newest stable Composer in getcomposer.org's
-/// `versions` (the list `composer self-update` reads, newest first).
-pub fn pick_composer(versions: &Value) -> Result<(String, String)> {
-    let stable = versions
-        .pointer("/stable/0")
-        .ok_or_else(|| anyhow!("Composer: no stable version"))?;
+/// `(version, URL)` of the newest Composer that runs on PHP `php` (`8.4.13`),
+/// from getcomposer.org's `versions` (the list `composer self-update`
+/// reads, newest first): the stable one, or the 2.2 LTS for a PHP older
+/// than the stable's `min-php` (`70205` = 7.2.5).
+pub fn pick_composer(versions: &Value, php: &str) -> Result<(String, String)> {
+    let php_id = {
+        let n: Vec<u64> = php
+            .split(|c: char| !c.is_ascii_digit())
+            .filter(|p| !p.is_empty())
+            .take(3)
+            .filter_map(|p| p.parse().ok())
+            .collect();
+        n.first().copied().unwrap_or(0) * 10000
+            + n.get(1).copied().unwrap_or(0) * 100
+            + n.get(2).copied().unwrap_or(0)
+    };
+    let entry = ["stable", "2.2"]
+        .iter()
+        .filter_map(|ch| versions.get(*ch).and_then(Value::as_array))
+        .flatten()
+        .find(|e| e.get("min-php").and_then(Value::as_u64).unwrap_or(0) <= php_id)
+        .ok_or_else(|| anyhow!("Composer: no stable version for PHP {php}"))?;
     let get = |k: &str| {
-        stable
+        entry
             .get(k)
             .and_then(Value::as_str)
             .ok_or_else(|| anyhow!("Composer versions: no {k}"))
@@ -252,6 +268,33 @@ pub fn pick_composer(versions: &Value) -> Result<(String, String)> {
     ))
 }
 
+/// PHP `version` with the Composer that runs on it, inside its folder: each
+/// version of PHP has its own (`php\8.4\composer.phar`).
+fn php_release(ctx: &Ctx, version: String, path: String, sha: String) -> Result<Release> {
+    let (composer_version, composer) =
+        pick_composer(&ctx.net.json("https://getcomposer.org/versions")?, &version)?;
+    let composer_sha = hash_in_list(
+        &ctx.net.text(&format!("{composer}.sha256sum"))?,
+        "composer.phar",
+    )
+    .ok_or_else(|| anyhow!("Composer: no SHA-256"))?;
+    Ok(Release {
+        version: format!("{version} (Composer {composer_version})"),
+        parts: vec![
+            php_part(path, sha),
+            Part {
+                url: composer,
+                file_name: "composer.phar".into(),
+                expect: Expect::Sha256(composer_sha),
+                kind: Kind::File,
+                inner: Inner::Root,
+                dest: Dest::Inside("composer.phar"),
+                sign: None,
+            },
+        ],
+    })
+}
+
 /// The branches of `releases.json` with a Thread Safe x64 build, newest first.
 pub fn php_lines(releases: &Value) -> Vec<String> {
     let mut out: Vec<String> = releases
@@ -259,7 +302,9 @@ pub fn php_lines(releases: &Value) -> Vec<String> {
         .into_iter()
         .flatten()
         .map(|(k, _)| k.clone())
+        // PHP 8 and later: Apache's configuration loads `php8apache2_4.dll`.
         .filter(|k| crate::versions::valid_line(k) && pick_php(releases, Some(k)).is_ok())
+        .filter(|k| crate::ranges::Version::parse(k).is_some_and(|v| v.0 >= 8))
         .collect();
     out.sort_by_key(|l| std::cmp::Reverse(super::lang::version_key(l)));
     out
@@ -285,48 +330,28 @@ impl Installer for Php {
         true
     }
 
+    /// Composer comes after the zip (`php_release`).
+    fn inside(&self) -> &'static [&'static str] {
+        &["composer.phar"]
+    }
+
     fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
         Ok(php_lines(
             &ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?,
         ))
     }
 
-    /// PHP only: Composer stays the default's.
     fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
         let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
         let (version, path, sha) = pick_php(&releases, Some(line))?;
-        Ok(Release {
-            version,
-            parts: vec![php_part(path, sha)],
-        })
+        php_release(ctx, version, path, sha)
     }
 
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
         let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
         let branch = Settings::load(ctx.kit).settings.php_version;
         let (version, path, sha) = pick_php(&releases, branch.as_deref())?;
-        let (composer_version, composer) =
-            pick_composer(&ctx.net.json("https://getcomposer.org/versions")?)?;
-        let composer_sha = hash_in_list(
-            &ctx.net.text(&format!("{composer}.sha256sum"))?,
-            "composer.phar",
-        )
-        .ok_or_else(|| anyhow!("Composer: no SHA-256"))?;
-        Ok(Release {
-            version: format!("{version} (Composer {composer_version})"),
-            parts: vec![
-                php_part(path, sha),
-                Part {
-                    url: composer,
-                    file_name: "composer.phar".into(),
-                    expect: Expect::Sha256(composer_sha),
-                    kind: Kind::File,
-                    inner: Inner::Root,
-                    dest: Dest::Tools(vec!["composer.phar"]),
-                    sign: None,
-                },
-            ],
-        })
+        php_release(ctx, version, path, sha)
     }
 
     /// VC++ DLLs next to `php.exe`; `cacert.pem` for HTTPS from PHP (PHP does
@@ -382,17 +407,58 @@ impl Installer for Php {
                 write_atomic(&ini, new.as_bytes())?;
             }
         }
+        composer_launchers(dest)?;
+        // An older kit's Composer, one for every PHP, first on the PATH.
         let tools = ctx.kit.apps().join("tools");
-        write_atomic(
-            &tools.join("composer.cmd"),
-            b"@php \"%~dp0composer.phar\" %*\r\n",
-        )?;
-        write_atomic(
-            &tools.join("composer"),
-            b"#!/bin/sh\nexec php \"$(dirname \"$0\")/composer.phar\" \"$@\"\n",
-        )?;
+        for name in ["composer.phar", "composer.cmd", "composer"] {
+            let _ = fs::remove_file(tools.join(name));
+        }
         Ok(())
     }
+}
+
+/// An older kit had one Composer for every PHP, in `tools\`: each folder of
+/// PHP gets a copy with its launchers (its next update brings its own), then
+/// the old one goes. At start, with `versions::migrate`.
+pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
+    let tools = kit.apps().join("tools");
+    let old = tools.join("composer.phar");
+    let Some(php) = crate::catalog::Catalog::get().find("php") else {
+        return Ok(());
+    };
+    if !old.is_file() {
+        return Ok(());
+    }
+    let dirs = std::iter::once(crate::versions::default_dir(kit, php)).chain(
+        crate::versions::saved(kit, php)
+            .into_iter()
+            .map(|l| crate::versions::saved_dir(kit, php, &l.line)),
+    );
+    for dir in dirs.filter(|d| d.join("php.exe").is_file()) {
+        if !dir.join("composer.phar").is_file() {
+            fs::copy(&old, dir.join("composer.phar")).with_context(|| dir.display().to_string())?;
+        }
+        composer_launchers(&dir)?;
+    }
+    for name in ["composer.phar", "composer.cmd", "composer"] {
+        let _ = fs::remove_file(tools.join(name));
+    }
+    Ok(())
+}
+
+/// `composer.cmd` and `composer` (Git Bash) next to `composer.phar` in a
+/// folder of PHP: they run it with the `php.exe` beside them, so each
+/// version of PHP uses its own Composer.
+pub fn composer_launchers(dir: &Path) -> Result<()> {
+    write_atomic(
+        &dir.join("composer.cmd"),
+        b"@\"%~dp0php.exe\" \"%~dp0composer.phar\" %*\r\n",
+    )?;
+    write_atomic(
+        &dir.join("composer"),
+        b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nexec \"$d/php.exe\" \"$d/composer.phar\" \"$@\"\n",
+    )?;
+    Ok(())
 }
 
 /// `${CP_APPS}\php\…` of an older kit's `php.ini` as `${CP_PHP}\…`.
@@ -530,9 +596,9 @@ pub fn apache_site(dir: &Path) -> Result<()> {
             "DirectoryIndex index.php index.html",
             "",
             "# The kit's PHP (Apache module), php.ini in data\\php",
-            "<IfFile \"${CP_APPS_FWD}/php/php8apache2_4.dll\">",
-            "    LoadFile \"${CP_APPS_FWD}/php/php8ts.dll\"",
-            "    LoadModule php_module \"${CP_APPS_FWD}/php/php8apache2_4.dll\"",
+            "<IfFile \"${CP_PHP_FWD}/php8apache2_4.dll\">",
+            "    LoadFile \"${CP_PHP_FWD}/php8ts.dll\"",
+            "    LoadModule php_module \"${CP_PHP_FWD}/php8apache2_4.dll\"",
             "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"",
             "    <FilesMatch \"\\.php$\">",
             "        SetHandler application/x-httpd-php",
@@ -607,29 +673,47 @@ mod tests {
         assert_eq!(pick_php(&releases, Some("8.3")).unwrap().0, "8.3.20");
         assert!(pick_php(&releases, Some("7.4")).is_err());
         assert_eq!(php_lines(&releases), ["8.4", "8.3"]);
+
+        // PHP 7 has a build, but Apache's configuration loads PHP 8's module.
+        let mut with_7 = releases.clone();
+        with_7["7.4"] = json!({"version": "7.4.33", "ts-vc15-x64": {"zip": {"path": "php-7.4.33.zip", "sha256": "dd"}}});
+        assert_eq!(php_lines(&with_7), ["8.4", "8.3"]);
     }
 
     #[test]
-    fn composer_newest_stable() {
+    fn composer_for_each_php() {
         let versions = json!({
             "stable": [
-                {"path": "/download/2.10.3/composer.phar", "version": "2.10.3"},
-                {"path": "/download/2.2.30/composer.phar", "version": "2.2.30"}
+                {"path": "/download/2.10.3/composer.phar", "version": "2.10.3", "min-php": 70205}
             ],
-            "preview": [{"path": "/download/2.11.0-RC1/composer.phar", "version": "2.11.0-RC1"}]
+            "preview": [{"path": "/download/2.11.0-RC1/composer.phar", "version": "2.11.0-RC1", "min-php": 70205}],
+            "2.2": [{"path": "/download/2.2.30/composer.phar", "version": "2.2.30", "min-php": 50300}]
         });
-        assert_eq!(
-            pick_composer(&versions).unwrap(),
-            (
-                "2.10.3".into(),
-                "https://getcomposer.org/download/2.10.3/composer.phar".into()
-            )
+        let stable = (
+            "2.10.3".to_owned(),
+            "https://getcomposer.org/download/2.10.3/composer.phar".to_owned(),
         );
-        assert!(pick_composer(&json!({"stable": []})).is_err());
+        assert_eq!(pick_composer(&versions, "8.4.13").unwrap(), stable);
+        assert_eq!(pick_composer(&versions, "7.2.5").unwrap(), stable);
+        assert_eq!(
+            pick_composer(&versions, "7.1.33").unwrap().0,
+            "2.2.30",
+            "older PHP: the LTS"
+        );
+        assert!(pick_composer(&json!({"stable": []}), "8.4.1").is_err());
         assert!(pick_composer(
-            &json!({"stable": [{"path": "https://x/composer.phar", "version": "1"}]})
+            &json!({"stable": [{"path": "https://x/composer.phar", "version": "1"}]}),
+            "8.4.1"
         )
         .is_err());
+
+        let tmp = crate::kit::tests::TempDir::new("composer-launchers");
+        composer_launchers(&tmp.0).unwrap();
+        let cmd = fs::read_to_string(tmp.0.join("composer.cmd")).unwrap();
+        assert!(
+            cmd.contains(r#""%~dp0php.exe" "%~dp0composer.phar""#),
+            "{cmd}"
+        );
     }
 
     #[test]
