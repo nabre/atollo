@@ -298,8 +298,12 @@ export function AgentPicker({
             onClick={() => {
               setChosen(a.id);
             }}
+            // An input option (the find widget's toggles): its active colors
+            // and border when chosen, the toolbar hover otherwise.
             className={`flex size-[22px] items-center justify-center rounded-[3px] ${
-              agent === a.id ? "bg-vsc-option-active" : "opacity-60 hover:bg-vsc-toolbar-hover hover:opacity-100"
+              agent === a.id
+                ? "bg-vsc-option-active outline-1 -outline-offset-1 outline-vsc-option-active-border"
+                : "opacity-60 hover:bg-vsc-toolbar-hover hover:opacity-100"
             }`}
           >
             <ComponentLogo id={a.id} size={16} />

@@ -5,8 +5,6 @@ import {
   VscAccount,
   VscArchive,
   VscCheck,
-  VscChevronDown,
-  VscChevronRight,
   VscCloudDownload,
   VscCode,
   VscRepo,
@@ -32,6 +30,7 @@ import { useAction } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { Mark } from "../tags";
 import { t } from "../i18n";
+import { List, ListRow, SearchBox } from "../workbench";
 import { useGithub } from "./account";
 import { RepoDetails } from "./details";
 
@@ -165,15 +164,11 @@ function Repositories({
         <h2 id="gh-repos" className="sr-only">
           {t("Repository")}
         </h2>
-        <input
-          type="search"
-          aria-label={t("Cerca nei repository")}
-          placeholder={t("Cerca nei repository")}
+        <SearchBox
           value={filter}
-          onChange={(e) => {
-            setFilter(e.target.value);
-          }}
-          className="min-w-0 flex-1 input"
+          onChange={setFilter}
+          placeholder={t("Cerca nei repository")}
+          className="min-w-0 flex-1"
         />
         <ActionButton icon={VscRefresh} label={t("Aggiorna")} compact busy={loading} onClick={onReload} />
       </div>
@@ -203,76 +198,80 @@ function Repositories({
                 {g.owner} · {g.repos.length}
               </h3>
             ) : null}
-            <ul aria-label={g.owner} className="-mx-3">
+            <List label={g.owner} className="-mx-3">
               {g.repos.map((r) => {
                 const expanded = open === r.fullName;
                 return (
-                  <li key={r.fullName}>
-                    <div
-                      className={`group flex h-[22px] items-center gap-0.5 border-l-2 pr-1 pl-2.5 hover:bg-vsc-list-hover ${
-                        r.local ? "border-l-vsc-success" : "border-l-transparent"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        aria-expanded={expanded}
-                        onClick={() => {
-                          setOpen(expanded ? null : r.fullName);
-                        }}
-                        className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
-                      >
-                        {expanded ? (
-                          <VscChevronDown size={16} aria-hidden="true" className="shrink-0" />
-                        ) : (
-                          <VscChevronRight size={16} aria-hidden="true" className="shrink-0" />
-                        )}
-                        <RepoIcon repo={r} />
-                        <span className={`truncate ${r.local ? "text-vsc-success" : ""}`}>{r.name}</span>
+                  <ListRow
+                    key={r.fullName}
+                    twistie={expanded ? "open" : "closed"}
+                    onSelect={() => {
+                      setOpen(expanded ? null : r.fullName);
+                    }}
+                    icon={<RepoIcon repo={r} />}
+                    label={r.local ? <span className="text-vsc-success">{r.name}</span> : r.name}
+                    description={
+                      <span className="inline-flex items-center gap-1.5 align-middle">
                         {r.local && <span className="sr-only">{t("clonato")}</span>}
                         <RepoFlags repo={r} />
-                      </button>
-                      {r.local ? (
+                      </span>
+                    }
+                    // A cloned repository is marked on the left, as a
+                    // modified file in the Explorer.
+                    className={`rounded-none border-l-2 ${r.local ? "border-l-vsc-success" : "border-l-transparent"}`}
+                    // The row's actions stay shown, not only on hover.
+                    decorations={
+                      <span className="flex items-center gap-0.5">
+                        {r.local ? (
+                          <ActionButton
+                            icon={VscCode}
+                            label={t("Editor")}
+                            ghost
+                            compact
+                            busy={busy === `editor:${r.fullName}`}
+                            disabled={editor?.installed === false}
+                            title={t("Apre {0} nell'editor", r.local)}
+                            onClick={() => {
+                              const project = r.local ?? "";
+                              run(`editor:${r.fullName}`, async () => {
+                                await editorOpen(project);
+                                onEditor();
+                              });
+                            }}
+                          />
+                        ) : (
+                          <ActionButton
+                            icon={VscCloudDownload}
+                            label={t("Clona")}
+                            ghost
+                            compact
+                            busy={busy === `clone:${r.fullName}`}
+                            title={t("Copia {0} in projects", r.fullName)}
+                            onClick={() => {
+                              clone(r);
+                            }}
+                          />
+                        )}
                         <ActionButton
-                          icon={VscCode}
-                          label={t("Editor")}
-                          ghost
+                          icon={VscLinkExternal}
+                          label="GitHub"
                           compact
-                          busy={busy === `editor:${r.fullName}`}
-                          disabled={editor?.installed === false}
-                          title={t("Apre {0} nell'editor", r.local)}
+                          ghost
+                          title={t("Apre {0} su github.com", r.fullName)}
                           onClick={() => {
-                            const project = r.local ?? "";
-                            run(`editor:${r.fullName}`, async () => {
-                              await editorOpen(project);
-                              onEditor();
-                            });
+                            run(`web:${r.fullName}`, () => githubOpen(r.fullName));
                           }}
                         />
-                      ) : (
-                        <ActionButton
-                          icon={VscCloudDownload}
-                          label={t("Clona")}
-                          ghost
-                          compact
-                          busy={busy === `clone:${r.fullName}`}
-                          title={t("Copia {0} in projects", r.fullName)}
-                          onClick={() => {
-                            clone(r);
-                          }}
-                        />
-                      )}
-                      <ActionButton
-                        icon={VscLinkExternal}
-                        label="GitHub"
-                        compact
-                        ghost
-                        title={t("Apre {0} su github.com", r.fullName)}
-                        onClick={() => {
-                          run(`web:${r.fullName}`, () => githubOpen(r.fullName));
-                        }}
-                      />
-                    </div>
-                    {expanded && (
+                      </span>
+                    }
+                  >
+                    {/* The list moves between rows with these keys: not
+                        while they move in the details' fields. */}
+                    <div
+                      onKeyDown={(e) => {
+                        if (["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) e.stopPropagation();
+                      }}
+                    >
                       <RepoDetails
                         repo={r}
                         canDelete={repos.canDelete}
@@ -305,11 +304,11 @@ function Repositories({
                         }}
                         onSignIn={onSignIn}
                       />
-                    )}
-                  </li>
+                    </div>
+                  </ListRow>
                 );
               })}
-            </ul>
+            </List>
           </div>
         ))
       )}
