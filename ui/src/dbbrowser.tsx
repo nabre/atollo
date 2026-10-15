@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { VscChevronLeft, VscChevronRight, VscDatabase, VscEye, VscRefresh, VscTable } from "react-icons/vsc";
 import { DB_PAGE, dbBrowseRows, dbBrowseTree, type DbDatabase, type DbRows, type ServiceInfo } from "./api";
 import { locale, t } from "./i18n";
-import { ErrorLine } from "./pages";
+import { ErrorLine } from "./common";
 import { IconButton, List, ListRow, ProgressBar } from "./workbench";
 
 type Engine = ServiceInfo["id"];

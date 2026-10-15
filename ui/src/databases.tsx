@@ -29,7 +29,7 @@ import {
 import { t } from "./i18n";
 import { DbBrowser } from "./dbbrowser";
 import { ComponentLogo } from "./logos";
-import { ActionButton, ErrorLine } from "./pages";
+import { ActionButton, ErrorLine } from "./common";
 import { useEvery } from "./hooks";
 import {
   Button,

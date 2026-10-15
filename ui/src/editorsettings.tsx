@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 import { VscSave } from "react-icons/vsc";
 import { projectEditorSettings, projectEditorSettingsSet, type EditorSettingsView } from "./api";
 import { t } from "./i18n";
-import { ActionButton, ErrorLine, useAction } from "./pages";
+import { ActionButton, ErrorLine } from "./common";
+import { useAction } from "./hooks";
 
 type Tri = "default" | "yes" | "no";
 const toTri = (v: boolean | null): Tri => (v === null ? "default" : v ? "yes" : "no");

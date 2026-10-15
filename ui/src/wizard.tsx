@@ -25,7 +25,7 @@ import {
   useFrameworks,
   usePlan,
 } from "./frameworks";
-import { ErrorLine } from "./pages";
+import { ErrorLine } from "./common";
 import { useSubscription } from "./hooks";
 import { t } from "./i18n";
 import { Button, IconButton, Link, Notice, ProgressBar, SingleEditor } from "./workbench";

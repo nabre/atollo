@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { VscCheck, VscCloudUpload, VscDiscard, VscFolderOpened } from "react-icons/vsc";
 import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "./api";
 import { locale, t } from "./i18n";
-import { ActionButton, ErrorLine, useAction } from "./pages";
+import { ActionButton, ErrorLine } from "./common";
+import { useAction } from "./hooks";
 
 function size(bytes: number): string {
   const kb = bytes / 1024;

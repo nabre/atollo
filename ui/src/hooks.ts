@@ -1,7 +1,7 @@
 // Hooks shared by the pages, for the two ways Rust keeps them current:
 // events it sends (`useSubscription`) and state read again every few seconds
-// (`useEvery`).
-import { useEffect, useRef } from "react";
+// (`useEvery`); and an action with its wait and its error (`useAction`).
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /** One of the `on…` functions of ./api: starts listening, resolves to the
  * function that stops. */
@@ -48,4 +48,28 @@ export function useEvery(read: () => void, ms: number): void {
       window.clearInterval(timer);
     };
   }, [read, ms]);
+}
+
+/** Runs an action, keeping track of what is busy and of the last error. */
+export function useAction(onDone?: () => void) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const run = useCallback(
+    (key: string, action: () => Promise<void>) => {
+      setBusy(key);
+      setError(null);
+      action().then(
+        () => {
+          setBusy(null);
+          onDone?.();
+        },
+        (e: unknown) => {
+          setBusy(null);
+          setError(String(e));
+        },
+      );
+    },
+    [onDone],
+  );
+  return { busy, error, run };
 }
