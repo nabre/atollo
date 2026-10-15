@@ -11,10 +11,18 @@
 // from a phone on the same network; then the firewall asks).
 
 const net = require('net');
+const dgram = require('dgram');
 
 if (process.env.ATOLLO_ALLOW_LAN !== '1' && !net.Server.prototype.listen.atolloLoopback) {
-    const ANY = new Set(['', '0.0.0.0', '::', '[::]', '::0']);
-    const loopback = host => host === undefined || host === null || ANY.has(host);
+    // Matches undefined/null/empty and every IPv4/IPv6 wildcard representation
+    // ('0.0.0.0', '::', '[::]', '::0', '0:0:0:0:0:0:0:0',
+    // '0000:0000:0000:0000:0000:0000:0000:0000' used by Vite's wildcardHosts,
+    // '::ffff:0.0.0.0', etc.).
+    const WILDCARD = /^(?:[0:.\[\]]*|\[?::ffff:0(?:\.0\.0\.0|:0:0|)\]?)$/i;
+    const loopback = host =>
+        host === undefined ||
+        host === null ||
+        (typeof host === 'string' && WILDCARD.test(host.trim()));
     const original = net.Server.prototype.listen;
 
     // listen(options, cb) or listen(port, [host], [backlog], [cb]); a pipe
@@ -23,7 +31,7 @@ if (process.env.ATOLLO_ALLOW_LAN !== '1' && !net.Server.prototype.listen.atolloL
         if (!args.length) args = [0];
         const first = args[0];
         if (first && typeof first === 'object' && !Array.isArray(first)) {
-            if (first.port !== undefined && first.path === undefined && first.handle === undefined
+            if (first.path === undefined && first.handle === undefined
                 && first._handle === undefined && first.fd === undefined && loopback(first.host)) {
                 args[0] = { ...first, host: '127.0.0.1' };
             }
@@ -35,4 +43,27 @@ if (process.env.ATOLLO_ALLOW_LAN !== '1' && !net.Server.prototype.listen.atolloL
     };
     listen.atolloLoopback = true;
     net.Server.prototype.listen = listen;
+
+    const originalBind = dgram.Socket.prototype.bind;
+    const bind = function (...args) {
+        const local = this && this.type === 'udp6' ? '::1' : '127.0.0.1';
+        const first = args[0];
+        if (first && typeof first === 'object' && !Array.isArray(first)) {
+            if (first.fd === undefined && loopback(first.address)) {
+                args[0] = { ...first, address: local };
+            }
+        } else if (typeof first === 'number' || (typeof first === 'string' && /^\d+$/.test(first)) || first === undefined || first === null || typeof first === 'function') {
+            if (typeof first === 'function') {
+                args = [0, local, first];
+            } else if (typeof args[1] === 'string' && loopback(args[1])) {
+                args[1] = local;
+            } else if (typeof args[1] !== 'string') {
+                args[0] = first ?? 0;
+                args.splice(1, 0, local);
+            }
+        }
+        return originalBind.apply(this, args);
+    };
+    bind.atolloLoopback = true;
+    dgram.Socket.prototype.bind = bind;
 }
