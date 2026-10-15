@@ -5,8 +5,9 @@
 //! and a project's own Apache (`apache`). What a project is: `detect`.
 //!
 //! The projects in `projects\` (port of nabre/atollo `core/projects.js`):
-//! list with what each one is, new empty project, delete an empty one,
-//! clone from GitHub or a Git URL.
+//! list with what each one is, new empty project, delete an empty one (with
+//! its databases on the kit's servers, PLAN-DATA.md WP-5), clone from GitHub
+//! or a Git URL.
 
 pub mod alias;
 pub mod apache;
@@ -163,13 +164,165 @@ pub fn create(kit: &Kit, name: &str, lang: &str) -> Result<PathBuf> {
     Ok(dir)
 }
 
-/// Deletes a project only while its folder is empty (never a link, never
-/// files): `remove_dir` fails by itself if something appeared meanwhile.
-pub fn delete_empty(kit: &Kit, name: &str, lang: &str) -> Result<()> {
+/// The databases of the kit's servers, as a project's deletion sees them
+/// (PLAN-DATA.md WP-5): `db::services::ProjectDrops` for the real servers,
+/// a fake in the tests.
+pub trait ProjectDatabases {
+    /// The server of `engine` is installed (otherwise its database is left).
+    fn installed(&self, engine: &str) -> bool;
+    /// Drops the project's database and user on `engine`, starting the
+    /// server when it is stopped.
+    fn drop_db(&self, project: &str, engine: &str) -> Result<()>;
+}
+
+/// A database of the project that its deletion drops.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlannedDb {
+    /// `mariadb` or `mongodb`.
+    pub engine: String,
+    /// Name of the database and of its user.
+    pub database: String,
+    /// Not installed: skipped, the database stays in the server's data.
+    pub installed: bool,
+}
+
+/// What deleting a project takes away (PLAN-DATA.md T5.1).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeletePlan {
+    /// The folder in `projects\` (not a link).
+    pub folder_exists: bool,
+    /// Only an empty folder is deleted from the app.
+    pub folder_empty: bool,
+    /// The databases with a password of the kit, dropped first.
+    pub databases: Vec<PlannedDb>,
+    /// The copies of its databases (`private\backups`) and their bytes.
+    pub backups: usize,
+    pub backups_size: u64,
+}
+
+/// The project's folder in `projects\`: a folder (not a link), and whether
+/// it is empty; `None` when missing.
+fn folder_state(dir: &Path) -> Option<(bool, bool)> {
+    let meta = fs::symlink_metadata(dir).ok()?;
+    let folder = meta.is_dir() && !crate::os::safe_path::is_reparse(&meta);
+    Some((
+        folder,
+        folder && fs::read_dir(dir).is_ok_and(|mut d| d.next().is_none()),
+    ))
+}
+
+/// What [`delete`] would take away. Reads only: nothing is created. Fails
+/// when the passwords of the databases cannot be read (deleting would then
+/// need `force_without_db`).
+pub fn delete_plan(kit: &Kit, name: &str, lang: &str) -> Result<DeletePlan> {
+    check_name(name, lang)?;
+    let (folder_exists, folder_empty) =
+        folder_state(&kit.projects().join(name)).unwrap_or((false, false));
+    let database = crate::db::auth::db_name(name);
+    let databases = engines_of(kit, name)?
+        .into_iter()
+        .map(|engine| PlannedDb {
+            installed: Catalog::get()
+                .find(&engine)
+                .is_some_and(|c| c.is_installed(kit)),
+            engine,
+            database: database.clone(),
+        })
+        .collect();
+    let (backups, backups_size) = state::ProjectState::of(kit, name)
+        .map(|s| s.dir().join(r"private\backups"))
+        .and_then(|dir| fs::read_dir(dir).ok())
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| e.metadata().ok())
+        .filter(|m| m.is_file() && !crate::os::safe_path::is_reparse(m))
+        .fold((0, 0), |(n, size), m| (n + 1, size + m.len()));
+    Ok(DeletePlan {
+        folder_exists,
+        folder_empty,
+        databases,
+        backups,
+        backups_size,
+    })
+}
+
+/// The kit's servers where the project has a database (a stored password).
+fn engines_of(kit: &Kit, name: &str) -> Result<Vec<String>> {
+    let passwords = crate::db::auth::try_project_passwords(kit, name)
+        .context("the passwords of the project's databases")?;
+    Ok(passwords
+        .into_keys()
+        .filter(|e| crate::db::services::SERVERS.contains(&e.as_str()))
+        .collect())
+}
+
+/// Deletes a project (PLAN-DATA.md WP-5): its databases and users on the
+/// kit's servers first, then its folder, which must be empty (never a link,
+/// never files: `remove_dir` fails by itself if something appeared
+/// meanwhile), then everything the kit keeps for it in `data\projects`.
+///
+/// A drop that fails stops everything, nothing deleted. With
+/// `force_without_db` no server is touched: the folders go anyway and the
+/// log names the databases and users left (never a password). A server
+/// not installed is skipped, its database named in the log as well.
+pub fn delete(
+    kit: &Kit,
+    name: &str,
+    lang: &str,
+    dbs: &dyn ProjectDatabases,
+    force_without_db: bool,
+) -> Result<()> {
     check_name(name, lang)?;
     let dir = kit.projects().join(name);
-    let meta = fs::symlink_metadata(&dir).with_context(|| name.to_owned())?;
-    if !meta.is_dir() || meta.file_type().is_symlink() {
+    check_deletable(&dir, name, lang)?;
+    let database = crate::db::auth::db_name(name);
+    let engines = match engines_of(kit, name) {
+        Ok(engines) => engines,
+        Err(e) if force_without_db => {
+            crate::log::warn(&format!(
+                "{name}: deleted without its databases, unknown ({e:#}): \
+                 database and user {database} may be left on the servers"
+            ));
+            Vec::new()
+        }
+        Err(e) => return Err(e),
+    };
+    let mut left = Vec::new();
+    for engine in engines {
+        if force_without_db {
+            left.push(engine);
+        } else if !dbs.installed(&engine) {
+            crate::log::info(&format!("{name}: {engine} not installed, skipped"));
+            left.push(engine);
+        } else {
+            dbs.drop_db(name, &engine)
+                .with_context(|| format!("{engine}: dropping the database {database}"))?;
+        }
+    }
+    if !left.is_empty() {
+        crate::log::warn(&format!(
+            "{name}: database and user {database} left on {}",
+            left.join(", ")
+        ));
+    }
+    fs::remove_dir(&dir).with_context(|| dir.display().to_string())?;
+    let removed = settings::remove(kit, name);
+    // The users are gone (or given up): their passwords go too, even when
+    // another file of the folder stayed.
+    if let Err(e) = crate::db::auth::drop_project(kit, name) {
+        crate::log::warn(&format!("{name}: passwords: {e:#}"));
+    }
+    removed.with_context(|| format!("data\\projects\\{name}"))?;
+    Ok(())
+}
+
+/// Only an empty folder, never a link, is deleted from the app.
+fn check_deletable(dir: &Path, name: &str, lang: &str) -> Result<()> {
+    let meta = fs::symlink_metadata(dir).with_context(|| name.to_owned())?;
+    if !meta.is_dir() || crate::os::safe_path::is_reparse(&meta) {
         bail!(
             "{}",
             tr(
@@ -179,7 +332,7 @@ pub fn delete_empty(kit: &Kit, name: &str, lang: &str) -> Result<()> {
             )
         );
     }
-    if fs::read_dir(&dir)?.next().is_some() {
+    if fs::read_dir(dir)?.next().is_some() {
         bail!(
             "{}",
             tr(
@@ -189,8 +342,6 @@ pub fn delete_empty(kit: &Kit, name: &str, lang: &str) -> Result<()> {
             )
         );
     }
-    fs::remove_dir(&dir).with_context(|| dir.display().to_string())?;
-    settings::remove(kit, name);
     Ok(())
 }
 
@@ -645,9 +796,187 @@ mod tests {
         let site = l.iter().find(|p| p.id == "site").unwrap();
         assert!(!site.empty);
         assert_eq!(site.project.default.as_deref(), Some("static"));
-        assert!(delete_empty(&kit, "site", "it").is_err());
-        delete_empty(&kit, "empty", "it").unwrap();
+        let none = FakeDbs::new(&[]);
+        assert!(delete(&kit, "site", "it", &none, false).is_err());
+        delete(&kit, "empty", "it", &none, false).unwrap();
         assert!(!kit.projects().join("empty").exists());
-        assert!(delete_empty(&kit, r"..\data", "it").is_err());
+        assert!(delete(&kit, r"..\data", "it", &none, false).is_err());
+        assert!(none.calls().is_empty());
+    }
+
+    /// The kit's servers, faked: which are installed, which drop fails, the
+    /// drops asked (and the servers "started" for them).
+    struct FakeDbs {
+        installed: Vec<&'static str>,
+        failing: Vec<&'static str>,
+        calls: std::sync::Mutex<Vec<String>>,
+    }
+
+    impl FakeDbs {
+        fn new(installed: &[&'static str]) -> FakeDbs {
+            FakeDbs {
+                installed: installed.to_vec(),
+                failing: Vec::new(),
+                calls: std::sync::Mutex::new(Vec::new()),
+            }
+        }
+        fn calls(&self) -> Vec<String> {
+            self.calls.lock().unwrap().clone()
+        }
+    }
+
+    impl ProjectDatabases for FakeDbs {
+        fn installed(&self, engine: &str) -> bool {
+            self.installed.contains(&engine)
+        }
+        fn drop_db(&self, project: &str, engine: &str) -> Result<()> {
+            // as `Services::project_db_drop`: the server starts first
+            self.calls.lock().unwrap().push(format!("start {engine}"));
+            if self.failing.contains(&engine) {
+                bail!("{engine} did not start");
+            }
+            self.calls.lock().unwrap().push(format!(
+                "drop {engine} {}",
+                crate::db::auth::db_name(project)
+            ));
+            Ok(())
+        }
+    }
+
+    /// A project with an empty folder, kit files, two databases and a copy.
+    fn project_with_dbs(kit: &Kit, name: &str) -> state::ProjectState {
+        create(kit, name, "it").unwrap();
+        settings::update(kit, name, |s| s.agent = Some("claude".into()));
+        crate::db::auth::set_project_password(kit, name, "mariadb", "pw-maria").unwrap();
+        crate::db::auth::set_project_password(kit, name, "mongodb", "pw-mongo").unwrap();
+        let state = state::ProjectState::of(kit, name).unwrap();
+        fs::write(state.backups_dir().unwrap().join("x-1.sql"), "12345").unwrap();
+        fs::write(state.backups_dir().unwrap().join("x-2.archive.gz"), "123").unwrap();
+        state
+    }
+
+    #[test]
+    fn delete_plan_with_and_without_databases() {
+        let tmp = TempDir::new("projects-plan");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        create(&kit, "plain", "it").unwrap();
+        let plan = delete_plan(&kit, "plain", "it").unwrap();
+        assert_eq!(
+            plan,
+            DeletePlan {
+                folder_exists: true,
+                folder_empty: true,
+                databases: Vec::new(),
+                backups: 0,
+                backups_size: 0,
+            }
+        );
+        assert!(
+            !kit.project_data().join("plain").exists(),
+            "the plan creates nothing"
+        );
+        assert!(delete_plan(&kit, "..", "it").is_err());
+        let missing = delete_plan(&kit, "missing", "it").unwrap();
+        assert!(!missing.folder_exists && !missing.folder_empty);
+
+        let state = project_with_dbs(&kit, "Shop Online");
+        fs::write(kit.projects().join("Shop Online").join("a.txt"), "x").unwrap();
+        let plan = delete_plan(&kit, "Shop Online", "it").unwrap();
+        assert!(plan.folder_exists && !plan.folder_empty);
+        let engines: Vec<_> = plan.databases.iter().map(|d| d.engine.as_str()).collect();
+        assert_eq!(engines, ["mariadb", "mongodb"]);
+        assert!(plan
+            .databases
+            .iter()
+            .all(|d| d.database == "shop_online" && !d.installed));
+        assert_eq!((plan.backups, plan.backups_size), (2, 8));
+        let json = serde_json::to_string(&plan).unwrap();
+        assert!(
+            json.contains("\"folderEmpty\":false") && json.contains("\"backupsSize\":8"),
+            "{json}"
+        );
+        assert!(!json.contains("pw-"), "no password in the plan: {json}");
+
+        // passwords that cannot be read: no plan (only a forced delete)
+        fs::write(state.db_file().unwrap(), "{ not json").unwrap();
+        assert!(delete_plan(&kit, "Shop Online", "it").is_err());
+    }
+
+    #[test]
+    fn delete_drops_the_databases_first() {
+        let tmp = TempDir::new("projects-delete-dbs");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let state = project_with_dbs(&kit, "shop");
+        let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+        delete(&kit, "shop", "it", &dbs, false).unwrap();
+        assert_eq!(
+            dbs.calls(),
+            [
+                "start mariadb",
+                "drop mariadb shop",
+                "start mongodb",
+                "drop mongodb shop"
+            ]
+        );
+        assert!(!kit.projects().join("shop").exists());
+        assert!(
+            !state.dir().exists(),
+            "nothing left in data\\projects\\shop"
+        );
+
+        // a server not installed is skipped; the rest goes
+        let state = project_with_dbs(&kit, "shop");
+        let dbs = FakeDbs::new(&["mongodb"]);
+        delete(&kit, "shop", "it", &dbs, false).unwrap();
+        assert_eq!(dbs.calls(), ["start mongodb", "drop mongodb shop"]);
+        assert!(!kit.projects().join("shop").exists() && !state.dir().exists());
+    }
+
+    #[test]
+    fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
+        let tmp = TempDir::new("projects-delete-fail");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        let state = project_with_dbs(&kit, "shop");
+        let mut dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+        dbs.failing.push("mongodb");
+        let e = delete(&kit, "shop", "it", &dbs, false).unwrap_err();
+        assert!(format!("{e:#}").contains("mongodb did not start"), "{e:#}");
+        assert!(!format!("{e:#}").contains("pw-"), "{e:#}");
+        assert!(kit.projects().join("shop").is_dir(), "folder kept");
+        assert_eq!(
+            crate::db::auth::project_password(&kit, "shop", "mongodb").as_deref(),
+            Some("pw-mongo"),
+            "passwords kept"
+        );
+        assert_eq!(
+            fs::read_dir(state.backups_dir().unwrap()).unwrap().count(),
+            2
+        );
+
+        // forced: no server touched, the folders go
+        let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+        delete(&kit, "shop", "it", &dbs, true).unwrap();
+        assert!(dbs.calls().is_empty(), "{:?}", dbs.calls());
+        assert!(!kit.projects().join("shop").exists() && !state.dir().exists());
+
+        // a non-empty folder stops before any server is touched
+        let state = project_with_dbs(&kit, "shop");
+        fs::write(kit.projects().join("shop").join("a.txt"), "x").unwrap();
+        let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+        assert!(delete(&kit, "shop", "it", &dbs, false).is_err());
+        assert!(delete(&kit, "shop", "it", &dbs, true).is_err());
+        assert!(dbs.calls().is_empty());
+        fs::remove_file(kit.projects().join("shop").join("a.txt")).unwrap();
+
+        // unreadable passwords: an error, unless forced
+        fs::write(state.db_file().unwrap(), "{ not json").unwrap();
+        assert!(delete(&kit, "shop", "it", &dbs, false).is_err());
+        assert!(kit.projects().join("shop").is_dir());
+        delete(&kit, "shop", "it", &dbs, true).unwrap();
+        assert!(dbs.calls().is_empty());
+        assert!(!kit.projects().join("shop").exists() && !state.dir().exists());
     }
 }
