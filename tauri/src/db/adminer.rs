@@ -10,8 +10,9 @@
 //!   of the PC that reach 127.0.0.1 cannot use root's login;
 //! - root's password and the MariaDB port in the server's environment
 //!   (`DEVKIT_DB_*`), never on the command line or in the browser;
-//! - sessions and Adminer's temporary files in `data\app\adminer`, the
-//!   server's output in `data\app\logs\adminer.log`.
+//! - sessions in `data\app\adminer`, uploaded files in `adminer\` of the
+//!   PC's temporary folder (D-90), the server's output in
+//!   `data\app\logs\adminer.log`.
 
 use std::fs::{self, File};
 use std::net::{Ipv4Addr, TcpListener};
@@ -26,6 +27,7 @@ use super::auth;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
+use crate::os::temp::TempWork;
 use crate::projects::run::responds;
 use crate::setup::catalog;
 
@@ -37,8 +39,10 @@ struct Server {
     /// The MariaDB port it logs in to.
     db_port: u16,
     token: String,
-    // Dropped last: ends PHP's server.
+    // Dropped after the fields above: ends PHP's server.
     _job: Job,
+    // Dropped last, once PHP has ended: the uploads' folder.
+    _uploads: TempWork,
 }
 
 #[derive(Default)]
@@ -105,6 +109,9 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
         .ok_or_else(|| anyhow!("MariaDB has no password of root yet"))?;
     let dir = kit.app_dir().join("adminer");
     fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
+    // Uploaded files (an SQL file to import) pass through the PC's temporary
+    // folder (D-90); the sessions stay in the kit.
+    let uploads = TempWork::new(kit, "adminer").context("adminer uploads")?;
     let log = kit.logs().join("adminer.log");
     let out = File::create(&log).with_context(|| log.display().to_string())?;
     let token = crate::editor::random_token()?;
@@ -113,7 +120,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
     cmd.arg("-d")
         .arg(format!("session.save_path={}", dir.display()))
         .arg("-d")
-        .arg(format!("upload_tmp_dir={}", dir.display()))
+        .arg(format!("upload_tmp_dir={}", uploads.path().display()))
         .arg("-S")
         .arg(format!("127.0.0.1:{port}"))
         .arg("-t")
@@ -152,6 +159,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
         db_port,
         token,
         _job: job,
+        _uploads: uploads,
     })
 }
 

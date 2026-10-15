@@ -1,8 +1,9 @@
 //! Files downloaded by hand (DECISIONS.md D-82): when a download fails, the
 //! interface shows its address; the file saved by the browser is dropped on
-//! the app (or picked) and kept in `data\downloads` until an installation
-//! uses it. A file is used only when its checksum is the one the source
-//! publishes, whatever its name (a browser may add ` (1)`).
+//! the app (or picked) and kept in `downloads\` of the PC's temporary folder
+//! (`data\downloads` without one, D-90) until an installation uses it. A
+//! file is used only when its checksum is the one the source publishes,
+//! whatever its name (a browser may add ` (1)`).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -16,11 +17,53 @@ use crate::net::verify::{self, Expect};
 /// Kept at most this long when no installation uses them.
 const KEEP: Duration = Duration::from_secs(30 * 24 * 3600);
 
+/// `downloads\` of the PC's temporary folder (D-90, Q-3), or `data\downloads`
+/// without one. The files found in `data\downloads` (kept there by an older
+/// version, or put there by hand as the command line says) are moved into it
+/// first.
 pub fn dir(kit: &Kit) -> PathBuf {
-    kit.data().join("downloads")
+    let in_kit = kit.data().join("downloads");
+    let Some(temp) = kit.system_temp() else {
+        return in_kit;
+    };
+    let dir = temp.join("downloads");
+    move_files(&in_kit, &dir);
+    dir
 }
 
-/// Copies `files` into `data\downloads` (through `.part`); returns their
+/// Moves the files of `from` (not the `.part` ones) into `to`: renamed on
+/// the same disk, else copied through `.part` and deleted. A file that
+/// cannot move (still being written) stays, with a warning in the log.
+fn move_files(from: &Path, to: &Path) {
+    let Ok(entries) = fs::read_dir(from) else {
+        return;
+    };
+    for path in entries.flatten().map(|e| e.path()) {
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        if !path.is_file() || name.ends_with(".part") {
+            continue;
+        }
+        let moved = (|| -> Result<()> {
+            fs::create_dir_all(to).with_context(|| to.display().to_string())?;
+            let dest = to.join(name);
+            if fs::rename(&path, &dest).is_ok() {
+                return Ok(());
+            }
+            let part = to.join(format!("{name}.part"));
+            fs::copy(&path, &part)
+                .with_context(|| format!("{} → {}", path.display(), part.display()))?;
+            fs::rename(&part, &dest).with_context(|| dest.display().to_string())?;
+            fs::remove_file(&path).with_context(|| path.display().to_string())
+        })();
+        if let Err(e) = moved {
+            crate::log::warn(&format!("{}: {e:#}", path.display()));
+        }
+    }
+}
+
+/// Copies `files` into `dir(kit)` (through `.part`); returns their
 /// names. Folders are refused; the files are left where they are.
 pub fn add(kit: &Kit, files: &[PathBuf]) -> Result<Vec<String>> {
     let dir = dir(kit);
@@ -203,5 +246,60 @@ mod tests {
         assert_eq!(fs::read(&dest).unwrap(), b"tool");
         assert!(!dir(&kit).join("tool (1).zip").exists(), "used once");
         assert!(dir(&kit).join("other.zip").exists(), "another file is kept");
+    }
+
+    /// With the PC's temporary folder, the files are kept there; those left
+    /// in `data\downloads` move there and are still found by checksum.
+    #[test]
+    fn kept_in_the_host_temp_folder() {
+        let tmp = TempDir::new("downloads-host");
+        let kit = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
+        kit.prepare().unwrap();
+        let old = kit.data().join("downloads");
+        fs::create_dir_all(&old).unwrap();
+        fs::write(old.join("tool.zip"), b"tool").unwrap();
+        fs::write(old.join("half.zip.part"), b"x").unwrap();
+
+        let here = dir(&kit);
+        assert!(here.starts_with(tmp.0.join("host")), "{}", here.display());
+        assert!(here.join("tool.zip").is_file(), "moved on first use");
+        assert!(!old.join("tool.zip").exists());
+        assert!(old.join("half.zip.part").exists(), "a partial file stays");
+
+        let outside = tmp.0.join("other.zip");
+        fs::write(&outside, b"other").unwrap();
+        add(&kit, std::slice::from_ref(&outside)).unwrap();
+        assert!(here.join("other.zip").is_file());
+        assert!(!old.join("other.zip").exists(), "nothing new in the kit");
+
+        let dest = tmp.0.join("tool.zip");
+        assert!(take(&kit, "tool.zip", &sha256(b"tool"), &dest).unwrap());
+        assert_eq!(fs::read(&dest).unwrap(), b"tool");
+        assert!(!here.join("tool.zip").exists(), "used once");
+    }
+
+    #[test]
+    fn moved_across_disks_by_copy() {
+        let tmp = TempDir::new("downloads-move");
+        let (from, to) = (tmp.0.join("from"), tmp.0.join("to"));
+        fs::create_dir_all(&from).unwrap();
+        fs::write(from.join("a.zip"), b"a").unwrap();
+        // A file held without sharing delete cannot be renamed: copied, and
+        // left (with a warning) until it is free.
+        let held = {
+            use std::os::windows::fs::OpenOptionsExt;
+            fs::OpenOptions::new()
+                .read(true)
+                .share_mode(1)
+                .open(from.join("a.zip"))
+                .unwrap()
+        };
+        move_files(&from, &to);
+        assert_eq!(fs::read(to.join("a.zip")).unwrap(), b"a");
+        assert!(!to.join("a.zip.part").exists());
+        drop(held);
+        move_files(&from, &to);
+        assert!(!from.join("a.zip").exists());
+        assert_eq!(fs::read(to.join("a.zip")).unwrap(), b"a");
     }
 }

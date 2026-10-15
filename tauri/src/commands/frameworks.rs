@@ -106,12 +106,48 @@ pub(super) fn framework_action_id(name: &str, i: usize) -> String {
     }
 }
 
+/// `merge_into` for a framework made on another disk, where a rename fails:
+/// what `to` already has stays (in `kept`), the rest is copied. Links are
+/// skipped, as `archive::copy_tree` does.
+fn merge_copy(
+    from: &std::path::Path,
+    to: &std::path::Path,
+    rel: &std::path::Path,
+    kept: &mut Vec<String>,
+) -> std::io::Result<()> {
+    for entry in std::fs::read_dir(from)? {
+        let entry = entry?;
+        let kind = entry.file_type()?;
+        if kind.is_symlink() {
+            continue;
+        }
+        let (src, dst) = (entry.path(), to.join(entry.file_name()));
+        let rel = rel.join(entry.file_name());
+        match std::fs::symlink_metadata(&dst) {
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                if kind.is_dir() {
+                    crate::net::archive::copy_tree(&src, &dst)?;
+                } else {
+                    std::fs::copy(&src, &dst)?;
+                }
+            }
+            Err(e) => return Err(e),
+            Ok(m) if m.is_dir() && !crate::os::safe_path::is_reparse(&m) && kind.is_dir() => {
+                merge_copy(&src, &dst, &rel, kept)?;
+            }
+            Ok(_) => kept.push(rel.to_string_lossy().into_owned()),
+        }
+    }
+    Ok(())
+}
+
 /// Creates `projects\<name>` from a base and its additions: installs the
 /// kit's tools they need, runs the commands with the kit's PowerShell,
 /// writes the chosen variables in its `.env` (`env`, as the wizard shows
 /// them), saves their actions in the project. An existing project is used when it
 /// is empty, or when it has files but no Git: then the framework is made in
-/// `data\tmp\frameworks` and its files are added, those already there stay.
+/// the PC's temporary folder (`frameworks\<stamp>`, D-90) and its files are
+/// added, those already there stay.
 /// A failed command stops it and leaves the folder as it is, to look at.
 #[tauri::command]
 pub async fn frameworks_create<R: Runtime>(
@@ -154,17 +190,21 @@ pub async fn frameworks_create<R: Runtime>(
         let needs: Vec<&str> = plan.needs.iter().map(String::as_str).collect();
         let env = ensure(&app, &task, &kit, lang, &needs)?;
         std::fs::create_dir_all(kit.projects()).or_fail("frameworks")?;
-        // A project with files: the framework is made aside, then added to it.
+        // A project with files: the framework is made aside, in the PC's
+        // temporary folder (D-90; removed when `staging` is dropped), then
+        // added to it.
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_nanos());
-        let staging = kit.data().join(r"tmp\frameworks").join(stamp.to_string());
-        let make_at = if existing == Existing::Files {
-            std::fs::create_dir_all(&staging).or_fail("frameworks")?;
-            staging.clone()
+        let staging = if existing == Existing::Files {
+            let rel = format!("frameworks/{stamp}");
+            Some(crate::os::temp::TempWork::new(&kit, &rel).or_fail("frameworks")?)
         } else {
-            kit.projects()
+            None
         };
+        let make_at = staging
+            .as_ref()
+            .map_or_else(|| kit.projects(), |s| s.path().to_path_buf());
         // An empty project: its folder is made again by the creation.
         if existing == Existing::Empty {
             std::fs::remove_dir(&dir).or_fail("frameworks")?;
@@ -196,13 +236,18 @@ pub async fn frameworks_create<R: Runtime>(
                 run(i + 1, line, &make_at)?;
             }
             if existing == Existing::Files {
-                let made = staging.join(&name);
+                let made = make_at.join(&name);
                 if !made.is_dir() {
                     return Err(no_folder().into());
                 }
                 let mut kept = Vec::new();
-                crate::projects::frameworks::merge_into(&made, &dir, &mut kept)
-                    .or_fail("frameworks")?;
+                // Moved on the same disk; copied from the PC's disk.
+                if crate::os::volume::same_volume(&made, &dir) {
+                    crate::projects::frameworks::merge_into(&made, &dir, &mut kept)
+                } else {
+                    merge_copy(&made, &dir, std::path::Path::new(""), &mut kept)
+                }
+                .or_fail("frameworks")?;
                 for k in kept {
                     let text = crate::i18n::t(lang, "Già nel progetto, lasciato com'è: {0}", &[&k]);
                     emit(plan.create.len(), None, Some(text));
@@ -241,9 +286,7 @@ pub async fn frameworks_create<R: Runtime>(
             }
             Ok(())
         })();
-        if existing == Existing::Files {
-            let _ = std::fs::remove_dir_all(&staging);
-        }
+        drop(staging);
         if existing == Existing::Empty && !dir.exists() {
             let _ = std::fs::create_dir(&dir);
         }
@@ -286,4 +329,37 @@ pub fn frameworks_cancel<R: Runtime>(webview: Webview<R>) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::projects::frameworks::cancel();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::merge_copy;
+    use crate::kit::tests::TempDir;
+    use std::fs;
+    use std::path::Path;
+
+    /// As `merge_into`, by copy: the project's files stay, the source too.
+    #[test]
+    fn merge_copy_keeps_what_the_project_has() {
+        let tmp = TempDir::new("mergecopy");
+        let (made, dir) = (tmp.0.join("made"), tmp.0.join("app"));
+        fs::create_dir_all(made.join(r"src\lib")).unwrap();
+        fs::write(made.join("package.json"), "new").unwrap();
+        fs::write(made.join(r"src\main.js"), "new").unwrap();
+        fs::write(made.join(r"src\lib\a.js"), "new").unwrap();
+        fs::create_dir_all(dir.join("src")).unwrap();
+        fs::write(dir.join("package.json"), "mine").unwrap();
+        let mut kept = Vec::new();
+        merge_copy(&made, &dir, Path::new(""), &mut kept).unwrap();
+        assert_eq!(kept, ["package.json"]);
+        assert_eq!(
+            fs::read_to_string(dir.join("package.json")).unwrap(),
+            "mine"
+        );
+        assert_eq!(
+            fs::read_to_string(dir.join(r"src\lib\a.js")).unwrap(),
+            "new"
+        );
+        assert!(made.join(r"src\main.js").is_file());
+    }
 }
