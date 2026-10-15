@@ -22,7 +22,7 @@
 //! points into the default folder (PATH, `JAVA_HOME`, `DOTNET_ROOT`,
 //! `CP_PHP`) points into the chosen one instead. The editor's terminals
 //! start from the shared editor server, so each project with a choice gets
-//! `data\app\projects\<project>\versions.json` (the rewrites), which the
+//! `data\projects\<project>\versions.json` (the rewrites), which the
 //! kit's PowerShell profile applies.
 //!
 //! Here the folders and lines on disk and the Tools page; the choices in
@@ -232,12 +232,7 @@ pub fn is_present(kit: &Kit, c: &Component, line: &str) -> bool {
 /// The projects that chose a line, per component id and line.
 fn project_users(kit: &Kit) -> BTreeMap<(String, String), Vec<String>> {
     let mut out: BTreeMap<(String, String), Vec<String>> = BTreeMap::new();
-    for entry in fs::read_dir(kit.project_states())
-        .into_iter()
-        .flatten()
-        .flatten()
-    {
-        let project = entry.file_name().to_string_lossy().into_owned();
+    for project in crate::projects::state::all(kit) {
         for (id, line) in project_choice(kit, &project) {
             out.entry((id, line)).or_default().push(project.clone());
         }
