@@ -316,6 +316,182 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Puts `tree` (a complete folder, in the PC's temporary folder or on the
+/// kit's disk) in place of `dest`. On the same disk it is `replace_dir`. From
+/// another disk, where a rename fails, the tree is first checked against the
+/// destination's disk (`check_fits`, `check_space`), then copied next to
+/// `dest` into `<dest>.atollo-new`, which `replace_dir` swaps in: an
+/// interrupted copy leaves only that folder, which `clean_leftovers` removes,
+/// and the installed version is never half replaced.
+pub fn stage_into(tree: &Path, dest: &Path) -> Result<()> {
+    let parent = dest.parent().context("no parent folder")?;
+    fs::create_dir_all(parent)?;
+    let same = crate::os::volume::same_volume(tree, parent);
+    stage_with(tree, dest, same)
+}
+
+/// `stage_into` with the disk decision given (tests cannot make a second disk).
+fn stage_with(tree: &Path, dest: &Path, same_volume: bool) -> Result<()> {
+    if same_volume {
+        return replace_dir(tree, dest);
+    }
+    check_fits(tree, dest)?;
+    check_space(tree, dest)?;
+    let staged = staged_path(dest);
+    let copied = retry_denied(|| {
+        // Each attempt starts from empty: a leftover of an interrupted copy,
+        // or what the antivirus let through before it said no.
+        if staged.exists() {
+            fs::remove_dir_all(&staged)?;
+        }
+        copy_tree(tree, &staged)
+    });
+    if let Err(e) = copied {
+        let _ = fs::remove_dir_all(&staged);
+        return Err(e).with_context(|| format!("copying into {}", staged.display()));
+    }
+    let swapped = replace_dir(&staged, dest);
+    if swapped.is_err() {
+        let _ = fs::remove_dir_all(&staged);
+    }
+    swapped
+}
+
+/// `<dest>.atollo-new`, where a tree from another disk is copied first.
+fn staged_path(dest: &Path) -> PathBuf {
+    let name = dest
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    dest.with_file_name(format!("{name}{STAGED}"))
+}
+
+const STAGED: &str = ".atollo-new";
+
+/// Copies the folder `from` into `to` (created). Links are skipped, as in
+/// the extraction; hard links become separate files.
+pub fn copy_tree(from: &Path, to: &Path) -> io::Result<()> {
+    fs::create_dir_all(to)?;
+    for entry in fs::read_dir(from)? {
+        let entry = entry?;
+        let kind = entry.file_type()?;
+        let target = to.join(entry.file_name());
+        if kind.is_symlink() {
+            continue;
+        }
+        if kind.is_dir() {
+            copy_tree(&entry.path(), &target)?;
+        } else {
+            fs::copy(entry.path(), &target)?;
+        }
+    }
+    Ok(())
+}
+
+/// The files of `tree` (a folder or one file) with their sizes; links are
+/// skipped, as `copy_tree` does.
+fn sizes(tree: &Path) -> io::Result<Vec<(PathBuf, u64)>> {
+    let meta = fs::symlink_metadata(tree)?;
+    if !meta.is_dir() {
+        return Ok(vec![(tree.to_path_buf(), meta.len())]);
+    }
+    let mut out = Vec::new();
+    let mut stack = vec![tree.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        for entry in fs::read_dir(&dir)? {
+            let entry = entry?;
+            let kind = entry.file_type()?;
+            if kind.is_symlink() {
+                continue;
+            }
+            if kind.is_dir() {
+                stack.push(entry.path());
+            } else {
+                out.push((entry.path(), entry.metadata()?.len()));
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// The nearest folder of `path` that exists: the disk of a destination not
+/// created yet.
+fn existing_ancestor(path: &Path) -> &Path {
+    path.ancestors().find(|p| p.is_dir()).unwrap_or(path)
+}
+
+/// `1.5 GiB`, `20 MiB`, `300 KiB`, `12 bytes`.
+fn human(bytes: u64) -> String {
+    const UNITS: [(&str, u64); 3] = [("GiB", 1 << 30), ("MiB", 1 << 20), ("KiB", 1 << 10)];
+    for (unit, size) in UNITS {
+        if bytes >= size {
+            return format!("{:.1} {unit}", bytes as f64 / size as f64);
+        }
+    }
+    format!("{bytes} bytes")
+}
+
+/// Every file of `tree` fits on the disk of `dest`: FAT32 holds no file of
+/// 4 GiB or more. Checked before the installed version is touched. When the
+/// disk cannot be read, nothing is refused (a copy that fails still does).
+pub fn check_fits(tree: &Path, dest: &Path) -> Result<()> {
+    match crate::os::volume::info(existing_ancestor(dest)) {
+        Ok(v) => fits(tree, v.fs.max_file_size(), v.fs.as_str()),
+        Err(e) => {
+            crate::log::warn(&format!("{}: {e}", dest.display()));
+            Ok(())
+        }
+    }
+}
+
+/// `check_fits` with the disk's limit given.
+fn fits(tree: &Path, limit: Option<u64>, fs_name: &str) -> Result<()> {
+    let Some(limit) = limit else {
+        return Ok(());
+    };
+    if let Some((file, size)) = sizes(tree)?.into_iter().find(|(_, s)| *s > limit) {
+        let name = file.strip_prefix(tree).unwrap_or(&file);
+        let name = if name.as_os_str().is_empty() {
+            &file
+        } else {
+            name
+        };
+        bail!(
+            "{} is {} ({size} bytes): too large for the kit's disk ({fs_name}, at most {} per file)",
+            name.display(),
+            human(size),
+            human(limit)
+        );
+    }
+    Ok(())
+}
+
+/// The disk of `dest` has room for a copy of `tree`. When the disk cannot be
+/// read, nothing is refused (a copy that fails still does).
+pub fn check_space(tree: &Path, dest: &Path) -> Result<()> {
+    match crate::os::volume::free_space(existing_ancestor(dest)) {
+        Ok(free) => has_space(tree, free, dest),
+        Err(e) => {
+            crate::log::warn(&format!("{}: {e}", dest.display()));
+            Ok(())
+        }
+    }
+}
+
+/// `check_space` with the free bytes given.
+fn has_space(tree: &Path, free: u64, dest: &Path) -> Result<()> {
+    let needed: u64 = sizes(tree)?.iter().map(|(_, s)| s).sum();
+    if needed > free {
+        bail!(
+            "not enough space for {}: {} needed, {} free",
+            dest.display(),
+            human(needed),
+            human(free)
+        );
+    }
+    Ok(())
+}
+
 /// Runs `op` again while Windows answers "access denied", up to 30 s: the
 /// antivirus scans the files just extracted and, while it holds them, their
 /// folder cannot move (Java and Kotlin failed so on their first install).
@@ -375,12 +551,18 @@ pub fn replace_file(new: &Path, dest: &Path) -> Result<()> {
             .unwrap_or_default()
     ));
     let _ = fs::remove_file(&old);
+    // Copied next to `dest` first, not renamed: `new` may be on another disk
+    // (PC temp folder), and an interrupted copy leaves only `<name>.atollo-new`.
+    let staged = staged_path(dest);
+    retry_denied(|| fs::copy(new, &staged).map(|_| ()))
+        .with_context(|| format!("writing {}", staged.display()))?;
     let had_old = dest.exists();
-    if had_old {
-        fs::rename(dest, &old).map_err(|_| InUse(dest.to_path_buf()))?;
+    if had_old && fs::rename(dest, &old).is_err() {
+        let _ = fs::remove_file(&staged);
+        return Err(InUse(dest.to_path_buf()).into());
     }
-    // Copy, not rename: `new` may be on another disk (PC temp folder).
-    if let Err(e) = fs::copy(new, dest) {
+    if let Err(e) = fs::rename(&staged, dest) {
+        let _ = fs::remove_file(&staged);
         if had_old {
             let _ = fs::rename(&old, dest);
         }
@@ -408,12 +590,17 @@ fn sibling(dest: &Path, tag: &str) -> PathBuf {
     dest.with_file_name(format!("{name}.{tag}-{}", stamp()))
 }
 
-/// Deletes leftovers of interrupted swaps (`*.old-*`, `*.new-*`) in `dir`.
+/// Deletes leftovers of interrupted swaps (`*.old-*`, `*.new-*`) and copies
+/// (`*.atollo-new`, `stage_into`) in `dir`.
 pub fn clean_leftovers(dir: &Path) {
     for entry in fs::read_dir(dir).into_iter().flatten().flatten() {
         let name = entry.file_name().to_string_lossy().into_owned();
-        if name.contains(".old-") || name.contains(".new-") {
-            let _ = fs::remove_dir_all(entry.path());
+        if name.contains(".old-") || name.contains(".new-") || name.ends_with(STAGED) {
+            if entry.file_type().is_ok_and(|t| t.is_dir()) {
+                let _ = fs::remove_dir_all(entry.path());
+            } else {
+                let _ = fs::remove_file(entry.path());
+            }
         }
     }
 }
@@ -638,6 +825,170 @@ mod tests {
         scan.join().unwrap();
         assert_eq!(fs::read_to_string(dest.join(r"lib\a.jar")).unwrap(), "jar");
         assert!(!new.exists());
+    }
+
+    fn tree(root: &Path, text: &str) {
+        fs::create_dir_all(root.join(r"bin\lib")).unwrap();
+        fs::write(root.join(r"bin\tool.exe"), text).unwrap();
+        fs::write(root.join(r"bin\lib\a.dll"), text).unwrap();
+    }
+
+    fn names(dir: &Path) -> Vec<String> {
+        let mut names: Vec<String> = fs::read_dir(dir)
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    }
+
+    #[test]
+    fn stage_into_on_the_same_disk_moves() {
+        let tmp = TempDir::new("stagesame");
+        let new = tmp.0.join(r"temp\x");
+        tree(&new, "1");
+        let dest = tmp.0.join(r"apps\tool");
+        stage_into(&new, &dest).unwrap();
+        assert_eq!(fs::read_to_string(dest.join(r"bin\tool.exe")).unwrap(), "1");
+        assert!(!new.exists(), "renamed, not copied");
+        assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
+    }
+
+    #[test]
+    fn stage_into_from_another_disk_copies() {
+        let tmp = TempDir::new("stageother");
+        let dest = tmp.0.join(r"apps\tool");
+        tree(&dest, "old");
+        fs::write(dest.join("gone.txt"), "old").unwrap();
+        let new = tmp.0.join(r"temp\x");
+        tree(&new, "new");
+        // A copy interrupted earlier (the app closed in the middle).
+        fs::create_dir_all(tmp.0.join(r"apps\tool.atollo-new\bin")).unwrap();
+        fs::write(tmp.0.join(r"apps\tool.atollo-new\stale.txt"), "x").unwrap();
+        stage_with(&new, &dest, false).unwrap();
+        assert_eq!(
+            fs::read_to_string(dest.join(r"bin\lib\a.dll")).unwrap(),
+            "new"
+        );
+        assert!(!dest.join("gone.txt").exists() && !dest.join("stale.txt").exists());
+        assert!(new.join(r"bin\tool.exe").is_file(), "the source is copied");
+        assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
+
+        // The swap refused (a file in use): the installed tree is intact and
+        // no copy is left next to it.
+        let busy = {
+            use std::os::windows::fs::OpenOptionsExt;
+            fs::OpenOptions::new()
+                .read(true)
+                .share_mode(1)
+                .open(dest.join(r"bin\tool.exe"))
+                .unwrap()
+        };
+        tree(&new, "newer");
+        let err = stage_with(&new, &dest, false).unwrap_err();
+        assert!(err.is::<InUse>(), "{err:#}");
+        drop(busy);
+        assert_eq!(
+            fs::read_to_string(dest.join(r"bin\tool.exe")).unwrap(),
+            "new"
+        );
+        assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
+    }
+
+    #[test]
+    fn interrupted_copy_is_cleaned() {
+        let tmp = TempDir::new("stageleft");
+        let apps = tmp.0.join("apps");
+        tree(&apps.join("tool"), "1");
+        // What a copy stopped in the middle leaves: only the staged folder
+        // (and a staged single file of `replace_file`).
+        tree(&staged_path(&apps.join("tool")), "half");
+        fs::write(staged_path(&apps.join("uv.exe")), "half").unwrap();
+        assert_eq!(
+            names(&apps),
+            ["tool", "tool.atollo-new", "uv.exe.atollo-new"]
+        );
+        clean_leftovers(&apps);
+        assert_eq!(names(&apps), ["tool"]);
+        assert_eq!(
+            fs::read_to_string(apps.join(r"tool\bin\tool.exe")).unwrap(),
+            "1"
+        );
+    }
+
+    #[test]
+    fn replace_file_leaves_no_staged_copy() {
+        let tmp = TempDir::new("replstaged");
+        let dest = tmp.0.join("uv.exe");
+        let new = tmp.0.join(r"temp\uv.exe");
+        fs::create_dir_all(new.parent().unwrap()).unwrap();
+        fs::write(&new, "1").unwrap();
+        replace_file(&new, &dest).unwrap();
+        assert_eq!(fs::read_to_string(&dest).unwrap(), "1");
+        assert!(new.is_file(), "the source is copied");
+        assert_eq!(names(&tmp.0), ["temp", "uv.exe"]);
+    }
+
+    /// A file over 4 GiB (sparse: nothing written) does not fit on FAT32;
+    /// the error names it with its size.
+    #[test]
+    fn check_fits_refuses_a_file_too_large_for_fat32() {
+        use std::os::windows::io::AsRawHandle;
+        use windows::Win32::Foundation::HANDLE;
+        use windows::Win32::System::IO::DeviceIoControl;
+        const FSCTL_SET_SPARSE: u32 = 0x0009_00C4;
+        let tmp = TempDir::new("fits");
+        let new = tmp.0.join("x");
+        tree(&new, "small");
+        let fat32 = crate::os::volume::FsKind::Fat32.max_file_size();
+        fits(&new, fat32, "FAT32").unwrap();
+        check_fits(&new, &tmp.0.join(r"apps\tool")).unwrap();
+
+        let big = new.join(r"bin\lib\model.bin");
+        let file = File::create(&big).unwrap();
+        // SAFETY: the handle stays valid while `file` lives; no buffers.
+        let sparse = unsafe {
+            DeviceIoControl(
+                HANDLE(file.as_raw_handle()),
+                FSCTL_SET_SPARSE,
+                None,
+                0,
+                None,
+                0,
+                None,
+                None,
+            )
+        };
+        assert!(sparse.is_ok(), "{sparse:?}");
+        file.set_len((4 << 30) + 1).unwrap();
+        drop(file);
+        let err = fits(&new, fat32, "FAT32").unwrap_err().to_string();
+        assert!(err.contains(r"bin\lib\model.bin"), "{err}");
+        assert!(
+            err.contains("4294967297 bytes") && err.contains("FAT32"),
+            "{err}"
+        );
+        fits(&new, None, "NTFS").unwrap();
+        // A single file is checked too (`replace_file`).
+        assert!(fits(&big, fat32, "FAT32").is_err());
+        // The test disk (NTFS) has no limit.
+        check_fits(&new, &tmp.0.join(r"apps\tool")).unwrap();
+    }
+
+    #[test]
+    fn check_space_needs_the_whole_tree() {
+        let tmp = TempDir::new("space");
+        let new = tmp.0.join("x");
+        tree(&new, "12345");
+        let dest = tmp.0.join(r"apps\tool");
+        has_space(&new, 10, &dest).unwrap();
+        let err = has_space(&new, 9, &dest).unwrap_err().to_string();
+        assert!(
+            err.contains("10 bytes needed") && err.contains("9 bytes free"),
+            "{err}"
+        );
+        check_space(&new, &dest).unwrap();
+        assert_eq!(human(3 << 29), "1.5 GiB");
     }
 
     #[test]

@@ -520,12 +520,11 @@ fn install(
 ) -> Result<Vec<String>> {
     let mut gallery: Vec<String> = Vec::new();
     let mut sources: Vec<(String, PathBuf)> = Vec::new();
-    let work = kit.data().join(r"tmp\setup\extensions");
-    let _ = fs::remove_dir_all(&work);
-    fs::create_dir_all(&work)?;
+    // In the host's temporary folder (D-90), removed when `work` is dropped.
+    let work = crate::os::temp::TempWork::new(kit, "extensions")?;
     for id in ids {
         if id == CODELLDB {
-            match net.map(|n| codelldb_vsix(kit, n, &work)) {
+            match net.map(|n| codelldb_vsix(kit, n, work.path())) {
                 Some(Ok(vsix)) => sources.push((id.clone(), vsix)),
                 Some(Err(e)) => crate::log::warn(&format!("CodeLLDB: {e:#}")),
                 None => {}
@@ -566,7 +565,7 @@ fn install(
         String::from_utf8_lossy(&out.stdout),
         String::from_utf8_lossy(&out.stderr)
     );
-    let _ = fs::remove_dir_all(&work);
+    drop(work);
     let ok = installed_from_output(&text);
     let succeeded: Vec<String> = ids
         .iter()

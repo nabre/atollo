@@ -92,9 +92,9 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
     if folder.join("vcruntime140.dll").is_file() && !force {
         return Ok(folder);
     }
-    let work = ctx.kit.data().join(r"tmp\setup\vcruntime");
-    let _ = fs::remove_dir_all(&work);
-    fs::create_dir_all(&work)?;
+    // In the host's temporary folder (D-90), removed when `guard` is dropped.
+    let guard = crate::os::temp::TempWork::new(ctx.kit, "setup/vcruntime")?;
+    let work = guard.path();
     let result = (|| -> Result<()> {
         let exe = work.join("vc_redist.x64.exe");
         ctx.net.download(
@@ -116,7 +116,7 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
             expand_cab(ctx, &cab, &work.join(format!("c{n}")))?;
         }
         // The Burn manifest names the cab of the "Minimum" runtime.
-        let manifest = walk(&work)
+        let manifest = walk(work)
             .into_iter()
             .filter(|p| p.file_name().is_some_and(|n| n == "0"))
             .find_map(|p| {
@@ -137,7 +137,7 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
                     .map(|c| c[1].to_owned())
             })
             .ok_or_else(|| anyhow!("vc_redist.x64.exe: no vcRuntimeMinimum x64"))?;
-        let dll_cab = walk(&work)
+        let dll_cab = walk(work)
             .into_iter()
             .find(|p| p.file_name().is_some_and(|n| n.to_string_lossy() == source))
             .ok_or_else(|| anyhow!("vc_redist.x64.exe: {source} not found"))?;
@@ -155,9 +155,9 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
             bail!("vcruntime140.dll not found in the Microsoft package");
         }
         crate::net::signature::check(&key, &microsoft, true)?;
-        crate::net::archive::replace_dir(&dlls, &folder)
+        crate::net::archive::stage_into(&dlls, &folder)
     })();
-    let _ = fs::remove_dir_all(&work);
+    drop(guard);
     result.map(|()| folder)
 }
 
