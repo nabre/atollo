@@ -17,9 +17,9 @@ use super::{fetch, triple_arch, work_dir, Ctx, Installer, Progress, Release};
 use crate::fsx::write_atomic;
 use crate::jobs;
 use crate::net::first_sha256;
+use crate::net::verify::Expect;
 use crate::settings::Settings;
 use crate::setup::catalog::Component;
-use crate::verify::Expect;
 
 /// Runs a kit program, sending its output lines to the progress notes.
 fn run(
@@ -193,8 +193,8 @@ impl Installer for Rust {
             url,
             "rustup-init.exe".into(),
             Expect::Sha256(sha),
-            crate::archive::Kind::File,
-            crate::archive::Inner::Root,
+            crate::net::archive::Kind::File,
+            crate::net::archive::Inner::Root,
         ))
     }
 
@@ -286,7 +286,7 @@ impl Installer for Rust {
                 &envs,
                 progress,
             )?;
-            crate::archive::replace_dir(&root, &rust)?;
+            crate::net::archive::replace_dir(&root, &rust)?;
             let _ = fs::remove_dir_all(&work);
             Ok(())
         })();
@@ -423,8 +423,8 @@ fn r_release(ctx: &Ctx, version: &str) -> Result<Release> {
         format!("{base}/micromamba-win-64"),
         "micromamba.exe".into(),
         Expect::Sha256(sha),
-        crate::archive::Kind::File,
-        crate::archive::Inner::Root,
+        crate::net::archive::Kind::File,
+        crate::net::archive::Inner::Root,
     ))
 }
 
@@ -507,11 +507,11 @@ impl Installer for R {
             let tools = ctx.kit.apps().join("tools");
             fs::create_dir_all(&tools)?;
             let mm = tools.join("micromamba.exe");
-            crate::archive::replace_file(&mm_new, &mm)?;
+            crate::net::archive::replace_file(&mm_new, &mm)?;
             let home = work.join("mamba-home");
             // The same line again (a patch): the old folder goes first.
             if target.exists() {
-                crate::archive::remove_dir(target)?;
+                crate::net::archive::remove_dir(target)?;
             }
             let envs = [
                 ("HOME", home.clone()),

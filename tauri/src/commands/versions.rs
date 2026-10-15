@@ -111,7 +111,7 @@ pub fn versions_remove<R: Runtime>(
         return Err(tr(&state, "C'è già un'installazione in corso.", &[]));
     }
     crate::versions::remove(&state.kit, &id, &line).map_err(|e| {
-        if e.is::<crate::archive::InUse>() {
+        if e.is::<crate::net::archive::InUse>() {
             tr(
                 &state,
                 "La versione {0} è in uso: chiudi i programmi che la usano e riprova.",

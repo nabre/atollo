@@ -22,8 +22,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
+use crate::net::verify::{self, Expect};
 use crate::net::{GhAsset, Net};
-use crate::verify::{self, Expect};
 
 pub const REPO: &str = "nabre/atollo";
 const TAG_PREFIX: &str = "app-v";

@@ -11,7 +11,7 @@ use std::time::{Duration, SystemTime};
 use anyhow::{bail, Context, Result};
 
 use crate::kit::Kit;
-use crate::verify::{self, Expect};
+use crate::net::verify::{self, Expect};
 
 /// Kept at most this long when no installation uses them.
 const KEEP: Duration = Duration::from_secs(30 * 24 * 3600);

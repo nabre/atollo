@@ -29,12 +29,12 @@ use std::sync::atomic::AtomicBool;
 
 use anyhow::{bail, Context, Result};
 
-use crate::archive::{self, Inner, Kind};
 use crate::env::KitEnv;
 use crate::kit::Kit;
+use crate::net::archive::{self, Inner, Kind};
+use crate::net::verify::{self, Expect};
 use crate::net::Net;
 use crate::setup::catalog::Component;
-use crate::verify::{self, Expect};
 
 pub use lang::{make_launchers, version_key};
 pub use web::adopt_composer;
@@ -450,11 +450,11 @@ fn install_part(
     if let Some(sign) = &part.sign {
         let file = tree.join(sign.file.replace('/', "\\"));
         let publisher = pattern(sign.publisher)?;
-        match crate::signature::check(&file, &publisher, sign.required)? {
-            crate::signature::Verdict::Valid { subject } => {
+        match crate::net::signature::check(&file, &publisher, sign.required)? {
+            crate::net::signature::Verdict::Valid { subject } => {
                 progress.note(&format!("signature ok: {subject}"))
             }
-            crate::signature::Verdict::RevocationUnknown { subject } => {
+            crate::net::signature::Verdict::RevocationUnknown { subject } => {
                 progress.note(&format!(
                     "signature of {subject}: revocation not verifiable (offline?)"
                 ));

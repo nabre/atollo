@@ -16,10 +16,10 @@ use std::process::Stdio;
 use anyhow::{anyhow, bail, Context, Result};
 
 use super::{fetch, work_dir, Ctx, Installer, Progress, Release};
-use crate::archive::{self, Inner, Kind};
 use crate::kit::Kit;
+use crate::net::archive::{self, Inner, Kind};
+use crate::net::verify::Expect;
 use crate::setup::catalog::{Catalog, Component};
-use crate::verify::Expect;
 
 pub struct Android;
 

@@ -17,9 +17,9 @@ use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS
 use windows::Win32::System::Threading::CreateMutexW;
 
 use super::catalog::{Catalog, Choice, Component};
-use crate::archive::{self, InUse};
 use crate::install::{self, Ctx, Progress};
 use crate::kit::Arch;
+use crate::net::archive::{self, InUse};
 use crate::net::Cancelled;
 
 #[derive(Debug, Clone, Default)]

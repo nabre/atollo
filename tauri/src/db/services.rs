@@ -197,7 +197,7 @@ fn seed(kit: &Kit, id: &str, line: &str) -> Result<Option<String>> {
         return Ok(None);
     }
     if target.exists() {
-        crate::archive::remove_dir(&target)?;
+        crate::net::archive::remove_dir(&target)?;
     }
     copy_dir(&root.join(&from), &target)?;
     crate::log::info(&format!("{id}: data of {from} copied for {line}"));

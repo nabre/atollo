@@ -227,7 +227,7 @@ mod tests {
 
         // Removing a version's folder leaves the others' files alone
         // (junctions are not followed), then its junctions go.
-        crate::archive::remove_dir(&ten).unwrap();
+        crate::net::archive::remove_dir(&ten).unwrap();
         assert!(eight
             .join(r"shared\Microsoft.NETCore.App\8.0.21\coreclr.dll")
             .is_file());

@@ -6,9 +6,9 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 
 use super::{arch_of, github_single, Ctx, Installer, Release};
-use crate::archive::{Inner, Kind};
+use crate::net::archive::{Inner, Kind};
+use crate::net::verify::Expect;
 use crate::setup::catalog::Component;
-use crate::verify::Expect;
 
 /// PowerShell 7, the official zip (not the "fxdependent" build).
 pub struct Pwsh;
