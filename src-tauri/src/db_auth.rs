@@ -152,6 +152,13 @@ pub const MONGO_ADMIN_JS: &str = "db.getSiblingDB('admin').createUser({ user: 'a
 pub const MONGO_SHUTDOWN_JS: &str = "const a = db.getSiblingDB('admin'); \
     a.auth('admin', process.env.DEVKIT_DB_ADMIN); a.shutdownServer()";
 
+/// mongosh script after data of the previous major version was copied:
+/// the features of the new one (`DEVKIT_DB_FCV`, `9.0`), as MongoDB's
+/// upgrade guide asks; the next major needs it.
+pub const MONGO_FCV_JS: &str = "const a = db.getSiblingDB('admin'); \
+    a.auth('admin', process.env.DEVKIT_DB_ADMIN); \
+    a.adminCommand({ setFeatureCompatibilityVersion: process.env.DEVKIT_DB_FCV, confirm: true })";
+
 /// A project's connection to one of the kit's databases.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]

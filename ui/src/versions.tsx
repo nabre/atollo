@@ -1,18 +1,17 @@
 // Versions of the languages kept side by side (DECISIONS.md D-80): the
 // default folder, replaced by updates, and one saved folder per minor line
 // (an update to a new minor keeps the old one; others can be downloaded).
-// The Tools page chooses the kit's line of each language, the project page
-// the project's. The lists propose also the lines the source offers and
+// The Tools page chooses the kit's line of each language in its row, the
+// project page the project's. The lists propose also the lines the source offers and
 // are not on disk yet: choosing one downloads it.
-import { useCallback, useEffect, useRef, useState } from "react";
-import { VscCloudDownload, VscRefresh, VscTrash } from "react-icons/vsc";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { VscAdd, VscCloudDownload, VscLock, VscRefresh, VscTrash } from "react-icons/vsc";
 import {
   projectVersions,
   projectVersionsSet,
   versionsAdd,
   versionsAvailable,
   versionsList,
-  versionsPrefer,
   versionsRemove,
   type ProjectVersions as ProjectVersionsData,
   type SetupSnapshot,
@@ -21,16 +20,30 @@ import {
 import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine, useAction } from "./pages";
-import { useSetup } from "./setup";
-import { Badge, Tag } from "./tags";
-import { EditorSection, Link, Notice, SettingItem, SettingsGroup } from "./workbench";
+import { ItemBar, ItemStatus, itemState, useSetup } from "./setup";
+import { Tag } from "./tags";
+import { EditorSection, Link, Notice } from "./workbench";
 
 /** A list older than this (seconds) is asked again. */
 const STALE = 24 * 60 * 60;
 
+/** A full version and the parts that come with it, as the installers
+ * write it: `8.4.13 (Composer 2.8.12)` → `8.4.13`, `["Composer 2.8.12"]`. */
+export function splitVersion(version: string | null): { main: string | null; parts: string[] } {
+  const m = version?.match(/^(.*?) \((.*)\)$/);
+  return m ? { main: m[1] ?? null, parts: (m[2] ?? "").split(", ") } : { main: version, parts: [] };
+}
+
+/** The Composer that came with a version of PHP: `2.8.12`. */
+export function composerOf(version: string | null): string | null {
+  const part = splitVersion(version).parts.find((p) => p.startsWith("Composer "));
+  return part ? part.slice("Composer ".length) : null;
+}
+
 /** `22.11` with its full version, as the lists show it. */
 function lineText(line: string, version: string | null): string {
-  return version && version !== line ? `${line} (${version})` : line;
+  const main = splitVersion(version).main;
+  return main && main !== line ? `${line} (${main})` : line;
 }
 
 /** The lines on disk: the default folder, then the saved ones. */
@@ -39,7 +52,7 @@ function present(tool: VersionedTool): { line: string; label: string }[] {
   if (tool.default) {
     out.push({
       line: tool.default.line,
-      label: t("{0}, predefinita", lineText(tool.default.line, tool.default.version)),
+      label: lineText(tool.default.line, tool.default.version),
     });
   }
   for (const s of tool.saved) out.push({ line: s.line, label: lineText(s.line, s.version) });
@@ -205,6 +218,7 @@ function LineState({
   setup,
   error,
   onDownload,
+  inList = false,
 }: {
   tool: VersionedTool;
   line: string | null;
@@ -212,6 +226,8 @@ function LineState({
   setup: SetupSnapshot | null;
   error: string | undefined;
   onDownload: (line: string) => void;
+  /** The list of the lines shows its download (Tools page). */
+  inList?: boolean;
 }) {
   if (error) {
     return (
@@ -222,6 +238,8 @@ function LineState({
   }
   if (line === null || isPresent(tool, line)) return null;
   const step = stepOf(setup, tool, line);
+  const waiting = setup?.running && setup.queue.some((q) => q.id === tool.id && q.name === `${tool.name} ${line}`);
+  if (inList && (waiting || (step && step.outcome === null && setup?.running))) return null;
   if (step && step.outcome === null && setup?.running) {
     const percent = step.size && step.done !== null ? ` ${String(Math.floor((step.done * 100) / step.size))}%` : "";
     return (
@@ -250,54 +268,99 @@ function LineState({
   );
 }
 
-/** The lines on disk of a tool, with who uses them; saved ones can go. */
+/** The lines on disk of a tool, with who uses them. Each can go while
+ * another stays (the newest left becomes the default); the last goes with
+ * the tool, by its checkbox. */
 function DiskLines({
   tool,
+  setup,
   busy,
   running,
+  outside,
   onRemove,
 }: {
   tool: VersionedTool;
+  setup: SetupSnapshot | null;
+  outside: Record<string, string[]>;
   busy: string | null;
   running: boolean;
   onRemove: (line: string) => void;
 }) {
-  const kitLine = tool.preferred ?? tool.default?.line;
-  const rows = [
-    ...(tool.default ? [{ ...tool.default, isDefault: true }] : []),
-    ...tool.saved.map((s) => ({ ...s, isDefault: false })),
-  ];
-  if (rows.length < 2 && Object.keys(tool.projects).length === 0) return null;
+  const rows = [...(tool.default ? [tool.default] : []), ...tool.saved];
+  // Lines the preparation is downloading or will download, not on disk yet.
+  const prefix = `${tool.name} `;
+  const coming = [...(setup?.running ? setup.queue : []), ...(setup?.steps ?? [])]
+    .filter((s) => s.id === tool.id && s.name.startsWith(prefix))
+    .map((s) => s.name.slice(prefix.length))
+    .filter((line, i, all) => all.indexOf(line) === i && !isPresent(tool, line))
+    .filter((line) => {
+      const state = itemState(setup, tool.id, prefix + line);
+      return state !== null && state.kind !== "problem";
+    });
+  if (rows.length === 0 && coming.length === 0) return null;
   return (
-    <ul className="mt-2 space-y-0.5" aria-label={t("Versioni scaricate di {0}", tool.name)}>
+    <ul className="mt-1 space-y-0.5" aria-label={t("Versioni di {0}", tool.name)}>
       {rows.map((r) => {
         const users = tool.projects[r.line] ?? [];
+        const state = itemState(setup, tool.id, prefix + r.line);
         return (
-          <li key={r.line} className="flex min-h-[22px] items-center gap-2">
-            <span className="min-w-0 truncate font-mono text-[12px]">{lineText(r.line, r.version)}</span>
-            {r.isDefault && <Tag>{t("predefinita")}</Tag>}
-            {r.line === kitLine && <Badge>{t("kit")}</Badge>}
-            {users.length > 0 && (
-              <Tag title={users.join(", ")}>{users.length === 1 ? users[0] : t("{0} progetti", users.length)}</Tag>
-            )}
-            <span className="flex-1" />
-            {!r.isDefault && (
-              <ActionButton
-                icon={VscTrash}
-                label={t("Rimuovi {0} {1}", tool.name, r.line)}
-                title={
-                  users.length > 0
-                    ? t("La usano {0}: dopo la rimozione useranno la predefinita.", users.join(", "))
-                    : t("Rimuovi {0} {1}", tool.name, r.line)
-                }
-                compact
-                busy={busy === `remove:${tool.id}:${r.line}`}
-                disabled={running || busy !== null}
-                onClick={() => {
-                  onRemove(r.line);
-                }}
-              />
-            )}
+          <li key={r.line}>
+            <div className="flex min-h-[22px] items-center gap-2">
+              <span className="min-w-0 truncate font-mono text-[12px]">{lineText(r.line, r.version)}</span>
+              {/* What comes with this version (Maven, Gradle with Java); Composer has its row. */}
+              {splitVersion(r.version)
+                .parts.filter((p) => !p.startsWith("Composer "))
+                .map((p) => (
+                  <Tag key={p}>{p}</Tag>
+                ))}
+              {/* The newest line its source offers. */}
+              {tool.available[0] === r.line && <Tag tone="focus">latest</Tag>}
+              {(outside[r.line] ?? []).length > 0 && (
+                <Tag tone="warning">{t("non per {0}", (outside[r.line] ?? []).join(", "))}</Tag>
+              )}
+              <span className="flex-1" />
+              {state && (
+                <span className="text-[12px]">
+                  <ItemStatus state={state} />
+                </span>
+              )}
+              {/* Locked by the projects that use it; otherwise it can go. */}
+              {users.length > 0 ? (
+                <Locked projects={users} label={t("{0} {1}: progetti che la usano", tool.name, r.line)} />
+              ) : (
+                rows.length > 1 && (
+                  <ActionButton
+                    icon={VscTrash}
+                    label={t("Rimuovi {0} {1}", tool.name, r.line)}
+                    compact
+                    busy={busy === `remove:${tool.id}:${r.line}`}
+                    disabled={running || busy !== null}
+                    onClick={() => {
+                      onRemove(r.line);
+                    }}
+                  />
+                )
+              )}
+            </div>
+            {state && <ItemBar state={state} label={prefix + r.line} />}
+            {state?.kind === "problem" && <p className="text-[12px] text-vsc-error select-text">{state.text}</p>}
+          </li>
+        );
+      })}
+      {coming.map((line) => {
+        const state = itemState(setup, tool.id, prefix + line);
+        return (
+          <li key={`coming-${line}`}>
+            <div className="flex min-h-[22px] items-center gap-2">
+              <span className="min-w-0 truncate font-mono text-[12px] text-vsc-desc">{line}</span>
+              <span className="flex-1" />
+              {state && (
+                <span className="text-[12px]">
+                  <ItemStatus state={state} />
+                </span>
+              )}
+            </div>
+            {state && <ItemBar state={state} label={prefix + line} />}
           </li>
         );
       })}
@@ -305,42 +368,143 @@ function DiskLines({
   );
 }
 
-/** Downloading a line without choosing it (for the projects). */
-function Download({ tool, busy, onAdd }: { tool: VersionedTool; busy: boolean; onAdd: (line: string) => void }) {
-  const free = offered(tool).flatMap((g) => g.lines);
-  const [line, setLine] = useState("");
-  const value = free.includes(line) ? line : (free[0] ?? "");
-  if (free.length === 0) return null;
+/** "locked": a version some projects use, so it cannot go; its small menu
+ * lists them. The counterpart of the bin. */
+function Locked({ projects, label }: { projects: string[]; label: string }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
   return (
-    <div className="mt-2 flex items-center gap-2">
-      <select
-        aria-label={t("Versione da scaricare")}
-        value={value}
-        onChange={(e) => {
-          setLine(e.target.value);
-        }}
-        className="input w-40"
-      >
-        {offered(tool).map((g) => (
-          <optgroup key={g.major} label={`${g.major}.x`}>
-            {g.lines.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
-      <ActionButton
-        icon={VscCloudDownload}
-        label={t("Scarica")}
-        small
-        busy={busy}
-        disabled={value === ""}
+    <div ref={box} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
         onClick={() => {
-          onAdd(value);
+          setOpen((o) => !o);
+        }}
+        className="inline-flex items-center gap-1 rounded-sm px-1 text-[11px] text-vsc-desc hover:bg-vsc-list-hover hover:text-vsc-fg"
+      >
+        <VscLock size={12} aria-hidden="true" />
+        locked
+      </button>
+      {open && (
+        <ul
+          role="menu"
+          aria-label={label}
+          className="absolute top-full right-0 z-20 mt-1 min-w-36 rounded border border-vsc-menu-border bg-vsc-menu py-1 text-[12px] text-vsc-menu-fg shadow-[0_2px_8px_var(--vsc-shadow)]"
+        >
+          <li role="none" className="px-3 pb-0.5 text-[11px] text-vsc-desc">
+            {t("Usata da")}
+          </li>
+          {projects.map((p) => (
+            <li key={p} role="menuitem" className="px-3 py-0.5">
+              {p}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** "+": the lines its source offers that are not on disk (nor being
+ * downloaded), by major version; one chosen is downloaded without becoming
+ * the kit's (for the projects). */
+function AddLine({
+  tool,
+  setup,
+  busy,
+  onAdd,
+}: {
+  tool: VersionedTool;
+  setup: SetupSnapshot | null;
+  busy: boolean;
+  onAdd: (line: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const groups = offered(tool)
+    .map((g) => ({
+      ...g,
+      lines: g.lines.filter((l) => {
+        const state = itemState(setup, tool.id, `${tool.name} ${l}`);
+        return state === null || state.kind === "problem";
+      }),
+    }))
+    .filter((g) => g.lines.length > 0);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+  if (groups.length === 0) return null;
+  return (
+    <div ref={box} className="relative">
+      <ActionButton
+        icon={VscAdd}
+        label={t("Aggiungi una versione di {0}", tool.name)}
+        compact
+        busy={busy}
+        onClick={() => {
+          setOpen((o) => !o);
         }}
       />
+      {open && (
+        <ul
+          role="menu"
+          aria-label={t("Versioni da scaricare")}
+          className="absolute top-full right-0 z-20 mt-1 max-h-72 min-w-44 overflow-y-auto rounded border border-vsc-menu-border bg-vsc-menu py-1 text-vsc-menu-fg shadow-[0_2px_8px_var(--vsc-shadow)]"
+        >
+          {groups.map((g) => (
+            <li key={g.major} role="none">
+              <div className="px-3 pt-1 pb-0.5 text-[11px] text-vsc-desc">{`${g.major}.x`}</div>
+              <ul role="none">
+                {g.lines.map((l) => (
+                  <li key={l} role="none">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setOpen(false);
+                        onAdd(l);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-0.5 text-left font-mono text-[12px] hover:bg-vsc-list-hover focus:bg-vsc-list-hover focus:outline-none"
+                    >
+                      <VscCloudDownload size={12} aria-hidden="true" />
+                      {tool.name} {l}
+                      {tool.available[0] === l && (
+                        <Tag tone="focus" className="ml-auto">
+                          latest
+                        </Tag>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -353,90 +517,96 @@ function useReloadOnSteps(setup: SetupSnapshot | null, load: () => void) {
   }, [finished, load]);
 }
 
-/** The "Versioni" group of the Tools page. */
-export function VersionsSection({ setup }: { setup: SetupSnapshot | null }) {
+/** The kit's versions for the Tools page, where each versioned tool shows
+ * them in its own row (ToolVersions). `enabled` false (first start) asks
+ * nothing. */
+export function useKitVersions(setup: SetupSnapshot | null, enabled: boolean) {
   const [tools, setTools] = useState<VersionedTool[] | null>(null);
   const load = useCallback(() => {
+    if (!enabled) return;
     versionsList().then(setTools, () => {
       setTools([]);
     });
-  }, []);
-  const { busy, error, run } = useAction(load);
+  }, [enabled]);
+  const { busy, error, run: runAction } = useAction(load);
+  // The tool of the last action, the one that shows its error.
+  const [last, setLast] = useState<string | null>(null);
   const offers = useOffers(tools, load);
   useEffect(load, [load]);
   useReloadOnSteps(setup, load);
+  const run = useCallback(
+    (id: string, key: string, task: () => Promise<void>) => {
+      setLast(id);
+      runAction(key, task);
+    },
+    [runAction],
+  );
+  const byId = useMemo(() => new Map((tools ?? []).map((x) => [x.id, x])), [tools]);
+  return { byId, setTools, busy, error, last, run, offers };
+}
+
+export type KitVersions = ReturnType<typeof useKitVersions>;
+
+/** The versions of an installed tool in its row of the Tools page: the
+ * kit's line, the lines on disk with who uses them, one to download. */
+export function ToolVersions({
+  tool,
+  kit,
+  setup,
+  outside = {},
+}: {
+  tool: VersionedTool;
+  kit: KitVersions;
+  setup: SetupSnapshot | null;
+  /** Line → the components that cannot run on it (relations matrix). */
+  outside?: Record<string, string[]>;
+}) {
+  const { busy, run, offers, setTools } = kit;
   const running = setup?.running ?? false;
-  const installed = (tools ?? []).filter((x) => x.installed);
+  const add = (line: string) => {
+    run(tool.id, `add:${tool.id}`, () => versionsAdd(tool.id, line));
+  };
   return (
-    <SettingsGroup
-      id="group-versions"
-      title={t("Versioni")}
-      description={t(
-        "La versione scelta qui vale per tutto il kit; ogni progetto può sceglierne un'altra nella sua pagina. Le versioni da scaricare si scaricano appena scelte; un aggiornamento che cambia la versione minore conserva quella vecchia.",
-      )}
-    >
-      {installed.map((tool) => {
-        const value = tool.preferred ?? tool.default?.line ?? "";
-        const add = (line: string) => {
-          run(`add:${tool.id}`, () => versionsAdd(tool.id, line));
-        };
-        return (
-          <SettingItem
-            key={tool.id}
-            title={tool.name}
-            keywords={`${tool.id} ${t("versione")}`}
-            modified={tool.preferred !== null && tool.preferred !== tool.default?.line}
-          >
-            <div className="flex items-center gap-2">
-              <ComponentLogo id={tool.id} size={16} />
-              <LineSelect
-                tool={tool}
-                value={value}
-                label={t("Versione di {0} per il kit", tool.name)}
-                disabled={busy !== null || (running && !isPresent(tool, value))}
-                onChange={(l) => {
-                  const line = l === tool.default?.line ? null : l;
-                  run(`prefer:${tool.id}`, () => versionsPrefer(tool.id, line).then(setTools));
-                }}
-              />
-              <RefreshLines
-                tool={tool}
-                checking={offers.checking.has(tool.id)}
-                disabled={busy !== null}
-                onRefresh={() => {
-                  offers.refresh([tool.id]);
-                }}
-              />
-            </div>
-            <LineState
-              tool={tool}
-              line={tool.preferred}
-              fallback={tool.default?.line ?? ""}
-              setup={setup}
-              error={offers.failed[tool.id]}
-              onDownload={add}
-            />
-            <DiskLines
-              tool={tool}
-              busy={busy}
-              running={running}
-              onRemove={(line) => {
-                run(`remove:${tool.id}:${line}`, () => versionsRemove(tool.id, line).then(setTools));
-              }}
-            />
-            {tool.downloadable && <Download tool={tool} busy={running || busy === `add:${tool.id}`} onAdd={add} />}
-          </SettingItem>
-        );
-      })}
-      {tools !== null && installed.length === 0 && (
-        <p data-setting className="max-w-[880px] px-[14px] text-vsc-desc">
-          {t("Nessun linguaggio con più versioni installato.")}
-        </p>
-      )}
-      <div className="max-w-[880px] px-[14px] empty:hidden">
-        <ErrorLine error={error} />
+    <div className="mt-1.5 max-w-[620px]">
+      <div className="flex items-center gap-1">
+        <span className="flex-1 text-[12px] text-vsc-desc">
+          {t("Versioni: il kit usa la più recente; un progetto nuovo tiene quella che c'è alla sua creazione")}
+        </span>
+        <div className="flex items-center gap-1">
+          <RefreshLines
+            tool={tool}
+            checking={offers.checking.has(tool.id)}
+            disabled={busy !== null}
+            onRefresh={() => {
+              offers.refresh([tool.id]);
+            }}
+          />
+          {tool.downloadable && (
+            <AddLine tool={tool} setup={setup} busy={running || busy === `add:${tool.id}`} onAdd={add} />
+          )}
+        </div>
       </div>
-    </SettingsGroup>
+      <LineState
+        tool={tool}
+        line={tool.preferred}
+        fallback={tool.default?.line ?? ""}
+        setup={setup}
+        error={offers.failed[tool.id]}
+        onDownload={add}
+        inList
+      />
+      <DiskLines
+        tool={tool}
+        setup={setup}
+        outside={outside}
+        busy={busy}
+        running={running}
+        onRemove={(line) => {
+          run(tool.id, `remove:${tool.id}:${line}`, () => versionsRemove(tool.id, line).then(setTools));
+        }}
+      />
+      {kit.last === tool.id && <ErrorLine error={kit.error} />}
+    </div>
   );
 }
 
@@ -484,7 +654,7 @@ export function ProjectVersions({ project }: { project: string }) {
                   id={`ver-${tool.id}`}
                   tool={tool}
                   value={chosen}
-                  first={{ value: "", label: t("Come il kit ({0})", kitLine) }}
+                  first={{ value: "", label: t("La più recente ({0})", kitLine) }}
                   disabled={busy !== null || (running && chosen !== "" && !isPresent(tool, chosen))}
                   onChange={(l) => {
                     set(l === "" ? null : l);

@@ -47,6 +47,20 @@ fn version_in(folder: Option<&Path>) -> Option<String> {
     version.filter(|v| !v.is_empty())
 }
 
+/// The runtime in use, without changing anything (for the relations
+/// matrix): the PC's, or the kit's fixed one.
+pub fn found(kit: &Kit) -> Option<Runtime> {
+    if let Some(version) = version_in(None) {
+        return Some(Runtime::System(version));
+    }
+    let folder = fixed_folder(kit);
+    if !folder.join("msedgewebview2.exe").is_file() {
+        return None;
+    }
+    let version = version_in(Some(&folder))?;
+    Some(Runtime::Fixed { folder, version })
+}
+
 /// Finds a usable runtime; sets `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER` for the
 /// fixed one. Must run before any thread starts (it sets a variable).
 pub fn locate(kit: &Kit) -> Option<Runtime> {

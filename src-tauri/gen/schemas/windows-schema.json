@@ -477,6 +477,12 @@
           "markdownDescription": "Enables the projects_list command without any pre-configured scope."
         },
         {
+          "description": "Enables the relations_matrix command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-relations-matrix",
+          "markdownDescription": "Enables the relations_matrix command without any pre-configured scope."
+        },
+        {
           "description": "Enables the run_clear command without any pre-configured scope.",
           "type": "string",
           "const": "allow-run-clear",
@@ -517,6 +523,12 @@
           "type": "string",
           "const": "allow-run-stop",
           "markdownDescription": "Enables the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the service_line command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-service-line",
+          "markdownDescription": "Enables the service_line command without any pre-configured scope."
         },
         {
           "description": "Enables the service_set command without any pre-configured scope.",
@@ -613,12 +625,6 @@
           "type": "string",
           "const": "allow-versions-list",
           "markdownDescription": "Enables the versions_list command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the versions_prefer command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-versions-prefer",
-          "markdownDescription": "Enables the versions_prefer command without any pre-configured scope."
         },
         {
           "description": "Enables the versions_remove command without any pre-configured scope.",
@@ -927,6 +933,12 @@
           "markdownDescription": "Denies the projects_list command without any pre-configured scope."
         },
         {
+          "description": "Denies the relations_matrix command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-relations-matrix",
+          "markdownDescription": "Denies the relations_matrix command without any pre-configured scope."
+        },
+        {
           "description": "Denies the run_clear command without any pre-configured scope.",
           "type": "string",
           "const": "deny-run-clear",
@@ -967,6 +979,12 @@
           "type": "string",
           "const": "deny-run-stop",
           "markdownDescription": "Denies the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the service_line command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-service-line",
+          "markdownDescription": "Denies the service_line command without any pre-configured scope."
         },
         {
           "description": "Denies the service_set command without any pre-configured scope.",
@@ -1063,12 +1081,6 @@
           "type": "string",
           "const": "deny-versions-list",
           "markdownDescription": "Denies the versions_list command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the versions_prefer command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-versions-prefer",
-          "markdownDescription": "Denies the versions_prefer command without any pre-configured scope."
         },
         {
           "description": "Denies the versions_remove command without any pre-configured scope.",

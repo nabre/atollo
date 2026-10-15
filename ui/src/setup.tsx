@@ -1,7 +1,7 @@
 // Progress of the preparation (installing, updating, removing components),
 // shared by the status bar, the Activity panel and the Tools page.
 import { useEffect, useState } from "react";
-import { VscCheck, VscCircleSlash, VscError, VscLoading, VscWarning } from "react-icons/vsc";
+import { VscCheck, VscCircleSlash, VscError, VscHistory, VscLoading, VscWarning } from "react-icons/vsc";
 import { onSetup, setupCancel, setupState, type Outcome, type SetupSnapshot, type SetupStep } from "./api";
 import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
@@ -76,6 +76,73 @@ export function setupStatusText(s: SetupSnapshot | null): string | null {
   if (!current) return t("Installazione in preparazione…");
   const p = current.outcome ? null : percent(current);
   return t("Installazione {0}/{1}: {2}", s.steps.length, s.total, current.name) + (p === null ? "" : ` ${String(p)}%`);
+}
+
+/** Where an element of a list stands in the preparation: waiting, running
+ * (with the download's percent or the installer's note), or not done. */
+export type ItemState =
+  | { kind: "queued" }
+  | { kind: "running"; percent: number | null; note: string | null }
+  | { kind: "problem"; text: string };
+
+/** The state of the step `name` of component `id`; null when the
+ * preparation does not touch it or it went well. */
+export function itemState(s: SetupSnapshot | null, id: string, name: string): ItemState | null {
+  if (!s) return null;
+  const step = [...s.steps].reverse().find((x) => x.id === id && x.name === name);
+  if (!step) {
+    return s.running && s.queue.some((q) => q.id === id && q.name === name) ? { kind: "queued" } : null;
+  }
+  const o = step.outcome;
+  if (o === null) {
+    return s.running
+      ? { kind: "running", percent: percent(step), note: step.note }
+      : { kind: "problem", text: t("interrotto") };
+  }
+  return isProblem(o) ? { kind: "problem", text: outcomeText(o) } : null;
+}
+
+/** The short state of an element, in its row. */
+export function ItemStatus({ state }: { state: ItemState }) {
+  if (state.kind === "queued") {
+    return (
+      <span className="text-vsc-desc">
+        <VscHistory className="mr-1 inline" size={12} aria-hidden="true" />
+        {t("in coda")}
+      </span>
+    );
+  }
+  if (state.kind === "running") {
+    return (
+      <span className="text-vsc-link" title={state.note ?? undefined}>
+        <VscLoading className="mr-1 inline animate-spin" size={12} aria-hidden="true" />
+        {state.percent !== null ? t("download {0}%", state.percent) : (state.note ?? t("in corso"))}
+      </span>
+    );
+  }
+  return (
+    <span className="text-vsc-error" title={state.text}>
+      <VscError className="mr-1 inline" size={12} aria-hidden="true" />
+      {t("non riuscito")}
+    </span>
+  );
+}
+
+/** The download's bar under an element, while it runs. */
+export function ItemBar({ state, label, className = "" }: { state: ItemState; label: string; className?: string }) {
+  if (state.kind !== "running" || state.percent === null) return null;
+  return (
+    <span
+      role="progressbar"
+      aria-valuenow={state.percent}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={t("Download di {0}", label)}
+      className={`block h-0.5 bg-vsc-border ${className}`}
+    >
+      <span className="block h-full bg-vsc-progress" style={{ width: `${String(state.percent)}%` }} />
+    </span>
+  );
 }
 
 function StepIcon({ step, running }: { step: SetupStep; running: boolean }) {

@@ -58,6 +58,11 @@ impl Outcome {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "event", rename_all = "camelCase")]
 pub enum Event {
+    /// The steps of the run, `(id, name)` as `Step` will say them, before
+    /// the first: the interface shows them waiting.
+    Queue {
+        steps: Vec<(String, String)>,
+    },
     Step {
         index: usize,
         total: usize,
@@ -271,7 +276,27 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
     };
     let plan = plan(ctx, catalog, &choice, opts)?;
     let update_all = opts.update_all || !opts.only.is_empty();
-    let total = plan.handle.len() + plan.remove.len();
+    // "Update all" also brings every saved line to its latest patch.
+    let patches = if opts.update_all {
+        saved_lines(ctx, catalog, &plan.handle)
+    } else {
+        Vec::new()
+    };
+    let named = |id: &String| catalog.find(id).map(|c| (c.id.clone(), c.name.clone()));
+    sink.emit(Event::Queue {
+        steps: plan
+            .remove
+            .iter()
+            .chain(&plan.handle)
+            .filter_map(named)
+            .chain(patches.iter().filter_map(|(id, line, _)| {
+                catalog
+                    .find(id)
+                    .map(|c| (c.id.clone(), format!("{} {line}", c.name)))
+            }))
+            .collect(),
+    });
+    let total = plan.handle.len() + plan.remove.len() + patches.len();
     let mut results = Vec::new();
     let mut index = 0;
 
@@ -321,6 +346,21 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
         });
         results.push((c.id.clone(), outcome));
     }
+
+    for (id, line, current) in &patches {
+        let Some(c) = catalog.find(id) else { continue };
+        index += 1;
+        // Become the default with the update of the default: done.
+        if !crate::versions::saved(ctx.kit, c)
+            .iter()
+            .any(|l| &l.line == line)
+        {
+            continue;
+        }
+        let current = current.as_deref().filter(|_| !opts.force);
+        let outcome = line_step(ctx, c, line, current, (index, total), sink);
+        results.push((c.id.clone(), outcome));
+    }
     Ok(results)
 }
 
@@ -331,49 +371,97 @@ fn run_lines(
     lines: &[(String, String)],
     sink: &mut dyn Sink,
 ) -> Vec<(String, Outcome)> {
+    sink.emit(Event::Queue {
+        steps: lines
+            .iter()
+            .filter_map(|(id, line)| {
+                catalog
+                    .find(id)
+                    .map(|c| (c.id.clone(), format!("{} {line}", c.name)))
+            })
+            .collect(),
+    });
     let mut results = Vec::new();
     for (index, (id, line)) in lines.iter().enumerate() {
         let Some(c) = catalog.find(id) else { continue };
-        if ctx.cancel.load(Ordering::Relaxed) {
-            results.push((c.id.clone(), Outcome::Cancelled));
-            continue;
-        }
-        sink.emit(Event::Step {
-            index: index + 1,
-            total: lines.len(),
-            id: c.id.clone(),
-            name: format!("{} {line}", c.name),
-        });
-        let result = (|| -> Result<Outcome> {
-            let Some(installer) = install::installer(&c.id) else {
-                return Ok(Outcome::Unsupported);
-            };
-            let release = installer.release_line(ctx, c, line)?;
-            let mut progress = StepProgress {
-                id: &c.id,
-                sink: &mut *sink,
-                last_percent: None,
-            };
-            install::install_line(ctx, c, &release, &mut progress)?;
-            Ok(Outcome::Installed {
-                version: release.version,
-            })
-        })();
-        let outcome = match result {
-            Ok(outcome) => outcome,
-            Err(e) if e.is::<Cancelled>() => Outcome::Cancelled,
-            Err(e) if e.is::<InUse>() => Outcome::InUse,
-            Err(e) => Outcome::Failed {
-                message: format!("{e:#}"),
-            },
-        };
-        sink.emit(Event::Done {
-            id: c.id.clone(),
-            outcome: outcome.clone(),
-        });
+        let outcome = line_step(ctx, c, line, None, (index + 1, lines.len()), sink);
         results.push((c.id.clone(), outcome));
     }
     results
+}
+
+/// The saved lines "Update all" brings to their latest patch, each in its
+/// own folder: those of the versioned components it handles whose installer
+/// knows the lines, with the version they have now.
+fn saved_lines(
+    ctx: &Ctx,
+    catalog: &Catalog,
+    ids: &[String],
+) -> Vec<(String, String, Option<String>)> {
+    ids.iter()
+        .filter_map(|id| catalog.find(id))
+        .filter(|c| c.versioned && c.is_installed(ctx.kit))
+        .filter(|c| install::installer(&c.id).is_some_and(|i| i.has_lines()))
+        .flat_map(|c| {
+            crate::versions::saved(ctx.kit, c)
+                .into_iter()
+                .map(|l| (c.id.clone(), l.line, l.version))
+        })
+        .collect()
+}
+
+/// Installs the newest build of `line` of `c` as a saved line; with
+/// `current` (the version on disk) only when the source has a newer one.
+fn line_step(
+    ctx: &Ctx,
+    c: &Component,
+    line: &str,
+    current: Option<&str>,
+    (index, total): (usize, usize),
+    sink: &mut dyn Sink,
+) -> Outcome {
+    if ctx.cancel.load(Ordering::Relaxed) {
+        return Outcome::Cancelled;
+    }
+    sink.emit(Event::Step {
+        index,
+        total,
+        id: c.id.clone(),
+        name: format!("{} {line}", c.name),
+    });
+    let result = (|| -> Result<Outcome> {
+        let Some(installer) = install::installer(&c.id) else {
+            return Ok(Outcome::Unsupported);
+        };
+        let release = installer.release_line(ctx, c, line)?;
+        if current == Some(release.version.as_str()) {
+            return Ok(Outcome::UpToDate {
+                version: Some(release.version),
+            });
+        }
+        let mut progress = StepProgress {
+            id: &c.id,
+            sink: &mut *sink,
+            last_percent: None,
+        };
+        install::install_line(ctx, c, &release, &mut progress)?;
+        Ok(Outcome::Installed {
+            version: release.version,
+        })
+    })();
+    let outcome = match result {
+        Ok(outcome) => outcome,
+        Err(e) if e.is::<Cancelled>() => Outcome::Cancelled,
+        Err(e) if e.is::<InUse>() => Outcome::InUse,
+        Err(e) => Outcome::Failed {
+            message: format!("{e:#}"),
+        },
+    };
+    sink.emit(Event::Done {
+        id: c.id.clone(),
+        outcome: outcome.clone(),
+    });
+    outcome
 }
 
 /// Removes the component's folder and the other files it owns. Folders

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-relations-matrix"
+description = "Enables the relations_matrix command without any pre-configured scope."
+commands.allow = ["relations_matrix"]
+
+[[permission]]
+identifier = "deny-relations-matrix"
+description = "Denies the relations_matrix command without any pre-configured scope."
+commands.deny = ["relations_matrix"]

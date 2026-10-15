@@ -157,7 +157,10 @@ impl KitEnv {
         let arch = kit.arch().as_str();
         let platform = kit.arch().platform();
         let fwd = |p: &Path| p.to_string_lossy().replace('\\', "/");
-        let has = |rel: &str| apps.join(rel).is_file();
+        // In the folder of a versioned component: that of its default
+        // version (versions.rs).
+        let app = |rel: &str| crate::catalog::kit_path(kit, rel);
+        let has = |rel: &str| app(rel).is_file();
 
         // Kit folders (_env.cmd:7-16, 22)
         env.set_path("DEVKIT", root);
@@ -221,6 +224,11 @@ impl KitEnv {
         env.set_path("NPM_CONFIG_PREFIX", &npm_prefix);
         env.set_path("NPM_CONFIG_CACHE", data.join(r"cache\npm"));
         env.set_path("NPM_CONFIG_USERCONFIG", home.join(".npmrc"));
+        // yarn through corepack (the pnpm component): its downloads in the
+        // kit, no question before one, never a change to package.json.
+        env.set_path("COREPACK_HOME", data.join(r"cache\corepack"));
+        env.set("COREPACK_ENABLE_DOWNLOAD_PROMPT", "0");
+        env.set("COREPACK_ENABLE_AUTO_PIN", "0");
         env.set("NODE_OPTIONS", node_options(kit));
         env.set_path("UV_CACHE_DIR", data.join(r"cache\uv"));
         env.set_path("UV_PYTHON_INSTALL_DIR", data.join(r"uv\python"));
@@ -231,14 +239,17 @@ impl KitEnv {
         env.set_path("PHPRC", data.join("php"));
         // The PHP in use: php.ini finds its extensions through it, so a
         // saved version of PHP loads its own (versions.rs).
-        env.set_path("CP_PHP", apps.join("php"));
+        env.set_path("CP_PHP", app("php"));
+        // Apache's PHP, with `/`: it follows CP_PHP when a version is chosen
+        // for the kit or a project (versions::apply).
+        env.set("CP_PHP_FWD", fwd(&app("php")));
         let composer = data.join("composer");
         env.set_path("COMPOSER_HOME", &composer);
         env.set_path("COMPOSER_CACHE_DIR", data.join(r"cache\composer"));
 
         // Rust and the other languages (_env.cmd:153-184)
-        let rustup = apps.join(r"rust\rustup");
-        let cargo = apps.join(r"rust\cargo");
+        let rustup = app(r"rust\rustup");
+        let cargo = app(r"rust\cargo");
         env.set_path("RUSTUP_HOME", &rustup);
         env.set_path("CARGO_HOME", &cargo);
         let gobin = data.join(r"go\bin").join(&platform);
@@ -249,11 +260,11 @@ impl KitEnv {
         env.set_path("GOENV", data.join(r"go\env"));
         env.set("GOTELEMETRY", "off");
         if has(r"java\bin\java.exe") {
-            env.set_path("JAVA_HOME", apps.join("java"));
+            env.set_path("JAVA_HOME", app("java"));
         }
         env.set_path("GRADLE_USER_HOME", data.join("gradle"));
         let dotnet_home = data.join("dotnet").join(&platform);
-        env.set_path("DOTNET_ROOT", apps.join("dotnet"));
+        env.set_path("DOTNET_ROOT", app("dotnet"));
         env.set_path("DOTNET_CLI_HOME", &dotnet_home);
         env.set_path("NUGET_PACKAGES", data.join(r"cache\nuget"));
         env.set("DOTNET_CLI_TELEMETRY_OPTOUT", "1");
@@ -281,7 +292,12 @@ impl KitEnv {
         env.set_path("YARN_CACHE_FOLDER", data.join(r"cache\yarn"));
         let gem_home = data.join("ruby").join(&platform);
         env.set_path("GEM_HOME", &gem_home);
-        env.set_path("R_LIBS_USER", data.join("r").join(&platform));
+        // One library per minor version of R (`%v` = 4.6): packages
+        // compiled for one do not load in another (D-81).
+        env.set(
+            "R_LIBS_USER",
+            format!("{}\\%v", data.join("r").join(&platform).display()),
+        );
 
         // PowerShell 7 of the kit (new, D-23)
         env.set("POWERSHELL_TELEMETRY_OPTOUT", "1");
@@ -293,31 +309,27 @@ impl KitEnv {
 
         // PATH: kit tools in the order of _env.cmd:187-228, then the system
         // The kit's own commands first (agy.cmd carries Antigravity's login).
-        let mut path: Vec<PathBuf> = vec![
-            kit.kit_files().join("bin"),
-            apps.join("claude"),
-            apps.join("tools"),
-        ];
+        let mut path: Vec<PathBuf> = vec![kit.kit_files().join("bin"), app("claude"), app("tools")];
         if has(r"pwsh\pwsh.exe") {
-            path.push(apps.join("pwsh"));
+            path.push(app("pwsh"));
         }
         if has(r"codex\bin\codex.exe") {
-            path.push(apps.join(r"codex\bin"));
-            path.push(apps.join(r"codex\codex-path"));
+            path.push(app(r"codex\bin"));
+            path.push(app(r"codex\codex-path"));
         }
         // Antigravity is not on the PATH itself: `agy` is data\kit\bin\agy.cmd,
         // which carries its login in and out of Windows (keyring.rs).
         if has(r"python\python.exe") {
-            path.push(apps.join("python"));
-            path.push(apps.join(r"python\Scripts"));
+            path.push(app("python"));
+            path.push(app(r"python\Scripts"));
         }
         path.extend(subdirs_starting_with(&pyuser, "Python3").map(|d| d.join("Scripts")));
         if has(r"node\node.exe") {
-            path.push(apps.join("node"));
+            path.push(app("node"));
             path.push(npm_prefix.clone());
         }
         if has(r"php\php.exe") {
-            path.push(apps.join("php"));
+            path.push(app("php"));
             path.push(composer.join(r"vendor\bin"));
         }
         if !cargo.join(r"bin\cargo.exe").is_file() {
@@ -334,91 +346,67 @@ impl KitEnv {
                 path.extend(dirs.iter().cloned());
             }
         };
-        when(&mut path, r"go\bin\go.exe", &[apps.join(r"go\bin"), gobin]);
-        when(&mut path, r"java\bin\java.exe", &[apps.join(r"java\bin")]);
-        when(&mut path, r"maven\bin\mvn.cmd", &[apps.join(r"maven\bin")]);
-        when(
-            &mut path,
-            r"gradle\bin\gradle.bat",
-            &[apps.join(r"gradle\bin")],
-        );
-        when(
-            &mut path,
-            r"kotlin\bin\kotlinc.bat",
-            &[apps.join(r"kotlin\bin")],
-        );
+        when(&mut path, r"go\bin\go.exe", &[app(r"go\bin"), gobin]);
+        when(&mut path, r"java\bin\java.exe", &[app(r"java\bin")]);
+        when(&mut path, r"maven\bin\mvn.cmd", &[app(r"maven\bin")]);
+        when(&mut path, r"gradle\bin\gradle.bat", &[app(r"gradle\bin")]);
+        when(&mut path, r"kotlin\bin\kotlinc.bat", &[app(r"kotlin\bin")]);
         when(
             &mut path,
             r"dotnet\dotnet.exe",
-            &[apps.join("dotnet"), dotnet_home.join(r".dotnet\tools")],
+            &[app("dotnet"), dotnet_home.join(r".dotnet\tools")],
         );
         when(
             &mut path,
             r"dart\bin\dart.exe",
-            &[apps.join(r"dart\bin"), pub_cache.join("bin")],
+            &[app(r"dart\bin"), pub_cache.join("bin")],
         );
-        when(&mut path, r"zig\zig.exe", &[apps.join("zig")]);
-        when(
-            &mut path,
-            r"julia\bin\julia.exe",
-            &[apps.join(r"julia\bin")],
-        );
-        when(
-            &mut path,
-            r"bun\bun.exe",
-            &[apps.join("bun"), bun.join("bin")],
-        );
+        when(&mut path, r"zig\zig.exe", &[app("zig")]);
+        when(&mut path, r"julia\bin\julia.exe", &[app(r"julia\bin")]);
+        when(&mut path, r"bun\bun.exe", &[app("bun"), bun.join("bin")]);
         when(
             &mut path,
             r"deno\deno.exe",
-            &[apps.join("deno"), deno_root.join("bin")],
+            &[app("deno"), deno_root.join("bin")],
         );
-        when(&mut path, r"typst\typst.exe", &[apps.join("typst")]);
+        when(&mut path, r"typst\typst.exe", &[app("typst")]);
         when(
             &mut path,
             r"tinytex\bin\windows\tlmgr.bat",
-            &[apps.join(r"tinytex\bin\windows")],
+            &[app(r"tinytex\bin\windows")],
         );
         if npm_prefix.join("pnpm.cmd").is_file() {
             path.push(pnpm);
         }
-        when(
-            &mut path,
-            r"cmake\bin\cmake.exe",
-            &[apps.join(r"cmake\bin")],
-        );
-        when(&mut path, r"cc\bin\clang.exe", &[apps.join(r"cc\bin")]);
+        when(&mut path, r"cmake\bin\cmake.exe", &[app(r"cmake\bin")]);
+        when(&mut path, r"cc\bin\clang.exe", &[app(r"cc\bin")]);
         when(
             &mut path,
             r"ruby\bin\ruby.exe",
-            &[apps.join(r"ruby\bin"), gem_home.join("bin")],
+            &[app(r"ruby\bin"), gem_home.join("bin")],
         );
-        when(&mut path, r"r\bin\R.cmd", &[apps.join(r"r\bin")]);
+        when(&mut path, r"r\bin\R.cmd", &[app(r"r\bin")]);
         // Databases (D-73): servers and clients.
         when(
             &mut path,
             r"mariadb\bin\mariadb.exe",
-            &[apps.join(r"mariadb\bin")],
+            &[app(r"mariadb\bin")],
         );
-        when(
-            &mut path,
-            r"mongodb\bin\mongod.exe",
-            &[apps.join(r"mongodb\bin")],
-        );
+        when(&mut path, r"mongodb\bin\mongod.exe", &[app(r"mongodb\bin")]);
         when(
             &mut path,
             r"mongosh\bin\mongosh.exe",
-            &[apps.join(r"mongosh\bin")],
+            &[app(r"mongosh\bin")],
         );
         when(
             &mut path,
             r"mongodb-tools\bin\mongodump.exe",
-            &[apps.join(r"mongodb-tools\bin")],
+            &[app(r"mongodb-tools\bin")],
         );
-        when(&mut path, r"sqlite\sqlite3.exe", &[apps.join("sqlite")]);
+        when(&mut path, r"sqlite\sqlite3.exe", &[app("sqlite")]);
         if has(r"git\bin\bash.exe") {
-            env.set_path("CLAUDE_CODE_GIT_BASH_PATH", apps.join(r"git\bin\bash.exe"));
-            path.push(apps.join(r"git\cmd"));
+            env.set_path("CLAUDE_CODE_GIT_BASH_PATH", app(r"git\bin\bash.exe"));
+            path.push(app(r"git\cmd"));
         }
         let system32 = PathBuf::from(host.system_root()).join("System32");
         path.push(system32.clone());
@@ -750,5 +738,46 @@ mod tests {
             "PATH=C:\\x MY_PASSWORD=***"
         );
         assert_eq!(mask_secrets("no secrets here"), "no secrets here");
+    }
+
+    #[test]
+    fn languages_from_the_folder_of_their_version() {
+        let (_tmp, kit) = fake_kit(
+            "env-versions",
+            &[
+                r"node\22.11\node.exe",
+                r"php\8.4\php.exe",
+                r"java\21.0\bin\java.exe",
+            ],
+        );
+        let catalog = crate::catalog::Catalog::get();
+        for (id, version) in [
+            ("node", "v22.11.0"),
+            ("php", "8.4.13"),
+            ("java", "21.0.5+11"),
+        ] {
+            catalog
+                .find(id)
+                .unwrap()
+                .save_version(&kit, version)
+                .unwrap();
+        }
+        let env = KitEnv::build(&kit, &Settings::default(), "it", &host());
+        let apps = kit.apps();
+        let path = env.get("PATH").unwrap();
+        assert!(path
+            .split(';')
+            .any(|e| Path::new(e) == apps.join(r"node\22.11")));
+        assert!(path
+            .split(';')
+            .any(|e| Path::new(e) == apps.join(r"java\21.0\bin")));
+        assert_eq!(env.get("CP_PHP"), apps.join(r"php\8.4").to_str());
+        assert_eq!(env.get("JAVA_HOME"), apps.join(r"java\21.0").to_str());
+        let fwd = apps
+            .join(r"php\8.4")
+            .display()
+            .to_string()
+            .replace('\\', "/");
+        assert_eq!(env.get("CP_PHP_FWD"), Some(fwd.as_str()));
     }
 }

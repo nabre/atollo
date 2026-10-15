@@ -148,11 +148,13 @@ impl Catalog {
 }
 
 /// A path of the catalog: relative to `data\apps\<platform>`, or to the kit
-/// root with `@`.
+/// root with `@`. In a versioned component's folder it is that of its
+/// default version (`node/node.exe` → `node\22.11\node.exe`, versions.rs).
 pub fn kit_path(kit: &Kit, rel: &str) -> PathBuf {
     match rel.strip_prefix('@') {
         Some(r) => kit.root().join(r.replace('/', "\\")),
-        None => kit.apps().join(rel.replace('/', "\\")),
+        None => crate::versions::resolve(kit, rel)
+            .unwrap_or_else(|| kit.apps().join(rel.replace('/', "\\"))),
     }
 }
 
@@ -220,7 +222,7 @@ impl Component {
         self.folder_path(kit)
             .into_iter()
             .chain(self.remove.iter().map(|r| kit_path(kit, r)))
-            // The saved lines go with the component.
+            // Saved lines of an older kit, not moved yet (versions::migrate).
             .chain(
                 self.versioned
                     .then(|| kit.apps().join("versions").join(&self.id)),
@@ -444,10 +446,13 @@ mod tests {
             catalog.find("vscodium-server").map(|c| c.group),
             Some(Group::App)
         );
-        // Saved lines are copies of the component's own folder.
+        // Saved lines are copies of the component's own folder: languages,
+        // and the database servers (each version with its data, D-81).
         for c in catalog.all().iter().filter(|c| c.versioned) {
             assert!(
-                c.folder.is_some() && c.group == Group::Languages,
+                c.folder.is_some()
+                    && (c.group == Group::Languages
+                        || crate::services::SERVERS.contains(&c.id.as_str())),
                 "{}: versioned",
                 c.id
             );
@@ -556,7 +561,7 @@ mod tests {
         for (id, parts) in [
             ("java", &["maven/bin/mvn.cmd", "gradle/bin/gradle.bat"][..]),
             ("cmake", &["tools/ninja.exe"]),
-            ("php", &["tools/composer.phar"]),
+            ("php", &["php/composer.phar"]),
             ("pnpm", &["@data/npm-global/yarn.cmd"]),
             ("vscodium-server", &["vscodium-server/node.exe"]),
         ] {

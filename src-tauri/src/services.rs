@@ -6,8 +6,12 @@
 //!   `root` and MongoDB's `admin` get a random one at the first start, also
 //!   on data made by an older Dev-Kit (`db_auth.rs`); each project gets its
 //!   own database and user (`project_db_create`);
-//! - data in `data\db\<id>`, created at the first start (MariaDB with its
-//!   `mariadb-install-db`); output in `data\app\logs\<id>.log`;
+//! - data in `data\db\<id>\<version>`, one folder per version the server
+//!   runs (D-81: a setting of the server, the newest by default), created
+//!   at its first start as a copy of the nearest older version's (forward
+//!   only; MongoDB one major at a time, then its feature compatibility), or
+//!   new (MariaDB with its `mariadb-install-db`); output in
+//!   `data\app\logs\<id>.log`;
 //! - each server runs in a job of its own, nested in the app's: closing the
 //!   app ends it in any case; `stop` first asks the server to shut down
 //!   (`mariadb-admin shutdown`, mongosh `shutdownServer`), so no recovery
@@ -55,6 +59,10 @@ pub struct Setting {
     pub port: Option<u16>,
     #[serde(default)]
     pub autostart: bool,
+    /// The version (`12.3`) the server runs; None or not on disk: the
+    /// newest on disk (D-81).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -85,6 +93,9 @@ pub struct ServiceInfo {
     pub password: Option<String>,
     /// Why the last start failed.
     pub message: Option<String>,
+    /// The version it runs, and those installed (newest first).
+    pub line: Option<String>,
+    pub lines: Vec<String>,
 }
 
 struct Server {
@@ -102,8 +113,141 @@ pub struct Services {
     errors: Mutex<BTreeMap<String, String>>,
 }
 
-pub fn data_dir(kit: &Kit, id: &str) -> PathBuf {
+/// The version of `id` the server runs: the one in its settings while it is
+/// on disk, otherwise the newest on disk.
+pub fn server_line(kit: &Kit, id: &str) -> Option<String> {
+    let c = Catalog::get().find(id)?;
+    load_settings(kit)
+        .get(id)
+        .and_then(|s| s.line.clone())
+        .filter(|l| crate::versions::is_present(kit, c, l))
+        .or_else(|| crate::versions::newest_line(kit, c))
+}
+
+/// The installed versions of `id`, newest first.
+pub fn server_lines(kit: &Kit, id: &str) -> Vec<String> {
+    let Some(c) = Catalog::get().find(id) else {
+        return Vec::new();
+    };
+    let mut lines: Vec<String> = crate::versions::default_line(kit, c)
+        .into_iter()
+        .chain(crate::versions::saved(kit, c).into_iter().map(|l| l.line))
+        .collect();
+    lines.sort_by_key(|l| std::cmp::Reverse(crate::install::version_key(l)));
+    lines
+}
+
+/// `data\db\<id>`: the data of every version of the server.
+fn data_root(kit: &Kit, id: &str) -> PathBuf {
     kit.data().join("db").join(id)
+}
+
+/// The data of the version the server runs, `data\db\<id>\<line>`: data
+/// of a newer version does not open in an older one (D-81).
+pub fn data_dir(kit: &Kit, id: &str) -> PathBuf {
+    match server_line(kit, id) {
+        Some(line) => data_root(kit, id).join(line),
+        None => data_root(kit, id),
+    }
+}
+
+/// The data of a version that has it yet (MariaDB's `mysql`, MongoDB's
+/// `WiredTiger`).
+fn has_data(id: &str, dir: &std::path::Path) -> bool {
+    match id {
+        "mariadb" => dir.join("mysql").is_dir(),
+        _ => dir.join("WiredTiger").is_file(),
+    }
+}
+
+/// The data of `line` the first time it starts: a copy of that of the
+/// nearest older version, if the server can take it (MariaDB from any
+/// older one; MongoDB from the same or the previous major only). The old
+/// data stays as it was, for its own version. Returns the version copied.
+fn seed(kit: &Kit, id: &str, line: &str) -> Result<Option<String>> {
+    let root = data_root(kit, id);
+    let target = root.join(line);
+    if has_data(id, &target) {
+        return Ok(None);
+    }
+    let wanted = crate::install::version_key(line);
+    let mut older: Vec<(Vec<u64>, String)> = fs::read_dir(&root)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            let key = crate::install::version_key(&name);
+            (crate::versions::valid_line(&name) && key < wanted && has_data(id, &e.path()))
+                .then_some((key, name))
+        })
+        .collect();
+    older.sort();
+    let Some((key, from)) = older.pop() else {
+        return Ok(None);
+    };
+    if id == "mongodb"
+        && wanted.first().copied().unwrap_or(0) > key.first().copied().unwrap_or(0) + 1
+    {
+        crate::log::warn(&format!(
+            "mongodb {line}: the data of {from} cannot jump more than one major version; \
+             starting with empty data (the {from} data stays)"
+        ));
+        return Ok(None);
+    }
+    if target.exists() {
+        crate::archive::remove_dir(&target)?;
+    }
+    copy_dir(&root.join(&from), &target)?;
+    crate::log::info(&format!("{id}: data of {from} copied for {line}"));
+    Ok(Some(from))
+}
+
+fn copy_dir(from: &std::path::Path, to: &std::path::Path) -> Result<()> {
+    fs::create_dir_all(to)?;
+    for entry in fs::read_dir(from)?.flatten() {
+        let target = to.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_dir(&entry.path(), &target)?;
+        } else {
+            fs::copy(entry.path(), &target).with_context(|| target.display().to_string())?;
+        }
+    }
+    Ok(())
+}
+
+/// Data of an older kit, `data\db\<id>` itself: into the folder of the
+/// installed version, `data\db\<id>\<line>`. At start (versions::migrate).
+pub fn migrate_data(kit: &Kit) {
+    for id in SERVERS {
+        let root = data_root(kit, id);
+        if !has_data(id, &root) {
+            continue;
+        }
+        let Some(line) = Catalog::get()
+            .find(id)
+            .and_then(|c| crate::versions::default_line(kit, c))
+        else {
+            continue;
+        };
+        let moving = kit.data().join("db").join(format!("{id}.devkit-move"));
+        let moved = fs::rename(&root, &moving)
+            .and_then(|()| fs::create_dir_all(&root))
+            .and_then(|()| fs::rename(&moving, root.join(&line)));
+        match moved {
+            Ok(()) => crate::log::info(&format!(
+                "{id}: data moved to {}",
+                root.join(&line).display()
+            )),
+            Err(e) => {
+                if moving.exists() && !root.join(&line).exists() {
+                    let _ = fs::remove_dir(&root);
+                    let _ = fs::rename(&moving, &root);
+                }
+                crate::log::warn(&format!("{id}: data not moved ({e})"));
+            }
+        }
+    }
 }
 
 fn log_path(kit: &Kit, id: &str) -> PathBuf {
@@ -126,8 +270,14 @@ fn installed(kit: &Kit, id: &str) -> bool {
 }
 
 pub(crate) fn bin(kit: &Kit, id: &str, exe: &str) -> PathBuf {
-    match id {
-        "mongosh" => kit.apps().join(r"mongosh\bin").join(exe),
+    let versioned = Catalog::get().find(id).filter(|c| c.versioned);
+    match (id, versioned) {
+        ("mongosh", _) => kit.apps().join(r"mongosh\bin").join(exe),
+        // The version the server runs.
+        (_, Some(c)) => crate::versions::dir_for(kit, c, server_line(kit, id).as_deref())
+            .unwrap_or_else(|| kit.apps().join(id))
+            .join("bin")
+            .join(exe),
         _ => kit.apps().join(id).join("bin").join(exe),
     }
 }
@@ -280,6 +430,8 @@ impl Services {
                     user: admin_user(id).to_owned(),
                     password: admin_password(&secrets, id),
                     message: errors.get(*id).cloned(),
+                    line: server_line(&self.kit, id),
+                    lines: server_lines(&self.kit, id),
                 }
             })
             .collect()
@@ -509,6 +661,12 @@ impl Services {
     }
 
     fn launch(&self, id: &str, env: &KitEnv, port: u16) -> Result<u16> {
+        // The first start of a version: the data of the nearest older one.
+        let line = server_line(&self.kit, id);
+        let seeded = match &line {
+            Some(l) => seed(&self.kit, id, l)?,
+            None => None,
+        };
         let (data, fresh) = self.prepare(id, env, port)?;
         let log = log_path(&self.kit, id);
         let file = OpenOptions::new()
@@ -567,7 +725,41 @@ impl Services {
             self.stop(id);
             return Err(e);
         }
+        if let (Some(from), Some(line)) = (&seeded, &line) {
+            self.after_copy(id, env, port, from, line);
+        }
         Ok(port)
+    }
+
+    /// After the data of `from` was copied for `line`: MongoDB takes the
+    /// features of the new major (its next one needs it); MariaDB's system
+    /// tables are brought up to date by hand (`mariadb-upgrade`, D-73).
+    fn after_copy(&self, id: &str, env: &KitEnv, port: u16, from: &str, line: &str) {
+        let major = |l: &str| l.split('.').next().unwrap_or("").to_owned();
+        if major(from) == major(line) {
+            return;
+        }
+        if id != "mongodb" {
+            crate::log::info(&format!(
+                "mariadb {line}: data of {from}; run mariadb-upgrade to update the system tables"
+            ));
+            return;
+        }
+        let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), env);
+        cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
+            .arg(port.to_string())
+            .args(["--eval", db_auth::MONGO_FCV_JS])
+            .env(
+                "DEVKIT_DB_ADMIN",
+                db_auth::load(&self.kit).mongodb_admin.unwrap_or_default(),
+            )
+            .env("DEVKIT_DB_FCV", line);
+        match run_tool(cmd, Duration::from_secs(60)) {
+            Ok(_) => crate::log::info(&format!("mongodb {line}: feature compatibility {line}")),
+            Err(e) => crate::log::warn(&format!(
+                "mongodb {line}: setFeatureCompatibilityVersion: {e:#}"
+            )),
+        }
     }
 
     /// Where a project's database copies go: `data\db\backup\<project>`.
@@ -768,13 +960,43 @@ impl Services {
             bail!("port below 1024");
         }
         let mut all = load_settings(&self.kit);
+        let line = all.get(id).and_then(|s| s.line.clone());
         all.insert(
             id.to_owned(),
             Setting {
                 port: port.filter(|p| *p != default_port(id)),
                 autostart,
+                line,
             },
         );
+        let text = serde_json::to_string_pretty(&all)?;
+        write_atomic(&settings_path(&self.kit), text.as_bytes())?;
+        Ok(())
+    }
+
+    /// The version `id` runs (None: the newest on disk), while it is
+    /// stopped: each version has its own data (D-81).
+    pub fn set_line(&self, id: &str, line: Option<&str>) -> Result<()> {
+        if !SERVERS.contains(&id) {
+            bail!("unknown server {id}");
+        }
+        if let Some(l) = line {
+            if !server_lines(&self.kit, id).iter().any(|x| x == l) {
+                bail!("{id} {l} is not installed");
+            }
+        }
+        if self
+            .running
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get_mut(id)
+            .is_some_and(|s| matches!(s.child.try_wait(), Ok(None)))
+        {
+            bail!("{id} is running: stop it first");
+        }
+        let mut all = load_settings(&self.kit);
+        let entry = all.entry(id.to_owned()).or_default();
+        entry.line = line.map(str::to_owned);
         let text = serde_json::to_string_pretty(&all)?;
         write_atomic(&settings_path(&self.kit), text.as_bytes())?;
         Ok(())
@@ -818,6 +1040,88 @@ mod tests {
     use super::*;
     use crate::kit::{tests::TempDir, Arch};
 
+    /// `id` installed at `version`, the default folder of its line.
+    fn fake_server(kit: &Kit, id: &str, version: &str) {
+        let c = Catalog::get().find(id).unwrap();
+        let dir = crate::versions::install_dir(kit, c, version);
+        let folder = c.folder.as_deref().unwrap();
+        for k in std::iter::once(&c.key).chain(&c.keys) {
+            if let Some(rel) = k.strip_prefix(folder) {
+                let file = dir.join(rel.trim_start_matches('/').replace('/', "\\"));
+                fs::create_dir_all(file.parent().unwrap()).unwrap();
+                fs::write(&file, b"").unwrap();
+            }
+        }
+        c.save_version(kit, version).unwrap();
+    }
+
+    #[test]
+    fn each_version_has_its_data() {
+        let tmp = TempDir::new("services-lines");
+        let kit = Kit::at(tmp.0.clone(), Arch::X64);
+        kit.prepare().unwrap();
+        // Data of an older kit, then the server's own folder per version.
+        fake_server(&kit, "mariadb", "11.8.3");
+        let root = kit.data().join(r"db\mariadb");
+        fs::create_dir_all(root.join("mysql")).unwrap();
+        fs::write(root.join("ibdata1"), b"x").unwrap();
+        migrate_data(&kit);
+        assert!(root.join(r"11.8\mysql").is_dir() && !root.join("mysql").exists());
+        assert_eq!(data_dir(&kit, "mariadb"), root.join("11.8"));
+
+        // A newer version starts with a copy; the old data stays.
+        let c = Catalog::get().find("mariadb").unwrap();
+        let newer = crate::versions::saved_dir(&kit, c, "12.3");
+        fs::create_dir_all(newer.join("bin")).unwrap();
+        for k in ["mariadbd.exe", "mariadb.exe"] {
+            fs::write(newer.join("bin").join(k), b"").unwrap();
+        }
+        assert_eq!(server_line(&kit, "mariadb").as_deref(), Some("12.3"));
+        assert_eq!(server_lines(&kit, "mariadb"), ["12.3", "11.8"]);
+        assert_eq!(
+            seed(&kit, "mariadb", "12.3").unwrap().as_deref(),
+            Some("11.8")
+        );
+        assert!(root.join(r"12.3\ibdata1").is_file() && root.join(r"11.8\ibdata1").is_file());
+        assert_eq!(
+            seed(&kit, "mariadb", "12.3").unwrap(),
+            None,
+            "only the first time"
+        );
+        // Back to the older version: its own data, a setting of the server.
+        let s = Services::new(kit.clone());
+        s.set_line("mariadb", Some("11.8")).unwrap();
+        assert_eq!(data_dir(&kit, "mariadb"), root.join("11.8"));
+        assert!(
+            s.set_line("mariadb", Some("10.6")).is_err(),
+            "not installed"
+        );
+        assert_eq!(
+            bin(&kit, "mariadb", "mariadbd.exe")
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .file_name()
+                .unwrap(),
+            "11.8"
+        );
+
+        // MongoDB: one major at a time.
+        let mongo = kit.data().join(r"db\mongodb");
+        fs::create_dir_all(mongo.join("7.0")).unwrap();
+        fs::write(mongo.join(r"7.0\WiredTiger"), b"").unwrap();
+        assert_eq!(
+            seed(&kit, "mongodb", "9.0").unwrap(),
+            None,
+            "7.0 cannot jump to 9.0"
+        );
+        assert_eq!(
+            seed(&kit, "mongodb", "8.0").unwrap().as_deref(),
+            Some("7.0")
+        );
+    }
+
     #[test]
     fn settings_round_trip_and_defaults() {
         let tmp = TempDir::new("services");
@@ -833,7 +1137,8 @@ mod tests {
             all["mariadb"],
             Setting {
                 port: Some(3307),
-                autostart: true
+                autostart: true,
+                line: None
             }
         );
         assert_eq!(all["mongodb"].port, None, "the default port is not stored");

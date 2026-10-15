@@ -10,7 +10,7 @@ use serde_json::Value;
 use super::{arch_of, github_single, pattern, triple_arch, Ctx, Dest, Installer, Part, Release};
 use crate::archive::{Inner, Kind};
 use crate::catalog::Component;
-use crate::net::{first_sha256, github_digest};
+use crate::net::{first_sha256, github_digest, GhRelease};
 use crate::verify::Expect;
 
 /// Numeric parts of a version, for "newest" comparisons (`1.10.2` > `1.9`).
@@ -305,13 +305,88 @@ impl Installer for Java {
 
 pub struct Kotlin;
 
+const KOTLIN_ASSET: &str = r"^kotlin-compiler-[\d.]+\.zip$";
+
+/// The stable releases of `repo` with an asset matching `asset`, newest
+/// first (its last 100 releases: betas and RCs left out). For the versions
+/// of tools published on GitHub (Kotlin, Typst).
+fn github_stable(ctx: &Ctx, repo: &str, asset: &str) -> Result<Vec<GhRelease>> {
+    let all: Vec<GhRelease> = ctx.net.json(&format!(
+        "https://api.github.com/repos/{repo}/releases?per_page=100"
+    ))?;
+    let re = pattern(asset)?;
+    let mut out: Vec<GhRelease> = all
+        .into_iter()
+        .filter(|r| !r.prerelease && is_release(r.tag_name.trim_start_matches('v')))
+        .filter(|r| r.asset(&re).is_some())
+        .collect();
+    out.sort_by_key(|r| std::cmp::Reverse(version_key(r.tag_name.trim_start_matches('v'))));
+    Ok(out)
+}
+
+/// The minor lines of `releases` (newest first, each once).
+pub fn release_lines(releases: &[GhRelease]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for r in releases {
+        if let Some(line) = crate::versions::line_of(&r.tag_name) {
+            if !out.contains(&line) {
+                out.push(line);
+            }
+        }
+    }
+    out
+}
+
+/// The newest release of `line` among the stable ones of `repo`, as one
+/// archive (GitHub's SHA-256 digest).
+fn github_line(ctx: &Ctx, repo: &str, asset: &str, line: &str, inner: Inner) -> Result<Release> {
+    let releases = github_stable(ctx, repo, asset)?;
+    let rel = releases
+        .iter()
+        .find(|r| crate::versions::line_of(&r.tag_name).as_deref() == Some(line))
+        .ok_or_else(|| anyhow!("{repo} {line} not available"))?;
+    let file = rel
+        .asset(&pattern(asset)?)
+        .ok_or_else(|| anyhow!("{repo} {}: no asset", rel.tag_name))?;
+    Ok(Release::single(
+        rel.tag_name.trim_start_matches('v').to_owned(),
+        file.browser_download_url.clone(),
+        file.name.clone(),
+        Expect::Sha256(github_digest(file)?),
+        Kind::Zip,
+        inner,
+    ))
+}
+
 impl Installer for Kotlin {
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
         github_single(
             ctx,
             "JetBrains/kotlin",
-            r"^kotlin-compiler-[\d.]+\.zip$",
+            KOTLIN_ASSET,
             Kind::Zip,
+            Inner::Named("kotlinc".into()),
+        )
+    }
+
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        Ok(release_lines(&github_stable(
+            ctx,
+            "JetBrains/kotlin",
+            KOTLIN_ASSET,
+        )?))
+    }
+
+    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
+        github_line(
+            ctx,
+            "JetBrains/kotlin",
+            KOTLIN_ASSET,
+            line,
             Inner::Named("kotlinc".into()),
         )
     }
@@ -586,14 +661,43 @@ impl Installer for Deno {
 
 pub struct Typst;
 
+/// The Typst zip for this kit's platform.
+fn typst_asset(ctx: &Ctx, component: &Component) -> String {
+    let arch = triple_arch(ctx, component);
+    format!(r"^typst-{arch}-pc-windows-msvc\.zip$")
+}
+
+/// Typst's 0.x versions change the syntax: old documents need their own
+/// (versioned, D-81; `typst.toml` declares the compiler).
 impl Installer for Typst {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let arch = triple_arch(ctx, component);
         github_single(
             ctx,
             "typst/typst",
-            &format!(r"^typst-{arch}-pc-windows-msvc\.zip$"),
+            &typst_asset(ctx, component),
             Kind::Zip,
+            Inner::Single,
+        )
+    }
+
+    fn has_lines(&self) -> bool {
+        true
+    }
+
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        Ok(release_lines(&github_stable(
+            ctx,
+            "typst/typst",
+            &typst_asset(ctx, component),
+        )?))
+    }
+
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        github_line(
+            ctx,
+            "typst/typst",
+            &typst_asset(ctx, component),
+            line,
             Inner::Single,
         )
     }
@@ -753,6 +857,22 @@ impl Installer for Ruby {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn kotlin_lines_from_releases() {
+        let rel = |tag: &str| GhRelease {
+            tag_name: tag.into(),
+            assets: Vec::new(),
+            prerelease: false,
+        };
+        let list = [
+            rel("v2.2.21"),
+            rel("v2.2.20"),
+            rel("v2.1.21"),
+            rel("v2.0.0"),
+        ];
+        assert_eq!(release_lines(&list), ["2.2", "2.1", "2.0"]);
+    }
 
     #[test]
     fn lines_of_the_sources() {
