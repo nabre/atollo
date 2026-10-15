@@ -6,7 +6,7 @@ Avanzamento sul branch `feature/data-layout`:
 
 - Ondata 0 fatta: WP-S `7f70e3d`, WP-0 `73adb32`.
 - Ondata 1 fusa il 16/10/2026: A6 (WP-8, WP-11 backend) `41e9efe`, A2 (WP-1, WP-2) `0c83512`, A3 (WP-3, WP-4) `6687822`, A7 (WP-9, WP-10) `349c10f`, correzioni del coordinatore `68ddfbb`, `20cd6a6`. 302 test superati, clippy pulito. Revisione R: non approvata con 4 problemi. Corretti dal coordinatore in `57c21ee`: `CP_HOST_TEMP` e `TEMP` dentro il kit ignorato (un `Atollo.exe` lanciato da una console del kit non trovava il temp vero); i programmi del kit chiusi prima della pulizia all'uscita; 4 GiB liberi richiesti nel temp per un'installazione, altrimenti `data\tmp`. Il quarto (password nuova applicata al server e persa se `db.json` è illeggibile) passa ad A3 nell'ondata 2.
-- Ondata 2 in corso: A3 (WP-5 e la correzione della revisione), A4 (WP-6, WP-7 backend), A8 (WP-12).
+- Ondata 2 in corso: A3 (WP-5 e la correzione della revisione), A4 (WP-6, WP-7 backend); A8 (WP-12) fuso in `695c177`, 304 test superati.
 - Note per le ondate successive, dai rapporti:
   - **WP-6 prima di qualsiasi rilascio**: finché non migra, le password dei progetti in `secrets.json` non si leggono; «Crea» nella pagina del database ne farebbe una nuova e la `.env` esistente smetterebbe di funzionare.
   - WP-5: `auth::drop_project` cancella `db.json`; chiamarlo solo dopo aver tolto gli utenti dai server, o rimettere le password se un drop fallisce.
@@ -392,7 +392,12 @@ Ogni pacchetto (WP) ha: obiettivo, dipendenze, file, compiti numerati, criteri d
 - [ ] Kit con i dati della versione 1 (copia di un kit reale): avvio, migrazione, progetti, porte, password e copie intatti.
 - [ ] Kit su chiavetta **exFAT**: installazione di Node, Python, Java; `TEMP` dei programmi nel sistema; nessun file in `data\tmp` dopo la chiusura.
 - [ ] Kit su chiavetta **FAT32**: componente con un file oltre 4 GiB rifiutato con errore chiaro, versione installata intatta.
-- [ ] Rust su exFAT: installazione, aggiornamento, `cargo build`.
+- [ ] Rust (WP-12, `695c177`):
+  - kit NTFS senza Rust: installazione, `cargo --version` da `rust\cargo\bin`;
+  - kit NTFS con Rust: aggiornamento sul posto («rustup update» nel registro), uno strumento di `cargo install` resta;
+  - kit FAT32/exFAT senza Rust: nessun errore sui collegamenti fisici, `rustup-init` nel temp e copia sulla chiavetta; `cargo`, `rustc` e `rustup show` funzionano dalle copie dei proxy;
+  - kit FAT32/exFAT con Rust: aggiornamento («rustup update (copy in the temp folder)»), strumenti di `cargo install` presenti, nessun `rust.atollo-new` rimasto;
+  - `TEMP` su un disco FAT/exFAT: errore chiaro sul temp senza collegamenti fisici, kit intatto.
 - [ ] Eliminazione di un progetto con MariaDB e MongoDB: server fermo, database e utente tolti.
 - [ ] Progetto rinominato in Esplora file: compare fra gli orfani, «Collega a…» lo riporta.
 - [ ] C: quasi pieno: le installazioni ripiegano su `data\tmp` con avviso.
