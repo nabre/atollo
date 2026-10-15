@@ -6,7 +6,7 @@ import { runSetPort, type Ports, type ProjectAction, type ProjectInfo, type RunI
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { CheckboxLabel, Dot, IconButton, Link, List, ListRow, TextField } from "../workbench";
+import { CheckboxLabel, Dot, IconButton, Link, List, ListRow, Notice, TextField } from "../workbench";
 import { VscDebugStart, VscDebugStop, VscStarEmpty, VscStarFull, VscTrash } from "react-icons/vsc";
 import { projectActionDefault, urlOpen } from "../api";
 import { ActionBar, EditorSection, Properties } from "../workbench";
@@ -193,6 +193,11 @@ export function ActionDetail({
     >
       <Properties rows={rows} />
       <ErrorLine error={error} />
+      {r?.skippedAliases.map((url) => (
+        <Notice key={url} tone="warning">
+          {t("L'alias {0} punta fuori dai progetti o a un collegamento: non servito", url)}
+        </Notice>
+      ))}
       {r && <LogView title={a.label} lines={logs[key] ?? []} />}
     </EditorSection>
   );

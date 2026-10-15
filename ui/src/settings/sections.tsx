@@ -82,6 +82,28 @@ export function GeneralSettings({ s, set }: { s: Settings; set: (patch: Partial<
           className="w-full"
         />
       </SettingItem>
+      <SettingItem
+        category={general}
+        title={t("Temporanei dei programmi")}
+        description={t(
+          "Automatico usa la cartella temporanea di Windows se il kit è su una chiavetta, su un disco di rete o su FAT32/exFAT, altrimenti la cartella data\\tmp del kit. Nel sistema i file restano sul PC finché chiudi l'app.",
+        )}
+        modified={s.programTemp !== "auto"}
+      >
+        <Select
+          label={t("Temporanei dei programmi")}
+          value={s.programTemp}
+          onChange={(v) => {
+            set({ programTemp: v });
+          }}
+          options={[
+            { value: "auto", label: t("Automatico") },
+            { value: "kit", label: t("Nel kit") },
+            { value: "system", label: t("Nel sistema") },
+          ]}
+          className="w-full"
+        />
+      </SettingItem>
       <SettingItem category={general} title={t("Aggiornamento automatico")} modified={!s.autoUpdate} inline>
         <CheckboxLabel
           checked={s.autoUpdate}

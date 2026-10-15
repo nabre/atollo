@@ -1,5 +1,5 @@
 // Copies of a project's database (DECISIONS.md D-78): export into
-// data\db\backup\<project>, restore one of them (a file from elsewhere is
+// data\projects\<project>\private\backups, restore one of them (a file from elsewhere is
 // copied into that folder first: the app has no file picker, D-15).
 import { useCallback, useState } from "react";
 import { VscCloudUpload, VscDiscard, VscFolderOpened } from "react-icons/vsc";

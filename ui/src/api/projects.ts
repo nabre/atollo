@@ -48,7 +48,7 @@ export interface ProjectInfo {
   warnings: string[];
   custom: boolean;
   default: string | null;
-  /** The kit's settings of the project (data\app\projects\<id>\dev-settings.json). */
+  /** The kit's settings of the project (data\projects\<id>\dev-settings.json). */
   settings: { agent?: string; lastOpened?: number; extensions?: { added: string[]; removed: string[] } };
   /** Editor extensions of its languages, then those added by hand. */
   extensions: ProjectExtension[];
