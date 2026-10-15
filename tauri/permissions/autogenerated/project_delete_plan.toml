@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-delete-plan"
+description = "Enables the project_delete_plan command without any pre-configured scope."
+commands.allow = ["project_delete_plan"]
+
+[[permission]]
+identifier = "deny-project-delete-plan"
+description = "Denies the project_delete_plan command without any pre-configured scope."
+commands.deny = ["project_delete_plan"]

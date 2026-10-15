@@ -36,6 +36,7 @@
     "allow-folder-open",
     "allow-project-create",
     "allow-project-delete",
+    "allow-project-delete-plan",
     "allow-frameworks-get",
     "allow-frameworks-set",
     "allow-frameworks-plan",

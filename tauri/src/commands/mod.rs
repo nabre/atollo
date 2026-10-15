@@ -293,6 +293,7 @@ macro_rules! command_handler {
             $crate::commands::app::folder_open,
             $crate::commands::projects::project_create,
             $crate::commands::projects::project_delete,
+            $crate::commands::projects::project_delete_plan,
             $crate::commands::frameworks::frameworks_get,
             $crate::commands::frameworks::frameworks_set,
             $crate::commands::frameworks::frameworks_plan,

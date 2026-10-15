@@ -645,5 +645,14 @@
   "Linguaggi attivi nel progetto ({0})": "Langages actifs dans le projet ({0})",
   "Nessun linguaggio versionabile rilevato nel progetto.": "Aucun langage versionnable détecté dans le projet.",
   "Linguaggi non presenti nel progetto ({0})": "Langages absents du projet ({0})",
-  "Clicca per espandere se vuoi impostare altri linguaggi per il terminale o gli script.": "Cliquez pour développer si vous souhaitez définir d'autres langages pour le terminal ou les scripts."
+  "Clicca per espandere se vuoi impostare altri linguaggi per il terminale o gli script.": "Cliquez pour développer si vous souhaitez définir d'autres langages pour le terminal ou les scripts.",
+  "Eliminare {0}?": "Supprimer {0} ?",
+  "Vengono eliminati:": "Sont supprimés :",
+  "La cartella vuota del progetto e le impostazioni del kit": "Le dossier vide du projet et les réglages du kit",
+  "Il database {0} e il suo utente su {1}": "La base de données {0} et son utilisateur sur {1}",
+  "{0} non è installato: il database {1} resta nei suoi dati": "{0} n'est pas installé : la base de données {1} reste dans ses données",
+  "Copie dei database: {0} ({1})": "Copies des bases de données : {0} ({1})",
+  "Un server fermo viene avviato per eliminare il database.": "Un serveur arrêté est démarré pour supprimer la base de données.",
+  "Elimina senza i database": "Supprimer sans les bases de données",
+  "«Elimina senza i database» lascia database e utenti sui server.": "« Supprimer sans les bases de données » laisse bases et utilisateurs sur les serveurs."
 }

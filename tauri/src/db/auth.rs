@@ -226,8 +226,24 @@ pub fn root_password_sql(password: &str) -> String {
     )
 }
 
+/// Databases and users of the servers themselves: a project named after one
+/// would create, alter or drop it (`DROP DATABASE mysql`, the `root` user,
+/// MongoDB's `admin` with every user in it).
+const RESERVED: &[&str] = &[
+    "mysql",
+    "information_schema",
+    "performance_schema",
+    "sys",
+    "root",
+    "mariadb_sys",
+    "admin",
+    "local",
+    "config",
+];
+
 /// Name of a project's database and user: lower case letters, digits and
-/// `_`, at most 64 characters (MariaDB's limit for databases).
+/// `_`, at most 64 characters (MariaDB's limit for databases); never one of
+/// the servers' own names, which get `_db` after them.
 pub fn db_name(project: &str) -> String {
     let mut name: String = project
         .to_ascii_lowercase()
@@ -237,6 +253,9 @@ pub fn db_name(project: &str) -> String {
     name.truncate(64);
     if name.trim_matches('_').is_empty() {
         name = "progetto".into();
+    }
+    if RESERVED.contains(&name.as_str()) {
+        name.push_str("_db");
     }
     name
 }
@@ -469,6 +488,22 @@ pub(crate) mod tests {
         assert_eq!(db_name("Negozio-Online"), "negozio_online");
         assert_eq!(db_name("app & co (1)"), "app___co__1_");
         assert_eq!(db_name("---"), "progetto");
+        // never the servers' own databases or users
+        for (project, name) in [
+            ("mysql", "mysql_db"),
+            ("MySQL", "mysql_db"),
+            ("sys", "sys_db"),
+            ("information_schema", "information_schema_db"),
+            ("root", "root_db"),
+            ("mariadb.sys", "mariadb_sys_db"),
+            ("admin", "admin_db"),
+            ("local", "local_db"),
+            ("config", "config_db"),
+        ] {
+            assert_eq!(db_name(project), name, "{project}");
+            assert!(project_drop_sql(&db_name(project)).contains(&format!("`{name}`")));
+        }
+        assert_eq!(db_name("mysql2"), "mysql2");
         assert_eq!(db_name(&"x".repeat(80)).len(), 64);
         let pw = "0123456789abcdef0123456789abcdef";
         let sql = project_sql("shop", pw);
