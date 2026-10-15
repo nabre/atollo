@@ -9,7 +9,7 @@
 //! joins the versions of the parts, so a new build of any part is noticed.
 //! Installers made of processes (Rust, pnpm, R) implement `custom`.
 //!
-//! Versioned components (`versions.rs`) have one folder per minor line,
+//! Versioned components (`versions/mod.rs`) have one folder per minor line,
 //! `data\apps\<platform>\<id>\<line>`: an update installs into that of its
 //! line (the old line stays), and another line can be installed next to it
 //! (`lines`, `release_line`).
@@ -303,7 +303,7 @@ pub fn install(
     } else {
         let work = work_dir(ctx, component)?;
         // A versioned component goes into the folder of its line, next to
-        // the others (versions.rs).
+        // the others (versions/mod.rs).
         let own = if component.versioned {
             Some(crate::versions::install_dir(
                 ctx.kit,

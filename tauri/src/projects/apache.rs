@@ -25,7 +25,7 @@ fn fwd(p: &Path) -> String {
 }
 
 /// PHP in `kit.conf` of an older kit, `${CP_APPS_FWD}/php/`: its folder now
-/// holds one folder per version (versions.rs), the default is
+/// holds one folder per version (versions/mod.rs), the default is
 /// `${CP_PHP_FWD}`. The only change the kit makes to that file.
 pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
     let conf = kit.data().join(r"apache\kit.conf");

@@ -3,7 +3,7 @@
 use super::*;
 
 /// The versioned languages and tools: default folder, saved lines, the
-/// kit's preferred line (`versions.rs`).
+/// kit's preferred line (`versions/mod.rs`).
 #[tauri::command]
 pub fn versions_list<R: Runtime>(
     webview: Webview<R>,
@@ -170,7 +170,7 @@ pub fn project_versions_set<R: Runtime>(
     Ok(project_versions_of(&state.kit, &project))
 }
 
-/// The relations matrix (relations.rs, D-81): the saved one while nothing
+/// The relations matrix (versions/relations.rs, D-81): the saved one while nothing
 /// it was made from changed; `force` builds it again. Off the window's
 /// thread: it reads every project's files and asks WebView2 its version.
 #[tauri::command]
@@ -178,11 +178,12 @@ pub async fn relations_matrix<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     force: bool,
-) -> Result<crate::relations::Matrix, String> {
+) -> Result<crate::versions::relations::Matrix, String> {
     ensure_main(&webview)?;
     let (kit, lang) = (state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        crate::relations::matrix(&kit, lang, force).map_err(|e| fail("relations", format!("{e:#}")))
+        crate::versions::relations::matrix(&kit, lang, force)
+            .map_err(|e| fail("relations", format!("{e:#}")))
     })
     .await
     .map_err(|e| fail("relations", e))?

@@ -19,9 +19,9 @@ use serde_json::Value;
 
 use crate::catalog::{Catalog, Component};
 use crate::kit::Kit;
-use crate::ranges::{Bare, Range, Version};
+use crate::versions::ranges::{Bare, Range, Version};
 
-const KNOWN: &str = include_str!("../catalog/relations.json");
+const KNOWN: &str = include_str!("../../catalog/relations.json");
 
 #[derive(Debug, Deserialize)]
 struct Known {

@@ -72,7 +72,7 @@ pub(super) fn apply_env(state: &AppState, settings: Settings) -> &'static str {
     state.editor.set_env(env.clone());
     state.setup.set_config(env, settings);
     crate::versions::write_project_files(&state.kit);
-    crate::side_by_side::refresh(&state.kit);
+    crate::versions::side_by_side::refresh(&state.kit);
     lang
 }
 

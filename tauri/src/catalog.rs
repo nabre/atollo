@@ -85,7 +85,7 @@ pub struct Component {
     #[serde(default)]
     pub sha256: Option<String>,
     /// Other minor lines can be kept next to the default folder, and chosen
-    /// for the kit or a project (`versions.rs`, D-80).
+    /// for the kit or a project (`versions/mod.rs`, D-80).
     #[serde(default)]
     pub versioned: bool,
 }
@@ -160,7 +160,7 @@ impl Catalog {
 
 /// A path of the catalog: relative to `data\apps\<platform>`, or to the kit
 /// root with `@`. In a versioned component's folder it is that of its
-/// default version (`node/node.exe` → `node\22.11\node.exe`, versions.rs).
+/// default version (`node/node.exe` → `node\22.11\node.exe`, versions/mod.rs).
 pub fn kit_path(kit: &Kit, rel: &str) -> PathBuf {
     match rel.strip_prefix('@') {
         Some(r) => kit.root().join(r.replace('/', "\\")),

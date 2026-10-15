@@ -28,7 +28,7 @@ pub struct ComponentInfo {
     /// x64 only, on an ARM64 PC with Windows 10: only Windows 11 runs x64
     /// programs there (D-81). Not available.
     pub needs_windows11: bool,
-    /// One folder per minor line, side by side (versions.rs); the others
+    /// One folder per minor line, side by side (versions/mod.rs); the others
     /// are always at their latest version.
     pub versioned: bool,
 }

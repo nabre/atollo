@@ -27,7 +27,7 @@ pub struct ProjectSettings {
     #[serde(default, skip_serializing_if = "Extensions::is_empty")]
     pub extensions: Extensions,
     /// Lines of the languages chosen for the project, by component id
-    /// (`versions.rs`); missing = the kit's.
+    /// (`versions/mod.rs`); missing = the kit's.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub versions: BTreeMap<String, String>,
     #[serde(flatten)]

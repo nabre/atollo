@@ -178,7 +178,7 @@ mod tests {
     /// The notes of the relations matrix (relations.json) too.
     #[test]
     fn relation_notes_are_in_the_catalog() {
-        for note in crate::relations::notes() {
+        for note in crate::versions::relations::notes() {
             let tr = catalog().get(note);
             for lang in ["en", "fr", "de"] {
                 assert!(

@@ -221,7 +221,7 @@ fn settle_project<R: Runtime>(
     if let Err(e) = ensure(app, task, kit, lang, &ids) {
         crate::log::warn(&format!("{project}: {e}"));
     }
-    let lines = crate::relations::settle(kit, lang, project);
+    let lines = crate::versions::relations::settle(kit, lang, project);
     if !lines.is_empty() {
         let opts = Options {
             lines,
