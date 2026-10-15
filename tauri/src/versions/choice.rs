@@ -187,9 +187,10 @@ pub fn set_project_choice(kit: &Kit, project: &str, id: &str, line: Option<&str>
 /// (profile.ps1), and `versions.txt` (`from<TAB>to` lines) for Git Bash
 /// (bashrc); removed when the project has no rewrite.
 pub fn write_project_file(kit: &Kit, project: &str) {
-    let Some(dir) = crate::projects::settings::dir(kit, project) else {
+    let Some(state) = crate::projects::state::ProjectState::of(kit, project) else {
         return;
     };
+    let dir = state.dir();
     let (json, txt) = (dir.join("versions.json"), dir.join("versions.txt"));
     let swaps = project_swaps(kit, project);
     if swaps.is_empty() {
@@ -203,7 +204,7 @@ pub fn write_project_file(kit: &Kit, project: &str) {
         .iter()
         .map(|s| format!("{}\t{}\n", s.from, s.to))
         .collect();
-    let result = fs::create_dir_all(&dir)
+    let result = fs::create_dir_all(dir)
         .and_then(|()| write_atomic(&json, text.as_bytes()))
         .and_then(|()| write_atomic(&txt, lines.as_bytes()));
     if let Err(e) = result {
@@ -214,12 +215,8 @@ pub fn write_project_file(kit: &Kit, project: &str) {
 /// Every project's `versions.json`, after a change of the kit's lines or of
 /// what is installed.
 pub fn write_project_files(kit: &Kit) {
-    for entry in fs::read_dir(kit.project_states())
-        .into_iter()
-        .flatten()
-        .flatten()
-    {
-        write_project_file(kit, &entry.file_name().to_string_lossy());
+    for project in crate::projects::state::all(kit) {
+        write_project_file(kit, &project);
     }
 }
 
@@ -307,9 +304,9 @@ mod tests {
             ),
             "only entries under the folder"
         );
-        let file = kit.app_dir().join(r"projects\app\versions.json");
+        let file = kit.project_data().join(r"app\versions.json");
         assert!(fs::read_to_string(&file).unwrap().contains("swaps"));
-        let txt = kit.app_dir().join(r"projects\app\versions.txt");
+        let txt = kit.project_data().join(r"app\versions.txt");
         assert_eq!(
             fs::read_to_string(&txt).unwrap(),
             format!("{}\t{}\n", main.display(), old.display())
