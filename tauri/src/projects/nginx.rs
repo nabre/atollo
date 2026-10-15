@@ -1,5 +1,5 @@
 //! A project's own Nginx: the kit's `nginx.exe` with a configuration written at
-//! every start in `data\app\projects\<project>\nginx\` (never in the project),
+//! every start in `data\projects\<project>\nginx\` (never in the project),
 //! plus `php-cgi.exe` on an local FastCGI port when PHP is installed.
 
 use std::collections::BTreeMap;
@@ -43,8 +43,8 @@ pub fn php_dir(kit: &Kit, env: &KitEnv) -> Option<PathBuf> {
 
 /// The folder of the project's Nginx runtime files.
 pub fn dir(kit: &Kit, project: &str) -> Result<PathBuf> {
-    crate::projects::settings::dir(kit, project)
-        .map(|d| d.join("nginx"))
+    crate::projects::state::ProjectState::of(kit, project)
+        .map(|s| s.nginx_dir())
         .ok_or_else(|| anyhow!("not a project name: {project}"))
 }
 
@@ -279,7 +279,7 @@ mod tests {
     fn nginx_conf_with_aliases_and_php() {
         let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
         let doc = Path::new(r"D:\kit\projects\shop\public");
-        let run = Path::new(r"D:\kit\data\app\projects\shop\nginx");
+        let run = Path::new(r"D:\kit\data\projects\shop\nginx");
         let tmp = crate::kit::tests::TempDir::new("nginx-alias");
         let projs = tmp.0.join("projects");
         fs::create_dir_all(projs.join(r"shop\storage\media")).unwrap();
