@@ -3,9 +3,10 @@
 import { useState, type SyntheticEvent } from "react";
 import { VscCheck, VscClose, VscCopy, VscEdit, VscKey, VscTrash } from "react-icons/vsc";
 import { githubDelete, githubRename, type GithubRepo } from "../api";
-import { useAction } from "../hooks";
+import { useAction, useCopy } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { locale, t } from "../i18n";
+import { InlineConfirm } from "../workbench";
 
 export function RepoDetails({
   repo: r,
@@ -22,7 +23,7 @@ export function RepoDetails({
 }) {
   const [mode, setMode] = useState<"rename" | "delete" | "permission" | null>(null);
   const [name, setName] = useState(r.name);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopy();
   const { busy, error, run } = useAction();
 
   const rename = (e: SyntheticEvent) => {
@@ -79,9 +80,7 @@ export function RepoDetails({
           icon={copied ? VscCheck : VscCopy}
           label={copied ? t("Indirizzo copiato") : t("Copia l'indirizzo per Git")}
           onClick={() => {
-            void navigator.clipboard.writeText(`${r.htmlUrl}.git`).then(() => {
-              setCopied(true);
-            });
+            copy(`${r.htmlUrl}.git`);
           }}
         />
         {r.admin && (
@@ -142,7 +141,21 @@ export function RepoDetails({
         </form>
       )}
       {mode === "delete" && (
-        <div role="alertdialog" aria-label={t("Eliminare {0} da GitHub?", r.fullName)} className="space-y-2">
+        <InlineConfirm
+          label={t("Eliminare {0} da GitHub?", r.fullName)}
+          actions={
+            <>
+              <ActionButton icon={VscTrash} label={t("Elimina")} busy={busy === "delete"} onClick={remove} />
+              <ActionButton
+                icon={VscClose}
+                label={t("Annulla")}
+                onClick={() => {
+                  setMode(null);
+                }}
+              />
+            </>
+          }
+        >
           <p className="text-vsc-warning">
             {t(
               "Eliminare {0} da GitHub? Non si può annullare: anche issue, pull request, wiki e release vengono eliminate.",
@@ -150,17 +163,7 @@ export function RepoDetails({
             )}
             {r.local && ` ${t("La copia locale in projects\\{0} resta.", r.local)}`}
           </p>
-          <div className="flex flex-wrap gap-2">
-            <ActionButton icon={VscTrash} label={t("Elimina")} busy={busy === "delete"} onClick={remove} />
-            <ActionButton
-              icon={VscClose}
-              label={t("Annulla")}
-              onClick={() => {
-                setMode(null);
-              }}
-            />
-          </div>
-        </div>
+        </InlineConfirm>
       )}
       {mode === "permission" && (
         <div role="status" className="space-y-2">

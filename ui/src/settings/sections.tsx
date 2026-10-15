@@ -2,7 +2,7 @@
 // versions of the languages.
 import { LANGS, t } from "../i18n";
 import type { Settings, SettingsView } from "../api";
-import { CheckboxLabel, Link, SettingItem, SettingsGroup } from "../workbench";
+import { CheckboxLabel, Link, Select, SettingItem, SettingsGroup } from "../workbench";
 
 const empty = (s: string) => (s.trim() === "" ? null : s.trim());
 
@@ -50,21 +50,18 @@ export function GeneralSettings({ s, set }: { s: Settings; set: (patch: Partial<
         description={t("La lingua di NEXKORA.")}
         modified={s.lang !== null}
       >
-        <select
-          aria-label={t("Lingua")}
+        <Select
+          label={t("Lingua")}
           value={s.lang ?? ""}
-          onChange={(e) => {
-            set({ lang: (empty(e.target.value) as Settings["lang"]) ?? null });
+          onChange={(v) => {
+            set({ lang: (empty(v) as Settings["lang"]) ?? null });
           }}
-          className="input w-full"
-        >
-          <option value="">{t("Lingua di Windows")}</option>
-          {LANGS.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "", label: t("Lingua di Windows") },
+            ...LANGS.map((l) => ({ value: l.id, label: l.name })),
+          ]}
+          className="w-full"
+        />
       </SettingItem>
       <SettingItem
         category={general}
@@ -72,17 +69,18 @@ export function GeneralSettings({ s, set }: { s: Settings; set: (patch: Partial<
         description={t("Dove si aprono le console del kit.")}
         modified={s.terminal !== null}
       >
-        <select
-          aria-label={t("Terminale")}
+        <Select
+          label={t("Terminale")}
           value={s.terminal ?? ""}
-          onChange={(e) => {
-            set({ terminal: (empty(e.target.value) as Settings["terminal"]) ?? null });
+          onChange={(v) => {
+            set({ terminal: (empty(v) as Settings["terminal"]) ?? null });
           }}
-          className="input w-full"
-        >
-          <option value="">{t("Windows Terminal del kit (predefinito)")}</option>
-          <option value="classic">{t("Console classica di Windows")}</option>
-        </select>
+          options={[
+            { value: "", label: t("Windows Terminal del kit (predefinito)") },
+            { value: "classic", label: t("Console classica di Windows") },
+          ]}
+          className="w-full"
+        />
       </SettingItem>
       <SettingItem category={general} title={t("Aggiornamento automatico")} modified={!s.autoUpdate} inline>
         <CheckboxLabel
@@ -230,18 +228,19 @@ export function VersionSettings({ s, set }: { s: Settings; set: (patch: Partial<
         }}
       />
       <SettingItem category={versions} title={t("Compilatore di Rust")} modified={s.rustToolchain !== null}>
-        <select
-          aria-label={t("Compilatore di Rust")}
+        <Select
+          label={t("Compilatore di Rust")}
           value={s.rustToolchain ?? ""}
-          onChange={(e) => {
-            set({ rustToolchain: (empty(e.target.value) as Settings["rustToolchain"]) ?? null });
+          onChange={(v) => {
+            set({ rustToolchain: (empty(v) as Settings["rustToolchain"]) ?? null });
           }}
-          className="input w-full"
-        >
-          <option value="">{t("GNU (predefinito, tutto nel kit)")}</option>
-          <option value="gnu">GNU</option>
-          <option value="msvc">{t("MSVC (richiede Visual Studio Build Tools nel PC)")}</option>
-        </select>
+          options={[
+            { value: "", label: t("GNU (predefinito, tutto nel kit)") },
+            { value: "gnu", label: "GNU" },
+            { value: "msvc", label: t("MSVC (richiede Visual Studio Build Tools nel PC)") },
+          ]}
+          className="w-full"
+        />
       </SettingItem>
     </SettingsGroup>
   );

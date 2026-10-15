@@ -1,6 +1,7 @@
 // Hooks shared by the pages, for the two ways Rust keeps them current:
 // events it sends (`useSubscription`) and state read again every few seconds
-// (`useEvery`); and an action with its wait and its error (`useAction`).
+// (`useEvery`); an action with its wait and its error (`useAction`); a copy
+// to the clipboard (`useCopy`).
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** One of the `on…` functions of ./api: starts listening, resolves to the
@@ -72,4 +73,34 @@ export function useAction(onDone?: () => void) {
     [onDone],
   );
   return { busy, error, run };
+}
+
+/** Copies text to the clipboard; `copied` turns true once it is there, and
+ * back to false after `resetMs` when given (or on `reset`). */
+export function useCopy(resetMs?: number) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(
+    () => () => {
+      window.clearTimeout(timer.current);
+    },
+    [],
+  );
+  const copy = useCallback(
+    (text: string) => {
+      void navigator.clipboard.writeText(text).then(() => {
+        setCopied(true);
+        if (resetMs !== undefined) {
+          timer.current = window.setTimeout(() => {
+            setCopied(false);
+          }, resetMs);
+        }
+      });
+    },
+    [resetMs],
+  );
+  const reset = useCallback(() => {
+    setCopied(false);
+  }, []);
+  return { copied, copy, reset };
 }

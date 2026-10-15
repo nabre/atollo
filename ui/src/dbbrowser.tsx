@@ -7,7 +7,7 @@ import { VscChevronLeft, VscChevronRight, VscDatabase, VscEye, VscRefresh, VscTa
 import { DB_PAGE, dbBrowseRows, dbBrowseTree, type DbDatabase, type DbRows, type ServiceInfo } from "./api";
 import { locale, t } from "./i18n";
 import { ErrorLine } from "./common";
-import { IconButton, List, ListRow, ProgressBar } from "./workbench";
+import { DataTable, IconButton, List, ListRow, ProgressBar } from "./workbench";
 
 type Engine = ServiceInfo["id"];
 
@@ -110,43 +110,40 @@ function TableView({ engine, database, table }: { engine: Engine; database: stri
         page && (
           // A new page starts at the top.
           <div key={page.offset} className="min-h-0 flex-1 overflow-auto">
-            <table className="border-separate border-spacing-0 font-mono text-[12px]">
-              <thead className="sticky top-0 z-10 bg-vsc-bg">
-                <tr>
-                  {page.columns.map((c) => (
-                    <th
-                      key={c.name}
-                      scope="col"
-                      title={c.kind || undefined}
-                      className="h-[26px] border-r border-b border-vsc-border px-2 text-left font-semibold whitespace-nowrap"
-                    >
-                      {c.name}
-                      {c.kind && <span className="ml-1.5 font-normal text-vsc-desc">{c.kind}</span>}
-                    </th>
-                  ))}
+            <DataTable
+              className="border-separate border-spacing-0 font-mono text-[12px]"
+              stickyHead
+              head={page.columns.map((c) => (
+                <th
+                  key={c.name}
+                  scope="col"
+                  title={c.kind || undefined}
+                  className="h-[26px] border-r border-b border-vsc-border px-2 text-left font-semibold whitespace-nowrap"
+                >
+                  {c.name}
+                  {c.kind && <span className="ml-1.5 font-normal text-vsc-desc">{c.kind}</span>}
+                </th>
+              ))}
+            >
+              {page.rows.map((r, i) => (
+                <tr key={offset + i} className="hover:bg-vsc-list-hover">
+                  {page.columns.map((c, j) => {
+                    const v = cell(r[j], engine);
+                    return (
+                      <td
+                        key={c.name}
+                        title={v.text.length > 40 ? v.text : undefined}
+                        className={`h-[22px] max-w-[22rem] truncate border-r border-b border-vsc-border px-2 select-text ${
+                          v.dim ? "text-vsc-desc italic" : ""
+                        } ${v.num ? "text-right tabular-nums" : ""}`}
+                      >
+                        {v.text}
+                      </td>
+                    );
+                  })}
                 </tr>
-              </thead>
-              <tbody>
-                {page.rows.map((r, i) => (
-                  <tr key={offset + i} className="hover:bg-vsc-list-hover">
-                    {page.columns.map((c, j) => {
-                      const v = cell(r[j], engine);
-                      return (
-                        <td
-                          key={c.name}
-                          title={v.text.length > 40 ? v.text : undefined}
-                          className={`h-[22px] max-w-[22rem] truncate border-r border-b border-vsc-border px-2 select-text ${
-                            v.dim ? "text-vsc-desc italic" : ""
-                          } ${v.num ? "text-right tabular-nums" : ""}`}
-                        >
-                          {v.text}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ))}
+            </DataTable>
           </div>
         )
       )}

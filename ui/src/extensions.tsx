@@ -16,6 +16,7 @@ import { t } from "./i18n";
 import { ComponentLogo, LanguageLogo } from "./logos";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction } from "./hooks";
+import { DataTable } from "./workbench";
 
 /** The matrix: one row per extension, one column per language or tool, then "all". */
 export function ExtensionsMatrixSection({
@@ -64,10 +65,11 @@ export function ExtensionsMatrixSection({
           )}
         </p>
         <div className="overflow-x-auto px-4 pb-3">
-          <table className="border-collapse text-[12px]">
-            <caption className="sr-only">{t("Matrice linguaggio-estensione")}</caption>
-            <thead>
-              <tr>
+          <DataTable
+            caption={t("Matrice linguaggio-estensione")}
+            className="border-collapse text-[12px]"
+            head={
+              <>
                 <th
                   scope="col"
                   className="sticky left-0 bg-vsc-bg pr-3 text-left align-bottom font-normal text-vsc-desc"
@@ -93,47 +95,46 @@ export function ExtensionsMatrixSection({
                 <th scope="col" className="pl-3 text-left align-bottom font-normal text-vsc-desc">
                   <span className="sr-only">{t("Stato")}</span>
                 </th>
-              </tr>
-            </thead>
-            <tbody>
-              {matrix.extensions.map((e) => {
-                const general = e.languages.length === 0 && e.tools.length === 0;
-                const mark = (on: boolean) =>
-                  on ? (
-                    <>
-                      <span aria-hidden="true">{e.optional ? "○" : "●"}</span>
-                      <span className="sr-only">{e.optional ? t("facoltativa") : t("sì")}</span>
-                    </>
-                  ) : null;
-                return (
-                  <tr key={e.id} className="border-t border-vsc-border hover:bg-vsc-list-hover">
-                    <th scope="row" className="sticky left-0 bg-vsc-bg py-0.5 pr-3 text-left font-normal" title={e.id}>
-                      {e.name}
-                      {e.programs.length > 0 && (
-                        <span className="ml-1 text-vsc-desc">
-                          {t("(con {0})", e.programs.map(componentName).join(", "))}
-                        </span>
-                      )}
-                    </th>
-                    {columns.map((c) => (
-                      <td key={c.key} className={`${cell} ${used.has(c.key) ? "bg-vsc-focus/15" : ""}`}>
-                        {mark(c.tool ? e.tools.includes(c.key) : e.languages.includes(c.key))}
-                      </td>
-                    ))}
-                    <td className={cell}>{mark(general)}</td>
-                    <td className="pl-3 whitespace-nowrap">
-                      {e.installed && (
-                        <span className="text-vsc-success" title={t("installata")}>
-                          <VscCheck size={12} aria-hidden="true" />
-                          <span className="sr-only">{t("installata")}</span>
-                        </span>
-                      )}
+              </>
+            }
+          >
+            {matrix.extensions.map((e) => {
+              const general = e.languages.length === 0 && e.tools.length === 0;
+              const mark = (on: boolean) =>
+                on ? (
+                  <>
+                    <span aria-hidden="true">{e.optional ? "○" : "●"}</span>
+                    <span className="sr-only">{e.optional ? t("facoltativa") : t("sì")}</span>
+                  </>
+                ) : null;
+              return (
+                <tr key={e.id} className="border-t border-vsc-border hover:bg-vsc-list-hover">
+                  <th scope="row" className="sticky left-0 bg-vsc-bg py-0.5 pr-3 text-left font-normal" title={e.id}>
+                    {e.name}
+                    {e.programs.length > 0 && (
+                      <span className="ml-1 text-vsc-desc">
+                        {t("(con {0})", e.programs.map(componentName).join(", "))}
+                      </span>
+                    )}
+                  </th>
+                  {columns.map((c) => (
+                    <td key={c.key} className={`${cell} ${used.has(c.key) ? "bg-vsc-focus/15" : ""}`}>
+                      {mark(c.tool ? e.tools.includes(c.key) : e.languages.includes(c.key))}
                     </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                  ))}
+                  <td className={cell}>{mark(general)}</td>
+                  <td className="pl-3 whitespace-nowrap">
+                    {e.installed && (
+                      <span className="text-vsc-success" title={t("installata")}>
+                        <VscCheck size={12} aria-hidden="true" />
+                        <span className="sr-only">{t("installata")}</span>
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </DataTable>
         </div>
       </details>
     </section>

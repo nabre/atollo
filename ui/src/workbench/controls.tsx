@@ -152,6 +152,73 @@ export function SearchBox({
   );
 }
 
+export interface SelectOption<T extends string> {
+  value: T;
+  label: string;
+}
+
+/** A labelled group of options (<optgroup>). */
+export interface SelectGroup<T extends string> {
+  group: string;
+  options: SelectOption<T>[];
+}
+
+/** A dropdown (monaco-select-box), 26px as the inputs. `options` can mix
+ * single options and groups, in order; `onChange` gets the chosen value. */
+export function Select<T extends string>({
+  value,
+  onChange,
+  options,
+  label,
+  id,
+  disabled = false,
+  autoFocus = false,
+  onBlur,
+  className = "",
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: (SelectOption<T> | SelectGroup<T>)[];
+  /** Accessible name when there is no <label> around or for it. */
+  label?: string | undefined;
+  id?: string | undefined;
+  disabled?: boolean;
+  autoFocus?: boolean;
+  onBlur?: () => void;
+  className?: string;
+}) {
+  return (
+    <select
+      id={id}
+      aria-label={label}
+      value={value}
+      disabled={disabled}
+      autoFocus={autoFocus}
+      onBlur={onBlur}
+      onChange={(e) => {
+        onChange(e.target.value as T);
+      }}
+      className={className ? `input ${className}` : "input"}
+    >
+      {options.map((o) =>
+        "group" in o ? (
+          <optgroup key={`group:${o.group}`} label={o.group}>
+            {o.options.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.label}
+              </option>
+            ))}
+          </optgroup>
+        ) : (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ),
+      )}
+    </select>
+  );
+}
+
 /** A checkbox as VSCodium's: 18px, rounded, a check codicon. */
 export function Checkbox({
   checked,

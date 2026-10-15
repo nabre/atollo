@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { EnvVar, FrameworkAction, FrameworkVariant } from "../api";
 import { t } from "../i18n";
 import { VscAdd } from "react-icons/vsc";
-import { IconButton, Link } from "../workbench";
+import { IconButton, Link, Select } from "../workbench";
 import { useComponents } from "./model";
 import { ToolTag } from "./tags";
 
@@ -131,26 +131,22 @@ export function NeedsField({
           />
         ))}
         {adding ? (
-          <select
+          <Select
             autoFocus
-            aria-label={t("Aggiungi uno strumento del kit")}
+            label={t("Aggiungi uno strumento del kit")}
             value=""
             onBlur={() => {
               setAdding(false);
             }}
-            onChange={(e) => {
-              if (e.target.value) onChange([...ids, e.target.value]);
+            onChange={(id) => {
+              if (id) onChange([...ids, id]);
               setAdding(false);
             }}
-            className="input"
-          >
-            <option value="">{t("scegli uno strumento…")}</option>
-            {others.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: t("scegli uno strumento…") },
+              ...others.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+          />
         ) : (
           <IconButton
             icon={VscAdd}
@@ -214,17 +210,18 @@ function DatabaseField({ value, onChange }: { value: string | undefined; onChang
   return (
     <label className="block">
       <span className="mb-1 block text-vsc-desc">{t("Database del kit per il progetto")}</span>
-      <select
+      <Select
         value={value ?? ""}
-        onChange={(e) => {
-          onChange(e.target.value || undefined);
+        onChange={(v) => {
+          onChange(v || undefined);
         }}
-        className="input w-full"
-      >
-        <option value="">{t("Nessuno")}</option>
-        <option value="mariadb">MariaDB (MySQL)</option>
-        <option value="mongodb">MongoDB</option>
-      </select>
+        options={[
+          { value: "", label: t("Nessuno") },
+          { value: "mariadb", label: "MariaDB (MySQL)" },
+          { value: "mongodb", label: "MongoDB" },
+        ]}
+        className="w-full"
+      />
     </label>
   );
 }

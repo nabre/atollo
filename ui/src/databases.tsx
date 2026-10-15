@@ -30,7 +30,7 @@ import { t } from "./i18n";
 import { DbBrowser } from "./dbbrowser";
 import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine } from "./common";
-import { useEvery } from "./hooks";
+import { useCopy, useEvery } from "./hooks";
 import {
   Button,
   CheckboxLabel,
@@ -45,6 +45,7 @@ import {
   Notice,
   PaneStack,
   Properties,
+  Select,
   SideBarTitle,
   ViewContainer,
   ViewPane,
@@ -90,7 +91,7 @@ function StateText({ s }: { s: ServiceInfo }) {
 /** A password: hidden until shown, copied without showing it. */
 export function SecretField({ value, label }: { value: string; label: string }) {
   const [shown, setShown] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopy(1500);
   return (
     <span className="flex min-w-0 items-center gap-2">
       <code className="truncate font-mono text-vsc-fg">{shown ? value : "••••••••••••"}</code>
@@ -112,12 +113,7 @@ export function SecretField({ value, label }: { value: string; label: string }) 
         aria-label={t("Copia {0}", label)}
         title={t("Copia")}
         onClick={() => {
-          void navigator.clipboard.writeText(value).then(() => {
-            setCopied(true);
-            setTimeout(() => {
-              setCopied(false);
-            }, 1500);
-          });
+          copy(value);
         }}
       >
         <VscCopy size={14} aria-hidden="true" />
@@ -256,22 +252,19 @@ function ServiceDetails({
                           "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.",
                         )}
                   </p>
-                  <select
+                  <Select
                     id={`line-${s.id}`}
                     value={s.line ?? ""}
                     disabled={on || busy}
-                    onChange={(e) => {
-                      const line = e.target.value;
+                    onChange={(line) => {
                       onLine(line === s.lines[0] ? null : line);
                     }}
-                    className="input w-40"
-                  >
-                    {s.lines.map((l, i) => (
-                      <option key={l} value={l}>
-                        {i === 0 ? t("{0} (la più recente)", l) : l}
-                      </option>
-                    ))}
-                  </select>
+                    options={s.lines.map((l, i) => ({
+                      value: l,
+                      label: i === 0 ? t("{0} (la più recente)", l) : l,
+                    }))}
+                    className="w-40"
+                  />
                 </div>
               )}
               <div className="space-y-1">

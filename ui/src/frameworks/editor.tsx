@@ -3,7 +3,7 @@
 import { urlOpen, type FrameworkPiece, type FrameworksView } from "../api";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { Link, SettingItem, SettingsGroup } from "../workbench";
+import { Link, Select, SettingItem, SettingsGroup } from "../workbench";
 import { bases, cleaned, pieceTab, slotLabel, textOf, type Frameworks } from "./model";
 import { ActionsField, EnvField, LinesField, NeedsField, TextField, VariantFields } from "./fields";
 
@@ -137,21 +137,17 @@ function PieceItem({
             {others.length > 0 && (
               <label className="flex items-center gap-2">
                 <span className="text-vsc-desc">{t("Usala anche con")}</span>
-                <select
+                <Select
                   value=""
-                  aria-label={t("Usala anche con")}
-                  onChange={(e) => {
-                    if (e.target.value) set({ on: { ...piece.on, [e.target.value]: {} } });
+                  label={t("Usala anche con")}
+                  onChange={(id) => {
+                    if (id) set({ on: { ...piece.on, [id]: {} } });
                   }}
-                  className="input"
-                >
-                  <option value="">{t("scegli una base…")}</option>
-                  {others.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: "", label: t("scegli una base…") },
+                    ...others.map((b) => ({ value: b.id, label: b.name })),
+                  ]}
+                />
               </label>
             )}
           </>
