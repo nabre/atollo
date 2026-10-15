@@ -214,7 +214,10 @@ export function NewProjectPage({ onOpen, onSettings }: { onOpen: (project: strin
                         <PieceLogo piece={b} size={18} />
                         {b.name}
                       </span>
-                      <span className="mt-0.5 block font-normal text-vsc-desc">{textOf(view, b.desc)}</span>
+                      {/* descriptionForeground is 4.4:1 on the dark selection: the foreground there */}
+                      <span className={`mt-0.5 block font-normal ${on ? "text-vsc-fg" : "text-vsc-desc"}`}>
+                        {textOf(view, b.desc)}
+                      </span>
                     </Radio>
                   </div>
                 );

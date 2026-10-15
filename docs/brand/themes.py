@@ -178,10 +178,12 @@ BRAND = {
         "statusBar.debuggingBorder": "#C2410C",
         "statusBar.focusBorder": "#FFFFFF",
         "statusBarItem.focusBorder": "#FFFFFF",
-        "statusBarItem.hoverBackground": "#FFFFFF26",
+        # Darker, not lighter, than the band: white text keeps 4.5:1 on
+        # hover and on the active item (a white veil drops it to 3.4:1).
+        "statusBarItem.hoverBackground": "#04140D26",
         "statusBarItem.hoverForeground": "#FFFFFF",
-        "statusBarItem.activeBackground": "#FFFFFF40",
-        "statusBarItem.prominentBackground": "#FFFFFF33",
+        "statusBarItem.activeBackground": "#04140D40",
+        "statusBarItem.prominentBackground": "#04140D33",
         "statusBarItem.prominentForeground": "#FFFFFF",
         "statusBarItem.remoteBackground": "#0F3D2E",
         "statusBarItem.remoteForeground": "#FFFFFF",
@@ -425,9 +427,11 @@ TOKENS = {
     "quote": "textBlockQuote.background",
     "quote-border": "textBlockQuote.border",
     "selection": "editor.selectionBackground",
-    # States
-    "error": "errorForeground",
-    "warning": "editorWarning.foreground",
+    # States. Error and warning are also text: the list's colors (as the
+    # explorer's file names), 4.5:1 in both themes, where errorForeground
+    # and editorWarning.foreground of Light Modern are near 3:1.
+    "error": "list.errorForeground",
+    "warning": "list.warningForeground",
     "info": "editorInfo.foreground",
     "success": "gitDecoration.untrackedResourceForeground",
     "orange": "charts.orange",

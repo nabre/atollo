@@ -109,8 +109,8 @@
   --vsc-quote: var(--vscode-textBlockQuote-background);
   --vsc-quote-border: var(--vscode-textBlockQuote-border);
   --vsc-selection: var(--vscode-editor-selectionBackground);
-  --vsc-error: var(--vscode-errorForeground);
-  --vsc-warning: var(--vscode-editorWarning-foreground);
+  --vsc-error: var(--vscode-list-errorForeground);
+  --vsc-warning: var(--vscode-list-warningForeground);
   --vsc-info: var(--vscode-editorInfo-foreground);
   --vsc-success: var(--vscode-gitDecoration-untrackedResourceForeground);
   --vsc-orange: var(--vscode-charts-orange);
