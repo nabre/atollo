@@ -173,9 +173,10 @@ export function ComponentRow({
   const versions = versioned?.installed && on ? versioned : null;
   // Its step in the preparation: waiting, downloading, failed.
   const state = itemState(setup, c.id, c.name);
-  // A left bar marks what a project needs: emerald, orange when not chosen.
+  // A left bar marks what a project needs: emerald, orange when not chosen
+  // (a 5% tint: the orange text on it stays at 4.5:1 in light).
   const mark = unchosen
-    ? "border-l-vsc-orange bg-vsc-orange/10"
+    ? "border-l-vsc-orange bg-vsc-orange/5"
     : forProjects.length > 0
       ? "border-l-vsc-focus"
       : on !== (c.chosen || c.locked)
