@@ -18,7 +18,8 @@ import {
 } from "./api";
 import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
-import { ActionButton, ErrorLine, useAction } from "./pages";
+import { ActionButton, ErrorLine } from "./common";
+import { useAction } from "./hooks";
 import { Tag } from "./tags";
 
 /** The matrix, read again when the preparation finishes a step or `key`

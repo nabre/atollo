@@ -1,34 +1,10 @@
-// Shared pieces of the pages (buttons, actions with their error) and the
-// editor's state as a hint. The controls themselves are in workbench/.
-import { useCallback, useState } from "react";
+// Shared pieces of the pages (the button of an action, the line of its
+// error) and the editor's state as a hint. The controls themselves are in
+// workbench/.
 import type { IconType } from "react-icons";
 import type { EditorStatus } from "./api";
 import { t } from "./i18n";
 import { Button, IconButton, Notice } from "./workbench";
-
-/** Runs an action, keeping track of what is busy and of the last error. */
-export function useAction(onDone?: () => void) {
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const run = useCallback(
-    (key: string, action: () => Promise<void>) => {
-      setBusy(key);
-      setError(null);
-      action().then(
-        () => {
-          setBusy(null);
-          onDone?.();
-        },
-        (e: unknown) => {
-          setBusy(null);
-          setError(String(e));
-        },
-      );
-    },
-    [onDone],
-  );
-  return { busy, error, run };
-}
 
 /** A button of the pages: a text button (Button), or with `compact` an
  * icon action (IconButton) named by its label. */

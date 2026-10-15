@@ -1,0 +1,261 @@
+// The rows of the Tools page: a component with its checkbox, its tags and
+// state and its versions; Composer under PHP.
+import { VscCheck, VscFolderLibrary, VscReferences, VscTypeHierarchySub, VscWarning } from "react-icons/vsc";
+import { setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot, type VersionedTool } from "../api";
+import { t } from "../i18n";
+import { Checkbox } from "../workbench";
+import { ItemBar, ItemStatus, itemState, type ItemState } from "../setup";
+import { composerOf, splitVersion, ToolVersions, type KitVersions } from "../versions";
+import { ByHandBox } from "../byhand";
+import { LinkProblems, outsideOf } from "../relations";
+import { sizeText } from "./model";
+import { ComponentLogo } from "../logos";
+import { Badge, Tag } from "../tags";
+
+/** The projects that need `c`: blue when chosen, orange with a warning when not. */
+export function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
+  if (names.length === 0) return null;
+  const list = names.join(", ");
+  return on ? (
+    <Tag
+      tone="focus"
+      className="ml-2"
+      title={t("Serve ai progetti: {0}.", list)}
+      icon={<VscFolderLibrary size={11} aria-hidden="true" />}
+    >
+      <span className="sr-only">{t("serve ai progetti")} </span>
+      {list}
+    </Tag>
+  ) : (
+    <Tag
+      tone="warning"
+      className="ml-2"
+      title={t("Serve ai progetti: {0}. Non è scelto: sceglilo perché funzionino.", list)}
+      icon={<VscWarning size={11} aria-hidden="true" />}
+    >
+      <span className="sr-only">{t("attenzione: non scelto, serve ai progetti")} </span>
+      {list}
+    </Tag>
+  );
+}
+
+/** What `c` needs (installed with it) and, when chosen, what needs `c`. */
+export function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentInfo[]; chosen: Set<string> }) {
+  const name = (id: string) => list.find((x) => x.id === id)?.name ?? id;
+  const usedBy = list.filter((x) => chosen.has(x.id) && x.needs.includes(c.id)).map((x) => x.name);
+  return (
+    <>
+      {c.needs.map((n) => (
+        <Tag
+          key={n}
+          className="ml-2"
+          title={t("Richiede {0}: si installa insieme.", name(n))}
+          icon={<VscTypeHierarchySub size={11} aria-hidden="true" />}
+        >
+          <span className="sr-only">{t("richiede")} </span>
+          {name(n)}
+        </Tag>
+      ))}
+      {usedBy.length > 0 && (
+        <Tag
+          dashed
+          className="ml-2"
+          title={t("Serve a {0}: resta installato finché serve.", usedBy.join(", "))}
+          icon={<VscReferences size={11} aria-hidden="true" />}
+        >
+          {t("per {0}", usedBy.join(", "))}
+        </Tag>
+      )}
+    </>
+  );
+}
+
+/** Composer: a tool of its own with its version, but one per version of
+ * PHP and compatible with it, installed and updated with it; its checkbox
+ * follows PHP's. */
+export function ComposerRow({
+  php,
+  tool,
+  on,
+  state,
+}: {
+  php: ComponentInfo;
+  tool: VersionedTool | undefined;
+  on: boolean;
+  state: ItemState | null;
+}) {
+  const kitLine = tool?.preferred ?? tool?.default?.line;
+  const all = [...(tool?.default ? [tool.default] : []), ...(tool?.saved ?? [])]
+    .map((l) => ({ line: l.line, composer: composerOf(l.version) }))
+    .filter((l): l is { line: string; composer: string } => l.composer !== null);
+  const kit = all.find((l) => l.line === kitLine) ?? all[0];
+  return (
+    <div
+      data-setting
+      className="max-w-[880px] border-l-2 border-l-transparent py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50"
+    >
+      <div className="flex items-center gap-3">
+        <Checkbox id="comp-composer" checked={on} disabled onChange={() => undefined} />
+        <span className="flex w-5 shrink-0 justify-center">
+          <ComponentLogo id="composer" size={20} />
+        </span>
+        <label
+          htmlFor="comp-composer"
+          className="min-w-0 flex-1 leading-[18px]"
+          title={t("Si installa, si aggiorna e si toglie con PHP.")}
+        >
+          <span className="font-semibold text-vsc-settings-header">Composer</span>
+          <span className="ml-2 text-vsc-desc">
+            {t("pacchetti PHP, uno per ogni versione di PHP e compatibile con quella")}
+          </span>
+          <Tag dashed className="ml-2" icon={<VscReferences size={11} aria-hidden="true" />}>
+            {t("con {0}", php.name)}
+          </Tag>
+        </label>
+        <span className="w-16 shrink-0" />
+        <span className="w-40 shrink-0 truncate text-right text-[12px]">
+          {state ? (
+            <ItemStatus state={state} />
+          ) : all.length > 1 ? null /* its versions are in the list below */ : kit ? (
+            <span className="text-vsc-success">
+              <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
+              {kit.composer}
+            </span>
+          ) : (
+            <span className="text-vsc-desc">{t("non installato")}</span>
+          )}
+        </span>
+      </div>
+      {all.length > 1 && (
+        <ul className="mt-1.5 space-y-0.5 pl-[62px]" aria-label={t("Versioni di Composer")}>
+          {all.map((l) => (
+            <li key={l.line} className="flex min-h-[22px] items-center gap-2 font-mono text-[12px]">
+              <span className="text-vsc-desc">{t("con {0} {1}", php.name, l.line)}</span>
+              <span>{l.composer}</span>
+              {l.line === kitLine && <Badge>{t("in uso")}</Badge>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** A component in its section: its checkbox, logo, name with its tags, size
+ * and state, and its versions; PHP is followed by Composer's row. */
+export function ComponentRow({
+  c,
+  list,
+  chosen,
+  forProjects,
+  kit,
+  setup,
+  links,
+  onChange,
+}: {
+  c: ComponentInfo;
+  list: ComponentInfo[];
+  chosen: Set<string>;
+  /** Names of the projects that need it. */
+  forProjects: string[];
+  kit: KitVersions;
+  setup: SetupSnapshot | null;
+  links: RelationLink[];
+  onChange: (on: boolean) => void;
+}) {
+  const running = setup?.running ?? false;
+  const required = c.locked;
+  const on = chosen.has(c.id);
+  const inputId = `comp-${c.id}`;
+  const unchosen = forProjects.length > 0 && !on;
+  // Versions only of what is installed and stays.
+  const versioned = kit.byId.get(c.id);
+  const versions = versioned?.installed && on ? versioned : null;
+  // Its step in the preparation: waiting, downloading, failed.
+  const state = itemState(setup, c.id, c.name);
+  // A left bar marks what a project needs: emerald, orange when not chosen.
+  const mark = unchosen
+    ? "border-l-vsc-orange bg-vsc-orange/10"
+    : forProjects.length > 0
+      ? "border-l-vsc-focus"
+      : on !== (c.chosen || c.locked)
+        ? "border-l-vsc-settings-modified"
+        : "border-l-transparent";
+  // PHP's version without its Composer, which has its row.
+  const shown = composerOf(c.version) ? splitVersion(c.version).main : c.version;
+  return (
+    <>
+      <div data-setting className={`max-w-[880px] border-l-2 py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50 ${mark}`}>
+        <div className="flex items-center gap-3">
+          <Checkbox
+            id={inputId}
+            checked={on}
+            disabled={required || running || c.noArm64 || (!c.available && !on)}
+            onChange={(v) => {
+              onChange(v);
+            }}
+            className={unchosen ? "rounded-sm outline-2 outline-offset-1 outline-vsc-orange" : ""}
+          />
+          <span className="flex w-5 shrink-0 justify-center">
+            <ComponentLogo id={c.id} size={20} />
+          </span>
+          <label htmlFor={inputId} className="min-w-0 flex-1 cursor-pointer leading-[18px]">
+            <span className={unchosen ? "font-semibold text-vsc-orange" : "font-semibold text-vsc-settings-header"}>
+              {c.name}
+            </span>
+            <span className="ml-2 text-vsc-desc">{c.desc}</span>
+            <ProjectsChip names={forProjects} on={on} />
+            <Dependencies c={c} list={list} chosen={chosen} />
+            <LinkProblems id={c.id} links={links} />
+          </label>
+          {c.x64Only && (
+            <span className="text-[12px] text-vsc-desc" title={t("Su PC ARM64 gira in emulazione x64")}>
+              x64
+            </span>
+          )}
+          <span className="w-16 shrink-0 text-right text-[12px] text-vsc-desc">{sizeText(c.mb)}</span>
+          <span
+            className="w-40 shrink-0 truncate text-right text-[12px]"
+            title={versions ? undefined : (c.version ?? undefined)}
+          >
+            {state ? (
+              <ItemStatus state={state} />
+            ) : versions ? null /* its versions are in the list below */ : c.installed ? (
+              <span className="text-vsc-success">
+                <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
+                {shown ?? t("installato")}
+              </span>
+            ) : c.noArm64 ? (
+              <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
+            ) : c.needsWindows11 ? (
+              <span className="text-vsc-desc">{t("richiede Windows 11 su ARM64")}</span>
+            ) : (
+              <span className="text-vsc-desc">{t("non installato")}</span>
+            )}
+          </span>
+        </div>
+        {state && <ItemBar state={state} label={c.name} className="mt-1.5 ml-[62px]" />}
+        {state?.kind === "problem" && (
+          <p className="mt-1 ml-[62px] text-[12px] text-vsc-error select-text">{state.text}</p>
+        )}
+        {state?.kind === "problem" && state.byHand && (
+          <div className="ml-[62px]">
+            <ByHandBox
+              id={c.id}
+              name={c.name}
+              byHand={state.byHand}
+              disabled={running}
+              onRetry={() => setupStart([c.id], false)}
+            />
+          </div>
+        )}
+        {versions && (
+          <div className="pl-[62px]">
+            <ToolVersions tool={versions} kit={kit} setup={setup} outside={outsideOf(links, c.id)} />
+          </div>
+        )}
+      </div>
+      {c.id === "php" && <ComposerRow php={c} tool={versioned} on={on} state={state} />}
+    </>
+  );
+}

@@ -14,7 +14,8 @@ import {
 } from "./api";
 import { t } from "./i18n";
 import { ComponentLogo, LanguageLogo } from "./logos";
-import { ActionButton, ErrorLine, useAction } from "./pages";
+import { ActionButton, ErrorLine } from "./common";
+import { useAction } from "./hooks";
 
 /** The matrix: one row per extension, one column per language or tool, then "all". */
 export function ExtensionsMatrixSection({

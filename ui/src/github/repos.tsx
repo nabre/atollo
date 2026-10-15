@@ -1,78 +1,44 @@
-// GitHub page: the kit's GitHub account and its repositories (port of
-// nabre/dev-kit setup/extensions/github-repos). One sign-in for everything:
-// this page, the kit's Git (editor, consoles, agents) and GitHub CLI, saved
-// in data\gh (tauri/src/github.rs, DECISIONS.md D-70).
-import { useCallback, useEffect, useMemo, useState, type SyntheticEvent } from "react";
+// The account's repositories in the side bar of Projects, to clone one as a
+// new project.
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   VscAccount,
   VscArchive,
   VscCheck,
   VscChevronDown,
   VscChevronRight,
-  VscClose,
   VscCloudDownload,
   VscCode,
-  VscCopy,
-  VscEdit,
   VscRepo,
   VscGlobe,
-  VscKey,
   VscLinkExternal,
   VscLock,
   VscOrganization,
   VscRefresh,
   VscRepoForked,
-  VscSignIn,
-  VscSignOut,
-  VscTrash,
 } from "react-icons/vsc";
 import type { IconType } from "react-icons";
 import {
   editorOpen,
   githubClone,
-  githubDelete,
   githubOpen,
-  githubRename,
   githubRepos,
   githubSignIn,
-  githubSignInCancel,
-  githubSignOut,
-  githubStatus,
-  onGithub,
   type EditorStatus,
   type GithubRepo,
   type GithubRepos,
-  type GithubStatus,
-} from "./api";
-import { ActionButton, ErrorLine, useAction } from "./pages";
-import { Mark } from "./tags";
-import { useSubscription } from "./hooks";
-import { locale, rich, t } from "./i18n";
-
-/** The account's state, kept current by the "github" events of the sign-in. */
-export function useGithub() {
-  const [status, setStatus] = useState<GithubStatus | null>(null);
-  const reload = useCallback(() => {
-    githubStatus().then(setStatus, () => {
-      setStatus(null);
-    });
-  }, []);
-  useEffect(reload, [reload]);
-  useSubscription(onGithub, setStatus);
-  return { status, setStatus, reload };
-}
+} from "../api";
+import { useAction } from "../hooks";
+import { ActionButton, ErrorLine } from "../common";
+import { Mark } from "../tags";
+import { t } from "../i18n";
+import { useGithub } from "./account";
+import { RepoDetails } from "./details";
 
 // Alphabetical whatever order GitHub answers in; app2 before app10.
 const byName = (a: GithubRepo, b: GithubRepo) =>
   a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true }) ||
   a.fullName.localeCompare(b.fullName);
-
-/** The GitHub account of the kit, in the Settings (D-76). */
-export function GithubAccount() {
-  const { status, setStatus, reload } = useGithub();
-  const signIn = (deleteScope: boolean) => githubSignIn(deleteScope).then(setStatus);
-  return <Account status={status} onSignIn={signIn} onChanged={reload} />;
-}
 
 /** The account's repositories, to clone one as a new project (D-76). */
 export function GithubRepositories({ editor, onChanged }: { editor: EditorStatus | null; onChanged: () => void }) {
@@ -130,138 +96,6 @@ export function GithubRepositories({ editor, onChanged }: { editor: EditorStatus
         />
       )}
     </div>
-  );
-}
-
-function Account({
-  status,
-  onSignIn,
-  onChanged,
-}: {
-  status: GithubStatus | null;
-  onSignIn: (deleteScope: boolean) => Promise<void>;
-  onChanged: () => void;
-}) {
-  const { busy, error, run } = useAction(onChanged);
-  const [confirm, setConfirm] = useState(false);
-  const [copied, setCopied] = useState(false);
-  if (!status) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
-  return (
-    <section aria-labelledby="gh-account" className="space-y-2 border-t border-vsc-border px-3 py-2">
-      <h2 id="gh-account" className="text-[13px] font-semibold">
-        {t("Account GitHub del kit")}
-      </h2>
-      <p className="text-vsc-desc">
-        {rich(
-          t(
-            "Un solo accesso per tutto il kit: questa pagina, Git (anche nell'editor, nelle console e negli agenti) e GitHub CLI. Resta nel kit, in {0}.",
-          ),
-          <span className="font-mono">data\gh</span>,
-        )}
-      </p>
-      {status.signingIn ? (
-        <div className="space-y-2" role="status">
-          {status.code ? (
-            <>
-              <p>{t("Nella pagina di GitHub che si è aperta scrivi questo codice, poi autorizza GitHub CLI:")}</p>
-              <p className="font-mono text-[22px] tracking-widest select-text">{status.code}</p>
-            </>
-          ) : (
-            <p className="text-vsc-desc">{t("Accesso in preparazione…")}</p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {status.code && (
-              <>
-                <ActionButton
-                  icon={copied ? VscCheck : VscCopy}
-                  label={copied ? t("Codice copiato") : t("Copia il codice")}
-                  onClick={() => {
-                    void navigator.clipboard.writeText(status.code ?? "").then(() => {
-                      setCopied(true);
-                    });
-                  }}
-                />
-                <ActionButton
-                  icon={VscLinkExternal}
-                  label={t("Apri la pagina di GitHub")}
-                  onClick={() => {
-                    run("device", () => githubOpen(null));
-                  }}
-                />
-              </>
-            )}
-            <ActionButton
-              icon={VscClose}
-              label={t("Annulla")}
-              onClick={() => {
-                run("cancel", githubSignInCancel);
-              }}
-            />
-          </div>
-        </div>
-      ) : status.signedIn ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <VscCheck className="text-vsc-success" size={16} aria-hidden="true" />
-          <span>{status.login ? t("Accesso fatto come {0}", `@${status.login}`) : t("accesso fatto")}</span>
-          <span className="ml-auto flex flex-wrap items-center gap-2">
-            {confirm ? (
-              <>
-                <span>{t("Uscire da GitHub? Anche Git, l'editor e gli agenti del kit perdono l'accesso.")}</span>
-                <ActionButton
-                  icon={VscSignOut}
-                  label={t("Esci")}
-                  busy={busy === "out"}
-                  onClick={() => {
-                    setConfirm(false);
-                    run("out", githubSignOut);
-                  }}
-                />
-                <ActionButton
-                  icon={VscClose}
-                  label={t("Annulla")}
-                  onClick={() => {
-                    setConfirm(false);
-                  }}
-                />
-              </>
-            ) : (
-              <ActionButton
-                icon={VscSignOut}
-                label={t("Esci")}
-                title={t("Toglie l'accesso salvato nel kit")}
-                onClick={() => {
-                  setConfirm(true);
-                }}
-              />
-            )}
-          </span>
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <ActionButton
-            icon={VscSignIn}
-            label={t("Accedi a GitHub")}
-            primary
-            busy={busy === "in"}
-            onClick={() => {
-              setCopied(false);
-              run("in", () => onSignIn(false));
-            }}
-          />
-          <span className="text-[12px] text-vsc-desc">
-            {t("Si apre github.com nel browser: scrivi il codice che compare qui e autorizza GitHub CLI.")}
-          </span>
-        </div>
-      )}
-      <ErrorLine error={error ?? (status.signingIn ? null : status.error)} />
-      {status.signedIn && (
-        <p className="text-[12px] text-vsc-desc">
-          {t(
-            "Uscire dal kit non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account.",
-          )}
-        </p>
-      )}
-    </section>
   );
 }
 
@@ -513,187 +347,5 @@ function RepoFlags({ repo }: { repo: GithubRepo }) {
         </Mark>
       ))}
     </>
-  );
-}
-
-function RepoDetails({
-  repo: r,
-  canDelete,
-  onRenamed,
-  onDeleted,
-  onSignIn,
-}: {
-  repo: GithubRepo;
-  canDelete: boolean | null;
-  onRenamed: (r: GithubRepo) => void;
-  onDeleted: () => void;
-  onSignIn: (deleteScope: boolean) => Promise<void>;
-}) {
-  const [mode, setMode] = useState<"rename" | "delete" | "permission" | null>(null);
-  const [name, setName] = useState(r.name);
-  const [copied, setCopied] = useState(false);
-  const { busy, error, run } = useAction();
-
-  const rename = (e: SyntheticEvent) => {
-    e.preventDefault();
-    const next = name.trim();
-    if (next === r.name) {
-      setMode(null);
-      return;
-    }
-    run("rename", async () => {
-      const done = await githubRename(r.fullName, next);
-      setMode(null);
-      onRenamed({ ...done.repo, local: done.local });
-    });
-  };
-  const remove = () => {
-    if (canDelete === false) {
-      setMode("permission");
-      return;
-    }
-    run("delete", async () => {
-      const result = await githubDelete(r.fullName);
-      if (result === "deleted") onDeleted();
-      else setMode("permission");
-    });
-  };
-
-  return (
-    <div className="space-y-1.5 py-1.5 pr-3 pl-8">
-      <p className="select-text">
-        <span className="font-semibold">{r.fullName}</span>
-        {r.description && <span className="text-vsc-desc"> — {r.description}</span>}
-      </p>
-      <p className="text-[12px] text-vsc-desc">
-        {[
-          r.private ? t("Privato") : t("Pubblico"),
-          r.language,
-          `★ ${String(r.stars)}`,
-          r.pushedAt
-            ? t(
-                "ultimo push {0}",
-                new Intl.DateTimeFormat(locale(), { dateStyle: "medium", timeStyle: "short" }).format(
-                  new Date(r.pushedAt),
-                ),
-              )
-            : "",
-          r.local ? t("clonato in projects\\{0}", r.local) : t("non clonato"),
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <ActionButton
-          icon={copied ? VscCheck : VscCopy}
-          label={copied ? t("Indirizzo copiato") : t("Copia l'indirizzo per Git")}
-          onClick={() => {
-            void navigator.clipboard.writeText(`${r.htmlUrl}.git`).then(() => {
-              setCopied(true);
-            });
-          }}
-        />
-        {r.admin && (
-          <>
-            <ActionButton
-              icon={VscEdit}
-              label={t("Rinomina")}
-              onClick={() => {
-                setName(r.name);
-                setMode(mode === "rename" ? null : "rename");
-              }}
-            />
-            <ActionButton
-              icon={VscTrash}
-              label={t("Elimina da GitHub")}
-              onClick={() => {
-                setMode(mode === "delete" ? null : "delete");
-              }}
-            />
-          </>
-        )}
-      </div>
-      {mode === "rename" && (
-        <form onSubmit={rename} className="flex flex-wrap items-end gap-2" aria-label={t("Rinomina {0}", r.fullName)}>
-          <label className="flex flex-col gap-1">
-            <span className="text-[12px] text-vsc-desc">{t("Nuovo nome del repository su GitHub")}</span>
-            <input
-              autoFocus
-              required
-              pattern="[A-Za-z0-9._\-]+"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-              }}
-              className="w-64 input"
-            />
-          </label>
-          <ActionButton
-            icon={VscEdit}
-            label={t("Rinomina")}
-            primary
-            submit
-            busy={busy === "rename"}
-            onClick={() => undefined}
-          />
-          <ActionButton
-            icon={VscClose}
-            label={t("Annulla")}
-            onClick={() => {
-              setMode(null);
-            }}
-          />
-          <p className="basis-full text-[12px] text-vsc-desc">
-            {t(
-              "GitHub reindirizza i vecchi indirizzi. La copia locale, se c'è, punta al nuovo nome; la sua cartella in projects resta com'è.",
-            )}
-          </p>
-        </form>
-      )}
-      {mode === "delete" && (
-        <div role="alertdialog" aria-label={t("Eliminare {0} da GitHub?", r.fullName)} className="space-y-2">
-          <p className="text-vsc-warning">
-            {t(
-              "Eliminare {0} da GitHub? Non si può annullare: anche issue, pull request, wiki e release vengono eliminate.",
-              r.fullName,
-            )}
-            {r.local && ` ${t("La copia locale in projects\\{0} resta.", r.local)}`}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <ActionButton icon={VscTrash} label={t("Elimina")} busy={busy === "delete"} onClick={remove} />
-            <ActionButton
-              icon={VscClose}
-              label={t("Annulla")}
-              onClick={() => {
-                setMode(null);
-              }}
-            />
-          </div>
-        </div>
-      )}
-      {mode === "permission" && (
-        <div role="status" className="space-y-2">
-          <p>
-            {t(
-              "L'accesso del kit non ha il permesso di eliminare i repository. Accedi di nuovo concedendolo, poi premi ancora «Elimina da GitHub».",
-            )}
-          </p>
-          <ActionButton
-            icon={VscKey}
-            label={t("Concedi il permesso")}
-            primary
-            busy={busy === "grant"}
-            onClick={() => {
-              run("grant", async () => {
-                await onSignIn(true);
-                setMode(null);
-                window.scrollTo({ top: 0 });
-              });
-            }}
-          />
-        </div>
-      )}
-      <ErrorLine error={error} />
-    </div>
   );
 }

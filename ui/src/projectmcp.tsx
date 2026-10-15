@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 import { VscAdd, VscClose, VscSave, VscTrash } from "react-icons/vsc";
 import { projectMcp, projectMcpSet, type McpServer, type McpView } from "./api";
 import { t } from "./i18n";
-import { ActionButton, ErrorLine, useAction } from "./pages";
+import { ActionButton, ErrorLine } from "./common";
+import { useAction } from "./hooks";
 
 function describe(s: McpServer): string {
   return s.kind === "http" ? (s.url ?? "") : [s.command ?? "", ...s.args].join(" ");

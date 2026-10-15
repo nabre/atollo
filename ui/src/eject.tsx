@@ -6,7 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { VscClose, VscDebugDisconnect, VscRefresh } from "react-icons/vsc";
 
 import { appQuit, ejectList, ejectRun, type OpenNow } from "./api";
-import { ActionButton, ErrorLine, useAction } from "./pages";
+import { ActionButton, ErrorLine } from "./common";
+import { useAction } from "./hooks";
 import { EditorBody, EditorSection, Notice, SingleEditor } from "./workbench";
 import { t } from "./i18n";
 

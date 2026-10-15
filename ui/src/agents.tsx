@@ -16,10 +16,10 @@ import {
   type Level,
 } from "./api";
 import { rich, t } from "./i18n";
-import { ActionButton, ErrorLine, useAction } from "./pages";
+import { ActionButton, ErrorLine } from "./common";
 import { ComponentLogo } from "./logos";
 import { AgentUsage, useStats } from "./stats";
-import { useEvery } from "./hooks";
+import { useAction, useEvery } from "./hooks";
 import {
   Button,
   Dot,
