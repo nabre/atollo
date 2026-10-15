@@ -1,4 +1,4 @@
-//! GitHub page: the kit's GitHub account (github.rs, DECISIONS.md D-70).
+//! GitHub page: the kit's GitHub account (github/, DECISIONS.md D-70).
 
 use super::*;
 

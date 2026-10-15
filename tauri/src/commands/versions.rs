@@ -170,7 +170,7 @@ pub fn project_versions_set<R: Runtime>(
     Ok(project_versions_of(&state.kit, &project))
 }
 
-/// The relations matrix (versions/relations.rs, D-81): the saved one while nothing
+/// The relations matrix (versions/relations/, D-81): the saved one while nothing
 /// it was made from changed; `force` builds it again. Off the window's
 /// thread: it reads every project's files and asks WebView2 its version.
 #[tauri::command]

@@ -387,7 +387,7 @@ impl Net {
     }
 
     /// One call to the GitHub API with the kit's GitHub account
-    /// (`github.rs`): `method` is GET, PATCH or DELETE; the token goes to
+    /// (`github/`): `method` is GET, PATCH or DELETE; the token goes to
     /// `https://api.github.com/` only. A single attempt: renaming or deleting
     /// twice is not the same as once.
     pub fn github_call(

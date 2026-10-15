@@ -1,4 +1,4 @@
-//! The kit's database servers (db/services.rs, D-73).
+//! The kit's database servers (db/services/, D-73).
 
 use super::*;
 

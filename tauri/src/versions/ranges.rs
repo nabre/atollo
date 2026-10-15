@@ -1,5 +1,5 @@
 //! Version ranges as projects and tools declare them, for the relations
-//! matrix (`versions/relations.rs`): npm and Composer (`^20.1`, `~8.2`, `>=18 <23`,
+//! matrix (`versions/relations/`): npm and Composer (`^20.1`, `~8.2`, `>=18 <23`,
 //! `8.1.x`, `1.2 - 1.4`, `||` and `|`), PEP 440 (`>=3.10,<3.13`, `~=3.11`,
 //! `==3.12.*`, `!=3.12.1`) and plain minimums (`go 1.21`, CMake's
 //! `cmake_minimum_required`). Pre-release tags are ignored: `3.15.0a1` is

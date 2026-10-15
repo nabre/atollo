@@ -1,4 +1,4 @@
-//! New project from frameworks (projects/frameworks.rs, DECISIONS.md D-83).
+//! New project from frameworks (projects/frameworks/, DECISIONS.md D-83).
 
 use super::*;
 
@@ -110,7 +110,7 @@ pub(super) fn framework_action_id(name: &str, i: usize) -> String {
 /// writes the chosen variables in its `.env` (`env`, as the wizard shows
 /// them), saves their actions in the project. An existing project is used when it
 /// is empty, or when it has files but no Git: then the framework is made in
-/// `data	mprameworks` and its files are added, those already there stay.
+/// `data\tmp\frameworks` and its files are added, those already there stay.
 /// A failed command stops it and leaves the folder as it is, to look at.
 #[tauri::command]
 pub async fn frameworks_create<R: Runtime>(
