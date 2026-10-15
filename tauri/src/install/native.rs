@@ -68,6 +68,41 @@ fn can_hard_link(dir: &Path) -> bool {
     ok
 }
 
+fn rustup_installed(rust: &Path) -> bool {
+    rust.join(r"cargo\bin\rustup.exe").is_file() && rust.join(r"cargo\bin\rustc.exe").is_file()
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum RustPlan {
+    /// Installed on a kit with hard links: `rustup update` where it is.
+    InPlace,
+    /// rustup-init in the temp, result copied into the kit.
+    Fresh,
+    /// Kit without hard links: update a copy in the temp, copy it back.
+    CopyUpdate,
+}
+
+/// Where rustup runs. In place only on a kit with hard links; otherwise in
+/// the temp folder, which must have them (the probe runs only then). A temp
+/// folder without hard links is the one case that still fails.
+fn rust_plan(
+    installed: bool,
+    kit_links: bool,
+    temp_links: impl FnOnce() -> bool,
+) -> Result<RustPlan> {
+    if installed && kit_links {
+        return Ok(RustPlan::InPlace);
+    }
+    if !temp_links() {
+        bail!("rustup needs a disk with hard links (NTFS) for its work folder: the temp folder of this PC has none");
+    }
+    Ok(if installed {
+        RustPlan::CopyUpdate
+    } else {
+        RustPlan::Fresh
+    })
+}
+
 // --- Rustup's registry entry ---------------------------------------------------
 // rustup writes HKCU\...\Uninstall\Rustup at every install and self update,
 // even with --no-modify-path. The kit puts it back as it was: removed if it
@@ -213,10 +248,14 @@ impl Installer for Rust {
             bail!("Rust must be prepared on a PC of the kit's architecture (rustup runs the toolchain)");
         }
         let rust = ctx.kit.apps().join("rust");
-        fs::create_dir_all(ctx.kit.data().join("tmp"))?;
-        if !can_hard_link(&ctx.kit.data().join("tmp")) {
-            bail!("rustup needs a disk with hard links (NTFS): this kit is on FAT32/exFAT");
-        }
+        let installed = rustup_installed(&rust);
+        // Hard links are probed where rustup runs: in place, the kit's own
+        // disk; otherwise the work folder in the host temp (normally NTFS).
+        let kit_links = installed && {
+            fs::create_dir_all(ctx.kit.apps())?;
+            can_hard_link(&ctx.kit.apps())
+        };
+        let in_place = rust_plan(installed, kit_links, || false).ok() == Some(RustPlan::InPlace);
         let host = rust_host(ctx);
         let owned = [ctx.kit.root()];
         let rustup = rust.join(r"cargo\bin\rustup.exe");
@@ -229,7 +268,7 @@ impl Installer for Rust {
         };
         let before = rustup_key();
         let result = (|| -> Result<()> {
-            if rustup.is_file() && rust.join(r"cargo\bin\rustc.exe").is_file() {
+            if in_place {
                 // In place: keeps the crates registry and the `cargo install` tools.
                 progress.note("rustup update");
                 let envs = envs_for(&rust);
@@ -247,6 +286,32 @@ impl Installer for Rust {
             }
             let guard = work_dir(ctx, component)?;
             let work = guard.path();
+            let plan = rust_plan(installed, kit_links, || can_hard_link(work))?;
+            let root = work.join("rust");
+            if plan == RustPlan::CopyUpdate {
+                // Kit without hard links (FAT32/exFAT): the tree is copied to
+                // the temp, updated there and copied back. The proxies in
+                // cargo\bin (hard links of rustup.exe on NTFS) become plain
+                // copies; rustup dispatches by the file name, so they work.
+                progress.note("rustup update (copy in the temp folder)");
+                crate::net::archive::check_space(&rust, work)?;
+                crate::net::archive::copy_tree(&rust, &root)
+                    .with_context(|| format!("copy {}", rust.display()))?;
+                let envs = envs_for(&root);
+                let envs: Vec<(&str, &Path)> =
+                    envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
+                let tool = root.join(r"cargo\bin\rustup.exe");
+                run(ctx, &tool, &["update", "stable"], &envs, progress)?;
+                run(
+                    ctx,
+                    &tool,
+                    &["set", "auto-self-update", "disable"],
+                    &envs,
+                    progress,
+                )?;
+                crate::net::archive::stage_into(&root, &rust)?;
+                return Ok(());
+            }
             let part = &release.parts[0];
             let init = fetch(
                 ctx,
@@ -256,7 +321,6 @@ impl Installer for Rust {
                 work,
                 progress,
             )?;
-            let root = work.join("rust");
             let envs = envs_for(&root);
             let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
             progress.note(&format!("rustup-init: stable {host}"));
@@ -574,6 +638,28 @@ impl Installer for R {
 mod tests {
     use super::*;
     use crate::kit::tests::TempDir;
+
+    #[test]
+    fn rust_plan_by_kit_and_temp() {
+        let never = || -> bool { panic!("temp probed on a kit that does it in place") };
+        // NTFS kit, installed: in place, the temp is not even probed.
+        assert_eq!(rust_plan(true, true, never).unwrap(), RustPlan::InPlace);
+        // FAT/exFAT kit, installed: a copy in the temp.
+        assert_eq!(
+            rust_plan(true, false, || true).unwrap(),
+            RustPlan::CopyUpdate
+        );
+        // Fresh install: always in the temp, on NTFS or FAT kits alike.
+        assert_eq!(rust_plan(false, true, || true).unwrap(), RustPlan::Fresh);
+        assert_eq!(rust_plan(false, false, || true).unwrap(), RustPlan::Fresh);
+    }
+
+    #[test]
+    fn rust_plan_refuses_a_temp_without_hard_links() {
+        assert!(rust_plan(false, false, || false).is_err());
+        assert!(rust_plan(true, false, || false).is_err());
+        assert!(rust_plan(false, true, || false).is_err());
+    }
 
     #[test]
     fn r_versions_of_windows_only() {
