@@ -260,6 +260,15 @@ impl KitEnv {
         if let Some(real) = host.get("CP_USER_PROFILE").or(host.get("USERPROFILE")) {
             env.set("CP_USER_PROFILE", real);
         }
+        // The host's temporary folder for files in transit (D-90), kept for a
+        // Atollo.exe started from the kit's own consoles, whose TEMP is the kit's.
+        if let Some(real) = host
+            .get("CP_HOST_TEMP")
+            .or(host.get("TEMP"))
+            .or(host.get("TMP"))
+        {
+            env.set("CP_HOST_TEMP", real);
+        }
         env.set_path("HOME", &home);
         env.set_path("USERPROFILE", &home);
         let home_s = home.to_string_lossy().into_owned();
@@ -827,7 +836,7 @@ mod tests {
         let (_tmp, kit) = fake_kit("env-leak", &["git/bin/bash.exe", "node/node.exe"]);
         let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
         for (name, value) in env.iter() {
-            if name == "CP_USER_PROFILE" {
+            if name == "CP_USER_PROFILE" || name == "CP_HOST_TEMP" {
                 continue;
             }
             assert!(
