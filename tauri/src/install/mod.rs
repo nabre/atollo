@@ -242,12 +242,19 @@ pub trait Progress {
     fn bytes(&mut self, done: u64, total: Option<u64>);
 }
 
+/// Free space the PC's temporary folder must have for an installation's
+/// download and extraction; the sizes are not known before the download, and
+/// the largest components (Android SDK, Rust, TeX Live) stay below this.
+const SETUP_ROOM: u64 = 4 << 30;
+
 /// The work folder of a component, `setup\<id>` in the PC's temporary folder
-/// (D-90; `data\tmp\setup\<id>` without one), emptied. It lives as long as
-/// the guard: keep it for the whole installation.
+/// (D-90; `data\tmp\setup\<id>` without one or with less than `SETUP_ROOM`
+/// free there), emptied. It lives as long as the guard: keep it for the
+/// whole installation.
 pub fn work_dir(ctx: &Ctx, component: &Component) -> Result<TempWork> {
     let rel = format!("setup/{}", component.id);
-    TempWork::new(ctx.kit, &rel).with_context(|| format!("work folder {rel}"))
+    TempWork::new_with_space(ctx.kit, &rel, SETUP_ROOM)
+        .with_context(|| format!("work folder {rel}"))
 }
 
 /// Downloads and verifies one file into `work`; the same file added by hand

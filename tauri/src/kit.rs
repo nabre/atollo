@@ -99,10 +99,21 @@ impl Kit {
     /// (`TEMP`/`TMP` of the real process, read before D-04 moves them into
     /// `data\`) and the disk of the root. Without them the kit works as before:
     /// every temporary file in `data\tmp`.
+    ///
+    /// A `TEMP` that is already the kit's (a Dev-Kit.exe started from a kit
+    /// console without `CP_HOST_TEMP`) is not the host's: inside the root it
+    /// is ignored, inside `Dev-Kit\<id>` it is taken back to its base.
     pub fn with_host(mut self, host_temp: Option<&Path>) -> Kit {
+        let id = self.id();
+        let mine = Path::new("Dev-Kit").join(&id);
         self.system_temp = host_temp
             .filter(|t| t.is_absolute())
-            .map(|t| strip_verbatim(t).join("Dev-Kit").join(self.id()));
+            .map(strip_verbatim)
+            .map(|t| match t.ancestors().find(|a| a.ends_with(&mine)) {
+                Some(a) => a.to_path_buf(),
+                None => t.join(&mine),
+            })
+            .filter(|t| !t.starts_with(&self.root));
         self.volume = crate::os::volume::info(&self.root).ok();
         self
     }
@@ -376,6 +387,14 @@ pub(crate) mod tests {
             Path::new(r"C:\Users\u\AppData\Local\Temp\Dev-Kit").join(kit.id())
         );
         assert!(host.volume().is_some_and(|v| v.free > 0));
+        // started from the kit's own programs: never nested, never inside the kit
+        let nested = host.system_temp().unwrap().join("system");
+        assert_eq!(
+            kit.clone().with_host(Some(&nested)).system_temp(),
+            host.system_temp()
+        );
+        let inside = tmp.0.join(r"data\tmp\system");
+        assert_eq!(kit.clone().with_host(Some(&inside)).system_temp(), None);
         // a relative TEMP is not used: everything stays in data\tmp
         assert_eq!(kit.with_host(Some(Path::new("Temp"))).system_temp(), None);
     }

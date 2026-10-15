@@ -72,8 +72,14 @@ fn run() -> i32 {
         }
     };
     let kit = match Kit::from_exe(&exe) {
-        // The host's TEMP, before the profile folders move into data\ (D-04, D-90).
-        Ok(kit) => kit.with_host(host.get("TEMP").or(host.get("TMP")).map(Path::new)),
+        // The host's TEMP, before the profile folders move into data\ (D-04,
+        // D-90); CP_HOST_TEMP when started from the kit's own environment.
+        Ok(kit) => kit.with_host(
+            host.get("CP_HOST_TEMP")
+                .or(host.get("TEMP"))
+                .or(host.get("TMP"))
+                .map(Path::new),
+        ),
         Err(e) => {
             fatal(
                 early_lang,
@@ -288,9 +294,12 @@ fn run() -> i32 {
         .map(|app| {
             app.run(move |_, event| {
                 if let tauri::RunEvent::Exit = event {
-                    // The programs' temp left on the PC goes (D-90); what a
-                    // program still holds is removed by the next sweep.
-                    os::temp::cleanup_at_exit(&update_kit);
+                    // The programs' temp left on the PC goes (D-90): the
+                    // programs are ended first, or they would still hold it.
+                    if update_kit.system_temp().is_some() {
+                        os::sessions::stop_children(&update_kit);
+                        os::temp::cleanup_at_exit(&update_kit);
+                    }
                     match setup::self_update::apply_staged(&update_kit, &update_exe) {
                         Ok(true) => log::info("update applied"),
                         Ok(false) => {}

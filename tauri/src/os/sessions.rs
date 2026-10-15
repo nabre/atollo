@@ -88,6 +88,40 @@ pub fn foreign_processes(kit: &Kit) -> Vec<KitProcess> {
         .collect()
 }
 
+/// At exit: ends the kit's programs this app started (editor server,
+/// consoles, agents), which the job would end only after the process is
+/// gone, and waits a moment for them to let go of their files. WebView2
+/// is left to close on its own.
+pub fn stop_children(kit: &Kit) {
+    let me = std::process::id();
+    let webview = crate::os::webview::fixed_folder(kit);
+    let all = processes::all();
+    // Descendants, not only children: a console's shell is under conhost.exe.
+    let mut ours = BTreeSet::from([me]);
+    loop {
+        let before = ours.len();
+        for p in &all {
+            if ours.contains(&p.parent) && p.pid != p.parent {
+                ours.insert(p.pid);
+            }
+        }
+        if ours.len() == before {
+            break;
+        }
+    }
+    let pids: Vec<u32> = all
+        .iter()
+        .filter(|p| p.pid != me && ours.contains(&p.pid))
+        .filter(|p| p.path.starts_with(kit.root()) && !p.path.starts_with(&webview))
+        .map(|p| p.pid)
+        .collect();
+    if pids.is_empty() {
+        return;
+    }
+    stop(&pids);
+    std::thread::sleep(std::time::Duration::from_millis(300));
+}
+
 /// Ends `pids` and everything they started.
 pub fn stop(pids: &[u32]) {
     let all = processes::all();
