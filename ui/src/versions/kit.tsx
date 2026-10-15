@@ -134,8 +134,18 @@ function DiskLines({
   );
 }
 
+/** The look of vscode-context-menu (5px corners, menu colors, the widget
+ * shadow) and of its items (2em, 3px corners, the selection colors). The
+ * menus stay native: the component has no menu roles, and its items hold
+ * only a label and a keybinding, not the groups and tags these show. */
+const MENU =
+  "absolute top-full right-0 z-20 mt-1 rounded-[5px] border border-vsc-menu-border bg-vsc-menu py-1 text-vsc-menu-fg shadow-[0_2px_8px_var(--vsc-shadow)]";
+const MENU_ITEM = "mx-1 flex h-[2em] items-center gap-2 rounded-[3px] px-2 text-[12px]";
+
 /** "locked": a version some projects use, so it cannot go; its small menu
- * lists them. The counterpart of the bin. */
+ * lists them. The counterpart of the bin. A native button, drawn as a
+ * toolbar button: it opens a menu (aria-haspopup, aria-expanded), which
+ * Button can't say. */
 function Locked({ projects, label }: { projects: string[]; label: string }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -161,22 +171,18 @@ function Locked({ projects, label }: { projects: string[]; label: string }) {
         onClick={() => {
           setOpen((o) => !o);
         }}
-        className="inline-flex items-center gap-1 rounded-sm px-1 text-[11px] text-vsc-desc hover:bg-vsc-list-hover hover:text-vsc-fg"
+        className="inline-flex h-[22px] items-center gap-1 rounded-[5px] px-1 text-[11px] text-vsc-desc hover:bg-vsc-toolbar-hover hover:text-vsc-fg"
       >
         <VscLock size={12} aria-hidden="true" />
         locked
       </button>
       {open && (
-        <ul
-          role="menu"
-          aria-label={label}
-          className="absolute top-full right-0 z-20 mt-1 min-w-36 rounded border border-vsc-menu-border bg-vsc-menu py-1 text-[12px] text-vsc-menu-fg shadow-[0_2px_8px_var(--vsc-shadow)]"
-        >
+        <ul role="menu" aria-label={label} className={`${MENU} min-w-36`}>
           <li role="none" className="px-3 pb-0.5 text-[11px] text-vsc-desc">
             {t("Usata da")}
           </li>
           {projects.map((p) => (
-            <li key={p} role="menuitem" className="px-3 py-0.5">
+            <li key={p} role="menuitem" className={MENU_ITEM}>
               {p}
             </li>
           ))}
@@ -236,11 +242,7 @@ function AddLine({
         }}
       />
       {open && (
-        <ul
-          role="menu"
-          aria-label={t("Versioni da scaricare")}
-          className="absolute top-full right-0 z-20 mt-1 max-h-72 min-w-44 overflow-y-auto rounded border border-vsc-menu-border bg-vsc-menu py-1 text-vsc-menu-fg shadow-[0_2px_8px_var(--vsc-shadow)]"
-        >
+        <ul role="menu" aria-label={t("Versioni da scaricare")} className={`${MENU} max-h-72 min-w-44 overflow-y-auto`}>
           {groups.map((g) => (
             <li key={g.major} role="none">
               <div className="px-3 pt-1 pb-0.5 text-[11px] text-vsc-desc">{`${g.major}.x`}</div>
@@ -254,7 +256,7 @@ function AddLine({
                         setOpen(false);
                         onAdd(l);
                       }}
-                      className="flex w-full items-center gap-2 px-3 py-0.5 text-left font-mono text-[12px] hover:bg-vsc-list-hover focus:bg-vsc-list-hover focus:outline-none"
+                      className={`${MENU_ITEM} w-[calc(100%-8px)] text-left font-mono hover:bg-vsc-menu-selection hover:text-vsc-menu-selection-fg focus:bg-vsc-menu-selection focus:text-vsc-menu-selection-fg focus:outline-none`}
                     >
                       <VscCloudDownload size={12} aria-hidden="true" />
                       {tool.name} {l}
