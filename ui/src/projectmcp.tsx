@@ -1,13 +1,13 @@
 // A project's own MCP servers (DECISIONS.md D-78): in its .mcp.json for
 // Claude Code, copied to .codex\config.toml for Codex; Antigravity has only
 // the kit's servers.
-import { useCallback, useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { VscAdd, VscClose, VscSave, VscTrash } from "react-icons/vsc";
 import { projectMcp, projectMcpSet, type McpServer, type McpView } from "./api";
 import { t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction, useLoad } from "./hooks";
-import { Select } from "./workbench";
+import { Select, TextArea, TextField } from "./workbench";
 
 function describe(s: McpServer): string {
   return s.kind === "http" ? (s.url ?? "") : [s.command ?? "", ...s.args].join(" ");
@@ -19,7 +19,12 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
   const [command, setCommand] = useState("");
   const [args, setArgs] = useState("");
   const [url, setUrl] = useState("");
-  const field = "w-full input";
+  // TextField has no `required`: set on the components, which then stop
+  // the form's submit as a native input does. Every text field here is.
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    for (const f of form.current?.querySelectorAll("vscode-textfield") ?? []) f.required = true;
+  });
   const submit = (e: SyntheticEvent) => {
     e.preventDefault();
     onAdd({
@@ -39,6 +44,7 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
   };
   return (
     <form
+      ref={form}
       onSubmit={submit}
       aria-label={t("Nuovo server MCP")}
       className="space-y-2 border-t border-vsc-border px-3 py-2"
@@ -46,15 +52,7 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="space-y-1">
           <span className="text-vsc-desc">{t("Nome")}</span>
-          <input
-            className={`${field} font-mono`}
-            required
-            pattern="[A-Za-z0-9_\-]+"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-            }}
-          />
+          <TextField mono pattern="[A-Za-z0-9_\-]+" value={name} onChange={setName} className="w-full" />
         </label>
         <label className="space-y-1">
           <span className="text-vsc-desc">{t("Tipo")}</span>
@@ -73,41 +71,17 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
         <div className="grid gap-2 sm:grid-cols-2">
           <label className="space-y-1">
             <span className="text-vsc-desc">{t("Programma")}</span>
-            <input
-              className={`${field} font-mono`}
-              required
-              placeholder="npx"
-              value={command}
-              onChange={(e) => {
-                setCommand(e.target.value);
-              }}
-            />
+            <TextField mono placeholder="npx" value={command} onChange={setCommand} className="w-full" />
           </label>
           <label className="space-y-1">
             <span className="text-vsc-desc">{t("Argomenti, uno per riga")}</span>
-            <textarea
-              className={`${field} font-mono`}
-              rows={2}
-              spellCheck={false}
-              value={args}
-              onChange={(e) => {
-                setArgs(e.target.value);
-              }}
-            />
+            <TextArea mono rows={2} spellCheck={false} value={args} onChange={setArgs} className="w-full" />
           </label>
         </div>
       ) : (
         <label className="block space-y-1">
           <span className="text-vsc-desc">{t("Indirizzo")}</span>
-          <input
-            className={`${field} font-mono`}
-            required
-            placeholder="https://"
-            value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-            }}
-          />
+          <TextField mono placeholder="https://" value={url} onChange={setUrl} className="w-full" />
         </label>
       )}
       <div className="flex gap-2">

@@ -1,7 +1,8 @@
 // Title bar of the app window, drawn by the interface: the window has no
 // Windows frame (tauri/src/main.rs, `decorations(false)`). The empty part
 // drags the window and a double click maximizes it (`data-tauri-drag-region`);
-// the three buttons are those of Windows. Only the main window has the
+// the three buttons are those of Windows, native buttons as VSCodium's
+// window controls (no vscode-elements component draws them). Only the main window has the
 // permissions they use (capabilities/main.json).
 import { useEffect, useState } from "react";
 import { VscChromeClose, VscChromeMaximize, VscChromeMinimize, VscChromeRestore } from "react-icons/vsc";
@@ -9,6 +10,7 @@ import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { browserPreview } from "./api";
 import { t } from "./i18n";
 import { BrandSymbol, BrandWordmark } from "./brand";
+import { Badge } from "./tags";
 
 /** The window, or null in the browser preview and in the tests. */
 function current(): Window | null {
@@ -70,11 +72,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
         )}
       </span>
       <span data-tauri-drag-region className="h-full flex-1" />
-      {browserPreview && (
-        <span className="mr-2 rounded bg-vsc-badge px-1.5 text-[11px] leading-[18px] text-vsc-badge-fg">
-          {t("Anteprima nel browser: dati di esempio")}
-        </span>
-      )}
+      {browserPreview && <Badge className="mr-2">{t("Anteprima nel browser: dati di esempio")}</Badge>}
       <button
         type="button"
         aria-label={t("Riduci a icona")}
@@ -105,7 +103,8 @@ export function TitleBar({ title }: { title: string | undefined }) {
         type="button"
         aria-label={t("Chiudi")}
         title={t("Chiudi")}
-        className="flex h-full w-11 items-center justify-center text-vsc-titlebar-fg hover:bg-[#e81123] hover:text-white focus-visible:bg-[#e81123] focus-visible:text-white"
+        // VSCodium's close hover, a fixed color in its CSS: not a theme color.
+        className="flex h-full w-11 items-center justify-center text-vsc-titlebar-fg hover:bg-[rgba(232,17,35,0.9)] hover:text-white focus-visible:bg-[rgba(232,17,35,0.9)] focus-visible:text-white"
         onClick={() => {
           // Same path as the Windows button: the app asks first if something is open.
           act((w) => w.close());

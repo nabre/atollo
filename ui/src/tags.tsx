@@ -1,5 +1,5 @@
 // Small labels shared by every page, so a tag looks the same everywhere:
-// Tag (bordered chip), Badge (filled pill), Mark (an icon named on hover).
+// Tag (bordered chip), Badge (vscode-badge), Mark (an icon named on hover).
 import type { ReactNode } from "react";
 
 const TONES = {
@@ -37,11 +37,9 @@ export function Tag({
   );
 }
 
-/** A filled pill: a state ("in esecuzione") or a plan. */
+/** A filled label: a state ("in uso") or a plan (vscode-badge, default variant). */
 export function Badge({ className = "", children }: { className?: string; children: ReactNode }) {
-  return (
-    <span className={`rounded-sm bg-vsc-badge px-1.5 text-[11px] text-vsc-badge-fg ${className}`}>{children}</span>
-  );
+  return <vscode-badge className={className}>{children}</vscode-badge>;
 }
 
 /** An icon that stands for a word: named on hover and for screen readers. */

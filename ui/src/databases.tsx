@@ -47,6 +47,7 @@ import {
   Properties,
   Select,
   SideBarTitle,
+  TextField,
   ViewContainer,
   ViewPane,
 } from "./workbench";
@@ -95,29 +96,23 @@ export function SecretField({ value, label }: { value: string; label: string }) 
   return (
     <span className="flex min-w-0 items-center gap-2">
       <code className="truncate font-mono text-vsc-fg">{shown ? value : "••••••••••••"}</code>
-      <button
-        type="button"
-        className="rounded-sm p-1 text-vsc-fg hover:bg-vsc-list-hover"
-        aria-label={shown ? t("Nascondi {0}", label) : t("Mostra {0}", label)}
+      <IconButton
+        icon={shown ? VscEyeClosed : VscEye}
+        label={shown ? t("Nascondi {0}", label) : t("Mostra {0}", label)}
         title={shown ? t("Nascondi") : t("Mostra")}
-        aria-pressed={shown}
+        checked={shown}
         onClick={() => {
           setShown(!shown);
         }}
-      >
-        {shown ? <VscEyeClosed size={14} aria-hidden="true" /> : <VscEye size={14} aria-hidden="true" />}
-      </button>
-      <button
-        type="button"
-        className="rounded-sm p-1 text-vsc-fg hover:bg-vsc-list-hover"
-        aria-label={t("Copia {0}", label)}
+      />
+      <IconButton
+        icon={VscCopy}
+        label={t("Copia {0}", label)}
         title={t("Copia")}
         onClick={() => {
           copy(value);
         }}
-      >
-        <VscCopy size={14} aria-hidden="true" />
-      </button>
+      />
       {copied && <span className="text-vsc-desc">{t("Copiata")}</span>}
     </span>
   );
@@ -274,18 +269,19 @@ function ServiceDetails({
                 <p className="text-vsc-desc">
                   {portValid ? t("Vale dal prossimo avvio.") : t("Una porta fra 1024 e 65535.")}
                 </p>
-                <input
+                <TextField
                   id={portId}
                   inputMode="numeric"
+                  mono
                   value={port}
-                  onChange={(e) => {
-                    setPort(e.target.value.replace(/\D/g, ""));
+                  onChange={(v) => {
+                    setPort(v.replace(/\D/g, ""));
                   }}
                   onBlur={() => {
                     if (portValid && portValue !== s.port) onSet(portValue, s.autostart);
                   }}
-                  aria-invalid={!portValid}
-                  className="w-24 input font-mono"
+                  invalid={!portValid}
+                  className="w-24"
                 />
               </div>
               <CheckboxLabel

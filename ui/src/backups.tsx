@@ -2,11 +2,12 @@
 // data\db\backup\<project>, restore one of them (a file from elsewhere is
 // copied into that folder first: the app has no file picker, D-15).
 import { useCallback, useState } from "react";
-import { VscCheck, VscCloudUpload, VscDiscard, VscFolderOpened } from "react-icons/vsc";
+import { VscCloudUpload, VscDiscard, VscFolderOpened } from "react-icons/vsc";
 import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "./api";
 import { locale, t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction, useLoad } from "./hooks";
+import { Notice } from "./workbench";
 
 function size(bytes: number): string {
   const kb = bytes / 1024;
@@ -48,12 +49,7 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
           }}
         />
       </div>
-      {done && (
-        <p role="status" className="flex items-center gap-1 text-vsc-success">
-          <VscCheck size={14} aria-hidden="true" />
-          {done}
-        </p>
-      )}
+      {done && <Notice tone="success">{done}</Notice>}
       {list.length === 0 ? (
         <p className="text-[12px] text-vsc-desc">
           {t("Nessuna copia. Per ripristinare un file da fuori, copialo nella cartella delle copie.")}
