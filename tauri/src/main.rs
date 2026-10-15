@@ -106,8 +106,6 @@ fn run() -> i32 {
     };
 
     log::init(&kit.logs());
-    // The projects' data in data\projects (D-89), before anything reads it.
-    projects::migrate::run(&kit);
     // Before the environment points at them: one folder per version.
     versions::migrate(&kit);
     // The versions side by side, known to Gradle, Maven and dotnet.
@@ -231,6 +229,10 @@ fn run() -> i32 {
         }
     };
 
+    // The projects' data in data\projects (D-89), as the one app of the kit
+    // (D-08): a command line run or a second start would race the open app's
+    // writes of passwords and ports. Before the Runner reads the ports.
+    projects::migrate::run(&kit);
     // Leftovers of files in transit (D-90): only here, as the one app of the
     // kit (D-08); a command line run would race the open app's programs.
     os::temp::sweep(&kit);
