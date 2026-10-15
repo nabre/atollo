@@ -6,7 +6,7 @@ export HISTFILE="$HOME/.bash_history"
 export HISTSIZE=10000
 shopt -s histappend
 
-# Versions of the languages chosen for the project (data\app\projects\<project>\
+# Versions of the languages chosen for the project (data\projects\<project>\
 # versions.txt, "from<TAB>to" lines written by Dev-Kit.exe), as profile.ps1
 # does for PowerShell (DECISIONS.md D-80): PATH in POSIX form, the other
 # variables as Windows paths.
@@ -18,7 +18,7 @@ __devkit_versions() {
     case "${here,,}" in "${projects,,}"?*) ;; *) return 0 ;; esac
     project="${here:${#projects}}"
     project="${project%%/*}"
-    file="$(cygpath -u "$CP_DATA")/app/projects/$project/versions.txt"
+    file="$(cygpath -u "$CP_DATA")/projects/$project/versions.txt"
     [ -f "$file" ] || return 0
     while IFS=$'\t' read -r from to; do
         to="${to%$'\r'}"

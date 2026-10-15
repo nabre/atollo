@@ -161,6 +161,7 @@ impl Kit {
         self.app_dir().join("settings.json")
     }
     /// Before D-89: `data\app\projects`. Read only by the migration (WP-6).
+    #[allow(dead_code)] // until WP-6 reads it
     pub fn project_states(&self) -> PathBuf {
         self.app_dir().join("projects")
     }
