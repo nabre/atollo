@@ -24,7 +24,7 @@ use std::path::{Component, Path, PathBuf};
 use anyhow::{bail, Context, Result};
 use serde_json::{Map, Value};
 
-use super::{quote, tr, Action, Kind, Project, OVERRIDE_FILES};
+use super::{php_server, tr, Action, Kind, Project, OVERRIDE_FILES};
 use crate::fsx::write_atomic;
 
 /// Id of the action written by "Servi come sito web".
@@ -354,7 +354,7 @@ pub fn set_site_with_options(
                 "label": tr(lang, "sito web Nginx ({0})", &[&shown]), "nginx": rel }),
             SiteKind::Php | SiteKind::None => {
                 serde_json::json!({ "id": SITE_ACTION, "label": label, "type": "web",
-                    "command": format!("php -S 127.0.0.1:{{port}} -t {}", quote(&rel)) })
+                    "command": php_server(project_dir, &rel) })
             }
         };
         if matches!(kind, SiteKind::Apache | SiteKind::Nginx) {

@@ -17,6 +17,7 @@
 //! `panel.json` in the project (old name `pannello.json`) corrects or
 //! replaces what was detected (`overrides.rs`). One file per platform.
 
+mod container;
 mod go;
 mod node;
 mod overrides;
@@ -165,6 +166,9 @@ pub struct Project {
     pub languages: Vec<String>,
     /// Ids of the kit's components it needs.
     pub requires: Vec<String>,
+    /// Lines of some of them, from the images of Compose and Dockerfile.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub lines: BTreeMap<String, String>,
     pub actions: Vec<Action>,
     pub warnings: Vec<String>,
     pub custom: bool,
@@ -248,6 +252,32 @@ fn quote(s: &str) -> String {
     } else {
         s.to_owned()
     }
+}
+
+/// The kit's router of `php -S` (`runtime\php-router.php`, written to
+/// `data\kit\`): 403 for hidden files and `.inc` (SEC-V3-02).
+const PHP_ROUTER: &str = r#""%CP_DATA%\kit\php-router.php""#;
+
+/// `php -S` on the folder `root` of the project, with the project's own
+/// `router.php` (in `root` or in the project folder) if it has one, else the
+/// kit's router.
+fn php_server(dir: &Path, root: &str) -> String {
+    let own = [format!(r"{root}\router.php"), "router.php".to_owned()]
+        .into_iter()
+        .map(|f| f.trim_start_matches(r".\").to_owned())
+        .find(|f| exists(dir, f));
+    let router = own.as_deref().map_or_else(|| PHP_ROUTER.to_owned(), quote);
+    format!("php -S 127.0.0.1:{{port}} -t {} {router}", quote(root))
+}
+
+/// Files that ask for Nginx, in the project folder or in the site's.
+const NGINX_FILES: [&str; 2] = ["nginx.conf", ".nginx"];
+
+/// A `nginx.conf` or `.nginx` in the project folder or in `root`.
+fn has_nginx(dir: &Path, root: &str) -> bool {
+    NGINX_FILES
+        .iter()
+        .any(|f| exists(dir, f) || (root != "." && exists(dir, &format!(r"{root}\{f}"))))
 }
 
 /// One walk of the project: 3 levels, at most 3000 files, no IGNORED folders.
@@ -491,25 +521,26 @@ pub fn requires(dir: &Path) -> Vec<String> {
         found.insert("apache");
         found.insert("php");
     }
-    for compose in ["compose.yaml", "docker-compose.yml"] {
-        let text = read(dir, compose).to_ascii_lowercase();
-        if text.contains("image: httpd")
-            || text.contains("image: apache")
-            || (text.contains("php:") && text.contains("-apache"))
-        {
-            found.insert("apache");
-            found.insert("php");
-        }
-        if text.contains("image: nginx") {
-            found.insert("nginx");
-        }
+    // The walk skips hidden names: `.nginx` is looked for here.
+    if has_nginx(dir, ".") {
+        found.insert("nginx");
     }
+    found.extend(container::servers(dir).into_keys());
     found.extend(databases(dir));
     let catalog = crate::setup::catalog::Catalog::get();
     found
         .into_iter()
         .filter(|id| catalog.find(id).is_some())
         .map(str::to_owned)
+        .collect()
+}
+
+/// The lines of the kit's components that the project's containers name
+/// (`php:8.3-apache` → `php` = `8.3`).
+pub fn lines(dir: &Path) -> BTreeMap<String, String> {
+    container::servers(dir)
+        .into_iter()
+        .filter_map(|(id, line)| Some((id.to_owned(), line?)))
         .collect()
 }
 
@@ -593,31 +624,13 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         },
         languages: languages(dir),
         requires: requires(dir),
+        lines: lines(dir),
         actions: results.iter().flat_map(|r| r.actions.clone()).collect(),
         warnings: results.iter().flat_map(|r| r.warnings.clone()).collect(),
         custom: false,
         default: None,
     };
     overrides::apply(&mut project, dir, lang);
-    // An Apache of its own needs Apache and its PHP module.
-    if project.actions.iter().any(|a| a.apache_dir.is_some()) {
-        for id in ["apache", "php"] {
-            if !project.requires.iter().any(|r| r == id) {
-                project.requires.push(id.to_owned());
-            }
-        }
-        project.requires.sort();
-    }
-    if project.actions.iter().any(|a| a.nginx_dir.is_some()) {
-        if !project.requires.iter().any(|r| r == "nginx") {
-            project.requires.push("nginx".to_owned());
-        }
-        project.requires.sort();
-    }
-    if project.platform.contains("WordPress") && !project.requires.iter().any(|r| r == "mariadb") {
-        project.requires.push("mariadb".to_owned());
-        project.requires.sort();
-    }
     if project.default.is_none() {
         project.default = project
             .actions
@@ -626,6 +639,37 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             .or(project.actions.first())
             .map(|a| a.id.clone());
     }
+    // An Apache of its own needs Apache and its PHP module, a Nginx needs
+    // Nginx: when it is the main action or written in panel.json, not when
+    // it is only proposed beside `php -S` or `artisan serve`.
+    let used = |a: &&Action| a.custom || project.default.as_deref() == Some(a.id.as_str());
+    let mut needed: Vec<&str> = Vec::new();
+    if project
+        .actions
+        .iter()
+        .filter(used)
+        .any(|a| a.apache_dir.is_some())
+    {
+        needed.extend(["apache", "php"]);
+    }
+    if project
+        .actions
+        .iter()
+        .filter(used)
+        .any(|a| a.nginx_dir.is_some())
+    {
+        needed.push("nginx");
+    }
+    // A CMS needs the kit's MariaDB (D-93).
+    if php::CMS.iter().any(|c| project.platform.contains(c)) {
+        needed.push("mariadb");
+    }
+    for id in needed {
+        if !project.requires.iter().any(|r| r == id) {
+            project.requires.push(id.to_owned());
+        }
+    }
+    project.requires.sort();
     project
 }
 
