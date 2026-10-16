@@ -74,3 +74,16 @@ fn node_lines_are_lts_majors_and_the_newest() {
     );
     assert_eq!(node_lines(&index, "win-arm64-zip"), ["20.19"]);
 }
+
+#[test]
+fn custom_by_target() {
+    for t in Target::ALL {
+        // Git: its archive on Windows, micromamba on macOS and Linux.
+        assert_eq!(Git.custom(t), !t.is_windows(), "git on {t}");
+        // Archives everywhere.
+        assert!(!Python.custom(t), "python on {t}");
+        // Processes everywhere.
+        let r = super::super::installer("r").map(|i| i.custom(t));
+        assert_eq!(r, Some(true), "r on {t}");
+    }
+}

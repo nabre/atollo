@@ -8,7 +8,8 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::{arch_of, github_single, pattern, target_of, Ctx, Installer, Release};
+use super::native::{conda_info, conda_versions, micromamba_create, micromamba_release};
+use super::{arch_of, github_single, pattern, target_of, Ctx, Installer, Progress, Release};
 use crate::fsx::{join_rel, write_atomic};
 use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
@@ -18,61 +19,45 @@ use crate::os::jobs;
 use crate::settings::Settings;
 use crate::setup::catalog::Component;
 
-/// Git: Git for Windows Portable (`.7z.exe`) on Windows, or a portable
-/// prebuilt Git archive on macOS and Linux.
+/// Git: Git for Windows Portable (`.7z.exe`) on Windows; on macOS and Linux
+/// the conda-forge `git` package with its libraries, in an environment
+/// created by micromamba in its own folder (like R). That environment
+/// cannot be moved: when the kit moves it is installed again (D-92).
 pub struct Git;
 
 impl Installer for Git {
+    /// Micromamba on macOS and Linux, the shared path on Windows.
+    fn custom(&self, target: Target) -> bool {
+        !target.os.is_windows()
+    }
+
+    /// The environment in the folder of its line, then `finish` (the
+    /// portable `.gitconfig`), which the shared path would have run.
+    fn install_custom(
+        &self,
+        ctx: &Ctx,
+        component: &Component,
+        release: &Release,
+        progress: &mut dyn Progress,
+    ) -> Result<()> {
+        let dir = crate::versions::install_dir(ctx.kit, component, &release.version);
+        let spec = format!("git={}", release.version);
+        micromamba_create(ctx, component, release, &dir, &[&spec], progress)?;
+        if !crate::versions::has_key_for(target_of(ctx, component), component, &dir) {
+            bail!("bin/git not found after the installation");
+        }
+        self.finish(ctx, component, &dir)
+    }
+
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let target = target_of(ctx, component);
         if !target.is_windows() {
-            let info: Value = ctx
-                .net
-                .json("https://api.anaconda.org/package/conda-forge/git")?;
             let subdir = target.conda_subdir();
-            let file = info
-                .get("files")
-                .and_then(Value::as_array)
-                .into_iter()
-                .flatten()
-                .filter(|f| f.pointer("/attrs/subdir").and_then(Value::as_str) == Some(subdir))
-                .filter(|f| {
-                    f.get("basename")
-                        .and_then(Value::as_str)
-                        .is_some_and(|n| n.ends_with(".tar.bz2") || n.ends_with(".conda"))
-                })
-                .max_by_key(|f| {
-                    super::version_key(f.get("version").and_then(Value::as_str).unwrap_or_default())
-                })
+            let versions = conda_versions(&conda_info(ctx, "git")?, subdir);
+            let version = versions
+                .first()
                 .ok_or_else(|| anyhow!("no conda-forge git package for {subdir}"))?;
-            let version = file
-                .get("version")
-                .and_then(Value::as_str)
-                .ok_or_else(|| anyhow!("conda-forge git: missing version"))?
-                .to_owned();
-            let raw_url = file
-                .get("download_url")
-                .and_then(Value::as_str)
-                .ok_or_else(|| anyhow!("conda-forge git: missing download_url"))?;
-            let url = if raw_url.starts_with("//") {
-                format!("https:{raw_url}")
-            } else {
-                raw_url.to_owned()
-            };
-            let sha = file
-                .get("sha256")
-                .and_then(Value::as_str)
-                .ok_or_else(|| anyhow!("conda-forge git: missing sha256"))?
-                .to_owned();
-            let name = format!("git-{version}-{subdir}.tar.bz2");
-            return Ok(Release::single(
-                version,
-                url,
-                name,
-                Expect::Sha256(sha),
-                Kind::Zip,
-                Inner::Root,
-            ));
+            return micromamba_release(ctx, version);
         }
         let rel = ctx.net.github_latest("git-for-windows/git")?;
         let suffix = if arch_of(ctx, component) == "arm64" {
