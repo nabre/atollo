@@ -243,6 +243,58 @@ fn concurrent_list_and_save_profile_keep_profile() {
     assert_eq!(servers.list("it", false).pools.len(), 20);
 }
 
+/// M1: removing a profile waits for a start/stop under way (`op_lock`),
+/// then stops its pool and drops it from `servers.json` in one go.
+#[test]
+fn remove_profile_stops_and_forgets_under_op_lock() {
+    let tmp = TempDir::new("servers-remove-op");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: "gone".into(),
+                name: "gone".into(),
+                engine: WebServerEngine::Nginx,
+                server_line: None,
+                php_line: None,
+                port: Some(8094),
+            },
+            "it",
+        )
+        .unwrap();
+    let job = Job::new().unwrap();
+    let child = jobs::spawn_in(
+        std::process::Command::new(system32("ping.exe")).args(["-n", "60", "127.0.0.1"]),
+        &job,
+    )
+    .unwrap();
+    servers.running.lock().unwrap().insert(
+        "gone".into(),
+        RunningPool {
+            child,
+            port: 8094,
+            fcgi_port: None,
+            php: None,
+            _job: job,
+        },
+    );
+    let op = servers.op_lock.lock().unwrap();
+    std::thread::scope(|s| {
+        let remover = s.spawn(|| servers.remove_profile("gone"));
+        std::thread::sleep(Duration::from_millis(300));
+        assert!(!remover.is_finished(), "waits for op_lock");
+        assert_eq!(load_store(&kit).profiles.len(), 1);
+        assert_eq!(servers.running_count(), 1);
+        drop(op);
+        remover.join().unwrap().unwrap();
+    });
+    assert_eq!(servers.running_count(), 0);
+    assert!(load_store(&kit).profiles.is_empty());
+    assert!(!load_store(&kit).ports.contains_key("gone"));
+}
+
 /// BUG-07: the 3 s poll reuses the scan; `fresh` and every change made
 /// through `WebServers` read `servers.json` and the projects again.
 #[test]
