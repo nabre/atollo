@@ -595,14 +595,16 @@ impl WebServers {
             return p;
         }
         let used: std::collections::BTreeSet<u16> = store.ports.values().copied().collect();
-        for p in POOL_PORT_FROM..=POOL_PORT_TO {
-            if !used.contains(&p) && is_port_free(p) {
-                store.ports.insert(id.to_owned(), p);
-                *dirty = true;
-                return p;
-            }
-        }
-        POOL_PORT_FROM
+        // A free port no other pool has; failing that (every one taken by
+        // other programs), one no other pool has, which the start reports
+        // as busy: never the port of another pool (defect 6).
+        let p = (POOL_PORT_FROM..=POOL_PORT_TO)
+            .find(|p| !used.contains(p) && is_port_free(*p))
+            .or_else(|| (POOL_PORT_FROM..=POOL_PORT_TO).find(|p| !used.contains(p)))
+            .unwrap_or(POOL_PORT_FROM);
+        store.ports.insert(id.to_owned(), p);
+        *dirty = true;
+        p
     }
 
     /// The pools for the "Server Web" page. With `fresh` false (the 3 s
@@ -929,6 +931,18 @@ impl WebServers {
             .unwrap_or_else(PoisonError::into_inner);
         let mut store = load_store(&self.kit);
         if let Some(p) = input.port {
+            // One port per pool (defect 6): two pools on one port, the
+            // second never starts and its sites answer from the first.
+            if let Some((other, _)) = store.ports.iter().find(|(o, q)| **q == p && **o != id) {
+                bail!(
+                    "{}",
+                    crate::i18n::t(
+                        lang,
+                        "La porta {0} è già del server {1}: scegline un'altra.",
+                        &[&p.to_string(), other]
+                    )
+                );
+            }
             store.ports.insert(id.clone(), p);
         }
         if let Some(existing) = store.profiles.iter_mut().find(|p| p.id == id) {

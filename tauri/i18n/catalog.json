@@ -44,6 +44,11 @@
     "fr": "Le port {0} est déjà utilisé par un autre programme : changez-le ci-dessous.",
     "de": "Port {0} wird bereits von einem anderen Programm verwendet: Ändere ihn unten."
   },
+  "La porta {0} è già del server {1}: scegline un'altra.": {
+    "en": "Port {0} already belongs to server {1}: choose another one.",
+    "fr": "Le port {0} appartient déjà au serveur {1} : choisissez-en un autre.",
+    "de": "Port {0} gehört bereits zum Server {1}: Wähle einen anderen."
+  },
   "database compatibile con MySQL: server e client": {
     "en": "MySQL-compatible database: server and client",
     "fr": "base de données compatible MySQL : serveur et client",
