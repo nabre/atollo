@@ -26,14 +26,38 @@ fn nginx_conf_with_aliases_and_php() {
         &aliases,
     );
     let projs_fwd = fwd(&projs);
-    assert!(conf.contains("listen 127.0.0.1:7106 default_server;"));
-    assert!(conf.contains("server_name shop.localhost api.shop.localhost localhost;"));
+    assert!(conf.contains("listen 127.0.0.1:7106;"));
+    assert!(conf.contains(
+        "server_name shop.localhost api.shop.localhost localhost 127.0.0.1 [::1] *.localhost;"
+    ));
     assert!(conf.contains("root \"D:/kit/projects/shop/public\";"));
     assert!(conf.contains("fastcgi_pass 127.0.0.1:9123;"));
     assert!(conf.contains("location /media/ {"));
     assert!(conf.contains(&format!("alias \"{projs_fwd}/shop/storage/media/\";")));
     assert!(conf.contains(&format!("alias \"{projs_fwd}/common/assets/\";")));
     assert!(!conf.contains("location /up/") && !conf.contains("x;y"));
+}
+
+/// SEC-V3-03: not in LAN mode the site names the local hosts only and a
+/// default server answers 421 to any other `Host`; in LAN mode the site is
+/// the default server (an IP of the PC is the `Host`).
+#[test]
+fn only_local_hosts_without_lan() {
+    let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
+    let doc = Path::new(r"D:\kit\projects\shop\public");
+    let run = Path::new(r"D:\kit\data\projects\shop\nginx");
+    let conf = |lan| project_conf(nginx, Some("shop"), doc, run, 7113, None, lan, &[], &[]);
+
+    let local = conf(false);
+    let refuse = "    server {\r\n        listen 127.0.0.1:7113 default_server;\r\n        server_name _;\r\n        return 421;\r\n    }";
+    assert!(local.contains(refuse), "{local}");
+    assert_eq!(local.matches("default_server").count(), 1, "{local}");
+    assert!(local.contains("server_name shop.localhost localhost 127.0.0.1 [::1] *.localhost;\r\n"));
+
+    let lan = conf(true);
+    assert!(!lan.contains("return 421"), "{lan}");
+    assert!(lan.contains("listen 7113 default_server;"));
+    assert!(lan.contains("server_name shop.localhost localhost;\r\n"));
 }
 
 #[test]

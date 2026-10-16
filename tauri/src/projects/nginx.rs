@@ -48,6 +48,10 @@ pub fn dir(kit: &Kit, project: &str) -> Result<PathBuf> {
         .ok_or_else(|| anyhow!("not a project name: {project}"))
 }
 
+/// The local `Host` names a project's own Nginx answers besides `localhost`
+/// and the project's domains when not in LAN mode (SEC-V3-03).
+const LOCAL_HOSTS: [&str; 3] = ["127.0.0.1", "[::1]", "*.localhost"];
+
 /// Creates the required Nginx temporary directories inside `run_dir`.
 pub fn prepare_dirs(run_dir: &Path) -> Result<()> {
     fs::create_dir_all(run_dir.join("conf.d"))?;
@@ -73,7 +77,10 @@ pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     lines
 }
 
-/// Generates an Nginx `server { ... }` VirtualHost block.
+/// Generates an Nginx `server { ... }` VirtualHost block. `dedicated`: the
+/// project's own Nginx, which answers `localhost` too; in LAN mode it is the
+/// `default_server` (any `Host`, an IP of the PC included), else it names
+/// the local hosts only and [`project_conf`] refuses the others.
 #[allow(clippy::too_many_arguments)]
 pub fn vhost_block(
     nginx_install: &Path,
@@ -85,14 +92,14 @@ pub fn vhost_block(
     lan: bool,
     domains: &[String],
     aliases: &[SiteAlias],
-    default_server: bool,
+    dedicated: bool,
 ) -> String {
     let listen = if lan {
         port.to_string()
     } else {
         format!("127.0.0.1:{port}")
     };
-    let listen_suffix = if default_server {
+    let listen_suffix = if dedicated && lan {
         " default_server"
     } else {
         ""
@@ -107,8 +114,11 @@ pub fn vhost_block(
             names.push(d);
         }
     }
-    if default_server || names.is_empty() {
+    if dedicated || names.is_empty() {
         names.push("localhost".to_owned());
+    }
+    if dedicated && !lan {
+        names.extend(LOCAL_HOSTS.iter().map(|h| (*h).to_owned()));
     }
     let root_fwd = fwd(doc_root);
     let nginx_fwd = fwd(nginx_install);
@@ -203,7 +213,7 @@ pub fn project_conf(
         aliases,
         true,
     );
-    [
+    let mut lines = vec![
         "# --- Dev-Kit: this project's Nginx (written at every start) ---".to_owned(),
         "worker_processes 1;".to_owned(),
         format!("pid \"{run_fwd}/nginx.pid\";"),
@@ -222,11 +232,24 @@ pub fn project_conf(
         format!("    scgi_temp_path \"{run_fwd}/temp/scgi\";"),
         "    sendfile on;".to_owned(),
         "    keepalive_timeout 65;".to_owned(),
+        // Up to 120 characters for a domain (alias::valid_domain).
+        "    server_names_hash_bucket_size 128;".to_owned(),
         server,
-        "}".to_owned(),
-        String::new(),
-    ]
-    .join("\r\n")
+    ];
+    if !lan {
+        // Against DNS rebinding (a page of another site that renames itself
+        // to 127.0.0.1 and reads the project): a `Host` the site does not
+        // name, or none, gets 421 from this default server.
+        lines.extend([
+            "    server {".to_owned(),
+            format!("        listen 127.0.0.1:{port} default_server;"),
+            "        server_name _;".to_owned(),
+            "        return 421;".to_owned(),
+            "    }".to_owned(),
+        ]);
+    }
+    lines.extend(["}".to_owned(), String::new()]);
+    lines.join("\r\n")
 }
 
 /// Spawns `php-cgi.exe -b 127.0.0.1:<fcgi_port>` inside `job` when PHP is installed,
