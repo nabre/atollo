@@ -191,15 +191,15 @@ Ogni finding confermato dai revisori torna all'agente proprietario del file (ste
 
 ---
 
-## 6. Decisioni da prendere prima del lancio
+## 6. Decisioni (prese il 2026-10-16)
 
 | # | Domanda | Raccomandazione |
 | :-: | :-- | :-- |
-| 1 | PHP/Apache/Nginx su macOS/Linux: **non disponibili** ora (opzione C) o porting completo via micromamba (php.ini, httpd.conf, mod_php da rifare)? | **Opzione C** ora (onda 1, A4); porting in un ciclo separato |
-| 2 | Git su Unix via micromamba, accettando che l'ambiente non sia rilocabile (stesso limite di R)? | Sì (B2) |
-| 3 | A0 può riformattare tutto il repo (`cargo fmt`, Prettier) in commit dedicati? | Sì, è l'unico modo per rendere la CI significativa |
+| 1 | PHP/Apache/Nginx su macOS/Linux: **non disponibili** ora (opzione C) o porting completo via micromamba (php.ini, httpd.conf, mod_php da rifare)? | ✅ **Deciso: opzione C** ora (onda 1, A4); porting in un ciclo separato |
+| 2 | Git su Unix via micromamba, accettando che l'ambiente non sia rilocabile (stesso limite di R)? | ✅ **Deciso: sì, con reinstallazione automatica** quando cambia il percorso del kit: B2 aggiunge a `check_moved` (`kit.rs`, `root-<os>.txt`) la marcatura «da reinstallare» dei componenti conda (Git, R) su Unix |
+| 3 | A0 può riformattare tutto il repo (`cargo fmt`, Prettier) in commit dedicati? | ✅ **Deciso: sì**, in commit dedicati e meccanici |
 | 4 | Cache di `WebServers::list()` con dati della pagina Server fino a 15 s in ritardo? | Sì, con «Aggiorna» che forza `fresh` |
-| 5 | Esecuzione della CI: `workflow_dispatch` sul ramo o PR verso `main`? | PR (dà anche la revisione), ma va chiesta esplicitamente |
+| 5 | Esecuzione della CI: `workflow_dispatch` sul ramo o PR verso `main`? | ✅ **Deciso: `workflow_dispatch`** sul ramo, automatico a fine onda |
 | 6 | `FollowSymLinks` nei vhost Apache: indagine su Windows reale prima di toccarlo? | Sì, fuori dallo sciame |
 
 ---
