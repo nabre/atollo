@@ -38,3 +38,33 @@ fn the_editor_is_pinned() {
     };
     assert!(sha.len() == 64 && sha.chars().all(|c| c.is_ascii_hexdigit()));
 }
+
+/// BUG-V3-09: every system the editor is downloaded for has its SHA-256
+/// fixed in the catalog (no `.sha256` fetched next to the archive); on
+/// Windows ARM64 the x64 build, emulated.
+#[test]
+fn the_editor_is_pinned_on_every_target() {
+    use crate::kit::Target;
+
+    let server = Catalog::get().find("vscodium-server").unwrap();
+    for target in Target::ALL {
+        let download = if server.is_emulated_on(target) {
+            target.with_arch(crate::kit::Arch::X64)
+        } else {
+            target
+        };
+        let sha = server
+            .sha256_for(download)
+            .unwrap_or_else(|| panic!("no SHA-256 for {download}"));
+        assert!(
+            sha.len() == 64 && sha.chars().all(|c| c.is_ascii_hexdigit()),
+            "{download}"
+        );
+        let r = pinned_with_sha(download, server, sha).unwrap();
+        assert!(r.parts[0].file_name.contains(download.as_str()), "{target}");
+    }
+    assert_eq!(
+        server.sha256_for(Target::WIN32_X64),
+        server.sha256.as_deref()
+    );
+}
