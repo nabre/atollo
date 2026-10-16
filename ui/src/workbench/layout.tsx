@@ -249,6 +249,8 @@ export interface Tab {
   /** A description after the label, as the folder of two files with one name. */
   description?: string;
   title?: string;
+  /** Always open: no close button (the Tools page's table). */
+  pinned?: boolean;
 }
 
 /** The tab bar of the modern UI: 32px, on the editor color, no border. */
@@ -279,6 +281,7 @@ export function EditorTabs({
       <div role="tablist" aria-label="Editor" className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]">
         {tabs.map((tab) => {
           const on = tab.id === active;
+          const close = tab.pinned ? undefined : onClose;
           return (
             <div
               key={tab.id}
@@ -297,21 +300,21 @@ export function EditorTabs({
                   onSelect(tab.id);
                 }}
                 onAuxClick={(e) => {
-                  if (e.button === 1 && onClose) onClose(tab.id);
+                  if (e.button === 1 && close) close(tab.id);
                 }}
-                className={`relative flex h-full min-w-0 items-center gap-1.5 pl-1.5 outline-none focus-visible:outline-1 focus-visible:-outline-offset-4 focus-visible:outline-vsc-focus ${onClose ? "pr-1" : "pr-2"}`}
+                className={`relative flex h-full min-w-0 items-center gap-1.5 pl-1.5 outline-none focus-visible:outline-1 focus-visible:-outline-offset-4 focus-visible:outline-vsc-focus ${close ? "pr-1" : "pr-2"}`}
               >
                 {tab.icon && <span className="flex w-4 shrink-0 justify-center">{tab.icon}</span>}
                 <span className="truncate">{tab.label}</span>
                 {tab.description && <span className="truncate text-[12px] opacity-70">{tab.description}</span>}
               </button>
-              {onClose && (
+              {close && (
                 <button
                   type="button"
                   aria-label={t("Chiudi {0}", tab.label)}
                   title={t("Chiudi")}
                   onClick={() => {
-                    onClose(tab.id);
+                    close(tab.id);
                   }}
                   className={`relative mr-1 flex size-5 items-center justify-center rounded hover:bg-vsc-toolbar-hover ${
                     on ? "" : "invisible group-hover/tab:visible focus-visible:visible"

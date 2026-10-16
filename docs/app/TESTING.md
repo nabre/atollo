@@ -8,14 +8,20 @@ npm test
 npm -w ui run build
 ```
 
-`npm run lint` controlla `cargo fmt`, `cargo clippy -D warnings`, ESLint e Prettier; `npm test` esegue `cargo test` e i test dell'interfaccia (Vitest); `npm -w ui run build` controlla i tipi (`tsc -b`) e compila l'interfaccia.
+`npm run lint` controlla `cargo fmt`, `cargo clippy -D warnings`, ESLint e Prettier (anche sui test, con i tipi di `test\ui\tsconfig.json`); `npm test` esegue `cargo test` e i test dell'interfaccia (Vitest); `npm -w ui run build` controlla i tipi (`tsc -b`) e compila l'interfaccia.
+
+Tutte le prove stanno in `test\`, con la struttura dei sorgenti:
+- `test\rust\<percorso>.rs`: le prove di `tauri\src\<percorso>.rs`. Restano un modulo figlio di quel file, che le dichiara in fondo con `#[cfg(test)] #[path = "…/test/rust/<percorso>.rs"] mod tests;`: vedono le sue funzioni private (`use super::*`), come prima. Una prova nuova va nel file di `test\rust` del modulo; un modulo che non ne ha ancora aggiunge le tre righe.
+- `test\ui\<percorso>.test.ts(x)`: le prove di `ui\src\<percorso>`, che importano da `../../ui/src/…`; `test\ui\setup.ts` prepara jsdom (Vitest, `ui\vite.config.ts`).
+
+Le prove dal vivo sulle fonti delle versioni (rete, ignorate di solito): `cargo test live_lines -- --ignored --nocapture` (con `GITHUB_TOKEN`), vedi CATALOG.md §2.
 
 Coprono, fra l'altro:
 - radice del kit, ambiente e PATH;
 - file del kit (`fsx.rs`): BOM, byte non UTF-8, file mancante, vuoto o danneggiato, scrittura atomica senza file temporanei rimasti;
 - errore dei comandi (`commands\error.rs`): Tauri manda per `CmdError` lo stesso valore di una stringa, `or_fail` manda il testo breve e `or_fail_chain` tutta la catena;
 - catalogo, dipendenze, parti (`keys`), limiti ARM64 e componenti che servono a comandi e agenti (`setup\needs.rs`);
-- righe di versione lette dalle fonti di ogni linguaggio (Go, Java, .NET, Zig: ogni prova accanto al suo installatore in `install\lang\`);
+- righe di versione lette dalle fonti di ogni linguaggio (Go, Java, .NET, Zig: prove in `test\rust\install\lang\`);
 - editor alla versione fissata del rilascio;
 - download con checksum e firme;
 - editor e server web reale (con il token e senza);
@@ -29,8 +35,8 @@ Coprono, fra l'altro:
 - scambio dell'exe in aggiornamento;
 - DPAPI di `keyring-before.json`;
 - cataloghi delle quattro lingue (Rust e interfaccia), completi e con gli stessi segnaposto;
-- `useLoad` (`ui\src\hooks.test.ts`): prima lettura, le tre politiche d'errore, nuova lettura quando cambiano `load` o `key` ma non la politica, `enabled`, lettura periodica fermata allo smontaggio, `setData`;
-- controlli dell'interfaccia su `vscode-elements` (`ui\src\workbench\controls.test.tsx`, `elements.test.tsx`): eventi che scattano davvero, valori controllati, Invio nei moduli, nomi accessibili, codicon; ogni variabile `--vscode-*` letta dai componenti definita nei due temi (`ui\src\theme.test.ts`).
+- `useLoad` (`test\ui\hooks.test.ts`): prima lettura, le tre politiche d'errore, nuova lettura quando cambiano `load` o `key` ma non la politica, `enabled`, lettura periodica fermata allo smontaggio, `setData`;
+- controlli dell'interfaccia su `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): eventi che scattano davvero, valori controllati, Invio nei moduli, nomi accessibili, codicon; ogni variabile `--vscode-*` letta dai componenti definita nei due temi (`test\ui\theme.test.ts`).
 
 ## Prove sull'interfaccia reale
 

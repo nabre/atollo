@@ -365,6 +365,29 @@ pub fn install(
     Ok(())
 }
 
+/// The release of a first installation at `line` instead of the latest:
+/// its own folder from `line`, the shared parts (Maven and Gradle, mongosh,
+/// the tools) from the latest, as a saved line gets them from the default.
+pub fn release_at(ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+    let Some(inst) = installer(&component.id) else {
+        bail!("{}: no installer", component.id);
+    };
+    if !component.versioned || !inst.has_lines() {
+        bail!("{}: no version {line} to download", component.id);
+    }
+    let mut release = inst.release_line(ctx, component, line)?;
+    if !inst.custom() {
+        let latest = inst.latest(ctx, component)?;
+        release.parts.extend(
+            latest
+                .parts
+                .into_iter()
+                .filter(|p| matches!(p.dest, Dest::Folder(_) | Dest::Tools(_))),
+        );
+    }
+    Ok(release)
+}
+
 /// Installs `release` of a versioned component as a saved line: only its
 /// own folder and what goes inside it (Composer), not Maven or Gradle, into
 /// `data\apps\<platform>\<id>\<line>`. Returns the line.
@@ -617,60 +640,12 @@ fn github_single(ctx: &Ctx, repo: &str, re: &str, kind: Kind, inner: Inner) -> R
         version,
         asset.browser_download_url.clone(),
         asset.name.clone(),
-        Expect::Sha256(crate::net::github_digest(asset)?),
+        Expect::Sha256(ctx.net.release_sha256(&rel, asset)?),
         kind,
         inner,
     ))
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::kit::tests::TempDir;
-    use crate::setup::catalog::Catalog;
-
-    #[test]
-    fn every_catalog_component_has_an_installer() {
-        for c in Catalog::get().all() {
-            assert!(installer(&c.id).is_some(), "{} has no installer", c.id);
-        }
-    }
-
-    #[test]
-    fn find_file_is_case_insensitive_and_recursive() {
-        let tmp = TempDir::new("findfile");
-        let deep = tmp.0.join("a").join("b");
-        fs::create_dir_all(&deep).unwrap();
-        fs::write(deep.join("UV.EXE"), b"").unwrap();
-        assert_eq!(find_file(&tmp.0, "uv.exe"), Some(deep.join("UV.EXE")));
-        assert_eq!(find_file(&tmp.0, "gh.exe"), None);
-    }
-
-    #[test]
-    fn check_key_wants_every_part_of_the_folder() {
-        let tmp = TempDir::new("checkkey");
-        let server = Catalog::get().find("vscodium-server").unwrap();
-        let tree = tmp.0.join("tree");
-        fs::create_dir_all(tree.join("out")).unwrap();
-        fs::write(tree.join(r"out\server-main.js"), b"").unwrap();
-        let err = check_key(server, &[], &tree).unwrap_err();
-        assert!(err.to_string().contains("node.exe"), "{err}");
-        fs::write(tree.join("node.exe"), b"").unwrap();
-        check_key(server, &[], &tree).unwrap();
-
-        // Parts in other folders (Maven, Gradle) are not in this tree.
-        let java = Catalog::get().find("java").unwrap();
-        let tree = tmp.0.join("jdk");
-        fs::create_dir_all(tree.join("bin")).unwrap();
-        fs::write(tree.join(r"bin\java.exe"), b"").unwrap();
-        check_key(java, &[], &tree).unwrap();
-
-        // Composer goes inside PHP's folder after the zip: not in it.
-        let php = Catalog::get().find("php").unwrap();
-        let tree = tmp.0.join("php");
-        fs::create_dir_all(&tree).unwrap();
-        fs::write(tree.join("php.exe"), b"").unwrap();
-        assert!(check_key(php, &[], &tree).is_err());
-        check_key(php, installer("php").unwrap().inside(), &tree).unwrap();
-    }
-}
+#[path = "../../../test/rust/install/mod.rs"]
+mod tests;

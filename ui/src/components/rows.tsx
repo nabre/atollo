@@ -5,7 +5,7 @@ import { setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot, 
 import { t } from "../i18n";
 import { Checkbox } from "../workbench";
 import { ItemBar, ItemStatus, itemState, type ItemState } from "../setup";
-import { composerOf, splitVersion, ToolVersions, type KitVersions } from "../versions";
+import { composerOf, splitVersion, ToolInstallLine, ToolVersions, type KitVersions } from "../versions";
 import { ByHandBox } from "../byhand";
 import { LinkProblems, outsideOf } from "../relations";
 import { sizeText } from "./model";
@@ -13,7 +13,7 @@ import { ComponentLogo } from "../logos";
 import { Badge, Tag } from "../tags";
 
 /** The projects that need `c`: blue when chosen, orange with a warning when not. */
-function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
+export function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
   if (names.length === 0) return null;
   const list = names.join(", ");
   return on ? (
@@ -40,7 +40,7 @@ function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
 }
 
 /** What `c` needs (installed with it) and, when chosen, what needs `c`. */
-function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentInfo[]; chosen: Set<string> }) {
+export function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentInfo[]; chosen: Set<string> }) {
   const name = (id: string) => list.find((x) => x.id === id)?.name ?? id;
   const usedBy = list.filter((x) => chosen.has(x.id) && x.needs.includes(c.id)).map((x) => x.name);
   return (
@@ -73,7 +73,7 @@ function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: ComponentIn
 /** Composer: a tool of its own with its version, but one per version of
  * PHP and compatible with it, installed and updated with it; its checkbox
  * follows PHP's. */
-function ComposerRow({
+export function ComposerRow({
   php,
   tool,
   on,
@@ -168,9 +168,12 @@ export function ComponentRow({
   const on = chosen.has(c.id);
   const inputId = `comp-${c.id}`;
   const unchosen = forProjects.length > 0 && !on;
-  // Versions only of what is installed and stays.
+  // The versions of what is installed, checked or not; of what is not, the
+  // version to install instead of the latest.
   const versioned = kit.byId.get(c.id);
-  const versions = versioned?.installed && on ? versioned : null;
+  const versions = versioned?.installed ? versioned : null;
+  const installable =
+    versioned && !versioned.installed && versioned.downloadable && c.available && !c.noArm64 ? versioned : null;
   // Its step in the preparation: waiting, downloading, failed.
   const state = itemState(setup, c.id, c.name);
   // A left bar marks what a project needs: emerald, orange when not chosen
@@ -253,6 +256,11 @@ export function ComponentRow({
         {versions && (
           <div className="pl-[62px]">
             <ToolVersions tool={versions} kit={kit} setup={setup} outside={outsideOf(links, c.id)} />
+          </div>
+        )}
+        {installable && !state && (
+          <div className="pl-[62px]">
+            <ToolInstallLine tool={installable} kit={kit} setup={setup} />
           </div>
         )}
       </div>

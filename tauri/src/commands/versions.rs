@@ -26,29 +26,50 @@ pub async fn versions_available<R: Runtime>(
     let (kit, env) = (state.kit.clone(), state.env());
     let token = github_token(&state.host);
     tauri::async_runtime::spawn_blocking(move || {
-        let c = Catalog::get().find(&id).ok_or("unknown component")?;
-        let installer = install::installer(&id).ok_or("no installer")?;
-        // Some lists come from GitHub's API (Python): the kit's account if
-        // there is no token of the PC, as the installations do.
-        let token = token.or_else(|| crate::github::token(&kit, &env));
-        let net = crate::net::Net::new(&Settings::load(&kit).settings, token)
-            .or_fail_chain("versions")?
-            .with_github_cache(kit.data().join("cache").join("github"));
-        let cancel = std::sync::atomic::AtomicBool::new(false);
-        let ctx = install::Ctx {
-            kit: &kit,
-            net: &net,
-            env: &env,
-            cancel: &cancel,
-        };
-        let lines = installer.lines(&ctx, c).or_fail_chain("versions")?;
-        if let Err(e) = crate::versions::save_offered(&kit, &id, &lines) {
-            crate::log::warn(&format!("versions of {id}: {e:#}"));
-        }
-        Ok(lines)
+        fetch_lines(&kit, &env, token, &id).or_fail_chain("versions")
     })
     .await
     .or_fail("versions")?
+}
+
+/// Asks the source of `id` for its lines and keeps them for the lists.
+pub(crate) fn fetch_lines(
+    kit: &Kit,
+    env: &KitEnv,
+    token: Option<String>,
+    id: &str,
+) -> anyhow::Result<Vec<String>> {
+    let c = Catalog::get()
+        .find(id)
+        .ok_or_else(|| anyhow::anyhow!("unknown component: {id}"))?;
+    let installer = install::installer(id).ok_or_else(|| anyhow::anyhow!("{id}: no installer"))?;
+    // Some lists come from GitHub's API (Python): the kit's account if
+    // there is no token of the PC, as the installations do.
+    let token = token.or_else(|| crate::github::token(kit, env));
+    let net = crate::net::Net::new(&Settings::load(kit).settings, token)?
+        .with_github_cache(kit.data().join("cache").join("github"));
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    let ctx = install::Ctx {
+        kit,
+        net: &net,
+        env,
+        cancel: &cancel,
+    };
+    let lines = installer.lines(&ctx, c)?;
+    if let Err(e) = crate::versions::save_offered(kit, id, &lines) {
+        crate::log::warn(&format!("versions of {id}: {e:#}"));
+    }
+    Ok(lines)
+}
+
+/// At the start, in the background: the lists of lines missing or older
+/// than a day, so the menus to download a version are ready.
+pub(crate) fn refresh_stale_lines(kit: &Kit, env: &KitEnv, token: Option<String>) {
+    for id in crate::versions::stale_offers(kit) {
+        if let Err(e) = fetch_lines(kit, env, token.clone(), &id) {
+            crate::log::warn(&format!("versions of {id}: {e:#}"));
+        }
+    }
 }
 
 /// Downloads `line` of `id` next to the default folder, with the app's
@@ -64,6 +85,51 @@ pub fn versions_add<R: Runtime>(
     ensure_main(&webview)?;
     crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
     download_line(app, &state, id, line)
+}
+
+/// Installs `id`, not installed yet, at `line` instead of the latest: it
+/// becomes chosen (with what it needs) and its first version is `line`.
+#[tauri::command]
+pub fn versions_install<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+    line: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
+    install_now(app, &state, id, Some(line))
+}
+
+/// `id` becomes chosen (with what it needs) and is installed now, at
+/// `line` when given (first installation), without waiting for "Apply":
+/// the other changes of the Tools page stay pending.
+pub(super) fn install_now<R: Runtime>(
+    app: AppHandle<R>,
+    state: &AppState,
+    id: String,
+    line: Option<String>,
+) -> CmdResult<()> {
+    if state.setup.snapshot().running {
+        return Err(tr(state, "C'è già un'installazione in corso.", &[]).into());
+    }
+    let catalog = Catalog::get();
+    if catalog.find(&id).is_none() {
+        return Err(format!("unknown component: {id}").into());
+    }
+    let mut choice = crate::setup::catalog::Choice::read(&state.kit, catalog)
+        .unwrap_or_else(|| crate::setup::catalog::Choice::defaults(catalog));
+    choice.set(catalog, &id, true);
+    choice
+        .write(&state.kit, catalog)
+        .or_fail_chain("components")?;
+    let opts = Options {
+        only: vec![id.clone()],
+        at: line.map(|l| vec![(id, l)]).unwrap_or_default(),
+        ..Options::default()
+    };
+    Ok(state.setup.start(opts, false, setup_notify(app))?)
 }
 
 pub(super) fn download_line<R: Runtime>(

@@ -22,9 +22,11 @@ export default defineConfig(({ mode }) => ({
   },
   test: {
     environment: "jsdom",
-    include: ["src/**/*.test.tsx", "src/**/*.test.ts"],
+    // The tests live in the repository's test\ui, with the structure of src.
+    dir: "../test/ui",
+    include: ["**/*.test.tsx", "**/*.test.ts"],
     // What jsdom lacks for the vscode-elements components.
-    setupFiles: ["src/test-setup.ts"],
+    setupFiles: ["../test/ui/setup.ts"],
     // The theme's generated CSS, read as text by theme.test.ts.
     css: { include: [/theme-(vscode|colors)\.css/] },
     // Resolved by Vite (with the conditions above), not by Node.

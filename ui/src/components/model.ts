@@ -53,6 +53,16 @@ export function groups(): { id: string; title: string; hint: string; has: (c: Co
   ];
 }
 
+/** `c` has every word of `search` in its name, description or id. */
+export function matches(c: ComponentInfo, search: string): boolean {
+  const text = `${c.name} ${c.desc} ${c.id}`.toLowerCase();
+  return search
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((w) => text.includes(w));
+}
+
 /** Turns `id` on or off following the dependencies both ways. */
 export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, on: boolean): Set<string> {
   const next = new Set(chosen);

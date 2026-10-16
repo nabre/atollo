@@ -36,7 +36,7 @@ import {
 import { alive, ProjectsPage, useRuns } from "./projects";
 import { ActivityPanel } from "./activity";
 import { TitleBar } from "./titlebar";
-import { ComponentsPage } from "./components";
+import { ComponentsPage, ToolsPage } from "./components";
 import { AgentsPage, useAgents } from "./agents";
 import { setupStatusText, useSetup } from "./setup";
 import { SettingsPage } from "./settings";
@@ -73,6 +73,8 @@ export function App() {
   const [page, setPage] = useState<PageId>("projects");
   /** The projects open in the editor, kept while other pages are shown. */
   const projectTabs = useTabs();
+  /** The tools open in the editor of the Tools page, kept the same way. */
+  const toolTabs = useTabs();
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [lang, setLangState] = useState<Lang>("it");
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +133,7 @@ export function App() {
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {info?.firstRun ? (
-            <ComponentsPage setup={setup} firstRun onDone={loadInfo} />
+            <ComponentsPage setup={setup} onDone={loadInfo} />
           ) : page === "new" ? (
             <NewProjectPage
               onOpen={(project) => {
@@ -156,7 +158,7 @@ export function App() {
           ) : page === "agents" ? (
             <AgentsPage />
           ) : page === "components" ? (
-            <ComponentsPage setup={setup} />
+            <ToolsPage setup={setup} tabs={toolTabs} />
           ) : page === "databases" ? (
             <DatabasesPage />
           ) : page === "servers" ? (

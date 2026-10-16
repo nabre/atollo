@@ -30,7 +30,7 @@ pub use zig::Zig;
 use super::{pattern, Ctx, Release};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
-use crate::net::{github_digest, GhRelease};
+use crate::net::{verifiable, GhRelease};
 
 /// Numeric parts of a version, for "newest" comparisons (`1.10.2` > `1.9`).
 pub fn version_key(v: &str) -> Vec<u64> {
@@ -73,11 +73,17 @@ fn github_stable(ctx: &Ctx, repo: &str, asset: &str) -> Result<Vec<GhRelease>> {
     let re = pattern(asset)?;
     let mut out: Vec<GhRelease> = all
         .into_iter()
-        .filter(|r| !r.prerelease && is_release(r.tag_name.trim_start_matches('v')))
-        .filter(|r| r.asset(&re).is_some())
+        .filter(|r| !r.prerelease && is_release(tag_version(&r.tag_name)))
+        // Only what can be checked: GitHub's digest or a checksum file.
+        .filter(|r| r.asset(&re).is_some_and(|a| verifiable(r, a)))
         .collect();
-    out.sort_by_key(|r| std::cmp::Reverse(version_key(r.tag_name.trim_start_matches('v'))));
+    out.sort_by_key(|r| std::cmp::Reverse(version_key(tag_version(&r.tag_name))));
     Ok(out)
+}
+
+/// The version of a release tag: `v2.1.0`, `bun-v1.2.0` → `2.1.0`, `1.2.0`.
+fn tag_version(tag: &str) -> &str {
+    tag.trim_start_matches("bun-").trim_start_matches('v')
 }
 
 /// The minor lines of `releases` (newest first, each once).
@@ -105,43 +111,15 @@ fn github_line(ctx: &Ctx, repo: &str, asset: &str, line: &str, inner: Inner) -> 
         .asset(&pattern(asset)?)
         .ok_or_else(|| anyhow!("{repo} {}: no asset", rel.tag_name))?;
     Ok(Release::single(
-        rel.tag_name.trim_start_matches('v').to_owned(),
+        tag_version(&rel.tag_name).to_owned(),
         file.browser_download_url.clone(),
         file.name.clone(),
-        Expect::Sha256(github_digest(file)?),
+        Expect::Sha256(ctx.net.release_sha256(rel, file)?),
         Kind::Zip,
         inner,
     ))
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn kotlin_lines_from_releases() {
-        let rel = |tag: &str| GhRelease {
-            tag_name: tag.into(),
-            assets: Vec::new(),
-            prerelease: false,
-        };
-        let list = [
-            rel("v2.2.21"),
-            rel("v2.2.20"),
-            rel("v2.1.21"),
-            rel("v2.0.0"),
-        ];
-        assert_eq!(release_lines(&list), ["2.2", "2.1", "2.0"]);
-    }
-
-    #[test]
-    fn versions() {
-        assert!(version_key("1.10.2") > version_key("1.9.9"));
-        assert!(
-            is_release("0.14.1")
-                && !is_release("master")
-                && !is_release("4.0.0-beta-1")
-                && !is_release("")
-        );
-    }
-}
+#[path = "../../../../test/rust/install/lang/mod.rs"]
+mod tests;

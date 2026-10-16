@@ -2,7 +2,14 @@
 // lines on disk with who uses them, the menu to download another.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VscAdd, VscCloudDownload, VscLock, VscTrash } from "react-icons/vsc";
-import { versionsAdd, versionsList, versionsRemove, type SetupSnapshot, type VersionedTool } from "../api";
+import {
+  versionsAdd,
+  versionsInstall,
+  versionsList,
+  versionsRemove,
+  type SetupSnapshot,
+  type VersionedTool,
+} from "../api";
 import { t } from "../i18n";
 import { useAction, useLoad } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
@@ -195,15 +202,17 @@ function Locked({ projects, label }: { projects: string[]; label: string }) {
 /** "+": the lines its source offers that are not on disk (nor being
  * downloaded), by major version; one chosen is downloaded without becoming
  * the kit's (for the projects). */
-function AddLine({
+export function AddLine({
   tool,
   setup,
   busy,
+  label = t("Aggiungi una versione di {0}", tool.name),
   onAdd,
 }: {
   tool: VersionedTool;
   setup: SetupSnapshot | null;
   busy: boolean;
+  label?: string;
   onAdd: (line: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -234,7 +243,7 @@ function AddLine({
     <div ref={box} className="relative">
       <ActionButton
         icon={VscAdd}
-        label={t("Aggiungi una versione di {0}", tool.name)}
+        label={label}
         compact
         busy={busy}
         onClick={() => {
@@ -362,6 +371,54 @@ export function ToolVersions({
           run(tool.id, `remove:${tool.id}:${line}`, () => versionsRemove(tool.id, line).then(setTools));
         }}
       />
+      {kit.last === tool.id && <ErrorLine error={kit.error} />}
+    </div>
+  );
+}
+
+/** A versioned tool not installed, checked or not: the version to install
+ * instead of the latest, from the lines its source offers. */
+export function ToolInstallLine({
+  tool,
+  kit,
+  setup,
+}: {
+  tool: VersionedTool;
+  kit: KitVersions;
+  setup: SetupSnapshot | null;
+}) {
+  const { busy, run, offers } = kit;
+  const running = setup?.running ?? false;
+  const none = offered(tool).length === 0;
+  return (
+    <div className="mt-1.5 max-w-[620px]">
+      <div className="flex items-center gap-1">
+        <span className="flex-1 text-[12px] text-vsc-desc">
+          {none
+            ? t("Versione da installare: cerca quelle disponibili, altrimenti si installa la più recente")
+            : t("Versione da installare: scegline una, altrimenti si installa la più recente")}
+        </span>
+        <div className="flex items-center gap-1">
+          <RefreshLines
+            tool={tool}
+            checking={offers.checking.has(tool.id)}
+            disabled={busy !== null}
+            onRefresh={() => {
+              offers.refresh([tool.id]);
+            }}
+          />
+          <AddLine
+            tool={tool}
+            setup={setup}
+            busy={running || busy === `install:${tool.id}`}
+            label={t("Installa una versione di {0}", tool.name)}
+            onAdd={(line) => {
+              run(tool.id, `install:${tool.id}`, () => versionsInstall(tool.id, line));
+            }}
+          />
+        </div>
+      </div>
+      {offers.failed[tool.id] && <p className="text-[12px] text-vsc-error select-text">{offers.failed[tool.id]}</p>}
       {kit.last === tool.id && <ErrorLine error={kit.error} />}
     </div>
   );

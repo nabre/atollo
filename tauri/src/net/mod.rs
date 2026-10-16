@@ -254,6 +254,27 @@ impl Net {
         })
     }
 
+    /// The SHA-256 of a release asset: GitHub's digest, or the release's
+    /// checksum file for the older assets (`checksum_asset`).
+    pub fn release_sha256(&self, release: &GhRelease, asset: &GhAsset) -> Result<String> {
+        if let Ok(hash) = github_digest(asset) {
+            return Ok(hash);
+        }
+        let file = checksum_asset(release, asset)
+            .ok_or_else(|| anyhow!("GitHub gives no SHA-256 for {}", asset.name))?;
+        let text = self.text(&file.browser_download_url)?;
+        hash_in_list(&text, &asset.name)
+            .or_else(|| {
+                // A file for this asset only: its hash, maybe without a name.
+                (!file.name.eq_ignore_ascii_case("SHASUMS256.txt")
+                    && !file.name.eq_ignore_ascii_case("SHA256SUMS")
+                    && !file.name.eq_ignore_ascii_case("sha256sums.txt"))
+                .then(|| first_sha256(&text))
+                .flatten()
+            })
+            .ok_or_else(|| anyhow!("{}: no SHA-256 for {}", file.name, asset.name))
+    }
+
     pub fn json<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
         let text = self.text(url)?;
         serde_json::from_str(&text).with_context(|| format!("unexpected answer from {url}"))
@@ -655,144 +676,35 @@ pub fn github_digest(asset: &GhAsset) -> Result<String> {
         .ok_or_else(|| anyhow!("GitHub gives no SHA-256 for {}", asset.name))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn checksum_lists() {
-        let list = "aa  other.zip\n\
-            0123456789abcdef0123456789abcdef0123456789abcdef0123456789ABCDEF *node-v24.1.0-win-x64.zip\n";
-        assert_eq!(
-            hash_in_list(list, "node-v24.1.0-win-x64.zip").as_deref(),
-            Some("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
-        );
-        assert_eq!(hash_in_list(list, "missing.zip"), None);
-        let single =
-            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  file.tar.gz";
-        assert_eq!(first_sha256(single).map(|h| h.len()), Some(64));
-        assert_eq!(first_sha256("no hash"), None);
-    }
-
-    #[test]
-    fn github_digest_format() {
-        let asset = |d: Option<&str>| GhAsset {
-            name: "x.zip".into(),
-            browser_download_url: String::new(),
-            digest: d.map(Into::into),
-        };
-        let hex = "ab".repeat(32);
-        assert_eq!(
-            github_digest(&asset(Some(&format!("sha256:{hex}")))).unwrap(),
-            hex
-        );
-        assert!(github_digest(&asset(None)).is_err());
-        assert!(github_digest(&asset(Some("sha512:00"))).is_err());
-    }
-
-    /// A server answering, in order: 200 with an ETag, 304 when asked with
-    /// it, then 403 (the limit of GitHub's API).
-    #[test]
-    fn github_answers_kept_with_their_etag() {
-        use std::io::{BufRead, BufReader, Write};
-        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-        let url = format!("http://{}/repos/x/y", listener.local_addr().unwrap());
-        let server = std::thread::spawn(move || {
-            let mut asked_with_tag = Vec::new();
-            for answer in 0..3 {
-                let (mut stream, _) = listener.accept().unwrap();
-                let mut reader = BufReader::new(stream.try_clone().unwrap());
-                let mut tagged = false;
-                loop {
-                    let mut line = String::new();
-                    reader.read_line(&mut line).unwrap();
-                    if line
-                        .to_ascii_lowercase()
-                        .starts_with("if-none-match: \"v1\"")
-                    {
-                        tagged = true;
-                    }
-                    if line == "\r\n" || line.is_empty() {
-                        break;
-                    }
-                }
-                asked_with_tag.push(tagged);
-                let reply = match answer {
-                    0 => "HTTP/1.1 200 OK\r\nETag: \"v1\"\r\nContent-Length: 7\r\nConnection: close\r\n\r\n{\"a\":1}",
-                    1 => "HTTP/1.1 304 Not Modified\r\nConnection: close\r\n\r\n",
-                    _ => "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
-                };
-                stream.write_all(reply.as_bytes()).unwrap();
-            }
-            asked_with_tag
-        });
-        let tmp = crate::kit::tests::TempDir::new("github-cache");
-        let net = Net::new(&Settings::default(), None).unwrap();
-        for _ in 0..3 {
-            assert_eq!(net.github_cached(&url, &tmp.0).unwrap(), "{\"a\":1}");
-        }
-        assert_eq!(server.join().unwrap(), [false, true, true]);
-    }
-
-    /// The shape of github.com's `expanded_assets` (October 2026): two
-    /// links per asset, then its digest; an asset without a digest.
-    #[test]
-    fn release_page_assets() {
-        let hex = "AE".repeat(32);
-        let html = format!(
-            r#"<li><a href="/cli/cli/releases/download/v2.1/gh_2.1_windows_amd64.zip" rel="nofollow">
-            <span>GitHub CLI</span></a>
-            <a href="/cli/cli/releases/download/v2.1/gh_2.1_windows_amd64.zip" rel="nofollow"></a>
-            <span class="Truncate-text">sha256:{hex}</span>
-            <clipboard-copy value="sha256:{hex}"></clipboard-copy></li>
-            <li><a href="/cli/cli/releases/download/v2.1/notes%20v2.txt" rel="nofollow"></a></li>
-            <li><a href="/cli/cli/archive/refs/tags/v2.1.zip" rel="nofollow"></a>
-            <span>sha256:{}</span></li>"#,
-            "00".repeat(32)
-        );
-        let assets = expanded_assets(&html, "cli/cli", "v2.1");
-        assert_eq!(assets.len(), 2);
-        assert_eq!(assets[0].name, "gh_2.1_windows_amd64.zip");
-        assert_eq!(
-            assets[0].browser_download_url,
-            "https://github.com/cli/cli/releases/download/v2.1/gh_2.1_windows_amd64.zip"
-        );
-        assert_eq!(github_digest(&assets[0]).unwrap(), hex.to_ascii_lowercase());
-        assert_eq!(assets[1].name, "notes v2.txt");
-        assert_eq!(assets[1].digest, None);
-    }
-
-    #[test]
-    fn limit_errors_are_recognised() {
-        let limit = anyhow::Error::new(ureq::Error::StatusCode(403))
-            .context(GithubLimit)
-            .context("GET x");
-        assert!(is_github_limit(&limit));
-        assert!(is_permanent(&limit));
-        let missing = anyhow::Error::new(ureq::Error::StatusCode(404)).context("GET x");
-        assert!(!is_github_limit(&missing));
-    }
-
-    /// The real github.com (`cargo test -- --ignored`).
-    #[test]
-    #[ignore]
-    fn release_page_live() {
-        let net = Net::new(&Settings::default(), None).unwrap();
-        let rel = net.github_latest_page("PowerShell/PowerShell").unwrap();
-        let zip = rel
-            .asset(&regex::Regex::new(r"^PowerShell-.+-win-x64\.zip$").unwrap())
-            .unwrap();
-        assert_eq!(github_digest(zip).unwrap().len(), 64);
-    }
-
-    #[test]
-    fn retry_stops_on_cancel() {
-        let mut calls = 0;
-        let result: Result<()> = retry(|| {
-            calls += 1;
-            Err(Cancelled.into())
-        });
-        assert!(result.is_err());
-        assert_eq!(calls, 1);
-    }
+/// The checksum file a release publishes for `asset`, for the assets older
+/// than GitHub's digests: `<name>.sha256` (Kotlin), `<stem>.sha256sum`
+/// (Deno), or a list for every asset (`SHASUMS256.txt` of Bun).
+pub fn checksum_asset<'a>(release: &'a GhRelease, asset: &GhAsset) -> Option<&'a GhAsset> {
+    let stem = asset
+        .name
+        .rsplit_once('.')
+        .map_or(asset.name.as_str(), |(s, _)| s);
+    let names = [
+        format!("{}.sha256", asset.name),
+        format!("{}.sha256sum", asset.name),
+        format!("{stem}.sha256sum"),
+        "SHASUMS256.txt".to_owned(),
+        "SHA256SUMS".to_owned(),
+        "sha256sums.txt".to_owned(),
+    ];
+    names.iter().find_map(|n| {
+        release
+            .assets
+            .iter()
+            .find(|a| a.name.eq_ignore_ascii_case(n))
+    })
 }
+
+/// `asset` can be checked: GitHub's digest or a checksum file of its release.
+pub fn verifiable(release: &GhRelease, asset: &GhAsset) -> bool {
+    github_digest(asset).is_ok() || checksum_asset(release, asset).is_some()
+}
+
+#[cfg(test)]
+#[path = "../../../test/rust/net/mod.rs"]
+mod tests;

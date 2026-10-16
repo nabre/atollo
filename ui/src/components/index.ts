@@ -1,2 +1,3 @@
-// The Tools page (also the first-start page).
+// The Tools page (./explorer.tsx) and the first-start page (./page.tsx).
 export { ComponentsPage } from "./page";
+export { ToolsPage } from "./explorer";

@@ -61,8 +61,8 @@ export function stepOf(setup: SetupSnapshot | null, tool: VersionedTool, line: s
   return [...(setup?.steps ?? [])].reverse().find((s) => s.id === tool.id && s.name.endsWith(` ${line}`)) ?? null;
 }
 
-/** Asks the sources of the installed tools whose list is missing or
- * older than a day, once per view; `reload` after. */
+/** Asks the sources of the tools whose list is missing or older than a
+ * day, once per view; `reload` after. */
 export function useOffers(tools: VersionedTool[] | null, reload: () => void) {
   const [checking, setChecking] = useState<ReadonlySet<string>>(new Set());
   const [failed, setFailed] = useState<Record<string, string>>({});
@@ -93,7 +93,8 @@ export function useOffers(tools: VersionedTool[] | null, reload: () => void) {
     if (tools === null) return;
     const now = Date.now() / 1000;
     const stale = tools
-      .filter((x) => x.installed && x.downloadable && !asked.current.has(x.id))
+      // Installed or not: the menu to install a version needs it too.
+      .filter((x) => x.downloadable && !asked.current.has(x.id))
       .filter((x) => x.checked === null || now - x.checked > STALE)
       .map((x) => x.id);
     if (stale.length > 0) refresh(stale);
