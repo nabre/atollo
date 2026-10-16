@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command};
 
 use anyhow::{anyhow, bail, Result};
 
@@ -215,13 +215,21 @@ pub fn project_conf(
 }
 
 /// Spawns `php-cgi.exe -b 127.0.0.1:<fcgi_port>` inside `job` when PHP is installed,
-/// returning the FastCGI port used.
-pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<u16> {
+/// returning the FastCGI port used and the process, whose death the caller
+/// watches (a Nginx without its php-cgi answers 502 to every `.php`).
+/// `None` when PHP is not installed or the spawn failed (in the log).
+pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(u16, Child)> {
     let php = php_dir(kit, env)?;
     let cgi = php.join("php-cgi.exe");
-    let listener = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).ok()?;
-    let fcgi_port = listener.local_addr().ok()?.port();
-    drop(listener);
+    let fcgi_port = match std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
+        .and_then(|l| l.local_addr())
+    {
+        Ok(addr) => addr.port(),
+        Err(e) => {
+            crate::log::warn(&format!("php-cgi: no free FastCGI port: {e}"));
+            return None;
+        }
+    };
     let mut cmd = jobs::kit_command(&cgi, env);
     cmd.arg("-b")
         .arg(format!("127.0.0.1:{fcgi_port}"))
@@ -231,8 +239,13 @@ pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<u1
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
-    jobs::spawn_in(&mut cmd, job).ok()?;
-    Some(fcgi_port)
+    match jobs::spawn_in(&mut cmd, job) {
+        Ok(child) => Some((fcgi_port, child)),
+        Err(e) => {
+            crate::log::warn(&format!("php-cgi {}: {e:#}", cgi.display()));
+            None
+        }
+    }
 }
 
 /// Prepares `nginx.conf` and returns the `Command` to start `nginx.exe`.

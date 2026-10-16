@@ -122,7 +122,52 @@ struct RunningPool {
     child: Child,
     port: u16,
     fcgi_port: Option<u16>,
+    /// The pool's php-cgi (Nginx with PHP): when it dies the pool is
+    /// stopped, never left "running" answering 502 to every `.php`.
+    php: Option<Child>,
     _job: Job,
+}
+
+impl RunningPool {
+    /// The server, and its php-cgi if it has one, are still running.
+    fn alive(&mut self) -> bool {
+        matches!(self.child.try_wait(), Ok(None))
+            && self
+                .php
+                .as_mut()
+                .is_none_or(|p| matches!(p.try_wait(), Ok(None)))
+    }
+
+    /// Ends the server (and, with its Job, the rest), waiting for it so
+    /// that its port is being released when this returns.
+    fn end(mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
+/// Takes out of `running` the pools whose server or php-cgi ended: they
+/// are ended (outside the lock) by the caller.
+fn take_dead(running: &mut BTreeMap<String, RunningPool>) -> Vec<(String, RunningPool)> {
+    let dead: Vec<String> = running
+        .iter_mut()
+        .filter_map(|(id, r)| (!r.alive()).then(|| id.clone()))
+        .collect();
+    dead.into_iter()
+        .filter_map(|id| running.remove(&id).map(|r| (id, r)))
+        .collect()
+}
+
+/// Ends the pools [`take_dead`] took out, noting why in the log.
+fn end_dead(dead: Vec<(String, RunningPool)>) {
+    for (id, mut r) in dead {
+        if matches!(r.child.try_wait(), Ok(None)) {
+            crate::log::warn(&format!(
+                "server pool {id}: php-cgi ended, the pool is stopped (start it again)"
+            ));
+        }
+        r.end();
+    }
 }
 
 /// Lock order (never taken the other way round, to rule out deadlocks):
@@ -405,9 +450,13 @@ impl WebServers {
     }
 
     pub fn running_count(&self) -> usize {
-        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
-        running.retain(|_, r| matches!(r.child.try_wait(), Ok(None)));
-        running.len()
+        let (dead, count) = {
+            let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+            let dead = take_dead(&mut running);
+            (dead, running.len())
+        };
+        end_dead(dead);
+        count
     }
 
     pub fn stop_all(&self) {
@@ -480,7 +529,7 @@ impl WebServers {
     /// Marks the pools that are running, with their live pid and port.
     fn apply_running(&self, view: &mut WebServersView) {
         let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
-        running.retain(|_, r| matches!(r.child.try_wait(), Ok(None)));
+        let dead = take_dead(&mut running);
         for pool in &mut view.pools {
             if let Some(r) = running.get(&pool.id) {
                 pool.running = true;
@@ -491,6 +540,8 @@ impl WebServers {
                 }
             }
         }
+        drop(running);
+        end_dead(dead);
     }
 
     /// Reads the profiles, the projects and the installed lines (the slow
@@ -509,6 +560,8 @@ impl WebServers {
         let mut store = load_store(&self.kit);
         let mut store_dirty = false;
         let mut pools_map: BTreeMap<String, WebServerPool> = BTreeMap::new();
+        // Manual pools with a site that needs PHP.
+        let mut php_wanted: std::collections::BTreeSet<String> = Default::default();
 
         for p in store.profiles.clone() {
             let port = self.assign_or_get_port(&mut store, &mut store_dirty, &p.id, p.port);
@@ -516,7 +569,9 @@ impl WebServers {
                 WebServerEngine::Apache => apache_lines.first().cloned(),
                 WebServerEngine::Nginx => nginx_lines.first().cloned(),
             });
-            let php_line = p.php_line.clone().or_else(|| php_lines.first().cloned());
+            // PHP only when chosen, or (below) when a site of the pool needs it:
+            // never a php-cgi for a pool of static sites.
+            let php_line = p.php_line.clone();
             pools_map.insert(
                 p.id.clone(),
                 WebServerPool {
@@ -610,6 +665,9 @@ impl WebServers {
                     pid
                 };
 
+                if needs_php {
+                    php_wanted.insert(target_pool_id.clone());
+                }
                 if let Some(pool) = pools_map.get_mut(&target_pool_id) {
                     let server_name = format!("{proj_id}.localhost");
                     let url = format!("http://{server_name}:{}", pool.port);
@@ -625,6 +683,12 @@ impl WebServers {
             }
         }
 
+        for (id, pool) in &mut pools_map {
+            if pool.manual && pool.php_line.is_none() && php_wanted.contains(id) {
+                pool.php_line = php_lines.first().cloned();
+            }
+        }
+
         // If no pools exist yet but Apache or Nginx is installed, expose the default pool so the
         // user can start/inspect it from the "Server Web" page immediately.
         if pools_map.is_empty() && (!apache_lines.is_empty() || !nginx_lines.is_empty()) {
@@ -637,7 +701,8 @@ impl WebServers {
                 WebServerEngine::Apache => apache_lines.first().cloned(),
                 WebServerEngine::Nginx => nginx_lines.first().cloned(),
             };
-            let php_line = php_lines.first().cloned();
+            // No project yet: no PHP project, so no php-cgi (BUG-05r).
+            let php_line: Option<String> = None;
             let pid = auto_pool_id(engine, srv_line.as_deref(), php_line.as_deref());
             let port = self.assign_or_get_port(&mut store, &mut store_dirty, &pid, None);
             let name = auto_pool_name(engine, srv_line.as_deref(), php_line.as_deref());
@@ -870,7 +935,7 @@ impl WebServers {
         let _ = fs::remove_file(pool_dir.join("stderr.log"));
 
         let job = Job::new()?;
-        let (mut cmd, fcgi_port) = match pool.engine {
+        let (mut cmd, fcgi_port, php) = match pool.engine {
             WebServerEngine::Apache => {
                 let apache_dir = component_dir(&self.kit, "apache", pool.server_line.as_deref());
                 let exe = apache_dir.join(r"bin\httpd.exe");
@@ -882,7 +947,7 @@ impl WebServers {
                 let conf_path = self.write_pool_configs(&pool, None, lan)?;
                 let mut cmd = jobs::kit_command(&exe, &env);
                 cmd.arg("-f").arg(&conf_path);
-                (cmd, None)
+                (cmd, None, None)
             }
             WebServerEngine::Nginx => {
                 let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
@@ -892,10 +957,11 @@ impl WebServers {
                 }
                 env.set("CP_NGINX", nginx_dir.display().to_string());
                 env.set("CP_NGINX_FWD", fwd(&nginx_dir));
-                let fcgi = if pool.php_line.is_some() {
+                let (fcgi, php) = if pool.php_line.is_some() {
                     nginx::spawn_php_cgi_if_present(&self.kit, &env, &job)
+                        .map_or((None, None), |(port, child)| (Some(port), Some(child)))
                 } else {
-                    None
+                    (None, None)
                 };
                 let conf_path = self.write_pool_configs(&pool, fcgi, lan)?;
                 let mut cmd = jobs::kit_command(&exe, &env);
@@ -905,7 +971,7 @@ impl WebServers {
                     .arg(&conf_path)
                     .arg("-g")
                     .arg("daemon off;");
-                (cmd, fcgi)
+                (cmd, fcgi, php)
             }
         };
 
@@ -952,6 +1018,7 @@ impl WebServers {
                     child,
                     port: pool.port,
                     fcgi_port,
+                    php,
                     _job: job,
                 },
             );
@@ -972,9 +1039,8 @@ impl WebServers {
         // The server itself is killed and waited for before its Job is
         // dropped (which ends what it started, php-cgi included), so that
         // its port is being released when this returns.
-        if let Some(mut pool) = removed {
-            let _ = pool.child.kill();
-            let _ = pool.child.wait();
+        if let Some(pool) = removed {
+            pool.end();
         }
     }
 

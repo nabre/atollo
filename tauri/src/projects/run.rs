@@ -480,7 +480,9 @@ impl Runner {
             )
         } else if let Some(folder) = &action.nginx_dir {
             let root = detect::inside_dir(&cwd, folder)?;
-            let fcgi_port = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job);
+            // php-cgi lives in the action's job: stopping the action ends it too.
+            let fcgi_port = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job)
+                .map(|(port, _php)| port);
             let cmd = crate::projects::nginx::command(
                 &self.kit,
                 id,
