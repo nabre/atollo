@@ -122,3 +122,76 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
     assert!(!beta_vhost.contains("default_server"));
     assert!(beta_vhost.contains("server_name beta.localhost;"));
 }
+
+fn nginx_pool(id: &str, port: u16, sites: Vec<AttachedSite>) -> WebServerPool {
+    WebServerPool {
+        id: id.into(),
+        name: "Nginx".into(),
+        engine: WebServerEngine::Nginx,
+        server_line: None,
+        php_line: None,
+        port,
+        running: false,
+        pid: None,
+        manual: false,
+        sites,
+        conf_dir: format!(r"data\servers\{id}"),
+    }
+}
+
+fn site(project: &str, folder: &str, port: u16) -> AttachedSite {
+    AttachedSite {
+        project: project.into(),
+        folder: folder.into(),
+        server_name: format!("{project}.localhost"),
+        domains: Vec::new(),
+        aliases: BTreeMap::new(),
+        url: format!("http://{project}.localhost:{port}"),
+    }
+}
+
+/// N-S1: a site whose document root is missing or a junction is not served
+/// at all (never the project root in its place, with `.env` and `.git`).
+#[test]
+fn pool_skips_site_with_missing_or_linked_docroot() {
+    let tmp = TempDir::new("servers-docroot");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let projects = kit.projects();
+
+    fs::create_dir_all(projects.join(r"good\public")).unwrap();
+    // `missing` has no public\ folder: only its secrets at the root.
+    fs::create_dir_all(projects.join("missing")).unwrap();
+    fs::write(projects.join(r"missing\.env"), "DB_PASSWORD=x").unwrap();
+    // `linked` has public\ as a junction to a folder outside the projects.
+    fs::create_dir_all(projects.join("linked")).unwrap();
+    let outside = tmp.0.join("outside");
+    fs::create_dir_all(&outside).unwrap();
+    crate::os::safe_path::tests::junction(&projects.join(r"linked\public"), &outside);
+
+    let pool = nginx_pool(
+        "nginx-docroot",
+        8089,
+        vec![
+            site("good", "public", 8089),
+            site("missing", "public", 8089),
+            site("linked", "public", 8089),
+        ],
+    );
+    let conf_path = servers.write_pool_configs(&pool, None, false).unwrap();
+    let vhosts = conf_path.parent().unwrap().join("vhosts");
+    let good = fs::read_to_string(vhosts.join("good.conf")).unwrap();
+    assert!(good.contains("good/public"), "{good}");
+    assert!(!vhosts.join("missing.conf").exists());
+    assert!(!vhosts.join("linked.conf").exists());
+    let all: String = fs::read_dir(&vhosts)
+        .unwrap()
+        .flatten()
+        .map(|e| fs::read_to_string(e.path()).unwrap())
+        .collect();
+    assert!(
+        !all.contains("missing") && !all.contains("outside"),
+        "{all}"
+    );
+}

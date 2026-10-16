@@ -305,6 +305,25 @@ fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) 
     .join("\r\n")
 }
 
+/// The document root of an attached site: its folder inside the project,
+/// checked without following links (D-77). `None` (the site is not served,
+/// with a warning in the log, as for a skipped alias) when the folder is
+/// missing, outside the project or reached through a junction: never the
+/// project root in its place, which would serve `.env`, `.git` and the like.
+fn site_doc_root(project_root: &Path, site: &AttachedSite) -> Option<PathBuf> {
+    match detect::inside_dir(project_root, &site.folder) {
+        Ok(dir) => Some(dir),
+        Err(_) => {
+            crate::log::warn(&format!(
+                "{}: site folder {} not served (missing, not a folder of the project, or through a link)",
+                project_root.display(),
+                site.folder
+            ));
+            None
+        }
+    }
+}
+
 fn pool_error_tail(pool_dir: &Path) -> String {
     for rel in ["error.log", "logs/error.log"] {
         if let Ok(text) = fs::read_to_string(pool_dir.join(rel)) {
@@ -639,8 +658,9 @@ impl WebServers {
                     .context("Apache httpd.conf")?;
                 for site in &pool.sites {
                     let proj_root = self.kit.projects().join(&site.project);
-                    let doc_root = detect::inside_dir(&proj_root, &site.folder)
-                        .unwrap_or_else(|_| proj_root.clone());
+                    let Some(doc_root) = site_doc_root(&proj_root, site) else {
+                        continue;
+                    };
                     let vhost = apache_vhost_conf(
                         pool.port,
                         &proj_root,
@@ -663,8 +683,9 @@ impl WebServers {
                 let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
                 for site in &pool.sites {
                     let proj_root = self.kit.projects().join(&site.project);
-                    let doc_root = detect::inside_dir(&proj_root, &site.folder)
-                        .unwrap_or_else(|_| proj_root.clone());
+                    let Some(doc_root) = site_doc_root(&proj_root, site) else {
+                        continue;
+                    };
                     let vhost = nginx::vhost_block(
                         &nginx_dir,
                         Some(&site.project),
