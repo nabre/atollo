@@ -128,10 +128,32 @@ struct RunningPool {
     child: Child,
     port: u16,
     fcgi_port: Option<u16>,
+    /// The PHP line the pool was started with (`None`: no PHP).
+    php_line: Option<String>,
     /// The pool's php-cgi (Nginx with PHP): when it dies the pool is
     /// stopped, never left "running" answering 502 to every `.php`.
     php: Option<Child>,
     _job: Job,
+}
+
+/// What a reload compares of a running pool with what it should be now.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct LivePool {
+    port: u16,
+    php_line: Option<String>,
+    fcgi_port: Option<u16>,
+}
+
+/// A reload of a running pool needs a full stop and start (not Nginx's
+/// graceful `-s reload`, which keeps its php-cgi and port): Apache (no
+/// graceful signal on Windows), another port, another PHP line, or PHP
+/// wanted with no php-cgi running (a manual pool that just got its first
+/// PHP site: else every `.php` answers 503 until a manual restart).
+fn needs_restart(pool: &WebServerPool, live: &LivePool) -> bool {
+    pool.engine == WebServerEngine::Apache
+        || pool.port != live.port
+        || pool.php_line != live.php_line
+        || (pool.php_line.is_some() && live.fcgi_port.is_none())
 }
 
 impl RunningPool {
@@ -1054,6 +1076,7 @@ impl WebServers {
                     child,
                     port: pool.port,
                     fcgi_port,
+                    php_line: pool.php_line.clone(),
                     php,
                     _job: job,
                 },
@@ -1093,19 +1116,25 @@ impl WebServers {
             .find(|p| p.id == id)
             .ok_or_else(|| anyhow!("Server pool not found: {id}"))?;
         let lan = base_env.get("ATOLLO_ALLOW_LAN") == Some("1");
-        let existing_fcgi = self
+        let live = self
             .running
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .get(id)
-            .and_then(|r| r.fcgi_port);
-
-        let conf_path = self.write_pool_configs(&pool, existing_fcgi, lan)?;
-        if !pool.running {
+            .map(|r| LivePool {
+                port: r.port,
+                php_line: r.php_line.clone(),
+                fcgi_port: r.fcgi_port,
+            });
+        let Some(live) = live else {
+            // Not running: its files are ready for the next start.
+            self.write_pool_configs(&pool, None, lan)?;
             return Ok(());
-        }
+        };
 
-        if pool.engine == WebServerEngine::Nginx {
+        if !needs_restart(&pool, &live) {
+            // Nginx with the same PHP and port: a graceful reload.
+            let conf_path = self.write_pool_configs(&pool, live.fcgi_port, lan)?;
             let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
             let exe = nginx_dir.join("nginx.exe");
             let pool_dir = self.kit.data().join("servers").join(&pool.id);
@@ -1121,10 +1150,11 @@ impl WebServers {
             }
         }
 
-        // Clean restart when graceful signal is unavailable (Apache standalone on Windows).
+        // A clean restart: Apache (no graceful signal on Windows), a pool
+        // whose PHP or port changed, or a failed Nginx reload.
         self.stop_locked(id);
         // start_locked reports the port as taken if it is still not free.
-        wait_port_released(pool.port, Duration::from_secs(5));
+        wait_port_released(live.port, Duration::from_secs(5));
         self.start_locked(id, base_env, lang)
     }
 
