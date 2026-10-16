@@ -195,3 +195,40 @@ fn pool_skips_site_with_missing_or_linked_docroot() {
         "{all}"
     );
 }
+
+/// N-S4a: `list` (which saves new ports) running next to `save_profile`
+/// never loses a profile: every read-modify-write holds `store_lock`.
+#[test]
+fn concurrent_list_and_save_profile_keep_profile() {
+    let tmp = TempDir::new("servers-store-lock");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    std::thread::scope(|s| {
+        s.spawn(|| {
+            for i in 0..20 {
+                servers
+                    .save_profile(
+                        WebServerProfileInput {
+                            id: String::new(),
+                            name: format!("p{i}"),
+                            engine: WebServerEngine::Nginx,
+                            server_line: None,
+                            php_line: None,
+                            port: None,
+                        },
+                        "it",
+                    )
+                    .unwrap();
+            }
+        });
+        s.spawn(|| {
+            for _ in 0..40 {
+                servers.list("it");
+            }
+        });
+    });
+    let store = load_store(&kit);
+    assert_eq!(store.profiles.len(), 20);
+    assert_eq!(servers.list("it").pools.len(), 20);
+}
