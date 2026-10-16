@@ -118,8 +118,8 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
     assert!(main_conf.contains("server_name localhost;"));
 
     let vhosts_dir = conf_path.parent().unwrap().join("vhosts");
-    let alpha_vhost = fs::read_to_string(vhosts_dir.join("alpha.conf")).unwrap();
-    let beta_vhost = fs::read_to_string(vhosts_dir.join("beta.conf")).unwrap();
+    let alpha_vhost = fs::read_to_string(vhosts_dir.join("alpha.localhost.conf")).unwrap();
+    let beta_vhost = fs::read_to_string(vhosts_dir.join("beta.localhost.conf")).unwrap();
 
     assert!(alpha_vhost.contains("listen 127.0.0.1:8088;"));
     assert!(!alpha_vhost.contains("default_server"));
@@ -191,10 +191,10 @@ fn pool_skips_site_with_missing_or_linked_docroot() {
     );
     let conf_path = servers.write_pool_configs(&pool, None, false).unwrap();
     let vhosts = conf_path.parent().unwrap().join("vhosts");
-    let good = fs::read_to_string(vhosts.join("good.conf")).unwrap();
+    let good = fs::read_to_string(vhosts.join("good.localhost.conf")).unwrap();
     assert!(good.contains("good/public"), "{good}");
-    assert!(!vhosts.join("missing.conf").exists());
-    assert!(!vhosts.join("linked.conf").exists());
+    assert!(!vhosts.join("missing.localhost.conf").exists());
+    assert!(!vhosts.join("linked.localhost.conf").exists());
     let all: String = fs::read_dir(&vhosts)
         .unwrap()
         .flatten()
@@ -697,4 +697,92 @@ fn reload_restarts_when_php_or_port_changes() {
     let mut apache = nginx_pool("a", 8093, Vec::new());
     apache.engine = WebServerEngine::Apache;
     assert!(needs_restart(&apache, &live(None, None)));
+}
+
+/// BUG-V3-02: two web actions of one project in the same pool are two
+/// VirtualHosts with their own ServerName and file; a stale file goes.
+#[test]
+fn two_actions_of_one_project_get_distinct_vhosts() {
+    let tmp = TempDir::new("servers-two-actions");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: "legacy".into(),
+                name: "Legacy".into(),
+                engine: WebServerEngine::Nginx,
+                server_line: None,
+                php_line: None,
+                port: Some(8087),
+            },
+            "it",
+        )
+        .unwrap();
+    let shop = kit.projects().join("shop");
+    fs::create_dir_all(shop.join("public")).unwrap();
+    fs::create_dir_all(shop.join("docs")).unwrap();
+    fs::write(
+        shop.join("panel.json"),
+        r#"{ "actions": [
+            { "id": "npm:docs", "nginx": "docs", "server": "legacy" },
+            { "id": "site", "nginx": "public", "server": "legacy" } ] }"#,
+    )
+    .unwrap();
+    let view = servers.list("it", true);
+    let pool = view.pools.iter().find(|p| p.id == "legacy").unwrap();
+    let names: BTreeMap<&str, &str> = pool
+        .sites
+        .iter()
+        .map(|s| (s.action.as_str(), s.server_name.as_str()))
+        .collect();
+    assert_eq!(names["site"], "shop.localhost");
+    assert_eq!(names["npm:docs"], "npm-docs.shop.localhost");
+    assert!(names.values().all(|n| alias::valid_domain(n)));
+    let docs = pool.sites.iter().find(|s| s.action == "npm:docs").unwrap();
+    assert_eq!(docs.url, "http://npm-docs.shop.localhost:8087");
+
+    let vhosts = kit.data().join(r"servers\legacy\vhosts");
+    fs::create_dir_all(&vhosts).unwrap();
+    fs::write(vhosts.join("shop.conf"), "stale").unwrap();
+    servers.write_pool_configs(pool, None, false).unwrap();
+    let mut files: Vec<String> = fs::read_dir(&vhosts)
+        .unwrap()
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    files.sort();
+    assert_eq!(
+        files,
+        ["npm-docs.shop.localhost.conf", "shop.localhost.conf"]
+    );
+    let main = fs::read_to_string(vhosts.join("shop.localhost.conf")).unwrap();
+    assert!(main.contains("server_name shop.localhost;"), "{main}");
+    assert!(main.contains("shop/public"), "{main}");
+    let other = fs::read_to_string(vhosts.join("npm-docs.shop.localhost.conf")).unwrap();
+    assert!(
+        other.contains("server_name npm-docs.shop.localhost;"),
+        "{other}"
+    );
+    assert!(other.contains("shop/docs"), "{other}");
+}
+
+/// BUG-V3-02: names that give the same label in one pool stay distinct.
+#[test]
+fn name_sites_keeps_names_unique() {
+    let mut sites = vec![
+        site("My Shop", "public", 8080),
+        site("my-shop", "public", 8080),
+        site("___", "public", 8080),
+    ];
+    sites[1].action = "web".into();
+    name_sites(&mut sites, 8080);
+    let names: Vec<&str> = sites.iter().map(|s| s.server_name.as_str()).collect();
+    assert_eq!(
+        names,
+        ["my-shop.localhost", "my-shop-2.localhost", "site.localhost"]
+    );
+    assert_eq!(sites[1].url, "http://my-shop-2.localhost:8080");
+    assert_eq!(host_label("Ünï Côde_42"), "n-c-de-42");
 }
