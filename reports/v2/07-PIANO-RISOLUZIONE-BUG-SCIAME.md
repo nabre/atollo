@@ -234,7 +234,7 @@ Ogni finding confermato dai revisori torna all'agente proprietario del file (ste
 | 11 | BUG-05r | 🟡 parziale | `fix(servers): BUG-05r watch the pool's php-cgi and start it only for PHP` — solo i pool; il php-cgi del server Nginx **dedicato** del progetto non è sorvegliato |
 | 12 | BUG-07 | ✅ chiuso | `fix(servers): BUG-07 cache the projects scan of the server list for 15 s` |
 | 13 | N-S5 | ✅ chiuso | `fix(servers): N-S5 give Apache pools a default VirtualHost first` |
-| 14 | GAP-RUN | 🟡 parziale | `fix(run): GAP-RUN start a site assigned to a server profile in its pool`; `fix(ui): AttachedSite carries the action id of its site` — lo stato dell'esecuzione non segue il ciclo di vita del pool |
+| 14 | GAP-RUN | ✅ chiuso | `fix(run): GAP-RUN start a site assigned to a server profile in its pool`; `fix(ui): AttachedSite carries the action id of its site`; dopo la revisione `fix(run): I2 a run served by a pool stops with its pool`, `fix(run): I3 start and attach the same, freshly found pool` |
 | 15 | BUG-23a | 🟡 parziale | `refactor(install): shared conda and micromamba helpers out of R`; `refactor(install): Installer::custom takes the target`; `fix(install): BUG-23a Git on macOS and Linux by micromamba`; `fix(kit): D-92 reinstall conda components when the kit moves` — codice completo, non provato su macOS/Linux reali |
 | 16 | BUG-23b | ✅ chiuso | `fix(catalog): BUG-23b/BUG-24a PHP, Apache, Nginx and Adminer Windows only` (opzione C) |
 | 17 | BUG-24a | ✅ chiuso | stesso commit di BUG-23b; `fix(projects): offer only components available on the kit's platform` |
@@ -249,17 +249,36 @@ Ogni finding confermato dai revisori torna all'agente proprietario del file (ste
 | 26 | UI-POLISH | ✅ chiuso | `fix(ui): Italian source badges, readable day labels, strict guide tr (UI-POLISH)`; `fix(ui): add Riprova to the banner of the kit's unreadable state (N2)` |
 | 27 | ARCH-LAZY | ✅ chiuso | `fix(ui): load the Guide page lazily in its own chunk (ARCH-LAZY)` |
 
-Totale: **24 chiusi, 3 parziali**. Anche `fix(serve): test that silent connections do not block the server` (verifica di BUG-01).
+Totale: **25 chiusi, 2 parziali** (BUG-05r per il solo Nginx dedicato, BUG-23a in attesa di prova su macOS/Linux reali). Anche `fix(serve): test that silent connections do not block the server` (verifica di BUG-01).
 
 ### 8.1 Seguiti non fatti
 
 | Voce | Dove | Nota |
 | :-- | :-- | :-- |
-| Slowloris a goccia (byte a byte) | `projects/serve.rs` | il timeout di lettura di 5 s vale per ogni lettura: manca una scadenza totale per la richiesta |
 | `.phtml`, `.php5` | `projects/apache.rs`, `projects/nginx.rs`, `install/web.rs` | il rifiuto senza PHP copre solo `.php` (in ogni maiuscola) |
-| `kit.conf` esistenti | `projects/apache.rs` (`fix_kit_conf`) | il nuovo blocco vale solo per i `kit.conf` creati da ora; quelli già scritti restano con `\.php$` e senza rifiuto |
 | php-cgi del Nginx dedicato | `projects/run.rs` | il `Child` di php-cgi è ancora scartato: la sua morte non si vede (BUG-05r) |
-| Esecuzione su pool | `projects/run.rs`, `servers/mod.rs` | l'esecuzione registrata non è legata al ciclo di vita del pool: fermato o caduto il pool, resta «in corso» (GAP-RUN) |
 | Git conda su Unix | `install/core.rs`, `kit.rs` | validazione reale su macOS e Linux (installazione, `.gitconfig`, reinstallazione dopo lo spostamento) |
 | `Options FollowSymLinks` | vhost Apache | indagine su Windows reale (giunzione verso `\\server`, NTLM), §6 punto 6 |
 | Test con kit reale (`ATOLLO_TEST_KIT`) | `test/rust/servers/` | `start_reports_syntax_error` (BUG-03) e `apache_pool_reload_twice` (BUG-04) non scritti |
+| Due azioni web di un progetto nello stesso pool | `servers/mod.rs` (`write_pool_configs`) | scritte nello stesso `vhosts/<progetto>.conf` con lo stesso `server_name`: il server ne serve una sola |
+| File nascosti nel sito del kit | `install/web.rs` | il blocco dei file nascosti (F3) copre pool e progetti, non il sito del kit né il server PHP integrato |
+| php-cgi senza autenticazione | `projects/nginx.rs` | ascolta su `127.0.0.1`: un altro utente locale può eseguire PHP con i diritti dell'utente (preesistente) |
+| DNS rebinding sul server dedicato | `projects/apache.rs`, `projects/nginx.rs` | le conf del progetto singolo rispondono a ogni `Host` (i pool e `serve.rs` no) |
+
+### 8.2 Giro di revisione (onda 3)
+
+Tre revisori in sola lettura (sicurezza, concorrenza, interfaccia) hanno riletto `ef3e4ee..bac8364`. Nessun rilievo bloccante; i rilievi importanti e minori sono stati corretti da cinque agenti in parallelo:
+
+| Rilievo | Commit |
+| :-- | :-- |
+| Catene di link che escono dalla destinazione (tar/zip, Unix); memoria xz senza limite | `fix(archive): refuse link chains that escape the destination; cap xz memory` |
+| `/INDEX.PHP` servito come sorgente da Nginx con FastCGI | `fix(nginx): F2 run .php in any case through FastCGI` |
+| `.git`, `.env` serviti quando la radice del sito è quella del progetto | `fix(sites): F3 refuse hidden files and folders but .well-known` |
+| `kit.conf` esistenti senza i blocchi PHP | `fix(apache): migrate an older kit.conf to the PHP blocks of today` |
+| Pool che guadagna un sito PHP mentre gira | `fix(servers): I1 restart a running pool whose PHP changed on reload` |
+| Esecuzione su pool che resta «in corso» | `fix(run): I2 a run served by a pool stops with its pool` |
+| Cache vecchia in «Avvia» | `fix(run): I3 start and attach the same, freshly found pool` |
+| `remove_profile` fuori da `op_lock`; porta appena liberata | `fix(servers): M1 …`, `fix(servers): M2 …` |
+| Client che manda un byte alla volta | `fix(serve): total deadline for the request head` |
+| Spostamento solo nelle maiuscole; linee salvate di R (D-92) | `fix(kit): D-92 case-only moves off Windows, reinstall saved conda lines` |
+| Accessibilità di «+», focus, etichetta «bloccata», «Riprova» busy | `fix(ui): menu state on "+", focus kept after choosing, saving and retrying`; `fix(ui): Riprova stays busy until the read ends on every load error`; `fix(ui): R3-4 one row per site of a pool, keyed by project and action` |
