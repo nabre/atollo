@@ -276,6 +276,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
             child,
             port: 8094,
             fcgi_port: None,
+            php_line: None,
             php: None,
             _job: job,
         },
@@ -563,6 +564,7 @@ fn pool_with_dead_php_cgi_is_not_running() {
             child: server,
             port: 8099,
             fcgi_port: Some(9000),
+            php_line: Some("8.4".into()),
             php: Some(php),
             _job: job,
         },
@@ -613,4 +615,37 @@ fn pool_of_finds_assigned_project() {
     assert_eq!(site.url, "http://shop.localhost:8096");
     assert_eq!(servers.pool_of("shop", "other", "it").map(|p| p.0.id), None);
     assert_eq!(servers.pool_of("nope", "site", "it").map(|p| p.0.id), None);
+}
+
+/// I1: a reload restarts the pool (never a graceful Nginx reload keeping
+/// no php-cgi) when PHP is wanted and not running, or changed; Apache and
+/// a new port always restart.
+#[test]
+fn reload_restarts_when_php_or_port_changes() {
+    let live = |php: Option<&str>, fcgi: Option<u16>| LivePool {
+        port: 8093,
+        php_line: php.map(str::to_owned),
+        fcgi_port: fcgi,
+    };
+    let mut pool = nginx_pool("legacy", 8093, Vec::new());
+    // Static pool, static sites: graceful.
+    assert!(!needs_restart(&pool, &live(None, None)));
+    // A PHP site assigned to a running static pool: restart (I1).
+    pool.php_line = Some("8.4".into());
+    assert!(needs_restart(&pool, &live(None, None)));
+    // Started with PHP but php-cgi missing: try again.
+    assert!(needs_restart(&pool, &live(Some("8.4"), None)));
+    // Same PHP, php-cgi running: graceful.
+    assert!(!needs_restart(&pool, &live(Some("8.4"), Some(9001))));
+    // Another PHP line, or PHP gone: restart.
+    assert!(needs_restart(&pool, &live(Some("8.3"), Some(9001))));
+    pool.php_line = None;
+    assert!(needs_restart(&pool, &live(Some("8.4"), Some(9001))));
+    // Another port: restart.
+    pool.port = 8092;
+    assert!(needs_restart(&pool, &live(None, None)));
+    // Apache: always.
+    let mut apache = nginx_pool("a", 8093, Vec::new());
+    apache.engine = WebServerEngine::Apache;
+    assert!(needs_restart(&apache, &live(None, None)));
 }
