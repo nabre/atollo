@@ -5,7 +5,8 @@
 //! - only requests addressed to localhost, or with the local network
 //!   allowed to an IP address (a `Host` of another name that points to the
 //!   PC, DNS rebinding, cannot read the project);
-//! - no hidden files or folders (`.git`, `.env`), except `.well-known`;
+//! - no hidden files or folders (`.git`, `.env`), except `.well-known`, nor
+//!   names shaped like NTFS 8.3 short names (`GIT~1`), which could reach them;
 //! - nothing outside the folder (`..`, links leading out);
 //! - a folder without the final `/` is redirected (relative links work).
 
@@ -82,6 +83,16 @@ fn percent_decode(s: &str) -> Option<String> {
     String::from_utf8(out).ok()
 }
 
+/// A segment shaped like an NTFS 8.3 short name (`~` followed by a digit,
+/// as in `GIT~1`): it could reach a hidden file (`.git`, `.env`) under
+/// another name, so it is refused without asking Windows.
+fn is_short_name(segment: &str) -> bool {
+    segment
+        .as_bytes()
+        .windows(2)
+        .any(|w| w[0] == b'~' && w[1].is_ascii_digit())
+}
+
 pub enum Answer {
     File(PathBuf),
     Redirect(String),
@@ -99,7 +110,7 @@ pub fn resolve(root: &Path, target: &str) -> Answer {
     }
     if rel
         .split(['/', '\\'])
-        .any(|s| s.starts_with('.') && s != ".well-known")
+        .any(|s| (s.starts_with('.') && s != ".well-known") || is_short_name(s))
     {
         return Answer::Status(403, "Forbidden");
     }
