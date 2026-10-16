@@ -615,28 +615,6 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         default: None,
     };
     overrides::apply(&mut project, dir, lang);
-    // An Apache of its own needs Apache and its PHP module.
-    if project.actions.iter().any(|a| a.apache_dir.is_some()) {
-        for id in ["apache", "php"] {
-            if !project.requires.iter().any(|r| r == id) {
-                project.requires.push(id.to_owned());
-            }
-        }
-        project.requires.sort();
-    }
-    if project.actions.iter().any(|a| a.nginx_dir.is_some()) {
-        if !project.requires.iter().any(|r| r == "nginx") {
-            project.requires.push("nginx".to_owned());
-        }
-        project.requires.sort();
-    }
-    // A CMS needs the kit's MariaDB (D-93).
-    if php::CMS.iter().any(|c| project.platform.contains(c))
-        && !project.requires.iter().any(|r| r == "mariadb")
-    {
-        project.requires.push("mariadb".to_owned());
-        project.requires.sort();
-    }
     if project.default.is_none() {
         project.default = project
             .actions
@@ -645,6 +623,37 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             .or(project.actions.first())
             .map(|a| a.id.clone());
     }
+    // An Apache of its own needs Apache and its PHP module, a Nginx needs
+    // Nginx: when it is the main action or written in panel.json, not when
+    // it is only proposed beside `php -S` or `artisan serve`.
+    let used = |a: &&Action| a.custom || project.default.as_deref() == Some(a.id.as_str());
+    let mut needed: Vec<&str> = Vec::new();
+    if project
+        .actions
+        .iter()
+        .filter(used)
+        .any(|a| a.apache_dir.is_some())
+    {
+        needed.extend(["apache", "php"]);
+    }
+    if project
+        .actions
+        .iter()
+        .filter(used)
+        .any(|a| a.nginx_dir.is_some())
+    {
+        needed.push("nginx");
+    }
+    // A CMS needs the kit's MariaDB (D-93).
+    if php::CMS.iter().any(|c| project.platform.contains(c)) {
+        needed.push("mariadb");
+    }
+    for id in needed {
+        if !project.requires.iter().any(|r| r == id) {
+            project.requires.push(id.to_owned());
+        }
+    }
+    project.requires.sort();
     project
 }
 

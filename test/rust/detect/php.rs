@@ -16,6 +16,11 @@ fn laravel_and_plain() {
         p.actions[0].command,
         r#"php -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#
     );
+    // Apache proposed after `php -S`, not required.
+    assert_eq!(ids(&p), ["php:server", "apache"]);
+    assert_eq!(p.default.as_deref(), Some("php:server"));
+    assert_eq!(p.actions[1].apache_dir.as_deref(), Some("public"));
+    assert!(!p.requires.contains(&"apache".to_owned()));
 
     let ht = project(
         "php-apache",

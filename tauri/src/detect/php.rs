@@ -1,6 +1,6 @@
 //! PHP: Laravel (and Statamic), Symfony, the CMS (WordPress, also with
 //! Bedrock; PrestaShop, Drupal, Joomla, TYPO3), plain PHP (built-in server
-//! `php -S`).
+//! `php -S`, and an Apache of its own proposed beside it).
 
 use std::path::Path;
 
@@ -36,6 +36,21 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     } else {
         tr(lang, "file {0}", &[".php"])
     };
+    let root = docroot.unwrap_or(".");
+    let shown = if root == "." {
+        tr(lang, "cartella del progetto", &[])
+    } else {
+        root.to_owned()
+    };
+    let apache = || {
+        Action::apache(
+            "apache",
+            &tr(lang, "sito web Apache ({0})", &[&shown]),
+            root,
+        )
+    };
+    let has_htaccess =
+        exists(dir, ".htaccess") || (root != "." && exists(dir, &format!(r"{root}\.htaccess")));
     if exists(dir, "artisan") {
         platform = if requires("statamic/cms") {
             "Statamic"
@@ -81,22 +96,13 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             platform = "Symfony".into();
             reason = "bin/console".into();
         }
-        let root = docroot.unwrap_or(".");
-        let shown = if root == "." {
-            tr(lang, "cartella del progetto", &[])
-        } else {
-            root.to_owned()
-        };
-        let has_htaccess =
-            exists(dir, ".htaccess") || (root != "." && exists(dir, &format!(r"{root}\.htaccess")));
         let has_nginx = exists(dir, "nginx.conf")
             || (root != "." && exists(dir, &format!(r"{root}\nginx.conf")));
-        if has_htaccess || cms.is_some() {
-            actions.push(Action::apache(
-                "apache",
-                &tr(lang, "sito web Apache ({0})", &[&shown]),
-                root,
-            ));
+        // A CMS or an `.htaccess`: Apache first, the main button. Otherwise
+        // proposed after `php -S`.
+        let apache_first = has_htaccess || cms.is_some();
+        if apache_first {
+            actions.push(apache());
         }
         if has_nginx {
             actions.push(Action::nginx(
@@ -111,6 +117,9 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             &php_server(dir, root),
             Kind::Web,
         ));
+        if !apache_first {
+            actions.push(apache());
+        }
     }
     if composer {
         actions.push(Action::new(
