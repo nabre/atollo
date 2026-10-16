@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="v3Fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.28"/>
+    </linearGradient>
+    <linearGradient id="v3TargetFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0.14"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="620" rx="16" fill="url(#bgGrad)" stroke="#1f2937" stroke-width="1.5"/>
+
+  <text x="450" y="38" fill="#f9fafb" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" text-anchor="middle">
+    NEXKORA Dev-Kit — Radar Evoluzione 9 Dimensioni (v1 → v2 → v3 Audit → Target v3.1 100% Portable)
+  </text>
+  <text x="450" y="60" fill="#9ca3af" font-family="system-ui, -apple-system, sans-serif" font-size="13" text-anchor="middle">
+    Confronto metrico su base 100 dopo il merge dello Sciame PR #1 (HEAD 39b74bc) e piano di promozione v3
+  </text>
+
+  <!-- Radar Grid Center: (450, 325), Radius: 200 -->
+  <!-- Angles (9 axes, step 40 deg, starting at -90 deg):
+       0: -90°   (0, -1)       -> (450, 125)
+       1: -50°   (0.643, -0.766) -> (578.6, 171.8)
+       2: -10°   (0.985, -0.174) -> (647.0, 290.2)
+       3:  30°   (0.866, 0.500)  -> (623.2, 425.0)
+       4:  70°   (0.342, 0.940)  -> (518.4, 513.0)
+       5: 110°   (-0.342, 0.940) -> (381.6, 513.0)
+       6: 150°   (-0.866, 0.500) -> (276.8, 425.0)
+       7: 190°   (-0.985, -0.174)-> (253.0, 290.2)
+       8: 230°   (-0.643, -0.766)-> (321.4, 171.8)
+  -->
+  <g stroke="#374151" stroke-width="1" fill="none">
+    <!-- 100% ring -->
+    <polygon points="450,125 578.6,171.8 647.0,290.2 623.2,425.0 518.4,513.0 381.6,513.0 276.8,425.0 253.0,290.2 321.4,171.8" stroke="#4b5563" stroke-dasharray="3,3"/>
+    <!-- 80% ring -->
+    <polygon points="450,165 552.8,202.4 607.6,297.2 588.6,405.0 504.7,475.4 395.3,475.4 311.4,405.0 292.4,297.2 347.2,202.4"/>
+    <!-- 60% ring -->
+    <polygon points="450,205 527.1,233.1 568.2,304.1 553.9,385.0 491.0,437.8 409.0,437.8 346.1,385.0 331.8,304.1 372.9,233.1"/>
+    <!-- 40% ring -->
+    <polygon points="450,245 501.4,263.7 528.8,311.1 519.3,365.0 477.4,400.2 422.6,400.2 380.7,365.0 371.2,311.1 398.6,263.7"/>
+    <!-- Axes -->
+    <line x1="450" y1="325" x2="450" y2="125"/>
+    <line x1="450" y1="325" x2="578.6" y2="171.8"/>
+    <line x1="450" y1="325" x2="647.0" y2="290.2"/>
+    <line x1="450" y1="325" x2="623.2" y2="425.0"/>
+    <line x1="450" y1="325" x2="518.4" y2="513.0"/>
+    <line x1="450" y1="325" x2="381.6" y2="513.0"/>
+    <line x1="450" y1="325" x2="276.8" y2="425.0"/>
+    <line x1="450" y1="325" x2="253.0" y2="290.2"/>
+    <line x1="450" y1="325" x2="321.4" y2="171.8"/>
+  </g>
+
+  <!-- v1 Baseline Polygon (Amber dashed) -->
+  <!-- Scores v1: D1=92, D2=88, D3=89, D4=86, D5=81, D6=87, D7=90, D8=85, D9=22 -->
+  <polygon points="450,141 563.1,190.2 625.3,294.0 598.9,411.0 505.4,477.3 390.5,488.5 294.1,415.0 282.6,295.4 421.7,291.3"
+           fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <!-- v2 Snapshot Polygon (Blue dashed) -->
+  <!-- Scores v2: D1=93, D2=88, D3=86, D4=86, D5=81, D6=87, D7=90, D8=87, D9=58 -->
+  <polygon points="450,139 563.1,190.2 619.4,295.1 598.9,411.0 505.4,477.3 390.5,488.5 294.1,415.0 278.6,294.7 375.4,236.1"
+           fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="3,3"/>
+
+  <!-- Target v3.1 (100% Portable + Multi-OS Full) Polygon (Purple) -->
+  <!-- Scores Target: D1=99, D2=100, D3=98, D4=96, D5=95, D6=98, D7=98, D8=97, D9=98 -->
+  <polygon points="450,127 578.6,171.8 643.1,290.9 616.3,421.0 515.0,503.6 383.0,509.2 280.3,423.0 258.9,291.2 324.0,174.9"
+           fill="url(#v3TargetFill)" stroke="#a855f7" stroke-width="2" stroke-dasharray="4,2"/>
+
+  <!-- v3 Current Audit (HEAD 39b74bc) Polygon (Emerald/Cyan solid) -->
+  <!-- Scores v3: D1=96, D2=94, D3=94, D4=91, D5=90, D6=95, D7=95, D8=94, D9=76 -->
+  <polygon points="450,133 570.9,181.0 635.2,292.3 607.6,416.0 511.6,494.2 385.0,503.6 285.5,420.0 264.8,292.3 352.3,208.6"
+           fill="url(#v3Fill)" stroke="#10b981" stroke-width="3"/>
+
+  <!-- Data Points for v3 -->
+  <g fill="#10b981" stroke="#0b0f19" stroke-width="2">
+    <circle cx="450" cy="133" r="5"/>
+    <circle cx="570.9" cy="181.0" r="5"/>
+    <circle cx="635.2" cy="292.3" r="5"/>
+    <circle cx="607.6" cy="416.0" r="5"/>
+    <circle cx="511.6" cy="494.2" r="5"/>
+    <circle cx="385.0" cy="503.6" r="5"/>
+    <circle cx="285.5" cy="420.0" r="5"/>
+    <circle cx="264.8" cy="292.3" r="5"/>
+    <circle cx="352.3" cy="208.6" r="5"/>
+  </g>
+
+  <!-- Axis Labels -->
+  <g font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#e5e7eb" font-weight="600">
+    <text x="450" y="105" text-anchor="middle">D1 · Architettura (96/100)</text>
+    <text x="595" y="164" text-anchor="start">D2 · Portabilità 100% (94 → 100)</text>
+    <text x="662" y="294" text-anchor="start">D3 · Correttezza Logica (94/100)</text>
+    <text x="638" y="435" text-anchor="start">D4 · UX / UI &amp; A11y (91/100)</text>
+    <text x="530" y="535" text-anchor="start">D5 · Facilitazione (90/100)</text>
+    <text x="370" y="535" text-anchor="end">D6 · Sicurezza (95/100)</text>
+    <text x="262" y="435" text-anchor="end">D7 · Performance (95/100)</text>
+    <text x="238" y="294" text-anchor="end">D8 · Test &amp; Qualità (94/100)</text>
+    <text x="305" y="164" text-anchor="end">D9 · Multi-OS &amp; Distro (76 → 98)</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(85, 568)" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#d1d5db">
+    <line x1="0" y1="8" x2="28" y2="8" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,4"/>
+    <text x="36" y="12">v1 Baseline (82,4/100)</text>
+
+    <line x1="185" y1="8" x2="213" y2="8" stroke="#3b82f6" stroke-width="2" stroke-dasharray="3,3"/>
+    <text x="221" y="12">v2 Snapshot (85,4/100)</text>
+
+    <line x1="375" y1="8" x2="403" y2="8" stroke="#10b981" stroke-width="3"/>
+    <text x="411" y="12" fill="#10b981" font-weight="700">v3 Audit HEAD 39b74bc (93,1/100)</text>
+
+    <line x1="625" y1="8" x2="653" y2="8" stroke="#a855f7" stroke-width="2" stroke-dasharray="4,2"/>
+    <text x="661" y="12" fill="#c084fc" font-weight="600">Target v3.1 Blueprint (98,2/100)</text>
+  </g>
+</svg>
