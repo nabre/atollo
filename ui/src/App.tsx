@@ -49,6 +49,7 @@ import { NewProjectPage } from "./wizard";
 import { GuidePage, type GuideTopicId } from "./guide";
 import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./hooks";
+import { LoadError } from "./common";
 
 type PageId = "new" | "projects" | "agents" | "databases" | "servers" | "components" | "guide" | "settings" | "eject";
 
@@ -131,7 +132,7 @@ export function App() {
         {t("Vai al contenuto")}
       </a>
       <TitleBar title={current?.label} />
-      <Banner info={info} error={error} />
+      <Banner info={info} error={error} onRetry={loadInfo} />
       {/* VSCodium's floating parts: 4px apart on the workbench color. */}
       <div className="flex min-h-0 flex-1 gap-1 px-1 pb-1">
         <ActivityBar
@@ -331,9 +332,8 @@ function ActivityBar({
 
 /** Warnings about the kit itself, as VSCodium's banner: one line each
  * over the whole window. */
-function Banner({ info, error }: { info: AppInfo | null; error: string | null }) {
-  const notes: { tone: "error" | "warning"; text: string }[] = [];
-  if (error) notes.push({ tone: "error", text: t("Impossibile leggere lo stato del kit: {0}", error) });
+function Banner({ info, error, onRetry }: { info: AppInfo | null; error: string | null; onRetry: () => void }) {
+  const notes: { tone: "warning"; text: string }[] = [];
   if (info?.movedFrom) {
     notes.push({
       tone: "warning",
@@ -358,9 +358,10 @@ function Banner({ info, error }: { info: AppInfo | null; error: string | null })
       ),
     });
   }
-  if (notes.length === 0) return null;
+  if (!error && notes.length === 0) return null;
   return (
     <div className="mx-1 mb-1 space-y-1 rounded-lg border border-vsc-surface-border bg-vsc-widget px-3 py-1.5">
+      <LoadError error={error && t("Impossibile leggere lo stato del kit: {0}", error)} onRetry={onRetry} />
       {notes.map((n) => (
         <Notice key={n.text} tone={n.tone}>
           {n.text}

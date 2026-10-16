@@ -393,6 +393,22 @@ describe("App", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("forbidden");
   });
 
+  it("reads the kit's state again from the banner", async () => {
+    let fail = true;
+    invoke.mockImplementation((cmd) =>
+      cmd === "app_info" && fail ? Promise.reject(new Error("forbidden")) : answers()(cmd),
+    );
+    render(<App />);
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Impossibile leggere lo stato del kit: Error: forbidden");
+    fail = false;
+    fireEvent.click(within(alert).getByRole("button", { name: "Riprova" }));
+    await waitFor(() => {
+      expect(screen.queryByText(/Impossibile leggere lo stato del kit/)).toBeNull();
+    });
+    expect(invoke.mock.calls.filter(([c]) => c === "app_info")).toHaveLength(2);
+  });
+
   it("opens a project in the editor and starts an action from its page", async () => {
     invoke.mockImplementation(
       answers({
