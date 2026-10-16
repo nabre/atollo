@@ -30,12 +30,13 @@ import {
 } from "react-icons/vsc";
 import { lang } from "../i18n";
 
-/** Localized string helper for rich guide content (IT default, EN/FR/DE). */
-export function tr(it: string, en?: string, fr?: string, de?: string): string {
+/** Localized string helper for rich guide content: the Italian source and
+ * its English, French and German, all required (no silent fallback). */
+export function tr(it: string, en: string, fr: string, de: string): string {
   const l = lang();
-  if (l === "en") return en ?? it;
-  if (l === "fr") return fr ?? en ?? it;
-  if (l === "de") return de ?? en ?? it;
+  if (l === "en") return en;
+  if (l === "fr") return fr;
+  if (l === "de") return de;
   return it;
 }
 
@@ -411,20 +412,20 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     title: () =>
       tr(
         "«Strumenti», «Impostazioni», «Rimuovi l'unità» e CLI",
-        "“Tools”, “Settings”, “Remove Drive” & CLI",
+        "“Tools”, “Settings”, “Remove drive” & CLI",
         "« Outils », « Paramètres », « Retirer le lecteur » et CLI",
         "„Werkzeuge“, „Einstellungen“, „Laufwerk entfernen“ & CLI",
       ),
     subtitle: () =>
       tr(
-        "Gestione multi-versione con lucchetto locked, matrice delle Relazioni, albero di personalizzazione Framework, espulsione sicura e CLI Atollo.exe.",
-        "Multi-version management with locked badge, Relations matrix, Framework customization tree, safe drive ejection and Atollo.exe CLI.",
-        "Gestion multi-version avec cadenas verrouillé, matrice des Relations, arbre de personnalisation des Frameworks, éjection sécurisée et CLI Atollo.exe.",
-        "Multi-Versions-Verwaltung mit Gesperrt-Schloss, Beziehungsmatrix, Framework-Anpassungsbaum, sicherem Auswerfen und Atollo.exe-CLI.",
+        "Gestione multi-versione con il lucchetto «bloccata», matrice delle Relazioni, albero di personalizzazione Framework, espulsione sicura e CLI Atollo.exe.",
+        "Multi-version management with the “locked” badge, Relations matrix, Framework customization tree, safe drive ejection and Atollo.exe CLI.",
+        "Gestion multi-version avec le cadenas « verrouillée », matrice des Relations, arbre de personnalisation des Frameworks, éjection sécurisée et CLI Atollo.exe.",
+        "Multi-Versions-Verwaltung mit dem Schloss „gesperrt“, Beziehungsmatrix, Framework-Anpassungsbaum, sicherem Auswerfen und Atollo.exe-CLI.",
       ),
     icon: VscExtensions,
     keywords:
-      "strumenti multi-versione locked relazioni estensioni impostazioni framework rimuovi unita eject cli powershell out-host",
+      "strumenti multi-versione bloccata locked relazioni estensioni impostazioni framework rimuovi unita eject cli powershell out-host",
     targetPage: "components",
   },
 
