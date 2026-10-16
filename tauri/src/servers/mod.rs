@@ -247,6 +247,70 @@ fn slug(s: &str) -> String {
     out.trim_matches('-').to_owned()
 }
 
+/// A DNS label for a `.localhost` name (`alias::valid_domain`): lowercase
+/// ASCII letters and digits, anything else as one `-`, none at the edges;
+/// `site` when nothing is left.
+fn host_label(s: &str) -> String {
+    let mut out = String::new();
+    for ch in s.trim().chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+        } else if !out.is_empty() && !out.ends_with('-') {
+            out.push('-');
+        }
+    }
+    let out = out.trim_end_matches('-');
+    if out.is_empty() {
+        "site".to_owned()
+    } else {
+        out.chars()
+            .take(50)
+            .collect::<String>()
+            .trim_end_matches('-')
+            .to_owned()
+    }
+}
+
+/// Gives every site of a pool its own `ServerName` (BUG-V3-02): the main
+/// site of a project (its `site` action, else its first one in the pool)
+/// `<project>.localhost`, every other `<action>.<project>.localhost`. A name
+/// already taken in the pool (two projects whose names give the same label)
+/// gets `-2`, `-3`... on its first label. The VirtualHost file is named after
+/// it, so two sites never write the same file either.
+fn name_sites(sites: &mut [AttachedSite], port: u16) {
+    let mut used: std::collections::BTreeSet<String> = Default::default();
+    for i in 0..sites.len() {
+        let project = sites[i].project.clone();
+        let main = sites
+            .iter()
+            .position(|s| s.project == project && s.action == detect::SITE_ACTION)
+            .or_else(|| sites.iter().position(|s| s.project == project));
+        let (first, rest) = if main == Some(i) {
+            (host_label(&project), "localhost".to_owned())
+        } else {
+            (
+                host_label(&sites[i].action),
+                format!("{}.localhost", host_label(&project)),
+            )
+        };
+        let mut name = format!("{first}.{rest}");
+        let mut n = 2;
+        while used.contains(&name) {
+            name = format!("{first}-{n}.{rest}");
+            n += 1;
+        }
+        used.insert(name.clone());
+        sites[i].url = format!("http://{name}:{port}");
+        sites[i].server_name = name;
+    }
+}
+
+/// The VirtualHost file of a site in `vhosts\`: one per `ServerName`, unique
+/// in the pool ([`name_sites`]).
+fn vhost_file(site: &AttachedSite) -> String {
+    format!("{}.conf", site.server_name)
+}
+
 fn auto_pool_id(
     engine: WebServerEngine,
     server_line: Option<&str>,
@@ -733,19 +797,22 @@ impl WebServers {
                     php_wanted.insert(target_pool_id.clone());
                 }
                 if let Some(pool) = pools_map.get_mut(&target_pool_id) {
-                    let server_name = format!("{proj_id}.localhost");
-                    let url = format!("http://{server_name}:{}", pool.port);
+                    // Named, with its URL, by `name_sites` below.
                     pool.sites.push(AttachedSite {
                         project: proj_id.clone(),
                         action: action.id.clone(),
                         folder,
-                        server_name,
+                        server_name: String::new(),
                         domains: action.domains.clone(),
                         aliases: action.aliases.clone(),
-                        url,
+                        url: String::new(),
                     });
                 }
             }
+        }
+
+        for pool in pools_map.values_mut() {
+            name_sites(&mut pool.sites, pool.port);
         }
 
         for (id, pool) in &mut pools_map {
@@ -920,10 +987,7 @@ impl WebServers {
                         &doc_root,
                         site,
                     );
-                    write_atomic(
-                        &vhosts_dir.join(format!("{}.conf", site.project)),
-                        vhost.as_bytes(),
-                    )?;
+                    write_atomic(&vhosts_dir.join(vhost_file(site)), vhost.as_bytes())?;
                 }
                 let main_conf = apache_pool_conf(&base, &pool_dir, pool.port, lan)?;
                 let conf_path = pool_dir.join("httpd.conf");
@@ -938,20 +1002,25 @@ impl WebServers {
                     let Some(doc_root) = site_doc_root(&proj_root, site) else {
                         continue;
                     };
+                    // The site's own ServerName first (never `<project>.localhost`
+                    // for every action of the project: BUG-V3-02).
+                    let names: Vec<String> = std::iter::once(site.server_name.clone())
+                        .chain(site.domains.iter().cloned())
+                        .collect();
                     let vhost = nginx::vhost_block(
                         &nginx_dir,
-                        Some(&site.project),
+                        None,
                         &doc_root,
                         None,
                         pool.port,
                         fcgi_port,
                         lan,
-                        &site.domains,
+                        &names,
                         &alias::resolve(&proj_root, &self.kit.projects(), &site.aliases),
                         false,
                     );
                     write_atomic(
-                        &vhosts_dir.join(format!("{}.conf", site.project)),
+                        &vhosts_dir.join(vhost_file(site)),
                         format!("{vhost}\r\n").as_bytes(),
                     )?;
                 }
