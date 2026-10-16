@@ -630,7 +630,10 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         }
         project.requires.sort();
     }
-    if project.platform.contains("WordPress") && !project.requires.iter().any(|r| r == "mariadb") {
+    // A CMS needs the kit's MariaDB (D-93).
+    if php::CMS.iter().any(|c| project.platform.contains(c))
+        && !project.requires.iter().any(|r| r == "mariadb")
+    {
         project.requires.push("mariadb".to_owned());
         project.requires.sort();
     }
