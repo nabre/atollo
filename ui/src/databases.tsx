@@ -20,10 +20,12 @@ import {
   dbAdminOpen,
   folderOpen,
   serviceLine,
+  serviceLinePort,
   serviceSet,
   serviceStart,
   serviceStop,
   servicesList,
+  type LineInfo,
   type ServiceInfo,
   type ServiceState,
 } from "./api";
@@ -119,6 +121,73 @@ export function SecretField({ value, label }: { value: string; label: string }) 
   );
 }
 
+/** Another version of a server, on its own port (PLAN.md §13.2): state,
+ * port and start/stop. */
+function OtherLine({
+  id,
+  o,
+  busy,
+  onStart,
+  onStop,
+  onPort,
+}: {
+  id: string;
+  o: LineInfo;
+  busy: boolean;
+  onStart: () => void;
+  onStop: () => void;
+  onPort: (port: number) => void;
+}) {
+  const [port, setPort] = useState(String(o.port));
+  const on = o.state === "running" || o.state === "starting";
+  const portValue = Number(port);
+  const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
+  const portId = `port-${id}-${o.line}`;
+  return (
+    <div className="space-y-2 rounded border border-vsc-border p-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="font-mono font-semibold">{o.line}</span>
+        <span className="flex items-center gap-1.5" role="status">
+          <Dot tone={stateTone(o.state)} />
+          {stateLabel(o.state)}
+        </span>
+        <span className="flex-1" />
+        {on ? (
+          <ActionButton icon={VscDebugStop} label={t("Ferma {0}", o.line)} small busy={busy} onClick={onStop} />
+        ) : (
+          <ActionButton icon={VscDebugStart} label={t("Avvia {0}", o.line)} small busy={busy} onClick={onStart} />
+        )}
+      </div>
+      {o.state === "error" && o.message && (
+        <Notice tone="error">
+          <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap">{o.message}</pre>
+        </Notice>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor={portId}>{t("Porta")}</label>
+        <TextField
+          id={portId}
+          inputMode="numeric"
+          mono
+          value={port}
+          onChange={(v) => {
+            setPort(v.replace(/\D/g, ""));
+          }}
+          onBlur={() => {
+            if (portValid && portValue !== o.port) onPort(portValue);
+          }}
+          invalid={!portValid}
+          className="w-24"
+        />
+        <span className="text-vsc-desc">
+          {portValid ? (on ? t("Vale dal prossimo avvio.") : null) : t("Una porta fra 1024 e 65535.")}
+        </span>
+      </div>
+      <code className="block font-mono text-[12px] break-all text-vsc-desc select-text">{o.dataDir}</code>
+    </div>
+  );
+}
+
 function ServiceDetails({
   s,
   busy,
@@ -127,6 +196,10 @@ function ServiceDetails({
   onSet,
   onLine,
   onAdminer,
+  lineBusy,
+  onLineStart,
+  onLineStop,
+  onLinePort,
 }: {
   s: ServiceInfo;
   busy: boolean;
@@ -136,6 +209,11 @@ function ServiceDetails({
   onAdminer?: (() => void) | undefined;
   onSet: (port: number | null, autostart: boolean) => void;
   onLine: (line: string | null) => void;
+  /** The other versions (PLAN.md §13.2). */
+  lineBusy: (line: string) => boolean;
+  onLineStart: (line: string) => void;
+  onLineStop: (line: string) => void;
+  onLinePort: (line: string, port: number) => void;
 }) {
   const [port, setPort] = useState(String(s.port));
   const on = s.state === "running" || s.state === "starting";
@@ -295,6 +373,36 @@ function ServiceDetails({
               </CheckboxLabel>
             </div>
           </EditorSection>
+          {s.others.length > 0 && (
+            <EditorSection id={`db-others-${s.id}`} title={t("Altre versioni")}>
+              <div className="space-y-3">
+                <p className="text-vsc-desc">
+                  {t(
+                    "Accese insieme a {0}, ciascuna sulla sua porta e con i suoi dati, per i progetti che le chiedono: si sceglie nella pagina del progetto, e la porta arriva al progetto come DB_PORT.",
+                    s.line ?? "",
+                  )}
+                </p>
+                {s.others.map((o) => (
+                  <OtherLine
+                    // A new key when the port changes: the field starts from it.
+                    key={`${o.line}-${String(o.port)}`}
+                    id={s.id}
+                    o={o}
+                    busy={lineBusy(o.line)}
+                    onStart={() => {
+                      onLineStart(o.line);
+                    }}
+                    onStop={() => {
+                      onLineStop(o.line);
+                    }}
+                    onPort={(port) => {
+                      onLinePort(o.line, port);
+                    }}
+                  />
+                ))}
+              </div>
+            </EditorSection>
+          )}
           <EditorSection id={`db-files-${s.id}`} title={t("File")}>
             <Properties
               rows={[
@@ -339,7 +447,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
   };
   const current = chosen ?? list?.[0]?.id;
   const service = list?.find((s) => s.id === current);
-  const running = (list ?? []).filter((s) => s.state === "running").length;
+  const running = (list ?? []).reduce((n, s) => n + [s, ...s.others].filter((x) => x.state === "running").length, 0);
 
   const side = (
     <>
@@ -441,6 +549,16 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
           }}
           onLine={(line) => {
             act(service.id, () => serviceLine(service.id, line));
+          }}
+          lineBusy={(line) => busy === `${service.id}@${line}`}
+          onLineStart={(line) => {
+            act(`${service.id}@${line}`, () => serviceStart(service.id, line));
+          }}
+          onLineStop={(line) => {
+            act(`${service.id}@${line}`, () => serviceStop(service.id, line));
+          }}
+          onLinePort={(line, port) => {
+            act(`${service.id}@${line}`, () => serviceLinePort(service.id, line, port));
           }}
           onAdminer={
             service.id === "mariadb"

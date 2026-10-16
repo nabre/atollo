@@ -517,7 +517,6 @@
   "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.": "Un serveur pour tous les projets. Chaque version a ses données : au premier démarrage d'une plus récente, celles de la précédente sont copiées et restent telles quelles.",
   "{0} (la più recente)": "{0} (la plus récente)",
   "Scarica {0}": "Télécharger {0}",
-  "Server su {0}": "Serveur sur {0}",
   "richiede Windows 11 su ARM64": "requiert Windows 11 sur ARM64",
   "Non più nella cartella del kit, tolti dalla scelta: {0}.": "Plus dans le dossier du kit, retirés du choix : {0}.",
   "Scaricalo dal browser:": "Téléchargez-le dans le navigateur :",
@@ -749,5 +748,13 @@
   "Versione di {0}": "Version de {0}",
   "predefinito": "par défaut",
   "{0} (copia)": "{0} (copie)",
-  "{0} strumenti": "{0} outils"
+  "{0} strumenti": "{0} outils",
+  "Ferma {0}": "Arrêter {0}",
+  "Avvia {0}": "Démarrer {0}",
+  "Altre versioni": "Autres versions",
+  "Accese insieme a {0}, ciascuna sulla sua porta e con i suoi dati, per i progetti che le chiedono: si sceglie nella pagina del progetto, e la porta arriva al progetto come DB_PORT.": "Démarrées avec {0}, chacune sur son port et avec ses données, pour les projets qui les demandent : on la choisit dans la page du projet, et le port arrive au projet comme DB_PORT.",
+  "Versione del server": "Version du serveur",
+  "Ogni versione ha la sua porta e i suoi dati: cambiandola, database e utente si creano anche sulla nuova, vuoti (i dati si portano con una copia).": "Chaque version a son port et ses données : en la changeant, la base et l'utilisateur sont aussi créés sur la nouvelle, vides (les données se déplacent avec une copie).",
+  "Ogni versione ha la sua porta e i suoi dati.": "Chaque version a son port et ses données.",
+  "Quella del server ({0})": "Celle du serveur ({0})"
 }

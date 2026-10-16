@@ -69,6 +69,7 @@ pub async fn project_delete<R: Runtime>(
         let dbs = crate::db::services::ProjectDrops {
             services: &services,
             env,
+            project: project.clone(),
         };
         crate::projects::delete(&kit, &project, lang, &dbs, force_without_db == Some(true))
             .or_fail_chain("project delete")
