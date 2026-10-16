@@ -16,14 +16,40 @@ use crate::os::jobs::{self, Job};
 use crate::projects::alias::{self, valid_domain, SiteAlias};
 use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
 
+/// The server program of the Nginx in `dir` (BUG-V3-08): `nginx.exe` on
+/// Windows; `sbin/nginx` on macOS and Linux, or `bin/nginx` when only that
+/// one is there.
+pub fn nginx_exe(kit: &Kit, dir: &Path) -> PathBuf {
+    if kit.os().is_windows() {
+        return dir.join("nginx.exe");
+    }
+    let sbin = dir.join("sbin").join("nginx");
+    let bin = dir.join("bin").join("nginx");
+    if !sbin.is_file() && bin.is_file() {
+        bin
+    } else {
+        sbin
+    }
+}
+
+/// The FastCGI program of the PHP in `dir`: `php-cgi.exe` on Windows,
+/// `bin/php-cgi` on macOS and Linux (BUG-V3-08).
+pub fn php_cgi_exe(kit: &Kit, dir: &Path) -> PathBuf {
+    if kit.os().is_windows() {
+        dir.join("php-cgi.exe")
+    } else {
+        dir.join("bin").join("php-cgi")
+    }
+}
+
 /// Resolves the Nginx installation directory from `env` (`CP_NGINX`) or the kit's default line.
 pub fn nginx_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
     env.get("CP_NGINX")
         .map(PathBuf::from)
-        .filter(|d| d.join("nginx.exe").is_file())
+        .filter(|d| nginx_exe(kit, d).is_file())
         .unwrap_or_else(|| {
             let resolved = crate::setup::catalog::kit_path(kit, "nginx");
-            if resolved.join("nginx.exe").is_file() {
+            if nginx_exe(kit, &resolved).is_file() {
                 resolved
             } else {
                 kit.apps().join("nginx")
@@ -31,14 +57,14 @@ pub fn nginx_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
         })
 }
 
-/// Resolves the PHP directory (`php-cgi.exe`) from `env` (`CP_PHP`) or the kit's default line.
+/// Resolves the PHP directory (`php-cgi`) from `env` (`CP_PHP`) or the kit's default line.
 pub fn php_dir(kit: &Kit, env: &KitEnv) -> Option<PathBuf> {
     let dir = env
         .get("CP_PHP")
         .map(PathBuf::from)
-        .filter(|d| d.join("php-cgi.exe").is_file())
+        .filter(|d| php_cgi_exe(kit, d).is_file())
         .unwrap_or_else(|| crate::setup::catalog::kit_path(kit, "php"));
-    dir.join("php-cgi.exe").is_file().then_some(dir)
+    php_cgi_exe(kit, &dir).is_file().then_some(dir)
 }
 
 /// The folder of the project's Nginx runtime files.
@@ -265,7 +291,7 @@ pub fn project_conf(
 /// `None` when PHP is not installed or the spawn failed (in the log).
 pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(u16, Child)> {
     let php = php_dir(kit, env)?;
-    let cgi = php.join("php-cgi.exe");
+    let cgi = php_cgi_exe(kit, &php);
     let fcgi_port = match std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
         .and_then(|l| l.local_addr())
     {
@@ -308,7 +334,7 @@ pub fn command(
     env: &KitEnv,
 ) -> Result<Command> {
     let nginx = nginx_dir(kit, env);
-    let exe = nginx.join("nginx.exe");
+    let exe = nginx_exe(kit, &nginx);
     if !exe.is_file() {
         bail!("Nginx is not installed (Strumenti > Nginx)");
     }

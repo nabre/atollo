@@ -326,14 +326,25 @@ pub fn dir(kit: &Kit, project: &str) -> Result<PathBuf> {
         .ok_or_else(|| anyhow!("not a project name: {project}"))
 }
 
+/// The server program of the Apache in `dir`: `bin\httpd.exe` on Windows,
+/// `bin/httpd` on macOS and Linux (BUG-V3-08).
+pub fn httpd_exe(kit: &Kit, dir: &Path) -> PathBuf {
+    let name = if kit.os().is_windows() {
+        "httpd.exe"
+    } else {
+        "httpd"
+    };
+    dir.join("bin").join(name)
+}
+
 /// Resolves the Apache installation directory from `env` (`CP_APACHE`) or the kit's default line.
 pub fn apache_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
     env.get("CP_APACHE")
         .map(PathBuf::from)
-        .filter(|d| d.join(r"bin\httpd.exe").is_file())
+        .filter(|d| httpd_exe(kit, d).is_file())
         .unwrap_or_else(|| {
             let resolved = crate::setup::catalog::kit_path(kit, "apache");
-            if resolved.join(r"bin\httpd.exe").is_file() {
+            if httpd_exe(kit, &resolved).is_file() {
                 resolved
             } else {
                 kit.apps().join("apache")
@@ -355,7 +366,7 @@ pub fn command(
     env: &KitEnv,
 ) -> Result<Command> {
     let apache = apache_dir(kit, env);
-    let exe = apache.join(r"bin\httpd.exe");
+    let exe = httpd_exe(kit, &apache);
     if !exe.is_file() {
         bail!("Apache is not installed (Strumenti > Apache)");
     }

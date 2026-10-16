@@ -1372,7 +1372,7 @@ impl WebServers {
         let (mut cmd, fcgi_port, php) = match pool.engine {
             WebServerEngine::Apache => {
                 let apache_dir = component_dir(&self.kit, "apache", pool.server_line.as_deref());
-                let exe = apache_dir.join(r"bin\httpd.exe");
+                let exe = apache::httpd_exe(&self.kit, &apache_dir);
                 if !exe.is_file() {
                     bail!("Apache is not installed");
                 }
@@ -1385,7 +1385,7 @@ impl WebServers {
             }
             WebServerEngine::Nginx => {
                 let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
-                let exe = nginx_dir.join("nginx.exe");
+                let exe = nginx::nginx_exe(&self.kit, &nginx_dir);
                 if !exe.is_file() {
                     bail!("Nginx is not installed");
                 }
@@ -1525,7 +1525,7 @@ impl WebServers {
             // Nginx with the same PHP and port: a graceful reload.
             let conf_path = self.write_pool_configs(&pool, live.fcgi_port, lan)?;
             let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
-            let exe = nginx_dir.join("nginx.exe");
+            let exe = nginx::nginx_exe(&self.kit, &nginx_dir);
             let pool_dir = self.kit.data().join("servers").join(&pool.id);
             let status = jobs::kit_command(&exe, base_env)
                 .arg("-p")
