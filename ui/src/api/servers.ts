@@ -7,6 +7,8 @@ export type WebServerEngine = "apache" | "nginx";
 
 export interface AttachedSite {
   project: string;
+  /** Id of the project's action this site comes from ("" in older data). */
+  action: string;
   folder: string;
   serverName: string;
   domains: string[];
@@ -59,6 +61,7 @@ const SAMPLE_SERVERS: WebServersView = {
       sites: [
         {
           project: "portale-legacy",
+          action: "apache",
           folder: "public",
           serverName: "portale-legacy.localhost",
           domains: ["admin.portale-legacy.localhost"],
