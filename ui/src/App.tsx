@@ -4,7 +4,7 @@
 // concerns one project on its page, what concerns the kit on the kit's pages.
 // Texts go through t() (i18n.ts) in the language of the settings or of
 // Windows, sent by app_info.
-import { useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
   VscBook,
@@ -46,10 +46,14 @@ import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
 import { ServersPage } from "./servers";
 import { NewProjectPage } from "./wizard";
-import { GuidePage, type GuideTopicId } from "./guide";
+import type { GuideTopicId } from "./guide";
 import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./hooks";
 import { LoadError } from "./common";
+
+// The Guide is large and seldom open: its own chunk, read the first time
+// the page is shown.
+const GuidePage = lazy(() => import("./guide").then((m) => ({ default: m.GuidePage })));
 
 type PageId = "new" | "projects" | "agents" | "databases" | "servers" | "components" | "guide" | "settings" | "eject";
 
@@ -176,14 +180,16 @@ export function App() {
           ) : page === "servers" ? (
             <ServersPage onGuide={openGuide} />
           ) : page === "guide" ? (
-            <GuidePage
-              key={guideTopic}
-              info={info}
-              initialTopic={guideTopic}
-              onNavigate={(target) => {
-                setPage(target);
-              }}
-            />
+            <Suspense fallback={<div className="flex-1 p-5 text-vsc-desc">{t("Caricamento…")}</div>}>
+              <GuidePage
+                key={guideTopic}
+                info={info}
+                initialTopic={guideTopic}
+                onNavigate={(target) => {
+                  setPage(target);
+                }}
+              />
+            </Suspense>
           ) : page === "settings" ? (
             <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} info={info} onGuide={openGuide} />
           ) : (
