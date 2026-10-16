@@ -17,6 +17,8 @@ fn profile_crud_and_vhost_generation() {
                 server_line: Some("2.4".into()),
                 php_line: Some("5.6".into()),
                 port: Some(8095),
+                keep_alive: true,
+                autostart: false,
             },
             "it",
         )
@@ -111,6 +113,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
         ],
         conf_dir: r"data\servers\nginx-default".into(),
         orphan: false,
+        profile: None,
     };
 
     let conf_path = servers.write_pool_configs(&pool, None, false).unwrap();
@@ -147,6 +150,7 @@ fn nginx_pool(id: &str, port: u16, sites: Vec<AttachedSite>) -> WebServerPool {
         sites,
         conf_dir: format!(r"data\servers\{id}"),
         orphan: false,
+        profile: None,
     }
 }
 
@@ -228,6 +232,8 @@ fn concurrent_list_and_save_profile_keep_profile() {
                             server_line: None,
                             php_line: None,
                             port: None,
+                            keep_alive: true,
+                            autostart: false,
                         },
                         "it",
                     )
@@ -262,6 +268,8 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
                 server_line: None,
                 php_line: None,
                 port: Some(8094),
+                keep_alive: true,
+                autostart: false,
             },
             "it",
         )
@@ -281,6 +289,8 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
             php_line: None,
             php: None,
             started: nginx_pool("gone", 8094, Vec::new()),
+            by_user: true,
+            attached: BTreeSet::new(),
             _job: job,
         },
     );
@@ -318,6 +328,8 @@ fn start_waits_for_a_port_being_released() {
                 server_line: None,
                 php_line: None,
                 port: Some(port),
+                keep_alive: true,
+                autostart: false,
             },
             "it",
         )
@@ -364,6 +376,8 @@ fn list_uses_cache_until_invalidated() {
         server_line: None,
         php_line: None,
         port: Some(if id == "outside" { 8097 } else { 8086 }),
+        keep_alive: true,
+        autostart: false,
     };
     let store = StoredServers {
         profiles: vec![profile("outside")],
@@ -449,6 +463,8 @@ fn fresh_list_prunes_ports_of_gone_pools() {
             server_line: None,
             php_line: None,
             port: Some(8097),
+            keep_alive: true,
+            autostart: false,
         }],
         ports,
     };
@@ -525,6 +541,8 @@ fn default_nginx_pool_has_no_php_without_php_projects() {
                 server_line: None,
                 php_line: None,
                 port: Some(8098),
+                keep_alive: true,
+                autostart: false,
             },
             "it",
         )
@@ -570,6 +588,8 @@ fn pool_with_dead_php_cgi_is_not_running() {
             php_line: Some("8.4".into()),
             php: Some(php),
             started: nginx_pool("nginx-php", 8099, Vec::new()),
+            by_user: true,
+            attached: BTreeSet::new(),
             _job: job,
         },
     );
@@ -602,6 +622,8 @@ fn pool_of_finds_assigned_project() {
                 server_line: None,
                 php_line: None,
                 port: Some(8096),
+                keep_alive: true,
+                autostart: false,
             },
             "it",
         )
@@ -637,6 +659,8 @@ fn pool_of_finds_assigned_project() {
                 server_line: None,
                 php_line: None,
                 port: Some(8091),
+                keep_alive: true,
+                autostart: false,
             },
             "it",
         )
@@ -720,6 +744,8 @@ fn two_actions_of_one_project_get_distinct_vhosts() {
                 server_line: None,
                 php_line: None,
                 port: Some(8087),
+                keep_alive: true,
+                autostart: false,
             },
             "it",
         )
@@ -819,6 +845,8 @@ fn ports_are_unique_among_pools() {
         server_line: None,
         php_line: None,
         port: Some(port),
+        keep_alive: true,
+        autostart: false,
     };
     servers.save_profile(profile("one", 8085), "it").unwrap();
     let err = servers
@@ -867,6 +895,8 @@ fn start_refuses_a_line_not_installed() {
         server_line: Some(server_line.into()),
         php_line: Some(php_line.into()),
         port: Some(port),
+        keep_alive: true,
+        autostart: false,
     };
     servers.save_profile(profile("1.25", "8.4"), "it").unwrap();
     let err = servers
@@ -900,6 +930,8 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
             php_line: started.php_line.clone(),
             php: None,
             started,
+            by_user: true,
+            attached: BTreeSet::new(),
             _job: job,
         },
     );
@@ -957,6 +989,8 @@ fn assign_project_reloads_only_its_pool_and_reports_errors() {
                     server_line: None,
                     php_line: None,
                     port: Some(port),
+                    keep_alive: true,
+                    autostart: false,
                 },
                 "it",
             )
@@ -1012,6 +1046,96 @@ fn php_cgi_listening_tells_ended_from_ready() {
     )
     .unwrap();
     assert!(!php_cgi_listening(&mut ended, port, Duration::from_secs(5)));
+}
+
+/// PLAN.md §13.1: a pool stops with its last project only when projects
+/// started it and it is not kept alive.
+#[test]
+fn stops_when_left_follows_who_started_it() {
+    assert!(stops_when_left(false, 0, false));
+    assert!(!stops_when_left(false, 1, false), "another project left");
+    assert!(!stops_when_left(false, 0, true), "kept alive");
+    assert!(!stops_when_left(true, 0, false), "started by the user");
+}
+
+/// PLAN.md §13.1: an older `servers.json` (no options) keeps its profiles
+/// alive and starts none with the app; the options are saved and read back.
+#[test]
+fn profile_options_default_and_round_trip() {
+    let old: StoredServers = serde_json::from_str(
+        r#"{ "profiles": [ { "id": "legacy", "name": "Legacy", "engine": "nginx",
+            "port": 8090 } ], "ports": { "legacy": 8090 } }"#,
+    )
+    .unwrap();
+    assert!(old.profiles[0].keep_alive);
+    assert!(!old.profiles[0].autostart);
+
+    let tmp = TempDir::new("servers-options");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let mut profile = old.profiles[0].clone();
+    profile.keep_alive = false;
+    profile.autostart = true;
+    servers.save_profile(profile, "it").unwrap();
+    let text = fs::read_to_string(store_path(&kit)).unwrap();
+    assert!(text.contains("\"keepAlive\": false") && text.contains("\"autostart\": true"));
+    let view = servers.list("it", true);
+    let saved = view.pools[0].profile.as_ref().unwrap();
+    assert!(!saved.keep_alive && saved.autostart);
+    assert_eq!(
+        saved.server_line, None,
+        "the profile as saved, not resolved"
+    );
+
+    // With the app: tried, and with no Nginx in this kit only logged.
+    servers.autostart(&KitEnv::default(), "it");
+    assert!(!servers.is_running("legacy"));
+}
+
+/// PLAN.md §13.1: a stopped project's site leaves the pool's files; an
+/// automatic pool started by projects stops with the last of them.
+#[test]
+fn detach_leaves_the_pool_and_stops_an_empty_automatic_one() {
+    let tmp = TempDir::new("servers-detach");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let projects = kit.projects();
+    fs::create_dir_all(projects.join(r"shop\public")).unwrap();
+    fs::create_dir_all(projects.join(r"blog\public")).unwrap();
+    let pool = nginx_pool(
+        "nginx-auto",
+        8082,
+        vec![site("shop", "public", 8082), site("blog", "public", 8082)],
+    );
+
+    // Not running: only left out of the files written for the next start.
+    servers
+        .detach("nginx-auto", "shop", "site", &KitEnv::default(), "it")
+        .unwrap();
+    let conf = servers.write_pool_configs(&pool, None, false).unwrap();
+    let vhosts = conf.parent().unwrap().join("vhosts");
+    assert!(!vhosts.join("shop.localhost.conf").exists());
+    assert!(vhosts.join("blog.localhost.conf").exists());
+
+    // Started by the blog only: its stop stops the automatic pool.
+    fake_running(&servers, pool.clone());
+    {
+        let mut running = servers.running.lock().unwrap();
+        let r = running.get_mut("nginx-auto").unwrap();
+        r.by_user = false;
+        r.attached.insert(("blog".into(), "site".into()));
+    }
+    servers
+        .detach("nginx-auto", "blog", "site", &KitEnv::default(), "it")
+        .unwrap();
+    assert!(!servers.is_running("nginx-auto"));
+    assert!(servers
+        .detached
+        .lock()
+        .unwrap()
+        .contains(&("blog".into(), "site".into())));
 }
 
 /// BUG-V3-02: names that give the same label in one pool stay distinct.

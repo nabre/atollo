@@ -31,6 +31,9 @@ export interface WebServerPool {
   /** Running, but no longer one of the pools of the profiles and the projects
    * (an automatic pool whose id changed with a newer line): stop it. */
   orphan: boolean;
+  /** The profile as saved (a manual pool), to save it again with its options
+   * changed; null for an automatic pool. */
+  profile: WebServerProfileInput | null;
 }
 
 export interface WebServerProfileInput {
@@ -40,6 +43,11 @@ export interface WebServerProfileInput {
   serverLine: string | null;
   phpLine: string | null;
   port: number | null;
+  /** «Mantieni attivo anche senza progetti»: started by a project, the pool
+   * stays on when its last project stops (true when left out). */
+  keepAlive?: boolean;
+  /** «Avvia con NEXKORA»: started when the app opens. */
+  autostart?: boolean;
 }
 
 export interface WebServersView {
@@ -74,6 +82,7 @@ const SAMPLE_SERVERS: WebServersView = {
       ],
       confDir: "data\\servers\\apache-2.4-php-8.4",
       orphan: false,
+      profile: null,
     },
   ],
   apacheLines: ["2.4"],

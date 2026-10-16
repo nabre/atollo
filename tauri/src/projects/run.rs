@@ -890,9 +890,18 @@ impl Runner {
         (self.notify)(Event::State(info));
     }
 
+    /// The pool serving the running action `key`, with its project and
+    /// action ids (`None`: not served by a pool, or not running).
+    pub fn pooled(&self, key: &str) -> Option<(String, String, String)> {
+        let entries = self.entries();
+        let e = entries.get(key)?;
+        let pool = e.pool.clone().filter(|_| e.info.state == State::Running)?;
+        Some((pool, e.info.project.clone(), e.info.action.clone()))
+    }
+
     /// Stops an action and everything it started. An action served by a
-    /// shared pool is only marked stopped: the pool serves other projects
-    /// too and is stopped from the "Server Web" page.
+    /// shared pool is only marked stopped here: the caller takes its site
+    /// out of the pool (`WebServers::detach`).
     pub fn stop(&self, key: &str) {
         let (job, unpooled) = {
             let mut entries = self.entries();

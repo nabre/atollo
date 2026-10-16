@@ -31,6 +31,7 @@ import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
 import {
   Button,
+  CheckboxLabel,
   Dot,
   EditorBody,
   EditorHeader,
@@ -48,6 +49,42 @@ import {
   ViewPane,
 } from "./workbench";
 
+/** The two options of a profile, as in the creation form and the details. */
+function ProfileOptions({
+  keepAlive,
+  autostart,
+  disabled = false,
+  onChange,
+}: {
+  keepAlive: boolean;
+  autostart: boolean;
+  disabled?: boolean;
+  onChange: (keepAlive: boolean, autostart: boolean) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <CheckboxLabel
+        checked={keepAlive}
+        disabled={disabled}
+        onChange={(v) => {
+          onChange(v, autostart);
+        }}
+      >
+        {t("Mantieni attivo anche senza progetti")}
+      </CheckboxLabel>
+      <CheckboxLabel
+        checked={autostart}
+        disabled={disabled}
+        onChange={(v) => {
+          onChange(keepAlive, v);
+        }}
+      >
+        {t("Avvia con NEXKORA")}
+      </CheckboxLabel>
+    </div>
+  );
+}
+
 function PoolDetails({
   pool,
   busy,
@@ -55,6 +92,7 @@ function PoolDetails({
   onStop,
   onReload,
   onRemove,
+  onOptions,
 }: {
   pool: WebServerPool;
   busy: boolean;
@@ -62,6 +100,7 @@ function PoolDetails({
   onStop: () => void;
   onReload: () => void;
   onRemove?: (() => void) | undefined;
+  onOptions?: ((keepAlive: boolean, autostart: boolean) => void) | undefined;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -181,6 +220,22 @@ function PoolDetails({
             ]}
           />
         </EditorSection>
+        <EditorSection id={`srv-options-${pool.id}`} title={t("Avvio e arresto")}>
+          {pool.profile && onOptions ? (
+            <ProfileOptions
+              keepAlive={pool.profile.keepAlive ?? true}
+              autostart={pool.profile.autostart ?? false}
+              disabled={busy}
+              onChange={onOptions}
+            />
+          ) : (
+            <p className="text-[12px] text-vsc-desc">
+              {t(
+                "Un pool automatico parte con il primo progetto che lo usa e si ferma con l'ultimo, se non l'hai avviato da questa pagina.",
+              )}
+            </p>
+          )}
+        </EditorSection>
       </EditorBody>
     </div>
   );
@@ -199,6 +254,8 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
   const [newServerLine, setNewServerLine] = useState("");
   const [newPhpLine, setNewPhpLine] = useState("");
   const [newPort, setNewPort] = useState("");
+  const [newKeepAlive, setNewKeepAlive] = useState(true);
+  const [newAutostart, setNewAutostart] = useState(false);
 
   const load = useCallback((fresh: boolean) => {
     serversList(fresh).then(setView, (e: unknown) => {
@@ -396,6 +453,14 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
                 placeholder="8081"
               />
             </div>
+            <ProfileOptions
+              keepAlive={newKeepAlive}
+              autostart={newAutostart}
+              onChange={(keepAlive, autostart) => {
+                setNewKeepAlive(keepAlive);
+                setNewAutostart(autostart);
+              }}
+            />
             <Button
               small
               disabled={newName.trim().length === 0 || busy === "__create"}
@@ -409,6 +474,8 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
                     serverLine: newServerLine || null,
                     phpLine: newPhpLine || null,
                     port: portNum,
+                    keepAlive: newKeepAlive,
+                    autostart: newAutostart,
                   });
                   setNewName("");
                   setNewPort("");
@@ -447,6 +514,15 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
             activePool.manual
               ? () => {
                   run(activePool.id, () => serverRemove(activePool.id));
+                }
+              : undefined
+          }
+          onOptions={
+            activePool.profile
+              ? (keepAlive, autostart) => {
+                  const profile = activePool.profile;
+                  if (!profile) return;
+                  run(activePool.id, () => serverSave({ ...profile, keepAlive, autostart }));
                 }
               : undefined
           }
