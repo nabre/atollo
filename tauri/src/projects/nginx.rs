@@ -135,8 +135,10 @@ pub fn vhost_block(
     }
     lines.extend(alias_locations(aliases, "        "));
     if let Some(fp) = fcgi_port {
+        // `~*`: on NTFS `/INDEX.PHP` is the same file, and must be run,
+        // never served as text by `location /`.
         lines.extend([
-            "        location ~ \\.php$ {".to_owned(),
+            "        location ~* \\.php$ {".to_owned(),
             "            try_files $uri =404;".to_owned(),
             format!("            fastcgi_pass 127.0.0.1:{fp};"),
             "            fastcgi_index index.php;".to_owned(),

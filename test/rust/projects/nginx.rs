@@ -52,3 +52,25 @@ fn no_fcgi_blocks_php_source() {
     assert!(!with_php.contains("return 503;"), "{with_php}");
     assert!(with_php.contains("fastcgi_pass 127.0.0.1:9124;"));
 }
+
+/// F2: on NTFS `/INDEX.PHP` is `index.php`: the FastCGI location matches
+/// any case, so it is run and never served as source by `location /`.
+#[test]
+fn fastcgi_location_is_case_insensitive() {
+    let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
+    let doc = Path::new(r"D:\kit\projects\site\public");
+    let run = Path::new(r"D:\kit\data\projects\site\nginx");
+    let conf = project_conf(
+        nginx,
+        Some("site"),
+        doc,
+        run,
+        7108,
+        Some(9125),
+        false,
+        &[],
+        &[],
+    );
+    assert!(conf.contains("location ~* \\.php$ {"), "{conf}");
+    assert!(!conf.contains("location ~ \\.php$"), "{conf}");
+}
