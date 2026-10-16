@@ -22,7 +22,7 @@ fn profile_crud_and_vhost_generation() {
         )
         .unwrap();
 
-    let view = servers.list("it");
+    let view = servers.list("it", false);
     assert_eq!(view.pools.len(), 1);
     assert_eq!(view.pools[0].id, "legacy-apache-5.6");
     assert_eq!(view.pools[0].port, 8095);
@@ -59,7 +59,7 @@ fn profile_crud_and_vhost_generation() {
     assert!(!vhost.contains("..") && !vhost.contains("Include") && !vhost.contains("Listen"));
 
     servers.remove_profile("legacy-apache-5.6").unwrap();
-    assert!(servers.list("it").pools.is_empty());
+    assert!(servers.list("it", false).pools.is_empty());
 }
 
 #[test]
@@ -224,11 +224,56 @@ fn concurrent_list_and_save_profile_keep_profile() {
         });
         s.spawn(|| {
             for _ in 0..40 {
-                servers.list("it");
+                servers.list("it", true);
             }
         });
     });
     let store = load_store(&kit);
     assert_eq!(store.profiles.len(), 20);
-    assert_eq!(servers.list("it").pools.len(), 20);
+    assert_eq!(servers.list("it", false).pools.len(), 20);
+}
+
+/// BUG-07: the 3 s poll reuses the scan; `fresh` and every change made
+/// through `WebServers` read `servers.json` and the projects again.
+#[test]
+fn list_uses_cache_until_invalidated() {
+    let tmp = TempDir::new("servers-list-cache");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    assert!(servers.list("it", false).pools.is_empty());
+
+    // Changed behind its back: the cached scan is still shown...
+    let profile = |id: &str| WebServerProfileInput {
+        id: id.into(),
+        name: id.into(),
+        engine: WebServerEngine::Nginx,
+        server_line: None,
+        php_line: None,
+        port: Some(8097),
+    };
+    let store = StoredServers {
+        profiles: vec![profile("outside")],
+        ports: BTreeMap::new(),
+    };
+    save_store(&kit, &store).unwrap();
+    assert!(servers.list("it", false).pools.is_empty());
+    // ...until a fresh list (the "Aggiorna" button).
+    assert_eq!(servers.list("it", true).pools.len(), 1);
+
+    // save_profile and remove_profile invalidate it.
+    servers.save_profile(profile("second"), "it").unwrap();
+    assert_eq!(servers.list("it", false).pools.len(), 2);
+    servers.remove_profile("outside").unwrap();
+    let ids: Vec<String> = servers
+        .list("it", false)
+        .pools
+        .into_iter()
+        .map(|p| p.id)
+        .collect();
+    assert_eq!(ids, ["second"]);
+
+    // Another language is never served from the cache of the first.
+    save_store(&kit, &StoredServers::default()).unwrap();
+    assert!(servers.list("en", false).pools.is_empty());
 }

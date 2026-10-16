@@ -74,8 +74,11 @@ const SAMPLE_SERVERS: WebServersView = {
   phpLines: ["8.4", "8.3", "7.4", "5.6"],
 };
 
-export function serversList(): Promise<WebServersView> {
-  return query<WebServersView>("servers_list", SAMPLE_SERVERS);
+/** The pools. `fresh` reads the projects again (the refresh button); left
+ * out, Rust may answer from its scan of the last 15 s, with the running
+ * state always current. */
+export function serversList(fresh = false): Promise<WebServersView> {
+  return query<WebServersView>("servers_list", SAMPLE_SERVERS, { fresh });
 }
 
 export function serverSave(profile: WebServerProfileInput): Promise<void> {
