@@ -2,10 +2,13 @@
 //! `Expand-Package`, `Replace-Dir` and `Replace-File`).
 //!
 //! Extraction refuses entries that would land outside the target (absolute
-//! paths, `..`, drive prefixes) and skips links. File times are not restored
-//! (exFAT rejects them; `tar -m` in the kit). Swaps are atomic from the
-//! user's point of view: the new folder is complete before the old one moves,
-//! and a failure puts the old one back.
+//! paths, `..`, drive prefixes). Links are never created on Windows; on Unix
+//! a symbolic link is created only if its target is relative and stays inside
+//! the target folder, and a hard link only to a file already extracted there
+//! (others are skipped). File times are not restored (exFAT rejects them;
+//! `tar -m` in the kit). Swaps are atomic from the user's point of view: the
+//! new folder is complete before the old one moves, and a failure puts the
+//! old one back.
 
 use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom};
@@ -173,20 +176,10 @@ fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
 }
 
 fn extract_tar_xz(archive: &Path, dest: &Path) -> Result<()> {
-    // Use system `tar -xJf` when extracting `.tar.xz` archives (Linux/macOS
-    // and Windows 10/11 ship `tar` with libarchive XZ support), after verifying
-    // every entry path with `safe_join`.
-    let status = std::process::Command::new("tar")
-        .arg("-xJf")
-        .arg(archive)
-        .arg("-C")
-        .arg(dest)
-        .status()
-        .context("running tar -xJf")?;
-    if !status.success() {
-        bail!("tar -xJf exited with {status}");
-    }
-    Ok(())
+    // Decoded in process and fed to the same tar walk as `.tar.gz`, so every
+    // entry goes through `safe_join` and the link rules of `extract_tar_stream`.
+    let xz = lzma_rust2::XzReader::new(io::BufReader::new(File::open(archive)?), true);
+    extract_tar_stream(xz, dest)
 }
 
 fn extract_tar_stream<R: Read>(reader: R, dest: &Path) -> Result<()> {
