@@ -279,3 +279,58 @@ fn pool_runs_follow_their_pool() {
     r.clear(&shop.key);
     assert_eq!(r.list().len(), 1);
 }
+
+/// BUG-V3-01: when the php-cgi of a project's Nginx ends, the server is
+/// stopped and the run ends in error with the reason in its log; stopped by
+/// the user, nothing is added.
+#[test]
+fn nginx_stops_when_its_php_cgi_ends() {
+    let tmp = TempDir::new("run-php-cgi");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let r = Runner::new(kit, Arc::new(|_| {}));
+    let cmd = |args: &str| {
+        let mut c = std::process::Command::new(jobs::system_root().join(r"System32\cmd.exe"));
+        c.raw_arg(format!("/d /c \"{args}\""))
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        c
+    };
+    let run = |project: &str, stopped: bool| {
+        let info = r.attach_pool(
+            project,
+            &site_action(false, None),
+            "-",
+            8097,
+            "http://x",
+            "it",
+        );
+        let job = Job::new().unwrap();
+        let mut server = jobs::spawn_in(&mut cmd("ping -n 60 127.0.0.1"), &job).unwrap();
+        let php = jobs::spawn_in(&mut cmd("exit 7"), &job).unwrap();
+        {
+            let mut entries = r.entries();
+            let e = entries.get_mut(&info.key).unwrap();
+            e.pool = None;
+            e.stopped = stopped;
+            e.job = (!stopped).then_some(job);
+        }
+        let start = std::time::Instant::now();
+        let code = r.wait_with_php(&info.key, &mut server, php, "it");
+        assert!(start.elapsed() < Duration::from_secs(20));
+        (code, r.log(&info.key))
+    };
+
+    let (code, log) = run("shop", false);
+    assert_eq!(code, None, "an error, whatever the server's code");
+    assert!(
+        log.iter()
+            .any(|l| l.contains("php-cgi terminato (codice 7)")),
+        "{log:?}"
+    );
+
+    // Stopped by the user: the job is gone, the server is only waited for.
+    let (_, log) = run("blog", true);
+    assert!(!log.iter().any(|l| l.contains("php-cgi")), "{log:?}");
+}

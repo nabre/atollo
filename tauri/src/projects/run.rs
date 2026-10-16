@@ -481,6 +481,8 @@ impl Runner {
         };
 
         let job = Job::new()?;
+        // The php-cgi of a project's Nginx, watched with the server.
+        let mut php: Option<Child> = None;
         let (mut cmd, shown) = if let Some(folder) = &action.static_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             let exe = std::env::current_exe()?;
@@ -513,7 +515,10 @@ impl Runner {
             let root = detect::inside_dir(&cwd, folder)?;
             // php-cgi lives in the action's job: stopping the action ends it too.
             let fcgi_port = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job)
-                .map(|(port, _php)| port);
+                .map(|(port, child)| {
+                    php = Some(child);
+                    port
+                });
             let cmd = crate::projects::nginx::command(
                 &self.kit,
                 id,
@@ -657,7 +662,10 @@ impl Runner {
         }
         let (me, key2, lang2) = (Arc::clone(self), key.clone(), lang.to_owned());
         std::thread::spawn(move || {
-            let code = child.wait().ok().and_then(|s| s.code());
+            let code = match php {
+                Some(php) => me.wait_with_php(&key2, &mut child, php, &lang2),
+                None => child.wait().ok().and_then(|s| s.code()),
+            };
             for r in readers {
                 let _ = r.join();
             }
@@ -862,6 +870,57 @@ impl Runner {
         };
         self.append(key, line, false);
         (self.notify)(Event::State(info));
+    }
+
+    /// Waits for a project's Nginx (`child`) and its `php` (php-cgi). When
+    /// php-cgi ends first the action is stopped and ends in error, never
+    /// left running with 502 for every `.php` (BUG-V3-01). The server's exit
+    /// code, `None` when it was stopped for its php-cgi.
+    fn wait_with_php(
+        &self,
+        key: &str,
+        child: &mut Child,
+        mut php: Child,
+        lang: &str,
+    ) -> Option<i32> {
+        loop {
+            if let Ok(Some(status)) = child.try_wait() {
+                return status.code();
+            }
+            if let Ok(Some(status)) = php.try_wait() {
+                let job = {
+                    let mut entries = self.entries();
+                    entries
+                        .get_mut(key)
+                        .filter(|e| !e.stopped)
+                        .and_then(|e| e.job.take())
+                };
+                // Stopped by the user: the job already ended both.
+                let Some(job) = job else {
+                    return child.wait().ok().and_then(|s| s.code());
+                };
+                let code = status
+                    .code()
+                    .map_or_else(|| "?".to_owned(), |c| c.to_string());
+                self.append(
+                    key,
+                    vec![format!(
+                        "[!] {}",
+                        tr(
+                            lang,
+                            "php-cgi terminato (codice {0}): server fermato",
+                            &[&code]
+                        )
+                    )],
+                    false,
+                );
+                // Closing the job's last handle ends the server too.
+                drop(job);
+                let _ = child.wait();
+                return None;
+            }
+            std::thread::sleep(Duration::from_millis(250));
+        }
     }
 
     fn finish(&self, key: &str, code: Option<i32>, lang: &str) {
