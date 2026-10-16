@@ -61,8 +61,11 @@ export interface ComponentInfo {
   /** This version of the app can install it on this kit. */
   available: boolean;
   x64Only: boolean;
-  /** No ARM64 build and this kit is ARM64: why it is not available. */
+  /** No ARM64 build and this kit is Windows ARM64: why it is not available. */
   noArm64: boolean;
+  /** Not made for this kit's system (Windows only, on macOS or Linux): why it
+   * is not available, already translated. null on Windows ARM64 (noArm64). */
+  unavailableReason: string | null;
   needs: string[];
   /** x64 only, on an ARM64 PC with Windows 10 (no x64 emulation there). */
   needsWindows11: boolean;
@@ -114,6 +117,7 @@ function sampleComponent(
     available: true,
     x64Only: false,
     noArm64: false,
+    unavailableReason: null,
     needs: [],
     needsWindows11: false,
     versioned: ["python", "node", "php", "go", "java"].includes(id),

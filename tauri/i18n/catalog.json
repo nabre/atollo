@@ -659,6 +659,16 @@
     "fr": "{0} n'est pas disponible sur les PC ARM64.",
     "de": "{0} ist auf ARM64-PCs nicht verfügbar."
   },
+  "{0} non è disponibile per {1}.": {
+    "en": "{0} is not available for {1}.",
+    "fr": "{0} n'est pas disponible pour {1}.",
+    "de": "{0} ist für {1} nicht verfügbar."
+  },
+  "non disponibile per {0}": {
+    "en": "not available for {0}",
+    "fr": "non disponible pour {0}",
+    "de": "für {0} nicht verfügbar"
+  },
   "Limite": {
     "en": "Limit",
     "fr": "Limite",

@@ -619,6 +619,7 @@ describe("App", () => {
         available: true,
         x64Only: false,
         noArm64: false,
+        unavailableReason: null,
         needs: [],
       },
       {
@@ -635,6 +636,7 @@ describe("App", () => {
         available: true,
         x64Only: true,
         noArm64: false,
+        unavailableReason: null,
         needs: [],
       },
       {
@@ -651,6 +653,7 @@ describe("App", () => {
         available: true,
         x64Only: true,
         noArm64: false,
+        unavailableReason: null,
         needs: ["php"],
       },
       {
@@ -667,6 +670,7 @@ describe("App", () => {
         available: true,
         x64Only: false,
         noArm64: false,
+        unavailableReason: null,
         needs: [],
       },
       {
@@ -683,6 +687,24 @@ describe("App", () => {
         available: false,
         x64Only: false,
         noArm64: true,
+        unavailableReason: null,
+        needs: [],
+      },
+      {
+        id: "julia",
+        name: "Julia",
+        group: "languages",
+        desc: "calcolo",
+        mb: 500,
+        chosen: false,
+        installed: false,
+        present: false,
+        locked: false,
+        version: null,
+        available: false,
+        x64Only: false,
+        noArm64: false,
+        unavailableReason: "non disponibile per linux-x64",
         needs: [],
       },
     ];
@@ -694,6 +716,9 @@ describe("App", () => {
     expect(screen.getByLabelText<HTMLInputElement>(/^Git(?!Hub)/).disabled).toBe(true);
     expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
     expect(screen.getByText("non disponibile su PC ARM64")).toBeTruthy();
+    // Not made for this system: the reason from Rust, not "ARM64" (BUG-24c).
+    expect(screen.getByLabelText<HTMLInputElement>(/^Juliacalcolo/).disabled).toBe(true);
+    expect(screen.getByText("non disponibile per linux-x64")).toBeTruthy();
     // Dependencies: Apache shows what it needs, PHP what it is needed by.
     expect(screen.getByTitle("Richiede PHP: si installa insieme.")).toBeTruthy();
     expect(screen.getByText("per Apache")).toBeTruthy();
