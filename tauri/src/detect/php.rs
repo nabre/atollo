@@ -1,9 +1,13 @@
 //! PHP: Laravel (and Statamic), Symfony, the CMS (WordPress, also with
-//! Bedrock; TYPO3, Drupal), plain PHP (built-in server `php -S`).
+//! Bedrock; PrestaShop, Drupal, Joomla, TYPO3), plain PHP (built-in server
+//! `php -S`, and an Apache of its own proposed beside it).
 
 use std::path::Path;
 
-use super::{exists, list_dir, quote, read_json, tr, Action, Found, Kind};
+use super::{exists, list_dir, php_server, read_json, tr, Action, Found, Kind};
+
+/// The CMS with a database: the kit's MariaDB in `requires` (`mod.rs`).
+pub(super) const CMS: [&str; 5] = ["WordPress", "PrestaShop", "Drupal", "Joomla", "TYPO3"];
 
 pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     let manifest = read_json(dir, "composer.json");
@@ -32,6 +36,21 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     } else {
         tr(lang, "file {0}", &[".php"])
     };
+    let root = docroot.unwrap_or(".");
+    let shown = if root == "." {
+        tr(lang, "cartella del progetto", &[])
+    } else {
+        root.to_owned()
+    };
+    let apache = || {
+        Action::apache(
+            "apache",
+            &tr(lang, "sito web Apache ({0})", &[&shown]),
+            root,
+        )
+    };
+    let has_htaccess =
+        exists(dir, ".htaccess") || (root != "." && exists(dir, &format!(r"{root}\.htaccess")));
     if exists(dir, "artisan") {
         platform = if requires("statamic/cms") {
             "Statamic"
@@ -46,45 +65,47 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             "php artisan serve --host=127.0.0.1 --port={port}",
             Kind::Web,
         ));
+        // Laravel's `public\.htaccess`: Apache too, after `artisan serve`.
+        if has_htaccess {
+            actions.push(apache());
+        }
     } else {
-        let is_wp = exists(dir, "wp-config.php")
+        // The CMS before Symfony: PrestaShop has a `bin\console` too.
+        let cms = if exists(dir, "wp-config.php")
             || exists(dir, "wp-settings.php")
             || exists(dir, r"wp-includes\version.php")
-            || requires("roots/wordpress");
-        if exists(dir, r"bin\console") {
+        {
+            Some(("WordPress", "wp-settings.php"))
+        } else if requires("roots/wordpress") {
+            Some(("WordPress", "composer.json (roots/wordpress)"))
+        } else if exists(dir, r"classes\PrestaShopAutoload.php") {
+            Some(("PrestaShop", "classes/PrestaShopAutoload.php"))
+        } else if requires("drupal/core-recommended") || requires("drupal/core") {
+            Some(("Drupal", "composer.json (drupal/core)"))
+        } else if exists(dir, r"core\lib\Drupal.php") {
+            Some(("Drupal", "core/lib/Drupal.php"))
+        } else if exists(dir, r"administrator\manifests\files\joomla.xml") {
+            Some(("Joomla", "administrator/manifests/files/joomla.xml"))
+        } else if requires("typo3/cms-core") {
+            Some(("TYPO3", "composer.json (typo3/cms-core)"))
+        } else if exists(dir, r"typo3\sysext\core\ext_emconf.php") {
+            Some(("TYPO3", "typo3/sysext/core"))
+        } else {
+            None
+        };
+        if let Some((name, why)) = cms {
+            platform = name.into();
+            reason = why.into();
+        } else if exists(dir, r"bin\console") {
             platform = "Symfony".into();
             reason = "bin/console".into();
-        } else if is_wp {
-            platform = "WordPress".into();
-            reason = if requires("roots/wordpress") {
-                "composer.json (roots/wordpress)"
-            } else {
-                "wp-settings.php"
-            }
-            .into();
-        } else if requires("typo3/cms-core") {
-            platform = "TYPO3".into();
-            reason = "composer.json (typo3/cms-core)".into();
-        } else if requires("drupal/core-recommended") || requires("drupal/core") {
-            platform = "Drupal".into();
-            reason = "composer.json (drupal/core)".into();
         }
-        let root = docroot.unwrap_or(".");
-        let shown = if root == "." {
-            tr(lang, "cartella del progetto", &[])
-        } else {
-            root.to_owned()
-        };
-        let has_htaccess =
-            exists(dir, ".htaccess") || (root != "." && exists(dir, &format!(r"{root}\.htaccess")));
-        let has_nginx = exists(dir, "nginx.conf")
-            || (root != "." && exists(dir, &format!(r"{root}\nginx.conf")));
-        if has_htaccess || is_wp {
-            actions.push(Action::apache(
-                "apache",
-                &tr(lang, "sito web Apache ({0})", &[&shown]),
-                root,
-            ));
+        let has_nginx = super::has_nginx(dir, root);
+        // A CMS or an `.htaccess`: Apache first, the main button. Otherwise
+        // proposed after `php -S`.
+        let apache_first = has_htaccess || cms.is_some();
+        if apache_first {
+            actions.push(apache());
         }
         if has_nginx {
             actions.push(Action::nginx(
@@ -96,9 +117,12 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
         actions.push(Action::new(
             "php:server",
             &tr(lang, "php -S (cartella {0})", &[root]),
-            &format!("php -S 127.0.0.1:{{port}} -t {}", quote(root)),
+            &php_server(dir, root),
             Kind::Web,
         ));
+        if !apache_first {
+            actions.push(apache());
+        }
     }
     if composer {
         actions.push(Action::new(

@@ -439,11 +439,6 @@
     "fr": "fichiers {0}",
     "de": "{0}-Dateien"
   },
-  "WordPress richiede un database MySQL/MariaDB, non incluso nel kit.": {
-    "en": "WordPress needs a MySQL/MariaDB database, which is not included in the kit.",
-    "fr": "WordPress nécessite une base de données MySQL/MariaDB, non incluse dans le kit.",
-    "de": "WordPress benötigt eine MySQL/MariaDB-Datenbank, die nicht im Kit enthalten ist."
-  },
   "php -S (cartella {0})": {
     "en": "php -S (folder {0})",
     "fr": "php -S (dossier {0})",
