@@ -62,6 +62,9 @@ impl WebServerEngine {
 #[serde(rename_all = "camelCase")]
 pub struct AttachedSite {
     pub project: String,
+    /// The id of the project's action this site comes from.
+    #[serde(default)]
+    pub action: String,
     pub folder: String,
     pub server_name: String,
     pub domains: Vec<String>,
@@ -519,6 +522,28 @@ impl WebServers {
         view
     }
 
+    /// The pool serving `action_id` of `project`, with that site (its URL
+    /// with the live port when the pool runs). The cached scan first, then
+    /// a fresh one (`panel.json` edited by hand since).
+    pub fn pool_of(
+        &self,
+        project: &str,
+        action_id: &str,
+        lang: &str,
+    ) -> Option<(WebServerPool, AttachedSite)> {
+        let find = |view: WebServersView| {
+            view.pools.into_iter().find_map(|pool| {
+                let site = pool
+                    .sites
+                    .iter()
+                    .find(|s| s.project == project && s.action == action_id)
+                    .cloned()?;
+                Some((pool, site))
+            })
+        };
+        find(self.list(lang, false)).or_else(|| find(self.list(lang, true)))
+    }
+
     /// Drops the cached scan: the next `list` reads the projects again.
     pub fn invalidate(&self) {
         let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
@@ -673,6 +698,7 @@ impl WebServers {
                     let url = format!("http://{server_name}:{}", pool.port);
                     pool.sites.push(AttachedSite {
                         project: proj_id.clone(),
+                        action: action.id.clone(),
                         folder,
                         server_name,
                         domains: action.domains.clone(),

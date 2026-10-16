@@ -38,6 +38,7 @@ fn profile_crud_and_vhost_generation() {
     aliases.insert("/q".into(), "a\"\r\nInclude x".into());
     let site = AttachedSite {
         project: "portale".into(),
+        action: "site".into(),
         folder: "public".into(),
         server_name: "portale.localhost".into(),
         domains: vec!["admin.portale.localhost".into(), "x\r\nListen 80".into()],
@@ -86,6 +87,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
         sites: vec![
             AttachedSite {
                 project: "alpha".into(),
+                action: "site".into(),
                 folder: "public".into(),
                 server_name: "alpha.localhost".into(),
                 domains: vec!["api.alpha.localhost".into()],
@@ -94,6 +96,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
             },
             AttachedSite {
                 project: "beta".into(),
+                action: "site".into(),
                 folder: "public".into(),
                 server_name: "beta.localhost".into(),
                 domains: Vec::new(),
@@ -142,6 +145,7 @@ fn nginx_pool(id: &str, port: u16, sites: Vec<AttachedSite>) -> WebServerPool {
 fn site(project: &str, folder: &str, port: u16) -> AttachedSite {
     AttachedSite {
         project: project.into(),
+        action: "site".into(),
         folder: folder.into(),
         server_name: format!("{project}.localhost"),
         domains: Vec::new(),
@@ -460,4 +464,45 @@ fn pool_with_dead_php_cgi_is_not_running() {
     assert_eq!(dead.len(), 1);
     assert_eq!(dead[0].0, "nginx-php");
     end_dead(dead);
+}
+
+/// GAP-RUN: the pool of a project's site is the profile it was assigned to.
+#[test]
+fn pool_of_finds_assigned_project() {
+    let tmp = TempDir::new("servers-pool-of");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: String::new(),
+                name: "Legacy".into(),
+                engine: WebServerEngine::Nginx,
+                server_line: None,
+                php_line: None,
+                port: Some(8096),
+            },
+            "it",
+        )
+        .unwrap();
+    let shop = kit.projects().join("shop");
+    fs::create_dir_all(shop.join("public")).unwrap();
+    assert_eq!(servers.pool_of("shop", "site", "it").map(|p| p.0.id), None);
+
+    servers
+        .assign_project(
+            "shop",
+            "public",
+            WebServerEngine::Nginx,
+            Some("legacy".into()),
+            &KitEnv::default(),
+            "it",
+        )
+        .unwrap();
+    let (pool, site) = servers.pool_of("shop", "site", "it").unwrap();
+    assert_eq!(pool.id, "legacy");
+    assert_eq!(site.url, "http://shop.localhost:8096");
+    assert_eq!(servers.pool_of("shop", "other", "it").map(|p| p.0.id), None);
+    assert_eq!(servers.pool_of("nope", "site", "it").map(|p| p.0.id), None);
 }
