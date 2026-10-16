@@ -1,5 +1,37 @@
 # Novità
 
+## Correzioni dopo la verifica della v2 (16/10/2026)
+
+27 difetti confermati rileggendo il codice ([`reports/v2/07`](../../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)), chiusi da uno sciame di agenti in quattro onde; CI di nuovo verde (`cargo fmt`, clippy, ESLint, Prettier) e passo dell'interfaccia in CI che si ferma al primo comando fallito.
+
+**Sicurezza**
+- **Pool dei server web**: un sito la cui cartella manca, sta fuori dal progetto o è una giunzione si salta (avviso nel log), invece di servire la radice del progetto con `.env`, `.git` e `wp-config.php` (N-S1). I pool Apache hanno un VirtualHost di default `localhost` prima dei progetti: un `Host` sconosciuto, o l'IP dalla LAN, non arriva più al primo progetto (N-S5).
+- **`.php` mai serviti come testo**: Nginx senza FastCGI risponde 503 (N-S2); Apache (progetti, pool e sito del kit `data\apache\kit.conf`) rifiuta i `.php` con 403 se nessun modulo PHP è caricato, e riconosce `.php` in qualsiasi maiuscola (`INDEX.PHP`). Un `kit.conf` già esistente resta com'è.
+- **Server statico**: rifiutati i nomi brevi 8.3 (`GIT~1`, `ENV~1`) che aggiravano il blocco dei file nascosti (N-S3); test sulle connessioni silenziose che non bloccano il server.
+- **Archivi `.tar.xz`** estratti in Rust con lo stesso percorso sicuro dei `.tar.gz`: nomi controllati, link solo se sicuri, niente `tar` di sistema (BUG-22, N-A1).
+
+**Server Web**
+- `servers.json` non perde più profili: ogni lettura-modifica-scrittura è serializzata (N-S4a); «Salva» e «Rimuovi» non bloccano l'interfaccia (N-S4b); le porte dei pool spariti si tolgono (N-S4c).
+- La lista dei pool rilegge i progetti al più ogni 15 s (o col pulsante «Aggiorna»), non a ogni aggiornamento di 3 s (BUG-07).
+- L'output di httpd/nginx va in `data\servers\<pool>\stderr.log` e un errore di sintassi della configurazione arriva all'utente (BUG-03). Il riavvio aspetta fino a 5 s che la porta si liberi, senza il falso «porta già in uso» (BUG-04).
+- **php-cgi dei pool sorvegliato**: se si chiude, il pool risulta fermo (da riavviare) invece di «avviato» con un 502 permanente; parte solo se un sito del pool usa PHP (BUG-05r).
+- **«Avvia» del progetto rispetta il server scelto**: un sito assegnato a un profilo manuale avvia quel pool e la sua esecuzione ne usa l'indirizzo; «Ferma» la segna solo ferma, perché il pool è condiviso e si ferma dalla pagina Server Web (GAP-RUN).
+
+**Installazione e piattaforme**
+- **Git su macOS e Linux via micromamba** (D-92): il pacchetto `git` di conda-forge, con le sue librerie, in un ambiente nella cartella della sua linea, come R (BUG-23a). Un ambiente conda ha il percorso scritto dentro: quando il kit cambia cartella, Git e R fuori da Windows si segnano da reinstallare e l'installazione automatica all'avvio li rifà.
+- **PHP, Apache, Nginx e Adminer solo su Windows, per ora**: le fonti sono build Windows e `php.ini`/`httpd.conf` sono scritti per Windows; su macOS e Linux Nginx scaricava il sorgente (BUG-23b, BUG-24a). I progetti propongono solo componenti disponibili sul sistema del kit; [CATALOG.md](CATALOG.md) dice cosa c'è dove.
+- Python conserva i pacchetti e trova `pip` usando la linea davvero installata, non quella delle impostazioni (BUG-24b).
+- Un componente non disponibile dice perché: «non disponibile sui PC ARM64» solo su Windows ARM64, altrimenti il sistema (BUG-24c).
+- Il file da scaricare a mano nomina la cartella giusta (nel temp del sistema) in tutte e quattro le lingue (BUG-17r).
+
+**Interfaccia**
+- **Database**: gli errori delle azioni restano visibili anche dopo l'aggiornamento della lista, e una lettura vecchia non riporta la lista di prima (N-U1).
+- **«Riprova»** quando non si leggono lo stato del kit, le impostazioni dell'editor, le estensioni o i server MCP del progetto; il riquadro MCP mostra l'errore invece di sparire (BUG-18r, N2).
+- **Tastiera**: menu delle versioni con frecce, Home/End, Esc e focus restituito; il dialogo di conferma tiene Tab tra i controlli raggiungibili e rende il focus alla chiusura (BUG-20r).
+- I divisori salvano la misura a fine trascinamento, non a ogni pixel (BUG-11r). Badge «più recente»/«bloccata» tradotti, etichette dei giorni leggibili, Guida allineata ai nomi dell'app («Rimuovi l'unità») (UI-POLISH). La Guida si carica a parte, fuori dal pacchetto principale (ARCH-LAZY).
+
+**Verificato**: `cargo check`, clippy e fmt per Windows; 85 test dell'interfaccia, ESLint, Prettier e build puliti. I test Rust girano solo nella CI Windows. Da provare a mano: Git via micromamba su macOS e Linux reali, avvio di un progetto in un pool, morte di php-cgi ([reports/v2/07 §8](../../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)).
+
 ## Una cartella per versione minore per tutti gli strumenti (16/10/2026)
 
 Ogni strumento sta in una cartella col nome della sua versione minore, e una correzione (patch) prende il posto di quella cartella (D-91).
