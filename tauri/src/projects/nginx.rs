@@ -145,6 +145,14 @@ pub fn vhost_block(
                 .to_owned(),
             "        }".to_owned(),
         ]);
+    } else {
+        // Without PHP-CGI a `.php` would be sent as a download, source and
+        // secrets included: refuse it (aliases too, regex wins over prefix).
+        lines.extend([
+            "        location ~* \\.php$ {".to_owned(),
+            "            return 503;".to_owned(),
+            "        }".to_owned(),
+        ]);
     }
     if let Some(cd) = conf_d_dir {
         lines.push(format!("        include \"{}/conf.d/*.conf\";", fwd(cd)));
