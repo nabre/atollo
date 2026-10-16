@@ -284,6 +284,16 @@
     "fr": "serveur prêt : {0}",
     "de": "Server bereit: {0}"
   },
+  "pool condiviso {0}": {
+    "en": "shared pool {0}",
+    "fr": "pool partagé {0}",
+    "de": "gemeinsamer Pool {0}"
+  },
+  "servito dal pool condiviso {0}: {1}": {
+    "en": "served by the shared pool {0}: {1}",
+    "fr": "servi par le pool partagé {0} : {1}",
+    "de": "vom gemeinsamen Pool {0} bereitgestellt: {1}"
+  },
   "processo terminato, codice {0}": {
     "en": "process exited, code {0}",
     "fr": "processus terminé, code {0}",
