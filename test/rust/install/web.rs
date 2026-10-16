@@ -111,6 +111,23 @@ fn apache_site_created_once() {
 }
 
 #[test]
+fn apache_site_refuses_php_without_module() {
+    let tmp = TempDir::new("apachesitephp");
+    apache_site(&tmp.0).unwrap();
+    let text = fs::read_to_string(tmp.0.join("kit.conf")).unwrap();
+    assert!(!text.contains("<FilesMatch \"\\.php$\">"));
+    assert_eq!(text.matches("<FilesMatch \"(?i)\\.php$\">").count(), 4);
+    assert_eq!(text.matches("LoadModule php").count(), 3);
+    let deny = text.find("<IfModule !php_module>").unwrap();
+    assert!(deny > text.rfind("LoadModule php5_module").unwrap());
+    assert!(text[deny..].contains("<IfModule !php7_module>"));
+    assert!(text[deny..].contains("<IfModule !php5_module>"));
+    assert!(text[deny..].contains("Require all denied"));
+    assert!(text.trim_end().ends_with("conf.d/*.conf\""));
+    assert!(text.contains("\r\n"));
+}
+
+#[test]
 fn apache_builds_of_the_pages() {
     let page = r#"<a href="/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip">x</a>
         <a href="/download/VS18/binaries/httpd-2.4.69-261002-win32-vs18.zip">32</a>
