@@ -1,5 +1,11 @@
 # Novità
 
+## Terminali del kit (16/10/2026)
+
+- **Pagina «Terminali»** (D-94): console del kit che si aprono in qualsiasi cartella del PC. «Tutti gli strumenti» ha ogni strumento installato alla versione più recente; i terminali propri includono solo gli strumenti scelti (agenti, linguaggi, database), ognuno alla versione più recente o a una salvata. Cartella di partenza salvata per terminale, «Apri in…» per sceglierne un'altra una volta, «Duplica» per partire dal predefinito.
+- Gli strumenti esclusi escono dal PATH con le variabili che puntano nelle loro cartelle; PowerShell 7, GitHub CLI e i comandi del kit restano sempre.
+- In una cartella di progetto il terminale tiene le sue versioni, non quelle del progetto (`DEVKIT_TERMINAL` in `profile.ps1` e `bashrc`).
+
 ## Correzioni dopo la verifica della v2 (16/10/2026)
 
 27 difetti confermati rileggendo il codice ([`reports/v2/07`](../../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)), chiusi da uno sciame di agenti in quattro onde; CI di nuovo verde (`cargo fmt`, clippy, ESLint, Prettier) e passo dell'interfaccia in CI che si ferma al primo comando fallito.

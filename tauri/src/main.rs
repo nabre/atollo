@@ -25,6 +25,7 @@ mod projects;
 mod servers;
 mod settings;
 mod setup;
+mod terminals;
 mod versions;
 
 use std::path::Path;
