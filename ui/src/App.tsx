@@ -20,6 +20,7 @@ import {
   VscPlay,
   VscRemote,
   VscSettingsGear,
+  VscTerminal,
   VscWand,
 } from "react-icons/vsc";
 import {
@@ -45,6 +46,7 @@ import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
 import { ServersPage } from "./servers";
+import { TerminalsPage } from "./terminals";
 import { NewProjectPage } from "./wizard";
 import type { GuideTopicId } from "./guide";
 import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
@@ -55,7 +57,8 @@ import { LoadError } from "./common";
 // the page is shown.
 const GuidePage = lazy(() => import("./guide").then((m) => ({ default: m.GuidePage })));
 
-type PageId = "new" | "projects" | "agents" | "databases" | "servers" | "components" | "guide" | "settings" | "eject";
+type PageId =
+  "new" | "projects" | "agents" | "databases" | "servers" | "terminals" | "components" | "guide" | "settings" | "eject";
 
 interface Page {
   id: PageId;
@@ -70,6 +73,7 @@ function pages(): Page[] {
     { id: "agents", label: t("Agenti"), icon: VscHubot },
     { id: "databases", label: t("Database"), icon: VscDatabase },
     { id: "servers", label: t("Server Web"), icon: VscGlobe },
+    { id: "terminals", label: t("Terminali"), icon: VscTerminal },
     { id: "components", label: t("Strumenti"), icon: VscExtensions },
     { id: "guide", label: t("Guida"), icon: VscBook },
     { id: "settings", label: t("Impostazioni"), icon: VscSettingsGear },
@@ -183,6 +187,12 @@ export function App() {
             <DatabasesPage onGuide={openGuide} />
           ) : page === "servers" ? (
             <ServersPage onGuide={openGuide} />
+          ) : page === "terminals" ? (
+            <TerminalsPage
+              onTools={() => {
+                setPage("components");
+              }}
+            />
           ) : page === "guide" ? (
             <Suspense fallback={<div className="flex-1 p-5 text-vsc-desc">{t("Caricamento…")}</div>}>
               <GuidePage

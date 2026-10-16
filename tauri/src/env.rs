@@ -199,6 +199,10 @@ impl KitEnv {
         self.vars.insert(name.to_owned(), value.into());
     }
 
+    pub(crate) fn remove(&mut self, name: &str) {
+        self.vars.retain(|k, _| !k.eq_ignore_ascii_case(name));
+    }
+
     fn set_path(&mut self, name: &str, value: impl AsRef<Path>) {
         self.set(name, value.as_ref().to_string_lossy().into_owned());
     }

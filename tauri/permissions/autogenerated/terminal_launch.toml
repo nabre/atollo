@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-terminal-launch"
+description = "Enables the terminal_launch command without any pre-configured scope."
+commands.allow = ["terminal_launch"]
+
+[[permission]]
+identifier = "deny-terminal-launch"
+description = "Denies the terminal_launch command without any pre-configured scope."
+commands.deny = ["terminal_launch"]

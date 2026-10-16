@@ -177,6 +177,16 @@ pub fn project_env(kit: &Kit, project: &str, mut env: KitEnv) -> KitEnv {
     env
 }
 
+/// The kit environment (with the kit's lines) on the lines of `choice`
+/// instead: a kit terminal's (terminals.rs).
+pub fn choice_env(kit: &Kit, choice: &Choice, mut env: KitEnv) -> KitEnv {
+    apply(
+        &mut env,
+        &swaps(kit, &kit_choice(kit), &clean(choice.clone())),
+    );
+    env
+}
+
 pub fn set_project_choice(kit: &Kit, project: &str, id: &str, line: Option<&str>) -> Result<()> {
     check(id, line)?;
     crate::projects::settings::update(kit, project, |s| {

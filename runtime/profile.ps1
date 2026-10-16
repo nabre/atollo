@@ -22,9 +22,10 @@ if (Get-Module -ListAvailable PSReadLine) {
 # versions.json, written by Dev-Kit.exe): the editor's terminals start from
 # the editor server, shared by every project, so the folders of the
 # project's versions take the place of the kit's here (DECISIONS.md D-80).
+# A kit terminal (DEVKIT_TERMINAL, the Terminals page) keeps its own.
 $projects = Join-Path $env:CP_ROOT 'projects'
 $here = (Get-Location).ProviderPath
-if ($here.StartsWith($projects + '\', [StringComparison]::OrdinalIgnoreCase)) {
+if (-not $env:DEVKIT_TERMINAL -and $here.StartsWith($projects + '\', [StringComparison]::OrdinalIgnoreCase)) {
     $project = $here.Substring($projects.Length + 1).Split('\')[0]
     $file = Join-Path $env:CP_DATA "projects\$project\versions.json"
     if (Test-Path -LiteralPath $file) {
@@ -69,5 +70,6 @@ if (-not $env:DEVKIT_QUIET) {
         if (Get-Command -Name $name -CommandType Application -ErrorAction Ignore) { $name }
     }
     Write-Host "Dev-Kit" -ForegroundColor Cyan -NoNewline
+    if ($env:DEVKIT_TERMINAL) { Write-Host " · $env:DEVKIT_TERMINAL" -ForegroundColor Cyan -NoNewline }
     Write-Host ("  " + ($found -join '  ')) -ForegroundColor DarkGray
 }
