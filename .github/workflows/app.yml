@@ -32,12 +32,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Frontend dependencies
         run: npm ci --no-fund --no-audit
-      - name: Frontend lint, format, types, tests, build
-        run: |
-          npm -w ui run lint
-          npm -w ui run format:check
-          npm -w ui test
-          npm -w ui run build
+      # One step per command: a multi-line pwsh step only fails on the last
+      # command's exit code.
+      - name: Frontend lint and types
+        run: npm -w ui run lint
+      - name: Frontend format
+        run: npm -w ui run format:check
+      - name: Frontend tests
+        run: npm -w ui test
+      - name: Frontend build
+        run: npm -w ui run build
       - name: cargo fmt
         run: cargo fmt --check
       - name: cargo clippy
