@@ -350,11 +350,19 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
     let plan = plan(ctx, catalog, &choice, opts)?;
     let update_all = opts.update_all || !opts.only.is_empty();
     // "Update all" also brings every saved line to its latest patch.
-    let patches = if opts.update_all {
+    let mut patches = if opts.update_all {
         saved_lines(ctx, catalog, &plan.handle)
     } else {
         Vec::new()
     };
+    // Saved lines marked when the kit moved (conda environments, D-92):
+    // installed again at their line, even at the same version.
+    for (id, line) in marked_lines(ctx, catalog, &plan.handle) {
+        match patches.iter_mut().find(|(i, l, _)| *i == id && *l == line) {
+            Some(patch) => patch.2 = None,
+            None => patches.push((id, line, None)),
+        }
+    }
     let named = |id: &String| catalog.find(id).map(|c| (c.id.clone(), c.name.clone()));
     sink.emit(Event::Queue {
         steps: plan
@@ -486,6 +494,19 @@ fn saved_lines(
         .collect()
 }
 
+/// The saved lines of the components a run handles that are marked to be
+/// installed again because the kit moved (`Component::lines_to_reinstall`).
+pub(crate) fn marked_lines(ctx: &Ctx, catalog: &Catalog, ids: &[String]) -> Vec<(String, String)> {
+    ids.iter()
+        .filter_map(|id| catalog.find(id))
+        .flat_map(|c| {
+            c.lines_to_reinstall(ctx.kit)
+                .into_iter()
+                .map(|line| (c.id.clone(), line))
+        })
+        .collect()
+}
+
 /// Installs the newest build of `line` of `c` as a saved line; with
 /// `current` (the version on disk) only when the source has a newer one.
 fn line_step(
@@ -561,6 +582,14 @@ fn step(
 ) -> Outcome {
     let installed = c.is_installed(ctx.kit);
     let current = c.installed_version(ctx.kit);
+    // Marked when the kit moved (a conda environment, D-92): installed
+    // again even at the same version, a versioned one at its own line.
+    let reinstall = installed && c.needs_reinstall(ctx.kit);
+    let force = force || reinstall;
+    let keep_line = current
+        .as_deref()
+        .and_then(crate::versions::line_of)
+        .filter(|_| reinstall && c.versioned);
     // A part of the app at another version than this release's: installed
     // again without "update all", and never newer than the fixed one.
     if installed && !update_all && !force && !c.outdated(ctx.kit) {
@@ -574,8 +603,9 @@ fn step(
         };
     };
     let result = (|| -> Result<Outcome> {
-        let release = match at {
-            Some(line) if !installed => install::release_at(ctx, c, line)?,
+        let release = match (at, &keep_line) {
+            (Some(line), _) if !installed => install::release_at(ctx, c, line)?,
+            (_, Some(line)) if installer.has_lines() => install::release_at(ctx, c, line)?,
             _ => installer.latest(ctx, c)?,
         };
         if installed && !force && current.as_deref() == Some(release.version.as_str()) {

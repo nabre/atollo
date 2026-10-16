@@ -9,7 +9,7 @@
 // collapsible's header has no button role nor aria-expanded, the tabs keep
 // their tablist inside the shadow root and have no close button for the
 // editor's tabs, and the details editor's bar is navigation, not tabs.
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import { VscChevronRight, VscClose } from "react-icons/vsc";
 import { t } from "../i18n";
@@ -53,22 +53,52 @@ function readSize(key: string, fallback: number): number {
   }
 }
 
-/** A size the user drags with a sash, remembered in this browser. */
+function writeSize(key: string, size: number) {
+  try {
+    localStorage.setItem(`size:${key}`, String(size));
+  } catch {
+    // Not remembered: the size still changes.
+  }
+}
+
+/** How long a size stays still before it is written. */
+const STORE_DELAY_MS = 150;
+
+/** A size the user drags with a sash, remembered in this browser. The
+ * updater only clamps (it can run twice, and runs on every pointer move);
+ * the size is written once the drag pauses, not at every pixel, and when
+ * the part goes away before that. */
 export function useStoredSize(key: string, fallback: number, min: number, max: number) {
   const [size, setSize] = useState(() => Math.min(max, Math.max(min, readSize(key, fallback))));
   const set = useCallback(
     (v: number | ((prev: number) => number)) => {
-      setSize((prev) => {
-        const next = Math.round(Math.min(max, Math.max(min, typeof v === "function" ? v(prev) : v)));
-        try {
-          localStorage.setItem(`size:${key}`, String(next));
-        } catch {
-          // Not remembered: the size still changes.
-        }
-        return next;
-      });
+      setSize((prev) => Math.round(Math.min(max, Math.max(min, typeof v === "function" ? v(prev) : v))));
     },
-    [key, min, max],
+    [min, max],
+  );
+  // The size not written yet; null when there is none (as at the start).
+  const pending = useRef<{ key: string; size: number } | null>(null);
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    pending.current = { key, size };
+    const timer = setTimeout(() => {
+      pending.current = null;
+      writeSize(key, size);
+    }, STORE_DELAY_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [key, size]);
+  useEffect(
+    () => () => {
+      const last = pending.current;
+      if (last) writeSize(last.key, last.size);
+    },
+    [],
   );
   return [size, set] as const;
 }
@@ -280,7 +310,11 @@ export function EditorTabs({
 }) {
   return (
     <div className={TAB_BAR}>
-      <div role="tablist" aria-label={t("Editor")} className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]">
+      <div
+        role="tablist"
+        aria-label={t("Editor")}
+        className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]"
+      >
         {tabs.map((tab) => {
           const on = tab.id === active;
           const close = tab.pinned ? undefined : onClose;

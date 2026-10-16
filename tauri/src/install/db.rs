@@ -98,11 +98,11 @@ pub(crate) fn mariadb_archive_for(
         .iter()
         .max_by_key(|(v, _)| version_key(v))
         .ok_or_else(|| anyhow!("MariaDB: no releases"))?;
-    let files = release["files"].as_array().into_iter().flatten();
+    let mut files = release["files"].as_array().into_iter().flatten();
     let (file, kind) = match target.os {
         Os::Win32 => {
             let f = files
-                .filter(|f| {
+                .find(|f| {
                     f["os"] == "Windows"
                         && f["cpu"] == "x86_64"
                         && f["package_type"] == "ZIP file"
@@ -110,22 +110,20 @@ pub(crate) fn mariadb_archive_for(
                             .as_str()
                             .is_some_and(|n| n.ends_with("-winx64.zip"))
                 })
-                .next()
                 .ok_or_else(|| anyhow!("MariaDB {version}: no Windows zip"))?;
             (f, Kind::Zip)
         }
         Os::Linux | Os::Darwin => {
             let cpu = target.gnu_arch();
             let f = files
-                .filter(|f| {
+                .find(|f| {
                     (f["os"] == "Linux" || f["os"] == "macOS")
                         && f["cpu"] == cpu
                         && f["package_type"] == "gzipped tar file"
-                        && f["file_name"].as_str().is_some_and(|n| {
-                            n.ends_with(".tar.gz") && !n.contains("debugsymbols")
-                        })
+                        && f["file_name"]
+                            .as_str()
+                            .is_some_and(|n| n.ends_with(".tar.gz") && !n.contains("debugsymbols"))
                 })
-                .next()
                 .ok_or_else(|| anyhow!("MariaDB {version}: no {cpu} tar.gz"))?;
             (f, Kind::TarGz)
         }
@@ -195,12 +193,13 @@ pub(crate) fn mongodb_archive_for(
         })
         .ok_or_else(|| anyhow!("MongoDB {}: no production release", line.unwrap_or("")))?;
     let number = version["version"].as_str().unwrap_or_default().to_owned();
-    let downloads = version["downloads"].as_array().into_iter().flatten();
+    let mut downloads = version["downloads"].as_array().into_iter().flatten();
     let (archive, kind) = match target.os {
         Os::Win32 => {
             let d = downloads
-                .filter(|d| d["target"] == "windows" && d["arch"] == "x86_64" && d["edition"] == "base")
-                .next()
+                .find(|d| {
+                    d["target"] == "windows" && d["arch"] == "x86_64" && d["edition"] == "base"
+                })
                 .ok_or_else(|| anyhow!("MongoDB {number}: no Windows zip"))?;
             (&d["archive"], Kind::Zip)
         }
@@ -210,22 +209,20 @@ pub(crate) fn mongodb_archive_for(
                 Arch::X64 => "x86_64",
             };
             let d = downloads
-                .filter(|d| d["target"] == "macos" && d["arch"] == arch && d["edition"] == "base")
-                .next()
+                .find(|d| d["target"] == "macos" && d["arch"] == arch && d["edition"] == "base")
                 .ok_or_else(|| anyhow!("MongoDB {number}: no macOS {arch} archive"))?;
             (&d["archive"], Kind::TarGz)
         }
         Os::Linux => {
             let arch = target.gnu_arch();
             let d = downloads
-                .filter(|d| {
+                .find(|d| {
                     d["edition"] == "base"
                         && d["arch"] == arch
-                        && d["target"]
-                            .as_str()
-                            .is_some_and(|t| t == "ubuntu2204" || t == "ubuntu2404" || t.starts_with("ubuntu"))
+                        && d["target"].as_str().is_some_and(|t| {
+                            t == "ubuntu2204" || t == "ubuntu2404" || t.starts_with("ubuntu")
+                        })
                 })
-                .next()
                 .ok_or_else(|| anyhow!("MongoDB {number}: no Linux {arch} archive"))?;
             (&d["archive"], Kind::TarGz)
         }
@@ -259,12 +256,11 @@ pub(crate) fn mongodb_tools_for(
         .and_then(|a| a.first())
         .ok_or_else(|| anyhow!("MongoDB tools: no versions"))?;
     let number = v["version"].as_str().unwrap_or_default().to_owned();
-    let downloads = v["downloads"].as_array().into_iter().flatten();
+    let mut downloads = v["downloads"].as_array().into_iter().flatten();
     let (archive, kind) = match target.os {
         Os::Win32 => {
             let d = downloads
-                .filter(|d| d["name"] == "windows" && d["arch"] == "x86_64")
-                .next()
+                .find(|d| d["name"] == "windows" && d["arch"] == "x86_64")
                 .ok_or_else(|| anyhow!("MongoDB tools {number}: no Windows zip"))?;
             (&d["archive"], Kind::Zip)
         }
@@ -274,8 +270,7 @@ pub(crate) fn mongodb_tools_for(
                 Arch::X64 => "x86_64",
             };
             let d = downloads
-                .filter(|d| d["name"] == "macos" && d["arch"] == arch)
-                .next()
+                .find(|d| d["name"] == "macos" && d["arch"] == arch)
                 .ok_or_else(|| anyhow!("MongoDB tools {number}: no macOS {arch} zip"))?;
             (&d["archive"], Kind::Zip)
         }
@@ -285,13 +280,12 @@ pub(crate) fn mongodb_tools_for(
                 Arch::X64 => "x86_64",
             };
             let d = downloads
-                .filter(|d| {
+                .find(|d| {
                     (d["arch"] == arch || d["arch"] == target.gnu_arch())
-                        && d["name"]
-                            .as_str()
-                            .is_some_and(|n| n == "ubuntu2204" || n == "ubuntu2404" || n.starts_with("ubuntu"))
+                        && d["name"].as_str().is_some_and(|n| {
+                            n == "ubuntu2204" || n == "ubuntu2404" || n.starts_with("ubuntu")
+                        })
                 })
-                .next()
                 .ok_or_else(|| anyhow!("MongoDB tools {number}: no Linux {arch} archive"))?;
             (&d["archive"], Kind::TarGz)
         }

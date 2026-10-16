@@ -32,12 +32,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Frontend dependencies
         run: npm ci --no-fund --no-audit
-      - name: Frontend lint, format, types, tests, build
-        run: |
-          npm -w ui run lint
-          npm -w ui run format:check
-          npm -w ui test
-          npm -w ui run build
+      # One step per command: a multi-line pwsh step only fails on the last
+      # command's exit code.
+      - name: Frontend lint and types
+        run: npm -w ui run lint
+      - name: Frontend format
+        run: npm -w ui run format:check
+      - name: Frontend tests
+        run: npm -w ui test
+      - name: Frontend build
+        run: npm -w ui run build
       - name: cargo fmt
         run: cargo fmt --check
       - name: cargo clippy
@@ -125,11 +129,18 @@ jobs:
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
           & "$kit/Atollo.exe" prepare --only "pwsh,node,git,terminal,vscodium-server" | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "prepare failed ($LASTEXITCODE)" }
-          & "$kit/data/apps/win32-x64/pwsh/pwsh.exe" -NoProfile -Command '$PSVersionTable.PSVersion'
-          & "$kit/data/apps/win32-x64/node/node.exe" -v
-          & "$kit/data/apps/win32-x64/git/cmd/git.exe" --version
-          if (-not (Test-Path "$kit/data/apps/win32-x64/vscodium-server/out/server-main.js")) { throw "editor server missing" }
-          if (-not (Test-Path "$kit/data/apps/win32-x64/terminal/WindowsTerminal.exe")) { throw "Windows Terminal missing" }
+          $apps = "$kit/data/apps/win32-x64"
+          # One folder per minor version (D-91): exactly one line installed.
+          function Line([string]$tool, [string]$file) {
+            $found = @(Get-ChildItem -Path "$apps/$tool/*/$file" -ErrorAction SilentlyContinue)
+            if ($found.Count -ne 1) { throw "${tool}/<line>/${file}: found $($found.Count)" }
+            $found[0].FullName
+          }
+          & (Line pwsh pwsh.exe) -NoProfile -Command '$PSVersionTable.PSVersion'
+          & (Line node node.exe) -v
+          & (Line git cmd/git.exe) --version
+          if (-not (Test-Path "$apps/vscodium-server/out/server-main.js")) { throw "editor server missing" }
+          $null = Line terminal WindowsTerminal.exe
           & "$kit/Atollo.exe" prepare --only "pwsh,node" --update-all | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "update check failed" }
       - name: Real kit tests (editor server; Windows Terminal console with the kit environment)

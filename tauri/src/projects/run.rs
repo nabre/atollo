@@ -96,6 +96,35 @@ struct Entry {
     stopped: bool,
     actual_port: Option<u16>,
     detected_url: Option<String>,
+    /// Served by this shared pool (`servers/mod.rs`): no process of its own.
+    pool: Option<String>,
+}
+
+/// How «Avvia» serves an Apache or Nginx site.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SiteMode {
+    /// Its own httpd/nginx on the action's port (also `server` "auto").
+    Dedicated,
+    /// The shared pool (manual profile) chosen in `panel.json` (`server`).
+    Pool(String),
+}
+
+/// A site assigned to a manual server profile is served by that pool;
+/// everything else (no `server`, `auto`, not an Apache/Nginx site) runs on
+/// its own.
+pub fn site_mode(action: &Action) -> SiteMode {
+    if action.apache_dir.is_none() && action.nginx_dir.is_none() {
+        return SiteMode::Dedicated;
+    }
+    match action
+        .server
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty() && *s != "auto")
+    {
+        Some(id) => SiteMode::Pool(id.to_owned()),
+        None => SiteMode::Dedicated,
+    }
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -309,10 +338,12 @@ impl Runner {
         result
     }
 
+    /// A process of the action runs (one served by a pool has none: a
+    /// dedicated start replaces it).
     fn alive(&self, key: &str) -> bool {
-        self.entries()
-            .get(key)
-            .is_some_and(|e| matches!(e.info.state, State::Starting | State::Running))
+        self.entries().get(key).is_some_and(|e| {
+            e.pool.is_none() && matches!(e.info.state, State::Starting | State::Running)
+        })
     }
 
     /// The port of a web action: the one it had (if free), or the first free
@@ -480,7 +511,9 @@ impl Runner {
             )
         } else if let Some(folder) = &action.nginx_dir {
             let root = detect::inside_dir(&cwd, folder)?;
-            let fcgi_port = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job);
+            // php-cgi lives in the action's job: stopping the action ends it too.
+            let fcgi_port = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job)
+                .map(|(port, _php)| port);
             let cmd = crate::projects::nginx::command(
                 &self.kit,
                 id,
@@ -578,6 +611,7 @@ impl Runner {
                         stopped: false,
                         actual_port: None,
                         detected_url: None,
+                        pool: None,
                     },
                 );
                 (self.notify)(Event::Log {
@@ -598,6 +632,7 @@ impl Runner {
                 stopped: false,
                 actual_port: None,
                 detected_url: None,
+                pool: None,
             },
         );
         self.append(&key, header, false);
@@ -633,6 +668,69 @@ impl Runner {
             std::thread::spawn(move || me.watch_port(&key3, &lang3));
         }
         Ok(info)
+    }
+
+    /// `action` of `project` served by the running pool `pool` at `url`:
+    /// shown as running with no process of its own. A dedicated server of
+    /// the action still running is kept (and returned) instead.
+    pub fn attach_pool(
+        &self,
+        project: &str,
+        action: &Action,
+        pool: &str,
+        port: u16,
+        url: &str,
+        lang: &str,
+    ) -> RunInfo {
+        let key = key_of(project, &action.id);
+        let info = {
+            let mut entries = self.entries();
+            if let Some(e) = entries.get(&key).filter(|e| {
+                e.pool.is_none() && matches!(e.info.state, State::Starting | State::Running)
+            }) {
+                return e.info.clone();
+            }
+            let info = RunInfo {
+                key: key.clone(),
+                project: project.to_owned(),
+                action: action.id.clone(),
+                label: action.label.clone(),
+                kind: action.kind,
+                command: tr(lang, "pool condiviso {0}", &[pool]),
+                port: Some(port),
+                url: Some(format!("{}/", url.trim_end_matches('/'))),
+                state: State::Running,
+                start: now_ms(),
+                end: None,
+                code: None,
+                pid: None,
+                skipped_aliases: Vec::new(),
+            };
+            entries.insert(
+                key.clone(),
+                Entry {
+                    info: info.clone(),
+                    lines: Vec::new(),
+                    job: None,
+                    stopped: false,
+                    actual_port: None,
+                    detected_url: None,
+                    pool: Some(pool.to_owned()),
+                },
+            );
+            info
+        };
+        let line = format!(
+            "[Atollo] {}",
+            tr(
+                lang,
+                "servito dal pool condiviso {0}: {1}",
+                &[pool, info.url.as_deref().unwrap_or_default()]
+            )
+        );
+        self.append(&key, vec![line], false);
+        (self.notify)(Event::State(info.clone()));
+        info
     }
 
     fn read_stream(&self, key: &str, mut stream: Box<dyn Read + Send>) {
@@ -792,18 +890,28 @@ impl Runner {
         (self.notify)(Event::State(info));
     }
 
-    /// Stops an action and everything it started.
+    /// Stops an action and everything it started. An action served by a
+    /// shared pool is only marked stopped: the pool serves other projects
+    /// too and is stopped from the "Server Web" page.
     pub fn stop(&self, key: &str) {
-        let job = {
+        let (job, unpooled) = {
             let mut entries = self.entries();
             let Some(e) = entries.get_mut(key) else {
                 return;
             };
             e.stopped = true;
-            e.job.take()
+            let unpooled = (e.pool.is_some() && e.info.state == State::Running).then(|| {
+                e.info.state = State::Stopped;
+                e.info.end = Some(now_ms());
+                e.info.clone()
+            });
+            (e.job.take(), unpooled)
         };
         // Closing the job's last handle ends its processes (KILL_ON_JOB_CLOSE).
         drop(job);
+        if let Some(info) = unpooled {
+            (self.notify)(Event::State(info));
+        }
     }
 
     pub fn stop_all(&self) {
@@ -812,24 +920,66 @@ impl Runner {
             .values_mut()
             .filter_map(|e| {
                 e.stopped = true;
+                if e.pool.is_some() && e.info.state == State::Running {
+                    e.info.state = State::Stopped;
+                    e.info.end = Some(now_ms());
+                }
                 e.job.take()
             })
             .collect();
         drop(jobs);
     }
 
-    /// Actions still running (for the close confirmation).
+    /// Actions still running (for the close confirmation); those served by
+    /// a pool are counted with the pools.
     pub fn running(&self) -> usize {
         self.entries()
             .values()
-            .filter(|e| matches!(e.info.state, State::Starting | State::Running))
+            .filter(|e| {
+                e.pool.is_none() && matches!(e.info.state, State::Starting | State::Running)
+            })
             .count()
+    }
+
+    /// Marks stopped the actions served by a pool that no longer runs
+    /// (`pool_running` false: stopped from the "Server Web" page, or
+    /// dead), which would otherwise stay "running" and never be cleared.
+    pub fn reconcile_pools(&self, pool_running: impl Fn(&str) -> bool) {
+        // The pools are asked without `entries` held (no lock inside another).
+        let pools: HashSet<String> = self
+            .entries()
+            .values()
+            .filter(|e| e.info.state == State::Running)
+            .filter_map(|e| e.pool.clone())
+            .collect();
+        let gone: HashSet<String> = pools.into_iter().filter(|p| !pool_running(p)).collect();
+        if gone.is_empty() {
+            return;
+        }
+        let ended: Vec<RunInfo> = {
+            let mut entries = self.entries();
+            entries
+                .values_mut()
+                .filter(|e| e.info.state == State::Running)
+                .filter(|e| e.pool.as_ref().is_some_and(|p| gone.contains(p)))
+                .map(|e| {
+                    e.info.state = State::Stopped;
+                    e.info.end = Some(now_ms());
+                    e.info.clone()
+                })
+                .collect()
+        };
+        for info in ended {
+            (self.notify)(Event::State(info));
+        }
     }
 
     /// Forgets the output of an action that ended.
     pub fn clear(&self, key: &str) {
         let mut entries = self.entries();
-        if entries.get(key).is_some_and(|e| e.job.is_none()) {
+        if entries.get(key).is_some_and(|e| {
+            e.job.is_none() && (e.pool.is_none() || e.info.state != State::Running)
+        }) {
             entries.remove(key);
         }
     }

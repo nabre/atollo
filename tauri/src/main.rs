@@ -364,8 +364,8 @@ fn prepare(
         cancel: &cancel,
     };
     log::info(&format!("prepare {args:?}"));
-    let mut printer = cli::Printer::new(&mut *out, lang)
-        .with_downloads_dir(setup::downloads::dir(kit));
+    let mut printer =
+        cli::Printer::new(&mut *out, lang).with_downloads_dir(setup::downloads::dir(kit));
     let results = match setup::runner::run(&ctx, &args.options(), &mut printer) {
         Ok(results) => results,
         Err(e) if e.is::<setup::runner::Busy>() => {

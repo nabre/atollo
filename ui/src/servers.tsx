@@ -111,7 +111,7 @@ function PoolDetails({
                 const aliasEntries = Object.entries(site.aliases);
                 return (
                   <div
-                    key={site.project}
+                    key={`${site.project}:${site.action}`}
                     className="rounded border border-vsc-border bg-vsc-sidebar/40 px-3 py-2.5 space-y-1.5"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -191,11 +191,17 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
   const [newPhpLine, setNewPhpLine] = useState("");
   const [newPort, setNewPort] = useState("");
 
-  const refresh = useCallback(() => {
-    serversList().then(setView, (e: unknown) => {
+  const load = useCallback((fresh: boolean) => {
+    serversList(fresh).then(setView, (e: unknown) => {
       setError(String(e));
     });
   }, []);
+  const refresh = useCallback(() => {
+    load(false);
+  }, [load]);
+  const refreshFresh = useCallback(() => {
+    load(true);
+  }, [load]);
   useEvery(refresh, 3000);
 
   const run = (id: string, fn: () => Promise<void>) => {
@@ -233,7 +239,7 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
                 setCreateOpen(true);
               }}
             />
-            <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={refresh} />
+            <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={refreshFresh} />
             {onGuide && (
               <IconButton
                 icon={VscBook}

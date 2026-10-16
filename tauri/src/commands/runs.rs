@@ -1,13 +1,17 @@
 //! Projects' actions started by the kit (projects/run.rs): start, stop, log, ports.
 
 use super::*;
+use crate::projects::run::{site_mode, SiteMode};
 
 #[tauri::command]
 pub fn run_list<R: Runtime>(
     webview: Webview<R>,
+    state: State<'_, AppState>,
     runner: State<'_, Arc<Runner>>,
 ) -> CmdResult<Vec<crate::projects::run::RunInfo>> {
     ensure_main(&webview)?;
+    // A site served by a pool stopped (or dead) since: stopped too.
+    runner.reconcile_pools(|id| state.servers.is_running(id));
     Ok(runner.list())
 }
 
@@ -24,12 +28,39 @@ pub async fn run_start<R: Runtime>(
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
-    let runner = Arc::clone(&runner);
+    let (runner, servers) = (Arc::clone(&runner), Arc::clone(&state.servers));
     tauri::async_runtime::spawn_blocking(move || {
         let detected = crate::detect::detect(&dir, lang);
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
         };
+        // A site assigned to a server profile: started in that shared pool
+        // (GAP-RUN). A profile gone since: the pool `list` puts it in, or,
+        // not in any, its own server as before.
+        if let SiteMode::Pool(_) = site_mode(a) {
+            // A fresh scan: the cached one may still name the pool the site
+            // was moved from.
+            if let Some((pool, site)) = servers.pool_of(&project, &a.id, lang) {
+                let mut wanted = vec![pool.engine.as_str()];
+                if pool.php_line.is_some() {
+                    wanted.push("php");
+                }
+                let env = ensure(&app, &task, &kit, lang, &wanted)?;
+                servers.start(&pool.id, &env, lang).or_fail_chain("run")?;
+                // The run is attached to the very pool just started, and
+                // only while it runs (with its live port).
+                let Some(port) = servers.running_port(&pool.id) else {
+                    return Err(crate::i18n::t(
+                        lang,
+                        "Il server condiviso {0} non è partito: guarda la pagina Server Web.",
+                        &[&pool.id],
+                    )
+                    .into());
+                };
+                let url = format!("http://{}:{port}", site.server_name);
+                return Ok(runner.attach_pool(&project, a, &pool.id, port, &url, lang));
+            }
+        }
         let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);

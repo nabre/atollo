@@ -35,3 +35,57 @@ fn nginx_conf_with_aliases_and_php() {
     assert!(conf.contains(&format!("alias \"{projs_fwd}/common/assets/\";")));
     assert!(!conf.contains("location /up/") && !conf.contains("x;y"));
 }
+
+#[test]
+fn no_fcgi_blocks_php_source() {
+    let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
+    let doc = Path::new(r"D:\kit\projects\site\public");
+    let run = Path::new(r"D:\kit\data\projects\site\nginx");
+    let block = "        location ~* \\.php$ {\r\n            return 503;\r\n        }";
+    let conf = |fcgi| project_conf(nginx, Some("site"), doc, run, 7107, fcgi, false, &[], &[]);
+
+    let static_only = conf(None);
+    assert!(static_only.contains(block), "{static_only}");
+    assert!(!static_only.contains("fastcgi_pass"));
+
+    let with_php = conf(Some(9124));
+    assert!(!with_php.contains("return 503;"), "{with_php}");
+    assert!(with_php.contains("fastcgi_pass 127.0.0.1:9124;"));
+}
+
+/// F2: on NTFS `/INDEX.PHP` is `index.php`: the FastCGI location matches
+/// any case, so it is run and never served as source by `location /`.
+#[test]
+fn fastcgi_location_is_case_insensitive() {
+    let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
+    let doc = Path::new(r"D:\kit\projects\site\public");
+    let run = Path::new(r"D:\kit\data\projects\site\nginx");
+    let conf = project_conf(
+        nginx,
+        Some("site"),
+        doc,
+        run,
+        7108,
+        Some(9125),
+        false,
+        &[],
+        &[],
+    );
+    assert!(conf.contains("location ~* \\.php$ {"), "{conf}");
+    assert!(!conf.contains("location ~ \\.php$"), "{conf}");
+}
+
+/// F3: hidden files and folders are refused but `.well-known`, before any
+/// other regex location (the first matching one wins), with or without PHP.
+#[test]
+fn hidden_files_are_denied_first() {
+    let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
+    let doc = Path::new(r"D:\kit\projects\blog");
+    let run = Path::new(r"D:\kit\data\projects\blog\nginx");
+    let deny = "        location ~ /\\.(?!well-known(/|$)) {\r\n            deny all;\r\n        }";
+    for fcgi in [None, Some(9126)] {
+        let conf = project_conf(nginx, Some("blog"), doc, run, 7110, fcgi, false, &[], &[]);
+        let at = conf.find(deny).unwrap_or_else(|| panic!("{conf}"));
+        assert!(at < conf.find("location ~* \\.php$").unwrap(), "{conf}");
+    }
+}

@@ -32,7 +32,7 @@ pub fn fwd(p: &Path) -> String {
 pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
     let conf = kit.data().join(r"apache\kit.conf");
     if let Ok(text) = fs::read_to_string(&conf) {
-        let fixed = text.replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/");
+        let fixed = migrate_kit_conf(&text);
         if fixed != text {
             write_atomic(&conf, fixed.as_bytes()).with_context(|| conf.display().to_string())?;
         }
@@ -62,7 +62,43 @@ pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
     Ok(())
 }
 
-/// Dynamic `<IfFile>` blocks for PHP 8, PHP 7, and PHP 5 Thread-Safe Apache modules.
+/// The text of an older `kit.conf` (created once, never rewritten) brought
+/// up to date: PHP under `${CP_PHP_FWD}`, `.php` matched in any case
+/// (`INDEX.PHP` is PHP on Windows too) and refused (403) without a PHP
+/// module, as [`php_module_blocks`] writes them. Idempotent.
+pub fn migrate_kit_conf(text: &str) -> String {
+    let mut fixed = text
+        .replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/")
+        .replace("\"\\.php$\"", "\"(?i)\\.php$\"");
+    if !fixed.contains("<IfModule !php_module>") {
+        let blocks = php_module_blocks("CP_PHP_FWD");
+        let deny_from = blocks
+            .iter()
+            .rposition(|l| l == "</IfFile>")
+            .map_or(0, |i| i + 1);
+        let deny = blocks[deny_from..].join("\r\n");
+        // After the last module block (`IfModule` is read in order), or at
+        // the end when there is none.
+        match fixed.rfind("</IfFile>") {
+            Some(at) => {
+                let at = at + "</IfFile>".len();
+                fixed.insert_str(at, &format!("\r\n{deny}"));
+            }
+            None => {
+                if !fixed.is_empty() && !fixed.ends_with('\n') {
+                    fixed.push_str("\r\n");
+                }
+                fixed.push_str(&format!("{deny}\r\n"));
+            }
+        }
+    }
+    fixed
+}
+
+/// Dynamic `<IfFile>` blocks for PHP 8, PHP 7, and PHP 5 Thread-Safe Apache
+/// modules (`.php` in any case: `INDEX.PHP` is PHP on Windows too). Without
+/// any of them a `.php` would be sent as text, source and secrets included:
+/// it is refused instead (403).
 pub fn php_module_blocks(php_var: &str) -> Vec<String> {
     let mut out = Vec::new();
     for (dll, ts, module) in [
@@ -75,13 +111,40 @@ pub fn php_module_blocks(php_var: &str) -> Vec<String> {
             format!("    LoadFile \"${{{php_var}}}/{ts}\""),
             format!("    LoadModule {module} \"${{{php_var}}}/{dll}\""),
             "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"".to_owned(),
-            "    <FilesMatch \"\\.php$\">".to_owned(),
+            "    <FilesMatch \"(?i)\\.php$\">".to_owned(),
             "        SetHandler application/x-httpd-php".to_owned(),
             "    </FilesMatch>".to_owned(),
             "</IfFile>".to_owned(),
         ]);
     }
+    out.extend([
+        "<IfModule !php_module>".to_owned(),
+        "    <IfModule !php7_module>".to_owned(),
+        "        <IfModule !php5_module>".to_owned(),
+        "            <FilesMatch \"(?i)\\.php$\">".to_owned(),
+        "                Require all denied".to_owned(),
+        "            </FilesMatch>".to_owned(),
+        "        </IfModule>".to_owned(),
+        "    </IfModule>".to_owned(),
+        "</IfModule>".to_owned(),
+    ]);
     out
+}
+
+/// Refuses (403) hidden files and folders (`.env`, `.git/`, `.htpasswd`)
+/// but `.well-known`: a site served from the project's root (WordPress
+/// `.`) would otherwise hand them out. By URL (`LocationMatch`, aliases
+/// included, never matching a dotted folder above the site on disk) and
+/// by file name (`FilesMatch`).
+pub fn hidden_deny(indent: &str) -> Vec<String> {
+    vec![
+        format!("{indent}<LocationMatch \"/\\.(?!well-known(/|$))\">"),
+        format!("{indent}    Require all denied"),
+        format!("{indent}</LocationMatch>"),
+        format!("{indent}<FilesMatch \"^\\.(?!well-known$)\">"),
+        format!("{indent}    Require all denied"),
+        format!("{indent}</FilesMatch>"),
+    ]
 }
 
 /// Directives (`Alias` + `<Directory>`) for checked path aliases; `own` is
@@ -175,6 +238,7 @@ pub fn project_conf_with_site(
         "</Directory>".to_owned(),
     ]);
     site.extend(alias_directives("${CP_PROJECT_FWD}", aliases, ""));
+    site.extend(hidden_deny(""));
     site.push("DirectoryIndex index.php index.html".to_owned());
     site.extend(php_module_blocks("CP_PHP_FWD"));
     site.push(format!("IncludeOptional \"{dir}/conf.d/*.conf\""));

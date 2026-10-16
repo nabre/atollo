@@ -2,10 +2,17 @@
 //! `Expand-Package`, `Replace-Dir` and `Replace-File`).
 //!
 //! Extraction refuses entries that would land outside the target (absolute
-//! paths, `..`, drive prefixes) and skips links. File times are not restored
-//! (exFAT rejects them; `tar -m` in the kit). Swaps are atomic from the
-//! user's point of view: the new folder is complete before the old one moves,
-//! and a failure puts the old one back.
+//! paths, `..`, drive prefixes) and entries whose way from the target crosses
+//! a symbolic link; a file is written only as a new file (an existing one is
+//! removed first, never truncated through a link). Links are never created on
+//! Windows. On Unix symbolic links are created last, after every file and
+//! folder (as GNU tar does), and only if the target is relative, has no `\`
+//! or `:`, and resolves inside the target folder through real folders only
+//! (so a chain of links cannot climb out); a hard link is created only to a
+//! regular file already extracted there. Other links are skipped. File
+//! times are not restored (exFAT rejects them; `tar -m` in the kit). Swaps are atomic from the user's point of view: the
+//! new folder is complete before the old one moves, and a failure puts the
+//! old one back.
 
 use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom};
@@ -97,30 +104,76 @@ pub fn extract(archive: &Path, kind: Kind, dest: &Path) -> Result<()> {
     .with_context(|| format!("extracting {}", archive.display()))
 }
 
+/// Refuses `path` if it, or a folder between `dest` and it, is a symbolic
+/// link (or another link Windows reports as one): nothing is ever written
+/// through a link, wherever it came from.
+fn no_link_on_the_way(dest: &Path, path: &Path) -> Result<()> {
+    let rel = path
+        .strip_prefix(dest)
+        .with_context(|| format!("{} is outside {}", path.display(), dest.display()))?;
+    let mut cur = dest.to_path_buf();
+    for part in rel.components() {
+        cur.push(part);
+        match fs::symlink_metadata(&cur) {
+            Ok(meta) if meta.file_type().is_symlink() => {
+                bail!("unsafe path in archive: {} is a link", cur.display())
+            }
+            Ok(_) => {}
+            Err(_) => break, // Not there yet: nothing below it exists either.
+        }
+    }
+    Ok(())
+}
+
+/// Creates the folder `dir` inside `dest`, never through a link.
+fn prepare_dir(dest: &Path, dir: &Path) -> Result<()> {
+    no_link_on_the_way(dest, dir)?;
+    fs::create_dir_all(dir)?;
+    Ok(())
+}
+
+/// A new file at `path` inside `dest`: what was there (a file of an
+/// earlier entry, or a link) is removed, never truncated or followed.
+fn create_file(dest: &Path, path: &Path) -> Result<File> {
+    if let Some(dir) = path.parent() {
+        prepare_dir(dest, dir)?;
+    }
+    match fs::symlink_metadata(path) {
+        Ok(meta) if meta.is_dir() => {
+            bail!("unsafe path in archive: {} is a folder", path.display())
+        }
+        Ok(_) => fs::remove_file(path)?,
+        Err(_) => {}
+    }
+    Ok(fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)?)
+}
+
 fn extract_zip(archive: &Path, dest: &Path) -> Result<()> {
     let mut zip = zip::ZipArchive::new(File::open(archive)?)?;
+    #[cfg(unix)]
+    let mut links: Vec<(PathBuf, String)> = Vec::new();
     for i in 0..zip.len() {
         let mut entry = zip.by_index(i)?;
         let Some(path) = safe_join(dest, entry.name()) else {
             bail!("unsafe path in archive: {}", entry.name());
         };
         if entry.is_dir() {
-            fs::create_dir_all(&path)?;
+            prepare_dir(dest, &path)?;
         } else if entry.is_symlink() {
             #[cfg(unix)]
             {
                 let mut target = String::new();
                 if entry.read_to_string(&mut target).is_ok() {
-                    create_safe_symlink(dest, &path, target.trim())?;
+                    links.push((path, target.trim().to_owned()));
                 }
             }
             continue;
         } else {
-            if let Some(dir) = path.parent() {
-                fs::create_dir_all(dir)?;
-            }
             let mode = entry.unix_mode();
-            io::copy(&mut entry, &mut File::create(&path)?)?;
+            io::copy(&mut entry, &mut create_file(dest, &path)?)?;
             if mode.is_some_and(|m| m & 0o111 != 0)
                 || path
                     .parent()
@@ -131,38 +184,58 @@ fn extract_zip(archive: &Path, dest: &Path) -> Result<()> {
             }
         }
     }
+    #[cfg(unix)]
+    for (path, target) in links {
+        create_safe_symlink(dest, &path, &target)?;
+    }
     Ok(())
 }
 
+/// Creates the symbolic link `link_path -> link_target` if the target
+/// resolves inside `dest` the way the kernel resolves it: every name crossed
+/// on the way (all but the last) must be a real folder, not a link, so a
+/// link made earlier (`t -> .`, then `s -> t/..`) cannot be used to climb
+/// out. Called after every file and folder exists; other targets are skipped.
 #[cfg(unix)]
 fn create_safe_symlink(dest: &Path, link_path: &Path, link_target: &str) -> Result<()> {
-    if link_target.is_empty() || link_target.starts_with(['/', '\\']) || link_target.contains(':') {
+    if link_target.is_empty() || link_target.starts_with('/') || link_target.contains(['\\', ':']) {
         return Ok(());
     }
     let Some(parent) = link_path.parent() else {
         return Ok(());
     };
-    // Verify that resolving the relative symlink target stays within `dest`.
-    let rel_parent = parent.strip_prefix(dest).unwrap_or(Path::new(""));
-    let combined = if rel_parent.as_os_str().is_empty() {
-        link_target.to_owned()
-    } else {
-        format!("{}/{link_target}", rel_parent.to_string_lossy())
+    let Ok(rel_parent) = parent.strip_prefix(dest) else {
+        return Ok(());
     };
-    let mut normalized: Vec<&str> = Vec::new();
-    for seg in combined.split(['/', '\\']) {
-        match seg {
-            "" | "." => {}
-            ".." => {
-                if normalized.pop().is_none() {
-                    return Ok(());
-                }
+    prepare_dir(dest, parent)?;
+    let mut steps: Vec<&std::ffi::OsStr> = rel_parent.iter().collect();
+    steps.extend(
+        link_target
+            .split('/')
+            .filter(|s| !s.is_empty() && *s != ".")
+            .map(std::ffi::OsStr::new),
+    );
+    let mut resolved = PathBuf::new();
+    for (i, step) in steps.iter().enumerate() {
+        if *step == ".." {
+            if !resolved.pop() {
+                return Ok(()); // Above `dest`.
             }
-            part => normalized.push(part),
+            continue;
+        }
+        resolved.push(step);
+        if i + 1 < steps.len() {
+            match fs::symlink_metadata(dest.join(&resolved)) {
+                Ok(meta) if meta.is_dir() => {}
+                _ => return Ok(()), // A link, a file or nothing: not followed.
+            }
         }
     }
-    fs::create_dir_all(parent)?;
-    let _ = fs::remove_file(link_path);
+    match fs::symlink_metadata(link_path) {
+        Ok(meta) if meta.is_dir() => return Ok(()),
+        Ok(_) => fs::remove_file(link_path)?,
+        Err(_) => {}
+    }
     std::os::unix::fs::symlink(link_target, link_path)?;
     Ok(())
 }
@@ -172,27 +245,26 @@ fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
     extract_tar_stream(gz, dest)
 }
 
+/// Memory the xz decoder may take, in KiB (1 GiB; `xz -9` needs 65 MiB).
+const XZ_MEM_LIMIT_KIB: u32 = 1 << 20;
+
 fn extract_tar_xz(archive: &Path, dest: &Path) -> Result<()> {
-    // Use system `tar -xJf` when extracting `.tar.xz` archives (Linux/macOS
-    // and Windows 10/11 ship `tar` with libarchive XZ support), after verifying
-    // every entry path with `safe_join`.
-    let status = std::process::Command::new("tar")
-        .arg("-xJf")
-        .arg(archive)
-        .arg("-C")
-        .arg(dest)
-        .status()
-        .context("running tar -xJf")?;
-    if !status.success() {
-        bail!("tar -xJf exited with {status}");
-    }
-    Ok(())
+    // Decoded in process and fed to the same tar walk as `.tar.gz`, so every
+    // entry goes through `safe_join` and the link rules of `extract_tar_stream`.
+    let xz = lzma_rust2::XzReader::new_mem_limit(
+        io::BufReader::new(File::open(archive)?),
+        true,
+        XZ_MEM_LIMIT_KIB,
+    );
+    extract_tar_stream(xz, dest)
 }
 
 fn extract_tar_stream<R: Read>(reader: R, dest: &Path) -> Result<()> {
     let mut tar = tar::Archive::new(reader);
     tar.set_preserve_mtime(false);
     tar.set_preserve_permissions(false);
+    #[cfg(unix)]
+    let mut links: Vec<(PathBuf, String)> = Vec::new();
     for entry in tar.entries()? {
         let mut entry = entry?;
         let name = entry.path()?.to_string_lossy().into_owned();
@@ -205,12 +277,9 @@ fn extract_tar_stream<R: Read>(reader: R, dest: &Path) -> Result<()> {
         let entry_type = entry.header().entry_type();
         let mode = entry.header().mode().ok();
         match entry_type {
-            tar::EntryType::Directory => fs::create_dir_all(&path)?,
+            tar::EntryType::Directory => prepare_dir(dest, &path)?,
             tar::EntryType::Regular | tar::EntryType::Continuous => {
-                if let Some(dir) = path.parent() {
-                    fs::create_dir_all(dir)?;
-                }
-                io::copy(&mut entry, &mut File::create(&path)?)?;
+                io::copy(&mut entry, &mut create_file(dest, &path)?)?;
                 if mode.is_some_and(|m| m & 0o111 != 0)
                     || path
                         .parent()
@@ -223,20 +292,23 @@ fn extract_tar_stream<R: Read>(reader: R, dest: &Path) -> Result<()> {
             #[cfg(unix)]
             tar::EntryType::Symlink => {
                 if let Ok(Some(target)) = entry.link_name() {
-                    let target_str = target.to_string_lossy();
-                    create_safe_symlink(dest, &path, &target_str)?;
+                    links.push((path, target.to_string_lossy().into_owned()));
                 }
             }
             #[cfg(unix)]
             tar::EntryType::Link => {
                 if let Ok(Some(target)) = entry.link_name() {
-                    let target_str = target.to_string_lossy();
-                    if let Some(target_path) = safe_join(dest, &target_str) {
-                        if target_path.is_file() {
+                    if let Some(target_path) = safe_join(dest, &target.to_string_lossy()) {
+                        let regular = no_link_on_the_way(dest, &target_path).is_ok()
+                            && fs::symlink_metadata(&target_path)
+                                .is_ok_and(|m| m.file_type().is_file());
+                        if regular {
                             if let Some(dir) = path.parent() {
-                                fs::create_dir_all(dir)?;
+                                prepare_dir(dest, dir)?;
                             }
-                            let _ = fs::remove_file(&path);
+                            if fs::symlink_metadata(&path).is_ok_and(|m| !m.is_dir()) {
+                                fs::remove_file(&path)?;
+                            }
                             let _ = fs::hard_link(&target_path, &path);
                         }
                     }
@@ -245,6 +317,10 @@ fn extract_tar_stream<R: Read>(reader: R, dest: &Path) -> Result<()> {
             // Devices, pax headers, or links on Windows: never followed or created.
             _ => {}
         }
+    }
+    #[cfg(unix)]
+    for (path, target) in links {
+        create_safe_symlink(dest, &path, &target)?;
     }
     Ok(())
 }
@@ -325,12 +401,20 @@ fn extract_7z(archive: &Path, dest: &Path) -> Result<()> {
                 return Ok(false);
             };
             if entry.is_directory() {
-                fs::create_dir_all(&path)?;
-            } else {
-                if let Some(dir) = path.parent() {
-                    fs::create_dir_all(dir)?;
+                if let Err(e) = prepare_dir(dest, &path) {
+                    failure = Some(e);
+                    return Ok(false);
                 }
-                io::copy(data, &mut File::create(&path)?)?;
+            } else {
+                match create_file(dest, &path) {
+                    Ok(mut file) => {
+                        io::copy(data, &mut file)?;
+                    }
+                    Err(e) => {
+                        failure = Some(e);
+                        return Ok(false);
+                    }
+                }
             }
             Ok(true)
         });

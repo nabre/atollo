@@ -4,11 +4,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
+import { VscAdd } from "react-icons/vsc";
 import {
   Button,
   Checkbox,
   CheckboxLabel,
   ConfirmDialog,
+  IconButton,
   Radio,
   SearchBox,
   Select,
@@ -266,6 +268,73 @@ describe("workbench controls", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps Tab and Shift+Tab inside the dialog, past a hidden submit button", () => {
+    render(
+      <ConfirmDialog
+        title="Chiudere?"
+        cancelLabel="Annulla"
+        onCancel={() => undefined}
+        actions={
+          <form>
+            <Button variant="primary" submit>
+              Conferma
+            </Button>
+          </form>
+        }
+      >
+        <p>Si chiude tutto.</p>
+      </ConfirmDialog>,
+    );
+    const cancel = screen.getByRole("button", { name: "Annulla" });
+    const confirm = screen.getByRole("button", { name: "Conferma" });
+    expect(document.activeElement).toBe(cancel);
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(confirm);
+    // The last reachable control is Conferma, not the hidden native submit.
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(cancel);
+  });
+
+  it("gives the focus back to what opened the dialog once it closes", () => {
+    function Opener() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true);
+            }}
+          >
+            Elimina
+          </button>
+          {open && (
+            <ConfirmDialog
+              title="Eliminare?"
+              cancelLabel="Annulla"
+              onCancel={() => {
+                setOpen(false);
+              }}
+              actions={null}
+            >
+              <p>Non si torna indietro.</p>
+            </ConfirmDialog>
+          )}
+        </>
+      );
+    }
+    render(<Opener />);
+    const opener = screen.getByRole("button", { name: "Elimina" });
+    opener.focus();
+    fireEvent.click(opener);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Annulla" }));
+    act(() => {
+      fireEvent.keyDown(window, { key: "Escape" });
+    });
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+
   it("lets Esc cancel a dialog from a closed select inside it", async () => {
     const onCancel = vi.fn();
     render(
@@ -286,6 +355,24 @@ describe("workbench controls", () => {
     await select.updateComplete;
     fireEvent.keyDown(select, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("says that an icon action opens a menu, and which one while it is open", () => {
+    const { rerender } = render(<IconButton icon={VscAdd} label="Aggiungi" onClick={() => undefined} />);
+    const plain = screen.getByRole("button", { name: "Aggiungi" });
+    expect(plain.hasAttribute("aria-haspopup")).toBe(false);
+    expect(plain.hasAttribute("aria-expanded")).toBe(false);
+    const draw = (open: boolean) => (
+      <IconButton icon={VscAdd} label="Aggiungi" menu={{ open, id: "m" }} onClick={() => undefined} />
+    );
+    rerender(draw(false));
+    const button = screen.getByRole("button", { name: "Aggiungi" });
+    expect(button.getAttribute("aria-haspopup")).toBe("menu");
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(button.hasAttribute("aria-controls")).toBe(false);
+    rerender(draw(true));
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+    expect(button.getAttribute("aria-controls")).toBe("m");
   });
 
   it("gives autocomplete to a TextField again when it is drawn again", () => {

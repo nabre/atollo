@@ -116,7 +116,10 @@ pub fn project_action_save<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    Ok(crate::detect::save_action(&dir, &action, state.lang())?)
+    crate::detect::save_action(&dir, &action, state.lang())?;
+    // Its `server` may have moved the site to another pool.
+    state.servers.invalidate();
+    Ok(())
 }
 
 /// The project's own MCP servers (.mcp.json, D-78).
@@ -153,7 +156,9 @@ pub fn project_action_remove<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    Ok(crate::detect::remove_action(&dir, &id, state.lang())?)
+    crate::detect::remove_action(&dir, &id, state.lang())?;
+    state.servers.invalidate();
+    Ok(())
 }
 
 /// The action that "Avvia" starts.
@@ -196,13 +201,16 @@ pub fn project_site<R: Runtime>(
         )
         .into());
     }
-    Ok(crate::detect::set_site_with_options(
+    crate::detect::set_site_with_options(
         &dir,
         &folder,
         kind,
         &options.unwrap_or_default(),
         state.lang(),
-    )?)
+    )?;
+    // The site (and its `server`) changed: the pools are scanned again.
+    state.servers.invalidate();
+    Ok(())
 }
 
 /// Installs the kit components a project needs and are missing (its

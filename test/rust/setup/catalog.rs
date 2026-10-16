@@ -269,6 +269,68 @@ fn shared_paths_go_with_the_last_owner() {
         .contains(&kit.apps().join("apache")));
 }
 
+/// Option C (BUG-23b, BUG-24a): PHP, Apache and Nginx are Windows only
+/// (Windows builds, php.ini and httpd.conf of Windows), so Adminer, which
+/// needs PHP, is too. Git stays everywhere: Claude Code needs it.
+#[test]
+fn web_stack_is_windows_only() {
+    use crate::kit::Target;
+
+    let catalog = Catalog::get();
+    for id in ["php", "apache", "nginx", "adminer"] {
+        let c = catalog.find(id).unwrap();
+        for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
+            assert!(c.is_available_on(target), "{id} on {target}");
+        }
+        for target in [
+            Target::DARWIN_ARM64,
+            Target::DARWIN_X64,
+            Target::LINUX_X64,
+            Target::LINUX_ARM64,
+        ] {
+            assert!(!c.is_available_on(target), "{id} on {target}");
+        }
+    }
+    for id in ["git", "claude"] {
+        let c = catalog.find(id).unwrap();
+        for target in Target::ALL {
+            assert!(c.is_available_on(target), "{id} on {target}");
+        }
+    }
+}
+
+/// Asking for Adminer on Linux names the system, not ARM64.
+#[test]
+fn adminer_on_linux_names_the_system() {
+    use crate::kit::Target;
+    use crate::setup::runner::{plan, Options};
+
+    let tmp = TempDir::new("catalog-adminer-linux");
+    let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
+    kit.prepare().unwrap();
+    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let env = crate::env::KitEnv::default();
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    let ctx = crate::install::Ctx {
+        kit: &kit,
+        net: &net,
+        env: &env,
+        cancel: &cancel,
+    };
+    let catalog = Catalog::get();
+    let opts = Options {
+        only: vec!["adminer".into()],
+        ..Options::default()
+    };
+    let e = plan(&ctx, catalog, &Choice::defaults(catalog), &opts)
+        .err()
+        .unwrap()
+        .to_string();
+    assert!(e.contains("linux-x64") && !e.contains("ARM64"), "{e}");
+    let msg = crate::commands::unavailable_msg("en", "Adminer", Target::LINUX_X64);
+    assert_eq!(msg, "Adminer is not available for linux-x64.");
+}
+
 #[test]
 fn multi_platform_availability_and_paths_across_targets() {
     use crate::kit::Target;
@@ -327,5 +389,3 @@ fn multi_platform_availability_and_paths_across_targets() {
     assert_eq!(node.installed_version(&kit_win).as_deref(), Some("22.11.0"));
     assert_eq!(node.installed_version(&kit_mac).as_deref(), Some("24.1.0"));
 }
-
-

@@ -5,7 +5,8 @@
 //! - only requests addressed to localhost, or with the local network
 //!   allowed to an IP address (a `Host` of another name that points to the
 //!   PC, DNS rebinding, cannot read the project);
-//! - no hidden files or folders (`.git`, `.env`), except `.well-known`;
+//! - no hidden files or folders (`.git`, `.env`), except `.well-known`, nor
+//!   names shaped like NTFS 8.3 short names (`GIT~1`), which could reach them;
 //! - nothing outside the folder (`..`, links leading out);
 //! - a folder without the final `/` is redirected (relative links work).
 
@@ -14,7 +15,7 @@ use std::net::{Ipv4Addr, TcpListener, TcpStream};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 
@@ -82,6 +83,16 @@ fn percent_decode(s: &str) -> Option<String> {
     String::from_utf8(out).ok()
 }
 
+/// A segment shaped like an NTFS 8.3 short name (`~` followed by a digit,
+/// as in `GIT~1`): it could reach a hidden file (`.git`, `.env`) under
+/// another name, so it is refused without asking Windows.
+fn is_short_name(segment: &str) -> bool {
+    segment
+        .as_bytes()
+        .windows(2)
+        .any(|w| w[0] == b'~' && w[1].is_ascii_digit())
+}
+
 pub enum Answer {
     File(PathBuf),
     Redirect(String),
@@ -99,7 +110,7 @@ pub fn resolve(root: &Path, target: &str) -> Answer {
     }
     if rel
         .split(['/', '\\'])
-        .any(|s| s.starts_with('.') && s != ".well-known")
+        .any(|s| (s.starts_with('.') && s != ".well-known") || is_short_name(s))
     {
         return Answer::Status(403, "Forbidden");
     }
@@ -153,10 +164,49 @@ fn is_ip_host_header(host: &str) -> bool {
         .is_some_and(|h| h.parse::<Ipv4Addr>().is_ok())
 }
 
+/// Longest wait for a single read of the request head.
+const READ_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Total time allowed for the whole request head, however it trickles in:
+/// a client sending one byte every few seconds is cut here, not after the
+/// 8192 bytes of the head (hours). Shorter under test, to keep tests quick.
+pub(crate) const HEAD_DEADLINE: Duration = if cfg!(test) {
+    Duration::from_secs(3)
+} else {
+    Duration::from_secs(10)
+};
+
+/// Reads from the connection, each read waiting at most what is left
+/// before `deadline` (and never more than [`READ_TIMEOUT`]).
+struct DeadlineReader {
+    stream: TcpStream,
+    deadline: Instant,
+}
+
+impl Read for DeadlineReader {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let left = self.deadline.saturating_duration_since(Instant::now());
+        // `set_read_timeout(Some(0))` is an error: a spent budget ends here.
+        if left.is_zero() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "request head deadline",
+            ));
+        }
+        self.stream.set_read_timeout(Some(left.min(READ_TIMEOUT)))?;
+        self.stream.read(buf)
+    }
+}
+
 fn handle(root: &Path, lan: bool, mut stream: TcpStream) -> Result<()> {
-    let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
+    let deadline = Instant::now() + HEAD_DEADLINE;
+    let _ = stream.set_read_timeout(Some(READ_TIMEOUT));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
-    let mut reader = BufReader::new(stream.try_clone()?.take(8192));
+    let head = DeadlineReader {
+        stream: stream.try_clone()?,
+        deadline,
+    };
+    let mut reader = BufReader::new(head.take(8192));
     let mut request = String::new();
     reader.read_line(&mut request)?;
     let mut host = String::new();
@@ -219,6 +269,9 @@ fn handle(root: &Path, lan: bool, mut stream: TcpStream) -> Result<()> {
     Ok(())
 }
 
+/// Connections served at the same time; the others are closed at once.
+const MAX_CONNS: usize = 64;
+
 struct ConnGuard(Arc<AtomicUsize>);
 
 impl Drop for ConnGuard {
@@ -258,7 +311,6 @@ pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
             ]
         )
     );
-    const MAX_CONNS: usize = 64;
     let active = Arc::new(AtomicUsize::new(0));
     for stream in listener.incoming().flatten() {
         let prev = active.fetch_add(1, Ordering::AcqRel);

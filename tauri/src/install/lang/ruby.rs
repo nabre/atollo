@@ -76,7 +76,7 @@ pub(crate) fn ruby_unix_suffix(target: Target) -> &'static str {
     }
 }
 
-fn ruby_unix_assets<'a>(releases: &'a [Value], target: Target) -> Vec<(String, &'a Value)> {
+fn ruby_unix_assets(releases: &[Value], target: Target) -> Vec<(String, &Value)> {
     let suffix = ruby_unix_suffix(target);
     let Ok(re) = regex::Regex::new(&format!(r"^ruby-(\d+\.\d+\.\d+)-{suffix}$")) else {
         return Vec::new();

@@ -147,10 +147,18 @@ pub trait Installer: Sync {
     fn finish(&self, _ctx: &Ctx, _component: &Component, _dest: &Path) -> Result<()> {
         Ok(())
     }
-    /// Installers made of processes instead of archives: install `release`
-    /// themselves. Default: the shared path.
-    fn custom(&self) -> bool {
+    /// Installers made of processes instead of archives on `target`: install
+    /// `release` themselves. Default: the shared path.
+    fn custom(&self, _target: crate::kit::Target) -> bool {
         false
+    }
+    /// Its folder keeps working when the kit moves (another drive letter
+    /// or folder) on `target`. Not so for a conda environment off Windows
+    /// (Git, R), which has its folder written inside: when the kit moves
+    /// it is marked to be installed again (`flag_not_relocatable`, D-92).
+    /// Default: it can move.
+    fn relocatable(&self, _target: crate::kit::Target) -> bool {
+        true
     }
     fn install_custom(
         &self,
@@ -305,7 +313,7 @@ pub fn install(
     let Some(inst) = installer(&component.id) else {
         bail!("{}: no installer", component.id);
     };
-    if inst.custom() {
+    if inst.custom(target_of(ctx, component)) {
         inst.install_custom(ctx, component, release, progress)?;
         if component.per_line() {
             let dir = crate::versions::install_dir(ctx.kit, component, &release.version);
@@ -362,9 +370,44 @@ pub fn install(
             part.display()
         );
     }
+    // Installed for this root: no longer to be installed again (D-92).
+    component.clear_reinstall(ctx.kit);
     // A tool always at its latest version keeps only the new line.
     crate::versions::drop_old_lines(ctx.kit, component);
     Ok(())
+}
+
+/// The kit moved from `old_root`: the components on disk that cannot follow
+/// it on this kit's target (`Installer::relocatable`) are marked to be
+/// installed again (`Component::needs_reinstall`); the automatic setup at
+/// start reinstalls them (`setup::task::outdated_app`). Their saved lines
+/// are marked one by one (`Component::lines_to_reinstall`). Returns the ids,
+/// `<id>@<line>` for a saved line.
+/// Nothing on Windows, where every component can move.
+pub fn flag_not_relocatable(kit: &Kit, old_root: &str) -> std::io::Result<Vec<String>> {
+    let target = kit.target();
+    let mut flagged = Vec::new();
+    for c in crate::setup::catalog::Catalog::get().all() {
+        let fixed = installer(&c.id).is_some_and(|i| !i.relocatable(target));
+        if !fixed {
+            continue;
+        }
+        if c.is_present(kit) {
+            c.mark_reinstall(kit, old_root)?;
+            flagged.push(c.id.clone());
+        }
+        // The saved lines (R 4.4 next to the default 4.5) are conda
+        // environments too (only beside an installed default: otherwise every
+        // folder looks saved): each one is marked and installed again at its
+        // line by the same start (`setup::runner::run`).
+        if c.versioned && c.is_installed(kit) {
+            for line in crate::versions::saved(kit, c) {
+                c.mark_line_reinstall(kit, &line.line, old_root)?;
+                flagged.push(format!("{}@{}", c.id, line.line));
+            }
+        }
+    }
+    Ok(flagged)
 }
 
 /// The release of a first installation at `line` instead of the latest:
@@ -378,7 +421,7 @@ pub fn release_at(ctx: &Ctx, component: &Component, line: &str) -> Result<Releas
         bail!("{}: no version {line} to download", component.id);
     }
     let mut release = inst.release_line(ctx, component, line)?;
-    if !inst.custom() {
+    if !inst.custom(target_of(ctx, component)) {
         let latest = inst.latest(ctx, component)?;
         release.parts.extend(
             latest
@@ -411,7 +454,7 @@ pub fn install_line(
         bail!("{} {line}: it is the default version", component.id);
     }
     let target = crate::versions::saved_dir(ctx.kit, component, &line);
-    if inst.custom() {
+    if inst.custom(target_of(ctx, component)) {
         inst.install_custom_at(ctx, component, release, &target, progress)?;
         if !crate::versions::has_key(component, &target) {
             bail!(
@@ -421,6 +464,8 @@ pub fn install_line(
             );
         }
         crate::versions::write_version(&target, &release.version)?;
+        // Installed for this root: no longer to be installed again (D-92).
+        component.clear_line_reinstall(ctx.kit, &line);
         return Ok(line);
     }
     if !release.parts.iter().any(|p| p.dest == Dest::Own) {
@@ -455,6 +500,7 @@ pub fn install_line(
         );
     }
     crate::versions::write_version(&target, &release.version)?;
+    component.clear_line_reinstall(ctx.kit, &line);
     Ok(line)
 }
 

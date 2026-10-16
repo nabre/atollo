@@ -8,7 +8,8 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::{arch_of, github_single, pattern, target_of, Ctx, Installer, Release};
+use super::native::{conda_info, conda_versions, micromamba_create, micromamba_release};
+use super::{arch_of, github_single, pattern, target_of, Ctx, Installer, Progress, Release};
 use crate::fsx::{join_rel, write_atomic};
 use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
@@ -18,61 +19,50 @@ use crate::os::jobs;
 use crate::settings::Settings;
 use crate::setup::catalog::Component;
 
-/// Git: Git for Windows Portable (`.7z.exe`) on Windows, or a portable
-/// prebuilt Git archive on macOS and Linux.
+/// Git: Git for Windows Portable (`.7z.exe`) on Windows; on macOS and Linux
+/// the conda-forge `git` package with its libraries, in an environment
+/// created by micromamba in its own folder (like R). That environment
+/// cannot be moved: when the kit moves it is installed again (D-92).
 pub struct Git;
 
 impl Installer for Git {
+    /// Micromamba on macOS and Linux, the shared path on Windows.
+    fn custom(&self, target: Target) -> bool {
+        !target.os.is_windows()
+    }
+
+    /// PortableGit moves with the kit; a conda environment does not (D-92).
+    fn relocatable(&self, target: Target) -> bool {
+        target.os.is_windows()
+    }
+
+    /// The environment in the folder of its line, then `finish` (the
+    /// portable `.gitconfig`), which the shared path would have run.
+    fn install_custom(
+        &self,
+        ctx: &Ctx,
+        component: &Component,
+        release: &Release,
+        progress: &mut dyn Progress,
+    ) -> Result<()> {
+        let dir = crate::versions::install_dir(ctx.kit, component, &release.version);
+        let spec = format!("git={}", release.version);
+        micromamba_create(ctx, component, release, &dir, &[&spec], progress)?;
+        if !crate::versions::has_key_for(target_of(ctx, component), component, &dir) {
+            bail!("bin/git not found after the installation");
+        }
+        self.finish(ctx, component, &dir)
+    }
+
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let target = target_of(ctx, component);
         if !target.is_windows() {
-            let info: Value = ctx
-                .net
-                .json("https://api.anaconda.org/package/conda-forge/git")?;
             let subdir = target.conda_subdir();
-            let file = info
-                .get("files")
-                .and_then(Value::as_array)
-                .into_iter()
-                .flatten()
-                .filter(|f| f.pointer("/attrs/subdir").and_then(Value::as_str) == Some(subdir))
-                .filter(|f| {
-                    f.get("basename")
-                        .and_then(Value::as_str)
-                        .is_some_and(|n| n.ends_with(".tar.bz2") || n.ends_with(".conda"))
-                })
-                .max_by_key(|f| {
-                    super::version_key(f.get("version").and_then(Value::as_str).unwrap_or_default())
-                })
+            let versions = conda_versions(&conda_info(ctx, "git")?, subdir);
+            let version = versions
+                .first()
                 .ok_or_else(|| anyhow!("no conda-forge git package for {subdir}"))?;
-            let version = file
-                .get("version")
-                .and_then(Value::as_str)
-                .ok_or_else(|| anyhow!("conda-forge git: missing version"))?
-                .to_owned();
-            let raw_url = file
-                .get("download_url")
-                .and_then(Value::as_str)
-                .ok_or_else(|| anyhow!("conda-forge git: missing download_url"))?;
-            let url = if raw_url.starts_with("//") {
-                format!("https:{raw_url}")
-            } else {
-                raw_url.to_owned()
-            };
-            let sha = file
-                .get("sha256")
-                .and_then(Value::as_str)
-                .ok_or_else(|| anyhow!("conda-forge git: missing sha256"))?
-                .to_owned();
-            let name = format!("git-{version}-{subdir}.tar.bz2");
-            return Ok(Release::single(
-                version,
-                url,
-                name,
-                Expect::Sha256(sha),
-                Kind::Zip,
-                Inner::Root,
-            ));
+            return micromamba_release(ctx, version);
         }
         let rel = ctx.net.github_latest("git-for-windows/git")?;
         let suffix = if arch_of(ctx, component) == "arm64" {
@@ -164,6 +154,29 @@ fn python_minor(ctx: &Ctx) -> String {
         .python_version
         .filter(|v| pattern(r"^3\.\d+$").is_ok_and(|re| re.is_match(v)))
         .unwrap_or_else(|| PYTHON_DEFAULT.to_owned())
+}
+
+/// The minor line of the Python in `tree` (`3.14`), read from its files:
+/// `python314.dll` on Windows, `lib/python3.14` elsewhere. The line chosen
+/// in the settings may differ from the one installed (a project's line, a
+/// change not applied yet). `None` when neither is there.
+pub fn python_minor_in(tree: &Path, windows: bool) -> Option<String> {
+    let (dir, re) = if windows {
+        (tree.to_path_buf(), r"(?i)^python3(\d+)\.dll$")
+    } else {
+        (tree.join("lib"), r"^python3\.(\d+)$")
+    };
+    let re = pattern(re).ok()?;
+    fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_dir() != windows))
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            re.captures(&name)?.get(1)?.as_str().parse::<u32>().ok()
+        })
+        .max()
+        .map(|n| format!("3.{n}"))
 }
 
 /// The newest `cpython-<minor>.N+<date>-<triple>-install_only_stripped.tar.gz`
@@ -303,7 +316,9 @@ impl Installer for Python {
         // Packages are compatible only within the same minor version.
         let minor = |v: &str| v.split('.').take(2).collect::<Vec<_>>().join(".");
         let m = minor(&old_version);
-        if m != python_minor(ctx) {
+        let new =
+            python_minor_in(tree, ctx.kit.os().is_windows()).unwrap_or_else(|| python_minor(ctx));
+        if m != new {
             return Ok(());
         }
         let is_pip = |name: &str| {
@@ -339,8 +354,11 @@ impl Installer for Python {
             (p, join_rel(dest, "Lib/ensurepip/_bundled"))
         } else {
             let p = dest.join("bin").join("python3");
-            let m = python_minor(ctx);
-            (p, join_rel(dest, &format!("lib/python{m}/ensurepip/_bundled")))
+            let m = python_minor_in(dest, false).unwrap_or_else(|| python_minor(ctx));
+            (
+                p,
+                join_rel(dest, &format!("lib/python{m}/ensurepip/_bundled")),
+            )
         };
         let wheel = fs::read_dir(&bundled)
             .into_iter()
@@ -488,7 +506,10 @@ impl Installer for Node {
 
     fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
         let index: Vec<NodeEntry> = ctx.net.json("https://nodejs.org/dist/index.json")?;
-        Ok(node_lines(&index, &node_wanted_file(target_of(ctx, component))))
+        Ok(node_lines(
+            &index,
+            &node_wanted_file(target_of(ctx, component)),
+        ))
     }
 
     fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {

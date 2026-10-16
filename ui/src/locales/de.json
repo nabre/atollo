@@ -515,7 +515,7 @@
   "Versioni: il kit usa la più recente; un progetto nuovo tiene quella che c'è alla sua creazione": "Versionen: das Kit verwendet die neueste; ein neues Projekt behält die bei seiner Erstellung vorhandene",
   "La più recente ({0})": "Die neueste ({0})",
   "Più versioni una accanto all'altra, una per versione minore: «Aggiorna tutto» porta ognuna all'ultima patch, una versione minore nuova si aggiunge senza togliere le altre. Il kit usa la più recente; un progetto tiene quella che c'era quando è stato creato (o quella che chiede il suo codice) e può cambiarla nella sua pagina.": "Mehrere Versionen nebeneinander, eine pro Nebenversion: „Alle aktualisieren“ bringt jede auf den neuesten Patch, eine neue Nebenversion kommt hinzu, ohne die anderen zu entfernen. Das Kit verwendet die neueste; ein Projekt behält die bei seiner Erstellung vorhandene (oder die, die sein Code verlangt) und kann sie auf seiner Seite ändern.",
-  "{0} {1}: progetti che la usano": "{0} {1}: Projekte, die sie verwenden",
+  "{0} {1} bloccata: progetti che la usano": "{0} {1} gesperrt: Projekte, die sie verwenden",
   "Usata da": "Verwendet von",
   "Ferma il server per cambiarla.": "Halten Sie den Server an, um sie zu ändern.",
   "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.": "Ein Server für alle Projekte. Jede Version hat ihre eigenen Daten: Beim ersten Start einer neueren werden die der vorherigen kopiert, die unverändert bleiben.",
@@ -725,6 +725,6 @@
   "Guida": "Anleitung",
   "Cerca nella guida": "In der Anleitung suchen",
   "Apri la guida di questa pagina": "Anleitung für diese Seite öffnen",
-  "latest": "neueste",
-  "locked": "gesperrt"
+  "più recente": "neueste",
+  "bloccata": "gesperrt"
 }

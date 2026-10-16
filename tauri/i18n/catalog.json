@@ -184,10 +184,10 @@
     "fr": "{0} : échec : {1}",
     "de": "{0}: fehlgeschlagen: {1}"
   },
-  "Scaricalo dal browser ({0}), mettilo nella cartella data\\downloads del kit e riprova.": {
-    "en": "Download it in the browser ({0}), put it in the kit's data\\downloads folder and try again.",
-    "fr": "Téléchargez-le dans le navigateur ({0}), placez-le dans le dossier data\\downloads du kit et réessayez.",
-    "de": "Lade es im Browser herunter ({0}), lege es in den Ordner data\\downloads des Kits und versuche es erneut."
+  "Scaricalo dal browser ({0}), mettilo nella cartella {1} e riprova.": {
+    "en": "Download it in the browser ({0}), put it in the folder {1} and try again.",
+    "fr": "Téléchargez-le dans le navigateur ({0}), placez-le dans le dossier {1} et réessayez.",
+    "de": "Lade es im Browser herunter ({0}), lege es in den Ordner {1} und versuche es erneut."
   },
   "Un'altra preparazione è già in corso in questo kit.": {
     "en": "Another preparation is already running in this kit.",
@@ -283,6 +283,21 @@
     "en": "server ready: {0}",
     "fr": "serveur prêt : {0}",
     "de": "Server bereit: {0}"
+  },
+  "pool condiviso {0}": {
+    "en": "shared pool {0}",
+    "fr": "pool partagé {0}",
+    "de": "gemeinsamer Pool {0}"
+  },
+  "Il server condiviso {0} non è partito: guarda la pagina Server Web.": {
+    "en": "The shared server {0} did not start: see the Web Servers page.",
+    "fr": "Le serveur partagé {0} n'a pas démarré : voyez la page Serveurs Web.",
+    "de": "Der gemeinsame Server {0} ist nicht gestartet: siehe die Seite Webserver."
+  },
+  "servito dal pool condiviso {0}: {1}": {
+    "en": "served by the shared pool {0}: {1}",
+    "fr": "servi par le pool partagé {0} : {1}",
+    "de": "vom gemeinsamen Pool {0} bereitgestellt: {1}"
   },
   "processo terminato, codice {0}": {
     "en": "process exited, code {0}",
@@ -658,6 +673,16 @@
     "en": "{0} is not available on ARM64 PCs.",
     "fr": "{0} n'est pas disponible sur les PC ARM64.",
     "de": "{0} ist auf ARM64-PCs nicht verfügbar."
+  },
+  "{0} non è disponibile per {1}.": {
+    "en": "{0} is not available for {1}.",
+    "fr": "{0} n'est pas disponible pour {1}.",
+    "de": "{0} ist für {1} nicht verfügbar."
+  },
+  "non disponibile per {0}": {
+    "en": "not available for {0}",
+    "fr": "non disponible pour {0}",
+    "de": "für {0} nicht verfügbar"
   },
   "Limite": {
     "en": "Limit",

@@ -5,7 +5,7 @@ import { useCallback, useState, type SyntheticEvent } from "react";
 import { VscAdd, VscClose, VscSave, VscTrash } from "react-icons/vsc";
 import { projectMcp, projectMcpSet, type McpServer, type McpView } from "./api";
 import { t } from "./i18n";
-import { ActionButton, ErrorLine } from "./common";
+import { ActionButton, ErrorLine, LoadError } from "./common";
 import { useAction, useLoad } from "./hooks";
 import { Select, TextArea, TextField } from "./workbench";
 
@@ -98,10 +98,11 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
 
 export function ProjectMcpBox({ project }: { project: string }) {
   const read = useCallback(() => projectMcp(project), [project]);
-  const { data: view, reload: load } = useLoad<McpView | null>(read, null, { onError: "keep" });
+  const { data: view, error: loadErr, reload: load, retry } = useLoad<McpView | null>(read, null, { onError: "show" });
   const [adding, setAdding] = useState(false);
   const { busy, error, run } = useAction(load);
-  if (!view) return null;
+  const loadError = <LoadError error={loadErr} onRetry={retry} className="px-3 py-2" />;
+  if (!view) return loadError;
   const save = (servers: McpServer[]) => {
     run("save", () => projectMcpSet(project, servers));
   };
@@ -166,6 +167,7 @@ export function ProjectMcpBox({ project }: { project: string }) {
           </p>
         </>
       )}
+      {loadError}
       <ErrorLine error={error} />
     </section>
   );
