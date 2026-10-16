@@ -104,8 +104,9 @@ export function App() {
   } = useLoad<EditorStatus | null>(editorStatus, null, { onError: { fallback: null }, every: 5000 });
   useSubscription(onEditorStatus, setEditor);
 
-  const loadInfo = useCallback(() => {
-    appInfo().then(
+  /** The read itself, for "Riprova" (busy until it ends). */
+  const readInfo = useCallback(() => {
+    return appInfo().then(
       (i) => {
         setLang(i.lang);
         setLangState(i.lang);
@@ -117,6 +118,9 @@ export function App() {
       },
     );
   }, []);
+  const loadInfo = useCallback(() => {
+    void readInfo();
+  }, [readInfo]);
   useEffect(loadInfo, [loadInfo]);
 
   useSubscription(onCloseRequested, setClosing);
@@ -136,7 +140,7 @@ export function App() {
         {t("Vai al contenuto")}
       </a>
       <TitleBar title={current?.label} />
-      <Banner info={info} error={error} onRetry={loadInfo} />
+      <Banner info={info} error={error} onRetry={readInfo} />
       {/* VSCodium's floating parts: 4px apart on the workbench color. */}
       <div className="flex min-h-0 flex-1 gap-1 px-1 pb-1">
         <ActivityBar
@@ -338,7 +342,15 @@ function ActivityBar({
 
 /** Warnings about the kit itself, as VSCodium's banner: one line each
  * over the whole window. */
-function Banner({ info, error, onRetry }: { info: AppInfo | null; error: string | null; onRetry: () => void }) {
+function Banner({
+  info,
+  error,
+  onRetry,
+}: {
+  info: AppInfo | null;
+  error: string | null;
+  onRetry: () => Promise<unknown>;
+}) {
   const notes: { tone: "warning"; text: string }[] = [];
   if (info?.movedFrom) {
     notes.push({
