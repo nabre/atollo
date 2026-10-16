@@ -111,7 +111,7 @@ function PoolDetails({
                 const aliasEntries = Object.entries(site.aliases);
                 return (
                   <div
-                    key={site.project}
+                    key={`${site.project}:${site.action}`}
                     className="rounded border border-vsc-border bg-vsc-sidebar/40 px-3 py-2.5 space-y-1.5"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
