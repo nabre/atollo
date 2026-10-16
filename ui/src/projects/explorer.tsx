@@ -13,6 +13,7 @@ import {
   VscRefresh,
   VscRepoClone,
   VscTerminal,
+  VscWand,
 } from "react-icons/vsc";
 import {
   editorOpen,
@@ -71,6 +72,7 @@ export function ProjectsPage({
   forget,
   tabs,
   onGuide,
+  onWizard,
 }: {
   status: EditorStatus | null;
   agents: AgentInfo[] | null;
@@ -83,6 +85,8 @@ export function ProjectsPage({
   /** The projects open in the editor (kept by the app across pages). */
   tabs: ReturnType<typeof useTabs>;
   onGuide?: (topic: GuideTopicId) => void;
+  /** Opens the new-project wizard (frameworks and CMS, D-83). */
+  onWizard?: () => void;
 }) {
   const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["projects"]));
   const [filter, setFilter] = useState("");
@@ -349,6 +353,12 @@ export function ProjectsPage({
                     {t("Nuovo progetto…")}
                   </Link>
                 </li>
+                {onWizard && (
+                  <li className="flex items-center gap-2">
+                    <VscWand size={16} aria-hidden="true" className="text-vsc-link" />
+                    <Link onClick={onWizard}>{t("Nuovo progetto da framework o CMS…")}</Link>
+                  </li>
+                )}
                 <li className="flex items-center gap-2">
                   <VscRepoClone size={16} aria-hidden="true" className="text-vsc-link" />
                   <Link

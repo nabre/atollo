@@ -36,6 +36,33 @@ fn combinations() {
     let tauri = plan(p, "tauri", &[]).unwrap();
     assert_eq!(tauri.needs, ["rust", "node"]);
 
+    // A CMS has its database from the base, and an administrator in .env.
+    for cms in ["wordpress", "typo3", "drupal"] {
+        let site = plan(p, cms, &[]).unwrap();
+        assert_eq!(site.database.as_deref(), Some("mariadb"), "{cms}");
+        assert_eq!(site.needs, ["php", "mariadb"], "{cms}");
+        assert!(
+            site.env.iter().any(|e| e.value == "{password}"),
+            "{cms}: administrator's password"
+        );
+        assert!(
+            site.steps.iter().all(|s| !s.contains("DB_PASSWORD=")),
+            "{cms}: passwords only through $env"
+        );
+    }
+    let statamic = plan(p, "statamic", &[]).unwrap();
+    assert_eq!(statamic.database, None, "content in files");
+    let mut base_db = p.to_vec();
+    base_db
+        .iter_mut()
+        .find(|b| b.id == "laravel")
+        .unwrap()
+        .database = Some("mongodb".into());
+    assert!(
+        plan(&base_db, "laravel", &ids(&["mysql"])).is_err(),
+        "the base's database and another"
+    );
+
     let mysql = plan(p, "laravel", &ids(&["mysql", "bootstrap"])).unwrap();
     assert_eq!(mysql.database.as_deref(), Some("mariadb"));
     assert!(mysql.needs.contains(&"mariadb".to_owned()));
@@ -81,9 +108,24 @@ fn combinations() {
 
 #[test]
 fn env_values() {
-    assert_eq!(env_value("{name}", "shop"), "shop");
-    assert_eq!(env_value("{name}", "my shop"), "\"my shop\"");
-    assert_eq!(env_value("{package}", "my shop"), "com.example.myshop");
+    assert_eq!(env_value("{name}", "shop", "pw"), "shop");
+    assert_eq!(env_value("{name}", "my shop", "pw"), "\"my shop\"");
+    assert_eq!(
+        env_value("{package}", "my shop", "pw"),
+        "com.example.myshop"
+    );
+    assert_eq!(env_value("{password}", "shop", "Dk-1"), "Dk-1");
+    assert_eq!(env_raw("{name} {password}", "my shop", "pw"), "my shop pw");
+    let pw = password_of(&"0".repeat(64));
+    assert_eq!(pw.len(), 26);
+    for want in [
+        char::is_ascii_uppercase,
+        char::is_ascii_lowercase,
+        char::is_ascii_digit,
+        char::is_ascii_punctuation,
+    ] {
+        assert!(pw.chars().any(|c| want(&c)), "{pw}");
+    }
     let p = official();
     let plan = plan(p, "laravel", &ids(&["nativephp"])).unwrap();
     let keys: Vec<&str> = plan.env.iter().map(|e| e.key.as_str()).collect();

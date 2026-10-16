@@ -214,7 +214,13 @@ export function EnvField({ value, onChange }: { value: EnvVar[] | undefined; onC
 }
 
 /** The kit's database server where the project gets its database. */
-function DatabaseField({ value, onChange }: { value: string | undefined; onChange: (v: string | undefined) => void }) {
+export function DatabaseField({
+  value,
+  onChange,
+}: {
+  value: string | undefined;
+  onChange: (v: string | undefined) => void;
+}) {
   return (
     <label className="block">
       <span className="mb-1 block text-vsc-desc">{t("Database del kit per il progetto")}</span>

@@ -48,11 +48,13 @@ pub fn cancelled() -> bool {
 }
 
 /// Runs one line with the kit's PowerShell in `dir`, without a window or
-/// input (`CI=1`: the tools do not ask). Every line of output goes to
-/// `out`. A failure returns its last line of output.
+/// input (`CI=1`: the tools do not ask), with `vars` in its environment
+/// (`$env:…`, so a password is not in the line shown). Every line of
+/// output goes to `out`. A failure returns its last line of output.
 pub fn run_line(
     kit: &Kit,
     env: &KitEnv,
+    vars: &[(String, String)],
     dir: &Path,
     line: &str,
     out: &(dyn Fn(&str) + Sync),
@@ -80,6 +82,7 @@ pub fn run_line(
     .env("NO_COLOR", "1")
     .env("FORCE_COLOR", "0")
     .env("COMPOSER_NO_INTERACTION", "1")
+    .envs(vars.iter().map(|(k, v)| (k, v)))
     .stdin(Stdio::null())
     .stdout(Stdio::piped())
     .stderr(Stdio::piped());

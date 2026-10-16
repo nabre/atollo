@@ -26,6 +26,8 @@ fn validation() {
         p.on.insert("nothing".into(), Variant::default());
     }));
     assert!(bad(|p| p.kind = Kind::Addon));
+    assert!(bad(|p| p.database = Some("oracle".into())));
+    assert!(!bad(|p| p.database = Some("mariadb".into())));
     assert!(bad(|p| {
         p.kind = Kind::Addon;
         p.on.insert(

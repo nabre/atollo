@@ -5,7 +5,7 @@ import { ErrorLine } from "../common";
 import { t } from "../i18n";
 import { Link, Select, SettingItem, SettingsGroup } from "../workbench";
 import { bases, cleaned, pieceTab, slotLabel, textOf, type Frameworks } from "./model";
-import { ActionsField, EnvField, LinesField, NeedsField, TextField, VariantFields } from "./fields";
+import { ActionsField, DatabaseField, EnvField, LinesField, NeedsField, TextField, VariantFields } from "./fields";
 
 function PieceItem({
   piece,
@@ -107,6 +107,15 @@ function PieceItem({
               value={piece.env}
               onChange={(env) => {
                 set({ env });
+              }}
+            />
+            <DatabaseField
+              value={piece.database}
+              onChange={(database) => {
+                const next = { ...piece };
+                if (database) next.database = database;
+                else delete next.database;
+                onChange(next);
               }}
             />
           </>

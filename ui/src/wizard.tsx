@@ -308,7 +308,9 @@ export function NewProjectPage({
 
           <Section title={t("4. File .env")}>
             <p className="text-vsc-desc">
-              {t("Il kit le scrive nel file .env del progetto. {name} e {package} si riempiono con il nome.")}
+              {t(
+                "Il kit le scrive nel file .env del progetto. {name} e {package} si riempiono con il nome, {password} con una password nuova.",
+              )}
             </p>
             <EnvRows
               rows={envRows}

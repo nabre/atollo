@@ -95,10 +95,13 @@ pub fn plan(pieces: &[Piece], base: &str, addons: &[String]) -> Result<Plan, Pro
             .map_or_else(|| b.create.clone(), |(_, v)| v.create.clone()),
         steps: b.steps.clone(),
         actions: b.actions.clone(),
-        database: None,
+        database: b.database.clone(),
         env: b.env.clone(),
         notes: b.note.iter().cloned().collect(),
     };
+    if let Some(db) = &b.database {
+        add_needs(&mut out.needs, std::slice::from_ref(db));
+    }
     for (p, v) in &chosen {
         if let Some(db) = &v.database {
             if let Some(other) = &out.database {
@@ -148,12 +151,27 @@ pub fn fill(line: &str, name: &str) -> String {
         .replace("{name}", &quoted)
 }
 
-/// A value of `.env` with `{name}` and `{package}` filled in, in double
-/// quotes when it has spaces, quotes, `#` or `$`.
-pub fn env_value(value: &str, name: &str) -> String {
-    let v = value
+/// The administrator's password of a CMS (`{password}` in `.env`), from
+/// 20 random hex characters: an upper case and a lower case letter, a
+/// digit and a sign always there, as TYPO3's policy wants; nothing to
+/// quote in `.env`, PowerShell or a URL.
+pub fn password_of(random_hex: &str) -> String {
+    format!("Dk-{}-7a", &random_hex[..20.min(random_hex.len())])
+}
+
+/// A value of `.env` as the project's commands get it: `{name}`,
+/// `{package}` and `{password}` filled in.
+pub fn env_raw(value: &str, name: &str, password: &str) -> String {
+    value
         .replace("{package}", &package_of(name))
-        .replace("{name}", name);
+        .replace("{password}", password)
+        .replace("{name}", name)
+}
+
+/// A value of `.env` as written there: filled in ([`env_raw`]), in double
+/// quotes when it has spaces, quotes, `#` or `$`.
+pub fn env_value(value: &str, name: &str, password: &str) -> String {
+    let v = env_raw(value, name, password);
     if v.contains([' ', '"', '#', '\'', '$']) {
         format!("\"{}\"", v.replace('\\', "\\\\").replace('"', "\\\""))
     } else {

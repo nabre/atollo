@@ -934,6 +934,46 @@
     "fr": "Framework PHP pour applications web",
     "de": "PHP-Framework für Webanwendungen"
   },
+  "Sito WordPress con Composer (Bedrock), plugin e temi come pacchetti": {
+    "en": "WordPress site with Composer (Bedrock), plugins and themes as packages",
+    "fr": "Site WordPress avec Composer (Bedrock), extensions et thèmes en paquets",
+    "de": "WordPress-Website mit Composer (Bedrock), Plugins und Themes als Pakete"
+  },
+  "Pannello in /wp/wp-admin, con ADMIN_USER e ADMIN_PASSWORD del file .env. Il sito risponde all'indirizzo con cui lo apri, su qualsiasi porta.": {
+    "en": "Dashboard at /wp/wp-admin, with ADMIN_USER and ADMIN_PASSWORD from the .env file. The site answers at the address you open it with, on any port.",
+    "fr": "Tableau de bord dans /wp/wp-admin, avec ADMIN_USER et ADMIN_PASSWORD du fichier .env. Le site répond à l'adresse avec laquelle vous l'ouvrez, sur n'importe quel port.",
+    "de": "Dashboard unter /wp/wp-admin, mit ADMIN_USER und ADMIN_PASSWORD aus der .env-Datei. Die Website antwortet unter der Adresse, mit der du sie öffnest, auf jedem Port."
+  },
+  "CMS TYPO3 per siti grandi e multilingua": {
+    "en": "TYPO3 CMS for large and multilingual sites",
+    "fr": "CMS TYPO3 pour les sites grands et multilingues",
+    "de": "TYPO3-CMS für große und mehrsprachige Websites"
+  },
+  "Pannello in /typo3, con ADMIN_USER e ADMIN_PASSWORD del file .env. Una password scritta a mano vuole maiuscole, minuscole, cifre e un segno.": {
+    "en": "Backend at /typo3, with ADMIN_USER and ADMIN_PASSWORD from the .env file. A password typed by hand needs upper and lower case letters, digits and a symbol.",
+    "fr": "Interface d'administration dans /typo3, avec ADMIN_USER et ADMIN_PASSWORD du fichier .env. Un mot de passe saisi à la main demande des majuscules, des minuscules, des chiffres et un symbole.",
+    "de": "Backend unter /typo3, mit ADMIN_USER und ADMIN_PASSWORD aus der .env-Datei. Ein von Hand eingegebenes Passwort braucht Groß- und Kleinbuchstaben, Ziffern und ein Sonderzeichen."
+  },
+  "CMS Drupal con Drush, per siti e portali strutturati": {
+    "en": "Drupal CMS with Drush, for structured sites and portals",
+    "fr": "CMS Drupal avec Drush, pour des sites et portails structurés",
+    "de": "Drupal-CMS mit Drush, für strukturierte Websites und Portale"
+  },
+  "Accesso in /user/login, con ADMIN_USER e ADMIN_PASSWORD del file .env.": {
+    "en": "Log in at /user/login, with ADMIN_USER and ADMIN_PASSWORD from the .env file.",
+    "fr": "Connexion dans /user/login, avec ADMIN_USER et ADMIN_PASSWORD du fichier .env.",
+    "de": "Anmeldung unter /user/login, mit ADMIN_USER und ADMIN_PASSWORD aus der .env-Datei."
+  },
+  "CMS su Laravel con i contenuti in file, senza database": {
+    "en": "CMS on Laravel with the content in files, without a database",
+    "fr": "CMS sur Laravel avec le contenu dans des fichiers, sans base de données",
+    "de": "CMS auf Laravel mit den Inhalten in Dateien, ohne Datenbank"
+  },
+  "Pannello in /cp: si entra con ADMIN_EMAIL e ADMIN_PASSWORD del file .env.": {
+    "en": "Control panel at /cp: log in with ADMIN_EMAIL and ADMIN_PASSWORD from the .env file.",
+    "fr": "Panneau de contrôle dans /cp : connectez-vous avec ADMIN_EMAIL et ADMIN_PASSWORD du fichier .env.",
+    "de": "Control Panel unter /cp: Anmeldung mit ADMIN_EMAIL und ADMIN_PASSWORD aus der .env-Datei."
+  },
   "Sito o applicazione web in TypeScript": {
     "en": "Website or web application in TypeScript",
     "fr": "Site ou application web en TypeScript",
