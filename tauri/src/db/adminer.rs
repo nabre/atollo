@@ -3,7 +3,7 @@
 //!
 //! - PHP's own server (`php -S`) of the kit's default PHP, on 127.0.0.1 and a
 //!   port the system gives, with the router `data\kit\adminer.php`
-//!   (`kit-files/adminer.php`), started at the first "Adminer" and ended
+//!   (`runtime/adminer.php`), started at the first "Adminer" and ended
 //!   with MariaDB or the app (the app's job);
 //! - a new token at every start: the address the app opens carries it,
 //!   any request without it (or its cookie) gets 403, so the other users

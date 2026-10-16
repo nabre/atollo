@@ -465,7 +465,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - `editor_window.rs`: una finestra per progetto (`editor-<n>`, nessuna capability), cartella dati `data\webview2`, navigazione solo verso il server, `window.open` sul server → nuova finestra dell'editor, link `http(s)` esterni → browser di sistema fuori dal job, altri schemi bloccati; tasti acceleratori e menu contestuale del browser spenti, zoom gestito dall'editor.
 - `editor_cfg.rs`: impostazioni del server in `data\vscodium-server\data\Machine\settings.json`: profili del terminale del kit riscritti a ogni avvio ("Atollo" con PowerShell 7, "Atollo - Git Bash", "Atollo - cmd", agenti installati), profili del PC nascosti, profili dell'utente conservati; valori predefiniti solo se mancano; file con commenti lasciato com'è.
 - `terminal.rs`: Windows Terminal portabile con il profilo PowerShell del kit e gli schemi "VSCodium Dark/Light Modern"; senza Windows Terminal, PowerShell del kit in una console classica; mai la shell del PC.
-- `kit-files/profile.ps1` e `kit-files/bashrc`: prompt "Atollo", strumenti disponibili, moduli e cronologia nel kit.
+- `runtime/profile.ps1` e `runtime/bashrc`: prompt "Atollo", strumenti disponibili, moduli e cronologia nel kit.
 - Componenti obbligatori mancanti installati da soli prima di aprire editor o console (`SetupTask`); avanzamento in Home e nella barra di stato.
 - Interfaccia: Home con "Editor" e "Terminale", pagina Progetti (apri nell'editor, console nella cartella), stato dell'editor e dell'installazione nella barra di stato, avviso per i percorsi del kit che bloccano il controllo dei file (D-33).
 - CI: test del server reale (403 senza token, reindirizzamento con cookie, token mascherato, nessun processo rimasto).

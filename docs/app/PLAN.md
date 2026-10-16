@@ -187,7 +187,7 @@ Cargo.toml  Cargo.lock        workspace
 package.json                  workspace npm (ui), comandi dev, build, test, lint
 tauri\                        exe (moduli §4), catalogo e testi incorporati
 ui\                           interfaccia React + TypeScript + Tailwind (D-02)
-kit-files\                    file scritti in data\kit\ (loopback.js, profile.ps1, console.ps1, bashrc, bin\agy.cmd, bin\agy)
+runtime\                      file scritti in data\kit\ (loopback.js, profile.ps1, console.ps1, bashrc, bin\agy.cmd, bin\agy)
 docs\app\                     piano, decisioni, architettura, catalogo, prove, novità
 docs\brand\                   logo, temi, script che li generano
 .github\workflows\app.yml     CI e release
