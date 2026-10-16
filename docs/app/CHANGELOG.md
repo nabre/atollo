@@ -1,5 +1,14 @@
 # Novità
 
+## CMS nel wizard dei progetti (16/10/2026)
+
+- **Nuove basi** nel wizard «Nuovo progetto»: WordPress (Bedrock), TYPO3, Drupal e Statamic, con database MariaDB del progetto, installazione completa e amministratore pronto (utente e password nel `.env`, D-93).
+- **Database chiesto dalla base**: una base può avere il suo server di database, come le aggiunte; il campo è anche nell'editor delle Impostazioni.
+- I comandi della creazione ricevono la connessione al database e le variabili del `.env` nell'ambiente, senza password nelle righe mostrate; `{password}` nel `.env` diventa una password nuova.
+- Un `.env` che Git prenderebbe si aggiunge al `.gitignore`.
+- La voce «Inizia» della pagina Progetti apre anche il wizard.
+- I progetti TYPO3, Drupal, Statamic e WordPress con Bedrock sono riconosciuti come tali.
+
 ## Terminali del kit (16/10/2026)
 
 - **Pagina «Terminali»** (D-94): console del kit che si aprono in qualsiasi cartella del PC. «Tutti gli strumenti» ha ogni strumento installato alla versione più recente; i terminali propri includono solo gli strumenti scelti (agenti, linguaggi, database), ognuno alla versione più recente o a una salvata. Cartella di partenza salvata per terminale, «Apri in…» per sceglierne un'altra una volta, «Duplica» per partire dal predefinito.

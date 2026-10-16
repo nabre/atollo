@@ -27,3 +27,39 @@ fn merge_copy_keeps_what_the_project_has() {
     );
     assert!(made.join(r"src\main.js").is_file());
 }
+
+/// `.env` holds passwords: listed in `.gitignore` when Git would take it.
+#[test]
+fn env_goes_in_gitignore() {
+    let tmp = TempDir::new("ignoreenv");
+    let dir = tmp.0.join("site");
+    fs::create_dir_all(&dir).unwrap();
+    super::ignore_env(&dir).unwrap();
+    assert!(!dir.join(".gitignore").exists(), "no .env, nothing to do");
+    fs::write(dir.join(".env"), "A=1\n").unwrap();
+    super::ignore_env(&dir).unwrap();
+    assert_eq!(
+        fs::read_to_string(dir.join(".gitignore")).unwrap(),
+        "/.env\n"
+    );
+    fs::write(dir.join(".gitignore"), "/vendor\r\n/var").unwrap();
+    super::ignore_env(&dir).unwrap();
+    super::ignore_env(&dir).unwrap();
+    assert_eq!(
+        fs::read_to_string(dir.join(".gitignore")).unwrap(),
+        "/vendor\r\n/var\r\n/.env\r\n"
+    );
+}
+
+#[test]
+fn database_for_the_steps() {
+    let db = crate::db::auth::project_db("mariadb", "site", "pw", 3307);
+    let vars = super::db_vars(&db);
+    let get = |k: &str| vars.iter().find(|(n, _)| n == k).map(|(_, v)| v.as_str());
+    assert_eq!(get("ATOLLO_DB_PORT"), Some("3307"));
+    assert_eq!(get("ATOLLO_DB_NAME"), Some("site"));
+    assert_eq!(
+        get("ATOLLO_DB_URL"),
+        Some("mysql://site:pw@127.0.0.1:3307/site")
+    );
+}

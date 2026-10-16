@@ -93,6 +93,7 @@ export function cleaned(p: FrameworkPiece): string {
     lines(p.steps),
     actions(p.actions),
     envs(p.env),
+    p.database?.trim() ?? "",
     p.note?.trim() ?? "",
     on,
   ]);

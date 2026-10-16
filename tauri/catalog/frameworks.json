@@ -1,5 +1,5 @@
 {
-  "about": "Framework of the new-project wizard (DECISIONS.md D-83): a base and the additions combined with it. Official instructions, versions checked on npm, Packagist and GitHub on 15/10/2026. Every base with a web interface has the CSS frameworks (slot css); development goes through Vite or its equivalent (Turbopack for Next.js). env: variables written in .env before the steps ({name}, {package} filled in). database: a server of the kit (mariadb, mongodb) where the project gets its database, its connection written in .env, before the steps. Each line is one command run with the kit's PowerShell and environment: 'create' in projects\\ (it makes the folder {name}), 'steps' inside projects\\{name}. {name} = project name, {package} = com.example.<name in lower case letters and digits>. needs: components of the kit, installed first. actions: name and command, saved as the project's actions. An addition has one entry in 'on' per base it works with: its 'create' replaces the base's (a starter kit, a template), its steps come after the base's, its actions replace those of the base with the same name. Two additions of the same 'slot' do not go together. desc and note: Italian, translated by i18n/catalog.json.",
+  "about": "Framework of the new-project wizard (DECISIONS.md D-83): a base and the additions combined with it. Official instructions, versions checked on npm, Packagist and GitHub on 15/10/2026. Every base with a web interface but the CMS has the CSS frameworks (slot css); development goes through Vite or its equivalent (Turbopack for Next.js). env: variables written in .env before the steps ({name}, {package} filled in). database (of a base or of an addition): a server of the kit (mariadb, mongodb) where the project gets its database, its connection written in .env, before the steps; the steps get it as $env:ATOLLO_DB_HOST, _PORT, _NAME, _USER, _PASSWORD, _URL, and the variables of .env too ({password} = a new password, DECISIONS.md D-93). Each line is one command run with the kit's PowerShell and environment: 'create' in projects\\ (it makes the folder {name}), 'steps' inside projects\\{name}. {name} = project name, {package} = com.example.<name in lower case letters and digits>. needs: components of the kit, installed first. actions: name and command, saved as the project's actions. An addition has one entry in 'on' per base it works with: its 'create' replaces the base's (a starter kit, a template), its steps come after the base's, its actions replace those of the base with the same name. Two additions of the same 'slot' do not go together. desc and note: Italian, translated by i18n/catalog.json.",
   "pieces": [
     {
       "id": "laravel",
@@ -183,6 +183,178 @@
           "command": ".\\gradlew.bat assembleDebug"
         }
       ]
+    },
+    {
+      "id": "wordpress",
+      "kind": "base",
+      "name": "WordPress",
+      "desc": "Sito WordPress con Composer (Bedrock), plugin e temi come pacchetti",
+      "home": "https://roots.io/bedrock/docs/installation/",
+      "needs": [
+        "php"
+      ],
+      "create": [
+        "composer create-project roots/bedrock:^1.31 {name}"
+      ],
+      "steps": [
+        "$c = Get-Content .env -Raw; foreach ($k in 'AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY', 'AUTH_SALT', 'SECURE_AUTH_SALT', 'LOGGED_IN_SALT', 'NONCE_SALT') { $v = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32)); $c = $c -replace \"(?m)^$k=[^\\r\\n]*\", \"$k='$v'\" }; Set-Content .env $c -NoNewline",
+        "Add-Content config/environments/development.php \"`nConfig::define('WP_HOME', 'http://' . (`$_SERVER['HTTP_HOST'] ?? 'localhost'));`nConfig::define('WP_SITEURL', Config::get('WP_HOME') . '/wp');`nConfig::define('WP_CONTENT_URL', Config::get('WP_HOME') . Config::get('CONTENT_DIR'));\"",
+        "composer require wp-cli/wp-cli-bundle:^2.12 --dev",
+        "vendor\\bin\\wp core install --url=http://localhost --title={name} --admin_user=$env:ADMIN_USER --admin_password=$env:ADMIN_PASSWORD --admin_email=$env:ADMIN_EMAIL --skip-email"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "php -S 127.0.0.1:8000 -t web"
+        }
+      ],
+      "env": [
+        {
+          "key": "WP_HOME",
+          "value": "http://localhost"
+        },
+        {
+          "key": "ADMIN_USER",
+          "value": "admin"
+        },
+        {
+          "key": "ADMIN_PASSWORD",
+          "value": "{password}"
+        },
+        {
+          "key": "ADMIN_EMAIL",
+          "value": "admin@example.com"
+        }
+      ],
+      "database": "mariadb",
+      "note": "Pannello in /wp/wp-admin, con ADMIN_USER e ADMIN_PASSWORD del file .env. Il sito risponde all'indirizzo con cui lo apri, su qualsiasi porta."
+    },
+    {
+      "id": "typo3",
+      "kind": "base",
+      "name": "TYPO3",
+      "desc": "CMS TYPO3 per siti grandi e multilingua",
+      "home": "https://docs.typo3.org/m/typo3/tutorial-getting-started/main/en-us/Installation/Install.html",
+      "needs": [
+        "php"
+      ],
+      "create": [
+        "composer create-project typo3/cms-base-distribution:^14.3 {name}"
+      ],
+      "steps": [
+        "vendor\\bin\\typo3 setup -n --driver=mysqli --host=$env:ATOLLO_DB_HOST --port=$env:ATOLLO_DB_PORT --dbname=$env:ATOLLO_DB_NAME --username=$env:ATOLLO_DB_USER --password=$env:ATOLLO_DB_PASSWORD --admin-username=$env:ADMIN_USER --admin-user-password=$env:ADMIN_PASSWORD --admin-email=$env:ADMIN_EMAIL --project-name={name} --server-type=other --create-site=http://localhost/",
+        "Get-ChildItem config/sites -Recurse -Filter config.yaml | ForEach-Object { $c = Get-Content $_.FullName -Raw; Set-Content $_.FullName ($c -replace '(?m)^base: [^\\r\\n]*', 'base: /') -NoNewline }",
+        "$f = 'config/system/additional.php'; if (-not (Test-Path $f)) { New-Item -ItemType Directory -Force config/system | Out-Null; Set-Content $f '<?php' }; Add-Content $f \"`$GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '(localhost|127\\.0\\.0\\.1)(:\\d+)?';\""
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "php -S 127.0.0.1:8000 -t public"
+        }
+      ],
+      "env": [
+        {
+          "key": "ADMIN_USER",
+          "value": "admin"
+        },
+        {
+          "key": "ADMIN_PASSWORD",
+          "value": "{password}"
+        },
+        {
+          "key": "ADMIN_EMAIL",
+          "value": "admin@example.com"
+        }
+      ],
+      "database": "mariadb",
+      "note": "Pannello in /typo3, con ADMIN_USER e ADMIN_PASSWORD del file .env. Una password scritta a mano vuole maiuscole, minuscole, cifre e un segno."
+    },
+    {
+      "id": "drupal",
+      "kind": "base",
+      "name": "Drupal",
+      "desc": "CMS Drupal con Drush, per siti e portali strutturati",
+      "home": "https://www.drupal.org/docs/getting-started/installing-drupal",
+      "needs": [
+        "php"
+      ],
+      "create": [
+        "composer create-project drupal/recommended-project:^11.4 {name}"
+      ],
+      "steps": [
+        "composer require drush/drush:^13.8",
+        "vendor\\bin\\drush site:install standard --yes --db-url=$env:ATOLLO_DB_URL --site-name={name} --site-mail=$env:ADMIN_EMAIL --account-name=$env:ADMIN_USER --account-pass=$env:ADMIN_PASSWORD --account-mail=$env:ADMIN_EMAIL"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "vendor\\bin\\drush runserver 127.0.0.1:8000"
+        },
+        {
+          "name": "Svuota cache",
+          "command": "vendor\\bin\\drush cache:rebuild"
+        }
+      ],
+      "env": [
+        {
+          "key": "ADMIN_USER",
+          "value": "admin"
+        },
+        {
+          "key": "ADMIN_PASSWORD",
+          "value": "{password}"
+        },
+        {
+          "key": "ADMIN_EMAIL",
+          "value": "admin@example.com"
+        }
+      ],
+      "database": "mariadb",
+      "note": "Accesso in /user/login, con ADMIN_USER e ADMIN_PASSWORD del file .env."
+    },
+    {
+      "id": "statamic",
+      "kind": "base",
+      "name": "Statamic",
+      "desc": "CMS su Laravel con i contenuti in file, senza database",
+      "home": "https://statamic.dev/getting-started/installing/local",
+      "needs": [
+        "php",
+        "node"
+      ],
+      "create": [
+        "composer create-project statamic/statamic:^6.5 {name}"
+      ],
+      "steps": [
+        "npm install",
+        "npm run build",
+        "php please make:user $env:ADMIN_EMAIL --password=$env:ADMIN_PASSWORD --super"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "php artisan serve"
+        },
+        {
+          "name": "Vite",
+          "command": "npm run dev"
+        }
+      ],
+      "env": [
+        {
+          "key": "APP_NAME",
+          "value": "{name}"
+        },
+        {
+          "key": "ADMIN_EMAIL",
+          "value": "admin@example.com"
+        },
+        {
+          "key": "ADMIN_PASSWORD",
+          "value": "{password}"
+        }
+      ],
+      "note": "Pannello in /cp: si entra con ADMIN_EMAIL e ADMIN_PASSWORD del file .env."
     },
     {
       "id": "vite-bundle",
