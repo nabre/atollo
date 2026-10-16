@@ -108,6 +108,7 @@ fn cms_with_composer() {
         let p = detect(&site.0, "it");
         assert_eq!(p.platform, platform);
         assert_eq!(p.actions[0].apache_dir.as_deref(), Some(docroot));
+        assert!(p.requires.contains(&"mariadb".to_owned()));
     }
 
     let statamic = project(
@@ -118,4 +119,39 @@ fn cms_with_composer() {
         ],
     );
     assert_eq!(detect(&statamic.0, "it").platform, "Statamic");
+}
+
+/// The CMS from their archive, without Composer: Apache first and MariaDB.
+#[test]
+fn cms_from_archive() {
+    for (marker, platform) in [
+        // PrestaShop has a Symfony `bin\console`: still PrestaShop.
+        ("classes/PrestaShopAutoload.php", "PrestaShop"),
+        ("core/lib/Drupal.php", "Drupal"),
+        ("administrator/manifests/files/joomla.xml", "Joomla"),
+        ("typo3/sysext/core/ext_emconf.php", "TYPO3"),
+    ] {
+        let site = project(
+            &format!("cms-{platform}"),
+            &[("index.php", "<?php"), (marker, ""), ("bin/console", "")],
+        );
+        let p = detect(&site.0, "it");
+        assert_eq!(p.platform, platform);
+        assert_eq!(p.default.as_deref(), Some("apache"));
+        assert_eq!(p.actions[0].apache_dir.as_deref(), Some("."));
+        for id in ["apache", "php", "mariadb"] {
+            assert!(p.requires.contains(&id.to_owned()), "{platform}: {id}");
+        }
+    }
+    // Statamic keeps its contents in files: no database.
+    let statamic = project(
+        "cms-statamic",
+        &[
+            ("composer.json", r#"{"require": {"statamic/cms": "^6"}}"#),
+            ("artisan", ""),
+        ],
+    );
+    assert!(!detect(&statamic.0, "it")
+        .requires
+        .contains(&"mariadb".to_owned()));
 }
