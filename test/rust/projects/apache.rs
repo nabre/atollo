@@ -39,10 +39,55 @@ fn conf_of_a_project() {
         &aliases,
     )
     .unwrap();
-    assert!(with_site.contains("ServerAlias shop.localhost api.shop.localhost\r\n"));
+    assert!(with_site.contains(
+        "    ServerAlias 127.0.0.1 [::1] *.localhost shop.localhost api.shop.localhost\r\n"
+    ));
     assert!(with_site.contains("Alias \"/media\" \"${CP_PROJECT_FWD}/storage/media\""));
     assert!(with_site.contains("Alias \"/shared\" \"${CP_PROJECTS_FWD}/common/assets\""));
     assert!(!with_site.contains("/up") && !with_site.contains(".."));
+}
+
+/// SEC-V3-03: not in LAN mode only a local `Host` is served; the first
+/// VirtualHost, which answers any other one, refuses everything. In LAN
+/// mode an IP of the PC is the `Host`: no VirtualHost.
+#[test]
+fn only_local_hosts_without_lan() {
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\n";
+    let root = Path::new(r"D:\kit\projects\shop\public");
+    let dir = Path::new(r"D:\kit\data\projects\shop\apache");
+    let conf = |lan| {
+        project_conf_with_site(
+            base,
+            Some("shop"),
+            root,
+            dir,
+            7112,
+            lan,
+            &["api.shop.localhost".into()],
+            &[],
+        )
+        .unwrap()
+    };
+    let local = conf(false);
+    let refuse = "<VirtualHost *:7112>\r\n    ServerName refused.invalid\r\n    <Location \"/\">\r\n        Require all denied\r\n    </Location>\r\n</VirtualHost>";
+    let site = "<VirtualHost *:7112>\r\n    ServerName localhost\r\n    ServerAlias 127.0.0.1 [::1] *.localhost shop.localhost api.shop.localhost\r\n</VirtualHost>";
+    let at = local.find(refuse).unwrap_or_else(|| panic!("{local}"));
+    assert_eq!(
+        local.find("<VirtualHost"),
+        Some(at),
+        "the refusing one first"
+    );
+    assert!(local.find(site).unwrap() > at, "{local}");
+    assert_eq!(local.matches("<VirtualHost").count(), 2);
+    // Before the user's conf.d (a VirtualHost of theirs is never the first).
+    assert!(local.find(site).unwrap() < local.find("IncludeOptional").unwrap());
+    // The site's directives stay in the main server, inherited by both.
+    assert!(local.find("DocumentRoot").unwrap() < at);
+    assert!(!local[..at].contains("ServerAlias"));
+
+    let lan = conf(true);
+    assert!(!lan.contains("<VirtualHost"), "{lan}");
+    assert!(lan.contains("\r\nServerAlias shop.localhost api.shop.localhost\r\n"));
 }
 
 /// A3 handoff: `.php` goes to PHP in any case, and without a PHP module it

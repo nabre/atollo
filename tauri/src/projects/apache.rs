@@ -260,7 +260,7 @@ pub fn project_conf_with_site(
         format!("Listen {listen}"),
         format!("ServerName localhost:{port}"),
     ];
-    if !server_aliases.is_empty() {
+    if lan && !server_aliases.is_empty() {
         site.push(format!("ServerAlias {}", server_aliases.join(" ")));
     }
     site.extend([
@@ -280,9 +280,39 @@ pub fn project_conf_with_site(
     site.extend(hidden_deny(""));
     site.push("DirectoryIndex index.php index.html".to_owned());
     site.extend(php_module_blocks("CP_PHP_FWD"));
+    if !lan {
+        site.extend(local_hosts_only(port, &server_aliases));
+    }
     site.push(format!("IncludeOptional \"{dir}/conf.d/*.conf\""));
     let joined = site.join("\r\n");
     Ok(format!("{}\r\n\r\n{joined}\r\n", kit_part.trim_end()))
+}
+
+/// Against DNS rebinding (a page of another site that renames itself to
+/// 127.0.0.1 and reads the project): only a local `Host` is served,
+/// `localhost`, `127.0.0.1`, `[::1]`, any `*.localhost` and the project's
+/// own names. Any other `Host` (or none) gets the first VirtualHost, which
+/// refuses everything (403); the site's directives stay in the main server,
+/// which both inherit. Not in LAN mode, where an IP of the PC is the `Host`.
+fn local_hosts_only(port: u16, server_aliases: &[String]) -> Vec<String> {
+    let mut names = vec![
+        "127.0.0.1".to_owned(),
+        "[::1]".to_owned(),
+        "*.localhost".to_owned(),
+    ];
+    names.extend(server_aliases.iter().cloned());
+    vec![
+        format!("<VirtualHost *:{port}>"),
+        "    ServerName refused.invalid".to_owned(),
+        "    <Location \"/\">".to_owned(),
+        "        Require all denied".to_owned(),
+        "    </Location>".to_owned(),
+        "</VirtualHost>".to_owned(),
+        format!("<VirtualHost *:{port}>"),
+        "    ServerName localhost".to_owned(),
+        format!("    ServerAlias {}", names.join(" ")),
+        "</VirtualHost>".to_owned(),
+    ]
 }
 
 /// The folder of the project's Apache files.
