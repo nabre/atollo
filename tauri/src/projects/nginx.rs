@@ -61,7 +61,8 @@ pub fn prepare_dirs(run_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Generates Nginx `location` blocks for checked path aliases.
+/// Generates Nginx `location` blocks for checked path aliases (no link
+/// followed in their folders where Nginx can do it).
 pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     let mut lines = Vec::new();
     for alias in aliases {
@@ -72,6 +73,12 @@ pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
         lines.push(format!("{indent}location {}/ {{", alias.url));
         lines.push(format!("{indent}    alias \"{target}\";"));
         lines.push(format!("{indent}    autoindex on;"));
+        // No link followed in an alias' folder (WEB-8). Nginx for Windows
+        // has no `disable_symlinks` (it needs `openat`) and would not start
+        // with it: there `alias::resolve` only refuses a linked folder.
+        if !cfg!(windows) {
+            lines.push(format!("{indent}    disable_symlinks on;"));
+        }
         lines.push(format!("{indent}}}"));
     }
     lines
