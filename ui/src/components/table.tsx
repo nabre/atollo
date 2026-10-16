@@ -34,7 +34,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
   const tool = kit.byId.get(c.id);
   const lines = tool?.downloadable ? tool : null;
   const doing = running || busy !== null;
-  if (c.noArm64 || c.needsWindows11) return null;
+  if (c.noArm64 || c.unavailableReason !== null || c.needsWindows11) return null;
   if (!c.installed) {
     if (!c.available) return null;
     return (
@@ -280,7 +280,7 @@ export function ToolsTable({
                   <Checkbox
                     label={t("Scegli {0}", c.name)}
                     checked={on}
-                    disabled={c.locked || running || c.noArm64 || (!c.available && !on)}
+                    disabled={c.locked || running || c.noArm64 || c.unavailableReason !== null || (!c.available && !on)}
                     onChange={(v) => {
                       choose(c.id, v);
                     }}
@@ -320,6 +320,8 @@ export function ToolsTable({
                     <span className="text-vsc-success">{t("installato")}</span>
                   ) : c.noArm64 ? (
                     <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
+                  ) : c.unavailableReason !== null ? (
+                    <span className="text-vsc-desc">{c.unavailableReason}</span>
                   ) : (
                     <span className="text-vsc-desc">{t("non installato")}</span>
                   )}

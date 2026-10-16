@@ -173,7 +173,14 @@ export function ComponentRow({
   const versioned = kit.byId.get(c.id);
   const versions = versioned?.installed ? versioned : null;
   const installable =
-    versioned && !versioned.installed && versioned.downloadable && c.available && !c.noArm64 ? versioned : null;
+    versioned &&
+    !versioned.installed &&
+    versioned.downloadable &&
+    c.available &&
+    !c.noArm64 &&
+    c.unavailableReason === null
+      ? versioned
+      : null;
   // Its step in the preparation: waiting, downloading, failed.
   const state = itemState(setup, c.id, c.name);
   // A left bar marks what a project needs: emerald, orange when not chosen
@@ -194,7 +201,7 @@ export function ComponentRow({
           <Checkbox
             id={inputId}
             checked={on}
-            disabled={required || running || c.noArm64 || (!c.available && !on)}
+            disabled={required || running || c.noArm64 || c.unavailableReason !== null || (!c.available && !on)}
             onChange={(v) => {
               onChange(v);
             }}
@@ -231,6 +238,8 @@ export function ComponentRow({
               </span>
             ) : c.noArm64 ? (
               <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
+            ) : c.unavailableReason !== null ? (
+              <span className="text-vsc-desc">{c.unavailableReason}</span>
             ) : c.needsWindows11 ? (
               <span className="text-vsc-desc">{t("richiede Windows 11 su ARM64")}</span>
             ) : (

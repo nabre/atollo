@@ -56,7 +56,14 @@ export function ToolPage({
   const item = itemState(setup, c.id, c.name);
   const versioned = kit.byId.get(c.id);
   const installable =
-    versioned && !versioned.installed && versioned.downloadable && c.available && !c.noArm64 ? versioned : null;
+    versioned &&
+    !versioned.installed &&
+    versioned.downloadable &&
+    c.available &&
+    !c.noArm64 &&
+    c.unavailableReason === null
+      ? versioned
+      : null;
   const group = groups().find((g) => g.has(c));
   const name = (id: string) => list.find((x) => x.id === id)?.name ?? id;
   const usedBy = list.filter((x) => chosen.has(x.id) && x.needs.includes(c.id));
@@ -97,6 +104,10 @@ export function ToolPage({
           ) : c.noArm64 ? (
             <span key="state" className="text-vsc-desc">
               {t("non disponibile su PC ARM64")}
+            </span>
+          ) : c.unavailableReason !== null ? (
+            <span key="state" className="text-vsc-desc">
+              {c.unavailableReason}
             </span>
           ) : c.needsWindows11 ? (
             <span key="state" className="text-vsc-desc">
