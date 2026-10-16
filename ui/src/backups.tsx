@@ -7,7 +7,7 @@ import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Bac
 import { locale, t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction, useLoad } from "./hooks";
-import { Notice } from "./workbench";
+import { InlineConfirm, Notice } from "./workbench";
 
 function size(bytes: number): string {
   const kb = bytes / 1024;
@@ -61,30 +61,41 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
               <span className="min-w-0 flex-1 truncate font-mono text-[12px]">{b.file}</span>
               <span className="text-[12px] text-vsc-desc">{size(b.size)}</span>
               {confirm === b.file ? (
-                <>
-                  <span className="text-vsc-warning">{t("I dati attuali vengono sostituiti.")}</span>
-                  <ActionButton
-                    icon={VscDiscard}
-                    label={t("Ripristina")}
-                    primary
-                    busy={busy === `restore:${b.file}`}
-                    onClick={() => {
-                      setConfirm(null);
-                      setDone(null);
-                      run(`restore:${b.file}`, async () => {
-                        await projectDbRestore(project, b.file);
-                        setDone(t("Ripristinato da {0}", b.file));
-                      });
-                    }}
-                  />
-                  <ActionButton
-                    icon={VscDiscard}
-                    label={t("Annulla")}
-                    onClick={() => {
-                      setConfirm(null);
-                    }}
-                  />
-                </>
+                <InlineConfirm
+                  row
+                  question={t("Ripristinare {0}?", b.file)}
+                  textClassName="text-vsc-warning"
+                  onCancel={() => {
+                    setConfirm(null);
+                  }}
+                  actions={
+                    <>
+                      <ActionButton
+                        icon={VscDiscard}
+                        label={t("Ripristina")}
+                        primary
+                        busy={busy === `restore:${b.file}`}
+                        onClick={() => {
+                          setConfirm(null);
+                          setDone(null);
+                          run(`restore:${b.file}`, async () => {
+                            await projectDbRestore(project, b.file);
+                            setDone(t("Ripristinato da {0}", b.file));
+                          });
+                        }}
+                      />
+                      <ActionButton
+                        icon={VscDiscard}
+                        label={t("Annulla")}
+                        onClick={() => {
+                          setConfirm(null);
+                        }}
+                      />
+                    </>
+                  }
+                >
+                  {t("I dati attuali vengono sostituiti.")}
+                </InlineConfirm>
               ) : (
                 <ActionButton
                   icon={VscDiscard}
