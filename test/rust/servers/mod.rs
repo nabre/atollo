@@ -368,6 +368,9 @@ fn apache_pool_conf_has_default_vhost_first() {
     assert!(default < include);
     assert_eq!(conf.matches("<VirtualHost").count(), 1);
     assert_eq!(conf.find("<VirtualHost"), Some(default));
+    // A3 handoff: no PHP module, no `.php` sent as source.
+    assert!(conf.contains("<IfModule !php_module>"));
+    assert!(conf.contains("<FilesMatch \"(?i)\\.php$\">\r\n                Require all denied"));
 }
 
 /// `id` installed at `version`, the default folder of its line.

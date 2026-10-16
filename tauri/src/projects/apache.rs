@@ -62,7 +62,10 @@ pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
     Ok(())
 }
 
-/// Dynamic `<IfFile>` blocks for PHP 8, PHP 7, and PHP 5 Thread-Safe Apache modules.
+/// Dynamic `<IfFile>` blocks for PHP 8, PHP 7, and PHP 5 Thread-Safe Apache
+/// modules (`.php` in any case: `INDEX.PHP` is PHP on Windows too). Without
+/// any of them a `.php` would be sent as text, source and secrets included:
+/// it is refused instead (403).
 pub fn php_module_blocks(php_var: &str) -> Vec<String> {
     let mut out = Vec::new();
     for (dll, ts, module) in [
@@ -75,12 +78,23 @@ pub fn php_module_blocks(php_var: &str) -> Vec<String> {
             format!("    LoadFile \"${{{php_var}}}/{ts}\""),
             format!("    LoadModule {module} \"${{{php_var}}}/{dll}\""),
             "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"".to_owned(),
-            "    <FilesMatch \"\\.php$\">".to_owned(),
+            "    <FilesMatch \"(?i)\\.php$\">".to_owned(),
             "        SetHandler application/x-httpd-php".to_owned(),
             "    </FilesMatch>".to_owned(),
             "</IfFile>".to_owned(),
         ]);
     }
+    out.extend([
+        "<IfModule !php_module>".to_owned(),
+        "    <IfModule !php7_module>".to_owned(),
+        "        <IfModule !php5_module>".to_owned(),
+        "            <FilesMatch \"(?i)\\.php$\">".to_owned(),
+        "                Require all denied".to_owned(),
+        "            </FilesMatch>".to_owned(),
+        "        </IfModule>".to_owned(),
+        "    </IfModule>".to_owned(),
+        "</IfModule>".to_owned(),
+    ]);
     out
 }
 
