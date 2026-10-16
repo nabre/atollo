@@ -515,7 +515,7 @@
   "Versioni: il kit usa la più recente; un progetto nuovo tiene quella che c'è alla sua creazione": "Versions: the kit uses the newest; a new project keeps the one there when it is created",
   "La più recente ({0})": "The newest ({0})",
   "Più versioni una accanto all'altra, una per versione minore: «Aggiorna tutto» porta ognuna all'ultima patch, una versione minore nuova si aggiunge senza togliere le altre. Il kit usa la più recente; un progetto tiene quella che c'era quando è stato creato (o quella che chiede il suo codice) e può cambiarla nella sua pagina.": "Several versions side by side, one per minor version: “Update all” brings each to its latest patch, a new minor version is added without removing the others. The kit uses the newest; a project keeps the one there when it was created (or the one its code asks for) and can change it on its page.",
-  "{0} {1}: progetti che la usano": "{0} {1}: projects that use it",
+  "{0} {1} bloccata: progetti che la usano": "{0} {1} locked: projects that use it",
   "Usata da": "Used by",
   "Ferma il server per cambiarla.": "Stop the server to change it.",
   "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.": "One server for every project. Each version has its own data: the first start of a newer one copies those of the previous one, which stay as they were.",

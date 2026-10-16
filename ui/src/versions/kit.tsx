@@ -78,7 +78,7 @@ function DiskLines({
               )}
               {/* Locked by the projects that use it; otherwise it can go. */}
               {users.length > 0 ? (
-                <Locked projects={users} label={t("{0} {1}: progetti che la usano", tool.name, r.line)} />
+                <Locked projects={users} label={t("{0} {1} bloccata: progetti che la usano", tool.name, r.line)} />
               ) : (
                 rows.length > 1 && (
                   <ActionButton
@@ -152,10 +152,15 @@ const MENU_ITEM = "mx-1 flex h-[2em] items-center gap-2 rounded-[3px] px-2 text-
 /** A small menu under its button (the box's first button): it opens with
  * the focus on its first item; the arrows, Home and End move among the
  * items; Esc closes it and gives the focus back to the button, as Tab or a
- * click outside close it. */
+ * click outside close it. `close` closes it with the focus back on the
+ * button (an item chosen). */
 function useMenu() {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => {
+    setOpen(false);
+    box.current?.querySelector<HTMLElement>("button")?.focus();
+  }, []);
   useEffect(() => {
     if (!open) return;
     box.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
@@ -164,8 +169,7 @@ function useMenu() {
     };
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      setOpen(false);
-      box.current?.querySelector<HTMLElement>("button")?.focus();
+      close();
     };
     document.addEventListener("mousedown", onMouse);
     document.addEventListener("keydown", onKey);
@@ -173,7 +177,7 @@ function useMenu() {
       document.removeEventListener("mousedown", onMouse);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, close]);
   const onMenuKey = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key === "Tab") {
       setOpen(false);
@@ -190,7 +194,7 @@ function useMenu() {
     e.preventDefault();
     all[next]?.focus();
   };
-  return { open, setOpen, box, onMenuKey };
+  return { open, setOpen, close, box, onMenuKey };
 }
 
 /** "bloccata" (locked): a version some projects use, so it cannot go; its small menu
@@ -253,7 +257,8 @@ export function AddLine({
   label?: string;
   onAdd: (line: string) => void;
 }) {
-  const { open, setOpen, box, onMenuKey } = useMenu();
+  const { open, setOpen, close, box, onMenuKey } = useMenu();
+  const menuId = useId();
   const groups = offered(tool)
     .map((g) => ({
       ...g,
@@ -271,12 +276,14 @@ export function AddLine({
         label={label}
         compact
         busy={busy}
+        menu={{ open, id: menuId }}
         onClick={() => {
           setOpen((o) => !o);
         }}
       />
       {open && (
         <ul
+          id={menuId}
           role="menu"
           aria-label={t("Versioni da scaricare")}
           onKeyDown={onMenuKey}
@@ -292,7 +299,7 @@ export function AddLine({
                       type="button"
                       role="menuitem"
                       onClick={() => {
-                        setOpen(false);
+                        close();
                         onAdd(l);
                       }}
                       className={`${MENU_ITEM} w-[calc(100%-8px)] text-left font-mono hover:bg-vsc-menu-selection hover:text-vsc-menu-selection-fg focus:bg-vsc-menu-selection focus:text-vsc-menu-selection-fg focus:outline-none`}

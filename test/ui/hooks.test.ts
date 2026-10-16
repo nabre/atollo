@@ -73,6 +73,26 @@ describe("useLoad", () => {
     expect(result.current.error).toBeNull();
   });
 
+  it("retry resolves to whether the read worked", async () => {
+    let fail = true;
+    const load = vi.fn(() => (fail ? Promise.reject(new Error("no")) : Promise.resolve(1)));
+    const { result } = renderHook(() => useLoad(load, 0, { onError: "show" }));
+    await settle();
+    let ok: boolean | undefined;
+    await act(async () => {
+      ok = await result.current.retry();
+    });
+    expect(ok).toBe(false);
+    expect(result.current.error).toBe("Error: no");
+    fail = false;
+    await act(async () => {
+      ok = await result.current.retry();
+    });
+    expect(ok).toBe(true);
+    expect(result.current.data).toBe(1);
+    expect(result.current.error).toBeNull();
+  });
+
   it("reads again when load or key change, not when the policy does", async () => {
     const a = vi.fn(() => Promise.resolve("a"));
     const b = vi.fn(() => Promise.resolve("b"));

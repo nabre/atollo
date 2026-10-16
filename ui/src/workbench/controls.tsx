@@ -176,6 +176,13 @@ export function Button({
   );
 }
 
+/** What a button that opens a menu says of it: open or not, and the id of
+ * the menu (aria-controls while it is open). */
+export interface MenuTrigger {
+  open: boolean;
+  id: string;
+}
+
 /** An icon action (vscode-toolbar-button's look: 22px, 5px corners, the
  * toolbar hover), with the label as its accessible name and tooltip. A
  * native button: the component has no disabled state, and its name would
@@ -187,6 +194,7 @@ export function IconButton({
   busy = false,
   disabled = false,
   checked,
+  menu,
   title,
   className = "",
 }: {
@@ -197,6 +205,9 @@ export function IconButton({
   disabled?: boolean;
   /** A toggle action: pressed state. */
   checked?: boolean;
+  /** It opens a menu (aria-haspopup): whether it is open, and its id
+   * (aria-expanded, aria-controls while it is open). */
+  menu?: MenuTrigger | undefined;
   title?: string | undefined;
   className?: string;
 }) {
@@ -206,6 +217,9 @@ export function IconButton({
       aria-label={label}
       title={title ?? label}
       aria-pressed={checked}
+      aria-haspopup={menu ? "menu" : undefined}
+      aria-expanded={menu?.open}
+      aria-controls={menu?.open ? menu.id : undefined}
       aria-busy={busy}
       disabled={disabled || busy}
       onClick={onClick}
