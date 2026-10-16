@@ -450,7 +450,7 @@ impl WebServers {
         let mut view = match cached {
             Some(view) => view,
             None => {
-                let view = self.scan(lang);
+                let view = self.scan(lang, fresh);
                 let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
                 if cache.generation == generation {
                     cache.entry = Some((Instant::now(), lang.to_owned(), view.clone()));
@@ -486,8 +486,10 @@ impl WebServers {
     }
 
     /// Reads the profiles, the projects and the installed lines (the slow
-    /// part of `list`), assigning ports to new pools.
-    fn scan(&self, lang: &str) -> WebServersView {
+    /// part of `list`), assigning ports to new pools. With `prune`, the
+    /// ports of pools that no longer exist (and are not running) are
+    /// dropped from `servers.json`.
+    fn scan(&self, lang: &str, prune: bool) -> WebServersView {
         let apache_lines = crate::db::services::server_lines(&self.kit, "apache");
         let nginx_lines = crate::db::services::server_lines(&self.kit, "nginx");
         let php_lines = crate::db::services::server_lines(&self.kit, "php");
@@ -649,6 +651,15 @@ impl WebServers {
             );
         }
 
+        if prune {
+            // store_lock -> running: the documented lock order.
+            let running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+            let before = store.ports.len();
+            store
+                .ports
+                .retain(|id, _| pools_map.contains_key(id) || running.contains_key(id));
+            store_dirty |= store.ports.len() != before;
+        }
         if store_dirty {
             let _ = save_store(&self.kit, &store);
         }

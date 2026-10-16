@@ -316,3 +316,35 @@ fn wait_port_released_true_after_listener_dropped() {
     });
     assert!(begun.elapsed() < Duration::from_secs(5));
 }
+
+/// N-S4c: a fresh list drops the ports of pools that no longer exist; the
+/// cached poll leaves `servers.json` as it is.
+#[test]
+fn fresh_list_prunes_ports_of_gone_pools() {
+    let tmp = TempDir::new("servers-prune-ports");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let mut ports = BTreeMap::new();
+    ports.insert("apache-2.2-php-5.6".to_owned(), 8123);
+    ports.insert("keep".to_owned(), 8097);
+    let store = StoredServers {
+        profiles: vec![WebServerProfileInput {
+            id: "keep".into(),
+            name: "Keep".into(),
+            engine: WebServerEngine::Nginx,
+            server_line: None,
+            php_line: None,
+            port: Some(8097),
+        }],
+        ports,
+    };
+    save_store(&kit, &store).unwrap();
+
+    servers.list("it", false);
+    assert_eq!(load_store(&kit).ports.len(), 2);
+    servers.list("it", true);
+    let ports = load_store(&kit).ports;
+    assert_eq!(ports.keys().collect::<Vec<_>>(), ["keep"]);
+    assert_eq!(ports["keep"], 8097);
+}
