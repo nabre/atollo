@@ -346,8 +346,10 @@ fn site_doc_root(project_root: &Path, site: &AttachedSite) -> Option<PathBuf> {
     }
 }
 
+/// The last lines of the pool's error log, or of `stderr.log` (what the
+/// server printed before its own log was open: a configuration syntax error).
 fn pool_error_tail(pool_dir: &Path) -> String {
-    for rel in ["error.log", "logs/error.log"] {
+    for rel in ["error.log", "logs/error.log", "stderr.log"] {
         if let Ok(text) = fs::read_to_string(pool_dir.join(rel)) {
             let tail: Vec<&str> = text
                 .lines()
@@ -830,6 +832,7 @@ impl WebServers {
 
         let pool_dir = self.kit.data().join("servers").join(&pool.id);
         let _ = fs::remove_file(pool_dir.join("error.log"));
+        let _ = fs::remove_file(pool_dir.join("stderr.log"));
 
         let job = Job::new()?;
         let (mut cmd, fcgi_port) = match pool.engine {
@@ -871,9 +874,13 @@ impl WebServers {
             }
         };
 
+        // What the server prints (a syntax error in a configuration comes
+        // before its error log is open) goes to stderr.log, for the error.
+        let out_path = pool_dir.join("stderr.log");
+        let out = fs::File::create(&out_path).with_context(|| out_path.display().to_string())?;
         cmd.stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
+            .stdout(Stdio::from(out.try_clone()?))
+            .stderr(Stdio::from(out));
         let mut child = jobs::spawn_in(&mut cmd, &job)?;
 
         let addr = SocketAddr::from(([127, 0, 0, 1], pool.port));
