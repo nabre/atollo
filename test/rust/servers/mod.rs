@@ -277,3 +277,25 @@ fn list_uses_cache_until_invalidated() {
     save_store(&kit, &StoredServers::default()).unwrap();
     assert!(servers.list("en", false).pools.is_empty());
 }
+
+/// BUG-03: what httpd/nginx print on stderr (a syntax error, before their
+/// error log is open) reaches the error shown to the user.
+#[test]
+fn pool_error_tail_reads_stderr_log() {
+    let tmp = TempDir::new("servers-stderr-tail");
+    let pool_dir = tmp.0.join("pool");
+    fs::create_dir_all(&pool_dir).unwrap();
+    assert_eq!(pool_error_tail(&pool_dir), "");
+    fs::write(
+        pool_dir.join("stderr.log"),
+        "AH00526: Syntax error on line 12 of httpd.conf:\r\nInvalid command 'Lisen'\r\n\r\n",
+    )
+    .unwrap();
+    assert_eq!(
+        pool_error_tail(&pool_dir),
+        ": AH00526: Syntax error on line 12 of httpd.conf: | Invalid command 'Lisen'"
+    );
+    // The server's own error log, when it has lines, comes first.
+    fs::write(pool_dir.join("error.log"), "[error] bind failed\n").unwrap();
+    assert_eq!(pool_error_tail(&pool_dir), ": [error] bind failed");
+}
