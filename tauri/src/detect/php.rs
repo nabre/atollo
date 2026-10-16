@@ -100,8 +100,7 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             platform = "Symfony".into();
             reason = "bin/console".into();
         }
-        let has_nginx = exists(dir, "nginx.conf")
-            || (root != "." && exists(dir, &format!(r"{root}\nginx.conf")));
+        let has_nginx = super::has_nginx(dir, root);
         // A CMS or an `.htaccess`: Apache first, the main button. Otherwise
         // proposed after `php -S`.
         let apache_first = has_htaccess || cms.is_some();

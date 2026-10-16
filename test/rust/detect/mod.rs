@@ -66,6 +66,26 @@ fn unknown_and_static() {
     assert_eq!(p.actions[0].static_dir.as_deref(), Some("."));
     assert_eq!(p.default.as_deref(), Some("static"));
     assert_eq!(p.languages, ["CSS", "HTML"]);
+    assert_eq!(ids(&p), ["static"]);
+}
+
+/// `nginx.conf` or `.nginx` outside the PHP projects: a static site gets a
+/// Nginx of its own after the file server.
+#[test]
+fn static_site_with_nginx() {
+    for file in ["nginx.conf", ".nginx", "public/nginx.conf"] {
+        let site = project(
+            &format!("static-nginx-{}", file.replace(['/', '.'], "_")),
+            &[("public/index.html", ""), (file, "")],
+        );
+        let p = detect(&site.0, "it");
+        assert_eq!(ids(&p), ["static", "nginx"], "{file}");
+        assert_eq!(p.default.as_deref(), Some("static"));
+        assert_eq!(p.actions[1].nginx_dir.as_deref(), Some("public"));
+        assert!(p.requires.contains(&"nginx".to_owned()), "{file}");
+    }
+    let php = project("php-dot-nginx", &[("index.php", "<?php"), (".nginx", "")]);
+    assert!(ids(&detect(&php.0, "it")).contains(&"nginx"));
 }
 
 #[test]
