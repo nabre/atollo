@@ -299,3 +299,20 @@ fn pool_error_tail_reads_stderr_log() {
     fs::write(pool_dir.join("error.log"), "[error] bind failed\n").unwrap();
     assert_eq!(pool_error_tail(&pool_dir), ": [error] bind failed");
 }
+
+/// BUG-04: the reload waits for the port of the stopped server to be free.
+#[test]
+fn wait_port_released_true_after_listener_dropped() {
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port();
+    assert!(!wait_port_released(port, Duration::from_millis(250)));
+    let begun = std::time::Instant::now();
+    std::thread::scope(|s| {
+        s.spawn(move || {
+            std::thread::sleep(Duration::from_millis(300));
+            drop(listener);
+        });
+        assert!(wait_port_released(port, Duration::from_secs(5)));
+    });
+    assert!(begun.elapsed() < Duration::from_secs(5));
+}
