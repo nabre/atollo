@@ -104,3 +104,51 @@ fn hidden_files_are_denied() {
         format!("    {}", by_url.lines().next().unwrap())
     );
 }
+
+/// An older kit.conf (created once): `.php` matched in any case and refused
+/// without a PHP module, once; the user's other lines kept.
+#[test]
+fn old_kit_conf_is_migrated_once() {
+    let mut old = vec![
+        "DocumentRoot \"${CP_ROOT_FWD}/data/apache/htdocs\"".to_owned(),
+        "# mine".to_owned(),
+    ];
+    for (dll, ts, module) in [
+        ("php8apache2_4.dll", "php8ts.dll", "php_module"),
+        ("php7apache2_4.dll", "php7ts.dll", "php7_module"),
+        ("php5apache2_4.dll", "php5ts.dll", "php5_module"),
+    ] {
+        old.extend([
+            format!("<IfFile \"${{CP_APPS_FWD}}/php/{dll}\">"),
+            format!("    LoadFile \"${{CP_APPS_FWD}}/php/{ts}\""),
+            format!("    LoadModule {module} \"${{CP_APPS_FWD}}/php/{dll}\""),
+            "    <FilesMatch \"\\.php$\">".to_owned(),
+            "        SetHandler application/x-httpd-php".to_owned(),
+            "    </FilesMatch>".to_owned(),
+            "</IfFile>".to_owned(),
+        ]);
+    }
+    old.extend([
+        String::new(),
+        "IncludeOptional \"${CP_ROOT_FWD}/data/apache/conf.d/*.conf\"".to_owned(),
+        String::new(),
+    ]);
+    let old = old.join("\r\n");
+
+    let new = migrate_kit_conf(&old);
+    assert!(!new.contains("\"\\.php$\""), "{new}");
+    assert!(!new.contains("${CP_APPS_FWD}/php/"), "{new}");
+    assert_eq!(new.matches("<FilesMatch \"(?i)\\.php$\">").count(), 4);
+    assert!(new.contains("# mine"));
+    let deny = new.find("<IfModule !php_module>").expect("deny block");
+    assert!(deny > new.rfind("</IfFile>").unwrap());
+    assert!(deny < new.find("IncludeOptional").unwrap());
+    assert_eq!(migrate_kit_conf(&new), new, "idempotent");
+
+    // A kit.conf written from php_module_blocks is left as it is.
+    let current = format!("{}\r\n", php_module_blocks("CP_PHP_FWD").join("\r\n"));
+    assert_eq!(migrate_kit_conf(&current), current);
+    // No module block at all: the deny goes at the end.
+    let bare = migrate_kit_conf("DocumentRoot \"x\"");
+    assert!(bare.starts_with("DocumentRoot \"x\"\r\n<IfModule !php_module>"));
+}

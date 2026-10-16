@@ -32,7 +32,7 @@ pub fn fwd(p: &Path) -> String {
 pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
     let conf = kit.data().join(r"apache\kit.conf");
     if let Ok(text) = fs::read_to_string(&conf) {
-        let fixed = text.replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/");
+        let fixed = migrate_kit_conf(&text);
         if fixed != text {
             write_atomic(&conf, fixed.as_bytes()).with_context(|| conf.display().to_string())?;
         }
@@ -60,6 +60,39 @@ pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
         }
     }
     Ok(())
+}
+
+/// The text of an older `kit.conf` (created once, never rewritten) brought
+/// up to date: PHP under `${CP_PHP_FWD}`, `.php` matched in any case
+/// (`INDEX.PHP` is PHP on Windows too) and refused (403) without a PHP
+/// module, as [`php_module_blocks`] writes them. Idempotent.
+pub fn migrate_kit_conf(text: &str) -> String {
+    let mut fixed = text
+        .replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/")
+        .replace("\"\\.php$\"", "\"(?i)\\.php$\"");
+    if !fixed.contains("<IfModule !php_module>") {
+        let blocks = php_module_blocks("CP_PHP_FWD");
+        let deny_from = blocks
+            .iter()
+            .rposition(|l| l == "</IfFile>")
+            .map_or(0, |i| i + 1);
+        let deny = blocks[deny_from..].join("\r\n");
+        // After the last module block (`IfModule` is read in order), or at
+        // the end when there is none.
+        match fixed.rfind("</IfFile>") {
+            Some(at) => {
+                let at = at + "</IfFile>".len();
+                fixed.insert_str(at, &format!("\r\n{deny}"));
+            }
+            None => {
+                if !fixed.is_empty() && !fixed.ends_with('\n') {
+                    fixed.push_str("\r\n");
+                }
+                fixed.push_str(&format!("{deny}\r\n"));
+            }
+        }
+    }
+    fixed
 }
 
 /// Dynamic `<IfFile>` blocks for PHP 8, PHP 7, and PHP 5 Thread-Safe Apache
