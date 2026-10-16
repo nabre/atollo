@@ -3,7 +3,8 @@
 use anyhow::Result;
 
 use super::{github_line, github_stable, release_lines};
-use crate::install::{arch_of, github_single, triple_arch, Ctx, Installer, Release};
+use crate::install::{github_single, target_of, Ctx, Installer, Release};
+use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::setup::catalog::Component;
 
@@ -11,14 +12,22 @@ pub struct Bun;
 
 const BUN_REPO: &str = "oven-sh/bun";
 
-/// The Bun zip for this kit's platform.
-fn bun_asset(ctx: &Ctx, component: &Component) -> String {
-    let arch = if arch_of(ctx, component) == "arm64" {
-        "aarch64"
-    } else {
-        "x64"
+/// The Bun zip for `target`.
+pub(crate) fn bun_asset_for(target: Target) -> String {
+    let os = match target.os {
+        Os::Win32 => "windows",
+        Os::Darwin => "darwin",
+        Os::Linux => "linux",
     };
-    format!(r"^bun-windows-{arch}\.zip$")
+    let arch = match target.arch {
+        Arch::Arm64 => "aarch64",
+        Arch::X64 => "x64",
+    };
+    format!(r"^bun-{os}-{arch}\.zip$")
+}
+
+fn bun_asset(ctx: &Ctx, component: &Component) -> String {
+    bun_asset_for(target_of(ctx, component))
 }
 
 impl Installer for Bun {
@@ -59,10 +68,13 @@ pub struct Deno;
 
 const DENO_REPO: &str = "denoland/deno";
 
-/// The Deno zip for this kit's platform.
+/// The Deno zip for `target`.
+pub(crate) fn deno_asset_for(target: Target) -> String {
+    format!(r"^deno-{}\.zip$", target.rust_triple())
+}
+
 fn deno_asset(ctx: &Ctx, component: &Component) -> String {
-    let arch = triple_arch(ctx, component);
-    format!(r"^deno-{arch}-pc-windows-msvc\.zip$")
+    deno_asset_for(target_of(ctx, component))
 }
 
 impl Installer for Deno {

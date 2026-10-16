@@ -8,13 +8,16 @@ use std::process::Stdio;
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
+#[cfg(windows)]
 use windows::core::HSTRING;
+#[cfg(windows)]
 use windows::Win32::System::Registry::{
     RegDeleteTreeW, RegGetValueW, RegSetKeyValueW, HKEY_CURRENT_USER, REG_SZ, RRF_RT_REG_SZ,
 };
 
-use super::{fetch, triple_arch, work_dir, Ctx, Installer, Progress, Release};
-use crate::fsx::write_atomic;
+use super::{fetch, target_of, work_dir, Ctx, Installer, Progress, Release};
+use crate::fsx::{join_rel, write_atomic};
+use crate::kit::Target;
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
 use crate::os::jobs;
@@ -68,8 +71,14 @@ fn can_hard_link(dir: &Path) -> bool {
     ok
 }
 
-fn rustup_installed(rust: &Path) -> bool {
-    rust.join(r"cargo\bin\rustup.exe").is_file() && rust.join(r"cargo\bin\rustc.exe").is_file()
+fn rustup_bin(rust: &Path, target: Target) -> PathBuf {
+    join_rel(rust, &format!("cargo/bin/rustup{}", target.exe_suffix()))
+}
+
+fn rustup_installed(rust: &Path, target: Target) -> bool {
+    let sfx = target.exe_suffix();
+    join_rel(rust, &format!("cargo/bin/rustup{sfx}")).is_file()
+        && join_rel(rust, &format!("cargo/bin/rustc{sfx}")).is_file()
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -108,9 +117,12 @@ fn rust_plan(
 // even with --no-modify-path. The kit puts it back as it was: removed if it
 // was created now and points into the kit, old values restored otherwise.
 
+#[cfg(windows)]
 const RUSTUP_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Rustup";
+#[cfg(windows)]
 const RUSTUP_VALUES: [&str; 3] = ["UninstallString", "DisplayName", "DisplayVersion"];
 
+#[cfg(windows)]
 fn reg_get(name: &str) -> Option<String> {
     let key = HSTRING::from(RUSTUP_KEY);
     let value = HSTRING::from(name);
@@ -133,6 +145,7 @@ fn reg_get(name: &str) -> Option<String> {
 }
 
 /// `None` when the key does not exist.
+#[cfg(windows)]
 fn rustup_key() -> Option<Vec<(String, Option<String>)>> {
     let values: Vec<_> = RUSTUP_VALUES
         .iter()
@@ -141,6 +154,12 @@ fn rustup_key() -> Option<Vec<(String, Option<String>)>> {
     values.iter().any(|(_, v)| v.is_some()).then_some(values)
 }
 
+#[cfg(not(windows))]
+fn rustup_key() -> Option<Vec<(String, Option<String>)>> {
+    None
+}
+
+#[cfg(windows)]
 fn restore_rustup_key(before: Option<Vec<(String, Option<String>)>>, owned: &[&Path]) {
     let key = HSTRING::from(RUSTUP_KEY);
     let result = (|| -> Result<()> {
@@ -195,14 +214,18 @@ fn restore_rustup_key(before: Option<Vec<(String, Option<String>)>>, owned: &[&P
     }
 }
 
+#[cfg(not(windows))]
+fn restore_rustup_key(_before: Option<Vec<(String, Option<String>)>>, _owned: &[&Path]) {}
+
 /// Rust: rustup with the stable toolchain, rustfmt and clippy, all in
-/// `rust\` (`RUSTUP_HOME`, `CARGO_HOME`). Host `x86_64-pc-windows-gnu` by
-/// default (own linker), `msvc` from the settings, always `msvc` on ARM64.
+/// `rust/` (`RUSTUP_HOME`, `CARGO_HOME`). Host `x86_64-pc-windows-gnu` by
+/// default on Windows x64 (own linker), `msvc` from the settings, or the
+/// native Rust target triple on Windows ARM64, macOS and Linux.
 pub struct Rust;
 
 fn rust_host(ctx: &Ctx) -> String {
-    if ctx.kit.arch() == crate::kit::Arch::Arm64 {
-        return "aarch64-pc-windows-msvc".into();
+    if ctx.kit.target() != Target::WIN32_X64 {
+        return ctx.kit.target().rust_triple().into();
     }
     match Settings::load(ctx.kit).settings.rust_toolchain.as_deref() {
         Some("msvc") => "x86_64-pc-windows-msvc".into(),
@@ -219,14 +242,16 @@ impl Installer for Rust {
             .captures(&channel)
             .map(|c| c[1].to_owned())
             .ok_or_else(|| anyhow!("no stable version in channel-rust-stable.toml"))?;
-        let triple = format!("{}-pc-windows-msvc", triple_arch(ctx, component));
-        let url = format!("https://static.rust-lang.org/rustup/dist/{triple}/rustup-init.exe");
+        let target = target_of(ctx, component);
+        let triple = target.rust_triple();
+        let file_name = format!("rustup-init{}", target.exe_suffix());
+        let url = format!("https://static.rust-lang.org/rustup/dist/{triple}/{file_name}");
         let sha = first_sha256(&ctx.net.text(&format!("{url}.sha256"))?)
             .ok_or_else(|| anyhow!("rustup-init: no SHA-256"))?;
         Ok(Release::single(
             version,
             url,
-            "rustup-init.exe".into(),
+            file_name,
             Expect::Sha256(sha),
             crate::net::archive::Kind::File,
             crate::net::archive::Inner::Root,
@@ -244,11 +269,12 @@ impl Installer for Rust {
         release: &Release,
         progress: &mut dyn Progress,
     ) -> Result<()> {
-        if ctx.kit.arch() != crate::kit::Arch::detect() {
-            bail!("Rust must be prepared on a PC of the kit's architecture (rustup runs the toolchain)");
+        if ctx.kit.target() != Target::detect() {
+            bail!("Rust must be prepared on a machine of the kit's target (rustup runs the toolchain)");
         }
+        let target = ctx.kit.target();
         let rust = ctx.kit.apps().join("rust");
-        let installed = rustup_installed(&rust);
+        let installed = rustup_installed(&rust, target);
         // Hard links are probed where rustup runs: in place, the kit's own
         // disk; otherwise the work folder in the host temp (normally NTFS).
         let kit_links = installed && {
@@ -258,7 +284,7 @@ impl Installer for Rust {
         let in_place = rust_plan(installed, kit_links, || false).ok() == Some(RustPlan::InPlace);
         let host = rust_host(ctx);
         let owned = [ctx.kit.root()];
-        let rustup = rust.join(r"cargo\bin\rustup.exe");
+        let rustup = rustup_bin(&rust, target);
         let envs_for = |root: &Path| -> [(&'static str, PathBuf); 3] {
             [
                 ("RUSTUP_HOME", root.join("rustup")),
@@ -289,10 +315,6 @@ impl Installer for Rust {
             let plan = rust_plan(installed, kit_links, || can_hard_link(work))?;
             let root = work.join("rust");
             if plan == RustPlan::CopyUpdate {
-                // Kit without hard links (FAT32/exFAT): the tree is copied to
-                // the temp, updated there and copied back. The proxies in
-                // cargo\bin (hard links of rustup.exe on NTFS) become plain
-                // copies; rustup dispatches by the file name, so they work.
                 progress.note("rustup update (copy in the temp folder)");
                 crate::net::archive::check_space(&rust, work)?;
                 crate::net::archive::copy_tree(&rust, &root)
@@ -300,7 +322,7 @@ impl Installer for Rust {
                 let envs = envs_for(&root);
                 let envs: Vec<(&str, &Path)> =
                     envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
-                let tool = root.join(r"cargo\bin\rustup.exe");
+                let tool = rustup_bin(&root, target);
                 run(ctx, &tool, &["update", "stable"], &envs, progress)?;
                 run(
                     ctx,
@@ -321,6 +343,15 @@ impl Installer for Rust {
                 work,
                 progress,
             )?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if let Ok(m) = fs::metadata(&init) {
+                    let mut p = m.permissions();
+                    p.set_mode(p.mode() | 0o755);
+                    let _ = fs::set_permissions(&init, p);
+                }
+            }
             let envs = envs_for(&root);
             let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
             progress.note(&format!("rustup-init: stable {host}"));
@@ -346,7 +377,7 @@ impl Installer for Rust {
             )?;
             run(
                 ctx,
-                &root.join(r"cargo\bin\rustup.exe"),
+                &rustup_bin(&root, target),
                 &["set", "auto-self-update", "disable"],
                 &envs,
                 progress,
@@ -359,7 +390,7 @@ impl Installer for Rust {
     }
 }
 
-/// pnpm and yarn, installed globally with the kit's npm in `data\npm-global`
+/// pnpm and yarn, installed globally with the kit's npm in `data/npm-global`
 /// (their install scripts only print messages: not run).
 pub struct Pnpm;
 
@@ -397,9 +428,12 @@ impl Installer for Pnpm {
     ) -> Result<()> {
         // npm-cli.js with the kit's node, no cmd.exe: its quoting breaks on
         // kit paths with `&` or parentheses (found in a test kit).
-        let node = crate::setup::catalog::kit_path(ctx.kit, r"node\node.exe");
-        let npm_cli =
-            crate::setup::catalog::kit_path(ctx.kit, r"node\node_modules\npm\bin\npm-cli.js");
+        let node = crate::setup::catalog::kit_path(ctx.kit, "node/node.exe");
+        let npm_cli = if ctx.kit.os().is_windows() {
+            crate::setup::catalog::kit_path(ctx.kit, "node/node_modules/npm/bin/npm-cli.js")
+        } else {
+            crate::setup::catalog::kit_path(ctx.kit, "node/lib/node_modules/npm/bin/npm-cli.js")
+        };
         if !node.is_file() || !npm_cli.is_file() {
             bail!("the kit's Node.js is needed for pnpm and yarn");
         }
@@ -409,16 +443,28 @@ impl Installer for Pnpm {
             all.extend_from_slice(args);
             run(ctx, &node, &all, &[], progress)
         };
-        // yarn through corepack: the version a project asks for
-        // (`packageManager`: Yarn 4, 3…), classic 1.22 otherwise. Installed
-        // again at every update, with the yarn package of an older kit gone.
         let _ = npm(&["uninstall", "yarn", "corepack"], progress);
         npm(
             &["install", "--ignore-scripts", "corepack@latest"],
             progress,
         )?;
         let prefix = ctx.kit.data().join("npm-global");
-        let corepack = prefix.join(r"node_modules\corepack\dist\corepack.js");
+        let corepack = if ctx.kit.os().is_windows() {
+            join_rel(&prefix, "node_modules/corepack/dist/corepack.js")
+        } else {
+            let lib = join_rel(&prefix, "lib/node_modules/corepack/dist/corepack.js");
+            if lib.is_file() {
+                lib
+            } else {
+                join_rel(&prefix, "node_modules/corepack/dist/corepack.js")
+            }
+        };
+        let bin_dir = if ctx.kit.os().is_windows() {
+            prefix.clone()
+        } else {
+            prefix.join("bin")
+        };
+        fs::create_dir_all(&bin_dir)?;
         run(
             ctx,
             &node,
@@ -427,16 +473,11 @@ impl Installer for Pnpm {
                 "enable",
                 "yarn",
                 "--install-directory",
-                &prefix.display().to_string(),
+                &bin_dir.display().to_string(),
             ],
             &[],
             progress,
         )?;
-        // pnpm last, over corepack's own pnpm commands (--force), with its
-        // install script, which puts the native pnpm.exe in place: without
-        // it pnpm.cmd does not start (tried 15/10/2026); recent npm runs it
-        // only when allowed. pnpm then runs the version a project asks for
-        // (`packageManager`), downloaded into PNPM_HOME.
         npm(
             &["install", "--force", "--allow-scripts=pnpm", "pnpm@latest"],
             progress,
@@ -445,19 +486,25 @@ impl Installer for Pnpm {
 }
 
 /// R from conda-forge (OpenBLAS), installed by micromamba in the work
-/// folder and moved into the kit; launchers `bin\R.cmd`, `bin\Rscript.cmd`
-/// put R's DLLs on the PATH of R only. x64 only (no conda-forge R for ARM64).
+/// folder and moved into the kit; launchers `bin/R(.cmd)`, `bin/Rscript(.cmd)`
+/// put R's libraries on the PATH of R only. Unavailable on `win32-arm64`.
 pub struct R;
 
-/// The versions of r-base built for Windows x64 (`win-64`), newest first:
-/// `latest_version` of the package can be one of another platform.
+/// The versions of r-base built for Windows x64 (`win-64`), newest first.
+#[cfg(test)]
 pub fn r_versions(info: &Value) -> Vec<String> {
+    r_versions_for(info, "win-64")
+}
+
+/// The versions of r-base built for `subdir` (`win-64`, `osx-arm64`, `linux-64`, ...),
+/// newest first.
+pub fn r_versions_for(info: &Value, subdir: &str) -> Vec<String> {
     let mut out: Vec<String> = info
         .get("files")
         .and_then(Value::as_array)
         .into_iter()
         .flatten()
-        .filter(|f| f.pointer("/attrs/subdir").and_then(Value::as_str) == Some("win-64"))
+        .filter(|f| f.pointer("/attrs/subdir").and_then(Value::as_str) == Some(subdir))
         .filter_map(|f| f.get("version").and_then(Value::as_str))
         .filter(|v| super::lang::is_release(v))
         .map(str::to_owned)
@@ -474,18 +521,20 @@ fn r_info(ctx: &Ctx) -> Result<Value> {
 
 /// `version` of R with the newest micromamba that installs it.
 fn r_release(ctx: &Ctx, version: &str) -> Result<Release> {
+    let target = ctx.kit.target();
+    let asset = target.micromamba_asset();
     let mm = ctx.net.github_latest("mamba-org/micromamba-releases")?;
     let base = format!(
         "https://github.com/mamba-org/micromamba-releases/releases/download/{}",
         mm.tag_name
     );
-    let sha = first_sha256(&ctx.net.text(&format!("{base}/micromamba-win-64.sha256"))?)
+    let sha = first_sha256(&ctx.net.text(&format!("{base}/{asset}.sha256"))?)
         .ok_or_else(|| anyhow!("micromamba: no SHA-256"))?;
     Ok(Release::single(
         // r-base only: a new micromamba alone does not rebuild R.
         version.to_owned(),
-        format!("{base}/micromamba-win-64"),
-        "micromamba.exe".into(),
+        format!("{base}/{asset}"),
+        format!("micromamba{}", target.exe_suffix()),
         Expect::Sha256(sha),
         crate::net::archive::Kind::File,
         crate::net::archive::Inner::Root,
@@ -496,10 +545,11 @@ fn r_release(ctx: &Ctx, version: &str) -> Result<Release> {
 /// one folder per line (versioned, D-81), `renv.lock` declares R's version.
 impl Installer for R {
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
-        let versions = r_versions(&r_info(ctx)?);
+        let subdir = ctx.kit.target().conda_subdir();
+        let versions = r_versions_for(&r_info(ctx)?, subdir);
         let version = versions
             .first()
-            .ok_or_else(|| anyhow!("r-base: no version for win-64"))?;
+            .ok_or_else(|| anyhow!("r-base: no version for {subdir}"))?;
         r_release(ctx, version)
     }
 
@@ -508,8 +558,9 @@ impl Installer for R {
     }
 
     fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+        let subdir = ctx.kit.target().conda_subdir();
         let mut lines: Vec<String> = Vec::new();
-        for v in r_versions(&r_info(ctx)?) {
+        for v in r_versions_for(&r_info(ctx)?, subdir) {
             if let Some(line) = crate::versions::line_of(&v) {
                 if !lines.contains(&line) {
                     lines.push(line);
@@ -520,11 +571,12 @@ impl Installer for R {
     }
 
     fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
-        let versions = r_versions(&r_info(ctx)?);
+        let subdir = ctx.kit.target().conda_subdir();
+        let versions = r_versions_for(&r_info(ctx)?, subdir);
         let version = versions
             .iter()
             .find(|v| crate::versions::line_of(v).as_deref() == Some(line))
-            .ok_or_else(|| anyhow!("R {line} not available for win-64"))?;
+            .ok_or_else(|| anyhow!("R {line} not available for {subdir}"))?;
         r_release(ctx, version)
     }
 
@@ -554,7 +606,7 @@ impl Installer for R {
         target: &Path,
         progress: &mut dyn Progress,
     ) -> Result<()> {
-        if ctx.kit.arch() != crate::kit::Arch::X64 {
+        if ctx.kit.target() == Target::WIN32_ARM64 {
             bail!("conda-forge has no R for Windows ARM64");
         }
         let guard = work_dir(ctx, component)?;
@@ -571,8 +623,17 @@ impl Installer for R {
             )?;
             let tools = ctx.kit.apps().join("tools");
             fs::create_dir_all(&tools)?;
-            let mm = tools.join("micromamba.exe");
+            let mm = tools.join(format!("micromamba{}", ctx.kit.os().exe_suffix()));
             crate::net::archive::replace_file(&mm_new, &mm)?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if let Ok(m) = fs::metadata(&mm) {
+                    let mut p = m.permissions();
+                    p.set_mode(p.mode() | 0o755);
+                    let _ = fs::set_permissions(&mm, p);
+                }
+            }
             let home = work.join("mamba-home");
             // The same line again (a patch): the old folder goes first.
             if target.exists() {
@@ -581,8 +642,8 @@ impl Installer for R {
             let envs = [
                 ("HOME", home.clone()),
                 ("USERPROFILE", home.clone()),
-                ("APPDATA", home.join(r"AppData\Roaming")),
-                ("LOCALAPPDATA", home.join(r"AppData\Local")),
+                ("APPDATA", join_rel(&home, "AppData/Roaming")),
+                ("LOCALAPPDATA", join_rel(&home, "AppData/Local")),
                 ("MAMBA_ROOT_PREFIX", home.join("mamba")),
             ];
             let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
@@ -607,22 +668,26 @@ impl Installer for R {
                 &envs,
                 progress,
             )?;
-            if !target.join(r"lib\R\bin\x64\R.exe").is_file() {
-                bail!("R.exe not found after the installation");
+            if ctx.kit.os().is_windows() {
+                if !join_rel(target, "lib/R/bin/x64/R.exe").is_file() {
+                    bail!("R.exe not found after the installation");
+                }
+                let bin = target.join("bin");
+                fs::create_dir_all(&bin)?;
+                for exe in ["R", "Rscript"] {
+                    let cmd = format!(
+                        "@echo off\r\nrem Dev-Kit: R with its DLLs (Library\\bin) in the PATH of R only\r\nsetlocal\r\nset \"PATH=%~dp0..\\lib\\R\\bin\\x64;%~dp0..\\Library\\bin;%PATH%\"\r\n\"%~dp0..\\lib\\R\\bin\\x64\\{exe}.exe\" %*\r\nexit /b %ERRORLEVEL%\r\n"
+                    );
+                    write_atomic(&bin.join(format!("{exe}.cmd")), cmd.as_bytes())?;
+                    let sh = format!(
+                        "#!/bin/sh\n# Dev-Kit: R with its DLLs (Library/bin) in the PATH of R only\nd=$(dirname \"$0\")/..\nPATH=\"$d/lib/R/bin/x64:$d/Library/bin:$PATH\" exec \"$d/lib/R/bin/x64/{exe}.exe\" \"$@\"\n"
+                    );
+                    write_atomic(&bin.join(exe), sh.as_bytes())?;
+                }
+            } else if !join_rel(target, "bin/R").is_file() {
+                bail!("bin/R not found after the installation");
             }
-            let bin = target.join("bin");
-            fs::create_dir_all(&bin)?;
-            for exe in ["R", "Rscript"] {
-                let cmd = format!(
-                    "@echo off\r\nrem Dev-Kit: R with its DLLs (Library\\bin) in the PATH of R only\r\nsetlocal\r\nset \"PATH=%~dp0..\\lib\\R\\bin\\x64;%~dp0..\\Library\\bin;%PATH%\"\r\n\"%~dp0..\\lib\\R\\bin\\x64\\{exe}.exe\" %*\r\nexit /b %ERRORLEVEL%\r\n"
-                );
-                write_atomic(&bin.join(format!("{exe}.cmd")), cmd.as_bytes())?;
-                let sh = format!(
-                    "#!/bin/sh\n# Dev-Kit: R with its DLLs (Library/bin) in the PATH of R only\nd=$(dirname \"$0\")/..\nPATH=\"$d/lib/R/bin/x64:$d/Library/bin:$PATH\" exec \"$d/lib/R/bin/x64/{exe}.exe\" \"$@\"\n"
-                );
-                write_atomic(&bin.join(exe), sh.as_bytes())?;
-            }
-            let site = target.join(r"lib\R\etc\Rprofile.site");
+            let site = join_rel(target, "lib/R/etc/Rprofile.site");
             let mut text = fs::read_to_string(&site).unwrap_or_default();
             text.push_str("\n# Dev-Kit: CRAN without asking for a mirror\nlocal({ r <- getOption('repos'); if (is.null(r) || identical(unname(r['CRAN']), '@CRAN@')) options(repos = c(CRAN = 'https://cloud.r-project.org')) })\n");
             fs::write(&site, text)?;

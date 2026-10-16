@@ -14,8 +14,9 @@ use std::process::Stdio;
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
-use super::{fetch, pattern, Ctx, Dest, Installer, Part, Progress, Release};
-use crate::fsx::write_atomic;
+use super::{fetch, pattern, target_of, Ctx, Dest, Installer, Part, Progress, Release};
+use crate::fsx::{join_rel, write_atomic};
+use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::hash_in_list;
 use crate::net::verify::Expect;
@@ -104,7 +105,9 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
             &mut |_, _| {},
         )?;
         let microsoft = pattern("O=Microsoft Corporation")?;
+        #[cfg(windows)]
         crate::net::signature::check(&exe, &microsoft, true)?;
+        let _ = &microsoft;
         let bytes = fs::read(&exe)?;
         let cabs = find_cabs(&bytes);
         if cabs.len() < 2 {
@@ -154,6 +157,7 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
         if !key.is_file() {
             bail!("vcruntime140.dll not found in the Microsoft package");
         }
+        #[cfg(windows)]
         crate::net::signature::check(&key, &microsoft, true)?;
         crate::net::archive::stage_into(&dlls, &folder)
     })();
@@ -177,6 +181,9 @@ fn walk(dir: &Path) -> Vec<PathBuf> {
 }
 
 pub(super) fn copy_vc_runtime(ctx: &Ctx, dest: &Path) -> Result<()> {
+    if !ctx.kit.os().is_windows() {
+        return Ok(());
+    }
     let vc = vc_runtime(ctx, false)?;
     for entry in fs::read_dir(vc)?.flatten() {
         if entry
@@ -434,7 +441,7 @@ impl Installer for Php {
         _old: &Path,
     ) -> Result<()> {
         copy_vc_runtime(ctx, tree)?;
-        let ssl = tree.join(r"extras\ssl");
+        let ssl = join_rel(tree, "extras/ssl");
         fs::create_dir_all(&ssl)?;
         let pem = (|| -> Result<()> {
             let sha = hash_in_list(
@@ -463,10 +470,10 @@ impl Installer for Php {
 
     /// `data\php\php.ini` once (then it is the user's), Composer launchers.
     fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
-        let ini = ctx.kit.data().join(r"php\php.ini");
-        if !ini.exists() {
-            let template = fs::read_to_string(dest.join("php.ini-development"))
-                .context("php.ini-development")?;
+        let ini = join_rel(ctx.kit.data(), "php/php.ini");
+        let dev_ini = dest.join("php.ini-development");
+        if !ini.exists() && dev_ini.is_file() {
+            let template = fs::read_to_string(&dev_ini).context("php.ini-development")?;
             fs::create_dir_all(ini.parent().unwrap_or(dest))?;
             write_atomic(&ini, php_ini(&template)?.as_bytes())?;
         } else if let Ok(text) = fs::read_to_string(&ini) {
@@ -504,7 +511,7 @@ pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
             .into_iter()
             .map(|l| crate::versions::saved_dir(kit, php, &l.line)),
     );
-    for dir in dirs.filter(|d| d.join("php.exe").is_file()) {
+    for dir in dirs.filter(|d| d.join("php.exe").is_file() || join_rel(d, "bin/php").is_file()) {
         if !dir.join("composer.phar").is_file() {
             fs::copy(&old, dir.join("composer.phar")).with_context(|| dir.display().to_string())?;
         }
@@ -516,18 +523,24 @@ pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
     Ok(())
 }
 
-/// `composer.cmd` and `composer` (Git Bash) next to `composer.phar` in a
-/// folder of PHP: they run it with the `php.exe` beside them, so each
-/// version of PHP uses its own Composer.
+/// `composer.cmd` and `composer` (Git Bash / POSIX sh) next to `composer.phar`
+/// in a folder of PHP: they run it with the `php.exe` or `bin/php` beside them,
+/// so each version of PHP uses its own Composer.
 pub fn composer_launchers(dir: &Path) -> Result<()> {
     write_atomic(
         &dir.join("composer.cmd"),
         b"@\"%~dp0php.exe\" \"%~dp0composer.phar\" %*\r\n",
     )?;
+    let sh = dir.join("composer");
     write_atomic(
-        &dir.join("composer"),
-        b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nexec \"$d/php.exe\" \"$d/composer.phar\" \"$@\"\n",
+        &sh,
+        b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nif [ -x \"$d/bin/php\" ]; then\n  exec \"$d/bin/php\" \"$d/composer.phar\" \"$@\"\nfi\nexec \"$d/php.exe\" \"$d/composer.phar\" \"$@\"\n",
     )?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = fs::set_permissions(&sh, fs::Permissions::from_mode(0o755));
+    }
     Ok(())
 }
 
@@ -677,9 +690,11 @@ impl Installer for Apache {
     ) -> Result<()> {
         copy_vc_runtime(ctx, &tree.join("bin"))?;
         fs::create_dir_all(tree.join("logs"))?;
-        let conf = tree.join(r"conf\httpd.conf");
-        let text = fs::read_to_string(&conf).context("httpd.conf")?;
-        fs::write(&conf, httpd_conf(&text)?)?;
+        let conf = join_rel(tree, "conf/httpd.conf");
+        if conf.is_file() {
+            let text = fs::read_to_string(&conf).context("httpd.conf")?;
+            fs::write(&conf, httpd_conf(&text)?)?;
+        }
         Ok(())
     }
 
@@ -688,21 +703,30 @@ impl Installer for Apache {
     }
 }
 
-/// Official Windows build of Nginx from `nginx/nginx` GitHub releases.
+/// Official build of Nginx from `nginx/nginx` GitHub releases.
 pub struct Nginx;
 
 const NGINX_REPO: &str = "nginx/nginx";
-const NGINX_ASSET: &str = r"^nginx-\d+\.\d+\.\d+\.zip$";
+const NGINX_ASSET_ZIP: &str = r"^nginx-\d+\.\d+\.\d+\.zip$";
+const NGINX_ASSET_TAR: &str = r"^nginx-\d+\.\d+\.\d+\.tar\.gz$";
+
+fn nginx_asset_for(target: Target) -> (&'static str, Kind) {
+    match target.os {
+        Os::Win32 => (NGINX_ASSET_ZIP, Kind::Zip),
+        Os::Darwin | Os::Linux => (NGINX_ASSET_TAR, Kind::TarGz),
+    }
+}
 
 fn nginx_version(tag: &str) -> &str {
     tag.trim_start_matches("release-").trim_start_matches('v')
 }
 
-fn nginx_releases(ctx: &Ctx) -> Result<Vec<crate::net::GhRelease>> {
+fn nginx_releases(ctx: &Ctx, target: Target) -> Result<Vec<crate::net::GhRelease>> {
     let all: Vec<crate::net::GhRelease> = ctx.net.json(&format!(
         "https://api.github.com/repos/{NGINX_REPO}/releases?per_page=100"
     ))?;
-    let re = pattern(NGINX_ASSET)?;
+    let (pat, _) = nginx_asset_for(target);
+    let re = pattern(pat)?;
     let mut out: Vec<crate::net::GhRelease> = all
         .into_iter()
         .filter(|r| !r.prerelease && super::lang::is_release(nginx_version(&r.tag_name)))
@@ -713,16 +737,17 @@ fn nginx_releases(ctx: &Ctx) -> Result<Vec<crate::net::GhRelease>> {
     Ok(out)
 }
 
-fn nginx_release_from(ctx: &Ctx, rel: &crate::net::GhRelease) -> Result<Release> {
+fn nginx_release_from(ctx: &Ctx, target: Target, rel: &crate::net::GhRelease) -> Result<Release> {
+    let (pat, kind) = nginx_asset_for(target);
     let file = rel
-        .asset(&pattern(NGINX_ASSET)?)
-        .ok_or_else(|| anyhow!("Nginx {}: no Windows zip asset", rel.tag_name))?;
+        .asset(&pattern(pat)?)
+        .ok_or_else(|| anyhow!("Nginx {}: no asset for {target}", rel.tag_name))?;
     Ok(Release::single(
         nginx_version(&rel.tag_name).to_owned(),
         file.browser_download_url.clone(),
         file.name.clone(),
         Expect::Sha256(ctx.net.release_sha256(rel, file)?),
-        Kind::Zip,
+        kind,
         Inner::Single,
     ))
 }
@@ -732,9 +757,10 @@ impl Installer for Nginx {
         true
     }
 
-    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        let target = target_of(ctx, component);
         let mut out = Vec::new();
-        for r in nginx_releases(ctx)? {
+        for r in nginx_releases(ctx, target)? {
             if let Some(line) = crate::versions::line_of(nginx_version(&r.tag_name)) {
                 if !out.contains(&line) {
                     out.push(line);
@@ -744,26 +770,28 @@ impl Installer for Nginx {
         Ok(out)
     }
 
-    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
-        let releases = nginx_releases(ctx)?;
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        let target = target_of(ctx, component);
+        let releases = nginx_releases(ctx, target)?;
         let rel = releases
             .iter()
             .find(|r| crate::versions::line_of(nginx_version(&r.tag_name)).as_deref() == Some(line))
             .ok_or_else(|| anyhow!("Nginx {line} not available"))?;
-        nginx_release_from(ctx, rel)
+        nginx_release_from(ctx, target, rel)
     }
 
-    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let target = target_of(ctx, component);
         if let Ok(rel) = ctx.net.github_latest(NGINX_REPO) {
-            if let Ok(r) = nginx_release_from(ctx, &rel) {
+            if let Ok(r) = nginx_release_from(ctx, target, &rel) {
                 return Ok(r);
             }
         }
-        let releases = nginx_releases(ctx)?;
+        let releases = nginx_releases(ctx, target)?;
         let rel = releases
             .first()
             .ok_or_else(|| anyhow!("no Nginx release found"))?;
-        nginx_release_from(ctx, rel)
+        nginx_release_from(ctx, target, rel)
     }
 
     fn before_swap(

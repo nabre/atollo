@@ -312,3 +312,53 @@ fn languages_from_the_folder_of_their_version() {
         .replace('\\', "/");
     assert_eq!(env.get("CP_PHP_FWD"), Some(fwd.as_str()));
 }
+
+#[test]
+fn unix_target_builds_colon_path_and_xdg_dirs() {
+    use crate::kit::Target;
+
+    let tmp = TempDir::new("env-unix");
+    let kit = Kit::at_target(tmp.0.join("Kit"), Target::DARWIN_ARM64);
+    for rel in [
+        "git/bin/git",
+        "node/bin/node",
+        "python/bin/python3",
+        "pwsh/pwsh",
+        "go/bin/go",
+        "tinytex/bin/universal-darwin/tlmgr",
+    ] {
+        let file = crate::fsx::join_rel(kit.apps(), rel);
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(file, b"").unwrap();
+    }
+    let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
+    let path = env.get("PATH").unwrap();
+    assert!(path.contains(':'), "Unix target must join PATH with ':'");
+    let entries = env.path_entries();
+    let n = entries.len();
+    assert_eq!(
+        &entries[n - 5..],
+        ["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+    );
+    let apps = kit.apps();
+    assert!(entries
+        .iter()
+        .any(|e| Path::new(e) == crate::fsx::join_rel(&apps, "node/bin")));
+    assert!(entries
+        .iter()
+        .any(|e| Path::new(e) == crate::fsx::join_rel(&apps, "python/bin")));
+    assert!(entries
+        .iter()
+        .any(|e| Path::new(e) == crate::fsx::join_rel(&apps, "tinytex/bin/universal-darwin")));
+    for xdg in [
+        "XDG_CONFIG_HOME",
+        "XDG_DATA_HOME",
+        "XDG_CACHE_HOME",
+        "XDG_STATE_HOME",
+        "TMPDIR",
+    ] {
+        let v = env.get(xdg).unwrap_or_else(|| panic!("{xdg} missing"));
+        assert!(Path::new(v).starts_with(kit.data()), "{xdg} = {v}");
+    }
+}
+

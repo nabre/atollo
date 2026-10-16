@@ -4,7 +4,8 @@ use anyhow::{anyhow, Result};
 use serde_json::Value;
 
 use super::{is_release, s, version_key};
-use crate::install::{arch_of, Ctx, Installer, Release};
+use crate::install::{arch_of, target_of, Ctx, Installer, Release};
+use crate::kit::Os;
 use crate::net::archive::{Inner, Kind};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
@@ -50,8 +51,14 @@ fn dart_versions(ctx: &Ctx) -> Result<Vec<String>> {
 
 /// The SDK zip of version `v` with its SHA-256.
 fn dart_release(ctx: &Ctx, component: &Component, v: &str) -> Result<Release> {
+    let target = target_of(ctx, component);
+    let os_tag = match target.os {
+        Os::Win32 => "windows",
+        Os::Darwin => "macos",
+        Os::Linux => "linux",
+    };
     let arch = arch_of(ctx, component);
-    let name = format!("dartsdk-windows-{arch}-release.zip");
+    let name = format!("dartsdk-{os_tag}-{arch}-release.zip");
     let url = format!("{DART_STABLE}/{v}/sdk/{name}");
     let sha = first_sha256(&ctx.net.text(&format!("{url}.sha256sum"))?)
         .ok_or_else(|| anyhow!("Dart {v}: no SHA-256"))?;

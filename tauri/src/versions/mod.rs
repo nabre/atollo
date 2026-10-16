@@ -147,28 +147,51 @@ pub fn default_dir(kit: &Kit, c: &Component) -> PathBuf {
 /// `rel` of the catalog (`node/node.exe`) inside the default folder of the
 /// component with one folder per line it starts with; `None` for the others.
 pub fn resolve(kit: &Kit, rel: &str) -> Option<PathBuf> {
-    let rel = rel.replace('/', "\\");
-    let (head, rest) = rel.split_once('\\').unwrap_or((rel.as_str(), ""));
+    let translated = crate::setup::catalog::translate_rel(kit.target(), rel);
+    let norm = translated.replace('\\', "/");
+    let (head, rest) = norm.split_once('/').unwrap_or((norm.as_str(), ""));
     let c = lined().find(|c| {
         c.folder
             .as_deref()
             .is_some_and(|f| f.eq_ignore_ascii_case(head))
     })?;
     let dir = default_dir(kit, c);
-    Some(if rest.is_empty() { dir } else { dir.join(rest) })
+    Some(if rest.is_empty() {
+        dir
+    } else {
+        crate::fsx::join_rel(&dir, rest)
+    })
+}
+
+/// Infers the [`crate::kit::Target`] from an `apps/<target>/...` path when
+/// present, falling back to [`crate::kit::Target::detect`].
+pub fn target_from_path(dir: &Path) -> crate::kit::Target {
+    for ancestor in dir.ancestors() {
+        if let Some(name) = ancestor.file_name().and_then(|n| n.to_str()) {
+            if let Some(t) = crate::kit::Target::parse(name) {
+                return t;
+            }
+        }
+    }
+    crate::kit::Target::detect()
 }
 
 /// The key of `c` is in `dir`, a copy of its own folder.
 pub fn has_key(c: &Component, dir: &Path) -> bool {
+    has_key_for(target_from_path(dir), c, dir)
+}
+
+/// The key of `c` for `target` is in `dir`, a copy of its own folder.
+pub fn has_key_for(target: crate::kit::Target, c: &Component, dir: &Path) -> bool {
     let Some(folder) = &c.folder else {
         return false;
     };
-    let rel = c
-        .key
+    let key = c.key_for(target);
+    let rel = key
         .strip_prefix(folder.as_str())
-        .unwrap_or(&c.key)
-        .trim_start_matches('/');
-    let path = dir.join(rel.replace('/', "\\"));
+        .unwrap_or(&key)
+        .trim_start_matches(['/', '\\']);
+    let path = crate::fsx::join_rel(dir, rel);
     path.is_file() || (rel.is_empty() && fs::read_dir(dir).is_ok_and(|mut d| d.next().is_some()))
 }
 

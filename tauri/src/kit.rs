@@ -16,8 +16,88 @@ use thiserror::Error;
 use crate::fsx::write_atomic;
 use crate::os::volume::VolumeInfo;
 
-/// Processor platform of the downloaded programs (`data\apps\win32-<arch>`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+/// Operating system family of a kit target (`win32`, `darwin`, `linux`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Os {
+    Win32,
+    Darwin,
+    Linux,
+}
+
+#[allow(dead_code)]
+impl Os {
+    /// Operating system of the running binary.
+    pub const fn current() -> Os {
+        #[cfg(target_os = "macos")]
+        {
+            Os::Darwin
+        }
+        #[cfg(target_os = "linux")]
+        {
+            Os::Linux
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        {
+            Os::Win32
+        }
+    }
+
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Os::Win32 => "win32",
+            Os::Darwin => "darwin",
+            Os::Linux => "linux",
+        }
+    }
+
+    pub const fn is_windows(self) -> bool {
+        matches!(self, Os::Win32)
+    }
+
+    pub const fn is_macos(self) -> bool {
+        matches!(self, Os::Darwin)
+    }
+
+    pub const fn is_linux(self) -> bool {
+        matches!(self, Os::Linux)
+    }
+
+    pub const fn is_unix(self) -> bool {
+        matches!(self, Os::Darwin | Os::Linux)
+    }
+
+    pub const fn exe_suffix(self) -> &'static str {
+        match self {
+            Os::Win32 => ".exe",
+            Os::Darwin | Os::Linux => "",
+        }
+    }
+
+    pub const fn cmd_suffix(self) -> &'static str {
+        match self {
+            Os::Win32 => ".cmd",
+            Os::Darwin | Os::Linux => "",
+        }
+    }
+
+    pub const fn bat_suffix(self) -> &'static str {
+        match self {
+            Os::Win32 => ".bat",
+            Os::Darwin | Os::Linux => "",
+        }
+    }
+
+    pub const fn path_sep(self) -> char {
+        match self {
+            Os::Win32 => ';',
+            Os::Darwin | Os::Linux => ':',
+        }
+    }
+}
+
+/// Processor platform of the downloaded programs (`x64` or `arm64`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Arch {
     X64,
@@ -25,13 +105,25 @@ pub enum Arch {
 }
 
 impl Arch {
-    /// Same rule as `_env.cmd`: ARM64 when the process or its WOW64 host
-    /// reports ARM64, otherwise x64.
+    /// Same rule as `_env.cmd` on Windows (ARM64 when the process or its WOW64
+    /// host reports ARM64, otherwise x64), and compile-time `target_arch` on
+    /// macOS and Linux.
     pub fn detect() -> Arch {
-        Self::from_env_values(
-            std::env::var("PROCESSOR_ARCHITECTURE").ok().as_deref(),
-            std::env::var("PROCESSOR_ARCHITEW6432").ok().as_deref(),
-        )
+        #[cfg(windows)]
+        {
+            Self::from_env_values(
+                std::env::var("PROCESSOR_ARCHITECTURE").ok().as_deref(),
+                std::env::var("PROCESSOR_ARCHITEW6432").ok().as_deref(),
+            )
+        }
+        #[cfg(not(windows))]
+        {
+            if cfg!(target_arch = "aarch64") {
+                Arch::Arm64
+            } else {
+                Arch::X64
+            }
+        }
     }
 
     fn from_env_values(arch: Option<&str>, wow64: Option<&str>) -> Arch {
@@ -43,16 +135,219 @@ impl Arch {
         }
     }
 
-    pub fn as_str(self) -> &'static str {
+    pub const fn as_str(self) -> &'static str {
         match self {
             Arch::X64 => "x64",
             Arch::Arm64 => "arm64",
         }
     }
 
-    /// `win32-x64` or `win32-arm64`, the folder name used under `data\apps`.
+    /// Folder name used under `data/apps` on the current OS (`win32-x64`, etc.).
     pub fn platform(self) -> String {
-        format!("win32-{}", self.as_str())
+        Target::new(Os::current(), self).as_str().to_owned()
+    }
+}
+
+/// Combined OS + CPU target (`win32-x64`, `win32-arm64`, `darwin-arm64`,
+/// `darwin-x64`, `linux-x64`, `linux-arm64`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Target {
+    pub os: Os,
+    pub arch: Arch,
+}
+
+#[allow(dead_code)]
+impl Target {
+    pub const WIN32_X64: Target = Target {
+        os: Os::Win32,
+        arch: Arch::X64,
+    };
+    pub const WIN32_ARM64: Target = Target {
+        os: Os::Win32,
+        arch: Arch::Arm64,
+    };
+    pub const DARWIN_ARM64: Target = Target {
+        os: Os::Darwin,
+        arch: Arch::Arm64,
+    };
+    pub const DARWIN_X64: Target = Target {
+        os: Os::Darwin,
+        arch: Arch::X64,
+    };
+    pub const LINUX_X64: Target = Target {
+        os: Os::Linux,
+        arch: Arch::X64,
+    };
+    pub const LINUX_ARM64: Target = Target {
+        os: Os::Linux,
+        arch: Arch::Arm64,
+    };
+
+    pub const ALL: [Target; 6] = [
+        Self::WIN32_X64,
+        Self::WIN32_ARM64,
+        Self::DARWIN_ARM64,
+        Self::DARWIN_X64,
+        Self::LINUX_X64,
+        Self::LINUX_ARM64,
+    ];
+
+    pub const fn new(os: Os, arch: Arch) -> Target {
+        Target { os, arch }
+    }
+
+    pub fn detect() -> Target {
+        Target::new(Os::current(), Arch::detect())
+    }
+
+    pub const fn with_arch(self, arch: Arch) -> Target {
+        Target { os: self.os, arch }
+    }
+
+    /// Canonical folder and matrix identifier (`win32-x64`, `darwin-arm64`, ...).
+    pub const fn as_str(self) -> &'static str {
+        match (self.os, self.arch) {
+            (Os::Win32, Arch::X64) => "win32-x64",
+            (Os::Win32, Arch::Arm64) => "win32-arm64",
+            (Os::Darwin, Arch::Arm64) => "darwin-arm64",
+            (Os::Darwin, Arch::X64) => "darwin-x64",
+            (Os::Linux, Arch::X64) => "linux-x64",
+            (Os::Linux, Arch::Arm64) => "linux-arm64",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Target> {
+        match s.trim() {
+            "win32-x64" => Some(Self::WIN32_X64),
+            "win32-arm64" => Some(Self::WIN32_ARM64),
+            "darwin-arm64" => Some(Self::DARWIN_ARM64),
+            "darwin-x64" => Some(Self::DARWIN_X64),
+            "linux-x64" => Some(Self::LINUX_X64),
+            "linux-arm64" => Some(Self::LINUX_ARM64),
+            _ => None,
+        }
+    }
+
+    pub const fn is_windows(self) -> bool {
+        self.os.is_windows()
+    }
+
+    pub const fn is_macos(self) -> bool {
+        self.os.is_macos()
+    }
+
+    pub const fn is_linux(self) -> bool {
+        self.os.is_linux()
+    }
+
+    pub const fn is_unix(self) -> bool {
+        self.os.is_unix()
+    }
+
+    pub const fn exe_suffix(self) -> &'static str {
+        self.os.exe_suffix()
+    }
+
+    /// Rust / LLVM target triple (`x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, ...).
+    pub const fn rust_triple(self) -> &'static str {
+        match (self.os, self.arch) {
+            (Os::Win32, Arch::X64) => "x86_64-pc-windows-msvc",
+            (Os::Win32, Arch::Arm64) => "aarch64-pc-windows-msvc",
+            (Os::Darwin, Arch::Arm64) => "aarch64-apple-darwin",
+            (Os::Darwin, Arch::X64) => "x86_64-apple-darwin",
+            (Os::Linux, Arch::X64) => "x86_64-unknown-linux-gnu",
+            (Os::Linux, Arch::Arm64) => "aarch64-unknown-linux-gnu",
+        }
+    }
+
+    /// GNU / LLVM CPU name (`x86_64` or `aarch64`).
+    pub const fn gnu_arch(self) -> &'static str {
+        match self.arch {
+            Arch::X64 => "x86_64",
+            Arch::Arm64 => "aarch64",
+        }
+    }
+
+    /// Go / GitHub CLI / Docker OS name (`windows`, `darwin`, `linux`).
+    pub const fn go_os(self) -> &'static str {
+        match self.os {
+            Os::Win32 => "windows",
+            Os::Darwin => "darwin",
+            Os::Linux => "linux",
+        }
+    }
+
+    /// Go / GitHub CLI / Docker CPU name (`amd64` or `arm64`).
+    pub const fn go_arch(self) -> &'static str {
+        match self.arch {
+            Arch::X64 => "amd64",
+            Arch::Arm64 => "arm64",
+        }
+    }
+
+    /// Node.js / VSCodium / Dart OS name (`win`, `darwin`, `linux`).
+    pub const fn node_os(self) -> &'static str {
+        match self.os {
+            Os::Win32 => "win",
+            Os::Darwin => "darwin",
+            Os::Linux => "linux",
+        }
+    }
+
+    /// Eclipse Adoptium OS name (`windows`, `mac`, `linux`).
+    pub const fn adoptium_os(self) -> &'static str {
+        match self.os {
+            Os::Win32 => "windows",
+            Os::Darwin => "mac",
+            Os::Linux => "linux",
+        }
+    }
+
+    /// Eclipse Adoptium CPU name (`x64` or `aarch64`).
+    pub const fn adoptium_arch(self) -> &'static str {
+        match self.arch {
+            Arch::X64 => "x64",
+            Arch::Arm64 => "aarch64",
+        }
+    }
+
+    /// Conda-forge subdirectory (`win-64`, `osx-arm64`, `linux-64`, ...).
+    pub const fn conda_subdir(self) -> &'static str {
+        match (self.os, self.arch) {
+            (Os::Win32, Arch::X64) => "win-64",
+            (Os::Win32, Arch::Arm64) => "win-arm64",
+            (Os::Darwin, Arch::Arm64) => "osx-arm64",
+            (Os::Darwin, Arch::X64) => "osx-64",
+            (Os::Linux, Arch::X64) => "linux-64",
+            (Os::Linux, Arch::Arm64) => "linux-aarch64",
+        }
+    }
+
+    /// Micromamba standalone binary asset name on GitHub releases.
+    pub const fn micromamba_asset(self) -> &'static str {
+        match (self.os, self.arch) {
+            (Os::Win32, _) => "micromamba-win-64",
+            (Os::Darwin, Arch::Arm64) => "micromamba-osx-arm64",
+            (Os::Darwin, Arch::X64) => "micromamba-osx-64",
+            (Os::Linux, Arch::X64) => "micromamba-linux-64",
+            (Os::Linux, Arch::Arm64) => "micromamba-linux-aarch64",
+        }
+    }
+
+    /// TinyTeX / TeX Live binary subdirectory under `tinytex/bin/`.
+    pub const fn texlive_bin(self) -> &'static str {
+        match (self.os, self.arch) {
+            (Os::Win32, _) => "windows",
+            (Os::Darwin, _) => "universal-darwin",
+            (Os::Linux, Arch::X64) => "x86_64-linux",
+            (Os::Linux, Arch::Arm64) => "aarch64-linux",
+        }
+    }
+}
+
+impl std::fmt::Display for Target {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
@@ -68,7 +363,7 @@ pub enum KitError {
 #[derive(Debug, Clone)]
 pub struct Kit {
     root: PathBuf,
-    arch: Arch,
+    target: Target,
     /// `<host TEMP>\Dev-Kit\<id>`, for files in transit (PLAN-DATA.md §4.2).
     system_temp: Option<PathBuf>,
     /// The disk of the root, read once at start.
@@ -83,13 +378,18 @@ impl Kit {
             .parent()
             .filter(|p| !p.as_os_str().is_empty())
             .ok_or_else(|| KitError::NoRoot(exe.clone()))?;
-        Ok(Kit::at(root.to_path_buf(), Arch::detect()))
+        Ok(Kit::at_target(root.to_path_buf(), Target::detect()))
     }
 
+    #[cfg(test)]
     pub fn at(root: PathBuf, arch: Arch) -> Kit {
+        Self::at_target(root, Target::new(Os::current(), arch))
+    }
+
+    pub fn at_target(root: PathBuf, target: Target) -> Kit {
         Kit {
             root: strip_verbatim(&root),
-            arch,
+            target,
             system_temp: None,
             volume: None,
         }
@@ -121,8 +421,14 @@ impl Kit {
     pub fn root(&self) -> &Path {
         &self.root
     }
+    pub fn target(&self) -> Target {
+        self.target
+    }
+    pub fn os(&self) -> Os {
+        self.target.os
+    }
     pub fn arch(&self) -> Arch {
-        self.arch
+        self.target.arch
     }
     pub fn data(&self) -> PathBuf {
         self.root.join("data")
@@ -143,9 +449,13 @@ impl Kit {
     pub fn volume(&self) -> Option<VolumeInfo> {
         self.volume
     }
-    /// Downloaded programs for this processor: `data\apps\win32-<arch>`.
+    /// Downloaded programs for this target: `data/apps/<os>-<arch>`.
     pub fn apps(&self) -> PathBuf {
-        self.data().join("apps").join(self.arch.platform())
+        self.data().join("apps").join(self.target.as_str())
+    }
+    /// Installed component version files for this target: `data/app/versions/<os>-<arch>`.
+    pub fn versions_dir(&self) -> PathBuf {
+        self.app_dir().join("versions").join(self.target.as_str())
     }
     /// The app's own state: settings, component choice, versions, logs.
     pub fn app_dir(&self) -> PathBuf {
@@ -202,16 +512,21 @@ impl Kit {
         })
     }
 
-    /// `data\app\root.txt` keeps the last root. When it differs, the old one is
-    /// also saved in `data\app\old-root.txt` (kept until the paths in the
-    /// agents' files are rewritten, phase 5), like `old-root-win32.txt`.
+    /// `data/app/root.txt` (or `root-<os>.txt` on macOS/Linux) keeps the last
+    /// root for this operating system. When it differs, the old one is also
+    /// saved in `data/app/old-root.txt` (or `old-root-<os>.txt`).
     fn check_moved(&self) -> io::Result<Option<PathBuf>> {
-        let record = self.app_dir().join("root.txt");
+        let (record_name, pending_name) = match self.target.os {
+            Os::Win32 => ("root.txt", "old-root.txt"),
+            Os::Darwin => ("root-darwin.txt", "old-root-darwin.txt"),
+            Os::Linux => ("root-linux.txt", "old-root-linux.txt"),
+        };
+        let record = self.app_dir().join(record_name);
         let now = self.root.to_string_lossy().into_owned();
         let last = fs::read_to_string(&record).ok();
         let moved = match last.as_deref().map(str::trim) {
             Some(last) if !last.is_empty() && !last.eq_ignore_ascii_case(&now) => {
-                let pending = self.app_dir().join("old-root.txt");
+                let pending = self.app_dir().join(pending_name);
                 if !pending.exists() {
                     write_atomic(&pending, last.as_bytes())?;
                 }

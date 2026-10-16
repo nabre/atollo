@@ -483,17 +483,20 @@ fn install_part(
         let _ = fs::remove_file(&file);
     }
     let tree = archive::pick_inner(&extracted, &part.inner)?;
-    if let Some(sign) = &part.sign {
-        let file = tree.join(sign.file.replace('/', "\\"));
-        let publisher = pattern(sign.publisher)?;
-        match crate::net::signature::check(&file, &publisher, sign.required)? {
-            crate::net::signature::Verdict::Valid { subject } => {
-                progress.note(&format!("signature ok: {subject}"))
-            }
-            crate::net::signature::Verdict::RevocationUnknown { subject } => {
-                progress.note(&format!(
-                    "signature of {subject}: revocation not verifiable (offline?)"
-                ));
+    #[cfg(windows)]
+    if ctx.kit.os().is_windows() {
+        if let Some(sign) = &part.sign {
+            let file = crate::fsx::join_rel(&tree, &sign.file);
+            let publisher = pattern(sign.publisher)?;
+            match crate::net::signature::check(&file, &publisher, sign.required)? {
+                crate::net::signature::Verdict::Valid { subject } => {
+                    progress.note(&format!("signature ok: {subject}"))
+                }
+                crate::net::signature::Verdict::RevocationUnknown { subject } => {
+                    progress.note(&format!(
+                        "signature of {subject}: revocation not verifiable (offline?)"
+                    ));
+                }
             }
         }
     }
@@ -503,7 +506,7 @@ fn install_part(
             let Some(folder) = own else {
                 bail!("{} has no folder of its own", component.id);
             };
-            check_key(component, inst.inside(), &tree)?;
+            check_key_for(ctx.kit.target(), component, inst.inside(), &tree)?;
             inst.before_swap(ctx, component, &tree, folder)?;
             if let Some(parent) = folder.parent() {
                 archive::clean_leftovers(parent);
@@ -528,7 +531,7 @@ fn install_part(
             Ok(())
         }
         Dest::File { folder, name, from } => {
-            let src = tree.join(from.replace('/', "\\"));
+            let src = crate::fsx::join_rel(&tree, from);
             if !src.is_file() {
                 bail!("{from} not found in {}", part.file_name);
             }
@@ -582,20 +585,38 @@ pub fn find_file(dir: &Path, name: &str) -> Option<PathBuf> {
 
 /// The key file, and the other parts in the component's own folder, must be
 /// in the new tree before anything is replaced.
+#[cfg_attr(not(test), allow(dead_code))]
 fn check_key(component: &Component, inside: &[&str], tree: &Path) -> Result<()> {
+    check_key_for(
+        crate::versions::target_from_path(tree),
+        component,
+        inside,
+        tree,
+    )
+}
+
+pub(crate) fn check_key_for(
+    target: crate::kit::Target,
+    component: &Component,
+    inside: &[&str],
+    tree: &Path,
+) -> Result<()> {
     let Some(folder) = &component.folder else {
         return Ok(());
     };
-    for k in std::iter::once(&component.key).chain(&component.keys) {
-        let key = PathBuf::from(k.replace('/', "\\"));
-        let Ok(rel) = key.strip_prefix(folder) else {
+    for k in std::iter::once(component.key_for(target)).chain(component.keys_for(target)) {
+        let norm = k.replace('\\', "/");
+        let Some(rel) = norm
+            .strip_prefix(folder.as_str())
+            .and_then(|r| r.strip_prefix('/'))
+        else {
             continue;
         };
-        if inside.iter().any(|name| rel == Path::new(name)) {
+        if inside.contains(&rel) {
             continue;
         }
-        let path = tree.join(rel);
-        let ok = if rel.as_os_str().is_empty() {
+        let path = crate::fsx::join_rel(tree, rel);
+        let ok = if rel.is_empty() {
             fs::read_dir(tree).is_ok_and(|mut d| d.next().is_some())
         } else {
             path.is_file()
@@ -607,22 +628,25 @@ fn check_key(component: &Component, inside: &[&str], tree: &Path) -> Result<()> 
     Ok(())
 }
 
-/// `x64` or `arm64` as used by most download names, honouring `x64Only`.
-fn arch_of(ctx: &Ctx, component: &Component) -> &'static str {
-    if component.x64_only {
-        "x64"
+/// Effective [`crate::kit::Target`] for downloading `component`, honouring
+/// x64 emulation on `win32-arm64` when `x64_only` is set.
+fn target_of(ctx: &Ctx, component: &Component) -> crate::kit::Target {
+    let t = ctx.kit.target();
+    if component.is_emulated_on(t) {
+        t.with_arch(crate::kit::Arch::X64)
     } else {
-        ctx.kit.arch().as_str()
+        t
     }
+}
+
+/// `x64` or `arm64` as used by most download names, honouring `x64Only` on Windows.
+fn arch_of(ctx: &Ctx, component: &Component) -> &'static str {
+    target_of(ctx, component).arch.as_str()
 }
 
 /// `x86_64` or `aarch64`, for Rust-style target names.
 fn triple_arch(ctx: &Ctx, component: &Component) -> &'static str {
-    if arch_of(ctx, component) == "arm64" {
-        "aarch64"
-    } else {
-        "x86_64"
-    }
+    target_of(ctx, component).gnu_arch()
 }
 
 fn pattern(re: &str) -> Result<regex::Regex> {

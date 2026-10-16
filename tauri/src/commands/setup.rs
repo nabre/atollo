@@ -74,15 +74,16 @@ pub(super) fn emulates_x64() -> bool {
 pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
     let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
-    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
+    let target = kit.target();
+    let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
     let locked = catalog.locked();
     // The order of the page, which an installation follows too.
     catalog
         .in_page_order()
         .into_iter()
         .map(|c| {
-            let no_arm64 = c.no_arm64 && arm64;
-            let needs_windows11 = arm64 && c.x64_only && !emulates_x64();
+            let no_arm64 = !c.is_available_on(target);
+            let needs_windows11 = win_arm64 && c.x64_only && !emulates_x64();
             ComponentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
@@ -94,7 +95,9 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 present: c.is_present(kit),
                 locked: locked.contains(c.id.as_str()),
                 version: c.installed_version(kit),
-                available: install::installer(&c.id).is_some() && !no_arm64 && !needs_windows11,
+                available: install::installer(&c.id).is_some()
+                    && c.is_available_on(target)
+                    && !needs_windows11,
                 x64_only: c.x64_only,
                 no_arm64,
                 needs: c.needs.clone(),

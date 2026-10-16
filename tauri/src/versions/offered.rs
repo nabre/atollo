@@ -18,7 +18,12 @@ pub struct Offered {
 }
 
 pub(crate) fn offered_file(kit: &Kit) -> PathBuf {
-    kit.app_dir().join("version-lines.json")
+    match kit.target() {
+        crate::kit::Target::WIN32_X64 => kit.app_dir().join("version-lines.json"),
+        target => kit
+            .app_dir()
+            .join(format!("version-lines-{}.json", target.as_str())),
+    }
 }
 
 /// Every component's offered lines (newest first). A list with a line

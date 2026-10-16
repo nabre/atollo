@@ -5,30 +5,34 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use super::{github_line, github_stable, release_lines};
-use crate::install::{github_single, triple_arch, Ctx, Installer, Release};
+use super::{github_line_kind, github_stable, release_lines};
+use crate::fsx::join_rel;
+use crate::install::{github_single, target_of, Ctx, Installer, Release};
+use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
-use crate::setup::catalog::Component;
+use crate::setup::catalog::{translate_rel, Component};
 
 pub struct Typst;
 
-/// The Typst zip for this kit's platform.
-fn typst_asset(ctx: &Ctx, component: &Component) -> String {
-    let arch = triple_arch(ctx, component);
-    format!(r"^typst-{arch}-pc-windows-msvc\.zip$")
+/// The Typst archive pattern and kind for `target`.
+pub(crate) fn typst_spec(target: Target) -> (String, Kind) {
+    let arch = target.gnu_arch();
+    match target.os {
+        Os::Win32 => (format!(r"^typst-{arch}-pc-windows-msvc\.zip$"), Kind::Zip),
+        Os::Darwin => (format!(r"^typst-{arch}-apple-darwin\.tar\.xz$"), Kind::TarXz),
+        Os::Linux => (
+            format!(r"^typst-{arch}-unknown-linux-musl\.tar\.xz$"),
+            Kind::TarXz,
+        ),
+    }
 }
 
 /// Typst's 0.x versions change the syntax: old documents need their own
 /// (versioned, D-81; `typst.toml` declares the compiler).
 impl Installer for Typst {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        github_single(
-            ctx,
-            "typst/typst",
-            &typst_asset(ctx, component),
-            Kind::Zip,
-            Inner::Single,
-        )
+        let (pat, kind) = typst_spec(target_of(ctx, component));
+        github_single(ctx, "typst/typst", &pat, kind, Inner::Single)
     }
 
     fn has_lines(&self) -> bool {
@@ -36,30 +40,48 @@ impl Installer for Typst {
     }
 
     fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
-        Ok(release_lines(&github_stable(
-            ctx,
-            "typst/typst",
-            &typst_asset(ctx, component),
-        )?))
+        let (pat, _) = typst_spec(target_of(ctx, component));
+        Ok(release_lines(&github_stable(ctx, "typst/typst", &pat)?))
     }
 
     fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
-        github_line(
-            ctx,
-            "typst/typst",
-            &typst_asset(ctx, component),
-            line,
-            Inner::Single,
-        )
+        let (pat, kind) = typst_spec(target_of(ctx, component));
+        github_line_kind(ctx, "typst/typst", &pat, line, kind, Inner::Single)
     }
 }
 
-/// TinyTeX-1 (x64 build, also on ARM64): a self-extracting 7z, read directly.
+/// TinyTeX-1: a self-extracting 7z on Windows, `.tgz` on macOS, `.tar.gz`/`.tar.xz` on Linux.
 pub struct TinyTex;
+
+pub(crate) fn tinytex_spec(target: Target) -> (&'static str, Kind, Inner) {
+    match (target.os, target.arch) {
+        (Os::Win32, _) => (
+            r"^TinyTeX-1-windows-v[\d.]+\.exe$",
+            Kind::SevenZip,
+            Inner::Named("TinyTeX".into()),
+        ),
+        (Os::Darwin, _) => (r"^TinyTeX-1-v[\d.]+\.tgz$", Kind::TarGz, Inner::Single),
+        (Os::Linux, Arch::X64) => (
+            r"^TinyTeX-1-(?:x86_64-linux-)?v[\d.]+\.tar\.gz$",
+            Kind::TarGz,
+            Inner::Single,
+        ),
+        (Os::Linux, Arch::Arm64) => (
+            r"^TinyTeX-1-aarch64-linux-v[\d.]+\.tar\.xz$",
+            Kind::TarXz,
+            Inner::Single,
+        ),
+    }
+}
+
+fn tlmgr_path(ctx: &Ctx, root: &Path) -> std::path::PathBuf {
+    let rel = translate_rel(ctx.kit.target(), r"bin\windows\tlmgr.bat");
+    join_rel(root, &rel)
+}
 
 /// The packages a TinyTeX has (`tlmgr info --list --only-installed`).
 fn tlmgr_packages(ctx: &Ctx, root: &Path) -> Option<Vec<String>> {
-    let tlmgr = root.join(r"bin\windows\tlmgr.bat");
+    let tlmgr = tlmgr_path(ctx, root);
     if !tlmgr.is_file() {
         return None;
     }
@@ -84,18 +106,13 @@ fn tlmgr_packages(ctx: &Ctx, root: &Path) -> Option<Vec<String>> {
 /// from its own year, so the yearly release is a new TinyTeX, and the
 /// packages added with tlmgr (or by R Markdown, latexmk…) come back.
 fn tinytex_list(ctx: &Ctx) -> std::path::PathBuf {
-    ctx.kit.data().join(r"texlive\packages.txt")
+    join_rel(ctx.kit.data(), "texlive/packages.txt")
 }
 
 impl Installer for TinyTex {
-    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
-        github_single(
-            ctx,
-            "rstudio/tinytex-releases",
-            r"^TinyTeX-1-windows-v[\d.]+\.exe$",
-            Kind::SevenZip,
-            Inner::Named("TinyTeX".into()),
-        )
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let (pat, kind, inner) = tinytex_spec(target_of(ctx, component));
+        github_single(ctx, "rstudio/tinytex-releases", pat, kind, inner)
     }
 
     fn before_swap(
@@ -128,7 +145,7 @@ impl Installer for TinyTex {
         if missing.is_empty() {
             return Ok(());
         }
-        let ok = crate::os::jobs::kit_command(dest.join(r"bin\windows\tlmgr.bat"), ctx.env)
+        let ok = crate::os::jobs::kit_command(tlmgr_path(ctx, dest), ctx.env)
             .arg("install")
             .args(&missing)
             .stdin(std::process::Stdio::null())

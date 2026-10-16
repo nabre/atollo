@@ -13,18 +13,28 @@ shopt -s histappend
 __devkit_versions() {
     local projects here project file from to fu tu name value entry out
     [ -n "$CP_ROOT" ] && [ -n "$CP_DATA" ] || return 0
-    projects="$(cygpath -u "$CP_ROOT")/projects/"
+    __devkit_p() {
+        if command -v cygpath >/dev/null 2>&1; then
+            cygpath -u "$1"
+        else
+            printf '%s\n' "$1"
+        fi
+    }
+    projects="$(__devkit_p "$CP_ROOT")/projects/"
     here="$PWD/"
-    case "${here,,}" in "${projects,,}"?*) ;; *) return 0 ;; esac
+    case "${here,,}" in "${projects,,}"?*) ;; *) unset -f __devkit_p; return 0 ;; esac
     project="${here:${#projects}}"
     project="${project%%/*}"
-    file="$(cygpath -u "$CP_DATA")/projects/$project/versions.txt"
-    [ -f "$file" ] || return 0
+    file="$(__devkit_p "$CP_DATA")/projects/$project/versions.txt"
+    if [ ! -f "$file" ]; then
+        unset -f __devkit_p
+        return 0
+    fi
     while IFS=$'\t' read -r from to; do
         to="${to%$'\r'}"
         [ -n "$from" ] && [ -n "$to" ] || continue
-        fu="$(cygpath -u "$from")"
-        tu="$(cygpath -u "$to")"
+        fu="$(__devkit_p "$from")"
+        tu="$(__devkit_p "$to")"
         out=""
         local IFS=':'
         for entry in $PATH; do
@@ -38,10 +48,11 @@ __devkit_versions() {
         for name in JAVA_HOME DOTNET_ROOT CP_PHP CP_APACHE CP_NGINX; do
             value="${!name}"
             case "${value,,}" in
-                "${from,,}" | "${from,,}"\\*) export "$name=$to${value:${#from}}" ;;
+                "${from,,}" | "${from,,}"\\* | "${from,,}"/*) export "$name=$to${value:${#from}}" ;;
             esac
         done
     done < "$file"
+    unset -f __devkit_p
     export PATH
 }
 __devkit_versions

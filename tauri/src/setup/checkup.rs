@@ -64,6 +64,7 @@ pub fn check_all(kit: &Kit, env: &KitEnv) -> Vec<Check> {
 }
 
 /// The file version of `exe` (`a.b.c.d`), from its version resource.
+#[cfg(windows)]
 fn file_version(exe: &std::path::Path) -> Result<String> {
     use windows::core::{HSTRING, PCWSTR};
     use windows::Win32::Storage::FileSystem::{
@@ -107,6 +108,14 @@ fn file_version(exe: &std::path::Path) -> Result<String> {
             f.dwFileVersionLS & 0xffff
         ))
     }
+}
+
+#[cfg(not(windows))]
+fn file_version(exe: &std::path::Path) -> Result<String> {
+    if !exe.is_file() {
+        bail!("{} not found", exe.display());
+    }
+    Ok("installed".to_owned())
 }
 
 fn php_script(kit: &Kit, env: &KitEnv, script: &std::path::Path) -> Result<String> {

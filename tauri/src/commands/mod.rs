@@ -134,14 +134,15 @@ fn ensure<R: Runtime>(
     use tauri::Manager;
     let env = || app.state::<AppState>().env();
     let catalog = Catalog::get();
-    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
+    let target = kit.target();
+    let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
     let needed = with_needs(catalog, wanted);
-    if let Some(c) = needed.iter().find(|c| arm64 && c.no_arm64) {
+    if let Some(c) = needed.iter().find(|c| !c.is_available_on(target)) {
         return Err(crate::i18n::t(lang, "{0} non è disponibile sui PC ARM64.", &[&c.name]).into());
     }
     if let Some(c) = needed
         .iter()
-        .find(|c| arm64 && c.x64_only && !emulates_x64())
+        .find(|c| win_arm64 && c.x64_only && !emulates_x64())
     {
         return Err(crate::i18n::t(
             lang,

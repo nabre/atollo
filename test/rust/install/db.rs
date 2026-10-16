@@ -95,3 +95,41 @@ fn sqlite_tools_for_each_arch() {
     assert_eq!(sha, "c".repeat(64));
     assert_eq!(sqlite_tools(&page, "arm64").unwrap().2, "a".repeat(64));
 }
+
+#[test]
+fn sqlite_and_mongodb_across_targets() {
+    use crate::kit::Target;
+
+    let page = format!(
+        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-osx-x64-3540000.zip,123,{m}\n\
+             PRODUCT,3.54.0,2026/sqlite-tools-linux-x64-3540000.zip,456,{l}\n-->",
+        m = "b".repeat(64),
+        l = "c".repeat(64)
+    );
+    let (_, osx_path, osx_sha) = sqlite_tools_for(&page, "osx", "x64").unwrap();
+    assert_eq!(osx_path, "2026/sqlite-tools-osx-x64-3540000.zip");
+    assert_eq!(osx_sha, "b".repeat(64));
+    let (_, lin_path, lin_sha) = sqlite_tools_for(&page, "linux", "x64").unwrap();
+    assert_eq!(lin_path, "2026/sqlite-tools-linux-x64-3540000.zip");
+    assert_eq!(lin_sha, "c".repeat(64));
+
+    let current: Value = serde_json::from_str(&format!(
+        r#"{{"versions":[{{"version":"9.0.4","production_release":true,"downloads":[
+            {{"target":"macos","arch":"arm64","edition":"base","archive":{{"url":"https://fastdl.mongodb.org/osx/mongodb-macos-arm64-9.0.4.tgz","sha256":"{m}"}}}},
+            {{"target":"ubuntu2204","arch":"aarch64","edition":"base","archive":{{"url":"https://fastdl.mongodb.org/linux/mongodb-linux-aarch64-ubuntu2204-9.0.4.tgz","sha256":"{l}"}}}}
+        ]}}]}}"#,
+        m = "1".repeat(64),
+        l = "2".repeat(64)
+    ))
+    .unwrap();
+    let (v, url, _, kind) = mongodb_archive_for(Target::DARWIN_ARM64, &current, None).unwrap();
+    assert_eq!(v, "9.0.4");
+    assert!(url.ends_with("mongodb-macos-arm64-9.0.4.tgz"));
+    assert_eq!(kind, Kind::TarGz);
+    let (_, url_lin, _, kind_lin) =
+        mongodb_archive_for(Target::LINUX_ARM64, &current, None).unwrap();
+    assert!(url_lin.ends_with("mongodb-linux-aarch64-ubuntu2204-9.0.4.tgz"));
+    assert_eq!(kind_lin, Kind::TarGz);
+}
+
+

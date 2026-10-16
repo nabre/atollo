@@ -8,7 +8,8 @@ use std::path::Path;
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 
-use super::{arch_of, pattern, Ctx, Dest, Installer, Part, Release};
+use super::{arch_of, pattern, target_of, Ctx, Dest, Installer, Part, Release};
+use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::github_digest;
 use crate::net::verify::Expect;
@@ -60,25 +61,36 @@ fn mariadb_major(index: &Value) -> Result<String> {
         .ok_or_else(|| anyhow!("MariaDB: no stable long-term release"))
 }
 
-fn mariadb_release(ctx: &Ctx, major: &str) -> Result<Release> {
+fn mariadb_release(ctx: &Ctx, target: Target, major: &str) -> Result<Release> {
     let latest = ctx
         .net
         .json::<Value>(&format!("{MARIADB_API}/{major}/latest/"))?;
-    let (version, name, sha) = mariadb_zip(&latest)?;
+    let (version, name, sha, kind) = mariadb_archive_for(target, &latest)?;
     Ok(Release::single(
         version.clone(),
         // The API lists http:// links: the same file over https.
         format!("{MARIADB_API}/{version}/{name}"),
         name,
         Expect::Sha256(sha),
-        Kind::Zip,
+        kind,
         Inner::Single,
     ))
 }
 
 /// Version, file name and SHA-256 of the Windows x64 zip in the answer of
 /// `/<major>/latest/` (debug symbols excluded).
+#[cfg(test)]
 fn mariadb_zip(latest: &Value) -> Result<(String, String, String)> {
+    let (v, n, s, _) = mariadb_archive_for(Target::WIN32_X64, latest)?;
+    Ok((v, n, s))
+}
+
+/// Version, file name, SHA-256 and archive kind for `target` in the answer
+/// of `/<major>/latest/`.
+pub(crate) fn mariadb_archive_for(
+    target: Target,
+    latest: &Value,
+) -> Result<(String, String, String, Kind)> {
     let releases = latest["releases"]
         .as_object()
         .ok_or_else(|| anyhow!("MariaDB: no releases"))?;
@@ -86,33 +98,53 @@ fn mariadb_zip(latest: &Value) -> Result<(String, String, String)> {
         .iter()
         .max_by_key(|(v, _)| version_key(v))
         .ok_or_else(|| anyhow!("MariaDB: no releases"))?;
-    let file = release["files"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .find(|f| {
-            f["os"] == "Windows"
-                && f["cpu"] == "x86_64"
-                && f["package_type"] == "ZIP file"
-                && f["file_name"]
-                    .as_str()
-                    .is_some_and(|n| n.ends_with("-winx64.zip"))
-        })
-        .ok_or_else(|| anyhow!("MariaDB {version}: no Windows zip"))?;
+    let files = release["files"].as_array().into_iter().flatten();
+    let (file, kind) = match target.os {
+        Os::Win32 => {
+            let f = files
+                .filter(|f| {
+                    f["os"] == "Windows"
+                        && f["cpu"] == "x86_64"
+                        && f["package_type"] == "ZIP file"
+                        && f["file_name"]
+                            .as_str()
+                            .is_some_and(|n| n.ends_with("-winx64.zip"))
+                })
+                .next()
+                .ok_or_else(|| anyhow!("MariaDB {version}: no Windows zip"))?;
+            (f, Kind::Zip)
+        }
+        Os::Linux | Os::Darwin => {
+            let cpu = target.gnu_arch();
+            let f = files
+                .filter(|f| {
+                    (f["os"] == "Linux" || f["os"] == "macOS")
+                        && f["cpu"] == cpu
+                        && f["package_type"] == "gzipped tar file"
+                        && f["file_name"].as_str().is_some_and(|n| {
+                            n.ends_with(".tar.gz") && !n.contains("debugsymbols")
+                        })
+                })
+                .next()
+                .ok_or_else(|| anyhow!("MariaDB {version}: no {cpu} tar.gz"))?;
+            (f, Kind::TarGz)
+        }
+    };
     let name = file["file_name"].as_str().unwrap_or_default().to_owned();
     let sha = file["checksum"]["sha256sum"]
         .as_str()
         .filter(|s| s.len() == 64)
         .ok_or_else(|| anyhow!("MariaDB {version}: no SHA-256"))?;
-    Ok((version.clone(), name, sha.to_owned()))
+    Ok((version.clone(), name, sha.to_owned(), kind))
 }
 
 pub struct MariaDb;
 
 impl Installer for MariaDb {
-    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let target = target_of(ctx, component);
         let major = mariadb_major(&ctx.net.json::<Value>(&format!("{MARIADB_API}/"))?)?;
-        mariadb_release(ctx, &major)
+        mariadb_release(ctx, target, &major)
     }
 
     fn has_lines(&self) -> bool {
@@ -125,8 +157,9 @@ impl Installer for MariaDb {
         ))
     }
 
-    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
-        mariadb_release(ctx, line)
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        let target = target_of(ctx, component);
+        mariadb_release(ctx, target, line)
     }
 
     fn before_swap(&self, _ctx: &Ctx, _c: &Component, tree: &Path, _old: &Path) -> Result<()> {
@@ -136,7 +169,19 @@ impl Installer for MariaDb {
 
 /// The newest production release of a major version (`x.0.y`: minor
 /// releases are rapid releases), its Windows x64 zip and SHA-256.
+#[cfg(test)]
 fn mongodb_zip(current: &Value, line: Option<&str>) -> Result<(String, String, String)> {
+    let (v, u, s, _) = mongodb_archive_for(Target::WIN32_X64, current, line)?;
+    Ok((v, u, s))
+}
+
+/// The newest production release of a major version for `target`, its
+/// archive URL, SHA-256 and `Kind`.
+pub(crate) fn mongodb_archive_for(
+    target: Target,
+    current: &Value,
+    line: Option<&str>,
+) -> Result<(String, String, String, Kind)> {
     let version = current["versions"]
         .as_array()
         .into_iter()
@@ -150,13 +195,41 @@ fn mongodb_zip(current: &Value, line: Option<&str>) -> Result<(String, String, S
         })
         .ok_or_else(|| anyhow!("MongoDB {}: no production release", line.unwrap_or("")))?;
     let number = version["version"].as_str().unwrap_or_default().to_owned();
-    let archive = version["downloads"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .find(|d| d["target"] == "windows" && d["arch"] == "x86_64" && d["edition"] == "base")
-        .map(|d| &d["archive"])
-        .ok_or_else(|| anyhow!("MongoDB {number}: no Windows zip"))?;
+    let downloads = version["downloads"].as_array().into_iter().flatten();
+    let (archive, kind) = match target.os {
+        Os::Win32 => {
+            let d = downloads
+                .filter(|d| d["target"] == "windows" && d["arch"] == "x86_64" && d["edition"] == "base")
+                .next()
+                .ok_or_else(|| anyhow!("MongoDB {number}: no Windows zip"))?;
+            (&d["archive"], Kind::Zip)
+        }
+        Os::Darwin => {
+            let arch = match target.arch {
+                Arch::Arm64 => "arm64",
+                Arch::X64 => "x86_64",
+            };
+            let d = downloads
+                .filter(|d| d["target"] == "macos" && d["arch"] == arch && d["edition"] == "base")
+                .next()
+                .ok_or_else(|| anyhow!("MongoDB {number}: no macOS {arch} archive"))?;
+            (&d["archive"], Kind::TarGz)
+        }
+        Os::Linux => {
+            let arch = target.gnu_arch();
+            let d = downloads
+                .filter(|d| {
+                    d["edition"] == "base"
+                        && d["arch"] == arch
+                        && d["target"]
+                            .as_str()
+                            .is_some_and(|t| t == "ubuntu2204" || t == "ubuntu2404" || t.starts_with("ubuntu"))
+                })
+                .next()
+                .ok_or_else(|| anyhow!("MongoDB {number}: no Linux {arch} archive"))?;
+            (&d["archive"], Kind::TarGz)
+        }
+    };
     let url = archive["url"]
         .as_str()
         .filter(|u| u.starts_with("https://"))
@@ -165,33 +238,83 @@ fn mongodb_zip(current: &Value, line: Option<&str>) -> Result<(String, String, S
         .as_str()
         .filter(|s| s.len() == 64)
         .ok_or_else(|| anyhow!("MongoDB {number}: no SHA-256"))?;
-    Ok((number, url.to_owned(), sha.to_owned()))
+    Ok((number, url.to_owned(), sha.to_owned(), kind))
 }
 
 /// The newest MongoDB Database Tools for Windows x64 from `release.json`
 /// (version, https link, SHA-256).
+#[cfg(test)]
 fn mongodb_tools_zip(release: &Value) -> Result<(String, String, String)> {
+    let (v, u, s, _) = mongodb_tools_for(Target::WIN32_X64, release)?;
+    Ok((v, u, s))
+}
+
+/// The newest MongoDB Database Tools for `target` from `release.json`.
+pub(crate) fn mongodb_tools_for(
+    target: Target,
+    release: &Value,
+) -> Result<(String, String, String, Kind)> {
     let v = release["versions"]
         .as_array()
         .and_then(|a| a.first())
         .ok_or_else(|| anyhow!("MongoDB tools: no versions"))?;
     let number = v["version"].as_str().unwrap_or_default().to_owned();
-    let archive = v["downloads"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .find(|d| d["name"] == "windows" && d["arch"] == "x86_64")
-        .map(|d| &d["archive"])
-        .ok_or_else(|| anyhow!("MongoDB tools {number}: no Windows zip"))?;
+    let downloads = v["downloads"].as_array().into_iter().flatten();
+    let (archive, kind) = match target.os {
+        Os::Win32 => {
+            let d = downloads
+                .filter(|d| d["name"] == "windows" && d["arch"] == "x86_64")
+                .next()
+                .ok_or_else(|| anyhow!("MongoDB tools {number}: no Windows zip"))?;
+            (&d["archive"], Kind::Zip)
+        }
+        Os::Darwin => {
+            let arch = match target.arch {
+                Arch::Arm64 => "arm64",
+                Arch::X64 => "x86_64",
+            };
+            let d = downloads
+                .filter(|d| d["name"] == "macos" && d["arch"] == arch)
+                .next()
+                .ok_or_else(|| anyhow!("MongoDB tools {number}: no macOS {arch} zip"))?;
+            (&d["archive"], Kind::Zip)
+        }
+        Os::Linux => {
+            let arch = match target.arch {
+                Arch::Arm64 => "arm64",
+                Arch::X64 => "x86_64",
+            };
+            let d = downloads
+                .filter(|d| {
+                    (d["arch"] == arch || d["arch"] == target.gnu_arch())
+                        && d["name"]
+                            .as_str()
+                            .is_some_and(|n| n == "ubuntu2204" || n == "ubuntu2404" || n.starts_with("ubuntu"))
+                })
+                .next()
+                .ok_or_else(|| anyhow!("MongoDB tools {number}: no Linux {arch} archive"))?;
+            (&d["archive"], Kind::TarGz)
+        }
+    };
     let url = archive["url"]
         .as_str()
-        .filter(|u| u.starts_with("https://") && u.ends_with(".zip"))
-        .ok_or_else(|| anyhow!("MongoDB tools {number}: no https zip"))?;
+        .filter(|u| u.starts_with("https://"))
+        .ok_or_else(|| anyhow!("MongoDB tools {number}: no https archive"))?;
     let sha = archive["sha256"]
         .as_str()
         .filter(|s| s.len() == 64)
         .ok_or_else(|| anyhow!("MongoDB tools {number}: no SHA-256"))?;
-    Ok((number, url.to_owned(), sha.to_owned()))
+    Ok((number, url.to_owned(), sha.to_owned(), kind))
+}
+
+fn mongosh_asset_pattern(target: Target) -> (&'static str, Kind) {
+    match (target.os, target.arch) {
+        (Os::Win32, _) => (r"^mongosh-[\d.]+-win32-x64\.zip$", Kind::Zip),
+        (Os::Darwin, Arch::Arm64) => (r"^mongosh-[\d.]+-darwin-arm64\.zip$", Kind::Zip),
+        (Os::Darwin, Arch::X64) => (r"^mongosh-[\d.]+-darwin-x64\.zip$", Kind::Zip),
+        (Os::Linux, Arch::X64) => (r"^mongosh-[\d.]+-linux-x64\.tgz$", Kind::TarGz),
+        (Os::Linux, Arch::Arm64) => (r"^mongosh-[\d.]+-linux-arm64\.tgz$", Kind::TarGz),
+    }
 }
 
 /// The major versions in production (`9.0`, `8.0`, `7.0`), newest first:
@@ -230,9 +353,10 @@ impl Installer for MongoDb {
 
     /// The server of `line` only: mongosh and the tools are shared, at their
     /// latest (they support every server in production).
-    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
-        let (version, url, sha) =
-            mongodb_zip(&ctx.net.json::<Value>(MONGODB_CURRENT)?, Some(line))?;
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        let target = target_of(ctx, component);
+        let (version, url, sha, kind) =
+            mongodb_archive_for(target, &ctx.net.json::<Value>(MONGODB_CURRENT)?, Some(line))?;
         let file_name = url.rsplit('/').next().unwrap_or("mongodb.zip").to_owned();
         Ok(Release {
             version,
@@ -240,7 +364,7 @@ impl Installer for MongoDb {
                 url,
                 file_name,
                 expect: Expect::Sha256(sha),
-                kind: Kind::Zip,
+                kind,
                 inner: Inner::Single,
                 dest: Dest::Own,
                 sign: None,
@@ -248,18 +372,21 @@ impl Installer for MongoDb {
         })
     }
 
-    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let target = target_of(ctx, component);
         let current = ctx.net.json::<Value>(MONGODB_CURRENT)?;
-        let (version, url, sha) = mongodb_zip(&current, None)?;
+        let (version, url, sha, server_kind) = mongodb_archive_for(target, &current, None)?;
         let shell = ctx.net.github_latest("mongodb-js/mongosh")?;
+        let (shell_pat, shell_kind) = mongosh_asset_pattern(target);
         let asset = shell
-            .asset(&pattern(r"^mongosh-[\d.]+-win32-x64\.zip$")?)
-            .ok_or_else(|| anyhow!("mongosh {}: no Windows zip", shell.tag_name))?;
+            .asset(&pattern(shell_pat)?)
+            .ok_or_else(|| anyhow!("mongosh {}: no archive for {target}", shell.tag_name))?;
         let shell_version = shell.tag_name.trim_start_matches('v').to_owned();
         let file_name = url.rsplit('/').next().unwrap_or("mongodb.zip").to_owned();
         // mongodump and mongorestore: export and import of a project's
         // database (D-78).
-        let (tools_version, tools_url, tools_sha) = mongodb_tools_zip(
+        let (tools_version, tools_url, tools_sha, tools_kind) = mongodb_tools_for(
+            target,
             &ctx.net
                 .json::<Value>("https://downloads.mongodb.org/tools/db/release.json")?,
         )?;
@@ -275,7 +402,7 @@ impl Installer for MongoDb {
                     url,
                     file_name,
                     expect: Expect::Sha256(sha),
-                    kind: Kind::Zip,
+                    kind: server_kind,
                     inner: Inner::Single,
                     dest: Dest::Own,
                     sign: None,
@@ -284,7 +411,7 @@ impl Installer for MongoDb {
                     url: asset.browser_download_url.clone(),
                     file_name: asset.name.clone(),
                     expect: Expect::Sha256(github_digest(asset)?),
-                    kind: Kind::Zip,
+                    kind: shell_kind,
                     inner: Inner::Single,
                     dest: Dest::Folder("mongosh"),
                     sign: None,
@@ -293,7 +420,7 @@ impl Installer for MongoDb {
                     url: tools_url,
                     file_name: tools_file,
                     expect: Expect::Sha256(tools_sha),
-                    kind: Kind::Zip,
+                    kind: tools_kind,
                     inner: Inner::Single,
                     dest: Dest::Folder("mongodb-tools"),
                     sign: None,
@@ -302,24 +429,39 @@ impl Installer for MongoDb {
         })
     }
 
-    /// mongod needs the VC++ runtime (the zip only has its installer):
+    /// mongod needs the VC++ runtime on Windows (the zip only has its installer):
     /// the kit's copy, as for Apache; no debug symbols, no installer.
     fn before_swap(&self, ctx: &Ctx, _c: &Component, tree: &Path, _old: &Path) -> Result<()> {
         remove_debug_symbols(tree)?;
         let _ = fs::remove_file(tree.join("bin").join("vc_redist.x64.exe"));
-        super::web::copy_vc_runtime(ctx, &tree.join("bin"))
+        if ctx.kit.os().is_windows() {
+            super::web::copy_vc_runtime(ctx, &tree.join("bin"))?;
+        }
+        Ok(())
     }
 }
 
 /// From the `PRODUCT,<version>,<path>,<size>,<sha3-256>` lines of
-/// sqlite.org's download page: the command-line tools for `arch`.
+/// sqlite.org's download page: the command-line tools for Windows `arch`.
+#[cfg(test)]
 fn sqlite_tools(page: &str, arch: &str) -> Result<(String, String, String)> {
+    sqlite_tools_for(page, "win", arch)
+}
+
+/// From the `PRODUCT,<version>,<path>,<size>,<sha3-256>` lines of
+/// sqlite.org's download page: the command-line tools for `os_tag` (`"win"`,
+/// `"osx"`, `"linux"`) and `arch` (`"x64"`, `"arm64"`).
+pub(crate) fn sqlite_tools_for(
+    page: &str,
+    os_tag: &str,
+    arch: &str,
+) -> Result<(String, String, String)> {
     let re = pattern(&format!(
-        r"(?m)^PRODUCT,([\d.]+),(\d{{4}}/sqlite-tools-win-{arch}-\d+\.zip),\d+,([0-9a-f]{{64}})\s*$"
+        r"(?m)^PRODUCT,([\d.]+),(\d{{4}}/sqlite-tools-{os_tag}-{arch}-\d+\.zip),\d+,([0-9a-f]{{64}})\s*$"
     ))?;
     let c = re
         .captures(page)
-        .ok_or_else(|| anyhow!("SQLite: no tools for win-{arch} on the download page"))?;
+        .ok_or_else(|| anyhow!("SQLite: no tools for {os_tag}-{arch} on the download page"))?;
     Ok((c[1].to_owned(), c[2].to_owned(), c[3].to_owned()))
 }
 
@@ -327,8 +469,16 @@ pub struct Sqlite;
 
 impl Installer for Sqlite {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let target = target_of(ctx, component);
+        let os_tag = match target.os {
+            Os::Win32 => "win",
+            Os::Darwin => "osx",
+            Os::Linux => "linux",
+        };
+        let arch = arch_of(ctx, component);
         let page = ctx.net.text("https://sqlite.org/download.html")?;
-        let (version, path, sha3) = sqlite_tools(&page, arch_of(ctx, component))?;
+        let (version, path, sha3) = sqlite_tools_for(&page, os_tag, arch)
+            .or_else(|_| sqlite_tools_for(&page, os_tag, "x64"))?;
         let name = path.rsplit('/').next().unwrap_or("sqlite.zip").to_owned();
         Ok(Release::single(
             version,

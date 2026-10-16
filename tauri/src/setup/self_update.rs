@@ -67,7 +67,11 @@ pub fn parse_version(text: &str) -> Option<(u64, u64, u64)> {
 }
 
 pub fn asset_name(kit: &Kit) -> String {
-    format!("Dev-Kit-{}.exe", kit.arch().as_str())
+    match kit.os() {
+        crate::kit::Os::Win32 => format!("Dev-Kit-{}.exe", kit.arch().as_str()),
+        crate::kit::Os::Darwin => format!("Dev-Kit-{}.app.tar.gz", kit.target().as_str()),
+        crate::kit::Os::Linux => format!("Dev-Kit-{}.AppImage", kit.target().as_str()),
+    }
 }
 
 fn update_dir(kit: &Kit) -> PathBuf {

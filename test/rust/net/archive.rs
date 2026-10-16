@@ -47,6 +47,10 @@ fn zip_extract_and_inner() {
     assert!(inner.join("bin").join("tool.exe").is_file());
     assert_eq!(pick_inner(&out, &Inner::Auto).unwrap(), inner);
     assert_eq!(pick_inner(&out, &Inner::Root).unwrap(), out);
+    assert_eq!(
+        pick_inner(&out, &Inner::SingleThen("bin")).unwrap(),
+        inner.join("bin")
+    );
 
     let flat = tmp.0.join("flat.zip");
     make_zip(&flat, &[("pwsh.exe", "x"), ("Modules/a.psd1", "m")]);

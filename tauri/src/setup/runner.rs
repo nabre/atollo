@@ -12,13 +12,16 @@ use std::sync::atomic::Ordering;
 
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
+#[cfg(windows)]
 use windows::core::HSTRING;
+#[cfg(windows)]
 use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, HANDLE};
+#[cfg(windows)]
 use windows::Win32::System::Threading::CreateMutexW;
 
 use super::catalog::{Catalog, Choice, Component};
 use crate::install::{self, Ctx, Progress};
-use crate::kit::Arch;
+use crate::kit::Target;
 use crate::net::archive::{self, InUse};
 use crate::net::Cancelled;
 
@@ -118,9 +121,11 @@ pub trait Sink {
 }
 
 /// One run per kit: `Local\Dev-Kit-Prepare-<kit id>`.
+#[cfg(windows)]
 #[derive(Debug)]
 struct RunLock(HANDLE);
 
+#[cfg(windows)]
 impl Drop for RunLock {
     fn drop(&mut self) {
         // SAFETY: handle from CreateMutexW, closed once.
@@ -128,10 +133,31 @@ impl Drop for RunLock {
     }
 }
 
+#[cfg(not(windows))]
+#[derive(Debug)]
+struct RunLock(String);
+
+#[cfg(not(windows))]
+impl Drop for RunLock {
+    fn drop(&mut self) {
+        if let Ok(mut set) = active_locks().lock() {
+            set.remove(&self.0);
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn active_locks() -> &'static std::sync::Mutex<HashSet<String>> {
+    static LOCKS: std::sync::OnceLock<std::sync::Mutex<HashSet<String>>> =
+        std::sync::OnceLock::new();
+    LOCKS.get_or_init(|| std::sync::Mutex::new(HashSet::new()))
+}
+
 #[derive(Debug, thiserror::Error)]
 #[error("another preparation is already running in this kit")]
 pub struct Busy;
 
+#[cfg(windows)]
 fn lock(kit_id: &str) -> Result<RunLock> {
     let name = HSTRING::from(format!(r"Local\Dev-Kit-Prepare-{kit_id}"));
     // SAFETY: valid name, default security.
@@ -145,6 +171,17 @@ fn lock(kit_id: &str) -> Result<RunLock> {
     Ok(RunLock(handle))
 }
 
+#[cfg(not(windows))]
+fn lock(kit_id: &str) -> Result<RunLock> {
+    let mut set = active_locks()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if !set.insert(kit_id.to_owned()) {
+        return Err(Busy.into());
+    }
+    Ok(RunLock(kit_id.to_owned()))
+}
+
 /// What a run would do, before doing it (shown by the interface).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct Plan {
@@ -152,14 +189,15 @@ pub struct Plan {
     pub remove: Vec<String>,
 }
 
-/// Nothing marked `noArm64` is ever planned on an ARM64 kit.
+/// Nothing unavailable on the kit's target (e.g. `noArm64` on `win32-arm64`,
+/// or `terminal` on macOS/Linux) is ever planned.
 pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Result<Plan> {
     for id in opts.only.iter().chain(&opts.skip) {
         if catalog.find(id).is_none() {
             bail!("unknown component: {id}");
         }
     }
-    let arm64 = ctx.kit.arch() == Arch::Arm64;
+    let target = ctx.kit.target();
     let installed: HashSet<&str> = catalog
         .all()
         .iter()
@@ -167,9 +205,9 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         .map(|c| c.id.as_str())
         .collect();
     let wanted = if opts.only.is_empty() {
-        chosen_without_skipped(catalog, choice, &opts.skip, &installed, arm64)
+        chosen_without_skipped(catalog, choice, &opts.skip, &installed, target)
     } else {
-        only_with_needs(catalog, &opts.only, &installed, arm64)?
+        only_with_needs(catalog, &opts.only, &installed, target)?
     };
     let mut plan = Plan::default();
     // In the order of the Tools page: the progress goes down the list.
@@ -186,12 +224,12 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
 }
 
 /// `only`: the listed components plus, transitively, what they need and is
-/// not installed yet. On ARM64 a component marked `noArm64` is an error.
+/// not installed yet. A component unavailable on `target` is an error.
 fn only_with_needs<'a>(
     catalog: &'a Catalog,
     only: &[String],
     installed: &HashSet<&str>,
-    arm64: bool,
+    target: Target,
 ) -> Result<HashSet<&'a str>> {
     let mut wanted = HashSet::new();
     let mut todo: Vec<(&Component, Option<&str>)> = only
@@ -200,10 +238,15 @@ fn only_with_needs<'a>(
         .map(|c| (c, None))
         .collect();
     while let Some((c, needed_by)) = todo.pop() {
-        if arm64 && c.no_arm64 {
+        if !c.is_available_on(target) {
+            let platform = if target == Target::WIN32_ARM64 {
+                "ARM64"
+            } else {
+                target.as_str()
+            };
             match needed_by {
-                None => bail!("{} is not available on ARM64", c.id),
-                Some(by) => bail!("{by} needs {}, which is not available on ARM64", c.id),
+                None => bail!("{} is not available on {platform}", c.id),
+                Some(by) => bail!("{by} needs {}, which is not available on {platform}", c.id),
             }
         }
         if !wanted.insert(c.id.as_str()) {
@@ -219,7 +262,7 @@ fn only_with_needs<'a>(
 }
 
 /// The choice without `skip` (system components and what they need cannot be
-/// skipped) and, on ARM64, without what is marked `noArm64`; then,
+/// skipped) and without what is unavailable on `target`; then,
 /// transitively, without every component not installed yet (locked ones
 /// aside) that needs one neither planned nor installed.
 fn chosen_without_skipped<'a>(
@@ -227,13 +270,13 @@ fn chosen_without_skipped<'a>(
     choice: &Choice,
     skip: &[String],
     installed: &HashSet<&str>,
-    arm64: bool,
+    target: Target,
 ) -> HashSet<&'a str> {
     let locked = catalog.locked();
     let mut wanted: HashSet<&str> = catalog
         .all()
         .iter()
-        .filter(|c| choice.is_chosen(&c.id) && !(arm64 && c.no_arm64))
+        .filter(|c| choice.is_chosen(&c.id) && c.is_available_on(target))
         .filter(|c| locked.contains(c.id.as_str()) || !skip.contains(&c.id))
         .map(|c| c.id.as_str())
         .collect();

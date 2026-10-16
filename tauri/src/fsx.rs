@@ -13,11 +13,23 @@
 
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+
+/// Joins a relative path (`"a/b/c"` or `r"a\b\c"`) onto `base` using the
+/// current OS separator, ignoring empty or `"."` segments.
+pub fn join_rel(base: impl AsRef<Path>, rel: &str) -> PathBuf {
+    let mut out = base.as_ref().to_path_buf();
+    for seg in rel.split(['/', '\\']) {
+        if !seg.is_empty() && seg != "." {
+            out.push(seg);
+        }
+    }
+    out
+}
 
 /// `text` without the byte order mark some Windows editors put first.
 pub fn strip_bom(text: &str) -> &str {

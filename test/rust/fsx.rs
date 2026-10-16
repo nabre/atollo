@@ -93,3 +93,13 @@ fn write_atomic_concurrent_threads_do_not_collide_on_tmp() {
     assert_eq!(names.len(), 4);
     let _ = fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn join_rel_normalizes_both_slashes_and_skips_dot() {
+    let base = Path::new("root");
+    let expected = base.join("a").join("b").join("c.txt");
+    assert_eq!(join_rel(base, "a/b/c.txt"), expected);
+    assert_eq!(join_rel(base, r"a\b\c.txt"), expected);
+    assert_eq!(join_rel(base, "./a//b/./c.txt"), expected);
+}
+

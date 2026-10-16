@@ -608,17 +608,18 @@ pub fn installed_from_output(text: &str) -> BTreeSet<String> {
 
 /// The platform package of CodeLLDB for this kit. Extensions run in the
 /// editor server's process, so the package follows the server: x64 on
-/// ARM64 too while the server is `x64Only` (emulated).
+/// Windows ARM64 too while the server is emulated there.
 fn codelldb_asset(kit: &Kit) -> String {
-    let server_x64 = Catalog::get()
+    let target = kit.target();
+    let server_emulated = Catalog::get()
         .find("vscodium-server")
-        .is_some_and(|c| c.x64_only);
-    let arch = if server_x64 {
+        .is_some_and(|c| c.is_emulated_on(target));
+    let arch = if server_emulated {
         "x64"
     } else {
-        kit.arch().as_str()
+        target.arch.as_str()
     };
-    format!("codelldb-win32-{arch}.vsix")
+    format!("codelldb-{}-{arch}.vsix", target.os.as_str())
 }
 
 /// CodeLLDB's platform package from GitHub, verified (`Install-CodeLldb`).

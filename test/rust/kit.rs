@@ -60,6 +60,64 @@ fn verbatim_prefix_is_removed() {
 fn apps_folder_per_platform() {
     let kit = Kit::at(PathBuf::from(r"F:\K"), Arch::Arm64);
     assert_eq!(kit.apps(), PathBuf::from(r"F:\K\data\apps\win32-arm64"));
+
+    for (target, slug, triple, conda, tl_bin) in [
+        (
+            Target::WIN32_X64,
+            "win32-x64",
+            "x86_64-pc-windows-msvc",
+            "win-64",
+            "windows",
+        ),
+        (
+            Target::WIN32_ARM64,
+            "win32-arm64",
+            "aarch64-pc-windows-msvc",
+            "win-arm64",
+            "windows",
+        ),
+        (
+            Target::DARWIN_ARM64,
+            "darwin-arm64",
+            "aarch64-apple-darwin",
+            "osx-arm64",
+            "universal-darwin",
+        ),
+        (
+            Target::DARWIN_X64,
+            "darwin-x64",
+            "x86_64-apple-darwin",
+            "osx-64",
+            "universal-darwin",
+        ),
+        (
+            Target::LINUX_X64,
+            "linux-x64",
+            "x86_64-unknown-linux-gnu",
+            "linux-64",
+            "x86_64-linux",
+        ),
+        (
+            Target::LINUX_ARM64,
+            "linux-arm64",
+            "aarch64-unknown-linux-gnu",
+            "linux-aarch64",
+            "aarch64-linux",
+        ),
+    ] {
+        let k = Kit::at_target(PathBuf::from(r"F:\K"), target);
+        assert_eq!(k.target(), target);
+        assert_eq!(Target::parse(slug), Some(target));
+        assert_eq!(target.as_str(), slug);
+        assert_eq!(target.rust_triple(), triple);
+        assert_eq!(target.conda_subdir(), conda);
+        assert_eq!(target.texlive_bin(), tl_bin);
+        assert_eq!(k.apps(), PathBuf::from(r"F:\K\data\apps").join(slug));
+        assert_eq!(
+            k.versions_dir(),
+            PathBuf::from(r"F:\K\data\app\versions").join(slug)
+        );
+    }
 }
 
 #[test]

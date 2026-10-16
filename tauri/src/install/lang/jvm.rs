@@ -7,7 +7,9 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
 use super::{github_line, github_stable, is_release, release_lines, s, version_key};
-use crate::install::{arch_of, github_single, pattern, Ctx, Dest, Installer, Part, Release};
+use crate::fsx::join_rel;
+use crate::install::{arch_of, github_single, pattern, target_of, Ctx, Dest, Installer, Part, Release};
+use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
@@ -17,25 +19,38 @@ use crate::setup::catalog::Component;
 /// Gradle in their folders.
 pub struct Java;
 
-/// The newest Temurin JDK zip of `feature` (21, 25...) for this kit:
+pub(crate) fn temurin_spec(target: Target) -> (&'static str, &'static str, &'static str, Kind, Inner) {
+    let os = target.adoptium_os();
+    let arch = target.adoptium_arch();
+    match target.os {
+        Os::Win32 => (os, arch, ".zip", Kind::Zip, Inner::Single),
+        Os::Darwin => (
+            os,
+            arch,
+            ".tar.gz",
+            Kind::TarGz,
+            Inner::SingleThen("Contents/Home"),
+        ),
+        Os::Linux => (os, arch, ".tar.gz", Kind::TarGz, Inner::Single),
+    }
+}
+
+/// The newest Temurin JDK archive of `feature` (21, 25...) for this kit:
 /// its version and the part that becomes the `java` folder.
 fn temurin(ctx: &Ctx, component: &Component, feature: u64) -> Result<(String, Part)> {
-    let arch = if arch_of(ctx, component) == "arm64" {
-        "aarch64"
-    } else {
-        "x64"
-    };
+    let target = target_of(ctx, component);
+    let (os, arch, ext, kind, inner) = temurin_spec(target);
     let assets: Vec<Value> = ctx.net.json(&format!(
-        "https://api.adoptium.net/v3/assets/latest/{feature}/hotspot?architecture={arch}&image_type=jdk&os=windows&vendor=eclipse"
+        "https://api.adoptium.net/v3/assets/latest/{feature}/hotspot?architecture={arch}&image_type=jdk&os={os}&vendor=eclipse"
     ))?;
     let jdk = assets
         .iter()
         .find(|a| {
             a.pointer("/binary/package/name")
                 .and_then(Value::as_str)
-                .is_some_and(|n| n.ends_with(".zip"))
+                .is_some_and(|n| n.ends_with(ext))
         })
-        .ok_or_else(|| anyhow!("no Temurin {feature} zip for {arch}"))?;
+        .ok_or_else(|| anyhow!("no Temurin {feature} {ext} for {os}/{arch}"))?;
     let pkg = jdk
         .pointer("/binary/package")
         .ok_or_else(|| anyhow!("Adoptium: no package"))?;
@@ -50,8 +65,8 @@ fn temurin(ctx: &Ctx, component: &Component, feature: u64) -> Result<(String, Pa
             url: s(pkg, "link")?.to_owned(),
             file_name: s(pkg, "name")?.to_owned(),
             expect: Expect::Sha256(s(pkg, "checksum")?.to_owned()),
-            kind: Kind::Zip,
-            inner: Inner::Single,
+            kind,
+            inner,
             dest: Dest::Own,
             sign: None,
         },
@@ -82,8 +97,8 @@ impl Installer for Java {
         true
     }
 
-    /// On ARM64 only the versions with a Windows aarch64 build (Temurin has
-    /// few: 21 today).
+    /// On ARM64 only the versions with an aarch64 build (Temurin on Windows
+    /// ARM64 has few: 21 today).
     fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
         let info: Value = ctx
             .net
@@ -184,7 +199,7 @@ impl Installer for Java {
 
     /// Maven keeps its repository in the kit (`data\maven\repository`).
     fn finish(&self, ctx: &Ctx, _component: &Component, _dest: &Path) -> Result<()> {
-        let settings = ctx.kit.apps().join(r"maven\conf\settings.xml");
+        let settings = join_rel(ctx.kit.apps(), "maven/conf/settings.xml");
         let text = fs::read_to_string(&settings).with_context(|| settings.display().to_string())?;
         if !text.contains("${env.CP_DATA}/maven/repository") {
             let re = pattern(r"(<settings[^>]*>)")?;
