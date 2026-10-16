@@ -822,8 +822,11 @@ impl WebServers {
     }
 
     pub fn remove_profile(&self, id: &str) -> Result<()> {
-        // `stop` takes `op_lock`: done before `store_lock` (lock order).
-        self.stop(id);
+        // `op_lock` for the whole removal (then `store_lock`, the lock
+        // order): a start in between would bring the pool back to life
+        // after it was stopped, with its profile gone.
+        let _op = self.op_lock.lock().unwrap_or_else(PoisonError::into_inner);
+        self.stop_locked(id);
         let _store = self
             .store_lock
             .lock()
