@@ -941,6 +941,39 @@ impl Runner {
             .count()
     }
 
+    /// Marks stopped the actions served by a pool that no longer runs
+    /// (`pool_running` false: stopped from the "Server Web" page, or
+    /// dead), which would otherwise stay "running" and never be cleared.
+    pub fn reconcile_pools(&self, pool_running: impl Fn(&str) -> bool) {
+        // The pools are asked without `entries` held (no lock inside another).
+        let pools: HashSet<String> = self
+            .entries()
+            .values()
+            .filter(|e| e.info.state == State::Running)
+            .filter_map(|e| e.pool.clone())
+            .collect();
+        let gone: HashSet<String> = pools.into_iter().filter(|p| !pool_running(p)).collect();
+        if gone.is_empty() {
+            return;
+        }
+        let ended: Vec<RunInfo> = {
+            let mut entries = self.entries();
+            entries
+                .values_mut()
+                .filter(|e| e.info.state == State::Running)
+                .filter(|e| e.pool.as_ref().is_some_and(|p| gone.contains(p)))
+                .map(|e| {
+                    e.info.state = State::Stopped;
+                    e.info.end = Some(now_ms());
+                    e.info.clone()
+                })
+                .collect()
+        };
+        for info in ended {
+            (self.notify)(Event::State(info));
+        }
+    }
+
     /// Forgets the output of an action that ended.
     pub fn clear(&self, key: &str) {
         let mut entries = self.entries();

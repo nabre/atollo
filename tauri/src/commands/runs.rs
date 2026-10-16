@@ -6,9 +6,12 @@ use crate::projects::run::{site_mode, SiteMode};
 #[tauri::command]
 pub fn run_list<R: Runtime>(
     webview: Webview<R>,
+    state: State<'_, AppState>,
     runner: State<'_, Arc<Runner>>,
 ) -> CmdResult<Vec<crate::projects::run::RunInfo>> {
     ensure_main(&webview)?;
+    // A site served by a pool stopped (or dead) since: stopped too.
+    runner.reconcile_pools(|id| state.servers.is_running(id));
     Ok(runner.list())
 }
 
