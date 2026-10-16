@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="100%" height="100%" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="960" height="540" rx="16" fill="url(#bg2)" stroke="#334155" stroke-width="1.5"/>
+
+  <text x="32" y="40" fill="#f8fafc" font-size="20" font-weight="700">Evoluzione Readiness Multipiattaforma v1 → v2 per Sottosistema (6 Target)</text>
+  <text x="32" y="62" fill="#94a3b8" font-size="13">Readiness globale salita dal 57% (v1) al 74% (v2, +17 pt) grazie a Target, translate_rel, join_rel, KitEnv Unix e Matrice Download</text>
+
+  <!-- Legend -->
+  <g transform="translate(32, 82)" font-size="12">
+    <rect x="0" y="-10" width="14" height="14" rx="3" fill="#10b981"/>
+    <text x="20" y="1" fill="#e2e8f0" font-weight="600">Già Pronto Cross-Platform (74% in v2 vs 57% in v1)</text>
+
+    <rect x="330" y="-10" width="14" height="14" rx="3" fill="#f59e0b"/>
+    <text x="350" y="1" fill="#e2e8f0" font-weight="600">Da Adattare / Rifinire (8% in v2 vs 21% in v1)</text>
+
+    <rect x="640" y="-10" width="14" height="14" rx="3" fill="#ef4444"/>
+    <text x="660" y="1" fill="#e2e8f0" font-weight="600">Win32 da Astrarre in #[cfg(unix)] (18% in v2 vs 22% in v1)</text>
+  </g>
+
+  <!-- Bars area: x=260 to x=810 (width 550px = 100%) -->
+  <g transform="translate(32, 118)" font-size="12">
+    <g transform="translate(238, 0)" stroke="#334155" stroke-width="1" stroke-dasharray="3,3">
+      <line x1="0" y1="0" x2="0" y2="380"/>
+      <line x1="137.5" y1="0" x2="137.5" y2="380"/>
+      <line x1="275" y1="0" x2="275" y2="380"/>
+      <line x1="412.5" y1="0" x2="412.5" y2="380"/>
+      <line x1="550" y1="0" x2="550" y2="380"/>
+    </g>
+
+    <!-- Row 1: Frontend React/TS (96% -> 96%) -->
+    <g transform="translate(0, 14)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">1. UI React &amp; Workbench (`ui/src/**`)</text>
+      <rect x="238" y="0" width="528" height="18" rx="4" fill="#10b981"/>
+      <rect x="766" y="0" width="22" height="18" rx="2" fill="#f59e0b"/>
+      <text x="798" y="13" fill="#10b981" font-weight="700">96% (v1: 96%)</text>
+    </g>
+
+    <!-- Row 2: Runtime Shell Scripts (90% -> 98% with bashrc __devkit_p) -->
+    <g transform="translate(0, 46)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">2. Runtime Scripts (`bashrc`, `agy`, `gradle`)</text>
+      <rect x="238" y="0" width="539" height="18" rx="4" fill="#10b981"/>
+      <rect x="777" y="0" width="11" height="18" rx="2" fill="#f59e0b"/>
+      <text x="798" y="13" fill="#10b981" font-weight="700">98% (+8%)</text>
+    </g>
+
+    <!-- Row 3: Kit, Env, Detect, Versions (92% -> 98% with Target, XDG, side_by_side) -->
+    <g transform="translate(0, 78)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">3. Kit, Env &amp; Versioni (`kit.rs`, `env.rs`, `versions/`)</text>
+      <rect x="238" y="0" width="539" height="18" rx="4" fill="#10b981"/>
+      <rect x="777" y="0" width="11" height="18" rx="2" fill="#f59e0b"/>
+      <text x="798" y="13" fill="#10b981" font-weight="700">98% (+6%)</text>
+    </g>
+
+    <!-- Row 4: IPC Commands & Setup Runner (88% -> 94% with Target availability & RunLock) -->
+    <g transform="translate(0, 110)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">4. Tauri IPC &amp; Runner (`commands/`, `runner.rs`)</text>
+      <rect x="238" y="0" width="517" height="18" rx="4" fill="#10b981"/>
+      <rect x="755" y="0" width="33" height="18" rx="2" fill="#f59e0b"/>
+      <text x="798" y="13" fill="#10b981" font-weight="700">94% (+6%)</text>
+    </g>
+
+    <!-- Row 5: Net, Archives & Checksums (78% -> 92% with safe_join, TarXz, SingleThen, 0755) -->
+    <g transform="translate(0, 142)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">5. Rete, Archivi &amp; Hash (`net/archive.rs`)</text>
+      <rect x="238" y="0" width="506" height="18" rx="4" fill="#10b981"/>
+      <rect x="744" y="0" width="22" height="18" fill="#f59e0b"/>
+      <rect x="766" y="0" width="22" height="18" rx="2" fill="#ef4444"/>
+      <text x="798" y="13" fill="#10b981" font-weight="700">92% (+14%)</text>
+    </g>
+
+    <!-- Row 6: Installers & Component Catalog (30% -> 84% with 6-target matrix & translate_rel) -->
+    <g transform="translate(0, 174)">
+      <text x="0" y="13" fill="#38bdf8" font-weight="700">6. Installer &amp; Catalogo (`install/`, `catalog.rs`)</text>
+      <rect x="238" y="0" width="462" height="18" rx="4" fill="#10b981"/>
+      <rect x="700" y="0" width="66" height="18" fill="#f59e0b"/>
+      <rect x="766" y="0" width="22" height="18" rx="2" fill="#ef4444"/>
+      <text x="798" y="13" fill="#38bdf8" font-weight="800">84% (+54%!)</text>
+    </g>
+
+    <!-- Row 7: Agents Sync & Relocation (65% -> 72% with Unix venv relocation) -->
+    <g transform="translate(0, 206)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">7. Agenti IA Sync &amp; Relocate (`agents/`)</text>
+      <rect x="238" y="0" width="396" height="18" rx="4" fill="#10b981"/>
+      <rect x="634" y="0" width="77" height="18" fill="#f59e0b"/>
+      <rect x="711" y="0" width="77" height="18" rx="2" fill="#ef4444"/>
+      <text x="798" y="13" fill="#38bdf8" font-weight="700">72% (+7%)</text>
+    </g>
+
+    <!-- Row 8: Editor VSCodium & Extensions (48% -> 56% with CodeLLDB & Server multi-target) -->
+    <g transform="translate(0, 238)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">8. Editor VSCodium &amp; Ext (`editor/`)</text>
+      <rect x="238" y="0" width="308" height="18" rx="4" fill="#10b981"/>
+      <rect x="546" y="0" width="88" height="18" fill="#f59e0b"/>
+      <rect x="634" y="0" width="154" height="18" rx="2" fill="#ef4444"/>
+      <text x="798" y="13" fill="#fbbf24" font-weight="700">56% (+8%)</text>
+    </g>
+
+    <!-- Row 9: Databases & Web Server Pools (50% -> 52%) -->
+    <g transform="translate(0, 270)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">9. Runtime DB &amp; Server Web (`db/`, `servers/`)</text>
+      <rect x="238" y="0" width="286" height="18" rx="4" fill="#10b981"/>
+      <rect x="524" y="0" width="176" height="18" fill="#f59e0b"/>
+      <rect x="700" y="0" width="88" height="18" rx="2" fill="#ef4444"/>
+      <text x="798" y="13" fill="#fbbf24" font-weight="700">52% (+2%)</text>
+    </g>
+
+    <!-- Row 10: Keyring & Credentials (20% -> 20%) -->
+    <g transform="translate(0, 302)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">10. Keyring Antigravity (`agents/keyring.rs`)</text>
+      <rect x="238" y="0" width="110" height="18" rx="4" fill="#10b981"/>
+      <rect x="348" y="0" width="55" height="18" fill="#f59e0b"/>
+      <rect x="403" y="0" width="385" height="18" rx="2" fill="#ef4444"/>
+      <text x="798" y="13" fill="#f87171" font-weight="700">20% (=)</text>
+    </g>
+
+    <!-- Row 11: Terminal Integration (15% -> 18%) -->
+    <g transform="translate(0, 334)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">11. Terminale Portabile (`editor/wterm.rs`)</text>
+      <rect x="238" y="0" width="99" height="18" rx="4" fill="#10b981"/>
+      <rect x="337" y="0" width="66" height="18" fill="#f59e0b"/>
+      <rect x="403" y="0" width="385" height="18" rx="2" fill="#ef4444"/>
+      <text x="798" y="13" fill="#f87171" font-weight="700">18% (+3%)</text>
+    </g>
+
+    <!-- Row 12: OS Layer (12% -> 15%) -->
+    <g transform="translate(0, 366)">
+      <text x="0" y="13" fill="#f8fafc" font-weight="600">12. Astrazioni Sistema (`tauri/src/os/**`)</text>
+      <rect x="238" y="0" width="82.5" height="18" rx="4" fill="#10b981"/>
+      <rect x="320.5" y="0" width="44" height="18" fill="#f59e0b"/>
+      <rect x="364.5" y="0" width="423.5" height="18" rx="2" fill="#ef4444"/>
+      <text x="798" y="13" fill="#f87171" font-weight="700">15% (+3%)</text>
+    </g>
+  </g>
+</svg>

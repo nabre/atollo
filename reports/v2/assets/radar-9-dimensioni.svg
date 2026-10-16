@@ -1,0 +1,218 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="100%" height="100%" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="polyFillV2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.26"/>
+    </linearGradient>
+    <linearGradient id="polyFillV1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.10"/>
+    </linearGradient>
+    <linearGradient id="targetFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="540" rx="16" fill="url(#bgGrad)" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- Header -->
+  <text x="32" y="40" fill="#f8fafc" font-size="20" font-weight="700">NEXKORA (Dev-Kit) — Radar Comparativo v1 vs v2 sulle 9 Dimensioni</text>
+  <text x="32" y="62" fill="#94a3b8" font-size="13">Media ponderata globale: da 82.4/100 (v1) a 85.4/100 (v2, +3.0 pt) — Balzo di +17 pt su Multipiattaforma e fix concorrenza fsx</text>
+
+  <!-- Radar Center at (280, 298), Radius R = 165 -->
+  <!-- 9 axes at angles: -90, -50, -10, 30, 70, 110, 150, 190, 230 deg -->
+  <g transform="translate(280, 298)">
+    <!-- Grid Rings (20%, 40%, 60%, 80%, 100%) -->
+    <circle r="33" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+    <circle r="66" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+    <circle r="99" fill="none" stroke="#334155" stroke-width="1"/>
+    <circle r="132" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+    <circle r="165" fill="none" stroke="#475569" stroke-width="1.5"/>
+
+    <!-- Ring Labels -->
+    <text x="4" y="-35" fill="#64748b" font-size="10">20</text>
+    <text x="4" y="-68" fill="#64748b" font-size="10">40</text>
+    <text x="4" y="-101" fill="#64748b" font-size="10">60</text>
+    <text x="4" y="-134" fill="#64748b" font-size="10">80</text>
+    <text x="4" y="-167" fill="#94a3b8" font-size="10" font-weight="600">100</text>
+
+    <!-- Axes Lines -->
+    <line x1="0" y1="0" x2="0" y2="-165" stroke="#334155" stroke-width="1"/>
+    <line x1="0" y1="0" x2="126.4" y2="-106.1" stroke="#334155" stroke-width="1"/>
+    <line x1="0" y1="0" x2="162.5" y2="-28.7" stroke="#334155" stroke-width="1"/>
+    <line x1="0" y1="0" x2="142.9" y2="82.5" stroke="#334155" stroke-width="1"/>
+    <line x1="0" y1="0" x2="56.4" y2="155.0" stroke="#334155" stroke-width="1"/>
+    <line x1="0" y1="0" x2="-56.4" y2="155.0" stroke="#334155" stroke-width="1"/>
+    <line x1="0" y1="0" x2="-142.9" y2="82.5" stroke="#334155" stroke-width="1"/>
+    <line x1="0" y1="0" x2="-162.5" y2="-28.7" stroke="#334155" stroke-width="1"/>
+    <line x1="0" y1="0" x2="-126.4" y2="-106.1" stroke="#334155" stroke-width="1"/>
+
+    <!-- Target Benchmark Polygon (90% across all axes, R=148.5) -->
+    <polygon points="0,-148.5 113.8,-95.5 146.2,-25.8 128.6,74.3 50.8,139.5 -50.8,139.5 -128.6,74.3 -146.2,-25.8 -113.8,-95.5"
+             fill="url(#targetFill)" stroke="#10b981" stroke-width="1.3" stroke-dasharray="5,4"/>
+
+    <!-- v1 Polygon (Baseline):
+         1. Arch: 92 -> (0, -151.8)
+         2. Logica: 84 -> (106.2, -89.1)
+         3. UX: 86 -> (139.7, -24.6)
+         4. UI: 90 -> (128.6, 74.3)
+         5. Uso: 88 -> (49.7, 136.4)
+         9. Facilitazione: 91 -> (-51.4, 141.1)
+         7. Bug-Free: 76 -> (-108.6, 62.7)
+         6. Completezza: 78 -> (-126.7, -22.3)
+         8. Multipiattaforma: 57 -> (-72.1, -60.5)
+    -->
+    <polygon points="0,-151.8 106.2,-89.1 139.7,-24.6 128.6,74.3 49.7,136.4 -51.4,141.1 -108.6,62.7 -126.7,-22.3 -72.1,-60.5"
+             fill="url(#polyFillV1)" stroke="#a855f7" stroke-width="1.8" stroke-dasharray="4,3"/>
+
+    <!-- v2 Polygon (Current HEAD fa8a34d):
+         1. Architettura: 94% -> R=155.1 -> (0, -155.1)
+         2. Logica: 87% -> R=143.6 -> (110.0, -92.3)
+         3. UX: 86% -> R=141.9 -> (139.7, -24.6)
+         4. UI & Design: 90% -> R=148.5 -> (128.6, 74.3)
+         5. Esperienza d'uso: 89% -> R=146.9 -> (50.2, 138.0)
+         9. Facilitazione Utente: 91% -> R=150.2 -> (-51.4, 141.1)
+         7. Robustezza / Bug: 78% -> R=128.7 -> (-111.5, 64.4)
+         6. Completezza Funz.: 80% -> R=132.0 -> (-130.0, -22.9)
+         8. Multipiattaforma: 74% -> R=122.1 -> (-93.5, -78.5)
+    -->
+    <polygon points="0,-155.1 110.0,-92.3 139.7,-24.6 128.6,74.3 50.2,138.0 -51.4,141.1 -111.5,64.4 -130.0,-22.9 -93.5,-78.5"
+             fill="url(#polyFillV2)" stroke="#38bdf8" stroke-width="2.6"/>
+
+    <!-- Data Points v2 -->
+    <circle cx="0" cy="-155.1" r="5" fill="#10b981" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="110.0" cy="-92.3" r="5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="139.7" cy="-24.6" r="5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="128.6" cy="74.3" r="5" fill="#10b981" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="50.2" cy="138.0" r="5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="-51.4" cy="141.1" r="5" fill="#10b981" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="-111.5" cy="64.4" r="5" fill="#fbbf24" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="-130.0" cy="-22.9" r="5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="-93.5" cy="-78.5" r="5.5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>
+
+    <!-- Axis Labels -->
+    <text x="0" y="-180" text-anchor="middle" fill="#10b981" font-size="12" font-weight="700">1. Architettura (94 | +2)</text>
+    <text x="138" y="-112" text-anchor="start" fill="#38bdf8" font-size="12" font-weight="700">2. Logica (87 | +3)</text>
+    <text x="174" y="-25" text-anchor="start" fill="#e2e8f0" font-size="12" font-weight="600">3. UX (86 | =)</text>
+    <text x="154" y="92" text-anchor="start" fill="#10b981" font-size="12" font-weight="600">4. UI &amp; Design (90 | =)</text>
+    <text x="64" y="176" text-anchor="start" fill="#e2e8f0" font-size="12" font-weight="600">5. Esperienza Uso (89 | +1)</text>
+    <text x="-64" y="176" text-anchor="end" fill="#10b981" font-size="12" font-weight="600">9. Facilitazione (91 | =)</text>
+    <text x="-152" y="92" text-anchor="end" fill="#fbbf24" font-size="12" font-weight="600">7. Robustezza Bug (78 | +2)</text>
+    <text x="-172" y="-25" text-anchor="end" fill="#38bdf8" font-size="12" font-weight="600">6. Completezza (80 | +2)</text>
+    <text x="-136" y="-112" text-anchor="end" fill="#38bdf8" font-size="12" font-weight="700">8. Multi-OS (74 | +17!)</text>
+  </g>
+
+  <!-- Right Panel: Comparative Scorecard Table v1 vs v2 -->
+  <g transform="translate(555, 90)">
+    <rect width="375" height="415" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="18" y="28" fill="#f8fafc" font-size="14" font-weight="700">Confronto Analitico v1 → v2 (commit fa8a34d)</text>
+    <text x="18" y="44" fill="#94a3b8" font-size="11">Rimodulazione KPI su base reale del codice attuale</text>
+    <line x1="18" y1="54" x2="357" y2="54" stroke="#334155" stroke-width="1"/>
+
+    <g transform="translate(18, 76)" font-size="12">
+      <!-- Row 1 -->
+      <text x="0" y="0" fill="#cbd5e1">1. Architettura Software</text>
+      <rect x="155" y="-10" width="80" height="8" rx="4" fill="#0f172a"/>
+      <rect x="155" y="-10" width="75.2" height="8" rx="4" fill="#10b981"/>
+      <text x="245" y="0" fill="#94a3b8" font-size="11">92→</text>
+      <text x="295" y="0" text-anchor="end" fill="#10b981" font-weight="700">94</text>
+      <text x="338" y="0" text-anchor="end" fill="#10b981" font-size="11" font-weight="700">+2</text>
+
+      <!-- Row 2 -->
+      <g transform="translate(0, 34)">
+        <text x="0" y="0" fill="#cbd5e1">2. Logica di Dominio</text>
+        <rect x="155" y="-10" width="80" height="8" rx="4" fill="#0f172a"/>
+        <rect x="155" y="-10" width="69.6" height="8" rx="4" fill="#38bdf8"/>
+        <text x="245" y="0" fill="#94a3b8" font-size="11">84→</text>
+        <text x="295" y="0" text-anchor="end" fill="#38bdf8" font-weight="700">87</text>
+        <text x="338" y="0" text-anchor="end" fill="#10b981" font-size="11" font-weight="700">+3</text>
+      </g>
+
+      <!-- Row 3 -->
+      <g transform="translate(0, 68)">
+        <text x="0" y="0" fill="#cbd5e1">3. User Experience (UX)</text>
+        <rect x="155" y="-10" width="80" height="8" rx="4" fill="#0f172a"/>
+        <rect x="155" y="-10" width="68.8" height="8" rx="4" fill="#38bdf8"/>
+        <text x="245" y="0" fill="#94a3b8" font-size="11">86→</text>
+        <text x="295" y="0" text-anchor="end" fill="#38bdf8" font-weight="700">86</text>
+        <text x="338" y="0" text-anchor="end" fill="#94a3b8" font-size="11">=</text>
+      </g>
+
+      <!-- Row 4 -->
+      <g transform="translate(0, 102)">
+        <text x="0" y="0" fill="#cbd5e1">4. User Interface (UI)</text>
+        <rect x="155" y="-10" width="80" height="8" rx="4" fill="#0f172a"/>
+        <rect x="155" y="-10" width="72.0" height="8" rx="4" fill="#10b981"/>
+        <text x="245" y="0" fill="#94a3b8" font-size="11">90→</text>
+        <text x="295" y="0" text-anchor="end" fill="#10b981" font-weight="700">90</text>
+        <text x="338" y="0" text-anchor="end" fill="#94a3b8" font-size="11">=</text>
+      </g>
+
+      <!-- Row 5 -->
+      <g transform="translate(0, 136)">
+        <text x="0" y="0" fill="#cbd5e1">5. Esperienza di Utilizzo</text>
+        <rect x="155" y="-10" width="80" height="8" rx="4" fill="#0f172a"/>
+        <rect x="155" y="-10" width="71.2" height="8" rx="4" fill="#38bdf8"/>
+        <text x="245" y="0" fill="#94a3b8" font-size="11">88→</text>
+        <text x="295" y="0" text-anchor="end" fill="#38bdf8" font-weight="700">89</text>
+        <text x="338" y="0" text-anchor="end" fill="#10b981" font-size="11" font-weight="700">+1</text>
+      </g>
+
+      <!-- Row 6 -->
+      <g transform="translate(0, 170)">
+        <text x="0" y="0" fill="#cbd5e1">6. Completezza Funzionale</text>
+        <rect x="155" y="-10" width="80" height="8" rx="4" fill="#0f172a"/>
+        <rect x="155" y="-10" width="64.0" height="8" rx="4" fill="#38bdf8"/>
+        <text x="245" y="0" fill="#94a3b8" font-size="11">78→</text>
+        <text x="295" y="0" text-anchor="end" fill="#38bdf8" font-weight="700">80</text>
+        <text x="338" y="0" text-anchor="end" fill="#10b981" font-size="11" font-weight="700">+2</text>
+      </g>
+
+      <!-- Row 7 -->
+      <g transform="translate(0, 204)">
+        <text x="0" y="0" fill="#cbd5e1">7. Robustezza &amp; Bug-Free</text>
+        <rect x="155" y="-10" width="80" height="8" rx="4" fill="#0f172a"/>
+        <rect x="155" y="-10" width="62.4" height="8" rx="4" fill="#fbbf24"/>
+        <text x="245" y="0" fill="#94a3b8" font-size="11">76→</text>
+        <text x="295" y="0" text-anchor="end" fill="#fbbf24" font-weight="700">78</text>
+        <text x="338" y="0" text-anchor="end" fill="#10b981" font-size="11" font-weight="700">+2</text>
+      </g>
+
+      <!-- Row 8 -->
+      <g transform="translate(0, 238)">
+        <text x="0" y="0" fill="#f8fafc" font-weight="700">8. Readiness Multipiattaforma</text>
+        <rect x="155" y="-10" width="80" height="8" rx="4" fill="#0f172a"/>
+        <rect x="155" y="-10" width="59.2" height="8" rx="4" fill="#38bdf8"/>
+        <text x="245" y="0" fill="#94a3b8" font-size="11">57→</text>
+        <text x="295" y="0" text-anchor="end" fill="#38bdf8" font-weight="800">74</text>
+        <text x="338" y="0" text-anchor="end" fill="#10b981" font-size="11" font-weight="800">+17</text>
+      </g>
+
+      <!-- Row 9 -->
+      <g transform="translate(0, 272)">
+        <text x="0" y="0" fill="#cbd5e1">9. Facilitazione &amp; Interazione</text>
+        <rect x="155" y="-10" width="80" height="8" rx="4" fill="#0f172a"/>
+        <rect x="155" y="-10" width="72.8" height="8" rx="4" fill="#10b981"/>
+        <text x="245" y="0" fill="#94a3b8" font-size="11">91→</text>
+        <text x="295" y="0" text-anchor="end" fill="#10b981" font-weight="700">91</text>
+        <text x="338" y="0" text-anchor="end" fill="#94a3b8" font-size="11">=</text>
+      </g>
+    </g>
+
+    <!-- Legend -->
+    <g transform="translate(18, 382)" font-size="11">
+      <rect x="0" y="-9" width="12" height="12" rx="3" fill="#38bdf8" fill-opacity="0.5" stroke="#38bdf8"/>
+      <text x="16" y="1" fill="#e2e8f0" font-weight="600">v2 Attuale (85.4)</text>
+      <line x1="118" y1="-3" x2="136" y2="-3" stroke="#a855f7" stroke-width="2" stroke-dasharray="4,3"/>
+      <text x="142" y="1" fill="#94a3b8">v1 (82.4)</text>
+      <line x1="205" y1="-3" x2="223" y2="-3" stroke="#10b981" stroke-width="2" stroke-dasharray="4,3"/>
+      <text x="229" y="1" fill="#94a3b8">Target 1.0 (92+)</text>
+    </g>
+  </g>
+</svg>
