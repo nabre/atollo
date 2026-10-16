@@ -122,10 +122,18 @@ struct RunningPool {
     _job: Job,
 }
 
+/// Lock order (never taken the other way round, to rule out deadlocks):
+/// `op_lock` (start/stop/reload, held for seconds) -> `store_lock` (one
+/// load + change + save of `servers.json`) -> `running` (short lookups).
+/// `store_lock` is never held while waiting for `op_lock`.
 pub struct WebServers {
     kit: Kit,
     running: Mutex<BTreeMap<String, RunningPool>>,
     op_lock: Mutex<()>,
+    /// Held around every read-modify-write of `servers.json`, so that
+    /// `list` (port assignment) and `save_profile`/`remove_profile` never
+    /// overwrite each other's changes.
+    store_lock: Mutex<()>,
 }
 
 fn store_path(kit: &Kit) -> PathBuf {
@@ -351,6 +359,7 @@ impl WebServers {
             kit,
             running: Mutex::new(BTreeMap::new()),
             op_lock: Mutex::new(()),
+            store_lock: Mutex::new(()),
         }
     }
 
@@ -397,6 +406,10 @@ impl WebServers {
         let nginx_lines = crate::db::services::server_lines(&self.kit, "nginx");
         let php_lines = crate::db::services::server_lines(&self.kit, "php");
 
+        let store_guard = self
+            .store_lock
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         let mut store = load_store(&self.kit);
         let mut store_dirty = false;
         let mut pools_map: BTreeMap<String, WebServerPool> = BTreeMap::new();
@@ -553,6 +566,7 @@ impl WebServers {
         if store_dirty {
             let _ = save_store(&self.kit, &store);
         }
+        drop(store_guard);
 
         let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
         running.retain(|_, r| matches!(r.child.try_wait(), Ok(None)));
@@ -605,6 +619,10 @@ impl WebServers {
         input.id = id.clone();
         input.name = name;
 
+        let _store = self
+            .store_lock
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         let mut store = load_store(&self.kit);
         if let Some(p) = input.port {
             store.ports.insert(id.clone(), p);
@@ -618,7 +636,12 @@ impl WebServers {
     }
 
     pub fn remove_profile(&self, id: &str) -> Result<()> {
+        // `stop` takes `op_lock`: done before `store_lock` (lock order).
         self.stop(id);
+        let _store = self
+            .store_lock
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         let mut store = load_store(&self.kit);
         store.profiles.retain(|p| p.id != id);
         store.ports.remove(id);
