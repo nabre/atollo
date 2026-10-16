@@ -395,7 +395,34 @@ impl Component {
         write_atomic(&path, version.as_bytes()).with_context(|| path.display().to_string())
     }
 
+    /// `<id>.reinstall` next to its version: the kit moved and the
+    /// component cannot follow (a conda environment on macOS/Linux, D-92).
+    fn reinstall_file(kit: &Kit, id: &str) -> PathBuf {
+        kit.versions_dir().join(format!("{id}.reinstall"))
+    }
+
+    /// To be installed again although it is on disk: set when the kit moved
+    /// (`kit.rs` `check_moved`), cleared by a successful installation.
+    pub fn needs_reinstall(&self, kit: &Kit) -> bool {
+        Self::reinstall_file(kit, &self.id).is_file()
+    }
+
+    /// Marks it to be installed again (`needs_reinstall`); the text is the
+    /// root it was installed for, for the logs.
+    pub fn mark_reinstall(&self, kit: &Kit, old_root: &str) -> std::io::Result<()> {
+        let path = Self::reinstall_file(kit, &self.id);
+        if let Some(dir) = path.parent() {
+            fs::create_dir_all(dir)?;
+        }
+        write_atomic(&path, old_root.as_bytes())
+    }
+
+    pub fn clear_reinstall(&self, kit: &Kit) {
+        let _ = fs::remove_file(Self::reinstall_file(kit, &self.id));
+    }
+
     pub fn forget_version(&self, kit: &Kit) {
+        self.clear_reinstall(kit);
         let _ = fs::remove_file(Self::version_file(kit, &self.id));
         if kit.os().is_windows() {
             let _ = fs::remove_file(Self::legacy_version_file(kit, &self.id));

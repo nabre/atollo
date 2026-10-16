@@ -152,6 +152,14 @@ pub trait Installer: Sync {
     fn custom(&self, _target: crate::kit::Target) -> bool {
         false
     }
+    /// Its folder keeps working when the kit moves (another drive letter
+    /// or folder) on `target`. Not so for a conda environment off Windows
+    /// (Git, R), which has its folder written inside: when the kit moves
+    /// it is marked to be installed again (`flag_not_relocatable`, D-92).
+    /// Default: it can move.
+    fn relocatable(&self, _target: crate::kit::Target) -> bool {
+        true
+    }
     fn install_custom(
         &self,
         _ctx: &Ctx,
@@ -362,9 +370,29 @@ pub fn install(
             part.display()
         );
     }
+    // Installed for this root: no longer to be installed again (D-92).
+    component.clear_reinstall(ctx.kit);
     // A tool always at its latest version keeps only the new line.
     crate::versions::drop_old_lines(ctx.kit, component);
     Ok(())
+}
+
+/// The kit moved from `old_root`: the components on disk that cannot follow
+/// it on this kit's target (`Installer::relocatable`) are marked to be
+/// installed again (`Component::needs_reinstall`); the automatic setup at
+/// start reinstalls them (`setup::task::outdated_app`). Returns their ids.
+/// Nothing on Windows, where every component can move.
+pub fn flag_not_relocatable(kit: &Kit, old_root: &str) -> std::io::Result<Vec<String>> {
+    let target = kit.target();
+    let mut flagged = Vec::new();
+    for c in crate::setup::catalog::Catalog::get().all() {
+        let fixed = installer(&c.id).is_some_and(|i| !i.relocatable(target));
+        if fixed && c.is_present(kit) {
+            c.mark_reinstall(kit, old_root)?;
+            flagged.push(c.id.clone());
+        }
+    }
+    Ok(flagged)
 }
 
 /// The release of a first installation at `line` instead of the latest:

@@ -53,6 +53,35 @@ fn editor_of_another_release_is_updated_at_start() {
     assert!(outdated_app(&kit).is_empty());
 }
 
+/// D-92: Git marked when the kit moved is installed again at start, and
+/// only while it is on disk.
+#[test]
+fn component_marked_after_a_move_is_reinstalled_at_start() {
+    let tmp = TempDir::new("task-reinstall");
+    let kit = Kit::at_target(tmp.0.clone(), crate::kit::Target::LINUX_X64);
+    kit.prepare().unwrap();
+    let git = Catalog::get().find("git").unwrap();
+    git.mark_reinstall(&kit, "/old/kit").unwrap();
+    assert!(git.needs_reinstall(&kit));
+    assert!(
+        outdated_app(&kit).is_empty(),
+        "not installed: nothing to redo"
+    );
+    for key in git.key_paths(&kit) {
+        fs::create_dir_all(key.parent().unwrap()).unwrap();
+        fs::write(&key, b"").unwrap();
+    }
+    git.save_version(&kit, "2.51.0").unwrap();
+    assert!(git.is_installed(&kit));
+    assert_eq!(outdated_app(&kit), ["git"]);
+    git.clear_reinstall(&kit);
+    assert!(outdated_app(&kit).is_empty());
+    // Removing it forgets the mark too.
+    git.mark_reinstall(&kit, "/old/kit").unwrap();
+    git.forget_version(&kit);
+    assert!(!git.needs_reinstall(&kit));
+}
+
 /// No network: every required component is already installed.
 #[test]
 fn run_reports_steps_and_ends() {

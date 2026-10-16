@@ -561,6 +561,14 @@ fn step(
 ) -> Outcome {
     let installed = c.is_installed(ctx.kit);
     let current = c.installed_version(ctx.kit);
+    // Marked when the kit moved (a conda environment, D-92): installed
+    // again even at the same version, a versioned one at its own line.
+    let reinstall = installed && c.needs_reinstall(ctx.kit);
+    let force = force || reinstall;
+    let keep_line = current
+        .as_deref()
+        .and_then(crate::versions::line_of)
+        .filter(|_| reinstall && c.versioned);
     // A part of the app at another version than this release's: installed
     // again without "update all", and never newer than the fixed one.
     if installed && !update_all && !force && !c.outdated(ctx.kit) {
@@ -574,8 +582,9 @@ fn step(
         };
     };
     let result = (|| -> Result<Outcome> {
-        let release = match at {
-            Some(line) if !installed => install::release_at(ctx, c, line)?,
+        let release = match (at, &keep_line) {
+            (Some(line), _) if !installed => install::release_at(ctx, c, line)?,
+            (_, Some(line)) if installer.has_lines() => install::release_at(ctx, c, line)?,
             _ => installer.latest(ctx, c)?,
         };
         if installed && !force && current.as_deref() == Some(release.version.as_str()) {
