@@ -258,7 +258,7 @@ impl Installer for Rust {
         ))
     }
 
-    fn custom(&self) -> bool {
+    fn custom(&self, _target: Target) -> bool {
         true
     }
 
@@ -415,7 +415,7 @@ impl Installer for Pnpm {
         })
     }
 
-    fn custom(&self) -> bool {
+    fn custom(&self, _target: Target) -> bool {
         true
     }
 
@@ -665,7 +665,7 @@ impl Installer for R {
         micromamba_release(ctx, version)
     }
 
-    fn custom(&self) -> bool {
+    fn custom(&self, _target: Target) -> bool {
         true
     }
 
