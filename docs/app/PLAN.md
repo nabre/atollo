@@ -211,4 +211,15 @@ Chiuse il 14/10: Q1 prodotto separato · Q2 `projects\` nella radice · Q3 repos
 
 Nessuna domanda aperta oggi.
 
+## 13. Lavori aperti: server web e database
+
+Restano dallo spec dei server web (16/10/2026); il resto (versioni del progetto in due zone, Apache e Nginx versionati, PHP < 8.0, rilevamento di `.htaccess`, CMS e `nginx.conf`, domini `*.localhost`, alias di percorso, pagina Server con profili) è fatto.
+
+1. **Pool all'avvio del progetto.** «Avvia» su un sito Apache o Nginx lancia ancora un `httpd.exe` o `nginx.exe` per progetto (`projects/run.rs`); i pool di `servers/mod.rs` partono solo dalla pagina Server. Da fare:
+   - all'avvio il progetto calcola il pool `(motore, versione del server, versione di PHP)` e si aggancia a quello acceso, con un reload; altrimenti lo crea e lo avvia;
+   - all'arresto il VirtualHost esce dal pool; un pool creato in automatico senza più progetti si spegne;
+   - sui profili, «Mantieni attivo anche senza progetti» e «Avvia con Atollo» (`keepAlive`, `autostart` in `servers.json`).
+2. **Più versioni dello stesso database accese insieme.** Es. MariaDB 10.6 sulla 3306 e 11.4 sulla 3307 per due progetti che le chiedono; la porta della versione va al progetto in `DB_PORT`. Oggi una porta per database (`db/services/mod.rs`, `port`); i dati sono già separati per versione (`data\db\<id>\<linea>`).
+3. **Una porta per progetto nel pool** (da decidere). Lo spec prevedeva un `Listen` per VirtualHost; oggi il pool ha una porta e distingue i siti per nome (`<progetto>.localhost`). Va scelto se tenere così o aggiungere la porta per progetto (utile per chi apre `127.0.0.1:<porta>`).
+
 Piano approvato il 14/10/2026. Fasi 1-6 completate: vedi [CHANGELOG.md](CHANGELOG.md); prove in [TESTING.md](TESTING.md).
