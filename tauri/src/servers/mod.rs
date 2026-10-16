@@ -305,6 +305,21 @@ fn name_sites(sites: &mut [AttachedSite], port: u16) {
     }
 }
 
+/// The Apache/Nginx sites of a project that go in a pool, each project
+/// once per site (PLAN-DATA §9, defect 7): every one written in
+/// `panel.json`; the detected ones (`.htaccess`, `nginx.conf`) only when
+/// there is none of those, and then only the first, so that a project with
+/// a `site` action, or with both files, is not in two pools at once.
+fn pooled_actions(actions: &[detect::Action]) -> Vec<&detect::Action> {
+    let web = |a: &&detect::Action| a.apache_dir.is_some() || a.nginx_dir.is_some();
+    let custom: Vec<&detect::Action> = actions.iter().filter(web).filter(|a| a.custom).collect();
+    if custom.is_empty() {
+        actions.iter().filter(web).take(1).collect()
+    } else {
+        custom
+    }
+}
+
 /// The VirtualHost file of a site in `vhosts\`: one per `ServerName`, unique
 /// in the pool ([`name_sites`]).
 fn vhost_file(site: &AttachedSite) -> String {
@@ -737,7 +752,7 @@ impl WebServers {
             let needs_php =
                 detected.requires.iter().any(|r| r == "php") || choice.contains_key("php");
 
-            for action in &detected.actions {
+            for action in pooled_actions(&detected.actions) {
                 let (engine, folder) = if let Some(f) = &action.apache_dir {
                     (WebServerEngine::Apache, f.clone())
                 } else if let Some(f) = &action.nginx_dir {

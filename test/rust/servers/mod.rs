@@ -768,6 +768,38 @@ fn two_actions_of_one_project_get_distinct_vhosts() {
     assert!(other.contains("shop/docs"), "{other}");
 }
 
+/// Defect 7 (PLAN-DATA §9): a project is put in the pools once per site:
+/// the detected `apache` and `nginx` give way to the sites of `panel.json`,
+/// and only the first of them is taken.
+#[test]
+fn pooled_actions_drop_detected_duplicates() {
+    use crate::detect::{Action, Kind};
+    let web = |id: &str, apache: bool, custom: bool| {
+        let mut a = Action::for_test(id, "", Kind::Web);
+        if apache {
+            a.apache_dir = Some("public".into());
+        } else {
+            a.nginx_dir = Some("public".into());
+        }
+        a.custom = custom;
+        a
+    };
+    let ids = |actions: &[Action]| -> Vec<String> {
+        pooled_actions(actions)
+            .into_iter()
+            .map(|a| a.id.clone())
+            .collect()
+    };
+    let cmd = Action::for_test("php:server", "php -S", Kind::Web);
+    let detected = [web("apache", true, false), web("nginx", false, false), cmd];
+    assert_eq!(ids(&detected), ["apache"]);
+    let mut with_site = detected.to_vec();
+    with_site.push(web("site", false, true));
+    with_site.push(web("docs", true, true));
+    assert_eq!(ids(&with_site), ["site", "docs"]);
+    assert!(ids(&[Action::for_test("dev", "npm run dev", Kind::Web)]).is_empty());
+}
+
 /// BUG-V3-02: names that give the same label in one pool stay distinct.
 #[test]
 fn name_sites_keeps_names_unique() {
