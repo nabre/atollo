@@ -105,32 +105,38 @@ fn swaps(kit: &Kit, base: &Choice, choice: &Choice) -> Vec<Swap> {
         .collect()
 }
 
-/// `value` with every entry (`;`-separated) under `from` moved under `to`.
-fn rewrite_value(value: &str, swaps: &[Swap]) -> String {
-    value
-        .split(';')
+/// `value` with every entry (`sep`-separated) under `from` moved under `to`.
+fn rewrite_value(value: &str, swaps: &[Swap], sep: char) -> String {
+    let mut sep_buf = [0u8; 4];
+    let sep_str = sep.encode_utf8(&mut sep_buf);
+    crate::env::split_path(value, sep)
+        .into_iter()
         .map(|entry| {
             for s in swaps {
                 let lower = entry.to_ascii_lowercase();
                 let from = s.from.to_ascii_lowercase();
-                if lower == from || lower.starts_with(&format!("{from}\\")) {
+                if lower == from
+                    || lower.starts_with(&format!("{from}\\"))
+                    || lower.starts_with(&format!("{from}/"))
+                {
                     return format!("{}{}", s.to, &entry[s.from.len()..]);
                 }
             }
             entry.to_owned()
         })
         .collect::<Vec<_>>()
-        .join(";")
+        .join(sep_str)
 }
 
 fn apply(env: &mut KitEnv, swaps: &[Swap]) {
     if swaps.is_empty() {
         return;
     }
+    let sep = env.path_sep();
     let changed: Vec<(String, String)> = env
         .iter()
         .filter_map(|(k, v)| {
-            let new = rewrite_value(v, swaps);
+            let new = rewrite_value(v, swaps, sep);
             (new != v).then(|| (k.to_owned(), new))
         })
         .collect();

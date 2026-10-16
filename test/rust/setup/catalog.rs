@@ -268,3 +268,64 @@ fn shared_paths_go_with_the_last_owner() {
         .owned_paths(&kit)
         .contains(&kit.apps().join("apache")));
 }
+
+#[test]
+fn multi_platform_availability_and_paths_across_targets() {
+    use crate::kit::Target;
+
+    let catalog = Catalog::get();
+    let term = catalog.find("terminal").unwrap();
+    assert!(term.is_available_on(Target::WIN32_X64));
+    assert!(term.is_available_on(Target::WIN32_ARM64));
+    assert!(!term.is_available_on(Target::DARWIN_ARM64));
+    assert!(!term.is_available_on(Target::LINUX_X64));
+
+    let tex = catalog.find("tinytex").unwrap();
+    assert!(tex.is_emulated_on(Target::WIN32_ARM64));
+    assert!(tex.is_available_on(Target::DARWIN_ARM64));
+    assert!(tex.is_available_on(Target::LINUX_ARM64));
+    assert_eq!(
+        tex.key_for(Target::DARWIN_ARM64),
+        "tinytex/bin/universal-darwin/tlmgr"
+    );
+    assert_eq!(
+        tex.key_for(Target::LINUX_X64),
+        "tinytex/bin/x86_64-linux/tlmgr"
+    );
+
+    let r = catalog.find("r").unwrap();
+    assert!(!r.is_available_on(Target::WIN32_ARM64));
+    assert!(r.is_available_on(Target::DARWIN_ARM64));
+    assert_eq!(r.key_for(Target::LINUX_X64), "r/bin/R");
+
+    let php = catalog.find("php").unwrap();
+    assert!(php.is_emulated_on(Target::WIN32_ARM64));
+    assert!(!php.is_emulated_on(Target::DARWIN_ARM64));
+    assert_eq!(php.key_for(Target::DARWIN_ARM64), "php/bin/php");
+
+    let node = catalog.find("node").unwrap();
+    assert_eq!(node.key_for(Target::WIN32_X64), "node/node.exe");
+    assert_eq!(node.key_for(Target::DARWIN_ARM64), "node/bin/node");
+    assert_eq!(node.key_for(Target::LINUX_ARM64), "node/bin/node");
+
+    let vsc = catalog.find("vscodium-server").unwrap();
+    assert_eq!(
+        vsc.keys_for(Target::DARWIN_ARM64),
+        vec!["vscodium-server/node".to_string()]
+    );
+    assert!(vsc.sha256_for(Target::WIN32_X64).is_some());
+    assert!(vsc.sha256_for(Target::WIN32_ARM64).is_some());
+
+    // Per-target version files stay isolated in data/app/versions/<target>/<id>.txt
+    let tmp = TempDir::new("catalog-targets");
+    let kit_win = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+    let kit_mac = Kit::at_target(tmp.0.clone(), Target::DARWIN_ARM64);
+    kit_win.prepare().unwrap();
+    kit_mac.prepare().unwrap();
+    node.save_version(&kit_win, "22.11.0").unwrap();
+    node.save_version(&kit_mac, "24.1.0").unwrap();
+    assert_eq!(node.installed_version(&kit_win).as_deref(), Some("22.11.0"));
+    assert_eq!(node.installed_version(&kit_mac).as_deref(), Some("24.1.0"));
+}
+
+

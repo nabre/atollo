@@ -4,12 +4,22 @@ use anyhow::{anyhow, Result};
 use serde_json::Value;
 
 use super::{file_name_of, is_release, s, version_key};
-use crate::install::{triple_arch, Ctx, Installer, Release};
+use crate::install::{target_of, Ctx, Installer, Release};
+use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
 use crate::setup::catalog::Component;
 
 pub struct Zig;
+
+pub(crate) fn zig_key_of(target: Target) -> (String, Kind) {
+    let arch = target.gnu_arch();
+    match target.os {
+        Os::Win32 => (format!("{arch}-windows"), Kind::Zip),
+        Os::Darwin => (format!("{arch}-macos"), Kind::TarXz),
+        Os::Linux => (format!("{arch}-linux"), Kind::TarXz),
+    }
+}
 
 /// The release lines of Zig's index with a build for `key`, newest first.
 pub fn zig_lines(index: &Value, key: &str) -> Vec<String> {
@@ -35,7 +45,7 @@ impl Installer for Zig {
     }
 
     fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
-        let key = format!("{}-windows", triple_arch(ctx, component));
+        let (key, _) = zig_key_of(target_of(ctx, component));
         let index: Value = ctx.net.json("https://ziglang.org/download/index.json")?;
         Ok(zig_lines(&index, &key))
     }
@@ -47,7 +57,7 @@ impl Installer for Zig {
 
 impl Zig {
     fn release(ctx: &Ctx, component: &Component, line: Option<&str>) -> Result<Release> {
-        let key = format!("{}-windows", triple_arch(ctx, component));
+        let (key, kind) = zig_key_of(target_of(ctx, component));
         let index: Value = ctx.net.json("https://ziglang.org/download/index.json")?;
         let obj = index.as_object().ok_or_else(|| anyhow!("Zig index"))?;
         let v = obj
@@ -65,7 +75,7 @@ impl Zig {
             url.clone(),
             file_name_of(&url),
             Expect::Sha256(s(f, "shasum")?.to_owned()),
-            Kind::Zip,
+            kind,
             Inner::Single,
         ))
     }

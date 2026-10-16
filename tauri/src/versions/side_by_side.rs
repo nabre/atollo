@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::fsx::write_atomic;
+use crate::fsx::{join_rel, write_atomic};
 use crate::kit::Kit;
 use crate::setup::catalog::{Catalog, Component};
 
@@ -94,7 +94,7 @@ fn java(kit: &Kit) -> Result<()> {
         return Ok(());
     };
     let jdks = line_dirs(kit, c);
-    let props = kit.data().join(r"gradle\gradle.properties");
+    let props = join_rel(&kit.data(), "gradle/gradle.properties");
     let old = fs::read_to_string(&props).unwrap_or_default();
     let dirs: Vec<PathBuf> = jdks.iter().map(|(_, d)| d.clone()).collect();
     let new = gradle_properties(&old, &dirs);
@@ -102,7 +102,7 @@ fn java(kit: &Kit) -> Result<()> {
         fs::create_dir_all(props.parent().unwrap_or(&props))?;
         write_atomic(&props, new.as_bytes()).with_context(|| props.display().to_string())?;
     }
-    let toolchains = kit.home().join(r".m2\toolchains.xml");
+    let toolchains = join_rel(&kit.home(), ".m2/toolchains.xml");
     let mine = fs::read_to_string(&toolchains).map_or(true, |t| t.contains(KIT_MARK));
     if mine {
         if jdks.is_empty() {
@@ -118,26 +118,62 @@ fn java(kit: &Kit) -> Result<()> {
 /// The folders of a .NET root another root shares: its SDKs and runtimes.
 const DOTNET_SHARED: [&str; 4] = [
     "sdk",
-    r"shared\Microsoft.NETCore.App",
-    r"shared\Microsoft.AspNetCore.App",
-    r"shared\Microsoft.WindowsDesktop.App",
+    "shared/Microsoft.NETCore.App",
+    "shared/Microsoft.AspNetCore.App",
+    "shared/Microsoft.WindowsDesktop.App",
 ];
 
-fn is_junction(path: &Path) -> bool {
+#[cfg(windows)]
+fn is_dir_link(path: &Path) -> bool {
     junction::exists(path).unwrap_or(false)
 }
 
-/// Each root gets, as junctions, the versions the other roots have of
-/// their own; junctions to versions gone are removed.
+#[cfg(not(windows))]
+fn is_dir_link(path: &Path) -> bool {
+    path.is_symlink()
+}
+
+#[cfg(windows)]
+fn dir_link_target_ok(path: &Path) -> bool {
+    junction::get_target(path).is_ok_and(|t| t.is_dir())
+}
+
+#[cfg(not(windows))]
+fn dir_link_target_ok(path: &Path) -> bool {
+    fs::read_link(path).is_ok_and(|t| t.is_dir())
+}
+
+#[cfg(windows)]
+fn remove_dir_link(path: &Path) {
+    let _ = junction::delete(path);
+    let _ = fs::remove_dir(path);
+}
+
+#[cfg(not(windows))]
+fn remove_dir_link(path: &Path) {
+    let _ = fs::remove_file(path);
+}
+
+#[cfg(windows)]
+fn create_dir_link(source: &Path, link: &Path) -> Result<()> {
+    junction::create(source, link).with_context(|| link.display().to_string())
+}
+
+#[cfg(not(windows))]
+fn create_dir_link(source: &Path, link: &Path) -> Result<()> {
+    std::os::unix::fs::symlink(source, link).with_context(|| link.display().to_string())
+}
+
+/// Each root gets, as junctions (Windows) or symlinks (Unix), the versions the
+/// other roots have of their own; links to versions gone are removed.
 pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
     for root in roots {
         for sub in DOTNET_SHARED {
-            let dir = root.join(sub);
+            let dir = join_rel(root, sub);
             for entry in fs::read_dir(&dir).into_iter().flatten().flatten() {
                 let path = entry.path();
-                if is_junction(&path) && !junction::get_target(&path).is_ok_and(|t| t.is_dir()) {
-                    let _ = junction::delete(&path);
-                    let _ = fs::remove_dir(&path);
+                if is_dir_link(&path) && !dir_link_target_ok(&path) {
+                    remove_dir_link(&path);
                 }
             }
         }
@@ -145,18 +181,19 @@ pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
     for root in roots {
         for other in roots.iter().filter(|o| *o != root) {
             for sub in DOTNET_SHARED {
-                let from = other.join(sub);
+                let from = join_rel(other, sub);
                 for entry in fs::read_dir(&from).into_iter().flatten().flatten() {
                     let source = entry.path();
-                    if is_junction(&source) || !source.is_dir() {
+                    if is_dir_link(&source) || !source.is_dir() {
                         continue;
                     }
-                    let link = root.join(sub).join(entry.file_name());
-                    if link.exists() {
+                    let sub_dir = join_rel(root, sub);
+                    let link = sub_dir.join(entry.file_name());
+                    if link.exists() || is_dir_link(&link) {
                         continue;
                     }
-                    fs::create_dir_all(root.join(sub))?;
-                    junction::create(&source, &link).with_context(|| link.display().to_string())?;
+                    fs::create_dir_all(&sub_dir)?;
+                    create_dir_link(&source, &link)?;
                 }
             }
         }

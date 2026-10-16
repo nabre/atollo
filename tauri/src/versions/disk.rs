@@ -216,17 +216,18 @@ fn migrate_from_tools(kit: &Kit, c: &Component) -> Result<()> {
     let (Some(folder), Some(version)) = (&c.folder, c.installed_version(kit)) else {
         return Ok(());
     };
-    let rel = c
-        .key
+    let key = c.key_for(kit.target());
+    let rel = key
         .strip_prefix(folder.as_str())
-        .unwrap_or(&c.key)
+        .unwrap_or(&key)
         .trim_start_matches('/');
     let (sub, exe) = rel.rsplit_once('/').unwrap_or(("", rel));
     let tools = kit.apps().join("tools");
     let files: Vec<PathBuf> = c
         .remove
         .iter()
-        .filter_map(|r| r.strip_prefix("tools/"))
+        .map(|r| crate::setup::catalog::translate_rel(kit.target(), r))
+        .filter_map(|r| r.strip_prefix("tools/").map(str::to_owned))
         .map(|name| tools.join(name))
         .filter(|p| p.is_file())
         .collect();
@@ -234,7 +235,7 @@ fn migrate_from_tools(kit: &Kit, c: &Component) -> Result<()> {
     if has_key(c, &dir) || !files.iter().any(|p| p.ends_with(exe)) {
         return Ok(());
     }
-    let into = dir.join(sub.replace('/', "\\"));
+    let into = crate::fsx::join_rel(&dir, sub);
     fs::create_dir_all(&into)?;
     for from in &files {
         let to = into.join(from.file_name().unwrap_or_default());

@@ -4,7 +4,7 @@
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
-use super::{arch_of, Ctx, Dest, Installer, Part, Release, Sign};
+use super::{target_of, Ctx, Dest, Installer, Part, Release, Sign};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
 use crate::setup::catalog::Component;
@@ -30,18 +30,24 @@ fn npm(ctx: &Ctx, url: &str) -> Result<(String, String, String)> {
     ))
 }
 
-/// Claude Code: the native package `@anthropic-ai/claude-code-win32-<arch>`
-/// (channel `latest`), verified with npm integrity and Anthropic's signature;
-/// `claude.exe` replaced as a file, so a running Claude can be updated.
+/// Claude Code: the native package `@anthropic-ai/claude-code-<os>-<arch>`
+/// (channel `latest`), verified with npm integrity and (on Windows) Anthropic's
+/// signature; `claude(.exe)` replaced as a file, so a running Claude can be updated.
 pub struct Claude;
 
 impl Installer for Claude {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let arch = arch_of(ctx, component);
+        let target = target_of(ctx, component);
+        let slug = target.as_str();
         let (version, tarball, integrity) = npm(
             ctx,
-            &format!("https://registry.npmjs.org/@anthropic-ai/claude-code-win32-{arch}/latest"),
+            &format!("https://registry.npmjs.org/@anthropic-ai/claude-code-{slug}/latest"),
         )?;
+        let bin = if target.is_windows() {
+            "claude.exe"
+        } else {
+            "claude"
+        };
         Ok(Release {
             parts: vec![Part {
                 url: tarball,
@@ -51,10 +57,10 @@ impl Installer for Claude {
                 inner: Inner::Named("package".into()),
                 dest: Dest::File {
                     folder: "claude",
-                    name: "claude.exe",
-                    from: "claude.exe".into(),
+                    name: bin,
+                    from: bin.into(),
                 },
-                sign: Some(Sign {
+                sign: target.is_windows().then(|| Sign {
                     file: "claude.exe".into(),
                     publisher: "Anthropic",
                     required: false,
@@ -65,8 +71,8 @@ impl Installer for Claude {
     }
 }
 
-/// Codex: the Windows build of `@openai/codex` (`<version>-win32-<arch>`),
-/// whose `package/vendor/<target>` folder becomes `codex\`.
+/// Codex: the native build of `@openai/codex` (`<version>-<os>-<arch>`),
+/// whose `package/vendor/<target>` folder becomes `codex/`.
 pub struct Codex;
 
 impl Installer for Codex {
@@ -75,10 +81,10 @@ impl Installer for Codex {
             .net
             .json("https://registry.npmjs.org/@openai/codex/latest")?;
         let version = str_at(&meta, &["version"])?.to_owned();
-        let arch = arch_of(ctx, component);
+        let slug = target_of(ctx, component).as_str();
         let (_, tarball, integrity) = npm(
             ctx,
-            &format!("https://registry.npmjs.org/@openai/codex/{version}-win32-{arch}"),
+            &format!("https://registry.npmjs.org/@openai/codex/{version}-{slug}"),
         )?;
         Ok(Release::single(
             version.clone(),
@@ -91,17 +97,14 @@ impl Installer for Codex {
     }
 }
 
-/// Antigravity CLI: one exe from Google's update manifest, SHA-512.
+/// Antigravity CLI: one binary from Google's update manifest, SHA-512.
 /// `agy install` is not run: the kit's environment is enough.
 pub struct Antigravity;
 
 impl Installer for Antigravity {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let platform = if arch_of(ctx, component) == "arm64" {
-            "windows_arm64"
-        } else {
-            "windows_amd64"
-        };
+        let target = target_of(ctx, component);
+        let platform = format!("{}_{}", target.go_os(), target.go_arch());
         let meta: Value = ctx.net.json(&format!(
             "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/{platform}.json"
         ))?;
@@ -115,7 +118,12 @@ impl Installer for Antigravity {
         if sha512.len() != 128 || !sha512.chars().all(|c| c.is_ascii_hexdigit()) {
             bail!("Antigravity manifest without a valid SHA-512");
         }
-        let file_name = format!("agy-{version}.exe");
+        let bin = if target.is_windows() {
+            "agy.exe"
+        } else {
+            "agy"
+        };
+        let file_name = format!("agy-{version}{}", target.exe_suffix());
         Ok(Release {
             parts: vec![Part {
                 url,
@@ -125,7 +133,7 @@ impl Installer for Antigravity {
                 inner: Inner::Root,
                 dest: Dest::File {
                     folder: "antigravity",
-                    name: "agy.exe",
+                    name: bin,
                     from: file_name,
                 },
                 sign: None,

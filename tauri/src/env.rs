@@ -17,12 +17,13 @@ use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::fsx::join_rel;
 use crate::kit::Kit;
 use crate::os::volume::{DriveKind, VolumeInfo};
 use crate::settings::{ProgramTemp, Settings};
 
-/// System variables kept from the real environment: what Windows programs
-/// need to run, nothing that points into the user's profile.
+/// System variables kept from the real environment: what Windows and Unix
+/// programs need to run, nothing that points into the user's profile.
 const SYSTEM_VARS: &[&str] = &[
     "ALLUSERSPROFILE",
     "CommonProgramFiles",
@@ -30,7 +31,12 @@ const SYSTEM_VARS: &[&str] = &[
     "CommonProgramW6432",
     "COMPUTERNAME",
     "ComSpec",
+    "DBUS_SESSION_BUS_ADDRESS",
+    "DISPLAY",
     "DriverData",
+    "LANG",
+    "LC_ALL",
+    "LOGNAME",
     "LOGONSERVER",
     "NUMBER_OF_PROCESSORS",
     "OS",
@@ -46,12 +52,18 @@ const SYSTEM_VARS: &[&str] = &[
     "ProgramW6432",
     "PUBLIC",
     "SESSIONNAME",
+    "SHELL",
+    "SSH_AUTH_SOCK",
     "SystemDrive",
     "SystemRoot",
+    "TERM",
+    "USER",
     "USERDOMAIN",
     "USERDOMAIN_ROAMINGPROFILE",
     "USERNAME",
+    "WAYLAND_DISPLAY",
     "windir",
+    "XDG_RUNTIME_DIR",
 ];
 
 /// Proxy variables of the PC: kept (as `_env.cmd` does), overridden by the
@@ -114,6 +126,7 @@ pub struct KitEnv {
     /// `data\tmp` when the programs' temp is in the kit on a disk with
     /// permissions: `create_dirs` gives it an owner-only DACL.
     private_tmp: Option<PathBuf>,
+    path_sep: Option<char>,
 }
 
 /// Where the programs' temp (`TEMP`, `TMP`) or Claude's (`CLAUDE_CODE_TMPDIR`,
@@ -190,17 +203,56 @@ impl KitEnv {
         self.set(name, value.as_ref().to_string_lossy().into_owned());
     }
 
+    /// The PATH separator used by this environment (`;` on Windows, `:` on Unix).
+    pub fn path_sep(&self) -> char {
+        self.path_sep
+            .unwrap_or(if cfg!(windows) { ';' } else { ':' })
+    }
+
     /// The PATH entries, in order.
     pub fn path_entries(&self) -> Vec<&str> {
+        let sep = self.path_sep();
         self.get("PATH")
-            .map(|p| p.split(';').collect())
+            .map(|p| split_path(p, sep))
             .unwrap_or_default()
     }
+}
+
+/// Splits a `sep`-separated path list without breaking Windows drive prefixes
+/// (`C:\...`) when testing a Unix (`:`) target on a Windows host.
+pub(crate) fn split_path(value: &str, sep: char) -> Vec<&str> {
+    if sep != ':' {
+        return value.split(sep).collect();
+    }
+    let bytes = value.as_bytes();
+    let mut out = Vec::new();
+    let mut start = 0;
+    for (i, &b) in bytes.iter().enumerate() {
+        if b == b':' {
+            let is_drive = i == start + 1
+                && bytes[start].is_ascii_alphabetic()
+                && matches!(bytes.get(i + 1), Some(b'\\' | b'/'));
+            if !is_drive {
+                out.push(&value[start..i]);
+                start = i + 1;
+            }
+        }
+    }
+    out.push(&value[start..]);
+    out
+}
+
+impl KitEnv {
 
     /// Builds the environment of `kit`. Reads only which programs exist in
     /// `data\apps` (like the `if exist` lines of `_env.cmd`); writes nothing.
     pub fn build(kit: &Kit, settings: &Settings, lang: &str, host: &Host) -> KitEnv {
-        let mut env = KitEnv::default();
+        let is_win = kit.os().is_windows();
+        let sep = kit.os().path_sep();
+        let mut env = KitEnv {
+            path_sep: Some(sep),
+            ..KitEnv::default()
+        };
         for name in SYSTEM_VARS.iter().chain(PROXY_VARS) {
             if let Some(value) = host.get(name) {
                 env.set(name, value);
@@ -212,7 +264,7 @@ impl KitEnv {
         let apps = kit.apps();
         let home = kit.home();
         let arch = kit.arch().as_str();
-        let platform = kit.arch().platform();
+        let platform = kit.target().as_str().to_owned();
         let fwd = |p: &Path| p.to_string_lossy().replace('\\', "/");
         // In the folder of a versioned component: that of its default
         // version (versions/mod.rs).
@@ -259,7 +311,11 @@ impl KitEnv {
         env.set_path("CP_ANTIGRAVITY", app("antigravity"));
 
         // Portable profile (_env.cmd:76-98)
-        if let Some(real) = host.get("CP_USER_PROFILE").or(host.get("USERPROFILE")) {
+        if let Some(real) = host
+            .get("CP_USER_PROFILE")
+            .or(host.get("USERPROFILE"))
+            .or(host.get("HOME"))
+        {
             env.set("CP_USER_PROFILE", real);
         }
         // The host's temporary folder for files in transit (D-90), kept for a
@@ -268,6 +324,7 @@ impl KitEnv {
             .get("CP_HOST_TEMP")
             .or(host.get("TEMP"))
             .or(host.get("TMP"))
+            .or(host.get("TMPDIR"))
         {
             env.set("CP_HOST_TEMP", real);
         }
@@ -284,11 +341,18 @@ impl KitEnv {
         env.set_path("LOCALAPPDATA", &localappdata);
         env.set_path("TEMP", &program_tmp);
         env.set_path("TMP", &program_tmp);
+        if !is_win {
+            env.set_path("TMPDIR", &program_tmp);
+            env.set_path("XDG_CONFIG_HOME", home.join(".config"));
+            env.set_path("XDG_CACHE_HOME", join_rel(&data, "cache/xdg"));
+            env.set_path("XDG_DATA_HOME", join_rel(&home, ".local/share"));
+            env.set_path("XDG_STATE_HOME", join_rel(&home, ".local/state"));
+        }
         env.set_path("NODE_REPL_HISTORY", home.join(".node_repl_history"));
         env.set_path("PYTHON_HISTORY", home.join(".python_history"));
         env.set_path(
             "PSModuleAnalysisCachePath",
-            localappdata.join(r"Microsoft\Windows\PowerShell\ModuleAnalysisCache"),
+            join_rel(&localappdata, "Microsoft/Windows/PowerShell/ModuleAnalysisCache"),
         );
         env.set("GCM_CREDENTIAL_STORE", "dpapi");
         env.set_path(
@@ -299,27 +363,27 @@ impl KitEnv {
         // Python, pip, Node, npm, uv, gh, PHP, Composer (_env.cmd:101-139)
         let pyuser = data.join("python-user");
         env.set_path("PYTHONUSERBASE", &pyuser);
-        env.set_path("PIP_CACHE_DIR", data.join(r"cache\pip"));
+        env.set_path("PIP_CACHE_DIR", join_rel(&data, "cache/pip"));
         env.set("PIP_DISABLE_PIP_VERSION_CHECK", "1");
         env.set("PYTHONIOENCODING", "utf-8");
         let npm_prefix = data.join("npm-global");
         env.set_path("NPM_CONFIG_PREFIX", &npm_prefix);
-        env.set_path("NPM_CONFIG_CACHE", data.join(r"cache\npm"));
+        env.set_path("NPM_CONFIG_CACHE", join_rel(&data, "cache/npm"));
         env.set_path("NPM_CONFIG_USERCONFIG", home.join(".npmrc"));
         // yarn through corepack (the pnpm component): its downloads in the
         // kit, no question before one, never a change to package.json.
-        env.set_path("COREPACK_HOME", data.join(r"cache\corepack"));
+        env.set_path("COREPACK_HOME", join_rel(&data, "cache/corepack"));
         env.set("COREPACK_ENABLE_DOWNLOAD_PROMPT", "0");
         env.set("COREPACK_ENABLE_AUTO_PIN", "0");
         env.set("NODE_OPTIONS", node_options(kit));
-        env.set_path("UV_CACHE_DIR", data.join(r"cache\uv"));
-        env.set_path("UV_PYTHON_INSTALL_DIR", data.join(r"uv\python"));
+        env.set_path("UV_CACHE_DIR", join_rel(&data, "cache/uv"));
+        env.set_path("UV_PYTHON_INSTALL_DIR", join_rel(&data, "uv/python"));
         // uv's own Pythons only (downloaded into the kit): never one of the
         // PC's, found through the registry, and none written into it.
         env.set("UV_PYTHON_PREFERENCE", "only-managed");
         env.set("UV_PYTHON_INSTALL_REGISTRY", "0");
-        env.set_path("UV_TOOL_DIR", data.join(r"uv\tools"));
-        let uv_bin = data.join(r"uv\bin");
+        env.set_path("UV_TOOL_DIR", join_rel(&data, "uv/tools"));
+        let uv_bin = join_rel(&data, "uv/bin");
         env.set_path("UV_TOOL_BIN_DIR", &uv_bin);
         env.set_path("GH_CONFIG_DIR", data.join("gh"));
         env.set_path("PHPRC", data.join("php"));
@@ -335,19 +399,19 @@ impl KitEnv {
         env.set("CP_NGINX_FWD", fwd(&app("nginx")));
         let composer = data.join("composer");
         env.set_path("COMPOSER_HOME", &composer);
-        env.set_path("COMPOSER_CACHE_DIR", data.join(r"cache\composer"));
+        env.set_path("COMPOSER_CACHE_DIR", join_rel(&data, "cache/composer"));
 
         // Rust and the other languages (_env.cmd:153-184)
-        let rustup = app(r"rust\rustup");
-        let cargo = app(r"rust\cargo");
+        let rustup = app("rust/rustup");
+        let cargo = app("rust/cargo");
         env.set_path("RUSTUP_HOME", &rustup);
         env.set_path("CARGO_HOME", &cargo);
-        let gobin = data.join(r"go\bin").join(&platform);
+        let gobin = join_rel(&data, "go/bin").join(&platform);
         env.set_path("GOPATH", data.join("go"));
         env.set_path("GOBIN", &gobin);
-        env.set_path("GOCACHE", data.join(r"cache\go-build"));
-        env.set_path("GOMODCACHE", data.join(r"go\pkg\mod"));
-        env.set_path("GOENV", data.join(r"go\env"));
+        env.set_path("GOCACHE", join_rel(&data, "cache/go-build"));
+        env.set_path("GOMODCACHE", join_rel(&data, "go/pkg/mod"));
+        env.set_path("GOENV", join_rel(&data, "go/env"));
         env.set("GOTELEMETRY", "off");
         if has(r"java\bin\java.exe") {
             env.set_path("JAVA_HOME", app("java"));
@@ -372,35 +436,35 @@ impl KitEnv {
         let dotnet_home = data.join("dotnet").join(&platform);
         env.set_path("DOTNET_ROOT", app("dotnet"));
         env.set_path("DOTNET_CLI_HOME", &dotnet_home);
-        env.set_path("NUGET_PACKAGES", data.join(r"cache\nuget"));
+        env.set_path("NUGET_PACKAGES", join_rel(&data, "cache/nuget"));
         env.set("DOTNET_CLI_TELEMETRY_OPTOUT", "1");
         env.set("DOTNET_NOLOGO", "1");
         env.set("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1");
         env.set("DOTNET_MULTILEVEL_LOOKUP", "0");
-        let pub_cache = data.join(r"cache\pub");
+        let pub_cache = join_rel(&data, "cache/pub");
         env.set_path("PUB_CACHE", &pub_cache);
-        env.set_path("ZIG_GLOBAL_CACHE_DIR", data.join(r"cache\zig"));
+        env.set_path("ZIG_GLOBAL_CACHE_DIR", join_rel(&data, "cache/zig"));
         env.set_path("JULIA_DEPOT_PATH", data.join("julia").join(&platform));
         let bun = data.join("bun").join(&platform);
         env.set_path("BUN_INSTALL", &bun);
-        env.set_path("DENO_DIR", data.join(r"cache\deno"));
+        env.set_path("DENO_DIR", join_rel(&data, "cache/deno"));
         let deno_root = data.join("deno").join(&platform);
         env.set_path("DENO_INSTALL_ROOT", &deno_root);
-        env.set_path("TYPST_PACKAGE_PATH", data.join(r"typst\packages"));
-        env.set_path("TYPST_PACKAGE_CACHE_PATH", data.join(r"cache\typst"));
+        env.set_path("TYPST_PACKAGE_PATH", join_rel(&data, "typst/packages"));
+        env.set_path("TYPST_PACKAGE_CACHE_PATH", join_rel(&data, "cache/typst"));
         env.set_path("TEXMFHOME", data.join("texmf"));
         let texlive = data.join("texlive").join(&platform);
         env.set_path("TEXMFVAR", texlive.join("texmf-var"));
         env.set_path("TEXMFCONFIG", texlive.join("texmf-config"));
         let pnpm = data.join("pnpm").join(&platform);
         env.set_path("PNPM_HOME", &pnpm);
-        env.set_path("pnpm_config_store_dir", data.join(r"cache\pnpm-store"));
-        env.set_path("YARN_CACHE_FOLDER", data.join(r"cache\yarn"));
+        env.set_path("pnpm_config_store_dir", join_rel(&data, "cache/pnpm-store"));
+        env.set_path("YARN_CACHE_FOLDER", join_rel(&data, "cache/yarn"));
         // One library per minor version of R (`%v` = 4.6): packages
         // compiled for one do not load in another (D-81).
         env.set(
             "R_LIBS_USER",
-            format!("{}\\%v", data.join("r").join(&platform).display()),
+            format!("{}", data.join("r").join(&platform).join("%v").display()),
         );
 
         // PowerShell 7 of the kit (new, D-23)
@@ -430,30 +494,53 @@ impl KitEnv {
         // Antigravity is not on the PATH itself: `agy` is data\kit\bin\agy.cmd,
         // which carries its login in and out of Windows (agents/keyring.rs).
         if has(r"python\python.exe") {
-            path.push(app("python"));
-            path.push(app(r"python\Scripts"));
+            if is_win {
+                path.push(app("python"));
+                path.push(app(r"python\Scripts"));
+            } else {
+                path.push(app("python/bin"));
+            }
         }
-        path.extend(subdirs_starting_with(&pyuser, "Python3").map(|d| d.join("Scripts")));
+        if is_win {
+            path.extend(subdirs_starting_with(&pyuser, "Python3").map(|d| d.join("Scripts")));
+        } else if pyuser.join("bin").is_dir() {
+            path.push(pyuser.join("bin"));
+        }
         if has(r"node\node.exe") {
-            path.push(app("node"));
-            path.push(npm_prefix.clone());
+            if is_win {
+                path.push(app("node"));
+                path.push(npm_prefix.clone());
+            } else {
+                path.push(app("node/bin"));
+                path.push(npm_prefix.join("bin"));
+            }
         }
         if has(r"php\php.exe") {
-            path.push(app("php"));
-            path.push(composer.join(r"vendor\bin"));
+            if is_win {
+                path.push(app("php"));
+            } else {
+                path.push(app("php/bin"));
+            }
+            path.push(join_rel(&composer, "vendor/bin"));
         }
         if has(r"apache\bin\httpd.exe") {
             path.push(app(r"apache\bin"));
         }
         if has(r"nginx\nginx.exe") {
-            path.push(app("nginx"));
+            if is_win {
+                path.push(app("nginx"));
+            } else {
+                path.push(app("nginx/sbin"));
+            }
         }
-        if !cargo.join(r"bin\cargo.exe").is_file() {
+        let cargo_exe = if is_win { "bin/cargo.exe" } else { "bin/cargo" };
+        let rustup_exe = if is_win { "bin/rustup.exe" } else { "bin/rustup" };
+        if !join_rel(&cargo, cargo_exe).is_file() {
             path.extend(
                 subdirs_starting_with(&rustup.join("toolchains"), "stable-").map(|d| d.join("bin")),
             );
         }
-        if cargo.join(r"bin\rustup.exe").is_file() {
+        if join_rel(&cargo, rustup_exe).is_file() {
             path.push(cargo.join("bin"));
         }
         path.push(uv_bin);
@@ -482,7 +569,7 @@ impl KitEnv {
         when(
             &mut path,
             r"dotnet\dotnet.exe",
-            &[app("dotnet"), dotnet_home.join(r".dotnet\tools")],
+            &[app("dotnet"), join_rel(&dotnet_home, ".dotnet/tools")],
         );
         when(
             &mut path,
@@ -498,12 +585,18 @@ impl KitEnv {
             &[app("deno"), deno_root.join("bin")],
         );
         when(&mut path, r"typst\typst.exe", &[app("typst")]);
+        let tl_bin = format!("tinytex/bin/{}", kit.target().texlive_bin());
         when(
             &mut path,
             r"tinytex\bin\windows\tlmgr.bat",
-            &[app(r"tinytex\bin\windows")],
+            &[app(&tl_bin)],
         );
-        if npm_prefix.join("pnpm.cmd").is_file() {
+        let pnpm_installed = if is_win {
+            npm_prefix.join("pnpm.cmd").is_file()
+        } else {
+            join_rel(&npm_prefix, "bin/pnpm").is_file()
+        };
+        if pnpm_installed {
             path.push(pnpm);
         }
         when(&mut path, r"cmake\bin\cmake.exe", &[app(r"cmake\bin")]);
@@ -541,31 +634,38 @@ impl KitEnv {
             &[app(r"mongodb-tools\bin")],
         );
         when(&mut path, r"sqlite\sqlite3.exe", &[app("sqlite")]);
-        if has(r"git\bin\bash.exe") {
-            env.set_path("CLAUDE_CODE_GIT_BASH_PATH", app(r"git\bin\bash.exe"));
-            path.push(app(r"git\cmd"));
+        if is_win {
+            if has(r"git\bin\bash.exe") {
+                env.set_path("CLAUDE_CODE_GIT_BASH_PATH", app(r"git\bin\bash.exe"));
+                path.push(app(r"git\cmd"));
+            }
+            let system32 = PathBuf::from(host.system_root()).join("System32");
+            path.push(system32.clone());
+            path.push(system32.join("Wbem"));
+            path.push(system32.join(r"WindowsPowerShell\v1.0"));
+            env.set(
+                "PSModulePath",
+                format!(
+                    "{};{}",
+                    join_rel(&data, "pwsh/Modules").display(),
+                    system32.join(r"WindowsPowerShell\v1.0\Modules").display()
+                ),
+            );
+        } else {
+            if has("git/bin/git") {
+                path.push(app("git/bin"));
+            }
+            for sys in ["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"] {
+                path.push(PathBuf::from(sys));
+            }
+            env.set_path("PSModulePath", join_rel(&data, "pwsh/Modules"));
         }
-        let system32 = PathBuf::from(host.system_root()).join("System32");
-        path.push(system32.clone());
-        path.push(system32.join("Wbem"));
-        path.push(system32.join(r"WindowsPowerShell\v1.0"));
         let path: Vec<String> = path
             .iter()
             .map(|p| p.to_string_lossy().into_owned())
             .collect();
-        env.set("PATH", path.join(";"));
-        // PowerShell modules: the kit's and Windows' own, never those
-        // installed in the PC (Documents, Program Files), for the PowerShell
-        // that agents start too. PowerShell 7 still adds its own folders at
-        // start; the kit's consoles narrow them further (profile.ps1).
-        env.set(
-            "PSModulePath",
-            format!(
-                "{};{}",
-                data.join(r"pwsh\Modules").display(),
-                system32.join(r"WindowsPowerShell\v1.0\Modules").display()
-            ),
-        );
+        let sep_str = if is_win { ";" } else { ":" };
+        env.set("PATH", path.join(sep_str));
 
         // Settings (replace data\proxy.cmd, _env.cmd:270-273)
         let net = &settings.network;
@@ -600,6 +700,10 @@ impl KitEnv {
             "APPDATA",
             "LOCALAPPDATA",
             "TEMP",
+            "XDG_CONFIG_HOME",
+            "XDG_CACHE_HOME",
+            "XDG_DATA_HOME",
+            "XDG_STATE_HOME",
             "NPM_CONFIG_PREFIX",
             "UV_TOOL_BIN_DIR",
         ] {
@@ -628,6 +732,11 @@ pub fn apply_to_current_process(env: &KitEnv, kit: &Kit) {
         "LOCALAPPDATA",
         "TEMP",
         "TMP",
+        "TMPDIR",
+        "XDG_CONFIG_HOME",
+        "XDG_CACHE_HOME",
+        "XDG_DATA_HOME",
+        "XDG_STATE_HOME",
         "CP_USER_PROFILE",
     ] {
         if let Some(value) = env.get(name) {

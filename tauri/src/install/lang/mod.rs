@@ -102,6 +102,17 @@ pub fn release_lines(releases: &[GhRelease]) -> Vec<String> {
 /// The newest release of `line` among the stable ones of `repo`, as one
 /// archive (GitHub's SHA-256 digest).
 fn github_line(ctx: &Ctx, repo: &str, asset: &str, line: &str, inner: Inner) -> Result<Release> {
+    github_line_kind(ctx, repo, asset, line, Kind::Zip, inner)
+}
+
+fn github_line_kind(
+    ctx: &Ctx,
+    repo: &str,
+    asset: &str,
+    line: &str,
+    kind: Kind,
+    inner: Inner,
+) -> Result<Release> {
     let releases = github_stable(ctx, repo, asset)?;
     let rel = releases
         .iter()
@@ -115,7 +126,7 @@ fn github_line(ctx: &Ctx, repo: &str, asset: &str, line: &str, inner: Inner) -> 
         file.browser_download_url.clone(),
         file.name.clone(),
         Expect::Sha256(ctx.net.release_sha256(rel, file)?),
-        Kind::Zip,
+        kind,
         inner,
     ))
 }

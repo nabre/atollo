@@ -15,23 +15,39 @@ use std::process::Stdio;
 
 use anyhow::{anyhow, bail, Context, Result};
 
-use super::{fetch, work_dir, Ctx, Installer, Progress, Release};
-use crate::kit::Kit;
+use super::{fetch, target_of, work_dir, Ctx, Installer, Progress, Release};
+use crate::fsx::join_rel;
+use crate::kit::{Kit, Os, Target};
 use crate::net::archive::{self, Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::{Catalog, Component};
+use crate::setup::catalog::{translate_rel, Catalog, Component};
 
 pub struct Android;
 
 const STUDIO: &str = "https://developer.android.com/studio";
 const REPOSITORY: &str = "https://dl.google.com/android/repository/";
 
+fn os_tag_of(target: Target) -> &'static str {
+    match target.os {
+        Os::Win32 => "win",
+        Os::Darwin => "mac",
+        Os::Linux => "linux",
+    }
+}
+
 /// The Windows zip of the command-line tools on the download page: its
 /// name, build number and SHA-256.
+#[cfg(test)]
 pub fn tools_on_page(page: &str) -> Option<(String, String, String)> {
-    let re = regex::Regex::new(
-        r#">\s*(commandlinetools-win-(\d+)_latest\.zip)\s*</button>\s*</td>\s*<td>[^<]*</td>\s*<td>\s*([0-9a-f]{64})\s*</td>"#,
-    )
+    tools_on_page_for(page, "win")
+}
+
+/// The zip of the command-line tools on the download page for `os_tag`
+/// (`"win"`, `"mac"`, or `"linux"`): its name, build number and SHA-256.
+pub fn tools_on_page_for(page: &str, os_tag: &str) -> Option<(String, String, String)> {
+    let re = regex::Regex::new(&format!(
+        r#">\s*(commandlinetools-{os_tag}-(\d+)_latest\.zip)\s*</button>\s*</td>\s*<td>[^<]*</td>\s*<td>\s*([0-9a-f]{{64}})\s*</td>"#
+    ))
     .ok()?;
     let c = re.captures(page)?;
     Some((c[1].to_owned(), c[2].to_owned(), c[3].to_owned()))
@@ -74,7 +90,8 @@ fn java_home(kit: &Kit) -> Option<PathBuf> {
         return None;
     }
     let dir = crate::versions::dir_for(kit, java, Some(&line))?;
-    dir.join(r"bin\java.exe").is_file().then_some(dir)
+    let java_bin = translate_rel(kit.target(), r"bin\java.exe");
+    join_rel(&dir, &java_bin).is_file().then_some(dir)
 }
 
 /// Runs sdkmanager with fixed arguments (package names checked by
@@ -87,10 +104,17 @@ fn sdkmanager(
     input: &str,
     progress: &mut dyn Progress,
 ) -> Result<String> {
-    let script = sdk.join(r"cmdline-tools\latest\bin\sdkmanager.bat");
+    let rel_script = translate_rel(ctx.kit.target(), r"cmdline-tools\latest\bin\sdkmanager.bat");
+    let script = join_rel(sdk, &rel_script);
     let quoted: Vec<String> = args.iter().map(|a| format!("\"{a}\"")).collect();
     let quoted: Vec<&str> = quoted.iter().map(String::as_str).collect();
-    let mut cmd = crate::os::jobs::batch_command(&script, &quoted, ctx.env);
+    let mut cmd = if ctx.kit.os().is_windows() {
+        crate::os::jobs::batch_command(&script, &quoted, ctx.env)
+    } else {
+        let mut c = crate::os::jobs::kit_command(&script, ctx.env);
+        c.args(args);
+        c
+    };
     cmd.env("JAVA_HOME", java)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -128,10 +152,12 @@ fn sdkmanager(
 }
 
 impl Installer for Android {
-    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let target = target_of(ctx, component);
+        let os_tag = os_tag_of(target);
         let page = ctx.net.text(STUDIO)?;
-        let (name, build, sha) = tools_on_page(&page)
-            .ok_or_else(|| anyhow!("Android command-line tools: not found on {STUDIO}"))?;
+        let (name, build, sha) = tools_on_page_for(&page, os_tag)
+            .ok_or_else(|| anyhow!("Android command-line tools ({os_tag}): not found on {STUDIO}"))?;
         Ok(Release::single(
             build,
             format!("{REPOSITORY}{name}"),
@@ -157,6 +183,7 @@ impl Installer for Android {
         release: &Release,
         progress: &mut dyn Progress,
     ) -> Result<()> {
+        let target = target_of(ctx, component);
         let sdk = component
             .folder_path(ctx.kit)
             .ok_or_else(|| anyhow!("android: no folder"))?;
@@ -178,11 +205,12 @@ impl Installer for Android {
             let extracted = work.join("x");
             archive::extract(&file, Kind::Zip, &extracted)?;
             let tree = archive::pick_inner(&extracted, &Inner::Single)?;
-            if !tree.join(r"bin\sdkmanager.bat").is_file() {
-                bail!("the archive does not contain bin\\sdkmanager.bat");
+            let sdk_bin = translate_rel(target, r"bin\sdkmanager.bat");
+            if !join_rel(&tree, &sdk_bin).is_file() {
+                bail!("the archive does not contain {sdk_bin}");
             }
             fs::create_dir_all(sdk.join("cmdline-tools"))?;
-            archive::stage_into(&tree, &sdk.join(r"cmdline-tools\latest"))?;
+            archive::stage_into(&tree, &join_rel(&sdk, "cmdline-tools/latest"))?;
 
             progress.note("sdkmanager: licenses");
             sdkmanager(
@@ -205,8 +233,9 @@ impl Installer for Android {
             if !first {
                 sdkmanager(ctx, &sdk, &java, &["--update"], &"y\n".repeat(8), progress)?;
             }
-            if !sdk.join(r"platform-tools\adb.exe").is_file() {
-                bail!("adb.exe not found after the installation");
+            let adb_rel = translate_rel(target, r"platform-tools\adb.exe");
+            if !join_rel(&sdk, &adb_rel).is_file() {
+                bail!("{adb_rel} not found after the installation");
             }
             Ok(())
         })();

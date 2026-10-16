@@ -14,8 +14,8 @@ use std::sync::OnceLock;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::fsx::write_atomic;
-use crate::kit::Kit;
+use crate::fsx::{join_rel, write_atomic};
+use crate::kit::{Arch, Kit, Target};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -69,6 +69,11 @@ pub struct Component {
     /// No build runs on ARM64, not even emulated (R): not available there.
     #[serde(default)]
     pub no_arm64: bool,
+    /// Explicit list of targets where this component is available (e.g.
+    /// `["win32-x64", "win32-arm64"]` for Windows Terminal). Empty = all
+    /// targets except `win32-arm64` when `no_arm64` is true.
+    #[serde(default)]
+    pub targets: Vec<String>,
     /// Other files or folders it owns (relative to `data\apps\<platform>`,
     /// `@` = the kit root), removed with it unless another installed
     /// component lists them too.
@@ -84,6 +89,9 @@ pub struct Component {
     pub version: Option<String>,
     #[serde(default)]
     pub sha256: Option<String>,
+    /// Per-target SHA-256 overrides for fixed-version components (`vscodium-server`).
+    #[serde(default)]
+    pub sha256_by_target: BTreeMap<String, String>,
     /// Other minor lines can be kept next to the default folder, and chosen
     /// for the kit or a project (`versions/mod.rs`, D-80).
     #[serde(default)]
@@ -163,15 +171,54 @@ impl Catalog {
     }
 }
 
-/// A path of the catalog: relative to `data\apps\<platform>`, or to the kit
+/// Translates a catalog relative path (`"node/node.exe"`, `"python/python.exe"`,
+/// `"tinytex/bin/windows/tlmgr.bat"`, `"@data/npm-global/pnpm.cmd"`) to the
+/// layout of `target`. On Windows (`win32-x64`, `win32-arm64`) paths are kept
+/// as written; on macOS and Linux they follow the Unix binary layout.
+pub fn translate_rel(target: Target, rel: &str) -> String {
+    if target.is_windows() {
+        return rel.to_owned();
+    }
+    let norm = rel.replace('\\', "/");
+    match norm.as_str() {
+        "git/bin/bash.exe" | "git/cmd/git.exe" => return "git/bin/git".to_owned(),
+        "python/python.exe" => return "python/bin/python3".to_owned(),
+        "node/node.exe" => return "node/bin/node".to_owned(),
+        "node/npm.cmd" => return "node/bin/npm".to_owned(),
+        "node/npx.cmd" => return "node/bin/npx".to_owned(),
+        "php/php.exe" => return "php/bin/php".to_owned(),
+        "nginx/nginx.exe" => return "nginx/sbin/nginx".to_owned(),
+        "@data/npm-global/pnpm.cmd" => return "@data/npm-global/bin/pnpm".to_owned(),
+        "@data/npm-global/pnpx.cmd" => return "@data/npm-global/bin/pnpx".to_owned(),
+        "@data/npm-global/pn.cmd" => return "@data/npm-global/bin/pn".to_owned(),
+        "@data/npm-global/pnx.cmd" => return "@data/npm-global/bin/pnx".to_owned(),
+        "@data/npm-global/yarn.cmd" => return "@data/npm-global/bin/yarn".to_owned(),
+        "@data/npm-global/yarnpkg.cmd" => return "@data/npm-global/bin/yarnpkg".to_owned(),
+        _ => {}
+    }
+    let mapped = if let Some(rest) = norm.strip_prefix("tinytex/bin/windows/") {
+        format!("tinytex/bin/{}/{rest}", target.texlive_bin())
+    } else {
+        norm
+    };
+    for ext in [".exe", ".cmd", ".bat"] {
+        if let Some(stem) = mapped.strip_suffix(ext) {
+            return stem.to_owned();
+        }
+    }
+    mapped
+}
+
+/// A path of the catalog: relative to `data/apps/<platform>`, or to the kit
 /// root with `@`. In the folder of a component with one folder per line it
-/// is that of its default version (`node/node.exe` → `node\22.11\node.exe`,
+/// is that of its default version (`node/node.exe` → `node/22.11/node.exe`,
 /// versions/mod.rs).
 pub fn kit_path(kit: &Kit, rel: &str) -> PathBuf {
-    match rel.strip_prefix('@') {
-        Some(r) => kit.root().join(r.replace('/', "\\")),
-        None => crate::versions::resolve(kit, rel)
-            .unwrap_or_else(|| kit.apps().join(rel.replace('/', "\\"))),
+    let translated = translate_rel(kit.target(), rel);
+    match translated.strip_prefix('@') {
+        Some(r) => join_rel(kit.root(), r),
+        None => crate::versions::resolve(kit, &translated)
+            .unwrap_or_else(|| join_rel(&kit.apps(), &translated)),
     }
 }
 
@@ -197,6 +244,45 @@ impl Component {
             Group::Databases => 4,
             Group::Os => 5,
         }
+    }
+
+    /// True when the component is supported on `target` (natively or via x64 emulation).
+    pub fn is_available_on(&self, target: Target) -> bool {
+        if !self.targets.is_empty() && !self.targets.iter().any(|t| t == target.as_str()) {
+            return false;
+        }
+        if target == Target::WIN32_ARM64 && self.no_arm64 {
+            return false;
+        }
+        true
+    }
+
+    /// True when `target` uses the x64 build under OS binary translation
+    /// (WOW64 on `win32-arm64`, Rosetta 2 on `darwin-arm64` if needed).
+    pub fn is_emulated_on(&self, target: Target) -> bool {
+        target == Target::WIN32_ARM64 && self.x64_only
+    }
+
+    /// Fixed SHA-256 for `target` (checks `sha256_by_target` first, then `sha256`
+    /// on `win32-x64` / `win32-arm64`).
+    pub fn sha256_for(&self, target: Target) -> Option<&str> {
+        if let Some(s) = self.sha256_by_target.get(target.as_str()) {
+            return Some(s.as_str());
+        }
+        if target.is_windows() {
+            return self.sha256.as_deref();
+        }
+        None
+    }
+
+    /// `self.key` translated for `target`.
+    pub fn key_for(&self, target: Target) -> String {
+        translate_rel(target, &self.key)
+    }
+
+    /// `self.keys` translated for `target`.
+    pub fn keys_for(&self, target: Target) -> Vec<String> {
+        self.keys.iter().map(|k| translate_rel(target, k)).collect()
     }
 
     /// Where the key lives: `data\apps\<platform>\…`, or the kit root with `@`.
@@ -261,7 +347,7 @@ impl Component {
             .collect()
     }
 
-    /// Its folder holds one folder per minor line (`git.56`): versioned,
+    /// Its folder holds one folder per minor line (`git .56`): versioned,
     /// or `minor_folder`.
     pub fn per_line(&self) -> bool {
         self.versioned || self.minor_folder
@@ -272,14 +358,25 @@ impl Component {
     }
 
     fn version_file(kit: &Kit, id: &str) -> PathBuf {
+        kit.versions_dir().join(format!("{id}.txt"))
+    }
+
+    fn legacy_version_file(kit: &Kit, id: &str) -> PathBuf {
         kit.app_dir().join("versions").join(format!("{id}.txt"))
     }
 
     pub fn installed_version(&self, kit: &Kit) -> Option<String> {
-        fs::read_to_string(Self::version_file(kit, &self.id))
-            .ok()
-            .map(|v| v.trim().to_owned())
-            .filter(|v| !v.is_empty())
+        let read = |p: PathBuf| {
+            fs::read_to_string(p)
+                .ok()
+                .map(|v| v.trim().to_owned())
+                .filter(|v| !v.is_empty())
+        };
+        read(Self::version_file(kit, &self.id)).or_else(|| {
+            (kit.os().is_windows() && kit.arch() == Arch::X64)
+                .then(|| read(Self::legacy_version_file(kit, &self.id)))
+                .flatten()
+        })
     }
 
     /// A part of the app (fixed `version`) installed at another version: the
@@ -300,6 +397,9 @@ impl Component {
 
     pub fn forget_version(&self, kit: &Kit) {
         let _ = fs::remove_file(Self::version_file(kit, &self.id));
+        if kit.os().is_windows() {
+            let _ = fs::remove_file(Self::legacy_version_file(kit, &self.id));
+        }
     }
 }
 

@@ -67,7 +67,11 @@ pub fn parse_version(text: &str) -> Option<(u64, u64, u64)> {
 }
 
 pub fn asset_name(kit: &Kit) -> String {
-    format!("Atollo-{}.exe", kit.arch().as_str())
+    match kit.os() {
+        crate::kit::Os::Win32 => format!("Atollo-{}.exe", kit.arch().as_str()),
+        crate::kit::Os::Darwin => format!("Atollo-{}.app.tar.gz", kit.target().as_str()),
+        crate::kit::Os::Linux => format!("Atollo-{}.AppImage", kit.target().as_str()),
+    }
 }
 
 fn update_dir(kit: &Kit) -> PathBuf {

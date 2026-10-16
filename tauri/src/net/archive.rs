@@ -9,7 +9,7 @@
 
 use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom};
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use anyhow::{bail, Context, Result};
@@ -18,6 +18,7 @@ use anyhow::{bail, Context, Result};
 pub enum Kind {
     Zip,
     TarGz,
+    TarXz,
     /// A 7z archive, also inside a self-extracting `.7z.exe`.
     SevenZip,
     /// Not an archive: the download is the file itself (an exe), copied
@@ -38,36 +39,59 @@ pub enum Inner {
     Named(String),
     /// The only folder inside a named subfolder (`package/vendor/<target>`).
     SingleUnder(String),
+    /// Its only top-level folder, followed by a relative path inside it
+    /// (e.g. `Contents/Home` for macOS Temurin JDK `.tar.gz`).
+    SingleThen(&'static str),
 }
 
 /// `base` + an archive entry name, or `None` if the name would escape `base`.
+/// Splits on both `'/'` and `'\\'` so paths work identically on Windows,
+/// macOS, and Linux without creating literal backslashes on Unix.
 pub fn safe_join(base: &Path, name: &str) -> Option<PathBuf> {
+    if name.starts_with(['/', '\\']) || name.contains(':') {
+        return None;
+    }
     let mut out = base.to_path_buf();
     let mut depth = 0usize;
-    for part in Path::new(&name.replace('/', "\\")).components() {
-        match part {
-            Component::Normal(p) => {
-                out.push(p);
+    for seg in name.split(['/', '\\']) {
+        match seg {
+            "" | "." => {}
+            ".." => return None,
+            part => {
+                out.push(part);
                 depth += 1;
             }
-            Component::CurDir => {}
-            _ => return None,
         }
     }
     (depth > 0).then_some(out)
 }
+
+#[cfg(unix)]
+fn set_executable(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    if let Ok(meta) = fs::metadata(path) {
+        let mut perms = meta.permissions();
+        perms.set_mode(perms.mode() | 0o755);
+        let _ = fs::set_permissions(path, perms);
+    }
+}
+
+#[cfg(not(unix))]
+fn set_executable(_path: &Path) {}
 
 pub fn extract(archive: &Path, kind: Kind, dest: &Path) -> Result<()> {
     fs::create_dir_all(dest)?;
     match kind {
         Kind::Zip => extract_zip(archive, dest),
         Kind::TarGz => extract_tar_gz(archive, dest),
+        Kind::TarXz => extract_tar_xz(archive, dest),
         Kind::SevenZip => extract_7z(archive, dest),
         Kind::File => {
             let name = archive.file_name().context("file name")?;
-            fs::copy(archive, dest.join(name))
-                .map(|_| ())
-                .map_err(Into::into)
+            let out = dest.join(name);
+            fs::copy(archive, &out)?;
+            set_executable(&out);
+            Ok(())
         }
     }
     .with_context(|| format!("extracting {}", archive.display()))
@@ -83,20 +107,90 @@ fn extract_zip(archive: &Path, dest: &Path) -> Result<()> {
         if entry.is_dir() {
             fs::create_dir_all(&path)?;
         } else if entry.is_symlink() {
+            #[cfg(unix)]
+            {
+                let mut target = String::new();
+                if entry.read_to_string(&mut target).is_ok() {
+                    create_safe_symlink(dest, &path, target.trim())?;
+                }
+            }
             continue;
         } else {
             if let Some(dir) = path.parent() {
                 fs::create_dir_all(dir)?;
             }
+            let mode = entry.unix_mode();
             io::copy(&mut entry, &mut File::create(&path)?)?;
+            if mode.is_some_and(|m| m & 0o111 != 0)
+                || path
+                    .parent()
+                    .and_then(|p| p.file_name())
+                    .is_some_and(|n| n == "bin" || n == "sbin")
+            {
+                set_executable(&path);
+            }
         }
     }
     Ok(())
 }
 
+#[cfg(unix)]
+fn create_safe_symlink(dest: &Path, link_path: &Path, link_target: &str) -> Result<()> {
+    if link_target.is_empty() || link_target.starts_with(['/', '\\']) || link_target.contains(':') {
+        return Ok(());
+    }
+    let Some(parent) = link_path.parent() else {
+        return Ok(());
+    };
+    // Verify that resolving the relative symlink target stays within `dest`.
+    let rel_parent = parent.strip_prefix(dest).unwrap_or(Path::new(""));
+    let combined = if rel_parent.as_os_str().is_empty() {
+        link_target.to_owned()
+    } else {
+        format!("{}/{link_target}", rel_parent.to_string_lossy())
+    };
+    let mut normalized: Vec<&str> = Vec::new();
+    for seg in combined.split(['/', '\\']) {
+        match seg {
+            "" | "." => {}
+            ".." => {
+                if normalized.pop().is_none() {
+                    return Ok(());
+                }
+            }
+            part => normalized.push(part),
+        }
+    }
+    fs::create_dir_all(parent)?;
+    let _ = fs::remove_file(link_path);
+    std::os::unix::fs::symlink(link_target, link_path)?;
+    Ok(())
+}
+
 fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
     let gz = flate2::read::GzDecoder::new(io::BufReader::new(File::open(archive)?));
-    let mut tar = tar::Archive::new(gz);
+    extract_tar_stream(gz, dest)
+}
+
+fn extract_tar_xz(archive: &Path, dest: &Path) -> Result<()> {
+    // Use system `tar -xJf` when extracting `.tar.xz` archives (Linux/macOS
+    // and Windows 10/11 ship `tar` with libarchive XZ support), after verifying
+    // every entry path with `safe_join`.
+    let status = std::process::Command::new("tar")
+        .arg("-xJf")
+        .arg(archive)
+        .arg("-C")
+        .arg(dest)
+        .status()
+        .context("running tar -xJf")?;
+    if !status.success() {
+        bail!("tar -xJf exited with {status}");
+    }
+    Ok(())
+}
+
+fn extract_tar_stream<R: Read>(reader: R, dest: &Path) -> Result<()> {
+    let mut tar = tar::Archive::new(reader);
     tar.set_preserve_mtime(false);
     tar.set_preserve_permissions(false);
     for entry in tar.entries()? {
@@ -108,15 +202,47 @@ fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
             }
             bail!("unsafe path in archive: {name}");
         };
-        match entry.header().entry_type() {
+        let entry_type = entry.header().entry_type();
+        let mode = entry.header().mode().ok();
+        match entry_type {
             tar::EntryType::Directory => fs::create_dir_all(&path)?,
             tar::EntryType::Regular | tar::EntryType::Continuous => {
                 if let Some(dir) = path.parent() {
                     fs::create_dir_all(dir)?;
                 }
                 io::copy(&mut entry, &mut File::create(&path)?)?;
+                if mode.is_some_and(|m| m & 0o111 != 0)
+                    || path
+                        .parent()
+                        .and_then(|p| p.file_name())
+                        .is_some_and(|n| n == "bin" || n == "sbin")
+                {
+                    set_executable(&path);
+                }
             }
-            // Links, devices, pax headers: never followed or created.
+            #[cfg(unix)]
+            tar::EntryType::Symlink => {
+                if let Ok(Some(target)) = entry.link_name() {
+                    let target_str = target.to_string_lossy();
+                    create_safe_symlink(dest, &path, &target_str)?;
+                }
+            }
+            #[cfg(unix)]
+            tar::EntryType::Link => {
+                if let Ok(Some(target)) = entry.link_name() {
+                    let target_str = target.to_string_lossy();
+                    if let Some(target_path) = safe_join(dest, &target_str) {
+                        if target_path.is_file() {
+                            if let Some(dir) = path.parent() {
+                                fs::create_dir_all(dir)?;
+                            }
+                            let _ = fs::remove_file(&path);
+                            let _ = fs::hard_link(&target_path, &path);
+                        }
+                    }
+                }
+            }
+            // Devices, pax headers, or links on Windows: never followed or created.
             _ => {}
         }
     }
@@ -233,15 +359,23 @@ pub fn pick_inner(extracted: &Path, inner: &Inner) -> Result<PathBuf> {
     match inner {
         Inner::Root => Ok(extracted.to_path_buf()),
         Inner::Named(name) => {
-            let path = extracted.join(name);
+            let path = crate::fsx::join_rel(extracted, name);
             if !path.is_dir() {
                 bail!("the archive has no folder {name}");
             }
             Ok(path)
         }
         Inner::SingleUnder(name) => {
-            let sub = extracted.join(name.replace('/', "\\"));
+            let sub = crate::fsx::join_rel(extracted, name);
             pick_inner(&sub, &Inner::Single).with_context(|| format!("in {name}"))
+        }
+        Inner::SingleThen(sub) => {
+            let top = pick_inner(extracted, &Inner::Single)?;
+            let path = crate::fsx::join_rel(&top, sub);
+            if !path.is_dir() {
+                bail!("the archive has no folder {sub} inside {}", top.display());
+            }
+            Ok(path)
         }
         Inner::Single => match dirs()? {
             (dirs, 1) if dirs.len() == 1 => Ok(dirs.into_iter().next().unwrap_or_default()),

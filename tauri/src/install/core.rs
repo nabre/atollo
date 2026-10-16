@@ -8,8 +8,9 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::{arch_of, github_single, pattern, triple_arch, Ctx, Installer, Release};
-use crate::fsx::write_atomic;
+use super::{arch_of, github_single, pattern, target_of, Ctx, Installer, Release};
+use crate::fsx::{join_rel, write_atomic};
+use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
 use crate::net::{github_digest, hash_in_list};
@@ -17,12 +18,62 @@ use crate::os::jobs;
 use crate::settings::Settings;
 use crate::setup::catalog::Component;
 
-/// Git for Windows Portable: a self-extracting 7z, read directly (no 7-Zip
-/// window), then its post-install script.
+/// Git: Git for Windows Portable (`.7z.exe`) on Windows, or a portable
+/// prebuilt Git archive on macOS and Linux.
 pub struct Git;
 
 impl Installer for Git {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let target = target_of(ctx, component);
+        if !target.is_windows() {
+            let info: Value = ctx
+                .net
+                .json("https://api.anaconda.org/package/conda-forge/git")?;
+            let subdir = target.conda_subdir();
+            let file = info
+                .get("files")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter(|f| f.pointer("/attrs/subdir").and_then(Value::as_str) == Some(subdir))
+                .filter(|f| {
+                    f.get("basename")
+                        .and_then(Value::as_str)
+                        .is_some_and(|n| n.ends_with(".tar.bz2") || n.ends_with(".conda"))
+                })
+                .max_by_key(|f| {
+                    super::version_key(f.get("version").and_then(Value::as_str).unwrap_or_default())
+                })
+                .ok_or_else(|| anyhow!("no conda-forge git package for {subdir}"))?;
+            let version = file
+                .get("version")
+                .and_then(Value::as_str)
+                .ok_or_else(|| anyhow!("conda-forge git: missing version"))?
+                .to_owned();
+            let raw_url = file
+                .get("download_url")
+                .and_then(Value::as_str)
+                .ok_or_else(|| anyhow!("conda-forge git: missing download_url"))?;
+            let url = if raw_url.starts_with("//") {
+                format!("https:{raw_url}")
+            } else {
+                raw_url.to_owned()
+            };
+            let sha = file
+                .get("sha256")
+                .and_then(Value::as_str)
+                .ok_or_else(|| anyhow!("conda-forge git: missing sha256"))?
+                .to_owned();
+            let name = format!("git-{version}-{subdir}.tar.bz2");
+            return Ok(Release::single(
+                version,
+                url,
+                name,
+                Expect::Sha256(sha),
+                Kind::Zip,
+                Inner::Root,
+            ));
+        }
         let rel = ctx.net.github_latest("git-for-windows/git")?;
         let suffix = if arch_of(ctx, component) == "arm64" {
             "arm64"
@@ -54,36 +105,38 @@ impl Installer for Git {
     /// selector window), and the portable home gets a `.gitconfig` once
     /// (main branch; any owner, for FAT32/exFAT sticks).
     fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
-        if dest.join("post-install.bat").is_file() {
-            let system_root = ctx.env.get("SystemRoot").unwrap_or(r"C:\Windows");
-            let cmd = Path::new(system_root).join("System32").join("cmd.exe");
-            let status = jobs::kit_command(&cmd, ctx.env)
-                .args(["/d", "/c", "post-install.bat"])
-                .current_dir(dest)
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .status()
-                .context("Git post-install.bat")?;
-            // The script deletes itself as its last line, so cmd always ends
-            // with "batch file not found" (exit 1): success = script gone.
-            if dest.join("post-install.bat").exists() {
-                bail!("Git post-install.bat failed ({status})");
+        if ctx.kit.os().is_windows() {
+            if dest.join("post-install.bat").is_file() {
+                let system_root = ctx.env.get("SystemRoot").unwrap_or(r"C:\Windows");
+                let cmd = Path::new(system_root).join("System32").join("cmd.exe");
+                let status = jobs::kit_command(&cmd, ctx.env)
+                    .args(["/d", "/c", "post-install.bat"])
+                    .current_dir(dest)
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .status()
+                    .context("Git post-install.bat")?;
+                // The script deletes itself as its last line, so cmd always ends
+                // with "batch file not found" (exit 1): success = script gone.
+                if dest.join("post-install.bat").exists() {
+                    bail!("Git post-install.bat failed ({status})");
+                }
             }
-        }
-        let git = dest.join("cmd").join("git.exe");
-        let current = jobs::kit_command(&git, ctx.env)
-            .args(["config", "--system", "--get", "credential.helper"])
-            .output()
-            .context("git config --get")?;
-        let helper = String::from_utf8_lossy(&current.stdout).trim().to_owned();
-        let re = pattern(r"(?i)helper-selector|git-credential-manager(\.exe)?$")?;
-        if helper.is_empty() || re.is_match(&helper) {
-            let status = jobs::kit_command(&git, ctx.env)
-                .args(["config", "--system", "credential.helper", "manager"])
-                .status()
-                .context("git config --system")?;
-            if !status.success() {
-                bail!("git config --system credential.helper failed");
+            let git = dest.join("cmd").join("git.exe");
+            let current = jobs::kit_command(&git, ctx.env)
+                .args(["config", "--system", "--get", "credential.helper"])
+                .output()
+                .context("git config --get")?;
+            let helper = String::from_utf8_lossy(&current.stdout).trim().to_owned();
+            let re = pattern(r"(?i)helper-selector|git-credential-manager(\.exe)?$")?;
+            if helper.is_empty() || re.is_match(&helper) {
+                let status = jobs::kit_command(&git, ctx.env)
+                    .args(["config", "--system", "credential.helper", "manager"])
+                    .status()
+                    .context("git config --system")?;
+                if !status.success() {
+                    bail!("git config --system credential.helper failed");
+                }
             }
         }
         let gitconfig = ctx.kit.home().join(".gitconfig");
@@ -164,8 +217,8 @@ pub fn python_lines(sums: &str, triple: &str) -> Vec<String> {
 impl Python {
     fn release(ctx: &Ctx, component: &Component, minor: &str) -> Result<Release> {
         let (prefix, sums) = python_sums(ctx)?;
-        let triple = format!("{}-pc-windows-msvc", triple_arch(ctx, component));
-        let (file, version, sha) = pick_python(&sums, minor, &triple)
+        let triple = target_of(ctx, component).rust_triple();
+        let (file, version, sha) = pick_python(&sums, minor, triple)
             .ok_or_else(|| anyhow!("no Python {minor} for {triple}"))?;
         Ok(Release::single(
             version,
@@ -190,8 +243,8 @@ impl Installer for Python {
             Some(m) => m,
             None => {
                 let (_, sums) = python_sums(ctx)?;
-                let triple = format!("{}-pc-windows-msvc", triple_arch(ctx, component));
-                python_lines(&sums, &triple)
+                let triple = target_of(ctx, component).rust_triple();
+                python_lines(&sums, triple)
                     .into_iter()
                     .next()
                     .unwrap_or_else(|| PYTHON_DEFAULT.to_owned())
@@ -206,8 +259,8 @@ impl Installer for Python {
 
     fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
         let (_, sums) = python_sums(ctx)?;
-        let triple = format!("{}-pc-windows-msvc", triple_arch(ctx, component));
-        Ok(python_lines(&sums, &triple))
+        let triple = target_of(ctx, component).rust_triple();
+        Ok(python_lines(&sums, triple))
     }
 
     fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
@@ -218,7 +271,11 @@ impl Installer for Python {
     /// `data\python-packages-<old version>.txt`; with the same minor version,
     /// `Lib\site-packages` and `Scripts` (except pip) move to the new tree.
     fn before_swap(&self, ctx: &Ctx, component: &Component, tree: &Path, old: &Path) -> Result<()> {
-        let old_python = old.join("python.exe");
+        let old_python = if ctx.kit.os().is_windows() {
+            old.join("python.exe")
+        } else {
+            old.join("bin").join("python3")
+        };
         if !old_python.is_file() {
             return Ok(());
         }
@@ -245,16 +302,22 @@ impl Installer for Python {
         }
         // Packages are compatible only within the same minor version.
         let minor = |v: &str| v.split('.').take(2).collect::<Vec<_>>().join(".");
-        if minor(&old_version) != python_minor(ctx) {
+        let m = minor(&old_version);
+        if m != python_minor(ctx) {
             return Ok(());
         }
         let is_pip = |name: &str| {
             let n = name.to_ascii_lowercase();
             n == "pip" || n.starts_with("pip-") || n.starts_with("pip.") || n.starts_with("pip3")
         };
-        for sub in [r"Lib\site-packages", "Scripts"] {
-            let from = old.join(sub);
-            let to = tree.join(sub);
+        let subs: Vec<String> = if ctx.kit.os().is_windows() {
+            vec!["Lib/site-packages".into(), "Scripts".into()]
+        } else {
+            vec![format!("lib/python{m}/site-packages"), "bin".into()]
+        };
+        for sub in &subs {
+            let from = join_rel(old, sub);
+            let to = join_rel(tree, sub);
             fs::create_dir_all(&to)?;
             for entry in fs::read_dir(&from).into_iter().flatten().flatten() {
                 let name = entry.file_name().to_string_lossy().into_owned();
@@ -270,9 +333,15 @@ impl Installer for Python {
 
     /// `python3.exe` next to `python.exe`, and pip from the bundled wheel.
     fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
-        let python = dest.join("python.exe");
-        fs::copy(&python, dest.join("python3.exe")).context("python3.exe")?;
-        let bundled = dest.join(r"Lib\ensurepip\_bundled");
+        let (python, bundled) = if ctx.kit.os().is_windows() {
+            let p = dest.join("python.exe");
+            fs::copy(&p, dest.join("python3.exe")).context("python3.exe")?;
+            (p, join_rel(dest, "Lib/ensurepip/_bundled"))
+        } else {
+            let p = dest.join("bin").join("python3");
+            let m = python_minor(ctx);
+            (p, join_rel(dest, &format!("lib/python{m}/ensurepip/_bundled")))
+        };
         let wheel = fs::read_dir(&bundled)
             .into_iter()
             .flatten()
@@ -328,12 +397,21 @@ pub struct NodeEntry {
     files: Vec<String>,
 }
 
-/// Node.js: the newest LTS with a Windows zip for this platform.
+/// Node.js: the newest LTS with an archive for this target.
 pub struct Node;
 
-/// The lines of Node.js with a Windows zip for `arch` (`win-x64-zip`) in
-/// `index.json` (newest first, as the index): the even majors (LTS lines)
-/// from 18 on, the others only for their newest major.
+/// The `files` identifier used in `https://nodejs.org/dist/index.json` for `target`.
+pub fn node_wanted_file(target: Target) -> String {
+    match target.os {
+        Os::Win32 => format!("win-{}-zip", target.arch.as_str()),
+        Os::Darwin => format!("osx-{}-tar", target.arch.as_str()),
+        Os::Linux => format!("linux-{}", target.arch.as_str()),
+    }
+}
+
+/// The lines of Node.js with `wanted` (`win-x64-zip`, `osx-arm64-tar`,
+/// `linux-x64`, ...) in `index.json` (newest first, as the index): the even
+/// majors (LTS lines) from 18 on, the others only for their newest major.
 pub fn node_lines(index: &[NodeEntry], wanted: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for e in index.iter().filter(|e| e.files.iter().any(|f| f == wanted)) {
@@ -362,9 +440,11 @@ pub fn node_lines(index: &[NodeEntry], wanted: &str) -> Vec<String> {
 
 impl Node {
     fn release(ctx: &Ctx, component: &Component, line: Option<&str>) -> Result<Release> {
-        let arch = arch_of(ctx, component);
+        let target = target_of(ctx, component);
+        let arch = target.arch.as_str();
+        let node_os = target.node_os();
+        let wanted = node_wanted_file(target);
         let index: Vec<NodeEntry> = ctx.net.json("https://nodejs.org/dist/index.json")?;
-        let wanted = format!("win-{arch}-zip");
         let entry = index
             .iter()
             .find(|e| {
@@ -372,9 +452,15 @@ impl Node {
                     // None: the newest release (the line marked "latest").
                     && line.is_none_or(|l| crate::versions::line_of(&e.version).as_deref() == Some(l))
             })
-            .ok_or_else(|| anyhow!("no Node.js {} for win-{arch}", line.unwrap_or("LTS")))?;
+            .ok_or_else(|| anyhow!("no Node.js {} for {node_os}-{arch}", line.unwrap_or("LTS")))?;
         let v = &entry.version;
-        let file_name = format!("node-{v}-win-{arch}.zip");
+        let (ext, kind) = if target.is_windows() {
+            ("zip", Kind::Zip)
+        } else {
+            ("tar.gz", Kind::TarGz)
+        };
+        let stem = format!("node-{v}-{node_os}-{arch}");
+        let file_name = format!("{stem}.{ext}");
         let sums = ctx
             .net
             .text(&format!("https://nodejs.org/dist/{v}/SHASUMS256.txt"))?;
@@ -385,8 +471,8 @@ impl Node {
             format!("https://nodejs.org/dist/{v}/{file_name}"),
             file_name,
             Expect::Sha256(sha),
-            Kind::Zip,
-            Inner::Named(format!("node-{v}-win-{arch}")),
+            kind,
+            Inner::Named(stem),
         ))
     }
 }
@@ -402,10 +488,7 @@ impl Installer for Node {
 
     fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
         let index: Vec<NodeEntry> = ctx.net.json("https://nodejs.org/dist/index.json")?;
-        Ok(node_lines(
-            &index,
-            &format!("win-{}-zip", arch_of(ctx, component)),
-        ))
+        Ok(node_lines(&index, &node_wanted_file(target_of(ctx, component))))
     }
 
     fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
@@ -413,37 +496,45 @@ impl Installer for Node {
     }
 }
 
-/// uv, uvx, uvw in `uv\<line>`.
+/// uv, uvx, uvw in `uv/<line>`.
 pub struct Uv;
 
 impl Installer for Uv {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let triple = format!("{}-pc-windows-msvc", triple_arch(ctx, component));
+        let target = target_of(ctx, component);
+        let triple = target.rust_triple();
+        let (ext, kind) = if target.is_windows() {
+            (r"\.zip", Kind::Zip)
+        } else {
+            (r"\.tar\.gz", Kind::TarGz)
+        };
         github_single(
             ctx,
             "astral-sh/uv",
-            &format!(r"^uv-{}\.zip$", regex::escape(&triple)),
-            Kind::Zip,
+            &format!(r"^uv-{}{ext}$", regex::escape(triple)),
+            kind,
             Inner::Auto,
         )
     }
 }
 
-/// GitHub CLI in `gh\<line>` (`bin\gh.exe`).
+/// GitHub CLI in `gh/<line>` (`bin/gh(.exe)`).
 pub struct Gh;
 
 impl Installer for Gh {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let arch = if arch_of(ctx, component) == "arm64" {
-            "arm64"
-        } else {
-            "amd64"
+        let target = target_of(ctx, component);
+        let arch = target.go_arch();
+        let (os_tag, ext, kind) = match target.os {
+            Os::Win32 => ("windows", r"\.zip", Kind::Zip),
+            Os::Darwin => ("macOS", r"\.zip", Kind::Zip),
+            Os::Linux => ("linux", r"\.tar\.gz", Kind::TarGz),
         };
         github_single(
             ctx,
             "cli/cli",
-            &format!(r"^gh_[\d.]+_windows_{arch}\.zip$"),
-            Kind::Zip,
+            &format!(r"^gh_[\d.]+_{os_tag}_{arch}{ext}$"),
+            kind,
             Inner::Auto,
         )
     }
