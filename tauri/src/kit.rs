@@ -514,7 +514,10 @@ impl Kit {
 
     /// `data/app/root.txt` (or `root-<os>.txt` on macOS/Linux) keeps the last
     /// root for this operating system. When it differs, the old one is also
-    /// saved in `data/app/old-root.txt` (or `old-root-<os>.txt`).
+    /// saved in `data/app/old-root.txt` (or `old-root-<os>.txt`), and the
+    /// components that cannot move on this target (conda environments on
+    /// macOS/Linux: Git, R) are marked to be installed again (D-92), before
+    /// the new root is recorded, so a failed start notices the move again.
     fn check_moved(&self) -> io::Result<Option<PathBuf>> {
         let (record_name, pending_name) = match self.target.os {
             Os::Win32 => ("root.txt", "old-root.txt"),
@@ -530,6 +533,7 @@ impl Kit {
                 if !pending.exists() {
                     write_atomic(&pending, last.as_bytes())?;
                 }
+                crate::install::flag_not_relocatable(self, last)?;
                 Some(PathBuf::from(last))
             }
             _ => None,

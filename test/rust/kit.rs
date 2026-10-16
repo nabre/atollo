@@ -175,6 +175,51 @@ fn prepare_creates_only_inside_root_and_detects_move() {
     assert_eq!(entries.len(), 1, "nothing created next to the kit");
 }
 
+/// D-92: a conda environment (Git, R off Windows) has its folder written
+/// inside, so a moved kit marks it to be installed again; on Windows every
+/// component moves with the kit.
+#[test]
+fn moving_the_kit_flags_the_conda_components_off_windows() {
+    let catalog = crate::setup::catalog::Catalog::get();
+    let flagged = |kit: &Kit| -> Vec<&str> {
+        ["git", "r", "python", "node"]
+            .into_iter()
+            .filter(|id| catalog.find(id).unwrap().needs_reinstall(kit))
+            .collect()
+    };
+    for (target, expected) in [
+        (Target::LINUX_X64, vec!["git", "r"]),
+        (Target::DARWIN_ARM64, vec!["git", "r"]),
+        (Target::WIN32_X64, vec![]),
+    ] {
+        let tmp = TempDir::new(&format!("moved-{target}"));
+        let first = Kit::at_target(tmp.0.join("one"), target);
+        assert_eq!(first.prepare().unwrap(), None);
+        // Git, R and Python on disk; Node is not.
+        for rel in ["git/2.51/bin/git", "r/4.5/bin/R", "python/3.13/bin/python3"] {
+            let file = crate::fsx::join_rel(first.apps(), rel);
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(&file, b"x").unwrap();
+        }
+        assert_eq!(first.prepare().unwrap(), None);
+        assert!(flagged(&first).is_empty(), "{target}: not moved yet");
+
+        let moved_root = tmp.0.join("two");
+        fs::rename(first.root(), &moved_root).unwrap();
+        let moved = Kit::at_target(moved_root, target);
+        assert_eq!(moved.prepare().unwrap(), Some(first.root().to_path_buf()));
+        assert_eq!(flagged(&moved), expected, "{target}");
+
+        // Reinstalled (install::install clears it): not flagged again at
+        // the next start from the same root.
+        for id in &expected {
+            catalog.find(id).unwrap().clear_reinstall(&moved);
+        }
+        assert_eq!(moved.prepare().unwrap(), None);
+        assert!(flagged(&moved).is_empty(), "{target}: same root");
+    }
+}
+
 #[test]
 fn folders_that_break_the_editor_watcher() {
     assert_eq!(watcher_unsafe_folder(Path::new(r"E:\Atollo")), None);

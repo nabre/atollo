@@ -669,6 +669,15 @@ impl Installer for R {
         true
     }
 
+    /// Off Windows the moved environment loads its libraries and finds its
+    /// files at the old folder: installed again (D-92). On Windows R runs
+    /// from its launchers and only building packages from source reads the
+    /// old folder; reinstalling 1 GB at every new drive letter of a stick
+    /// would cost more.
+    fn relocatable(&self, target: Target) -> bool {
+        target.os.is_windows()
+    }
+
     fn install_custom(
         &self,
         ctx: &Ctx,

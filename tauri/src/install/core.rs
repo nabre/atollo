@@ -31,6 +31,11 @@ impl Installer for Git {
         !target.os.is_windows()
     }
 
+    /// PortableGit moves with the kit; a conda environment does not (D-92).
+    fn relocatable(&self, target: Target) -> bool {
+        target.os.is_windows()
+    }
+
     /// The environment in the folder of its line, then `finish` (the
     /// portable `.gitconfig`), which the shared path would have run.
     fn install_custom(
