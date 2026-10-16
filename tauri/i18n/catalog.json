@@ -184,10 +184,10 @@
     "fr": "{0} : échec : {1}",
     "de": "{0}: fehlgeschlagen: {1}"
   },
-  "Scaricalo dal browser ({0}), mettilo nella cartella data\\downloads del kit e riprova.": {
-    "en": "Download it in the browser ({0}), put it in the kit's data\\downloads folder and try again.",
-    "fr": "Téléchargez-le dans le navigateur ({0}), placez-le dans le dossier data\\downloads du kit et réessayez.",
-    "de": "Lade es im Browser herunter ({0}), lege es in den Ordner data\\downloads des Kits und versuche es erneut."
+  "Scaricalo dal browser ({0}), mettilo nella cartella {1} e riprova.": {
+    "en": "Download it in the browser ({0}), put it in the folder {1} and try again.",
+    "fr": "Téléchargez-le dans le navigateur ({0}), placez-le dans le dossier {1} et réessayez.",
+    "de": "Lade es im Browser herunter ({0}), lege es in den Ordner {1} und versuche es erneut."
   },
   "Un'altra preparazione è già in corso in questo kit.": {
     "en": "Another preparation is already running in this kit.",
