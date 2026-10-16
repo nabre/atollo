@@ -10,6 +10,7 @@ import type { IconType } from "react-icons";
 import {
   VscAdd,
   VscBeaker,
+  VscBook,
   VscCloudDownload,
   VscExtensions,
   VscGithub,
@@ -23,6 +24,7 @@ import {
 } from "react-icons/vsc";
 import { editorRestart, settingsGet, settingsSet, type Settings, type SettingsView, type AppInfo } from "../api";
 import { GithubAccount } from "../github";
+import type { GuideTopicId } from "../guide";
 import { BrandSymbol } from "../brand";
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
@@ -71,10 +73,12 @@ export function SettingsPage({
   onSaved,
   editorRunning,
   info,
+  onGuide,
 }: {
   onSaved: () => void;
   editorRunning: boolean;
   info: AppInfo | null;
+  onGuide?: (topic: GuideTopicId) => void;
 }) {
   const [view, setView] = useState<SettingsView | null>(null);
   const [s, setS] = useState<Settings | null>(null);
@@ -214,7 +218,20 @@ export function SettingsPage({
 
   const side = (
     <>
-      <SideBarTitle title={t("Impostazioni")} />
+      <SideBarTitle
+        title={t("Impostazioni")}
+        actions={
+          onGuide ? (
+            <IconButton
+              icon={VscBook}
+              label={t("Apri la guida di questa pagina")}
+              onClick={() => {
+                onGuide(tabs.active === "github" ? "github-setup" : "cfg-init-net");
+              }}
+            />
+          ) : undefined
+        }
+      />
       <div className="px-3 pb-1.5">
         <SearchBox value={search} onChange={setSearch} placeholder={t("Cerca nelle impostazioni")} />
       </div>

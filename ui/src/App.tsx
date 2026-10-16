@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
+  VscBook,
   VscCode,
   VscDatabase,
   VscDebugDisconnect,
@@ -45,10 +46,11 @@ import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
 import { ServersPage } from "./servers";
 import { NewProjectPage } from "./wizard";
+import { GuidePage, type GuideTopicId } from "./guide";
 import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./hooks";
 
-type PageId = "new" | "projects" | "agents" | "databases" | "servers" | "components" | "settings" | "eject";
+type PageId = "new" | "projects" | "agents" | "databases" | "servers" | "components" | "guide" | "settings" | "eject";
 
 interface Page {
   id: PageId;
@@ -64,6 +66,7 @@ function pages(): Page[] {
     { id: "databases", label: t("Database"), icon: VscDatabase },
     { id: "servers", label: t("Server Web"), icon: VscGlobe },
     { id: "components", label: t("Strumenti"), icon: VscExtensions },
+    { id: "guide", label: t("Guida"), icon: VscBook },
     { id: "settings", label: t("Impostazioni"), icon: VscSettingsGear },
     { id: "eject", label: t("Rimuovi l'unità"), icon: VscDebugDisconnect },
   ];
@@ -71,6 +74,11 @@ function pages(): Page[] {
 
 export function App() {
   const [page, setPage] = useState<PageId>("projects");
+  const [guideTopic, setGuideTopic] = useState<GuideTopicId>("overview");
+  const openGuide = useCallback((topic: GuideTopicId = "overview") => {
+    setGuideTopic(topic);
+    setPage("guide");
+  }, []);
   /** The projects open in the editor, kept while other pages are shown. */
   const projectTabs = useTabs();
   /** The tools open in the editor of the Tools page, kept the same way. */
@@ -143,6 +151,7 @@ export function App() {
               onSettings={() => {
                 setPage("settings");
               }}
+              onGuide={openGuide}
             />
           ) : page === "projects" ? (
             <ProjectsPage
@@ -154,19 +163,29 @@ export function App() {
               logs={logs}
               loadLog={loadLog}
               forget={forget}
+              onGuide={openGuide}
             />
           ) : page === "agents" ? (
-            <AgentsPage />
+            <AgentsPage onGuide={openGuide} />
           ) : page === "components" ? (
-            <ToolsPage setup={setup} tabs={toolTabs} />
+            <ToolsPage setup={setup} tabs={toolTabs} onGuide={openGuide} />
           ) : page === "databases" ? (
-            <DatabasesPage />
+            <DatabasesPage onGuide={openGuide} />
           ) : page === "servers" ? (
-            <ServersPage />
+            <ServersPage onGuide={openGuide} />
+          ) : page === "guide" ? (
+            <GuidePage
+              key={guideTopic}
+              info={info}
+              initialTopic={guideTopic}
+              onNavigate={(target) => {
+                setPage(target);
+              }}
+            />
           ) : page === "settings" ? (
-            <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} info={info} />
+            <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} info={info} onGuide={openGuide} />
           ) : (
-            <EjectPage />
+            <EjectPage onGuide={openGuide} />
           )}
           {panelOpen && (
             <>
@@ -221,7 +240,7 @@ export function App() {
 }
 
 /** Pages at the bottom of the bar, as VSCodium's Accounts and Manage. */
-const BOTTOM: PageId[] = ["settings", "eject"];
+const BOTTOM: PageId[] = ["guide", "settings", "eject"];
 
 /** VSCodium's activity bar (modern layout): 36px items with a rounded mark
  * on the active one and the brand's bar on its left edge, a badge with what

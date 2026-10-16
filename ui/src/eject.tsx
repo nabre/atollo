@@ -3,7 +3,7 @@
 // then closes the app so the drive can be removed safely. The same list is
 // shown when the window is closed with something open (CloseDialog).
 import { useCallback, useEffect, useState } from "react";
-import { VscClose, VscDebugDisconnect, VscRefresh } from "react-icons/vsc";
+import { VscBook, VscClose, VscDebugDisconnect, VscRefresh } from "react-icons/vsc";
 
 import { appQuit, ejectList, ejectRun, type OpenNow } from "./api";
 import { ActionButton, ErrorLine } from "./common";
@@ -36,7 +36,7 @@ export function OpenList({ open }: { open: OpenNow }) {
   );
 }
 
-export function EjectPage() {
+export function EjectPage({ onGuide }: { onGuide?: (topic: "lifecycle") => void } = {}) {
   const [open, setOpen] = useState<OpenNow | null>(null);
   const [done, setDone] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -97,6 +97,15 @@ export function EjectPage() {
         )}
         <div className="flex flex-wrap gap-2">
           <ActionButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
+          {onGuide && (
+            <ActionButton
+              icon={VscBook}
+              label={t("Guida")}
+              onClick={() => {
+                onGuide("lifecycle");
+              }}
+            />
+          )}
           <ActionButton
             icon={VscDebugDisconnect}
             label={t("Chiudi tutto e prepara la rimozione")}

@@ -571,60 +571,128 @@ pub fn php_ini(template: &str) -> Result<String> {
 
 /// Apache httpd from Apache Lounge (the maintained Windows build). Port,
 /// site and PHP live in `data\apache\kit.conf`, which updates never touch.
+///
+/// Its lines are whole versions (`patchLines`): Apache has only the 2.4
+/// line. Apache Lounge deletes a build when the next one comes out, except
+/// the last one of each retired compiler (`APACHE_PAGES`).
 pub struct Apache;
+
+const APACHE_SITE: &str = "https://www.apachelounge.com";
+
+/// The pages with Win64 builds, the current one first. VC11 (2.4.38) is
+/// left out: it needs the Visual C++ 2012 runtime, which the kit lacks.
+const APACHE_PAGES: &[&str] = &[
+    "/download/",
+    "/download/VS17/",
+    "/download/VS16/",
+    "/download/VC15/",
+    "/download/VC14/",
+];
+
+/// A Win64 build on Apache Lounge.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ApacheBuild {
+    /// `2.4.66-251206`, or `2.4.54` for the older builds.
+    pub version: String,
+    /// `/download/VS17/binaries/httpd-2.4.66-251206-Win64-VS17.zip`.
+    pub path: String,
+    pub file: String,
+}
+
+/// The Win64 builds linked by a page of Apache Lounge, in page order.
+pub fn apache_builds_in(page: &str) -> Vec<ApacheBuild> {
+    let Ok(re) = pattern(
+        r#"(?i)href="(/download/[^"/]+/binaries/(httpd-(\d+\.\d+\.\d+(?:-\d+)?)-win64-v[cs]\d+\.zip))""#,
+    ) else {
+        return Vec::new();
+    };
+    let mut out: Vec<ApacheBuild> = Vec::new();
+    for c in re.captures_iter(page) {
+        if out.iter().all(|b| !b.file.eq_ignore_ascii_case(&c[2])) {
+            out.push(ApacheBuild {
+                version: c[3].to_owned(),
+                path: c[1].to_owned(),
+                file: c[2].to_owned(),
+            });
+        }
+    }
+    out
+}
+
+/// The builds on Apache Lounge, one per version, the newest page first. A
+/// page of a retired compiler that does not answer is skipped.
+fn apache_builds(ctx: &Ctx) -> Result<Vec<ApacheBuild>> {
+    let mut out: Vec<ApacheBuild> = Vec::new();
+    for (i, page) in APACHE_PAGES.iter().enumerate() {
+        let text = match ctx.net.text(&format!("{APACHE_SITE}{page}")) {
+            Ok(t) => t,
+            Err(e) if i > 0 => {
+                crate::log::warn(&format!("Apache Lounge {page}: {e:#}"));
+                continue;
+            }
+            Err(e) => return Err(e),
+        };
+        for b in apache_builds_in(&text) {
+            let line = crate::versions::patch_of(&b.version);
+            if out
+                .iter()
+                .all(|o| crate::versions::patch_of(&o.version) != line)
+            {
+                out.push(b);
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// The release of a build, with the SHA-256 Apache Lounge publishes.
+fn apache_release_of(ctx: &Ctx, b: &ApacheBuild) -> Result<Release> {
+    let url = format!("{APACHE_SITE}{}", b.path);
+    let sums = ctx.net.text(&format!("{url}.txt"))?;
+    let sha = pattern(r"(?is)SHA256-Checksum for:[^\r\n]*\r?\n\s*([0-9a-f]{64})")?
+        .captures(&sums)
+        .map(|m| m[1].to_owned())
+        .ok_or_else(|| anyhow!("Apache {}: no SHA-256", b.version))?;
+    Ok(Release::single(
+        b.version.clone(),
+        url,
+        b.file.clone(),
+        Expect::Sha256(sha),
+        Kind::Zip,
+        Inner::Named("Apache24".into()),
+    ))
+}
 
 impl Installer for Apache {
     fn has_lines(&self) -> bool {
         true
     }
 
+    /// The versions on Apache Lounge, newest first.
     fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
-        let site = "https://www.apachelounge.com";
-        let page = ctx.net.text(&format!("{site}/download/"))?;
-        let re = pattern(
-            r#"(?i)href="/download/VS\d+/binaries/httpd-(\d+\.\d+)\.\d+-\d+-Win64-VS\d+\.zip""#,
-        )?;
-        let mut out: Vec<String> = Vec::new();
-        for c in re.captures_iter(&page) {
-            let line = c[1].to_owned();
-            if crate::versions::valid_line(&line) && !out.contains(&line) {
-                out.push(line);
-            }
-        }
+        let mut out: Vec<String> = apache_builds(ctx)?
+            .iter()
+            .filter_map(|b| crate::versions::patch_of(&b.version))
+            .collect();
         out.sort_by_key(|l| std::cmp::Reverse(super::lang::version_key(l)));
         Ok(out)
     }
 
-    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
-        let rel = self.latest(ctx, component)?;
-        if crate::versions::line_of(&rel.version).as_deref() == Some(line) {
-            return Ok(rel);
-        }
-        bail!("Apache {line} not available")
+    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
+        let build = apache_builds(ctx)?
+            .into_iter()
+            .find(|b| crate::versions::patch_of(&b.version).as_deref() == Some(line))
+            .ok_or_else(|| anyhow!("Apache {line} not available"))?;
+        apache_release_of(ctx, &build)
     }
 
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
-        let site = "https://www.apachelounge.com";
-        let page = ctx.net.text(&format!("{site}/download/"))?;
-        let re = pattern(
-            r#"(?i)href="(/download/VS\d+/binaries/(httpd-(\d+\.\d+\.\d+-\d+)-Win64-VS\d+\.zip))""#,
-        )?;
-        let c = re
-            .captures(&page)
+        let page = ctx.net.text(&format!("{APACHE_SITE}/download/"))?;
+        let build = apache_builds_in(&page)
+            .into_iter()
+            .next()
             .ok_or_else(|| anyhow!("Apache Win64 package not found on apachelounge.com"))?;
-        let sums = ctx.net.text(&format!("{site}{}.txt", &c[1]))?;
-        let sha = pattern(r"(?is)SHA256-Checksum for:[^\r\n]*\r?\n\s*([0-9a-f]{64})")?
-            .captures(&sums)
-            .map(|m| m[1].to_owned())
-            .ok_or_else(|| anyhow!("Apache: no SHA-256"))?;
-        Ok(Release::single(
-            c[3].to_owned(),
-            format!("{site}{}", &c[1]),
-            c[2].to_owned(),
-            Expect::Sha256(sha),
-            Kind::Zip,
-            Inner::Named("Apache24".into()),
-        ))
+        apache_release_of(ctx, &build)
     }
 
     fn before_swap(

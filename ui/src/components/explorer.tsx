@@ -6,6 +6,7 @@
 import { useState, type ReactNode } from "react";
 import {
   VscAdd,
+  VscBook,
   VscClose,
   VscExtensions,
   VscReferences,
@@ -15,6 +16,7 @@ import {
   VscWarning,
 } from "react-icons/vsc";
 import type { SetupSnapshot } from "../api";
+import type { GuideTopicId } from "../guide";
 import { t } from "../i18n";
 import { ErrorLine } from "../common";
 import { ComponentLogo } from "../logos";
@@ -68,7 +70,15 @@ function overviewTitle(id: Overview): string {
   }[id];
 }
 
-export function ToolsPage({ setup, tabs }: { setup: SetupSnapshot | null; tabs: ReturnType<typeof useTabs> }) {
+export function ToolsPage({
+  setup,
+  tabs,
+  onGuide,
+}: {
+  setup: SetupSnapshot | null;
+  tabs: ReturnType<typeof useTabs>;
+  onGuide?: (topic: GuideTopicId) => void;
+}) {
   const state = useComponents(setup, false);
   const { list, chosen, choose, error, synced, neededBy, projects, load } = state;
   const kit = useKitVersions(setup, true);
@@ -102,14 +112,25 @@ export function ToolsPage({ setup, tabs }: { setup: SetupSnapshot | null; tabs: 
       <SideBarTitle
         title={t("Strumenti")}
         actions={
-          <IconButton
-            icon={VscRefresh}
-            label={t("Aggiorna")}
-            onClick={() => {
-              load();
-              relations.load();
-            }}
-          />
+          <>
+            <IconButton
+              icon={VscRefresh}
+              label={t("Aggiorna")}
+              onClick={() => {
+                load();
+                relations.load();
+              }}
+            />
+            {onGuide && (
+              <IconButton
+                icon={VscBook}
+                label={t("Apri la guida di questa pagina")}
+                onClick={() => {
+                  onGuide("sources-table");
+                }}
+              />
+            )}
+          </>
         }
       />
       <div className="shrink-0 px-3 pt-1 pb-1.5">

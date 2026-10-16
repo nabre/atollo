@@ -5,6 +5,7 @@
 // port and open in the browser.
 import { useCallback, useState } from "react";
 import {
+  VscBook,
   VscCode,
   VscFolderOpened,
   VscGlobe,
@@ -30,6 +31,7 @@ import {
 } from "../api";
 import { AgentButton } from "../agents";
 import { GithubRepositories } from "../github";
+import type { GuideTopicId } from "../guide";
 import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
@@ -68,6 +70,7 @@ export function ProjectsPage({
   loadLog,
   forget,
   tabs,
+  onGuide,
 }: {
   status: EditorStatus | null;
   agents: AgentInfo[] | null;
@@ -79,6 +82,7 @@ export function ProjectsPage({
   forget: (key: string) => void;
   /** The projects open in the editor (kept by the app across pages). */
   tabs: ReturnType<typeof useTabs>;
+  onGuide?: (topic: GuideTopicId) => void;
 }) {
   const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["projects"]));
   const [filter, setFilter] = useState("");
@@ -169,6 +173,15 @@ export function ProjectsPage({
                 run("folder", () => folderOpen("projects"));
               }}
             />
+            {onGuide && (
+              <IconButton
+                icon={VscBook}
+                label={t("Apri la guida di questa pagina")}
+                onClick={() => {
+                  onGuide("feat-projects");
+                }}
+              />
+            )}
           </>
         }
       />
@@ -356,6 +369,18 @@ export function ProjectsPage({
                     {t("Apri la cartella dei progetti")}
                   </Link>
                 </li>
+                {onGuide && (
+                  <li className="flex items-center gap-2">
+                    <VscBook size={16} aria-hidden="true" className="text-vsc-link" />
+                    <Link
+                      onClick={() => {
+                        onGuide("overview");
+                      }}
+                    >
+                      {t("Guida")}
+                    </Link>
+                  </li>
+                )}
               </ul>
             </section>
             <p className="text-[12px] text-vsc-desc">

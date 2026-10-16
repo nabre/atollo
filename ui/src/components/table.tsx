@@ -3,7 +3,7 @@
 // those shown) applied with "Apply" as on the tool's own page, and the
 // actions done at once: install (at a chosen version), add a version, update.
 import { useMemo, useState } from "react";
-import { VscArrowDown, VscArrowUp, VscSync, VscWarning } from "react-icons/vsc";
+import { VscArrowDown, VscArrowUp, VscCloudDownload, VscSync, VscWarning } from "react-icons/vsc";
 import {
   componentsInstall,
   setupStart,
@@ -18,7 +18,7 @@ import { ComponentLogo } from "../logos";
 import { ItemStatus, itemState } from "../setup";
 import { Tag } from "../tags";
 import { AddLine, composerOf, RefreshLines, splitVersion, type KitVersions } from "../versions";
-import { Button, Checkbox, DataTable, IconButton, Link, SearchBox, Select } from "../workbench";
+import { Checkbox, DataTable, IconButton, Link, SearchBox, Select } from "../workbench";
 import { groups, linesOf, matches, sizeText } from "./model";
 import type { ComponentsState } from "./state";
 
@@ -39,18 +39,17 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
     if (!c.available) return null;
     return (
       <span className="flex items-center gap-1">
-        <Button
-          small
-          variant="primary"
+        <IconButton
+          icon={VscCloudDownload}
+          label={t("Installa {0}", c.name)}
+          title={t("Installa {0} all'ultima versione, subito", c.name)}
           busy={busy === `install:${c.id}`}
           disabled={doing}
-          title={t("Installa {0} all'ultima versione, subito", c.name)}
+          className="text-vsc-link"
           onClick={() => {
             run(c.id, `install:${c.id}`, () => componentsInstall(c.id));
           }}
-        >
-          {t("Installa")}
-        </Button>
+        />
         {lines && (
           <>
             <AddLine

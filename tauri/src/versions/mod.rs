@@ -7,7 +7,8 @@
 //!
 //! Every version has its folder inside the component's own, one per minor
 //! line (`major.minor`): `data\apps\<platform>\node\<line>`, with the full
-//! version in `.devkit-version`. The default is the folder of the installed
+//! version in `.devkit-version`. Apache, with a single minor line, has one
+//! per patch (`patch_lines`, `apache\2.4.66`). The default is the folder of the installed
 //! version (`data\app\versions\<id>.txt`), the one updates replace:
 //! - an update that changes the minor line installs next to the old one,
 //!   which stays as a saved line (a new patch of the same line replaces);
@@ -78,6 +79,35 @@ pub fn valid_line(line: &str) -> bool {
     line_of(line).as_deref() == Some(line)
 }
 
+/// `major.minor.patch` of a version: `2.4.66-251206` → `2.4.66`. `None`
+/// without three numbers.
+pub fn patch_of(version: &str) -> Option<String> {
+    let line = line_of(version)?;
+    let start = version.find(|c: char| c.is_ascii_digit())?;
+    let patch = version[start..]
+        .split(|c: char| !c.is_ascii_digit() && c != '.')
+        .next()?
+        .split('.')
+        .nth(2)
+        .filter(|p| !p.is_empty())?;
+    Some(format!("{line}.{patch}"))
+}
+
+/// The line of `version` of `c`: `major.minor`, the whole version for the
+/// components with `patch_lines` (Apache).
+pub fn line_for(c: &Component, version: &str) -> Option<String> {
+    if c.patch_lines {
+        patch_of(version)
+    } else {
+        line_of(version)
+    }
+}
+
+/// A line of `c` as the interface and the files write it.
+pub fn valid_line_for(c: &Component, line: &str) -> bool {
+    line_for(c, line).as_deref() == Some(line)
+}
+
 /// The versioned components of the catalog.
 pub fn versioned() -> impl Iterator<Item = &'static Component> {
     Catalog::get().all().iter().filter(|c| c.versioned)
@@ -92,10 +122,10 @@ fn store(kit: &Kit, c: &Component) -> PathBuf {
     c.folder_path(kit).unwrap_or_else(|| kit.apps().join(&c.id))
 }
 
-/// The folder of `version`: its line, or the version itself (safe
-/// characters only) when it has no `major.minor`.
-pub fn dir_name(version: &str) -> String {
-    line_of(version).unwrap_or_else(|| {
+/// The folder of `version` of `c`: its line, or the version itself (safe
+/// characters only) when it has none.
+pub fn dir_name(c: &Component, version: &str) -> String {
+    line_for(c, version).unwrap_or_else(|| {
         version
             .trim()
             .chars()
@@ -117,7 +147,7 @@ pub fn saved_dir(kit: &Kit, c: &Component, line: &str) -> PathBuf {
 
 /// Where `version` of `c` is installed as the default.
 pub fn install_dir(kit: &Kit, c: &Component, version: &str) -> PathBuf {
-    saved_dir(kit, c, &dir_name(version))
+    saved_dir(kit, c, &dir_name(c, version))
 }
 
 /// The default folder of `c`: that of the installed version; the
@@ -126,7 +156,7 @@ pub fn install_dir(kit: &Kit, c: &Component, version: &str) -> PathBuf {
 pub fn default_dir(kit: &Kit, c: &Component) -> PathBuf {
     let store = store(kit, c);
     if let Some(version) = c.installed_version(kit) {
-        let dir = store.join(dir_name(&version));
+        let dir = store.join(dir_name(c, &version));
         if has_key(c, &dir) {
             return dir;
         }
@@ -167,7 +197,7 @@ pub fn default_line(kit: &Kit, c: &Component) -> Option<String> {
     if !c.is_installed(kit) {
         return None;
     }
-    c.installed_version(kit).as_deref().and_then(line_of)
+    line_for(c, &c.installed_version(kit)?)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -187,7 +217,7 @@ pub fn saved(kit: &Kit, c: &Component) -> Vec<Line> {
         .flatten()
         .filter_map(|e| {
             let line = e.file_name().to_string_lossy().into_owned();
-            let other = valid_line(&line) && default.as_deref() != Some(line.as_str());
+            let other = valid_line_for(c, &line) && default.as_deref() != Some(line.as_str());
             (other && has_key(c, &e.path())).then(|| Line {
                 version: fs::read_to_string(e.path().join(VERSION_FILE))
                     .ok()

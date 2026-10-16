@@ -727,4 +727,22 @@ describe("App", () => {
     expect(screen.getByText("Togliere l'accesso salvato nel kit?")).toBeTruthy();
     expect(invoke).not.toHaveBeenCalledWith("agent_sign_out", expect.anything());
   });
+
+  it("opens the Guide from the activity bar and contextual buttons and navigates topics", async () => {
+    invoke.mockImplementation(answers({}));
+    render(<App />);
+    // Open Guide from the bottom-left Activity Bar icon
+    const [guideBtn] = screen.getAllByRole("button", { name: "Guida" });
+    if (guideBtn) fireEvent.click(guideBtn);
+    expect(await screen.findByText(/I 6 principi architetturali cardine/)).toBeTruthy();
+
+    // Jump to the 36-source table
+    fireEvent.click(screen.getByRole("button", { name: /Esplora le 36 fonti/ }));
+    expect(await screen.findByText(/Catalogo completo delle fonti esterne/)).toBeTruthy();
+    expect(screen.getByText("PortableGit-<v>-(64-bit|arm64).7z.exe (estratto in Rust)")).toBeTruthy();
+
+    // Jump to a visual feature topic with screenshots
+    fireEvent.click(screen.getByText(/Pagina «Progetti»/));
+    expect(await screen.findByText(/05 · Scheda 1 — Avvio/)).toBeTruthy();
+  });
 });

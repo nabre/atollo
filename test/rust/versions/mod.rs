@@ -19,6 +19,27 @@ fn lines() {
     assert!(!valid_line(r"..\x") && !valid_line("1.2;3"));
 }
 
+#[test]
+fn patch_lines() {
+    for (v, l) in [
+        ("2.4.66-251206", Some("2.4.66")),
+        ("2.4.54", Some("2.4.54")),
+        ("v22.11.0", Some("22.11.0")),
+        ("2.4", None),
+        ("", None),
+    ] {
+        assert_eq!(patch_of(v).as_deref(), l, "{v}");
+    }
+    let catalog = Catalog::get();
+    let apache = catalog.find("apache").unwrap();
+    let node = catalog.find("node").unwrap();
+    assert_eq!(line_for(apache, "2.4.66-251206").as_deref(), Some("2.4.66"));
+    assert_eq!(line_for(node, "v22.11.0").as_deref(), Some("22.11"));
+    assert!(valid_line_for(apache, "2.4.66") && !valid_line_for(apache, "2.4"));
+    assert!(valid_line_for(node, "22.11") && !valid_line_for(node, "22.11.0"));
+    assert!(!valid_line_for(apache, r"2.4.6\x"));
+}
+
 pub(super) fn install_fake(kit: &Kit, c: &Component, dir: &Path) {
     let rel = c.key.strip_prefix(c.folder.as_deref().unwrap()).unwrap();
     let key = dir.join(rel.trim_start_matches('/').replace('/', "\\"));

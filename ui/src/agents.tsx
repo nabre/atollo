@@ -4,7 +4,7 @@
 // sign-out. Launch happens only in a project. Instructions, skills and MCP
 // servers are shared by the three (data\agents, aligned by the app).
 import { useState } from "react";
-import { VscFolderOpened, VscHubot, VscRefresh, VscSignOut, VscWarning } from "react-icons/vsc";
+import { VscBook, VscFolderOpened, VscHubot, VscRefresh, VscSignOut, VscWarning } from "react-icons/vsc";
 import {
   agentLaunch,
   agentSignOut,
@@ -15,6 +15,7 @@ import {
   type AgentStats,
   type Level,
 } from "./api";
+import type { GuideTopicId } from "./guide";
 import { rich, t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
 import { ComponentLogo } from "./logos";
@@ -76,7 +77,7 @@ function AgentFooter({ agent, stats }: { agent: AgentInfo; stats: AgentStats | u
   );
 }
 
-export function AgentsPage() {
+export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => void } = {}) {
   const { agents, reload } = useAgents();
   const { busy, error, run } = useAction(reload);
   const [confirm, setConfirm] = useState<AgentId | null>(null);
@@ -109,6 +110,15 @@ export function AgentsPage() {
                 run("folder", () => folderOpen("agents"));
               }}
             />
+            {onGuide && (
+              <IconButton
+                icon={VscBook}
+                label={t("Apri la guida di questa pagina")}
+                onClick={() => {
+                  onGuide("feat-agents");
+                }}
+              />
+            )}
           </>
         }
       />
