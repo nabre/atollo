@@ -222,8 +222,14 @@ fn pool_run_stops_without_a_process() {
     assert_eq!(r.running(), 0, "counted with the pools");
     r.clear(&info.key);
     assert_eq!(r.list().len(), 1, "not cleared while served");
+    // What run_stop needs to take the site out of its pool.
+    assert_eq!(
+        r.pooled(&info.key),
+        Some(("legacy".into(), "shop".into(), a.id.clone()))
+    );
     r.stop(&info.key);
     assert_eq!(r.list()[0].state, State::Stopped);
+    assert_eq!(r.pooled(&info.key), None);
     r.clear(&info.key);
     assert!(r.list().is_empty());
 }
