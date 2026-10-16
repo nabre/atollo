@@ -23,7 +23,6 @@ export function EditorSettingsBox({ project }: { project: string }) {
     projectEditorSettings(project).then(
       (v) => {
         setLoadErr(null);
-        if (!v) return;
         setView(v);
         setFormat(toTri(v.settings.formatOnSave));
         setIndent(

@@ -280,7 +280,11 @@ export function EditorTabs({
 }) {
   return (
     <div className={TAB_BAR}>
-      <div role="tablist" aria-label={t("Editor")} className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]">
+      <div
+        role="tablist"
+        aria-label={t("Editor")}
+        className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]"
+      >
         {tabs.map((tab) => {
           const on = tab.id === active;
           const close = tab.pinned ? undefined : onClose;

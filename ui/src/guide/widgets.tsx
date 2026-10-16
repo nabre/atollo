@@ -264,7 +264,9 @@ export function GuideRecipe({
             </span>
             <span>·</span>
             <span>
-              <strong>{tr("File su disco:", "File on disk:", "Fichier sur le disque :", "Datei auf dem Datenträger:")}</strong>{" "}
+              <strong>
+                {tr("File su disco:", "File on disk:", "Fichier sur le disque :", "Datei auf dem Datenträger:")}
+              </strong>{" "}
               <code className="rounded bg-vsc-input px-1.5 py-0.5 font-mono text-[11px] text-vsc-fg select-text">
                 {whereFile}
               </code>
@@ -340,12 +342,7 @@ export function KitFoldersBar() {
     },
     {
       id: "backup",
-      label: tr(
-        "Backup database",
-        "Database backups",
-        "Sauvegardes de bases de données",
-        "Datenbank-Backups",
-      ),
+      label: tr("Backup database", "Database backups", "Sauvegardes de bases de données", "Datenbank-Backups"),
       path: tr(
         "data\\projects\\<progetto>\\private\\backups\\",
         "data\\projects\\<project>\\private\\backups\\",

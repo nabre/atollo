@@ -184,9 +184,7 @@ function Locked({ projects, label }: { projects: string[]; label: string }) {
       </button>
       {open && (
         <ul aria-label={label} className={`${MENU} min-w-36`}>
-          <li className="px-3 pb-0.5 text-[11px] text-vsc-desc">
-            {t("Usata da")}
-          </li>
+          <li className="px-3 pb-0.5 text-[11px] text-vsc-desc">{t("Usata da")}</li>
           {projects.map((p) => (
             <li key={p} className={MENU_ITEM}>
               {p}

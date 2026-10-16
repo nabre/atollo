@@ -40,7 +40,7 @@ export function useRuns() {
   const forget = useCallback(
     (key: string) => {
       void runClear(key).then(() => {
-        delete live.current[key];
+        live.current = Object.fromEntries(Object.entries(live.current).filter(([k]) => k !== key));
         setRuns((r) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== key)));
       });
     },
