@@ -74,3 +74,18 @@ fn fastcgi_location_is_case_insensitive() {
     assert!(conf.contains("location ~* \\.php$ {"), "{conf}");
     assert!(!conf.contains("location ~ \\.php$"), "{conf}");
 }
+
+/// F3: hidden files and folders are refused but `.well-known`, before any
+/// other regex location (the first matching one wins), with or without PHP.
+#[test]
+fn hidden_files_are_denied_first() {
+    let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
+    let doc = Path::new(r"D:\kit\projects\blog");
+    let run = Path::new(r"D:\kit\data\projects\blog\nginx");
+    let deny = "        location ~ /\\.(?!well-known(/|$)) {\r\n            deny all;\r\n        }";
+    for fcgi in [None, Some(9126)] {
+        let conf = project_conf(nginx, Some("blog"), doc, run, 7110, fcgi, false, &[], &[]);
+        let at = conf.find(deny).unwrap_or_else(|| panic!("{conf}"));
+        assert!(at < conf.find("location ~* \\.php$").unwrap(), "{conf}");
+    }
+}

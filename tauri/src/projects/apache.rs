@@ -98,6 +98,22 @@ pub fn php_module_blocks(php_var: &str) -> Vec<String> {
     out
 }
 
+/// Refuses (403) hidden files and folders (`.env`, `.git/`, `.htpasswd`)
+/// but `.well-known`: a site served from the project's root (WordPress
+/// `.`) would otherwise hand them out. By URL (`LocationMatch`, aliases
+/// included, never matching a dotted folder above the site on disk) and
+/// by file name (`FilesMatch`).
+pub fn hidden_deny(indent: &str) -> Vec<String> {
+    vec![
+        format!("{indent}<LocationMatch \"/\\.(?!well-known(/|$))\">"),
+        format!("{indent}    Require all denied"),
+        format!("{indent}</LocationMatch>"),
+        format!("{indent}<FilesMatch \"^\\.(?!well-known$)\">"),
+        format!("{indent}    Require all denied"),
+        format!("{indent}</FilesMatch>"),
+    ]
+}
+
 /// Directives (`Alias` + `<Directory>`) for checked path aliases; `own` is
 /// the expression of the project's folder (`${CP_PROJECT_FWD}`).
 pub fn alias_directives(own: &str, aliases: &[SiteAlias], indent: &str) -> Vec<String> {
@@ -189,6 +205,7 @@ pub fn project_conf_with_site(
         "</Directory>".to_owned(),
     ]);
     site.extend(alias_directives("${CP_PROJECT_FWD}", aliases, ""));
+    site.extend(hidden_deny(""));
     site.push("DirectoryIndex index.php index.html".to_owned());
     site.extend(php_module_blocks("CP_PHP_FWD"));
     site.push(format!("IncludeOptional \"{dir}/conf.d/*.conf\""));

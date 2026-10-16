@@ -290,6 +290,7 @@ fn apache_vhost_conf(
         "        Require all granted".to_owned(),
         "    </Directory>".to_owned(),
     ]);
+    lines.extend(apache::hidden_deny("    "));
     lines.extend(apache::alias_directives(
         &format!("${{CP_PROJECTS_FWD}}/{}", site.project),
         &alias::resolve(project_root, projects_root, &site.aliases),

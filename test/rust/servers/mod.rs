@@ -58,6 +58,11 @@ fn profile_crud_and_vhost_generation() {
     assert!(vhost.contains("Alias \"/media\" \"${CP_PROJECTS_FWD}/portale/storage/uploads\""));
     assert!(vhost.contains("Alias \"/shared\" \"${CP_PROJECTS_FWD}/common/assets\""));
     assert!(!vhost.contains("..") && !vhost.contains("Include") && !vhost.contains("Listen"));
+    // F3: hidden files refused inside the VirtualHost.
+    let deny = "    <LocationMatch \"/\\.(?!well-known(/|$))\">\r\n        Require all denied\r\n    </LocationMatch>";
+    let at = vhost.find(deny).unwrap_or_else(|| panic!("{vhost}"));
+    assert!(at < vhost.find("</VirtualHost>").unwrap());
+    assert!(vhost.contains("    <FilesMatch \"^\\.(?!well-known$)\">"));
 
     servers.remove_profile("legacy-apache-5.6").unwrap();
     assert!(servers.list("it", false).pools.is_empty());
@@ -118,6 +123,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
 
     assert!(alpha_vhost.contains("listen 127.0.0.1:8088;"));
     assert!(!alpha_vhost.contains("default_server"));
+    assert!(alpha_vhost.contains("location ~ /\\.(?!well-known(/|$)) {"));
     assert!(alpha_vhost.contains("server_name alpha.localhost api.alpha.localhost;"));
     assert!(!alpha_vhost.contains("server_name alpha.localhost api.alpha.localhost localhost;"));
 

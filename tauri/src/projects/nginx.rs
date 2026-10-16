@@ -119,6 +119,13 @@ pub fn vhost_block(
         format!("        server_name {};", names.join(" ")),
         format!("        root \"{root_fwd}\";"),
         "        index index.php index.html index.htm;".to_owned(),
+        // Hidden files and folders (`.env`, `.git/`) are refused but
+        // `.well-known`: a site served from the project's root would hand
+        // them out. A regex location, before the others: it wins over the
+        // aliases' prefix locations and over `.php`.
+        "        location ~ /\\.(?!well-known(/|$)) {".to_owned(),
+        "            deny all;".to_owned(),
+        "        }".to_owned(),
     ];
     if fcgi_port.is_some() {
         lines.extend([
