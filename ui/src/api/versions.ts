@@ -98,6 +98,12 @@ export function versionsAdd(id: string, line: string): Promise<void> {
   return act("versions_add", { id, line });
 }
 
+/** Installs `id`, not installed yet, at `line` instead of the latest: it
+ * becomes chosen (with what it needs); progress as `setup` events. */
+export function versionsInstall(id: string, line: string): Promise<void> {
+  return act("versions_install", { id, line });
+}
+
 export function versionsRemove(id: string, line: string): Promise<VersionedTool[]> {
   return query<VersionedTool[]>("versions_remove", SAMPLE_VERSIONS, { id, line });
 }

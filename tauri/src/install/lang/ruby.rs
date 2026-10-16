@@ -35,7 +35,8 @@ pub fn pick_ruby_line<'a>(
 }
 
 /// `(version, build, asset)` of every `rubyinstaller-X.Y.Z-N-<arch>.7z`
-/// among the releases that are not previews.
+/// among the releases that are not previews, with GitHub's SHA-256 (the
+/// older ones have none: they could not be checked).
 fn ruby_assets<'a>(releases: &'a [Value], arch: &str) -> Vec<(String, u64, &'a Value)> {
     let Ok(re) = regex::Regex::new(&format!(
         r"^rubyinstaller-(\d+\.\d+\.\d+)-(\d+)-{arch}\.7z$"
@@ -56,6 +57,7 @@ fn ruby_assets<'a>(releases: &'a [Value], arch: &str) -> Vec<(String, u64, &'a V
         })
         .filter_map(|a| {
             let name = a.get("name")?.as_str()?;
+            a.get("digest")?.as_str()?.strip_prefix("sha256:")?;
             let c = re.captures(name)?;
             Some((c[1].to_owned(), c[2].parse::<u64>().ok()?, a))
         })
@@ -160,37 +162,5 @@ fn copy_missing(from: &Path, to: &Path) -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn ruby_highest_version_and_build() {
-        let rel = |pre: bool, names: &[&str]| json!({"prerelease": pre, "assets": names.iter().map(|n| json!({"name": n})).collect::<Vec<_>>()});
-        let releases = vec![
-            rel(
-                false,
-                &[
-                    "rubyinstaller-3.3.9-1-x64.7z",
-                    "rubyinstaller-3.3.9-1-arm.7z",
-                ],
-            ),
-            rel(
-                false,
-                &[
-                    "rubyinstaller-3.4.5-1-x64.7z",
-                    "rubyinstaller-3.4.5-2-x64.7z",
-                ],
-            ),
-            rel(true, &["rubyinstaller-3.5.0-1-x64.7z"]),
-        ];
-        assert_eq!(
-            pick_ruby_line(&releases, "x64", None).map(|(v, _)| v),
-            Some("3.4.5-2".into())
-        );
-        assert_eq!(
-            pick_ruby_line(&releases, "arm", None).map(|(v, _)| v),
-            Some("3.3.9-1".into())
-        );
-    }
-}
+#[path = "../../../../test/rust/install/lang/ruby.rs"]
+mod tests;

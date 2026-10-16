@@ -31,6 +31,8 @@ pub struct ComponentInfo {
     /// One folder per minor line, side by side (versions/mod.rs); the others
     /// are always at their latest version.
     pub versioned: bool,
+    /// Its official site.
+    pub home: String,
 }
 
 /// When the Tools page opens: what was deleted by hand from the kit's
@@ -98,6 +100,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 needs: c.needs.clone(),
                 needs_windows11,
                 versioned: c.versioned,
+                home: c.home.clone(),
             }
         })
         .collect()
@@ -149,6 +152,19 @@ pub fn setup_start<R: Runtime>(
         ..Options::default()
     };
     Ok(state.setup.start(opts, false, setup_notify(app))?)
+}
+
+/// Installs `id` now, at its latest version, from the table of the Tools
+/// page: it becomes chosen, the other changes of the page stay pending.
+#[tauri::command]
+pub fn components_install<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    super::versions::install_now(app, &state, id, None)
 }
 
 /// The choice of the "Linguaggi e strumenti" page: `chosen` are the ids to
@@ -288,41 +304,5 @@ pub fn setup_by_hand_open<R: Runtime>(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::kit::{tests::TempDir, Arch};
-
-    #[test]
-    fn r_is_not_available_on_arm64() {
-        let tmp = TempDir::new("cmd-comps");
-        for (arch, arm64) in [(Arch::X64, false), (Arch::Arm64, true)] {
-            let kit = Kit::at(tmp.0.join(arch.as_str()), arch);
-            kit.prepare().unwrap();
-            let infos = component_infos(&kit, "it");
-            let r = infos.iter().find(|c| c.id == "r").unwrap();
-            assert_eq!(
-                (r.available, r.no_arm64, r.x64_only),
-                (!arm64, arm64, false)
-            );
-            let php = infos.iter().find(|c| c.id == "php").unwrap();
-            assert!(php.available && !php.no_arm64 && php.x64_only, "emulated");
-        }
-    }
-
-    #[test]
-    fn unavailable_components_keep_their_choice() {
-        let tmp = TempDir::new("cmd-choice");
-        let catalog = Catalog::get();
-        for (arch, kept) in [(Arch::X64, false), (Arch::Arm64, true)] {
-            let kit = Kit::at(tmp.0.join(arch.as_str()), arch);
-            kit.prepare().unwrap();
-            let mut saved = Choice::defaults(catalog);
-            saved.set(catalog, "r", true);
-            saved.write(&kit, catalog).unwrap();
-            let text = choice_text(&kit, &["git".into(), "php".into()]);
-            let choice = Choice::parse(&text, catalog);
-            assert_eq!(choice.is_chosen("r"), kept, "{arch:?}");
-            assert!(choice.is_chosen("php") && !choice.is_chosen("go"));
-        }
-    }
-}
+#[path = "../../../test/rust/commands/setup.rs"]
+mod tests;

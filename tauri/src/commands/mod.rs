@@ -286,6 +286,7 @@ macro_rules! command_handler {
             $crate::commands::setup::downloads_pick,
             $crate::commands::setup::setup_by_hand_open,
             $crate::commands::setup::components_apply,
+            $crate::commands::setup::components_install,
             $crate::commands::agents::agents_status,
             $crate::commands::agents::agents_stats,
             $crate::commands::agents::agent_launch,
@@ -307,6 +308,7 @@ macro_rules! command_handler {
             $crate::commands::versions::versions_list,
             $crate::commands::versions::versions_available,
             $crate::commands::versions::versions_add,
+            $crate::commands::versions::versions_install,
             $crate::commands::versions::versions_remove,
             $crate::commands::versions::project_versions,
             $crate::commands::versions::project_versions_set,
@@ -373,24 +375,5 @@ macro_rules! command_handler {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::kit::{tests::TempDir, Arch};
-    use std::fs;
-
-    #[test]
-    fn project_names_cannot_escape() {
-        let tmp = TempDir::new("cmd-proj");
-        let kit = Kit::at(tmp.0.clone(), Arch::X64);
-        kit.prepare().unwrap();
-        fs::create_dir_all(kit.projects().join("app")).unwrap();
-        assert_eq!(project_dir(&kit, None, "it").unwrap(), kit.projects());
-        assert_eq!(
-            project_dir(&kit, Some("app"), "it").unwrap(),
-            kit.projects().join("app")
-        );
-        for bad in ["..", r"..\data", "a/b", "C:\\x", "missing", "con"] {
-            assert!(project_dir(&kit, Some(bad), "it").is_err(), "{bad}");
-        }
-    }
-}
+#[path = "../../../test/rust/commands/mod.rs"]
+mod tests;

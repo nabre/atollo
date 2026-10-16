@@ -35,6 +35,26 @@ pub fn offered(kit: &Kit) -> BTreeMap<String, Offered> {
     all
 }
 
+/// How long a list of lines is good for (as on the Tools page).
+const STALE_SECS: u64 = 24 * 60 * 60;
+
+/// The versioned components whose lines can be downloaded and whose list is
+/// missing or older than a day.
+pub fn stale_offers(kit: &Kit) -> Vec<String> {
+    let all = offered(kit);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    super::versioned()
+        .filter(|c| crate::install::installer(&c.id).is_some_and(|i| i.has_lines()))
+        .filter(|c| {
+            all.get(&c.id)
+                .is_none_or(|o| now.saturating_sub(o.checked) > STALE_SECS)
+        })
+        .map(|c| c.id.clone())
+        .collect()
+}
+
 /// Keeps what the source of `id` offers now.
 pub fn save_offered(kit: &Kit, id: &str, lines: &[String]) -> Result<()> {
     // Lists of several components can be asked for at the same time.
@@ -71,47 +91,5 @@ pub fn to_download(kit: &Kit, id: &str, line: &str) -> Result<bool> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::kit::{tests::TempDir, Arch};
-    use crate::setup::catalog::Catalog;
-    use crate::versions::tests::install_fake;
-    use crate::versions::{install_dir, saved_dir, tools};
-
-    #[test]
-    fn offered_lines_and_downloads() {
-        let tmp = TempDir::new("versions-offered");
-        let kit = Kit::at(tmp.0.clone(), Arch::X64);
-        kit.prepare().unwrap();
-        let node = Catalog::get().find("node").unwrap();
-
-        // Nothing installed: nothing to download.
-        assert!(!to_download(&kit, "node", "20.18").unwrap());
-
-        let main = install_dir(&kit, node, "v22.11.0");
-        install_fake(&kit, node, &main);
-        node.save_version(&kit, "v22.11.0").unwrap();
-        let old = saved_dir(&kit, node, "20.18");
-        install_fake(&kit, node, &old);
-        assert!(!to_download(&kit, "node", "22.11").unwrap(), "the default");
-        assert!(!to_download(&kit, "node", "20.18").unwrap(), "saved");
-        assert!(to_download(&kit, "node", "18.20").unwrap());
-        assert!(to_download(&kit, "node", "x").is_err());
-
-        // Kept per component, valid lines only, newest first.
-        save_offered(&kit, "node", &["20.18".into(), "24.1".into(), "bad".into()]).unwrap();
-        save_offered(&kit, "claude", &["1.0".into()]).unwrap();
-        let all = offered(&kit);
-        assert_eq!(all.keys().collect::<Vec<_>>(), ["node"]);
-        assert_eq!(all["node"].lines, ["24.1", "20.18"]);
-        assert!(all["node"].checked > 0);
-
-        crate::projects::settings::update(&kit, "app", |s| {
-            s.versions.insert("node".into(), "20.18".into());
-        });
-        let tool = tools(&kit).into_iter().find(|t| t.id == "node").unwrap();
-        assert_eq!(tool.available, ["24.1", "20.18"]);
-        assert!(tool.checked.is_some());
-        assert_eq!(tool.projects.get("20.18").map(Vec::len), Some(1));
-    }
-}
+#[path = "../../../test/rust/versions/offered.rs"]
+mod tests;

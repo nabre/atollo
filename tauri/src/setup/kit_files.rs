@@ -46,23 +46,5 @@ pub fn write_all(kit: &Kit) -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::kit::{tests::TempDir, Arch};
-
-    #[test]
-    fn written_and_restored() {
-        let tmp = TempDir::new("kitfiles");
-        let kit = Kit::at(tmp.0.clone(), Arch::X64);
-        write_all(&kit).unwrap();
-        let path = kit.kit_files().join("loopback.js");
-        assert!(fs::read_to_string(&path)
-            .unwrap()
-            .contains("devkitLoopback"));
-        fs::write(&path, "changed").unwrap();
-        write_all(&kit).unwrap();
-        assert!(fs::read_to_string(&path)
-            .unwrap()
-            .contains("devkitLoopback"));
-    }
-}
+#[path = "../../../test/rust/setup/kit_files.rs"]
+mod tests;

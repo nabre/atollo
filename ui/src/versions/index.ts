@@ -5,5 +5,6 @@
 // project page the project's. The lists propose also the lines the source offers and
 // are not on disk yet: choosing one downloads it.
 export { composerOf, splitVersion } from "./model";
-export { ToolVersions, useKitVersions, type KitVersions } from "./kit";
+export { AddLine, ToolInstallLine, ToolVersions, useKitVersions, type KitVersions } from "./kit";
+export { RefreshLines } from "./lines";
 export { ProjectVersions } from "./project";

@@ -69,6 +69,8 @@ export interface ComponentInfo {
   /** One folder per minor version, side by side; the others are always at
    * their latest version. */
   versioned: boolean;
+  /** Its official site. */
+  home: string;
 }
 
 const IDLE: SetupSnapshot = {
@@ -115,6 +117,7 @@ function sampleComponent(
     needs: [],
     needsWindows11: false,
     versioned: ["python", "node", "php", "go", "java"].includes(id),
+    home: "https://example.org",
     ...extra,
   };
 }
@@ -207,4 +210,10 @@ export function setupCancel(): Promise<void> {
 /** Saves the choice (ids to keep installed) and installs/removes in the background. */
 export function componentsApply(chosen: string[], updateAll: boolean): Promise<void> {
   return act("components_apply", { chosen, updateAll });
+}
+
+/** Installs `id` now at its latest version; it becomes chosen, the other
+ * changes of the page stay pending. Progress as `setup` events. */
+export function componentsInstall(id: string): Promise<void> {
+  return act("components_install", { id });
 }
