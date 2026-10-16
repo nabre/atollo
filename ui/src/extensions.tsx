@@ -30,14 +30,14 @@ export function ExtensionsMatrixSection({
   const {
     data: matrix,
     error: loadErr,
-    reload,
+    retry,
   } = useLoad<ExtensionsMatrix | null>(extensionsMatrix, null, {
     onError: "show",
     key: components,
   });
   /** Languages and tools of the projects: their columns are highlighted. */
   const used = useMemo(() => new Set(projects.flatMap((p) => [...p.languages, ...p.requires])), [projects]);
-  if (loadErr) return <LoadError error={loadErr} onRetry={reload} />;
+  if (loadErr) return <LoadError error={loadErr} onRetry={retry} />;
   if (!matrix) return null;
   const columns: { key: string; name: string; tool: boolean }[] = [
     ...matrix.languages.map((l) => ({ key: l, name: l, tool: false })),

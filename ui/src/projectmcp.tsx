@@ -98,10 +98,10 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
 
 export function ProjectMcpBox({ project }: { project: string }) {
   const read = useCallback(() => projectMcp(project), [project]);
-  const { data: view, error: loadErr, reload: load } = useLoad<McpView | null>(read, null, { onError: "show" });
+  const { data: view, error: loadErr, reload: load, retry } = useLoad<McpView | null>(read, null, { onError: "show" });
   const [adding, setAdding] = useState(false);
   const { busy, error, run } = useAction(load);
-  const loadError = <LoadError error={loadErr} onRetry={load} className="px-3 py-2" />;
+  const loadError = <LoadError error={loadErr} onRetry={retry} className="px-3 py-2" />;
   if (!view) return loadError;
   const save = (servers: McpServer[]) => {
     run("save", () => projectMcpSet(project, servers));
