@@ -934,6 +934,54 @@ fn orphan_running_pool_is_listed_until_stopped() {
     assert!(servers.list("it", true).pools.is_empty());
 }
 
+/// Defect 8: assigning a project reloads only the running pool that
+/// serves it (never the others) and reports its failure.
+#[test]
+fn assign_project_reloads_only_its_pool_and_reports_errors() {
+    let tmp = TempDir::new("servers-assign-reload");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let free = || {
+        let l = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        l.local_addr().unwrap().port()
+    };
+    let (legacy_port, other_port) = (free(), free());
+    for (id, port) in [("legacy", legacy_port), ("other", other_port)] {
+        servers
+            .save_profile(
+                WebServerProfileInput {
+                    id: id.into(),
+                    name: id.into(),
+                    engine: WebServerEngine::Nginx,
+                    server_line: None,
+                    php_line: None,
+                    port: Some(port),
+                },
+                "it",
+            )
+            .unwrap();
+        fake_running(&servers, nginx_pool(id, port, Vec::new()));
+    }
+    fs::create_dir_all(kit.projects().join(r"shop\public")).unwrap();
+    // The reload of `legacy` restarts it, and there is no Nginx here.
+    let err = servers
+        .assign_project(
+            "shop",
+            "public",
+            WebServerEngine::Nginx,
+            Some("legacy".into()),
+            &KitEnv::default(),
+            "it",
+        )
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("Nginx is not installed"), "{err}");
+    assert!(!servers.is_running("legacy"));
+    assert!(servers.is_running("other"), "not touched");
+    servers.stop("other");
+}
+
 /// BUG-V3-02: names that give the same label in one pool stay distinct.
 #[test]
 fn name_sites_keeps_names_unique() {
