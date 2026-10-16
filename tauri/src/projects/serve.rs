@@ -15,7 +15,7 @@ use std::net::{Ipv4Addr, TcpListener, TcpStream};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 
@@ -164,10 +164,49 @@ fn is_ip_host_header(host: &str) -> bool {
         .is_some_and(|h| h.parse::<Ipv4Addr>().is_ok())
 }
 
+/// Longest wait for a single read of the request head.
+const READ_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Total time allowed for the whole request head, however it trickles in:
+/// a client sending one byte every few seconds is cut here, not after the
+/// 8192 bytes of the head (hours). Shorter under test, to keep tests quick.
+pub(crate) const HEAD_DEADLINE: Duration = if cfg!(test) {
+    Duration::from_secs(3)
+} else {
+    Duration::from_secs(10)
+};
+
+/// Reads from the connection, each read waiting at most what is left
+/// before `deadline` (and never more than [`READ_TIMEOUT`]).
+struct DeadlineReader {
+    stream: TcpStream,
+    deadline: Instant,
+}
+
+impl Read for DeadlineReader {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let left = self.deadline.saturating_duration_since(Instant::now());
+        // `set_read_timeout(Some(0))` is an error: a spent budget ends here.
+        if left.is_zero() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "request head deadline",
+            ));
+        }
+        self.stream.set_read_timeout(Some(left.min(READ_TIMEOUT)))?;
+        self.stream.read(buf)
+    }
+}
+
 fn handle(root: &Path, lan: bool, mut stream: TcpStream) -> Result<()> {
-    let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
+    let deadline = Instant::now() + HEAD_DEADLINE;
+    let _ = stream.set_read_timeout(Some(READ_TIMEOUT));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
-    let mut reader = BufReader::new(stream.try_clone()?.take(8192));
+    let head = DeadlineReader {
+        stream: stream.try_clone()?,
+        deadline,
+    };
+    let mut reader = BufReader::new(head.take(8192));
     let mut request = String::new();
     reader.read_line(&mut request)?;
     let mut host = String::new();
