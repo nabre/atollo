@@ -1,7 +1,7 @@
 // Reusable UI components for the in-app Guide: screenshot cards with
 // full-screen zoom modal, copyable code/config blocks, step-by-step recipe
 // cards and quick folder openers.
-import { useEffect, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
   VscArrowRight,
@@ -17,7 +17,7 @@ import { folderOpen } from "../api";
 import { useCopy } from "../hooks";
 import { t } from "../i18n";
 import { Tag } from "../tags";
-import { Button, IconButton } from "../workbench";
+import { Button, IconButton, useModalFocus } from "../workbench";
 import { tr, type AppPageTarget } from "./model";
 
 /** An application screenshot from /guide/*.webp with caption, practical
@@ -36,16 +36,6 @@ export function GuideShot({
   scenario?: string;
 }) {
   const [zoom, setZoom] = useState(false);
-  useEffect(() => {
-    if (!zoom) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setZoom(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [zoom]);
 
   return (
     <>
@@ -110,42 +100,67 @@ export function GuideShot({
       </figure>
 
       {zoom && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={title}
-          onClick={() => {
+        <ZoomDialog
+          src={src}
+          title={title}
+          caption={caption}
+          scenario={scenario}
+          onClose={() => {
             setZoom(false);
           }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 p-4"
-        >
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className="flex max-h-[92vh] w-[min(1240px,95vw)] flex-col overflow-hidden rounded-lg border border-vsc-widget-border bg-vsc-widget shadow-[0_0_16px_4px_var(--vsc-shadow)]"
-          >
-            <div className="flex items-center justify-between gap-2 border-b border-vsc-border px-4 py-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="truncate font-semibold text-vsc-settings-header">{title}</span>
-                <Tag>{scenario}</Tag>
-              </div>
-              <IconButton
-                icon={VscClose}
-                label={t("Chiudi")}
-                onClick={() => {
-                  setZoom(false);
-                }}
-              />
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto bg-black/40 p-2">
-              <img src={`/guide/${src}`} alt={title} className="mx-auto block max-w-full rounded" />
-            </div>
-            <div className="border-t border-vsc-border px-4 py-2 text-[12px] text-vsc-desc">{caption}</div>
-          </div>
-        </div>
+        />
       )}
     </>
+  );
+}
+
+/** The zoomed screenshot over the window: the focus goes to its close
+ * button, Tab stays inside, Esc or a click outside closes it, and the focus
+ * goes back to the button that opened it (useModalFocus). */
+function ZoomDialog({
+  src,
+  title,
+  caption,
+  scenario,
+  onClose,
+}: {
+  src: string;
+  title: string;
+  caption: string;
+  scenario: string;
+  onClose: () => void;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  useModalFocus(box, onClose);
+  return (
+    <div
+      ref={box}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      tabIndex={-1}
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 p-4 outline-none"
+    >
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className="flex max-h-[92vh] w-[min(1240px,95vw)] flex-col overflow-hidden rounded-lg border border-vsc-widget-border bg-vsc-widget shadow-[0_0_16px_4px_var(--vsc-shadow)]"
+      >
+        <div className="flex items-center justify-between gap-2 border-b border-vsc-border px-4 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate font-semibold text-vsc-settings-header">{title}</span>
+            <Tag>{scenario}</Tag>
+          </div>
+          <IconButton icon={VscClose} label={t("Chiudi")} onClick={onClose} />
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto bg-black/40 p-2">
+          <img src={`/guide/${src}`} alt={title} className="mx-auto block max-w-full rounded" />
+        </div>
+        <div className="border-t border-vsc-border px-4 py-2 text-[12px] text-vsc-desc">{caption}</div>
+      </div>
+    </div>
   );
 }
 
