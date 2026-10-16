@@ -113,20 +113,36 @@ pub(crate) fn mariadb_archive_for(
                 .ok_or_else(|| anyhow!("MariaDB {version}: no Windows zip"))?;
             (f, Kind::Zip)
         }
-        Os::Linux | Os::Darwin => {
+        Os::Linux => {
+            // Only Linux files (never another system's), the
+            // `linux-systemd` build first (glibc, the one MariaDB
+            // publishes today), debug symbols excluded (BUG-V3-04).
             let cpu = target.gnu_arch();
-            let f = files
-                .find(|f| {
-                    (f["os"] == "Linux" || f["os"] == "macOS")
+            let tarballs: Vec<&Value> = files
+                .filter(|f| {
+                    f["os"] == "Linux"
                         && f["cpu"] == cpu
                         && f["package_type"] == "gzipped tar file"
                         && f["file_name"]
                             .as_str()
                             .is_some_and(|n| n.ends_with(".tar.gz") && !n.contains("debugsymbols"))
                 })
-                .ok_or_else(|| anyhow!("MariaDB {version}: no {cpu} tar.gz"))?;
+                .collect();
+            let f = tarballs
+                .iter()
+                .find(|f| {
+                    f["file_name"]
+                        .as_str()
+                        .is_some_and(|n| n.contains("-linux-systemd-"))
+                })
+                .or(tarballs.first())
+                .copied()
+                .ok_or_else(|| anyhow!("MariaDB {version}: no Linux {cpu} tar.gz"))?;
             (f, Kind::TarGz)
         }
+        // The REST API lists Windows, Linux and source files only: no macOS
+        // build (the catalog leaves MariaDB out of darwin targets).
+        Os::Darwin => return Err(anyhow!("MariaDB {version}: no macOS build")),
     };
     let name = file["file_name"].as_str().unwrap_or_default().to_owned();
     let sha = file["checksum"]["sha256sum"]

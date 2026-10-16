@@ -10,9 +10,11 @@ use crate::install::{
 };
 use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
-use crate::net::github_digest;
 use crate::net::verify::Expect;
+use crate::net::{github_digest, verifiable, GhAsset, GhRelease};
 use crate::setup::catalog::Component;
+
+use super::version_key;
 
 /// CMake, with Ninja in `tools\`.
 pub struct Cmake;
@@ -107,34 +109,7 @@ impl Installer for Cc {
                     Inner::Single,
                 )
             }
-            (Os::Darwin, Arch::Arm64) => github_single(
-                ctx,
-                "llvm/llvm-project",
-                r"^(?:LLVM-[\d.]+-macOS-ARM64|clang\+llvm-[\d.]+-arm64-apple-darwin[^/]*)\.tar\.xz$",
-                Kind::TarXz,
-                Inner::Single,
-            ),
-            (Os::Darwin, Arch::X64) => github_single(
-                ctx,
-                "llvm/llvm-project",
-                r"^(?:LLVM-[\d.]+-macOS-X64|clang\+llvm-[\d.]+-x86_64-apple-darwin[^/]*)\.tar\.xz$",
-                Kind::TarXz,
-                Inner::Single,
-            ),
-            (Os::Linux, Arch::X64) => github_single(
-                ctx,
-                "llvm/llvm-project",
-                r"^(?:LLVM-[\d.]+-Linux-X64|clang\+llvm-[\d.]+-x86_64-linux-gnu[^/]*)\.tar\.xz$",
-                Kind::TarXz,
-                Inner::Single,
-            ),
-            (Os::Linux, Arch::Arm64) => github_single(
-                ctx,
-                "llvm/llvm-project",
-                r"^(?:LLVM-[\d.]+-Linux-ARM64|clang\+llvm-[\d.]+-aarch64-linux-gnu[^/]*)\.tar\.xz$",
-                Kind::TarXz,
-                Inner::Single,
-            ),
+            _ => llvm_release(ctx, llvm_asset(target)),
         }
     }
 
@@ -166,6 +141,70 @@ impl Installer for Cc {
     }
 }
 
+const LLVM_REPO: &str = "llvm/llvm-project";
+
+/// The LLVM/Clang archive for `target` among the assets of a release of
+/// llvm/llvm-project (macOS and Linux; Windows takes llvm-mingw). Clang
+/// only: the headers and libraries of the C library come from the system
+/// (Xcode Command Line Tools on macOS, libc headers and `make` on Linux).
+pub(crate) fn llvm_asset(target: Target) -> &'static str {
+    match (target.os, target.arch) {
+        (Os::Darwin, Arch::Arm64) => {
+            r"^(?:LLVM-[\d.]+-macOS-ARM64|clang\+llvm-[\d.]+-arm64-apple-darwin[^/]*)\.tar\.xz$"
+        }
+        (Os::Darwin, Arch::X64) => {
+            r"^(?:LLVM-[\d.]+-macOS-X64|clang\+llvm-[\d.]+-x86_64-apple-darwin[^/]*)\.tar\.xz$"
+        }
+        (_, Arch::X64) => {
+            r"^(?:LLVM-[\d.]+-Linux-X64|clang\+llvm-[\d.]+-x86_64-linux-gnu[^/]*)\.tar\.xz$"
+        }
+        (_, Arch::Arm64) => {
+            r"^(?:LLVM-[\d.]+-Linux-ARM64|clang\+llvm-[\d.]+-aarch64-linux-gnu[^/]*)\.tar\.xz$"
+        }
+    }
+}
+
+/// The newest stable release with a checkable archive matching `re`.
+/// llvm/llvm-project does not build every system for every release: some
+/// have no macOS ARM64 archive, none after 20.1.7 has a macOS x64 one
+/// (BUG-V3-05).
+pub(crate) fn newest_llvm<'a>(
+    releases: &'a [GhRelease],
+    re: &regex::Regex,
+) -> Option<(&'a GhRelease, &'a GhAsset)> {
+    releases
+        .iter()
+        .filter(|r| !r.prerelease)
+        .filter_map(|r| r.asset(re).filter(|a| verifiable(r, a)).map(|a| (r, a)))
+        .max_by_key(|(r, _)| version_key(&r.tag_name))
+}
+
+/// The latest release of LLVM when it has the archive of `asset`, else the
+/// newest of the last 100 that has it.
+fn llvm_release(ctx: &Ctx, asset: &str) -> Result<Release> {
+    let re = pattern(asset)?;
+    let latest = ctx.net.github_latest(LLVM_REPO)?;
+    let older: Vec<GhRelease>;
+    let (rel, file) = match latest.asset(&re) {
+        Some(file) => (&latest, file),
+        None => {
+            older = ctx.net.json(&format!(
+                "https://api.github.com/repos/{LLVM_REPO}/releases?per_page=100"
+            ))?;
+            newest_llvm(&older, &re)
+                .ok_or_else(|| anyhow!("{LLVM_REPO}: no release with an asset matching {asset}"))?
+        }
+    };
+    Ok(Release::single(
+        rel.tag_name.clone(),
+        file.browser_download_url.clone(),
+        file.name.clone(),
+        Expect::Sha256(ctx.net.release_sha256(rel, file)?),
+        Kind::TarXz,
+        Inner::Single,
+    ))
+}
+
 /// `make` is mingw32-make in llvm-mingw (make.exe is only in busybox, not
 /// on the PATH): Makefiles, Ruby's native gems and R's source packages
 /// call `make`. Also at start, for a C/C++ installed before (D-81).
@@ -188,3 +227,7 @@ pub fn make_launchers(bin: &Path) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "../../../../test/rust/install/lang/cc.rs"]
+mod tests;
