@@ -7,8 +7,9 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Context, Result};
 
 use super::{
-    check, default_dir, default_line, find, has_key, install_dir, project_users, saved, saved_dir,
-    store, valid_line, versioned, write_version, Line,
+    check, default_dir, default_line, find, has_key, install_dir, line_for, line_of, project_users,
+    saved, saved_dir, store, valid_line, valid_line_for, versioned, write_version, Line,
+    VERSION_FILE,
 };
 use crate::kit::Kit;
 use crate::setup::catalog::{Catalog, Component};
@@ -114,6 +115,9 @@ pub fn migrate(kit: &Kit) {
         if let Err(e) = migrate_default(kit, c) {
             crate::log::warn(&format!("{}: default folder not moved ({e:#})", c.id));
         }
+        if let Err(e) = migrate_patch_lines(kit, c) {
+            crate::log::warn(&format!("{}: version folders not renamed ({e:#})", c.id));
+        }
     }
     let old = kit.apps().join("versions");
     for entry in fs::read_dir(&old).into_iter().flatten().flatten() {
@@ -174,12 +178,47 @@ fn migrate_default(kit: &Kit, c: &Component) -> Result<()> {
     Ok(())
 }
 
+/// A component with one folder per patch (Apache): `apache\2.4`, from
+/// before, takes the name of the version inside (`apache\2.4.66`). A name
+/// already taken leaves it as it is.
+fn migrate_patch_lines(kit: &Kit, c: &Component) -> Result<()> {
+    if !c.patch_lines {
+        return Ok(());
+    }
+    let installed = c.installed_version(kit);
+    for entry in fs::read_dir(store(kit, c)).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if !valid_line(&name) || !has_key(c, &entry.path()) {
+            continue;
+        }
+        let version = fs::read_to_string(entry.path().join(VERSION_FILE))
+            .ok()
+            .map(|v| v.trim().to_owned())
+            .filter(|v| !v.is_empty())
+            .or_else(|| {
+                installed
+                    .clone()
+                    .filter(|v| line_of(v).as_deref() == Some(name.as_str()))
+            });
+        let Some(line) = version.as_deref().and_then(|v| line_for(c, v)) else {
+            continue;
+        };
+        let to = saved_dir(kit, c, &line);
+        if to.exists() {
+            continue;
+        }
+        fs::rename(entry.path(), &to).with_context(|| to.display().to_string())?;
+        crate::log::info(&format!("{}: {name} renamed to {line}", c.id));
+    }
+    Ok(())
+}
+
 /// `versions\<id>\<line>` → `<folder>\<line>`; a line already there wins.
 fn migrate_saved(kit: &Kit, c: &Component, old: &Path) -> Result<()> {
     for entry in fs::read_dir(old)?.flatten() {
         let line = entry.file_name().to_string_lossy().into_owned();
         let to = saved_dir(kit, c, &line);
-        if !valid_line(&line) || has_key(c, &to) {
+        if !valid_line_for(c, &line) || has_key(c, &to) {
             crate::net::archive::remove_dir(&entry.path())?;
             continue;
         }

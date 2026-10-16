@@ -1,5 +1,25 @@
 # Novità
 
+## Guida operativa e pagina «Guida» nell'app (16/10/2026)
+
+Manuale completo del kit in [`GUIDA.md`](GUIDA.md) (con 16 schermate commentate in `images\`) e pagina interattiva **Guida** (`VscBook`) in basso a sinistra nella barra delle attività.
+
+**Fatto**
+- **5 capitoli e 16 sezioni navigabili** nello stile Workbench di VSCodium (`ui/src/guide/`): architettura portabile e layout su disco, 36 fonti ufficiali con tabella ricercabile e stato live dei componenti installati, account GitHub unificato (D-70), panoramica visiva di tutte le viste e 12 ricette di configurazione passo-passo.
+- **Galleria visiva WebP con Lightbox** (`ui/public/guide/*.webp`) e collegamenti contestuali *«Guida»* nell'intestazione di tutte le pagine principali dell'app per aprire direttamente il capitolo associato.
+
+## Versioni di Apache (16/10/2026)
+
+Apache ha una sola linea (2.4) e Apache Lounge cancella una build quando esce la successiva: l'elenco delle versioni aveva sempre una voce sola.
+
+**Fatto**
+- **Una versione per patch** (`patchLines` nel catalogo, D-80): Apache si sceglie e si scarica come `2.4.69`, `2.4.66`…, ognuna nella sua cartella `apache\2.4.66`. Un aggiornamento si installa accanto alla versione precedente, che resta salvata.
+- **Archivio di Apache Lounge**: oltre alla build corrente, l'elenco propone l'ultima build di ogni compilatore ritirato (VS17 2.4.66, VS16 2.4.57, VC15 2.4.54, VC14 2.4.41), ognuna con lo SHA-256 pubblicato. VC11 (2.4.38) è escluso: richiede il runtime di Visual C++ 2012.
+- Tabella degli strumenti: «Installa» è un'icona.
+
+**Cambia**
+- Al primo avvio la cartella `apache\2.4` prende il nome della versione che contiene (`apache\2.4.69`). La scelta «2.4» di un progetto non vale più: il progetto segue il kit finché non sceglie una versione. L'elenco delle versioni di Apache già salvato si chiede di nuovo.
+
 ## Dati per progetto e file di passaggio nel temp del sistema (16/10/2026)
 
 Ciò che il kit tiene per un progetto sta in una cartella sola, e download ed estrazioni non scrivono più sulla chiavetta (D-89, D-90, [PLAN-DATA.md](PLAN-DATA.md)).

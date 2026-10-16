@@ -721,5 +721,8 @@
   "Strumenti del kit": "Outils du kit",
   "Aggiorna {0}": "Mettre à jour {0}",
   "Installa {0} all'ultima versione, subito": "Installer {0} dans sa dernière version, maintenant",
-  "Scarica la versione nuova di {0}, se c'è": "Télécharger la nouvelle version de {0}, s'il y en a une"
+  "Scarica la versione nuova di {0}, se c'è": "Télécharger la nouvelle version de {0}, s'il y en a une",
+  "Guida": "Guide",
+  "Cerca nella guida": "Rechercher dans le guide",
+  "Apri la guida di questa pagina": "Ouvrir le guide de cette page"
 }

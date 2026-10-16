@@ -400,7 +400,7 @@ pub fn install_line(
     let Some(inst) = installer(&component.id) else {
         bail!("{}: no installer", component.id);
     };
-    let line = crate::versions::line_of(&release.version)
+    let line = crate::versions::line_for(component, &release.version)
         .ok_or_else(|| anyhow::anyhow!("{}: version {}", component.id, release.version))?;
     if !component.versioned {
         bail!("{}: versions cannot be saved", component.id);

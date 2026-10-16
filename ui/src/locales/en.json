@@ -721,5 +721,8 @@
   "Strumenti del kit": "Kit tools",
   "Aggiorna {0}": "Update {0}",
   "Installa {0} all'ultima versione, subito": "Install {0} at its latest version, now",
-  "Scarica la versione nuova di {0}, se c'è": "Download the new version of {0}, if there is one"
+  "Scarica la versione nuova di {0}, se c'è": "Download the new version of {0}, if there is one",
+  "Guida": "Guide",
+  "Cerca nella guida": "Search in guide",
+  "Apri la guida di questa pagina": "Open the guide for this page"
 }

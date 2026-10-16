@@ -108,7 +108,15 @@ function EnvRows({
   );
 }
 
-export function NewProjectPage({ onOpen, onSettings }: { onOpen: (project: string) => void; onSettings: () => void }) {
+export function NewProjectPage({
+  onOpen,
+  onSettings,
+  onGuide,
+}: {
+  onOpen: (project: string) => void;
+  onSettings: () => void;
+  onGuide?: (topic: "feat-projects") => void;
+}) {
   const fw = useFrameworks();
   const { view, pieces, load } = fw;
   useEffect(load, [load]);
@@ -185,6 +193,18 @@ export function NewProjectPage({ onOpen, onSettings }: { onOpen: (project: strin
               "Scegli una base e le aggiunte: il kit installa gli strumenti che servono ed esegue i comandi ufficiali.",
             )}{" "}
             <Link onClick={onSettings}>{t("Modifica le istruzioni")}</Link>
+            {onGuide && (
+              <>
+                {" · "}
+                <Link
+                  onClick={() => {
+                    onGuide("feat-projects");
+                  }}
+                >
+                  {t("Guida")}
+                </Link>
+              </>
+            )}
           </p>
           <ErrorLine error={fw.error} />
 

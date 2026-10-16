@@ -111,6 +111,24 @@ fn apache_site_created_once() {
 }
 
 #[test]
+fn apache_builds_of_the_pages() {
+    let page = r#"<a href="/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip">x</a>
+        <a href="/download/VS18/binaries/httpd-2.4.69-261002-win32-vs18.zip">32</a>
+        <a href="/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip.txt">sums</a>
+        <a href="/download/VC15/binaries/httpd-2.4.54-win64-VC15.zip">old</a>
+        <a href="/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip">again</a>"#;
+    let builds = apache_builds_in(page);
+    assert_eq!(builds.len(), 2);
+    assert_eq!(builds[0].version, "2.4.69-261002");
+    assert_eq!(builds[0].file, "httpd-2.4.69-261002-Win64-VS18.zip");
+    assert_eq!(
+        builds[0].path,
+        "/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip"
+    );
+    assert_eq!(builds[1].version, "2.4.54");
+}
+
+#[test]
 fn cab_headers() {
     let mut bytes = vec![0u8; 10];
     let mut cab = b"MSCF\0\0\0\0".to_vec();

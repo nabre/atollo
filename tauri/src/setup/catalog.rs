@@ -88,6 +88,10 @@ pub struct Component {
     /// for the kit or a project (`versions/mod.rs`, D-80).
     #[serde(default)]
     pub versioned: bool,
+    /// Its lines are whole versions (`2.4.66`), not `major.minor`: the
+    /// source has a single minor line (Apache).
+    #[serde(default)]
+    pub patch_lines: bool,
 }
 
 #[derive(Debug, Deserialize)]

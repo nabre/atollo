@@ -7,7 +7,7 @@ use std::fs;
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use super::{default_line, dir_for, find, is_present, saved, valid_line, versioned};
+use super::{default_line, dir_for, find, is_present, saved, valid_line_for, versioned};
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
@@ -60,17 +60,17 @@ pub fn pin_newest(kit: &Kit, project: &str) {
 pub fn clean(choice: Choice) -> Choice {
     choice
         .into_iter()
-        .filter(|(id, line)| find(id).is_some() && valid_line(line))
+        .filter(|(id, line)| find(id).is_some_and(|c| valid_line_for(c, line)))
         .collect()
 }
 
 /// Checks a choice from the interface.
 pub fn check(id: &str, line: Option<&str>) -> Result<()> {
-    if find(id).is_none() {
+    let Some(c) = find(id) else {
         bail!("not a versioned component: {id}");
-    }
+    };
     if let Some(l) = line {
-        if !valid_line(l) {
+        if !valid_line_for(c, l) {
             bail!("not a version line: {l}");
         }
     }

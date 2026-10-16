@@ -3,7 +3,16 @@
 // VirtualHosts and portable relative path aliases.
 
 import { useCallback, useState } from "react";
-import { VscAdd, VscDebugStart, VscDebugStop, VscGlobe, VscLinkExternal, VscRefresh, VscTrash } from "react-icons/vsc";
+import {
+  VscAdd,
+  VscBook,
+  VscDebugStart,
+  VscDebugStop,
+  VscGlobe,
+  VscLinkExternal,
+  VscRefresh,
+  VscTrash,
+} from "react-icons/vsc";
 import {
   serverReload,
   serverRemove,
@@ -168,7 +177,7 @@ function PoolDetails({
   );
 }
 
-export function ServersPage() {
+export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") => void } = {}) {
   const [view, setView] = useState<WebServersView | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -225,6 +234,15 @@ export function ServersPage() {
               }}
             />
             <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={refresh} />
+            {onGuide && (
+              <IconButton
+                icon={VscBook}
+                label={t("Apri la guida di questa pagina")}
+                onClick={() => {
+                  onGuide("feat-services");
+                }}
+              />
+            )}
           </>
         }
       />

@@ -6,6 +6,7 @@
 
 import { useCallback, useState } from "react";
 import {
+  VscBook,
   VscCopy,
   VscDebugStart,
   VscDebugStop,
@@ -308,7 +309,7 @@ function ServiceDetails({
   );
 }
 
-export function DatabasesPage() {
+export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") => void } = {}) {
   const [list, setList] = useState<ServiceInfo[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -353,6 +354,15 @@ export function DatabasesPage() {
                 void folderOpen("db");
               }}
             />
+            {onGuide && (
+              <IconButton
+                icon={VscBook}
+                label={t("Apri la guida di questa pagina")}
+                onClick={() => {
+                  onGuide("feat-services");
+                }}
+              />
+            )}
           </>
         }
       />
