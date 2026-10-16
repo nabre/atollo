@@ -295,6 +295,53 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
     assert!(!load_store(&kit).ports.contains_key("gone"));
 }
 
+/// M2: a port released within a moment (a pool just ended) is waited for,
+/// not reported as used by another program; one kept taken still is.
+#[test]
+fn start_waits_for_a_port_being_released() {
+    let tmp = TempDir::new("servers-start-port");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port();
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: "busy".into(),
+                name: "busy".into(),
+                engine: WebServerEngine::Nginx,
+                server_line: None,
+                php_line: None,
+                port: Some(port),
+            },
+            "it",
+        )
+        .unwrap();
+    let busy = "La porta";
+
+    // Kept taken: the port error, after the grace.
+    let err = servers
+        .start("busy", &KitEnv::default(), "it")
+        .unwrap_err()
+        .to_string();
+    assert!(err.starts_with(busy), "{err}");
+
+    // Released while waiting: on to the start (no Nginx in this kit).
+    std::thread::scope(|s| {
+        s.spawn(move || {
+            std::thread::sleep(Duration::from_millis(400));
+            drop(listener);
+        });
+        let err = servers
+            .start("busy", &KitEnv::default(), "it")
+            .unwrap_err()
+            .to_string();
+        assert!(!err.starts_with(busy), "{err}");
+        assert!(err.contains("Nginx is not installed"), "{err}");
+    });
+}
+
 /// BUG-07: the 3 s poll reuses the scan; `fresh` and every change made
 /// through `WebServers` read `servers.json` and the projects again.
 #[test]

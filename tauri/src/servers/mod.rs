@@ -34,6 +34,9 @@ const POOL_PORT_TO: u16 = 8999;
 /// How long `list` reuses the scan of the projects (D-71 style): the 3 s
 /// poll of the page refreshes only running/pid/port in the meantime.
 const LIST_TTL: Duration = Duration::from_secs(15);
+/// How long a start waits for a taken port before calling it used by
+/// another program.
+const PORT_BUSY_GRACE: Duration = Duration::from_secs(2);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -940,7 +943,10 @@ impl WebServers {
         if pool.running {
             return Ok(());
         }
-        if !is_port_free(pool.port) {
+        // A pool just ended (a dead one ended by `list`, outside `op_lock`)
+        // may still hold its socket for a moment: not "used by another
+        // program" yet.
+        if !wait_port_released(pool.port, PORT_BUSY_GRACE) {
             bail!(
                 "{}",
                 crate::i18n::t(
