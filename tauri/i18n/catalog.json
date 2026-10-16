@@ -1298,5 +1298,40 @@
     "en": "Enter a name for the server profile.",
     "fr": "Écrivez un nom pour le profil de serveur.",
     "de": "Gib einen Namen für das Serverprofil ein."
+  },
+  "Tutti gli strumenti": {
+    "en": "All tools",
+    "fr": "Tous les outils",
+    "de": "Alle Werkzeuge"
+  },
+  "La cartella {0} non esiste.": {
+    "en": "The folder {0} does not exist.",
+    "fr": "Le dossier {0} n'existe pas.",
+    "de": "Der Ordner {0} existiert nicht."
+  },
+  "Scrivi un nome per il terminale.": {
+    "en": "Enter a name for the terminal.",
+    "fr": "Écrivez un nom pour le terminal.",
+    "de": "Gib einen Namen für das Terminal ein."
+  },
+  "Il nome del terminale è troppo lungo (al massimo {0} caratteri).": {
+    "en": "The terminal's name is too long (at most {0} characters).",
+    "fr": "Le nom du terminal est trop long ({0} caractères au maximum).",
+    "de": "Der Name des Terminals ist zu lang (höchstens {0} Zeichen)."
+  },
+  "Il terminale predefinito non si modifica.": {
+    "en": "The default terminal cannot be changed.",
+    "fr": "Le terminal par défaut ne peut pas être modifié.",
+    "de": "Das Standardterminal kann nicht geändert werden."
+  },
+  "Terminale non trovato: {0}": {
+    "en": "Terminal not found: {0}",
+    "fr": "Terminal introuvable : {0}",
+    "de": "Terminal nicht gefunden: {0}"
+  },
+  "Scegli la cartella del terminale": {
+    "en": "Choose the terminal's folder",
+    "fr": "Choisissez le dossier du terminal",
+    "de": "Ordner des Terminals wählen"
   }
 }

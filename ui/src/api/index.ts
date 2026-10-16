@@ -16,3 +16,4 @@ export * from "./frameworks";
 export * from "./runs";
 export * from "./github";
 export * from "./servers";
+export * from "./terminals";

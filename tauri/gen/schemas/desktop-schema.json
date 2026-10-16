@@ -717,10 +717,40 @@
           "markdownDescription": "Enables the setup_state command without any pre-configured scope."
         },
         {
+          "description": "Enables the terminal_dir_pick command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-terminal-dir-pick",
+          "markdownDescription": "Enables the terminal_dir_pick command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the terminal_launch command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-terminal-launch",
+          "markdownDescription": "Enables the terminal_launch command without any pre-configured scope."
+        },
+        {
           "description": "Enables the terminal_open command without any pre-configured scope.",
           "type": "string",
           "const": "allow-terminal-open",
           "markdownDescription": "Enables the terminal_open command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the terminal_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-terminal-remove",
+          "markdownDescription": "Enables the terminal_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the terminal_save command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-terminal-save",
+          "markdownDescription": "Enables the terminal_save command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the terminals_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-terminals-list",
+          "markdownDescription": "Enables the terminals_list command without any pre-configured scope."
         },
         {
           "description": "Enables the update_check command without any pre-configured scope.",
@@ -1311,10 +1341,40 @@
           "markdownDescription": "Denies the setup_state command without any pre-configured scope."
         },
         {
+          "description": "Denies the terminal_dir_pick command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-terminal-dir-pick",
+          "markdownDescription": "Denies the terminal_dir_pick command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the terminal_launch command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-terminal-launch",
+          "markdownDescription": "Denies the terminal_launch command without any pre-configured scope."
+        },
+        {
           "description": "Denies the terminal_open command without any pre-configured scope.",
           "type": "string",
           "const": "deny-terminal-open",
           "markdownDescription": "Denies the terminal_open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the terminal_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-terminal-remove",
+          "markdownDescription": "Denies the terminal_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the terminal_save command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-terminal-save",
+          "markdownDescription": "Denies the terminal_save command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the terminals_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-terminals-list",
+          "markdownDescription": "Denies the terminals_list command without any pre-configured scope."
         },
         {
           "description": "Denies the update_check command without any pre-configured scope.",

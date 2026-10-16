@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-terminals-list"
+description = "Enables the terminals_list command without any pre-configured scope."
+commands.allow = ["terminals_list"]
+
+[[permission]]
+identifier = "deny-terminals-list"
+description = "Denies the terminals_list command without any pre-configured scope."
+commands.deny = ["terminals_list"]
