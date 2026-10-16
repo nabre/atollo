@@ -133,7 +133,7 @@ Regole di progetto:
 - **Processi lunghi in background.** Installazioni, aggiornamenti ed espulsione girano in un task asincrono. L'interfaccia riceve righe di log ed eventi di stato tramite eventi Tauri e non si blocca mai.
 - **Un solo Job Object** per tutta l'app: ogni processo figlio (server dell'editor, PowerShell, console degli agenti) viene assegnato al job alla creazione.
 - **Finestre.** `main` (l'app) ed `editor` (una o più finestre dell'editor, una per progetto aperto). Le finestre dell'editor caricano solo l'URL del server locale.
-- **Console degli agenti fuori dall'editor.** Il lancio diretto di un agente apre Windows Terminal se il kit lo contiene o se è presente nel sistema, altrimenti `conhost`. In entrambi i casi si usa l'ambiente del kit e si passa da `agents.rs`.
+- **Console degli agenti fuori dall'editor.** Il lancio diretto di un agente apre la console classica di Windows (`conhost.exe`, mai il terminale del PC), con l'ambiente del kit, e passa da `agents.rs`.
 - **Plugin ammessi**: istanza singola, finestre di dialogo native (solo per scegliere cartelle), apertura di link esterni nel browser di sistema. Ogni altro plugin va motivato in `DECISIONS.md`.
 - **Dipendenze Rust** minime e diffuse (`serde`, `tokio`, `windows` o `windows-sys`, `anyhow` o `thiserror`). Versioni fissate in `Cargo.lock`, incluso nel repository.
 

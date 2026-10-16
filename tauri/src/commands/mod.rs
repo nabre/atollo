@@ -116,8 +116,8 @@ fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> CmdResult<PathBu
 }
 
 /// Why `name` cannot be installed on `target`: no build for ARM64 PCs on
-/// Windows ARM64, otherwise not made for that system (Windows Terminal on
-/// macOS or Linux).
+/// Windows ARM64, otherwise not made for that system (PHP on macOS or
+/// Linux).
 pub(crate) fn unavailable_msg(lang: &str, name: &str, target: crate::kit::Target) -> String {
     if target == crate::kit::Target::WIN32_ARM64 {
         crate::i18n::t(lang, "{0} non è disponibile sui PC ARM64.", &[name])

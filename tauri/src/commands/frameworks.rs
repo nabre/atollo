@@ -106,6 +106,45 @@ pub(super) fn framework_action_id(name: &str, i: usize) -> String {
     }
 }
 
+/// The connection to the project's database for the commands of a
+/// creation, by name, whatever the framework calls it (TYPO3's and
+/// Drupal's installers take it as options).
+pub(super) fn db_vars(db: &crate::db::auth::ProjectDb) -> Vec<(String, String)> {
+    [
+        ("DEVKIT_DB_HOST", db.host.clone()),
+        ("DEVKIT_DB_PORT", db.port.to_string()),
+        ("DEVKIT_DB_NAME", db.database.clone()),
+        ("DEVKIT_DB_USER", db.user.clone()),
+        ("DEVKIT_DB_PASSWORD", db.password.clone()),
+        ("DEVKIT_DB_URL", db.url.clone()),
+    ]
+    .into_iter()
+    .map(|(k, v)| (k.to_owned(), v))
+    .collect()
+}
+
+/// Adds `/.env` to the project's `.gitignore` when the project has a
+/// `.env` that Git would take: the kit writes passwords there (the
+/// database's, a CMS administrator's). TYPO3 and Drupal do not list it.
+pub(super) fn ignore_env(dir: &std::path::Path) -> anyhow::Result<()> {
+    let path = dir.join(".gitignore");
+    if !dir.join(".env").is_file()
+        || crate::db::auth::env_ignored(dir)
+        || crate::os::safe_path::is_link(&path)
+    {
+        return Ok(());
+    }
+    let text = std::fs::read_to_string(&path).unwrap_or_default();
+    let newline = if text.contains("\r\n") { "\r\n" } else { "\n" };
+    let sep = if text.is_empty() || text.ends_with('\n') {
+        ""
+    } else {
+        newline
+    };
+    crate::fsx::write_atomic(&path, format!("{text}{sep}/.env{newline}").as_bytes())?;
+    Ok(())
+}
+
 /// `merge_into` for a framework made on another disk, where a rename fails:
 /// what `to` already has stays (in `kept`), the rest is copied. Links are
 /// skipped, as `archive::copy_tree` does.
@@ -163,6 +202,10 @@ pub async fn frameworks_create<R: Runtime>(
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     crate::projects::frameworks::check_env(&env).map_err(|p| problem_text(lang, p))?;
     let wanted_env = env;
+    // `{password}` of `.env`: one new password for the creation.
+    let password = crate::projects::frameworks::password_of(
+        &crate::editor::random_token().or_fail("frameworks")?,
+    );
     let services = Arc::clone(&state.services);
     let busy = crate::projects::frameworks::begin()
         .ok_or_else(|| tr(&state, "È già in corso la creazione di un progetto.", &[]))?;
@@ -216,24 +259,31 @@ pub async fn frameworks_create<R: Runtime>(
                 &[&name],
             )
         };
-        let run = |step: usize, line: &str, at: &std::path::Path| -> CmdResult<()> {
+        let run = |step: usize,
+                   line: &str,
+                   at: &std::path::Path,
+                   vars: &[(String, String)]|
+         -> CmdResult<()> {
             if crate::projects::frameworks::cancelled() {
                 return Err(crate::i18n::t(lang, "Creazione annullata.", &[]).into());
             }
             let command = crate::projects::frameworks::fill(line, &name);
             emit(step, Some(command.clone()), None);
             let out = |l: &str| emit(step, None, Some(l.to_owned()));
-            crate::projects::frameworks::run_line(&kit, &env, at, &command, &out).map_err(|last| {
-                if crate::projects::frameworks::cancelled() {
-                    return crate::i18n::t(lang, "Creazione annullata.", &[]).into();
-                }
-                crate::log::warn(&format!("frameworks: {command}: {last}"));
-                crate::i18n::t(lang, "Comando non riuscito: {0}\n{1}", &[&command, &last]).into()
-            })
+            crate::projects::frameworks::run_line(&kit, &env, vars, at, &command, &out).map_err(
+                |last| {
+                    if crate::projects::frameworks::cancelled() {
+                        return crate::i18n::t(lang, "Creazione annullata.", &[]).into();
+                    }
+                    crate::log::warn(&format!("frameworks: {command}: {last}"));
+                    crate::i18n::t(lang, "Comando non riuscito: {0}\n{1}", &[&command, &last])
+                        .into()
+                },
+            )
         };
         let result = (|| -> CmdResult<()> {
             for (i, line) in plan.create.iter().enumerate() {
-                run(i + 1, line, &make_at)?;
+                run(i + 1, line, &make_at, &[])?;
             }
             if existing == Existing::Files {
                 let made = make_at.join(&name);
@@ -256,6 +306,9 @@ pub async fn frameworks_create<R: Runtime>(
             if !dir.is_dir() {
                 return Err(no_folder().into());
             }
+            // What the steps get in their environment: the database's
+            // connection (`DEVKIT_DB_*`) and the variables of `.env`.
+            let mut step_vars: Vec<(String, String)> = Vec::new();
             if let Some(engine) = &plan.database {
                 let text = crate::i18n::t(lang, "Creo il database del progetto in {0}…", &[engine]);
                 emit(plan.create.len(), None, Some(text));
@@ -264,6 +317,7 @@ pub async fn frameworks_create<R: Runtime>(
                     .and_then(|_port| services.project_db_create(&name, engine))
                     .or_fail_chain("database")?;
                 crate::db::auth::env_apply(&dir, &db).or_fail_chain(".env")?;
+                step_vars.extend(db_vars(&db));
             }
             let vars: Vec<(String, String)> = wanted_env
                 .iter()
@@ -271,10 +325,16 @@ pub async fn frameworks_create<R: Runtime>(
                 .map(|v| {
                     (
                         v.key.clone(),
-                        crate::projects::frameworks::env_value(&v.value, &name),
+                        crate::projects::frameworks::env_value(&v.value, &name, &password),
                     )
                 })
                 .collect();
+            step_vars.extend(wanted_env.iter().filter(|v| !v.key.is_empty()).map(|v| {
+                (
+                    v.key.clone(),
+                    crate::projects::frameworks::env_raw(&v.value, &name, &password),
+                )
+            }));
             if !vars.is_empty() {
                 let keys: Vec<&str> = vars.iter().map(|(k, _)| k.as_str()).collect();
                 let text = crate::i18n::t(lang, "Scrivo nel file .env: {0}", &[&keys.join(", ")]);
@@ -282,7 +342,10 @@ pub async fn frameworks_create<R: Runtime>(
                 crate::db::auth::env_set(&dir, &vars).or_fail_chain(".env")?;
             }
             for (i, line) in plan.steps.iter().enumerate() {
-                run(plan.create.len() + i + 1, line, &dir)?;
+                run(plan.create.len() + i + 1, line, &dir, &step_vars)?;
+            }
+            if let Err(e) = ignore_env(&dir) {
+                crate::log::warn(&format!("{name}: .gitignore: {e:#}"));
             }
             Ok(())
         })();

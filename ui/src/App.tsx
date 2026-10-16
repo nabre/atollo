@@ -178,6 +178,9 @@ export function App() {
               loadLog={loadLog}
               forget={forget}
               onGuide={openGuide}
+              onWizard={() => {
+                setPage("new");
+              }}
             />
           ) : page === "agents" ? (
             <AgentsPage onGuide={openGuide} />

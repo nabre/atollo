@@ -77,8 +77,6 @@ export interface Settings {
   pythonVersion: string | null;
   phpVersion: string | null;
   rustToolchain: "gnu" | "msvc" | null;
-  /** `null` = the kit's Windows Terminal; `classic` = Windows' classic console. */
-  terminal: "classic" | null;
   /** `TEMP` of the programs; applies to the consoles opened after saving. */
   programTemp: "auto" | "kit" | "system";
 }
@@ -99,7 +97,6 @@ const SAMPLE_SETTINGS: SettingsView = {
     pythonVersion: null,
     phpVersion: null,
     rustToolchain: null,
-    terminal: null,
     programTemp: "auto",
   },
   geminiKeySet: false,

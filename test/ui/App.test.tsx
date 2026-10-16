@@ -94,7 +94,6 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
         pythonVersion: null,
         phpVersion: null,
         rustToolchain: null,
-        terminal: null,
         programTemp: "auto",
       },
       geminiKeySet: true,

@@ -336,11 +336,11 @@ fn multi_platform_availability_and_paths_across_targets() {
     use crate::kit::Target;
 
     let catalog = Catalog::get();
-    let term = catalog.find("terminal").unwrap();
-    assert!(term.is_available_on(Target::WIN32_X64));
-    assert!(term.is_available_on(Target::WIN32_ARM64));
-    assert!(!term.is_available_on(Target::DARWIN_ARM64));
-    assert!(!term.is_available_on(Target::LINUX_X64));
+    let php = catalog.find("php").unwrap();
+    assert!(php.is_available_on(Target::WIN32_X64));
+    assert!(php.is_available_on(Target::WIN32_ARM64));
+    assert!(!php.is_available_on(Target::DARWIN_ARM64));
+    assert!(!php.is_available_on(Target::LINUX_X64));
 
     let tex = catalog.find("tinytex").unwrap();
     assert!(tex.is_emulated_on(Target::WIN32_ARM64));

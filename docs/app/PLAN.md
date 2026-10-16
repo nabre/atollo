@@ -22,7 +22,8 @@ Scelte non ovvie: [DECISIONS.md](DECISIONS.md). Domande aperte: §12.
 | 14/10 | Impostazioni del kit per ogni progetto in `data`, file `dev-settings.json` | `data\app\projects\<progetto>\dev-settings.json` (D-63) |
 | 14/10 | Barra di Windows della finestra spenta, barra dell'interfaccia | solo finestra principale (D-64) |
 | 14/10 | Loghi ufficiali degli strumenti; etichette del codice di ogni progetto; solo gli agenti installati | D-65 |
-| 14/10 | Gestione del terminale nel kit: predefinito il terminale del kit, portabile | Windows Terminal portabile (componente `terminal`), la console classica nelle Impostazioni (D-68) |
+| 14/10 | Gestione del terminale nel kit: predefinito il terminale del kit, portabile | Windows Terminal portabile (componente `terminal`), la console classica nelle Impostazioni (D-68); tolto il 16/10 (D-95) |
+| 16/10 | Windows Terminal non è necessario: toglierlo del tutto | componente `terminal`, impostazione «Terminale» e gruppo `os` tolti; console solo nella console classica di Windows (D-95) |
 
 Requisiti del prompt **superati** da queste indicazioni:
 - "Riusa, non riscrivere" gli script del kit → tutto in Rust dentro l'exe.
@@ -41,7 +42,7 @@ Il kit attuale diventa la **specifica di riferimento**: il comportamento si port
 | --- | --- | --- |
 | Ambiente portabile (~90 variabili, PATH del kit) | `setup/windows/_env.cmd` | `env.rs` |
 | Rilocazione dopo spostamento o cambio di lettera | `_env.cmd:238-267`, `setup/agents/moved.js` | `agents/relocate.rs` |
-| Catalogo componenti (30: i 27 del Dev-Kit senza VSCodium desktop, più `pwsh`, `terminal` e l'editor) | `setup/components.json` | `setup/catalog.rs`, dati incorporati |
+| Catalogo componenti (i 27 del Dev-Kit senza VSCodium desktop, più `pwsh` e l'editor) | `setup/components.json` | `setup/catalog.rs`, dati incorporati |
 | Download, verifica (SHA-256/512, npm, Authenticode), estrazione, scambio cartelle | `_common.ps1`, `_prepare-*.ps1`, `_languages.ps1`, `_workarea.ps1` | `net/`, `install/` |
 | Allineamento di istruzioni, skill, MCP, regole, cartelle attendibili | `setup/agents/sync.js` + 8 moduli | `agents/sync/` |
 | Accesso Antigravity fuori da Gestione credenziali | `agy-keyring.ps1` | `agents/keyring.rs` |
@@ -71,7 +72,7 @@ Dev-Kit\                         qualsiasi cartella, anche con spazi, ( ) e &
     app\                         settings.json, components.txt, versions\, logs\, update\, ports.json,
                                  root.txt, old-root.txt, extensions.txt, extensions-offered.txt,
                                  projects\<progetto>\dev-settings.json (impostazioni del kit per progetto)
-    kit\                         file che i programmi vogliono su disco (loopback.js, profile.ps1, console.ps1, bashrc, bin\agy.cmd), riscritti dall'exe a ogni nuova versione
+    kit\                         file che i programmi vogliono su disco (loopback.js, profile.ps1, bashrc, bin\agy.cmd), riscritti dall'exe a ogni nuova versione
     webview2\                    dati di WebView2
     vscodium-server\             dati del server dell'editor e token
     … le altre cartelle dati di _env.cmd (npm-global, go, gradle, php, apache…)
@@ -90,7 +91,7 @@ Dev-Kit.exe (Tauri 2, dentro un Job Object)
  ├─ finestre "editor"  http://127.0.0.1:<7000-7099>, nessuna capability
  ├─ motore Rust        tutto il resto (§4)
  └─ figli, tutti nel job:
-     codium-server · console in Windows Terminal del kit o in conhost.exe (pwsh del kit, claude / codex / agy) · azioni dei progetti · installazioni
+     codium-server · console in conhost.exe (pwsh del kit, claude / codex / agy) · azioni dei progetti · installazioni
 ```
 
 Riga di comando dello stesso exe, senza finestra (D-21, `cli.rs`):
@@ -121,10 +122,10 @@ Una cartella per area; l'elenco dei file, i livelli e le regole comuni per file,
 | `os\` | Job Object, avvio con l'ambiente del kit, console `conhost.exe`, `.cmd`/`.bat`, uscita dal job per browser ed Esplora risorse (`jobs`); processi del PC per cartella; programmi del kit aperti, altre copie, «Rimuovi l'unità» (`sessions`); istanza singola per kit (mutex + pipe); WebView2 di sistema o fisso; lettura dentro un progetto senza seguire collegamenti (`safe_path`, D-77) |
 | `net\` | HTTPS con il TLS e i certificati di Windows, proxy, 3 tentativi, `.part`, API di GitHub (`digest` delle asset); SHA-256, SHA-512, integrità npm (`verify`); Authenticode con editore atteso (`signature`); zip, tar.gz, 7z, scambio cartelle con ripristino, "file in uso" (`archive`) |
 | `setup\` | catalogo incorporato (`keys`, `noArm64`, gruppo `app` con versione fissata), `data\app\components.txt`, `needs` a cascata; cosa serve a un agente, a un clone o a un'azione (D-59); piano e ordine dei passi, annullamento al termine del passo (`runner`); preparazione avviata dalla finestra (`task`); verifica finale (`checkup`, D-39); download a mano (`downloads`, D-82); file in `data\kit\` (`kit_files`); aggiornamento dell'exe in `data\app\update\`, SHA-256, scambio alla chiusura (`self_update`) |
-| `install\` | un installatore per famiglia: `core` (git, python, node, uv, gh), `agents`, `web` (php, apache, VC++), `native` (rust, pnpm, r), `lang\` (gli altri linguaggi, un file per famiglia), `editor` (pwsh, Windows Terminal, editor), `db` (MariaDB, MongoDB, SQLite, Adminer: D-73, D-85), `android` (D-84) |
+| `install\` | un installatore per famiglia: `core` (git, python, node, uv, gh), `agents`, `web` (php, apache, VC++), `native` (rust, pnpm, r), `lang\` (gli altri linguaggi, un file per famiglia), `editor` (pwsh, editor), `db` (MariaDB, MongoDB, SQLite, Adminer: D-73, D-85), `android` (D-84) |
 | `versions\` | versioni salvate, una cartella per versione minore, scelta del kit e dei progetti (D-80); versioni fianco a fianco per Gradle, Maven e .NET (`side_by_side`, D-81); matrice delle relazioni e intervalli di versione di npm, Composer, PEP 440 (`relations\`, `ranges`, D-81) |
 | `projects\`, `detect\` | elenco, creazione, clone con il Git del kit, rilevamento del tipo, dei linguaggi e delle azioni, `panel.json`; `dev-settings.json` (`settings`, D-63); MCP e `.vscode\settings.json` (`mcp`, `vscode`, D-78); «Nuovo progetto» da framework (`frameworks\`, D-83); azioni con porte 7100-7999 in `data\app\ports.json`, log, browser, rete locale (`run`, D-50); server di file `Dev-Kit.exe serve` (`serve`, D-51); Apache del progetto (`apache`) |
-| `editor\` | server web: porta, token, avvio, salute, riavvio; finestre `editor-<n>` con la barra di VSCodium (`window`, D-69); impostazioni e profili del terminale (`cfg`); estensioni dalla matrice linguaggio-estensione e dai progetti, CodeLLDB (`ext`, D-71; nessuna estensione propria, Q4 = a); tema NEXKORA (`theme`); console del kit in Windows Terminal portabile o in `conhost.exe` (`terminal`, `wterm`, D-57, D-68) |
+| `editor\` | server web: porta, token, avvio, salute, riavvio; finestre `editor-<n>` con la barra di VSCodium (`window`, D-69); impostazioni e profili del terminale (`cfg`); estensioni dalla matrice linguaggio-estensione e dai progetti, CodeLLDB (`ext`, D-71; nessuna estensione propria, Q4 = a); tema NEXKORA (`theme`); console del kit in `conhost.exe` (`terminal`, D-57, D-95) |
 | `agents\` | stato, lancio in una console del kit, uscita, sorvegliante; allineamento di istruzioni, skill, MCP, regole e cartelle attendibili (`sync\`); limiti d'uso e consumi di Claude Code, Codex e Antigravity (`stats\`, D-61); accesso di Antigravity con Gestione credenziali (`keyring`); rilocazione dopo uno spostamento, regole di `moved.js` (`relocate`) |
 | `db\` | server MariaDB e MongoDB del kit, impostazioni in `data\app\services.json`, dati per versione, copie (`services\`, D-73); password e `.env` (`auth`, D-74); contenuto in sola lettura (`browse`, D-79); Adminer (`adminer`, D-85) |
 | `github\` | account GitHub del kit, uno per tutto (D-70): `gh auth login --web`, `credential.helper` di Git verso `gh`; repository dell'account, clone, rinomina, eliminazione (`repos`) |
@@ -141,8 +142,7 @@ React + TypeScript `strict` + Tailwind, con i controlli di VSCodium (`@vscode-el
 | Componente | Cosa | Perché |
 | --- | --- | --- |
 | `pwsh` | PowerShell 7 portabile (zip ufficiale, x64 e ARM64, SHA-256), obbligatorio | shell predefinita dell'editor e delle console; PSReadLine incluso; isolabile dal PC |
-| `terminal` | Windows Terminal portabile (zip ufficiale, x64 e ARM64, `.portable`), predefinito (D-68); ogni scheda riceve l'ambiente del kit da una named pipe | console fuori dall'editor (agenti, Terminale), nel job; mai il terminale predefinito del PC |
-| (nessuno) | console classica di Windows: `conhost.exe` di System32 avviato direttamente (D-57), nelle Impostazioni e come ripiego; prima xterm.js e `portable-pty` (D-44) | stessa console, senza un programma in più |
+| (nessuno) | console classica di Windows: `conhost.exe` di System32 avviato direttamente (D-57, D-95); prima Windows Terminal portabile (D-68), e prima ancora xterm.js e `portable-pty` (D-44) | stessa console, senza un programma in più |
 | `git` | Git Bash, installato quando serve (con Claude Code, per un clone: D-59) | shell dei comandi di Claude |
 
 Profili nell'editor (riscritti a ogni avvio; profili di sistema nascosti; quelli dell'utente conservati): **Dev-Kit** (pwsh, predefinito, anche per le attività), Dev-Kit - Git Bash, Dev-Kit - cmd, Claude Code / Codex / Antigravity (se installati).
@@ -171,7 +171,7 @@ Esclusa dalla prima versione (Q6 = no, 14/10). I formati di `data\app\` restano 
 | --- | --- | --- |
 | 0. Piano | questo documento | piano approvato |
 | 1. Scheletro | progetto Tauri, `kit.rs`, `env.rs`, `jobs.rs`, istanza singola, log, finestra vuota, `Dev-Kit.exe env`, CI x64 + ARM64 | exe che parte da chiavetta, crea solo `data\`, nulla fuori |
-| 2. Motore di installazione | `net`, `verify`, `archive`, `catalog`, `setup_runner`; componenti `pwsh`, `terminal` (tolto e poi ripristinato il 14/10: D-57, D-68), `git`, `node`, `vscodium-server` | `Dev-Kit.exe prepare --only pwsh,node,git,vscodium-server` installa e verifica (come nella CI) |
+| 2. Motore di installazione | `net`, `verify`, `archive`, `catalog`, `setup_runner`; componenti `pwsh`, `terminal` (tolto e poi ripristinato il 14/10: D-57, D-68; tolto il 16/10: D-95), `git`, `node`, `vscodium-server` | `Dev-Kit.exe prepare --only pwsh,node,git,vscodium-server` installa e verifica (come nella CI) |
 | 3. Editor e terminale | `editor*`, `terminal.rs`, finestre `editor`, capability, estensioni consigliate | progetto aperto nell'editor con terminale Dev-Kit esclusivo; nessuna IPC dalle finestre `editor` |
 | 4. Tutti i componenti | altri componenti, rimozione, verifica finale; pagina Linguaggi e strumenti e Primo avvio | ogni linguaggio installato e rimosso dall'app |
 | 5. Agenti | `agents.rs`, `agents_sync`, `keyring.rs`, `relocate.rs`; pagine Home e Agenti | tre agenti avviati, istruzioni e skill allineate, kit spostato che funziona |
@@ -187,7 +187,7 @@ Cargo.toml  Cargo.lock        workspace
 package.json                  workspace npm (ui), comandi dev, build, test, lint
 tauri\                        exe (moduli §4), catalogo e testi incorporati
 ui\                           interfaccia React + TypeScript + Tailwind (D-02)
-runtime\                      file scritti in data\kit\ (loopback.js, profile.ps1, console.ps1, bashrc, bin\agy.cmd, bin\agy)
+runtime\                      file scritti in data\kit\ (loopback.js, profile.ps1, bashrc, bin\agy.cmd, bin\agy)
 docs\app\                     piano, decisioni, architettura, catalogo, prove, novità
 docs\brand\                   logo, temi, script che li generano
 .github\workflows\app.yml     CI e release

@@ -2,7 +2,7 @@
 // the languages found in a project, from Simple Icons (react-icons/si) with
 // each brand's colour. A brand drawn in black or white takes the text colour,
 // so it reads in both themes. Where Simple Icons has no logo (PowerShell,
-// Windows Terminal, OpenAI) the closest icon of another set stands in;
+// OpenAI) the closest icon of another set stands in;
 // Antigravity's arch is drawn here. Also the frameworks of the wizard.
 import { useId, type ReactNode } from "react";
 import type { IconBaseProps, IconType } from "react-icons";
@@ -24,6 +24,7 @@ import {
   SiDart,
   SiDeno,
   SiDotnet,
+  SiDrupal,
   SiElectron,
   SiFilament,
   SiFsharp,
@@ -54,20 +55,23 @@ import {
   SiRuby,
   SiRust,
   SiSqlite,
+  SiStatamic,
   SiSvelte,
   SiSymfony,
   SiTailwindcss,
   SiTauri,
   SiTypescript,
+  SiTypo3,
   SiTypst,
   SiUv,
   SiVite,
   SiVitest,
   SiVscodium,
   SiVuedotjs,
+  SiWordpress,
   SiZig,
 } from "react-icons/si";
-import { VscTerminal, VscTerminalPowershell } from "react-icons/vsc";
+import { VscTerminalPowershell } from "react-icons/vsc";
 import { Mark, Tag } from "./tags";
 
 /** Antigravity's logo: an arch in Google's colours, red at the top to blue
@@ -118,7 +122,6 @@ const C: Logo = { icon: SiC, color: "#A8B9CC" };
 const COMPONENTS: Record<string, Logo> = {
   gh: { icon: SiGithub },
   pwsh: { icon: VscTerminalPowershell, color: "#5391FE" },
-  terminal: { icon: VscTerminal },
   "vscodium-server": { icon: SiVscodium, color: "#2F80ED" },
   claude: { icon: SiClaude, color: "#D97757" },
   codex: { icon: RiOpenaiFill },
@@ -196,6 +199,10 @@ const FRAMEWORKS: Record<string, Logo> = {
   electron: { icon: SiElectron, color: "#47848F" },
   tauri: { icon: SiTauri, color: "#24C8D8" },
   android: { icon: SiAndroid, color: "#3DDC84" },
+  wordpress: { icon: SiWordpress, color: "#21759B" },
+  typo3: { icon: SiTypo3, color: "#FF8700" },
+  drupal: { icon: SiDrupal, color: "#0678BE" },
+  statamic: { icon: SiStatamic, color: "#FF269E" },
   react: { icon: SiReact, color: "#61DAFB" },
   vue: { icon: SiVuedotjs, color: "#4FC08D" },
   svelte: { icon: SiSvelte, color: "#FF3E00" },

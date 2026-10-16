@@ -36,3 +36,52 @@ fn laravel_and_plain() {
     assert!(p.requires.contains(&"apache".to_owned()));
     assert!(p.requires.contains(&"php".to_owned()));
 }
+
+/// The CMS of the wizard, made with Composer: the public folder is a
+/// subfolder, `.env` stays out of the site.
+#[test]
+fn cms_with_composer() {
+    let bedrock = project(
+        "php-bedrock",
+        &[
+            ("composer.json", r#"{"require": {"roots/wordpress": "^6"}}"#),
+            ("web/index.php", "<?php"),
+            (".env", "DATABASE_URL=mysql://a:b@127.0.0.1:3306/a"),
+        ],
+    );
+    let p = detect(&bedrock.0, "it");
+    assert_eq!(p.platform, "WordPress");
+    assert_eq!(p.actions[0].apache_dir.as_deref(), Some("web"));
+    assert!(p.requires.contains(&"mariadb".to_owned()));
+
+    for (pkg, docroot, platform) in [
+        ("typo3/cms-core", "public", "TYPO3"),
+        ("drupal/core-recommended", "web", "Drupal"),
+    ] {
+        let manifest = format!(r#"{{"require": {{"{pkg}": "*"}}}}"#);
+        let (index, htaccess) = (
+            format!("{docroot}/index.php"),
+            format!("{docroot}/.htaccess"),
+        );
+        let site = project(
+            &format!("php-{platform}"),
+            &[
+                ("composer.json", manifest.as_str()),
+                (index.as_str(), "<?php"),
+                (htaccess.as_str(), "RewriteEngine On"),
+            ],
+        );
+        let p = detect(&site.0, "it");
+        assert_eq!(p.platform, platform);
+        assert_eq!(p.actions[0].apache_dir.as_deref(), Some(docroot));
+    }
+
+    let statamic = project(
+        "php-statamic",
+        &[
+            ("composer.json", r#"{"require": {"statamic/cms": "^6"}}"#),
+            ("artisan", ""),
+        ],
+    );
+    assert_eq!(detect(&statamic.0, "it").platform, "Statamic");
+}

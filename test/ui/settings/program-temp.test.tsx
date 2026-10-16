@@ -16,7 +16,6 @@ const SETTINGS: Settings = {
   pythonVersion: null,
   phpVersion: null,
   rustToolchain: null,
-  terminal: null,
   programTemp: "auto",
 };
 

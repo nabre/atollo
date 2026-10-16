@@ -59,6 +59,15 @@ pub fn check_env(env: &[EnvVar]) -> Result<(), Problem> {
     Ok(())
 }
 
+fn check_database(database: Option<&String>) -> Result<(), Problem> {
+    match database {
+        Some(db) if !crate::db::services::SERVERS.contains(&db.as_str()) => {
+            Err(("Server di database sconosciuto: {0}", vec![db.clone()]))
+        }
+        _ => Ok(()),
+    }
+}
+
 fn check_needs(needs: &[String]) -> Result<(), Problem> {
     let catalog = crate::setup::catalog::Catalog::get();
     match needs.iter().find(|n| catalog.find(n).is_none()) {
@@ -95,6 +104,7 @@ pub fn validate(pieces: &[Piece]) -> Result<(), Problem> {
         check_commands(&p.steps)?;
         check_actions(&p.actions)?;
         check_env(&p.env)?;
+        check_database(p.database.as_ref())?;
         match p.kind {
             Kind::Base => {
                 if p.create.is_empty() {
@@ -113,11 +123,7 @@ pub fn validate(pieces: &[Piece]) -> Result<(), Problem> {
                         return Err(("Base sconosciuta: {0}", vec![base.clone()]));
                     }
                     check_needs(&v.needs)?;
-                    if let Some(db) = &v.database {
-                        if !crate::db::services::SERVERS.contains(&db.as_str()) {
-                            return Err(("Server di database sconosciuto: {0}", vec![db.clone()]));
-                        }
-                    }
+                    check_database(v.database.as_ref())?;
                     check_commands(&v.create)?;
                     check_commands(&v.steps)?;
                     check_actions(&v.actions)?;

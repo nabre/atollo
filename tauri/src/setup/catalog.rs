@@ -23,9 +23,6 @@ pub enum Group {
     Required,
     Agents,
     Languages,
-    /// Tools tied to an operating system (Windows Terminal): shown in
-    /// their own group of "Linguaggi e strumenti", chosen like the others.
-    Os,
     /// Database servers and tools (D-73), with their own group too.
     Databases,
     /// Part of Dev-Kit itself (the editor): not in "Linguaggi e strumenti",
@@ -70,7 +67,7 @@ pub struct Component {
     #[serde(default)]
     pub no_arm64: bool,
     /// Explicit list of targets where this component is available (e.g.
-    /// `["win32-x64", "win32-arm64"]` for Windows Terminal). Empty = all
+    /// `["win32-x64", "win32-arm64"]` for PHP). Empty = all
     /// targets except `win32-arm64` when `no_arm64` is true.
     #[serde(default)]
     pub targets: Vec<String>,
@@ -233,8 +230,7 @@ fn exists(path: &Path) -> bool {
 
 impl Component {
     /// Its section of the Tools page: required (and the editor), agents,
-    /// languages (several versions), tools (one, the latest), databases,
-    /// tied to an operating system.
+    /// languages (several versions), tools (one, the latest), databases.
     pub fn page_section(&self) -> u8 {
         match self.group {
             Group::Required | Group::App => 0,
@@ -242,7 +238,6 @@ impl Component {
             Group::Languages if self.versioned => 2,
             Group::Languages => 3,
             Group::Databases => 4,
-            Group::Os => 5,
         }
     }
 

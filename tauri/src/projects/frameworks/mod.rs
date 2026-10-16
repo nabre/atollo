@@ -17,7 +17,7 @@ mod runner;
 mod target;
 mod validate;
 
-pub use plan::{env_value, fill, plan, Plan};
+pub use plan::{env_raw, env_value, fill, password_of, plan, Plan};
 pub use runner::{begin, cancel, cancelled, run_line};
 pub use target::{existing, merge_into, targets, Existing, Target};
 pub use validate::{check_env, validate, Problem};
@@ -103,6 +103,10 @@ pub struct Piece {
     /// Variables written in the project's `.env`, before the steps.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub env: Vec<EnvVar>,
+    /// Of a base that cannot do without one (a CMS): the kit's server
+    /// where the project gets its database, as an addition's `database`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub database: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
     /// Of an addition: what it does with each base, by base id.
@@ -204,6 +208,7 @@ pub fn clean(p: &mut Piece) {
     clean_lines(&mut p.steps);
     clean_actions(&mut p.actions);
     clean_env(&mut p.env);
+    clean_note(&mut p.database);
     clean_note(&mut p.note);
     for v in p.on.values_mut() {
         clean_lines(&mut v.needs);

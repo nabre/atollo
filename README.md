@@ -28,7 +28,7 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 
 In basso, su ogni pagina, il pannello **Attività**: cosa è avviato o in installazione (progetti, database, componenti), con l'output e gli errori in un solo posto.
 
-La console del kit è Windows Terminal portabile del kit (o la console classica di Windows, se la scegli nelle Impostazioni o se Windows Terminal non è installato) con PowerShell 7 del kit e il solo ambiente del kit: i programmi installati sul PC non si vedono.
+La console del kit è la console classica di Windows con PowerShell 7 del kit e il solo ambiente del kit: i programmi installati sul PC non si vedono.
 
 ## Cosa resta del Dev-Kit
 
