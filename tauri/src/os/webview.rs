@@ -4,10 +4,15 @@
 //! `data\apps\win32-<arch>\webview2\` (used through
 //! `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`); else the caller shows a message
 //! with the download link. Microsoft's bootstrapper is never started.
+//!
+//! macOS (WKWebView) and Linux (WebKitGTK) have the web view of the system:
+//! always `Runtime::System`, never a fixed one.
 
 use std::path::{Path, PathBuf};
 
+#[cfg(windows)]
 use windows::core::{HSTRING, PCWSTR, PWSTR};
+#[cfg(windows)]
 use windows::Win32::System::Com::CoTaskMemFree;
 
 use crate::kit::Kit;
@@ -23,6 +28,18 @@ pub fn fixed_folder(kit: &Kit) -> PathBuf {
     kit.apps().join("webview2")
 }
 
+/// The system's web view; there is no fixed runtime in a folder.
+#[cfg(not(windows))]
+fn version_in(folder: Option<&Path>) -> Option<String> {
+    let name = if cfg!(target_os = "macos") {
+        "WKWebView"
+    } else {
+        "WebKitGTK"
+    };
+    folder.is_none().then(|| name.to_owned())
+}
+
+#[cfg(windows)]
 fn version_in(folder: Option<&Path>) -> Option<String> {
     let folder = folder.map(|f| HSTRING::from(f.as_os_str()));
     let folder_ptr = folder

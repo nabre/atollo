@@ -10,7 +10,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
+#[cfg(windows)]
 use windows::Win32::Foundation::CloseHandle;
+#[cfg(windows)]
 use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
 
 use super::processes::{self, Proc};
@@ -31,7 +33,11 @@ pub fn kit_processes(kit: &Kit) -> Vec<KitProcess> {
     let me = std::process::id();
     let all = processes::all();
     let ours: Vec<&Proc> = {
-        let prefix = format!("{}\\", kit.root().display().to_string().to_lowercase());
+        let prefix = format!(
+            "{}{}",
+            kit.root().display().to_string().to_lowercase(),
+            std::path::MAIN_SEPARATOR
+        );
         all.iter()
             .filter(|p| {
                 p.path
@@ -137,13 +143,27 @@ pub fn stop(pids: &[u32]) {
             continue;
         }
         todo.extend(children.get(&pid).cloned().unwrap_or_default());
-        // SAFETY: terminate-only handle, closed right after.
-        unsafe {
-            if let Ok(h) = OpenProcess(PROCESS_TERMINATE, false, pid) {
-                let _ = TerminateProcess(h, 1);
-                let _ = CloseHandle(h);
-            }
+        terminate(pid);
+    }
+}
+
+#[cfg(windows)]
+fn terminate(pid: u32) {
+    // SAFETY: terminate-only handle, closed right after.
+    unsafe {
+        if let Ok(h) = OpenProcess(PROCESS_TERMINATE, false, pid) {
+            let _ = TerminateProcess(h, 1);
+            let _ = CloseHandle(h);
         }
+    }
+}
+
+#[cfg(unix)]
+fn terminate(pid: u32) {
+    // 0 and negative numbers would signal whole process groups.
+    if let Ok(pid @ 1..) = libc::pid_t::try_from(pid) {
+        // SAFETY: a plain signal to one process; a pid that is gone just fails.
+        unsafe { libc::kill(pid, libc::SIGKILL) };
     }
 }
 

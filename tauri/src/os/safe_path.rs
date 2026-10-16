@@ -28,7 +28,14 @@ pub fn lexical(path: &Path) -> Option<PathBuf> {
     Some(out)
 }
 
+/// A symbolic link (Unix has no junctions), seen without following it.
+#[cfg(not(windows))]
+pub fn is_reparse(meta: &fs::Metadata) -> bool {
+    meta.file_type().is_symlink()
+}
+
 /// A symbolic link or a junction (reparse point), seen without following it.
+#[cfg(windows)]
 pub fn is_reparse(meta: &fs::Metadata) -> bool {
     use std::os::windows::fs::MetadataExt;
     const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
