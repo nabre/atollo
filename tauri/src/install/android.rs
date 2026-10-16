@@ -156,8 +156,9 @@ impl Installer for Android {
         let target = target_of(ctx, component);
         let os_tag = os_tag_of(target);
         let page = ctx.net.text(STUDIO)?;
-        let (name, build, sha) = tools_on_page_for(&page, os_tag)
-            .ok_or_else(|| anyhow!("Android command-line tools ({os_tag}): not found on {STUDIO}"))?;
+        let (name, build, sha) = tools_on_page_for(&page, os_tag).ok_or_else(|| {
+            anyhow!("Android command-line tools ({os_tag}): not found on {STUDIO}")
+        })?;
         Ok(Release::single(
             build,
             format!("{REPOSITORY}{name}"),

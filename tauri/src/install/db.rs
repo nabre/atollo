@@ -121,9 +121,9 @@ pub(crate) fn mariadb_archive_for(
                     (f["os"] == "Linux" || f["os"] == "macOS")
                         && f["cpu"] == cpu
                         && f["package_type"] == "gzipped tar file"
-                        && f["file_name"].as_str().is_some_and(|n| {
-                            n.ends_with(".tar.gz") && !n.contains("debugsymbols")
-                        })
+                        && f["file_name"]
+                            .as_str()
+                            .is_some_and(|n| n.ends_with(".tar.gz") && !n.contains("debugsymbols"))
                 })
                 .next()
                 .ok_or_else(|| anyhow!("MariaDB {version}: no {cpu} tar.gz"))?;
@@ -199,7 +199,9 @@ pub(crate) fn mongodb_archive_for(
     let (archive, kind) = match target.os {
         Os::Win32 => {
             let d = downloads
-                .filter(|d| d["target"] == "windows" && d["arch"] == "x86_64" && d["edition"] == "base")
+                .filter(|d| {
+                    d["target"] == "windows" && d["arch"] == "x86_64" && d["edition"] == "base"
+                })
                 .next()
                 .ok_or_else(|| anyhow!("MongoDB {number}: no Windows zip"))?;
             (&d["archive"], Kind::Zip)
@@ -221,9 +223,9 @@ pub(crate) fn mongodb_archive_for(
                 .filter(|d| {
                     d["edition"] == "base"
                         && d["arch"] == arch
-                        && d["target"]
-                            .as_str()
-                            .is_some_and(|t| t == "ubuntu2204" || t == "ubuntu2404" || t.starts_with("ubuntu"))
+                        && d["target"].as_str().is_some_and(|t| {
+                            t == "ubuntu2204" || t == "ubuntu2404" || t.starts_with("ubuntu")
+                        })
                 })
                 .next()
                 .ok_or_else(|| anyhow!("MongoDB {number}: no Linux {arch} archive"))?;
@@ -287,9 +289,9 @@ pub(crate) fn mongodb_tools_for(
             let d = downloads
                 .filter(|d| {
                     (d["arch"] == arch || d["arch"] == target.gnu_arch())
-                        && d["name"]
-                            .as_str()
-                            .is_some_and(|n| n == "ubuntu2204" || n == "ubuntu2404" || n.starts_with("ubuntu"))
+                        && d["name"].as_str().is_some_and(|n| {
+                            n == "ubuntu2204" || n == "ubuntu2404" || n.starts_with("ubuntu")
+                        })
                 })
                 .next()
                 .ok_or_else(|| anyhow!("MongoDB tools {number}: no Linux {arch} archive"))?;

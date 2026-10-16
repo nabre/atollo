@@ -17,7 +17,9 @@ use crate::setup::catalog::Component;
 /// CMake, with Ninja in `tools\`.
 pub struct Cmake;
 
-pub(crate) fn cmake_spec(target: Target) -> (&'static str, Kind, Inner, &'static str, &'static str) {
+pub(crate) fn cmake_spec(
+    target: Target,
+) -> (&'static str, Kind, Inner, &'static str, &'static str) {
     match (target.os, target.arch) {
         (Os::Win32, Arch::X64) => (
             r"^cmake-[\d.]+-windows-x86_64\.zip$",
@@ -61,13 +63,7 @@ impl Installer for Cmake {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let target = target_of(ctx, component);
         let (cmake_pat, cmake_kind, cmake_inner, ninja_zip, ninja_bin) = cmake_spec(target);
-        let mut release = github_single(
-            ctx,
-            "Kitware/CMake",
-            cmake_pat,
-            cmake_kind,
-            cmake_inner,
-        )?;
+        let mut release = github_single(ctx, "Kitware/CMake", cmake_pat, cmake_kind, cmake_inner)?;
         let ninja = ctx.net.github_latest("ninja-build/ninja")?;
         let asset = ninja
             .assets
@@ -155,7 +151,8 @@ impl Installer for Cc {
             for (alias, target_bin) in [("gcc", "clang"), ("g++", "clang++")] {
                 let p = bin.join(alias);
                 if !p.exists() {
-                    let script = format!("#!/bin/sh\nexec \"$(dirname \"$0\")/{target_bin}\" \"$@\"\n");
+                    let script =
+                        format!("#!/bin/sh\nexec \"$(dirname \"$0\")/{target_bin}\" \"$@\"\n");
                     crate::fsx::write_atomic(&p, script.as_bytes())?;
                     #[cfg(unix)]
                     {

@@ -340,7 +340,10 @@ impl Installer for Python {
         } else {
             let p = dest.join("bin").join("python3");
             let m = python_minor(ctx);
-            (p, join_rel(dest, &format!("lib/python{m}/ensurepip/_bundled")))
+            (
+                p,
+                join_rel(dest, &format!("lib/python{m}/ensurepip/_bundled")),
+            )
         };
         let wheel = fs::read_dir(&bundled)
             .into_iter()
@@ -488,7 +491,10 @@ impl Installer for Node {
 
     fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
         let index: Vec<NodeEntry> = ctx.net.json("https://nodejs.org/dist/index.json")?;
-        Ok(node_lines(&index, &node_wanted_file(target_of(ctx, component))))
+        Ok(node_lines(
+            &index,
+            &node_wanted_file(target_of(ctx, component)),
+        ))
     }
 
     fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
