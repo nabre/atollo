@@ -266,6 +266,73 @@ describe("workbench controls", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps Tab and Shift+Tab inside the dialog, past a hidden submit button", () => {
+    render(
+      <ConfirmDialog
+        title="Chiudere?"
+        cancelLabel="Annulla"
+        onCancel={() => undefined}
+        actions={
+          <form>
+            <Button variant="primary" submit>
+              Conferma
+            </Button>
+          </form>
+        }
+      >
+        <p>Si chiude tutto.</p>
+      </ConfirmDialog>,
+    );
+    const cancel = screen.getByRole("button", { name: "Annulla" });
+    const confirm = screen.getByRole("button", { name: "Conferma" });
+    expect(document.activeElement).toBe(cancel);
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(confirm);
+    // The last reachable control is Conferma, not the hidden native submit.
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(cancel);
+  });
+
+  it("gives the focus back to what opened the dialog once it closes", () => {
+    function Opener() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true);
+            }}
+          >
+            Elimina
+          </button>
+          {open && (
+            <ConfirmDialog
+              title="Eliminare?"
+              cancelLabel="Annulla"
+              onCancel={() => {
+                setOpen(false);
+              }}
+              actions={null}
+            >
+              <p>Non si torna indietro.</p>
+            </ConfirmDialog>
+          )}
+        </>
+      );
+    }
+    render(<Opener />);
+    const opener = screen.getByRole("button", { name: "Elimina" });
+    opener.focus();
+    fireEvent.click(opener);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Annulla" }));
+    act(() => {
+      fireEvent.keyDown(window, { key: "Escape" });
+    });
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+
   it("lets Esc cancel a dialog from a closed select inside it", async () => {
     const onCancel = vi.fn();
     render(

@@ -1,6 +1,6 @@
 // The versions of a tool in its row of the Tools page: the kit's line, the
 // lines on disk with who uses them, the menu to download another.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { VscAdd, VscCloudDownload, VscLock, VscTrash } from "react-icons/vsc";
 import {
   versionsAdd,
@@ -149,30 +149,64 @@ const MENU =
   "absolute top-full right-0 z-20 mt-1 rounded-[5px] border border-vsc-menu-border bg-vsc-menu py-1 text-vsc-menu-fg shadow-[0_2px_8px_var(--vsc-shadow)]";
 const MENU_ITEM = "mx-1 flex h-[2em] items-center gap-2 rounded-[3px] px-2 text-[12px] whitespace-nowrap";
 
+/** A small menu under its button (the box's first button): it opens with
+ * the focus on its first item; the arrows, Home and End move among the
+ * items; Esc closes it and gives the focus back to the button, as Tab or a
+ * click outside close it. */
+function useMenu() {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    box.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    const onMouse = (e: MouseEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      box.current?.querySelector<HTMLElement>("button")?.focus();
+    };
+    document.addEventListener("mousedown", onMouse);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onMouse);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const onMenuKey = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key === "Tab") {
+      setOpen(false);
+      return;
+    }
+    const all = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+    const at = all.findIndex((b) => b === document.activeElement);
+    let next = -1;
+    if (e.key === "ArrowDown") next = at < 0 ? 0 : (at + 1) % all.length;
+    else if (e.key === "ArrowUp") next = at < 0 ? all.length - 1 : (at - 1 + all.length) % all.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = all.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    all[next]?.focus();
+  };
+  return { open, setOpen, box, onMenuKey };
+}
+
 /** "locked": a version some projects use, so it cannot go; its small menu
  * lists them. The counterpart of the bin. A native button, drawn as a
  * toolbar button: it opens a menu (aria-haspopup, aria-expanded), which
  * Button can't say. */
 function Locked({ projects, label }: { projects: string[]; label: string }) {
-  const [open, setOpen] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [open]);
+  const { open, setOpen, box, onMenuKey } = useMenu();
+  const menuId = useId();
   return (
     <div ref={box} className="relative">
       <button
         type="button"
+        aria-haspopup="menu"
         aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
         aria-label={label}
         onClick={() => {
           setOpen((o) => !o);
@@ -183,10 +217,17 @@ function Locked({ projects, label }: { projects: string[]; label: string }) {
         {t("locked")}
       </button>
       {open && (
-        <ul aria-label={label} className={`${MENU} min-w-36`}>
-          <li className="px-3 pb-0.5 text-[11px] text-vsc-desc">{t("Usata da")}</li>
+        <ul id={menuId} role="menu" aria-label={label} onKeyDown={onMenuKey} className={`${MENU} min-w-36`}>
+          <li role="none" className="px-3 pb-0.5 text-[11px] text-vsc-desc">
+            {t("Usata da")}
+          </li>
           {projects.map((p) => (
-            <li key={p} className={MENU_ITEM}>
+            <li
+              key={p}
+              role="menuitem"
+              tabIndex={-1}
+              className={`${MENU_ITEM} focus:bg-vsc-menu-selection focus:text-vsc-menu-selection-fg focus:outline-none`}
+            >
               {p}
             </li>
           ))}
@@ -212,8 +253,7 @@ export function AddLine({
   label?: string;
   onAdd: (line: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
+  const { open, setOpen, box, onMenuKey } = useMenu();
   const groups = offered(tool)
     .map((g) => ({
       ...g,
@@ -223,18 +263,6 @@ export function AddLine({
       }),
     }))
     .filter((g) => g.lines.length > 0);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [open]);
   if (groups.length === 0) return null;
   return (
     <div ref={box} className="relative">
@@ -248,7 +276,12 @@ export function AddLine({
         }}
       />
       {open && (
-        <ul role="menu" aria-label={t("Versioni da scaricare")} className={`${MENU} max-h-72 min-w-44 overflow-y-auto`}>
+        <ul
+          role="menu"
+          aria-label={t("Versioni da scaricare")}
+          onKeyDown={onMenuKey}
+          className={`${MENU} max-h-72 min-w-44 overflow-y-auto`}
+        >
           {groups.map((g) => (
             <li key={g.major} role="none">
               <div className="px-3 pt-1 pb-0.5 text-[11px] text-vsc-desc">{`${g.major}.x`}</div>
