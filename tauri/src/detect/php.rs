@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use super::{exists, list_dir, quote, read_json, tr, Action, Found, Kind};
+use super::{exists, list_dir, php_server, read_json, tr, Action, Found, Kind};
 
 pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     let manifest = read_json(dir, "composer.json");
@@ -96,7 +96,7 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
         actions.push(Action::new(
             "php:server",
             &tr(lang, "php -S (cartella {0})", &[root]),
-            &format!("php -S 127.0.0.1:{{port}} -t {}", quote(root)),
+            &php_server(dir, root),
             Kind::Web,
         ));
     }

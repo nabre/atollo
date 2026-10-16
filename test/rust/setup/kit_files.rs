@@ -10,6 +10,7 @@ fn written_and_restored() {
     assert!(fs::read_to_string(&path)
         .unwrap()
         .contains("atolloLoopback"));
+    assert!(kit.kit_files().join("php-router.php").is_file());
     fs::write(&path, "changed").unwrap();
     write_all(&kit).unwrap();
     assert!(fs::read_to_string(&path)

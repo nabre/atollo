@@ -12,7 +12,10 @@ fn laravel_and_plain() {
     let plain = project("php-plain", &[("public/index.php", "<?php")]);
     let p = detect(&plain.0, "it");
     assert_eq!(p.kind, Kind::Web);
-    assert_eq!(p.actions[0].command, "php -S 127.0.0.1:{port} -t public");
+    assert_eq!(
+        p.actions[0].command,
+        r#"php -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#
+    );
 
     let ht = project(
         "php-apache",
@@ -35,6 +38,37 @@ fn laravel_and_plain() {
     assert!(p.requires.contains(&"mariadb".to_owned()));
     assert!(p.requires.contains(&"apache".to_owned()));
     assert!(p.requires.contains(&"php".to_owned()));
+}
+
+/// `php -S` goes through the kit's router (no `.env`, `.git`, `.inc`), unless
+/// the project has a `router.php` of its own (SEC-V3-02).
+#[test]
+fn php_server_router() {
+    let own = project(
+        "php-router",
+        &[
+            ("public/index.php", "<?php"),
+            ("public/router.php", "<?php"),
+        ],
+    );
+    let p = detect(&own.0, "it");
+    assert_eq!(
+        p.actions[0].command,
+        r"php -S 127.0.0.1:{port} -t public public\router.php"
+    );
+    let root = project(
+        "php-router-root",
+        &[("index.php", "<?php"), ("router.php", "<?php")],
+    );
+    let p = detect(&root.0, "it");
+    assert_eq!(
+        p.actions[0].command,
+        "php -S 127.0.0.1:{port} -t . router.php"
+    );
+
+    let router = include_str!("../../../runtime/php-router.php");
+    assert!(router.contains("well-known") && router.contains(".inc") && router.contains("403"));
+    assert!(router.trim_end().ends_with("return false;"));
 }
 
 /// The CMS of the wizard, made with Composer: the public folder is a
