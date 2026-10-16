@@ -19,8 +19,8 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `python` | Python + pip | sì | 70 | | 3.13 predefinito |
 | | `node` | Node.js LTS + npm | no | 110 | | quando serve: azioni con `npm`, server MCP con `npx` (D-59) |
 | | `uv` | uv, uvx | no | 35 | | quando serve: azioni con `uv`, server MCP con `uvx` (D-59) |
-| | `php` | PHP + Composer | sì | 100 | | con VC++ locale; x64 anche su ARM64 |
-| | `apache` | Apache | sì | 45 | `php` | x64 anche su ARM64 |
+| | `php` | PHP + Composer | sì | 100 | | con VC++ locale; x64 anche su ARM64; solo Windows |
+| | `apache` | Apache | sì | 45 | `php` | x64 anche su ARM64; solo Windows |
 | | `rust` | Rust | no | 920 | | toolchain `gnu` su x64 |
 | | `go` | Go | no | 250 | | |
 | | `java` | Java (Temurin, Maven, Gradle) | no | 300 | | |
@@ -41,7 +41,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `r` | R (conda-forge) | no | 1100 | | solo x64: non disponibile sui kit ARM64 (`noArm64`) |
 | database (`databases`) | `mariadb` | MariaDB | no | 230 | | **nuovo** (D-73); compatibile con MySQL; x64 anche su ARM64 |
 | | `mongodb` | MongoDB, mongosh, Database Tools | no | 570 | | **nuovo** (D-73); Database Tools per le copie (D-78); x64 anche su ARM64 |
-| | `adminer` | Adminer | no | 1 | `php`, `mariadb` | **nuovo** (D-85); MariaDB nel browser, come phpMyAdmin |
+| | `adminer` | Adminer | no | 1 | `php`, `mariadb` | **nuovo** (D-85); MariaDB nel browser, come phpMyAdmin; solo Windows (serve PHP) |
 | | `sqlite` | SQLite (sqlite3) | no | 15 | | **nuovo** (D-73) |
 | legati a un sistema operativo (`os`) | `terminal` | Windows Terminal | sì | 45 | `pwsh` | **nuovo**; il terminale del kit per le console fuori dall'editor (DECISIONS.md D-68); la console classica di Windows resta nelle Impostazioni |
 
@@ -49,7 +49,9 @@ I gruppi, i predefiniti e le dimensioni sono quelli di `components.json`. Propos
 
 Tolti dal catalogo il 14/10/2026: Windows Terminal (`terminal`), perché le console erano la console classica di Windows (DECISIONS.md D-57), poi tornato lo stesso giorno come terminale predefinito delle console (D-68); VSCodium desktop (`vscodium`), perché l'editor è integrato. Il componente `conpty` proposto in D-47 non è stato aggiunto.
 
-Campi del catalogo oltre a quelli del Atollo: `keys` (le altre parti di un componente: Maven e Gradle di Java, Ninja di CMake, Composer di PHP, yarn di pnpm, `node.exe` dell'editor; installato solo se ci sono tutte), `x64Only` (build x64 anche su ARM64, in emulazione), `noArm64` (nessuna build per ARM64), `remove` (altri file posseduti; `tools\vcruntime` di PHP e Apache se ne va solo con l'ultimo dei due), `check` (comando della verifica finale, per tutti; `<file-version>` legge la versione dal file senza avviarlo, per Windows Terminal), `version` e `sha256` (gruppo `app`).
+Campi del catalogo oltre a quelli del Atollo: `keys` (le altre parti di un componente: Maven e Gradle di Java, Ninja di CMake, Composer di PHP, yarn di pnpm, `node.exe` dell'editor; installato solo se ci sono tutte), `x64Only` (build x64 anche su ARM64, in emulazione), `noArm64` (nessuna build per ARM64), `targets` (i soli sistemi in cui è disponibile, es. `["win32-x64", "win32-arm64"]`; vuoto = tutti), `remove` (altri file posseduti; `tools\vcruntime` di PHP e Apache se ne va solo con l'ultimo dei due), `check` (comando della verifica finale, per tutti; `<file-version>` legge la versione dal file senza avviarlo, per Windows Terminal), `version` e `sha256` (gruppo `app`).
+
+**Disponibilità su macOS e Linux** (16/10/2026, opzione C di BUG-23b/BUG-24a). Solo Windows (`targets`): Windows Terminal; PHP, Apache e Nginx, perché le fonti sono build per Windows (`windows.php.net`, Apache Lounge; di Nginx su Unix c'è solo il tarball sorgente, che `nginx_asset_for` rifiuta con un errore esplicito) e `php.ini`/`httpd.conf` sono scritti per Windows; Adminer, che ha bisogno di PHP. Il porting (via micromamba, con le configurazioni rifatte) è rimandato a un ciclo separato. Git resta disponibile ovunque: serve a Claude Code. Un componente non disponibile per il sistema si mostra «non disponibile per `<os>-<arch>`» (es. `linux-x64`), non «non disponibile su PC ARM64», che resta solo per Windows ARM64 (BUG-24c).
 
 ## 2. Come si installa ciascuno
 
