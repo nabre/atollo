@@ -187,15 +187,19 @@ pub fn hidden_deny(indent: &str) -> Vec<String> {
 }
 
 /// Directives (`Alias` + `<Directory>`) for checked path aliases; `own` is
-/// the expression of the project's folder (`${CP_PROJECT_FWD}`).
+/// the expression of the project's folder (`${CP_PROJECT_FWD}`). No link is
+/// followed in their folders (WEB-8), and a `.htaccess` there cannot turn
+/// `FollowSymLinks` back on: everything else of `AllowOverride All` stays.
 pub fn alias_directives(own: &str, aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     let mut lines = Vec::new();
     for alias in aliases {
         let target = alias.apache_path(own);
         lines.push(format!("{indent}Alias \"{}\" \"{target}\"", alias.url));
         lines.push(format!("{indent}<Directory \"{target}\">"));
-        lines.push(format!("{indent}    Options Indexes FollowSymLinks"));
-        lines.push(format!("{indent}    AllowOverride All"));
+        lines.push(format!("{indent}    Options Indexes"));
+        lines.push(format!(
+            "{indent}    AllowOverride AuthConfig FileInfo Indexes Limit Options=Indexes,MultiViews"
+        ));
         lines.push(format!("{indent}    Require all granted"));
         lines.push(format!("{indent}</Directory>"));
     }

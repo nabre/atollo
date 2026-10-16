@@ -267,3 +267,33 @@ fn old_kit_conf_is_migrated_once() {
     let bare = migrate_kit_conf("DocumentRoot \"x\"");
     assert!(bare.starts_with("DocumentRoot \"x\"\r\n<IfModule !php_module>"));
 }
+
+/// WEB-8: no link followed in an alias' folder, not even through its
+/// `.htaccess`; the DocumentRoot keeps `FollowSymLinks` (Laravel serves
+/// `public/storage` through a link).
+#[test]
+fn aliases_follow_no_links() {
+    let tmp = crate::kit::tests::TempDir::new("apache-alias-links");
+    let projects = tmp.0.join("projects");
+    fs::create_dir_all(projects.join(r"shop\storage\media")).unwrap();
+    let mut aliases = BTreeMap::new();
+    aliases.insert("/media".into(), "storage/media".into());
+    let aliases = alias::resolve(&projects.join("shop"), &projects, &aliases);
+    assert_eq!(aliases.len(), 1);
+    let lines = alias_directives("${CP_PROJECT_FWD}", &aliases, "").join("\r\n");
+    assert!(lines.contains("\r\n    Options Indexes\r\n"), "{lines}");
+    assert!(!lines.contains("FollowSymLinks"), "{lines}");
+    assert!(!lines.contains("AllowOverride All"), "{lines}");
+    assert!(lines.contains("Options=Indexes,MultiViews"), "{lines}");
+
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\n";
+    let conf = project_conf(
+        base,
+        Path::new(r"D:\kit\projects\shop\public"),
+        Path::new(r"D:\kit\data\projects\shop\apache"),
+        7114,
+        false,
+    )
+    .unwrap();
+    assert!(conf.contains("    Options Indexes FollowSymLinks\r\n    AllowOverride All"));
+}

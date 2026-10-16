@@ -132,3 +132,22 @@ fn hidden_files_are_denied_first() {
         assert!(at < conf.find("location ~* \\.(?:php").unwrap(), "{conf}");
     }
 }
+
+/// WEB-8: no link followed in an alias' folder where Nginx can refuse them;
+/// Nginx for Windows has no `disable_symlinks` and would not start with it.
+#[test]
+fn aliases_follow_no_links_where_nginx_can() {
+    let tmp = crate::kit::tests::TempDir::new("nginx-alias-links");
+    let projs = tmp.0.join("projects");
+    fs::create_dir_all(projs.join(r"shop\storage\media")).unwrap();
+    let mut aliases = BTreeMap::new();
+    aliases.insert("/media".into(), "storage/media".into());
+    let aliases = alias::resolve(&projs.join("shop"), &projs, &aliases);
+    let lines = alias_locations(&aliases, "").join("\r\n");
+    assert!(lines.starts_with("location /media/ {"), "{lines}");
+    assert_eq!(
+        lines.contains("disable_symlinks on;"),
+        !cfg!(windows),
+        "{lines}"
+    );
+}
