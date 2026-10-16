@@ -2,6 +2,7 @@
 // error) and the editor's state as a hint. The controls themselves are in
 // workbench/.
 import type { IconType } from "react-icons";
+import { VscRefresh } from "react-icons/vsc";
 import type { EditorStatus } from "./api";
 import { t } from "./i18n";
 import { Button, IconButton, Notice } from "./workbench";
@@ -57,6 +58,27 @@ export function ActionButton({
 export function ErrorLine({ error }: { error: string | null }) {
   if (!error) return null;
   return <Notice tone="error">{error}</Notice>;
+}
+
+/** A read that failed, with "Riprova" to read again. */
+export function LoadError({
+  error,
+  onRetry,
+  className = "",
+}: {
+  error: string | null;
+  onRetry: () => void;
+  className?: string;
+}) {
+  if (!error) return null;
+  return (
+    <Notice tone="error" className={className}>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span>{error}</span>
+        <ActionButton icon={VscRefresh} label={t("Riprova")} small onClick={onRetry} />
+      </div>
+    </Notice>
+  );
 }
 
 export function editorHint(status: EditorStatus | null): string | undefined {
