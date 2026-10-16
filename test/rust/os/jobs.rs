@@ -78,6 +78,24 @@ fn closing_the_job_kills_its_processes() {
     }
 }
 
+/// BUG-V3-03: the shell of a project's action comes from the kit
+/// environment's `SystemRoot`, never a fixed `C:\Windows`.
+#[test]
+fn shell_command_runs_a_line_with_the_kit_environment() {
+    let mut env = KitEnv::default();
+    env.set("SystemRoot", std::env::var("SystemRoot").unwrap());
+    env.set("GREETING", "hi");
+    let cmd = shell_command("echo %GREETING% there& exit /b 3", &env);
+    assert!(
+        std::path::Path::new(cmd.get_program()).starts_with(std::env::var("SystemRoot").unwrap())
+    );
+    let out = shell_command("echo %GREETING% there& exit /b 3", &env)
+        .output()
+        .unwrap();
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "hi there");
+    assert_eq!(out.status.code(), Some(3));
+}
+
 #[test]
 fn kit_command_does_not_inherit_the_environment() {
     let env = KitEnv::default();

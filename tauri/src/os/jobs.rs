@@ -310,11 +310,7 @@ pub fn kit_command(program: impl AsRef<std::ffi::OsStr>, env: &KitEnv) -> Comman
 /// text from the user: cmd would interpret `&`, `|` and `%` in them.
 #[cfg(windows)]
 pub fn batch_command(script: &std::path::Path, args: &[&str], env: &KitEnv) -> Command {
-    let system_root = env.get("SystemRoot").unwrap_or(r"C:\Windows");
-    let mut cmd = kit_command(
-        std::path::Path::new(system_root).join(r"System32\cmd.exe"),
-        env,
-    );
+    let mut cmd = kit_command(cmd_exe(env), env);
     if let Some(dir) = script.parent().filter(|d| !d.as_os_str().is_empty()) {
         cmd.current_dir(dir);
     }
@@ -325,6 +321,30 @@ pub fn batch_command(script: &std::path::Path, args: &[&str], env: &KitEnv) -> C
         line.push_str(a);
     }
     cmd.raw_arg(format!("/d /s /c \"{line}\""));
+    cmd
+}
+
+/// The PC's `cmd.exe`, from the kit environment's `SystemRoot`.
+#[cfg(windows)]
+fn cmd_exe(env: &KitEnv) -> PathBuf {
+    let system_root = env.get("SystemRoot").unwrap_or(r"C:\Windows");
+    std::path::Path::new(system_root).join(r"System32\cmd.exe")
+}
+
+/// A command line of the user (a project's action) through the system
+/// shell, with the kit environment: `cmd.exe /d /s /c "<line>"` on Windows
+/// (passed as is: cmd reads its own quoting), `/bin/sh -c <line>` elsewhere.
+#[cfg(windows)]
+pub fn shell_command(line: &str, env: &KitEnv) -> Command {
+    let mut cmd = kit_command(cmd_exe(env), env);
+    cmd.raw_arg(format!("/d /s /c \"{line}\""));
+    cmd
+}
+
+#[cfg(unix)]
+pub fn shell_command(line: &str, env: &KitEnv) -> Command {
+    let mut cmd = kit_command("/bin/sh", env);
+    cmd.arg("-c").arg(line);
     cmd
 }
 
