@@ -860,12 +860,20 @@ pub fn apache_site(dir: &Path) -> Result<()> {
             "</Directory>",
             "DirectoryIndex index.php index.html",
             "",
-            "# The kit's PHP (Apache module), php.ini in data\\php; without it a .php is refused (403).",
-            "# .inc and .php3 ... .php8 are never served.",
+            "# Hidden files and folders (.env, .git) are refused, .well-known is served",
         ]
         .into_iter()
         .map(str::to_owned)
         .collect();
+        lines.extend(crate::projects::apache::hidden_deny(""));
+        lines.extend(
+            [
+                "",
+                "# The kit's PHP (Apache module), php.ini in data\\php; without it a .php is refused (403).",
+                "# .inc and .php3 ... .php8 are never served.",
+            ]
+            .map(str::to_owned),
+        );
         lines.extend(crate::projects::apache::php_module_blocks("CP_PHP_FWD"));
         lines.extend(
             [

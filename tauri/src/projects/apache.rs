@@ -76,7 +76,7 @@ pub const PHP_NEVER: &str = r"\.(?:inc|php[3-8])$";
 /// up to date: PHP under `${CP_PHP_FWD}`, the PHP files ([`PHP_RUN`])
 /// matched in any case and refused (403) without a PHP module, `.inc` and
 /// the old `.php3`…`.php8` always refused, as [`php_module_blocks`] writes
-/// them. Idempotent.
+/// them, and hidden files refused ([`hidden_deny`]). Idempotent.
 pub fn migrate_kit_conf(text: &str) -> String {
     let mut fixed = text
         .replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/")
@@ -89,6 +89,10 @@ pub fn migrate_kit_conf(text: &str) -> String {
     let never = php_never_block();
     if !fixed.contains(&never[0]) {
         missing.extend(never);
+    }
+    let hidden = hidden_deny("");
+    if !fixed.contains(&hidden[0]) {
+        missing.extend(hidden);
     }
     if !missing.is_empty() {
         let missing = missing.join("\r\n");

@@ -140,6 +140,18 @@ fn apache_site_refuses_php_without_module() {
     assert!(text.contains("\r\n"));
 }
 
+/// SEC-V3-02: the kit's site refuses hidden files (`.env`, `.git/`) but
+/// `.well-known`, like the projects' servers.
+#[test]
+fn apache_site_refuses_hidden_files() {
+    let tmp = TempDir::new("apachesitehidden");
+    apache_site(&tmp.0).unwrap();
+    let text = fs::read_to_string(tmp.0.join("kit.conf")).unwrap();
+    let hidden = crate::projects::apache::hidden_deny("").join("\r\n");
+    let at = text.find(&hidden).unwrap_or_else(|| panic!("{text}"));
+    assert!(at > text.find("Require all granted").unwrap());
+}
+
 #[test]
 fn apache_builds_of_the_pages() {
     let page = r#"<a href="/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip">x</a>
