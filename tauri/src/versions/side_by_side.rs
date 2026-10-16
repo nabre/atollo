@@ -94,7 +94,7 @@ fn java(kit: &Kit) -> Result<()> {
         return Ok(());
     };
     let jdks = line_dirs(kit, c);
-    let props = join_rel(&kit.data(), "gradle/gradle.properties");
+    let props = join_rel(kit.data(), "gradle/gradle.properties");
     let old = fs::read_to_string(&props).unwrap_or_default();
     let dirs: Vec<PathBuf> = jdks.iter().map(|(_, d)| d.clone()).collect();
     let new = gradle_properties(&old, &dirs);
@@ -102,7 +102,7 @@ fn java(kit: &Kit) -> Result<()> {
         fs::create_dir_all(props.parent().unwrap_or(&props))?;
         write_atomic(&props, new.as_bytes()).with_context(|| props.display().to_string())?;
     }
-    let toolchains = join_rel(&kit.home(), ".m2/toolchains.xml");
+    let toolchains = join_rel(kit.home(), ".m2/toolchains.xml");
     let mine = fs::read_to_string(&toolchains).map_or(true, |t| t.contains(KIT_MARK));
     if mine {
         if jdks.is_empty() {

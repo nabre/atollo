@@ -15,7 +15,7 @@ pub struct Julia;
 const JULIA_VERSIONS: &str = "https://julialang-s3.julialang.org/bin/versions.json";
 
 /// The archive of `target` of a version, if it has one.
-pub(crate) fn julia_archive_for<'a>(version: &'a Value, target: Target) -> Option<&'a Value> {
+pub(crate) fn julia_archive_for(version: &Value, target: Target) -> Option<&Value> {
     let (os, ext) = match target.os {
         Os::Win32 => ("winnt", "zip"),
         Os::Darwin => ("mac", "tar.gz"),
@@ -37,7 +37,7 @@ pub(crate) fn julia_archive_for<'a>(version: &'a Value, target: Target) -> Optio
 }
 
 /// The stable versions with an archive for `target`, newest first.
-fn julia_stable<'a>(versions: &'a Value, target: Target) -> Result<Vec<(&'a str, &'a Value)>> {
+fn julia_stable(versions: &Value, target: Target) -> Result<Vec<(&str, &Value)>> {
     let obj = versions
         .as_object()
         .ok_or_else(|| anyhow!("Julia versions"))?;

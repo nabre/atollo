@@ -218,7 +218,7 @@ pub fn kit_path(kit: &Kit, rel: &str) -> PathBuf {
     match translated.strip_prefix('@') {
         Some(r) => join_rel(kit.root(), r),
         None => crate::versions::resolve(kit, &translated)
-            .unwrap_or_else(|| join_rel(&kit.apps(), &translated)),
+            .unwrap_or_else(|| join_rel(kit.apps(), &translated)),
     }
 }
 
