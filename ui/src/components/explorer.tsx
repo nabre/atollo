@@ -1,6 +1,6 @@
-// The Tools page, as the Projects page: the side bar lists the components
-// by group (required, agents, languages, tools, databases, system) with
-// their state, and the overviews of the kit; the editor opens each one in
+// The Tools page, as the Projects page: the side bar shows the components
+// as a tree, one branch per group (required, agents, languages, tools,
+// databases, system), with their state, and the overviews of the kit; the editor opens each one in
 // its own tab (./tool.tsx). Choosing and removing wait for "Apply", in the
 // bar under the editor (./applybar.tsx).
 import { useState, type ReactNode } from "react";
@@ -15,7 +15,7 @@ import {
   VscTable,
   VscWarning,
 } from "react-icons/vsc";
-import type { SetupSnapshot } from "../api";
+import type { ComponentInfo, SetupSnapshot } from "../api";
 import type { GuideTopicId } from "../guide";
 import { t } from "../i18n";
 import { ErrorLine } from "../common";
@@ -107,6 +107,68 @@ export function ToolsPage({
     else tabs.show(id);
   };
 
+  const shown = list?.filter((c) => matches(c, search)) ?? [];
+  const installedAll = shown.filter((c) => c.installed).length;
+  // A tool's row, under its group's branch of the tree.
+  const row = (c: ComponentInfo) => {
+    const on = chosen.has(c.id);
+    const pending = on !== (c.chosen || c.locked);
+    const item = itemState(setup, c.id, c.name);
+    const missing = (neededBy.get(c.id) ?? []).length > 0 && !on;
+    const version = composerOf(c.version) ? splitVersion(c.version).main : c.version;
+    return (
+      <ListRow
+        key={c.id}
+        depth={1}
+        icon={<ComponentLogo id={c.id} size={16} />}
+        label={c.name}
+        description={c.installed ? (version ?? undefined) : undefined}
+        title={c.desc}
+        selected={active === c.id}
+        onSelect={() => {
+          tabs.show(c.id);
+        }}
+        actions={
+          c.locked ? undefined : on ? (
+            <IconButton
+              icon={VscClose}
+              label={c.installed ? t("Rimuovi {0}", c.name) : t("Non installare {0}", c.name)}
+              disabled={running}
+              onClick={() => {
+                choose(c.id, false);
+              }}
+            />
+          ) : (
+            <IconButton
+              icon={VscAdd}
+              label={t("Installa {0}", c.name)}
+              disabled={running || !c.available}
+              onClick={() => {
+                choose(c.id, true);
+              }}
+            />
+          )
+        }
+        decorations={
+          item ? (
+            <ItemStatus state={item} />
+          ) : (
+            <>
+              {missing && (
+                <VscWarning size={14} className="text-vsc-warning" aria-label={t("Serve a progetti e non è scelto")} />
+              )}
+              {pending ? (
+                <Dot tone="warn" label={on ? t("da installare") : t("da rimuovere")} />
+              ) : c.installed ? (
+                <Dot tone="ok" label={t("installato")} />
+              ) : null}
+            </>
+          )
+        }
+      />
+    );
+  };
+
   const side = (
     <>
       <SideBarTitle
@@ -143,88 +205,39 @@ export function ToolsPage({
         <p className="px-5 py-1 text-vsc-desc">{t("Caricamento…")}</p>
       ) : (
         <PaneStack>
-          {all.map((g, i) => {
-            const items = list.filter((c) => g.has(c) && matches(c, search));
-            if (items.length === 0) return null;
-            const installed = items.filter((c) => c.installed).length;
-            return (
-              <ViewPane
-                key={g.id}
-                first={i === 0}
-                fill
-                title={g.title}
-                badge={`${String(installed)}/${String(items.length)}`}
-                expanded={!closed.has(g.id) || search !== ""}
-                onToggle={() => {
-                  toggle(g.id);
-                }}
-              >
-                <List label={g.title}>
-                  {items.map((c) => {
-                    const on = chosen.has(c.id);
-                    const pending = on !== (c.chosen || c.locked);
-                    const item = itemState(setup, c.id, c.name);
-                    const missing = (neededBy.get(c.id) ?? []).length > 0 && !on;
-                    const version = composerOf(c.version) ? splitVersion(c.version).main : c.version;
-                    return (
-                      <ListRow
-                        key={c.id}
-                        icon={<ComponentLogo id={c.id} size={16} />}
-                        label={c.name}
-                        description={c.installed ? (version ?? undefined) : undefined}
-                        title={c.desc}
-                        selected={active === c.id}
-                        onSelect={() => {
-                          tabs.show(c.id);
-                        }}
-                        actions={
-                          c.locked ? undefined : on ? (
-                            <IconButton
-                              icon={VscClose}
-                              label={c.installed ? t("Rimuovi {0}", c.name) : t("Non installare {0}", c.name)}
-                              disabled={running}
-                              onClick={() => {
-                                choose(c.id, false);
-                              }}
-                            />
-                          ) : (
-                            <IconButton
-                              icon={VscAdd}
-                              label={t("Installa {0}", c.name)}
-                              disabled={running || !c.available}
-                              onClick={() => {
-                                choose(c.id, true);
-                              }}
-                            />
-                          )
-                        }
-                        decorations={
-                          item ? (
-                            <ItemStatus state={item} />
-                          ) : (
-                            <>
-                              {missing && (
-                                <VscWarning
-                                  size={14}
-                                  className="text-vsc-warning"
-                                  aria-label={t("Serve a progetti e non è scelto")}
-                                />
-                              )}
-                              {pending ? (
-                                <Dot tone="warn" label={on ? t("da installare") : t("da rimuovere")} />
-                              ) : c.installed ? (
-                                <Dot tone="ok" label={t("installato")} />
-                              ) : null}
-                            </>
-                          )
-                        }
-                      />
-                    );
-                  })}
-                </List>
-              </ViewPane>
-            );
-          })}
+          <ViewPane
+            first
+            fill
+            title={t("Componenti")}
+            badge={`${String(installedAll)}/${String(shown.length)}`}
+            expanded={!closed.has("components")}
+            onToggle={() => {
+              toggle("components");
+            }}
+          >
+            <List label={t("Componenti")}>
+              {all.map((g) => {
+                const items = shown.filter((c) => g.has(c));
+                if (items.length === 0) return null;
+                const installed = items.filter((c) => c.installed).length;
+                const open = !closed.has(g.id) || search !== "";
+                return (
+                  <ListRow
+                    key={g.id}
+                    twistie={open ? "open" : "closed"}
+                    label={g.title}
+                    title={g.hint}
+                    description={`${String(installed)}/${String(items.length)}`}
+                    onSelect={() => {
+                      toggle(g.id);
+                    }}
+                  >
+                    <List label={g.title}>{items.map(row)}</List>
+                  </ListRow>
+                );
+              })}
+            </List>
+          </ViewPane>
           <ViewPane
             title={t("Panoramica")}
             expanded={!closed.has("overview")}
