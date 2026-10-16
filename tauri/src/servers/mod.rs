@@ -1369,21 +1369,34 @@ impl WebServers {
         } else {
             folder.trim()
         };
+        // The pools serving the project before and after the change are the
+        // only ones to reload (defect 8: not every running pool).
+        let mut touched = self.pools_serving(project, lang);
         set_site_with_options(&proj_dir, folder_clean, kind, &opts, lang)?;
         self.invalidate();
+        touched.extend(self.pools_serving(project, lang));
 
-        // Reload any running pools so the new VirtualHost routing takes effect immediately.
-        let running_ids: Vec<String> = self
-            .running
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .keys()
-            .cloned()
-            .collect();
-        for rid in running_ids {
-            let _ = self.reload(&rid, base_env, lang);
+        let mut failed = None;
+        for id in touched {
+            if !self.is_running(&id) {
+                continue;
+            }
+            if let Err(e) = self.reload(&id, base_env, lang) {
+                crate::log::warn(&format!("server pool {id}: reload: {e:#}"));
+                failed.get_or_insert(e);
+            }
         }
-        Ok(())
+        failed.map_or(Ok(()), Err)
+    }
+
+    /// The ids of the pools (orphans aside) with a site of `project`.
+    fn pools_serving(&self, project: &str, lang: &str) -> std::collections::BTreeSet<String> {
+        self.list(lang, true)
+            .pools
+            .into_iter()
+            .filter(|p| !p.orphan && p.sites.iter().any(|s| s.project == project))
+            .map(|p| p.id)
+            .collect()
     }
 }
 
