@@ -33,18 +33,15 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             Kind::Web,
         ));
     } else {
-        let is_wp = exists(dir, "wp-config.php") || exists(dir, "wp-settings.php");
+        let is_wp = exists(dir, "wp-config.php")
+            || exists(dir, "wp-settings.php")
+            || exists(dir, r"wp-includes\version.php");
         if exists(dir, r"bin\console") {
             platform = "Symfony".into();
             reason = "bin/console".into();
         } else if is_wp {
             platform = "WordPress".into();
             reason = "wp-settings.php".into();
-            warnings.push(tr(
-                lang,
-                "WordPress richiede un database MySQL/MariaDB, non incluso nel kit.",
-                &[],
-            ));
         }
         let root = docroot.unwrap_or(".");
         let shown = if root == "." {

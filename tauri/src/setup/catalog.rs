@@ -88,10 +88,11 @@ pub struct Component {
     /// for the kit or a project (`versions/mod.rs`, D-80).
     #[serde(default)]
     pub versioned: bool,
-    /// Its lines are whole versions (`2.4.66`), not `major.minor`: the
-    /// source has a single minor line (Apache).
+    /// One folder per minor line too, but a single version, always the
+    /// latest: a new patch replaces its line, a new line takes the place of
+    /// the old one (`versions/mod.rs`).
     #[serde(default)]
-    pub patch_lines: bool,
+    pub minor_folder: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -163,8 +164,9 @@ impl Catalog {
 }
 
 /// A path of the catalog: relative to `data\apps\<platform>`, or to the kit
-/// root with `@`. In a versioned component's folder it is that of its
-/// default version (`node/node.exe` → `node\22.11\node.exe`, versions/mod.rs).
+/// root with `@`. In the folder of a component with one folder per line it
+/// is that of its default version (`node/node.exe` → `node\22.11\node.exe`,
+/// versions/mod.rs).
 pub fn kit_path(kit: &Kit, rel: &str) -> PathBuf {
     match rel.strip_prefix('@') {
         Some(r) => kit.root().join(r.replace('/', "\\")),
@@ -257,6 +259,12 @@ impl Component {
                     .then(|| kit.apps().join("versions").join(&self.id)),
             )
             .collect()
+    }
+
+    /// Its folder holds one folder per minor line (`git.56`): versioned,
+    /// or `minor_folder`.
+    pub fn per_line(&self) -> bool {
+        self.versioned || self.minor_folder
     }
 
     pub fn folder_path(&self, kit: &Kit) -> Option<PathBuf> {

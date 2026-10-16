@@ -188,7 +188,7 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
           <p className="w-full text-[12px] text-vsc-desc">
             {kind === "apache"
               ? t(
-                  "Un Apache solo per questo progetto, sulla sua porta, con .htaccess e il PHP del kit. La configurazione è in data\\app\\projects\\{0}\\apache; le tue direttive vanno in conf.d.",
+                  "Un Apache solo per questo progetto, sulla sua porta, con .htaccess e il PHP del kit. La configurazione è in data\\projects\\{0}\\apache; le tue direttive vanno in conf.d.",
                   project.id,
                 )
               : t(

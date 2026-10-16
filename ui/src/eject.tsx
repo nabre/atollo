@@ -42,9 +42,15 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "lifecycle") => void 
   const [loadError, setLoadError] = useState<string | null>(null);
   const { busy, error, run } = useAction();
   const load = useCallback(() => {
-    ejectList().then(setOpen, (e: unknown) => {
-      setLoadError(String(e));
-    });
+    ejectList().then(
+      (o) => {
+        setOpen(o);
+        setLoadError(null);
+      },
+      (e: unknown) => {
+        setLoadError(String(e));
+      },
+    );
   }, []);
   useEffect(load, [load]);
 

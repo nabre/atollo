@@ -408,7 +408,7 @@
   "Apache del progetto: {0}": "Apache du projet : {0}",
   "PHP (server integrato)": "PHP (serveur intégré)",
   "Apache dedicato": "Apache dédié",
-  "Un Apache solo per questo progetto, sulla sua porta, con .htaccess e il PHP del kit. La configurazione è in data\\app\\projects\\{0}\\apache; le tue direttive vanno in conf.d.": "Un Apache pour ce seul projet, sur son propre port, avec .htaccess et le PHP du kit. La configuration est dans data\\app\\projects\\{0}\\apache ; vos directives vont dans conf.d.",
+  "Un Apache solo per questo progetto, sulla sua porta, con .htaccess e il PHP del kit. La configurazione è in data\\projects\\{0}\\apache; le tue direttive vanno in conf.d.": "Un Apache pour ce seul projet, sur son propre port, avec .htaccess et le PHP du kit. La configuration est dans data\\projects\\{0}\\apache ; vos directives vont dans conf.d.",
   "Cartella": "Dossier",
   "Origine": "Origine",
   "Togli l'output": "Effacer la sortie",
@@ -724,5 +724,7 @@
   "Scarica la versione nuova di {0}, se c'è": "Télécharger la nouvelle version de {0}, s'il y en a une",
   "Guida": "Guide",
   "Cerca nella guida": "Rechercher dans le guide",
-  "Apri la guida di questa pagina": "Ouvrir le guide de cette page"
+  "Apri la guida di questa pagina": "Ouvrir le guide de cette page",
+  "latest": "dernière",
+  "locked": "verrouillé"
 }

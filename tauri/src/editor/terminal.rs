@@ -51,7 +51,7 @@ enum Program<'a> {
 }
 
 fn pwsh(kit: &Kit) -> Result<PathBuf> {
-    let pwsh = kit.apps().join(r"pwsh\pwsh.exe");
+    let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");
     // Never the shells of the PC: without the kit's PowerShell, no console.
     anyhow::ensure!(pwsh.is_file(), "PowerShell 7 del kit non è installato");
     Ok(pwsh)

@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use super::{check, find, is_present, valid_line_for};
+use super::{check, find, is_present, valid_line};
 use crate::kit::Kit;
 
 /// The lines a source offered for a component, and when (Unix seconds).
@@ -22,12 +22,12 @@ pub(crate) fn offered_file(kit: &Kit) -> PathBuf {
 }
 
 /// Every component's offered lines (newest first). A list with a line
-/// that is not one of its component (`2.4` of Apache, from before its
-/// `patch_lines`) is dropped: it is asked again.
+/// that is not `major.minor` (`2.4.66` of Apache, from a kit with one
+/// folder per patch) is dropped: it is asked again.
 pub fn offered(kit: &Kit) -> BTreeMap<String, Offered> {
     let mut all: BTreeMap<String, Offered> =
         crate::fsx::read_json(&offered_file(kit)).unwrap_or_default();
-    all.retain(|id, o| find(id).is_some_and(|c| o.lines.iter().all(|l| valid_line_for(c, l))));
+    all.retain(|id, o| find(id).is_some() && o.lines.iter().all(|l| valid_line(l)));
     for o in all.values_mut() {
         o.lines
             .sort_by_key(|l| std::cmp::Reverse(crate::install::version_key(l)));
@@ -63,7 +63,9 @@ pub fn save_offered(kit: &Kit, id: &str, lines: &[String]) -> Result<()> {
     let _guard = LOCK
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    let Some(c) = find(id) else { return Ok(()) };
+    if find(id).is_none() {
+        return Ok(());
+    }
     let mut all = offered(kit);
     let checked = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -71,11 +73,7 @@ pub fn save_offered(kit: &Kit, id: &str, lines: &[String]) -> Result<()> {
     all.insert(
         id.to_owned(),
         Offered {
-            lines: lines
-                .iter()
-                .filter(|l| valid_line_for(c, l))
-                .cloned()
-                .collect(),
+            lines: lines.iter().filter(|l| valid_line(l)).cloned().collect(),
             checked,
         },
     );

@@ -66,7 +66,7 @@ function DiskLines({
                   <Tag key={p}>{p}</Tag>
                 ))}
               {/* The newest line its source offers. */}
-              {tool.available[0] === r.line && <Tag tone="focus">latest</Tag>}
+              {tool.available[0] === r.line && <Tag tone="focus">{t("latest")}</Tag>}
               {(outside[r.line] ?? []).length > 0 && (
                 <Tag tone="warning">{t("non per {0}", (outside[r.line] ?? []).join(", "))}</Tag>
               )}
@@ -172,7 +172,6 @@ function Locked({ projects, label }: { projects: string[]; label: string }) {
     <div ref={box} className="relative">
       <button
         type="button"
-        aria-haspopup="menu"
         aria-expanded={open}
         aria-label={label}
         onClick={() => {
@@ -181,15 +180,15 @@ function Locked({ projects, label }: { projects: string[]; label: string }) {
         className="inline-flex h-[22px] items-center gap-1 rounded-[5px] px-1 text-[11px] text-vsc-desc hover:bg-vsc-toolbar-hover hover:text-vsc-fg"
       >
         <VscLock size={12} aria-hidden="true" />
-        locked
+        {t("locked")}
       </button>
       {open && (
-        <ul role="menu" aria-label={label} className={`${MENU} min-w-36`}>
-          <li role="none" className="px-3 pb-0.5 text-[11px] text-vsc-desc">
+        <ul aria-label={label} className={`${MENU} min-w-36`}>
+          <li className="px-3 pb-0.5 text-[11px] text-vsc-desc">
             {t("Usata da")}
           </li>
           {projects.map((p) => (
-            <li key={p} role="menuitem" className={MENU_ITEM}>
+            <li key={p} className={MENU_ITEM}>
               {p}
             </li>
           ))}
@@ -271,7 +270,7 @@ export function AddLine({
                       {tool.name} {l}
                       {tool.available[0] === l && (
                         <Tag tone="focus" className="ml-auto">
-                          latest
+                          {t("latest")}
                         </Tag>
                       )}
                     </button>

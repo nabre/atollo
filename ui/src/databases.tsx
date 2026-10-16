@@ -316,9 +316,15 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
   const [chosen, setChosen] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(true);
   const refresh = useCallback(() => {
-    servicesList().then(setList, (e: unknown) => {
-      setError(String(e));
-    });
+    servicesList().then(
+      (l) => {
+        setList(l);
+        setError(null);
+      },
+      (e: unknown) => {
+        setError(String(e));
+      },
+    );
   }, []);
   useEvery(refresh, 3000);
   const act = (id: string, action: () => Promise<ServiceInfo[]>) => {

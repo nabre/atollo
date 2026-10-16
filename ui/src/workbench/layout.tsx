@@ -57,14 +57,16 @@ function readSize(key: string, fallback: number): number {
 export function useStoredSize(key: string, fallback: number, min: number, max: number) {
   const [size, setSize] = useState(() => Math.min(max, Math.max(min, readSize(key, fallback))));
   const set = useCallback(
-    (v: number) => {
-      const next = Math.round(Math.min(max, Math.max(min, v)));
-      setSize(next);
-      try {
-        localStorage.setItem(`size:${key}`, String(next));
-      } catch {
-        // Not remembered: the size still changes.
-      }
+    (v: number | ((prev: number) => number)) => {
+      setSize((prev) => {
+        const next = Math.round(Math.min(max, Math.max(min, typeof v === "function" ? v(prev) : v)));
+        try {
+          localStorage.setItem(`size:${key}`, String(next));
+        } catch {
+          // Not remembered: the size still changes.
+        }
+        return next;
+      });
     },
     [key, min, max],
   );
@@ -142,7 +144,7 @@ export function ViewContainer({ side, id, children }: { side?: ReactNode; id: st
             vertical
             label={t("Ridimensiona la barra laterale")}
             onDrag={(d) => {
-              setWidth(width + d);
+              setWidth((w) => w + d);
             }}
             onReset={() => {
               setWidth(300);
@@ -162,7 +164,7 @@ export function ViewContainer({ side, id, children }: { side?: ReactNode; id: st
 export function SideBarTitle({ title, actions }: { title: string; actions?: ReactNode }) {
   return (
     <div className="group/title flex h-8 shrink-0 items-center px-1">
-      <h1 className="min-w-0 flex-1 truncate pl-2 text-[12px] leading-8 font-semibold text-vsc-sidebar-title capitalize">
+      <h1 className="min-w-0 flex-1 truncate pl-2 text-[12px] leading-8 font-semibold text-vsc-sidebar-title">
         {title}
       </h1>
       {actions && <ActionBar className="pl-1">{actions}</ActionBar>}
@@ -215,7 +217,7 @@ export function ViewPane({
           type="button"
           aria-expanded={expanded}
           onClick={onToggle}
-          className="flex h-full min-w-0 flex-1 items-center gap-0.5 rounded pl-0.5 text-left text-[12px] font-semibold capitalize outline-none focus-visible:outline-1 focus-visible:-outline-offset-2 focus-visible:outline-vsc-focus"
+          className="flex h-full min-w-0 flex-1 items-center gap-0.5 rounded pl-0.5 text-left text-[12px] font-semibold outline-none focus-visible:outline-1 focus-visible:-outline-offset-2 focus-visible:outline-vsc-focus"
         >
           <VscChevronRight
             size={16}
@@ -278,7 +280,7 @@ export function EditorTabs({
 }) {
   return (
     <div className={TAB_BAR}>
-      <div role="tablist" aria-label="Editor" className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]">
+      <div role="tablist" aria-label={t("Editor")} className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]">
         {tabs.map((tab) => {
           const on = tab.id === active;
           const close = tab.pinned ? undefined : onClose;
@@ -532,7 +534,7 @@ export function Panel({
                 onClick={() => {
                   onSelect(x.id);
                 }}
-                className={`relative flex h-8 items-center gap-1 px-2 text-[12px] capitalize ${
+                className={`relative flex h-8 items-center gap-1 px-2 text-[12px] ${
                   on
                     ? "text-vsc-panel-title after:absolute after:inset-x-2 after:bottom-1.5 after:h-px after:bg-vsc-panel-title-border"
                     : "text-vsc-panel-title-inactive hover:text-vsc-panel-title"

@@ -1,5 +1,6 @@
 use super::*;
 use crate::kit::tests::TempDir;
+use std::fs;
 use std::io::Read;
 
 #[test]
@@ -22,11 +23,15 @@ fn host_header() {
 #[test]
 fn paths() {
     let tmp = TempDir::new("serve");
-    fs::create_dir_all(tmp.0.join("sub")).unwrap();
-    fs::write(tmp.0.join("index.html"), "home").unwrap();
-    fs::write(tmp.0.join("sub/index.html"), "sub").unwrap();
-    fs::write(tmp.0.join(".env"), "secret").unwrap();
-    let root = fs::canonicalize(&tmp.0).unwrap();
+    let root = tmp.0.join("site");
+    let outside = tmp.0.join("outside");
+    fs::create_dir_all(root.join("sub")).unwrap();
+    fs::create_dir_all(&outside).unwrap();
+    fs::write(root.join("index.html"), "home").unwrap();
+    fs::write(root.join("sub/index.html"), "sub").unwrap();
+    fs::write(root.join(".env"), "secret").unwrap();
+    fs::write(outside.join("secret.txt"), "leaked").unwrap();
+    crate::os::safe_path::tests::junction(&root.join("lnk"), &outside);
     assert!(matches!(resolve(&root, "/"), Answer::File(p) if p.ends_with("index.html")));
     assert!(matches!(resolve(&root, "/sub?x=1"), Answer::Redirect(l) if l == "/sub/?x=1"));
     assert!(matches!(resolve(&root, "/.env"), Answer::Status(403, _)));
@@ -38,6 +43,11 @@ fn paths() {
         resolve(&root, "/sub/..%5C..%5Cx"),
         Answer::Status(403, _)
     ));
+    assert!(matches!(
+        resolve(&root, "/lnk/secret.txt"),
+        Answer::Status(403, _)
+    ));
+    assert!(matches!(resolve(&root, "/lnk/"), Answer::Status(403, _)));
     assert!(matches!(
         resolve(&root, "/missing.js"),
         Answer::Status(404, _)

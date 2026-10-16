@@ -101,6 +101,7 @@ export function SettingsPage({
         setS(v.settings);
         setGemini(null);
         setDirty(false);
+        setLoadError(null);
       },
       (e: unknown) => {
         setLoadError(String(e));

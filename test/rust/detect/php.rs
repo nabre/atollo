@@ -25,4 +25,14 @@ fn laravel_and_plain() {
     assert_eq!(p.default.as_deref(), Some("apache"));
     assert_eq!(p.actions[0].apache_dir.as_deref(), Some("public"));
     assert!(p.requires.contains(&"apache".to_owned()));
+
+    let wp = project(
+        "php-wp",
+        &[("index.php", "<?php"), ("wp-settings.php", "<?php")],
+    );
+    let p = detect(&wp.0, "it");
+    assert_eq!(p.platform, "WordPress");
+    assert!(p.requires.contains(&"mariadb".to_owned()));
+    assert!(p.requires.contains(&"apache".to_owned()));
+    assert!(p.requires.contains(&"php".to_owned()));
 }

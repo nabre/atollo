@@ -56,15 +56,15 @@ const PIPE_SDDL: &str = "D:P(A;;GA;;;OW)";
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(30);
 
 fn exe(kit: &Kit) -> PathBuf {
-    kit.apps().join(r"terminal\WindowsTerminal.exe")
+    crate::setup::catalog::kit_path(kit, r"terminal\WindowsTerminal.exe")
 }
 
 fn settings_path(kit: &Kit) -> PathBuf {
-    kit.apps().join(r"terminal\settings\settings.json")
+    crate::setup::catalog::kit_path(kit, r"terminal\settings\settings.json")
 }
 
 fn pwsh(kit: &Kit) -> PathBuf {
-    kit.apps().join(r"pwsh\pwsh.exe")
+    crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe")
 }
 
 /// Installed, and Windows can run it.
@@ -146,13 +146,13 @@ fn kit_profiles(kit: &Kit) -> Vec<Value> {
             "colorScheme": colors, "hidden": false
         }));
     }
-    let bash = kit.apps().join(r"git\bin\bash.exe");
+    let bash = crate::setup::catalog::kit_path(kit, r"git\bin\bash.exe");
     if bash.is_file() {
         let rc = kit.kit_files().join("bashrc").display().to_string();
         out.push(json!({
             "guid": PROFILE_BASH, "name": "Dev-Kit - Git Bash",
             "commandline": format!("{} --rcfile {} -i", quote(&bash.display().to_string()), quote(&rc)),
-            "icon": kit.apps().join(r"git\git-bash.exe").display().to_string(),
+            "icon": crate::setup::catalog::kit_path(kit, r"git\git-bash.exe").display().to_string(),
             "startingDirectory": kit.projects().display().to_string(),
             "colorScheme": colors, "hidden": false
         }));

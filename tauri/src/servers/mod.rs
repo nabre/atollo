@@ -9,10 +9,11 @@
 
 use std::collections::BTreeMap;
 use std::fs;
+use std::net::{SocketAddr, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Stdio};
 use std::sync::{Mutex, PoisonError};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -25,7 +26,7 @@ use crate::os::jobs::{self, Job};
 use crate::projects::alias;
 use crate::projects::apache::{self, fwd};
 use crate::projects::nginx;
-use crate::projects::run::{is_port_free, responds};
+use crate::projects::run::is_port_free;
 use crate::setup::catalog::Catalog;
 
 const POOL_PORT_FROM: u16 = 8081;
@@ -124,6 +125,7 @@ struct RunningPool {
 pub struct WebServers {
     kit: Kit,
     running: Mutex<BTreeMap<String, RunningPool>>,
+    op_lock: Mutex<()>,
 }
 
 fn store_path(kit: &Kit) -> PathBuf {
@@ -292,7 +294,7 @@ fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) 
         format!("    include \"{run_fwd}/vhosts/*.conf\";"),
         format!("    include \"{run_fwd}/conf.d/*.conf\";"),
         "    server {".to_owned(),
-        format!("        listen {listen};"),
+        format!("        listen {listen} default_server;"),
         "        server_name localhost;".to_owned(),
         format!("        root \"{nginx_fwd}/html\";"),
         "        index index.html index.htm;".to_owned(),
@@ -303,11 +305,33 @@ fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) 
     .join("\r\n")
 }
 
+fn pool_error_tail(pool_dir: &Path) -> String {
+    for rel in ["error.log", "logs/error.log"] {
+        if let Ok(text) = fs::read_to_string(pool_dir.join(rel)) {
+            let tail: Vec<&str> = text
+                .lines()
+                .map(str::trim)
+                .filter(|l| !l.is_empty())
+                .rev()
+                .take(5)
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev()
+                .collect();
+            if !tail.is_empty() {
+                return format!(": {}", tail.join(" | "));
+            }
+        }
+    }
+    String::new()
+}
+
 impl WebServers {
     pub fn new(kit: Kit) -> Self {
         Self {
             kit,
             running: Mutex::new(BTreeMap::new()),
+            op_lock: Mutex::new(()),
         }
     }
 
@@ -322,9 +346,17 @@ impl WebServers {
         running.clear();
     }
 
-    fn assign_or_get_port(&self, store: &mut StoredServers, id: &str, manual: Option<u16>) -> u16 {
+    fn assign_or_get_port(
+        &self,
+        store: &mut StoredServers,
+        dirty: &mut bool,
+        id: &str,
+        manual: Option<u16>,
+    ) -> u16 {
         if let Some(p) = manual.filter(|p| *p >= 1024) {
-            store.ports.insert(id.to_owned(), p);
+            if store.ports.insert(id.to_owned(), p) != Some(p) {
+                *dirty = true;
+            }
             return p;
         }
         if let Some(&p) = store.ports.get(id) {
@@ -334,7 +366,7 @@ impl WebServers {
         for p in POOL_PORT_FROM..=POOL_PORT_TO {
             if !used.contains(&p) && is_port_free(p) {
                 store.ports.insert(id.to_owned(), p);
-                let _ = save_store(&self.kit, store);
+                *dirty = true;
                 return p;
             }
         }
@@ -347,10 +379,11 @@ impl WebServers {
         let php_lines = crate::db::services::server_lines(&self.kit, "php");
 
         let mut store = load_store(&self.kit);
+        let mut store_dirty = false;
         let mut pools_map: BTreeMap<String, WebServerPool> = BTreeMap::new();
 
         for p in store.profiles.clone() {
-            let port = self.assign_or_get_port(&mut store, &p.id, p.port);
+            let port = self.assign_or_get_port(&mut store, &mut store_dirty, &p.id, p.port);
             let server_line = p.server_line.clone().or_else(|| match p.engine {
                 WebServerEngine::Apache => apache_lines.first().cloned(),
                 WebServerEngine::Nginx => nginx_lines.first().cloned(),
@@ -382,6 +415,13 @@ impl WebServers {
                 continue;
             };
             let detected = detect::detect(&proj_dir, lang);
+            if !detected
+                .actions
+                .iter()
+                .any(|a| a.apache_dir.is_some() || a.nginx_dir.is_some())
+            {
+                continue;
+            }
             let choice = crate::versions::project_choice(&self.kit, &proj_id);
             let needs_php =
                 detected.requires.iter().any(|r| r == "php") || choice.contains_key("php");
@@ -419,7 +459,8 @@ impl WebServers {
                     };
                     let pid = auto_pool_id(engine, srv_line.as_deref(), php_line.as_deref());
                     if !pools_map.contains_key(&pid) {
-                        let port = self.assign_or_get_port(&mut store, &pid, None);
+                        let port =
+                            self.assign_or_get_port(&mut store, &mut store_dirty, &pid, None);
                         let name = auto_pool_name(engine, srv_line.as_deref(), php_line.as_deref());
                         pools_map.insert(
                             pid.clone(),
@@ -470,7 +511,7 @@ impl WebServers {
             };
             let php_line = php_lines.first().cloned();
             let pid = auto_pool_id(engine, srv_line.as_deref(), php_line.as_deref());
-            let port = self.assign_or_get_port(&mut store, &pid, None);
+            let port = self.assign_or_get_port(&mut store, &mut store_dirty, &pid, None);
             let name = auto_pool_name(engine, srv_line.as_deref(), php_line.as_deref());
             pools_map.insert(
                 pid.clone(),
@@ -488,6 +529,10 @@ impl WebServers {
                     conf_dir: format!(r"data\servers\{pid}"),
                 },
             );
+        }
+
+        if store_dirty {
+            let _ = save_store(&self.kit, &store);
         }
 
         let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
@@ -616,7 +661,7 @@ impl WebServers {
             WebServerEngine::Nginx => {
                 nginx::prepare_dirs(&pool_dir)?;
                 let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
-                for (idx, site) in pool.sites.iter().enumerate() {
+                for site in &pool.sites {
                     let proj_root = self.kit.projects().join(&site.project);
                     let doc_root = detect::inside_dir(&proj_root, &site.folder)
                         .unwrap_or_else(|_| proj_root.clone());
@@ -630,7 +675,7 @@ impl WebServers {
                         lan,
                         &site.domains,
                         &alias::resolve(&proj_root, &self.kit.projects(), &site.aliases),
-                        idx == 0,
+                        false,
                     );
                     write_atomic(
                         &vhosts_dir.join(format!("{}.conf", site.project)),
@@ -646,6 +691,11 @@ impl WebServers {
     }
 
     pub fn start(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
+        let _op = self.op_lock.lock().unwrap_or_else(PoisonError::into_inner);
+        self.start_locked(id, base_env, lang)
+    }
+
+    fn start_locked(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
         let view = self.list(lang);
         let pool = view
             .pools
@@ -675,6 +725,9 @@ impl WebServers {
         env.set("CP_PROJECTS_FWD", fwd(&self.kit.projects()));
         let lan = env.get("DEVKIT_ALLOW_LAN") == Some("1");
 
+        let pool_dir = self.kit.data().join("servers").join(&pool.id);
+        let _ = fs::remove_file(pool_dir.join("error.log"));
+
         let job = Job::new()?;
         let (mut cmd, fcgi_port) = match pool.engine {
             WebServerEngine::Apache => {
@@ -698,9 +751,12 @@ impl WebServers {
                 }
                 env.set("CP_NGINX", nginx_dir.display().to_string());
                 env.set("CP_NGINX_FWD", fwd(&nginx_dir));
-                let fcgi = nginx::spawn_php_cgi_if_present(&self.kit, &env, &job);
+                let fcgi = if pool.php_line.is_some() {
+                    nginx::spawn_php_cgi_if_present(&self.kit, &env, &job)
+                } else {
+                    None
+                };
                 let conf_path = self.write_pool_configs(&pool, fcgi, lan)?;
-                let pool_dir = self.kit.data().join("servers").join(&pool.id);
                 let mut cmd = jobs::kit_command(&exe, &env);
                 cmd.arg("-p")
                     .arg(&pool_dir)
@@ -715,14 +771,31 @@ impl WebServers {
         cmd.stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null());
-        let child = jobs::spawn_in(&mut cmd, &job)?;
+        let mut child = jobs::spawn_in(&mut cmd, &job)?;
 
-        let deadline = Instant::now() + Duration::from_secs(6);
-        while Instant::now() < deadline {
-            if responds(pool.port) {
+        let addr = SocketAddr::from(([127, 0, 0, 1], pool.port));
+        let mut ready = false;
+        for _ in 0..60 {
+            if TcpStream::connect_timeout(&addr, Duration::from_millis(80)).is_ok() {
+                ready = true;
                 break;
             }
-            std::thread::sleep(Duration::from_millis(120));
+            if let Some(status) = child.try_wait().context("wait web server")? {
+                let detail = pool_error_tail(&pool_dir);
+                bail!(
+                    "{} exited prematurely ({status}){detail}",
+                    pool.engine.label()
+                );
+            }
+            std::thread::sleep(Duration::from_millis(80));
+        }
+        if !ready {
+            let detail = pool_error_tail(&pool_dir);
+            bail!(
+                "{} did not start listening on port {}{detail}",
+                pool.engine.label(),
+                pool.port
+            );
         }
 
         self.running
@@ -741,6 +814,11 @@ impl WebServers {
     }
 
     pub fn stop(&self, id: &str) {
+        let _op = self.op_lock.lock().unwrap_or_else(PoisonError::into_inner);
+        self.stop_locked(id);
+    }
+
+    fn stop_locked(&self, id: &str) {
         let removed = self
             .running
             .lock()
@@ -750,6 +828,11 @@ impl WebServers {
     }
 
     pub fn reload(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
+        let _op = self.op_lock.lock().unwrap_or_else(PoisonError::into_inner);
+        self.reload_locked(id, base_env, lang)
+    }
+
+    fn reload_locked(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
         let view = self.list(lang);
         let pool = view
             .pools
@@ -786,9 +869,16 @@ impl WebServers {
         }
 
         // Clean restart when graceful signal is unavailable (Apache standalone on Windows).
-        self.stop(id);
-        std::thread::sleep(Duration::from_millis(120));
-        self.start(id, base_env, lang)
+        self.stop_locked(id);
+        std::thread::sleep(Duration::from_millis(100));
+        let addr = SocketAddr::from(([127, 0, 0, 1], pool.port));
+        for _ in 0..20 {
+            if TcpStream::connect_timeout(&addr, Duration::from_millis(30)).is_err() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        self.start_locked(id, base_env, lang)
     }
 
     pub fn assign_project(

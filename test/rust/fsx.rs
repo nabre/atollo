@@ -59,3 +59,37 @@ fn write_json_creates_the_folder_and_leaves_no_temporary() {
     assert_eq!(names.len(), 1);
     let _ = fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn write_atomic_concurrent_threads_do_not_collide_on_tmp() {
+    let dir = temp("concurrent");
+    fs::create_dir_all(&dir).unwrap();
+    let handles: Vec<_> = (0..8u32)
+        .map(|i| {
+            let dir = dir.clone();
+            std::thread::spawn(move || {
+                // Threads share the same stem (`cfg.json`, `cfg.toml`, etc.) and target files.
+                let ext = if i % 2 == 0 { "json" } else { "toml" };
+                let file = dir.join(format!("cfg-{}.{ext}", i % 4));
+                for step in 0..10u32 {
+                    let payload = format!("{{\"thread\":{i},\"step\":{step}}}");
+                    write_atomic(&file, payload.as_bytes()).unwrap();
+                }
+            })
+        })
+        .collect();
+    for h in handles {
+        h.join().unwrap();
+    }
+    let names: Vec<String> = fs::read_dir(&dir)
+        .unwrap()
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    assert!(
+        names.iter().all(|n| !n.contains(".tmp-")),
+        "leftover tmp files: {names:?}"
+    );
+    assert_eq!(names.len(), 4);
+    let _ = fs::remove_dir_all(&dir);
+}

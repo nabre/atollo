@@ -73,7 +73,12 @@ export function GuideShot({
           onClick={() => {
             setZoom(true);
           }}
-          title={tr("Clicca per ingrandire l'immagine", "Click to enlarge image")}
+          title={tr(
+            "Clicca per ingrandire l'immagine",
+            "Click to enlarge image",
+            "Cliquer pour agrandir l'image",
+            "Klicken, um das Bild zu vergrößern",
+          )}
           className="group relative block w-full cursor-zoom-in overflow-hidden bg-black/20 text-left focus-visible:outline-1 focus-visible:outline-vsc-focus"
         >
           <img
@@ -89,7 +94,14 @@ export function GuideShot({
             <div className="rounded border-l-2 border-l-vsc-focus bg-vsc-bg/70 px-3 py-2 text-vsc-fg">
               <div className="mb-0.5 flex items-center gap-1.5 font-semibold text-vsc-settings-header">
                 <VscInfo size={14} aria-hidden="true" className="text-vsc-info" />
-                <span>{tr("Esempio pratico nello screenshot", "Practical example in screenshot")}</span>
+                <span>
+                  {tr(
+                    "Esempio pratico nello screenshot",
+                    "Practical example in screenshot",
+                    "Exemple pratique dans la capture d'écran",
+                    "Praktisches Beispiel im Screenshot",
+                  )}
+                </span>
               </div>
               <div className="leading-relaxed">{example}</div>
             </div>
@@ -245,11 +257,14 @@ export function GuideRecipe({
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-vsc-desc">
             <span>
-              <strong>{tr("Dove si configura:", "Where to configure:")}</strong> {whereUi}
+              <strong>
+                {tr("Dove si configura:", "Where to configure:", "Où configurer :", "Wo zu konfigurieren:")}
+              </strong>{" "}
+              {whereUi}
             </span>
             <span>·</span>
             <span>
-              <strong>{tr("File su disco:", "File on disk:")}</strong>{" "}
+              <strong>{tr("File su disco:", "File on disk:", "Fichier sur le disque :", "Datei auf dem Datenträger:")}</strong>{" "}
               <code className="rounded bg-vsc-input px-1.5 py-0.5 font-mono text-[11px] text-vsc-fg select-text">
                 {whereFile}
               </code>
@@ -265,7 +280,7 @@ export function GuideRecipe({
             }}
           >
             <span className="inline-flex items-center gap-1">
-              {targetLabel ?? tr("Configura ora", "Configure now")}
+              {targetLabel ?? tr("Configura ora", "Configure now", "Configurer maintenant", "Jetzt konfigurieren")}
               <VscArrowRight size={12} aria-hidden="true" />
             </span>
           </Button>
@@ -274,7 +289,12 @@ export function GuideRecipe({
 
       <div className="space-y-1.5 text-[12px]">
         <div className="font-semibold text-vsc-settings-header">
-          {tr("Passaggi operativi:", "Step-by-step procedure:")}
+          {tr(
+            "Passaggi operativi:",
+            "Step-by-step procedure:",
+            "Procédure étape par étape :",
+            "Schritt-für-Schritt-Anleitung:",
+          )}
         </div>
         <ol className="m-0 list-decimal space-y-1.5 pl-5 leading-relaxed">
           {steps.map((s, i) => (
@@ -285,7 +305,12 @@ export function GuideRecipe({
 
       <div className="rounded border-l-2 border-l-vsc-focus bg-vsc-bg/60 px-3 py-2 text-[12px]">
         <div className="mb-0.5 font-semibold text-vsc-settings-header">
-          {tr("Scopo tecnico e perché va fatto:", "Technical purpose & why it matters:")}
+          {tr(
+            "Scopo tecnico e perché va fatto:",
+            "Technical purpose & why it matters:",
+            "Objectif technique et pourquoi le faire :",
+            "Technischer Zweck und warum es wichtig ist:",
+          )}
         </div>
         <div className="leading-relaxed text-vsc-fg/90">{purpose}</div>
       </div>
@@ -298,10 +323,36 @@ export function GuideRecipe({
 /** Quick buttons to open the kit's key folders in Windows Explorer. */
 export function KitFoldersBar() {
   const items: { id: "projects" | "agents" | "db" | "backup"; label: string; path: string }[] = [
-    { id: "projects", label: tr("Cartella progetti", "Projects folder"), path: "projects\\" },
-    { id: "agents", label: tr("Agenti condivisi", "Shared agents"), path: "data\\agents\\" },
-    { id: "db", label: tr("Dati database", "Database data"), path: "data\\db\\" },
-    { id: "backup", label: tr("Backup database", "Database backups"), path: "data\\backup\\" },
+    {
+      id: "projects",
+      label: tr("Cartella progetti", "Projects folder", "Dossier des projets", "Projektordner"),
+      path: "projects\\",
+    },
+    {
+      id: "agents",
+      label: tr("Agenti condivisi", "Shared agents", "Agents partagés", "Geteilte Agenten"),
+      path: "data\\agents\\",
+    },
+    {
+      id: "db",
+      label: tr("Dati database", "Database data", "Données de bases de données", "Datenbankdaten"),
+      path: "data\\db\\",
+    },
+    {
+      id: "backup",
+      label: tr(
+        "Backup database",
+        "Database backups",
+        "Sauvegardes de bases de données",
+        "Datenbank-Backups",
+      ),
+      path: tr(
+        "data\\projects\\<progetto>\\private\\backups\\",
+        "data\\projects\\<project>\\private\\backups\\",
+        "data\\projects\\<projet>\\private\\backups\\",
+        "data\\projects\\<projekt>\\private\\backups\\",
+      ),
+    },
   ];
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -318,7 +369,7 @@ export function KitFoldersBar() {
           <span className="inline-flex items-center gap-1">
             <VscFolderOpened size={12} aria-hidden="true" />
             <span>{x.label}</span>
-            <code className="font-mono text-[10px] opacity-75">{x.path}</code>
+            <code className="font-mono text-[11px] opacity-75">{x.path}</code>
           </span>
         </Button>
       ))}

@@ -7,9 +7,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Context, Result};
 
 use super::{
-    check, default_dir, default_line, find, has_key, install_dir, line_for, line_of, project_users,
-    saved, saved_dir, store, valid_line, valid_line_for, versioned, write_version, Line,
-    VERSION_FILE,
+    check, default_dir, default_line, find, has_key, install_dir, line_of, lined, project_users,
+    saved, saved_dir, store, valid_line, version_in, versioned, write_version, Line,
 };
 use crate::kit::Kit;
 use crate::setup::catalog::{Catalog, Component};
@@ -107,15 +106,20 @@ fn repair_default(kit: &Kit, c: &Component) -> Result<()> {
 
 /// Brings the folders of an older kit to one folder per version, at start
 /// before anything uses them: the default `node\` into `node\<line>`, the
-/// saved `versions\<id>\<line>` into `node\<line>`. The saved lines of
-/// components no longer versioned go. A folder in use stays as it is (the
-/// kit works with it) and is moved at the next start.
+/// saved `versions\<id>\<line>` into `node\<line>`, `tools\gh.exe` into
+/// `gh\<line>\bin`, a folder per patch (`apache\2.4.69`) into its line. The
+/// saved lines of components no longer versioned go, and the old lines of
+/// the tools always at their latest version. A folder in use stays as it is
+/// (the kit works with it) and is moved at the next start.
 pub fn migrate(kit: &Kit) {
-    for c in versioned() {
+    for c in lined() {
         if let Err(e) = migrate_default(kit, c) {
             crate::log::warn(&format!("{}: default folder not moved ({e:#})", c.id));
         }
-        if let Err(e) = migrate_patch_lines(kit, c) {
+        if let Err(e) = migrate_from_tools(kit, c) {
+            crate::log::warn(&format!("{}: not moved from tools ({e:#})", c.id));
+        }
+        if let Err(e) = migrate_patch_folders(kit, c) {
             crate::log::warn(&format!("{}: version folders not renamed ({e:#})", c.id));
         }
     }
@@ -135,6 +139,9 @@ pub fn migrate(kit: &Kit) {
         if let Err(e) = repair_default(kit, c) {
             crate::log::warn(&format!("{}: no default version ({e:#})", c.id));
         }
+    }
+    for c in lined() {
+        drop_old_lines(kit, c);
     }
     // The databases' data, one folder per version too.
     crate::db::services::migrate_data(kit);
@@ -178,37 +185,99 @@ fn migrate_default(kit: &Kit, c: &Component) -> Result<()> {
     Ok(())
 }
 
-/// A component with one folder per patch (Apache): `apache\2.4`, from
-/// before, takes the name of the version inside (`apache\2.4.66`). A name
-/// already taken leaves it as it is.
-fn migrate_patch_lines(kit: &Kit, c: &Component) -> Result<()> {
-    if !c.patch_lines {
-        return Ok(());
+/// The lines of a `minor_folder` component other than the installed one's,
+/// left by an update to a new line. One in use stays, for the next start.
+pub fn drop_old_lines(kit: &Kit, c: &Component) {
+    if !c.minor_folder || c.versioned {
+        return;
     }
-    let installed = c.installed_version(kit);
+    let Some(line) = default_line(kit, c) else {
+        return;
+    };
+    if !has_key(c, &saved_dir(kit, c, &line)) {
+        return;
+    }
     for entry in fs::read_dir(store(kit, c)).into_iter().flatten().flatten() {
         let name = entry.file_name().to_string_lossy().into_owned();
-        if !valid_line(&name) || !has_key(c, &entry.path()) {
+        if name == line || !valid_line(&name) || !entry.path().is_dir() {
             continue;
         }
-        let version = fs::read_to_string(entry.path().join(VERSION_FILE))
-            .ok()
-            .map(|v| v.trim().to_owned())
-            .filter(|v| !v.is_empty())
-            .or_else(|| {
-                installed
-                    .clone()
-                    .filter(|v| line_of(v).as_deref() == Some(name.as_str()))
-            });
-        let Some(line) = version.as_deref().and_then(|v| line_for(c, v)) else {
-            continue;
-        };
+        match crate::net::archive::remove_dir(&entry.path()) {
+            Ok(()) => crate::log::info(&format!("{}: {name} removed, {line} replaces it", c.id)),
+            Err(e) => crate::log::warn(&format!("{}: {name} not removed ({e:#})", c.id)),
+        }
+    }
+}
+
+/// The executables of a kit that kept them in `tools\` (GitHub CLI, uv)
+/// move into the folder of their line, where the key is (`gh\2.102\bin`):
+/// the `tools/` files of `remove`, when the key's file is one of them.
+fn migrate_from_tools(kit: &Kit, c: &Component) -> Result<()> {
+    let (Some(folder), Some(version)) = (&c.folder, c.installed_version(kit)) else {
+        return Ok(());
+    };
+    let rel = c
+        .key
+        .strip_prefix(folder.as_str())
+        .unwrap_or(&c.key)
+        .trim_start_matches('/');
+    let (sub, exe) = rel.rsplit_once('/').unwrap_or(("", rel));
+    let tools = kit.apps().join("tools");
+    let files: Vec<PathBuf> = c
+        .remove
+        .iter()
+        .filter_map(|r| r.strip_prefix("tools/"))
+        .map(|name| tools.join(name))
+        .filter(|p| p.is_file())
+        .collect();
+    let dir = install_dir(kit, c, &version);
+    if has_key(c, &dir) || !files.iter().any(|p| p.ends_with(exe)) {
+        return Ok(());
+    }
+    let into = dir.join(sub.replace('/', "\\"));
+    fs::create_dir_all(&into)?;
+    for from in &files {
+        let to = into.join(from.file_name().unwrap_or_default());
+        fs::rename(from, &to).with_context(|| to.display().to_string())?;
+    }
+    write_version(&dir, &version)?;
+    crate::log::info(&format!("{}: moved from tools to {}", c.id, dir.display()));
+    Ok(())
+}
+
+/// A folder per patch, from a kit that kept them (Apache: `apache\2.4.69`):
+/// the installed version's takes the name of its line (`apache\2.4`), the
+/// other ones of that line go.
+fn migrate_patch_folders(kit: &Kit, c: &Component) -> Result<()> {
+    let installed = c.installed_version(kit);
+    let mut folders: Vec<(String, PathBuf, Option<String>)> = fs::read_dir(store(kit, c))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            let line = line_of(&name)?;
+            let patch = line != name && name.chars().all(|ch| ch.is_ascii_digit() || ch == '.');
+            (patch && has_key(c, &e.path())).then(|| (name, e.path(), version_in(&e.path())))
+        })
+        .collect();
+    // The installed version first, then the newest.
+    folders.sort_by_key(|(name, _, version)| {
+        (
+            version.is_none() || *version != installed,
+            std::cmp::Reverse(crate::install::version_key(name)),
+        )
+    });
+    for (name, path, _) in folders {
+        let Some(line) = line_of(&name) else { continue };
         let to = saved_dir(kit, c, &line);
         if to.exists() {
-            continue;
+            crate::net::archive::remove_dir(&path)?;
+            crate::log::info(&format!("{}: {name} removed, {line} replaces it", c.id));
+        } else {
+            fs::rename(&path, &to).with_context(|| to.display().to_string())?;
+            crate::log::info(&format!("{}: {name} renamed to {line}", c.id));
         }
-        fs::rename(entry.path(), &to).with_context(|| to.display().to_string())?;
-        crate::log::info(&format!("{}: {name} renamed to {line}", c.id));
     }
     Ok(())
 }
@@ -218,7 +287,7 @@ fn migrate_saved(kit: &Kit, c: &Component, old: &Path) -> Result<()> {
     for entry in fs::read_dir(old)?.flatten() {
         let line = entry.file_name().to_string_lossy().into_owned();
         let to = saved_dir(kit, c, &line);
-        if !valid_line_for(c, &line) || has_key(c, &to) {
+        if !valid_line(&line) || has_key(c, &to) {
             crate::net::archive::remove_dir(&entry.path())?;
             continue;
         }

@@ -8,7 +8,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::{arch_of, github_single, pattern, triple_arch, Ctx, Dest, Installer, Release};
+use super::{arch_of, github_single, pattern, triple_arch, Ctx, Installer, Release};
 use crate::fsx::write_atomic;
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
@@ -413,31 +413,23 @@ impl Installer for Node {
     }
 }
 
-/// A GitHub asset whose executables go to `tools\` (uv, gh).
-fn github_tools(ctx: &Ctx, repo: &str, re: &str, files: Vec<&'static str>) -> Result<Release> {
-    let mut release = github_single(ctx, repo, re, Kind::Zip, Inner::Root)?;
-    for part in &mut release.parts {
-        part.dest = Dest::Tools(files.clone());
-    }
-    Ok(release)
-}
-
-/// uv, uvx, uvw in `tools\`.
+/// uv, uvx, uvw in `uv\<line>`.
 pub struct Uv;
 
 impl Installer for Uv {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let triple = format!("{}-pc-windows-msvc", triple_arch(ctx, component));
-        github_tools(
+        github_single(
             ctx,
             "astral-sh/uv",
             &format!(r"^uv-{}\.zip$", regex::escape(&triple)),
-            vec!["uv.exe", "uvx.exe", "uvw.exe"],
+            Kind::Zip,
+            Inner::Auto,
         )
     }
 }
 
-/// GitHub CLI in `tools\`.
+/// GitHub CLI in `gh\<line>` (`bin\gh.exe`).
 pub struct Gh;
 
 impl Installer for Gh {
@@ -447,11 +439,12 @@ impl Installer for Gh {
         } else {
             "amd64"
         };
-        github_tools(
+        github_single(
             ctx,
             "cli/cli",
             &format!(r"^gh_[\d.]+_windows_{arch}\.zip$"),
-            vec!["gh.exe"],
+            Kind::Zip,
+            Inner::Auto,
         )
     }
 }

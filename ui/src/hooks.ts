@@ -78,6 +78,7 @@ export function useLoad<T>(load: () => Promise<T>, initial: T, options: LoadOpti
   const [data, setData] = useState<T>(initial);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const seq = useRef(0);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -91,14 +92,15 @@ export function useLoad<T>(load: () => Promise<T>, initial: T, options: LoadOpti
   });
   const reload = useCallback(() => {
     if (!enabled) return;
+    const id = ++seq.current;
     load().then(
       (value) => {
-        if (!mounted.current) return;
+        if (!mounted.current || id !== seq.current) return;
         setData(value);
         setError(null);
       },
       (e: unknown) => {
-        if (!mounted.current) return;
+        if (!mounted.current || id !== seq.current) return;
         const p = policy.current;
         if (p === "show") setError(String(e));
         else if (p !== "keep") setData(p.fallback);
@@ -120,17 +122,28 @@ export function useLoad<T>(load: () => Promise<T>, initial: T, options: LoadOpti
 export function useAction(onDone?: () => void) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
+  const seq = useRef(0);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const run = useCallback(
     (key: string, action: () => Promise<void>) => {
+      const id = ++seq.current;
       setBusy(key);
       setError(null);
       action().then(
         () => {
-          setBusy(null);
+          if (!mounted.current) return;
+          if (id === seq.current) setBusy(null);
           onDone?.();
         },
         (e: unknown) => {
-          setBusy(null);
+          if (!mounted.current) return;
+          if (id === seq.current) setBusy(null);
           setError(String(e));
         },
       );
