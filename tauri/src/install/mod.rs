@@ -380,16 +380,31 @@ pub fn install(
 /// The kit moved from `old_root`: the components on disk that cannot follow
 /// it on this kit's target (`Installer::relocatable`) are marked to be
 /// installed again (`Component::needs_reinstall`); the automatic setup at
-/// start reinstalls them (`setup::task::outdated_app`). Returns their ids.
+/// start reinstalls them (`setup::task::outdated_app`). Their saved lines
+/// are marked one by one (`Component::lines_to_reinstall`). Returns the ids,
+/// `<id>@<line>` for a saved line.
 /// Nothing on Windows, where every component can move.
 pub fn flag_not_relocatable(kit: &Kit, old_root: &str) -> std::io::Result<Vec<String>> {
     let target = kit.target();
     let mut flagged = Vec::new();
     for c in crate::setup::catalog::Catalog::get().all() {
         let fixed = installer(&c.id).is_some_and(|i| !i.relocatable(target));
-        if fixed && c.is_present(kit) {
+        if !fixed {
+            continue;
+        }
+        if c.is_present(kit) {
             c.mark_reinstall(kit, old_root)?;
             flagged.push(c.id.clone());
+        }
+        // The saved lines (R 4.4 next to the default 4.5) are conda
+        // environments too (only beside an installed default: otherwise every
+        // folder looks saved): each one is marked and installed again at its
+        // line by the same start (`setup::runner::run`).
+        if c.versioned && c.is_installed(kit) {
+            for line in crate::versions::saved(kit, c) {
+                c.mark_line_reinstall(kit, &line.line, old_root)?;
+                flagged.push(format!("{}@{}", c.id, line.line));
+            }
         }
     }
     Ok(flagged)
@@ -449,6 +464,8 @@ pub fn install_line(
             );
         }
         crate::versions::write_version(&target, &release.version)?;
+        // Installed for this root: no longer to be installed again (D-92).
+        component.clear_line_reinstall(ctx.kit, &line);
         return Ok(line);
     }
     if !release.parts.iter().any(|p| p.dest == Dest::Own) {
@@ -483,6 +500,7 @@ pub fn install_line(
         );
     }
     crate::versions::write_version(&target, &release.version)?;
+    component.clear_line_reinstall(ctx.kit, &line);
     Ok(line)
 }
 

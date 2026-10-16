@@ -528,7 +528,7 @@ impl Kit {
         let now = self.root.to_string_lossy().into_owned();
         let last = fs::read_to_string(&record).ok();
         let moved = match last.as_deref().map(str::trim) {
-            Some(last) if !last.is_empty() && !last.eq_ignore_ascii_case(&now) => {
+            Some(last) if !last.is_empty() && !same_root(self.target.os, last, &now) => {
                 let pending = self.app_dir().join(pending_name);
                 if !pending.exists() {
                     write_atomic(&pending, last.as_bytes())?;
@@ -542,6 +542,21 @@ impl Kit {
             write_atomic(&record, now.as_bytes())?;
         }
         Ok(moved)
+    }
+}
+
+/// The recorded root and the current one are the same folder. On Windows
+/// paths ignore case (`E:\Kit` is `e:\kit`). Elsewhere they are compared
+/// exactly: on Linux `/media/u/Kit` and `/media/u/kit` are two folders, so
+/// a kit renamed only in case has moved (D-92: its conda environments point
+/// at the old folder). macOS is compared exactly too: its usual file system
+/// ignores case, but a volume under `/Volumes` may not, and a move noticed
+/// once too often costs a reinstallation, one missed leaves Git or R broken.
+pub(crate) fn same_root(os: Os, recorded: &str, now: &str) -> bool {
+    if os.is_windows() {
+        recorded.eq_ignore_ascii_case(now)
+    } else {
+        recorded == now
     }
 }
 

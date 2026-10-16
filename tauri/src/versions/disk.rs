@@ -24,7 +24,9 @@ pub fn remove(kit: &Kit, id: &str, line: &str) -> Result<()> {
         bail!("{id} {line}: used by {}", users.join(", "));
     }
     if default_line(kit, c).as_deref() != Some(line) {
-        return crate::net::archive::remove_dir(&saved_dir(kit, c, line));
+        crate::net::archive::remove_dir(&saved_dir(kit, c, line))?;
+        c.clear_line_reinstall(kit, line);
+        return Ok(());
     }
     let Some(next) = saved(kit, c).into_iter().next() else {
         bail!("{id} {line}: the only version, it goes with the component");
