@@ -186,19 +186,37 @@ fn old_kit_conf_is_migrated_once() {
     assert!(deny < new.find("IncludeOptional").unwrap());
     assert_eq!(migrate_kit_conf(&new), new, "idempotent");
 
-    // SEC-V3-01: a kit.conf of the previous kit (`(?i)\.php$`, deny block
-    // already there) gets the other PHP files and the `.inc` refusal.
+    // SEC-V3-01, SEC-V3-02: a kit.conf of the previous kit (`(?i)\.php$`,
+    // deny block already there) gets the other PHP files, the `.inc`
+    // refusal and the hidden files refusal.
+    let hidden = hidden_deny("").join("\r\n");
     let previous = migrate_kit_conf(&old)
         .replace("\\.(?:php|phtml|phar)$", "\\.php$")
+        .replace(&format!("\r\n{hidden}"), "")
         .replace(
             "<FilesMatch \"(?i)\\.(?:inc|php[3-8])$\">\r\n    Require all denied\r\n</FilesMatch>\r\n",
             "",
         );
     assert!(!previous.contains("php[3-8]"), "{previous}");
+    assert!(!previous.contains("LocationMatch"), "{previous}");
     assert_eq!(migrate_kit_conf(&previous), new);
 
-    // A kit.conf written from php_module_blocks is left as it is.
-    let current = format!("{}\r\n", php_module_blocks("CP_PHP_FWD").join("\r\n"));
+    // SEC-V3-02: hidden files refused, once, before the user's includes.
+    assert_eq!(new.matches(&hidden).count(), 1, "{new}");
+    assert!(new.find(&hidden).unwrap() < new.find("IncludeOptional").unwrap());
+    let unhidden = new.replace(&format!("\r\n{hidden}"), "");
+    assert!(!unhidden.contains("LocationMatch"), "{unhidden}");
+    let rehidden = migrate_kit_conf(&unhidden);
+    assert_eq!(rehidden.matches(&hidden).count(), 1, "{rehidden}");
+    assert_eq!(rehidden.len(), new.len());
+    assert_eq!(migrate_kit_conf(&rehidden), rehidden);
+
+    // A kit.conf written from php_module_blocks and hidden_deny is left as
+    // it is.
+    let current = format!(
+        "{}\r\n{hidden}\r\n",
+        php_module_blocks("CP_PHP_FWD").join("\r\n")
+    );
     assert_eq!(migrate_kit_conf(&current), current);
     // No module block at all: the deny goes at the end.
     let bare = migrate_kit_conf("DocumentRoot \"x\"");
