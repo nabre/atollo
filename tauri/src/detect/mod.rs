@@ -250,6 +250,22 @@ fn quote(s: &str) -> String {
     }
 }
 
+/// The kit's router of `php -S` (`runtime\php-router.php`, written to
+/// `data\kit\`): 403 for hidden files and `.inc` (SEC-V3-02).
+const PHP_ROUTER: &str = r#""%CP_DATA%\kit\php-router.php""#;
+
+/// `php -S` on the folder `root` of the project, with the project's own
+/// `router.php` (in `root` or in the project folder) if it has one, else the
+/// kit's router.
+fn php_server(dir: &Path, root: &str) -> String {
+    let own = [format!(r"{root}\router.php"), "router.php".to_owned()]
+        .into_iter()
+        .map(|f| f.trim_start_matches(r".\").to_owned())
+        .find(|f| exists(dir, f));
+    let router = own.as_deref().map_or_else(|| PHP_ROUTER.to_owned(), quote);
+    format!("php -S 127.0.0.1:{{port}} -t {} {router}", quote(root))
+}
+
 /// One walk of the project: 3 levels, at most 3000 files, no IGNORED folders.
 fn walk_files(dir: &Path, on_file: &mut dyn FnMut(&str)) {
     fn walk(d: &Path, depth: u32, seen: &mut u32, on_file: &mut dyn FnMut(&str)) {
