@@ -35,6 +35,7 @@ const VIEW: WebServersView = {
       manual: true,
       sites: [site("site", "public"), site("docs", "docs")],
       confDir: "data\\servers\\legacy",
+      orphan: false,
     },
   ],
   apacheLines: [],
@@ -68,5 +69,22 @@ describe("ServersPage", () => {
     expect(screen.getByText("docs")).toBeTruthy();
     const keyWarnings = errors.mock.calls.filter((c) => c.some((a) => String(a).includes("same key")));
     expect(keyWarnings).toEqual([]);
+  });
+
+  it("marks an orphan pool, with no reload, still stoppable", async () => {
+    const [legacy] = VIEW.pools;
+    if (!legacy) throw new Error("fixture");
+    const orphan = { ...legacy, id: "nginx-1.25", running: true, pid: 42, orphan: true };
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve({ ...VIEW, pools: [orphan] });
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText(/non corrisponde più ai progetti/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Ricarica configurazione" })).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Ferma" }).length).toBeGreaterThan(0);
   });
 });

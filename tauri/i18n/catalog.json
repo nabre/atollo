@@ -49,6 +49,11 @@
     "fr": "{0} {1} n'est pas installé dans le kit : installez cette version ou choisissez-en une autre.",
     "de": "{0} {1} ist nicht im Kit installiert: Installiere diese Version oder wähle eine andere."
   },
+  "Questo pool non corrisponde più ai progetti e ai profili: fermalo.": {
+    "en": "This pool no longer matches the projects and the profiles: stop it.",
+    "fr": "Ce pool ne correspond plus aux projets ni aux profils : arrêtez-le.",
+    "de": "Dieser Pool passt nicht mehr zu den Projekten und Profilen: Halte ihn an."
+  },
   "La porta {0} è già del server {1}: scegline un'altra.": {
     "en": "Port {0} already belongs to server {1}: choose another one.",
     "fr": "Le port {0} appartient déjà au serveur {1} : choisissez-en un autre.",

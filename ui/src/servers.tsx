@@ -92,12 +92,21 @@ function PoolDetails({
             ) : (
               <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />
             )}
-            <ActionButton icon={VscRefresh} label={t("Ricarica configurazione")} busy={busy} onClick={onReload} />
+            {!pool.orphan && (
+              <ActionButton icon={VscRefresh} label={t("Ricarica configurazione")} busy={busy} onClick={onReload} />
+            )}
             {onRemove && <ActionButton icon={VscTrash} label={t("Elimina profilo")} busy={busy} onClick={onRemove} />}
           </>
         }
       />
       <EditorBody narrow>
+        {pool.orphan && (
+          <Notice tone="warning">
+            {t(
+              "Questo pool è ancora acceso ma non corrisponde più ai progetti e ai profili (per esempio dopo l'installazione di una versione più recente): fermalo.",
+            )}
+          </Notice>
+        )}
         <EditorSection id={`srv-sites-${pool.id}`} title={t("VirtualHost collegati")}>
           {pool.sites.length === 0 ? (
             <Notice tone="info">

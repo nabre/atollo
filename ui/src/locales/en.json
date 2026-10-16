@@ -617,6 +617,7 @@
   "Servito con Nginx e PHP-CGI nel pool corrispondente alle versioni del progetto, su http://{0}.localhost.": "Served with Nginx and PHP-CGI in the pool matching the project's versions, at http://{0}.localhost.",
   "Ricarica configurazione": "Reload configuration",
   "Elimina profilo": "Delete profile",
+  "Questo pool è ancora acceso ma non corrisponde più ai progetti e ai profili (per esempio dopo l'installazione di una versione più recente): fermalo.": "This pool is still running but no longer matches the projects and the profiles (for example after a newer version was installed): stop it.",
   "VirtualHost collegati": "Attached VirtualHosts",
   "Nessun progetto collegato a questo pool. I progetti Apache o Nginx con la stessa combinazione di versioni (o assegnati a questo profilo dalla scheda Sito web del progetto) compaiono qui automaticamente.": "No projects attached to this pool. Apache or Nginx projects with the same version combination (or assigned to this profile from the project's Website tab) appear here automatically.",
   "Alias di percorso:": "Path aliases:",
