@@ -309,6 +309,11 @@
     "fr": "processus terminé",
     "de": "Prozess beendet"
   },
+  "php-cgi terminato (codice {0}): server fermato": {
+    "en": "php-cgi exited (code {0}): server stopped",
+    "fr": "php-cgi terminé (code {0}) : serveur arrêté",
+    "de": "php-cgi beendet (Code {0}): Server gestoppt"
+  },
   "Sito statico: {0}   (cartella {1})": {
     "en": "Static site: {0}   (folder {1})",
     "fr": "Site statique : {0}   (dossier {1})",
