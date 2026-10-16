@@ -64,12 +64,16 @@ fn folders_of_an_older_kit_move() {
     assert_eq!(saved(&kit, node).len(), 1);
     assert!(has_key(node, &store.join("20.18")));
     assert!(!kit.apps().join("versions").exists());
+    // The PHP path follows the line, and a .php without a module is refused.
+    let fixed = fs::read_to_string(&conf).unwrap();
     assert_eq!(
-        fs::read_to_string(&conf).unwrap(),
-        "LoadFile \"${CP_PHP_FWD}/php8ts.dll\"\r\n"
+        fixed,
+        crate::projects::apache::migrate_kit_conf("LoadFile \"${CP_PHP_FWD}/php8ts.dll\"\r\n")
     );
+    assert!(fixed.starts_with("LoadFile \"${CP_PHP_FWD}/php8ts.dll\"\r\n<IfModule !php_module>"));
     // Nothing left to do the second time.
     migrate(&kit);
+    assert_eq!(fs::read_to_string(&conf).unwrap(), fixed);
     assert_eq!(default_dir(&kit, node), main);
     // The default removed by hand: the newest line left takes over.
     fs::remove_dir_all(&main).unwrap();
