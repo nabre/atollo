@@ -13,7 +13,7 @@ use std::net::{SocketAddr, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Stdio};
 use std::sync::{Mutex, PoisonError};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -31,6 +31,9 @@ use crate::setup::catalog::Catalog;
 
 const POOL_PORT_FROM: u16 = 8081;
 const POOL_PORT_TO: u16 = 8999;
+/// How long `list` reuses the scan of the projects (D-71 style): the 3 s
+/// poll of the page refreshes only running/pid/port in the meantime.
+const LIST_TTL: Duration = Duration::from_secs(15);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -126,6 +129,15 @@ struct RunningPool {
 /// `op_lock` (start/stop/reload, held for seconds) -> `store_lock` (one
 /// load + change + save of `servers.json`) -> `running` (short lookups).
 /// `store_lock` is never held while waiting for `op_lock`.
+/// The last scan of `list` (before the running state is applied), with the
+/// language it was made in. `generation` grows at every invalidation, so a
+/// scan begun before a change never stores its stale result.
+#[derive(Default)]
+struct ListCache {
+    generation: u64,
+    entry: Option<(Instant, String, WebServersView)>,
+}
+
 pub struct WebServers {
     kit: Kit,
     running: Mutex<BTreeMap<String, RunningPool>>,
@@ -134,6 +146,8 @@ pub struct WebServers {
     /// `list` (port assignment) and `save_profile`/`remove_profile` never
     /// overwrite each other's changes.
     store_lock: Mutex<()>,
+    /// A leaf lock: held only to read or replace the cached scan.
+    cache: Mutex<ListCache>,
 }
 
 fn store_path(kit: &Kit) -> PathBuf {
@@ -360,6 +374,7 @@ impl WebServers {
             running: Mutex::new(BTreeMap::new()),
             op_lock: Mutex::new(()),
             store_lock: Mutex::new(()),
+            cache: Mutex::new(ListCache::default()),
         }
     }
 
@@ -401,7 +416,60 @@ impl WebServers {
         POOL_PORT_FROM
     }
 
-    pub fn list(&self, lang: &str) -> WebServersView {
+    /// The pools for the "Server Web" page. With `fresh` false (the 3 s
+    /// poll) the scan of the projects is reused for [`LIST_TTL`]; only the
+    /// running state (running, pid, port) is read again every time.
+    pub fn list(&self, lang: &str, fresh: bool) -> WebServersView {
+        let (generation, cached) = {
+            let cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+            let cached = cache
+                .entry
+                .as_ref()
+                .filter(|(at, l, _)| !fresh && l == lang && at.elapsed() < LIST_TTL)
+                .map(|(_, _, view)| view.clone());
+            (cache.generation, cached)
+        };
+        let mut view = match cached {
+            Some(view) => view,
+            None => {
+                let view = self.scan(lang);
+                let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+                if cache.generation == generation {
+                    cache.entry = Some((Instant::now(), lang.to_owned(), view.clone()));
+                }
+                view
+            }
+        };
+        self.apply_running(&mut view);
+        view
+    }
+
+    /// Drops the cached scan: the next `list` reads the projects again.
+    pub fn invalidate(&self) {
+        let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+        cache.generation = cache.generation.wrapping_add(1);
+        cache.entry = None;
+    }
+
+    /// Marks the pools that are running, with their live pid and port.
+    fn apply_running(&self, view: &mut WebServersView) {
+        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+        running.retain(|_, r| matches!(r.child.try_wait(), Ok(None)));
+        for pool in &mut view.pools {
+            if let Some(r) = running.get(&pool.id) {
+                pool.running = true;
+                pool.pid = Some(r.child.id());
+                pool.port = r.port;
+                for s in &mut pool.sites {
+                    s.url = format!("http://{}:{}", s.server_name, r.port);
+                }
+            }
+        }
+    }
+
+    /// Reads the profiles, the projects and the installed lines (the slow
+    /// part of `list`), assigning ports to new pools.
+    fn scan(&self, lang: &str) -> WebServersView {
         let apache_lines = crate::db::services::server_lines(&self.kit, "apache");
         let nginx_lines = crate::db::services::server_lines(&self.kit, "nginx");
         let php_lines = crate::db::services::server_lines(&self.kit, "php");
@@ -568,19 +636,6 @@ impl WebServers {
         }
         drop(store_guard);
 
-        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
-        running.retain(|_, r| matches!(r.child.try_wait(), Ok(None)));
-        for (id, r) in running.iter() {
-            if let Some(pool) = pools_map.get_mut(id) {
-                pool.running = true;
-                pool.pid = Some(r.child.id());
-                pool.port = r.port;
-                for s in &mut pool.sites {
-                    s.url = format!("http://{}:{}", s.server_name, r.port);
-                }
-            }
-        }
-
         WebServersView {
             pools: pools_map.into_values().collect(),
             apache_lines,
@@ -632,7 +687,9 @@ impl WebServers {
         } else {
             store.profiles.push(input);
         }
-        save_store(&self.kit, &store)
+        let saved = save_store(&self.kit, &store);
+        self.invalidate();
+        saved
     }
 
     pub fn remove_profile(&self, id: &str) -> Result<()> {
@@ -645,7 +702,9 @@ impl WebServers {
         let mut store = load_store(&self.kit);
         store.profiles.retain(|p| p.id != id);
         store.ports.remove(id);
-        save_store(&self.kit, &store)
+        let saved = save_store(&self.kit, &store);
+        self.invalidate();
+        saved
     }
 
     /// Writes `httpd.conf` / `nginx.conf` and all `vhosts/*.conf` for `pool`.
@@ -740,7 +799,7 @@ impl WebServers {
     }
 
     fn start_locked(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
-        let view = self.list(lang);
+        let view = self.list(lang, true);
         let pool = view
             .pools
             .into_iter()
@@ -877,7 +936,7 @@ impl WebServers {
     }
 
     fn reload_locked(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
-        let view = self.list(lang);
+        let view = self.list(lang, true);
         let pool = view
             .pools
             .into_iter()
@@ -962,6 +1021,7 @@ impl WebServers {
             folder.trim()
         };
         set_site_with_options(&proj_dir, folder_clean, kind, &opts, lang)?;
+        self.invalidate();
 
         // Reload any running pools so the new VirtualHost routing takes effect immediately.
         let running_ids: Vec<String> = self

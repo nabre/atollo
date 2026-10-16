@@ -8,10 +8,17 @@ use crate::servers::{WebServerEngine, WebServerProfileInput, WebServersView};
 pub async fn servers_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
+    fresh: Option<bool>,
 ) -> CmdResult<WebServersView> {
     ensure_main(&webview)?;
-    let (servers, lang) = (Arc::clone(&state.servers), state.lang());
-    tauri::async_runtime::spawn_blocking(move || servers.list(lang))
+    // `fresh` (the refresh button) reads the projects again; the page's
+    // poll leaves it out and gets the cached scan (BUG-07).
+    let (servers, lang, fresh) = (
+        Arc::clone(&state.servers),
+        state.lang(),
+        fresh.unwrap_or(false),
+    );
+    tauri::async_runtime::spawn_blocking(move || servers.list(lang, fresh))
         .await
         .or_fail("servers")
 }
@@ -52,7 +59,7 @@ pub async fn server_start<R: Runtime>(
         Arc::clone(&state.servers),
     );
     tauri::async_runtime::spawn_blocking(move || {
-        let view = servers.list(lang);
+        let view = servers.list(lang, true);
         let Some(pool) = view.pools.iter().find(|p| p.id == id) else {
             return Err(fail("servers", format!("unknown server pool {id}")));
         };
