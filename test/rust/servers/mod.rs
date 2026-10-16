@@ -842,6 +842,43 @@ fn ports_are_unique_among_pools() {
     assert!(dirty);
 }
 
+/// Defect 4: a pool whose server or PHP line is not installed does not
+/// start (never the default line in its place), with an error naming it.
+#[test]
+fn start_refuses_a_line_not_installed() {
+    let tmp = TempDir::new("servers-missing-line");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "nginx", "1.27.4");
+    fake_server(&kit, "php", "8.4.13");
+    let servers = WebServers::new(kit.clone());
+    let port = {
+        let l = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        l.local_addr().unwrap().port()
+    };
+    let profile = |server_line: &str, php_line: &str| WebServerProfileInput {
+        id: "old".into(),
+        name: "Old".into(),
+        engine: WebServerEngine::Nginx,
+        server_line: Some(server_line.into()),
+        php_line: Some(php_line.into()),
+        port: Some(port),
+    };
+    servers.save_profile(profile("1.25", "8.4"), "it").unwrap();
+    let err = servers
+        .start("old", &KitEnv::default(), "it")
+        .unwrap_err()
+        .to_string();
+    assert!(err.starts_with("Nginx 1.25 non è installato"), "{err}");
+    servers.save_profile(profile("1.27", "7.4"), "it").unwrap();
+    let err = servers
+        .start("old", &KitEnv::default(), "it")
+        .unwrap_err()
+        .to_string();
+    assert!(err.starts_with("PHP 7.4 non è installato"), "{err}");
+    assert!(!servers.is_running("old"));
+}
+
 /// BUG-V3-02: names that give the same label in one pool stay distinct.
 #[test]
 fn name_sites_keeps_names_unique() {
