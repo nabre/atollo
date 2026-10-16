@@ -69,7 +69,8 @@ export interface LoadOptions<T> {
 
 /**
  * A value read with `load` when the component mounts and again when `load`
- * changes (keep it stable with useCallback), or on `reload`. `setData`
+ * changes (keep it stable with useCallback), or on `reload` (`retry` is the
+ * same, and resolves to whether the read worked: "Riprova"). `setData`
  * changes it in between, as events do. Nothing is set once the component
  * is gone.
  */
@@ -90,23 +91,30 @@ export function useLoad<T>(load: () => Promise<T>, initial: T, options: LoadOpti
   useEffect(() => {
     policy.current = onError;
   });
-  const reload = useCallback(() => {
-    if (!enabled) return;
+  // The read, resolving once its answer is in: true when it worked (and is
+  // still the latest read), false otherwise.
+  const read = useCallback((): Promise<boolean> => {
+    if (!enabled) return Promise.resolve(false);
     const id = ++seq.current;
-    load().then(
+    return load().then(
       (value) => {
-        if (!mounted.current || id !== seq.current) return;
+        if (!mounted.current || id !== seq.current) return false;
         setData(value);
         setError(null);
+        return true;
       },
       (e: unknown) => {
-        if (!mounted.current || id !== seq.current) return;
+        if (!mounted.current || id !== seq.current) return false;
         const p = policy.current;
         if (p === "show") setError(String(e));
         else if (p !== "keep") setData(p.fallback);
+        return false;
       },
     );
   }, [load, enabled]);
+  const reload = useCallback(() => {
+    void read();
+  }, [read]);
   useEffect(() => {
     reload();
     if (every === undefined) return;
@@ -115,7 +123,7 @@ export function useLoad<T>(load: () => Promise<T>, initial: T, options: LoadOpti
       window.clearInterval(timer);
     };
   }, [reload, every, key]);
-  return { data, error, reload, setData };
+  return { data, error, reload, retry: read, setData };
 }
 
 /** Runs an action, keeping track of what is busy and of the last error. */

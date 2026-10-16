@@ -13,7 +13,7 @@ use std::net::{SocketAddr, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Stdio};
 use std::sync::{Mutex, PoisonError};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -31,6 +31,12 @@ use crate::setup::catalog::Catalog;
 
 const POOL_PORT_FROM: u16 = 8081;
 const POOL_PORT_TO: u16 = 8999;
+/// How long `list` reuses the scan of the projects (D-71 style): the 3 s
+/// poll of the page refreshes only running/pid/port in the meantime.
+const LIST_TTL: Duration = Duration::from_secs(15);
+/// How long a start waits for a taken port before calling it used by
+/// another program.
+const PORT_BUSY_GRACE: Duration = Duration::from_secs(2);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -59,6 +65,9 @@ impl WebServerEngine {
 #[serde(rename_all = "camelCase")]
 pub struct AttachedSite {
     pub project: String,
+    /// The id of the project's action this site comes from.
+    #[serde(default)]
+    pub action: String,
     pub folder: String,
     pub server_name: String,
     pub domains: Vec<String>,
@@ -119,13 +128,99 @@ struct RunningPool {
     child: Child,
     port: u16,
     fcgi_port: Option<u16>,
+    /// The PHP line the pool was started with (`None`: no PHP).
+    php_line: Option<String>,
+    /// The pool's php-cgi (Nginx with PHP): when it dies the pool is
+    /// stopped, never left "running" answering 502 to every `.php`.
+    php: Option<Child>,
     _job: Job,
+}
+
+/// What a reload compares of a running pool with what it should be now.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct LivePool {
+    port: u16,
+    php_line: Option<String>,
+    fcgi_port: Option<u16>,
+}
+
+/// A reload of a running pool needs a full stop and start (not Nginx's
+/// graceful `-s reload`, which keeps its php-cgi and port): Apache (no
+/// graceful signal on Windows), another port, another PHP line, or PHP
+/// wanted with no php-cgi running (a manual pool that just got its first
+/// PHP site: else every `.php` answers 503 until a manual restart).
+fn needs_restart(pool: &WebServerPool, live: &LivePool) -> bool {
+    pool.engine == WebServerEngine::Apache
+        || pool.port != live.port
+        || pool.php_line != live.php_line
+        || (pool.php_line.is_some() && live.fcgi_port.is_none())
+}
+
+impl RunningPool {
+    /// The server, and its php-cgi if it has one, are still running.
+    fn alive(&mut self) -> bool {
+        matches!(self.child.try_wait(), Ok(None))
+            && self
+                .php
+                .as_mut()
+                .is_none_or(|p| matches!(p.try_wait(), Ok(None)))
+    }
+
+    /// Ends the server (and, with its Job, the rest), waiting for it so
+    /// that its port is being released when this returns.
+    fn end(mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
+/// Takes out of `running` the pools whose server or php-cgi ended: they
+/// are ended (outside the lock) by the caller.
+fn take_dead(running: &mut BTreeMap<String, RunningPool>) -> Vec<(String, RunningPool)> {
+    let dead: Vec<String> = running
+        .iter_mut()
+        .filter_map(|(id, r)| (!r.alive()).then(|| id.clone()))
+        .collect();
+    dead.into_iter()
+        .filter_map(|id| running.remove(&id).map(|r| (id, r)))
+        .collect()
+}
+
+/// Ends the pools [`take_dead`] took out, noting why in the log.
+fn end_dead(dead: Vec<(String, RunningPool)>) {
+    for (id, mut r) in dead {
+        if matches!(r.child.try_wait(), Ok(None)) {
+            crate::log::warn(&format!(
+                "server pool {id}: php-cgi ended, the pool is stopped (start it again)"
+            ));
+        }
+        r.end();
+    }
+}
+
+/// Lock order (never taken the other way round, to rule out deadlocks):
+/// `op_lock` (start/stop/reload, held for seconds) -> `store_lock` (one
+/// load + change + save of `servers.json`) -> `running` (short lookups).
+/// `store_lock` is never held while waiting for `op_lock`.
+/// The last scan of `list` (before the running state is applied), with the
+/// language it was made in. `generation` grows at every invalidation, so a
+/// scan begun before a change never stores its stale result.
+#[derive(Default)]
+struct ListCache {
+    generation: u64,
+    entry: Option<(Instant, String, WebServersView)>,
 }
 
 pub struct WebServers {
     kit: Kit,
     running: Mutex<BTreeMap<String, RunningPool>>,
     op_lock: Mutex<()>,
+    /// Held around every read-modify-write of `servers.json`, so that
+    /// `list` (port assignment) and `save_profile`/`remove_profile` never
+    /// overwrite each other's changes.
+    store_lock: Mutex<()>,
+    /// A leaf lock: held only to read or replace the cached scan.
+    cache: Mutex<ListCache>,
 }
 
 fn store_path(kit: &Kit) -> PathBuf {
@@ -220,6 +315,7 @@ fn apache_vhost_conf(
         "        Require all granted".to_owned(),
         "    </Directory>".to_owned(),
     ]);
+    lines.extend(apache::hidden_deny("    "));
     lines.extend(apache::alias_directives(
         &format!("${{CP_PROJECTS_FWD}}/{}", site.project),
         &alias::resolve(project_root, projects_root, &site.aliases),
@@ -253,6 +349,14 @@ fn apache_pool_conf(base: &str, pool_dir: &Path, port: u16, lan: bool) -> Result
         "DirectoryIndex index.php index.html".to_owned(),
     ];
     site.extend(apache::php_module_blocks("CP_PHP_FWD"));
+    // The first VirtualHost answers any Host no other one names (an IP from
+    // the LAN, a misspelt name): Apache's own page, never a project.
+    site.extend([
+        format!("<VirtualHost *:{port}>"),
+        "    ServerName localhost".to_owned(),
+        format!("    DocumentRoot \"{default_htdocs}\""),
+        "</VirtualHost>".to_owned(),
+    ]);
     site.push(format!("IncludeOptional \"{dir_fwd}/vhosts/*.conf\""));
     site.push(format!("IncludeOptional \"{dir_fwd}/conf.d/*.conf\""));
     Ok(format!(
@@ -305,8 +409,45 @@ fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) 
     .join("\r\n")
 }
 
+/// The document root of an attached site: its folder inside the project,
+/// checked without following links (D-77). `None` (the site is not served,
+/// with a warning in the log, as for a skipped alias) when the folder is
+/// missing, outside the project or reached through a junction: never the
+/// project root in its place, which would serve `.env`, `.git` and the like.
+fn site_doc_root(project_root: &Path, site: &AttachedSite) -> Option<PathBuf> {
+    match detect::inside_dir(project_root, &site.folder) {
+        Ok(dir) => Some(dir),
+        Err(_) => {
+            crate::log::warn(&format!(
+                "{}: site folder {} not served (missing, not a folder of the project, or through a link)",
+                project_root.display(),
+                site.folder
+            ));
+            None
+        }
+    }
+}
+
+/// True once `port` can be listened on again (checked every 100 ms), false
+/// if it is still taken after `within`: after a stop, Windows may keep the
+/// socket of the killed server for a moment.
+fn wait_port_released(port: u16, within: Duration) -> bool {
+    let begun = Instant::now();
+    loop {
+        if is_port_free(port) {
+            return true;
+        }
+        if begun.elapsed() >= within {
+            return false;
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
+/// The last lines of the pool's error log, or of `stderr.log` (what the
+/// server printed before its own log was open: a configuration syntax error).
 fn pool_error_tail(pool_dir: &Path) -> String {
-    for rel in ["error.log", "logs/error.log"] {
+    for rel in ["error.log", "logs/error.log", "stderr.log"] {
         if let Ok(text) = fs::read_to_string(pool_dir.join(rel)) {
             let tail: Vec<&str> = text
                 .lines()
@@ -332,13 +473,25 @@ impl WebServers {
             kit,
             running: Mutex::new(BTreeMap::new()),
             op_lock: Mutex::new(()),
+            store_lock: Mutex::new(()),
+            cache: Mutex::new(ListCache::default()),
         }
     }
 
     pub fn running_count(&self) -> usize {
-        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
-        running.retain(|_, r| matches!(r.child.try_wait(), Ok(None)));
-        running.len()
+        let (dead, count) = {
+            let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+            let dead = take_dead(&mut running);
+            (dead, running.len())
+        };
+        end_dead(dead);
+        count
+    }
+
+    /// The pool `id` runs (server and php-cgi alive). Light: only the
+    /// `running` lock, no scan; a dead pool is ended by the next `list`.
+    pub fn is_running(&self, id: &str) -> bool {
+        self.running_port(id).is_some()
     }
 
     pub fn stop_all(&self) {
@@ -373,14 +526,106 @@ impl WebServers {
         POOL_PORT_FROM
     }
 
-    pub fn list(&self, lang: &str) -> WebServersView {
+    /// The pools for the "Server Web" page. With `fresh` false (the 3 s
+    /// poll) the scan of the projects is reused for [`LIST_TTL`]; only the
+    /// running state (running, pid, port) is read again every time.
+    pub fn list(&self, lang: &str, fresh: bool) -> WebServersView {
+        let (generation, cached) = {
+            let cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+            let cached = cache
+                .entry
+                .as_ref()
+                .filter(|(at, l, _)| !fresh && l == lang && at.elapsed() < LIST_TTL)
+                .map(|(_, _, view)| view.clone());
+            (cache.generation, cached)
+        };
+        let mut view = match cached {
+            Some(view) => view,
+            None => {
+                let view = self.scan(lang, fresh);
+                let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+                if cache.generation == generation {
+                    cache.entry = Some((Instant::now(), lang.to_owned(), view.clone()));
+                }
+                view
+            }
+        };
+        self.apply_running(&mut view);
+        view
+    }
+
+    /// The pool serving `action_id` of `project`, with that site (its URL
+    /// with the live port when the pool runs). Always from a fresh scan:
+    /// a cached one may still put the site in the pool it was moved from
+    /// (`panel.json` edited by hand, or before an invalidation).
+    pub fn pool_of(
+        &self,
+        project: &str,
+        action_id: &str,
+        lang: &str,
+    ) -> Option<(WebServerPool, AttachedSite)> {
+        self.list(lang, true).pools.into_iter().find_map(|pool| {
+            let site = pool
+                .sites
+                .iter()
+                .find(|s| s.project == project && s.action == action_id)
+                .cloned()?;
+            Some((pool, site))
+        })
+    }
+
+    /// The live port of the pool `id` when it runs (server and php-cgi
+    /// alive). Light: only the `running` lock.
+    pub fn running_port(&self, id: &str) -> Option<u16> {
+        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+        running
+            .get_mut(id)
+            .and_then(|r| r.alive().then_some(r.port))
+    }
+
+    /// Drops the cached scan: the next `list` reads the projects again.
+    pub fn invalidate(&self) {
+        let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+        cache.generation = cache.generation.wrapping_add(1);
+        cache.entry = None;
+    }
+
+    /// Marks the pools that are running, with their live pid and port.
+    fn apply_running(&self, view: &mut WebServersView) {
+        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+        let dead = take_dead(&mut running);
+        for pool in &mut view.pools {
+            if let Some(r) = running.get(&pool.id) {
+                pool.running = true;
+                pool.pid = Some(r.child.id());
+                pool.port = r.port;
+                for s in &mut pool.sites {
+                    s.url = format!("http://{}:{}", s.server_name, r.port);
+                }
+            }
+        }
+        drop(running);
+        end_dead(dead);
+    }
+
+    /// Reads the profiles, the projects and the installed lines (the slow
+    /// part of `list`), assigning ports to new pools. With `prune`, the
+    /// ports of pools that no longer exist (and are not running) are
+    /// dropped from `servers.json`.
+    fn scan(&self, lang: &str, prune: bool) -> WebServersView {
         let apache_lines = crate::db::services::server_lines(&self.kit, "apache");
         let nginx_lines = crate::db::services::server_lines(&self.kit, "nginx");
         let php_lines = crate::db::services::server_lines(&self.kit, "php");
 
+        let store_guard = self
+            .store_lock
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         let mut store = load_store(&self.kit);
         let mut store_dirty = false;
         let mut pools_map: BTreeMap<String, WebServerPool> = BTreeMap::new();
+        // Manual pools with a site that needs PHP.
+        let mut php_wanted: std::collections::BTreeSet<String> = Default::default();
 
         for p in store.profiles.clone() {
             let port = self.assign_or_get_port(&mut store, &mut store_dirty, &p.id, p.port);
@@ -388,7 +633,9 @@ impl WebServers {
                 WebServerEngine::Apache => apache_lines.first().cloned(),
                 WebServerEngine::Nginx => nginx_lines.first().cloned(),
             });
-            let php_line = p.php_line.clone().or_else(|| php_lines.first().cloned());
+            // PHP only when chosen, or (below) when a site of the pool needs it:
+            // never a php-cgi for a pool of static sites.
+            let php_line = p.php_line.clone();
             pools_map.insert(
                 p.id.clone(),
                 WebServerPool {
@@ -482,11 +729,15 @@ impl WebServers {
                     pid
                 };
 
+                if needs_php {
+                    php_wanted.insert(target_pool_id.clone());
+                }
                 if let Some(pool) = pools_map.get_mut(&target_pool_id) {
                     let server_name = format!("{proj_id}.localhost");
                     let url = format!("http://{server_name}:{}", pool.port);
                     pool.sites.push(AttachedSite {
                         project: proj_id.clone(),
+                        action: action.id.clone(),
                         folder,
                         server_name,
                         domains: action.domains.clone(),
@@ -494,6 +745,12 @@ impl WebServers {
                         url,
                     });
                 }
+            }
+        }
+
+        for (id, pool) in &mut pools_map {
+            if pool.manual && pool.php_line.is_none() && php_wanted.contains(id) {
+                pool.php_line = php_lines.first().cloned();
             }
         }
 
@@ -509,7 +766,8 @@ impl WebServers {
                 WebServerEngine::Apache => apache_lines.first().cloned(),
                 WebServerEngine::Nginx => nginx_lines.first().cloned(),
             };
-            let php_line = php_lines.first().cloned();
+            // No project yet: no PHP project, so no php-cgi (BUG-05r).
+            let php_line: Option<String> = None;
             let pid = auto_pool_id(engine, srv_line.as_deref(), php_line.as_deref());
             let port = self.assign_or_get_port(&mut store, &mut store_dirty, &pid, None);
             let name = auto_pool_name(engine, srv_line.as_deref(), php_line.as_deref());
@@ -531,22 +789,19 @@ impl WebServers {
             );
         }
 
+        if prune {
+            // store_lock -> running: the documented lock order.
+            let running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+            let before = store.ports.len();
+            store
+                .ports
+                .retain(|id, _| pools_map.contains_key(id) || running.contains_key(id));
+            store_dirty |= store.ports.len() != before;
+        }
         if store_dirty {
             let _ = save_store(&self.kit, &store);
         }
-
-        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
-        running.retain(|_, r| matches!(r.child.try_wait(), Ok(None)));
-        for (id, r) in running.iter() {
-            if let Some(pool) = pools_map.get_mut(id) {
-                pool.running = true;
-                pool.pid = Some(r.child.id());
-                pool.port = r.port;
-                for s in &mut pool.sites {
-                    s.url = format!("http://{}:{}", s.server_name, r.port);
-                }
-            }
-        }
+        drop(store_guard);
 
         WebServersView {
             pools: pools_map.into_values().collect(),
@@ -586,6 +841,10 @@ impl WebServers {
         input.id = id.clone();
         input.name = name;
 
+        let _store = self
+            .store_lock
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         let mut store = load_store(&self.kit);
         if let Some(p) = input.port {
             store.ports.insert(id.clone(), p);
@@ -595,15 +854,27 @@ impl WebServers {
         } else {
             store.profiles.push(input);
         }
-        save_store(&self.kit, &store)
+        let saved = save_store(&self.kit, &store);
+        self.invalidate();
+        saved
     }
 
     pub fn remove_profile(&self, id: &str) -> Result<()> {
-        self.stop(id);
+        // `op_lock` for the whole removal (then `store_lock`, the lock
+        // order): a start in between would bring the pool back to life
+        // after it was stopped, with its profile gone.
+        let _op = self.op_lock.lock().unwrap_or_else(PoisonError::into_inner);
+        self.stop_locked(id);
+        let _store = self
+            .store_lock
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         let mut store = load_store(&self.kit);
         store.profiles.retain(|p| p.id != id);
         store.ports.remove(id);
-        save_store(&self.kit, &store)
+        let saved = save_store(&self.kit, &store);
+        self.invalidate();
+        saved
     }
 
     /// Writes `httpd.conf` / `nginx.conf` and all `vhosts/*.conf` for `pool`.
@@ -639,8 +910,9 @@ impl WebServers {
                     .context("Apache httpd.conf")?;
                 for site in &pool.sites {
                     let proj_root = self.kit.projects().join(&site.project);
-                    let doc_root = detect::inside_dir(&proj_root, &site.folder)
-                        .unwrap_or_else(|_| proj_root.clone());
+                    let Some(doc_root) = site_doc_root(&proj_root, site) else {
+                        continue;
+                    };
                     let vhost = apache_vhost_conf(
                         pool.port,
                         &proj_root,
@@ -663,8 +935,9 @@ impl WebServers {
                 let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
                 for site in &pool.sites {
                     let proj_root = self.kit.projects().join(&site.project);
-                    let doc_root = detect::inside_dir(&proj_root, &site.folder)
-                        .unwrap_or_else(|_| proj_root.clone());
+                    let Some(doc_root) = site_doc_root(&proj_root, site) else {
+                        continue;
+                    };
                     let vhost = nginx::vhost_block(
                         &nginx_dir,
                         Some(&site.project),
@@ -696,7 +969,7 @@ impl WebServers {
     }
 
     fn start_locked(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
-        let view = self.list(lang);
+        let view = self.list(lang, true);
         let pool = view
             .pools
             .into_iter()
@@ -705,7 +978,10 @@ impl WebServers {
         if pool.running {
             return Ok(());
         }
-        if !is_port_free(pool.port) {
+        // A pool just ended (a dead one ended by `list`, outside `op_lock`)
+        // may still hold its socket for a moment: not "used by another
+        // program" yet.
+        if !wait_port_released(pool.port, PORT_BUSY_GRACE) {
             bail!(
                 "{}",
                 crate::i18n::t(
@@ -727,9 +1003,10 @@ impl WebServers {
 
         let pool_dir = self.kit.data().join("servers").join(&pool.id);
         let _ = fs::remove_file(pool_dir.join("error.log"));
+        let _ = fs::remove_file(pool_dir.join("stderr.log"));
 
         let job = Job::new()?;
-        let (mut cmd, fcgi_port) = match pool.engine {
+        let (mut cmd, fcgi_port, php) = match pool.engine {
             WebServerEngine::Apache => {
                 let apache_dir = component_dir(&self.kit, "apache", pool.server_line.as_deref());
                 let exe = apache_dir.join(r"bin\httpd.exe");
@@ -741,7 +1018,7 @@ impl WebServers {
                 let conf_path = self.write_pool_configs(&pool, None, lan)?;
                 let mut cmd = jobs::kit_command(&exe, &env);
                 cmd.arg("-f").arg(&conf_path);
-                (cmd, None)
+                (cmd, None, None)
             }
             WebServerEngine::Nginx => {
                 let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
@@ -751,10 +1028,11 @@ impl WebServers {
                 }
                 env.set("CP_NGINX", nginx_dir.display().to_string());
                 env.set("CP_NGINX_FWD", fwd(&nginx_dir));
-                let fcgi = if pool.php_line.is_some() {
+                let (fcgi, php) = if pool.php_line.is_some() {
                     nginx::spawn_php_cgi_if_present(&self.kit, &env, &job)
+                        .map_or((None, None), |(port, child)| (Some(port), Some(child)))
                 } else {
-                    None
+                    (None, None)
                 };
                 let conf_path = self.write_pool_configs(&pool, fcgi, lan)?;
                 let mut cmd = jobs::kit_command(&exe, &env);
@@ -764,13 +1042,17 @@ impl WebServers {
                     .arg(&conf_path)
                     .arg("-g")
                     .arg("daemon off;");
-                (cmd, fcgi)
+                (cmd, fcgi, php)
             }
         };
 
+        // What the server prints (a syntax error in a configuration comes
+        // before its error log is open) goes to stderr.log, for the error.
+        let out_path = pool_dir.join("stderr.log");
+        let out = fs::File::create(&out_path).with_context(|| out_path.display().to_string())?;
         cmd.stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
+            .stdout(Stdio::from(out.try_clone()?))
+            .stderr(Stdio::from(out));
         let mut child = jobs::spawn_in(&mut cmd, &job)?;
 
         let addr = SocketAddr::from(([127, 0, 0, 1], pool.port));
@@ -807,6 +1089,8 @@ impl WebServers {
                     child,
                     port: pool.port,
                     fcgi_port,
+                    php_line: pool.php_line.clone(),
+                    php,
                     _job: job,
                 },
             );
@@ -824,7 +1108,12 @@ impl WebServers {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .remove(id);
-        drop(removed);
+        // The server itself is killed and waited for before its Job is
+        // dropped (which ends what it started, php-cgi included), so that
+        // its port is being released when this returns.
+        if let Some(pool) = removed {
+            pool.end();
+        }
     }
 
     pub fn reload(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
@@ -833,26 +1122,32 @@ impl WebServers {
     }
 
     fn reload_locked(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
-        let view = self.list(lang);
+        let view = self.list(lang, true);
         let pool = view
             .pools
             .into_iter()
             .find(|p| p.id == id)
             .ok_or_else(|| anyhow!("Server pool not found: {id}"))?;
         let lan = base_env.get("DEVKIT_ALLOW_LAN") == Some("1");
-        let existing_fcgi = self
+        let live = self
             .running
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .get(id)
-            .and_then(|r| r.fcgi_port);
-
-        let conf_path = self.write_pool_configs(&pool, existing_fcgi, lan)?;
-        if !pool.running {
+            .map(|r| LivePool {
+                port: r.port,
+                php_line: r.php_line.clone(),
+                fcgi_port: r.fcgi_port,
+            });
+        let Some(live) = live else {
+            // Not running: its files are ready for the next start.
+            self.write_pool_configs(&pool, None, lan)?;
             return Ok(());
-        }
+        };
 
-        if pool.engine == WebServerEngine::Nginx {
+        if !needs_restart(&pool, &live) {
+            // Nginx with the same PHP and port: a graceful reload.
+            let conf_path = self.write_pool_configs(&pool, live.fcgi_port, lan)?;
             let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
             let exe = nginx_dir.join("nginx.exe");
             let pool_dir = self.kit.data().join("servers").join(&pool.id);
@@ -868,16 +1163,11 @@ impl WebServers {
             }
         }
 
-        // Clean restart when graceful signal is unavailable (Apache standalone on Windows).
+        // A clean restart: Apache (no graceful signal on Windows), a pool
+        // whose PHP or port changed, or a failed Nginx reload.
         self.stop_locked(id);
-        std::thread::sleep(Duration::from_millis(100));
-        let addr = SocketAddr::from(([127, 0, 0, 1], pool.port));
-        for _ in 0..20 {
-            if TcpStream::connect_timeout(&addr, Duration::from_millis(30)).is_err() {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(50));
-        }
+        // start_locked reports the port as taken if it is still not free.
+        wait_port_released(live.port, Duration::from_secs(5));
         self.start_locked(id, base_env, lang)
     }
 
@@ -918,6 +1208,7 @@ impl WebServers {
             folder.trim()
         };
         set_site_with_options(&proj_dir, folder_clean, kind, &opts, lang)?;
+        self.invalidate();
 
         // Reload any running pools so the new VirtualHost routing takes effect immediately.
         let running_ids: Vec<String> = self

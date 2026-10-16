@@ -514,7 +514,10 @@ impl Kit {
 
     /// `data/app/root.txt` (or `root-<os>.txt` on macOS/Linux) keeps the last
     /// root for this operating system. When it differs, the old one is also
-    /// saved in `data/app/old-root.txt` (or `old-root-<os>.txt`).
+    /// saved in `data/app/old-root.txt` (or `old-root-<os>.txt`), and the
+    /// components that cannot move on this target (conda environments on
+    /// macOS/Linux: Git, R) are marked to be installed again (D-92), before
+    /// the new root is recorded, so a failed start notices the move again.
     fn check_moved(&self) -> io::Result<Option<PathBuf>> {
         let (record_name, pending_name) = match self.target.os {
             Os::Win32 => ("root.txt", "old-root.txt"),
@@ -525,11 +528,12 @@ impl Kit {
         let now = self.root.to_string_lossy().into_owned();
         let last = fs::read_to_string(&record).ok();
         let moved = match last.as_deref().map(str::trim) {
-            Some(last) if !last.is_empty() && !last.eq_ignore_ascii_case(&now) => {
+            Some(last) if !last.is_empty() && !same_root(self.target.os, last, &now) => {
                 let pending = self.app_dir().join(pending_name);
                 if !pending.exists() {
                     write_atomic(&pending, last.as_bytes())?;
                 }
+                crate::install::flag_not_relocatable(self, last)?;
                 Some(PathBuf::from(last))
             }
             _ => None,
@@ -538,6 +542,21 @@ impl Kit {
             write_atomic(&record, now.as_bytes())?;
         }
         Ok(moved)
+    }
+}
+
+/// The recorded root and the current one are the same folder. On Windows
+/// paths ignore case (`E:\Kit` is `e:\kit`). Elsewhere they are compared
+/// exactly: on Linux `/media/u/Kit` and `/media/u/kit` are two folders, so
+/// a kit renamed only in case has moved (D-92: its conda environments point
+/// at the old folder). macOS is compared exactly too: its usual file system
+/// ignores case, but a volume under `/Volumes` may not, and a move noticed
+/// once too often costs a reinstallation, one missed leaves Git or R broken.
+pub(crate) fn same_root(os: Os, recorded: &str, now: &str) -> bool {
+    if os.is_windows() {
+        recorded.eq_ignore_ascii_case(now)
+    } else {
+        recorded == now
     }
 }
 

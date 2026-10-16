@@ -102,3 +102,54 @@ fn printer_uses_kit_markers() {
     assert!(text.contains("  √ PowerShell 7: installato 7.6.7"));
     assert!(text.contains("  x PowerShell 7: non riuscito: boom"));
 }
+
+/// The hint of a file to download by hand names the folder where it is
+/// looked for, without "del kit" (it is in the system's TEMP, D-90), in
+/// every language (BUG-17r).
+#[test]
+fn failed_by_hand_shows_downloads_dir() {
+    let failed = || Event::Done {
+        id: "gh".into(),
+        outcome: Outcome::Failed {
+            message: "offline".into(),
+            by_hand: Some(crate::setup::runner::ByHand {
+                url: "https://example.org/gh.zip".into(),
+                file_name: "gh.zip".into(),
+            }),
+        },
+    };
+    let dir = std::path::PathBuf::from(r"C:\Temp\Dev-Kit\abc\downloads");
+    for (lang, kit) in [
+        ("it", "del kit"),
+        ("en", "kit's"),
+        ("fr", "du kit"),
+        ("de", "des Kits"),
+    ] {
+        let mut buf = Vec::new();
+        {
+            let mut p = Printer::new(&mut buf, lang).with_downloads_dir(dir.clone());
+            p.emit(failed());
+        }
+        let text = String::from_utf8(buf).unwrap();
+        assert!(text.contains(&dir.display().to_string()), "{lang}: {text}");
+        assert!(
+            text.contains("https://example.org/gh.zip"),
+            "{lang}: {text}"
+        );
+        assert!(
+            !text.contains(kit) && !text.contains("{1}"),
+            "{lang}: {text}"
+        );
+    }
+    // Without the folder of the system: the one in the kit.
+    let mut buf = Vec::new();
+    {
+        let mut p = Printer::new(&mut buf, "it");
+        p.emit(failed());
+    }
+    let text = String::from_utf8(buf).unwrap();
+    assert!(
+        text.contains("mettilo nella cartella data\\downloads e riprova."),
+        "{text}"
+    );
+}

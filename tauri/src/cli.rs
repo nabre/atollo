@@ -352,17 +352,17 @@ impl Sink for Printer<'_> {
                             t(lang, "{0}: non riuscito: {1}", &[&name, &message])
                         );
                         if let Some(b) = by_hand {
+                            // The folder where fetch looks (D-90: in the
+                            // system's TEMP); data\downloads works too.
+                            let dir = self.downloads_dir.as_ref().map_or_else(
+                                || "data\\downloads".to_owned(),
+                                |d| d.display().to_string(),
+                            );
                             let hint = t(
                                 lang,
-                                "Scaricalo dal browser ({0}), mettilo nella cartella data\\downloads del kit e riprova.",
-                                &[&b.url],
+                                "Scaricalo dal browser ({0}), mettilo nella cartella {1} e riprova.",
+                                &[&b.url, &dir],
                             );
-                            let hint = match &self.downloads_dir {
-                                Some(dir) => {
-                                    hint.replace("data\\downloads", &dir.display().to_string())
-                                }
-                                None => hint,
-                            };
                             line.push_str(&format!("\n    {hint}"));
                         }
                         line

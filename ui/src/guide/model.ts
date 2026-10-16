@@ -30,12 +30,13 @@ import {
 } from "react-icons/vsc";
 import { lang } from "../i18n";
 
-/** Localized string helper for rich guide content (IT default, EN/FR/DE). */
-export function tr(it: string, en?: string, fr?: string, de?: string): string {
+/** Localized string helper for rich guide content: the Italian source and
+ * its English, French and German, all required (no silent fallback). */
+export function tr(it: string, en: string, fr: string, de: string): string {
   const l = lang();
-  if (l === "en") return en ?? it;
-  if (l === "fr") return fr ?? en ?? it;
-  if (l === "de") return de ?? en ?? it;
+  if (l === "en") return en;
+  if (l === "fr") return fr;
+  if (l === "de") return de;
   return it;
 }
 
@@ -411,20 +412,20 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     title: () =>
       tr(
         "«Strumenti», «Impostazioni», «Rimuovi l'unità» e CLI",
-        "“Tools”, “Settings”, “Remove Drive” & CLI",
+        "“Tools”, “Settings”, “Remove drive” & CLI",
         "« Outils », « Paramètres », « Retirer le lecteur » et CLI",
         "„Werkzeuge“, „Einstellungen“, „Laufwerk entfernen“ & CLI",
       ),
     subtitle: () =>
       tr(
-        "Gestione multi-versione con lucchetto locked, matrice delle Relazioni, albero di personalizzazione Framework, espulsione sicura e CLI Dev-Kit.exe.",
-        "Multi-version management with locked badge, Relations matrix, Framework customization tree, safe drive ejection and Dev-Kit.exe CLI.",
-        "Gestion multi-version avec cadenas verrouillé, matrice des Relations, arbre de personnalisation des Frameworks, éjection sécurisée et CLI Dev-Kit.exe.",
-        "Multi-Versions-Verwaltung mit Gesperrt-Schloss, Beziehungsmatrix, Framework-Anpassungsbaum, sicherem Auswerfen und Dev-Kit.exe-CLI.",
+        "Gestione multi-versione con il lucchetto «bloccata», matrice delle Relazioni, albero di personalizzazione Framework, espulsione sicura e CLI Dev-Kit.exe.",
+        "Multi-version management with the “locked” badge, Relations matrix, Framework customization tree, safe drive ejection and Dev-Kit.exe CLI.",
+        "Gestion multi-version avec le cadenas « verrouillée », matrice des Relations, arbre de personnalisation des Frameworks, éjection sécurisée et CLI Dev-Kit.exe.",
+        "Multi-Versions-Verwaltung mit dem Schloss „gesperrt“, Beziehungsmatrix, Framework-Anpassungsbaum, sicherem Auswerfen und Dev-Kit.exe-CLI.",
       ),
     icon: VscExtensions,
     keywords:
-      "strumenti multi-versione locked relazioni estensioni impostazioni framework rimuovi unita eject cli powershell out-host",
+      "strumenti multi-versione bloccata locked relazioni estensioni impostazioni framework rimuovi unita eject cli powershell out-host",
     targetPage: "components",
   },
 
@@ -1076,7 +1077,12 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     binarySource: "static.rust-lang.org/rustup/dist/<triple>/rustup-init.exe",
     verifyKind: "SHA-256",
     verifyDetail: () =>
-      tr("SHA-256 da <url>.sha256", "SHA-256 from <url>.sha256", "SHA-256 depuis <url>.sha256", "SHA-256 aus <url>.sha256"),
+      tr(
+        "SHA-256 da <url>.sha256",
+        "SHA-256 from <url>.sha256",
+        "SHA-256 depuis <url>.sha256",
+        "SHA-256 aus <url>.sha256",
+      ),
     targetPath: () =>
       tr(
         "rust\\cargo\\bin\\rustc.exe e rustup.exe",
@@ -1137,7 +1143,12 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     binarySource: "apache-maven-<v>-bin.zip",
     verifyKind: "SHA-512",
     verifyDetail: () =>
-      tr("SHA-512 da <url>.sha512", "SHA-512 from <url>.sha512", "SHA-512 depuis <url>.sha512", "SHA-512 aus <url>.sha512"),
+      tr(
+        "SHA-512 da <url>.sha512",
+        "SHA-512 from <url>.sha512",
+        "SHA-512 depuis <url>.sha512",
+        "SHA-512 aus <url>.sha512",
+      ),
     targetPath: "maven\\bin\\mvn.cmd",
   }),
   defSource({
@@ -1557,13 +1568,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
   defSource({
     id: "adminer",
     logoId: "adminer",
-    name: () =>
-      tr(
-        "Adminer (per MariaDB)",
-        "Adminer (for MariaDB)",
-        "Adminer (pour MariaDB)",
-        "Adminer (für MariaDB)",
-      ),
+    name: () => tr("Adminer (per MariaDB)", "Adminer (for MariaDB)", "Adminer (pour MariaDB)", "Adminer (für MariaDB)"),
     group: "databases",
     home: "https://www.adminer.org",
     metaSource: "api.github.com/repos/vrana/adminer/releases/latest",

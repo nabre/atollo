@@ -750,6 +750,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
      - *(Opzionale)* Inserisci **Domini `.localhost` aggiuntivi** separati da virgola (es. `api.mio-sito.localhost, admin.mio-sito.localhost`).
      - *(Opzionale)* Clicca su **«Aggiungi alias»** per mappare un percorso URL (es. `/media`) a una cartella interna al progetto (`storage/uploads`) o a una cartella di un altro progetto del kit (`@altro-progetto/public`).
   5. Clicca su **«Salva»**. Poi avvia il progetto (o avvia il pool corrispondente nella pagina **Server Web**) e apri `http://<progetto>.localhost:<porta>`.
+     - Con *Automatico* «Avvia» apre un'istanza dedicata del progetto sulla sua porta; con un **profilo manuale** «Avvia» avvia (se è fermo) il pool di quel profilo e mostra l'indirizzo del sito nel pool. «Ferma» su un sito servito da un pool lo segna soltanto come fermo: il pool, condiviso con altri progetti, si ferma dalla pagina **Server Web**.
 - **Scopo**:
   - Permettere architetture multi-sito e multi-dominio (`.htaccess` su Apache, FastCGI `php-cgi.exe` su Nginx) e condivisione di asset tra progetti diversi (`@altro-progetto/...`) mantenendo il 100% della portabilità: i file `httpd.conf`/`nginx.conf` vengono rigenerati a ogni avvio in `data\servers\<pool>\` usando le variabili del kit (`${CP_PROJECTS_FWD}`) e validando ogni alias con `safe_path` (nessuna giunzione malevola verso server esterni viene mai seguita, D-77).
 

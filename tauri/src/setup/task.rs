@@ -84,12 +84,18 @@ pub fn missing_required(kit: &Kit) -> Vec<String> {
 /// Parts of the app installed at another version than this release's (the
 /// editor after an update of Dev-Kit). Brought to the fixed version once, at
 /// start; until then the installed one keeps working, so nothing waits for
-/// it (a folder in use must not block the editor).
+/// it (a folder in use must not block the editor). Also the components
+/// marked to be installed again because the kit moved and they cannot
+/// follow it (conda environments on macOS/Linux, D-92), also when only
+/// saved lines of theirs are marked (`setup::runner::run` reinstalls them).
 pub fn outdated_app(kit: &Kit) -> Vec<String> {
     Catalog::get()
         .all()
         .iter()
-        .filter(|c| install::installer(&c.id).is_some() && c.is_installed(kit) && c.outdated(kit))
+        .filter(|c| install::installer(&c.id).is_some() && c.is_installed(kit))
+        .filter(|c| {
+            c.outdated(kit) || c.needs_reinstall(kit) || !c.lines_to_reinstall(kit).is_empty()
+        })
         .map(|c| c.id.clone())
         .collect()
 }

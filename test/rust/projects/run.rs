@@ -161,3 +161,121 @@ fn runs_and_stops_commands() {
         State::Stopped
     );
 }
+
+fn site_action(apache: bool, server: Option<&str>) -> Action {
+    let mut a = Action::for_test("site", "", Kind::Web);
+    if apache {
+        a.apache_dir = Some("public".into());
+    } else {
+        a.nginx_dir = Some("public".into());
+    }
+    a.server = server.map(str::to_owned);
+    a
+}
+
+/// GAP-RUN: a site assigned to a server profile goes to that pool.
+#[test]
+fn site_mode_pool_when_assigned() {
+    assert_eq!(
+        site_mode(&site_action(true, Some("legacy"))),
+        SiteMode::Pool("legacy".into())
+    );
+    assert_eq!(
+        site_mode(&site_action(false, Some(" shop "))),
+        SiteMode::Pool("shop".into())
+    );
+}
+
+/// GAP-RUN: no profile (or `auto`, or empty) keeps the dedicated server,
+/// and a `server` on another kind of action means nothing.
+#[test]
+fn site_mode_dedicated_otherwise() {
+    for server in [None, Some("auto"), Some(""), Some("  ")] {
+        assert_eq!(site_mode(&site_action(true, server)), SiteMode::Dedicated);
+        assert_eq!(site_mode(&site_action(false, server)), SiteMode::Dedicated);
+    }
+    let mut cmd = Action::for_test("dev", "npm run dev", Kind::Web);
+    cmd.server = Some("legacy".into());
+    assert_eq!(site_mode(&cmd), SiteMode::Dedicated);
+}
+
+/// GAP-RUN: a run served by a pool shows the site's URL; stopping it only
+/// marks it stopped (the shared pool is not this action's to end).
+#[test]
+fn pool_run_stops_without_a_process() {
+    let tmp = TempDir::new("run-pool");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let r = Runner::new(kit, Arc::new(|_| {}));
+    let a = site_action(false, Some("legacy"));
+    let info = r.attach_pool(
+        "shop",
+        &a,
+        "legacy",
+        8095,
+        "http://shop.localhost:8095",
+        "it",
+    );
+    assert_eq!(info.state, State::Running);
+    assert_eq!(info.url.as_deref(), Some("http://shop.localhost:8095/"));
+    assert_eq!(info.port, Some(8095));
+    assert_eq!(r.running(), 0, "counted with the pools");
+    r.clear(&info.key);
+    assert_eq!(r.list().len(), 1, "not cleared while served");
+    r.stop(&info.key);
+    assert_eq!(r.list()[0].state, State::Stopped);
+    r.clear(&info.key);
+    assert!(r.list().is_empty());
+}
+
+/// I2: a run served by a pool stopped from the "Server Web" page (or dead)
+/// is marked stopped, and can then be cleared; one whose pool runs is not.
+#[test]
+fn pool_runs_follow_their_pool() {
+    let tmp = TempDir::new("run-pool-reconcile");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let seen = Arc::clone(&events);
+    let r = Runner::new(
+        kit,
+        Arc::new(move |e| {
+            if let Event::State(i) = e {
+                seen.lock().unwrap().push((i.key, i.state));
+            }
+        }),
+    );
+    let a = site_action(false, Some("legacy"));
+    let shop = r.attach_pool(
+        "shop",
+        &a,
+        "legacy",
+        8095,
+        "http://shop.localhost:8095",
+        "it",
+    );
+    let blog = r.attach_pool(
+        "blog",
+        &a,
+        "other",
+        8096,
+        "http://blog.localhost:8096",
+        "it",
+    );
+    events.lock().unwrap().clear();
+
+    r.reconcile_pools(|_| true);
+    assert!(r.list().iter().all(|i| i.state == State::Running));
+    assert!(events.lock().unwrap().is_empty());
+
+    r.reconcile_pools(|id| id != "legacy");
+    let state = |key: &str| r.list().into_iter().find(|i| i.key == key).unwrap().state;
+    assert_eq!(state(&shop.key), State::Stopped);
+    assert_eq!(state(&blog.key), State::Running);
+    assert_eq!(
+        *events.lock().unwrap(),
+        vec![(shop.key.clone(), State::Stopped)]
+    );
+    r.clear(&shop.key);
+    assert_eq!(r.list().len(), 1);
+}

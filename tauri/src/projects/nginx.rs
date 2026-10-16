@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command};
 
 use anyhow::{anyhow, bail, Result};
 
@@ -119,6 +119,13 @@ pub fn vhost_block(
         format!("        server_name {};", names.join(" ")),
         format!("        root \"{root_fwd}\";"),
         "        index index.php index.html index.htm;".to_owned(),
+        // Hidden files and folders (`.env`, `.git/`) are refused but
+        // `.well-known`: a site served from the project's root would hand
+        // them out. A regex location, before the others: it wins over the
+        // aliases' prefix locations and over `.php`.
+        "        location ~ /\\.(?!well-known(/|$)) {".to_owned(),
+        "            deny all;".to_owned(),
+        "        }".to_owned(),
     ];
     if fcgi_port.is_some() {
         lines.extend([
@@ -135,14 +142,24 @@ pub fn vhost_block(
     }
     lines.extend(alias_locations(aliases, "        "));
     if let Some(fp) = fcgi_port {
+        // `~*`: on NTFS `/INDEX.PHP` is the same file, and must be run,
+        // never served as text by `location /`.
         lines.extend([
-            "        location ~ \\.php$ {".to_owned(),
+            "        location ~* \\.php$ {".to_owned(),
             "            try_files $uri =404;".to_owned(),
             format!("            fastcgi_pass 127.0.0.1:{fp};"),
             "            fastcgi_index index.php;".to_owned(),
             format!("            include \"{nginx_fwd}/conf/fastcgi_params\";"),
             "            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;"
                 .to_owned(),
+            "        }".to_owned(),
+        ]);
+    } else {
+        // Without PHP-CGI a `.php` would be sent as a download, source and
+        // secrets included: refuse it (aliases too, regex wins over prefix).
+        lines.extend([
+            "        location ~* \\.php$ {".to_owned(),
+            "            return 503;".to_owned(),
             "        }".to_owned(),
         ]);
     }
@@ -207,13 +224,21 @@ pub fn project_conf(
 }
 
 /// Spawns `php-cgi.exe -b 127.0.0.1:<fcgi_port>` inside `job` when PHP is installed,
-/// returning the FastCGI port used.
-pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<u16> {
+/// returning the FastCGI port used and the process, whose death the caller
+/// watches (a Nginx without its php-cgi answers 502 to every `.php`).
+/// `None` when PHP is not installed or the spawn failed (in the log).
+pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(u16, Child)> {
     let php = php_dir(kit, env)?;
     let cgi = php.join("php-cgi.exe");
-    let listener = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).ok()?;
-    let fcgi_port = listener.local_addr().ok()?.port();
-    drop(listener);
+    let fcgi_port = match std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
+        .and_then(|l| l.local_addr())
+    {
+        Ok(addr) => addr.port(),
+        Err(e) => {
+            crate::log::warn(&format!("php-cgi: no free FastCGI port: {e}"));
+            return None;
+        }
+    };
     let mut cmd = jobs::kit_command(&cgi, env);
     cmd.arg("-b")
         .arg(format!("127.0.0.1:{fcgi_port}"))
@@ -223,8 +248,13 @@ pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<u1
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
-    jobs::spawn_in(&mut cmd, job).ok()?;
-    Some(fcgi_port)
+    match jobs::spawn_in(&mut cmd, job) {
+        Ok(child) => Some((fcgi_port, child)),
+        Err(e) => {
+            crate::log::warn(&format!("php-cgi {}: {e:#}", cgi.display()));
+            None
+        }
+    }
 }
 
 /// Prepares `nginx.conf` and returns the `Command` to start `nginx.exe`.

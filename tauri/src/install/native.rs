@@ -258,7 +258,7 @@ impl Installer for Rust {
         ))
     }
 
-    fn custom(&self) -> bool {
+    fn custom(&self, _target: Target) -> bool {
         true
     }
 
@@ -415,7 +415,7 @@ impl Installer for Pnpm {
         })
     }
 
-    fn custom(&self) -> bool {
+    fn custom(&self, _target: Target) -> bool {
         true
     }
 
@@ -490,15 +490,18 @@ impl Installer for Pnpm {
 /// put R's libraries on the PATH of R only. Unavailable on `win32-arm64`.
 pub struct R;
 
-/// The versions of r-base built for Windows x64 (`win-64`), newest first.
-#[cfg(test)]
-pub fn r_versions(info: &Value) -> Vec<String> {
-    r_versions_for(info, "win-64")
+/// The description of the conda-forge package `pkg`: every file of every
+/// version, with its `attrs.subdir`.
+pub(super) fn conda_info(ctx: &Ctx, pkg: &str) -> Result<Value> {
+    ctx.net.json(&format!(
+        "https://api.anaconda.org/package/conda-forge/{pkg}"
+    ))
 }
 
-/// The versions of r-base built for `subdir` (`win-64`, `osx-arm64`, `linux-64`, ...),
-/// newest first.
-pub fn r_versions_for(info: &Value, subdir: &str) -> Vec<String> {
+/// The release versions of a conda-forge package (`info` from `conda_info`)
+/// built for `subdir` (`win-64`, `osx-arm64`, `linux-64`, ...), newest
+/// first; pre-releases (`4.7.0rc1`) are left out.
+pub fn conda_versions(info: &Value, subdir: &str) -> Vec<String> {
     let mut out: Vec<String> = info
         .get("files")
         .and_then(Value::as_array)
@@ -514,13 +517,9 @@ pub fn r_versions_for(info: &Value, subdir: &str) -> Vec<String> {
     out
 }
 
-fn r_info(ctx: &Ctx) -> Result<Value> {
-    ctx.net
-        .json("https://api.anaconda.org/package/conda-forge/r-base")
-}
-
-/// `version` of R with the newest micromamba that installs it.
-fn r_release(ctx: &Ctx, version: &str) -> Result<Release> {
+/// `version` of a conda package with the newest micromamba that installs
+/// it: the release's one part is micromamba itself (`micromamba_create`).
+pub(super) fn micromamba_release(ctx: &Ctx, version: &str) -> Result<Release> {
     let target = ctx.kit.target();
     let asset = target.micromamba_asset();
     let mm = ctx.net.github_latest("mamba-org/micromamba-releases")?;
@@ -531,7 +530,7 @@ fn r_release(ctx: &Ctx, version: &str) -> Result<Release> {
     let sha = first_sha256(&ctx.net.text(&format!("{base}/{asset}.sha256"))?)
         .ok_or_else(|| anyhow!("micromamba: no SHA-256"))?;
     Ok(Release::single(
-        // r-base only: a new micromamba alone does not rebuild R.
+        // The package only: a new micromamba alone does not rebuild it.
         version.to_owned(),
         format!("{base}/{asset}"),
         format!("micromamba{}", target.exe_suffix()),
@@ -541,16 +540,102 @@ fn r_release(ctx: &Ctx, version: &str) -> Result<Release> {
     ))
 }
 
+/// The arguments of `micromamba create` for an environment at `prefix` with
+/// `specs` (`git=2.51.0`), from conda-forge only and without any `.condarc`.
+pub fn micromamba_create_args(prefix: &Path, specs: &[&str]) -> Vec<String> {
+    let mut args: Vec<String> = vec![
+        "create".to_owned(),
+        "--no-rc".to_owned(),
+        "-y".to_owned(),
+        "-q".to_owned(),
+        "-p".to_owned(),
+        prefix.display().to_string(),
+        "-c".to_owned(),
+        "conda-forge".to_owned(),
+        "--override-channels".to_owned(),
+    ];
+    args.extend(specs.iter().map(|s| (*s).to_owned()));
+    args
+}
+
+/// Creates the conda environment `prefix` with `specs`, by the micromamba
+/// of `release` (`micromamba_release`), put into `tools`. Any old `prefix`
+/// goes first. Its home, root prefix and package cache are in the work
+/// folder, so nothing is written outside the kit and the temporary folder.
+/// The environment is created where it stays: conda writes `prefix` into
+/// some of its files, so it cannot be moved (D-92).
+pub(super) fn micromamba_create(
+    ctx: &Ctx,
+    component: &Component,
+    release: &Release,
+    prefix: &Path,
+    specs: &[&str],
+    progress: &mut dyn Progress,
+) -> Result<()> {
+    let part = release
+        .parts
+        .first()
+        .ok_or_else(|| anyhow!("{}: no micromamba to download", component.id))?;
+    let guard = work_dir(ctx, component)?;
+    let work = guard.path();
+    let result = (|| -> Result<()> {
+        let mm_new = fetch(
+            ctx,
+            &part.url,
+            &part.file_name,
+            &part.expect,
+            work,
+            progress,
+        )?;
+        let tools = ctx.kit.apps().join("tools");
+        fs::create_dir_all(&tools)?;
+        let mm = tools.join(format!("micromamba{}", ctx.kit.os().exe_suffix()));
+        crate::net::archive::replace_file(&mm_new, &mm)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(m) = fs::metadata(&mm) {
+                let mut p = m.permissions();
+                p.set_mode(p.mode() | 0o755);
+                let _ = fs::set_permissions(&mm, p);
+            }
+        }
+        let home = work.join("mamba-home");
+        // The same line again (a patch): the old folder goes first.
+        if prefix.exists() {
+            crate::net::archive::remove_dir(prefix)?;
+        }
+        let envs = [
+            ("HOME", home.clone()),
+            ("USERPROFILE", home.clone()),
+            ("APPDATA", join_rel(&home, "AppData/Roaming")),
+            ("LOCALAPPDATA", join_rel(&home, "AppData/Local")),
+            ("MAMBA_ROOT_PREFIX", home.join("mamba")),
+        ];
+        let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
+        progress.note(&format!("micromamba: {}", specs.join(" ")));
+        let args = micromamba_create_args(prefix, specs);
+        let args: Vec<&str> = args.iter().map(String::as_str).collect();
+        run(ctx, &mm, &args, &envs, progress)?;
+        // The package cache is in the work folder; a `pkgs` left in the
+        // environment is only downloaded archives.
+        let _ = fs::remove_dir_all(prefix.join("pkgs"));
+        Ok(())
+    })();
+    drop(guard);
+    result
+}
+
 /// Packages compiled for one minor version of R do not load in another:
 /// one folder per line (versioned, D-81), `renv.lock` declares R's version.
 impl Installer for R {
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
         let subdir = ctx.kit.target().conda_subdir();
-        let versions = r_versions_for(&r_info(ctx)?, subdir);
+        let versions = conda_versions(&conda_info(ctx, "r-base")?, subdir);
         let version = versions
             .first()
             .ok_or_else(|| anyhow!("r-base: no version for {subdir}"))?;
-        r_release(ctx, version)
+        micromamba_release(ctx, version)
     }
 
     fn has_lines(&self) -> bool {
@@ -560,7 +645,7 @@ impl Installer for R {
     fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
         let subdir = ctx.kit.target().conda_subdir();
         let mut lines: Vec<String> = Vec::new();
-        for v in r_versions_for(&r_info(ctx)?, subdir) {
+        for v in conda_versions(&conda_info(ctx, "r-base")?, subdir) {
             if let Some(line) = crate::versions::line_of(&v) {
                 if !lines.contains(&line) {
                     lines.push(line);
@@ -572,16 +657,25 @@ impl Installer for R {
 
     fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
         let subdir = ctx.kit.target().conda_subdir();
-        let versions = r_versions_for(&r_info(ctx)?, subdir);
+        let versions = conda_versions(&conda_info(ctx, "r-base")?, subdir);
         let version = versions
             .iter()
             .find(|v| crate::versions::line_of(v).as_deref() == Some(line))
             .ok_or_else(|| anyhow!("R {line} not available for {subdir}"))?;
-        r_release(ctx, version)
+        micromamba_release(ctx, version)
     }
 
-    fn custom(&self) -> bool {
+    fn custom(&self, _target: Target) -> bool {
         true
+    }
+
+    /// Off Windows the moved environment loads its libraries and finds its
+    /// files at the old folder: installed again (D-92). On Windows R runs
+    /// from its launchers and only building packages from source reads the
+    /// old folder; reinstalling 1 GB at every new drive letter of a stick
+    /// would cost more.
+    fn relocatable(&self, target: Target) -> bool {
+        target.os.is_windows()
     }
 
     fn install_custom(
@@ -609,93 +703,39 @@ impl Installer for R {
         if ctx.kit.target() == Target::WIN32_ARM64 {
             bail!("conda-forge has no R for Windows ARM64");
         }
-        let guard = work_dir(ctx, component)?;
-        let work = guard.path();
-        let result = (|| -> Result<()> {
-            let part = &release.parts[0];
-            let mm_new = fetch(
-                ctx,
-                &part.url,
-                &part.file_name,
-                &part.expect,
-                work,
-                progress,
-            )?;
-            let tools = ctx.kit.apps().join("tools");
-            fs::create_dir_all(&tools)?;
-            let mm = tools.join(format!("micromamba{}", ctx.kit.os().exe_suffix()));
-            crate::net::archive::replace_file(&mm_new, &mm)?;
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                if let Ok(m) = fs::metadata(&mm) {
-                    let mut p = m.permissions();
-                    p.set_mode(p.mode() | 0o755);
-                    let _ = fs::set_permissions(&mm, p);
-                }
+        let spec = format!("r-base={}", release.version);
+        micromamba_create(
+            ctx,
+            component,
+            release,
+            target,
+            &[&spec, "libblas=*=*openblas"],
+            progress,
+        )?;
+        if ctx.kit.os().is_windows() {
+            if !join_rel(target, "lib/R/bin/x64/R.exe").is_file() {
+                bail!("R.exe not found after the installation");
             }
-            let home = work.join("mamba-home");
-            // The same line again (a patch): the old folder goes first.
-            if target.exists() {
-                crate::net::archive::remove_dir(target)?;
-            }
-            let envs = [
-                ("HOME", home.clone()),
-                ("USERPROFILE", home.clone()),
-                ("APPDATA", join_rel(&home, "AppData/Roaming")),
-                ("LOCALAPPDATA", join_rel(&home, "AppData/Local")),
-                ("MAMBA_ROOT_PREFIX", home.join("mamba")),
-            ];
-            let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
-            progress.note(&format!("micromamba: r-base {}", release.version));
-            let spec = format!("r-base={}", release.version);
-            run(
-                ctx,
-                &mm,
-                &[
-                    "create",
-                    "--no-rc",
-                    "-y",
-                    "-q",
-                    "-p",
-                    &target.display().to_string(),
-                    "-c",
-                    "conda-forge",
-                    "--override-channels",
-                    &spec,
-                    "libblas=*=*openblas",
-                ],
-                &envs,
-                progress,
-            )?;
-            if ctx.kit.os().is_windows() {
-                if !join_rel(target, "lib/R/bin/x64/R.exe").is_file() {
-                    bail!("R.exe not found after the installation");
-                }
-                let bin = target.join("bin");
-                fs::create_dir_all(&bin)?;
-                for exe in ["R", "Rscript"] {
-                    let cmd = format!(
+            let bin = target.join("bin");
+            fs::create_dir_all(&bin)?;
+            for exe in ["R", "Rscript"] {
+                let cmd = format!(
                         "@echo off\r\nrem Dev-Kit: R with its DLLs (Library\\bin) in the PATH of R only\r\nsetlocal\r\nset \"PATH=%~dp0..\\lib\\R\\bin\\x64;%~dp0..\\Library\\bin;%PATH%\"\r\n\"%~dp0..\\lib\\R\\bin\\x64\\{exe}.exe\" %*\r\nexit /b %ERRORLEVEL%\r\n"
                     );
-                    write_atomic(&bin.join(format!("{exe}.cmd")), cmd.as_bytes())?;
-                    let sh = format!(
+                write_atomic(&bin.join(format!("{exe}.cmd")), cmd.as_bytes())?;
+                let sh = format!(
                         "#!/bin/sh\n# Dev-Kit: R with its DLLs (Library/bin) in the PATH of R only\nd=$(dirname \"$0\")/..\nPATH=\"$d/lib/R/bin/x64:$d/Library/bin:$PATH\" exec \"$d/lib/R/bin/x64/{exe}.exe\" \"$@\"\n"
                     );
-                    write_atomic(&bin.join(exe), sh.as_bytes())?;
-                }
-            } else if !join_rel(target, "bin/R").is_file() {
-                bail!("bin/R not found after the installation");
+                write_atomic(&bin.join(exe), sh.as_bytes())?;
             }
-            let site = join_rel(target, "lib/R/etc/Rprofile.site");
-            let mut text = fs::read_to_string(&site).unwrap_or_default();
-            text.push_str("\n# Dev-Kit: CRAN without asking for a mirror\nlocal({ r <- getOption('repos'); if (is.null(r) || identical(unname(r['CRAN']), '@CRAN@')) options(repos = c(CRAN = 'https://cloud.r-project.org')) })\n");
-            fs::write(&site, text)?;
-            let _ = fs::remove_dir_all(target.join("pkgs"));
-            Ok(())
-        })();
-        drop(guard);
-        result
+        } else if !join_rel(target, "bin/R").is_file() {
+            bail!("bin/R not found after the installation");
+        }
+        let site = join_rel(target, "lib/R/etc/Rprofile.site");
+        let mut text = fs::read_to_string(&site).unwrap_or_default();
+        text.push_str("\n# Dev-Kit: CRAN without asking for a mirror\nlocal({ r <- getOption('repos'); if (is.null(r) || identical(unname(r['CRAN']), '@CRAN@')) options(repos = c(CRAN = 'https://cloud.r-project.org')) })\n");
+        fs::write(&site, text)?;
+        Ok(())
     }
 }
 

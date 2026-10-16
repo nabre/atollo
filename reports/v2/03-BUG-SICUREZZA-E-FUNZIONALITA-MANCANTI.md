@@ -1,5 +1,8 @@
 # 03 — Identificazione dei Bug, Sicurezza e Funzionalità Mancanti (v2 — Confronto Evolutivo con v1)
 
+> [!IMPORTANT]
+> **Errata (16/10/2026).** La rilettura del codice in [`07-PIANO-RISOLUZIONE-BUG-SCIAME.md`](07-PIANO-RISOLUZIONE-BUG-SCIAME.md) §1.1 ha trovato che molte voci date qui come aperte erano **già risolte a `fa8a34d`**: `BUG-01`, `BUG-08`, `BUG-09`, `BUG-10`, `BUG-12`, `BUG-13`, `BUG-14`, `BUG-15`, `BUG-16`, `BUG-19`, `BUG-21`; `BUG-06` è **falso** (`ProjectMcpBox` è montato). Le voci davvero aperte (27, con quelle nuove `N-*`) e il loro stato dopo le correzioni sono in 07 §1.2 e §8: i conteggi e i punteggi qui sotto non tengono conto di questa errata.
+
 > [!WARNING]
 > Questo documento aggiorna le **Dimensioni 6 (Funzionalità mancanti: da `78` a `80/100`, `+2 pt`)** e **7 (Identificazione dei bug e sicurezza: da `76` a `78/100`, `+2 pt`)**. Rispetto ai **21 bug** della `v1`, **1 bug di severità ALTA (`BUG-02`) è stato risolto** (insieme ai bug di separazione path Unix in `archive::safe_join`), **20 bug della `v1` restano aperti**, e l'audit del nuovo codice multi-OS (`fa8a34d`) ha permesso di individuare **3 nuovi bug (`BUG-22`, `BUG-23`, `BUG-24`)**.
 

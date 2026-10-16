@@ -4,7 +4,7 @@
 // As the Extensions view: the servers in the side bar, the chosen one's
 // page in the editor.
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import {
   VscBook,
   VscCopy,
@@ -31,7 +31,7 @@ import { t } from "./i18n";
 import { DbBrowser } from "./dbbrowser";
 import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine } from "./common";
-import { useCopy, useEvery } from "./hooks";
+import { useAction, useCopy, useLoad } from "./hooks";
 import {
   Button,
   CheckboxLabel,
@@ -310,36 +310,31 @@ function ServiceDetails({
 }
 
 export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") => void } = {}) {
-  const [list, setList] = useState<ServiceInfo[] | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // The list is read now and every 3 s; an action answers with the new list.
+  // The read's error and the action's are kept apart: a read that works
+  // clears the first, not the second. After an action the list is read
+  // again, which also drops a read still running from before it.
+  const {
+    data: list,
+    error: loadError,
+    reload: refresh,
+    setData: setList,
+  } = useLoad<ServiceInfo[] | null>(servicesList, null, { onError: "show", every: 3000 });
+  const { busy, error, run } = useAction();
   const [chosen, setChosen] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(true);
-  const refresh = useCallback(() => {
-    servicesList().then(
-      (l) => {
-        setList(l);
-        setError(null);
-      },
-      (e: unknown) => {
-        setError(String(e));
-      },
-    );
-  }, []);
-  useEvery(refresh, 3000);
   const act = (id: string, action: () => Promise<ServiceInfo[]>) => {
-    setBusy(id);
-    setError(null);
-    action().then(
-      (l) => {
-        setList(l);
-        setBusy(null);
-      },
-      (e: unknown) => {
-        setError(String(e));
-        setBusy(null);
-        refresh();
-      },
+    run(id, () =>
+      action().then(
+        (l) => {
+          setList(l);
+          refresh();
+        },
+        (e: unknown) => {
+          refresh();
+          throw e;
+        },
+      ),
     );
   };
   const current = chosen ?? list?.[0]?.id;
@@ -426,6 +421,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
   return (
     <ViewContainer id="databases" side={side}>
       <div className="px-5 pt-3 empty:hidden">
+        <ErrorLine error={loadError} />
         <ErrorLine error={error} />
       </div>
       {service ? (

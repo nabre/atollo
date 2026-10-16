@@ -21,8 +21,12 @@ pub struct ComponentInfo {
     /// This version of the app can install it on this kit.
     pub available: bool,
     pub x64_only: bool,
-    /// No ARM64 build and this kit is ARM64: why it is not available.
+    /// No ARM64 build and this kit is Windows ARM64: why it is not available.
     pub no_arm64: bool,
+    /// Not made for this kit's system (Windows only, on macOS or Linux): why
+    /// it is not available, already translated. `None` on Windows ARM64,
+    /// where `no_arm64` says it.
+    pub unavailable_reason: Option<String>,
     /// Components it needs (Apache needs PHP, Kotlin needs Java).
     pub needs: Vec<String>,
     /// x64 only, on an ARM64 PC with Windows 10: only Windows 11 runs x64
@@ -70,7 +74,8 @@ pub(super) fn emulates_x64() -> bool {
 }
 
 /// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`
-/// component is not available on an ARM64 kit.
+/// component is not available on a Windows ARM64 kit, one with an
+/// `unavailableReason` not on this system (macOS, Linux).
 pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
     let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
@@ -82,7 +87,10 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
         .in_page_order()
         .into_iter()
         .map(|c| {
-            let no_arm64 = !c.is_available_on(target);
+            let off = !c.is_available_on(target);
+            let no_arm64 = off && win_arm64;
+            let unavailable_reason = (off && !win_arm64)
+                .then(|| crate::i18n::t(lang, "non disponibile per {0}", &[target.as_str()]));
             let needs_windows11 = win_arm64 && c.x64_only && !emulates_x64();
             ComponentInfo {
                 id: c.id.clone(),
@@ -100,6 +108,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                     && !needs_windows11,
                 x64_only: c.x64_only,
                 no_arm64,
+                unavailable_reason,
                 needs: c.needs.clone(),
                 needs_windows11,
                 versioned: c.versioned,

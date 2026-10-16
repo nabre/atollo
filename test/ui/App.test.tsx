@@ -393,6 +393,22 @@ describe("App", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("forbidden");
   });
 
+  it("reads the kit's state again from the banner", async () => {
+    let fail = true;
+    invoke.mockImplementation((cmd) =>
+      cmd === "app_info" && fail ? Promise.reject(new Error("forbidden")) : answers()(cmd),
+    );
+    render(<App />);
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Impossibile leggere lo stato del kit: Error: forbidden");
+    fail = false;
+    fireEvent.click(within(alert).getByRole("button", { name: "Riprova" }));
+    await waitFor(() => {
+      expect(screen.queryByText(/Impossibile leggere lo stato del kit/)).toBeNull();
+    });
+    expect(invoke.mock.calls.filter(([c]) => c === "app_info")).toHaveLength(2);
+  });
+
   it("opens a project in the editor and starts an action from its page", async () => {
     invoke.mockImplementation(
       answers({
@@ -603,6 +619,7 @@ describe("App", () => {
         available: true,
         x64Only: false,
         noArm64: false,
+        unavailableReason: null,
         needs: [],
       },
       {
@@ -619,6 +636,7 @@ describe("App", () => {
         available: true,
         x64Only: true,
         noArm64: false,
+        unavailableReason: null,
         needs: [],
       },
       {
@@ -635,6 +653,7 @@ describe("App", () => {
         available: true,
         x64Only: true,
         noArm64: false,
+        unavailableReason: null,
         needs: ["php"],
       },
       {
@@ -651,6 +670,7 @@ describe("App", () => {
         available: true,
         x64Only: false,
         noArm64: false,
+        unavailableReason: null,
         needs: [],
       },
       {
@@ -667,6 +687,24 @@ describe("App", () => {
         available: false,
         x64Only: false,
         noArm64: true,
+        unavailableReason: null,
+        needs: [],
+      },
+      {
+        id: "julia",
+        name: "Julia",
+        group: "languages",
+        desc: "calcolo",
+        mb: 500,
+        chosen: false,
+        installed: false,
+        present: false,
+        locked: false,
+        version: null,
+        available: false,
+        x64Only: false,
+        noArm64: false,
+        unavailableReason: "non disponibile per linux-x64",
         needs: [],
       },
     ];
@@ -678,6 +716,9 @@ describe("App", () => {
     expect(screen.getByLabelText<HTMLInputElement>(/^Git(?!Hub)/).disabled).toBe(true);
     expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
     expect(screen.getByText("non disponibile su PC ARM64")).toBeTruthy();
+    // Not made for this system: the reason from Rust, not "ARM64" (BUG-24c).
+    expect(screen.getByLabelText<HTMLInputElement>(/^Juliacalcolo/).disabled).toBe(true);
+    expect(screen.getByText("non disponibile per linux-x64")).toBeTruthy();
     // Dependencies: Apache shows what it needs, PHP what it is needed by.
     expect(screen.getByTitle("Richiede PHP: si installa insieme.")).toBeTruthy();
     expect(screen.getByText("per Apache")).toBeTruthy();

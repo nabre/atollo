@@ -111,6 +111,23 @@ fn apache_site_created_once() {
 }
 
 #[test]
+fn apache_site_refuses_php_without_module() {
+    let tmp = TempDir::new("apachesitephp");
+    apache_site(&tmp.0).unwrap();
+    let text = fs::read_to_string(tmp.0.join("kit.conf")).unwrap();
+    assert!(!text.contains("<FilesMatch \"\\.php$\">"));
+    assert_eq!(text.matches("<FilesMatch \"(?i)\\.php$\">").count(), 4);
+    assert_eq!(text.matches("LoadModule php").count(), 3);
+    let deny = text.find("<IfModule !php_module>").unwrap();
+    assert!(deny > text.rfind("LoadModule php5_module").unwrap());
+    assert!(text[deny..].contains("<IfModule !php7_module>"));
+    assert!(text[deny..].contains("<IfModule !php5_module>"));
+    assert!(text[deny..].contains("Require all denied"));
+    assert!(text.trim_end().ends_with("conf.d/*.conf\""));
+    assert!(text.contains("\r\n"));
+}
+
+#[test]
 fn apache_builds_of_the_pages() {
     let page = r#"<a href="/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip">x</a>
         <a href="/download/VS18/binaries/httpd-2.4.69-261002-win32-vs18.zip">32</a>
@@ -139,4 +156,23 @@ fn cab_headers() {
     bytes.extend_from_slice(&cab);
     bytes.extend_from_slice(b"MSCF\0\0\0\0junk");
     assert_eq!(find_cabs(&bytes), vec![(10, 100)]);
+}
+
+/// The `.tar.gz` of the Nginx releases is the source: never picked on macOS
+/// or Linux, where Nginx is not available (BUG-23b).
+#[test]
+fn nginx_asset_only_on_windows() {
+    for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
+        let (pat, kind) = nginx_asset_for(target).unwrap();
+        assert!(pat.ends_with(r"\.zip$") && kind == Kind::Zip, "{target}");
+    }
+    for target in [
+        Target::DARWIN_ARM64,
+        Target::DARWIN_X64,
+        Target::LINUX_X64,
+        Target::LINUX_ARM64,
+    ] {
+        let e = nginx_asset_for(target).unwrap_err().to_string();
+        assert!(e.contains(target.as_str()), "{e}");
+    }
 }

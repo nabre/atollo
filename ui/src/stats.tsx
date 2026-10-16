@@ -177,7 +177,7 @@ ${t("7 giorni")}: ${detail(u.week)}`}
                     style={{ height: `${String((v / max) * 100)}%` }}
                   />
                 </span>
-                <span className="text-[10px] text-vsc-desc">{day}</span>
+                <span className="text-[11px] text-vsc-desc">{day}</span>
               </span>
             );
           })}

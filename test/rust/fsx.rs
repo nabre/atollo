@@ -102,4 +102,3 @@ fn join_rel_normalizes_both_slashes_and_skips_dot() {
     assert_eq!(join_rel(base, r"a\b\c.txt"), expected);
     assert_eq!(join_rel(base, "./a//b/./c.txt"), expected);
 }
-

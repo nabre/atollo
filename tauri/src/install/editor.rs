@@ -20,7 +20,10 @@ impl Installer for Pwsh {
         let target = target_of(ctx, component);
         let arch = target.arch.as_str();
         let (re, kind) = match target.os {
-            Os::Win32 => (format!(r"^PowerShell-\d+\.\d+\.\d+-win-{arch}\.zip$"), Kind::Zip),
+            Os::Win32 => (
+                format!(r"^PowerShell-\d+\.\d+\.\d+-win-{arch}\.zip$"),
+                Kind::Zip,
+            ),
             Os::Darwin => (
                 format!(r"^powershell-\d+\.\d+\.\d+-osx-{arch}\.tar\.gz$"),
                 Kind::TarGz,
@@ -90,7 +93,8 @@ impl Installer for Server {
             bail!("{}: no version fixed in the catalog", component.id);
         };
         let name = format!("vscodium-reh-web-{}-{version}.tar.gz", target.as_str());
-        let url = format!("https://github.com/VSCodium/vscodium/releases/download/{version}/{name}");
+        let url =
+            format!("https://github.com/VSCodium/vscodium/releases/download/{version}/{name}");
         let sha_text = ctx.net.text(&format!("{url}.sha256"))?;
         let sha = first_sha256(&sha_text)
             .ok_or_else(|| anyhow::anyhow!("vscodium-server: no SHA-256 in {name}.sha256"))?;
@@ -125,11 +129,7 @@ fn pinned(component: &Component) -> Result<Release> {
     pinned_with_sha(Target::WIN32_X64, component, sha)
 }
 
-pub(crate) fn pinned_with_sha(
-    target: Target,
-    component: &Component,
-    sha: &str,
-) -> Result<Release> {
+pub(crate) fn pinned_with_sha(target: Target, component: &Component, sha: &str) -> Result<Release> {
     let Some(version) = &component.version else {
         bail!("{}: no version fixed in the catalog", component.id);
     };

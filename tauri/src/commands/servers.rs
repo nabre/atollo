@@ -8,33 +8,49 @@ use crate::servers::{WebServerEngine, WebServerProfileInput, WebServersView};
 pub async fn servers_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
+    fresh: Option<bool>,
 ) -> CmdResult<WebServersView> {
     ensure_main(&webview)?;
-    let (servers, lang) = (Arc::clone(&state.servers), state.lang());
-    tauri::async_runtime::spawn_blocking(move || servers.list(lang))
+    // `fresh` (the refresh button) reads the projects again; the page's
+    // poll leaves it out and gets the cached scan (BUG-07).
+    let (servers, lang, fresh) = (
+        Arc::clone(&state.servers),
+        state.lang(),
+        fresh.unwrap_or(false),
+    );
+    tauri::async_runtime::spawn_blocking(move || servers.list(lang, fresh))
         .await
         .or_fail("servers")
 }
 
+// save and remove wait for `store_lock` (and remove for `op_lock`, held up
+// to seconds by a start or reload): off the IPC thread, as server_stop.
 #[tauri::command]
-pub fn server_save<R: Runtime>(
+pub async fn server_save<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     profile: WebServerProfileInput,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    state.servers.save_profile(profile, state.lang())?;
-    Ok(())
+    let (servers, lang) = (Arc::clone(&state.servers), state.lang());
+    tauri::async_runtime::spawn_blocking(move || {
+        servers.save_profile(profile, lang).map_err(CmdError::from)
+    })
+    .await
+    .or_fail("servers")?
 }
 
 #[tauri::command]
-pub fn server_remove<R: Runtime>(
+pub async fn server_remove<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    state.servers.remove_profile(&id).or_fail("servers")
+    let servers = Arc::clone(&state.servers);
+    tauri::async_runtime::spawn_blocking(move || servers.remove_profile(&id).or_fail("servers"))
+        .await
+        .or_fail("servers")?
 }
 
 #[tauri::command]
@@ -52,7 +68,7 @@ pub async fn server_start<R: Runtime>(
         Arc::clone(&state.servers),
     );
     tauri::async_runtime::spawn_blocking(move || {
-        let view = servers.list(lang);
+        let view = servers.list(lang, true);
         let Some(pool) = view.pools.iter().find(|p| p.id == id) else {
             return Err(fail("servers", format!("unknown server pool {id}")));
         };

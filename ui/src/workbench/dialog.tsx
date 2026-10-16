@@ -1,13 +1,31 @@
 // Confirmations: the modal one over the whole window (VSCodium's dialog
 // box) and the inline one under the button that asked it.
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Button } from "./controls";
 
-const FOCUSABLE =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+// What Tab reaches: not a hidden control nor one out of the tab order (as
+// the native submit button next to a Button with `submit`).
+const REACHABLE = ':not([hidden]):not([tabindex="-1"])';
+const FOCUSABLE = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]",
+]
+  .map((s) => s + REACHABLE)
+  .join(", ");
+
+/** The controls Tab moves among in a box, in order, without those inside a
+ * hidden part. */
+function tabbable(box: HTMLElement): HTMLElement[] {
+  return Array.from(box.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => !el.closest("[hidden]"));
+}
 
 /** A modal question: the cancel button (a vscode-button) has the focus,
- * Esc cancels. The confirming buttons and an error line come from the
+ * Tab stays inside, Esc cancels; once closed, the focus goes back where it
+ * was. The confirming buttons and an error line come from the
  * caller (`actions`, `footer`). */
 export function ConfirmDialog({
   title,
@@ -27,6 +45,20 @@ export function ConfirmDialog({
 }) {
   const id = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  // Where the focus was before the dialog took it (read while rendering,
+  // before the cancel button's autoFocus).
+  const [opener] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null));
+  useEffect(() => {
+    const node = dialogRef.current;
+    return () => {
+      // Still in the page: a remount (StrictMode), not a close. Otherwise
+      // the focus fell to the body with the dialog; a confirm that moved it
+      // elsewhere keeps it there.
+      if (node?.isConnected) return;
+      const at = document.activeElement;
+      if (opener?.isConnected && (at === null || at === document.body)) opener.focus();
+    };
+  }, [opener]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -34,7 +66,7 @@ export function ConfirmDialog({
         return;
       }
       if (e.key === "Tab" && dialogRef.current) {
-        const items = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        const items = tabbable(dialogRef.current);
         if (items.length === 0) return;
         const first = items[0];
         const last = items[items.length - 1];
