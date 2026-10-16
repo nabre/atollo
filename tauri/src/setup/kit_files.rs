@@ -13,7 +13,6 @@ const FILES: &[(&str, &str)] = &[
     ("loopback.js", include_str!("../../../runtime/loopback.js")),
     ("adminer.php", include_str!("../../../runtime/adminer.php")),
     ("profile.ps1", include_str!("../../../runtime/profile.ps1")),
-    ("console.ps1", include_str!("../../../runtime/console.ps1")),
     ("bashrc", include_str!("../../../runtime/bashrc")),
     (r"bin\agy.cmd", include_str!("../../../runtime/bin/agy.cmd")),
     (r"bin\agy", include_str!("../../../runtime/bin/agy")),

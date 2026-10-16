@@ -65,25 +65,6 @@ export function GeneralSettings({ s, set }: { s: Settings; set: (patch: Partial<
       </SettingItem>
       <SettingItem
         category={general}
-        title={t("Terminale")}
-        description={t("Dove si aprono le console del kit.")}
-        modified={s.terminal !== null}
-      >
-        <Select
-          label={t("Terminale")}
-          value={s.terminal ?? ""}
-          onChange={(v) => {
-            set({ terminal: (empty(v) as Settings["terminal"]) ?? null });
-          }}
-          options={[
-            { value: "", label: t("Windows Terminal del kit (predefinito)") },
-            { value: "classic", label: t("Console classica di Windows") },
-          ]}
-          className="w-full"
-        />
-      </SettingItem>
-      <SettingItem
-        category={general}
         title={t("Temporanei dei programmi")}
         description={t(
           "Automatico usa la cartella temporanea di Windows se il kit è su una chiavetta, su un disco di rete o su FAT32/exFAT, altrimenti la cartella data\\tmp del kit. Nel sistema i file restano sul PC finché chiudi l'app.",

@@ -26,9 +26,6 @@ pub struct Check {
 
 const LIMIT: Duration = Duration::from_secs(60);
 
-/// As the only argument of a check: read the program's version resource
-/// instead of starting it (a window program, such as Windows Terminal).
-pub const FILE_VERSION: &str = "<file-version>";
 /// As the only argument of a check: a PHP script (Adminer), compiled by the
 /// kit's PHP (`php -l`); the answer is the `@version` of its header.
 pub const PHP_SCRIPT: &str = "<php>";
@@ -42,7 +39,6 @@ pub fn check(kit: &Kit, env: &KitEnv, c: &Component) -> Option<Check> {
     }
     let result = match c.missing_part(kit) {
         Some(part) => Err(anyhow::anyhow!("{} not found", part.display())),
-        None if args == [FILE_VERSION] => file_version(&kit_path(kit, program)),
         None if args == [PHP_SCRIPT] => php_script(kit, env, &kit_path(kit, program)),
         None => run(env, &kit_path(kit, program), args),
     };
@@ -61,61 +57,6 @@ pub fn check_all(kit: &Kit, env: &KitEnv) -> Vec<Check> {
         .iter()
         .filter_map(|c| check(kit, env, c))
         .collect()
-}
-
-/// The file version of `exe` (`a.b.c.d`), from its version resource.
-#[cfg(windows)]
-fn file_version(exe: &std::path::Path) -> Result<String> {
-    use windows::core::{HSTRING, PCWSTR};
-    use windows::Win32::Storage::FileSystem::{
-        GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW, VS_FIXEDFILEINFO,
-    };
-    if !exe.is_file() {
-        bail!("{} not found", exe.display());
-    }
-    let name = HSTRING::from(exe.as_os_str());
-    // SAFETY: the buffer has the size Windows asked for; the fixed info is
-    // read only after VerQueryValueW points inside it with the right length.
-    unsafe {
-        let size = GetFileVersionInfoSizeW(PCWSTR(name.as_ptr()), None);
-        if size == 0 {
-            bail!("no version resource");
-        }
-        let mut data = vec![0u8; size as usize];
-        GetFileVersionInfoW(PCWSTR(name.as_ptr()), None, size, data.as_mut_ptr().cast())
-            .context("version resource")?;
-        let mut info: *mut std::ffi::c_void = std::ptr::null_mut();
-        let mut len = 0u32;
-        let root = HSTRING::from("\\");
-        if !VerQueryValueW(
-            data.as_ptr().cast(),
-            PCWSTR(root.as_ptr()),
-            &mut info,
-            &mut len,
-        )
-        .as_bool()
-            || info.is_null()
-            || (len as usize) < std::mem::size_of::<VS_FIXEDFILEINFO>()
-        {
-            bail!("no version in the resource");
-        }
-        let f = &*(info as *const VS_FIXEDFILEINFO);
-        Ok(format!(
-            "{}.{}.{}.{}",
-            f.dwFileVersionMS >> 16,
-            f.dwFileVersionMS & 0xffff,
-            f.dwFileVersionLS >> 16,
-            f.dwFileVersionLS & 0xffff
-        ))
-    }
-}
-
-#[cfg(not(windows))]
-fn file_version(exe: &std::path::Path) -> Result<String> {
-    if !exe.is_file() {
-        bail!("{} not found", exe.display());
-    }
-    Ok("installed".to_owned())
 }
 
 fn php_script(kit: &Kit, env: &KitEnv, script: &std::path::Path) -> Result<String> {

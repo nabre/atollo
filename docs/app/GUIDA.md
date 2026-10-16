@@ -40,7 +40,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
    - [4.11 Interfaccia a Riga di Comando (CLI di `Dev-Kit.exe`)](#411-interfaccia-a-riga-di-comando-cli-di-dev-kitexe)
 5. [Guida Passo-Passo alla Configurazione di Ogni Elemento e Relativi Scopi](#5-guida-passo-passo-alla-configurazione-di-ogni-elemento-e-relativi-scopi)
    - [5.1 Preparazione Iniziale del Kit e Scelta del Disco](#51-preparazione-iniziale-del-kit-e-scelta-del-disco)
-   - [5.2 Configurazione Generale: Lingua, Terminale, Temporanei e Aggiornamenti](#52-configurazione-generale-lingua-terminale-temporanei-e-aggiornamenti)
+   - [5.2 Configurazione Generale: Lingua, Temporanei e Aggiornamenti](#52-configurazione-generale-lingua-temporanei-e-aggiornamenti)
    - [5.3 Configurazione di Rete: Proxy Aziendali, Certificati CA (SSL Inspection) e LAN](#53-configurazione-di-rete-proxy-aziendali-certificati-ca-ssl-inspection-e-lan)
    - [5.4 Configurazione dei Compilatori e delle Linee Predefinite (Python, PHP, Rust)](#54-configurazione-dei-compilatori-e-delle-linee-predefinite-python-php-rust)
    - [5.5 Configurazione delle Versioni per Singolo Progetto e Risoluzione Conflitti](#55-configurazione-delle-versioni-per-singolo-progetto-e-risoluzione-conflitti)
@@ -86,7 +86,6 @@ Quando `Dev-Kit.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD 
 └── data\                                   # Tutto lo stato, i programmi, le configurazioni e i dati
     ├── apps\win32-<x64|arm64>\             # Eseguibili e linguaggi scaricati
     │   ├── pwsh\<major.minor>\             # PowerShell 7 portabile (obbligatorio)
-    │   ├── terminal\<major.minor>\         # Windows Terminal portabile (con file .portable)
     │   ├── vscodium-server\                # Server web dell'editor VSCodium (versione fissata al rilascio)
     │   ├── claude\  codex\  antigravity\   # I tre agenti AI, ognuno in <major.minor>\
     │   ├── git\  gh\  uv\  cmake\ ...      # Sempre all'ultima versione: una sola cartella <major.minor>\
@@ -130,7 +129,7 @@ Quando `Dev-Kit.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD 
     ├── gh\                                 # Credenziali portabili di GitHub CLI (hosts.yml)
     ├── antigravity\                        # Credenziali di Antigravity salvate nel kit (keyring.json)
     ├── home\                               # Profilo utente portabile (.claude, .codex, .gemini, .gitconfig, .ssh, AppData)
-    ├── kit\                                # Script e helper estratti dall'exe (profile.ps1, console.ps1, loopback.js, adminer.php, bin\agy.cmd, bin\gradle.cmd)
+    ├── kit\                                # Script e helper estratti dall'exe (profile.ps1, loopback.js, adminer.php, bin\agy.cmd, bin\gradle.cmd)
     ├── vscodium-server\                    # Dati del server VSCodium, estensioni installate e Machine\settings.json
     ├── webview2\                           # Profilo browser isolato delle finestre dell'app e dell'editor
     └── tmp\                                # File temporanei di fallback quando non si usa il TEMP di sistema
@@ -174,7 +173,6 @@ La tabella seguente dichiara l'organizzazione esatta di tutti gli indirizzi da c
 | **`pwsh`** (PowerShell 7) | Obbligatori (`required`) | `https://github.com/PowerShell/PowerShell` | GitHub API: `https://api.github.com/repos/PowerShell/PowerShell/releases/latest` | Asset `PowerShell-<v>-win-(x64\|arm64).zip` da `github.com/PowerShell/PowerShell/releases/download/...` | SHA-256 da `asset.digest` GitHub | `pwsh\<linea>\pwsh.exe` |
 | **`gh`** (GitHub CLI) | Obbligatori (`required`) | `https://cli.github.com` | GitHub API: `https://api.github.com/repos/cli/cli/releases/latest` | Asset `gh_<v>_windows_(amd64\|arm64).zip` | SHA-256 da `asset.digest` GitHub | `gh\<linea>\bin\gh.exe` |
 | **`vscodium-server`** (Editor) | App (`app`) | `https://vscodium.com` | Versione fissata nel catalogo (`1.135.06055`, D-58) | `https://github.com/VSCodium/vscodium/releases/download/<v>/vscodium-reh-web-win32-x64-<v>.tar.gz` | SHA-256 cablato nel catalogo (`components.json`) | `vscodium-server\` |
-| **`terminal`** (Windows Terminal) | Sistema (`os`) | `https://github.com/microsoft/terminal` | GitHub API: `https://api.github.com/repos/microsoft/terminal/releases/latest` | Asset `Microsoft.WindowsTerminal_<v>_(x64\|arm64).zip` | SHA-256 da `asset.digest` GitHub | `terminal\<linea>\WindowsTerminal.exe` (+ file `.portable`) |
 | **`claude`** (Claude Code) | Agenti (`agents`) | `https://claude.com/product/claude-code` | Registro npm: `https://registry.npmjs.org/@anthropic-ai/claude-code-win32-<arch>/latest` | Campo `dist.tarball` del JSON npm | Integrità npm `sha512-...` + firma Authenticode `Anthropic` | `claude\<linea>\claude.exe` |
 | **`codex`** (Codex) | Agenti (`agents`) | `https://github.com/openai/codex` | Registro npm: `https://registry.npmjs.org/@openai/codex/latest` → poi `/<ver>-win32-<arch>` | Campo `dist.tarball` del pacchetto specifico per architettura | Integrità npm `sha512-...` | `codex\<linea>\bin\codex.exe` |
 | **`antigravity`** (Antigravity) | Agenti (`agents`) | `https://antigravity.google` | Manifesto Google Cloud Run: `https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_(amd64\|arm64).json` | Campo `url` del manifesto JSON | SHA-512 (128 hex) dal campo `sha512` del manifesto | `antigravity\<linea>\agy.exe` (invocato tramite `data\kit\bin\agy.cmd`) |
@@ -426,9 +424,9 @@ Cliccando su un progetto si apre nella parte centrale la **Scheda del Progetto**
   - Si apre in finestre dedicate di Dev-Kit (`editor-<n>`) senza barra del titolo di Windows: utilizza direttamente la barra del titolo di VSCodium con i menu (`File`, `Edit`, ecc.) e i pulsanti di controllo finestra iniettati nativamente (D-69).
   - **Sicurezza delle finestre Editor**: le finestre dell'editor non hanno alcun accesso ai comandi IPC di Tauri (D-14), possono navigare solo verso l'URL del proprio progetto (`folder=`), chiedono conferma di fiducia (*Workspace Trust*) alla prima apertura di un progetto sconosciuto (D-67) e attivano nell'area di lavoro solo le estensioni pertinenti a quel progetto (D-71).
   - **Rilevamento live dei linguaggi (ogni 15 secondi)**: se mentre lavori nell'editor crei il primo file `.py` o `.rb` in un progetto, entro 15 secondi il kit se ne accorge, installa in background le estensioni per quel linguaggio e mostra nella finestra dell'editor un banner per riavviare le estensioni.
-- **Terminale esclusivo del kit (`tauri/src/editor/terminal.rs` e `wterm.rs`)**:
+- **Terminale esclusivo del kit (`tauri/src/editor/terminal.rs`)**:
   - **Dentro l'editor**: i profili di sistema di Windows sono nascosti; il profilo predefinito è **Dev-Kit** (PowerShell 7 del kit con `profile.ps1`, che applica anche le versioni dei linguaggi scelte per quel progetto), affiancato da *Dev-Kit - Git Bash*, *Dev-Kit - cmd* e dai profili dei tre agenti AI installati.
-  - **Fuori dall'editor (pulsante «Terminale» o avvio di un Agente)**: apre **Windows Terminal portabile del kit** (o la console classica `conhost.exe` se scelta nelle Impostazioni). Poiché Windows Terminal riunisce tutte le finestre in un unico processo, Dev-Kit inietta l'ambiente esatto del progetto in ogni nuova scheda attraverso una **named pipe crittograficamente casuale protetta da DACL del solo proprietario** (`Dev-Kit-Console-<64-hex>`).
+  - **Fuori dall'editor (pulsante «Terminale» o avvio di un Agente)**: apre la **console classica di Windows** (`conhost.exe` di System32, avviato direttamente: Windows non la passa al terminale predefinito del PC) con PowerShell 7 del kit e l'ambiente esatto del progetto, dentro il job dell'app (D-57, D-95).
 
 ---
 
@@ -574,7 +572,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 - **Passaggi**:
   1. Crea una cartella per il kit (es. `D:\Dev-Kit` su disco interno o `E:\Dev-Kit` su chiavetta USB). **Importante**: assicurati che nessun segmento del percorso inizi con una cifra (`0-9`) o con le lettere minuscole `x` o `u` (es. evita `D:\2026\kit` o `D:\utils\kit`, usa piuttosto `D:\Anno2026\kit` o `D:\Tools\kit`).
   2. Copia `Dev-Kit.exe` dentro la cartella e avvialo con doppio clic.
-  3. Nella schermata di **Primo Avvio**, verifica i componenti preselezionati (di default: *PowerShell 7*, *GitHub CLI*, *Editor*, i tre *Agenti*, *Python*, *PHP*, *Apache*, *Windows Terminal* — circa 1,9 GB) oppure spunta subito altri linguaggi o database che usi abitualmente, quindi clicca su **«Installa»**.
+  3. Nella schermata di **Primo Avvio**, verifica i componenti preselezionati (di default: *PowerShell 7*, *GitHub CLI*, *Editor*, i tre *Agenti*, *Python*, *PHP*, *Apache*, più *Git* che arriva con GitHub CLI — circa 1,8 GB) oppure spunta subito altri linguaggi o database che usi abitualmente, quindi clicca su **«Installa»**.
 
 ![Schermata di Primo Avvio (Benvenuto in NEXKORA) con selezione iniziale degli strumenti](images/01-wizard-benvenuto.png)
 
@@ -584,23 +582,20 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 
 ---
 
-### 5.2 Configurazione Generale: Lingua, Terminale, Temporanei e Aggiornamenti
+### 5.2 Configurazione Generale: Lingua, Temporanei e Aggiornamenti
 
 - **Dove si configura**: **Impostazioni › Generale** (salvato in `data\app\settings.json`).
 - **Passaggi e Scopi per ogni voce**:
   1. **Lingua (`lang`)**:
      - *Passaggi*: scegli tra *Lingua di Windows*, *Italiano*, *English*, *Français*, *Deutsch* e clicca su **«Salva»** in alto a destra nella barra delle schede.
      - *Scopo*: cambia istantaneamente (senza riavvio) la lingua dell'interfaccia, dei messaggi d'errore del motore Rust e imposta la variabile `DEVKIT_LANG` per gli strumenti del kit.
-  2. **Terminale (`terminal`)**:
-     - *Passaggi*: scegli tra *Windows Terminal del kit (predefinito)* e *Console classica di Windows (`conhost.exe`)*, poi clicca su **«Salva»**.
-     - *Scopo*: Windows Terminal offre schede moderne, temi cromatici identici a VSCodium e resa tipografica avanzata; la *Console classica di Windows* è utile su macchine più datate (es. Windows 10 pre-2004), in sessioni desktop remoto leggere o se si preferisce una finestra separata minimale per ogni console.
-  3. **Temporanei dei programmi (`programTemp`: `Automatico` / `Nel kit` / `Nel sistema`)**:
+  2. **Temporanei dei programmi (`programTemp`: `Automatico` / `Nel kit` / `Nel sistema`)**:
      - *Passaggi*: seleziona la modalità desiderata nel menu a tendina *Temporanei dei programmi* e salva.
      - *Scopo*: controlla dove puntano le variabili `TEMP`, `TMP` e `CLAUDE_CODE_TMPDIR` viste dai compilatori, da `npm`, `pip` e dagli agenti AI:
        - **Automatico (consigliato)**: se il kit si trova su un disco interno fisso **NTFS/ReFS**, usa `data\tmp\system` dentro il kit (zero tracce sul PC e cartella protetta da DACL); se invece il kit si trova su una **chiavetta USB rimovibile**, su un **disco di rete** o su file system **FAT32/exFAT**, sposta automaticamente i temporanei in `<TEMP di Windows>\Dev-Kit\<id>\system` (e `\claude`). Questo **moltiplica la velocità di compilazione**, evita l'usura della memoria flash USB e impedisce che frammenti temporanei restino leggibili senza permessi su una chiavetta FAT32/exFAT (vengono poi cancellati automaticamente dal PC alla chiusura dell'app).
        - **Nel kit**: forza l'uso esclusivo di `data\tmp` anche su chiavetta (massima riservatezza rispetto al PC ospite, ma più lento su USB).
        - **Nel sistema**: forza l'uso del disco del PC ospite anche quando il kit è su disco fisso (utile per risparmiare spazio o scritture sull'unità del kit).
-  4. **Aggiornamento automatico (`autoUpdate`)**:
+  3. **Aggiornamento automatico (`autoUpdate`)**:
      - *Passaggi*: lascia attiva o deseleziona la casella *«Scarica da solo le nuove versioni di NEXKORA»*.
      - *Scopo*: quando è attiva, 20 secondi dopo l'avvio l'app controlla silenziosamente se esiste una nuova release `app-v*` su GitHub, la scarica e ne verifica lo SHA-256 in `data\app\update\`, sostituendo `Dev-Kit.exe` alla chiusura senza mai interrompere il lavoro. Disattivala se lavori su connessioni a consumo stretto o vuoi bloccare la versione dell'ambiente.
 

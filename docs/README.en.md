@@ -28,7 +28,7 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 
 At the bottom of every page, the **Activity** panel: what is running or installing (projects, databases, components), with output and errors in one place.
 
-The kit console is the kit's portable Windows Terminal (or the classic Windows console, if chosen in Settings or if Windows Terminal is not installed) with the kit's PowerShell 7 and only the kit's environment: programs installed on the PC are not visible.
+The kit console is the classic Windows console with the kit's PowerShell 7 and only the kit's environment: programs installed on the PC are not visible.
 
 ## What is left of the Dev-Kit
 

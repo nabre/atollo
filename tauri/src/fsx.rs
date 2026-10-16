@@ -8,8 +8,8 @@
 //!   a crash never leaves a half-written file; the folder is created first.
 //!
 //! Files of other programs edited as `serde_json::Value` with their own rules
-//! (the editor's and Windows Terminal's settings, the agents' files) use
-//! [`read_text`] and [`write_atomic`] directly.
+//! (the editor's settings, the agents' files) use [`read_text`] and
+//! [`write_atomic`] directly.
 
 use std::fs;
 use std::io;

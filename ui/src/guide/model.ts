@@ -350,14 +350,13 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Esploratore progetti, scheda a 7 sezioni (Avvio, Sito web, Componenti, Database, Estensioni, Editor, Git), VSCodium Web e named pipe del Terminale.",
-        "Project explorer, 7-section detail view (Run, Website, Components, Database, Extensions, Editor, Git), VSCodium Web and Terminal named pipe.",
-        "Explorateur de projets, vue détaillée à 7 sections (Exécution, Site web, Composants, Base de données, Extensions, Éditeur, Git), VSCodium Web et tube nommé du Terminal.",
-        "Projekt-Explorer, Detailansicht mit 7 Abschnitten (Start, Website, Komponenten, Datenbank, Erweiterungen, Editor, Git), VSCodium Web und Named Pipe des Terminals.",
+        "Esploratore progetti, scheda a 7 sezioni (Avvio, Sito web, Componenti, Database, Estensioni, Editor, Git), VSCodium Web e console del kit.",
+        "Project explorer, 7-section detail view (Run, Website, Components, Database, Extensions, Editor, Git), VSCodium Web and kit consoles.",
+        "Explorateur de projets, vue détaillée à 7 sections (Exécution, Site web, Composants, Base de données, Extensions, Éditeur, Git), VSCodium Web et consoles du kit.",
+        "Projekt-Explorer, Detailansicht mit 7 Abschnitten (Start, Website, Komponenten, Datenbank, Erweiterungen, Editor, Git), VSCodium Web und Konsolen des Kits.",
       ),
     icon: VscFolderLibrary,
-    keywords:
-      "progetti scheda avvio sito web componenti database estensioni editor vscodium terminale windows terminal named pipe",
+    keywords: "progetti scheda avvio sito web componenti database estensioni editor vscodium terminale console",
     targetPage: "projects",
   },
   {
@@ -524,7 +523,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
   },
 ];
 
-export type SourceCategory = "required" | "app" | "os" | "agents" | "languages" | "tools" | "databases" | "part";
+export type SourceCategory = "required" | "app" | "agents" | "languages" | "tools" | "databases" | "part";
 
 export interface DiskTreeNode {
   path: string;
@@ -748,24 +747,6 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
         "SHA-256 fest in components.json hinterlegt",
       ),
     targetPath: "vscodium-server\\",
-  }),
-  defSource({
-    id: "terminal",
-    logoId: "terminal",
-    name: () =>
-      tr(
-        "Windows Terminal Portabile",
-        "Portable Windows Terminal",
-        "Windows Terminal Portable",
-        "Portables Windows Terminal",
-      ),
-    group: "os",
-    home: "https://github.com/microsoft/terminal",
-    metaSource: "api.github.com/repos/microsoft/terminal/releases/latest",
-    binarySource: "Microsoft.WindowsTerminal_<v>_(x64|arm64).zip",
-    verifyKind: "SHA-256",
-    verifyDetail: "GitHub Release asset.digest",
-    targetPath: () => `terminal\\${lLine()}\\WindowsTerminal.exe (+ .portable)`,
   }),
   defSource({
     id: "claude",

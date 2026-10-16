@@ -31,7 +31,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 - **Interfaccia dell'app**: colori dei temi predefiniti "Dark Modern" e "Light Modern" come variabili CSS (`ui\src\theme.css`), scelti da `prefers-color-scheme` (tema di Windows); struttura a barra delle attività, area di contenuto e barra di stato come VSCodium; carattere Segoe WPC/Segoe UI 13 px; focus visibile con il colore di VSCodium.
 - **Editor**: `window.autoDetectColorScheme` attivo, con Dark Modern / Light Modern come temi preferiti (fase 3).
 - **Icone**: Codicons (`react-icons/vsc`).
-- **Terminali**: i colori di PSReadLine ricavati da `terminal.ansi*` previsti per la fase 3 non si fanno (scelta dell'utente del 14/10/2026): bastano gli schemi del terminale. Le console dell'app usavano i colori del terminale di VSCodium in xterm.js (D-44, D-46); oggi Windows Terminal del kit usa gli schemi «VSCodium Dark Modern» / «VSCodium Light Modern» scritti dall'app (D-68), la console classica (D-57) i colori della console di Windows.
+- **Terminali**: i colori di PSReadLine ricavati da `terminal.ansi*` previsti per la fase 3 non si fanno (scelta dell'utente del 14/10/2026): bastano gli schemi del terminale. Le console dell'app usavano i colori del terminale di VSCodium in xterm.js (D-44, D-46); poi Windows Terminal del kit gli schemi «VSCodium Dark Modern» / «VSCodium Light Modern» scritti dall'app (D-68, tolto con D-95); oggi la console classica (D-57) usa i colori della console di Windows.
 - **Da verificare**: i valori in `theme.css` vanno confrontati con i file `dark_modern.json` / `light_modern.json` del server di VSCodium appena installato (fase 3); eventuali differenze si correggono lì.
 
 ## D-03 Tauri 2.12.0 fissato
@@ -85,8 +85,8 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 ## D-13 Console fuori dall'editor
 
-- Windows Terminal portabile del kit (D-68), predefinito; la console classica di Windows (D-57) come alternativa nelle Impostazioni e come ripiego. Sempre con il solo ambiente del kit e nel job; mai il terminale predefinito del PC.
-- Prima (fino al 14/10/2026): Windows Terminal portabile del kit, `WindowsTerminal.exe --window new -d <cartella> -- <comando>`, sostituito perché esiste solo per Windows (D-44); poi finestre dell'app con xterm.js e pseudo console (D-44…D-46), sostituite da D-57; poi di nuovo Windows Terminal, predefinito (D-68).
+- Console classica di Windows (D-57, D-95). Sempre con il solo ambiente del kit e nel job; mai il terminale predefinito del PC.
+- Prima (fino al 14/10/2026): Windows Terminal portabile del kit, `WindowsTerminal.exe --window new -d <cartella> -- <comando>`, sostituito perché esiste solo per Windows (D-44); poi finestre dell'app con xterm.js e pseudo console (D-44…D-46), sostituite da D-57; poi di nuovo Windows Terminal, predefinito (D-68), tolto il 16/10/2026 (D-95).
 
 ## D-14 Comandi solo per la finestra `main`
 
@@ -100,7 +100,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 ## D-16 Catalogo dei componenti incorporato
 
-- Il catalogo è un file JSON nel codice sorgente, incorporato con `include_str!` e validato da un test (id unici, `needs` esistenti, gruppi validi). Id liberi (il vincolo `^[a-z]+$` era degli script): `vscodium-server`, `pwsh` (`terminal`, Windows Terminal: tolto con D-44, tornato con D-68; WebView2 non è un componente: D-37).
+- Il catalogo è un file JSON nel codice sorgente, incorporato con `include_str!` e validato da un test (id unici, `needs` esistenti, gruppi validi). Id liberi (il vincolo `^[a-z]+$` era degli script): `vscodium-server`, `pwsh` (`terminal`, Windows Terminal: tolto con D-44, tornato con D-68, tolto con D-95; WebView2 non è un componente: D-37).
 - Campi oltre a quelli del Dev-Kit: `keys` (le altre parti: Maven, Ninja, Composer…; il componente è installato solo se ci sono tutte), `noArm64` (nessuna build per ARM64, nemmeno emulata: R), `remove` condiviso (`tools\vcruntime` di PHP e Apache se ne va con l'ultimo dei due), `version` e `sha256` per il gruppo `app` (D-58). Gruppi: `required`, `agents`, `languages`, `app`.
 - Scelta in `data\app\components.txt` (formato `id=1|0` del Dev-Kit: semplice e leggibile a mano); versioni in `data\app\versions\<id>.txt`.
 
@@ -147,7 +147,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 **Oggi** (`tauri\Cargo.toml`):
 - `toml_edit` non c'è: i blocchi del kit in `config.toml` di Codex si scrivono come blocchi di testo con marcatori, lasciando com'è il resto del file (D-40).
-- `portable-pty` è stato tolto con D-57: le console sono Windows Terminal del kit (D-68) o `conhost.exe` avviato con `CreateProcessW`.
+- `portable-pty` è stato tolto con D-57: le console sono `conhost.exe` avviato con `CreateProcessW` (D-95).
 - In più: `junction` 2.1 (giunzioni NTFS delle skill, D-40), `webview2-com` 0.39 (D-05), `native-tls` 0.2, `anyhow`, `thiserror`, `serde`, `serde_json`.
 
 ## D-29 Regole del motore di installazione (fase 2)
@@ -163,7 +163,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-23 Terminale esclusivo del kit
 
-- **Scelta.** Shell predefinita nell'editor: PowerShell 7 portabile, `-NoProfile` + profilo del kit in `data\kit\`; `PSModulePath` senza i moduli del PC (D-34); `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`. Git Bash e cmd come profili aggiuntivi. Console esterne: Windows Terminal portabile del kit (D-68), console classica di Windows come alternativa e ripiego (D-57); prima D-44.
+- **Scelta.** Shell predefinita nell'editor: PowerShell 7 portabile, `-NoProfile` + profilo del kit in `data\kit\`; `PSModulePath` senza i moduli del PC (D-34); `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`. Git Bash e cmd come profili aggiuntivi. Console esterne: console classica di Windows (D-57, D-95); prima D-44, poi Windows Terminal portabile del kit (D-68).
 - **Scartate.** Windows PowerShell 5.1 di sistema: carica moduli e profili del PC. Nushell: estranea agli agenti, che si aspettano PowerShell o Bash. Windows Terminal di sistema: pacchetto Store, fuori dal job, impostazioni in `%LOCALAPPDATA%`.
 - **Verificato il 14/10/2026.** PowerShell 7.6.7: `PowerShell-7.6.7-win-x64.zip` / `-win-arm64.zip`, SHA-256 in `hashes.sha256` e nel `digest` delle asset.
 
@@ -173,7 +173,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-25 File che i programmi vogliono su disco
 
-- `loopback.js` (per `NODE_OPTIONS=--require`), `profile.ps1`, `console.ps1`, `bashrc`, `bin\agy.cmd`, `bin\agy`: incorporati nell'exe, riscritti in `data\kit\` a ogni avvio se mancano o sono diversi (confronto del contenuto); una modifica a mano viene sostituita.
+- `loopback.js` (per `NODE_OPTIONS=--require`), `profile.ps1`, `bashrc`, `bin\agy.cmd`, `bin\agy`: incorporati nell'exe, riscritti in `data\kit\` a ogni avvio se mancano o sono diversi (confronto del contenuto); una modifica a mano viene sostituita.
 
 ## D-26 Server web dell'editor
 
@@ -236,7 +236,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-39 Verifica finale
 
-- `checkup.rs` (`Test-Installation` del kit): ogni componente installato risponde al suo comando di versione (campo `check` del catalogo, obbligatorio per tutti: test `every_check_names_an_installed_file`), con l'ambiente del kit e 60 s di limite. Un programma a finestra non si avvia: `"check": ["<programma>", "<file-version>"]` legge la versione dal file (`GetFileVersionInfoW`); oggi solo Windows Terminal. `Dev-Kit.exe check`; dopo `prepare` per ciò che è stato installato.
+- `checkup.rs` (`Test-Installation` del kit): ogni componente installato risponde al suo comando di versione (campo `check` del catalogo, obbligatorio per tutti: test `every_check_names_an_installed_file`), con l'ambiente del kit e 60 s di limite. `Dev-Kit.exe check`; dopo `prepare` per ciò che è stato installato.
 
 ## D-40 Allineamento degli agenti in Rust
 
@@ -261,14 +261,14 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-44 Terminale integrato nell'app (sostituita da D-57)
 
-Superata il 14/10/2026 da D-57 (console classica di Windows), oggi alternativa a Windows Terminal del kit (D-68). Resta per la storia delle scelte.
+Superata il 14/10/2026 da D-57 (console classica di Windows). Resta per la storia delle scelte.
 
 - **Scelta dell'utente** (14/10/2026): un terminale disponibile per tutti i sistemi operativi; tra un terminale esterno multipiattaforma e uno dentro l'app, l'utente ha scelto **dentro l'app**. Sostituisce Windows Terminal (D-13, D-23), che esiste solo per Windows ed era un eseguibile in più da scaricare.
 - **Come.** `terminal.rs`: il processo (PowerShell del kit, o un agente) parte su una pseudo console di `portable-pty` 0.9.0 (ConPTY su Windows, pty su macOS e Linux; D-22) con il solo ambiente del kit; una finestra `terminal-<n>` dell'app carica `terminal.html` (xterm.js 6.0.0 + `@xterm/addon-fit` 0.11.0, D-28) e la mostra. Stesso motore del terminale di VSCodium (xterm.js + PTY).
 - **Scartate.** WezTerm (multipiattaforma, portabile, configurazione Lua): resta un eseguibile esterno da scaricare e configurare, con le sue regole di ambiente. Alacritty: niente schede. Kitty: niente Windows. Ghostty: su Windows non maturo. Windows Terminal: solo Windows.
 - **Portata.** Il codice del terminale (`portable-pty`, xterm.js, finestre Tauri) è multipiattaforma; il resto dell'app usa ancora API di Windows (job, `windows`, WebView2, percorsi `win32-*`): il porting su macOS e Linux resta da fare, ma il terminale non lo ostacola.
 - **Il terminale di VSCodium resta il suo.** L'editor ha già un terminale integrato (xterm.js nella pagina, PTY nel server) sulle shell del kit (D-23); la console dell'app non lo sostituisce e non vi si può innestare, perché il PTY dell'editor è interno al suo server. Stesse shell, stesso profilo, stessi colori: i due terminali si comportano allo stesso modo.
-- **Kit esistenti.** La cartella `data\apps\<piattaforma>\terminal\` è di nuovo usata da Windows Terminal del kit (D-68).
+- **Kit esistenti.** La cartella `data\apps\<piattaforma>\terminal\` è stata usata di nuovo da Windows Terminal del kit (D-68); con D-95 l'app la toglie all'avvio.
 
 ## D-45 Console: processo e pseudo console (sostituita da D-57)
 
@@ -345,11 +345,11 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 
 - Le sottocartelle di `projects` sono attendibili per Claude e Codex (comportamento del Dev-Kit, `trust.js`), così gli agenti non chiedono conferma a ogni progetto. È un rischio accettato: un progetto clonato da fonte sconosciuta ha subito i permessi di un progetto fidato. Lo ricordano la pagina Progetti e Linguaggi e strumenti al primo avvio. Scartato: l'attendibilità progetto per progetto, che il Dev-Kit aveva tolto perché gli agenti la chiedevano di continuo.
 - `keyring-before.json` contiene per pochi istanti le credenziali di Antigravity già presenti nel PC, per rimetterle com'erano dopo `agy`. Ora i loro segreti sono cifrati con DPAPI per l'utente di Windows (`CryptProtectData`, senza diritti di amministratore): una chiavetta persa o un file copiato non li rivela. Il file viene comunque cancellato al salvataggio successivo.
-- Windows Terminal interpretava `;` negli argomenti come separatore di comandi (una cartella chiamata `a; new-tab cmd` avrebbe aperto un altro programma). Con Windows Terminal del kit (D-68) la cartella è un argomento: ogni `;` viene protetto (`\;`, `wterm::wt_arg`, test `semicolons_are_escaped`). Nella console classica (D-57) la cartella è la cartella di lavoro del processo e un argomento con le virgolette viene rifiutato.
+- Windows Terminal interpretava `;` negli argomenti come separatore di comandi (una cartella chiamata `a; new-tab cmd` avrebbe aperto un altro programma). Con Windows Terminal del kit (D-68, tolto con D-95) ogni `;` veniva protetto. Nella console classica (D-57) la cartella è la cartella di lavoro del processo e un argomento con le virgolette viene rifiutato.
 
 ## D-54 Impostazioni
 
-- La pagina Impostazioni scrive `data\app\settings.json` dopo aver controllato i valori: lingua, proxy `http(s)://`, file PEM esistente, Python `3.x`, PHP `8.x`, toolchain `gnu|msvc`, terminale `classic` (console classica, D-68). Un file illeggibile non viene sovrascritto finché l'utente non salva.
+- La pagina Impostazioni scrive `data\app\settings.json` dopo aver controllato i valori: lingua, proxy `http(s)://`, file PEM esistente, Python `3.x`, PHP `8.x`, toolchain `gnu|msvc`. Un file illeggibile non viene sovrascritto finché l'utente non salva.
 - La chiave di Gemini non torna mai all'interfaccia: questa riceve solo «salvata sì/no». `null` la conserva, `""` la toglie.
 - Al salvataggio l'ambiente del kit viene ricostruito dall'ambiente reale catturato all'avvio (`Host`): valgono subito per console, agenti, installazioni e progetti. Il server dell'editor già avviato tiene il suo ambiente fino al riavvio, e la pagina lo dice.
 
@@ -382,7 +382,7 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 
 ## D-57 Console classica di Windows al posto di xterm.js
 
-Dal 14/10/2026 è l'alternativa a Windows Terminal del kit, che è il predefinito (D-68): resta valida per «Console classica di Windows» nelle Impostazioni e come ripiego.
+Dal 14/10/2026 è stata l'alternativa a Windows Terminal del kit (D-68); dal 16/10/2026 è di nuovo l'unica console (D-95).
 
 - **Scelta dell'utente** (14/10/2026): via la libreria del terminale «web» (xterm.js) dalle console dell'app; tutto ciò che il kit fa usa solo strumenti del kit o componenti di Windows, mai programmi del PC. Sostituisce D-44, D-45 e D-46; chiude D-47.
 - **Come.** `terminal.rs`: la PowerShell del kit, o un agente, parte in `conhost.exe` di System32 avviato direttamente, con il solo ambiente del kit e dentro il job dell'app. Avviata così, la console resta nella finestra classica e Windows non la passa al terminale predefinito del PC (Windows Terminal o altri): verificato su Windows 11 (`ConsoleWindowClass`, nessun `WindowsTerminal.exe`).
@@ -449,7 +449,7 @@ Dal 14/10/2026 è l'alternativa a Windows Terminal del kit, che è il predefinit
 ## D-65 Loghi ufficiali di componenti e linguaggi
 
 - **Scelta dell'utente** (14/10/2026): ogni strumento con il suo logo; ogni progetto con le etichette del codice che contiene.
-- **Come.** Simple Icons di `react-icons/si` (già una dipendenza), con il colore di ogni marchio; i marchi neri o bianchi prendono il colore del testo, così si leggono in entrambi i temi. Dove Simple Icons non ha il logo: PowerShell (icona Codicon di PowerShell), Windows Terminal (icona Codicon del terminale, D-68), Codex (logo OpenAI di Remix Icon), Antigravity (un'icona neutra: nessun logo ufficiale nei pacchetti, e il sito non ne pubblica uno scaricabile). I linguaggi dei progetti (rilevati da `detect::languages`, i più usati prima) compaiono come etichette con il logo nella riga del progetto e nei progetti recenti della Home.
+- **Come.** Simple Icons di `react-icons/si` (già una dipendenza), con il colore di ogni marchio; i marchi neri o bianchi prendono il colore del testo, così si leggono in entrambi i temi. Dove Simple Icons non ha il logo: PowerShell (icona Codicon di PowerShell), Codex (logo OpenAI di Remix Icon), Antigravity (un'icona neutra: nessun logo ufficiale nei pacchetti, e il sito non ne pubblica uno scaricabile). I linguaggi dei progetti (rilevati da `detect::languages`, i più usati prima) compaiono come etichette con il logo nella riga del progetto e nei progetti recenti della Home.
 
 ## D-66 Progetti attendibili anche nell'editor (sostituita da D-67)
 
@@ -468,7 +468,9 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
 - **Limite.** La memoria del workbench dipende dall'origine `127.0.0.1:<porta>`: se la porta 7000 è occupata e il server ne prende un'altra, l'editor chiede di nuovo. Chiede, non si fida da solo.
 - Claude Code e Codex restano come in D-53: le cartelle di `projects` sono attendibili per loro.
 
-## D-68 Windows Terminal portabile del kit, predefinito per le console
+## D-68 Windows Terminal portabile del kit, predefinito per le console (sostituita da D-95)
+
+Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le console sono di nuovo solo la console classica di Windows (D-57). Resta per la storia delle scelte.
 
 - **Scelta dell'utente** (14/10/2026): un terminale portabile incluso nel kit, Windows Terminal, come predefinito; la console classica di Windows (D-57) resta come alternativa nelle Impostazioni. Riprende la scelta di D-13 tolta da D-44: Windows Terminal resta solo per Windows (il porting su macOS e Linux sceglierà il terminale di quei sistemi).
 - **Componente** `terminal` (gruppo `languages`, predefinito, dipende da `pwsh`): lo zip ufficiale `Microsoft.WindowsTerminal_<v>_(x64|arm64).zip` di `microsoft/terminal` con `.portable` accanto all'exe, così le impostazioni restano in `terminal\settings\` e non in `%LOCALAPPDATA%`. Prima di ogni console l'app riscrive i profili «Dev-Kit» e «Dev-Kit - Git Bash» e gli schemi di colori di VSCodium; il resto del file è dell'utente, e un file che non è JSON semplice o che non si legge (per esempio UTF-16) resta com'è: si crea solo se manca (`wterm.rs`, test `settings_of_the_user_are_never_lost`).
@@ -593,7 +595,7 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
 ## D-80 Più versioni dei linguaggi, una per versione minore
 
 - **Scelta dell'utente** (15/10/2026): salvare, scaricare e scegliere le versioni preferite degli strumenti del codice; una versione nuova si crea al cambio della versione minore; ogni progetto può avere le sue.
-- **Dove** (rivisto il 15/10/2026, «una cartella per versione»). Ogni versione ha la sua sottocartella nella cartella del componente: `data\apps\<piattaforma>\node\<major.minor>`, con la versione completa in `.devkit-version`. La **predefinita** è quella della versione installata (`data\app\versions\<id>.txt`), quella che «Aggiorna tutto» sostituisce; le altre sono le versioni salvate. `versions::default_dir` la trova e `catalog::kit_path` ci passa dentro (`node/node.exe` → `node\22.11\node.exe`), così chiave, controlli, ambiente (`env.rs`) e installatori seguono la predefinita senza percorsi scritti a mano. Componenti con `"versioned": true` nel catalogo: Python, Node.js, PHP, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Ruby, Typst (di nuovo dal 15/10/2026, D-81: le 0.x cambiano la sintassi dei documenti). Esclusi gli strumenti che si vogliono sempre aggiornati e non si scelgono per progetto: agenti, Windows Terminal, PowerShell, Git, GitHub CLI, uv, Rust (le toolchain le gestisce rustup), TinyTeX, R, pnpm, l'editor; dal 15/10/2026 anche CMake/Ninja e C/C++ (llvm-mingw ha versioni a data, senza `major.minor`). Esclusi anche i database: i dati in `data\db` non passano fra versioni maggiori.
+- **Dove** (rivisto il 15/10/2026, «una cartella per versione»). Ogni versione ha la sua sottocartella nella cartella del componente: `data\apps\<piattaforma>\node\<major.minor>`, con la versione completa in `.devkit-version`. La **predefinita** è quella della versione installata (`data\app\versions\<id>.txt`), quella che «Aggiorna tutto» sostituisce; le altre sono le versioni salvate. `versions::default_dir` la trova e `catalog::kit_path` ci passa dentro (`node/node.exe` → `node\22.11\node.exe`), così chiave, controlli, ambiente (`env.rs`) e installatori seguono la predefinita senza percorsi scritti a mano. Componenti con `"versioned": true` nel catalogo: Python, Node.js, PHP, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Ruby, Typst (di nuovo dal 15/10/2026, D-81: le 0.x cambiano la sintassi dei documenti). Esclusi gli strumenti che si vogliono sempre aggiornati e non si scelgono per progetto: agenti, PowerShell, Git, GitHub CLI, uv, Rust (le toolchain le gestisce rustup), TinyTeX, R, pnpm, l'editor; dal 15/10/2026 anche CMake/Ninja e C/C++ (llvm-mingw ha versioni a data, senza `major.minor`). Esclusi anche i database: i dati in `data\db` non passano fra versioni maggiori.
 - **Salvare.** Un aggiornamento si installa nella cartella della sua linea: con la stessa `major.minor` (patch) la sostituisce, con una linea nuova la crea accanto e la vecchia resta lì com'è, come versione salvata (nessuno spostamento, quindi nessun problema con le cartelle in uso). La versione installata si scrive prima del controllo finale delle parti, perché dice dove cercare la chiave; se una parte manca torna quella di prima.
 - **Patch di ogni linea** (15/10/2026). «Aggiorna tutto» porta all'ultima patch anche ogni versione salvata, nella sua cartella (`setup_runner::saved_lines`, un passo per linea dopo i componenti; salta quelle già all'ultima, salvo «forza»). Vale per i componenti il cui installatore conosce le linee; gli altri tengono le salvate come sono.
 - **Esistere.** Un linguaggio versionato c'è finché ha almeno una versione. La casella della pagina Strumenti vale «almeno una versione»: spuntata installa l'ultima, tolta (con «Applica») rimuove il componente con tutte le versioni, seguendo le dipendenze (Kotlin con Java, Apache con PHP). Le versioni si tolgono anche una per una, predefinita compresa finché ne resta un'altra: la più recente rimasta diventa predefinita (`versions::remove`, che riscrive la versione installata). L'ultima si toglie solo con la casella. All'avvio, se la cartella della predefinita manca e ce ne sono altre, la più recente prende il suo posto (`repair_default`).
@@ -607,7 +609,7 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
 - **Rimuovere.** Vedi «Esistere»; togliendo il componente se ne va la sua cartella con tutte le versioni.
 - **Menu propositivo** (15/10/2026). I menu delle versioni (kit e progetto) mostrano le versioni scaricate e, raggruppate per maggiore, quelle offerte dalla fonte e non ancora scaricate. Le linee offerte si conservano in `data\app\version-lines.json` (`versions::save_offered`, scritto da `versions_available` e da `Dev-Kit.exe versions <id>`); l'interfaccia le richiede se mancano o hanno più di 24 ore. Scegliere una linea non presente (`versions::to_download`) avvia il download col task di preparazione e salva subito la scelta: finché manca vale la predefinita, come per una versione rimossa, e a download finito `apply_env` riscrive ambiente e `versions.json` dei progetti. `versions_list` riporta anche i progetti che hanno scelto ogni linea.
 - **Una pagina sola** (15/10/2026). Nella pagina Strumenti le versioni non hanno più un gruppo a parte: ogni linguaggio installato e scelto mostra sotto la sua riga la versione del kit, le versioni scaricate con chi le usa e il download di un'altra. Installato e conservato si leggono nello stesso punto; un componente tolto (non ancora applicato) non mostra le versioni.
-- **Oggi** (16/10/2026, D-91). Una cartella per minore anche per gli strumenti sempre all'ultima versione (agenti, Git, GitHub CLI, uv, PowerShell, Windows Terminal, CMake, Adminer, SQLite), ma una sola: una minore nuova toglie la vecchia. Apache torna a `apache\2.4`.
+- **Oggi** (16/10/2026, D-91). Una cartella per minore anche per gli strumenti sempre all'ultima versione (agenti, Git, GitHub CLI, uv, PowerShell, CMake, Adminer, SQLite), ma una sola: una minore nuova toglie la vecchia. Apache torna a `apache\2.4`.
 - **Prove.** Test di `versions` (linee, cartelle per versione, riscrittura dell'ambiente, file del progetto, scelte non valide, migrazione dalla struttura precedente anche interrotta, `kit.conf`), di `env` (PATH, `JAVA_HOME`, `CP_PHP` e `CP_PHP_FWD` dalla cartella della versione), degli elenchi delle linee di ogni fonte e di `php.ini`; blocco di `profile.ps1` provato in PowerShell; interfaccia nell'anteprima del browser.
 
 ## D-81 Matrice delle relazioni fra strumenti, versioni e progetti
@@ -773,12 +775,11 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
 ## D-91 Una cartella per versione minore per tutti gli strumenti
 
 - **Scelta dell'utente** (16/10/2026): per tutti gli strumenti la cartella si chiama fino alla versione minore (`git\2.56`); una versione di correzione (patch) sostituisce la sua minore, il contenuto da aggiornare si toglie e si rimette, non si mescola. Linguaggi e database tengono le versioni affiancate come in D-80; gli strumenti sempre all'ultima versione ne hanno una sola.
-- **Quali** (campo `minorFolder` del catalogo, `Component::per_line` = `versioned` o `minorFolder`): Claude Code, Codex, Antigravity, Git, GitHub CLI, uv, PowerShell 7, Windows Terminal, CMake/Ninja, Adminer, SQLite. GitHub CLI e uv escono da `tools\`: `gh\<linea>\bin\gh.exe`, `uv\<linea>\uv.exe` (con `uvx.exe` e `uvw.exe`), nel PATH dalle loro cartelle. Ninja e il runtime VC++ restano in `tools\`.
+- **Quali** (campo `minorFolder` del catalogo, `Component::per_line` = `versioned` o `minorFolder`): Claude Code, Codex, Antigravity, Git, GitHub CLI, uv, PowerShell 7, CMake/Ninja, Adminer, SQLite. GitHub CLI e uv escono da `tools\`: `gh\<linea>\bin\gh.exe`, `uv\<linea>\uv.exe` (con `uvx.exe` e `uvw.exe`), nel PATH dalle loro cartelle. Ninja e il runtime VC++ restano in `tools\`.
 - **Esclusi.** Rust (le toolchain le aggiunge rustup nella cartella), Android SDK (i pacchetti di sdkmanager), TinyTeX (i pacchetti di tlmgr), pnpm/yarn (`data\npm-global`, gestiti da npm): togliendo la cartella a ogni aggiornamento si perderebbero i pacchetti aggiunti. C/C++ (llvm-mingw ha versioni a data, senza minore). L'editor, fissato a ogni rilascio dell'app (D-58).
 - **Apache** torna a una cartella per minore (`apache\2.4`): Apache Lounge pubblica solo l'ultima build di 2.4, che sostituisce la cartella. Le cartelle per patch del 16/10/2026 (`patchLines`, tolto) si sistemano all'avvio (`migrate_patch_folders`): quella della versione installata prende il nome della linea, le altre della stessa linea si tolgono; l'elenco delle versioni salvato con le patch si chiede di nuovo e la scelta di una patch in un progetto non vale più.
-- **Aggiornare.** Stessa minore: la build nuova si prepara accanto e prende il posto della cartella (`replace_dir`, come prima): il contenuto vecchio sparisce tutto, ma se il download o l'estrazione falliscono la versione installata resta. Minore nuova: si installa nella sua cartella, poi la minore vecchia si toglie (`versions::drop_old_lines`); se è in uso (una console di PowerShell aperta) resta e si toglie al prossimo avvio. Bonus: PowerShell e Windows Terminal si aggiornano a una minore nuova anche mentre girano.
-- **Percorsi.** Tutto passa da `catalog::kit_path` → `versions::resolve` (esteso a `lined()`): ambiente, profili dei terminali dell'editor e di Windows Terminal, Git e GitHub CLI del kit, agenti, avvio dei framework. Le impostazioni dell'editor e di Windows Terminal si riscrivono a ogni avvio dell'editor e a ogni console; `agy.cmd` usa `CP_ANTIGRAVITY`. Il credential helper di Git era già `!gh auth git-credential`, dal PATH.
-- **Windows Terminal** tiene le impostazioni nella sua cartella (modo portabile): `before_swap` copia `settings\` nella build nuova, dalla cartella che sostituisce o da quella della minore precedente.
+- **Aggiornare.** Stessa minore: la build nuova si prepara accanto e prende il posto della cartella (`replace_dir`, come prima): il contenuto vecchio sparisce tutto, ma se il download o l'estrazione falliscono la versione installata resta. Minore nuova: si installa nella sua cartella, poi la minore vecchia si toglie (`versions::drop_old_lines`); se è in uso (una console di PowerShell aperta) resta e si toglie al prossimo avvio. Bonus: PowerShell si aggiorna a una minore nuova anche mentre gira.
+- **Percorsi.** Tutto passa da `catalog::kit_path` → `versions::resolve` (esteso a `lined()`): ambiente, profili dei terminali dell'editor, Git e GitHub CLI del kit, agenti, avvio dei framework. Le impostazioni dell'editor si riscrivono a ogni avvio dell'editor; `agy.cmd` usa `CP_ANTIGRAVITY`. Il credential helper di Git era già `!gh auth git-credential`, dal PATH.
 - **Dalla struttura precedente** (`versions::migrate`, all'avvio): `git\` senza linee diventa `git\2.56` come i linguaggi (`migrate_default`); `tools\gh.exe` e `tools\uv*.exe` vanno nella cartella della loro linea (`migrate_from_tools`); una cartella in uso resta dov'è e il kit la usa così (`default_dir` ripiega sulla cartella del componente) fino all'avvio dopo.
 - **Scartata.** Cancellare la cartella prima del download (proposta dall'utente, poi scelta l'alternativa): se il download fallisce lo strumento manca finché non si riprova, e PowerShell è la shell del kit. Tenere le minori vecchie anche per gli strumenti: crescerebbero a ogni aggiornamento senza che nessuno le scelga.
 - **Prove.** Test di `versions` (componenti con e senza cartella per linea, `kit_path` nella linea, cartelle per patch di Apache, `git\` senza linee, minore nuova che toglie la vecchia mentre i linguaggi tengono le loro, GitHub CLI e uv fuori da `tools\` con Ninja che resta) e degli elenchi delle linee.
@@ -799,7 +800,7 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
 ## D-94 Terminali del kit, ovunque sul PC, con strumenti e versioni scelti
 
 - **Scelta dell'utente** (16/10/2026). Una pagina «Terminali» crea console del kit che si aprono in qualsiasi cartella del PC. Un terminale predefinito con tutti gli strumenti scaricati, ognuno alla versione più recente; terminali propri con gli strumenti e le versioni scelti. «Servizi» sono i componenti del catalogo (agenti, linguaggi, database) messi sul PATH: i server di database non partono da soli. Ogni terminale ha una cartella di partenza salvata (predefinita `projects\`); «Apri in…» ne sceglie un'altra per una volta con il selettore di cartelle di Windows.
-- **Come** (`terminals.rs`). Il predefinito non si salva: è l'ambiente del kit (D-80, la linea più recente su disco). Gli altri sono in `data\app\terminals.json` (`id`, `name`, `dir`, `tools`: id → linea o `null` per la più recente). L'ambiente parte da quello del kit: le linee scelte con le stesse riscritture dei progetti (`versions::choice_env`), poi `strip` toglie le voci del PATH e le variabili che puntano nelle cartelle degli strumenti esclusi: la cartella del componente (tutte le linee), le altre che possiede in `data\apps` (Maven e Gradle di Java, mongosh) e quelle dei pacchetti che installa per l'utente (`NPM_CONFIG_PREFIX`, `COMPOSER_HOME`, `GOPATH`...). Sempre presenti: i comandi del kit, PowerShell 7, GitHub CLI e le cartelle di Windows. La console è quella dei progetti (`terminal::open_console`: Windows Terminal del kit o conhost, nel job dell'app).
+- **Come** (`terminals.rs`). Il predefinito non si salva: è l'ambiente del kit (D-80, la linea più recente su disco). Gli altri sono in `data\app\terminals.json` (`id`, `name`, `dir`, `tools`: id → linea o `null` per la più recente). L'ambiente parte da quello del kit: le linee scelte con le stesse riscritture dei progetti (`versions::choice_env`), poi `strip` toglie le voci del PATH e le variabili che puntano nelle cartelle degli strumenti esclusi: la cartella del componente (tutte le linee), le altre che possiede in `data\apps` (Maven e Gradle di Java, mongosh) e quelle dei pacchetti che installa per l'utente (`NPM_CONFIG_PREFIX`, `COMPOSER_HOME`, `GOPATH`...). Sempre presenti: i comandi del kit, PowerShell 7, GitHub CLI e le cartelle di Windows. La console è quella dei progetti (`terminal::open_console`: conhost, nel job dell'app).
 - **Solo ciò che c'è.** Si scelgono strumenti installati e linee su disco; uno strumento tolto dopo resta fuori (la pagina lo dice), una linea tolta torna alla più recente. Nessun download all'apertura, oltre a ciò che serve a ogni console (PowerShell 7).
 - **`DEVKIT_TERMINAL`** (il nome del terminale) arriva alla console: `profile.ps1` e `bashrc` non applicano le versioni di un progetto sopra quelle del terminale aperto in una cartella di `projects\`, e il banner mostra il nome.
 - **Fuori dal kit.** La cartella di partenza può essere ovunque: è il terminale a spostarsi, non lo stato. Profilo, cache e temporanei restano quelli del kit (D-00).
@@ -817,3 +818,11 @@ Superata il 14/10/2026: l'editor chiede alla prima apertura di ogni progetto (D-
 - **Indirizzo**: WordPress risponde all'host con cui si apre (`WP_HOME`, `WP_SITEURL`, `WP_CONTENT_URL` da `HTTP_HOST` nell'ambiente `development` di Bedrock), perché le porte dei progetti cambiano; TYPO3 ha il sito con `base: /` e `trustedHostsPattern` per `localhost` e `127.0.0.1` con qualsiasi porta.
 - **Rilevamento** (`detect\php.rs`): WordPress anche con Bedrock (`roots/wordpress` in `composer.json`), TYPO3 (`typo3/cms-core`), Drupal (`drupal/core-recommended`), Statamic (`statamic/cms` con `artisan`).
 - **Limiti noti**: le basi non sono ancora state provate dall'inizio alla fine con il PHP del kit su Windows (comandi verificati sui sorgenti delle versioni scelte); Drupal (`settings.php`) e TYPO3 (`config\system\settings.php`) tengono una copia della connessione: se il kit la cambia nel `.env`, va cambiata anche lì.
+
+## D-95 Niente Windows Terminal: le console sono solo la console classica di Windows
+
+- **Scelta dell'utente** (16/10/2026): Windows Terminal non serve all'app, quindi va tolto del tutto. Sostituisce D-68; le console tornano a D-57.
+- **Perché.** La console classica era già il ripiego di ogni console (Impostazioni, componente non installato, Windows prima della build 19041, avvio non riuscito): senza Windows Terminal l'app fa tutto lo stesso. Windows Terminal costava 45 MB in più fra i predefiniti, una named pipe con DACL per passare l'ambiente, l'unione delle impostazioni dell'utente, la protezione dei `;`, la copia di `settings\` a ogni aggiornamento e una prova reale nella CI. Inoltre le schede aperte con «+» avevano un ambiente vecchio e l'app non le contava, ed esiste solo per Windows. Il terminale moderno con i colori di VSCodium resta quello integrato nell'editor.
+- **Tolti.** Il componente `terminal` (catalogo, relazione con `pwsh`, installatore, `editor/wterm.rs`, `runtime/console.ps1`); l'impostazione «Terminale» (`terminal`: un `settings.json` che la contiene ancora la ignora); il gruppo `os` della pagina «Linguaggi e strumenti», che conteneva solo Windows Terminal; la verifica `<file-version>`, che serviva solo a lui; `Console::open` di `jobs.rs`. `windows_build` passa in `os` (serve all'emulazione x64).
+- **Kit esistenti.** All'avvio `versions::migrate` toglie `data\apps\<piattaforma>\terminal\` (impostazioni comprese), i file di versione e di reinstallazione di `terminal` e `data\kit\console.ps1`; una cartella in uso resta e si toglie all'avvio successivo. La riga `terminal=` di `components.txt` si ignora e sparisce alla prossima scrittura della scelta.
+- **Prove.** `retired_windows_terminal_goes` (`versions/disk`); le prove di disponibilità per sistema usano PHP al posto di Windows Terminal.

@@ -634,11 +634,6 @@
     "fr": "le shell du terminal du kit",
     "de": "die Shell des Terminals des Kits"
   },
-  "il terminale del kit per le console fuori dall'editor": {
-    "en": "the kit's terminal for the consoles outside the editor",
-    "fr": "le terminal du kit pour les consoles hors de l'éditeur",
-    "de": "das Terminal des Kits für die Konsolen außerhalb des Editors"
-  },
   "VSCodium integrato nella finestra di NEXKORA": {
     "en": "VSCodium integrated in the NEXKORA window",
     "fr": "VSCodium intégré à la fenêtre de NEXKORA",

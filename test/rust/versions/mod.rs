@@ -30,7 +30,6 @@ fn tools_have_a_folder_per_line() {
         "gh",
         "uv",
         "pwsh",
-        "terminal",
         "cmake",
         "adminer",
         "sqlite",

@@ -145,6 +145,7 @@ pub fn migrate(kit: &Kit) {
     for c in lined() {
         drop_old_lines(kit, c);
     }
+    drop_retired(kit);
     // The databases' data, one folder per version too.
     crate::db::services::migrate_data(kit);
     if let Err(e) = crate::install::adopt_composer(kit) {
@@ -153,6 +154,41 @@ pub fn migrate(kit: &Kit) {
     if let Err(e) = crate::projects::apache::fix_kit_conf(kit) {
         crate::log::warn(&format!("Apache kit.conf: {e:#}"));
     }
+}
+
+/// Components no longer in the catalog: Windows Terminal (D-95).
+const RETIRED: [&str; 1] = ["terminal"];
+
+/// What an older kit kept of a component no longer in the catalog: its
+/// folder in `data\apps`, its version files and its files in `data\kit`. A
+/// folder in use stays and goes at the next start.
+fn drop_retired(kit: &Kit) {
+    for id in RETIRED {
+        let dir = kit.apps().join(id);
+        if dir.exists() {
+            match crate::net::archive::remove_dir(&dir) {
+                Ok(()) => crate::log::info(&format!("{id}: no longer in the catalog, removed")),
+                Err(e) => crate::log::warn(&format!("{id}: not removed ({e:#})")),
+            }
+        }
+        let prefix = format!("{id}@");
+        for e in fs::read_dir(kit.versions_dir())
+            .into_iter()
+            .flatten()
+            .flatten()
+        {
+            let name = e.file_name().to_string_lossy().into_owned();
+            if name == format!("{id}.txt")
+                || name == format!("{id}.reinstall")
+                || (name.starts_with(&prefix) && name.ends_with(".reinstall"))
+            {
+                let _ = fs::remove_file(e.path());
+            }
+        }
+        let _ = fs::remove_file(kit.app_dir().join("versions").join(format!("{id}.txt")));
+    }
+    // The start script of Windows Terminal's consoles.
+    let _ = fs::remove_file(kit.kit_files().join("console.ps1"));
 }
 
 /// `node\node.exe` → `node\<line>\node.exe`, through `node.devkit-move`

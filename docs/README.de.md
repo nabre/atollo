@@ -28,7 +28,7 @@ Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShel
 
 Unten auf jeder Seite das Feld **Aktivität**: was läuft oder installiert wird (Projekte, Datenbanken, Komponenten), mit Ausgabe und Fehlern an einem Ort.
 
-Die Konsole des Kits ist das portable Windows Terminal des Kits (oder die klassische Windows-Konsole, wenn sie in den Einstellungen gewählt ist oder Windows Terminal nicht installiert ist) mit der PowerShell 7 des Kits und nur der Umgebung des Kits: auf dem PC installierte Programme sind nicht sichtbar.
+Die Konsole des Kits ist die klassische Windows-Konsole mit der PowerShell 7 des Kits und nur der Umgebung des Kits: auf dem PC installierte Programme sind nicht sichtbar.
 
 ## Was vom Dev-Kit bleibt
 

@@ -44,12 +44,6 @@ export function groups(): { id: string; title: string; hint: string; has: (c: Co
       hint: t("Server avviati dalla pagina Database, solo su questo PC (127.0.0.1); i dati restano in data\\db."),
       has: of("databases"),
     },
-    {
-      id: "os",
-      title: t("Legati a un sistema operativo"),
-      hint: t("Funzionano solo sul sistema per cui sono fatti, qui Windows."),
-      has: of("os"),
-    },
   ];
 }
 
