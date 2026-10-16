@@ -493,7 +493,9 @@ impl Kit {
 
     /// Creates `data\`, `projects\` and the app folders; checks that the root
     /// can be written. Returns the previous root when the kit has moved since
-    /// the last start (another drive letter or folder).
+    /// the last start (another drive letter or folder). The components that
+    /// follow the kit set the folders written in their files to the current
+    /// ones (`install::relocate`: R's Makeconf on Windows).
     pub fn prepare(&self) -> Result<Option<PathBuf>, KitError> {
         for dir in [
             self.projects(),
@@ -506,10 +508,12 @@ impl Kit {
                 source,
             })?;
         }
-        self.check_moved().map_err(|source| KitError::NotWritable {
+        let moved = self.check_moved().map_err(|source| KitError::NotWritable {
             path: self.app_dir(),
             source,
-        })
+        })?;
+        crate::install::relocate(self);
+        Ok(moved)
     }
 
     /// `data/app/root.txt` (or `root-<os>.txt` on macOS/Linux) keeps the last
