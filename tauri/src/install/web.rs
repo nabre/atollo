@@ -842,7 +842,7 @@ pub fn apache_site(dir: &Path) -> Result<()> {
     fs::create_dir_all(&htdocs)?;
     let conf = dir.join("kit.conf");
     if !conf.exists() {
-        let text = [
+        let mut lines: Vec<String> = [
             "# Atollo Apache configuration (yours: updates never touch it).",
             "# Paths use variables set by Atollo, so they work on any drive letter.",
             "",
@@ -860,36 +860,21 @@ pub fn apache_site(dir: &Path) -> Result<()> {
             "</Directory>",
             "DirectoryIndex index.php index.html",
             "",
-            "# The kit's PHP (Apache module), php.ini in data\\php",
-            "<IfFile \"${CP_PHP_FWD}/php8apache2_4.dll\">",
-            "    LoadFile \"${CP_PHP_FWD}/php8ts.dll\"",
-            "    LoadModule php_module \"${CP_PHP_FWD}/php8apache2_4.dll\"",
-            "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"",
-            "    <FilesMatch \"\\.php$\">",
-            "        SetHandler application/x-httpd-php",
-            "    </FilesMatch>",
-            "</IfFile>",
-            "<IfFile \"${CP_PHP_FWD}/php7apache2_4.dll\">",
-            "    LoadFile \"${CP_PHP_FWD}/php7ts.dll\"",
-            "    LoadModule php7_module \"${CP_PHP_FWD}/php7apache2_4.dll\"",
-            "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"",
-            "    <FilesMatch \"\\.php$\">",
-            "        SetHandler application/x-httpd-php",
-            "    </FilesMatch>",
-            "</IfFile>",
-            "<IfFile \"${CP_PHP_FWD}/php5apache2_4.dll\">",
-            "    LoadFile \"${CP_PHP_FWD}/php5ts.dll\"",
-            "    LoadModule php5_module \"${CP_PHP_FWD}/php5apache2_4.dll\"",
-            "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"",
-            "    <FilesMatch \"\\.php$\">",
-            "        SetHandler application/x-httpd-php",
-            "    </FilesMatch>",
-            "</IfFile>",
-            "",
-            "# Other configurations (virtual hosts, aliases...): .conf files in data\\apache\\conf.d",
-            "IncludeOptional \"${CP_ROOT_FWD}/data/apache/conf.d/*.conf\"",
+            "# The kit's PHP (Apache module), php.ini in data\\php; without it a .php is refused (403)",
         ]
-        .join("\r\n");
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+        lines.extend(crate::projects::apache::php_module_blocks("CP_PHP_FWD"));
+        lines.extend(
+            [
+                "",
+                "# Other configurations (virtual hosts, aliases...): .conf files in data\\apache\\conf.d",
+                "IncludeOptional \"${CP_ROOT_FWD}/data/apache/conf.d/*.conf\"",
+            ]
+            .map(str::to_owned),
+        );
+        let text = lines.join("\r\n");
         write_atomic(&conf, format!("{text}\r\n").as_bytes())?;
     }
     if fs::read_dir(&htdocs)?.next().is_none() {
