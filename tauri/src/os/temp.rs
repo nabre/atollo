@@ -52,19 +52,7 @@ impl TempWork {
     fn at(dir: &Path) -> io::Result<TempWork> {
         let _ = fs::remove_dir_all(dir);
         fs::create_dir_all(dir)?;
-        // Shared for reading and writing but not for delete: while this
-        // handle lives, `sweep` cannot remove the lock, which marks the
-        // folder as in use.
-        let lock = {
-            use std::os::windows::fs::OpenOptionsExt;
-            const FILE_SHARE_READ_WRITE: u32 = 0x1 | 0x2;
-            fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .share_mode(FILE_SHARE_READ_WRITE)
-                .open(dir.join(".lock"))?
-        };
+        let lock = open_lock(&dir.join(".lock"))?;
         Ok(TempWork {
             dir: dir.to_path_buf(),
             lock: Some(lock),
@@ -81,6 +69,55 @@ impl Drop for TempWork {
         self.lock = None;
         let _ = fs::remove_dir_all(&self.dir);
     }
+}
+
+/// Shared for reading and writing but not for delete: while this handle
+/// lives, `sweep` cannot remove the lock, which marks the folder as in use.
+#[cfg(windows)]
+fn open_lock(path: &Path) -> io::Result<File> {
+    use std::os::windows::fs::OpenOptionsExt;
+    const FILE_SHARE_READ_WRITE: u32 = 0x1 | 0x2;
+    fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .share_mode(FILE_SHARE_READ_WRITE)
+        .open(path)
+}
+
+/// Unix removes open files: the lock is an exclusive `flock` instead, held
+/// while this handle lives and released by the system when the app dies.
+#[cfg(unix)]
+fn open_lock(path: &Path) -> io::Result<File> {
+    use std::os::fd::AsRawFd;
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(path)?;
+    // SAFETY: a valid descriptor owned by `file`.
+    if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(file)
+}
+
+/// The `.lock` at `path` is held by a running `TempWork` (here or in
+/// another app). On Windows the removal itself tells it (sharing violation).
+#[cfg(windows)]
+fn held(_path: &Path) -> bool {
+    false
+}
+
+#[cfg(unix)]
+fn held(path: &Path) -> bool {
+    use std::os::fd::AsRawFd;
+    let Ok(file) = fs::OpenOptions::new().read(true).open(path) else {
+        return false;
+    };
+    // SAFETY: a valid descriptor owned by `file`; the lock, when taken, is
+    // released when `file` closes at the end of this function.
+    unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) != 0 }
 }
 
 /// Free bytes on the volume of `path`, asked to its nearest existing parent.
@@ -134,7 +171,7 @@ fn sweep_one(dir: &Path) {
         .or_else(|_| fs::metadata(dir))
         .and_then(|m| m.modified());
     let old = stamp.is_ok_and(|t| t.elapsed().is_ok_and(|age| age > STALE));
-    if !old {
+    if !old || held(&lock) {
         return;
     }
     match fs::remove_file(&lock) {
