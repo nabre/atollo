@@ -512,14 +512,20 @@ fn build_app<R: tauri::Runtime>(
             // Extensions follow the projects open in the editor; the editor
             // windows offer to restart them (D-71).
             // Databases marked "start with Atollo" (D-73).
-            let (services, env) = {
+            // Then the server profiles marked "Avvia con Atollo".
+            let (services, servers, env, lang) = {
                 let state = app.state::<AppState>();
                 (
                     std::sync::Arc::clone(&state.services),
+                    std::sync::Arc::clone(&state.servers),
                     state.env.read().map(|e| e.clone()).unwrap_or_default(),
+                    state.lang(),
                 )
             };
-            std::thread::spawn(move || services.autostart(&env));
+            std::thread::spawn(move || {
+                services.autostart(&env);
+                servers.autostart(&env, lang);
+            });
             let editor = std::sync::Arc::clone(&app.state::<AppState>().editor);
             let notify = app.handle().clone();
             editor.set_on_installed(std::sync::Arc::new(move |ids: &[String]| {

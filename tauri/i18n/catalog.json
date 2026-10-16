@@ -44,6 +44,21 @@
     "fr": "Le port {0} est déjà utilisé par un autre programme : changez-le ci-dessous.",
     "de": "Port {0} wird bereits von einem anderen Programm verwendet: Ändere ihn unten."
   },
+  "{0} {1} non è installato nel kit: installa questa versione o scegline un'altra.": {
+    "en": "{0} {1} is not installed in the kit: install this version or choose another one.",
+    "fr": "{0} {1} n'est pas installé dans le kit : installez cette version ou choisissez-en une autre.",
+    "de": "{0} {1} ist nicht im Kit installiert: Installiere diese Version oder wähle eine andere."
+  },
+  "Questo pool non corrisponde più ai progetti e ai profili: fermalo.": {
+    "en": "This pool no longer matches the projects and the profiles: stop it.",
+    "fr": "Ce pool ne correspond plus aux projets ni aux profils : arrêtez-le.",
+    "de": "Dieser Pool passt nicht mehr zu den Projekten und Profilen: Halte ihn an."
+  },
+  "La porta {0} è già del server {1}: scegline un'altra.": {
+    "en": "Port {0} already belongs to server {1}: choose another one.",
+    "fr": "Le port {0} appartient déjà au serveur {1} : choisissez-en un autre.",
+    "de": "Port {0} gehört bereits zum Server {1}: Wähle einen anderen."
+  },
   "database compatibile con MySQL: server e client": {
     "en": "MySQL-compatible database: server and client",
     "fr": "base de données compatible MySQL : serveur et client",

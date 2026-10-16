@@ -40,25 +40,27 @@ pub async fn run_start<R: Runtime>(
         if let SiteMode::Pool(_) = site_mode(a) {
             // A fresh scan: the cached one may still name the pool the site
             // was moved from.
-            if let Some((pool, site)) = servers.pool_of(&project, &a.id, lang) {
+            if let Some((pool, _)) = servers.pool_of(&project, &a.id, lang) {
                 let mut wanted = vec![pool.engine.as_str()];
                 if pool.php_line.is_some() {
                     wanted.push("php");
                 }
                 let env = ensure(&app, &task, &kit, lang, &wanted)?;
-                servers.start(&pool.id, &env, lang).or_fail_chain("run")?;
-                // The run is attached to the very pool just started, and
-                // only while it runs (with its live port).
-                let Some(port) = servers.running_port(&pool.id) else {
+                // The site joins the pool (started, or reloaded when it was
+                // left out of it); the run follows the pool while it runs.
+                let (pool_id, port, server_name) = servers
+                    .attach(&project, &a.id, &env, lang)
+                    .or_fail_chain("run")?;
+                if servers.running_port(&pool_id) != Some(port) {
                     return Err(crate::i18n::t(
                         lang,
                         "Il server condiviso {0} non è partito: guarda la pagina Server Web.",
-                        &[&pool.id],
+                        &[&pool_id],
                     )
                     .into());
-                };
-                let url = format!("http://{}:{port}", site.server_name);
-                return Ok(runner.attach_pool(&project, a, &pool.id, port, &url, lang));
+                }
+                let url = format!("http://{server_name}:{port}");
+                return Ok(runner.attach_pool(&project, a, &pool_id, port, &url, lang));
             }
         }
         let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
@@ -72,15 +74,30 @@ pub async fn run_start<R: Runtime>(
     .or_fail("run")?
 }
 
+/// Stops an action. A site served by a pool leaves it (a reload, or the
+/// pool stops when no project is left in it: PLAN.md §13.1), off the IPC
+/// thread.
 #[tauri::command]
-pub fn run_stop<R: Runtime>(
+pub async fn run_stop<R: Runtime>(
     webview: Webview<R>,
+    state: State<'_, AppState>,
     runner: State<'_, Arc<Runner>>,
     key: String,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
+    let pooled = runner.pooled(&key);
     runner.stop(&key);
-    Ok(())
+    let Some((pool, project, action)) = pooled else {
+        return Ok(());
+    };
+    let (servers, env, lang) = (Arc::clone(&state.servers), state.env(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || {
+        servers
+            .detach(&pool, &project, &action, &env, lang)
+            .or_fail_chain("run")
+    })
+    .await
+    .or_fail("run")?
 }
 
 #[tauri::command]
