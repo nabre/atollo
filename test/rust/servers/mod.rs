@@ -1138,6 +1138,119 @@ fn detach_leaves_the_pool_and_stops_an_empty_automatic_one() {
         .contains(&("blog".into(), "site".into())));
 }
 
+/// The kit given by ATOLLO_TEST_KIT with Apache installed, its environment,
+/// and a free port; `None` (skipped) otherwise.
+fn real_apache() -> Option<(Kit, KitEnv, u16)> {
+    let Ok(root) = std::env::var("ATOLLO_TEST_KIT") else {
+        eprintln!("ATOLLO_TEST_KIT not set: skipped");
+        return None;
+    };
+    let kit = Kit::at(PathBuf::from(root), Arch::detect());
+    kit.prepare().unwrap();
+    if !Catalog::get()
+        .find("apache")
+        .is_some_and(|c| c.is_installed(&kit))
+    {
+        eprintln!("apache not installed: skipped");
+        return None;
+    }
+    let env = KitEnv::build(
+        &kit,
+        &crate::settings::Settings::default(),
+        "en",
+        &crate::env::Host::capture(),
+    );
+    let port = {
+        let l = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        l.local_addr().unwrap().port()
+    };
+    Some((kit, env, port))
+}
+
+/// A profile `id` for Apache on `port` in the real kit; removed, with its
+/// folder in `data\servers\`, by [`drop_real_profile`].
+fn real_profile(servers: &WebServers, id: &str, port: u16) {
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: id.into(),
+                name: id.into(),
+                engine: WebServerEngine::Apache,
+                server_line: None,
+                php_line: None,
+                port: Some(port),
+                keep_alive: true,
+                autostart: false,
+            },
+            "en",
+        )
+        .unwrap();
+}
+
+fn drop_real_profile(kit: &Kit, servers: &WebServers, id: &str) {
+    servers.remove_profile(id).unwrap();
+    let _ = fs::remove_dir_all(kit.data().join("servers").join(id));
+}
+
+/// BUG-03 with a real httpd (ATOLLO_TEST_KIT): a syntax error in the pool's
+/// configuration reaches the error of the start, not only a log.
+#[test]
+fn start_reports_syntax_error() {
+    let Some((kit, env, port)) = real_apache() else {
+        return;
+    };
+    let servers = WebServers::new(kit.clone());
+    let id = "atollo-test-syntax";
+    real_profile(&servers, id, port);
+    // conf.d\ is the user's and is kept by every start.
+    let conf_d = kit.data().join(r"servers").join(id).join("conf.d");
+    fs::create_dir_all(&conf_d).unwrap();
+    fs::write(conf_d.join("bad.conf"), "Lisen 1\r\n").unwrap();
+    let err = servers.start(id, &env, "en").map_err(|e| e.to_string());
+    drop_real_profile(&kit, &servers, id);
+    let err = err.unwrap_err();
+    assert!(err.contains("Lisen"), "{err}");
+    assert!(!servers.is_running(id));
+}
+
+/// BUG-04 with a real httpd (ATOLLO_TEST_KIT): two reloads in a row (each a
+/// stop and start, Apache has no graceful reload on Windows) find the port
+/// free again and leave the pool answering.
+#[test]
+fn apache_pool_reload_twice() {
+    let Some((kit, env, port)) = real_apache() else {
+        return;
+    };
+    let servers = WebServers::new(kit.clone());
+    let id = "atollo-test-reload";
+    real_profile(&servers, id, port);
+    let answers = || {
+        TcpStream::connect_timeout(
+            &SocketAddr::from(([127, 0, 0, 1], port)),
+            Duration::from_secs(1),
+        )
+        .is_ok()
+    };
+    let result = (|| -> Result<()> {
+        servers.start(id, &env, "en")?;
+        let first = servers.list("en", false).pools;
+        let pid = first.iter().find(|p| p.id == id).and_then(|p| p.pid);
+        for _ in 0..2 {
+            servers.reload(id, &env, "en")?;
+            anyhow::ensure!(servers.is_running(id), "running after the reload");
+            anyhow::ensure!(answers(), "answers on {port} after the reload");
+        }
+        let now = servers.list("en", false).pools;
+        let again = now.iter().find(|p| p.id == id).and_then(|p| p.pid);
+        anyhow::ensure!(pid != again, "a new httpd: {pid:?} {again:?}");
+        Ok(())
+    })();
+    servers.stop(id);
+    drop_real_profile(&kit, &servers, id);
+    result.unwrap();
+    assert!(wait_port_released(port, Duration::from_secs(5)));
+}
+
 /// BUG-V3-02: names that give the same label in one pool stay distinct.
 #[test]
 fn name_sites_keeps_names_unique() {
