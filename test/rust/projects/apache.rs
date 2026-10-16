@@ -77,3 +77,30 @@ fn php_is_case_insensitive_and_denied_without_module() {
     .unwrap();
     assert!(conf.contains(deny));
 }
+
+/// F3: hidden files and folders (`.env`, `.git/`) are refused but
+/// `.well-known`, by URL and by file name, also with the project's root
+/// as DocumentRoot.
+#[test]
+fn hidden_files_are_denied() {
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\n";
+    let conf = project_conf(
+        base,
+        Path::new(r"D:\kit\projects\blog"),
+        Path::new(r"D:\kit\data\projects\blog\apache"),
+        7109,
+        false,
+    )
+    .unwrap();
+    let by_url =
+        "<LocationMatch \"/\\.(?!well-known(/|$))\">\r\n    Require all denied\r\n</LocationMatch>";
+    let by_name = "<FilesMatch \"^\\.(?!well-known$)\">\r\n    Require all denied\r\n</FilesMatch>";
+    assert!(conf.contains(by_url), "{conf}");
+    assert!(conf.contains(by_name), "{conf}");
+    // After the `<Directory>` that grants access.
+    assert!(conf.find(by_url).unwrap() > conf.find("Require all granted").unwrap());
+    assert_eq!(
+        hidden_deny("    ")[0],
+        format!("    {}", by_url.lines().next().unwrap())
+    );
+}
