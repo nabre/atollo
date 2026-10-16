@@ -34,8 +34,8 @@ fn unavailable_msg_names_arm64_only_on_windows_arm64() {
 #[test]
 fn unavailable_msg_names_the_system_elsewhere() {
     use crate::kit::Target;
-    let mac = unavailable_msg("it", "Windows Terminal", Target::DARWIN_ARM64);
-    assert_eq!(mac, "Windows Terminal non è disponibile per darwin-arm64.");
+    let mac = unavailable_msg("it", "Apache", Target::DARWIN_ARM64);
+    assert_eq!(mac, "Apache non è disponibile per darwin-arm64.");
     let linux = unavailable_msg("en", "PHP", Target::LINUX_X64);
     assert_eq!(linux, "PHP is not available for linux-x64.");
     for lang in ["it", "en", "fr", "de"] {

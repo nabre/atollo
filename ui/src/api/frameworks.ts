@@ -44,6 +44,8 @@ export interface FrameworkPiece {
   steps?: string[];
   actions?: FrameworkAction[];
   env?: EnvVar[];
+  /** Of a base that needs one (a CMS): the kit's database server for the project. */
+  database?: string;
   note?: string;
   /** Of an addition: what it does with each base, by base id. */
   on?: Record<string, FrameworkVariant>;

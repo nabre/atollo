@@ -1,11 +1,20 @@
-//! PHP: Laravel, Symfony, WordPress, plain PHP (built-in server `php -S`).
+//! PHP: Laravel (and Statamic), Symfony, the CMS (WordPress, also with
+//! Bedrock; TYPO3, Drupal), plain PHP (built-in server `php -S`).
 
 use std::path::Path;
 
 use super::{exists, list_dir, quote, read_json, tr, Action, Found, Kind};
 
 pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
-    let composer = read_json(dir, "composer.json").is_some();
+    let manifest = read_json(dir, "composer.json");
+    let composer = manifest.is_some();
+    // A package in composer.json's `require` (the CMS made with Composer).
+    let requires = |package: &str| {
+        manifest
+            .as_ref()
+            .and_then(|m| m.get("require")?.get(package))
+            .is_some()
+    };
     let php_in_root = list_dir(dir)
         .iter()
         .any(|f| f.to_ascii_lowercase().ends_with(".php"));
@@ -24,7 +33,12 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
         tr(lang, "file {0}", &[".php"])
     };
     if exists(dir, "artisan") {
-        platform = "Laravel".into();
+        platform = if requires("statamic/cms") {
+            "Statamic"
+        } else {
+            "Laravel"
+        }
+        .into();
         reason = "artisan".into();
         actions.push(Action::new(
             "php:artisan",
@@ -35,13 +49,25 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     } else {
         let is_wp = exists(dir, "wp-config.php")
             || exists(dir, "wp-settings.php")
-            || exists(dir, r"wp-includes\version.php");
+            || exists(dir, r"wp-includes\version.php")
+            || requires("roots/wordpress");
         if exists(dir, r"bin\console") {
             platform = "Symfony".into();
             reason = "bin/console".into();
         } else if is_wp {
             platform = "WordPress".into();
-            reason = "wp-settings.php".into();
+            reason = if requires("roots/wordpress") {
+                "composer.json (roots/wordpress)"
+            } else {
+                "wp-settings.php"
+            }
+            .into();
+        } else if requires("typo3/cms-core") {
+            platform = "TYPO3".into();
+            reason = "composer.json (typo3/cms-core)".into();
+        } else if requires("drupal/core-recommended") || requires("drupal/core") {
+            platform = "Drupal".into();
+            reason = "composer.json (drupal/core)".into();
         }
         let root = docroot.unwrap_or(".");
         let shown = if root == "." {

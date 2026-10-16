@@ -45,7 +45,6 @@ export const COMPONENT_NAMES: Record<string, string> = {
   mongodb: "MongoDB",
   sqlite: "SQLite",
   pwsh: "PowerShell 7",
-  terminal: "Windows Terminal",
   "vscodium-server": "Editor",
 };
 

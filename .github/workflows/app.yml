@@ -120,14 +120,14 @@ jobs:
           }
           $names = (Get-ChildItem $kit -Force).Name | Sort-Object
           if (($names -join ',') -ne 'data,Atollo.exe,projects') { throw "unexpected files: $names" }
-      - name: Real install of pwsh, node, git, Windows Terminal and the editor server (x64)
+      - name: Real install of pwsh, node, git and the editor server (x64)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
-          & "$kit/Atollo.exe" prepare --only "pwsh,node,git,terminal,vscodium-server" | Out-Host
+          & "$kit/Atollo.exe" prepare --only "pwsh,node,git,vscodium-server" | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "prepare failed ($LASTEXITCODE)" }
           $apps = "$kit/data/apps/win32-x64"
           # One folder per minor version (D-91): exactly one line installed.
@@ -140,10 +140,9 @@ jobs:
           & (Line node node.exe) -v
           & (Line git cmd/git.exe) --version
           if (-not (Test-Path "$apps/vscodium-server/out/server-main.js")) { throw "editor server missing" }
-          $null = Line terminal WindowsTerminal.exe
           & "$kit/Atollo.exe" prepare --only "pwsh,node" --update-all | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "update check failed" }
-      - name: Real kit tests (editor server; Windows Terminal console with the kit environment)
+      - name: Real kit tests (editor server with the kit environment)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |

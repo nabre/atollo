@@ -13,7 +13,6 @@
     { "from": "codex", "to": "pwsh", "kind": "uses", "optional": true },
     { "from": "codex", "to": "git", "kind": "uses", "optional": true },
     { "from": "gh", "to": "git", "kind": "uses", "optional": true, "note": "solo per clone, checkout e setup-git" },
-    { "from": "terminal", "to": "pwsh", "kind": "needs" },
     { "from": "vscodium-server", "to": "pwsh", "kind": "needs", "note": "terminale integrato dell'editor" },
     { "from": "vscodium-server", "to": "git", "kind": "uses", "optional": true, "range": ">=2" },
     { "from": "uv", "to": "python", "kind": "uses", "optional": true, "note": "senza un Python adatto uv ne scarica uno suo" },

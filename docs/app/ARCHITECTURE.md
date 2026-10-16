@@ -66,7 +66,7 @@ tauri\src\
   editor\                     editor e console
     mod  window               server web di VSCodium; finestre editor-<n> (D-69)
     cfg  ext  theme           impostazioni e profili del terminale; estensioni (D-71); tema Atollo
-    terminal  wterm           console del kit (D-57); Windows Terminal portabile (D-68)
+    terminal                  console del kit: console classica di Windows (D-57, D-95)
   agents\                     agenti: stato, avvio, uscita, sorvegliante
     sync\                     istruzioni, skill, MCP, regole, cartelle attendibili
     stats\                    limiti d'uso e consumi (D-61)
@@ -151,7 +151,7 @@ Ogni modulo segue le stesse regole per i suoi file in `data\`:
 - **percorsi** dai metodi di `Kit` (`data()`, `apps()`, `app_dir()`, `settings_file()`, `project_data()`, `system_temp()`…; i file di un progetto da `projects::state::ProjectState`) o da una funzione del modulo che possiede il file (`db::services::settings_path`, `versions::offered_file`); mai lo stesso nome di file scritto in due moduli;
 - **lettura**: `fsx::read_text` (UTF-8 con sostituzione dei byte non validi, senza BOM); per il JSON `fsx::read_json` (mancante o danneggiato: `None`, per lo stato che il kit ricostruisce), `fsx::load_json` (il valore predefinito più il problema da mostrare, per le impostazioni dell'utente) o `fsx::try_read_json` (errore con il percorso). Un file vuoto vale come mancante;
 - **scrittura**: `fsx::write_json` (crea la cartella, JSON indentato, atomico) o `fsx::write_atomic` per il testo; mai `fs::write` su un file che il kit rilegge;
-- **file di altri programmi** (impostazioni dell'editor e di Windows Terminal, file degli agenti, `.mcp.json`) come `serde_json::Value`, con le regole del loro modulo: un file con commenti o non valido non si sovrascrive;
+- **file di altri programmi** (impostazioni dell'editor, file degli agenti, `.mcp.json`) come `serde_json::Value`, con le regole del loro modulo: un file con commenti o non valido non si sovrascrive;
 - **dentro un progetto** solo con `os::safe_path` (nessun collegamento seguito, D-77).
 
 ### Processi

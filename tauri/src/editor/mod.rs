@@ -1,6 +1,6 @@
 //! Editor and consoles: the VSCodium web server (this file), its windows
-//! (`window`), settings (`cfg`), extensions (`ext`) and theme (`theme`), the
-//! consoles (`terminal`) and the kit's Windows Terminal (`wterm`).
+//! (`window`), settings (`cfg`), extensions (`ext`) and theme (`theme`) and
+//! the consoles (`terminal`).
 //!
 //! The integrated editor: the VSCodium web server, one per session.
 //!
@@ -19,7 +19,6 @@ pub mod ext;
 pub mod terminal;
 pub mod theme;
 pub mod window;
-pub mod wterm;
 
 use std::fs::{self, OpenOptions};
 use std::io::{BufRead, BufReader, Read, Write};

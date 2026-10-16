@@ -43,7 +43,7 @@ export interface SetupSnapshot {
 }
 
 /** `app`: part of Atollo (the editor), shown with the required ones. */
-export type Group = "required" | "app" | "agents" | "languages" | "os" | "databases";
+export type Group = "required" | "app" | "agents" | "languages" | "databases";
 
 export interface ComponentInfo {
   id: string;
@@ -155,7 +155,6 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
   sampleComponent("typst", "Typst", "languages", "documenti e PDF da testo", 50),
   sampleComponent("mariadb", "MariaDB", "databases", "compatibile con MySQL", 210, { ...ON, version: "11.8.3" }),
   sampleComponent("mongodb", "MongoDB", "databases", "database a documenti", 650, { x64Only: true }),
-  sampleComponent("terminal", "Windows Terminal", "os", "il terminale del kit", 25, { ...ON, version: "1.23" }),
 ];
 
 /** When the Tools page opens: what was deleted by hand from the kit's

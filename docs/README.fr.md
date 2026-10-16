@@ -28,7 +28,7 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 
 En bas de chaque page, le panneau **Activité** : ce qui tourne ou s'installe (projets, bases de données, composants), avec la sortie et les erreurs au même endroit.
 
-La console du kit est le Windows Terminal portable du kit (ou la console classique de Windows, si vous la choisissez dans les Paramètres ou si Windows Terminal n'est pas installé) avec le PowerShell 7 du kit et seulement l'environnement du kit : les programmes installés sur le PC ne sont pas visibles.
+La console du kit est la console classique de Windows avec le PowerShell 7 du kit et seulement l'environnement du kit : les programmes installés sur le PC ne sont pas visibles.
 
 ## Ce qui reste du Atollo
 

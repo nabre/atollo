@@ -28,10 +28,10 @@ fn unavailable_for_the_system_is_not_arm64() {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
         let infos = component_infos(&kit, "en");
-        let term = infos.iter().find(|c| c.id == "terminal").unwrap();
-        assert!(!term.available && !term.no_arm64, "{target:?}");
+        let php = infos.iter().find(|c| c.id == "php").unwrap();
+        assert!(!php.available && !php.no_arm64, "{target:?}");
         assert_eq!(
-            term.unavailable_reason.as_deref(),
+            php.unavailable_reason.as_deref(),
             Some(format!("not available for {}", target.as_str()).as_str())
         );
         let python = infos.iter().find(|c| c.id == "python").unwrap();

@@ -1005,7 +1005,6 @@ function TopicSourcesTable({
     { id: "tools", label: tr("Strumenti", "Tools", "Outils", "Werkzeuge") },
     { id: "part", label: tr("Sotto-parti & SDK", "Sub-parts & SDKs", "Sous-parties et SDK", "Teilkomponenten & SDKs") },
     { id: "app", label: tr("App & Editor", "App & Editor", "App et Éditeur", "App & Editor") },
-    { id: "os", label: tr("Terminale", "Terminal", "Terminal", "Terminal") },
   ];
 
   return (
@@ -1316,7 +1315,7 @@ function TopicGithubRole({ onSelectTopic }: { onSelectTopic: (id: GuideTopicId) 
             )}
           >
             {tr(
-              "Oltre metà del catalogo (Git, uv, Ripgrep, fd, Bat, jq, Pandoc, Typst, CMake, Ninja, Rust Analyzer, Bun, Ruby, Adminer, Windows Terminal, ecc.) risolve le versioni tramite api.github.com. Senza login GitHub applica un limite di 60 richieste/ora per IP (HTTP 403 Rate limit exceeded); con l'account collegato il kit inietta automaticamente Authorization: Bearer <token> portando la soglia a 5.000 richieste/ora.",
+              "Oltre metà del catalogo (Git, uv, Ripgrep, fd, Bat, jq, Pandoc, Typst, CMake, Ninja, Rust Analyzer, Bun, Ruby, Adminer, ecc.) risolve le versioni tramite api.github.com. Senza login GitHub applica un limite di 60 richieste/ora per IP (HTTP 403 Rate limit exceeded); con l'account collegato il kit inietta automaticamente Authorization: Bearer <token> portando la soglia a 5.000 richieste/ora.",
               "Over half the catalog resolves versions via api.github.com. Without login, GitHub enforces a 60 req/hour limit per IP (HTTP 403 Rate limit exceeded); with a linked account, the kit automatically injects Authorization: Bearer <token>, raising the limit to 5,000 requests/hour.",
               "Plus de la moitié du catalogue résout les versions via api.github.com. Sans connexion, GitHub applique une limite de 60 requêtes/heure par IP (HTTP 403 Rate limit exceeded) ; avec un compte lié, le kit injecte automatiquement Authorization: Bearer <token>, portant le seuil à 5 000 requêtes/heure.",
               "Über die Hälfte des Katalogs ermittelt Versionen über api.github.com. Ohne Login gilt bei GitHub ein Limit von 60 Anfragen/Stunde pro IP (HTTP 403 Rate limit exceeded); mit verknüpftem Konto fügt das Kit automatisch Authorization: Bearer <token> hinzu und erhöht das Limit auf 5.000 Anfragen/Stunde.",
