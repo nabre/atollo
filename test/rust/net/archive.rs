@@ -90,8 +90,107 @@ fn tar_gz_extract() {
     let out = tmp.0.join("out");
     extract(&archive, Kind::TarGz, &out).unwrap();
     assert_eq!(
-        fs::read_to_string(out.join(r"server\bin\run.cmd")).unwrap(),
+        fs::read_to_string(out.join("server").join("bin").join("run.cmd")).unwrap(),
         "hello"
+    );
+}
+
+/// A `.tar.xz` written by `fill`, compressed in process (no `xz` binary).
+fn make_tar_xz(path: &Path, fill: impl FnOnce(&mut tar::Builder<lzma_rust2::XzWriter<File>>)) {
+    let xz = lzma_rust2::XzWriter::new(
+        File::create(path).unwrap(),
+        lzma_rust2::XzOptions::with_preset(1),
+    )
+    .unwrap();
+    let mut tar = tar::Builder::new(xz);
+    fill(&mut tar);
+    tar.into_inner().unwrap().finish().unwrap();
+}
+
+/// The header of a regular file of `size` bytes, mode `0o644`.
+fn file_header(size: u64) -> tar::Header {
+    let mut header = tar::Header::new_gnu();
+    header.set_size(size);
+    header.set_mode(0o644);
+    header.set_cksum();
+    header
+}
+
+#[test]
+fn tar_xz_extract() {
+    let tmp = TempDir::new("tarxz");
+    let archive = tmp.0.join("a.tar.xz");
+    make_tar_xz(&archive, |tar| {
+        tar.append_data(&mut file_header(5), "server/bin/run", &b"hello"[..])
+            .unwrap();
+        tar.append_data(&mut file_header(4), "server/readme.txt", &b"read"[..])
+            .unwrap();
+    });
+    let out = tmp.0.join("out");
+    extract(&archive, Kind::TarXz, &out).unwrap();
+    let run = out.join("server").join("bin").join("run");
+    assert_eq!(fs::read_to_string(&run).unwrap(), "hello");
+    assert_eq!(
+        fs::read_to_string(out.join("server").join("readme.txt")).unwrap(),
+        "read"
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = |p: &Path| fs::metadata(p).unwrap().permissions().mode();
+        assert_ne!(mode(&run) & 0o111, 0, "files in bin/ are executable");
+        assert_eq!(
+            mode(&out.join("server").join("readme.txt")) & 0o111,
+            0,
+            "others keep their mode"
+        );
+    }
+}
+
+/// `tar::Builder` refuses `..` in names: the header is written by hand, as
+/// a hostile archive would be.
+#[test]
+fn tar_xz_slip_is_refused() {
+    let tmp = TempDir::new("tarxzslip");
+    let archive = tmp.0.join("evil.tar.xz");
+    make_tar_xz(&archive, |tar| {
+        let name = b"../evil.txt";
+        let mut header = tar::Header::new_old();
+        header.as_old_mut().name[..name.len()].copy_from_slice(name);
+        header.set_size(1);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append(&header, &b"x"[..]).unwrap();
+    });
+    let out = tmp.0.join("out");
+    assert!(extract(&archive, Kind::TarXz, &out).is_err());
+    assert!(!tmp.0.join("evil.txt").exists());
+}
+
+/// A symbolic link to an absolute path is not created; the rest is.
+#[cfg(unix)]
+#[test]
+fn tar_xz_absolute_symlink_skipped() {
+    let tmp = TempDir::new("tarxzlink");
+    let archive = tmp.0.join("link.tar.xz");
+    make_tar_xz(&archive, |tar| {
+        let mut link = tar::Header::new_gnu();
+        link.set_entry_type(tar::EntryType::Symlink);
+        link.set_size(0);
+        link.set_mode(0o777);
+        link.set_path("server/passwd").unwrap();
+        link.set_link_name("/etc/passwd").unwrap();
+        link.set_cksum();
+        tar.append(&link, io::empty()).unwrap();
+        tar.append_data(&mut file_header(2), "server/ok.txt", &b"ok"[..])
+            .unwrap();
+    });
+    let out = tmp.0.join("out");
+    extract(&archive, Kind::TarXz, &out).unwrap();
+    assert!(fs::symlink_metadata(out.join("server").join("passwd")).is_err());
+    assert_eq!(
+        fs::read_to_string(out.join("server").join("ok.txt")).unwrap(),
+        "ok"
     );
 }
 

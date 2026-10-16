@@ -30,6 +30,7 @@ zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 tar = "0.4.46"
 flate2 = "1.1.10"
 sevenz-rust2 = "0.23.0"
+lzma-rust2 = { version = "0.21", default-features = false, features = ["std", "optimization", "xz", "encoder"] }
 base64 = "0.23.1"
 regex = "1.13.1"
 junction = "2.1.0"
