@@ -275,6 +275,14 @@ fn apache_pool_conf(base: &str, pool_dir: &Path, port: u16, lan: bool) -> Result
         "DirectoryIndex index.php index.html".to_owned(),
     ];
     site.extend(apache::php_module_blocks("CP_PHP_FWD"));
+    // The first VirtualHost answers any Host no other one names (an IP from
+    // the LAN, a misspelt name): Apache's own page, never a project.
+    site.extend([
+        format!("<VirtualHost *:{port}>"),
+        "    ServerName localhost".to_owned(),
+        format!("    DocumentRoot \"{default_htdocs}\""),
+        "</VirtualHost>".to_owned(),
+    ]);
     site.push(format!("IncludeOptional \"{dir_fwd}/vhosts/*.conf\""));
     site.push(format!("IncludeOptional \"{dir_fwd}/conf.d/*.conf\""));
     Ok(format!(
