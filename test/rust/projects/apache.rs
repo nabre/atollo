@@ -44,3 +44,36 @@ fn conf_of_a_project() {
     assert!(with_site.contains("Alias \"/shared\" \"${CP_PROJECTS_FWD}/common/assets\""));
     assert!(!with_site.contains("/up") && !with_site.contains(".."));
 }
+
+/// A3 handoff: `.php` goes to PHP in any case, and without a PHP module it
+/// is refused, never sent as source.
+#[test]
+fn php_is_case_insensitive_and_denied_without_module() {
+    let blocks = php_module_blocks("CP_PHP_FWD").join("\r\n");
+    assert!(!blocks.contains("<FilesMatch \"\\.php$\">"), "{blocks}");
+    assert_eq!(
+        blocks
+            .matches("<FilesMatch \"(?i)\\.php$\">\r\n        SetHandler application/x-httpd-php")
+            .count(),
+        3
+    );
+    let deny = "<IfModule !php_module>\r\n    <IfModule !php7_module>\r\n        <IfModule !php5_module>\r\n            <FilesMatch \"(?i)\\.php$\">\r\n                Require all denied\r\n            </FilesMatch>\r\n        </IfModule>\r\n    </IfModule>\r\n</IfModule>";
+    let at = blocks.find(deny).expect("deny block");
+    // After the modules are loaded: `IfModule` is read in order.
+    assert!(at > blocks.rfind("LoadModule").unwrap());
+    assert_eq!(
+        blocks.matches("<IfModule").count(),
+        blocks.matches("</IfModule>").count()
+    );
+
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\n";
+    let conf = project_conf(
+        base,
+        Path::new(r"D:\kit\projects\shop\public"),
+        Path::new(r"D:\kit\data\projects\shop\apache"),
+        7105,
+        false,
+    )
+    .unwrap();
+    assert!(conf.contains(deny));
+}
