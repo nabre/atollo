@@ -614,10 +614,10 @@
     "fr": "compilation de C et C++",
     "de": "Builds für C und C++"
   },
-  "compilatore C e C++ (Clang, MinGW-w64): gcc, g++, make": {
-    "en": "C and C++ compiler (Clang, MinGW-w64): gcc, g++, make",
-    "fr": "compilateur C et C++ (Clang, MinGW-w64) : gcc, g++, make",
-    "de": "C- und C++-Compiler (Clang, MinGW-w64): gcc, g++, make"
+  "compilatore C e C++ (Clang, MinGW-w64): gcc, g++, make; su macOS servono gli Xcode Command Line Tools, su Linux gli header della libc e make del sistema": {
+    "en": "C and C++ compiler (Clang, MinGW-w64): gcc, g++, make; on macOS it needs the Xcode Command Line Tools, on Linux the system's libc headers and make",
+    "fr": "compilateur C et C++ (Clang, MinGW-w64) : gcc, g++, make ; sur macOS il faut les Xcode Command Line Tools, sur Linux les en-têtes de la libc et make du système",
+    "de": "C- und C++-Compiler (Clang, MinGW-w64): gcc, g++, make; unter macOS werden die Xcode Command Line Tools benötigt, unter Linux die libc-Header und make des Systems"
   },
   "Ruby, gem e Bundler (RubyInstaller)": {
     "en": "Ruby, gem and Bundler (RubyInstaller)",
