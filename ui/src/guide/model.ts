@@ -1076,7 +1076,12 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     binarySource: "static.rust-lang.org/rustup/dist/<triple>/rustup-init.exe",
     verifyKind: "SHA-256",
     verifyDetail: () =>
-      tr("SHA-256 da <url>.sha256", "SHA-256 from <url>.sha256", "SHA-256 depuis <url>.sha256", "SHA-256 aus <url>.sha256"),
+      tr(
+        "SHA-256 da <url>.sha256",
+        "SHA-256 from <url>.sha256",
+        "SHA-256 depuis <url>.sha256",
+        "SHA-256 aus <url>.sha256",
+      ),
     targetPath: () =>
       tr(
         "rust\\cargo\\bin\\rustc.exe e rustup.exe",
@@ -1137,7 +1142,12 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     binarySource: "apache-maven-<v>-bin.zip",
     verifyKind: "SHA-512",
     verifyDetail: () =>
-      tr("SHA-512 da <url>.sha512", "SHA-512 from <url>.sha512", "SHA-512 depuis <url>.sha512", "SHA-512 aus <url>.sha512"),
+      tr(
+        "SHA-512 da <url>.sha512",
+        "SHA-512 from <url>.sha512",
+        "SHA-512 depuis <url>.sha512",
+        "SHA-512 aus <url>.sha512",
+      ),
     targetPath: "maven\\bin\\mvn.cmd",
   }),
   defSource({
@@ -1557,13 +1567,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
   defSource({
     id: "adminer",
     logoId: "adminer",
-    name: () =>
-      tr(
-        "Adminer (per MariaDB)",
-        "Adminer (for MariaDB)",
-        "Adminer (pour MariaDB)",
-        "Adminer (für MariaDB)",
-      ),
+    name: () => tr("Adminer (per MariaDB)", "Adminer (for MariaDB)", "Adminer (pour MariaDB)", "Adminer (für MariaDB)"),
     group: "databases",
     home: "https://www.adminer.org",
     metaSource: "api.github.com/repos/vrana/adminer/releases/latest",

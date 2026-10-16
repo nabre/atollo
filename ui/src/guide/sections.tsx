@@ -144,7 +144,12 @@ function TopicOverview({
         <Notice tone="info">
           <div className="space-y-1">
             <div className="font-semibold text-vsc-settings-header">
-              {tr("Missione architetturale", "Architectural mission", "Mission architecturale", "Architektonische Mission")}
+              {tr(
+                "Missione architetturale",
+                "Architectural mission",
+                "Mission architecturale",
+                "Architektonische Mission",
+              )}
             </div>
             <div>
               {tr(
@@ -177,7 +182,12 @@ function TopicOverview({
                 </code>,
               ],
               [
-                tr("File system rilevato", "Detected file system", "Système de fichiers détecté", "Erkanntes Dateisystem"),
+                tr(
+                  "File system rilevato",
+                  "Detected file system",
+                  "Système de fichiers détecté",
+                  "Erkanntes Dateisystem",
+                ),
                 <Tag key="fs" tone="focus">
                   {info.diskFs ?? "NTFS"}
                 </Tag>,
@@ -477,7 +487,12 @@ function TopicDiskLayout({ info }: { info: AppInfo | null }) {
               key: "home",
               cells: [
                 <strong key="c">
-                  {tr("Profilo utente e XDG", "User profile & XDG", "Profil utilisateur et XDG", "Benutzerprofil & XDG")}
+                  {tr(
+                    "Profilo utente e XDG",
+                    "User profile & XDG",
+                    "Profil utilisateur et XDG",
+                    "Benutzerprofil & XDG",
+                  )}
                 </strong>,
                 <code key="v" className="font-mono text-[11px]">
                   HOME, USERPROFILE, APPDATA, LOCALAPPDATA, XDG_*
@@ -549,7 +564,12 @@ function TopicDiskLayout({ info }: { info: AppInfo | null }) {
               key: "privacy",
               cells: [
                 <strong key="c">
-                  {tr("Telemetria disattivata", "Disabled telemetry", "Télémétrie désactivée", "Deaktivierte Telemetrie")}
+                  {tr(
+                    "Telemetria disattivata",
+                    "Disabled telemetry",
+                    "Télémétrie désactivée",
+                    "Deaktivierte Telemetrie",
+                  )}
                 </strong>,
                 <code key="v" className="font-mono text-[11px]">
                   DOTNET_CLI_TELEMETRY_OPTOUT=1, NEXT_TELEMETRY_DISABLED=1, ASTRO_TELEMETRY_DISABLED=1
@@ -709,7 +729,12 @@ function TopicLifecycle({ onNavigate }: { onNavigate: (page: AppPageTarget) => v
                   5
                 </Tag>,
                 <strong key="t">
-                  {tr("Ripristino siti web", "Website restoration", "Restauration des sites web", "Wiederherstellung der Websites")}
+                  {tr(
+                    "Ripristino siti web",
+                    "Website restoration",
+                    "Restauration des sites web",
+                    "Wiederherstellung der Websites",
+                  )}
                 </strong>,
                 <span key="d">
                   {tr(
@@ -1187,12 +1212,7 @@ function TopicExtraSources() {
               key: "codex-quota",
               cells: [
                 <strong key="s">
-                  {tr(
-                    "Quota Codex (OpenAI)",
-                    "Codex Quota (OpenAI)",
-                    "Quota Codex (OpenAI)",
-                    "Codex-Quote (OpenAI)",
-                  )}
+                  {tr("Quota Codex (OpenAI)", "Codex Quota (OpenAI)", "Quota Codex (OpenAI)", "Codex-Quote (OpenAI)")}
                 </strong>,
                 <code key="e" className="font-mono text-[11px] select-text">
                   https://chatgpt.com/backend-api/wham/usage
@@ -1944,7 +1964,12 @@ function TopicFeatAgents({ onNavigate }: { onNavigate: (page: AppPageTarget) => 
         <SimpleTable
           columns={[
             tr("Elemento condiviso", "Shared element", "Élément partagé", "Geteiltes Element"),
-            tr("Sorgente in data\\agents\\", "Source in data\\agents\\", "Source dans data\\agents\\", "Quelle in data\\agents\\"),
+            tr(
+              "Sorgente in data\\agents\\",
+              "Source in data\\agents\\",
+              "Source dans data\\agents\\",
+              "Quelle in data\\agents\\",
+            ),
             tr(
               "Destinazioni sincronizzate automaticamente",
               "Automatically synchronized destinations",
@@ -2993,7 +3018,12 @@ function TopicCfgActionsOrphans({ onNavigate }: { onNavigate: (page: AppPageTarg
           )}
           whereFile="data\app\ · data\antigravity\.keyring.dpapi"
           targetPage="eject"
-          targetLabel={tr("Apri Rimuovi l'unità", "Open Eject drive", "Ouvrir Retirer le lecteur", "Laufwerk entfernen öffnen")}
+          targetLabel={tr(
+            "Apri Rimuovi l'unità",
+            "Open Eject drive",
+            "Ouvrir Retirer le lecteur",
+            "Laufwerk entfernen öffnen",
+          )}
           onNavigate={onNavigate}
           steps={[
             tr(

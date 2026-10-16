@@ -176,8 +176,8 @@ describe("useLoad", () => {
 
 describe("useAction", () => {
   it("keeps busy until the latest overlapping action settles", async () => {
-    const first = deferred<void>();
-    const second = deferred<void>();
+    const first = deferred<undefined>();
+    const second = deferred<undefined>();
     const { result } = renderHook(() => useAction());
     act(() => {
       result.current.run("first", () => first.promise);
@@ -187,10 +187,10 @@ describe("useAction", () => {
       result.current.run("second", () => second.promise);
     });
     expect(result.current.busy).toBe("second");
-    first.resolve();
+    first.resolve(undefined);
     await settle();
     expect(result.current.busy).toBe("second");
-    second.resolve();
+    second.resolve(undefined);
     await settle();
     expect(result.current.busy).toBeNull();
   });
