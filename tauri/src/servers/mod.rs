@@ -530,6 +530,44 @@ fn wait_port_released(port: u16, within: Duration) -> bool {
     }
 }
 
+/// True once `child` (php-cgi) answers on `port`, or is still running after
+/// `within` (slow, not failed); false if it ended: its FastCGI port is
+/// chosen free and let go before it starts, and another program may have
+/// taken it in between (defect 9).
+fn php_cgi_listening(child: &mut Child, port: u16, within: Duration) -> bool {
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let begun = Instant::now();
+    loop {
+        if TcpStream::connect_timeout(&addr, Duration::from_millis(80)).is_ok() {
+            return true;
+        }
+        if !matches!(child.try_wait(), Ok(None)) {
+            return false;
+        }
+        if begun.elapsed() >= within {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+/// The pool's php-cgi with its FastCGI port, started again on another
+/// port (up to 3 times) when it ends at once because its port was taken.
+fn spawn_php_cgi(kit: &Kit, env: &KitEnv, job: &Job) -> (Option<u16>, Option<Child>) {
+    for _ in 0..3 {
+        let Some((port, mut child)) = nginx::spawn_php_cgi_if_present(kit, env, job) else {
+            break;
+        };
+        if php_cgi_listening(&mut child, port, Duration::from_secs(5)) {
+            return (Some(port), Some(child));
+        }
+        crate::log::warn(&format!(
+            "php-cgi ended at once on port {port}: trying another port"
+        ));
+    }
+    (None, None)
+}
+
 /// The last lines of the pool's error log, or of `stderr.log` (what the
 /// server printed before its own log was open: a configuration syntax error).
 fn pool_error_tail(pool_dir: &Path) -> String {
@@ -1179,8 +1217,7 @@ impl WebServers {
                 env.set("CP_NGINX", nginx_dir.display().to_string());
                 env.set("CP_NGINX_FWD", fwd(&nginx_dir));
                 let (fcgi, php) = if pool.php_line.is_some() {
-                    nginx::spawn_php_cgi_if_present(&self.kit, &env, &job)
-                        .map_or((None, None), |(port, child)| (Some(port), Some(child)))
+                    spawn_php_cgi(&self.kit, &env, &job)
                 } else {
                     (None, None)
                 };

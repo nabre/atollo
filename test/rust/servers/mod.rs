@@ -982,6 +982,38 @@ fn assign_project_reloads_only_its_pool_and_reports_errors() {
     servers.stop("other");
 }
 
+/// Defect 9: php-cgi is waited for on its FastCGI port; one that ends at
+/// once (its port taken in the meantime) is reported, to try another port.
+#[test]
+fn php_cgi_listening_tells_ended_from_ready() {
+    let job = Job::new().unwrap();
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let mut alive = jobs::spawn_in(
+        std::process::Command::new(system32("ping.exe")).args(["-n", "60", "127.0.0.1"]),
+        &job,
+    )
+    .unwrap();
+    let begun = Instant::now();
+    assert!(php_cgi_listening(&mut alive, port, Duration::from_secs(5)));
+    assert!(begun.elapsed() < Duration::from_secs(2), "answers at once");
+    drop(listener);
+    // Alive but not listening yet: slow, kept.
+    assert!(php_cgi_listening(
+        &mut alive,
+        port,
+        Duration::from_millis(300)
+    ));
+    let _ = alive.kill();
+    let _ = alive.wait();
+    let mut ended = jobs::spawn_in(
+        std::process::Command::new(system32("cmd.exe")).args(["/d", "/c", "exit 1"]),
+        &job,
+    )
+    .unwrap();
+    assert!(!php_cgi_listening(&mut ended, port, Duration::from_secs(5)));
+}
+
 /// BUG-V3-02: names that give the same label in one pool stay distinct.
 #[test]
 fn name_sites_keeps_names_unique() {
