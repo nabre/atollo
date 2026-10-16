@@ -708,12 +708,18 @@ pub struct Nginx;
 
 const NGINX_REPO: &str = "nginx/nginx";
 const NGINX_ASSET_ZIP: &str = r"^nginx-\d+\.\d+\.\d+\.zip$";
-const NGINX_ASSET_TAR: &str = r"^nginx-\d+\.\d+\.\d+\.tar\.gz$";
 
-fn nginx_asset_for(target: Target) -> (&'static str, Kind) {
+/// The asset of a release for `target`. Only Windows has a build: the
+/// `.tar.gz` of the releases is the source, which the kit does not compile
+/// (Nginx is Windows only in the catalog, BUG-23b).
+fn nginx_asset_for(target: Target) -> Result<(&'static str, Kind)> {
     match target.os {
-        Os::Win32 => (NGINX_ASSET_ZIP, Kind::Zip),
-        Os::Darwin | Os::Linux => (NGINX_ASSET_TAR, Kind::TarGz),
+        Os::Win32 => Ok((NGINX_ASSET_ZIP, Kind::Zip)),
+        Os::Darwin | Os::Linux => {
+            bail!(
+                "Nginx is not available for {target}: nginx.org publishes a build for Windows only"
+            )
+        }
     }
 }
 
@@ -722,10 +728,10 @@ fn nginx_version(tag: &str) -> &str {
 }
 
 fn nginx_releases(ctx: &Ctx, target: Target) -> Result<Vec<crate::net::GhRelease>> {
+    let (pat, _) = nginx_asset_for(target)?;
     let all: Vec<crate::net::GhRelease> = ctx.net.json(&format!(
         "https://api.github.com/repos/{NGINX_REPO}/releases?per_page=100"
     ))?;
-    let (pat, _) = nginx_asset_for(target);
     let re = pattern(pat)?;
     let mut out: Vec<crate::net::GhRelease> = all
         .into_iter()
@@ -738,7 +744,7 @@ fn nginx_releases(ctx: &Ctx, target: Target) -> Result<Vec<crate::net::GhRelease
 }
 
 fn nginx_release_from(ctx: &Ctx, target: Target, rel: &crate::net::GhRelease) -> Result<Release> {
-    let (pat, kind) = nginx_asset_for(target);
+    let (pat, kind) = nginx_asset_for(target)?;
     let file = rel
         .asset(&pattern(pat)?)
         .ok_or_else(|| anyhow!("Nginx {}: no asset for {target}", rel.tag_name))?;

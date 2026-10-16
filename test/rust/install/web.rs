@@ -140,3 +140,22 @@ fn cab_headers() {
     bytes.extend_from_slice(b"MSCF\0\0\0\0junk");
     assert_eq!(find_cabs(&bytes), vec![(10, 100)]);
 }
+
+/// The `.tar.gz` of the Nginx releases is the source: never picked on macOS
+/// or Linux, where Nginx is not available (BUG-23b).
+#[test]
+fn nginx_asset_only_on_windows() {
+    for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
+        let (pat, kind) = nginx_asset_for(target).unwrap();
+        assert!(pat.ends_with(r"\.zip$") && kind == Kind::Zip, "{target}");
+    }
+    for target in [
+        Target::DARWIN_ARM64,
+        Target::DARWIN_X64,
+        Target::LINUX_X64,
+        Target::LINUX_ARM64,
+    ] {
+        let e = nginx_asset_for(target).unwrap_err().to_string();
+        assert!(e.contains(target.as_str()), "{e}");
+    }
+}
