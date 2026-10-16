@@ -348,3 +348,20 @@ fn fresh_list_prunes_ports_of_gone_pools() {
     assert_eq!(ports.keys().collect::<Vec<_>>(), ["keep"]);
     assert_eq!(ports["keep"], 8097);
 }
+
+/// N-S5: a Host no project names (an IP from the LAN) gets Apache's own
+/// page from the first VirtualHost, never the first project.
+#[test]
+fn apache_pool_conf_has_default_vhost_first() {
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\nServerRoot \"${SRVROOT}\"\r\n";
+    let conf = apache_pool_conf(base, Path::new(r"C:\kit\data\servers\p"), 8081, true).unwrap();
+    let default = conf
+        .find("<VirtualHost *:8081>\r\n    ServerName localhost\r\n    DocumentRoot \"${SRVROOT}/htdocs\"\r\n</VirtualHost>")
+        .expect("default vhost");
+    let include = conf
+        .find("IncludeOptional \"C:/kit/data/servers/p/vhosts/*.conf\"")
+        .unwrap();
+    assert!(default < include);
+    assert_eq!(conf.matches("<VirtualHost").count(), 1);
+    assert_eq!(conf.find("<VirtualHost"), Some(default));
+}
