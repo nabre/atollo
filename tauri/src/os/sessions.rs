@@ -3,8 +3,9 @@
 //!
 //! A process belongs to the kit when its program lives under the kit root;
 //! only the tops of process trees are listed (a terminal, not every shell
-//! inside it). Another kit: a process under `<other root>\data\apps\win32-*`
-//! or another `Atollo.exe` with a `data\app` folder next to it.
+//! inside it). Another kit: a process under `<other root>\data\apps\<os>-*`
+//! (`win32`, `darwin`, `linux`) or another `Atollo.exe` (`Atollo` on
+//! macOS and Linux) with a `data\app` folder next to it.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -167,23 +168,32 @@ fn terminate(pid: u32) {
     }
 }
 
+/// The root of the kit a program belongs to: one under
+/// `<root>/data/apps/<os>-<arch>/` (Windows, macOS or Linux folders, either
+/// separator), or the app itself (`Atollo.exe`, `Atollo` elsewhere) when
+/// `is_kit` says its folder holds `data/app`.
+fn kit_root_of(path: &Path, name: &str, is_kit: impl Fn(&Path) -> bool) -> Option<PathBuf> {
+    let text = path.display().to_string();
+    // ASCII lower case and one separator: byte offsets stay those of `text`.
+    let lower = text.to_ascii_lowercase().replace('\\', "/");
+    for os in ["win32", "darwin", "linux"] {
+        if let Some(i) = lower.find(&format!("/data/apps/{os}-")) {
+            return Some(PathBuf::from(&text[..i]));
+        }
+    }
+    let app = name.eq_ignore_ascii_case("Atollo.exe") || name == "Atollo";
+    app.then(|| path.parent())
+        .flatten()
+        .filter(|d| is_kit(d))
+        .map(Path::to_path_buf)
+}
+
 /// Roots of other kits with programs running now.
 pub fn other_kits(kit: &Kit) -> Vec<PathBuf> {
     let mine = kit.root().display().to_string().to_lowercase();
     let mut out = BTreeSet::new();
     for p in processes::all() {
-        let path = p.path.display().to_string();
-        let lower = path.to_lowercase();
-        let root = if let Some(i) = lower.find("\\data\\apps\\win32-") {
-            Some(PathBuf::from(&path[..i]))
-        } else if p.name.eq_ignore_ascii_case("Atollo.exe") {
-            p.path
-                .parent()
-                .filter(|d| d.join(r"data\app").is_dir())
-                .map(Path::to_path_buf)
-        } else {
-            None
-        };
+        let root = kit_root_of(&p.path, &p.name, |d| d.join("data").join("app").is_dir());
         if let Some(root) = root {
             if root.display().to_string().to_lowercase() != mine {
                 out.insert(root);
