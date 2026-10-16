@@ -487,3 +487,48 @@ fn drop_scripts() {
     assert!(MONGO_DROP_JS.contains("dropUser(n)") && MONGO_DROP_JS.contains("dropDatabase()"));
     assert!(!MONGO_DROP_JS.contains("ATOLLO_DB_PASSWORD"));
 }
+
+/// The version of a server for the project's database (PLAN.md §13.2):
+/// in `lines` of `db.json`, beside the passwords and the names, which its
+/// readers do not take for a password.
+#[test]
+fn project_lines_in_db_json() {
+    let tmp = crate::kit::tests::TempDir::new("db-auth-lines");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    kit.prepare().unwrap();
+    assert_eq!(project_line(&kit, "shop", "mariadb").unwrap(), None);
+    set_project_line(&kit, "shop", "mariadb", None).unwrap();
+    assert!(
+        !kit.project_data().join(r"shop\private\db.json").exists(),
+        "nothing created to remove a version"
+    );
+    write_db_json(
+        &kit,
+        "shop",
+        r#"{ "mariadb": "pw", "names": { "mariadb": "shop_old" } }"#,
+    );
+    set_project_line(&kit, "shop", "mariadb", Some("10.6")).unwrap();
+    assert_eq!(
+        project_line(&kit, "shop", "mariadb").unwrap().as_deref(),
+        Some("10.6")
+    );
+    assert_eq!(project_line(&kit, "shop", "mongodb").unwrap(), None);
+    let json = db_json(&kit, "shop");
+    assert_eq!(json["mariadb"], "pw", "password kept");
+    assert_eq!(json["names"]["mariadb"], "shop_old", "name kept");
+    assert_eq!(
+        project_passwords(&kit, "shop").keys().collect::<Vec<_>>(),
+        ["mariadb"],
+        "lines is not a password"
+    );
+    assert!(set_project_line(&kit, "shop", "mariadb", Some("x; DROP")).is_err());
+    set_project_line(&kit, "shop", "mariadb", None).unwrap();
+    assert!(
+        db_json(&kit, "shop").get("lines").is_none(),
+        "empty lines removed"
+    );
+    assert_eq!(project_line(&kit, "shop", "mariadb").unwrap(), None);
+    // A value that is not a version is ignored, never used in a path.
+    write_db_json(&kit, "shop", r#"{ "lines": { "mariadb": "..\\x" } }"#);
+    assert_eq!(project_line(&kit, "shop", "mariadb").unwrap(), None);
+}

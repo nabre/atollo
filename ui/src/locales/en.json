@@ -517,7 +517,6 @@
   "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.": "One server for every project. Each version has its own data: the first start of a newer one copies those of the previous one, which stay as they were.",
   "{0} (la più recente)": "{0} (the newest)",
   "Scarica {0}": "Download {0}",
-  "Server su {0}": "Server on {0}",
   "richiede Windows 11 su ARM64": "needs Windows 11 on ARM64",
   "Non più nella cartella del kit, tolti dalla scelta: {0}.": "No longer in the kit's folder, removed from the choice: {0}.",
   "Scaricalo dal browser:": "Download it in the browser:",
@@ -753,5 +752,13 @@
   "Versione di {0}": "Version of {0}",
   "predefinito": "default",
   "{0} (copia)": "{0} (copy)",
-  "{0} strumenti": "{0} tools"
+  "{0} strumenti": "{0} tools",
+  "Ferma {0}": "Stop {0}",
+  "Avvia {0}": "Start {0}",
+  "Altre versioni": "Other versions",
+  "Accese insieme a {0}, ciascuna sulla sua porta e con i suoi dati, per i progetti che le chiedono: si sceglie nella pagina del progetto, e la porta arriva al progetto come DB_PORT.": "Running alongside {0}, each on its own port and with its own data, for the projects that ask for them: chosen on the project's page, and the port reaches the project as DB_PORT.",
+  "Versione del server": "Server version",
+  "Ogni versione ha la sua porta e i suoi dati: cambiandola, database e utente si creano anche sulla nuova, vuoti (i dati si portano con una copia).": "Each version has its own port and data: when you change it, the database and user are also created on the new one, empty (data moves with a copy).",
+  "Ogni versione ha la sua porta e i suoi dati.": "Each version has its own port and data.",
+  "Quella del server ({0})": "The server's ({0})"
 }

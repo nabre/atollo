@@ -13,6 +13,36 @@ pub struct ProjectDatabases {
     pub detected: Vec<String>,
     pub env_exists: bool,
     pub env_ignored: bool,
+    /// By engine: the version its database is on and those installed.
+    pub versions: std::collections::BTreeMap<String, DbVersions>,
+}
+
+/// The versions of a server for a project (PLAN.md §13.2).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DbVersions {
+    /// Chosen for the project; None: the one the server runs (`server`).
+    pub chosen: Option<String>,
+    pub server: Option<String>,
+    /// Installed, newest first.
+    pub lines: Vec<String>,
+}
+
+fn db_versions(kit: &Kit, project: &str) -> std::collections::BTreeMap<String, DbVersions> {
+    crate::db::services::SERVERS
+        .iter()
+        .map(|engine| {
+            let chosen = crate::db::auth::project_line(kit, project, engine)
+                .ok()
+                .flatten();
+            let versions = DbVersions {
+                chosen,
+                server: crate::db::services::server_line(kit, engine),
+                lines: crate::db::services::server_lines(kit, engine),
+            };
+            ((*engine).to_owned(), versions)
+        })
+        .collect()
 }
 
 #[tauri::command]
@@ -31,7 +61,39 @@ pub fn project_databases<R: Runtime>(
             .collect(),
         env_exists: dir.join(".env").is_file(),
         env_ignored: crate::db::auth::env_ignored(&dir),
+        versions: db_versions(&state.kit, &project),
     })
+}
+
+/// The version of a server for the project's database (null: the one the
+/// server runs), each on its own port (PLAN.md §13.2). A database already
+/// created is created on that version too: the server is installed and
+/// started for it.
+#[tauri::command]
+pub async fn project_db_line<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    engine: String,
+    line: Option<String>,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
+        return Err(fail("database", format!("unknown server {engine}")));
+    }
+    let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
+        services
+            .project_db_line(&project, &engine, line.as_deref(), &env)
+            .map_err(|e| super::services::start_error(lang, &e))?;
+        Ok(())
+    })
+    .await
+    .or_fail("database")?
 }
 
 /// Creates the project's database and user: installs and starts the server
@@ -53,7 +115,9 @@ pub async fn project_db_create<R: Runtime>(
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
-        services.start(&engine, &env).or_fail_chain("database")?;
+        services
+            .start_for(&project, &engine, &env)
+            .or_fail_chain("database")?;
         services
             .project_db_create(&project, &engine)
             .or_fail_chain("database")
@@ -137,7 +201,9 @@ pub async fn project_db_export<R: Runtime>(
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
-        services.start(&engine, &env).or_fail_chain("database")?;
+        services
+            .start_for(&project, &engine, &env)
+            .or_fail_chain("database")?;
         let file = services.export(&project, &engine).or_fail_chain("export")?;
         Ok(file
             .file_name()
@@ -168,7 +234,9 @@ pub async fn project_db_restore<R: Runtime>(
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[engine])?;
-        services.start(engine, &env).or_fail_chain("database")?;
+        services
+            .start_for(&project, engine, &env)
+            .or_fail_chain("database")?;
         services.restore(&project, &file).or_fail_chain("restore")
     })
     .await

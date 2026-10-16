@@ -12,7 +12,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
 
 use super::tools::run_with_input;
-use super::{auth, Services};
+use super::{auth, project_line, Services};
 use crate::os::jobs;
 use crate::projects::state::ProjectState;
 
@@ -71,7 +71,8 @@ impl Services {
     /// A copy of the project's database in its backup folder (D-78); the
     /// server must run.
     pub fn export(&self, project: &str, engine: &str) -> Result<PathBuf> {
-        let (port, env) = self.running_server(engine)?;
+        let line = project_line(&self.kit, project, engine);
+        let (port, env) = self.running_at(engine, line.as_deref())?;
         // The dump runs as root/admin: only the database the kit made for
         // this project, never one another project (or someone else) uses.
         let name = self.own_database(project, engine)?;
@@ -92,7 +93,7 @@ impl Services {
             _ => {
                 let file = dir.join(format!("{name}-{stamp}.sql"));
                 let out = fs::File::create(&file)?;
-                let mut cmd = self.mariadb_tool("mariadb-dump.exe", &env);
+                let mut cmd = self.mariadb_tool_at("mariadb-dump.exe", &env, line.as_deref(), port);
                 cmd.args(["--single-transaction", "--routines", "--triggers"])
                     .arg(&name)
                     .stdin(Stdio::null())
@@ -125,7 +126,8 @@ impl Services {
         }
         if file.ends_with(".archive.gz") {
             let name = self.own_database(project, "mongodb")?;
-            let (port, env) = self.running_server("mongodb")?;
+            let line = project_line(&self.kit, project, "mongodb");
+            let (port, env) = self.running_at("mongodb", line.as_deref())?;
             let (mut cmd, config) = self.mongo_tool("mongorestore.exe", &env, port)?;
             cmd.arg(format!("--archive={}", path.display()))
                 .arg("--gzip")
@@ -140,10 +142,17 @@ impl Services {
             // outside (D-78) and name other databases or `mysql.*`.
             let password = auth::try_project_password(&self.kit, project, "mariadb")?
                 .ok_or_else(|| anyhow!("the project has no MariaDB database yet"))?;
-            let (port, env) = self.running_server("mariadb")?;
+            let line = project_line(&self.kit, project, "mariadb");
+            let (port, env) = self.running_at("mariadb", line.as_deref())?;
             let sql = fs::read_to_string(&path)?;
-            let (mut cmd, login) =
-                self.mariadb_as_project("mariadb.exe", &env, port, &name, &password)?;
+            let (mut cmd, login) = self.mariadb_as_project(
+                "mariadb.exe",
+                &env,
+                line.as_deref(),
+                port,
+                &name,
+                &password,
+            )?;
             cmd.arg(&name);
             let result = run_with_input(cmd, &sql, Duration::from_secs(600));
             let _ = fs::remove_file(login);

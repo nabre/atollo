@@ -6,10 +6,10 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 
 use super::tools::run_tool;
-use super::{auth, bin, server_line, Services, SERVERS};
+use super::{auth, bin, bin_at, server_line, Services, SERVERS};
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs;
@@ -23,7 +23,12 @@ fn data_root(kit: &Kit, id: &str) -> PathBuf {
 /// The data of the version the server runs, `data\db\<id>\<line>`: data
 /// of a newer version does not open in an older one (D-81).
 pub fn data_dir(kit: &Kit, id: &str) -> PathBuf {
-    match server_line(kit, id) {
+    data_dir_at(kit, id, None)
+}
+
+/// The data of version `line` (None: the one the server runs).
+pub fn data_dir_at(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
+    match line.map(str::to_owned).or_else(|| server_line(kit, id)) {
         Some(line) => data_root(kit, id).join(line),
         None => data_root(kit, id),
     }
@@ -42,7 +47,9 @@ fn has_data(id: &str, dir: &std::path::Path) -> bool {
 /// nearest older version, if the server can take it (MariaDB from any
 /// older one; MongoDB from the same or the previous major only). The old
 /// data stays as it was, for its own version. Returns the version copied.
-pub(super) fn seed(kit: &Kit, id: &str, line: &str) -> Result<Option<String>> {
+/// Refused while that version is among `running` (PLAN.md §13.2: versions
+/// run side by side): its files are in use.
+pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Result<Option<String>> {
     let root = data_root(kit, id);
     let target = root.join(line);
     if has_data(id, &target) {
@@ -72,6 +79,12 @@ pub(super) fn seed(kit: &Kit, id: &str, line: &str) -> Result<Option<String>> {
              starting with empty data (the {from} data stays)"
         ));
         return Ok(None);
+    }
+    if running.contains(&from) {
+        bail!(
+            "{id} {line} starts the first time with a copy of the data of {from}: \
+             stop {id} {from} first"
+        );
     }
     if target.exists() {
         crate::net::archive::remove_dir(&target)?;
@@ -131,8 +144,14 @@ pub fn migrate_data(kit: &Kit) {
 impl Services {
     /// Creates the data folder the first time; true when it is new (no
     /// password set in it yet).
-    pub(super) fn prepare(&self, id: &str, env: &KitEnv, port: u16) -> Result<(PathBuf, bool)> {
-        let data = data_dir(&self.kit, id);
+    pub(super) fn prepare(
+        &self,
+        id: &str,
+        line: Option<&str>,
+        env: &KitEnv,
+        port: u16,
+    ) -> Result<(PathBuf, bool)> {
+        let data = data_dir_at(&self.kit, id, line);
         let fresh = match id {
             "mariadb" => !data.join("mysql").is_dir(),
             _ => !data.join("WiredTiger").is_file(),
@@ -145,7 +164,8 @@ impl Services {
             if let Some(parent) = data.parent() {
                 fs::create_dir_all(parent)?;
             }
-            let mut cmd = jobs::kit_command(bin(&self.kit, id, "mariadb-install-db.exe"), env);
+            let mut cmd =
+                jobs::kit_command(bin_at(&self.kit, id, line, "mariadb-install-db.exe"), env);
             cmd.arg(format!("--datadir={}", data.display()))
                 .arg(format!("--port={port}"));
             run_tool(cmd, Duration::from_secs(120)).context("mariadb-install-db")?;

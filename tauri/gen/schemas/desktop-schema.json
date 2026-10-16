@@ -453,6 +453,12 @@
           "markdownDescription": "Enables the project_db_export command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_db_line command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-db-line",
+          "markdownDescription": "Enables the project_db_line command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_db_restore command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-db-restore",
@@ -655,6 +661,12 @@
           "type": "string",
           "const": "allow-service-line",
           "markdownDescription": "Enables the service_line command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the service_line_port command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-service-line-port",
+          "markdownDescription": "Enables the service_line_port command without any pre-configured scope."
         },
         {
           "description": "Enables the service_set command without any pre-configured scope.",
@@ -1077,6 +1089,12 @@
           "markdownDescription": "Denies the project_db_export command without any pre-configured scope."
         },
         {
+          "description": "Denies the project_db_line command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-db-line",
+          "markdownDescription": "Denies the project_db_line command without any pre-configured scope."
+        },
+        {
           "description": "Denies the project_db_restore command without any pre-configured scope.",
           "type": "string",
           "const": "deny-project-db-restore",
@@ -1279,6 +1297,12 @@
           "type": "string",
           "const": "deny-service-line",
           "markdownDescription": "Denies the service_line command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the service_line_port command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-service-line-port",
+          "markdownDescription": "Denies the service_line_port command without any pre-configured scope."
         },
         {
           "description": "Denies the service_set command without any pre-configured scope.",
