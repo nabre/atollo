@@ -36,6 +36,7 @@ const VIEW: WebServersView = {
       sites: [site("site", "public"), site("docs", "docs")],
       confDir: "data\\servers\\legacy",
       orphan: false,
+      profile: null,
     },
   ],
   apacheLines: [],
@@ -69,6 +70,54 @@ describe("ServersPage", () => {
     expect(screen.getByText("docs")).toBeTruthy();
     const keyWarnings = errors.mock.calls.filter((c) => c.some((a) => String(a).includes("same key")));
     expect(keyWarnings).toEqual([]);
+  });
+
+  it("saves a profile's start options with the profile as it was saved", async () => {
+    const [legacy] = VIEW.pools;
+    if (!legacy) throw new Error("fixture");
+    const profile = {
+      id: "legacy",
+      name: "Legacy",
+      engine: "nginx" as const,
+      serverLine: null,
+      phpLine: null,
+      port: 8090,
+    };
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve({ ...VIEW, pools: [{ ...legacy, profile }] });
+      if (cmd === "server_save") return Promise.resolve(null);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const keep = screen.getAllByRole("checkbox", { name: "Mantieni attivo anche senza progetti" });
+    // The profile's (the creation form is closed): checked, as for an older
+    // servers.json with no option saved.
+    expect(keep.map((c) => (c as HTMLInputElement).checked)).toEqual([true]);
+    const auto = screen.getAllByRole("checkbox", { name: "Avvia con Atollo" });
+    const last = auto[auto.length - 1];
+    if (!last) throw new Error("no checkbox");
+    await act(async () => {
+      last.click();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(invoke).toHaveBeenCalledWith("server_save", {
+      profile: { ...profile, keepAlive: true, autostart: true },
+    });
+  });
+
+  it("explains how an automatic pool starts and stops", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve(VIEW);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText(/si ferma con l'ultimo/)).toBeTruthy();
   });
 
   it("marks an orphan pool, with no reload, still stoppable", async () => {
