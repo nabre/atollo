@@ -53,6 +53,26 @@ fn paths() {
         Answer::Status(404, _)
     ));
     assert!(matches!(resolve(&root, "/%zz"), Answer::Status(400, _)));
+
+    // NTFS 8.3 short names (`ENV~1` is `.env`, `GIT~1` is `.git`), in any
+    // case and encoding: refused before touching the disk.
+    fs::write(root.join("a~b.txt"), "tilde").unwrap();
+    for target in [
+        "/ENV~1",
+        "/env~1",
+        "/GIT~1/config",
+        "/sub/GIT~1/config",
+        "/%45NV%7E1",
+        "/sub%5CGIT~1",
+    ] {
+        assert!(
+            matches!(resolve(&root, target), Answer::Status(403, _)),
+            "{target}"
+        );
+    }
+    // A `~` not followed by a digit is an ordinary name.
+    assert!(matches!(resolve(&root, "/a~b.txt"), Answer::File(p) if p.ends_with("a~b.txt")));
+    assert!(matches!(resolve(&root, "/x~.txt"), Answer::Status(404, _)));
 }
 
 #[test]
