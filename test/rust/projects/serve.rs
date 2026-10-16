@@ -154,3 +154,64 @@ fn slowloris_does_not_block() {
     let out = answered.expect("no answer while silent connections were open");
     assert!(out.ends_with("<h1>ok</h1>"), "{out}");
 }
+
+/// A client sending one byte a second never trips the per-read timeout, but
+/// the total deadline for the request head closes it all the same.
+#[test]
+fn dribbling_client_is_cut_after_deadline() {
+    let tmp = TempDir::new("serve-dribble");
+    fs::write(tmp.0.join("index.html"), "<h1>ok</h1>").unwrap();
+    let port = start(&tmp.0);
+    let mut s = None;
+    for _ in 0..50 {
+        if let Ok(c) = TcpStream::connect((Ipv4Addr::LOCALHOST, port)) {
+            s = Some(c);
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    let mut s = s.expect("server did not start");
+    let started = std::time::Instant::now();
+    let head = format!(
+        "GET / HTTP/1.1\r\nHost: localhost:{port}\r\nX-Pad: {}",
+        "a".repeat(64)
+    );
+    let mut cut = false;
+    for byte in head.bytes() {
+        if s.write_all(&[byte]).and_then(|()| s.flush()).is_err() {
+            cut = true;
+            break;
+        }
+        // A closed connection reads as end of stream (or a reset).
+        s.set_read_timeout(Some(Duration::from_millis(1000)))
+            .unwrap();
+        let mut buf = [0u8; 64];
+        let closed = match s.read(&mut buf) {
+            Ok(0) => true,
+            Ok(n) => panic!(
+                "unexpected answer: {:?}",
+                String::from_utf8_lossy(&buf[..n])
+            ),
+            Err(e) => !matches!(
+                e.kind(),
+                std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+            ),
+        };
+        if closed {
+            assert!(
+                started.elapsed() >= HEAD_DEADLINE - Duration::from_millis(500),
+                "closed too early: {:?}",
+                started.elapsed()
+            );
+            cut = true;
+            break;
+        }
+        assert!(
+            started.elapsed() < HEAD_DEADLINE + Duration::from_secs(3),
+            "still open after {:?}",
+            started.elapsed()
+        );
+    }
+    assert!(cut, "the dribbling client was never cut");
+    assert!(started.elapsed() < HEAD_DEADLINE + Duration::from_secs(3));
+}
