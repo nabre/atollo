@@ -4,7 +4,7 @@ import { useCallback, useState, type SyntheticEvent } from "react";
 import { VscSave } from "react-icons/vsc";
 import { projectEditorSettings, projectEditorSettingsSet, type EditorSettings, type EditorSettingsView } from "./api";
 import { t } from "./i18n";
-import { ActionButton, ErrorLine, LoadError } from "./common";
+import { ActionButton, ErrorLine, LoadError, useRetryFocus } from "./common";
 import { useAction, useLoad } from "./hooks";
 import { Select, TextArea } from "./workbench";
 
@@ -14,17 +14,31 @@ const fromTri = (v: Tri): boolean | null => (v === "default" ? null : v === "yes
 
 export function EditorSettingsBox({ project }: { project: string }) {
   const read = useCallback(() => projectEditorSettings(project), [project]);
-  const { data: view, error: loadErr, reload } = useLoad<EditorSettingsView | null>(read, null, { onError: "show" });
-  const [saved, setSaved] = useState(false);
+  const {
+    data: view,
+    error: loadErr,
+    reload,
+    retry,
+  } = useLoad<EditorSettingsView | null>(read, null, { onError: "show" });
+  // The project whose settings were just saved: the form, made again from
+  // the file read after, says so and keeps the focus on Salva.
+  const [savedFor, setSavedFor] = useState<string | null>(null);
+  const saved = savedFor === project;
   const { busy, error, run } = useAction(() => {
-    setSaved(true);
+    setSavedFor(project);
     reload();
   });
-  const loadError = <LoadError error={loadErr} onRetry={reload} className="px-3 py-2" />;
+  const { target: heading, onRetry } = useRetryFocus<HTMLHeadingElement>(retry);
+  const loadError = <LoadError error={loadErr} onRetry={onRetry} className="px-3 py-2" />;
   if (!view) return loadError;
   return (
     <section aria-labelledby="editor-settings" className="border-t border-vsc-border">
-      <h2 id="editor-settings" className="flex h-8 items-center px-3 text-[12px] font-semibold text-vsc-sidebar-title">
+      <h2
+        id="editor-settings"
+        ref={heading}
+        tabIndex={-1}
+        className="flex h-8 items-center px-3 text-[12px] font-semibold text-vsc-sidebar-title"
+      >
         {t("Impostazioni dell'editor per questo progetto")}
       </h2>
       {view.readOnly ? (
@@ -42,7 +56,7 @@ export function EditorSettingsBox({ project }: { project: string }) {
           saved={saved}
           error={error}
           onSave={(settings) => {
-            setSaved(false);
+            setSavedFor(null);
             run("save", () => projectEditorSettingsSet(project, settings));
           }}
         />
@@ -121,7 +135,16 @@ function SettingsForm({
         {t("Si salvano in .vscode\\settings.json nel progetto; le altre impostazioni del file restano.")}
       </p>
       <div className="flex items-center gap-2">
-        <ActionButton icon={VscSave} label={t("Salva")} primary submit busy={busy} onClick={() => undefined} />
+        <ActionButton
+          icon={VscSave}
+          label={t("Salva")}
+          primary
+          submit
+          busy={busy}
+          // Made again after a save (a new key): the focus stays on it.
+          autoFocus={saved}
+          onClick={() => undefined}
+        />
         {saved && <span className="text-vsc-success">{t("Salvato.")}</span>}
       </div>
       <ErrorLine error={error} />

@@ -55,6 +55,25 @@ describe("versions menus", () => {
     expect(onAdd).toHaveBeenCalledWith("8.3");
   });
 
+  it("says that + opens a menu, and gives it the focus back once a line is chosen", () => {
+    const onAdd = vi.fn();
+    render(<AddLine tool={tool} setup={null} busy={false} onAdd={onAdd} />);
+    const plus = screen.getByRole("button", { name: "Aggiungi una versione di PHP" });
+    expect(plus.getAttribute("aria-haspopup")).toBe("menu");
+    expect(plus.getAttribute("aria-expanded")).toBe("false");
+    expect(plus.hasAttribute("aria-controls")).toBe(false);
+    fireEvent.click(plus);
+    expect(plus.getAttribute("aria-expanded")).toBe("true");
+    const menu = screen.getByRole("menu", { name: "Versioni da scaricare" });
+    expect(plus.getAttribute("aria-controls")).toBe(menu.id);
+    fireEvent.keyDown(menu, { key: "ArrowDown" });
+    fireEvent.click(document.activeElement as HTMLElement);
+    expect(onAdd).toHaveBeenCalledWith("8.2");
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(plus.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(plus);
+  });
+
   it("closes the menu on Esc and gives the focus back to +", () => {
     render(<AddLine tool={tool} setup={null} busy={false} onAdd={() => undefined} />);
     const plus = screen.getByRole("button", { name: "Aggiungi una versione di PHP" });
@@ -68,15 +87,17 @@ describe("versions menus", () => {
 
   it("says that a locked line opens a menu of its projects", () => {
     render(<ToolVersions tool={tool} kit={kit} setup={null} />);
-    const lock = screen.getByRole("button", { name: "PHP 8.4: progetti che la usano" });
+    const lock = screen.getByRole("button", { name: "PHP 8.4 bloccata: progetti che la usano" });
     // The badges speak the source language (Italian), as the rest of the row.
     expect(lock.textContent).toBe("bloccata");
+    // The name holds the visible word (WCAG 2.5.3, label in name).
+    expect(lock.getAttribute("aria-label")).toContain(lock.textContent);
     expect(screen.getByText("più recente")).toBeTruthy();
     expect(lock.getAttribute("aria-haspopup")).toBe("menu");
     expect(lock.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(lock);
     expect(lock.getAttribute("aria-expanded")).toBe("true");
-    const menu = screen.getByRole("menu", { name: "PHP 8.4: progetti che la usano" });
+    const menu = screen.getByRole("menu", { name: "PHP 8.4 bloccata: progetti che la usano" });
     expect(lock.getAttribute("aria-controls")).toBe(menu.id);
     const items = screen.getAllByRole("menuitem");
     expect(document.activeElement).toBe(items[0]);

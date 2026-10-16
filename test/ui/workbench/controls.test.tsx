@@ -4,11 +4,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
+import { VscAdd } from "react-icons/vsc";
 import {
   Button,
   Checkbox,
   CheckboxLabel,
   ConfirmDialog,
+  IconButton,
   Radio,
   SearchBox,
   Select,
@@ -353,6 +355,24 @@ describe("workbench controls", () => {
     await select.updateComplete;
     fireEvent.keyDown(select, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("says that an icon action opens a menu, and which one while it is open", () => {
+    const { rerender } = render(<IconButton icon={VscAdd} label="Aggiungi" onClick={() => undefined} />);
+    const plain = screen.getByRole("button", { name: "Aggiungi" });
+    expect(plain.hasAttribute("aria-haspopup")).toBe(false);
+    expect(plain.hasAttribute("aria-expanded")).toBe(false);
+    const draw = (open: boolean) => (
+      <IconButton icon={VscAdd} label="Aggiungi" menu={{ open, id: "m" }} onClick={() => undefined} />
+    );
+    rerender(draw(false));
+    const button = screen.getByRole("button", { name: "Aggiungi" });
+    expect(button.getAttribute("aria-haspopup")).toBe("menu");
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(button.hasAttribute("aria-controls")).toBe(false);
+    rerender(draw(true));
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+    expect(button.getAttribute("aria-controls")).toBe("m");
   });
 
   it("gives autocomplete to a TextField again when it is drawn again", () => {

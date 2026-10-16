@@ -515,7 +515,7 @@
   "Versioni: il kit usa la più recente; un progetto nuovo tiene quella che c'è alla sua creazione": "Versions : le kit utilise la plus récente ; un nouveau projet garde celle présente à sa création",
   "La più recente ({0})": "La plus récente ({0})",
   "Più versioni una accanto all'altra, una per versione minore: «Aggiorna tutto» porta ognuna all'ultima patch, una versione minore nuova si aggiunge senza togliere le altre. Il kit usa la più recente; un progetto tiene quella che c'era quando è stato creato (o quella che chiede il suo codice) e può cambiarla nella sua pagina.": "Plusieurs versions côte à côte, une par version mineure : « Tout mettre à jour » amène chacune à son dernier correctif, une nouvelle version mineure s'ajoute sans retirer les autres. Le kit utilise la plus récente ; un projet garde celle présente à sa création (ou celle que demande son code) et peut la changer sur sa page.",
-  "{0} {1}: progetti che la usano": "{0} {1} : projets qui l'utilisent",
+  "{0} {1} bloccata: progetti che la usano": "{0} {1} verrouillée : projets qui l'utilisent",
   "Usata da": "Utilisée par",
   "Ferma il server per cambiarla.": "Arrêtez le serveur pour la changer.",
   "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.": "Un serveur pour tous les projets. Chaque version a ses données : au premier démarrage d'une plus récente, celles de la précédente sont copiées et restent telles quelles.",
