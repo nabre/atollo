@@ -79,19 +79,20 @@ pub fn folders(kit: &Kit) -> Vec<PathBuf> {
     out
 }
 
+/// What can be added from "Linguaggi e strumenti": not installed, and
+/// available for the kit's platform (no PHP, Apache, Nginx off Windows, no
+/// R on Windows ARM64).
+fn addable(kit: &Kit, c: &crate::setup::catalog::Component) -> bool {
+    !c.is_installed(kit) && c.is_available_on(kit.target())
+}
+
 pub fn info(kit: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
     let project = detect::detect(dir, lang);
     let catalog = Catalog::get();
-    // What can be added from "Linguaggi e strumenti": not R on ARM64.
-    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
     let missing = project
         .requires
         .iter()
-        .filter(|id| {
-            catalog
-                .find(id)
-                .is_some_and(|c| !c.is_installed(kit) && !(c.no_arm64 && arm64))
-        })
+        .filter(|id| catalog.find(id).is_some_and(|c| addable(kit, c)))
         .cloned()
         .collect();
     let empty = fs::symlink_metadata(dir).is_ok_and(|m| m.is_dir())
