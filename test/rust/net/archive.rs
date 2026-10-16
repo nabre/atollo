@@ -194,6 +194,201 @@ fn tar_xz_absolute_symlink_skipped() {
     );
 }
 
+/// One entry of a hand-made tar: a file with its text, a symbolic link or
+/// a hard link with its target.
+enum Ent<'a> {
+    File(&'a str, &'a str),
+    Sym(&'a str, &'a str),
+    Hard(&'a str, &'a str),
+}
+
+fn append_entries<W: Write>(tar: &mut tar::Builder<W>, entries: &[Ent]) {
+    for entry in entries {
+        let (kind, name, target) = match entry {
+            Ent::File(name, text) => {
+                tar.append_data(&mut file_header(text.len() as u64), name, text.as_bytes())
+                    .unwrap();
+                continue;
+            }
+            Ent::Sym(name, target) => (tar::EntryType::Symlink, name, target),
+            Ent::Hard(name, target) => (tar::EntryType::Link, name, target),
+        };
+        let mut link = tar::Header::new_gnu();
+        link.set_entry_type(kind);
+        link.set_size(0);
+        link.set_mode(0o777);
+        link.set_path(name).unwrap();
+        link.set_link_name(target).unwrap();
+        link.set_cksum();
+        tar.append(&link, io::empty()).unwrap();
+    }
+}
+
+/// `entries` as a `.tar.gz` or a `.tar.xz` at `path`.
+fn make_tar(path: &Path, kind: Kind, entries: &[Ent]) {
+    match kind {
+        Kind::TarXz => make_tar_xz(path, |tar| append_entries(tar, entries)),
+        _ => {
+            let gz = flate2::write::GzEncoder::new(
+                File::create(path).unwrap(),
+                flate2::Compression::fast(),
+            );
+            let mut tar = tar::Builder::new(gz);
+            append_entries(&mut tar, entries);
+            tar.into_inner().unwrap().finish().unwrap();
+        }
+    }
+}
+
+/// `t -> .` and `s -> t/..` each look inside the target when read alone;
+/// together `s` is the parent of the target. A file under `s/` must not
+/// land there (links are made last and never crossed).
+#[test]
+fn tar_symlink_chain_escape_refused() {
+    for kind in [Kind::TarGz, Kind::TarXz] {
+        let tmp = TempDir::new("tarchain");
+        let archive = tmp.0.join("evil.tar");
+        make_tar(
+            &archive,
+            kind,
+            &[
+                Ent::Sym("t", "."),
+                Ent::Sym("s", "t/.."),
+                Ent::File("s/pwned", "x"),
+            ],
+        );
+        let out = tmp.0.join("out");
+        let _ = extract(&archive, kind, &out);
+        assert!(!tmp.0.join("pwned").exists(), "{kind:?}");
+        let s = fs::symlink_metadata(out.join("s")).unwrap();
+        assert!(s.is_dir(), "{kind:?}: s stays a real folder");
+
+        // The links alone: `t` is inside and made, `s` crosses it and is not.
+        let archive = tmp.0.join("links.tar");
+        make_tar(&archive, kind, &[Ent::Sym("t", "."), Ent::Sym("s", "t/..")]);
+        let out = tmp.0.join("out2");
+        extract(&archive, kind, &out).unwrap();
+        assert!(fs::symlink_metadata(out.join("s")).is_err(), "{kind:?}");
+        #[cfg(unix)]
+        assert!(fs::symlink_metadata(out.join("t"))
+            .unwrap()
+            .file_type()
+            .is_symlink());
+        #[cfg(not(unix))]
+        assert!(fs::symlink_metadata(out.join("t")).is_err());
+    }
+}
+
+/// The same chain in a zip.
+#[test]
+fn zip_symlink_chain_escape_refused() {
+    let tmp = TempDir::new("zipchain");
+    let archive = tmp.0.join("evil.zip");
+    {
+        let mut zip = zip::ZipWriter::new(File::create(&archive).unwrap());
+        let options = zip::write::SimpleFileOptions::default();
+        zip.add_symlink("t", ".", options).unwrap();
+        zip.add_symlink("s", "t/..", options).unwrap();
+        zip.start_file("s/pwned", options).unwrap();
+        zip.write_all(b"x").unwrap();
+        zip.finish().unwrap();
+    }
+    let out = tmp.0.join("out");
+    let _ = extract(&archive, Kind::Zip, &out);
+    assert!(!tmp.0.join("pwned").exists());
+    assert!(fs::symlink_metadata(out.join("s")).unwrap().is_dir());
+}
+
+/// A hard link reached through a link chain (or to a file outside) is not
+/// made, and a later file of the same name never truncates the target.
+#[test]
+fn tar_hardlink_outside_refused() {
+    for kind in [Kind::TarGz, Kind::TarXz] {
+        let tmp = TempDir::new("tarhard");
+        let victim = tmp.0.join("victim.txt");
+        fs::write(&victim, "safe").unwrap();
+        let archive = tmp.0.join("evil.tar");
+        make_tar(
+            &archive,
+            kind,
+            &[
+                Ent::Sym("t", "."),
+                Ent::Sym("s", "t/.."),
+                Ent::Hard("h", "s/victim.txt"),
+                Ent::File("h", "pwned"),
+            ],
+        );
+        let out = tmp.0.join("out");
+        let _ = extract(&archive, kind, &out);
+        assert_eq!(fs::read_to_string(&victim).unwrap(), "safe", "{kind:?}");
+        assert_eq!(fs::read_to_string(out.join("h")).unwrap(), "pwned");
+    }
+}
+
+/// A link already in the target (not from the archive) is never crossed
+/// or written through, and a hard link to it is not made.
+#[cfg(unix)]
+#[test]
+fn tar_never_writes_through_a_link() {
+    use std::os::unix::fs::MetadataExt;
+    let tmp = TempDir::new("tarthrough");
+    let victim = tmp.0.join("victim.txt");
+    fs::write(&victim, "safe").unwrap();
+    let out = tmp.0.join("out");
+    fs::create_dir_all(&out).unwrap();
+    std::os::unix::fs::symlink(&tmp.0, out.join("up")).unwrap();
+    std::os::unix::fs::symlink(&victim, out.join("ext")).unwrap();
+
+    let archive = tmp.0.join("hard.tar.gz");
+    make_tar(
+        &archive,
+        Kind::TarGz,
+        &[Ent::Hard("h", "ext"), Ent::File("h", "pwned")],
+    );
+    extract(&archive, Kind::TarGz, &out).unwrap();
+    assert_eq!(fs::read_to_string(&victim).unwrap(), "safe");
+    assert_eq!(fs::metadata(&victim).unwrap().nlink(), 1);
+
+    let archive = tmp.0.join("file.tar.gz");
+    make_tar(&archive, Kind::TarGz, &[Ent::File("up/pwned", "x")]);
+    assert!(extract(&archive, Kind::TarGz, &out).is_err());
+    assert!(!tmp.0.join("pwned").exists());
+
+    // A file entry named like the link replaces the link, not its target.
+    let archive = tmp.0.join("over.tar.gz");
+    make_tar(&archive, Kind::TarGz, &[Ent::File("ext", "new")]);
+    extract(&archive, Kind::TarGz, &out).unwrap();
+    assert_eq!(fs::read_to_string(&victim).unwrap(), "safe");
+    assert_eq!(fs::read_to_string(out.join("ext")).unwrap(), "new");
+}
+
+/// Ordinary relative links are kept, even when they come before their
+/// target in the archive; one that crosses another link is not.
+#[cfg(unix)]
+#[test]
+fn tar_relative_symlinks_inside_are_created() {
+    let tmp = TempDir::new("tarlinks");
+    let archive = tmp.0.join("ok.tar.xz");
+    make_tar(
+        &archive,
+        Kind::TarXz,
+        &[
+            Ent::Sym("pkg/bin/tool", "../lib/tool.sh"),
+            Ent::File("pkg/lib/tool.sh", "run"),
+            Ent::Sym("pkg/cur", "lib"),
+            Ent::Sym("pkg/through", "cur/tool.sh"),
+        ],
+    );
+    let out = tmp.0.join("out");
+    extract(&archive, Kind::TarXz, &out).unwrap();
+    assert_eq!(fs::read_to_string(out.join("pkg/bin/tool")).unwrap(), "run");
+    assert_eq!(
+        fs::read_to_string(out.join("pkg/cur/tool.sh")).unwrap(),
+        "run"
+    );
+    assert!(fs::symlink_metadata(out.join("pkg/through")).is_err());
+}
+
 #[test]
 fn seven_z_signature_search_spans_buffers() {
     let tmp = TempDir::new("7zsig");
