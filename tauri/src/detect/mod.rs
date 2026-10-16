@@ -389,6 +389,12 @@ fn need_of_file(name: &str) -> Option<&'static str> {
 /// its manifests (npm, pip, Composer). MySQL means the kit's MariaDB.
 fn databases(dir: &Path) -> BTreeSet<&'static str> {
     let mut found = BTreeSet::new();
+    if exists(dir, "wp-config.php")
+        || exists(dir, "wp-settings.php")
+        || exists(dir, r"wp-includes\version.php")
+    {
+        found.insert("mariadb");
+    }
     let read = |name: &str| read(dir, name).to_ascii_lowercase();
     let env = read(".env") + &read(".env.example");
     for line in env.lines().map(str::trim) {
@@ -606,6 +612,10 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         if !project.requires.iter().any(|r| r == "nginx") {
             project.requires.push("nginx".to_owned());
         }
+        project.requires.sort();
+    }
+    if project.platform.contains("WordPress") && !project.requires.iter().any(|r| r == "mariadb") {
+        project.requires.push("mariadb".to_owned());
         project.requires.sort();
     }
     if project.default.is_none() {

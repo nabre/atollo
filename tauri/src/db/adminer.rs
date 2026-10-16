@@ -134,9 +134,8 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
         .stdin(Stdio::null())
         .stdout(Stdio::from(out.try_clone()?))
         .stderr(Stdio::from(out));
-    let mut child = jobs::spawn(&mut cmd)?;
     let job = Job::new()?;
-    job.assign(&child)?;
+    let mut child = jobs::spawn_in(&mut cmd, &job).context("spawn php -S for Adminer")?;
     let begun = Instant::now();
     while !responds(port) {
         if !matches!(child.try_wait(), Ok(None)) {

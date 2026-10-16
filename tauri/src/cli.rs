@@ -265,6 +265,7 @@ pub fn print_components(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Resul
 pub struct Printer<'a> {
     pub out: &'a mut dyn Write,
     pub lang: &'a str,
+    pub downloads_dir: Option<std::path::PathBuf>,
     names: Vec<(String, String)>,
 }
 
@@ -273,8 +274,14 @@ impl<'a> Printer<'a> {
         Printer {
             out,
             lang,
+            downloads_dir: None,
             names: Vec::new(),
         }
+    }
+
+    pub fn with_downloads_dir(mut self, dir: std::path::PathBuf) -> Printer<'a> {
+        self.downloads_dir = Some(dir);
+        self
     }
 
     fn name(&self, id: &str) -> String {
@@ -345,15 +352,18 @@ impl Sink for Printer<'_> {
                             t(lang, "{0}: non riuscito: {1}", &[&name, &message])
                         );
                         if let Some(b) = by_hand {
-                            line.push_str(&format!(
-                                "
-    {}",
-                                t(
-                                    lang,
-                                    "Scaricalo dal browser ({0}), mettilo nella cartella data\\downloads del kit e riprova.",
-                                    &[&b.url]
-                                )
-                            ));
+                            let hint = t(
+                                lang,
+                                "Scaricalo dal browser ({0}), mettilo nella cartella data\\downloads del kit e riprova.",
+                                &[&b.url],
+                            );
+                            let hint = match &self.downloads_dir {
+                                Some(dir) => {
+                                    hint.replace("data\\downloads", &dir.display().to_string())
+                                }
+                                None => hint,
+                            };
+                            line.push_str(&format!("\n    {hint}"));
                         }
                         line
                     }

@@ -115,7 +115,12 @@ export function GuidePage({
             actions={
               <IconButton
                 icon={VscFolderOpened}
-                label={tr("Apri cartella progetti", "Open projects folder")}
+                label={tr(
+                  "Apri cartella progetti",
+                  "Open projects folder",
+                  "Ouvrir le dossier des projets",
+                  "Projektordner öffnen",
+                )}
                 onClick={() => {
                   void folderOpen("projects");
                 }}
@@ -153,7 +158,7 @@ export function GuidePage({
                           }}
                           icon={<Icon size={15} aria-hidden="true" />}
                           label={item.title()}
-                          decorations={<span className="font-mono text-[10px] opacity-70">{item.sectionCode}</span>}
+                          decorations={<span className="font-mono text-[11px] opacity-70">{item.sectionCode}</span>}
                         />
                       );
                     })}
@@ -198,7 +203,12 @@ export function GuidePage({
               }}
             >
               <span className="inline-flex items-center gap-1">
-                {tr("Apri questa vista nell'app", "Open this view in app")}
+                {tr(
+                  "Apri questa vista nell'app",
+                  "Open this view in app",
+                  "Ouvrir cette vue dans l'application",
+                  "Diese Ansicht in der App öffnen",
+                )}
                 <VscArrowRight size={12} aria-hidden="true" />
               </span>
             </Button>

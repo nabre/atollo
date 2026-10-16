@@ -462,7 +462,7 @@ pub fn clone(
             tr(lang, "Esiste già una cartella {0} in projects.", &[&name])
         );
     }
-    let git = kit.apps().join(r"git\cmd\git.exe");
+    let git = crate::setup::catalog::kit_path(kit, r"git\cmd\git.exe");
     if !git.is_file() {
         bail!("{}", tr(lang, "Git del kit non è installato.", &[]));
     }

@@ -52,11 +52,11 @@ fn tr(lang: &str, source: &str, args: &[&str]) -> String {
 }
 
 pub fn gh_exe(kit: &Kit) -> PathBuf {
-    kit.apps().join(r"tools\gh.exe")
+    crate::setup::catalog::kit_path(kit, r"gh\bin\gh.exe")
 }
 
 fn git_exe(kit: &Kit) -> PathBuf {
-    kit.apps().join(r"git\cmd\git.exe")
+    crate::setup::catalog::kit_path(kit, r"git\cmd\git.exe")
 }
 
 /// `gh` with the kit's environment and never a question.

@@ -1,7 +1,10 @@
 // Confirmations: the modal one over the whole window (VSCodium's dialog
 // box) and the inline one under the button that asked it.
-import { useEffect, useId, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button } from "./controls";
+
+const FOCUSABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** A modal question: the cancel button (a vscode-button) has the focus,
  * Esc cancels. The confirming buttons and an error line come from the
@@ -23,9 +26,30 @@ export function ConfirmDialog({
   footer?: ReactNode;
 }) {
   const id = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
+      if (e.key === "Escape") {
+        onCancel();
+        return;
+      }
+      if (e.key === "Tab" && dialogRef.current) {
+        const items = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first || !dialogRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            last?.focus();
+          }
+        } else {
+          if (document.activeElement === last || !dialogRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            first?.focus();
+          }
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => {
@@ -36,6 +60,7 @@ export function ConfirmDialog({
     // The dimmed window: no theme color for it in VSCodium either.
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div
+        ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby={`${id}-title`}

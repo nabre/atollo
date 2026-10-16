@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
-import { useLoad, type LoadOptions } from "../../ui/src/hooks";
+import { useAction, useLoad, type LoadOptions } from "../../ui/src/hooks";
 
 /** A promise settled by the test. */
 function deferred<T>() {
@@ -154,5 +154,44 @@ describe("useLoad", () => {
     expect(seen.length).toBe(renders);
     expect(ok.result.current.data).toBe(0);
     expect(ko.result.current.data).toBe(0);
+  });
+
+  it("ignores out-of-order responses from earlier loads", async () => {
+    const first = deferred<number>();
+    const second = deferred<number>();
+    let call = 0;
+    const load = vi.fn(() => (++call === 1 ? first.promise : second.promise));
+    const { result } = renderHook(() => useLoad(load, 0, { onError: "show" }));
+    act(() => {
+      result.current.reload();
+    });
+    second.resolve(2);
+    await settle();
+    expect(result.current.data).toBe(2);
+    first.resolve(1);
+    await settle();
+    expect(result.current.data).toBe(2);
+  });
+});
+
+describe("useAction", () => {
+  it("keeps busy until the latest overlapping action settles", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    const { result } = renderHook(() => useAction());
+    act(() => {
+      result.current.run("first", () => first.promise);
+    });
+    expect(result.current.busy).toBe("first");
+    act(() => {
+      result.current.run("second", () => second.promise);
+    });
+    expect(result.current.busy).toBe("second");
+    first.resolve();
+    await settle();
+    expect(result.current.busy).toBe("second");
+    second.resolve();
+    await settle();
+    expect(result.current.busy).toBeNull();
   });
 });

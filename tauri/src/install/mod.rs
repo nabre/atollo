@@ -307,15 +307,15 @@ pub fn install(
     };
     if inst.custom() {
         inst.install_custom(ctx, component, release, progress)?;
-        if component.versioned {
+        if component.per_line() {
             let dir = crate::versions::install_dir(ctx.kit, component, &release.version);
             crate::versions::write_version(&dir, &release.version)?;
         }
     } else {
         let work = work_dir(ctx, component)?;
-        // A versioned component goes into the folder of its line, next to
-        // the others (versions/mod.rs).
-        let own = if component.versioned {
+        // A component with one folder per line goes into that of its line,
+        // next to the others (versions/mod.rs).
+        let own = if component.per_line() {
             Some(crate::versions::install_dir(
                 ctx.kit,
                 component,
@@ -341,7 +341,7 @@ pub fn install(
             Some(folder) => inst.finish(ctx, component, folder)?,
             None => inst.finish(ctx, component, &ctx.kit.apps().join("tools"))?,
         }
-        if let (true, Some(folder)) = (component.versioned, &own) {
+        if let (true, Some(folder)) = (component.per_line(), &own) {
             crate::versions::write_version(folder, &release.version)?;
         }
     }
@@ -362,6 +362,8 @@ pub fn install(
             part.display()
         );
     }
+    // A tool always at its latest version keeps only the new line.
+    crate::versions::drop_old_lines(ctx.kit, component);
     Ok(())
 }
 
@@ -400,7 +402,7 @@ pub fn install_line(
     let Some(inst) = installer(&component.id) else {
         bail!("{}: no installer", component.id);
     };
-    let line = crate::versions::line_for(component, &release.version)
+    let line = crate::versions::line_of(&release.version)
         .ok_or_else(|| anyhow::anyhow!("{}: version {}", component.id, release.version))?;
     if !component.versioned {
         bail!("{}: versions cannot be saved", component.id);
@@ -530,7 +532,11 @@ fn install_part(
             if !src.is_file() {
                 bail!("{from} not found in {}", part.file_name);
             }
-            let dir = apps.join(folder);
+            // The component's own folder: that of its line (Claude Code).
+            let dir = match own {
+                Some(o) if component.folder.as_deref() == Some(*folder) => o.to_path_buf(),
+                _ => apps.join(folder),
+            };
             fs::create_dir_all(&dir)?;
             put_file(&src, &dir.join(name))
         }

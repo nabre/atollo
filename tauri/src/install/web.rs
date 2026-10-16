@@ -572,22 +572,11 @@ pub fn php_ini(template: &str) -> Result<String> {
 /// Apache httpd from Apache Lounge (the maintained Windows build). Port,
 /// site and PHP live in `data\apache\kit.conf`, which updates never touch.
 ///
-/// Its lines are whole versions (`patchLines`): Apache has only the 2.4
-/// line. Apache Lounge deletes a build when the next one comes out, except
-/// the last one of each retired compiler (`APACHE_PAGES`).
+/// Apache Lounge keeps only the latest build of 2.4, its only line: a new
+/// build replaces the folder `apache\2.4`.
 pub struct Apache;
 
 const APACHE_SITE: &str = "https://www.apachelounge.com";
-
-/// The pages with Win64 builds, the current one first. VC11 (2.4.38) is
-/// left out: it needs the Visual C++ 2012 runtime, which the kit lacks.
-const APACHE_PAGES: &[&str] = &[
-    "/download/",
-    "/download/VS17/",
-    "/download/VS16/",
-    "/download/VC15/",
-    "/download/VC14/",
-];
 
 /// A Win64 build on Apache Lounge.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -619,30 +608,10 @@ pub fn apache_builds_in(page: &str) -> Vec<ApacheBuild> {
     out
 }
 
-/// The builds on Apache Lounge, one per version, the newest page first. A
-/// page of a retired compiler that does not answer is skipped.
+/// The builds on the download page of Apache Lounge, the newest first.
 fn apache_builds(ctx: &Ctx) -> Result<Vec<ApacheBuild>> {
-    let mut out: Vec<ApacheBuild> = Vec::new();
-    for (i, page) in APACHE_PAGES.iter().enumerate() {
-        let text = match ctx.net.text(&format!("{APACHE_SITE}{page}")) {
-            Ok(t) => t,
-            Err(e) if i > 0 => {
-                crate::log::warn(&format!("Apache Lounge {page}: {e:#}"));
-                continue;
-            }
-            Err(e) => return Err(e),
-        };
-        for b in apache_builds_in(&text) {
-            let line = crate::versions::patch_of(&b.version);
-            if out
-                .iter()
-                .all(|o| crate::versions::patch_of(&o.version) != line)
-            {
-                out.push(b);
-            }
-        }
-    }
-    Ok(out)
+    let page = ctx.net.text(&format!("{APACHE_SITE}/download/"))?;
+    Ok(apache_builds_in(&page))
 }
 
 /// The release of a build, with the SHA-256 Apache Lounge publishes.
@@ -668,12 +637,17 @@ impl Installer for Apache {
         true
     }
 
-    /// The versions on Apache Lounge, newest first.
+    /// The lines on Apache Lounge, newest first (only 2.4).
     fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
-        let mut out: Vec<String> = apache_builds(ctx)?
+        let mut out: Vec<String> = Vec::new();
+        for line in apache_builds(ctx)?
             .iter()
-            .filter_map(|b| crate::versions::patch_of(&b.version))
-            .collect();
+            .filter_map(|b| crate::versions::line_of(&b.version))
+        {
+            if !out.contains(&line) {
+                out.push(line);
+            }
+        }
         out.sort_by_key(|l| std::cmp::Reverse(super::lang::version_key(l)));
         Ok(out)
     }
@@ -681,14 +655,13 @@ impl Installer for Apache {
     fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
         let build = apache_builds(ctx)?
             .into_iter()
-            .find(|b| crate::versions::patch_of(&b.version).as_deref() == Some(line))
+            .find(|b| crate::versions::line_of(&b.version).as_deref() == Some(line))
             .ok_or_else(|| anyhow!("Apache {line} not available"))?;
         apache_release_of(ctx, &build)
     }
 
     fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
-        let page = ctx.net.text(&format!("{APACHE_SITE}/download/"))?;
-        let build = apache_builds_in(&page)
+        let build = apache_builds(ctx)?
             .into_iter()
             .next()
             .ok_or_else(|| anyhow!("Apache Win64 package not found on apachelounge.com"))?;

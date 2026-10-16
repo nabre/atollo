@@ -6,7 +6,7 @@ import { projectEditorSettings, projectEditorSettingsSet, type EditorSettingsVie
 import { t } from "./i18n";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction } from "./hooks";
-import { Select, TextArea } from "./workbench";
+import { Notice, Select, TextArea } from "./workbench";
 
 type Tri = "default" | "yes" | "no";
 const toTri = (v: boolean | null): Tri => (v === null ? "default" : v ? "yes" : "no");
@@ -14,6 +14,7 @@ const fromTri = (v: Tri): boolean | null => (v === "default" ? null : v === "yes
 
 export function EditorSettingsBox({ project }: { project: string }) {
   const [view, setView] = useState<EditorSettingsView | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
   const [format, setFormat] = useState<Tri>("default");
   const [indent, setIndent] = useState("default");
   const [hidden, setHidden] = useState("");
@@ -21,6 +22,8 @@ export function EditorSettingsBox({ project }: { project: string }) {
   const load = useCallback(() => {
     projectEditorSettings(project).then(
       (v) => {
+        setLoadErr(null);
+        if (!v) return;
         setView(v);
         setFormat(toTri(v.settings.formatOnSave));
         setIndent(
@@ -32,7 +35,9 @@ export function EditorSettingsBox({ project }: { project: string }) {
         );
         setHidden(v.settings.hidden.join("\n"));
       },
-      () => undefined,
+      (e: unknown) => {
+        setLoadErr(String(e));
+      },
     );
   }, [project]);
   useEffect(load, [load]);
@@ -40,6 +45,7 @@ export function EditorSettingsBox({ project }: { project: string }) {
     setSaved(true);
     load();
   });
+  if (loadErr) return <Notice tone="error">{loadErr}</Notice>;
   if (!view) return null;
   const submit = (e: SyntheticEvent) => {
     e.preventDefault();

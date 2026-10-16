@@ -1,5 +1,20 @@
 # Novità
 
+## Una cartella per versione minore per tutti gli strumenti (16/10/2026)
+
+Ogni strumento sta in una cartella col nome della sua versione minore, e una correzione (patch) prende il posto di quella cartella (D-91).
+
+**Fatto**
+- **Strumenti sempre all'ultima versione** (Claude Code, Codex, Antigravity, Git, GitHub CLI, uv, PowerShell 7, Windows Terminal, CMake/Ninja, Adminer, SQLite): `git\2.56`, `pwsh\7.6`, `claude\2.1`… Una patch sostituisce la cartella; una minore nuova si installa accanto e la vecchia si toglie (in uso: al prossimo avvio). PowerShell e Windows Terminal si aggiornano a una minore nuova anche aperti.
+- **GitHub CLI e uv** escono da `tools\`: `gh\<linea>\bin\gh.exe`, `uv\<linea>\uv.exe`.
+- **Windows Terminal** porta le sue impostazioni (`settings\`) in ogni aggiornamento.
+- Linguaggi e database come prima: più minori affiancate, scelte per il kit o per progetto.
+- Restano senza cartella di versione Rust, Android SDK, TinyTeX e pnpm (i pacchetti aggiunti stanno dentro), C/C++ (versioni a data) e l'editor.
+
+**Cambia**
+- **Apache** torna a una cartella per minore, `apache\2.4`: al primo avvio la cartella della versione installata (`apache\2.4.69`) prende quel nome e le altre build salvate si tolgono. La scelta di una patch in un progetto non vale più; l'elenco delle versioni si chiede di nuovo.
+- Al primo avvio le cartelle esistenti si spostano da sole (`git\` → `git\2.56`, `tools\gh.exe` → `gh\2.102\bin\gh.exe`); una cartella in uso si sposta all'avvio dopo.
+
 ## Guida operativa e pagina «Guida» nell'app (16/10/2026)
 
 Manuale completo del kit in [`GUIDA.md`](GUIDA.md) (con 16 schermate commentate in `images\`) e pagina interattiva **Guida** (`VscBook`) in basso a sinistra nella barra delle attività.

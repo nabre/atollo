@@ -9,10 +9,11 @@
 //! - nothing outside the folder (`..`, links leading out);
 //! - a folder without the final `/` is redirected (relative links work).
 
-use std::fs;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{Ipv4Addr, TcpListener, TcpStream};
 use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -110,7 +111,7 @@ pub fn resolve(root: &Path, target: &str) -> Answer {
         return Answer::Status(403, "Forbidden");
     }
     let mut file = root.join(rel_path);
-    if file.is_dir() {
+    if crate::os::safe_path::is_dir(root, &file) {
         if !rel.ends_with('/') {
             let q = if query.is_empty() {
                 String::new()
@@ -121,11 +122,19 @@ pub fn resolve(root: &Path, target: &str) -> Answer {
         }
         file = file.join("index.html");
     }
-    // A link inside the folder that leads out of it is refused.
-    match (fs::canonicalize(&file), fs::canonicalize(root)) {
-        (Ok(real), Ok(base)) if real.starts_with(&base) && real.is_file() => Answer::File(real),
-        (Ok(_), Ok(_)) => Answer::Status(403, "Forbidden"),
-        _ => Answer::Status(404, "Not Found"),
+    // A link inside the folder is refused without ever following it (D-77).
+    let Some((base, real)) =
+        crate::os::safe_path::lexical(root).zip(crate::os::safe_path::lexical(&file))
+    else {
+        return Answer::Status(403, "Forbidden");
+    };
+    if !real.starts_with(&base) || !crate::os::safe_path::no_links(&base, &real) {
+        return Answer::Status(403, "Forbidden");
+    }
+    if crate::os::safe_path::is_file(&base, &real) {
+        Answer::File(real)
+    } else {
+        Answer::Status(404, "Not Found")
     }
 }
 
@@ -145,8 +154,9 @@ fn is_ip_host_header(host: &str) -> bool {
 }
 
 fn handle(root: &Path, lan: bool, mut stream: TcpStream) -> Result<()> {
-    stream.set_read_timeout(Some(Duration::from_secs(10)))?;
-    let mut reader = BufReader::new(stream.try_clone()?);
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
+    let mut reader = BufReader::new(stream.try_clone()?.take(8192));
     let mut request = String::new();
     reader.read_line(&mut request)?;
     let mut host = String::new();
@@ -172,9 +182,9 @@ fn handle(root: &Path, lan: bool, mut stream: TcpStream) -> Result<()> {
         resolve(root, target)
     };
     let (status, kind, body, extra) = match answer {
-        Answer::File(path) => match fs::read(&path) {
-            Ok(bytes) => ("200 OK".to_owned(), mime(&path), bytes, String::new()),
-            Err(_) => (
+        Answer::File(path) => match crate::os::safe_path::read(root, &path) {
+            Some(bytes) => ("200 OK".to_owned(), mime(&path), bytes, String::new()),
+            None => (
                 "404 Not Found".to_owned(),
                 "text/plain; charset=utf-8",
                 b"Not Found".to_vec(),
@@ -209,10 +219,27 @@ fn handle(root: &Path, lan: bool, mut stream: TcpStream) -> Result<()> {
     Ok(())
 }
 
+struct ConnGuard(Arc<AtomicUsize>);
+
+impl Drop for ConnGuard {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
+    }
+}
+
 /// Serves `root` on `127.0.0.1:port` (every interface with the local
 /// network allowed) until the process is ended.
 pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
-    let root = fs::canonicalize(root).with_context(|| root.display().to_string())?;
+    let abs = if root.is_absolute() {
+        root.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .with_context(|| root.display().to_string())?
+            .join(root)
+    };
+    let root = crate::os::safe_path::lexical(&abs)
+        .filter(|r| crate::os::safe_path::is_dir(r, r))
+        .with_context(|| root.display().to_string())?;
     let lan = std::env::var("ATOLLO_ALLOW_LAN").is_ok_and(|v| v == "1");
     let ip = if lan {
         Ipv4Addr::UNSPECIFIED
@@ -231,9 +258,17 @@ pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
             ]
         )
     );
+    const MAX_CONNS: usize = 64;
+    let active = Arc::new(AtomicUsize::new(0));
     for stream in listener.incoming().flatten() {
+        let prev = active.fetch_add(1, Ordering::AcqRel);
+        let guard = ConnGuard(Arc::clone(&active));
+        if prev >= MAX_CONNS {
+            continue;
+        }
         let root = root.clone();
         std::thread::spawn(move || {
+            let _guard = guard;
             let _ = handle(&root, lan, stream);
         });
     }

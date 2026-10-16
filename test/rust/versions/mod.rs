@@ -20,24 +20,50 @@ fn lines() {
 }
 
 #[test]
-fn patch_lines() {
-    for (v, l) in [
-        ("2.4.66-251206", Some("2.4.66")),
-        ("2.4.54", Some("2.4.54")),
-        ("v22.11.0", Some("22.11.0")),
-        ("2.4", None),
-        ("", None),
+fn tools_have_a_folder_per_line() {
+    let lined: Vec<&str> = lined().map(|c| c.id.as_str()).collect();
+    for id in [
+        "claude",
+        "codex",
+        "antigravity",
+        "git",
+        "gh",
+        "uv",
+        "pwsh",
+        "terminal",
+        "cmake",
+        "adminer",
+        "sqlite",
+        "node",
+        "apache",
     ] {
-        assert_eq!(patch_of(v).as_deref(), l, "{v}");
+        assert!(lined.contains(&id), "{id}");
     }
-    let catalog = Catalog::get();
-    let apache = catalog.find("apache").unwrap();
-    let node = catalog.find("node").unwrap();
-    assert_eq!(line_for(apache, "2.4.66-251206").as_deref(), Some("2.4.66"));
-    assert_eq!(line_for(node, "v22.11.0").as_deref(), Some("22.11"));
-    assert!(valid_line_for(apache, "2.4.66") && !valid_line_for(apache, "2.4"));
-    assert!(valid_line_for(node, "22.11") && !valid_line_for(node, "22.11.0"));
-    assert!(!valid_line_for(apache, r"2.4.6\x"));
+    // Packages added later live in their folders (rustup, sdkmanager,
+    // tlmgr, npm); llvm-mingw has dates; the editor is the app's.
+    for id in [
+        "rust",
+        "android",
+        "tinytex",
+        "pnpm",
+        "cc",
+        "vscodium-server",
+    ] {
+        assert!(!lined.contains(&id), "{id}");
+    }
+
+    let tmp = crate::kit::tests::TempDir::new("versions-lined");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let git = Catalog::get().find("git").unwrap();
+    let dir = install_dir(&kit, git, "2.56.0.2");
+    assert!(dir.ends_with(r"git\2.56"));
+    install_fake(&kit, git, &dir);
+    git.save_version(&kit, "2.56.0.2").unwrap();
+    assert_eq!(
+        crate::setup::catalog::kit_path(&kit, r"git\cmd\git.exe"),
+        dir.join(r"cmd\git.exe")
+    );
+    assert!(saved(&kit, git).is_empty());
 }
 
 pub(super) fn install_fake(kit: &Kit, c: &Component, dir: &Path) {

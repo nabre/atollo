@@ -1,7 +1,7 @@
 // The actions started in this session and their state, for the app, the
 // Activity panel and the projects' pages.
-import { useCallback, useState } from "react";
-import { onRun, runClear, runList, runLog, type RunInfo, type RunState } from "../api";
+import { useCallback, useRef, useState } from "react";
+import { onRun, runClear, runLog, runList, type RunInfo, type RunState } from "../api";
 import { t } from "../i18n";
 import { useLoad, useSubscription } from "../hooks";
 
@@ -9,14 +9,18 @@ const MAX_LINES = 3000;
 
 export const alive = (s: RunState | undefined) => s === "starting" || s === "running";
 
-const readRuns = () => runList().then((list) => Object.fromEntries(list.map((r) => [r.key, r])));
-
 /** The actions started in this session, kept current by the "run" events. */
 export function useRuns() {
   const [logs, setLogs] = useState<Record<string, string[]>>({});
-  const { data: runs, setData: setRuns } = useLoad<Record<string, RunInfo>>(readRuns, {}, { onError: "keep" });
+  const live = useRef<Record<string, RunInfo>>({});
+  const read = useCallback(
+    () => runList().then((list) => ({ ...Object.fromEntries(list.map((r) => [r.key, r])), ...live.current })),
+    [],
+  );
+  const { data: runs, setData: setRuns } = useLoad<Record<string, RunInfo>>(read, {}, { onError: "keep" });
   useSubscription(onRun, (e) => {
     if (e.kind === "state") {
+      live.current[e.key] = e;
       setRuns((r) => ({ ...r, [e.key]: e }));
     } else {
       setLogs((l) => {
@@ -36,6 +40,7 @@ export function useRuns() {
   const forget = useCallback(
     (key: string) => {
       void runClear(key).then(() => {
+        delete live.current[key];
         setRuns((r) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== key)));
       });
     },

@@ -127,16 +127,16 @@ fn profile(path: &Path, args: &[String], icon: &str) -> Value {
 
 /// The kit profiles for what is installed now.
 pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
-    let apps = kit.apps();
+    let app = |rel: &str| crate::setup::catalog::kit_path(kit, rel);
     let mut out = Map::new();
-    let pwsh = apps.join(r"pwsh\pwsh.exe");
+    let pwsh = app(r"pwsh\pwsh.exe");
     if pwsh.is_file() {
         out.insert(
             "Atollo".into(),
             profile(&pwsh, &pwsh_args(kit), "terminal-powershell"),
         );
     }
-    let bash = apps.join(r"git\bin\bash.exe");
+    let bash = app(r"git\bin\bash.exe");
     if bash.is_file() {
         let rc = kit.kit_files().join("bashrc").display().to_string();
         out.insert(
@@ -158,7 +158,7 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
         ("Codex", r"codex\bin\codex.exe", "hubot"),
         ("Antigravity", r"antigravity\agy.exe", "rocket"),
     ] {
-        let exe = apps.join(rel);
+        let exe = app(rel);
         if exe.is_file() {
             // Antigravity through the kit's agy.cmd: it carries the login.
             let path = if name == "Antigravity" {
@@ -205,7 +205,7 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
     if !keep_default && names.iter().any(|n| n == DEFAULT_PROFILE) {
         out.insert(default_key.into(), json!(DEFAULT_PROFILE));
     }
-    let pwsh = kit.apps().join(r"pwsh\pwsh.exe");
+    let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");
     if pwsh.is_file() {
         // Tasks and debug consoles use the kit's shell too.
         out.insert(

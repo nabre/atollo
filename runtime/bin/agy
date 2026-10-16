@@ -2,7 +2,7 @@
 # Atollo: agy for Git Bash, with its Google login carried into Windows
 # before the run and back into the kit after it (see agy.cmd).
 "$ATOLLO_EXE" keyring restore
-"$CP_APPS/antigravity/agy.exe" "$@"
+"$CP_ANTIGRAVITY/agy.exe" "$@"
 rc=$?
 "$ATOLLO_EXE" keyring save
 exit $rc

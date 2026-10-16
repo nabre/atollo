@@ -27,6 +27,7 @@ import { projectDatabases, projectStatus, type ProjectDatabases, type ProjectSta
 import { AgentPicker } from "../agents";
 import { ProjectExtensions } from "../extensions";
 import { EditorSettingsBox } from "../editorsettings";
+import { ProjectMcpBox } from "../projectmcp";
 import { ProjectVersions } from "../versions";
 import { ActionBar, EditorBody, EditorHeader, EditorSection, NavBar, type NavItem } from "../workbench";
 import { alive } from "./runs";
@@ -274,7 +275,12 @@ export function ProjectPage({
         )}
         {section === "databases" && <Databases p={p} dbs={dbs} onChanged={reload} />}
         {section === "extensions" && <ProjectExtensions project={p} onChanged={onChanged} />}
-        {section === "editor" && <EditorSettingsBox project={p.id} />}
+        {section === "editor" && (
+          <>
+            <EditorSettingsBox project={p.id} />
+            <ProjectMcpBox project={p.id} />
+          </>
+        )}
         {section === "git" && <Git status={status} />}
       </EditorBody>
     </div>

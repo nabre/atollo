@@ -118,7 +118,7 @@ pub fn running(kit: &Kit) -> BTreeSet<String> {
     let procs = crate::os::processes::running_under(&kit.apps());
     IDS.iter()
         .filter(|id| {
-            let exe = kit.apps().join(exe_of(id).unwrap_or_default());
+            let exe = crate::setup::catalog::kit_path(kit, exe_of(id).unwrap_or_default());
             procs.iter().any(|p| {
                 p.path
                     .display()
@@ -155,7 +155,7 @@ fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
     let Some(rel) = exe_of(id) else {
         bail!("unknown agent: {id}")
     };
-    let exe = kit.apps().join(rel);
+    let exe = crate::setup::catalog::kit_path(kit, rel);
     if !exe.is_file() {
         let name = Catalog::get().find(id).map_or(id, |c| c.name.as_str());
         bail!("{}", crate::i18n::t(lang, "{0} non è installato.", &[name]));
@@ -196,7 +196,7 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
     match id {
         "claude" => remove_if_exists(&home.join(r".claude\.credentials.json")),
         "codex" => {
-            let codex = kit.apps().join(r"codex\bin\codex.exe");
+            let codex = crate::setup::catalog::kit_path(kit, r"codex\bin\codex.exe");
             if codex.is_file() {
                 let status = crate::os::jobs::kit_command(&codex, env)
                     .arg("logout")

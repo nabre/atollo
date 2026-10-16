@@ -23,19 +23,19 @@ fn stale_lists_are_asked_for_again() {
     crate::fsx::write_json(&offered_file(&kit), &all).unwrap();
     assert!(stale_offers(&kit).iter().any(|id| id == "mariadb"));
 
-    // Apache's list of before (`2.4`, not a patch): asked for again.
+    // Apache's list of a kit with one folder per patch: asked for again.
     let mut all = offered(&kit);
     all.insert(
         "apache".into(),
         Offered {
-            lines: vec!["2.4".into()],
+            lines: vec!["2.4.69".into()],
             checked: all["mariadb"].checked + STALE_SECS,
         },
     );
     crate::fsx::write_json(&offered_file(&kit), &all).unwrap();
     assert!(stale_offers(&kit).iter().any(|id| id == "apache"));
     save_offered(&kit, "apache", &["2.4.69".into(), "2.4".into()]).unwrap();
-    assert_eq!(offered(&kit)["apache"].lines, ["2.4.69"]);
+    assert_eq!(offered(&kit)["apache"].lines, ["2.4"]);
 }
 
 #[test]

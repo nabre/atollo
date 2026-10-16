@@ -4,7 +4,7 @@ rem and back into the kit after it (Atollo.exe keyring, see keyring.rs).
 rem Written by Atollo.exe; edits are replaced at the next start.
 setlocal
 "%ATOLLO_EXE%" keyring restore
-"%CP_APPS%\antigravity\agy.exe" %*
+"%CP_ANTIGRAVITY%\agy.exe" %*
 set "AGY_EXIT=%ERRORLEVEL%"
 "%ATOLLO_EXE%" keyring save
 exit /b %AGY_EXIT%

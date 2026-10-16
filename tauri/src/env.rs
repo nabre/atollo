@@ -255,6 +255,8 @@ impl KitEnv {
         env.set("DISABLE_UPDATES", "1");
         env.set_path("CODEX_HOME", home.join(".codex"));
         env.set("AGY_CLI_DISABLE_AUTO_UPDATE", "true");
+        // The folder of its line, for the kit's agy.cmd.
+        env.set_path("CP_ANTIGRAVITY", app("antigravity"));
 
         // Portable profile (_env.cmd:76-98)
         if let Some(real) = host.get("CP_USER_PROFILE").or(host.get("USERPROFILE")) {
@@ -412,6 +414,12 @@ impl KitEnv {
         // PATH: kit tools in the order of _env.cmd:187-228, then the system
         // The kit's own commands first (agy.cmd carries Antigravity's login).
         let mut path: Vec<PathBuf> = vec![kit.kit_files().join("bin"), app("claude"), app("tools")];
+        if has(r"gh\bin\gh.exe") {
+            path.push(app(r"gh\bin"));
+        }
+        if has(r"uv\uv.exe") {
+            path.push(app("uv"));
+        }
         if has(r"pwsh\pwsh.exe") {
             path.push(app("pwsh"));
         }

@@ -105,6 +105,7 @@ export function App() {
         setLang(i.lang);
         setLangState(i.lang);
         setInfo(i);
+        setError(null);
       },
       (e: unknown) => {
         setError(String(e));
@@ -193,7 +194,7 @@ export function App() {
                 vertical={false}
                 label={t("Ridimensiona il pannello")}
                 onDrag={(d) => {
-                  setPanelHeight(panelHeight - d);
+                  setPanelHeight((h) => h - d);
                 }}
                 onReset={() => {
                   setPanelHeight(240);
@@ -307,7 +308,7 @@ function ActivityBar({
           // and a 1px border, where the editor's badge is 16px high.
           <span
             aria-label={shown.label}
-            className="pointer-events-none absolute right-0.5 bottom-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-vsc-activitybar-badge px-1 text-[9px] leading-none font-semibold text-vsc-activitybar-badge-fg"
+            className="pointer-events-none absolute right-0.5 bottom-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-vsc-activitybar-badge px-1 text-[11px] leading-none font-semibold text-vsc-activitybar-badge-fg"
           >
             {shown.count > 99 ? "99+" : shown.count}
           </span>

@@ -65,7 +65,10 @@ pub fn load_json<T: DeserializeOwned + Default>(path: &Path) -> (T, Option<Strin
 /// Writes through a temporary file in the same folder, then renames it over
 /// the target, so a crash never leaves a half-written file.
 pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let tmp = path.with_extension(format!("tmp-{}", std::process::id()));
+    static TMP_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let seq = TMP_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
+    let tmp = path.with_file_name(format!("{name}.tmp-{}-{seq}", std::process::id()));
     fs::write(&tmp, bytes)?;
     fs::rename(&tmp, path).inspect_err(|_| {
         let _ = fs::remove_file(&tmp);

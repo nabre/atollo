@@ -41,6 +41,23 @@ impl Installer for Terminal {
         )
     }
 
+    /// Its settings (`settings\`, portable mode) go into the new tree: from
+    /// the folder it replaces, or from the old line's for a new line.
+    fn before_swap(&self, ctx: &Ctx, component: &Component, tree: &Path, old: &Path) -> Result<()> {
+        let from = [
+            old.to_path_buf(),
+            crate::versions::default_dir(ctx.kit, component),
+        ]
+        .into_iter()
+        .map(|d| d.join("settings"))
+        .find(|d| d.is_dir());
+        match from {
+            Some(from) => crate::net::archive::copy_tree(&from, &tree.join("settings"))
+                .context("terminal settings"),
+            None => Ok(()),
+        }
+    }
+
     /// `.portable` next to the exe: settings stay in the folder, not in
     /// `%LOCALAPPDATA%` (Windows Terminal portable mode).
     fn finish(&self, _ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
