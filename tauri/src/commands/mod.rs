@@ -42,6 +42,7 @@ pub(crate) mod runs;
 pub(crate) mod servers;
 pub(crate) mod services;
 pub(crate) mod setup;
+pub(crate) mod terminals;
 pub(crate) mod versions;
 pub(crate) mod window;
 
@@ -293,6 +294,11 @@ macro_rules! command_handler {
             $crate::commands::editing::editor_restart,
             $crate::commands::projects::projects_list,
             $crate::commands::editing::terminal_open,
+            $crate::commands::terminals::terminals_list,
+            $crate::commands::terminals::terminal_save,
+            $crate::commands::terminals::terminal_remove,
+            $crate::commands::terminals::terminal_launch,
+            $crate::commands::terminals::terminal_dir_pick,
             $crate::commands::setup::components_list,
             $crate::commands::setup::components_sync,
             $crate::commands::setup::setup_state,

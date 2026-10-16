@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="barGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="barCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="barPurple" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="960" height="540" rx="16" fill="url(#bg2)" stroke="#1f2937" stroke-width="1.5"/>
+
+  <text x="480" y="38" fill="#f9fafb" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" text-anchor="middle">
+    Prontezza Multipiattaforma &amp; Portabilità 100% per Sottosistema (HEAD 39b74bc vs Target Blueprint v3)
+  </text>
+  <text x="480" y="60" fill="#9ca3af" font-family="system-ui, -apple-system, sans-serif" font-size="13" text-anchor="middle">
+    Avanzamento sui 6 Target (win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64, linux-arm64) e 36 Componenti
+  </text>
+
+  <!-- Grid lines: x=290 (0%) to x=890 (100%), width=600 -->
+  <g stroke="#1f2937" stroke-width="1" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280">
+    <line x1="290" y1="85" x2="290" y2="465" stroke="#374151"/>
+    <text x="290" y="485" text-anchor="middle">0%</text>
+    <line x1="440" y1="85" x2="440" y2="465"/>
+    <text x="440" y="485" text-anchor="middle">25%</text>
+    <line x1="590" y1="85" x2="590" y2="465"/>
+    <text x="590" y="485" text-anchor="middle">50%</text>
+    <line x1="740" y1="85" x2="740" y2="465"/>
+    <text x="740" y="485" text-anchor="middle">75%</text>
+    <line x1="890" y1="85" x2="890" y2="465" stroke="#374151"/>
+    <text x="890" y="485" text-anchor="middle">100%</text>
+  </g>
+
+  <!-- Rows -->
+  <g font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#e5e7eb">
+    <!-- Row 1: Modello Target & Catalogo (kit.rs, catalog.rs) -->
+    <text x="275" y="112" text-anchor="end" font-weight="600">1. Modello Target &amp; Catalogo (36 tool)</text>
+    <rect x="290" y="96" width="600" height="22" rx="5" fill="#1f2937"/>
+    <rect x="290" y="96" width="588" height="22" rx="5" fill="url(#barGreen)"/>
+    <text x="900" y="112" fill="#10b981" font-weight="700" font-size="12">98% (v3)</text>
+
+    <!-- Row 2: Estrazione Archivi (.zip, .7z, .tar.gz, .tar.xz pure-Rust) -->
+    <text x="275" y="158" text-anchor="end" font-weight="600">2. Archivi &amp; Sicurezza Symlink (archive.rs)</text>
+    <rect x="290" y="142" width="600" height="22" rx="5" fill="#1f2937"/>
+    <rect x="290" y="142" width="600" height="22" rx="5" fill="url(#barGreen)"/>
+    <text x="900" y="158" fill="#10b981" font-weight="700" font-size="12">100% (BUG-22 chiuso)</text>
+
+    <!-- Row 3: Ambiente Isolato & PATH Multi-OS (env.rs) -->
+    <text x="275" y="204" text-anchor="end" font-weight="600">3. Ambiente Isolato &amp; PATH (env.rs)</text>
+    <rect x="290" y="188" width="600" height="22" rx="5" fill="#1f2937"/>
+    <rect x="290" y="188" width="576" height="22" rx="5" fill="url(#barGreen)"/>
+    <text x="900" y="204" fill="#10b981" font-weight="700" font-size="12">96%</text>
+
+    <!-- Row 4: Installer Multi-OS (31/36 attivi su Unix, 36/36 con Blueprint v3) -->
+    <text x="275" y="250" text-anchor="end" font-weight="600">4. Installer Catalogo su 6 Target</text>
+    <rect x="290" y="234" width="600" height="22" rx="5" fill="#1f2937"/>
+    <rect x="290" y="234" width="600" height="22" rx="5" fill="url(#barPurple)" opacity="0.35"/>
+    <rect x="290" y="234" width="516" height="22" rx="5" fill="url(#barCyan)"/>
+    <text x="900" y="250" fill="#38bdf8" font-weight="700" font-size="12">86% → 100%</text>
+
+    <!-- Row 5: Rilocabilità Offline 100% (USB / Cambio Percorso senza rete) -->
+    <text x="275" y="296" text-anchor="end" font-weight="600">5. Rilocabilità Offline 100% (Zero-Reinstall)</text>
+    <rect x="290" y="280" width="600" height="22" rx="5" fill="#1f2937"/>
+    <rect x="290" y="280" width="600" height="22" rx="5" fill="url(#barPurple)" opacity="0.35"/>
+    <rect x="290" y="280" width="540" height="22" rx="5" fill="url(#barCyan)"/>
+    <text x="900" y="296" fill="#38bdf8" font-weight="700" font-size="12">90% → 100%</text>
+
+    <!-- Row 6: Web Stack (PHP, Apache, Nginx, Adminer) Multi-OS -->
+    <text x="275" y="342" text-anchor="end" font-weight="600">6. Web Stack &amp; Pool VirtualHost Multi-OS</text>
+    <rect x="290" y="326" width="600" height="22" rx="5" fill="#1f2937"/>
+    <rect x="290" y="326" width="600" height="22" rx="5" fill="url(#barPurple)" opacity="0.35"/>
+    <rect x="290" y="326" width="360" height="22" rx="5" fill="url(#barCyan)"/>
+    <text x="900" y="342" fill="#c084fc" font-weight="700" font-size="12">60% → 100%</text>
+
+    <!-- Row 7: Astrazione OS & Compilazione Host Unix (Cargo.toml, os/*.rs) -->
+    <text x="275" y="388" text-anchor="end" font-weight="600">7. Layer OS &amp; Keyring Cross-Platform</text>
+    <rect x="290" y="372" width="600" height="22" rx="5" fill="#1f2937"/>
+    <rect x="290" y="372" width="600" height="22" rx="5" fill="url(#barPurple)" opacity="0.35"/>
+    <rect x="290" y="372" width="240" height="22" rx="5" fill="url(#barCyan)"/>
+    <text x="900" y="388" fill="#c084fc" font-weight="700" font-size="12">40% → 100%</text>
+
+    <!-- Row 8: Compatibilità Distro Linux (glibc, musl/Alpine, NixOS) -->
+    <text x="275" y="434" text-anchor="end" font-weight="600">8. Resilienza Distro OS (Win10/LTSC, musl, NixOS)</text>
+    <rect x="290" y="418" width="600" height="22" rx="5" fill="#1f2937"/>
+    <rect x="290" y="418" width="588" height="22" rx="5" fill="url(#barPurple)" opacity="0.35"/>
+    <rect x="290" y="418" width="432" height="22" rx="5" fill="url(#barCyan)"/>
+    <text x="900" y="434" fill="#c084fc" font-weight="700" font-size="12">72% → 98%</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(220, 505)" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#d1d5db">
+    <rect x="0" y="0" width="16" height="12" rx="3" fill="url(#barGreen)"/>
+    <text x="24" y="10">Completato in HEAD 39b74bc</text>
+
+    <rect x="210" y="0" width="16" height="12" rx="3" fill="url(#barCyan)"/>
+    <text x="234" y="10">Stato Attuale v3 (Parziale)</text>
+
+    <rect x="420" y="0" width="16" height="12" rx="3" fill="url(#barPurple)" opacity="0.5"/>
+    <text x="444" y="10">Target Promosso dal Blueprint v3 (100% Portable &amp; Multi-OS)</text>
+  </g>
+</svg>

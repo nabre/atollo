@@ -9,10 +9,11 @@ shopt -s histappend
 # Versions of the languages chosen for the project (data\projects\<project>\
 # versions.txt, "from<TAB>to" lines written by Atollo.exe), as profile.ps1
 # does for PowerShell (DECISIONS.md D-80): PATH in POSIX form, the other
-# variables as Windows paths.
+# variables as Windows paths. A kit terminal (ATOLLO_TERMINAL, the Terminals
+# page) keeps its own.
 __atollo_versions() {
     local projects here project file from to fu tu name value entry out
-    [ -n "$CP_ROOT" ] && [ -n "$CP_DATA" ] || return 0
+    [ -n "$CP_ROOT" ] && [ -n "$CP_DATA" ] && [ -z "$ATOLLO_TERMINAL" ] || return 0
     __atollo_p() {
         if command -v cygpath >/dev/null 2>&1; then
             cygpath -u "$1"
