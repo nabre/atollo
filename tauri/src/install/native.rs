@@ -17,7 +17,7 @@ use windows::Win32::System::Registry::{
 
 use super::{fetch, target_of, work_dir, Ctx, Installer, Progress, Release};
 use crate::fsx::{join_rel, write_atomic};
-use crate::kit::Target;
+use crate::kit::{Kit, Target};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
 use crate::os::jobs;
@@ -626,6 +626,37 @@ pub(super) fn micromamba_create(
     result
 }
 
+/// `Makeconf` with its `LOCAL_SOFT` lines set to `<prefix>/Library`
+/// (forward slashes, as conda writes it); `None` when they already are.
+pub(crate) fn relocated_makeconf(text: &str, prefix: &Path) -> Option<String> {
+    let library = format!(
+        "{}/Library",
+        prefix
+            .to_string_lossy()
+            .replace('\\', "/")
+            .trim_end_matches('/')
+    );
+    let mut changed = false;
+    let mut out = String::with_capacity(text.len() + library.len());
+    for line in text.split_inclusive('\n') {
+        let body = line.trim_end_matches(['\r', '\n']);
+        let ending = &line[body.len()..];
+        let value = body
+            .strip_prefix("LOCAL_SOFT")
+            .map(str::trim_start)
+            .and_then(|rest| rest.strip_prefix("?=").or_else(|| rest.strip_prefix('=')));
+        match value {
+            Some(old) if old.trim() != library => {
+                let op = if body.contains("?=") { "?=" } else { "=" };
+                out.push_str(&format!("LOCAL_SOFT {op} {library}{ending}"));
+                changed = true;
+            }
+            _ => out.push_str(line),
+        }
+    }
+    changed.then_some(out)
+}
+
 /// Packages compiled for one minor version of R do not load in another:
 /// one folder per line (versioned, D-81), `renv.lock` declares R's version.
 impl Installer for R {
@@ -676,6 +707,31 @@ impl Installer for R {
     /// would cost more.
     fn relocatable(&self, target: Target) -> bool {
         target.os.is_windows()
+    }
+
+    /// On Windows conda writes the environment's folder into
+    /// `lib/R/etc/x64/Makeconf` (`LOCAL_SOFT`, where a package built from
+    /// source finds the headers and libraries of `Library`): set again to
+    /// the folder of each line, which moves with the kit (BUG-V3-06).
+    fn relocate(&self, kit: &Kit, component: &Component) -> Result<()> {
+        if !kit.os().is_windows() {
+            return Ok(());
+        }
+        let Some(folder) = component.folder_path(kit) else {
+            return Ok(());
+        };
+        for entry in fs::read_dir(&folder).into_iter().flatten().flatten() {
+            let dir = entry.path();
+            let makeconf = join_rel(&dir, "lib/R/etc/x64/Makeconf");
+            let Ok(text) = fs::read_to_string(&makeconf) else {
+                continue;
+            };
+            if let Some(new) = relocated_makeconf(&text, &dir) {
+                write_atomic(&makeconf, new.as_bytes())
+                    .with_context(|| makeconf.display().to_string())?;
+            }
+        }
+        Ok(())
     }
 
     fn install_custom(

@@ -160,6 +160,12 @@ pub trait Installer: Sync {
     fn relocatable(&self, _target: crate::kit::Target) -> bool {
         true
     }
+    /// A component that follows the kit but writes its folder into some
+    /// file (R's Makeconf on Windows): those files are set to the folders
+    /// it is in now (`relocate`). Default: nothing to do.
+    fn relocate(&self, _kit: &Kit, _component: &Component) -> Result<()> {
+        Ok(())
+    }
     fn install_custom(
         &self,
         _ctx: &Ctx,
@@ -407,6 +413,23 @@ pub fn flag_not_relocatable(kit: &Kit, old_root: &str) -> std::io::Result<Vec<St
         }
     }
     Ok(flagged)
+}
+
+/// The components that follow the kit when it moves (`relocatable`) set
+/// the folders written in their files to where they are now
+/// (`Installer::relocate`). At every start, not only after a move noticed
+/// now: a kit moved before keeps working too; nothing is written when the
+/// files are right. A failure is logged, the start goes on.
+pub fn relocate(kit: &Kit) {
+    let target = kit.target();
+    for c in crate::setup::catalog::Catalog::get().all() {
+        let Some(inst) = installer(&c.id).filter(|i| i.relocatable(target)) else {
+            continue;
+        };
+        if let Err(e) = inst.relocate(kit, c) {
+            crate::log::warn(&format!("{}: relocation: {e:#}", c.id));
+        }
+    }
 }
 
 /// The release of a first installation at `line` instead of the latest:
