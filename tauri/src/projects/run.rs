@@ -4,7 +4,7 @@
 //! - every action runs in a job of its own, nested in the app's: stopping it
 //!   ends the whole tree (npm → node → esbuild…), closing the app ends all;
 //! - commands go through `cmd.exe /d /s /c` with the kit's environment plus
-//!   `PORT`, `ROCKET_PORT`, `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
+//!   `PORT`, `ROCKET_PORT`, `DB_PORT` (its MariaDB database), `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
 //!   action runs this exe as a file server (`Dev-Kit.exe serve`), an
 //!   `apache` action the kit's httpd with a configuration of the project;
 //! - web actions keep their port from one start to the next (bookmarks,
@@ -547,6 +547,10 @@ impl Runner {
         if let Some(p) = port {
             cmd.env("PORT", p.to_string())
                 .env("ROCKET_PORT", p.to_string());
+        }
+        // The port of the MariaDB version its database is on (PLAN.md §13.2).
+        if let Some(p) = crate::db::services::project_db_port(&self.kit, id) {
+            cmd.env("DB_PORT", p.to_string());
         }
         for (k, v) in &action.env {
             cmd.env(k, listen(v));

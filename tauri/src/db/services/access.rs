@@ -6,7 +6,7 @@ use std::time::Duration;
 use anyhow::{anyhow, bail, Context, Result};
 
 use super::tools::run_with_input;
-use super::{auth, bin, Services};
+use super::{auth, bin, bin_at, line_port, project_line, server_lines, Services, SERVERS};
 use crate::env::KitEnv;
 use crate::os::jobs;
 
@@ -26,8 +26,18 @@ pub(super) fn admin_password(secrets: &auth::Secrets, id: &str) -> Option<String
 
 impl Services {
     /// The administrator's password, set on a new data folder or on one made
-    /// before D-74 (no password yet), and MariaDB's `[client]` login.
-    pub(super) fn secure(&self, id: &str, env: &KitEnv, port: u16, fresh: bool) -> Result<()> {
+    /// before D-74 (no password yet), and MariaDB's `[client]` login (for
+    /// the version the server runs, `main`; the others get the same
+    /// password, every version of a server has one administrator).
+    pub(super) fn secure(
+        &self,
+        id: &str,
+        line: Option<&str>,
+        main: bool,
+        env: &KitEnv,
+        port: u16,
+        fresh: bool,
+    ) -> Result<()> {
         let mut secrets = auth::load(&self.kit);
         let known = admin_password(&secrets, id);
         let password = match &known {
@@ -50,7 +60,8 @@ impl Services {
                 }
                 _ => {
                     // No password yet: log in without one, ignoring my.ini.
-                    let mut cmd = jobs::kit_command(bin(&self.kit, id, "mariadb.exe"), env);
+                    let mut cmd =
+                        jobs::kit_command(bin_at(&self.kit, id, line, "mariadb.exe"), env);
                     cmd.args([
                         "--no-defaults",
                         "--user=root",
@@ -70,15 +81,15 @@ impl Services {
             auth::save(&self.kit, &secrets)?;
             crate::log::info(&format!("{id}: administrator password set"));
         }
-        if id == "mariadb" {
+        if id == "mariadb" && main {
             auth::write_client_ini(&self.kit, port, &password)?;
         }
         Ok(())
     }
 
-    /// The project's databases already created, at the servers' ports.
-    /// A database whose name cannot be resolved ([`auth::project_db_name`])
-    /// is left out, with a warning.
+    /// The project's databases already created, at the ports of the
+    /// versions they are on. A database whose name cannot be resolved
+    /// ([`auth::project_db_name`]) is left out, with a warning.
     pub fn project_dbs(&self, project: &str) -> Vec<auth::ProjectDb> {
         auth::project_passwords(&self.kit, project)
             .iter()
@@ -86,19 +97,57 @@ impl Services {
                 let name = auth::project_db_name(&self.kit, project, engine)
                     .map_err(|e| crate::log::warn(&format!("{project}: {engine}: {e:#}")))
                     .ok()?;
-                Some(auth::project_db(engine, &name, pw, self.port(engine)))
+                let line = project_line(&self.kit, project, engine);
+                let port = line_port(&self.kit, engine, line.as_deref());
+                Some(auth::project_db(engine, &name, pw, port))
             })
             .collect()
     }
 
-    /// Creates (or repairs) the project's database and user on a running
-    /// server; name and password stay the same once generated. They are
-    /// stored before the server gets them, and an unreadable `db.json`, a
-    /// name of the server's own or one another project uses stop here
-    /// (`auth::ensure_project_db`): a failed call is repaired by running
-    /// again, never a password lost nor another project's user altered.
+    /// Starts the version of `engine` the project's database is on.
+    pub fn start_for(&self, project: &str, engine: &str, env: &KitEnv) -> Result<u16> {
+        let line = project_line(&self.kit, project, engine);
+        self.start_line(engine, line.as_deref(), env)
+    }
+
+    /// The version of `engine` for the project's database (None: the one
+    /// the server runs), in its `db.json` (PLAN.md §13.2). A project that
+    /// has a database already gets it, with the same name and password,
+    /// on the version chosen (started for it); its data stays on the
+    /// version it was on (a copy and a restore move it).
+    pub fn project_db_line(
+        &self,
+        project: &str,
+        engine: &str,
+        line: Option<&str>,
+        env: &KitEnv,
+    ) -> Result<Option<auth::ProjectDb>> {
+        if !SERVERS.contains(&engine) {
+            bail!("unknown server {engine}");
+        }
+        if let Some(l) = line {
+            if !server_lines(&self.kit, engine).iter().any(|x| x == l) {
+                bail!("{engine} {l} is not installed");
+            }
+        }
+        auth::set_project_line(&self.kit, project, engine, line)?;
+        if auth::try_project_password(&self.kit, project, engine)?.is_none() {
+            return Ok(None);
+        }
+        self.start_for(project, engine, env)?;
+        self.project_db_create(project, engine).map(Some)
+    }
+
+    /// Creates (or repairs) the project's database and user on the running
+    /// version it is on; name and password stay the same once generated.
+    /// They are stored before the server gets them, and an unreadable
+    /// `db.json`, a name of the server's own or one another project uses
+    /// stop here (`auth::ensure_project_db`): a failed call is repaired by
+    /// running again, never a password lost nor another project's user
+    /// altered.
     pub fn project_db_create(&self, project: &str, engine: &str) -> Result<auth::ProjectDb> {
-        let (port, env) = self.running_server(engine)?;
+        let line = project_line(&self.kit, project, engine);
+        let (port, env) = self.running_at(engine, line.as_deref())?;
         let (name, password) = auth::ensure_project_db(&self.kit, project, engine)
             .context("the passwords of the project's databases")?;
         match engine {
@@ -116,7 +165,7 @@ impl Services {
                 run_with_input(cmd, "", Duration::from_secs(60))?;
             }
             _ => {
-                let cmd = self.mariadb_tool("mariadb.exe", &env);
+                let cmd = self.mariadb_tool_at("mariadb.exe", &env, line.as_deref(), port);
                 run_with_input(
                     cmd,
                     &auth::project_sql(&name, &password),
@@ -136,27 +185,35 @@ impl Services {
     pub fn project_db_drop(&self, project: &str, engine: &str, env: &KitEnv) -> Result<()> {
         let name = auth::project_db_name(&self.kit, project, engine)?;
         auth::check_name_free(&self.kit, project, engine, &name)?;
-        self.db_drop(engine, &name, env)
+        let line = project_line(&self.kit, project, engine);
+        self.db_drop_at(engine, line.as_deref(), &name, env)
     }
 
-    /// Drops the database and user `name` from `engine`, a name already
-    /// resolved and checked by the caller (`projects::delete`); a server's
-    /// own name or one that is not a name is refused here as well.
-    pub fn db_drop(&self, engine: &str, name: &str, env: &KitEnv) -> Result<()> {
+    /// Drops the database and user `name` from version `line` of `engine`
+    /// (None: the one the server runs), a name already resolved and checked
+    /// by the caller (`projects::delete`); a server's own name or one that
+    /// is not a name is refused here as well.
+    pub fn db_drop_at(
+        &self,
+        engine: &str,
+        line: Option<&str>,
+        name: &str,
+        env: &KitEnv,
+    ) -> Result<()> {
         if !auth::is_valid_name(name) || auth::is_reserved(engine, name) {
             bail!("{engine}: {name} is not a project's database: not dropped");
         }
-        let was_running = self.running_server(engine).is_ok();
-        self.start(engine, env)?;
-        let result = self.drop_on_running(engine, name);
+        let was_running = self.running_at(engine, line).is_ok();
+        self.start_line(engine, line, env)?;
+        let result = self.drop_on_running(engine, line, name);
         if !was_running {
-            self.stop(engine);
+            self.stop_line(engine, line);
         }
         result
     }
 
-    fn drop_on_running(&self, engine: &str, name: &str) -> Result<()> {
-        let (port, env) = self.running_server(engine)?;
+    fn drop_on_running(&self, engine: &str, line: Option<&str>, name: &str) -> Result<()> {
+        let (port, env) = self.running_at(engine, line)?;
         match engine {
             "mongodb" => {
                 let admin = auth::load(&self.kit)
@@ -171,7 +228,7 @@ impl Services {
                 run_with_input(cmd, "", Duration::from_secs(60))?;
             }
             _ => {
-                let cmd = self.mariadb_tool("mariadb.exe", &env);
+                let cmd = self.mariadb_tool_at("mariadb.exe", &env, line, port);
                 run_with_input(cmd, &auth::project_drop_sql(name), Duration::from_secs(60))?;
             }
         }

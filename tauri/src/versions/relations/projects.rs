@@ -95,7 +95,7 @@ fn need(
     let fits = |l: &String| admits(&range, have, l);
     let chosen = crate::versions::project_choice(kit, project).remove(&c.id);
     need.uses = if need.server {
-        crate::db::services::server_line(kit, &c.id)
+        crate::db::services::project_line(kit, project, &c.id)
     } else {
         chosen
             .clone()

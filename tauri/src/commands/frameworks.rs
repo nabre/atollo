@@ -313,7 +313,7 @@ pub async fn frameworks_create<R: Runtime>(
                 let text = crate::i18n::t(lang, "Creo il database del progetto in {0}…", &[engine]);
                 emit(plan.create.len(), None, Some(text));
                 let db = services
-                    .start(engine, &env)
+                    .start_for(&name, engine, &env)
                     .and_then(|_port| services.project_db_create(&name, engine))
                     .or_fail_chain("database")?;
                 crate::db::auth::env_apply(&dir, &db).or_fail_chain(".env")?;

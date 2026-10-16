@@ -91,15 +91,62 @@ pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
 
 /// A project's `private\db.json`: engine (`mariadb`, `mongodb`) → password
 /// of its user, and `names`: engine → name of its database and user (an
-/// object, so the readers of passwords skip it); other keys kept as they are.
+/// object, so the readers of passwords skip it); `lines`: engine → version of
+/// the server its database is on, when not the one the server runs (PLAN.md
+/// §13.2); other keys kept as they are.
 ///
 /// ```json
-/// { "mariadb": "<password>", "names": { "mariadb": "shop" } }
+/// { "mariadb": "<password>", "names": { "mariadb": "shop" }, "lines": { "mariadb": "10.6" } }
 /// ```
 pub(crate) type ProjectSecrets = serde_json::Map<String, serde_json::Value>;
 
 /// The key of the names in `db.json`.
 const NAMES: &str = "names";
+
+/// The key of the versions in `db.json`.
+const LINES: &str = "lines";
+
+/// The version of `engine` chosen for the project's database (None: the
+/// one the server runs); an error when `db.json` cannot be read. A value
+/// that is not a version is ignored.
+pub fn project_line(kit: &Kit, project: &str, engine: &str) -> Result<Option<String>> {
+    let secrets = read_project(&project_file_to_read(kit, project)?)?.unwrap_or_default();
+    Ok(secrets
+        .get(LINES)
+        .and_then(|l| l.get(engine))
+        .and_then(serde_json::Value::as_str)
+        .filter(|l| crate::versions::valid_line(l))
+        .map(str::to_owned))
+}
+
+/// Stores (None: removes) the version of `engine` for the project's
+/// database; nothing is created to remove one.
+pub fn set_project_line(kit: &Kit, project: &str, engine: &str, line: Option<&str>) -> Result<()> {
+    if line.is_some_and(|l| !crate::versions::valid_line(l)) {
+        bail!("not a version line: {}", line.unwrap_or_default());
+    }
+    let mut secrets = read_project(&project_file_to_read(kit, project)?)?;
+    if line.is_none() && secrets.is_none() {
+        return Ok(());
+    }
+    let secrets = secrets.get_or_insert_with(Default::default);
+    let lines = match secrets
+        .entry(LINES)
+        .or_insert_with(|| serde_json::Value::Object(Default::default()))
+    {
+        serde_json::Value::Object(lines) => lines,
+        _ => bail!("db.json: \"{LINES}\" is not an object"),
+    };
+    match line {
+        Some(l) => lines.insert(engine.to_owned(), l.into()),
+        None => lines.remove(engine),
+    };
+    if lines.is_empty() {
+        secrets.remove(LINES);
+    }
+    let path = project_file(kit, project)?;
+    write_in_private(&path, &serde_json::to_string_pretty(&secrets)?)
+}
 
 fn project_state(kit: &Kit, project: &str) -> Result<ProjectState> {
     match ProjectState::of(kit, project) {

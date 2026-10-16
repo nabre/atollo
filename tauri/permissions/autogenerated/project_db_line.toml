@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-db-line"
+description = "Enables the project_db_line command without any pre-configured scope."
+commands.allow = ["project_db_line"]
+
+[[permission]]
+identifier = "deny-project-db-line"
+description = "Denies the project_db_line command without any pre-configured scope."
+commands.deny = ["project_db_line"]

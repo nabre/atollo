@@ -18,13 +18,15 @@ pub async fn services_list<R: Runtime>(
 }
 
 /// Starts a database server, installing it first if needed; waits until it
-/// answers.
+/// answers. `line`: another installed version, on its own port (PLAN.md
+/// §13.2); null: the version the server runs.
 #[tauri::command]
 pub async fn service_start<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
+    line: Option<String>,
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     if !crate::db::services::SERVERS.contains(&id.as_str()) {
@@ -35,7 +37,7 @@ pub async fn service_start<R: Runtime>(
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[id.as_str()])?;
         services
-            .start(&id, &env)
+            .start_line(&id, line.as_deref(), &env)
             .map_err(|e| start_error(lang, &e))?;
         Ok(services.list())
     })
@@ -60,11 +62,12 @@ pub async fn service_stop<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
+    line: Option<String>,
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        services.stop(&id);
+        services.stop_line(&id, line.as_deref());
         services.list()
     })
     .await
@@ -87,6 +90,28 @@ pub async fn service_line<R: Runtime>(
     tauri::async_runtime::spawn_blocking(move || {
         services
             .set_line(&id, line.as_deref())
+            .or_fail_chain("service")?;
+        Ok(services.list())
+    })
+    .await
+    .or_fail("service")?
+}
+
+/// The port of another version of a database server (null: the first free
+/// one after the server's), from its next start (PLAN.md §13.2).
+#[tauri::command]
+pub async fn service_line_port<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+    line: String,
+    port: Option<u16>,
+) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
+    ensure_main(&webview)?;
+    let services = Arc::clone(&state.services);
+    tauri::async_runtime::spawn_blocking(move || {
+        services
+            .set_line_port(&id, &line, port)
             .or_fail_chain("service")?;
         Ok(services.list())
     })

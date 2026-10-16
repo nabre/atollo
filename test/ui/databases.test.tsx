@@ -100,4 +100,24 @@ describe("DatabasesPage", () => {
     await flush();
     expect(screen.getAllByRole("button", { name: "Ferma" }).length).toBeGreaterThan(0);
   });
+
+  it("starts another version on its own port and sets that port (PLAN.md 13.2)", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "services_list") return Promise.resolve(STOPPED);
+      if (cmd === "service_start" || cmd === "service_line_port") return Promise.resolve(STOPPED);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<DatabasesPage />);
+    await flush();
+    expect(screen.getByText("Altre versioni")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Avvia 11.4" }));
+    await flush();
+    expect(invoke).toHaveBeenCalledWith("service_start", { id: "mariadb", line: "11.4" });
+    const port = document.getElementById("port-mariadb-11.4") as HTMLInputElement;
+    expect(port.value).toBe("3307");
+    fireEvent.change(port, { target: { value: "3317" } });
+    fireEvent.blur(port);
+    await flush();
+    expect(invoke).toHaveBeenCalledWith("service_line_port", { id: "mariadb", line: "11.4", port: 3317 });
+  });
 });
