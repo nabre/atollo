@@ -230,6 +230,9 @@ fn handle(root: &Path, lan: bool, mut stream: TcpStream) -> Result<()> {
     Ok(())
 }
 
+/// Connections served at the same time; the others are closed at once.
+const MAX_CONNS: usize = 64;
+
 struct ConnGuard(Arc<AtomicUsize>);
 
 impl Drop for ConnGuard {
@@ -269,7 +272,6 @@ pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
             ]
         )
     );
-    const MAX_CONNS: usize = 64;
     let active = Arc::new(AtomicUsize::new(0));
     for stream in listener.incoming().flatten() {
         let prev = active.fetch_add(1, Ordering::AcqRel);

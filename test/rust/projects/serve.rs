@@ -75,17 +75,23 @@ fn paths() {
     assert!(matches!(resolve(&root, "/x~.txt"), Answer::Status(404, _)));
 }
 
-#[test]
-fn serves_over_http() {
-    let tmp = TempDir::new("serve-http");
-    fs::write(tmp.0.join("index.html"), "<h1>ok</h1>").unwrap();
+/// Starts `run` on a free port in a background thread.
+fn start(root: &Path) -> u16 {
     let port = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
         .unwrap()
         .local_addr()
         .unwrap()
         .port();
-    let root = tmp.0.clone();
+    let root = root.to_path_buf();
     std::thread::spawn(move || run(&root, port, "it"));
+    port
+}
+
+#[test]
+fn serves_over_http() {
+    let tmp = TempDir::new("serve-http");
+    fs::write(tmp.0.join("index.html"), "<h1>ok</h1>").unwrap();
+    let port = start(&tmp.0);
     let get = |host: &str| {
         for _ in 0..50 {
             if let Ok(mut s) = TcpStream::connect((Ipv4Addr::LOCALHOST, port)) {
@@ -104,4 +110,47 @@ fn serves_over_http() {
         "{ok}"
     );
     assert!(get("rebind.example").starts_with("HTTP/1.1 403"));
+}
+
+/// A full house of silent connections (slowloris) is closed by the 5 s read
+/// timeout: a real request is answered again soon after, not never.
+#[test]
+fn slowloris_does_not_block() {
+    let tmp = TempDir::new("serve-slowloris");
+    fs::write(tmp.0.join("index.html"), "<h1>ok</h1>").unwrap();
+    let port = start(&tmp.0);
+    let get = || -> Option<String> {
+        let mut s = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).ok()?;
+        s.set_read_timeout(Some(Duration::from_secs(2))).ok()?;
+        write!(s, "GET / HTTP/1.1\r\nHost: localhost:{port}\r\n\r\n").ok()?;
+        let mut out = String::new();
+        s.read_to_string(&mut out).ok()?;
+        Some(out).filter(|o| o.starts_with("HTTP/1.1 200"))
+    };
+    // The server is up before the flood starts.
+    let mut up = false;
+    for _ in 0..50 {
+        if get().is_some() {
+            up = true;
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    assert!(up, "server did not start");
+
+    let started = std::time::Instant::now();
+    let idle: Vec<TcpStream> = (0..MAX_CONNS + 6)
+        .map(|_| TcpStream::connect((Ipv4Addr::LOCALHOST, port)).unwrap())
+        .collect();
+    let mut answered = None;
+    while started.elapsed() < Duration::from_secs(8) {
+        if let Some(out) = get() {
+            answered = Some(out);
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    drop(idle);
+    let out = answered.expect("no answer while silent connections were open");
+    assert!(out.ends_with("<h1>ok</h1>"), "{out}");
 }
