@@ -360,7 +360,7 @@ fn list_uses_cache_until_invalidated() {
         engine: WebServerEngine::Nginx,
         server_line: None,
         php_line: None,
-        port: Some(8097),
+        port: Some(if id == "outside" { 8097 } else { 8086 }),
     };
     let store = StoredServers {
         profiles: vec![profile("outside")],
@@ -798,6 +798,48 @@ fn pooled_actions_drop_detected_duplicates() {
     with_site.push(web("docs", true, true));
     assert_eq!(ids(&with_site), ["site", "docs"]);
     assert!(ids(&[Action::for_test("dev", "npm run dev", Kind::Web)]).is_empty());
+}
+
+/// Defect 6: two pools never share a port: a profile is refused the port
+/// of another one, and a new pool never falls back on a pool's port.
+#[test]
+fn ports_are_unique_among_pools() {
+    let tmp = TempDir::new("servers-unique-ports");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let profile = |id: &str, port: u16| WebServerProfileInput {
+        id: id.into(),
+        name: id.into(),
+        engine: WebServerEngine::Nginx,
+        server_line: None,
+        php_line: None,
+        port: Some(port),
+    };
+    servers.save_profile(profile("one", 8085), "it").unwrap();
+    let err = servers
+        .save_profile(profile("two", 8085), "it")
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("8085") && err.contains("one"), "{err}");
+    // The same profile saved again keeps its port.
+    servers.save_profile(profile("one", 8085), "it").unwrap();
+    servers.save_profile(profile("two", 8084), "it").unwrap();
+
+    // Every port of the range taken by a pool but one: that one, even
+    // when another program holds it.
+    let mut store = load_store(&kit);
+    for (i, p) in (POOL_PORT_FROM..=POOL_PORT_TO).enumerate() {
+        if p != 8500 {
+            store.ports.insert(format!("p{i}"), p);
+        }
+    }
+    let mut dirty = false;
+    assert_eq!(
+        servers.assign_or_get_port(&mut store, &mut dirty, "new", None),
+        8500
+    );
+    assert!(dirty);
 }
 
 /// BUG-V3-02: names that give the same label in one pool stay distinct.
