@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 460" width="100%" height="100%" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="920" height="460" rx="16" fill="url(#bg3)" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- Left Half: Bug & Gap Distribution -->
+  <g transform="translate(32, 36)">
+    <text x="0" y="0" fill="#f8fafc" font-size="18" font-weight="700">Distribuzione Anomalie &amp; Bug Rilevati (21 Totali)</text>
+    <text x="0" y="22" fill="#94a3b8" font-size="12">Classificazione per severità e dominio (Backend Rust vs Frontend React/Docs)</text>
+
+    <!-- Card 1: Critici / Alta Priorità -->
+    <g transform="translate(0, 44)">
+      <rect width="410" height="78" rx="10" fill="#1e293b" stroke="#ef4444" stroke-width="1.5"/>
+      <rect x="14" y="16" width="46" height="46" rx="8" fill="#ef4444" fill-opacity="0.18"/>
+      <text x="37" y="46" text-anchor="middle" fill="#ef4444" font-size="22" font-weight="800">5</text>
+      <text x="74" y="30" fill="#f8fafc" font-size="14" font-weight="700">Severità Alta (Concorrenza, Sicurezza, Pool Server)</text>
+      <text x="74" y="49" fill="#94a3b8" font-size="11.5">• Race condition `write_atomic` (PID-only) e `servers::start`</text>
+      <text x="74" y="65" fill="#94a3b8" font-size="11.5">• `serve.rs` symlink/NTLM bypass (D-77) + Silent crash Apache/Nginx</text>
+    </g>
+
+    <!-- Card 2: Media Priorità -->
+    <g transform="translate(0, 136)">
+      <rect width="410" height="78" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+      <rect x="14" y="16" width="46" height="46" rx="8" fill="#f59e0b" fill-opacity="0.18"/>
+      <text x="37" y="46" text-anchor="middle" fill="#f59e0b" font-size="22" font-weight="800">9</text>
+      <text x="74" y="30" fill="#f8fafc" font-size="14" font-weight="700">Severità Media (Logica, UI Orfana, Race Frontend)</text>
+      <text x="74" y="49" fill="#94a3b8" font-size="11.5">• `ProjectMcpBox` non montato; `servers::list` I/O ogni 3s</text>
+      <text x="74" y="65" fill="#94a3b8" font-size="11.5">• `useLoad`/`useRuns` race; Guida non tradotta in FR/DE; reload 120ms</text>
+    </g>
+
+    <!-- Card 3: Bassa Priorità / Polish -->
+    <g transform="translate(0, 228)">
+      <rect width="410" height="78" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+      <rect x="14" y="16" width="46" height="46" rx="8" fill="#38bdf8" fill-opacity="0.18"/>
+      <text x="37" y="46" text-anchor="middle" fill="#38bdf8" font-size="22" font-weight="800">7</text>
+      <text x="74" y="30" fill="#f8fafc" font-size="14" font-weight="700">Severità Bassa (Accessibilità, Tipografia, Drift Path)</text>
+      <text x="74" y="49" fill="#94a3b8" font-size="11.5">• Focus trap mancante in `ConfirmDialog`; `capitalize` CSS su IT/FR</text>
+      <text x="74" y="65" fill="#94a3b8" font-size="11.5">• Path obsoleti `data\app\projects` e `data\backup` in UI/Guida</text>
+    </g>
+
+    <!-- Summary bar -->
+    <g transform="translate(0, 324)">
+      <text x="0" y="14" fill="#cbd5e1" font-size="12" font-weight="600">Ripartizione per Livello:</text>
+      <rect x="150" y="2" width="118" height="14" rx="3" fill="#6366f1"/>
+      <rect x="268" y="2" width="104" height="14" fill="#06b6d4"/>
+      <rect x="372" y="2" width="38" height="14" rx="3" fill="#10b981"/>
+      <text x="150" y="32" fill="#818cf8" font-size="11">Backend Rust (45%)</text>
+      <text x="268" y="32" fill="#22d3ee" font-size="11">Frontend UI/UX (40%)</text>
+      <text x="372" y="32" fill="#34d399" font-size="11">Docs (15%)</text>
+    </g>
+  </g>
+
+  <!-- Right Half: User Facilitation Index -->
+  <g transform="translate(476, 36)">
+    <text x="0" y="0" fill="#f8fafc" font-size="18" font-weight="700">Indice di Facilitazione Utente (Time-to-Code)</text>
+    <text x="0" y="22" fill="#94a3b8" font-size="12">Riduzione dell'attrito rispetto alla configurazione manuale tradizionale</text>
+
+    <g transform="translate(0, 44)">
+      <rect width="412" height="328" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+
+      <!-- Metric 1 -->
+      <g transform="translate(20, 28)">
+        <text x="0" y="0" fill="#f8fafc" font-size="13" font-weight="700">1. Studente / Neofita (Primo Progetto + DB + Editor)</text>
+        <text x="0" y="18" fill="#94a3b8" font-size="11">Setup tradizionale: ~95 min (PATH, SSL, VSCodium, estensioni, MariaDB)</text>
+        <rect x="0" y="26" width="340" height="10" rx="5" fill="#475569"/>
+        <rect x="0" y="42" width="36" height="10" rx="5" fill="#10b981"/>
+        <text x="44" y="51" fill="#10b981" font-size="11" font-weight="700">Con NEXKORA: ~4 min (-95% tempo, 0 conflitti su PC)</text>
+      </g>
+
+      <!-- Metric 2 -->
+      <g transform="translate(20, 108)">
+        <text x="0" y="0" fill="#f8fafc" font-size="13" font-weight="700">2. Sviluppatore Full-Stack Multi-Versione (PHP/Node/Python)</text>
+        <text x="0" y="18" fill="#94a3b8" font-size="11">Cambio versione per-progetto (`dev-settings.json` + verifica compatibilità)</text>
+        <rect x="0" y="26" width="372" height="12" rx="6" fill="#0f172a"/>
+        <rect x="0" y="26" width="342" height="12" rx="6" fill="#38bdf8"/>
+        <text x="372" y="0" text-anchor="end" fill="#38bdf8" font-size="13" font-weight="700">92 / 100</text>
+      </g>
+
+      <!-- Metric 3 -->
+      <g transform="translate(20, 174)">
+        <text x="0" y="0" fill="#f8fafc" font-size="13" font-weight="700">3. Sviluppatore AI-Assisted (Claude, Codex, Gemini, Agy)</text>
+        <text x="0" y="18" fill="#94a3b8" font-size="11">Sync 1-click istruzioni/skills/MCP + isolamento keyring DPAPI</text>
+        <rect x="0" y="26" width="372" height="12" rx="6" fill="#0f172a"/>
+        <rect x="0" y="26" width="335" height="12" rx="6" fill="#818cf8"/>
+        <text x="372" y="0" text-anchor="end" fill="#818cf8" font-size="13" font-weight="700">90 / 100</text>
+      </g>
+
+      <!-- Metric 4 -->
+      <g transform="translate(20, 240)">
+        <text x="0" y="0" fill="#f8fafc" font-size="13" font-weight="700">4. Mobilità &amp; Portabilità su Chiavetta/SSD Esterno</text>
+        <text x="0" y="18" fill="#94a3b8" font-size="11">Rilocazione automatica path, Temp su host, Rimozione sicura USB</text>
+        <rect x="0" y="26" width="372" height="12" rx="6" fill="#0f172a"/>
+        <rect x="0" y="26" width="357" height="12" rx="6" fill="#10b981"/>
+        <text x="372" y="0" text-anchor="end" fill="#10b981" font-size="13" font-weight="700">96 / 100</text>
+      </g>
+    </g>
+  </g>
+</svg>
