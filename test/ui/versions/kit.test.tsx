@@ -69,6 +69,9 @@ describe("versions menus", () => {
   it("says that a locked line opens a menu of its projects", () => {
     render(<ToolVersions tool={tool} kit={kit} setup={null} />);
     const lock = screen.getByRole("button", { name: "PHP 8.4: progetti che la usano" });
+    // The badges speak the source language (Italian), as the rest of the row.
+    expect(lock.textContent).toBe("bloccata");
+    expect(screen.getByText("più recente")).toBeTruthy();
     expect(lock.getAttribute("aria-haspopup")).toBe("menu");
     expect(lock.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(lock);

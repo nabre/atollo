@@ -66,7 +66,7 @@ function DiskLines({
                   <Tag key={p}>{p}</Tag>
                 ))}
               {/* The newest line its source offers. */}
-              {tool.available[0] === r.line && <Tag tone="focus">{t("latest")}</Tag>}
+              {tool.available[0] === r.line && <Tag tone="focus">{t("più recente")}</Tag>}
               {(outside[r.line] ?? []).length > 0 && (
                 <Tag tone="warning">{t("non per {0}", (outside[r.line] ?? []).join(", "))}</Tag>
               )}
@@ -193,7 +193,7 @@ function useMenu() {
   return { open, setOpen, box, onMenuKey };
 }
 
-/** "locked": a version some projects use, so it cannot go; its small menu
+/** "bloccata" (locked): a version some projects use, so it cannot go; its small menu
  * lists them. The counterpart of the bin. A native button, drawn as a
  * toolbar button: it opens a menu (aria-haspopup, aria-expanded), which
  * Button can't say. */
@@ -214,7 +214,7 @@ function Locked({ projects, label }: { projects: string[]; label: string }) {
         className="inline-flex h-[22px] items-center gap-1 rounded-[5px] px-1 text-[11px] text-vsc-desc hover:bg-vsc-toolbar-hover hover:text-vsc-fg"
       >
         <VscLock size={12} aria-hidden="true" />
-        {t("locked")}
+        {t("bloccata")}
       </button>
       {open && (
         <ul id={menuId} role="menu" aria-label={label} onKeyDown={onMenuKey} className={`${MENU} min-w-36`}>
@@ -301,7 +301,7 @@ export function AddLine({
                       {tool.name} {l}
                       {tool.available[0] === l && (
                         <Tag tone="focus" className="ml-auto">
-                          {t("latest")}
+                          {t("più recente")}
                         </Tag>
                       )}
                     </button>

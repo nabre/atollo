@@ -753,19 +753,19 @@ function TopicLifecycle({ onNavigate }: { onNavigate: (page: AppPageTarget) => v
       <EditorSection
         id="guide-lifecycle-eject"
         title={tr(
-          "Sequenza di chiusura sicura e Rimuovi unità",
-          "Safe shutdown & Eject drive sequence",
-          "Séquence de fermeture sécurisée et Retirer le lecteur",
-          "Sicheres Beenden & Laufwerk entfernen",
+          "Sequenza di chiusura sicura e «Rimuovi l'unità»",
+          "Safe shutdown & “Remove drive” sequence",
+          "Séquence de fermeture sécurisée et « Retirer le lecteur »",
+          "Sicheres Beenden & „Laufwerk entfernen“",
         )}
       >
         <GuideShot
           src="15-rimuovi-unita.webp"
           title={tr(
-            "15 · Pagina Rimuovi unità e pulizia tracce",
-            "15 · Eject drive & trace cleanup page",
-            "15 · Page Retirer le lecteur et nettoyage des traces",
-            "15 · Seite Laufwerk entfernen & Spurenbereinigung",
+            "15 · Pagina «Rimuovi l'unità» e pulizia tracce",
+            "15 · “Remove drive” & trace cleanup page",
+            "15 · Page « Retirer le lecteur » et nettoyage des traces",
+            "15 · Seite „Laufwerk entfernen“ & Spurenbereinigung",
           )}
           caption={tr(
             "Riepilogo dei controlli effettuati prima della rimozione: arresto siti web e database, chiusura processi in data\\apps\\, salvataggio credenziali Antigravity cifrate DPAPI e rimozione delle chiavi orfane sul PC ospite.",
@@ -789,7 +789,12 @@ function TopicLifecycle({ onNavigate }: { onNavigate: (page: AppPageTarget) => v
           >
             <span className="inline-flex items-center gap-1.5">
               <VscDebugDisconnect size={14} aria-hidden="true" />
-              {tr("Vai a Rimuovi unità", "Go to Eject drive", "Aller à Retirer le lecteur", "Zu Laufwerk entfernen")}
+              {tr(
+                "Vai a «Rimuovi l'unità»",
+                "Go to “Remove drive”",
+                "Aller à « Retirer le lecteur »",
+                "Zu „Laufwerk entfernen“",
+              )}
             </span>
           </Button>
         </div>
@@ -1550,7 +1555,7 @@ function TopicFeatWorkbench({ onNavigate }: { onNavigate: (page: AppPageTarget) 
                 <span key="d">
                   {tr(
                     "In alto le 6 viste operative: Nuovo progetto, Progetti (con badge conteggio), Agenti, Database, Server Web, Strumenti. In basso le 3 viste di sistema: Guida (questa vista), Impostazioni, Rimuovi l'unità.",
-                    "Top 6 operational views: New project, Projects (with count badge), Agents, Databases, Web Servers, Tools. Bottom 3 system views: Guide (this view), Settings, Eject drive.",
+                    "Top 6 operational views: New project, Projects (with count badge), Agents, Databases, Web Servers, Tools. Bottom 3 system views: Guide (this view), Settings, Remove drive.",
                     "En haut les 6 vues opérationnelles : Nouveau projet, Projets (avec badge de comptage), Agents, Bases de données, Serveurs Web, Outils. En bas les 3 vues système : Guide (cette vue), Paramètres, Retirer le lecteur.",
                     "Oben die 6 Arbeitsansichten: Neues Projekt, Projekte (mit Zähler), Agenten, Datenbanken, Webserver, Werkzeuge. Unten die 3 Systemansichten: Anleitung (diese Ansicht), Einstellungen, Laufwerk entfernen.",
                   )}
@@ -2203,14 +2208,14 @@ function TopicFeatToolsCli({ onNavigate }: { onNavigate: (page: AppPageTarget) =
             "Chaque ligne de version affiche l'étiquette ",
             "Jede Versionslinie zeigt das Abzeichen ",
           )}
-          <Tag tone="focus">{t("latest")}</Tag>
+          <Tag tone="focus">{t("più recente")}</Tag>
           {tr(
             " quando corrisponde alla più recente offerta dal fornitore e l'indicatore ",
             " badge when it matches the newest line offered by the vendor and the ",
             " lorsqu'elle correspond à la plus récente proposée par l'éditeur ainsi que l'indicateur ",
             ", wenn sie der neuesten vom Hersteller angebotenen Linie entspricht, sowie die Kennzeichnung ",
           )}
-          <Tag>{t("locked")}</Tag>
+          <Tag>{t("bloccata")}</Tag>
           {tr(
             " quando è usata da uno o più progetti (impedendone la rimozione accidentale).",
             " indicator when it is pinned by one or more projects (preventing accidental removal).",
@@ -3012,17 +3017,17 @@ function TopicCfgActionsOrphans({ onNavigate }: { onNavigate: (page: AppPageTarg
           )}
           whereUi={tr(
             "Impostazioni → Aggiornamenti / Il kit · Rimuovi l'unità",
-            "Settings → Updates / The kit · Eject drive",
+            "Settings → Updates / The kit · Remove drive",
             "Paramètres → Mises à jour / Le kit · Retirer le lecteur",
             "Einstellungen → Updates / Das Kit · Laufwerk entfernen",
           )}
           whereFile="data\app\ · data\antigravity\.keyring.dpapi"
           targetPage="eject"
           targetLabel={tr(
-            "Apri Rimuovi l'unità",
-            "Open Eject drive",
-            "Ouvrir Retirer le lecteur",
-            "Laufwerk entfernen öffnen",
+            "Apri «Rimuovi l'unità»",
+            "Open “Remove drive”",
+            "Ouvrir « Retirer le lecteur »",
+            "„Laufwerk entfernen“ öffnen",
           )}
           onNavigate={onNavigate}
           steps={[
@@ -3034,7 +3039,7 @@ function TopicCfgActionsOrphans({ onNavigate }: { onNavigate: (page: AppPageTarg
             ),
             tr(
               "Quando hai terminato di lavorare, apri «Rimuovi l'unità» dalla barra sinistra in basso.",
-              "When you finish working, open 'Eject drive' from the bottom-left Activity Bar.",
+              "When you finish working, open “Remove drive” from the bottom-left Activity Bar.",
               "Lorsque vous avez terminé de travailler, ouvrez « Retirer le lecteur » depuis la barre d'activité en bas à gauche.",
               "Wenn du mit der Arbeit fertig bist, öffne unten links in der Aktivitätsleiste „Laufwerk entfernen“.",
             ),
