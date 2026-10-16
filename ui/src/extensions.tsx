@@ -14,9 +14,9 @@ import {
 } from "./api";
 import { t } from "./i18n";
 import { ComponentLogo, LanguageLogo } from "./logos";
-import { ActionButton, ErrorLine } from "./common";
+import { ActionButton, ErrorLine, LoadError } from "./common";
 import { useAction, useLoad } from "./hooks";
-import { Checkbox, DataTable, Notice } from "./workbench";
+import { Checkbox, DataTable } from "./workbench";
 
 /** The matrix: one row per extension, one column per language or tool, then "all". */
 export function ExtensionsMatrixSection({
@@ -27,13 +27,17 @@ export function ExtensionsMatrixSection({
   /** A new list when the page reloads: the installed marks follow. */
   components: ComponentInfo[];
 }) {
-  const { data: matrix, error: loadErr } = useLoad<ExtensionsMatrix | null>(extensionsMatrix, null, {
+  const {
+    data: matrix,
+    error: loadErr,
+    reload,
+  } = useLoad<ExtensionsMatrix | null>(extensionsMatrix, null, {
     onError: "show",
     key: components,
   });
   /** Languages and tools of the projects: their columns are highlighted. */
   const used = useMemo(() => new Set(projects.flatMap((p) => [...p.languages, ...p.requires])), [projects]);
-  if (loadErr) return <Notice tone="error">{loadErr}</Notice>;
+  if (loadErr) return <LoadError error={loadErr} onRetry={reload} />;
   if (!matrix) return null;
   const columns: { key: string; name: string; tool: boolean }[] = [
     ...matrix.languages.map((l) => ({ key: l, name: l, tool: false })),
