@@ -17,6 +17,7 @@
 //! `panel.json` in the project (old name `pannello.json`) corrects or
 //! replaces what was detected (`overrides.rs`). One file per platform.
 
+mod container;
 mod go;
 mod node;
 mod overrides;
@@ -165,6 +166,9 @@ pub struct Project {
     pub languages: Vec<String>,
     /// Ids of the kit's components it needs.
     pub requires: Vec<String>,
+    /// Lines of some of them, from the images of Compose and Dockerfile.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub lines: BTreeMap<String, String>,
     pub actions: Vec<Action>,
     pub warnings: Vec<String>,
     pub custom: bool,
@@ -521,25 +525,22 @@ pub fn requires(dir: &Path) -> Vec<String> {
     if has_nginx(dir, ".") {
         found.insert("nginx");
     }
-    for compose in ["compose.yaml", "docker-compose.yml"] {
-        let text = read(dir, compose).to_ascii_lowercase();
-        if text.contains("image: httpd")
-            || text.contains("image: apache")
-            || (text.contains("php:") && text.contains("-apache"))
-        {
-            found.insert("apache");
-            found.insert("php");
-        }
-        if text.contains("image: nginx") {
-            found.insert("nginx");
-        }
-    }
+    found.extend(container::servers(dir).into_keys());
     found.extend(databases(dir));
     let catalog = crate::setup::catalog::Catalog::get();
     found
         .into_iter()
         .filter(|id| catalog.find(id).is_some())
         .map(str::to_owned)
+        .collect()
+}
+
+/// The lines of the kit's components that the project's containers name
+/// (`php:8.3-apache` → `php` = `8.3`).
+pub fn lines(dir: &Path) -> BTreeMap<String, String> {
+    container::servers(dir)
+        .into_iter()
+        .filter_map(|(id, line)| Some((id.to_owned(), line?)))
         .collect()
 }
 
@@ -623,6 +624,7 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         },
         languages: languages(dir),
         requires: requires(dir),
+        lines: lines(dir),
         actions: results.iter().flat_map(|r| r.actions.clone()).collect(),
         warnings: results.iter().flat_map(|r| r.warnings.clone()).collect(),
         custom: false,
