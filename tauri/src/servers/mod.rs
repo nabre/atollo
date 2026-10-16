@@ -89,6 +89,10 @@ pub struct WebServerPool {
     pub manual: bool,
     pub sites: Vec<AttachedSite>,
     pub conf_dir: String,
+    /// Running, but no longer one of the pools of the profiles and the
+    /// projects (an automatic pool whose id changed when a newer line was
+    /// installed): shown as it was started so that it can be stopped.
+    pub orphan: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -133,6 +137,9 @@ struct RunningPool {
     /// The pool's php-cgi (Nginx with PHP): when it dies the pool is
     /// stopped, never left "running" answering 502 to every `.php`.
     php: Option<Child>,
+    /// The pool as it was started: what the page shows of it when it is
+    /// no longer in the scan (an orphan, defect 5).
+    started: WebServerPool,
     _job: Job,
 }
 
@@ -646,6 +653,9 @@ impl WebServers {
         lang: &str,
     ) -> Option<(WebServerPool, AttachedSite)> {
         self.list(lang, true).pools.into_iter().find_map(|pool| {
+            if pool.orphan {
+                return None;
+            }
             let site = pool
                 .sites
                 .iter()
@@ -683,6 +693,19 @@ impl WebServers {
                 for s in &mut pool.sites {
                     s.url = format!("http://{}:{}", s.server_name, r.port);
                 }
+            }
+        }
+        // Running pools the scan no longer has (defect 5): shown as they
+        // were started, never left running out of sight.
+        for (id, r) in running.iter() {
+            if !view.pools.iter().any(|p| &p.id == id) {
+                view.pools.push(WebServerPool {
+                    running: true,
+                    pid: Some(r.child.id()),
+                    port: r.port,
+                    orphan: true,
+                    ..r.started.clone()
+                });
             }
         }
         drop(running);
@@ -731,6 +754,7 @@ impl WebServers {
                     manual: true,
                     sites: Vec::new(),
                     conf_dir: format!(r"data\servers\{}", p.id),
+                    orphan: false,
                 },
             );
         }
@@ -804,6 +828,7 @@ impl WebServers {
                                 manual: false,
                                 sites: Vec::new(),
                                 conf_dir: format!(r"data\servers\{pid}"),
+                                orphan: false,
                             },
                         );
                     }
@@ -869,6 +894,7 @@ impl WebServers {
                     manual: false,
                     sites: Vec::new(),
                     conf_dir: format!(r"data\servers\{pid}"),
+                    orphan: false,
                 },
             );
         }
@@ -1215,6 +1241,7 @@ impl WebServers {
                     fcgi_port,
                     php_line: pool.php_line.clone(),
                     php,
+                    started: pool,
                     _job: job,
                 },
             );
@@ -1252,6 +1279,17 @@ impl WebServers {
             .into_iter()
             .find(|p| p.id == id)
             .ok_or_else(|| anyhow!("Server pool not found: {id}"))?;
+        if pool.orphan {
+            // Nothing to reload it with: its combination is gone.
+            bail!(
+                "{}",
+                crate::i18n::t(
+                    lang,
+                    "Questo pool non corrisponde più ai progetti e ai profili: fermalo.",
+                    &[]
+                )
+            );
+        }
         let lan = base_env.get("DEVKIT_ALLOW_LAN") == Some("1");
         let live = self
             .running

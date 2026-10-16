@@ -28,6 +28,9 @@ export interface WebServerPool {
   manual: boolean;
   sites: AttachedSite[];
   confDir: string;
+  /** Running, but no longer one of the pools of the profiles and the projects
+   * (an automatic pool whose id changed with a newer line): stop it. */
+  orphan: boolean;
 }
 
 export interface WebServerProfileInput {
@@ -70,6 +73,7 @@ const SAMPLE_SERVERS: WebServersView = {
         },
       ],
       confDir: "data\\servers\\apache-2.4-php-8.4",
+      orphan: false,
     },
   ],
   apacheLines: ["2.4"],

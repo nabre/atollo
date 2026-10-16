@@ -110,6 +110,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
             },
         ],
         conf_dir: r"data\servers\nginx-default".into(),
+        orphan: false,
     };
 
     let conf_path = servers.write_pool_configs(&pool, None, false).unwrap();
@@ -145,6 +146,7 @@ fn nginx_pool(id: &str, port: u16, sites: Vec<AttachedSite>) -> WebServerPool {
         manual: false,
         sites,
         conf_dir: format!(r"data\servers\{id}"),
+        orphan: false,
     }
 }
 
@@ -278,6 +280,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
             fcgi_port: None,
             php_line: None,
             php: None,
+            started: nginx_pool("gone", 8094, Vec::new()),
             _job: job,
         },
     );
@@ -566,6 +569,7 @@ fn pool_with_dead_php_cgi_is_not_running() {
             fcgi_port: Some(9000),
             php_line: Some("8.4".into()),
             php: Some(php),
+            started: nginx_pool("nginx-php", 8099, Vec::new()),
             _job: job,
         },
     );
@@ -877,6 +881,57 @@ fn start_refuses_a_line_not_installed() {
         .to_string();
     assert!(err.starts_with("PHP 7.4 non è installato"), "{err}");
     assert!(!servers.is_running("old"));
+}
+
+/// A pool of `id` "running" (a `ping` in a Job) as started from `started`.
+fn fake_running(servers: &WebServers, started: WebServerPool) {
+    let job = Job::new().unwrap();
+    let child = jobs::spawn_in(
+        std::process::Command::new(system32("ping.exe")).args(["-n", "60", "127.0.0.1"]),
+        &job,
+    )
+    .unwrap();
+    servers.running.lock().unwrap().insert(
+        started.id.clone(),
+        RunningPool {
+            child,
+            port: started.port,
+            fcgi_port: None,
+            php_line: started.php_line.clone(),
+            php: None,
+            started,
+            _job: job,
+        },
+    );
+}
+
+/// Defect 5: a running pool the scan no longer has (its automatic id
+/// changed with a newer line) stays on the page, marked, until stopped;
+/// it serves no new run and is not reloaded.
+#[test]
+fn orphan_running_pool_is_listed_until_stopped() {
+    let tmp = TempDir::new("servers-orphan");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    fake_running(
+        &servers,
+        nginx_pool("nginx-1.25", 8083, vec![site("shop", "public", 8083)]),
+    );
+    let view = servers.list("it", true);
+    assert_eq!(view.pools.len(), 1);
+    let orphan = &view.pools[0];
+    assert!(orphan.orphan && orphan.running && orphan.pid.is_some());
+    assert_eq!(orphan.sites[0].project, "shop");
+    assert_eq!(servers.pool_of("shop", "site", "it").map(|p| p.0.id), None);
+    let err = servers
+        .reload("nginx-1.25", &KitEnv::default(), "it")
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("fermalo"), "{err}");
+    assert!(servers.is_running("nginx-1.25"));
+    servers.stop("nginx-1.25");
+    assert!(servers.list("it", true).pools.is_empty());
 }
 
 /// BUG-V3-02: names that give the same label in one pool stay distinct.
