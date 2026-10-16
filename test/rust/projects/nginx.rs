@@ -41,7 +41,8 @@ fn no_fcgi_blocks_php_source() {
     let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
     let doc = Path::new(r"D:\kit\projects\site\public");
     let run = Path::new(r"D:\kit\data\projects\site\nginx");
-    let block = "        location ~* \\.php$ {\r\n            return 503;\r\n        }";
+    let block =
+        "        location ~* \\.(?:php|phtml|phar)$ {\r\n            return 503;\r\n        }";
     let conf = |fcgi| project_conf(nginx, Some("site"), doc, run, 7107, fcgi, false, &[], &[]);
 
     let static_only = conf(None);
@@ -71,8 +72,26 @@ fn fastcgi_location_is_case_insensitive() {
         &[],
         &[],
     );
-    assert!(conf.contains("location ~* \\.php$ {"), "{conf}");
-    assert!(!conf.contains("location ~ \\.php$"), "{conf}");
+    assert!(
+        conf.contains("location ~* \\.(?:php|phtml|phar)$ {"),
+        "{conf}"
+    );
+    assert!(!conf.contains("location ~ \\."), "{conf}");
+}
+
+/// SEC-V3-01: `.inc` and `.php3`…`.php8` refused with or without PHP,
+/// before the PHP location; `.phtml` and `.phar` go where `.php` goes.
+#[test]
+fn inc_and_old_php_files_are_never_served() {
+    let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
+    let doc = Path::new(r"D:\kit\projects\site\public");
+    let run = Path::new(r"D:\kit\data\projects\site\nginx");
+    let never = "        location ~* \\.(?:inc|php[3-8])$ {\r\n            deny all;\r\n        }";
+    for fcgi in [None, Some(9127)] {
+        let conf = project_conf(nginx, Some("site"), doc, run, 7111, fcgi, false, &[], &[]);
+        let at = conf.find(never).unwrap_or_else(|| panic!("{conf}"));
+        assert!(at < conf.find("location ~* \\.(?:php|phtml|phar)$").unwrap());
+    }
 }
 
 /// F3: hidden files and folders are refused but `.well-known`, before any
@@ -86,6 +105,6 @@ fn hidden_files_are_denied_first() {
     for fcgi in [None, Some(9126)] {
         let conf = project_conf(nginx, Some("blog"), doc, run, 7110, fcgi, false, &[], &[]);
         let at = conf.find(deny).unwrap_or_else(|| panic!("{conf}"));
-        assert!(at < conf.find("location ~* \\.php$").unwrap(), "{conf}");
+        assert!(at < conf.find("location ~* \\.(?:php").unwrap(), "{conf}");
     }
 }

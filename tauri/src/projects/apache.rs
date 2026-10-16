@@ -62,43 +62,87 @@ pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
     Ok(())
 }
 
+/// The files PHP runs, in any case (`INDEX.PHP` is PHP on Windows too):
+/// `.php`, `.phtml` templates and `.phar` archives, as Debian's PHP module
+/// does. Nginx uses the same pattern for its FastCGI location.
+pub const PHP_RUN: &str = r"\.(?:php|phtml|phar)$";
+
+/// Files never served, with or without PHP: `.inc` includes and the old
+/// `.php3`…`.php8`, which PHP does not run here and which as text would
+/// hand out source and secrets.
+pub const PHP_NEVER: &str = r"\.(?:inc|php[3-8])$";
+
 /// The text of an older `kit.conf` (created once, never rewritten) brought
-/// up to date: PHP under `${CP_PHP_FWD}`, `.php` matched in any case
-/// (`INDEX.PHP` is PHP on Windows too) and refused (403) without a PHP
-/// module, as [`php_module_blocks`] writes them. Idempotent.
+/// up to date: PHP under `${CP_PHP_FWD}`, the PHP files ([`PHP_RUN`])
+/// matched in any case and refused (403) without a PHP module, `.inc` and
+/// the old `.php3`…`.php8` always refused, as [`php_module_blocks`] writes
+/// them. Idempotent.
 pub fn migrate_kit_conf(text: &str) -> String {
     let mut fixed = text
         .replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/")
-        .replace("\"\\.php$\"", "\"(?i)\\.php$\"");
+        .replace("\"\\.php$\"", "\"(?i)\\.php$\"")
+        .replace("\"(?i)\\.php$\"", &format!("\"(?i){PHP_RUN}\""));
+    let mut missing = Vec::new();
     if !fixed.contains("<IfModule !php_module>") {
-        let blocks = php_module_blocks("CP_PHP_FWD");
-        let deny_from = blocks
-            .iter()
-            .rposition(|l| l == "</IfFile>")
-            .map_or(0, |i| i + 1);
-        let deny = blocks[deny_from..].join("\r\n");
-        // After the last module block (`IfModule` is read in order), or at
-        // the end when there is none.
-        match fixed.rfind("</IfFile>") {
+        missing.extend(php_missing_block());
+    }
+    let never = php_never_block();
+    if !fixed.contains(&never[0]) {
+        missing.extend(never);
+    }
+    if !missing.is_empty() {
+        let missing = missing.join("\r\n");
+        // After the deny block, else after the last module block (`IfModule`
+        // is read in order), or at the end when there is none.
+        let deny_end = fixed.find("<IfModule !php_module>").and_then(|from| {
+            fixed[from..]
+                .find("\n</IfModule>")
+                .map(|at| from + at + "\n</IfModule>".len())
+        });
+        let module_end = fixed.rfind("</IfFile>").map(|at| at + "</IfFile>".len());
+        match deny_end.or(module_end) {
             Some(at) => {
-                let at = at + "</IfFile>".len();
-                fixed.insert_str(at, &format!("\r\n{deny}"));
+                fixed.insert_str(at, &format!("\r\n{missing}"));
             }
             None => {
                 if !fixed.is_empty() && !fixed.ends_with('\n') {
                     fixed.push_str("\r\n");
                 }
-                fixed.push_str(&format!("{deny}\r\n"));
+                fixed.push_str(&format!("{missing}\r\n"));
             }
         }
     }
     fixed
 }
 
+/// `.inc` and the old `.php3`…`.php8` refused (403), PHP or not.
+fn php_never_block() -> Vec<String> {
+    vec![
+        format!("<FilesMatch \"(?i){PHP_NEVER}\">"),
+        "    Require all denied".to_owned(),
+        "</FilesMatch>".to_owned(),
+    ]
+}
+
+/// Without a PHP module the PHP files ([`PHP_RUN`]) are refused (403).
+fn php_missing_block() -> Vec<String> {
+    vec![
+        "<IfModule !php_module>".to_owned(),
+        "    <IfModule !php7_module>".to_owned(),
+        "        <IfModule !php5_module>".to_owned(),
+        format!("            <FilesMatch \"(?i){PHP_RUN}\">"),
+        "                Require all denied".to_owned(),
+        "            </FilesMatch>".to_owned(),
+        "        </IfModule>".to_owned(),
+        "    </IfModule>".to_owned(),
+        "</IfModule>".to_owned(),
+    ]
+}
+
 /// Dynamic `<IfFile>` blocks for PHP 8, PHP 7, and PHP 5 Thread-Safe Apache
-/// modules (`.php` in any case: `INDEX.PHP` is PHP on Windows too). Without
-/// any of them a `.php` would be sent as text, source and secrets included:
-/// it is refused instead (403).
+/// modules, running the files of [`PHP_RUN`]. Without any of them those
+/// would be sent as text, source and secrets included: they are refused
+/// instead (403), as are always the files of [`PHP_NEVER`].
 pub fn php_module_blocks(php_var: &str) -> Vec<String> {
     let mut out = Vec::new();
     for (dll, ts, module) in [
@@ -111,23 +155,14 @@ pub fn php_module_blocks(php_var: &str) -> Vec<String> {
             format!("    LoadFile \"${{{php_var}}}/{ts}\""),
             format!("    LoadModule {module} \"${{{php_var}}}/{dll}\""),
             "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"".to_owned(),
-            "    <FilesMatch \"(?i)\\.php$\">".to_owned(),
+            format!("    <FilesMatch \"(?i){PHP_RUN}\">"),
             "        SetHandler application/x-httpd-php".to_owned(),
             "    </FilesMatch>".to_owned(),
             "</IfFile>".to_owned(),
         ]);
     }
-    out.extend([
-        "<IfModule !php_module>".to_owned(),
-        "    <IfModule !php7_module>".to_owned(),
-        "        <IfModule !php5_module>".to_owned(),
-        "            <FilesMatch \"(?i)\\.php$\">".to_owned(),
-        "                Require all denied".to_owned(),
-        "            </FilesMatch>".to_owned(),
-        "        </IfModule>".to_owned(),
-        "    </IfModule>".to_owned(),
-        "</IfModule>".to_owned(),
-    ]);
+    out.extend(php_missing_block());
+    out.extend(php_never_block());
     out
 }
 

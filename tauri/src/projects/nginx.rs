@@ -14,7 +14,7 @@ use crate::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
 use crate::projects::alias::{self, valid_domain, SiteAlias};
-use crate::projects::apache::fwd;
+use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
 
 /// Resolves the Nginx installation directory from `env` (`CP_NGINX`) or the kit's default line.
 pub fn nginx_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
@@ -126,6 +126,10 @@ pub fn vhost_block(
         "        location ~ /\\.(?!well-known(/|$)) {".to_owned(),
         "            deny all;".to_owned(),
         "        }".to_owned(),
+        // `.inc` and the old `.php3`…`.php8`: never served, PHP or not.
+        format!("        location ~* {PHP_NEVER} {{"),
+        "            deny all;".to_owned(),
+        "        }".to_owned(),
     ];
     if fcgi_port.is_some() {
         lines.extend([
@@ -143,9 +147,10 @@ pub fn vhost_block(
     lines.extend(alias_locations(aliases, "        "));
     if let Some(fp) = fcgi_port {
         // `~*`: on NTFS `/INDEX.PHP` is the same file, and must be run,
-        // never served as text by `location /`.
+        // never served as text by `location /`. `.phtml` and `.phar` as
+        // with Apache's PHP module.
         lines.extend([
-            "        location ~* \\.php$ {".to_owned(),
+            format!("        location ~* {PHP_RUN} {{"),
             "            try_files $uri =404;".to_owned(),
             format!("            fastcgi_pass 127.0.0.1:{fp};"),
             "            fastcgi_index index.php;".to_owned(),
@@ -155,10 +160,11 @@ pub fn vhost_block(
             "        }".to_owned(),
         ]);
     } else {
-        // Without PHP-CGI a `.php` would be sent as a download, source and
-        // secrets included: refuse it (aliases too, regex wins over prefix).
+        // Without PHP-CGI a `.php` (`.phtml`, `.phar`) would be sent as a
+        // download, source and secrets included: refuse it (aliases too,
+        // regex wins over prefix).
         lines.extend([
-            "        location ~* \\.php$ {".to_owned(),
+            format!("        location ~* {PHP_RUN} {{"),
             "            return 503;".to_owned(),
             "        }".to_owned(),
         ]);

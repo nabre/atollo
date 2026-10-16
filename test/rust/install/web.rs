@@ -116,7 +116,20 @@ fn apache_site_refuses_php_without_module() {
     apache_site(&tmp.0).unwrap();
     let text = fs::read_to_string(tmp.0.join("kit.conf")).unwrap();
     assert!(!text.contains("<FilesMatch \"\\.php$\">"));
-    assert_eq!(text.matches("<FilesMatch \"(?i)\\.php$\">").count(), 4);
+    assert_eq!(
+        text.matches("<FilesMatch \"(?i)\\.(?:php|phtml|phar)$\">")
+            .count(),
+        4
+    );
+    // SEC-V3-01: `.inc` and `.php3`…`.php8` never served.
+    assert!(text.contains(
+        "<FilesMatch \"(?i)\\.(?:inc|php[3-8])$\">\r\n    Require all denied\r\n</FilesMatch>"
+    ));
+    assert_eq!(
+        crate::projects::apache::migrate_kit_conf(&text),
+        text,
+        "nothing to migrate"
+    );
     assert_eq!(text.matches("LoadModule php").count(), 3);
     let deny = text.find("<IfModule !php_module>").unwrap();
     assert!(deny > text.rfind("LoadModule php5_module").unwrap());

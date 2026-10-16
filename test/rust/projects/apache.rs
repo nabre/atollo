@@ -53,11 +53,11 @@ fn php_is_case_insensitive_and_denied_without_module() {
     assert!(!blocks.contains("<FilesMatch \"\\.php$\">"), "{blocks}");
     assert_eq!(
         blocks
-            .matches("<FilesMatch \"(?i)\\.php$\">\r\n        SetHandler application/x-httpd-php")
+            .matches("<FilesMatch \"(?i)\\.(?:php|phtml|phar)$\">\r\n        SetHandler application/x-httpd-php")
             .count(),
         3
     );
-    let deny = "<IfModule !php_module>\r\n    <IfModule !php7_module>\r\n        <IfModule !php5_module>\r\n            <FilesMatch \"(?i)\\.php$\">\r\n                Require all denied\r\n            </FilesMatch>\r\n        </IfModule>\r\n    </IfModule>\r\n</IfModule>";
+    let deny = "<IfModule !php_module>\r\n    <IfModule !php7_module>\r\n        <IfModule !php5_module>\r\n            <FilesMatch \"(?i)\\.(?:php|phtml|phar)$\">\r\n                Require all denied\r\n            </FilesMatch>\r\n        </IfModule>\r\n    </IfModule>\r\n</IfModule>";
     let at = blocks.find(deny).expect("deny block");
     // After the modules are loaded: `IfModule` is read in order.
     assert!(at > blocks.rfind("LoadModule").unwrap());
@@ -76,6 +76,37 @@ fn php_is_case_insensitive_and_denied_without_module() {
     )
     .unwrap();
     assert!(conf.contains(deny));
+}
+
+/// SEC-V3-01: `.phtml` and `.phar` run as PHP (refused without it), `.inc`
+/// and `.php3`…`.php8` are never served, PHP or not.
+#[test]
+fn other_php_files_are_run_or_refused() {
+    let run = regex::Regex::new(&format!("(?i){PHP_RUN}")).unwrap();
+    let never = regex::Regex::new(&format!("(?i){PHP_NEVER}")).unwrap();
+    for f in ["a.php", "INDEX.PHP", "view.phtml", "tool.PHAR"] {
+        assert!(run.is_match(f) && !never.is_match(f), "{f}");
+    }
+    for f in [
+        "db.inc",
+        "CONFIG.INC",
+        "old.php3",
+        "old.php5",
+        "x.PHP7",
+        "y.php8",
+    ] {
+        assert!(never.is_match(f) && !run.is_match(f), "{f}");
+    }
+    for f in ["a.php.txt", "a.html", "php", "a.php9", "a.include"] {
+        assert!(!run.is_match(f) && !never.is_match(f), "{f}");
+    }
+
+    let blocks = php_module_blocks("CP_PHP_FWD").join("\r\n");
+    let refuse =
+        "<FilesMatch \"(?i)\\.(?:inc|php[3-8])$\">\r\n    Require all denied\r\n</FilesMatch>";
+    // Outside any `IfModule`/`IfFile`: with PHP too.
+    let at = blocks.find(refuse).unwrap_or_else(|| panic!("{blocks}"));
+    assert!(at > blocks.rfind("</IfModule>").unwrap(), "{blocks}");
 }
 
 /// F3: hidden files and folders (`.env`, `.git/`) are refused but
@@ -137,13 +168,34 @@ fn old_kit_conf_is_migrated_once() {
 
     let new = migrate_kit_conf(&old);
     assert!(!new.contains("\"\\.php$\""), "{new}");
+    assert!(!new.contains("\"(?i)\\.php$\""), "{new}");
     assert!(!new.contains("${CP_APPS_FWD}/php/"), "{new}");
-    assert_eq!(new.matches("<FilesMatch \"(?i)\\.php$\">").count(), 4);
+    assert_eq!(
+        new.matches("<FilesMatch \"(?i)\\.(?:php|phtml|phar)$\">")
+            .count(),
+        4
+    );
+    assert_eq!(
+        new.matches("<FilesMatch \"(?i)\\.(?:inc|php[3-8])$\">")
+            .count(),
+        1
+    );
     assert!(new.contains("# mine"));
     let deny = new.find("<IfModule !php_module>").expect("deny block");
     assert!(deny > new.rfind("</IfFile>").unwrap());
     assert!(deny < new.find("IncludeOptional").unwrap());
     assert_eq!(migrate_kit_conf(&new), new, "idempotent");
+
+    // SEC-V3-01: a kit.conf of the previous kit (`(?i)\.php$`, deny block
+    // already there) gets the other PHP files and the `.inc` refusal.
+    let previous = migrate_kit_conf(&old)
+        .replace("\\.(?:php|phtml|phar)$", "\\.php$")
+        .replace(
+            "<FilesMatch \"(?i)\\.(?:inc|php[3-8])$\">\r\n    Require all denied\r\n</FilesMatch>\r\n",
+            "",
+        );
+    assert!(!previous.contains("php[3-8]"), "{previous}");
+    assert_eq!(migrate_kit_conf(&previous), new);
 
     // A kit.conf written from php_module_blocks is left as it is.
     let current = format!("{}\r\n", php_module_blocks("CP_PHP_FWD").join("\r\n"));
