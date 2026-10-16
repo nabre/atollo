@@ -346,6 +346,22 @@ fn site_doc_root(project_root: &Path, site: &AttachedSite) -> Option<PathBuf> {
     }
 }
 
+/// True once `port` can be listened on again (checked every 100 ms), false
+/// if it is still taken after `within`: after a stop, Windows may keep the
+/// socket of the killed server for a moment.
+fn wait_port_released(port: u16, within: Duration) -> bool {
+    let begun = Instant::now();
+    loop {
+        if is_port_free(port) {
+            return true;
+        }
+        if begun.elapsed() >= within {
+            return false;
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
 /// The last lines of the pool's error log, or of `stderr.log` (what the
 /// server printed before its own log was open: a configuration syntax error).
 fn pool_error_tail(pool_dir: &Path) -> String {
@@ -934,7 +950,13 @@ impl WebServers {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .remove(id);
-        drop(removed);
+        // The server itself is killed and waited for before its Job is
+        // dropped (which ends what it started, php-cgi included), so that
+        // its port is being released when this returns.
+        if let Some(mut pool) = removed {
+            let _ = pool.child.kill();
+            let _ = pool.child.wait();
+        }
     }
 
     pub fn reload(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
@@ -980,14 +1002,8 @@ impl WebServers {
 
         // Clean restart when graceful signal is unavailable (Apache standalone on Windows).
         self.stop_locked(id);
-        std::thread::sleep(Duration::from_millis(100));
-        let addr = SocketAddr::from(([127, 0, 0, 1], pool.port));
-        for _ in 0..20 {
-            if TcpStream::connect_timeout(&addr, Duration::from_millis(30)).is_err() {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(50));
-        }
+        // start_locked reports the port as taken if it is still not free.
+        wait_port_released(pool.port, Duration::from_secs(5));
         self.start_locked(id, base_env, lang)
     }
 
