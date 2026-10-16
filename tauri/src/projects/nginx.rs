@@ -14,7 +14,7 @@ use crate::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
 use crate::projects::alias::{self, valid_domain, SiteAlias};
-use crate::projects::apache::fwd;
+use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
 
 /// Resolves the Nginx installation directory from `env` (`CP_NGINX`) or the kit's default line.
 pub fn nginx_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
@@ -48,6 +48,10 @@ pub fn dir(kit: &Kit, project: &str) -> Result<PathBuf> {
         .ok_or_else(|| anyhow!("not a project name: {project}"))
 }
 
+/// The local `Host` names a project's own Nginx answers besides `localhost`
+/// and the project's domains when not in LAN mode (SEC-V3-03).
+const LOCAL_HOSTS: [&str; 3] = ["127.0.0.1", "[::1]", "*.localhost"];
+
 /// Creates the required Nginx temporary directories inside `run_dir`.
 pub fn prepare_dirs(run_dir: &Path) -> Result<()> {
     fs::create_dir_all(run_dir.join("conf.d"))?;
@@ -57,7 +61,8 @@ pub fn prepare_dirs(run_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Generates Nginx `location` blocks for checked path aliases.
+/// Generates Nginx `location` blocks for checked path aliases (no link
+/// followed in their folders where Nginx can do it).
 pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     let mut lines = Vec::new();
     for alias in aliases {
@@ -68,12 +73,21 @@ pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
         lines.push(format!("{indent}location {}/ {{", alias.url));
         lines.push(format!("{indent}    alias \"{target}\";"));
         lines.push(format!("{indent}    autoindex on;"));
+        // No link followed in an alias' folder (WEB-8). Nginx for Windows
+        // has no `disable_symlinks` (it needs `openat`) and would not start
+        // with it: there `alias::resolve` only refuses a linked folder.
+        if !cfg!(windows) {
+            lines.push(format!("{indent}    disable_symlinks on;"));
+        }
         lines.push(format!("{indent}}}"));
     }
     lines
 }
 
-/// Generates an Nginx `server { ... }` VirtualHost block.
+/// Generates an Nginx `server { ... }` VirtualHost block. `dedicated`: the
+/// project's own Nginx, which answers `localhost` too; in LAN mode it is the
+/// `default_server` (any `Host`, an IP of the PC included), else it names
+/// the local hosts only and [`project_conf`] refuses the others.
 #[allow(clippy::too_many_arguments)]
 pub fn vhost_block(
     nginx_install: &Path,
@@ -85,14 +99,14 @@ pub fn vhost_block(
     lan: bool,
     domains: &[String],
     aliases: &[SiteAlias],
-    default_server: bool,
+    dedicated: bool,
 ) -> String {
     let listen = if lan {
         port.to_string()
     } else {
         format!("127.0.0.1:{port}")
     };
-    let listen_suffix = if default_server {
+    let listen_suffix = if dedicated && lan {
         " default_server"
     } else {
         ""
@@ -107,8 +121,11 @@ pub fn vhost_block(
             names.push(d);
         }
     }
-    if default_server || names.is_empty() {
+    if dedicated || names.is_empty() {
         names.push("localhost".to_owned());
+    }
+    if dedicated && !lan {
+        names.extend(LOCAL_HOSTS.iter().map(|h| (*h).to_owned()));
     }
     let root_fwd = fwd(doc_root);
     let nginx_fwd = fwd(nginx_install);
@@ -124,6 +141,10 @@ pub fn vhost_block(
         // them out. A regex location, before the others: it wins over the
         // aliases' prefix locations and over `.php`.
         "        location ~ /\\.(?!well-known(/|$)) {".to_owned(),
+        "            deny all;".to_owned(),
+        "        }".to_owned(),
+        // `.inc` and the old `.php3`…`.php8`: never served, PHP or not.
+        format!("        location ~* {PHP_NEVER} {{"),
         "            deny all;".to_owned(),
         "        }".to_owned(),
     ];
@@ -143,9 +164,10 @@ pub fn vhost_block(
     lines.extend(alias_locations(aliases, "        "));
     if let Some(fp) = fcgi_port {
         // `~*`: on NTFS `/INDEX.PHP` is the same file, and must be run,
-        // never served as text by `location /`.
+        // never served as text by `location /`. `.phtml` and `.phar` as
+        // with Apache's PHP module.
         lines.extend([
-            "        location ~* \\.php$ {".to_owned(),
+            format!("        location ~* {PHP_RUN} {{"),
             "            try_files $uri =404;".to_owned(),
             format!("            fastcgi_pass 127.0.0.1:{fp};"),
             "            fastcgi_index index.php;".to_owned(),
@@ -155,10 +177,11 @@ pub fn vhost_block(
             "        }".to_owned(),
         ]);
     } else {
-        // Without PHP-CGI a `.php` would be sent as a download, source and
-        // secrets included: refuse it (aliases too, regex wins over prefix).
+        // Without PHP-CGI a `.php` (`.phtml`, `.phar`) would be sent as a
+        // download, source and secrets included: refuse it (aliases too,
+        // regex wins over prefix).
         lines.extend([
-            "        location ~* \\.php$ {".to_owned(),
+            format!("        location ~* {PHP_RUN} {{"),
             "            return 503;".to_owned(),
             "        }".to_owned(),
         ]);
@@ -197,7 +220,7 @@ pub fn project_conf(
         aliases,
         true,
     );
-    [
+    let mut lines = vec![
         "# --- Atollo: this project's Nginx (written at every start) ---".to_owned(),
         "worker_processes 1;".to_owned(),
         format!("pid \"{run_fwd}/nginx.pid\";"),
@@ -216,11 +239,24 @@ pub fn project_conf(
         format!("    scgi_temp_path \"{run_fwd}/temp/scgi\";"),
         "    sendfile on;".to_owned(),
         "    keepalive_timeout 65;".to_owned(),
+        // Up to 120 characters for a domain (alias::valid_domain).
+        "    server_names_hash_bucket_size 128;".to_owned(),
         server,
-        "}".to_owned(),
-        String::new(),
-    ]
-    .join("\r\n")
+    ];
+    if !lan {
+        // Against DNS rebinding (a page of another site that renames itself
+        // to 127.0.0.1 and reads the project): a `Host` the site does not
+        // name, or none, gets 421 from this default server.
+        lines.extend([
+            "    server {".to_owned(),
+            format!("        listen 127.0.0.1:{port} default_server;"),
+            "        server_name _;".to_owned(),
+            "        return 421;".to_owned(),
+            "    }".to_owned(),
+        ]);
+    }
+    lines.extend(["}".to_owned(), String::new()]);
+    lines.join("\r\n")
 }
 
 /// Spawns `php-cgi.exe -b 127.0.0.1:<fcgi_port>` inside `job` when PHP is installed,
