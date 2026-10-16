@@ -289,6 +289,11 @@
     "fr": "pool partagé {0}",
     "de": "gemeinsamer Pool {0}"
   },
+  "Il server condiviso {0} non è partito: guarda la pagina Server Web.": {
+    "en": "The shared server {0} did not start: see the Web Servers page.",
+    "fr": "Le serveur partagé {0} n'a pas démarré : voyez la page Serveurs Web.",
+    "de": "Der gemeinsame Server {0} ist nicht gestartet: siehe die Seite Webserver."
+  },
   "servito dal pool condiviso {0}: {1}": {
     "en": "served by the shared pool {0}: {1}",
     "fr": "servi par le pool partagé {0} : {1}",

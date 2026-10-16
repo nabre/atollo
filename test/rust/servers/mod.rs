@@ -621,6 +621,49 @@ fn pool_of_finds_assigned_project() {
     assert_eq!(site.url, "http://shop.localhost:8096");
     assert_eq!(servers.pool_of("shop", "other", "it").map(|p| p.0.id), None);
     assert_eq!(servers.pool_of("nope", "site", "it").map(|p| p.0.id), None);
+
+    // I3: moved to another profile behind the cache's back (no
+    // invalidation): the cached scan still says "legacy", pool_of does not.
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: "modern".into(),
+                name: "Modern".into(),
+                engine: WebServerEngine::Nginx,
+                server_line: None,
+                php_line: None,
+                port: Some(8091),
+            },
+            "it",
+        )
+        .unwrap();
+    assert!(servers
+        .list("it", false)
+        .pools
+        .iter()
+        .any(|p| p.id == "legacy" && p.sites.iter().any(|s| s.project == "shop")));
+    set_site_with_options(
+        &shop,
+        "public",
+        SiteKind::Nginx,
+        &SiteOptions {
+            server: Some("modern".into()),
+            ..SiteOptions::default()
+        },
+        "it",
+    )
+    .unwrap();
+    let cached = servers.list("it", false);
+    assert!(cached
+        .pools
+        .iter()
+        .any(|p| p.id == "legacy" && p.sites.iter().any(|s| s.project == "shop")));
+    let (pool, site) = servers.pool_of("shop", "site", "it").unwrap();
+    assert_eq!(pool.id, "modern");
+    assert_eq!(site.url, "http://shop.localhost:8091");
+    // Not running: no live port to attach a run to.
+    assert_eq!(servers.running_port("modern"), None);
+    assert!(!servers.is_running("modern"));
 }
 
 /// I1: a reload restarts the pool (never a graceful Nginx reload keeping

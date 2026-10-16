@@ -491,11 +491,7 @@ impl WebServers {
     /// The pool `id` runs (server and php-cgi alive). Light: only the
     /// `running` lock, no scan; a dead pool is ended by the next `list`.
     pub fn is_running(&self, id: &str) -> bool {
-        self.running
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .get_mut(id)
-            .is_some_and(RunningPool::alive)
+        self.running_port(id).is_some()
     }
 
     pub fn stop_all(&self) {
@@ -559,25 +555,32 @@ impl WebServers {
     }
 
     /// The pool serving `action_id` of `project`, with that site (its URL
-    /// with the live port when the pool runs). The cached scan first, then
-    /// a fresh one (`panel.json` edited by hand since).
+    /// with the live port when the pool runs). Always from a fresh scan:
+    /// a cached one may still put the site in the pool it was moved from
+    /// (`panel.json` edited by hand, or before an invalidation).
     pub fn pool_of(
         &self,
         project: &str,
         action_id: &str,
         lang: &str,
     ) -> Option<(WebServerPool, AttachedSite)> {
-        let find = |view: WebServersView| {
-            view.pools.into_iter().find_map(|pool| {
-                let site = pool
-                    .sites
-                    .iter()
-                    .find(|s| s.project == project && s.action == action_id)
-                    .cloned()?;
-                Some((pool, site))
-            })
-        };
-        find(self.list(lang, false)).or_else(|| find(self.list(lang, true)))
+        self.list(lang, true).pools.into_iter().find_map(|pool| {
+            let site = pool
+                .sites
+                .iter()
+                .find(|s| s.project == project && s.action == action_id)
+                .cloned()?;
+            Some((pool, site))
+        })
+    }
+
+    /// The live port of the pool `id` when it runs (server and php-cgi
+    /// alive). Light: only the `running` lock.
+    pub fn running_port(&self, id: &str) -> Option<u16> {
+        let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+        running
+            .get_mut(id)
+            .and_then(|r| r.alive().then_some(r.port))
     }
 
     /// Drops the cached scan: the next `list` reads the projects again.

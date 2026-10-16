@@ -38,19 +38,27 @@ pub async fn run_start<R: Runtime>(
         // (GAP-RUN). A profile gone since: the pool `list` puts it in, or,
         // not in any, its own server as before.
         if let SiteMode::Pool(_) = site_mode(a) {
-            if let Some((pool, _)) = servers.pool_of(&project, &a.id, lang) {
+            // A fresh scan: the cached one may still name the pool the site
+            // was moved from.
+            if let Some((pool, site)) = servers.pool_of(&project, &a.id, lang) {
                 let mut wanted = vec![pool.engine.as_str()];
                 if pool.php_line.is_some() {
                     wanted.push("php");
                 }
                 let env = ensure(&app, &task, &kit, lang, &wanted)?;
                 servers.start(&pool.id, &env, lang).or_fail_chain("run")?;
-                let Some((pool, site)) = servers.pool_of(&project, &a.id, lang) else {
-                    return Err(
-                        crate::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into(),
-                    );
+                // The run is attached to the very pool just started, and
+                // only while it runs (with its live port).
+                let Some(port) = servers.running_port(&pool.id) else {
+                    return Err(crate::i18n::t(
+                        lang,
+                        "Il server condiviso {0} non è partito: guarda la pagina Server Web.",
+                        &[&pool.id],
+                    )
+                    .into());
                 };
-                return Ok(runner.attach_pool(&project, a, &pool.id, pool.port, &site.url, lang));
+                let url = format!("http://{}:{port}", site.server_name);
+                return Ok(runner.attach_pool(&project, a, &pool.id, port, &url, lang));
             }
         }
         let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
