@@ -266,6 +266,16 @@ fn php_server(dir: &Path, root: &str) -> String {
     format!("php -S 127.0.0.1:{{port}} -t {} {router}", quote(root))
 }
 
+/// Files that ask for Nginx, in the project folder or in the site's.
+const NGINX_FILES: [&str; 2] = ["nginx.conf", ".nginx"];
+
+/// A `nginx.conf` or `.nginx` in the project folder or in `root`.
+fn has_nginx(dir: &Path, root: &str) -> bool {
+    NGINX_FILES
+        .iter()
+        .any(|f| exists(dir, f) || (root != "." && exists(dir, &format!(r"{root}\{f}"))))
+}
+
 /// One walk of the project: 3 levels, at most 3000 files, no IGNORED folders.
 fn walk_files(dir: &Path, on_file: &mut dyn FnMut(&str)) {
     fn walk(d: &Path, depth: u32, seen: &mut u32, on_file: &mut dyn FnMut(&str)) {
@@ -506,6 +516,10 @@ pub fn requires(dir: &Path) -> Vec<String> {
     {
         found.insert("apache");
         found.insert("php");
+    }
+    // The walk skips hidden names: `.nginx` is looked for here.
+    if has_nginx(dir, ".") {
+        found.insert("nginx");
     }
     for compose in ["compose.yaml", "docker-compose.yml"] {
         let text = read(dir, compose).to_ascii_lowercase();
