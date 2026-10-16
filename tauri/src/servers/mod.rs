@@ -1090,6 +1090,32 @@ impl WebServers {
             );
         }
 
+        // The pool's lines are on disk (defect 4): a missing one would start
+        // the default line in its place, a "PHP 7.4" pool running PHP 8.
+        let catalog = Catalog::get();
+        for (cid, name, line) in [
+            (
+                pool.engine.as_str(),
+                pool.engine.label(),
+                pool.server_line.as_deref(),
+            ),
+            ("php", "PHP", pool.php_line.as_deref()),
+        ] {
+            let (Some(line), Some(c)) = (line, catalog.find(cid)) else {
+                continue;
+            };
+            if !crate::versions::is_present(&self.kit, c, line) {
+                bail!(
+                    "{}",
+                    crate::i18n::t(
+                        lang,
+                        "{0} {1} non è installato nel kit: installa questa versione o scegline un'altra.",
+                        &[name, line]
+                    )
+                );
+            }
+        }
+
         let mut env = base_env.clone();
         if let Some(php_line) = &pool.php_line {
             let php_dir = component_dir(&self.kit, "php", Some(php_line));
