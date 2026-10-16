@@ -65,6 +65,10 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             "php artisan serve --host=127.0.0.1 --port={port}",
             Kind::Web,
         ));
+        // Laravel's `public\.htaccess`: Apache too, after `artisan serve`.
+        if has_htaccess {
+            actions.push(apache());
+        }
     } else {
         // The CMS before Symfony: PrestaShop has a `bin\console` too.
         let cms = if exists(dir, "wp-config.php")

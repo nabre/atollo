@@ -9,6 +9,21 @@ fn laravel_and_plain() {
     assert_eq!(ids(&p), ["php:artisan", "composer:install"]);
     assert!(p.warnings.iter().any(|w| w.contains("composer install")));
 
+    // Laravel's public\.htaccess: Apache after `artisan serve`.
+    let ht = project(
+        "php-laravel-ht",
+        &[
+            ("composer.json", "{}"),
+            ("artisan", ""),
+            ("public/index.php", "<?php"),
+            ("public/.htaccess", "RewriteEngine On"),
+        ],
+    );
+    let p = detect(&ht.0, "it");
+    assert_eq!(ids(&p), ["php:artisan", "apache", "composer:install"]);
+    assert_eq!(p.default.as_deref(), Some("php:artisan"));
+    assert_eq!(p.actions[1].apache_dir.as_deref(), Some("public"));
+
     let plain = project("php-plain", &[("public/index.php", "<?php")]);
     let p = detect(&plain.0, "it");
     assert_eq!(p.kind, Kind::Web);
