@@ -138,21 +138,64 @@ export function ConfirmDialog({
   );
 }
 
-/** A question in the page's flow (deleting something): the message, then
- * the buttons that answer it. */
+/** A question in the page's flow (deleting something, signing out): the
+ * question shown first (`question`, its name; or `label` when the question
+ * is already in the text), the text that explains it (`children`, its
+ * description), then the buttons that answer it. The last action is the
+ * safe one ("Annulla") and takes the focus when the question appears; Esc
+ * calls `onCancel`. `row` puts it all on one line, as in a bar or a list
+ * row; `textClassName` styles the text. */
 export function InlineConfirm({
+  question,
   label,
   children,
   actions,
+  onCancel,
+  row = false,
+  className = "",
+  textClassName = "",
 }: {
-  label: string;
-  children: ReactNode;
+  question?: string;
+  label?: string;
+  children?: ReactNode;
   actions: ReactNode;
+  onCancel?: () => void;
+  row?: boolean;
+  className?: string;
+  textClassName?: string;
 }) {
+  const id = useId();
+  const answers = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (answers.current) tabbable(answers.current).at(-1)?.focus();
+  }, []);
+  const Text = row ? "span" : "div";
   return (
-    <div role="alertdialog" aria-label={label} className="space-y-2">
-      {children}
-      <div className="flex flex-wrap gap-2">{actions}</div>
+    <div
+      role="alertdialog"
+      aria-labelledby={question ? `${id}-q` : undefined}
+      aria-label={question ? undefined : label}
+      aria-describedby={children ? `${id}-desc` : undefined}
+      onKeyDown={(e) => {
+        if (e.key !== "Escape" || !onCancel) return;
+        e.stopPropagation();
+        onCancel();
+      }}
+      className={`${row ? "flex flex-wrap items-center gap-2" : "space-y-2"} ${className}`}
+    >
+      {question && (
+        <Text id={`${id}-q`} className={children ? "" : textClassName}>
+          {question}
+        </Text>
+      )}
+      {children && (
+        <Text id={`${id}-desc`} className={textClassName}>
+          {children}
+        </Text>
+      )}
+      <div ref={answers} className="flex flex-wrap gap-2">
+        {actions}
+      </div>
     </div>
   );
 }

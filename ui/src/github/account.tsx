@@ -15,6 +15,7 @@ import { useAction, useCopy, useLoad } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { useSubscription } from "../hooks";
 import { rich, t } from "../i18n";
+import { InlineConfirm } from "../workbench";
 
 /** The account's state, kept current by the "github" events of the sign-in. */
 export function useGithub() {
@@ -104,25 +105,33 @@ function Account({
           <span>{status.login ? t("Accesso fatto come {0}", `@${status.login}`) : t("accesso fatto")}</span>
           <span className="ml-auto flex flex-wrap items-center gap-2">
             {confirm ? (
-              <>
-                <span>{t("Uscire da GitHub? Anche Git, l'editor e gli agenti del kit perdono l'accesso.")}</span>
-                <ActionButton
-                  icon={VscSignOut}
-                  label={t("Esci")}
-                  busy={busy === "out"}
-                  onClick={() => {
-                    setConfirm(false);
-                    run("out", githubSignOut);
-                  }}
-                />
-                <ActionButton
-                  icon={VscClose}
-                  label={t("Annulla")}
-                  onClick={() => {
-                    setConfirm(false);
-                  }}
-                />
-              </>
+              <InlineConfirm
+                row
+                question={t("Uscire da GitHub? Anche Git, l'editor e gli agenti del kit perdono l'accesso.")}
+                onCancel={() => {
+                  setConfirm(false);
+                }}
+                actions={
+                  <>
+                    <ActionButton
+                      icon={VscSignOut}
+                      label={t("Esci")}
+                      busy={busy === "out"}
+                      onClick={() => {
+                        setConfirm(false);
+                        run("out", githubSignOut);
+                      }}
+                    />
+                    <ActionButton
+                      icon={VscClose}
+                      label={t("Annulla")}
+                      onClick={() => {
+                        setConfirm(false);
+                      }}
+                    />
+                  </>
+                }
+              />
             ) : (
               <ActionButton
                 icon={VscSignOut}

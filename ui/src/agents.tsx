@@ -28,6 +28,7 @@ import {
   EditorHeader,
   EditorSection,
   IconButton,
+  InlineConfirm,
   List,
   ListItem,
   Notice,
@@ -198,26 +199,34 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
               {agent.signedIn && agent.signInKind !== "api key" && (
                 <div className="flex flex-wrap items-center gap-1.5">
                   {confirm === agent.id ? (
-                    <>
-                      <span>{t("Togliere l'accesso salvato nel kit?")}</span>
-                      <ActionButton
-                        icon={VscSignOut}
-                        label={t("Esci")}
-                        primary
-                        busy={busy === `out:${agent.id}`}
-                        onClick={() => {
-                          setConfirm(null);
-                          run(`out:${agent.id}`, () => agentSignOut(agent.id));
-                        }}
-                      />
-                      <Button
-                        onClick={() => {
-                          setConfirm(null);
-                        }}
-                      >
-                        {t("Annulla")}
-                      </Button>
-                    </>
+                    <InlineConfirm
+                      row
+                      question={t("Togliere l'accesso salvato nel kit?")}
+                      onCancel={() => {
+                        setConfirm(null);
+                      }}
+                      actions={
+                        <>
+                          <ActionButton
+                            icon={VscSignOut}
+                            label={t("Esci")}
+                            primary
+                            busy={busy === `out:${agent.id}`}
+                            onClick={() => {
+                              setConfirm(null);
+                              run(`out:${agent.id}`, () => agentSignOut(agent.id));
+                            }}
+                          />
+                          <Button
+                            onClick={() => {
+                              setConfirm(null);
+                            }}
+                          >
+                            {t("Annulla")}
+                          </Button>
+                        </>
+                      }
+                    />
                   ) : (
                     <ActionButton
                       icon={VscSignOut}

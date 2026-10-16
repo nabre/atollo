@@ -1,15 +1,25 @@
 // The focus of the modal boxes (useModalFocus): it goes inside when the box
 // opens, Tab and Shift+Tab stay inside, Esc closes, and once closed it goes
 // back to the control that opened the box. The same for ConfirmDialog and
-// the zoomed screenshot of the Guide.
+// the zoomed screenshot of the Guide. The yes/no questions in the page
+// (InlineConfirm) are alertdialogs named by their question, with the focus
+// on the safe answer.
 import { useRef, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { ConfirmDialog, useModalFocus } from "../../../ui/src/workbench";
+import { ConfirmDialog, InlineConfirm, useModalFocus } from "../../../ui/src/workbench";
 import { GuideShot } from "../../../ui/src/guide/widgets";
+import { DatabaseCopies } from "../../../ui/src/backups";
+
+const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
+  isTauri: () => true,
+}));
 
 afterEach(() => {
   cleanup();
+  invoke.mockReset();
 });
 
 function Box({ onClose, empty = false }: { onClose: () => void; empty?: boolean }) {
@@ -125,6 +135,62 @@ describe("ConfirmDialog", () => {
     expect(dialog.contains(document.activeElement)).toBe(true);
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("InlineConfirm", () => {
+  it("is an alertdialog named by its question, described by its text, with the focus on the safe answer", () => {
+    const onCancel = vi.fn();
+    render(
+      <InlineConfirm
+        row
+        question="Ripristinare copia.sql?"
+        onCancel={onCancel}
+        actions={
+          <>
+            <button type="button">Ripristina</button>
+            <button type="button">Annulla</button>
+          </>
+        }
+      >
+        I dati attuali vengono sostituiti.
+      </InlineConfirm>,
+    );
+    const dialog = screen.getByRole("alertdialog", { name: "Ripristinare copia.sql?" });
+    expect(document.getElementById(dialog.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
+      "I dati attuali vengono sostituiti.",
+    );
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Annulla" }));
+    fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("takes its name from `label` when the question is in the text, without a description of its own", () => {
+    render(
+      <InlineConfirm label="Uscire?" actions={<button type="button">Annulla</button>}>
+        {null}
+      </InlineConfirm>,
+    );
+    const dialog = screen.getByRole("alertdialog", { name: "Uscire?" });
+    expect(dialog.hasAttribute("aria-describedby")).toBe(false);
+  });
+});
+
+describe("DatabaseCopies", () => {
+  it("asks before a restore with an alertdialog, and Esc gives up", async () => {
+    invoke.mockImplementation((cmd) =>
+      cmd === "project_backups"
+        ? Promise.resolve([{ file: "shop-1.sql", engine: "mariadb", size: 2048 }])
+        : Promise.reject(new Error(`unexpected ${cmd}`)),
+    );
+    render(<DatabaseCopies project="shop" engine="mariadb" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Ripristina…" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Ripristinare shop-1.sql?" });
+    expect(dialog.getAttribute("aria-describedby")).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Annulla" }));
+    fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(invoke).not.toHaveBeenCalledWith("project_db_restore", expect.anything());
   });
 });
 
