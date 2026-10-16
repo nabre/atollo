@@ -220,6 +220,97 @@ fn moving_the_kit_flags_the_conda_components_off_windows() {
     }
 }
 
+/// F7a: off Windows a root that changed only in case is another folder
+/// (Linux, and macOS volumes that respect case): the kit moved. On Windows
+/// it is the same folder.
+#[test]
+fn case_only_move_is_a_move_off_windows() {
+    assert!(same_root(Os::Win32, r"E:\Kit", r"e:\kit"));
+    assert!(!same_root(Os::Linux, "/media/u/Kit", "/media/u/kit"));
+    assert!(!same_root(Os::Darwin, "/Volumes/U/Kit", "/Volumes/U/kit"));
+    assert!(same_root(Os::Linux, "/media/u/kit", "/media/u/kit"));
+
+    let catalog = crate::setup::catalog::Catalog::get();
+    for (target, moves) in [(Target::LINUX_X64, true), (Target::WIN32_X64, false)] {
+        let tmp = TempDir::new(&format!("case-{target}"));
+        let first = Kit::at_target(tmp.0.join("Kit"), target);
+        assert_eq!(first.prepare().unwrap(), None);
+        let file = crate::fsx::join_rel(first.apps(), "git/2.51/bin/git");
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, b"x").unwrap();
+        // Renamed in two steps: also where the file system ignores case.
+        fs::rename(first.root(), tmp.0.join("tmp")).unwrap();
+        fs::rename(tmp.0.join("tmp"), tmp.0.join("kit")).unwrap();
+        let moved = Kit::at_target(tmp.0.join("kit"), target);
+        let expected = moves.then(|| first.root().to_path_buf());
+        assert_eq!(moved.prepare().unwrap(), expected, "{target}");
+        let git = catalog.find("git").unwrap();
+        assert_eq!(git.needs_reinstall(&moved), moves, "{target}");
+    }
+}
+
+/// M3/F7b: a saved line of R (another conda environment next to the
+/// default one) is marked too, and the start reinstalls it at its line.
+#[test]
+fn saved_r_line_is_marked_when_the_kit_moves() {
+    let catalog = crate::setup::catalog::Catalog::get();
+    let r = catalog.find("r").unwrap();
+    let tmp = TempDir::new("moved-r-line");
+    let first = Kit::at_target(tmp.0.join("one"), Target::LINUX_X64);
+    assert_eq!(first.prepare().unwrap(), None);
+    for rel in ["r/4.5/bin/R", "r/4.4/bin/R"] {
+        let file = crate::fsx::join_rel(first.apps(), rel);
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, b"x").unwrap();
+    }
+    r.save_version(&first, "4.5.1").unwrap();
+    let saved: Vec<String> = crate::versions::saved(&first, r)
+        .into_iter()
+        .map(|l| l.line)
+        .collect();
+    assert_eq!(saved, ["4.4"]);
+    assert!(r.lines_to_reinstall(&first).is_empty());
+
+    let moved_root = tmp.0.join("two");
+    fs::rename(first.root(), &moved_root).unwrap();
+    let moved = Kit::at_target(moved_root, Target::LINUX_X64);
+    assert_eq!(moved.prepare().unwrap(), Some(first.root().to_path_buf()));
+    assert!(r.needs_reinstall(&moved));
+    assert_eq!(r.lines_to_reinstall(&moved), ["4.4"]);
+    assert!(crate::setup::task::outdated_app(&moved).contains(&"r".to_owned()));
+
+    // The default reinstalled: the saved line still keeps R in the start.
+    r.clear_reinstall(&moved);
+    assert!(crate::setup::task::outdated_app(&moved).contains(&"r".to_owned()));
+    // The line reinstalled (install::install_line clears it): nothing left.
+    r.clear_line_reinstall(&moved, "4.4");
+    assert!(!crate::setup::task::outdated_app(&moved).contains(&"r".to_owned()));
+
+    // A marked line removed from the Tools page loses its mark.
+    r.mark_line_reinstall(&moved, "4.4", "/old").unwrap();
+    crate::versions::remove(&moved, "r", "4.4").unwrap();
+    assert!(r.lines_to_reinstall(&moved).is_empty());
+    assert!(!moved.versions_dir().join("r@4.4.reinstall").exists());
+
+    // A marked line that became the default marks the component.
+    let file = crate::fsx::join_rel(moved.apps(), "r/4.4/bin/R");
+    fs::create_dir_all(file.parent().unwrap()).unwrap();
+    fs::write(&file, b"x").unwrap();
+    r.mark_line_reinstall(&moved, "4.4", "/old").unwrap();
+    r.save_version(&moved, "4.4.3").unwrap();
+    assert!(!r.needs_reinstall(&moved));
+    // 4.5 is a saved line now, not marked; 4.4's mark moves to R.
+    assert!(r.lines_to_reinstall(&moved).is_empty());
+    assert!(r.needs_reinstall(&moved));
+    assert!(!moved.versions_dir().join("r@4.4.reinstall").exists());
+
+    // Removing R forgets every mark.
+    r.mark_line_reinstall(&moved, "4.5", "/old").unwrap();
+    r.forget_version(&moved);
+    assert!(!r.needs_reinstall(&moved));
+    assert!(!moved.versions_dir().join("r@4.5.reinstall").exists());
+}
+
 #[test]
 fn folders_that_break_the_editor_watcher() {
     assert_eq!(watcher_unsafe_folder(Path::new(r"E:\Atollo")), None);

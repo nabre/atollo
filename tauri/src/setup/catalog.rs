@@ -421,8 +421,80 @@ impl Component {
         let _ = fs::remove_file(Self::reinstall_file(kit, &self.id));
     }
 
+    /// `<id>@<line>.reinstall`: the same for a saved line (another version
+    /// kept next to the default folder, `versions::saved`), also a conda
+    /// environment that cannot follow the kit (D-92).
+    fn line_reinstall_file(kit: &Kit, id: &str, line: &str) -> PathBuf {
+        kit.versions_dir().join(format!("{id}@{line}.reinstall"))
+    }
+
+    /// Marks saved `line` to be installed again (`lines_to_reinstall`).
+    pub fn mark_line_reinstall(
+        &self,
+        kit: &Kit,
+        line: &str,
+        old_root: &str,
+    ) -> std::io::Result<()> {
+        let path = Self::line_reinstall_file(kit, &self.id, line);
+        if let Some(dir) = path.parent() {
+            fs::create_dir_all(dir)?;
+        }
+        write_atomic(&path, old_root.as_bytes())
+    }
+
+    pub fn clear_line_reinstall(&self, kit: &Kit, line: &str) {
+        let _ = fs::remove_file(Self::line_reinstall_file(kit, &self.id, line));
+    }
+
+    /// The saved lines marked to be installed again that are still on disk,
+    /// newest first. A mark whose line went (removed from the Tools page or
+    /// by hand) is dropped: nothing is left to repair; one whose line became
+    /// the default (the default removed first) marks the component instead.
+    pub fn lines_to_reinstall(&self, kit: &Kit) -> Vec<String> {
+        let prefix = format!("{}@", self.id);
+        let mut marked: BTreeSet<String> = fs::read_dir(kit.versions_dir())
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter_map(|e| {
+                let name = e.file_name().to_string_lossy().into_owned();
+                name.strip_prefix(&prefix)?
+                    .strip_suffix(".reinstall")
+                    .map(str::to_owned)
+            })
+            .collect();
+        let saved: Vec<String> = crate::versions::saved(kit, self)
+            .into_iter()
+            .map(|l| l.line)
+            .filter(|l| marked.remove(l))
+            .collect();
+        let default = crate::versions::default_line(kit, self);
+        for gone in marked {
+            if default.as_deref() == Some(gone.as_str()) && !self.needs_reinstall(kit) {
+                let path = Self::line_reinstall_file(kit, &self.id, &gone);
+                let old_root = fs::read_to_string(path).unwrap_or_default();
+                if self.mark_reinstall(kit, &old_root).is_err() {
+                    continue;
+                }
+            }
+            self.clear_line_reinstall(kit, &gone);
+        }
+        saved
+    }
+
     pub fn forget_version(&self, kit: &Kit) {
         self.clear_reinstall(kit);
+        let prefix = format!("{}@", self.id);
+        for e in fs::read_dir(kit.versions_dir())
+            .into_iter()
+            .flatten()
+            .flatten()
+        {
+            let name = e.file_name().to_string_lossy().into_owned();
+            if name.starts_with(&prefix) && name.ends_with(".reinstall") {
+                let _ = fs::remove_file(e.path());
+            }
+        }
         let _ = fs::remove_file(Self::version_file(kit, &self.id));
         if kit.os().is_windows() {
             let _ = fs::remove_file(Self::legacy_version_file(kit, &self.id));

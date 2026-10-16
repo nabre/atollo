@@ -350,11 +350,19 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
     let plan = plan(ctx, catalog, &choice, opts)?;
     let update_all = opts.update_all || !opts.only.is_empty();
     // "Update all" also brings every saved line to its latest patch.
-    let patches = if opts.update_all {
+    let mut patches = if opts.update_all {
         saved_lines(ctx, catalog, &plan.handle)
     } else {
         Vec::new()
     };
+    // Saved lines marked when the kit moved (conda environments, D-92):
+    // installed again at their line, even at the same version.
+    for (id, line) in marked_lines(ctx, catalog, &plan.handle) {
+        match patches.iter_mut().find(|(i, l, _)| *i == id && *l == line) {
+            Some(patch) => patch.2 = None,
+            None => patches.push((id, line, None)),
+        }
+    }
     let named = |id: &String| catalog.find(id).map(|c| (c.id.clone(), c.name.clone()));
     sink.emit(Event::Queue {
         steps: plan
@@ -482,6 +490,19 @@ fn saved_lines(
             crate::versions::saved(ctx.kit, c)
                 .into_iter()
                 .map(|l| (c.id.clone(), l.line, l.version))
+        })
+        .collect()
+}
+
+/// The saved lines of the components a run handles that are marked to be
+/// installed again because the kit moved (`Component::lines_to_reinstall`).
+pub(crate) fn marked_lines(ctx: &Ctx, catalog: &Catalog, ids: &[String]) -> Vec<(String, String)> {
+    ids.iter()
+        .filter_map(|id| catalog.find(id))
+        .flat_map(|c| {
+            c.lines_to_reinstall(ctx.kit)
+                .into_iter()
+                .map(|line| (c.id.clone(), line))
         })
         .collect()
 }
