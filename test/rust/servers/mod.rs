@@ -365,3 +365,99 @@ fn apache_pool_conf_has_default_vhost_first() {
     assert_eq!(conf.matches("<VirtualHost").count(), 1);
     assert_eq!(conf.find("<VirtualHost"), Some(default));
 }
+
+/// `id` installed at `version`, the default folder of its line.
+fn fake_server(kit: &Kit, id: &str, version: &str) {
+    let c = Catalog::get().find(id).unwrap();
+    let dir = crate::versions::install_dir(kit, c, version);
+    let folder = c.folder.as_deref().unwrap();
+    for k in std::iter::once(&c.key).chain(&c.keys) {
+        if let Some(rel) = k.strip_prefix(folder) {
+            let file = dir.join(rel.trim_start_matches('/').replace('/', "\\"));
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(&file, b"").unwrap();
+        }
+    }
+    c.save_version(kit, version).unwrap();
+}
+
+/// BUG-05r: with Nginx and PHP installed but no project, the default pool
+/// starts no php-cgi; nor does a manual profile without a chosen PHP.
+#[test]
+fn default_nginx_pool_has_no_php_without_php_projects() {
+    let tmp = TempDir::new("servers-default-php");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "nginx", "1.27.4");
+    fake_server(&kit, "php", "8.4.13");
+    let servers = WebServers::new(kit.clone());
+
+    let view = servers.list("it", true);
+    assert_eq!(view.php_lines, ["8.4"]);
+    assert_eq!(view.pools.len(), 1);
+    let pool = &view.pools[0];
+    assert_eq!(pool.engine, WebServerEngine::Nginx);
+    assert_eq!(pool.php_line, None);
+    assert_eq!(pool.id, "nginx-1.27");
+
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: String::new(),
+                name: "Static".into(),
+                engine: WebServerEngine::Nginx,
+                server_line: None,
+                php_line: None,
+                port: Some(8098),
+            },
+            "it",
+        )
+        .unwrap();
+    let view = servers.list("it", true);
+    let manual = view.pools.iter().find(|p| p.id == "static").unwrap();
+    assert_eq!(manual.php_line, None);
+    assert_eq!(manual.server_line.as_deref(), Some("1.27"));
+}
+
+fn system32(exe: &str) -> String {
+    let root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
+    format!(r"{root}\System32\{exe}")
+}
+
+/// BUG-05r: a pool whose php-cgi ended is taken out of the running ones
+/// (and its server ended), never left "running" answering 502.
+#[test]
+fn pool_with_dead_php_cgi_is_not_running() {
+    let job = Job::new().unwrap();
+    let server = jobs::spawn_in(
+        std::process::Command::new(system32("ping.exe")).args(["-n", "60", "127.0.0.1"]),
+        &job,
+    )
+    .unwrap();
+    let mut php = jobs::spawn_in(
+        std::process::Command::new(system32("cmd.exe")).args(["/d", "/c", "exit 0"]),
+        &job,
+    )
+    .unwrap();
+    let begun = Instant::now();
+    while php.try_wait().unwrap().is_none() {
+        assert!(begun.elapsed() < Duration::from_secs(5));
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    let mut running = BTreeMap::new();
+    running.insert(
+        "nginx-php".to_owned(),
+        RunningPool {
+            child: server,
+            port: 8099,
+            fcgi_port: Some(9000),
+            php: Some(php),
+            _job: job,
+        },
+    );
+    let dead = take_dead(&mut running);
+    assert!(running.is_empty());
+    assert_eq!(dead.len(), 1);
+    assert_eq!(dead[0].0, "nginx-php");
+    end_dead(dead);
+}
