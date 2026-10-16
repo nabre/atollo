@@ -166,6 +166,29 @@ fn python_minor(ctx: &Ctx) -> String {
         .unwrap_or_else(|| PYTHON_DEFAULT.to_owned())
 }
 
+/// The minor line of the Python in `tree` (`3.14`), read from its files:
+/// `python314.dll` on Windows, `lib/python3.14` elsewhere. The line chosen
+/// in the settings may differ from the one installed (a project's line, a
+/// change not applied yet). `None` when neither is there.
+pub fn python_minor_in(tree: &Path, windows: bool) -> Option<String> {
+    let (dir, re) = if windows {
+        (tree.to_path_buf(), r"(?i)^python3(\d+)\.dll$")
+    } else {
+        (tree.join("lib"), r"^python3\.(\d+)$")
+    };
+    let re = pattern(re).ok()?;
+    fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_dir() != windows))
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            re.captures(&name)?.get(1)?.as_str().parse::<u32>().ok()
+        })
+        .max()
+        .map(|n| format!("3.{n}"))
+}
+
 /// The newest `cpython-<minor>.N+<date>-<triple>-install_only_stripped.tar.gz`
 /// in a SHA256SUMS file: (file name, patch version, hash).
 pub fn pick_python(sums: &str, minor: &str, triple: &str) -> Option<(String, String, String)> {
@@ -303,7 +326,9 @@ impl Installer for Python {
         // Packages are compatible only within the same minor version.
         let minor = |v: &str| v.split('.').take(2).collect::<Vec<_>>().join(".");
         let m = minor(&old_version);
-        if m != python_minor(ctx) {
+        let new =
+            python_minor_in(tree, ctx.kit.os().is_windows()).unwrap_or_else(|| python_minor(ctx));
+        if m != new {
             return Ok(());
         }
         let is_pip = |name: &str| {
@@ -339,7 +364,7 @@ impl Installer for Python {
             (p, join_rel(dest, "Lib/ensurepip/_bundled"))
         } else {
             let p = dest.join("bin").join("python3");
-            let m = python_minor(ctx);
+            let m = python_minor_in(dest, false).unwrap_or_else(|| python_minor(ctx));
             (
                 p,
                 join_rel(dest, &format!("lib/python{m}/ensurepip/_bundled")),
