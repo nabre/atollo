@@ -147,9 +147,9 @@ pub trait Installer: Sync {
     fn finish(&self, _ctx: &Ctx, _component: &Component, _dest: &Path) -> Result<()> {
         Ok(())
     }
-    /// Installers made of processes instead of archives: install `release`
-    /// themselves. Default: the shared path.
-    fn custom(&self) -> bool {
+    /// Installers made of processes instead of archives on `target`: install
+    /// `release` themselves. Default: the shared path.
+    fn custom(&self, _target: crate::kit::Target) -> bool {
         false
     }
     fn install_custom(
@@ -305,7 +305,7 @@ pub fn install(
     let Some(inst) = installer(&component.id) else {
         bail!("{}: no installer", component.id);
     };
-    if inst.custom() {
+    if inst.custom(target_of(ctx, component)) {
         inst.install_custom(ctx, component, release, progress)?;
         if component.per_line() {
             let dir = crate::versions::install_dir(ctx.kit, component, &release.version);
@@ -378,7 +378,7 @@ pub fn release_at(ctx: &Ctx, component: &Component, line: &str) -> Result<Releas
         bail!("{}: no version {line} to download", component.id);
     }
     let mut release = inst.release_line(ctx, component, line)?;
-    if !inst.custom() {
+    if !inst.custom(target_of(ctx, component)) {
         let latest = inst.latest(ctx, component)?;
         release.parts.extend(
             latest
@@ -411,7 +411,7 @@ pub fn install_line(
         bail!("{} {line}: it is the default version", component.id);
     }
     let target = crate::versions::saved_dir(ctx.kit, component, &line);
-    if inst.custom() {
+    if inst.custom(target_of(ctx, component)) {
         inst.install_custom_at(ctx, component, release, &target, progress)?;
         if !crate::versions::has_key(component, &target) {
             bail!(

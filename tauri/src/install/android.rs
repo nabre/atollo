@@ -169,7 +169,7 @@ impl Installer for Android {
         ))
     }
 
-    fn custom(&self) -> bool {
+    fn custom(&self, _target: Target) -> bool {
         true
     }
 
