@@ -212,3 +212,54 @@ Ogni finding confermato dai revisori torna all'agente proprietario del file (ste
 | 1 | 6 | 23 | onda 0 verde |
 | 2 | 2 | 3 | A2, A3, A4 integrati |
 | 3 | 4 + CI | verifica di tutte le 27 | onde 1–2 integrate |
+
+---
+
+## 8. Stato di esecuzione
+
+> Ramo `ccr-7b1949d1-btdvkl`, da `ef3e4ee` (fine onda 0) a `bac8364` più i commit di D1 (onda 3). Gate locali verdi a ogni onda: `cargo check`/`clippy -D warnings` per `x86_64-pc-windows-msvc`, `cargo fmt --check`, `npm -w ui test`/`lint`/`format:check`/`build`. I test Rust girano solo nella CI Windows.
+
+| # | ID | Stato | Commit di chiusura |
+| :-: | :-- | :-: | :-- |
+| 1 | CI-0 | ✅ chiuso | `style: apply cargo fmt`; `fix(lint): clear clippy warnings`; `fix(lint): clear eslint errors and prettier drift in ui`; `ci: fail the frontend step on the first failing command` |
+| 2 | N-S1 | ✅ chiuso | `fix(servers): N-S1 never serve the project root when a site's folder is missing or linked` |
+| 3 | N-S2 | ✅ chiuso | `fix(nginx): refuse .php with 503 when there is no FastCGI (N-S2)`; per Apache `fix(apache): refuse .php without a PHP module, match .php in any case` e `fix(apache): kit site refuses .php without a PHP module, any case` (`kit.conf`) |
+| 4 | N-S3 | ✅ chiuso | `fix(serve): refuse NTFS 8.3 short-name segments (N-S3)` |
+| 5 | BUG-22 | ✅ chiuso | `fix(archive): BUG-22 extract .tar.xz in Rust through the safe tar path` |
+| 6 | N-S4a | ✅ chiuso | `fix(servers): N-S4a serialize every read-modify-write of servers.json` |
+| 7 | N-S4b | ✅ chiuso | `fix(servers): N-S4b run server_save and server_remove off the IPC thread` |
+| 8 | N-S4c | ✅ chiuso | `fix(servers): N-S4c prune ports of pools that no longer exist` |
+| 9 | BUG-03 | ✅ chiuso | `fix(servers): BUG-03 keep httpd/nginx output in the pool's stderr.log` |
+| 10 | BUG-04 | ✅ chiuso | `fix(servers): BUG-04 wait for the port to be released on reload` |
+| 11 | BUG-05r | 🟡 parziale | `fix(servers): BUG-05r watch the pool's php-cgi and start it only for PHP` — solo i pool; il php-cgi del server Nginx **dedicato** del progetto non è sorvegliato |
+| 12 | BUG-07 | ✅ chiuso | `fix(servers): BUG-07 cache the projects scan of the server list for 15 s` |
+| 13 | N-S5 | ✅ chiuso | `fix(servers): N-S5 give Apache pools a default VirtualHost first` |
+| 14 | GAP-RUN | 🟡 parziale | `fix(run): GAP-RUN start a site assigned to a server profile in its pool`; `fix(ui): AttachedSite carries the action id of its site` — lo stato dell'esecuzione non segue il ciclo di vita del pool |
+| 15 | BUG-23a | 🟡 parziale | `refactor(install): shared conda and micromamba helpers out of R`; `refactor(install): Installer::custom takes the target`; `fix(install): BUG-23a Git on macOS and Linux by micromamba`; `fix(kit): D-92 reinstall conda components when the kit moves` — codice completo, non provato su macOS/Linux reali |
+| 16 | BUG-23b | ✅ chiuso | `fix(catalog): BUG-23b/BUG-24a PHP, Apache, Nginx and Adminer Windows only` (opzione C) |
+| 17 | BUG-24a | ✅ chiuso | stesso commit di BUG-23b; `fix(projects): offer only components available on the kit's platform` |
+| 18 | BUG-24b | ✅ chiuso | `fix(install): BUG-24b use the Python line actually installed` |
+| 19 | BUG-24c | ✅ chiuso | `fix(setup): BUG-24c say why a component is unavailable` |
+| 20 | BUG-17r | ✅ chiuso | `fix(cli): BUG-17r name the downloads folder as a placeholder` |
+| 21 | N-A1 | ✅ chiuso | nel commit di BUG-22 (`Path::join` nel test, doc del modulo sui link) |
+| 22 | N-U1 | ✅ chiuso | `fix(ui): keep the Database page's action errors apart from its reads (N-U1)` |
+| 23 | BUG-18r | ✅ chiuso | `fix(ui): offer Riprova on the failed reads of a project's boxes (BUG-18r)` |
+| 24 | BUG-11r | ✅ chiuso | `fix(ui): write a sash's size once the drag pauses (BUG-11r)` |
+| 25 | BUG-20r | ✅ chiuso | `fix(ui): keyboard and focus for the versions menus and the dialog (BUG-20r)` |
+| 26 | UI-POLISH | ✅ chiuso | `fix(ui): Italian source badges, readable day labels, strict guide tr (UI-POLISH)`; `fix(ui): add Riprova to the banner of the kit's unreadable state (N2)` |
+| 27 | ARCH-LAZY | ✅ chiuso | `fix(ui): load the Guide page lazily in its own chunk (ARCH-LAZY)` |
+
+Totale: **24 chiusi, 3 parziali**. Anche `fix(serve): test that silent connections do not block the server` (verifica di BUG-01).
+
+### 8.1 Seguiti non fatti
+
+| Voce | Dove | Nota |
+| :-- | :-- | :-- |
+| Slowloris a goccia (byte a byte) | `projects/serve.rs` | il timeout di lettura di 5 s vale per ogni lettura: manca una scadenza totale per la richiesta |
+| `.phtml`, `.php5` | `projects/apache.rs`, `projects/nginx.rs`, `install/web.rs` | il rifiuto senza PHP copre solo `.php` (in ogni maiuscola) |
+| `kit.conf` esistenti | `projects/apache.rs` (`fix_kit_conf`) | il nuovo blocco vale solo per i `kit.conf` creati da ora; quelli già scritti restano con `\.php$` e senza rifiuto |
+| php-cgi del Nginx dedicato | `projects/run.rs` | il `Child` di php-cgi è ancora scartato: la sua morte non si vede (BUG-05r) |
+| Esecuzione su pool | `projects/run.rs`, `servers/mod.rs` | l'esecuzione registrata non è legata al ciclo di vita del pool: fermato o caduto il pool, resta «in corso» (GAP-RUN) |
+| Git conda su Unix | `install/core.rs`, `kit.rs` | validazione reale su macOS e Linux (installazione, `.gitconfig`, reinstallazione dopo lo spostamento) |
+| `Options FollowSymLinks` | vhost Apache | indagine su Windows reale (giunzione verso `\\server`, NTLM), §6 punto 6 |
+| Test con kit reale (`ATOLLO_TEST_KIT`) | `test/rust/servers/` | `start_reports_syntax_error` (BUG-03) e `apache_pool_reload_twice` (BUG-04) non scritti |
