@@ -243,7 +243,6 @@ pub(crate) fn split_path(value: &str, sep: char) -> Vec<&str> {
 }
 
 impl KitEnv {
-
     /// Builds the environment of `kit`. Reads only which programs exist in
     /// `data\apps` (like the `if exist` lines of `_env.cmd`); writes nothing.
     pub fn build(kit: &Kit, settings: &Settings, lang: &str, host: &Host) -> KitEnv {
@@ -352,7 +351,10 @@ impl KitEnv {
         env.set_path("PYTHON_HISTORY", home.join(".python_history"));
         env.set_path(
             "PSModuleAnalysisCachePath",
-            join_rel(&localappdata, "Microsoft/Windows/PowerShell/ModuleAnalysisCache"),
+            join_rel(
+                &localappdata,
+                "Microsoft/Windows/PowerShell/ModuleAnalysisCache",
+            ),
         );
         env.set("GCM_CREDENTIAL_STORE", "dpapi");
         env.set_path(
@@ -534,7 +536,11 @@ impl KitEnv {
             }
         }
         let cargo_exe = if is_win { "bin/cargo.exe" } else { "bin/cargo" };
-        let rustup_exe = if is_win { "bin/rustup.exe" } else { "bin/rustup" };
+        let rustup_exe = if is_win {
+            "bin/rustup.exe"
+        } else {
+            "bin/rustup"
+        };
         if !join_rel(&cargo, cargo_exe).is_file() {
             path.extend(
                 subdirs_starting_with(&rustup.join("toolchains"), "stable-").map(|d| d.join("bin")),
@@ -586,11 +592,7 @@ impl KitEnv {
         );
         when(&mut path, r"typst\typst.exe", &[app("typst")]);
         let tl_bin = format!("tinytex/bin/{}", kit.target().texlive_bin());
-        when(
-            &mut path,
-            r"tinytex\bin\windows\tlmgr.bat",
-            &[app(&tl_bin)],
-        );
+        when(&mut path, r"tinytex\bin\windows\tlmgr.bat", &[app(&tl_bin)]);
         let pnpm_installed = if is_win {
             npm_prefix.join("pnpm.cmd").is_file()
         } else {

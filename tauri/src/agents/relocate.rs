@@ -369,11 +369,15 @@ fn venv_files(venv: &Path) -> Vec<PathBuf> {
     if !venv.join("pyvenv.cfg").is_file() {
         return Vec::new();
     }
-    let is_pth = |n: &str| n.ends_with(".pth") || (n.starts_with("__editable__") && n.ends_with(".py"));
+    let is_pth =
+        |n: &str| n.ends_with(".pth") || (n.starts_with("__editable__") && n.ends_with(".py"));
     let mut out = vec![venv.join("pyvenv.cfg")];
     out.extend(files_in(&venv.join("Scripts"), |_| true));
     out.extend(files_in(&venv.join("bin"), |_| true));
-    out.extend(files_in(&crate::fsx::join_rel(venv, "Lib/site-packages"), is_pth));
+    out.extend(files_in(
+        &crate::fsx::join_rel(venv, "Lib/site-packages"),
+        is_pth,
+    ));
     for py_dir in subdirs(&venv.join("lib")) {
         out.extend(files_in(&py_dir.join("site-packages"), is_pth));
     }

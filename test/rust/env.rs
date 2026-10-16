@@ -361,4 +361,3 @@ fn unix_target_builds_colon_path_and_xdg_dirs() {
         assert!(Path::new(v).starts_with(kit.data()), "{xdg} = {v}");
     }
 }
-

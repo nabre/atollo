@@ -131,5 +131,3 @@ fn sqlite_and_mongodb_across_targets() {
     assert!(url_lin.ends_with("mongodb-linux-aarch64-ubuntu2204-9.0.4.tgz"));
     assert_eq!(kind_lin, Kind::TarGz);
 }
-
-

@@ -327,5 +327,3 @@ fn multi_platform_availability_and_paths_across_targets() {
     assert_eq!(node.installed_version(&kit_win).as_deref(), Some("22.11.0"));
     assert_eq!(node.installed_version(&kit_mac).as_deref(), Some("24.1.0"));
 }
-
-

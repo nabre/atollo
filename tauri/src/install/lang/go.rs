@@ -31,7 +31,9 @@ pub fn go_lines(list: &[Value], arch: &str) -> Vec<String> {
 pub fn go_lines_for(list: &[Value], os: &str, arch: &str) -> Vec<String> {
     let mut out: Vec<String> = list
         .iter()
-        .filter(|r| r.get("stable") == Some(&Value::Bool(true)) && go_file_for(r, os, arch).is_some())
+        .filter(|r| {
+            r.get("stable") == Some(&Value::Bool(true)) && go_file_for(r, os, arch).is_some()
+        })
         .filter_map(|r| crate::versions::line_of(r.get("version")?.as_str()?))
         .collect();
     out.sort_by_key(|l| std::cmp::Reverse(version_key(l)));
@@ -71,8 +73,8 @@ impl Go {
             })
             .max_by_key(|r| version_key(r.get("version").and_then(Value::as_str).unwrap_or("")))
             .ok_or_else(|| anyhow!("no stable Go {}", line.unwrap_or("")))?;
-        let f = go_file_for(rel, os, arch)
-            .ok_or_else(|| anyhow!("no Go archive for {os}/{arch}"))?;
+        let f =
+            go_file_for(rel, os, arch).ok_or_else(|| anyhow!("no Go archive for {os}/{arch}"))?;
         let name = s(f, "filename")?;
         Ok(Release::single(
             s(rel, "version")?.trim_start_matches("go").to_owned(),

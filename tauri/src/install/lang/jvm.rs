@@ -8,7 +8,9 @@ use serde_json::Value;
 
 use super::{github_line, github_stable, is_release, release_lines, s, version_key};
 use crate::fsx::join_rel;
-use crate::install::{arch_of, github_single, pattern, target_of, Ctx, Dest, Installer, Part, Release};
+use crate::install::{
+    arch_of, github_single, pattern, target_of, Ctx, Dest, Installer, Part, Release,
+};
 use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::first_sha256;
@@ -19,7 +21,9 @@ use crate::setup::catalog::Component;
 /// Gradle in their folders.
 pub struct Java;
 
-pub(crate) fn temurin_spec(target: Target) -> (&'static str, &'static str, &'static str, Kind, Inner) {
+pub(crate) fn temurin_spec(
+    target: Target,
+) -> (&'static str, &'static str, &'static str, Kind, Inner) {
     let os = target.adoptium_os();
     let arch = target.adoptium_arch();
     match target.os {

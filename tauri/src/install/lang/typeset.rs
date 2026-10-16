@@ -19,7 +19,10 @@ pub(crate) fn typst_spec(target: Target) -> (String, Kind) {
     let arch = target.gnu_arch();
     match target.os {
         Os::Win32 => (format!(r"^typst-{arch}-pc-windows-msvc\.zip$"), Kind::Zip),
-        Os::Darwin => (format!(r"^typst-{arch}-apple-darwin\.tar\.xz$"), Kind::TarXz),
+        Os::Darwin => (
+            format!(r"^typst-{arch}-apple-darwin\.tar\.xz$"),
+            Kind::TarXz,
+        ),
         Os::Linux => (
             format!(r"^typst-{arch}-unknown-linux-musl\.tar\.xz$"),
             Kind::TarXz,
