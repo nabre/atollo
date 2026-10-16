@@ -125,6 +125,16 @@ export interface ProjectDatabases {
   detected: string[];
   envExists: boolean;
   envIgnored: boolean;
+  /** By engine: the version its database is on (PLAN.md §13.2). */
+  versions: Partial<Record<ProjectDb["engine"], DbVersions>>;
+}
+
+export interface DbVersions {
+  /** Chosen for the project; null: the one the server runs (`server`). */
+  chosen: string | null;
+  server: string | null;
+  /** Installed, newest first. */
+  lines: string[];
 }
 
 export interface EnvChange {
@@ -148,10 +158,21 @@ const SAMPLE_PROJECT_DATABASES: ProjectDatabases = {
   detected: ["mariadb", "sqlite"],
   envExists: true,
   envIgnored: true,
+  versions: {
+    mariadb: { chosen: null, server: "12.3", lines: ["12.3", "11.4"] },
+    mongodb: { chosen: null, server: null, lines: [] },
+  },
 };
 
 export function projectDatabases(project: string): Promise<ProjectDatabases> {
   return query<ProjectDatabases>("project_databases", SAMPLE_PROJECT_DATABASES, { project });
+}
+
+/** The version of a server for the project's database (null: the one the
+ * server runs), on its own port; a database already created is created on
+ * it too, the server installed and started for it. */
+export function projectDbLine(project: string, engine: ProjectDb["engine"], line: string | null): Promise<void> {
+  return act("project_db_line", { project, engine, line });
 }
 
 /** Creates the project's database and user, installing and starting the server if needed. */

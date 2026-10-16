@@ -7,8 +7,8 @@ fn settings_round_trip_and_defaults() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     let s = Services::new(kit.clone());
-    assert_eq!(s.port("mariadb"), 3306);
-    assert_eq!(s.port("mongodb"), 27017);
+    assert_eq!(line_port(&kit, "mariadb", None), 3306);
+    assert_eq!(line_port(&kit, "mongodb", None), 27017);
     s.set("mariadb", Some(3307), true).unwrap();
     s.set("mongodb", Some(27017), false).unwrap();
     let all = load_settings(&kit);
@@ -17,7 +17,7 @@ fn settings_round_trip_and_defaults() {
         Setting {
             port: Some(3307),
             autostart: true,
-            line: None
+            ..Setting::default()
         }
     );
     assert_eq!(all["mongodb"].port, None, "the default port is not stored");

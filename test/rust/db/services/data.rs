@@ -1,5 +1,8 @@
 use super::*;
-use crate::db::services::server_lines;
+use crate::db::services::{
+    bin_at, line_port, line_ports, load_settings, log_path, project_db_port, project_line,
+    server_lines, Setting, State,
+};
 use crate::kit::{tests::TempDir, Arch};
 
 /// `id` installed at `version`, the default folder of its line.
@@ -41,12 +44,12 @@ fn each_version_has_its_data() {
     assert_eq!(server_line(&kit, "mariadb").as_deref(), Some("12.3"));
     assert_eq!(server_lines(&kit, "mariadb"), ["12.3", "11.8"]);
     assert_eq!(
-        seed(&kit, "mariadb", "12.3").unwrap().as_deref(),
+        seed(&kit, "mariadb", "12.3", &[]).unwrap().as_deref(),
         Some("11.8")
     );
     assert!(root.join(r"12.3\ibdata1").is_file() && root.join(r"11.8\ibdata1").is_file());
     assert_eq!(
-        seed(&kit, "mariadb", "12.3").unwrap(),
+        seed(&kit, "mariadb", "12.3", &[]).unwrap(),
         None,
         "only the first time"
     );
@@ -74,12 +77,153 @@ fn each_version_has_its_data() {
     fs::create_dir_all(mongo.join("7.0")).unwrap();
     fs::write(mongo.join(r"7.0\WiredTiger"), b"").unwrap();
     assert_eq!(
-        seed(&kit, "mongodb", "9.0").unwrap(),
+        seed(&kit, "mongodb", "9.0", &[]).unwrap(),
         None,
         "7.0 cannot jump to 9.0"
     );
     assert_eq!(
-        seed(&kit, "mongodb", "8.0").unwrap().as_deref(),
+        seed(&kit, "mongodb", "8.0", &[]).unwrap().as_deref(),
         Some("7.0")
     );
+}
+
+/// The data of a running version is never copied (PLAN.md §13.2).
+#[test]
+fn no_copy_of_a_running_version() {
+    let tmp = TempDir::new("services-seed-running");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let root = kit.data().join(r"db\mariadb");
+    fs::create_dir_all(root.join(r"10.6\mysql")).unwrap();
+    let err = seed(&kit, "mariadb", "11.8", &["10.6".to_owned()]).unwrap_err();
+    assert!(format!("{err:#}").contains("stop mariadb 10.6"), "{err:#}");
+    assert!(!root.join("11.8").exists(), "nothing copied");
+    assert_eq!(
+        seed(&kit, "mariadb", "11.8", &["11.8".to_owned()])
+            .unwrap()
+            .as_deref(),
+        Some("10.6")
+    );
+}
+
+/// Two versions of MariaDB side by side (PLAN.md §13.2): the one the
+/// server runs on its port, the other on the next free one, stored at
+/// its first start; each with its data, program and log; the project's
+/// database on the version chosen for it, at that version's port.
+#[test]
+fn versions_side_by_side() {
+    let tmp = TempDir::new("services-side");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "mariadb", "11.4.5");
+    let c = Catalog::get().find("mariadb").unwrap();
+    let older = crate::versions::saved_dir(&kit, c, "10.6");
+    fs::create_dir_all(older.join("bin")).unwrap();
+    for k in ["mariadbd.exe", "mariadb.exe"] {
+        fs::write(older.join("bin").join(k), b"").unwrap();
+    }
+    assert_eq!(server_lines(&kit, "mariadb"), ["11.4", "10.6"]);
+    assert_eq!(server_line(&kit, "mariadb").as_deref(), Some("11.4"));
+    assert_eq!(line_port(&kit, "mariadb", None), 3306);
+    assert_eq!(line_port(&kit, "mariadb", Some("11.4")), 3306);
+    assert_eq!(line_port(&kit, "mariadb", Some("10.6")), 3307);
+    assert_eq!(
+        data_dir_at(&kit, "mariadb", Some("10.6")),
+        kit.data().join(r"db\mariadb\10.6")
+    );
+    assert!(bin_at(&kit, "mariadb", Some("10.6"), "mariadbd.exe").starts_with(&older));
+    assert_eq!(
+        log_path(&kit, "mariadb", Some("10.6")),
+        kit.logs().join("mariadb-10.6.log")
+    );
+    assert_eq!(
+        log_path(&kit, "mariadb", Some("11.4")),
+        kit.logs().join("mariadb.log")
+    );
+
+    // The page: the other version with its port and data.
+    let s = Services::new(kit.clone());
+    let info = s.list().into_iter().find(|i| i.id == "mariadb").unwrap();
+    assert_eq!((info.port, info.line.as_deref()), (3306, Some("11.4")));
+    assert_eq!(info.others.len(), 1);
+    let other = &info.others[0];
+    assert_eq!((other.line.as_str(), other.port), ("10.6", 3307));
+    assert_eq!(other.state, State::Stopped);
+    assert_eq!(other.url, "mysql://root@127.0.0.1:3307/");
+
+    // Ports of the other versions: stored, never the server's nor another's.
+    s.set_line_port("mariadb", "10.6", Some(3316)).unwrap();
+    assert_eq!(line_port(&kit, "mariadb", Some("10.6")), 3316);
+    assert!(s.set_line_port("mariadb", "10.6", Some(3306)).is_err());
+    assert!(s.set_line_port("mariadb", "10.6", Some(80)).is_err());
+    assert!(s.set_line_port("mariadb", "11.4", Some(3320)).is_err());
+    assert!(s.set_line_port("mariadb", "9.0", Some(3320)).is_err());
+    s.set("mariadb", Some(3310), true).unwrap();
+    assert_eq!(
+        load_settings(&kit)["mariadb"].ports["10.6"],
+        3316,
+        "the server's settings keep the other ports"
+    );
+    s.set_line_port("mariadb", "10.6", None).unwrap();
+    assert_eq!(line_port(&kit, "mariadb", Some("10.6")), 3311);
+    s.set("mariadb", None, false).unwrap();
+    assert!(s
+        .start_line("mariadb", Some("9.0"), &KitEnv::default())
+        .is_err());
+
+    // The project's database follows the version chosen for it.
+    crate::db::auth::set_project_password(&kit, "shop", "mariadb", "pw").unwrap();
+    assert_eq!(project_db_port(&kit, "shop"), Some(3306));
+    assert_eq!(
+        project_db_port(&kit, "blog"),
+        None,
+        "no database: no DB_PORT"
+    );
+    assert!(s
+        .project_db_line("shop", "mariadb", Some("9.0"), &KitEnv::default())
+        .is_err());
+    crate::db::auth::set_project_line(&kit, "shop", "mariadb", Some("10.6")).unwrap();
+    assert_eq!(
+        project_line(&kit, "shop", "mariadb").as_deref(),
+        Some("10.6")
+    );
+    assert_eq!(project_db_port(&kit, "shop"), Some(3307));
+    let dbs = s.project_dbs("shop");
+    assert_eq!((dbs[0].port, dbs[0].url.contains(":3307/")), (3307, true));
+    let err = s.project_db_create("shop", "mariadb").unwrap_err();
+    assert!(
+        format!("{err:#}").contains("mariadb 10.6 is not running"),
+        "{err:#}"
+    );
+
+    // A saved state of before (no `ports`) reads as it was.
+    fs::write(
+        kit.app_dir().join("services.json"),
+        r#"{ "mariadb": { "port": 3308, "autostart": true } }"#,
+    )
+    .unwrap();
+    let old = &load_settings(&kit)["mariadb"];
+    assert!(old.autostart && old.ports.is_empty());
+    assert_eq!(line_port(&kit, "mariadb", Some("10.6")), 3309);
+}
+
+#[test]
+fn line_ports_skip_the_taken_ones() {
+    let lines: Vec<String> = ["12.3", "11.4", "10.11", "10.6"]
+        .iter()
+        .map(|s| (*s).to_owned())
+        .collect();
+    let mut setting = Setting::default();
+    setting.ports.insert("10.6".into(), 3307);
+    setting.ports.insert("10.11".into(), 3306);
+    let ports = line_ports(&setting, "mariadb", Some("12.3"), &lines);
+    assert_eq!(ports["12.3"], 3306);
+    assert_eq!(ports["10.6"], 3307, "stored");
+    assert_eq!(ports["11.4"], 3308, "first free after the server's");
+    assert_eq!(
+        ports["10.11"], 3309,
+        "stored on the server's port: given again"
+    );
+    let values: std::collections::BTreeSet<u16> = ports.values().copied().collect();
+    assert_eq!(values.len(), 4, "one port each");
 }

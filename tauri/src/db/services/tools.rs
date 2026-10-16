@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Result};
 
-use super::{auth, bin, Services};
+use super::{auth, bin, bin_at, Services};
 use crate::env::KitEnv;
 use crate::os::jobs;
 
@@ -78,6 +78,26 @@ impl Services {
         cmd
     }
 
+    /// [`Services::mariadb_tool`] of version `line` (None: the one the
+    /// server runs) on `port`: the `[client]` login names the port of the
+    /// version the server runs only (PLAN.md §13.2).
+    pub(crate) fn mariadb_tool_at(
+        &self,
+        exe: &str,
+        env: &KitEnv,
+        line: Option<&str>,
+        port: u16,
+    ) -> Command {
+        let mut cmd = jobs::kit_command(bin_at(&self.kit, "mariadb", line, exe), env);
+        // It must be the first option; the port from here wins over it.
+        cmd.arg(format!(
+            "--defaults-extra-file={}",
+            auth::client_ini(&self.kit).display()
+        ))
+        .arg(format!("--port={port}"));
+        cmd
+    }
+
     /// A tool of MariaDB logged in as the project's own user, which has
     /// rights on its database only: for SQL the kit did not write (a copy
     /// brought from outside), so a `USE other` or `mysql.*` in it fails. Its
@@ -87,6 +107,7 @@ impl Services {
         &self,
         exe: &str,
         env: &KitEnv,
+        line: Option<&str>,
         port: u16,
         user: &str,
         password: &str,
@@ -98,7 +119,7 @@ impl Services {
                 "[client]\r\nuser={user}\r\npassword={password}\r\nhost=127.0.0.1\r\nport={port}\r\n"
             ),
         )?;
-        let mut cmd = jobs::kit_command(bin(&self.kit, "mariadb", exe), env);
+        let mut cmd = jobs::kit_command(bin_at(&self.kit, "mariadb", line, exe), env);
         // It must be the first option.
         cmd.arg(format!("--defaults-file={}", login.display()));
         Ok((cmd, login))

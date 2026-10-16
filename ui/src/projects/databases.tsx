@@ -9,15 +9,17 @@ import { t } from "../i18n";
 import { VscArrowLeft } from "react-icons/vsc";
 import {
   projectDbCreate,
+  projectDbLine,
   projectEnvApply,
   projectEnvPreview,
+  type DbVersions,
   type EnvChange,
   type ProjectDatabases,
   type ProjectDb,
 } from "../api";
 import { SecretField } from "../databases";
 import { DatabaseCopies } from "../backups";
-import { DataTable, EditorSection, Notice, Properties } from "../workbench";
+import { DataTable, EditorSection, Notice, Properties, Select } from "../workbench";
 import { COMPONENT_NAMES } from "./needs";
 
 function EnvPreview({
@@ -97,6 +99,56 @@ function EnvPreview({
   );
 }
 
+/** The version of the server for the project's database, when more than
+ * one is installed (PLAN.md §13.2): each runs on its own port. */
+function DbVersionSelect({
+  project,
+  engine,
+  versions,
+  hasDb,
+  onChanged,
+}: {
+  project: string;
+  engine: ProjectDb["engine"];
+  versions: DbVersions | undefined;
+  hasDb: boolean;
+  onChanged: () => void;
+}) {
+  const { busy, error, run } = useAction(onChanged);
+  if (!versions || versions.lines.length < 2) return null;
+  const id = `pdb-line-${engine}`;
+  return (
+    <div className="mb-3 space-y-1">
+      <label htmlFor={id} className="block font-semibold">
+        {t("Versione del server")}
+      </label>
+      <p className="text-vsc-desc">
+        {hasDb
+          ? t(
+              "Ogni versione ha la sua porta e i suoi dati: cambiandola, database e utente si creano anche sulla nuova, vuoti (i dati si portano con una copia).",
+            )
+          : t("Ogni versione ha la sua porta e i suoi dati.")}
+      </p>
+      <Select
+        id={id}
+        value={versions.chosen ?? ""}
+        disabled={busy !== null}
+        onChange={(line) => {
+          run("line", async () => {
+            await projectDbLine(project, engine, line === "" ? null : line);
+          });
+        }}
+        options={[
+          { value: "", label: t("Quella del server ({0})", versions.server ?? "") },
+          ...versions.lines.map((l) => ({ value: l, label: l })),
+        ]}
+        className="w-48"
+      />
+      <ErrorLine error={error} />
+    </div>
+  );
+}
+
 export function Databases({
   p,
   dbs,
@@ -121,6 +173,13 @@ export function Databases({
             title={COMPONENT_NAMES[engine] ?? engine}
             actions={used ? <span className="text-[12px] text-vsc-desc">{t("usato dal progetto")}</span> : undefined}
           >
+            <DbVersionSelect
+              project={p.id}
+              engine={engine}
+              versions={dbs.versions[engine]}
+              hasDb={db !== undefined}
+              onChanged={onChanged}
+            />
             {db ? (
               <div className="space-y-3">
                 <Properties
