@@ -1,11 +1,11 @@
-//! Editor, shell and terminal: VSCodium web server, PowerShell 7, Windows
-//! Terminal (docs/app/CATALOG.md and DECISIONS.md D-23, D-26, D-68).
+//! Editor and shell: VSCodium web server, PowerShell 7 (docs/app/CATALOG.md
+//! and DECISIONS.md D-23, D-26).
 
 use std::path::Path;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 
-use super::{arch_of, github_single, target_of, Ctx, Installer, Release};
+use super::{github_single, target_of, Ctx, Installer, Release};
 use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::first_sha256;
@@ -34,48 +34,6 @@ impl Installer for Pwsh {
             ),
         };
         github_single(ctx, "PowerShell/PowerShell", &re, kind, Inner::Auto)
-    }
-}
-
-/// Windows Terminal, the unpackaged zip in portable mode (D-68).
-pub struct Terminal;
-
-impl Installer for Terminal {
-    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        if !ctx.kit.os().is_windows() {
-            bail!("Windows Terminal is only available on Windows");
-        }
-        let arch = arch_of(ctx, component);
-        github_single(
-            ctx,
-            "microsoft/terminal",
-            &format!(r"^Microsoft\.WindowsTerminal_[\d.]+_{arch}\.zip$"),
-            Kind::Zip,
-            Inner::Auto,
-        )
-    }
-
-    /// Its settings (`settings\`, portable mode) go into the new tree: from
-    /// the folder it replaces, or from the old line's for a new line.
-    fn before_swap(&self, ctx: &Ctx, component: &Component, tree: &Path, old: &Path) -> Result<()> {
-        let from = [
-            old.to_path_buf(),
-            crate::versions::default_dir(ctx.kit, component),
-        ]
-        .into_iter()
-        .map(|d| d.join("settings"))
-        .find(|d| d.is_dir());
-        match from {
-            Some(from) => crate::net::archive::copy_tree(&from, &tree.join("settings"))
-                .context("terminal settings"),
-            None => Ok(()),
-        }
-    }
-
-    /// `.portable` next to the exe: settings stay in the folder, not in
-    /// `%LOCALAPPDATA%` (Windows Terminal portable mode).
-    fn finish(&self, _ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
-        std::fs::write(dest.join(".portable"), b"").context("terminal .portable")
     }
 }
 

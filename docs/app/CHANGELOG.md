@@ -1,5 +1,11 @@
 # Novità
 
+## Niente Windows Terminal (16/10/2026)
+
+- **Console solo nella console classica di Windows** (D-95): Terminale, agenti e terminali del kit si aprono in `conhost.exe` con PowerShell 7 del kit, come succedeva già quando Windows Terminal mancava. Tolti il componente Windows Terminal, l'impostazione «Terminale» e il gruppo «Legati a un sistema operativo» della pagina «Linguaggi e strumenti».
+- **Kit esistenti**: all'avvio l'app toglie la cartella di Windows Terminal (impostazioni comprese), i suoi file di versione e `data\kit\console.ps1`.
+- Proposta del primo avvio: circa 1,8 GB (45 MB in meno).
+
 ## CMS nel wizard dei progetti (16/10/2026)
 
 - **Nuove basi** nel wizard «Nuovo progetto»: WordPress (Bedrock), TYPO3, Drupal e Statamic, con database MariaDB del progetto, installazione completa e amministratore pronto (utente e password nel `.env`, D-93).

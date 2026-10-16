@@ -26,19 +26,6 @@ fn php_header_version() {
     assert_eq!(header_version("<?php echo 1;"), None);
 }
 
-/// A window program is checked by its version resource, not started.
-#[test]
-fn file_version_without_starting() {
-    let system = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
-    let notepad = std::path::Path::new(&system).join(r"System32\notepad.exe");
-    let v = file_version(&notepad).unwrap();
-    assert_eq!(v.split('.').count(), 4, "{v}");
-    assert!(v.split('.').all(|n| n.parse::<u16>().is_ok()), "{v}");
-    assert!(file_version(std::path::Path::new(r"C:\no\such.exe")).is_err());
-    let wt = Catalog::get().find("terminal").unwrap();
-    assert_eq!(wt.check[1..], [FILE_VERSION]);
-}
-
 /// `@` in the check program is the kit root, as in the key.
 #[test]
 fn check_program_at_the_kit_root() {

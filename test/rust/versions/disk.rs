@@ -192,3 +192,40 @@ fn github_cli_and_uv_leave_tools() {
     // CMake's Ninja stays in tools.
     assert!(tools.join("ninja.exe").is_file() && !tools.join("gh.exe").exists());
 }
+
+/// Windows Terminal is no longer in the catalog (D-95): what an older kit
+/// kept of it goes at start, nothing else.
+#[test]
+fn retired_windows_terminal_goes() {
+    let tmp = TempDir::new("versions-retired");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let wt = kit.apps().join(r"terminal\1.25\settings");
+    fs::create_dir_all(&wt).unwrap();
+    fs::write(wt.join("settings.json"), "{}").unwrap();
+    fs::create_dir_all(kit.versions_dir()).unwrap();
+    for f in [
+        "terminal.txt",
+        "terminal.reinstall",
+        "terminal@1.24.reinstall",
+        "pwsh.txt",
+    ] {
+        fs::write(kit.versions_dir().join(f), "1").unwrap();
+    }
+    let legacy = kit.app_dir().join(r"versions\terminal.txt");
+    fs::write(&legacy, "1.25.2609.30003").unwrap();
+    fs::create_dir_all(kit.kit_files()).unwrap();
+    let script = kit.kit_files().join("console.ps1");
+    fs::write(&script, "# pipe").unwrap();
+
+    migrate(&kit);
+
+    assert!(!kit.apps().join("terminal").exists());
+    assert!(!legacy.exists() && !script.exists());
+    let left: Vec<String> = fs::read_dir(kit.versions_dir())
+        .unwrap()
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(left, ["pwsh.txt"]);
+}
