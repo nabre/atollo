@@ -18,7 +18,7 @@ import { ComponentLogo } from "../logos";
 import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { useSetup } from "../setup";
-import { EditorSection } from "../workbench";
+import { EditorSection, Notice } from "../workbench";
 import { isPresent, useOffers, useReloadOnSteps } from "./model";
 import { LineSelect, LineState, RefreshLines } from "./lines";
 
@@ -44,10 +44,12 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
 
   const running = setup?.running ?? false;
   const allTools = data?.tools ?? [];
+  // A language the project needs and the kit lacks (p.missing) stays in the
+  // first zone, with what to do instead of a line to choose.
   const activeTools = allTools.filter(
     (x) =>
       (p.requires.includes(x.id) || Boolean(data?.chosen[x.id])) &&
-      (x.installed || x.downloadable || x.saved.length > 0),
+      (p.missing.includes(x.id) || x.installed || x.downloadable || x.saved.length > 0),
   );
   const inactiveTools = allTools.filter(
     (x) => !p.requires.includes(x.id) && !data?.chosen[x.id] && x.installed && (x.downloadable || x.saved.length > 0),
@@ -61,6 +63,21 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
     const set = (line: string | null) => {
       run(tool.id, () => projectVersionsSet(project, tool.id, line).then(setData));
     };
+    if (p.missing.includes(tool.id)) {
+      return (
+        <div key={tool.id}>
+          <div className="flex items-center gap-2">
+            <ComponentLogo id={tool.id} size={16} />
+            <span className="w-28 shrink-0 truncate">{tool.name}</span>
+            <Notice tone="warning" className="min-w-0 flex-1 text-[12px]">
+              {t(
+                "Non installato: «Installa ciò che manca» in Componenti lo installa, poi qui se ne sceglie la versione.",
+              )}
+            </Notice>
+          </div>
+        </div>
+      );
+    }
     return (
       <div key={tool.id}>
         <div className="flex items-center gap-2">
@@ -113,7 +130,7 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
     <EditorSection id="versions" title={t("Versioni")}>
       <p className="text-vsc-desc">
         {t(
-          "Valgono per terminale, azioni e agenti del progetto, e per i terminali dell'editor aperti da adesso. Una versione da scaricare si scarica appena scelta.",
+          "Valgono per terminale, azioni e agenti del progetto, per il server web che lo serve (Apache o Nginx, con il suo PHP) e per i terminali dell'editor aperti da adesso. Una versione da scaricare si scarica appena scelta.",
         )}
       </p>
       {data !== null && activeTools.length === 0 && inactiveTools.length === 0 && (
