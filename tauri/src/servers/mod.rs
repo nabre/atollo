@@ -488,6 +488,16 @@ impl WebServers {
         count
     }
 
+    /// The pool `id` runs (server and php-cgi alive). Light: only the
+    /// `running` lock, no scan; a dead pool is ended by the next `list`.
+    pub fn is_running(&self, id: &str) -> bool {
+        self.running
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get_mut(id)
+            .is_some_and(RunningPool::alive)
+    }
+
     pub fn stop_all(&self) {
         let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
         running.clear();

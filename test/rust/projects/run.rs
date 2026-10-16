@@ -227,3 +227,55 @@ fn pool_run_stops_without_a_process() {
     r.clear(&info.key);
     assert!(r.list().is_empty());
 }
+
+/// I2: a run served by a pool stopped from the "Server Web" page (or dead)
+/// is marked stopped, and can then be cleared; one whose pool runs is not.
+#[test]
+fn pool_runs_follow_their_pool() {
+    let tmp = TempDir::new("run-pool-reconcile");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let seen = Arc::clone(&events);
+    let r = Runner::new(
+        kit,
+        Arc::new(move |e| {
+            if let Event::State(i) = e {
+                seen.lock().unwrap().push((i.key, i.state));
+            }
+        }),
+    );
+    let a = site_action(false, Some("legacy"));
+    let shop = r.attach_pool(
+        "shop",
+        &a,
+        "legacy",
+        8095,
+        "http://shop.localhost:8095",
+        "it",
+    );
+    let blog = r.attach_pool(
+        "blog",
+        &a,
+        "other",
+        8096,
+        "http://blog.localhost:8096",
+        "it",
+    );
+    events.lock().unwrap().clear();
+
+    r.reconcile_pools(|_| true);
+    assert!(r.list().iter().all(|i| i.state == State::Running));
+    assert!(events.lock().unwrap().is_empty());
+
+    r.reconcile_pools(|id| id != "legacy");
+    let state = |key: &str| r.list().into_iter().find(|i| i.key == key).unwrap().state;
+    assert_eq!(state(&shop.key), State::Stopped);
+    assert_eq!(state(&blog.key), State::Running);
+    assert_eq!(
+        *events.lock().unwrap(),
+        vec![(shop.key.clone(), State::Stopped)]
+    );
+    r.clear(&shop.key);
+    assert_eq!(r.list().len(), 1);
+}
