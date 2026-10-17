@@ -1,4 +1,4 @@
-use super::venv_python;
+use super::{has_venv, venv_python};
 use crate::detect::tests::{ids, project};
 use crate::detect::{detect, Kind};
 use crate::kit::Os;
@@ -8,6 +8,56 @@ fn venv_python_per_os() {
     assert_eq!(venv_python(Os::Win32, ".venv"), r".venv\Scripts\python.exe");
     assert_eq!(venv_python(Os::Linux, ".venv"), ".venv/bin/python");
     assert_eq!(venv_python(Os::Darwin, "venv"), "venv/bin/python");
+}
+
+/// The venv of each system is found by its own layout, and only that one.
+#[test]
+fn has_venv_per_os() {
+    let win = project("venv-win", &[(".venv/Scripts/python.exe", "")]);
+    let unix = project(
+        "venv-unix",
+        &[(".venv/bin/python", ""), (".venv/pyvenv.cfg", "")],
+    );
+    let empty_bin = project("venv-nobin", &[(".venv/bin/pip", "")]);
+    assert!(has_venv(&win.0, Os::Win32, ".venv"));
+    assert!(!has_venv(&win.0, Os::Linux, ".venv"));
+    for os in [Os::Linux, Os::Darwin] {
+        assert!(has_venv(&unix.0, os, ".venv"));
+        assert!(!has_venv(&unix.0, os, "venv"));
+        assert!(!has_venv(&empty_bin.0, os, ".venv"));
+    }
+    assert!(!has_venv(&unix.0, Os::Win32, ".venv"));
+}
+
+/// A real venv of macOS and Linux: `bin/python` is a link to a Python
+/// outside the project. It is found, and the run command uses it.
+#[cfg(unix)]
+#[test]
+fn venv_with_a_linked_python_is_found() {
+    let p = project(
+        "venv-link",
+        &[
+            (".venv/pyvenv.cfg", "home = /usr/bin\n"),
+            ("requirements.txt", "flask\n"),
+            ("app.py", "from flask import Flask\napp = Flask(__name__)\n"),
+        ],
+    );
+    let bin = p.0.join(".venv").join("bin");
+    std::fs::create_dir_all(&bin).unwrap();
+    std::os::unix::fs::symlink("/usr/bin/python3", bin.join("python")).unwrap();
+    assert!(has_venv(&p.0, Os::current(), ".venv"));
+    let found = detect(&p.0, "it");
+    let run = found.actions.iter().find(|a| a.id == "py:flask").unwrap();
+    assert!(
+        run.command.starts_with(".venv/bin/python -m flask"),
+        "{}",
+        run.command
+    );
+    assert!(found.warnings.is_empty(), "{:?}", found.warnings);
+    // `bin` itself a link (to a folder outside): never trusted.
+    let q = project("venv-binlink", &[(".venv/pyvenv.cfg", "")]);
+    std::os::unix::fs::symlink("/usr/bin", q.0.join(".venv").join("bin")).unwrap();
+    assert!(!has_venv(&q.0, Os::current(), ".venv"));
 }
 
 #[test]
