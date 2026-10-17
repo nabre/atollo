@@ -7,20 +7,29 @@ fn folders_both_ways_conflicts_and_deletions() {
     let (_t, _kit, p) = kit("tree");
     let (a, b) = (p.agents.join("skills"), p.claude.join("skills"));
     fs::create_dir_all(a.join("one")).unwrap();
-    fs::write(a.join(r"one\SKILL.md"), "A1").unwrap();
+    fs::write(a.join("one").join("SKILL.md"), "A1").unwrap();
     fs::create_dir_all(b.join("two")).unwrap();
-    fs::write(b.join(r"two\SKILL.md"), "B1").unwrap();
+    fs::write(b.join("two").join("SKILL.md"), "B1").unwrap();
     let mut r = Report::default();
     sync_tree(&p, &a, &b, "t", true, "skills", &mut r).unwrap();
-    assert_eq!(fs::read_to_string(b.join(r"one\SKILL.md")).unwrap(), "A1");
-    assert_eq!(fs::read_to_string(a.join(r"two\SKILL.md")).unwrap(), "B1");
+    assert_eq!(
+        fs::read_to_string(b.join("one").join("SKILL.md")).unwrap(),
+        "A1"
+    );
+    assert_eq!(
+        fs::read_to_string(a.join("two").join("SKILL.md")).unwrap(),
+        "B1"
+    );
 
     // Both change the same file: the newer wins, the other is kept.
-    fs::write(a.join(r"one\SKILL.md"), "A2").unwrap();
+    fs::write(a.join("one").join("SKILL.md"), "A2").unwrap();
     std::thread::sleep(Duration::from_millis(30));
-    fs::write(b.join(r"one\SKILL.md"), "B2").unwrap();
+    fs::write(b.join("one").join("SKILL.md"), "B2").unwrap();
     sync_tree(&p, &a, &b, "t", true, "skills", &mut r).unwrap();
-    assert_eq!(fs::read_to_string(a.join(r"one\SKILL.md")).unwrap(), "B2");
+    assert_eq!(
+        fs::read_to_string(a.join("one").join("SKILL.md")).unwrap(),
+        "B2"
+    );
     assert!(r.warnings.iter().any(|w| w.contains("both sides")));
     assert_eq!(fs::read_dir(p.state.join("conflicts")).unwrap().count(), 1);
 
@@ -38,7 +47,7 @@ fn junction_inside_is_never_written_through() {
     let outside = t.0.join("outside");
     fs::create_dir_all(&outside).unwrap();
     fs::create_dir_all(a.join("sub")).unwrap();
-    fs::write(a.join(r"sub\f.txt"), "hi").unwrap();
+    fs::write(a.join("sub").join("f.txt"), "hi").unwrap();
     fs::create_dir_all(&b).unwrap();
     junction::create(&outside, b.join("sub")).unwrap();
     let mut r = Report::default();

@@ -46,7 +46,7 @@ fn old_ports(kit: &Kit) -> PathBuf {
     kit.app_dir().join("ports.json")
 }
 fn old_backups(kit: &Kit) -> PathBuf {
-    kit.data().join(r"db\backup")
+    kit.data().join("db").join("backup")
 }
 
 /// Data of layout 1 still waiting to move (the migration failed somewhere and

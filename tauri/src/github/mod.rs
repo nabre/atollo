@@ -17,7 +17,7 @@
 //! Here the account, the sign-in and Git's helper; the repositories in
 //! `repos`.
 
-mod repos;
+pub(crate) mod repos;
 
 pub use repos::{
     clone_repo, delete, rename, repos, valid_full_name, valid_repo_name, Renamed, Repos,
@@ -106,8 +106,13 @@ fn hosts_user(text: &str) -> Option<String> {
     None
 }
 
+/// gh's `hosts.yml`, in the kit's `GH_CONFIG_DIR`.
+pub(crate) fn hosts_file(kit: &Kit) -> PathBuf {
+    kit.data().join("gh").join("hosts.yml")
+}
+
 fn login_name(kit: &Kit) -> Option<String> {
-    fs::read_to_string(kit.data().join(r"gh\hosts.yml"))
+    fs::read_to_string(hosts_file(kit))
         .ok()
         .and_then(|t| hosts_user(&t))
 }

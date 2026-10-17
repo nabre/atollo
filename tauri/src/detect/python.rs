@@ -6,6 +6,7 @@ use std::sync::LazyLock;
 use regex::Regex;
 
 use super::{exists, list_dir, read, tr, Action, Found, Kind};
+use crate::kit::Os;
 
 static FASTAPI: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"FastAPI\s*\(").ok());
 static FASTAPI_VAR: LazyLock<Option<Regex>> =
@@ -27,11 +28,35 @@ const CANDIDATES: [&str; 9] = [
     "src/app.py",
 ];
 
+/// The Python of the virtual environment `venv` (relative to the project)
+/// on `os`: `Scripts\python.exe` on Windows, `bin/python` elsewhere.
+pub(crate) fn venv_python(os: Os, venv: &str) -> String {
+    if os.is_windows() {
+        format!(r"{venv}\Scripts\python.exe")
+    } else {
+        format!("{venv}/bin/python")
+    }
+}
+
+/// `dir` holds the virtual environment `venv` for `os`. On Windows its
+/// `Scripts\python.exe` is a file. On macOS and Linux `bin/python` is a
+/// link by default (`python -> python3 -> /usr/bin/python3`, made so by
+/// `venv`, `virtualenv` and `uv`), and the safe checks never accept a
+/// link: `bin` must be a real folder inside the project and `python` a
+/// name in it, the link itself is not followed.
+pub(crate) fn has_venv(dir: &Path, os: Os, venv: &str) -> bool {
+    if os.is_windows() {
+        return exists(dir, &venv_python(os, venv));
+    }
+    let bin = dir.join(venv).join("bin");
+    crate::os::safe_path::is_dir(dir, &bin) && std::fs::symlink_metadata(bin.join("python")).is_ok()
+}
+
 /// The project's Python: its virtual environment, uv, or the kit's.
 fn interpreter(dir: &Path) -> (String, bool) {
     for v in [".venv", "venv", "env"] {
-        if exists(dir, &format!(r"{v}\Scripts\python.exe")) {
-            return (format!(r"{v}\Scripts\python.exe"), true);
+        if has_venv(dir, Os::current(), v) {
+            return (venv_python(Os::current(), v), true);
         }
     }
     if exists(dir, "uv.lock") {
@@ -172,7 +197,10 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
         actions.push(Action::new(
             "py:venv",
             &tr(lang, "crea .venv e installa requirements.txt", &[]),
-            r"python -m venv .venv && .venv\Scripts\python.exe -m pip install -r requirements.txt",
+            &format!(
+                "python -m venv .venv && {} -m pip install -r requirements.txt",
+                venv_python(Os::current(), ".venv")
+            ),
             Kind::Command,
         ));
     }
