@@ -54,7 +54,18 @@ fn check_program_at_the_kit_root() {
             std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o755)).unwrap();
         }
     }
-    let result = check(&kit, &KitEnv::default(), pnpm).unwrap();
+    let mut result = check(&kit, &KitEnv::default(), pnpm).unwrap();
+    // A process forked by another test while the script was still open for
+    // writing holds the descriptor until its exec: the exec of the script
+    // fails with ETXTBSY until then. Retry for a short while there.
+    let attempts = if cfg!(unix) { 20 } else { 1 };
+    for _ in 1..attempts {
+        if result.ok {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        result = check(&kit, &KitEnv::default(), pnpm).unwrap();
+    }
     assert!(result.ok, "{}", result.answer);
     assert_eq!(result.answer, "10.0.0");
 }
