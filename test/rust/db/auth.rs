@@ -544,3 +544,33 @@ fn project_lines_in_db_json() {
     write_db_json(&kit, "shop", r#"{ "lines": { "mariadb": "..\\x" } }"#);
     assert_eq!(project_line(&kit, "shop", "mariadb").unwrap(), None);
 }
+
+/// The lock of `db.json` holds across processes (the command line beside
+/// the app): a change waits while another holder of the kit's lock, here
+/// a thread that is not behind this process's mutex, keeps it.
+#[test]
+fn db_json_lock_waits_for_the_kit_lock() {
+    let tmp = crate::kit::tests::TempDir::new("db-auth-lock");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    kit.prepare().unwrap();
+    write_db_json(&kit, "shop", r#"{ "mariadb": "pw" }"#);
+    let (held_tx, held_rx) = std::sync::mpsc::channel();
+    let other = {
+        let kit = kit.clone();
+        std::thread::spawn(move || {
+            let lock = KitLock::take(&kit).unwrap();
+            held_tx.send(()).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(400));
+            let released = std::time::Instant::now();
+            drop(lock);
+            released
+        })
+    };
+    held_rx.recv().unwrap();
+    set_project_line(&kit, "shop", "mariadb", Some("10.6")).unwrap();
+    let written = std::time::Instant::now();
+    let released = other.join().unwrap();
+    assert!(written >= released, "written while the other held the lock");
+    assert_eq!(db_json(&kit, "shop")["lines"]["mariadb"], "10.6");
+    assert_eq!(db_json(&kit, "shop")["mariadb"], "pw");
+}
