@@ -32,6 +32,23 @@ fn fake_kit(name: &str, installed: &[&str]) -> (TempDir, Kit) {
     (tmp, kit)
 }
 
+/// data/home/AppData only for a Windows kit: elsewhere the variables are
+/// set but nothing creates the folders.
+#[test]
+fn appdata_folders_only_on_windows() {
+    for (target, made) in [(Target::WIN32_X64, true), (Target::LINUX_X64, false)] {
+        let tmp = TempDir::new("env-appdata");
+        let kit = Kit::at_target(tmp.0.join("Kit"), target);
+        let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
+        env.create_dirs().unwrap();
+        let home = kit.data().join("home");
+        assert!(env.get("APPDATA").is_some(), "{target:?}");
+        assert_eq!(home.join("AppData").join("Roaming").is_dir(), made);
+        assert_eq!(home.join("AppData").join("Local").is_dir(), made);
+        assert!(home.is_dir());
+    }
+}
+
 #[test]
 #[cfg_attr(
     not(windows),

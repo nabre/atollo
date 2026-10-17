@@ -167,3 +167,34 @@ fn a_php_line_brings_its_php_ini() {
         ini.to_str().unwrap().replace('\\', "/")
     );
 }
+
+/// Off Windows a project on another Ruby line also gets that line's
+/// GEM_HOME, and its bin on PATH, not the default line's.
+#[test]
+fn a_ruby_line_brings_its_gem_home() {
+    let tmp = TempDir::new("versions-gem-home");
+    let target = crate::kit::Target::LINUX_X64;
+    let kit = Kit::at_target(tmp.0.clone(), target);
+    kit.prepare().unwrap();
+    let ruby = Catalog::get().find("ruby").unwrap();
+    let main = install_dir(&kit, ruby, "3.4.7");
+    install_fake(&kit, ruby, &main);
+    ruby.save_version(&kit, "3.4.7").unwrap();
+    let old = saved_dir(&kit, ruby, "3.3");
+    install_fake(&kit, ruby, &old);
+    write_version(&old, "3.3.9").unwrap();
+
+    let data = kit.data();
+    let (gems, old_gems) = (
+        crate::env::gem_home(&data, target, "3.4"),
+        crate::env::gem_home(&data, target, "3.3"),
+    );
+    let mut env = KitEnv::default();
+    env.set("GEM_HOME", gems.to_str().unwrap());
+    env.set("PATH", gems.join("bin").to_str().unwrap());
+
+    set_project_choice(&kit, "app", "ruby", Some("3.3")).unwrap();
+    let p = project_env(&kit, "app", env.clone());
+    assert_eq!(p.get("GEM_HOME"), old_gems.to_str());
+    assert_eq!(p.get("PATH"), old_gems.join("bin").to_str());
+}

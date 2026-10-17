@@ -114,6 +114,19 @@ fn swaps(kit: &Kit, base: &Choice, choice: &Choice) -> Vec<Swap> {
                         out.push(swap(&ini_from, &ini_to));
                     }
                 }
+                // Off Windows each Ruby line has its own GEM_HOME (and its bin
+                // on PATH, moved by the same swap since it sits under it).
+                if c.id == "ruby" {
+                    let target = kit.target();
+                    if let (Some(a), Some(b)) = (
+                        crate::env::gem_home_for_dir(&data, target, &from),
+                        crate::env::gem_home_for_dir(&data, target, &to),
+                    ) {
+                        if a != b {
+                            out.push(swap(&a, &b));
+                        }
+                    }
+                }
                 out
             })
         })
