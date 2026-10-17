@@ -511,12 +511,23 @@ impl KitEnv {
         // Variables keyed on installed components, per system (Phase 2 of
         // PLAN-PIATTAFORME): each hook reads only what is on disk.
         // C and C++ on macOS and Linux (WP-2.3): the shims over Zig in
-        // `cc/bin`, for Makefiles, CMake, cc-rs, cgo and native gems. On
-        // Windows the PATH finds llvm-mingw's gcc and clang, as before.
-        if !is_win && has(r"cc\bin\clang.exe") {
-            let cc_bin = app(r"cc\bin");
-            for (name, tool) in CC_VARS {
-                env.set_path(name, cc_bin.join(tool));
+        // `cc/bin`, for Makefiles, CMake, cc-rs, cgo and native gems, only
+        // with the kit's Zig ([`unix_cc_env`]). On Windows the PATH finds
+        // llvm-mingw's gcc and clang, as before.
+        let unix_cc = if is_win {
+            UnixCc::default()
+        } else {
+            unix_cc_env(&app(r"cc\bin"), has(r"zig\zig.exe"), |p| p.is_file())
+        };
+        for (name, value) in &unix_cc.vars {
+            env.set_path(name, value);
+        }
+        // rustc links with `cc` from the PATH, the shim then: on a Mac with
+        // the Command Line Tools, Apple's linker instead, which knows the
+        // flags and frameworks rustc passes.
+        if unix_cc.on_path {
+            if let Some((name, linker)) = macos_rust_linker(kit.target(), xcode_clt_present()) {
+                env.set(&name, linker);
             }
         }
         // Rust on Windows ARM64 (WP-2.4): the `gnullvm` host links with
@@ -533,22 +544,33 @@ impl KitEnv {
             }
         }
         // Ruby on macOS and Linux (WP-2.2): gems in the kit, one folder per
-        // system and line (native gems are built for both). On Windows
-        // they stay in the folder of their Ruby.
+        // system and line (native gems are built for both), for the line
+        // the kit uses: the newest on disk, as `apply_kit_choice` below
+        // moves the PATH to it. On Windows they stay in the folder of
+        // their Ruby.
         let gem_home = if is_win || !has(r"ruby\bin\ruby.exe") {
             None
         } else {
             crate::setup::catalog::Catalog::get()
                 .find("ruby")
-                .and_then(|ruby| crate::versions::default_line(kit, ruby))
-                .map(|line| gem_home(&data, kit.target(), &line))
+                .and_then(|ruby| {
+                    let line = crate::versions::newest_line(kit, ruby)?;
+                    let dir = crate::versions::dir_for(kit, ruby, Some(&line))?;
+                    gem_home_for_dir(&data, kit.target(), &dir)
+                })
         };
         if let Some(gems) = &gem_home {
             env.set_path("GEM_HOME", gems);
+            // Gem commands start the Ruby on the PATH (`#!/usr/bin/env
+            // ruby`), not the absolute path of the Ruby that installed
+            // them: they survive a move of the kit and follow the line.
+            env.set_path("GEMRC", gemrc_path(&data));
         }
         // .NET on Linux without libicu (T2.7.4): invariant globalization,
-        // or every `dotnet` command stops at start.
-        if kit.os() == Os::Linux && has(r"dotnet\dotnet.exe") && !libicu_present() {
+        // or every `dotnet` command stops at start. Whether .NET is on disk
+        // or not: an environment built before its installation (the final
+        // check of `prepare`) needs it too, and nothing else reads it.
+        if kit.os() == Os::Linux && !libicu_present() {
             env.set("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
         }
 
@@ -696,7 +718,11 @@ impl KitEnv {
             }
             env.set("CMAKE_POLICY_VERSION_MINIMUM", "3.5");
         }
-        when(&mut path, r"cc\bin\clang.exe", &[app(r"cc\bin")]);
+        if is_win {
+            when(&mut path, r"cc\bin\clang.exe", &[app(r"cc\bin")]);
+        } else if unix_cc.on_path {
+            path.push(app(r"cc\bin"));
+        }
         when(
             &mut path,
             r"ruby\bin\ruby.exe",
@@ -806,6 +832,9 @@ impl KitEnv {
         if let Some(dir) = &self.shims {
             write_python_shim(dir)?;
         }
+        if let Some(rc) = self.get("GEMRC") {
+            write_gemrc(Path::new(rc))?;
+        }
         // Kit mode on NTFS/ReFS: the programs' leftovers are for the owner only.
         if let Some(tmp) = &self.private_tmp {
             if let Err(e) = crate::editor::restrict_dir_to_owner(tmp) {
@@ -868,6 +897,79 @@ pub(crate) const CC_VARS: [(&str, &str); 4] = [
     ("RANLIB", "ranlib"),
 ];
 
+/// What C and C++ of the kit give the environment on macOS and Linux:
+/// `cc/bin` on the PATH, and the [`CC_VARS`].
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(crate) struct UnixCc {
+    pub on_path: bool,
+    pub vars: Vec<(&'static str, PathBuf)>,
+}
+
+/// [`UnixCc`] for the `cc` component in `cc_bin` (`clang` is its key),
+/// `zig` when the kit's Zig is installed. The shims of WP-2.3 (`make` is
+/// one of them) only with Zig: without it they would hide the system's
+/// compiler and fail. Each variable only for a program on disk. The LLVM
+/// of an older kit (no `make`, no `cc`) stays on the PATH as before, with
+/// no variables.
+pub(crate) fn unix_cc_env(cc_bin: &Path, zig: bool, is_file: impl Fn(&Path) -> bool) -> UnixCc {
+    if !is_file(&cc_bin.join("clang")) {
+        return UnixCc::default();
+    }
+    if !is_file(&cc_bin.join("make")) {
+        return UnixCc {
+            on_path: true,
+            vars: Vec::new(),
+        };
+    }
+    if !zig {
+        return UnixCc::default();
+    }
+    UnixCc {
+        on_path: true,
+        vars: CC_VARS
+            .iter()
+            .map(|(name, tool)| (*name, cc_bin.join(tool)))
+            .filter(|(_, p)| is_file(p))
+            .collect(),
+    }
+}
+
+/// The linker of Rust on a Mac whose PATH has the kit's `cc`, when the
+/// Command Line Tools are installed (`clt`): Apple's `/usr/bin/cc`, as
+/// `CARGO_TARGET_<TRIPLE>_LINKER`. Without them `/usr/bin/cc` only asks to
+/// install them: the shim (`zig cc`) stays. `None` off macOS.
+pub(crate) fn macos_rust_linker(target: Target, clt: bool) -> Option<(String, &'static str)> {
+    if !target.os.is_macos() || !clt {
+        return None;
+    }
+    let triple = target.rust_triple().to_ascii_uppercase().replace('-', "_");
+    Some((format!("CARGO_TARGET_{triple}_LINKER"), "/usr/bin/cc"))
+}
+
+/// The folders `xcode-select -p` prints when Xcode Command Line Tools, or
+/// Xcode itself, are installed, each with the `clang` of its own.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) const XCODE_DEVELOPER_DIRS: [&str; 2] = [
+    "/Library/Developer/CommandLineTools",
+    "/Applications/Xcode.app/Contents/Developer",
+];
+
+/// Xcode Command Line Tools (or Xcode) on this Mac; looked up once. False
+/// elsewhere: a macOS kit prepared on another system cannot know.
+fn xcode_clt_present() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        static PRESENT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        *PRESENT.get_or_init(|| {
+            XCODE_DEVELOPER_DIRS
+                .iter()
+                .any(|d| join_rel(Path::new(d), "usr/bin/clang").is_file())
+        })
+    }
+    #[cfg(not(target_os = "macos"))]
+    false
+}
+
 /// The linker of Rust's `aarch64-pc-windows-gnullvm` host in llvm-mingw's
 /// `cc_bin`: its aarch64 wrapper (the linker rustc looks for by default),
 /// else `clang.exe`; `None` without the `cc` component.
@@ -911,6 +1013,40 @@ pub(crate) fn git_unix_env(
 /// `GEM_HOME` of Ruby `line` on macOS and Linux: `<data>/ruby-gems/<target>/<line>`.
 pub(crate) fn gem_home(data: &Path, target: Target, line: &str) -> PathBuf {
     data.join("ruby-gems").join(target.as_str()).join(line)
+}
+
+/// `GEM_HOME` of the Ruby in `ruby_dir` (`data/apps/<target>/ruby/<line>`,
+/// named after its line), for the swap of a Ruby line (versions/choice.rs):
+/// `None` on Windows or for a folder not named after a line.
+pub(crate) fn gem_home_for_dir(data: &Path, target: Target, ruby_dir: &Path) -> Option<PathBuf> {
+    let line = ruby_dir.file_name()?.to_str()?;
+    (!target.is_windows() && crate::versions::valid_line(line))
+        .then(|| gem_home(data, target, line))
+}
+
+/// The kit's RubyGems configuration on macOS and Linux (`GEMRC`, merged
+/// over `~/.gemrc`): `<data>/ruby-gems/gemrc`.
+pub(crate) fn gemrc_path(data: &Path) -> PathBuf {
+    data.join("ruby-gems").join("gemrc")
+}
+
+/// [`gemrc_path`]: gem commands written with `#!/usr/bin/env ruby`
+/// (`--env-shebang`), so they run with the Ruby on the PATH after the kit
+/// moves (Ruby is installed again elsewhere, D-92) or another line is
+/// chosen. Bundler writes them so already.
+pub(crate) const GEMRC: &str = "# Dev-Kit: gem commands start the Ruby on the PATH, so they keep\n\
+# working when the kit moves (written by Dev-Kit, kept as it is).\n\
+gem: --env-shebang\n";
+
+/// Writes [`GEMRC`] at `rc` when missing (afterwards it is the user's).
+fn write_gemrc(rc: &Path) -> std::io::Result<()> {
+    if rc.exists() {
+        return Ok(());
+    }
+    if let Some(dir) = rc.parent() {
+        fs::create_dir_all(dir)?;
+    }
+    crate::fsx::write_atomic(rc, GEMRC.as_bytes())
 }
 
 /// The folders where Linux keeps shared libraries, for `arch` (`x86_64`,
