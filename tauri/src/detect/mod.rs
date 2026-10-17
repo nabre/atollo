@@ -218,11 +218,21 @@ fn tr(lang: &str, source: &str, args: &[&str]) -> String {
 // Every look into a project goes through `safe_path`: never through a
 // symbolic link or a junction (D-77).
 fn exists(dir: &Path, rel: &str) -> bool {
-    crate::os::safe_path::exists(dir, &dir.join(rel))
+    crate::os::safe_path::exists(dir, &dir.join(&*native(rel)))
 }
 
 fn read(dir: &Path, rel: &str) -> String {
-    crate::os::safe_path::read_text(dir, &dir.join(rel)).unwrap_or_default()
+    crate::os::safe_path::read_text(dir, &dir.join(&*native(rel))).unwrap_or_default()
+}
+
+/// A relative path written with `\` (as the detection writes them), with
+/// the system's separator: on macOS and Linux `\` is a character of a name.
+fn native(rel: &str) -> std::borrow::Cow<'_, str> {
+    if cfg!(windows) {
+        rel.into()
+    } else {
+        rel.replace('\\', "/").into()
+    }
 }
 
 fn read_json(dir: &Path, rel: &str) -> Option<serde_json::Value> {
@@ -255,8 +265,13 @@ fn quote(s: &str) -> String {
 }
 
 /// The kit's router of `php -S` (`runtime\php-router.php`, written to
-/// `data\kit\`): 403 for hidden files and `.inc` (SEC-V3-02).
+/// `data\kit\`): 403 for hidden files and `.inc` (SEC-V3-02). The command
+/// runs through `cmd.exe` on Windows and `/bin/sh` elsewhere, each with its
+/// own way to read `CP_DATA`.
+#[cfg(windows)]
 const PHP_ROUTER: &str = r#""%CP_DATA%\kit\php-router.php""#;
+#[cfg(not(windows))]
+const PHP_ROUTER: &str = r#""$CP_DATA/kit/php-router.php""#;
 
 /// `php -S` on the folder `root` of the project, with the project's own
 /// `router.php` (in `root` or in the project folder) if it has one, else the
@@ -265,9 +280,10 @@ fn php_server(dir: &Path, root: &str) -> String {
     let own = [format!(r"{root}\router.php"), "router.php".to_owned()]
         .into_iter()
         .map(|f| f.trim_start_matches(r".\").to_owned())
-        .find(|f| exists(dir, f));
+        .find(|f| exists(dir, f))
+        .map(|f| native(&f).into_owned());
     let router = own.as_deref().map_or_else(|| PHP_ROUTER.to_owned(), quote);
-    format!("php -S 127.0.0.1:{{port}} -t {} {router}", quote(root))
+    format!("php -S 127.0.0.1:{{port}} -t {} {router}", quote(&native(root)))
 }
 
 /// Files that ask for Nginx, in the project folder or in the site's.
