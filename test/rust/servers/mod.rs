@@ -46,6 +46,7 @@ fn profile_crud_and_vhost_generation() {
         domains: vec!["admin.portale.localhost".into(), "x\r\nListen 80".into()],
         aliases,
         url: "http://portale.localhost:8095".into(),
+        chosen: true,
     };
     let vhost = apache_vhost_conf(
         8095,
@@ -100,6 +101,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
                 domains: vec!["api.alpha.localhost".into()],
                 aliases: BTreeMap::new(),
                 url: "http://alpha.localhost:8088".into(),
+                chosen: true,
             },
             AttachedSite {
                 project: "beta".into(),
@@ -109,6 +111,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
                 domains: Vec::new(),
                 aliases: BTreeMap::new(),
                 url: "http://beta.localhost:8088".into(),
+                chosen: true,
             },
         ],
         conf_dir: r"data\servers\nginx-default".into(),
@@ -163,6 +166,7 @@ fn site(project: &str, folder: &str, port: u16) -> AttachedSite {
         domains: Vec::new(),
         aliases: BTreeMap::new(),
         url: format!("http://{project}.localhost:{port}"),
+        chosen: true,
     }
 }
 
@@ -1321,6 +1325,106 @@ fn name_sites_keeps_names_unique() {
     );
     assert_eq!(sites[1].url, "http://my-shop-2.localhost:8080");
     assert_eq!(host_label("Ünï Côde_42"), "n-c-de-42");
+}
+
+/// PLAN-DATA §9 1.1: an automatic pool lists (and serves) the sites the
+/// projects chose in `panel.json` and those started, not every PHP project
+/// that was only offered Apache.
+#[test]
+fn automatic_pools_list_chosen_or_started_sites() {
+    let tmp = TempDir::new("servers-chosen-sites");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "apache", "2.4.65");
+    let servers = WebServers::new(kit.clone());
+    let projects = kit.projects();
+    // Offered Apache next to `php -S`.
+    fs::create_dir_all(projects.join(r"plain\public")).unwrap();
+    fs::write(projects.join(r"plain\public\index.php"), "<?php").unwrap();
+    // A site written in panel.json.
+    fs::create_dir_all(projects.join(r"shop\public")).unwrap();
+    fs::write(projects.join(r"shop\public\index.php"), "<?php").unwrap();
+    fs::write(
+        projects.join(r"shop\panel.json"),
+        r#"{ "actions": [ { "id": "site", "apache": "public" } ] }"#,
+    )
+    .unwrap();
+
+    let projects_of = |pools: &[WebServerPool]| -> Vec<String> {
+        pools
+            .iter()
+            .flat_map(|p| p.sites.iter().map(|s| s.project.clone()))
+            .collect()
+    };
+    let all = servers.list_all("it", true);
+    assert_eq!(projects_of(&all.pools), ["plain", "shop"]);
+    let shown = servers.list("it", true);
+    assert_eq!(projects_of(&shown.pools), ["shop"]);
+    // Every project goes to the same pool: it is not left out with them.
+    let (pool, _) = servers.pool_of("plain", "apache", "it").unwrap();
+    assert!(shown.pools.iter().any(|p| p.id == pool.id));
+
+    let pool_dir = kit.data().join("servers").join(&pool.id);
+    let apache_dir = component_dir(&kit, "apache", pool.server_line.as_deref());
+    fs::create_dir_all(apache_dir.join("conf")).unwrap();
+    fs::write(
+        apache_dir.join(r"conf\httpd.conf"),
+        "Define SRVROOT \"x\"\r\nServerRoot \"${SRVROOT}\"\r\n",
+    )
+    .unwrap();
+    let vhosts = || -> Vec<String> {
+        let mut v: Vec<String> = fs::read_dir(pool_dir.join("vhosts"))
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        v.sort();
+        v
+    };
+    servers.write_pool_configs(&pool, None, false).unwrap();
+    assert_eq!(vhosts(), ["shop.localhost.conf"]);
+
+    // Started by its project: listed and served.
+    servers
+        .started
+        .lock()
+        .unwrap()
+        .insert(("plain".into(), "apache".into()));
+    assert_eq!(
+        projects_of(&servers.list("it", true).pools),
+        ["plain", "shop"]
+    );
+    servers.write_pool_configs(&pool, None, false).unwrap();
+    assert_eq!(vhosts(), ["plain.localhost.conf", "shop.localhost.conf"]);
+
+    // Stopped: out again (the pool is not running, nothing to reload).
+    servers
+        .detach(&pool.id, "plain", "apache", &KitEnv::default(), "it")
+        .unwrap();
+    assert_eq!(projects_of(&servers.list("it", true).pools), ["shop"]);
+}
+
+/// The pools of the page: an automatic pool with no site left is not
+/// shown, unless it runs or it is the only pool (the one to start).
+#[test]
+fn shown_pools_drop_empty_automatic_ones() {
+    let mut hidden = site("plain", "public", 8081);
+    hidden.chosen = false;
+    let started = BTreeSet::new();
+    let pools = vec![
+        nginx_pool("nginx-1.27", 8081, vec![hidden.clone()]),
+        nginx_pool("nginx-1.26", 8082, vec![site("shop", "public", 8082)]),
+    ];
+    let ids =
+        |pools: &[WebServerPool]| -> Vec<String> { pools.iter().map(|p| p.id.clone()).collect() };
+    assert_eq!(ids(&shown_pools(pools.clone(), &started)), ["nginx-1.26"]);
+    let mut running = pools.clone();
+    running[0].running = true;
+    let shown = shown_pools(running, &started);
+    assert_eq!(ids(&shown), ["nginx-1.27", "nginx-1.26"]);
+    assert!(shown[0].sites.is_empty());
+    let only = shown_pools(vec![pools[0].clone()], &started);
+    assert_eq!(ids(&only), ["nginx-1.27"]);
 }
 
 /// SC-2: automatic ids name their lines (`apache-2.4_php-7.4`); the ids of
