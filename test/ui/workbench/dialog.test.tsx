@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ConfirmDialog, InlineConfirm, useModalFocus } from "../../../ui/src/workbench";
 import { GuideShot } from "../../../ui/src/guide/widgets";
-import { DatabaseCopies } from "../../../ui/src/backups";
+import { DatabaseCopies } from "../../../ui/src/databases";
 
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
 vi.mock("@tauri-apps/api/core", () => ({

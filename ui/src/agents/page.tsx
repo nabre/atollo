@@ -14,13 +14,13 @@ import {
   type AgentInfo,
   type AgentStats,
   type Level,
-} from "./api";
-import type { GuideTopicId } from "./guide";
-import { rich, t } from "./i18n";
-import { ActionButton, ErrorLine } from "./common";
-import { ComponentLogo } from "./logos";
+} from "../api";
+import type { GuideTopicId } from "../guide";
+import { rich, t } from "../i18n";
+import { ActionButton, ErrorLine } from "../common";
+import { ComponentLogo } from "../logos";
 import { AgentUsage, useStats } from "./stats";
-import { useAction, useLoad } from "./hooks";
+import { useAction, useLoad } from "../hooks";
 import {
   Button,
   Dot,
@@ -38,7 +38,7 @@ import {
   ViewContainer,
   ViewPane,
   WelcomeView,
-} from "./workbench";
+} from "../workbench";
 
 /** The agents' state, refreshed every few seconds (running, signed in). */
 export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } {

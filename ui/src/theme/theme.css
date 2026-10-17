@@ -42,11 +42,11 @@
 /* The brand covers (docs/brand/make.py). */
 :root,
 :root[data-theme="dark"] {
-  --vsc-hero: url("./assets/brand/hero-dark.svg");
+  --vsc-hero: url("../assets/brand/hero-dark.svg");
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --vsc-hero: url("./assets/brand/hero-light.svg");
+    --vsc-hero: url("../assets/brand/hero-light.svg");
   }
 }
 

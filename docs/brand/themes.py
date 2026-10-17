@@ -9,9 +9,9 @@ colors (make.py, brand.png) and writes:
 - tauri/editor-theme/: the editor's "NEXKORA Dark" and "NEXKORA Light",
   the two themes whole (colors, token colors) with the same emphasis, as
   the extension `nexkora.theme` that the kit installs (editor_theme.rs);
-- ui/src/theme-vscode.css: the same colors as the `--vscode-*` variables
+- ui/src/theme/theme-vscode.css: the same colors as the `--vscode-*` variables
   that VS Code gives a webview, which @vscode-elements/elements reads;
-- ui/src/theme-colors.css: the app's short tokens (`--vsc-*`), each an
+- ui/src/theme/theme-colors.css: the app's short tokens (`--vsc-*`), each an
   alias of one of those variables, and their Tailwind utilities.
 
 The colors a theme leaves to VS Code's defaults come from vscode-defaults/,
@@ -671,7 +671,7 @@ def write_vscode_css():
   }}
 }}
 """
-    write(ROOT / "ui" / "src" / "theme-vscode.css", css)
+    write(ROOT / "ui" / "src" / "theme" / "theme-vscode.css", css)
     return dark, light
 
 
@@ -696,7 +696,7 @@ def write_tokens_css(dark, light):
 {chr(10).join(f"  --color-vsc-{t}: var(--vsc-{t});" for t in TOKENS)}
 }}
 """
-    write(ROOT / "ui" / "src" / "theme-colors.css", css)
+    write(ROOT / "ui" / "src" / "theme" / "theme-colors.css", css)
 
 
 def main():

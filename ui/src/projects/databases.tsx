@@ -21,7 +21,7 @@ import {
   type ProjectDb,
 } from "../api";
 import { SecretField } from "../databases";
-import { DatabaseCopies } from "../backups";
+import { DatabaseCopies } from "../databases";
 import { DataTable, EditorSection, Notice, Properties, Select } from "../workbench";
 import { COMPONENT_NAMES } from "./needs";
 

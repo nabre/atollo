@@ -3,8 +3,8 @@
 // not bring back the old list.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { SAMPLE_SERVICES, type ServiceInfo } from "../../ui/src/api";
-import { DatabasesPage } from "../../ui/src/databases";
+import { SAMPLE_SERVICES, type ServiceInfo } from "../../../ui/src/api";
+import { DatabasesPage } from "../../../ui/src/databases";
 
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
 vi.mock("@tauri-apps/api/core", () => ({
