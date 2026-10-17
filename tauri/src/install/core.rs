@@ -401,8 +401,19 @@ impl Installer for Python {
     }
 }
 
+/// The packages kept from the old line. Links (and junctions) are skipped:
+/// following one would copy what it points to outside the tree, and a cycle
+/// would never end; the new line has its own `bin/python3`-style links.
 fn copy_tree(from: &Path, to: &Path) -> Result<()> {
-    if from.is_dir() {
+    let meta = fs::symlink_metadata(from).with_context(|| from.display().to_string())?;
+    if meta.file_type().is_symlink() {
+        crate::log::warn(&format!(
+            "python: link not carried to the new line: {}",
+            from.display()
+        ));
+        return Ok(());
+    }
+    if meta.is_dir() {
         fs::create_dir_all(to)?;
         for entry in fs::read_dir(from)? {
             let entry = entry?;

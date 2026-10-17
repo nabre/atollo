@@ -82,7 +82,7 @@ fn cleanup_at_exit_removes_programs_temp_only() {
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
     let base = host.system_temp().unwrap().to_path_buf();
     let work = TempWork::new(&host, "setup/x").unwrap();
-    fs::create_dir_all(base.join(r"system\a")).unwrap();
+    fs::create_dir_all(base.join("system").join("a")).unwrap();
     fs::create_dir_all(base.join("claude")).unwrap();
     cleanup_at_exit(&host);
     assert!(!base.join("system").exists() && !base.join("claude").exists());
@@ -91,12 +91,14 @@ fn cleanup_at_exit_removes_programs_temp_only() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "expected path given with backslashes")]
 fn falls_back_to_data_tmp_without_space() {
     let tmp = TempDir::new("temp-space");
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
     let work = TempWork::new_with_space(&host, "setup/big", u64::MAX).unwrap();
-    assert_eq!(work.path(), host.data().join(r"tmp\setup\big"));
+    assert_eq!(
+        work.path(),
+        host.data().join("tmp").join("setup").join("big")
+    );
     let ok = TempWork::new_with_space(&host, "setup/small", 1).unwrap();
     assert!(ok.path().starts_with(host.system_temp().unwrap()));
 }
