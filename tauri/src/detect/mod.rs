@@ -254,6 +254,7 @@ fn list_dir(dir: &Path) -> Vec<String> {
 }
 
 /// Quotes a path for `cmd.exe` when it holds spaces or symbols.
+#[cfg(windows)]
 fn quote(s: &str) -> String {
     if s.chars()
         .any(|c| c.is_whitespace() || "&()^,;=".contains(c))
@@ -261,6 +262,21 @@ fn quote(s: &str) -> String {
         format!("\"{s}\"")
     } else {
         s.to_owned()
+    }
+}
+
+/// Quotes a path for `/bin/sh` when it holds anything but plain characters:
+/// in single quotes, where `$(…)`, backticks and `;` of a folder name in a
+/// cloned repository stay text.
+#[cfg(not(windows))]
+fn quote(s: &str) -> String {
+    if !s.is_empty()
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || "._-/+@".contains(c))
+    {
+        s.to_owned()
+    } else {
+        format!("'{}'", s.replace('\'', r"'\''"))
     }
 }
 

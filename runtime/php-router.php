@@ -26,20 +26,33 @@ if ($host !== '') {
     }
 }
 
-$path = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
-// On Windows `\` separates folders too, and a name with dots or spaces at
-// the end, or with an alternate data stream (`::$DATA`), is the same file.
+// The path as the built-in server reads it: everything before `?`, decoded
+// once. Not `parse_url`: it reads `//.env` as a host named `.env` and gives
+// up (false) on some paths, and either would let the request through.
+$uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+$cut = strcspn($uri, '?#');
+$path = rawurldecode(substr($uri, 0, $cut));
+if ($path === '' || $path[0] !== '/' || strpos($path, "\0") !== false) {
+    http_response_code(403);
+    exit;
+}
+// On Windows `\` separates folders too, a name with dots or spaces at the
+// end or with an alternate data stream (`::$DATA`) is the same file, and a
+// short 8.3 name (`ENV~1` for `.env`) reaches a file under another name.
 foreach (preg_split('~[/\\\\]+~', $path) as $part) {
     $name = rtrim($part, '. ');
     if ($part === '' || $part === '.' || $part === '..') {
         continue;
     }
     if (strpos($part, ':') !== false
+        || preg_match('/~\d/', $part)
         || ($part[0] === '.' && strtolower($name) !== '.well-known')
         || preg_match('~\.(?:inc|php[3-8]|phtml|phar)$~i', $name)
-        // `index.php.` is `index.php` on Windows, but the built-in server
-        // would send it as a static file, with its source.
-        || ($name !== $part && preg_match('~\.php$~i', $name))) {
+        // The built-in server runs only `.php` in lower case: `index.PHP`
+        // and `index.php.` are `index.php` on Windows, but would be sent as
+        // static files, with their source.
+        || (preg_match('~\.php$~i', $name) && $name !== $part)
+        || (preg_match('~\.php$~i', $name) && substr($name, -4) !== '.php')) {
         http_response_code(403);
         exit;
     }
