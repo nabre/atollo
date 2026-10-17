@@ -31,17 +31,7 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
 #[cfg(windows)]
-use windows::core::HSTRING;
-#[cfg(windows)]
-use windows::Win32::Foundation::{LocalFree, HLOCAL};
-#[cfg(windows)]
-use windows::Win32::Security::Authorization::{
-    ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
-};
-#[cfg(windows)]
 use windows::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
-#[cfg(windows)]
-use windows::Win32::Security::{SetFileSecurityW, DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
 
 use crate::env::{mask_secrets, KitEnv};
 use crate::kit::Kit;
@@ -256,8 +246,11 @@ impl Editor {
         log_path: &Path,
     ) -> Result<Server> {
         let dir = server_dir(&self.kit);
-        let mut cmd = jobs::kit_command(dir.join("node.exe"), &self.env());
-        cmd.arg(dir.join(r"out\server-main.js"))
+        let mut cmd = jobs::kit_command(
+            crate::router::bins::editor_node(&self.kit, &dir),
+            &self.env(),
+        );
+        cmd.arg(crate::router::bins::editor_server_main(&dir))
             .args(["--host", "127.0.0.1", "--port", &port.to_string()])
             .arg("--connection-token-file")
             .arg(token_file)
@@ -352,44 +345,14 @@ pub fn random_token() -> Result<String> {
 /// Protected DACL with full access for the owner only (mode 600 on Unix).
 /// Fails on disks without permissions (FAT32/exFAT): the caller only logs it.
 pub(crate) fn restrict_to_owner(path: &Path) -> Result<()> {
-    #[cfg(windows)]
-    return set_dacl(path, "D:P(A;;FA;;;OW)");
-    #[cfg(unix)]
-    return set_mode(path, 0o600);
+    crate::router::fs::restrict_to_owner(path)
 }
 
 /// The same for a folder, inherited by every file and folder created in it
 /// afterwards (temporary files included): they are private from the start.
 /// On Unix the folder gets mode 700: what is inside cannot be reached.
 pub(crate) fn restrict_dir_to_owner(path: &Path) -> Result<()> {
-    #[cfg(windows)]
-    return set_dacl(path, "D:P(A;OICI;FA;;;OW)");
-    #[cfg(unix)]
-    return set_mode(path, 0o700);
-}
-
-#[cfg(unix)]
-fn set_mode(path: &Path, mode: u32) -> Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    fs::set_permissions(path, fs::Permissions::from_mode(mode))
-        .with_context(|| format!("chmod {mode:o} {}", path.display()))
-}
-
-#[cfg(windows)]
-fn set_dacl(path: &Path, sddl: &str) -> Result<()> {
-    let sddl = HSTRING::from(sddl);
-    let mut sd = PSECURITY_DESCRIPTOR::default();
-    // SAFETY: valid SDDL string; `sd` receives a LocalAlloc'd descriptor freed below.
-    unsafe {
-        ConvertStringSecurityDescriptorToSecurityDescriptorW(&sddl, SDDL_REVISION_1, &mut sd, None)
-    }
-    .context("security descriptor")?;
-    let file = HSTRING::from(path.as_os_str());
-    // SAFETY: `sd` is a valid descriptor for the duration of the call.
-    let result = unsafe { SetFileSecurityW(&file, DACL_SECURITY_INFORMATION, sd) };
-    // SAFETY: frees the descriptor allocated above, once.
-    unsafe { LocalFree(Some(HLOCAL(sd.0))) };
-    result.ok().context("SetFileSecurityW")
+    crate::router::fs::restrict_dir_to_owner(path)
 }
 
 fn append_log(path: &Path, line: &str) {

@@ -219,6 +219,12 @@
           "markdownDescription": "Enables the components_apply command without any pre-configured scope."
         },
         {
+          "description": "Enables the components_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-components-check",
+          "markdownDescription": "Enables the components_check command without any pre-configured scope."
+        },
+        {
           "description": "Enables the components_install command without any pre-configured scope.",
           "type": "string",
           "const": "allow-components-install",
@@ -853,6 +859,12 @@
           "type": "string",
           "const": "deny-components-apply",
           "markdownDescription": "Denies the components_apply command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the components_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-components-check",
+          "markdownDescription": "Denies the components_check command without any pre-configured scope."
         },
         {
           "description": "Denies the components_install command without any pre-configured scope.",

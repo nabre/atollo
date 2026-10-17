@@ -84,6 +84,9 @@ fn tlmgr_path(ctx: &Ctx, root: &Path) -> std::path::PathBuf {
 
 /// The packages a TinyTeX has (`tlmgr info --list --only-installed`).
 fn tlmgr_packages(ctx: &Ctx, root: &Path) -> Option<Vec<String>> {
+    if !crate::router::target::can_execute_on_host(ctx.kit.target()) {
+        return None;
+    }
     let tlmgr = tlmgr_path(ctx, root);
     if !tlmgr.is_file() {
         return None;
@@ -136,6 +139,9 @@ impl Installer for TinyTex {
     /// The packages of the old TinyTeX it does not have, installed again; a
     /// failure (offline) only goes to the log: the list stays for next time.
     fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
+        if !crate::router::target::can_execute_on_host(ctx.kit.target()) {
+            return Ok(());
+        }
         let Ok(text) = fs::read_to_string(tinytex_list(ctx)) else {
             return Ok(());
         };

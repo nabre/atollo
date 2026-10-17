@@ -95,7 +95,8 @@ impl Installer for Git {
     /// selector window), and the portable home gets a `.gitconfig` once
     /// (main branch; any owner, for FAT32/exFAT sticks).
     fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
-        if ctx.kit.os().is_windows() {
+        if ctx.kit.os().is_windows() && crate::router::target::can_execute_on_host(ctx.kit.target())
+        {
             if dest.join("post-install.bat").is_file() {
                 let system_root = ctx.env.get("SystemRoot").unwrap_or(r"C:\Windows");
                 let cmd = Path::new(system_root).join("System32").join("cmd.exe");
@@ -295,22 +296,24 @@ impl Installer for Python {
         let old_version = component
             .installed_version(ctx.kit)
             .unwrap_or_else(|| "old".into());
-        if let Ok(out) = jobs::kit_command(&old_python, ctx.env)
-            .args([
-                "-m",
-                "pip",
-                "freeze",
-                "--all",
-                "--disable-pip-version-check",
-            ])
-            .output()
-        {
-            if out.status.success() {
-                let list = ctx
-                    .kit
-                    .data()
-                    .join(format!("python-packages-{old_version}.txt"));
-                write_atomic(&list, &out.stdout)?;
+        if crate::router::target::can_execute_on_host(ctx.kit.target()) {
+            if let Ok(out) = jobs::kit_command(&old_python, ctx.env)
+                .args([
+                    "-m",
+                    "pip",
+                    "freeze",
+                    "--all",
+                    "--disable-pip-version-check",
+                ])
+                .output()
+            {
+                if out.status.success() {
+                    let list = ctx
+                        .kit
+                        .data()
+                        .join(format!("python-packages-{old_version}.txt"));
+                    write_atomic(&list, &out.stdout)?;
+                }
             }
         }
         // Packages are compatible only within the same minor version.
@@ -360,6 +363,9 @@ impl Installer for Python {
                 join_rel(dest, &format!("lib/python{m}/ensurepip/_bundled")),
             )
         };
+        if !crate::router::target::can_execute_on_host(ctx.kit.target()) {
+            return Ok(());
+        }
         let wheel = fs::read_dir(&bundled)
             .into_iter()
             .flatten()

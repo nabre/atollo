@@ -53,6 +53,7 @@ pub enum Cli {
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct PrepareArgs {
+    pub target: Option<crate::kit::Target>,
     pub only: Vec<String>,
     pub skip: Vec<String>,
     pub update_all: bool,
@@ -64,6 +65,7 @@ pub struct PrepareArgs {
 impl PrepareArgs {
     pub fn options(&self) -> Options {
         Options {
+            target: self.target,
             only: self.only.clone(),
             skip: self.skip.clone(),
             update_all: self.update_all,
@@ -141,6 +143,13 @@ pub fn parse(args: &[OsString]) -> Cli {
             let mut rest = args[1..].iter();
             while let Some(arg) = rest.next() {
                 match arg.to_string_lossy().as_ref() {
+                    "--target" => {
+                        let value = rest.next().map(|v| v.to_string_lossy().to_lowercase());
+                        match value.as_deref().and_then(crate::kit::Target::parse) {
+                            Some(t) => p.target = Some(t),
+                            None => return Cli::Unknown("prepare --target".into()),
+                        }
+                    }
                     "--only" => p.only.extend(ids(rest.next())),
                     "--skip" => p.skip.extend(ids(rest.next())),
                     "--update-all" => p.update_all = true,

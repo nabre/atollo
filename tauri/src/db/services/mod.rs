@@ -297,17 +297,18 @@ pub(crate) fn bin(kit: &Kit, id: &str, exe: &str) -> PathBuf {
 
 /// A program of version `line` of `id` (None: the version it runs).
 pub(crate) fn bin_at(kit: &Kit, id: &str, line: Option<&str>, exe: &str) -> PathBuf {
+    let stem = exe.strip_suffix(".exe").unwrap_or(exe);
     let versioned = Catalog::get().find(id).filter(|c| c.versioned);
     match (id, versioned) {
-        ("mongosh", _) => kit.apps().join(r"mongosh\bin").join(exe),
+        ("mongosh", _) => crate::router::bins::mongosh_bin(kit),
+        ("mongodb-tools", _) => crate::router::bins::mongo_tool_bin(kit, stem),
         (_, Some(c)) => {
             let line = line.map(str::to_owned).or_else(|| server_line(kit, id));
-            crate::versions::dir_for(kit, c, line.as_deref())
-                .unwrap_or_else(|| kit.apps().join(id))
-                .join("bin")
-                .join(exe)
+            let dir = crate::versions::dir_for(kit, c, line.as_deref())
+                .unwrap_or_else(|| kit.apps().join(id));
+            crate::router::bins::db_bin_in(kit.os(), &dir, stem)
         }
-        _ => kit.apps().join(id).join("bin").join(exe),
+        _ => crate::router::bins::db_bin(kit, id, stem),
     }
 }
 

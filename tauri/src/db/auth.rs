@@ -61,23 +61,13 @@ pub fn load(kit: &Kit) -> Secrets {
 /// `write_atomic` nor the file is ever readable by others, not even for a
 /// moment (security review of D-74); the file's own DACL is set again after.
 fn write_private(path: &Path, text: &str) -> Result<()> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-        if let Err(e) = crate::editor::restrict_dir_to_owner(parent) {
-            crate::log::warn(&format!("{}: permissions: {e:#}", parent.display()));
-        }
-    }
-    write_in_private(path, text)
+    crate::router::fs::write_private(path, text)
 }
 
 /// The atomic write and the file's own DACL, in a folder already private
 /// (`ProjectState::private_dir` sets its DACL before returning it).
 fn write_in_private(path: &Path, text: &str) -> Result<()> {
-    write_atomic(path, text.as_bytes())?;
-    if let Err(e) = crate::editor::restrict_to_owner(path) {
-        crate::log::warn(&format!("{}: permissions: {e:#}", path.display()));
-    }
-    Ok(())
+    crate::router::fs::write_in_private(path, text)
 }
 
 /// A private file of `data\app\db` (a tool's config with a password).

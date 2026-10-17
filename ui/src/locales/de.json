@@ -775,5 +775,8 @@
   "{0} {1} non è installata: il database del progetto è su questa versione, che non si avvia. Installala, o scegli un'altra versione (database e utente si creano anche lì, vuoti).": "{0} {1} ist nicht installiert: Die Datenbank des Projekts liegt auf dieser Version, die nicht startet. Installiere sie oder wähle eine andere Version (Datenbank und Benutzer werden auch dort angelegt, leer).",
   "{0} {1} non è installata: installala, o scegli un'altra versione per il database del progetto.": "{0} {1} ist nicht installiert: Installiere sie oder wähle eine andere Version für die Datenbank des Projekts.",
   "Installa {0} {1}": "{0} {1} installieren",
-  "{0} (non installata)": "{0} (nicht installiert)"
+  "{0} (non installata)": "{0} (nicht installiert)",
+  "pre-scaricato": "vorab heruntergeladen",
+  "Verifica": "Prüfen",
+  "Bootstrap pre-scaricato; l'installazione termina al primo avvio su quel sistema": "Bootstrap vorab heruntergeladen; die Installation wird beim ersten Start auf diesem System abgeschlossen"
 }

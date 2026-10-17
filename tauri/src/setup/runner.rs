@@ -29,6 +29,8 @@ use crate::net::Cancelled;
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {
+    /// Target platform to prepare; defaults to `ctx.kit.target()`.
+    pub target: Option<Target>,
     /// Only these components (installed or updated); nothing removed.
     pub only: Vec<String>,
     /// Not these, on top of the choice (required components cannot be skipped).
@@ -200,10 +202,13 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         }
     }
     let target = ctx.kit.target();
+    let can_run = crate::router::target::can_execute_on_host(target);
     let installed: HashSet<&str> = catalog
         .all()
         .iter()
-        .filter(|c| c.is_installed(ctx.kit))
+        .filter(|c| {
+            c.is_installed(ctx.kit) || (!can_run && crate::router::bootstrap::is_staged(ctx.kit, c))
+        })
         .map(|c| c.id.as_str())
         .collect();
     let wanted = if opts.only.is_empty() {
@@ -583,22 +588,26 @@ fn step(
     sink: &mut dyn Sink,
 ) -> Outcome {
     let installed = c.is_installed(ctx.kit);
+    let staged = crate::router::bootstrap::is_staged(ctx.kit, c);
+    let can_run = crate::router::target::can_execute_on_host(ctx.kit.target());
     let current = c.installed_version(ctx.kit);
-    // Marked when the kit moved (a conda environment, D-92): installed
-    // again even at the same version, a versioned one at its own line.
-    let reinstall = installed && c.needs_reinstall(ctx.kit);
+    // Marked when the kit moved (a conda environment, D-92) or bootstrap-staged
+    // on another OS and now running on its target OS: installed again even at
+    // the same version, a versioned one at its own line.
+    let reinstall = (installed && c.needs_reinstall(ctx.kit)) || (staged && can_run);
     let force = force || reinstall;
     let keep_line = current
         .as_deref()
         .and_then(crate::versions::line_of)
         .filter(|_| reinstall && c.versioned);
+    let ready_for_target = installed || (staged && !can_run);
     // A part of the app at another version than this release's: installed
     // again without "update all", and never newer than the fixed one.
-    if installed && !update_all && !force && !c.outdated(ctx.kit) {
+    if ready_for_target && !update_all && !force && !c.outdated(ctx.kit) {
         return Outcome::UpToDate { version: current };
     }
     let Some(installer) = install::installer(&c.id) else {
-        return if installed {
+        return if ready_for_target {
             Outcome::UpToDate { version: current }
         } else {
             Outcome::Unsupported
@@ -610,7 +619,7 @@ fn step(
             (_, Some(line)) if installer.has_lines() => install::release_at(ctx, c, line)?,
             _ => installer.latest(ctx, c)?,
         };
-        if installed && !force && current.as_deref() == Some(release.version.as_str()) {
+        if ready_for_target && !force && current.as_deref() == Some(release.version.as_str()) {
             return Ok(Outcome::UpToDate {
                 version: current.clone(),
             });

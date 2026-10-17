@@ -99,6 +99,19 @@ fn ensure_main<R: Runtime>(webview: &Webview<R>) -> CmdResult<()> {
     }
 }
 
+/// Returns `kit` scoped to `target` (`win32-x64`, `linux-x64`, `darwin-arm64`…)
+/// when given, or `kit.clone()` when omitted.
+pub(super) fn kit_for(kit: &Kit, target: Option<&str>) -> CmdResult<Kit> {
+    match target.map(str::trim).filter(|s| !s.is_empty()) {
+        None => Ok(kit.clone()),
+        Some(raw) => {
+            let t =
+                crate::kit::Target::parse(raw).ok_or_else(|| format!("unknown target: {raw}"))?;
+            Ok(kit.for_target(t))
+        }
+    }
+}
+
 /// `None` = the projects folder itself; a name must be a valid project
 /// name of an existing folder (no paths, no `..`).
 fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> CmdResult<PathBuf> {
@@ -301,6 +314,7 @@ macro_rules! command_handler {
             $crate::commands::terminals::terminal_dir_pick,
             $crate::commands::setup::components_list,
             $crate::commands::setup::components_sync,
+            $crate::commands::setup::components_check,
             $crate::commands::setup::setup_state,
             $crate::commands::setup::setup_start,
             $crate::commands::setup::setup_cancel,

@@ -8,9 +8,11 @@ use super::*;
 pub fn versions_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
+    target: Option<String>,
 ) -> CmdResult<Vec<crate::versions::Tool>> {
     ensure_main(&webview)?;
-    Ok(crate::versions::tools(&state.kit))
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    Ok(crate::versions::tools(&kit))
 }
 
 /// The lines of `id` that can be downloaded (asks its source); kept for the
@@ -20,10 +22,12 @@ pub async fn versions_available<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
+    target: Option<String>,
 ) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
     crate::versions::check(&id, None).map_err(|e| e.to_string())?;
-    let (kit, env) = (state.kit.clone(), state.env());
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    let env = state.env();
     let token = github_token(&state.host);
     tauri::async_runtime::spawn_blocking(move || {
         fetch_lines(&kit, &env, token, &id).or_fail_chain("versions")
@@ -81,10 +85,11 @@ pub fn versions_add<R: Runtime>(
     state: State<'_, AppState>,
     id: String,
     line: String,
+    target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
-    download_line(app, &state, id, line)
+    download_line(app, &state, id, line, target)
 }
 
 /// Installs `id`, not installed yet, at `line` instead of the latest: it
@@ -96,10 +101,11 @@ pub fn versions_install<R: Runtime>(
     state: State<'_, AppState>,
     id: String,
     line: String,
+    target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
-    install_now(app, &state, id, Some(line))
+    install_now(app, &state, id, Some(line), target)
 }
 
 /// `id` becomes chosen (with what it needs) and is installed now, at
@@ -110,21 +116,22 @@ pub(super) fn install_now<R: Runtime>(
     state: &AppState,
     id: String,
     line: Option<String>,
+    target: Option<String>,
 ) -> CmdResult<()> {
     if state.setup.snapshot().running {
         return Err(tr(state, "C'è già un'installazione in corso.", &[]).into());
     }
+    let kit = kit_for(&state.kit, target.as_deref())?;
     let catalog = Catalog::get();
     if catalog.find(&id).is_none() {
         return Err(format!("unknown component: {id}").into());
     }
-    let mut choice = crate::setup::catalog::Choice::read(&state.kit, catalog)
+    let mut choice = crate::setup::catalog::Choice::read(&kit, catalog)
         .unwrap_or_else(|| crate::setup::catalog::Choice::defaults(catalog));
     choice.set(catalog, &id, true);
-    choice
-        .write(&state.kit, catalog)
-        .or_fail_chain("components")?;
+    choice.write(&kit, catalog).or_fail_chain("components")?;
     let opts = Options {
+        target: Some(kit.target()),
         only: vec![id.clone()],
         at: line.map(|l| vec![(id, l)]).unwrap_or_default(),
         ..Options::default()
@@ -137,8 +144,11 @@ pub(super) fn download_line<R: Runtime>(
     state: &AppState,
     id: String,
     line: String,
+    target: Option<String>,
 ) -> CmdResult<()> {
+    let kit = kit_for(&state.kit, target.as_deref())?;
     let opts = Options {
+        target: Some(kit.target()),
         lines: vec![(id, line)],
         ..Options::default()
     };
@@ -155,7 +165,7 @@ pub(super) fn download_chosen<R: Runtime>(
 ) -> CmdResult<()> {
     let Some(line) = line else { return Ok(()) };
     if crate::versions::to_download(&state.kit, id, line).or_fail_chain("versions")? {
-        download_line(app, state, id.to_owned(), line.to_owned())?;
+        download_line(app, state, id.to_owned(), line.to_owned(), None)?;
     }
     Ok(())
 }
@@ -167,12 +177,14 @@ pub fn versions_remove<R: Runtime>(
     state: State<'_, AppState>,
     id: String,
     line: String,
+    target: Option<String>,
 ) -> CmdResult<Vec<crate::versions::Tool>> {
     ensure_main(&webview)?;
     if state.setup.snapshot().running {
         return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
     }
-    crate::versions::remove(&state.kit, &id, &line).map_err(|e| {
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    crate::versions::remove(&kit, &id, &line).map_err(|e| {
         if e.is::<crate::net::archive::InUse>() {
             tr(
                 &state,
@@ -184,8 +196,10 @@ pub fn versions_remove<R: Runtime>(
             fail("versions", format!("{e:#}"))
         }
     })?;
-    apply_env(&state, Settings::load(&state.kit).settings);
-    Ok(crate::versions::tools(&state.kit))
+    if kit.target() == state.kit.target() {
+        apply_env(&state, Settings::load(&state.kit).settings);
+    }
+    Ok(crate::versions::tools(&kit))
 }
 
 #[derive(Debug, Serialize)]
