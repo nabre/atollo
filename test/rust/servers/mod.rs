@@ -46,6 +46,8 @@ fn profile_crud_and_vhost_generation() {
         domains: vec!["admin.portale.localhost".into(), "x\r\nListen 80".into()],
         aliases,
         url: "http://portale.localhost:8095".into(),
+        chosen: true,
+        detached: false,
     };
     let vhost = apache_vhost_conf(
         8095,
@@ -100,6 +102,8 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
                 domains: vec!["api.alpha.localhost".into()],
                 aliases: BTreeMap::new(),
                 url: "http://alpha.localhost:8088".into(),
+                chosen: true,
+                detached: false,
             },
             AttachedSite {
                 project: "beta".into(),
@@ -109,6 +113,8 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
                 domains: Vec::new(),
                 aliases: BTreeMap::new(),
                 url: "http://beta.localhost:8088".into(),
+                chosen: true,
+                detached: false,
             },
         ],
         conf_dir: r"data\servers\nginx-default".into(),
@@ -169,6 +175,8 @@ fn site(project: &str, folder: &str, port: u16) -> AttachedSite {
         domains: Vec::new(),
         aliases: BTreeMap::new(),
         url: format!("http://{project}.localhost:{port}"),
+        chosen: true,
+        detached: false,
     }
 }
 
@@ -482,6 +490,43 @@ fn fresh_list_prunes_ports_of_gone_pools() {
     let ports = load_store(&kit).ports;
     assert_eq!(ports.keys().collect::<Vec<_>>(), ["keep"]);
     assert_eq!(ports["keep"], 8097);
+}
+
+/// A port kept in `servers.json` by a pool gone since does not block a
+/// profile: saving it drops the ports of the pools that no longer exist.
+#[test]
+fn save_profile_takes_the_port_of_a_gone_pool() {
+    let tmp = TempDir::new("servers-gone-port");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let mut store = StoredServers::default();
+    store.ports.insert("apache-2.2_php-5.6".to_owned(), 8124);
+    save_store(&kit, &store).unwrap();
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: "mine".into(),
+                name: "Mine".into(),
+                engine: WebServerEngine::Nginx,
+                server_line: None,
+                php_line: None,
+                port: Some(8124),
+                keep_alive: true,
+                autostart: false,
+            },
+            "it",
+        )
+        .unwrap();
+    let ports = load_store(&kit).ports;
+    assert_eq!(ports.keys().collect::<Vec<_>>(), ["mine"]);
+
+    // Opening the app drops them too.
+    let mut store = load_store(&kit);
+    store.ports.insert("nginx-1.20".to_owned(), 8125);
+    save_store(&kit, &store).unwrap();
+    servers.autostart(&KitEnv::default(), "it");
+    assert!(!load_store(&kit).ports.contains_key("nginx-1.20"));
 }
 
 /// N-S5: a Host no project names (an IP from the LAN) gets Apache's own
@@ -1000,9 +1045,9 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
     );
 }
 
-/// Defect 5: a running pool the scan no longer has (its automatic id
-/// changed with a newer line) stays on the page, marked, until stopped;
-/// it serves no new run and is not reloaded.
+/// Defect 5: a running pool the scan does not have (an id that is neither a
+/// profile's nor an automatic one) stays on the page, marked, until
+/// stopped; it serves no new run and is not reloaded.
 #[test]
 fn orphan_running_pool_is_listed_until_stopped() {
     let tmp = TempDir::new("servers-orphan");
@@ -1011,7 +1056,7 @@ fn orphan_running_pool_is_listed_until_stopped() {
     let servers = WebServers::new(kit.clone());
     fake_running(
         &servers,
-        nginx_pool("nginx-1.25", 8083, vec![site("shop", "public", 8083)]),
+        nginx_pool("gone", 8083, vec![site("shop", "public", 8083)]),
     );
     let view = servers.list("it", true);
     assert_eq!(view.pools.len(), 1);
@@ -1020,12 +1065,12 @@ fn orphan_running_pool_is_listed_until_stopped() {
     assert_eq!(orphan.sites[0].project, "shop");
     assert_eq!(servers.pool_of("shop", "site", "it").map(|p| p.0.id), None);
     let err = servers
-        .reload("nginx-1.25", &KitEnv::default(), "it")
+        .reload("gone", &KitEnv::default(), "it")
         .unwrap_err()
         .to_string();
     assert!(err.contains("fermalo"), "{err}");
-    assert!(servers.is_running("nginx-1.25"));
-    servers.stop("nginx-1.25");
+    assert!(servers.is_running("gone"));
+    servers.stop("gone");
     assert!(servers.list("it", true).pools.is_empty());
 }
 
@@ -1331,4 +1376,274 @@ fn name_sites_keeps_names_unique() {
     );
     assert_eq!(sites[1].url, "http://my-shop-2.localhost:8080");
     assert_eq!(host_label("Ünï Côde_42"), "n-c-de-42");
+}
+
+/// PLAN-DATA §9 1.1: an automatic pool lists (and serves) the sites the
+/// projects chose in `panel.json` and those started, not every PHP project
+/// that was only offered Apache.
+#[test]
+fn automatic_pools_list_chosen_or_started_sites() {
+    let tmp = TempDir::new("servers-chosen-sites");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "apache", "2.4.65");
+    let servers = WebServers::new(kit.clone());
+    let projects = kit.projects();
+    // Offered Apache next to `php -S`.
+    fs::create_dir_all(projects.join(r"plain\public")).unwrap();
+    fs::write(projects.join(r"plain\public\index.php"), "<?php").unwrap();
+    // A site written in panel.json.
+    fs::create_dir_all(projects.join(r"shop\public")).unwrap();
+    fs::write(projects.join(r"shop\public\index.php"), "<?php").unwrap();
+    fs::write(
+        projects.join(r"shop\panel.json"),
+        r#"{ "actions": [ { "id": "site", "apache": "public" } ] }"#,
+    )
+    .unwrap();
+
+    let projects_of = |pools: &[WebServerPool]| -> Vec<String> {
+        pools
+            .iter()
+            .flat_map(|p| p.sites.iter().map(|s| s.project.clone()))
+            .collect()
+    };
+    let all = servers.list_all("it", true);
+    assert_eq!(projects_of(&all.pools), ["plain", "shop"]);
+    let shown = servers.list("it", true);
+    assert_eq!(projects_of(&shown.pools), ["shop"]);
+    // Every project goes to the same pool: it is not left out with them.
+    let (pool, _) = servers.pool_of("plain", "apache", "it").unwrap();
+    assert!(shown.pools.iter().any(|p| p.id == pool.id));
+
+    let pool_dir = kit.data().join("servers").join(&pool.id);
+    let apache_dir = component_dir(&kit, "apache", pool.server_line.as_deref());
+    fs::create_dir_all(apache_dir.join("conf")).unwrap();
+    fs::write(
+        apache_dir.join(r"conf\httpd.conf"),
+        "Define SRVROOT \"x\"\r\nServerRoot \"${SRVROOT}\"\r\n",
+    )
+    .unwrap();
+    let vhosts = || -> Vec<String> {
+        let mut v: Vec<String> = fs::read_dir(pool_dir.join("vhosts"))
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        v.sort();
+        v
+    };
+    servers.write_pool_configs(&pool, None, false).unwrap();
+    assert_eq!(vhosts(), ["shop.localhost.conf"]);
+
+    // Started by its project: listed and served.
+    servers
+        .started
+        .lock()
+        .unwrap()
+        .insert(("plain".into(), "apache".into()));
+    assert_eq!(
+        projects_of(&servers.list("it", true).pools),
+        ["plain", "shop"]
+    );
+    servers.write_pool_configs(&pool, None, false).unwrap();
+    assert_eq!(vhosts(), ["plain.localhost.conf", "shop.localhost.conf"]);
+
+    // Stopped: out again (the pool is not running, nothing to reload).
+    servers
+        .detach(&pool.id, "plain", "apache", &KitEnv::default(), "it")
+        .unwrap();
+    assert_eq!(projects_of(&servers.list("it", true).pools), ["shop"]);
+
+    // A chosen site whose project stopped: still listed, marked detached.
+    let shop_site = |servers: &WebServers| {
+        servers
+            .list("it", false)
+            .pools
+            .into_iter()
+            .flat_map(|p| p.sites)
+            .find(|s| s.project == "shop")
+            .unwrap()
+    };
+    assert!(!shop_site(&servers).detached);
+    servers
+        .detach(&pool.id, "shop", "site", &KitEnv::default(), "it")
+        .unwrap();
+    let shop = shop_site(&servers);
+    assert!(shop.detached);
+    assert_eq!(shop.server_name, "shop.localhost");
+}
+
+/// PLAN.md §13.1: a site marked `dedicated` keeps its own server (in no
+/// pool); a new profile never takes an id a site's `server` means otherwise.
+#[test]
+fn dedicated_sites_and_reserved_profile_ids() {
+    let tmp = TempDir::new("servers-dedicated");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let shop = kit.projects().join("shop");
+    fs::create_dir_all(shop.join("public")).unwrap();
+    fs::write(
+        shop.join("panel.json"),
+        r#"{ "actions": [ { "id": "site", "apache": "public", "server": "dedicated" } ] }"#,
+    )
+    .unwrap();
+    assert_eq!(servers.pool_of("shop", "site", "it").map(|p| p.0.id), None);
+
+    let profile = |name: &str| WebServerProfileInput {
+        id: String::new(),
+        name: name.into(),
+        engine: WebServerEngine::Apache,
+        server_line: None,
+        php_line: None,
+        port: None,
+        keep_alive: true,
+        autostart: false,
+    };
+    for (name, id) in [
+        ("Apache 2.4", "apache-2.4-profile"),
+        ("Dedicated", "dedicated-profile"),
+        ("Auto", "auto-profile"),
+        ("Apache test", "apache-test"),
+    ] {
+        servers.save_profile(profile(name), "it").unwrap();
+        assert!(
+            load_store(&kit).profiles.iter().any(|p| p.id == id),
+            "{name}"
+        );
+    }
+}
+
+/// The pools of the page: an automatic pool with no site left is not
+/// shown, unless it runs or it is the only pool (the one to start).
+#[test]
+fn shown_pools_drop_empty_automatic_ones() {
+    let mut hidden = site("plain", "public", 8081);
+    hidden.chosen = false;
+    let started = BTreeSet::new();
+    let pools = vec![
+        nginx_pool("nginx-1.27", 8081, vec![hidden.clone()]),
+        nginx_pool("nginx-1.26", 8082, vec![site("shop", "public", 8082)]),
+    ];
+    let ids =
+        |pools: &[WebServerPool]| -> Vec<String> { pools.iter().map(|p| p.id.clone()).collect() };
+    assert_eq!(ids(&shown_pools(pools.clone(), &started)), ["nginx-1.26"]);
+    let mut running = pools.clone();
+    running[0].running = true;
+    let shown = shown_pools(running, &started);
+    assert_eq!(ids(&shown), ["nginx-1.27", "nginx-1.26"]);
+    assert!(shown[0].sites.is_empty());
+    let only = shown_pools(vec![pools[0].clone()], &started);
+    assert_eq!(ids(&only), ["nginx-1.27"]);
+}
+
+/// SC-2: automatic ids name their lines (`apache-2.4_php-7.4`); the ids of
+/// before are read too, and a profile's id is not one.
+#[test]
+fn auto_pool_ids_name_their_lines() {
+    let apache = WebServerEngine::Apache;
+    assert_eq!(
+        auto_pool_id(apache, Some("2.4"), Some("7.4")),
+        "apache-2.4_php-7.4"
+    );
+    assert_eq!(
+        auto_pool_id(WebServerEngine::Nginx, Some("1.27"), None),
+        "nginx-1.27"
+    );
+    assert_eq!(auto_pool_id(apache, None, None), "apache-default");
+    let lines = |s: Option<&str>, p: Option<&str>| {
+        Some((apache, s.map(str::to_owned), p.map(str::to_owned)))
+    };
+    assert_eq!(
+        parse_auto_pool_id("apache-2.4_php-7.4"),
+        lines(Some("2.4"), Some("7.4"))
+    );
+    assert_eq!(
+        parse_auto_pool_id("apache-2.4-php-7.4"),
+        lines(Some("2.4"), Some("7.4"))
+    );
+    assert_eq!(
+        parse_auto_pool_id("apache-default_php-8.4"),
+        lines(None, Some("8.4"))
+    );
+    assert_eq!(
+        canonical_auto_pool("apache-2.4_php-7.4"),
+        lines(Some("2.4"), Some("7.4"))
+    );
+    assert_eq!(canonical_auto_pool("apache-2.4-php-7.4"), None);
+    for other in [
+        "legacy",
+        "apache",
+        "apache-test",
+        "nginx-1.27-php-x",
+        "iis-1.0",
+    ] {
+        assert_eq!(parse_auto_pool_id(other), None, "{other}");
+    }
+}
+
+/// SC-2: the ports stored under the ids of before move to the new ones (a
+/// port already stored there wins); a profile's id stays as it is.
+#[test]
+fn ports_move_to_the_new_automatic_ids() {
+    let mut store = StoredServers::default();
+    store.ports.insert("apache-2.4-php-7.4".into(), 8081);
+    store.ports.insert("nginx-1.27-php-8.4".into(), 8082);
+    store.ports.insert("nginx-1.27_php-8.4".into(), 8090);
+    store.ports.insert("nginx-1.26".into(), 8083);
+    store.ports.insert("apache-2.2-php-5.6".into(), 8084);
+    store.profiles.push(WebServerProfileInput {
+        id: "apache-2.2-php-5.6".into(),
+        name: "Old".into(),
+        engine: WebServerEngine::Apache,
+        server_line: None,
+        php_line: None,
+        port: Some(8084),
+        keep_alive: true,
+        autostart: false,
+    });
+    assert!(migrate_port_ids(&mut store));
+    let ports: Vec<(&str, u16)> = store.ports.iter().map(|(k, v)| (k.as_str(), *v)).collect();
+    assert_eq!(
+        ports,
+        [
+            ("apache-2.2-php-5.6", 8084),
+            ("apache-2.4_php-7.4", 8081),
+            ("nginx-1.26", 8083),
+            ("nginx-1.27_php-8.4", 8090),
+        ]
+    );
+    assert!(!migrate_port_ids(&mut store));
+}
+
+/// SC-2: a running automatic pool no project goes to any more stays a pool
+/// of the list (not an orphan), rebuilt from its id; a site naming an
+/// automatic pool in `panel.json` (old id too) goes to the lines it names.
+#[test]
+fn automatic_pools_come_back_from_their_ids() {
+    let tmp = TempDir::new("servers-stable-ids");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "nginx", "1.27.4");
+    let servers = WebServers::new(kit.clone());
+    fake_running(&servers, nginx_pool("nginx-1.25", 8083, Vec::new()));
+    let view = servers.list("it", true);
+    let old = view.pools.iter().find(|p| p.id == "nginx-1.25").unwrap();
+    assert!(!old.orphan && old.running);
+    assert_eq!(old.server_line.as_deref(), Some("1.25"));
+    assert!(load_store(&kit).ports.contains_key("nginx-1.25"));
+    servers.stop("nginx-1.25");
+
+    let shop = kit.projects().join("shop");
+    fs::create_dir_all(shop.join("public")).unwrap();
+    fs::write(
+        shop.join("panel.json"),
+        r#"{ "actions": [ { "id": "site", "nginx": "public", "server": "nginx-1.26-php-8.3" } ] }"#,
+    )
+    .unwrap();
+    let (pool, _) = servers.pool_of("shop", "site", "it").unwrap();
+    assert_eq!(pool.id, "nginx-1.26_php-8.3");
+    assert_eq!(pool.server_line.as_deref(), Some("1.26"));
+    assert_eq!(pool.php_line.as_deref(), Some("8.3"));
+    assert!(!pool.manual);
 }
