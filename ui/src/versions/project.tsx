@@ -18,7 +18,7 @@ import { ComponentLogo } from "../logos";
 import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { useSetup } from "../setup";
-import { EditorSection, Notice } from "../workbench";
+import { EditorSection, Link, Notice } from "../workbench";
 import { isPresent, useOffers, useReloadOnSteps } from "./model";
 import { LineSelect, LineState, RefreshLines } from "./lines";
 
@@ -63,6 +63,15 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
     const set = (line: string | null) => {
       run(tool.id, () => projectVersionsSet(project, tool.id, line).then(setData));
     };
+    // The line the project's containers name (Compose, Dockerfile): only
+    // proposed, applied by the user, when it is not the one in use.
+    const fromContainers = p.lines?.[tool.id];
+    const suggested = fromContainers && fromContainers !== (chosen || kitLine) ? fromContainers : null;
+    const applicable =
+      suggested !== null &&
+      (isPresent(tool, suggested) || (tool.downloadable && tool.available.includes(suggested))) &&
+      busy === null &&
+      !(running && !isPresent(tool, suggested));
     if (p.missing.includes(tool.id)) {
       return (
         <div key={tool.id}>
@@ -110,6 +119,24 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
         <div className="pl-[136px]">
           {need && (
             <p className="mt-0.5 text-[12px] text-vsc-desc">{t("Richiesto da {0}: {1}", need.source, need.declared)}</p>
+          )}
+          {suggested !== null && (
+            <p className="mt-0.5 text-[12px] text-vsc-desc">
+              {t("Dai container del progetto (Compose o Dockerfile): {0} {1}.", tool.name, suggested)}{" "}
+              {applicable ? (
+                <Link
+                  onClick={() => {
+                    set(suggested);
+                  }}
+                >
+                  {t("Usa {0}", suggested)}
+                </Link>
+              ) : (
+                !isPresent(tool, suggested) &&
+                !tool.available.includes(suggested) &&
+                t("Non è tra le versioni offerte.")
+              )}
+            </p>
           )}
           <LineState
             tool={tool}

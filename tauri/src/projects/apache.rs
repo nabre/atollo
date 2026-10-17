@@ -80,6 +80,11 @@ pub const PHP_NEVER: &str = r"\.(?:inc|php[3-8])$";
 pub fn migrate_kit_conf(text: &str) -> String {
     let mut fixed = text
         .replace("${CP_APPS_FWD}/php/", "${CP_PHP_FWD}/")
+        // One php.ini per line of PHP, that of the PHP in use.
+        .replace(
+            "PHPIniDir \"${CP_ROOT_FWD}/data/php\"",
+            "PHPIniDir \"${CP_PHPRC_FWD}\"",
+        )
         .replace("\"\\.php$\"", "\"(?i)\\.php$\"")
         .replace("\"(?i)\\.php$\"", &format!("\"(?i){PHP_RUN}\""));
     let mut missing = Vec::new();
@@ -158,7 +163,7 @@ pub fn php_module_blocks(php_var: &str) -> Vec<String> {
             format!("<IfFile \"${{{php_var}}}/{dll}\">"),
             format!("    LoadFile \"${{{php_var}}}/{ts}\""),
             format!("    LoadModule {module} \"${{{php_var}}}/{dll}\""),
-            "    PHPIniDir \"${CP_ROOT_FWD}/data/php\"".to_owned(),
+            "    PHPIniDir \"${CP_PHPRC_FWD}\"".to_owned(),
             format!("    <FilesMatch \"(?i){PHP_RUN}\">"),
             "        SetHandler application/x-httpd-php".to_owned(),
             "    </FilesMatch>".to_owned(),

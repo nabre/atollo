@@ -45,6 +45,9 @@ export interface ProjectInfo {
   reason: string;
   languages: string[];
   requires: string[];
+  /** Lines of some of them named by the images of Compose and Dockerfile
+   * (`php:8.3-apache` → `{ php: "8.3" }`); absent when none. */
+  lines?: Record<string, string>;
   actions: ProjectAction[];
   warnings: string[];
   custom: boolean;

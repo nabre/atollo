@@ -13,10 +13,10 @@ name = "Dev-Kit"
 path = "src/main.rs"
 
 [build-dependencies]
-tauri-build = { version = "=2.7.0", features = [] }
+tauri-build = { version = "=2.7.1", features = [] }
 
 [dependencies]
-tauri = { version = "=2.12.0", features = [] }
+tauri = { version = "=2.12.1", features = [] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 anyhow = "1.0.104"
@@ -71,4 +71,4 @@ features = [
 ]
 
 [dev-dependencies]
-tauri = { version = "=2.12.0", features = ["test"] }
+tauri = { version = "=2.12.1", features = ["test"] }

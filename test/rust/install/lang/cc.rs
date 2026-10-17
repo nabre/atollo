@@ -114,3 +114,30 @@ fn llvm_asset_names_per_target() {
         assert_eq!(hits, [expected], "{target}");
     }
 }
+
+/// When 20.1.7 leaves the last 100 releases, macOS x64 still gets it,
+/// from the fixed tag, archive and SHA-256; no other system is pinned.
+#[test]
+fn llvm_is_pinned_on_macos_x64_only() {
+    use crate::kit::Target;
+
+    let r = llvm_pinned(Target::DARWIN_X64).unwrap();
+    assert_eq!(r.version, "llvmorg-20.1.7");
+    assert_eq!(r.parts.len(), 1);
+    assert_eq!(
+        r.parts[0].url,
+        "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.7/LLVM-20.1.7-macOS-X64.tar.xz"
+    );
+    assert!(pattern(llvm_asset(Target::DARWIN_X64))
+        .unwrap()
+        .is_match(&r.parts[0].file_name));
+    let Expect::Sha256(sha) = &r.parts[0].expect else {
+        panic!("sha256")
+    };
+    assert!(sha.len() == 64 && sha.chars().all(|c| c.is_ascii_hexdigit()));
+    for t in Target::ALL {
+        if t != Target::DARWIN_X64 {
+            assert!(llvm_pinned(t).is_none(), "{t}");
+        }
+    }
+}

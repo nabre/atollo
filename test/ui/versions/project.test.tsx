@@ -79,6 +79,47 @@ describe("ProjectVersions", () => {
     expect(document.getElementById("ver-python")).not.toBeNull();
   });
 
+  it("proposes the line of the project's containers, applied only on request", async () => {
+    answer();
+    const set = vi.fn();
+    invoke.mockImplementation((cmd, args) => {
+      if (cmd === "project_versions") return Promise.resolve(DATA);
+      if (cmd === "project_versions_set") {
+        set(args);
+        return Promise.resolve({ ...DATA, chosen: { node: "0.9" } });
+      }
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<ProjectVersions p={{ ...P, missing: [], lines: { node: "0.9" } }} />);
+    expect(
+      await screen.findByText(/Dai container del progetto \(Compose o Dockerfile\): Node\.js 0\.9\./),
+    ).toBeTruthy();
+    expect(set).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Usa 0.9" }));
+    await vi.waitFor(() => {
+      expect(set).toHaveBeenCalledWith({ project: "shop", id: "node", line: "0.9" });
+    });
+    // Once chosen, the proposal goes away.
+    await vi.waitFor(() => {
+      expect(screen.queryByText(/Node\.js 0\.9\./)).toBeNull();
+    });
+  });
+
+  it("proposes nothing when the container line is the one in use", async () => {
+    answer();
+    render(<ProjectVersions p={{ ...P, missing: [], lines: { node: "1.0" } }} />);
+    expect(await screen.findByText("Linguaggi attivi nel progetto (2)")).toBeTruthy();
+    expect(screen.queryByText(/Dai container del progetto/)).toBeNull();
+  });
+
+  it("names a container line that is not offered, without an action", async () => {
+    answer();
+    render(<ProjectVersions p={{ ...P, missing: [], lines: { node: "7.1" } }} />);
+    expect(await screen.findByText(/Node\.js 7\.1\. Non è tra le versioni offerte\./)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Usa 7.1" })).toBeNull();
+  });
+
   it("says the versions apply to the project's web server too", async () => {
     answer();
     render(<ProjectVersions p={{ ...P, missing: [] }} />);

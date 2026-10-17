@@ -25,6 +25,106 @@ fn php_ini_from_template() {
     );
 }
 
+/// PHP before 7.2 names its extensions `php_curl.dll`, before 8.0 GD is
+/// `gd2`: each line's template gets the same extensions on.
+#[test]
+fn php_ini_from_older_templates() {
+    let ini = php_ini(";extension=php_curl.dll\r\n;extension=php_gd2.dll\r\n;extension=php_ldap.dll\r\n;extension=gd2\r\n").unwrap();
+    assert_eq!(
+        ini,
+        "extension=php_curl.dll\r\nextension=php_gd2.dll\r\n;extension=php_ldap.dll\r\nextension=gd2\r\n"
+    );
+}
+
+/// A PHP folder of `kit` (its key) with its `php.ini-development`.
+fn fake_php(dir: &Path, template: &str) {
+    fs::create_dir_all(dir).unwrap();
+    fs::write(dir.join("php.exe"), b"").unwrap();
+    fs::write(dir.join("php.ini-development"), template).unwrap();
+}
+
+/// Defect 10: one php.ini per line of PHP, from that line's template; the
+/// single php.ini of an older kit becomes the default line's, with the
+/// user's changes.
+#[test]
+fn one_php_ini_per_line() {
+    use crate::kit::{Arch, Kit};
+    use crate::setup::catalog::Catalog;
+
+    let tmp = TempDir::new("php-ini-lines");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let data = kit.data();
+    let php = Catalog::get().find("php").unwrap();
+    let version = "8.4.13 (Composer 2.8.12)";
+    let main = crate::versions::install_dir(&kit, php, version);
+    fake_php(&main, ";extension=curl\r\n");
+    php.save_version(&kit, version).unwrap();
+    let old = crate::versions::saved_dir(&kit, php, "5.6");
+    fake_php(&old, ";extension=php_curl.dll\r\n");
+    crate::versions::write_version(&old, "5.6.40").unwrap();
+    let legacy = data.join(r"php\php.ini");
+    fs::create_dir_all(legacy.parent().unwrap()).unwrap();
+    fs::write(&legacy, "memory_limit = 1G\r\n").unwrap();
+
+    assert_eq!(php_ini_dir(&data, &main), data.join(r"php\8.4"));
+    assert_eq!(php_ini_dir(&data, &old), data.join(r"php\5.6"));
+    assert_eq!(
+        php_ini_dir(&data, &kit.apps().join("php")),
+        data.join("php"),
+        "an older kit's layout"
+    );
+
+    migrate_php_ini(&kit).unwrap();
+    let main_ini = data.join(r"php\8.4\php.ini");
+    let old_ini = data.join(r"php\5.6\php.ini");
+    assert_eq!(
+        fs::read_to_string(&main_ini).unwrap(),
+        "memory_limit = 1G\r\n"
+    );
+    assert!(!legacy.exists());
+    assert_eq!(
+        fs::read_to_string(&old_ini).unwrap(),
+        "extension=php_curl.dll\r\n"
+    );
+
+    // Then they are the user's: never written again.
+    fs::write(&old_ini, "mine").unwrap();
+    migrate_php_ini(&kit).unwrap();
+    ensure_php_ini(&data, &old).unwrap();
+    assert_eq!(fs::read_to_string(&old_ini).unwrap(), "mine");
+    assert_eq!(
+        fs::read_to_string(&main_ini).unwrap(),
+        "memory_limit = 1G\r\n"
+    );
+
+    // The environment points at the php.ini of the PHP it names.
+    let mut env = crate::env::KitEnv::default();
+    env.set_php(&data, &old);
+    assert_eq!(
+        env.get("PHPRC"),
+        Some(data.join(r"php\5.6").to_str().unwrap())
+    );
+    assert_eq!(
+        env.get("CP_PHPRC_FWD").unwrap(),
+        data.join(r"php\5.6").to_str().unwrap().replace('\\', "/")
+    );
+}
+
+/// Apache loads the php.ini of the PHP in use, also in an older kit.conf.
+#[test]
+fn apache_php_ini_follows_the_line() {
+    let blocks = crate::projects::apache::php_module_blocks("CP_PHP_FWD").join("\n");
+    assert!(blocks.contains("PHPIniDir \"${CP_PHPRC_FWD}\""));
+    assert!(!blocks.contains("/data/php\""));
+    assert_eq!(
+        crate::projects::apache::migrate_kit_conf("    PHPIniDir \"${CP_ROOT_FWD}/data/php\"\r\n")
+            .lines()
+            .next(),
+        Some("    PHPIniDir \"${CP_PHPRC_FWD}\"")
+    );
+}
+
 #[test]
 fn php_branch_and_build() {
     let releases = json!({
