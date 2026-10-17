@@ -128,9 +128,9 @@ pub fn url_open<R: Runtime>(webview: Webview<R>, url: String) -> CmdResult<()> {
     open_in_browser(&url)
 }
 
-/// The PC's browser, through Explorer.
+/// The PC's browser.
 pub(super) fn open_in_browser(url: &str) -> CmdResult<()> {
-    crate::os::jobs::open_with_explorer(url).or_fail_chain("browser")
+    crate::os::jobs::open_url(url).or_fail_chain("browser")
 }
 
 /// `http://localhost:<port>/…` or `http://127.0.0.1:<port>/…` only.

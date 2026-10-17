@@ -227,6 +227,11 @@ pub fn open_with_explorer(target: impl AsRef<OsStr>) -> Result<()> {
     spawn_detached(Command::new(opener).arg(target), 0).map(|_| ())
 }
 
+#[cfg(unix)]
+pub fn open_url(url: &str) -> Result<()> {
+    open_with_explorer(url)
+}
+
 #[cfg(windows)]
 pub struct Job {
     handle: HANDLE,
@@ -577,12 +582,25 @@ pub fn system_root() -> PathBuf {
     PathBuf::from(std::env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into()))
 }
 
-/// Opens a web address in the PC's browser, or a folder in File Explorer,
-/// through Explorer and outside the job: both stay open after the app.
+/// Opens a folder in File Explorer, outside the job: it stays open after
+/// the app. Web addresses go through `open_url`.
 #[cfg(windows)]
 pub fn open_with_explorer(target: impl AsRef<OsStr>) -> Result<()> {
     spawn_detached(
         Command::new(system_root().join("explorer.exe")).arg(target),
+        0,
+    )
+    .map(|_| ())
+}
+
+/// Opens a web address in the PC's browser, outside the job. Not through
+/// `explorer.exe`: Windows 11 drops an address with a query (`?atollo=…`)
+/// without opening the browser.
+#[cfg(windows)]
+pub fn open_url(url: &str) -> Result<()> {
+    spawn_detached(
+        Command::new(system_root().join(r"System32\rundll32.exe"))
+            .args(["url.dll,FileProtocolHandler", url]),
         0,
     )
     .map(|_| ())

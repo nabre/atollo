@@ -17,8 +17,6 @@
 //!   new window: refused here and done on this window, still without IPC.
 
 use std::path::Path;
-#[cfg(windows)]
-use std::process::Command;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use anyhow::{Context, Result};
@@ -541,17 +539,7 @@ pub fn open_in_browser(url: &Url) -> Result<()> {
     if classify_external(url) != Leave::Browser {
         anyhow::bail!("blocked link scheme: {}", url.scheme());
     }
-    #[cfg(not(windows))]
-    return jobs::open_with_explorer(url.as_str());
-    #[cfg(windows)]
-    {
-        let rundll = jobs::system_root().join(r"System32\rundll32.exe");
-        jobs::spawn_detached(
-            Command::new(rundll).args(["url.dll,FileProtocolHandler", url.as_str()]),
-            0,
-        )
-        .map(|_| ())
-    }
+    jobs::open_url(url.as_str())
 }
 
 /// An editor window on the project in `folder`, which it cannot leave.
