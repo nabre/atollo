@@ -43,6 +43,7 @@ export function TerminalPanel({
     );
   };
   const ask = (s: PtyInfo) => {
+    setError(null);
     if (s.running) setAsking(s);
     else doClose(s.id);
   };
@@ -80,9 +81,20 @@ export function TerminalPanel({
           </>
         }
       >
-        {sessions.map((s) => (
-          <TerminalView key={s.id} session={s} backend={backend} active={s.id === current?.id} />
-        ))}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {/* A tab whose program ended closes without the dialog: its
+              error shows here. */}
+          {!asking && error && (
+            <div className="shrink-0 px-2 pt-1">
+              <ErrorLine error={error} />
+            </div>
+          )}
+          <div className="flex min-h-0 flex-1">
+            {sessions.map((s) => (
+              <TerminalView key={s.id} session={s} backend={backend} active={s.id === current?.id} />
+            ))}
+          </div>
+        </div>
       </Panel>
       {asking && (
         <ConfirmDialog

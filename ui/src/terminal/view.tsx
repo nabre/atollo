@@ -127,6 +127,9 @@ export function TerminalView({
     const typed = x.onData((data) => {
       backend.write(id, data).catch(() => undefined);
     });
+    const binary = x.onBinary((data) => {
+      backend.writeBinary(id, data).catch(() => undefined);
+    });
     let size = "";
     const resize = () => {
       // Hidden tabs have no size: measured again when shown.
@@ -151,6 +154,7 @@ export function TerminalView({
       gone = true;
       stop?.();
       typed.dispose();
+      binary.dispose();
       observer?.disconnect();
       scheme?.removeEventListener("change", retheme);
       x.dispose();
