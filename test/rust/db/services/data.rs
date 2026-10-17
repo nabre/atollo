@@ -21,6 +21,7 @@ fn fake_server(kit: &Kit, id: &str, version: &str) {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "Windows layout: .exe keys and backslash paths")]
 fn each_version_has_its_data() {
     let tmp = TempDir::new("services-lines");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -89,6 +90,7 @@ fn each_version_has_its_data() {
 
 /// The data of a running version is never copied (PLAN.md §13.2).
 #[test]
+#[cfg_attr(not(windows), ignore = "data folders created with backslash paths")]
 fn no_copy_of_a_running_version() {
     let tmp = TempDir::new("services-seed-running");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -111,6 +113,7 @@ fn no_copy_of_a_running_version() {
 /// its first start; each with its data, program and log; the project's
 /// database on the version chosen for it, at that version's port.
 #[test]
+#[cfg_attr(not(windows), ignore = "Windows layout: .exe keys and backslash paths")]
 fn versions_side_by_side() {
     let tmp = TempDir::new("services-side");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -211,6 +214,7 @@ fn versions_side_by_side() {
 /// versions the projects' databases are on: not the server's own, not one
 /// chosen without a database, not one uninstalled.
 #[test]
+#[cfg_attr(not(windows), ignore = "Windows layout: .exe keys and backslash paths")]
 fn autostart_lines_follow_the_projects() {
     use crate::db::auth;
     let tmp = TempDir::new("services-autostart");

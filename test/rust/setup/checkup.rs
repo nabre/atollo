@@ -31,6 +31,7 @@ fn php_header_version() {
 
 /// `@` in the check program is the kit root, as in the key.
 #[test]
+#[cfg_attr(not(windows), ignore = "runs a batch file (@echo) as pnpm")]
 fn check_program_at_the_kit_root() {
     let tmp = TempDir::new("checkup-root");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -47,6 +48,7 @@ fn check_program_at_the_kit_root() {
 
 /// Half installed: in the check, failed, with the missing part.
 #[test]
+#[cfg_attr(not(windows), ignore = "expects the Windows part ninja.exe")]
 fn half_installed_fails_the_check() {
     let tmp = TempDir::new("checkup-half");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

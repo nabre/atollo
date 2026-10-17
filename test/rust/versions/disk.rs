@@ -4,6 +4,7 @@ use crate::versions::tests::install_fake;
 use crate::versions::{dir_name, VERSION_FILE};
 
 #[test]
+#[cfg_attr(not(windows), ignore = "install_fake writes the Windows layout")]
 fn deleted_by_hand_is_no_longer_chosen() {
     let tmp = TempDir::new("versions-sync");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -35,6 +36,7 @@ fn deleted_by_hand_is_no_longer_chosen() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "Windows layout: .exe keys and backslash paths")]
 fn folders_of_an_older_kit_move() {
     let tmp = TempDir::new("versions-migrate");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -111,6 +113,7 @@ fn folders_of_an_older_kit_move() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "install_fake writes the Windows layout")]
 fn apache_folders_take_their_line() {
     let tmp = TempDir::new("versions-patch");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -137,6 +140,7 @@ fn apache_folders_take_their_line() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "install_fake writes the Windows layout")]
 fn tools_keep_only_their_new_line() {
     let tmp = TempDir::new("versions-minor");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -169,6 +173,10 @@ fn tools_keep_only_their_new_line() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "Windows layout: .exe programs and backslash paths"
+)]
 fn github_cli_and_uv_leave_tools() {
     let tmp = TempDir::new("versions-tools");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -196,6 +204,7 @@ fn github_cli_and_uv_leave_tools() {
 /// Windows Terminal is no longer in the catalog (D-95): what an older kit
 /// kept of it goes at start, nothing else.
 #[test]
+#[cfg_attr(not(windows), ignore = "folders created with backslash paths")]
 fn retired_windows_terminal_goes() {
     let tmp = TempDir::new("versions-retired");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

@@ -24,6 +24,7 @@ use crate::projects::nginx::FastCgi;
 use crate::setup::catalog::Catalog;
 
 #[test]
+#[cfg_attr(not(windows), ignore = "project folders created with backslash paths")]
 fn profile_crud_and_vhost_generation() {
     let tmp = TempDir::new("servers-pool");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -95,6 +96,7 @@ fn profile_crud_and_vhost_generation() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "document roots created with backslash paths")]
 fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
     let tmp = TempDir::new("servers-nginx-pool");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -205,6 +207,10 @@ fn site(project: &str, folder: &str, port: u16) -> AttachedSite {
 /// N-S1: a site whose document root is missing or a junction is not served
 /// at all (never the project root in its place, with `.env` and `.git`).
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "backslash paths and a junction made with mklink /J"
+)]
 fn pool_skips_site_with_missing_or_linked_docroot() {
     let tmp = TempDir::new("servers-docroot");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -290,6 +296,7 @@ fn concurrent_list_and_save_profile_keep_profile() {
 /// M1: removing a profile waits for a start/stop under way (`op_lock`),
 /// then stops its pool and drops it from `servers.json` in one go.
 #[test]
+#[cfg_attr(not(windows), ignore = "runs ping.exe from System32")]
 fn remove_profile_stops_and_forgets_under_op_lock() {
     let tmp = TempDir::new("servers-remove-op");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -626,6 +633,10 @@ fn fake_server(kit: &Kit, id: &str, version: &str) {
 /// BUG-05r: with Nginx and PHP installed but no project, the default pool
 /// starts no php-cgi; nor does a manual profile without a chosen PHP.
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "fake_server writes the Windows layout with backslashes"
+)]
 fn default_nginx_pool_has_no_php_without_php_projects() {
     let tmp = TempDir::new("servers-default-php");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -671,6 +682,7 @@ fn system32(exe: &str) -> String {
 /// BUG-05r: a pool whose php-cgi ended is taken out of the running ones
 /// (and its server ended), never left "running" answering 502.
 #[test]
+#[cfg_attr(not(windows), ignore = "runs ping.exe and cmd.exe from System32")]
 fn pool_with_dead_php_cgi_is_not_running() {
     let job = Job::new().unwrap();
     let server = jobs::spawn_in(
@@ -846,6 +858,7 @@ fn reload_restarts_when_php_or_port_changes() {
 /// BUG-V3-02: two web actions of one project in the same pool are two
 /// VirtualHosts with their own ServerName and file; a stale file goes.
 #[test]
+#[cfg_attr(not(windows), ignore = "vhosts folder given with backslashes")]
 fn two_actions_of_one_project_get_distinct_vhosts() {
     let tmp = TempDir::new("servers-two-actions");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1007,6 +1020,10 @@ fn ports_are_unique_among_pools() {
 /// Defect 4: a pool whose server or PHP line is not installed does not
 /// start (never the default line in its place), with an error naming it.
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "fake_server writes the Windows layout with backslashes"
+)]
 fn start_refuses_a_line_not_installed() {
     let tmp = TempDir::new("servers-missing-line");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1071,6 +1088,7 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
 /// profile's nor an automatic one) stays on the page, marked, until
 /// stopped; it serves no new run and is not reloaded.
 #[test]
+#[cfg_attr(not(windows), ignore = "runs ping.exe from System32")]
 fn orphan_running_pool_is_listed_until_stopped() {
     let tmp = TempDir::new("servers-orphan");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1099,6 +1117,7 @@ fn orphan_running_pool_is_listed_until_stopped() {
 /// Defect 8: assigning a project reloads only the running pool that
 /// serves it (never the others) and reports its failure.
 #[test]
+#[cfg_attr(not(windows), ignore = "runs ping.exe from System32")]
 fn assign_project_reloads_only_its_pool_and_reports_errors() {
     let tmp = TempDir::new("servers-assign-reload");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1149,6 +1168,7 @@ fn assign_project_reloads_only_its_pool_and_reports_errors() {
 /// Defect 9: php-cgi is waited for on its FastCGI port; one that ends at
 /// once (its port taken in the meantime) is reported, to try another port.
 #[test]
+#[cfg_attr(not(windows), ignore = "runs ping.exe and cmd.exe from System32")]
 fn php_cgi_listening_tells_ended_from_ready() {
     let job = Job::new().unwrap();
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
@@ -1226,6 +1246,7 @@ fn profile_options_default_and_round_trip() {
 /// PLAN.md §13.1: a stopped project's site leaves the pool's files; an
 /// automatic pool started by projects stops with the last of them.
 #[test]
+#[cfg_attr(not(windows), ignore = "backslash paths and ping.exe from System32")]
 fn detach_leaves_the_pool_and_stops_an_empty_automatic_one() {
     let tmp = TempDir::new("servers-detach");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1404,6 +1425,10 @@ fn name_sites_keeps_names_unique() {
 /// projects chose in `panel.json` and those started, not every PHP project
 /// that was only offered Apache.
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "fake_server and project files with backslash paths"
+)]
 fn automatic_pools_list_chosen_or_started_sites() {
     let tmp = TempDir::new("servers-chosen-sites");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1642,6 +1667,7 @@ fn ports_move_to_the_new_automatic_ids() {
 /// of the list (not an orphan), rebuilt from its id; a site naming an
 /// automatic pool in `panel.json` (old id too) goes to the lines it names.
 #[test]
+#[cfg_attr(not(windows), ignore = "fake_server layout and ping.exe from System32")]
 fn automatic_pools_come_back_from_their_ids() {
     let tmp = TempDir::new("servers-stable-ids");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

@@ -55,6 +55,7 @@ fn settings_round_trip_and_defaults() {
 /// on (`used`), then the one it is on now, each once; a `db.json` of before
 /// has only the one it is on.
 #[test]
+#[cfg_attr(not(windows), ignore = "db.json path given with backslashes")]
 fn drop_lines_cover_every_version_used() {
     let tmp = TempDir::new("services-drop-lines");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

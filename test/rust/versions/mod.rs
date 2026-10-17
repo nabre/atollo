@@ -20,6 +20,10 @@ fn lines() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "install_fake writes the Windows layout; backslash paths"
+)]
 fn tools_have_a_folder_per_line() {
     let lined: Vec<&str> = lined().map(|c| c.id.as_str()).collect();
     for id in [

@@ -15,6 +15,7 @@ pub(crate) fn junction(link: &Path, target: &Path) {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "junctions made with mklink /J")]
 fn links_are_never_followed() {
     let tmp = TempDir::new("safe-path");
     let root = tmp.0.join("p");

@@ -2,6 +2,7 @@ use super::*;
 use crate::kit::{tests::TempDir, Arch};
 
 #[test]
+#[cfg_attr(not(windows), ignore = "expected paths given with backslashes")]
 fn one_folder_per_project() {
     let tmp = TempDir::new("project-state");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -42,6 +43,7 @@ fn one_folder_per_project() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "files created with backslash paths")]
 fn orphans_by_files_and_adopted() {
     let tmp = TempDir::new("project-orphans");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -142,6 +144,10 @@ fn orphans_by_files_and_adopted() {
 /// the orphan's) is refused before anything is read or moved; so is an
 /// orphan whose `db.json` cannot be read.
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "backslash paths and junctions made with mklink /J"
+)]
 fn adopt_refuses_links_and_unreadable_passwords() {
     use crate::os::safe_path::tests::junction;
     let tmp = TempDir::new("project-adopt-links");

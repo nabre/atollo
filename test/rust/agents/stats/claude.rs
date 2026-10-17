@@ -44,6 +44,7 @@ fn plan_windows_and_credits() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "project folders created with backslash paths")]
 fn sessions_and_tokens() {
     let tmp = TempDir::new("stats-claude");
     let dir = tmp.0.join(".claude");

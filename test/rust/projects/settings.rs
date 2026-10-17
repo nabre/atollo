@@ -2,6 +2,7 @@ use super::*;
 use crate::kit::{tests::TempDir, Arch};
 
 #[test]
+#[cfg_attr(not(windows), ignore = "settings path given with backslashes")]
 fn saved_in_data_and_kept() {
     let tmp = TempDir::new("project-settings");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
