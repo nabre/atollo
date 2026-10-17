@@ -76,27 +76,19 @@ jobs:
   # MockRuntime without `transparent`), so every job runs the whole suite.
   test-unix:
     name: Test ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
+    # The runner comes from the target, so `target` is the only matrix key.
+    # macos-13 is retired; macos-15-intel is the last x64 macOS image.
+    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-latest","linux-arm64":"ubuntu-24.04-arm","darwin-arm64":"macos-latest","darwin-x64":"macos-15-intel"}')[matrix.target] }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        target: [linux-x64, linux-arm64, darwin-arm64, darwin-x64]
-        include:
-          - target: linux-x64
-            os: ubuntu-latest
-          - target: linux-arm64
-            os: ubuntu-24.04-arm
-          - target: darwin-arm64
-            os: macos-latest
-          # macos-13 is retired; macos-15-intel is the last x64 macOS image.
-          - target: darwin-x64
-            os: macos-15-intel
         # A repository without ARM64 runners (a private one may have none)
-        # sets the variable ARM64_RUNNERS to off: the job is left out
-        # instead of waiting for a runner that never comes.
-        exclude:
-          - target: ${{ vars.ARM64_RUNNERS == 'off' && 'linux-arm64' || 'none' }}
+        # sets the variable ARM64_RUNNERS to off: linux-arm64 is left out of
+        # the list instead of waiting for a runner that never comes. Not an
+        # exclude plus include: GitHub applies include after exclude and
+        # would add the excluded target back as a new combination.
+        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64","darwin-x64"]' || '["linux-x64","linux-arm64","darwin-arm64","darwin-x64"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -162,7 +154,18 @@ jobs:
           node-version: lts/*
           cache: npm
           cache-dependency-path: package-lock.json
-      - uses: dtolnay/rust-toolchain@stable
+      # The native toolchain by name: an x64 rustup (preinstalled, or
+      # rustup-init run under emulation) would otherwise pick an x64 host
+      # and test an emulated build.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable-aarch64-pc-windows-msvc
+      # No silent fallback to emulation: the job fails unless rustc is native.
+      - name: Native aarch64 toolchain
+        shell: bash
+        run: |
+          rustc -vV
+          rustc -vV | tr -d '\r' | grep -qx 'host: aarch64-pc-windows-msvc' || { echo "rustc is not aarch64-pc-windows-msvc: the tests would run under emulation" >&2; exit 1; }
       - uses: Swatinem/rust-cache@v2
       - name: Frontend dependencies
         run: npm ci --no-fund --no-audit
