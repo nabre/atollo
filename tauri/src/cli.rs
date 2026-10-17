@@ -5,9 +5,11 @@
 //! (`── N. Name ──`, `√`, `x`, `!`, `·`), so they read the same.
 
 use std::ffi::OsString;
+#[cfg(windows)]
 use std::fs::OpenOptions;
 use std::io::{self, Write};
 
+#[cfg(windows)]
 use windows::Win32::System::Console::{
     AttachConsole, GetStdHandle, ATTACH_PARENT_PROCESS, STD_OUTPUT_HANDLE,
 };
@@ -161,7 +163,14 @@ pub fn parse(args: &[OsString]) -> Cli {
     }
 }
 
+/// Where command output goes: a Unix program always has its standard output.
+#[cfg(not(windows))]
+pub fn output() -> Box<dyn Write> {
+    Box::new(io::stdout())
+}
+
 /// Where command output goes.
+#[cfg(windows)]
 pub fn output() -> Box<dyn Write> {
     // SAFETY: plain handle query.
     let redirected =

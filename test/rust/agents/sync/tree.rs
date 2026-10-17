@@ -30,6 +30,7 @@ fn folders_both_ways_conflicts_and_deletions() {
     assert!(!a.join("two").exists());
 }
 
+#[cfg(windows)]
 #[test]
 fn junction_inside_is_never_written_through() {
     let (t, _kit, p) = kit("tree-confined");

@@ -17,13 +17,16 @@
 //!   new window: refused here and done on this window, still without IPC.
 
 use std::path::Path;
+#[cfg(windows)]
 use std::process::Command;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use anyhow::{Context, Result};
 use tauri::webview::NewWindowResponse;
 use tauri::{AppHandle, Manager, Runtime, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+#[cfg(windows)]
 use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+#[cfg(windows)]
 use windows::core::Interface;
 
 use crate::os::jobs;
@@ -538,12 +541,17 @@ pub fn open_in_browser(url: &Url) -> Result<()> {
     if classify_external(url) != Leave::Browser {
         anyhow::bail!("blocked link scheme: {}", url.scheme());
     }
-    let rundll = jobs::system_root().join(r"System32\rundll32.exe");
-    jobs::spawn_detached(
-        Command::new(rundll).args(["url.dll,FileProtocolHandler", url.as_str()]),
-        0,
-    )
-    .map(|_| ())
+    #[cfg(not(windows))]
+    return jobs::open_with_explorer(url.as_str());
+    #[cfg(windows)]
+    {
+        let rundll = jobs::system_root().join(r"System32\rundll32.exe");
+        jobs::spawn_detached(
+            Command::new(rundll).args(["url.dll,FileProtocolHandler", url.as_str()]),
+            0,
+        )
+        .map(|_| ())
+    }
 }
 
 /// An editor window on the project in `folder`, which it cannot leave.
@@ -639,8 +647,13 @@ pub fn open<R: Runtime>(
     Ok(())
 }
 
+/// WebView2 settings: nothing to change in WKWebView or WebKitGTK.
+#[cfg(not(windows))]
+pub fn quiet_webview<R: Runtime>(_window: &WebviewWindow<R>, _what: &'static str) {}
+
 /// Browser accelerator keys, context menu and status bar off, so Ctrl+W,
 /// Ctrl+N, Ctrl+F, F5... reach the page. `what` names the window in the log.
+#[cfg(windows)]
 pub fn quiet_webview<R: Runtime>(window: &WebviewWindow<R>, what: &'static str) {
     let applied = window.with_webview(move |webview| {
         let result = (|| -> windows::core::Result<()> {

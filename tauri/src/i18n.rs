@@ -36,7 +36,29 @@ pub fn resolve(
     LANGS.into_iter().find(|l| *l == two).unwrap_or("en")
 }
 
+/// The user's locale on macOS and Linux, from `LC_ALL`, `LC_MESSAGES` or
+/// `LANG` (`it_IT.UTF-8` gives `it-IT`); `C` and `POSIX` are none.
+#[cfg(not(windows))]
+pub fn windows_locale() -> Option<String> {
+    ["LC_ALL", "LC_MESSAGES", "LANG"]
+        .iter()
+        .filter_map(|v| std::env::var(v).ok())
+        .find(|v| !v.is_empty())
+        .and_then(|v| posix_locale(&v))
+}
+
+/// `it_IT.UTF-8@euro` → `it-IT`; `C` and `POSIX` → None.
+#[cfg(any(not(windows), test))]
+fn posix_locale(value: &str) -> Option<String> {
+    let name = value.split(['.', '@']).next().unwrap_or_default();
+    if name.is_empty() || name == "C" || name == "POSIX" {
+        return None;
+    }
+    Some(name.replace('_', "-"))
+}
+
 /// The user's default locale name from Windows, e.g. `it-IT`.
+#[cfg(windows)]
 pub fn windows_locale() -> Option<String> {
     use windows::Win32::Globalization::GetUserDefaultLocaleName;
     let mut buf = [0u16; 85];

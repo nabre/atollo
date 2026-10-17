@@ -13,11 +13,13 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use anyhow::Result;
 use tauri::{AppHandle, Manager, Runtime};
+#[cfg(windows)]
 use windows::Win32::System::Console::SetConsoleCtrlHandler;
 
 use super::cfg::pwsh_args;
 use crate::env::KitEnv;
 use crate::kit::Kit;
+#[cfg(windows)]
 use crate::os::jobs;
 
 /// The consoles open now: process ids of their `conhost.exe`.
@@ -60,6 +62,7 @@ fn is_batch(path: &Path) -> bool {
 }
 
 /// The console host and its arguments: `program` and its own.
+#[cfg_attr(not(windows), allow(dead_code))]
 struct Line {
     conhost: PathBuf,
     args: Vec<String>,
@@ -104,6 +107,7 @@ fn conhost(env: &KitEnv) -> PathBuf {
 }
 
 /// Counts `console` until it closes; then `on_exit` runs.
+#[cfg(windows)]
 fn track(consoles: &Consoles, console: jobs::Console, on_exit: Box<dyn FnOnce() + Send>) {
     let pid = console.id();
     consoles.lock().insert(pid);
@@ -115,8 +119,22 @@ fn track(consoles: &Consoles, console: jobs::Console, on_exit: Box<dyn FnOnce() 
     });
 }
 
+/// The console host is Windows' own: no console outside the editor on
+/// macOS and Linux (the editor's terminal works there).
+#[cfg(not(windows))]
+fn start(
+    _consoles: &Consoles,
+    _env: &KitEnv,
+    _dir: &Path,
+    _line: &Line,
+    _on_exit: Box<dyn FnOnce() + Send>,
+) -> Result<()> {
+    anyhow::bail!("consoles outside the editor are not available on this system")
+}
+
 /// Starts the console `line` in `dir`, in the job, and counts it until it
 /// closes; then `on_exit` runs.
+#[cfg(windows)]
 fn start(
     consoles: &Consoles,
     env: &KitEnv,
@@ -171,6 +189,6 @@ pub fn open_console<R: Runtime>(
     open(app, kit, env, dir, None, Box::new(|| {}))
 }
 
-#[cfg(test)]
+#[cfg(all(test, windows))]
 #[path = "../../../test/rust/editor/terminal.rs"]
 mod tests;

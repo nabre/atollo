@@ -23,6 +23,7 @@ fn tokens_are_random_hex() {
 }
 
 /// Processes whose program lives under `dir`.
+#[cfg(windows)]
 fn processes_under(dir: &Path) -> Vec<u32> {
     use windows::Win32::System::Diagnostics::ToolHelp::{
         CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
@@ -69,6 +70,7 @@ fn processes_under(dir: &Path) -> Vec<u32> {
 
 /// The real server (prompt, "editor.rs" test): needs a kit with the
 /// editor installed, given by ATOLLO_TEST_KIT (CI runs it after prepare).
+#[cfg(windows)]
 #[test]
 fn real_server_token_redirect_and_stop() {
     let Ok(root) = std::env::var("ATOLLO_TEST_KIT") else {
