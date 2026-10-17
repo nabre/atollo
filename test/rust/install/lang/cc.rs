@@ -127,6 +127,43 @@ fn shims_translate_target_triples() {
     }
 }
 
+/// Without Zig on the PATH the shims take the kit's newest line, compared
+/// as numbers (0.14 after 0.9, not the last in glob order), skip folders
+/// that are not lines, and fall back to a Zig of the older layout.
+#[test]
+#[cfg_attr(windows, ignore = "runs the shims with /bin/sh")]
+fn shims_take_the_newest_kit_zig() {
+    use crate::kit::tests::TempDir;
+
+    let tmp = TempDir::new("cc-shims-newest");
+    let apps = tmp.0.join("apps");
+    let bin = apps.join("cc").join("bin");
+    write_zig_shims(&bin).unwrap();
+    let zig_at = |dir: &Path, name: &str| {
+        fs::create_dir_all(dir).unwrap();
+        let zig = dir.join("zig");
+        fs::write(&zig, format!("#!/bin/sh\necho {name}\n")).unwrap();
+        crate::router::fs::set_executable(&zig).unwrap();
+    };
+    let run = || -> String {
+        let out = std::process::Command::new(bin.join("cc"))
+            .env("PATH", "/nonexistent")
+            .output()
+            .unwrap();
+        assert!(out.status.success());
+        String::from_utf8_lossy(&out.stdout).trim().to_owned()
+    };
+    let zig = apps.join("zig");
+    zig_at(&zig, "old-layout");
+    assert_eq!(run(), "old-layout");
+    for line in ["0.9", "0.14", "0.13", "next"] {
+        zig_at(&zig.join(line), line);
+    }
+    assert_eq!(run(), "0.14");
+    zig_at(&zig.join("1.0"), "1.0");
+    assert_eq!(run(), "1.0");
+}
+
 /// Xcode Command Line Tools are mentioned on macOS only, and only when
 /// `xcode-select -p` printed no folder.
 #[test]

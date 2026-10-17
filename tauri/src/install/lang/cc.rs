@@ -161,13 +161,33 @@ const TOOL_SHIM: &str = r#"#!/bin/sh
 @ZIG@exec zig @CMD@ "$@"
 "#;
 
-/// The lines of the shims that find Zig: the PATH's, else one of the kit's
-/// (`data/apps/<target>/zig/<line>/zig`, two folders above `cc/bin`), else
-/// a clear error. `${0%/*}` rather than `dirname`: it works with any PATH.
+/// The lines of the shims that find Zig: the PATH's, else the kit's newest
+/// line (`data/apps/<target>/zig/<line>/zig`, two folders above `cc/bin`;
+/// the line the kit uses, versions/choice.rs `kit_choice`), compared as
+/// numbers (0.14 after 0.9), else a Zig of an older layout (`zig/zig`),
+/// else a clear error. Shell built-ins only, so it works with any PATH:
+/// `${0%/*}` rather than `dirname`, no `sort`.
 const FIND_ZIG: &str = r#"if ! command -v zig >/dev/null 2>&1; then
-  for z in "${0%/*}"/../../zig/*/zig "${0%/*}"/../../zig/zig; do
-    [ -x "$z" ] && PATH="${z%/*}:$PATH"
+  d=${0%/*}/../../zig
+  best=
+  bm=-1
+  bn=-1
+  for z in "$d"/*/zig; do
+    [ -x "$z" ] || continue
+    l=${z%/zig}
+    l=${l##*/}
+    m=${l%%.*}
+    n=${l#*.}
+    n=${n%%.*}
+    case $m.$n in *[!0-9.]* | .* | *.) continue ;; esac
+    if [ "$m" -gt "$bm" ] || { [ "$m" -eq "$bm" ] && [ "$n" -gt "$bn" ]; }; then
+      best=${z%/zig}
+      bm=$m
+      bn=$n
+    fi
   done
+  [ -z "$best" ] && [ -x "$d/zig" ] && best=$d
+  [ -n "$best" ] && PATH="$best:$PATH"
   command -v zig >/dev/null 2>&1 || { echo "Atollo: @CMD@ needs Zig, install it from Tools" >&2; exit 127; }
 fi
 "#;
@@ -317,10 +337,16 @@ impl Installer for Cc {
         }
         write_zig_shims(&folder.join("bin"))?;
         if !crate::setup::catalog::kit_path(ctx.kit, "zig/zig.exe").is_file() {
-            progress.note("Zig is not installed: cc, c++, ar and ranlib need it");
+            progress.note(
+                "Zig is not installed: cc, c++, ar and ranlib need it, and stay off the PATH until it is",
+            );
         }
-        if let Some(note) = xcode_note(target, xcode_selected().as_deref()) {
-            progress.note(note);
+        // Only a Mac can say: a darwin kit prepared on another system would
+        // always hear that the tools are missing.
+        if cfg!(target_os = "macos") {
+            if let Some(note) = xcode_note(target, xcode_selected().as_deref()) {
+                progress.note(note);
+            }
         }
         Ok(())
     }
