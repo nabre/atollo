@@ -62,19 +62,19 @@ fn other_kit_roots_on_every_system() {
         None
     );
     // The app itself, with and without .exe, only next to `data/app`.
-    let exe = Path::new("/media/u/kit/Dev-Kit");
+    let exe = Path::new("/media/u/kit/Atollo");
     assert_eq!(
-        kit_root_of(exe, "Dev-Kit", yes),
+        kit_root_of(exe, "Atollo", yes),
         Some(PathBuf::from("/media/u/kit"))
     );
-    assert_eq!(kit_root_of(exe, "Dev-Kit", no), None);
+    assert_eq!(kit_root_of(exe, "Atollo", no), None);
     #[cfg(windows)]
     assert_eq!(
-        kit_root_of(Path::new(r"E:\kit\Dev-Kit.exe"), "DEV-KIT.EXE", yes),
+        kit_root_of(Path::new(r"E:\kit\Atollo.exe"), "ATOLLO.EXE", yes),
         Some(PathBuf::from(r"E:\kit"))
     );
     assert_eq!(
-        kit_root_of(Path::new("/usr/bin/devkit"), "devkit", yes),
+        kit_root_of(Path::new("/usr/bin/atollo"), "atollo", yes),
         None
     );
 }

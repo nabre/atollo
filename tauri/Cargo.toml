@@ -1,7 +1,7 @@
 [package]
-name = "dev-kit"
+name = "atollo"
 version = "0.2.0"
-description = "Dev-Kit: portable development environment with integrated editor and AI agents"
+description = "Atollo — Universal Portable Dev & AI Workspace"
 authors = ["nabre"]
 license = "MIT"
 edition = "2021"
@@ -9,7 +9,7 @@ rust-version = "1.93"
 publish = false
 
 [[bin]]
-name = "Dev-Kit"
+name = "Atollo"
 path = "src/main.rs"
 
 [build-dependencies]

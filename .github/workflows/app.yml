@@ -113,11 +113,64 @@ jobs:
       - name: No elevation in the manifest
         shell: pwsh
         run: |
-          $exe = "target/${{ matrix.target }}/release/Dev-Kit.exe"
+          $exe = "target/${{ matrix.target }}/release/Atollo.exe"
           $text = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($exe))
           if ($text -notmatch 'requestedExecutionLevel level="asInvoker"') { throw "asInvoker missing" }
           if ($text -match 'requireAdministrator|highestAvailable') { throw "elevation requested" }
-      - name: Sign the exe (optional)
+      - name: PE VersionInfo metadata
+        shell: pwsh
+        run: |
+          $exe = "target/${{ matrix.target }}/release/Atollo.exe"
+          $vi = (Get-Item $exe).VersionInfo
+          $vi | Format-List ProductName, FileDescription, CompanyName, OriginalFilename, InternalName, FileVersion, ProductVersion
+          if ($vi.ProductName -ne 'Atollo') { throw "unexpected ProductName: '$($vi.ProductName)'" }
+          if ($vi.FileDescription -ne 'Atollo — Universal Portable Dev & AI Workspace') { throw "unexpected FileDescription: '$($vi.FileDescription)'" }
+          if ($vi.CompanyName -ne 'nabre') { throw "unexpected CompanyName: '$($vi.CompanyName)'" }
+          if ($vi.OriginalFilename -ne 'Atollo.exe') { throw "unexpected OriginalFilename: '$($vi.OriginalFilename)'" }
+          if (-not $vi.FileVersion) { throw "FileVersion missing" }
+      - name: Check signing configuration
+        id: sign-config
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+        run: |
+          $signpath = [bool]($env:SIGNPATH_API_TOKEN -and $env:SIGNPATH_ORGANIZATION_ID -and $env:SIGNPATH_PROJECT_SLUG -and $env:SIGNPATH_SIGNING_POLICY_SLUG)
+          "signpath=$($signpath.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+      - name: Upload unsigned artifact for SignPath
+        id: upload-unsigned
+        if: steps.sign-config.outputs.signpath == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-Atollo-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/Atollo.exe
+          if-no-files-found: error
+      - name: Submit signing request to SignPath
+        if: steps.sign-config.outputs.signpath == 'true'
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: target/${{ matrix.target }}/signed
+      - name: Replace exe with SignPath signed artifact
+        if: steps.sign-config.outputs.signpath == 'true'
+        shell: pwsh
+        run: |
+          $signed = "target/${{ matrix.target }}/signed/Atollo.exe"
+          $dest = "target/${{ matrix.target }}/release/Atollo.exe"
+          if (-not (Test-Path $signed)) { throw "Signed binary not found at $signed" }
+          Copy-Item $signed $dest -Force
+          $sig = Get-AuthenticodeSignature $dest
+          if ($sig.Status -ne 'Valid') { throw "Authenticode signature invalid: $($sig.Status) ($($sig.StatusMessage))" }
+      - name: Sign the exe with local PFX (optional fallback)
+        if: steps.sign-config.outputs.signpath != 'true'
         shell: pwsh
         env:
           # Base64 of a code-signing .pfx and its password; without them
@@ -131,7 +184,7 @@ jobs:
           try {
             $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1
             if (-not $signtool) { throw "signtool.exe not found" }
-            & $signtool.FullName sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f $pfx /p $env:SIGN_PASSWORD "target/${{ matrix.target }}/release/Dev-Kit.exe"
+            & $signtool.FullName sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f $pfx /p $env:SIGN_PASSWORD "target/${{ matrix.target }}/release/Atollo.exe"
             if ($LASTEXITCODE -ne 0) { throw "signing failed ($LASTEXITCODE)" }
           } finally {
             Remove-Item $pfx -Force
@@ -142,10 +195,10 @@ jobs:
         run: |
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
           New-Item -ItemType Directory -Force $kit | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/Dev-Kit.exe" $kit
-          # Dev-Kit.exe is a window program: without a pipe PowerShell neither
+          Copy-Item "target/${{ matrix.target }}/release/Atollo.exe" $kit
+          # Atollo.exe is a window program: without a pipe PowerShell neither
           # waits for it nor reads its output.
-          $env_out = & "$kit/Dev-Kit.exe" env | Write-Output
+          $env_out = & "$kit/Atollo.exe" env | Write-Output
           if ($LASTEXITCODE -ne 0) {
             Get-ChildItem "$kit/data/app/logs" -File -ErrorAction SilentlyContinue | Get-Content
             throw "env failed ($LASTEXITCODE)"
@@ -155,7 +208,7 @@ jobs:
             if (-not ($entry.StartsWith("$kit\data") -or $entry -like "$env:SystemRoot\System32*")) { throw "foreign PATH entry: $entry" }
           }
           $names = (Get-ChildItem $kit -Force).Name | Sort-Object
-          if (($names -join ',') -ne 'data,Dev-Kit.exe,projects') { throw "unexpected files: $names" }
+          if (($names -join ',') -ne 'Atollo.exe,data,projects') { throw "unexpected files: $names" }
       - name: Real install of pwsh, node, git and the editor server (x64)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
@@ -163,7 +216,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
-          & "$kit/Dev-Kit.exe" prepare --only "pwsh,node,git,vscodium-server" | Out-Host
+          & "$kit/Atollo.exe" prepare --only "pwsh,node,git,vscodium-server" | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "prepare failed ($LASTEXITCODE)" }
           $apps = "$kit/data/apps/win32-x64"
           # One folder per minor version (D-91): exactly one line installed.
@@ -176,7 +229,7 @@ jobs:
           & (Line node node.exe) -v
           & (Line git cmd/git.exe) --version
           if (-not (Test-Path "$apps/vscodium-server/out/server-main.js")) { throw "editor server missing" }
-          & "$kit/Dev-Kit.exe" prepare --only "pwsh,node" --update-all | Out-Host
+          & "$kit/Atollo.exe" prepare --only "pwsh,node" --update-all | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "update check failed" }
       - name: Real kit tests (editor server with the kit environment)
         if: matrix.target == 'x86_64-pc-windows-msvc'
@@ -186,8 +239,8 @@ jobs:
           cargo test --target ${{ matrix.target }} real_ -- --nocapture --test-threads=1
       - uses: actions/upload-artifact@v4
         with:
-          name: Dev-Kit-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/Dev-Kit.exe
+          name: Atollo-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/Atollo.exe
           if-no-files-found: error
 
   release:
@@ -211,17 +264,17 @@ jobs:
           if ($env:GITHUB_REF_NAME -ne "app-v$version") { throw "tag $env:GITHUB_REF_NAME does not match app-v$version" }
       - uses: actions/download-artifact@v4
         with:
-          pattern: Dev-Kit-*
+          pattern: Atollo-*
           path: artifacts
       - name: Release assets
         shell: pwsh
         run: |
           # Names and .sha256 files as read by tauri/src/setup/self_update.rs.
           New-Item -ItemType Directory -Force dist | Out-Null
-          $assets = @{ 'x86_64-pc-windows-msvc' = 'Dev-Kit-x64.exe'; 'aarch64-pc-windows-msvc' = 'Dev-Kit-arm64.exe' }
+          $assets = @{ 'x86_64-pc-windows-msvc' = 'Atollo-x64.exe'; 'aarch64-pc-windows-msvc' = 'Atollo-arm64.exe' }
           foreach ($target in $assets.Keys) {
             $name = $assets[$target]
-            Move-Item "artifacts/Dev-Kit-$target/Dev-Kit.exe" "dist/$name"
+            Move-Item "artifacts/Atollo-$target/Atollo.exe" "dist/$name"
             $hash = (Get-FileHash "dist/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
             Set-Content "dist/$name.sha256" "$hash  $name" -Encoding ascii
           }
@@ -233,5 +286,5 @@ jobs:
         run: |
           $tag = $env:GITHUB_REF_NAME
           $version = $tag.Substring('app-v'.Length)
-          gh release create $tag (Get-ChildItem dist).FullName --verify-tag --title "Dev-Kit $version" --notes "Dev-Kit $version for Windows x64 and arm64: replace Dev-Kit.exe, or let the app update itself."
+          gh release create $tag (Get-ChildItem dist).FullName --verify-tag --title "Atollo $version" --notes "Atollo $version for Windows x64 and arm64: replace Atollo.exe, or let the app update itself."
           if ($LASTEXITCODE -ne 0) { throw "gh release create failed ($LASTEXITCODE)" }

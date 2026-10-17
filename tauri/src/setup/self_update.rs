@@ -1,12 +1,12 @@
-//! New versions of `Dev-Kit.exe` (DECISIONS.md D-20), from the `app-v*`
+//! New versions of `Atollo.exe` (DECISIONS.md D-20), from the `app-v*`
 //! releases of nabre/dev-kit2.
 //!
 //! - check: the newest `app-vX.Y.Z` release (no drafts or pre-releases)
-//!   newer than this exe, with the asset `Dev-Kit-<x64|arm64>.exe`;
-//! - stage: download to `data\app\update\Dev-Kit.exe`, SHA-256 from GitHub
-//!   (the asset digest, or `Dev-Kit-<arch>.exe.sha256` in the release), then
+//!   newer than this exe, with the asset `Atollo-<x64|arm64>.exe`;
+//! - stage: download to `data\app\update\Atollo.exe`, SHA-256 from GitHub
+//!   (the asset digest, or `Atollo-<arch>.exe.sha256` in the release), then
 //!   `update.json` with the version: only a complete, verified file is staged;
-//! - swap, when the app closes: `Dev-Kit.exe` → `Dev-Kit.old.exe` (Windows
+//! - swap, when the app closes: `Atollo.exe` → `Atollo.old.exe` (Windows
 //!   lets a running exe be renamed), the staged file in its place; the old
 //!   one is deleted at the next start. A failed move puts the old one back.
 //!
@@ -68,9 +68,9 @@ pub fn parse_version(text: &str) -> Option<(u64, u64, u64)> {
 
 pub fn asset_name(kit: &Kit) -> String {
     match kit.os() {
-        crate::kit::Os::Win32 => format!("Dev-Kit-{}.exe", kit.arch().as_str()),
-        crate::kit::Os::Darwin => format!("Dev-Kit-{}.app.tar.gz", kit.target().as_str()),
-        crate::kit::Os::Linux => format!("Dev-Kit-{}.AppImage", kit.target().as_str()),
+        crate::kit::Os::Win32 => format!("Atollo-{}.exe", kit.arch().as_str()),
+        crate::kit::Os::Darwin => format!("Atollo-{}.app.tar.gz", kit.target().as_str()),
+        crate::kit::Os::Linux => format!("Atollo-{}.AppImage", kit.target().as_str()),
     }
 }
 
@@ -79,7 +79,7 @@ fn update_dir(kit: &Kit) -> PathBuf {
 }
 
 fn staged_exe(kit: &Kit) -> PathBuf {
-    update_dir(kit).join("Dev-Kit.exe")
+    update_dir(kit).join("Atollo.exe")
 }
 
 fn staged_info(kit: &Kit) -> PathBuf {
@@ -230,7 +230,7 @@ pub fn apply_staged(kit: &Kit, exe: &Path) -> Result<bool> {
         discard(kit);
         bail!("staged update changed on disk: discarded");
     }
-    let old = exe.with_file_name("Dev-Kit.old.exe");
+    let old = exe.with_file_name("Atollo.old.exe");
     let _ = fs::remove_file(&old);
     fs::rename(exe, &old).with_context(|| format!("{} → {}", exe.display(), old.display()))?;
     if let Err(e) = fs::rename(&staged, exe).or_else(|_| fs::copy(&staged, exe).map(|_| ())) {
@@ -264,7 +264,7 @@ pub fn record_version(kit: &Kit) {
 /// At start: the exe replaced by the last update. Still in use (a `sync` or
 /// `keyring` of the old version running): tried again next time.
 pub fn remove_old(exe: &Path) {
-    let old = exe.with_file_name("Dev-Kit.old.exe");
+    let old = exe.with_file_name("Atollo.old.exe");
     if old.exists() {
         if let Err(e) = fs::remove_file(&old) {
             crate::log::warn(&format!("{}: {e}", old.display()));

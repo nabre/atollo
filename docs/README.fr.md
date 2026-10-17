@@ -1,17 +1,16 @@
-# Dev-Kit
+# Atollo — Universal Portable Dev & AI Workspace
 
 [Italiano](../README.md) · [English](README.en.md) · Français · [Deutsch](README.de.md)
 
-Un environnement de développement portable pour Windows en un seul fichier : `Dev-Kit.exe`. Éditeur (VSCodium) intégré, agents Claude Code, Codex et Antigravity, langages et outils téléchargés à la demande. Aucune installation, aucun droit d'administrateur, aucun fichier hors du dossier du kit.
+**Atollo** est un *Universal Portable Dev & AI Workspace* autonome (`Atollo.exe`) qui réunit **Éditeur** (VSCodium intégré), **Gestionnaire de langages et d'outils** (plus de 20 langages et outils téléchargés à la demande), **Serveurs/Bases de données locales** (MariaDB/MySQL, MongoDB, SQLite, Apache/Nginx) et **Orchestrateur d'agents IA** (Claude Code, Codex et Antigravity avec instructions, skills et serveurs MCP synchronisés) dans un seul dossier portable. Aucune installation, aucun droit d'administrateur, aucun service système hors du dossier de l'espace de travail.
 
 Au premier démarrage, l'application télécharge d'elle-même les composants système : PowerShell 7, GitHub CLI, l'éditeur et ce dont ils ont besoin (Git pour GitHub CLI). Le reste se choisit dans la page « Outils », ou arrive quand il sert : Node.js avec une action `npm`, uv avec un serveur MCP `uvx`, et ainsi de suite.
 
-> En développement. État et plan (en italien) : [app/PLAN.md](app/PLAN.md), nouveautés : [app/CHANGELOG.md](app/CHANGELOG.md).
-> Inspiré de [nabre/dev-kit](https://github.com/nabre/dev-kit), dont il n'est pas une nouvelle version : c'est un produit distinct.
+> État et plan (en italien) : [app/PLAN.md](app/PLAN.md), nouveautés : [app/CHANGELOG.md](app/CHANGELOG.md).
 
 ## Utilisation
 
-1. Copiez `Dev-Kit.exe` dans un dossier vide : une clé USB, un disque externe ou un dossier de votre profil (espaces, parenthèses ou `&` dans le nom sont acceptés).
+1. Copiez `Atollo.exe` dans un dossier vide : une clé USB, un disque externe ou un dossier de votre profil (espaces, parenthèses ou `&` dans le nom sont acceptés).
 2. Double-cliquez : l'application crée `projects\` et `data\`. Au premier démarrage, choisissez agents, langages et outils : l'application les télécharge et les vérifie (somme de contrôle ou signature).
 3. Créez ou clonez un projet dans la page **Projets**. L'éditeur, le terminal et les agents s'ouvrent toujours dans le dossier d'un projet, jamais ailleurs.
 
@@ -19,63 +18,66 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 
 | Page | Contenu |
 | --- | --- |
-| **Projets** | les projets avec Lancer, Éditeur, Terminal et agent ; **Nouveau projet** : vide, depuis vos dépôts GitHub (avec clonage, renommage et suppression sur GitHub) ou depuis une adresse Git ; avis sur le kit. Chaque projet a sa page : **Résumé** (l'action principale avec sa sortie, langages, bases de données, agent, Git), **Ressources** (composants, base de données du projet avec utilisateur et mot de passe, extensions de l'éditeur), **Avancé** (actions, ports, site statique, Git, instructions des agents) |
+| **Projets** | les projets avec Lancer, Éditeur, Terminal et agent ; **Nouveau projet** : vide, depuis vos dépôts GitHub (avec clonage, renommage et suppression sur GitHub) ou depuis une adresse Git ; avis sur l'environnement. Chaque projet a sa page : **Résumé** (l'action principale avec sa sortie, langages, bases de données, agent, Git), **Ressources** (composants, base de données du projet avec utilisateur et mot de passe, extensions de l'éditeur), **Avancé** (actions, ports, site statique, Git, instructions des agents) |
 | **Agents** | Claude Code, Codex et Antigravity installés : version, connexion, limites du forfait et consommation du jour et des 7 derniers jours ; instructions, skills et serveurs MCP partagés dans `data\agents` |
-| **Bases de données** | les serveurs MariaDB (compatible MySQL) et MongoDB du kit : démarrage et arrêt, mot de passe de l'administrateur, port, données dans `data\db`, sur ce PC seulement ; SQLite sans serveur |
+| **Bases de données** | les serveurs MariaDB (compatible MySQL) et MongoDB d'Atollo : démarrage et arrêt, mot de passe de l'administrateur, port, données dans `data\db`, sur ce PC seulement ; SQLite sans serveur |
 | **Outils** | langages et outils avec leur logo, leurs dépendances et l'espace disque ; installer, mettre à jour, supprimer ; la matrice des extensions de l'éditeur |
-| **Paramètres** | langue, terminal, réseau (proxy, certificats, réseau local), clé Gemini, versions de Python et PHP, compilateur Rust (GNU ou MSVC), mises à jour de l'application ; le **compte GitHub** du kit, un seul pour tout (application, Git, éditeur, consoles, agents, GitHub CLI) ; où se trouve le kit |
-| **Retirer le lecteur** | ferme tout ce que le kit a ouvert, ramène la connexion d'Antigravity dans le kit et permet d'éjecter la clé |
+| **Paramètres** | langue, terminal, réseau (proxy, certificats, réseau local), clé Gemini, versions de Python et PHP, compilateur Rust (GNU ou MSVC), mises à jour de l'application ; le **compte GitHub** d'Atollo, un seul pour tout (application, Git, éditeur, consoles, agents, GitHub CLI) ; où se trouve le dossier d'Atollo |
+| **Retirer le lecteur** | ferme tout ce qu'Atollo a ouvert, ramène la connexion d'Antigravity dans `data\` et permet d'éjecter le lecteur |
 
 En bas de chaque page, le panneau **Activité** : ce qui tourne ou s'installe (projets, bases de données, composants), avec la sortie et les erreurs au même endroit.
 
-La console du kit est la console classique de Windows avec le PowerShell 7 du kit et seulement l'environnement du kit : les programmes installés sur le PC ne sont pas visibles.
-
-## Ce qui reste du Dev-Kit
-
-Le menu en console de [nabre/dev-kit](https://github.com/nabre/dev-kit) disparaît : chacune de ses entrées a une page dans l'application (« Proxy et paramètres » est la page Paramètres) et la logique des scripts est en Rust dans l'exe. Les composants sont les mêmes (plus PowerShell 7 et l'éditeur intégré, moins VSCodium desktop), tout comme l'alignement des instructions, skills et MCP entre les trois agents et la relocalisation quand le kit change de dossier ou de lettre de lecteur. Les kits du Dev-Kit ne sont pas importés.
+La console d'Atollo est la console classique de Windows avec PowerShell 7 intégré et uniquement l'environnement isolé d'Atollo : les programmes installés sur le PC hôte n'interfèrent pas.
 
 ## Limites connues
 
-- Windows 10 et 11 uniquement, x64 et ARM64 (sur ARM64, l'éditeur, PHP, Apache et TinyTeX tournent en émulation x64 ; R n'est pas disponible).
-- Hors du kit, il ne reste que les traces de Windows, la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle faite dans les Paramètres reste dans le kit, dans `data\gh`) et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
+- Sur Windows 10 et 11 (`x64` et `ARM64`), sur ARM64 l'éditeur, PHP, Apache et TinyTeX tournent en émulation x64 ; R n'est pas disponible (détails multi-plateformes dans [app/MATRICE-PIATTAFORME.html](app/MATRICE-PIATTAFORME.html)).
+- Hors du dossier d'Atollo, il ne reste que les traces de Windows, les fichiers temporaires de transit dans le dossier temporaire du système (supprimés automatiquement à la fermeture), la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle faite dans les Paramètres reste dans `data\gh`) et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
 - Les dossiers de `projects\` sont considérés comme fiables par Claude Code et Codex : n'ouvrez que des projets de confiance. L'éditeur, lui, demande à la première ouverture de chaque projet et ouvre en « mode restreint » ceux auxquels vous ne faites pas confiance.
 - Les limites d'utilisation des agents viennent d'interfaces non documentées des fournisseurs et peuvent cesser de fonctionner après une de leurs mises à jour.
-- « Retirer le lecteur » ne voit pas les programmes du PC qui gardent seulement un fichier du kit ouvert.
-- L'exe n'est pas signé (voir plus bas).
+- « Retirer le lecteur » ne voit pas les programmes du PC qui gardent seulement un fichier du dossier d'Atollo ouvert.
 
 ## Structure
 
 ```
-Dev-Kit\
-  Dev-Kit.exe     toute la logique
+Atollo\
+  Atollo.exe      toute la logique
   projects\       vos projets
   data\           programmes téléchargés, paramètres, connexions, cache, fichiers temporaires
-                  (les paramètres du kit de chaque projet : data\app\projects\<projet>\dev-settings.json)
+                  (les paramètres de chaque projet : data\projects\<projet>\dev-settings.json)
 ```
 
 Pour une sauvegarde, copiez `projects\` et `data\` (sans `data\apps\` ni `data\cache\`, qui se téléchargent à nouveau).
 
+## Désinstallation
+
+Atollo n'utilise pas d'installateur, n'enregistre aucun service système ni tâche planifiée et ne modifie ni le registre ni le `PATH` de Windows :
+
+1. Ouvrez la page **Retirer le lecteur** (ou fermez l'application) pour arrêter tous les processus lancés par Atollo et rapatrier dans `data\` la session éventuelle d'Antigravity.
+2. Supprimez le dossier contenant `Atollo.exe`, `data\` et `projects\` (après avoir sauvegardé les projets que vous souhaitez conserver).
+3. Les éventuels dossiers temporaires dans `%TEMP%` sont automatiquement supprimés à la fermeture ; si vous aviez exécuté `gh auth login` manuellement depuis une console (au lieu de la page **Paramètres**), vous pouvez supprimer l'entrée correspondante du **Gestionnaire d'identification** de Windows.
+
 ## Ligne de commande
 
 ```
-Dev-Kit.exe                          ouvre la fenêtre
-Dev-Kit.exe env                      affiche l'environnement que reçoivent les programmes du kit
-Dev-Kit.exe components               liste les langages et outils, avec ceux installés
-Dev-Kit.exe check                    vérifie que les programmes installés répondent
-Dev-Kit.exe prepare [options]        installe, met à jour et supprime les composants choisis
+Atollo.exe                           ouvre la fenêtre
+Atollo.exe env                       affiche l'environnement que reçoivent les programmes d'Atollo
+Atollo.exe components                liste les langages et outils, avec ceux installés
+Atollo.exe check                     vérifie que les programmes installés répondent
+Atollo.exe prepare [options]         installe, met à jour et supprime les composants choisis
     --only a,b                       seulement ceux-ci (et ce dont ils ont besoin)
     --skip a,b                       pas ceux-ci
     --update-all                     met aussi à jour ceux déjà installés
     --force                          télécharge à nouveau
-Dev-Kit.exe sync [--project <dossier>] [--verbose]
+Atollo.exe sync [--project <dossier>] [--verbose]
                                      aligne instructions, skills et MCP des trois agents
-Dev-Kit.exe keyring restore|save     connexion d'Antigravity (utilisée par agy.cmd du kit)
-Dev-Kit.exe serve <dossier> <port>   serveur de fichiers pour un site statique
-Dev-Kit.exe version                  affiche la version
-Dev-Kit.exe help                     affiche l'aide
+Atollo.exe keyring restore|save      connexion d'Antigravity (utilisée par agy.cmd)
+Atollo.exe serve <dossier> <port>    serveur de fichiers pour un site statique
+Atollo.exe version                   affiche la version
+Atollo.exe help                      affiche l'aide
 ```
 
-Depuis PowerShell, ajoutez `| Out-Host` (par exemple `.\Dev-Kit.exe check | Out-Host`) : `Dev-Kit.exe` est un programme à fenêtre, et sans pipe PowerShell ne l'attend pas et ne lit ni sa sortie ni son code de retour.
+Depuis PowerShell, ajoutez `| Out-Host` (par exemple `.\Atollo.exe check | Out-Host`) : `Atollo.exe` est un programme à fenêtre, et sans pipe PowerShell ne l'attend pas et ne lit ni sa sortie ni son code de retour.
 
 ## Compiler
 
@@ -88,7 +90,7 @@ npm run build
 
 Les dépendances JavaScript sont seulement à la racine (`node_modules` et `package-lock.json`) : `ui` est un workspace npm.
 
-L'exe se trouve dans `target\release\Dev-Kit.exe`. Aucun installateur n'est créé (`--no-bundle`).
+L'exe se trouve dans `target\release\Atollo.exe`. Aucun installateur n'est créé (`--no-bundle`).
 
 Contrôles avant une modification :
 
@@ -104,7 +106,22 @@ Développement avec rechargement automatique : `npm run dev`.
 
 ## Si Windows bloque l'exe
 
-L'exe n'est pas encore signé. Si SmartScreen affiche « Windows a protégé votre ordinateur », choisissez **Informations complémentaires** › **Exécuter quand même**. Si l'exe a été téléchargé depuis Internet : clic droit › **Propriétés** › **Débloquer**. Sur les PC d'entreprise avec AppLocker, il faut l'autorisation du service informatique.
+Tant que le certificat de signature n'est pas actif sur la version téléchargée, si SmartScreen affiche « Windows a protégé votre ordinateur », choisissez **Informations complémentaires** › **Exécuter quand même**. Si l'exe a été téléchargé depuis Internet : clic droit › **Propriétés** › **Débloquer**. Sur les PC d'entreprise avec AppLocker, il faut l'autorisation du service informatique.
+
+## Code signing policy
+
+Free code signing on Windows provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+- **Rôles du projet (Committer, Reviewer et Approver) :** [nabre](https://github.com/nabre)
+- **Provenance des binaires :** les exécutables des versions officielles sont compilés et signés exclusivement par le pipeline automatisé GitHub Actions ([`.github/workflows/app.yml`](../.github/workflows/app.yml)) à partir du code source public de ce dépôt, sans intervention manuelle sur les binaires.
+
+## Privacy policy
+
+Atollo (`Atollo.exe`) respecte pleinement la vie privée de l'utilisateur :
+
+- **Aucune télémétrie ni collecte de données :** l'application ne collecte aucune donnée personnelle, statistique d'utilisation, télémétrie ou rapport de plantage, et ne contacte aucun serveur géré par l'auteur du projet. Elle désactive également la télémétrie intégrée des composants gérés (tels que PowerShell 7 et le serveur VSCodium).
+- **Stockage local :** les paramètres, projets, bases de données locales, journaux et identifiants sont enregistrés exclusivement en local dans le dossier `data\` (et `projects\`) d'Atollo sur l'appareil de l'utilisateur.
+- **Connexions réseau :** l'application n'effectue des requêtes réseau que vers les sources amont officielles pour vérifier les mises à jour et télécharger les composants demandés par l'utilisateur (`api.github.com`, miroirs officiels des langages/outils, registre Open VSX pour les extensions de l'éditeur) et, lorsque l'utilisateur configure et utilise l'intégration GitHub, les agents IA (**Claude Code**, **Codex**, **Antigravity**) ou une clé API Gemini, directement vers les API des fournisseurs respectifs selon leurs propres politiques de confidentialité.
 
 ## Licence
 

@@ -1,14 +1,14 @@
 {
-  "name": "dev-kit2",
+  "name": "atollo",
   "private": true,
-  "description": "Comandi di sviluppo. 'npm run dev' apre la finestra di Dev-Kit con ricarica automatica.",
+  "description": "Comandi di sviluppo. 'npm run dev' apre la finestra di Atollo con ricarica automatica.",
   "workspaces": [
     "ui"
   ],
   "scripts": {
     "setup": "npm ci --no-fund --no-audit",
     "dev": "tauri dev",
-    "start": "tauri build --debug --no-bundle && start \"\" target\\debug\\Dev-Kit.exe",
+    "start": "tauri build --debug --no-bundle && start \"\" target\\debug\\Atollo.exe",
     "build": "tauri build --no-bundle",
     "test": "cargo test && npm -w ui test",
     "lint": "cargo fmt --check && cargo clippy --all-targets -- -D warnings && npm -w ui run lint && npm -w ui run format:check"

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "NEXKORA",
-  "mainBinaryName": "Dev-Kit",
-  "identifier": "io.github.nabre.devkit2",
+  "productName": "Atollo",
+  "mainBinaryName": "Atollo",
+  "identifier": "io.github.nabre.atollo",
   "build": {
     "beforeDevCommand": {
       "script": "npm run dev",
@@ -28,6 +28,9 @@
   },
   "bundle": {
     "active": false,
+    "publisher": "nabre",
+    "copyright": "Copyright (c) nabre",
+    "shortDescription": "Atollo — Universal Portable Dev & AI Workspace",
     "icon": [
       "icons/icon.ico",
       "icons/icon.png"

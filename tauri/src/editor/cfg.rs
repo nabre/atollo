@@ -38,7 +38,7 @@ const HIDDEN: &[&str] = &[
 pub const DEFAULT_PROFILE: &str = "Dev-Kit";
 
 /// The kit's themes (editor/theme.rs) in place of VSCodium's own: a theme
-/// setting missing or on one of these becomes NEXKORA's; any other theme is
+/// setting missing or on one of these becomes Atollo's; any other theme is
 /// the user's choice and stays. VSCodium 1.140 calls its themes "Dark
 /// Modern" and "Light Modern" (older ids: "Default ...").
 const THEMES: &[(&str, &[&str], &str)] = &[
@@ -49,6 +49,7 @@ const THEMES: &[(&str, &[&str], &str)] = &[
             "Default Dark Modern",
             "Dark+",
             "Default Dark+",
+            "NEXKORA Dark",
         ],
         crate::editor::theme::DARK,
     ),
@@ -59,6 +60,7 @@ const THEMES: &[(&str, &[&str], &str)] = &[
             "Default Dark Modern",
             "Dark+",
             "Default Dark+",
+            "NEXKORA Dark",
         ],
         crate::editor::theme::DARK,
     ),
@@ -69,24 +71,25 @@ const THEMES: &[(&str, &[&str], &str)] = &[
             "Default Light Modern",
             "Light+",
             "Default Light+",
+            "NEXKORA Light",
         ],
         crate::editor::theme::LIGHT,
     ),
 ];
 
 /// Color blocks the kit once wrote over VSCodium's themes, before the
-/// NEXKORA themes (`workbench.colorCustomizations`): removed, the user's
+/// Atollo themes (`workbench.colorCustomizations`): removed, the user's
 /// other colors stay.
 const OLD_BLOCKS: &[&str] = &["[Default Dark Modern]", "[Default Light Modern]"];
 
 fn set_themes(existing: &Map<String, Value>, out: &mut Map<String, Value>) {
-    for (setting, codium, nexkora) in THEMES {
+    for (setting, codium, atollo) in THEMES {
         let own = match existing.get(*setting) {
             Some(Value::String(t)) => codium.contains(&t.as_str()),
             _ => true,
         };
         if own {
-            out.insert((*setting).into(), json!(nexkora));
+            out.insert((*setting).into(), json!(atollo));
         }
     }
     let key = "workbench.colorCustomizations";

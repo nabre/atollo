@@ -109,7 +109,7 @@ fn file_with_comments_left_alone() {
 }
 
 #[test]
-fn codium_themes_become_nexkora_user_choice_kept() {
+fn codium_themes_become_atollo_user_choice_kept() {
     let (_t, kit) = kit_with("cfg-colors", &[]);
     let path = settings_path(&kit);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -123,14 +123,14 @@ fn codium_themes_become_nexkora_user_choice_kept() {
     let colors = s["workbench.colorCustomizations"].as_object().unwrap();
     assert_eq!(colors.len(), 1, "the user's own kept: {colors:?}");
     assert_eq!(colors["editor.background"], "#000000");
-    assert_eq!(s["workbench.colorTheme"], "NEXKORA Dark");
+    assert_eq!(s["workbench.colorTheme"], "Atollo Dark");
     assert_eq!(s["workbench.experimental.modernUI"], true);
-    assert_eq!(s["workbench.preferredDarkColorTheme"], "NEXKORA Dark");
+    assert_eq!(s["workbench.preferredDarkColorTheme"], "Atollo Dark");
     assert_eq!(s["workbench.preferredLightColorTheme"], "Solarized Light");
 
     fs::write(&path, r#"{"workbench.preferredLightColorTheme":"Default Light Modern","workbench.colorCustomizations":{"[Default Dark Modern]":{}}}"#).unwrap();
     write(&kit, Path::new(r"C:\Windows")).unwrap();
     let s = read(&kit);
-    assert_eq!(s["workbench.preferredLightColorTheme"], "NEXKORA Light");
+    assert_eq!(s["workbench.preferredLightColorTheme"], "Atollo Light");
     assert!(s.get("workbench.colorCustomizations").is_none());
 }

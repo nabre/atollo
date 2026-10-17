@@ -20,22 +20,22 @@ fn versions_and_choice() {
     assert_eq!(parse_version("1.10.0"), Some((1, 10, 0)));
     assert_eq!(parse_version("app-v1.2"), None);
     assert_eq!(parse_version("v1.2.3.4"), None);
-    let mut pre = release("app-v9.0.0", "Dev-Kit-x64.exe");
+    let mut pre = release("app-v9.0.0", "Atollo-x64.exe");
     pre.prerelease = true;
     let list = vec![
-        release("app-v1.0.1", "Dev-Kit-x64.exe"),
-        release("app-v1.2.0", "Dev-Kit-x64.exe"),
-        release("app-v1.3.0", "Dev-Kit-arm64.exe"),
-        release("node-v1", "Dev-Kit-x64.exe"),
+        release("app-v1.0.1", "Atollo-x64.exe"),
+        release("app-v1.2.0", "Atollo-x64.exe"),
+        release("app-v1.3.0", "Atollo-arm64.exe"),
+        release("node-v1", "Atollo-x64.exe"),
         pre,
     ];
     assert_eq!(
-        newest(&list, "1.0.0", "Dev-Kit-x64.exe").map(|r| r.tag_name.as_str()),
+        newest(&list, "1.0.0", "Atollo-x64.exe").map(|r| r.tag_name.as_str()),
         Some("app-v1.2.0")
     );
-    assert!(newest(&list, "1.2.0", "Dev-Kit-x64.exe").is_none());
+    assert!(newest(&list, "1.2.0", "Atollo-x64.exe").is_none());
     assert_eq!(
-        newest(&list, "1.0.0", "Dev-Kit-arm64.exe").map(|r| r.tag_name.as_str()),
+        newest(&list, "1.0.0", "Atollo-arm64.exe").map(|r| r.tag_name.as_str()),
         Some("app-v1.3.0")
     );
 }
@@ -45,7 +45,7 @@ fn swap_and_cleanup() {
     let tmp = TempDir::new("self-update");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let exe = tmp.0.join("Dev-Kit.exe");
+    let exe = tmp.0.join("Atollo.exe");
     fs::write(&exe, b"old").unwrap();
     // Nothing staged: nothing changes.
     assert!(!apply_staged(&kit, &exe).unwrap());
@@ -63,10 +63,10 @@ fn swap_and_cleanup() {
     );
     assert!(apply_staged(&kit, &exe).unwrap());
     assert_eq!(fs::read(&exe).unwrap(), b"new");
-    assert_eq!(fs::read(tmp.0.join("Dev-Kit.old.exe")).unwrap(), b"old");
+    assert_eq!(fs::read(tmp.0.join("Atollo.old.exe")).unwrap(), b"old");
     assert!(!staged_exe(&kit).exists() && !staged_info(&kit).exists());
     remove_old(&exe);
-    assert!(!tmp.0.join("Dev-Kit.old.exe").exists());
+    assert!(!tmp.0.join("Atollo.old.exe").exists());
 
     // A staged file changed after the check is never used.
     fs::write(staged_exe(&kit), b"evil").unwrap();

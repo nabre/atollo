@@ -170,7 +170,7 @@ fn terminate(pid: u32) {
 
 /// The root of the kit a program belongs to: one under
 /// `<root>/data/apps/<os>-<arch>/` (Windows, macOS or Linux folders, either
-/// separator), or the app itself (`Dev-Kit.exe`, `Dev-Kit` elsewhere) when
+/// separator), or the app itself (`Atollo.exe`, `Atollo` elsewhere) when
 /// `is_kit` says its folder holds `data/app`.
 fn kit_root_of(path: &Path, name: &str, is_kit: impl Fn(&Path) -> bool) -> Option<PathBuf> {
     let text = path.display().to_string();
@@ -181,7 +181,7 @@ fn kit_root_of(path: &Path, name: &str, is_kit: impl Fn(&Path) -> bool) -> Optio
             return Some(PathBuf::from(&text[..i]));
         }
     }
-    let app = name.eq_ignore_ascii_case("Dev-Kit.exe") || name == "Dev-Kit";
+    let app = name.eq_ignore_ascii_case("Atollo.exe") || name == "Atollo";
     app.then(|| path.parent())
         .flatten()
         .filter(|d| is_kit(d))
