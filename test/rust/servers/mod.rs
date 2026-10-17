@@ -874,6 +874,20 @@ fn ports_are_unique_among_pools() {
         8500
     );
     assert!(dirty);
+
+    // A servers.json of before: an automatic pool stored on the port a
+    // profile was given by hand gets a port of its own.
+    let mut store = load_store(&kit);
+    store.ports.insert("one".to_owned(), 8085);
+    store.ports.insert("auto".to_owned(), 8085);
+    let mut dirty = false;
+    let p = servers.assign_or_get_port(&mut store, &mut dirty, "auto", None);
+    assert_ne!(p, 8085);
+    assert!(dirty);
+    assert_eq!(
+        servers.assign_or_get_port(&mut store, &mut dirty, "one", Some(8085)),
+        8085
+    );
 }
 
 /// Defect 4: a pool whose server or PHP line is not installed does not

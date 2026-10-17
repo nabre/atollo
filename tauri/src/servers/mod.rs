@@ -674,8 +674,13 @@ impl WebServers {
             }
             return p;
         }
+        // A stored port another pool also has (a profile given that port
+        // by hand before profiles' ports were checked) is given up for a
+        // new one, so files of before are mended at the first scan.
         if let Some(&p) = store.ports.get(id) {
-            return p;
+            if !store.ports.iter().any(|(other, q)| *q == p && other != id) {
+                return p;
+            }
         }
         let used: BTreeSet<u16> = store.ports.values().copied().collect();
         // A free port no other pool has; failing that (every one taken by
