@@ -120,6 +120,24 @@ describe("ServersPage", () => {
     expect(screen.getByText(/si ferma con l'ultimo/)).toBeTruthy();
   });
 
+  it("marks a detached site, apart from the attached ones", async () => {
+    const [legacy] = VIEW.pools;
+    if (!legacy) throw new Error("fixture");
+    const sites = [site("site", "public"), { ...site("docs", "docs"), detached: true }];
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve({ ...VIEW, pools: [{ ...legacy, sites }] });
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    const { container } = render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getAllByText("Sganciato: il progetto è fermo")).toHaveLength(1);
+    const marked = container.querySelectorAll("[data-detached]");
+    expect(marked).toHaveLength(1);
+    expect(marked[0]?.textContent).toContain("docs");
+  });
+
   it("marks an orphan pool, with no reload, still stoppable", async () => {
     const [legacy] = VIEW.pools;
     if (!legacy) throw new Error("fixture");

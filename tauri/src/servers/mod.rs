@@ -73,6 +73,16 @@ pub struct AttachedSite {
     pub domains: Vec<String>,
     pub aliases: BTreeMap<String, String>,
     pub url: String,
+    /// The project chose this server: a site written in `panel.json` (or
+    /// assigned to the pool), not one only detected (`.htaccess`, a PHP
+    /// project offered Apache). One that is not goes in the pool only while
+    /// a project runs it (PLAN-DATA §9 1.1, TW1.3).
+    #[serde(default)]
+    pub chosen: bool,
+    /// Its project was stopped in this session ([`WebServers::detach`]):
+    /// listed, but left out of the pool's files until it starts again.
+    #[serde(default)]
+    pub detached: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -90,8 +100,10 @@ pub struct WebServerPool {
     pub sites: Vec<AttachedSite>,
     pub conf_dir: String,
     /// Running, but no longer one of the pools of the profiles and the
-    /// projects (an automatic pool whose id changed when a newer line was
-    /// installed): shown as it was started so that it can be stopped.
+    /// projects: shown as it was started so that it can be stopped. Since
+    /// the automatic ids name their lines (SC-2) a running automatic pool is
+    /// always rebuilt from its id, so only a pool whose id is neither a
+    /// profile's nor an automatic one can be left like this.
     pub orphan: bool,
     /// The profile as saved (a manual pool), for the page to save it again
     /// with its options changed; `None` for an automatic pool, which stops
@@ -262,6 +274,40 @@ pub struct WebServers {
     /// VirtualHost is left out of the pool until the project starts again
     /// (PLAN.md §13.1). A leaf lock, like `cache`.
     detached: Mutex<BTreeSet<(String, String)>>,
+    /// The sites (`project`, `action`) started by their project in this
+    /// session ([`Self::attach`]): with the sites the projects chose, the
+    /// only ones a pool lists and serves ([`serves`]). A leaf lock.
+    started: Mutex<BTreeSet<(String, String)>>,
+}
+
+/// A site is in its pool when its project chose that server, or while its
+/// project runs it (PLAN-DATA §9 1.1, TW1.3): never every PHP project that
+/// was only offered Apache.
+fn serves(site: &AttachedSite, started: &BTreeSet<(String, String)>) -> bool {
+    site.chosen || started.contains(&(site.project.clone(), site.action.clone()))
+}
+
+/// The pools as the page shows them: only the sites [`serves`] keeps, and
+/// no automatic pool left with none (unless it runs), but one, so that a kit
+/// with Apache or Nginx and no site still has a pool to start.
+fn shown_pools(
+    pools: Vec<WebServerPool>,
+    started: &BTreeSet<(String, String)>,
+) -> Vec<WebServerPool> {
+    let mut first_auto = None;
+    let mut out = Vec::new();
+    for mut pool in pools {
+        pool.sites.retain(|s| serves(s, started));
+        if pool.manual || pool.running || !pool.sites.is_empty() {
+            out.push(pool);
+        } else if first_auto.is_none() {
+            first_auto = Some(pool);
+        }
+    }
+    if out.is_empty() {
+        out.extend(first_auto);
+    }
+    out
 }
 
 fn store_path(kit: &Kit) -> PathBuf {
@@ -367,6 +413,10 @@ fn vhost_file(site: &AttachedSite) -> String {
     format!("{}.conf", site.server_name)
 }
 
+/// The id of the automatic pool of (engine, server line, PHP line), SC-2:
+/// `apache-2.4_php-7.4`, `nginx-1.27` (no PHP), `apache-default` (no line
+/// installed). It names the lines it runs, so it can be read back
+/// ([`parse_auto_pool_id`]) whatever is installed later.
 fn auto_pool_id(
     engine: WebServerEngine,
     server_line: Option<&str>,
@@ -374,8 +424,99 @@ fn auto_pool_id(
 ) -> String {
     let srv = server_line.unwrap_or("default");
     match php_line {
-        Some(php) => format!("{}-{srv}-php-{php}", engine.as_str()),
+        Some(php) => format!("{}-{srv}_php-{php}", engine.as_str()),
         None => format!("{}-{srv}", engine.as_str()),
+    }
+}
+
+/// The engine and lines an automatic pool id names: the id of
+/// [`auto_pool_id`], or the one of before SC-2 (`apache-2.4-php-7.4`).
+/// `None` for any other id (a profile's).
+fn parse_auto_pool_id(id: &str) -> Option<PoolLines> {
+    let (engine, rest) = [WebServerEngine::Apache, WebServerEngine::Nginx]
+        .into_iter()
+        .find_map(|e| Some((e, id.strip_prefix(e.as_str())?.strip_prefix('-')?)))?;
+    let (srv, php) = match rest
+        .split_once("_php-")
+        .or_else(|| rest.split_once("-php-"))
+    {
+        Some((srv, php)) => (srv, Some(php)),
+        None => (rest, None),
+    };
+    let line = |l: &str| crate::versions::valid_line(l).then(|| l.to_owned());
+    let srv = match srv {
+        "default" => None,
+        l => Some(line(l)?),
+    };
+    let php = match php {
+        Some(p) => Some(line(p)?),
+        None => None,
+    };
+    Some((engine, srv, php))
+}
+
+/// An id a site's `server` in `panel.json` gives another meaning than a
+/// profile: `auto`, `dedicated`, or an automatic pool's.
+fn reserved_id(id: &str) -> bool {
+    id == "auto" || id == crate::projects::run::DEDICATED_SERVER || parse_auto_pool_id(id).is_some()
+}
+
+/// The engine and lines of `id` when it is an automatic pool id as
+/// [`auto_pool_id`] writes it today.
+type PoolLines = (WebServerEngine, Option<String>, Option<String>);
+
+fn canonical_auto_pool(id: &str) -> Option<PoolLines> {
+    parse_auto_pool_id(id)
+        .filter(|(e, srv, php)| auto_pool_id(*e, srv.as_deref(), php.as_deref()) == id)
+}
+
+/// Moves the ports stored under the automatic ids of before SC-2
+/// (`apache-2.4-php-7.4`) to the new ones (`apache-2.4_php-7.4`), so that a
+/// pool keeps its port; a profile's id is never touched. True if any moved.
+fn migrate_port_ids(store: &mut StoredServers) -> bool {
+    let profiles: BTreeSet<&str> = store.profiles.iter().map(|p| p.id.as_str()).collect();
+    let moves: Vec<(String, String)> = store
+        .ports
+        .keys()
+        .filter(|id| !profiles.contains(id.as_str()))
+        .filter_map(|id| {
+            let (engine, srv, php) = parse_auto_pool_id(id)?;
+            let new = auto_pool_id(engine, srv.as_deref(), php.as_deref());
+            (&new != id).then(|| (id.clone(), new))
+        })
+        .collect();
+    let mut moved = false;
+    for (old, new) in moves {
+        if let Some(port) = store.ports.remove(&old) {
+            store.ports.entry(new).or_insert(port);
+            moved = true;
+        }
+    }
+    moved
+}
+
+/// An automatic pool with no sites yet.
+fn auto_pool(
+    engine: WebServerEngine,
+    server_line: Option<String>,
+    php_line: Option<String>,
+    port: u16,
+) -> WebServerPool {
+    let id = auto_pool_id(engine, server_line.as_deref(), php_line.as_deref());
+    WebServerPool {
+        name: auto_pool_name(engine, server_line.as_deref(), php_line.as_deref()),
+        conf_dir: format!(r"data\servers\{id}"),
+        id,
+        engine,
+        server_line,
+        php_line,
+        port,
+        running: false,
+        pid: None,
+        manual: false,
+        sites: Vec::new(),
+        orphan: false,
+        profile: None,
     }
 }
 
@@ -683,6 +824,7 @@ impl WebServers {
             store_lock: Mutex::new(()),
             cache: Mutex::new(ListCache::default()),
             detached: Mutex::new(BTreeSet::new()),
+            started: Mutex::new(BTreeSet::new()),
         }
     }
 
@@ -741,10 +883,36 @@ impl WebServers {
         p
     }
 
-    /// The pools for the "Server Web" page. With `fresh` false (the 3 s
-    /// poll) the scan of the projects is reused for [`LIST_TTL`]; only the
-    /// running state (running, pid, port) is read again every time.
+    /// The pools for the "Server Web" page ([`shown_pools`]). With `fresh`
+    /// false (the 3 s poll) the scan of the projects is reused for
+    /// [`LIST_TTL`]; only the running state (running, pid, port) is read
+    /// again every time.
     pub fn list(&self, lang: &str, fresh: bool) -> WebServersView {
+        let mut view = self.list_all(lang, fresh);
+        let started = self.started_sites();
+        let detached = self
+            .detached
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        view.pools = shown_pools(view.pools, &started);
+        for site in view.pools.iter_mut().flat_map(|p| p.sites.iter_mut()) {
+            site.detached = detached.contains(&(site.project.clone(), site.action.clone()));
+        }
+        view
+    }
+
+    fn started_sites(&self) -> BTreeSet<(String, String)> {
+        self.started
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// Every pool with every site that may go in it (also those of the
+    /// projects not running): what a start, a reload or [`Self::pool_of`]
+    /// works out the pool of a site from.
+    fn list_all(&self, lang: &str, fresh: bool) -> WebServersView {
         let (generation, cached) = {
             let cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
             let cached = cache
@@ -779,17 +947,20 @@ impl WebServers {
         action_id: &str,
         lang: &str,
     ) -> Option<(WebServerPool, AttachedSite)> {
-        self.list(lang, true).pools.into_iter().find_map(|pool| {
-            if pool.orphan {
-                return None;
-            }
-            let site = pool
-                .sites
-                .iter()
-                .find(|s| s.project == project && s.action == action_id)
-                .cloned()?;
-            Some((pool, site))
-        })
+        self.list_all(lang, true)
+            .pools
+            .into_iter()
+            .find_map(|pool| {
+                if pool.orphan {
+                    return None;
+                }
+                let site = pool
+                    .sites
+                    .iter()
+                    .find(|s| s.project == project && s.action == action_id)
+                    .cloned()?;
+                Some((pool, site))
+            })
     }
 
     /// The live port of the pool `id` when it runs (server and php-cgi
@@ -822,7 +993,8 @@ impl WebServers {
                 }
             }
         }
-        // Running pools the scan no longer has (defect 5): shown as they
+        // Running pools the scan does not have (defect 5; an automatic one
+        // only until the next scan rebuilds it from its id): shown as they
         // were started, never left running out of sight.
         for (id, r) in running.iter() {
             if !view.pools.iter().any(|p| &p.id == id) {
@@ -853,7 +1025,7 @@ impl WebServers {
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
         let mut store = load_store(&self.kit);
-        let mut store_dirty = false;
+        let mut store_dirty = migrate_port_ids(&mut store);
         let mut pools_map: BTreeMap<String, WebServerPool> = BTreeMap::new();
         // Manual pools with a site that needs PHP.
         let mut php_wanted: BTreeSet<String> = Default::default();
@@ -915,51 +1087,50 @@ impl WebServers {
                     continue;
                 };
 
-                let target_pool_id = if let Some(explicit) = action
-                    .server
-                    .as_deref()
-                    .filter(|s| pools_map.contains_key(*s))
+                let explicit = action.server.as_deref().map(str::trim);
+                if explicit == Some(crate::projects::run::DEDICATED_SERVER) {
+                    // Its own server, never a pool's.
+                    continue;
+                }
+                let target_pool_id = if let Some(profile) =
+                    explicit.filter(|s| pools_map.get(*s).is_some_and(|p| p.manual))
                 {
-                    explicit.to_owned()
+                    profile.to_owned()
                 } else {
-                    let srv_line = choice
-                        .get(engine.as_str())
-                        .cloned()
-                        .or_else(|| match engine {
-                            WebServerEngine::Apache => apache_lines.first().cloned(),
-                            WebServerEngine::Nginx => nginx_lines.first().cloned(),
-                        });
-                    let php_line = if needs_php {
-                        choice
-                            .get("php")
-                            .cloned()
-                            .or_else(|| php_lines.first().cloned())
-                    } else {
-                        None
+                    // An automatic pool named in `panel.json` (also by its id
+                    // of before SC-2) runs the lines it names; any other site
+                    // goes to the pool of the project's lines (the newest on
+                    // disk for one not chosen, as the kit runs it).
+                    let (srv_line, php_line) = match explicit
+                        .and_then(parse_auto_pool_id)
+                        .filter(|(e, _, _)| *e == engine)
+                    {
+                        Some((_, srv, php)) => (srv, php),
+                        None => {
+                            let srv_line =
+                                choice
+                                    .get(engine.as_str())
+                                    .cloned()
+                                    .or_else(|| match engine {
+                                        WebServerEngine::Apache => apache_lines.first().cloned(),
+                                        WebServerEngine::Nginx => nginx_lines.first().cloned(),
+                                    });
+                            let php_line = if needs_php {
+                                choice
+                                    .get("php")
+                                    .cloned()
+                                    .or_else(|| php_lines.first().cloned())
+                            } else {
+                                None
+                            };
+                            (srv_line, php_line)
+                        }
                     };
                     let pid = auto_pool_id(engine, srv_line.as_deref(), php_line.as_deref());
                     if !pools_map.contains_key(&pid) {
                         let port =
                             self.assign_or_get_port(&mut store, &mut store_dirty, &pid, None);
-                        let name = auto_pool_name(engine, srv_line.as_deref(), php_line.as_deref());
-                        pools_map.insert(
-                            pid.clone(),
-                            WebServerPool {
-                                id: pid.clone(),
-                                name,
-                                engine,
-                                server_line: srv_line,
-                                php_line,
-                                port,
-                                running: false,
-                                pid: None,
-                                manual: false,
-                                sites: Vec::new(),
-                                conf_dir: format!(r"data\servers\{pid}"),
-                                orphan: false,
-                                profile: None,
-                            },
-                        );
+                        pools_map.insert(pid.clone(), auto_pool(engine, srv_line, php_line, port));
                     }
                     pid
                 };
@@ -977,6 +1148,8 @@ impl WebServers {
                         domains: action.domains.clone(),
                         aliases: action.aliases.clone(),
                         url: String::new(),
+                        chosen: action.custom,
+                        detached: false,
                     });
                 }
             }
@@ -1005,32 +1178,29 @@ impl WebServers {
                 WebServerEngine::Nginx => nginx_lines.first().cloned(),
             };
             // No project yet: no PHP project, so no php-cgi (BUG-05r).
-            let php_line: Option<String> = None;
-            let pid = auto_pool_id(engine, srv_line.as_deref(), php_line.as_deref());
+            let pid = auto_pool_id(engine, srv_line.as_deref(), None);
             let port = self.assign_or_get_port(&mut store, &mut store_dirty, &pid, None);
-            let name = auto_pool_name(engine, srv_line.as_deref(), php_line.as_deref());
-            pools_map.insert(
-                pid.clone(),
-                WebServerPool {
-                    id: pid.clone(),
-                    name,
-                    engine,
-                    server_line: srv_line,
-                    php_line,
-                    port,
-                    running: false,
-                    pid: None,
-                    manual: false,
-                    sites: Vec::new(),
-                    conf_dir: format!(r"data\servers\{pid}"),
-                    orphan: false,
-                    profile: None,
-                },
-            );
+            pools_map.insert(pid, auto_pool(engine, srv_line, None, port));
+        }
+
+        {
+            // store_lock -> running: the documented lock order.
+            let running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
+            // A running automatic pool no project goes to any more (a project
+            // moved to a newer line): its id names its lines (SC-2), so it is
+            // still a pool of the list, to stop or to reload, never an orphan.
+            for id in running.keys() {
+                if pools_map.contains_key(id) {
+                    continue;
+                }
+                if let Some((engine, srv, php)) = canonical_auto_pool(id) {
+                    let port = self.assign_or_get_port(&mut store, &mut store_dirty, id, None);
+                    pools_map.insert(id.clone(), auto_pool(engine, srv, php, port));
+                }
+            }
         }
 
         if prune {
-            // store_lock -> running: the documented lock order.
             let running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
             let before = store.ports.len();
             store
@@ -1060,7 +1230,15 @@ impl WebServers {
             );
         }
         let id = if input.id.trim().is_empty() {
-            slug(&name)
+            // A new profile never takes an id a site's `server` means
+            // otherwise (`auto`, `dedicated`, an automatic pool's, as from
+            // the name "Apache 2.4").
+            let id = slug(&name);
+            if reserved_id(&id) {
+                format!("{id}-profile")
+            } else {
+                id
+            }
         } else {
             slug(&input.id)
         };
@@ -1081,6 +1259,10 @@ impl WebServers {
         input.id = id.clone();
         input.name = name;
 
+        // The ports of pools gone since (a project removed, another line)
+        // leave `servers.json` first: never "already taken" by a pool that
+        // does not exist any more.
+        self.scan(lang, true);
         let _store = self
             .store_lock
             .lock()
@@ -1132,6 +1314,9 @@ impl WebServers {
     /// Starts the profiles marked «Avvia con Atollo» (when the app opens),
     /// as if from the "Server Web" page; a failure only goes to the log.
     pub fn autostart(&self, env: &KitEnv, lang: &str) {
+        // A fresh list when the app opens: the ports of pools gone since
+        // the last session leave `servers.json`.
+        self.list(lang, true);
         let ids: Vec<String> = load_store(&self.kit)
             .profiles
             .into_iter()
@@ -1163,22 +1348,46 @@ impl WebServers {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .remove(&key);
-        let (pool, site) = self
-            .pool_of(project, action, lang)
-            .ok_or_else(|| anyhow!("No server pool serves {project} ({action})"))?;
-        // In the running configuration already, unless it was left out or
-        // came after the last start or reload.
-        let written = self
-            .running
+        // Before the files are written: a site only detected goes in the
+        // pool while its project runs it.
+        let was_started = !self
+            .started
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .get(&pool.id)
-            .is_some_and(|r| {
-                r.started
-                    .sites
-                    .iter()
-                    .any(|s| s.project == project && s.action == action)
-            });
+            .insert(key.clone());
+        let undo = || {
+            if was_detached {
+                self.detached
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .insert(key.clone());
+            }
+            if !was_started {
+                self.started
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .remove(&key);
+            }
+        };
+        let Some((pool, site)) = self.pool_of(project, action, lang) else {
+            undo();
+            bail!("No server pool serves {project} ({action})");
+        };
+        // In the running configuration already, unless it was left out (or
+        // only detected and not started before) or came after the last start
+        // or reload.
+        let written = (site.chosen || was_started)
+            && self
+                .running
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .get(&pool.id)
+                .is_some_and(|r| {
+                    r.started
+                        .sites
+                        .iter()
+                        .any(|s| s.project == project && s.action == action)
+                });
         let result = if pool.running {
             if was_detached || !written {
                 self.reload_locked(&pool.id, base_env, lang)
@@ -1189,12 +1398,7 @@ impl WebServers {
             self.start_locked(&pool.id, base_env, lang, false)
         };
         if let Err(e) = result {
-            if was_detached {
-                self.detached
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .insert(key);
-            }
+            undo();
             return Err(e);
         }
         let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
@@ -1223,6 +1427,10 @@ impl WebServers {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .insert(key.clone());
+        self.started
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .remove(&key);
         let (by_user, left) = {
             let mut running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
             let Some(r) = running.get_mut(id) else {
@@ -1243,8 +1451,9 @@ impl WebServers {
         }
     }
 
-    /// Writes `httpd.conf` / `nginx.conf` and all `vhosts/*.conf` for `pool`,
-    /// but those of the sites whose project was stopped ([`Self::detach`]).
+    /// Writes `httpd.conf` / `nginx.conf` and the `vhosts/*.conf` of the
+    /// sites of `pool` it [`serves`], but those of the sites whose project
+    /// was stopped ([`Self::detach`]).
     fn write_pool_configs(
         &self,
         pool: &WebServerPool,
@@ -1256,10 +1465,10 @@ impl WebServers {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone();
-        let served = pool
-            .sites
-            .iter()
-            .filter(|s| !detached.contains(&(s.project.clone(), s.action.clone())));
+        let started = self.started_sites();
+        let served = pool.sites.iter().filter(|s| {
+            serves(s, &started) && !detached.contains(&(s.project.clone(), s.action.clone()))
+        });
         let pool_dir = self.kit.data().join("servers").join(&pool.id);
         let vhosts_dir = pool_dir.join("vhosts");
         let conf_d_dir = pool_dir.join("conf.d");
@@ -1350,7 +1559,7 @@ impl WebServers {
 
     /// `by_user`: started from the page or with the app, not by a project.
     fn start_locked(&self, id: &str, base_env: &KitEnv, lang: &str, by_user: bool) -> Result<()> {
-        let view = self.list(lang, true);
+        let view = self.list_all(lang, true);
         let pool = view
             .pools
             .into_iter()
@@ -1546,7 +1755,7 @@ impl WebServers {
     }
 
     fn reload_locked(&self, id: &str, base_env: &KitEnv, lang: &str) -> Result<()> {
-        let view = self.list(lang, true);
+        let view = self.list_all(lang, true);
         let pool = view
             .pools
             .into_iter()
@@ -1689,7 +1898,7 @@ impl WebServers {
 
     /// The ids of the pools (orphans aside) with a site of `project`.
     fn pools_serving(&self, project: &str, lang: &str) -> BTreeSet<String> {
-        self.list(lang, true)
+        self.list_all(lang, true)
             .pools
             .into_iter()
             .filter(|p| !p.orphan && p.sites.iter().any(|s| s.project == project))

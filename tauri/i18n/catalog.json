@@ -309,6 +309,11 @@
     "fr": "Le serveur partagé {0} n'a pas démarré : voyez la page Serveurs Web.",
     "de": "Der gemeinsame Server {0} ist nicht gestartet: siehe die Seite Webserver."
   },
+  "Il server condiviso {0} non è partito ({1}): il sito usa un server tutto suo.": {
+    "en": "The shared server {0} did not start ({1}): the site uses a server of its own.",
+    "fr": "Le serveur partagé {0} n'a pas démarré ({1}) : le site utilise son propre serveur.",
+    "de": "Der gemeinsame Server {0} ist nicht gestartet ({1}): die Website verwendet einen eigenen Server."
+  },
   "servito dal pool condiviso {0}: {1}": {
     "en": "served by the shared pool {0}: {1}",
     "fr": "servi par le pool partagé {0} : {1}",
