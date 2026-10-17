@@ -137,6 +137,9 @@ fn startup_notices() {
         fs_type: fs_type.into(),
         options: options.iter().map(|o| o.to_string()).collect(),
     };
+    let folder = Path::new("/home/me/kit/data");
+    let notice_for =
+        |os, fs, mount: Option<&Mount>, lang| notice_for(os, fs, false, mount, folder, lang);
     let noexec = mount("ext4", &["rw", "noexec"]);
     let linux = notice_for(Os::Linux, FsKind::Posix, Some(&noexec), "it").unwrap();
     assert!(linux.blocking);
@@ -200,6 +203,42 @@ fn startup_notices() {
     }
 }
 
+/// The `statvfs` flag alone blocks the start: on a btrfs subvolume (the
+/// default `/home` of Fedora and openSUSE) `mountinfo` has no line with
+/// the folder's device, and the kit must not start anyway.
+#[test]
+fn noexec_flag_blocks_without_the_mount() {
+    let folder = Path::new("/home/me/kit/data");
+    for os in [Os::Linux, Os::Darwin] {
+        let n = notice_for(os, FsKind::Posix, true, None, folder, "it").unwrap();
+        assert!(n.blocking, "{os:?}");
+        // The command names the folder when the mount point is unknown.
+        assert!(n.text.contains("'/home/me/kit/data'"), "{}", n.text);
+    }
+    // The flag set, the mount found without the option: still blocking,
+    // on the mount point.
+    let found = Mount {
+        point: PathBuf::from("/home"),
+        fs_type: "btrfs".into(),
+        options: vec!["rw".into()],
+    };
+    let n = notice_for(Os::Linux, FsKind::Posix, true, Some(&found), folder, "it").unwrap();
+    assert!(
+        n.blocking && n.text.contains("remount,exec '/home'"),
+        "{}",
+        n.text
+    );
+    // Nothing set, nothing found: the kit starts.
+    assert_eq!(
+        notice_for(Os::Linux, FsKind::Posix, false, None, folder, "it"),
+        None
+    );
+    assert_eq!(
+        notice_for(Os::Win32, FsKind::Ntfs, true, None, folder, "it"),
+        None
+    );
+}
+
 #[cfg(windows)]
 #[test]
 fn no_startup_problem_on_windows() {
@@ -207,6 +246,7 @@ fn no_startup_problem_on_windows() {
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64).with_host(None);
     assert_eq!(disk_notice(&kit, "it"), None);
     assert_eq!(startup_problem(&kit, "it"), None);
+    assert!(!kit_noexec(&kit));
     assert!(!kit.volume().unwrap().noexec);
 }
 
