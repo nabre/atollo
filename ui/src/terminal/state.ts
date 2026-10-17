@@ -1,7 +1,7 @@
 // The sessions of the app's terminal (macOS and Linux) and the panel's
 // state: kept by the main window while pages change, filled by the events
 // of Rust. No xterm.js here, so the window loads it only with the panel.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PtyBackend, PtyInfo } from "./api";
 
 /** The sessions and the panel's state; `enabled` false (Windows, or before
@@ -10,6 +10,9 @@ export function useTerminals(backend: PtyBackend, enabled: boolean) {
   const [sessions, setSessions] = useState<PtyInfo[]>([]);
   const [active, setActive] = useState<number | null>(null);
   const [shown, setShown] = useState(false);
+  // Every exit told: an opening read after it (a program that ended at
+  // once) still shows the session ended.
+  const exits = useRef(new Map<number, PtyInfo>());
 
   const upsert = useCallback((info: PtyInfo) => {
     setSessions((list) =>
@@ -31,7 +34,8 @@ export function useTerminals(backend: PtyBackend, enabled: boolean) {
       );
     };
     keep(
-      backend.onOpened((info) => {
+      backend.onOpened((opened) => {
+        const info = exits.current.get(opened.id) ?? opened;
         upsert(info);
         setActive(info.id);
         setShown(true);
@@ -40,6 +44,7 @@ export function useTerminals(backend: PtyBackend, enabled: boolean) {
     // Only a tab still shown: a session closed here ends after its tab.
     keep(
       backend.onExit((info) => {
+        exits.current.set(info.id, info);
         setSessions((list) => list.map((s) => (s.id === info.id ? info : s)));
       }),
     );

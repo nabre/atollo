@@ -206,6 +206,23 @@ describe("TerminalPanel", () => {
     });
   });
 
+  it("shows ended a session whose exit came before its opening", async () => {
+    const fake = fakeBackend();
+    render(<Harness backend={fake.backend} />);
+    await waitFor(() => {
+      expect(fake.sessions).toHaveBeenCalled();
+    });
+    fake.exit({ ...BASH, running: false, code: 1 });
+    fake.open(BASH, { seq: 0, data: "" });
+    expect(screen.getByRole("tab", { name: "app · bash (terminato)" })).toBeTruthy();
+    // No question: its program is gone.
+    fireEvent.click(screen.getByRole("button", { name: "Chiudi il terminale" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    await waitFor(() => {
+      expect(fake.calls).toContain("close 1");
+    });
+  });
+
   it("closes a running session once confirmed", async () => {
     const fake = fakeBackend();
     render(<Harness backend={fake.backend} />);
