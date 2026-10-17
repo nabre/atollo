@@ -6,9 +6,12 @@
 #   Inside WSL or on Linux:                bash scripts/test-linux.sh
 #
 # The repository is copied with rsync into the Linux file system
-# ($DEVKIT_LINUX_DIR, default ~/dev-kit2): on /mnt/<drive> permissions and
+# ($DEVKIT_LINUX_DIR, default ~/dev-kit2-copies/<folder>-<hash of its
+# path>, one per checkout or worktree): on /mnt/<drive> permissions and
 # symbolic links are not Linux's and the build is slow. target/ stays there
-# between runs, so the next build is incremental.
+# between runs, so the next build is incremental. Two runs on the same copy
+# take turns (flock on <copy>.lock): a run never tests another checkout's
+# code.
 #
 # Options:
 #   --clippy       also cargo clippy --all-targets -- -D warnings, before the tests
@@ -37,7 +40,9 @@ check_dest() {
 }
 
 src="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-dest="${DEVKIT_LINUX_DIR:-$HOME/dev-kit2}"
+# One copy per source folder: worktrees of the swarm run in parallel.
+src_hash="$(printf '%s' "$src" | cksum | cut -d' ' -f1)"
+dest="${DEVKIT_LINUX_DIR:-$HOME/dev-kit2-copies/$(basename "$src")-$src_hash}"
 clippy=0
 cargo_args=()
 while [ $# -gt 0 ]; do
@@ -134,6 +139,12 @@ fi
 
 mkdir -p "$dest"
 dest="$(cd "$dest" && pwd)"
+# Copy and tests of one run at a time on this copy (held until exit).
+exec 9>"$dest.lock"
+if ! flock -n 9; then
+    echo "Another run is using $dest: waiting for it to end"
+    flock 9
+fi
 if [ "$src" = "$dest" ]; then
     echo "Already in $dest: nothing to copy"
 else
