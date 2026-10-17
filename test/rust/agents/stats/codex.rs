@@ -42,6 +42,7 @@ fn windows_from_server_and_logs() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "session folders created with backslash paths")]
 fn sessions_count_growth_once() {
     let tmp = TempDir::new("stats-codex");
     let dir = tmp.0.join(".codex");

@@ -3,6 +3,7 @@ use crate::kit::{tests::TempDir, Arch};
 use std::time::SystemTime;
 
 #[test]
+#[cfg_attr(not(windows), ignore = "expected paths given with backslashes")]
 fn in_host_temp_or_data_tmp() {
     let tmp = TempDir::new("temp-work");
     let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
@@ -33,6 +34,10 @@ fn age(dir: &Path, hours: u64) {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "temporary folders created with backslash paths"
+)]
 fn sweep_keeps_live_and_new_removes_old() {
     let tmp = TempDir::new("temp-sweep");
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
@@ -77,7 +82,7 @@ fn cleanup_at_exit_removes_programs_temp_only() {
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
     let base = host.system_temp().unwrap().to_path_buf();
     let work = TempWork::new(&host, "setup/x").unwrap();
-    fs::create_dir_all(base.join(r"system\a")).unwrap();
+    fs::create_dir_all(base.join("system").join("a")).unwrap();
     fs::create_dir_all(base.join("claude")).unwrap();
     cleanup_at_exit(&host);
     assert!(!base.join("system").exists() && !base.join("claude").exists());
@@ -90,7 +95,10 @@ fn falls_back_to_data_tmp_without_space() {
     let tmp = TempDir::new("temp-space");
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
     let work = TempWork::new_with_space(&host, "setup/big", u64::MAX).unwrap();
-    assert_eq!(work.path(), host.data().join(r"tmp\setup\big"));
+    assert_eq!(
+        work.path(),
+        host.data().join("tmp").join("setup").join("big")
+    );
     let ok = TempWork::new_with_space(&host, "setup/small", 1).unwrap();
     assert!(ok.path().starts_with(host.system_temp().unwrap()));
 }

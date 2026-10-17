@@ -75,6 +75,45 @@ fn node_lines_are_lts_majors_and_the_newest() {
     assert_eq!(node_lines(&index, "win-arm64-zip"), ["20.19"]);
 }
 
+/// The newest LTS, not the newest release (T0.4.6); a line asked for gives
+/// its newest; a newer major already installed is not taken back.
+#[test]
+fn node_pick_is_the_newest_lts() {
+    let index: Vec<NodeEntry> = serde_json::from_value(serde_json::json!([
+        {"version": "v25.1.0", "files": ["win-x64-zip", "linux-arm64"], "lts": false},
+        {"version": "v25.0.0", "files": ["win-x64-zip"], "lts": false},
+        {"version": "v24.11.1", "files": ["linux-arm64"], "lts": "Krypton"},
+        {"version": "v24.11.0", "files": ["win-x64-zip", "linux-arm64"], "lts": "Krypton"},
+        {"version": "v24.10.0", "files": ["win-x64-zip"], "lts": false},
+        {"version": "v22.21.1", "files": ["win-x64-zip"], "lts": "Jod"},
+        {"version": "v21.7.3", "files": ["osx-arm64-tar"], "lts": false}
+    ]))
+    .unwrap();
+    let pick = |wanted: &str, line: Option<&str>, installed: Option<&str>| {
+        node_pick(&index, wanted, line, installed).map(|e| e.version.as_str())
+    };
+    assert_eq!(pick("win-x64-zip", None, None), Some("v24.11.0"));
+    assert_eq!(pick("linux-arm64", None, None), Some("v24.11.1"));
+    assert_eq!(
+        pick("win-x64-zip", None, Some("v22.21.1")),
+        Some("v24.11.0")
+    );
+    assert_eq!(
+        pick("win-x64-zip", None, Some("v24.11.0")),
+        Some("v24.11.0")
+    );
+    // A "Current" installed before: its major, never back to 24.
+    assert_eq!(pick("win-x64-zip", None, Some("v25.0.0")), Some("v25.1.0"));
+    assert_eq!(pick("win-x64-zip", Some("25.0"), None), Some("v25.0.0"));
+    assert_eq!(pick("win-x64-zip", Some("22.21"), None), Some("v22.21.1"));
+    assert_eq!(pick("win-x64-zip", Some("23.11"), None), None);
+    // No LTS for that archive: the newest there is.
+    assert_eq!(pick("osx-arm64-tar", None, None), Some("v21.7.3"));
+    assert_eq!(pick("osx-x64-tar", None, None), None);
+    // The major installed has no build here: the LTS.
+    assert_eq!(pick("linux-arm64", None, Some("v26.0.0")), Some("v24.11.1"));
+}
+
 #[test]
 fn custom_by_target() {
     for t in Target::ALL {

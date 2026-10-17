@@ -248,8 +248,7 @@ fn fingerprint(kit: &Kit, lang: &str) -> String {
     }
     read(&kit.app_dir().join("tool-versions.json")).hash(&mut h);
     read(&crate::versions::offered_file(kit)).hash(&mut h);
-    kit.apps()
-        .join(r"tools\vcruntime\vcruntime140.dll")
+    crate::fsx::join_rel(kit.apps(), "tools/vcruntime/vcruntime140.dll")
         .is_file()
         .hash(&mut h);
     for (project, dir) in project_dirs(kit) {

@@ -89,7 +89,7 @@ pub fn find_cabs(bytes: &[u8]) -> Vec<(usize, usize)> {
 
 /// The DLLs of the Visual C++ runtime in `tools\vcruntime`, extracted once.
 pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
-    let folder = ctx.kit.apps().join(r"tools\vcruntime");
+    let folder = join_rel(ctx.kit.apps(), "tools/vcruntime");
     if folder.join("vcruntime140.dll").is_file() && !force {
         return Ok(folder);
     }

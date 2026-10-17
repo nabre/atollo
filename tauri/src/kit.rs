@@ -324,10 +324,12 @@ impl Target {
         }
     }
 
-    /// Micromamba standalone binary asset name on GitHub releases.
+    /// Micromamba standalone binary asset name on GitHub releases (native
+    /// on every target, `win-arm64` too).
     pub const fn micromamba_asset(self) -> &'static str {
         match (self.os, self.arch) {
-            (Os::Win32, _) => "micromamba-win-64",
+            (Os::Win32, Arch::X64) => "micromamba-win-64",
+            (Os::Win32, Arch::Arm64) => "micromamba-win-arm64",
             (Os::Darwin, Arch::Arm64) => "micromamba-osx-arm64",
             (Os::Darwin, Arch::X64) => "micromamba-osx-64",
             (Os::Linux, Arch::X64) => "micromamba-linux-64",

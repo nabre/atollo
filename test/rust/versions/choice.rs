@@ -5,6 +5,10 @@ use crate::versions::tests::install_fake;
 use crate::versions::{default_dir, install_dir, remove, saved_dir, write_version, Line};
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "Windows layout: .exe keys, backslash paths and ';' in PATH"
+)]
 fn choices_rewrite_the_environment() {
     let tmp = TempDir::new("versions");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -130,6 +134,10 @@ fn choices_rewrite_the_environment() {
 /// A project on another line of PHP also gets that line's php.ini
 /// (PHPRC, and Apache's CP_PHPRC_FWD), not the default line's.
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "install_fake writes the Windows layout; backslash paths"
+)]
 fn a_php_line_brings_its_php_ini() {
     let tmp = TempDir::new("versions-php-ini");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

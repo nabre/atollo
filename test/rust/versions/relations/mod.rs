@@ -1,5 +1,23 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::{tests::TempDir, Arch, Os};
+
+#[test]
+fn windows_runtimes_only_on_windows() {
+    for id in ["vcruntime", "webview2", "x64-emulation"] {
+        assert!(checks::runtime_on(id, Os::Win32), "{id}");
+        assert!(!checks::runtime_on(id, Os::Linux), "{id}");
+        assert!(!checks::runtime_on(id, Os::Darwin), "{id}");
+    }
+    assert!(checks::runtime_on("something-else", Os::Linux));
+    // Every runtime of the knowledge file is named there.
+    for r in &known().runtimes {
+        assert!(
+            ["vcruntime", "webview2", "x64-emulation"].contains(&r.id.as_str()),
+            "{}: say on which systems it exists (checks::runtime_on)",
+            r.id
+        );
+    }
+}
 
 /// `id` installed at `version`: its key files, in the folder of its line.
 fn fake(kit: &Kit, id: &str, version: &str) {

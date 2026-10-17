@@ -68,6 +68,10 @@ fn urls_and_domains() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "backslash paths and junctions made with mklink /J"
+)]
 fn resolved_only_inside_the_projects_without_links() {
     let tmp = TempDir::new("site-alias");
     let projects = tmp.0.join("projects");

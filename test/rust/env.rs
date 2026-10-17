@@ -33,6 +33,10 @@ fn fake_kit(name: &str, installed: &[&str]) -> (TempDir, Kit) {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "HOMEDRIVE and HOMEPATH exist only with a drive letter"
+)]
 fn profile_and_temp_inside_kit() {
     let (_tmp, kit) = fake_kit("env-profile", &[]);
     let env = KitEnv::build(&kit, &Settings::default(), "it", &host());
@@ -65,6 +69,10 @@ fn profile_and_temp_inside_kit() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "Windows paths with backslashes in the expected values"
+)]
 fn program_temp_decision_table() {
     use crate::os::volume::FsKind;
     let vol = |fs, drive| Some(VolumeInfo { fs, drive, free: 1 });
@@ -165,6 +173,7 @@ fn nothing_from_the_user_profile_leaks() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "Windows PATH: System32 and git/cmd")]
 fn path_is_kit_then_system_only() {
     let (_tmp, kit) = fake_kit(
         "env-path",
@@ -273,6 +282,10 @@ fn secrets_are_masked() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "Windows layout: backslash folders, .exe keys and ';' in PATH"
+)]
 fn languages_from_the_folder_of_their_version() {
     let (_tmp, kit) = fake_kit(
         "env-versions",

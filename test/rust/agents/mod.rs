@@ -2,6 +2,7 @@ use super::*;
 use crate::kit::{tests::TempDir, Arch};
 
 #[test]
+#[cfg_attr(not(windows), ignore = "credential files written with backslash paths")]
 fn sign_in_detection() {
     let tmp = TempDir::new("agents");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

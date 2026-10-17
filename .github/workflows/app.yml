@@ -2,8 +2,12 @@ name: App
 
 on:
   push:
-    branches: [main]
+    # feature/platforms is the integration branch of the macOS and Linux
+    # port (PLAN-PIATTAFORME.md §7).
+    branches: [main, feature/platforms]
     tags: ['app-v*']
+  # Every base branch, feature/platforms too: the coordinator sees macOS
+  # and Linux before each merge (T0.6.7).
   pull_request:
   workflow_dispatch:
 
@@ -46,18 +50,45 @@ jobs:
         run: cargo fmt --check
       - name: cargo clippy
         run: cargo clippy --all-targets -- -D warnings
+      # Still in pwsh, as before; stdout (where the results are) is kept for
+      # the counts in the job's summary, and the step ends with cargo's
+      # $LASTEXITCODE.
       - name: cargo test
-        run: cargo test
+        run: cargo test | Tee-Object -FilePath cargo-test.log
+      - name: Test summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### cargo test (win32-x64)"
+            if grep -q '^test result:' cargo-test.log 2>/dev/null; then
+              grep '^test result:' cargo-test.log | awk '{ p += $4; f += $6; i += $8 } END { printf "| passed | failed | ignored |\n| ---: | ---: | ---: |\n| %d | %d | %d |\n", p, f, i }'
+              grep -E '^test .* \.\.\. FAILED$' cargo-test.log | sed 's/^/- /' || true
+            else
+              echo "No test result: the tests did not build or run (see the log)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
-  # The crate compiles on macOS and Linux too (B7 / N-A1): verification
-  # only, nothing is built or shipped for them.
-  check-unix:
-    name: Check ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  # cargo test on macOS and Linux (WP-0.6). Tests that only hold on Windows
+  # (Windows paths, cmd.exe, junctions) carry
+  # #[cfg_attr(not(windows), ignore = "...")] and count as ignored here.
+  # tauri 2.12.1 builds its `test` feature on macOS too (2.12.0 did not:
+  # MockRuntime without `transparent`), so every job runs the whole suite.
+  test-unix:
+    name: Test ${{ matrix.target }}
+    # The runner comes from the target, so `target` is the only matrix key.
+    # macos-13 is retired; macos-15-intel is the last x64 macOS image.
+    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-latest","linux-arm64":"ubuntu-24.04-arm","darwin-arm64":"macos-latest","darwin-x64":"macos-15-intel"}')[matrix.target] }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # A repository without ARM64 runners (a private one may have none)
+        # sets the variable ARM64_RUNNERS to off: linux-arm64 is left out of
+        # the list instead of waiting for a runner that never comes. Not an
+        # exclude plus include: GitHub applies include after exclude and
+        # would add the excluded target back as a new combination.
+        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64","darwin-x64"]' || '["linux-x64","linux-arm64","darwin-arm64","darwin-x64"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -66,24 +97,111 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
       - name: System libraries of Tauri 2 (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev libdbus-1-dev libxdo-dev pkg-config
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev patchelf libssl-dev libdbus-1-dev libxdo-dev pkg-config build-essential
       # tauri::generate_context! needs the frontend in dist/.
       - name: Frontend dependencies
         run: npm ci --no-fund --no-audit
       - name: Frontend build
         run: npm -w ui run build
-      - name: cargo check
-        run: cargo check
-      # The tests too on Linux; on macOS tauri 2.12's test feature does not
-      # build (mock runtime without `transparent`).
-      - name: cargo check (tests)
-        if: runner.os == 'Linux'
-        run: cargo check --all-targets
+      # Vitest once off Windows (paths, line endings): the x64 Linux job.
+      - name: Frontend tests
+        if: matrix.target == 'linux-x64'
+        run: npm -w ui test
+      # scripts/test-linux.sh copies with rsync --delete: only into an empty
+      # folder or one it made (marker), never into a clone with its own work.
+      - name: test-linux.sh copy guard
+        if: matrix.target == 'linux-x64'
+        shell: bash
+        run: |
+          t="$RUNNER_TEMP/guard"
+          mkdir -p "$t/empty" "$t/copy" "$t/clone/.git" "$t/clone/tauri" "$t/other"
+          touch "$t/copy/.atollo-linux-copy" "$t/clone/Cargo.toml" "$t/other/x"
+          check() {
+            local got=0
+            ATOLLO_LINUX_DIR="$t/$1" bash scripts/test-linux.sh --check-dest >/dev/null 2>&1 || got=$?
+            echo "$1: exit $got (want $2)"
+            [ "$got" -eq "$2" ]
+          }
+          check empty 0 && check absent 0 && check copy 0 && check clone 2 && check other 2
+      - name: cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+      # The output is kept for the summary; pipefail keeps cargo's exit code
+      # through tee.
+      - name: cargo test
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo test 2>&1 | tee cargo-test.log
+      - name: Test summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### cargo test (${{ matrix.target }})"
+            if grep -q '^test result:' cargo-test.log 2>/dev/null; then
+              grep '^test result:' cargo-test.log | awk '{ p += $4; f += $6; i += $8 } END { printf "| passed | failed | ignored |\n| ---: | ---: | ---: |\n| %d | %d | %d |\n", p, f, i }'
+              grep -E '^test .* \.\.\. FAILED$' cargo-test.log | sed 's/^/- /' || true
+            else
+              echo "No test result: the tests did not build or run (see the log)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # cargo test natively on Windows ARM64: the build job only cross-compiles
+  # aarch64-pc-windows-msvc on x64 (T0.6.5). Left out with ARM64_RUNNERS=off.
+  test-windows-arm64:
+    name: Test win32-arm64
+    runs-on: windows-11-arm
+    if: vars.ARM64_RUNNERS != 'off'
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+      # The native toolchain by name: an x64 rustup (preinstalled, or
+      # rustup-init run under emulation) would otherwise pick an x64 host
+      # and test an emulated build.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable-aarch64-pc-windows-msvc
+      # No silent fallback to emulation: the job fails unless rustc is native.
+      - name: Native aarch64 toolchain
+        shell: bash
+        run: |
+          rustc -vV
+          rustc -vV | tr -d '\r' | grep -qx 'host: aarch64-pc-windows-msvc' || { echo "rustc is not aarch64-pc-windows-msvc: the tests would run under emulation" >&2; exit 1; }
+      - uses: Swatinem/rust-cache@v2
+      - name: Frontend dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Frontend build
+        run: npm -w ui run build
+      # pwsh, as in the x64 job.
+      - name: cargo test
+        run: cargo test | Tee-Object -FilePath cargo-test.log
+      - name: Test summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### cargo test (win32-arm64)"
+            if grep -q '^test result:' cargo-test.log 2>/dev/null; then
+              grep '^test result:' cargo-test.log | awk '{ p += $4; f += $6; i += $8 } END { printf "| passed | failed | ignored |\n| ---: | ---: | ---: |\n| %d | %d | %d |\n", p, f, i }'
+              grep -E '^test .* \.\.\. FAILED$' cargo-test.log | sed 's/^/- /' || true
+            else
+              echo "No test result: the tests did not build or run (see the log)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   build:
     name: Build ${{ matrix.target }}

@@ -114,8 +114,8 @@ fn github_full_name(url: &str) -> Option<String> {
 }
 
 /// The remotes' URLs in a clone's `.git\config`.
-fn remote_urls(dir: &Path) -> Vec<String> {
-    fs::read_to_string(dir.join(r".git\config"))
+pub(crate) fn remote_urls(dir: &Path) -> Vec<String> {
+    fs::read_to_string(dir.join(".git").join("config"))
         .unwrap_or_default()
         .lines()
         .filter_map(|l| {

@@ -30,6 +30,10 @@ fn existing_folders() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "expects the Windows separator in the kept names"
+)]
 fn merging_keeps_what_is_there() {
     let tmp = TempDir::new("frameworks-merge");
     let (from, to) = (tmp.0.join("from"), tmp.0.join("to"));

@@ -21,8 +21,49 @@ fn commands() {
     );
     assert_eq!(parse(&args(&["--version"])), Cli::Version);
     assert_eq!(parse(&args(&["/?"])), Cli::Help);
-    assert_eq!(parse(&args(&["components"])), Cli::Components);
+    assert_eq!(parse(&args(&["components"])), Cli::Components(None));
     assert_eq!(parse(&args(&["x"])), Cli::Unknown("x".into()));
+}
+
+#[test]
+fn components_for_a_target() {
+    use crate::kit::Target;
+    assert_eq!(
+        parse(&args(&["components", "--target", "Linux-ARM64"])),
+        Cli::Components(Some(Target::LINUX_ARM64))
+    );
+    assert_eq!(
+        parse(&args(&["components", "--target", "beos-x64"])),
+        Cli::Unknown("components --target".into())
+    );
+    assert_eq!(
+        parse(&args(&["components", "--target"])),
+        Cli::Unknown("components --target".into())
+    );
+}
+
+/// WP-0.4: `components --target linux-arm64` names what is missing there,
+/// with the catalog's reason.
+#[test]
+fn components_say_why_not_on_linux_arm64() {
+    let tmp = std::env::temp_dir().join(format!("atollo-cli-components-{}", std::process::id()));
+    let kit = Kit::at(tmp.clone(), crate::kit::Arch::detect())
+        .for_target(crate::kit::Target::LINUX_ARM64);
+    let mut out = Vec::new();
+    print_components(&kit, "en", &mut out).unwrap();
+    let text = String::from_utf8(out).unwrap();
+    let line = |id: &str| {
+        text.lines()
+            // After the mark `[x] ` / `[ ] `.
+            .find(|l| l.get(4..).and_then(|r| r.split_whitespace().next()) == Some(id))
+            .unwrap_or_else(|| panic!("no line for {id}: {text}"))
+            .to_owned()
+    };
+    for id in ["android", "sqlite"] {
+        assert!(line(id).contains("not available"), "{}", line(id));
+    }
+    assert!(!line("node").contains("not available"), "{}", line("node"));
+    let _ = std::fs::remove_dir_all(tmp);
 }
 
 #[test]

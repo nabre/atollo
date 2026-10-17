@@ -71,6 +71,7 @@ fn ports_are_kept_and_locked() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "ports.json paths given with backslashes")]
 fn ports_per_project_file() {
     let tmp = TempDir::new("run-ports-files");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -121,6 +122,7 @@ fn ports_per_project_file() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "cmd.exe commands (%PORT%, exit /b, ping -n)")]
 fn runs_and_stops_commands() {
     let tmp = TempDir::new("run-cmd");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

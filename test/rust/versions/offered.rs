@@ -39,6 +39,7 @@ fn stale_lists_are_asked_for_again() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "install_fake writes the Windows layout")]
 fn offered_lines_and_downloads() {
     let tmp = TempDir::new("versions-offered");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

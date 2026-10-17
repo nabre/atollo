@@ -1,6 +1,8 @@
 # Atollo: Git Bash of the kit (written by Atollo.exe to data\kit\bashrc).
 # Started as: bash --rcfile <this file> -i. The PC's ~/.bashrc is not read:
 # HOME is data\home, so a ~/.bashrc there (yours) is loaded at the end.
+# Also read by the system bash of macOS (3.2) and Linux: no bash 4 syntax
+# (${var,,}, declare -A, mapfile, ;& and ;;&).
 
 export HISTFILE="$HOME/.bash_history"
 export HISTSIZE=10000
@@ -13,6 +15,7 @@ shopt -s histappend
 # page) keeps its own.
 __atollo_versions() {
     local projects here project file from to fu tu name value entry out
+    local nocase=""
     [ -n "$CP_ROOT" ] && [ -n "$CP_DATA" ] && [ -z "$ATOLLO_TERMINAL" ] || return 0
     __atollo_p() {
         if command -v cygpath >/dev/null 2>&1; then
@@ -21,14 +24,25 @@ __atollo_versions() {
             printf '%s\n' "$1"
         fi
     }
+    # Paths compare ignoring case where the file system does (Windows,
+    # macOS), exactly on Linux. nocasematch (bash 3.1) covers the case
+    # statements below without a process per string; restored at the end.
+    shopt -q nocasematch && nocase=1
+    case "$OSTYPE" in
+        msys* | cygwin* | darwin*) shopt -s nocasematch ;;
+    esac
+    __atollo_done() {
+        [ -n "$nocase" ] || shopt -u nocasematch
+        unset -f __atollo_p __atollo_done
+    }
     projects="$(__atollo_p "$CP_ROOT")/projects/"
     here="$PWD/"
-    case "${here,,}" in "${projects,,}"?*) ;; *) unset -f __atollo_p; return 0 ;; esac
+    case "$here" in "$projects"?*) ;; *) __atollo_done; return 0 ;; esac
     project="${here:${#projects}}"
     project="${project%%/*}"
     file="$(__atollo_p "$CP_DATA")/projects/$project/versions.txt"
     if [ ! -f "$file" ]; then
-        unset -f __atollo_p
+        __atollo_done
         return 0
     fi
     while IFS=$'\t' read -r from to; do
@@ -39,8 +53,8 @@ __atollo_versions() {
         out=""
         local IFS=':'
         for entry in $PATH; do
-            case "${entry,,}" in
-                "${fu,,}" | "${fu,,}"/*) entry="$tu${entry:${#fu}}" ;;
+            case "$entry" in
+                "$fu" | "$fu"/*) entry="$tu${entry:${#fu}}" ;;
             esac
             out="${out:+$out:}$entry"
         done
@@ -48,12 +62,12 @@ __atollo_versions() {
         PATH="$out"
         for name in JAVA_HOME DOTNET_ROOT CP_PHP PHPRC CP_APACHE CP_NGINX; do
             value="${!name}"
-            case "${value,,}" in
-                "${from,,}" | "${from,,}"\\* | "${from,,}"/*) export "$name=$to${value:${#from}}" ;;
+            case "$value" in
+                "$from" | "$from"\\* | "$from"/*) export "$name=$to${value:${#from}}" ;;
             esac
         done
     done < "$file"
-    unset -f __atollo_p
+    __atollo_done
     export PATH
 }
 __atollo_versions
