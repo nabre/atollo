@@ -369,28 +369,34 @@ fn prepare_creates_only_inside_root_and_detects_move() {
     assert_eq!(entries.len(), 1, "nothing created next to the kit");
 }
 
-/// D-92: a conda environment (Git, R off Windows) has its folder written
-/// inside, so a moved kit marks it to be installed again; on Windows every
-/// component moves with the kit.
+/// D-92: a conda environment (R and Ruby off Windows) has its folder
+/// written inside, so a moved kit marks it to be installed again; Git
+/// (dugite-native, WP-2.1) follows the kit; on Windows every component
+/// moves with the kit.
 #[test]
 fn moving_the_kit_flags_the_conda_components_off_windows() {
     let catalog = crate::setup::catalog::Catalog::get();
     let flagged = |kit: &Kit| -> Vec<&str> {
-        ["git", "r", "python", "node"]
+        ["git", "r", "ruby", "python", "node"]
             .into_iter()
             .filter(|id| catalog.find(id).unwrap().needs_reinstall(kit))
             .collect()
     };
     for (target, expected) in [
-        (Target::LINUX_X64, vec!["git", "r"]),
-        (Target::DARWIN_ARM64, vec!["git", "r"]),
+        (Target::LINUX_X64, vec!["r", "ruby"]),
+        (Target::DARWIN_ARM64, vec!["r", "ruby"]),
         (Target::WIN32_X64, vec![]),
     ] {
         let tmp = TempDir::new(&format!("moved-{target}"));
         let first = Kit::at_target(tmp.0.join("one"), target);
         assert_eq!(first.prepare().unwrap(), None);
-        // Git, R and Python on disk; Node is not.
-        for rel in ["git/2.51/bin/git", "r/4.5/bin/R", "python/3.13/bin/python3"] {
+        // Git, R, Ruby and Python on disk; Node is not.
+        for rel in [
+            "git/2.51/bin/git",
+            "r/4.5/bin/R",
+            "ruby/3.4/bin/ruby",
+            "python/3.13/bin/python3",
+        ] {
             let file = crate::fsx::join_rel(first.apps(), rel);
             fs::create_dir_all(file.parent().unwrap()).unwrap();
             fs::write(&file, b"x").unwrap();
@@ -447,7 +453,8 @@ fn case_only_move_is_a_move_off_windows() {
         let tmp = TempDir::new(&format!("case-{target}"));
         let first = Kit::at_target(tmp.0.join("Kit"), target);
         assert_eq!(first.prepare().unwrap(), None);
-        let file = crate::fsx::join_rel(first.apps(), "git/2.51/bin/git");
+        // R: a conda environment off Windows.
+        let file = crate::fsx::join_rel(first.apps(), "r/4.5/bin/R");
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(&file, b"x").unwrap();
         // Renamed in two steps: also where the file system ignores case.
@@ -456,8 +463,8 @@ fn case_only_move_is_a_move_off_windows() {
         let moved = Kit::at_target(tmp.0.join("kit"), target);
         let expected = moves.then(|| first.root().to_path_buf());
         assert_eq!(moved.prepare().unwrap(), expected, "{target}");
-        let git = catalog.find("git").unwrap();
-        assert_eq!(git.needs_reinstall(&moved), moves, "{target}");
+        let r = catalog.find("r").unwrap();
+        assert_eq!(r.needs_reinstall(&moved), moves, "{target}");
     }
 }
 

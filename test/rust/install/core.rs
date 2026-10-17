@@ -117,12 +117,124 @@ fn node_pick_is_the_newest_lts() {
 #[test]
 fn custom_by_target() {
     for t in Target::ALL {
-        // Git: its archive on Windows, micromamba on macOS and Linux.
-        assert_eq!(Git.custom(t), !t.is_windows(), "git on {t}");
+        // Git: an archive everywhere (PortableGit, dugite-native), and it
+        // follows the kit everywhere (WP-2.1).
+        assert!(!Git.custom(t), "git on {t}");
+        assert!(Git.relocatable(t), "git on {t}");
         // Archives everywhere.
         assert!(!Python.custom(t), "python on {t}");
         // Processes everywhere.
         let r = super::super::installer("r").map(|i| i.custom(t));
         assert_eq!(r, Some(true), "r on {t}");
     }
+}
+
+/// WP-2.1: the dugite-native asset of each Unix target (names of the
+/// v2.53.0-4 release, checked on GitHub), never the 32-bit builds;
+/// PortableGit on Windows.
+#[test]
+fn dugite_asset_per_target() {
+    let assets = [
+        "dugite-native-v2.53.0-4098283-macOS-arm64.tar.gz",
+        "dugite-native-v2.53.0-4098283-macOS-arm64.tar.gz.sha256",
+        "dugite-native-v2.53.0-4098283-macOS-arm64.lzma",
+        "dugite-native-v2.53.0-4098283-macOS-x64.tar.gz",
+        "dugite-native-v2.53.0-4098283-ubuntu-arm.tar.gz",
+        "dugite-native-v2.53.0-4098283-ubuntu-arm64.tar.gz",
+        "dugite-native-v2.53.0-4098283-ubuntu-x64.tar.gz",
+        "dugite-native-v2.53.0-4098283-ubuntu-x86.tar.gz",
+        "dugite-native-v2.53.0-4098283-windows-arm64.tar.gz",
+        "dugite-native-v2.53.0-4098283-windows-x64.tar.gz",
+    ];
+    for (t, want) in [
+        (Target::DARWIN_ARM64, Some("macOS-arm64.tar.gz")),
+        (Target::DARWIN_X64, Some("macOS-x64.tar.gz")),
+        (Target::LINUX_X64, Some("ubuntu-x64.tar.gz")),
+        (Target::LINUX_ARM64, Some("ubuntu-arm64.tar.gz")),
+        (Target::WIN32_X64, None),
+        (Target::WIN32_ARM64, None),
+    ] {
+        let Some(re) = dugite_asset_pattern(t) else {
+            assert_eq!(want, None, "{t}");
+            continue;
+        };
+        let re = regex::Regex::new(&re).unwrap();
+        let found: Vec<&str> = assets.iter().copied().filter(|a| re.is_match(a)).collect();
+        assert_eq!(found.len(), 1, "{t}: {found:?}");
+        assert!(found[0].ends_with(want.unwrap()), "{t}: {found:?}");
+    }
+    assert_eq!(dugite_version("v2.53.0-4"), "2.53.0-4");
+    assert_eq!(
+        crate::versions::line_of(&dugite_version("v2.53.0-4")).as_deref(),
+        Some("2.53")
+    );
+}
+
+/// T2.1.4: the credential helper goes into dugite's `etc/gitconfig` once,
+/// next to what is there; a helper already set stays.
+#[test]
+fn unix_gitconfig_gets_the_credential_helper_once() {
+    assert_eq!(unix_credential_helper(true), "osxkeychain");
+    assert_eq!(unix_credential_helper(false), "cache --timeout=3600");
+    let dugite = "[include]\n  path=/etc/gitconfig\n\n[credential \"https://dev.azure.com\"]\n  useHttpPath = true\n";
+    let new = gitconfig_with_helper(dugite, "cache --timeout=3600").unwrap();
+    assert!(new.starts_with(dugite), "{new}");
+    assert!(
+        new.ends_with("[credential]\n\thelper = cache --timeout=3600\n"),
+        "{new}"
+    );
+    assert_eq!(gitconfig_with_helper(&new, "osxkeychain"), None);
+    // A helper of the user: kept, also with other spacing and case.
+    assert_eq!(
+        gitconfig_with_helper("[Credential]\n    Helper=store\n", "cache"),
+        None
+    );
+    // A helper only for one host is not the default one.
+    assert!(gitconfig_with_helper(
+        "[credential \"https://example.com\"]\n\thelper = store",
+        "cache"
+    )
+    .is_some_and(|t| t.contains("example.com\"]\n\thelper = store\n#")));
+    assert!(gitconfig_with_helper("", "cache").is_some_and(|t| t.starts_with("# Dev-Kit")));
+}
+
+/// T2.1.3: the conda-forge Git of an older Dev-Kit (the only one that
+/// cannot move) is marked once to be installed again; dugite's folder and
+/// Windows are left alone.
+#[test]
+fn conda_git_is_marked_once_for_reinstall() {
+    let tmp = crate::kit::tests::TempDir::new("conda-git");
+    let git = crate::setup::catalog::Catalog::get().find("git").unwrap();
+    for target in [Target::LINUX_X64, Target::DARWIN_ARM64, Target::WIN32_X64] {
+        let kit = crate::kit::Kit::at_target(tmp.0.join(target.as_str()), target);
+        let store = git.folder_path(&kit).unwrap();
+        // The installed line 2.51, with the key of `target`.
+        let line = store.join("2.51");
+        let key = git.key_for(target);
+        let key_file = crate::fsx::join_rel(&line, key.strip_prefix("git/").unwrap());
+        fs::create_dir_all(key_file.parent().unwrap()).unwrap();
+        fs::write(&key_file, b"x").unwrap();
+        fs::create_dir_all(line.join("libexec").join("git-core")).unwrap();
+        git.save_version(&kit, "2.51.0").unwrap();
+        Git.relocate(&kit, git).unwrap();
+        assert!(!git.needs_reinstall(&kit), "{target}: dugite's layout");
+        // An old conda line not removed yet (in use) does not count.
+        fs::create_dir_all(store.join("2.50").join("conda-meta")).unwrap();
+        Git.relocate(&kit, git).unwrap();
+        assert!(!git.needs_reinstall(&kit), "{target}: old line");
+        fs::create_dir_all(line.join("conda-meta")).unwrap();
+        assert!(has_conda_git(&line));
+        Git.relocate(&kit, git).unwrap();
+        assert_eq!(git.needs_reinstall(&kit), !target.is_windows(), "{target}");
+        // Installed again (install::install clears it) with dugite.
+        git.clear_reinstall(&kit);
+        fs::remove_dir_all(line.join("conda-meta")).unwrap();
+        Git.relocate(&kit, git).unwrap();
+        assert!(!git.needs_reinstall(&kit), "{target}: replaced");
+    }
+    assert!(!has_conda_git(&tmp.0.join("missing")));
+    // The layout before lines: `git` itself is the environment.
+    let flat = tmp.0.join("flat").join("git");
+    fs::create_dir_all(flat.join("conda-meta")).unwrap();
+    assert!(has_conda_git(&flat));
 }
