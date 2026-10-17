@@ -766,5 +766,9 @@
   "Versione del server": "Server-Version",
   "Ogni versione ha la sua porta e i suoi dati: cambiandola, database e utente si creano anche sulla nuova, vuoti (i dati si portano con una copia).": "Jede Version hat ihren eigenen Port und ihre eigenen Daten: beim Wechsel werden Datenbank und Benutzer auch auf der neuen angelegt, leer (die Daten wandern mit einer Kopie).",
   "Ogni versione ha la sua porta e i suoi dati.": "Jede Version hat ihren eigenen Port und ihre eigenen Daten.",
-  "Quella del server ({0})": "Die des Servers ({0})"
+  "Quella del server ({0})": "Die des Servers ({0})",
+  "{0} {1} non è installata: il database del progetto è su questa versione, che non si avvia. Installala, o scegli un'altra versione (database e utente si creano anche lì, vuoti).": "{0} {1} ist nicht installiert: Die Datenbank des Projekts liegt auf dieser Version, die nicht startet. Installiere sie oder wähle eine andere Version (Datenbank und Benutzer werden auch dort angelegt, leer).",
+  "{0} {1} non è installata: installala, o scegli un'altra versione per il database del progetto.": "{0} {1} ist nicht installiert: Installiere sie oder wähle eine andere Version für die Datenbank des Projekts.",
+  "Installa {0} {1}": "{0} {1} installieren",
+  "{0} (non installata)": "{0} (nicht installiert)"
 }
