@@ -269,7 +269,7 @@ impl WebServers {
         match pool.engine {
             WebServerEngine::Apache => {
                 let apache_dir = component_dir(&self.kit, "apache", pool.server_line.as_deref());
-                let base = fs::read_to_string(apache_dir.join(r"conf\httpd.conf"))
+                let base = fs::read_to_string(apache_dir.join("conf").join("httpd.conf"))
                     .context("Apache httpd.conf")?;
                 for site in served {
                     let proj_root = self.kit.projects().join(&site.project);

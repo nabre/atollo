@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use super::known::known;
 use super::{admits, name_of, split, version_of, Have, Link, LinkStatus, RuntimeState};
-use crate::kit::Kit;
+use crate::kit::{Kit, Os};
 use crate::setup::catalog::Catalog;
 use crate::versions::ranges::{Bare, Range};
 
@@ -72,6 +72,16 @@ pub(super) fn links(lang: &str, haves: &BTreeMap<String, Have>) -> Vec<Link> {
         .collect()
 }
 
+/// The system runtime `id` exists on `os`: the Visual C++ DLLs, WebView2
+/// and the x64 emulation of Windows 11 are Windows pieces, never missing
+/// on macOS or Linux.
+pub(super) fn runtime_on(id: &str, os: Os) -> bool {
+    match id {
+        "vcruntime" | "webview2" | "x64-emulation" => os.is_windows(),
+        _ => true,
+    }
+}
+
 pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) -> Vec<RuntimeState> {
     let catalog = Catalog::get();
     let arm64 = kit.arch() == crate::kit::Arch::Arm64;
@@ -79,7 +89,7 @@ pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) ->
     known()
         .runtimes
         .iter()
-        .filter(|s| !s.arm64 || arm64)
+        .filter(|s| (!s.arm64 || arm64) && runtime_on(&s.id, kit.os()))
         .map(|s| {
             let mut needed_by: Vec<String> = Vec::new();
             for f in &s.for_ {
@@ -98,7 +108,7 @@ pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) ->
             }
             let (present, detail) = match s.id.as_str() {
                 "vcruntime" => {
-                    let dll = kit.apps().join(r"tools\vcruntime\vcruntime140.dll");
+                    let dll = crate::fsx::join_rel(kit.apps(), "tools/vcruntime/vcruntime140.dll");
                     (dll.is_file(), None)
                 }
                 "webview2" => match crate::os::webview::found(kit) {

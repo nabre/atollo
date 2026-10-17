@@ -104,8 +104,7 @@ fn set_themes(existing: &Map<String, Value>, out: &mut Map<String, Value>) {
 }
 
 pub fn settings_path(kit: &Kit) -> PathBuf {
-    kit.data()
-        .join(r"vscodium-server\data\Machine\settings.json")
+    crate::fsx::join_rel(kit.data(), "vscodium-server/data/Machine/settings.json")
 }
 
 /// How the kit's PowerShell is started (editor, console windows, tasks).
@@ -162,7 +161,7 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
         if exe.is_file() {
             // Antigravity through the kit's agy.cmd: it carries the login.
             let path = if name == "Antigravity" {
-                kit.kit_files().join(r"bin\agy.cmd")
+                kit.kit_files().join("bin").join("agy.cmd")
             } else {
                 exe
             };
