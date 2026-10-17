@@ -446,9 +446,10 @@ fn prepare(
 }
 
 /// Help text of the command line (Italian source; translated by the
-/// catalog). `{0}` is the program's name ([`program_name`]); the target ids
+/// catalog). `{0}` is the program's name ([`program_name`]), `{1}` the
+/// kit's Antigravity command ([`help_text`]); the target ids
 /// are those of `Target::ALL`.
-const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
+const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
 
 /// The program's name in the help: `Atollo.exe` on Windows, as always;
 /// elsewhere the file it was started from (`Atollo`, `Atollo`, ...), or
@@ -463,8 +464,11 @@ fn program_name(os: kit::Os, exe: Option<&Path>) -> String {
         .unwrap_or_else(|| "Atollo".to_owned())
 }
 
+/// The help for `os`; `{1}` is the kit's Antigravity command (`agy.cmd`
+/// on Windows, as always; `agy` elsewhere).
 fn help_text(lang: &str, os: kit::Os, exe: Option<&Path>) -> String {
-    i18n::t(lang, HELP, &[&program_name(os, exe)])
+    let agy = if os.is_windows() { "agy.cmd" } else { "agy" };
+    i18n::t(lang, HELP, &[&program_name(os, exe), agy])
 }
 
 /// `versions <id>`: the lines of `id` its source offers.
@@ -503,12 +507,11 @@ fn version_lines(kit: &Kit, kit_env: &KitEnv, settings: &Settings, host: &Host, 
     }
 }
 
+/// The help for this program: [`kit::app_exe`] names the AppImage when the
+/// app runs from one, not the inner program of its temporary mount, which
+/// the user cannot start.
 fn help(lang: &str) -> String {
-    help_text(
-        lang,
-        kit::Os::current(),
-        std::env::current_exe().ok().as_deref(),
-    )
+    help_text(lang, kit::Os::current(), kit::app_exe().as_deref())
 }
 
 /// The app's context, expanded once for the app and its tests: on macOS
