@@ -96,14 +96,7 @@ fn git_state_from_files() {
     // it points to: here the real repository of `p`.
     let linked = tmp.0.join("linked");
     fs::create_dir_all(&linked).unwrap();
-    let status = std::process::Command::new("cmd")
-        .args(["/d", "/c", "mklink", "/J"])
-        .arg(linked.join(".git"))
-        .arg(&g)
-        .stdout(std::process::Stdio::null())
-        .status()
-        .unwrap();
-    assert!(status.success(), "mklink /J");
+    crate::os::safe_path::tests::junction(&linked.join(".git"), &g);
     assert!(git_dir(&linked, &tmp.0).is_none(), "junction .git refused");
     assert!(git_info(&linked, &tmp.0).is_none());
 }
