@@ -480,10 +480,6 @@ fn build_app<R: tauri::Runtime>(
     state: AppState,
     kit: Kit,
 ) -> tauri::Builder<R> {
-    // The folder and file windows of macOS and Linux, used from Rust only
-    // (editor/picker.rs); Windows keeps IFileOpenDialog.
-    #[cfg(unix)]
-    let builder = builder.plugin(tauri_plugin_dialog::init());
     builder
         .manage(state)
         .manage(editor::terminal::Consoles::default())
