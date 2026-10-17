@@ -16,9 +16,10 @@ use anyhow::{Context, Result};
 use serde_json::{json, Map, Value};
 
 use crate::fsx::write_atomic;
-use crate::kit::Kit;
+use crate::kit::{Kit, Os};
 
-/// Profiles owned by the kit (rewritten) and the PC profiles hidden.
+/// Profiles owned by the kit (rewritten) and the PC profiles hidden, on
+/// Windows.
 pub const KIT_PROFILES: &[&str] = &[
     "Atollo",
     "Atollo - Git Bash",
@@ -35,7 +36,66 @@ const HIDDEN: &[&str] = &[
     "JavaScript Debug Terminal",
 ];
 
+/// The same on macOS and Linux: the system's bash (Git of the kit has no
+/// shell there, T1.3.2) and, on macOS, zsh; never cmd.
+pub const KIT_PROFILES_UNIX: &[&str] = &[
+    "Atollo",
+    "Atollo - Bash",
+    "Atollo - zsh",
+    "Claude Code",
+    "Codex",
+    "Antigravity",
+];
+/// The shells VSCodium detects on macOS and Linux: those of /etc/shells,
+/// named after their file (macOS lists csh, dash, ksh and tcsh too).
+const HIDDEN_UNIX: &[&str] = &[
+    "bash",
+    "zsh",
+    "fish",
+    "tmux",
+    "pwsh",
+    "sh",
+    "csh",
+    "tcsh",
+    "ksh",
+    "dash",
+    "rbash",
+    "JavaScript Debug Terminal",
+];
+
 pub const DEFAULT_PROFILE: &str = "Atollo";
+/// The default on macOS and Linux without the kit's PowerShell.
+pub const DEFAULT_PROFILE_UNIX: &str = "Atollo - Bash";
+/// The shells of macOS and Linux the kit starts (never one of the user's
+/// PATH): bash for the kit's `bashrc`, zsh on macOS.
+pub const BASH: &str = "/bin/bash";
+pub const ZSH: &str = "/bin/zsh";
+
+/// The suffix of the editor's per-system settings
+/// (`terminal.integrated.profiles.<os>`).
+fn os_key(os: Os) -> &'static str {
+    match os {
+        Os::Win32 => "windows",
+        Os::Darwin => "osx",
+        Os::Linux => "linux",
+    }
+}
+
+fn kit_profile_names(os: Os) -> &'static [&'static str] {
+    if os.is_windows() {
+        KIT_PROFILES
+    } else {
+        KIT_PROFILES_UNIX
+    }
+}
+
+fn hidden(os: Os) -> &'static [&'static str] {
+    if os.is_windows() {
+        HIDDEN
+    } else {
+        HIDDEN_UNIX
+    }
+}
 
 /// The kit's themes (editor/theme.rs) in place of VSCodium's own: a theme
 /// setting missing or on one of these becomes Atollo's; any other theme is
@@ -127,8 +187,15 @@ fn profile(path: &Path, args: &[String], icon: &str) -> Value {
     json!({ "path": path.display().to_string(), "args": args, "icon": icon, "overrideName": true })
 }
 
-/// The kit profiles for what is installed now.
+/// The arguments of bash with the kit's `bashrc`.
+pub fn bash_args(kit: &Kit) -> Vec<String> {
+    let rc = kit.kit_files().join("bashrc").display().to_string();
+    vec!["--rcfile".into(), rc, "-i".into()]
+}
+
+/// The kit profiles for what is installed now, for the kit's system.
 pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
+    let os = kit.os();
     let app = |rel: &str| crate::setup::catalog::kit_path(kit, rel);
     let mut out = Map::new();
     let pwsh = app(r"pwsh\pwsh.exe");
@@ -138,23 +205,35 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
             profile(&pwsh, &pwsh_args(kit), "terminal-powershell"),
         );
     }
-    let bash = app(r"git\bin\bash.exe");
-    if bash.is_file() {
-        let rc = kit.kit_files().join("bashrc").display().to_string();
+    if os.is_windows() {
+        let bash = app(r"git\bin\bash.exe");
+        if bash.is_file() {
+            out.insert(
+                "Atollo - Git Bash".into(),
+                profile(&bash, &bash_args(kit), "terminal-bash"),
+            );
+        }
+        let cmd = system_root.join(r"System32\cmd.exe");
         out.insert(
-            "Atollo - Git Bash".into(),
-            profile(
-                &bash,
-                &["--rcfile".into(), rc, "-i".into()],
-                "terminal-bash",
-            ),
+            "Atollo - cmd".into(),
+            profile(&cmd, &["/d".into(), "/k".into()], "terminal-cmd"),
         );
+    } else {
+        // The system's bash with the kit's bashrc (bash 3.2 on macOS reads
+        // it too, WP-0.3); the environment is the kit's, from the server.
+        out.insert(
+            "Atollo - Bash".into(),
+            profile(Path::new(BASH), &bash_args(kit), "terminal-bash"),
+        );
+        if os.is_macos() {
+            // Interactive, not a login shell: path_helper of
+            // /etc/zprofile would put the system's folders first.
+            out.insert(
+                "Atollo - zsh".into(),
+                profile(Path::new(ZSH), &["-i".into()], "terminal"),
+            );
+        }
     }
-    let cmd = system_root.join(r"System32\cmd.exe");
-    out.insert(
-        "Atollo - cmd".into(),
-        profile(&cmd, &["/d".into(), "/k".into()], "terminal-cmd"),
-    );
     for (name, rel, icon) in [
         ("Claude Code", r"claude\claude.exe", "sparkle"),
         ("Codex", r"codex\bin\codex.exe", "hubot"),
@@ -162,9 +241,12 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
     ] {
         let exe = app(rel);
         if exe.is_file() {
-            // Antigravity through the kit's agy.cmd: it carries the login.
+            // Antigravity through the kit's agy.cmd (agy, sh, on macOS and
+            // Linux): it carries the login.
             let path = if name == "Antigravity" {
-                kit.kit_files().join("bin").join("agy.cmd")
+                kit.kit_files()
+                    .join("bin")
+                    .join(crate::router::bins::cmd_name(os, "agy"))
             } else {
                 exe
             };
@@ -182,52 +264,70 @@ pub enum Outcome {
     LeftAlone(String),
 }
 
-/// Merges the kit's settings into `existing` (the parsed file).
+/// Merges the kit's settings into `existing` (the parsed file). The
+/// terminal settings are those of the kit's system (`.windows`, `.osx`,
+/// `.linux`): the same file serves a kit used on several systems, each
+/// writes its own and leaves the others.
 pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Map<String, Value> {
+    let os = kit.os();
+    let key = |name: &str| format!("terminal.integrated.{name}.{}", os_key(os));
+    let (owned, hidden) = (kit_profile_names(os), hidden(os));
     let mut out = existing.clone();
-    let profiles_key = "terminal.integrated.profiles.windows";
+    let profiles_key = key("profiles");
     let mut profiles = Map::new();
-    for name in HIDDEN {
+    for name in hidden {
         profiles.insert((*name).into(), Value::Null);
     }
     let kit_profiles = kit_profiles(kit, system_root);
-    if let Some(Value::Object(old)) = existing.get(profiles_key) {
+    if let Some(Value::Object(old)) = existing.get(&profiles_key) {
         for (name, value) in old {
-            if !KIT_PROFILES.contains(&name.as_str()) && !HIDDEN.contains(&name.as_str()) {
+            if !owned.contains(&name.as_str()) && !hidden.contains(&name.as_str()) {
                 profiles.insert(name.clone(), value.clone());
             }
         }
     }
     let names: Vec<String> = kit_profiles.keys().cloned().collect();
     profiles.extend(kit_profiles);
-    out.insert(profiles_key.into(), Value::Object(profiles.clone()));
+    out.insert(profiles_key, Value::Object(profiles.clone()));
 
-    let default_key = "terminal.integrated.defaultProfile.windows";
-    let keep_default = matches!(existing.get(default_key), Some(Value::String(d)) if profiles.get(d).is_some_and(|p| !p.is_null()));
-    if !keep_default && names.iter().any(|n| n == DEFAULT_PROFILE) {
-        out.insert(default_key.into(), json!(DEFAULT_PROFILE));
+    let default_key = key("defaultProfile");
+    let keep_default = matches!(existing.get(&default_key), Some(Value::String(d)) if profiles.get(d).is_some_and(|p| !p.is_null()));
+    // Without the kit's PowerShell, bash on macOS and Linux.
+    let default = [DEFAULT_PROFILE]
+        .into_iter()
+        .chain((!os.is_windows()).then_some(DEFAULT_PROFILE_UNIX))
+        .find(|d| names.iter().any(|n| n == d));
+    if let (false, Some(default)) = (keep_default, default) {
+        out.insert(default_key, json!(default));
     }
     let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");
-    if pwsh.is_file() {
-        // Tasks and debug consoles use the kit's shell too.
-        out.insert(
-            "terminal.integrated.automationProfile.windows".into(),
-            json!({ "path": pwsh.display().to_string(), "args": ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass"] }),
-        );
+    if os.is_windows() {
+        if pwsh.is_file() {
+            // Tasks and debug consoles use the kit's shell too.
+            out.insert(
+                key("automationProfile"),
+                json!({ "path": pwsh.display().to_string(), "args": ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass"] }),
+            );
+        }
+        out.insert("terminal.integrated.useWslProfiles".into(), json!(false));
+    } else {
+        // Tasks written for sh and bash: the system's bash, never the
+        // user's login shell (its profile could put other tools first).
+        out.insert(key("automationProfile"), json!({ "path": BASH }));
     }
-    out.insert("terminal.integrated.useWslProfiles".into(), json!(false));
     // VSCodium drops NODE_OPTIONS from the terminals' environment (one of its
     // "dangerous" variables): without `loopback.js` a dev server started in
     // the editor's terminal or a task listens on the network and Windows
     // Firewall asks for a consent that needs an administrator. The settings'
     // variables are added after that cleanup; the user's others are kept.
-    let env_key = "terminal.integrated.env.windows";
-    let mut vars = match existing.get(env_key) {
+    // macOS and Linux get it too: the servers stay on 127.0.0.1 there as well.
+    let env_key = key("env");
+    let mut vars = match existing.get(&env_key) {
         Some(Value::Object(m)) => m.clone(),
         _ => Map::new(),
     };
     vars.insert("NODE_OPTIONS".into(), json!(crate::env::node_options(kit)));
-    out.insert(env_key.into(), Value::Object(vars));
+    out.insert(env_key, Value::Object(vars));
 
     set_themes(existing, &mut out);
 

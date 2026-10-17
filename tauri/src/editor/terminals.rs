@@ -18,7 +18,9 @@
 //!   the project's (profile.ps1, bashrc).
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+#[cfg(windows)]
+use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 use anyhow::{bail, Result};
@@ -434,14 +436,9 @@ pub fn start_dir(kit: &Kit, terminal: &Terminal, dir: Option<&str>, lang: &str) 
     }
 }
 
-/// The "Select folder" window is Windows' only (no dialog plugin in the app).
-#[cfg(not(windows))]
-pub fn pick_dir(_owner: isize, _title: &str, _start: Option<&Path>) -> Result<Option<PathBuf>> {
-    bail!("choosing a folder is not available on this system")
-}
-
 /// Windows' "Select folder" window over `owner` (a window handle), starting
-/// in `start`. `None` when closed without a choice.
+/// in `start`. `None` when closed without a choice. macOS and Linux:
+/// `editor::picker::folder`.
 #[cfg(windows)]
 pub fn pick_dir(owner: isize, title: &str, start: Option<&Path>) -> Result<Option<PathBuf>> {
     use windows::core::{HSTRING, PCWSTR};

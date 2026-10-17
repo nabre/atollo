@@ -1,0 +1,10 @@
+# The commands of the app's terminal of macOS and Linux (editor/pty.rs,
+# commands/terminals.rs), registered only there. Written by hand, not
+# generated from build.rs COMMANDS: one permission for the five commands,
+# granted by capabilities/main.json (on Windows the commands do not exist,
+# so it allows nothing there).
+
+[[permission]]
+identifier = "allow-pty-sessions"
+description = "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close."
+commands.allow = ["pty_sessions", "pty_backlog", "pty_write", "pty_resize", "pty_close"]

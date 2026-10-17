@@ -778,5 +778,15 @@
   "{0} (non installata)": "{0} (nicht installiert)",
   "pre-scaricato": "vorab heruntergeladen",
   "Verifica": "Prüfen",
-  "Bootstrap pre-scaricato; l'installazione termina al primo avvio su quel sistema": "Bootstrap vorab heruntergeladen; die Installation wird beim ersten Start auf diesem System abgeschlossen"
+  "Bootstrap pre-scaricato; l'installazione termina al primo avvio su quel sistema": "Bootstrap vorab heruntergeladen; die Installation wird beim ersten Start auf diesem System abgeschlossen",
+  "[processo terminato]": "[Prozess beendet]",
+  "[processo terminato, codice {0}]": "[Prozess beendet, Code {0}]",
+  "{0} (terminato)": "{0} (beendet)",
+  "Chiudi il terminale": "Terminal schließen",
+  "Nascondi i terminali": "Terminals ausblenden",
+  "Mostra i terminali": "Terminals einblenden",
+  "Chiudere il terminale?": "Terminal schließen?",
+  "In «{0}» un programma è ancora in esecuzione: chiudendo il terminale si ferma.": "In „{0}“ läuft noch ein Programm: Wenn Sie das Terminal schließen, wird es beendet.",
+  "Terminali aperti: {0}": "Offene Terminals: {0}",
+  "Ridimensiona i terminali": "Terminals skalieren"
 }

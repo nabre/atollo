@@ -123,14 +123,9 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
     Ok(false)
 }
 
-/// The "Open" window is Windows' only (no dialog plugin in the app).
-#[cfg(not(windows))]
-pub fn pick(_owner: isize, _title: &str) -> Result<Vec<PathBuf>> {
-    bail!("choosing files is not available on this system")
-}
-
 /// Windows' "Open" window over `owner` (a window handle), several files,
 /// starting in the Downloads folder. Empty when closed without a choice.
+/// macOS and Linux: `editor::picker::files`.
 #[cfg(windows)]
 pub fn pick(owner: isize, title: &str) -> Result<Vec<PathBuf>> {
     use windows::core::{HSTRING, PCWSTR};
