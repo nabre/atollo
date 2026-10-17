@@ -431,8 +431,8 @@ fn replace_dir_with_a_folder_held_open() {
     let tmp = TempDir::new("replheld");
     let dest = tmp.0.join("editor");
     let make = |root: &Path, text: &str| {
-        fs::create_dir_all(root.join(r"extensions\held")).unwrap();
-        fs::write(root.join(r"extensions\held\a.txt"), text).unwrap();
+        fs::create_dir_all(root.join("extensions").join("held")).unwrap();
+        fs::write(root.join("extensions").join("held").join("a.txt"), text).unwrap();
         fs::write(root.join("node.exe"), text).unwrap();
     };
     make(&dest, "old");
@@ -441,7 +441,7 @@ fn replace_dir_with_a_folder_held_open() {
         .read(true)
         .share_mode(SHARE_READ_WRITE)
         .custom_flags(BACKUP_SEMANTICS)
-        .open(dest.join(r"extensions\held"))
+        .open(dest.join("extensions").join("held"))
         .unwrap();
     assert!(
         fs::rename(&dest, tmp.0.join("x")).is_err(),
@@ -454,7 +454,7 @@ fn replace_dir_with_a_folder_held_open() {
     replace_dir(&new, &dest).unwrap();
     assert_eq!(fs::read_to_string(dest.join("node.exe")).unwrap(), "new");
     assert_eq!(
-        fs::read_to_string(dest.join(r"extensions\held\a.txt")).unwrap(),
+        fs::read_to_string(dest.join("extensions").join("held").join("a.txt")).unwrap(),
         "new"
     );
     assert!(dest.join("out").is_dir() && !dest.join("gone.txt").exists());
@@ -482,7 +482,7 @@ fn replace_dir_with_a_folder_held_open() {
     drop(busy);
     assert_eq!(fs::read_to_string(dest.join("node.exe")).unwrap(), "new");
     assert_eq!(
-        fs::read_to_string(dest.join(r"extensions\held\a.txt")).unwrap(),
+        fs::read_to_string(dest.join("extensions").join("held").join("a.txt")).unwrap(),
         "new"
     );
     assert!(dest.join("out").is_dir());
@@ -495,13 +495,13 @@ fn replace_dir_with_a_folder_held_open() {
 fn replace_dir_waits_for_a_scan() {
     use std::os::windows::fs::OpenOptionsExt;
     let tmp = TempDir::new("replscan");
-    let new = tmp.0.join(r"x\kotlinc");
+    let new = tmp.0.join("x").join("kotlinc");
     fs::create_dir_all(new.join("lib")).unwrap();
-    fs::write(new.join(r"lib\a.jar"), "jar").unwrap();
+    fs::write(new.join("lib").join("a.jar"), "jar").unwrap();
     let held = fs::OpenOptions::new()
         .read(true)
         .share_mode(1)
-        .open(new.join(r"lib\a.jar"))
+        .open(new.join("lib").join("a.jar"))
         .unwrap();
     let dest = tmp.0.join("kotlin");
     assert!(
@@ -514,14 +514,17 @@ fn replace_dir_waits_for_a_scan() {
     });
     replace_dir(&new, &dest).unwrap();
     scan.join().unwrap();
-    assert_eq!(fs::read_to_string(dest.join(r"lib\a.jar")).unwrap(), "jar");
+    assert_eq!(
+        fs::read_to_string(dest.join("lib").join("a.jar")).unwrap(),
+        "jar"
+    );
     assert!(!new.exists());
 }
 
 fn tree(root: &Path, text: &str) {
-    fs::create_dir_all(root.join(r"bin\lib")).unwrap();
-    fs::write(root.join(r"bin\tool.exe"), text).unwrap();
-    fs::write(root.join(r"bin\lib\a.dll"), text).unwrap();
+    fs::create_dir_all(root.join("bin").join("lib")).unwrap();
+    fs::write(root.join("bin").join("tool.exe"), text).unwrap();
+    fs::write(root.join("bin").join("lib").join("a.dll"), text).unwrap();
 }
 
 fn names(dir: &Path) -> Vec<String> {
@@ -536,11 +539,14 @@ fn names(dir: &Path) -> Vec<String> {
 #[test]
 fn stage_into_on_the_same_disk_moves() {
     let tmp = TempDir::new("stagesame");
-    let new = tmp.0.join(r"temp\x");
+    let new = tmp.0.join("temp").join("x");
     tree(&new, "1");
-    let dest = tmp.0.join(r"apps\tool");
+    let dest = tmp.0.join("apps").join("tool");
     stage_into(&new, &dest).unwrap();
-    assert_eq!(fs::read_to_string(dest.join(r"bin\tool.exe")).unwrap(), "1");
+    assert_eq!(
+        fs::read_to_string(dest.join("bin").join("tool.exe")).unwrap(),
+        "1"
+    );
     assert!(!new.exists(), "renamed, not copied");
     assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
 }
@@ -549,21 +555,28 @@ fn stage_into_on_the_same_disk_moves() {
 #[test]
 fn stage_into_from_another_disk_copies() {
     let tmp = TempDir::new("stageother");
-    let dest = tmp.0.join(r"apps\tool");
+    let dest = tmp.0.join("apps").join("tool");
     tree(&dest, "old");
     fs::write(dest.join("gone.txt"), "old").unwrap();
-    let new = tmp.0.join(r"temp\x");
+    let new = tmp.0.join("temp").join("x");
     tree(&new, "new");
     // A copy interrupted earlier (the app closed in the middle).
-    fs::create_dir_all(tmp.0.join(r"apps\tool.devkit-new\bin")).unwrap();
-    fs::write(tmp.0.join(r"apps\tool.devkit-new\stale.txt"), "x").unwrap();
+    fs::create_dir_all(tmp.0.join("apps").join("tool.devkit-new").join("bin")).unwrap();
+    fs::write(
+        tmp.0.join("apps").join("tool.devkit-new").join("stale.txt"),
+        "x",
+    )
+    .unwrap();
     stage_with(&new, &dest, false).unwrap();
     assert_eq!(
-        fs::read_to_string(dest.join(r"bin\lib\a.dll")).unwrap(),
+        fs::read_to_string(dest.join("bin").join("lib").join("a.dll")).unwrap(),
         "new"
     );
     assert!(!dest.join("gone.txt").exists() && !dest.join("stale.txt").exists());
-    assert!(new.join(r"bin\tool.exe").is_file(), "the source is copied");
+    assert!(
+        new.join("bin").join("tool.exe").is_file(),
+        "the source is copied"
+    );
     assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
 
     // The swap refused (a file in use): the installed tree is intact and
@@ -573,7 +586,7 @@ fn stage_into_from_another_disk_copies() {
         fs::OpenOptions::new()
             .read(true)
             .share_mode(1)
-            .open(dest.join(r"bin\tool.exe"))
+            .open(dest.join("bin").join("tool.exe"))
             .unwrap()
     };
     tree(&new, "newer");
@@ -581,7 +594,7 @@ fn stage_into_from_another_disk_copies() {
     assert!(err.is::<InUse>(), "{err:#}");
     drop(busy);
     assert_eq!(
-        fs::read_to_string(dest.join(r"bin\tool.exe")).unwrap(),
+        fs::read_to_string(dest.join("bin").join("tool.exe")).unwrap(),
         "new"
     );
     assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
@@ -603,7 +616,7 @@ fn interrupted_copy_is_cleaned() {
     clean_leftovers(&apps);
     assert_eq!(names(&apps), ["tool"]);
     assert_eq!(
-        fs::read_to_string(apps.join(r"tool\bin\tool.exe")).unwrap(),
+        fs::read_to_string(apps.join("tool").join("bin").join("tool.exe")).unwrap(),
         "1"
     );
 }
@@ -612,7 +625,7 @@ fn interrupted_copy_is_cleaned() {
 fn replace_file_leaves_no_staged_copy() {
     let tmp = TempDir::new("replstaged");
     let dest = tmp.0.join("uv.exe");
-    let new = tmp.0.join(r"temp\uv.exe");
+    let new = tmp.0.join("temp").join("uv.exe");
     fs::create_dir_all(new.parent().unwrap()).unwrap();
     fs::write(&new, "1").unwrap();
     replace_file(&new, &dest).unwrap();
@@ -635,9 +648,9 @@ fn check_fits_refuses_a_file_too_large_for_fat32() {
     tree(&new, "small");
     let fat32 = crate::os::volume::FsKind::Fat32.max_file_size();
     fits(&new, fat32, "FAT32").unwrap();
-    check_fits(&new, &tmp.0.join(r"apps\tool")).unwrap();
+    check_fits(&new, &tmp.0.join("apps").join("tool")).unwrap();
 
-    let big = new.join(r"bin\lib\model.bin");
+    let big = new.join("bin").join("lib").join("model.bin");
     let file = File::create(&big).unwrap();
     // SAFETY: the handle stays valid while `file` lives; no buffers.
     let sparse = unsafe {
@@ -665,7 +678,7 @@ fn check_fits_refuses_a_file_too_large_for_fat32() {
     // A single file is checked too (`replace_file`).
     assert!(fits(&big, fat32, "FAT32").is_err());
     // The test disk (NTFS) has no limit.
-    check_fits(&new, &tmp.0.join(r"apps\tool")).unwrap();
+    check_fits(&new, &tmp.0.join("apps").join("tool")).unwrap();
 }
 
 #[test]
@@ -673,7 +686,7 @@ fn check_space_needs_the_whole_tree() {
     let tmp = TempDir::new("space");
     let new = tmp.0.join("x");
     tree(&new, "12345");
-    let dest = tmp.0.join(r"apps\tool");
+    let dest = tmp.0.join("apps").join("tool");
     has_space(&new, 10, &dest).unwrap();
     let err = has_space(&new, 9, &dest).unwrap_err().to_string();
     assert!(

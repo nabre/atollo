@@ -21,8 +21,8 @@ fn conf_of_a_project() {
 
     let tmp = crate::kit::tests::TempDir::new("apache-alias");
     let projects = tmp.0.join("projects");
-    fs::create_dir_all(projects.join(r"shop\storage\media")).unwrap();
-    fs::create_dir_all(projects.join(r"common\assets")).unwrap();
+    fs::create_dir_all(projects.join("shop").join("storage").join("media")).unwrap();
+    fs::create_dir_all(projects.join("common").join("assets")).unwrap();
     let mut aliases = BTreeMap::new();
     aliases.insert("/media".into(), "storage/media".into());
     aliases.insert("/shared".into(), "@common/assets".into());
@@ -275,7 +275,7 @@ fn old_kit_conf_is_migrated_once() {
 fn aliases_follow_no_links() {
     let tmp = crate::kit::tests::TempDir::new("apache-alias-links");
     let projects = tmp.0.join("projects");
-    fs::create_dir_all(projects.join(r"shop\storage\media")).unwrap();
+    fs::create_dir_all(projects.join("shop").join("storage").join("media")).unwrap();
     let mut aliases = BTreeMap::new();
     aliases.insert("/media".into(), "storage/media".into());
     let aliases = alias::resolve(&projects.join("shop"), &projects, &aliases);

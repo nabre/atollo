@@ -264,7 +264,11 @@ fn delete_drops_the_names_in_use() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     // an orphan of before the names, adopted by "Nuovo"
-    let old = kit.project_data().join(r"Vecchio-Nome\private\db.json");
+    let old = kit
+        .project_data()
+        .join("Vecchio-Nome")
+        .join("private")
+        .join("db.json");
     fs::create_dir_all(old.parent().unwrap()).unwrap();
     fs::write(&old, r#"{"mariadb":"pw","mongodb":"pw2"}"#).unwrap();
     create(&kit, "Nuovo", "it").unwrap();
