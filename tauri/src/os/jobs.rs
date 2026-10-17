@@ -54,13 +54,61 @@ use crate::env::KitEnv;
 /// The process groups of the programs started in the job (Unix).
 #[cfg(unix)]
 pub struct Job {
+    id: u64,
     groups: std::sync::Mutex<Vec<i32>>,
+}
+
+/// Which job last started a process with a given pid (0: none, a program
+/// started by [`spawn`] or [`spawn_detached`]). A job's leader is often
+/// reaped long before the job is dropped, and its pid can then lead a new
+/// group: the job signals a group only while the pid is still its own here.
+#[cfg(unix)]
+static OWNERS: std::sync::Mutex<std::collections::BTreeMap<i32, u64>> =
+    std::sync::Mutex::new(std::collections::BTreeMap::new());
+
+#[cfg(unix)]
+fn claim(pid: u32, job: u64) {
+    if let Ok(pid) = i32::try_from(pid) {
+        OWNERS
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(pid, job);
+    }
+}
+
+/// Whether `killpg(pgid)` can only reach the job's own group. When no
+/// process has the pid `pgid`, the group is the job's (its members keep the
+/// number from being reused) or empty. When one does, it must be the job's
+/// leader, not yet reaped: a child of the app that `waitid` still sees.
+#[cfg(unix)]
+fn own_group(pgid: i32) -> bool {
+    // SAFETY: signal 0 only checks that the process exists.
+    if unsafe { libc::kill(pgid, 0) } == -1
+        && std::io::Error::last_os_error().raw_os_error() == Some(libc::ESRCH)
+    {
+        return true;
+    }
+    let Ok(id) = libc::id_t::try_from(pgid) else {
+        return false;
+    };
+    // SAFETY: a zeroed siginfo_t is valid; WNOWAIT leaves a zombie in place.
+    unsafe {
+        let mut info: libc::siginfo_t = std::mem::zeroed();
+        libc::waitid(
+            libc::P_PID,
+            id,
+            &mut info,
+            libc::WEXITED | libc::WNOHANG | libc::WNOWAIT,
+        ) == 0
+    }
 }
 
 #[cfg(unix)]
 impl Job {
     pub fn new() -> Result<Job> {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         Ok(Job {
+            id: NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             groups: std::sync::Mutex::new(Vec::new()),
         })
     }
@@ -68,6 +116,7 @@ impl Job {
     /// Adds the group led by `child` (started with `process_group(0)`).
     pub fn assign(&self, child: &Child) -> Result<()> {
         let pid = i32::try_from(child.id()).context("pid")?;
+        claim(child.id(), self.id);
         self.groups
             .lock()
             .unwrap_or_else(|e| e.into_inner())
@@ -80,9 +129,16 @@ impl Job {
 impl Drop for Job {
     fn drop(&mut self) {
         let groups = self.groups.get_mut().unwrap_or_else(|e| e.into_inner());
+        let mut owners = OWNERS.lock().unwrap_or_else(|e| e.into_inner());
         for &pgid in groups.iter() {
-            // SAFETY: a plain signal to a process group this job created.
-            unsafe { libc::killpg(pgid, libc::SIGKILL) };
+            if owners.get(&pgid) != Some(&self.id) {
+                continue; // the pid went to a later program
+            }
+            owners.remove(&pgid);
+            if own_group(pgid) {
+                // SAFETY: a plain signal to a process group this job created.
+                unsafe { libc::killpg(pgid, libc::SIGKILL) };
+            }
         }
     }
 }
@@ -124,8 +180,11 @@ pub fn batch_command(script: &std::path::Path, args: &[&str], env: &KitEnv) -> C
 /// Starts a program that belongs to the session: stopped at exit.
 #[cfg(unix)]
 pub fn spawn(cmd: &mut Command) -> Result<Child> {
-    cmd.spawn()
-        .with_context(|| format!("starting {:?}", cmd.get_program()))
+    let child = cmd
+        .spawn()
+        .with_context(|| format!("starting {:?}", cmd.get_program()))?;
+    claim(child.id(), 0);
+    Ok(child)
 }
 
 /// Starts a program in `job`, as the leader of a new process group: dropping
@@ -149,8 +208,11 @@ pub fn spawn_in(cmd: &mut Command, job: &Job) -> Result<Child> {
 #[cfg(unix)]
 pub fn spawn_detached(cmd: &mut Command, _flags: u32) -> Result<Child> {
     cmd.process_group(0);
-    cmd.spawn()
-        .with_context(|| format!("starting {:?}", cmd.get_program()))
+    let child = cmd
+        .spawn()
+        .with_context(|| format!("starting {:?}", cmd.get_program()))?;
+    claim(child.id(), 0);
+    Ok(child)
 }
 
 /// Opens a web address or a folder with the system's handler (`open` on
