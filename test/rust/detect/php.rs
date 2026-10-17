@@ -60,8 +60,9 @@ fn laravel_and_plain() {
     assert!(p.requires.contains(&"php".to_owned()));
 }
 
-/// `php -S` goes through the kit's router (no `.env`, `.git`, `.inc`), unless
-/// the project has a `router.php` of its own (SEC-V3-02).
+/// `php -S` always goes through the kit's router (no `.env`, `.git`, `.inc`):
+/// a project's own `router.php` runs after it, its path given relative to
+/// the document root (SEC-V3-02, D-97).
 #[test]
 fn php_server_router() {
     let own = project(
@@ -69,12 +70,22 @@ fn php_server_router() {
         &[
             ("public/index.php", "<?php"),
             ("public/router.php", "<?php"),
+            ("router.php", "<?php"),
         ],
     );
     let p = detect(&own.0, "it");
     assert_eq!(
         p.actions[0].command,
-        r"php -S 127.0.0.1:{port} -t public public\router.php"
+        r#"php -d "devkit.router=router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#
+    );
+    let up = project(
+        "php-router-up",
+        &[("public/index.php", "<?php"), ("router.php", "<?php")],
+    );
+    let p = detect(&up.0, "it");
+    assert_eq!(
+        p.actions[0].command,
+        r#"php -d "devkit.router=..\router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#
     );
     let root = project(
         "php-router-root",
@@ -83,7 +94,7 @@ fn php_server_router() {
     let p = detect(&root.0, "it");
     assert_eq!(
         p.actions[0].command,
-        "php -S 127.0.0.1:{port} -t . router.php"
+        r#"php -d "devkit.router=router.php" -S 127.0.0.1:{port} -t . "%CP_DATA%\kit\php-router.php""#
     );
 
     let router = include_str!("../../../runtime/php-router.php");
@@ -95,6 +106,10 @@ fn php_server_router() {
     // and short 8.3 names (`ENV~1`) are refused.
     assert!(!router.contains("parse_url(") && router.contains(r"'/~\d/'"));
     assert!(router.trim_end().ends_with("return false;"));
+    // The checks leave no variable to the project's router, required in the
+    // global scope with its return value.
+    assert!(router.contains("(static function () {"));
+    assert!(router.contains("return require $_SERVER['DOCUMENT_ROOT']"));
 }
 
 /// The CMS of the wizard, made with Composer: the public folder is a

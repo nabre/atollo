@@ -118,8 +118,14 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
 
     let conf_path = servers.write_pool_configs(&pool, None, false).unwrap();
     let main_conf = fs::read_to_string(&conf_path).unwrap();
-    assert!(main_conf.contains("listen 127.0.0.1:8088 default_server;"));
-    assert!(main_conf.contains("server_name localhost;"));
+    // The pool's page for its local names; any other Host gets 421 (D-98).
+    assert!(main_conf.contains(
+        "        listen 127.0.0.1:8088;\r\n        server_name localhost 127.0.0.1 [::1];"
+    ));
+    assert!(main_conf.contains(
+        "        listen 127.0.0.1:8088 default_server;\r\n        server_name _;\r\n        return 421;"
+    ));
+    assert_eq!(main_conf.matches("default_server").count(), 1);
 
     let vhosts_dir = conf_path.parent().unwrap().join("vhosts");
     let alpha_vhost = fs::read_to_string(vhosts_dir.join("alpha.localhost.conf")).unwrap();
@@ -285,7 +291,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
         RunningPool {
             child,
             port: 8094,
-            fcgi_port: None,
+            fcgi: None,
             php_line: None,
             php: None,
             started: nginx_pool("gone", 8094, Vec::new()),
@@ -500,6 +506,41 @@ fn apache_pool_conf_has_default_vhost_first() {
     ));
 }
 
+/// Out of LAN mode the pool's first VirtualHost refuses a Host nobody names
+/// with 403, as a project's own Apache (D-98); its local names keep
+/// Apache's page, and both come before the projects' sites.
+#[test]
+fn apache_pool_conf_refuses_foreign_hosts() {
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\nServerRoot \"${SRVROOT}\"\r\n";
+    let conf = apache_pool_conf(base, Path::new(r"C:\kit\data\servers\p"), 8081, false).unwrap();
+    let refused = conf
+        .find("<VirtualHost *:8081>\r\n    ServerName refused.invalid\r\n    <Location \"/\">\r\n        Require all denied")
+        .expect("refusing vhost");
+    let local = conf
+        .find("<VirtualHost *:8081>\r\n    ServerName localhost\r\n    ServerAlias 127.0.0.1 [::1]\r\n    DocumentRoot \"${SRVROOT}/htdocs\"\r\n</VirtualHost>")
+        .expect("local vhost");
+    let include = conf
+        .find("IncludeOptional \"C:/kit/data/servers/p/vhosts/*.conf\"")
+        .unwrap();
+    assert_eq!(conf.find("<VirtualHost"), Some(refused));
+    assert!(refused < local && local < include);
+    assert_eq!(conf.matches("<VirtualHost").count(), 2);
+    assert!(!conf.contains("*.localhost"));
+}
+
+/// In LAN mode the Nginx pool keeps its own page as default server.
+#[test]
+fn nginx_pool_conf_lan_keeps_default_page() {
+    let conf = nginx_pool_conf(
+        Path::new(r"C:\kit\apps\nginx"),
+        Path::new(r"C:\kit\data\servers\p"),
+        8082,
+        true,
+    );
+    assert!(conf.contains("        listen 8082 default_server;\r\n        server_name localhost;"));
+    assert!(!conf.contains("return 421;"));
+}
+
 /// `id` installed at `version`, the default folder of its line.
 fn fake_server(kit: &Kit, id: &str, version: &str) {
     let c = Catalog::get().find(id).unwrap();
@@ -586,7 +627,10 @@ fn pool_with_dead_php_cgi_is_not_running() {
         RunningPool {
             child: server,
             port: 8099,
-            fcgi_port: Some(9000),
+            fcgi: Some(FastCgi {
+                port: 9000,
+                key: "k".into(),
+            }),
             php_line: Some("8.4".into()),
             php: Some(php),
             started: nginx_pool("nginx-php", 8099, Vec::new()),
@@ -704,7 +748,10 @@ fn reload_restarts_when_php_or_port_changes() {
     let live = |php: Option<&str>, fcgi: Option<u16>| LivePool {
         port: 8093,
         php_line: php.map(str::to_owned),
-        fcgi_port: fcgi,
+        fcgi: fcgi.map(|port| FastCgi {
+            port,
+            key: "k".into(),
+        }),
     };
     let mut pool = nginx_pool("legacy", 8093, Vec::new());
     // Static pool, static sites: graceful.
@@ -942,7 +989,7 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
         RunningPool {
             child,
             port: started.port,
-            fcgi_port: None,
+            fcgi: None,
             php_line: started.php_line.clone(),
             php: None,
             started,

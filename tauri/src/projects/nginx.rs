@@ -106,7 +106,8 @@ pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
         lines.push(format!("{indent}    autoindex on;"));
         // No link followed in an alias' folder (WEB-8). Nginx for Windows
         // has no `disable_symlinks` (it needs `openat`) and would not start
-        // with it: there `alias::resolve` only refuses a linked folder.
+        // with it: there `alias::resolve_nginx` leaves out a folder with a
+        // link inside.
         if !cfg!(windows) {
             lines.push(format!("{indent}    disable_symlinks on;"));
         }
@@ -126,7 +127,7 @@ pub fn vhost_block(
     doc_root: &Path,
     conf_d_dir: Option<&Path>,
     port: u16,
-    fcgi_port: Option<u16>,
+    fcgi: Option<&FastCgi>,
     lan: bool,
     domains: &[String],
     aliases: &[SiteAlias],
@@ -179,7 +180,7 @@ pub fn vhost_block(
         "            deny all;".to_owned(),
         "        }".to_owned(),
     ];
-    if fcgi_port.is_some() {
+    if fcgi.is_some() {
         lines.extend([
             "        location / {".to_owned(),
             "            try_files $uri $uri/ /index.php?$query_string;".to_owned(),
@@ -193,18 +194,20 @@ pub fn vhost_block(
         ]);
     }
     lines.extend(alias_locations(aliases, "        "));
-    if let Some(fp) = fcgi_port {
+    if let Some(fcgi) = fcgi {
         // `~*`: on NTFS `/INDEX.PHP` is the same file, and must be run,
         // never served as text by `location /`. `.phtml` and `.phar` as
         // with Apache's PHP module.
         lines.extend([
             format!("        location ~* {PHP_RUN} {{"),
             "            try_files $uri =404;".to_owned(),
-            format!("            fastcgi_pass 127.0.0.1:{fp};"),
+            format!("            fastcgi_pass 127.0.0.1:{};", fcgi.port),
             "            fastcgi_index index.php;".to_owned(),
             format!("            include \"{nginx_fwd}/conf/fastcgi_params\";"),
             "            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;"
                 .to_owned(),
+            // What runtime\fcgi-guard.php asks of every request.
+            format!("            fastcgi_param {FCGI_KEY_PARAM} {};", fcgi.key),
             "        }".to_owned(),
         ]);
     } else {
@@ -232,7 +235,7 @@ pub fn project_conf(
     doc_root: &Path,
     run_dir: &Path,
     port: u16,
-    fcgi_port: Option<u16>,
+    fcgi: Option<&FastCgi>,
     lan: bool,
     domains: &[String],
     aliases: &[SiteAlias],
@@ -245,7 +248,7 @@ pub fn project_conf(
         doc_root,
         Some(run_dir),
         port,
-        fcgi_port,
+        fcgi,
         lan,
         domains,
         aliases,
@@ -289,14 +292,45 @@ pub fn project_conf(
     lines.join("\r\n")
 }
 
-/// Spawns `php-cgi.exe -b 127.0.0.1:<fcgi_port>` inside `job` when PHP is installed,
-/// returning the FastCGI port used and the process, whose death the caller
-/// watches (a Nginx without its php-cgi answers 502 to every `.php`).
-/// `None` when PHP is not installed or the spawn failed (in the log).
-pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(u16, Child)> {
+/// The FastCGI parameter that carries the key of [`FastCgi`], checked by
+/// `runtime\fcgi-guard.php` (D-99 «Resta»).
+pub const FCGI_KEY_PARAM: &str = "DEVKIT_FCGI_KEY";
+
+/// A running php-cgi as Nginx reaches it: its port on 127.0.0.1 and the
+/// random key Nginx sends with every request. php-cgi has no authentication
+/// and Nginx for Windows speaks FastCGI over TCP only (no Unix socket, no
+/// named pipe): without the key the kit's guard, prepended to every script,
+/// answers 403 and runs nothing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FastCgi {
+    pub port: u16,
+    pub key: String,
+}
+
+/// Spawns `php-cgi.exe -b 127.0.0.1:<port>` inside `job` when PHP is
+/// installed, returning its [`FastCgi`] and the process, whose death the
+/// caller watches (a Nginx without its php-cgi answers 502 to every `.php`).
+/// php-cgi gets a new key (`-d devkit.fcgi_key`), the kit's guard as
+/// `auto_prepend_file`, and `FCGI_WEB_SERVER_ADDRS=127.0.0.1` (PHP's own
+/// list of the web servers it accepts). `None` when PHP is not installed,
+/// the guard is missing or the spawn failed (in the log).
+pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(FastCgi, Child)> {
     let php = php_dir(kit, env)?;
     let cgi = php_cgi_exe(kit, &php);
-    let fcgi_port = match std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
+    let guard = kit.kit_files().join("fcgi-guard.php");
+    if !guard.is_file() {
+        // Never a php-cgi that runs whatever it is asked.
+        crate::log::warn(&format!("php-cgi: {} is missing", guard.display()));
+        return None;
+    }
+    let key = match crate::editor::random_token() {
+        Ok(key) => key,
+        Err(e) => {
+            crate::log::warn(&format!("php-cgi: no FastCGI key: {e:#}"));
+            return None;
+        }
+    };
+    let port = match std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
         .and_then(|l| l.local_addr())
     {
         Ok(addr) => addr.port(),
@@ -307,20 +341,35 @@ pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(u
     };
     let mut cmd = jobs::kit_command(&cgi, env);
     cmd.arg("-b")
-        .arg(format!("127.0.0.1:{fcgi_port}"))
+        .arg(format!("127.0.0.1:{port}"))
         .arg("-c")
         .arg(kit.data().join("php"))
+        .args(guard_args(&guard, &key))
         .env("PHP_FCGI_MAX_REQUESTS", "0")
+        .env("FCGI_WEB_SERVER_ADDRS", "127.0.0.1")
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
     match jobs::spawn_in(&mut cmd, job) {
-        Ok(child) => Some((fcgi_port, child)),
+        Ok(child) => Some((FastCgi { port, key }, child)),
         Err(e) => {
             crate::log::warn(&format!("php-cgi {}: {e:#}", cgi.display()));
             None
         }
     }
+}
+
+/// The php-cgi arguments of the guard: the key as an ini value of the
+/// command line (`get_cfg_var`, out of reach of a request and of
+/// `.user.ini`) and the guard in double quotes with `/`, so that a space or
+/// a `;` of the kit's path stays in the ini value.
+pub fn guard_args(guard: &Path, key: &str) -> [String; 4] {
+    [
+        "-d".to_owned(),
+        format!("devkit.fcgi_key={key}"),
+        "-d".to_owned(),
+        format!("auto_prepend_file=\"{}\"", fwd(guard)),
+    ]
 }
 
 /// Prepares `nginx.conf` and returns the `Command` to start `nginx.exe`.
@@ -331,7 +380,7 @@ pub fn command(
     project_root: &Path,
     doc_root: &Path,
     port: u16,
-    fcgi_port: Option<u16>,
+    fcgi: Option<&FastCgi>,
     lan: bool,
     domains: &[String],
     aliases: &BTreeMap<String, String>,
@@ -351,10 +400,10 @@ pub fn command(
         doc_root,
         &run_dir,
         port,
-        fcgi_port,
+        fcgi,
         lan,
         domains,
-        &alias::resolve(project_root, &kit.projects(), aliases),
+        &alias::resolve_nginx(project_root, &kit.projects(), aliases),
     );
     write_atomic(&conf, content.as_bytes())?;
     let mut cmd = jobs::kit_command(&exe, env);
