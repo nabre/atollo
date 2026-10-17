@@ -17,9 +17,20 @@
 //! the one the app started: its leader is gone (the members keep the number
 //! from being reused) or is the same process (same start time).
 //!
+//! A group whose last process ended is forgotten within a second (the guard
+//! checks its table every `TICK_MS`), long before its number can come back
+//! as the group of a program that is not the kit's: many programs are
+//! started without being unwatched (one per database query, the tools).
+//!
+//! The guard ignores `SIGTERM`, `SIGQUIT`, `SIGHUP` and `SIGINT`: it has the
+//! app's name, so `pkill`/`killall` by name reach both, and the guard must
+//! outlive the app to do its work. It still ends on its own once the pipe
+//! closes, and `SIGKILL` ends it.
+//!
 //! Limits: a program that leaves its group (`setsid`, a shell's job
-//! control) is not followed; the guard holds the app's file open until it
-//! exits, at most 5 s after the app.
+//! control) is not followed; with `SLOTS` live groups at once a further one
+//! is not followed either (the guard cannot log: nothing is open); the guard
+//! holds the app's file open until it exits, at most 5 s after the app.
 
 #[cfg(unix)]
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -29,10 +40,13 @@ use std::sync::Mutex;
 #[cfg(unix)]
 use anyhow::{Context, Result};
 
-/// The groups the guard watches at most; more are dropped from the table
-/// once their group is empty.
+/// The groups the guard watches at most at once.
 #[cfg(unix)]
 const SLOTS: usize = 1024;
+
+/// How often the guard forgets the groups that emptied, in milliseconds.
+#[cfg(unix)]
+const TICK_MS: libc::c_int = 1000;
 
 /// One message: the group (negative: no longer watched) and the start time
 /// of its leader, little-endian, padded to 16 bytes (one atomic write).
@@ -271,8 +285,9 @@ unsafe fn guard_main(read_fd: libc::c_int) -> ! {
     // Its own group, no terminal signals, no hold on the kit's folder or on
     // the app's files: only the pipe stays open, as descriptor 3.
     libc::setpgid(0, 0);
-    libc::signal(libc::SIGHUP, libc::SIG_IGN);
-    libc::signal(libc::SIGINT, libc::SIG_IGN);
+    for signal in [libc::SIGHUP, libc::SIGINT, libc::SIGTERM, libc::SIGQUIT] {
+        libc::signal(signal, libc::SIG_IGN);
+    }
     libc::chdir(c"/".as_ptr());
     if read_fd != 3 {
         libc::dup2(read_fd, 3);
@@ -290,6 +305,16 @@ unsafe fn guard_main(read_fd: libc::c_int) -> ! {
     let mut record = [0u8; RECORD];
     let mut have = 0usize;
     loop {
+        let mut wait = libc::pollfd {
+            fd: 3,
+            events: libc::POLLIN,
+            revents: 0,
+        };
+        let ready = libc::poll(&mut wait, 1, TICK_MS);
+        if ready == 0 || (ready < 0 && errno() == libc::EINTR) {
+            prune(&mut groups, group_alive);
+            continue;
+        }
         let rest = record.get_mut(have..).unwrap_or_default();
         let n = libc::read(3, rest.as_mut_ptr().cast(), rest.len());
         if n < 0 && errno() == libc::EINTR {
@@ -305,11 +330,10 @@ unsafe fn guard_main(read_fd: libc::c_int) -> ! {
         have = 0;
         let (pgid, start, add) = decode(&record);
         if add {
+            prune(&mut groups, group_alive);
             insert(&mut groups, pgid, start);
         } else {
-            for slot in groups.iter_mut().filter(|s| s.0 == pgid) {
-                *slot = (0, 0);
-            }
+            forget(&mut groups, pgid);
         }
     }
 
@@ -338,22 +362,39 @@ unsafe fn guard_main(read_fd: libc::c_int) -> ! {
     libc::_exit(0)
 }
 
-/// Adds a group to the table; when it is full, the empty groups go first.
-#[cfg(unix)]
-fn insert(groups: &mut [(i32, u64); SLOTS], pgid: i32, start: u64) {
+/// Adds a group to the table (or renews its start time); `false` when the
+/// table is full and the group is not followed. No allocation.
+#[cfg(any(unix, test))]
+pub(crate) fn insert(groups: &mut [(i32, u64)], pgid: i32, start: u64) -> bool {
     if let Some(slot) = groups.iter_mut().find(|s| s.0 == pgid) {
         *slot = (pgid, start);
-        return;
+        return true;
     }
-    if !groups.iter().any(|s| s.0 == 0) {
-        for slot in groups.iter_mut() {
-            if !group_alive(slot.0) {
-                *slot = (0, 0);
-            }
+    match groups.iter_mut().find(|s| s.0 == 0) {
+        Some(slot) => {
+            *slot = (pgid, start);
+            true
         }
+        None => false,
     }
-    if let Some(slot) = groups.iter_mut().find(|s| s.0 == 0) {
-        *slot = (pgid, start);
+}
+
+/// Forgets the group `pgid`.
+#[cfg(any(unix, test))]
+pub(crate) fn forget(groups: &mut [(i32, u64)], pgid: i32) {
+    for slot in groups.iter_mut().filter(|s| s.0 == pgid) {
+        *slot = (0, 0);
+    }
+}
+
+/// Forgets every group with no process left, before its number can be
+/// reused by a group that is not the kit's. No allocation.
+#[cfg(any(unix, test))]
+pub(crate) fn prune(groups: &mut [(i32, u64)], alive: impl Fn(i32) -> bool) {
+    for slot in groups.iter_mut().filter(|s| s.0 != 0) {
+        if !alive(slot.0) {
+            *slot = (0, 0);
+        }
     }
 }
 
