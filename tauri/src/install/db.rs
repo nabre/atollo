@@ -363,9 +363,18 @@ pub fn mongodb_tools_linux_name<'a>(
         .filter_map(|n| mongodb_build_version(n).map(|(f, v)| (*n, f, v)))
         .collect();
     if let Some((family, version)) = os_release.and_then(linux_distro) {
+        // RHEL-like systems keep one glibc per major (`VERSION_ID="7"` of
+        // CentOS 7 takes `rhel70`, `8.2` takes the newest `rhel8x`).
+        let fits = |v: &Vec<u64>| {
+            if family == "rhel" {
+                v.first() <= version.first()
+            } else {
+                *v <= version
+            }
+        };
         let best = builds
             .iter()
-            .filter(|(_, f, v)| *f == family && *v <= version)
+            .filter(|(_, f, v)| *f == family && fits(v))
             .max_by(|a, b| a.2.cmp(&b.2));
         if let Some((name, _, _)) = best {
             return Some(name);
