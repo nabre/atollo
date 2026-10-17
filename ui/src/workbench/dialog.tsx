@@ -146,11 +146,9 @@ function focusBack(opener: HTMLElement | null, around: HTMLElement | null): HTML
   if (!opener) return null;
   if (opener.isConnected) return opener;
   if (!around?.isConnected) return null;
-  const name = (el: HTMLElement) => el.getAttribute("aria-label") ?? el.textContent?.trim() ?? "";
+  const name = (el: HTMLElement) => el.getAttribute("aria-label") ?? el.textContent.trim();
   const wanted = name(opener);
-  return (
-    Array.from(around.querySelectorAll<HTMLElement>(opener.localName)).find((el) => name(el) === wanted) ?? null
-  );
+  return Array.from(around.querySelectorAll<HTMLElement>(opener.localName)).find((el) => name(el) === wanted) ?? null;
 }
 
 /** A question in the page's flow (deleting something, signing out): the
