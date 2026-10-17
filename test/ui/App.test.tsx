@@ -26,6 +26,8 @@ const info: AppInfo = {
   otherKits: [],
   diskFs: "NTFS",
   diskKind: "fixed",
+  diskNoexec: null,
+  diskNote: null,
   systemTemp: null,
 };
 
