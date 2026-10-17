@@ -75,7 +75,14 @@ fn profile_and_temp_inside_kit() {
 )]
 fn program_temp_decision_table() {
     use crate::os::volume::FsKind;
-    let vol = |fs, drive| Some(VolumeInfo { fs, drive, free: 1 });
+    let vol = |fs, drive| {
+        Some(VolumeInfo {
+            fs,
+            drive,
+            free: 1,
+            noexec: false,
+        })
+    };
     let data = Path::new(r"E:\Kit\data");
     let host = Path::new(r"C:\Users\me\AppData\Local\Temp\Atollo\abc");
     let in_kit = PathBuf::from(r"E:\Kit\data\tmp\system");
