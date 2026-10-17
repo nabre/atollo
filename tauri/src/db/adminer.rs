@@ -4,7 +4,9 @@
 //! - PHP's own server (`php -S`) of the kit's default PHP, on 127.0.0.1 and a
 //!   port the system gives, with the router `data\kit\adminer.php`
 //!   (`runtime/adminer.php`), started at the first "Adminer" and ended
-//!   with MariaDB or the app (the app's job);
+//!   with the MariaDB version it logs in to or the app (the app's job);
+//! - one at a time, on the version chosen (PLAN.md §13.2: each on its own
+//!   port): opening it on another version starts it again there;
 //! - a new token at every start: the address the app opens carries it,
 //!   any request without it (or its cookie) gets 403, so the other users
 //!   of the PC that reach 127.0.0.1 cannot use root's login;
@@ -90,6 +92,16 @@ impl Adminer {
             .take()
             .is_some()
         {
+            crate::log::info("adminer: stopped");
+        }
+    }
+
+    /// Ends Adminer when it logs in to the MariaDB at `db_port` (a version
+    /// that stops); one on another version stays.
+    pub fn stop_for(&self, db_port: u16) {
+        let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
+        if running.as_ref().is_some_and(|s| s.db_port == db_port) {
+            *running = None;
             crate::log::info("adminer: stopped");
         }
     }

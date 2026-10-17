@@ -561,6 +561,10 @@ impl Runner {
                 .any(|v| v != p);
             if !own {
                 cmd.env("DB_PORT", p);
+                // `mariadb` of its scripts logs in on that version too.
+                if let Some(home) = crate::db::services::project_mysql_home(&self.kit, id) {
+                    cmd.env("MYSQL_HOME", home);
+                }
             }
         }
         for (k, v) in &action.env {

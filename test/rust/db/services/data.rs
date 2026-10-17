@@ -1,7 +1,7 @@
 use super::*;
 use crate::db::services::{
     bin_at, line_port, line_ports, lines_in_use, load_settings, log_path, project_db_port,
-    project_line, server_lines, Setting, State,
+    project_line, project_mysql_home, server_lines, Setting, State,
 };
 use crate::kit::{tests::TempDir, Arch};
 
@@ -239,6 +239,24 @@ fn autostart_lines_follow_the_projects() {
     auth::set_project_line(&kit, "wiki", "mariadb", Some("9.0")).unwrap();
     assert_eq!(lines_in_use(&kit, "mariadb"), ["10.6"], "9.0 not installed");
     assert!(lines_in_use(&kit, "mongodb").is_empty());
+
+    // `MYSQL_HOME` of a project on another version: that version's login,
+    // once its start wrote it; none on the server's version.
+    assert_eq!(project_mysql_home(&kit, "shop"), None, "not started yet");
+    auth::write_line_client_ini(&kit, "10.6", 3307, "pw").unwrap();
+    let home = project_mysql_home(&kit, "shop").unwrap();
+    assert_eq!(home, kit.app_dir().join(r"db\lines\10.6"));
+    let ini = fs::read_to_string(home.join("my.ini")).unwrap();
+    assert!(
+        ini.contains("port=3307") && ini.contains("user=root"),
+        "{ini}"
+    );
+    assert_eq!(
+        project_mysql_home(&kit, "blog"),
+        None,
+        "the server's version"
+    );
+    assert!(auth::write_line_client_ini(&kit, "..", 3307, "pw").is_err());
 }
 
 #[test]

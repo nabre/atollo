@@ -137,7 +137,7 @@ fn real_databases_start_and_stop() {
                     String::from_utf8_lossy(&out.stdout).trim().to_owned()
                 }
                 _ => {
-                    let mut cmd = s.mariadb_tool("mariadb.exe", &env);
+                    let mut cmd = s.mariadb_tool_at("mariadb.exe", &env, None, port);
                     cmd.args(["-N", "-e", script]);
                     let out = cmd.output().unwrap();
                     String::from_utf8_lossy(&out.stdout).trim().to_owned()
@@ -163,7 +163,7 @@ fn real_databases_start_and_stop() {
             "{id}: data written, count {n:?}"
         );
         // The explorer sees the database, the table and its rows (D-79).
-        let dbs = crate::db::browse::tree(&s, id).unwrap();
+        let dbs = crate::db::browse::tree(&s, id, None).unwrap();
         let db = dbs
             .iter()
             .find(|d| d.name == "prova_kit")
@@ -176,17 +176,17 @@ fn real_databases_start_and_stop() {
             dbs.iter().any(|d| d.system),
             "{id}: system databases listed"
         );
-        let page = crate::db::browse::rows(&s, id, "prova_kit", "t", 0).unwrap();
+        let page = crate::db::browse::rows(&s, id, None, "prova_kit", "t", 0).unwrap();
         assert!(page.total > 0 && !page.rows.is_empty(), "{id}: rows read");
         assert!(page.columns.iter().any(|c| c.name == "x"), "{id}: column x");
         if id == "mariadb" {
-            assert!(crate::db::browse::rows(&s, id, "prova_kit", "no`; DROP", 0).is_err());
+            assert!(crate::db::browse::rows(&s, id, None, "prova_kit", "no`; DROP", 0).is_err());
         }
         // Adminer logged in with the token only, ended with MariaDB (D-85).
         let adminer = (id == "mariadb" && installed(&kit, "adminer")).then(|| {
-            let url = s.adminer_url().unwrap();
+            let url = s.adminer_url(None).unwrap();
             crate::db::adminer::tests::assert_logs_in(&url);
-            assert_eq!(s.adminer_url().unwrap(), url, "the same Adminer");
+            assert_eq!(s.adminer_url(None).unwrap(), url, "the same Adminer");
             url
         });
         let file = s.export("Prova Kit", id).unwrap();
@@ -209,7 +209,7 @@ fn real_databases_start_and_stop() {
         assert!(!responds(port), "{id}: stopped again after the drop");
         s.start(id, &env).unwrap();
         assert!(
-            !crate::db::browse::tree(&s, id)
+            !crate::db::browse::tree(&s, id, None)
                 .unwrap()
                 .iter()
                 .any(|d| d.name == "prova_kit"),
