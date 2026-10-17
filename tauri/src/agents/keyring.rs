@@ -16,24 +16,41 @@
 //!
 //! The app saves as well at start and when an agy of the kit ends, so a
 //! window closed abruptly does not leave the login in Windows.
+//!
+//! macOS and Linux: agy keeps its login in the Keychain or the Secret
+//! Service, which the kit does not handle; there is no credential to move
+//! and writing one fails with "not available on this system".
 
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 
+#[cfg(not(windows))]
+use anyhow::bail;
 use anyhow::{Context, Result};
+#[cfg(windows)]
 use base64::Engine;
 use serde::{Deserialize, Serialize};
+#[cfg(windows)]
 use windows::core::{HSTRING, PCWSTR, PWSTR};
+#[cfg(windows)]
 use windows::Win32::Foundation::{
     CloseHandle, GetLastError, LocalFree, ERROR_ALREADY_EXISTS, HLOCAL, WAIT_ABANDONED,
     WAIT_OBJECT_0,
 };
+#[cfg(windows)]
 use windows::Win32::Security::Credentials::{
     CredDeleteW, CredEnumerateW, CredFree, CredWriteW, CREDENTIALW, CRED_FLAGS, CRED_PERSIST,
     CRED_PERSIST_SESSION, CRED_TYPE_GENERIC,
 };
+#[cfg(windows)]
 use windows::Win32::System::Threading::{CreateMutexW, ReleaseMutex, WaitForSingleObject};
+
+/// "Logon session" persistence: never on disk, gone at logoff.
+#[cfg(windows)]
+const PERSIST_SESSION: u32 = CRED_PERSIST_SESSION.0;
+#[cfg(not(windows))]
+const PERSIST_SESSION: u32 = 1;
 
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
@@ -59,6 +76,7 @@ pub struct Item {
 
 /// go-keyring names `<service>:<user>`: one part starts with jetski
 /// (Antigravity's code name) or antigravity.
+#[cfg_attr(not(any(windows, test)), allow(dead_code))]
 pub fn is_antigravity(target: &str) -> bool {
     let lower = target.to_ascii_lowercase();
     let Some((service, user)) = lower.split_once(':') else {
@@ -68,6 +86,38 @@ pub fn is_antigravity(target: &str) -> bool {
     starts(service) || starts(user)
 }
 
+/// No Credential Manager here: nothing of agy to list.
+#[cfg(not(windows))]
+fn list() -> Vec<Item> {
+    Vec::new()
+}
+
+#[cfg(not(windows))]
+fn write(item: &Item, _persist: u32) -> Result<()> {
+    bail!(
+        "{}: the Antigravity login in the kit is not available on this system",
+        item.target
+    )
+}
+
+#[cfg(not(windows))]
+fn delete(_target: &str) {}
+
+#[cfg(not(windows))]
+fn protect(_blob: &str) -> Result<String> {
+    bail!("DPAPI is not available on this system")
+}
+
+/// A blob saved without `protect` is returned as it is.
+#[cfg(not(windows))]
+fn unprotect(blob: &str) -> Result<String> {
+    if blob.starts_with(DPAPI) {
+        bail!("DPAPI is not available on this system");
+    }
+    Ok(blob.to_owned())
+}
+
+#[cfg(windows)]
 fn list() -> Vec<Item> {
     let mut out = Vec::new();
     let mut count = 0u32;
@@ -108,6 +158,7 @@ fn list() -> Vec<Item> {
     out
 }
 
+#[cfg(windows)]
 fn write(item: &Item, persist: u32) -> Result<()> {
     let blob = base64::engine::general_purpose::STANDARD
         .decode(item.blob.as_deref().unwrap_or_default())
@@ -139,6 +190,7 @@ fn write(item: &Item, persist: u32) -> Result<()> {
     unsafe { CredWriteW(&cred, 0) }.with_context(|| format!("CredWrite {}", item.target))
 }
 
+#[cfg(windows)]
 fn delete(target: &str) {
     // SAFETY: valid string; a missing credential is not an error here.
     let _ = unsafe { CredDeleteW(&HSTRING::from(target), CRED_TYPE_GENERIC, None) };
@@ -180,6 +232,7 @@ const DPAPI: &str = "dpapi:";
 
 /// DPAPI for the current user: a secret of the PC copied into the kit is
 /// unreadable on any other PC or account.
+#[cfg(windows)]
 fn protect(blob: &str) -> Result<String> {
     use windows::Win32::Security::Cryptography::{CryptProtectData, CRYPT_INTEGER_BLOB};
     let data = base64::engine::general_purpose::STANDARD.decode(blob)?;
@@ -204,6 +257,7 @@ fn protect(blob: &str) -> Result<String> {
 }
 
 /// The secret saved by `protect` (a blob without the prefix as it is).
+#[cfg(windows)]
 fn unprotect(blob: &str) -> Result<String> {
     use windows::Win32::Security::Cryptography::{CryptUnprotectData, CRYPT_INTEGER_BLOB};
     let Some(rest) = blob.strip_prefix(DPAPI) else {
@@ -234,16 +288,48 @@ fn save_file(path: &std::path::Path, items: &[Item]) -> Result<()> {
         .with_context(|| path.display().to_string())
 }
 
-/// An `agy.exe` of this kit is running.
+/// An `agy.exe` (`agy` on macOS and Linux) of this kit is running.
 pub fn kit_agy_running(kit: &Kit) -> bool {
     crate::os::processes::running_under(&kit.apps())
         .iter()
-        .any(|p| p.name.eq_ignore_ascii_case("agy.exe"))
+        .any(|p| p.name.eq_ignore_ascii_case("agy.exe") || p.name == "agy")
+}
+
+/// The kit's lock: an exclusive `flock` on `data/antigravity/keyring.lock`,
+/// waited for at most 30 s like on Windows.
+#[cfg(unix)]
+struct Lock(#[allow(dead_code)] fs::File);
+
+#[cfg(unix)]
+impl Lock {
+    fn take(kit: &Kit) -> Result<Lock> {
+        use std::os::fd::AsRawFd;
+        let dir = kit.data().join("antigravity");
+        fs::create_dir_all(&dir)?;
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(dir.join("keyring.lock"))
+            .context("keyring.lock")?;
+        let start = std::time::Instant::now();
+        // SAFETY: a valid descriptor owned by `file`.
+        while unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+            if start.elapsed() > Duration::from_secs(30) {
+                crate::log::warn("antigravity keyring: lock busy for 30 s, going on");
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        }
+        Ok(Lock(file))
+    }
 }
 
 /// The kit's lock: `Local\Dev-Kit-agy-keyring-<kit id>` (same as the kit).
+#[cfg(windows)]
 struct Lock(windows::Win32::Foundation::HANDLE);
 
+#[cfg(windows)]
 impl Lock {
     fn take(kit: &Kit) -> Result<Lock> {
         let name = HSTRING::from(format!(r"Local\Dev-Kit-agy-keyring-{}", kit.id()));
@@ -260,6 +346,7 @@ impl Lock {
     }
 }
 
+#[cfg(windows)]
 impl Drop for Lock {
     fn drop(&mut self) {
         // SAFETY: handle from CreateMutexW; released and closed once.
@@ -330,7 +417,7 @@ fn save_login(kit: &Kit, f: &Files) -> Result<()> {
     }
     for mut o in to_restore {
         o.blob = o.blob.as_deref().map(unprotect).transpose()?;
-        write(&o, o.persist.unwrap_or(CRED_PERSIST_SESSION.0))?;
+        write(&o, o.persist.unwrap_or(PERSIST_SESSION))?;
     }
     fs::remove_file(&f.seen)?;
     Ok(())
@@ -392,7 +479,7 @@ pub fn restore(kit: &Kit) -> Result<()> {
         if existing.iter().any(|e| e.target == c.target) {
             continue;
         }
-        write(&c, CRED_PERSIST_SESSION.0)?;
+        write(&c, PERSIST_SESSION)?;
         let written = list()
             .into_iter()
             .find(|x| x.target == c.target)

@@ -30,12 +30,17 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
+#[cfg(windows)]
 use windows::core::HSTRING;
+#[cfg(windows)]
 use windows::Win32::Foundation::{LocalFree, HLOCAL};
+#[cfg(windows)]
 use windows::Win32::Security::Authorization::{
     ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
 };
+#[cfg(windows)]
 use windows::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
+#[cfg(windows)]
 use windows::Win32::Security::{SetFileSecurityW, DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
 
 use crate::env::{mask_secrets, KitEnv};
@@ -332,25 +337,45 @@ fn free_ports() -> impl Iterator<Item = u16> {
 
 pub fn random_token() -> Result<String> {
     let mut bytes = [0u8; 32];
+    #[cfg(windows)]
     // SAFETY: the buffer is valid for its length; system RNG, no algorithm handle.
     unsafe { BCryptGenRandom(None, &mut bytes, BCRYPT_USE_SYSTEM_PREFERRED_RNG) }
         .ok()
         .context("BCryptGenRandom")?;
+    #[cfg(unix)]
+    fs::File::open("/dev/urandom")
+        .and_then(|mut f| f.read_exact(&mut bytes))
+        .context("/dev/urandom")?;
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
 
-/// Protected DACL with full access for the owner only. Fails on disks
-/// without permissions (FAT32/exFAT): the caller only logs it.
+/// Protected DACL with full access for the owner only (mode 600 on Unix).
+/// Fails on disks without permissions (FAT32/exFAT): the caller only logs it.
 pub(crate) fn restrict_to_owner(path: &Path) -> Result<()> {
-    set_dacl(path, "D:P(A;;FA;;;OW)")
+    #[cfg(windows)]
+    return set_dacl(path, "D:P(A;;FA;;;OW)");
+    #[cfg(unix)]
+    return set_mode(path, 0o600);
 }
 
 /// The same for a folder, inherited by every file and folder created in it
 /// afterwards (temporary files included): they are private from the start.
+/// On Unix the folder gets mode 700: what is inside cannot be reached.
 pub(crate) fn restrict_dir_to_owner(path: &Path) -> Result<()> {
-    set_dacl(path, "D:P(A;OICI;FA;;;OW)")
+    #[cfg(windows)]
+    return set_dacl(path, "D:P(A;OICI;FA;;;OW)");
+    #[cfg(unix)]
+    return set_mode(path, 0o700);
 }
 
+#[cfg(unix)]
+fn set_mode(path: &Path, mode: u32) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(path, fs::Permissions::from_mode(mode))
+        .with_context(|| format!("chmod {mode:o} {}", path.display()))
+}
+
+#[cfg(windows)]
 fn set_dacl(path: &Path, sddl: &str) -> Result<()> {
     let sddl = HSTRING::from(sddl);
     let mut sd = PSECURITY_DESCRIPTOR::default();

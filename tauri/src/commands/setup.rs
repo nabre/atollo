@@ -273,7 +273,10 @@ pub async fn downloads_pick<R: Runtime>(
     state: State<'_, AppState>,
 ) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
+    #[cfg(windows)]
     let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
+    #[cfg(not(windows))]
+    let owner = 0;
     let title = crate::i18n::t(state.lang(), "Scegli il file scaricato", &[]);
     let kit = state.kit.clone();
     tauri::async_runtime::spawn_blocking(move || {

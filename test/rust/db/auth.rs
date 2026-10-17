@@ -94,6 +94,7 @@ fn env_for_laravel_and_others() {
     );
 }
 
+#[cfg(windows)]
 #[test]
 fn secrets_round_trip_and_gitignore() {
     let tmp = crate::kit::tests::TempDir::new("db-auth");
@@ -121,6 +122,7 @@ fn secrets_round_trip_and_gitignore() {
         .contains("DB_PASSWORD=z"));
 }
 
+#[cfg(windows)]
 /// The DACL of `path` as SDDL text (`D:P(A;;FA;;;OW)`).
 pub(crate) fn dacl(path: &Path) -> String {
     use windows::core::{HSTRING, PWSTR};
@@ -165,13 +167,23 @@ pub(crate) fn dacl(path: &Path) -> String {
     }
 }
 
+/// Unix: no permission for the group or the others.
+#[cfg(unix)]
+pub(crate) fn assert_owner_only(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    let mode = fs::metadata(path).unwrap().permissions().mode();
+    assert_eq!(mode & 0o077, 0, "{}: {mode:o}", path.display());
+}
+
 /// One entry, for the owner, nobody else (the test folder is on NTFS).
+#[cfg(windows)]
 pub(crate) fn assert_owner_only(path: &Path) {
     let sddl = dacl(path);
     assert_eq!(sddl.matches("(A;").count(), 1, "{}: {sddl}", path.display());
     assert!(sddl.ends_with(";FA;;;OW)"), "{}: {sddl}", path.display());
 }
 
+#[cfg(windows)]
 #[test]
 fn project_passwords_in_private_folder() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-project");

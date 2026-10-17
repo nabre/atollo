@@ -289,6 +289,7 @@ fn pool_runs_follow_their_pool() {
 /// BUG-V3-01: when the php-cgi of a project's Nginx ends, the server is
 /// stopped and the run ends in error with the reason in its log; stopped by
 /// the user, nothing is added.
+#[cfg(windows)]
 #[test]
 fn nginx_stops_when_its_php_cgi_ends() {
     let tmp = TempDir::new("run-php-cgi");

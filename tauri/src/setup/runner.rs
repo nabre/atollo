@@ -10,7 +10,9 @@
 use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 
-use anyhow::{bail, Context, Result};
+#[cfg(windows)]
+use anyhow::Context;
+use anyhow::{bail, Result};
 use serde::Serialize;
 #[cfg(windows)]
 use windows::core::HSTRING;

@@ -12,6 +12,8 @@
 //! and is renamed only when complete; 3 attempts, waiting 5 s then 10 s.
 
 pub mod archive;
+/// Authenticode (WinVerifyTrust): Windows only, like the files it checks.
+#[cfg(windows)]
 pub mod signature;
 pub mod verify;
 

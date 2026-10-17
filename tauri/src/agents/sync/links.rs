@@ -14,13 +14,38 @@
 //! the caller copies the skills instead.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Path, PathBuf, MAIN_SEPARATOR_STR};
 
 use anyhow::Result;
 use serde_json::{json, Value};
 
 use super::tree::{is_reparse, list_files};
 use super::{read_state, stamp, write_json, Paths, Report, Tool};
+
+/// Folder links: junctions on Windows.
+#[cfg(windows)]
+use junction as dirlink;
+
+/// Folder links: symbolic links on macOS and Linux, with the calls of the
+/// `junction` crate.
+#[cfg(unix)]
+mod dirlink {
+    use std::io;
+    use std::path::{Path, PathBuf};
+
+    pub fn create(target: impl AsRef<Path>, link: impl AsRef<Path>) -> io::Result<()> {
+        std::os::unix::fs::symlink(target, link)
+    }
+
+    /// Removes the link only, never what it points to.
+    pub fn delete(link: impl AsRef<Path>) -> io::Result<()> {
+        std::fs::remove_file(link)
+    }
+
+    pub fn get_target(link: impl AsRef<Path>) -> io::Result<PathBuf> {
+        std::fs::read_link(link)
+    }
+}
 
 fn same(a: &Path, b: &Path) -> bool {
     let norm = |p: &Path| {
@@ -34,10 +59,10 @@ fn same(a: &Path, b: &Path) -> bool {
 
 fn can_link(dir: &Path, target: &Path) -> bool {
     let probe = dir.join(format!(".devkit-link-{}", std::process::id()));
-    let _ = junction::delete(&probe);
+    let _ = dirlink::delete(&probe);
     let _ = fs::remove_dir(&probe);
-    let ok = junction::create(target, &probe).is_ok();
-    let _ = junction::delete(&probe);
+    let ok = dirlink::create(target, &probe).is_ok();
+    let _ = dirlink::delete(&probe);
     let _ = fs::remove_dir(&probe);
     ok
 }
@@ -47,8 +72,8 @@ fn same_tree(a: &Path, b: &Path) -> bool {
     fa.len() == fb.len()
         && fa.iter().all(|(rel, st)| {
             fb.get(rel).is_some_and(|o| o.size == st.size)
-                && fs::read(a.join(rel.replace('/', "\\"))).ok()
-                    == fs::read(b.join(rel.replace('/', "\\"))).ok()
+                && fs::read(a.join(rel.replace('/', MAIN_SEPARATOR_STR))).ok()
+                    == fs::read(b.join(rel.replace('/', MAIN_SEPARATOR_STR))).ok()
         })
 }
 
@@ -141,11 +166,11 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
         let path = e.path();
         let shared = shared_root.join(&name);
         if is_reparse(&path) {
-            let target = junction::get_target(&path).ok();
+            let target = dirlink::get_target(&path).ok();
             if shared.exists() && target.as_deref().is_some_and(|t| same(t, &shared)) {
                 continue;
             }
-            let _ = junction::delete(&path);
+            let _ = dirlink::delete(&path);
             let _ = fs::remove_dir(&path);
         } else if path.is_dir() && path.join("SKILL.md").is_file() {
             adopt(p, tool, &name, &path, report)?;
@@ -162,7 +187,7 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
     for name in names {
         let link = dir.join(&name);
         if fs::symlink_metadata(&link).is_err() {
-            if let Err(e) = junction::create(shared_root.join(&name), &link) {
+            if let Err(e) = dirlink::create(shared_root.join(&name), &link) {
                 report.warn(format!("{}: link failed ({e})", link.display()));
                 continue;
             }
@@ -181,6 +206,6 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
     Ok(true)
 }
 
-#[cfg(test)]
+#[cfg(all(test, windows))]
 #[path = "../../../../test/rust/agents/sync/links.rs"]
 mod tests;
