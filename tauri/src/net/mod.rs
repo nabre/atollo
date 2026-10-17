@@ -8,7 +8,8 @@
 //! TLS is Windows' own (SChannel through native-tls) with the Windows
 //! certificate store, so corporate SSL inspection works as it does for the
 //! browser. Proxy: the one in Settings, else `HTTPS_PROXY`/`HTTP_PROXY`, else
-//! the Windows proxy setting (read-only). Every download goes to `<file>.part`
+//! the system's setting, read only: Windows', macOS `scutil --proxy`, or
+//! GNOME's on Linux. Every download goes to `<file>.part`
 //! and is renamed only when complete; 3 attempts, waiting 5 s then 10 s.
 
 pub mod archive;
@@ -120,7 +121,10 @@ impl Net {
             .filter(|p| !p.is_empty())
         {
             Some(url) => Some(Proxy::new(url).with_context(|| format!("proxy {url}"))?),
+            #[cfg(windows)]
             None => Proxy::try_from_env(),
+            #[cfg(unix)]
+            None => Proxy::try_from_env().or_else(system_proxy),
         };
         let tls = TlsConfig::builder()
             .provider(TlsProvider::NativeTls)
@@ -705,6 +709,127 @@ pub fn checksum_asset<'a>(release: &'a GhRelease, asset: &GhAsset) -> Option<&'a
 /// `asset` can be checked: GitHub's digest or a checksum file of its release.
 pub fn verifiable(release: &GhRelease, asset: &GhAsset) -> bool {
     github_digest(asset).is_ok() || checksum_asset(release, asset).is_some()
+}
+
+/// `http://host:port` of a proxy (a proxy for HTTPS is reached over HTTP
+/// too); no port when the system gives none.
+#[cfg(any(unix, test))]
+fn proxy_url(host: &str, port: Option<&str>) -> Option<String> {
+    let host = host.trim();
+    if host.is_empty() {
+        return None;
+    }
+    let host = host
+        .strip_prefix("http://")
+        .or_else(|| host.strip_prefix("https://"))
+        .unwrap_or(host)
+        .trim_end_matches('/');
+    match port.map(str::trim).filter(|p| !p.is_empty() && *p != "0") {
+        Some(p) => Some(format!("http://{host}:{p}")),
+        None => Some(format!("http://{host}")),
+    }
+}
+
+/// The proxy in the output of macOS `scutil --proxy` (the settings of
+/// System Settings › Network): HTTPS's if on, else HTTP's.
+#[cfg(any(target_os = "macos", test))]
+pub(crate) fn scutil_proxy(output: &str) -> Option<String> {
+    let mut keys = std::collections::BTreeMap::new();
+    let mut depth = 0usize;
+    for line in output.lines() {
+        let line = line.trim();
+        // Only the keys of the top dictionary (not ExceptionsList's items).
+        if line == "}" {
+            depth = depth.saturating_sub(1);
+            continue;
+        }
+        if let Some((key, value)) = line.split_once(" : ") {
+            if depth == 1 {
+                keys.insert(key.trim(), value.trim());
+            }
+        }
+        if line.ends_with('{') {
+            depth += 1;
+        }
+    }
+    ["HTTPS", "HTTP"].iter().find_map(|kind| {
+        let on = keys.get(format!("{kind}Enable").as_str()) == Some(&"1");
+        let host = keys.get(format!("{kind}Proxy").as_str())?;
+        on.then(|| proxy_url(host, keys.get(format!("{kind}Port").as_str()).copied()))
+            .flatten()
+    })
+}
+
+/// The proxy of GNOME's settings (`org.gnome.system.proxy`) from what
+/// `gsettings get` printed: `mode`, then host and port for HTTPS and HTTP.
+/// Only `'manual'`: an automatic configuration (PAC) is not read.
+#[cfg(any(target_os = "linux", test))]
+pub(crate) fn gnome_proxy(mode: &str, https: (&str, &str), http: (&str, &str)) -> Option<String> {
+    let unquote = |s: &str| s.trim().trim_matches('\'').to_owned();
+    if unquote(mode) != "manual" {
+        return None;
+    }
+    [https, http]
+        .iter()
+        .find_map(|(host, port)| proxy_url(&unquote(host), Some(&unquote(port))))
+}
+
+/// The system's proxy on macOS and Linux (T1.8.4), read once: used only
+/// when neither the settings nor `HTTPS_PROXY`/`HTTP_PROXY` give one.
+#[cfg(unix)]
+fn system_proxy() -> Option<Proxy> {
+    static URL: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    let url = URL.get_or_init(read_system_proxy).as_deref()?;
+    match Proxy::new(url) {
+        Ok(p) => Some(p),
+        Err(e) => {
+            crate::log::warn(&format!("system proxy {url}: {e}"));
+            None
+        }
+    }
+}
+
+/// The text a program printed, `None` when it is missing or fails.
+#[cfg(unix)]
+fn output_of(cmd: &mut std::process::Command) -> Option<String> {
+    let out = cmd
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()
+        .filter(|o| o.status.success())?;
+    Some(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
+#[cfg(target_os = "macos")]
+fn read_system_proxy() -> Option<String> {
+    scutil_proxy(&output_of(
+        std::process::Command::new("/usr/sbin/scutil").arg("--proxy"),
+    )?)
+}
+
+/// GNOME's settings, read with the user's own profile: the app points
+/// `HOME` and `XDG_CONFIG_HOME` (where dconf keeps them) into the kit.
+#[cfg(target_os = "linux")]
+fn read_system_proxy() -> Option<String> {
+    let profile = std::env::var_os("CP_USER_PROFILE").or_else(|| std::env::var_os("HOME"))?;
+    let get = |schema: &str, key: &str| {
+        let mut cmd = std::process::Command::new("gsettings");
+        cmd.args(["get", schema, key])
+            .env("HOME", &profile)
+            .env_remove("XDG_CONFIG_HOME");
+        output_of(&mut cmd).unwrap_or_default()
+    };
+    let mode = get("org.gnome.system.proxy", "mode");
+    if mode.trim().trim_matches('\'') != "manual" {
+        return None;
+    }
+    let pair = |schema| (get(schema, "host"), get(schema, "port"));
+    let (https, http) = (
+        pair("org.gnome.system.proxy.https"),
+        pair("org.gnome.system.proxy.http"),
+    );
+    gnome_proxy(&mode, (&https.0, &https.1), (&http.0, &http.1))
 }
 
 #[cfg(test)]
