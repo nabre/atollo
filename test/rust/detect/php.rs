@@ -1,11 +1,7 @@
-use crate::detect::tests::{ids, project};
+use crate::detect::tests::{ids, project, sh};
 use crate::detect::{detect, Kind};
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "expects the cmd.exe form of the php -S command"
-)]
 fn laravel_and_plain() {
     let l = project("php-laravel", &[("composer.json", "{}"), ("artisan", "")]);
     let p = detect(&l.0, "it");
@@ -33,7 +29,10 @@ fn laravel_and_plain() {
     assert_eq!(p.kind, Kind::Web);
     assert_eq!(
         p.actions[0].command,
-        r#"php -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#
+        sh(
+            r#"php -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#,
+            r#"php -S 127.0.0.1:{port} -t public "$CP_DATA/kit/php-router.php""#
+        )
     );
     // Apache proposed after `php -S`, not required.
     assert_eq!(ids(&p), ["php:server", "apache"]);
@@ -68,10 +67,6 @@ fn laravel_and_plain() {
 /// a project's own `router.php` runs after it, its path given relative to
 /// the document root (SEC-V3-02, D-97).
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "expects the cmd.exe form of the php -S command"
-)]
 fn php_server_router() {
     let own = project(
         "php-router",
@@ -84,7 +79,10 @@ fn php_server_router() {
     let p = detect(&own.0, "it");
     assert_eq!(
         p.actions[0].command,
-        r#"php -d "atollo.router=router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#
+        sh(
+            r#"php -d "atollo.router=router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#,
+            r#"php -d 'atollo.router=router.php' -S 127.0.0.1:{port} -t public "$CP_DATA/kit/php-router.php""#
+        )
     );
     let up = project(
         "php-router-up",
@@ -93,7 +91,10 @@ fn php_server_router() {
     let p = detect(&up.0, "it");
     assert_eq!(
         p.actions[0].command,
-        r#"php -d "atollo.router=..\router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#
+        sh(
+            r#"php -d "atollo.router=..\router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#,
+            r#"php -d 'atollo.router=../router.php' -S 127.0.0.1:{port} -t public "$CP_DATA/kit/php-router.php""#
+        )
     );
     let root = project(
         "php-router-root",
@@ -102,7 +103,10 @@ fn php_server_router() {
     let p = detect(&root.0, "it");
     assert_eq!(
         p.actions[0].command,
-        r#"php -d "atollo.router=router.php" -S 127.0.0.1:{port} -t . "%CP_DATA%\kit\php-router.php""#
+        sh(
+            r#"php -d "atollo.router=router.php" -S 127.0.0.1:{port} -t . "%CP_DATA%\kit\php-router.php""#,
+            r#"php -d 'atollo.router=router.php' -S 127.0.0.1:{port} -t . "$CP_DATA/kit/php-router.php""#
+        )
     );
 
     let router = include_str!("../../../runtime/php-router.php");

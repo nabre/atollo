@@ -5,11 +5,12 @@ use std::io::Write;
 #[test]
 fn unsafe_names_are_refused() {
     let base = Path::new(r"D:\x");
+    // with the system's separator after the base: `D:\x\a\b.txt` on Windows
     assert_eq!(
         safe_join(base, "a/b.txt"),
-        Some(PathBuf::from(r"D:\x\a\b.txt"))
+        Some(base.join("a").join("b.txt"))
     );
-    assert_eq!(safe_join(base, "./a"), Some(PathBuf::from(r"D:\x\a")));
+    assert_eq!(safe_join(base, "./a"), Some(base.join("a")));
     for bad in [
         "../evil",
         "a/../../evil",

@@ -47,13 +47,9 @@ fn quotas_of_the_offered_models() {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "conversation folder created with a backslash path"
-)]
 fn conversations_are_sessions() {
     let tmp = TempDir::new("stats-agy");
-    let conv = tmp.0.join(r"antigravity\conversations");
+    let conv = tmp.0.join("antigravity").join("conversations");
     fs::create_dir_all(&conv).unwrap();
     for f in ["a.db", "a.db-wal", "b.pb", "c.txt"] {
         fs::write(conv.join(f), b"x").unwrap();

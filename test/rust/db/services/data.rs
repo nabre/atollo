@@ -5,14 +5,17 @@ use crate::db::services::{
 };
 use crate::kit::{tests::TempDir, Arch};
 
-/// `id` installed at `version`, the default folder of its line.
+/// `id` installed at `version`, the default folder of its line, with the
+/// key paths of the kit's target (`bin/mariadbd.exe` on Windows,
+/// `bin/mariadbd` elsewhere).
 fn fake_server(kit: &Kit, id: &str, version: &str) {
     let c = Catalog::get().find(id).unwrap();
     let dir = crate::versions::install_dir(kit, c, version);
     let folder = c.folder.as_deref().unwrap();
-    for k in std::iter::once(&c.key).chain(&c.keys) {
+    let target = kit.target();
+    for k in std::iter::once(c.key_for(target)).chain(c.keys_for(target)) {
         if let Some(rel) = k.strip_prefix(folder) {
-            let file = dir.join(rel.trim_start_matches('/').replace('/', "\\"));
+            let file = crate::fsx::join_rel(&dir, rel);
             fs::create_dir_all(file.parent().unwrap()).unwrap();
             fs::write(&file, b"").unwrap();
         }
@@ -20,35 +23,43 @@ fn fake_server(kit: &Kit, id: &str, version: &str) {
     c.save_version(kit, version).unwrap();
 }
 
+/// The MariaDB programs of a line folder of an older version, as the
+/// kit's target names them.
+fn fake_mariadb_line(kit: &Kit, dir: &std::path::Path) {
+    fs::create_dir_all(dir.join("bin")).unwrap();
+    for stem in ["mariadbd", "mariadb"] {
+        let exe = crate::router::bins::exe_name(kit.os(), stem);
+        fs::write(dir.join("bin").join(exe), b"").unwrap();
+    }
+}
+
 #[test]
-#[cfg_attr(not(windows), ignore = "Windows layout: .exe keys and backslash paths")]
 fn each_version_has_its_data() {
     let tmp = TempDir::new("services-lines");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     // Data of an older kit, then the server's own folder per version.
     fake_server(&kit, "mariadb", "11.8.3");
-    let root = kit.data().join(r"db\mariadb");
+    let root = kit.data().join("db").join("mariadb");
     fs::create_dir_all(root.join("mysql")).unwrap();
     fs::write(root.join("ibdata1"), b"x").unwrap();
     migrate_data(&kit);
-    assert!(root.join(r"11.8\mysql").is_dir() && !root.join("mysql").exists());
+    assert!(root.join("11.8").join("mysql").is_dir() && !root.join("mysql").exists());
     assert_eq!(data_dir(&kit, "mariadb"), root.join("11.8"));
 
     // A newer version starts with a copy; the old data stays.
     let c = Catalog::get().find("mariadb").unwrap();
     let newer = crate::versions::saved_dir(&kit, c, "12.3");
-    fs::create_dir_all(newer.join("bin")).unwrap();
-    for k in ["mariadbd.exe", "mariadb.exe"] {
-        fs::write(newer.join("bin").join(k), b"").unwrap();
-    }
+    fake_mariadb_line(&kit, &newer);
     assert_eq!(server_line(&kit, "mariadb").as_deref(), Some("12.3"));
     assert_eq!(server_lines(&kit, "mariadb"), ["12.3", "11.8"]);
     assert_eq!(
         seed(&kit, "mariadb", "12.3", &[]).unwrap().as_deref(),
         Some("11.8")
     );
-    assert!(root.join(r"12.3\ibdata1").is_file() && root.join(r"11.8\ibdata1").is_file());
+    assert!(
+        root.join("12.3").join("ibdata1").is_file() && root.join("11.8").join("ibdata1").is_file()
+    );
     assert_eq!(
         seed(&kit, "mariadb", "12.3", &[]).unwrap(),
         None,
@@ -74,9 +85,9 @@ fn each_version_has_its_data() {
     );
 
     // MongoDB: one major at a time.
-    let mongo = kit.data().join(r"db\mongodb");
+    let mongo = kit.data().join("db").join("mongodb");
     fs::create_dir_all(mongo.join("7.0")).unwrap();
-    fs::write(mongo.join(r"7.0\WiredTiger"), b"").unwrap();
+    fs::write(mongo.join("7.0").join("WiredTiger"), b"").unwrap();
     assert_eq!(
         seed(&kit, "mongodb", "9.0", &[]).unwrap(),
         None,
@@ -90,13 +101,12 @@ fn each_version_has_its_data() {
 
 /// The data of a running version is never copied (PLAN.md §13.2).
 #[test]
-#[cfg_attr(not(windows), ignore = "data folders created with backslash paths")]
 fn no_copy_of_a_running_version() {
     let tmp = TempDir::new("services-seed-running");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let root = kit.data().join(r"db\mariadb");
-    fs::create_dir_all(root.join(r"10.6\mysql")).unwrap();
+    let root = kit.data().join("db").join("mariadb");
+    fs::create_dir_all(root.join("10.6").join("mysql")).unwrap();
     let err = seed(&kit, "mariadb", "11.8", &["10.6".to_owned()]).unwrap_err();
     assert!(format!("{err:#}").contains("stop mariadb 10.6"), "{err:#}");
     assert!(!root.join("11.8").exists(), "nothing copied");
@@ -113,7 +123,6 @@ fn no_copy_of_a_running_version() {
 /// its first start; each with its data, program and log; the project's
 /// database on the version chosen for it, at that version's port.
 #[test]
-#[cfg_attr(not(windows), ignore = "Windows layout: .exe keys and backslash paths")]
 fn versions_side_by_side() {
     let tmp = TempDir::new("services-side");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -121,10 +130,7 @@ fn versions_side_by_side() {
     fake_server(&kit, "mariadb", "11.4.5");
     let c = Catalog::get().find("mariadb").unwrap();
     let older = crate::versions::saved_dir(&kit, c, "10.6");
-    fs::create_dir_all(older.join("bin")).unwrap();
-    for k in ["mariadbd.exe", "mariadb.exe"] {
-        fs::write(older.join("bin").join(k), b"").unwrap();
-    }
+    fake_mariadb_line(&kit, &older);
     assert_eq!(server_lines(&kit, "mariadb"), ["11.4", "10.6"]);
     assert_eq!(server_line(&kit, "mariadb").as_deref(), Some("11.4"));
     assert_eq!(line_port(&kit, "mariadb", None), 3306);
@@ -132,7 +138,7 @@ fn versions_side_by_side() {
     assert_eq!(line_port(&kit, "mariadb", Some("10.6")), 3307);
     assert_eq!(
         data_dir_at(&kit, "mariadb", Some("10.6")),
-        kit.data().join(r"db\mariadb\10.6")
+        kit.data().join("db").join("mariadb").join("10.6")
     );
     assert!(bin_at(&kit, "mariadb", Some("10.6"), "mariadbd.exe").starts_with(&older));
     assert_eq!(
@@ -214,7 +220,6 @@ fn versions_side_by_side() {
 /// versions the projects' databases are on: not the server's own, not one
 /// chosen without a database, not one uninstalled.
 #[test]
-#[cfg_attr(not(windows), ignore = "Windows layout: .exe keys and backslash paths")]
 fn autostart_lines_follow_the_projects() {
     use crate::db::auth;
     let tmp = TempDir::new("services-autostart");
@@ -223,10 +228,7 @@ fn autostart_lines_follow_the_projects() {
     fake_server(&kit, "mariadb", "11.4.5");
     let c = Catalog::get().find("mariadb").unwrap();
     let older = crate::versions::saved_dir(&kit, c, "10.6");
-    fs::create_dir_all(older.join("bin")).unwrap();
-    for k in ["mariadbd.exe", "mariadb.exe"] {
-        fs::write(older.join("bin").join(k), b"").unwrap();
-    }
+    fake_mariadb_line(&kit, &older);
     assert!(lines_in_use(&kit, "mariadb").is_empty());
     // chosen, no database yet: not started
     auth::set_project_line(&kit, "blog", "mariadb", Some("10.6")).unwrap();
@@ -264,7 +266,7 @@ fn autostart_lines_follow_the_projects() {
     assert_eq!(project_mysql_home(&kit, "shop"), None, "not started yet");
     auth::write_line_client_ini(&kit, "10.6", 3307, "pw").unwrap();
     let home = project_mysql_home(&kit, "shop").unwrap();
-    assert_eq!(home, kit.app_dir().join(r"db\lines\10.6"));
+    assert_eq!(home, kit.app_dir().join("db").join("lines").join("10.6"));
     let ini = fs::read_to_string(home.join("my.ini")).unwrap();
     assert!(
         ini.contains("port=3307") && ini.contains("user=root"),

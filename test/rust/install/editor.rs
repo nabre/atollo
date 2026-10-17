@@ -2,28 +2,27 @@ use super::*;
 use crate::setup::catalog::Catalog;
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "Windows program paths, compared with the Windows separator"
-)]
 fn processes_of_the_old_editor() {
-    let proc = |pid, path: &str| crate::os::processes::Proc {
+    // Paths of the system's form: the comparison uses its separator.
+    let apps = if cfg!(windows) {
+        Path::new(r"E:\Kit\data\apps\win32-x64").to_path_buf()
+    } else {
+        Path::new("/media/u/Kit/data/apps/linux-x64").to_path_buf()
+    };
+    let proc = |pid, rel: &[&str]| crate::os::processes::Proc {
         pid,
         parent: 0,
         name: String::new(),
-        path: path.into(),
+        path: rel.iter().fold(apps.clone(), |p, s| p.join(s)),
     };
     let all = [
-        proc(1, r"E:\Kit\data\apps\win32-x64\vscodium-server\node.exe"),
-        proc(2, r"E:\Kit\data\apps\win32-x64\VSCODIUM-SERVER\bin\x.exe"),
-        proc(
-            3,
-            r"E:\Kit\data\apps\win32-x64\vscodium-server-old\node.exe",
-        ),
-        proc(4, r"E:\Kit\data\apps\win32-x64\node\node.exe"),
+        proc(1, &["vscodium-server", "node.exe"]),
+        proc(2, &["VSCODIUM-SERVER", "bin", "x.exe"]),
+        proc(3, &["vscodium-server-old", "node.exe"]),
+        proc(4, &["node", "node.exe"]),
     ];
-    let old = Path::new(r"E:\Kit\data\apps\win32-x64\vscodium-server");
-    assert_eq!(crate::os::processes::running_from(&all, old), [1, 2]);
+    let old = apps.join("vscodium-server");
+    assert_eq!(crate::os::processes::running_from(&all, &old), [1, 2]);
 }
 
 #[test]

@@ -55,12 +55,15 @@ fn settings_round_trip_and_defaults() {
 /// on (`used`), then the one it is on now, each once; a `db.json` of before
 /// has only the one it is on.
 #[test]
-#[cfg_attr(not(windows), ignore = "db.json path given with backslashes")]
 fn drop_lines_cover_every_version_used() {
     let tmp = TempDir::new("services-drop-lines");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let file = kit.project_data().join(r"shop\private\db.json");
+    let file = kit
+        .project_data()
+        .join("shop")
+        .join("private")
+        .join("db.json");
     fs::create_dir_all(file.parent().unwrap()).unwrap();
     assert!(project_drop_lines(&kit, "shop", "mariadb").is_empty());
     fs::write(
