@@ -1,8 +1,29 @@
 # Novità
 
+## Riordino di cartelle e file (17/10/2026)
+
+Struttura riallineata alle regole di [ARCHITECTURE.md](ARCHITECTURE.md), senza cambiare il comportamento (salvo la correzione qui sotto).
+
+**Correzione**
+- **Spostamento del kit su macOS e Linux**: `kit.rs` salvava la radice vecchia in `old-root-darwin.txt` / `old-root-linux.txt`, ma `agents::relocate` leggeva solo `old-root.txt`: fuori da Windows i percorsi degli agenti non venivano riscritti dopo uno spostamento e il file restava. Ora tutti e due usano `Kit::old_root_file`.
+
+**Motore Rust**
+- `servers\mod.rs` (1911 righe) diviso in `mod.rs` (tipi ed elenco), `pools.rs` (servers.json, pool automatici, scansione), `config.rs` (configurazione generata), `process.rs` (avvio, arresto, ricarica, siti collegati); codice copiato invariato.
+- `terminals.rs` passa da `src\` a `editor\terminals.rs`, accanto a `terminal.rs`: in cima a `src\` resta solo l'infrastruttura.
+- Percorsi in un solo posto: `Kit::versions_root()` (`data\app\versions`, prima scritto a mano in tre moduli), `ext::user_path` (`extensions.txt`, due volte), `auth::secrets_path` usato anche dalla migrazione.
+- Stato del kit letto con `fsx::read_text` / `fsx::read_json` (BOM e byte non UTF-8 tollerati): `components.txt`, file delle versioni, `layout.txt`, `root.txt`, la radice vecchia, `extensions.txt`, `secrets.json`.
+
+**Interfaccia**
+- Nuove cartelle `databases\` (`page`, `browser`, `backups`), `agents\` (`page`, `stats`), `theme\` (i tre CSS; `docs\brand\themes.py` scrive lì); `projectmcp.tsx` ed `editorsettings.tsx` passano in `projects\` (`mcp.tsx`, `editorsettings.tsx`). I test in `test\ui` seguono la stessa struttura. Il CSS compilato è identico.
+
+**Repository**
+- `Prompt.md` → `docs\app\PROMPT.md`, `brand.png` → `docs\brand\`, `reports\` → `docs\reports\`: nella radice restano configurazione e README.
+
+**Verificato**: `cargo fmt --check`, clippy con `-D warnings`, 452 test Rust (uno nuovo), ESLint, Prettier, `tsc`, 117 test dell'interfaccia, build dell'interfaccia.
+
 ## Correzioni e sviluppi della v3 (17/10/2026)
 
-Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../../reports/v3/03-BUG-SICUREZZA-E-FUNZIONALITA-MANCANTI.md), PLAN §13 e PLAN-DATA §9, chiusi da uno sciame di sette agenti (sicurezza web, pool, installazioni, database, rilevamento, interfaccia, multi-OS) più un giro di revisione con 17 rilievi, tutti corretti. Stato voce per voce in [reports/v3/03 §4](../../reports/v3/03-BUG-SICUREZZA-E-FUNZIONALITA-MANCANTI.md).
+Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../reports/v3/03-BUG-SICUREZZA-E-FUNZIONALITA-MANCANTI.md), PLAN §13 e PLAN-DATA §9, chiusi da uno sciame di sette agenti (sicurezza web, pool, installazioni, database, rilevamento, interfaccia, multi-OS) più un giro di revisione con 17 rilievi, tutti corretti. Stato voce per voce in [reports/v3/03 §4](../reports/v3/03-BUG-SICUREZZA-E-FUNZIONALITA-MANCANTI.md).
 
 **Sicurezza**
 - **Estensioni PHP** (D-96, SEC-V3-01): con PHP, Apache e Nginx eseguono `.php`, `.phtml` e `.phar`; senza PHP li rifiutano (Apache 403, Nginx 503). `.inc` e `.php3`…`.php8` sono sempre rifiutati (403), nei server dedicati, nei pool e nel sito del kit. Un `kit.conf` esistente riceve i blocchi che mancano all'avvio, una volta sola.
@@ -65,7 +86,7 @@ Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../../reports/v3/03-BUG
 
 ## Correzioni dopo la verifica della v2 (16/10/2026)
 
-27 difetti confermati rileggendo il codice ([`reports/v2/07`](../../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)), chiusi da uno sciame di agenti in quattro onde; CI di nuovo verde (`cargo fmt`, clippy, ESLint, Prettier) e passo dell'interfaccia in CI che si ferma al primo comando fallito.
+27 difetti confermati rileggendo il codice ([`reports/v2/07`](../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)), chiusi da uno sciame di agenti in quattro onde; CI di nuovo verde (`cargo fmt`, clippy, ESLint, Prettier) e passo dell'interfaccia in CI che si ferma al primo comando fallito.
 
 **Sicurezza**
 - **Pool dei server web**: un sito la cui cartella manca, sta fuori dal progetto o è una giunzione si salta (avviso nel log), invece di servire la radice del progetto con `.env`, `.git` e `wp-config.php` (N-S1). I pool Apache hanno un VirtualHost di default `localhost` prima dei progetti: un `Host` sconosciuto, o l'IP dalla LAN, non arriva più al primo progetto (N-S5).
@@ -93,7 +114,7 @@ Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../../reports/v3/03-BUG
 - **Tastiera**: menu delle versioni con frecce, Home/End, Esc e focus restituito; il dialogo di conferma tiene Tab tra i controlli raggiungibili e rende il focus alla chiusura (BUG-20r).
 - I divisori salvano la misura a fine trascinamento, non a ogni pixel (BUG-11r). Badge «più recente»/«bloccata» tradotti, etichette dei giorni leggibili, Guida allineata ai nomi dell'app («Rimuovi l'unità») (UI-POLISH). La Guida si carica a parte, fuori dal pacchetto principale (ARCH-LAZY).
 
-**Verificato**: `cargo check`, clippy e fmt per Windows; 85 test dell'interfaccia, ESLint, Prettier e build puliti. I test Rust girano solo nella CI Windows. Da provare a mano: Git via micromamba su macOS e Linux reali, avvio di un progetto in un pool, morte di php-cgi ([reports/v2/07 §8](../../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)).
+**Verificato**: `cargo check`, clippy e fmt per Windows; 85 test dell'interfaccia, ESLint, Prettier e build puliti. I test Rust girano solo nella CI Windows. Da provare a mano: Git via micromamba su macOS e Linux reali, avvio di un progetto in un pool, morte di php-cgi ([reports/v2/07 §8](../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)).
 
 ## Una cartella per versione minore per tutti gli strumenti (16/10/2026)
 

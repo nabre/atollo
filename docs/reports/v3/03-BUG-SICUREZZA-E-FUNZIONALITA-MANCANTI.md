@@ -271,7 +271,7 @@ Os::Linux => {
 
 ## 4. Stato di esecuzione
 
-> Ramo `fix/v3-swarm`, da `59da30a` a `f03d0a5`. Sette pacchetti in parallelo (websec, pools, install, db, detect, ui, multios), uniti con `--no-ff` senza conflitti (`1ca0c42`…`c7412b5`, poi `a9eb3c9`), e un giro di revisione con 17 rilievi, tutti corretti (`3262f7a`…`f03d0a5`). Gate finali su Windows: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (426 passati, 3 ignorati), `npm -w ui test` (107), `lint`, `format:check`, `build`. Decisioni in [DECISIONS.md](../../docs/app/DECISIONS.md) D-96…D-106, novità in [CHANGELOG.md](../../docs/app/CHANGELOG.md).
+> Ramo `fix/v3-swarm`, da `59da30a` a `f03d0a5`. Sette pacchetti in parallelo (websec, pools, install, db, detect, ui, multios), uniti con `--no-ff` senza conflitti (`1ca0c42`…`c7412b5`, poi `a9eb3c9`), e un giro di revisione con 17 rilievi, tutti corretti (`3262f7a`…`f03d0a5`). Gate finali su Windows: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (426 passati, 3 ignorati), `npm -w ui test` (107), `lint`, `format:check`, `build`. Decisioni in [DECISIONS.md](../../app/DECISIONS.md) D-96…D-106, novità in [CHANGELOG.md](../../app/CHANGELOG.md).
 
 | # | ID | Stato | Commit di chiusura |
 | :-: | :-- | :-: | :-- |

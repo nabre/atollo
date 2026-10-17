@@ -188,10 +188,10 @@ package.json                  workspace npm (ui), comandi dev, build, test, lint
 tauri\                        exe (moduli §4), catalogo e testi incorporati
 ui\                           interfaccia React + TypeScript + Tailwind (D-02)
 runtime\                      file scritti in data\kit\ (loopback.js, profile.ps1, bashrc, bin\agy.cmd, bin\agy)
-docs\app\                     piano, decisioni, architettura, catalogo, prove, novità
-docs\brand\                   logo, temi, script che li generano
+docs\app\                     piano, decisioni, architettura, catalogo, prove, novità; PROMPT.md, il prompt iniziale
+docs\brand\                   logo, temi, script che li generano, la tavola del brand (brand.png)
+docs\reports\                 rapporti di analisi (v1-v4)
 .github\workflows\app.yml     CI e release
-Prompt.md                     il prompt iniziale
 ```
 
 Le cartelle di `tauri\src\` e `ui\src\`: [ARCHITECTURE.md](ARCHITECTURE.md).
