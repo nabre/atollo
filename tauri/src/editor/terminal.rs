@@ -61,8 +61,8 @@ impl Consoles {
         self.lock().iter().copied().collect()
     }
 
-    /// The programs of the sessions that still run: "Rimuovi l'unità" ends
-    /// them with their trees.
+    /// The programs of the sessions that still run and the jobs left in
+    /// their sessions: "Rimuovi l'unità" ends them with their trees.
     #[cfg(not(windows))]
     pub fn pids(&self) -> Vec<u32> {
         self.ptys.pids()
@@ -212,10 +212,15 @@ fn open<R: Runtime>(
         Some(command) => pty::command(command, dir),
     };
     let (out, end) = (app.clone(), app.clone());
-    let info = app.state::<Consoles>().ptys.open(
+    app.state::<Consoles>().ptys.open(
         &launch,
         env,
         dir,
+        // Told before the session's first output or its exit.
+        |info| {
+            crate::log::info(&format!("terminal {}: {}", info.id, info.title));
+            let _ = app.emit_to(main, pty::OPENED_EVENT, info);
+        },
         move |id, chunk| {
             let _ = out.emit_to(main, &pty::output_event(id), chunk);
         },
@@ -224,8 +229,6 @@ fn open<R: Runtime>(
             on_exit();
         },
     )?;
-    crate::log::info(&format!("terminal {}: {}", info.id, info.title));
-    let _ = app.emit_to(main, pty::OPENED_EVENT, &info);
     Ok(())
 }
 
