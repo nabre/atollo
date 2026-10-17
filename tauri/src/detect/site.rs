@@ -9,11 +9,11 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     let root = ["index.html", r"public\index.html", r"docs\index.html"]
         .into_iter()
         .find(|f| exists(dir, f))?;
-    let folder = Path::new(root)
-        .parent()
-        .map(|p| p.to_string_lossy().into_owned())
-        .filter(|p| !p.is_empty())
-        .unwrap_or_else(|| ".".into());
+    // Split on the `\` the candidates are written with: `Path::parent`
+    // does not see it as a separator on macOS and Linux.
+    let folder = root
+        .rsplit_once('\\')
+        .map_or_else(|| ".".to_owned(), |(d, _)| d.to_owned());
     let shown = if folder == "." {
         tr(lang, "cartella del progetto", &[])
     } else {
