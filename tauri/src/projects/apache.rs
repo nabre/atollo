@@ -30,7 +30,7 @@ pub fn fwd(p: &Path) -> String {
 /// `${CP_PHP_FWD}`. Also updates migrated `httpd.conf` files from
 /// `${CP_APPS_FWD}/apache` to `${CP_APACHE_FWD}`.
 pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
-    let conf = kit.data().join(r"apache\kit.conf");
+    let conf = kit.data().join("apache").join("kit.conf");
     if let Ok(text) = fs::read_to_string(&conf) {
         let fixed = migrate_kit_conf(&text);
         if fixed != text {
@@ -47,7 +47,7 @@ pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
         }
     }
     for dir in dirs {
-        let httpd = dir.join(r"conf\httpd.conf");
+        let httpd = dir.join("conf").join("httpd.conf");
         if let Ok(text) = fs::read_to_string(&httpd) {
             let fixed = text.replace(
                 "Define SRVROOT \"${CP_APPS_FWD}/apache\"",
@@ -375,7 +375,7 @@ pub fn command(
     if !exe.is_file() {
         bail!("Apache is not installed (Strumenti > Apache)");
     }
-    let base = fs::read_to_string(apache.join(r"conf\httpd.conf")).context("httpd.conf")?;
+    let base = fs::read_to_string(apache.join("conf").join("httpd.conf")).context("httpd.conf")?;
     let dir = dir(kit, project)?;
     fs::create_dir_all(dir.join("conf.d"))?;
     let conf = dir.join("httpd.conf");
