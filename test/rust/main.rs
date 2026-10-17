@@ -103,7 +103,7 @@ fn editor_windows_cannot_invoke_commands() {
     let app = mock_builder()
         .manage(state())
         .invoke_handler(command_handler!())
-        .build(tauri::generate_context!())
+        .build(context())
         .unwrap();
     let main = WebviewWindowBuilder::new(&app, MAIN, WebviewUrl::App("index.html".into()))
         .data_directory(std::env::temp_dir().join("atollo-ipc-test-webview"))
@@ -149,7 +149,7 @@ fn terminal_sessions_only_on_unix_and_only_for_main() {
         .manage(state())
         .manage(editor::terminal::Consoles::default())
         .invoke_handler(command_handler!())
-        .build(tauri::generate_context!())
+        .build(context())
         .unwrap();
     let data = std::env::temp_dir().join("atollo-ipc-test-webview-pty");
     let main = WebviewWindowBuilder::new(&app, MAIN, WebviewUrl::App("index.html".into()))

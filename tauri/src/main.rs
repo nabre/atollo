@@ -306,7 +306,7 @@ fn run() -> i32 {
     // The exe swap of a staged update happens on Exit (`run` may not return).
     let (update_kit, update_exe) = (kit.clone(), exe.clone());
     let result = build_app(tauri::Builder::default(), state, kit.clone())
-        .build(tauri::generate_context!())
+        .build(context())
         .map(|app| {
             app.run(move |handle, event| {
                 if let tauri::RunEvent::Exit = event {
@@ -486,6 +486,13 @@ fn version_lines(kit: &Kit, kit_env: &KitEnv, settings: &Settings, host: &Host, 
 
 fn help(lang: &str) -> String {
     i18n::t(lang, HELP, &[])
+}
+
+/// The app's context, expanded once for the app and its tests: on macOS
+/// `generate_context!` embeds the Info.plist under a global symbol, so a
+/// second expansion in the same binary does not link.
+fn context<R: tauri::Runtime>() -> tauri::Context<R> {
+    tauri::generate_context!()
 }
 
 /// The app: state, commands, main window, focus requests from a second start.
