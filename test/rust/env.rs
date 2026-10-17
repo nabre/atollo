@@ -506,6 +506,17 @@ fn python_on_the_unix_path() {
     }
     // Unchanged: left as it is.
     env.create_dirs().unwrap();
+    // The same script without its exec bits (a copy that drops modes):
+    // they come back.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let file = shims.join("python");
+        fs::set_permissions(&file, fs::Permissions::from_mode(0o644)).unwrap();
+        env.create_dirs().unwrap();
+        let mode = fs::metadata(&file).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o755);
+    }
 
     // Without the kit's Python: no shim on the PATH.
     let bare = Kit::at_target(tmp.0.join("Bare"), Target::LINUX_X64);

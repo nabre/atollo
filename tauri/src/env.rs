@@ -812,18 +812,20 @@ fn system_path(os: crate::kit::Os) -> &'static [&'static str] {
 }
 
 /// Writes `dir/python` ([`PYTHON_SHIM`]) when it is missing or different,
-/// executable (`LF`, 755).
+/// executable (`LF`, 755). An unchanged script that lost its exec bits (a
+/// kit copied by a tool that drops modes) gets them back.
 fn write_python_shim(dir: &Path) -> std::io::Result<()> {
     let file = dir.join("python");
-    if fs::read(&file).is_ok_and(|b| b == PYTHON_SHIM.as_bytes()) {
-        return Ok(());
+    if !fs::read(&file).is_ok_and(|b| b == PYTHON_SHIM.as_bytes()) {
+        fs::create_dir_all(dir)?;
+        crate::fsx::write_atomic(&file, PYTHON_SHIM.as_bytes())?;
     }
-    fs::create_dir_all(dir)?;
-    crate::fsx::write_atomic(&file, PYTHON_SHIM.as_bytes())?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(&file, fs::Permissions::from_mode(0o755))?;
+        if fs::metadata(&file)?.permissions().mode() & 0o111 != 0o111 {
+            fs::set_permissions(&file, fs::Permissions::from_mode(0o755))?;
+        }
     }
     Ok(())
 }
