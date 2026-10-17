@@ -953,9 +953,9 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
     );
 }
 
-/// Defect 5: a running pool the scan no longer has (its automatic id
-/// changed with a newer line) stays on the page, marked, until stopped;
-/// it serves no new run and is not reloaded.
+/// Defect 5: a running pool the scan does not have (an id that is neither a
+/// profile's nor an automatic one) stays on the page, marked, until
+/// stopped; it serves no new run and is not reloaded.
 #[test]
 fn orphan_running_pool_is_listed_until_stopped() {
     let tmp = TempDir::new("servers-orphan");
@@ -964,7 +964,7 @@ fn orphan_running_pool_is_listed_until_stopped() {
     let servers = WebServers::new(kit.clone());
     fake_running(
         &servers,
-        nginx_pool("nginx-1.25", 8083, vec![site("shop", "public", 8083)]),
+        nginx_pool("gone", 8083, vec![site("shop", "public", 8083)]),
     );
     let view = servers.list("it", true);
     assert_eq!(view.pools.len(), 1);
@@ -973,12 +973,12 @@ fn orphan_running_pool_is_listed_until_stopped() {
     assert_eq!(orphan.sites[0].project, "shop");
     assert_eq!(servers.pool_of("shop", "site", "it").map(|p| p.0.id), None);
     let err = servers
-        .reload("nginx-1.25", &KitEnv::default(), "it")
+        .reload("gone", &KitEnv::default(), "it")
         .unwrap_err()
         .to_string();
     assert!(err.contains("fermalo"), "{err}");
-    assert!(servers.is_running("nginx-1.25"));
-    servers.stop("nginx-1.25");
+    assert!(servers.is_running("gone"));
+    servers.stop("gone");
     assert!(servers.list("it", true).pools.is_empty());
 }
 
@@ -1284,4 +1284,115 @@ fn name_sites_keeps_names_unique() {
     );
     assert_eq!(sites[1].url, "http://my-shop-2.localhost:8080");
     assert_eq!(host_label("Ünï Côde_42"), "n-c-de-42");
+}
+
+/// SC-2: automatic ids name their lines (`apache-2.4_php-7.4`); the ids of
+/// before are read too, and a profile's id is not one.
+#[test]
+fn auto_pool_ids_name_their_lines() {
+    let apache = WebServerEngine::Apache;
+    assert_eq!(
+        auto_pool_id(apache, Some("2.4"), Some("7.4")),
+        "apache-2.4_php-7.4"
+    );
+    assert_eq!(
+        auto_pool_id(WebServerEngine::Nginx, Some("1.27"), None),
+        "nginx-1.27"
+    );
+    assert_eq!(auto_pool_id(apache, None, None), "apache-default");
+    let lines = |s: Option<&str>, p: Option<&str>| {
+        Some((apache, s.map(str::to_owned), p.map(str::to_owned)))
+    };
+    assert_eq!(
+        parse_auto_pool_id("apache-2.4_php-7.4"),
+        lines(Some("2.4"), Some("7.4"))
+    );
+    assert_eq!(
+        parse_auto_pool_id("apache-2.4-php-7.4"),
+        lines(Some("2.4"), Some("7.4"))
+    );
+    assert_eq!(
+        parse_auto_pool_id("apache-default_php-8.4"),
+        lines(None, Some("8.4"))
+    );
+    assert_eq!(
+        canonical_auto_pool("apache-2.4_php-7.4"),
+        lines(Some("2.4"), Some("7.4"))
+    );
+    assert_eq!(canonical_auto_pool("apache-2.4-php-7.4"), None);
+    for other in [
+        "legacy",
+        "apache",
+        "apache-test",
+        "nginx-1.27-php-x",
+        "iis-1.0",
+    ] {
+        assert_eq!(parse_auto_pool_id(other), None, "{other}");
+    }
+}
+
+/// SC-2: the ports stored under the ids of before move to the new ones (a
+/// port already stored there wins); a profile's id stays as it is.
+#[test]
+fn ports_move_to_the_new_automatic_ids() {
+    let mut store = StoredServers::default();
+    store.ports.insert("apache-2.4-php-7.4".into(), 8081);
+    store.ports.insert("nginx-1.27-php-8.4".into(), 8082);
+    store.ports.insert("nginx-1.27_php-8.4".into(), 8090);
+    store.ports.insert("nginx-1.26".into(), 8083);
+    store.ports.insert("apache-2.2-php-5.6".into(), 8084);
+    store.profiles.push(WebServerProfileInput {
+        id: "apache-2.2-php-5.6".into(),
+        name: "Old".into(),
+        engine: WebServerEngine::Apache,
+        server_line: None,
+        php_line: None,
+        port: Some(8084),
+        keep_alive: true,
+        autostart: false,
+    });
+    assert!(migrate_port_ids(&mut store));
+    let ports: Vec<(&str, u16)> = store.ports.iter().map(|(k, v)| (k.as_str(), *v)).collect();
+    assert_eq!(
+        ports,
+        [
+            ("apache-2.2-php-5.6", 8084),
+            ("apache-2.4_php-7.4", 8081),
+            ("nginx-1.26", 8083),
+            ("nginx-1.27_php-8.4", 8090),
+        ]
+    );
+    assert!(!migrate_port_ids(&mut store));
+}
+
+/// SC-2: a running automatic pool no project goes to any more stays a pool
+/// of the list (not an orphan), rebuilt from its id; a site naming an
+/// automatic pool in `panel.json` (old id too) goes to the lines it names.
+#[test]
+fn automatic_pools_come_back_from_their_ids() {
+    let tmp = TempDir::new("servers-stable-ids");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "nginx", "1.27.4");
+    let servers = WebServers::new(kit.clone());
+    fake_running(&servers, nginx_pool("nginx-1.25", 8083, Vec::new()));
+    let view = servers.list("it", true);
+    let old = view.pools.iter().find(|p| p.id == "nginx-1.25").unwrap();
+    assert!(!old.orphan && old.running);
+    assert_eq!(old.server_line.as_deref(), Some("1.25"));
+    assert!(load_store(&kit).ports.contains_key("nginx-1.25"));
+    servers.stop("nginx-1.25");
+
+    let shop = kit.projects().join("shop");
+    fs::create_dir_all(shop.join("public")).unwrap();
+    fs::write(
+        shop.join("panel.json"),
+        r#"{ "actions": [ { "id": "site", "nginx": "public", "server": "nginx-1.26-php-8.3" } ] }"#,
+    )
+    .unwrap();
+    let (pool, _) = servers.pool_of("shop", "site", "it").unwrap();
+    assert_eq!(pool.id, "nginx-1.26_php-8.3");
+    assert_eq!(pool.server_line.as_deref(), Some("1.26"));
+    assert_eq!(pool.php_line.as_deref(), Some("8.3"));
+    assert!(!pool.manual);
 }

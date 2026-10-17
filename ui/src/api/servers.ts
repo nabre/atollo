@@ -60,7 +60,7 @@ export interface WebServersView {
 const SAMPLE_SERVERS: WebServersView = {
   pools: [
     {
-      id: "apache-2.4-php-8.4",
+      id: "apache-2.4_php-8.4",
       name: "Apache 2.4 · PHP 8.4",
       engine: "apache",
       serverLine: "2.4",
@@ -80,7 +80,7 @@ const SAMPLE_SERVERS: WebServersView = {
           url: "http://portale-legacy.localhost:8081",
         },
       ],
-      confDir: "data\\servers\\apache-2.4-php-8.4",
+      confDir: "data\\servers\\apache-2.4_php-8.4",
       orphan: false,
       profile: null,
     },
