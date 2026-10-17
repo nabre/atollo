@@ -47,6 +47,7 @@ import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
 import { ServersPage } from "./servers";
 import { TerminalsPage } from "./terminals";
+import { tauriPty, useTerminals, type Terminals } from "./terminal";
 import { NewProjectPage } from "./wizard";
 import type { GuideTopicId } from "./guide";
 import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
@@ -56,6 +57,9 @@ import { LoadError } from "./common";
 // The Guide is large and seldom open: its own chunk, read the first time
 // the page is shown.
 const GuidePage = lazy(() => import("./guide").then((m) => ({ default: m.GuidePage })));
+// The terminal panel brings xterm.js: read when a session first opens
+// (macOS and Linux), never on Windows.
+const TerminalPanel = lazy(() => import("./terminal/panel").then((m) => ({ default: m.TerminalPanel })));
 
 type PageId =
   "new" | "projects" | "agents" | "databases" | "servers" | "terminals" | "components" | "guide" | "settings" | "eject";
@@ -133,6 +137,10 @@ export function App() {
   const current = all.find((p) => p.id === page) ?? all[0];
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelHeight, setPanelHeight] = useStoredSize("panel", 240, 120, 600);
+  // The app's terminal on macOS and Linux (D-109); Windows opens console
+  // windows instead, so nothing is read or listened to there.
+  const terminals = useTerminals(tauriPty, info !== null && !info.platform.startsWith("win32"));
+  const [terminalHeight, setTerminalHeight] = useStoredSize("terminal", 280, 120, 800);
 
   return (
     // The key re-renders every text when the language changes.
@@ -212,6 +220,23 @@ export function App() {
           ) : (
             <EjectPage onGuide={openGuide} />
           )}
+          {terminals.shown && (
+            <>
+              <Sash
+                vertical={false}
+                label={t("Ridimensiona i terminali")}
+                onDrag={(d) => {
+                  setTerminalHeight((h) => h - d);
+                }}
+                onReset={() => {
+                  setTerminalHeight(280);
+                }}
+              />
+              <Suspense fallback={<div style={{ height: terminalHeight }} className="shrink-0 bg-vsc-panel" />}>
+                <TerminalPanel terminals={terminals} backend={tauriPty} height={terminalHeight} />
+              </Suspense>
+            </>
+          )}
           {panelOpen && (
             <>
               <Sash
@@ -251,6 +276,7 @@ export function App() {
         onPanel={() => {
           setPanelOpen(!panelOpen);
         }}
+        terminals={terminals}
       />
       {closing && (
         <CloseDialog
@@ -454,6 +480,7 @@ function StatusBar({
   runs,
   panelOpen,
   onPanel,
+  terminals,
 }: {
   info: AppInfo | null;
   editor: EditorStatus | null;
@@ -461,7 +488,11 @@ function StatusBar({
   runs: Record<string, RunInfo>;
   panelOpen: boolean;
   onPanel: () => void;
+  /** The app's terminal sessions (macOS and Linux; none on Windows). */
+  terminals: Terminals;
 }) {
+  const sessions = terminals.sessions.length;
+  const terminalsLabel = terminals.shown ? t("Nascondi i terminali") : t("Mostra i terminali");
   const installing = setupStatusText(setup);
   const list = Object.values(runs);
   const live = list.filter((r) => alive(r.state)).length;
@@ -503,6 +534,19 @@ function StatusBar({
         </StatusItem>
       )}
       <span className="flex-1" />
+      {sessions > 0 && (
+        <StatusItem
+          title={terminalsLabel}
+          onClick={() => {
+            terminals.setShown(!terminals.shown);
+          }}
+          pressed={terminals.shown}
+        >
+          <span className="sr-only">{terminalsLabel}</span>
+          <VscTerminal size={14} aria-hidden="true" />
+          <span aria-label={t("Terminali aperti: {0}", String(sessions))}>{sessions}</span>
+        </StatusItem>
+      )}
       {info && (
         <>
           {editor?.running && (
