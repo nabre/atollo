@@ -9,13 +9,18 @@
 //   gets 403;
 // - root's password stays in this process's environment: never in the
 //   address, the session or the browser (`config.inc.php` reads it);
-// - only requests addressed to 127.0.0.1 or localhost (no DNS rebinding);
+// - only requests addressed to this server's own loopback address and port
+//   (no DNS rebinding); the app picks an address other than 127.0.0.1,
+//   where the projects' sites run, because browsers send a host's cookies to
+//   all its ports: on 127.0.0.1 the cookie below and phpMyAdmin's session
+//   would reach the projects' PHP;
 // - PHP runs only through phpMyAdmin's entry points; the other files are
 //   served only from its public folders (js, themes, doc), never its code.
 
 $token = (string) getenv('DEVKIT_PMA_TOKEN');
+$self = (string) getenv('DEVKIT_PMA_HOST') . ':' . (string) ($_SERVER['SERVER_PORT'] ?? '');
 $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
-if ($token === '' || !preg_match('~^(127\.0\.0\.1|localhost):\d+$~', $host)) {
+if ($token === '' || getenv('DEVKIT_PMA_HOST') === false || !hash_equals($self, $host)) {
     http_response_code(403);
     exit;
 }
