@@ -88,7 +88,6 @@ pub(crate) fn webkit_install_command(os_release: &str) -> Option<&'static str> {
 /// The message when the web view is missing: on Windows the one of
 /// WebView2 (unchanged), on Linux what to install. `os_release` is the
 /// text of `/etc/os-release` (Linux).
-#[allow(dead_code)] // called by main.rs at start (WP-1.8)
 pub fn missing_message(kit: &Kit, os_release: Option<&str>, lang: &str) -> String {
     use crate::i18n::t;
     if kit.os().is_linux() {
