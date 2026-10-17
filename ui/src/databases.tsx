@@ -371,6 +371,11 @@ function ServiceDetails({
               >
                 {t("Avvia con NEXKORA")}
               </CheckboxLabel>
+              {s.others.length > 0 && (
+                <p className="text-vsc-desc">
+                  {t("Con il server partono anche le altre versioni su cui sono i database dei progetti.")}
+                </p>
+              )}
             </div>
           </EditorSection>
           {s.others.length > 0 && (
