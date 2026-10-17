@@ -17,10 +17,18 @@ fn read(kit: &Kit) -> Map<String, Value> {
     serde_json::from_str(&fs::read_to_string(settings_path(kit)).unwrap()).unwrap()
 }
 
+/// A Windows kit on any host, with the kit's PowerShell and Git Bash.
+fn windows_kit(name: &str) -> (TempDir, Kit) {
+    kit_on(
+        name,
+        crate::kit::Target::WIN32_X64,
+        &["pwsh/pwsh.exe", "git/bin/bash.exe"],
+    )
+}
+
 #[test]
-#[cfg_attr(not(windows), ignore = "files created and paths read with backslashes")]
 fn profiles_rewritten_user_ones_kept() {
-    let (_t, kit) = kit_with("cfg-profiles", &[r"pwsh\pwsh.exe", r"git\bin\bash.exe"]);
+    let (_t, kit) = windows_kit("cfg-profiles");
     let path = settings_path(&kit);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(
@@ -37,14 +45,9 @@ fn profiles_rewritten_user_ones_kept() {
         .as_object()
         .unwrap();
     assert_eq!(p["Mine"]["path"], "x.exe");
-    assert!(p["Atollo"]["path"]
-        .as_str()
-        .unwrap()
-        .ends_with(r"pwsh\pwsh.exe"));
-    assert!(p["Atollo - Git Bash"]["args"][1]
-        .as_str()
-        .unwrap()
-        .ends_with(r"data\kit\bashrc"));
+    assert!(slashed(&p["Atollo"]["path"]).ends_with("win32-x64/pwsh/pwsh.exe"));
+    assert!(slashed(&p["Atollo - Git Bash"]["path"]).ends_with("git/bin/bash.exe"));
+    assert!(slashed(&p["Atollo - Git Bash"]["args"][1]).ends_with("data/kit/bashrc"));
     assert!(
         p.get("Codex").is_none(),
         "agent not installed: profile removed"
@@ -68,9 +71,8 @@ fn profiles_rewritten_user_ones_kept() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "files created and paths read with backslashes")]
 fn user_default_profile_kept_when_valid() {
-    let (_t, kit) = kit_with("cfg-default", &[r"pwsh\pwsh.exe", r"git\bin\bash.exe"]);
+    let (_t, kit) = windows_kit("cfg-default");
     let path = settings_path(&kit);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(
@@ -233,22 +235,29 @@ fn macos_profiles_pwsh_default_zsh_and_agy() {
     // Antigravity through the kit's agy (sh): it carries the login.
     let agy = slashed(&p["Antigravity"]["path"]);
     assert!(agy.ends_with("data/kit/bin/agy"), "{agy}");
+    // The shells macOS lists in /etc/shells are hidden, as on Windows.
+    for shell in ["bash", "zsh", "sh", "csh", "tcsh", "ksh", "dash"] {
+        assert!(p[shell].is_null(), "{shell} shown");
+        assert!(p.get(shell).is_some(), "{shell} not hidden");
+    }
     assert_eq!(s["terminal.integrated.defaultProfile.osx"], "Atollo");
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "files created and paths read with backslashes")]
 fn windows_profiles_unchanged_by_the_unix_ones() {
-    let (_t, kit) = kit_with("cfg-win-only", &[r"pwsh\pwsh.exe", r"git\bin\bash.exe"]);
+    let (_t, kit) = windows_kit("cfg-win-only");
     let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
     assert_eq!(
         shown(&s, "terminal.integrated.profiles.windows"),
         ["Atollo", "Atollo - Git Bash", "Atollo - cmd"]
     );
+    // Joined by the host's separator off Windows: compared with slashes.
     assert_eq!(
-        s["terminal.integrated.profiles.windows"]["Atollo - cmd"]["path"],
-        r"C:\Windows\System32\cmd.exe"
+        slashed(&s["terminal.integrated.profiles.windows"]["Atollo - cmd"]["path"]),
+        "C:/Windows/System32/cmd.exe"
     );
+    let hidden = &s["terminal.integrated.profiles.windows"];
+    assert!(hidden["PowerShell"].is_null() && hidden["Command Prompt"].is_null());
     assert!(s
         .keys()
         .all(|k| !k.ends_with(".linux") && !k.ends_with(".osx")));
