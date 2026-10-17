@@ -16,6 +16,11 @@ use crate::os::jobs::{self, Job};
 use crate::projects::alias::{self, valid_domain, SiteAlias};
 use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
 
+/// The `http` line that lets a `server_name` reach 120 characters (a
+/// domain, alias::valid_domain, or a pool's `<action>-N.<project>.localhost`):
+/// with a smaller bucket Nginx does not start.
+pub const SERVER_NAMES_HASH: &str = "    server_names_hash_bucket_size 128;";
+
 /// The server program of the Nginx in `dir` (BUG-V3-08): `nginx.exe` on
 /// Windows; `sbin/nginx` on macOS and Linux, or `bin/nginx` when only that
 /// one is there.
@@ -265,8 +270,7 @@ pub fn project_conf(
         format!("    scgi_temp_path \"{run_fwd}/temp/scgi\";"),
         "    sendfile on;".to_owned(),
         "    keepalive_timeout 65;".to_owned(),
-        // Up to 120 characters for a domain (alias::valid_domain).
-        "    server_names_hash_bucket_size 128;".to_owned(),
+        SERVER_NAMES_HASH.to_owned(),
         server,
     ];
     if !lan {

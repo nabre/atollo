@@ -514,7 +514,7 @@ fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) 
         format!("    scgi_temp_path \"{run_fwd}/temp/scgi\";"),
         "    sendfile on;".to_owned(),
         "    keepalive_timeout 65;".to_owned(),
-        "    server_names_hash_bucket_size 64;".to_owned(),
+        nginx::SERVER_NAMES_HASH.to_owned(),
         format!("    include \"{run_fwd}/vhosts/*.conf\";"),
         format!("    include \"{run_fwd}/conf.d/*.conf\";"),
         "    server {".to_owned(),
