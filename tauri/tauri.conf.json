@@ -28,6 +28,9 @@
   },
   "bundle": {
     "active": false,
+    "publisher": "nabre",
+    "copyright": "Copyright (c) nabre",
+    "shortDescription": "Atollo — Universal Portable Dev & AI Workspace",
     "icon": [
       "icons/icon.ico",
       "icons/icon.png"

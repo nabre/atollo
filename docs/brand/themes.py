@@ -8,7 +8,7 @@ colors (make.py, brand.png) and writes:
 
 - tauri/editor-theme/: the editor's "Atollo Dark" and "Atollo Light",
   the two themes whole (colors, token colors) with the same emphasis, as
-  the extension `atollo.theme` that the kit installs (editor_theme.rs);
+  the extension `atollo.theme` that the kit installs (editor/theme.rs);
 - ui/src/theme/theme-vscode.css: the same colors as the `--vscode-*` variables
   that VS Code gives a webview, which @vscode-elements/elements reads;
 - ui/src/theme/theme-colors.css: the app's short tokens (`--vsc-*`), each an
@@ -608,7 +608,7 @@ def write_extension():
         for kind in ("dark", "light")
     }
     # The version follows the content: a new theme is a new version, and
-    # the kit reinstalls it (editor_theme.rs).
+    # the kit reinstalls it (editor/theme.rs).
     digest = hashlib.sha256("".join(themes.values()).encode()).hexdigest()
     package = {
         "name": "theme",
