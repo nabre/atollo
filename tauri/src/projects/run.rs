@@ -514,18 +514,19 @@ impl Runner {
         } else if let Some(folder) = &action.nginx_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             // php-cgi lives in the action's job: stopping the action ends it too.
-            let fcgi_port = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job)
-                .map(|(port, child)| {
+            let fcgi = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job).map(
+                |(fcgi, child)| {
                     php = Some(child);
-                    port
-                });
+                    fcgi
+                },
+            );
             let cmd = crate::projects::nginx::command(
                 &self.kit,
                 id,
                 dir,
                 &root,
                 port.unwrap_or(PORT_FROM),
-                fcgi_port,
+                fcgi.as_ref(),
                 lan,
                 &action.domains,
                 &action.aliases,
@@ -587,7 +588,9 @@ impl Runner {
             end: None,
             code: None,
             pid: None,
-            skipped_aliases: if action.apache_dir.is_some() || action.nginx_dir.is_some() {
+            skipped_aliases: if action.nginx_dir.is_some() {
+                crate::projects::alias::skipped_nginx(dir, &self.kit.projects(), &action.aliases)
+            } else if action.apache_dir.is_some() {
                 crate::projects::alias::skipped(dir, &self.kit.projects(), &action.aliases)
             } else {
                 Vec::new()

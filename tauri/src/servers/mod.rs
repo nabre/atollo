@@ -25,7 +25,7 @@ use crate::kit::{validate_project_name, Kit};
 use crate::os::jobs::{self, Job};
 use crate::projects::alias;
 use crate::projects::apache::{self, fwd};
-use crate::projects::nginx;
+use crate::projects::nginx::{self, FastCgi};
 use crate::projects::run::is_port_free;
 use crate::setup::catalog::Catalog;
 
@@ -147,7 +147,7 @@ struct StoredServers {
 struct RunningPool {
     child: Child,
     port: u16,
-    fcgi_port: Option<u16>,
+    fcgi: Option<FastCgi>,
     /// The PHP line the pool was started with (`None`: no PHP).
     php_line: Option<String>,
     /// The pool's php-cgi (Nginx with PHP): when it dies the pool is
@@ -170,7 +170,7 @@ struct RunningPool {
 struct LivePool {
     port: u16,
     php_line: Option<String>,
-    fcgi_port: Option<u16>,
+    fcgi: Option<FastCgi>,
 }
 
 /// A reload of a running pool needs a full stop and start (not Nginx's
@@ -182,7 +182,7 @@ fn needs_restart(pool: &WebServerPool, live: &LivePool) -> bool {
     pool.engine == WebServerEngine::Apache
         || pool.port != live.port
         || pool.php_line != live.php_line
-        || (pool.php_line.is_some() && live.fcgi_port.is_none())
+        || (pool.php_line.is_some() && live.fcgi.is_none())
 }
 
 impl RunningPool {
@@ -446,6 +446,11 @@ fn apache_vhost_conf(
     lines.join("\r\n")
 }
 
+/// The local names, besides `localhost`, that reach a pool's own page out
+/// of LAN mode (never `*.localhost`: Apache's first match would take the
+/// projects' sites).
+const POOL_LOCAL_HOSTS: [&str; 2] = ["127.0.0.1", "[::1]"];
+
 /// Generates the master `httpd.conf` for an Apache pool.
 fn apache_pool_conf(base: &str, pool_dir: &Path, port: u16, lan: bool) -> Result<String> {
     let kit_part = apache::strip_kit_tail(base)?;
@@ -469,11 +474,27 @@ fn apache_pool_conf(base: &str, pool_dir: &Path, port: u16, lan: bool) -> Result
         "DirectoryIndex index.php index.html".to_owned(),
     ];
     site.extend(apache::php_module_blocks("CP_PHP_FWD"));
-    // The first VirtualHost answers any Host no other one names (an IP from
-    // the LAN, a misspelt name): Apache's own page, never a project.
+    // The first VirtualHost answers any Host no other one names, never a
+    // project. Out of LAN mode it refuses it with 403, as a project's own
+    // Apache does (D-98: a page of another site re-pointed to 127.0.0.1,
+    // DNS rebinding), and Apache's own page stays for the pool's local names.
+    // In LAN mode (an IP of the PC as `Host`) it is Apache's own page.
+    if !lan {
+        site.extend([
+            format!("<VirtualHost *:{port}>"),
+            "    ServerName refused.invalid".to_owned(),
+            "    <Location \"/\">".to_owned(),
+            "        Require all denied".to_owned(),
+            "    </Location>".to_owned(),
+            "</VirtualHost>".to_owned(),
+        ]);
+    }
+    site.push(format!("<VirtualHost *:{port}>"));
+    site.push("    ServerName localhost".to_owned());
+    if !lan {
+        site.push(format!("    ServerAlias {}", POOL_LOCAL_HOSTS.join(" ")));
+    }
     site.extend([
-        format!("<VirtualHost *:{port}>"),
-        "    ServerName localhost".to_owned(),
         format!("    DocumentRoot \"{default_htdocs}\""),
         "</VirtualHost>".to_owned(),
     ]);
@@ -495,7 +516,7 @@ fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) 
     } else {
         format!("127.0.0.1:{port}")
     };
-    [
+    let mut lines = vec![
         "# --- Atollo: shared Nginx VirtualHost pool (written at every start) ---".to_owned(),
         "worker_processes 1;".to_owned(),
         format!("pid \"{run_fwd}/nginx.pid\";"),
@@ -517,16 +538,40 @@ fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) 
         nginx::SERVER_NAMES_HASH.to_owned(),
         format!("    include \"{run_fwd}/vhosts/*.conf\";"),
         format!("    include \"{run_fwd}/conf.d/*.conf\";"),
-        "    server {".to_owned(),
-        format!("        listen {listen} default_server;"),
-        "        server_name localhost;".to_owned(),
-        format!("        root \"{nginx_fwd}/html\";"),
-        "        index index.html index.htm;".to_owned(),
-        "    }".to_owned(),
-        "}".to_owned(),
-        String::new(),
-    ]
-    .join("\r\n")
+    ];
+    if lan {
+        // An IP of the PC as `Host`: Nginx's own page, never a project.
+        lines.extend([
+            "    server {".to_owned(),
+            format!("        listen {listen} default_server;"),
+            "        server_name localhost;".to_owned(),
+            format!("        root \"{nginx_fwd}/html\";"),
+            "        index index.html index.htm;".to_owned(),
+            "    }".to_owned(),
+        ]);
+    } else {
+        // Nginx's own page for the pool's local names; any other `Host`, or
+        // none, gets 421 from the default server, as a project's own Nginx
+        // (D-98: DNS rebinding).
+        lines.extend([
+            "    server {".to_owned(),
+            format!("        listen {listen};"),
+            format!(
+                "        server_name localhost {};",
+                POOL_LOCAL_HOSTS.join(" ")
+            ),
+            format!("        root \"{nginx_fwd}/html\";"),
+            "        index index.html index.htm;".to_owned(),
+            "    }".to_owned(),
+            "    server {".to_owned(),
+            format!("        listen {listen} default_server;"),
+            "        server_name _;".to_owned(),
+            "        return 421;".to_owned(),
+            "    }".to_owned(),
+        ]);
+    }
+    lines.extend(["}".to_owned(), String::new()]);
+    lines.join("\r\n")
 }
 
 /// The document root of an attached site: its folder inside the project,
@@ -590,16 +635,17 @@ fn php_cgi_listening(child: &mut Child, port: u16, within: Duration) -> bool {
 
 /// The pool's php-cgi with its FastCGI port, started again on another
 /// port (up to 3 times) when it ends at once because its port was taken.
-fn spawn_php_cgi(kit: &Kit, env: &KitEnv, job: &Job) -> (Option<u16>, Option<Child>) {
+fn spawn_php_cgi(kit: &Kit, env: &KitEnv, job: &Job) -> (Option<FastCgi>, Option<Child>) {
     for _ in 0..3 {
-        let Some((port, mut child)) = nginx::spawn_php_cgi_if_present(kit, env, job) else {
+        let Some((fcgi, mut child)) = nginx::spawn_php_cgi_if_present(kit, env, job) else {
             break;
         };
-        if php_cgi_listening(&mut child, port, Duration::from_secs(5)) {
-            return (Some(port), Some(child));
+        if php_cgi_listening(&mut child, fcgi.port, Duration::from_secs(5)) {
+            return (Some(fcgi), Some(child));
         }
         crate::log::warn(&format!(
-            "php-cgi ended at once on port {port}: trying another port"
+            "php-cgi ended at once on port {}: trying another port",
+            fcgi.port
         ));
     }
     (None, None)
@@ -1202,7 +1248,7 @@ impl WebServers {
     fn write_pool_configs(
         &self,
         pool: &WebServerPool,
-        fcgi_port: Option<u16>,
+        fcgi: Option<&FastCgi>,
         lan: bool,
     ) -> Result<PathBuf> {
         let detached = self
@@ -1276,10 +1322,10 @@ impl WebServers {
                         &doc_root,
                         None,
                         pool.port,
-                        fcgi_port,
+                        fcgi,
                         lan,
                         &names,
-                        &alias::resolve(&proj_root, &self.kit.projects(), &site.aliases),
+                        &alias::resolve_nginx(&proj_root, &self.kit.projects(), &site.aliases),
                         false,
                     );
                     write_atomic(
@@ -1377,7 +1423,7 @@ impl WebServers {
         let _ = fs::remove_file(pool_dir.join("stderr.log"));
 
         let job = Job::new()?;
-        let (mut cmd, fcgi_port, php) = match pool.engine {
+        let (mut cmd, fcgi, php) = match pool.engine {
             WebServerEngine::Apache => {
                 let apache_dir = component_dir(&self.kit, "apache", pool.server_line.as_deref());
                 let exe = apache::httpd_exe(&self.kit, &apache_dir);
@@ -1409,7 +1455,7 @@ impl WebServers {
                 } else {
                     (None, None)
                 };
-                let conf_path = self.write_pool_configs(&pool, fcgi, lan)?;
+                let conf_path = self.write_pool_configs(&pool, fcgi.as_ref(), lan)?;
                 let mut cmd = jobs::kit_command(&exe, &env);
                 cmd.arg("-p")
                     .arg(&pool_dir)
@@ -1463,7 +1509,7 @@ impl WebServers {
                 RunningPool {
                     child,
                     port: pool.port,
-                    fcgi_port,
+                    fcgi,
                     php_line: pool.php_line.clone(),
                     php,
                     started: pool,
@@ -1526,7 +1572,7 @@ impl WebServers {
             .map(|r| LivePool {
                 port: r.port,
                 php_line: r.php_line.clone(),
-                fcgi_port: r.fcgi_port,
+                fcgi: r.fcgi.clone(),
             });
         let Some(live) = live else {
             // Not running: its files are ready for the next start.
@@ -1536,7 +1582,7 @@ impl WebServers {
 
         if !needs_restart(&pool, &live) {
             // Nginx with the same PHP and port: a graceful reload.
-            let conf_path = self.write_pool_configs(&pool, live.fcgi_port, lan)?;
+            let conf_path = self.write_pool_configs(&pool, live.fcgi.as_ref(), lan)?;
             let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
             let exe = nginx::nginx_exe(&self.kit, &nginx_dir);
             let pool_dir = self.kit.data().join("servers").join(&pool.id);

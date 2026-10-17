@@ -11,6 +11,7 @@ fn written_and_restored() {
         .unwrap()
         .contains("atolloLoopback"));
     assert!(kit.kit_files().join("php-router.php").is_file());
+    assert!(kit.kit_files().join("fcgi-guard.php").is_file());
     fs::write(&path, "changed").unwrap();
     write_all(&kit).unwrap();
     assert!(fs::read_to_string(&path)

@@ -670,7 +670,7 @@
   "rimovibile": "Wechseldatenträger",
   "di rete": "Netzwerk",
   "altro": "andere",
-  "L'alias {0} punta fuori dai progetti o a un collegamento: non servito": "Der Alias {0} zeigt außerhalb der Projekte oder auf eine Verknüpfung: nicht bereitgestellt",
+  "L'alias {0} punta fuori dai progetti o a un collegamento, o la sua cartella contiene collegamenti o è troppo grande per controllarla: non servito": "Der Alias {0} zeigt außerhalb der Projekte oder auf eine Verknüpfung, oder sein Ordner enthält Verknüpfungen oder ist zu groß für die Prüfung: nicht bereitgestellt",
   "Le impostazioni e i dati del kit di questo progetto": "Die Einstellungen und Daten des Kits für dieses Projekt",
   "impostazioni": "Einstellungen",
   "porte: {0}": "Ports: {0}",
