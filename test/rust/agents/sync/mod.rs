@@ -72,10 +72,15 @@ fn rule_and_trust() {
     )
     .unwrap();
     run(&kit, None);
-    assert!(fs::read_to_string(p.claude.join(r"rules\atollo.md"))
+    assert!(fs::read_to_string(p.claude.join("rules").join("atollo.md"))
         .unwrap()
         .contains("Atollo"));
-    assert!(p.gemini.join(r"config\rules\atollo.md").is_file());
+    assert!(p
+        .gemini
+        .join("config")
+        .join("rules")
+        .join("atollo.md")
+        .is_file());
     let cfg: Value = serde_json::from_str(&fs::read_to_string(p.claude_json()).unwrap()).unwrap();
     let app = p
         .projects
@@ -106,7 +111,7 @@ fn lock_is_released_and_stale_lock_taken() {
     }
     assert!(!p.state.join("lock").exists());
     fs::create_dir_all(p.state.join("lock")).unwrap();
-    fs::write(p.state.join(r"lock\pid"), "4000000000").unwrap();
+    fs::write(p.state.join("lock").join("pid"), "4000000000").unwrap();
     assert!(Lock::take(&p.state).is_ok(), "holder gone: stale");
 }
 
