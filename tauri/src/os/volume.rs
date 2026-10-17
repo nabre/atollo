@@ -5,7 +5,9 @@
 //! between two disks.
 
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(windows)]
+use std::path::PathBuf;
 
 #[cfg(windows)]
 use windows::core::HSTRING;
@@ -87,7 +89,9 @@ fn linux_name(magic: u32) -> (&'static str, bool) {
     }
 }
 
+/// Linux tells only network disks apart (`statfs`); the others are `Other`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(target_os = "linux", allow(dead_code))]
 pub enum DriveKind {
     Fixed,
     Removable,
@@ -119,22 +123,6 @@ pub struct VolumeInfo {
 fn device(path: &Path) -> io::Result<u64> {
     use std::os::unix::fs::MetadataExt;
     Ok(std::fs::metadata(path)?.dev())
-}
-
-/// The mount point of the volume `path` is on: the highest folder above it
-/// that is still on the same device.
-#[cfg(unix)]
-pub fn root_of(path: &Path) -> io::Result<PathBuf> {
-    let path = std::fs::canonicalize(path)?;
-    let dev = device(&path)?;
-    let mut root = path.clone();
-    for p in path.ancestors().skip(1) {
-        if device(p).ok() != Some(dev) {
-            break;
-        }
-        root = p.to_path_buf();
-    }
-    Ok(root)
 }
 
 #[cfg(unix)]
