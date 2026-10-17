@@ -134,6 +134,8 @@ pub fn pty_backlog<R: Runtime>(
 }
 
 /// What was typed in session `id`; queued, never blocking the window.
+/// `binary`: bytes that are not text, one character per byte (xterm.js's
+/// `onBinary`).
 #[cfg(unix)]
 #[tauri::command]
 pub fn pty_write<R: Runtime>(
@@ -141,12 +143,17 @@ pub fn pty_write<R: Runtime>(
     webview: Webview<R>,
     id: u64,
     data: String,
+    binary: Option<bool>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    app.state::<terminal::Consoles>()
-        .ptys
-        .write(id, &data)
-        .or_fail_chain("terminal")
+    let ptys = &app.state::<terminal::Consoles>().ptys;
+    if binary == Some(true) {
+        let Some(bytes) = crate::editor::pty::latin1(&data) else {
+            return Err("terminal input: not bytes".to_owned().into());
+        };
+        return ptys.write_bytes(id, &bytes).or_fail_chain("terminal");
+    }
+    ptys.write(id, &data).or_fail_chain("terminal")
 }
 
 #[cfg(unix)]
