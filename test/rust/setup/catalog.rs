@@ -505,13 +505,19 @@ fn remove_unix_on_macos_and_linux() {
         ("uv", "tools/uv"),
         ("cmake", "tools/ninja"),
         ("r", "tools/micromamba"),
-        ("git", "tools/micromamba"),
+        ("ruby", "tools/micromamba"),
+        ("mongodb", "tools/micromamba"),
+        ("mongodb", "mongosh"),
+        ("sqlite", "tools/micromamba"),
     ] {
         let c = catalog.find(id).unwrap();
         assert!(c.remove_unix.iter().any(|r| r == part), "{id}: {part}");
     }
+    // Git is dugite-native off Windows (WP-2.1): micromamba is not its own.
+    let git_unix = &catalog.find("git").unwrap().remove_unix;
+    assert!(!git_unix.iter().any(|r| r == "tools/micromamba"));
 
-    // On Linux: the Unix files, and micromamba goes with the last of Git and R.
+    // On Linux: the Unix files, and micromamba goes with the last of Ruby and R.
     let tmp = TempDir::new("catalog-remove-unix");
     let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
     kit.prepare().unwrap();
@@ -525,12 +531,12 @@ fn remove_unix_on_macos_and_linux() {
         "{owned:?}"
     );
     let mm = kit.apps().join("tools").join("micromamba");
-    let (git, r) = (catalog.find("git").unwrap(), catalog.find("r").unwrap());
-    for c in [git, r] {
+    let (ruby, r) = (catalog.find("ruby").unwrap(), catalog.find("r").unwrap());
+    for c in [ruby, r] {
         touch(&c.folder_path(&kit).unwrap().join("bin").join("x"));
     }
-    assert!(!r.owned_paths(&kit).contains(&mm), "Git still uses it");
-    fs::remove_dir_all(git.folder_path(&kit).unwrap()).unwrap();
+    assert!(!r.owned_paths(&kit).contains(&mm), "Ruby still uses it");
+    fs::remove_dir_all(ruby.folder_path(&kit).unwrap()).unwrap();
     assert!(r.owned_paths(&kit).contains(&mm), "last owner");
 
     // The same kit on Windows: the Windows names, as before.
