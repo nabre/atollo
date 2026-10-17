@@ -6,21 +6,15 @@ use std::time::Duration;
 use anyhow::{anyhow, bail, Context, Result};
 
 use super::tools::run_with_input;
-use super::{auth, bin, bin_at, check_line, line_port, project_line, Services, SERVERS};
+use super::{auth, check_line, client_at, line_port, project_line, Services};
+use crate::db::DbEngine;
 use crate::env::KitEnv;
 use crate::os::jobs;
 
-pub(super) fn admin_user(id: &str) -> &'static str {
-    match id {
-        "mongodb" => "admin",
-        _ => "root",
-    }
-}
-
-pub(super) fn admin_password(secrets: &auth::Secrets, id: &str) -> Option<String> {
-    match id {
-        "mongodb" => secrets.mongodb_admin.clone(),
-        _ => secrets.mariadb_root.clone(),
+pub(super) fn admin_password(secrets: &auth::Secrets, engine: DbEngine) -> Option<String> {
+    match engine {
+        DbEngine::MongoDb => secrets.mongodb_admin.clone(),
+        DbEngine::MariaDb => secrets.mariadb_root.clone(),
     }
 }
 
@@ -31,23 +25,25 @@ impl Services {
     /// password, every version of a server has one administrator).
     pub(super) fn secure(
         &self,
-        id: &str,
+        engine: DbEngine,
         line: Option<&str>,
         main: bool,
         env: &KitEnv,
         port: u16,
         fresh: bool,
     ) -> Result<()> {
+        let id = engine.id();
         let mut secrets = auth::load(&self.kit);
-        let known = admin_password(&secrets, id);
+        let known = admin_password(&secrets, engine);
         let password = match &known {
             Some(p) => p.clone(),
             None => auth::new_password()?,
         };
         if fresh || known.is_none() {
-            match id {
-                "mongodb" => {
-                    let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), env);
+            let client = client_at(&self.kit, engine, line);
+            match engine {
+                DbEngine::MongoDb => {
+                    let mut cmd = jobs::kit_command(client, env);
                     cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                         .arg(port.to_string())
                         .args(["--eval", auth::MONGO_ADMIN_JS])
@@ -58,10 +54,9 @@ impl Services {
                     )?;
                     secrets.mongodb_admin = Some(password.clone());
                 }
-                _ => {
+                DbEngine::MariaDb => {
                     // No password yet: log in without one, ignoring my.ini.
-                    let mut cmd =
-                        jobs::kit_command(bin_at(&self.kit, id, line, "mariadb.exe"), env);
+                    let mut cmd = jobs::kit_command(client, env);
                     cmd.args([
                         "--no-defaults",
                         "--user=root",
@@ -81,19 +76,23 @@ impl Services {
             auth::save(&self.kit, &secrets)?;
             crate::log::info(&format!("{id}: administrator password set"));
         }
-        // Every MariaDB tool reads `client.ini` (`mariadb_tool_at`, with its
-        // own `--port`): written for the server's port, also when another
-        // version is the first one ever started.
-        if id == "mariadb" && main {
-            auth::write_client_ini(&self.kit, port, &password)?;
-        } else if id == "mariadb" {
-            if !auth::client_ini(&self.kit).is_file() {
-                auth::write_client_ini(&self.kit, line_port(&self.kit, id, None), &password)?;
+        match engine {
+            DbEngine::MongoDb => {}
+            // Every MariaDB tool reads `client.ini` (`sql_tool_at`, with its
+            // own `--port`): written for the server's port, also when another
+            // version is the first one ever started.
+            DbEngine::MariaDb if main => {
+                auth::write_client_ini(&self.kit, port, &password)?;
             }
-            // The login of this version on its port: `MYSQL_HOME` of the
-            // projects on it (`project_mysql_home`).
-            if let Some(l) = line {
-                auth::write_line_client_ini(&self.kit, l, port, &password)?;
+            DbEngine::MariaDb => {
+                if !auth::client_ini(&self.kit).is_file() {
+                    auth::write_client_ini(&self.kit, line_port(&self.kit, id, None), &password)?;
+                }
+                // The login of this version on its port: `MYSQL_HOME` of the
+                // projects on it (`project_mysql_home`).
+                if let Some(l) = line {
+                    auth::write_line_client_ini(&self.kit, l, port, &password)?;
+                }
             }
         }
         Ok(())
@@ -134,9 +133,7 @@ impl Services {
         line: Option<&str>,
         env: &KitEnv,
     ) -> Result<Option<auth::ProjectDb>> {
-        if !SERVERS.contains(&engine) {
-            bail!("unknown server {engine}");
-        }
+        DbEngine::parse(engine)?;
         if let Some(l) = line {
             check_line(&self.kit, engine, l)?;
         }
@@ -176,16 +173,17 @@ impl Services {
     /// running again, never a password lost nor another project's user
     /// altered.
     pub fn project_db_create(&self, project: &str, engine: &str) -> Result<auth::ProjectDb> {
+        let kind = DbEngine::parse(engine)?;
         let line = project_line(&self.kit, project, engine);
-        let (port, env) = self.running_at(engine, line.as_deref())?;
+        let (port, env) = self.running_at(kind, line.as_deref())?;
         let (name, password) = auth::ensure_project_db(&self.kit, project, engine)
             .context("the passwords of the project's databases")?;
-        match engine {
-            "mongodb" => {
+        match kind {
+            DbEngine::MongoDb => {
                 let admin = auth::load(&self.kit)
                     .mongodb_admin
                     .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
-                let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), &env);
+                let mut cmd = jobs::kit_command(client_at(&self.kit, kind, None), &env);
                 cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                     .arg(port.to_string())
                     .args(["--eval", auth::MONGO_PROJECT_JS])
@@ -194,8 +192,8 @@ impl Services {
                     .env("ATOLLO_DB_PASSWORD", &password);
                 run_with_input(cmd, "", Duration::from_secs(60))?;
             }
-            _ => {
-                let cmd = self.mariadb_tool_at("mariadb.exe", &env, line.as_deref(), port);
+            DbEngine::MariaDb => {
+                let cmd = self.sql_tool_at(kind, kind.client_bin(), &env, line.as_deref(), port);
                 run_with_input(
                     cmd,
                     &auth::project_sql(&name, &password),
@@ -239,23 +237,24 @@ impl Services {
         if !auth::is_valid_name(name) || auth::is_reserved(engine, name) {
             bail!("{engine}: {name} is not a project's database: not dropped");
         }
-        let was_running = self.running_at(engine, line).is_ok();
-        self.start_line(engine, line, env)?;
-        let result = self.drop_on_running(engine, line, name);
+        let kind = DbEngine::parse(engine)?;
+        let was_running = self.running_at(kind, line).is_ok();
+        self.start_engine(kind, line, env)?;
+        let result = self.drop_on_running(kind, line, name);
         if !was_running {
-            self.stop_line(engine, line);
+            self.stop_engine(kind, line);
         }
         result
     }
 
-    fn drop_on_running(&self, engine: &str, line: Option<&str>, name: &str) -> Result<()> {
+    fn drop_on_running(&self, engine: DbEngine, line: Option<&str>, name: &str) -> Result<()> {
         let (port, env) = self.running_at(engine, line)?;
         match engine {
-            "mongodb" => {
+            DbEngine::MongoDb => {
                 let admin = auth::load(&self.kit)
                     .mongodb_admin
                     .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
-                let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), &env);
+                let mut cmd = jobs::kit_command(client_at(&self.kit, engine, None), &env);
                 cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                     .arg(port.to_string())
                     .args(["--eval", auth::MONGO_DROP_JS])
@@ -263,8 +262,8 @@ impl Services {
                     .env("ATOLLO_DB_NAME", name);
                 run_with_input(cmd, "", Duration::from_secs(60))?;
             }
-            _ => {
-                let cmd = self.mariadb_tool_at("mariadb.exe", &env, line, port);
+            DbEngine::MariaDb => {
+                let cmd = self.sql_tool_at(engine, engine.client_bin(), &env, line, port);
                 run_with_input(cmd, &auth::project_drop_sql(name), Duration::from_secs(60))?;
             }
         }

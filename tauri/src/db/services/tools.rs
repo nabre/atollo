@@ -8,8 +8,10 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, bail, Result};
 
 use super::{auth, bin_at, Services};
+use crate::db::DbEngine;
 use crate::env::KitEnv;
 use crate::os::jobs;
+use crate::router::bins::exe_name;
 
 /// Runs a tool with `input` on its stdin (SQL with passwords: never on the
 /// command line) and waits at most `limit`; fails with its error output.
@@ -67,18 +69,21 @@ pub(super) fn run_tool(mut cmd: Command, limit: Duration) -> Result<()> {
 }
 
 impl Services {
-    /// A tool of MariaDB logged in as `root` (the kit's `[client]` login),
-    /// of version `line` (None: the one the server runs) on `port`: the
-    /// `[client]` login names the port of the version the server runs only
-    /// (PLAN.md §13.2).
-    pub(crate) fn mariadb_tool_at(
+    /// A tool of a SQL `engine` (`stem`: [`DbEngine::client_bin`],
+    /// [`DbEngine::dump_bin`]…) logged in as `root` (the kit's `[client]`
+    /// login), of version `line` (None: the one the server runs) on `port`:
+    /// the `[client]` login names the port of the version the server runs
+    /// only (PLAN.md §13.2).
+    pub(crate) fn sql_tool_at(
         &self,
-        exe: &str,
+        engine: DbEngine,
+        stem: &str,
         env: &KitEnv,
         line: Option<&str>,
         port: u16,
     ) -> Command {
-        let mut cmd = jobs::kit_command(bin_at(&self.kit, "mariadb", line, exe), env);
+        debug_assert!(engine.is_sql(), "{engine} has no [client] login");
+        let mut cmd = jobs::kit_command(bin_at(&self.kit, engine.component(), line, stem), env);
         // It must be the first option; the port from here wins over it.
         cmd.arg(format!(
             "--defaults-extra-file={}",
@@ -88,20 +93,36 @@ impl Services {
         cmd
     }
 
-    /// A tool of MariaDB logged in as the project's own user, which has
-    /// rights on its database only: for SQL the kit did not write (a copy
-    /// brought from outside), so a `USE other` or `mysql.*` in it fails. Its
-    /// login is in a file of the private folder read instead of every other
-    /// (`--defaults-file`: root's `my.ini` is not read), removed after.
-    pub(super) fn mariadb_as_project(
+    /// [`Services::sql_tool_at`] of MariaDB, `exe` as the tests name it.
+    #[cfg(test)]
+    pub(crate) fn mariadb_tool_at(
         &self,
         exe: &str,
+        env: &KitEnv,
+        line: Option<&str>,
+        port: u16,
+    ) -> Command {
+        self.sql_tool_at(DbEngine::MariaDb, exe, env, line, port)
+    }
+
+    /// A tool of a SQL `engine` logged in as the project's own user, which
+    /// has rights on its database only: for SQL the kit did not write (a
+    /// copy brought from outside), so a `USE other` or `mysql.*` in it
+    /// fails. Its login is in a file of the private folder read instead of
+    /// every other (`--defaults-file`: root's `my.ini` is not read), removed
+    /// after.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn sql_as_project(
+        &self,
+        engine: DbEngine,
+        stem: &str,
         env: &KitEnv,
         line: Option<&str>,
         port: u16,
         user: &str,
         password: &str,
     ) -> Result<(Command, PathBuf)> {
+        let exe = exe_name(self.kit.os(), stem);
         let login = auth::dir(&self.kit).join(format!("{exe}-{}.cnf", std::process::id()));
         auth::write_private_text(
             &login,
@@ -109,27 +130,29 @@ impl Services {
                 "[client]\r\nuser={user}\r\npassword={password}\r\nhost=127.0.0.1\r\nport={port}\r\n"
             ),
         )?;
-        let mut cmd = jobs::kit_command(bin_at(&self.kit, "mariadb", line, exe), env);
+        let mut cmd = jobs::kit_command(bin_at(&self.kit, engine.component(), line, stem), env);
         // It must be the first option.
         cmd.arg(format!("--defaults-file={}", login.display()));
         Ok((cmd, login))
     }
 
-    /// mongodump/mongorestore logged in as `admin`, the password in a config
-    /// file of the private folder (never on the command line), removed after.
+    /// MongoDB's `stem` ([`DbEngine::dump_bin`], [`DbEngine::restore_bin`])
+    /// logged in as `admin`, the password in a config file of the private
+    /// folder (never on the command line), removed after.
     pub(super) fn mongo_tool(
         &self,
-        exe: &str,
+        stem: &str,
         env: &KitEnv,
         port: u16,
     ) -> Result<(Command, PathBuf)> {
         let admin = auth::load(&self.kit)
             .mongodb_admin
             .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
+        let exe = exe_name(self.kit.os(), stem);
         let config = auth::dir(&self.kit).join(format!("{exe}-{}.yaml", std::process::id()));
         auth::write_private_text(&config, &format!("password: {admin}\n"))?;
-        let stem = exe.strip_suffix(".exe").unwrap_or(exe);
-        let mut cmd = jobs::kit_command(crate::router::bins::mongo_tool_bin(&self.kit, stem), env);
+        let tools = DbEngine::MongoDb.tools_component();
+        let mut cmd = jobs::kit_command(bin_at(&self.kit, tools, None, stem), env);
         cmd.arg(format!("--config={}", config.display()))
             .args([
                 "--host=127.0.0.1",
