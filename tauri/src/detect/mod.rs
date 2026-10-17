@@ -283,7 +283,10 @@ fn php_server(dir: &Path, root: &str) -> String {
         .find(|f| exists(dir, f))
         .map(|f| native(&f).into_owned());
     let router = own.as_deref().map_or_else(|| PHP_ROUTER.to_owned(), quote);
-    format!("php -S 127.0.0.1:{{port}} -t {} {router}", quote(&native(root)))
+    format!(
+        "php -S 127.0.0.1:{{port}} -t {} {router}",
+        quote(&native(root))
+    )
 }
 
 /// Files that ask for Nginx, in the project folder or in the site's.
