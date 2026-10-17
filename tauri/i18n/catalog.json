@@ -1344,6 +1344,11 @@
     "fr": "serveur web et proxy inverse, avec PHP-CGI",
     "de": "Webserver und Reverse-Proxy, mit PHP-CGI"
   },
+  "server web e reverse proxy, con HTTPS automatico": {
+    "en": "web server and reverse proxy, with automatic HTTPS",
+    "fr": "serveur web et proxy inverse, avec HTTPS automatique",
+    "de": "Webserver und Reverse-Proxy, mit automatischem HTTPS"
+  },
   "modulo php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64": {
     "en": "php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll module, PHP Thread Safe x64",
     "fr": "module php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64",
