@@ -13,12 +13,28 @@ use crate::kit::Kit;
 /// `.venv\Scripts\python.exe`...). Both separators on every system: a
 /// command written on Windows reaches macOS and Linux in a shared kit.
 fn component_of(program: &str) -> Option<&'static str> {
-    let name = program
-        .trim_matches('"')
+    file_name(program.trim_matches('"')).and_then(|name| component_of_name(&name))
+}
+
+/// The last part of a path, with `/` or `\` as separators, as Windows'
+/// `Path::file_name` reads it: trailing separators and `.` parts are
+/// skipped, a drive (`C:node.exe`) is not part of the name, `..` has none.
+pub(crate) fn file_name(path: &str) -> Option<String> {
+    let bytes = path.as_bytes();
+    let path = if bytes.len() >= 2 && bytes[1] == b':' && bytes[0].is_ascii_alphabetic() {
+        &path[2..]
+    } else {
+        path
+    };
+    let last = path
         .rsplit(['/', '\\'])
-        .next()
-        .filter(|n| !n.is_empty())?
-        .to_ascii_lowercase();
+        .find(|part| !part.is_empty() && *part != ".")?;
+    (last != "..").then(|| last.to_owned())
+}
+
+/// The component of a program's file name (`npm`, `python.exe`).
+fn component_of_name(name: &str) -> Option<&'static str> {
+    let name = name.to_ascii_lowercase();
     let stem = [".exe", ".cmd", ".bat", ".ps1"]
         .iter()
         .find_map(|ext| name.strip_suffix(ext))
