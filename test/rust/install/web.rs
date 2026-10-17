@@ -47,6 +47,7 @@ fn fake_php(dir: &Path, template: &str) {
 /// single php.ini of an older kit becomes the default line's, with the
 /// user's changes.
 #[test]
+#[cfg_attr(not(windows), ignore = "Windows layout: php.exe and backslash paths")]
 fn one_php_ini_per_line() {
     use crate::kit::{Arch, Kit};
     use crate::setup::catalog::Catalog;
@@ -197,6 +198,7 @@ fn httpd_conf_changes() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "expected file given with a backslash path")]
 fn apache_site_created_once() {
     let tmp = TempDir::new("apachesite");
     apache_site(&tmp.0).unwrap();

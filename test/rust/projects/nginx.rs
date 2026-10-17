@@ -9,6 +9,7 @@ fn cgi(port: u16) -> FastCgi {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "alias folders created with backslash paths")]
 fn nginx_conf_with_aliases_and_php() {
     let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
     let doc = Path::new(r"D:\kit\projects\shop\public");
@@ -171,6 +172,7 @@ fn hidden_files_are_denied_first() {
 /// WEB-8: no link followed in an alias' folder where Nginx can refuse them;
 /// Nginx for Windows has no `disable_symlinks` and would not start with it.
 #[test]
+#[cfg_attr(not(windows), ignore = "alias folders created with backslash paths")]
 fn aliases_follow_no_links_where_nginx_can() {
     let tmp = crate::kit::tests::TempDir::new("nginx-alias-links");
     let projs = tmp.0.join("projects");

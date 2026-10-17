@@ -3,6 +3,7 @@ use crate::kit::{tests::TempDir, Arch};
 use std::time::SystemTime;
 
 #[test]
+#[cfg_attr(not(windows), ignore = "expected paths given with backslashes")]
 fn in_host_temp_or_data_tmp() {
     let tmp = TempDir::new("temp-work");
     let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
@@ -33,6 +34,10 @@ fn age(dir: &Path, hours: u64) {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "temporary folders created with backslash paths"
+)]
 fn sweep_keeps_live_and_new_removes_old() {
     let tmp = TempDir::new("temp-sweep");
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
@@ -86,6 +91,7 @@ fn cleanup_at_exit_removes_programs_temp_only() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "expected path given with backslashes")]
 fn falls_back_to_data_tmp_without_space() {
     let tmp = TempDir::new("temp-space");
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
