@@ -794,7 +794,10 @@ impl Services {
                 bail!("{id} {l} is not installed");
             }
         }
-        if self.running_server(id).is_ok() {
+        // Any version, not only the one the server runs: another one on its
+        // own port would become the server while every caller takes the
+        // server's port for it.
+        if self.running_server(id).is_ok() || !self.running_lines(id).is_empty() {
             bail!("{id} is running: stop it first");
         }
         let mut all = load_settings(&self.kit);
