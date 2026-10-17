@@ -29,20 +29,11 @@ pub fn db_bin_in(os: Os, dir: &Path, stem: &str) -> PathBuf {
     dir.join("bin").join(exe_name(os, stem))
 }
 
-/// Database server or client binary inside `data/apps/<target>/<folder>/bin/<stem>[.exe]`.
+/// Database server or client binary inside `data/apps/<target>/<folder>/bin/<stem>[.exe]`:
+/// the folder and stem come from `db::DbEngine` (`client_component`,
+/// `tools_component`, `client_bin`, `dump_bin`…), e.g. `mongosh/bin/mongosh`.
 pub fn db_bin(kit: &Kit, folder: &str, stem: &str) -> PathBuf {
     db_bin_in(kit.os(), &kit.apps().join(folder), stem)
-}
-
-/// `mongosh` binary in `data/apps/<target>/mongosh/bin/mongosh[.exe]`.
-pub fn mongosh_bin(kit: &Kit) -> PathBuf {
-    db_bin(kit, "mongosh", "mongosh")
-}
-
-/// MongoDB database tool (`mongodump`, `mongorestore`) in
-/// `data/apps/<target>/mongodb-tools/bin/<stem>[.exe]`.
-pub fn mongo_tool_bin(kit: &Kit, stem: &str) -> PathBuf {
-    db_bin(kit, "mongodb-tools", stem)
 }
 
 /// Bundled Node.js binary inside `vscodium-server` (`node.exe` on Windows, `node` on Unix).

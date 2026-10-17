@@ -20,6 +20,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
+use super::DbEngine;
 use crate::fsx::{read_json, write_atomic};
 use crate::kit::Kit;
 use crate::projects::state::ProjectState;
@@ -533,7 +534,7 @@ pub fn check_name_free(kit: &Kit, project: &str, engine: &str, name: &str) -> Re
 pub(crate) fn add_legacy_names(secrets: &mut ProjectSecrets, project: &str) -> Result<bool> {
     let engines: Vec<String> = secrets
         .iter()
-        .filter(|(k, v)| v.is_string() && crate::db::services::SERVERS.contains(&k.as_str()))
+        .filter(|(k, v)| v.is_string() && DbEngine::from_id(k).is_some())
         .map(|(k, _)| k.clone())
         .collect();
     let mut added = false;
@@ -632,32 +633,19 @@ pub fn root_password_sql(password: &str) -> String {
     )
 }
 
-/// Databases and users of MariaDB itself: a project named after one would
-/// create, alter or drop it (`DROP DATABASE mysql`, the `root` user).
-const MARIADB_RESERVED: &[&str] = &[
-    "mysql",
-    "information_schema",
-    "performance_schema",
-    "sys",
-    "root",
-    "mariadb_sys",
-];
-
-/// MongoDB's own databases (`admin` holds every user of the server).
-const MONGODB_RESERVED: &[&str] = &["admin", "local", "config"];
-
-/// `name` is a database or user of the server of `engine` itself (of
-/// either server for an engine this version does not know).
+/// `name` is a database or user of the server of `engine` itself
+/// ([`DbEngine::reserved_names`]; of every server for an engine this
+/// version does not know).
 pub fn is_reserved(engine: &str, name: &str) -> bool {
-    let lists: &[&[&str]] = match engine {
-        "mariadb" => &[MARIADB_RESERVED],
-        "mongodb" => &[MONGODB_RESERVED],
-        _ => &[MARIADB_RESERVED, MONGODB_RESERVED],
+    let reserved = |e: DbEngine| {
+        e.reserved_names()
+            .iter()
+            .any(|r| r.eq_ignore_ascii_case(name))
     };
-    lists
-        .iter()
-        .flat_map(|l| l.iter())
-        .any(|r| r.eq_ignore_ascii_case(name))
+    match DbEngine::from_id(engine) {
+        Some(e) => reserved(e),
+        None => DbEngine::ALL.into_iter().any(reserved),
+    }
 }
 
 /// The rule of the names before they were stored: lower case letters,
@@ -773,12 +761,11 @@ pub struct ProjectDb {
 /// The connection to the database and user `name` ([`project_db_name`]).
 pub fn project_db(engine: &str, name: &str, password: &str, port: u16) -> ProjectDb {
     let name = name.to_owned();
-    let url = match engine {
-        "mongodb" => {
-            format!("mongodb://{name}:{password}@127.0.0.1:{port}/{name}?authSource={name}")
-        }
-        _ => format!("mysql://{name}:{password}@127.0.0.1:{port}/{name}"),
-    };
+    // An id this version does not know: a SQL server, as before the engines
+    // were an enum.
+    let url = DbEngine::from_id(engine)
+        .unwrap_or(DbEngine::MariaDb)
+        .project_url(&name, password, port);
     ProjectDb {
         engine: engine.to_owned(),
         database: name.clone(),
@@ -812,14 +799,17 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
     let laravel = text
         .lines()
         .any(|l| l.trim_start().starts_with("DB_CONNECTION="));
-    let pairs: Vec<(&str, String)> = match db.engine.as_str() {
-        "mongodb" if laravel => vec![
+    // An id this version does not know: a SQL server, as before the engines
+    // were an enum.
+    let engine = DbEngine::from_id(&db.engine).unwrap_or(DbEngine::MariaDb);
+    let pairs: Vec<(&str, String)> = match engine {
+        DbEngine::MongoDb if laravel => vec![
             ("DB_CONNECTION", "mongodb".into()),
             ("DB_DATABASE", db.database.clone()),
             ("MONGODB_URI", db.url.clone()),
         ],
-        "mongodb" => vec![("MONGODB_URI", db.url.clone())],
-        _ if laravel => vec![
+        DbEngine::MongoDb => vec![("MONGODB_URI", db.url.clone())],
+        DbEngine::MariaDb if laravel => vec![
             ("DB_CONNECTION", "mysql".into()),
             ("DB_HOST", db.host.clone()),
             ("DB_PORT", db.port.to_string()),
@@ -827,7 +817,7 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
             ("DB_USERNAME", db.user.clone()),
             ("DB_PASSWORD", db.password.clone()),
         ],
-        _ => vec![("DATABASE_URL", db.url.clone())],
+        DbEngine::MariaDb => vec![("DATABASE_URL", db.url.clone())],
     };
     pairs.into_iter().map(|(k, v)| (k.to_owned(), v)).collect()
 }

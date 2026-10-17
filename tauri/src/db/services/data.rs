@@ -8,8 +8,11 @@ use std::time::Duration;
 
 use anyhow::{bail, Context, Result};
 
+#[cfg(test)]
+use super::bin;
 use super::tools::run_tool;
-use super::{auth, bin, bin_at, server_line, Services, SERVERS};
+use super::{auth, bin_at, client_at, server_line, Services};
+use crate::db::DbEngine;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs;
@@ -36,10 +39,10 @@ pub fn data_dir_at(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
 
 /// The data of a version that has it yet (MariaDB's `mysql`, MongoDB's
 /// `WiredTiger`).
-fn has_data(id: &str, dir: &std::path::Path) -> bool {
-    match id {
-        "mariadb" => dir.join("mysql").is_dir(),
-        _ => dir.join("WiredTiger").is_file(),
+fn has_data(engine: DbEngine, dir: &std::path::Path) -> bool {
+    match engine {
+        DbEngine::MariaDb => dir.join("mysql").is_dir(),
+        DbEngine::MongoDb => dir.join("WiredTiger").is_file(),
     }
 }
 
@@ -50,9 +53,10 @@ fn has_data(id: &str, dir: &std::path::Path) -> bool {
 /// Refused while that version is among `running` (PLAN.md §13.2: versions
 /// run side by side): its files are in use.
 pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Result<Option<String>> {
+    let engine = DbEngine::parse(id)?;
     let root = data_root(kit, id);
     let target = root.join(line);
-    if has_data(id, &target) {
+    if has_data(engine, &target) {
         return Ok(None);
     }
     let wanted = crate::install::version_key(line);
@@ -63,7 +67,7 @@ pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Resul
         .filter_map(|e| {
             let name = e.file_name().to_string_lossy().into_owned();
             let key = crate::install::version_key(&name);
-            (crate::versions::valid_line(&name) && key < wanted && has_data(id, &e.path()))
+            (crate::versions::valid_line(&name) && key < wanted && has_data(engine, &e.path()))
                 .then_some((key, name))
         })
         .collect();
@@ -71,11 +75,17 @@ pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Resul
     let Some((key, from)) = older.pop() else {
         return Ok(None);
     };
-    if id == "mongodb"
+    // MariaDB opens the data of any older version; MongoDB only that of the
+    // same or the previous major.
+    let one_major_at_a_time = match engine {
+        DbEngine::MariaDb => false,
+        DbEngine::MongoDb => true,
+    };
+    if one_major_at_a_time
         && wanted.first().copied().unwrap_or(0) > key.first().copied().unwrap_or(0) + 1
     {
         crate::log::warn(&format!(
-            "mongodb {line}: the data of {from} cannot jump more than one major version; \
+            "{id} {line}: the data of {from} cannot jump more than one major version; \
              starting with empty data (the {from} data stays)"
         ));
         return Ok(None);
@@ -110,13 +120,14 @@ fn copy_dir(from: &std::path::Path, to: &std::path::Path) -> Result<()> {
 /// Data of an older kit, `data\db\<id>` itself: into the folder of the
 /// installed version, `data\db\<id>\<line>`. At start (versions::migrate).
 pub fn migrate_data(kit: &Kit) {
-    for id in SERVERS {
+    for engine in DbEngine::ALL {
+        let id = engine.id();
         let root = data_root(kit, id);
-        if !has_data(id, &root) {
+        if !has_data(engine, &root) {
             continue;
         }
         let Some(line) = Catalog::get()
-            .find(id)
+            .find(engine.component())
             .and_then(|c| crate::versions::default_line(kit, c))
         else {
             continue;
@@ -146,29 +157,29 @@ impl Services {
     /// password set in it yet).
     pub(super) fn prepare(
         &self,
-        id: &str,
+        engine: DbEngine,
         line: Option<&str>,
         env: &KitEnv,
         port: u16,
     ) -> Result<(PathBuf, bool)> {
-        let data = data_dir_at(&self.kit, id, line);
-        let fresh = match id {
-            "mariadb" => !data.join("mysql").is_dir(),
-            _ => !data.join("WiredTiger").is_file(),
-        };
-        if id == "mariadb" && fresh {
-            // mariadb-install-db wants a folder that does not exist yet.
-            if data.is_dir() && fs::read_dir(&data)?.next().is_none() {
-                fs::remove_dir(&data)?;
+        let data = data_dir_at(&self.kit, engine.id(), line);
+        let fresh = !has_data(engine, &data);
+        match engine.install_db_bin() {
+            Some(install) if fresh => {
+                // mariadb-install-db wants a folder that does not exist yet.
+                if data.is_dir() && fs::read_dir(&data)?.next().is_none() {
+                    fs::remove_dir(&data)?;
+                }
+                if let Some(parent) = data.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                let mut cmd =
+                    jobs::kit_command(bin_at(&self.kit, engine.component(), line, install), env);
+                cmd.arg(format!("--datadir={}", data.display()))
+                    .arg(format!("--port={port}"));
+                run_tool(cmd, Duration::from_secs(120)).context(install)?;
             }
-            if let Some(parent) = data.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            let mut cmd =
-                jobs::kit_command(bin_at(&self.kit, id, line, "mariadb-install-db.exe"), env);
-            cmd.arg(format!("--datadir={}", data.display()))
-                .arg(format!("--port={port}"));
-            run_tool(cmd, Duration::from_secs(120)).context("mariadb-install-db")?;
+            _ => {}
         }
         fs::create_dir_all(&data)?;
         Ok((data, fresh))
@@ -177,18 +188,28 @@ impl Services {
     /// After the data of `from` was copied for `line`: MongoDB takes the
     /// features of the new major (its next one needs it); MariaDB's system
     /// tables are brought up to date by hand (`mariadb-upgrade`, D-73).
-    pub(super) fn after_copy(&self, id: &str, env: &KitEnv, port: u16, from: &str, line: &str) {
+    pub(super) fn after_copy(
+        &self,
+        engine: DbEngine,
+        env: &KitEnv,
+        port: u16,
+        from: &str,
+        line: &str,
+    ) {
         let major = |l: &str| l.split('.').next().unwrap_or("").to_owned();
         if major(from) == major(line) {
             return;
         }
-        if id != "mongodb" {
-            crate::log::info(&format!(
-                "mariadb {line}: data of {from}; run mariadb-upgrade to update the system tables"
-            ));
-            return;
+        match engine {
+            DbEngine::MariaDb => {
+                crate::log::info(&format!(
+                    "mariadb {line}: data of {from}; run mariadb-upgrade to update the system tables"
+                ));
+                return;
+            }
+            DbEngine::MongoDb => {}
         }
-        let mut cmd = jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), env);
+        let mut cmd = jobs::kit_command(client_at(&self.kit, engine, None), env);
         cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
             .arg(port.to_string())
             .args(["--eval", auth::MONGO_FCV_JS])
