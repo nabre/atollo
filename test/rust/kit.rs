@@ -146,9 +146,20 @@ fn app_translocation_is_refused_on_macos() {
     assert_eq!(translocated_bundle(moved).as_deref(), Some("Atollo.app"));
     let text = launch_problem(Os::Darwin, moved, "it").unwrap();
     assert!(
-        text.contains("xattr -dr com.apple.quarantine \"Atollo.app\""),
+        text.contains("xattr -dr com.apple.quarantine 'Atollo.app'"),
         "{text}"
     );
+    // Always quoted, so that a crafted name cannot run anything.
+    let crafted = Path::new(
+        "/private/var/folders/xy/abc/T/AppTranslocation/0A1B-2C/d/$(id)'.app/Contents/MacOS/Atollo",
+    );
+    let text = launch_problem(Os::Darwin, crafted, "it").unwrap();
+    assert!(text.contains(r"quarantine '$(id)'\''.app'"), "{text}");
+    let plain = Path::new(
+        "/private/var/folders/xy/abc/T/AppTranslocation/0A1B-2C/d/Kit.app/Contents/MacOS/Atollo",
+    );
+    let text = launch_problem(Os::Darwin, plain, "it").unwrap();
+    assert!(text.contains("quarantine 'Kit.app'"), "{text}");
     let en = launch_problem(Os::Darwin, moved, "en").unwrap();
     assert!(en.contains("App Translocation") && en != text, "{en}");
     let normal = Path::new("/Users/u/Kit/Atollo.app/Contents/MacOS/Atollo");

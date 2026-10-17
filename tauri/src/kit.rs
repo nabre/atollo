@@ -687,11 +687,7 @@ pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
         return None;
     }
     let bundle = translocated_bundle(exe)?;
-    let quoted = if bundle.contains(' ') {
-        format!("\"{bundle}\"")
-    } else {
-        bundle
-    };
+    let quoted = crate::os::sh_quote(&bundle);
     Some(format!(
         "{}\n\n{}",
         crate::i18n::t(lang, "macOS ha aperto Atollo da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.", &[]),

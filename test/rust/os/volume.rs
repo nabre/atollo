@@ -81,6 +81,25 @@ fn linux_removable_from_a_fake_sys_tree() {
         block_drive_kind(&partition(&usb_hdd, "sdc1")),
         DriveKind::Removable
     );
+    // An SD card in a built-in reader says removable 0; soldered eMMC is
+    // also `mmcblk` but its card type is MMC (`-` for the real `:`, which
+    // Windows folders cannot hold).
+    let card = |rel: &str, kind: &str| {
+        let dir = disk(rel, Some("0"));
+        std::fs::create_dir_all(dir.join("device")).unwrap();
+        std::fs::write(dir.join("device/type"), format!("{kind}\n")).unwrap();
+        dir
+    };
+    let sd = card("devices/pci0/mmc_host/mmc0/mmc0-aaaa/block/mmcblk0", "SD");
+    assert_eq!(
+        block_drive_kind(&partition(&sd, "mmcblk0p1")),
+        DriveKind::Removable
+    );
+    let emmc = card("devices/pci0/mmc_host/mmc1/mmc1-0001/block/mmcblk1", "MMC");
+    assert_eq!(
+        block_drive_kind(&partition(&emmc, "mmcblk1p2")),
+        DriveKind::Fixed
+    );
     let odd = disk("devices/virtual/block/zram0", None);
     assert_eq!(block_drive_kind(&odd), DriveKind::Other);
 }
@@ -124,15 +143,28 @@ fn startup_notices() {
     assert!(
         linux
             .text
-            .contains("sudo mount -o remount,exec \"/media/me/KIT\""),
+            .contains("sudo mount -o remount,exec '/media/me/KIT'"),
         "{}",
         linux.text
     );
     let mac = notice_for(Os::Darwin, FsKind::Posix, Some(&noexec), "it").unwrap();
     assert!(
-        mac.text.contains("sudo mount -u -o exec \"/media/me/KIT\""),
+        mac.text.contains("sudo mount -u -o exec '/media/me/KIT'"),
         "{}",
         mac.text
+    );
+    // A label is chosen by whoever made the stick: nothing in it expands
+    // when the user pastes the command.
+    let crafted = Mount {
+        point: PathBuf::from("/media/me/$(rm x)`y`'z"),
+        ..noexec.clone()
+    };
+    let text = notice_for(Os::Linux, FsKind::Posix, Some(&crafted), "it")
+        .unwrap()
+        .text;
+    assert!(
+        text.contains(r"remount,exec '/media/me/$(rm x)`y`'\''z'"),
+        "{text}"
     );
     let en = notice_for(Os::Linux, FsKind::Posix, Some(&noexec), "en").unwrap();
     assert_ne!(en.text, linux.text);

@@ -126,7 +126,9 @@ pub struct VolumeInfo {
 /// The kind of a Linux block device from its folder in `/sys/devices`
 /// (`/sys/dev/block/<major>:<minor>` resolved): a partition's `removable`
 /// flag is its disk's, the folder above. A disk on USB is removable even
-/// when it says otherwise (USB hard disks and many card readers report 0).
+/// when it says otherwise (USB hard disks and many card readers report 0),
+/// and so is an SD card in a built-in reader (`mmcblk*`, removable 0, its
+/// card's `device/type` is `SD`; soldered eMMC says `MMC` and stays fixed).
 #[cfg(any(target_os = "linux", test))]
 fn block_drive_kind(device: &Path) -> DriveKind {
     let disk = if device.join("partition").is_file() {
@@ -137,9 +139,11 @@ fn block_drive_kind(device: &Path) -> DriveKind {
     let usb = device
         .components()
         .any(|c| c.as_os_str().to_str().is_some_and(|s| s.starts_with("usb")));
+    let sd_card =
+        std::fs::read_to_string(disk.join("device").join("type")).is_ok_and(|t| t.trim() == "SD");
     match std::fs::read_to_string(disk.join("removable")).map(|s| s.trim() == "1") {
         Ok(true) => DriveKind::Removable,
-        _ if usb => DriveKind::Removable,
+        _ if usb || sd_card => DriveKind::Removable,
         Ok(false) => DriveKind::Fixed,
         Err(_) => DriveKind::Other,
     }
@@ -464,7 +468,7 @@ pub fn notice_for(os: Os, fs: FsKind, mount: Option<&Mount>, lang: &str) -> Opti
         return None;
     }
     let point = mount.map_or_else(String::new, |m| m.point.display().to_string());
-    let quoted = format!("\"{point}\"");
+    let quoted = super::sh_quote(&point);
     let blocking = |text: String| {
         Some(DiskNotice {
             blocking: true,
