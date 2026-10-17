@@ -229,3 +229,32 @@ fn retired_windows_terminal_goes() {
         .collect();
     assert_eq!(left, ["pwsh.txt"]);
 }
+
+/// Adminer is no longer in the catalog (phpMyAdmin, D-107): its folder,
+/// version, router, sessions and log go at start.
+#[test]
+fn retired_adminer_goes() {
+    let tmp = TempDir::new("versions-retired-adminer");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let line = kit.apps().join(r"adminer\6.1");
+    fs::create_dir_all(&line).unwrap();
+    fs::write(line.join("adminer.php"), "<?php").unwrap();
+    fs::create_dir_all(kit.versions_dir()).unwrap();
+    fs::write(kit.versions_dir().join("adminer.txt"), "6.1.2").unwrap();
+    fs::create_dir_all(kit.kit_files()).unwrap();
+    let router = kit.kit_files().join("adminer.php");
+    fs::write(&router, "<?php").unwrap();
+    let sessions = kit.app_dir().join("adminer");
+    fs::create_dir_all(&sessions).unwrap();
+    fs::write(sessions.join("sess_x"), "").unwrap();
+    fs::create_dir_all(kit.logs()).unwrap();
+    let log = kit.logs().join("adminer.log");
+    fs::write(&log, "started").unwrap();
+
+    migrate(&kit);
+
+    assert!(!kit.apps().join("adminer").exists());
+    assert!(!kit.versions_dir().join("adminer.txt").exists());
+    assert!(!router.exists() && !sessions.exists() && !log.exists());
+}

@@ -11,7 +11,10 @@ use crate::kit::Kit;
 
 const FILES: &[(&str, &str)] = &[
     ("loopback.js", include_str!("../../../runtime/loopback.js")),
-    ("adminer.php", include_str!("../../../runtime/adminer.php")),
+    (
+        "phpmyadmin.php",
+        include_str!("../../../runtime/phpmyadmin.php"),
+    ),
     (
         "php-router.php",
         include_str!("../../../runtime/php-router.php"),

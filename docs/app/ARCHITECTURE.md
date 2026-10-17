@@ -17,7 +17,7 @@ tauri\
   build.rs                    elenco dei comandi (COMMANDS) e manifesto asInvoker
 ui\src\                       interfaccia React + TypeScript (sotto)
 test\rust\  test\ui\          prove, con la stessa struttura di tauri\src e ui\src
-runtime\                      file scritti in data\kit\ (profile.ps1, loopback.js, adminer.php, bin\…)
+runtime\                      file scritti in data\kit\ (profile.ps1, loopback.js, phpmyadmin.php, bin\…)
 docs\app\                     piano, decisioni, architettura, catalogo, prove, novità; PROMPT.md (il prompt iniziale)
 docs\brand\                   logo, temi, script che li generano; brand.png (la tavola del brand)
 docs\reports\                 rapporti di analisi v1-v4
@@ -83,7 +83,7 @@ tauri\src\
   db\                         database
     services\                 server del kit (D-73): mod (impostazioni, avvio, arresto), data (cartelle per
                               versione), access (password e database dei progetti), backups (D-78), tools
-    auth  browse  adminer     password e .env (D-74); contenuto in sola lettura (D-79); Adminer (D-85)
+    auth  browse  phpmyadmin  password e .env (D-74); contenuto in sola lettura (D-79); phpMyAdmin (D-107)
   github\                     account GitHub del kit (D-70): mod (accesso, helper di Git), repos (elenco, clone,
                               rinomina, eliminazione)
   net\                        rete: mod (HTTPS, proxy, API di GitHub), verify (SHA), signature (Authenticode),
@@ -114,7 +114,7 @@ data\
   tmp\                        passaggio nel kit quando il temp del sistema non c'è o non basta; TEMP dei programmi nel kit
 ```
 
-Nel temp del sistema, `<TEMP>\Dev-Kit\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `adminer\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `os\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`os::temp::sweep`); alla chiusura, dopo il job, `os::temp::cleanup_at_exit`.
+Nel temp del sistema, `<TEMP>\Dev-Kit\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `os\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`os::temp::sweep`); alla chiusura, dopo il job, `os::temp::cleanup_at_exit`.
 
 Regole delle cartelle:
 - un modulo con il nome della sua area è il `mod.rs` della cartella (`editor\mod.rs`, non `editor\editor.rs`: clippy lo rifiuta), così `crate::editor::Editor` e `crate::versions::*` restano brevi; le cartelle senza logica propria (`db\`, `setup\`, `os\`) hanno in `mod.rs` solo la descrizione dell'area;
@@ -141,7 +141,7 @@ Un file per pagina o area dell'interfaccia, con gli stessi nomi dei file di `ui\
 | `orphans.rs` | dati senza progetto: elenco e «Collega a…» (D-89) |
 | `frameworks.rs` | nuovo progetto da framework |
 | `github.rs` | account e repository GitHub |
-| `databases.rs` | database dei progetti, copie, `.env`, contenuto, Adminer |
+| `databases.rs` | database dei progetti, copie, `.env`, contenuto, phpMyAdmin |
 | `services.rs` | server di database del kit |
 | `servers.rs` | pool di server web: elenco, profili, avvio, arresto, ricarica, progetto collegato |
 | `terminals.rs` | pagina Terminali: elenco, salvataggio, rimozione, apertura, scelta della cartella |
