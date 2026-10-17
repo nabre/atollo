@@ -5,18 +5,30 @@
 # kit (DECISIONS.md D-23).
 
 # Modules: PowerShell's own and the kit's, not Documents\PowerShell or
-# Program Files of the PC.
-$kitModules = Join-Path $env:CP_DATA 'pwsh\Modules'
-$env:PSModulePath = (Join-Path $PSHOME 'Modules') + ';' + $kitModules
+# Program Files of the PC. Paths and lists are built with the separators of
+# the system (';' and '\' on Windows, ':' and '/' on macOS and Linux).
+$kitModules = [IO.Path]::Combine($env:CP_DATA, 'pwsh', 'Modules')
+$env:PSModulePath = (Join-Path $PSHOME 'Modules') + [IO.Path]::PathSeparator + $kitModules
 
 # .NET asks Windows for the AppData folder and ignores APPDATA: point the
-# history at the kit explicitly.
+# history at the kit explicitly. On macOS and Linux PSReadLine keeps it under
+# XDG_DATA_HOME, already in the kit.
 if (Get-Module -ListAvailable PSReadLine) {
     Import-Module PSReadLine
-    $history = Join-Path $env:APPDATA 'Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt'
-    New-Item -ItemType Directory -Force -Path (Split-Path $history) | Out-Null
-    Set-PSReadLineOption -HistorySavePath $history -PredictionSource History
+    if ($env:OS -eq 'Windows_NT') {
+        $history = [IO.Path]::Combine($env:APPDATA, 'Microsoft', 'Windows', 'PowerShell', 'PSReadLine', 'ConsoleHost_history.txt')
+        New-Item -ItemType Directory -Force -Path (Split-Path $history) | Out-Null
+        Set-PSReadLineOption -HistorySavePath $history -PredictionSource History
+    } else {
+        Set-PSReadLineOption -PredictionSource History
+    }
 }
+
+# Paths compare ignoring case where the file system does (Windows, macOS),
+# exactly on Linux ($IsLinux is unset, so false, in Windows PowerShell 5.1).
+$sep = [IO.Path]::PathSeparator
+$slash = [IO.Path]::DirectorySeparatorChar
+$cmp = if ($IsLinux) { [StringComparison]::Ordinal } else { [StringComparison]::OrdinalIgnoreCase }
 
 # Versions of the languages chosen for the project (data\projects\<project>\
 # versions.json, written by Dev-Kit.exe): the editor's terminals start from
@@ -25,24 +37,25 @@ if (Get-Module -ListAvailable PSReadLine) {
 # A kit terminal (DEVKIT_TERMINAL, the Terminals page) keeps its own.
 $projects = Join-Path $env:CP_ROOT 'projects'
 $here = (Get-Location).ProviderPath
-if (-not $env:DEVKIT_TERMINAL -and $here.StartsWith($projects + '\', [StringComparison]::OrdinalIgnoreCase)) {
-    $project = $here.Substring($projects.Length + 1).Split('\')[0]
-    $file = Join-Path $env:CP_DATA "projects\$project\versions.json"
+if (-not $env:DEVKIT_TERMINAL -and $here.StartsWith($projects + $slash, $cmp)) {
+    $project = $here.Substring($projects.Length + 1).Split($slash)[0]
+    $file = [IO.Path]::Combine($env:CP_DATA, 'projects', $project, 'versions.json')
     if (Test-Path -LiteralPath $file) {
         try {
             $swaps = @((Get-Content -LiteralPath $file -Raw | ConvertFrom-Json).swaps)
             foreach ($name in @([Environment]::GetEnvironmentVariables().Keys)) {
                 $value = [Environment]::GetEnvironmentVariable($name)
-                $new = @($value -split ';' | ForEach-Object {
+                if ($null -eq $value) { continue }
+                $new = @($value.Split($sep) | ForEach-Object {
                     $entry = $_
                     foreach ($s in $swaps) {
-                        if ($entry -ieq $s.from -or $entry.StartsWith($s.from + '\', [StringComparison]::OrdinalIgnoreCase)) {
+                        if ([string]::Equals($entry, $s.from, $cmp) -or $entry.StartsWith($s.from + $slash, $cmp)) {
                             $entry = $s.to + $entry.Substring($s.from.Length)
                             break
                         }
                     }
                     $entry
-                }) -join ';'
+                }) -join $sep
                 if ($new -cne $value) { [Environment]::SetEnvironmentVariable($name, $new) }
             }
         } catch {
@@ -50,12 +63,13 @@ if (-not $env:DEVKIT_TERMINAL -and $here.StartsWith($projects + '\', [StringComp
         }
     }
 }
-Remove-Variable projects, here, project, file, swaps, name, value, new -ErrorAction Ignore
+Remove-Variable projects, here, project, file, swaps, name, value, new, sep, slash, cmp -ErrorAction Ignore
 
 function global:prompt {
     $here = $ExecutionContext.SessionState.Path.CurrentLocation.ProviderPath
     $projects = Join-Path $env:CP_ROOT 'projects'
-    if ($here.StartsWith($projects, [StringComparison]::OrdinalIgnoreCase)) {
+    $cmp = if ($IsLinux) { [StringComparison]::Ordinal } else { [StringComparison]::OrdinalIgnoreCase }
+    if ($here.StartsWith($projects, $cmp)) {
         $here = '~projects' + $here.Substring($projects.Length)
     }
     $esc = [char]27
