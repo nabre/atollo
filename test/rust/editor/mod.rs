@@ -15,6 +15,22 @@ fn url_encodes_odd_folders() {
 }
 
 #[test]
+fn url_of_a_unix_folder_has_one_leading_slash() {
+    let u = url(7001, "ab", Some(Path::new("/home/me/Dev Kit/projects/app")));
+    assert_eq!(
+        u,
+        "http://127.0.0.1:7001/?tkn=ab&folder=/home/me/Dev%20Kit/projects/app"
+    );
+    let mac = url(7001, "ab", Some(Path::new("/Users/me/Kit/projects/già")));
+    assert_eq!(
+        mac,
+        "http://127.0.0.1:7001/?tkn=ab&folder=/Users/me/Kit/projects/gi%C3%A0"
+    );
+    assert_eq!(folder_param(Path::new(r"C:\x\y")), "/C:/x/y");
+    assert_eq!(folder_param(Path::new("/x/y")), "/x/y");
+}
+
+#[test]
 fn tokens_are_random_hex() {
     let a = random_token().unwrap();
     assert_eq!(a.len(), 64);

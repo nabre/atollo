@@ -26,6 +26,29 @@ fn editor_stays_in_its_project() {
 }
 
 #[test]
+fn editor_stays_in_a_unix_project() {
+    let u = |s: &str| s.parse::<Url>().unwrap();
+    let dir = Path::new("/home/me/Kit/projects/app & co");
+    let page = crate::editor::url(7003, "tok", Some(dir));
+    assert!(page.contains("folder=/home/"), "{page}");
+    assert!(in_project(&u(&page), dir));
+    assert!(in_project(
+        &u("http://127.0.0.1:7003/?folder=/home/me/Kit/projects/app%20%26%20co/"),
+        dir
+    ));
+    for out in [
+        // one more slash is another path for the server
+        "http://127.0.0.1:7003/?folder=//home/me/Kit/projects/app%20%26%20co",
+        // case matters on Linux
+        "http://127.0.0.1:7003/?folder=/home/me/kit/projects/app%20%26%20co",
+        "http://127.0.0.1:7003/?folder=/home/me/Kit/projects",
+        "http://127.0.0.1:7003/?folder=/home/me/Kit/projects/app%20%26%20co/sub",
+    ] {
+        assert!(!in_project(&u(out), dir), "{out}");
+    }
+}
+
+#[test]
 fn title_bar_buttons() {
     let u = |s: &str| s.parse::<Url>().unwrap();
     let at = |p: &str| control(&u(&format!("http://127.0.0.1:7003{p}")), 7003);

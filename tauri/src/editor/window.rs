@@ -507,8 +507,18 @@ pub fn same_origin(url: &Url, port: u16) -> bool {
 /// with `folder=` the project's folder. Another folder, a workspace file or
 /// an empty window (`ew=`) is refused, also in a new window.
 pub fn in_project(url: &Url, folder: &Path) -> bool {
-    let want = format!("/{}", folder.display().to_string().replace('\\', "/"));
-    let norm = |s: &str| s.trim_end_matches('/').to_lowercase();
+    let want = super::folder_param(folder);
+    // A Windows path (`/C:/...`) is matched in any case, as Windows does;
+    // a Unix one exactly: on Linux `/home/a/App` is another folder.
+    let fold = !folder.display().to_string().starts_with('/');
+    let norm = |s: &str| {
+        let s = s.trim_end_matches('/');
+        if fold {
+            s.to_lowercase()
+        } else {
+            s.to_owned()
+        }
+    };
     let mut found = false;
     for (key, value) in url.query_pairs() {
         match key.as_ref() {
