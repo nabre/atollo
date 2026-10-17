@@ -135,12 +135,24 @@ impl Services {
                 bail!("{engine} {l} is not installed");
             }
         }
+        let previous = auth::project_line(&self.kit, project, engine)?;
         auth::set_project_line(&self.kit, project, engine, line)?;
         if auth::try_project_password(&self.kit, project, engine)?.is_none() {
             return Ok(None);
         }
-        self.start_for(project, engine, env)?;
-        self.project_db_create(project, engine).map(Some)
+        let moved = self
+            .start_for(project, engine, env)
+            .and_then(|_| self.project_db_create(project, engine));
+        if moved.is_err() {
+            // The database and its user are still on the version it was
+            // on: `db.json` goes back to it, so DB_PORT, `.env`, export and
+            // restore keep finding them.
+            if let Err(e) = auth::set_project_line(&self.kit, project, engine, previous.as_deref())
+            {
+                crate::log::warn(&format!("{project}: {engine}: version not restored: {e:#}"));
+            }
+        }
+        moved.map(Some)
     }
 
     /// Creates (or repairs) the project's database and user on the running
