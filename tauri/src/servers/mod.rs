@@ -567,13 +567,16 @@ fn wait_port_released(port: u16, within: Duration) -> bool {
 /// True once `child` (php-cgi) answers on `port`, or is still running after
 /// `within` (slow, not failed); false if it ended: its FastCGI port is
 /// chosen free and let go before it starts, and another program may have
-/// taken it in between (defect 9).
+/// taken it in between (defect 9). In that case the port answers at once,
+/// before php-cgi fails to bind it: an answer counts only if php-cgi is
+/// still running a moment after.
 fn php_cgi_listening(child: &mut Child, port: u16, within: Duration) -> bool {
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let begun = Instant::now();
     loop {
         if TcpStream::connect_timeout(&addr, Duration::from_millis(80)).is_ok() {
-            return true;
+            std::thread::sleep(Duration::from_millis(250));
+            return matches!(child.try_wait(), Ok(None));
         }
         if !matches!(child.try_wait(), Ok(None)) {
             return false;
@@ -1392,7 +1395,12 @@ impl WebServers {
                 env.set("CP_NGINX", nginx_dir.display().to_string());
                 env.set("CP_NGINX_FWD", fwd(&nginx_dir));
                 let (fcgi, php) = if pool.php_line.is_some() {
-                    spawn_php_cgi(&self.kit, &env, &job)
+                    match spawn_php_cgi(&self.kit, &env, &job) {
+                        // A PHP pool never runs without its PHP: every
+                        // `.php` would answer 503, with nothing watched.
+                        (None, _) => bail!("php-cgi did not start (see the log)"),
+                        started => started,
+                    }
                 } else {
                     (None, None)
                 };
