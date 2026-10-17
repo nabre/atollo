@@ -545,6 +545,59 @@ fn project_lines_in_db_json() {
     assert_eq!(project_line(&kit, "shop", "mariadb").unwrap(), None);
 }
 
+/// The versions a database was created on (`used`), for the deletion: kept
+/// once each, beside passwords, names and `lines`; a `db.json` of before
+/// has none, and nothing is created for a project without one.
+#[test]
+fn used_lines_in_db_json() {
+    let tmp = crate::kit::tests::TempDir::new("db-auth-used");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    kit.prepare().unwrap();
+    add_project_used_line(&kit, "shop", "mariadb", "12.3").unwrap();
+    assert!(
+        !kit.project_data().join(r"shop\private\db.json").exists(),
+        "nothing created"
+    );
+    write_db_json(
+        &kit,
+        "shop",
+        r#"{ "mariadb": "pw", "names": { "mariadb": "shop" }, "lines": { "mariadb": "10.6" } }"#,
+    );
+    assert!(project_used_lines(&kit, "shop", "mariadb")
+        .unwrap()
+        .is_empty());
+    add_project_used_line(&kit, "shop", "mariadb", "12.3").unwrap();
+    add_project_used_line(&kit, "shop", "mariadb", "10.6").unwrap();
+    add_project_used_line(&kit, "shop", "mariadb", "12.3").unwrap();
+    assert_eq!(
+        project_used_lines(&kit, "shop", "mariadb").unwrap(),
+        ["12.3", "10.6"]
+    );
+    assert!(project_used_lines(&kit, "shop", "mongodb")
+        .unwrap()
+        .is_empty());
+    assert!(add_project_used_line(&kit, "shop", "mariadb", "..\\x").is_err());
+    let json = db_json(&kit, "shop");
+    assert_eq!(json["mariadb"], "pw");
+    assert_eq!(json["names"]["mariadb"], "shop");
+    assert_eq!(json["lines"]["mariadb"], "10.6");
+    assert_eq!(
+        project_passwords(&kit, "shop").keys().collect::<Vec<_>>(),
+        ["mariadb"],
+        "used is not a password"
+    );
+    // A value that is not a version is never used.
+    write_db_json(
+        &kit,
+        "shop",
+        r#"{ "mariadb": "pw", "used": { "mariadb": ["..\\x", 3, "11.4"] } }"#,
+    );
+    assert_eq!(
+        project_used_lines(&kit, "shop", "mariadb").unwrap(),
+        ["11.4"]
+    );
+}
+
 /// The lock of `db.json` holds across processes (the command line beside
 /// the app): a change waits while another holder of the kit's lock, here
 /// a thread that is not behind this process's mutex, keeps it.

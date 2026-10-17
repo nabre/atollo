@@ -136,8 +136,16 @@ impl Services {
             }
         }
         let previous = auth::project_line(&self.kit, project, engine)?;
+        let has_db = auth::try_project_password(&self.kit, project, engine)?.is_some();
+        if has_db {
+            // A database created before the versions were kept: the one it
+            // is on now, for the deletion of the project.
+            if let Some(on) = project_line(&self.kit, project, engine) {
+                auth::add_project_used_line(&self.kit, project, engine, &on)?;
+            }
+        }
         auth::set_project_line(&self.kit, project, engine, line)?;
-        if auth::try_project_password(&self.kit, project, engine)?.is_none() {
+        if !has_db {
             return Ok(None);
         }
         let moved = self
@@ -188,6 +196,12 @@ impl Services {
                     &auth::project_sql(&name, &password),
                     Duration::from_secs(60),
                 )?;
+            }
+        }
+        // The deletion of the project drops it from every version it is on.
+        if let Some(l) = &line {
+            if let Err(e) = auth::add_project_used_line(&self.kit, project, engine, l) {
+                crate::log::warn(&format!("{project}: {engine} {l}: version not kept: {e:#}"));
             }
         }
         Ok(auth::project_db(engine, &name, &password, port))

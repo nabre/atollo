@@ -93,10 +93,12 @@ pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
 /// of its user, and `names`: engine → name of its database and user (an
 /// object, so the readers of passwords skip it); `lines`: engine → version of
 /// the server its database is on, when not the one the server runs (PLAN.md
-/// §13.2); other keys kept as they are.
+/// §13.2); `used`: engine → every version where it was created; other keys
+/// kept as they are.
 ///
 /// ```json
-/// { "mariadb": "<password>", "names": { "mariadb": "shop" }, "lines": { "mariadb": "10.6" } }
+/// { "mariadb": "<password>", "names": { "mariadb": "shop" }, "lines": { "mariadb": "10.6" },
+///   "used": { "mariadb": ["12.3", "10.6"] } }
 /// ```
 pub(crate) type ProjectSecrets = serde_json::Map<String, serde_json::Value>;
 
@@ -240,6 +242,61 @@ pub fn set_project_line(kit: &Kit, project: &str, engine: &str, line: Option<&st
     if lines.is_empty() {
         secrets.remove(LINES);
     }
+    let path = project_file(kit, project)?;
+    write_in_private(&path, &serde_json::to_string_pretty(&secrets)?)
+}
+
+/// The key of the versions each database was created on, in `db.json`.
+const USED: &str = "used";
+
+/// The versions of `engine` where the project's database and user were
+/// created (`used` of `db.json`: engine → versions), so that deleting the
+/// project drops them from each. Empty for a `db.json` of before (only the
+/// version it is on now is known then); values that are not versions are
+/// ignored.
+pub fn project_used_lines(kit: &Kit, project: &str, engine: &str) -> Result<Vec<String>> {
+    let secrets = read_project(&project_file_to_read(kit, project)?)?.unwrap_or_default();
+    Ok(secrets
+        .get(USED)
+        .and_then(|u| u.get(engine))
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(serde_json::Value::as_str)
+        .filter(|l| crate::versions::valid_line(l))
+        .map(str::to_owned)
+        .collect())
+}
+
+/// Adds `line` to the versions of `engine` where the project's database
+/// exists ([`project_used_lines`]); nothing is created for a project
+/// without `db.json`.
+pub fn add_project_used_line(kit: &Kit, project: &str, engine: &str, line: &str) -> Result<()> {
+    if !crate::versions::valid_line(line) {
+        bail!("not a version line: {line}");
+    }
+    let _one = db_json_lock(kit)?;
+    let Some(mut secrets) = read_project(&project_file_to_read(kit, project)?)? else {
+        return Ok(());
+    };
+    let used = match secrets
+        .entry(USED)
+        .or_insert_with(|| serde_json::Value::Object(Default::default()))
+    {
+        serde_json::Value::Object(used) => used,
+        _ => bail!("db.json: \"{USED}\" is not an object"),
+    };
+    let lines = match used
+        .entry(engine)
+        .or_insert_with(|| serde_json::Value::Array(Vec::new()))
+    {
+        serde_json::Value::Array(lines) => lines,
+        _ => bail!("db.json: the versions used by {engine} are not a list"),
+    };
+    if lines.iter().any(|l| l.as_str() == Some(line)) {
+        return Ok(());
+    }
+    lines.push(line.into());
     let path = project_file(kit, project)?;
     write_in_private(&path, &serde_json::to_string_pretty(&secrets)?)
 }
