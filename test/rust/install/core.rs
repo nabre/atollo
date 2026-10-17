@@ -238,3 +238,26 @@ fn conda_git_is_marked_once_for_reinstall() {
     fs::create_dir_all(flat.join("conda-meta")).unwrap();
     assert!(has_conda_git(&flat));
 }
+
+/// Why a fresh Linux kit got Python 3.15.0: with no line in the settings
+/// `Python::latest` takes the first of `python_lines`, the newest final
+/// minor (D-81, "ticked installs the newest"); 3.15.0 is final since
+/// October 2026. Pre-releases never count. Same on every target.
+#[test]
+fn python_default_is_the_newest_final_line() {
+    let h = "a".repeat(64);
+    for t in Target::ALL {
+        let triple = t.rust_triple();
+        let sums = format!(
+            "{h}  cpython-3.13.16+20261014-{triple}-install_only_stripped.tar.gz\n\
+             {h}  cpython-3.14.4+20261014-{triple}-install_only_stripped.tar.gz\n\
+             {h}  cpython-3.15.0+20261014-{triple}-install_only_stripped.tar.gz\n\
+             {h}  cpython-3.16.0a1+20261014-{triple}-install_only_stripped.tar.gz\n"
+        );
+        assert_eq!(python_lines(&sums, triple)[0], "3.15", "{t}");
+        let (_, version, _) = pick_python(&sums, "3.15", triple).unwrap();
+        assert_eq!(version, "3.15.0", "{t}");
+    }
+    // Only when the list is empty.
+    assert_eq!(PYTHON_DEFAULT, "3.13");
+}
