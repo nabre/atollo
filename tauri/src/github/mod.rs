@@ -115,7 +115,7 @@ fn login_name(kit: &Kit) -> Option<String> {
 /// Opens `https://github.com/<path>` in the PC's browser, outside the job.
 /// `path`: [`DEVICE_PATH`] or an `owner/repo` already validated.
 pub fn open_web(path: &str) -> Result<()> {
-    jobs::open_with_explorer(format!("https://github.com/{path}"))
+    jobs::open_url(&format!("https://github.com/{path}"))
 }
 
 // --- Git: the account for github.com ----------------------------------------
