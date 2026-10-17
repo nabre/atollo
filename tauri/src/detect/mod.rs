@@ -289,18 +289,29 @@ const PHP_ROUTER: &str = r#""%CP_DATA%\kit\php-router.php""#;
 #[cfg(not(windows))]
 const PHP_ROUTER: &str = r#""$CP_DATA/kit/php-router.php""#;
 
-/// `php -S` on the folder `root` of the project, with the project's own
-/// `router.php` (in `root` or in the project folder) if it has one, else the
-/// kit's router.
+/// `php -S` on the folder `root` of the project, always through the kit's
+/// router. A project's own `router.php` (in `root`, else in the project
+/// folder) runs after the kit's checks: `php -S` takes one router only, so
+/// the kit's includes it, given as `-d atollo.router=<path>` relative to
+/// `root` (hidden files and `.inc` stay refused, D-97).
 fn php_server(dir: &Path, root: &str) -> String {
-    let own = [format!(r"{root}\router.php"), "router.php".to_owned()]
-        .into_iter()
-        .map(|f| f.trim_start_matches(r".\").to_owned())
-        .find(|f| exists(dir, f))
-        .map(|f| native(&f).into_owned());
-    let router = own.as_deref().map_or_else(|| PHP_ROUTER.to_owned(), quote);
+    let depth = root
+        .split(['\\', '/'])
+        .filter(|s| !s.is_empty() && *s != ".")
+        .count();
+    let in_root = format!(r"{root}\router.php");
+    let own = if exists(dir, in_root.trim_start_matches(r".\")) {
+        Some("router.php".to_owned())
+    } else if exists(dir, "router.php") {
+        Some(format!(r"{}router.php", r"..\".repeat(depth)))
+    } else {
+        None
+    };
+    let own = own
+        .map(|f| format!("-d {} ", quote(&format!("atollo.router={}", native(&f)))))
+        .unwrap_or_default();
     format!(
-        "php -S 127.0.0.1:{{port}} -t {} {router}",
+        "php {own}-S 127.0.0.1:{{port}} -t {} {PHP_ROUTER}",
         quote(&native(root))
     )
 }
