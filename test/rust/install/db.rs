@@ -217,3 +217,57 @@ fn sqlite_and_mongodb_across_targets() {
     assert!(url_lin.ends_with("mongodb-linux-aarch64-ubuntu2204-9.0.4.tgz"));
     assert_eq!(kind_lin, Kind::TarGz);
 }
+
+/// mongosh follows MongoDB's download target (`x64Only`): the x64 build on
+/// Windows ARM64, the native one everywhere else.
+#[test]
+fn mongosh_asset_per_target() {
+    use crate::kit::Target;
+
+    let mongodb = crate::setup::catalog::Catalog::get()
+        .find("mongodb")
+        .unwrap();
+    let names = [
+        (Target::WIN32_X64, "mongosh-2.5.9-win32-x64.zip"),
+        (Target::WIN32_ARM64, "mongosh-2.5.9-win32-x64.zip"),
+        (Target::DARWIN_ARM64, "mongosh-2.5.9-darwin-arm64.zip"),
+        (Target::DARWIN_X64, "mongosh-2.5.9-darwin-x64.zip"),
+        (Target::LINUX_X64, "mongosh-2.5.9-linux-x64.tgz"),
+        (Target::LINUX_ARM64, "mongosh-2.5.9-linux-arm64.tgz"),
+    ];
+    for (target, name) in names {
+        let download = crate::router::target::effective_target(target, mongodb);
+        let (re, kind) = mongosh_asset_pattern(download);
+        let re = pattern(re).unwrap();
+        assert!(re.is_match(name), "{target}: {name}");
+        for (other, other_name) in names {
+            if other_name != name {
+                assert!(!re.is_match(other_name), "{target} took {other}");
+            }
+        }
+        let tgz = name.ends_with(".tgz");
+        assert_eq!(kind == Kind::TarGz, tgz, "{target}");
+    }
+    // The arm64 Windows pattern is honest, in case it is ever asked for.
+    let (re, _) = mongosh_asset_pattern(Target::WIN32_ARM64);
+    assert!(pattern(re)
+        .unwrap()
+        .is_match("mongosh-2.5.9-win32-arm64.zip"));
+}
+
+/// No silent fallback to x64 for SQLite (D-108), except on Windows ARM64
+/// where the x64 build runs emulated.
+#[test]
+fn sqlite_falls_back_to_x64_only_on_windows_arm64() {
+    use crate::kit::Target;
+
+    for t in Target::ALL {
+        let want = (t == Target::WIN32_ARM64).then_some("x64");
+        assert_eq!(sqlite_fallback_arch(t), want, "{t}");
+    }
+    let page = format!(
+        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-linux-x64-3540000.zip,456,{l}\n-->",
+        l = "c".repeat(64)
+    );
+    assert!(sqlite_tools_for(&page, "linux", "arm64").is_err());
+}

@@ -6,40 +6,111 @@ use std::fs;
 
 #[test]
 fn target_execution_matrix_across_os_and_arch() {
-    for t in Target::ALL {
-        assert!(target::can_execute_between(t, t), "{t} on itself");
+    use target::can_execute_between as can;
+    for rosetta in [false, true] {
+        for t in Target::ALL {
+            assert!(can(t, t, rosetta), "{t} on itself");
+        }
+        // Windows ARM64 runs x64 binaries via emulation, Rosetta or not.
+        assert!(can(Target::WIN32_ARM64, Target::WIN32_X64, rosetta));
+        // Linux ARM64 does not assume user-mode x64 emulation, and x64 never runs ARM64.
+        assert!(!can(Target::LINUX_ARM64, Target::LINUX_X64, rosetta));
+        assert!(!can(Target::WIN32_X64, Target::WIN32_ARM64, rosetta));
+        assert!(!can(Target::DARWIN_X64, Target::DARWIN_ARM64, rosetta));
+        // Cross-OS execution is never allowed.
+        assert!(!can(Target::WIN32_X64, Target::LINUX_X64, rosetta));
+        assert!(!can(Target::LINUX_X64, Target::DARWIN_X64, rosetta));
+        assert!(!can(Target::DARWIN_ARM64, Target::LINUX_ARM64, rosetta));
     }
-    // Windows ARM64 and macOS Apple Silicon run x64 binaries via emulation.
-    assert!(target::can_execute_between(
-        Target::WIN32_ARM64,
-        Target::WIN32_X64
-    ));
-    assert!(target::can_execute_between(
-        Target::DARWIN_ARM64,
-        Target::DARWIN_X64
-    ));
-    // Linux ARM64 does not assume user-mode x64 emulation, and x64 never runs ARM64.
-    assert!(!target::can_execute_between(
-        Target::LINUX_ARM64,
-        Target::LINUX_X64
-    ));
-    assert!(!target::can_execute_between(
-        Target::WIN32_X64,
-        Target::WIN32_ARM64
-    ));
-    assert!(!target::can_execute_between(
-        Target::DARWIN_X64,
-        Target::DARWIN_ARM64
-    ));
-    // Cross-OS execution is never allowed.
-    assert!(!target::can_execute_between(
-        Target::WIN32_X64,
-        Target::LINUX_X64
-    ));
-    assert!(!target::can_execute_between(
-        Target::LINUX_X64,
-        Target::DARWIN_X64
-    ));
+    // macOS Apple Silicon runs x64 binaries only with Rosetta 2.
+    assert!(can(Target::DARWIN_ARM64, Target::DARWIN_X64, true));
+    assert!(!can(Target::DARWIN_ARM64, Target::DARWIN_X64, false));
+    // Every pair: Rosetta changes that one pair only.
+    for host in Target::ALL {
+        for t in Target::ALL {
+            let differs = can(host, t, true) != can(host, t, false);
+            let mac = host == Target::DARWIN_ARM64 && t == Target::DARWIN_X64;
+            assert_eq!(differs, mac, "{host} -> {t}");
+        }
+    }
+}
+
+#[test]
+fn rosetta_is_checked_only_for_its_components_on_that_mac() {
+    let mut c: crate::setup::catalog::Component = serde_json::from_value(serde_json::json!({
+        "id": "x", "name": "X", "group": "languages", "def": false, "mb": 1,
+        "desc": "x", "home": "https://x", "key": "x/x.exe", "rosetta": true
+    }))
+    .unwrap();
+    let mac = Target::DARWIN_ARM64;
+    assert!(c.is_emulated_on(mac) && !c.is_emulated_on(Target::WIN32_ARM64));
+    assert_eq!(target::effective_target(mac, &c), Target::DARWIN_X64);
+    // On the Mac itself, without Rosetta: not available.
+    assert!(target::rosetta_missing(mac, mac, &c, false));
+    assert!(!target::rosetta_missing(mac, mac, &c, true));
+    // A kit prepared for that Mac from another system cannot know.
+    for host in [Target::WIN32_X64, Target::LINUX_X64, Target::DARWIN_X64] {
+        assert!(!target::rosetta_missing(host, mac, &c, false), "{host}");
+    }
+    // Other targets never need it.
+    for t in Target::ALL.into_iter().filter(|t| *t != mac) {
+        assert!(!target::rosetta_missing(t, t, &c, false), "{t}");
+    }
+    // A component with a native Apple Silicon build never needs it.
+    c.rosetta = false;
+    assert!(!target::rosetta_missing(mac, mac, &c, false));
+    assert_eq!(target::effective_target(mac, &c), mac);
+    // Not on a Mac: the probe says no, and nothing is ever missing here.
+    #[cfg(not(target_os = "macos"))]
+    {
+        assert!(!target::rosetta_present());
+        c.rosetta = true;
+        for t in Target::ALL {
+            assert_eq!(target::installable_on(&c, t), c.is_available_on(t));
+        }
+    }
+}
+
+/// `x64Only` is about Windows ARM64: the same components have a native
+/// build for Apple Silicon, which must not become x64 there.
+#[test]
+fn x64_only_components_stay_native_on_apple_silicon() {
+    for c in Catalog::get().all() {
+        if c.x64_only && c.is_available_on(Target::DARWIN_ARM64) {
+            assert!(!c.is_emulated_on(Target::DARWIN_ARM64), "{}", c.id);
+            assert_eq!(
+                target::effective_target(Target::DARWIN_ARM64, c),
+                Target::DARWIN_ARM64,
+                "{}",
+                c.id
+            );
+        }
+        if c.x64_only {
+            assert_eq!(
+                target::effective_target(Target::WIN32_ARM64, c),
+                Target::WIN32_X64,
+                "{}",
+                c.id
+            );
+        }
+    }
+}
+
+/// micromamba has a native build on every target, Windows ARM64 too.
+#[test]
+fn micromamba_asset_per_target() {
+    let assets: Vec<&str> = Target::ALL.iter().map(|t| t.micromamba_asset()).collect();
+    assert_eq!(
+        assets,
+        [
+            "micromamba-win-64",
+            "micromamba-win-arm64",
+            "micromamba-osx-arm64",
+            "micromamba-osx-64",
+            "micromamba-linux-64",
+            "micromamba-linux-aarch64",
+        ]
+    );
 }
 
 #[test]
