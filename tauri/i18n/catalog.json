@@ -704,6 +704,26 @@
     "fr": "non disponible pour {0}",
     "de": "für {0} nicht verfügbar"
   },
+  "{0} non è disponibile: {1}.": {
+    "en": "{0} is not available: {1}.",
+    "fr": "{0} n'est pas disponible : {1}.",
+    "de": "{0} ist nicht verfügbar: {1}."
+  },
+  "Google non pubblica platform-tools e build-tools per Linux ARM64": {
+    "en": "Google does not publish platform-tools and build-tools for Linux ARM64",
+    "fr": "Google ne publie pas platform-tools et build-tools pour Linux ARM64",
+    "de": "Google veröffentlicht platform-tools und build-tools nicht für Linux ARM64"
+  },
+  "sqlite.org non pubblica gli strumenti a riga di comando per Linux ARM64": {
+    "en": "sqlite.org does not publish the command-line tools for Linux ARM64",
+    "fr": "sqlite.org ne publie pas les outils en ligne de commande pour Linux ARM64",
+    "de": "sqlite.org veröffentlicht die Kommandozeilenwerkzeuge nicht für Linux ARM64"
+  },
+  "richiede Rosetta 2: installala con softwareupdate --install-rosetta (serve un amministratore)": {
+    "en": "needs Rosetta 2: install it with softwareupdate --install-rosetta (an administrator is needed)",
+    "fr": "nécessite Rosetta 2 : installez-le avec softwareupdate --install-rosetta (un administrateur est nécessaire)",
+    "de": "benötigt Rosetta 2: installiere es mit softwareupdate --install-rosetta (ein Administrator ist nötig)"
+  },
   "Limite": {
     "en": "Limit",
     "fr": "Limite",

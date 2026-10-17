@@ -23,8 +23,10 @@ pub struct ComponentInfo {
     pub x64_only: bool,
     /// No ARM64 build and this kit is Windows ARM64: why it is not available.
     pub no_arm64: bool,
-    /// Not made for this kit's system (Windows only, on macOS or Linux): why
-    /// it is not available, already translated. `None` on Windows ARM64,
+    /// Why it is not available on this kit's target, already translated:
+    /// the catalog's own reason (`unavailable`, Android on Linux ARM64),
+    /// Rosetta 2 missing on this Mac, or not made for this system (Windows
+    /// only, on macOS or Linux). `None` for `noArm64` on Windows ARM64,
     /// where `no_arm64` says it.
     pub unavailable_reason: Option<String>,
     /// Components it needs (Apache needs PHP, Kotlin needs Java).
@@ -105,7 +107,7 @@ pub(super) fn emulates_x64() -> bool {
 
 /// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`
 /// component is not available on a Windows ARM64 kit, one with an
-/// `unavailableReason` not on this system (macOS, Linux).
+/// `unavailableReason` not on this target (see [`unavailable_reason`]).
 pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
     let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
@@ -118,9 +120,9 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
         .into_iter()
         .map(|c| {
             let off = !c.is_available_on(target);
-            let no_arm64 = off && win_arm64;
-            let unavailable_reason = (off && !win_arm64)
-                .then(|| crate::i18n::t(lang, "non disponibile per {0}", &[target.as_str()]));
+            let no_rosetta = !off && crate::router::target::rosetta_missing_on_host(target, c);
+            let unavailable_reason = unavailable_reason(c, target, no_rosetta, lang);
+            let no_arm64 = off && win_arm64 && unavailable_reason.is_none();
             let needs_windows11 = win_arm64
                 && c.x64_only
                 && crate::kit::Os::current().is_windows()
@@ -137,7 +139,8 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 locked: locked.contains(c.id.as_str()),
                 version: c.installed_version(kit),
                 available: install::installer(&c.id).is_some()
-                    && c.is_available_on(target)
+                    && !off
+                    && !no_rosetta
                     && !needs_windows11,
                 x64_only: c.x64_only,
                 no_arm64,
@@ -150,6 +153,32 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
             }
         })
         .collect()
+}
+
+/// Why `c` cannot be installed on `target`, translated: the catalog's
+/// reason for that target, then Rosetta 2 missing on this Mac
+/// (`no_rosetta`), then "not available for <target>" when the catalog has
+/// no build for it. `None` when it is available, and for the components
+/// without an ARM64 build on Windows ARM64 (the page says it its own way,
+/// `no_arm64`).
+pub(super) fn unavailable_reason(
+    c: &crate::setup::catalog::Component,
+    target: crate::kit::Target,
+    no_rosetta: bool,
+    lang: &str,
+) -> Option<String> {
+    if let Some(reason) = c.unavailable_reason(target) {
+        return Some(crate::i18n::t(lang, reason, &[]));
+    }
+    if no_rosetta {
+        return Some(crate::i18n::t(
+            lang,
+            "richiede Rosetta 2: installala con softwareupdate --install-rosetta (serve un amministratore)",
+            &[],
+        ));
+    }
+    (!c.is_available_on(target) && target != crate::kit::Target::WIN32_ARM64)
+        .then(|| crate::i18n::t(lang, "non disponibile per {0}", &[target.as_str()]))
 }
 
 /// Sends every change of the preparation to the app window.
@@ -250,8 +279,9 @@ pub fn components_apply<R: Runtime>(
 }
 
 /// `components.txt` for the ids in `chosen`. What this target cannot install
-/// (`noArm64` on `win32-arm64`, or `windowsOnly` on macOS/Linux) keeps its
-/// saved choice: the same kit on another OS/arch must not lose it.
+/// (`noArm64` on `win32-arm64`, `unavailable` or outside `targets`, an x64
+/// build on a Mac without Rosetta 2) keeps its saved choice: the same kit
+/// on another OS/arch must not lose it.
 pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
     let catalog = Catalog::get();
     let saved = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
@@ -260,7 +290,7 @@ pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
         .all()
         .iter()
         .map(|c| {
-            let on = if !c.is_available_on(target) {
+            let on = if !crate::router::target::installable_on(c, target) {
                 saved.is_chosen(&c.id)
             } else {
                 chosen.contains(&c.id)

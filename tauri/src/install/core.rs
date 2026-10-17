@@ -419,6 +419,55 @@ pub struct NodeEntry {
     version: String,
     #[serde(default)]
     files: Vec<String>,
+    /// The codename of an LTS release (`"Krypton"`), `false` for the others.
+    #[serde(default)]
+    lts: Value,
+}
+
+impl NodeEntry {
+    fn is_lts(&self) -> bool {
+        !matches!(self.lts, Value::Bool(false) | Value::Null)
+    }
+
+    fn major(&self) -> Option<u64> {
+        super::lang::version_key(&self.version).first().copied()
+    }
+}
+
+/// The release of `index` (newest first, as nodejs.org lists it) to
+/// install with the archive `wanted`: the newest of `line` when one is
+/// asked; otherwise the newest LTS (`lts` not `false`), or the newest
+/// release when the index has no LTS for it. When the version installed
+/// (`installed`) is newer than that LTS (a "Current" release installed by
+/// an older Dev-Kit), the newest of its major instead: an update never takes
+/// the kit back to an older major.
+pub fn node_pick<'a>(
+    index: &'a [NodeEntry],
+    wanted: &str,
+    line: Option<&str>,
+    installed: Option<&str>,
+) -> Option<&'a NodeEntry> {
+    let mut with_file = index.iter().filter(|e| e.files.iter().any(|f| f == wanted));
+    if let Some(l) = line {
+        return with_file.find(|e| crate::versions::line_of(&e.version).as_deref() == Some(l));
+    }
+    let all: Vec<&NodeEntry> = with_file.collect();
+    let pick = all
+        .iter()
+        .find(|e| e.is_lts())
+        .or_else(|| all.first())
+        .copied()?;
+    let key = super::lang::version_key;
+    match installed {
+        Some(v) if key(v) > key(&pick.version) => {
+            let major = key(v).first().copied();
+            all.iter()
+                .find(|e| e.major() == major)
+                .copied()
+                .or(Some(pick))
+        }
+        _ => Some(pick),
+    }
 }
 
 /// Node.js: the newest LTS with an archive for this target.
@@ -469,13 +518,8 @@ impl Node {
         let node_os = target.node_os();
         let wanted = node_wanted_file(target);
         let index: Vec<NodeEntry> = ctx.net.json("https://nodejs.org/dist/index.json")?;
-        let entry = index
-            .iter()
-            .find(|e| {
-                e.files.contains(&wanted)
-                    // None: the newest release (the line marked "latest").
-                    && line.is_none_or(|l| crate::versions::line_of(&e.version).as_deref() == Some(l))
-            })
+        let installed = component.installed_version(ctx.kit);
+        let entry = node_pick(&index, &wanted, line, installed.as_deref())
             .ok_or_else(|| anyhow!("no Node.js {} for {node_os}-{arch}", line.unwrap_or("LTS")))?;
         let v = &entry.version;
         let (ext, kind) = if target.is_windows() {
