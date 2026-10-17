@@ -12,8 +12,10 @@ pub struct Bun;
 
 const BUN_REPO: &str = "oven-sh/bun";
 
-/// The Bun zip for `target`.
-pub(crate) fn bun_asset_for(target: Target) -> String {
+/// The Bun zip for `target`; with `baseline`, on x64 only, the build for
+/// CPUs without AVX2 (`bun-<os>-x64-baseline.zip`), which the other one
+/// stops on with "Illegal instruction" (T2.7.2).
+pub(crate) fn bun_asset_for(target: Target, baseline: bool) -> String {
     let os = match target.os {
         Os::Win32 => "windows",
         Os::Darwin => "darwin",
@@ -21,13 +23,32 @@ pub(crate) fn bun_asset_for(target: Target) -> String {
     };
     let arch = match target.arch {
         Arch::Arm64 => "aarch64",
+        Arch::X64 if baseline => "x64-baseline",
         Arch::X64 => "x64",
     };
     format!(r"^bun-{os}-{arch}\.zip$")
 }
 
+/// The baseline build of Bun for `target`: an x64 kit prepared on this PC
+/// (its CPU is the one Bun runs on) when the CPU has no AVX2. A kit
+/// prepared for another system gets the usual build.
+fn bun_baseline(target: Target) -> bool {
+    target.arch == Arch::X64 && target == Target::detect() && !cpu_has_avx2()
+}
+
+#[cfg(target_arch = "x86_64")]
+fn cpu_has_avx2() -> bool {
+    std::arch::is_x86_feature_detected!("avx2")
+}
+
+#[cfg(not(target_arch = "x86_64"))]
+fn cpu_has_avx2() -> bool {
+    true
+}
+
 fn bun_asset(ctx: &Ctx, component: &Component) -> String {
-    bun_asset_for(target_of(ctx, component))
+    let target = target_of(ctx, component);
+    bun_asset_for(target, bun_baseline(target))
 }
 
 impl Installer for Bun {
@@ -110,3 +131,7 @@ impl Installer for Deno {
         )
     }
 }
+
+#[cfg(test)]
+#[path = "../../../../test/rust/install/lang/js.rs"]
+mod tests;
