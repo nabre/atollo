@@ -16,14 +16,13 @@ const ALLOWED: &[(&str, &str, &str)] = &[
     (
         "editor/cfg.rs",
         r#"r"System32\cmd.exe""#,
-        "a program of Windows under %SystemRoot%; not gated yet: the cmd profile \
-         is written on every OS until phase 1 (terminal profiles) keeps it to Windows",
+        "a program of Windows under %SystemRoot%, inside `if os.is_windows()`: \
+         the cmd profile is written for Windows only",
     ),
     (
         "editor/terminal.rs",
         r#"r"System32\conhost.exe""#,
-        "the console host of Windows under %SystemRoot%; not gated yet: phase 1 \
-         (terminal) keeps it to Windows",
+        "the console host of Windows under %SystemRoot%, inside `cfg(windows)`",
     ),
     (
         "env.rs",

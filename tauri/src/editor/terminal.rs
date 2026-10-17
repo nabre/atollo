@@ -1,14 +1,21 @@
-//! Consoles outside the editor: the kit's PowerShell or an agent, in a
-//! classic Windows console (DECISIONS.md D-57, D-95). Never a shell of the
-//! PC, and never the PC's terminal program: the console is hosted by
-//! Windows' own `conhost.exe`, started directly, so Windows does not hand
-//! it to the PC's default terminal.
+//! Consoles outside the editor: the kit's PowerShell or an agent.
 //!
-//! The console is in the app's job: it ends with the app, and "Rimuovi
-//! l'unità" ends it.
+//! On Windows, a classic Windows console (DECISIONS.md D-57, D-95). Never a
+//! shell of the PC, and never the PC's terminal program: the console is
+//! hosted by Windows' own `conhost.exe`, started directly, so Windows does
+//! not hand it to the PC's default terminal. The console is in the app's
+//! job: it ends with the app, and "Rimuovi l'unità" ends it.
+//!
+//! On macOS and Linux, a session of the app's own terminal (`pty.rs`,
+//! D-109): the main window shows it in its terminal panel. It ends with the
+//! app, and "Rimuovi l'unità" ends it.
 
+#[cfg(windows)]
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(windows)]
+use std::path::PathBuf;
+#[cfg(windows)]
 use std::sync::{Arc, Mutex, PoisonError};
 
 use anyhow::Result;
@@ -16,31 +23,60 @@ use tauri::{AppHandle, Manager, Runtime};
 #[cfg(windows)]
 use windows::Win32::System::Console::SetConsoleCtrlHandler;
 
+#[cfg(windows)]
 use super::cfg::pwsh_args;
+use super::pty;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 #[cfg(windows)]
 use crate::os::jobs;
 
-/// The consoles open now: process ids of their `conhost.exe`.
+/// The consoles open now: process ids of their `conhost.exe` (Windows),
+/// and the app's terminal sessions (macOS and Linux; none on Windows).
 #[derive(Default, Clone)]
-pub struct Consoles(Arc<Mutex<BTreeSet<u32>>>);
+pub struct Consoles {
+    #[cfg(windows)]
+    conhosts: Arc<Mutex<BTreeSet<u32>>>,
+    pub ptys: pty::Sessions,
+}
 
 impl Consoles {
+    #[cfg(windows)]
     fn lock(&self) -> std::sync::MutexGuard<'_, BTreeSet<u32>> {
-        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+        self.conhosts.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
+    #[cfg(windows)]
     pub fn count(&self) -> usize {
         self.lock().len()
     }
 
+    #[cfg(not(windows))]
+    pub fn count(&self) -> usize {
+        self.ptys.running()
+    }
+
+    #[cfg(windows)]
     pub fn pids(&self) -> Vec<u32> {
         self.lock().iter().copied().collect()
+    }
+
+    /// The programs of the sessions that still run: "Rimuovi l'unità" ends
+    /// them with their trees.
+    #[cfg(not(windows))]
+    pub fn pids(&self) -> Vec<u32> {
+        self.ptys.pids()
+    }
+
+    /// At the app's exit: every terminal session ends (Windows' consoles
+    /// end with the job).
+    pub fn close_all(&self) {
+        self.ptys.close_all(pty::GRACE);
     }
 }
 
 /// What a console runs.
+#[cfg(windows)]
 enum Program<'a> {
     /// The kit's PowerShell with the kit's profile.
     Shell,
@@ -49,6 +85,7 @@ enum Program<'a> {
     Command(&'a Path),
 }
 
+#[cfg(windows)]
 fn pwsh(kit: &Kit) -> Result<PathBuf> {
     let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");
     // Never the shells of the PC: without the kit's PowerShell, no console.
@@ -56,13 +93,14 @@ fn pwsh(kit: &Kit) -> Result<PathBuf> {
     Ok(pwsh)
 }
 
+#[cfg(windows)]
 fn is_batch(path: &Path) -> bool {
     path.extension()
         .is_some_and(|e| e.eq_ignore_ascii_case("cmd") || e.eq_ignore_ascii_case("bat"))
 }
 
 /// The console host and its arguments: `program` and its own.
-#[cfg_attr(not(windows), allow(dead_code))]
+#[cfg(windows)]
 struct Line {
     conhost: PathBuf,
     args: Vec<String>,
@@ -70,6 +108,7 @@ struct Line {
 
 /// `conhost.exe <program>`: conhost hands its other arguments to the
 /// program, quoting the ones with spaces.
+#[cfg(windows)]
 fn line(kit: &Kit, env: &KitEnv, program: &Program) -> Result<Line> {
     let mut args = Vec::new();
     match program {
@@ -101,6 +140,7 @@ fn line(kit: &Kit, env: &KitEnv, program: &Program) -> Result<Line> {
 }
 
 /// Windows' console host.
+#[cfg(windows)]
 fn conhost(env: &KitEnv) -> PathBuf {
     let system_root = env.get("SystemRoot").unwrap_or(r"C:\Windows");
     Path::new(system_root).join(r"System32\conhost.exe")
@@ -117,19 +157,6 @@ fn track(consoles: &Consoles, console: jobs::Console, on_exit: Box<dyn FnOnce() 
         consoles.lock().remove(&pid);
         on_exit();
     });
-}
-
-/// The console host is Windows' own: no console outside the editor on
-/// macOS and Linux (the editor's terminal works there).
-#[cfg(not(windows))]
-fn start(
-    _consoles: &Consoles,
-    _env: &KitEnv,
-    _dir: &Path,
-    _line: &Line,
-    _on_exit: Box<dyn FnOnce() + Send>,
-) -> Result<()> {
-    anyhow::bail!("consoles outside the editor are not available on this system")
 }
 
 /// Starts the console `line` in `dir`, in the job, and counts it until it
@@ -153,6 +180,7 @@ fn start(
 }
 
 /// Opens `program` (`None`: the kit's shell) in a console.
+#[cfg(windows)]
 fn open<R: Runtime>(
     app: &AppHandle<R>,
     kit: &Kit,
@@ -164,6 +192,41 @@ fn open<R: Runtime>(
     let program = program.map_or(Program::Shell, Program::Command);
     let line = line(kit, env, &program)?;
     start(&app.state::<Consoles>(), env, dir, &line, on_exit)
+}
+
+/// Opens `program` (`None`: the kit's shell) in a session of the app's
+/// terminal, and tells the main window to show it.
+#[cfg(unix)]
+fn open<R: Runtime>(
+    app: &AppHandle<R>,
+    kit: &Kit,
+    env: &KitEnv,
+    dir: &Path,
+    program: Option<&Path>,
+    on_exit: Box<dyn FnOnce() + Send>,
+) -> Result<()> {
+    use tauri::Emitter;
+    let main = crate::commands::MAIN;
+    let launch = match program {
+        None => pty::shell(kit, dir),
+        Some(command) => pty::command(command, dir),
+    };
+    let (out, end) = (app.clone(), app.clone());
+    let info = app.state::<Consoles>().ptys.open(
+        &launch,
+        env,
+        dir,
+        move |id, chunk| {
+            let _ = out.emit_to(main, &pty::output_event(id), chunk);
+        },
+        move |info| {
+            let _ = end.emit_to(main, pty::EXIT_EVENT, &info);
+            on_exit();
+        },
+    )?;
+    crate::log::info(&format!("terminal {}: {}", info.id, info.title));
+    let _ = app.emit_to(main, pty::OPENED_EVENT, &info);
+    Ok(())
 }
 
 /// Runs `command` (an agent, or a `.cmd` wrapper) in a new kit console in
@@ -179,7 +242,8 @@ pub fn open_command<R: Runtime>(
     open(app, kit, env, dir, Some(command), Box::new(on_exit))
 }
 
-/// Opens a kit console (the kit's PowerShell) in `dir`. Inside the job.
+/// Opens a kit console (the kit's PowerShell; on macOS and Linux bash when
+/// it is not installed) in `dir`. Inside the job.
 pub fn open_console<R: Runtime>(
     app: &AppHandle<R>,
     kit: &Kit,
