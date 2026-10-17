@@ -26,6 +26,62 @@ fn start_time_from_proc_stat() {
     assert_eq!(stat_start_time(b""), None);
 }
 
+/// The table forgets emptied groups at every tick, so that a stale number
+/// never reaches a group that is not the kit's (review of WP-1.5).
+#[test]
+fn table_forgets_the_groups_that_emptied() {
+    let mut groups = [(0i32, 0u64); 3];
+    assert!(insert(&mut groups, 10, 1));
+    assert!(insert(&mut groups, 20, 2));
+    assert!(insert(&mut groups, 30, 3));
+    // Full: a fourth group is not followed, and the caller knows.
+    assert!(!insert(&mut groups, 40, 4));
+    // A group already there only renews its start time.
+    assert!(insert(&mut groups, 20, 22));
+    assert!(groups.contains(&(20, 22)));
+
+    prune(&mut groups, |pgid| pgid != 10);
+    assert!(!groups.iter().any(|s| s.0 == 10));
+    assert!(groups.contains(&(30, 3)));
+    assert!(insert(&mut groups, 40, 4));
+
+    forget(&mut groups, 30);
+    assert!(!groups.iter().any(|s| s.0 == 30));
+    // Empty slots are never asked about.
+    prune(&mut groups, |pgid| {
+        assert_ne!(pgid, 0);
+        true
+    });
+    assert_eq!(groups.iter().filter(|s| s.0 != 0).count(), 2);
+}
+
+/// `pkill`/`killall` by name reach the guard too (it has the app's name):
+/// it must survive `SIGTERM` and still end when its pipe closes.
+#[cfg(unix)]
+#[test]
+fn guard_survives_sigterm() {
+    use std::time::Duration;
+    let (reader, writer) = std::io::pipe().unwrap();
+    let guard = fork_guard(reader).unwrap();
+    std::thread::sleep(Duration::from_millis(200));
+    let mut code = 0;
+    // SAFETY: signals and waits for the guard, a child of this process.
+    unsafe {
+        assert_eq!(libc::kill(guard, libc::SIGTERM), 0);
+        assert_eq!(libc::kill(guard, libc::SIGQUIT), 0);
+        std::thread::sleep(Duration::from_millis(300));
+        assert_eq!(
+            libc::waitpid(guard, &mut code, libc::WNOHANG),
+            0,
+            "guard died"
+        );
+    }
+    drop(writer);
+    // SAFETY: as above.
+    assert_eq!(unsafe { libc::waitpid(guard, &mut code, 0) }, guard);
+    assert!(libc::WIFEXITED(code));
+}
+
 #[cfg(target_os = "linux")]
 #[test]
 fn start_time_of_this_process() {
