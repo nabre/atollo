@@ -446,6 +446,11 @@ fn apache_vhost_conf(
     lines.join("\r\n")
 }
 
+/// The local names, besides `localhost`, that reach a pool's own page out
+/// of LAN mode (never `*.localhost`: Apache's first match would take the
+/// projects' sites).
+const POOL_LOCAL_HOSTS: [&str; 2] = ["127.0.0.1", "[::1]"];
+
 /// Generates the master `httpd.conf` for an Apache pool.
 fn apache_pool_conf(base: &str, pool_dir: &Path, port: u16, lan: bool) -> Result<String> {
     let kit_part = apache::strip_kit_tail(base)?;
@@ -469,11 +474,27 @@ fn apache_pool_conf(base: &str, pool_dir: &Path, port: u16, lan: bool) -> Result
         "DirectoryIndex index.php index.html".to_owned(),
     ];
     site.extend(apache::php_module_blocks("CP_PHP_FWD"));
-    // The first VirtualHost answers any Host no other one names (an IP from
-    // the LAN, a misspelt name): Apache's own page, never a project.
+    // The first VirtualHost answers any Host no other one names, never a
+    // project. Out of LAN mode it refuses it with 403, as a project's own
+    // Apache does (D-98: a page of another site re-pointed to 127.0.0.1,
+    // DNS rebinding), and Apache's own page stays for the pool's local names.
+    // In LAN mode (an IP of the PC as `Host`) it is Apache's own page.
+    if !lan {
+        site.extend([
+            format!("<VirtualHost *:{port}>"),
+            "    ServerName refused.invalid".to_owned(),
+            "    <Location \"/\">".to_owned(),
+            "        Require all denied".to_owned(),
+            "    </Location>".to_owned(),
+            "</VirtualHost>".to_owned(),
+        ]);
+    }
+    site.push(format!("<VirtualHost *:{port}>"));
+    site.push("    ServerName localhost".to_owned());
+    if !lan {
+        site.push(format!("    ServerAlias {}", POOL_LOCAL_HOSTS.join(" ")));
+    }
     site.extend([
-        format!("<VirtualHost *:{port}>"),
-        "    ServerName localhost".to_owned(),
         format!("    DocumentRoot \"{default_htdocs}\""),
         "</VirtualHost>".to_owned(),
     ]);
@@ -495,7 +516,7 @@ fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) 
     } else {
         format!("127.0.0.1:{port}")
     };
-    [
+    let mut lines = vec![
         "# --- Atollo: shared Nginx VirtualHost pool (written at every start) ---".to_owned(),
         "worker_processes 1;".to_owned(),
         format!("pid \"{run_fwd}/nginx.pid\";"),
@@ -517,16 +538,40 @@ fn nginx_pool_conf(nginx_install: &Path, pool_dir: &Path, port: u16, lan: bool) 
         nginx::SERVER_NAMES_HASH.to_owned(),
         format!("    include \"{run_fwd}/vhosts/*.conf\";"),
         format!("    include \"{run_fwd}/conf.d/*.conf\";"),
-        "    server {".to_owned(),
-        format!("        listen {listen} default_server;"),
-        "        server_name localhost;".to_owned(),
-        format!("        root \"{nginx_fwd}/html\";"),
-        "        index index.html index.htm;".to_owned(),
-        "    }".to_owned(),
-        "}".to_owned(),
-        String::new(),
-    ]
-    .join("\r\n")
+    ];
+    if lan {
+        // An IP of the PC as `Host`: Nginx's own page, never a project.
+        lines.extend([
+            "    server {".to_owned(),
+            format!("        listen {listen} default_server;"),
+            "        server_name localhost;".to_owned(),
+            format!("        root \"{nginx_fwd}/html\";"),
+            "        index index.html index.htm;".to_owned(),
+            "    }".to_owned(),
+        ]);
+    } else {
+        // Nginx's own page for the pool's local names; any other `Host`, or
+        // none, gets 421 from the default server, as a project's own Nginx
+        // (D-98: DNS rebinding).
+        lines.extend([
+            "    server {".to_owned(),
+            format!("        listen {listen};"),
+            format!(
+                "        server_name localhost {};",
+                POOL_LOCAL_HOSTS.join(" ")
+            ),
+            format!("        root \"{nginx_fwd}/html\";"),
+            "        index index.html index.htm;".to_owned(),
+            "    }".to_owned(),
+            "    server {".to_owned(),
+            format!("        listen {listen} default_server;"),
+            "        server_name _;".to_owned(),
+            "        return 421;".to_owned(),
+            "    }".to_owned(),
+        ]);
+    }
+    lines.extend(["}".to_owned(), String::new()]);
+    lines.join("\r\n")
 }
 
 /// The document root of an attached site: its folder inside the project,
