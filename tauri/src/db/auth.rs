@@ -103,6 +103,16 @@ pub(crate) type ProjectSecrets = serde_json::Map<String, serde_json::Value>;
 /// The key of the names in `db.json`.
 const NAMES: &str = "names";
 
+/// Held by every read-change-write of a project's `db.json`: two commands
+/// on blocking threads (a version chosen while a database is created) would
+/// otherwise each write back what they read, and one change would be lost.
+fn db_json_lock() -> std::sync::MutexGuard<'static, ()> {
+    static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    ONE_AT_A_TIME
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
 /// The key of the versions in `db.json`.
 const LINES: &str = "lines";
 
@@ -125,6 +135,7 @@ pub fn set_project_line(kit: &Kit, project: &str, engine: &str, line: Option<&st
     if line.is_some_and(|l| !crate::versions::valid_line(l)) {
         bail!("not a version line: {}", line.unwrap_or_default());
     }
+    let _one = db_json_lock();
     let mut secrets = read_project(&project_file_to_read(kit, project)?)?;
     if line.is_none() && secrets.is_none() {
         return Ok(());
@@ -232,10 +243,7 @@ pub fn try_project_password(kit: &Kit, project: &str, engine: &str) -> Result<Op
 pub fn ensure_project_db(kit: &Kit, project: &str, engine: &str) -> Result<(String, String)> {
     // The check of the other projects' names and the write are one step:
     // two creations at once (`my-app`, `my_app`) cannot both pass.
-    static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    let _one = ONE_AT_A_TIME
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _one = db_json_lock();
     let mut secrets = read_project(&project_file_to_read(kit, project)?)?.unwrap_or_default();
     let name = name_in(&secrets, project, engine)?;
     check_name_free(kit, project, engine, &name)?;
@@ -413,6 +421,7 @@ pub(crate) fn add_legacy_names(secrets: &mut ProjectSecrets, project: &str) -> R
 /// [`add_legacy_names`] on the `db.json` of `project`, written back (in
 /// its private folder) only when something was added.
 pub(crate) fn keep_legacy_names(kit: &Kit, project: &str) -> Result<()> {
+    let _one = db_json_lock();
     let path = project_file_to_read(kit, project)?;
     let Some(mut secrets) = read_project(&path)? else {
         return Ok(());
@@ -427,6 +436,7 @@ pub(crate) fn keep_legacy_names(kit: &Kit, project: &str) -> Result<()> {
 /// `db.json` of before the names; creations use [`ensure_project_db`]).
 #[allow(dead_code)] // the tests
 pub fn set_project_password(kit: &Kit, project: &str, engine: &str, password: &str) -> Result<()> {
+    let _one = db_json_lock();
     let path = project_file(kit, project)?;
     let mut secrets = read_project(&path)?.unwrap_or_default();
     secrets.insert(engine.to_owned(), password.into());
@@ -437,6 +447,7 @@ pub fn set_project_password(kit: &Kit, project: &str, engine: &str, password: &s
 /// the users can be dropped from the servers (PLAN-DATA.md WP-5). Nothing is
 /// created: after the project's folder of the kit is gone it stays gone.
 pub fn drop_project(kit: &Kit, project: &str) -> Result<BTreeMap<String, String>> {
+    let _one = db_json_lock();
     let path = project_file_to_read(kit, project)?;
     let Some(secrets) = read_project(&path)? else {
         return Ok(BTreeMap::new());
