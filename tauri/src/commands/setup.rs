@@ -2,6 +2,7 @@
 //! by hand (D-82).
 
 use super::*;
+use crate::router::availability::unavailable_reason;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -153,32 +154,6 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
             }
         })
         .collect()
-}
-
-/// Why `c` cannot be installed on `target`, translated: the catalog's
-/// reason for that target, then Rosetta 2 missing on this Mac
-/// (`no_rosetta`), then "not available for <target>" when the catalog has
-/// no build for it. `None` when it is available, and for the components
-/// without an ARM64 build on Windows ARM64 (the page says it its own way,
-/// `no_arm64`).
-pub(super) fn unavailable_reason(
-    c: &crate::setup::catalog::Component,
-    target: crate::kit::Target,
-    no_rosetta: bool,
-    lang: &str,
-) -> Option<String> {
-    if let Some(reason) = c.unavailable_reason(target) {
-        return Some(crate::i18n::t(lang, reason, &[]));
-    }
-    if no_rosetta {
-        return Some(crate::i18n::t(
-            lang,
-            "richiede Rosetta 2: installala con softwareupdate --install-rosetta (serve un amministratore)",
-            &[],
-        ));
-    }
-    (!c.is_available_on(target) && target != crate::kit::Target::WIN32_ARM64)
-        .then(|| crate::i18n::t(lang, "non disponibile per {0}", &[target.as_str()]))
 }
 
 /// Sends every change of the preparation to the app window.

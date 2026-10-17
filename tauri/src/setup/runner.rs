@@ -197,16 +197,16 @@ fn lock(kit: &Kit) -> Result<RunLock> {
     }
     // From here the guard takes the id out of the set again, also on error.
     let mut guard = RunLock { id, file: None };
-    guard.file = prepare_flock(kit)?;
+    guard.file = Some(prepare_flock(kit)?);
     Ok(guard)
 }
 
 /// The exclusive `flock` on `data/app/prepare.lock`, without waiting:
-/// `Busy` when another process holds it. A file system without `flock`
-/// (some network shares) gives `None`: the set of this process is the only
-/// lock there, as before.
+/// `Busy` when another process holds it. Any other error (a file system
+/// without `flock`, some network shares) is returned: the run does not
+/// start unguarded.
 #[cfg(unix)]
-fn prepare_flock(kit: &Kit) -> Result<Option<std::fs::File>> {
+fn prepare_flock(kit: &Kit) -> Result<std::fs::File> {
     use anyhow::Context;
     use std::os::fd::AsRawFd;
     let dir = kit.app_dir();
@@ -224,10 +224,11 @@ fn prepare_flock(kit: &Kit) -> Result<Option<std::fs::File>> {
         if e.kind() == std::io::ErrorKind::WouldBlock {
             return Err(Busy.into());
         }
-        crate::log::warn(&format!("flock {}: {e}", path.display()));
-        return Ok(None);
+        // No silent fallback: as `os::instance::acquire`, a file system
+        // without `flock` stops the run instead of preparing unguarded.
+        return Err(e).with_context(|| format!("flock {}", path.display()));
     }
-    Ok(Some(file))
+    Ok(file)
 }
 
 /// What a run would do, before doing it (shown by the interface).

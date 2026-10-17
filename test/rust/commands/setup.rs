@@ -97,32 +97,6 @@ fn catalog_reasons_reach_the_page() {
     }
 }
 
-/// Rosetta 2 missing says so, before "not available for <target>".
-#[test]
-fn rosetta_reason() {
-    let catalog = Catalog::get();
-    let python = catalog.find("python").unwrap();
-    let php = catalog.find("php").unwrap();
-    assert_eq!(
-        unavailable_reason(python, Target::DARWIN_ARM64, true, "en").as_deref(),
-        Some("needs Rosetta 2: install it with softwareupdate --install-rosetta (an administrator is needed)")
-    );
-    assert_eq!(
-        unavailable_reason(python, Target::DARWIN_ARM64, false, "en"),
-        None
-    );
-    assert_eq!(
-        unavailable_reason(php, Target::DARWIN_ARM64, false, "en").as_deref(),
-        Some("not available for darwin-arm64")
-    );
-    // Windows ARM64 without a build: the page's own "no ARM64" text.
-    let r = catalog.find("r").unwrap();
-    assert_eq!(
-        unavailable_reason(r, Target::WIN32_ARM64, false, "en"),
-        None
-    );
-}
-
 #[test]
 fn unavailable_components_keep_their_choice() {
     let tmp = TempDir::new("cmd-choice");

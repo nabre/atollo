@@ -3,6 +3,7 @@
 //! resolution (`bins`), multi-target disk and health probing (`probe`), and
 //! OS-aware private/executable file operations (`fs`).
 
+pub mod availability;
 pub mod bins;
 pub mod bootstrap;
 pub mod fs;
