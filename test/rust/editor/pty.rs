@@ -106,8 +106,11 @@ struct Calls {
     written: Vec<u8>,
     sizes: Vec<(u16, u16)>,
     hung_up: u32,
-    killed: u32,
+    /// The pids of every kill.
+    killed: Vec<Vec<u32>>,
     released: u32,
+    /// The processes left in the session besides the program (its jobs).
+    left: Vec<u32>,
 }
 
 #[derive(Clone)]
@@ -125,6 +128,13 @@ impl FakeIo {
             pid,
             on_hang_up: Arc::default(),
         }
+    }
+
+    /// A program whose jobs `left` stay in its session.
+    fn with_jobs(pid: u32, left: &[u32]) -> FakeIo {
+        let io = FakeIo::new(pid);
+        io.calls().left = left.to_vec();
+        io
     }
 
     fn calls(&self) -> MutexGuard<'_, Calls> {
@@ -150,8 +160,13 @@ impl Io for FakeIo {
             s.exited(Some(0));
         }
     }
-    fn kill(&self) {
-        self.calls().killed += 1;
+    fn left(&self, _leader_running: bool) -> Vec<u32> {
+        self.calls().left.clone()
+    }
+    fn kill(&self, pids: &[u32]) {
+        let mut c = self.calls();
+        c.killed.push(pids.to_vec());
+        c.left.retain(|p| !pids.contains(p));
     }
     fn release(&self) {
         self.calls().released += 1;
@@ -187,6 +202,12 @@ fn sessions_write_resize_and_count() {
     assert!(!info.running);
     assert_eq!(info.code, Some(3));
     assert_eq!(info.dir, Path::new("/p/app").display().to_string());
+
+    // "Rimuovi l'unità": the jobs too, also those of a shell that ended.
+    io.calls().left = vec![4300];
+    let running = FakeIo::with_jobs(5000, &[5001]);
+    sessions.insert("b".into(), Path::new("/p"), Box::new(running));
+    assert_eq!(sessions.pids(), [4300, 5000, 5001]);
 }
 
 #[test]
@@ -240,7 +261,7 @@ fn close_hangs_up_then_kills_what_did_not_end() {
     sessions.insert("a".into(), Path::new("/p"), Box::new(stubborn.clone()));
     sessions.close(1, Duration::from_millis(50)).unwrap();
     assert_eq!(stubborn.calls().hung_up, 1);
-    assert_eq!(stubborn.calls().killed, 1);
+    assert_eq!(stubborn.calls().killed, [vec![10]]);
     assert_eq!(stubborn.calls().released, 1);
     assert!(sessions.list().is_empty());
     assert!(sessions.close(1, Duration::ZERO).is_err());
@@ -251,7 +272,7 @@ fn close_hangs_up_then_kills_what_did_not_end() {
     *polite.on_hang_up.lock().unwrap() = Some(Arc::clone(&s));
     sessions.close(s.info().id, Duration::from_secs(5)).unwrap();
     assert_eq!(polite.calls().hung_up, 1);
-    assert_eq!(polite.calls().killed, 0);
+    assert!(polite.calls().killed.is_empty());
     assert_eq!(polite.calls().released, 1);
 
     // Already ended: only let go.
@@ -260,22 +281,91 @@ fn close_hangs_up_then_kills_what_did_not_end() {
     s.exited(None);
     sessions.close(s.info().id, Duration::from_secs(5)).unwrap();
     assert_eq!(ended.calls().hung_up, 0);
+    assert!(ended.calls().killed.is_empty());
     assert_eq!(ended.calls().released, 1);
+}
+
+#[test]
+fn jobs_left_by_a_shell_that_ended_are_killed() {
+    // An interactive bash ends at once on the hang-up; a job of it that
+    // ignores SIGHUP (`caddy run`, `nohup x &`) stays in its session.
+    let sessions = Sessions::default();
+    let shell = FakeIo::with_jobs(20, &[21, 22]);
+    let s = sessions.insert("a".into(), Path::new("/p"), Box::new(shell.clone()));
+    *shell.on_hang_up.lock().unwrap() = Some(Arc::clone(&s));
+    let started = Instant::now();
+    sessions
+        .close(s.info().id, Duration::from_millis(200))
+        .unwrap();
+    assert!(
+        started.elapsed() >= Duration::from_millis(200),
+        "grace for the jobs"
+    );
+    let c = shell.calls();
+    assert_eq!(c.hung_up, 1);
+    assert_eq!(c.killed, [vec![21, 22]], "the shell itself was reaped");
+    assert_eq!(c.released, 1);
+    drop(c);
+
+    // `x &` then `exit`: the tab shows the shell ended, its job runs on;
+    // closing the tab kills it at once, with no grace.
+    let ended = FakeIo::with_jobs(30, &[31]);
+    let s = sessions.insert("b".into(), Path::new("/p"), Box::new(ended.clone()));
+    s.exited(Some(0));
+    let started = Instant::now();
+    sessions.close(s.info().id, Duration::from_secs(5)).unwrap();
+    assert!(started.elapsed() < Duration::from_secs(2));
+    assert_eq!(ended.calls().hung_up, 0);
+    assert_eq!(ended.calls().killed, [vec![31]]);
+
+    // Still running past the grace: the program with its jobs.
+    let stubborn = FakeIo::with_jobs(40, &[41]);
+    let s = sessions.insert("c".into(), Path::new("/p"), Box::new(stubborn.clone()));
+    sessions
+        .close(s.info().id, Duration::from_millis(20))
+        .unwrap();
+    assert_eq!(stubborn.calls().killed, [vec![40, 41]]);
 }
 
 #[test]
 fn close_all_at_exit_ends_every_session() {
     let sessions = Sessions::default();
-    let ios: Vec<FakeIo> = (0..3).map(FakeIo::new).collect();
+    let ios: Vec<FakeIo> = (1..=3).map(FakeIo::new).collect();
     for io in &ios {
         sessions.insert("x".into(), Path::new("/p"), Box::new(io.clone()));
     }
+    // A shell that ended on the hang-up, leaving a job.
+    let shell = FakeIo::with_jobs(9, &[90]);
+    let s = sessions.insert("y".into(), Path::new("/p"), Box::new(shell.clone()));
+    *shell.on_hang_up.lock().unwrap() = Some(s);
     sessions.close_all(Duration::from_millis(20));
     assert!(sessions.list().is_empty());
     for io in &ios {
         let c = io.calls();
-        assert_eq!((c.hung_up, c.killed, c.released), (1, 1, 1));
+        assert_eq!((c.hung_up, c.released), (1, 1));
+        assert_eq!(c.killed, [vec![io.pid]]);
     }
+    assert_eq!(shell.calls().killed, [vec![90]]);
+}
+
+#[test]
+fn session_members_by_session_id() {
+    let me = std::process::id();
+    // (pid, session id): 100 leads, 101 and 102 are its jobs, 200 another
+    // session, 300 a job that left with `setsid`.
+    let procs = [(100, 100), (101, 100), (102, 100), (200, 200), (300, 300)];
+    assert_eq!(in_session(&procs, 100, true), [100, 101, 102]);
+    // The leader reaped: its jobs only.
+    let after = [(101, 100), (102, 100), (200, 200)];
+    assert_eq!(in_session(&after, 100, false), [101, 102]);
+    // Its pid now another program's (so its session is gone): none.
+    let reused = [(100, 7), (200, 200)];
+    assert!(in_session(&reused, 100, false).is_empty());
+    let reused_leader = [(100, 100), (101, 100)];
+    assert!(in_session(&reused_leader, 100, false).is_empty());
+    // Never the app, never pid 0.
+    assert!(in_session(&[(me, 100)], 100, true).is_empty());
+    assert!(in_session(&[(0, 0), (5, 0)], 0, true).is_empty());
 }
 
 /// Real PTYs: a program's output comes back, the size reaches it, closing
@@ -322,6 +412,7 @@ mod real {
                 &sh("printf 'pty-%s|%s|%s\\n' \"$ATOLLO_PROBE\" \"$TERM\" \"$(pwd)\"; exit 3"),
                 &env(),
                 &tmp.0,
+                |_| {},
                 |_, _| {},
                 move |info| tx.send(info).unwrap(),
             )
@@ -347,6 +438,7 @@ mod real {
                 &sh("read line; stty size; echo \"got-$line\""),
                 &env(),
                 &tmp.0,
+                |_| {},
                 |_, _| {},
                 |_| {},
             )
@@ -369,25 +461,154 @@ mod real {
                 &sh("trap '' HUP; sleep 60 & echo \"bg=$!\"; wait"),
                 &env(),
                 &tmp.0,
+                |_| {},
                 |_, _| {},
                 |_| {},
             )
             .unwrap();
-        let out = wait_for(&sessions, info.id, "bg=");
-        let bg: i32 = out
-            .split("bg=")
-            .nth(1)
-            .and_then(|s| s.split_whitespace().next())
-            .and_then(|s| s.parse().ok())
-            .unwrap_or_else(|| panic!("{out:?}"));
-        assert_eq!(sessions.pids().len(), 1);
+        let bg = pid_after(&sessions, info.id, "bg=");
+        // The program and its job, for "Rimuovi l'unità".
+        let pids = sessions.pids();
+        assert_eq!(pids.len(), 2, "{pids:?}");
+        assert!(pids.contains(&u32::try_from(bg).unwrap()), "{pids:?}");
         sessions.close(info.id, Duration::from_millis(300)).unwrap();
+        assert_gone(bg);
+    }
+
+    /// The first number written after `tag` (the echo of a typed line
+    /// holds the tag too, followed by its `$$`).
+    fn pid_after(sessions: &Sessions, id: u64, tag: &str) -> i32 {
+        let until = Instant::now() + Duration::from_secs(20);
+        loop {
+            let out = sessions.backlog(id).unwrap().data;
+            let found = out.split(tag).skip(1).find_map(|s| {
+                let digits: String = s.chars().take_while(char::is_ascii_digit).collect();
+                digits.parse().ok()
+            });
+            match found {
+                Some(pid) => return pid,
+                None if Instant::now() > until => panic!("no {tag} in {out:?}"),
+                None => std::thread::sleep(Duration::from_millis(20)),
+            }
+        }
+    }
+
+    fn assert_gone(pid: i32) {
         let until = Instant::now() + Duration::from_secs(5);
         // SAFETY: signal 0 only checks that the process exists.
-        while unsafe { libc::kill(bg, 0) } == 0 && Instant::now() < until {
+        while unsafe { libc::kill(pid, 0) } == 0 && Instant::now() < until {
             std::thread::sleep(Duration::from_millis(50));
         }
         // SAFETY: as above.
-        assert_ne!(unsafe { libc::kill(bg, 0) }, 0, "sleep {bg} still running");
+        assert_ne!(unsafe { libc::kill(pid, 0) }, 0, "{pid} still running");
+    }
+
+    fn interactive_bash() -> Launch {
+        Launch {
+            program: PathBuf::from("/bin/bash"),
+            args: vec!["--norc".into(), "--noprofile".into(), "-i".into()],
+            shell: PathBuf::from("/bin/bash"),
+            title: "test".into(),
+        }
+    }
+
+    fn open_bash(sessions: &Sessions, dir: &Path) -> u64 {
+        sessions
+            .open(&interactive_bash(), &env(), dir, |_| {}, |_, _| {}, |_| {})
+            .unwrap()
+            .id
+    }
+
+    #[test]
+    fn close_ends_a_job_of_an_interactive_bash_that_ignores_the_hang_up() {
+        // Job control: the job has a group of its own, bash ends at once
+        // on the hang-up, the job stays (reparented) until the session's
+        // processes are killed.
+        let tmp = TempDir::new("pty-bash-fg");
+        let sessions = Sessions::default();
+        let id = open_bash(&sessions, &tmp.0);
+        sessions
+            .write(id, "sh -c 'trap \"\" HUP; echo fg=$$; exec sleep 60'\r")
+            .unwrap();
+        let fg = pid_after(&sessions, id, "fg=");
+        sessions.close(id, Duration::from_millis(300)).unwrap();
+        assert_gone(fg);
+    }
+
+    #[test]
+    fn closing_a_bash_that_ended_ends_its_background_job() {
+        // `x &` then `exit`: bash does not hang up its running jobs.
+        let tmp = TempDir::new("pty-bash-bg");
+        let sessions = Sessions::default();
+        let id = open_bash(&sessions, &tmp.0);
+        sessions
+            .write(id, "sh -c 'trap \"\" HUP; exec sleep 60' & echo bg=$!\r")
+            .unwrap();
+        let bg = pid_after(&sessions, id, "bg=");
+        sessions.write(id, "exit\r").unwrap();
+        let until = Instant::now() + Duration::from_secs(20);
+        while sessions.running() > 0 && Instant::now() < until {
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        assert_eq!(sessions.running(), 0, "bash did not exit");
+        // SAFETY: signal 0 only checks that the process exists.
+        assert_eq!(unsafe { libc::kill(bg, 0) }, 0, "the job runs on");
+        sessions.close(id, Duration::from_millis(300)).unwrap();
+        assert_gone(bg);
+    }
+
+    #[test]
+    fn exit_never_comes_before_open() {
+        let tmp = TempDir::new("pty-order");
+        let sessions = Sessions::default();
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let (tx, rx) = channel();
+        let (opened, ended) = (Arc::clone(&events), Arc::clone(&events));
+        sessions
+            .open(
+                &sh("exit 5"),
+                &env(),
+                &tmp.0,
+                move |info| {
+                    opened
+                        .lock()
+                        .unwrap()
+                        .push(format!("open {}", info.running))
+                },
+                |_, _| {},
+                move |info| {
+                    ended.lock().unwrap().push(format!("exit {:?}", info.code));
+                    tx.send(()).unwrap();
+                },
+            )
+            .unwrap();
+        rx.recv_timeout(Duration::from_secs(20)).unwrap();
+        assert_eq!(*events.lock().unwrap(), ["open true", "exit Some(5)"]);
+    }
+
+    #[test]
+    fn a_missing_folder_or_a_program_that_cannot_run_is_told() {
+        let tmp = TempDir::new("pty-ready");
+        let sessions = Sessions::default();
+        let missing = tmp.0.join("nope");
+        let e = sessions
+            .open(&sh("true"), &env(), &missing, |_| {}, |_, _| {}, |_| {})
+            .unwrap_err();
+        assert!(e.to_string().contains("non esiste"), "{e:#}");
+        // Without its execute bit (as on a copy that lost it).
+        let script = tmp.0.join("agy");
+        std::fs::write(&script, "#!/bin/sh\necho hi\n").unwrap();
+        let e = sessions
+            .open(
+                &command(&script, &tmp.0),
+                &env(),
+                &tmp.0,
+                |_| {},
+                |_, _| {},
+                |_| {},
+            )
+            .unwrap_err();
+        assert!(e.to_string().contains("non è un programma"), "{e:#}");
+        assert!(sessions.list().is_empty());
     }
 }

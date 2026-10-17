@@ -8,7 +8,8 @@
 //!   environment only, in the chosen folder;
 //! - its program leads a session and a process group of its own (`setsid`
 //!   of the PTY), put in a job (`os/jobs.rs`): closing the session hangs it
-//!   up, then ends what is left of its tree and its group;
+//!   up, then ends what is left of its tree, its group and its session
+//!   (the jobs of an interactive shell, in groups of their own);
 //! - the output goes to the window as text (UTF-8 decoded across reads) in
 //!   numbered chunks, event `pty://<id>`; the last [`BACKLOG`] bytes stay in
 //!   the session for a view that attaches later (the panel opens after the
@@ -231,6 +232,24 @@ pub fn command(command: &Path, dir: &Path) -> Launch {
     }
 }
 
+/// The processes of `procs` (pid, session id) left in the session that
+/// `leader` led. Every job of the session keeps its id, the leader's pid,
+/// unless it calls `setsid` itself, and the system gives that pid to no new
+/// process while one of them lives. So a process with that pid, once the
+/// leader was reaped, means the session is gone and the pid now another
+/// program's: then none. Never the app itself.
+pub fn in_session(procs: &[(u32, u32)], leader: u32, leader_running: bool) -> Vec<u32> {
+    if leader == 0 || (!leader_running && procs.iter().any(|&(pid, _)| pid == leader)) {
+        return Vec::new();
+    }
+    let me = std::process::id();
+    procs
+        .iter()
+        .filter(|&&(pid, sid)| sid == leader && pid != me)
+        .map(|&(pid, _)| pid)
+        .collect()
+}
+
 /// The PTY and the program of a session, as the session uses them.
 pub trait Io: Send + Sync {
     /// Queues `data` for the program; written in order, never blocking.
@@ -240,8 +259,11 @@ pub trait Io: Send + Sync {
     fn pid(&self) -> Option<u32>;
     /// Asks the program to end (`SIGHUP`, as a terminal closing).
     fn hang_up(&self);
-    /// Ends the program's tree now.
-    fn kill(&self);
+    /// The processes left in the program's session (see [`in_session`]);
+    /// `leader_running`: the program itself was not reaped yet.
+    fn left(&self, leader_running: bool) -> Vec<u32>;
+    /// Ends `pids` and their trees now.
+    fn kill(&self, pids: &[u32]);
     /// Lets go of the PTY and of the job: what is left of the program's
     /// group is killed.
     fn release(&self);
@@ -311,24 +333,43 @@ impl Session {
         self.state().running
     }
 
-    /// Hangs up the program, waits up to `grace` for it to end, kills its
-    /// tree if it did not, and lets go of the PTY and the job.
+    /// Whether the program ended and nothing is left in its session.
+    fn settled(&self) -> bool {
+        !self.running() && self.io.left(false).is_empty()
+    }
+
+    /// Hangs up the program, waits up to `grace` for it and its session to
+    /// end, kills what did not, and lets go of the PTY and the job.
     pub fn end(&self, grace: Duration) {
+        // A program that already ended had its hang-up from its shell, or
+        // never had a terminal of its own to lose: what outlived it is
+        // killed at once.
         if self.running() {
             self.io.hang_up();
             let until = Instant::now() + grace;
-            while self.running() && Instant::now() < until {
-                std::thread::sleep(Duration::from_millis(25));
+            while !self.settled() && Instant::now() < until {
+                std::thread::sleep(Duration::from_millis(50));
             }
         }
         self.finish();
     }
 
-    /// Kills the program's tree if it still runs, and lets go of the PTY
-    /// and the job.
+    /// Kills the program's tree if it still runs and whatever is left in
+    /// its session, and lets go of the PTY and the job. Not only while the
+    /// program runs: an interactive bash puts each job in a group of its
+    /// own, and on the hang-up it ends at once while a job that ignores
+    /// SIGHUP (`caddy run`, `nohup cmd &`) keeps running, reparented, out
+    /// of reach of the job's group and of the app's tree.
     fn finish(&self) {
-        if self.running() {
-            self.io.kill();
+        let running = self.running();
+        let mut pids = self.io.left(running);
+        if running {
+            pids.extend(self.io.pid());
+        }
+        pids.sort_unstable();
+        pids.dedup();
+        if !pids.is_empty() {
+            self.io.kill(&pids);
         }
         self.io.release();
     }
@@ -402,13 +443,21 @@ impl Sessions {
         self.lock().values().filter(|s| s.running()).count()
     }
 
-    /// Process ids of the programs that still run ("Rimuovi l'unità").
+    /// Process ids of the programs that still run and of what is left in
+    /// their sessions, also of a session whose program ended (its jobs):
+    /// "Rimuovi l'unità" ends them with their trees.
     pub fn pids(&self) -> Vec<u32> {
-        self.lock()
-            .values()
-            .filter(|s| s.running())
-            .filter_map(|s| s.io.pid())
-            .collect()
+        let mut pids: Vec<u32> = Vec::new();
+        for s in self.lock().values() {
+            let running = s.running();
+            pids.extend(s.io.left(running));
+            if running {
+                pids.extend(s.io.pid());
+            }
+        }
+        pids.sort_unstable();
+        pids.dedup();
+        pids
     }
 
     pub fn backlog(&self, id: u64) -> Result<Chunk> {
@@ -445,12 +494,14 @@ impl Sessions {
     /// not end within `grace` is killed.
     pub fn close_all(&self, grace: Duration) {
         let all: Vec<Arc<Session>> = std::mem::take(&mut *self.lock()).into_values().collect();
-        for s in all.iter().filter(|s| s.running()) {
+        // Only those hung up now are waited for, as in `Session::end`.
+        let hung: Vec<&Arc<Session>> = all.iter().filter(|s| s.running()).collect();
+        for s in &hung {
             s.io.hang_up();
         }
         let until = Instant::now() + grace;
-        while all.iter().any(|s| s.running()) && Instant::now() < until {
-            std::thread::sleep(Duration::from_millis(25));
+        while !hung.iter().all(|s| s.settled()) && Instant::now() < until {
+            std::thread::sleep(Duration::from_millis(50));
         }
         for s in &all {
             s.finish();
@@ -458,19 +509,23 @@ impl Sessions {
     }
 
     /// Opens a session running `launch` in `dir` with the kit environment
-    /// only; `on_output` gets every chunk, `on_exit` the session once its
-    /// program ended.
+    /// only; `on_open` gets the new session before anything else is sent,
+    /// `on_output` every chunk, `on_exit` the session once its program
+    /// ended (a program that ends at once never has its exit told first).
     #[cfg(unix)]
     pub fn open(
         &self,
         launch: &Launch,
         env: &crate::env::KitEnv,
         dir: &Path,
+        on_open: impl FnOnce(&PtyInfo),
         on_output: impl Fn(u64, &Chunk) + Send + 'static,
         on_exit: impl FnOnce(PtyInfo) + Send + 'static,
     ) -> Result<PtyInfo> {
         let spawned = unix::spawn(launch, env, dir)?;
         let session = self.insert(launch.title.clone(), dir, Box::new(spawned.io));
+        let opened = session.info();
+        on_open(&opened);
         let id = session.id;
         let reader = spawned.reader;
         let out = Arc::clone(&session);
@@ -485,7 +540,7 @@ impl Sessions {
             waited.exited(code);
             on_exit(waited.info());
         });
-        Ok(session.info())
+        Ok(opened)
     }
 }
 
@@ -524,7 +579,29 @@ mod unix {
         pixel_height: 0,
     };
 
+    /// What portable-pty would not tell: it falls back to `$HOME` for a
+    /// folder that is not one, and it closes the pipe through which a
+    /// failed `exec` is reported (a program that cannot start would look
+    /// like one that printed nothing and ended with 1).
+    pub fn ready(launch: &Launch, dir: &Path) -> Result<()> {
+        use std::os::unix::ffi::OsStrExt;
+        anyhow::ensure!(dir.is_dir(), "la cartella {} non esiste", dir.display());
+        let program = &launch.program;
+        let path = std::ffi::CString::new(program.as_os_str().as_bytes())
+            .with_context(|| format!("{}", program.display()))?;
+        // access(X_OK) also refuses a file on a `noexec` mount.
+        // SAFETY: a NUL-terminated path, only read.
+        let runnable = program.is_file() && unsafe { libc::access(path.as_ptr(), libc::X_OK) } == 0;
+        anyhow::ensure!(
+            runnable,
+            "{} non è un programma che si possa avviare",
+            program.display()
+        );
+        Ok(())
+    }
+
     pub fn spawn(launch: &Launch, env: &KitEnv, dir: &Path) -> Result<Spawned> {
+        ready(launch, dir)?;
         let pair = native_pty_system().openpty(SIZE).context("openpty")?;
         let mut cmd = CommandBuilder::new(&launch.program);
         cmd.args(&launch.args);
@@ -548,9 +625,14 @@ mod unix {
         // group when the session lets it go, as for the app's other jobs.
         let job = Job::new()?;
         let leader: &dyn Child = &*child;
-        if let Some(std_child) = leader.downcast_ref::<std::process::Child>() {
-            job.assign(std_child)?;
-        }
+        let Some(std_child) = leader.downcast_ref::<std::process::Child>() else {
+            // Never a session outside the job: its group would outlive it.
+            let mut child = child;
+            let _ = child.kill();
+            let _ = child.wait();
+            anyhow::bail!("pty child is not a std::process::Child");
+        };
+        job.assign(std_child)?;
         let reader = pair.master.try_clone_reader().context("pty reader")?;
         let mut writer = pair.master.take_writer().context("pty writer")?;
         let (tx, rx) = channel::<Vec<u8>>();
@@ -612,10 +694,26 @@ mod unix {
             }
         }
 
-        fn kill(&self) {
-            if let Some(pid) = self.pid {
-                crate::os::sessions::stop(&[pid]);
-            }
+        fn left(&self, leader_running: bool) -> Vec<u32> {
+            let Some(leader) = self.pid else {
+                return Vec::new();
+            };
+            // Zombies are not listed (no program path): a job that ended
+            // but was not reaped yet does not hold the session up.
+            let procs: Vec<(u32, u32)> = crate::os::processes::all()
+                .iter()
+                .filter_map(|p| {
+                    let pid = libc::pid_t::try_from(p.pid).ok()?;
+                    // SAFETY: only reads the session id; -1 when it is gone.
+                    let sid = unsafe { libc::getsid(pid) };
+                    Some((p.pid, u32::try_from(sid).ok()?))
+                })
+                .collect();
+            super::in_session(&procs, leader, leader_running)
+        }
+
+        fn kill(&self, pids: &[u32]) {
+            crate::os::sessions::stop(pids);
         }
 
         fn release(&self) {
