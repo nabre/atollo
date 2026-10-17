@@ -25,6 +25,39 @@ fn commands() {
     }
 }
 
+/// Both separators on every system, and on Windows the same name as
+/// `Path::file_name` ("Windows invariato").
+#[test]
+fn file_name_reads_windows_and_unix_paths() {
+    let cases = [
+        (r"C:\kit\node.exe", Some("node.exe")),
+        ("/opt/kit/bin/node", Some("node")),
+        (r"dir\", Some("dir")),
+        ("dir//", Some("dir")),
+        ("C:node.exe", Some("node.exe")),
+        (r"a\.\b\.", Some("b")),
+        (r"a\..", None),
+        ("..", None),
+        ("C:", None),
+        ("", None),
+        ("npm", Some("npm")),
+    ];
+    for (path, want) in cases {
+        assert_eq!(file_name(path).as_deref(), want, "{path}");
+        #[cfg(windows)]
+        assert_eq!(
+            std::path::Path::new(path)
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .as_deref(),
+            want,
+            "Path::file_name of {path}"
+        );
+    }
+    assert_eq!(component_of(r"dir\npm\"), Some("node"));
+    assert_eq!(component_of("C:python.exe"), Some("python"));
+}
+
 #[test]
 fn every_id_is_in_the_catalog() {
     for program in [
