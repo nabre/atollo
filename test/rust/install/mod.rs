@@ -72,6 +72,10 @@ fn find_file_is_case_insensitive_and_recursive() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "Windows keys (node.exe, java.exe) and backslash paths"
+)]
 fn check_key_wants_every_part_of_the_folder() {
     let tmp = TempDir::new("checkkey");
     let server = Catalog::get().find("vscodium-server").unwrap();

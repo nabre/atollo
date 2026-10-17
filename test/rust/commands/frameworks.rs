@@ -5,6 +5,7 @@ use std::path::Path;
 
 /// As `merge_into`, by copy: the project's files stay, the source too.
 #[test]
+#[cfg_attr(not(windows), ignore = "files created with backslash paths")]
 fn merge_copy_keeps_what_the_project_has() {
     let tmp = TempDir::new("mergecopy");
     let (made, dir) = (tmp.0.join("made"), tmp.0.join("app"));

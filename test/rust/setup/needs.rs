@@ -2,6 +2,10 @@ use super::*;
 use crate::kit::{tests::TempDir, Arch};
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "program paths with backslashes are split by the Windows Path"
+)]
 fn commands() {
     let ids = |c: &str| of_command(c).into_iter().collect::<Vec<_>>();
     assert_eq!(ids("npm run dev -- --port 7100"), ["node"]);

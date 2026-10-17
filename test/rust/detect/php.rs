@@ -2,6 +2,10 @@ use crate::detect::tests::{ids, project};
 use crate::detect::{detect, Kind};
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "expects the cmd.exe form of the php -S command"
+)]
 fn laravel_and_plain() {
     let l = project("php-laravel", &[("composer.json", "{}"), ("artisan", "")]);
     let p = detect(&l.0, "it");
@@ -64,6 +68,10 @@ fn laravel_and_plain() {
 /// a project's own `router.php` runs after it, its path given relative to
 /// the document root (SEC-V3-02, D-97).
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "expects the cmd.exe form of the php -S command"
+)]
 fn php_server_router() {
     let own = project(
         "php-router",
