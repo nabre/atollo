@@ -85,9 +85,14 @@ fn has_backslash(literal: &str) -> bool {
 }
 
 /// (line, literal) of each `.join(`/`.push(` whose first argument is a
-/// string literal with a backslash. Comment lines are skipped.
+/// string literal with a backslash, or a `format!` of one (`&` or not),
+/// and of each `Path::new(`/`PathBuf::from(` of such a literal. Comment
+/// lines are skipped.
 fn backslash_joins(text: &str) -> Vec<(usize, String)> {
-    let re = Regex::new(r##"\.(?:join|push)\(\s*(r#*"[^"]*"#*|"(?:[^"\\]|\\.)*")"##).unwrap();
+    let re = Regex::new(
+        r##"(?:\.(?:join|push)\(\s*&?(?:format!\(\s*)?|\b(?:Path::new|PathBuf::from)\(\s*)(r#*"[^"]*"#*|"(?:[^"\\]|\\.)*")"##,
+    )
+    .unwrap();
     // Comment lines blanked, so offsets (and line numbers) stay the same.
     let code: String = text
         .split_inclusive('\n')
@@ -121,10 +126,16 @@ fn the_scanner_finds_what_it_should() {
         "let ok = d.join(\"x\").join(\"y\");\n",
         "let s = v.join(\"\\n\");\n",
         "let q = v.push(\"say \\\"hi\\\"\");\n",
+        "let f = d.join(format!(r\"{x}\\y\"));\n",
+        "let g = d.join(&format!(\"{x}\\\\y\"));\n",
+        "let h = Path::new(r\"a\\b\");\n",
+        "let i = PathBuf::from(\"a\\\\b\");\n",
+        "let j = d.join(format!(\"{x}/y\"));\n",
+        "let k = Path::new(\"a/b\");\n",
     );
     let found = backslash_joins(text);
     let lines: Vec<usize> = found.iter().map(|(l, _)| *l).collect();
-    assert_eq!(lines, [1, 2, 5, 7], "{found:?}");
+    assert_eq!(lines, [1, 2, 5, 7, 12, 13, 14, 15], "{found:?}");
 }
 
 /// The last `n` names of `path`, outermost first.

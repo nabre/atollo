@@ -38,12 +38,25 @@ pub(crate) fn venv_python(os: Os, venv: &str) -> String {
     }
 }
 
+/// `dir` holds the virtual environment `venv` for `os`. On Windows its
+/// `Scripts\python.exe` is a file. On macOS and Linux `bin/python` is a
+/// link by default (`python -> python3 -> /usr/bin/python3`, made so by
+/// `venv`, `virtualenv` and `uv`), and the safe checks never accept a
+/// link: `bin` must be a real folder inside the project and `python` a
+/// name in it, the link itself is not followed.
+pub(crate) fn has_venv(dir: &Path, os: Os, venv: &str) -> bool {
+    if os.is_windows() {
+        return exists(dir, &venv_python(os, venv));
+    }
+    let bin = dir.join(venv).join("bin");
+    crate::os::safe_path::is_dir(dir, &bin) && std::fs::symlink_metadata(bin.join("python")).is_ok()
+}
+
 /// The project's Python: its virtual environment, uv, or the kit's.
 fn interpreter(dir: &Path) -> (String, bool) {
     for v in [".venv", "venv", "env"] {
-        let python = venv_python(Os::current(), v);
-        if exists(dir, &python) {
-            return (python, true);
+        if has_venv(dir, Os::current(), v) {
+            return (venv_python(Os::current(), v), true);
         }
     }
     if exists(dir, "uv.lock") {
