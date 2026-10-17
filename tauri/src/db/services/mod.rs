@@ -505,13 +505,13 @@ impl Services {
         if !SERVERS.contains(&id) {
             bail!("unknown server {id}");
         }
+        // The version named first: one uninstalled is told as such
+        // (`LineMissing`), the interface offers to install it.
+        if let Some(l) = line {
+            check_line(&self.kit, id, l)?;
+        }
         if !installed(&self.kit, id) {
             bail!("{id} is not installed");
-        }
-        if let Some(l) = line {
-            if !server_lines(&self.kit, id).iter().any(|x| x == l) {
-                bail!("{id} {l} is not installed");
-            }
         }
         let line = self.resolve(id, line);
         let key = Self::key(id, line.as_deref());
@@ -805,9 +805,7 @@ impl Services {
             bail!("unknown server {id}");
         }
         if let Some(l) = line {
-            if !server_lines(&self.kit, id).iter().any(|x| x == l) {
-                bail!("{id} {l} is not installed");
-            }
+            check_line(&self.kit, id, l)?;
         }
         // Any version, not only the one the server runs: another one on its
         // own port would become the server while every caller takes the
@@ -910,6 +908,34 @@ impl crate::projects::ProjectDatabases for ProjectDrops<'_> {
         }
         Ok(())
     }
+}
+
+/// A version of a server that is not installed: chosen for a project's
+/// database and then uninstalled, or asked by name.
+#[derive(Debug)]
+pub struct LineMissing {
+    pub id: String,
+    pub line: String,
+}
+
+impl std::fmt::Display for LineMissing {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} is not installed", self.id, self.line)
+    }
+}
+
+impl std::error::Error for LineMissing {}
+
+/// [`LineMissing`] unless version `line` of `id` is installed.
+fn check_line(kit: &Kit, id: &str, line: &str) -> Result<()> {
+    if server_lines(kit, id).iter().any(|x| x == line) {
+        return Ok(());
+    }
+    Err(LineMissing {
+        id: id.to_owned(),
+        line: line.to_owned(),
+    }
+    .into())
 }
 
 /// The port of a server is taken by another program.

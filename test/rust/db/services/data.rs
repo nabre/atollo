@@ -240,6 +240,21 @@ fn autostart_lines_follow_the_projects() {
     assert_eq!(lines_in_use(&kit, "mariadb"), ["10.6"], "9.0 not installed");
     assert!(lines_in_use(&kit, "mongodb").is_empty());
 
+    // A version uninstalled is told as such, for the interface to offer it.
+    let s = Services::new(kit.clone());
+    let missing = |e: anyhow::Error| {
+        e.downcast_ref::<crate::db::services::LineMissing>()
+            .map(|m| (m.id.clone(), m.line.clone()))
+    };
+    let err = s
+        .start_for("wiki", "mariadb", &KitEnv::default())
+        .unwrap_err();
+    assert_eq!(missing(err), Some(("mariadb".into(), "9.0".into())));
+    let err = s
+        .project_db_line("wiki", "mariadb", Some("9.1"), &KitEnv::default())
+        .unwrap_err();
+    assert_eq!(missing(err), Some(("mariadb".into(), "9.1".into())));
+
     // `MYSQL_HOME` of a project on another version: that version's login,
     // once its start wrote it; none on the server's version.
     assert_eq!(project_mysql_home(&kit, "shop"), None, "not started yet");

@@ -766,5 +766,9 @@
   "Versione del server": "Version du serveur",
   "Ogni versione ha la sua porta e i suoi dati: cambiandola, database e utente si creano anche sulla nuova, vuoti (i dati si portano con una copia).": "Chaque version a son port et ses données : en la changeant, la base et l'utilisateur sont aussi créés sur la nouvelle, vides (les données se déplacent avec une copie).",
   "Ogni versione ha la sua porta e i suoi dati.": "Chaque version a son port et ses données.",
-  "Quella del server ({0})": "Celle du serveur ({0})"
+  "Quella del server ({0})": "Celle du serveur ({0})",
+  "{0} {1} non è installata: il database del progetto è su questa versione, che non si avvia. Installala, o scegli un'altra versione (database e utente si creano anche lì, vuoti).": "{0} {1} n'est pas installée : la base de données du projet est sur cette version, qui ne démarre pas. Installez-la, ou choisissez une autre version (base de données et utilisateur y sont créés aussi, vides).",
+  "{0} {1} non è installata: installala, o scegli un'altra versione per il database del progetto.": "{0} {1} n'est pas installée : installez-la, ou choisissez une autre version pour la base de données du projet.",
+  "Installa {0} {1}": "Installer {0} {1}",
+  "{0} (non installata)": "{0} (non installée)"
 }

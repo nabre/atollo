@@ -44,6 +44,11 @@
     "fr": "Le port {0} est déjà utilisé par un autre programme : changez-le ci-dessous.",
     "de": "Port {0} wird bereits von einem anderen Programm verwendet: Ändere ihn unten."
   },
+  "{0} {1} non è installata: installala, o scegli un'altra versione nella pagina del progetto.": {
+    "en": "{0} {1} is not installed: install it, or choose another version on the project's page.",
+    "fr": "{0} {1} n'est pas installée : installez-la, ou choisissez une autre version sur la page du projet.",
+    "de": "{0} {1} ist nicht installiert: Installiere sie oder wähle auf der Projektseite eine andere Version."
+  },
   "{0} {1} non è installato nel kit: installa questa versione o scegline un'altra.": {
     "en": "{0} {1} is not installed in the kit: install this version or choose another one.",
     "fr": "{0} {1} n'est pas installé dans le kit : installez cette version ou choisissez-en une autre.",

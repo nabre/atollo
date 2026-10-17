@@ -6,7 +6,7 @@ use std::time::Duration;
 use anyhow::{anyhow, bail, Context, Result};
 
 use super::tools::run_with_input;
-use super::{auth, bin, bin_at, line_port, project_line, server_lines, Services, SERVERS};
+use super::{auth, bin, bin_at, check_line, line_port, project_line, Services, SERVERS};
 use crate::env::KitEnv;
 use crate::os::jobs;
 
@@ -138,9 +138,7 @@ impl Services {
             bail!("unknown server {engine}");
         }
         if let Some(l) = line {
-            if !server_lines(&self.kit, engine).iter().any(|x| x == l) {
-                bail!("{engine} {l} is not installed");
-            }
+            check_line(&self.kit, engine, l)?;
         }
         let previous = auth::project_line(&self.kit, project, engine)?;
         let has_db = auth::try_project_password(&self.kit, project, engine)?.is_some();

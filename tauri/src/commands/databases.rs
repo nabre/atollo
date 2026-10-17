@@ -117,7 +117,7 @@ pub async fn project_db_create<R: Runtime>(
         let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
         services
             .start_for(&project, &engine, &env)
-            .or_fail_chain("database")?;
+            .map_err(|e| start_error(lang, &e))?;
         services
             .project_db_create(&project, &engine)
             .or_fail_chain("database")
@@ -203,7 +203,7 @@ pub async fn project_db_export<R: Runtime>(
         let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
         services
             .start_for(&project, &engine, &env)
-            .or_fail_chain("database")?;
+            .map_err(|e| start_error(lang, &e))?;
         let file = services.export(&project, &engine).or_fail_chain("export")?;
         Ok(file
             .file_name()
@@ -236,7 +236,7 @@ pub async fn project_db_restore<R: Runtime>(
         let env = ensure(&app, &task, &kit, lang, &[engine])?;
         services
             .start_for(&project, engine, &env)
-            .or_fail_chain("database")?;
+            .map_err(|e| start_error(lang, &e))?;
         services.restore(&project, &file).or_fail_chain("restore")
     })
     .await
