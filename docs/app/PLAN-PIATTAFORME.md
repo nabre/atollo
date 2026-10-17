@@ -1,6 +1,6 @@
 # Dev-Kit App: piano per macOS, Linux e Windows ARM64
 
-Stato: **proposta** (17/10/2026), da approvare. Le domande del §3 sono aperte: ogni pacchetto che ne dipende lo dice.
+Stato: **approvato** (17/10/2026), domande del §3 chiuse dall'utente. Revisione 2: MySQL al posto di MariaDB su tutti i sistemi (Q-4), sviluppo da Windows (§2.1), integrazione locale senza push. In esecuzione sul branch `feature/platforms`.
 
 Base: branch `fix/v3-swarm`, commit `5c11a7a`. I riferimenti `file:riga` sono relativi a `tauri/src/` e presi dal codice di `6c26f88`: dopo i commit successivi possono essersi spostati di poche righe. Nel working tree c'è un lavoro in corso, D-107 (phpMyAdmin al posto di Adminer): questo piano parla già di phpMyAdmin.
 
@@ -104,20 +104,22 @@ Regole:
 - **Preparare da Windows un kit per un altro sistema** è il primo caso reale degli utenti di oggi: chiavetta preparata su Windows, poi usata su un Mac o su Linux. `prepare --target <id>` e `router/bootstrap.rs` esistono già. Ogni pacchetto di componenti lo prova (§6.5): preparazione da Windows su exFAT, poi primo avvio sull'altro sistema, con il completamento dei `.reinstall`.
 - **Gli agenti dello sciame lavorano su Windows.** Ognuno esegue in locale i test Windows e, se tocca codice Unix, `scripts/test-linux.sh` in WSL2. Il risultato su macOS lo dà la CI della pull request d'integrazione, e il coordinatore non fonde un'ondata con la CI rossa.
 
-## 3. Domande per l'utente
+## 3. Scelte dell'utente (17/10/2026)
 
-Ogni domanda ha una proposta. I pacchetti che dipendono da una domanda aperta partono con la proposta solo dopo il sì dell'utente.
-
-| Id | Domanda | Proposta | Scartate | Pacchetti |
+| Id | Domanda | Scelta | Scartate | Pacchetti |
 | --- | --- | --- | --- | --- |
-| Q-1 | Linux ARM64 è un target di primo livello (CI, rilasci)? | Sì, con i buchi dichiarati al §1.4 | «best effort» senza CI | WP-0.6, WP-5.4 |
-| Q-2 | Firma Apple Developer ID (99 $ l'anno) e notarizzazione? | Sì per i rilasci; fino ad allora build non firmata con istruzioni (`xattr -dr com.apple.quarantine`) | solo non firmata | WP-5.2 |
-| Q-3 | Server web predefinito? | **Caddy** su tutti i target; Apache resta su Windows per i progetti con `.htaccess`; Nginx tolto dopo la migrazione | Nginx su Unix (nessuna build ufficiale); FrankenPHP predefinito | WP-3.1…WP-3.5 |
-| Q-4 | Database MySQL-compatibile su macOS e Linux ARM64? | **MySQL** come secondo motore, predefinito per i kit nuovi, unico dove MariaDB non c'è; MariaDB resta per chi ha dati; «Migra a MySQL» via dump | MySQL ovunque con migrazione forzata; nessun database lì | WP-3.6…WP-3.9 |
-| Q-5 | Fonte dei binari su Unix? | Build rilocabili dove ci sono (dugite-native, static-php-cli, zig, Caddy, MySQL); conda-forge per Ruby, R, MongoDB su Linux, SQLite su Linux ARM64 | tutto da conda-forge; Homebrew (percorsi fissi) | Fase 2, Fase 3 |
-| Q-6 | Terminale e agenti su macOS e Linux? | Terminale nell'app (PTY + xterm.js) su Unix; su Windows resta la console classica (D-57, D-95) | Terminal.app / `x-terminal-emulator` come unico modo (dipende dal desktop, fuori dal controllo del kit) | WP-1.2 |
-| Q-7 | Formato su Linux? | AppImage, più un tar.gz con l'eseguibile per chi non ha FUSE | solo tar.gz; Flatpak (non portabile) | WP-5.3 |
-| Q-8 | PostgreSQL come terzo database? | Dopo questo piano (§10), sopra `DbEngine` | ora | — |
+| Q-1 | Linux ARM64 è un target di primo livello (CI, rilasci)? | **Sì**, con i buchi dichiarati al §1.4 | «best effort» senza CI | WP-0.6, WP-5.3, WP-5.5 |
+| Q-2 | Firma Apple Developer ID e notarizzazione? | **Non ora**: firma ad hoc e istruzioni (`xattr -dr com.apple.quarantine`); la pipeline di firma si prepara spenta | account Developer ID subito | WP-5.2 |
+| Q-3 | Server web predefinito? | **Caddy** su tutti i target; Apache resta su Windows per i progetti con `.htaccess`; Nginx tolto dopo la migrazione | Caddy accanto a Nginx; Nginx di conda-forge su Unix | WP-3.1…WP-3.5 |
+| Q-4 | Database MySQL-compatibile? | **MySQL ovunque**: sostituisce MariaDB su tutti i sistemi, con migrazione automatica dei dati via dump (§4.3) | MySQL accanto a MariaDB; nessun database su macOS e Linux ARM64 | WP-3.6…WP-3.9 |
+| Q-5 | Fonte dei binari su Unix? | **Build rilocabili** dove ci sono (dugite-native, static-php-cli, zig, Caddy, MySQL); conda-forge per Ruby, R, MongoDB su Linux, SQLite su Linux ARM64 | tutto da conda-forge | Fase 2, Fase 3 |
+| Q-6 | Terminale e agenti su macOS e Linux? | **Terminale nell'app** (PTY + xterm.js) su Unix; su Windows resta la console classica (D-57, D-95) | Terminal.app / `x-terminal-emulator` | WP-1.2 |
+| Q-7 | Formato su Linux? | AppImage, più un tar.gz con l'eseguibile per chi non ha FUSE (proposta, nessuna obiezione) | solo tar.gz; Flatpak | WP-5.3 |
+| Q-8 | PostgreSQL come terzo database? | Dopo questo piano (§10) | ora | — |
+| Q-9 | Hardware per le prove reali | Mac Apple Silicon, Mac Intel, PC o VM Linux con desktop, PC Windows ARM64: tutti disponibili all'utente | — | WP-1.9, §6 |
+| Q-10 | Integrazione | Branch locale `feature/platforms` da `fix/v3-swarm`, un worktree per agente, merge dopo revisione e test, **niente push** finché l'utente non lo chiede | push e PR per ondata; lavoro diretto su `fix/v3-swarm` | §7 |
+
+Conseguenza di Q-10: senza push la CI di GitHub non gira. I test su macOS e i job ARM64 di WP-0.6 si scrivono ma si eseguono solo quando l'utente fa push; fino ad allora valgono i test Windows in locale, WSL2 per Linux x64 (§2.1) e le prove sull'hardware dell'utente ai controlli (WP-1.9, §6).
 
 ## 4. Disegno
 
@@ -173,7 +175,7 @@ impl DbEngine {
     pub const ALL: [DbEngine; 3];
     pub fn id(self) -> &'static str;               // "mariadb" | "mysql" | "mongodb"
     pub fn component(self) -> &'static str;        // catalog id
-    pub fn default_port(self) -> u16;              // 3306 | 3307 | 27017
+    pub fn default_port(self) -> u16;              // 3306 | 3306 | 27017
     pub fn server_bin(self) -> &'static str;       // mariadbd | mysqld | mongod
     pub fn client_bin(self) -> &'static str;       // mariadb | mysql | mongosh
     pub fn dump_bin(self) -> &'static str;         // mariadb-dump | mysqldump | mongodump
@@ -183,8 +185,10 @@ impl DbEngine {
 }
 ```
 
-- `"mariadb"` e `"mongodb"` restano gli id salvati (`db.json`, `secrets.json` `mariadb_root`, `servers.json`): nessuna migrazione per chi non cambia motore.
-- MySQL ha la sua porta predefinita (3307) per poter girare accanto a MariaDB.
+- **MySQL al posto di MariaDB (Q-4).** `MariaDb` resta nell'enum solo per la migrazione (dump dei dati esistenti): non si propone, non si installa su kit nuovi, e dopo la migrazione va in `RETIRED` (`versions/disk.rs`) come Adminer (D-107). Il servizio SQL del kit è MySQL.
+- **Porte.** MySQL eredita le porte delle linee di MariaDB che sostituisce (3306 per la predefinita), così `DB_PORT` nelle `.env` dei progetti resta valido. Durante la migrazione MySQL gira su una porta temporanea e passa alla porta di MariaDB solo a migrazione finita.
+- **Id salvati.** `mariadb_root` di `secrets.json` diventa `mysql_root`; in `db.json` le voci `"mariadb"` diventano `"mysql"`, con le stesse password dei progetti: le `.env` non cambiano. Copia `pre-mysql` dei file prima di riscriverli.
+- **Migrazione automatica (WP-3.9).** Al primo avvio dopo l'aggiornamento, se ci sono dati MariaDB: avviso nel pannello Attività, poi per ogni linea MariaDB con dati: avvio, `mariadb-dump --all-databases --routines --events --triggers` (utenti esclusi), filtro delle parti solo MariaDB, inizializzazione di MySQL, ripristino, utenti e password ricreati da `db.json` e `secrets.json`, controllo (stesso elenco di database e tabelle, conteggio delle righe). La cartella di MariaDB resta come `data/db/mariadb.pre-mysql/` finché l'utente non la elimina dalla pagina Database. Se un passo fallisce, MariaDB resta il servizio attivo per quella linea e l'errore si mostra con il dump salvato.
 - **Inizializzazione MySQL**: `mysqld --no-defaults --initialize-insecure --basedir=<line> --datadir=<data> --lower_case_table_names=1`, poi `my.cnf` scritto dal kit (porta, `bind-address=127.0.0.1`, `socket` e `pid-file` dentro `data/db/mysql/<line>/`, `mysqlx=OFF`, `lower_case_table_names=1`). `lower_case_table_names=1` su tutti i sistemi: MySQL 8 non lo lascia cambiare dopo l'inizializzazione, e con lo stesso valore la cartella dati segue il kit da un sistema all'altro.
 - **Accesso dal terminale (D-74).** MySQL non legge `%MYSQL_HOME%\my.ini` come MariaDB (da verificare in T3.7.1). Il kit passa `--defaults-extra-file=<data/app/db/mysql.cnf>` tramite i lanciatori `mysql`/`mysqldump` di `data/kit/bin` e non si appoggia a `MYSQL_HOME` per MySQL.
 - **Utenti.** `CREATE USER … IDENTIFIED WITH caching_sha2_password BY …` (predefinito di 8.4 e 9.x; `mysql_native_password` non esiste più in 9.x). Gli utenti del progetto si connettono via TCP su 127.0.0.1: si crea `'<u>'@'localhost'` e `'<u>'@'127.0.0.1'`.
@@ -567,7 +571,7 @@ Fine fase: un progetto Laravel con database parte su macOS e Linux come su Windo
 
 #### WP-3.6 `DbEngine` senza cambiare comportamento · M
 
-- **Dipende da.** Q-4.
+- **Dipende da.** Q-4 (deciso: MySQL ovunque). È il primo passo comunque: separa il motore dal resto prima di cambiarlo.
 - **File.** `db/mod.rs` (enum), `db/services/*.rs`, `db/auth.rs`, `db/browse.rs`, `db/phpmyadmin.rs`, `commands/databases.rs`, `router/bins.rs`, `env.rs`, `detect/*`, `projects/frameworks/mod.rs`, `projects/state.rs`, `setup/needs.rs`.
 - **Compiti.**
   - T3.6.1 Enum `DbEngine` (§4.3) con `MariaDb` e `MongoDb`; `SERVERS` (`db/services/mod.rs:61`) diventa `DbEngine::ALL`.
@@ -602,7 +606,8 @@ Fine fase: un progetto Laravel con database parte su macOS e Linux come su Windo
   - T3.8.5 Copie: `mysqldump --single-transaction --routines --events`; ripristino come utente del progetto (come MariaDB, `3071169`).
   - T3.8.6 Arresto: `mysqladmin shutdown`, poi `SIGTERM`/`TerminateProcess`.
   - T3.8.7 phpMyAdmin e l'explorer dei database con MySQL (stessa porta scelta per il motore).
-- **Accettazione.** Su macOS e Linux ARM64: database di un progetto Laravel, migrazioni, copia e ripristino, phpMyAdmin; stessa cartella dati letta su Windows e Linux con la stessa linea.
+  - T3.8.8 Il servizio SQL del kit diventa MySQL ovunque: avvio automatico, pagina Database, pool, azioni dei progetti e `project_mysql_home` puntano a MySQL; MariaDB solo per la migrazione (WP-3.9).
+- **Accettazione.** Su tutti i sistemi: database di un progetto Laravel, migrazioni, copia e ripristino, phpMyAdmin; stessa cartella dati letta su Windows e Linux con la stessa linea.
 - **Test.** Argomenti e `my.cnf` attesi; SQL di utenti e grant; `real_mysql_*` con `DEVKIT_TEST_KIT` (come `real_phpmyadmin_on_running_mariadb`).
 
 #### WP-3.9 MySQL nell'interfaccia, rilevamento, migrazione · M
@@ -610,13 +615,14 @@ Fine fase: un progetto Laravel con database parte su macOS e Linux come su Windo
 - **Dipende da.** WP-3.8.
 - **File.** `ui/src/databases/page.tsx`, `ui/src/api/databases.ts`, `ui/src/api/projects.ts`, `ui/src/api/frameworks.ts`, `ui/src/frameworks/fields.tsx`, `ui/src/guide/model.ts`, `ui/src/logos.tsx`, locali; `detect/mod.rs:465-514,709-711`, `detect/container.rs:80-82`, `detect/php.rs:9`, `tauri/catalog/frameworks.json`, `tauri/catalog/extensions.json:69-70`, `tauri/catalog/relations.json:62-63`; `db/migrate_engine.rs` (nuovo).
 - **Compiti.**
-  - T3.9.1 Tipi `"mariadb" | "mysql" | "mongodb"`; controlli `s.id === "mariadb"` diventano «motore SQL».
-  - T3.9.2 Motore predefinito: MySQL per i kit nuovi e dove MariaDB non c'è; MariaDB per i kit con dati MariaDB.
-  - T3.9.3 Rilevamento: immagine `mysql` di docker compose → MySQL con la sua linea; `mariadb` → MariaDB.
-  - T3.9.4 Framework: opzione «MySQL» accanto a «MariaDB» in `frameworks.json` (`:229,269,312,697-705`).
-  - T3.9.5 «Migra a MySQL»: dump di ogni database del progetto con `mariadb-dump`, filtro delle parti solo MariaDB (`/*M!`, sequenze, collazioni `uca1400_*` → `utf8mb4_0900_ai_ci`), ripristino in MySQL, utenti e password ricreati da `db.json`; MariaDB non toccato finché l'utente non lo rimuove.
-- **Accettazione.** Progetto WordPress su MariaDB migrato a MySQL e funzionante; nessun dato perso nell'originale.
-- **Test.** Filtro del dump su esempi; Vitest della pagina con tre motori.
+  - T3.9.1 Tipi `"mysql" | "mongodb"` nell'interfaccia (`"mariadb"` solo nello stato della migrazione); controlli `s.id === "mariadb"` diventano `"mysql"`; testi «MariaDB è compatibile con MySQL» tolti.
+  - T3.9.2 Migrazione automatica (§4.3) in `db/migrate_engine.rs`: ripetibile, ripresa dopo un'interruzione, una linea alla volta, avanzamento nel pannello Attività; `db.json`, `secrets.json`, `servers.json` riscritti per ultimi con copia `pre-mysql`.
+  - T3.9.3 Filtro del dump: commenti `/*M!…*/`, `CREATE SEQUENCE` (errore con il nome se usate: MySQL non le ha), collazioni `uca1400_*` → `utf8mb4_0900_ai_ci`, `utf8mb3` → `utf8mb4`, opzioni di tabella solo MariaDB (`PAGE_CHECKSUM`, `TRANSACTIONAL`).
+  - T3.9.4 Rilevamento: immagini `mysql` e `mariadb` di docker compose → MySQL (`detect/container.rs:80-82`); `.env` con `DB_CONNECTION=mariadb` → MySQL con un avviso (Laravel lo accetta come `mysql`).
+  - T3.9.5 Framework: «MySQL» al posto di «MySQL (MariaDB)» in `frameworks.json` (`:229,269,312,697-705`); estensioni (`extensions.json:69-70`, SQLTools `tools:["mysql"]`) e relazioni (`relations.json:62-63`, `image: mysql:`).
+  - T3.9.6 Pagina Database: «Dati MariaDB conservati (N MB): Elimina» finché c'è `mariadb.pre-mysql`; MariaDB in `RETIRED` dopo la migrazione riuscita di tutte le linee.
+- **Accettazione.** Kit con MariaDB 11.4 e 12.3 e progetti WordPress e Laravel: dopo l'aggiornamento i siti funzionano con MySQL sulle stesse porte, con gli stessi utenti e password; i dati MariaDB restano finché l'utente non li elimina; un'interruzione a metà riprende al riavvio.
+- **Test.** Filtro del dump su esempi (sequenze, `uca1400`, `/*M!`); riscrittura di `db.json`/`secrets.json` di esempio; ripresa da ogni passo simulato; Vitest della pagina con MySQL e con i dati MariaDB conservati; `real_mariadb_to_mysql` con `DEVKIT_TEST_KIT`.
 
 ---
 
@@ -818,7 +824,7 @@ Numeri dopo D-107 (phpMyAdmin, in corso):
 
 - **D-108** Disponibilità per target nel catalogo (`unavailable`, `removeUnix`, `sha256ByTarget` generico, Rosetta), niente ripieghi silenziosi. WP-0.4.
 - **D-109** Terminale nell'app su macOS e Linux (PTY), console classica su Windows. Q-6, WP-1.2.
-- **D-110** MySQL come secondo motore (`DbEngine`), con `lower_case_table_names=1` e l'accesso con `--defaults-extra-file`. Q-4, WP-3.6…WP-3.9.
+- **D-110** MySQL al posto di MariaDB su tutti i sistemi (`DbEngine`), con `lower_case_table_names=1`, l'accesso con `--defaults-extra-file`, le porte ereditate e la migrazione automatica via dump. Rivede D-73. Q-4, WP-3.6…WP-3.9.
 - **D-111** Caddy come server web predefinito; Apache solo Windows; Nginx tolto. Q-3, WP-3.1…WP-3.5.
 - **D-112** Fonti per Unix: dugite-native, static-php-cli, zig cc, conda-forge (Ruby, MongoDB su Linux, SQLite su Linux ARM64). Q-5, Fase 2, WP-3.2.
 - **D-113** Pacchetto per macOS e Linux (`Dev-Kit.app`, AppImage, radice del kit, aggiornamento, firma). Q-2, Q-7, Fase 5.
