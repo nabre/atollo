@@ -1119,6 +1119,10 @@ impl WebServers {
         input.id = id.clone();
         input.name = name;
 
+        // The ports of pools gone since (a project removed, another line)
+        // leave `servers.json` first: never "already taken" by a pool that
+        // does not exist any more.
+        self.scan(lang, true);
         let _store = self
             .store_lock
             .lock()
@@ -1170,6 +1174,9 @@ impl WebServers {
     /// Starts the profiles marked «Avvia con Atollo» (when the app opens),
     /// as if from the "Server Web" page; a failure only goes to the log.
     pub fn autostart(&self, env: &KitEnv, lang: &str) {
+        // A fresh list when the app opens: the ports of pools gone since
+        // the last session leave `servers.json`.
+        self.list(lang, true);
         let ids: Vec<String> = load_store(&self.kit)
             .profiles
             .into_iter()
