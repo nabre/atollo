@@ -91,6 +91,9 @@ fn php_server_router() {
     // Same never-serve set as Apache and Nginx (SEC-V3-01), local hosts only
     // (SEC-V3-03).
     assert!(router.contains("php[3-8]|phtml|phar") && router.contains("421"));
+    // The path is cut at `?` by hand, not read with `parse_url` (`//.env`),
+    // and short 8.3 names (`ENV~1`) are refused.
+    assert!(!router.contains("parse_url(") && router.contains(r"'/~\d/'"));
     assert!(router.trim_end().ends_with("return false;"));
 }
 
