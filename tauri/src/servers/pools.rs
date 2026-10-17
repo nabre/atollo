@@ -134,6 +134,12 @@ pub(super) fn vhost_file(site: &AttachedSite) -> String {
     format!("{}.conf", site.server_name)
 }
 
+/// `data\servers\<id>` as the page shows it, with the system's separator.
+fn conf_dir_text(id: &str) -> String {
+    let sep = std::path::MAIN_SEPARATOR;
+    format!("data{sep}servers{sep}{id}")
+}
+
 /// The id of the automatic pool of (engine, server line, PHP line), SC-2:
 /// `apache-2.4_php-7.4`, `nginx-1.27` (no PHP), `apache-default` (no line
 /// installed). It names the lines it runs, so it can be read back
@@ -226,7 +232,7 @@ pub(super) fn auto_pool(
     let id = auto_pool_id(engine, server_line.as_deref(), php_line.as_deref());
     WebServerPool {
         name: auto_pool_name(engine, server_line.as_deref(), php_line.as_deref()),
-        conf_dir: format!(r"data\servers\{id}"),
+        conf_dir: conf_dir_text(&id),
         id,
         engine,
         server_line,
@@ -332,7 +338,7 @@ impl WebServers {
                     pid: None,
                     manual: true,
                     sites: Vec::new(),
-                    conf_dir: format!(r"data\servers\{}", p.id),
+                    conf_dir: conf_dir_text(&p.id),
                     orphan: false,
                     profile: Some(p.clone()),
                 },

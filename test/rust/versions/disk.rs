@@ -246,7 +246,7 @@ fn retired_adminer_goes() {
     let tmp = TempDir::new("versions-retired-adminer");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let line = kit.apps().join(r"adminer\6.1");
+    let line = kit.apps().join("adminer").join("6.1");
     fs::create_dir_all(&line).unwrap();
     fs::write(line.join("adminer.php"), "<?php").unwrap();
     fs::create_dir_all(kit.versions_dir()).unwrap();

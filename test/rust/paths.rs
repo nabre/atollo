@@ -51,13 +51,6 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "a program of Windows under %SystemRoot%; not gated yet: it extracts the \
          Visual C++ cabinet, which P6 keeps to Windows",
     ),
-    // Pending: files of other work packages. The owner replaces the join
-    // (`join_rel(ctx.kit.apps(), "tools/vcruntime")`) and removes the line.
-    (
-        "install/web.rs",
-        r#"r"tools\vcruntime""#,
-        "pending (P6): the Visual C++ DLLs are Windows only, but the join must not rely on it",
-    ),
 ];
 
 /// Every `.rs` file under `dir`.
