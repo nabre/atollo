@@ -35,3 +35,99 @@ fn ruby_highest_version_and_build() {
         vec![json!({"prerelease": false, "assets": [{"name": "rubyinstaller-3.1.7-1-x64.7z"}]})];
     assert!(ruby_lines(&old, "x64").is_empty());
 }
+
+/// WP-2.2: conda-forge on macOS and Linux (micromamba, not movable),
+/// RubyInstaller on Windows (unchanged).
+#[test]
+fn ruby_from_conda_off_windows() {
+    for t in Target::ALL {
+        assert_eq!(Ruby.custom(t), !t.is_windows(), "{t}");
+        assert_eq!(Ruby.relocatable(t), t.is_windows(), "{t}");
+    }
+    // The conda-forge subdirs of the four Unix targets (checked on
+    // api.anaconda.org: ruby 4.0.x and 3.4.x on all four).
+    let verified = ["osx-arm64", "osx-64", "linux-64", "linux-aarch64"];
+    for t in Target::ALL.into_iter().filter(|t| !t.is_windows()) {
+        assert!(verified.contains(&t.conda_subdir()), "{t}");
+    }
+}
+
+/// The lines and the version of a line from conda-forge's list (newest
+/// first, as `conda_versions` gives it).
+#[test]
+fn ruby_conda_lines_and_pick() {
+    let versions: Vec<String> = ["4.0.7", "4.0.6", "3.4.8", "3.4.7", "3.3.6"]
+        .iter()
+        .map(|v| (*v).to_owned())
+        .collect();
+    assert_eq!(ruby_conda_lines(&versions), ["4.0", "3.4", "3.3"]);
+    assert_eq!(
+        ruby_conda_pick(&versions, None).map(String::as_str),
+        Some("4.0.7")
+    );
+    assert_eq!(
+        ruby_conda_pick(&versions, Some("3.4")).map(String::as_str),
+        Some("3.4.8")
+    );
+    assert_eq!(ruby_conda_pick(&versions, Some("3.2")), None);
+    assert!(ruby_conda_lines(&[]).is_empty());
+    assert_eq!(ruby_conda_spec("4.0.7"), "ruby=4.0.7");
+    assert_eq!(
+        crate::install::native::micromamba_create_args(Path::new("/kit/ruby/4.0"), &["ruby=4.0.7"])
+            .last()
+            .map(String::as_str),
+        Some("ruby=4.0.7")
+    );
+}
+
+/// T2.2.4: conda-forge's `etc/gemrc` (ruby 4.0.7, linux-64) sends gems
+/// into the environment over `GEM_HOME`: its `gemhome:` goes, the rest
+/// stays.
+#[test]
+fn conda_gemrc_leaves_gem_home_to_the_kit() {
+    let gemrc = "gemhome: /kit/ruby/4.0/share/rubygems\n:update_sources: true\n";
+    assert_eq!(
+        gemrc_without_gemhome(gemrc).as_deref(),
+        Some(":update_sources: true\n")
+    );
+    assert_eq!(gemrc_without_gemhome(":update_sources: true\n"), None);
+    assert_eq!(gemrc_without_gemhome(""), None);
+}
+
+/// T2.2.4: the build tools of conda's `rbconfig.rb` (lines of ruby 4.0.7
+/// for linux-64; the macOS triplet of osx-arm64) under their plain names,
+/// so a native gem builds with the kit's or the system's `cc`.
+#[test]
+fn conda_rbconfig_uses_plain_tool_names() {
+    let text = concat!(
+        "  CONFIG[\"PKG_CONFIG\"] = \"x86_64-conda-linux-gnu-pkg-config\"\n",
+        "  CONFIG[\"CPP\"] = \"x86_64-conda-linux-gnu-cpp\"\n",
+        "  CONFIG[\"STRIP\"] = \"x86_64-conda-linux-gnu-strip -S -x\"\n",
+        "  CONFIG[\"CXX\"] = \"x86_64-conda-linux-gnu-c++\"\n",
+        "  CONFIG[\"CC\"] = \"x86_64-conda-linux-gnu-cc\"\r\n",
+        "  CONFIG[\"CC_VERSION_MESSAGE\"] = \"x86_64-conda-linux-gnu-cc (conda-forge gcc 15.3.0-7)\"\n",
+        "  CONFIG[\"build\"] = \"x86_64-conda-linux-gnu\"\n",
+        "  CONFIG[\"LDSHARED\"] = \"$(CC) -shared\"\n",
+    );
+    let want = concat!(
+        "  CONFIG[\"PKG_CONFIG\"] = \"pkg-config\"\n",
+        "  CONFIG[\"CPP\"] = \"$(CC) -E\"\n",
+        "  CONFIG[\"STRIP\"] = \"strip -S -x\"\n",
+        "  CONFIG[\"CXX\"] = \"c++\"\n",
+        "  CONFIG[\"CC\"] = \"cc\"\r\n",
+        "  CONFIG[\"CC_VERSION_MESSAGE\"] = \"x86_64-conda-linux-gnu-cc (conda-forge gcc 15.3.0-7)\"\n",
+        "  CONFIG[\"build\"] = \"x86_64-conda-linux-gnu\"\n",
+        "  CONFIG[\"LDSHARED\"] = \"$(CC) -shared\"\n",
+    );
+    assert_eq!(rbconfig_with_plain_tools(text).as_deref(), Some(want));
+    assert_eq!(rbconfig_with_plain_tools(want), None);
+    assert_eq!(
+        rbconfig_with_plain_tools("  CONFIG[\"CC\"] = \"arm64-apple-darwin20.0.0-clang\"\n")
+            .as_deref(),
+        Some("  CONFIG[\"CC\"] = \"clang\"\n")
+    );
+    assert_eq!(
+        rbconfig_with_plain_tools("  CONFIG[\"AR\"] = \"aarch64-conda-linux-gnu-ar\"\n").as_deref(),
+        Some("  CONFIG[\"AR\"] = \"ar\"\n")
+    );
+}
