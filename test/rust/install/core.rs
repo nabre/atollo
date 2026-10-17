@@ -118,8 +118,13 @@ fn node_pick_is_the_newest_lts() {
 fn custom_by_target() {
     for t in Target::ALL {
         // Git: an archive everywhere (PortableGit, dugite-native), and it
-        // follows the kit everywhere (WP-2.1).
-        assert!(!Git.custom(t), "git on {t}");
+        // follows the kit everywhere (WP-2.1); off Windows it is staged
+        // where its target cannot run (`git_staged`).
+        assert_eq!(
+            Git.custom(t),
+            !t.is_windows() && !crate::router::target::can_execute_on_host(t),
+            "git on {t}"
+        );
         assert!(Git.relocatable(t), "git on {t}");
         // Archives everywhere.
         assert!(!Python.custom(t), "python on {t}");
@@ -196,6 +201,127 @@ fn unix_gitconfig_gets_the_credential_helper_once() {
     )
     .is_some_and(|t| t.contains("example.com\"]\n\thelper = store\n#")));
     assert!(gitconfig_with_helper("", "cache").is_some_and(|t| t.starts_with("# Atollo")));
+}
+
+/// Review of WP-2.1: dugite-native for macOS or Linux prepared from a
+/// host that cannot run it (Windows above all, plan §6.5) is staged, not
+/// unpacked there; PortableGit and the host's own target install directly.
+#[test]
+fn git_is_staged_where_its_target_cannot_run() {
+    let between = |host: Target, target: Target, rosetta: bool| {
+        git_staged(
+            target,
+            crate::router::target::can_execute_between(host, target, rosetta),
+        )
+    };
+    for host in Target::ALL {
+        for target in Target::ALL {
+            let staged = between(host, target, false);
+            // PortableGit is never staged (the 7z self-extractor unpacks
+            // anywhere); from Windows every Unix Git is.
+            if target.is_windows() {
+                assert!(!staged, "{host} -> {target}: PortableGit");
+            } else if host.is_windows() {
+                assert!(staged, "{host} -> {target}: no links on Windows");
+            }
+            if host == target {
+                assert!(!staged, "{host}: its own target");
+            }
+        }
+    }
+    // Another system or CPU without translation: staged.
+    assert!(between(Target::LINUX_X64, Target::DARWIN_ARM64, false));
+    assert!(between(Target::LINUX_X64, Target::LINUX_ARM64, false));
+    assert!(between(Target::DARWIN_ARM64, Target::DARWIN_X64, false));
+    // With Rosetta 2 an Apple Silicon Mac runs the x64 Git itself.
+    assert!(!between(Target::DARWIN_ARM64, Target::DARWIN_X64, true));
+
+    // `should_stage` on this host, for a kit of every target.
+    let tmp = crate::kit::tests::TempDir::new("git-stage");
+    let git = crate::setup::catalog::Catalog::get().find("git").unwrap();
+    let net = crate::net::Net::new(&Settings::default(), None).unwrap();
+    let env = crate::env::KitEnv::default();
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    for target in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
+        let ctx = Ctx {
+            kit: &kit,
+            net: &net,
+            env: &env,
+            cancel: &cancel,
+        };
+        assert_eq!(
+            crate::router::bootstrap::should_stage(&ctx, &Git, git),
+            Git.custom(target),
+            "{target}"
+        );
+        if cfg!(windows) && !target.is_windows() {
+            assert!(
+                crate::router::bootstrap::should_stage(&ctx, &Git, git),
+                "{target} from Windows"
+            );
+        }
+    }
+}
+
+/// Review of WP-2.1: dugite's links (`git-remote-https` → `git-remote-http`,
+/// `git-upload-pack` → `git`) are lost when its tarball is unpacked on
+/// Windows; the Git left behind answers `--version` but cannot clone, so
+/// `finish` refuses it (`missing_git_links`).
+#[test]
+fn dugite_links_lost_on_windows_are_noticed() {
+    let tmp = crate::kit::tests::TempDir::new("git-links");
+    let archive = tmp.0.join("dugite.tar.gz");
+    {
+        let gz = flate2::write::GzEncoder::new(
+            fs::File::create(&archive).unwrap(),
+            flate2::Compression::fast(),
+        );
+        let mut tar = tar::Builder::new(gz);
+        for name in [
+            "bin/git",
+            "libexec/git-core/git",
+            "libexec/git-core/git-remote-http",
+        ] {
+            let mut header = tar::Header::new_gnu();
+            header.set_size(2);
+            header.set_mode(0o755);
+            header.set_cksum();
+            tar.append_data(&mut header, name, &b"#!"[..]).unwrap();
+        }
+        for (name, to) in [
+            ("libexec/git-core/git-remote-https", "git-remote-http"),
+            ("libexec/git-core/git-upload-pack", "git"),
+            ("libexec/git-core/git-receive-pack", "git"),
+        ] {
+            let mut header = tar::Header::new_gnu();
+            header.set_entry_type(tar::EntryType::Symlink);
+            header.set_size(0);
+            header.set_mode(0o777);
+            tar.append_link(&mut header, name, to).unwrap();
+        }
+        tar.into_inner().unwrap().finish().unwrap();
+    }
+    let out = tmp.0.join("out");
+    crate::net::archive::extract(&archive, Kind::TarGz, &out).unwrap();
+    assert!(out.join("libexec").join("git-core").join("git").is_file());
+    let missing = missing_git_links(&out);
+    if cfg!(windows) {
+        assert_eq!(
+            missing,
+            ["git-remote-https", "git-upload-pack", "git-receive-pack"]
+        );
+    } else {
+        assert!(missing.is_empty(), "{missing:?}");
+    }
+    // A complete tree (regular files are as good as links).
+    let full = tmp.0.join("full").join("libexec").join("git-core");
+    fs::create_dir_all(&full).unwrap();
+    for name in ["git-remote-https", "git-upload-pack", "git-receive-pack"] {
+        fs::write(full.join(name), b"x").unwrap();
+    }
+    assert!(missing_git_links(&tmp.0.join("full")).is_empty());
+    assert_eq!(missing_git_links(&tmp.0.join("none")).len(), 3);
 }
 
 /// T2.1.3: the conda-forge Git of an older Atollo (the only one that

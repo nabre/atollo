@@ -98,7 +98,50 @@ pub fn has_conda_git(dir: &Path) -> bool {
     dir.join("conda-meta").is_dir()
 }
 
+/// Git for `target` is staged when prepared on a host that cannot run it
+/// (`runs_here` false, `can_execute_on_host`): dugite-native off Windows.
+/// Its tarball has well over a hundred symbolic links
+/// (`git-remote-https`, `git-upload-pack`, the builtins) that a Windows
+/// host cannot make, and dropping them leaves a Git whose `--version`
+/// works but that cannot clone over HTTPS. So the archive is only
+/// downloaded and verified, and the first start on the target unpacks it
+/// with its links (bootstrap.rs), as the conda-forge Git was before.
+pub const fn git_staged(target: Target, runs_here: bool) -> bool {
+    !target.is_windows() && !runs_here
+}
+
+/// The programs of dugite-native's `libexec/git-core` that are symbolic
+/// links in its tarball, missing from `dest`: an archive unpacked where
+/// links could not be made. `git --version` works without them, HTTPS
+/// clones and local clones or pushes do not.
+pub fn missing_git_links(dest: &Path) -> Vec<&'static str> {
+    const LINKS: [&str; 3] = ["git-remote-https", "git-upload-pack", "git-receive-pack"];
+    let core = join_rel(dest, "libexec/git-core");
+    LINKS
+        .into_iter()
+        .filter(|name| !core.join(name).exists())
+        .collect()
+}
+
 impl Installer for Git {
+    /// Off Windows, on a host that cannot run the target's Git: staged
+    /// (`git_staged`), never unpacked there. Everywhere else the shared
+    /// path; `install_custom` is never reached, since `should_stage` is
+    /// true exactly when this is.
+    fn custom(&self, target: Target) -> bool {
+        git_staged(target, crate::router::target::can_execute_on_host(target))
+    }
+
+    fn install_custom(
+        &self,
+        _ctx: &Ctx,
+        _component: &Component,
+        _release: &Release,
+        _progress: &mut dyn super::Progress,
+    ) -> Result<()> {
+        bail!("git: dugite-native is staged for its target, never unpacked on this system")
+    }
+
     /// A conda-forge Git left by an older Atollo on macOS or Linux is
     /// marked once to be installed again (the start replaces it with
     /// dugite-native, whose folder has no `conda-meta`): it is the only Git
@@ -166,6 +209,14 @@ impl Installer for Git {
     /// also when the kit is prepared from another system).
     fn finish(&self, ctx: &Ctx, component: &Component, dest: &Path) -> Result<()> {
         if !target_of(ctx, component).is_windows() {
+            // Unpacked without its links: fail now, not at the first clone.
+            let missing = missing_git_links(dest);
+            if !missing.is_empty() {
+                bail!(
+                    "git: libexec/git-core without {} (symbolic links not unpacked)",
+                    missing.join(", ")
+                );
+            }
             let etc = join_rel(dest, "etc/gitconfig");
             let text = fs::read_to_string(&etc).unwrap_or_default();
             let keychain = join_rel(dest, "libexec/git-core/git-credential-osxkeychain").is_file();
