@@ -84,8 +84,14 @@ pub struct Swap {
     pub to: String,
 }
 
-/// The rewrites from the folders of `base` to those of `choice`.
+/// The rewrites from the folders of `base` to those of `choice`. PHP's
+/// line also moves `PHPRC` to that line's `php.ini` (`data\php\<line>`).
 fn swaps(kit: &Kit, base: &Choice, choice: &Choice) -> Vec<Swap> {
+    let swap = |from: &std::path::Path, to: &std::path::Path| Swap {
+        from: from.display().to_string(),
+        to: to.display().to_string(),
+    };
+    let data = kit.data();
     choice
         .iter()
         .filter_map(|(id, line)| {
@@ -97,11 +103,21 @@ fn swaps(kit: &Kit, base: &Choice, choice: &Choice) -> Vec<Swap> {
             }
             let from = dir_for(kit, c, base.get(id).map(String::as_str))?;
             let to = dir_for(kit, c, Some(line))?;
-            (from != to).then(|| Swap {
-                from: from.display().to_string(),
-                to: to.display().to_string(),
+            (from != to).then(|| {
+                let mut out = vec![swap(&from, &to)];
+                if c.id == "php" {
+                    let (ini_from, ini_to) = (
+                        crate::install::php_ini_dir(&data, &from),
+                        crate::install::php_ini_dir(&data, &to),
+                    );
+                    if ini_from != ini_to {
+                        out.push(swap(&ini_from, &ini_to));
+                    }
+                }
+                out
             })
         })
+        .flatten()
         .collect()
 }
 
@@ -147,6 +163,7 @@ fn apply(env: &mut KitEnv, swaps: &[Swap]) {
     // follow the version in use.
     for (from, to) in [
         ("CP_PHP", "CP_PHP_FWD"),
+        ("PHPRC", "CP_PHPRC_FWD"),
         ("CP_APACHE", "CP_APACHE_FWD"),
         ("CP_NGINX", "CP_NGINX_FWD"),
     ] {

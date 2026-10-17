@@ -1366,8 +1366,7 @@ impl WebServers {
         let mut env = base_env.clone();
         if let Some(php_line) = &pool.php_line {
             let php_dir = component_dir(&self.kit, "php", Some(php_line));
-            env.set("CP_PHP", php_dir.display().to_string());
-            env.set("CP_PHP_FWD", fwd(&php_dir));
+            env.set_php(&self.kit.data(), &php_dir);
         }
         env.set("CP_PROJECTS_FWD", fwd(&self.kit.projects()));
         let lan = env.get("DEVKIT_ALLOW_LAN") == Some("1");
