@@ -267,7 +267,8 @@ jobs:
           if-no-files-found: error
       - name: Submit signing request to SignPath
         if: steps.sign-config.outputs.signpath == 'true'
-        uses: signpath/github-action-submit-signing-request@v1
+        # Pinned to the commit of tag v1 (it receives the signing token).
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
