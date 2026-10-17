@@ -363,6 +363,20 @@ fn mongodb_tools_build_by_distribution() {
     assert_eq!(pick(Some(DEBIAN_9), &x64), Some("ubuntu2004"));
     assert_eq!(pick(None, &arm64), Some("ubuntu2004"));
     assert_eq!(pick(None, &["rhel93"]), None);
+    // RHEL-like systems by major: CentOS 7 (`VERSION_ID="7"`) takes
+    // rhel70, not the Ubuntu fallback; RHEL 8.2 the 8 build.
+    assert_eq!(
+        pick(Some("ID=\"centos\"\nVERSION_ID=\"7\"\n"), &x64),
+        Some("rhel70")
+    );
+    assert_eq!(
+        pick(Some("ID=\"rhel\"\nVERSION_ID=\"8.2\"\n"), &x64),
+        Some("rhel88")
+    );
+    assert_eq!(
+        pick(Some("ID=\"rhel\"\nVERSION_ID=\"9.0\"\n"), &arm64),
+        Some("rhel93")
+    );
 }
 
 #[test]

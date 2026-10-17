@@ -70,12 +70,24 @@ fn ruby_assets<'a>(releases: &'a [Value], arch: &str) -> Vec<(String, u64, &'a V
         .collect()
 }
 
+/// The oldest Ruby line offered from conda-forge (`major`, `minor`): the
+/// older ones there (2.3 to 3.1) are past their end of life, and
+/// RubyInstaller on Windows no longer lists them either.
+pub const RUBY_CONDA_OLDEST: (u32, u32) = (3, 2);
+
 /// The minor lines of conda-forge `ruby` versions (newest first, as
-/// `conda_versions` gives them), each once.
+/// `conda_versions` gives them), each once, from `RUBY_CONDA_OLDEST` on.
 pub fn ruby_conda_lines(versions: &[String]) -> Vec<String> {
+    let supported = |line: &str| {
+        let mut it = line.split('.').map(str::parse::<u32>);
+        match (it.next(), it.next()) {
+            (Some(Ok(major)), Some(Ok(minor))) => (major, minor) >= RUBY_CONDA_OLDEST,
+            _ => false,
+        }
+    };
     let mut out: Vec<String> = Vec::new();
     for line in versions.iter().filter_map(|v| crate::versions::line_of(v)) {
-        if !out.contains(&line) {
+        if supported(&line) && !out.contains(&line) {
             out.push(line);
         }
     }
@@ -118,25 +130,29 @@ pub fn gemrc_without_gemhome(text: &str) -> Option<String> {
 /// `arm64-apple-darwin20.0.0-clang` → `clang`): conda's compilers are not
 /// in the environment, so a native gem would stop at "cc: not found". The
 /// plain names are the kit's `cc` (WP-2.3) or the system's. The
-/// preprocessor is `$(CC) -E`, as Ruby's own default. `None` when nothing
-/// changes.
+/// preprocessor is `$(CC) -E`, as Ruby's own default. On macOS conda's
+/// `NM` is `llvm-nm --no-llvm-bc`, which the Xcode Command Line Tools do
+/// not ship: it becomes their `nm`. `None` when nothing changes.
 pub fn rbconfig_with_plain_tools(text: &str) -> Option<String> {
     let re = regex::Regex::new(
         r#"^(\s*CONFIG\["(CC|CXX|CPP|LD|AR|AS|NM|RANLIB|STRIP|OBJDUMP|OBJCOPY|PKG_CONFIG)"\] = ")[\w.]+-(?:conda-linux-gnu|apple-darwin[\d.]*)-([^"]*)(".*)$"#,
     )
     .ok()?;
+    let llvm_nm = regex::Regex::new(r#"^(\s*CONFIG\["NM"\] = ")llvm-nm(?: [^"]*)?(".*)$"#).ok()?;
     let mut changed = false;
     let mut out = String::with_capacity(text.len());
     for line in text.split_inclusive('\n') {
         let body = line.trim_end_matches(['\r', '\n']);
         let ending = &line[body.len()..];
-        match re.captures(body) {
-            Some(c) => {
-                let tool = if &c[2] == "CPP" { "$(CC) -E" } else { &c[3] };
-                out.push_str(&format!("{}{tool}{}{ending}", &c[1], &c[4]));
-                changed = true;
-            }
-            None => out.push_str(line),
+        if let Some(c) = re.captures(body) {
+            let tool = if &c[2] == "CPP" { "$(CC) -E" } else { &c[3] };
+            out.push_str(&format!("{}{tool}{}{ending}", &c[1], &c[4]));
+            changed = true;
+        } else if let Some(c) = llvm_nm.captures(body) {
+            out.push_str(&format!("{}nm{}{ending}", &c[1], &c[2]));
+            changed = true;
+        } else {
+            out.push_str(line);
         }
     }
     changed.then_some(out)

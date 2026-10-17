@@ -71,6 +71,13 @@ fn ruby_conda_lines_and_pick() {
     );
     assert_eq!(ruby_conda_pick(&versions, Some("3.2")), None);
     assert!(ruby_conda_lines(&[]).is_empty());
+    // The end-of-life lines conda-forge still has (2.3 to 3.1) are not
+    // offered: from 3.2 on, as RubyInstaller on Windows.
+    let old: Vec<String> = ["3.2.9", "3.1.6", "2.7.8", "2.3.8", "10.0.1"]
+        .iter()
+        .map(|v| (*v).to_owned())
+        .collect();
+    assert_eq!(ruby_conda_lines(&old), ["3.2", "10.0"]);
     assert_eq!(ruby_conda_spec("4.0.7"), "ruby=4.0.7");
     assert_eq!(
         crate::install::native::micromamba_create_args(Path::new("/kit/ruby/4.0"), &["ruby=4.0.7"])
@@ -129,5 +136,18 @@ fn conda_rbconfig_uses_plain_tool_names() {
     assert_eq!(
         rbconfig_with_plain_tools("  CONFIG[\"AR\"] = \"aarch64-conda-linux-gnu-ar\"\n").as_deref(),
         Some("  CONFIG[\"AR\"] = \"ar\"\n")
+    );
+    // osx-arm64 ruby 4.0.6: conda's llvm-nm is not in the Xcode tools.
+    assert_eq!(
+        rbconfig_with_plain_tools("  CONFIG[\"NM\"] = \"llvm-nm --no-llvm-bc\"\n").as_deref(),
+        Some("  CONFIG[\"NM\"] = \"nm\"\n")
+    );
+    assert_eq!(
+        rbconfig_with_plain_tools("  CONFIG[\"NM\"] = \"llvm-nm\"\n").as_deref(),
+        Some("  CONFIG[\"NM\"] = \"nm\"\n")
+    );
+    assert_eq!(
+        rbconfig_with_plain_tools("  CONFIG[\"NM_FLAGS\"] = \"llvm-nm\"\n"),
+        None
     );
 }
