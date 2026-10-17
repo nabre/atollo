@@ -4,18 +4,20 @@
 //! a clone or a project action needs them.
 
 use std::collections::BTreeSet;
-use std::path::Path;
 
 use super::catalog::Catalog;
 use crate::detect::Action;
 use crate::kit::Kit;
 
 /// The component of a program, by its name (`npm`, `python.exe`,
-/// `.venv\Scripts\python.exe`...).
+/// `.venv\Scripts\python.exe`...). Both separators on every system: a
+/// command written on Windows reaches macOS and Linux in a shared kit.
 fn component_of(program: &str) -> Option<&'static str> {
-    let name = Path::new(program.trim_matches('"'))
-        .file_name()?
-        .to_string_lossy()
+    let name = program
+        .trim_matches('"')
+        .rsplit(['/', '\\'])
+        .next()
+        .filter(|n| !n.is_empty())?
         .to_ascii_lowercase();
     let stem = [".exe", ".cmd", ".bat", ".ps1"]
         .iter()
