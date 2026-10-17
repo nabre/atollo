@@ -165,6 +165,65 @@ describe("InlineConfirm", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
+  it("gives the focus back to the button it replaced once it closes", () => {
+    function Asker() {
+      const [asking, setAsking] = useState(false);
+      return (
+        <div>
+          {asking ? (
+            <InlineConfirm
+              question="Eliminare?"
+              onCancel={() => {
+                setAsking(false);
+              }}
+              actions={
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAsking(false);
+                  }}
+                >
+                  Annulla
+                </button>
+              }
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setAsking(true);
+              }}
+            >
+              Elimina
+            </button>
+          )}
+        </div>
+      );
+    }
+    render(<Asker />);
+    const ask = () => {
+      const trigger = screen.getByRole("button", { name: "Elimina" });
+      trigger.focus();
+      fireEvent.click(trigger);
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Annulla" }));
+    };
+    ask();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Elimina" }));
+    ask();
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Elimina" }));
+  });
+
+  it("has no description when its text is empty", () => {
+    render(
+      <InlineConfirm question="Applicare?" actions={<button type="button">Annulla</button>}>
+        {[false, false]}
+      </InlineConfirm>,
+    );
+    expect(screen.getByRole("alertdialog", { name: "Applicare?" }).hasAttribute("aria-describedby")).toBe(false);
+  });
+
   it("takes its name from `label` when the question is in the text, without a description of its own", () => {
     render(
       <InlineConfirm label="Uscire?" actions={<button type="button">Annulla</button>}>
