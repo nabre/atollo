@@ -2,6 +2,23 @@
 
 Stato: **approvato** (17/10/2026), domande del §3 chiuse dall'utente. Revisione 2: MySQL al posto di MariaDB su tutti i sistemi (Q-4), sviluppo da Windows (§2.1), integrazione locale senza push. In esecuzione sul branch `feature/platforms`.
 
+Avanzamento:
+
+- **Ondata 0 fusa il 17/10/2026** (`3ee45fc`): P1 (WP-0.1, WP-0.2, T0.5.2-T0.5.3), P2 (WP-0.4, T0.5.1), P3 (WP-0.3), P9 (WP-0.6), ciascuno approvato dal revisore R (P1 al terzo giro, P2 al secondo; P9 completato dal coordinatore in `4830427`). Coordinatore: `components --target` con il motivo (`f2f4740`), richieste degli agenti fuori dai loro file (`5d5575f`), action SignPath fissata a un commit (`ce53ae7`). 504 test Rust e 117 Vitest superati su Windows; clippy pulito. Il codice `cfg(unix)` è stato compilato solo con clippy in modo incrociato (strumenti finti, senza linker), **mai eseguito su Unix**: WSL2 non parte finché la virtualizzazione non è attiva (riavvio del PC dopo la modifica del BIOS, poi `wsl.exe --install --no-distribution`).
+- Deviazioni dal piano, da riportare nei documenti (WP-6.3):
+  - CI: `macos-15-intel` al posto di `macos-13` (immagine ritirata); il feature `test` di tauri 2.12.1 compila su macOS, quindi `cargo test` completo senza feature separata (T0.6.2); 74 test validi solo su Windows ignorati altrove con `cfg_attr(not(windows), ignore = "motivo")`; variabile `ARM64_RUNNERS=off` per un repository privato (da impostare prima del primo push: `ubuntu-24.04-arm` e `windows-11-arm` sono gratuiti solo per i repository pubblici).
+  - Catalogo (D-108): `rosetta` è un campo separato da `x64Only` (che resta solo per Windows ARM64); nessun componente lo usa, perché tutti gli `x64Only` hanno una build nativa per Apple Silicon. `removeUnix` sostituisce `remove` su macOS e Linux.
+  - T0.3.1: `shopt -s nocasematch` (bash 3.1+) al posto di `tr`, attivo solo su msys/cygwin/darwin: nessun processo in più per voce del PATH su Windows; su Linux confronto esatto.
+  - `scripts/test-linux.sh`: una copia per checkout in `~/dev-kit2-copies/`, con `flock`.
+- **Arretrato per le ondate successive** (dai rapporti dell'ondata 0):
+  - Fase 1 (P4): il profilo «cmd» e conhost di `editor/cfg.rs`/`editor/terminal.rs` non sono limitati a Windows; `editor/mod.rs` `url()`/`in_project()` aggiungono `/` davanti a un percorso Unix che già lo ha (`//home/...`).
+  - Fase 1 (P3) o rilevamento: su Unix il Python del kit è `python/bin/python3`, ma i comandi proposti iniziano con `python`: serve un `python` nel PATH del kit su Unix, o `python3`. `setup/needs.rs` `component_of` usa `Path::file_name` e non riconosce su Unix un comando scritto su Windows (`.venv\Scripts\python.exe`).
+  - Fase 3 (P6): `install/web.rs` (`expand.exe`, CAB del Visual C++) non è limitato ai target Windows.
+  - Test (nuovo pacchetto **WP-0.7**, prima della fase 2): riscrivere gli aiuti dei test che usano percorsi con `\` (`install_fake`, `fake_server`, gli aiuti di `db.json`; circa 120 `join(r"a\b")` nei test) e la funzione `junction()` dei test con `symlink` su Unix, così i 74 test ignorati e i quattro test di sicurezza sui link girano anche su macOS e Linux.
+  - Aiuto della riga di comando (4 lingue): `--target` di `prepare` e `components` non compare.
+  - Decisione da prendere più avanti: su Windows `remove` di pnpm non comprende corepack, `removeUnix` sì.
+  - WP-6.1: `router::probe::TargetToolStatus` senza il motivo di indisponibilità.
+
 Base: branch `fix/v3-swarm`, commit `5c11a7a`. I riferimenti `file:riga` sono relativi a `tauri/src/` e presi dal codice di `6c26f88`: dopo i commit successivi possono essersi spostati di poche righe. Nel working tree c'è un lavoro in corso, D-107 (phpMyAdmin al posto di Adminer): questo piano parla già di phpMyAdmin.
 
 Fonte: [MATRICE-PIATTAFORME.html](MATRICE-PIATTAFORME.html), con lo stato di ogni componente e funzione sui 6 target, gli asset esatti, le fonti upstream e i sostituti. Questo documento ne sviluppa il piano (sezione 7 della matrice) in pacchetti di lavoro eseguibili.
@@ -92,7 +109,7 @@ Il codice si scrive e si prova su un PC Windows 11 x64 (questo, con WSL2 e Ubunt
 | `win32-arm64` | in locale (`--target aarch64-pc-windows-msvc`, come la CI) | CI con un runner `windows-11-arm` (nuovo, WP-0.6) | PC Windows 11 ARM64 (utente) |
 | `linux-x64` | **WSL2** (`wsl -d Ubuntu`) | WSL2 in locale e CI (`ubuntu-latest`) | WSL2 con WSLg per la finestra; poi un PC o una VM Linux con desktop |
 | `linux-arm64` | CI | CI (`ubuntu-24.04-arm`) | PC o scheda ARM64 (utente), o VM ARM64 in cloud |
-| `darwin-arm64`, `darwin-x64` | solo CI (Tauri non compila per macOS da Windows) | CI (`macos-latest`, `macos-13`) | Mac dell'utente, o Mac in cloud; senza Mac WP-1.9 resta aperto |
+| `darwin-arm64`, `darwin-x64` | solo CI (Tauri non compila per macOS da Windows) | CI (`macos-latest`, `macos-15-intel`) | Mac dell'utente, o Mac in cloud; senza Mac WP-1.9 resta aperto |
 
 Regole:
 
@@ -329,7 +346,7 @@ Anticipato dalla fase 5 della matrice: i pacchetti successivi hanno bisogno dei 
 - **Dipende da.** Q-1 per il job linux-arm64.
 - **File.** `.github/workflows/app.yml`, `scripts/test-linux.sh` (nuovo), `docs/app/TESTING.md`, eventuali `#[cfg(windows)]` sui test che usano solo Windows.
 - **Compiti.**
-  - T0.6.1 Job `test-unix` con matrice `ubuntu-latest`, `ubuntu-24.04-arm`, `macos-latest` (arm64), `macos-13` (x64): `cargo test` del crate; dipendenze di Tauri per Linux (`libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `librsvg2-dev`).
+  - T0.6.1 Job `test-unix` con matrice `ubuntu-latest`, `ubuntu-24.04-arm`, `macos-latest` (arm64), `macos-15-intel` (x64; `macos-13` è ritirato): `cargo test` del crate; dipendenze di Tauri per Linux (`libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `librsvg2-dev`).
   - T0.6.2 Il problema della feature di test di tauri 2.12 su macOS (`app.yml:82-86`): test senza `--all-targets` o feature separata; documentare la scelta.
   - T0.6.3 Segnare con `#[cfg(windows)]` o `#[cfg_attr(not(windows), ignore)]` i test che usano API di Windows, con il motivo.
   - T0.6.4 Vitest e build dell'interfaccia anche su ubuntu (`npm test`, `npm -w ui run build`).
