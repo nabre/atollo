@@ -45,29 +45,39 @@ use std::time::{Duration, Instant};
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use super::auth;
+use super::{auth, DbEngine};
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
 use crate::projects::run::{is_port_free, responds};
 use crate::setup::catalog::Catalog;
-use access::{admin_password, admin_user};
+use access::admin_password;
 pub use backups::Backup;
 use data::seed;
 pub use data::{data_dir, data_dir_at, migrate_data};
 use tools::run_tool;
 
-/// The servers, in the order of the page.
-pub const SERVERS: [&str; 2] = ["mariadb", "mongodb"];
+/// The ids of the servers, in the order of the page: [`DbEngine::ALL`], for
+/// the callers that still hold an id (`commands`, `projects`, `versions`).
+pub const SERVERS: [&str; DbEngine::ALL.len()] = {
+    let mut ids = [""; DbEngine::ALL.len()];
+    let mut i = 0;
+    while i < ids.len() {
+        ids[i] = DbEngine::ALL[i].id();
+        i += 1;
+    }
+    ids
+};
 
 const READY_WITHIN: Duration = Duration::from_secs(90);
 const STOP_WITHIN: Duration = Duration::from_secs(20);
 
+/// [`DbEngine::default_port`] of `id`; an id that is not a server gets
+/// MariaDB's, as before the engines were an enum.
 pub fn default_port(id: &str) -> u16 {
-    match id {
-        "mongodb" => 27017,
-        _ => 3306,
-    }
+    DbEngine::from_id(id)
+        .unwrap_or(DbEngine::MariaDb)
+        .default_port()
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -147,8 +157,8 @@ struct Server {
     _job: Job,
 }
 
-/// A running server: its id and the version it runs (empty: none known).
-type Key = (String, String);
+/// A running server: its engine and the version it runs (empty: none known).
+type Key = (DbEngine, String);
 
 pub struct Services {
     kit: Kit,
@@ -248,11 +258,12 @@ pub fn project_line(kit: &Kit, project: &str, engine: &str) -> Option<String> {
 /// The port of the project's MariaDB database, when it has one: the
 /// `DB_PORT` of its programs (PLAN.md §13.2).
 pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
-    auth::project_passwords(kit, project).get("mariadb")?;
+    let id = DbEngine::MariaDb.id();
+    auth::project_passwords(kit, project).get(id)?;
     Some(line_port(
         kit,
-        "mariadb",
-        project_line(kit, project, "mariadb").as_deref(),
+        id,
+        project_line(kit, project, id).as_deref(),
     ))
 }
 
@@ -261,9 +272,10 @@ pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
 /// `[client]` login, written at its start (`mariadb` then logs in on its
 /// port). None: the kit's own (`env.rs`), on the server's port.
 pub fn project_mysql_home(kit: &Kit, project: &str) -> Option<PathBuf> {
-    auth::project_passwords(kit, project).get("mariadb")?;
-    let line = auth::project_line(kit, project, "mariadb").ok().flatten()?;
-    if Some(&line) == server_line(kit, "mariadb").as_ref() {
+    let id = DbEngine::MariaDb.id();
+    auth::project_passwords(kit, project).get(id)?;
+    let line = auth::project_line(kit, project, id).ok().flatten()?;
+    if Some(&line) == server_line(kit, id).as_ref() {
         return None;
     }
     let dir = auth::line_client_dir(kit, &line);
@@ -291,32 +303,33 @@ fn installed(kit: &Kit, id: &str) -> bool {
     Catalog::get().find(id).is_some_and(|c| c.is_installed(kit))
 }
 
+#[cfg(test)]
 pub(crate) fn bin(kit: &Kit, id: &str, exe: &str) -> PathBuf {
     bin_at(kit, id, None, exe)
 }
 
-/// A program of version `line` of `id` (None: the version it runs).
+/// A program of version `line` of component `id` (None: the version it
+/// runs): `exe` is a stem (`.exe` added on Windows) or, as the tests write
+/// it, a Windows file name. A versioned component (the servers) has one
+/// folder per line; the others (`mongosh`, `mongodb-tools`, folders of the
+/// MongoDB installer, not in the catalog) one folder.
 pub(crate) fn bin_at(kit: &Kit, id: &str, line: Option<&str>, exe: &str) -> PathBuf {
     let stem = exe.strip_suffix(".exe").unwrap_or(exe);
-    let versioned = Catalog::get().find(id).filter(|c| c.versioned);
-    match (id, versioned) {
-        ("mongosh", _) => crate::router::bins::mongosh_bin(kit),
-        ("mongodb-tools", _) => crate::router::bins::mongo_tool_bin(kit, stem),
-        (_, Some(c)) => {
+    match Catalog::get().find(id).filter(|c| c.versioned) {
+        Some(c) => {
             let line = line.map(str::to_owned).or_else(|| server_line(kit, id));
             let dir = crate::versions::dir_for(kit, c, line.as_deref())
                 .unwrap_or_else(|| kit.apps().join(id));
             crate::router::bins::db_bin_in(kit.os(), &dir, stem)
         }
-        _ => crate::router::bins::db_bin(kit, id, stem),
+        None => crate::router::bins::db_bin(kit, id, stem),
     }
 }
 
-pub fn url(id: &str, port: u16) -> String {
-    match id {
-        "mongodb" => format!("mongodb://admin@127.0.0.1:{port}/?authSource=admin"),
-        _ => format!("mysql://root@127.0.0.1:{port}/"),
-    }
+/// The client of `engine` ([`DbEngine::client_bin`]), of version `line`
+/// when it is in the server's folder.
+pub(crate) fn client_at(kit: &Kit, engine: DbEngine, line: Option<&str>) -> PathBuf {
+    bin_at(kit, engine.client_component(), line, engine.client_bin())
 }
 
 /// The last lines of a server's log, to tell why it stopped.
@@ -341,13 +354,13 @@ impl Services {
     }
 
     /// The version `line` names, or the one the server runs.
-    fn resolve(&self, id: &str, line: Option<&str>) -> Option<String> {
+    fn resolve(&self, engine: DbEngine, line: Option<&str>) -> Option<String> {
         line.map(str::to_owned)
-            .or_else(|| server_line(&self.kit, id))
+            .or_else(|| server_line(&self.kit, engine.id()))
     }
 
-    fn key(id: &str, line: Option<&str>) -> Key {
-        (id.to_owned(), line.unwrap_or_default().to_owned())
+    fn key(engine: DbEngine, line: Option<&str>) -> Key {
+        (engine, line.unwrap_or_default().to_owned())
     }
 
     /// State and port of a server under `key` (`port` when it is not
@@ -374,7 +387,7 @@ impl Services {
             Some((false, _)) => {
                 running.remove(key);
                 let line = (!key.1.is_empty()).then_some(key.1.as_str());
-                errors.insert(key.clone(), log_tail(&self.kit, &key.0, line));
+                errors.insert(key.clone(), log_tail(&self.kit, key.0.id(), line));
                 (State::Error, port)
             }
             None if errors.contains_key(key) => (State::Error, port),
@@ -387,25 +400,26 @@ impl Services {
         let secrets = auth::load(&self.kit);
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         let mut errors = self.errors.lock().unwrap_or_else(|e| e.into_inner());
-        SERVERS
-            .iter()
-            .map(|id| {
-                let setting = settings.get(*id).cloned().unwrap_or_default();
+        DbEngine::ALL
+            .into_iter()
+            .map(|engine| {
+                let id = engine.id();
+                let setting = settings.get(id).cloned().unwrap_or_default();
                 let line = server_line(&self.kit, id);
                 let lines = server_lines(&self.kit, id);
                 let ports = line_ports(&setting, id, line.as_deref(), &lines);
-                let key = Self::key(id, line.as_deref());
+                let key = Self::key(engine, line.as_deref());
                 let (state, port) = self.state_of(
                     &mut running,
                     &mut errors,
                     &key,
-                    setting.port.unwrap_or_else(|| default_port(id)),
+                    setting.port.unwrap_or_else(|| engine.default_port()),
                 );
                 let others = lines
                     .iter()
                     .filter(|l| Some(l.as_str()) != line.as_deref())
                     .map(|l| {
-                        let key = Self::key(id, Some(l));
+                        let key = Self::key(engine, Some(l));
                         let stored = ports.get(l).copied().unwrap_or(port);
                         let (state, port) = self.state_of(&mut running, &mut errors, &key, stored);
                         LineInfo {
@@ -414,7 +428,7 @@ impl Services {
                             port,
                             data_dir: data_dir_at(&self.kit, id, Some(l)).display().to_string(),
                             log: log_path(&self.kit, id, Some(l)).display().to_string(),
-                            url: url(id, port),
+                            url: engine.admin_url(port),
                             message: errors.get(&key).cloned(),
                         }
                     })
@@ -430,9 +444,9 @@ impl Services {
                     autostart: setting.autostart,
                     data_dir: data_dir(&self.kit, id).display().to_string(),
                     log: log_path(&self.kit, id, None).display().to_string(),
-                    url: url(id, port),
-                    user: admin_user(id).to_owned(),
-                    password: admin_password(&secrets, id),
+                    url: engine.admin_url(port),
+                    user: engine.admin_user().to_owned(),
+                    password: admin_password(&secrets, engine),
                     message: errors.get(&key).cloned(),
                     line,
                     lines,
@@ -449,28 +463,29 @@ impl Services {
         running.len()
     }
 
-    /// The versions of `id` running now.
-    fn running_lines(&self, id: &str) -> Vec<String> {
+    /// The versions of `engine` running now.
+    fn running_lines(&self, engine: DbEngine) -> Vec<String> {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         running
             .iter_mut()
-            .filter_map(|((i, l), s)| {
-                (i == id && matches!(s.child.try_wait(), Ok(None))).then(|| l.clone())
+            .filter_map(|((e, l), s)| {
+                (*e == engine && matches!(s.child.try_wait(), Ok(None))).then(|| l.clone())
             })
             .collect()
     }
 
     fn command(
         &self,
-        id: &str,
+        engine: DbEngine,
         line: Option<&str>,
         env: &KitEnv,
         data: &std::path::Path,
         port: u16,
     ) -> Command {
-        match id {
-            "mongodb" => {
-                let mut cmd = jobs::kit_command(bin_at(&self.kit, id, line, "mongod.exe"), env);
+        let server = bin_at(&self.kit, engine.component(), line, engine.server_bin());
+        let mut cmd = jobs::kit_command(server, env);
+        match engine {
+            DbEngine::MongoDb => {
                 cmd.arg("--dbpath")
                     .arg(data)
                     .arg("--port")
@@ -478,10 +493,8 @@ impl Services {
                     .arg("--bind_ip")
                     .arg("127.0.0.1")
                     .arg("--auth");
-                cmd
             }
-            _ => {
-                let mut cmd = jobs::kit_command(bin_at(&self.kit, id, line, "mariadbd.exe"), env);
+            DbEngine::MariaDb => {
                 // The ini written by mariadb-install-db first (it must be the
                 // first option); port and address from here win over it.
                 cmd.arg(format!("--defaults-file={}", data.join("my.ini").display()))
@@ -489,9 +502,9 @@ impl Services {
                     .arg(format!("--port={port}"))
                     .arg("--bind-address=127.0.0.1")
                     .arg("--console");
-                cmd
             }
         }
+        cmd
     }
 
     /// Starts `id` and waits until it answers on its port. Errors: not
@@ -503,9 +516,17 @@ impl Services {
     /// Starts version `line` of `id` (None: the version the server runs),
     /// on its own port beside the others (PLAN.md §13.2).
     pub fn start_line(&self, id: &str, line: Option<&str>, env: &KitEnv) -> Result<u16> {
-        if !SERVERS.contains(&id) {
-            bail!("unknown server {id}");
-        }
+        self.start_engine(DbEngine::parse(id)?, line, env)
+    }
+
+    /// [`Services::start_line`] of `engine`.
+    pub(crate) fn start_engine(
+        &self,
+        engine: DbEngine,
+        line: Option<&str>,
+        env: &KitEnv,
+    ) -> Result<u16> {
+        let id = engine.id();
         // The version named first: one uninstalled is told as such
         // (`LineMissing`), the interface offers to install it.
         if let Some(l) = line {
@@ -514,8 +535,8 @@ impl Services {
         if !installed(&self.kit, id) {
             bail!("{id} is not installed");
         }
-        let line = self.resolve(id, line);
-        let key = Self::key(id, line.as_deref());
+        let line = self.resolve(engine, line);
+        let key = Self::key(engine, line.as_deref());
         if let Some(s) = self
             .running
             .lock()
@@ -536,7 +557,7 @@ impl Services {
                 self.keep_port(id, l, port)?;
             }
         }
-        let result = self.launch(id, line.as_deref(), main, env, port);
+        let result = self.launch(engine, line.as_deref(), main, env, port);
         let mut errors = self.errors.lock().unwrap_or_else(|e| e.into_inner());
         match &result {
             Ok(_) => {
@@ -563,27 +584,28 @@ impl Services {
 
     fn launch(
         &self,
-        id: &str,
+        engine: DbEngine,
         line: Option<&str>,
         main: bool,
         env: &KitEnv,
         port: u16,
     ) -> Result<u16> {
+        let id = engine.id();
         // The first start of a version: the data of the nearest older one,
         // never while that one runs (its files are in use).
         let seeded = match line {
-            Some(l) => seed(&self.kit, id, l, &self.running_lines(id))?,
+            Some(l) => seed(&self.kit, id, l, &self.running_lines(engine))?,
             None => None,
         };
-        let key = Self::key(id, line);
-        let (data, fresh) = self.prepare(id, line, env, port)?;
+        let key = Self::key(engine, line);
+        let (data, fresh) = self.prepare(engine, line, env, port)?;
         let log = log_path(&self.kit, id, line);
         let file = OpenOptions::new()
             .create(true)
             .append(true)
             .open(&log)
             .with_context(|| log.display().to_string())?;
-        let mut cmd = self.command(id, line, env, &data, port);
+        let mut cmd = self.command(engine, line, env, &data, port);
         cmd.stdin(Stdio::null())
             .stdout(Stdio::from(file.try_clone()?))
             .stderr(Stdio::from(file));
@@ -625,7 +647,7 @@ impl Services {
                 bail!("{}", log_tail(&self.kit, id, line));
             }
             if start.elapsed() > READY_WITHIN {
-                self.stop_line(id, line);
+                self.stop_engine(engine, line);
                 bail!(
                     "no answer on port {port} within {} s",
                     READY_WITHIN.as_secs()
@@ -633,29 +655,29 @@ impl Services {
             }
             std::thread::sleep(Duration::from_millis(250));
         }
-        if let Err(e) = self.secure(id, line, main, env, port, fresh) {
-            self.stop_line(id, line);
+        if let Err(e) = self.secure(engine, line, main, env, port, fresh) {
+            self.stop_engine(engine, line);
             return Err(e);
         }
         if let (Some(from), Some(line)) = (&seeded, line) {
-            self.after_copy(id, env, port, from, line);
+            self.after_copy(engine, env, port, from, line);
         }
         Ok(port)
     }
 
     /// The server's port and environment, when it runs.
-    pub(crate) fn running_server(&self, engine: &str) -> Result<(u16, KitEnv)> {
+    pub(crate) fn running_server(&self, engine: DbEngine) -> Result<(u16, KitEnv)> {
         self.running_at(engine, None)
     }
 
     /// Port and environment of version `line` of `engine` (None: the
     /// version the server runs), when it runs.
-    pub(crate) fn running_at(&self, engine: &str, line: Option<&str>) -> Result<(u16, KitEnv)> {
+    pub(crate) fn running_at(&self, engine: DbEngine, line: Option<&str>) -> Result<(u16, KitEnv)> {
         let line = self.resolve(engine, line);
         let key = Self::key(engine, line.as_deref());
         let name = match &line {
             Some(l) => format!("{engine} {l}"),
-            None => engine.to_owned(),
+            None => engine.id().to_owned(),
         };
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         match running.get_mut(&key) {
@@ -670,7 +692,7 @@ impl Services {
     /// The address that opens phpMyAdmin logged in to the running MariaDB
     /// (D-107), version `line` (None: the one the server runs), in `lang`.
     pub fn phpmyadmin_url(&self, line: Option<&str>, lang: &str) -> Result<String> {
-        let (port, env) = self.running_at("mariadb", line)?;
+        let (port, env) = self.running_at(DbEngine::MariaDb, line)?;
         self.phpmyadmin.open(&self.kit, &env, port, lang)
     }
 
@@ -680,10 +702,18 @@ impl Services {
         self.stop_line(id, None);
     }
 
-    /// [`Services::stop`] for version `line` (None: the one it runs).
+    /// [`Services::stop`] for version `line` (None: the one it runs); an id
+    /// that is not a server has nothing running.
     pub fn stop_line(&self, id: &str, line: Option<&str>) {
-        let line = self.resolve(id, line);
-        self.stop_key(&Self::key(id, line.as_deref()));
+        if let Some(engine) = DbEngine::from_id(id) {
+            self.stop_engine(engine, line);
+        }
+    }
+
+    /// [`Services::stop_line`] of `engine`.
+    pub(crate) fn stop_engine(&self, engine: DbEngine, line: Option<&str>) {
+        let line = self.resolve(engine, line);
+        self.stop_key(&Self::key(engine, line.as_deref()));
     }
 
     fn stop_key(&self, key: &Key) {
@@ -695,18 +725,11 @@ impl Services {
         else {
             return;
         };
-        let (id, line) = (
-            key.0.as_str(),
-            (!key.1.is_empty()).then_some(key.1.as_str()),
-        );
-        if id == "mariadb" {
-            // phpMyAdmin logged in to this version ends with it.
-            self.phpmyadmin.stop_for(server.port);
-        }
-        let ask = match id {
-            "mongodb" => {
-                let mut cmd =
-                    jobs::kit_command(bin(&self.kit, "mongosh", "mongosh.exe"), &server.env);
+        let (engine, line) = (key.0, (!key.1.is_empty()).then_some(key.1.as_str()));
+        let id = engine.id();
+        let ask = match engine {
+            DbEngine::MongoDb => {
+                let mut cmd = jobs::kit_command(client_at(&self.kit, engine, None), &server.env);
                 cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                     .arg(server.port.to_string())
                     .args(["--eval", auth::MONGO_SHUTDOWN_JS])
@@ -716,9 +739,11 @@ impl Services {
                     );
                 cmd
             }
-            _ => {
-                let mut cmd =
-                    self.mariadb_tool_at("mariadb-admin.exe", &server.env, line, server.port);
+            DbEngine::MariaDb => {
+                // phpMyAdmin logged in to this version ends with it.
+                self.phpmyadmin.stop_for(server.port);
+                let admin = engine.admin_bin().unwrap_or(engine.client_bin());
+                let mut cmd = self.sql_tool_at(engine, admin, &server.env, line, server.port);
                 cmd.arg("shutdown");
                 cmd
             }
@@ -753,15 +778,13 @@ impl Services {
 
     /// Port (None: default) and "start with Dev-Kit" of `id`.
     pub fn set(&self, id: &str, port: Option<u16>, autostart: bool) -> Result<()> {
-        if !SERVERS.contains(&id) {
-            bail!("unknown server {id}");
-        }
+        let engine = DbEngine::parse(id)?;
         if port.is_some_and(|p| p < 1024) {
             bail!("port below 1024");
         }
         let mut all = load_settings(&self.kit);
         let entry = all.entry(id.to_owned()).or_default();
-        entry.port = port.filter(|p| *p != default_port(id));
+        entry.port = port.filter(|p| *p != engine.default_port());
         entry.autostart = autostart;
         crate::fsx::write_json(&settings_path(&self.kit), &all)
     }
@@ -771,9 +794,7 @@ impl Services {
     /// (its port is the server's, [`Services::set`]) nor a port another
     /// version has.
     pub fn set_line_port(&self, id: &str, line: &str, port: Option<u16>) -> Result<()> {
-        if !SERVERS.contains(&id) {
-            bail!("unknown server {id}");
-        }
+        DbEngine::parse(id)?;
         let lines = server_lines(&self.kit, id);
         if !lines.iter().any(|x| x == line) {
             bail!("{id} {line} is not installed");
@@ -802,16 +823,14 @@ impl Services {
     /// The version `id` runs (None: the newest on disk), while it is
     /// stopped: each version has its own data (D-81).
     pub fn set_line(&self, id: &str, line: Option<&str>) -> Result<()> {
-        if !SERVERS.contains(&id) {
-            bail!("unknown server {id}");
-        }
+        let engine = DbEngine::parse(id)?;
         if let Some(l) = line {
             check_line(&self.kit, id, l)?;
         }
         // Any version, not only the one the server runs: another one on its
         // own port would become the server while every caller takes the
         // server's port for it.
-        if self.running_server(id).is_ok() || !self.running_lines(id).is_empty() {
+        if self.running_server(engine).is_ok() || !self.running_lines(engine).is_empty() {
             bail!("{id} is running: stop it first");
         }
         let mut all = load_settings(&self.kit);
@@ -825,12 +844,15 @@ impl Services {
     /// on ([`lines_in_use`]), each on its own port.
     pub fn autostart(&self, env: &KitEnv) {
         for (id, s) in load_settings(&self.kit) {
-            if s.autostart && SERVERS.contains(&id.as_str()) && installed(&self.kit, &id) {
+            let Some(engine) = DbEngine::from_id(&id) else {
+                continue;
+            };
+            if s.autostart && installed(&self.kit, &id) {
                 if let Err(e) = self.start(&id, env) {
                     crate::log::warn(&format!("{id}: automatic start: {e:#}"));
                 }
                 for line in lines_in_use(&self.kit, &id) {
-                    if let Err(e) = self.start_line(&id, Some(&line), env) {
+                    if let Err(e) = self.start_engine(engine, Some(&line), env) {
                         crate::log::warn(&format!("{id} {line}: automatic start: {e:#}"));
                     }
                 }
