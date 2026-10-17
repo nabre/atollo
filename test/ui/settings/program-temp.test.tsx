@@ -50,6 +50,8 @@ describe("KitInfo disk facts", () => {
     otherKits: [],
     diskFs: "exFAT",
     diskKind: "removable",
+    diskNoexec: null,
+    diskNote: null,
     systemTemp: "C:\\Users\\me\\AppData\\Local\\Temp\\Dev-Kit\\ab12",
   };
 
@@ -57,6 +59,13 @@ describe("KitInfo disk facts", () => {
     render(<KitInfo info={info} />);
     expect(screen.getByText("exFAT, rimovibile")).toBeTruthy();
     expect(screen.getByText(info.systemTemp ?? "")).toBeTruthy();
+  });
+
+  it("adds noexec and the app's note on the kit's disk (WP-1.7)", () => {
+    const note = "Il disco del kit è exFAT: niente link simbolici.";
+    render(<KitInfo info={{ ...info, diskFs: "POSIX", diskKind: "fixed", diskNoexec: true, diskNote: note }} />);
+    expect(screen.getByText("POSIX, fisso, noexec")).toBeTruthy();
+    expect(screen.getByText(note)).toBeTruthy();
   });
 
   it("falls back to data\\tmp and hides an unreadable disk", () => {
