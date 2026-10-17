@@ -535,22 +535,22 @@ Fonte: [web_servers_and_versioning_spec.md](../../web_servers_and_versioning_spe
 | 1.1 | Pool per (motore, linea server, linea PHP), un processo per pool, un VirtualHost per progetto | parziale | Id `apache-2.4-php-7.4` invece di `apache-2.4_php-7.4`. **Una sola porta per pool** con VirtualHost per nome, mentre S dà a ogni progetto la sua porta nello stesso processo: `127.0.0.1:<porta>` raggiunge solo il primo sito. Il pool elenca ogni progetto con un'azione Apache/Nginx, non solo quelli avviati |
 | 1.2a | Avvia progetto → aggancia al pool, avvia il pool se fermo | **manca** | `projects/run.rs:370-405` avvia ancora un httpd/nginx **dedicato** al progetto; nulla fuori dalla pagina Server Web usa i pool |
 | 1.2b | Pool già avviato → `Include` + `Listen` e ricarica senza nuovi processi | parziale | Solo dalla pagina; Apache fa ferma + 120 ms + avvia (interruzione), mai una ricarica morbida |
-| 1.2c | Ferma progetto → toglie il sito e ricarica; pool automatico vuoto si spegne; manuale o «Mantieni attivo» resta | **manca** | `stop` ferma solo il job; niente «Mantieni attivo» |
+| 1.2c | Ferma progetto → toglie il sito e ricarica; pool automatico vuoto si spegne; manuale o «Mantieni attivo» resta | **fatto** (17/10/2026, D-101) | — (lo sgancio vale per la sessione; l'elenco del pool mostra ancora il sito) |
 | 1.3a | Apache e Nginx versionati nel catalogo | fatto | Nginx nel gruppo `languages`; Apache scarica solo l'ultima linea |
 | 1.3b | PHP < 8.0 (7.4…7.0, 5.6) | fatto, altro meccanismo | Tabella fissa `PHP_ARCHIVES` con SHA-256 invece della scansione di `archives/`. PHP 5.6 è compilato con VC11 e 7.0/7.1 con VC14: il kit fornisce solo il runtime VC++ 2015+, 5.6 probabilmente non parte (da verificare) |
 | 1.3c | DLL del modulo PHP per versione | fatto | Scelta con `<IfFile>` sulla DLL presente, non per versione: funziona |
-| 1.3d | Più linee di MariaDB/MongoDB accese insieme su porte diverse, `DB_PORT` nell'ambiente del progetto | **manca** | Una linea per motore |
+| 1.3d | Più linee di MariaDB/MongoDB accese insieme su porte diverse, `DB_PORT` nell'ambiente del progetto | **fatto** (17/10/2026, D-102) | Per MariaDB. Avvio automatico, `MYSQL_HOME` del terminale e Adminer solo per la versione principale |
 | 2 | Rilevamento: Node, Python/Go/Rust, statico | fatto | — |
-| 2 | PHP con `.htaccess` o CMS → Apache + `requires` (+ MariaDB per i CMS) | parziale | Solo WordPress (non PrestaShop, Drupal, Joomla); WordPress non aggiunge `mariadb` e l'avviso dice ancora «MariaDB non incluso nel kit»; Laravel con `public/.htaccess` non riceve l'azione Apache |
-| 2 | `nginx.conf` → Nginx | parziale | Solo nei progetti PHP; `.nginx` ignorato |
-| 2 | Compose: motore e linea esatta | parziale | Confronto a sottostringa (`image: httpd`), niente `compose.yml`/`docker-compose.yaml`, niente `Dockerfile` |
-| 2 | PHP semplice: proporre Apache accanto a `php -S` | **manca** | Solo `php -S` |
+| 2 | PHP con `.htaccess` o CMS → Apache + `requires` (+ MariaDB per i CMS) | **fatto** (17/10/2026, D-103) | PrestaShop, Drupal, Joomla, TYPO3 da archivio; WordPress con `mariadb` c'era già, tolto solo il testo orfano; Laravel/Statamic con `.htaccess` ricevono l'azione Apache |
+| 2 | `nginx.conf` → Nginx | **fatto** (17/10/2026, D-103) | Anche `.nginx` e nei siti statici; non per Node/Python |
+| 2 | Compose: motore e linea esatta | **fatto** (17/10/2026, D-103) | Nome esatto, quattro nomi di file, `FROM` di `Dockerfile`/`Containerfile`; `Project.lines` non ancora usato dall'interfaccia |
+| 2 | PHP semplice: proporre Apache accanto a `php -S` | **fatto** (17/10/2026, D-103) | Apache proposto, non richiesto |
 | 3.1 | Pagina Server Web | parziale | Nessun contatore nella barra delle attività; motore/linee non modificabili; niente «Mantieni attivo», «Avvia con Atollo», registro, «+ Associa progetto», «rendi permanente» |
 | 3.2 | Tre modi di assegnazione | parziale | Automatico solo per l'elenco, non all'avvio; il selettore del sito onora solo i profili manuali e chi esegue il progetto lo ignora; `serverAssignProject` non è chiamato dall'interfaccia |
 | 3.3a | `<progetto>.localhost` + domini | fatto | Il sito dedicato usa `ServerName localhost:<porta>` |
-| 3.3b | Alias relativi, `@progetto/…` | fatto (WP-S) | `Options FollowSymLinks` nelle cartelle degli alias: un collegamento **dentro** la cartella viene seguito da Apache al momento della richiesta |
-| 4 | Versioni del progetto in due zone | fatto | `p.missing` non considerato esplicitamente; testo introduttivo senza i server web; nessun test Vitest |
-| 5.1 | `servers.json` con `keepAlive`, `autostart`, `manual`; pool automatici promuovibili | parziale | Mancano i tre campi e la promozione |
+| 3.3b | Alias relativi, `@progetto/…` | fatto (WP-S); WEB-8 fatto (17/10/2026, D-100) | Nginx su Windows segue ancora i collegamenti dentro la cartella (direttiva assente nella build win32) |
+| 4 | Versioni del progetto in due zone | **fatto** (17/10/2026, D-106) | — (`p.missing` nella zona 1, testo con i server web, test Vitest) |
+| 5.1 | `servers.json` con `keepAlive`, `autostart`, `manual`; pool automatici promuovibili | parziale | `keepAlive` e `autostart` fatti (17/10/2026, D-101); mancano `manual`, la promozione e la conservazione delle chiavi sconosciute |
 | 5.2 | Comandi con stato `starting/error`, PID, registro, `server_reload` | parziale | Stato solo acceso/spento, nessun registro |
 | 6 | `CP_APACHE`, `CP_NGINX` nell'ambiente | fatto, altro meccanismo | — |
 
@@ -566,6 +566,8 @@ Difetti trovati nel codice dei pool (`servers/mod.rs`, salvo dove indicato):
 8. **`assign_project` riavvia tutti i pool** e ignora gli errori (`:833-842`).
 9. **Nginx**: due `default_server`/`localhost` in conflitto; un solo `php-cgi` senza riavvio; porta FastCGI scelta e poi rilasciata prima dell'avvio (`nginx.rs:213-216`).
 10. **`php.ini` unico** (`data\php`) per tutte le versioni di PHP, 5.6 compresa.
+
+Stato dei difetti al 17/10/2026: 1, 2, 3 chiusi dallo sciame v2 (`op_lock`; BUG-04 attesa della porta, ora con una prova su kit reale; BUG-03 `stderr.log`, idem); 4, 6, 7, 8, 9 chiusi dallo sciame v3 (D-101, D-99); 5 parziale (pool orfano in elenco, fermabile; id stabili di SC-2 da fare); 10 aperto (`php.ini` per linea: `install/web.rs`, `env.rs`, `-c` di php-cgi).
 
 Contraddizioni con questo piano, risolte così:
 
