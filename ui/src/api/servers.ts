@@ -10,10 +10,17 @@ export interface AttachedSite {
   /** Id of the project's action this site comes from ("" in older data). */
   action: string;
   folder: string;
+  /** The site's own name in the pool, from Rust (`name_sites`):
+   * `<project>.localhost` for a project's main site,
+   * `<action>.<project>.localhost` for the others, `-2`… when taken. */
   serverName: string;
   domains: string[];
   aliases: Record<string, string>;
   url: string;
+  /** Its project chose this server in panel.json (not only detected). */
+  chosen?: boolean;
+  /** Its project was stopped: listed, but out of the pool until it starts. */
+  detached?: boolean;
 }
 
 export interface WebServerPool {

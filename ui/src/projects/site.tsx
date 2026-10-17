@@ -13,6 +13,19 @@ interface AliasRow {
   target: string;
 }
 
+/** A `.localhost` label as Rust's `host_label` (servers/mod.rs) writes it:
+ * only for a site not in a pool yet, whose name Rust has not given. */
+function hostLabel(name: string): string {
+  const label = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50)
+    .replace(/-+$/, "");
+  return label || "site";
+}
+
 function initialAliases(aliases: Record<string, string> | undefined): AliasRow[] {
   if (!aliases) return [];
   return Object.entries(aliases).map(([url, target]) => ({ url, target }));
@@ -41,6 +54,11 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
 
   const isWebServer = kind === "apache" || kind === "nginx";
   const matchingPools = (servers?.pools ?? []).filter((p) => p.engine === kind);
+  // The name Rust gave the site in its pool (`name_sites`: lowercase labels,
+  // `-2` when taken); before the site is saved, the project's own label.
+  const siteName =
+    (servers?.pools ?? []).flatMap((p) => p.sites).find((s) => s.project === project.id && s.action === "site")
+      ?.serverName ?? `${hostLabel(project.id)}.localhost`;
 
   const submit = (e: SyntheticEvent) => {
     e.preventDefault();
@@ -127,13 +145,13 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
         <div className="flex flex-col gap-2 border-t border-vsc-border pt-2">
           <label className="flex flex-col gap-1">
             <span className="text-vsc-desc">
-              {t("Domini .localhost aggiuntivi (separati da virgola; predefinito: {0}.localhost)", project.id)}
+              {t("Domini .localhost aggiuntivi (separati da virgola; predefinito: {0})", siteName)}
             </span>
             <TextField
               label={t("Domini .localhost aggiuntivi")}
               value={domainsText}
               onChange={setDomainsText}
-              placeholder={`api.${project.id}.localhost, admin.${project.id}.localhost`}
+              placeholder={`api.${siteName}, admin.${siteName}`}
               mono
               className="w-full max-w-xl"
             />
@@ -191,7 +209,7 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
               ? t(
                   "Servito da {0} nel server condiviso delle versioni del progetto (o nel profilo scelto), su http://{1}.",
                   kind === "apache" ? "Apache" : "Nginx",
-                  `${project.id}.localhost`,
+                  siteName,
                 )
               : kind === "apache"
                 ? t(

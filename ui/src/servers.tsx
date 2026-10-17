@@ -141,16 +141,14 @@ function PoolDetails({
       <EditorBody narrow>
         {pool.orphan && (
           <Notice tone="warning">
-            {t(
-              "Questo pool è ancora acceso ma non corrisponde più ai progetti e ai profili (per esempio dopo l'installazione di una versione più recente): fermalo.",
-            )}
+            {t("Questo pool è ancora acceso ma non corrisponde più ai progetti e ai profili: fermalo.")}
           </Notice>
         )}
         <EditorSection id={`srv-sites-${pool.id}`} title={t("VirtualHost collegati")}>
           {pool.sites.length === 0 ? (
             <Notice tone="info">
               {t(
-                "Nessun progetto collegato a questo pool. I progetti Apache o Nginx con la stessa combinazione di versioni (o assegnati a questo profilo dalla scheda Sito web del progetto) compaiono qui automaticamente.",
+                "Nessun sito in questo pool. Un sito Apache o Nginx compare qui quando il suo progetto lo avvia o lo sceglie nella scheda Sito web (pool automatico delle sue versioni, o questo profilo).",
               )}
             </Notice>
           ) : (
@@ -160,7 +158,12 @@ function PoolDetails({
                 return (
                   <div
                     key={`${site.project}:${site.action}`}
-                    className="rounded border border-vsc-border bg-vsc-sidebar/40 px-3 py-2.5 space-y-1.5"
+                    data-detached={site.detached ? "true" : undefined}
+                    className={`rounded border px-3 py-2.5 space-y-1.5 ${
+                      site.detached
+                        ? "border-dashed border-vsc-border opacity-60"
+                        : "border-vsc-border bg-vsc-sidebar/40"
+                    }`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -168,6 +171,11 @@ function PoolDetails({
                         <code className="rounded bg-vsc-badge px-1.5 py-0.5 font-mono text-[11px] text-vsc-badge-fg">
                           {site.folder}
                         </code>
+                        {site.detached && (
+                          <span className="rounded border border-vsc-border px-1.5 py-0.5 text-[11px] text-vsc-desc">
+                            {t("Sganciato: il progetto è fermo")}
+                          </span>
+                        )}
                       </div>
                       <Button
                         small
