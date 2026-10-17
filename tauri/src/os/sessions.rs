@@ -148,7 +148,7 @@ pub fn stop(pids: &[u32]) {
         std::time::Duration::from_secs(5),
         std::time::Duration::from_millis(100),
         signal,
-        alive,
+        identity,
     );
 }
 
@@ -182,28 +182,34 @@ pub(crate) enum Signal {
 
 /// `SIGTERM` to every process, a wait of up to `grace` (checked every
 /// `step`) for them to end, then `SIGKILL` to those left (T1.5.3): the
-/// databases write their files to disk on `SIGTERM`.
+/// databases write their files to disk on `SIGTERM`. `identity` is when a
+/// running process started (`None`: it has ended): a pid that ends and is
+/// taken by another program during the wait no longer matches, and that
+/// program, outside the kit, gets no signal.
 #[cfg(any(unix, test))]
 pub(crate) fn stop_gently(
     pids: &[u32],
     grace: std::time::Duration,
     step: std::time::Duration,
     signal: impl Fn(u32, Signal),
-    alive: impl Fn(u32) -> bool,
+    identity: impl Fn(u32) -> Option<u64>,
 ) {
-    for &pid in pids {
+    let mut left: Vec<(u32, u64)> = pids
+        .iter()
+        .filter_map(|&pid| Some((pid, identity(pid)?)))
+        .collect();
+    for &(pid, _) in &left {
         signal(pid, Signal::Term);
     }
     let start = std::time::Instant::now();
-    let mut left: Vec<u32> = pids.to_vec();
     loop {
-        left.retain(|&pid| alive(pid));
+        left.retain(|&(pid, started)| identity(pid) == Some(started));
         if left.is_empty() || start.elapsed() >= grace {
             break;
         }
         std::thread::sleep(step);
     }
-    for pid in left {
+    for (pid, _) in left {
         signal(pid, Signal::Kill);
     }
 }
@@ -258,6 +264,15 @@ fn alive(pid: u32) -> bool {
             && info.si_pid() == id
     };
     !ended
+}
+
+/// When `pid`, still running, started; `None` once it has ended. A start
+/// time that cannot be read counts as 0: such a process is then told only
+/// by its pid, as before.
+#[cfg(unix)]
+fn identity(pid: u32) -> Option<u64> {
+    let id = libc::pid_t::try_from(pid).ok()?;
+    alive(pid).then(|| super::guard::start_time(id).unwrap_or(0))
 }
 
 /// The root of the kit a program belongs to: one under
