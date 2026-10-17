@@ -145,9 +145,9 @@ fn json_lines(text: &str) -> Result<Vec<Value>> {
         .collect()
 }
 
-fn mariadb(services: &Services, sql: &str) -> Result<String> {
-    let (_, env) = services.running_server("mariadb")?;
-    let mut cmd = services.mariadb_tool("mariadb.exe", &env);
+fn mariadb(services: &Services, line: Option<&str>, sql: &str) -> Result<String> {
+    let (port, env) = services.running_at("mariadb", line)?;
+    let mut cmd = services.mariadb_tool_at("mariadb.exe", &env, line, port);
     cmd.args([
         "--batch",
         "--raw",
@@ -157,8 +157,13 @@ fn mariadb(services: &Services, sql: &str) -> Result<String> {
     output(cmd, sql, WITHIN)
 }
 
-fn mongosh(services: &Services, script: &str, vars: &[(&str, &str)]) -> Result<Value> {
-    let (port, env) = services.running_server("mongodb")?;
+fn mongosh(
+    services: &Services,
+    line: Option<&str>,
+    script: &str,
+    vars: &[(&str, &str)],
+) -> Result<Value> {
+    let (port, env) = services.running_at("mongodb", line)?;
     let admin = auth::load(services.kit())
         .mongodb_admin
         .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
@@ -197,13 +202,14 @@ const MONGO_ROWS_JS: &str = "const a = db.getSiblingDB('admin'); \
     const docs = c.find().skip(Number(process.env.ATOLLO_DB_OFFSET)).limit(Number(process.env.ATOLLO_DB_LIMIT)).toArray(); \
     print(EJSON.stringify({ total: c.countDocuments(), docs }, undefined, undefined, { relaxed: true }));";
 
-/// The databases of a running server, with their tables or collections,
-/// sorted by name.
-pub fn tree(services: &Services, engine: &str) -> Result<Vec<Database>> {
+/// The databases of a running server, version `line` (None: the one the
+/// server runs; each version has its own port and data), with their tables
+/// or collections, sorted by name.
+pub fn tree(services: &Services, engine: &str, line: Option<&str>) -> Result<Vec<Database>> {
     let mut out: Vec<Database> = Vec::new();
     match engine {
         "mariadb" => {
-            for row in json_lines(&mariadb(services, MARIADB_TREE)?)? {
+            for row in json_lines(&mariadb(services, line, MARIADB_TREE)?)? {
                 let db = row["db"].as_str().unwrap_or_default().to_owned();
                 if out.last().is_none_or(|d| d.name != db) {
                     out.push(Database {
@@ -224,7 +230,7 @@ pub fn tree(services: &Services, engine: &str) -> Result<Vec<Database>> {
             }
         }
         "mongodb" => {
-            let answer = mongosh(services, MONGO_TREE_JS, &[])?;
+            let answer = mongosh(services, line, MONGO_TREE_JS, &[])?;
             for d in answer.as_array().into_iter().flatten() {
                 let name = d["name"].as_str().unwrap_or_default().to_owned();
                 let mut tables: Vec<Table> = d["tables"]
@@ -268,10 +274,12 @@ fn mariadb_value(name: &str, data_type: &str) -> String {
     }
 }
 
-/// One page of a table or collection, from `offset`.
+/// One page of a table or collection of version `line` ([`tree`]), from
+/// `offset`.
 pub fn rows(
     services: &Services,
     engine: &str,
+    line: Option<&str>,
     database: &str,
     table: &str,
     offset: u64,
@@ -285,7 +293,7 @@ pub fn rows(
                 literal(database),
                 literal(table)
             );
-            let cols = json_lines(&mariadb(services, &sql)?)?;
+            let cols = json_lines(&mariadb(services, line, &sql)?)?;
             if cols.is_empty() {
                 bail!("table not found: {database}.{table}");
             }
@@ -310,7 +318,7 @@ pub fn rows(
                 "SELECT COUNT(*) FROM {from};\nSELECT JSON_ARRAY({}) FROM {from} LIMIT {PAGE} OFFSET {offset};\n",
                 values.join(", ")
             );
-            let mut lines = json_lines(&mariadb(services, &sql)?)?.into_iter();
+            let mut lines = json_lines(&mariadb(services, line, &sql)?)?.into_iter();
             let total = lines.next().and_then(|v| v.as_u64()).unwrap_or(0);
             let rows = lines
                 .map(|v| match v {
@@ -329,6 +337,7 @@ pub fn rows(
             let (offset_s, limit_s) = (offset.to_string(), PAGE.to_string());
             let answer = mongosh(
                 services,
+                line,
                 MONGO_ROWS_JS,
                 &[
                     ("ATOLLO_DB_NAME", database),

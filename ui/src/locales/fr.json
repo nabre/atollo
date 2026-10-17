@@ -43,6 +43,7 @@
   "Attività": "Activité",
   "Avvia": "Démarrer",
   "Avvia con Atollo": "Démarrer avec Atollo",
+  "Con il server partono anche le altre versioni su cui sono i database dei progetti.": "Les autres versions qui portent les bases de données des projets démarrent aussi avec le serveur.",
   "Avvia il server per vederne il contenuto.": "Démarrez le serveur pour voir son contenu.",
   "Contenuto": "Contenu",
   "Contenuto del server": "Contenu du serveur",
@@ -233,6 +234,8 @@
   "Un database e un utente solo per questo progetto, con una password generata dal kit.": "Une base de données et un utilisateur pour ce projet seulement, avec un mot de passe généré par le kit.",
   "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. MariaDB è compatibile con MySQL; nel terminale del kit il comando mariadb entra già come root, e «Apri Adminer» lo apre nel browser, come phpMyAdmin. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.": "Un serveur par type, partagé par tous les projets, accessible depuis ce PC uniquement (127.0.0.1), avec un mot de passe. MariaDB est compatible avec MySQL ; dans le terminal du kit, la commande mariadb se connecte déjà en root, et « Ouvrir Adminer » l'ouvre dans le navigateur, comme phpMyAdmin. Chaque projet a sa propre base de données et son utilisateur : créez-les depuis la page du projet.",
   "Apri Adminer": "Ouvrir Adminer",
+  "Adminer su {0}": "Adminer sur {0}",
+  "Questa versione nel browser; il server si avvia se è fermo": "Cette version dans le navigateur ; le serveur démarre s'il est arrêté",
   "MariaDB nel browser, come phpMyAdmin; al primo uso si installa e il server si avvia": "MariaDB dans le navigateur, comme phpMyAdmin ; la première fois, il s'installe et le serveur démarre",
   "Un solo accesso per tutto il kit: questa pagina, Git (anche nell'editor, nelle console e negli agenti) e GitHub CLI. Resta nel kit, in {0}.": "Une seule connexion pour tout le kit : cette page, Git (y compris dans l'éditeur, les consoles et les agents) et GitHub CLI. Elle reste dans le kit, dans {0}.",
   "Una porta fra 1024 e 65535.": "Un port entre 1024 et 65535.",
@@ -766,5 +769,9 @@
   "Versione del server": "Version du serveur",
   "Ogni versione ha la sua porta e i suoi dati: cambiandola, database e utente si creano anche sulla nuova, vuoti (i dati si portano con una copia).": "Chaque version a son port et ses données : en la changeant, la base et l'utilisateur sont aussi créés sur la nouvelle, vides (les données se déplacent avec une copie).",
   "Ogni versione ha la sua porta e i suoi dati.": "Chaque version a son port et ses données.",
-  "Quella del server ({0})": "Celle du serveur ({0})"
+  "Quella del server ({0})": "Celle du serveur ({0})",
+  "{0} {1} non è installata: il database del progetto è su questa versione, che non si avvia. Installala, o scegli un'altra versione (database e utente si creano anche lì, vuoti).": "{0} {1} n'est pas installée : la base de données du projet est sur cette version, qui ne démarre pas. Installez-la, ou choisissez une autre version (base de données et utilisateur y sont créés aussi, vides).",
+  "{0} {1} non è installata: installala, o scegli un'altra versione per il database del progetto.": "{0} {1} n'est pas installée : installez-la, ou choisissez une autre version pour la base de données du projet.",
+  "Installa {0} {1}": "Installer {0} {1}",
+  "{0} (non installata)": "{0} (non installée)"
 }

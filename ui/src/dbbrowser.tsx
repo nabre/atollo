@@ -31,7 +31,17 @@ function cell(v: unknown, engine: Engine): { text: string; dim?: boolean; num?: 
   return { text: typeof v === "string" ? v : JSON.stringify(v) };
 }
 
-function TableView({ engine, database, table }: { engine: Engine; database: string; table: string }) {
+function TableView({
+  engine,
+  line,
+  database,
+  table,
+}: {
+  engine: Engine;
+  line: string | null;
+  database: string;
+  table: string;
+}) {
   const [offset, setOffset] = useState(0);
   const [page, setPage] = useState<DbRows | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +52,7 @@ function TableView({ engine, database, table }: { engine: Engine; database: stri
   const loading = answered !== request;
   useEffect(() => {
     let alive = true;
-    dbBrowseRows(engine, database, table, offset).then(
+    dbBrowseRows(engine, database, table, offset, line).then(
       (p) => {
         if (!alive) return;
         setPage(p);
@@ -58,7 +68,7 @@ function TableView({ engine, database, table }: { engine: Engine; database: stri
     return () => {
       alive = false;
     };
-  }, [engine, database, table, offset, request]);
+  }, [engine, line, database, table, offset, request]);
   const total = page?.total ?? 0;
   const shown = page?.rows.length ?? 0;
   return (
@@ -151,7 +161,9 @@ function TableView({ engine, database, table }: { engine: Engine; database: stri
   );
 }
 
-export function DbBrowser({ engine }: { engine: Engine }) {
+/** `line`: another version of the server, on its own port (PLAN.md §13.2);
+ * null: the version the server runs. */
+export function DbBrowser({ engine, line = null }: { engine: Engine; line?: string | null }) {
   const [tree, setTree] = useState<DbDatabase[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -159,7 +171,7 @@ export function DbBrowser({ engine }: { engine: Engine }) {
   const [systemOpen, setSystemOpen] = useState(false);
   const [chosen, setChosen] = useState<{ database: string; table: string } | null>(null);
   const load = useCallback(() => {
-    dbBrowseTree(engine).then(
+    dbBrowseTree(engine, line).then(
       (dbs) => {
         setTree(dbs);
         setError(null);
@@ -172,7 +184,7 @@ export function DbBrowser({ engine }: { engine: Engine }) {
         setLoading(false);
       },
     );
-  }, [engine]);
+  }, [engine, line]);
   useEffect(load, [load]);
   const refresh = () => {
     setLoading(true);
@@ -265,6 +277,7 @@ export function DbBrowser({ engine }: { engine: Engine }) {
         <TableView
           key={`${chosen.database}\u0000${chosen.table}`}
           engine={engine}
+          line={line}
           database={chosen.database}
           table={chosen.table}
         />

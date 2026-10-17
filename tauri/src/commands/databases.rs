@@ -117,7 +117,7 @@ pub async fn project_db_create<R: Runtime>(
         let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
         services
             .start_for(&project, &engine, &env)
-            .or_fail_chain("database")?;
+            .map_err(|e| start_error(lang, &e))?;
         services
             .project_db_create(&project, &engine)
             .or_fail_chain("database")
@@ -203,7 +203,7 @@ pub async fn project_db_export<R: Runtime>(
         let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
         services
             .start_for(&project, &engine, &env)
-            .or_fail_chain("database")?;
+            .map_err(|e| start_error(lang, &e))?;
         let file = services.export(&project, &engine).or_fail_chain("export")?;
         Ok(file
             .file_name()
@@ -236,7 +236,7 @@ pub async fn project_db_restore<R: Runtime>(
         let env = ensure(&app, &task, &kit, lang, &[engine])?;
         services
             .start_for(&project, engine, &env)
-            .or_fail_chain("database")?;
+            .map_err(|e| start_error(lang, &e))?;
         services.restore(&project, &file).or_fail_chain("restore")
     })
     .await
@@ -244,12 +244,14 @@ pub async fn project_db_restore<R: Runtime>(
 }
 
 /// The databases of a running server with their tables or collections
-/// (D-79), read only.
+/// (D-79), read only. `line`: another version, on its own port (PLAN.md
+/// §13.2); null: the version the server runs.
 #[tauri::command]
 pub async fn db_browse_tree<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     engine: String,
+    line: Option<String>,
 ) -> CmdResult<Vec<crate::db::browse::Database>> {
     ensure_main(&webview)?;
     if !crate::db::services::SERVERS.contains(&engine.as_str()) {
@@ -257,18 +259,20 @@ pub async fn db_browse_tree<R: Runtime>(
     }
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        crate::db::browse::tree(&services, &engine).or_fail_chain("browse")
+        crate::db::browse::tree(&services, &engine, line.as_deref()).or_fail_chain("browse")
     })
     .await
     .or_fail("browse")?
 }
 
-/// One page of rows of a table or collection, from `offset` (D-79).
+/// One page of rows of a table or collection, from `offset` (D-79), on
+/// version `line` (null: the one the server runs).
 #[tauri::command]
 pub async fn db_browse_rows<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     engine: String,
+    line: Option<String>,
     database: String,
     table: String,
     offset: u64,
@@ -279,8 +283,15 @@ pub async fn db_browse_rows<R: Runtime>(
     }
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        crate::db::browse::rows(&services, &engine, &database, &table, offset)
-            .or_fail_chain("browse")
+        crate::db::browse::rows(
+            &services,
+            &engine,
+            line.as_deref(),
+            &database,
+            &table,
+            offset,
+        )
+        .or_fail_chain("browse")
     })
     .await
     .or_fail("browse")?
@@ -288,11 +299,14 @@ pub async fn db_browse_rows<R: Runtime>(
 
 /// Adminer on the kit's MariaDB in the browser (D-85): Adminer (with PHP
 /// and MariaDB) installed the first time, MariaDB started when it is off.
+/// `line`: another installed version, on its own port (PLAN.md §13.2);
+/// null: the version the server runs.
 #[tauri::command]
 pub async fn db_admin_open<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
+    line: Option<String>,
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
@@ -300,9 +314,11 @@ pub async fn db_admin_open<R: Runtime>(
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &["mariadb", "adminer"])?;
         services
-            .start("mariadb", &env)
+            .start_line("mariadb", line.as_deref(), &env)
             .map_err(|e| start_error(lang, &e))?;
-        let url = services.adminer_url().or_fail_chain("adminer")?;
+        let url = services
+            .adminer_url(line.as_deref())
+            .or_fail_chain("adminer")?;
         open_in_browser(&url)?;
         Ok(services.list())
     })

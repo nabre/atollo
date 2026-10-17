@@ -278,7 +278,10 @@ impl KitEnv {
         env.set_path("ATOLLO", root);
         env.set_path("CP_ROOT", root);
         env.set_path("CP_DATA", &data);
-        // The `[client]` login of the kit's MariaDB (db/auth.rs, D-74).
+        // The `[client]` login of the kit's MariaDB (db/auth.rs, D-74), on
+        // the port of the version the server runs; a project's programs get
+        // the login of another version when its database is there
+        // (`db::services::project_mysql_home`).
         env.set_path("MYSQL_HOME", data.join("app").join("db"));
         env.set("CP_ARCH", arch);
         env.set_path("CP_APPS", &apps);
