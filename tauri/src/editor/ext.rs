@@ -34,7 +34,7 @@ use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::env::KitEnv;
-use crate::fsx::write_atomic;
+use crate::fsx::{read_text, write_atomic};
 use crate::kit::Kit;
 use crate::net::verify::Expect;
 use crate::net::{github_digest, Net};
@@ -136,12 +136,17 @@ fn offered_path(kit: &Kit) -> PathBuf {
     kit.app_dir().join("extensions-offered.txt")
 }
 
+/// The user's general extensions (`data\app\extensions.txt`).
+fn user_path(kit: &Kit) -> PathBuf {
+    kit.app_dir().join("extensions.txt")
+}
+
 pub fn extensions_dir(kit: &Kit) -> PathBuf {
     kit.data().join(r"vscodium-server\extensions")
 }
 
 fn read_set(path: &Path) -> BTreeSet<String> {
-    fs::read_to_string(path)
+    read_text(path)
         .unwrap_or_default()
         .lines()
         .map(|l| l.trim().to_ascii_lowercase())
@@ -282,7 +287,7 @@ pub fn hidden_of(kit: &Kit, dir: &Path) -> Vec<String> {
             }
         }
     }
-    let user = fs::read_to_string(kit.app_dir().join("extensions.txt")).unwrap_or_default();
+    let user = read_text(&user_path(kit)).unwrap_or_default();
     hidden(&project, &others, &parse(&user))
 }
 
@@ -322,7 +327,7 @@ fn wanted(kit: &Kit) -> Wanted {
             .filter(|e| e.general() && !e.optional && allowed(&e.programs))
             .map(|e| e.id.clone()),
     );
-    let user = fs::read_to_string(kit.app_dir().join("extensions.txt")).unwrap_or_default();
+    let user = read_text(&user_path(kit)).unwrap_or_default();
     w.offer.extend(
         parse(&user)
             .into_iter()

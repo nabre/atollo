@@ -2,7 +2,7 @@
 //! their tools and versions, opened in any folder of the PC.
 
 use super::*;
-use crate::terminals::{self, Terminal, TerminalsView};
+use crate::editor::terminals::{self, Terminal, TerminalsView};
 
 #[tauri::command]
 pub async fn terminals_list<R: Runtime>(

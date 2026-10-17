@@ -3,7 +3,8 @@
 //! with the current one (port of nabre/dev-kit `setup/agents/moved.js`).
 //!
 //! `kit.rs` notices the move at start and saves the old root in
-//! `data\app\old-root.txt`; it is removed here once the paths are updated,
+//! `data\app\old-root.txt` (`old-root-<os>.txt` on macOS and Linux,
+//! `Kit::old_root_file`); it is removed here once the paths are updated,
 //! so a move is never lost if this step does not run at that start.
 //! Spellings replaced: `E:\kit`, `E:\\kit` (JSON), `E:/kit`, and
 //! `file:///e%3A/kit` URIs, only as a whole path, keeping the drive letter's
@@ -456,10 +457,10 @@ fn targets(kit: &Kit, p: &Paths) -> Vec<PathBuf> {
     out
 }
 
-/// Replaces the old root (from `data\app\old-root.txt`) everywhere.
+/// Replaces the old root (from [`Kit::old_root_file`]) everywhere.
 pub fn relocate(kit: &Kit, report: &mut Report) -> Result<()> {
-    let pending = kit.app_dir().join("old-root.txt");
-    let Ok(from) = fs::read_to_string(&pending) else {
+    let pending = kit.old_root_file();
+    let Ok(from) = crate::fsx::read_text(&pending) else {
         return Ok(());
     };
     let from = from

@@ -1,5 +1,27 @@
+use std::fs;
+use std::net::{SocketAddr, TcpStream};
+use std::path::{Path, PathBuf};
+
+use anyhow::Result;
+
+use super::config::{apache_pool_conf, apache_vhost_conf, component_dir, nginx_pool_conf};
+use super::pools::{
+    auto_pool_id, canonical_auto_pool, host_label, load_store, migrate_port_ids, name_sites,
+    parse_auto_pool_id, pooled_actions, save_store, store_path, StoredServers, POOL_PORT_FROM,
+    POOL_PORT_TO,
+};
+use super::process::{
+    end_dead, needs_restart, php_cgi_listening, pool_error_tail, stops_when_left, take_dead,
+    wait_port_released, LivePool, RunningPool,
+};
 use super::*;
+use crate::detect::{set_site_with_options, SiteKind, SiteOptions};
+use crate::env::KitEnv;
 use crate::kit::{tests::TempDir, Arch};
+use crate::os::jobs::{self, Job};
+use crate::projects::alias;
+use crate::projects::nginx::FastCgi;
+use crate::setup::catalog::Catalog;
 
 #[test]
 fn profile_crud_and_vhost_generation() {

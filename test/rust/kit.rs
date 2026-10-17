@@ -220,6 +220,24 @@ fn moving_the_kit_flags_the_conda_components_off_windows() {
     }
 }
 
+/// The old root that `check_moved` saves is the file `agents::relocate`
+/// reads, on every OS (macOS and Linux used to save `old-root-<os>.txt`
+/// while relocate read only `old-root.txt`).
+#[test]
+fn old_root_file_is_the_one_check_moved_writes() {
+    let root = std::env::temp_dir().join("devkit-old-root");
+    let names = [
+        (Target::WIN32_X64, "old-root.txt"),
+        (Target::DARWIN_ARM64, "old-root-darwin.txt"),
+        (Target::LINUX_X64, "old-root-linux.txt"),
+    ];
+    for (target, name) in names {
+        let kit = Kit::at_target(root.clone(), target);
+        assert_eq!(kit.old_root_file(), kit.app_dir().join(name));
+        assert_eq!(kit.root_files().1, kit.old_root_file());
+    }
+}
+
 /// F7a: off Windows a root that changed only in case is another folder
 /// (Linux, and macOS volumes that respect case): the kit moved. On Windows
 /// it is the same folder.

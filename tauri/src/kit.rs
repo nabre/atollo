@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
-use crate::fsx::write_atomic;
+use crate::fsx::{read_text, write_atomic};
 use crate::os::volume::VolumeInfo;
 
 /// Operating system family of a kit target (`win32`, `darwin`, `linux`).
@@ -467,7 +467,12 @@ impl Kit {
     }
     /// Installed component version files for this target: `data/app/versions/<os>-<arch>`.
     pub fn versions_dir(&self) -> PathBuf {
-        self.app_dir().join("versions").join(self.target.as_str())
+        self.versions_root().join(self.target.as_str())
+    }
+    /// `data/app/versions`: the folders of the targets, the app's own
+    /// `app.txt` and the component files from before the targets.
+    pub fn versions_root(&self) -> PathBuf {
+        self.app_dir().join("versions")
     }
     /// The app's own state: settings, component choice, versions, logs.
     pub fn app_dir(&self) -> PathBuf {
@@ -535,17 +540,11 @@ impl Kit {
     /// macOS/Linux: Git, R) are marked to be installed again (D-92), before
     /// the new root is recorded, so a failed start notices the move again.
     fn check_moved(&self) -> io::Result<Option<PathBuf>> {
-        let (record_name, pending_name) = match self.target.os {
-            Os::Win32 => ("root.txt", "old-root.txt"),
-            Os::Darwin => ("root-darwin.txt", "old-root-darwin.txt"),
-            Os::Linux => ("root-linux.txt", "old-root-linux.txt"),
-        };
-        let record = self.app_dir().join(record_name);
+        let (record, pending) = self.root_files();
         let now = self.root.to_string_lossy().into_owned();
-        let last = fs::read_to_string(&record).ok();
+        let last = read_text(&record).ok();
         let moved = match last.as_deref().map(str::trim) {
             Some(last) if !last.is_empty() && !same_root(self.target.os, last, &now) => {
-                let pending = self.app_dir().join(pending_name);
                 if !pending.exists() {
                     write_atomic(&pending, last.as_bytes())?;
                 }
@@ -558,6 +557,22 @@ impl Kit {
             write_atomic(&record, now.as_bytes())?;
         }
         Ok(moved)
+    }
+
+    /// The last root of this operating system and the old root waiting for
+    /// `agents::relocate` after a move (see [`Self::check_moved`]).
+    fn root_files(&self) -> (PathBuf, PathBuf) {
+        let (record, pending) = match self.target.os {
+            Os::Win32 => ("root.txt", "old-root.txt"),
+            Os::Darwin => ("root-darwin.txt", "old-root-darwin.txt"),
+            Os::Linux => ("root-linux.txt", "old-root-linux.txt"),
+        };
+        (self.app_dir().join(record), self.app_dir().join(pending))
+    }
+
+    /// The old root saved by a move, until the agents' files follow it.
+    pub fn old_root_file(&self) -> PathBuf {
+        self.root_files().1
     }
 }
 

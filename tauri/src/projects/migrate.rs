@@ -30,7 +30,7 @@ use serde_json::{Map, Value};
 
 use super::state::{has_files, remove_empty_dirs, ProjectState};
 use crate::db::auth;
-use crate::fsx::{try_read_json, write_atomic, write_json};
+use crate::fsx::{read_text, try_read_json, write_atomic, write_json};
 use crate::kit::Kit;
 use crate::os::safe_path::is_link;
 
@@ -45,9 +45,6 @@ fn copies_dir(kit: &Kit) -> PathBuf {
 fn old_ports(kit: &Kit) -> PathBuf {
     kit.app_dir().join("ports.json")
 }
-fn secrets_file(kit: &Kit) -> PathBuf {
-    auth::dir(kit).join("secrets.json")
-}
 fn old_backups(kit: &Kit) -> PathBuf {
     kit.data().join(r"db\backup")
 }
@@ -57,7 +54,7 @@ fn old_backups(kit: &Kit) -> PathBuf {
 /// only in the old places, unseen by the checks of database names: creating,
 /// dropping and restoring databases wait (`db::auth::check_name_free`).
 pub fn pending(kit: &Kit) -> bool {
-    if fs::read_to_string(layout_file(kit)).is_ok_and(|t| t.trim() == LAYOUT) {
+    if read_text(&layout_file(kit)).is_ok_and(|t| t.trim() == LAYOUT) {
         return false;
     }
     kit.project_states().exists()
@@ -68,7 +65,7 @@ pub fn pending(kit: &Kit) -> bool {
 
 /// Migrates once; never panics, logs what it did not do.
 pub fn run(kit: &Kit) {
-    if fs::read_to_string(layout_file(kit)).is_ok_and(|t| t.trim() == LAYOUT) {
+    if read_text(&layout_file(kit)).is_ok_and(|t| t.trim() == LAYOUT) {
         return;
     }
     match migrate(kit) {
@@ -140,7 +137,10 @@ fn copy_ports(kit: &Kit) -> Result<()> {
 /// T6.2: `data\app\pre-v2\secrets.json`, private like the original, only
 /// when it still has the projects' passwords (or cannot be read).
 fn copy_secrets(kit: &Kit) -> Result<()> {
-    let (from, to) = (secrets_file(kit), copies_dir(kit).join("secrets.json"));
+    let (from, to) = (
+        auth::secrets_path(kit),
+        copies_dir(kit).join("secrets.json"),
+    );
     if !from.is_file() || to.exists() {
         return Ok(());
     }
@@ -310,7 +310,7 @@ fn merge_ports(file: &Path, ports: &Map<String, Value>, locked: &[Value]) -> Res
 /// a password already there kept; `secrets.json` rewritten only after every
 /// project's file was written, with only what could not move.
 fn split_passwords(kit: &Kit) -> Result<()> {
-    let path = secrets_file(kit);
+    let path = auth::secrets_path(kit);
     let Some(mut secrets) = read_map(&path)? else {
         return Ok(());
     };
