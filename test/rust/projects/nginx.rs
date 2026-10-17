@@ -1,5 +1,13 @@
 use super::*;
 
+/// A php-cgi on `port` with a fixed key.
+fn cgi(port: u16) -> FastCgi {
+    FastCgi {
+        port,
+        key: "0123abcd".repeat(8),
+    }
+}
+
 #[test]
 fn nginx_conf_with_aliases_and_php() {
     let nginx = Path::new(r"D:\kit\data\apps\win-x64\nginx\1.28");
@@ -20,7 +28,7 @@ fn nginx_conf_with_aliases_and_php() {
         doc,
         run,
         7106,
-        Some(9123),
+        Some(&cgi(9123)),
         false,
         &["api.shop.localhost".into(), "x;y.localhost".into()],
         &aliases,
@@ -32,6 +40,11 @@ fn nginx_conf_with_aliases_and_php() {
     ));
     assert!(conf.contains("root \"D:/kit/projects/shop/public\";"));
     assert!(conf.contains("fastcgi_pass 127.0.0.1:9123;"));
+    // The key the kit's guard asks of every request (D-99).
+    assert!(conf.contains(&format!(
+        "            fastcgi_param ATOLLO_FCGI_KEY {};\r\n        }}",
+        cgi(9123).key
+    )));
     assert!(conf.contains("location /media/ {"));
     assert!(conf.contains(&format!("alias \"{projs_fwd}/shop/storage/media/\";")));
     assert!(conf.contains(&format!("alias \"{projs_fwd}/common/assets/\";")));
@@ -67,13 +80,15 @@ fn no_fcgi_blocks_php_source() {
     let run = Path::new(r"D:\kit\data\projects\site\nginx");
     let block =
         "        location ~* \\.(?:php|phtml|phar)$ {\r\n            return 503;\r\n        }";
-    let conf = |fcgi| project_conf(nginx, Some("site"), doc, run, 7107, fcgi, false, &[], &[]);
+    let conf = |fcgi: Option<&FastCgi>| {
+        project_conf(nginx, Some("site"), doc, run, 7107, fcgi, false, &[], &[])
+    };
 
     let static_only = conf(None);
     assert!(static_only.contains(block), "{static_only}");
     assert!(!static_only.contains("fastcgi_pass"));
 
-    let with_php = conf(Some(9124));
+    let with_php = conf(Some(&cgi(9124)));
     assert!(!with_php.contains("return 503;"), "{with_php}");
     assert!(with_php.contains("fastcgi_pass 127.0.0.1:9124;"));
 }
@@ -91,7 +106,7 @@ fn fastcgi_location_is_case_insensitive() {
         doc,
         run,
         7108,
-        Some(9125),
+        Some(&cgi(9125)),
         false,
         &[],
         &[],
@@ -111,8 +126,18 @@ fn inc_and_old_php_files_are_never_served() {
     let doc = Path::new(r"D:\kit\projects\site\public");
     let run = Path::new(r"D:\kit\data\projects\site\nginx");
     let never = "        location ~* \\.(?:inc|php[3-8])$ {\r\n            deny all;\r\n        }";
-    for fcgi in [None, Some(9127)] {
-        let conf = project_conf(nginx, Some("site"), doc, run, 7111, fcgi, false, &[], &[]);
+    for fcgi in [None, Some(cgi(9127))] {
+        let conf = project_conf(
+            nginx,
+            Some("site"),
+            doc,
+            run,
+            7111,
+            fcgi.as_ref(),
+            false,
+            &[],
+            &[],
+        );
         let at = conf.find(never).unwrap_or_else(|| panic!("{conf}"));
         assert!(at < conf.find("location ~* \\.(?:php|phtml|phar)$").unwrap());
     }
@@ -126,8 +151,18 @@ fn hidden_files_are_denied_first() {
     let doc = Path::new(r"D:\kit\projects\blog");
     let run = Path::new(r"D:\kit\data\projects\blog\nginx");
     let deny = "        location ~ /\\.(?!well-known(/|$)) {\r\n            deny all;\r\n        }";
-    for fcgi in [None, Some(9126)] {
-        let conf = project_conf(nginx, Some("blog"), doc, run, 7110, fcgi, false, &[], &[]);
+    for fcgi in [None, Some(cgi(9126))] {
+        let conf = project_conf(
+            nginx,
+            Some("blog"),
+            doc,
+            run,
+            7110,
+            fcgi.as_ref(),
+            false,
+            &[],
+            &[],
+        );
         let at = conf.find(deny).unwrap_or_else(|| panic!("{conf}"));
         assert!(at < conf.find("location ~* \\.(?:php").unwrap(), "{conf}");
     }
@@ -180,4 +215,25 @@ fn server_programs_per_system() {
     fs::create_dir_all(dir.join("sbin")).unwrap();
     fs::write(dir.join("sbin").join("nginx"), "").unwrap();
     assert_eq!(nginx_exe(&linux, &dir), dir.join("sbin").join("nginx"));
+}
+
+/// D-99 «Resta»: php-cgi runs nothing without the key Nginx sends. The key
+/// is an ini value of its command line (out of reach of a request) and the
+/// guard path stays one ini value with a space or a `;` in it.
+#[test]
+fn php_cgi_guard_arguments() {
+    let guard = Path::new("D:/my kit;x/data/kit/fcgi-guard.php");
+    assert_eq!(
+        guard_args(guard, "abc"),
+        [
+            "-d",
+            "atollo.fcgi_key=abc",
+            "-d",
+            "auto_prepend_file=\"D:/my kit;x/data/kit/fcgi-guard.php\""
+        ]
+    );
+    let php = include_str!("../../../runtime/fcgi-guard.php");
+    assert!(php.contains("get_cfg_var('atollo.fcgi_key')"));
+    assert!(php.contains(&format!("$_SERVER['{FCGI_KEY_PARAM}']")));
+    assert!(php.contains("hash_equals(") && php.contains("http_response_code(403)"));
 }

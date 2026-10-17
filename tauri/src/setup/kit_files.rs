@@ -16,6 +16,10 @@ const FILES: &[(&str, &str)] = &[
         "php-router.php",
         include_str!("../../../runtime/php-router.php"),
     ),
+    (
+        "fcgi-guard.php",
+        include_str!("../../../runtime/fcgi-guard.php"),
+    ),
     ("profile.ps1", include_str!("../../../runtime/profile.ps1")),
     ("bashrc", include_str!("../../../runtime/bashrc")),
     (r"bin\agy.cmd", include_str!("../../../runtime/bin/agy.cmd")),

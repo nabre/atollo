@@ -291,7 +291,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
         RunningPool {
             child,
             port: 8094,
-            fcgi_port: None,
+            fcgi: None,
             php_line: None,
             php: None,
             started: nginx_pool("gone", 8094, Vec::new()),
@@ -627,7 +627,10 @@ fn pool_with_dead_php_cgi_is_not_running() {
         RunningPool {
             child: server,
             port: 8099,
-            fcgi_port: Some(9000),
+            fcgi: Some(FastCgi {
+                port: 9000,
+                key: "k".into(),
+            }),
             php_line: Some("8.4".into()),
             php: Some(php),
             started: nginx_pool("nginx-php", 8099, Vec::new()),
@@ -745,7 +748,10 @@ fn reload_restarts_when_php_or_port_changes() {
     let live = |php: Option<&str>, fcgi: Option<u16>| LivePool {
         port: 8093,
         php_line: php.map(str::to_owned),
-        fcgi_port: fcgi,
+        fcgi: fcgi.map(|port| FastCgi {
+            port,
+            key: "k".into(),
+        }),
     };
     let mut pool = nginx_pool("legacy", 8093, Vec::new());
     // Static pool, static sites: graceful.
@@ -983,7 +989,7 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
         RunningPool {
             child,
             port: started.port,
-            fcgi_port: None,
+            fcgi: None,
             php_line: started.php_line.clone(),
             php: None,
             started,
