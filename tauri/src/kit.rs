@@ -3,7 +3,8 @@
 //!
 //! Layout (docs/app/PLAN.md §2): `Dev-Kit.exe`, `projects\` and `data\` side by
 //! side; everything the kit downloads or writes lives in `data\`. Nothing is
-//! ever created outside the root. The platform rule and the "kit was moved"
+//! ever created outside the root. On macOS the root holds `Dev-Kit.app`, on
+//! Linux the AppImage (`root_from`). The platform rule and the "kit was moved"
 //! record follow nabre/dev-kit `setup/windows/_env.cmd` (lines 13-16, 238-267).
 
 use std::fs;
@@ -374,14 +375,14 @@ pub struct Kit {
 }
 
 impl Kit {
-    /// The kit whose root is the folder of `exe`.
+    /// The kit of the program at `exe`: the folder of `exe`, or the folder
+    /// next to `Dev-Kit.app` or the AppImage ([`root_from`]).
     pub fn from_exe(exe: &Path) -> Result<Kit, KitError> {
         let exe = strip_verbatim(exe);
-        let root = exe
-            .parent()
-            .filter(|p| !p.as_os_str().is_empty())
+        let image = running_appimage(&exe);
+        let root = root_from(Os::current(), &exe, image.as_deref())
             .ok_or_else(|| KitError::NoRoot(exe.clone()))?;
-        Ok(Kit::at_target(root.to_path_buf(), Target::detect()))
+        Ok(Kit::at_target(root, Target::detect()))
     }
 
     #[cfg(test)]
@@ -591,6 +592,137 @@ pub(crate) fn same_root(os: Os, recorded: &str, now: &str) -> bool {
     } else {
         recorded == now
     }
+}
+
+/// The kit root for the program at `exe` on `os` (PLAN-PIATTAFORME.md
+/// §4.6): on Linux the folder of the AppImage when the app runs from one
+/// (`image`, its `$APPIMAGE`; the program itself is in a temporary mount),
+/// on macOS the folder that holds `Dev-Kit.app` when `exe` is its
+/// `Contents/MacOS/` program (nothing is ever written inside the bundle),
+/// otherwise the folder of `exe`. `None`: no folder to use.
+pub fn root_from(os: Os, exe: &Path, image: Option<&Path>) -> Option<PathBuf> {
+    let non_empty = |p: &Path| (!p.as_os_str().is_empty()).then(|| p.to_path_buf());
+    if let Some(image) = image.filter(|i| os.is_linux() && i.has_root()) {
+        return image.parent().and_then(non_empty);
+    }
+    if os.is_macos() {
+        if let Some(bundle) = app_bundle(exe) {
+            return bundle.parent().and_then(non_empty);
+        }
+    }
+    exe.parent().and_then(non_empty)
+}
+
+/// The `*.app` bundle whose program is `exe` (`X.app/Contents/MacOS/x`).
+fn app_bundle(exe: &Path) -> Option<&Path> {
+    let macos = exe.parent()?;
+    let contents = macos.parent()?;
+    let bundle = contents.parent()?;
+    let named = |p: &Path, n: &str| p.file_name().is_some_and(|f| f == n);
+    let is_app = bundle
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("app"));
+    (named(macos, "MacOS") && named(contents, "Contents") && is_app).then_some(bundle)
+}
+
+/// The AppImage the app runs from: `$APPIMAGE`, when `exe` is inside the
+/// image's mount (`$APPDIR`). A plain binary started from a program that
+/// itself runs from an AppImage inherits both variables, but is not inside
+/// that mount.
+#[cfg_attr(not(any(target_os = "linux", test)), allow(dead_code))]
+fn appimage_of(
+    exe: &Path,
+    image: Option<&std::ffi::OsStr>,
+    appdir: Option<&std::ffi::OsStr>,
+) -> Option<PathBuf> {
+    let (image, appdir) = (image?, appdir?);
+    (!image.is_empty() && !appdir.is_empty() && exe.starts_with(appdir))
+        .then(|| PathBuf::from(image))
+}
+
+#[cfg(target_os = "linux")]
+fn running_appimage(exe: &Path) -> Option<PathBuf> {
+    appimage_of(
+        exe,
+        std::env::var_os("APPIMAGE").as_deref(),
+        std::env::var_os("APPDIR").as_deref(),
+    )
+}
+
+#[cfg(not(target_os = "linux"))]
+fn running_appimage(_exe: &Path) -> Option<PathBuf> {
+    None
+}
+
+/// The program the kit's wrappers start to run the app again
+/// (`DEVKIT_EXE`): the AppImage when the app runs from one, whose inner
+/// program goes away with its mount; otherwise this program.
+pub fn app_exe() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    Some(running_appimage(&exe).unwrap_or(exe))
+}
+
+/// The app bundle macOS runs from a random read-only copy (App
+/// Translocation, a downloaded app not yet moved or cleared of its
+/// quarantine): its name (`Dev-Kit.app`), or `None` for a normal start.
+pub fn translocated_bundle(exe: &Path) -> Option<String> {
+    let moved = exe
+        .components()
+        .any(|c| c.as_os_str() == "AppTranslocation");
+    moved.then(|| {
+        app_bundle(exe).and_then(Path::file_name).map_or_else(
+            || "Dev-Kit.app".to_owned(),
+            |n| n.to_string_lossy().into_owned(),
+        )
+    })
+}
+
+/// What stops the app at start before the kit is touched (T1.1.2): on
+/// macOS a translocated bundle, whose folder is a temporary read-only copy
+/// where a kit would be created and lost. The text says how to fix it
+/// (Q-2: no Developer ID signature, so the quarantine flag is cleared).
+#[allow(dead_code)] // called by main.rs at start (WP-1.1)
+pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
+    if !os.is_macos() {
+        return None;
+    }
+    let bundle = translocated_bundle(exe)?;
+    let quoted = crate::os::sh_quote(&bundle);
+    Some(format!(
+        "{}\n\n{}",
+        crate::i18n::t(lang, "macOS ha aperto NEXKORA da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.", &[]),
+        crate::i18n::t(lang, "Esci da NEXKORA, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.", &[&quoted]),
+    ))
+}
+
+/// The message for a kit whose folders cannot be created (T1.1.3). On
+/// macOS and Linux a read-only disk (a locked card, a read-only mount, an
+/// image) is named as such; Windows keeps its message.
+#[allow(dead_code)] // called by main.rs at start (WP-1.1)
+pub fn prepare_error_message(os: Os, error: &KitError, lang: &str) -> String {
+    let path = match error {
+        KitError::NotWritable { path, .. } | KitError::NoRoot(path) => path.display().to_string(),
+    };
+    let read_only = matches!(error, KitError::NotWritable { source, .. }
+        if source.kind() == io::ErrorKind::ReadOnlyFilesystem);
+    let cannot = crate::i18n::t(lang, "Impossibile scrivere nella cartella {0}.", &[&path]);
+    if os.is_windows() {
+        return format!(
+            "{cannot}\n\n{}",
+            crate::i18n::t(lang, "Sposta Dev-Kit.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
+        );
+    }
+    if read_only {
+        return format!(
+            "{}\n\n{}",
+            crate::i18n::t(lang, "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.", &[&path]),
+            crate::i18n::t(lang, "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia NEXKORA.", &[])
+        );
+    }
+    format!(
+        "{cannot}\n\n{}",
+        crate::i18n::t(lang, "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia NEXKORA.", &[])
+    )
 }
 
 /// `\\?\C:\x` -> `C:\x` (keeps `\\?\UNC\` and other forms unchanged).

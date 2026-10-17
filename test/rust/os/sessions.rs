@@ -79,3 +79,94 @@ fn other_kit_roots_on_every_system() {
         None
     );
 }
+
+#[test]
+fn tree_of_the_stopped_processes() {
+    let p = |pid, parent| crate::os::processes::Proc {
+        pid,
+        parent,
+        name: String::new(),
+        path: PathBuf::new(),
+    };
+    // 10 -> 11 -> 12, 10 -> 13; 1 (the app) -> 10; 20 alone.
+    let all = [p(10, 1), p(11, 10), p(12, 11), p(13, 10), p(20, 1), p(1, 0)];
+    let mut tree = tree_of(&[10, 10], &all, 1);
+    assert_eq!(tree.first(), Some(&10), "a parent before its children");
+    tree.sort_unstable();
+    assert_eq!(tree, [10, 11, 12, 13]);
+    // The app itself is never in it.
+    assert_eq!(tree_of(&[1], &all, 1), Vec::<u32>::new());
+}
+
+/// T1.5.3: `SIGTERM` to all, `SIGKILL` only to those still running after
+/// the wait; nothing waits when all have ended.
+#[test]
+fn gentle_stop_waits_then_kills() {
+    use std::cell::RefCell;
+    let sent = RefCell::new(Vec::new());
+    let stubborn = 7;
+    stop_gently(
+        &[5, stubborn],
+        Duration::from_millis(200),
+        Duration::from_millis(10),
+        |pid, s| sent.borrow_mut().push((pid, s)),
+        // 5 ends on SIGTERM: running when first looked at, then gone.
+        |pid| match pid {
+            7 => Some(70),
+            _ if sent.borrow().is_empty() => Some(50),
+            _ => None,
+        },
+    );
+    assert_eq!(
+        sent.into_inner(),
+        [
+            (5, Signal::Term),
+            (stubborn, Signal::Term),
+            (stubborn, Signal::Kill)
+        ]
+    );
+    let sent = RefCell::new(Vec::new());
+    let start = std::time::Instant::now();
+    stop_gently(
+        &[5],
+        Duration::from_secs(5),
+        Duration::from_millis(10),
+        |pid, s| sent.borrow_mut().push((pid, s)),
+        |_| sent.borrow().is_empty().then_some(50),
+    );
+    assert!(start.elapsed() < Duration::from_secs(1));
+    assert_eq!(sent.into_inner(), [(5, Signal::Term)]);
+}
+
+/// A pid that ends during the wait and is taken by another program (a
+/// new start time) gets no `SIGKILL`: that program is not the kit's.
+#[test]
+fn gentle_stop_spares_a_reused_pid() {
+    use std::cell::{Cell, RefCell};
+    let sent = RefCell::new(Vec::new());
+    let calls = Cell::new(0);
+    stop_gently(
+        &[9],
+        Duration::from_millis(100),
+        Duration::from_millis(10),
+        |pid, s| sent.borrow_mut().push((pid, s)),
+        |_| {
+            calls.set(calls.get() + 1);
+            // The kit's program, then from the second look another one.
+            Some(if calls.get() == 1 { 1000 } else { 2000 })
+        },
+    );
+    assert_eq!(sent.into_inner(), [(9, Signal::Term)]);
+}
+
+/// A real program: `SIGTERM` ends it, no `SIGKILL` needed.
+#[cfg(unix)]
+#[test]
+fn gentle_stop_of_a_real_program() {
+    use std::os::unix::process::ExitStatusExt;
+    let mut child = Command::new("/bin/sleep").arg("30").spawn().unwrap();
+    let start = std::time::Instant::now();
+    stop(&[child.id()]);
+    assert!(start.elapsed() < Duration::from_secs(4));
+    assert_eq!(child.wait().unwrap().signal(), Some(libc::SIGTERM));
+}

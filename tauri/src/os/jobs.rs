@@ -10,6 +10,9 @@
 //! macOS and Linux have no Job Object: each program of a `Job` leads a
 //! process group of its own, killed (`killpg`) when the job is dropped, and
 //! what the app started is stopped at exit by `sessions::stop_children`.
+//! If the app is killed, the guard (`os/guard.rs`) ends the groups of the
+//! programs it started; on Linux a program started from the main thread
+//! also gets `SIGTERM` from the kernel when the app dies (T1.5.1).
 
 use std::ffi::OsStr;
 #[cfg(unix)]
@@ -121,6 +124,7 @@ impl Job {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .push(pid);
+        super::guard::watch(pid);
         Ok(())
     }
 }
@@ -139,17 +143,69 @@ impl Drop for Job {
                 // SAFETY: a plain signal to a process group this job created.
                 unsafe { libc::killpg(pgid, libc::SIGKILL) };
             }
+            super::guard::unwatch(pgid);
         }
     }
 }
 
-/// No Job Object on this system: nothing to join. Children are stopped at
-/// exit by `sessions::stop_children`; the returned text says so, for the log.
+/// No Job Object on this system: the guard takes its place (T1.5.2). Must
+/// run before the app starts its first program. A guard that cannot start
+/// leaves the programs to `sessions::stop_children` at a normal exit; the
+/// returned text says so, for the log.
 #[cfg(unix)]
 pub fn init() -> Result<Option<String>> {
-    Ok(Some(
-        "no job object on this system; children are stopped at exit".into(),
-    ))
+    match super::guard::start() {
+        Ok(()) => Ok(None),
+        Err(e) => Ok(Some(format!(
+            "{e:#}; children are stopped at a normal exit only"
+        ))),
+    }
+}
+
+/// Linux: the kernel sends `SIGTERM` to the program when the app dies
+/// (`PR_SET_PDEATHSIG`), and a program whose app died before it started
+/// does not start. Only from the app's main thread: the signal comes when
+/// the *thread* that started the program ends, and the other threads
+/// (tasks, the async pool) end long before the app. The guard covers the
+/// rest. `SIGTERM`, not `SIGKILL`: databases write to disk on it, and the
+/// guard sends `SIGKILL` 5 s later.
+#[cfg(target_os = "linux")]
+fn end_with_app(cmd: &mut Command) {
+    // SAFETY: plain queries of this process and thread.
+    let (app, thread) = unsafe { (libc::getpid(), libc::syscall(libc::SYS_gettid)) };
+    if libc::c_long::from(app) != thread {
+        return;
+    }
+    // SAFETY: the closure runs between fork and exec and only makes
+    // system calls; its error needs no allocation.
+    unsafe {
+        cmd.pre_exec(move || {
+            if libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM) != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            if libc::getppid() != app {
+                return Err(std::io::Error::from_raw_os_error(libc::ESRCH));
+            }
+            Ok(())
+        });
+    }
+}
+
+#[cfg(all(unix, not(target_os = "linux")))]
+fn end_with_app(_cmd: &mut Command) {}
+
+/// The guard watches the group `child` leads, if it leads one: a program
+/// started without `process_group(0)` is in the app's own group, which is
+/// never signalled.
+#[cfg(unix)]
+fn watch_group(child: &Child) {
+    let Ok(pid) = libc::pid_t::try_from(child.id()) else {
+        return;
+    };
+    // SAFETY: a plain query; a pid that is gone just fails.
+    if unsafe { libc::getpgid(pid) } == pid {
+        super::guard::watch(pid);
+    }
 }
 
 /// A command for a kit program: the kit environment only, no inherited
@@ -180,10 +236,12 @@ pub fn batch_command(script: &std::path::Path, args: &[&str], env: &KitEnv) -> C
 /// Starts a program that belongs to the session: stopped at exit.
 #[cfg(unix)]
 pub fn spawn(cmd: &mut Command) -> Result<Child> {
+    end_with_app(cmd);
     let child = cmd
         .spawn()
         .with_context(|| format!("starting {:?}", cmd.get_program()))?;
     claim(child.id(), 0);
+    watch_group(&child);
     Ok(child)
 }
 
@@ -192,6 +250,7 @@ pub fn spawn(cmd: &mut Command) -> Result<Child> {
 #[cfg(unix)]
 pub fn spawn_in(cmd: &mut Command, job: &Job) -> Result<Child> {
     cmd.process_group(0);
+    end_with_app(cmd);
     let mut child = cmd
         .spawn()
         .with_context(|| format!("starting {:?}", cmd.get_program()))?;

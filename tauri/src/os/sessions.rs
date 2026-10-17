@@ -32,7 +32,11 @@ pub struct KitProcess {
 /// that end with it anyway (WebView2, editor server): tops of trees only.
 pub fn kit_processes(kit: &Kit) -> Vec<KitProcess> {
     let me = std::process::id();
-    let all = processes::all();
+    // The guard (macOS, Linux) is a copy of the app: not one of its programs.
+    let all: Vec<Proc> = processes::all()
+        .into_iter()
+        .filter(|p| Some(p.pid) != super::guard::pid())
+        .collect();
     let ours: Vec<&Proc> = {
         let prefix = format!(
             "{}{}",
@@ -116,9 +120,11 @@ pub fn stop_children(kit: &Kit) {
             break;
         }
     }
+    // The guard stays until the app is gone: it then ends what is left.
+    let guard = super::guard::pid();
     let pids: Vec<u32> = all
         .iter()
-        .filter(|p| p.pid != me && ours.contains(&p.pid))
+        .filter(|p| p.pid != me && Some(p.pid) != guard && ours.contains(&p.pid))
         .filter(|p| p.path.starts_with(kit.root()) && !p.path.starts_with(&webview))
         .map(|p| p.pid)
         .collect();
@@ -131,20 +137,80 @@ pub fn stop_children(kit: &Kit) {
 
 /// Ends `pids` and everything they started.
 pub fn stop(pids: &[u32]) {
-    let all = processes::all();
+    let tree = tree_of(pids, &processes::all(), std::process::id());
+    #[cfg(windows)]
+    for pid in tree {
+        terminate(pid);
+    }
+    #[cfg(unix)]
+    stop_gently(
+        &tree,
+        std::time::Duration::from_secs(5),
+        std::time::Duration::from_millis(100),
+        signal,
+        identity,
+    );
+}
+
+/// `pids` and their descendants in `all`, without `me`, in the order the
+/// processes are ended (each before its children).
+pub(crate) fn tree_of(pids: &[u32], all: &[Proc], me: u32) -> Vec<u32> {
     let mut children: BTreeMap<u32, Vec<u32>> = BTreeMap::new();
-    for p in &all {
+    for p in all {
         children.entry(p.parent).or_default().push(p.pid);
     }
     let mut todo: Vec<u32> = pids.to_vec();
     let mut seen = BTreeSet::new();
-    let me = std::process::id();
+    let mut out = Vec::new();
     while let Some(pid) = todo.pop() {
         if pid == me || !seen.insert(pid) {
             continue;
         }
         todo.extend(children.get(&pid).cloned().unwrap_or_default());
-        terminate(pid);
+        out.push(pid);
+    }
+    out
+}
+
+/// A signal of [`stop_gently`].
+#[cfg(any(unix, test))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Signal {
+    Term,
+    Kill,
+}
+
+/// `SIGTERM` to every process, a wait of up to `grace` (checked every
+/// `step`) for them to end, then `SIGKILL` to those left (T1.5.3): the
+/// databases write their files to disk on `SIGTERM`. `identity` is when a
+/// running process started (`None`: it has ended): a pid that ends and is
+/// taken by another program during the wait no longer matches, and that
+/// program, outside the kit, gets no signal.
+#[cfg(any(unix, test))]
+pub(crate) fn stop_gently(
+    pids: &[u32],
+    grace: std::time::Duration,
+    step: std::time::Duration,
+    signal: impl Fn(u32, Signal),
+    identity: impl Fn(u32) -> Option<u64>,
+) {
+    let mut left: Vec<(u32, u64)> = pids
+        .iter()
+        .filter_map(|&pid| Some((pid, identity(pid)?)))
+        .collect();
+    for &(pid, _) in &left {
+        signal(pid, Signal::Term);
+    }
+    let start = std::time::Instant::now();
+    loop {
+        left.retain(|&(pid, started)| identity(pid) == Some(started));
+        if left.is_empty() || start.elapsed() >= grace {
+            break;
+        }
+        std::thread::sleep(step);
+    }
+    for (pid, _) in left {
+        signal(pid, Signal::Kill);
     }
 }
 
@@ -160,12 +226,53 @@ fn terminate(pid: u32) {
 }
 
 #[cfg(unix)]
-fn terminate(pid: u32) {
+fn signal(pid: u32, which: Signal) {
     // 0 and negative numbers would signal whole process groups.
     if let Ok(pid @ 1..) = libc::pid_t::try_from(pid) {
+        let sig = match which {
+            Signal::Term => libc::SIGTERM,
+            Signal::Kill => libc::SIGKILL,
+        };
         // SAFETY: a plain signal to one process; a pid that is gone just fails.
-        unsafe { libc::kill(pid, libc::SIGKILL) };
+        unsafe { libc::kill(pid, sig) };
     }
+}
+
+/// The process still runs: it exists and is not a child of the app that
+/// has ended and waits to be reaped (a zombie still answers `kill`).
+#[cfg(unix)]
+fn alive(pid: u32) -> bool {
+    let Ok(id @ 1..) = libc::pid_t::try_from(pid) else {
+        return false;
+    };
+    // SAFETY: signal 0 only checks that the process exists.
+    if unsafe { libc::kill(id, 0) } != 0
+        && std::io::Error::last_os_error().raw_os_error() == Some(libc::ESRCH)
+    {
+        return false;
+    }
+    // SAFETY: a zeroed siginfo_t is valid; WNOWAIT leaves the zombie to
+    // whoever waits for it.
+    let ended = unsafe {
+        let mut info: libc::siginfo_t = std::mem::zeroed();
+        libc::waitid(
+            libc::P_PID,
+            pid,
+            &mut info,
+            libc::WEXITED | libc::WNOHANG | libc::WNOWAIT,
+        ) == 0
+            && info.si_pid() == id
+    };
+    !ended
+}
+
+/// When `pid`, still running, started; `None` once it has ended. A start
+/// time that cannot be read counts as 0: such a process is then told only
+/// by its pid, as before.
+#[cfg(unix)]
+fn identity(pid: u32) -> Option<u64> {
+    let id = libc::pid_t::try_from(pid).ok()?;
+    alive(pid).then(|| super::guard::start_time(id).unwrap_or(0))
 }
 
 /// The root of the kit a program belongs to: one under

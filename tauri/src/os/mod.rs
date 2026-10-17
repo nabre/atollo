@@ -6,10 +6,12 @@
 //! (`safe_path`, D-77) and the build of Windows (here).
 //!
 //! macOS and Linux build the same modules with `#[cfg(unix)]` equivalents
-//! (a process group for the job, `flock` for the locks, a Unix socket for
-//! the instance, `/proc` or `libproc` for the processes): the crate
-//! compiles there; Windows stays the platform the kit is made for.
+//! (a process group for the job and a guard for a killed app, `flock` for
+//! the locks, a socket for the instance, `/proc` or `libproc` for the
+//! processes): the crate compiles there; Windows stays the platform the
+//! kit is made for.
 
+pub mod guard;
 pub mod instance;
 pub mod jobs;
 pub mod processes;
@@ -23,6 +25,14 @@ pub mod webview;
 use windows::core::HSTRING;
 #[cfg(windows)]
 use windows::Win32::System::Registry::{RegGetValueW, HKEY_LOCAL_MACHINE, RRF_RT_REG_SZ};
+
+/// `text` as one word for a POSIX shell, for the commands the user is told
+/// to paste in a Terminal: always in single quotes, where nothing expands
+/// (`$(...)`, backquotes), each `'` written as `'\''`. A volume label or a
+/// bundle name is chosen by whoever made the disk.
+pub fn sh_quote(text: &str) -> String {
+    format!("'{}'", text.replace('\'', r"'\''"))
+}
 
 /// Not Windows: no build to read.
 #[cfg(not(windows))]

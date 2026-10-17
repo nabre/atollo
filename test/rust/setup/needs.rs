@@ -2,10 +2,6 @@ use super::*;
 use crate::kit::{tests::TempDir, Arch};
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "program paths with backslashes are split by the Windows Path"
-)]
 fn commands() {
     let ids = |c: &str| of_command(c).into_iter().collect::<Vec<_>>();
     assert_eq!(ids("npm run dev -- --port 7100"), ["node"]);
@@ -20,9 +16,46 @@ fn commands() {
     assert_eq!(ids("pnpm dev"), ["pnpm"]);
     assert_eq!(ids("\"C:\\x y\\node.exe\" server.js"), ["node"]);
     assert!(ids("echo hi").is_empty());
+    // Both separators on every system: a kit shared between Windows and Unix.
+    assert_eq!(ids(".venv/bin/python -m pytest"), ["python"]);
+    assert_eq!(ids(r"tools\bin/cargo.EXE build"), ["rust"]);
+    assert!(ids(r"tools\ x").is_empty());
     for id in ids("npm i & go build & dotnet run & ruby x.rb & Rscript a.R") {
         assert!(Catalog::get().find(id).is_some(), "{id}");
     }
+}
+
+/// Both separators on every system, and on Windows the same name as
+/// `Path::file_name` ("Windows invariato").
+#[test]
+fn file_name_reads_windows_and_unix_paths() {
+    let cases = [
+        (r"C:\kit\node.exe", Some("node.exe")),
+        ("/opt/kit/bin/node", Some("node")),
+        (r"dir\", Some("dir")),
+        ("dir//", Some("dir")),
+        ("C:node.exe", Some("node.exe")),
+        (r"a\.\b\.", Some("b")),
+        (r"a\..", None),
+        ("..", None),
+        ("C:", None),
+        ("", None),
+        ("npm", Some("npm")),
+    ];
+    for (path, want) in cases {
+        assert_eq!(file_name(path).as_deref(), want, "{path}");
+        #[cfg(windows)]
+        assert_eq!(
+            std::path::Path::new(path)
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .as_deref(),
+            want,
+            "Path::file_name of {path}"
+        );
+    }
+    assert_eq!(component_of(r"dir\npm\"), Some("node"));
+    assert_eq!(component_of("C:python.exe"), Some("python"));
 }
 
 #[test]
