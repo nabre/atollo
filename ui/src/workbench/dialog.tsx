@@ -1,6 +1,6 @@
 // Confirmations: the modal one over the whole window (VSCodium's dialog
 // box) and the inline one under the button that asked it.
-import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
+import { Children, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Button } from "./controls";
 
 // What Tab reaches: not a hidden control nor one out of the tab order (as
@@ -138,13 +138,29 @@ export function ConfirmDialog({
   );
 }
 
+/** Where the focus goes once an InlineConfirm closes: the control that
+ * opened it when still in the page; otherwise the one rendered again in its
+ * place (callers show the question instead of their button), found in the
+ * part of the page around the question by its kind and its name. */
+function focusBack(opener: HTMLElement | null, around: HTMLElement | null): HTMLElement | null {
+  if (!opener) return null;
+  if (opener.isConnected) return opener;
+  if (!around?.isConnected) return null;
+  const name = (el: HTMLElement) => el.getAttribute("aria-label") ?? el.textContent?.trim() ?? "";
+  const wanted = name(opener);
+  return (
+    Array.from(around.querySelectorAll<HTMLElement>(opener.localName)).find((el) => name(el) === wanted) ?? null
+  );
+}
+
 /** A question in the page's flow (deleting something, signing out): the
  * question shown first (`question`, its name; or `label` when the question
  * is already in the text), the text that explains it (`children`, its
  * description), then the buttons that answer it. The last action is the
  * safe one ("Annulla") and takes the focus when the question appears; Esc
- * calls `onCancel`. `row` puts it all on one line, as in a bar or a list
- * row; `textClassName` styles the text. */
+ * calls `onCancel`. Once it closes, the focus goes back to the control
+ * that asked it ([`focusBack`]). `row` puts it all on one line, as in a bar
+ * or a list row; `textClassName` styles the text. */
 export function InlineConfirm({
   question,
   label,
@@ -165,17 +181,37 @@ export function InlineConfirm({
   textClassName?: string;
 }) {
   const id = useId();
+  const box = useRef<HTMLDivElement>(null);
   const answers = useRef<HTMLDivElement>(null);
+  // The control that asked the question (read while rendering, before the
+  // question takes its place).
+  const [opener] = useState(() =>
+    document.activeElement instanceof HTMLElement && document.activeElement !== document.body
+      ? document.activeElement
+      : null,
+  );
   useEffect(() => {
+    const node = box.current;
+    const around = node?.parentElement ?? null;
     if (answers.current) tabbable(answers.current).at(-1)?.focus();
-  }, []);
+    return () => {
+      // Still in the page: a remount (StrictMode), not a close. A choice
+      // that moved the focus elsewhere keeps it there.
+      if (node?.isConnected) return;
+      const at = document.activeElement;
+      if (at === null || at === document.body) focusBack(opener, around)?.focus();
+    };
+  }, [opener]);
   const Text = row ? "span" : "div";
+  // `false` and `null` children (a part of the text not needed) are no text.
+  const described = Children.toArray(children).length > 0;
   return (
     <div
+      ref={box}
       role="alertdialog"
       aria-labelledby={question ? `${id}-q` : undefined}
       aria-label={question ? undefined : label}
-      aria-describedby={children ? `${id}-desc` : undefined}
+      aria-describedby={described ? `${id}-desc` : undefined}
       onKeyDown={(e) => {
         if (e.key !== "Escape" || !onCancel) return;
         e.stopPropagation();
@@ -184,11 +220,11 @@ export function InlineConfirm({
       className={`${row ? "flex flex-wrap items-center gap-2" : "space-y-2"} ${className}`}
     >
       {question && (
-        <Text id={`${id}-q`} className={children ? "" : textClassName}>
+        <Text id={`${id}-q`} className={described ? "" : textClassName}>
           {question}
         </Text>
       )}
-      {children && (
+      {described && (
         <Text id={`${id}-desc`} className={textClassName}>
           {children}
         </Text>
