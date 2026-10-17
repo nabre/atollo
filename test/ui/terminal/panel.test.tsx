@@ -41,6 +41,18 @@ const { terms, FakeTerminal } = vi.hoisted(() => {
     type(data: string) {
       this.onDataHandler?.(data);
     }
+    private onBinaryHandler: ((d: string) => void) | null = null;
+    onBinary(handler: (d: string) => void) {
+      this.onBinaryHandler = handler;
+      return {
+        dispose: () => {
+          this.onBinaryHandler = null;
+        },
+      };
+    }
+    sendBinary(data: string) {
+      this.onBinaryHandler?.(data);
+    }
     dispose() {
       this.disposed = true;
     }
@@ -67,6 +79,7 @@ function fakeBackend(start: PtyInfo[] = []) {
   const output = new Map<number, ((c: PtyChunk) => void)[]>();
   const backlogs = new Map<number, PtyChunk>();
   const calls: string[] = [];
+  const failures = { close: null as string | null };
   const sessions = vi.fn(() => Promise.resolve(start));
   const backend: PtyBackend = {
     sessions,
@@ -75,13 +88,17 @@ function fakeBackend(start: PtyInfo[] = []) {
       calls.push(`write ${String(id)} ${data}`);
       return Promise.resolve();
     },
+    writeBinary: (id, data) => {
+      calls.push(`binary ${String(id)} ${Array.from(data, (c) => c.charCodeAt(0)).join(",")}`);
+      return Promise.resolve();
+    },
     resize: (id, cols, rows) => {
       calls.push(`resize ${String(id)} ${String(cols)}x${String(rows)}`);
       return Promise.resolve();
     },
     close: (id) => {
       calls.push(`close ${String(id)}`);
-      return Promise.resolve();
+      return failures.close === null ? Promise.resolve() : Promise.reject(new Error(failures.close));
     },
     onOpened: (h) => {
       opened.push(h);
@@ -100,6 +117,7 @@ function fakeBackend(start: PtyInfo[] = []) {
     backend,
     sessions,
     calls,
+    failures,
     open(info: PtyInfo, backlog: PtyChunk) {
       backlogs.set(info.id, backlog);
       act(() => {
@@ -178,6 +196,31 @@ describe("TerminalPanel", () => {
     expect(terms[0]?.written).toBe("$ ls\r\n");
     terms[0]?.type("pwd\r");
     expect(fake.calls).toContain("write 1 pwd\r");
+    // Mouse reports that are not text reach the program as bytes.
+    terms[0]?.sendBinary("\x1b[M \xff\xa0");
+    expect(fake.calls).toContain("binary 1 27,91,77,32,255,160");
+  });
+
+  it("shows why an ended session's tab could not close", async () => {
+    const fake = fakeBackend();
+    render(<Harness backend={fake.backend} />);
+    await waitFor(() => {
+      expect(fake.sessions).toHaveBeenCalled();
+    });
+    fake.open({ ...BASH, running: false, code: 0 }, { seq: 0, data: "" });
+    fake.failures.close = "terminal session 1 not found";
+    fireEvent.click(screen.getByRole("button", { name: "Chiudi il terminale" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText(/terminal session 1 not found/)).toBeTruthy();
+    });
+    // The tab stays; a later attempt that works clears the error.
+    expect(screen.getByRole("tab", { name: "app · bash (terminato)" })).toBeTruthy();
+    fake.failures.close = null;
+    fireEvent.click(screen.getByRole("button", { name: "Chiudi il terminale" }));
+    await waitFor(() => {
+      expect(screen.getByText("hidden 0")).toBeTruthy();
+    });
   });
 
   it("asks before closing a running session, not an ended one", async () => {
