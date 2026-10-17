@@ -72,33 +72,36 @@ fn find_file_is_case_insensitive_and_recursive() {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "Windows keys (node.exe, java.exe) and backslash paths"
-)]
 fn check_key_wants_every_part_of_the_folder() {
     let tmp = TempDir::new("checkkey");
+    // A tree outside `data/apps/<target>`: the keys of the host's target
+    // (`node.exe` on Windows, `node` elsewhere).
+    let host = crate::kit::Target::detect();
+    let exe = |stem: &str| crate::router::bins::exe_name(host.os, stem);
     let server = Catalog::get().find("vscodium-server").unwrap();
     let tree = tmp.0.join("tree");
     fs::create_dir_all(tree.join("out")).unwrap();
-    fs::write(tree.join(r"out\server-main.js"), b"").unwrap();
+    fs::write(tree.join("out").join("server-main.js"), b"").unwrap();
     let err = check_key(server, &[], &tree).unwrap_err();
-    assert!(err.to_string().contains("node.exe"), "{err}");
-    fs::write(tree.join("node.exe"), b"").unwrap();
+    let node = format!("vscodium-server/{}", exe("node"));
+    assert!(err.to_string().contains(&node), "{err}");
+    fs::write(tree.join(exe("node")), b"").unwrap();
     check_key(server, &[], &tree).unwrap();
 
     // Parts in other folders (Maven, Gradle) are not in this tree.
     let java = Catalog::get().find("java").unwrap();
     let tree = tmp.0.join("jdk");
     fs::create_dir_all(tree.join("bin")).unwrap();
-    fs::write(tree.join(r"bin\java.exe"), b"").unwrap();
+    fs::write(tree.join("bin").join(exe("java")), b"").unwrap();
     check_key(java, &[], &tree).unwrap();
 
     // Composer goes inside PHP's folder after the zip: not in it.
     let php = Catalog::get().find("php").unwrap();
     let tree = tmp.0.join("php");
-    fs::create_dir_all(&tree).unwrap();
-    fs::write(tree.join("php.exe"), b"").unwrap();
+    let key = php.key_for(host);
+    let file = crate::fsx::join_rel(&tree, key.strip_prefix("php/").unwrap());
+    fs::create_dir_all(file.parent().unwrap()).unwrap();
+    fs::write(file, b"").unwrap();
     assert!(check_key(php, &[], &tree).is_err());
     check_key(php, installer("php").unwrap().inside(), &tree).unwrap();
 }

@@ -2,7 +2,6 @@ use super::*;
 use crate::kit::{tests::TempDir, Arch};
 
 #[test]
-#[cfg_attr(not(windows), ignore = "settings path given with backslashes")]
 fn saved_in_data_and_kept() {
     let tmp = TempDir::new("project-settings");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -10,7 +9,11 @@ fn saved_in_data_and_kept() {
     assert_eq!(load(&kit, "app"), ProjectSettings::default());
     update(&kit, "app", |s| s.agent = Some("codex".into()));
     opened(&kit, "app");
-    let file = kit.data().join(r"projects\app\dev-settings.json");
+    let file = kit
+        .data()
+        .join("projects")
+        .join("app")
+        .join("dev-settings.json");
     let text = std::fs::read_to_string(&file).unwrap();
     assert!(text.contains("\"agent\": \"codex\"") && text.contains("lastOpened"));
     // a key of a newer version stays

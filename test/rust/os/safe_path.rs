@@ -2,6 +2,7 @@ use super::*;
 use crate::kit::tests::TempDir;
 
 /// A real junction (`mklink /J` needs no admin rights).
+#[cfg(windows)]
 pub(crate) fn junction(link: &Path, target: &Path) {
     let ok = std::process::Command::new("cmd")
         .args(["/d", "/c", "mklink", "/J"])
@@ -14,8 +15,23 @@ pub(crate) fn junction(link: &Path, target: &Path) {
     assert!(ok, "mklink /J");
 }
 
+/// Unix has no junctions: a symbolic link to the folder, what a cloned
+/// project brings there.
+#[cfg(unix)]
+pub(crate) fn junction(link: &Path, target: &Path) {
+    std::os::unix::fs::symlink(target, link).unwrap();
+}
+
+/// Removes a link made by `junction`, never its target: a junction goes
+/// as a folder, a symbolic link on Unix as a file.
+pub(crate) fn remove_junction(link: &Path) {
+    #[cfg(windows)]
+    fs::remove_dir(link).unwrap();
+    #[cfg(unix)]
+    fs::remove_file(link).unwrap();
+}
+
 #[test]
-#[cfg_attr(not(windows), ignore = "junctions made with mklink /J")]
 fn links_are_never_followed() {
     let tmp = TempDir::new("safe-path");
     let root = tmp.0.join("p");

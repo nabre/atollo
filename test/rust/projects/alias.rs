@@ -68,16 +68,12 @@ fn urls_and_domains() {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "backslash paths and junctions made with mklink /J"
-)]
 fn resolved_only_inside_the_projects_without_links() {
     let tmp = TempDir::new("site-alias");
     let projects = tmp.0.join("projects");
     let shop = projects.join("shop");
-    fs::create_dir_all(shop.join(r"storage\uploads")).unwrap();
-    fs::create_dir_all(projects.join(r"common\assets")).unwrap();
+    fs::create_dir_all(shop.join("storage").join("uploads")).unwrap();
+    fs::create_dir_all(projects.join("common").join("assets")).unwrap();
     let outside = tmp.0.join("outside");
     fs::create_dir_all(&outside).unwrap();
     junction(&shop.join("leak"), &outside);
@@ -100,7 +96,7 @@ fn resolved_only_inside_the_projects_without_links() {
         ["/ghost", "/leak", "/missing", "/up", "bad"]
     );
     let by_url = |u: &str| found.iter().find(|a| a.url == u).unwrap();
-    assert_eq!(by_url("/media").dir, shop.join(r"storage\uploads"));
+    assert_eq!(by_url("/media").dir, shop.join("storage").join("uploads"));
     assert_eq!(
         by_url("/media").apache_path("${CP_PROJECT_FWD}"),
         "${CP_PROJECT_FWD}/storage/uploads"
@@ -130,12 +126,14 @@ fn nginx_skips_aliases_with_links_inside() {
     let tmp = TempDir::new("site-alias-inside");
     let projects = tmp.0.join("projects");
     let shop = projects.join("shop");
-    fs::create_dir_all(shop.join(r"clean\a\b")).unwrap();
-    fs::write(shop.join(r"clean\a\b\x.txt"), "x").unwrap();
-    fs::create_dir_all(shop.join(r"dirty\2026\10")).unwrap();
+    let clean = shop.join("clean").join("a").join("b");
+    fs::create_dir_all(&clean).unwrap();
+    fs::write(clean.join("x.txt"), "x").unwrap();
+    let month = shop.join("dirty").join("2026").join("10");
+    fs::create_dir_all(&month).unwrap();
     let outside = tmp.0.join("outside");
     fs::create_dir_all(&outside).unwrap();
-    junction(&shop.join(r"dirty\2026\10\leak"), &outside);
+    junction(&month.join("leak"), &outside);
     let mut deep = shop.join("deep");
     for i in 0..=INSIDE_DEPTH {
         deep.push(format!("d{i}"));
@@ -145,7 +143,7 @@ fn nginx_skips_aliases_with_links_inside() {
     assert_eq!(look_inside(&shop.join("clean")), Inside::Clean);
     assert_eq!(
         look_inside(&shop.join("dirty")),
-        Inside::Link(shop.join(r"dirty\2026\10\leak"))
+        Inside::Link(month.join("leak"))
     );
     assert_eq!(look_inside(&shop.join("deep")), Inside::TooLarge);
 

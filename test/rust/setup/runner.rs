@@ -10,9 +10,22 @@ fn with_ctx(name: &str, f: impl FnOnce(&Ctx)) {
     with_arch_ctx(name, Arch::X64, f);
 }
 
+/// A Windows kit on every host: the plans below follow the catalog of
+/// Windows (Apache and PHP, R without an ARM64 build), and a plan reads the
+/// kit's target only.
 fn with_arch_ctx(name: &str, arch: Arch, f: impl FnOnce(&Ctx)) {
+    with_target_ctx(
+        name,
+        crate::kit::Target::new(crate::kit::Os::Win32, arch),
+        f,
+    );
+}
+
+/// A kit for `target` on any host: a plan is pure over the catalog and the
+/// kit's target.
+fn with_target_ctx(name: &str, target: crate::kit::Target, f: impl FnOnce(&Ctx)) {
     let tmp = TempDir::new(name);
-    let kit = Kit::at(tmp.0.clone(), arch);
+    let kit = Kit::at_target(tmp.0.clone(), target);
     kit.prepare().unwrap();
     let net = Net::new(&Settings::default(), None).unwrap();
     let env = KitEnv::default();
@@ -200,6 +213,57 @@ fn no_arm64_components_are_never_planned_on_arm64() {
         let p = plan_with(ctx, &choice, &["r"], &[]).unwrap();
         assert_eq!(p.handle, ["r"]);
     });
+}
+
+/// The plan of a Linux or macOS kit follows that system's catalog: what has
+/// no build there is never planned (asking for it is an error naming the
+/// target), and a component turned off is removed through the key paths of
+/// that system.
+#[test]
+fn unix_plans_follow_the_unix_catalog() {
+    use crate::kit::Target;
+    let catalog = Catalog::get();
+    for target in [Target::LINUX_X64, Target::DARWIN_ARM64] {
+        let mut choice = Choice::defaults(catalog);
+        for c in catalog.all() {
+            choice.set(catalog, &c.id, true);
+        }
+        with_target_ctx(&format!("plan-{}", target.as_str()), target, |ctx| {
+            let p = plan_with(ctx, &choice, &[], &[]).unwrap();
+            assert!(p.handle.contains(&"git".into()), "{}", target.as_str());
+            for id in &p.handle {
+                let c = catalog.find(id).unwrap();
+                assert!(c.is_available_on(target), "{id} on {}", target.as_str());
+            }
+            let missing: Vec<_> = catalog
+                .all()
+                .iter()
+                .filter(|c| !c.is_available_on(target))
+                .collect();
+            assert!(
+                !missing.is_empty(),
+                "{}: some component has no build",
+                target.as_str()
+            );
+            for c in missing {
+                assert!(!p.handle.contains(&c.id), "{} on {}", c.id, target.as_str());
+                let e = plan_with(ctx, &choice, &[&c.id], &[]).unwrap_err();
+                assert_eq!(
+                    e.to_string(),
+                    format!("{} is not available on {}", c.id, target.as_str())
+                );
+            }
+        });
+        let choice = Choice::defaults(catalog);
+        assert!(!choice.is_chosen("java"));
+        with_target_ctx(&format!("plan-rm-{}", target.as_str()), target, |ctx| {
+            fake_install(ctx, "java");
+            let java = catalog.find("java").unwrap();
+            assert!(java.is_present(ctx.kit));
+            let p = plan_with(ctx, &choice, &[], &[]).unwrap();
+            assert!(p.remove.contains(&"java".into()), "{}", target.as_str());
+        });
+    }
 }
 
 /// No network: everything chosen is already installed.

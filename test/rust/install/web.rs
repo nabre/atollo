@@ -36,10 +36,14 @@ fn php_ini_from_older_templates() {
     );
 }
 
-/// A PHP folder of `kit` (its key) with its `php.ini-development`.
-fn fake_php(dir: &Path, template: &str) {
-    fs::create_dir_all(dir).unwrap();
-    fs::write(dir.join("php.exe"), b"").unwrap();
+/// A PHP folder of `kit` (its key for the kit's target: `php.exe` on
+/// Windows, `bin/php` elsewhere) with its `php.ini-development`.
+fn fake_php(kit: &crate::kit::Kit, dir: &Path, template: &str) {
+    let php = crate::setup::catalog::Catalog::get().find("php").unwrap();
+    let key = php.key_for(kit.target());
+    let file = crate::fsx::join_rel(dir, key.strip_prefix("php/").unwrap());
+    fs::create_dir_all(file.parent().unwrap()).unwrap();
+    fs::write(file, b"").unwrap();
     fs::write(dir.join("php.ini-development"), template).unwrap();
 }
 
@@ -47,7 +51,6 @@ fn fake_php(dir: &Path, template: &str) {
 /// single php.ini of an older kit becomes the default line's, with the
 /// user's changes.
 #[test]
-#[cfg_attr(not(windows), ignore = "Windows layout: php.exe and backslash paths")]
 fn one_php_ini_per_line() {
     use crate::kit::{Arch, Kit};
     use crate::setup::catalog::Catalog;
@@ -59,17 +62,17 @@ fn one_php_ini_per_line() {
     let php = Catalog::get().find("php").unwrap();
     let version = "8.4.13 (Composer 2.8.12)";
     let main = crate::versions::install_dir(&kit, php, version);
-    fake_php(&main, ";extension=curl\r\n");
+    fake_php(&kit, &main, ";extension=curl\r\n");
     php.save_version(&kit, version).unwrap();
     let old = crate::versions::saved_dir(&kit, php, "5.6");
-    fake_php(&old, ";extension=php_curl.dll\r\n");
+    fake_php(&kit, &old, ";extension=php_curl.dll\r\n");
     crate::versions::write_version(&old, "5.6.40").unwrap();
-    let legacy = data.join(r"php\php.ini");
+    let legacy = data.join("php").join("php.ini");
     fs::create_dir_all(legacy.parent().unwrap()).unwrap();
     fs::write(&legacy, "memory_limit = 1G\r\n").unwrap();
 
-    assert_eq!(php_ini_dir(&data, &main), data.join(r"php\8.4"));
-    assert_eq!(php_ini_dir(&data, &old), data.join(r"php\5.6"));
+    assert_eq!(php_ini_dir(&data, &main), data.join("php").join("8.4"));
+    assert_eq!(php_ini_dir(&data, &old), data.join("php").join("5.6"));
     assert_eq!(
         php_ini_dir(&data, &kit.apps().join("php")),
         data.join("php"),
@@ -77,8 +80,8 @@ fn one_php_ini_per_line() {
     );
 
     migrate_php_ini(&kit).unwrap();
-    let main_ini = data.join(r"php\8.4\php.ini");
-    let old_ini = data.join(r"php\5.6\php.ini");
+    let main_ini = data.join("php").join("8.4").join("php.ini");
+    let old_ini = data.join("php").join("5.6").join("php.ini");
     assert_eq!(
         fs::read_to_string(&main_ini).unwrap(),
         "memory_limit = 1G\r\n"
@@ -102,13 +105,11 @@ fn one_php_ini_per_line() {
     // The environment points at the php.ini of the PHP it names.
     let mut env = crate::env::KitEnv::default();
     env.set_php(&data, &old);
-    assert_eq!(
-        env.get("PHPRC"),
-        Some(data.join(r"php\5.6").to_str().unwrap())
-    );
+    let ini_dir = data.join("php").join("5.6");
+    assert_eq!(env.get("PHPRC"), Some(ini_dir.to_str().unwrap()));
     assert_eq!(
         env.get("CP_PHPRC_FWD").unwrap(),
-        data.join(r"php\5.6").to_str().unwrap().replace('\\', "/")
+        ini_dir.to_str().unwrap().replace('\\', "/")
     );
 }
 
@@ -198,7 +199,6 @@ fn httpd_conf_changes() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "expected file given with a backslash path")]
 fn apache_site_created_once() {
     let tmp = TempDir::new("apachesite");
     apache_site(&tmp.0).unwrap();
@@ -209,7 +209,7 @@ fn apache_site_created_once() {
     fs::write(&conf, "mine").unwrap();
     apache_site(&tmp.0).unwrap();
     assert_eq!(fs::read_to_string(&conf).unwrap(), "mine");
-    assert!(tmp.0.join(r"htdocs\index.php").is_file());
+    assert!(tmp.0.join("htdocs").join("index.php").is_file());
 }
 
 #[test]
