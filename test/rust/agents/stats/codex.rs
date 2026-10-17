@@ -42,11 +42,10 @@ fn windows_from_server_and_logs() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "session folders created with backslash paths")]
 fn sessions_count_growth_once() {
     let tmp = TempDir::new("stats-codex");
     let dir = tmp.0.join(".codex");
-    let day = dir.join(r"sessions\2026\10\14");
+    let day = dir.join("sessions").join("2026").join("10").join("14");
     fs::create_dir_all(&day).unwrap();
     fs::create_dir_all(dir.join("archived_sessions")).unwrap();
     let cx = Ctx::for_tests("en");
@@ -65,7 +64,7 @@ fn sessions_count_growth_once() {
     .join("\n");
     fs::write(day.join("rollout-a.jsonl"), &text).unwrap();
     // a fork copies the same events
-    fs::write(dir.join(r"archived_sessions\rollout-b.jsonl"), &text).unwrap();
+    fs::write(dir.join("archived_sessions").join("rollout-b.jsonl"), &text).unwrap();
     fs::write(day.join("other.jsonl"), &text).unwrap();
     let (u, l) = from_logs(&dir, &Period::now(), &cx);
     // first event: 60 new + 40 cached + 10 out; then growth: 40 + 20 + 10

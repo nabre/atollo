@@ -31,15 +31,28 @@ fn php_header_version() {
 
 /// `@` in the check program is the kit root, as in the key.
 #[test]
-#[cfg_attr(not(windows), ignore = "runs a batch file (@echo) as pnpm")]
 fn check_program_at_the_kit_root() {
     let tmp = TempDir::new("checkup-root");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    // The host's own CPU: a kit of another one is only checked on disk
+    // (an x64 kit on Linux ARM64 runs nothing).
+    let kit = Kit::at(tmp.0.clone(), Arch::detect());
     kit.prepare().unwrap();
     let pnpm = Catalog::get().find("pnpm").unwrap();
+    // `pnpm.cmd` a batch file on Windows, `bin/pnpm` a shell script
+    // elsewhere.
+    let script: &[u8] = if cfg!(windows) {
+        b"@echo 10.0.0\r\n"
+    } else {
+        b"#!/bin/sh\necho 10.0.0\n"
+    };
     for p in pnpm.key_paths(&kit) {
         std::fs::create_dir_all(p.parent().unwrap()).unwrap();
-        std::fs::write(&p, b"@echo 10.0.0\r\n").unwrap();
+        std::fs::write(&p, script).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
     }
     let result = check(&kit, &KitEnv::default(), pnpm).unwrap();
     assert!(result.ok, "{}", result.answer);
@@ -48,7 +61,6 @@ fn check_program_at_the_kit_root() {
 
 /// Half installed: in the check, failed, with the missing part.
 #[test]
-#[cfg_attr(not(windows), ignore = "expects the Windows part ninja.exe")]
 fn half_installed_fails_the_check() {
     let tmp = TempDir::new("checkup-half");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -60,5 +72,11 @@ fn half_installed_fails_the_check() {
     std::fs::write(key, b"").unwrap();
     let result = check(&kit, &KitEnv::default(), cmake).unwrap();
     assert!(!result.ok);
-    assert!(result.answer.contains("ninja.exe"), "{}", result.answer);
+    // `tools/ninja.exe` on Windows, `tools/ninja` elsewhere
+    let ninja = crate::fsx::join_rel(kit.apps(), &cmake.keys_for(kit.target())[0]);
+    assert!(
+        result.answer.contains(&ninja.display().to_string()),
+        "{}",
+        result.answer
+    );
 }

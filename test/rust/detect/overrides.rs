@@ -1,6 +1,6 @@
 use super::*;
 use crate::detect::detect;
-use crate::detect::tests::{ids, project};
+use crate::detect::tests::{ids, project, sh};
 
 fn edit(id: &str, command: &str) -> ActionEdit {
     ActionEdit {
@@ -128,10 +128,6 @@ fn overrides_and_old_file() {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "expects the cmd.exe form of the php -S command"
-)]
 fn site_written_and_removed() {
     let tmp = project(
         "site",
@@ -147,7 +143,10 @@ fn site_written_and_removed() {
     set_site(&tmp.0, "www", SiteKind::Php, "it").unwrap();
     assert_eq!(
         detect(&tmp.0, "it").actions[0].command,
-        r#"php -S 127.0.0.1:{port} -t www "%CP_DATA%\kit\php-router.php""#
+        sh(
+            r#"php -S 127.0.0.1:{port} -t www "%CP_DATA%\kit\php-router.php""#,
+            r#"php -S 127.0.0.1:{port} -t www "$CP_DATA/kit/php-router.php""#
+        )
     );
     set_site(&tmp.0, "www", SiteKind::Apache, "it").unwrap();
     let p = detect(&tmp.0, "it");

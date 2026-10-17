@@ -24,7 +24,6 @@ use crate::projects::nginx::FastCgi;
 use crate::setup::catalog::Catalog;
 
 #[test]
-#[cfg_attr(not(windows), ignore = "project folders created with backslash paths")]
 fn profile_crud_and_vhost_generation() {
     let tmp = TempDir::new("servers-pool");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -54,8 +53,9 @@ fn profile_crud_and_vhost_generation() {
     assert!(view.pools[0].manual);
 
     let projects = kit.projects();
-    fs::create_dir_all(projects.join(r"portale\storage\uploads")).unwrap();
-    fs::create_dir_all(projects.join(r"common\assets")).unwrap();
+    let portale = projects.join("portale");
+    fs::create_dir_all(portale.join("storage").join("uploads")).unwrap();
+    fs::create_dir_all(projects.join("common").join("assets")).unwrap();
     let mut aliases = BTreeMap::new();
     aliases.insert("/media".into(), "storage/uploads".into());
     aliases.insert("/shared".into(), "@common/assets".into());
@@ -76,7 +76,7 @@ fn profile_crud_and_vhost_generation() {
         8095,
         &projects.join("portale"),
         &projects,
-        &projects.join(r"portale\public"),
+        &portale.join("public"),
         &site,
     );
     assert!(vhost.contains("<VirtualHost *:8095>"));
@@ -96,7 +96,6 @@ fn profile_crud_and_vhost_generation() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "document roots created with backslash paths")]
 fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
     let tmp = TempDir::new("servers-nginx-pool");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -104,8 +103,8 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
     let servers = WebServers::new(kit.clone());
 
     let projects = kit.projects();
-    fs::create_dir_all(projects.join(r"alpha\public")).unwrap();
-    fs::create_dir_all(projects.join(r"beta\public")).unwrap();
+    fs::create_dir_all(projects.join("alpha").join("public")).unwrap();
+    fs::create_dir_all(projects.join("beta").join("public")).unwrap();
 
     let pool = WebServerPool {
         id: "nginx-default".into(),
@@ -141,7 +140,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
                 detached: false,
             },
         ],
-        conf_dir: r"data\servers\nginx-default".into(),
+        conf_dir: conf_dir_text("nginx-default"),
         orphan: false,
         profile: None,
     };
@@ -184,10 +183,16 @@ fn nginx_pool(id: &str, port: u16, sites: Vec<AttachedSite>) -> WebServerPool {
         pid: None,
         manual: false,
         sites,
-        conf_dir: format!(r"data\servers\{id}"),
+        conf_dir: conf_dir_text(id),
         orphan: false,
         profile: None,
     }
+}
+
+/// `data\servers\<id>` as the page shows it: with the system's separator.
+fn conf_dir_text(id: &str) -> String {
+    let sep = std::path::MAIN_SEPARATOR;
+    format!("data{sep}servers{sep}{id}")
 }
 
 fn site(project: &str, folder: &str, port: u16) -> AttachedSite {
@@ -207,10 +212,6 @@ fn site(project: &str, folder: &str, port: u16) -> AttachedSite {
 /// N-S1: a site whose document root is missing or a junction is not served
 /// at all (never the project root in its place, with `.env` and `.git`).
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "backslash paths and a junction made with mklink /J"
-)]
 fn pool_skips_site_with_missing_or_linked_docroot() {
     let tmp = TempDir::new("servers-docroot");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -218,15 +219,15 @@ fn pool_skips_site_with_missing_or_linked_docroot() {
     let servers = WebServers::new(kit.clone());
     let projects = kit.projects();
 
-    fs::create_dir_all(projects.join(r"good\public")).unwrap();
+    fs::create_dir_all(projects.join("good").join("public")).unwrap();
     // `missing` has no public\ folder: only its secrets at the root.
     fs::create_dir_all(projects.join("missing")).unwrap();
-    fs::write(projects.join(r"missing\.env"), "DB_PASSWORD=x").unwrap();
+    fs::write(projects.join("missing").join(".env"), "DB_PASSWORD=x").unwrap();
     // `linked` has public\ as a junction to a folder outside the projects.
     fs::create_dir_all(projects.join("linked")).unwrap();
     let outside = tmp.0.join("outside");
     fs::create_dir_all(&outside).unwrap();
-    crate::os::safe_path::tests::junction(&projects.join(r"linked\public"), &outside);
+    crate::os::safe_path::tests::junction(&projects.join("linked").join("public"), &outside);
 
     let pool = nginx_pool(
         "nginx-docroot",
@@ -296,7 +297,6 @@ fn concurrent_list_and_save_profile_keep_profile() {
 /// M1: removing a profile waits for a start/stop under way (`op_lock`),
 /// then stops its pool and drops it from `servers.json` in one go.
 #[test]
-#[cfg_attr(not(windows), ignore = "runs ping.exe from System32")]
 fn remove_profile_stops_and_forgets_under_op_lock() {
     let tmp = TempDir::new("servers-remove-op");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -318,11 +318,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
         )
         .unwrap();
     let job = Job::new().unwrap();
-    let child = jobs::spawn_in(
-        std::process::Command::new(system32("ping.exe")).args(["-n", "60", "127.0.0.1"]),
-        &job,
-    )
-    .unwrap();
+    let child = jobs::spawn_in(&mut long_running(), &job).unwrap();
     servers.running.lock().unwrap().insert(
         "gone".into(),
         RunningPool {
@@ -615,14 +611,17 @@ fn nginx_pool_conf_lan_keeps_default_page() {
     assert!(!conf.contains("return 421;"));
 }
 
-/// `id` installed at `version`, the default folder of its line.
+/// `id` installed at `version`, the default folder of its line, with the
+/// key paths of the kit's target (`nginx.exe` on Windows, `sbin/nginx`
+/// elsewhere).
 fn fake_server(kit: &Kit, id: &str, version: &str) {
     let c = Catalog::get().find(id).unwrap();
     let dir = crate::versions::install_dir(kit, c, version);
     let folder = c.folder.as_deref().unwrap();
-    for k in std::iter::once(&c.key).chain(&c.keys) {
+    let target = kit.target();
+    for k in std::iter::once(c.key_for(target)).chain(c.keys_for(target)) {
         if let Some(rel) = k.strip_prefix(folder) {
-            let file = dir.join(rel.trim_start_matches('/').replace('/', "\\"));
+            let file = crate::fsx::join_rel(&dir, rel);
             fs::create_dir_all(file.parent().unwrap()).unwrap();
             fs::write(&file, b"").unwrap();
         }
@@ -633,10 +632,6 @@ fn fake_server(kit: &Kit, id: &str, version: &str) {
 /// BUG-05r: with Nginx and PHP installed but no project, the default pool
 /// starts no php-cgi; nor does a manual profile without a chosen PHP.
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "fake_server writes the Windows layout with backslashes"
-)]
 fn default_nginx_pool_has_no_php_without_php_projects() {
     let tmp = TempDir::new("servers-default-php");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -674,27 +669,53 @@ fn default_nginx_pool_has_no_php_without_php_projects() {
     assert_eq!(manual.server_line.as_deref(), Some("1.27"));
 }
 
+#[cfg(windows)]
 fn system32(exe: &str) -> String {
     let root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
     format!(r"{root}\System32\{exe}")
 }
 
+/// A program that runs for a minute, as a server would: `ping` from
+/// System32 on Windows, `sleep` elsewhere.
+fn long_running() -> std::process::Command {
+    #[cfg(windows)]
+    {
+        let mut cmd = std::process::Command::new(system32("ping.exe"));
+        cmd.args(["-n", "60", "127.0.0.1"]);
+        cmd
+    }
+    #[cfg(unix)]
+    {
+        let mut cmd = std::process::Command::new("/bin/sleep");
+        cmd.arg("60");
+        cmd
+    }
+}
+
+/// A program that ends at once with `code`: `cmd.exe` from System32 on
+/// Windows, `/bin/sh` elsewhere.
+fn exiting(code: u8) -> std::process::Command {
+    #[cfg(windows)]
+    {
+        let mut cmd = std::process::Command::new(system32("cmd.exe"));
+        cmd.args(["/d", "/c", &format!("exit {code}")]);
+        cmd
+    }
+    #[cfg(unix)]
+    {
+        let mut cmd = std::process::Command::new("/bin/sh");
+        cmd.args(["-c", &format!("exit {code}")]);
+        cmd
+    }
+}
+
 /// BUG-05r: a pool whose php-cgi ended is taken out of the running ones
 /// (and its server ended), never left "running" answering 502.
 #[test]
-#[cfg_attr(not(windows), ignore = "runs ping.exe and cmd.exe from System32")]
 fn pool_with_dead_php_cgi_is_not_running() {
     let job = Job::new().unwrap();
-    let server = jobs::spawn_in(
-        std::process::Command::new(system32("ping.exe")).args(["-n", "60", "127.0.0.1"]),
-        &job,
-    )
-    .unwrap();
-    let mut php = jobs::spawn_in(
-        std::process::Command::new(system32("cmd.exe")).args(["/d", "/c", "exit 0"]),
-        &job,
-    )
-    .unwrap();
+    let server = jobs::spawn_in(&mut long_running(), &job).unwrap();
+    let mut php = jobs::spawn_in(&mut exiting(0), &job).unwrap();
     let begun = Instant::now();
     while php.try_wait().unwrap().is_none() {
         assert!(begun.elapsed() < Duration::from_secs(5));
@@ -858,7 +879,6 @@ fn reload_restarts_when_php_or_port_changes() {
 /// BUG-V3-02: two web actions of one project in the same pool are two
 /// VirtualHosts with their own ServerName and file; a stale file goes.
 #[test]
-#[cfg_attr(not(windows), ignore = "vhosts folder given with backslashes")]
 fn two_actions_of_one_project_get_distinct_vhosts() {
     let tmp = TempDir::new("servers-two-actions");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -902,7 +922,7 @@ fn two_actions_of_one_project_get_distinct_vhosts() {
     let docs = pool.sites.iter().find(|s| s.action == "npm:docs").unwrap();
     assert_eq!(docs.url, "http://npm-docs.shop.localhost:8087");
 
-    let vhosts = kit.data().join(r"servers\legacy\vhosts");
+    let vhosts = kit.data().join("servers").join("legacy").join("vhosts");
     fs::create_dir_all(&vhosts).unwrap();
     fs::write(vhosts.join("shop.conf"), "stale").unwrap();
     servers.write_pool_configs(pool, None, false).unwrap();
@@ -1020,10 +1040,6 @@ fn ports_are_unique_among_pools() {
 /// Defect 4: a pool whose server or PHP line is not installed does not
 /// start (never the default line in its place), with an error naming it.
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "fake_server writes the Windows layout with backslashes"
-)]
 fn start_refuses_a_line_not_installed() {
     let tmp = TempDir::new("servers-missing-line");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1063,11 +1079,7 @@ fn start_refuses_a_line_not_installed() {
 /// A pool of `id` "running" (a `ping` in a Job) as started from `started`.
 fn fake_running(servers: &WebServers, started: WebServerPool) {
     let job = Job::new().unwrap();
-    let child = jobs::spawn_in(
-        std::process::Command::new(system32("ping.exe")).args(["-n", "60", "127.0.0.1"]),
-        &job,
-    )
-    .unwrap();
+    let child = jobs::spawn_in(&mut long_running(), &job).unwrap();
     servers.running.lock().unwrap().insert(
         started.id.clone(),
         RunningPool {
@@ -1088,7 +1100,6 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
 /// profile's nor an automatic one) stays on the page, marked, until
 /// stopped; it serves no new run and is not reloaded.
 #[test]
-#[cfg_attr(not(windows), ignore = "runs ping.exe from System32")]
 fn orphan_running_pool_is_listed_until_stopped() {
     let tmp = TempDir::new("servers-orphan");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1117,7 +1128,6 @@ fn orphan_running_pool_is_listed_until_stopped() {
 /// Defect 8: assigning a project reloads only the running pool that
 /// serves it (never the others) and reports its failure.
 #[test]
-#[cfg_attr(not(windows), ignore = "runs ping.exe from System32")]
 fn assign_project_reloads_only_its_pool_and_reports_errors() {
     let tmp = TempDir::new("servers-assign-reload");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1146,7 +1156,7 @@ fn assign_project_reloads_only_its_pool_and_reports_errors() {
             .unwrap();
         fake_running(&servers, nginx_pool(id, port, Vec::new()));
     }
-    fs::create_dir_all(kit.projects().join(r"shop\public")).unwrap();
+    fs::create_dir_all(kit.projects().join("shop").join("public")).unwrap();
     // The reload of `legacy` restarts it, and there is no Nginx here.
     let err = servers
         .assign_project(
@@ -1168,16 +1178,11 @@ fn assign_project_reloads_only_its_pool_and_reports_errors() {
 /// Defect 9: php-cgi is waited for on its FastCGI port; one that ends at
 /// once (its port taken in the meantime) is reported, to try another port.
 #[test]
-#[cfg_attr(not(windows), ignore = "runs ping.exe and cmd.exe from System32")]
 fn php_cgi_listening_tells_ended_from_ready() {
     let job = Job::new().unwrap();
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port();
-    let mut alive = jobs::spawn_in(
-        std::process::Command::new(system32("ping.exe")).args(["-n", "60", "127.0.0.1"]),
-        &job,
-    )
-    .unwrap();
+    let mut alive = jobs::spawn_in(&mut long_running(), &job).unwrap();
     let begun = Instant::now();
     assert!(php_cgi_listening(&mut alive, port, Duration::from_secs(5)));
     assert!(begun.elapsed() < Duration::from_secs(2), "answers at once");
@@ -1190,11 +1195,7 @@ fn php_cgi_listening_tells_ended_from_ready() {
     ));
     let _ = alive.kill();
     let _ = alive.wait();
-    let mut ended = jobs::spawn_in(
-        std::process::Command::new(system32("cmd.exe")).args(["/d", "/c", "exit 1"]),
-        &job,
-    )
-    .unwrap();
+    let mut ended = jobs::spawn_in(&mut exiting(1), &job).unwrap();
     assert!(!php_cgi_listening(&mut ended, port, Duration::from_secs(5)));
 }
 
@@ -1246,15 +1247,14 @@ fn profile_options_default_and_round_trip() {
 /// PLAN.md §13.1: a stopped project's site leaves the pool's files; an
 /// automatic pool started by projects stops with the last of them.
 #[test]
-#[cfg_attr(not(windows), ignore = "backslash paths and ping.exe from System32")]
 fn detach_leaves_the_pool_and_stops_an_empty_automatic_one() {
     let tmp = TempDir::new("servers-detach");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     let servers = WebServers::new(kit.clone());
     let projects = kit.projects();
-    fs::create_dir_all(projects.join(r"shop\public")).unwrap();
-    fs::create_dir_all(projects.join(r"blog\public")).unwrap();
+    fs::create_dir_all(projects.join("shop").join("public")).unwrap();
+    fs::create_dir_all(projects.join("blog").join("public")).unwrap();
     let pool = nginx_pool(
         "nginx-auto",
         8082,
@@ -1425,10 +1425,6 @@ fn name_sites_keeps_names_unique() {
 /// projects chose in `panel.json` and those started, not every PHP project
 /// that was only offered Apache.
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "fake_server and project files with backslash paths"
-)]
 fn automatic_pools_list_chosen_or_started_sites() {
     let tmp = TempDir::new("servers-chosen-sites");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -1437,13 +1433,15 @@ fn automatic_pools_list_chosen_or_started_sites() {
     let servers = WebServers::new(kit.clone());
     let projects = kit.projects();
     // Offered Apache next to `php -S`.
-    fs::create_dir_all(projects.join(r"plain\public")).unwrap();
-    fs::write(projects.join(r"plain\public\index.php"), "<?php").unwrap();
+    let plain = projects.join("plain").join("public");
+    fs::create_dir_all(&plain).unwrap();
+    fs::write(plain.join("index.php"), "<?php").unwrap();
     // A site written in panel.json.
-    fs::create_dir_all(projects.join(r"shop\public")).unwrap();
-    fs::write(projects.join(r"shop\public\index.php"), "<?php").unwrap();
+    let shop = projects.join("shop");
+    fs::create_dir_all(shop.join("public")).unwrap();
+    fs::write(shop.join("public").join("index.php"), "<?php").unwrap();
     fs::write(
-        projects.join(r"shop\panel.json"),
+        shop.join("panel.json"),
         r#"{ "actions": [ { "id": "site", "apache": "public" } ] }"#,
     )
     .unwrap();
@@ -1466,7 +1464,7 @@ fn automatic_pools_list_chosen_or_started_sites() {
     let apache_dir = component_dir(&kit, "apache", pool.server_line.as_deref());
     fs::create_dir_all(apache_dir.join("conf")).unwrap();
     fs::write(
-        apache_dir.join(r"conf\httpd.conf"),
+        apache_dir.join("conf").join("httpd.conf"),
         "Define SRVROOT \"x\"\r\nServerRoot \"${SRVROOT}\"\r\n",
     )
     .unwrap();
@@ -1667,7 +1665,6 @@ fn ports_move_to_the_new_automatic_ids() {
 /// of the list (not an orphan), rebuilt from its id; a site naming an
 /// automatic pool in `panel.json` (old id too) goes to the lines it names.
 #[test]
-#[cfg_attr(not(windows), ignore = "fake_server layout and ping.exe from System32")]
 fn automatic_pools_come_back_from_their_ids() {
     let tmp = TempDir::new("servers-stable-ids");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

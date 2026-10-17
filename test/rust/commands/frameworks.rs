@@ -5,14 +5,13 @@ use std::path::Path;
 
 /// As `merge_into`, by copy: the project's files stay, the source too.
 #[test]
-#[cfg_attr(not(windows), ignore = "files created with backslash paths")]
 fn merge_copy_keeps_what_the_project_has() {
     let tmp = TempDir::new("mergecopy");
     let (made, dir) = (tmp.0.join("made"), tmp.0.join("app"));
-    fs::create_dir_all(made.join(r"src\lib")).unwrap();
+    fs::create_dir_all(made.join("src").join("lib")).unwrap();
     fs::write(made.join("package.json"), "new").unwrap();
-    fs::write(made.join(r"src\main.js"), "new").unwrap();
-    fs::write(made.join(r"src\lib\a.js"), "new").unwrap();
+    fs::write(made.join("src").join("main.js"), "new").unwrap();
+    fs::write(made.join("src").join("lib").join("a.js"), "new").unwrap();
     fs::create_dir_all(dir.join("src")).unwrap();
     fs::write(dir.join("package.json"), "mine").unwrap();
     let mut kept = Vec::new();
@@ -23,10 +22,10 @@ fn merge_copy_keeps_what_the_project_has() {
         "mine"
     );
     assert_eq!(
-        fs::read_to_string(dir.join(r"src\lib\a.js")).unwrap(),
+        fs::read_to_string(dir.join("src").join("lib").join("a.js")).unwrap(),
         "new"
     );
-    assert!(made.join(r"src\main.js").is_file());
+    assert!(made.join("src").join("main.js").is_file());
 }
 
 /// `.env` holds passwords: listed in `.gitignore` when Git would take it.

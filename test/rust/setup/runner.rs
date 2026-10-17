@@ -10,9 +10,13 @@ fn with_ctx(name: &str, f: impl FnOnce(&Ctx)) {
     with_arch_ctx(name, Arch::X64, f);
 }
 
+/// A Windows kit on every host: the plans below follow the catalog of
+/// Windows (Apache and PHP, R without an ARM64 build), and a plan reads the
+/// kit's target only.
 fn with_arch_ctx(name: &str, arch: Arch, f: impl FnOnce(&Ctx)) {
     let tmp = TempDir::new(name);
-    let kit = Kit::at(tmp.0.clone(), arch);
+    let target = crate::kit::Target::new(crate::kit::Os::Win32, arch);
+    let kit = Kit::at_target(tmp.0.clone(), target);
     kit.prepare().unwrap();
     let net = Net::new(&Settings::default(), None).unwrap();
     let env = KitEnv::default();
