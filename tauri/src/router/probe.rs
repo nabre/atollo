@@ -55,7 +55,7 @@ pub fn probe_target(kit: &Kit, target: Target) -> TargetSummary {
     let mut tools = Vec::with_capacity(catalog.all().len());
 
     for c in catalog.all() {
-        let available = c.is_available_on(target);
+        let available = super::target::installable_on(c, target);
         let emulated = c.is_emulated_on(target);
         let chosen = available && choice.is_chosen(&c.id);
         let installed = available && c.is_installed(&scoped);

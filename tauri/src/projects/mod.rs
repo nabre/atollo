@@ -234,7 +234,7 @@ pub fn delete_plan(kit: &Kit, name: &str, lang: &str) -> Result<DeletePlan> {
         })
         .collect();
     let (backups, backups_size) = state::ProjectState::of(kit, name)
-        .map(|s| s.dir().join(r"private\backups"))
+        .map(|s| s.dir().join("private").join("backups"))
         .and_then(|dir| fs::read_dir(dir).ok())
         .into_iter()
         .flatten()

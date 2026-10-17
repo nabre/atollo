@@ -147,7 +147,9 @@ pub(super) fn ignore_env(dir: &std::path::Path) -> anyhow::Result<()> {
 
 /// `merge_into` for a framework made on another disk, where a rename fails:
 /// what `to` already has stays (in `kept`), the rest is copied. Links are
-/// skipped, as `archive::copy_tree` does.
+/// skipped at the levels walked here; inside a new subfolder
+/// `archive::copy_tree` makes them again on Unix when they stay inside (a
+/// copy where the file system has none).
 fn merge_copy(
     from: &std::path::Path,
     to: &std::path::Path,

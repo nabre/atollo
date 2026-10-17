@@ -4,6 +4,7 @@ use std::process::Command;
 use std::time::Duration;
 
 #[test]
+#[cfg_attr(not(windows), ignore = "copies and runs PING.EXE from System32")]
 fn lists_and_stops_a_kit_program() {
     let tmp = TempDir::new("sessions");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);

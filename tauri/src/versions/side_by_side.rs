@@ -161,19 +161,123 @@ fn create_dir_link(source: &Path, link: &Path) -> Result<()> {
 
 #[cfg(not(windows))]
 fn create_dir_link(source: &Path, link: &Path) -> Result<()> {
-    std::os::unix::fs::symlink(source, link).with_context(|| link.display().to_string())
+    link_or_copy(source, link, |s, l| std::os::unix::fs::symlink(s, l))
+}
+
+/// In a folder copied where a link could not be made: the folder it copies,
+/// relative to the copy (`../../../8.0/sdk/8.0.415`), so a kit on a disk
+/// mounted elsewhere (`/media/a/KIT`, `/Volumes/KIT`) still finds it.
+const COPY_MARK: &str = ".devkit-copy-of";
+
+/// Suffix of the folder a copy is made in before it takes its name: an
+/// interrupted copy leaves only that, removed by [`link_dotnet`].
+const STAGED: &str = ".devkit-new";
+
+/// The link `link -> source`, made by `make`; on a disk without links
+/// (exFAT, FAT: `archive::links_unsupported`) a copy of `source` marked
+/// with [`COPY_MARK`], so it goes like a link when `source` goes.
+#[cfg_attr(windows, allow(dead_code))]
+fn link_or_copy(
+    source: &Path,
+    link: &Path,
+    make: impl FnOnce(&Path, &Path) -> std::io::Result<()>,
+) -> Result<()> {
+    match make(source, link) {
+        Ok(()) => Ok(()),
+        Err(e) if crate::net::archive::links_unsupported(&e) => {
+            crate::net::archive::check_fits(source, link)?;
+            crate::net::archive::check_space(source, link)?;
+            copy_marked(source, link, crate::net::archive::copy_tree)
+                .with_context(|| format!("copying {} (no links on this disk)", link.display()))
+        }
+        Err(e) => Err(e).with_context(|| link.display().to_string()),
+    }
+}
+
+/// `<link>.devkit-new`, where the copy of [`copy_marked`] is made.
+fn staged_path(link: &Path) -> PathBuf {
+    let mut name = link.file_name().unwrap_or_default().to_os_string();
+    name.push(STAGED);
+    link.with_file_name(name)
+}
+
+/// Copies `source` (with `copy`) into `<link>.devkit-new`, marks it, then
+/// renames it to `link`: `link` is a complete, marked copy or nothing, and
+/// a copy that fails (a full disk) removes what it made.
+#[cfg_attr(windows, allow(dead_code))]
+fn copy_marked(
+    source: &Path,
+    link: &Path,
+    copy: impl FnOnce(&Path, &Path) -> std::io::Result<()>,
+) -> std::io::Result<()> {
+    let staged = staged_path(link);
+    if staged.exists() {
+        fs::remove_dir_all(&staged)?;
+    }
+    let made = copy(source, &staged)
+        .and_then(|()| fs::write(staged.join(COPY_MARK), copy_mark(source, link)))
+        .and_then(|()| fs::rename(&staged, link));
+    if made.is_err() {
+        let _ = fs::remove_dir_all(&staged);
+    }
+    made
+}
+
+/// A folder [`copy_marked`] is still making, or left by a copy interrupted.
+fn is_staged(path: &Path) -> bool {
+    !is_dir_link(path)
+        && path
+            .file_name()
+            .is_some_and(|n| n.to_string_lossy().ends_with(STAGED))
+}
+
+/// The text of [`COPY_MARK`]: `source` relative to `link`, with `/`; the
+/// absolute path when they share no root.
+fn copy_mark(source: &Path, link: &Path) -> String {
+    let from: Vec<_> = link.components().collect();
+    let to: Vec<_> = source.components().collect();
+    let common = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
+    if common == 0 {
+        return source.display().to_string();
+    }
+    let ups = std::iter::repeat_n("..".to_owned(), from.len() - common);
+    let downs = to[common..]
+        .iter()
+        .map(|c| c.as_os_str().to_string_lossy().into_owned());
+    ups.chain(downs).collect::<Vec<_>>().join("/")
+}
+
+/// A copy made by [`link_or_copy`] whose source is gone. The mark is read
+/// against the copy (an absolute one, of an older copy, as it is).
+fn stale_copy(path: &Path) -> bool {
+    fs::read_to_string(path.join(COPY_MARK)).is_ok_and(|s| !copy_source(path, s.trim()).is_dir())
+}
+
+/// The folder a [`COPY_MARK`] text names, read against the copy `path`.
+fn copy_source(path: &Path, mark: &str) -> PathBuf {
+    if Path::new(mark).is_absolute() {
+        PathBuf::from(mark)
+    } else {
+        join_rel(path, mark)
+    }
 }
 
 /// Each root gets, as junctions (Windows) or symlinks (Unix), the versions the
-/// other roots have of their own; links to versions gone are removed.
+/// other roots have of their own; links to versions gone are removed. On a
+/// Unix disk without links they are copies, removed the same way.
 pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
     for root in roots {
         for sub in DOTNET_SHARED {
             let dir = join_rel(root, sub);
             for entry in fs::read_dir(&dir).into_iter().flatten().flatten() {
                 let path = entry.path();
-                if is_dir_link(&path) && !dir_link_target_ok(&path) {
+                if is_staged(&path) {
+                    // A copy interrupted (the app closed): made again below.
+                    let _ = fs::remove_dir_all(&path);
+                } else if is_dir_link(&path) && !dir_link_target_ok(&path) {
                     remove_dir_link(&path);
+                } else if !is_dir_link(&path) && stale_copy(&path) {
+                    let _ = fs::remove_dir_all(&path);
                 }
             }
         }
@@ -184,7 +288,12 @@ pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
                 let from = join_rel(other, sub);
                 for entry in fs::read_dir(&from).into_iter().flatten().flatten() {
                     let source = entry.path();
-                    if is_dir_link(&source) || !source.is_dir() {
+                    // Only a root's own versions: not its links, nor copies.
+                    if is_dir_link(&source)
+                        || !source.is_dir()
+                        || source.join(COPY_MARK).is_file()
+                        || is_staged(&source)
+                    {
                         continue;
                     }
                     let sub_dir = join_rel(root, sub);

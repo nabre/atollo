@@ -198,8 +198,9 @@ fn run() -> i32 {
             let ok = checks.iter().all(|c| c.ok);
             return cli::print_checks(&checks, &mut *cli::output()).map_or(1, |()| i32::from(!ok));
         }
-        Cli::Components => {
-            return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0)
+        Cli::Components(target) => {
+            let kit = target.map_or_else(|| kit.clone(), |t| kit.for_target(t));
+            return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0);
         }
         Cli::Version => {
             let _ = writeln!(cli::output(), "NEXKORA {}", env!("CARGO_PKG_VERSION"));

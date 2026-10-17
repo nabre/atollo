@@ -4,8 +4,9 @@
 //! Rules kept from the kit: a component fails alone (the others go on);
 //! without "update all" an installed component is left as it is; "only"
 //! touches the listed components and removes nothing; one run at a time per
-//! kit (named mutex). Cancellation stops at once during a download and
-//! otherwise at the end of the current step, never in the middle of a swap.
+//! kit (named mutex on Windows, `flock` on macOS and Linux). Cancellation
+//! stops at once during a download and otherwise at the end of the current
+//! step, never in the middle of a swap.
 
 use std::collections::HashSet;
 use std::sync::atomic::Ordering;
@@ -23,7 +24,7 @@ use windows::Win32::System::Threading::CreateMutexW;
 
 use super::catalog::{Catalog, Choice, Component};
 use crate::install::{self, Ctx, Progress};
-use crate::kit::Target;
+use crate::kit::{Kit, Target};
 use crate::net::archive::{self, InUse};
 use crate::net::Cancelled;
 
@@ -137,15 +138,23 @@ impl Drop for RunLock {
     }
 }
 
+/// One run per kit on macOS and Linux: the kit's id in a set of this
+/// process, and an exclusive `flock` on `data/app/prepare.lock` for the
+/// other processes (another window, `prepare` from a terminal). The system
+/// drops the `flock` when the file closes, also after a crash.
 #[cfg(not(windows))]
 #[derive(Debug)]
-struct RunLock(String);
+struct RunLock {
+    id: String,
+    #[allow(dead_code)]
+    file: Option<std::fs::File>,
+}
 
 #[cfg(not(windows))]
 impl Drop for RunLock {
     fn drop(&mut self) {
         if let Ok(mut set) = active_locks().lock() {
-            set.remove(&self.0);
+            set.remove(&self.id);
         }
     }
 }
@@ -162,8 +171,8 @@ fn active_locks() -> &'static std::sync::Mutex<HashSet<String>> {
 pub struct Busy;
 
 #[cfg(windows)]
-fn lock(kit_id: &str) -> Result<RunLock> {
-    let name = HSTRING::from(format!(r"Local\Dev-Kit-Prepare-{kit_id}"));
+fn lock(kit: &Kit) -> Result<RunLock> {
+    let name = HSTRING::from(format!(r"Local\Dev-Kit-Prepare-{}", kit.id()));
     // SAFETY: valid name, default security.
     let handle = unsafe { CreateMutexW(None, false, &name) }.context("CreateMutexW")?;
     // SAFETY: last error of CreateMutexW on this thread.
@@ -176,14 +185,50 @@ fn lock(kit_id: &str) -> Result<RunLock> {
 }
 
 #[cfg(not(windows))]
-fn lock(kit_id: &str) -> Result<RunLock> {
-    let mut set = active_locks()
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if !set.insert(kit_id.to_owned()) {
-        return Err(Busy.into());
+fn lock(kit: &Kit) -> Result<RunLock> {
+    let id = kit.id();
+    {
+        let mut set = active_locks()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !set.insert(id.clone()) {
+            return Err(Busy.into());
+        }
     }
-    Ok(RunLock(kit_id.to_owned()))
+    // From here the guard takes the id out of the set again, also on error.
+    let mut guard = RunLock { id, file: None };
+    guard.file = Some(prepare_flock(kit)?);
+    Ok(guard)
+}
+
+/// The exclusive `flock` on `data/app/prepare.lock`, without waiting:
+/// `Busy` when another process holds it. Any other error (a file system
+/// without `flock`, some network shares) is returned: the run does not
+/// start unguarded.
+#[cfg(unix)]
+fn prepare_flock(kit: &Kit) -> Result<std::fs::File> {
+    use anyhow::Context;
+    use std::os::fd::AsRawFd;
+    let dir = kit.app_dir();
+    std::fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
+    let path = dir.join("prepare.lock");
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&path)
+        .with_context(|| path.display().to_string())?;
+    // SAFETY: a valid descriptor owned by `file`.
+    if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+        let e = std::io::Error::last_os_error();
+        if e.kind() == std::io::ErrorKind::WouldBlock {
+            return Err(Busy.into());
+        }
+        // No silent fallback: as `os::instance::acquire`, a file system
+        // without `flock` stops the run instead of preparing unguarded.
+        return Err(e).with_context(|| format!("flock {}", path.display()));
+    }
+    Ok(file)
 }
 
 /// What a run would do, before doing it (shown by the interface).
@@ -194,7 +239,8 @@ pub struct Plan {
 }
 
 /// Nothing unavailable on the kit's target (e.g. `noArm64` on `win32-arm64`,
-/// or `terminal` on macOS/Linux) is ever planned.
+/// PHP on macOS/Linux, Android on Linux ARM64, an x64 build on a Mac
+/// without Rosetta 2) is ever planned.
 pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Result<Plan> {
     for id in opts.only.iter().chain(&opts.skip) {
         if catalog.find(id).is_none() {
@@ -245,8 +291,11 @@ fn only_with_needs<'a>(
         .map(|c| (c, None))
         .collect();
     while let Some((c, needed_by)) = todo.pop() {
-        if !c.is_available_on(target) {
-            let platform = if target == Target::WIN32_ARM64 {
+        if !crate::router::target::installable_on(c, target) {
+            let platform = if c.is_available_on(target) {
+                // Available, but this Mac has no Rosetta 2 for its x64 build.
+                "this Mac without Rosetta 2"
+            } else if target == Target::WIN32_ARM64 {
                 "ARM64"
             } else {
                 target.as_str()
@@ -283,7 +332,7 @@ fn chosen_without_skipped<'a>(
     let mut wanted: HashSet<&str> = catalog
         .all()
         .iter()
-        .filter(|c| choice.is_chosen(&c.id) && c.is_available_on(target))
+        .filter(|c| choice.is_chosen(&c.id) && crate::router::target::installable_on(c, target))
         .filter(|c| locked.contains(c.id.as_str()) || !skip.contains(&c.id))
         .map(|c| c.id.as_str())
         .collect();
@@ -341,7 +390,7 @@ impl Progress for StepProgress<'_> {
 
 /// Runs a preparation; returns the outcome of every component touched.
 pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String, Outcome)>> {
-    let _lock = lock(&ctx.kit.id())?;
+    let _lock = lock(ctx.kit)?;
     let catalog = Catalog::get();
     if !opts.lines.is_empty() {
         return Ok(run_lines(ctx, catalog, &opts.lines, sink));
@@ -570,6 +619,13 @@ fn line_step(
 /// are renamed first, so one in use is left untouched (`InUse`).
 fn remove_component(ctx: &Ctx, c: &Component) -> Result<()> {
     for path in c.owned_paths(ctx.kit) {
+        // A link (`bin/pnpm` of npm on macOS and Linux) goes as a link,
+        // also when what it points to went first.
+        #[cfg(unix)]
+        if std::fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) {
+            std::fs::remove_file(&path).map_err(|_| InUse(path.clone()))?;
+            continue;
+        }
         if path.is_dir() {
             archive::remove_dir(&path)?;
         } else if path.exists() {
