@@ -2,7 +2,34 @@ use super::*;
 
 #[test]
 fn address_carries_the_token() {
-    assert_eq!(address(7400, "ab12"), "http://127.0.0.1:7400/?atollo=ab12");
+    let host = Ipv4Addr::new(127, 9, 8, 7);
+    assert_eq!(
+        address(host, 7400, "ab12"),
+        "http://127.9.8.7:7400/?atollo=ab12"
+    );
+}
+
+/// Never 127.0.0.1, where the projects' sites share cookies with any port.
+#[test]
+#[cfg(not(target_os = "macos"))]
+fn loopback_is_not_the_sites_one() {
+    for random in [[0, 0, 0], [253, 255, 253], [255, 255, 255], [0, 0, 254]] {
+        let ip = private_loopback(random);
+        assert!(ip.is_loopback(), "{ip}");
+        assert_ne!(ip, Ipv4Addr::LOCALHOST);
+        assert_ne!(ip.octets()[1], 0, "{ip}");
+        assert!(!matches!(ip.octets()[3], 0 | 255), "{ip}");
+    }
+}
+
+/// The router answers only for its own address and port, and the cookie it
+/// sets is bound to that host.
+#[test]
+fn router_checks_its_own_host() {
+    let router = include_str!("../../../runtime/phpmyadmin.php");
+    assert!(router.contains("getenv('ATOLLO_PMA_HOST')"));
+    assert!(router.contains("hash_equals($self, $host)"));
+    assert!(!router.contains("localhost"), "no shared host accepted");
 }
 
 /// The config written into phpMyAdmin's folder reads everything from the
@@ -54,13 +81,14 @@ fn real_phpmyadmin_on_running_mariadb() {
 /// `db/services/`): 403 without the token, then logged in as root with it;
 /// its public files are served, its code is not.
 pub fn assert_logs_in(url: &str) {
-    let port = url
-        .trim_start_matches("http://127.0.0.1:")
+    let authority = url
+        .trim_start_matches("http://")
         .split('/')
         .next()
         .unwrap()
         .to_owned();
-    let base = format!("http://127.0.0.1:{port}");
+    let base = format!("http://{authority}");
+    let (_, port) = authority.rsplit_once(':').unwrap();
     let agent: ureq::Agent = ureq::Agent::config_builder()
         .proxy(None)
         .http_status_as_error(false)
@@ -75,6 +103,17 @@ pub fn assert_logs_in(url: &str) {
         req.call().unwrap().status().as_u16()
     };
     assert_eq!(status("/", ""), 403, "no token, no phpMyAdmin");
+    // The same port reached through 127.0.0.1 or localhost (where the
+    // projects' sites and their cookies live) is refused, token or not.
+    for other in ["127.0.0.1", "localhost"] {
+        let mut answer = agent
+            .get(url)
+            .header("Host", &format!("{other}:{port}"))
+            .call()
+            .unwrap();
+        assert_eq!(answer.status().as_u16(), 403, "Host {other}");
+        let _ = answer.body_mut().read_to_string();
+    }
     assert_eq!(status("/?atollo=0", ""), 403, "wrong token");
     assert_eq!(
         status("/themes/pmahomme/css/theme.css", ""),
