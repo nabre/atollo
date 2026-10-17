@@ -79,6 +79,14 @@ fn tcp_fallback_checks_the_token() {
     let endpoint: TcpEndpoint =
         serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
     assert_eq!(endpoint.token, "secret-token");
+    // Created owner-only, no temporary file left beside it.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(&file).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o600);
+    }
+    assert_eq!(std::fs::read_dir(&tmp.0).unwrap().count(), 1);
 
     // A wrong token, and none at all: nothing arrives.
     let forged = tmp.0.join("forged.json");
@@ -104,7 +112,12 @@ fn tcp_fallback_checks_the_token() {
 fn second_start_reaches_the_first_on_unix() {
     let tmp = crate::kit::tests::TempDir::new("instance-unix");
     let kit = Kit::at(tmp.0.join("Kit"), Arch::X64);
+    // A TCP fallback of an earlier start: gone once the lock is taken.
+    let stale = kit.app_dir().join("instance.json");
+    std::fs::create_dir_all(kit.app_dir()).unwrap();
+    std::fs::write(&stale, r#"{"port":1,"token":"old"}"#).unwrap();
     let first = acquire(&kit).unwrap();
+    assert!(!stale.exists());
     assert!(matches!(first, Instance::Primary(_)));
     assert!(matches!(acquire(&kit).unwrap(), Instance::Secondary));
     let (tx, rx) = mpsc::channel();

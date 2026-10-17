@@ -109,6 +109,11 @@ pub fn acquire(kit: &Kit) -> Result<Instance> {
         }
         return Err(e).with_context(|| format!("flock {}", path.display()));
     }
+    // The lock is ours: a TCP fallback left by an earlier start describes
+    // no running app, and a second start that read it while this one is
+    // still starting would send its message to a port that is not the
+    // app's and report success.
+    let _ = std::fs::remove_file(endpoint_file(kit));
     Ok(Instance::Primary(MutexGuard(file)))
 }
 
@@ -299,7 +304,8 @@ pub(crate) fn listen_tcp(
         port: listener.local_addr()?.port(),
         token,
     };
-    crate::router::fs::write_in_private(file, &serde_json::to_string(&endpoint)?)?;
+    write_owner_only(file, &serde_json::to_string(&endpoint)?)
+        .with_context(|| file.display().to_string())?;
     std::thread::spawn(move || {
         for mut stream in listener.incoming().flatten() {
             let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
@@ -317,6 +323,35 @@ pub(crate) fn listen_tcp(
         }
     });
     Ok(())
+}
+
+/// Writes `text` to `path` through a file created owner-only (0600) and
+/// then renamed: the token is never readable by another user, not even
+/// for a moment (FAT and exFAT keep no modes: there nothing can be done).
+#[cfg(unix)]
+fn write_owner_only(path: &Path, text: &str) -> std::io::Result<()> {
+    use std::os::unix::fs::OpenOptionsExt;
+    let mut name = path.as_os_str().to_owned();
+    name.push(format!(".tmp-{}", std::process::id()));
+    let tmp = PathBuf::from(name);
+    let _ = std::fs::remove_file(&tmp);
+    let written = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(&tmp)
+        .and_then(|mut f| f.write_all(text.as_bytes()))
+        .and_then(|()| std::fs::rename(&tmp, path));
+    if written.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    written
+}
+
+/// Windows runs the TCP fallback only in tests.
+#[cfg(all(test, not(unix)))]
+fn write_owner_only(path: &Path, text: &str) -> Result<()> {
+    crate::router::fs::write_in_private(path, text)
 }
 
 /// The two tokens are equal, compared in a time that does not tell how
