@@ -21,10 +21,6 @@ fn host_header() {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "safe_path::tests::junction runs cmd: Windows only"
-)]
 fn paths() {
     let tmp = TempDir::new("serve");
     let root = tmp.0.join("site");

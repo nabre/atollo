@@ -2,7 +2,6 @@ use super::*;
 use crate::kit::{tests::TempDir, Arch};
 
 #[test]
-#[cfg_attr(not(windows), ignore = "expected paths given with backslashes")]
 fn one_folder_per_project() {
     let tmp = TempDir::new("project-state");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -10,19 +9,14 @@ fn one_folder_per_project() {
         assert!(ProjectState::of(&kit, bad).is_none(), "{bad:?}");
     }
     let s = ProjectState::of(&kit, "shop").unwrap();
-    assert_eq!(s.dir(), &tmp.0.join(r"data\projects\shop"));
-    assert_eq!(
-        s.settings_file(),
-        tmp.0.join(r"data\projects\shop\dev-settings.json")
-    );
-    assert_eq!(s.ports_file(), tmp.0.join(r"data\projects\shop\ports.json"));
-    assert_eq!(s.apache_dir(), tmp.0.join(r"data\projects\shop\apache"));
+    let shop = tmp.0.join("data").join("projects").join("shop");
+    assert_eq!(s.dir(), &shop);
+    assert_eq!(s.settings_file(), shop.join("dev-settings.json"));
+    assert_eq!(s.ports_file(), shop.join("ports.json"));
+    assert_eq!(s.apache_dir(), shop.join("apache"));
     let backups = s.backups_dir().unwrap();
-    assert!(backups.is_dir() && backups.ends_with(r"private\backups"));
-    assert_eq!(
-        s.db_file().unwrap(),
-        tmp.0.join(r"data\projects\shop\private\db.json")
-    );
+    assert!(backups.is_dir() && backups.ends_with(Path::new("private").join("backups")));
+    assert_eq!(s.db_file().unwrap(), shop.join("private").join("db.json"));
     assert_eq!(all(&kit), ["shop"]);
 
     // renamed with its files; never over another project's files
@@ -43,13 +37,12 @@ fn one_folder_per_project() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "files created with backslash paths")]
 fn orphans_by_files_and_adopted() {
     let tmp = TempDir::new("project-orphans");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     let write = |p: &str, rel: &str, text: &str| {
-        let path = kit.project_data().join(p).join(rel);
+        let path = crate::fsx::join_rel(kit.project_data().join(p), rel);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, text).unwrap();
     };
@@ -67,8 +60,8 @@ fn orphans_by_files_and_adopted() {
         "ports.json",
         r#"{"ports":{"web":8001},"locked":["web"]}"#,
     );
-    write("old", r"private\db.json", r#"{"mariadb":"pw","future":{}}"#);
-    write("old", r"private\backups\old-mariadb-1.sql", "x");
+    write("old", "private/db.json", r#"{"mariadb":"pw","future":{}}"#);
+    write("old", "private/backups/old-mariadb-1.sql", "x");
     assert_eq!(orphans(&kit), ["old"]);
     assert_eq!(
         holdings(&kit, "old").unwrap(),
@@ -89,7 +82,11 @@ fn orphans_by_files_and_adopted() {
     assert!(adopt(&kit, "old", "missing").is_err());
     assert!(adopt(&kit, "empty", "app").is_err());
     assert!(adopt(&kit, "old", "..").is_err());
-    assert!(kit.project_data().join(r"old\dev-settings.json").is_file());
+    assert!(kit
+        .project_data()
+        .join("old")
+        .join("dev-settings.json")
+        .is_file());
 
     // renamed outside the app: its empty folders are not data
     let runner = crate::projects::run::Runner::new(kit.clone(), std::sync::Arc::new(|_| {}));
@@ -106,16 +103,18 @@ fn orphans_by_files_and_adopted() {
     );
     assert!(shop
         .dir()
-        .join(r"private\backups\old-mariadb-1.sql")
+        .join("private")
+        .join("backups")
+        .join("old-mariadb-1.sql")
         .is_file());
     assert_eq!(
         crate::db::auth::project_password(&kit, "shop", "mariadb").as_deref(),
         Some("pw")
     );
     // the name of before travels with the passwords, other keys kept
+    let db_file = shop.dir().join("private").join("db.json");
     let db: serde_json::Value =
-        serde_json::from_str(&fs::read_to_string(shop.dir().join(r"private\db.json")).unwrap())
-            .unwrap();
+        serde_json::from_str(&fs::read_to_string(db_file).unwrap()).unwrap();
     assert_eq!(
         db,
         serde_json::json!({ "mariadb": "pw", "future": {}, "names": { "mariadb": "old" } })
@@ -144,21 +143,22 @@ fn orphans_by_files_and_adopted() {
 /// the orphan's) is refused before anything is read or moved; so is an
 /// orphan whose `db.json` cannot be read.
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "backslash paths and junctions made with mklink /J"
-)]
 fn adopt_refuses_links_and_unreadable_passwords() {
-    use crate::os::safe_path::tests::junction;
+    use crate::os::safe_path::tests::{junction, remove_junction};
     let tmp = TempDir::new("project-adopt-links");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     let write = |p: &str, rel: &str, text: &str| {
-        let path = kit.project_data().join(p).join(rel);
+        let path = crate::fsx::join_rel(kit.project_data().join(p), rel);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, text).unwrap();
     };
-    write("old", r"private\db.json", r#"{"mariadb":"pw"}"#);
+    let old_db = kit
+        .project_data()
+        .join("old")
+        .join("private")
+        .join("db.json");
+    write("old", "private/db.json", r#"{"mariadb":"pw"}"#);
     fs::create_dir_all(kit.projects().join("shop")).unwrap();
     // data\projects\shop is a junction to a folder outside
     let outside = tmp.0.join("outside");
@@ -166,12 +166,12 @@ fn adopt_refuses_links_and_unreadable_passwords() {
     junction(&kit.project_data().join("shop"), &outside);
     let e = adopt(&kit, "old", "shop").unwrap_err();
     assert!(e.to_string().contains("link"), "{e}");
-    assert!(kit.project_data().join(r"old\private\db.json").is_file());
+    assert!(old_db.is_file());
     assert!(
         outside.join("private").is_dir(),
         "nothing cleaned through it"
     );
-    fs::remove_dir(kit.project_data().join("shop")).unwrap();
+    remove_junction(&kit.project_data().join("shop"));
 
     // the orphan a junction: refused, its target untouched
     let target = tmp.0.join("target");
@@ -180,14 +180,14 @@ fn adopt_refuses_links_and_unreadable_passwords() {
     junction(&kit.project_data().join("linked"), &target);
     assert!(adopt(&kit, "linked", "shop").is_err());
     assert!(target.join("dev-settings.json").is_file());
-    fs::remove_dir(kit.project_data().join("linked")).unwrap();
+    remove_junction(&kit.project_data().join("linked"));
 
     // unreadable passwords: nothing moves
-    write("old", r"private\db.json", "{ not json");
+    write("old", "private/db.json", "{ not json");
     assert!(adopt(&kit, "old", "shop").is_err());
-    assert!(kit.project_data().join(r"old\private\db.json").is_file());
+    assert!(old_db.is_file());
     assert!(!kit.project_data().join("shop").exists());
-    write("old", r"private\db.json", r#"{"mariadb":"pw"}"#);
+    write("old", "private/db.json", r#"{"mariadb":"pw"}"#);
     adopt(&kit, "old", "shop").unwrap();
     assert_eq!(
         crate::db::auth::project_db_name(&kit, "shop", "mariadb").unwrap(),
