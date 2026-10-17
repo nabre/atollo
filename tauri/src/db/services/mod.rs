@@ -818,8 +818,26 @@ impl Services {
     }
 }
 
+/// The versions of `engine` to drop the project's database from: every one
+/// it was created on (`used` of its `db.json`) and the one it is on now,
+/// in that order, each once.
+pub fn project_drop_lines(kit: &Kit, project: &str, engine: &str) -> Vec<String> {
+    let mut lines = auth::project_used_lines(kit, project, engine).unwrap_or_else(|e| {
+        crate::log::warn(&format!("{project}: {engine}: {e:#}"));
+        Vec::new()
+    });
+    if let Some(now) = project_line(kit, project, engine) {
+        lines.push(now);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    lines.retain(|l| seen.insert(l.clone()));
+    lines
+}
+
 /// The kit's servers for the deletion of `project` (PLAN-DATA.md WP-5),
-/// started with `env` when stopped: the version its databases are on.
+/// started with `env` when stopped: every version its databases are on
+/// ([`project_drop_lines`]); a version no longer installed is skipped and
+/// named in the log.
 pub struct ProjectDrops<'a> {
     pub services: &'a Services,
     pub env: KitEnv,
@@ -832,9 +850,25 @@ impl crate::projects::ProjectDatabases for ProjectDrops<'_> {
     }
 
     fn drop_db(&self, engine: &str, database: &str) -> Result<()> {
-        let line = project_line(&self.services.kit, &self.project, engine);
-        self.services
-            .db_drop_at(engine, line.as_deref(), database, &self.env)
+        let kit = &self.services.kit;
+        let lines = project_drop_lines(kit, &self.project, engine);
+        if lines.is_empty() {
+            return self.services.db_drop_at(engine, None, database, &self.env);
+        }
+        let installed = server_lines(kit, engine);
+        for line in &lines {
+            if installed.contains(line) {
+                self.services
+                    .db_drop_at(engine, Some(line), database, &self.env)
+                    .with_context(|| format!("{engine} {line}"))?;
+            } else {
+                crate::log::warn(&format!(
+                    "{}: {engine} {line} not installed: database and user {database} left there",
+                    self.project
+                ));
+            }
+        }
+        Ok(())
     }
 }
 
