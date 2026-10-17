@@ -50,6 +50,151 @@ fn root_is_exe_folder_with_odd_names() {
     }
 }
 
+/// T1.1.1: the root next to `Atollo.app` or to the AppImage, otherwise
+/// the folder of the program; Windows keeps the folder of the exe.
+#[test]
+fn root_next_to_the_bundle_or_the_appimage() {
+    let p = |s: &str| PathBuf::from(s);
+    let root =
+        |os, exe: &str, image: Option<&str>| root_from(os, Path::new(exe), image.map(Path::new));
+    // macOS: the folder that holds the bundle, any case of `.app`.
+    assert_eq!(
+        root(
+            Os::Darwin,
+            "/Users/u/Kit/Atollo.app/Contents/MacOS/Atollo",
+            None
+        ),
+        Some(p("/Users/u/Kit"))
+    );
+    assert_eq!(
+        root(
+            Os::Darwin,
+            "/Volumes/KIT/A b.APP/Contents/MacOS/Atollo",
+            None
+        ),
+        Some(p("/Volumes/KIT"))
+    );
+    // Not a bundle layout: the folder of the program.
+    for exe in [
+        "/Users/u/Kit/Atollo",
+        "/Users/u/Kit/Atollo.app/Contents/Atollo",
+        "/Users/u/Kit/Atollo/Contents/MacOS/Atollo",
+    ] {
+        assert_eq!(
+            root(Os::Darwin, exe, None),
+            Path::new(exe).parent().map(Path::to_path_buf),
+            "{exe}"
+        );
+    }
+    // Linux: the folder of the AppImage, not of its temporary mount.
+    assert_eq!(
+        root(
+            Os::Linux,
+            "/tmp/.mount_Atollox1/usr/bin/Atollo",
+            Some("/media/u/KIT/Atollo.AppImage")
+        ),
+        Some(p("/media/u/KIT"))
+    );
+    assert_eq!(
+        root(Os::Linux, "/media/u/KIT/Atollo", None),
+        Some(p("/media/u/KIT"))
+    );
+    // A relative $APPIMAGE is not used.
+    assert_eq!(
+        root(Os::Linux, "/media/u/KIT/Atollo", Some("Atollo.AppImage")),
+        Some(p("/media/u/KIT"))
+    );
+    // The bundle rule is macOS only, the AppImage Linux only.
+    assert_eq!(
+        root(Os::Linux, "/k/X.app/Contents/MacOS/Atollo", None),
+        Some(p("/k/X.app/Contents/MacOS"))
+    );
+    assert_eq!(
+        root(Os::Win32, "/k/Atollo.exe", Some("/media/u/x.AppImage")),
+        Some(p("/k"))
+    );
+    #[cfg(windows)]
+    assert_eq!(
+        root(Os::Win32, r"E:\Kit\Atollo.exe", Some("/media/u/x.AppImage")),
+        Some(p(r"E:\Kit"))
+    );
+    assert_eq!(root(Os::Win32, "Atollo.exe", None), None);
+}
+
+#[test]
+fn appimage_only_from_inside_its_mount() {
+    let os = |s: &str| Some(std::ffi::OsString::from(s));
+    let exe = Path::new("/tmp/.mount_ab/usr/bin/Atollo");
+    let (image, dir) = (os("/media/u/K/Atollo.AppImage"), os("/tmp/.mount_ab"));
+    assert_eq!(
+        appimage_of(exe, image.as_deref(), dir.as_deref()),
+        Some(PathBuf::from("/media/u/K/Atollo.AppImage"))
+    );
+    // A plain binary started from inside another AppImage: not its image.
+    let plain = Path::new("/media/u/K/Atollo");
+    assert_eq!(appimage_of(plain, image.as_deref(), dir.as_deref()), None);
+    assert_eq!(appimage_of(exe, image.as_deref(), None), None);
+    assert_eq!(appimage_of(exe, os("").as_deref(), dir.as_deref()), None);
+}
+
+/// T1.1.2: a translocated bundle stops the start with the command to run.
+#[test]
+fn app_translocation_is_refused_on_macos() {
+    let moved = Path::new(
+        "/private/var/folders/xy/abc/T/AppTranslocation/0A1B-2C/d/Atollo.app/Contents/MacOS/Atollo",
+    );
+    assert_eq!(translocated_bundle(moved).as_deref(), Some("Atollo.app"));
+    let text = launch_problem(Os::Darwin, moved, "it").unwrap();
+    assert!(
+        text.contains("xattr -dr com.apple.quarantine \"Atollo.app\""),
+        "{text}"
+    );
+    let en = launch_problem(Os::Darwin, moved, "en").unwrap();
+    assert!(en.contains("App Translocation") && en != text, "{en}");
+    let normal = Path::new("/Users/u/Kit/Atollo.app/Contents/MacOS/Atollo");
+    assert_eq!(translocated_bundle(normal), None);
+    assert_eq!(launch_problem(Os::Darwin, normal, "it"), None);
+    assert_eq!(launch_problem(Os::Linux, moved, "it"), None);
+    assert_eq!(launch_problem(Os::Win32, moved, "it"), None);
+}
+
+/// T1.1.3: a read-only disk is named off Windows; Windows keeps its text.
+#[test]
+fn read_only_root_message() {
+    let err = |kind| KitError::NotWritable {
+        path: PathBuf::from("/media/u/KIT/projects"),
+        source: io::Error::from(kind),
+    };
+    let ro = prepare_error_message(Os::Linux, &err(io::ErrorKind::ReadOnlyFilesystem), "it");
+    assert!(
+        ro.contains("sola lettura") && ro.contains("/media/u/KIT/projects"),
+        "{ro}"
+    );
+    let denied = prepare_error_message(Os::Darwin, &err(io::ErrorKind::PermissionDenied), "it");
+    assert!(
+        !denied.contains("sola lettura") && !denied.contains("Atollo.exe"),
+        "{denied}"
+    );
+    // Windows: the message of before, whatever the error.
+    for kind in [
+        io::ErrorKind::ReadOnlyFilesystem,
+        io::ErrorKind::PermissionDenied,
+    ] {
+        assert_eq!(
+            prepare_error_message(Os::Win32, &err(kind), "it"),
+            "Impossibile scrivere nella cartella /media/u/KIT/projects.\n\nSposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo."
+        );
+    }
+    let en = prepare_error_message(Os::Linux, &err(io::ErrorKind::ReadOnlyFilesystem), "en");
+    assert_ne!(en, ro);
+}
+
+/// Without an AppImage the wrappers run this very program.
+#[test]
+fn app_exe_is_this_program() {
+    assert_eq!(app_exe(), std::env::current_exe().ok());
+}
+
 #[test]
 fn verbatim_prefix_is_removed() {
     let kit = Kit::from_exe(Path::new(r"\\?\D:\Kit\Atollo.exe")).unwrap();
