@@ -1,7 +1,7 @@
 {
   "name": "atollo",
   "private": true,
-  "description": "Comandi di sviluppo. 'npm run dev' apre la finestra di Atollo con ricarica automatica.",
+  "description": "Universal Portable Dev & AI Workspace",
   "workspaces": [
     "ui"
   ],
