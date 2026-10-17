@@ -9,17 +9,21 @@ use std::path::{Path, PathBuf};
 use regex::Regex;
 
 /// Joins with a backslash that are right as they are, with the reason:
-/// (file under `tauri/src`, the string literal as written, why).
+/// (file under `tauri/src`, the string literal as written, why). Those not
+/// yet inside `cfg(windows)` or an OS check say so, and which phase gates
+/// them.
 const ALLOWED: &[(&str, &str, &str)] = &[
     (
         "editor/cfg.rs",
         r#"r"System32\cmd.exe""#,
-        "under %SystemRoot%: the cmd profile exists only on Windows",
+        "a program of Windows under %SystemRoot%; not gated yet: the cmd profile \
+         is written on every OS until phase 1 (terminal profiles) keeps it to Windows",
     ),
     (
         "editor/terminal.rs",
         r#"r"System32\conhost.exe""#,
-        "under %SystemRoot%: the console host of Windows",
+        "the console host of Windows under %SystemRoot%; not gated yet: phase 1 \
+         (terminal) keeps it to Windows",
     ),
     (
         "env.rs",
@@ -34,17 +38,18 @@ const ALLOWED: &[(&str, &str, &str)] = &[
     (
         "os/jobs.rs",
         r#"r"System32\cmd.exe""#,
-        "under %SystemRoot%: Windows only",
+        "under %SystemRoot%, inside #[cfg(windows)]",
     ),
     (
         "os/jobs.rs",
         r#"r"System32\rundll32.exe""#,
-        "under %SystemRoot%: Windows only",
+        "under %SystemRoot%, inside #[cfg(windows)]",
     ),
     (
         "install/web.rs",
         r#"r"System32\expand.exe""#,
-        "under %SystemRoot%: extracts the Visual C++ cabinet on Windows",
+        "a program of Windows under %SystemRoot%; not gated yet: it extracts the \
+         Visual C++ cabinet, which P6 keeps to Windows",
     ),
     // Pending: files of other work packages. The owner replaces the join
     // (`join_rel(ctx.kit.apps(), "tools/vcruntime")`) and removes the line.
@@ -149,7 +154,24 @@ fn kit_paths_are_separate_names() {
         );
         let p = crate::agents::sync::Paths::of(&kit);
         assert_eq!(tail(&p.state, 3), ["data", "agents", ".sync"]);
+        assert_eq!(
+            tail(&crate::github::hosts_file(&kit), 3),
+            ["data", "gh", "hosts.yml"]
+        );
     }
+    // A project's git config, read for its remotes, by separate names too.
+    let tmp = crate::kit::tests::TempDir::new("paths-remotes");
+    let git = tmp.0.join(".git");
+    fs::create_dir_all(&git).unwrap();
+    fs::write(
+        git.join("config"),
+        "[remote \"origin\"]\n\turl = https://github.com/a/b.git\n",
+    )
+    .unwrap();
+    assert_eq!(
+        crate::github::repos::remote_urls(&tmp.0),
+        ["https://github.com/a/b.git"]
+    );
 }
 
 #[test]

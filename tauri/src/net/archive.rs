@@ -243,7 +243,8 @@ fn resolve_inside(dest: &Path, link_path: &Path, link_target: &str) -> Option<Pa
 /// target is outside `dest` (or crosses another link) is skipped. Where the
 /// file system has no links ([`links_unsupported`]: exFAT, FAT) the target
 /// is copied in place of the link, in a second pass, so a target that is
-/// itself such a copy is complete first. `make` creates one link
+/// itself such a copy is complete first; a link whose way crossed such a
+/// copy is then resolved again. `make` creates one link
 /// (`symlink(target, path)`; the tests inject a refusal). Returns the links
 /// skipped, for a warning.
 #[cfg_attr(not(unix), allow(dead_code))]
@@ -254,6 +255,9 @@ fn finish_links(
 ) -> Result<Vec<String>> {
     let mut skipped = Vec::new();
     let mut copies: Vec<(PathBuf, PathBuf)> = Vec::new();
+    // Links whose way crosses a name that is not a real folder (yet).
+    let mut unresolved: Vec<(PathBuf, String)> = Vec::new();
+    let mut refused = false;
     for (path, target) in links {
         let Some(parent) = path.parent() else {
             continue;
@@ -264,7 +268,7 @@ fn finish_links(
         }
         prepare_dir(dest, parent)?;
         let Some(resolved) = resolve_inside(dest, &path, &target) else {
-            skipped.push(format!("{} -> {target}", path.display()));
+            unresolved.push((path, target));
             continue;
         };
         match fs::symlink_metadata(&path) {
@@ -274,12 +278,49 @@ fn finish_links(
         }
         match make(&target, &path) {
             Ok(()) => {}
-            Err(e) if links_unsupported(&e) => copies.push((path, dest.join(resolved))),
+            Err(e) if links_unsupported(&e) => {
+                refused = true;
+                copies.push((path, dest.join(resolved)));
+            }
             Err(e) => return Err(e).with_context(|| path.display().to_string()),
         }
     }
-    // Copies in place of the links: first those whose source exists and
-    // holds no copy still to make (a link to a link, a folder with links).
+    loop {
+        copy_in_place_of_links(&mut copies, &mut skipped)?;
+        // Without links, a way through a link (`x -> lib64/foo`, with
+        // `lib64 -> lib`) crosses a real folder once that link is a copy:
+        // resolved again, by the same rules, until nothing more resolves.
+        let before = unresolved.len();
+        if refused {
+            unresolved.retain(|(path, target)| match resolve_inside(dest, path, target) {
+                Some(resolved) if fs::symlink_metadata(path).is_err() => {
+                    copies.push((path.clone(), dest.join(resolved)));
+                    false
+                }
+                _ => true,
+            });
+        }
+        if unresolved.len() == before {
+            break;
+        }
+    }
+    skipped.extend(
+        unresolved
+            .into_iter()
+            .map(|(path, target)| format!("{} -> {target}", path.display())),
+    );
+    Ok(skipped)
+}
+
+/// The copies of [`finish_links`] in place of the links `(path, source)`:
+/// first those whose source exists and holds no copy still to make (a link
+/// to a link, a folder with links). Those whose source never comes go to
+/// `skipped`.
+#[cfg_attr(not(unix), allow(dead_code))]
+fn copy_in_place_of_links(
+    copies: &mut Vec<(PathBuf, PathBuf)>,
+    skipped: &mut Vec<String>,
+) -> Result<()> {
     let there = |p: &Path| fs::symlink_metadata(p).is_ok();
     loop {
         let ready = copies.iter().position(|(path, source)| {
@@ -305,10 +346,10 @@ fn finish_links(
     }
     skipped.extend(
         copies
-            .into_iter()
+            .drain(..)
             .map(|(path, source)| format!("{} -> {}", path.display(), source.display())),
     );
-    Ok(skipped)
+    Ok(())
 }
 
 /// [`finish_links`] with real links, the skipped ones in the log.
@@ -714,7 +755,9 @@ fn copy_entries(from: &Path, to: &Path, links: &mut Vec<(PathBuf, String)>) -> i
 }
 
 /// The files of `tree` (a folder or one file) with their sizes; links are
-/// skipped, as `copy_tree` does.
+/// not counted (`copy_tree` makes them again on Unix and skips them on
+/// Windows). On a disk without links their targets are copied too, so the
+/// count is short there by what they point at.
 fn sizes(tree: &Path) -> io::Result<Vec<(PathBuf, u64)>> {
     let meta = fs::symlink_metadata(tree)?;
     if !meta.is_dir() {

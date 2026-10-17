@@ -130,7 +130,8 @@ impl Replacer {
         Some(out)
     }
 
-    /// The new spelling, with the drive letter in the case found. Only a
+    /// The new spelling, with the drive letter in the case found where
+    /// paths ignore case (Windows; elsewhere the match is exact). Only a
     /// real drive letter (`E:`, or `/e%3A` in a URI) is touched: the first
     /// letter of a Unix path is part of a folder name, so `/home/u/kit`
     /// moved to `/Users/u/kit` stays `/Users` (PORT-V4-02).
@@ -140,6 +141,10 @@ impl Replacer {
             .unwrap_or(1)
             - 1;
         let mut new = self.pairs[i].1.clone();
+        if !self.fold {
+            // An exact match: the case found says nothing more.
+            return new;
+        }
         let at = usize::from(new.first() == Some(&b'/'));
         if !(has_drive_letter(found, at) && has_drive_letter(&new, at)) {
             return new;
