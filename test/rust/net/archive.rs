@@ -801,6 +801,46 @@ fn links_become_copies_where_refused() {
     assert_eq!(skipped.len(), 2, "{skipped:?}");
 }
 
+/// Without links, a link whose way crosses another link (`x -> lib64/foo`,
+/// `lib64 -> lib`) is copied once that one is a copy; a way that still
+/// leaves the folder after it stays skipped.
+#[test]
+fn links_through_a_copied_link_where_refused() {
+    let tmp = TempDir::new("linkchain");
+    let dest = tmp.0.join("out");
+    fs::create_dir_all(dest.join("lib")).unwrap();
+    fs::write(dest.join("lib").join("foo"), "so").unwrap();
+    let links = vec![
+        (dest.join("x"), "lib64/foo".to_owned()),
+        (dest.join("y"), "lib64/../../secret".to_owned()),
+        (dest.join("lib64"), "lib".to_owned()),
+    ];
+    let skipped = finish_links(&dest, links, no_links).unwrap();
+    assert_eq!(fs::read_to_string(dest.join("x")).unwrap(), "so");
+    assert_eq!(
+        fs::read_to_string(dest.join("lib64").join("foo")).unwrap(),
+        "so"
+    );
+    assert!(!dest.join("y").exists());
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+
+    // With links, a way through a link is never followed.
+    let dest2 = tmp.0.join("out2");
+    fs::create_dir_all(dest2.join("lib")).unwrap();
+    let made = std::cell::RefCell::new(Vec::new());
+    let links = vec![
+        (dest2.join("x"), "lib64/foo".to_owned()),
+        (dest2.join("lib64"), "lib".to_owned()),
+    ];
+    let skipped = finish_links(&dest2, links, |t, p| {
+        made.borrow_mut().push((t.to_owned(), p.to_path_buf()));
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(made.borrow().len(), 1);
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+}
+
 /// A refusal for another reason (permissions) is an error, not a copy.
 #[test]
 fn other_link_errors_stop() {

@@ -41,6 +41,9 @@ fn unix_paths_keep_their_first_letter() {
         ("/home/u/kit", "/Home/u/kit"),
         ("/home/u/kit", "/Users/u/kit"),
         ("/Volumes/Kit", "/media/u/Kit"),
+        // Looks like a drive letter, but on Unix the match is exact: the
+        // new spelling is written as given.
+        ("/a:x/kit", "/B:y/kit"),
     ] {
         let r = Replacer::new(Os::Linux, from, to);
         let text = format!("{from}/a \"{from}/b\" file://{}/c", uri_path(from));
