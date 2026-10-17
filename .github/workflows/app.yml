@@ -116,7 +116,22 @@ jobs:
       - name: Frontend tests
         if: matrix.target == 'linux-x64'
         run: npm -w ui test
-      # The cfg(unix) and cfg(target_os) code that Windows never compiles.
+      # scripts/test-linux.sh copies with rsync --delete: only into an empty
+      # folder or one it made (marker), never into a clone with its own work.
+      - name: test-linux.sh copy guard
+        if: matrix.target == 'linux-x64'
+        shell: bash
+        run: |
+          t="$RUNNER_TEMP/guard"
+          mkdir -p "$t/empty" "$t/copy" "$t/clone/.git" "$t/clone/tauri" "$t/other"
+          touch "$t/copy/.devkit-linux-copy" "$t/clone/Cargo.toml" "$t/other/x"
+          check() {
+            local got=0
+            DEVKIT_LINUX_DIR="$t/$1" bash scripts/test-linux.sh --check-dest >/dev/null 2>&1 || got=$?
+            echo "$1: exit $got (want $2)"
+            [ "$got" -eq "$2" ]
+          }
+          check empty 0 && check absent 0 && check copy 0 && check clone 2 && check other 2
       - name: cargo clippy
         run: cargo clippy --all-targets -- -D warnings
       # The output is kept for the summary; pipefail keeps cargo's exit code
