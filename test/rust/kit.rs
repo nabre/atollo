@@ -206,16 +206,43 @@ fn app_exe_is_this_program() {
     assert_eq!(app_exe(), std::env::current_exe().ok());
 }
 
+/// The verbatim prefix is only a Windows path form, but the stripping is a
+/// string operation: it is checked on every OS, and through `from_exe` only
+/// where `D:\Kit` has a parent folder (on Linux and macOS `\` is part of a
+/// name, so that path has none).
 #[test]
 fn verbatim_prefix_is_removed() {
-    let kit = Kit::from_exe(Path::new(r"\\?\D:\Kit\Dev-Kit.exe")).unwrap();
-    assert_eq!(kit.root(), Path::new(r"D:\Kit"));
+    assert_eq!(
+        strip_verbatim(Path::new(r"\\?\D:\Kit")),
+        Path::new(r"D:\Kit")
+    );
+    assert_eq!(
+        strip_verbatim(Path::new(r"\\?\UNC\srv\share")),
+        Path::new(r"\\?\UNC\srv\share")
+    );
+    assert_eq!(
+        strip_verbatim(Path::new("/media/u/Kit")),
+        Path::new("/media/u/Kit")
+    );
+    if cfg!(windows) {
+        let kit = Kit::from_exe(Path::new(r"\\?\D:\Kit\Dev-Kit.exe")).unwrap();
+        assert_eq!(kit.root(), Path::new(r"D:\Kit"));
+    }
 }
 
 #[test]
 fn apps_folder_per_platform() {
+    // `Kit::at` is a kit of the system the tests run on.
     let kit = Kit::at(PathBuf::from(r"F:\K"), Arch::Arm64);
-    assert_eq!(kit.apps(), PathBuf::from(r"F:\K\data\apps\win32-arm64"));
+    let here = match Os::current() {
+        Os::Win32 => "win32-arm64",
+        Os::Darwin => "darwin-arm64",
+        Os::Linux => "linux-arm64",
+    };
+    assert_eq!(
+        kit.apps(),
+        PathBuf::from(r"F:\K").join("data").join("apps").join(here)
+    );
 
     for (target, slug, triple, conda, tl_bin) in [
         (
@@ -268,10 +295,11 @@ fn apps_folder_per_platform() {
         assert_eq!(target.rust_triple(), triple);
         assert_eq!(target.conda_subdir(), conda);
         assert_eq!(target.texlive_bin(), tl_bin);
-        assert_eq!(k.apps(), PathBuf::from(r"F:\K\data\apps").join(slug));
+        let data = PathBuf::from(r"F:\K").join("data");
+        assert_eq!(k.apps(), data.join("apps").join(slug));
         assert_eq!(
             k.versions_dir(),
-            PathBuf::from(r"F:\K\data\app\versions").join(slug)
+            data.join("app").join("versions").join(slug)
         );
     }
 }
@@ -289,13 +317,17 @@ fn host_temp_and_disk() {
     let tmp = TempDir::new("with-host");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     assert_eq!(kit.system_temp(), None);
-    assert_eq!(kit.project_data(), tmp.0.join(r"data\projects"));
-    let host = kit
-        .clone()
-        .with_host(Some(Path::new(r"C:\Users\u\AppData\Local\Temp")));
+    assert_eq!(kit.project_data(), tmp.0.join("data").join("projects"));
+    // An absolute TEMP of the host's system.
+    let host_temp = if cfg!(windows) {
+        r"C:\Users\u\AppData\Local\Temp"
+    } else {
+        "/var/folders/u/T"
+    };
+    let host = kit.clone().with_host(Some(Path::new(host_temp)));
     assert_eq!(
         host.system_temp().unwrap(),
-        Path::new(r"C:\Users\u\AppData\Local\Temp\Dev-Kit").join(kit.id())
+        Path::new(host_temp).join("Dev-Kit").join(kit.id())
     );
     assert!(host.volume().is_some_and(|v| v.free > 0));
     // started from the kit's own programs: never nested, never inside the kit
@@ -304,7 +336,7 @@ fn host_temp_and_disk() {
         kit.clone().with_host(Some(&nested)).system_temp(),
         host.system_temp()
     );
-    let inside = tmp.0.join(r"data\tmp\system");
+    let inside = tmp.0.join("data").join("tmp").join("system");
     assert_eq!(kit.clone().with_host(Some(&inside)).system_temp(), None);
     // a relative TEMP is not used: everything stays in data\tmp
     assert_eq!(kit.with_host(Some(Path::new("Temp"))).system_temp(), None);
@@ -323,7 +355,13 @@ fn prepare_creates_only_inside_root_and_detects_move() {
     fs::rename(first.root(), &moved_root).unwrap();
     let moved = Kit::at(moved_root, Arch::X64);
     assert_eq!(moved.prepare().unwrap(), Some(first.root().to_path_buf()));
-    let pending = fs::read_to_string(moved.app_dir().join("old-root.txt")).unwrap();
+    // `old-root.txt` on Windows, `old-root-<os>.txt` elsewhere.
+    let name = match Os::current() {
+        Os::Win32 => "old-root.txt",
+        Os::Darwin => "old-root-darwin.txt",
+        Os::Linux => "old-root-linux.txt",
+    };
+    let pending = fs::read_to_string(moved.app_dir().join(name)).unwrap();
     assert_eq!(Path::new(&pending), first.root());
     assert_eq!(moved.prepare().unwrap(), None, "recorded: not moved again");
 
@@ -485,6 +523,29 @@ fn saved_r_line_is_marked_when_the_kit_moves() {
     assert!(!moved.versions_dir().join("r@4.5.reinstall").exists());
 }
 
+/// Off Windows no folder is reported: the paths VSCodium turns into
+/// regular expressions have `/`, never a backslash before a digit, `x` or `u`.
+#[test]
+fn the_editor_watcher_is_safe_off_windows() {
+    for os in [Os::Linux, Os::Darwin] {
+        for p in ["/home/user/2026/kit", "/Volumes/x-kit", "/media/u/KIT"] {
+            assert_eq!(
+                watcher_unsafe_folder_on(os, Path::new(p)),
+                None,
+                "{os:?} {p}"
+            );
+        }
+    }
+    if !cfg!(windows) {
+        assert_eq!(watcher_unsafe_folder(Path::new("/home/user/2026")), None);
+    }
+}
+
+/// Windows paths are split into folders only by the Windows `Path`.
+#[cfg_attr(
+    not(windows),
+    ignore = "drive-letter paths with backslashes: one single folder name on macOS and Linux"
+)]
 #[test]
 fn folders_that_break_the_editor_watcher() {
     assert_eq!(watcher_unsafe_folder(Path::new(r"E:\Dev-Kit")), None);

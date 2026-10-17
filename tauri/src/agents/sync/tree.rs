@@ -201,12 +201,11 @@ pub fn sync_tree(
     } else {
         single(replica)
     };
+    // One component per `/` part: the native separator on every OS.
     let abs = |top: &Path, rel: &str| {
-        if rel.is_empty() {
-            top.to_path_buf()
-        } else {
-            top.join(rel.replace('/', "\\"))
-        }
+        rel.split('/')
+            .filter(|s| !s.is_empty())
+            .fold(top.to_path_buf(), |p, s| p.join(s))
     };
     let name = |rel: &str| {
         if rel.is_empty() {

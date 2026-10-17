@@ -1,11 +1,13 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch, Target};
+use crate::kit::{tests::TempDir, Arch, Os, Target};
 
+/// Windows x64 and ARM64 kits, whatever system runs the tests: `no_arm64`
+/// and the x64 build in emulation are Windows rows.
 #[test]
 fn r_is_not_available_on_arm64() {
     let tmp = TempDir::new("cmd-comps");
     for (arch, arm64) in [(Arch::X64, false), (Arch::Arm64, true)] {
-        let kit = Kit::at(tmp.0.join(arch.as_str()), arch);
+        let kit = Kit::at_target(tmp.0.join(arch.as_str()), Target::new(Os::Win32, arch));
         kit.prepare().unwrap();
         let infos = component_infos(&kit, "it");
         let r = infos.iter().find(|c| c.id == "r").unwrap();
@@ -97,12 +99,13 @@ fn catalog_reasons_reach_the_page() {
     }
 }
 
+/// On Windows ARM64 (a Windows kit on every host) R keeps its choice.
 #[test]
 fn unavailable_components_keep_their_choice() {
     let tmp = TempDir::new("cmd-choice");
     let catalog = Catalog::get();
     for (arch, kept) in [(Arch::X64, false), (Arch::Arm64, true)] {
-        let kit = Kit::at(tmp.0.join(arch.as_str()), arch);
+        let kit = Kit::at_target(tmp.0.join(arch.as_str()), Target::new(Os::Win32, arch));
         kit.prepare().unwrap();
         let mut saved = Choice::defaults(catalog);
         saved.set(catalog, "r", true);
