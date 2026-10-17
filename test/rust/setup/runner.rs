@@ -265,8 +265,85 @@ fn removal_and_cancel() {
 
 #[test]
 fn one_run_at_a_time() {
-    let first = lock("test-lock-kit").unwrap();
-    assert!(lock("test-lock-kit").unwrap_err().is::<Busy>());
+    let tmp = TempDir::new("runner-lock");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let first = lock(&kit).unwrap();
+    assert!(lock(&kit).unwrap_err().is::<Busy>());
+    // The same root for another target is the same kit.
+    let other = kit.for_target(crate::kit::Target::LINUX_ARM64);
+    assert!(lock(&other).unwrap_err().is::<Busy>());
     drop(first);
-    assert!(lock("test-lock-kit").is_ok());
+    assert!(lock(&kit).is_ok());
+}
+
+/// macOS and Linux: another process holding `data/app/prepare.lock` makes
+/// this one busy (T0.5.1); its id is not left in the set.
+#[cfg(unix)]
+#[test]
+fn another_process_holds_the_lock() {
+    use std::os::fd::AsRawFd;
+    let tmp = TempDir::new("runner-flock");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    // A descriptor of its own: to `flock` it is another holder, as another
+    // process would be.
+    let held = fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(kit.app_dir().join("prepare.lock"))
+        .unwrap();
+    // SAFETY: a valid descriptor owned by `held`.
+    assert_eq!(
+        unsafe { libc::flock(held.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) },
+        0
+    );
+    assert!(lock(&kit).unwrap_err().is::<Busy>());
+    drop(held);
+    let ok = lock(&kit).unwrap();
+    drop(ok);
+
+    // A real second process: this test binary, running only the test below.
+    let marker = tmp.0.join("child-ran");
+    let child = |expect: &str| {
+        let _ = fs::remove_file(&marker);
+        let status = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "setup::runner::tests::prepare_lock_child",
+                "--ignored",
+                "--test-threads=1",
+            ])
+            .env("DEVKIT_TEST_PREPARE_LOCK_ROOT", &tmp.0)
+            .env("DEVKIT_TEST_PREPARE_LOCK_EXPECT", expect)
+            .stdout(std::process::Stdio::null())
+            .status()
+            .unwrap();
+        assert!(status.success(), "child expecting {expect}");
+        assert!(marker.is_file(), "the child test did not run");
+    };
+    let mine = lock(&kit).unwrap();
+    child("busy");
+    drop(mine);
+    child("free");
+}
+
+/// The other process of `another_process_holds_the_lock`; nothing when run
+/// alone.
+#[cfg(unix)]
+#[test]
+#[ignore = "run by another_process_holds_the_lock as a second process"]
+fn prepare_lock_child() {
+    let Some(root) = std::env::var_os("DEVKIT_TEST_PREPARE_LOCK_ROOT") else {
+        return;
+    };
+    let root = std::path::PathBuf::from(root);
+    let kit = Kit::at(root.clone(), Arch::X64);
+    let result = lock(&kit);
+    match std::env::var("DEVKIT_TEST_PREPARE_LOCK_EXPECT").as_deref() {
+        Ok("busy") => assert!(result.unwrap_err().is::<Busy>()),
+        _ => assert!(result.is_ok()),
+    }
+    fs::write(root.join("child-ran"), b"").unwrap();
 }

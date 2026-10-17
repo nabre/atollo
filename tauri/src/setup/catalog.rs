@@ -1,10 +1,15 @@
 //! The components of the kit and the user's choice.
 //!
 //! The catalog (`catalog/components.json`, embedded) is the only list of
-//! components (docs/app/CATALOG.md). The choice is `data\app\components.txt`,
+//! components (docs/app/CATALOG.md). The choice is `data/app/components.txt`,
 //! in the format of nabre/dev-kit `_components.ps1:31-80`: three comment lines,
 //! then `id=1` or `id=0` per component, UTF-8 without BOM, CRLF. Versions are
-//! `data\app\versions\<id>.txt`, plain text.
+//! `data/app/versions/<target>/<id>.txt`, plain text.
+//!
+//! Availability per target (D-108): a component is installed on a target
+//! only with a build made for it, natively or through the system's x64
+//! emulation; otherwise it is "not available" with the reason, never a
+//! binary of another architecture that does not start.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -58,11 +63,18 @@ pub struct Component {
     /// installed only when the key and all of these exist.
     #[serde(default)]
     pub keys: Vec<String>,
-    /// The folder of `data\apps\<platform>` the component owns, if any.
+    /// The folder of `data/apps/<target>` the component owns, if any.
     #[serde(default)]
     pub folder: Option<String>,
+    /// No Windows ARM64 build: the x64 one runs there in emulation.
     #[serde(default)]
     pub x64_only: bool,
+    /// No Apple Silicon build: the x64 one runs on `darwin-arm64` with
+    /// Rosetta 2, and is not available on a Mac without it
+    /// (`router::target::rosetta_missing`). Separate from `x64_only`: most
+    /// components without a Windows ARM64 build have a native one for macOS.
+    #[serde(default)]
+    pub rosetta: bool,
     /// No build runs on ARM64, not even emulated (R): not available there.
     #[serde(default)]
     pub no_arm64: bool,
@@ -71,13 +83,22 @@ pub struct Component {
     /// targets except `win32-arm64` when `no_arm64` is true.
     #[serde(default)]
     pub targets: Vec<String>,
-    /// Other files or folders it owns (relative to `data\apps\<platform>`,
+    /// Targets where no build exists, with the reason the interface shows
+    /// (Italian, translated by the catalogs): `{"linux-arm64": "…"}`.
+    #[serde(default)]
+    pub unavailable: BTreeMap<String, String>,
+    /// Other files or folders it owns (relative to `data/apps/<target>`,
     /// `@` = the kit root), removed with it unless another installed
-    /// component lists them too.
+    /// component lists them too. Names of Windows; on macOS and Linux
+    /// `remove_unix` takes their place when the catalog gives it.
     #[serde(default)]
     pub remove: Vec<String>,
+    /// The same as `remove` on macOS and Linux, where the files are laid
+    /// out differently (`bin/pnpm`, `lib/node_modules/pnpm`); same rules.
+    #[serde(default)]
+    pub remove_unix: Vec<String>,
     /// Version command for the final check: program (relative to
-    /// `data\apps\<platform>`, `@` = the kit root) and arguments.
+    /// `data/apps/<target>`, `@` = the kit root) and arguments.
     #[serde(default)]
     pub check: Vec<String>,
     /// Group `app`: the version this release of Dev-Kit installs, and the
@@ -86,7 +107,10 @@ pub struct Component {
     pub version: Option<String>,
     #[serde(default)]
     pub sha256: Option<String>,
-    /// Per-target SHA-256 overrides for fixed-version components (`vscodium-server`).
+    /// SHA-256 fixed per target, with `version`, for any component whose
+    /// supplier publishes no hash (the editor today; PHP and MySQL builds
+    /// later): the installer checks the download against it and refuses
+    /// another one.
     #[serde(default)]
     pub sha256_by_target: BTreeMap<String, String>,
     /// Other minor lines can be kept next to the default folder, and chosen
@@ -206,7 +230,7 @@ pub fn translate_rel(target: Target, rel: &str) -> String {
     mapped
 }
 
-/// A path of the catalog: relative to `data/apps/<platform>`, or to the kit
+/// A path of the catalog: relative to `data/apps/<target>`, or to the kit
 /// root with `@`. In the folder of a component with one folder per line it
 /// is that of its default version (`node/node.exe` → `node/22.11/node.exe`,
 /// versions/mod.rs).
@@ -241,9 +265,15 @@ impl Component {
         }
     }
 
-    /// True when the component is supported on `target` (natively or via x64 emulation).
+    /// True when the catalog has a build for `target` (native, or x64 in
+    /// emulation): listed in `targets` (or no list), not in `unavailable`,
+    /// not `no_arm64` on `win32-arm64`. Whether Rosetta 2 is there is the
+    /// host's business (`router::target::installable_on`).
     pub fn is_available_on(&self, target: Target) -> bool {
         if !self.targets.is_empty() && !self.targets.iter().any(|t| t == target.as_str()) {
+            return false;
+        }
+        if self.unavailable.contains_key(target.as_str()) {
             return false;
         }
         if target == Target::WIN32_ARM64 && self.no_arm64 {
@@ -252,10 +282,28 @@ impl Component {
         true
     }
 
-    /// True when `target` uses the x64 build under OS binary translation
-    /// (WOW64 on `win32-arm64`, Rosetta 2 on `darwin-arm64` if needed).
+    /// Why it is not available on `target`, as the catalog says it (Italian
+    /// source, for `i18n::t`); `None` without a reason of its own (outside
+    /// `targets`, `no_arm64`) or when it is available.
+    pub fn unavailable_reason(&self, target: Target) -> Option<&str> {
+        self.unavailable.get(target.as_str()).map(String::as_str)
+    }
+
+    /// True when `target` uses the x64 build under OS binary translation:
+    /// `x64_only` on `win32-arm64` (WOW64), `rosetta` on `darwin-arm64`.
     pub fn is_emulated_on(&self, target: Target) -> bool {
-        target == Target::WIN32_ARM64 && self.x64_only
+        (target == Target::WIN32_ARM64 && self.x64_only)
+            || (target == Target::DARWIN_ARM64 && self.rosetta)
+    }
+
+    /// What it owns besides its folder on `target`: `remove`, or on macOS
+    /// and Linux `remove_unix` when the catalog gives it.
+    pub fn remove_for(&self, target: Target) -> &[String] {
+        if target.is_windows() || self.remove_unix.is_empty() {
+            &self.remove
+        } else {
+            &self.remove_unix
+        }
     }
 
     /// Fixed SHA-256 for `target` (checks `sha256_by_target` first, then `sha256`
@@ -280,7 +328,7 @@ impl Component {
         self.keys.iter().map(|k| translate_rel(target, k)).collect()
     }
 
-    /// Where the key lives: `data\apps\<platform>\…`, or the kit root with `@`.
+    /// Where the key lives: `data/apps/<target>/…`, or the kit root with `@`.
     #[cfg(test)]
     pub fn key_path(&self, kit: &Kit) -> PathBuf {
         kit_path(kit, &self.key)
@@ -315,7 +363,7 @@ impl Component {
     }
 
     /// Everything removed when the component is turned off, except what
-    /// another component still on disk owns too (`tools\vcruntime` of PHP
+    /// another component still on disk owns too (`tools/vcruntime` of PHP
     /// and Apache goes with the last of the two).
     pub fn owned_paths(&self, kit: &Kit) -> Vec<PathBuf> {
         let shared: Vec<PathBuf> = Catalog::get()
@@ -333,7 +381,11 @@ impl Component {
     fn all_owned(&self, kit: &Kit) -> Vec<PathBuf> {
         self.folder_path(kit)
             .into_iter()
-            .chain(self.remove.iter().map(|r| kit_path(kit, r)))
+            .chain(
+                self.remove_for(kit.target())
+                    .iter()
+                    .map(|r| kit_path(kit, r)),
+            )
             // Saved lines of an older kit, not moved yet (versions::migrate).
             .chain(
                 self.versioned

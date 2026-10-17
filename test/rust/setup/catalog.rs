@@ -389,3 +389,137 @@ fn multi_platform_availability_and_paths_across_targets() {
     assert_eq!(node.installed_version(&kit_win).as_deref(), Some("22.11.0"));
     assert_eq!(node.installed_version(&kit_mac).as_deref(), Some("24.1.0"));
 }
+
+/// D-108: a target with no build says why (Android and SQLite on Linux
+/// ARM64), and nothing changes for the others.
+#[test]
+fn unavailable_targets_have_a_reason() {
+    use crate::kit::Target;
+
+    let catalog = Catalog::get();
+    for id in ["android", "sqlite"] {
+        let c = catalog.find(id).unwrap();
+        assert!(!c.is_available_on(Target::LINUX_ARM64), "{id}");
+        let reason = c.unavailable_reason(Target::LINUX_ARM64).unwrap();
+        assert!(reason.contains("Linux ARM64"), "{id}: {reason}");
+        for t in Target::ALL
+            .into_iter()
+            .filter(|t| *t != Target::LINUX_ARM64)
+        {
+            assert!(c.is_available_on(t), "{id} on {t}");
+            assert_eq!(c.unavailable_reason(t), None, "{id} on {t}");
+        }
+    }
+    // Outside `targets` or `noArm64`: not available, no reason of its own.
+    let php = catalog.find("php").unwrap();
+    assert!(!php.is_available_on(Target::LINUX_X64));
+    assert_eq!(php.unavailable_reason(Target::LINUX_X64), None);
+    let r = catalog.find("r").unwrap();
+    assert!(!r.is_available_on(Target::WIN32_ARM64));
+    assert_eq!(r.unavailable_reason(Target::WIN32_ARM64), None);
+
+    // Every key a target, every reason translated.
+    let i18n: BTreeMap<String, BTreeMap<String, String>> =
+        serde_json::from_str(include_str!("../../../tauri/i18n/catalog.json")).unwrap();
+    for c in catalog.all() {
+        for (t, reason) in &c.unavailable {
+            assert!(Target::parse(t).is_some(), "{}: unknown target {t}", c.id);
+            assert!(!reason.trim().is_empty(), "{}: empty reason", c.id);
+            for lang in ["en", "fr", "de"] {
+                assert!(
+                    i18n.get(reason).and_then(|tr| tr.get(lang)).is_some(),
+                    "{}: {lang} missing for {reason:?}",
+                    c.id
+                );
+            }
+        }
+        for t in c.targets.iter().chain(c.sha256_by_target.keys()) {
+            assert!(Target::parse(t).is_some(), "{}: unknown target {t}", c.id);
+        }
+    }
+}
+
+/// `rosetta` comes only with a reason to: no catalog entry needs it today
+/// (every x64Only component has an Apple Silicon build).
+#[test]
+fn rosetta_is_off_in_the_catalog() {
+    for c in Catalog::get().all() {
+        assert!(!c.rosetta, "{}: check the Apple Silicon build first", c.id);
+    }
+}
+
+/// `removeUnix` follows the rules of `remove` with Unix names, and takes its
+/// place on macOS and Linux only; Windows keeps `remove`.
+#[test]
+fn remove_unix_on_macos_and_linux() {
+    use crate::kit::Target;
+
+    let catalog = Catalog::get();
+    for c in catalog.all() {
+        for r in &c.remove_unix {
+            let windows_name = [".exe", ".cmd", ".bat", ".ps1"]
+                .iter()
+                .any(|e| r.ends_with(e));
+            assert!(!r.contains('\\') && !windows_name, "{}: {r}", c.id);
+        }
+        for t in [Target::WIN32_X64, Target::WIN32_ARM64] {
+            assert_eq!(c.remove_for(t), c.remove.as_slice(), "{}", c.id);
+        }
+        let unix = if c.remove_unix.is_empty() {
+            &c.remove
+        } else {
+            &c.remove_unix
+        };
+        for t in [
+            Target::DARWIN_ARM64,
+            Target::DARWIN_X64,
+            Target::LINUX_X64,
+            Target::LINUX_ARM64,
+        ] {
+            assert_eq!(c.remove_for(t), unix.as_slice(), "{}", c.id);
+        }
+    }
+    for (id, part) in [
+        ("pnpm", "@data/npm-global/lib/node_modules/pnpm"),
+        ("pnpm", "@data/npm-global/lib/node_modules/corepack"),
+        ("pnpm", "@data/npm-global/bin/pnpm"),
+        ("uv", "tools/uv"),
+        ("cmake", "tools/ninja"),
+        ("r", "tools/micromamba"),
+        ("git", "tools/micromamba"),
+    ] {
+        let c = catalog.find(id).unwrap();
+        assert!(c.remove_unix.iter().any(|r| r == part), "{id}: {part}");
+    }
+
+    // On Linux: the Unix files, and micromamba goes with the last of Git and R.
+    let tmp = TempDir::new("catalog-remove-unix");
+    let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
+    kit.prepare().unwrap();
+    let npm_global = kit.data().join("npm-global");
+    let pnpm = catalog.find("pnpm").unwrap();
+    let owned = pnpm.owned_paths(&kit);
+    assert!(owned.contains(&npm_global.join("bin").join("pnpm")));
+    assert!(owned.contains(&npm_global.join("lib").join("node_modules").join("pnpm")));
+    assert!(
+        !owned.iter().any(|p| p.to_string_lossy().ends_with(".cmd")),
+        "{owned:?}"
+    );
+    let mm = kit.apps().join("tools").join("micromamba");
+    let (git, r) = (catalog.find("git").unwrap(), catalog.find("r").unwrap());
+    for c in [git, r] {
+        touch(&c.folder_path(&kit).unwrap().join("bin").join("x"));
+    }
+    assert!(!r.owned_paths(&kit).contains(&mm), "Git still uses it");
+    fs::remove_dir_all(git.folder_path(&kit).unwrap()).unwrap();
+    assert!(r.owned_paths(&kit).contains(&mm), "last owner");
+
+    // The same kit on Windows: the Windows names, as before.
+    let win = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+    assert!(pnpm
+        .owned_paths(&win)
+        .contains(&win.data().join("npm-global").join("pnpm.cmd")));
+    assert!(r
+        .owned_paths(&win)
+        .contains(&win.apps().join("tools").join("micromamba.exe")));
+}

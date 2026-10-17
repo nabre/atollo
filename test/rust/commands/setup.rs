@@ -44,6 +44,59 @@ fn unavailable_for_the_system_is_not_arm64() {
     assert!(r.no_arm64 && r.unavailable_reason.is_none());
 }
 
+/// The catalog's own reason, translated, in place of "not available for
+/// <target>" (D-108): Android and SQLite on Linux ARM64. The Windows rows
+/// are as before.
+#[test]
+fn catalog_reasons_reach_the_page() {
+    let tmp = TempDir::new("cmd-comps-reason");
+    let kit = Kit::at_target(tmp.0.join("la"), Target::LINUX_ARM64);
+    kit.prepare().unwrap();
+    let infos = component_infos(&kit, "en");
+    let row = |id: &str| infos.iter().find(|c| c.id == id).unwrap();
+    for (id, reason) in [
+        (
+            "android",
+            "Google does not publish platform-tools and build-tools for Linux ARM64",
+        ),
+        (
+            "sqlite",
+            "sqlite.org does not publish the command-line tools for Linux ARM64",
+        ),
+    ] {
+        let c = row(id);
+        assert!(!c.available && !c.no_arm64, "{id}");
+        assert_eq!(c.unavailable_reason.as_deref(), Some(reason));
+    }
+    assert_eq!(
+        row("php").unavailable_reason.as_deref(),
+        Some("not available for linux-arm64")
+    );
+    assert_eq!(row("python").unavailable_reason, None);
+    let it = component_infos(&kit, "it");
+    let android = it.iter().find(|c| c.id == "android").unwrap();
+    assert_eq!(
+        android.unavailable_reason.as_deref(),
+        Some("Google non pubblica platform-tools e build-tools per Linux ARM64")
+    );
+
+    // Elsewhere both are there, with no reason.
+    for target in [Target::WIN32_X64, Target::WIN32_ARM64, Target::LINUX_X64] {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
+        kit.prepare().unwrap();
+        for c in component_infos(&kit, "en")
+            .iter()
+            .filter(|c| c.id == "android" || c.id == "sqlite")
+        {
+            assert!(
+                c.available && c.unavailable_reason.is_none(),
+                "{} {target}",
+                c.id
+            );
+        }
+    }
+}
+
 #[test]
 fn unavailable_components_keep_their_choice() {
     let tmp = TempDir::new("cmd-choice");
