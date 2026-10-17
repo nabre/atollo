@@ -126,6 +126,7 @@ impl Arch {
         }
     }
 
+    #[cfg_attr(not(any(windows, test)), allow(dead_code))]
     fn from_env_values(arch: Option<&str>, wow64: Option<&str>) -> Arch {
         let is_arm = |v: Option<&str>| v.is_some_and(|v| v.eq_ignore_ascii_case("ARM64"));
         if is_arm(arch) || is_arm(wow64) {

@@ -422,6 +422,7 @@ fn replace_file_works_while_in_use() {
 /// A program of the PC keeps a folder of the tree open (as Cloud Code's
 /// indexer did with `extensions\terminal-suggest` of the editor): the
 /// swap still works. A file really in use stops it, and nothing changes.
+#[cfg(windows)]
 #[test]
 fn replace_dir_with_a_folder_held_open() {
     use std::os::windows::fs::OpenOptionsExt;
@@ -489,6 +490,7 @@ fn replace_dir_with_a_folder_held_open() {
 
 /// The antivirus holds a file just extracted for a moment (as on the
 /// first install of Java and Kotlin): the swap waits for it.
+#[cfg(windows)]
 #[test]
 fn replace_dir_waits_for_a_scan() {
     use std::os::windows::fs::OpenOptionsExt;
@@ -543,6 +545,7 @@ fn stage_into_on_the_same_disk_moves() {
     assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
 }
 
+#[cfg(windows)]
 #[test]
 fn stage_into_from_another_disk_copies() {
     let tmp = TempDir::new("stageother");
@@ -620,6 +623,7 @@ fn replace_file_leaves_no_staged_copy() {
 
 /// A file over 4 GiB (sparse: nothing written) does not fit on FAT32;
 /// the error names it with its size.
+#[cfg(windows)]
 #[test]
 fn check_fits_refuses_a_file_too_large_for_fat32() {
     use std::os::windows::io::AsRawHandle;
@@ -689,6 +693,7 @@ fn plain_file_kind() {
     assert!(tmp.0.join("out").join("agy.exe").is_file());
 }
 
+#[cfg(windows)]
 #[test]
 fn replace_and_remove() {
     let tmp = TempDir::new("replace");

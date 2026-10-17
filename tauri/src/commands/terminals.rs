@@ -80,7 +80,10 @@ pub async fn terminal_dir_pick<R: Runtime>(
     start: Option<String>,
 ) -> CmdResult<Option<String>> {
     ensure_main(&webview)?;
+    #[cfg(windows)]
     let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
+    #[cfg(not(windows))]
+    let owner = 0;
     let title = crate::i18n::t(state.lang(), "Scegli la cartella del terminale", &[]);
     let projects = state.kit.projects();
     tauri::async_runtime::spawn_blocking(move || {
