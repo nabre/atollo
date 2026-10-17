@@ -1413,5 +1413,75 @@
     "en": "Choose the terminal's folder",
     "fr": "Choisissez le dossier du terminal",
     "de": "Ordner des Terminals wählen"
+  },
+  "macOS ha aperto Atollo da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.": {
+    "en": "macOS opened Atollo from a temporary read-only copy (App Translocation): the kit cannot keep its data there.",
+    "fr": "macOS a ouvert Atollo depuis une copie temporaire en lecture seule (App Translocation) : le kit ne peut pas y garder ses données.",
+    "de": "macOS hat Atollo aus einer temporären, schreibgeschützten Kopie geöffnet (App Translocation): Dort kann das Kit seine Daten nicht speichern."
+  },
+  "Esci da Atollo, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.": {
+    "en": "Quit Atollo, open Terminal in the kit's folder and run: xattr -dr com.apple.quarantine {0}. Then open the app again from the kit's folder.",
+    "fr": "Quittez Atollo, ouvrez le Terminal dans le dossier du kit et exécutez : xattr -dr com.apple.quarantine {0}. Puis rouvrez l'app depuis le dossier du kit.",
+    "de": "Beende Atollo, öffne das Terminal im Ordner des Kits und führe aus: xattr -dr com.apple.quarantine {0}. Öffne die App dann erneut aus dem Ordner des Kits."
+  },
+  "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.": {
+    "en": "The kit's disk is read-only: cannot write to the folder {0}.",
+    "fr": "Le disque du kit est en lecture seule : impossible d'écrire dans le dossier {0}.",
+    "de": "Das Laufwerk des Kits ist schreibgeschützt: In den Ordner {0} kann nicht geschrieben werden."
+  },
+  "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia Atollo.": {
+    "en": "Copy the kit's folder to a disk you can write to, or mount the disk again read-write, and restart Atollo.",
+    "fr": "Copiez le dossier du kit sur un disque où vous pouvez écrire, ou remontez le disque en lecture-écriture, et redémarrez Atollo.",
+    "de": "Kopiere den Ordner des Kits auf ein Laufwerk, auf das du schreiben kannst, oder hänge das Laufwerk mit Schreibzugriff neu ein, und starte Atollo neu."
+  },
+  "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia Atollo.": {
+    "en": "Move the kit's folder where you can write (for example a USB stick or a folder of your profile) and restart Atollo.",
+    "fr": "Déplacez le dossier du kit là où vous pouvez écrire (par exemple une clé USB ou un dossier de votre profil) et redémarrez Atollo.",
+    "de": "Verschiebe den Ordner des Kits an einen Ort, an dem du schreiben kannst (zum Beispiel einen USB-Stick oder einen Ordner deines Profils), und starte Atollo neu."
+  },
+  "Il disco del kit ({0}) è montato con l'opzione noexec: da lì non può partire nessun programma, e Atollo non installa nulla.": {
+    "en": "The kit's disk ({0}) is mounted with the noexec option: no program can start from it, and Atollo installs nothing.",
+    "fr": "Le disque du kit ({0}) est monté avec l'option noexec : aucun programme ne peut y démarrer, et Atollo n'installe rien.",
+    "de": "Das Laufwerk des Kits ({0}) ist mit der Option noexec eingehängt: Von dort kann kein Programm starten, und Atollo installiert nichts."
+  },
+  "Rimontalo permettendo i programmi, per esempio con: {0}. Poi riavvia Atollo.": {
+    "en": "Mount it again allowing programs, for example with: {0}. Then restart Atollo.",
+    "fr": "Remontez-le en autorisant les programmes, par exemple avec : {0}. Puis redémarrez Atollo.",
+    "de": "Hänge es neu ein und erlaube Programme, zum Beispiel mit: {0}. Starte Atollo dann neu."
+  },
+  "Il disco del kit ({0}) è FAT32 montato con l'opzione showexec: Linux lascia partire solo i file .exe, .com e .bat, non i programmi del kit.": {
+    "en": "The kit's disk ({0}) is FAT32 mounted with the showexec option: Linux starts only .exe, .com and .bat files, not the kit's programs.",
+    "fr": "Le disque du kit ({0}) est en FAT32 monté avec l'option showexec : Linux ne lance que les fichiers .exe, .com et .bat, pas les programmes du kit.",
+    "de": "Das Laufwerk des Kits ({0}) ist FAT32 und mit der Option showexec eingehängt: Linux startet nur .exe-, .com- und .bat-Dateien, nicht die Programme des Kits."
+  },
+  "Formatta la chiavetta in exFAT (il kit funziona così anche su Windows e macOS), oppure rimontala senza showexec. Poi riavvia Atollo.": {
+    "en": "Format the USB stick as exFAT (the kit then works on Windows and macOS too), or mount it again without showexec. Then restart Atollo.",
+    "fr": "Formatez la clé USB en exFAT (le kit fonctionne alors aussi sous Windows et macOS), ou remontez-la sans showexec. Puis redémarrez Atollo.",
+    "de": "Formatiere den USB-Stick als exFAT (das Kit funktioniert dann auch unter Windows und macOS), oder hänge ihn ohne showexec neu ein. Starte Atollo dann neu."
+  },
+  "Il disco del kit è FAT32: file fino a 4 GB, niente link simbolici, socket e permessi. Le installazioni ne fanno a meno; per un kit su chiavetta è meglio exFAT.": {
+    "en": "The kit's disk is FAT32: files up to 4 GB, no symbolic links, sockets or permissions. Installations do without them; for a kit on a USB stick exFAT is better.",
+    "fr": "Le disque du kit est en FAT32 : fichiers jusqu'à 4 Go, pas de liens symboliques, de sockets ni de permissions. Les installations s'en passent ; pour un kit sur clé USB, exFAT est préférable.",
+    "de": "Das Laufwerk des Kits ist FAT32: Dateien bis 4 GB, keine symbolischen Links, Sockets oder Berechtigungen. Die Installationen kommen ohne sie aus; für ein Kit auf einem USB-Stick ist exFAT besser."
+  },
+  "Il disco del kit è exFAT: niente link simbolici, socket e permessi. Le installazioni ne fanno a meno, ma alcune occupano più spazio.": {
+    "en": "The kit's disk is exFAT: no symbolic links, sockets or permissions. Installations do without them, but some take more space.",
+    "fr": "Le disque du kit est en exFAT : pas de liens symboliques, de sockets ni de permissions. Les installations s'en passent, mais certaines prennent plus de place.",
+    "de": "Das Laufwerk des Kits ist exFAT: keine symbolischen Links, Sockets oder Berechtigungen. Die Installationen kommen ohne sie aus, manche brauchen aber mehr Platz."
+  },
+  "Manca WebKitGTK 4.1, che serve per mostrare le finestre di Atollo.": {
+    "en": "WebKitGTK 4.1 is missing; Atollo needs it to show its windows.",
+    "fr": "WebKitGTK 4.1 est absent ; Atollo en a besoin pour afficher ses fenêtres.",
+    "de": "WebKitGTK 4.1 fehlt; Atollo braucht es, um seine Fenster anzuzeigen."
+  },
+  "Installalo con {0}, poi riavvia Atollo. In alternativa usa l'AppImage di Atollo, che lo contiene.": {
+    "en": "Install it with {0}, then restart Atollo. Or use the Atollo AppImage, which includes it.",
+    "fr": "Installez-le avec {0}, puis redémarrez Atollo. Ou utilisez l'AppImage de Atollo, qui le contient.",
+    "de": "Installiere es mit {0} und starte Atollo dann neu. Oder verwende das AppImage von Atollo, das es enthält."
+  },
+  "Installa il pacchetto WebKitGTK 4.1 della tua distribuzione ({0}), poi riavvia Atollo. In alternativa usa l'AppImage di Atollo, che lo contiene.": {
+    "en": "Install your distribution's WebKitGTK 4.1 package ({0}), then restart Atollo. Or use the Atollo AppImage, which includes it.",
+    "fr": "Installez le paquet WebKitGTK 4.1 de votre distribution ({0}), puis redémarrez Atollo. Ou utilisez l'AppImage de Atollo, qui le contient.",
+    "de": "Installiere das WebKitGTK-4.1-Paket deiner Distribution ({0}) und starte Atollo dann neu. Oder verwende das AppImage von Atollo, das es enthält."
   }
 }
