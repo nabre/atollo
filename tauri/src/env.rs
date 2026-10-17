@@ -18,7 +18,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::fsx::join_rel;
-use crate::kit::Kit;
+use crate::kit::{Kit, Os, Target};
 use crate::os::volume::{DriveKind, VolumeInfo};
 use crate::settings::{ProgramTemp, Settings};
 
@@ -508,6 +508,50 @@ impl KitEnv {
             format!("{}", data.join("r").join(&platform).join("%v").display()),
         );
 
+        // Variables keyed on installed components, per system (Phase 2 of
+        // PLAN-PIATTAFORME): each hook reads only what is on disk.
+        // C and C++ on macOS and Linux (WP-2.3): the shims over Zig in
+        // `cc/bin`, for Makefiles, CMake, cc-rs, cgo and native gems. On
+        // Windows the PATH finds llvm-mingw's gcc and clang, as before.
+        if !is_win && has(r"cc\bin\clang.exe") {
+            let cc_bin = app(r"cc\bin");
+            for (name, tool) in CC_VARS {
+                env.set_path(name, cc_bin.join(tool));
+            }
+        }
+        // Rust on Windows ARM64 (WP-2.4): the `gnullvm` host links with
+        // llvm-mingw's clang for aarch64 (the `cc` component).
+        if kit.target() == Target::WIN32_ARM64 {
+            if let Some(linker) = arm64_rust_linker(&app(r"cc\bin"), |p| p.is_file()) {
+                env.set_path("CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER", linker);
+            }
+        }
+        // Git of dugite-native on macOS and Linux (WP-2.1).
+        if !is_win {
+            for (name, value) in git_unix_env(kit.os(), &app("git"), |p| p.exists()) {
+                env.set_path(name, value);
+            }
+        }
+        // Ruby on macOS and Linux (WP-2.2): gems in the kit, one folder per
+        // system and line (native gems are built for both). On Windows
+        // they stay in the folder of their Ruby.
+        let gem_home = if is_win || !has(r"ruby\bin\ruby.exe") {
+            None
+        } else {
+            crate::setup::catalog::Catalog::get()
+                .find("ruby")
+                .and_then(|ruby| crate::versions::default_line(kit, ruby))
+                .map(|line| gem_home(&data, kit.target(), &line))
+        };
+        if let Some(gems) = &gem_home {
+            env.set_path("GEM_HOME", gems);
+        }
+        // .NET on Linux without libicu (T2.7.4): invariant globalization,
+        // or every `dotnet` command stops at start.
+        if kit.os() == Os::Linux && has(r"dotnet\dotnet.exe") && !libicu_present() {
+            env.set("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+        }
+
         // PowerShell 7 of the kit (new, D-23)
         env.set("POWERSHELL_TELEMETRY_OPTOUT", "1");
         env.set("POWERSHELL_CLI_TELEMETRY_OPTOUT", "1");
@@ -656,9 +700,13 @@ impl KitEnv {
         when(
             &mut path,
             r"ruby\bin\ruby.exe",
-            // Gems and their commands live in the folder of their Ruby.
+            // Gems and their commands live in the folder of their Ruby
+            // (Windows), or in GEM_HOME (macOS and Linux).
             &[app(r"ruby\bin")],
         );
+        if let Some(gems) = &gem_home {
+            path.push(gems.join("bin"));
+        }
         when(&mut path, r"r\bin\R.cmd", &[app(r"r\bin")]);
         // Databases (D-73): servers and clients.
         when(
@@ -809,6 +857,101 @@ fn system_path(os: crate::kit::Os) -> &'static [&'static str] {
     } else {
         &["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
     }
+}
+
+/// The variables of the C and C++ toolchain on macOS and Linux and their
+/// program in `cc/bin` (install/lang/cc.rs writes them).
+pub(crate) const CC_VARS: [(&str, &str); 4] = [
+    ("CC", "cc"),
+    ("CXX", "c++"),
+    ("AR", "ar"),
+    ("RANLIB", "ranlib"),
+];
+
+/// The linker of Rust's `aarch64-pc-windows-gnullvm` host in llvm-mingw's
+/// `cc_bin`: its aarch64 wrapper (the linker rustc looks for by default),
+/// else `clang.exe`; `None` without the `cc` component.
+pub(crate) fn arm64_rust_linker(cc_bin: &Path, is_file: impl Fn(&Path) -> bool) -> Option<PathBuf> {
+    ["aarch64-w64-mingw32-clang.exe", "clang.exe"]
+        .iter()
+        .map(|name| cc_bin.join(name))
+        .find(|p| is_file(p))
+}
+
+/// The environment of a Git laid out as dugite-native (`git/libexec/git-core`)
+/// on `os`, as dugite sets it (lib/git-environment.ts): its helpers,
+/// templates and system gitconfig in its folder, and on Linux its CA bundle
+/// when it has one. Empty on Windows and for a Git without `libexec`.
+/// `PREFIX` (dugite, Linux only) is left out: in the whole kit environment
+/// it would send every `make install` into Git's folder.
+pub(crate) fn git_unix_env(
+    os: Os,
+    git: &Path,
+    exists: impl Fn(&Path) -> bool,
+) -> Vec<(&'static str, PathBuf)> {
+    let exec = join_rel(git, "libexec/git-core");
+    if os.is_windows() || !exists(&exec) {
+        return Vec::new();
+    }
+    let mut out = vec![
+        ("GIT_EXEC_PATH", exec),
+        (
+            "GIT_TEMPLATE_DIR",
+            join_rel(git, "share/git-core/templates"),
+        ),
+        ("GIT_CONFIG_SYSTEM", join_rel(git, "etc/gitconfig")),
+    ];
+    let ca = join_rel(git, "ssl/cacert.pem");
+    if os == Os::Linux && exists(&ca) {
+        out.push(("GIT_SSL_CAINFO", ca));
+    }
+    out
+}
+
+/// `GEM_HOME` of Ruby `line` on macOS and Linux: `<data>/ruby-gems/<target>/<line>`.
+pub(crate) fn gem_home(data: &Path, target: Target, line: &str) -> PathBuf {
+    data.join("ruby-gems").join(target.as_str()).join(line)
+}
+
+/// The folders where Linux keeps shared libraries, for `arch` (`x86_64`,
+/// `aarch64`): the multiarch ones of Debian and Ubuntu, then the others.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub(crate) fn linux_lib_dirs(arch: &str) -> Vec<PathBuf> {
+    let multiarch = format!("{arch}-linux-gnu");
+    let mut out = Vec::new();
+    for base in ["/usr/lib", "/lib"] {
+        out.push(Path::new(base).join(&multiarch));
+    }
+    for dir in ["/usr/lib64", "/lib64", "/usr/lib", "/lib", "/usr/local/lib"] {
+        out.push(PathBuf::from(dir));
+    }
+    out
+}
+
+/// True when one of `dirs` has ICU's common library (`libicuuc.so.<n>`),
+/// which .NET loads by its versioned name.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub(crate) fn has_libicu(dirs: &[PathBuf]) -> bool {
+    dirs.iter().any(|dir| {
+        fs::read_dir(dir).into_iter().flatten().flatten().any(|e| {
+            e.file_name()
+                .to_str()
+                .is_some_and(|n| n.starts_with("libicuuc.so."))
+        })
+    })
+}
+
+/// ICU is installed on this Linux PC; looked up once. Elsewhere true:
+/// a Linux kit built on another system cannot know.
+#[cfg(target_os = "linux")]
+fn libicu_present() -> bool {
+    static PRESENT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *PRESENT.get_or_init(|| has_libicu(&linux_lib_dirs(std::env::consts::ARCH)))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn libicu_present() -> bool {
+    true
 }
 
 /// Writes `dir/python` ([`PYTHON_SHIM`]) when it is missing or different,
