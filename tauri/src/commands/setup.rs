@@ -310,7 +310,7 @@ pub async fn downloads_add<R: Runtime>(
     .or_fail_chain("downloads")
 }
 
-/// The same, picked in Windows' "Open" window; empty when closed.
+/// The same, picked in the system's "Open" window; empty when closed.
 #[tauri::command]
 pub async fn downloads_pick<R: Runtime>(
     webview: Webview<R>,
@@ -319,12 +319,19 @@ pub async fn downloads_pick<R: Runtime>(
     ensure_main(&webview)?;
     #[cfg(windows)]
     let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
-    #[cfg(not(windows))]
-    let owner = 0;
+    #[cfg(unix)]
+    let window = webview.window();
     let title = crate::i18n::t(state.lang(), "Scegli il file scaricato", &[]);
     let kit = state.kit.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        #[cfg(windows)]
         let files = crate::setup::downloads::pick(owner, &title)?;
+        #[cfg(unix)]
+        let files = {
+            let home = std::env::var_os("HOME").map(PathBuf::from);
+            let start = crate::editor::picker::downloads_dir(home.as_deref());
+            crate::editor::picker::files(&window, &title, start.as_deref())
+        };
         if files.is_empty() {
             return Ok(Vec::new());
         }

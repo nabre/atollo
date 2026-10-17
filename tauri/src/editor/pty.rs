@@ -1,0 +1,641 @@
+//! The kit's terminal inside the app on macOS and Linux (DECISIONS.md
+//! D-109, plan §4.5): one PTY per session, shown by the main window with
+//! xterm.js (`ui/src/terminal`). Windows keeps its classic consoles
+//! (`terminal.rs`, D-57, D-95): no session ever opens there.
+//!
+//! - a session runs the kit's PowerShell when installed, else the system's
+//!   `/bin/bash` with the kit's `bashrc`, or an agent; with the kit
+//!   environment only, in the chosen folder;
+//! - its program leads a session and a process group of its own (`setsid`
+//!   of the PTY), put in a job (`os/jobs.rs`): closing the session hangs it
+//!   up, then ends what is left of its tree and its group;
+//! - the output goes to the window as text (UTF-8 decoded across reads) in
+//!   numbered chunks, event `pty://<id>`; the last [`BACKLOG`] bytes stay in
+//!   the session for a view that attaches later (the panel opens after the
+//!   first prompt was written), and the numbers tell it which events it
+//!   already has;
+//! - the keys typed are written in order by a thread of the session, so a
+//!   program that does not read never blocks the window.
+//!
+//! Only the PTY itself is Unix code (`unix` below); the sessions, the
+//! output and the choice of the program are plain code, tested on every
+//! system.
+
+// On Windows the sessions are only counted (always none) and tested.
+#![cfg_attr(windows, allow(dead_code))]
+
+use std::collections::BTreeMap;
+use std::io::Read;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::time::{Duration, Instant};
+
+use anyhow::{bail, Result};
+use serde::Serialize;
+
+use crate::kit::Kit;
+
+/// Output kept per session for a view that attaches late.
+pub const BACKLOG: usize = 256 * 1024;
+/// How long a program has to end after the hang-up before its tree is
+/// killed.
+pub const GRACE: Duration = Duration::from_secs(2);
+/// A session opened: the payload is its [`PtyInfo`].
+pub const OPENED_EVENT: &str = "pty-opened";
+/// The program of a session ended: the payload is its [`PtyInfo`].
+pub const EXIT_EVENT: &str = "pty-exit";
+/// The system's bash, never one of the user's PATH (cfg.rs uses it too).
+pub const BASH: &str = super::cfg::BASH;
+
+/// The event with the output of session `id`.
+pub fn output_event(id: u64) -> String {
+    format!("pty://{id}")
+}
+
+/// A session as the window shows it.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PtyInfo {
+    pub id: u64,
+    /// The folder's name and what runs (`app · bash`, `app · claude`).
+    pub title: String,
+    pub dir: String,
+    /// False once its program ended (the tab stays until it is closed).
+    pub running: bool,
+    /// The exit code, when it ended with one.
+    pub code: Option<u32>,
+}
+
+/// Output of a session: the chunk `seq` (1, 2, ...), or for a backlog
+/// everything kept up to the chunk `seq`.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct Chunk {
+    pub seq: u64,
+    pub data: String,
+}
+
+/// UTF-8 decoding of a byte stream read in pieces: a character split
+/// between two reads is kept for the next one; invalid bytes become U+FFFD.
+#[derive(Debug, Default)]
+pub struct Utf8 {
+    carry: Vec<u8>,
+}
+
+impl Utf8 {
+    pub fn push(&mut self, bytes: &[u8]) -> String {
+        self.carry.extend_from_slice(bytes);
+        let mut out = String::new();
+        let mut rest: &[u8] = &self.carry;
+        loop {
+            match std::str::from_utf8(rest) {
+                Ok(s) => {
+                    out.push_str(s);
+                    rest = &[];
+                    break;
+                }
+                Err(e) => {
+                    let (good, bad) = rest.split_at(e.valid_up_to());
+                    out.push_str(std::str::from_utf8(good).unwrap_or_default());
+                    match e.error_len() {
+                        Some(n) => {
+                            out.push(char::REPLACEMENT_CHARACTER);
+                            rest = &bad[n..];
+                        }
+                        // An incomplete character at the end: wait for more.
+                        None => {
+                            rest = bad;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        self.carry = rest.to_vec();
+        out
+    }
+
+    /// The end of the stream: an incomplete character left is invalid.
+    pub fn finish(&mut self) -> String {
+        if self.carry.is_empty() {
+            String::new()
+        } else {
+            self.carry.clear();
+            char::REPLACEMENT_CHARACTER.to_string()
+        }
+    }
+}
+
+/// The last output of a session, at most `cap` bytes, and the number of
+/// the last chunk in it.
+#[derive(Debug)]
+pub struct Backlog {
+    text: String,
+    seq: u64,
+    cap: usize,
+}
+
+impl Default for Backlog {
+    fn default() -> Self {
+        Backlog::with_cap(BACKLOG)
+    }
+}
+
+impl Backlog {
+    pub fn with_cap(cap: usize) -> Backlog {
+        Backlog {
+            text: String::new(),
+            seq: 0,
+            cap,
+        }
+    }
+
+    /// Adds a chunk; returns its number.
+    pub fn push(&mut self, data: &str) -> u64 {
+        self.seq += 1;
+        self.text.push_str(data);
+        if self.text.len() > self.cap {
+            let mut cut = self.text.len() - self.cap;
+            // Always at a character boundary, and at a line start when one
+            // is near, so the view does not begin inside an escape sequence.
+            while !self.text.is_char_boundary(cut) {
+                cut += 1;
+            }
+            if let Some(nl) = self.text[cut..].find('\n').filter(|&n| n < 4096) {
+                cut += nl + 1;
+            }
+            self.text.drain(..cut);
+        }
+        self.seq
+    }
+
+    pub fn snapshot(&self) -> Chunk {
+        Chunk {
+            seq: self.seq,
+            data: self.text.clone(),
+        }
+    }
+}
+
+/// What a session runs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Launch {
+    pub program: PathBuf,
+    pub args: Vec<String>,
+    /// `SHELL` for the session: what runs, or bash for an agent (Claude
+    /// Code and Codex run their commands with it), never the user's own.
+    pub shell: PathBuf,
+    pub title: String,
+}
+
+fn title(dir: &Path, what: &str) -> String {
+    let name = dir
+        .file_name()
+        .map_or_else(|| dir.display().to_string(), |n| n.to_string_lossy().into());
+    format!("{name} · {what}")
+}
+
+/// The kit's shell for `kit`'s system (T1.2.3): its PowerShell when
+/// installed, else `/bin/bash --rcfile <kit>/data/kit/bashrc -i` (bash 3.2
+/// on macOS reads it too, WP-0.3). Never a shell of the user's PATH.
+pub fn shell(kit: &Kit, dir: &Path) -> Launch {
+    let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");
+    if pwsh.is_file() {
+        return Launch {
+            args: super::cfg::pwsh_args(kit),
+            shell: pwsh.clone(),
+            program: pwsh,
+            title: title(dir, "pwsh"),
+        };
+    }
+    Launch {
+        program: PathBuf::from(BASH),
+        args: super::cfg::bash_args(kit),
+        shell: PathBuf::from(BASH),
+        title: title(dir, "bash"),
+    }
+}
+
+/// An agent or another program of the kit, started directly (Antigravity's
+/// `agy` is a sh script of the kit, written with its execute bit).
+pub fn command(command: &Path, dir: &Path) -> Launch {
+    let name = command.file_stem().map_or_else(
+        || command.display().to_string(),
+        |n| n.to_string_lossy().into(),
+    );
+    Launch {
+        program: command.to_path_buf(),
+        args: Vec::new(),
+        shell: PathBuf::from(BASH),
+        title: title(dir, &name),
+    }
+}
+
+/// The PTY and the program of a session, as the session uses them.
+pub trait Io: Send + Sync {
+    /// Queues `data` for the program; written in order, never blocking.
+    fn write(&self, data: &[u8]) -> Result<()>;
+    fn resize(&self, cols: u16, rows: u16) -> Result<()>;
+    /// The program's process id (also its process group's).
+    fn pid(&self) -> Option<u32>;
+    /// Asks the program to end (`SIGHUP`, as a terminal closing).
+    fn hang_up(&self);
+    /// Ends the program's tree now.
+    fn kill(&self);
+    /// Lets go of the PTY and of the job: what is left of the program's
+    /// group is killed.
+    fn release(&self);
+}
+
+struct State {
+    backlog: Backlog,
+    decoder: Utf8,
+    running: bool,
+    code: Option<u32>,
+}
+
+pub struct Session {
+    id: u64,
+    title: String,
+    dir: String,
+    io: Box<dyn Io>,
+    state: Mutex<State>,
+}
+
+impl Session {
+    fn state(&self) -> MutexGuard<'_, State> {
+        self.state.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    pub fn info(&self) -> PtyInfo {
+        let s = self.state();
+        PtyInfo {
+            id: self.id,
+            title: self.title.clone(),
+            dir: self.dir.clone(),
+            running: s.running,
+            code: s.code,
+        }
+    }
+
+    /// Output read from the PTY; the chunk to send, if any text came out.
+    pub fn output(&self, bytes: &[u8]) -> Option<Chunk> {
+        let mut s = self.state();
+        let data = s.decoder.push(bytes);
+        Self::chunk(&mut s, data)
+    }
+
+    /// The end of the output.
+    pub fn flush(&self) -> Option<Chunk> {
+        let mut s = self.state();
+        let data = s.decoder.finish();
+        Self::chunk(&mut s, data)
+    }
+
+    fn chunk(s: &mut State, data: String) -> Option<Chunk> {
+        if data.is_empty() {
+            return None;
+        }
+        let seq = s.backlog.push(&data);
+        Some(Chunk { seq, data })
+    }
+
+    /// The program ended with `code` (`None`: by a signal).
+    pub fn exited(&self, code: Option<u32>) {
+        let mut s = self.state();
+        s.running = false;
+        s.code = code;
+    }
+
+    pub fn running(&self) -> bool {
+        self.state().running
+    }
+
+    /// Hangs up the program, waits up to `grace` for it to end, kills its
+    /// tree if it did not, and lets go of the PTY and the job.
+    pub fn end(&self, grace: Duration) {
+        if self.running() {
+            self.io.hang_up();
+            let until = Instant::now() + grace;
+            while self.running() && Instant::now() < until {
+                std::thread::sleep(Duration::from_millis(25));
+            }
+        }
+        self.finish();
+    }
+
+    /// Kills the program's tree if it still runs, and lets go of the PTY
+    /// and the job.
+    fn finish(&self) {
+        if self.running() {
+            self.io.kill();
+        }
+        self.io.release();
+    }
+}
+
+/// Reads the PTY until its end, sending every chunk to `emit`.
+pub fn pump(session: &Session, mut reader: impl Read, emit: impl Fn(&Chunk)) {
+    let mut buf = [0u8; 8192];
+    loop {
+        match reader.read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => {
+                if let Some(chunk) = session.output(&buf[..n]) {
+                    emit(&chunk);
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
+            // EIO on Linux once the program and its children closed the PTY.
+            Err(_) => break,
+        }
+    }
+    if let Some(chunk) = session.flush() {
+        emit(&chunk);
+    }
+}
+
+/// The sessions of the app, open or ended but still shown.
+#[derive(Default, Clone)]
+pub struct Sessions {
+    map: Arc<Mutex<BTreeMap<u64, Arc<Session>>>>,
+    next: Arc<AtomicU64>,
+}
+
+impl Sessions {
+    fn lock(&self) -> MutexGuard<'_, BTreeMap<u64, Arc<Session>>> {
+        self.map.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn get(&self, id: u64) -> Result<Arc<Session>> {
+        match self.lock().get(&id) {
+            Some(s) => Ok(Arc::clone(s)),
+            None => bail!("terminal session {id} not found"),
+        }
+    }
+
+    /// Adds a session whose program runs now.
+    pub(crate) fn insert(&self, title: String, dir: &Path, io: Box<dyn Io>) -> Arc<Session> {
+        let id = self.next.fetch_add(1, Ordering::Relaxed) + 1;
+        let session = Arc::new(Session {
+            id,
+            title,
+            dir: dir.display().to_string(),
+            io,
+            state: Mutex::new(State {
+                backlog: Backlog::default(),
+                decoder: Utf8::default(),
+                running: true,
+                code: None,
+            }),
+        });
+        self.lock().insert(id, Arc::clone(&session));
+        session
+    }
+
+    pub fn list(&self) -> Vec<PtyInfo> {
+        self.lock().values().map(|s| s.info()).collect()
+    }
+
+    /// Sessions whose program still runs.
+    pub fn running(&self) -> usize {
+        self.lock().values().filter(|s| s.running()).count()
+    }
+
+    /// Process ids of the programs that still run ("Rimuovi l'unità").
+    pub fn pids(&self) -> Vec<u32> {
+        self.lock()
+            .values()
+            .filter(|s| s.running())
+            .filter_map(|s| s.io.pid())
+            .collect()
+    }
+
+    pub fn backlog(&self, id: u64) -> Result<Chunk> {
+        Ok(self.get(id)?.state().backlog.snapshot())
+    }
+
+    pub fn write(&self, id: u64, data: &str) -> Result<()> {
+        let session = self.get(id)?;
+        if !session.running() {
+            return Ok(());
+        }
+        session.io.write(data.as_bytes())
+    }
+
+    pub fn resize(&self, id: u64, cols: u16, rows: u16) -> Result<()> {
+        if !(1..=1000).contains(&cols) || !(1..=1000).contains(&rows) {
+            bail!("terminal size {cols}x{rows} out of range");
+        }
+        self.get(id)?.io.resize(cols, rows)
+    }
+
+    /// Ends the session's program (`grace` for it to end by itself) and
+    /// forgets the session.
+    pub fn close(&self, id: u64, grace: Duration) -> Result<()> {
+        let session = self.lock().remove(&id);
+        let Some(session) = session else {
+            bail!("terminal session {id} not found");
+        };
+        session.end(grace);
+        Ok(())
+    }
+
+    /// Every session, at the app's exit: hung up together, then what did
+    /// not end within `grace` is killed.
+    pub fn close_all(&self, grace: Duration) {
+        let all: Vec<Arc<Session>> = std::mem::take(&mut *self.lock()).into_values().collect();
+        for s in all.iter().filter(|s| s.running()) {
+            s.io.hang_up();
+        }
+        let until = Instant::now() + grace;
+        while all.iter().any(|s| s.running()) && Instant::now() < until {
+            std::thread::sleep(Duration::from_millis(25));
+        }
+        for s in &all {
+            s.finish();
+        }
+    }
+
+    /// Opens a session running `launch` in `dir` with the kit environment
+    /// only; `on_output` gets every chunk, `on_exit` the session once its
+    /// program ended.
+    #[cfg(unix)]
+    pub fn open(
+        &self,
+        launch: &Launch,
+        env: &crate::env::KitEnv,
+        dir: &Path,
+        on_output: impl Fn(u64, &Chunk) + Send + 'static,
+        on_exit: impl FnOnce(PtyInfo) + Send + 'static,
+    ) -> Result<PtyInfo> {
+        let spawned = unix::spawn(launch, env, dir)?;
+        let session = self.insert(launch.title.clone(), dir, Box::new(spawned.io));
+        let id = session.id;
+        let reader = spawned.reader;
+        let out = Arc::clone(&session);
+        std::thread::spawn(move || pump(&out, reader, |chunk| on_output(id, chunk)));
+        let mut child = spawned.child;
+        let waited = Arc::clone(&session);
+        std::thread::spawn(move || {
+            let code = match child.wait() {
+                Ok(status) if status.signal().is_none() => Some(status.exit_code()),
+                _ => None,
+            };
+            waited.exited(code);
+            on_exit(waited.info());
+        });
+        Ok(session.info())
+    }
+}
+
+#[cfg(unix)]
+mod unix {
+    use std::io::{Read, Write};
+    use std::path::Path;
+    use std::sync::mpsc::{channel, Sender};
+    use std::sync::{Mutex, PoisonError};
+
+    use anyhow::{Context, Result};
+    use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize};
+
+    use super::{Io, Launch};
+    use crate::env::KitEnv;
+    use crate::os::jobs::Job;
+
+    pub struct Spawned {
+        pub io: PtyIo,
+        pub reader: Box<dyn Read + Send>,
+        pub child: Box<dyn Child + Send + Sync>,
+    }
+
+    pub struct PtyIo {
+        pid: Option<u32>,
+        master: Mutex<Option<Box<dyn MasterPty + Send>>>,
+        input: Mutex<Option<Sender<Vec<u8>>>>,
+        job: Mutex<Option<Job>>,
+    }
+
+    /// The size before the view measures itself (`pty_resize`).
+    const SIZE: PtySize = PtySize {
+        rows: 24,
+        cols: 80,
+        pixel_width: 0,
+        pixel_height: 0,
+    };
+
+    pub fn spawn(launch: &Launch, env: &KitEnv, dir: &Path) -> Result<Spawned> {
+        let pair = native_pty_system().openpty(SIZE).context("openpty")?;
+        let mut cmd = CommandBuilder::new(&launch.program);
+        cmd.args(&launch.args);
+        cmd.cwd(dir);
+        cmd.env_clear();
+        for (k, v) in env.iter() {
+            cmd.env(k, v);
+        }
+        cmd.env("TERM", "xterm-256color");
+        cmd.env("COLORTERM", "truecolor");
+        cmd.env("SHELL", &launch.shell);
+        let child = pair
+            .slave
+            .spawn_command(cmd)
+            .with_context(|| format!("starting {}", launch.program.display()))?;
+        // The reader ends only once every copy of the PTY's other side is
+        // closed: the app keeps none.
+        drop(pair.slave);
+        let pid = child.process_id();
+        // The program leads its own group (setsid): the job kills that
+        // group when the session lets it go, as for the app's other jobs.
+        let job = Job::new()?;
+        let leader: &dyn Child = &*child;
+        if let Some(std_child) = leader.downcast_ref::<std::process::Child>() {
+            job.assign(std_child)?;
+        }
+        let reader = pair.master.try_clone_reader().context("pty reader")?;
+        let mut writer = pair.master.take_writer().context("pty writer")?;
+        let (tx, rx) = channel::<Vec<u8>>();
+        std::thread::spawn(move || {
+            for data in rx {
+                if writer
+                    .write_all(&data)
+                    .and_then(|()| writer.flush())
+                    .is_err()
+                {
+                    break;
+                }
+            }
+        });
+        Ok(Spawned {
+            io: PtyIo {
+                pid,
+                master: Mutex::new(Some(pair.master)),
+                input: Mutex::new(Some(tx)),
+                job: Mutex::new(Some(job)),
+            },
+            reader,
+            child,
+        })
+    }
+
+    impl Io for PtyIo {
+        fn write(&self, data: &[u8]) -> Result<()> {
+            let input = self.input.lock().unwrap_or_else(PoisonError::into_inner);
+            match input.as_ref() {
+                Some(tx) => tx.send(data.to_vec()).context("terminal closed"),
+                None => anyhow::bail!("terminal closed"),
+            }
+        }
+
+        fn resize(&self, cols: u16, rows: u16) -> Result<()> {
+            let master = self.master.lock().unwrap_or_else(PoisonError::into_inner);
+            match master.as_ref() {
+                Some(m) => m.resize(PtySize {
+                    rows,
+                    cols,
+                    pixel_width: 0,
+                    pixel_height: 0,
+                }),
+                None => anyhow::bail!("terminal closed"),
+            }
+        }
+
+        fn pid(&self) -> Option<u32> {
+            self.pid
+        }
+
+        fn hang_up(&self) {
+            // Only while the program has not been reaped (the session
+            // checks `running`): its pid cannot belong to another process.
+            if let Some(pid @ 1..) = self.pid.and_then(|p| libc::pid_t::try_from(p).ok()) {
+                // SAFETY: a plain signal to one process.
+                unsafe { libc::kill(pid, libc::SIGHUP) };
+            }
+        }
+
+        fn kill(&self) {
+            if let Some(pid) = self.pid {
+                crate::os::sessions::stop(&[pid]);
+            }
+        }
+
+        fn release(&self) {
+            self.input
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .take();
+            self.master
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .take();
+            // Dropping the job kills what is left of the group.
+            self.job
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .take();
+        }
+    }
+}
+
+#[cfg(test)]
+#[path = "../../../test/rust/editor/pty.rs"]
+mod tests;

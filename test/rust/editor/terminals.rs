@@ -2,6 +2,7 @@ use super::*;
 use crate::kit::{tests::TempDir, Arch};
 use crate::versions::{install_dir, saved_dir, write_version};
 use std::fs;
+use std::path::Path;
 
 /// The key file of `c` in `dir`, a copy of its folder.
 fn install_fake(c: &Component, dir: &Path) {

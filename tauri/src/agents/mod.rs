@@ -10,9 +10,11 @@
 //!   Antigravity a login saved in the kit (`agents/keyring.rs`) or `GEMINI_API_KEY`
 //!   (same sources as nabre/atollo `core/stats/*.js`);
 //! - launch: the agents are aligned first, the agent opens in a console
-//!   window of the app in the chosen folder, and they are aligned again when it
+//!   window of the app in the chosen folder (on macOS and Linux a session of
+//!   the app's terminal, `editor/pty.rs`), and they are aligned again when it
 //!   ends (`_agent.cmd` of the kit). Antigravity runs through
-//!   `data\kit\bin\agy.cmd`, which carries the login in and out of Windows;
+//!   `data\kit\bin\agy.cmd` (`agy`, sh, on macOS and Linux), which carries
+//!   the login in and out of the system's store;
 //! - a watcher thread aligns when an agent of the kit ends anywhere (editor
 //!   terminals, consoles) and saves Antigravity's login left in Windows.
 
@@ -167,8 +169,9 @@ fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
     })
 }
 
-/// Aligns the agents, then opens `id` in a kit console in `dir`; aligns
-/// again when that console ends.
+/// Aligns the agents, then opens `id` in a kit console in `dir` (Windows)
+/// or a session of the app's terminal with the agent as its program (macOS
+/// and Linux, T1.2.4); aligns again when that console or session ends.
 pub fn launch<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     kit: &Kit,

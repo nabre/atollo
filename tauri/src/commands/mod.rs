@@ -305,6 +305,18 @@ macro_rules! command_handler {
             $crate::commands::terminals::terminal_remove,
             $crate::commands::terminals::terminal_launch,
             $crate::commands::terminals::terminal_dir_pick,
+            // The app's terminal of macOS and Linux; permission
+            // `allow-pty-sessions` (permissions/pty.toml).
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_sessions,
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_backlog,
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_write,
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_resize,
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_close,
             $crate::commands::setup::components_list,
             $crate::commands::setup::components_sync,
             $crate::commands::setup::components_check,
