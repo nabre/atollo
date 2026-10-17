@@ -188,7 +188,7 @@ fn drop_retired(kit: &Kit) {
                 let _ = fs::remove_file(e.path());
             }
         }
-        let _ = fs::remove_file(kit.app_dir().join("versions").join(format!("{id}.txt")));
+        let _ = fs::remove_file(kit.versions_root().join(format!("{id}.txt")));
     }
     // The start script of Windows Terminal's consoles.
     let _ = fs::remove_file(kit.kit_files().join("console.ps1"));

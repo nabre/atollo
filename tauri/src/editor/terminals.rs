@@ -493,5 +493,5 @@ pub fn pick_dir(owner: isize, title: &str, start: Option<&Path>) -> Result<Optio
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/terminals.rs"]
+#[path = "../../../test/rust/editor/terminals.rs"]
 mod tests;

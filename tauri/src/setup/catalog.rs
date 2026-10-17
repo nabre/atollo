@@ -14,7 +14,7 @@ use std::sync::OnceLock;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::fsx::{join_rel, write_atomic};
+use crate::fsx::{join_rel, read_text, write_atomic};
 use crate::kit::{Arch, Kit, Target};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -357,12 +357,12 @@ impl Component {
     }
 
     fn legacy_version_file(kit: &Kit, id: &str) -> PathBuf {
-        kit.app_dir().join("versions").join(format!("{id}.txt"))
+        kit.versions_root().join(format!("{id}.txt"))
     }
 
     pub fn installed_version(&self, kit: &Kit) -> Option<String> {
         let read = |p: PathBuf| {
-            fs::read_to_string(p)
+            read_text(&p)
                 .ok()
                 .map(|v| v.trim().to_owned())
                 .filter(|v| !v.is_empty())
@@ -467,7 +467,7 @@ impl Component {
         for gone in marked {
             if default.as_deref() == Some(gone.as_str()) && !self.needs_reinstall(kit) {
                 let path = Self::line_reinstall_file(kit, &self.id, &gone);
-                let old_root = fs::read_to_string(path).unwrap_or_default();
+                let old_root = read_text(&path).unwrap_or_default();
                 if self.mark_reinstall(kit, &old_root).is_err() {
                     continue;
                 }
@@ -528,7 +528,7 @@ impl Choice {
     /// Reads `components.txt`; ids it does not mention take the default.
     /// Returns `None` when the file does not exist (first start).
     pub fn read(kit: &Kit, catalog: &Catalog) -> Option<Choice> {
-        let text = fs::read_to_string(Self::path(kit)).ok()?;
+        let text = read_text(&Self::path(kit)).ok()?;
         Some(Self::parse(&text, catalog))
     }
 

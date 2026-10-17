@@ -20,7 +20,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::fsx::write_atomic;
+use crate::fsx::{read_json, write_atomic};
 use crate::kit::Kit;
 use crate::projects::state::ProjectState;
 
@@ -42,7 +42,7 @@ pub fn dir(kit: &Kit) -> PathBuf {
     kit.app_dir().join("db")
 }
 
-fn secrets_path(kit: &Kit) -> PathBuf {
+pub fn secrets_path(kit: &Kit) -> PathBuf {
     dir(kit).join("secrets.json")
 }
 
@@ -51,10 +51,7 @@ pub fn client_ini(kit: &Kit) -> PathBuf {
 }
 
 pub fn load(kit: &Kit) -> Secrets {
-    fs::read_to_string(secrets_path(kit))
-        .ok()
-        .and_then(|t| serde_json::from_str(&t).ok())
-        .unwrap_or_default()
+    read_json(&secrets_path(kit)).unwrap_or_default()
 }
 
 /// Written in a folder made private first, so neither the temporary file of

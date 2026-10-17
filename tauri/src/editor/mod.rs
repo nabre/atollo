@@ -1,6 +1,7 @@
 //! Editor and consoles: the VSCodium web server (this file), its windows
 //! (`window`), settings (`cfg`), extensions (`ext`) and theme (`theme`) and
-//! the consoles (`terminal`).
+//! the consoles (`terminal`, a console window; `terminals`, the Terminals
+//! page: saved consoles with their own tools and versions).
 //!
 //! The integrated editor: the VSCodium web server, one per session.
 //!
@@ -17,6 +18,7 @@
 pub mod cfg;
 pub mod ext;
 pub mod terminal;
+pub mod terminals;
 pub mod theme;
 pub mod window;
 

@@ -20,7 +20,7 @@ use std::sync::{Mutex, PoisonError};
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::fsx::write_atomic;
+use crate::fsx::{read_text, write_atomic};
 use crate::kit::Kit;
 use crate::net::verify::{self, Expect};
 use crate::net::{GhAsset, Net};
@@ -250,8 +250,8 @@ fn discard(kit: &Kit) {
 
 /// The app's version among the components' ones (`data\app\versions\app.txt`).
 pub fn record_version(kit: &Kit) {
-    let path = kit.app_dir().join("versions").join("app.txt");
-    if fs::read_to_string(&path).ok().as_deref().map(str::trim) != Some(env!("CARGO_PKG_VERSION")) {
+    let path = kit.versions_root().join("app.txt");
+    if read_text(&path).ok().as_deref().map(str::trim) != Some(env!("CARGO_PKG_VERSION")) {
         if let Some(dir) = path.parent() {
             let _ = fs::create_dir_all(dir);
         }

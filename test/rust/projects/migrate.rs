@@ -44,7 +44,7 @@ fn v1_kit(tmp: &TempDir) -> Kit {
     write(&old.join(r"blog\dev-settings.json"), r#"{"agent":"codex"}"#);
     write(&old.join(r".old\dev-settings.json"), "{}");
     write(&kit.app_dir().join("ports.json"), PORTS);
-    write(&secrets_file(&kit), SECRETS);
+    write(&auth::secrets_path(&kit), SECRETS);
     let backup = kit.data().join(r"db\backup");
     write(&backup.join(r"shop\shop-mariadb-1.sql"), "CREATE TABLE t;");
     write(&backup.join(r"shop\shop-mongodb-1.archive.gz"), "gz");
@@ -144,14 +144,14 @@ fn v1_kit_to_v2_nothing_lost() {
     let kit = v1_kit(&tmp);
     run(&kit);
     assert_migrated(&kit);
-    let secrets = json_of(&secrets_file(&kit));
+    let secrets = json_of(&auth::secrets_path(&kit));
     assert_eq!(
         secrets,
         json!({"mariadbRoot": "r00t", "mongodbAdmin": "adm1n",
                "projects": {".old": {"mariadb": "pw-old"}}}),
         "only what has no project left"
     );
-    assert_owner_only(&secrets_file(&kit));
+    assert_owner_only(&auth::secrets_path(&kit));
 
     // a second start does nothing; nor does a full run again
     let before = snapshot(&kit);
@@ -167,11 +167,11 @@ fn a_new_kit_has_nothing_to_move() {
     let tmp = TempDir::new("migrate-new");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    write(&secrets_file(&kit), r#"{"mariadbRoot":"r00t"}"#);
+    write(&auth::secrets_path(&kit), r#"{"mariadbRoot":"r00t"}"#);
     run(&kit);
     assert_eq!(read(&layout_file(&kit)), "2");
     assert!(!copies_dir(&kit).exists(), "no copy of a file of layout 2");
-    assert_eq!(read(&secrets_file(&kit)), r#"{"mariadbRoot":"r00t"}"#);
+    assert_eq!(read(&auth::secrets_path(&kit)), r#"{"mariadbRoot":"r00t"}"#);
     assert!(!kit.project_data().exists());
 }
 
@@ -186,7 +186,7 @@ fn interrupted_after_the_ports_then_retried() {
     let new = kit.project_data();
     assert!(new.join(r"shop\dev-settings.json").is_file());
     assert!(new.join(r"shop\ports.json").is_file());
-    assert_eq!(read(&secrets_file(&kit)), SECRETS, "not touched yet");
+    assert_eq!(read(&auth::secrets_path(&kit)), SECRETS, "not touched yet");
     assert!(kit
         .data()
         .join(r"db\backup\shop\shop-mariadb-1.sql")
@@ -241,7 +241,7 @@ fn present_target_merged_and_password_conflict_kept() {
         json!({"mariadb": "kept", "mongodb": "shop"})
     );
     assert_eq!(
-        json_of(&secrets_file(&kit))["projects"],
+        json_of(&auth::secrets_path(&kit))["projects"],
         json!({"shop": {"mariadb": "pw-shop-maria"}, ".old": {"mariadb": "pw-old"}})
     );
     // copies: the one there wins, the other one moved
