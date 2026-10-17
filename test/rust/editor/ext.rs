@@ -193,16 +193,21 @@ fn pending_follows_projects_programs_offered_and_installed() {
 
 #[test]
 fn codelldb_follows_the_server() {
+    use crate::kit::Target;
     let tmp = TempDir::new("codelldb");
-    let x64 = Kit::at(tmp.0.clone(), Arch::X64);
-    assert_eq!(codelldb_asset(&x64), "codelldb-win32-x64.vsix");
-    let arm = Kit::at(tmp.0.clone(), Arch::Arm64);
+    let on = |target| codelldb_asset(&Kit::at_target(tmp.0.clone(), target));
+    assert_eq!(on(Target::WIN32_X64), "codelldb-win32-x64.vsix");
     assert!(Catalog::get().find("vscodium-server").unwrap().x64_only);
     assert_eq!(
-        codelldb_asset(&arm),
+        on(Target::WIN32_ARM64),
         "codelldb-win32-x64.vsix",
-        "the server is x64 only: its extensions too"
+        "the server is x64 only on Windows ARM64: its extensions too"
     );
+    // Native servers elsewhere (x64Only is Windows ARM64's, D-108).
+    assert_eq!(on(Target::LINUX_X64), "codelldb-linux-x64.vsix");
+    assert_eq!(on(Target::LINUX_ARM64), "codelldb-linux-arm64.vsix");
+    assert_eq!(on(Target::DARWIN_ARM64), "codelldb-darwin-arm64.vsix");
+    assert_eq!(on(Target::DARWIN_X64), "codelldb-darwin-x64.vsix");
 }
 
 #[test]

@@ -18,6 +18,7 @@ fn read(kit: &Kit) -> Map<String, Value> {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "files created and paths read with backslashes")]
 fn profiles_rewritten_user_ones_kept() {
     let (_t, kit) = kit_with("cfg-profiles", &[r"pwsh\pwsh.exe", r"git\bin\bash.exe"]);
     let path = settings_path(&kit);
@@ -67,6 +68,7 @@ fn profiles_rewritten_user_ones_kept() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "files created and paths read with backslashes")]
 fn user_default_profile_kept_when_valid() {
     let (_t, kit) = kit_with("cfg-default", &[r"pwsh\pwsh.exe", r"git\bin\bash.exe"]);
     let path = settings_path(&kit);
@@ -133,4 +135,162 @@ fn codium_themes_become_atollo_user_choice_kept() {
     let s = read(&kit);
     assert_eq!(s["workbench.preferredLightColorTheme"], "Atollo Light");
     assert!(s.get("workbench.colorCustomizations").is_none());
+}
+
+fn kit_on(name: &str, target: crate::kit::Target, installed: &[&str]) -> (TempDir, Kit) {
+    let (tmp, kit) = kit_with(name, &[]);
+    let kit = kit.for_target(target);
+    for rel in installed {
+        let f = crate::fsx::join_rel(kit.apps(), rel);
+        fs::create_dir_all(f.parent().unwrap()).unwrap();
+        fs::write(f, b"").unwrap();
+    }
+    (tmp, kit)
+}
+
+/// The profile names of `section` that are not hidden (`null`), sorted.
+fn shown(s: &Map<String, Value>, section: &str) -> Vec<String> {
+    let mut names: Vec<String> = s[section]
+        .as_object()
+        .unwrap()
+        .iter()
+        .filter(|(_, v)| !v.is_null())
+        .map(|(k, _)| k.clone())
+        .collect();
+    names.sort();
+    names
+}
+
+fn slashed(v: &Value) -> String {
+    v.as_str().unwrap().replace('\\', "/")
+}
+
+#[test]
+fn linux_profiles_bash_of_the_system_no_cmd() {
+    use crate::kit::Target;
+    // Git of the kit has no shell on Linux: its key is git/bin/git.
+    let (_t, kit) = kit_on(
+        "cfg-linux",
+        Target::LINUX_X64,
+        &["git/bin/git", "claude/claude"],
+    );
+    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    let s = read(&kit);
+    assert!(s.get("terminal.integrated.profiles.windows").is_none());
+    assert_eq!(
+        shown(&s, "terminal.integrated.profiles.linux"),
+        ["Claude Code", "Atollo - Bash"]
+    );
+    let p = &s["terminal.integrated.profiles.linux"];
+    assert_eq!(p["Atollo - Bash"]["path"], "/bin/bash");
+    assert_eq!(p["Atollo - Bash"]["args"][0], "--rcfile");
+    assert!(slashed(&p["Atollo - Bash"]["args"][1]).ends_with("data/kit/bashrc"));
+    assert_eq!(p["Atollo - Bash"]["args"][2], "-i");
+    assert!(slashed(&p["Claude Code"]["path"]).ends_with("linux-x64/claude/claude"));
+    assert!(p["bash"].is_null() && p["zsh"].is_null() && p["pwsh"].is_null());
+    let text = serde_json::to_string(&s).unwrap();
+    assert!(
+        !text.contains("cmd.exe") && !text.contains("agy.cmd"),
+        "{text}"
+    );
+    assert_eq!(
+        s["terminal.integrated.defaultProfile.linux"], "Atollo - Bash",
+        "no PowerShell of the kit: bash"
+    );
+    assert_eq!(
+        s["terminal.integrated.automationProfile.linux"]["path"],
+        "/bin/bash"
+    );
+    assert!(s["terminal.integrated.env.linux"]["NODE_OPTIONS"]
+        .as_str()
+        .unwrap()
+        .ends_with("/data/kit/loopback.js\""));
+    assert!(s.get("terminal.integrated.useWslProfiles").is_none());
+}
+
+#[test]
+fn macos_profiles_pwsh_default_zsh_and_agy() {
+    use crate::kit::Target;
+    let (_t, kit) = kit_on(
+        "cfg-mac",
+        Target::DARWIN_ARM64,
+        &["pwsh/pwsh", "antigravity/agy", "codex/bin/codex"],
+    );
+    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
+    assert_eq!(
+        shown(&s, "terminal.integrated.profiles.osx"),
+        [
+            "Antigravity",
+            "Codex",
+            "Atollo",
+            "Atollo - Bash",
+            "Atollo - zsh"
+        ]
+    );
+    let p = &s["terminal.integrated.profiles.osx"];
+    assert!(slashed(&p["Atollo"]["path"]).ends_with("darwin-arm64/pwsh/pwsh"));
+    assert_eq!(p["Atollo - zsh"]["path"], "/bin/zsh");
+    // Antigravity through the kit's agy (sh): it carries the login.
+    let agy = slashed(&p["Antigravity"]["path"]);
+    assert!(agy.ends_with("data/kit/bin/agy"), "{agy}");
+    assert_eq!(s["terminal.integrated.defaultProfile.osx"], "Atollo");
+}
+
+#[test]
+#[cfg_attr(not(windows), ignore = "files created and paths read with backslashes")]
+fn windows_profiles_unchanged_by_the_unix_ones() {
+    let (_t, kit) = kit_with("cfg-win-only", &[r"pwsh\pwsh.exe", r"git\bin\bash.exe"]);
+    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
+    assert_eq!(
+        shown(&s, "terminal.integrated.profiles.windows"),
+        ["Atollo", "Atollo - Git Bash", "Atollo - cmd"]
+    );
+    assert_eq!(
+        s["terminal.integrated.profiles.windows"]["Atollo - cmd"]["path"],
+        r"C:\Windows\System32\cmd.exe"
+    );
+    assert!(s
+        .keys()
+        .all(|k| !k.ends_with(".linux") && !k.ends_with(".osx")));
+    assert_eq!(s["terminal.integrated.useWslProfiles"], false);
+}
+
+#[test]
+fn each_system_keeps_the_others_settings() {
+    use crate::kit::Target;
+    let (_t, win) = kit_on("cfg-shared", Target::WIN32_X64, &["pwsh/pwsh.exe"]);
+    write(&win, Path::new(r"C:\Windows")).unwrap();
+    let linux = win.for_target(Target::LINUX_ARM64);
+    write(&linux, Path::new(r"C:\Windows")).unwrap();
+    let s = read(&linux);
+    assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Atollo");
+    assert!(s["terminal.integrated.profiles.windows"]["Atollo - cmd"].is_object());
+    assert!(s["terminal.integrated.profiles.linux"]
+        .get("Atollo - cmd")
+        .is_none());
+    assert_eq!(
+        s["terminal.integrated.defaultProfile.linux"],
+        "Atollo - Bash"
+    );
+    // The user's default kept when it is a profile of that system.
+    let mut user = s.clone();
+    user.insert(
+        "terminal.integrated.defaultProfile.linux".into(),
+        json!("Mine"),
+    );
+    let mut mine = user["terminal.integrated.profiles.linux"]
+        .as_object()
+        .unwrap()
+        .clone();
+    mine.insert("Mine".into(), json!({ "path": "/usr/bin/fish" }));
+    user.insert(
+        "terminal.integrated.profiles.linux".into(),
+        Value::Object(mine),
+    );
+    let again = merge(&user, &linux, Path::new(r"C:\Windows"));
+    assert_eq!(again["terminal.integrated.defaultProfile.linux"], "Mine");
+    assert_eq!(
+        again["terminal.integrated.profiles.linux"]["Mine"]["path"],
+        "/usr/bin/fish"
+    );
 }

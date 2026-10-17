@@ -372,15 +372,27 @@ fn pump(stream: impl Read + Send + 'static, log: PathBuf, token: String) {
     });
 }
 
-/// `http://127.0.0.1:<port>/?tkn=<token>&folder=/C:/path/to/project`.
+/// `http://127.0.0.1:<port>/?tkn=<token>&folder=/C:/path/to/project`
+/// (`folder=/home/me/kit/projects/app` on macOS and Linux).
 pub fn url(port: u16, token: &str, folder: Option<&Path>) -> String {
     let mut url = format!("http://127.0.0.1:{port}/?tkn={token}");
     if let Some(folder) = folder {
-        let path = format!("/{}", folder.display().to_string().replace('\\', "/"));
         url.push_str("&folder=");
-        url.push_str(&encode_query(&path));
+        url.push_str(&encode_query(&folder_param(folder)));
     }
     url
+}
+
+/// `folder` as the server's `folder=` wants it: forward slashes and one
+/// leading `/` (`/C:/x` for a Windows path; a Unix path already has it,
+/// and `//home/...` would be another path).
+pub fn folder_param(folder: &Path) -> String {
+    let path = folder.display().to_string().replace('\\', "/");
+    if path.starts_with('/') {
+        path
+    } else {
+        format!("/{path}")
+    }
 }
 
 fn encode_query(s: &str) -> String {
