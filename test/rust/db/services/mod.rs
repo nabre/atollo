@@ -182,11 +182,15 @@ fn real_databases_start_and_stop() {
         if id == "mariadb" {
             assert!(crate::db::browse::rows(&s, id, None, "prova_kit", "no`; DROP", 0).is_err());
         }
-        // Adminer logged in with the token only, ended with MariaDB (D-85).
-        let adminer = (id == "mariadb" && installed(&kit, "adminer")).then(|| {
-            let url = s.adminer_url(None).unwrap();
-            crate::db::adminer::tests::assert_logs_in(&url);
-            assert_eq!(s.adminer_url(None).unwrap(), url, "the same Adminer");
+        // phpMyAdmin logged in with the token only, ended with MariaDB (D-107).
+        let pma = (id == "mariadb" && installed(&kit, "phpmyadmin")).then(|| {
+            let url = s.phpmyadmin_url(None, "en").unwrap();
+            crate::db::phpmyadmin::tests::assert_logs_in(&url);
+            assert_eq!(
+                s.phpmyadmin_url(None, "en").unwrap(),
+                url,
+                "the same phpMyAdmin"
+            );
             url
         });
         let file = s.export("Prova Kit", id).unwrap();
@@ -219,8 +223,8 @@ fn real_databases_start_and_stop() {
         assert!(responds(port), "{id}: a running server stays running");
         s.stop(id);
         assert!(!responds(port), "{id} stopped");
-        if let Some(url) = adminer {
-            assert!(ureq::get(&url).call().is_err(), "Adminer stopped");
+        if let Some(url) = pma {
+            assert!(ureq::get(&url).call().is_err(), "phpMyAdmin stopped");
         }
         assert_eq!(s.running(), 0);
         s.set(id, before.port, before.autostart).unwrap();

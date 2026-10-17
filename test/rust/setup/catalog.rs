@@ -270,14 +270,14 @@ fn shared_paths_go_with_the_last_owner() {
 }
 
 /// Option C (BUG-23b, BUG-24a): PHP, Apache and Nginx are Windows only
-/// (Windows builds, php.ini and httpd.conf of Windows), so Adminer, which
+/// (Windows builds, php.ini and httpd.conf of Windows), so phpMyAdmin, which
 /// needs PHP, is too. Git stays everywhere: Claude Code needs it.
 #[test]
 fn web_stack_is_windows_only() {
     use crate::kit::Target;
 
     let catalog = Catalog::get();
-    for id in ["php", "apache", "nginx", "adminer"] {
+    for id in ["php", "apache", "nginx", "phpmyadmin"] {
         let c = catalog.find(id).unwrap();
         for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
             assert!(c.is_available_on(target), "{id} on {target}");
@@ -299,13 +299,13 @@ fn web_stack_is_windows_only() {
     }
 }
 
-/// Asking for Adminer on Linux names the system, not ARM64.
+/// Asking for phpMyAdmin on Linux names the system, not ARM64.
 #[test]
-fn adminer_on_linux_names_the_system() {
+fn phpmyadmin_on_linux_names_the_system() {
     use crate::kit::Target;
     use crate::setup::runner::{plan, Options};
 
-    let tmp = TempDir::new("catalog-adminer-linux");
+    let tmp = TempDir::new("catalog-phpmyadmin-linux");
     let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
     kit.prepare().unwrap();
     let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
@@ -319,7 +319,7 @@ fn adminer_on_linux_names_the_system() {
     };
     let catalog = Catalog::get();
     let opts = Options {
-        only: vec!["adminer".into()],
+        only: vec!["phpmyadmin".into()],
         ..Options::default()
     };
     let e = plan(&ctx, catalog, &Choice::defaults(catalog), &opts)
@@ -327,8 +327,8 @@ fn adminer_on_linux_names_the_system() {
         .unwrap()
         .to_string();
     assert!(e.contains("linux-x64") && !e.contains("ARM64"), "{e}");
-    let msg = crate::commands::unavailable_msg("en", "Adminer", Target::LINUX_X64);
-    assert_eq!(msg, "Adminer is not available for linux-x64.");
+    let msg = crate::commands::unavailable_msg("en", "phpMyAdmin", Target::LINUX_X64);
+    assert_eq!(msg, "phpMyAdmin is not available for linux-x64.");
 }
 
 #[test]

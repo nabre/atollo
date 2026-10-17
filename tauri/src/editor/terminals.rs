@@ -34,7 +34,7 @@ pub const DEFAULT_ID: &str = "default";
 /// The longest name, in characters.
 const NAME_MAX: usize = 60;
 /// Tools of those groups without a command for a terminal.
-const NO_COMMAND: &[&str] = &["adminer"];
+const NO_COMMAND: &[&str] = &["phpmyadmin"];
 
 /// One save or removal at a time: each rewrites the whole file.
 static STORE: Mutex<()> = Mutex::new(());

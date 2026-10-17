@@ -154,7 +154,7 @@ pub struct Services {
     kit: Kit,
     running: Mutex<BTreeMap<Key, Server>>,
     errors: Mutex<BTreeMap<Key, String>>,
-    adminer: crate::db::adminer::Adminer,
+    phpmyadmin: crate::db::phpmyadmin::PhpMyAdmin,
 }
 
 /// The version of `id` the server runs: the one in its settings while it is
@@ -332,7 +332,7 @@ impl Services {
             kit,
             running: Mutex::new(BTreeMap::new()),
             errors: Mutex::new(BTreeMap::new()),
-            adminer: crate::db::adminer::Adminer::default(),
+            phpmyadmin: crate::db::phpmyadmin::PhpMyAdmin::default(),
         }
     }
 
@@ -667,11 +667,11 @@ impl Services {
         }
     }
 
-    /// The address that opens Adminer logged in to the running MariaDB
-    /// (D-85), version `line` (None: the one the server runs).
-    pub fn adminer_url(&self, line: Option<&str>) -> Result<String> {
+    /// The address that opens phpMyAdmin logged in to the running MariaDB
+    /// (D-107), version `line` (None: the one the server runs), in `lang`.
+    pub fn phpmyadmin_url(&self, line: Option<&str>, lang: &str) -> Result<String> {
         let (port, env) = self.running_at("mariadb", line)?;
-        self.adminer.open(&self.kit, &env, port)
+        self.phpmyadmin.open(&self.kit, &env, port, lang)
     }
 
     /// Asks the server to shut down, then ends whatever is left.
@@ -700,8 +700,8 @@ impl Services {
             (!key.1.is_empty()).then_some(key.1.as_str()),
         );
         if id == "mariadb" {
-            // Adminer logged in to this version ends with it.
-            self.adminer.stop_for(server.port);
+            // phpMyAdmin logged in to this version ends with it.
+            self.phpmyadmin.stop_for(server.port);
         }
         let ask = match id {
             "mongodb" => {
@@ -738,7 +738,7 @@ impl Services {
 
     /// Every server and every version of them.
     pub fn stop_all(&self) {
-        self.adminer.stop();
+        self.phpmyadmin.stop();
         let keys: Vec<Key> = self
             .running
             .lock()

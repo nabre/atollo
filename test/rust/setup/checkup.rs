@@ -23,6 +23,9 @@ fn every_check_names_an_installed_file() {
 fn php_header_version() {
     let head = "<?php\n/** Adminer\n* @license x\n* @version 6.1.2\n*/namespace\n";
     assert_eq!(header_version(head), Some("6.1.2"));
+    // phpMyAdmin's libraries/classes/Version.php.
+    let pma = "<?php\nfinal class Version\n{\n    public const VERSION = '5.2.3' . VERSION_SUFFIX;\n    public const SERIES = '5.2';\n";
+    assert_eq!(header_version(pma), Some("5.2.3"));
     assert_eq!(header_version("<?php echo 1;"), None);
 }
 

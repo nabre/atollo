@@ -31,7 +31,7 @@ fn tools_have_a_folder_per_line() {
         "uv",
         "pwsh",
         "cmake",
-        "adminer",
+        "phpmyadmin",
         "sqlite",
         "node",
         "apache",

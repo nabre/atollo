@@ -130,7 +130,7 @@ function OtherLine({
   onStart,
   onStop,
   onPort,
-  onAdminer,
+  onPhpMyAdmin,
 }: {
   id: string;
   o: LineInfo;
@@ -138,8 +138,8 @@ function OtherLine({
   onStart: () => void;
   onStop: () => void;
   onPort: (port: number) => void;
-  /** MariaDB only: Adminer on this version. */
-  onAdminer?: (() => void) | undefined;
+  /** MariaDB only: phpMyAdmin on this version. */
+  onPhpMyAdmin?: (() => void) | undefined;
 }) {
   const [port, setPort] = useState(String(o.port));
   const on = o.state === "running" || o.state === "starting";
@@ -160,14 +160,14 @@ function OtherLine({
         ) : (
           <ActionButton icon={VscDebugStart} label={t("Avvia {0}", o.line)} small busy={busy} onClick={onStart} />
         )}
-        {onAdminer && (
+        {onPhpMyAdmin && (
           <ActionButton
             icon={VscLinkExternal}
-            label={t("Adminer su {0}", o.line)}
+            label={t("phpMyAdmin su {0}", o.line)}
             title={t("Questa versione nel browser; il server si avvia se è fermo")}
             small
             busy={busy}
-            onClick={onAdminer}
+            onClick={onPhpMyAdmin}
           />
         )}
       </div>
@@ -208,21 +208,21 @@ function ServiceDetails({
   onStop,
   onSet,
   onLine,
-  onAdminer,
+  onPhpMyAdmin,
   lineBusy,
   onLineStart,
   onLineStop,
   onLinePort,
-  onLineAdminer,
+  onLinePhpMyAdmin,
 }: {
   s: ServiceInfo;
   busy: boolean;
   onStart: () => void;
   onStop: () => void;
-  /** MariaDB only: Adminer in the browser. */
-  onAdminer?: (() => void) | undefined;
-  /** MariaDB only: Adminer on another version. */
-  onLineAdminer?: ((line: string) => void) | undefined;
+  /** MariaDB only: phpMyAdmin in the browser. */
+  onPhpMyAdmin?: (() => void) | undefined;
+  /** MariaDB only: phpMyAdmin on another version. */
+  onLinePhpMyAdmin?: ((line: string) => void) | undefined;
   onSet: (port: number | null, autostart: boolean) => void;
   onLine: (line: string | null) => void;
   /** The other versions (PLAN.md §13.2). */
@@ -236,7 +236,7 @@ function ServiceDetails({
   const portValue = Number(port);
   const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
   const portId = `port-${s.id}`;
-  // MariaDB's content is in Adminer (D-85): no explorer, only the details.
+  // MariaDB's content is in phpMyAdmin (D-107): no explorer, only the details.
   const explorer = s.id !== "mariadb";
   const [chosen, setSection] = useState<"content" | "details">(s.state === "running" ? "content" : "details");
   const section = explorer ? chosen : "details";
@@ -280,13 +280,13 @@ function ServiceDetails({
             ) : (
               <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />
             )}
-            {onAdminer && (
+            {onPhpMyAdmin && (
               <ActionButton
                 icon={VscLinkExternal}
-                label={t("Apri Adminer")}
-                title={t("MariaDB nel browser, come phpMyAdmin; al primo uso si installa e il server si avvia")}
+                label={t("Apri phpMyAdmin")}
+                title={t("MariaDB nel browser; al primo uso si installa e il server si avvia")}
                 busy={busy}
-                onClick={onAdminer}
+                onClick={onPhpMyAdmin}
               />
             )}
           </>
@@ -457,10 +457,10 @@ function ServiceDetails({
                     onPort={(port) => {
                       onLinePort(o.line, port);
                     }}
-                    onAdminer={
-                      onLineAdminer
+                    onPhpMyAdmin={
+                      onLinePhpMyAdmin
                         ? () => {
-                            onLineAdminer(o.line);
+                            onLinePhpMyAdmin(o.line);
                           }
                         : undefined
                     }
@@ -626,14 +626,14 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
           onLinePort={(line, port) => {
             act(`${service.id}@${line}`, () => serviceLinePort(service.id, line, port));
           }}
-          onAdminer={
+          onPhpMyAdmin={
             service.id === "mariadb"
               ? () => {
                   act(service.id, () => dbAdminOpen());
                 }
               : undefined
           }
-          onLineAdminer={
+          onLinePhpMyAdmin={
             service.id === "mariadb"
               ? (line) => {
                   act(`${service.id}@${line}`, () => dbAdminOpen(line));
@@ -646,7 +646,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
       )}
       <p className="shrink-0 border-t border-vsc-border px-5 py-2 text-[12px] text-vsc-desc">
         {t(
-          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. MariaDB è compatibile con MySQL; nel terminale del kit il comando mariadb entra già come root, e «Apri Adminer» lo apre nel browser, come phpMyAdmin. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
+          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. MariaDB è compatibile con MySQL; nel terminale del kit il comando mariadb entra già come root, e «Apri phpMyAdmin» lo apre nel browser. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
         )}
       </p>
     </ViewContainer>

@@ -74,10 +74,10 @@
     "fr": "base de données documentaire : serveur et shell mongosh",
     "de": "Dokumentendatenbank: Server und mongosh-Shell"
   },
-  "MariaDB nel browser, come phpMyAdmin: tabelle, righe, query SQL, importazione ed esportazione": {
-    "en": "MariaDB in the browser, like phpMyAdmin: tables, rows, SQL queries, import and export",
-    "fr": "MariaDB dans le navigateur, comme phpMyAdmin : tables, lignes, requêtes SQL, import et export",
-    "de": "MariaDB im Browser, wie phpMyAdmin: Tabellen, Zeilen, SQL-Abfragen, Import und Export"
+  "MariaDB nel browser: database, tabelle, righe, query SQL, utenti, importazione ed esportazione": {
+    "en": "MariaDB in the browser: databases, tables, rows, SQL queries, users, import and export",
+    "fr": "MariaDB dans le navigateur : bases de données, tables, lignes, requêtes SQL, utilisateurs, import et export",
+    "de": "MariaDB im Browser: Datenbanken, Tabellen, Zeilen, SQL-Abfragen, Benutzer, Import und Export"
   },
   "database in un file: riga di comando sqlite3": {
     "en": "database in a file: the sqlite3 command line",

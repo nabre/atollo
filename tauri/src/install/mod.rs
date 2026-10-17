@@ -247,7 +247,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "mariadb" => &db::MariaDb,
         "mongodb" => &db::MongoDb,
         "sqlite" => &db::Sqlite,
-        "adminer" => &db::Adminer,
+        "phpmyadmin" => &db::PhpMyAdmin,
         _ => return None,
     })
 }

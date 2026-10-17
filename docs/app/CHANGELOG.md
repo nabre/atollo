@@ -1,5 +1,17 @@
 # Novità
 
+## phpMyAdmin al posto di Adminer (17/10/2026)
+
+- **«Apri phpMyAdmin»** nella pagina di MariaDB sostituisce «Apri Adminer» (D-107): phpMyAdmin 5.2.3, già entrato come `root`, nella lingua dell'app. Al primo clic installa phpMyAdmin (circa 60 MB) e, se mancano, PHP e MariaDB; avvia MariaDB se è fermo. Funziona anche sulle altre versioni di MariaDB («phpMyAdmin su 11.4»).
+- Stessa protezione di Adminer: token monouso nell'indirizzo, che viene subito tolto, cookie `HttpOnly`, password di `root` solo nell'ambiente del server. Il router serve solo le pagine e i file pubblici di phpMyAdmin.
+- Importazione di file SQL fino a 512 MB.
+- **Adminer viene tolto**: all'avvio l'app cancella la sua cartella, il router, le sessioni e il log.
+
+**Correzione**
+- **Browser che non si apriva**: «Apri Adminer» avviava il server di PHP, ma la pagina non si apriva mai. Su Windows 11 `explorer.exe` ignora un indirizzo con `?…`. Ora gli indirizzi web passano da `rundll32 url.dll,FileProtocolHandler`, come già faceva l'editor; vale anche per gli indirizzi dei progetti, per GitHub e per i download a mano.
+
+**Verificato**: `cargo fmt --check`, clippy con `-D warnings`, 455 test Rust, ESLint, Prettier, `tsc`, 117 test dell'interfaccia; installazione reale e test reale su MariaDB 12.3 con PHP 8.5.
+
 ## Riordino di cartelle e file (17/10/2026)
 
 Struttura riallineata alle regole di [ARCHITECTURE.md](ARCHITECTURE.md), senza cambiare il comportamento (salvo la correzione qui sotto).

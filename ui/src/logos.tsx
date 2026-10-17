@@ -47,6 +47,7 @@ import {
   SiNodedotjs,
   SiOpenjdk,
   SiPhp,
+  SiPhpmyadmin,
   SiPnpm,
   SiPrettier,
   SiPython,
@@ -154,6 +155,7 @@ const COMPONENTS: Record<string, Logo> = {
   // MariaDB's #003545 is unreadable on dark: the text colour, as for black brands.
   mariadb: { icon: SiMariadb },
   mongodb: { icon: SiMongodb, color: "#47A248" },
+  phpmyadmin: { icon: SiPhpmyadmin, color: "#6C78AF" },
   // SQLite's #003B57 is unreadable on dark: the light blue of its logo.
   sqlite: { icon: SiSqlite, color: "#0F80CC" },
   r: R,

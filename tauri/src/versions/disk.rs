@@ -159,8 +159,9 @@ pub fn migrate(kit: &Kit) {
     }
 }
 
-/// Components no longer in the catalog: Windows Terminal (D-95).
-const RETIRED: [&str; 1] = ["terminal"];
+/// Components no longer in the catalog: Windows Terminal (D-95), Adminer
+/// (phpMyAdmin in its place, D-107).
+const RETIRED: [&str; 2] = ["terminal", "adminer"];
 
 /// What an older kit kept of a component no longer in the catalog: its
 /// folder in `data\apps`, its version files and its files in `data\kit`. A
@@ -192,6 +193,10 @@ fn drop_retired(kit: &Kit) {
     }
     // The start script of Windows Terminal's consoles.
     let _ = fs::remove_file(kit.kit_files().join("console.ps1"));
+    // Adminer's router, sessions and log.
+    let _ = fs::remove_file(kit.kit_files().join("adminer.php"));
+    let _ = fs::remove_dir_all(kit.app_dir().join("adminer"));
+    let _ = fs::remove_file(kit.logs().join("adminer.log"));
 }
 
 /// `node\node.exe` → `node\<line>\node.exe`, through `node.atollo-move`

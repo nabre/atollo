@@ -121,17 +121,17 @@ describe("DatabasesPage", () => {
     expect(invoke).toHaveBeenCalledWith("service_line_port", { id: "mariadb", line: "11.4", port: 3317 });
   });
 
-  it("opens Adminer on another version", async () => {
+  it("opens phpMyAdmin on another version", async () => {
     invoke.mockImplementation((cmd) => {
       if (cmd === "services_list" || cmd === "db_admin_open") return Promise.resolve(STOPPED);
       return Promise.reject(new Error(`unexpected ${cmd}`));
     });
     render(<DatabasesPage />);
     await flush();
-    fireEvent.click(screen.getByRole("button", { name: "Adminer su 11.4" }));
+    fireEvent.click(screen.getByRole("button", { name: "phpMyAdmin su 11.4" }));
     await flush();
     expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: "11.4" });
-    fireEvent.click(screen.getByRole("button", { name: "Apri Adminer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apri phpMyAdmin" }));
     await flush();
     expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: null });
   });

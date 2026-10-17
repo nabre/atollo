@@ -106,7 +106,7 @@ export function dbBrowseRows(
     : invoke<DbRows>("db_browse_rows", { engine, line, database, table, offset });
 }
 
-/** Adminer on the kit's MariaDB, in the browser (D-85): installed the first
+/** phpMyAdmin on the kit's MariaDB, in the browser (D-107): installed the first
  * time, MariaDB started when it is off; `line`: another version, on its
  * own port (null: the version the server runs). */
 export function dbAdminOpen(line: string | null = null): Promise<ServiceInfo[]> {

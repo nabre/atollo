@@ -1,20 +1,23 @@
-//! Adminer on the kit's MariaDB (DECISIONS.md D-85): what EasyPHP and XAMPP
-//! give with phpMyAdmin, from the Database page.
+//! phpMyAdmin on the kit's MariaDB (DECISIONS.md D-107, in place of Adminer
+//! of D-85): what EasyPHP and XAMPP give, from the Database page.
 //!
 //! - PHP's own server (`php -S`) of the kit's default PHP, on 127.0.0.1 and a
-//!   port the system gives, with the router `data\kit\adminer.php`
-//!   (`runtime/adminer.php`), started at the first "Adminer" and ended
-//!   with the MariaDB version it logs in to or the app (the app's job);
+//!   port the system gives, serving phpMyAdmin's folder through the router
+//!   `data\kit\phpmyadmin.php` (`runtime/phpmyadmin.php`), started at the
+//!   first "phpMyAdmin" and ended with the MariaDB version it logs in to or
+//!   the app (the app's job);
 //! - one at a time, on the version chosen (PLAN.md §13.2: each on its own
 //!   port): opening it on another version starts it again there;
 //! - a new token at every start: the address the app opens carries it,
 //!   any request without it (or its cookie) gets 403, so the other users
 //!   of the PC that reach 127.0.0.1 cannot use root's login;
-//! - root's password and the MariaDB port in the server's environment
-//!   (`ATOLLO_DB_*`), never on the command line or in the browser;
-//! - sessions in `data\app\adminer`, uploaded files in `adminer\` of the
-//!   PC's temporary folder (D-90), the server's output in
-//!   `data\app\logs\adminer.log`.
+//! - `config.inc.php` in phpMyAdmin's folder is the app's
+//!   (`runtime/phpmyadmin.config.php`), written at every start: root's
+//!   password, the MariaDB port and the cookie key come from the server's
+//!   environment (`ATOLLO_*`), never the command line or the browser;
+//! - sessions and phpMyAdmin's cache in `data\app\phpmyadmin`, uploaded
+//!   files in `phpmyadmin\` of the PC's temporary folder (D-90), the
+//!   server's output in `data\app\logs\phpmyadmin.log`.
 
 use std::fs::{self, File};
 use std::net::{Ipv4Addr, TcpListener};
@@ -27,6 +30,7 @@ use anyhow::{anyhow, bail, Context, Result};
 
 use super::auth;
 use crate::env::KitEnv;
+use crate::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
 use crate::os::temp::TempWork;
@@ -34,6 +38,9 @@ use crate::projects::run::responds;
 use crate::setup::catalog;
 
 const READY_WITHIN: Duration = Duration::from_secs(15);
+
+/// phpMyAdmin's `config.inc.php`, written into its folder.
+const CONFIG: &str = include_str!("../../../runtime/phpmyadmin.config.php");
 
 struct Server {
     child: Child,
@@ -48,13 +55,13 @@ struct Server {
 }
 
 #[derive(Default)]
-pub struct Adminer {
+pub struct PhpMyAdmin {
     running: Mutex<Option<Server>>,
 }
 
-/// `adminer\adminer.php` of the component.
-fn script(kit: &Kit) -> PathBuf {
-    catalog::kit_path(kit, "adminer/adminer.php")
+/// `phpmyadmin\index.php` of the component.
+fn entry(kit: &Kit) -> PathBuf {
+    catalog::kit_path(kit, "phpmyadmin/index.php")
 }
 
 /// A free port of 127.0.0.1, from the system.
@@ -67,10 +74,11 @@ pub fn address(port: u16, token: &str) -> String {
     format!("http://127.0.0.1:{port}/?atollo={token}")
 }
 
-impl Adminer {
-    /// The address that logs in to Adminer, on MariaDB at `db_port`; starts
-    /// PHP's server when it is not running or serves another port.
-    pub fn open(&self, kit: &Kit, env: &KitEnv, db_port: u16) -> Result<String> {
+impl PhpMyAdmin {
+    /// The address that logs in to phpMyAdmin, on MariaDB at `db_port`, in
+    /// `lang` (`it`, `en`...); starts PHP's server when it is not running or
+    /// serves another port.
+    pub fn open(&self, kit: &Kit, env: &KitEnv, db_port: u16, lang: &str) -> Result<String> {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(s) = running.as_mut() {
             if matches!(s.child.try_wait(), Ok(None)) && s.db_port == db_port {
@@ -78,7 +86,7 @@ impl Adminer {
             }
         }
         *running = None;
-        let server = start(kit, env, db_port)?;
+        let server = start(kit, env, db_port, lang)?;
         let url = address(server.port, &server.token);
         *running = Some(server);
         Ok(url)
@@ -92,41 +100,49 @@ impl Adminer {
             .take()
             .is_some()
         {
-            crate::log::info("adminer: stopped");
+            crate::log::info("phpmyadmin: stopped");
         }
     }
 
-    /// Ends Adminer when it logs in to the MariaDB at `db_port` (a version
-    /// that stops); one on another version stays.
+    /// Ends phpMyAdmin when it logs in to the MariaDB at `db_port` (a
+    /// version that stops); one on another version stays.
     pub fn stop_for(&self, db_port: u16) {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         if running.as_ref().is_some_and(|s| s.db_port == db_port) {
             *running = None;
-            crate::log::info("adminer: stopped");
+            crate::log::info("phpmyadmin: stopped");
         }
     }
 }
 
-fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
-    let adminer = script(kit);
-    if !adminer.is_file() {
-        bail!("Adminer is not installed: {} missing", adminer.display());
-    }
-    let router = kit.kit_files().join("adminer.php");
-    if !router.is_file() {
-        crate::setup::kit_files::write_all(kit)?;
+fn start(kit: &Kit, env: &KitEnv, db_port: u16, lang: &str) -> Result<Server> {
+    let index = entry(kit);
+    let Some(root) = index.parent().filter(|_| index.is_file()) else {
+        bail!("phpMyAdmin is not installed: {} missing", index.display());
+    };
+    // The router of this version of the app (only files that differ are
+    // written).
+    crate::setup::kit_files::write_all(kit)?;
+    let router = kit.kit_files().join("phpmyadmin.php");
+    let config = root.join("config.inc.php");
+    if fs::read(&config).ok().as_deref() != Some(CONFIG.as_bytes()) {
+        write_atomic(&config, CONFIG.as_bytes()).with_context(|| config.display().to_string())?;
     }
     let password = auth::load(kit)
         .mariadb_root
         .ok_or_else(|| anyhow!("MariaDB has no password of root yet"))?;
-    let dir = kit.app_dir().join("adminer");
-    fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
+    let dir = kit.app_dir().join("phpmyadmin");
+    let (sessions, cache) = (dir.join("sessions"), dir.join("tmp"));
+    for d in [&sessions, &cache] {
+        fs::create_dir_all(d).with_context(|| d.display().to_string())?;
+    }
     // Uploaded files (an SQL file to import) pass through the PC's temporary
     // folder (D-90); the sessions stay in the kit.
-    let uploads = TempWork::new(kit, "adminer").context("adminer uploads")?;
-    let log = kit.logs().join("adminer.log");
+    let uploads = TempWork::new(kit, "phpmyadmin").context("phpmyadmin uploads")?;
+    let log = kit.logs().join("phpmyadmin.log");
     let out = File::create(&log).with_context(|| log.display().to_string())?;
     let token = crate::editor::random_token()?;
+    let secret = crate::editor::random_token()?;
     let port = free_port()?;
     // The default PHP with its own php.ini and extensions, whatever line
     // the kit's environment names.
@@ -135,24 +151,30 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
     cmd.env("CP_PHP", &php_dir)
         .env("PHPRC", crate::install::php_ini_dir(&kit.data(), &php_dir))
         .arg("-d")
-        .arg(format!("session.save_path={}", dir.display()))
+        .arg(format!("session.save_path={}", sessions.display()))
         .arg("-d")
         .arg(format!("upload_tmp_dir={}", uploads.path().display()))
+        // Large SQL files to import.
+        .args(["-d", "upload_max_filesize=512M", "-d", "post_max_size=512M"])
+        .args(["-d", "memory_limit=512M", "-d", "max_execution_time=0"])
         .arg("-S")
         .arg(format!("127.0.0.1:{port}"))
         .arg("-t")
-        .arg(&dir)
+        .arg(root)
         .arg(&router)
-        .current_dir(&dir)
-        .env("ATOLLO_ADMINER", &adminer)
-        .env("ATOLLO_ADMINER_TOKEN", &token)
+        .current_dir(root)
+        .env("ATOLLO_PMA_ROOT", root)
+        .env("ATOLLO_PMA_TOKEN", &token)
+        .env("ATOLLO_PMA_SECRET", &secret)
+        .env("ATOLLO_PMA_TMP", &cache)
+        .env("ATOLLO_LANG", lang)
         .env("ATOLLO_DB_PORT", db_port.to_string())
         .env("ATOLLO_DB_PASSWORD", &password)
         .stdin(Stdio::null())
         .stdout(Stdio::from(out.try_clone()?))
         .stderr(Stdio::from(out));
     let job = Job::new()?;
-    let mut child = jobs::spawn_in(&mut cmd, &job).context("spawn php -S for Adminer")?;
+    let mut child = jobs::spawn_in(&mut cmd, &job).context("spawn php -S for phpMyAdmin")?;
     let begun = Instant::now();
     while !responds(port) {
         if !matches!(child.try_wait(), Ok(None)) {
@@ -168,7 +190,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
         }
         std::thread::sleep(Duration::from_millis(100));
     }
-    crate::log::info(&format!("adminer: started on 127.0.0.1:{port}"));
+    crate::log::info(&format!("phpmyadmin: started on 127.0.0.1:{port}"));
     Ok(Server {
         child,
         port,
@@ -180,5 +202,5 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
 }
 
 #[cfg(test)]
-#[path = "../../../test/rust/db/adminer.rs"]
+#[path = "../../../test/rust/db/phpmyadmin.rs"]
 pub(crate) mod tests;

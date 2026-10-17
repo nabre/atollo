@@ -1,5 +1,5 @@
 //! Databases of a project (D-74), backups, `.env`, content (D-79) and
-//! Adminer (D-85).
+//! phpMyAdmin (D-107).
 
 use super::*;
 
@@ -297,8 +297,8 @@ pub async fn db_browse_rows<R: Runtime>(
     .or_fail("browse")?
 }
 
-/// Adminer on the kit's MariaDB in the browser (D-85): Adminer (with PHP
-/// and MariaDB) installed the first time, MariaDB started when it is off.
+/// phpMyAdmin on the kit's MariaDB in the browser (D-107): phpMyAdmin (with
+/// PHP and MariaDB) installed the first time, MariaDB started when it is off.
 /// `line`: another installed version, on its own port (PLAN.md §13.2);
 /// null: the version the server runs.
 #[tauri::command]
@@ -312,16 +312,16 @@ pub async fn db_admin_open<R: Runtime>(
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure(&app, &task, &kit, lang, &["mariadb", "adminer"])?;
+        let env = ensure(&app, &task, &kit, lang, &["mariadb", "phpmyadmin"])?;
         services
             .start_line("mariadb", line.as_deref(), &env)
             .map_err(|e| start_error(lang, &e))?;
         let url = services
-            .adminer_url(line.as_deref())
-            .or_fail_chain("adminer")?;
+            .phpmyadmin_url(line.as_deref(), lang)
+            .or_fail_chain("phpmyadmin")?;
         open_in_browser(&url)?;
         Ok(services.list())
     })
     .await
-    .or_fail("adminer")?
+    .or_fail("phpmyadmin")?
 }
