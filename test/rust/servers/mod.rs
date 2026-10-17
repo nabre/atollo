@@ -1404,6 +1404,47 @@ fn automatic_pools_list_chosen_or_started_sites() {
     assert_eq!(projects_of(&servers.list("it", true).pools), ["shop"]);
 }
 
+/// PLAN.md §13.1: a site marked `dedicated` keeps its own server (in no
+/// pool); a new profile never takes an id a site's `server` means otherwise.
+#[test]
+fn dedicated_sites_and_reserved_profile_ids() {
+    let tmp = TempDir::new("servers-dedicated");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let shop = kit.projects().join("shop");
+    fs::create_dir_all(shop.join("public")).unwrap();
+    fs::write(
+        shop.join("panel.json"),
+        r#"{ "actions": [ { "id": "site", "apache": "public", "server": "dedicated" } ] }"#,
+    )
+    .unwrap();
+    assert_eq!(servers.pool_of("shop", "site", "it").map(|p| p.0.id), None);
+
+    let profile = |name: &str| WebServerProfileInput {
+        id: String::new(),
+        name: name.into(),
+        engine: WebServerEngine::Apache,
+        server_line: None,
+        php_line: None,
+        port: None,
+        keep_alive: true,
+        autostart: false,
+    };
+    for (name, id) in [
+        ("Apache 2.4", "apache-2.4-profile"),
+        ("Dedicated", "dedicated-profile"),
+        ("Auto", "auto-profile"),
+        ("Apache test", "apache-test"),
+    ] {
+        servers.save_profile(profile(name), "it").unwrap();
+        assert!(
+            load_store(&kit).profiles.iter().any(|p| p.id == id),
+            "{name}"
+        );
+    }
+}
+
 /// The pools of the page: an automatic pool with no site left is not
 /// shown, unless it runs or it is the only pool (the one to start).
 #[test]

@@ -201,13 +201,20 @@ fn site_mode_pool_when_assigned() {
     );
 }
 
-/// GAP-RUN: no profile (or `auto`, or empty) keeps the dedicated server,
+/// PLAN.md §13.1: no profile (or `auto`, or empty) goes to the automatic
+/// pool of the project's lines; `dedicated` keeps the site's own server,
 /// and a `server` on another kind of action means nothing.
 #[test]
-fn site_mode_dedicated_otherwise() {
+fn site_mode_auto_or_dedicated_otherwise() {
     for server in [None, Some("auto"), Some(""), Some("  ")] {
-        assert_eq!(site_mode(&site_action(true, server)), SiteMode::Dedicated);
-        assert_eq!(site_mode(&site_action(false, server)), SiteMode::Dedicated);
+        assert_eq!(site_mode(&site_action(true, server)), SiteMode::Auto);
+        assert_eq!(site_mode(&site_action(false, server)), SiteMode::Auto);
+    }
+    for server in [DEDICATED_SERVER, " dedicated "] {
+        assert_eq!(
+            site_mode(&site_action(true, Some(server))),
+            SiteMode::Dedicated
+        );
     }
     let mut cmd = Action::for_test("dev", "npm run dev", Kind::Web);
     cmd.server = Some("legacy".into());

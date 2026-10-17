@@ -451,6 +451,12 @@ fn parse_auto_pool_id(id: &str) -> Option<PoolLines> {
     Some((engine, srv, php))
 }
 
+/// An id a site's `server` in `panel.json` gives another meaning than a
+/// profile: `auto`, `dedicated`, or an automatic pool's.
+fn reserved_id(id: &str) -> bool {
+    id == "auto" || id == crate::projects::run::DEDICATED_SERVER || parse_auto_pool_id(id).is_some()
+}
+
 /// The engine and lines of `id` when it is an automatic pool id as
 /// [`auto_pool_id`] writes it today.
 type PoolLines = (WebServerEngine, Option<String>, Option<String>);
@@ -1024,6 +1030,10 @@ impl WebServers {
                 };
 
                 let explicit = action.server.as_deref().map(str::trim);
+                if explicit == Some(crate::projects::run::DEDICATED_SERVER) {
+                    // Its own server, never a pool's.
+                    continue;
+                }
                 let target_pool_id = if let Some(profile) =
                     explicit.filter(|s| pools_map.get(*s).is_some_and(|p| p.manual))
                 {
@@ -1161,7 +1171,15 @@ impl WebServers {
             );
         }
         let id = if input.id.trim().is_empty() {
-            slug(&name)
+            // A new profile never takes an id a site's `server` means
+            // otherwise (`auto`, `dedicated`, an automatic pool's, as from
+            // the name "Apache 2.4").
+            let id = slug(&name);
+            if reserved_id(&id) {
+                format!("{id}-profile")
+            } else {
+                id
+            }
         } else {
             slug(&input.id)
         };

@@ -34,10 +34,13 @@ pub async fn run_start<R: Runtime>(
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
         };
-        // A site assigned to a server profile: started in that shared pool
-        // (GAP-RUN). A profile gone since: the pool `list` puts it in, or,
-        // not in any, its own server as before.
-        if let SiteMode::Pool(_) = site_mode(a) {
+        // An Apache/Nginx site is started in a shared pool: the profile it
+        // was assigned to (GAP-RUN), else the automatic pool of its lines
+        // (PLAN.md §13.1). A profile gone since: the pool `list` puts it in,
+        // or, not in any, its own server as before.
+        let mode = site_mode(a);
+        let mut fallback = None;
+        if mode != SiteMode::Dedicated {
             // A fresh scan: the cached one may still name the pool the site
             // was moved from.
             if let Some((pool, _)) = servers.pool_of(&project, &a.id, lang) {
@@ -48,27 +51,49 @@ pub async fn run_start<R: Runtime>(
                 let env = ensure(&app, &task, &kit, lang, &wanted)?;
                 // The site joins the pool (started, or reloaded when it was
                 // left out of it); the run follows the pool while it runs.
-                let (pool_id, port, server_name) = servers
-                    .attach(&project, &a.id, &env, lang)
-                    .or_fail_chain("run")?;
-                if servers.running_port(&pool_id) != Some(port) {
-                    return Err(crate::i18n::t(
-                        lang,
-                        "Il server condiviso {0} non è partito: guarda la pagina Server Web.",
-                        &[&pool_id],
-                    )
-                    .into());
+                let attached = servers.attach(&project, &a.id, &env, lang).and_then(
+                    |(pool_id, port, server_name)| {
+                        if servers.running_port(&pool_id) == Some(port) {
+                            Ok((pool_id, port, server_name))
+                        } else {
+                            Err(anyhow::anyhow!(crate::i18n::t(
+                                lang,
+                                "Il server condiviso {0} non è partito: guarda la pagina Server Web.",
+                                &[&pool_id],
+                            )))
+                        }
+                    },
+                );
+                match attached {
+                    Ok((pool_id, port, server_name)) => {
+                        let url = format!("http://{server_name}:{port}");
+                        return Ok(runner.attach_pool(&project, a, &pool_id, port, &url, lang));
+                    }
+                    // The pool the user chose: its error, never another server.
+                    Err(e) if mode != SiteMode::Auto => return Err(e).or_fail_chain("run"),
+                    // The automatic pool cannot start (TW1.6): the site's own
+                    // server, saying why in its log.
+                    Err(e) => {
+                        crate::log::warn(&format!("run {project} {}: pool: {e:#}", a.id));
+                        fallback = Some(crate::i18n::t(
+                            lang,
+                            "Il server condiviso {0} non è partito ({1}): il sito usa un server tutto suo.",
+                            &[&pool.id, &format!("{e:#}")],
+                        ));
+                    }
                 }
-                let url = format!("http://{server_name}:{port}");
-                return Ok(runner.attach_pool(&project, a, &pool_id, port, &url, lang));
             }
         }
         let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
-        runner
+        let info = runner
             .start(&project, &dir, a, &env, lang)
-            .or_fail_chain("run")
+            .or_fail_chain("run")?;
+        if let Some(text) = fallback {
+            runner.note(&info.key, &text);
+        }
+        Ok(info)
     })
     .await
     .or_fail("run")?
