@@ -46,7 +46,7 @@ __atollo_versions() {
         done
         unset IFS
         PATH="$out"
-        for name in JAVA_HOME DOTNET_ROOT CP_PHP CP_APACHE CP_NGINX; do
+        for name in JAVA_HOME DOTNET_ROOT CP_PHP PHPRC CP_APACHE CP_NGINX; do
             value="${!name}"
             case "${value,,}" in
                 "${from,,}" | "${from,,}"\\* | "${from,,}"/*) export "$name=$to${value:${#from}}" ;;

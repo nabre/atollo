@@ -309,7 +309,7 @@ pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(u
     cmd.arg("-b")
         .arg(format!("127.0.0.1:{fcgi_port}"))
         .arg("-c")
-        .arg(kit.data().join("php"))
+        .arg(crate::install::php_ini_dir(&kit.data(), &php))
         .env("PHP_FCGI_MAX_REQUESTS", "0")
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())

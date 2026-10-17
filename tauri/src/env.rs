@@ -207,6 +207,17 @@ impl KitEnv {
         self.set(name, value.as_ref().to_string_lossy().into_owned());
     }
 
+    /// The PHP in `php_dir` and its own `php.ini` (`data\php\<line>`,
+    /// install/web.rs): `CP_PHP`, `PHPRC` and, with `/` for Apache,
+    /// `CP_PHP_FWD` and `CP_PHPRC_FWD`.
+    pub fn set_php(&mut self, data: &Path, php_dir: &Path) {
+        let ini = crate::install::php_ini_dir(data, php_dir);
+        self.set_path("CP_PHP", php_dir);
+        self.set("CP_PHP_FWD", php_dir.to_string_lossy().replace('\\', "/"));
+        self.set_path("PHPRC", &ini);
+        self.set("CP_PHPRC_FWD", ini.to_string_lossy().replace('\\', "/"));
+    }
+
     /// The PATH separator used by this environment (`;` on Windows, `:` on Unix).
     pub fn path_sep(&self) -> char {
         self.path_sep
@@ -392,13 +403,11 @@ impl KitEnv {
         let uv_bin = join_rel(&data, "uv/bin");
         env.set_path("UV_TOOL_BIN_DIR", &uv_bin);
         env.set_path("GH_CONFIG_DIR", data.join("gh"));
-        env.set_path("PHPRC", data.join("php"));
         // The PHP in use: php.ini finds its extensions through it, so a
-        // saved version of PHP loads its own (versions/mod.rs).
-        env.set_path("CP_PHP", app("php"));
-        // Apache's PHP, with `/`: it follows CP_PHP when a version is chosen
-        // for the kit or a project (versions::apply).
-        env.set("CP_PHP_FWD", fwd(&app("php")));
+        // saved version of PHP loads its own (versions/mod.rs); each line
+        // has its php.ini (PHPRC). Apache's, with `/`, follow them when a
+        // version is chosen for the kit or a project (versions::apply).
+        env.set_php(&data, &app("php"));
         env.set_path("CP_APACHE", app("apache"));
         env.set("CP_APACHE_FWD", fwd(&app("apache")));
         env.set_path("CP_NGINX", app("nginx"));

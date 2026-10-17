@@ -40,7 +40,7 @@ use crate::os::temp::TempWork;
 use crate::setup::catalog::Component;
 
 pub use lang::{make_launchers, version_key};
-pub use web::adopt_composer;
+pub use web::{adopt_composer, migrate_php_ini, php_ini_dir};
 
 /// What a step needs from the app.
 pub struct Ctx<'a> {
