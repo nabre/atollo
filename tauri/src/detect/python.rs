@@ -6,6 +6,7 @@ use std::sync::LazyLock;
 use regex::Regex;
 
 use super::{exists, list_dir, read, tr, Action, Found, Kind};
+use crate::kit::Os;
 
 static FASTAPI: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"FastAPI\s*\(").ok());
 static FASTAPI_VAR: LazyLock<Option<Regex>> =
@@ -27,11 +28,22 @@ const CANDIDATES: [&str; 9] = [
     "src/app.py",
 ];
 
+/// The Python of the virtual environment `venv` (relative to the project)
+/// on `os`: `Scripts\python.exe` on Windows, `bin/python` elsewhere.
+pub(crate) fn venv_python(os: Os, venv: &str) -> String {
+    if os.is_windows() {
+        format!(r"{venv}\Scripts\python.exe")
+    } else {
+        format!("{venv}/bin/python")
+    }
+}
+
 /// The project's Python: its virtual environment, uv, or the kit's.
 fn interpreter(dir: &Path) -> (String, bool) {
     for v in [".venv", "venv", "env"] {
-        if exists(dir, &format!(r"{v}\Scripts\python.exe")) {
-            return (format!(r"{v}\Scripts\python.exe"), true);
+        let python = venv_python(Os::current(), v);
+        if exists(dir, &python) {
+            return (python, true);
         }
     }
     if exists(dir, "uv.lock") {
@@ -172,7 +184,10 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
         actions.push(Action::new(
             "py:venv",
             &tr(lang, "crea .venv e installa requirements.txt", &[]),
-            r"python -m venv .venv && .venv\Scripts\python.exe -m pip install -r requirements.txt",
+            &format!(
+                "python -m venv .venv && {} -m pip install -r requirements.txt",
+                venv_python(Os::current(), ".venv")
+            ),
             Kind::Command,
         ));
     }

@@ -142,7 +142,7 @@ fn user_path(kit: &Kit) -> PathBuf {
 }
 
 pub fn extensions_dir(kit: &Kit) -> PathBuf {
-    kit.data().join(r"vscodium-server\extensions")
+    kit.data().join("vscodium-server").join("extensions")
 }
 
 fn read_set(path: &Path) -> BTreeSet<String> {

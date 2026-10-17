@@ -107,7 +107,7 @@ fn hosts_user(text: &str) -> Option<String> {
 }
 
 fn login_name(kit: &Kit) -> Option<String> {
-    fs::read_to_string(kit.data().join(r"gh\hosts.yml"))
+    fs::read_to_string(kit.data().join("gh").join("hosts.yml"))
         .ok()
         .and_then(|t| hosts_user(&t))
 }
