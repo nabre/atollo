@@ -265,6 +265,7 @@ fn project_passwords_in_private_folder() {
 /// A `db.json` that cannot be read is an error, never "no password":
 /// otherwise a new one would reach the server and be stored nowhere.
 #[test]
+#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn unreadable_passwords_stop_the_creation() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-unreadable");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
@@ -336,6 +337,7 @@ fn db_json(kit: &Kit, project: &str) -> serde_json::Value {
 /// rule of its time; a new database gets the server's reserved names
 /// with `_db`, only for that server.
 #[test]
+#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn names_stored_legacy_and_new() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-names");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
@@ -455,6 +457,7 @@ fn data_of_before_is_never_unseen() {
 /// Two projects that would get the same name: the second one's creation
 /// is refused before anything is stored or sent to a server.
 #[test]
+#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn same_name_refused_on_creation() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-collision");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
@@ -504,6 +507,7 @@ fn drop_scripts() {
 /// in `lines` of `db.json`, beside the passwords and the names, which its
 /// readers do not take for a password.
 #[test]
+#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn project_lines_in_db_json() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-lines");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
@@ -549,6 +553,7 @@ fn project_lines_in_db_json() {
 /// once each, beside passwords, names and `lines`; a `db.json` of before
 /// has none, and nothing is created for a project without one.
 #[test]
+#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn used_lines_in_db_json() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-used");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
@@ -602,6 +607,7 @@ fn used_lines_in_db_json() {
 /// the app): a change waits while another holder of the kit's lock, here
 /// a thread that is not behind this process's mutex, keeps it.
 #[test]
+#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn db_json_lock_waits_for_the_kit_lock() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-lock");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);

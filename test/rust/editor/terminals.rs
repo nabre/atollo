@@ -19,6 +19,7 @@ fn kit(name: &str) -> (TempDir, Kit) {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "Windows PATH with ';' and drive letters")]
 fn strip_drops_entries_and_variables_inside_the_folders() {
     let mut env = KitEnv::default();
     env.set(
@@ -113,6 +114,10 @@ fn saved_terminals_are_cleaned_and_get_unique_ids() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "install_fake writes the Windows layout; Windows PATH"
+)]
 fn a_terminal_keeps_its_tools_at_their_lines() {
     let (_tmp, kit) = kit("terminals-env");
     let catalog = Catalog::get();

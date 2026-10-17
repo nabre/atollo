@@ -2,6 +2,10 @@ use super::*;
 use crate::setup::catalog::Catalog;
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "Windows program paths, compared with the Windows separator"
+)]
 fn processes_of_the_old_editor() {
     let proc = |pid, path: &str| crate::os::processes::Proc {
         pid,

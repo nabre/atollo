@@ -128,6 +128,10 @@ fn overrides_and_old_file() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "expects the cmd.exe form of the php -S command"
+)]
 fn site_written_and_removed() {
     let tmp = project(
         "site",

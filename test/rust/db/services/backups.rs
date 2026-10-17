@@ -3,6 +3,7 @@ use crate::db::auth::tests::assert_owner_only;
 use crate::kit::{tests::TempDir, Arch, Kit};
 
 #[test]
+#[cfg_attr(not(windows), ignore = "expected paths given with backslashes")]
 fn copies_in_the_private_folder() {
     let tmp = TempDir::new("db-backups");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -59,6 +60,7 @@ fn copies_in_the_private_folder() {
 /// Dumps and restores run with the server's administrator: only on the
 /// database the kit made for the project, never one it shares.
 #[test]
+#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn only_the_projects_own_database() {
     let tmp = TempDir::new("db-backups-own");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
