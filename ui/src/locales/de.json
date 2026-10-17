@@ -646,6 +646,8 @@
   "Ogni pool Apache o Nginx può servire più progetti contemporaneamente tramite VirtualHost .localhost (RFC 6761, senza toccare il file hosts di Windows) e alias di percorso 100% portabili.": "Jeder Apache- oder Nginx-Pool kann mehrere Projekte gleichzeitig über .localhost-VirtualHosts (RFC 6761, ohne die Windows-hosts-Datei zu ändern) und 100 % portable Pfad-Aliase bereitstellen.",
   "Predefinita del kit": "Kit-Standard",
   "Richiesto da {0}: {1}": "Benötigt von {0}: {1}",
+  "Dai container del progetto (Compose o Dockerfile): {0} {1}.": "Aus den Containern des Projekts (Compose oder Dockerfile): {0} {1}.",
+  "Non è tra le versioni offerte.": "Sie ist nicht unter den angebotenen Versionen.",
   "Linguaggi attivi nel progetto ({0})": "Im Projekt aktive Sprachen ({0})",
   "Nessun linguaggio versionabile rilevato nel progetto.": "Keine versionierbaren Sprachen im Projekt erkannt.",
   "Linguaggi non presenti nel progetto ({0})": "Im Projekt nicht vorhandene Sprachen ({0})",
