@@ -1,7 +1,9 @@
 //! Editor and consoles: the VSCodium web server (this file), its windows
 //! (`window`), settings (`cfg`), extensions (`ext`) and theme (`theme`) and
-//! the consoles (`terminal`, a console window; `terminals`, the Terminals
-//! page: saved consoles with their own tools and versions).
+//! the consoles (`terminal`, a console window, on macOS and Linux a session
+//! of the app's terminal, `pty`; `terminals`, the Terminals page: saved
+//! consoles with their own tools and versions; `picker`, the folder and file
+//! windows of macOS and Linux).
 //!
 //! The integrated editor: the VSCodium web server, one per session.
 //!
@@ -17,6 +19,9 @@
 
 pub mod cfg;
 pub mod ext;
+#[cfg(unix)]
+pub mod picker;
+pub mod pty;
 pub mod terminal;
 pub mod terminals;
 pub mod theme;
@@ -36,7 +41,7 @@ use serde::Serialize;
 use windows::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
 
 use crate::env::{mask_secrets, KitEnv};
-use crate::kit::Kit;
+use crate::kit::{Kit, Os};
 use crate::os::jobs::{self, Job};
 
 pub const PORTS: std::ops::RangeInclusive<u16> = 7000..=7099;
@@ -372,15 +377,35 @@ fn pump(stream: impl Read + Send + 'static, log: PathBuf, token: String) {
     });
 }
 
-/// `http://127.0.0.1:<port>/?tkn=<token>&folder=/C:/path/to/project`.
+/// `http://127.0.0.1:<port>/?tkn=<token>&folder=/C:/path/to/project`
+/// (`folder=/home/me/kit/projects/app` on macOS and Linux).
 pub fn url(port: u16, token: &str, folder: Option<&Path>) -> String {
+    url_on(Os::current(), port, token, folder)
+}
+
+/// [`url`] for a folder of `os`.
+pub fn url_on(os: Os, port: u16, token: &str, folder: Option<&Path>) -> String {
     let mut url = format!("http://127.0.0.1:{port}/?tkn={token}");
     if let Some(folder) = folder {
-        let path = format!("/{}", folder.display().to_string().replace('\\', "/"));
         url.push_str("&folder=");
-        url.push_str(&encode_query(&path));
+        url.push_str(&encode_query(&folder_param_on(os, folder)));
     }
     url
+}
+
+/// `folder` of `os` as the server's `folder=` wants it: on Windows forward
+/// slashes after one more `/` (`/C:/x`, `///server/share/x`), as always; a
+/// Unix path as it is, since it has its `/` already (`//home/...` would be
+/// another path) and a `\` is a character of its names.
+pub fn folder_param_on(os: Os, folder: &Path) -> String {
+    let path = folder.display().to_string();
+    if os.is_windows() {
+        format!("/{}", path.replace('\\', "/"))
+    } else if path.starts_with('/') {
+        path
+    } else {
+        format!("/{path}")
+    }
 }
 
 fn encode_query(s: &str) -> String {

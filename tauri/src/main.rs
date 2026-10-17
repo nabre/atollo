@@ -307,8 +307,12 @@ fn run() -> i32 {
     let result = build_app(tauri::Builder::default(), state, kit.clone())
         .build(tauri::generate_context!())
         .map(|app| {
-            app.run(move |_, event| {
+            app.run(move |handle, event| {
                 if let tauri::RunEvent::Exit = event {
+                    // The app's terminal sessions (macOS and Linux) end with
+                    // it: their programs run outside the kit's folder, where
+                    // `stop_children` does not look. None on Windows.
+                    handle.state::<editor::terminal::Consoles>().close_all();
                     // The programs' temp left on the PC goes (D-90): the
                     // programs are ended first, or they would still hold it.
                     if update_kit.system_temp().is_some() {

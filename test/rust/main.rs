@@ -26,14 +26,30 @@ fn state() -> AppState {
     }
 }
 
+/// The URL of the app's own pages: `http://tauri.localhost` on Windows,
+/// `tauri://localhost` on macOS and Linux.
+const LOCAL: &str = if cfg!(windows) {
+    "http://tauri.localhost"
+} else {
+    "tauri://localhost"
+};
+
 fn invoke(
     webview: &tauri::WebviewWindow<tauri::test::MockRuntime>,
+    url: &str,
+) -> Result<serde_json::Value, serde_json::Value> {
+    invoke_cmd(webview, "app_info", url)
+}
+
+fn invoke_cmd(
+    webview: &tauri::WebviewWindow<tauri::test::MockRuntime>,
+    cmd: &str,
     url: &str,
 ) -> Result<serde_json::Value, serde_json::Value> {
     get_ipc_response(
         webview,
         InvokeRequest {
-            cmd: "app_info".into(),
+            cmd: cmd.into(),
             callback: tauri::ipc::CallbackFn(0),
             error: tauri::ipc::CallbackFn(1),
             url: url.parse().unwrap(),
@@ -63,7 +79,7 @@ fn editor_windows_cannot_invoke_commands() {
         .data_directory(std::env::temp_dir().join("devkit-ipc-test-webview"))
         .build()
         .unwrap();
-    let r = invoke(&main, "http://tauri.localhost");
+    let r = invoke(&main, LOCAL);
     assert!(r.is_ok(), "main window must work: {r:?}");
 
     let editor_url = "http://127.0.0.1:7000/";
@@ -85,5 +101,39 @@ fn editor_windows_cannot_invoke_commands() {
         .data_directory(std::env::temp_dir().join("devkit-ipc-test-webview"))
         .build()
         .unwrap();
-    assert!(invoke(&other, "http://tauri.localhost").is_err());
+    assert!(invoke(&other, LOCAL).is_err());
+}
+
+/// The app's terminal (editor/pty.rs): its commands answer the main window
+/// on macOS and Linux (permissions/pty.toml), never an editor window, and
+/// do not exist on Windows, which keeps its consoles.
+#[test]
+fn terminal_sessions_only_on_unix_and_only_for_main() {
+    let app = mock_builder()
+        .manage(state())
+        .manage(editor::terminal::Consoles::default())
+        .invoke_handler(command_handler!())
+        .build(tauri::generate_context!())
+        .unwrap();
+    let data = std::env::temp_dir().join("devkit-ipc-test-webview-pty");
+    let main = WebviewWindowBuilder::new(&app, MAIN, WebviewUrl::App("index.html".into()))
+        .data_directory(data.clone())
+        .build()
+        .unwrap();
+    let r = invoke_cmd(&main, "pty_sessions", LOCAL);
+    if cfg!(unix) {
+        assert_eq!(r, Ok(serde_json::json!([])));
+    } else {
+        assert!(r.is_err(), "no terminal sessions on Windows: {r:?}");
+    }
+    let editor_url = "http://127.0.0.1:7000/";
+    let editor = WebviewWindowBuilder::new(
+        &app,
+        "editor-1",
+        WebviewUrl::External(editor_url.parse().unwrap()),
+    )
+    .data_directory(data)
+    .build()
+    .unwrap();
+    assert!(invoke_cmd(&editor, "pty_sessions", editor_url).is_err());
 }

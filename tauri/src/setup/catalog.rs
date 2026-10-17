@@ -202,6 +202,10 @@ pub fn translate_rel(target: Target, rel: &str) -> String {
     }
     let norm = rel.replace('\\', "/");
     match norm.as_str() {
+        // Git's catalog key (`git/bin/bash.exe` on Windows) is its `git` on
+        // Unix: Git of the kit has no shell there. The kit's bash profiles
+        // and terminal use the system's `/bin/bash` (editor/cfg.rs,
+        // editor/pty.rs), never this path as a shell (T1.3.2).
         "git/bin/bash.exe" | "git/cmd/git.exe" => return "git/bin/git".to_owned(),
         "python/python.exe" => return "python/bin/python3".to_owned(),
         "node/node.exe" => return "node/bin/node".to_owned(),

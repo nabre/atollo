@@ -25,6 +25,7 @@
     "allow-terminal-remove",
     "allow-terminal-launch",
     "allow-terminal-dir-pick",
+    "allow-pty-sessions",
     "allow-components-list",
     "allow-components-sync",
     "allow-components-check",

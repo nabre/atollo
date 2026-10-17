@@ -42,6 +42,14 @@ ureq = { version = "3.4.2", default-features = false, features = ["win-system-pr
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+# The in-app terminal of macOS and Linux (D-109): a PTY per session. Windows
+# keeps its classic consoles (D-57, D-95).
+portable-pty = "=0.9.0"
+# Folder and file pickers of macOS and Linux (NSOpenPanel, GTK), called from
+# Rust only; Windows keeps IFileOpenDialog. rfd directly, not
+# tauri-plugin-dialog: the plugin replaces window.alert and window.confirm
+# in every webview, the editor's too.
+rfd = { version = "=0.16.0", default-features = false, features = ["gtk3"] }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.62.2"
