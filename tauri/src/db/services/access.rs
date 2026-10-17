@@ -86,8 +86,15 @@ impl Services {
         // version is the first one ever started.
         if id == "mariadb" && main {
             auth::write_client_ini(&self.kit, port, &password)?;
-        } else if id == "mariadb" && !auth::client_ini(&self.kit).is_file() {
-            auth::write_client_ini(&self.kit, line_port(&self.kit, id, None), &password)?;
+        } else if id == "mariadb" {
+            if !auth::client_ini(&self.kit).is_file() {
+                auth::write_client_ini(&self.kit, line_port(&self.kit, id, None), &password)?;
+            }
+            // The login of this version on its port: `MYSQL_HOME` of the
+            // projects on it (`project_mysql_home`).
+            if let Some(l) = line {
+                auth::write_line_client_ini(&self.kit, l, port, &password)?;
+            }
         }
         Ok(())
     }

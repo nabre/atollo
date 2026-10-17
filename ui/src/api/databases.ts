@@ -88,8 +88,10 @@ function sampleRows(table: string, offset: number): DbRows {
   };
 }
 
-export function dbBrowseTree(engine: ServiceInfo["id"]): Promise<DbDatabase[]> {
-  return query<DbDatabase[]>("db_browse_tree", SAMPLE_TREE, { engine });
+/** `line`: another version of the server, on its own port (PLAN.md §13.2);
+ * null: the version the server runs. */
+export function dbBrowseTree(engine: ServiceInfo["id"], line: string | null = null): Promise<DbDatabase[]> {
+  return query<DbDatabase[]>("db_browse_tree", SAMPLE_TREE, { engine, line });
 }
 
 export function dbBrowseRows(
@@ -97,16 +99,18 @@ export function dbBrowseRows(
   database: string,
   table: string,
   offset: number,
+  line: string | null = null,
 ): Promise<DbRows> {
   return browserPreview
     ? Promise.resolve(sampleRows(table, offset))
-    : invoke<DbRows>("db_browse_rows", { engine, database, table, offset });
+    : invoke<DbRows>("db_browse_rows", { engine, line, database, table, offset });
 }
 
 /** Adminer on the kit's MariaDB, in the browser (D-85): installed the first
- * time, MariaDB started when it is off. */
-export function dbAdminOpen(): Promise<ServiceInfo[]> {
-  return query<ServiceInfo[]>("db_admin_open", SAMPLE_SERVICES);
+ * time, MariaDB started when it is off; `line`: another version, on its
+ * own port (null: the version the server runs). */
+export function dbAdminOpen(line: string | null = null): Promise<ServiceInfo[]> {
+  return query<ServiceInfo[]>("db_admin_open", SAMPLE_SERVICES, { line });
 }
 
 export interface ProjectDb {

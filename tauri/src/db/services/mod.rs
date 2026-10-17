@@ -256,6 +256,20 @@ pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
     ))
 }
 
+/// The `MYSQL_HOME` of the project's programs when its MariaDB database is
+/// on another version than the server's: the folder of that version's
+/// `[client]` login, written at its start (`mariadb` then logs in on its
+/// port). None: the kit's own (`env.rs`), on the server's port.
+pub fn project_mysql_home(kit: &Kit, project: &str) -> Option<PathBuf> {
+    auth::project_passwords(kit, project).get("mariadb")?;
+    let line = auth::project_line(kit, project, "mariadb").ok().flatten()?;
+    if Some(&line) == server_line(kit, "mariadb").as_ref() {
+        return None;
+    }
+    let dir = auth::line_client_dir(kit, &line);
+    dir.join("my.ini").is_file().then_some(dir)
+}
+
 /// The output of `line`: `<id>.log` for the version the server runs,
 /// `<id>-<line>.log` for the others.
 fn log_path(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
@@ -653,9 +667,9 @@ impl Services {
     }
 
     /// The address that opens Adminer logged in to the running MariaDB
-    /// (D-85).
-    pub fn adminer_url(&self) -> Result<String> {
-        let (port, env) = self.running_server("mariadb")?;
+    /// (D-85), version `line` (None: the one the server runs).
+    pub fn adminer_url(&self, line: Option<&str>) -> Result<String> {
+        let (port, env) = self.running_at("mariadb", line)?;
         self.adminer.open(&self.kit, &env, port)
     }
 
@@ -668,9 +682,6 @@ impl Services {
     /// [`Services::stop`] for version `line` (None: the one it runs).
     pub fn stop_line(&self, id: &str, line: Option<&str>) {
         let line = self.resolve(id, line);
-        if id == "mariadb" && line == server_line(&self.kit, id) {
-            self.adminer.stop();
-        }
         self.stop_key(&Self::key(id, line.as_deref()));
     }
 
@@ -687,6 +698,10 @@ impl Services {
             key.0.as_str(),
             (!key.1.is_empty()).then_some(key.1.as_str()),
         );
+        if id == "mariadb" {
+            // Adminer logged in to this version ends with it.
+            self.adminer.stop_for(server.port);
+        }
         let ask = match id {
             "mongodb" => {
                 let mut cmd =

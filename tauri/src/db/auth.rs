@@ -605,13 +605,33 @@ pub fn new_password() -> Result<String> {
 
 /// The `[client]` login of `root` for the kit's MariaDB on `port`.
 pub fn write_client_ini(kit: &Kit, port: u16, password: &str) -> Result<()> {
+    write_private(&client_ini(kit), &client_ini_text(port, password))
+}
+
+/// The folder of the `[client]` login (`my.ini`) of another version of
+/// MariaDB, on its own port (PLAN.md §13.2): the `MYSQL_HOME` of the
+/// programs of a project whose database is on it.
+pub fn line_client_dir(kit: &Kit, line: &str) -> PathBuf {
+    dir(kit).join("lines").join(line)
+}
+
+/// [`write_client_ini`] for version `line` on its `port`
+/// ([`line_client_dir`]).
+pub fn write_line_client_ini(kit: &Kit, line: &str, port: u16, password: &str) -> Result<()> {
+    if !crate::versions::valid_line(line) {
+        bail!("not a version line: {line}");
+    }
     write_private(
-        &client_ini(kit),
-        &format!(
-            "# Atollo: login of the kit's MariaDB (written by the app).\r\n\
-             [client]\r\nuser=root\r\npassword={password}\r\nhost=127.0.0.1\r\n\
-             port={port}\r\nprotocol=TCP\r\n"
-        ),
+        &line_client_dir(kit, line).join("my.ini"),
+        &client_ini_text(port, password),
+    )
+}
+
+fn client_ini_text(port: u16, password: &str) -> String {
+    format!(
+        "# Atollo: login of the kit's MariaDB (written by the app).\r\n\
+         [client]\r\nuser=root\r\npassword={password}\r\nhost=127.0.0.1\r\n\
+         port={port}\r\nprotocol=TCP\r\n"
     )
 }
 
