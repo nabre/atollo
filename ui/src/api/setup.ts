@@ -31,10 +31,22 @@ export interface SetupStep {
   outcome: Outcome | null;
 }
 
+export const TARGETS = ["win32-x64", "win32-arm64", "linux-x64", "linux-arm64", "darwin-arm64", "darwin-x64"] as const;
+
+export type TargetId = (typeof TARGETS)[number];
+
+export interface ComponentCheck {
+  id: string;
+  name: string;
+  ok: boolean;
+  answer: string;
+}
+
 export interface SetupSnapshot {
   running: boolean;
   cancelling: boolean;
   automatic: boolean;
+  target?: string;
   total: number;
   steps: SetupStep[];
   /** The steps not started yet, in order (empty when the run ends). */
@@ -74,12 +86,16 @@ export interface ComponentInfo {
   versioned: boolean;
   /** Its official site. */
   home: string;
+  /** Bootstrap archives pre-downloaded for this target; finishes installing on
+   * first start on that OS. */
+  bootstrapStaged?: boolean;
 }
 
 const IDLE: SetupSnapshot = {
   running: false,
   cancelling: false,
   automatic: false,
+  target: "win32-x64",
   total: 0,
   steps: [],
   queue: [],
@@ -122,6 +138,7 @@ function sampleComponent(
     needsWindows11: false,
     versioned: ["python", "node", "php", "go", "java"].includes(id),
     home: "https://example.org",
+    bootstrapStaged: false,
     ...extra,
   };
 }
@@ -159,16 +176,20 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
 
 /** When the Tools page opens: what was deleted by hand from the kit's
  * folder is no longer chosen; the names of those. */
-export function componentsSync(): Promise<string[]> {
-  return query<string[]>("components_sync", []);
+export function componentsSync(target?: string): Promise<string[]> {
+  return query<string[]>("components_sync", [], target ? { target } : undefined);
 }
 
-export function componentsList(): Promise<ComponentInfo[]> {
-  return query<ComponentInfo[]>("components_list", SAMPLE_COMPONENTS);
+export function componentsList(target?: string): Promise<ComponentInfo[]> {
+  return query<ComponentInfo[]>("components_list", SAMPLE_COMPONENTS, target ? { target } : undefined);
 }
 
-export function setupStart(only: string[] | null, updateAll: boolean): Promise<void> {
-  return act("setup_start", { only, updateAll });
+export function componentsCheck(target?: string): Promise<ComponentCheck[]> {
+  return query<ComponentCheck[]>("components_check", [], target ? { target } : undefined);
+}
+
+export function setupStart(only: string[] | null, updateAll: boolean, target?: string): Promise<void> {
+  return act("setup_start", target ? { only, updateAll, target } : { only, updateAll });
 }
 
 /** Files downloaded by hand, kept for the next installation: their names. */
@@ -211,12 +232,12 @@ export function setupCancel(): Promise<void> {
 }
 
 /** Saves the choice (ids to keep installed) and installs/removes in the background. */
-export function componentsApply(chosen: string[], updateAll: boolean): Promise<void> {
-  return act("components_apply", { chosen, updateAll });
+export function componentsApply(chosen: string[], updateAll: boolean, target?: string): Promise<void> {
+  return act("components_apply", target ? { chosen, updateAll, target } : { chosen, updateAll });
 }
 
 /** Installs `id` now at its latest version; it becomes chosen, the other
  * changes of the page stay pending. Progress as `setup` events. */
-export function componentsInstall(id: string): Promise<void> {
-  return act("components_install", { id });
+export function componentsInstall(id: string, target?: string): Promise<void> {
+  return act("components_install", target ? { id, target } : { id });
 }

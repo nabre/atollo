@@ -63,7 +63,7 @@ export function stepOf(setup: SetupSnapshot | null, tool: VersionedTool, line: s
 
 /** Asks the sources of the tools whose list is missing or older than a
  * day, once per view; `reload` after. */
-export function useOffers(tools: VersionedTool[] | null, reload: () => void) {
+export function useOffers(tools: VersionedTool[] | null, reload: () => void, target?: string) {
   const [checking, setChecking] = useState<ReadonlySet<string>>(new Set());
   const [failed, setFailed] = useState<Record<string, string>>({});
   const asked = useRef(new Set<string>());
@@ -73,7 +73,7 @@ export function useOffers(tools: VersionedTool[] | null, reload: () => void) {
       setChecking((c) => new Set([...c, ...ids]));
       void Promise.allSettled(
         ids.map((id) =>
-          versionsAvailable(id).then(
+          versionsAvailable(id, target).then(
             () => {
               setFailed((f) => Object.fromEntries(Object.entries(f).filter(([k]) => k !== id)));
             },
@@ -87,7 +87,7 @@ export function useOffers(tools: VersionedTool[] | null, reload: () => void) {
         reload();
       });
     },
-    [reload],
+    [reload, target],
   );
   useEffect(() => {
     if (tools === null) return;

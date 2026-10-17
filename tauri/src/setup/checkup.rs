@@ -33,6 +33,9 @@ pub const PHP_SCRIPT: &str = "<php>";
 /// Runs the check command of `c`; `None` if it has none or nothing of it is
 /// on disk. Half installed (a part missing): failed, naming the part.
 pub fn check(kit: &Kit, env: &KitEnv, c: &Component) -> Option<Check> {
+    if !crate::router::target::can_execute_on_host(kit.target()) {
+        return crate::router::probe::check_static(kit, c);
+    }
     let (program, args) = c.check.split_first()?;
     if !c.is_present(kit) {
         return None;

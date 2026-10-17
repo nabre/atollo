@@ -37,21 +37,30 @@ pub struct ComponentInfo {
     pub versioned: bool,
     /// Its official site.
     pub home: String,
+    /// Bootstrap archives pre-downloaded for this target; finishes installing
+    /// on first start on that OS.
+    pub bootstrap_staged: bool,
 }
 
 /// When the Tools page opens: what was deleted by hand from the kit's
 /// folder is no longer chosen (versions::sync_with_disk); the names of
-/// those. Not while an installation runs (its folders come and go).
+/// those. Not while an installation runs (its folders come and go), nor when
+/// inspecting a non-host target.
 #[tauri::command]
 pub fn components_sync<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
+    target: Option<String>,
 ) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
     if state.setup.snapshot().running {
         return Ok(Vec::new());
     }
-    let off = crate::versions::sync_with_disk(&state.kit).or_fail_chain("components")?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    if kit.target() != state.kit.target() {
+        return Ok(Vec::new());
+    }
+    let off = crate::versions::sync_with_disk(&kit).or_fail_chain("components")?;
     if !off.is_empty() {
         apply_env(&state, Settings::load(&state.kit).settings);
     }
@@ -62,9 +71,30 @@ pub fn components_sync<R: Runtime>(
 pub fn components_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
+    target: Option<String>,
 ) -> CmdResult<Vec<ComponentInfo>> {
     ensure_main(&webview)?;
-    Ok(component_infos(&state.kit, state.lang()))
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    Ok(component_infos(&kit, state.lang()))
+}
+
+/// Verifies every installed or bootstrap-staged component on `target` (live
+/// version commands when executable on the host, static key/version check
+/// when probing a foreign target).
+#[tauri::command]
+pub async fn components_check<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    target: Option<String>,
+) -> CmdResult<Vec<crate::setup::checkup::Check>> {
+    ensure_main(&webview)?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    let env = state.env();
+    tauri::async_runtime::spawn_blocking(move || {
+        Ok(crate::router::Router::new(kit).probe_health(&env))
+    })
+    .await
+    .or_fail("check")?
 }
 
 /// The PC runs x64 programs: x64 itself, or Windows 11 on ARM64 (Windows 10
@@ -91,7 +121,10 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
             let no_arm64 = off && win_arm64;
             let unavailable_reason = (off && !win_arm64)
                 .then(|| crate::i18n::t(lang, "non disponibile per {0}", &[target.as_str()]));
-            let needs_windows11 = win_arm64 && c.x64_only && !emulates_x64();
+            let needs_windows11 = win_arm64
+                && c.x64_only
+                && crate::kit::Os::current().is_windows()
+                && !emulates_x64();
             ComponentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
@@ -113,6 +146,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 needs_windows11,
                 versioned: c.versioned,
                 home: c.home.clone(),
+                bootstrap_staged: crate::router::bootstrap::is_staged(kit, c),
             }
         })
         .collect()
@@ -152,13 +186,16 @@ pub fn setup_start<R: Runtime>(
     state: State<'_, AppState>,
     only: Option<Vec<String>>,
     update_all: bool,
+    target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
     let only = only.unwrap_or_default();
     if let Some(bad) = only.iter().find(|id| Catalog::get().find(id).is_none()) {
         return Err(format!("unknown component: {bad}").into());
     }
     let opts = Options {
+        target: Some(kit.target()),
         only,
         update_all,
         ..Options::default()
@@ -174,9 +211,10 @@ pub fn components_install<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
+    target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    super::versions::install_now(app, &state, id, None)
+    super::versions::install_now(app, &state, id, None, target)
 }
 
 /// The choice of the "Linguaggi e strumenti" page: `chosen` are the ids to
@@ -189,8 +227,10 @@ pub fn components_apply<R: Runtime>(
     state: State<'_, AppState>,
     chosen: Vec<String>,
     update_all: bool,
+    target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
     let catalog = Catalog::get();
     if let Some(bad) = chosen.iter().find(|id| catalog.find(id).is_none()) {
         return Err(format!("unknown component: {bad}").into());
@@ -198,30 +238,29 @@ pub fn components_apply<R: Runtime>(
     if state.setup.snapshot().running {
         return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
     }
-    let text = choice_text(&state.kit, &chosen);
+    let text = choice_text(&kit, &chosen);
     let choice = Choice::parse(&text, catalog);
-    choice
-        .write(&state.kit, catalog)
-        .or_fail_chain("components")?;
+    choice.write(&kit, catalog).or_fail_chain("components")?;
     let opts = Options {
+        target: Some(kit.target()),
         update_all,
         ..Options::default()
     };
     Ok(state.setup.start(opts, false, setup_notify(app))?)
 }
 
-/// `components.txt` for the ids in `chosen`. What this kit cannot install
-/// (`noArm64` on ARM64) keeps its saved choice: the same kit, back on an x64
-/// PC, must not lose it.
+/// `components.txt` for the ids in `chosen`. What this target cannot install
+/// (`noArm64` on `win32-arm64`, or `windowsOnly` on macOS/Linux) keeps its
+/// saved choice: the same kit on another OS/arch must not lose it.
 pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
     let catalog = Catalog::get();
     let saved = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
-    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
+    let target = kit.target();
     catalog
         .all()
         .iter()
         .map(|c| {
-            let on = if c.no_arm64 && arm64 {
+            let on = if !c.is_available_on(target) {
                 saved.is_chosen(&c.id)
             } else {
                 chosen.contains(&c.id)

@@ -128,7 +128,8 @@ impl Services {
             .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
         let config = auth::dir(&self.kit).join(format!("{exe}-{}.yaml", std::process::id()));
         auth::write_private_text(&config, &format!("password: {admin}\n"))?;
-        let mut cmd = jobs::kit_command(self.kit.apps().join(r"mongodb-tools\bin").join(exe), env);
+        let stem = exe.strip_suffix(".exe").unwrap_or(exe);
+        let mut cmd = jobs::kit_command(crate::router::bins::mongo_tool_bin(&self.kit, stem), env);
         cmd.arg(format!("--config={}", config.display()))
             .args([
                 "--host=127.0.0.1",

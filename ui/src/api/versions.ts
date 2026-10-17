@@ -79,33 +79,33 @@ const SAMPLE_VERSIONS: VersionedTool[] = [
   },
 ];
 
-export function versionsList(): Promise<VersionedTool[]> {
-  return query<VersionedTool[]>("versions_list", SAMPLE_VERSIONS);
+export function versionsList(target?: string): Promise<VersionedTool[]> {
+  return query<VersionedTool[]>("versions_list", SAMPLE_VERSIONS, target ? { target } : undefined);
 }
 
 /** The lines of `id` that can be downloaded, newest first (asks its source;
  * versionsList keeps them in `available`). */
-export function versionsAvailable(id: string): Promise<string[]> {
+export function versionsAvailable(id: string, target?: string): Promise<string[]> {
   return query<string[]>(
     "versions_available",
     id === "php" ? ["8.5", "8.4", "8.3", "8.2", "8.1"] : ["24.11", "22.21", "20.19", "18.20"],
-    { id },
+    target ? { id, target } : { id },
   );
 }
 
 /** Downloads `line` next to the default folder; progress as `setup` events. */
-export function versionsAdd(id: string, line: string): Promise<void> {
-  return act("versions_add", { id, line });
+export function versionsAdd(id: string, line: string, target?: string): Promise<void> {
+  return act("versions_add", target ? { id, line, target } : { id, line });
 }
 
 /** Installs `id`, not installed yet, at `line` instead of the latest: it
  * becomes chosen (with what it needs); progress as `setup` events. */
-export function versionsInstall(id: string, line: string): Promise<void> {
-  return act("versions_install", { id, line });
+export function versionsInstall(id: string, line: string, target?: string): Promise<void> {
+  return act("versions_install", target ? { id, line, target } : { id, line });
 }
 
-export function versionsRemove(id: string, line: string): Promise<VersionedTool[]> {
-  return query<VersionedTool[]>("versions_remove", SAMPLE_VERSIONS, { id, line });
+export function versionsRemove(id: string, line: string, target?: string): Promise<VersionedTool[]> {
+  return query<VersionedTool[]>("versions_remove", SAMPLE_VERSIONS, target ? { id, line, target } : { id, line });
 }
 
 export function projectVersions(project: string): Promise<ProjectVersions> {

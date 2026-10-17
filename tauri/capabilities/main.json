@@ -27,6 +27,7 @@
     "allow-terminal-dir-pick",
     "allow-components-list",
     "allow-components-sync",
+    "allow-components-check",
     "allow-setup-state",
     "allow-setup-start",
     "allow-setup-cancel",

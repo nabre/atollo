@@ -419,6 +419,17 @@ impl Kit {
         self
     }
 
+    /// The same kit root scoped to `target` (`data/apps/<target>`,
+    /// `data/app/versions/<target>`), preserving host temp and volume info.
+    pub fn for_target(&self, target: Target) -> Kit {
+        Kit {
+            root: self.root.clone(),
+            target,
+            system_temp: self.system_temp.clone(),
+            volume: self.volume,
+        }
+    }
+
     pub fn root(&self) -> &Path {
         &self.root
     }

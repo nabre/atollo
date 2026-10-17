@@ -19,6 +19,7 @@ const COMMANDS: &[&str] = &[
     "terminal_dir_pick",
     "components_list",
     "components_sync",
+    "components_check",
     "setup_state",
     "setup_start",
     "setup_cancel",

@@ -285,6 +285,10 @@ pub fn fetch(
     progress: &mut dyn Progress,
 ) -> Result<PathBuf> {
     let file = work.join(file_name);
+    if crate::router::bootstrap::take(ctx.kit, file_name, expect, &file)? {
+        progress.note("bootstrap pre-downloaded, checksum ok");
+        return Ok(file);
+    }
     if crate::setup::downloads::take(ctx.kit, file_name, expect, &file)? {
         progress.note("file added by hand, checksum ok");
         return Ok(file);
@@ -321,6 +325,9 @@ pub fn install(
     let Some(inst) = installer(&component.id) else {
         bail!("{}: no installer", component.id);
     };
+    if crate::router::bootstrap::should_stage(ctx, inst, component) {
+        return crate::router::bootstrap::stage(ctx, inst, component, release, None, progress);
+    }
     if inst.custom(target_of(ctx, component)) {
         inst.install_custom(ctx, component, release, progress)?;
         if component.per_line() {
@@ -479,6 +486,17 @@ pub fn install_line(
         bail!("{} {line}: it is the default version", component.id);
     }
     let target = crate::versions::saved_dir(ctx.kit, component, &line);
+    if crate::router::bootstrap::should_stage(ctx, inst, component) {
+        crate::router::bootstrap::stage(
+            ctx,
+            inst,
+            component,
+            release,
+            Some((&line, &target)),
+            progress,
+        )?;
+        return Ok(line);
+    }
     if inst.custom(target_of(ctx, component)) {
         inst.install_custom_at(ctx, component, release, &target, progress)?;
         if !crate::versions::has_key(component, &target) {
@@ -530,7 +548,7 @@ pub fn install_line(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn install_part(
+pub(crate) fn install_part(
     ctx: &Ctx,
     inst: &dyn Installer,
     component: &Component,
@@ -579,6 +597,7 @@ fn install_part(
             };
             check_key_for(ctx.kit.target(), component, inst.inside(), &tree)?;
             inst.before_swap(ctx, component, &tree, folder)?;
+            crate::router::fs::ensure_tree_executables(ctx.kit.target(), &tree);
             if let Some(parent) = folder.parent() {
                 archive::clean_leftovers(parent);
             }
@@ -588,6 +607,7 @@ fn install_part(
         }
         Dest::Folder(name) => {
             let folder = apps.join(name);
+            crate::router::fs::ensure_tree_executables(ctx.kit.target(), &tree);
             archive::clean_leftovers(&apps);
             archive::stage_into(&tree, &folder)
         }
@@ -597,7 +617,9 @@ fn install_part(
             for name in names {
                 let found = find_file(&tree, name)
                     .with_context(|| format!("{name} not found in {}", part.file_name))?;
-                put_file(&found, &tools.join(name))?;
+                let dest = tools.join(name);
+                put_file(&found, &dest)?;
+                let _ = crate::router::fs::set_executable(&dest);
             }
             Ok(())
         }
@@ -612,7 +634,10 @@ fn install_part(
                 _ => apps.join(folder),
             };
             fs::create_dir_all(&dir)?;
-            put_file(&src, &dir.join(name))
+            let dest = dir.join(name);
+            put_file(&src, &dest)?;
+            let _ = crate::router::fs::set_executable(&dest);
+            Ok(())
         }
         Dest::Inside(name) => {
             let Some(folder) = own else {
@@ -620,7 +645,10 @@ fn install_part(
             };
             let found = find_file(&tree, name)
                 .with_context(|| format!("{name} not found in {}", part.file_name))?;
-            put_file(&found, &folder.join(name))
+            let dest = folder.join(name);
+            put_file(&found, &dest)?;
+            let _ = crate::router::fs::set_executable(&dest);
+            Ok(())
         }
     }
 }
@@ -628,7 +656,7 @@ fn install_part(
 /// One file of the new tree in place of `dest`, always copied: checked
 /// against the disk of `dest` first, so the installed one stays when it
 /// cannot fit.
-fn put_file(new: &Path, dest: &Path) -> Result<()> {
+pub(crate) fn put_file(new: &Path, dest: &Path) -> Result<()> {
     archive::check_fits(new, dest)?;
     archive::check_space(new, dest)?;
     archive::replace_file(new, dest)

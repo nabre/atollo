@@ -68,7 +68,7 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
     let has = |v: Option<&str>| v.is_some_and(|s| !s.is_empty());
     match id {
         "claude" => {
-            let creds = json(&home.join(r".claude\.credentials.json"));
+            let creds = json(&home.join(".claude").join(".credentials.json"));
             if has(creds
                 .as_ref()
                 .and_then(|c| c.pointer("/claudeAiOauth/accessToken"))
@@ -82,7 +82,7 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
             }
         }
         "codex" => {
-            let auth = json(&home.join(r".codex\auth.json"));
+            let auth = json(&home.join(".codex").join("auth.json"));
             if has(auth
                 .as_ref()
                 .and_then(|a| a.pointer("/tokens/access_token"))
@@ -150,7 +150,7 @@ pub fn status(kit: &Kit, env: &KitEnv) -> Vec<AgentInfo> {
         .collect()
 }
 
-/// The command that starts `id` (Antigravity through the kit's `agy.cmd`).
+/// The command that starts `id` (Antigravity through the kit's `agy(.cmd)`).
 fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
     let Some(rel) = exe_of(id) else {
         bail!("unknown agent: {id}")
@@ -161,7 +161,7 @@ fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
         bail!("{}", crate::i18n::t(lang, "{0} non è installato.", &[name]));
     }
     Ok(if id == "antigravity" {
-        kit.kit_files().join(r"bin\agy.cmd")
+        crate::router::bins::agent_launcher(kit, id).unwrap_or(exe)
     } else {
         exe
     })
@@ -194,9 +194,9 @@ pub fn launch<R: tauri::Runtime>(
 pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
     let home = kit.home();
     match id {
-        "claude" => remove_if_exists(&home.join(r".claude\.credentials.json")),
+        "claude" => remove_if_exists(&home.join(".claude").join(".credentials.json")),
         "codex" => {
-            let codex = crate::setup::catalog::kit_path(kit, r"codex\bin\codex.exe");
+            let codex = crate::setup::catalog::kit_path(kit, "codex/bin/codex.exe");
             if codex.is_file() {
                 let status = crate::os::jobs::kit_command(&codex, env)
                     .arg("logout")
@@ -206,11 +206,11 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
                     return Ok(());
                 }
             }
-            remove_if_exists(&home.join(r".codex\auth.json"))
+            remove_if_exists(&home.join(".codex").join("auth.json"))
         }
         "antigravity" => {
             keyring::save(kit)?;
-            remove_if_exists(&kit.data().join(r"antigravity\keyring.json"))
+            remove_if_exists(&kit.data().join("antigravity").join("keyring.json"))
         }
         _ => bail!("unknown agent: {id}"),
     }

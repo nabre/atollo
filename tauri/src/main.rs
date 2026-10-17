@@ -22,6 +22,7 @@ mod log;
 mod net;
 mod os;
 mod projects;
+mod router;
 mod servers;
 mod settings;
 mod setup;
@@ -355,6 +356,14 @@ fn prepare(
     lang: &str,
     args: &cli::PrepareArgs,
 ) -> i32 {
+    let kit_scoped;
+    let kit = match args.target {
+        Some(t) => {
+            kit_scoped = kit.for_target(t);
+            &kit_scoped
+        }
+        None => kit,
+    };
     let mut out = cli::output();
     if let Err(e) = os::jobs::init() {
         log::warn(&format!("job object: {e:#}"));

@@ -502,8 +502,8 @@ pub fn sync_in_background(
 
 pub fn server_cli(kit: &Kit, env: &KitEnv) -> std::process::Command {
     let dir = crate::editor::server_dir(kit);
-    let mut cmd = jobs::kit_command(dir.join("node.exe"), env);
-    cmd.arg(dir.join(r"out\server-main.js"))
+    let mut cmd = jobs::kit_command(crate::router::bins::editor_node(kit, &dir), env);
+    cmd.arg(crate::router::bins::editor_server_main(&dir))
         .arg("--server-data-dir")
         .arg(kit.data().join("vscodium-server"))
         .arg("--accept-server-license-terms");

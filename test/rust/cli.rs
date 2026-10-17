@@ -39,6 +39,7 @@ fn prepare_options() {
     assert_eq!(
         parsed,
         Cli::Prepare(PrepareArgs {
+            target: None,
             only: vec!["pwsh".into(), "node".into()],
             skip: vec!["codex".into(), "rust".into()],
             update_all: true,
@@ -48,6 +49,8 @@ fn prepare_options() {
     );
     let Cli::Prepare(p) = parse(&args(&[
         "prepare",
+        "--target",
+        "linux-x64",
         "--line",
         "Node=22.21",
         "--line",
@@ -55,6 +58,7 @@ fn prepare_options() {
     ])) else {
         panic!("prepare")
     };
+    assert_eq!(p.target, Some(crate::kit::Target::LINUX_X64));
     assert_eq!(
         p.lines,
         [

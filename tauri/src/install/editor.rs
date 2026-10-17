@@ -64,11 +64,14 @@ impl Installer for Server {
     /// stopped, or its folder could not be replaced.
     fn before_swap(
         &self,
-        _ctx: &Ctx,
+        ctx: &Ctx,
         _component: &Component,
         _tree: &Path,
         old: &Path,
     ) -> Result<()> {
+        if ctx.kit.os() != Os::current() {
+            return Ok(());
+        }
         let running = crate::os::processes::running_from(&crate::os::processes::all(), old);
         if !running.is_empty() {
             crate::log::info(&format!("editor update: stopping {running:?}"));

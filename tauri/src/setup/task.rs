@@ -46,6 +46,8 @@ pub struct Snapshot {
     pub cancelling: bool,
     /// Started by the app at start, not by the user.
     pub automatic: bool,
+    /// Target (`os-arch`) of this run.
+    pub target: String,
     pub total: usize,
     pub steps: Vec<Step>,
     /// The steps not started yet, in order (empty when the run ends).
@@ -86,15 +88,19 @@ pub fn missing_required(kit: &Kit) -> Vec<String> {
 /// start; until then the installed one keeps working, so nothing waits for
 /// it (a folder in use must not block the editor). Also the components
 /// marked to be installed again because the kit moved and they cannot
-/// follow it (conda environments on macOS/Linux, D-92), also when only
-/// saved lines of theirs are marked (`setup::runner::run` reinstalls them).
+/// follow it (conda environments on macOS/Linux, D-92) or because their
+/// bootstrap was pre-downloaded on another OS (`router::bootstrap`), also
+/// when only saved lines of theirs are marked (`setup::runner::run`
+/// reinstalls them).
 pub fn outdated_app(kit: &Kit) -> Vec<String> {
     Catalog::get()
         .all()
         .iter()
-        .filter(|c| install::installer(&c.id).is_some() && c.is_installed(kit))
+        .filter(|c| install::installer(&c.id).is_some())
         .filter(|c| {
-            c.outdated(kit) || c.needs_reinstall(kit) || !c.lines_to_reinstall(kit).is_empty()
+            (c.is_installed(kit) && (c.outdated(kit) || c.needs_reinstall(kit)))
+                || crate::router::bootstrap::is_staged(kit, c)
+                || !c.lines_to_reinstall(kit).is_empty()
         })
         .map(|c| c.id.clone())
         .collect()
@@ -107,12 +113,16 @@ impl SetupTask {
         settings: Settings,
         github_token: Option<String>,
     ) -> SetupTask {
+        let target = kit.target().as_str().to_owned();
         SetupTask {
             kit,
             env: Mutex::new(env),
             settings: Mutex::new(settings),
             github_token,
-            state: Mutex::new(Snapshot::default()),
+            state: Mutex::new(Snapshot {
+                target,
+                ..Snapshot::default()
+            }),
             cancel: AtomicBool::new(false),
         }
     }
@@ -144,6 +154,7 @@ impl SetupTask {
         automatic: bool,
         notify: Notify,
     ) -> Result<(), String> {
+        let target = opts.target.unwrap_or_else(|| self.kit.target());
         {
             let mut state = self.lock();
             if state.running {
@@ -156,6 +167,7 @@ impl SetupTask {
             *state = Snapshot {
                 running: true,
                 automatic,
+                target: target.as_str().to_owned(),
                 ..Snapshot::default()
             };
             notify(&state);
@@ -191,6 +203,10 @@ impl SetupTask {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone();
+        let kit = match opts.target {
+            Some(t) => self.kit.for_target(t),
+            None => self.kit.clone(),
+        };
         // The PC's token, or the kit's GitHub account: GitHub allows 60
         // anonymous API calls an hour, and "Update all" asks for many.
         let token = self
@@ -201,7 +217,7 @@ impl SetupTask {
             .map_err(|e| format!("{e:#}"))?
             .with_github_cache(self.kit.data().join("cache").join("github"));
         let ctx = Ctx {
-            kit: &self.kit,
+            kit: &kit,
             net: &net,
             env: &env,
             cancel: &self.cancel,
