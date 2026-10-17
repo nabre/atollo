@@ -59,10 +59,15 @@ fn components_say_why_not_on_linux_arm64() {
             .unwrap_or_else(|| panic!("no line for {id}: {text}"))
             .to_owned()
     };
-    for id in ["android", "sqlite"] {
-        assert!(line(id).contains("not available"), "{}", line(id));
+    assert!(
+        line("android").contains("not available"),
+        "{}",
+        line("android")
+    );
+    // SQLite comes from conda-forge there (WP-2.5).
+    for id in ["node", "sqlite"] {
+        assert!(!line(id).contains("not available"), "{}", line(id));
     }
-    assert!(!line("node").contains("not available"), "{}", line("node"));
     let _ = std::fs::remove_dir_all(tmp);
 }
 

@@ -27,8 +27,9 @@ fn rosetta_reason() {
     );
 }
 
-/// The acceptance of WP-0.4: on `linux-arm64` Android and SQLite say why,
-/// in the sentence of an action and in every language of the catalog.
+/// The acceptance of WP-0.4: on `linux-arm64` Android says why, in the
+/// sentence of an action and in every language of the catalog. SQLite is
+/// there since WP-2.5 (conda-forge).
 #[test]
 fn linux_arm64_messages_give_the_catalog_reason() {
     let catalog = Catalog::get();
@@ -39,19 +40,18 @@ fn linux_arm64_messages_give_the_catalog_reason() {
         Some("Android SDK is not available: Google does not publish platform-tools and build-tools for Linux ARM64.")
     );
     assert_eq!(
-        unavailable_message(sqlite, Target::LINUX_ARM64, false, "it").as_deref(),
-        Some("SQLite non è disponibile: sqlite.org non pubblica gli strumenti a riga di comando per Linux ARM64.")
+        unavailable_message(android, Target::LINUX_ARM64, false, "it").as_deref(),
+        Some("Android SDK non è disponibile: Google non pubblica platform-tools e build-tools per Linux ARM64.")
     );
     for lang in ["it", "en", "fr", "de"] {
-        for c in [android, sqlite] {
-            let reason = unavailable_reason(c, Target::LINUX_ARM64, false, lang).unwrap();
-            let msg = unavailable_message(c, Target::LINUX_ARM64, false, lang).unwrap();
-            assert!(msg.contains(&reason), "{lang} {}: {msg}", c.id);
-            assert!(msg.contains(&c.name), "{lang} {}: {msg}", c.id);
-        }
+        let c = android;
+        let reason = unavailable_reason(c, Target::LINUX_ARM64, false, lang).unwrap();
+        let msg = unavailable_message(c, Target::LINUX_ARM64, false, lang).unwrap();
+        assert!(msg.contains(&reason), "{lang} {}: {msg}", c.id);
+        assert!(msg.contains(&c.name), "{lang} {}: {msg}", c.id);
     }
-    // Everywhere else they are available.
-    for target in [Target::WIN32_X64, Target::LINUX_X64, Target::DARWIN_ARM64] {
+    // SQLite is available everywhere.
+    for target in Target::ALL {
         assert_eq!(unavailable_message(sqlite, target, false, "en"), None);
     }
 }
