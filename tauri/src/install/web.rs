@@ -468,22 +468,11 @@ impl Installer for Php {
         Ok(())
     }
 
-    /// `data\php\php.ini` once (then it is the user's), Composer launchers.
+    /// `data\php\<line>\php.ini` of this line once (then it is the user's),
+    /// Composer launchers.
     fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
-        let ini = join_rel(ctx.kit.data(), "php/php.ini");
-        let dev_ini = dest.join("php.ini-development");
-        if !ini.exists() && dev_ini.is_file() {
-            let template = fs::read_to_string(&dev_ini).context("php.ini-development")?;
-            fs::create_dir_all(ini.parent().unwrap_or(dest))?;
-            write_atomic(&ini, php_ini(&template)?.as_bytes())?;
-        } else if let Ok(text) = fs::read_to_string(&ini) {
-            // Written before the saved versions (D-80): the paths follow the
-            // PHP in use, not the default folder.
-            let new = php_ini_paths(&text);
-            if new != text {
-                write_atomic(&ini, new.as_bytes())?;
-            }
-        }
+        migrate_php_ini(ctx.kit)?;
+        ensure_php_ini(&ctx.kit.data(), dest)?;
         composer_launchers(dest)?;
         // An older kit's Composer, one for every PHP, first on the PATH.
         let tools = ctx.kit.apps().join("tools");
@@ -544,6 +533,68 @@ pub fn composer_launchers(dir: &Path) -> Result<()> {
     Ok(())
 }
 
+/// The folder of the `php.ini` of the PHP in `php_dir` (PHPRC, `-c`,
+/// Apache's PHPIniDir): `data\php\<line>`, one per line of PHP, since each
+/// line comes with its own `php.ini-development` (5.6 does not know the
+/// directives of 8.4). `data\php` for a folder of an older kit's layout,
+/// not named after its line.
+pub fn php_ini_dir(data: &Path, php_dir: &Path) -> PathBuf {
+    let root = data.join("php");
+    match php_dir.file_name().and_then(|n| n.to_str()) {
+        Some(line) if crate::versions::valid_line(line) => root.join(line),
+        _ => root,
+    }
+}
+
+/// The `php.ini` of the PHP in `php_dir`: written from that PHP's own
+/// `php.ini-development` when missing (then it is the user's); an existing
+/// one only gets the paths of an older kit fixed.
+pub fn ensure_php_ini(data: &Path, php_dir: &Path) -> Result<()> {
+    let ini = php_ini_dir(data, php_dir).join("php.ini");
+    let dev_ini = php_dir.join("php.ini-development");
+    if !ini.exists() && dev_ini.is_file() {
+        let template = fs::read_to_string(&dev_ini).context("php.ini-development")?;
+        fs::create_dir_all(ini.parent().unwrap_or(php_dir))?;
+        write_atomic(&ini, php_ini(&template)?.as_bytes())?;
+    } else if let Ok(text) = fs::read_to_string(&ini) {
+        // Written before the saved versions (D-80): the paths follow the
+        // PHP in use, not the default folder.
+        let new = php_ini_paths(&text);
+        if new != text {
+            write_atomic(&ini, new.as_bytes())?;
+        }
+    }
+    Ok(())
+}
+
+/// An older kit had one `data\php\php.ini` for every PHP: it becomes the
+/// `php.ini` of the default line (the user's changes stay with the PHP the
+/// kit used), and every line on disk without one gets its own from its
+/// template. At start, with `versions::migrate`, and after PHP is installed.
+pub fn migrate_php_ini(kit: &crate::kit::Kit) -> Result<()> {
+    let Some(php) = crate::setup::catalog::Catalog::get().find("php") else {
+        return Ok(());
+    };
+    let data = &kit.data();
+    let default = crate::versions::default_dir(kit, php);
+    let old = data.join("php").join("php.ini");
+    let new = php_ini_dir(data, &default).join("php.ini");
+    if old.is_file() && new != old && !new.exists() && crate::versions::has_key(php, &default) {
+        fs::create_dir_all(new.parent().unwrap_or(data))?;
+        fs::rename(&old, &new).with_context(|| new.display().to_string())?;
+        crate::log::info(&format!("php.ini: moved to {}", new.display()));
+    }
+    let dirs = std::iter::once(default).chain(
+        crate::versions::saved(kit, php)
+            .into_iter()
+            .map(|l| crate::versions::saved_dir(kit, php, &l.line)),
+    );
+    for dir in dirs.filter(|d| crate::versions::has_key(php, d)) {
+        ensure_php_ini(data, &dir)?;
+    }
+    Ok(())
+}
+
 /// `${CP_APPS}\php\…` of an older kit's `php.ini` as `${CP_PHP}\…`.
 pub fn php_ini_paths(text: &str) -> String {
     text.replace(r"${CP_APPS}\php\", r"${CP_PHP}\")
@@ -560,7 +611,8 @@ pub fn php_ini(template: &str) -> Result<String> {
             r#"extension_dir = "$${CP_PHP}\ext"$1"#,
         ),
         (
-            r"(?m)^;(extension=(?:curl|fileinfo|gd|intl|mbstring|mysqli|openssl|pdo_mysql|pdo_sqlite|sodium|sqlite3|zip))[ \t]*(\r?)$",
+            // `curl` since 7.2, `php_curl.dll` before; `gd2` until 7.4.
+            r"(?m)^;(extension=(?:php_)?(?:curl|fileinfo|gd2?|intl|mbstring|mysqli|openssl|pdo_mysql|pdo_sqlite|sodium|sqlite3|zip)(?:\.dll)?)[ \t]*(\r?)$",
             "$1$2",
         ),
         (
@@ -869,7 +921,7 @@ pub fn apache_site(dir: &Path) -> Result<()> {
         lines.extend(
             [
                 "",
-                "# The kit's PHP (Apache module), php.ini in data\\php; without it a .php is refused (403).",
+                "# The kit's PHP (Apache module), php.ini in data\\php\\<line>; without it a .php is refused (403).",
                 "# .inc and .php3 ... .php8 are never served.",
             ]
             .map(str::to_owned),

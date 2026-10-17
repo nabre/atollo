@@ -109,7 +109,7 @@ impl Installer for Cc {
                     Inner::Single,
                 )
             }
-            _ => llvm_release(ctx, llvm_asset(target)),
+            _ => llvm_release(ctx, target),
         }
     }
 
@@ -179,9 +179,35 @@ pub(crate) fn newest_llvm<'a>(
         .max_by_key(|(r, _)| version_key(&r.tag_name))
 }
 
-/// The latest release of LLVM when it has the archive of `asset`, else the
-/// newest of the last 100 that has it.
-fn llvm_release(ctx: &Ctx, asset: &str) -> Result<Release> {
+/// The last release of LLVM built for macOS x64 (20.1.7, BUG-V3-05): tag,
+/// archive and its SHA-256 (GitHub's digest of the asset). Taken when no
+/// release among the last 100 has a macOS x64 archive any more.
+pub(crate) const LLVM_DARWIN_X64: (&str, &str, &str) = (
+    "llvmorg-20.1.7",
+    "LLVM-20.1.7-macOS-X64.tar.xz",
+    "ccf82ffe7e136ee49659cb57157856a7963d0950fac3d05aabba0db75bfba26f",
+);
+
+/// The fixed LLVM release for `target`, when there is one (macOS x64).
+pub(crate) fn llvm_pinned(target: Target) -> Option<Release> {
+    if (target.os, target.arch) != (Os::Darwin, Arch::X64) {
+        return None;
+    }
+    let (tag, name, sha) = LLVM_DARWIN_X64;
+    Some(Release::single(
+        tag.to_owned(),
+        format!("https://github.com/{LLVM_REPO}/releases/download/{tag}/{name}"),
+        name.to_owned(),
+        Expect::Sha256(sha.to_owned()),
+        Kind::TarXz,
+        Inner::Single,
+    ))
+}
+
+/// The latest release of LLVM when it has the archive of `target`, else the
+/// newest of the last 100 that has it, else the fixed one (`llvm_pinned`).
+fn llvm_release(ctx: &Ctx, target: Target) -> Result<Release> {
+    let asset = llvm_asset(target);
     let re = pattern(asset)?;
     let latest = ctx.net.github_latest(LLVM_REPO)?;
     let older: Vec<GhRelease>;
@@ -191,8 +217,14 @@ fn llvm_release(ctx: &Ctx, asset: &str) -> Result<Release> {
             older = ctx.net.json(&format!(
                 "https://api.github.com/repos/{LLVM_REPO}/releases?per_page=100"
             ))?;
-            newest_llvm(&older, &re)
-                .ok_or_else(|| anyhow!("{LLVM_REPO}: no release with an asset matching {asset}"))?
+            match newest_llvm(&older, &re) {
+                Some(found) => found,
+                None => {
+                    return llvm_pinned(target).ok_or_else(|| {
+                        anyhow!("{LLVM_REPO}: no release with an asset matching {asset}")
+                    })
+                }
+            }
         }
     };
     Ok(Release::single(

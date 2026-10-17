@@ -126,3 +126,35 @@ fn choices_rewrite_the_environment() {
         "the last goes with the component"
     );
 }
+
+/// A project on another line of PHP also gets that line's php.ini
+/// (PHPRC, and Apache's CP_PHPRC_FWD), not the default line's.
+#[test]
+fn a_php_line_brings_its_php_ini() {
+    let tmp = TempDir::new("versions-php-ini");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let php = Catalog::get().find("php").unwrap();
+    let version = "8.4.13 (Composer 2.8.12)";
+    let main = install_dir(&kit, php, version);
+    install_fake(&kit, php, &main);
+    php.save_version(&kit, version).unwrap();
+    let old = saved_dir(&kit, php, "7.4");
+    install_fake(&kit, php, &old);
+    write_version(&old, "7.4.33").unwrap();
+
+    let data = kit.data();
+    let mut env = KitEnv::default();
+    env.set_php(&data, &main);
+    assert_eq!(env.get("PHPRC"), data.join(r"php\8.4").to_str());
+
+    set_project_choice(&kit, "app", "php", Some("7.4")).unwrap();
+    let p = project_env(&kit, "app", env.clone());
+    let ini = data.join(r"php\7.4");
+    assert_eq!(p.get("CP_PHP"), old.to_str());
+    assert_eq!(p.get("PHPRC"), ini.to_str());
+    assert_eq!(
+        p.get("CP_PHPRC_FWD").unwrap(),
+        ini.to_str().unwrap().replace('\\', "/")
+    );
+}

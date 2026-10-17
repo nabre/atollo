@@ -151,6 +151,9 @@ pub fn migrate(kit: &Kit) {
     if let Err(e) = crate::install::adopt_composer(kit) {
         crate::log::warn(&format!("Composer of the older kit: {e:#}"));
     }
+    if let Err(e) = crate::install::migrate_php_ini(kit) {
+        crate::log::warn(&format!("php.ini per line of PHP: {e:#}"));
+    }
     if let Err(e) = crate::projects::apache::fix_kit_conf(kit) {
         crate::log::warn(&format!("Apache kit.conf: {e:#}"));
     }

@@ -128,8 +128,13 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16) -> Result<Server> {
     let out = File::create(&log).with_context(|| log.display().to_string())?;
     let token = crate::editor::random_token()?;
     let port = free_port()?;
+    // The default PHP with its own php.ini and extensions, whatever line
+    // the kit's environment names.
+    let php_dir = catalog::kit_path(kit, "php");
     let mut cmd = jobs::kit_command(catalog::kit_path(kit, "php/php.exe"), env);
-    cmd.arg("-d")
+    cmd.env("CP_PHP", &php_dir)
+        .env("PHPRC", crate::install::php_ini_dir(&kit.data(), &php_dir))
+        .arg("-d")
         .arg(format!("session.save_path={}", dir.display()))
         .arg("-d")
         .arg(format!("upload_tmp_dir={}", uploads.path().display()))
