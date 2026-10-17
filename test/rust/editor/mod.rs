@@ -2,7 +2,8 @@ use super::*;
 
 #[test]
 fn url_encodes_odd_folders() {
-    let u = url(
+    let u = url_on(
+        Os::Win32,
         7001,
         "ab",
         Some(Path::new(r"E:\Dev Kit (1) & co\projects\già")),
@@ -16,18 +17,46 @@ fn url_encodes_odd_folders() {
 
 #[test]
 fn url_of_a_unix_folder_has_one_leading_slash() {
-    let u = url(7001, "ab", Some(Path::new("/home/me/Dev Kit/projects/app")));
+    let linux = Some(Path::new("/home/me/Dev Kit/projects/app"));
     assert_eq!(
-        u,
+        url_on(Os::Linux, 7001, "ab", linux),
         "http://127.0.0.1:7001/?tkn=ab&folder=/home/me/Dev%20Kit/projects/app"
     );
-    let mac = url(7001, "ab", Some(Path::new("/Users/me/Kit/projects/già")));
+    let mac = Some(Path::new("/Users/me/Kit/projects/già"));
     assert_eq!(
-        mac,
+        url_on(Os::Darwin, 7001, "ab", mac),
         "http://127.0.0.1:7001/?tkn=ab&folder=/Users/me/Kit/projects/gi%C3%A0"
     );
-    assert_eq!(folder_param(Path::new(r"C:\x\y")), "/C:/x/y");
-    assert_eq!(folder_param(Path::new("/x/y")), "/x/y");
+    // A `\` is a character of a Unix name.
+    assert_eq!(folder_param_on(Os::Linux, Path::new(r"/x/a\b")), r"/x/a\b");
+    assert_eq!(folder_param_on(Os::Darwin, Path::new("/x/y")), "/x/y");
+    // The running system's folders.
+    let here = if cfg!(windows) {
+        "http://127.0.0.1:7001/?tkn=ab&folder=/C:/x/y"
+    } else {
+        "http://127.0.0.1:7001/?tkn=ab&folder=/x/y"
+    };
+    let dir = if cfg!(windows) { r"C:\x\y" } else { "/x/y" };
+    assert_eq!(url(7001, "ab", Some(Path::new(dir))), here);
+}
+
+#[test]
+fn windows_folders_keep_their_extra_slash() {
+    // As before macOS and Linux: one `/` more, for a drive or a share.
+    assert_eq!(folder_param_on(Os::Win32, Path::new(r"C:\x\y")), "/C:/x/y");
+    assert_eq!(
+        folder_param_on(Os::Win32, Path::new(r"\\server\share\x")),
+        "///server/share/x"
+    );
+    assert_eq!(
+        url_on(
+            Os::Win32,
+            7001,
+            "ab",
+            Some(Path::new(r"\\nas\kit\projects\app"))
+        ),
+        "http://127.0.0.1:7001/?tkn=ab&folder=///nas/kit/projects/app"
+    );
 }
 
 #[test]
