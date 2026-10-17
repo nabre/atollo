@@ -121,8 +121,9 @@ fn pipe_path(kit: &Kit) -> String {
 #[cfg(any(unix, test))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum SocketName {
-    /// Linux's abstract namespace (no file): the user's id keeps two users
-    /// of the same PC apart.
+    /// Linux's abstract namespace (no file): the user's id in the name keeps
+    /// two users of the same PC apart, and both ends check the other's user
+    /// (abstract names have no permissions).
     Abstract(String),
     /// A socket file (macOS).
     File(PathBuf),
@@ -214,6 +215,7 @@ fn connect(name: &SocketName) -> std::io::Result<std::os::unix::net::UnixStream>
         SocketName::Abstract(n) => UnixStream::connect_addr(&SocketAddr::from_abstract_name(n)?),
         SocketName::File(p) => UnixStream::connect(p),
     }
+    .and_then(same_user)
 }
 
 #[cfg(all(unix, not(target_os = "linux")))]
@@ -221,6 +223,50 @@ fn connect(name: &SocketName) -> std::io::Result<std::os::unix::net::UnixStream>
     match name {
         SocketName::File(p) => std::os::unix::net::UnixStream::connect(p),
         SocketName::Abstract(_) => Err(std::io::ErrorKind::Unsupported.into()),
+    }
+    .and_then(same_user)
+}
+
+/// The user at the other end of a local socket.
+#[cfg(target_os = "linux")]
+fn peer_uid(stream: &std::os::unix::net::UnixStream) -> Option<u32> {
+    use std::os::fd::AsRawFd;
+    // SAFETY: a zeroed ucred is valid; getsockopt fills at most `len` bytes.
+    unsafe {
+        let mut cred: libc::ucred = std::mem::zeroed();
+        let mut len = std::mem::size_of::<libc::ucred>() as libc::socklen_t;
+        let r = libc::getsockopt(
+            stream.as_raw_fd(),
+            libc::SOL_SOCKET,
+            libc::SO_PEERCRED,
+            std::ptr::from_mut(&mut cred).cast(),
+            &mut len,
+        );
+        (r == 0).then_some(cred.uid)
+    }
+}
+
+#[cfg(all(unix, not(target_os = "linux")))]
+fn peer_uid(stream: &std::os::unix::net::UnixStream) -> Option<u32> {
+    use std::os::fd::AsRawFd;
+    let (mut uid, mut gid) = (0, 0);
+    // SAFETY: two out-parameters on the stack.
+    let r = unsafe { libc::getpeereid(stream.as_raw_fd(), &mut uid, &mut gid) };
+    (r == 0).then_some(uid)
+}
+
+/// `stream` when the other end is this user. Linux's abstract names have
+/// no permissions: another user of the PC could connect to the app, or
+/// take the name first and get the second start's message.
+#[cfg(unix)]
+fn same_user(
+    stream: std::os::unix::net::UnixStream,
+) -> std::io::Result<std::os::unix::net::UnixStream> {
+    // SAFETY: getuid cannot fail.
+    if peer_uid(&stream) == Some(unsafe { libc::getuid() }) {
+        Ok(stream)
+    } else {
+        Err(std::io::ErrorKind::PermissionDenied.into())
     }
 }
 
@@ -366,7 +412,11 @@ pub fn listen(kit: &Kit, on_message: impl Fn(String) + Send + 'static) {
     // port that is no longer the app's.
     let _ = std::fs::remove_file(&file);
     std::thread::spawn(move || {
-        for mut stream in listener.incoming().flatten() {
+        for stream in listener.incoming().flatten() {
+            let Ok(mut stream) = same_user(stream) else {
+                crate::log::warn("instance socket: a connection of another user, ignored");
+                continue;
+            };
             let mut buf = Vec::new();
             if (&mut stream).take(4096).read_to_end(&mut buf).is_ok() {
                 on_message(String::from_utf8_lossy(&buf).into_owned());
