@@ -2,6 +2,13 @@
 //! phpMyAdmin (D-107).
 
 use super::*;
+use crate::db::DbEngine;
+
+/// The engine the interface names (`mariadb`, `mongodb`), or the error of
+/// an unknown one, logged under `context`.
+fn engine_of(engine: &str, context: &str) -> CmdResult<DbEngine> {
+    DbEngine::from_id(engine).ok_or_else(|| fail(context, format!("unknown server {engine}")))
+}
 
 /// The databases of a project (D-74): those created, those it seems to use,
 /// and whether its `.env` is ignored by Git.
@@ -29,18 +36,19 @@ pub struct DbVersions {
 }
 
 fn db_versions(kit: &Kit, project: &str) -> std::collections::BTreeMap<String, DbVersions> {
-    crate::db::services::SERVERS
-        .iter()
+    DbEngine::ALL
+        .into_iter()
         .map(|engine| {
-            let chosen = crate::db::auth::project_line(kit, project, engine)
+            let id = engine.id();
+            let chosen = crate::db::auth::project_line(kit, project, id)
                 .ok()
                 .flatten();
             let versions = DbVersions {
                 chosen,
-                server: crate::db::services::server_line(kit, engine),
-                lines: crate::db::services::server_lines(kit, engine),
+                server: crate::db::services::server_line(kit, id),
+                lines: crate::db::services::server_lines(kit, id),
             };
-            ((*engine).to_owned(), versions)
+            (id.to_owned(), versions)
         })
         .collect()
 }
@@ -57,7 +65,7 @@ pub fn project_databases<R: Runtime>(
         dbs: state.services.project_dbs(&project),
         detected: crate::detect::requires(&dir)
             .into_iter()
-            .filter(|id| matches!(id.as_str(), "mariadb" | "mongodb" | "sqlite"))
+            .filter(|id| DbEngine::from_id(id).is_some() || id == "sqlite")
             .collect(),
         env_exists: dir.join(".env").is_file(),
         env_ignored: crate::db::auth::env_ignored(&dir),
@@ -80,13 +88,11 @@ pub async fn project_db_line<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
-        return Err(fail("database", format!("unknown server {engine}")));
-    }
+    let kind = engine_of(&engine, "database")?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
+        let env = ensure(&app, &task, &kit, lang, &[kind.component()])?;
         services
             .project_db_line(&project, &engine, line.as_deref(), &env)
             .map_err(|e| super::services::start_error(lang, &e))?;
@@ -108,13 +114,11 @@ pub async fn project_db_create<R: Runtime>(
 ) -> CmdResult<crate::db::auth::ProjectDb> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
-        return Err(fail("database", format!("unknown server {engine}")));
-    }
+    let kind = engine_of(&engine, "database")?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
+        let env = ensure(&app, &task, &kit, lang, &[kind.component()])?;
         services
             .start_for(&project, &engine, &env)
             .map_err(|e| start_error(lang, &e))?;
@@ -194,13 +198,11 @@ pub async fn project_db_export<R: Runtime>(
 ) -> CmdResult<String> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
-        return Err(fail("database", format!("unknown server {engine}")));
-    }
+    let kind = engine_of(&engine, "database")?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure(&app, &task, &kit, lang, &[engine.as_str()])?;
+        let env = ensure(&app, &task, &kit, lang, &[kind.component()])?;
         services
             .start_for(&project, &engine, &env)
             .map_err(|e| start_error(lang, &e))?;
@@ -225,17 +227,14 @@ pub async fn project_db_restore<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    let engine = if file.ends_with(".archive.gz") {
-        "mongodb"
-    } else {
-        "mariadb"
-    };
+    // A name that is no copy goes to the SQL server, whose restore refuses it.
+    let engine = DbEngine::of_backup(&file).unwrap_or(DbEngine::MariaDb);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure(&app, &task, &kit, lang, &[engine])?;
+        let env = ensure(&app, &task, &kit, lang, &[engine.component()])?;
         services
-            .start_for(&project, engine, &env)
+            .start_for(&project, engine.id(), &env)
             .map_err(|e| start_error(lang, &e))?;
         services.restore(&project, &file).or_fail_chain("restore")
     })
@@ -254,9 +253,7 @@ pub async fn db_browse_tree<R: Runtime>(
     line: Option<String>,
 ) -> CmdResult<Vec<crate::db::browse::Database>> {
     ensure_main(&webview)?;
-    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
-        return Err(fail("browse", format!("unknown server {engine}")));
-    }
+    engine_of(&engine, "browse")?;
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         crate::db::browse::tree(&services, &engine, line.as_deref()).or_fail_chain("browse")
@@ -278,9 +275,7 @@ pub async fn db_browse_rows<R: Runtime>(
     offset: u64,
 ) -> CmdResult<crate::db::browse::Rows> {
     ensure_main(&webview)?;
-    if !crate::db::services::SERVERS.contains(&engine.as_str()) {
-        return Err(fail("browse", format!("unknown server {engine}")));
-    }
+    engine_of(&engine, "browse")?;
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         crate::db::browse::rows(
@@ -312,9 +307,10 @@ pub async fn db_admin_open<R: Runtime>(
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure(&app, &task, &kit, lang, &["mariadb", "phpmyadmin"])?;
+        let engine = DbEngine::MariaDb;
+        let env = ensure(&app, &task, &kit, lang, &[engine.component(), "phpmyadmin"])?;
         services
-            .start_line("mariadb", line.as_deref(), &env)
+            .start_engine(engine, line.as_deref(), &env)
             .map_err(|e| start_error(lang, &e))?;
         let url = services
             .phpmyadmin_url(line.as_deref(), lang)
