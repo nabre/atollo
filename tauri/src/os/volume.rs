@@ -532,7 +532,6 @@ fn exec_folder(kit: &Kit) -> PathBuf {
 
 /// The disk the kit's programs run from is mounted `noexec` (always
 /// `false` on Windows): for the Settings row (T1.7.4).
-#[allow(dead_code)] // read by commands/app.rs (T1.7.4)
 pub fn kit_noexec(kit: &Kit) -> bool {
     !Os::current().is_windows() && info(&exec_folder(kit)).is_ok_and(|v| v.noexec)
 }
@@ -540,7 +539,6 @@ pub fn kit_noexec(kit: &Kit) -> bool {
 /// The notice for the disk of `kit`, read now (`None` on Windows): the
 /// file system of the root; the `noexec` flag and the mount of the folder
 /// the programs run from.
-#[allow(dead_code)] // read by main.rs and Settings (WP-1.7)
 pub fn disk_notice(kit: &Kit, lang: &str) -> Option<DiskNotice> {
     let os = Os::current();
     if os.is_windows() {
