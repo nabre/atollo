@@ -5,10 +5,11 @@
 use std::fs;
 use std::path::Path;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use serde_json::Value;
 
-use super::{arch_of, pattern, target_of, Ctx, Dest, Installer, Part, Release};
+use super::native::{conda_info, conda_versions, micromamba_create, micromamba_release};
+use super::{arch_of, pattern, target_of, Ctx, Dest, Installer, Part, Progress, Release};
 use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::github_digest;
@@ -262,10 +263,147 @@ fn mongodb_tools_zip(release: &Value) -> Result<(String, String, String)> {
     Ok((v, u, s))
 }
 
-/// The newest MongoDB Database Tools for `target` from `release.json`.
+/// The newest MongoDB Database Tools for `target` from `release.json`; on
+/// Linux the build of the distribution of this PC, unknown here
+/// (`mongodb_tools_linux_name` with no `os-release`).
+#[cfg(test)]
 pub(crate) fn mongodb_tools_for(
     target: Target,
     release: &Value,
+) -> Result<(String, String, String, Kind)> {
+    mongodb_tools_for_distro(target, release, None)
+}
+
+/// A Linux distribution as MongoDB names its builds: family and version
+/// (`ubuntu` 24.04 → `["ubuntu", [24, 4]]`), from the text of
+/// `/etc/os-release`. Derivatives follow their base: Linux Mint and Pop!_OS
+/// by `UBUNTU_CODENAME`, Rocky, Alma, CentOS and Oracle Linux as RHEL,
+/// Fedora as the newest RHEL, openSUSE Leap as SUSE. `None` for the others.
+pub fn linux_distro(os_release: &str) -> Option<(&'static str, Vec<u64>)> {
+    let field = |name: &str| {
+        os_release.lines().find_map(|l| {
+            let (k, v) = l.split_once('=')?;
+            (k.trim() == name).then(|| v.trim().trim_matches(['"', '\'']).to_owned())
+        })
+    };
+    let id = field("ID").unwrap_or_default().to_ascii_lowercase();
+    let like = field("ID_LIKE").unwrap_or_default().to_ascii_lowercase();
+    let like: Vec<&str> = like.split_whitespace().collect();
+    let version = field("VERSION_ID")
+        .map(|v| version_key(&v))
+        .filter(|v| !v.is_empty());
+    let ubuntu_codename = |name: &str| -> Option<Vec<u64>> {
+        Some(match name {
+            "focal" => vec![20, 4],
+            "jammy" => vec![22, 4],
+            "noble" => vec![24, 4],
+            "resolute" => vec![26, 4],
+            _ => return None,
+        })
+    };
+    match id.as_str() {
+        "ubuntu" => return Some(("ubuntu", version?)),
+        "debian" => return Some(("debian", version?)),
+        "rhel" | "centos" | "rocky" | "almalinux" | "ol" => return Some(("rhel", version?)),
+        "fedora" => return Some(("rhel", vec![u64::MAX])),
+        "amzn" => return Some(("amazon", version?)),
+        "sles" | "sled" | "opensuse-leap" => return Some(("suse", version?)),
+        _ => {}
+    }
+    if like.contains(&"ubuntu") {
+        let codename = field("UBUNTU_CODENAME").unwrap_or_default();
+        return ubuntu_codename(&codename).map(|v| ("ubuntu", v));
+    }
+    if like
+        .iter()
+        .any(|l| ["rhel", "centos", "fedora"].contains(l))
+    {
+        return Some(("rhel", version?));
+    }
+    None
+}
+
+/// The family and version of a MongoDB build name (`ubuntu2404` →
+/// `("ubuntu", [24, 4])`, `debian92` → `[9, 2]`, `rhel88` → `[8, 8]`,
+/// `rhel10` → `[10]`, `amazon` → `[1]`).
+fn mongodb_build_version(name: &str) -> Option<(&'static str, Vec<u64>)> {
+    for family in ["ubuntu", "debian", "rhel", "amazon", "suse"] {
+        let Some(digits) = name.strip_prefix(family) else {
+            continue;
+        };
+        if !digits.chars().all(|c| c.is_ascii_digit()) {
+            return None;
+        }
+        let n: u64 = digits.parse().unwrap_or(1);
+        let v = match family {
+            "ubuntu" if digits.len() == 4 => vec![n / 100, n % 100],
+            // `debian92`, `rhel88`; `debian12` and `rhel10` are majors.
+            "debian" | "rhel" if digits.len() == 2 && n > 13 => vec![n / 10, n % 10],
+            _ => vec![n],
+        };
+        return Some((family, v));
+    }
+    None
+}
+
+/// The build of the MongoDB Database Tools (a name of `release.json`:
+/// `ubuntu2404`, `debian12`, `rhel93`...) for the distribution described by
+/// `os_release`, among `names` (those of the right CPU): the newest of its
+/// family not newer than it. When the distribution is unknown, or not
+/// readable (a kit prepared from another system), the oldest Ubuntu build
+/// from 20.04 on: built on the oldest glibc, it runs on the newer
+/// distributions too (the tools are Go programs that need only glibc and
+/// Kerberos, verified with `ldd` on 100.19.1).
+pub fn mongodb_tools_linux_name<'a>(
+    os_release: Option<&str>,
+    names: &[&'a str],
+) -> Option<&'a str> {
+    let builds: Vec<(&str, &'static str, Vec<u64>)> = names
+        .iter()
+        .filter_map(|n| mongodb_build_version(n).map(|(f, v)| (*n, f, v)))
+        .collect();
+    if let Some((family, version)) = os_release.and_then(linux_distro) {
+        // RHEL-like systems keep one glibc per major (`VERSION_ID="7"` of
+        // CentOS 7 takes `rhel70`, `8.2` takes the newest `rhel8x`).
+        let fits = |v: &Vec<u64>| {
+            if family == "rhel" {
+                v.first() <= version.first()
+            } else {
+                *v <= version
+            }
+        };
+        let best = builds
+            .iter()
+            .filter(|(_, f, v)| *f == family && fits(v))
+            .max_by(|a, b| a.2.cmp(&b.2));
+        if let Some((name, _, _)) = best {
+            return Some(name);
+        }
+    }
+    builds
+        .iter()
+        .filter(|(_, f, v)| *f == "ubuntu" && *v >= vec![20, 4])
+        .min_by(|a, b| a.2.cmp(&b.2))
+        .map(|(name, _, _)| *name)
+}
+
+/// The text of `/etc/os-release` (or `/usr/lib/os-release`) of this PC when
+/// it runs the kit's Linux target; `None` elsewhere.
+fn host_os_release(target: Target) -> Option<String> {
+    if target.os != Os::Linux || !cfg!(target_os = "linux") {
+        return None;
+    }
+    ["/etc/os-release", "/usr/lib/os-release"]
+        .iter()
+        .find_map(|p| fs::read_to_string(p).ok())
+}
+
+/// The newest MongoDB Database Tools for `target` from `release.json`, on
+/// Linux for the distribution `os_release` (`mongodb_tools_linux_name`).
+pub(crate) fn mongodb_tools_for_distro(
+    target: Target,
+    release: &Value,
+    os_release: Option<&str>,
 ) -> Result<(String, String, String, Kind)> {
     let v = release["versions"]
         .as_array()
@@ -295,13 +433,16 @@ pub(crate) fn mongodb_tools_for(
                 Arch::Arm64 => "arm64",
                 Arch::X64 => "x86_64",
             };
-            let d = downloads
-                .find(|d| {
-                    (d["arch"] == arch || d["arch"] == target.gnu_arch())
-                        && d["name"].as_str().is_some_and(|n| {
-                            n == "ubuntu2204" || n == "ubuntu2404" || n.starts_with("ubuntu")
-                        })
-                })
+            // MongoDB says `arm64` for Ubuntu, `aarch64` for the others.
+            let ours: Vec<&Value> = downloads
+                .filter(|d| d["arch"] == arch || d["arch"] == target.gnu_arch())
+                .collect();
+            let names: Vec<&str> = ours.iter().filter_map(|d| d["name"].as_str()).collect();
+            let name = mongodb_tools_linux_name(os_release, &names)
+                .ok_or_else(|| anyhow!("MongoDB tools {number}: no Linux {arch} archive"))?;
+            let d = ours
+                .iter()
+                .find(|d| d["name"] == name)
                 .ok_or_else(|| anyhow!("MongoDB tools {number}: no Linux {arch} archive"))?;
             (&d["archive"], Kind::TarGz)
         }
@@ -354,21 +495,194 @@ pub fn mongodb_lines(current: &Value) -> Vec<String> {
 
 const MONGODB_CURRENT: &str = "https://downloads.mongodb.org/current.json";
 
+/// The production lines (`8.0`, `7.0`: minor 0, as `mongodb_lines`) of
+/// conda-forge `mongodb` versions (newest first), each once; rapid
+/// releases (`8.3.7`) are left out.
+pub fn mongodb_conda_lines(versions: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for v in versions.iter().filter(|v| v.split('.').nth(1) == Some("0")) {
+        if let Some(line) = crate::versions::line_of(v) {
+            if !out.contains(&line) {
+                out.push(line);
+            }
+        }
+    }
+    out
+}
+
+/// The newest conda-forge `mongodb` of a production line (of `line`, or of
+/// any) among `versions` (newest first).
+pub fn mongodb_conda_pick<'a>(versions: &'a [String], line: Option<&str>) -> Option<&'a String> {
+    versions.iter().find(|v| {
+        v.split('.').nth(1) == Some("0")
+            && line.is_none_or(|l| crate::versions::line_of(v).as_deref() == Some(l))
+    })
+}
+
+/// The server's version in a release version of MongoDB
+/// (`8.0.23+mongosh2.5.9+tools100.19.1` → `8.0.23`).
+pub fn mongodb_server_version(release_version: &str) -> &str {
+    release_version.split('+').next().unwrap_or(release_version)
+}
+
+/// The server on Linux comes from conda-forge (WP-2.5): MongoDB's own
+/// archives are built for one distribution each.
+fn mongodb_from_conda(target: Target) -> bool {
+    target.os == Os::Linux
+}
+
+/// The conda-forge server of `line` (or the newest) for `target`, as a
+/// micromamba release.
+fn mongodb_conda_release(ctx: &Ctx, target: Target, line: Option<&str>) -> Result<Release> {
+    let subdir = target.conda_subdir();
+    let versions = conda_versions(&conda_info(ctx, "mongodb")?, subdir);
+    let version = mongodb_conda_pick(&versions, line)
+        .ok_or_else(|| anyhow!("no conda-forge MongoDB {} for {subdir}", line.unwrap_or("")))?;
+    micromamba_release(ctx, version)
+}
+
+/// mongosh (the generic build of each system: on Linux independent of the
+/// distribution) and the Database Tools (on Linux the build of this PC's
+/// distribution, `mongodb_tools_linux_name`), each into its own folder,
+/// with the `+mongosh<v>+tools<v>` of the release version.
+fn mongodb_shared_parts(ctx: &Ctx, target: Target) -> Result<(Vec<Part>, String)> {
+    let shell = ctx.net.github_latest("mongodb-js/mongosh")?;
+    let (shell_pat, shell_kind) = mongosh_asset_pattern(target);
+    let asset = shell
+        .asset(&pattern(shell_pat)?)
+        .ok_or_else(|| anyhow!("mongosh {}: no archive for {target}", shell.tag_name))?;
+    let shell_version = shell.tag_name.trim_start_matches('v').to_owned();
+    // mongodump and mongorestore: export and import of a project's
+    // database (D-78).
+    let (tools_version, tools_url, tools_sha, tools_kind) = mongodb_tools_for_distro(
+        target,
+        &ctx.net
+            .json::<Value>("https://downloads.mongodb.org/tools/db/release.json")?,
+        host_os_release(target).as_deref(),
+    )?;
+    let tools_file = tools_url
+        .rsplit('/')
+        .next()
+        .unwrap_or("mongodb-tools.zip")
+        .to_owned();
+    let parts = vec![
+        Part {
+            url: asset.browser_download_url.clone(),
+            file_name: asset.name.clone(),
+            expect: Expect::Sha256(github_digest(asset)?),
+            kind: shell_kind,
+            inner: Inner::Single,
+            dest: Dest::Folder("mongosh"),
+            sign: None,
+        },
+        Part {
+            url: tools_url,
+            file_name: tools_file,
+            expect: Expect::Sha256(tools_sha),
+            kind: tools_kind,
+            inner: Inner::Single,
+            dest: Dest::Folder("mongodb-tools"),
+            sign: None,
+        },
+    ];
+    Ok((
+        parts,
+        format!("+mongosh{shell_version}+tools{tools_version}"),
+    ))
+}
+
 pub struct MongoDb;
 
 impl Installer for MongoDb {
+    /// micromamba for the server on Linux, the shared path elsewhere.
+    fn custom(&self, target: Target) -> bool {
+        mongodb_from_conda(target)
+    }
+
+    /// A conda environment cannot follow the kit (D-92).
+    fn relocatable(&self, target: Target) -> bool {
+        !mongodb_from_conda(target)
+    }
+
+    fn install_custom(
+        &self,
+        ctx: &Ctx,
+        component: &Component,
+        release: &Release,
+        progress: &mut dyn Progress,
+    ) -> Result<()> {
+        let dir = crate::versions::install_dir(ctx.kit, component, &release.version);
+        self.install_custom_at(ctx, component, release, &dir, progress)
+    }
+
+    /// The server's environment in the folder of its line (`bin/mongod`,
+    /// the catalog's key), then mongosh and the tools (the other parts of a
+    /// release of `latest`; a saved line usually has only the server).
+    fn install_custom_at(
+        &self,
+        ctx: &Ctx,
+        component: &Component,
+        release: &Release,
+        target: &Path,
+        progress: &mut dyn Progress,
+    ) -> Result<()> {
+        let spec = format!("mongodb={}", mongodb_server_version(&release.version));
+        micromamba_create(ctx, component, release, target, &[&spec], progress)?;
+        if !crate::versions::has_key_for(target_of(ctx, component), component, target) {
+            bail!("bin/mongod not found after the installation");
+        }
+        let work = super::work_dir(ctx, component)?;
+        let result = release
+            .parts
+            .iter()
+            .skip(1)
+            .enumerate()
+            .try_for_each(|(i, part)| {
+                super::install_part(
+                    ctx,
+                    self,
+                    component,
+                    part,
+                    Some(target),
+                    &work.path().join(i.to_string()),
+                    progress,
+                )
+            });
+        drop(work);
+        result
+    }
+
     fn has_lines(&self) -> bool {
         true
     }
 
-    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        let target = target_of(ctx, component);
+        if mongodb_from_conda(target) {
+            let versions = conda_versions(&conda_info(ctx, "mongodb")?, target.conda_subdir());
+            return Ok(mongodb_conda_lines(&versions));
+        }
         Ok(mongodb_lines(&ctx.net.json::<Value>(MONGODB_CURRENT)?))
     }
 
     /// The server of `line` only: mongosh and the tools are shared, at their
-    /// latest (they support every server in production).
+    /// latest (they support every server in production). On Linux, where
+    /// `install::release_at` does not add them to a custom installer's
+    /// release, they come with it while they are not on disk (a first
+    /// installation at a line).
     fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
         let target = target_of(ctx, component);
+        if mongodb_from_conda(target) {
+            let mut release = mongodb_conda_release(ctx, target, Some(line))?;
+            let shared_missing = component
+                .keys_for(target)
+                .iter()
+                .any(|k| !crate::fsx::join_rel(ctx.kit.apps(), k).is_file());
+            if shared_missing {
+                release.parts.extend(mongodb_shared_parts(ctx, target)?.0);
+            }
+            return Ok(release);
+        }
         let (version, url, sha, kind) =
             mongodb_archive_for(target, &ctx.net.json::<Value>(MONGODB_CURRENT)?, Some(line))?;
         let file_name = url.rsplit('/').next().unwrap_or("mongodb.zip").to_owned();
@@ -386,60 +700,36 @@ impl Installer for MongoDb {
         })
     }
 
+    /// The server, mongosh (the generic build of each system, also on
+    /// Linux) and the Database Tools (on Linux the build of this PC's
+    /// distribution, `mongodb_tools_linux_name`). On Linux the server's part
+    /// is micromamba, which creates its conda-forge environment.
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let target = target_of(ctx, component);
-        let current = ctx.net.json::<Value>(MONGODB_CURRENT)?;
-        let (version, url, sha, server_kind) = mongodb_archive_for(target, &current, None)?;
-        let shell = ctx.net.github_latest("mongodb-js/mongosh")?;
-        let (shell_pat, shell_kind) = mongosh_asset_pattern(target);
-        let asset = shell
-            .asset(&pattern(shell_pat)?)
-            .ok_or_else(|| anyhow!("mongosh {}: no archive for {target}", shell.tag_name))?;
-        let shell_version = shell.tag_name.trim_start_matches('v').to_owned();
-        let file_name = url.rsplit('/').next().unwrap_or("mongodb.zip").to_owned();
-        // mongodump and mongorestore: export and import of a project's
-        // database (D-78).
-        let (tools_version, tools_url, tools_sha, tools_kind) = mongodb_tools_for(
-            target,
-            &ctx.net
-                .json::<Value>("https://downloads.mongodb.org/tools/db/release.json")?,
-        )?;
-        let tools_file = tools_url
-            .rsplit('/')
-            .next()
-            .unwrap_or("mongodb-tools.zip")
-            .to_owned();
+        let (version, server) = if mongodb_from_conda(target) {
+            let mut conda = mongodb_conda_release(ctx, target, None)?;
+            (conda.version, conda.parts.remove(0))
+        } else {
+            let current = ctx.net.json::<Value>(MONGODB_CURRENT)?;
+            let (version, url, sha, server_kind) = mongodb_archive_for(target, &current, None)?;
+            let file_name = url.rsplit('/').next().unwrap_or("mongodb.zip").to_owned();
+            let part = Part {
+                url,
+                file_name,
+                expect: Expect::Sha256(sha),
+                kind: server_kind,
+                inner: Inner::Single,
+                dest: Dest::Own,
+                sign: None,
+            };
+            (version, part)
+        };
+        let (shared, suffix) = mongodb_shared_parts(ctx, target)?;
+        let mut parts = vec![server];
+        parts.extend(shared);
         Ok(Release {
-            version: format!("{version}+mongosh{shell_version}+tools{tools_version}"),
-            parts: vec![
-                Part {
-                    url,
-                    file_name,
-                    expect: Expect::Sha256(sha),
-                    kind: server_kind,
-                    inner: Inner::Single,
-                    dest: Dest::Own,
-                    sign: None,
-                },
-                Part {
-                    url: asset.browser_download_url.clone(),
-                    file_name: asset.name.clone(),
-                    expect: Expect::Sha256(github_digest(asset)?),
-                    kind: shell_kind,
-                    inner: Inner::Single,
-                    dest: Dest::Folder("mongosh"),
-                    sign: None,
-                },
-                Part {
-                    url: tools_url,
-                    file_name: tools_file,
-                    expect: Expect::Sha256(tools_sha),
-                    kind: tools_kind,
-                    inner: Inner::Single,
-                    dest: Dest::Folder("mongodb-tools"),
-                    sign: None,
-                },
-            ],
+            version: format!("{version}{suffix}"),
+            parts,
         })
     }
 
@@ -482,16 +772,68 @@ pub(crate) fn sqlite_tools_for(
 /// The other build of the SQLite tools to take when sqlite.org has none
 /// for `target`: x64 on Windows ARM64, which runs it emulated. Nowhere
 /// else: an x64 binary does not start on Linux ARM64 (no silent fallback,
-/// D-108; the catalog says SQLite is not available there).
+/// D-108; SQLite comes from conda-forge there).
 pub(crate) fn sqlite_fallback_arch(target: Target) -> Option<&'static str> {
     (target == Target::WIN32_ARM64).then_some("x64")
 }
 
+/// sqlite.org publishes no command-line tools for Linux ARM64: there SQLite
+/// is conda-forge `sqlite` (WP-2.5).
+fn sqlite_from_conda(target: Target) -> bool {
+    target == Target::LINUX_ARM64
+}
+
+/// The catalog's key of SQLite off Windows is `sqlite/sqlite3`, the file
+/// of sqlite.org's zip; in a conda environment the program is
+/// `bin/sqlite3`, which finds its libraries from there (`$ORIGIN/../lib`):
+/// this launcher at the key starts it.
+pub const SQLITE_CONDA_LAUNCHER: &str =
+    "#!/bin/sh\n# Atollo: sqlite3 of the conda-forge environment next to this file\nexec \"$(dirname \"$0\")/bin/sqlite3\" \"$@\"\n";
+
 pub struct Sqlite;
 
 impl Installer for Sqlite {
+    /// micromamba on Linux ARM64, the shared path elsewhere.
+    fn custom(&self, target: Target) -> bool {
+        sqlite_from_conda(target)
+    }
+
+    /// A conda environment cannot follow the kit (D-92).
+    fn relocatable(&self, target: Target) -> bool {
+        !sqlite_from_conda(target)
+    }
+
+    /// The environment in the folder of its line, and the launcher at the
+    /// catalog's key.
+    fn install_custom(
+        &self,
+        ctx: &Ctx,
+        component: &Component,
+        release: &Release,
+        progress: &mut dyn Progress,
+    ) -> Result<()> {
+        let dir = crate::versions::install_dir(ctx.kit, component, &release.version);
+        let spec = format!("sqlite={}", release.version);
+        micromamba_create(ctx, component, release, &dir, &[&spec], progress)?;
+        if !dir.join("bin").join("sqlite3").is_file() {
+            bail!("bin/sqlite3 not found after the installation");
+        }
+        let launcher = dir.join("sqlite3");
+        crate::fsx::write_atomic(&launcher, SQLITE_CONDA_LAUNCHER.as_bytes())?;
+        crate::router::fs::set_executable(&launcher)?;
+        Ok(())
+    }
+
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let target = target_of(ctx, component);
+        if sqlite_from_conda(target) {
+            let subdir = target.conda_subdir();
+            let versions = conda_versions(&conda_info(ctx, "sqlite")?, subdir);
+            let version = versions
+                .first()
+                .ok_or_else(|| anyhow!("no conda-forge sqlite for {subdir}"))?;
+            return micromamba_release(ctx, version);
+        }
         let os_tag = match target.os {
             Os::Win32 => "win",
             Os::Darwin => "osx",

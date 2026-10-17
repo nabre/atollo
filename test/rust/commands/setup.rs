@@ -47,8 +47,8 @@ fn unavailable_for_the_system_is_not_arm64() {
 }
 
 /// The catalog's own reason, translated, in place of "not available for
-/// <target>" (D-108): Android and SQLite on Linux ARM64. The Windows rows
-/// are as before.
+/// <target>" (D-108): Android on Linux ARM64 (SQLite is there since
+/// WP-2.5). The Windows rows are as before.
 #[test]
 fn catalog_reasons_reach_the_page() {
     let tmp = TempDir::new("cmd-comps-reason");
@@ -56,20 +56,14 @@ fn catalog_reasons_reach_the_page() {
     kit.prepare().unwrap();
     let infos = component_infos(&kit, "en");
     let row = |id: &str| infos.iter().find(|c| c.id == id).unwrap();
-    for (id, reason) in [
-        (
-            "android",
-            "Google does not publish platform-tools and build-tools for Linux ARM64",
-        ),
-        (
-            "sqlite",
-            "sqlite.org does not publish the command-line tools for Linux ARM64",
-        ),
-    ] {
-        let c = row(id);
-        assert!(!c.available && !c.no_arm64, "{id}");
-        assert_eq!(c.unavailable_reason.as_deref(), Some(reason));
-    }
+    let c = row("android");
+    assert!(!c.available && !c.no_arm64, "android");
+    assert_eq!(
+        c.unavailable_reason.as_deref(),
+        Some("Google does not publish platform-tools and build-tools for Linux ARM64")
+    );
+    let sqlite = row("sqlite");
+    assert!(sqlite.available && sqlite.unavailable_reason.is_none());
     assert_eq!(
         row("php").unavailable_reason.as_deref(),
         Some("not available for linux-arm64")
