@@ -106,7 +106,8 @@ pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
         lines.push(format!("{indent}    autoindex on;"));
         // No link followed in an alias' folder (WEB-8). Nginx for Windows
         // has no `disable_symlinks` (it needs `openat`) and would not start
-        // with it: there `alias::resolve` only refuses a linked folder.
+        // with it: there `alias::resolve_nginx` leaves out a folder with a
+        // link inside.
         if !cfg!(windows) {
             lines.push(format!("{indent}    disable_symlinks on;"));
         }
@@ -354,7 +355,7 @@ pub fn command(
         fcgi_port,
         lan,
         domains,
-        &alias::resolve(project_root, &kit.projects(), aliases),
+        &alias::resolve_nginx(project_root, &kit.projects(), aliases),
     );
     write_atomic(&conf, content.as_bytes())?;
     let mut cmd = jobs::kit_command(&exe, env);

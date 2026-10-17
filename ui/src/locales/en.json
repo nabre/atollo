@@ -670,7 +670,7 @@
   "rimovibile": "removable",
   "di rete": "network",
   "altro": "other",
-  "L'alias {0} punta fuori dai progetti o a un collegamento: non servito": "The alias {0} points outside the projects or to a link: not served",
+  "L'alias {0} punta fuori dai progetti o a un collegamento, o la sua cartella contiene collegamenti o è troppo grande per controllarla: non servito": "The alias {0} points outside the projects or to a link, or its folder contains links or is too large to check: not served",
   "Le impostazioni e i dati del kit di questo progetto": "The kit's settings and data of this project",
   "impostazioni": "settings",
   "porte: {0}": "ports: {0}",

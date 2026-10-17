@@ -587,7 +587,9 @@ impl Runner {
             end: None,
             code: None,
             pid: None,
-            skipped_aliases: if action.apache_dir.is_some() || action.nginx_dir.is_some() {
+            skipped_aliases: if action.nginx_dir.is_some() {
+                crate::projects::alias::skipped_nginx(dir, &self.kit.projects(), &action.aliases)
+            } else if action.apache_dir.is_some() {
                 crate::projects::alias::skipped(dir, &self.kit.projects(), &action.aliases)
             } else {
                 Vec::new()
