@@ -266,3 +266,76 @@ Os::Linux => {
 ### `BUG-V3-09` (Bassa) — `vscodium-server` (`components.json:39`) Non Pre-Popola `sha256ByTarget` per i 5 Target Non-`win32-x64`
 - **File e Righe**: [`tauri/catalog/components.json:35-41`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/catalog/components.json#L35-L41) e [`tauri/src/install/editor.rs:87-102`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/editor.rs#L87-L102).
 - **Analisi**: In `install/editor.rs:89-101`, lo Sciame ha aggiunto un ottimo fallback che scarica `{url}.sha256` da GitHub quando `component.sha256_for(target)` è `None`. Tuttavia, in `components.json:39` è presente `"sha256": "be8c80fad63268255ba8ca8a9ebbd54eb39dc4b13c4fe2f963700e898a220420"` (che `sha256_for` usa solo per `Target::WIN32_X64`), mentre `sha256ByTarget` è omesso. Pre-popolare `sha256ByTarget` in `components.json` per tutti i 6 target della release `1.112.01907` evita una richiesta HTTP extra e garantisce il pinning crittografico offline/immutabile (`D-58`) su tutte le piattaforme.
+
+---
+
+## 4. Stato di esecuzione
+
+> Ramo `fix/v3-swarm`, da `59da30a` a `f03d0a5`. Sette pacchetti in parallelo (websec, pools, install, db, detect, ui, multios), uniti con `--no-ff` senza conflitti (`1ca0c42`…`c7412b5`, poi `a9eb3c9`), e un giro di revisione con 17 rilievi, tutti corretti (`3262f7a`…`f03d0a5`). Gate finali su Windows: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (426 passati, 3 ignorati), `npm -w ui test` (107), `lint`, `format:check`, `build`. Decisioni in [DECISIONS.md](../../docs/app/DECISIONS.md) D-96…D-106, novità in [CHANGELOG.md](../../docs/app/CHANGELOG.md).
+
+| # | ID | Stato | Commit di chiusura |
+| :-: | :-- | :-: | :-- |
+| 1 | SEC-V3-01 | ✅ chiuso | `62a019d` fix(web): run .phtml/.phar as PHP, never serve .inc or .php3-8; `3262f7a` fix(router): SEC-V3-01 and SEC-V3-03 on php -S |
+| 2 | SEC-V3-02 | ✅ chiuso | `79b2d27` fix(web): refuse hidden files in the kit's Apache site; `95be058` fix(detect): route php -S through the kit's router; `9901145` fix(detect): php -S router and project paths on Unix |
+| 3 | SEC-V3-03 | ✅ chiuso | `49e3d02` fix(web): serve only local hosts on a project's own server; `3262f7a` (421 su `php -S`); `77f0490` fix(servers): 128-byte server name bucket in the Nginx pool |
+| 4 | BUG-V3-01 | ✅ chiuso | `948a1f3` fix(run): stop a project's Nginx when its php-cgi ends (chiude anche BUG-05r di v2) |
+| 5 | BUG-V3-02 | ✅ chiuso | `8b50e51` fix(servers): one ServerName and vhost file per project action |
+| 6 | BUG-V3-03 | ✅ chiuso | `e48acda` fix(run): shell_command instead of a fixed cmd.exe |
+| 7 | BUG-V3-04 | ✅ chiuso | `2433781` fix(mariadb): Linux tarball only, systemd build first, no macOS (anche niente Linux arm64: nessuna build pubblicata) |
+| 8 | BUG-V3-05 | ✅ chiuso | `706dfb5` fix(cc): newest LLVM release with the system's archive — ripiego su un rilascio più vecchio (macOS Intel su 20.1.7) invece di conda-forge; requisiti del PC nella descrizione |
+| 9 | BUG-V3-06 | 🟡 parziale | `1412e9e` fix(r): R's Makeconf follows the kit on Windows — la parte Unix (rilocazione offline di Git e R dopo uno spostamento) non è fatta |
+| 10 | BUG-V3-07 | ✅ chiuso | `cbcca8e` fix(sessions): other kits on macOS and Linux too |
+| 11 | BUG-V3-08 | ✅ chiuso | `f159ad4` fix(servers): httpd, nginx and php-cgi per system |
+| 12 | BUG-V3-09 | ✅ chiuso | `a677d14` fix(editor): pin the editor's SHA-256 on every target |
+| 13 | N-A1 / B7 | 🟡 parziale | `dca57fd` build(cargo): Win32 dependencies only on Windows; `44b098e` feat(os): Unix implementations of the os layer; `20cec6b`; `c55e580` fix(keyring): gate every Windows API with a Unix answer; `17266ad` ci(app): cargo check on ubuntu-latest and macos-latest; `5751f38` fix(jobs): never SIGKILL a group whose leader pid was reused — compila per macOS e Linux, non provato su sistemi reali; PHP, Apache, Nginx e Adminer restano solo Windows |
+
+Voci dei piani chiuse nello stesso ramo:
+
+| Voce | Stato | Commit |
+| :-- | :-: | :-- |
+| PLAN §13.1 / PLAN-DATA 1.2c (sgancio, `keepAlive`, `autostart`) | 🟡 parziale | `2487dbe` feat(servers): pools follow their projects, keepAlive and autostart; `b964ff6` — resta l'aggancio al pool automatico per un sito senza `server` |
+| PLAN §13.2 / PLAN-DATA 1.3d (più versioni di MariaDB) | ✅ chiuso | `452acec`; dopo la revisione `0e5e0e8`, `d3c2389`, `f93adf4`, `ae9690b`, `3e7986f` |
+| PLAN-DATA §9 difetto 4 (linea non installata) | ✅ chiuso | `c347a3a` |
+| PLAN-DATA §9 difetto 5 (pool orfani) | 🟡 parziale | `d152706` — id stabili (SC-2) da fare |
+| PLAN-DATA §9 difetto 6 (porte) | ✅ chiuso | `699e823`, `9aec654` |
+| PLAN-DATA §9 difetto 7 (agganci doppi) | ✅ chiuso | `f2864f3` |
+| PLAN-DATA §9 difetto 8 (`assign_project`) | ✅ chiuso | `bacc046` |
+| PLAN-DATA §9 difetto 9 (php-cgi del pool) | ✅ chiuso | `32a7d9d`, `624f4d0` |
+| PLAN-DATA §9 difetto 10 (`php.ini` per linea) | ⏳ aperto | — |
+| Prove BUG-03/BUG-04 con kit reale | ✅ scritte | `9df0c9f` — saltate senza `DEVKIT_TEST_KIT`, mai eseguite su un httpd vero |
+| WEB-8 (alias senza collegamenti) | ✅ chiuso | `4c9d901` |
+| Rilevamento (CMS, Laravel, `nginx.conf`, Compose, PHP semplice) | ✅ chiuso | `a812a6c`, `89bc2b2`, `8a09983`, `49d747b`, `55b9e13`, `4522b97` |
+| Versioni del progetto in due zone (PLAN-DATA §9 riga 4) | ✅ chiuso | `50cba6d` |
+| Focus dei dialoghi (v3/02 §2.3) e quattro conferme `alertdialog` | ✅ chiuso | `384d6f4`, `98421ed`, `475ad2c`, `f03d0a5` |
+| B6 (temporanei con «Nel kit») | ➖ non un bug | voluto da D-90 |
+| R su Windows ARM64 | ➖ non fatto | R è `noArm64`; servirebbe rifare l'installatore |
+
+Totale per questo documento: **11 chiusi, 2 parziali** (BUG-V3-06 per la parte Unix, N-A1 in attesa di prova su macOS e Linux reali).
+
+### 4.1 Seguiti non fatti
+
+| Voce | Dove | Nota |
+| :-- | :-- | :-- |
+| php-cgi senza autenticazione | `projects/nginx.rs`, `servers/mod.rs` | `-b 127.0.0.1:<porta>`: un processo locale (o una SSRF locale) esegue PHP arbitrario; named pipe o `FCGI_WEB_SERVER_ADDRS` |
+| Nginx su Windows e collegamenti negli alias | `projects/nginx.rs` | `disable_symlinks` non esiste nella build win32; solo la cartella dell'alias è controllata |
+| Pool: rifiuto degli `Host` estranei | `servers/mod.rs` | il server di default del pool serve la pagina neutra di httpd/nginx, non 403/421 come i server dedicati |
+| Router del progetto | `detect/mod.rs` | un `router.php` del progetto sostituisce quello del kit senza avviso: i file nascosti non sono più bloccati |
+| Aggancio al pool automatico | `projects/run.rs`, `servers/mod.rs` | un sito senza `server` in `panel.json` usa il server dedicato |
+| Id stabili dei pool (SC-2) | `servers/mod.rs` | `apache-2.4_php-7.4` con migrazione delle porte; oggi l'orfano in elenco fa da ripiego |
+| `php.ini` per linea di PHP (difetto 10) | `install/web.rs`, `env.rs`, `projects/nginx.rs` | un solo `php.ini` per tutte le versioni |
+| Porte di pool spariti | `servers/mod.rs` | si tolgono solo con una lista nuova («Aggiorna»): una porta vecchia può bloccare un profilo |
+| Interfaccia dei pool | `ui/src/servers.tsx`, `ui/src/projects/site.tsx` | siti sganciati non distinti; i testi annunciano `<progetto>.localhost` anche per le azioni secondarie (`<azione>.<progetto>.localhost`) |
+| Pool con troppi siti | `servers/mod.rs` | Apache ora è proposto a ogni progetto PHP: i pool automatici elencano ogni progetto con un'azione Apache/Nginx (PLAN-DATA 1.1) |
+| Versioni di MariaDB: avvio automatico | `db/services` | parte solo la versione principale |
+| Versioni di MariaDB: strumenti | `env.rs`, Adminer, `DbBrowser` | `MYSQL_HOME`, Adminer e il browser dei database vedono solo la versione principale |
+| Versioni di MariaDB: eliminazione | `db/auth.rs` | un progetto che ha cambiato versione perde il database solo sull'ultima |
+| Versione disinstallata | `db/services` | avvio e creazione falliscono con «not installed»; l'interfaccia non lo segnala |
+| Lock di `db.json` | `db/auth.rs` | per processo: un CLI insieme all'app potrebbe correre |
+| `Project.lines` | `ui/src/api/projects.ts`, `ui/src/versions/project.tsx` | rilevato da Compose/Dockerfile, non usato dall'interfaccia |
+| LLVM su macOS Intel | `install/lang/cc.rs` | quando 20.1.7 esce dagli ultimi 100 rilasci, `cc` su darwin-x64 fallisce: segnarlo non disponibile o fissare il rilascio |
+| Editor aggiornato | `tauri/catalog/components.json` | a ogni nuova versione di `vscodium-server` rinnovare tutti i `sha256ByTarget` |
+| Unix: prova reale | `os/*`, `os/jobs.rs`, `stats` | istanza (flock e socket), sweep del temp, `killpg`, `/proc` e libproc, `local_day_start` con l'ora legale, test `cfg(unix)` |
+| Unix: ancora a forma di Windows | `env.rs`, conf di Apache/Nginx, `db/services`, `editor/ext` | `apache\bin`, `httpd.exe`, `mongod.exe`, `mariadbd.exe`, `node.exe` senza `translate_rel` |
+| CI macOS `--all-targets` | `tauri/Cargo.toml` | tauri 2.12.0 (feature `test`) contro tauri-runtime 2.12.1: allineare le versioni |
+| Prove con kit reale | `test/rust/servers/` | `start_reports_syntax_error` e `apache_pool_reload_twice` da eseguire in CI con `DEVKIT_TEST_KIT` |
+| Configurazioni vere | — | nessun `httpd -t`/`nginx -t` sulle configurazioni nuove: httpd e nginx non erano installati (prove in TESTING.md) |

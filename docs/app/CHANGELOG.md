@@ -1,5 +1,47 @@
 # Novità
 
+## Correzioni e sviluppi della v3 (17/10/2026)
+
+Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../../reports/v3/03-BUG-SICUREZZA-E-FUNZIONALITA-MANCANTI.md), PLAN §13 e PLAN-DATA §9, chiusi da uno sciame di sette agenti (sicurezza web, pool, installazioni, database, rilevamento, interfaccia, multi-OS) più un giro di revisione con 17 rilievi, tutti corretti. Stato voce per voce in [reports/v3/03 §4](../../reports/v3/03-BUG-SICUREZZA-E-FUNZIONALITA-MANCANTI.md).
+
+**Sicurezza**
+- **Estensioni PHP** (D-96, SEC-V3-01): con PHP, Apache e Nginx eseguono `.php`, `.phtml` e `.phar`; senza PHP li rifiutano (Apache 403, Nginx 503). `.inc` e `.php3`…`.php8` sono sempre rifiutati (403), nei server dedicati, nei pool e nel sito del kit. Un `kit.conf` esistente riceve i blocchi che mancano all'avvio, una volta sola.
+- **File nascosti nel sito del kit** (SEC-V3-02): `.env`, `.git` e simili rifiutati anche in `data\apache\kit.conf` (`.well-known` resta servito).
+- **`php -S` attraverso un router del kit** (D-97, SEC-V3-02): `data\kit\php-router.php` risponde 403 a file nascosti, `.inc`, `.php3`…`.php8`, `.phtml`, `.phar`, nomi come `index.php.`, `::$DATA` e `\` usato come separatore, e 421 a un `Host` che non è locale. Un `router.php` del progetto prende il suo posto.
+- **DNS rebinding** (D-98, SEC-V3-03): fuori dalla modalità rete locale il server dedicato di un progetto risponde solo a `localhost`, `127.0.0.1`, `[::1]`, `*.localhost` e ai domini del progetto; un altro `Host` riceve 403 (Apache) o 421 (Nginx).
+- **Alias senza collegamenti** (D-100, WEB-8): nelle cartelle degli alias Apache non segue collegamenti e un `.htaccess` non può riattivarli; Nginx scrive `disable_symlinks on` fuori da Windows.
+
+**Server Web**
+- **I pool seguono i progetti** (D-101, PLAN 13.1): «Ferma» toglie il sito dal pool e lo ricarica; un pool avviato dai progetti si spegne con l'ultimo, salvo «Mantieni attivo». Nuove opzioni dei profili «Mantieni attivo anche senza progetti» e «Avvia con NEXKORA» (`keepAlive`, `autostart` in `servers.json`), nel modulo di creazione e nella sezione «Avvio e arresto».
+- **Un nome per sito** (BUG-V3-02): nel pool il sito principale di un progetto è `<progetto>.localhost`, le altre azioni `<azione>.<progetto>.localhost`, ognuna con il suo file `vhosts\<nome>.conf`. Nomi di progetto con spazi o maiuscole danno ora una configurazione valida.
+- **php-cgi sorvegliato anche nel Nginx dedicato** (D-99, BUG-V3-01): se php-cgi si chiude, Nginx si ferma e l'esecuzione va in errore con una riga nel log. Nei pool php-cgi si aspetta sulla sua porta e si riprova su un'altra fino a tre volte; senza php-cgi il pool non parte.
+- Difetti dei pool (PLAN-DATA §9): una linea non installata ferma l'avvio con un errore che la nomina (4); un pool acceso il cui id è cambiato resta in elenco per poterlo fermare (5, parziale); una porta per pool, anche nel ripiego e in un `servers.json` vecchio (6); un progetto entra nei pool una volta per sito (7); assegnare un progetto ricarica solo i suoi pool (8).
+
+**Database**
+- **Più versioni di MariaDB insieme** (D-102, PLAN 13.2): la versione che il server usa tiene la sua porta (3306), le altre ne ricevono una propria, salvata al primo avvio. La pagina Database ha «Altre versioni» (stato, porta, avvia/ferma); la pagina del progetto «Versione del server», che crea database e utente sulla versione scelta. I dati non si spostano da soli.
+- **`DB_PORT`** nell'ambiente dei programmi del progetto, se il progetto ha un database MariaDB del kit e il suo `.env` non indica un'altra porta.
+- Le scritture di `db.json` di un progetto sono serializzate; la versione principale si cambia solo con nessuna versione accesa; un cambio di versione fallito lascia quella di prima.
+
+**Rilevamento dei progetti** (D-103)
+- CMS da archivio: PrestaShop, Drupal, Joomla e TYPO3 classico, con Apache e MariaDB.
+- Laravel e Statamic con `.htaccess` nella cartella pubblica ricevono l'azione Apache; PHP semplice propone Apache accanto a `php -S`; `nginx.conf` o `.nginx` danno l'azione Nginx anche ai siti statici.
+- Compose (`compose.yaml`, `docker-compose.yml`…) e `FROM` di `Dockerfile`/`Containerfile` letti per nome esatto dell'immagine, con la linea dal tag (`php:7.4-apache` → PHP 7.4 e Apache).
+- Apache e Nginx contano fra i requisiti solo se sono l'azione predefinita o scritti in `panel.json`. Tolto il testo orfano «MariaDB non incluso nel kit».
+
+**Installazione e piattaforme** (D-104, D-105)
+- **MariaDB** solo dove esiste una build: Windows (anche ARM64, in emulazione) e Linux x64, tarball `linux-systemd` (BUG-V3-04).
+- **C/C++ su macOS e Linux** usa l'ultimo rilascio di LLVM con l'archivio del sistema: macOS Intel resta su LLVM 20.1.7. La descrizione dice cosa serve sul PC (Xcode CLT; header della libc e `make`) (BUG-V3-05).
+- **Editor** con SHA-256 fissato per ogni sistema (BUG-V3-09).
+- **R su Windows**: `Makeconf` segue la cartella del kit a ogni avvio, così i pacchetti da sorgente si compilano dopo un cambio di lettera d'unità (BUG-V3-06, parte Windows).
+- **Il codice dell'app compila per macOS e Linux**: dipendenze Windows solo su Windows, icona PNG, strato `os` (istanza, temp, dischi, processi, job, sessioni) per Unix, programmi di shell e dei server web per sistema, altri kit aperti riconosciuti ovunque (B7, N-A1, BUG-V3-03/07/08). Nuovo job di CI `check-unix` su Ubuntu e macOS. Accesso di Antigravity, scelta di file e cartelle e console fuori dall'editor danno un errore chiaro fuori da Windows.
+
+**Interfaccia** (D-106)
+- Un'unica trappola del focus per i dialoghi (conferma e ingrandimento delle schermate della Guida).
+- Le quattro conferme sì/no nella pagina (uscita da un agente e da GitHub, ripristino di un database, «Applica» in Linguaggi e strumenti) sono `alertdialog` con il focus su «Annulla»; alla chiusura il focus torna al pulsante che le ha aperte.
+- Versioni del progetto: uno strumento mancante resta nella zona del progetto con il rimando a «Installa ciò che manca»; il testo nomina anche il server web.
+
+**Verificato**: 426 test Rust (3 ignorati), 107 test dell'interfaccia; fmt, clippy, ESLint, Prettier e build puliti su Windows. Il codice Unix è solo compilato (controllo incrociato per macOS e Linux). Da provare a mano: due versioni di MariaDB insieme, pool che si spengono e «Avvia con NEXKORA», `httpd -t`/`nginx -t` delle configurazioni nuove con `Host` estraneo, prove con `DEVKIT_TEST_KIT`, primo avvio reale su macOS e Linux ([TESTING.md](TESTING.md)).
+
 ## Niente Windows Terminal (16/10/2026)
 
 - **Console solo nella console classica di Windows** (D-95): Terminale, agenti e terminali del kit si aprono in `conhost.exe` con PowerShell 7 del kit, come succedeva già quando Windows Terminal mancava. Tolti il componente Windows Terminal, l'impostazione «Terminale» e il gruppo «Legati a un sistema operativo» della pagina «Linguaggi e strumenti».
@@ -134,7 +176,7 @@ Nessun cambiamento per chi usa l'app: stessi testi, comandi, eventi, log e file 
 - **Componenti di `workbench\`**: `Select` al posto di 13 `<select>`, `DataTable` di 5 `<table>`, `ConfirmDialog` e `InlineConfirm` per la chiusura dell'app e l'eliminazione di un repository GitHub; `useCopy` per le 3 copie negli appunti.
 - **Commenti**: i percorsi dei file Rust citati nell'interfaccia e nella CI puntano alle cartelle nuove; tolti i caratteri di controllo lasciati da escape sbagliati in tre commenti.
 
-**Non fatto** (elenco in ARCHITECTURE.md): 12 letture restano senza `useLoad` perché cambierebbe ciò che l'utente vede (un errore che oggi resta dopo una lettura riuscita); quattro conferme sì/no nella pagina restano senza il ruolo `alertdialog`.
+**Non fatto** (elenco in ARCHITECTURE.md): 12 letture restano senza `useLoad` perché cambierebbe ciò che l'utente vede (un errore che oggi resta dopo una lettura riuscita); quattro conferme sì/no nella pagina restano senza il ruolo `alertdialog` (fatte il 17/10/2026, D-106).
 
 **Verificato**: 274 test Rust (3 nuovi per `CmdError`, 3 in più dalla prova delle righe di versione divisa per linguaggio), 2 ignorati; clippy e fmt puliti; tipi, ESLint, Prettier e 36 test dell'interfaccia (9 nuovi per `useLoad`); nessun ciclo di import in `ui\src`. La build dell'interfaccia riesce, con un avviso: il file principale supera 500 kB (761 kB).
 
