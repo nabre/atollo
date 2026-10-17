@@ -434,8 +434,15 @@ pub fn start_dir(kit: &Kit, terminal: &Terminal, dir: Option<&str>, lang: &str) 
     }
 }
 
+/// The "Select folder" window is Windows' only (no dialog plugin in the app).
+#[cfg(not(windows))]
+pub fn pick_dir(_owner: isize, _title: &str, _start: Option<&Path>) -> Result<Option<PathBuf>> {
+    bail!("choosing a folder is not available on this system")
+}
+
 /// Windows' "Select folder" window over `owner` (a window handle), starting
 /// in `start`. `None` when closed without a choice.
+#[cfg(windows)]
 pub fn pick_dir(owner: isize, title: &str, start: Option<&Path>) -> Result<Option<PathBuf>> {
     use windows::core::{HSTRING, PCWSTR};
     use windows::Win32::Foundation::{ERROR_CANCELLED, HWND};

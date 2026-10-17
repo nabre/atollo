@@ -696,6 +696,7 @@ dependencies = [
  "base64 0.23.1",
  "flate2",
  "junction",
+ "libc",
  "lzma-rust2",
  "native-tls",
  "regex",

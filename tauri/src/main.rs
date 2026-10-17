@@ -31,7 +31,9 @@ mod versions;
 use std::path::Path;
 
 use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+#[cfg(windows)]
 use windows::core::HSTRING;
+#[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
 
 use crate::cli::Cli;
@@ -44,8 +46,15 @@ fn main() {
     std::process::exit(run());
 }
 
+/// Errors before (or instead of) the window, on macOS and Linux: stderr.
+#[cfg(not(windows))]
+fn fatal(_lang: &str, message: &str) {
+    eprintln!("{message}");
+}
+
 /// Message box for errors before (or instead of) the window; also on
 /// stderr, for the command line (a service session has no message box).
+#[cfg(windows)]
 fn fatal(lang: &str, message: &str) {
     eprintln!("{message}");
     let title = HSTRING::from(i18n::t(lang, "Atollo non può partire", &[]));

@@ -23,8 +23,7 @@ anyhow = "1.0.104"
 thiserror = "2.0.21"
 sha2 = "0.11.0"
 sha3 = "0.11.0"
-webview2-com = "0.39.1"
-ureq = { version = "3.4.2", default-features = false, features = ["native-tls", "json", "gzip", "win-system-proxy"] }
+ureq = { version = "3.4.2", default-features = false, features = ["native-tls", "json", "gzip"] }
 native-tls = "0.2.18"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 tar = "0.4.46"
@@ -33,9 +32,18 @@ sevenz-rust2 = "0.23.0"
 lzma-rust2 = { version = "0.21", default-features = false, features = ["std", "optimization", "xz", "encoder"] }
 base64 = "0.23.1"
 regex = "1.13.1"
-junction = "2.1.0"
 
-[dependencies.windows]
+# Win32 APIs, WebView2, junctions and the system proxy: Windows only, so the
+# same crate also builds for macOS and Linux (B7 / N-A1).
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.39.1"
+junction = "2.1.0"
+ureq = { version = "3.4.2", default-features = false, features = ["win-system-proxy"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies.windows]
 version = "0.62.2"
 features = [
     "Win32_Foundation",

@@ -151,3 +151,33 @@ fn aliases_follow_no_links_where_nginx_can() {
         "{lines}"
     );
 }
+
+/// BUG-V3-08: the programs of Nginx, PHP and Apache in each system's layout.
+#[test]
+fn server_programs_per_system() {
+    use crate::kit::Target;
+    let tmp = crate::kit::tests::TempDir::new("server-exes");
+    let dir = tmp.0.join("srv");
+    let win = Kit::at_target(tmp.0.join("w"), Target::WIN32_X64);
+    let linux = Kit::at_target(tmp.0.join("l"), Target::LINUX_X64);
+    let mac = Kit::at_target(tmp.0.join("m"), Target::DARWIN_ARM64);
+    assert_eq!(nginx_exe(&win, &dir), dir.join("nginx.exe"));
+    assert_eq!(php_cgi_exe(&win, &dir), dir.join("php-cgi.exe"));
+    assert_eq!(
+        crate::projects::apache::httpd_exe(&win, &dir),
+        dir.join("bin").join("httpd.exe")
+    );
+    assert_eq!(php_cgi_exe(&mac, &dir), dir.join("bin").join("php-cgi"));
+    assert_eq!(
+        crate::projects::apache::httpd_exe(&linux, &dir),
+        dir.join("bin").join("httpd")
+    );
+    // sbin/nginx by default; bin/nginx when only that one exists.
+    assert_eq!(nginx_exe(&linux, &dir), dir.join("sbin").join("nginx"));
+    fs::create_dir_all(dir.join("bin")).unwrap();
+    fs::write(dir.join("bin").join("nginx"), "").unwrap();
+    assert_eq!(nginx_exe(&mac, &dir), dir.join("bin").join("nginx"));
+    fs::create_dir_all(dir.join("sbin")).unwrap();
+    fs::write(dir.join("sbin").join("nginx"), "").unwrap();
+    assert_eq!(nginx_exe(&linux, &dir), dir.join("sbin").join("nginx"));
+}

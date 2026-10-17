@@ -3,7 +3,8 @@
 //!
 //! - every action runs in a job of its own, nested in the app's: stopping it
 //!   ends the whole tree (npm → node → esbuild…), closing the app ends all;
-//! - commands go through `cmd.exe /d /s /c` with the kit's environment plus
+//! - commands go through `cmd.exe /d /s /c` (`/bin/sh -c` on macOS and
+//!   Linux, `jobs::shell_command`) with the kit's environment plus
 //!   `PORT`, `ROCKET_PORT`, `DB_PORT` (its MariaDB database), `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
 //!   action runs this exe as a file server (`Atollo.exe serve`), an
 //!   `apache` action the kit's httpd with a configuration of the project;
@@ -17,7 +18,6 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Read;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, TcpStream};
-use std::os::windows::process::CommandExt;
 use std::path::Path;
 use std::process::{Child, Stdio};
 use std::sync::{Arc, LazyLock, Mutex, PoisonError};
@@ -537,10 +537,7 @@ impl Runner {
             )
         } else {
             let command = listen(&action.command);
-            let system_root = env.get("SystemRoot").unwrap_or(r"C:\Windows");
-            let mut cmd = jobs::kit_command(Path::new(system_root).join(r"System32\cmd.exe"), env);
-            cmd.raw_arg(format!("/d /s /c \"{command}\""));
-            (cmd, command)
+            (jobs::shell_command(&command, env), command)
         };
         cmd.current_dir(&cwd)
             .env("BROWSER", "none")

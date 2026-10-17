@@ -1,6 +1,8 @@
 use super::*;
+#[cfg(windows)]
 use crate::kit::{tests::TempDir, Arch};
 
+#[cfg(windows)]
 #[test]
 fn dpapi_roundtrip() {
     let blob = base64::engine::general_purpose::STANDARD.encode(b"secret of the PC");
@@ -22,6 +24,7 @@ fn names() {
 
 /// The real Credential Manager, with a test-only name: restore puts the
 /// kit's login in Windows (session only), save takes it back.
+#[cfg(windows)]
 #[test]
 fn restore_and_save_round_trip() {
     let tmp = TempDir::new("keyring");

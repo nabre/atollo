@@ -5,9 +5,13 @@
 //! between two disks.
 
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(windows)]
+use std::path::PathBuf;
 
+#[cfg(windows)]
 use windows::core::HSTRING;
+#[cfg(windows)]
 use windows::Win32::Storage::FileSystem::{
     GetDiskFreeSpaceExW, GetDriveTypeW, GetVolumeInformationW, GetVolumePathNameW,
 };
@@ -18,16 +22,23 @@ pub enum FsKind {
     Refs,
     Fat32,
     ExFat,
+    /// A file system of macOS or Linux with owners, modes and hard links
+    /// (APFS, ext4, btrfs...).
+    Posix,
     Other,
 }
 
 impl FsKind {
+    /// From the name Windows gives, or the one macOS gives (`msdos`, `apfs`)
+    /// or `linux_name` derives from the magic number.
     fn from_name(name: &str) -> FsKind {
         match name.to_ascii_uppercase().as_str() {
             "NTFS" => FsKind::Ntfs,
             "REFS" => FsKind::Refs,
-            "FAT32" | "FAT" => FsKind::Fat32,
+            "FAT32" | "FAT" | "MSDOS" | "VFAT" => FsKind::Fat32,
             "EXFAT" => FsKind::ExFat,
+            "APFS" | "HFS" | "EXT2" | "EXT3" | "EXT4" | "BTRFS" | "XFS" | "ZFS" | "F2FS"
+            | "TMPFS" => FsKind::Posix,
             _ => FsKind::Other,
         }
     }
@@ -41,9 +52,10 @@ impl FsKind {
         }
     }
 
-    /// Permissions (DACL) and hard links: NTFS and ReFS only.
+    /// Permissions (DACL, or owner and mode) and hard links: NTFS, ReFS and
+    /// the Unix file systems.
     pub fn has_permissions(self) -> bool {
-        matches!(self, FsKind::Ntfs | FsKind::Refs)
+        matches!(self, FsKind::Ntfs | FsKind::Refs | FsKind::Posix)
     }
 
     pub fn as_str(self) -> &'static str {
@@ -52,12 +64,34 @@ impl FsKind {
             FsKind::Refs => "ReFS",
             FsKind::Fat32 => "FAT32",
             FsKind::ExFat => "exFAT",
+            FsKind::Posix => "POSIX",
             FsKind::Other => "other",
         }
     }
 }
 
+/// The name of a Linux file system from its `statfs` magic number; network
+/// file systems are told apart for `DriveKind::Remote`.
+#[cfg(any(target_os = "linux", test))]
+fn linux_name(magic: u32) -> (&'static str, bool) {
+    match magic {
+        0x4d44 => ("FAT", false),
+        0x2011_bab0 => ("EXFAT", false),
+        0x5346_544e => ("NTFS", false),
+        0xef53 => ("EXT4", false),
+        0x9123_683e => ("BTRFS", false),
+        0x5846_5342 => ("XFS", false),
+        0x2fc1_2fc1 => ("ZFS", false),
+        0xf2f5_2010 => ("F2FS", false),
+        0x0102_1994 => ("TMPFS", false),
+        0x6969 | 0xff53_4d42 | 0xfe53_4d42 | 0x517b => ("", true),
+        _ => ("", false),
+    }
+}
+
+/// Linux tells only network disks apart (`statfs`); the others are `Other`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(target_os = "linux", allow(dead_code))]
 pub enum DriveKind {
     Fixed,
     Removable,
@@ -84,7 +118,85 @@ pub struct VolumeInfo {
     pub free: u64,
 }
 
+/// The device of `path` (`st_dev`): the same number means the same volume.
+#[cfg(unix)]
+fn device(path: &Path) -> io::Result<u64> {
+    use std::os::unix::fs::MetadataExt;
+    Ok(std::fs::metadata(path)?.dev())
+}
+
+#[cfg(unix)]
+fn statfs(path: &Path) -> io::Result<libc::statfs> {
+    use std::os::unix::ffi::OsStrExt;
+    let c = std::ffi::CString::new(path.as_os_str().as_bytes()).map_err(io::Error::other)?;
+    // SAFETY: zeroed is a valid `statfs`; `c` is NUL-terminated and alive.
+    let mut s: libc::statfs = unsafe { std::mem::zeroed() };
+    if unsafe { libc::statfs(c.as_ptr(), &mut s) } != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(s)
+}
+
+#[cfg(target_os = "linux")]
+pub fn info(path: &Path) -> io::Result<VolumeInfo> {
+    let s = statfs(path)?;
+    #[allow(clippy::unnecessary_cast)]
+    let (name, remote) = linux_name(s.f_type as u32);
+    Ok(VolumeInfo {
+        fs: FsKind::from_name(name),
+        drive: if remote {
+            DriveKind::Remote
+        } else {
+            DriveKind::Other
+        },
+        free: free_space(path)?,
+    })
+}
+
+#[cfg(all(unix, not(target_os = "linux")))]
+pub fn info(path: &Path) -> io::Result<VolumeInfo> {
+    /// `<sys/mount.h>`: a removable medium (not in the `libc` crate).
+    const MNT_REMOVABLE: u32 = 0x0000_0200;
+    let s = statfs(path)?;
+    // SAFETY: `f_fstypename` is a NUL-terminated name filled by statfs.
+    let name = unsafe { std::ffi::CStr::from_ptr(s.f_fstypename.as_ptr()) }.to_string_lossy();
+    let remote = matches!(name.as_ref(), "nfs" | "smbfs" | "afpfs" | "webdav");
+    let local = s.f_flags & libc::MNT_LOCAL as u32 != 0;
+    Ok(VolumeInfo {
+        fs: FsKind::from_name(&name),
+        drive: match (remote, local) {
+            (true, _) => DriveKind::Remote,
+            (false, true) if s.f_flags & MNT_REMOVABLE != 0 => DriveKind::Removable,
+            (false, true) => DriveKind::Fixed,
+            _ => DriveKind::Other,
+        },
+        free: free_space(path)?,
+    })
+}
+
+/// Bytes free for this user on the disk of `path` (an existing folder).
+#[cfg(unix)]
+pub fn free_space(path: &Path) -> io::Result<u64> {
+    use std::os::unix::ffi::OsStrExt;
+    let c = std::ffi::CString::new(path.as_os_str().as_bytes()).map_err(io::Error::other)?;
+    // SAFETY: zeroed is a valid `statvfs`; `c` is NUL-terminated and alive.
+    let mut s: libc::statvfs = unsafe { std::mem::zeroed() };
+    if unsafe { libc::statvfs(c.as_ptr(), &mut s) } != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    #[allow(clippy::useless_conversion)]
+    Ok(u64::from(s.f_bavail).saturating_mul(u64::from(s.f_frsize)))
+}
+
+/// `a` and `b` (existing) are on the same device: a `rename` between them
+/// works; otherwise the files must be copied.
+#[cfg(unix)]
+pub fn same_volume(a: &Path, b: &Path) -> bool {
+    matches!((device(a), device(b)), (Ok(a), Ok(b)) if a == b)
+}
+
 /// The root of the volume `path` is on (`D:\`, or a mounted folder).
+#[cfg(windows)]
 pub fn root_of(path: &Path) -> io::Result<PathBuf> {
     let mut buf = [0u16; 1024];
     // SAFETY: the buffer outlives the call, which writes at most its length.
@@ -94,6 +206,7 @@ pub fn root_of(path: &Path) -> io::Result<PathBuf> {
     Ok(PathBuf::from(String::from_utf16_lossy(&buf[..len])))
 }
 
+#[cfg(windows)]
 pub fn info(path: &Path) -> io::Result<VolumeInfo> {
     let root = root_of(path)?;
     let root_h = HSTRING::from(root.as_os_str());
@@ -121,6 +234,7 @@ pub fn info(path: &Path) -> io::Result<VolumeInfo> {
 }
 
 /// Bytes free for this user on the disk of `path` (an existing folder).
+#[cfg(windows)]
 pub fn free_space(path: &Path) -> io::Result<u64> {
     let mut free = 0u64;
     // SAFETY: `free` outlives the call.
@@ -138,6 +252,7 @@ pub fn free_space(path: &Path) -> io::Result<u64> {
 
 /// `a` and `b` (existing) are on the same volume: a `rename` between them
 /// works; otherwise the files must be copied.
+#[cfg(windows)]
 pub fn same_volume(a: &Path, b: &Path) -> bool {
     match (root_of(a), root_of(b)) {
         (Ok(a), Ok(b)) => a.as_os_str().eq_ignore_ascii_case(b.as_os_str()),
