@@ -46,7 +46,8 @@ pub const KIT_PROFILES_UNIX: &[&str] = &[
     "Codex",
     "Antigravity",
 ];
-/// The shells VSCodium detects on macOS and Linux.
+/// The shells VSCodium detects on macOS and Linux: those of /etc/shells,
+/// named after their file (macOS lists csh, dash, ksh and tcsh too).
 const HIDDEN_UNIX: &[&str] = &[
     "bash",
     "zsh",
@@ -54,6 +55,11 @@ const HIDDEN_UNIX: &[&str] = &[
     "tmux",
     "pwsh",
     "sh",
+    "csh",
+    "tcsh",
+    "ksh",
+    "dash",
+    "rbash",
     "JavaScript Debug Terminal",
 ];
 
