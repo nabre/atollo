@@ -212,10 +212,14 @@ fn open<R: Runtime>(
         Some(command) => pty::command(command, dir),
     };
     let (out, end) = (app.clone(), app.clone());
+    let lang = app
+        .try_state::<crate::commands::AppState>()
+        .map_or("it", |s| s.lang());
     app.state::<Consoles>().ptys.open(
         &launch,
         env,
         dir,
+        lang,
         // Told before the session's first output or its exit.
         |info| {
             crate::log::info(&format!("terminal {}: {}", info.id, info.title));

@@ -368,6 +368,60 @@ fn session_members_by_session_id() {
     assert!(in_session(&[(0, 0), (5, 0)], 0, true).is_empty());
 }
 
+#[test]
+fn binary_input_is_one_byte_per_character() {
+    assert_eq!(
+        latin1("\x1b[M \u{ff}\u{a0}"),
+        Some(vec![0x1b, b'[', b'M', b' ', 0xff, 0xa0])
+    );
+    assert_eq!(latin1(""), Some(Vec::new()));
+    // Never text in UTF-8 by mistake.
+    assert_eq!(latin1("à€"), None);
+    let sessions = Sessions::default();
+    let io = FakeIo::new(42);
+    let id = sessions
+        .insert("t".into(), Path::new("/x"), Box::new(io.clone()))
+        .info()
+        .id;
+    sessions.write_bytes(id, &[0xff, 0x00]).unwrap();
+    assert_eq!(io.calls().written, [0xff, 0x00]);
+}
+
+#[test]
+fn sessions_get_a_utf8_locale_when_the_kit_env_has_none() {
+    use crate::kit::Os;
+    // Started from Finder or launchd: nothing set.
+    assert_eq!(
+        utf8_locale(Os::Darwin, None, None, None),
+        Some(("LANG", "en_US.UTF-8"))
+    );
+    assert_eq!(
+        utf8_locale(Os::Linux, None, Some(""), Some("")),
+        Some(("LANG", "C.UTF-8"))
+    );
+    // The user's UTF-8 locale stays, in any spelling.
+    assert_eq!(
+        utf8_locale(Os::Darwin, None, None, Some("it_IT.UTF-8")),
+        None
+    );
+    assert_eq!(utf8_locale(Os::Linux, None, None, Some("de_DE.utf8")), None);
+    assert_eq!(
+        utf8_locale(Os::Darwin, None, Some("UTF-8"), Some("C")),
+        None
+    );
+    // Another charset: only the characters' category changes.
+    assert_eq!(
+        utf8_locale(Os::Linux, None, None, Some("fr_FR.ISO-8859-1")),
+        Some(("LC_CTYPE", "C.UTF-8"))
+    );
+    assert_eq!(
+        utf8_locale(Os::Darwin, None, Some("C"), Some("it_IT.UTF-8")),
+        Some(("LC_CTYPE", "en_US.UTF-8"))
+    );
+    // An LC_ALL of the user's is never overridden.
+    assert_eq!(utf8_locale(Os::Linux, Some("C"), None, None), None);
+}
+
 /// Real PTYs: a program's output comes back, the size reaches it, closing
 /// ends its whole group.
 #[cfg(unix)]
@@ -412,6 +466,7 @@ mod real {
                 &sh("printf 'pty-%s|%s|%s\\n' \"$DEVKIT_PROBE\" \"$TERM\" \"$(pwd)\"; exit 3"),
                 &env(),
                 &tmp.0,
+                "it",
                 |_| {},
                 |_, _| {},
                 move |info| tx.send(info).unwrap(),
@@ -438,6 +493,7 @@ mod real {
                 &sh("read line; stty size; echo \"got-$line\""),
                 &env(),
                 &tmp.0,
+                "it",
                 |_| {},
                 |_, _| {},
                 |_| {},
@@ -461,6 +517,7 @@ mod real {
                 &sh("trap '' HUP; sleep 60 & echo \"bg=$!\"; wait"),
                 &env(),
                 &tmp.0,
+                "it",
                 |_| {},
                 |_, _| {},
                 |_| {},
@@ -514,7 +571,15 @@ mod real {
 
     fn open_bash(sessions: &Sessions, dir: &Path) -> u64 {
         sessions
-            .open(&interactive_bash(), &env(), dir, |_| {}, |_, _| {}, |_| {})
+            .open(
+                &interactive_bash(),
+                &env(),
+                dir,
+                "it",
+                |_| {},
+                |_, _| {},
+                |_| {},
+            )
             .unwrap()
             .id
     }
@@ -569,6 +634,7 @@ mod real {
                 &sh("exit 5"),
                 &env(),
                 &tmp.0,
+                "it",
                 move |info| {
                     opened
                         .lock()
@@ -592,9 +658,38 @@ mod real {
         let sessions = Sessions::default();
         let missing = tmp.0.join("nope");
         let e = sessions
-            .open(&sh("true"), &env(), &missing, |_| {}, |_, _| {}, |_| {})
+            .open(
+                &sh("true"),
+                &env(),
+                &missing,
+                "it",
+                |_| {},
+                |_, _| {},
+                |_| {},
+            )
             .unwrap_err();
         assert!(e.to_string().contains("non esiste"), "{e:#}");
+        // In the language of the interface.
+        let e = sessions
+            .open(
+                &sh("true"),
+                &env(),
+                &missing,
+                "en",
+                |_| {},
+                |_, _| {},
+                |_| {},
+            )
+            .unwrap_err();
+        assert_eq!(
+            e.to_string(),
+            crate::i18n::t(
+                "en",
+                "La cartella {0} non esiste.",
+                &[&missing.display().to_string()]
+            )
+        );
+        assert!(!e.to_string().contains("non esiste"), "{e:#}");
         // Without its execute bit (as on a copy that lost it).
         let script = tmp.0.join("agy");
         std::fs::write(&script, "#!/bin/sh\necho hi\n").unwrap();
@@ -603,12 +698,69 @@ mod real {
                 &command(&script, &tmp.0),
                 &env(),
                 &tmp.0,
+                "it",
                 |_| {},
                 |_, _| {},
                 |_| {},
             )
             .unwrap_err();
-        assert!(e.to_string().contains("non è un programma"), "{e:#}");
+        assert!(e.to_string().contains("non è installato"), "{e:#}");
         assert!(sessions.list().is_empty());
+    }
+
+    #[test]
+    fn a_session_without_a_locale_gets_a_utf8_one() {
+        // An app started from Finder: no LANG, LC_ALL or LC_CTYPE.
+        let tmp = TempDir::new("pty-locale");
+        let sessions = Sessions::default();
+        let (tx, rx) = channel();
+        let info = sessions
+            .open(
+                &sh("printf 'loc=%s|%s|%s\\n' \"$LANG\" \"$LC_ALL\" \"$LC_CTYPE\""),
+                &env(),
+                &tmp.0,
+                "it",
+                |_| {},
+                |_, _| {},
+                move |info| tx.send(info).unwrap(),
+            )
+            .unwrap();
+        rx.recv_timeout(Duration::from_secs(20)).unwrap();
+        let out = wait_for(&sessions, info.id, "loc=");
+        let expected = if cfg!(target_os = "macos") {
+            "loc=en_US.UTF-8||"
+        } else {
+            "loc=C.UTF-8||"
+        };
+        assert!(out.contains(expected), "{out:?}");
+        sessions.close(info.id, Duration::ZERO).unwrap();
+    }
+
+    #[test]
+    fn the_exit_comes_after_the_last_output() {
+        let tmp = TempDir::new("pty-tail");
+        let sessions = Sessions::default();
+        let events = Arc::new(Mutex::new(Vec::<String>::new()));
+        let (tx, rx) = channel();
+        let (out, ended) = (Arc::clone(&events), Arc::clone(&events));
+        sessions
+            .open(
+                &sh("i=0; while [ $i -lt 3000 ]; do echo line$i; i=$((i+1)); done; echo tail-end"),
+                &env(),
+                &tmp.0,
+                "it",
+                |_| {},
+                move |_, chunk| out.lock().unwrap().push(chunk.data.clone()),
+                move |_| {
+                    ended.lock().unwrap().push("<exit>".into());
+                    tx.send(()).unwrap();
+                },
+            )
+            .unwrap();
+        rx.recv_timeout(Duration::from_secs(20)).unwrap();
+        let events = events.lock().unwrap();
+        assert_eq!(events.last().map(String::as_str), Some("<exit>"));
+        let text: String = events[..events.len() - 1].concat();
+        assert!(text.contains("tail-end"), "{text:?}");
     }
 }
