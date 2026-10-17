@@ -161,11 +161,40 @@ fn create_dir_link(source: &Path, link: &Path) -> Result<()> {
 
 #[cfg(not(windows))]
 fn create_dir_link(source: &Path, link: &Path) -> Result<()> {
-    std::os::unix::fs::symlink(source, link).with_context(|| link.display().to_string())
+    link_or_copy(source, link, |s, l| std::os::unix::fs::symlink(s, l))
+}
+
+/// In a folder copied where a link could not be made: the folder it copies.
+const COPY_MARK: &str = ".atollo-copy-of";
+
+/// The link `link -> source`, made by `make`; on a disk without links
+/// (exFAT, FAT: `archive::links_unsupported`) a copy of `source` marked
+/// with [`COPY_MARK`], so it goes like a link when `source` goes.
+#[cfg_attr(windows, allow(dead_code))]
+fn link_or_copy(
+    source: &Path,
+    link: &Path,
+    make: impl FnOnce(&Path, &Path) -> std::io::Result<()>,
+) -> Result<()> {
+    match make(source, link) {
+        Ok(()) => Ok(()),
+        Err(e) if crate::net::archive::links_unsupported(&e) => {
+            crate::net::archive::copy_tree(source, link)
+                .and_then(|()| fs::write(link.join(COPY_MARK), source.display().to_string()))
+                .with_context(|| format!("copying {} (no links on this disk)", link.display()))
+        }
+        Err(e) => Err(e).with_context(|| link.display().to_string()),
+    }
+}
+
+/// A copy made by [`link_or_copy`] whose source is gone.
+fn stale_copy(path: &Path) -> bool {
+    fs::read_to_string(path.join(COPY_MARK)).is_ok_and(|s| !Path::new(s.trim()).is_dir())
 }
 
 /// Each root gets, as junctions (Windows) or symlinks (Unix), the versions the
-/// other roots have of their own; links to versions gone are removed.
+/// other roots have of their own; links to versions gone are removed. On a
+/// Unix disk without links they are copies, removed the same way.
 pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
     for root in roots {
         for sub in DOTNET_SHARED {
@@ -174,6 +203,8 @@ pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
                 let path = entry.path();
                 if is_dir_link(&path) && !dir_link_target_ok(&path) {
                     remove_dir_link(&path);
+                } else if !is_dir_link(&path) && stale_copy(&path) {
+                    let _ = fs::remove_dir_all(&path);
                 }
             }
         }
@@ -184,7 +215,9 @@ pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
                 let from = join_rel(other, sub);
                 for entry in fs::read_dir(&from).into_iter().flatten().flatten() {
                     let source = entry.path();
-                    if is_dir_link(&source) || !source.is_dir() {
+                    // Only a root's own versions: not its links, nor copies.
+                    if is_dir_link(&source) || !source.is_dir() || source.join(COPY_MARK).is_file()
+                    {
                         continue;
                     }
                     let sub_dir = join_rel(root, sub);

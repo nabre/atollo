@@ -740,3 +740,150 @@ fn replace_and_remove() {
     remove_dir(&dest).unwrap();
     assert!(!dest.exists());
 }
+
+/// The refusal of exFAT and FAT, injected so it runs on every system.
+fn no_links(_: &str, _: &Path) -> io::Result<()> {
+    Err(io::Error::new(io::ErrorKind::Unsupported, "no links here"))
+}
+
+/// Without links the targets are copied: a file, a folder, a link to a
+/// link (whose copy comes first); a link outside, or a folder that would
+/// hold itself, is skipped.
+#[test]
+fn links_become_copies_where_refused() {
+    let tmp = TempDir::new("linkcopy");
+    let dest = tmp.0.join("out");
+    let pkg = dest.join("pkg");
+    fs::create_dir_all(pkg.join("lib")).unwrap();
+    fs::create_dir_all(pkg.join("bin")).unwrap();
+    fs::write(pkg.join("lib").join("tool.sh"), "run").unwrap();
+    let doc = pkg.join("share").join("doc");
+    fs::create_dir_all(&doc).unwrap();
+    fs::write(doc.join("a.txt"), "doc").unwrap();
+    fs::write(tmp.0.join("outside.txt"), "secret").unwrap();
+    let links = vec![
+        (pkg.join("chain"), "bin/tool".to_owned()),
+        (pkg.join("bin").join("tool"), "../lib/tool.sh".to_owned()),
+        (pkg.join("doc"), "share/doc".to_owned()),
+        (doc.join("up"), "..".to_owned()),
+        (pkg.join("out"), "../../outside.txt".to_owned()),
+    ];
+    let skipped = finish_links(&dest, links, no_links).unwrap();
+    assert_eq!(
+        fs::read_to_string(pkg.join("bin").join("tool")).unwrap(),
+        "run"
+    );
+    assert_eq!(fs::read_to_string(pkg.join("chain")).unwrap(), "run");
+    assert_eq!(
+        fs::read_to_string(pkg.join("doc").join("a.txt")).unwrap(),
+        "doc"
+    );
+    for copy in [pkg.join("chain"), pkg.join("doc")] {
+        assert!(!fs::symlink_metadata(&copy)
+            .unwrap()
+            .file_type()
+            .is_symlink());
+    }
+    assert!(!pkg.join("out").exists() && !doc.join("up").exists());
+    assert_eq!(skipped.len(), 2, "{skipped:?}");
+}
+
+/// A refusal for another reason (permissions) is an error, not a copy.
+#[test]
+fn other_link_errors_stop() {
+    let tmp = TempDir::new("linkerr");
+    let dest = tmp.0.join("out");
+    fs::create_dir_all(&dest).unwrap();
+    fs::write(dest.join("a"), "x").unwrap();
+    let denied = |_: &str, _: &Path| -> io::Result<()> {
+        Err(io::Error::new(io::ErrorKind::PermissionDenied, "denied"))
+    };
+    let links = vec![(dest.join("b"), "a".to_owned())];
+    assert!(finish_links(&dest, links, denied).is_err());
+    assert!(!dest.join("b").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn links_unsupported_codes() {
+    for code in [libc::EPERM, libc::ENOTSUP, libc::EOPNOTSUPP] {
+        assert!(
+            links_unsupported(&io::Error::from_raw_os_error(code)),
+            "{code}"
+        );
+    }
+    assert!(!links_unsupported(&io::Error::from_raw_os_error(
+        libc::EACCES
+    )));
+    assert!(!links_unsupported(&io::Error::from_raw_os_error(
+        libc::ENOENT
+    )));
+}
+
+#[test]
+fn links_unsupported_kind() {
+    assert!(links_unsupported(&io::Error::new(
+        io::ErrorKind::Unsupported,
+        "x"
+    )));
+    assert!(!links_unsupported(&io::Error::new(
+        io::ErrorKind::PermissionDenied,
+        "x"
+    )));
+}
+
+/// A tree installed from a temporary folder on another disk keeps its
+/// links (`bin/npm`, `bin/python3`), with the same relative target; one
+/// that leaves the tree is not copied.
+#[cfg(unix)]
+#[test]
+fn copy_tree_keeps_links_inside() {
+    use std::os::unix::fs::symlink;
+    let tmp = TempDir::new("copylinks");
+    let from = tmp.0.join("from");
+    fs::create_dir_all(from.join("lib")).unwrap();
+    fs::create_dir_all(from.join("bin")).unwrap();
+    fs::write(from.join("lib").join("npm-cli.js"), "js").unwrap();
+    fs::write(tmp.0.join("sibling.txt"), "no").unwrap();
+    symlink("../lib/npm-cli.js", from.join("bin").join("npm")).unwrap();
+    symlink("lib", from.join("cur")).unwrap();
+    symlink("../sibling.txt", from.join("esc")).unwrap();
+    symlink(tmp.0.join("sibling.txt"), from.join("abs")).unwrap();
+    let to = tmp.0.join("to");
+    copy_tree(&from, &to).unwrap();
+    let npm = to.join("bin").join("npm");
+    assert!(fs::symlink_metadata(&npm).unwrap().file_type().is_symlink());
+    assert_eq!(fs::read_link(&npm).unwrap(), Path::new("../lib/npm-cli.js"));
+    assert_eq!(fs::read_to_string(&npm).unwrap(), "js");
+    assert_eq!(fs::read_link(to.join("cur")).unwrap(), Path::new("lib"));
+    assert_eq!(
+        fs::read_to_string(to.join("cur").join("npm-cli.js")).unwrap(),
+        "js"
+    );
+    assert!(
+        fs::symlink_metadata(to.join("esc")).is_err(),
+        "outside the tree"
+    );
+    assert!(fs::symlink_metadata(to.join("abs")).is_err(), "absolute");
+}
+
+/// On Windows links are skipped by the copy, as before.
+#[cfg(windows)]
+#[test]
+fn copy_tree_copies_files_and_folders() {
+    let tmp = TempDir::new("copytree");
+    let from = tmp.0.join("from");
+    fs::create_dir_all(from.join("bin").join("lib")).unwrap();
+    fs::write(from.join("bin").join("tool.exe"), "1").unwrap();
+    fs::write(from.join("bin").join("lib").join("a.dll"), "2").unwrap();
+    let to = tmp.0.join("to");
+    copy_tree(&from, &to).unwrap();
+    assert_eq!(
+        fs::read_to_string(to.join("bin").join("tool.exe")).unwrap(),
+        "1"
+    );
+    assert_eq!(
+        fs::read_to_string(to.join("bin").join("lib").join("a.dll")).unwrap(),
+        "2"
+    );
+}
