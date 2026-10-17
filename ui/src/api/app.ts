@@ -21,8 +21,14 @@ export interface AppInfo {
   /** Other copies of the kit with programs open on this PC. */
   otherKits: string[];
   /** File system of the kit's disk; `null` when it could not be read. */
-  diskFs: "NTFS" | "ReFS" | "FAT32" | "exFAT" | "other" | null;
+  diskFs: "NTFS" | "ReFS" | "FAT32" | "exFAT" | "POSIX" | "other" | null;
   diskKind: "fixed" | "removable" | "remote" | "other" | null;
+  /** The disk the kit's programs run from is mounted `noexec` (macOS and
+   * Linux, WP-1.7); `null` on Windows. */
+  diskNoexec: boolean | null;
+  /** The app's notice about the kit's disk, translated; `null` on Windows
+   * or when all is well. */
+  diskNote: string | null;
   /** The host's temporary folder when the programs use it; `null`: `data\tmp`. */
   systemTemp: string | null;
 }
@@ -42,6 +48,8 @@ const SAMPLE_INFO: AppInfo = {
   otherKits: [],
   diskFs: "NTFS",
   diskKind: "fixed",
+  diskNoexec: null,
+  diskNote: null,
   systemTemp: null,
 };
 

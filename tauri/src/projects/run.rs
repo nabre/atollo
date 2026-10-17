@@ -494,7 +494,9 @@ impl Runner {
         let mut php: Option<Child> = None;
         let (mut cmd, shown) = if let Some(folder) = &action.static_dir {
             let root = detect::inside_dir(&cwd, folder)?;
-            let exe = std::env::current_exe()?;
+            // The AppImage, not its inner program: `kit_command` clears
+            // APPIMAGE, and the image's mount is not this program's to keep.
+            let exe = crate::kit::app_exe().ok_or_else(|| anyhow!("current exe"))?;
             let mut cmd = jobs::kit_command(&exe, env);
             cmd.arg("serve")
                 .arg(&root)

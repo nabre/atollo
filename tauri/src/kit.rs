@@ -681,7 +681,6 @@ pub fn translocated_bundle(exe: &Path) -> Option<String> {
 /// macOS a translocated bundle, whose folder is a temporary read-only copy
 /// where a kit would be created and lost. The text says how to fix it
 /// (Q-2: no Developer ID signature, so the quarantine flag is cleared).
-#[allow(dead_code)] // called by main.rs at start (WP-1.1)
 pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
     if !os.is_macos() {
         return None;
@@ -698,7 +697,6 @@ pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
 /// The message for a kit whose folders cannot be created (T1.1.3). On
 /// macOS and Linux a read-only disk (a locked card, a read-only mount, an
 /// image) is named as such; Windows keeps its message.
-#[allow(dead_code)] // called by main.rs at start (WP-1.1)
 pub fn prepare_error_message(os: Os, error: &KitError, lang: &str) -> String {
     let path = match error {
         KitError::NotWritable { path, .. } | KitError::NoRoot(path) => path.display().to_string(),
