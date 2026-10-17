@@ -11,13 +11,30 @@
 # between runs, so the next build is incremental.
 #
 # Options:
-#   --clippy   also cargo clippy --all-targets -- -D warnings, before the tests
+#   --clippy       also cargo clippy --all-targets -- -D warnings, before the tests
+#   --check-dest   only say whether $ATOLLO_LINUX_DIR may be copied into
+#                  (0 yes, 2 no); runs anywhere, also in Git Bash
 #   --         what follows goes to cargo test (a filter, -- --nocapture, ...)
 #
 # Exit codes: 0 tests green, 1 tests failed or did not build, 2 something
 # to install first (the command to run is printed).
 
 set -euo pipefail
+
+# rsync --delete empties whatever $ATOLLO_LINUX_DIR names: only an empty
+# folder or a copy made by this script (marker file) is synced into. A
+# clone of this repository without the marker (its own .git, work not
+# committed) is someone's checkout, not a copy: it is refused too.
+marker=".atollo-linux-copy"
+check_dest() {
+    local dir="$1"
+    if [ -d "$dir" ] && [ -n "$(ls -A "$dir")" ] && [ ! -f "$dir/$marker" ]; then
+        echo "$dir is not empty and was not made by this script (no $marker):" >&2
+        echo "the copy would overwrite or delete its files. Choose another folder" >&2
+        echo "with ATOLLO_LINUX_DIR, or empty this one." >&2
+        return 1
+    fi
+}
 
 src="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 dest="${ATOLLO_LINUX_DIR:-$HOME/atollo}"
@@ -26,8 +43,9 @@ cargo_args=()
 while [ $# -gt 0 ]; do
     case "$1" in
         --clippy) clippy=1 ;;
+        --check-dest) check_dest "$dest" || exit 2; echo "$dest: ok to copy into"; exit 0 ;;
         --) shift; cargo_args=("$@"); break ;;
-        -h | --help) sed -n '2,19p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h | --help) sed -n '2,/^$/p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $1 (see --help)" >&2; exit 2 ;;
     esac
     shift
@@ -56,7 +74,10 @@ packages=(
 )
 missing=()
 for p in "${packages[@]}"; do
-    dpkg -s "$p" >/dev/null 2>&1 || missing+=("$p")
+    # The Status line, not dpkg -s's exit code: a package removed with its
+    # configuration kept ("deinstall ok config-files") is not installed.
+    dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q 'install ok installed' ||
+        missing+=("$p")
 done
 
 # The frontend in dist/ (tauri::generate_context! embeds it): the one built
@@ -111,22 +132,12 @@ fi
 
 # --- Copy into the Linux file system ----------------------------------------
 
-# rsync --delete empties whatever $ATOLLO_LINUX_DIR names: only an empty
-# folder, a copy made by this script (marker file) or one of this
-# repository (Cargo.toml and tauri/) is synced into.
-marker=".atollo-linux-copy"
 mkdir -p "$dest"
 dest="$(cd "$dest" && pwd)"
 if [ "$src" = "$dest" ]; then
     echo "Already in $dest: nothing to copy"
 else
-    if [ -n "$(ls -A "$dest")" ] && [ ! -f "$dest/$marker" ] &&
-        ! { [ -f "$dest/Cargo.toml" ] && [ -d "$dest/tauri" ]; }; then
-        echo "$dest is not empty and is not a copy of this repository:" >&2
-        echo "the copy would delete its files. Choose another folder with" >&2
-        echo "ATOLLO_LINUX_DIR, or empty this one." >&2
-        exit 2
-    fi
+    check_dest "$dest" || exit 2
     echo "Copying $src -> $dest"
     # Anchored with /: tauri/src/projects and the data folders inside the
     # sources are copied. node_modules holds programs for Windows; the kit
