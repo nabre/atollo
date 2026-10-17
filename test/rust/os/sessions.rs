@@ -79,3 +79,68 @@ fn other_kit_roots_on_every_system() {
         None
     );
 }
+
+#[test]
+fn tree_of_the_stopped_processes() {
+    let p = |pid, parent| crate::os::processes::Proc {
+        pid,
+        parent,
+        name: String::new(),
+        path: PathBuf::new(),
+    };
+    // 10 -> 11 -> 12, 10 -> 13; 1 (the app) -> 10; 20 alone.
+    let all = [p(10, 1), p(11, 10), p(12, 11), p(13, 10), p(20, 1), p(1, 0)];
+    let mut tree = tree_of(&[10, 10], &all, 1);
+    assert_eq!(tree.first(), Some(&10), "a parent before its children");
+    tree.sort_unstable();
+    assert_eq!(tree, [10, 11, 12, 13]);
+    // The app itself is never in it.
+    assert_eq!(tree_of(&[1], &all, 1), Vec::<u32>::new());
+}
+
+/// T1.5.3: `SIGTERM` to all, `SIGKILL` only to those still running after
+/// the wait; nothing waits when all have ended.
+#[test]
+fn gentle_stop_waits_then_kills() {
+    use std::cell::RefCell;
+    let sent = RefCell::new(Vec::new());
+    let stubborn = 7;
+    stop_gently(
+        &[5, stubborn],
+        Duration::from_millis(200),
+        Duration::from_millis(10),
+        |pid, s| sent.borrow_mut().push((pid, s)),
+        |pid| pid == stubborn,
+    );
+    assert_eq!(
+        sent.into_inner(),
+        [
+            (5, Signal::Term),
+            (stubborn, Signal::Term),
+            (stubborn, Signal::Kill)
+        ]
+    );
+    let sent = RefCell::new(Vec::new());
+    let start = std::time::Instant::now();
+    stop_gently(
+        &[5],
+        Duration::from_secs(5),
+        Duration::from_millis(10),
+        |pid, s| sent.borrow_mut().push((pid, s)),
+        |_| false,
+    );
+    assert!(start.elapsed() < Duration::from_secs(1));
+    assert_eq!(sent.into_inner(), [(5, Signal::Term)]);
+}
+
+/// A real program: `SIGTERM` ends it, no `SIGKILL` needed.
+#[cfg(unix)]
+#[test]
+fn gentle_stop_of_a_real_program() {
+    use std::os::unix::process::ExitStatusExt;
+    let mut child = Command::new("/bin/sleep").arg("30").spawn().unwrap();
+    let start = std::time::Instant::now();
+    stop(&[child.id()]);
+    assert!(start.elapsed() < Duration::from_secs(4));
+    assert_eq!(child.wait().unwrap().signal(), Some(libc::SIGTERM));
+}

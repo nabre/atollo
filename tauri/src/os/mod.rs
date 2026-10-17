@@ -6,10 +6,12 @@
 //! (`safe_path`, D-77) and the build of Windows (here).
 //!
 //! macOS and Linux build the same modules with `#[cfg(unix)]` equivalents
-//! (a process group for the job, `flock` for the locks, a Unix socket for
-//! the instance, `/proc` or `libproc` for the processes): the crate
-//! compiles there; Windows stays the platform the kit is made for.
+//! (a process group for the job and a guard for a killed app, `flock` for
+//! the locks, a socket for the instance, `/proc` or `libproc` for the
+//! processes): the crate compiles there; Windows stays the platform the
+//! kit is made for.
 
+pub mod guard;
 pub mod instance;
 pub mod jobs;
 pub mod processes;
