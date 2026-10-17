@@ -479,6 +479,10 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
                   });
                   setNewName("");
                   setNewPort("");
+                  // The next profile starts from the defaults, not from
+                  // this one's options.
+                  setNewKeepAlive(true);
+                  setNewAutostart(false);
                   setCreateOpen(false);
                 });
               }}
