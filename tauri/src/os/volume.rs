@@ -456,18 +456,32 @@ pub struct DiskNotice {
     pub text: String,
 }
 
-/// The notice for a kit on `fs`, mounted as `mount` says, on `os`. Windows
-/// has none (nothing changes there). `noexec`, or FAT32 with `showexec` on
-/// Linux: no program of the kit could start, so the app stops with the
-/// command that fixes it. FAT32 and exFAT otherwise: a warning, since
-/// links, sockets and permissions are missing (installations do without
-/// them, WP-0.2).
-pub fn notice_for(os: Os, fs: FsKind, mount: Option<&Mount>, lang: &str) -> Option<DiskNotice> {
+/// The notice for a kit in `folder` on `fs`, on `os`. `noexec` is the
+/// disk's flag as `statvfs`/`statfs` read it, `mount` its mount when it was
+/// found (on btrfs subvolumes `/proc/self/mountinfo` has no line with the
+/// folder's device, so it may be missing). Windows has none (nothing
+/// changes there). `noexec` (the flag or the mount option), or FAT32 with
+/// `showexec` on Linux: no program of the kit could start, so the app
+/// stops with the command that fixes it, on the mount point or, unknown,
+/// on the folder. FAT32 and exFAT otherwise: a warning, since links,
+/// sockets and permissions are missing (installations do without them,
+/// WP-0.2).
+pub fn notice_for(
+    os: Os,
+    fs: FsKind,
+    noexec: bool,
+    mount: Option<&Mount>,
+    folder: &Path,
+    lang: &str,
+) -> Option<DiskNotice> {
     use crate::i18n::t;
     if os.is_windows() {
         return None;
     }
-    let point = mount.map_or_else(String::new, |m| m.point.display().to_string());
+    let point = mount
+        .map_or(folder, |m| m.point.as_path())
+        .display()
+        .to_string();
     let quoted = super::sh_quote(&point);
     let blocking = |text: String| {
         Some(DiskNotice {
@@ -475,7 +489,7 @@ pub fn notice_for(os: Os, fs: FsKind, mount: Option<&Mount>, lang: &str) -> Opti
             text,
         })
     };
-    if mount.is_some_and(Mount::noexec) {
+    if noexec || mount.is_some_and(Mount::noexec) {
         let remount = if os.is_macos() {
             format!("sudo mount -u -o exec {quoted}")
         } else {
@@ -505,8 +519,27 @@ pub fn notice_for(os: Os, fs: FsKind, mount: Option<&Mount>, lang: &str) -> Opti
     })
 }
 
+/// Where the kit's programs run: `data` may be on another disk than the
+/// app (a link), and a `noexec` root would not have started the app at all.
+fn exec_folder(kit: &Kit) -> PathBuf {
+    let data = kit.data();
+    if data.is_dir() {
+        data
+    } else {
+        kit.root().to_path_buf()
+    }
+}
+
+/// The disk the kit's programs run from is mounted `noexec` (always
+/// `false` on Windows): for the Settings row (T1.7.4).
+#[allow(dead_code)] // read by commands/app.rs (T1.7.4)
+pub fn kit_noexec(kit: &Kit) -> bool {
+    !Os::current().is_windows() && info(&exec_folder(kit)).is_ok_and(|v| v.noexec)
+}
+
 /// The notice for the disk of `kit`, read now (`None` on Windows): the
-/// file system of the root, the mount of `data`.
+/// file system of the root; the `noexec` flag and the mount of the folder
+/// the programs run from.
 #[allow(dead_code)] // read by main.rs and Settings (WP-1.7)
 pub fn disk_notice(kit: &Kit, lang: &str) -> Option<DiskNotice> {
     let os = Os::current();
@@ -514,11 +547,24 @@ pub fn disk_notice(kit: &Kit, lang: &str) -> Option<DiskNotice> {
         return None;
     }
     let fs = kit.volume().map_or(FsKind::Other, |v| v.fs);
-    // Where the programs run: `data` may be on another disk than the app
-    // (a link), and a `noexec` root would not have started the app at all.
-    let data = kit.data();
-    let mount = mount_of(if data.is_dir() { &data } else { kit.root() });
-    notice_for(os, fs, mount.as_ref(), lang)
+    let folder = exec_folder(kit);
+    // The flag decides `noexec`; the mount adds `showexec` and the mount
+    // point for the command. Both failing is said, not hidden.
+    let noexec = match info(&folder) {
+        Ok(v) => v.noexec,
+        Err(e) => {
+            crate::log::warn(&format!("{}: statvfs: {e}", folder.display()));
+            false
+        }
+    };
+    let mount = mount_of(&folder);
+    if mount.is_none() {
+        crate::log::warn(&format!(
+            "{}: mount not found, showexec not checked",
+            folder.display()
+        ));
+    }
+    notice_for(os, fs, noexec, mount.as_ref(), &folder, lang)
 }
 
 /// The message that stops the app at start (T1.7.1): the kit's disk runs
