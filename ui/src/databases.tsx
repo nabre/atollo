@@ -130,6 +130,7 @@ function OtherLine({
   onStart,
   onStop,
   onPort,
+  onAdminer,
 }: {
   id: string;
   o: LineInfo;
@@ -137,6 +138,8 @@ function OtherLine({
   onStart: () => void;
   onStop: () => void;
   onPort: (port: number) => void;
+  /** MariaDB only: Adminer on this version. */
+  onAdminer?: (() => void) | undefined;
 }) {
   const [port, setPort] = useState(String(o.port));
   const on = o.state === "running" || o.state === "starting";
@@ -156,6 +159,16 @@ function OtherLine({
           <ActionButton icon={VscDebugStop} label={t("Ferma {0}", o.line)} small busy={busy} onClick={onStop} />
         ) : (
           <ActionButton icon={VscDebugStart} label={t("Avvia {0}", o.line)} small busy={busy} onClick={onStart} />
+        )}
+        {onAdminer && (
+          <ActionButton
+            icon={VscLinkExternal}
+            label={t("Adminer su {0}", o.line)}
+            title={t("Questa versione nel browser; il server si avvia se è fermo")}
+            small
+            busy={busy}
+            onClick={onAdminer}
+          />
         )}
       </div>
       {o.state === "error" && o.message && (
@@ -200,6 +213,7 @@ function ServiceDetails({
   onLineStart,
   onLineStop,
   onLinePort,
+  onLineAdminer,
 }: {
   s: ServiceInfo;
   busy: boolean;
@@ -207,6 +221,8 @@ function ServiceDetails({
   onStop: () => void;
   /** MariaDB only: Adminer in the browser. */
   onAdminer?: (() => void) | undefined;
+  /** MariaDB only: Adminer on another version. */
+  onLineAdminer?: ((line: string) => void) | undefined;
   onSet: (port: number | null, autostart: boolean) => void;
   onLine: (line: string | null) => void;
   /** The other versions (PLAN.md §13.2). */
@@ -224,11 +240,18 @@ function ServiceDetails({
   const explorer = s.id !== "mariadb";
   const [chosen, setSection] = useState<"content" | "details">(s.state === "running" ? "content" : "details");
   const section = explorer ? chosen : "details";
+  // The version the explorer reads (null: the one the server runs); each
+  // has its own port and data (PLAN.md §13.2).
+  const [browseLine, setBrowseLine] = useState<string | null>(null);
+  const browsed = s.others.find((o) => o.line === browseLine);
+  const browsedState = browsed ? browsed.state : s.state;
+  const browsedOn = browsedState === "running" || browsedState === "starting";
   // The explorer stays while the server is on: a check that misses once
   // ("starting" for a moment) must not close it and lose the table chosen.
   const [browsable, setBrowsable] = useState(s.state === "running");
-  if (s.state === "running" && !browsable) setBrowsable(true);
-  if (!on && browsable) setBrowsable(false);
+  if (browsedState === "running" && !browsable) setBrowsable(true);
+  if (!browsedOn && browsable) setBrowsable(false);
+  const browseId = `browse-line-${s.id}`;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <EditorHeader
@@ -280,13 +303,44 @@ function ServiceDetails({
           onSelect={setSection}
         />
       )}
+      {section === "content" && s.others.length > 0 && (
+        <div className="flex shrink-0 items-center gap-2 px-5 py-2">
+          <label htmlFor={browseId}>{t("Versione")}</label>
+          <Select
+            id={browseId}
+            value={browseLine ?? ""}
+            onChange={(line) => {
+              const next = line === "" ? null : line;
+              const state = s.others.find((o) => o.line === next)?.state ?? s.state;
+              setBrowseLine(next);
+              setBrowsable(state === "running");
+            }}
+            options={[
+              { value: "", label: t("Quella del server ({0})", s.line ?? "") },
+              ...s.others.map((o) => ({ value: o.line, label: `${o.line} :${String(o.port)}` })),
+            ]}
+            className="w-56"
+          />
+        </div>
+      )}
       {section === "content" &&
         (browsable ? (
-          <DbBrowser engine={s.id} />
+          <DbBrowser key={browseLine ?? ""} engine={s.id} line={browseLine} />
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-vsc-desc">
             <p>{t("Avvia il server per vederne il contenuto.")}</p>
-            {!on && <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />}
+            {!browsedOn && (
+              <ActionButton
+                icon={VscDebugStart}
+                label={browseLine === null ? t("Avvia") : t("Avvia {0}", browseLine)}
+                primary
+                busy={browseLine === null ? busy : lineBusy(browseLine)}
+                onClick={() => {
+                  if (browseLine === null) onStart();
+                  else onLineStart(browseLine);
+                }}
+              />
+            )}
           </div>
         ))}
       {section === "details" && (
@@ -371,6 +425,11 @@ function ServiceDetails({
               >
                 {t("Avvia con NEXKORA")}
               </CheckboxLabel>
+              {s.others.length > 0 && (
+                <p className="text-vsc-desc">
+                  {t("Con il server partono anche le altre versioni su cui sono i database dei progetti.")}
+                </p>
+              )}
             </div>
           </EditorSection>
           {s.others.length > 0 && (
@@ -398,6 +457,13 @@ function ServiceDetails({
                     onPort={(port) => {
                       onLinePort(o.line, port);
                     }}
+                    onAdminer={
+                      onLineAdminer
+                        ? () => {
+                            onLineAdminer(o.line);
+                          }
+                        : undefined
+                    }
                   />
                 ))}
               </div>
@@ -563,7 +629,14 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
           onAdminer={
             service.id === "mariadb"
               ? () => {
-                  act(service.id, dbAdminOpen);
+                  act(service.id, () => dbAdminOpen());
+                }
+              : undefined
+          }
+          onLineAdminer={
+            service.id === "mariadb"
+              ? (line) => {
+                  act(`${service.id}@${line}`, () => dbAdminOpen(line));
                 }
               : undefined
           }

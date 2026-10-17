@@ -6,7 +6,7 @@ use std::time::Duration;
 use anyhow::{anyhow, bail, Context, Result};
 
 use super::tools::run_with_input;
-use super::{auth, bin, bin_at, line_port, project_line, server_lines, Services, SERVERS};
+use super::{auth, bin, bin_at, check_line, line_port, project_line, Services, SERVERS};
 use crate::env::KitEnv;
 use crate::os::jobs;
 
@@ -86,8 +86,15 @@ impl Services {
         // version is the first one ever started.
         if id == "mariadb" && main {
             auth::write_client_ini(&self.kit, port, &password)?;
-        } else if id == "mariadb" && !auth::client_ini(&self.kit).is_file() {
-            auth::write_client_ini(&self.kit, line_port(&self.kit, id, None), &password)?;
+        } else if id == "mariadb" {
+            if !auth::client_ini(&self.kit).is_file() {
+                auth::write_client_ini(&self.kit, line_port(&self.kit, id, None), &password)?;
+            }
+            // The login of this version on its port: `MYSQL_HOME` of the
+            // projects on it (`project_mysql_home`).
+            if let Some(l) = line {
+                auth::write_line_client_ini(&self.kit, l, port, &password)?;
+            }
         }
         Ok(())
     }
@@ -131,13 +138,19 @@ impl Services {
             bail!("unknown server {engine}");
         }
         if let Some(l) = line {
-            if !server_lines(&self.kit, engine).iter().any(|x| x == l) {
-                bail!("{engine} {l} is not installed");
-            }
+            check_line(&self.kit, engine, l)?;
         }
         let previous = auth::project_line(&self.kit, project, engine)?;
+        let has_db = auth::try_project_password(&self.kit, project, engine)?.is_some();
+        if has_db {
+            // A database created before the versions were kept: the one it
+            // is on now, for the deletion of the project.
+            if let Some(on) = project_line(&self.kit, project, engine) {
+                auth::add_project_used_line(&self.kit, project, engine, &on)?;
+            }
+        }
         auth::set_project_line(&self.kit, project, engine, line)?;
-        if auth::try_project_password(&self.kit, project, engine)?.is_none() {
+        if !has_db {
             return Ok(None);
         }
         let moved = self
@@ -188,6 +201,12 @@ impl Services {
                     &auth::project_sql(&name, &password),
                     Duration::from_secs(60),
                 )?;
+            }
+        }
+        // The deletion of the project drops it from every version it is on.
+        if let Some(l) = &line {
+            if let Err(e) = auth::add_project_used_line(&self.kit, project, engine, l) {
+                crate::log::warn(&format!("{project}: {engine} {l}: version not kept: {e:#}"));
             }
         }
         Ok(auth::project_db(engine, &name, &password, port))

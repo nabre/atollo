@@ -51,6 +51,37 @@ fn settings_round_trip_and_defaults() {
     assert_eq!(s.running(), 0);
 }
 
+/// Deleting a project drops its database from every version it was created
+/// on (`used`), then the one it is on now, each once; a `db.json` of before
+/// has only the one it is on.
+#[test]
+fn drop_lines_cover_every_version_used() {
+    let tmp = TempDir::new("services-drop-lines");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let file = kit.project_data().join(r"shop\private\db.json");
+    fs::create_dir_all(file.parent().unwrap()).unwrap();
+    assert!(project_drop_lines(&kit, "shop", "mariadb").is_empty());
+    fs::write(
+        &file,
+        r#"{ "mariadb": "pw", "lines": { "mariadb": "10.6" } }"#,
+    )
+    .unwrap();
+    assert_eq!(project_drop_lines(&kit, "shop", "mariadb"), ["10.6"]);
+    auth::add_project_used_line(&kit, "shop", "mariadb", "12.3").unwrap();
+    auth::add_project_used_line(&kit, "shop", "mariadb", "10.6").unwrap();
+    assert_eq!(
+        project_drop_lines(&kit, "shop", "mariadb"),
+        ["12.3", "10.6"]
+    );
+    auth::set_project_line(&kit, "shop", "mariadb", Some("11.4")).unwrap();
+    assert_eq!(
+        project_drop_lines(&kit, "shop", "mariadb"),
+        ["12.3", "10.6", "11.4"]
+    );
+    assert!(project_drop_lines(&kit, "shop", "mongodb").is_empty());
+}
+
 /// A real MariaDB and MongoDB of the kit given by DEVKIT_TEST_KIT, on
 /// free ports: start, answer, stop with nothing left.
 #[test]
@@ -106,7 +137,7 @@ fn real_databases_start_and_stop() {
                     String::from_utf8_lossy(&out.stdout).trim().to_owned()
                 }
                 _ => {
-                    let mut cmd = s.mariadb_tool("mariadb.exe", &env);
+                    let mut cmd = s.mariadb_tool_at("mariadb.exe", &env, None, port);
                     cmd.args(["-N", "-e", script]);
                     let out = cmd.output().unwrap();
                     String::from_utf8_lossy(&out.stdout).trim().to_owned()
@@ -132,7 +163,7 @@ fn real_databases_start_and_stop() {
             "{id}: data written, count {n:?}"
         );
         // The explorer sees the database, the table and its rows (D-79).
-        let dbs = crate::db::browse::tree(&s, id).unwrap();
+        let dbs = crate::db::browse::tree(&s, id, None).unwrap();
         let db = dbs
             .iter()
             .find(|d| d.name == "prova_kit")
@@ -145,17 +176,17 @@ fn real_databases_start_and_stop() {
             dbs.iter().any(|d| d.system),
             "{id}: system databases listed"
         );
-        let page = crate::db::browse::rows(&s, id, "prova_kit", "t", 0).unwrap();
+        let page = crate::db::browse::rows(&s, id, None, "prova_kit", "t", 0).unwrap();
         assert!(page.total > 0 && !page.rows.is_empty(), "{id}: rows read");
         assert!(page.columns.iter().any(|c| c.name == "x"), "{id}: column x");
         if id == "mariadb" {
-            assert!(crate::db::browse::rows(&s, id, "prova_kit", "no`; DROP", 0).is_err());
+            assert!(crate::db::browse::rows(&s, id, None, "prova_kit", "no`; DROP", 0).is_err());
         }
         // Adminer logged in with the token only, ended with MariaDB (D-85).
         let adminer = (id == "mariadb" && installed(&kit, "adminer")).then(|| {
-            let url = s.adminer_url().unwrap();
+            let url = s.adminer_url(None).unwrap();
             crate::db::adminer::tests::assert_logs_in(&url);
-            assert_eq!(s.adminer_url().unwrap(), url, "the same Adminer");
+            assert_eq!(s.adminer_url(None).unwrap(), url, "the same Adminer");
             url
         });
         let file = s.export("Prova Kit", id).unwrap();
@@ -178,7 +209,7 @@ fn real_databases_start_and_stop() {
         assert!(!responds(port), "{id}: stopped again after the drop");
         s.start(id, &env).unwrap();
         assert!(
-            !crate::db::browse::tree(&s, id)
+            !crate::db::browse::tree(&s, id, None)
                 .unwrap()
                 .iter()
                 .any(|d| d.name == "prova_kit"),

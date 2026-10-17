@@ -120,4 +120,55 @@ describe("DatabasesPage", () => {
     await flush();
     expect(invoke).toHaveBeenCalledWith("service_line_port", { id: "mariadb", line: "11.4", port: 3317 });
   });
+
+  it("opens Adminer on another version", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "services_list" || cmd === "db_admin_open") return Promise.resolve(STOPPED);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<DatabasesPage />);
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "Adminer su 11.4" }));
+    await flush();
+    expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: "11.4" });
+    fireEvent.click(screen.getByRole("button", { name: "Apri Adminer" }));
+    await flush();
+    expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: null });
+  });
+
+  it("browses the version chosen, each on its own port", async () => {
+    const mongo: ServiceInfo = {
+      ...(STOPPED[1] as ServiceInfo),
+      installed: true,
+      state: "running",
+      line: "8.0",
+      lines: ["8.0", "7.0"],
+      others: [
+        {
+          line: "7.0",
+          state: "running",
+          port: 27018,
+          dataDir: "E:\\Dev-Kit\\data\\db\\mongodb\\7.0",
+          log: "E:\\Dev-Kit\\data\\app\\logs\\mongodb-7.0.log",
+          url: "mongodb://admin@127.0.0.1:27018/?authSource=admin",
+          message: null,
+        },
+      ],
+    };
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "services_list") return Promise.resolve([STOPPED[0], mongo]);
+      if (cmd === "db_browse_tree") return Promise.resolve([]);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<DatabasesPage />);
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: /^MongoDB/ }));
+    await flush();
+    expect(invoke).toHaveBeenCalledWith("db_browse_tree", { engine: "mongodb", line: null });
+    const version = document.getElementById("browse-line-mongodb") as HTMLElementTagNameMap["vscode-single-select"];
+    expect(version.querySelectorAll("vscode-option")).toHaveLength(2);
+    fireEvent.change(version, { target: { value: "7.0" } });
+    await flush();
+    expect(invoke).toHaveBeenCalledWith("db_browse_tree", { engine: "mongodb", line: "7.0" });
+  });
 });

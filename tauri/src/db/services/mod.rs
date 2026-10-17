@@ -256,6 +256,20 @@ pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
     ))
 }
 
+/// The `MYSQL_HOME` of the project's programs when its MariaDB database is
+/// on another version than the server's: the folder of that version's
+/// `[client]` login, written at its start (`mariadb` then logs in on its
+/// port). None: the kit's own (`env.rs`), on the server's port.
+pub fn project_mysql_home(kit: &Kit, project: &str) -> Option<PathBuf> {
+    auth::project_passwords(kit, project).get("mariadb")?;
+    let line = auth::project_line(kit, project, "mariadb").ok().flatten()?;
+    if Some(&line) == server_line(kit, "mariadb").as_ref() {
+        return None;
+    }
+    let dir = auth::line_client_dir(kit, &line);
+    dir.join("my.ini").is_file().then_some(dir)
+}
+
 /// The output of `line`: `<id>.log` for the version the server runs,
 /// `<id>-<line>.log` for the others.
 fn log_path(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
@@ -491,13 +505,13 @@ impl Services {
         if !SERVERS.contains(&id) {
             bail!("unknown server {id}");
         }
+        // The version named first: one uninstalled is told as such
+        // (`LineMissing`), the interface offers to install it.
+        if let Some(l) = line {
+            check_line(&self.kit, id, l)?;
+        }
         if !installed(&self.kit, id) {
             bail!("{id} is not installed");
-        }
-        if let Some(l) = line {
-            if !server_lines(&self.kit, id).iter().any(|x| x == l) {
-                bail!("{id} {l} is not installed");
-            }
         }
         let line = self.resolve(id, line);
         let key = Self::key(id, line.as_deref());
@@ -653,9 +667,9 @@ impl Services {
     }
 
     /// The address that opens Adminer logged in to the running MariaDB
-    /// (D-85).
-    pub fn adminer_url(&self) -> Result<String> {
-        let (port, env) = self.running_server("mariadb")?;
+    /// (D-85), version `line` (None: the one the server runs).
+    pub fn adminer_url(&self, line: Option<&str>) -> Result<String> {
+        let (port, env) = self.running_at("mariadb", line)?;
         self.adminer.open(&self.kit, &env, port)
     }
 
@@ -668,9 +682,6 @@ impl Services {
     /// [`Services::stop`] for version `line` (None: the one it runs).
     pub fn stop_line(&self, id: &str, line: Option<&str>) {
         let line = self.resolve(id, line);
-        if id == "mariadb" && line == server_line(&self.kit, id) {
-            self.adminer.stop();
-        }
         self.stop_key(&Self::key(id, line.as_deref()));
     }
 
@@ -687,6 +698,10 @@ impl Services {
             key.0.as_str(),
             (!key.1.is_empty()).then_some(key.1.as_str()),
         );
+        if id == "mariadb" {
+            // Adminer logged in to this version ends with it.
+            self.adminer.stop_for(server.port);
+        }
         let ask = match id {
             "mongodb" => {
                 let mut cmd =
@@ -790,9 +805,7 @@ impl Services {
             bail!("unknown server {id}");
         }
         if let Some(l) = line {
-            if !server_lines(&self.kit, id).iter().any(|x| x == l) {
-                bail!("{id} {l} is not installed");
-            }
+            check_line(&self.kit, id, l)?;
         }
         // Any version, not only the one the server runs: another one on its
         // own port would become the server while every caller takes the
@@ -806,20 +819,63 @@ impl Services {
         crate::fsx::write_json(&settings_path(&self.kit), &all)
     }
 
-    /// The installed servers marked "start with Dev-Kit".
+    /// The installed servers marked "start with Dev-Kit": the version each
+    /// runs, then the other installed versions the projects' databases are
+    /// on ([`lines_in_use`]), each on its own port.
     pub fn autostart(&self, env: &KitEnv) {
         for (id, s) in load_settings(&self.kit) {
             if s.autostart && SERVERS.contains(&id.as_str()) && installed(&self.kit, &id) {
                 if let Err(e) = self.start(&id, env) {
                     crate::log::warn(&format!("{id}: automatic start: {e:#}"));
                 }
+                for line in lines_in_use(&self.kit, &id) {
+                    if let Err(e) = self.start_line(&id, Some(&line), env) {
+                        crate::log::warn(&format!("{id} {line}: automatic start: {e:#}"));
+                    }
+                }
             }
         }
     }
 }
 
+/// The installed versions of `id`, other than the one the server runs, that
+/// a project's database is on (`lines` of its `db.json`, with a database
+/// created): those the automatic start starts beside the server. Newest
+/// first; a version chosen and then uninstalled is left out.
+pub fn lines_in_use(kit: &Kit, id: &str) -> Vec<String> {
+    let main = server_line(kit, id);
+    let wanted: std::collections::BTreeSet<String> = crate::projects::state::all(kit)
+        .into_iter()
+        .filter(|p| auth::project_passwords(kit, p).contains_key(id))
+        .filter_map(|p| auth::project_line(kit, &p, id).ok().flatten())
+        .filter(|l| Some(l) != main.as_ref())
+        .collect();
+    server_lines(kit, id)
+        .into_iter()
+        .filter(|l| wanted.contains(l))
+        .collect()
+}
+
+/// The versions of `engine` to drop the project's database from: every one
+/// it was created on (`used` of its `db.json`) and the one it is on now,
+/// in that order, each once.
+pub fn project_drop_lines(kit: &Kit, project: &str, engine: &str) -> Vec<String> {
+    let mut lines = auth::project_used_lines(kit, project, engine).unwrap_or_else(|e| {
+        crate::log::warn(&format!("{project}: {engine}: {e:#}"));
+        Vec::new()
+    });
+    if let Some(now) = project_line(kit, project, engine) {
+        lines.push(now);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    lines.retain(|l| seen.insert(l.clone()));
+    lines
+}
+
 /// The kit's servers for the deletion of `project` (PLAN-DATA.md WP-5),
-/// started with `env` when stopped: the version its databases are on.
+/// started with `env` when stopped: every version its databases are on
+/// ([`project_drop_lines`]); a version no longer installed is skipped and
+/// named in the log.
 pub struct ProjectDrops<'a> {
     pub services: &'a Services,
     pub env: KitEnv,
@@ -832,10 +888,54 @@ impl crate::projects::ProjectDatabases for ProjectDrops<'_> {
     }
 
     fn drop_db(&self, engine: &str, database: &str) -> Result<()> {
-        let line = project_line(&self.services.kit, &self.project, engine);
-        self.services
-            .db_drop_at(engine, line.as_deref(), database, &self.env)
+        let kit = &self.services.kit;
+        let lines = project_drop_lines(kit, &self.project, engine);
+        if lines.is_empty() {
+            return self.services.db_drop_at(engine, None, database, &self.env);
+        }
+        let installed = server_lines(kit, engine);
+        for line in &lines {
+            if installed.contains(line) {
+                self.services
+                    .db_drop_at(engine, Some(line), database, &self.env)
+                    .with_context(|| format!("{engine} {line}"))?;
+            } else {
+                crate::log::warn(&format!(
+                    "{}: {engine} {line} not installed: database and user {database} left there",
+                    self.project
+                ));
+            }
+        }
+        Ok(())
     }
+}
+
+/// A version of a server that is not installed: chosen for a project's
+/// database and then uninstalled, or asked by name.
+#[derive(Debug)]
+pub struct LineMissing {
+    pub id: String,
+    pub line: String,
+}
+
+impl std::fmt::Display for LineMissing {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} is not installed", self.id, self.line)
+    }
+}
+
+impl std::error::Error for LineMissing {}
+
+/// [`LineMissing`] unless version `line` of `id` is installed.
+fn check_line(kit: &Kit, id: &str, line: &str) -> Result<()> {
+    if server_lines(kit, id).iter().any(|x| x == line) {
+        return Ok(());
+    }
+    Err(LineMissing {
+        id: id.to_owned(),
+        line: line.to_owned(),
+    }
+    .into())
 }
 
 /// The port of a server is taken by another program.

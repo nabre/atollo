@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Result};
 
-use super::{auth, bin, bin_at, Services};
+use super::{auth, bin_at, Services};
 use crate::env::KitEnv;
 use crate::os::jobs;
 
@@ -67,20 +67,10 @@ pub(super) fn run_tool(mut cmd: Command, limit: Duration) -> Result<()> {
 }
 
 impl Services {
-    /// A tool of MariaDB logged in as `root` (the kit's `[client]` login).
-    pub(crate) fn mariadb_tool(&self, exe: &str, env: &KitEnv) -> Command {
-        let mut cmd = jobs::kit_command(bin(&self.kit, "mariadb", exe), env);
-        // It must be the first option.
-        cmd.arg(format!(
-            "--defaults-extra-file={}",
-            auth::client_ini(&self.kit).display()
-        ));
-        cmd
-    }
-
-    /// [`Services::mariadb_tool`] of version `line` (None: the one the
-    /// server runs) on `port`: the `[client]` login names the port of the
-    /// version the server runs only (PLAN.md §13.2).
+    /// A tool of MariaDB logged in as `root` (the kit's `[client]` login),
+    /// of version `line` (None: the one the server runs) on `port`: the
+    /// `[client]` login names the port of the version the server runs only
+    /// (PLAN.md §13.2).
     pub(crate) fn mariadb_tool_at(
         &self,
         exe: &str,

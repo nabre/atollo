@@ -46,6 +46,17 @@ pub async fn service_start<R: Runtime>(
 }
 
 pub(super) fn start_error(lang: &str, e: &anyhow::Error) -> CmdError {
+    if let Some(m) = e.downcast_ref::<crate::db::services::LineMissing>() {
+        let name = crate::setup::catalog::Catalog::get()
+            .find(&m.id)
+            .map_or_else(|| m.id.clone(), |c| c.name.clone());
+        return crate::i18n::t(
+            lang,
+            "{0} {1} non è installata: installala, o scegli un'altra versione nella pagina del progetto.",
+            &[&name, &m.line],
+        )
+        .into();
+    }
     match e.downcast_ref::<crate::db::services::PortInUse>() {
         Some(p) => crate::i18n::t(
             lang,

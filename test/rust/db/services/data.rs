@@ -1,7 +1,7 @@
 use super::*;
 use crate::db::services::{
-    bin_at, line_port, line_ports, load_settings, log_path, project_db_port, project_line,
-    server_lines, Setting, State,
+    bin_at, line_port, line_ports, lines_in_use, load_settings, log_path, project_db_port,
+    project_line, project_mysql_home, server_lines, Setting, State,
 };
 use crate::kit::{tests::TempDir, Arch};
 
@@ -205,6 +205,73 @@ fn versions_side_by_side() {
     let old = &load_settings(&kit)["mariadb"];
     assert!(old.autostart && old.ports.is_empty());
     assert_eq!(line_port(&kit, "mariadb", Some("10.6")), 3309);
+}
+
+/// The automatic start starts, beside the server, the other installed
+/// versions the projects' databases are on: not the server's own, not one
+/// chosen without a database, not one uninstalled.
+#[test]
+fn autostart_lines_follow_the_projects() {
+    use crate::db::auth;
+    let tmp = TempDir::new("services-autostart");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "mariadb", "11.4.5");
+    let c = Catalog::get().find("mariadb").unwrap();
+    let older = crate::versions::saved_dir(&kit, c, "10.6");
+    fs::create_dir_all(older.join("bin")).unwrap();
+    for k in ["mariadbd.exe", "mariadb.exe"] {
+        fs::write(older.join("bin").join(k), b"").unwrap();
+    }
+    assert!(lines_in_use(&kit, "mariadb").is_empty());
+    // chosen, no database yet: not started
+    auth::set_project_line(&kit, "blog", "mariadb", Some("10.6")).unwrap();
+    auth::set_project_password(&kit, "blog", "mariadb", "pw").unwrap();
+    auth::set_project_line(&kit, "blog", "mariadb", None).unwrap();
+    auth::set_project_password(&kit, "shop", "mariadb", "pw").unwrap();
+    auth::set_project_line(&kit, "shop", "mariadb", Some("11.4")).unwrap();
+    assert!(
+        lines_in_use(&kit, "mariadb").is_empty(),
+        "the server's own version is started anyway"
+    );
+    auth::set_project_line(&kit, "shop", "mariadb", Some("10.6")).unwrap();
+    auth::set_project_password(&kit, "wiki", "mariadb", "pw").unwrap();
+    auth::set_project_line(&kit, "wiki", "mariadb", Some("9.0")).unwrap();
+    assert_eq!(lines_in_use(&kit, "mariadb"), ["10.6"], "9.0 not installed");
+    assert!(lines_in_use(&kit, "mongodb").is_empty());
+
+    // A version uninstalled is told as such, for the interface to offer it.
+    let s = Services::new(kit.clone());
+    let missing = |e: anyhow::Error| {
+        e.downcast_ref::<crate::db::services::LineMissing>()
+            .map(|m| (m.id.clone(), m.line.clone()))
+    };
+    let err = s
+        .start_for("wiki", "mariadb", &KitEnv::default())
+        .unwrap_err();
+    assert_eq!(missing(err), Some(("mariadb".into(), "9.0".into())));
+    let err = s
+        .project_db_line("wiki", "mariadb", Some("9.1"), &KitEnv::default())
+        .unwrap_err();
+    assert_eq!(missing(err), Some(("mariadb".into(), "9.1".into())));
+
+    // `MYSQL_HOME` of a project on another version: that version's login,
+    // once its start wrote it; none on the server's version.
+    assert_eq!(project_mysql_home(&kit, "shop"), None, "not started yet");
+    auth::write_line_client_ini(&kit, "10.6", 3307, "pw").unwrap();
+    let home = project_mysql_home(&kit, "shop").unwrap();
+    assert_eq!(home, kit.app_dir().join(r"db\lines\10.6"));
+    let ini = fs::read_to_string(home.join("my.ini")).unwrap();
+    assert!(
+        ini.contains("port=3307") && ini.contains("user=root"),
+        "{ini}"
+    );
+    assert_eq!(
+        project_mysql_home(&kit, "blog"),
+        None,
+        "the server's version"
+    );
+    assert!(auth::write_line_client_ini(&kit, "..", 3307, "pw").is_err());
 }
 
 #[test]
