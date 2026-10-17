@@ -1,10 +1,9 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
-use crate::versions::tests::install_fake;
+use crate::versions::tests::{install_fake, key_rel};
 use crate::versions::{dir_name, VERSION_FILE};
 
 #[test]
-#[cfg_attr(not(windows), ignore = "install_fake writes the Windows layout")]
 fn deleted_by_hand_is_no_longer_chosen() {
     let tmp = TempDir::new("versions-sync");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -36,7 +35,6 @@ fn deleted_by_hand_is_no_longer_chosen() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "Windows layout: .exe keys and backslash paths")]
 fn folders_of_an_older_kit_move() {
     let tmp = TempDir::new("versions-migrate");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -47,18 +45,23 @@ fn folders_of_an_older_kit_move() {
     let store = node.folder_path(&kit).unwrap();
     install_fake(&kit, node, &store);
     node.save_version(&kit, "v22.11.0").unwrap();
-    install_fake(&kit, node, &kit.apps().join(r"versions\node\20.18"));
-    fs::create_dir_all(kit.apps().join(r"versions\typst\0.13")).unwrap();
+    let versions = kit.apps().join("versions");
+    install_fake(&kit, node, &versions.join("node").join("20.18"));
+    fs::create_dir_all(versions.join("typst").join("0.13")).unwrap();
     assert_eq!(default_dir(&kit, node), store, "works before moving");
     assert!(node.is_installed(&kit));
-    let conf = kit.data().join(r"apache\kit.conf");
+    let conf = kit.data().join("apache").join("kit.conf");
     fs::create_dir_all(conf.parent().unwrap()).unwrap();
     fs::write(&conf, "LoadFile \"${CP_APPS_FWD}/php/php8ts.dll\"\r\n").unwrap();
 
     migrate(&kit);
     let main = store.join("22.11");
     assert_eq!(default_dir(&kit, node), main);
-    assert!(main.join("node.exe").is_file() && !store.join("node.exe").exists());
+    // `node.exe` on Windows, `bin/node` elsewhere
+    let key = key_rel(&kit, node);
+    assert!(
+        crate::fsx::join_rel(&main, &key).is_file() && !crate::fsx::join_rel(&store, &key).exists()
+    );
     assert_eq!(
         fs::read_to_string(main.join(VERSION_FILE)).unwrap(),
         "v22.11.0"
@@ -113,7 +116,6 @@ fn folders_of_an_older_kit_move() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "install_fake writes the Windows layout")]
 fn apache_folders_take_their_line() {
     let tmp = TempDir::new("versions-patch");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -140,7 +142,6 @@ fn apache_folders_take_their_line() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "install_fake writes the Windows layout")]
 fn tools_keep_only_their_new_line() {
     let tmp = TempDir::new("versions-minor");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -173,17 +174,15 @@ fn tools_keep_only_their_new_line() {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "Windows layout: .exe programs and backslash paths"
-)]
 fn github_cli_and_uv_leave_tools() {
     let tmp = TempDir::new("versions-tools");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     let tools = kit.apps().join("tools");
     fs::create_dir_all(&tools).unwrap();
-    for name in ["gh.exe", "uv.exe", "uvx.exe", "uvw.exe", "ninja.exe"] {
-        fs::write(tools.join(name), b"").unwrap();
+    // The programs as the kit's target names them (`gh.exe`, `gh`).
+    let exe = |stem: &str| crate::router::bins::exe_name(kit.os(), stem);
+    for stem in ["gh", "uv", "uvx", "uvw", "ninja"] {
+        fs::write(tools.join(exe(stem)), b"").unwrap();
     }
     let catalog = Catalog::get();
     let (gh, uv) = (catalog.find("gh").unwrap(), catalog.find("uv").unwrap());
@@ -191,25 +190,28 @@ fn github_cli_and_uv_leave_tools() {
     uv.save_version(&kit, "0.9.5").unwrap();
     assert!(!gh.is_installed(&kit));
     migrate(&kit);
-    assert!(kit.apps().join(r"gh\2.102\bin\gh.exe").is_file());
-    for name in ["uv.exe", "uvx.exe", "uvw.exe"] {
-        assert!(kit.apps().join(r"uv\0.9").join(name).is_file(), "{name}");
-        assert!(!tools.join(name).exists(), "{name}");
+    let gh_line = kit.apps().join("gh").join("2.102");
+    assert!(gh_line.join("bin").join(exe("gh")).is_file());
+    for name in ["uv", "uvx", "uvw"].map(exe) {
+        assert!(
+            kit.apps().join("uv").join("0.9").join(&name).is_file(),
+            "{name}"
+        );
+        assert!(!tools.join(&name).exists(), "{name}");
     }
     assert!(gh.is_installed(&kit) && uv.is_installed(&kit));
     // CMake's Ninja stays in tools.
-    assert!(tools.join("ninja.exe").is_file() && !tools.join("gh.exe").exists());
+    assert!(tools.join(exe("ninja")).is_file() && !tools.join(exe("gh")).exists());
 }
 
 /// Windows Terminal is no longer in the catalog (D-95): what an older kit
 /// kept of it goes at start, nothing else.
 #[test]
-#[cfg_attr(not(windows), ignore = "folders created with backslash paths")]
 fn retired_windows_terminal_goes() {
     let tmp = TempDir::new("versions-retired");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let wt = kit.apps().join(r"terminal\1.25\settings");
+    let wt = kit.apps().join("terminal").join("1.25").join("settings");
     fs::create_dir_all(&wt).unwrap();
     fs::write(wt.join("settings.json"), "{}").unwrap();
     fs::create_dir_all(kit.versions_dir()).unwrap();
@@ -221,7 +223,7 @@ fn retired_windows_terminal_goes() {
     ] {
         fs::write(kit.versions_dir().join(f), "1").unwrap();
     }
-    let legacy = kit.app_dir().join(r"versions\terminal.txt");
+    let legacy = kit.app_dir().join("versions").join("terminal.txt");
     fs::write(&legacy, "1.25.2609.30003").unwrap();
     fs::create_dir_all(kit.kit_files()).unwrap();
     let script = kit.kit_files().join("console.ps1");

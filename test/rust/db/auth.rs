@@ -208,7 +208,13 @@ fn project_passwords_in_private_folder() {
     let pw = new_password().unwrap();
     set_project_password(&kit, "shop", "mariadb", &pw).unwrap();
     set_project_password(&kit, "shop", "mongodb", "m1").unwrap();
-    let file = tmp.0.join(r"data\projects\shop\private\db.json");
+    let file = tmp
+        .0
+        .join("data")
+        .join("projects")
+        .join("shop")
+        .join("private")
+        .join("db.json");
     assert_owner_only(&file);
     assert_eq!(project_password(&kit, "shop", "mariadb"), Some(pw.clone()));
     assert_eq!(project_password(&kit, "other", "mariadb"), None);
@@ -265,12 +271,12 @@ fn project_passwords_in_private_folder() {
 /// A `db.json` that cannot be read is an error, never "no password":
 /// otherwise a new one would reach the server and be stored nowhere.
 #[test]
-#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn unreadable_passwords_stop_the_creation() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-unreadable");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
     kit.prepare().unwrap();
-    let private = tmp.0.join(r"data\projects\shop\private");
+    let projects = tmp.0.join("data").join("projects");
+    let private = projects.join("shop").join("private");
 
     // reading creates nothing
     assert_eq!(try_project_password(&kit, "shop", "mariadb").unwrap(), None);
@@ -306,7 +312,7 @@ fn unreadable_passwords_stop_the_creation() {
     // another project's unreadable file stops a creation too: what it
     // names is unknown
     assert!(ensure_project_db(&kit, "blog", "mariadb").is_err());
-    assert!(!tmp.0.join(r"data\projects\blog").exists());
+    assert!(!projects.join("blog").exists());
 
     // a folder where the file should be: cannot be read either
     fs::remove_file(&file).unwrap();
@@ -317,19 +323,27 @@ fn unreadable_passwords_stop_the_creation() {
 
     // dropping reads without creating: nothing comes back after
     assert!(drop_project(&kit, "shop").unwrap().is_empty());
-    fs::remove_dir_all(tmp.0.join(r"data\projects\shop")).unwrap();
+    fs::remove_dir_all(projects.join("shop")).unwrap();
     assert!(drop_project(&kit, "shop").unwrap().is_empty());
     assert!(!private.exists());
 }
 
 fn write_db_json(kit: &Kit, project: &str, json: &str) {
-    let file = kit.project_data().join(project).join(r"private\db.json");
+    let file = kit
+        .project_data()
+        .join(project)
+        .join("private")
+        .join("db.json");
     fs::create_dir_all(file.parent().unwrap()).unwrap();
     fs::write(file, json).unwrap();
 }
 
 fn db_json(kit: &Kit, project: &str) -> serde_json::Value {
-    let file = kit.project_data().join(project).join(r"private\db.json");
+    let file = kit
+        .project_data()
+        .join(project)
+        .join("private")
+        .join("db.json");
     serde_json::from_str(&fs::read_to_string(file).unwrap()).unwrap()
 }
 
@@ -337,7 +351,6 @@ fn db_json(kit: &Kit, project: &str) -> serde_json::Value {
 /// rule of its time; a new database gets the server's reserved names
 /// with `_db`, only for that server.
 #[test]
-#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn names_stored_legacy_and_new() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-names");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
@@ -457,7 +470,6 @@ fn data_of_before_is_never_unseen() {
 /// Two projects that would get the same name: the second one's creation
 /// is refused before anything is stored or sent to a server.
 #[test]
-#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn same_name_refused_on_creation() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-collision");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
@@ -507,7 +519,6 @@ fn drop_scripts() {
 /// in `lines` of `db.json`, beside the passwords and the names, which its
 /// readers do not take for a password.
 #[test]
-#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn project_lines_in_db_json() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-lines");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
@@ -515,7 +526,11 @@ fn project_lines_in_db_json() {
     assert_eq!(project_line(&kit, "shop", "mariadb").unwrap(), None);
     set_project_line(&kit, "shop", "mariadb", None).unwrap();
     assert!(
-        !kit.project_data().join(r"shop\private\db.json").exists(),
+        !kit.project_data()
+            .join("shop")
+            .join("private")
+            .join("db.json")
+            .exists(),
         "nothing created to remove a version"
     );
     write_db_json(
@@ -553,14 +568,17 @@ fn project_lines_in_db_json() {
 /// once each, beside passwords, names and `lines`; a `db.json` of before
 /// has none, and nothing is created for a project without one.
 #[test]
-#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn used_lines_in_db_json() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-used");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
     kit.prepare().unwrap();
     add_project_used_line(&kit, "shop", "mariadb", "12.3").unwrap();
     assert!(
-        !kit.project_data().join(r"shop\private\db.json").exists(),
+        !kit.project_data()
+            .join("shop")
+            .join("private")
+            .join("db.json")
+            .exists(),
         "nothing created"
     );
     write_db_json(
@@ -607,7 +625,6 @@ fn used_lines_in_db_json() {
 /// the app): a change waits while another holder of the kit's lock, here
 /// a thread that is not behind this process's mutex, keeps it.
 #[test]
-#[cfg_attr(not(windows), ignore = "db.json paths given with backslashes")]
 fn db_json_lock_waits_for_the_kit_lock() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-lock");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);

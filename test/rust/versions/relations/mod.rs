@@ -38,8 +38,7 @@ fn links_and_projects() {
     fake(&kit, "node", "v20.19.5");
     let node = Catalog::get().find("node").unwrap();
     let saved = crate::versions::saved_dir(&kit, node, "22.21");
-    fs::create_dir_all(&saved).unwrap();
-    fs::write(saved.join("node.exe"), b"").unwrap();
+    crate::versions::tests::install_fake(&kit, node, &saved);
     crate::versions::write_version(&saved, "v22.21.1").unwrap();
     crate::versions::save_offered(
         &kit,

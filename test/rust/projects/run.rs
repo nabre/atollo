@@ -71,12 +71,17 @@ fn ports_are_kept_and_locked() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "ports.json paths given with backslashes")]
 fn ports_per_project_file() {
     let tmp = TempDir::new("run-ports-files");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let file = |p: &str| tmp.0.join(format!(r"data\projects\{p}\ports.json"));
+    let file = |p: &str| {
+        tmp.0
+            .join("data")
+            .join("projects")
+            .join(p)
+            .join("ports.json")
+    };
     // no ports.json: nothing loaded, nothing written
     std::fs::create_dir_all(kit.project_data().join("empty")).unwrap();
     let r = Runner::new(kit.clone(), Arc::new(|_| {}));
@@ -121,9 +126,15 @@ fn ports_per_project_file() {
     assert_ne!(std::fs::read_to_string(file("one")).unwrap(), untouched);
 }
 
+/// Commands run through `cmd.exe` on Windows and `/bin/sh` elsewhere: each
+/// test command is given in the form of its shell.
 #[test]
-#[cfg_attr(not(windows), ignore = "cmd.exe commands (%PORT%, exit /b, ping -n)")]
 fn runs_and_stops_commands() {
+    let (echo, wait) = if cfg!(windows) {
+        ("echo %PORT% hello & exit /b 3", "ping -n 60 127.0.0.1")
+    } else {
+        ("echo $PORT hello; exit 3", "sleep 60")
+    };
     let tmp = TempDir::new("run-cmd");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
@@ -144,7 +155,7 @@ fn runs_and_stops_commands() {
         "it",
         &crate::env::Host::capture(),
     );
-    let action = Action::for_test("echo", "echo %PORT% hello & exit /b 3", Kind::Command);
+    let action = Action::for_test("echo", echo, Kind::Command);
     let info = r.start("demo", &proj, &action, &env, "it").unwrap();
     assert_eq!(info.state, State::Running);
     let key = info.key.clone();
@@ -164,7 +175,7 @@ fn runs_and_stops_commands() {
     assert!(events.load(Ordering::Relaxed) >= 3);
 
     // A server that never ends: stopped through its job.
-    let long = Action::for_test("wait", "ping -n 60 127.0.0.1", Kind::Command);
+    let long = Action::for_test("wait", wait, Kind::Command);
     let info = r.start("demo", &proj, &long, &env, "it").unwrap();
     assert_eq!(r.running(), 1);
     r.stop(&info.key);
