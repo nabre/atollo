@@ -100,18 +100,26 @@ struct Entry {
     pool: Option<String>,
 }
 
+/// The `server` of a site in `panel.json` that keeps its own httpd/nginx
+/// instead of a pool; never the id of a server profile.
+pub const DEDICATED_SERVER: &str = "dedicated";
+
 /// How «Avvia» serves an Apache or Nginx site.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SiteMode {
-    /// Its own httpd/nginx on the action's port (also `server` "auto").
+    /// Its own httpd/nginx on the action's port: any other action, or a
+    /// site whose `server` is [`DEDICATED_SERVER`].
     Dedicated,
-    /// The shared pool (manual profile) chosen in `panel.json` (`server`).
+    /// The automatic pool of the project's lines (engine, server line, PHP
+    /// line), started or reloaded (PLAN.md §13.1): no `server`, or `auto`.
+    Auto,
+    /// The shared pool chosen in `panel.json` (`server`).
     Pool(String),
 }
 
-/// A site assigned to a manual server profile is served by that pool;
-/// everything else (no `server`, `auto`, not an Apache/Nginx site) runs on
-/// its own.
+/// A site assigned to a server profile is served by that pool, one with no
+/// `server` (or `auto`) by the automatic pool of its lines, one marked
+/// `dedicated` (and every action that is not an Apache/Nginx site) on its own.
 pub fn site_mode(action: &Action) -> SiteMode {
     if action.apache_dir.is_none() && action.nginx_dir.is_none() {
         return SiteMode::Dedicated;
@@ -122,8 +130,9 @@ pub fn site_mode(action: &Action) -> SiteMode {
         .map(str::trim)
         .filter(|s| !s.is_empty() && *s != "auto")
     {
+        Some(DEDICATED_SERVER) => SiteMode::Dedicated,
         Some(id) => SiteMode::Pool(id.to_owned()),
-        None => SiteMode::Dedicated,
+        None => SiteMode::Auto,
     }
 }
 
@@ -783,6 +792,11 @@ impl Runner {
 
     /// `scan`: look for the address a web server prints (not in the app's
     /// own lines, which may hold one in the command).
+    /// A line of the kit (`[NEXKORA] …`) in the log of the run `key`.
+    pub fn note(&self, key: &str, text: &str) {
+        self.append(key, vec![format!("[NEXKORA] {text}")], false);
+    }
+
     fn append(&self, key: &str, lines: Vec<String>, scan: bool) {
         {
             let mut entries = self.entries();

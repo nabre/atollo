@@ -87,7 +87,7 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
             options={[
               { value: "static", label: t("file statici") },
               { value: "php", label: t("PHP (server integrato)") },
-              { value: "apache", label: t("Apache dedicato") },
+              { value: "apache", label: t("Apache") },
               { value: "nginx", label: t("Nginx") },
             ]}
           />
@@ -101,6 +101,7 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
               onChange={setServer}
               options={[
                 { value: "auto", label: t("Automatico (pool per versione)") },
+                { value: "dedicated", label: t("Server tutto suo (porta del progetto)") },
                 ...matchingPools.map((p) => ({
                   value: p.id,
                   label: `${p.name} (:${String(p.port)})`,
@@ -186,15 +187,18 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
           </div>
 
           <p className="w-full text-[12px] text-vsc-desc">
-            {kind === "apache"
+            {server !== "dedicated"
               ? t(
-                  "Un Apache solo per questo progetto, sulla sua porta, con .htaccess e il PHP del kit. La configurazione è in data\\projects\\{0}\\apache; le tue direttive vanno in conf.d.",
-                  project.id,
+                  "Servito da {0} nel server condiviso delle versioni del progetto (o nel profilo scelto), su http://{1}.",
+                  kind === "apache" ? "Apache" : "Nginx",
+                  `${project.id}.localhost`,
                 )
-              : t(
-                  "Servito con Nginx e PHP-CGI nel pool corrispondente alle versioni del progetto, su http://{0}.localhost.",
-                  project.id,
-                )}
+              : kind === "apache"
+                ? t(
+                    "Un Apache solo per questo progetto, sulla sua porta, con .htaccess e il PHP del kit. La configurazione è in data\\projects\\{0}\\apache; le tue direttive vanno in conf.d.",
+                    project.id,
+                  )
+                : t("Un Nginx solo per questo progetto, sulla sua porta, con il PHP del kit.")}
           </p>
         </div>
       )}
