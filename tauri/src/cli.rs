@@ -29,7 +29,9 @@ pub enum Cli {
         project: Option<String>,
     },
     Prepare(PrepareArgs),
-    Components,
+    /// The catalog; with `--target <id>`, for that system (what is not
+    /// available there says why).
+    Components(Option<crate::kit::Target>),
     /// The saved versions; with an id, the lines that can be downloaded.
     Versions(Option<String>),
     /// Every installed program answers its version command.
@@ -102,7 +104,20 @@ pub fn parse(args: &[OsString]) -> Cli {
             },
             Some(other) => Cli::Unknown(format!("env {other}")),
         },
-        "components" => Cli::Components,
+        "components" => match args
+            .get(1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .as_deref()
+        {
+            None => Cli::Components(None),
+            Some("--target") if args.len() == 3 => {
+                match crate::kit::Target::parse(&args[2].to_string_lossy().to_lowercase()) {
+                    Some(t) => Cli::Components(Some(t)),
+                    None => Cli::Unknown("components --target".into()),
+                }
+            }
+            Some(other) => Cli::Unknown(format!("components {other}")),
+        },
         "versions" if args.len() <= 2 => {
             Cli::Versions(args.get(1).map(|a| a.to_string_lossy().to_lowercase()))
         }
@@ -262,7 +277,11 @@ pub fn print_components(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Resul
         } else {
             "[ ]"
         };
-        let state = if c.is_installed(kit) {
+        let unavailable =
+            crate::router::availability::unavailable_message_on_host(c, kit.target(), lang);
+        let state = if let Some(why) = unavailable {
+            why
+        } else if c.is_installed(kit) {
             c.installed_version(kit)
                 .unwrap_or_else(|| t(lang, "installato", &[]))
         } else {

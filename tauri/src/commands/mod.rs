@@ -128,20 +128,8 @@ fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> CmdResult<PathBu
     }
 }
 
-/// Why `name` cannot be installed on `target`: no build for ARM64 PCs on
-/// Windows ARM64, otherwise not made for that system (PHP on macOS or
-/// Linux).
-pub(crate) fn unavailable_msg(lang: &str, name: &str, target: crate::kit::Target) -> String {
-    if target == crate::kit::Target::WIN32_ARM64 {
-        crate::i18n::t(lang, "{0} non è disponibile sui PC ARM64.", &[name])
-    } else {
-        crate::i18n::t(
-            lang,
-            "{0} non è disponibile per {1}.",
-            &[name, target.as_str()],
-        )
-    }
-}
+#[cfg(test)]
+pub(crate) use crate::router::availability::unavailable_msg;
 
 /// Installs what an action of the window needs and is missing, with the
 /// app's preparation task, and waits for it: the required components and
@@ -166,8 +154,13 @@ fn ensure<R: Runtime>(
     let target = kit.target();
     let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
     let needed = with_needs(catalog, wanted);
-    if let Some(c) = needed.iter().find(|c| !c.is_available_on(target)) {
-        return Err(unavailable_msg(lang, &c.name, target).into());
+    // With the catalog's reason (Android, SQLite on Linux ARM64) or Rosetta 2
+    // missing; the same sentences as before otherwise.
+    if let Some(msg) = needed
+        .iter()
+        .find_map(|c| crate::router::availability::unavailable_message_on_host(c, target, lang))
+    {
+        return Err(msg.into());
     }
     if let Some(c) = needed
         .iter()

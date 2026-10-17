@@ -54,22 +54,26 @@ pub fn unavailable_message(
         let reason = unavailable_reason(c, target, no_rosetta, lang)?;
         return Some(t(lang, "{0} non è disponibile: {1}.", &[&c.name, &reason]));
     }
-    Some(if target == Target::WIN32_ARM64 {
-        t(lang, "{0} non è disponibile sui PC ARM64.", &[&c.name])
+    Some(unavailable_msg(lang, &c.name, target))
+}
+
+/// The sentence without a reason of its own: no build for ARM64 PCs on
+/// Windows ARM64, otherwise not made for that system (PHP on macOS or
+/// Linux).
+pub fn unavailable_msg(lang: &str, name: &str, target: Target) -> String {
+    if target == Target::WIN32_ARM64 {
+        t(lang, "{0} non è disponibile sui PC ARM64.", &[name])
     } else {
         t(
             lang,
             "{0} non è disponibile per {1}.",
-            &[&c.name, target.as_str()],
+            &[name, target.as_str()],
         )
-    })
+    }
 }
 
 /// [`unavailable_message`] with Rosetta 2 probed on this host: for
 /// `commands::ensure` and `Dev-Kit components` (cli.rs).
-// The callers are in files of other work packages: drop the allow once
-// they use it.
-#[allow(dead_code)]
 pub fn unavailable_message_on_host(c: &Component, target: Target, lang: &str) -> Option<String> {
     let no_rosetta = c.is_available_on(target) && super::target::rosetta_missing_on_host(target, c);
     unavailable_message(c, target, no_rosetta, lang)
