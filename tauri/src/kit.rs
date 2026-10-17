@@ -742,6 +742,16 @@ fn strip_verbatim(path: &Path) -> PathBuf {
 /// changes made outside the editor are no longer noticed (verified with
 /// VSCodium 1.135.06055, @parcel/watcher 2.5.6, DECISIONS.md D-33). Parentheses, spaces and `&` are fine.
 pub fn watcher_unsafe_folder(path: &Path) -> Option<String> {
+    watcher_unsafe_folder_on(Os::current(), path)
+}
+
+/// [`watcher_unsafe_folder`] on `os`. Only Windows paths have backslashes:
+/// on macOS and Linux the globs hold `/` and every folder name is fine
+/// (`/home/user/2026` would otherwise be reported for `user` and `2026`).
+pub fn watcher_unsafe_folder_on(os: Os, path: &Path) -> Option<String> {
+    if !os.is_windows() {
+        return None;
+    }
     path.components().find_map(|c| match c {
         std::path::Component::Normal(name) => {
             let name = name.to_string_lossy();
