@@ -63,7 +63,12 @@ const SYSTEM_VARS: &[&str] = &[
     "USERNAME",
     "WAYLAND_DISPLAY",
     "windir",
+    // The X11 cookie and the desktop session (Linux): windows of the kit's
+    // programs under X11/XWayland, and `xdg-open` picking the handler.
+    "XAUTHORITY",
+    "XDG_CURRENT_DESKTOP",
     "XDG_RUNTIME_DIR",
+    "XDG_SESSION_TYPE",
 ];
 
 /// Proxy variables of the PC: kept (as `_env.cmd` does), overridden by the
@@ -127,7 +132,19 @@ pub struct KitEnv {
     /// permissions: `create_dirs` gives it an owner-only DACL.
     private_tmp: Option<PathBuf>,
     path_sep: Option<char>,
+    /// `data/kit/shims` on the PATH (macOS, Linux): `create_dirs` writes
+    /// its `python` there ([`PYTHON_SHIM`]).
+    shims: Option<PathBuf>,
 }
+
+/// `python` on macOS and Linux, where the kit's Python has only `python3`
+/// and the commands the kit proposes start with `python`. A script, not a
+/// link (exFAT and FAT keep none), in a folder only the Unix PATH has: in
+/// Git Bash on Windows `python` stays the kit's `python.exe`. The folder
+/// comes right after the kit's Python, so `python3` is the kit's (or the
+/// version a project chose); a virtual environment has its own `python`.
+pub(crate) const PYTHON_SHIM: &str =
+    "#!/bin/sh\n# The kit's Python on macOS and Linux has only python3.\nexec python3 \"$@\"\n";
 
 /// Where the programs' temp (`TEMP`, `TMP`) or Claude's (`CLAUDE_CODE_TMPDIR`,
 /// `claude = true`) goes, PLAN-DATA 4.2.5. `data` is the kit's data folder.
@@ -296,8 +313,9 @@ impl KitEnv {
         env.set_path("MYSQL_HOME", data.join("app").join("db"));
         env.set("CP_ARCH", arch);
         env.set_path("CP_APPS", &apps);
-        // The app itself, for the kit's wrappers (data\kit\bin\agy.cmd).
-        if let Ok(exe) = std::env::current_exe() {
+        // The app itself, for the kit's wrappers (data\kit\bin\agy.cmd):
+        // on Linux the AppImage, not its program inside a temporary mount.
+        if let Some(exe) = crate::kit::app_exe() {
             env.set_path("DEVKIT_EXE", exe);
         }
         env.set("CP_LANG", lang);
@@ -348,7 +366,9 @@ impl KitEnv {
         env.set_path("HOME", &home);
         env.set_path("USERPROFILE", &home);
         let home_s = home.to_string_lossy().into_owned();
-        if let Some((drive, rest)) = home_s.split_once(':') {
+        // A drive letter exists only on Windows; a `:` in a Unix folder
+        // name is not one.
+        if let Some((drive, rest)) = home_s.split_once(':').filter(|_| is_win) {
             env.set("HOMEDRIVE", format!("{drive}:"));
             env.set("HOMEPATH", rest);
         }
@@ -374,11 +394,14 @@ impl KitEnv {
                 "Microsoft/Windows/PowerShell/ModuleAnalysisCache",
             ),
         );
-        env.set("GCM_CREDENTIAL_STORE", "dpapi");
-        env.set_path(
-            "GCM_DPAPI_STORE_PATH",
-            home.join(".gcm").join("dpapi_store"),
-        );
+        // Git Credential Manager's DPAPI store exists only on Windows.
+        if is_win {
+            env.set("GCM_CREDENTIAL_STORE", "dpapi");
+            env.set_path(
+                "GCM_DPAPI_STORE_PATH",
+                home.join(".gcm").join("dpapi_store"),
+            );
+        }
 
         // Python, pip, Node, npm, uv, gh, PHP, Composer (_env.cmd:101-139)
         let pyuser = data.join("python-user");
@@ -517,6 +540,9 @@ impl KitEnv {
                 path.push(app(r"python\Scripts"));
             } else {
                 path.push(app("python/bin"));
+                let shims = kit.kit_files().join("shims");
+                path.push(shims.clone());
+                env.shims = Some(shims);
             }
         }
         if is_win {
@@ -673,7 +699,7 @@ impl KitEnv {
             if has("git/bin/git") {
                 path.push(app("git/bin"));
             }
-            for sys in ["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"] {
+            for sys in system_path(kit.os()) {
                 path.push(PathBuf::from(sys));
             }
             env.set_path("PSModulePath", join_rel(&data, "pwsh/Modules"));
@@ -729,6 +755,9 @@ impl KitEnv {
                 fs::create_dir_all(dir)?;
             }
         }
+        if let Some(dir) = &self.shims {
+            write_python_shim(dir)?;
+        }
         // Kit mode on NTFS/ReFS: the programs' leftovers are for the owner only.
         if let Some(tmp) = &self.private_tmp {
             if let Err(e) = crate::editor::restrict_dir_to_owner(tmp) {
@@ -762,6 +791,41 @@ pub fn apply_to_current_process(env: &KitEnv, kit: &Kit) {
         }
     }
     std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", kit.webview_data());
+}
+
+/// The system folders that end the PATH off Windows: Homebrew's on macOS
+/// (`/opt/homebrew/bin` on Apple Silicon, `/usr/local/bin` on Intel) after
+/// the kit's programs, so a tool the kit lacks can still come from it.
+fn system_path(os: crate::kit::Os) -> &'static [&'static str] {
+    if os.is_macos() {
+        &[
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+            "/usr/sbin",
+            "/sbin",
+        ]
+    } else {
+        &["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+    }
+}
+
+/// Writes `dir/python` ([`PYTHON_SHIM`]) when it is missing or different,
+/// executable (`LF`, 755).
+fn write_python_shim(dir: &Path) -> std::io::Result<()> {
+    let file = dir.join("python");
+    if fs::read(&file).is_ok_and(|b| b == PYTHON_SHIM.as_bytes()) {
+        return Ok(());
+    }
+    fs::create_dir_all(dir)?;
+    crate::fsx::write_atomic(&file, PYTHON_SHIM.as_bytes())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&file, fs::Permissions::from_mode(0o755))?;
+    }
+    Ok(())
 }
 
 fn subdirs_starting_with(dir: &Path, prefix: &str) -> impl Iterator<Item = PathBuf> {

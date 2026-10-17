@@ -356,9 +356,17 @@ fn unix_target_builds_colon_path_and_xdg_dirs() {
     assert!(path.contains(':'), "Unix target must join PATH with ':'");
     let entries = env.path_entries();
     let n = entries.len();
+    // macOS: Homebrew after the kit's programs (T1.8.1).
     assert_eq!(
-        &entries[n - 5..],
-        ["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+        &entries[n - 6..],
+        [
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+            "/usr/sbin",
+            "/sbin"
+        ]
     );
     let apps = kit.apps();
     assert!(entries
@@ -380,4 +388,138 @@ fn unix_target_builds_colon_path_and_xdg_dirs() {
         let v = env.get(xdg).unwrap_or_else(|| panic!("{xdg} missing"));
         assert!(Path::new(v).starts_with(kit.data()), "{xdg} = {v}");
     }
+}
+
+/// The environment of a Linux and a macOS kit (T1.8.1), as the table of
+/// Windows above: the desktop session kept, no Windows-only variable, the
+/// system folders after the kit's.
+#[test]
+fn linux_and_macos_environment_table() {
+    use crate::kit::Target;
+
+    let host = Host::from_pairs(
+        [
+            ("HOME", "/home/me"),
+            ("PATH", "/home/me/.local/bin:/usr/bin"),
+            ("DISPLAY", ":0"),
+            ("WAYLAND_DISPLAY", "wayland-0"),
+            ("XAUTHORITY", "/run/user/1000/.mutter-Xwaylandauth.X1"),
+            ("XDG_CURRENT_DESKTOP", "GNOME"),
+            ("XDG_SESSION_TYPE", "wayland"),
+            ("XDG_CONFIG_HOME", "/home/me/.config"),
+            ("LANG", "it_IT.UTF-8"),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.into(), v.into())),
+    );
+    for (target, system) in [
+        (
+            Target::LINUX_X64,
+            &["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"][..],
+        ),
+        (
+            Target::DARWIN_ARM64,
+            &[
+                "/opt/homebrew/bin",
+                "/usr/local/bin",
+                "/usr/bin",
+                "/bin",
+                "/usr/sbin",
+                "/sbin",
+            ][..],
+        ),
+    ] {
+        let tmp = TempDir::new(&format!("env-table-{target}"));
+        let kit = Kit::at_target(tmp.0.join("Kit"), target);
+        let env = KitEnv::build(&kit, &Settings::default(), "it", &host);
+        for (name, value) in [
+            ("DISPLAY", ":0"),
+            ("WAYLAND_DISPLAY", "wayland-0"),
+            ("XAUTHORITY", "/run/user/1000/.mutter-Xwaylandauth.X1"),
+            ("XDG_CURRENT_DESKTOP", "GNOME"),
+            ("XDG_SESSION_TYPE", "wayland"),
+            ("LANG", "it_IT.UTF-8"),
+            ("CP_USER_PROFILE", "/home/me"),
+        ] {
+            assert_eq!(env.get(name), Some(value), "{target} {name}");
+        }
+        // Windows only; a host path with a drive letter (this test on
+        // Windows) is not one on these systems either.
+        for name in [
+            "GCM_CREDENTIAL_STORE",
+            "GCM_DPAPI_STORE_PATH",
+            "HOMEDRIVE",
+            "HOMEPATH",
+        ] {
+            assert_eq!(env.get(name), None, "{target} {name}");
+        }
+        let xdg = env.get("XDG_CONFIG_HOME").unwrap();
+        assert!(Path::new(xdg).starts_with(kit.data()), "{target} {xdg}");
+        let entries = env.path_entries();
+        assert_eq!(&entries[entries.len() - system.len()..], system, "{target}");
+        assert!(!entries.contains(&"/home/me/.local/bin"), "{target}");
+    }
+}
+
+/// Windows keeps Git Credential Manager's DPAPI store.
+#[test]
+fn credential_store_on_windows_only() {
+    let (_tmp, kit) = fake_kit("env-gcm", &[]);
+    let kit = Kit::at_target(kit.root().to_path_buf(), crate::kit::Target::WIN32_X64);
+    let env = KitEnv::build(&kit, &Settings::default(), "it", &host());
+    assert_eq!(env.get("GCM_CREDENTIAL_STORE"), Some("dpapi"));
+    assert!(env.get("GCM_DPAPI_STORE_PATH").is_some());
+}
+
+/// Backlog (a): on macOS and Linux `python` runs the kit's `python3`,
+/// through a script in a folder that only the Unix PATH has, right after
+/// the kit's Python; Windows has no such folder.
+#[test]
+fn python_on_the_unix_path() {
+    use crate::kit::Target;
+
+    let tmp = TempDir::new("env-python-shim");
+    let kit = Kit::at_target(tmp.0.join("Kit"), Target::LINUX_X64);
+    let python = crate::fsx::join_rel(kit.apps(), "python/bin/python3");
+    fs::create_dir_all(python.parent().unwrap()).unwrap();
+    fs::write(&python, b"").unwrap();
+    let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
+    let shims = kit.kit_files().join("shims");
+    let entries = env.path_entries();
+    let at = |p: &Path| entries.iter().position(|e| Path::new(e) == p);
+    let bin = crate::fsx::join_rel(kit.apps(), "python/bin");
+    assert!(at(&bin).is_some(), "{entries:?}");
+    assert_eq!(at(&shims), at(&bin).map(|i| i + 1), "{entries:?}");
+    env.create_dirs().unwrap();
+    let script = fs::read_to_string(shims.join("python")).unwrap();
+    assert_eq!(script, PYTHON_SHIM);
+    assert!(script.starts_with("#!/bin/sh\n") && !script.contains('\r'));
+    assert!(script.contains("exec python3 \"$@\""));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = fs::metadata(shims.join("python"))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o755);
+    }
+    // Unchanged: left as it is.
+    env.create_dirs().unwrap();
+
+    // Without the kit's Python: no shim on the PATH.
+    let bare = Kit::at_target(tmp.0.join("Bare"), Target::LINUX_X64);
+    let env = KitEnv::build(&bare, &Settings::default(), "en", &host());
+    let bare_shims = bare.kit_files().join("shims");
+    assert!(!env
+        .path_entries()
+        .iter()
+        .any(|e| Path::new(e) == bare_shims));
+
+    // Windows: python.exe itself, never the shim folder.
+    let (_tmp, win) = fake_kit("env-python-win", &["python/python.exe"]);
+    let win = Kit::at_target(win.root().to_path_buf(), Target::WIN32_X64);
+    let env = KitEnv::build(&win, &Settings::default(), "en", &host());
+    let win_shims = win.kit_files().join("shims");
+    assert!(!env.path_entries().iter().any(|e| Path::new(e) == win_shims));
 }
