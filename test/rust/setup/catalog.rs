@@ -212,35 +212,50 @@ fn every_part_must_be_installed() {
     assert!(pnpm.key_paths(&kit)[1].starts_with(kit.data().join("npm-global")));
 }
 
+/// The server's layout on each target: `bin\codium-server.cmd` and
+/// `node.exe` on Windows, `bin/codium-server` and `node` elsewhere.
 #[test]
 fn editor_installed_means_the_files_started() {
+    use crate::kit::Target;
+
     let tmp = TempDir::new("catalog-editor");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    let dir = crate::editor::server_dir(&kit);
-    touch(&dir.join(r"bin\codium-server.cmd"));
-    assert!(!crate::editor::is_installed(&kit));
-    touch(&dir.join(r"out\server-main.js"));
-    assert!(!crate::editor::is_installed(&kit), "node.exe missing");
-    touch(&dir.join("node.exe"));
-    assert!(crate::editor::is_installed(&kit));
-    assert!(Catalog::get()
-        .find("vscodium-server")
-        .unwrap()
-        .is_installed(&kit));
+    for target in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
+        kit.prepare().unwrap();
+        let (launcher, node) = if target.is_windows() {
+            ("codium-server.cmd", "node.exe")
+        } else {
+            ("codium-server", "node")
+        };
+        let dir = crate::editor::server_dir(&kit);
+        touch(&dir.join("bin").join(launcher));
+        assert!(!crate::editor::is_installed(&kit), "{target}");
+        touch(&dir.join("out").join("server-main.js"));
+        assert!(
+            !crate::editor::is_installed(&kit),
+            "{target}: {node} missing"
+        );
+        touch(&dir.join(node));
+        assert!(crate::editor::is_installed(&kit), "{target}");
+        assert!(Catalog::get()
+            .find("vscodium-server")
+            .unwrap()
+            .is_installed(&kit));
+    }
 }
 
 #[test]
 fn shared_paths_go_with_the_last_owner() {
     let tmp = TempDir::new("catalog-shared");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    // PHP and Apache are Windows only (web_stack_is_windows_only).
+    let kit = Kit::at_target(tmp.0.clone(), crate::kit::Target::WIN32_X64);
     kit.prepare().unwrap();
     let catalog = Catalog::get();
     let (php, apache) = (
         catalog.find("php").unwrap(),
         catalog.find("apache").unwrap(),
     );
-    let vc = kit.apps().join(r"tools\vcruntime");
+    let vc = kit.apps().join("tools").join("vcruntime");
     for c in [php, apache] {
         for p in c.key_paths(&kit) {
             touch(&p);
