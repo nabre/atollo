@@ -94,7 +94,7 @@ pub async fn terminal_dir_pick<R: Runtime>(
         #[cfg(windows)]
         let picked = terminals::pick_dir(owner, &title, Some(&start));
         #[cfg(unix)]
-        let picked = anyhow::Ok(crate::editor::picker::folder(&window, &title, Some(&start)));
+        let picked = crate::editor::picker::folder(&window, &title, Some(&start));
         picked.map(|d| d.map(|d| d.display().to_string()))
     })
     .await

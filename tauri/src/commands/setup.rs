@@ -330,7 +330,7 @@ pub async fn downloads_pick<R: Runtime>(
         let files = {
             let home = std::env::var_os("HOME").map(PathBuf::from);
             let start = crate::editor::picker::downloads_dir(home.as_deref());
-            crate::editor::picker::files(&window, &title, start.as_deref())
+            crate::editor::picker::files(&window, &title, start.as_deref())?
         };
         if files.is_empty() {
             return Ok(Vec::new());
