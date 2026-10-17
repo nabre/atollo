@@ -116,3 +116,15 @@ fn second_start_reaches_the_first_on_unix() {
     // Nothing of the socket in the kit.
     assert!(!kit.app_dir().join("instance.sock").exists());
 }
+
+/// Both ends of the socket check the other's user (abstract names have no
+/// permissions): a connection of this user passes.
+#[cfg(unix)]
+#[test]
+fn socket_peer_is_this_user() {
+    let (a, b) = std::os::unix::net::UnixStream::pair().unwrap();
+    // SAFETY: getuid cannot fail.
+    let me = unsafe { libc::getuid() };
+    assert_eq!(peer_uid(&a), Some(me));
+    assert!(same_user(b).is_ok());
+}
