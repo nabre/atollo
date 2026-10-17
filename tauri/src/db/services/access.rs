@@ -81,8 +81,13 @@ impl Services {
             auth::save(&self.kit, &secrets)?;
             crate::log::info(&format!("{id}: administrator password set"));
         }
+        // Every MariaDB tool reads `client.ini` (`mariadb_tool_at`, with its
+        // own `--port`): written for the server's port, also when another
+        // version is the first one ever started.
         if id == "mariadb" && main {
             auth::write_client_ini(&self.kit, port, &password)?;
+        } else if id == "mariadb" && !auth::client_ini(&self.kit).is_file() {
+            auth::write_client_ini(&self.kit, line_port(&self.kit, id, None), &password)?;
         }
         Ok(())
     }
