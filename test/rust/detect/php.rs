@@ -88,6 +88,9 @@ fn php_server_router() {
 
     let router = include_str!("../../../runtime/php-router.php");
     assert!(router.contains("well-known") && router.contains(".inc") && router.contains("403"));
+    // Same never-serve set as Apache and Nginx (SEC-V3-01), local hosts only
+    // (SEC-V3-03).
+    assert!(router.contains("php[3-8]|phtml|phar") && router.contains("421"));
     assert!(router.trim_end().ends_with("return false;"));
 }
 
