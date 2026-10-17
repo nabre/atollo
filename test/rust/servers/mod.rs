@@ -118,8 +118,14 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
 
     let conf_path = servers.write_pool_configs(&pool, None, false).unwrap();
     let main_conf = fs::read_to_string(&conf_path).unwrap();
-    assert!(main_conf.contains("listen 127.0.0.1:8088 default_server;"));
-    assert!(main_conf.contains("server_name localhost;"));
+    // The pool's page for its local names; any other Host gets 421 (D-98).
+    assert!(main_conf.contains(
+        "        listen 127.0.0.1:8088;\r\n        server_name localhost 127.0.0.1 [::1];"
+    ));
+    assert!(main_conf.contains(
+        "        listen 127.0.0.1:8088 default_server;\r\n        server_name _;\r\n        return 421;"
+    ));
+    assert_eq!(main_conf.matches("default_server").count(), 1);
 
     let vhosts_dir = conf_path.parent().unwrap().join("vhosts");
     let alpha_vhost = fs::read_to_string(vhosts_dir.join("alpha.localhost.conf")).unwrap();
@@ -498,6 +504,41 @@ fn apache_pool_conf_has_default_vhost_first() {
     assert!(conf.contains(
         "<FilesMatch \"(?i)\\.(?:php|phtml|phar)$\">\r\n                Require all denied"
     ));
+}
+
+/// Out of LAN mode the pool's first VirtualHost refuses a Host nobody names
+/// with 403, as a project's own Apache (D-98); its local names keep
+/// Apache's page, and both come before the projects' sites.
+#[test]
+fn apache_pool_conf_refuses_foreign_hosts() {
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\nServerRoot \"${SRVROOT}\"\r\n";
+    let conf = apache_pool_conf(base, Path::new(r"C:\kit\data\servers\p"), 8081, false).unwrap();
+    let refused = conf
+        .find("<VirtualHost *:8081>\r\n    ServerName refused.invalid\r\n    <Location \"/\">\r\n        Require all denied")
+        .expect("refusing vhost");
+    let local = conf
+        .find("<VirtualHost *:8081>\r\n    ServerName localhost\r\n    ServerAlias 127.0.0.1 [::1]\r\n    DocumentRoot \"${SRVROOT}/htdocs\"\r\n</VirtualHost>")
+        .expect("local vhost");
+    let include = conf
+        .find("IncludeOptional \"C:/kit/data/servers/p/vhosts/*.conf\"")
+        .unwrap();
+    assert_eq!(conf.find("<VirtualHost"), Some(refused));
+    assert!(refused < local && local < include);
+    assert_eq!(conf.matches("<VirtualHost").count(), 2);
+    assert!(!conf.contains("*.localhost"));
+}
+
+/// In LAN mode the Nginx pool keeps its own page as default server.
+#[test]
+fn nginx_pool_conf_lan_keeps_default_page() {
+    let conf = nginx_pool_conf(
+        Path::new(r"C:\kit\apps\nginx"),
+        Path::new(r"C:\kit\data\servers\p"),
+        8082,
+        true,
+    );
+    assert!(conf.contains("        listen 8082 default_server;\r\n        server_name localhost;"));
+    assert!(!conf.contains("return 421;"));
 }
 
 /// `id` installed at `version`, the default folder of its line.
