@@ -825,6 +825,12 @@ impl KitEnv {
             "NPM_CONFIG_PREFIX",
             "UV_TOOL_BIN_DIR",
         ] {
+            // %APPDATA% and %LOCALAPPDATA% are Windows folders: off Windows the
+            // variables stay set (a few tools read them) but nothing creates
+            // data/home/AppData.
+            if self.path_sep() != ';' && matches!(name, "APPDATA" | "LOCALAPPDATA") {
+                continue;
+            }
             if let Some(dir) = self.get(name) {
                 fs::create_dir_all(dir)?;
             }
