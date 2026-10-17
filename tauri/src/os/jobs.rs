@@ -128,46 +128,6 @@ pub fn spawn(cmd: &mut Command) -> Result<Child> {
         .with_context(|| format!("starting {:?}", cmd.get_program()))
 }
 
-/// A process started by [`spawn_console`].
-#[cfg(unix)]
-pub struct Console {
-    child: std::sync::Mutex<Child>,
-    pid: u32,
-}
-
-#[cfg(unix)]
-impl Console {
-    pub fn id(&self) -> u32 {
-        self.pid
-    }
-
-    /// Waits until the process ends.
-    pub fn wait(&self) {
-        let _ = self.child.lock().unwrap_or_else(|e| e.into_inner()).wait();
-    }
-}
-
-/// Starts `program` with `args`, the kit environment only, in `dir`, in a
-/// process group of its own; the program opens its own window.
-#[cfg(unix)]
-pub fn spawn_console(
-    program: &std::path::Path,
-    args: &[String],
-    env: &KitEnv,
-    dir: &std::path::Path,
-) -> Result<Console> {
-    let child = kit_command(program, env)
-        .args(args)
-        .current_dir(dir)
-        .stdin(std::process::Stdio::null())
-        .spawn()
-        .with_context(|| format!("starting {}", program.display()))?;
-    Ok(Console {
-        pid: child.id(),
-        child: std::sync::Mutex::new(child),
-    })
-}
-
 /// Starts a program in `job`, as the leader of a new process group: dropping
 /// the job kills the group, its children included.
 #[cfg(unix)]

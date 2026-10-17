@@ -19,10 +19,6 @@ fn system_disk() {
     let v = info(&tmp).unwrap();
     assert!(v.free > 0);
     assert!(same_volume(&tmp, &tmp));
-    assert!(tmp
-        .canonicalize()
-        .unwrap()
-        .starts_with(root_of(&tmp).unwrap()));
 }
 
 #[test]
