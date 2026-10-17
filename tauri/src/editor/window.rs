@@ -507,10 +507,15 @@ pub fn same_origin(url: &Url, port: u16) -> bool {
 /// with `folder=` the project's folder. Another folder, a workspace file or
 /// an empty window (`ew=`) is refused, also in a new window.
 pub fn in_project(url: &Url, folder: &Path) -> bool {
-    let want = super::folder_param(folder);
+    in_project_on(crate::kit::Os::current(), url, folder)
+}
+
+/// [`in_project`] for a folder of `os`.
+pub fn in_project_on(os: crate::kit::Os, url: &Url, folder: &Path) -> bool {
+    let want = super::folder_param_on(os, folder);
     // A Windows path (`/C:/...`) is matched in any case, as Windows does;
     // a Unix one exactly: on Linux `/home/a/App` is another folder.
-    let fold = !folder.display().to_string().starts_with('/');
+    let fold = os.is_windows();
     let norm = |s: &str| {
         let s = s.trim_end_matches('/');
         if fold {
