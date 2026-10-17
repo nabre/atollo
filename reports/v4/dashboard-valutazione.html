@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atollo / Atollo — Dashboard di Valutazione Tecnica v4 (HEAD 18698f9)</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel-alt: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #a371f7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: linear-gradient(180deg, #161b22 0%, #0d1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+    h1 { margin: 0; font-size: 22px; font-weight: 700; }
+    .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .score-pill {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(63, 185, 80, 0.12);
+      border: 1px solid var(--green);
+      border-radius: 10px;
+      padding: 10px 18px;
+    }
+    .score-pill .big {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--green);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 32px 64px;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .kpi-card .k-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .kpi-card .k-val { font-size: 24px; font-weight: 700; margin: 6px 0 2px; font-family: ui-monospace, SFMono-Regular, monospace; }
+    .kpi-card .k-delta { font-size: 12px; color: var(--green); }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      border-bottom: none;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+    }
+    .tab-btn.active {
+      background: var(--panel);
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card h2 { margin-top: 0; font-size: 17px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; background: var(--panel-alt); }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+    .b-crit { background: rgba(248,81,73,0.2); color: #ff7b72; border: 1px solid var(--red); }
+    .b-high { background: rgba(210,153,34,0.2); color: #e3b341; border: 1px solid var(--yellow); }
+    .b-med  { background: rgba(88,166,255,0.18); color: var(--accent); border: 1px solid var(--accent); }
+    .b-low  { background: rgba(139,148,158,0.2); color: var(--muted); border: 1px solid var(--border); }
+    .b-ok   { background: rgba(63,185,80,0.2); color: var(--green); border: 1px solid var(--green); }
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .filter-btn.active { border-color: var(--accent); color: var(--accent); }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      background: rgba(110,118,129,0.2);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    .chart-box img { width: 100%; height: auto; border-radius: 8px; display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <div>
+        <h1>Atollo / Atollo — Dashboard Tecnica Integrale (Revisione v4)</h1>
+        <div class="sub">Commit Baseline: <code>HEAD 18698f9</code> (17 Ottobre 2026) · Evoluzione da <code>v3 (39b74bc)</code> · Decisioni <code>D-01..D-106</code></div>
+      </div>
+      <div class="score-pill">
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;">Indice Globale v4</div>
+          <div style="font-size:12px;color:var(--accent);">v3: 88,3 → Target: 98,4</div>
+        </div>
+        <div class="big">92,8 / 100</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="k-label">Backend Rust (tauri/src)</div>
+        <div class="k-val">38.161 LOC</div>
+        <div class="k-delta">134 file .rs (+3.241 LOC vs v3)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">Frontend UI (ui/src)</div>
+        <div class="k-val">28.060 LOC</div>
+        <div class="k-delta">118 file (+1.880 LOC vs v3)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">Suite Test Automatici</div>
+        <div class="k-val">536 Test</div>
+        <div class="k-delta">429 Rust + 107 Vitest (+21,0%)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">Catalogo Strumenti</div>
+        <div class="k-val">35 + 12</div>
+        <div class="k-delta">Ritirato terminal (D-95) → Terminali Kit (D-94)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">CI Multi-OS (D-104)</div>
+        <div class="k-val">100% Build</div>
+        <div class="k-delta">Windows + Ubuntu + macOS verdi</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">Rilievi Aperti v4</div>
+        <div class="k-val">25 Rilievi</div>
+        <div class="k-delta">4 Critici (Portabilità Unix), 8 Alti</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('overview', this)">1. Scorecard &amp; Grafici</button>
+      <button class="tab-btn" onclick="showTab('findings', this)">2. Catalogo 25 Rilievi v4</button>
+      <button class="tab-btn" onclick="showTab('matrix', this)">3. Matrice 35 Componenti × OS</button>
+      <button class="tab-btn" onclick="showTab('swarm', this)">4. Piano Sciame v4 (7 Agenti)</button>
+    </div>
+
+    <!-- TAB 1: OVERVIEW -->
+    <div id="tab-overview" class="tab-panel active">
+      <div class="grid-2">
+        <div class="card chart-box">
+          <h2>Radar Architetturale su 9 Dimensioni</h2>
+          <img src="./assets/radar-9-dimensioni.svg" alt="Radar 9 Dimensioni v4" />
+        </div>
+        <div class="card chart-box">
+          <h2>Readiness Multipiattaforma sui 35 Componenti</h2>
+          <img src="./assets/multipiattaforma-readiness.svg" alt="Readiness Multipiattaforma v4" />
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Tabella Comparativa delle 9 Dimensioni (v2 → v3 → v4 → Target Post-v4)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Dimensione</th>
+              <th>Peso</th>
+              <th>v2</th>
+              <th>v3</th>
+              <th>v4 (18698f9)</th>
+              <th>Delta</th>
+              <th>Target</th>
+              <th>Sintesi Tecnica v4</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td><strong>Architettura &amp; Modularità</strong></td><td>15%</td><td>91</td><td>94</td><td><strong>96/100</strong></td><td>+2</td><td>99</td><td>Nuovo <code>terminals.rs</code> (D-94), layer <code>os/*</code> cfg-pulito; resta disallineamento <code>site_mode</code> vs <code>WebServers::scan</code> (<code>BUG-V4-01</code>).</td></tr>
+            <tr><td>2</td><td><strong>Isolamento &amp; Zero-Residui Windows</strong></td><td>15%</td><td>96</td><td>97</td><td><strong>98/100</strong></td><td>+1</td><td>100</td><td>Ritiro Windows Terminal (D-95), pulizia automatica residui, <code>R Makeconf</code> auto-riparante (D-105).</td></tr>
+            <tr><td>3</td><td><strong>Rilocazione &amp; Resilienza USB</strong></td><td>12%</td><td>85</td><td>92</td><td><strong>93/100</strong></td><td>+1</td><td>99</td><td>Su Windows 99%; su Unix bloccata da <code>copy_tree</code> symlink (<code>PORT-V4-01</code>) e <code>old-root.txt</code> in <code>relocate.rs</code> (<code>PORT-V4-02</code>).</td></tr>
+            <tr><td>4</td><td><strong>Sicurezza Locale &amp; Guard-Rail</strong></td><td>12%</td><td>79</td><td>83</td><td><strong>91/100</strong></td><td>+8</td><td>98</td><td>Chiusi tutti i rilievi v3 (<code>PHP_RUN</code>/<code>PHP_NEVER</code>, <code>php-router.php</code>, DNS rebinding). Rilevato RCE negli alias di upload (<code>SEC-V4-01</code>).</td></tr>
+            <tr><td>5</td><td><strong>UX, Facilitazione &amp; Accessibilità</strong></td><td>10%</td><td>84</td><td>89</td><td><strong>93/100</strong></td><td>+4</td><td>98</td><td>Pagina Terminali (D-94), 4 CMS nel wizard (D-93), 28 modali con <code>useModalFocus</code>/<code>InlineConfirm</code> (D-106).</td></tr>
+            <tr><td>6</td><td><strong>Ecosistema AI &amp; Coding Agents</strong></td><td>8%</td><td>92</td><td>95</td><td><strong>96/100</strong></td><td>+1</td><td>99</td><td>Hub Claude/Codex/Antigravity completo; da ripulire i backslash Unix in <code>agents/*</code> (<code>PORT-V4-06</code>).</td></tr>
+            <tr><td>7</td><td><strong>Dati, DB Multi-Linea &amp; Backup</strong></td><td>8%</td><td>83</td><td>87</td><td><strong>92/100</strong></td><td>+5</td><td>98</td><td>MariaDB side-by-side (D-102) e <code>DB_PORT</code>; da fissare race su <code>services.json</code> (<code>BUG-V4-04</code>), port-swap (<code>BUG-V4-05</code>) ed <code>env_apply</code> (<code>BUG-V4-10</code>).</td></tr>
+            <tr><td>8</td><td><strong>Qualità Codice &amp; Copertura Test</strong></td><td>10%</td><td>86</td><td>91</td><td><strong>95/100</strong></td><td>+4</td><td>98</td><td>536 test automatici eseguiti (429 Rust + 107 Vitest, +21% rispetto a v3).</td></tr>
+            <tr><td>9</td><td><strong>Readiness Multi-OS (macOS/Linux)</strong></td><td>10%</td><td>48</td><td>67</td><td><strong>81/100</strong></td><td>+14</td><td>97</td><td>Compilazione Unix 100% in CI (D-104) e MariaDB/VSCodium/LLVM (D-105); da chiudere i blocchi runtime <code>PORT-V4-01..08</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: FINDINGS -->
+    <div id="tab-findings" class="tab-panel">
+      <div class="card">
+        <h2>Catalogo Completo dei 25 Rilievi Tecnici v4 ( + 6 Rifiniture UX )</h2>
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="filterFindings('ALL', this)">Tutti</button>
+          <button class="filter-btn" onclick="filterFindings('CRIT', this)">Critici (4)</button>
+          <button class="filter-btn" onclick="filterFindings('HIGH', this)">Alti (8)</button>
+          <button class="filter-btn" onclick="filterFindings('MED', this)">Medi (11)</button>
+          <button class="filter-btn" onclick="filterFindings('LOW', this)">Bassi / UX</button>
+        </div>
+        <table id="findings-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Severità</th>
+              <th>File &amp; Righe</th>
+              <th>Descrizione Tecnica &amp; Soluzione</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-sev="CRIT"><td><code>PORT-V4-01</code></td><td><span class="badge b-crit">CRITICA</span></td><td><code>tauri/src/net/archive.rs:597-599</code></td><td><code>copy_tree</code> salta tutti i symlink (<code>if kind.is_symlink() { continue; }</code>) quando staging e destinazione sono su volumi diversi (sempre vero su Linux <code>/tmp</code> e su USB), rompendo Python, Node, LLVM, TinyTeX, MariaDB.</td></tr>
+            <tr data-sev="CRIT"><td><code>PORT-V4-02</code></td><td><span class="badge b-crit">CRITICA</span></td><td><code>tauri/src/agents/relocate.rs:123, 389, 461</code></td><td><code>relocate.rs</code> cerca <code>"old-root.txt"</code> anziché <code>"old-root-{darwin,linux}.txt"</code> scritto da <code>kit.rs:527</code>, e <code>Replacer::substitute</code> altera il case del primo carattere dei path Unix (<code>/home</code> → <code>/Home</code>).</td></tr>
+            <tr data-sev="CRIT"><td><code>PORT-V4-03</code></td><td><span class="badge b-crit">CRITICA</span></td><td><code>tauri/src/setup/kit_files.rs:21-35</code>, <code>runtime/bin/agy:5</code>, <code>runtime/bashrc:26</code></td><td><code>kit_files.rs</code> usa <code>r"bin\agy"</code> senza <code>0o755</code>; <code>runtime/bin/agy</code> invoca <code>agy.exe</code>; <code>runtime/bashrc</code> usa <code>${var,,}</code> che fallisce su <code>/bin/bash</code> 3.2 di macOS.</td></tr>
+            <tr data-sev="CRIT"><td><code>PORT-V4-04</code></td><td><span class="badge b-crit">CRITICA</span></td><td><code>tauri/src/editor/mod.rs:258</code>, <code>ext.rs:140, 504</code>, <code>cfg.rs:127</code></td><td>VSCodium Server hardcoda <code>node.exe</code>, <code>r"out\server-main.js"</code>, <code>r"vscodium-server\..."</code> e configura solo <code>terminal.integrated.profiles.windows</code>.</td></tr>
+            <tr data-sev="HIGH"><td><code>SEC-V4-01</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/projects/apache.rs:197-205</code>, <code>nginx.rs:104</code></td><td>Esecuzione PHP (RCE) nelle directory Alias di upload: Apache eredita il <code>SetHandler</code> PHP globale e <code>AllowOverride FileInfo</code>; Nginx usa <code>location /alias/</code> senza <code>^~</code>.</td></tr>
+            <tr data-sev="HIGH"><td><code>BUG-V4-01</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/projects/run.rs:115-128</code>, <code>servers/mod.rs:878-918</code></td><td><code>site_mode</code> avvia come <code>Dedicated</code> i siti con <code>server: None | "auto"</code>, mentre <code>WebServers::scan</code> li elenca nei pool automatici; i profili eliminati ricadono nel pool automatico.</td></tr>
+            <tr data-sev="HIGH"><td><code>BUG-V4-04</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/db/services/mod.rs:500-564, 739-807</code></td><td>Race condition su <code>services.json</code> e su <code>Services::start_line</code> concorrenti per assenza di mutex di serializzazione in <code>Services</code>.</td></tr>
+            <tr data-sev="HIGH"><td><code>BUG-V4-05</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/db/services/mod.rs:188-222, 538-547</code></td><td>Scambio silenzioso delle porte MariaDB (port swap) al cambio della linea predefinita perché <code>keep_port</code> non salva la porta della linea primaria in <code>services.json</code>.</td></tr>
+            <tr data-sev="HIGH"><td><code>BUG-V4-09</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/detect/mod.rs:447, 548-562</code>, <code>commands/mod.rs:237</code></td><td><code>detect::requires(dir)</code> restituisce <code>"apache"</code> prima del filtro D-103 (riga 677), facendo auto-installare Apache a <code>settle_project</code> su ogni progetto Laravel.</td></tr>
+            <tr data-sev="HIGH"><td><code>BUG-V4-10</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/db/auth.rs:581-598</code>, <code>commands/frameworks.rs:319-343</code></td><td><code>env_apply</code> tronca <code>.env</code> alle sole 6 righe DB quando parte da <code>.env.example</code>, e in <code>frameworks_create</code> viene eseguito prima di <code>env_set</code> (che sovrascrive la password DB).</td></tr>
+            <tr data-sev="HIGH"><td><code>PORT-V4-05</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/db/services/*</code>, <code>db/adminer.rs:119</code></td><td><code>db/*</code> hardcoda <code>.exe</code> (<code>mariadbd.exe</code>, <code>mongod.exe</code>, <code>mongosh.exe</code>), <code>r"mongosh\bin"</code> e chiama <code>kit_path("php/php.exe")</code> con slash non tradotto da <code>translate_rel</code>.</td></tr>
+            <tr data-sev="HIGH"><td><code>PORT-V4-06</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/agents/mod.rs:70</code>, <code>agents/sync/mod.rs:62</code>, <code>detect/python.rs:33</code></td><td>Backslash letterali nei path di Claude/Codex/Antigravity, Apache, Composer e ricerca venv Python limitata a <code>Scripts/python.exe</code>.</td></tr>
+            <tr data-sev="MED"><td><code>SEC-V4-02</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>runtime/php-router.php:17-27</code>, <code>projects/run.rs:202</code></td><td><code>php-router.php</code> rifiuta le richieste LAN (<code>421</code>) perché <code>Runner</code> non esporta <code>ATOLLO_ALLOW_LAN=1</code>, e ammette richieste con header <code>Host</code> vuoto.</td></tr>
+            <tr data-sev="MED"><td><code>SEC-V4-03</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/projects/serve.rs:56-67</code></td><td>Il server statico integrato rifiuta <code>*.localhost</code> con <code>403 Forbidden</code>.</td></tr>
+            <tr data-sev="MED"><td><code>BUG-V4-02</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/servers/mod.rs:408-447, 1273-1284</code></td><td>I pool condivisi ignorano <code>data/projects/&lt;p&gt;/{apache,nginx}/conf.d/*.conf</code>.</td></tr>
+            <tr data-sev="MED"><td><code>BUG-V4-03</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/servers/mod.rs:1043</code>, <code>projects/run.rs:420</code></td><td>Manca la validazione incrociata delle porte tra pool web, progetti, DB e range VSCodium (<code>7000..=7099</code>), e <code>php.ini</code> è condiviso tra linee PHP.</td></tr>
+            <tr data-sev="MED"><td><code>BUG-V4-06</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/db/services/mod.rs:834-839</code></td><td><code>drop_db</code> elimina il database del progetto solo sulla linea MariaDB attualmente selezionata.</td></tr>
+            <tr data-sev="MED"><td><code>BUG-V4-07</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/db/browse.rs:148-181</code>, <code>db/services/mod.rs:657</code></td><td>Browser DB e Adminer interrogano solo la linea MariaDB primaria (<code>None</code>).</td></tr>
+            <tr data-sev="MED"><td><code>BUG-V4-11</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>commands/frameworks.rs</code>, <code>projects.rs</code>, <code>github.rs</code></td><td>Manca <code>state.servers.invalidate()</code> dopo creazione/clonazione/eliminazione progetto.</td></tr>
+            <tr data-sev="MED"><td><code>BUG-V4-12</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/detect/container.rs:142-168</code></td><td>Estrazione tag immagine Docker errata quando il registry include una porta (<code>registry:5000/img:tag</code>).</td></tr>
+            <tr data-sev="MED"><td><code>BUG-V4-13</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/terminals.rs:280-335</code></td><td><code>terminal_env</code> non fa fallback alla linea installata se una linea salvata nel profilo terminale è stata disinstallata.</td></tr>
+            <tr data-sev="MED"><td><code>PORT-V4-07</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>catalog/components.json:23-24</code>, <code>julia.rs</code>, <code>js.rs</code>, <code>checks.rs:75</code></td><td><code>Julia</code> e <code>Bun</code> privi di <code>x64Only: true</code> su <code>win32-arm64</code>; <code>check_vcruntime</code> falso negativo su Unix; <code>RunLock</code> in-process su Unix.</td></tr>
+            <tr data-sev="MED"><td><code>PORT-V4-08</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>install/cli.rs</code>, <code>install/lang/r.rs</code>, <code>components.json</code></td><td>Rilocazione offline Conda per <code>git</code>/<code>r</code> su Unix e sblocco di <code>php</code>, <code>apache</code>, <code>nginx</code>, <code>adminer</code> su Unix e <code>mariadb</code> su macOS.</td></tr>
+            <tr data-sev="LOW"><td><code>SEC-V4-04</code></td><td><span class="badge b-low">BASSA</span></td><td><code>projects/nginx.rs:220</code>, <code>servers/mod.rs:648</code></td><td>Impostare <code>FCGI_WEB_SERVER_ADDRS=127.0.0.1</code> per <code>php-cgi</code>.</td></tr>
+            <tr data-sev="LOW"><td><code>BUG-V4-08</code></td><td><span class="badge b-low">BASSA</span></td><td><code>tauri/src/db/services/tools.rs:115</code></td><td>Aggiungere contatore atomico <code>AtomicU64</code> al file temporaneo <code>&lt;stem&gt;-&lt;pid&gt;.cnf</code>.</td></tr>
+            <tr data-sev="LOW"><td><code>UX-V4-01..06</code></td><td><span class="badge b-low">UX / A11Y</span></td><td><code>ui/src/App.tsx</code>, <code>activity.tsx</code>, <code>servers.tsx</code>, <code>terminals.tsx</code></td><td>Conteggio pool e linee DB secondarie in <code>StatusBar</code>/<code>ActivityPanel</code>/<code>stopAll</code>; stato <code>detached</code> in <code>servers.tsx</code>; <code>onCancel</code> su <code>InlineConfirm</code> in <code>terminals.tsx:258</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 3: MATRIX -->
+    <div id="tab-matrix" class="tab-panel">
+      <div class="card chart-box">
+        <h2>Matrice Visuale per Famiglia OS / Distro</h2>
+        <img src="./assets/distro-compatibility-matrix.svg" alt="Matrice Distro v4" />
+      </div>
+      <div class="card">
+        <h2>Riepilogo Numerico sui 35 Componenti del Catalogo</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Piattaforma / Distro</th>
+              <th>Operativi Subito</th>
+              <th>Sbloccati da Fix Runtime v4</th>
+              <th>Richiedono Target/Sysroot</th>
+              <th>Totale Post-Sciame v4</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Windows 10/11 x64 (<code>win32-x64</code>)</strong></td><td><span class="badge b-ok">35 / 35 (100%)</span></td><td>0</td><td>0</td><td><strong>35 / 35 (100%)</strong></td></tr>
+            <tr><td><strong>Windows 11 ARM64 (<code>win32-arm64</code>)</strong></td><td><span class="badge b-ok">33 / 35 (94,3%)</span></td><td>2 (<code>julia</code>, <code>bun</code> con <code>x64Only</code>)</td><td>0</td><td><strong>35 / 35 (100%)</strong></td></tr>
+            <tr><td><strong>Linux x64 glibc ≥ 2.34 (Ubuntu 22+, Debian 12+, Fedora)</strong></td><td>12 / 35</td><td>19 / 35 (symlink <code>copy_tree</code> + <code>.exe</code>/backslash)</td><td>4 (<code>php</code>, <code>apache</code>, <code>nginx</code>, <code>adminer</code>)</td><td><strong>31 / 35 → 35 / 35 con Stack Web Unix</strong></td></tr>
+            <tr><td><strong>macOS Apple Silicon &amp; Intel (<code>darwin-arm64</code> / <code>darwin-x64</code>)</strong></td><td>12 / 35</td><td>18 / 35 (symlink + <code>bashrc</code> Bash 3.2 + <code>.exe</code>)</td><td>5 (4 Web + <code>mariadb</code>)</td><td><strong>30 / 35 → 35 / 35 con conda-forge/spc</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: SWARM -->
+    <div id="tab-swarm" class="tab-panel">
+      <div class="card">
+        <h2>Piano Esecutivo Sciame v4 — 7 Agenti in Parallelo Senza Conflitti</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Agente</th>
+              <th>Rilievi Assegnati</th>
+              <th>File Toccati in Esclusiva</th>
+              <th>Impatto Atteso</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Agente 1 — Sicurezza Web &amp; Router PHP</strong></td><td><code>SEC-V4-01..04</code></td><td><code>runtime/php-router.php</code>, <code>projects/apache.rs</code>, <code>projects/nginx.rs</code>, <code>projects/serve.rs</code></td><td>Sicurezza Locale: 91 → 98/100</td></tr>
+            <tr><td><strong>Agente 2 — Pool Condivisi &amp; Port Guard</strong></td><td><code>BUG-V4-01..03</code>, <code>BUG-V4-11</code></td><td><code>servers/mod.rs</code>, <code>projects/run.rs</code>, <code>commands/projects.rs</code>, <code>commands/github.rs</code></td><td>Architettura: 96 → 99/100</td></tr>
+            <tr><td><strong>Agente 3 — MariaDB Multi-Linea &amp; .env</strong></td><td><code>BUG-V4-04..08</code>, <code>BUG-V4-10</code></td><td><code>db/services/mod.rs</code>, <code>db/services/tools.rs</code>, <code>db/auth.rs</code>, <code>db/browse.rs</code>, <code>commands/frameworks.rs</code></td><td>Dati &amp; DB: 92 → 98/100</td></tr>
+            <tr><td><strong>Agente 4 — Detection &amp; Terminali</strong></td><td><code>BUG-V4-09</code>, <code>BUG-V4-12..13</code></td><td><code>detect/mod.rs</code>, <code>detect/container.rs</code>, <code>detect/python.rs</code>, <code>terminals.rs</code></td><td>Zero falsi positivi Apache su Laravel</td></tr>
+            <tr><td><strong>Agente 5 — Archivi, Symlink, Shell &amp; ARM64</strong></td><td><code>PORT-V4-01..03</code>, <code>PORT-V4-07</code></td><td><code>net/archive.rs</code>, <code>agents/relocate.rs</code>, <code>setup/kit_files.rs</code>, <code>runtime/bin/agy</code>, <code>runtime/bashrc</code>, <code>catalog/components.json</code>, <code>julia.rs</code>, <code>js.rs</code>, <code>checks.rs</code></td><td>Rilocazione &amp; USB: 93 → 99/100; Win ARM64: 100%</td></tr>
+            <tr><td><strong>Agente 6 — Runtime Unix Editor/DB/Agents</strong></td><td><code>PORT-V4-04..06</code>, <code>PORT-V4-08</code></td><td><code>editor/*</code>, <code>db/services/{data,access,backups}.rs</code>, <code>db/adminer.rs</code>, <code>agents/mod.rs</code>, <code>agents/sync/mod.rs</code></td><td>Readiness Multi-OS: 81 → 97/100</td></tr>
+            <tr><td><strong>Agente 7 — Rifiniture UX/UI &amp; A11y</strong></td><td><code>UX-V4-01..06</code></td><td><code>ui/src/{App,activity,servers,terminals,databases}.tsx</code>, <code>ui/src/projects/{site,databases}.tsx</code>, <code>ui/src/api/{projects,servers}.ts</code></td><td>UX &amp; Accessibilità: 93 → 98/100</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.add('active');
+      btn.classList.add('active');
+    }
+    function filterFindings(sev, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('#findings-table tbody tr').forEach(row => {
+        row.style.display = (sev === 'ALL' || row.dataset.sev === sev) ? '' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>
