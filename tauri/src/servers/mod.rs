@@ -1324,7 +1324,7 @@ impl WebServers {
                         fcgi_port,
                         lan,
                         &names,
-                        &alias::resolve(&proj_root, &self.kit.projects(), &site.aliases),
+                        &alias::resolve_nginx(&proj_root, &self.kit.projects(), &site.aliases),
                         false,
                     );
                     write_atomic(

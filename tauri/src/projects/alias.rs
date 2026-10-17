@@ -172,6 +172,123 @@ pub fn skipped(
         .collect()
 }
 
+/// Nginx for Windows has no `disable_symlinks` (it needs `openat`): it
+/// follows any link or junction inside an alias' folder (D-100).
+pub const NGINX_FOLLOWS_LINKS: bool = cfg!(windows);
+
+/// How deep and how wide [`look_inside`] goes: deeper and wider than the
+/// project walk of detection (3 levels, 3000 files), since an alias is often
+/// a folder of uploads by year and month.
+pub const INSIDE_DEPTH: usize = 8;
+pub const INSIDE_ENTRIES: usize = 20_000;
+
+/// What [`look_inside`] found in an alias' folder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Inside {
+    /// No link or junction anywhere in it.
+    Clean,
+    /// This entry is a link or a junction (or could not be read).
+    Link(PathBuf),
+    /// Deeper than [`INSIDE_DEPTH`] or with more than [`INSIDE_ENTRIES`]
+    /// entries: what was not looked at is not trusted.
+    TooLarge,
+}
+
+/// Looks for links and junctions inside `dir` (itself already checked by
+/// [`resolve`]) without following any. A folder or entry that cannot be read
+/// counts as a link: Nginx might read what the scan could not.
+pub fn look_inside(dir: &Path) -> Inside {
+    fn walk(d: &Path, depth: usize, seen: &mut usize) -> Inside {
+        let Ok(entries) = std::fs::read_dir(d) else {
+            return Inside::Link(d.to_path_buf());
+        };
+        for e in entries {
+            let Ok(e) = e else {
+                return Inside::Link(d.to_path_buf());
+            };
+            *seen += 1;
+            if *seen > INSIDE_ENTRIES {
+                return Inside::TooLarge;
+            }
+            // A DirEntry's metadata is the entry's own, never its target's.
+            let Ok(meta) = e.metadata() else {
+                return Inside::Link(e.path());
+            };
+            if safe_path::is_reparse(&meta) {
+                return Inside::Link(e.path());
+            }
+            if meta.is_dir() {
+                if depth >= INSIDE_DEPTH {
+                    return Inside::TooLarge;
+                }
+                match walk(&e.path(), depth + 1, seen) {
+                    Inside::Clean => {}
+                    other => return other,
+                }
+            }
+        }
+        Inside::Clean
+    }
+    let mut seen = 0;
+    walk(dir, 0, &mut seen)
+}
+
+/// The aliases [`resolve`] keeps that Nginx can serve: where Nginx follows
+/// links ([`NGINX_FOLLOWS_LINKS`]), those whose folder has none inside
+/// ([`look_inside`]); the others are left out with a warning in the log.
+pub fn resolve_nginx(
+    project_root: &Path,
+    projects_root: &Path,
+    aliases: &BTreeMap<String, String>,
+) -> Vec<SiteAlias> {
+    resolve(project_root, projects_root, aliases)
+        .into_iter()
+        .filter(|a| {
+            let found = nginx_inside(a);
+            match &found {
+                Inside::Clean => {}
+                Inside::Link(p) => crate::log::warn(&format!(
+                    "{}: alias {} not served by Nginx: {} is a link, a junction or unreadable (Nginx for Windows would follow it)",
+                    project_root.display(),
+                    a.url,
+                    p.display()
+                )),
+                Inside::TooLarge => crate::log::warn(&format!(
+                    "{}: alias {} not served by Nginx: its folder is too large to check for links (over {INSIDE_DEPTH} levels or {INSIDE_ENTRIES} entries)",
+                    project_root.display(),
+                    a.url
+                )),
+            }
+            found == Inside::Clean
+        })
+        .collect()
+}
+
+/// [`skipped`] for a site served by Nginx: also the aliases
+/// [`resolve_nginx`] leaves out for a link inside their folder.
+pub fn skipped_nginx(
+    project_root: &Path,
+    projects_root: &Path,
+    aliases: &BTreeMap<String, String>,
+) -> Vec<String> {
+    aliases
+        .iter()
+        .filter(|(url, target)| {
+            resolve_one(project_root, projects_root, url, target)
+                .is_none_or(|a| nginx_inside(&a) != Inside::Clean)
+        })
+        .map(|(url, _)| url.trim().to_owned())
+        .collect()
+}
+
+fn nginx_inside(alias: &SiteAlias) -> Inside {
+    if NGINX_FOLLOWS_LINKS {
+        look_inside(&alias.dir)
+    } else {
+        Inside::Clean
+    }
+}
+
 fn resolve_one(
     project_root: &Path,
     projects_root: &Path,
