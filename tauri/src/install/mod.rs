@@ -18,6 +18,7 @@
 
 mod agents;
 mod android;
+mod caddy;
 mod core;
 mod db;
 mod editor;
@@ -224,6 +225,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "php" => &web::Php,
         "apache" => &web::Apache,
         "nginx" => &web::Nginx,
+        "caddy" => &caddy::Caddy,
         "rust" => &native::Rust,
         "go" => &lang::Go,
         "java" => &lang::Java,
