@@ -4,8 +4,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { EditorSettingsView, McpView } from "../../../ui/src/api";
-import { ProjectMcpBox } from "../../../ui/src/projectmcp";
-import { EditorSettingsBox } from "../../../ui/src/editorsettings";
+import { ProjectMcpBox } from "../../../ui/src/projects/mcp";
+import { EditorSettingsBox } from "../../../ui/src/projects/editorsettings";
 
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
 vi.mock("@tauri-apps/api/core", () => ({

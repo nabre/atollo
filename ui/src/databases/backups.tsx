@@ -3,11 +3,11 @@
 // copied into that folder first: the app has no file picker, D-15).
 import { useCallback, useState } from "react";
 import { VscCloudUpload, VscDiscard, VscFolderOpened } from "react-icons/vsc";
-import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "./api";
-import { locale, t } from "./i18n";
-import { ActionButton, ErrorLine } from "./common";
-import { useAction, useLoad } from "./hooks";
-import { InlineConfirm, Notice } from "./workbench";
+import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "../api";
+import { locale, t } from "../i18n";
+import { ActionButton, ErrorLine } from "../common";
+import { useAction, useLoad } from "../hooks";
+import { InlineConfirm, Notice } from "../workbench";
 
 function size(bytes: number): string {
   const kb = bytes / 1024;

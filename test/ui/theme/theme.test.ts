@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import vscodeCss from "../../ui/src/theme-vscode.css?raw";
-import tokensCss from "../../ui/src/theme-colors.css?raw";
+import vscodeCss from "../../../ui/src/theme/theme-vscode.css?raw";
+import tokensCss from "../../../ui/src/theme/theme-colors.css?raw";
 
 // The components' sources (one module per file, as the app imports them).
 const sources = import.meta.glob<string>(
-  ["../../node_modules/@vscode-elements/elements/dist/**/*.js", "!**/bundled.js"],
+  ["../../../node_modules/@vscode-elements/elements/dist/**/*.js", "!**/bundled.js"],
   { query: "?raw", import: "default", eager: true },
 );
 

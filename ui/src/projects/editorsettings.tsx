@@ -2,11 +2,11 @@
 // D-78): format on save, indentation, folders hidden in the editor.
 import { useCallback, useState, type SyntheticEvent } from "react";
 import { VscSave } from "react-icons/vsc";
-import { projectEditorSettings, projectEditorSettingsSet, type EditorSettings, type EditorSettingsView } from "./api";
-import { t } from "./i18n";
-import { ActionButton, ErrorLine, LoadError, useRetryFocus } from "./common";
-import { useAction, useLoad } from "./hooks";
-import { Select, TextArea } from "./workbench";
+import { projectEditorSettings, projectEditorSettingsSet, type EditorSettings, type EditorSettingsView } from "../api";
+import { t } from "../i18n";
+import { ActionButton, ErrorLine, LoadError, useRetryFocus } from "../common";
+import { useAction, useLoad } from "../hooks";
+import { Select, TextArea } from "../workbench";
 
 type Tri = "default" | "yes" | "no";
 const toTri = (v: boolean | null): Tri => (v === null ? "default" : v ? "yes" : "no");

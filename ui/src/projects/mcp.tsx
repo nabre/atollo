@@ -3,11 +3,11 @@
 // the kit's servers.
 import { useCallback, useState, type SyntheticEvent } from "react";
 import { VscAdd, VscClose, VscSave, VscTrash } from "react-icons/vsc";
-import { projectMcp, projectMcpSet, type McpServer, type McpView } from "./api";
-import { t } from "./i18n";
-import { ActionButton, ErrorLine, LoadError } from "./common";
-import { useAction, useLoad } from "./hooks";
-import { Select, TextArea, TextField } from "./workbench";
+import { projectMcp, projectMcpSet, type McpServer, type McpView } from "../api";
+import { t } from "../i18n";
+import { ActionButton, ErrorLine, LoadError } from "../common";
+import { useAction, useLoad } from "../hooks";
+import { Select, TextArea, TextField } from "../workbench";
 
 function describe(s: McpServer): string {
   return s.kind === "http" ? (s.url ?? "") : [s.command ?? "", ...s.args].join(" ");

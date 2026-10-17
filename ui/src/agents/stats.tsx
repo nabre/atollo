@@ -11,10 +11,10 @@ import {
   type StatsReport,
   type Tokens,
   type Usage,
-} from "./api";
-import { locale, t } from "./i18n";
-import { ActionButton } from "./common";
-import { Badge } from "./tags";
+} from "../api";
+import { locale, t } from "../i18n";
+import { ActionButton } from "../common";
+import { Badge } from "../tags";
 
 /** Read again every 2 minutes, as often as the app asks the servers. */
 const EVERY = 2 * 60 * 1000;

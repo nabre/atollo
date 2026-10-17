@@ -28,12 +28,12 @@ import {
   type LineInfo,
   type ServiceInfo,
   type ServiceState,
-} from "./api";
-import { t } from "./i18n";
-import { DbBrowser } from "./dbbrowser";
-import { ComponentLogo } from "./logos";
-import { ActionButton, ErrorLine } from "./common";
-import { useAction, useCopy, useLoad } from "./hooks";
+} from "../api";
+import { t } from "../i18n";
+import { DbBrowser } from "./browser";
+import { ComponentLogo } from "../logos";
+import { ActionButton, ErrorLine } from "../common";
+import { useAction, useCopy, useLoad } from "../hooks";
 import {
   Button,
   CheckboxLabel,
@@ -53,7 +53,7 @@ import {
   TextField,
   ViewContainer,
   ViewPane,
-} from "./workbench";
+} from "../workbench";
 
 function stateLabel(state: ServiceState): string {
   switch (state) {
