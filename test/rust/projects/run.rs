@@ -9,6 +9,21 @@ fn local_network_setting() {
     assert_eq!(on_network(cmd, true), "php -S 0.0.0.0:7101 -t public");
 }
 
+/// The DB_PORT of a project's `.env` is read (it wins over the kit's).
+#[test]
+fn dotenv_values() {
+    let tmp = TempDir::new("run-dotenv");
+    std::fs::write(
+        tmp.0.join(".env"),
+        "# DB_PORT=1\nDB_HOST=127.0.0.1\nexport DB_PORT=\"3310\"\n",
+    )
+    .unwrap();
+    assert_eq!(dotenv_value(&tmp.0, "DB_PORT").as_deref(), Some("3310"));
+    assert_eq!(dotenv_value(&tmp.0, "DB_NAME"), None);
+    std::fs::write(tmp.0.join(".env"), "DB_PORT='3306'\n").unwrap();
+    assert_eq!(dotenv_value(&tmp.0, "DB_PORT").as_deref(), Some("3306"));
+}
+
 #[test]
 fn lines_and_colours() {
     let mut rest = String::new();

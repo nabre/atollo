@@ -550,9 +550,18 @@ impl Runner {
             cmd.env("PORT", p.to_string())
                 .env("ROCKET_PORT", p.to_string());
         }
-        // The port of the MariaDB version its database is on (PLAN.md §13.2).
+        // The port of the MariaDB version its database is on (PLAN.md §13.2),
+        // unless a `.env` sets another one: dotenv loaders keep a variable
+        // already there, and the user's own port would be lost.
         if let Some(p) = crate::db::services::project_db_port(&self.kit, id) {
-            cmd.env("DB_PORT", p.to_string());
+            let p = p.to_string();
+            let own = [dir, cwd.as_path()]
+                .into_iter()
+                .filter_map(|d| dotenv_value(d, "DB_PORT"))
+                .any(|v| v != p);
+            if !own {
+                cmd.env("DB_PORT", p);
+            }
         }
         for (k, v) in &action.env {
             cmd.env(k, listen(v));
@@ -1077,6 +1086,25 @@ impl Runner {
 
 fn tr(lang: &str, source: &str, args: &[&str]) -> String {
     crate::i18n::t(lang, source, args)
+}
+
+/// The value of `key` in the `.env` of `dir` (`KEY=value`, `export KEY=`,
+/// quotes taken off), when set there.
+pub(crate) fn dotenv_value(dir: &Path, key: &str) -> Option<String> {
+    let text = crate::os::safe_path::read_text(dir, &dir.join(".env"))?;
+    text.lines().rev().find_map(|line| {
+        let line = line.trim();
+        let line = line.strip_prefix("export ").unwrap_or(line);
+        let (k, v) = line.split_once('=')?;
+        (!k.starts_with('#') && k.trim() == key).then(|| {
+            let v = v.trim();
+            v.strip_prefix('"')
+                .and_then(|v| v.strip_suffix('"'))
+                .or_else(|| v.strip_prefix('\'').and_then(|v| v.strip_suffix('\'')))
+                .unwrap_or(v)
+                .to_owned()
+        })
+    })
 }
 
 /// A command (or a variable) found by the app listens on 127.0.0.1; with
