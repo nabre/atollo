@@ -806,16 +806,41 @@ impl Services {
         crate::fsx::write_json(&settings_path(&self.kit), &all)
     }
 
-    /// The installed servers marked "start with Atollo".
+    /// The installed servers marked "start with Atollo": the version each
+    /// runs, then the other installed versions the projects' databases are
+    /// on ([`lines_in_use`]), each on its own port.
     pub fn autostart(&self, env: &KitEnv) {
         for (id, s) in load_settings(&self.kit) {
             if s.autostart && SERVERS.contains(&id.as_str()) && installed(&self.kit, &id) {
                 if let Err(e) = self.start(&id, env) {
                     crate::log::warn(&format!("{id}: automatic start: {e:#}"));
                 }
+                for line in lines_in_use(&self.kit, &id) {
+                    if let Err(e) = self.start_line(&id, Some(&line), env) {
+                        crate::log::warn(&format!("{id} {line}: automatic start: {e:#}"));
+                    }
+                }
             }
         }
     }
+}
+
+/// The installed versions of `id`, other than the one the server runs, that
+/// a project's database is on (`lines` of its `db.json`, with a database
+/// created): those the automatic start starts beside the server. Newest
+/// first; a version chosen and then uninstalled is left out.
+pub fn lines_in_use(kit: &Kit, id: &str) -> Vec<String> {
+    let main = server_line(kit, id);
+    let wanted: std::collections::BTreeSet<String> = crate::projects::state::all(kit)
+        .into_iter()
+        .filter(|p| auth::project_passwords(kit, p).contains_key(id))
+        .filter_map(|p| auth::project_line(kit, &p, id).ok().flatten())
+        .filter(|l| Some(l) != main.as_ref())
+        .collect();
+    server_lines(kit, id)
+        .into_iter()
+        .filter(|l| wanted.contains(l))
+        .collect()
 }
 
 /// The versions of `engine` to drop the project's database from: every one
