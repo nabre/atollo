@@ -25,7 +25,7 @@ use crate::kit::{validate_project_name, Kit};
 use crate::os::jobs::{self, Job};
 use crate::projects::alias;
 use crate::projects::apache::{self, fwd};
-use crate::projects::nginx;
+use crate::projects::nginx::{self, FastCgi};
 use crate::projects::run::is_port_free;
 use crate::setup::catalog::Catalog;
 
@@ -147,7 +147,7 @@ struct StoredServers {
 struct RunningPool {
     child: Child,
     port: u16,
-    fcgi_port: Option<u16>,
+    fcgi: Option<FastCgi>,
     /// The PHP line the pool was started with (`None`: no PHP).
     php_line: Option<String>,
     /// The pool's php-cgi (Nginx with PHP): when it dies the pool is
@@ -170,7 +170,7 @@ struct RunningPool {
 struct LivePool {
     port: u16,
     php_line: Option<String>,
-    fcgi_port: Option<u16>,
+    fcgi: Option<FastCgi>,
 }
 
 /// A reload of a running pool needs a full stop and start (not Nginx's
@@ -182,7 +182,7 @@ fn needs_restart(pool: &WebServerPool, live: &LivePool) -> bool {
     pool.engine == WebServerEngine::Apache
         || pool.port != live.port
         || pool.php_line != live.php_line
-        || (pool.php_line.is_some() && live.fcgi_port.is_none())
+        || (pool.php_line.is_some() && live.fcgi.is_none())
 }
 
 impl RunningPool {
@@ -635,16 +635,17 @@ fn php_cgi_listening(child: &mut Child, port: u16, within: Duration) -> bool {
 
 /// The pool's php-cgi with its FastCGI port, started again on another
 /// port (up to 3 times) when it ends at once because its port was taken.
-fn spawn_php_cgi(kit: &Kit, env: &KitEnv, job: &Job) -> (Option<u16>, Option<Child>) {
+fn spawn_php_cgi(kit: &Kit, env: &KitEnv, job: &Job) -> (Option<FastCgi>, Option<Child>) {
     for _ in 0..3 {
-        let Some((port, mut child)) = nginx::spawn_php_cgi_if_present(kit, env, job) else {
+        let Some((fcgi, mut child)) = nginx::spawn_php_cgi_if_present(kit, env, job) else {
             break;
         };
-        if php_cgi_listening(&mut child, port, Duration::from_secs(5)) {
-            return (Some(port), Some(child));
+        if php_cgi_listening(&mut child, fcgi.port, Duration::from_secs(5)) {
+            return (Some(fcgi), Some(child));
         }
         crate::log::warn(&format!(
-            "php-cgi ended at once on port {port}: trying another port"
+            "php-cgi ended at once on port {}: trying another port",
+            fcgi.port
         ));
     }
     (None, None)
@@ -1247,7 +1248,7 @@ impl WebServers {
     fn write_pool_configs(
         &self,
         pool: &WebServerPool,
-        fcgi_port: Option<u16>,
+        fcgi: Option<&FastCgi>,
         lan: bool,
     ) -> Result<PathBuf> {
         let detached = self
@@ -1321,7 +1322,7 @@ impl WebServers {
                         &doc_root,
                         None,
                         pool.port,
-                        fcgi_port,
+                        fcgi,
                         lan,
                         &names,
                         &alias::resolve_nginx(&proj_root, &self.kit.projects(), &site.aliases),
@@ -1422,7 +1423,7 @@ impl WebServers {
         let _ = fs::remove_file(pool_dir.join("stderr.log"));
 
         let job = Job::new()?;
-        let (mut cmd, fcgi_port, php) = match pool.engine {
+        let (mut cmd, fcgi, php) = match pool.engine {
             WebServerEngine::Apache => {
                 let apache_dir = component_dir(&self.kit, "apache", pool.server_line.as_deref());
                 let exe = apache::httpd_exe(&self.kit, &apache_dir);
@@ -1454,7 +1455,7 @@ impl WebServers {
                 } else {
                     (None, None)
                 };
-                let conf_path = self.write_pool_configs(&pool, fcgi, lan)?;
+                let conf_path = self.write_pool_configs(&pool, fcgi.as_ref(), lan)?;
                 let mut cmd = jobs::kit_command(&exe, &env);
                 cmd.arg("-p")
                     .arg(&pool_dir)
@@ -1508,7 +1509,7 @@ impl WebServers {
                 RunningPool {
                     child,
                     port: pool.port,
-                    fcgi_port,
+                    fcgi,
                     php_line: pool.php_line.clone(),
                     php,
                     started: pool,
@@ -1571,7 +1572,7 @@ impl WebServers {
             .map(|r| LivePool {
                 port: r.port,
                 php_line: r.php_line.clone(),
-                fcgi_port: r.fcgi_port,
+                fcgi: r.fcgi.clone(),
             });
         let Some(live) = live else {
             // Not running: its files are ready for the next start.
@@ -1581,7 +1582,7 @@ impl WebServers {
 
         if !needs_restart(&pool, &live) {
             // Nginx with the same PHP and port: a graceful reload.
-            let conf_path = self.write_pool_configs(&pool, live.fcgi_port, lan)?;
+            let conf_path = self.write_pool_configs(&pool, live.fcgi.as_ref(), lan)?;
             let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
             let exe = nginx::nginx_exe(&self.kit, &nginx_dir);
             let pool_dir = self.kit.data().join("servers").join(&pool.id);
