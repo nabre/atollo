@@ -478,6 +478,43 @@ fn fresh_list_prunes_ports_of_gone_pools() {
     assert_eq!(ports["keep"], 8097);
 }
 
+/// A port kept in `servers.json` by a pool gone since does not block a
+/// profile: saving it drops the ports of the pools that no longer exist.
+#[test]
+fn save_profile_takes_the_port_of_a_gone_pool() {
+    let tmp = TempDir::new("servers-gone-port");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let mut store = StoredServers::default();
+    store.ports.insert("apache-2.2_php-5.6".to_owned(), 8124);
+    save_store(&kit, &store).unwrap();
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: "mine".into(),
+                name: "Mine".into(),
+                engine: WebServerEngine::Nginx,
+                server_line: None,
+                php_line: None,
+                port: Some(8124),
+                keep_alive: true,
+                autostart: false,
+            },
+            "it",
+        )
+        .unwrap();
+    let ports = load_store(&kit).ports;
+    assert_eq!(ports.keys().collect::<Vec<_>>(), ["mine"]);
+
+    // Opening the app drops them too.
+    let mut store = load_store(&kit);
+    store.ports.insert("nginx-1.20".to_owned(), 8125);
+    save_store(&kit, &store).unwrap();
+    servers.autostart(&KitEnv::default(), "it");
+    assert!(!load_store(&kit).ports.contains_key("nginx-1.20"));
+}
+
 /// N-S5: a Host no project names (an IP from the LAN) gets Apache's own
 /// page from the first VirtualHost, never the first project.
 #[test]
