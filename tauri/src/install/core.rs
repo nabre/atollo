@@ -328,7 +328,9 @@ impl Python {
 
 impl Installer for Python {
     /// The newest minor (the line marked "latest"), unless one is chosen in
-    /// the settings.
+    /// the settings: a ticked versioned language installs its newest line
+    /// (D-81), so a fresh kit gets 3.15 once python-build-standalone has
+    /// it. `PYTHON_DEFAULT` is only the fallback when no line is listed.
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let chosen = Settings::load(ctx.kit)
             .settings
