@@ -81,6 +81,12 @@ fn run() -> i32 {
             return 1;
         }
     };
+    // macOS App Translocation: a read-only copy where a kit would be lost
+    // (T1.1.2); `None` elsewhere.
+    if let Some(text) = kit::launch_problem(kit::Os::current(), &exe, early_lang) {
+        fatal(early_lang, &text);
+        return 1;
+    }
     let kit = match Kit::from_exe(&exe) {
         // The host's TEMP, before the profile folders move into data\ (D-04,
         // D-90); CP_HOST_TEMP when started from the kit's own environment.
@@ -101,15 +107,8 @@ fn run() -> i32 {
     let moved_from = match kit.prepare() {
         Ok(moved) => moved,
         Err(e) => {
-            let path = match &e {
-                kit::KitError::NotWritable { path, .. } => path.display().to_string(),
-                kit::KitError::NoRoot(path) => path.display().to_string(),
-            };
-            let text = format!(
-                "{}\n\n{}",
-                i18n::t(early_lang, "Impossibile scrivere nella cartella {0}.", &[&path]),
-                i18n::t(early_lang, "Sposta Dev-Kit.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
-            );
+            // Windows keeps its text; macOS and Linux name a read-only disk.
+            let text = kit::prepare_error_message(kit::Os::current(), &e, early_lang);
             fatal(early_lang, &text);
             return 1;
         }
@@ -128,6 +127,13 @@ fn run() -> i32 {
         host.get("DEVKIT_LANG"),
         windows_lang.as_deref(),
     );
+    // A kit disk that runs no program (noexec, showexec) stops the app and
+    // every command, `prepare` included (WP-1.7); FAT32 and exFAT are only
+    // logged. Nothing on Windows.
+    if let Some(text) = disk_stop(os::volume::disk_notice(&kit, lang)) {
+        fatal(lang, &text);
+        return 1;
+    }
     if let Some(problem) = &loaded.problem {
         log::warn(&i18n::t("en", "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.", &[problem]));
     }
@@ -251,16 +257,11 @@ fn run() -> i32 {
     // WebView2 lookup sets a variable for the fixed runtime: still single-threaded here.
     let runtime = os::webview::locate(&kit);
     let Some(runtime) = runtime else {
-        log::error("WebView2 runtime not found");
-        let text = format!(
-            "{}\n\n{}",
-            i18n::t(lang, "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di NEXKORA.", &[]),
-            i18n::t(
-                lang,
-                "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia NEXKORA. Non serve installare nulla.",
-                &[kit.arch().as_str(), os::webview::DOWNLOAD_URL, &os::webview::fixed_folder(&kit).display().to_string()]
-            )
-        );
+        log::error("web view runtime not found");
+        // WebView2 on Windows (same text as before), WebKitGTK on Linux
+        // with the command of the distribution.
+        let os_release = std::fs::read_to_string("/etc/os-release").ok();
+        let text = os::webview::missing_message(&kit, os_release.as_deref(), lang);
         fatal(lang, &text);
         return 1;
     };
@@ -273,8 +274,8 @@ fn run() -> i32 {
 
     match os::jobs::init() {
         Ok(None) => {}
-        Ok(Some(note)) => log::warn(&format!("job object: {note}")),
-        Err(e) => log::error(&format!("job object: {e:#}")),
+        Ok(Some(note)) => log::warn(&format!("child processes: {note}")),
+        Err(e) => log::error(&format!("child processes: {e:#}")),
     }
     log::info(&format!(
         "start {} root={} platform={} lang={lang} webview={webview_desc} moved_from={:?}",
@@ -343,6 +344,19 @@ fn run() -> i32 {
 
 use std::io::Write as _;
 
+/// What the notice on the kit's disk means at start (WP-1.7): the text
+/// that stops the app, logged as an error; a warning is only logged.
+fn disk_stop(notice: Option<os::volume::DiskNotice>) -> Option<String> {
+    let notice = notice?;
+    if notice.blocking {
+        log::error(&format!("kit disk: {}", notice.text));
+        Some(notice.text)
+    } else {
+        log::warn(&format!("kit disk: {}", notice.text));
+        None
+    }
+}
+
 /// Raises GitHub's API limit when the user has a token.
 fn github_token(host: &Host) -> Option<String> {
     host.get("GITHUB_TOKEN")
@@ -370,7 +384,7 @@ fn prepare(
     };
     let mut out = cli::output();
     if let Err(e) = os::jobs::init() {
-        log::warn(&format!("job object: {e:#}"));
+        log::warn(&format!("child processes: {e:#}"));
     }
     let net = match net::Net::new(settings, github_token(host)) {
         Ok(net) => net.with_github_cache(kit.data().join("cache").join("github")),

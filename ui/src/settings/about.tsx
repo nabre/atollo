@@ -7,14 +7,8 @@ import { ErrorLine } from "../common";
 import { t } from "../i18n";
 import { Button, Properties, SettingItem, SettingsGroup } from "../workbench";
 
-/** How the kit's disk is mounted on macOS and Linux (WP-1.7): `noexec`,
- * and the warning of the app about it, already translated. Optional: the
- * app sends them from WP-1.7 on, never on Windows. */
-type DiskMount = { diskNoexec?: boolean | null; diskNote?: string | null };
-
 /** Where the kit is (was on the Home, D-76). */
 export function KitInfo({ info }: { info: AppInfo }) {
-  const mount = info as AppInfo & DiskMount;
   const facts: [string, string][] = [
     [t("Cartella del kit"), info.root],
     [t("Progetti"), info.projects],
@@ -28,7 +22,7 @@ export function KitInfo({ info }: { info: AppInfo }) {
     const kind = { fixed: t("fisso"), removable: t("rimovibile"), remote: t("di rete"), other: t("altro") };
     const disk: string[] = [info.diskFs];
     if (info.diskKind !== null) disk.push(kind[info.diskKind]);
-    if (mount.diskNoexec) disk.push("noexec");
+    if (info.diskNoexec) disk.push("noexec");
     facts.splice(3, 0, [t("Disco del kit"), disk.join(", ")]);
   }
   const rows = facts.map(([k, v]): [string, React.ReactNode] => [
@@ -46,7 +40,7 @@ export function KitInfo({ info }: { info: AppInfo }) {
           <BrandSymbol size={40} />
           <Properties rows={rows} />
         </div>
-        {mount.diskNote ? <p className="mt-2 text-vsc-warning">{mount.diskNote}</p> : null}
+        {info.diskNote ? <p className="mt-2 text-vsc-warning">{info.diskNote}</p> : null}
       </SettingItem>
     </SettingsGroup>
   );

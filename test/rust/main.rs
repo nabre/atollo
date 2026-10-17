@@ -61,6 +61,36 @@ fn invoke_cmd(
     .map(|b| b.deserialize::<serde_json::Value>().unwrap())
 }
 
+/// WP-1.7: a blocking notice stops the start with its text; a warning
+/// (FAT32, exFAT) and no notice let it go on.
+#[test]
+fn disk_stop_only_for_blocking_notices() {
+    use os::volume::DiskNotice;
+    let notice = |blocking| DiskNotice {
+        blocking,
+        text: "noexec".into(),
+    };
+    assert_eq!(disk_stop(Some(notice(true))), Some("noexec".to_owned()));
+    assert_eq!(disk_stop(Some(notice(false))), None);
+    assert_eq!(disk_stop(None), None);
+}
+
+/// The checks at start change nothing on Windows: no launch problem, no
+/// notice on the kit's disk, the old texts (`kit::tests`, `os::webview`).
+#[test]
+fn start_checks_silent_on_windows() {
+    let exe = std::path::Path::new(
+        "/private/var/folders/x/AppTranslocation/1/d/Dev-Kit.app/Contents/MacOS/Dev-Kit",
+    );
+    assert_eq!(kit::launch_problem(kit::Os::Win32, exe, "it"), None);
+    assert_eq!(kit::launch_problem(kit::Os::Linux, exe, "it"), None);
+    assert!(kit::launch_problem(kit::Os::Darwin, exe, "it").is_some());
+    if cfg!(windows) {
+        let kit = Kit::at(std::env::temp_dir().join("devkit-ipc-test"), Arch::X64);
+        assert_eq!(os::volume::disk_notice(&kit, "it"), None);
+    }
+}
+
 #[test]
 fn help_is_translated() {
     assert_ne!(i18n::t("en", HELP, &[]), HELP);
@@ -81,6 +111,12 @@ fn editor_windows_cannot_invoke_commands() {
         .unwrap();
     let r = invoke(&main, LOCAL);
     assert!(r.is_ok(), "main window must work: {r:?}");
+    // The mount of the kit's disk (WP-1.7) is never sent on Windows.
+    if cfg!(windows) {
+        let info = r.as_ref().unwrap();
+        assert_eq!(info["diskNoexec"], serde_json::Value::Null);
+        assert_eq!(info["diskNote"], serde_json::Value::Null);
+    }
 
     let editor_url = "http://127.0.0.1:7000/";
     let editor = WebviewWindowBuilder::new(
