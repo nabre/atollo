@@ -96,6 +96,71 @@ fn help_is_translated() {
     assert_ne!(i18n::t("en", HELP, &[]), HELP);
 }
 
+/// The help names the program as it is on each system: `Dev-Kit.exe` on
+/// Windows whatever the file is called, the started file elsewhere; it
+/// documents `--target` with every target id, in every language.
+#[test]
+fn help_program_name_and_target_on_every_system() {
+    let exe = Path::new("/media/usb/Kit/Atollo");
+    for target in kit::Target::ALL {
+        let os = target.os;
+        let name = program_name(os, Some(exe));
+        let unknown = program_name(os, None);
+        if os.is_windows() {
+            assert_eq!(name, "Dev-Kit.exe", "{target}");
+            assert_eq!(unknown, "Dev-Kit.exe", "{target}");
+        } else {
+            assert_eq!(name, "Atollo", "{target}");
+            assert_eq!(unknown, "Dev-Kit", "{target}");
+        }
+        for lang in ["it", "en", "fr", "de"] {
+            let text = help_text(lang, os, Some(exe));
+            let first = text.lines().next().unwrap();
+            assert!(
+                first.contains(&format!(" {name} [")),
+                "{target} {lang}: {first}"
+            );
+            assert!(!text.contains("{0}"), "{target} {lang}");
+            if !os.is_windows() {
+                assert!(!text.contains(".exe"), "{target} {lang}");
+                assert!(!text.contains("agy.cmd"), "{target} {lang}");
+            }
+            // `--target` under both `components` and `prepare`.
+            let lines: Vec<&str> = text.lines().collect();
+            let at = |cmd: &str| {
+                lines
+                    .iter()
+                    .position(|l| l.starts_with(&format!("  {cmd} ")))
+                    .unwrap_or_else(|| panic!("{lang}: {cmd} missing"))
+            };
+            for cmd in ["components", "prepare"] {
+                let start = at(cmd);
+                let has = lines[start + 1..]
+                    .iter()
+                    .take_while(|l| l.starts_with("    "))
+                    .any(|l| l.trim_start().starts_with("--target <id>"));
+                assert!(has, "{lang}: --target missing under {cmd}");
+            }
+            for t in kit::Target::ALL {
+                assert!(text.contains(t.as_str()), "{lang}: {t} missing");
+            }
+        }
+    }
+}
+
+/// Windows keeps the help it has always printed, byte for byte, apart
+/// from the new `--target` lines.
+#[test]
+fn help_on_windows_names_dev_kit_exe() {
+    let exe = Path::new(r"D:\Kit\Atollo.exe");
+    let text = help_text("it", kit::Os::Win32, Some(exe));
+    assert!(text.starts_with("Uso: Dev-Kit.exe [comando]\n\nComandi:\n"));
+    assert_eq!(
+        help_text("en", kit::Os::Win32, Some(exe)).lines().next(),
+        Some("Usage: Dev-Kit.exe [command]")
+    );
+}
+
 /// DECISIONS.md D-14: an editor window (local server URL) cannot call
 /// the app's commands; the main window can.
 #[test]
