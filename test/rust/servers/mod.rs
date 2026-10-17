@@ -47,6 +47,7 @@ fn profile_crud_and_vhost_generation() {
         aliases,
         url: "http://portale.localhost:8095".into(),
         chosen: true,
+        detached: false,
     };
     let vhost = apache_vhost_conf(
         8095,
@@ -102,6 +103,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
                 aliases: BTreeMap::new(),
                 url: "http://alpha.localhost:8088".into(),
                 chosen: true,
+                detached: false,
             },
             AttachedSite {
                 project: "beta".into(),
@@ -112,6 +114,7 @@ fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
                 aliases: BTreeMap::new(),
                 url: "http://beta.localhost:8088".into(),
                 chosen: true,
+                detached: false,
             },
         ],
         conf_dir: r"data\servers\nginx-default".into(),
@@ -167,6 +170,7 @@ fn site(project: &str, folder: &str, port: u16) -> AttachedSite {
         aliases: BTreeMap::new(),
         url: format!("http://{project}.localhost:{port}"),
         chosen: true,
+        detached: false,
     }
 }
 
@@ -1402,6 +1406,24 @@ fn automatic_pools_list_chosen_or_started_sites() {
         .detach(&pool.id, "plain", "apache", &KitEnv::default(), "it")
         .unwrap();
     assert_eq!(projects_of(&servers.list("it", true).pools), ["shop"]);
+
+    // A chosen site whose project stopped: still listed, marked detached.
+    let shop_site = |servers: &WebServers| {
+        servers
+            .list("it", false)
+            .pools
+            .into_iter()
+            .flat_map(|p| p.sites)
+            .find(|s| s.project == "shop")
+            .unwrap()
+    };
+    assert!(!shop_site(&servers).detached);
+    servers
+        .detach(&pool.id, "shop", "site", &KitEnv::default(), "it")
+        .unwrap();
+    let shop = shop_site(&servers);
+    assert!(shop.detached);
+    assert_eq!(shop.server_name, "shop.localhost");
 }
 
 /// PLAN.md §13.1: a site marked `dedicated` keeps its own server (in no

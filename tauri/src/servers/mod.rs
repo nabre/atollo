@@ -79,6 +79,10 @@ pub struct AttachedSite {
     /// a project runs it (PLAN-DATA §9 1.1, TW1.3).
     #[serde(default)]
     pub chosen: bool,
+    /// Its project was stopped in this session ([`WebServers::detach`]):
+    /// listed, but left out of the pool's files until it starts again.
+    #[serde(default)]
+    pub detached: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -840,7 +844,15 @@ impl WebServers {
     pub fn list(&self, lang: &str, fresh: bool) -> WebServersView {
         let mut view = self.list_all(lang, fresh);
         let started = self.started_sites();
+        let detached = self
+            .detached
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
         view.pools = shown_pools(view.pools, &started);
+        for site in view.pools.iter_mut().flat_map(|p| p.sites.iter_mut()) {
+            site.detached = detached.contains(&(site.project.clone(), site.action.clone()));
+        }
         view
     }
 
@@ -1091,6 +1103,7 @@ impl WebServers {
                         aliases: action.aliases.clone(),
                         url: String::new(),
                         chosen: action.custom,
+                        detached: false,
                     });
                 }
             }
