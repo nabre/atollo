@@ -1,7 +1,12 @@
-# Build output
+# Build output (also separate target folders, e.g. `target-gate/` for parallel checks)
 /target/
+/target-*/
 /node_modules/
 /dist/
+
+# Claude Code: agents' worktrees and personal settings
+/.claude/worktrees/
+/.claude/settings.local.json
 
 # Created by Atollo.exe when it runs from the repository folder
 /data/
