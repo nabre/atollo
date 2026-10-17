@@ -405,14 +405,18 @@ fn multi_platform_availability_and_paths_across_targets() {
     assert_eq!(node.installed_version(&kit_mac).as_deref(), Some("24.1.0"));
 }
 
-/// D-108: a target with no build says why (Android and SQLite on Linux
-/// ARM64), and nothing changes for the others.
+/// D-108: a target with no build says why (Android on Linux ARM64; SQLite
+/// was there too until WP-2.5), and nothing changes for the others.
 #[test]
 fn unavailable_targets_have_a_reason() {
     use crate::kit::Target;
 
     let catalog = Catalog::get();
-    for id in ["android", "sqlite"] {
+    let sqlite = catalog.find("sqlite").unwrap();
+    for t in Target::ALL {
+        assert!(sqlite.is_available_on(t), "sqlite on {t}");
+    }
+    for id in ["android"] {
         let c = catalog.find(id).unwrap();
         assert!(!c.is_available_on(Target::LINUX_ARM64), "{id}");
         let reason = c.unavailable_reason(Target::LINUX_ARM64).unwrap();
