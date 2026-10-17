@@ -111,23 +111,37 @@ fi
 
 # --- Copy into the Linux file system ----------------------------------------
 
+# rsync --delete empties whatever $ATOLLO_LINUX_DIR names: only an empty
+# folder, a copy made by this script (marker file) or one of this
+# repository (Cargo.toml and tauri/) is synced into.
+marker=".atollo-linux-copy"
 mkdir -p "$dest"
 dest="$(cd "$dest" && pwd)"
 if [ "$src" = "$dest" ]; then
     echo "Already in $dest: nothing to copy"
 else
+    if [ -n "$(ls -A "$dest")" ] && [ ! -f "$dest/$marker" ] &&
+        ! { [ -f "$dest/Cargo.toml" ] && [ -d "$dest/tauri" ]; }; then
+        echo "$dest is not empty and is not a copy of this repository:" >&2
+        echo "the copy would delete its files. Choose another folder with" >&2
+        echo "ATOLLO_LINUX_DIR, or empty this one." >&2
+        exit 2
+    fi
     echo "Copying $src -> $dest"
     # Anchored with /: tauri/src/projects and the data folders inside the
     # sources are copied. node_modules holds programs for Windows; the kit
     # folders (data, projects) and the agents' worktrees are not sources.
-    # Excluded paths are never deleted from the copy: its target/ stays.
+    # Excluded paths are never deleted from the copy: its target/ and the
+    # marker stay.
     rsync -a --delete \
         --exclude='/target' --exclude='/target-*' --exclude='/target_*' \
         --exclude='node_modules/' \
         --exclude='/.claude/worktrees/' \
         --exclude='/data/' --exclude='/projects/' \
         --exclude='/.git' \
+        --exclude="/$marker" \
         "$src/" "$dest/"
+    touch "$dest/$marker"
 fi
 
 if [ $need_node -eq 1 ]; then
@@ -137,15 +151,18 @@ fi
 
 # --- Tests --------------------------------------------------------------------
 
+# cargo and rustup look for .cargo/config.toml and rust-toolchain.toml from
+# the working directory up: the copy's, not those around /mnt/<drive>.
+cd "$dest"
 log="$dest/target/test-linux.log"
 mkdir -p "$dest/target"
 status=0
 if [ $clippy -eq 1 ]; then
     echo "cargo clippy --all-targets -- -D warnings"
-    cargo clippy --manifest-path "$dest/Cargo.toml" --all-targets -- -D warnings || status=1
+    cargo clippy --all-targets -- -D warnings || status=1
 fi
 echo "cargo test ${cargo_args[*]:-}"
-cargo test --manifest-path "$dest/Cargo.toml" "${cargo_args[@]}" 2>&1 | tee "$log" || status=1
+cargo test "${cargo_args[@]}" 2>&1 | tee "$log" || status=1
 
 echo
 echo "=== Summary (linux, $(uname -m)) ==="

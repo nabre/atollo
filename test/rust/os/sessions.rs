@@ -37,7 +37,6 @@ fn lists_and_stops_a_kit_program() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "Windows paths only parse on Windows")]
 fn other_kit_roots_on_every_system() {
     let no = |_: &Path| false;
     let yes = |_: &Path| true;
