@@ -1,5 +1,5 @@
 //! The data of each version a server runs, `data\db\<id>\<line>` (D-81):
-//! created at the first start (MySQL with `mysqld --initialize-insecure`
+//! created at the first start (MySQL with `mysqld --initialize --init-file`
 //! and the kit's `my.cnf`, `mysql.rs`), copied forward from an older
 //! version, moved from the single folder of an older kit.
 
@@ -195,18 +195,49 @@ impl Services {
                 if let Some(parent) = data.parent() {
                     fs::create_dir_all(parent)?;
                 }
+                // root's password, stored before any server hears of it
+                // (every version has the same administrator), set by the
+                // initialization itself: root is never without one.
+                let mut secrets = auth::load(kit);
+                let password = match secrets.mysql_root.clone() {
+                    Some(p) => p,
+                    None => {
+                        let p = auth::new_password()?;
+                        secrets.mysql_root = Some(p.clone());
+                        auth::save(kit, &secrets)?;
+                        p
+                    }
+                };
+                let init = auth::dir(kit).join(format!("mysql-init-{}.sql", std::process::id()));
+                auth::write_private_text(&init, &auth::mysql_root_sql(&password))?;
                 let mut cmd = jobs::kit_command(
                     bin_at(kit, engine.component(), line, engine.server_bin()),
                     env,
                 );
-                cmd.args(mysql::init_args(&basedir, &data));
+                cmd.args(mysql::init_args(&basedir, &data, &init));
                 let log = log_path(kit, engine.id(), line);
-                run_logged(cmd, &log, Duration::from_secs(300))
-                    .context("mysqld --initialize-insecure")?;
+                let done = run_logged(cmd, &log, Duration::from_secs(300));
+                let _ = fs::remove_file(&init);
+                if let Err(e) = done {
+                    // A half-made folder (it was missing or empty): never
+                    // started with a root of unknown password.
+                    if data.is_dir() {
+                        let _ = crate::net::archive::remove_dir(&data);
+                    }
+                    return Err(e.context("mysqld --initialize"));
+                }
             }
             fs::create_dir_all(&data)?;
-            let fallback = std::env::temp_dir();
-            let socket = mysql::socket_path(kit.os(), &data, port, &fallback);
+            // A socket that does not fit its data folder goes to the kit's
+            // own private folder of the PC's temporary one, never /tmp.
+            let fallback = mysql::socket_dir(kit.system_temp());
+            let socket = mysql::socket_path(kit.os(), &data, port, fallback.as_deref())?;
+            if let Some(dir) = socket.as_ref().and_then(|s| s.parent()) {
+                if dir != data {
+                    fs::create_dir_all(dir)?;
+                    crate::router::fs::restrict_dir_to_owner(dir)?;
+                }
+            }
             let cnf = mysql::server_cnf(kit.os(), &basedir, &data, port, socket.as_deref());
             if fs::read_to_string(data.join("my.cnf")).ok().as_deref() != Some(cnf.as_str()) {
                 crate::fsx::write_atomic(&data.join("my.cnf"), cnf.as_bytes())?;

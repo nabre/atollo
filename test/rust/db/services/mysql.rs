@@ -3,12 +3,15 @@ use crate::kit::Target;
 
 #[test]
 fn initialization_with_the_same_case_rule_everywhere() {
-    let args = init_args(Path::new("base"), Path::new("data"));
+    let args = init_args(Path::new("base"), Path::new("data"), Path::new("init.sql"));
     assert_eq!(
         args[0], "--no-defaults",
         "first, or the PC's files are read"
     );
-    assert!(args.contains(&"--initialize-insecure".to_owned()));
+    // root never without a password: the init file sets the kit's.
+    assert!(args.contains(&"--initialize".to_owned()));
+    assert!(!args.iter().any(|a| a.contains("insecure")), "{args:?}");
+    assert!(args.contains(&"--init-file=init.sql".to_owned()));
     assert!(args.contains(&"--lower_case_table_names=1".to_owned()));
     assert!(args.contains(&"--basedir=base".to_owned()));
     assert!(args.contains(&"--datadir=data".to_owned()));
@@ -42,13 +45,14 @@ fn server_cnf_on_every_system() {
             _ => ("/kit/data/apps/x/mysql/8.4", "/kit/data/db/mysql/8.4"),
         };
         let (base, data) = (Path::new(base), Path::new(data));
-        let socket = socket_path(t.os, data, 3306, Path::new("/tmp"));
+        let socket = socket_path(t.os, data, 3306, None).unwrap();
         let text = server_cnf(t.os, base, data, 3306, socket.as_deref());
         assert!(text.contains("[mysqld]\n"), "{}", t.as_str());
         for line in [
             "port=3306\n",
             "bind-address=127.0.0.1\n",
             "mysqlx=OFF\n",
+            "skip-log-bin\n",
             "lower_case_table_names=1\n",
         ] {
             assert!(text.contains(line), "{}: {line}", t.as_str());
@@ -76,21 +80,56 @@ fn server_cnf_on_every_system() {
     }
 }
 
-/// A socket path that does not fit `sun_path` goes to the temporary folder.
+/// A socket path that does not fit `sun_path` goes to the kit's private
+/// folder of the PC's temporary one, never `/tmp` itself; without one that
+/// fits, an error.
 #[test]
 fn long_socket_paths_move() {
     let deep = Path::new("/media/someone/a-very-long-volume-name/Dev-Kit/data/db/mysql/9.7")
         .join("x".repeat(60));
+    let own = socket_dir(Some(Path::new("/tmp/Dev-Kit/k1"))).unwrap();
+    assert_eq!(own, Path::new("/tmp/Dev-Kit/k1").join("mysql"));
+    assert_eq!(socket_dir(None), None);
     assert_eq!(
-        socket_path(Os::Linux, &deep, 3307, Path::new("/tmp")).unwrap(),
-        Path::new("/tmp").join("devkit-mysql-3307.sock")
+        socket_path(Os::Linux, &deep, 3307, Some(&own))
+            .unwrap()
+            .unwrap(),
+        own.join("devkit-mysql-3307.sock")
     );
+    assert!(socket_path(Os::Linux, &deep, 3307, None).is_err());
+    assert!(socket_path(Os::Linux, &deep, 3307, Some(&deep)).is_err());
     let short = Path::new("/k/data/db/mysql/9.7");
     assert_eq!(
-        socket_path(Os::Darwin, short, 3307, Path::new("/tmp")).unwrap(),
+        socket_path(Os::Darwin, short, 3307, Some(&own))
+            .unwrap()
+            .unwrap(),
         short.join("mysql.sock")
     );
-    assert_eq!(socket_path(Os::Win32, short, 3307, Path::new("/tmp")), None);
+    assert_eq!(socket_path(Os::Win32, &deep, 3307, None).unwrap(), None);
+}
+
+/// The client's own commands are off on a restore (`\!`, `system`,
+/// `source`): MySQL `--commands=OFF`, MariaDB `--sandbox`; a client
+/// without the option gets no file (None).
+#[test]
+fn restores_without_client_commands() {
+    use crate::db::DbEngine;
+    let mysql_help =
+        "  --commands          Enable or disable processing of local mysql commands.\n  \
+                      --system-command    Enable or disable (by default) the 'system' mysql\n";
+    let maria_help = "  --sandbox           Disallow commands that access the file system (except \\P without an argument and \\e).\n";
+    assert_eq!(
+        restore_guard(DbEngine::MySql, mysql_help),
+        Some("--commands=OFF")
+    );
+    assert_eq!(
+        restore_guard(DbEngine::MariaDb, maria_help),
+        Some("--sandbox")
+    );
+    assert_eq!(restore_guard(DbEngine::MariaDb, mysql_help), None);
+    assert_eq!(restore_guard(DbEngine::MySql, maria_help), None);
+    assert_eq!(restore_guard(DbEngine::MySql, ""), None, "an old client");
+    assert_eq!(restore_guard(DbEngine::MongoDb, mysql_help), None);
 }
 
 /// Ubuntu 24.04: `libaio.so.1t64` only, linked by the kit; older systems:

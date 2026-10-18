@@ -79,7 +79,7 @@ impl DbEngine {
 
     /// The program that creates a new data folder before the first start
     /// (in [`DbEngine::component`]); None: the server creates it itself
-    /// (MySQL with `mysqld --initialize-insecure`, `services::data`).
+    /// (MySQL with `mysqld --initialize --init-file`, `services::data`).
     pub const fn install_db_bin(self) -> Option<&'static str> {
         match self {
             DbEngine::MariaDb => Some("mariadb-install-db"),

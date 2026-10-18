@@ -1,7 +1,7 @@
 //! What MySQL needs that MariaDB does not (D-110), as functions of the
 //! target and the folders, so the tests cover every system on Windows:
 //!
-//! - a new data folder from `mysqld --initialize-insecure` (no
+//! - a new data folder from `mysqld --initialize --init-file` (no
 //!   `mariadb-install-db`), always with `lower_case_table_names=1`: MySQL
 //!   refuses another value after the initialization, and with the same one
 //!   everywhere the folder opens on Windows, macOS and Linux alike;
@@ -19,13 +19,20 @@ use std::path::{Path, PathBuf};
 use crate::kit::{Arch, Os};
 
 /// The arguments of `mysqld` that create the data folder `data` of the
-/// server in `basedir` (with `root@localhost` and no password: the kit sets
-/// it right after, `access::secure`). Output on stderr (`--console`).
-pub fn init_args(basedir: &Path, data: &Path) -> Vec<String> {
+/// server in `basedir`. `--initialize` (never `--initialize-insecure`):
+/// `root` is never without a password, not even for a moment, and
+/// `init_file` (a private file of the kit, removed after) gives it the
+/// kit's own, on `localhost` and `127.0.0.1` ([`auth::mysql_root_sql`],
+/// run by the bootstrap before any connection is possible). Output on
+/// stderr (`--console`).
+///
+/// [`auth::mysql_root_sql`]: crate::db::auth::mysql_root_sql
+pub fn init_args(basedir: &Path, data: &Path, init_file: &Path) -> Vec<String> {
     vec![
         // It must be the first option.
         "--no-defaults".to_owned(),
-        "--initialize-insecure".to_owned(),
+        "--initialize".to_owned(),
+        format!("--init-file={}", init_file.display()),
         format!("--basedir={}", basedir.display()),
         format!("--datadir={}", data.display()),
         "--lower_case_table_names=1".to_owned(),
@@ -46,27 +53,52 @@ pub fn cnf_path(os: Os, path: &Path) -> String {
 }
 
 /// A Unix socket's path must fit in `sun_path` (104 bytes on macOS, 108 on
-/// Linux) or the server does not start: deep kits get one in `fallback`
-/// (the PC's temporary folder), named by the port.
+/// Linux) or the server does not start: deep kits get one in `fallback`,
+/// the kit's own private folder (0700) in the PC's temporary one
+/// (`<TEMP>/Dev-Kit/<kit id>/mysql`, [`socket_dir`]), named by the port;
+/// never a shared folder such as `/tmp` itself.
 const SOCKET_MAX: usize = 100;
 
+/// The kit's private folder of the sockets that do not fit in their data
+/// folder: `mysql` in the kit's temporary folder (`Kit::system_temp`).
+pub fn socket_dir(system_temp: Option<&Path>) -> Option<PathBuf> {
+    system_temp.map(|t| t.join("mysql"))
+}
+
 /// The socket of the server of `data` on `port`: none on Windows (TCP
-/// only), in the data folder when its path is short enough.
-pub fn socket_path(os: Os, data: &Path, port: u16, fallback: &Path) -> Option<PathBuf> {
+/// only), in the data folder when its path is short enough, otherwise in
+/// `fallback` ([`socket_dir`]); an error when neither fits (the server
+/// would not start, and no shared folder is used instead).
+pub fn socket_path(
+    os: Os,
+    data: &Path,
+    port: u16,
+    fallback: Option<&Path>,
+) -> anyhow::Result<Option<PathBuf>> {
     if os == Os::Win32 {
-        return None;
+        return Ok(None);
     }
     let inside = data.join("mysql.sock");
     if inside.as_os_str().len() <= SOCKET_MAX {
-        Some(inside)
-    } else {
-        Some(fallback.join(format!("devkit-mysql-{port}.sock")))
+        return Ok(Some(inside));
+    }
+    match fallback.map(|f| f.join(format!("devkit-mysql-{port}.sock"))) {
+        Some(s) if s.as_os_str().len() <= SOCKET_MAX => Ok(Some(s)),
+        _ => anyhow::bail!(
+            "{}: the folder of the kit is too deep for MySQL's socket and the PC has \
+             no short temporary folder: move the kit to a shorter path",
+            data.display()
+        ),
     }
 }
 
 /// The kit's `my.cnf` of the server: the folders, its port on 127.0.0.1
 /// only, no X Protocol (its port 33060 would be taken by every version),
-/// `lower_case_table_names=1` as at the initialization.
+/// `lower_case_table_names=1` as at the initialization, no binary log
+/// (`skip-log-bin`, as MariaDB's default): on since 8.0, it would refuse
+/// the triggers and functions of a project's own user without `SUPER`
+/// (error 1419, seen on 9.7 with a Laravel-style trigger) and fill the
+/// disk of a stick with logs a development server never replays.
 pub fn server_cnf(os: Os, basedir: &Path, data: &Path, port: u16, socket: Option<&Path>) -> String {
     let mut text = format!(
         "# Dev-Kit: options of the kit's MySQL (written by the app at every start).\n\
@@ -76,6 +108,7 @@ pub fn server_cnf(os: Os, basedir: &Path, data: &Path, port: u16, socket: Option
          port={port}\n\
          bind-address=127.0.0.1\n\
          mysqlx=OFF\n\
+         skip-log-bin\n\
          lower_case_table_names=1\n\
          pid-file={}\n",
         cnf_path(os, basedir),
@@ -86,6 +119,27 @@ pub fn server_cnf(os: Os, basedir: &Path, data: &Path, port: u16, socket: Option
         text.push_str(&format!("socket={}\n", cnf_path(os, s)));
     }
     text
+}
+
+/// The options that stop the SQL client from running its own commands
+/// while it reads a file given to it (a copy restored, D-78): a dump from
+/// elsewhere could hold `\! cmd`, `system`, `source`, `tee` or `pager` and
+/// run programs or write files as the user. MySQL: `--commands=OFF` (in the
+/// clients of 8.4 and 9.7, checked with `mysql --help`); MariaDB:
+/// `--sandbox` (from 10.5.25, 10.6.18, 10.11.8, 11.4.2). `help` is the
+/// client's `--help`; None: this client has no such option, and the file
+/// is not given to it.
+pub fn restore_guard(engine: crate::db::DbEngine, help: &str) -> Option<&'static str> {
+    use crate::db::DbEngine;
+    let has = |opt: &str| {
+        help.lines()
+            .any(|l| l.split_whitespace().next() == Some(opt))
+    };
+    match engine {
+        DbEngine::MySql if has("--commands") => Some("--commands=OFF"),
+        DbEngine::MariaDb if has("--sandbox") => Some("--sandbox"),
+        DbEngine::MySql | DbEngine::MariaDb | DbEngine::MongoDb => None,
+    }
 }
 
 /// The folders where the dynamic loader finds the system's libraries for

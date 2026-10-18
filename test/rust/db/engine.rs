@@ -178,7 +178,7 @@ fn mysql_programs() {
     assert_eq!((m.id(), m.component()), ("mysql", "mysql"));
     assert_eq!(m.default_port(), DbEngine::MariaDb.default_port());
     assert_eq!(m.server_bin(), "mysqld");
-    assert_eq!(m.install_db_bin(), None, "mysqld --initialize-insecure");
+    assert_eq!(m.install_db_bin(), None, "mysqld --initialize");
     assert_eq!((m.client_component(), m.client_bin()), ("mysql", "mysql"));
     assert_eq!((m.tools_component(), m.dump_bin()), ("mysql", "mysqldump"));
     assert_eq!(m.restore_bin(), "mysql");
