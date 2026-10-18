@@ -210,6 +210,10 @@ impl Services {
     pub fn project_db_create(&self, project: &str, engine: &str) -> Result<auth::ProjectDb> {
         let kind = self.engine_for(project, engine)?;
         let engine = kind.id();
+        // A database made on MariaDB now would miss the copy (D-117).
+        if kind == DbEngine::MariaDb && crate::db::migrate_engine::moving(&self.kit) {
+            bail!("MariaDB's data is moving to MySQL: try again when the move ends");
+        }
         let line = project_line(&self.kit, project, engine);
         let (port, env) = self.running_at(kind, line.as_deref())?;
         let (name, password) = auth::ensure_project_db(&self.kit, project, engine)
@@ -275,6 +279,9 @@ impl Services {
             bail!("{engine}: {name} is not a project's database: not dropped");
         }
         let kind = DbEngine::parse(engine)?;
+        if kind == DbEngine::MariaDb && crate::db::migrate_engine::moving(&self.kit) {
+            bail!("MariaDB's data is moving to MySQL: try again when the move ends");
+        }
         let was_running = self.running_at(kind, line).is_ok();
         self.start_engine(kind, line, env)?;
         let result = self.drop_on_running(kind, line, name);

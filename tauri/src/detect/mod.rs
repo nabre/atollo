@@ -484,14 +484,15 @@ fn need_of_file(name: &str) -> Option<&'static str> {
 
 /// The database servers a project uses (D-73), from its root: SQLite files,
 /// `.env` (Laravel's `DB_CONNECTION`, `DATABASE_URL`) and the drivers in
-/// its manifests (npm, pip, Composer). MySQL means the kit's MariaDB.
+/// its manifests (npm, pip, Composer). MySQL and MariaDB mean the kit's
+/// MySQL (D-117).
 fn databases(dir: &Path) -> BTreeSet<&'static str> {
     let mut found = BTreeSet::new();
     if exists(dir, "wp-config.php")
         || exists(dir, "wp-settings.php")
         || exists(dir, r"wp-includes\version.php")
     {
-        found.insert("mariadb");
+        found.insert("mysql");
     }
     let read = |name: &str| read(dir, name).to_ascii_lowercase();
     let env = read(".env") + &read(".env.example");
@@ -501,7 +502,7 @@ fn databases(dir: &Path) -> BTreeSet<&'static str> {
             .map_or("", |(_, v)| v.trim().trim_matches('"'));
         if line.starts_with("db_connection=") || line.starts_with("database_url=") {
             if value.starts_with("mysql") || value.starts_with("mariadb") {
-                found.insert("mariadb");
+                found.insert("mysql");
             } else if value.starts_with("mongodb") {
                 found.insert("mongodb");
             } else if value.starts_with("sqlite") {
@@ -533,7 +534,7 @@ fn databases(dir: &Path) -> BTreeSet<&'static str> {
         "mysqlclient",
         "aiomysql",
     ]) {
-        found.insert("mariadb");
+        found.insert("mysql");
     }
     if has(&[
         "mongodb",
@@ -554,6 +555,22 @@ fn databases(dir: &Path) -> BTreeSet<&'static str> {
         }
     });
     found
+}
+
+/// `.env` (or `.env.example` without one) says `DB_CONNECTION=mariadb`.
+pub(crate) fn env_wants_mariadb(dir: &Path) -> bool {
+    let env = match read(dir, ".env") {
+        t if t.is_empty() => read(dir, ".env.example"),
+        t => t,
+    };
+    env.lines().map(str::trim).any(|l| {
+        l.split_once('=').is_some_and(|(k, v)| {
+            k.trim() == "DB_CONNECTION"
+                && v.trim()
+                    .trim_matches(['"', '\''])
+                    .eq_ignore_ascii_case("mariadb")
+        })
+    })
 }
 
 /// Ids of the kit's components the project needs, sorted. Only ids that
@@ -694,6 +711,15 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         custom: false,
         default: None,
     };
+    // MariaDB's driver of Laravel on the kit's MySQL (D-117): its grammar
+    // writes types MySQL does not have (a native `uuid` column).
+    if env_wants_mariadb(dir) {
+        project.warnings.push(tr(
+            lang,
+            "DB_CONNECTION=mariadb nel file .env: il server SQL del kit è MySQL. Usa DB_CONNECTION=mysql: il driver mariadb di Laravel scrive tipi che MySQL non ha.",
+            &[],
+        ));
+    }
     overrides::apply(&mut project, dir, lang);
     if project.default.is_none() {
         project.default = project
@@ -733,9 +759,9 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
     {
         needed.extend(["caddy", "php"]);
     }
-    // A CMS needs the kit's MariaDB (D-93).
+    // A CMS needs the kit's SQL server, MySQL (D-93, D-117).
     if php::CMS.iter().any(|c| project.platform.contains(c)) {
-        needed.push("mariadb");
+        needed.push("mysql");
     }
     for id in needed {
         if !project.requires.iter().any(|r| r == id) {

@@ -51,6 +51,41 @@ fn env_goes_in_gitignore() {
     );
 }
 
+/// D-117, issue #3: on a new kit phpMyAdmin and the databases of WordPress
+/// and Laravel install MySQL, never MariaDB, and phpMyAdmin is available on
+/// the six targets.
+#[test]
+fn a_new_kit_installs_mysql_for_phpmyadmin_wordpress_and_laravel() {
+    use crate::kit::Target;
+    use crate::projects::frameworks::{official, plan};
+    use crate::setup::catalog::Catalog;
+    let catalog = Catalog::get();
+    let wordpress = plan(official(), "wordpress", &[]).unwrap();
+    let laravel = plan(official(), "laravel", &["mysql".to_owned()]).unwrap();
+    let wanted: [(&str, Vec<&str>); 3] = [
+        ("phpmyadmin", vec!["phpmyadmin"]),
+        ("wordpress", super::plan_needs(&wordpress)),
+        ("laravel", super::plan_needs(&laravel)),
+    ];
+    for target in Target::ALL {
+        for (what, ids) in &wanted {
+            let needed = crate::commands::with_needs(catalog, ids, target);
+            let needed: Vec<&str> = needed.iter().map(|c| c.id.as_str()).collect();
+            assert!(
+                needed.contains(&"mysql"),
+                "{what} on {target:?}: {needed:?}"
+            );
+            assert!(
+                !needed.contains(&"mariadb"),
+                "{what} on {target:?}: {needed:?}"
+            );
+        }
+        for id in crate::commands::with_needs(catalog, &["phpmyadmin"], target) {
+            assert!(id.is_available_on(target), "{} on {target:?}", id.id);
+        }
+    }
+}
+
 #[test]
 fn database_for_the_steps() {
     let db = crate::db::auth::project_db("mariadb", "site", "pw", 3307);

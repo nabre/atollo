@@ -189,6 +189,18 @@
           "markdownDescription": "Enables the agent_sign_out command without any pre-configured scope."
         },
         {
+          "description": "Enables the agent_token_link command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agent-token-link",
+          "markdownDescription": "Enables the agent_token_link command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the agent_token_save command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agent-token-save",
+          "markdownDescription": "Enables the agent_token_save command without any pre-configured scope."
+        },
+        {
           "description": "Enables the agents_stats command without any pre-configured scope.",
           "type": "string",
           "const": "allow-agents-stats",
@@ -217,6 +229,12 @@
           "type": "string",
           "const": "allow-components-apply",
           "markdownDescription": "Enables the components_apply command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the components_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-components-check",
+          "markdownDescription": "Enables the components_check command without any pre-configured scope."
         },
         {
           "description": "Enables the components_install command without any pre-configured scope.",
@@ -253,6 +271,24 @@
           "type": "string",
           "const": "allow-db-browse-tree",
           "markdownDescription": "Enables the db_browse_tree command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the db_migration command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-db-migration",
+          "markdownDescription": "Enables the db_migration command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the db_migration_drop_kept command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-db-migration-drop-kept",
+          "markdownDescription": "Enables the db_migration_drop_kept command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the db_migration_retry command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-db-migration-retry",
+          "markdownDescription": "Enables the db_migration_retry command without any pre-configured scope."
         },
         {
           "description": "Enables the downloads_add command without any pre-configured scope.",
@@ -567,6 +603,12 @@
           "markdownDescription": "Enables the projects_orphans command without any pre-configured scope."
         },
         {
+          "description": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close.",
+          "type": "string",
+          "const": "allow-pty-sessions",
+          "markdownDescription": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close."
+        },
+        {
           "description": "Enables the relations_matrix command without any pre-configured scope.",
           "type": "string",
           "const": "allow-relations-matrix",
@@ -825,6 +867,18 @@
           "markdownDescription": "Denies the agent_sign_out command without any pre-configured scope."
         },
         {
+          "description": "Denies the agent_token_link command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agent-token-link",
+          "markdownDescription": "Denies the agent_token_link command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the agent_token_save command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agent-token-save",
+          "markdownDescription": "Denies the agent_token_save command without any pre-configured scope."
+        },
+        {
           "description": "Denies the agents_stats command without any pre-configured scope.",
           "type": "string",
           "const": "deny-agents-stats",
@@ -853,6 +907,12 @@
           "type": "string",
           "const": "deny-components-apply",
           "markdownDescription": "Denies the components_apply command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the components_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-components-check",
+          "markdownDescription": "Denies the components_check command without any pre-configured scope."
         },
         {
           "description": "Denies the components_install command without any pre-configured scope.",
@@ -889,6 +949,24 @@
           "type": "string",
           "const": "deny-db-browse-tree",
           "markdownDescription": "Denies the db_browse_tree command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the db_migration command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-db-migration",
+          "markdownDescription": "Denies the db_migration command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the db_migration_drop_kept command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-db-migration-drop-kept",
+          "markdownDescription": "Denies the db_migration_drop_kept command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the db_migration_retry command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-db-migration-retry",
+          "markdownDescription": "Denies the db_migration_retry command without any pre-configured scope."
         },
         {
           "description": "Denies the downloads_add command without any pre-configured scope.",

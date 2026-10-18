@@ -167,6 +167,9 @@ pub fn migrate(kit: &Kit) {
     drop_retired(kit);
     // The databases' data, one folder per version too.
     crate::db::services::migrate_data(kit);
+    // After that move: MariaDB's programs go once none of its data waits
+    // for them (D-117).
+    retire_mariadb(kit);
     if let Err(e) = crate::install::adopt_composer(kit) {
         crate::log::warn(&format!("Composer of the older kit: {e:#}"));
     }
@@ -187,28 +190,7 @@ const RETIRED: [&str; 2] = ["terminal", "adminer"];
 /// folder in use stays and goes at the next start.
 fn drop_retired(kit: &Kit) {
     for id in RETIRED {
-        let dir = kit.apps().join(id);
-        if dir.exists() {
-            match crate::net::archive::remove_dir(&dir) {
-                Ok(()) => crate::log::info(&format!("{id}: no longer in the catalog, removed")),
-                Err(e) => crate::log::warn(&format!("{id}: not removed ({e:#})")),
-            }
-        }
-        let prefix = format!("{id}@");
-        for e in fs::read_dir(kit.versions_dir())
-            .into_iter()
-            .flatten()
-            .flatten()
-        {
-            let name = e.file_name().to_string_lossy().into_owned();
-            if name == format!("{id}.txt")
-                || name == format!("{id}.reinstall")
-                || (name.starts_with(&prefix) && name.ends_with(".reinstall"))
-            {
-                let _ = fs::remove_file(e.path());
-            }
-        }
-        let _ = fs::remove_file(kit.versions_root().join(format!("{id}.txt")));
+        drop_component(kit, id);
     }
     // The start script of Windows Terminal's consoles.
     let _ = fs::remove_file(kit.kit_files().join("console.ps1"));
@@ -216,6 +198,47 @@ fn drop_retired(kit: &Kit) {
     let _ = fs::remove_file(kit.kit_files().join("adminer.php"));
     let _ = fs::remove_dir_all(kit.app_dir().join("adminer"));
     let _ = fs::remove_file(kit.logs().join("adminer.log"));
+}
+
+/// The folder of `id` in `data\apps` and its version files. A folder in
+/// use stays and goes at the next start.
+fn drop_component(kit: &Kit, id: &str) {
+    let dir = kit.apps().join(id);
+    if dir.exists() {
+        match crate::net::archive::remove_dir(&dir) {
+            Ok(()) => crate::log::info(&format!("{id}: no longer in the catalog, removed")),
+            Err(e) => crate::log::warn(&format!("{id}: not removed ({e:#})")),
+        }
+    }
+    let prefix = format!("{id}@");
+    for e in fs::read_dir(kit.versions_dir())
+        .into_iter()
+        .flatten()
+        .flatten()
+    {
+        let name = e.file_name().to_string_lossy().into_owned();
+        if name == format!("{id}.txt")
+            || name == format!("{id}.reinstall")
+            || (name.starts_with(&prefix) && name.ends_with(".reinstall"))
+        {
+            let _ = fs::remove_file(e.path());
+        }
+    }
+    let _ = fs::remove_file(kit.versions_root().join(format!("{id}.txt")));
+}
+
+/// MariaDB is no longer a server of the kit (D-117): its programs (every
+/// version) go once no data of it waits to move to MySQL, moved already or
+/// never there. Its data, in `data\db`, is never touched here.
+pub fn retire_mariadb(kit: &Kit) {
+    use crate::db::DbEngine;
+    let root = kit.data().join("db").join(DbEngine::MariaDb.id());
+    let waiting = !crate::db::migrate_engine::pending_lines(kit).is_empty()
+        || root.join("mysql").is_dir()
+        || crate::db::migrate_engine::switching(kit);
+    if !waiting {
+        drop_component(kit, DbEngine::MariaDb.id());
+    }
 }
 
 /// `node\node.exe` → `node\<line>\node.exe`, through `node.atollo-move`

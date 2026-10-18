@@ -1,7 +1,7 @@
 use super::*;
 use crate::db::services::{
     bin_at, line_port, line_ports, lines_in_use, load_settings, log_path, project_client_env,
-    project_db_port, project_line, server_lines, Setting, State,
+    project_db_port, project_line, server_lines, Setting,
 };
 use crate::kit::{tests::TempDir, Arch};
 
@@ -9,7 +9,7 @@ use crate::kit::{tests::TempDir, Arch};
 /// key paths of the kit's target (`bin/mariadbd.exe` on Windows,
 /// `bin/mariadbd` elsewhere).
 fn fake_server(kit: &Kit, id: &str, version: &str) {
-    let c = Catalog::get().find(id).unwrap();
+    let c = Catalog::get().find_internal(id).unwrap();
     let dir = crate::versions::install_dir(kit, c, version);
     let folder = c.folder.as_deref().unwrap();
     let target = kit.target();
@@ -48,7 +48,7 @@ fn each_version_has_its_data() {
     assert_eq!(data_dir(&kit, "mariadb"), root.join("11.8"));
 
     // A newer version starts with a copy; the old data stays.
-    let c = Catalog::get().find("mariadb").unwrap();
+    let c = Catalog::get().find_internal("mariadb").unwrap();
     let newer = crate::versions::saved_dir(&kit, c, "12.3");
     fake_mariadb_line(&kit, &newer);
     assert_eq!(server_line(&kit, "mariadb").as_deref(), Some("12.3"));
@@ -128,7 +128,7 @@ fn versions_side_by_side() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     fake_server(&kit, "mariadb", "11.4.5");
-    let c = Catalog::get().find("mariadb").unwrap();
+    let c = Catalog::get().find_internal("mariadb").unwrap();
     let older = crate::versions::saved_dir(&kit, c, "10.6");
     fake_mariadb_line(&kit, &older);
     assert_eq!(server_lines(&kit, "mariadb"), ["11.4", "10.6"]);
@@ -150,15 +150,9 @@ fn versions_side_by_side() {
         kit.logs().join("mariadb.log")
     );
 
-    // The page: the other version with its port and data.
+    // Never on the page (D-117): its versions are the migration's.
     let s = Services::new(kit.clone());
-    let info = s.list().into_iter().find(|i| i.id == "mariadb").unwrap();
-    assert_eq!((info.port, info.line.as_deref()), (3306, Some("11.4")));
-    assert_eq!(info.others.len(), 1);
-    let other = &info.others[0];
-    assert_eq!((other.line.as_str(), other.port), ("10.6", 3307));
-    assert_eq!(other.state, State::Stopped);
-    assert_eq!(other.url, "mysql://root@127.0.0.1:3307/");
+    assert!(s.list().iter().all(|i| i.id != "mariadb"));
 
     // Ports of the other versions: stored, never the server's nor another's.
     s.set_line_port("mariadb", "10.6", Some(3316)).unwrap();
@@ -226,7 +220,7 @@ fn autostart_lines_follow_the_projects() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     fake_server(&kit, "mariadb", "11.4.5");
-    let c = Catalog::get().find("mariadb").unwrap();
+    let c = Catalog::get().find_internal("mariadb").unwrap();
     let older = crate::versions::saved_dir(&kit, c, "10.6");
     fake_mariadb_line(&kit, &older);
     assert!(lines_in_use(&kit, "mariadb").is_empty());
@@ -285,47 +279,39 @@ fn autostart_lines_follow_the_projects() {
     assert!(auth::write_line_client_ini(&kit, "..", 3307, "pw").is_err());
 }
 
-/// issue #3: every catalog need for a SQL server (phpMyAdmin's `needs`, a
-/// framework's `database`, an addition's) resolves through `sql_need` to
-/// MySQL on a new kit, to MariaDB on a kit that runs only MariaDB; other
-/// needs stay as they are. The callers outside `db` (setup runner, plan,
-/// detection) are wired by the coordinator (requests of p7).
+/// D-117: every catalog need for a SQL server (phpMyAdmin's `needs`, a
+/// framework's `database`, an addition's) is MySQL through `sql_need`, on
+/// every kit; other needs stay as they are, and a component's needs read
+/// through `needs_on` are resolved already.
 #[test]
 fn a_new_kit_needs_mysql_for_every_sql_need() {
-    use crate::db::services::sql_need_with;
+    use crate::db::services::sql_need;
     use crate::projects::frameworks::official;
     use crate::setup::catalog::Catalog;
-    let mut needs: Vec<String> = Catalog::get()
+    let pma = Catalog::get()
         .find("phpmyadmin")
-        .expect("phpmyadmin in the catalog")
-        .needs_on_every_target()
-        .map(String::from)
-        .collect();
+        .expect("phpmyadmin in the catalog");
+    let mut needs: Vec<String> = pma.needs_on_every_target().map(String::from).collect();
+    assert_eq!(needs, ["php", "mysql"]);
     for p in official() {
         needs.extend(p.database.clone());
         needs.extend(p.on.values().filter_map(|v| v.database.clone()));
     }
-    assert!(needs.iter().any(|n| n == "mariadb"), "{needs:?}");
-    let new_kit = |_: &str| false;
-    let mariadb_kit = |id: &str| id == "mariadb";
-    let both = |id: &str| id == "mariadb" || id == "mysql";
+    assert!(
+        needs.iter().any(|n| n == "mysql") && needs.iter().any(|n| n == "mongodb"),
+        "{needs:?}"
+    );
     for need in &needs {
         let sql = need == "mariadb" || need == "mysql";
-        let on_new = sql_need_with(need, new_kit);
-        assert_eq!(on_new, if sql { "mysql" } else { need.as_str() }, "{need}");
-        assert_ne!(on_new, "mariadb", "a new kit never gets MariaDB: {need}");
-        let on_old = sql_need_with(need, mariadb_kit);
         assert_eq!(
-            on_old,
-            if sql { "mariadb" } else { need.as_str() },
+            sql_need(need),
+            if sql { "mysql" } else { need.as_str() },
             "{need}"
         );
-        assert_eq!(
-            sql_need_with(need, both),
-            if sql { "mysql" } else { need.as_str() }
-        );
     }
-    assert_eq!(sql_need_with("mongodb", new_kit), "mongodb");
+    assert_eq!(sql_need("mariadb"), "mysql", "a framework file of before");
+    assert_eq!(sql_need("mongodb"), "mongodb");
+    assert_eq!(sql_need("php"), "php");
 }
 
 /// MySQL (D-110): the SQL server of a new kit, MariaDB kept where it runs;
@@ -336,10 +322,22 @@ fn mysql_is_the_kits_sql_server() {
     use crate::db::auth;
     use crate::db::services::{project_engine, project_sql_engine, sql_engine, sql_engine_with};
     use crate::db::DbEngine;
-    assert_eq!(sql_engine_with(|_| false), DbEngine::MySql, "a new kit");
-    assert_eq!(sql_engine_with(|id| id == "mariadb"), DbEngine::MariaDb);
-    assert_eq!(sql_engine_with(|id| id == "mysql"), DbEngine::MySql);
-    assert_eq!(sql_engine_with(|_| true), DbEngine::MySql, "both: MySQL");
+    assert_eq!(sql_engine_with(false, false), DbEngine::MySql, "a new kit");
+    assert_eq!(
+        sql_engine_with(true, true),
+        DbEngine::MariaDb,
+        "MariaDB with data not moved yet"
+    );
+    assert_eq!(
+        sql_engine_with(true, false),
+        DbEngine::MySql,
+        "MariaDB installed, data moved"
+    );
+    assert_eq!(
+        sql_engine_with(false, true),
+        DbEngine::MySql,
+        "data of a MariaDB this system cannot run"
+    );
 
     let tmp = TempDir::new("services-mysql");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -366,14 +364,16 @@ fn mysql_is_the_kits_sql_server() {
         "{err:#}"
     );
 
-    // A kit with MariaDB and no MySQL keeps MariaDB, on the page too.
+    // MariaDB installed without data (an explicit choice): MySQL.
     fake_server(&kit, "mariadb", "11.4.5");
+    assert_eq!(sql_engine(&kit), DbEngine::MySql, "no MariaDB data");
+    // With data not moved yet (D-117): MariaDB, where the sites' data is.
+    let mariadb_data = kit.data().join("db").join("mariadb");
+    fs::create_dir_all(mariadb_data.join("11.4").join("mysql")).unwrap();
     assert_eq!(sql_engine(&kit), DbEngine::MariaDb);
-    let ids: Vec<String> = s.list().into_iter().map(|i| i.id).collect();
-    assert_eq!(ids, ["mariadb", "mysql", "mongodb"]);
     auth::set_project_password(&kit, "old", "mariadb", "pw").unwrap();
 
-    // MySQL installed: new databases there, the old one stays on MariaDB.
+    // MySQL installed: still MariaDB until the data moves.
     fake_server(&kit, "mysql", "9.7.2");
     let c = Catalog::get().find("mysql").unwrap();
     let older = crate::versions::saved_dir(&kit, c, "8.4");
@@ -382,6 +382,15 @@ fn mysql_is_the_kits_sql_server() {
         let exe = crate::router::bins::exe_name(kit.os(), stem);
         fs::write(older.join("bin").join(exe), b"").unwrap();
     }
+    assert_eq!(sql_engine(&kit), DbEngine::MariaDb, "data not moved yet");
+    assert_eq!(project_sql_engine(&kit, "new"), DbEngine::MariaDb);
+    // Moved: the data is `mariadb.pre-mysql`, new databases go to MySQL;
+    // a project whose db.json still names MariaDB stays there.
+    fs::rename(
+        &mariadb_data,
+        kit.data().join("db").join("mariadb.pre-mysql"),
+    )
+    .unwrap();
     assert_eq!(sql_engine(&kit), DbEngine::MySql);
     assert_eq!(project_sql_engine(&kit, "new"), DbEngine::MySql);
     assert_eq!(project_sql_engine(&kit, "old"), DbEngine::MariaDb);

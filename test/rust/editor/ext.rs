@@ -66,7 +66,7 @@ fn matrix_is_valid() {
             .iter()
             .map(|(id, _)| id.as_str())
             .collect::<Vec<_>>(),
-        ["deno", "bun", "cmake", "mariadb", "mongodb", "sqlite"]
+        ["deno", "bun", "cmake", "mysql", "mongodb", "sqlite"]
     );
 }
 

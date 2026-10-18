@@ -714,10 +714,10 @@ function TopicLifecycle({ onNavigate }: { onNavigate: (page: AppPageTarget) => v
                 </strong>,
                 <span key="d">
                   {tr(
-                    "I motori MariaDB e MongoDB non rallentano l'apertura della finestra: partono automaticamente non appena apri la pagina Database o avvii un progetto che li usa.",
-                    "MariaDB and MongoDB engines do not slow down window startup: they start automatically as soon as you open the Databases page or launch a project that uses them.",
-                    "Les moteurs MariaDB et MongoDB ne ralentissent pas l'ouverture de la fenêtre : ils démarrent automatiquement dès que vous ouvrez la page Bases de données ou lancez un projet qui les utilise.",
-                    "Die Motoren MariaDB und MongoDB verlangsamen den Fensterstart nicht: Sie starten automatisch, sobald du die Seite Datenbanken öffnest oder ein entsprechendes Projekt startest.",
+                    "I motori MySQL e MongoDB non rallentano l'apertura della finestra: partono automaticamente non appena apri la pagina Database o avvii un progetto che li usa.",
+                    "MySQL and MongoDB engines do not slow down window startup: they start automatically as soon as you open the Databases page or launch a project that uses them.",
+                    "Les moteurs MySQL et MongoDB ne ralentissent pas l'ouverture de la fenêtre : ils démarrent automatiquement dès que vous ouvrez la page Bases de données ou lancez un projet qui les utilise.",
+                    "Die Motoren MySQL und MongoDB verlangsamen den Fensterstart nicht: Sie starten automatisch, sobald du die Seite Datenbanken öffnest oder ein entsprechendes Projekt startest.",
                   )}
                 </span>,
               ],
@@ -774,10 +774,10 @@ function TopicLifecycle({ onNavigate }: { onNavigate: (page: AppPageTarget) => v
             "Übersicht der Prüfungen vor dem Entfernen: Stoppen von Websites und Datenbanken, Beenden aller Prozesse unter data\\apps\\, Speichern DPAPI-verschlüsselter Antigravity-Zugangsdaten und Entfernen verwaister Schlüssel auf dem Host-PC.",
           )}
           example={tr(
-            "Con un solo clic su «Chiudi tutto e prepara la rimozione», il kit ferma il sito portale-clienti:8080, chiude MariaDB 11.4 e MongoDB 8.0 scaricando i buffer su disco, cifra il keyring e lascia l'unità D:\\ pronta da scollegare.",
-            "With a single click on “Close everything and prepare for removal”, the kit stops portale-clienti:8080, shuts down MariaDB 11.4 and MongoDB 8.0 flushing buffers to disk, encrypts the keyring and leaves drive D:\\ ready to unplug.",
-            "En un seul clic sur « Tout fermer et préparer le retrait », le kit arrête le site portale-clienti:8080, ferme MariaDB 11.4 et MongoDB 8.0 en vidant les tampons sur le disque, chiffre le trousseau et laisse le lecteur D:\\ prêt à être débranché.",
-            "Mit einem einzigen Klick auf „Alles schließen und Entfernen vorbereiten“ stoppt das Kit portale-clienti:8080, fährt MariaDB 11.4 und MongoDB 8.0 inklusive Pufferspeicherung herunter, verschlüsselt den Keyring und macht Laufwerk D:\\ bereit zum Trennen.",
+            "Con un solo clic su «Chiudi tutto e prepara la rimozione», il kit ferma il sito portale-clienti:8080, chiude MySQL 9.7 e MongoDB 8.0 scaricando i buffer su disco, cifra il keyring e lascia l'unità D:\\ pronta da scollegare.",
+            "With a single click on “Close everything and prepare for removal”, the kit stops portale-clienti:8080, shuts down MySQL 9.7 and MongoDB 8.0 flushing buffers to disk, encrypts the keyring and leaves drive D:\\ ready to unplug.",
+            "En un seul clic sur « Tout fermer et préparer le retrait », le kit arrête le site portale-clienti:8080, ferme MySQL 9.7 et MongoDB 8.0 en vidant les tampons sur le disque, chiffre le trousseau et laisse le lecteur D:\\ prêt à être débranché.",
+            "Mit einem einzigen Klick auf „Alles schließen und Entfernen vorbereiten“ stoppt das Kit portale-clienti:8080, fährt MySQL 9.7 und MongoDB 8.0 inklusive Pufferspeicherung herunter, verschlüsselt den Keyring und macht Laufwerk D:\\ bereit zum Trennen.",
           )}
         />
         <div>
@@ -1790,10 +1790,10 @@ function TopicFeatProjects({ onNavigate }: { onNavigate: (page: AppPageTarget) =
             "Die Seitenleiste listet alle Unterordner von projects\\ mit Sofortfilter und Tags der erkannten Sprachen auf.",
           )}
           example={tr(
-            "Tre progetti reali in D:\\Atollo\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) e portale-clienti (PHP 8.4 + Node 22 + MariaDB + MongoDB).",
-            "Three real projects in D:\\Atollo\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) and portale-clienti (PHP 8.4 + Node 22 + MariaDB + MongoDB).",
-            "Trois projets réels dans D:\\Atollo\\projects\\ : api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) et portale-clienti (PHP 8.4 + Node 22 + MariaDB + MongoDB).",
-            "Drei reale Projekte in D:\\Atollo\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) und portale-clienti (PHP 8.4 + Node 22 + MariaDB + MongoDB).",
+            "Tre progetti reali in D:\\Atollo\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) e portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
+            "Three real projects in D:\\Atollo\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) and portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
+            "Trois projets réels dans D:\\Atollo\\projects\\ : api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) et portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
+            "Drei reale Projekte in D:\\Atollo\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) und portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
           )}
         />
 
@@ -1873,10 +1873,10 @@ function TopicFeatProjects({ onNavigate }: { onNavigate: (page: AppPageTarget) =
               "08 · Registerkarte 4 — Datenbanken & .env-Variablen",
             )}
             caption={tr(
-              "Creazione istantanea di un database MariaDB/MongoDB omonimo (portale_clienti) e scrittura automatica delle stringhe di connessione nel file .env del progetto.",
-              "Instant creation of a matching MariaDB/MongoDB database (portale_clienti) and automatic injection of connection strings into the project's .env file.",
-              "Création instantanée d'une base MariaDB/MongoDB homonyme (portale_clienti) et écriture automatique des chaînes de connexion dans le fichier .env du projet.",
-              "Sofortige Erstellung einer gleichnamigen MariaDB-/MongoDB-Datenbank (portale_clienti) und automatisches Eintragen der Verbindungsdaten in die .env-Datei des Projekts.",
+              "Creazione istantanea di un database MySQL/MongoDB omonimo (portale_clienti) e scrittura automatica delle stringhe di connessione nel file .env del progetto.",
+              "Instant creation of a matching MySQL/MongoDB database (portale_clienti) and automatic injection of connection strings into the project's .env file.",
+              "Création instantanée d'une base MySQL/MongoDB homonyme (portale_clienti) et écriture automatique des chaînes de connexion dans le fichier .env du projet.",
+              "Sofortige Erstellung einer gleichnamigen MySQL-/MongoDB-Datenbank (portale_clienti) und automatisches Eintragen der Verbindungsdaten in die .env-Datei des Projekts.",
             )}
             example={tr(
               "Con un clic su «Scrivi nel file .env», il kit compila DB_HOST=127.0.0.1, DB_PORT=3306, DB_DATABASE=portale_clienti, DATABASE_URL e MONGODB_URI.",
@@ -2044,10 +2044,10 @@ function TopicFeatServices({ onNavigate }: { onNavigate: (page: AppPageTarget) =
       <EditorSection
         id="guide-feat-databases"
         title={tr(
-          "Pagina Database: MariaDB (con phpMyAdmin), MongoDB e SQLite",
-          "Databases page: MariaDB (with phpMyAdmin), MongoDB & SQLite",
-          "Page Bases de données : MariaDB (avec phpMyAdmin), MongoDB et SQLite",
-          "Seite Datenbanken: MariaDB (mit phpMyAdmin), MongoDB & SQLite",
+          "Pagina Database: MySQL (con phpMyAdmin), MongoDB e SQLite",
+          "Databases page: MySQL (with phpMyAdmin), MongoDB & SQLite",
+          "Page Bases de données : MySQL (avec phpMyAdmin), MongoDB et SQLite",
+          "Seite Datenbanken: MySQL (mit phpMyAdmin), MongoDB & SQLite",
         )}
         actions={
           <Button
@@ -2073,16 +2073,16 @@ function TopicFeatServices({ onNavigate }: { onNavigate: (page: AppPageTarget) =
           <GuideShot
             src="11-database-mariadb-adminer.webp"
             title={tr(
-              "11 · MariaDB 11.4 + interfaccia web phpMyAdmin",
-              "11 · MariaDB 11.4 + phpMyAdmin web interface",
-              "11 · MariaDB 11.4 + interface web phpMyAdmin",
-              "11 · MariaDB 11.4 + phpMyAdmin-Weboberfläche",
+              "11 · MySQL 9.7 + interfaccia web phpMyAdmin",
+              "11 · MySQL 9.7 + phpMyAdmin web interface",
+              "11 · MySQL 9.7 + interface web phpMyAdmin",
+              "11 · MySQL 9.7 + phpMyAdmin-Weboberfläche",
             )}
             caption={tr(
-              "Controllo del motore MariaDB (127.0.0.1:3306, utente root), selettore di versione, avvio con 1 clic di phpMyAdmin con auto-login e backup/ripristino .sql.",
-              "MariaDB engine control (127.0.0.1:3306, root user), version selector, 1-click phpMyAdmin launch with auto-login and .sql backup/restore.",
-              "Contrôle du moteur MariaDB (127.0.0.1:3306, utilisateur root), sélecteur de version, lancement en 1 clic de phpMyAdmin avec connexion automatique et sauvegarde/restauration .sql.",
-              "Steuerung des MariaDB-Motors (127.0.0.1:3306, Benutzer root), Versionsauswahl, 1-Klick-Start von phpMyAdmin mit Auto-Login sowie .sql-Backup/Wiederherstellung.",
+              "Controllo del motore MySQL (127.0.0.1:3306, utente root), selettore di versione, avvio con 1 clic di phpMyAdmin con auto-login e backup/ripristino .sql.",
+              "MySQL engine control (127.0.0.1:3306, root user), version selector, 1-click phpMyAdmin launch with auto-login and .sql backup/restore.",
+              "Contrôle du moteur MySQL (127.0.0.1:3306, utilisateur root), sélecteur de version, lancement en 1 clic de phpMyAdmin avec connexion automatique et sauvegarde/restauration .sql.",
+              "Steuerung des MySQL-Motors (127.0.0.1:3306, Benutzer root), Versionsauswahl, 1-Klick-Start von phpMyAdmin mit Auto-Login sowie .sql-Backup/Wiederherstellung.",
             )}
             example={tr(
               "Tre database applicativi presenti: api_magazzino (18,4 MB), gestionale_fatture (42,1 MB) e portale_clienti (9,6 MB), con phpMyAdmin attivo su 127.0.0.1:18306.",
@@ -2563,10 +2563,10 @@ function TopicCfgLangsAgents({ onNavigate }: { onNavigate: (page: AppPageTarget)
           onNavigate={onNavigate}
           steps={[
             tr(
-              "Nella pagina Strumenti seleziona un componente multi-versione (Python, Node.js, PHP, .NET, Java, Go, Ruby, R, MariaDB o MongoDB) e installa una o più linee major.minor.",
-              "In the Tools page, select a multi-version component (Python, Node.js, PHP, .NET, Java, Go, Ruby, R, MariaDB or MongoDB) and install one or more major.minor lines.",
-              "Sur la page Outils, sélectionnez un composant multi-versions (Python, Node.js, PHP, .NET, Java, Go, Ruby, R, MariaDB ou MongoDB) et installez une ou plusieurs lignes major.minor.",
-              "Wähle auf der Seite Werkzeuge eine Multi-Versions-Komponente (Python, Node.js, PHP, .NET, Java, Go, Ruby, R, MariaDB oder MongoDB) und installiere eine oder mehrere major.minor-Linien.",
+              "Nella pagina Strumenti seleziona un componente multi-versione (Python, Node.js, PHP, .NET, Java, Go, Ruby, R, MySQL o MongoDB) e installa una o più linee major.minor.",
+              "In the Tools page, select a multi-version component (Python, Node.js, PHP, .NET, Java, Go, Ruby, R, MySQL or MongoDB) and install one or more major.minor lines.",
+              "Sur la page Outils, sélectionnez un composant multi-versions (Python, Node.js, PHP, .NET, Java, Go, Ruby, R, MySQL ou MongoDB) et installez une ou plusieurs lignes major.minor.",
+              "Wähle auf der Seite Werkzeuge eine Multi-Versions-Komponente (Python, Node.js, PHP, .NET, Java, Go, Ruby, R, MySQL oder MongoDB) und installiere eine oder mehrere major.minor-Linien.",
             ),
             tr(
               "Imposta la versione predefinita del kit in Impostazioni → Versioni (oppure direttamente dalla scheda dello strumento).",
@@ -2800,10 +2800,10 @@ function TopicCfgDbWeb({ onNavigate }: { onNavigate: (page: AppPageTarget) => vo
               "Öffne das Projekt unter Projekte → <projekt> und wähle die Registerkarte „Datenbank“.",
             ),
             tr(
-              "Crea o collega un database MariaDB, MongoDB o SQLite per il progetto: il motore parte automaticamente in locale su 127.0.0.1.",
-              "Create or link a MariaDB, MongoDB or SQLite database for the project: the engine starts automatically on 127.0.0.1.",
-              "Créez ou liez une base MariaDB, MongoDB ou SQLite pour le projet : le moteur démarre automatiquement en local sur 127.0.0.1.",
-              "Erstelle oder verknüpfe eine MariaDB-, MongoDB- oder SQLite-Datenbank für das Projekt: Der Motor startet automatisch lokal auf 127.0.0.1.",
+              "Crea o collega un database MySQL, MongoDB o SQLite per il progetto: il motore parte automaticamente in locale su 127.0.0.1.",
+              "Create or link a MySQL, MongoDB or SQLite database for the project: the engine starts automatically on 127.0.0.1.",
+              "Créez ou liez une base MySQL, MongoDB ou SQLite pour le projet : le moteur démarre automatiquement en local sur 127.0.0.1.",
+              "Erstelle oder verknüpfe eine MySQL-, MongoDB- oder SQLite-Datenbank für das Projekt: Der Motor startet automatisch lokal auf 127.0.0.1.",
             ),
             tr(
               "Usa i pulsanti rapidi per sincronizzare le credenziali nel file .env del progetto o per esplorare tabelle e collezioni.",

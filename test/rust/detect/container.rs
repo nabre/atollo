@@ -52,10 +52,12 @@ fn compose_and_dockerfile() {
         let found = servers(&tmp.0);
         assert_eq!(found.get("php"), Some(&Some("8.3".into())), "{name}");
         assert_eq!(found.get("apache"), Some(&None), "{name}");
-        assert_eq!(found.get("mariadb"), Some(&Some("11.4".into())), "{name}");
+        // MariaDB's image is the kit's MySQL, without MariaDB's line (D-117).
+        assert_eq!(found.get("mysql"), Some(&None), "{name}");
+        assert!(!found.contains_key("mariadb"), "{name}");
         assert!(!found.contains_key("nginx"), "{name}");
         let p = crate::detect::detect(&tmp.0, "it");
-        for id in ["apache", "mariadb", "php"] {
+        for id in ["apache", "mysql", "php"] {
             assert!(p.requires.contains(&id.to_owned()), "{name}: {id}");
         }
         assert_eq!(p.lines.get("php").map(String::as_str), Some("8.3"));

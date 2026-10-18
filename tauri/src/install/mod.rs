@@ -40,6 +40,7 @@ use crate::net::Net;
 use crate::os::temp::TempWork;
 use crate::setup::catalog::Component;
 
+pub use db::mysql_pins;
 pub use lang::{make_launchers, version_key};
 pub use web::{adopt_composer, migrate_php_ini, php_ini_dir};
 
@@ -247,7 +248,6 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "pwsh" => &editor::Pwsh,
         "vscodium-server" => &editor::Server,
         "mysql" => &db::MySql,
-        "mariadb" => &db::MariaDb,
         "mongodb" => &db::MongoDb,
         "sqlite" => &db::Sqlite,
         "phpmyadmin" => &db::PhpMyAdmin,

@@ -12,7 +12,7 @@ import { t } from "../i18n";
 import { ConfirmDialog, Select, ViewPane } from "../workbench";
 import { DeleteProjectDialog } from "./delete";
 
-const ENGINE_NAMES: Record<string, string> = { mariadb: "MariaDB", mongodb: "MongoDB" };
+const ENGINE_NAMES: Record<string, string> = { mysql: "MySQL", mongodb: "MongoDB", mariadb: "MariaDB" };
 
 /** What an orphan holds, as one line. */
 function holds(h: Holdings): string {

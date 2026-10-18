@@ -362,18 +362,18 @@ describe("App", () => {
   it("opens a project's page with its sections and creates its database", async () => {
     invoke.mockImplementation(
       answers({
-        projects_list: [{ ...project("negozio"), requires: ["php", "mariadb"], missing: ["mariadb"] }],
+        projects_list: [{ ...project("negozio"), requires: ["php", "mysql"], missing: ["mysql"] }],
         project_status: { git: { branch: "main", upstream: null, synced: null, remote: null }, instructions: [] },
         project_databases: {
           dbs: [],
-          detected: ["mariadb"],
+          detected: ["mysql"],
           envExists: true,
           envIgnored: true,
-          versions: { mariadb: { chosen: null, server: "11.4", lines: ["11.4", "10.6"] } },
+          versions: { mysql: { chosen: null, server: "11.4", lines: ["11.4", "10.6"] } },
         },
         project_db_line: null,
         project_db_create: {
-          engine: "mariadb",
+          engine: "mysql",
           database: "negozio",
           user: "negozio",
           password: "x",
@@ -398,14 +398,14 @@ describe("App", () => {
     const creates = await screen.findAllByRole("button", { name: "Crea database e utente" });
     fireEvent.click(creates[0] as HTMLElement);
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("project_db_create", { project: "negozio", engine: "mariadb" });
+      expect(invoke).toHaveBeenCalledWith("project_db_create", { project: "negozio", engine: "mysql" });
     });
     // The version of the server for its database, each on its own port.
     const version = screen.getByLabelText<HTMLElementTagNameMap["vscode-single-select"]>("Versione del server");
     expect(version.querySelectorAll("vscode-option")).toHaveLength(3);
     fireEvent.change(version, { target: { value: "10.6" } });
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("project_db_line", { project: "negozio", engine: "mariadb", line: "10.6" });
+      expect(invoke).toHaveBeenCalledWith("project_db_line", { project: "negozio", engine: "mysql", line: "10.6" });
     });
     // The activity bar's Projects again: back to the list
     fireEvent.click(screen.getAllByRole("button", { name: "Progetti" })[0] as HTMLElement);

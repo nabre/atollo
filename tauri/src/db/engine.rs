@@ -27,6 +27,11 @@ impl DbEngine {
     /// Every engine, in the order of the Database page.
     pub const ALL: [DbEngine; 3] = [DbEngine::MariaDb, DbEngine::MySql, DbEngine::MongoDb];
 
+    /// The servers the kit offers, on the Database page and to start from
+    /// the interface: MariaDB is no longer one (D-117), only its data is
+    /// moved to MySQL (`db::migrate_engine`).
+    pub const OFFERED: [DbEngine; 2] = [DbEngine::MySql, DbEngine::MongoDb];
+
     /// The SQL servers, the kit's own first (D-110): the one a project gets
     /// when it has none yet and the kit has both.
     pub const SQL: [DbEngine; 2] = [DbEngine::MySql, DbEngine::MariaDb];

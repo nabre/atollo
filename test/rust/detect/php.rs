@@ -184,7 +184,7 @@ fn laravel_and_plain() {
     let p = detect(&wp.0, "it");
     assert_eq!(p.platform, "WordPress");
     assert_eq!(p.default.as_deref(), Some("caddy"));
-    assert!(p.requires.contains(&"mariadb".to_owned()));
+    assert!(p.requires.contains(&"mysql".to_owned()));
     assert!(p.requires.contains(&"caddy".to_owned()));
     assert!(p.requires.contains(&"php".to_owned()));
     assert!(!p.requires.contains(&"apache".to_owned()));
@@ -318,7 +318,7 @@ fn cms_with_composer() {
     let p = detect(&bedrock.0, "it");
     assert_eq!(p.platform, "WordPress");
     assert_eq!(p.actions[0].caddy_dir.as_deref(), Some("web"));
-    assert!(p.requires.contains(&"mariadb".to_owned()));
+    assert!(p.requires.contains(&"mysql".to_owned()));
 
     for (pkg, docroot, platform) in [
         ("typo3/cms-core", "public", "TYPO3"),
@@ -340,7 +340,7 @@ fn cms_with_composer() {
         let p = detect(&site.0, "it");
         assert_eq!(p.platform, platform);
         assert_eq!(p.actions[0].caddy_dir.as_deref(), Some(docroot));
-        assert!(p.requires.contains(&"mariadb".to_owned()));
+        assert!(p.requires.contains(&"mysql".to_owned()));
     }
 
     let statamic = project(
@@ -371,7 +371,7 @@ fn cms_from_archive() {
         assert_eq!(p.platform, platform);
         assert_eq!(p.default.as_deref(), Some("caddy"));
         assert_eq!(p.actions[0].caddy_dir.as_deref(), Some("."));
-        for id in ["caddy", "php", "mariadb"] {
+        for id in ["caddy", "php", "mysql"] {
             assert!(p.requires.contains(&id.to_owned()), "{platform}: {id}");
         }
     }
@@ -385,5 +385,5 @@ fn cms_from_archive() {
     );
     assert!(!detect(&statamic.0, "it")
         .requires
-        .contains(&"mariadb".to_owned()));
+        .contains(&"mysql".to_owned()));
 }

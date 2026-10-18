@@ -110,15 +110,15 @@ describe("DatabasesPage", () => {
     render(<DatabasesPage />);
     await flush();
     expect(screen.getByText("Altre versioni")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Avvia 11.4" }));
+    fireEvent.click(screen.getByRole("button", { name: "Avvia 8.4" }));
     await flush();
-    expect(invoke).toHaveBeenCalledWith("service_start", { id: "mariadb", line: "11.4" });
-    const port = document.getElementById("port-mariadb-11.4") as HTMLInputElement;
+    expect(invoke).toHaveBeenCalledWith("service_start", { id: "mysql", line: "8.4" });
+    const port = document.getElementById("port-mysql-8.4") as HTMLInputElement;
     expect(port.value).toBe("3307");
     fireEvent.change(port, { target: { value: "3317" } });
     fireEvent.blur(port);
     await flush();
-    expect(invoke).toHaveBeenCalledWith("service_line_port", { id: "mariadb", line: "11.4", port: 3317 });
+    expect(invoke).toHaveBeenCalledWith("service_line_port", { id: "mysql", line: "8.4", port: 3317 });
   });
 
   it("opens phpMyAdmin on another version", async () => {
@@ -128,12 +128,12 @@ describe("DatabasesPage", () => {
     });
     render(<DatabasesPage />);
     await flush();
-    fireEvent.click(screen.getByRole("button", { name: "phpMyAdmin su 11.4" }));
+    fireEvent.click(screen.getByRole("button", { name: "phpMyAdmin su 8.4" }));
     await flush();
-    expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: "11.4" });
+    expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: "8.4", engine: "mysql" });
     fireEvent.click(screen.getByRole("button", { name: "Apri phpMyAdmin" }));
     await flush();
-    expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: null });
+    expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: null, engine: "mysql" });
   });
 
   it("browses the version chosen, each on its own port", async () => {

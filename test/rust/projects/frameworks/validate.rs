@@ -27,6 +27,8 @@ fn validation() {
     }));
     assert!(bad(|p| p.kind = Kind::Addon));
     assert!(bad(|p| p.database = Some("oracle".into())));
+    assert!(!bad(|p| p.database = Some("mysql".into())));
+    // A framework file of before: its MariaDB is MySQL (D-117).
     assert!(!bad(|p| p.database = Some("mariadb".into())));
     assert!(bad(|p| {
         p.kind = Kind::Addon;

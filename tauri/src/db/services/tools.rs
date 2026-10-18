@@ -45,6 +45,95 @@ pub(super) fn run_with_input(mut cmd: Command, input: &str, limit: Duration) -> 
     }
 }
 
+/// Runs a SQL client with `input` on its stdin and returns what it writes
+/// (`--batch --skip-column-names` given by the caller); waits at most
+/// `limit`, fails with its error output.
+pub(crate) fn run_query(mut cmd: Command, input: &str, limit: Duration) -> Result<String> {
+    use std::io::{Read, Write};
+    cmd.stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let mut child = jobs::spawn(&mut cmd)?;
+    // The output is read aside: a large one would fill the pipe.
+    let mut stdout = child.stdout.take();
+    let reader = std::thread::spawn(move || {
+        let mut text = String::new();
+        if let Some(out) = stdout.as_mut() {
+            let _ = out.read_to_string(&mut text);
+        }
+        text
+    });
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(input.as_bytes())?;
+    }
+    let status = wait(&mut child, &cmd, limit)?;
+    let text = reader.join().unwrap_or_default();
+    let mut err = String::new();
+    if let Some(mut e) = child.stderr.take() {
+        let _ = e.read_to_string(&mut err);
+    }
+    if status.success() {
+        Ok(text)
+    } else {
+        Err(anyhow!("{}", err.trim()))
+    }
+}
+
+/// Runs a tool with its stdin from `from` or its stdout to `to` (a dump
+/// and its restore, D-117), at most `limit`; fails with its error output.
+pub(crate) fn run_with_files(
+    mut cmd: Command,
+    from: Option<&std::path::Path>,
+    to: Option<&std::path::Path>,
+    limit: Duration,
+) -> Result<()> {
+    use std::io::Read;
+    let stdin = match from {
+        Some(p) => Stdio::from(std::fs::File::open(p)?),
+        None => Stdio::null(),
+    };
+    let stdout = match to {
+        Some(p) => Stdio::from(std::fs::File::create(p)?),
+        None => Stdio::null(),
+    };
+    cmd.stdin(stdin).stdout(stdout).stderr(Stdio::piped());
+    let mut child = jobs::spawn(&mut cmd)?;
+    let mut stderr = child.stderr.take();
+    let reader = std::thread::spawn(move || {
+        let mut text = String::new();
+        if let Some(e) = stderr.as_mut() {
+            let _ = e.read_to_string(&mut text);
+        }
+        text
+    });
+    let status = wait(&mut child, &cmd, limit)?;
+    let err = reader.join().unwrap_or_default();
+    if status.success() {
+        Ok(())
+    } else {
+        Err(anyhow!("{}", err.trim()))
+    }
+}
+
+/// Waits for `child` at most `limit` (then ends it).
+fn wait(
+    child: &mut std::process::Child,
+    cmd: &Command,
+    limit: Duration,
+) -> Result<std::process::ExitStatus> {
+    let start = Instant::now();
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return Ok(status);
+        }
+        if start.elapsed() > limit {
+            let _ = child.kill();
+            bail!("{:?}: no answer", cmd.get_program());
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
 /// Runs a tool of a server and waits at most `limit`.
 pub(super) fn run_tool(mut cmd: Command, limit: Duration) -> Result<()> {
     cmd.stdin(Stdio::null())
