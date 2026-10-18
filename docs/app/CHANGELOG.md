@@ -1,5 +1,13 @@
 # Novità
 
+## Rilasci per macOS e Linux (19/10/2026)
+
+- **Ogni rilascio porta macOS e Linux** (D-119, [#5](https://github.com/nabre/dev-kit2/issues/5)): accanto agli exe di Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) e `Atollo-darwin-x64.app.zip` (Intel), `Atollo-linux-x64` e `Atollo-linux-arm64` in AppImage e `tar.gz`, ognuno con il suo `.sha256`. Sono i nomi che l'aggiornamento dell'app già cerca: un kit con il `.app` o l'AppImage si aggiornerà da solo dal prossimo rilascio.
+- **Prova prima di pubblicare**: un job nuovo scarica i file che il rilascio pubblicherà e li avvia di nuovo come farebbe un utente, su macOS dopo aver tolto la quarantena con `xattr`, su Linux l'AppImage senza FUSE e il `tar.gz` con il solo WebKitGTK del sistema. Se uno non parte, il rilascio non esce.
+- **README e note del rilascio** spiegano come aprire l'app su macOS (`xattr -dr com.apple.quarantine`, l'app aperta dalla cartella del kit, non da Download, per evitare App Translocation) e su Linux (`chmod +x`, `--appimage-extract-and-run` senza FUSE, oppure il `tar.gz` con WebKitGTK 4.1).
+
+**Verificato**: workflow letto con PyYAML e `actionlint` 1.7.7 (nessun errore nuovo), script dei passi controllati con `bash -n` e il parser di PowerShell, il passo dei file del rilascio provato su Windows con file finti (con e senza `linux-arm64`). Non provati: la CI vera e le prove su macchine pulite (Mac, Ubuntu 24.04, Fedora 42, Debian 13, aggiornamento da una versione all'altra).
+
 ## Spostare il kit senza rete su macOS e Linux (18/10/2026)
 
 - **R, Ruby, MongoDB (Linux), SQLite (Linux ARM64) e il `make` di C e C++** si reinstallano dopo che il kit cambia cartella, perché vengono da conda-forge e hanno il percorso scritto dentro (D-92). Ora i loro pacchetti restano nel kit, in `data/app/conda/<sistema>/`, e la reinstallazione li usa senza scaricare nulla, alla stessa versione: in WSL 43 s per R, Ruby, MongoDB e make, contro 86 s dalla rete con una connessione veloce, e funziona anche senza rete (D-118).
