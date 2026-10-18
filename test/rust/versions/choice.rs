@@ -153,13 +153,20 @@ fn a_php_line_brings_its_php_ini() {
     write_version(&old, "7.4.33").unwrap();
 
     let data = kit.data();
+    // Off Windows each target has its own folder of php.ini (one kit can
+    // hold the same line for Windows and Unix).
+    let ini_root = if kit.os().is_windows() {
+        data.join("php")
+    } else {
+        data.join("php").join(kit.target().as_str())
+    };
     let mut env = KitEnv::default();
     env.set_php(&data, &main);
-    assert_eq!(env.get("PHPRC"), data.join("php").join("8.4").to_str());
+    assert_eq!(env.get("PHPRC"), ini_root.join("8.4").to_str());
 
     set_project_choice(&kit, "app", "php", Some("7.4")).unwrap();
     let p = project_env(&kit, "app", env.clone());
-    let ini = data.join("php").join("7.4");
+    let ini = ini_root.join("7.4");
     assert_eq!(p.get("CP_PHP"), old.to_str());
     assert_eq!(p.get("PHPRC"), ini.to_str());
     assert_eq!(

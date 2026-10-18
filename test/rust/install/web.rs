@@ -49,14 +49,15 @@ fn fake_php(kit: &crate::kit::Kit, dir: &Path, template: &str) {
 
 /// Defect 10: one php.ini per line of PHP, from that line's template; the
 /// single php.ini of an older kit becomes the default line's, with the
-/// user's changes.
+/// user's changes. A Windows kit on every host: that php.ini only existed
+/// there (the Unix layout: `php_ini_shared_kit_both_orders`).
 #[test]
 fn one_php_ini_per_line() {
-    use crate::kit::{Arch, Kit};
+    use crate::kit::{Kit, Target};
     use crate::setup::catalog::Catalog;
 
     let tmp = TempDir::new("php-ini-lines");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
     kit.prepare().unwrap();
     let data = kit.data();
     let php = Catalog::get().find("php").unwrap();
@@ -111,6 +112,107 @@ fn one_php_ini_per_line() {
         env.get("CP_PHPRC_FWD").unwrap(),
         ini_dir.to_str().unwrap().replace('\\', "/")
     );
+}
+
+/// The folder of the php.ini for each of the six targets: Windows keeps
+/// `data/php/<line>`, macOS and Linux get `data/php/<target>/<line>`.
+#[test]
+fn php_ini_dir_per_target() {
+    use crate::kit::{Kit, Target};
+    let tmp = TempDir::new("php-ini-targets");
+    for target in [
+        Target::WIN32_X64,
+        Target::WIN32_ARM64,
+        Target::DARWIN_ARM64,
+        Target::DARWIN_X64,
+        Target::LINUX_X64,
+        Target::LINUX_ARM64,
+    ] {
+        let kit = Kit::at_target(tmp.0.join("kit"), target);
+        let data = kit.data();
+        let dir = kit.apps().join("php").join("8.5");
+        let want = if target.os == crate::kit::Os::Win32 {
+            data.join("php").join("8.5")
+        } else {
+            data.join("php").join(target.as_str()).join("8.5")
+        };
+        assert_eq!(php_ini_dir(&data, &dir), want, "{}", target.as_str());
+    }
+    // A kit folder named like a target does not count: only below data/.
+    let odd = Kit::at_target(tmp.0.join("linux-x64"), Target::WIN32_X64);
+    let dir = odd.apps().join("php").join("8.4");
+    assert_eq!(
+        php_ini_dir(&odd.data(), &dir),
+        odd.data().join("php").join("8.4")
+    );
+}
+
+/// Review of WP-3.2: one kit with PHP 8.5 for Windows and for Linux gets two
+/// php.ini, in either order of install: Windows with its extension= lines,
+/// Linux with none. The single php.ini of an older kit stays Windows'.
+#[test]
+fn php_ini_shared_kit_both_orders() {
+    use crate::kit::{Kit, Target};
+    for windows_first in [true, false] {
+        let tmp = TempDir::new("php-ini-shared");
+        let win = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+        let linux = win.for_target(Target::LINUX_X64);
+        win.prepare().unwrap();
+        let data = win.data();
+        let win_dir = win.apps().join("php").join("8.5");
+        let linux_dir = linux.apps().join("php").join("8.5");
+        fake_php(&win, &win_dir, ";extension=curl\r\n");
+        fake_php(&linux, &linux_dir, "");
+        fs::remove_file(linux_dir.join("php.ini-development")).unwrap();
+        let order = if windows_first {
+            [&win_dir, &linux_dir]
+        } else {
+            [&linux_dir, &win_dir]
+        };
+        for dir in order {
+            ensure_php_ini(&data, dir).unwrap();
+        }
+        let win_ini = fs::read_to_string(data.join("php").join("8.5").join("php.ini")).unwrap();
+        let linux_ini = fs::read_to_string(
+            data.join("php")
+                .join("linux-x64")
+                .join("8.5")
+                .join("php.ini"),
+        )
+        .unwrap();
+        assert_eq!(
+            win_ini, "extension=curl\r\n",
+            "windows_first={windows_first}"
+        );
+        assert_eq!(linux_ini, php_ini_unix(), "windows_first={windows_first}");
+        assert!(!linux_ini
+            .lines()
+            .any(|l| l.trim_start().starts_with("extension")));
+
+        // PHPRC of each system names its own folder.
+        let mut env = crate::env::KitEnv::default();
+        env.set_php(&data, &linux_dir);
+        let want = data.join("php").join("linux-x64").join("8.5");
+        assert_eq!(env.get("PHPRC"), Some(want.to_str().unwrap()));
+    }
+
+    // An older kit's data/php/php.ini never becomes a Unix PHP's.
+    let tmp = TempDir::new("php-ini-legacy-unix");
+    let linux = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
+    linux.prepare().unwrap();
+    let php = crate::setup::catalog::Catalog::get().find("php").unwrap();
+    let version = "8.5.8 (Composer 2.8.12)";
+    let main = crate::versions::install_dir(&linux, php, version);
+    fake_php(&linux, &main, "");
+    fs::remove_file(main.join("php.ini-development")).unwrap();
+    php.save_version(&linux, version).unwrap();
+    let legacy = linux.data().join("php").join("php.ini");
+    fs::create_dir_all(legacy.parent().unwrap()).unwrap();
+    fs::write(&legacy, "extension=curl\r\n").unwrap();
+    migrate_php_ini(&linux).unwrap();
+    assert_eq!(fs::read_to_string(&legacy).unwrap(), "extension=curl\r\n");
+    let ini = php_ini_dir(&linux.data(), &main).join("php.ini");
+    assert_eq!(fs::read_to_string(ini).unwrap(), php_ini_unix());
 }
 
 /// Apache loads the php.ini of the PHP in use, also in an older kit.conf.
