@@ -13,6 +13,9 @@ use serde::Serialize;
 
 use super::tools::run_with_input;
 use super::{auth, project_line, project_sql_engine, Services};
+use crate::db::DbEngine;
+use crate::os::jobs;
+use crate::projects::state::ProjectState;
 
 /// The options of a SQL dump (D-78): one consistent snapshot, with the
 /// routines and triggers; MySQL also the events and no GTID statement,
@@ -32,9 +35,6 @@ pub fn dump_args(engine: DbEngine) -> &'static [&'static str] {
         }
     }
 }
-use crate::db::DbEngine;
-use crate::os::jobs;
-use crate::projects::state::ProjectState;
 
 /// A copy of a project's database (D-78).
 #[derive(Debug, Clone, Serialize)]
