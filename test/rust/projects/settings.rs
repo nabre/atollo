@@ -9,7 +9,11 @@ fn saved_in_data_and_kept() {
     assert_eq!(load(&kit, "app"), ProjectSettings::default());
     update(&kit, "app", |s| s.agent = Some("codex".into()));
     opened(&kit, "app");
-    let file = kit.data().join(r"projects\app\dev-settings.json");
+    let file = kit
+        .data()
+        .join("projects")
+        .join("app")
+        .join("dev-settings.json");
     let text = std::fs::read_to_string(&file).unwrap();
     assert!(text.contains("\"agent\": \"codex\"") && text.contains("lastOpened"));
     // a key of a newer version stays

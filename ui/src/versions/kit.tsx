@@ -326,16 +326,17 @@ export function AddLine({
 /** The kit's versions for the Tools page, where each versioned tool shows
  * them in its own row (ToolVersions). `enabled` false (first start) asks
  * nothing. */
-export function useKitVersions(setup: SetupSnapshot | null, enabled: boolean) {
+export function useKitVersions(setup: SetupSnapshot | null, enabled: boolean, target?: string) {
+  const fetchVersions = useCallback(() => versionsList(target), [target]);
   const {
     data: tools,
     setData: setTools,
     reload: load,
-  } = useLoad<VersionedTool[] | null>(versionsList, null, { onError: { fallback: [] }, enabled });
+  } = useLoad<VersionedTool[] | null>(fetchVersions, null, { onError: { fallback: [] }, enabled });
   const { busy, error, run: runAction } = useAction(load);
   // The tool of the last action, the one that shows its error.
   const [last, setLast] = useState<string | null>(null);
-  const offers = useOffers(tools, load);
+  const offers = useOffers(tools, load, target);
   useReloadOnSteps(setup, load);
   const run = useCallback(
     (id: string, key: string, task: () => Promise<void>) => {
@@ -345,7 +346,7 @@ export function useKitVersions(setup: SetupSnapshot | null, enabled: boolean) {
     [runAction],
   );
   const byId = useMemo(() => new Map((tools ?? []).map((x) => [x.id, x])), [tools]);
-  return { byId, setTools, busy, error, last, run, offers };
+  return { byId, setTools, busy, error, last, run, offers, target };
 }
 
 export type KitVersions = ReturnType<typeof useKitVersions>;
@@ -364,10 +365,10 @@ export function ToolVersions({
   /** Line → the components that cannot run on it (relations matrix). */
   outside?: Record<string, string[]>;
 }) {
-  const { busy, run, offers, setTools } = kit;
+  const { busy, run, offers, setTools, target } = kit;
   const running = setup?.running ?? false;
   const add = (line: string) => {
-    run(tool.id, `add:${tool.id}`, () => versionsAdd(tool.id, line));
+    run(tool.id, `add:${tool.id}`, () => versionsAdd(tool.id, line, target));
   };
   return (
     <div className="mt-1.5 max-w-[620px]">
@@ -405,7 +406,7 @@ export function ToolVersions({
         busy={busy}
         running={running}
         onRemove={(line) => {
-          run(tool.id, `remove:${tool.id}:${line}`, () => versionsRemove(tool.id, line).then(setTools));
+          run(tool.id, `remove:${tool.id}:${line}`, () => versionsRemove(tool.id, line, target).then(setTools));
         }}
       />
       {kit.last === tool.id && <ErrorLine error={kit.error} />}
@@ -424,7 +425,7 @@ export function ToolInstallLine({
   kit: KitVersions;
   setup: SetupSnapshot | null;
 }) {
-  const { busy, run, offers } = kit;
+  const { busy, run, offers, target } = kit;
   const running = setup?.running ?? false;
   const none = offered(tool).length === 0;
   return (
@@ -450,7 +451,7 @@ export function ToolInstallLine({
             busy={running || busy === `install:${tool.id}`}
             label={t("Installa una versione di {0}", tool.name)}
             onAdd={(line) => {
-              run(tool.id, `install:${tool.id}`, () => versionsInstall(tool.id, line));
+              run(tool.id, `install:${tool.id}`, () => versionsInstall(tool.id, line, target));
             }}
           />
         </div>

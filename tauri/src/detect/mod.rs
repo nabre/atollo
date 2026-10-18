@@ -12,11 +12,13 @@
 //! - `static`: a folder of the project served by the exe's file server
 //!   (`Dev-Kit.exe serve`), instead of a command;
 //! - `apache`: a folder of the project served by an Apache of its own
-//!   (`projects/apache.rs`), instead of a command.
+//!   (`projects/apache.rs`), instead of a command; `nginx` and `caddy` the
+//!   same with Nginx or Caddy (`projects/caddy.rs`).
 //!
 //! `panel.json` in the project (old name `pannello.json`) corrects or
 //! replaces what was detected (`overrides.rs`). One file per platform.
 
+mod container;
 mod go;
 mod node;
 mod overrides;
@@ -81,6 +83,9 @@ pub struct Action {
     /// A folder served by the project's own Nginx.
     #[serde(rename = "nginx")]
     pub nginx_dir: Option<String>,
+    /// A folder served by Caddy, its own or a pool's (D-111).
+    #[serde(rename = "caddy")]
+    pub caddy_dir: Option<String>,
     /// Web server profile id, or `auto`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
@@ -107,6 +112,7 @@ impl Action {
             static_dir: None,
             apache_dir: None,
             nginx_dir: None,
+            caddy_dir: None,
             server: None,
             domains: Vec::new(),
             aliases: BTreeMap::new(),
@@ -142,6 +148,23 @@ impl Action {
             ..Action::new(id, label, "", Kind::Web)
         }
     }
+
+    /// A folder of the project served by Caddy.
+    fn caddy(id: &str, label: &str, folder: &str) -> Action {
+        Action {
+            caddy_dir: Some(folder.to_owned()),
+            ..Action::new(id, label, "", Kind::Web)
+        }
+    }
+
+    /// Served by a web server of the kit (Apache, Nginx, Caddy): a site
+    /// that can go in a shared pool.
+    pub fn web_server_dir(&self) -> Option<&str> {
+        self.apache_dir
+            .as_deref()
+            .or(self.nginx_dir.as_deref())
+            .or(self.caddy_dir.as_deref())
+    }
 }
 
 /// What one detector found in one folder.
@@ -165,6 +188,9 @@ pub struct Project {
     pub languages: Vec<String>,
     /// Ids of the kit's components it needs.
     pub requires: Vec<String>,
+    /// Lines of some of them, from the images of Compose and Dockerfile.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub lines: BTreeMap<String, String>,
     pub actions: Vec<Action>,
     pub warnings: Vec<String>,
     pub custom: bool,
@@ -214,11 +240,21 @@ fn tr(lang: &str, source: &str, args: &[&str]) -> String {
 // Every look into a project goes through `safe_path`: never through a
 // symbolic link or a junction (D-77).
 fn exists(dir: &Path, rel: &str) -> bool {
-    crate::os::safe_path::exists(dir, &dir.join(rel))
+    crate::os::safe_path::exists(dir, &dir.join(&*native(rel)))
 }
 
 fn read(dir: &Path, rel: &str) -> String {
-    crate::os::safe_path::read_text(dir, &dir.join(rel)).unwrap_or_default()
+    crate::os::safe_path::read_text(dir, &dir.join(&*native(rel))).unwrap_or_default()
+}
+
+/// A relative path written with `\` (as the detection writes them), with
+/// the system's separator: on macOS and Linux `\` is a character of a name.
+fn native(rel: &str) -> std::borrow::Cow<'_, str> {
+    if cfg!(windows) {
+        rel.into()
+    } else {
+        rel.replace('\\', "/").into()
+    }
 }
 
 fn read_json(dir: &Path, rel: &str) -> Option<serde_json::Value> {
@@ -240,6 +276,7 @@ fn list_dir(dir: &Path) -> Vec<String> {
 }
 
 /// Quotes a path for `cmd.exe` when it holds spaces or symbols.
+#[cfg(windows)]
 fn quote(s: &str) -> String {
     if s.chars()
         .any(|c| c.is_whitespace() || "&()^,;=".contains(c))
@@ -248,6 +285,67 @@ fn quote(s: &str) -> String {
     } else {
         s.to_owned()
     }
+}
+
+/// Quotes a path for `/bin/sh` when it holds anything but plain characters:
+/// in single quotes, where `$(…)`, backticks and `;` of a folder name in a
+/// cloned repository stay text.
+#[cfg(not(windows))]
+fn quote(s: &str) -> String {
+    if !s.is_empty()
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || "._-/+@".contains(c))
+    {
+        s.to_owned()
+    } else {
+        format!("'{}'", s.replace('\'', r"'\''"))
+    }
+}
+
+/// The kit's router of `php -S` (`runtime\php-router.php`, written to
+/// `data\kit\`): 403 for hidden files and `.inc` (SEC-V3-02). The command
+/// runs through `cmd.exe` on Windows and `/bin/sh` elsewhere, each with its
+/// own way to read `CP_DATA`.
+#[cfg(windows)]
+const PHP_ROUTER: &str = r#""%CP_DATA%\kit\php-router.php""#;
+#[cfg(not(windows))]
+const PHP_ROUTER: &str = r#""$CP_DATA/kit/php-router.php""#;
+
+/// `php -S` on the folder `root` of the project, always through the kit's
+/// router. A project's own `router.php` (in `root`, else in the project
+/// folder) runs after the kit's checks: `php -S` takes one router only, so
+/// the kit's includes it, given as `-d devkit.router=<path>` relative to
+/// `root` (hidden files and `.inc` stay refused, D-97).
+fn php_server(dir: &Path, root: &str) -> String {
+    let depth = root
+        .split(['\\', '/'])
+        .filter(|s| !s.is_empty() && *s != ".")
+        .count();
+    let in_root = format!(r"{root}\router.php");
+    let own = if exists(dir, in_root.trim_start_matches(r".\")) {
+        Some("router.php".to_owned())
+    } else if exists(dir, "router.php") {
+        Some(format!(r"{}router.php", r"..\".repeat(depth)))
+    } else {
+        None
+    };
+    let own = own
+        .map(|f| format!("-d {} ", quote(&format!("devkit.router={}", native(&f)))))
+        .unwrap_or_default();
+    format!(
+        "php {own}-S 127.0.0.1:{{port}} -t {} {PHP_ROUTER}",
+        quote(&native(root))
+    )
+}
+
+/// Files that ask for Nginx, in the project folder or in the site's.
+const NGINX_FILES: [&str; 2] = ["nginx.conf", ".nginx"];
+
+/// A `nginx.conf` or `.nginx` in the project folder or in `root`.
+fn has_nginx(dir: &Path, root: &str) -> bool {
+    NGINX_FILES
+        .iter()
+        .any(|f| exists(dir, f) || (root != "." && exists(dir, &format!(r"{root}\{f}"))))
 }
 
 /// One walk of the project: 3 levels, at most 3000 files, no IGNORED folders.
@@ -479,37 +577,34 @@ pub fn requires(dir: &Path) -> Vec<String> {
             found.insert("cc");
         }
     });
-    if [
-        ".htaccess",
-        r"public\.htaccess",
-        r"web\.htaccess",
-        r"htdocs\.htaccess",
-    ]
-    .iter()
-    .any(|f| exists(dir, f))
-    {
-        found.insert("apache");
+    // A `.htaccess` is PHP; Apache only on Windows and for rules of its own
+    // (Caddy serves the stock ones, detect/php.rs).
+    if php::HTACCESS.iter().any(|f| exists(dir, f)) {
         found.insert("php");
-    }
-    for compose in ["compose.yaml", "docker-compose.yml"] {
-        let text = read(dir, compose).to_ascii_lowercase();
-        if text.contains("image: httpd")
-            || text.contains("image: apache")
-            || (text.contains("php:") && text.contains("-apache"))
-        {
+        if php::apache_offered(crate::kit::Os::current(), &php::htaccess_texts(dir, ".")) {
             found.insert("apache");
-            found.insert("php");
-        }
-        if text.contains("image: nginx") {
-            found.insert("nginx");
         }
     }
+    // The walk skips hidden names: `.nginx` is looked for here.
+    if has_nginx(dir, ".") {
+        found.insert("nginx");
+    }
+    found.extend(container::servers(dir).into_keys());
     found.extend(databases(dir));
     let catalog = crate::setup::catalog::Catalog::get();
     found
         .into_iter()
         .filter(|id| catalog.find(id).is_some())
         .map(str::to_owned)
+        .collect()
+}
+
+/// The lines of the kit's components that the project's containers name
+/// (`php:8.3-apache` → `php` = `8.3`).
+pub fn lines(dir: &Path) -> BTreeMap<String, String> {
+    container::servers(dir)
+        .into_iter()
+        .filter_map(|(id, line)| Some((id.to_owned(), line?)))
         .collect()
 }
 
@@ -593,31 +688,13 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         },
         languages: languages(dir),
         requires: requires(dir),
+        lines: lines(dir),
         actions: results.iter().flat_map(|r| r.actions.clone()).collect(),
         warnings: results.iter().flat_map(|r| r.warnings.clone()).collect(),
         custom: false,
         default: None,
     };
     overrides::apply(&mut project, dir, lang);
-    // An Apache of its own needs Apache and its PHP module.
-    if project.actions.iter().any(|a| a.apache_dir.is_some()) {
-        for id in ["apache", "php"] {
-            if !project.requires.iter().any(|r| r == id) {
-                project.requires.push(id.to_owned());
-            }
-        }
-        project.requires.sort();
-    }
-    if project.actions.iter().any(|a| a.nginx_dir.is_some()) {
-        if !project.requires.iter().any(|r| r == "nginx") {
-            project.requires.push("nginx".to_owned());
-        }
-        project.requires.sort();
-    }
-    if project.platform.contains("WordPress") && !project.requires.iter().any(|r| r == "mariadb") {
-        project.requires.push("mariadb".to_owned());
-        project.requires.sort();
-    }
     if project.default.is_none() {
         project.default = project
             .actions
@@ -626,6 +703,46 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             .or(project.actions.first())
             .map(|a| a.id.clone());
     }
+    // An Apache of its own needs Apache and its PHP module, a Nginx needs
+    // Nginx, a Caddy Caddy and PHP: when it is the main action or written
+    // in panel.json, not when it is only proposed beside `php -S` or
+    // `artisan serve`.
+    let used = |a: &&Action| a.custom || project.default.as_deref() == Some(a.id.as_str());
+    let mut needed: Vec<&str> = Vec::new();
+    if project
+        .actions
+        .iter()
+        .filter(used)
+        .any(|a| a.apache_dir.is_some())
+    {
+        needed.extend(["apache", "php"]);
+    }
+    if project
+        .actions
+        .iter()
+        .filter(used)
+        .any(|a| a.nginx_dir.is_some())
+    {
+        needed.push("nginx");
+    }
+    if project
+        .actions
+        .iter()
+        .filter(used)
+        .any(|a| a.caddy_dir.is_some())
+    {
+        needed.extend(["caddy", "php"]);
+    }
+    // A CMS needs the kit's MariaDB (D-93).
+    if php::CMS.iter().any(|c| project.platform.contains(c)) {
+        needed.push("mariadb");
+    }
+    for id in needed {
+        if !project.requires.iter().any(|r| r == id) {
+            project.requires.push(id.to_owned());
+        }
+    }
+    project.requires.sort();
     project
 }
 

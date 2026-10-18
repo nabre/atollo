@@ -171,6 +171,10 @@ fn dribbling_client_is_cut_after_deadline() {
         std::thread::sleep(Duration::from_millis(50));
     }
     let mut s = s.expect("server did not start");
+    // Once, before the server can cut: macOS refuses setsockopt on a socket
+    // the peer has closed (EINVAL).
+    s.set_read_timeout(Some(Duration::from_millis(1000)))
+        .unwrap();
     let started = std::time::Instant::now();
     let head = format!(
         "GET / HTTP/1.1\r\nHost: localhost:{port}\r\nX-Pad: {}",
@@ -183,8 +187,6 @@ fn dribbling_client_is_cut_after_deadline() {
             break;
         }
         // A closed connection reads as end of stream (or a reset).
-        s.set_read_timeout(Some(Duration::from_millis(1000)))
-            .unwrap();
         let mut buf = [0u8; 64];
         let closed = match s.read(&mut buf) {
             Ok(0) => true,

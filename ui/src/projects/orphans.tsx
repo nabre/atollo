@@ -1,4 +1,4 @@
-// Data of the kit without a project (PLAN-DATA.md WP-7): a closed section of
+// Data of the kit without a project (D-89): a closed section of
 // the Projects side bar, shown only when there is something. Each entry
 // can be given to an existing project ("Collega a…", which must have no data
 // of the kit yet) or deleted with the confirmation of a project's deletion

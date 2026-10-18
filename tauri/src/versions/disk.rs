@@ -71,10 +71,29 @@ pub fn sync_with_disk(kit: &Kit) -> Result<Vec<String>> {
         .filter(|c| c.installed_version(kit).is_some() && !c.is_present(kit))
         .collect();
     let before = choice.clone();
+    let target = kit.target();
+    // What the chosen ones need on this target only (Zig for C and C++ on
+    // Linux) is not in the saved choice, so `Choice::set` cannot follow it:
+    // the chosen components that need it on this target go off here.
+    let kept = catalog.needs_only_on(&before.chosen_ids(catalog), target);
     for c in &gone {
         c.forget_version(kit);
-        if !catalog.is_locked(&c.id) {
-            choice.set(catalog, &c.id, false);
+        if catalog.is_locked(&c.id) {
+            continue;
+        }
+        choice.set(catalog, &c.id, false);
+        if kept.contains(c.id.as_str()) {
+            for d in catalog.all() {
+                if choice.is_chosen(&d.id)
+                    && !catalog.is_locked(&d.id)
+                    && d.id != c.id
+                    && catalog
+                        .with_needs_on(&[&d.id], target)
+                        .contains(c.id.as_str())
+                {
+                    choice.set(catalog, &d.id, false);
+                }
+            }
         }
     }
     if choice == before {
@@ -151,13 +170,17 @@ pub fn migrate(kit: &Kit) {
     if let Err(e) = crate::install::adopt_composer(kit) {
         crate::log::warn(&format!("Composer of the older kit: {e:#}"));
     }
+    if let Err(e) = crate::install::migrate_php_ini(kit) {
+        crate::log::warn(&format!("php.ini per line of PHP: {e:#}"));
+    }
     if let Err(e) = crate::projects::apache::fix_kit_conf(kit) {
         crate::log::warn(&format!("Apache kit.conf: {e:#}"));
     }
 }
 
-/// Components no longer in the catalog: Windows Terminal (D-95).
-const RETIRED: [&str; 1] = ["terminal"];
+/// Components no longer in the catalog: Windows Terminal (D-95), Adminer
+/// (phpMyAdmin in its place, D-107).
+const RETIRED: [&str; 2] = ["terminal", "adminer"];
 
 /// What an older kit kept of a component no longer in the catalog: its
 /// folder in `data\apps`, its version files and its files in `data\kit`. A
@@ -185,10 +208,14 @@ fn drop_retired(kit: &Kit) {
                 let _ = fs::remove_file(e.path());
             }
         }
-        let _ = fs::remove_file(kit.app_dir().join("versions").join(format!("{id}.txt")));
+        let _ = fs::remove_file(kit.versions_root().join(format!("{id}.txt")));
     }
     // The start script of Windows Terminal's consoles.
     let _ = fs::remove_file(kit.kit_files().join("console.ps1"));
+    // Adminer's router, sessions and log.
+    let _ = fs::remove_file(kit.kit_files().join("adminer.php"));
+    let _ = fs::remove_dir_all(kit.app_dir().join("adminer"));
+    let _ = fs::remove_file(kit.logs().join("adminer.log"));
 }
 
 /// `node\node.exe` → `node\<line>\node.exe`, through `node.devkit-move`

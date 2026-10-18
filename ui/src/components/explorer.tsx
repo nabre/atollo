@@ -81,7 +81,7 @@ export function ToolsPage({
 }) {
   const state = useComponents(setup, false);
   const { list, chosen, choose, error, synced, neededBy, projects, load } = state;
-  const kit = useKitVersions(setup, true);
+  const kit = useKitVersions(setup, true, state.target);
   const relations = useRelations(setup, list, true);
   const links = relations.matrix?.links ?? [];
   const [search, setSearch] = useState("");
@@ -108,10 +108,11 @@ export function ToolsPage({
   };
 
   const shown = list?.filter((c) => matches(c, search)) ?? [];
-  const installedAll = shown.filter((c) => c.installed).length;
+  const installedAll = shown.filter((c) => c.installed || Boolean(c.bootstrapStaged)).length;
   // A tool's row, under its group's branch of the tree.
   const row = (c: ComponentInfo) => {
     const on = chosen.has(c.id);
+    const ready = c.installed || Boolean(c.bootstrapStaged);
     const pending = on !== (c.chosen || c.locked);
     const item = itemState(setup, c.id, c.name);
     const missing = (neededBy.get(c.id) ?? []).length > 0 && !on;
@@ -122,7 +123,7 @@ export function ToolsPage({
         depth={1}
         icon={<ComponentLogo id={c.id} size={16} />}
         label={c.name}
-        description={c.installed ? (version ?? undefined) : undefined}
+        description={ready ? (version ?? undefined) : undefined}
         title={c.desc}
         selected={active === c.id}
         onSelect={() => {
@@ -132,7 +133,7 @@ export function ToolsPage({
           c.locked ? undefined : on ? (
             <IconButton
               icon={VscClose}
-              label={c.installed ? t("Rimuovi {0}", c.name) : t("Non installare {0}", c.name)}
+              label={ready ? t("Rimuovi {0}", c.name) : t("Non installare {0}", c.name)}
               disabled={running}
               onClick={() => {
                 choose(c.id, false);
@@ -161,6 +162,8 @@ export function ToolsPage({
                 <Dot tone="warn" label={on ? t("da installare") : t("da rimuovere")} />
               ) : c.installed ? (
                 <Dot tone="ok" label={t("installato")} />
+              ) : c.bootstrapStaged ? (
+                <Dot tone="ok" label={t("pre-scaricato")} />
               ) : null}
             </>
           )
@@ -219,7 +222,7 @@ export function ToolsPage({
               {all.map((g) => {
                 const items = shown.filter((c) => g.has(c));
                 if (items.length === 0) return null;
-                const installed = items.filter((c) => c.installed).length;
+                const installed = items.filter((c) => c.installed || Boolean(c.bootstrapStaged)).length;
                 const open = !closed.has(g.id) || search !== "";
                 return (
                   <ListRow

@@ -1,6 +1,6 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
-use crate::versions::tests::install_fake;
+use crate::versions::tests::{install_fake, key_rel};
 use crate::versions::{dir_name, VERSION_FILE};
 
 #[test]
@@ -34,6 +34,39 @@ fn deleted_by_hand_is_no_longer_chosen() {
     assert!(sync_with_disk(&kit).unwrap().is_empty());
 }
 
+/// D-81 with a need of one target: Zig deleted by hand on Linux turns off
+/// C and C++, which need it there, so the next run does not bring it back.
+/// On Windows C and C++ do not need Zig and stay chosen.
+#[test]
+fn deleted_need_of_one_target_turns_off_what_needs_it() {
+    use crate::kit::{Os, Target};
+    let catalog = Catalog::get();
+    let zig = catalog.find("zig").unwrap();
+    for (t, cc_after) in [
+        (Target::new(Os::Linux, Arch::X64), false),
+        (Target::new(Os::Darwin, Arch::Arm64), false),
+        (Target::WIN32_X64, true),
+    ] {
+        let tmp = TempDir::new("versions-sync-target");
+        let kit = Kit::at_target(tmp.0.clone(), t);
+        kit.prepare().unwrap();
+        install_fake(&kit, zig, &install_dir(&kit, zig, "0.14.0"));
+        zig.save_version(&kit, "0.14.0").unwrap();
+        let mut choice = crate::setup::catalog::Choice::defaults(catalog);
+        choice.set(catalog, "cc", true);
+        choice.write(&kit, catalog).unwrap();
+        assert!(sync_with_disk(&kit).unwrap().is_empty(), "{t}: all there");
+
+        fs::remove_dir_all(zig.folder_path(&kit).unwrap()).unwrap();
+        let off = sync_with_disk(&kit).unwrap();
+        let now = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
+        assert_eq!(now.is_chosen("cc"), cc_after, "{t}");
+        assert!(!now.is_chosen("zig"), "{t}");
+        assert_eq!(off.contains(&"C, C++".to_owned()), !cc_after, "{t}");
+        assert!(zig.installed_version(&kit).is_none(), "{t}");
+    }
+}
+
 #[test]
 fn folders_of_an_older_kit_move() {
     let tmp = TempDir::new("versions-migrate");
@@ -45,18 +78,23 @@ fn folders_of_an_older_kit_move() {
     let store = node.folder_path(&kit).unwrap();
     install_fake(&kit, node, &store);
     node.save_version(&kit, "v22.11.0").unwrap();
-    install_fake(&kit, node, &kit.apps().join(r"versions\node\20.18"));
-    fs::create_dir_all(kit.apps().join(r"versions\typst\0.13")).unwrap();
+    let versions = kit.apps().join("versions");
+    install_fake(&kit, node, &versions.join("node").join("20.18"));
+    fs::create_dir_all(versions.join("typst").join("0.13")).unwrap();
     assert_eq!(default_dir(&kit, node), store, "works before moving");
     assert!(node.is_installed(&kit));
-    let conf = kit.data().join(r"apache\kit.conf");
+    let conf = kit.data().join("apache").join("kit.conf");
     fs::create_dir_all(conf.parent().unwrap()).unwrap();
     fs::write(&conf, "LoadFile \"${CP_APPS_FWD}/php/php8ts.dll\"\r\n").unwrap();
 
     migrate(&kit);
     let main = store.join("22.11");
     assert_eq!(default_dir(&kit, node), main);
-    assert!(main.join("node.exe").is_file() && !store.join("node.exe").exists());
+    // `node.exe` on Windows, `bin/node` elsewhere
+    let key = key_rel(&kit, node);
+    assert!(
+        crate::fsx::join_rel(&main, &key).is_file() && !crate::fsx::join_rel(&store, &key).exists()
+    );
     assert_eq!(
         fs::read_to_string(main.join(VERSION_FILE)).unwrap(),
         "v22.11.0"
@@ -174,8 +212,10 @@ fn github_cli_and_uv_leave_tools() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     let tools = kit.apps().join("tools");
     fs::create_dir_all(&tools).unwrap();
-    for name in ["gh.exe", "uv.exe", "uvx.exe", "uvw.exe", "ninja.exe"] {
-        fs::write(tools.join(name), b"").unwrap();
+    // The programs as the kit's target names them (`gh.exe`, `gh`).
+    let exe = |stem: &str| crate::router::bins::exe_name(kit.os(), stem);
+    for stem in ["gh", "uv", "uvx", "uvw", "ninja"] {
+        fs::write(tools.join(exe(stem)), b"").unwrap();
     }
     let catalog = Catalog::get();
     let (gh, uv) = (catalog.find("gh").unwrap(), catalog.find("uv").unwrap());
@@ -183,14 +223,18 @@ fn github_cli_and_uv_leave_tools() {
     uv.save_version(&kit, "0.9.5").unwrap();
     assert!(!gh.is_installed(&kit));
     migrate(&kit);
-    assert!(kit.apps().join(r"gh\2.102\bin\gh.exe").is_file());
-    for name in ["uv.exe", "uvx.exe", "uvw.exe"] {
-        assert!(kit.apps().join(r"uv\0.9").join(name).is_file(), "{name}");
-        assert!(!tools.join(name).exists(), "{name}");
+    let gh_line = kit.apps().join("gh").join("2.102");
+    assert!(gh_line.join("bin").join(exe("gh")).is_file());
+    for name in ["uv", "uvx", "uvw"].map(exe) {
+        assert!(
+            kit.apps().join("uv").join("0.9").join(&name).is_file(),
+            "{name}"
+        );
+        assert!(!tools.join(&name).exists(), "{name}");
     }
     assert!(gh.is_installed(&kit) && uv.is_installed(&kit));
     // CMake's Ninja stays in tools.
-    assert!(tools.join("ninja.exe").is_file() && !tools.join("gh.exe").exists());
+    assert!(tools.join(exe("ninja")).is_file() && !tools.join(exe("gh")).exists());
 }
 
 /// Windows Terminal is no longer in the catalog (D-95): what an older kit
@@ -200,7 +244,7 @@ fn retired_windows_terminal_goes() {
     let tmp = TempDir::new("versions-retired");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let wt = kit.apps().join(r"terminal\1.25\settings");
+    let wt = kit.apps().join("terminal").join("1.25").join("settings");
     fs::create_dir_all(&wt).unwrap();
     fs::write(wt.join("settings.json"), "{}").unwrap();
     fs::create_dir_all(kit.versions_dir()).unwrap();
@@ -212,7 +256,7 @@ fn retired_windows_terminal_goes() {
     ] {
         fs::write(kit.versions_dir().join(f), "1").unwrap();
     }
-    let legacy = kit.app_dir().join(r"versions\terminal.txt");
+    let legacy = kit.app_dir().join("versions").join("terminal.txt");
     fs::write(&legacy, "1.25.2609.30003").unwrap();
     fs::create_dir_all(kit.kit_files()).unwrap();
     let script = kit.kit_files().join("console.ps1");
@@ -228,4 +272,33 @@ fn retired_windows_terminal_goes() {
         .map(|e| e.file_name().to_string_lossy().into_owned())
         .collect();
     assert_eq!(left, ["pwsh.txt"]);
+}
+
+/// Adminer is no longer in the catalog (phpMyAdmin, D-107): its folder,
+/// version, router, sessions and log go at start.
+#[test]
+fn retired_adminer_goes() {
+    let tmp = TempDir::new("versions-retired-adminer");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let line = kit.apps().join("adminer").join("6.1");
+    fs::create_dir_all(&line).unwrap();
+    fs::write(line.join("adminer.php"), "<?php").unwrap();
+    fs::create_dir_all(kit.versions_dir()).unwrap();
+    fs::write(kit.versions_dir().join("adminer.txt"), "6.1.2").unwrap();
+    fs::create_dir_all(kit.kit_files()).unwrap();
+    let router = kit.kit_files().join("adminer.php");
+    fs::write(&router, "<?php").unwrap();
+    let sessions = kit.app_dir().join("adminer");
+    fs::create_dir_all(&sessions).unwrap();
+    fs::write(sessions.join("sess_x"), "").unwrap();
+    fs::create_dir_all(kit.logs()).unwrap();
+    let log = kit.logs().join("adminer.log");
+    fs::write(&log, "started").unwrap();
+
+    migrate(&kit);
+
+    assert!(!kit.apps().join("adminer").exists());
+    assert!(!kit.versions_dir().join("adminer.txt").exists());
+    assert!(!router.exists() && !sessions.exists() && !log.exists());
 }

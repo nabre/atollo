@@ -1,10 +1,15 @@
 //! The components of the kit and the user's choice.
 //!
 //! The catalog (`catalog/components.json`, embedded) is the only list of
-//! components (docs/app/CATALOG.md). The choice is `data\app\components.txt`,
+//! components (docs/app/CATALOG.md). The choice is `data/app/components.txt`,
 //! in the format of nabre/dev-kit `_components.ps1:31-80`: three comment lines,
 //! then `id=1` or `id=0` per component, UTF-8 without BOM, CRLF. Versions are
-//! `data\app\versions\<id>.txt`, plain text.
+//! `data/app/versions/<target>/<id>.txt`, plain text.
+//!
+//! Availability per target (D-108): a component is installed on a target
+//! only with a build made for it, natively or through the system's x64
+//! emulation; otherwise it is "not available" with the reason, never a
+//! binary of another architecture that does not start.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -14,7 +19,7 @@ use std::sync::OnceLock;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::fsx::{join_rel, write_atomic};
+use crate::fsx::{join_rel, read_text, write_atomic};
 use crate::kit::{Arch, Kit, Target};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -48,8 +53,15 @@ pub struct Component {
     pub def: bool,
     /// Size on disk, about.
     pub mb: u32,
+    /// Components it needs on every target. Private: what it needs on a
+    /// target is [`Component::needs_on`], with `needs_by_target` too.
     #[serde(default)]
-    pub needs: Vec<String>,
+    needs: Vec<String>,
+    /// Components it needs on one target only, after `needs`: C and C++
+    /// are `zig cc` on macOS and Linux (`{"linux-x64": ["zig"]}`), Rust
+    /// links with llvm-mingw on Windows ARM64 (D-108).
+    #[serde(default)]
+    needs_by_target: BTreeMap<String, Vec<String>>,
     /// Italian; translated by the catalogs.
     pub desc: String,
     pub home: String,
@@ -58,11 +70,18 @@ pub struct Component {
     /// installed only when the key and all of these exist.
     #[serde(default)]
     pub keys: Vec<String>,
-    /// The folder of `data\apps\<platform>` the component owns, if any.
+    /// The folder of `data/apps/<target>` the component owns, if any.
     #[serde(default)]
     pub folder: Option<String>,
+    /// No Windows ARM64 build: the x64 one runs there in emulation.
     #[serde(default)]
     pub x64_only: bool,
+    /// No Apple Silicon build: the x64 one runs on `darwin-arm64` with
+    /// Rosetta 2, and is not available on a Mac without it
+    /// (`router::target::rosetta_missing`). Separate from `x64_only`: most
+    /// components without a Windows ARM64 build have a native one for macOS.
+    #[serde(default)]
+    pub rosetta: bool,
     /// No build runs on ARM64, not even emulated (R): not available there.
     #[serde(default)]
     pub no_arm64: bool,
@@ -71,13 +90,22 @@ pub struct Component {
     /// targets except `win32-arm64` when `no_arm64` is true.
     #[serde(default)]
     pub targets: Vec<String>,
-    /// Other files or folders it owns (relative to `data\apps\<platform>`,
+    /// Targets where no build exists, with the reason the interface shows
+    /// (Italian, translated by the catalogs): `{"linux-arm64": "…"}`.
+    #[serde(default)]
+    pub unavailable: BTreeMap<String, String>,
+    /// Other files or folders it owns (relative to `data/apps/<target>`,
     /// `@` = the kit root), removed with it unless another installed
-    /// component lists them too.
+    /// component lists them too. Names of Windows; on macOS and Linux
+    /// `remove_unix` takes their place when the catalog gives it.
     #[serde(default)]
     pub remove: Vec<String>,
+    /// The same as `remove` on macOS and Linux, where the files are laid
+    /// out differently (`bin/pnpm`, `lib/node_modules/pnpm`); same rules.
+    #[serde(default)]
+    pub remove_unix: Vec<String>,
     /// Version command for the final check: program (relative to
-    /// `data\apps\<platform>`, `@` = the kit root) and arguments.
+    /// `data/apps/<target>`, `@` = the kit root) and arguments.
     #[serde(default)]
     pub check: Vec<String>,
     /// Group `app`: the version this release of Dev-Kit installs, and the
@@ -86,7 +114,10 @@ pub struct Component {
     pub version: Option<String>,
     #[serde(default)]
     pub sha256: Option<String>,
-    /// Per-target SHA-256 overrides for fixed-version components (`vscodium-server`).
+    /// SHA-256 fixed per target, with `version`, for any component whose
+    /// supplier publishes no hash (the editor today; PHP and MySQL builds
+    /// later): the installer checks the download against it and refuses
+    /// another one.
     #[serde(default)]
     pub sha256_by_target: BTreeMap<String, String>,
     /// Other minor lines can be kept next to the default folder, and chosen
@@ -132,29 +163,85 @@ impl Catalog {
         self.components.iter().find(|c| c.id == id)
     }
 
-    /// Always installed: the system components (required, and the parts of
-    /// the app) and, transitively, what they need (GitHub CLI needs Git, the
-    /// editor needs PowerShell 7). Never turned off or skipped.
-    pub fn locked(&self) -> BTreeSet<&str> {
-        let mut out = BTreeSet::new();
-        let mut todo: Vec<&str> = self
+    /// Always installed on `target`: the system components (required, and
+    /// the parts of the app) and, transitively, what they need there
+    /// (GitHub CLI needs Git, the editor needs PowerShell 7). Never turned
+    /// off or skipped.
+    pub fn locked_on(&self, target: Target) -> BTreeSet<&str> {
+        let always: Vec<&str> = self
             .components
             .iter()
             .filter(|c| c.group.always())
             .map(|c| c.id.as_str())
             .collect();
+        self.with_needs_on(&always, target)
+    }
+
+    /// Locked on every target: the system components and what they need
+    /// on every target (`needs` alone). What the saved choice keeps on,
+    /// the same whatever system reads it; a run on a target installs
+    /// [`Catalog::locked_on`] that target.
+    pub fn locked(&self) -> BTreeSet<&str> {
+        let always: Vec<&str> = self
+            .components
+            .iter()
+            .filter(|c| c.group.always())
+            .map(|c| c.id.as_str())
+            .collect();
+        self.closure(&always, Component::needs_on_every_target)
+    }
+
+    /// [`Catalog::locked`] contains `id`.
+    pub fn is_locked(&self, id: &str) -> bool {
+        self.locked().contains(id)
+    }
+
+    /// `ids` (those in the catalog) and, transitively, what they need on
+    /// `target`.
+    pub fn with_needs_on<'a>(&'a self, ids: &[&str], target: Target) -> BTreeSet<&'a str> {
+        self.closure(ids, |c| c.needs_on(target))
+    }
+
+    /// What `ids` need on `target`, transitively, and not on every target:
+    /// Zig for C and C++ on macOS and Linux. Never in the saved choice
+    /// (see [`Component::needs_on_every_target`]): a run on `target` adds
+    /// it to the chosen components that need it, and keeps it while they
+    /// are chosen. An id of `ids` is in it only when another one needs it.
+    pub fn needs_only_on<'a>(&'a self, ids: &[&str], target: Target) -> BTreeSet<&'a str> {
+        let found: Vec<&Component> = ids.iter().filter_map(|id| self.find(id)).collect();
+        let here: Vec<&str> = found.iter().flat_map(|c| c.needs_on(target)).collect();
+        let everywhere: Vec<&str> = found
+            .iter()
+            .flat_map(|c| c.needs_on_every_target())
+            .collect();
+        let here = self.with_needs_on(&here, target);
+        let everywhere = self.closure(&everywhere, Component::needs_on_every_target);
+        here.difference(&everywhere).copied().collect()
+    }
+
+    /// `ids` (those in the catalog) and, transitively, what `needs` gives.
+    fn closure<'a, I>(
+        &'a self,
+        ids: &[&str],
+        needs: impl Fn(&'a Component) -> I,
+    ) -> BTreeSet<&'a str>
+    where
+        I: Iterator<Item = &'a str>,
+    {
+        let mut out = BTreeSet::new();
+        let mut todo: Vec<&'a str> = ids
+            .iter()
+            .filter_map(|id| self.find(id))
+            .map(|c| c.id.as_str())
+            .collect();
         while let Some(id) = todo.pop() {
             if let Some(c) = self.find(id) {
                 if out.insert(c.id.as_str()) {
-                    todo.extend(c.needs.iter().map(String::as_str));
+                    todo.extend(needs(c));
                 }
             }
         }
         out
-    }
-
-    pub fn is_locked(&self, id: &str) -> bool {
-        self.locked().contains(id)
     }
 
     /// The components in the order of the Tools page: by section, then by
@@ -178,6 +265,10 @@ pub fn translate_rel(target: Target, rel: &str) -> String {
     }
     let norm = rel.replace('\\', "/");
     match norm.as_str() {
+        // Git's catalog key (`git/bin/bash.exe` on Windows) is its `git` on
+        // Unix: Git of the kit has no shell there. The kit's bash profiles
+        // and terminal use the system's `/bin/bash` (editor/cfg.rs,
+        // editor/pty.rs), never this path as a shell (D-109).
         "git/bin/bash.exe" | "git/cmd/git.exe" => return "git/bin/git".to_owned(),
         "python/python.exe" => return "python/bin/python3".to_owned(),
         "node/node.exe" => return "node/bin/node".to_owned(),
@@ -206,7 +297,7 @@ pub fn translate_rel(target: Target, rel: &str) -> String {
     mapped
 }
 
-/// A path of the catalog: relative to `data/apps/<platform>`, or to the kit
+/// A path of the catalog: relative to `data/apps/<target>`, or to the kit
 /// root with `@`. In the folder of a component with one folder per line it
 /// is that of its default version (`node/node.exe` → `node/22.11/node.exe`,
 /// versions/mod.rs).
@@ -241,9 +332,45 @@ impl Component {
         }
     }
 
-    /// True when the component is supported on `target` (natively or via x64 emulation).
+    /// What it needs on `target`: `needs`, then `needs_by_target` of that
+    /// target (C and C++ need Zig on macOS and Linux only). The only way to
+    /// read its dependencies, so none is taken for the wrong system.
+    pub fn needs_on(&self, target: Target) -> impl Iterator<Item = &str> + '_ {
+        self.needs
+            .iter()
+            .chain(
+                self.needs_by_target
+                    .get(target.as_str())
+                    .into_iter()
+                    .flatten()
+                    .filter(|n| !self.needs.contains(n)),
+            )
+            .map(String::as_str)
+    }
+
+    /// What it needs on every target (`needs` alone). The saved choice
+    /// follows these only: `components.txt` is one for every system the
+    /// kit runs on, so a dependency of one target must not turn a
+    /// component on or off for the others; a run adds those of its own
+    /// target ([`Catalog::needs_only_on`]).
+    pub fn needs_on_every_target(&self) -> impl Iterator<Item = &str> + '_ {
+        self.needs.iter().map(String::as_str)
+    }
+
+    /// [`Component::needs_on`] as a list, for the interface.
+    pub fn needs_list_on(&self, target: Target) -> Vec<String> {
+        self.needs_on(target).map(str::to_owned).collect()
+    }
+
+    /// True when the catalog has a build for `target` (native, or x64 in
+    /// emulation): listed in `targets` (or no list), not in `unavailable`,
+    /// not `no_arm64` on `win32-arm64`. Whether Rosetta 2 is there is the
+    /// host's business (`router::target::installable_on`).
     pub fn is_available_on(&self, target: Target) -> bool {
         if !self.targets.is_empty() && !self.targets.iter().any(|t| t == target.as_str()) {
+            return false;
+        }
+        if self.unavailable.contains_key(target.as_str()) {
             return false;
         }
         if target == Target::WIN32_ARM64 && self.no_arm64 {
@@ -252,10 +379,28 @@ impl Component {
         true
     }
 
-    /// True when `target` uses the x64 build under OS binary translation
-    /// (WOW64 on `win32-arm64`, Rosetta 2 on `darwin-arm64` if needed).
+    /// Why it is not available on `target`, as the catalog says it (Italian
+    /// source, for `i18n::t`); `None` without a reason of its own (outside
+    /// `targets`, `no_arm64`) or when it is available.
+    pub fn unavailable_reason(&self, target: Target) -> Option<&str> {
+        self.unavailable.get(target.as_str()).map(String::as_str)
+    }
+
+    /// True when `target` uses the x64 build under OS binary translation:
+    /// `x64_only` on `win32-arm64` (WOW64), `rosetta` on `darwin-arm64`.
     pub fn is_emulated_on(&self, target: Target) -> bool {
-        target == Target::WIN32_ARM64 && self.x64_only
+        (target == Target::WIN32_ARM64 && self.x64_only)
+            || (target == Target::DARWIN_ARM64 && self.rosetta)
+    }
+
+    /// What it owns besides its folder on `target`: `remove`, or on macOS
+    /// and Linux `remove_unix` when the catalog gives it.
+    pub fn remove_for(&self, target: Target) -> &[String] {
+        if target.is_windows() || self.remove_unix.is_empty() {
+            &self.remove
+        } else {
+            &self.remove_unix
+        }
     }
 
     /// Fixed SHA-256 for `target` (checks `sha256_by_target` first, then `sha256`
@@ -280,7 +425,7 @@ impl Component {
         self.keys.iter().map(|k| translate_rel(target, k)).collect()
     }
 
-    /// Where the key lives: `data\apps\<platform>\…`, or the kit root with `@`.
+    /// Where the key lives: `data/apps/<target>/…`, or the kit root with `@`.
     #[cfg(test)]
     pub fn key_path(&self, kit: &Kit) -> PathBuf {
         kit_path(kit, &self.key)
@@ -315,7 +460,7 @@ impl Component {
     }
 
     /// Everything removed when the component is turned off, except what
-    /// another component still on disk owns too (`tools\vcruntime` of PHP
+    /// another component still on disk owns too (`tools/vcruntime` of PHP
     /// and Apache goes with the last of the two).
     pub fn owned_paths(&self, kit: &Kit) -> Vec<PathBuf> {
         let shared: Vec<PathBuf> = Catalog::get()
@@ -333,7 +478,11 @@ impl Component {
     fn all_owned(&self, kit: &Kit) -> Vec<PathBuf> {
         self.folder_path(kit)
             .into_iter()
-            .chain(self.remove.iter().map(|r| kit_path(kit, r)))
+            .chain(
+                self.remove_for(kit.target())
+                    .iter()
+                    .map(|r| kit_path(kit, r)),
+            )
             // Saved lines of an older kit, not moved yet (versions::migrate).
             .chain(
                 self.versioned
@@ -357,12 +506,12 @@ impl Component {
     }
 
     fn legacy_version_file(kit: &Kit, id: &str) -> PathBuf {
-        kit.app_dir().join("versions").join(format!("{id}.txt"))
+        kit.versions_root().join(format!("{id}.txt"))
     }
 
     pub fn installed_version(&self, kit: &Kit) -> Option<String> {
         let read = |p: PathBuf| {
-            fs::read_to_string(p)
+            read_text(&p)
                 .ok()
                 .map(|v| v.trim().to_owned())
                 .filter(|v| !v.is_empty())
@@ -467,7 +616,7 @@ impl Component {
         for gone in marked {
             if default.as_deref() == Some(gone.as_str()) && !self.needs_reinstall(kit) {
                 let path = Self::line_reinstall_file(kit, &self.id, &gone);
-                let old_root = fs::read_to_string(path).unwrap_or_default();
+                let old_root = read_text(&path).unwrap_or_default();
                 if self.mark_reinstall(kit, &old_root).is_err() {
                     continue;
                 }
@@ -497,7 +646,12 @@ impl Component {
     }
 }
 
-/// Which components the user wants.
+/// Which components the user wants. `components.txt` is one for the whole
+/// kit, read on every system it runs on: it follows the dependencies that
+/// hold on every target only (`needs`). Those of one target (C and C++
+/// need Zig on macOS and Linux) are added by the run on that target
+/// ([`Catalog::needs_only_on`]) and never saved, so opening or preparing
+/// the kit on Linux leaves the choice of Windows as it was.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Choice {
     chosen: BTreeMap<String, bool>,
@@ -509,7 +663,7 @@ impl Choice {
     }
 
     /// The defaults of the catalog, with what they need (Claude Code is a
-    /// default, Git is not: Git comes with it).
+    /// default, Git is not: Git comes with it). The same on every target.
     pub fn defaults(catalog: &Catalog) -> Choice {
         let mut choice = Choice {
             chosen: catalog
@@ -528,8 +682,13 @@ impl Choice {
     /// Reads `components.txt`; ids it does not mention take the default.
     /// Returns `None` when the file does not exist (first start).
     pub fn read(kit: &Kit, catalog: &Catalog) -> Option<Choice> {
-        let text = fs::read_to_string(Self::path(kit)).ok()?;
+        let text = read_text(&Self::path(kit)).ok()?;
         Some(Self::parse(&text, catalog))
+    }
+
+    /// [`Choice::read`], or the defaults on the first start.
+    pub fn read_or_defaults(kit: &Kit, catalog: &Catalog) -> Choice {
+        Self::read(kit, catalog).unwrap_or_else(|| Self::defaults(catalog))
     }
 
     pub fn parse(text: &str, catalog: &Catalog) -> Choice {
@@ -548,18 +707,17 @@ impl Choice {
         choice
     }
 
-    /// Required components are always on; a component whose dependency is
-    /// off is off too (`Repair-ComponentChoice`).
+    /// Required components are always on; a component whose dependency on
+    /// every target is off is off too (`Repair-ComponentChoice`). One of a
+    /// single target does not count: see [`Choice`].
     pub fn repair(&mut self, catalog: &Catalog) {
-        for c in catalog.all() {
-            if catalog.is_locked(&c.id) {
-                self.chosen.insert(c.id.clone(), true);
-            }
+        for id in catalog.locked() {
+            self.chosen.insert(id.to_owned(), true);
         }
         loop {
             let mut changed = false;
             for c in catalog.all() {
-                if self.is_chosen(&c.id) && c.needs.iter().any(|n| !self.is_chosen(n)) {
+                if self.is_chosen(&c.id) && c.needs_on_every_target().any(|n| !self.is_chosen(n)) {
                     self.chosen.insert(c.id.clone(), false);
                     changed = true;
                 }
@@ -574,25 +732,42 @@ impl Choice {
         self.chosen.get(id).copied().unwrap_or(false)
     }
 
-    /// Turns a component on or off, following dependencies both ways, as the
-    /// "Languages and tools" page of nabre/dev-kit does.
+    /// The ids chosen, in catalog order.
+    pub fn chosen_ids<'a>(&self, catalog: &'a Catalog) -> Vec<&'a str> {
+        catalog
+            .all()
+            .iter()
+            .filter(|c| self.is_chosen(&c.id))
+            .map(|c| c.id.as_str())
+            .collect()
+    }
+
+    /// Turns a component on or off, following the dependencies on every
+    /// target both ways, as the "Languages and tools" page of
+    /// nabre/dev-kit does. Those of one target only are not saved (see
+    /// [`Choice`]).
     pub fn set(&mut self, catalog: &Catalog, id: &str, on: bool) {
+        let locked = catalog.locked();
+        self.set_with(catalog, &locked, id, on);
+    }
+
+    fn set_with(&mut self, catalog: &Catalog, locked: &BTreeSet<&str>, id: &str, on: bool) {
         let Some(c) = catalog.find(id) else { return };
-        if catalog.is_locked(&c.id) {
+        if locked.contains(c.id.as_str()) {
             return;
         }
         self.chosen.insert(id.to_owned(), on);
         if on {
-            for need in &c.needs {
-                self.set(catalog, need, true);
+            for need in c.needs_on_every_target() {
+                self.set_with(catalog, locked, need, true);
             }
         } else {
             for other in catalog
                 .all()
                 .iter()
-                .filter(|o| o.needs.iter().any(|n| n == id))
+                .filter(|o| o.needs_on_every_target().any(|n| n == id))
             {
-                self.set(catalog, &other.id, false);
+                self.set_with(catalog, locked, &other.id, false);
             }
         }
     }

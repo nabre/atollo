@@ -1,6 +1,6 @@
 //! Dev-Kit: portable development environment for Windows in one exe.
 //!
-//! Start order (docs/app/PLAN.md §3): kit root → folders and settings →
+//! Start order (docs/app/ARCHITECTURE.md, Avvio): kit root → folders and settings →
 //! environment of this process inside `data\` → command line or window →
 //! one instance per kit → WebView2 → Job Object → main window.
 #![cfg_attr(not(test), windows_subsystem = "windows")]
@@ -22,16 +22,18 @@ mod log;
 mod net;
 mod os;
 mod projects;
+mod router;
 mod servers;
 mod settings;
 mod setup;
-mod terminals;
 mod versions;
 
 use std::path::Path;
 
 use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+#[cfg(windows)]
 use windows::core::HSTRING;
+#[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
 
 use crate::cli::Cli;
@@ -44,8 +46,15 @@ fn main() {
     std::process::exit(run());
 }
 
+/// Errors before (or instead of) the window, on macOS and Linux: stderr.
+#[cfg(not(windows))]
+fn fatal(_lang: &str, message: &str) {
+    eprintln!("{message}");
+}
+
 /// Message box for errors before (or instead of) the window; also on
 /// stderr, for the command line (a service session has no message box).
+#[cfg(windows)]
 fn fatal(lang: &str, message: &str) {
     eprintln!("{message}");
     let title = HSTRING::from(i18n::t(lang, "NEXKORA non può partire", &[]));
@@ -72,6 +81,12 @@ fn run() -> i32 {
             return 1;
         }
     };
+    // macOS App Translocation: a read-only copy where a kit would be lost
+    // (D-113); `None` elsewhere.
+    if let Some(text) = kit::launch_problem(kit::Os::current(), &exe, early_lang) {
+        fatal(early_lang, &text);
+        return 1;
+    }
     let kit = match Kit::from_exe(&exe) {
         // The host's TEMP, before the profile folders move into data\ (D-04,
         // D-90); CP_HOST_TEMP when started from the kit's own environment.
@@ -92,15 +107,8 @@ fn run() -> i32 {
     let moved_from = match kit.prepare() {
         Ok(moved) => moved,
         Err(e) => {
-            let path = match &e {
-                kit::KitError::NotWritable { path, .. } => path.display().to_string(),
-                kit::KitError::NoRoot(path) => path.display().to_string(),
-            };
-            let text = format!(
-                "{}\n\n{}",
-                i18n::t(early_lang, "Impossibile scrivere nella cartella {0}.", &[&path]),
-                i18n::t(early_lang, "Sposta Dev-Kit.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
-            );
+            // Windows keeps its text; macOS and Linux name a read-only disk.
+            let text = kit::prepare_error_message(kit::Os::current(), &e, early_lang);
             fatal(early_lang, &text);
             return 1;
         }
@@ -119,6 +127,13 @@ fn run() -> i32 {
         host.get("DEVKIT_LANG"),
         windows_lang.as_deref(),
     );
+    // A kit disk that runs no program (noexec, showexec) stops the app and
+    // every command, `prepare` included (D-105); FAT32 and exFAT are only
+    // logged. Nothing on Windows.
+    if let Some(text) = disk_stop(os::volume::disk_notice(&kit, lang)) {
+        fatal(lang, &text);
+        return 1;
+    }
     if let Some(problem) = &loaded.problem {
         log::warn(&i18n::t("en", "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.", &[problem]));
     }
@@ -189,8 +204,9 @@ fn run() -> i32 {
             let ok = checks.iter().all(|c| c.ok);
             return cli::print_checks(&checks, &mut *cli::output()).map_or(1, |()| i32::from(!ok));
         }
-        Cli::Components => {
-            return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0)
+        Cli::Components(target) => {
+            let kit = target.map_or_else(|| kit.clone(), |t| kit.for_target(t));
+            return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0);
         }
         Cli::Version => {
             let _ = writeln!(cli::output(), "NEXKORA {}", env!("CARGO_PKG_VERSION"));
@@ -241,16 +257,11 @@ fn run() -> i32 {
     // WebView2 lookup sets a variable for the fixed runtime: still single-threaded here.
     let runtime = os::webview::locate(&kit);
     let Some(runtime) = runtime else {
-        log::error("WebView2 runtime not found");
-        let text = format!(
-            "{}\n\n{}",
-            i18n::t(lang, "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di NEXKORA.", &[]),
-            i18n::t(
-                lang,
-                "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia NEXKORA. Non serve installare nulla.",
-                &[kit.arch().as_str(), os::webview::DOWNLOAD_URL, &os::webview::fixed_folder(&kit).display().to_string()]
-            )
-        );
+        log::error("web view runtime not found");
+        // WebView2 on Windows (same text as before), WebKitGTK on Linux
+        // with the command of the distribution.
+        let os_release = std::fs::read_to_string("/etc/os-release").ok();
+        let text = os::webview::missing_message(&kit, os_release.as_deref(), lang);
         fatal(lang, &text);
         return 1;
     };
@@ -263,8 +274,8 @@ fn run() -> i32 {
 
     match os::jobs::init() {
         Ok(None) => {}
-        Ok(Some(note)) => log::warn(&format!("job object: {note}")),
-        Err(e) => log::error(&format!("job object: {e:#}")),
+        Ok(Some(note)) => log::warn(&format!("child processes: {note}")),
+        Err(e) => log::error(&format!("child processes: {e:#}")),
     }
     log::info(&format!(
         "start {} root={} platform={} lang={lang} webview={webview_desc} moved_from={:?}",
@@ -295,10 +306,14 @@ fn run() -> i32 {
     // The exe swap of a staged update happens on Exit (`run` may not return).
     let (update_kit, update_exe) = (kit.clone(), exe.clone());
     let result = build_app(tauri::Builder::default(), state, kit.clone())
-        .build(tauri::generate_context!())
+        .build(context())
         .map(|app| {
-            app.run(move |_, event| {
+            app.run(move |handle, event| {
                 if let tauri::RunEvent::Exit = event {
+                    // The app's terminal sessions (macOS and Linux) end with
+                    // it: their programs run outside the kit's folder, where
+                    // `stop_children` does not look. None on Windows.
+                    handle.state::<editor::terminal::Consoles>().close_all();
                     // The programs' temp left on the PC goes (D-90): the
                     // programs are ended first, or they would still hold it.
                     if update_kit.system_temp().is_some() {
@@ -329,6 +344,19 @@ fn run() -> i32 {
 
 use std::io::Write as _;
 
+/// What the notice on the kit's disk means at start (D-105): the text
+/// that stops the app, logged as an error; a warning is only logged.
+fn disk_stop(notice: Option<os::volume::DiskNotice>) -> Option<String> {
+    let notice = notice?;
+    if notice.blocking {
+        log::error(&format!("kit disk: {}", notice.text));
+        Some(notice.text)
+    } else {
+        log::warn(&format!("kit disk: {}", notice.text));
+        None
+    }
+}
+
 /// Raises GitHub's API limit when the user has a token.
 fn github_token(host: &Host) -> Option<String> {
     host.get("GITHUB_TOKEN")
@@ -346,9 +374,17 @@ fn prepare(
     lang: &str,
     args: &cli::PrepareArgs,
 ) -> i32 {
+    let kit_scoped;
+    let kit = match args.target {
+        Some(t) => {
+            kit_scoped = kit.for_target(t);
+            &kit_scoped
+        }
+        None => kit,
+    };
     let mut out = cli::output();
     if let Err(e) = os::jobs::init() {
-        log::warn(&format!("job object: {e:#}"));
+        log::warn(&format!("child processes: {e:#}"));
     }
     let net = match net::Net::new(settings, github_token(host)) {
         Ok(net) => net.with_github_cache(kit.data().join("cache").join("github")),
@@ -409,8 +445,31 @@ fn prepare(
     i32::from(failed > 0)
 }
 
-/// Help text of the command line (Italian source; translated by the catalog).
-const HELP: &str = "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di NEXKORA.";
+/// Help text of the command line (Italian source; translated by the
+/// catalog). `{0}` is the program's name ([`program_name`]), `{1}` the
+/// kit's Antigravity command ([`help_text`]); the target ids
+/// are those of `Target::ALL`.
+const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di NEXKORA.";
+
+/// The program's name in the help: `Dev-Kit.exe` on Windows, as always;
+/// elsewhere the file it was started from (`Atollo`, `Dev-Kit`, ...), or
+/// `Dev-Kit` when that is unknown.
+fn program_name(os: kit::Os, exe: Option<&Path>) -> String {
+    if os.is_windows() {
+        return "Dev-Kit.exe".to_owned();
+    }
+    exe.and_then(Path::file_name)
+        .map(|n| n.to_string_lossy().into_owned())
+        .filter(|n| !n.is_empty())
+        .unwrap_or_else(|| "Dev-Kit".to_owned())
+}
+
+/// The help for `os`; `{1}` is the kit's Antigravity command (`agy.cmd`
+/// on Windows, as always; `agy` elsewhere).
+fn help_text(lang: &str, os: kit::Os, exe: Option<&Path>) -> String {
+    let agy = if os.is_windows() { "agy.cmd" } else { "agy" };
+    i18n::t(lang, HELP, &[&program_name(os, exe), agy])
+}
 
 /// `versions <id>`: the lines of `id` its source offers.
 fn version_lines(kit: &Kit, kit_env: &KitEnv, settings: &Settings, host: &Host, id: &str) -> i32 {
@@ -448,8 +507,18 @@ fn version_lines(kit: &Kit, kit_env: &KitEnv, settings: &Settings, host: &Host, 
     }
 }
 
+/// The help for this program: [`kit::app_exe`] names the AppImage when the
+/// app runs from one, not the inner program of its temporary mount, which
+/// the user cannot start.
 fn help(lang: &str) -> String {
-    i18n::t(lang, HELP, &[])
+    help_text(lang, kit::Os::current(), kit::app_exe().as_deref())
+}
+
+/// The app's context, expanded once for the app and its tests: on macOS
+/// `generate_context!` embeds the Info.plist under a global symbol, so a
+/// second expansion in the same binary does not link.
+fn context<R: tauri::Runtime>() -> tauri::Context<R> {
+    tauri::generate_context!()
 }
 
 /// The app: state, commands, main window, focus requests from a second start.
@@ -512,14 +581,20 @@ fn build_app<R: tauri::Runtime>(
             // Extensions follow the projects open in the editor; the editor
             // windows offer to restart them (D-71).
             // Databases marked "start with Dev-Kit" (D-73).
-            let (services, env) = {
+            // Then the server profiles marked "Avvia con NEXKORA".
+            let (services, servers, env, lang) = {
                 let state = app.state::<AppState>();
                 (
                     std::sync::Arc::clone(&state.services),
+                    std::sync::Arc::clone(&state.servers),
                     state.env.read().map(|e| e.clone()).unwrap_or_default(),
+                    state.lang(),
                 )
             };
-            std::thread::spawn(move || services.autostart(&env));
+            std::thread::spawn(move || {
+                services.autostart(&env);
+                servers.autostart(&env, lang);
+            });
             let editor = std::sync::Arc::clone(&app.state::<AppState>().editor);
             let notify = app.handle().clone();
             editor.set_on_installed(std::sync::Arc::new(move |ids: &[String]| {

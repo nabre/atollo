@@ -44,6 +44,31 @@
     "fr": "Le port {0} est déjà utilisé par un autre programme : changez-le ci-dessous.",
     "de": "Port {0} wird bereits von einem anderen Programm verwendet: Ändere ihn unten."
   },
+  "{0} {1} non è installata: installala, o scegli un'altra versione nella pagina del progetto.": {
+    "en": "{0} {1} is not installed: install it, or choose another version on the project's page.",
+    "fr": "{0} {1} n'est pas installée : installez-la, ou choisissez une autre version sur la page du projet.",
+    "de": "{0} {1} ist nicht installiert: Installiere sie oder wähle auf der Projektseite eine andere Version."
+  },
+  "{0} {1} non è installato nel kit: installa questa versione o scegline un'altra.": {
+    "en": "{0} {1} is not installed in the kit: install this version or choose another one.",
+    "fr": "{0} {1} n'est pas installé dans le kit : installez cette version ou choisissez-en une autre.",
+    "de": "{0} {1} ist nicht im Kit installiert: Installiere diese Version oder wähle eine andere."
+  },
+  "Questo pool non corrisponde più ai progetti e ai profili: fermalo.": {
+    "en": "This pool no longer matches the projects and the profiles: stop it.",
+    "fr": "Ce pool ne correspond plus aux projets ni aux profils : arrêtez-le.",
+    "de": "Dieser Pool passt nicht mehr zu den Projekten und Profilen: Halte ihn an."
+  },
+  "La porta {0} è già del server {1}: scegline un'altra.": {
+    "en": "Port {0} already belongs to server {1}: choose another one.",
+    "fr": "Le port {0} appartient déjà au serveur {1} : choisissez-en un autre.",
+    "de": "Port {0} gehört bereits zum Server {1}: Wähle einen anderen."
+  },
+  "database SQL del kit: server e client MySQL": {
+    "en": "the kit's SQL database: MySQL server and client",
+    "fr": "base de données SQL du kit : serveur et client MySQL",
+    "de": "SQL-Datenbank des Kits: MySQL-Server und -Client"
+  },
   "database compatibile con MySQL: server e client": {
     "en": "MySQL-compatible database: server and client",
     "fr": "base de données compatible MySQL : serveur et client",
@@ -54,10 +79,10 @@
     "fr": "base de données documentaire : serveur et shell mongosh",
     "de": "Dokumentendatenbank: Server und mongosh-Shell"
   },
-  "MariaDB nel browser, come phpMyAdmin: tabelle, righe, query SQL, importazione ed esportazione": {
-    "en": "MariaDB in the browser, like phpMyAdmin: tables, rows, SQL queries, import and export",
-    "fr": "MariaDB dans le navigateur, comme phpMyAdmin : tables, lignes, requêtes SQL, import et export",
-    "de": "MariaDB im Browser, wie phpMyAdmin: Tabellen, Zeilen, SQL-Abfragen, Import und Export"
+  "MariaDB nel browser: database, tabelle, righe, query SQL, utenti, importazione ed esportazione": {
+    "en": "MariaDB in the browser: databases, tables, rows, SQL queries, users, import and export",
+    "fr": "MariaDB dans le navigateur : bases de données, tables, lignes, requêtes SQL, utilisateurs, import et export",
+    "de": "MariaDB im Browser: Datenbanken, Tabellen, Zeilen, SQL-Abfragen, Benutzer, Import und Export"
   },
   "database in un file: riga di comando sqlite3": {
     "en": "database in a file: the sqlite3 command line",
@@ -294,6 +319,11 @@
     "fr": "Le serveur partagé {0} n'a pas démarré : voyez la page Serveurs Web.",
     "de": "Der gemeinsame Server {0} ist nicht gestartet: siehe die Seite Webserver."
   },
+  "Il server condiviso {0} non è partito ({1}): il sito usa un server tutto suo.": {
+    "en": "The shared server {0} did not start ({1}): the site uses a server of its own.",
+    "fr": "Le serveur partagé {0} n'a pas démarré ({1}) : le site utilise son propre serveur.",
+    "de": "Der gemeinsame Server {0} ist nicht gestartet ({1}): die Website verwendet einen eigenen Server."
+  },
   "servito dal pool condiviso {0}: {1}": {
     "en": "served by the shared pool {0}: {1}",
     "fr": "servi par le pool partagé {0} : {1}",
@@ -308,6 +338,11 @@
     "en": "process exited",
     "fr": "processus terminé",
     "de": "Prozess beendet"
+  },
+  "php-cgi terminato (codice {0}): server fermato": {
+    "en": "php-cgi exited (code {0}): server stopped",
+    "fr": "php-cgi terminé (code {0}) : serveur arrêté",
+    "de": "php-cgi beendet (Code {0}): Server gestoppt"
   },
   "Sito statico: {0}   (cartella {1})": {
     "en": "Static site: {0}   (folder {1})",
@@ -418,11 +453,6 @@
     "en": "{0} files",
     "fr": "fichiers {0}",
     "de": "{0}-Dateien"
-  },
-  "WordPress richiede un database MySQL/MariaDB, non incluso nel kit.": {
-    "en": "WordPress needs a MySQL/MariaDB database, which is not included in the kit.",
-    "fr": "WordPress nécessite une base de données MySQL/MariaDB, non incluse dans le kit.",
-    "de": "WordPress benötigt eine MySQL/MariaDB-Datenbank, die nicht im Kit enthalten ist."
   },
   "php -S (cartella {0})": {
     "en": "php -S (folder {0})",
@@ -614,15 +644,15 @@
     "fr": "compilation de C et C++",
     "de": "Builds für C und C++"
   },
-  "compilatore C e C++ (Clang, MinGW-w64): gcc, g++, make": {
-    "en": "C and C++ compiler (Clang, MinGW-w64): gcc, g++, make",
-    "fr": "compilateur C et C++ (Clang, MinGW-w64) : gcc, g++, make",
-    "de": "C- und C++-Compiler (Clang, MinGW-w64): gcc, g++, make"
+  "compilatore C e C++ (gcc, g++, make): Clang e MinGW-w64 su Windows, zig cc del kit e GNU make su macOS e Linux; i framework Apple richiedono Xcode Command Line Tools": {
+    "en": "C and C++ compiler (gcc, g++, make): Clang and MinGW-w64 on Windows, the kit's zig cc and GNU make on macOS and Linux; the Apple frameworks need Xcode Command Line Tools",
+    "fr": "compilateur C et C++ (gcc, g++, make) : Clang et MinGW-w64 sur Windows, zig cc du kit et GNU make sur macOS et Linux ; les frameworks Apple nécessitent les Xcode Command Line Tools",
+    "de": "C- und C++-Compiler (gcc, g++, make): Clang und MinGW-w64 unter Windows, zig cc des Kits und GNU make unter macOS und Linux; die Apple-Frameworks benötigen die Xcode Command Line Tools"
   },
-  "Ruby, gem e Bundler (RubyInstaller)": {
-    "en": "Ruby, gem and Bundler (RubyInstaller)",
-    "fr": "Ruby, gem et Bundler (RubyInstaller)",
-    "de": "Ruby, gem und Bundler (RubyInstaller)"
+  "Ruby, gem e Bundler: RubyInstaller su Windows, conda-forge su macOS e Linux": {
+    "en": "Ruby, gem and Bundler: RubyInstaller on Windows, conda-forge on macOS and Linux",
+    "fr": "Ruby, gem et Bundler : RubyInstaller sur Windows, conda-forge sur macOS et Linux",
+    "de": "Ruby, gem und Bundler: RubyInstaller unter Windows, conda-forge unter macOS und Linux"
   },
   "R da conda-forge, con il compilatore per i pacchetti": {
     "en": "R from conda-forge, with the compiler for packages",
@@ -678,6 +708,21 @@
     "en": "not available for {0}",
     "fr": "non disponible pour {0}",
     "de": "für {0} nicht verfügbar"
+  },
+  "{0} non è disponibile: {1}.": {
+    "en": "{0} is not available: {1}.",
+    "fr": "{0} n'est pas disponible : {1}.",
+    "de": "{0} ist nicht verfügbar: {1}."
+  },
+  "Google non pubblica platform-tools e build-tools per Linux ARM64": {
+    "en": "Google does not publish platform-tools and build-tools for Linux ARM64",
+    "fr": "Google ne publie pas platform-tools et build-tools pour Linux ARM64",
+    "de": "Google veröffentlicht platform-tools und build-tools nicht für Linux ARM64"
+  },
+  "richiede Rosetta 2: installala con softwareupdate --install-rosetta (serve un amministratore)": {
+    "en": "needs Rosetta 2: install it with softwareupdate --install-rosetta (an administrator is needed)",
+    "fr": "nécessite Rosetta 2 : installez-le avec softwareupdate --install-rosetta (un administrateur est nécessaire)",
+    "de": "benötigt Rosetta 2: installiere es mit softwareupdate --install-rosetta (ein Administrator ist nötig)"
   },
   "Limite": {
     "en": "Limit",
@@ -819,10 +864,10 @@
     "fr": "Nom non valide : seulement des lettres, des chiffres, « . », « - » et « _ ».",
     "de": "Ungültiger Name: nur Buchstaben, Ziffern, „.“, „-“ und „_“."
   },
-  "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di NEXKORA.": {
-    "en": "Usage: Dev-Kit.exe [command]\n\nCommands:\n  env                     show the kit environment\n      --project <name>    the one of a project's programs\n  components              list languages and tools, with the installed ones\n  versions [id]           the saved versions; with an id, those to download\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n      --line id=x.y       save this version next to the default\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's agy.cmd)\n  serve <folder> <port>   file server for a static site\n  version                 show the version\n  help                    show this help\n\nWithout a command, the NEXKORA window opens.",
-    "fr": "Utilisation : Dev-Kit.exe [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par agy.cmd du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre de NEXKORA s'ouvre.",
-    "de": "Verwendung: Dev-Kit.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von agy.cmd des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von NEXKORA."
+  "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di NEXKORA.": {
+    "en": "Usage: {0} [command]\n\nCommands:\n  env                     show the kit environment\n      --project <name>    the one of a project's programs\n  components              list languages and tools, with the installed ones\n      --target <id>       for another system: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           the saved versions; with an id, those to download\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n      --line id=x.y       save this version next to the default\n      --target <id>       prepare for another system (ids as for components)\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's {1})\n  serve <folder> <port>   file server for a static site\n  version                 show the version\n  help                    show this help\n\nWithout a command, the NEXKORA window opens.",
+    "fr": "Utilisation : {0} [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n      --target <id>       pour un autre système : win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n      --target <id>       prépare pour un autre système (id comme pour components)\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par {1} du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre de NEXKORA s'ouvre.",
+    "de": "Verwendung: {0} [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n      --target <id>       für ein anderes System: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n      --target <id>       bereitet für ein anderes System vor (ids wie bei components)\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von {1} des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von NEXKORA."
   },
   "predefinita": {
     "en": "default",
@@ -1299,6 +1344,11 @@
     "fr": "serveur web et proxy inverse, avec PHP-CGI",
     "de": "Webserver und Reverse-Proxy, mit PHP-CGI"
   },
+  "server web e reverse proxy, con HTTPS automatico": {
+    "en": "web server and reverse proxy, with automatic HTTPS",
+    "fr": "serveur web et proxy inverse, avec HTTPS automatique",
+    "de": "Webserver und Reverse-Proxy, mit automatischem HTTPS"
+  },
   "modulo php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64": {
     "en": "php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll module, PHP Thread Safe x64",
     "fr": "module php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64",
@@ -1323,6 +1373,16 @@
     "en": "Nginx website ({0})",
     "fr": "site web Nginx ({0})",
     "de": "Nginx-Website ({0})"
+  },
+  "sito web Caddy ({0})": {
+    "en": "Caddy website ({0})",
+    "fr": "site web Caddy ({0})",
+    "de": "Caddy-Website ({0})"
+  },
+  "Caddy non legge i .htaccess delle sottocartelle ({0}): ciò che nascondono è visibile e il PHP lì viene eseguito.": {
+    "en": "Caddy does not read the .htaccess files of subfolders ({0}): what they hide is visible and PHP runs there.",
+    "fr": "Caddy ne lit pas les .htaccess des sous-dossiers ({0}) : ce qu'ils cachent est visible et PHP y est exécuté.",
+    "de": "Caddy liest die .htaccess-Dateien der Unterordner nicht ({0}): Was sie verbergen, ist sichtbar, und PHP wird dort ausgeführt."
   },
   "Identificativo del server non valido.": {
     "en": "Invalid server identifier.",
@@ -1368,5 +1428,75 @@
     "en": "Choose the terminal's folder",
     "fr": "Choisissez le dossier du terminal",
     "de": "Ordner des Terminals wählen"
+  },
+  "macOS ha aperto NEXKORA da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.": {
+    "en": "macOS opened NEXKORA from a temporary read-only copy (App Translocation): the kit cannot keep its data there.",
+    "fr": "macOS a ouvert NEXKORA depuis une copie temporaire en lecture seule (App Translocation) : le kit ne peut pas y garder ses données.",
+    "de": "macOS hat NEXKORA aus einer temporären, schreibgeschützten Kopie geöffnet (App Translocation): Dort kann das Kit seine Daten nicht speichern."
+  },
+  "Esci da NEXKORA, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.": {
+    "en": "Quit NEXKORA, open Terminal in the kit's folder and run: xattr -dr com.apple.quarantine {0}. Then open the app again from the kit's folder.",
+    "fr": "Quittez NEXKORA, ouvrez le Terminal dans le dossier du kit et exécutez : xattr -dr com.apple.quarantine {0}. Puis rouvrez l'app depuis le dossier du kit.",
+    "de": "Beende NEXKORA, öffne das Terminal im Ordner des Kits und führe aus: xattr -dr com.apple.quarantine {0}. Öffne die App dann erneut aus dem Ordner des Kits."
+  },
+  "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.": {
+    "en": "The kit's disk is read-only: cannot write to the folder {0}.",
+    "fr": "Le disque du kit est en lecture seule : impossible d'écrire dans le dossier {0}.",
+    "de": "Das Laufwerk des Kits ist schreibgeschützt: In den Ordner {0} kann nicht geschrieben werden."
+  },
+  "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia NEXKORA.": {
+    "en": "Copy the kit's folder to a disk you can write to, or mount the disk again read-write, and restart NEXKORA.",
+    "fr": "Copiez le dossier du kit sur un disque où vous pouvez écrire, ou remontez le disque en lecture-écriture, et redémarrez NEXKORA.",
+    "de": "Kopiere den Ordner des Kits auf ein Laufwerk, auf das du schreiben kannst, oder hänge das Laufwerk mit Schreibzugriff neu ein, und starte NEXKORA neu."
+  },
+  "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia NEXKORA.": {
+    "en": "Move the kit's folder where you can write (for example a USB stick or a folder of your profile) and restart NEXKORA.",
+    "fr": "Déplacez le dossier du kit là où vous pouvez écrire (par exemple une clé USB ou un dossier de votre profil) et redémarrez NEXKORA.",
+    "de": "Verschiebe den Ordner des Kits an einen Ort, an dem du schreiben kannst (zum Beispiel einen USB-Stick oder einen Ordner deines Profils), und starte NEXKORA neu."
+  },
+  "Il disco del kit ({0}) è montato con l'opzione noexec: da lì non può partire nessun programma, e NEXKORA non installa nulla.": {
+    "en": "The kit's disk ({0}) is mounted with the noexec option: no program can start from it, and NEXKORA installs nothing.",
+    "fr": "Le disque du kit ({0}) est monté avec l'option noexec : aucun programme ne peut y démarrer, et NEXKORA n'installe rien.",
+    "de": "Das Laufwerk des Kits ({0}) ist mit der Option noexec eingehängt: Von dort kann kein Programm starten, und NEXKORA installiert nichts."
+  },
+  "Rimontalo permettendo i programmi, per esempio con: {0}. Poi riavvia NEXKORA.": {
+    "en": "Mount it again allowing programs, for example with: {0}. Then restart NEXKORA.",
+    "fr": "Remontez-le en autorisant les programmes, par exemple avec : {0}. Puis redémarrez NEXKORA.",
+    "de": "Hänge es neu ein und erlaube Programme, zum Beispiel mit: {0}. Starte NEXKORA dann neu."
+  },
+  "Il disco del kit ({0}) è FAT32 montato con l'opzione showexec: Linux lascia partire solo i file .exe, .com e .bat, non i programmi del kit.": {
+    "en": "The kit's disk ({0}) is FAT32 mounted with the showexec option: Linux starts only .exe, .com and .bat files, not the kit's programs.",
+    "fr": "Le disque du kit ({0}) est en FAT32 monté avec l'option showexec : Linux ne lance que les fichiers .exe, .com et .bat, pas les programmes du kit.",
+    "de": "Das Laufwerk des Kits ({0}) ist FAT32 und mit der Option showexec eingehängt: Linux startet nur .exe-, .com- und .bat-Dateien, nicht die Programme des Kits."
+  },
+  "Formatta la chiavetta in exFAT (il kit funziona così anche su Windows e macOS), oppure rimontala senza showexec. Poi riavvia NEXKORA.": {
+    "en": "Format the USB stick as exFAT (the kit then works on Windows and macOS too), or mount it again without showexec. Then restart NEXKORA.",
+    "fr": "Formatez la clé USB en exFAT (le kit fonctionne alors aussi sous Windows et macOS), ou remontez-la sans showexec. Puis redémarrez NEXKORA.",
+    "de": "Formatiere den USB-Stick als exFAT (das Kit funktioniert dann auch unter Windows und macOS), oder hänge ihn ohne showexec neu ein. Starte NEXKORA dann neu."
+  },
+  "Il disco del kit è FAT32: file fino a 4 GB, niente link simbolici, socket e permessi. Le installazioni ne fanno a meno; per un kit su chiavetta è meglio exFAT.": {
+    "en": "The kit's disk is FAT32: files up to 4 GB, no symbolic links, sockets or permissions. Installations do without them; for a kit on a USB stick exFAT is better.",
+    "fr": "Le disque du kit est en FAT32 : fichiers jusqu'à 4 Go, pas de liens symboliques, de sockets ni de permissions. Les installations s'en passent ; pour un kit sur clé USB, exFAT est préférable.",
+    "de": "Das Laufwerk des Kits ist FAT32: Dateien bis 4 GB, keine symbolischen Links, Sockets oder Berechtigungen. Die Installationen kommen ohne sie aus; für ein Kit auf einem USB-Stick ist exFAT besser."
+  },
+  "Il disco del kit è exFAT: niente link simbolici, socket e permessi. Le installazioni ne fanno a meno, ma alcune occupano più spazio.": {
+    "en": "The kit's disk is exFAT: no symbolic links, sockets or permissions. Installations do without them, but some take more space.",
+    "fr": "Le disque du kit est en exFAT : pas de liens symboliques, de sockets ni de permissions. Les installations s'en passent, mais certaines prennent plus de place.",
+    "de": "Das Laufwerk des Kits ist exFAT: keine symbolischen Links, Sockets oder Berechtigungen. Die Installationen kommen ohne sie aus, manche brauchen aber mehr Platz."
+  },
+  "Manca WebKitGTK 4.1, che serve per mostrare le finestre di NEXKORA.": {
+    "en": "WebKitGTK 4.1 is missing; NEXKORA needs it to show its windows.",
+    "fr": "WebKitGTK 4.1 est absent ; NEXKORA en a besoin pour afficher ses fenêtres.",
+    "de": "WebKitGTK 4.1 fehlt; NEXKORA braucht es, um seine Fenster anzuzeigen."
+  },
+  "Installalo con {0}, poi riavvia NEXKORA. In alternativa usa l'AppImage di NEXKORA, che lo contiene.": {
+    "en": "Install it with {0}, then restart NEXKORA. Or use the NEXKORA AppImage, which includes it.",
+    "fr": "Installez-le avec {0}, puis redémarrez NEXKORA. Ou utilisez l'AppImage de NEXKORA, qui le contient.",
+    "de": "Installiere es mit {0} und starte NEXKORA dann neu. Oder verwende das AppImage von NEXKORA, das es enthält."
+  },
+  "Installa il pacchetto WebKitGTK 4.1 della tua distribuzione ({0}), poi riavvia NEXKORA. In alternativa usa l'AppImage di NEXKORA, che lo contiene.": {
+    "en": "Install your distribution's WebKitGTK 4.1 package ({0}), then restart NEXKORA. Or use the NEXKORA AppImage, which includes it.",
+    "fr": "Installez le paquet WebKitGTK 4.1 de votre distribution ({0}), puis redémarrez NEXKORA. Ou utilisez l'AppImage de NEXKORA, qui le contient.",
+    "de": "Installiere das WebKitGTK-4.1-Paket deiner Distribution ({0}) und starte NEXKORA dann neu. Oder verwende das AppImage von NEXKORA, das es enthält."
   }
 }

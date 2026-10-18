@@ -11,6 +11,17 @@ pub fn project(name: &str, files: &[(&str, &str)]) -> TempDir {
     tmp
 }
 
+/// A command as the system's shell takes it: `cmd.exe` on Windows (double
+/// quotes, `%CP_DATA%`), `/bin/sh` elsewhere (single quotes, `$CP_DATA`);
+/// `windows` and `unix` are the expected command of each.
+pub fn sh<'a>(windows: &'a str, unix: &'a str) -> &'a str {
+    if cfg!(windows) {
+        windows
+    } else {
+        unix
+    }
+}
+
 #[test]
 fn databases_a_project_uses() {
     let laravel = project(
@@ -66,6 +77,26 @@ fn unknown_and_static() {
     assert_eq!(p.actions[0].static_dir.as_deref(), Some("."));
     assert_eq!(p.default.as_deref(), Some("static"));
     assert_eq!(p.languages, ["CSS", "HTML"]);
+    assert_eq!(ids(&p), ["static"]);
+}
+
+/// `nginx.conf` or `.nginx` outside the PHP projects: a static site gets a
+/// Nginx of its own after the file server.
+#[test]
+fn static_site_with_nginx() {
+    for file in ["nginx.conf", ".nginx", "public/nginx.conf"] {
+        let site = project(
+            &format!("static-nginx-{}", file.replace(['/', '.'], "_")),
+            &[("public/index.html", ""), (file, "")],
+        );
+        let p = detect(&site.0, "it");
+        assert_eq!(ids(&p), ["static", "nginx"], "{file}");
+        assert_eq!(p.default.as_deref(), Some("static"));
+        assert_eq!(p.actions[1].nginx_dir.as_deref(), Some("public"));
+        assert!(p.requires.contains(&"nginx".to_owned()), "{file}");
+    }
+    let php = project("php-dot-nginx", &[("index.php", "<?php"), (".nginx", "")]);
+    assert!(ids(&detect(&php.0, "it")).contains(&"nginx"));
 }
 
 #[test]
@@ -108,6 +139,10 @@ fn composite_project() {
 #[test]
 fn quoting() {
     assert_eq!(quote("public"), "public");
-    assert_eq!(quote("my site"), "\"my site\"");
-    assert_eq!(quote("a&b"), "\"a&b\"");
+    assert_eq!(quote("my site"), sh("\"my site\"", "'my site'"));
+    assert_eq!(quote("a&b"), sh("\"a&b\"", "'a&b'"));
+    // `/bin/sh` only: a quote in a name stays text
+    if cfg!(not(windows)) {
+        assert_eq!(quote("it's"), r"'it'\''s'");
+    }
 }

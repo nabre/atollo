@@ -18,6 +18,7 @@
 
 mod agents;
 mod android;
+mod caddy;
 mod core;
 mod db;
 mod editor;
@@ -40,7 +41,7 @@ use crate::os::temp::TempWork;
 use crate::setup::catalog::Component;
 
 pub use lang::{make_launchers, version_key};
-pub use web::adopt_composer;
+pub use web::{adopt_composer, migrate_php_ini, php_ini_dir};
 
 /// What a step needs from the app.
 pub struct Ctx<'a> {
@@ -75,6 +76,7 @@ pub enum Dest {
 /// An Authenticode signature to check on a file of the new tree before it
 /// is put in place (`Assert-Signature` of the kit).
 #[derive(Debug, Clone)]
+#[cfg_attr(not(windows), allow(dead_code))]
 pub struct Sign {
     /// Path of the file in the extracted tree.
     pub file: String,
@@ -93,6 +95,8 @@ pub struct Part {
     pub kind: Kind,
     pub inner: Inner,
     pub dest: Dest,
+    /// Checked on Windows only (Authenticode).
+    #[cfg_attr(not(windows), allow(dead_code))]
     pub sign: Option<Sign>,
 }
 
@@ -160,6 +164,12 @@ pub trait Installer: Sync {
     fn relocatable(&self, _target: crate::kit::Target) -> bool {
         true
     }
+    /// A component that follows the kit but writes its folder into some
+    /// file (R's Makeconf on Windows): those files are set to the folders
+    /// it is in now (`relocate`). Default: nothing to do.
+    fn relocate(&self, _kit: &Kit, _component: &Component) -> Result<()> {
+        Ok(())
+    }
     fn install_custom(
         &self,
         _ctx: &Ctx,
@@ -215,6 +225,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "php" => &web::Php,
         "apache" => &web::Apache,
         "nginx" => &web::Nginx,
+        "caddy" => &caddy::Caddy,
         "rust" => &native::Rust,
         "go" => &lang::Go,
         "java" => &lang::Java,
@@ -235,10 +246,11 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "r" => &native::R,
         "pwsh" => &editor::Pwsh,
         "vscodium-server" => &editor::Server,
+        "mysql" => &db::MySql,
         "mariadb" => &db::MariaDb,
         "mongodb" => &db::MongoDb,
         "sqlite" => &db::Sqlite,
-        "adminer" => &db::Adminer,
+        "phpmyadmin" => &db::PhpMyAdmin,
         _ => return None,
     })
 }
@@ -276,6 +288,10 @@ pub fn fetch(
     progress: &mut dyn Progress,
 ) -> Result<PathBuf> {
     let file = work.join(file_name);
+    if crate::router::bootstrap::take(ctx.kit, file_name, expect, &file)? {
+        progress.note("bootstrap pre-downloaded, checksum ok");
+        return Ok(file);
+    }
     if crate::setup::downloads::take(ctx.kit, file_name, expect, &file)? {
         progress.note("file added by hand, checksum ok");
         return Ok(file);
@@ -312,6 +328,9 @@ pub fn install(
     let Some(inst) = installer(&component.id) else {
         bail!("{}: no installer", component.id);
     };
+    if crate::router::bootstrap::should_stage(ctx, inst, component) {
+        return crate::router::bootstrap::stage(ctx, inst, component, release, None, progress);
+    }
     if inst.custom(target_of(ctx, component)) {
         inst.install_custom(ctx, component, release, progress)?;
         if component.per_line() {
@@ -409,6 +428,23 @@ pub fn flag_not_relocatable(kit: &Kit, old_root: &str) -> std::io::Result<Vec<St
     Ok(flagged)
 }
 
+/// The components that follow the kit when it moves (`relocatable`) set
+/// the folders written in their files to where they are now
+/// (`Installer::relocate`). At every start, not only after a move noticed
+/// now: a kit moved before keeps working too; nothing is written when the
+/// files are right. A failure is logged, the start goes on.
+pub fn relocate(kit: &Kit) {
+    let target = kit.target();
+    for c in crate::setup::catalog::Catalog::get().all() {
+        let Some(inst) = installer(&c.id).filter(|i| i.relocatable(target)) else {
+            continue;
+        };
+        if let Err(e) = inst.relocate(kit, c) {
+            crate::log::warn(&format!("{}: relocation: {e:#}", c.id));
+        }
+    }
+}
+
 /// The release of a first installation at `line` instead of the latest:
 /// its own folder from `line`, the shared parts (Maven and Gradle, mongosh,
 /// the tools) from the latest, as a saved line gets them from the default.
@@ -453,6 +489,17 @@ pub fn install_line(
         bail!("{} {line}: it is the default version", component.id);
     }
     let target = crate::versions::saved_dir(ctx.kit, component, &line);
+    if crate::router::bootstrap::should_stage(ctx, inst, component) {
+        crate::router::bootstrap::stage(
+            ctx,
+            inst,
+            component,
+            release,
+            Some((&line, &target)),
+            progress,
+        )?;
+        return Ok(line);
+    }
     if inst.custom(target_of(ctx, component)) {
         inst.install_custom_at(ctx, component, release, &target, progress)?;
         if !crate::versions::has_key(component, &target) {
@@ -504,7 +551,7 @@ pub fn install_line(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn install_part(
+pub(crate) fn install_part(
     ctx: &Ctx,
     inst: &dyn Installer,
     component: &Component,
@@ -553,6 +600,7 @@ fn install_part(
             };
             check_key_for(ctx.kit.target(), component, inst.inside(), &tree)?;
             inst.before_swap(ctx, component, &tree, folder)?;
+            crate::router::fs::ensure_tree_executables(ctx.kit.target(), &tree);
             if let Some(parent) = folder.parent() {
                 archive::clean_leftovers(parent);
             }
@@ -562,6 +610,7 @@ fn install_part(
         }
         Dest::Folder(name) => {
             let folder = apps.join(name);
+            crate::router::fs::ensure_tree_executables(ctx.kit.target(), &tree);
             archive::clean_leftovers(&apps);
             archive::stage_into(&tree, &folder)
         }
@@ -571,7 +620,9 @@ fn install_part(
             for name in names {
                 let found = find_file(&tree, name)
                     .with_context(|| format!("{name} not found in {}", part.file_name))?;
-                put_file(&found, &tools.join(name))?;
+                let dest = tools.join(name);
+                put_file(&found, &dest)?;
+                let _ = crate::router::fs::set_executable(&dest);
             }
             Ok(())
         }
@@ -586,7 +637,10 @@ fn install_part(
                 _ => apps.join(folder),
             };
             fs::create_dir_all(&dir)?;
-            put_file(&src, &dir.join(name))
+            let dest = dir.join(name);
+            put_file(&src, &dest)?;
+            let _ = crate::router::fs::set_executable(&dest);
+            Ok(())
         }
         Dest::Inside(name) => {
             let Some(folder) = own else {
@@ -594,7 +648,10 @@ fn install_part(
             };
             let found = find_file(&tree, name)
                 .with_context(|| format!("{name} not found in {}", part.file_name))?;
-            put_file(&found, &folder.join(name))
+            let dest = folder.join(name);
+            put_file(&found, &dest)?;
+            let _ = crate::router::fs::set_executable(&dest);
+            Ok(())
         }
     }
 }
@@ -602,7 +659,7 @@ fn install_part(
 /// One file of the new tree in place of `dest`, always copied: checked
 /// against the disk of `dest` first, so the installed one stays when it
 /// cannot fit.
-fn put_file(new: &Path, dest: &Path) -> Result<()> {
+pub(crate) fn put_file(new: &Path, dest: &Path) -> Result<()> {
     archive::check_fits(new, dest)?;
     archive::check_space(new, dest)?;
     archive::replace_file(new, dest)

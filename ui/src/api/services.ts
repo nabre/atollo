@@ -21,6 +21,20 @@ export interface ServiceInfo {
   /** The version it runs, and those installed, newest first (D-81). */
   line: string | null;
   lines: string[];
+  /** The other installed versions, each on its own port, newest first
+   * (D-102). */
+  others: LineInfo[];
+}
+
+/** Another version of a server, started beside the one it runs. */
+export interface LineInfo {
+  line: string;
+  state: ServiceState;
+  port: number;
+  dataDir: string;
+  log: string;
+  url: string;
+  message: string | null;
 }
 
 export const SAMPLE_SERVICES: ServiceInfo[] = [
@@ -39,6 +53,17 @@ export const SAMPLE_SERVICES: ServiceInfo[] = [
     message: null,
     line: "12.3",
     lines: ["12.3", "11.4"],
+    others: [
+      {
+        line: "11.4",
+        state: "stopped",
+        port: 3307,
+        dataDir: "E:\\Dev-Kit\\data\\db\\mariadb\\11.4",
+        log: "E:\\Dev-Kit\\data\\app\\logs\\mariadb-11.4.log",
+        url: "mysql://root@127.0.0.1:3307/",
+        message: null,
+      },
+    ],
   },
   {
     id: "mongodb",
@@ -55,6 +80,7 @@ export const SAMPLE_SERVICES: ServiceInfo[] = [
     message: null,
     line: null,
     lines: [],
+    others: [],
   },
 ];
 
@@ -62,13 +88,20 @@ export function servicesList(): Promise<ServiceInfo[]> {
   return query<ServiceInfo[]>("services_list", SAMPLE_SERVICES);
 }
 
-/** Starts a server (installing it first if needed) and waits until it answers. */
-export function serviceStart(id: ServiceInfo["id"]): Promise<ServiceInfo[]> {
-  return query<ServiceInfo[]>("service_start", SAMPLE_SERVICES, { id });
+/** Starts a server (installing it first if needed) and waits until it
+ * answers; `line`: another installed version, on its own port. */
+export function serviceStart(id: ServiceInfo["id"], line?: string): Promise<ServiceInfo[]> {
+  return query<ServiceInfo[]>("service_start", SAMPLE_SERVICES, line === undefined ? { id } : { id, line });
 }
 
-export function serviceStop(id: ServiceInfo["id"]): Promise<ServiceInfo[]> {
-  return query<ServiceInfo[]>("service_stop", SAMPLE_SERVICES, { id });
+export function serviceStop(id: ServiceInfo["id"], line?: string): Promise<ServiceInfo[]> {
+  return query<ServiceInfo[]>("service_stop", SAMPLE_SERVICES, line === undefined ? { id } : { id, line });
+}
+
+/** The port of another version (null: the first free one after the
+ * server's), from its next start. */
+export function serviceLinePort(id: ServiceInfo["id"], line: string, port: number | null): Promise<ServiceInfo[]> {
+  return query<ServiceInfo[]>("service_line_port", SAMPLE_SERVICES, { id, line, port });
 }
 
 /** Port (null: the default) and "start with Dev-Kit"; the port applies at the next start. */

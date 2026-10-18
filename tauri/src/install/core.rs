@@ -8,10 +8,9 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::native::{conda_info, conda_versions, micromamba_create, micromamba_release};
-use super::{arch_of, github_single, pattern, target_of, Ctx, Installer, Progress, Release};
+use super::{arch_of, github_single, pattern, target_of, Ctx, Installer, Release};
 use crate::fsx::{join_rel, write_atomic};
-use crate::kit::{Os, Target};
+use crate::kit::{Arch, Kit, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
 use crate::net::{github_digest, hash_in_list};
@@ -20,49 +19,161 @@ use crate::settings::Settings;
 use crate::setup::catalog::Component;
 
 /// Git: Git for Windows Portable (`.7z.exe`) on Windows; on macOS and Linux
-/// the conda-forge `git` package with its libraries, in an environment
-/// created by micromamba in its own folder (like R). That environment
-/// cannot be moved: when the kit moves it is installed again (D-92).
+/// the relocatable build of GitHub Desktop (`desktop/dugite-native`, D-112):
+/// `bin/git`, `libexec/git-core`, `share/git-core/templates` and its own
+/// `etc/gitconfig`. It finds them through the kit's environment
+/// (`GIT_EXEC_PATH`, `GIT_TEMPLATE_DIR`, `GIT_CONFIG_SYSTEM`, env.rs), so the
+/// folder follows the kit when it moves, like PortableGit.
 pub struct Git;
 
+/// The dugite-native asset of `target` (`...-ubuntu-arm64.tar.gz`); `None`
+/// on Windows, which keeps PortableGit. Only the 64-bit builds: never
+/// `ubuntu-arm` (32-bit ARM) or `ubuntu-x86`.
+pub fn dugite_asset_pattern(target: Target) -> Option<String> {
+    let suffix = match (target.os, target.arch) {
+        (Os::Win32, _) => return None,
+        (Os::Darwin, Arch::Arm64) => "macOS-arm64",
+        (Os::Darwin, Arch::X64) => "macOS-x64",
+        (Os::Linux, Arch::X64) => "ubuntu-x64",
+        (Os::Linux, Arch::Arm64) => "ubuntu-arm64",
+    };
+    Some(format!(
+        r"^dugite-native-v[\d.]+-[0-9a-f]+-{suffix}\.tar\.gz$"
+    ))
+}
+
+/// The version of a dugite-native release tag (`v2.53.0-4` → `2.53.0-4`):
+/// Git's version with dugite's build number, so a new build of the same
+/// Git is noticed as an update.
+pub fn dugite_version(tag: &str) -> String {
+    tag.trim_start_matches('v').to_owned()
+}
+
+/// The credential helper the kit's Git uses on macOS and Linux for hosts
+/// other than GitHub (GitHub goes through `gh`, github/mod.rs): the
+/// keychain when the build has `git-credential-osxkeychain`, otherwise
+/// Git's memory cache for an hour. dugite-native ships neither osxkeychain
+/// nor a configured Git Credential Manager (verified on v2.53.0-4), so
+/// today it is the cache on both systems.
+pub fn unix_credential_helper(has_osxkeychain: bool) -> &'static str {
+    if has_osxkeychain {
+        "osxkeychain"
+    } else {
+        "cache --timeout=3600"
+    }
+}
+
+/// `text` (dugite's `etc/gitconfig`, the system config of the kit's Git
+/// through `GIT_CONFIG_SYSTEM`) with `helper` as the credential helper;
+/// `None` when a `[credential]` section already sets one (the user's
+/// choice, or an earlier installation).
+pub fn gitconfig_with_helper(text: &str, helper: &str) -> Option<String> {
+    let mut in_credential = false;
+    for line in text.lines() {
+        let l = line.trim();
+        if l.starts_with('[') {
+            in_credential = l.eq_ignore_ascii_case("[credential]");
+            continue;
+        }
+        let key = l.split('=').next().unwrap_or_default().trim();
+        if in_credential && key.eq_ignore_ascii_case("helper") {
+            return None;
+        }
+    }
+    let mut out = text.to_owned();
+    if !out.is_empty() && !out.ends_with('\n') {
+        out.push('\n');
+    }
+    out.push_str(&format!(
+        "# Dev-Kit: credentials of hosts other than GitHub\n[credential]\n\thelper = {helper}\n"
+    ));
+    Some(out)
+}
+
+/// True when `dir`, the folder of the installed Git (its line, or `git`
+/// itself in the layout before lines), is a conda environment
+/// (`conda-meta`): the Git that Dev-Kit installed off Windows before
+/// dugite-native, which cannot follow the kit.
+pub fn has_conda_git(dir: &Path) -> bool {
+    dir.join("conda-meta").is_dir()
+}
+
+/// Git for `target` is staged when prepared on a host that cannot run it
+/// (`runs_here` false, `can_execute_on_host`): dugite-native off Windows.
+/// Its tarball has well over a hundred symbolic links
+/// (`git-remote-https`, `git-upload-pack`, the builtins) that a Windows
+/// host cannot make, and dropping them leaves a Git whose `--version`
+/// works but that cannot clone over HTTPS. So the archive is only
+/// downloaded and verified, and the first start on the target unpacks it
+/// with its links (bootstrap.rs), as the conda-forge Git was before.
+pub const fn git_staged(target: Target, runs_here: bool) -> bool {
+    !target.is_windows() && !runs_here
+}
+
+/// The programs of dugite-native's `libexec/git-core` that are symbolic
+/// links in its tarball, missing from `dest`: an archive unpacked where
+/// links could not be made. `git --version` works without them, HTTPS
+/// clones and local clones or pushes do not.
+pub fn missing_git_links(dest: &Path) -> Vec<&'static str> {
+    const LINKS: [&str; 3] = ["git-remote-https", "git-upload-pack", "git-receive-pack"];
+    let core = join_rel(dest, "libexec/git-core");
+    LINKS
+        .into_iter()
+        .filter(|name| !core.join(name).exists())
+        .collect()
+}
+
 impl Installer for Git {
-    /// Micromamba on macOS and Linux, the shared path on Windows.
+    /// Off Windows, on a host that cannot run the target's Git: staged
+    /// (`git_staged`), never unpacked there. Everywhere else the shared
+    /// path; `install_custom` is never reached, since `should_stage` is
+    /// true exactly when this is.
     fn custom(&self, target: Target) -> bool {
-        !target.os.is_windows()
+        git_staged(target, crate::router::target::can_execute_on_host(target))
     }
 
-    /// PortableGit moves with the kit; a conda environment does not (D-92).
-    fn relocatable(&self, target: Target) -> bool {
-        target.os.is_windows()
-    }
-
-    /// The environment in the folder of its line, then `finish` (the
-    /// portable `.gitconfig`), which the shared path would have run.
     fn install_custom(
         &self,
-        ctx: &Ctx,
-        component: &Component,
-        release: &Release,
-        progress: &mut dyn Progress,
+        _ctx: &Ctx,
+        _component: &Component,
+        _release: &Release,
+        _progress: &mut dyn super::Progress,
     ) -> Result<()> {
-        let dir = crate::versions::install_dir(ctx.kit, component, &release.version);
-        let spec = format!("git={}", release.version);
-        micromamba_create(ctx, component, release, &dir, &[&spec], progress)?;
-        if !crate::versions::has_key_for(target_of(ctx, component), component, &dir) {
-            bail!("bin/git not found after the installation");
+        bail!("git: dugite-native is staged for its target, never unpacked on this system")
+    }
+
+    /// A conda-forge Git left by an older Dev-Kit on macOS or Linux is
+    /// marked once to be installed again (the start replaces it with
+    /// dugite-native, whose folder has no `conda-meta`): it is the only Git
+    /// that cannot move with the kit. Only the installed line counts: an
+    /// old line still in use is removed later (`drop_old_lines`) and does
+    /// not mark it again. Nothing on Windows.
+    fn relocate(&self, kit: &Kit, component: &Component) -> Result<()> {
+        if kit.os().is_windows() || component.needs_reinstall(kit) {
+            return Ok(());
         }
-        self.finish(ctx, component, &dir)
+        if has_conda_git(&crate::versions::default_dir(kit, component)) {
+            component.mark_reinstall(kit, "conda-forge git")?;
+        }
+        Ok(())
     }
 
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let target = target_of(ctx, component);
-        if !target.is_windows() {
-            let subdir = target.conda_subdir();
-            let versions = conda_versions(&conda_info(ctx, "git")?, subdir);
-            let version = versions
-                .first()
-                .ok_or_else(|| anyhow!("no conda-forge git package for {subdir}"))?;
-            return micromamba_release(ctx, version);
+        if let Some(re) = dugite_asset_pattern(target) {
+            let rel = ctx.net.github_latest("desktop/dugite-native")?;
+            let asset = rel
+                .asset(&pattern(&re)?)
+                .ok_or_else(|| anyhow!("dugite-native {}: no Git for {target}", rel.tag_name))?;
+            // GitHub's digest, or the `.sha256` published next to the asset.
+            return Ok(Release::single(
+                dugite_version(&rel.tag_name),
+                asset.browser_download_url.clone(),
+                asset.name.clone(),
+                Expect::Sha256(ctx.net.release_sha256(&rel, asset)?),
+                Kind::TarGz,
+                Inner::Root,
+            ));
         }
         let rel = ctx.net.github_latest("git-for-windows/git")?;
         let suffix = if arch_of(ctx, component) == "arm64" {
@@ -93,9 +204,31 @@ impl Installer for Git {
     /// The self-extractor's post-install script, then `Set-KitGitConfig`:
     /// the system credential helper of the kit's Git is `manager` (not the
     /// selector window), and the portable home gets a `.gitconfig` once
-    /// (main branch; any owner, for FAT32/exFAT sticks).
-    fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
-        if ctx.kit.os().is_windows() {
+    /// (main branch; any owner, for FAT32/exFAT sticks). On macOS and Linux
+    /// the helper is written into the build's `etc/gitconfig` (no process:
+    /// also when the kit is prepared from another system).
+    fn finish(&self, ctx: &Ctx, component: &Component, dest: &Path) -> Result<()> {
+        if !target_of(ctx, component).is_windows() {
+            // Unpacked without its links: fail now, not at the first clone.
+            let missing = missing_git_links(dest);
+            if !missing.is_empty() {
+                bail!(
+                    "git: libexec/git-core without {} (symbolic links not unpacked)",
+                    missing.join(", ")
+                );
+            }
+            let etc = join_rel(dest, "etc/gitconfig");
+            let text = fs::read_to_string(&etc).unwrap_or_default();
+            let keychain = join_rel(dest, "libexec/git-core/git-credential-osxkeychain").is_file();
+            if let Some(new) = gitconfig_with_helper(&text, unix_credential_helper(keychain)) {
+                if let Some(dir) = etc.parent() {
+                    fs::create_dir_all(dir)?;
+                }
+                write_atomic(&etc, new.as_bytes()).with_context(|| etc.display().to_string())?;
+            }
+        }
+        if ctx.kit.os().is_windows() && crate::router::target::can_execute_on_host(ctx.kit.target())
+        {
             if dest.join("post-install.bat").is_file() {
                 let system_root = ctx.env.get("SystemRoot").unwrap_or(r"C:\Windows");
                 let cmd = Path::new(system_root).join("System32").join("cmd.exe");
@@ -246,7 +379,9 @@ impl Python {
 
 impl Installer for Python {
     /// The newest minor (the line marked "latest"), unless one is chosen in
-    /// the settings.
+    /// the settings: a ticked versioned language installs its newest line
+    /// (D-81), so a fresh kit gets 3.15 once python-build-standalone has
+    /// it. `PYTHON_DEFAULT` is only the fallback when no line is listed.
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let chosen = Settings::load(ctx.kit)
             .settings
@@ -295,22 +430,24 @@ impl Installer for Python {
         let old_version = component
             .installed_version(ctx.kit)
             .unwrap_or_else(|| "old".into());
-        if let Ok(out) = jobs::kit_command(&old_python, ctx.env)
-            .args([
-                "-m",
-                "pip",
-                "freeze",
-                "--all",
-                "--disable-pip-version-check",
-            ])
-            .output()
-        {
-            if out.status.success() {
-                let list = ctx
-                    .kit
-                    .data()
-                    .join(format!("python-packages-{old_version}.txt"));
-                write_atomic(&list, &out.stdout)?;
+        if crate::router::target::can_execute_on_host(ctx.kit.target()) {
+            if let Ok(out) = jobs::kit_command(&old_python, ctx.env)
+                .args([
+                    "-m",
+                    "pip",
+                    "freeze",
+                    "--all",
+                    "--disable-pip-version-check",
+                ])
+                .output()
+            {
+                if out.status.success() {
+                    let list = ctx
+                        .kit
+                        .data()
+                        .join(format!("python-packages-{old_version}.txt"));
+                    write_atomic(&list, &out.stdout)?;
+                }
             }
         }
         // Packages are compatible only within the same minor version.
@@ -360,6 +497,9 @@ impl Installer for Python {
                 join_rel(dest, &format!("lib/python{m}/ensurepip/_bundled")),
             )
         };
+        if !crate::router::target::can_execute_on_host(ctx.kit.target()) {
+            return Ok(());
+        }
         let wheel = fs::read_dir(&bundled)
             .into_iter()
             .flatten()
@@ -395,8 +535,19 @@ impl Installer for Python {
     }
 }
 
+/// The packages kept from the old line. Links (and junctions) are skipped:
+/// following one would copy what it points to outside the tree, and a cycle
+/// would never end; the new line has its own `bin/python3`-style links.
 fn copy_tree(from: &Path, to: &Path) -> Result<()> {
-    if from.is_dir() {
+    let meta = fs::symlink_metadata(from).with_context(|| from.display().to_string())?;
+    if meta.file_type().is_symlink() {
+        crate::log::warn(&format!(
+            "python: link not carried to the new line: {}",
+            from.display()
+        ));
+        return Ok(());
+    }
+    if meta.is_dir() {
         fs::create_dir_all(to)?;
         for entry in fs::read_dir(from)? {
             let entry = entry?;
@@ -413,6 +564,55 @@ pub struct NodeEntry {
     version: String,
     #[serde(default)]
     files: Vec<String>,
+    /// The codename of an LTS release (`"Krypton"`), `false` for the others.
+    #[serde(default)]
+    lts: Value,
+}
+
+impl NodeEntry {
+    fn is_lts(&self) -> bool {
+        !matches!(self.lts, Value::Bool(false) | Value::Null)
+    }
+
+    fn major(&self) -> Option<u64> {
+        super::lang::version_key(&self.version).first().copied()
+    }
+}
+
+/// The release of `index` (newest first, as nodejs.org lists it) to
+/// install with the archive `wanted`: the newest of `line` when one is
+/// asked; otherwise the newest LTS (`lts` not `false`), or the newest
+/// release when the index has no LTS for it. When the version installed
+/// (`installed`) is newer than that LTS (a "Current" release installed by
+/// an older Dev-Kit), the newest of its major instead: an update never takes
+/// the kit back to an older major.
+pub fn node_pick<'a>(
+    index: &'a [NodeEntry],
+    wanted: &str,
+    line: Option<&str>,
+    installed: Option<&str>,
+) -> Option<&'a NodeEntry> {
+    let mut with_file = index.iter().filter(|e| e.files.iter().any(|f| f == wanted));
+    if let Some(l) = line {
+        return with_file.find(|e| crate::versions::line_of(&e.version).as_deref() == Some(l));
+    }
+    let all: Vec<&NodeEntry> = with_file.collect();
+    let pick = all
+        .iter()
+        .find(|e| e.is_lts())
+        .or_else(|| all.first())
+        .copied()?;
+    let key = super::lang::version_key;
+    match installed {
+        Some(v) if key(v) > key(&pick.version) => {
+            let major = key(v).first().copied();
+            all.iter()
+                .find(|e| e.major() == major)
+                .copied()
+                .or(Some(pick))
+        }
+        _ => Some(pick),
+    }
 }
 
 /// Node.js: the newest LTS with an archive for this target.
@@ -463,13 +663,8 @@ impl Node {
         let node_os = target.node_os();
         let wanted = node_wanted_file(target);
         let index: Vec<NodeEntry> = ctx.net.json("https://nodejs.org/dist/index.json")?;
-        let entry = index
-            .iter()
-            .find(|e| {
-                e.files.contains(&wanted)
-                    // None: the newest release (the line marked "latest").
-                    && line.is_none_or(|l| crate::versions::line_of(&e.version).as_deref() == Some(l))
-            })
+        let installed = component.installed_version(ctx.kit);
+        let entry = node_pick(&index, &wanted, line, installed.as_deref())
             .ok_or_else(|| anyhow!("no Node.js {} for {node_os}-{arch}", line.unwrap_or("LTS")))?;
         let v = &entry.version;
         let (ext, kind) = if target.is_windows() {

@@ -64,6 +64,38 @@ pub async fn agent_launch<R: Runtime>(
     .or_fail("agent")?
 }
 
+/// "Collega con un token" (Claude Code on macOS, D-115): `claude
+/// setup-token` in a session of the app's terminal, its token saved in the
+/// kit. Async: the session runs until the user finishes in the browser.
+/// The page polls `agents_status`, so it sees the saved token by itself.
+#[tauri::command]
+pub async fn agent_token_link<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::agents::claude_token::link(&app, &kit, &env, lang, || {})
+            .or_fail_chain("claude setup-token")
+    })
+    .await
+    .or_fail("claude setup-token")?
+}
+
+/// "Salva il token": a token pasted by the user. Neither the token nor an
+/// error about it is logged or echoed (save's errors never contain it).
+#[tauri::command]
+pub fn agent_token_save<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    token: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    crate::agents::claude_token::save(&state.kit, &token).or_fail_chain("claude token")
+}
+
 #[tauri::command]
 pub fn agent_sign_out<R: Runtime>(
     webview: Webview<R>,

@@ -37,8 +37,8 @@ pub fn sync(p: &Paths, dir: &Path, report: &mut Report) -> Result<()> {
         return Ok(());
     }
     let root = project_root(p, dir);
-    let shared = root.join(r".agents\skills");
-    let claude = root.join(r".claude\skills");
+    let shared = root.join(".agents").join("skills");
+    let claude = root.join(".claude").join("skills");
     if !shared.exists() && !claude.exists() {
         return Ok(());
     }

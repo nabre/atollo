@@ -5,11 +5,12 @@ use std::io::Write;
 #[test]
 fn unsafe_names_are_refused() {
     let base = Path::new(r"D:\x");
+    // with the system's separator after the base: `D:\x\a\b.txt` on Windows
     assert_eq!(
         safe_join(base, "a/b.txt"),
-        Some(PathBuf::from(r"D:\x\a\b.txt"))
+        Some(base.join("a").join("b.txt"))
     );
-    assert_eq!(safe_join(base, "./a"), Some(PathBuf::from(r"D:\x\a")));
+    assert_eq!(safe_join(base, "./a"), Some(base.join("a")));
     for bad in [
         "../evil",
         "a/../../evil",
@@ -422,6 +423,7 @@ fn replace_file_works_while_in_use() {
 /// A program of the PC keeps a folder of the tree open (as Cloud Code's
 /// indexer did with `extensions\terminal-suggest` of the editor): the
 /// swap still works. A file really in use stops it, and nothing changes.
+#[cfg(windows)]
 #[test]
 fn replace_dir_with_a_folder_held_open() {
     use std::os::windows::fs::OpenOptionsExt;
@@ -430,8 +432,8 @@ fn replace_dir_with_a_folder_held_open() {
     let tmp = TempDir::new("replheld");
     let dest = tmp.0.join("editor");
     let make = |root: &Path, text: &str| {
-        fs::create_dir_all(root.join(r"extensions\held")).unwrap();
-        fs::write(root.join(r"extensions\held\a.txt"), text).unwrap();
+        fs::create_dir_all(root.join("extensions").join("held")).unwrap();
+        fs::write(root.join("extensions").join("held").join("a.txt"), text).unwrap();
         fs::write(root.join("node.exe"), text).unwrap();
     };
     make(&dest, "old");
@@ -440,7 +442,7 @@ fn replace_dir_with_a_folder_held_open() {
         .read(true)
         .share_mode(SHARE_READ_WRITE)
         .custom_flags(BACKUP_SEMANTICS)
-        .open(dest.join(r"extensions\held"))
+        .open(dest.join("extensions").join("held"))
         .unwrap();
     assert!(
         fs::rename(&dest, tmp.0.join("x")).is_err(),
@@ -453,7 +455,7 @@ fn replace_dir_with_a_folder_held_open() {
     replace_dir(&new, &dest).unwrap();
     assert_eq!(fs::read_to_string(dest.join("node.exe")).unwrap(), "new");
     assert_eq!(
-        fs::read_to_string(dest.join(r"extensions\held\a.txt")).unwrap(),
+        fs::read_to_string(dest.join("extensions").join("held").join("a.txt")).unwrap(),
         "new"
     );
     assert!(dest.join("out").is_dir() && !dest.join("gone.txt").exists());
@@ -481,7 +483,7 @@ fn replace_dir_with_a_folder_held_open() {
     drop(busy);
     assert_eq!(fs::read_to_string(dest.join("node.exe")).unwrap(), "new");
     assert_eq!(
-        fs::read_to_string(dest.join(r"extensions\held\a.txt")).unwrap(),
+        fs::read_to_string(dest.join("extensions").join("held").join("a.txt")).unwrap(),
         "new"
     );
     assert!(dest.join("out").is_dir());
@@ -489,17 +491,18 @@ fn replace_dir_with_a_folder_held_open() {
 
 /// The antivirus holds a file just extracted for a moment (as on the
 /// first install of Java and Kotlin): the swap waits for it.
+#[cfg(windows)]
 #[test]
 fn replace_dir_waits_for_a_scan() {
     use std::os::windows::fs::OpenOptionsExt;
     let tmp = TempDir::new("replscan");
-    let new = tmp.0.join(r"x\kotlinc");
+    let new = tmp.0.join("x").join("kotlinc");
     fs::create_dir_all(new.join("lib")).unwrap();
-    fs::write(new.join(r"lib\a.jar"), "jar").unwrap();
+    fs::write(new.join("lib").join("a.jar"), "jar").unwrap();
     let held = fs::OpenOptions::new()
         .read(true)
         .share_mode(1)
-        .open(new.join(r"lib\a.jar"))
+        .open(new.join("lib").join("a.jar"))
         .unwrap();
     let dest = tmp.0.join("kotlin");
     assert!(
@@ -512,14 +515,17 @@ fn replace_dir_waits_for_a_scan() {
     });
     replace_dir(&new, &dest).unwrap();
     scan.join().unwrap();
-    assert_eq!(fs::read_to_string(dest.join(r"lib\a.jar")).unwrap(), "jar");
+    assert_eq!(
+        fs::read_to_string(dest.join("lib").join("a.jar")).unwrap(),
+        "jar"
+    );
     assert!(!new.exists());
 }
 
 fn tree(root: &Path, text: &str) {
-    fs::create_dir_all(root.join(r"bin\lib")).unwrap();
-    fs::write(root.join(r"bin\tool.exe"), text).unwrap();
-    fs::write(root.join(r"bin\lib\a.dll"), text).unwrap();
+    fs::create_dir_all(root.join("bin").join("lib")).unwrap();
+    fs::write(root.join("bin").join("tool.exe"), text).unwrap();
+    fs::write(root.join("bin").join("lib").join("a.dll"), text).unwrap();
 }
 
 fn names(dir: &Path) -> Vec<String> {
@@ -534,33 +540,44 @@ fn names(dir: &Path) -> Vec<String> {
 #[test]
 fn stage_into_on_the_same_disk_moves() {
     let tmp = TempDir::new("stagesame");
-    let new = tmp.0.join(r"temp\x");
+    let new = tmp.0.join("temp").join("x");
     tree(&new, "1");
-    let dest = tmp.0.join(r"apps\tool");
+    let dest = tmp.0.join("apps").join("tool");
     stage_into(&new, &dest).unwrap();
-    assert_eq!(fs::read_to_string(dest.join(r"bin\tool.exe")).unwrap(), "1");
+    assert_eq!(
+        fs::read_to_string(dest.join("bin").join("tool.exe")).unwrap(),
+        "1"
+    );
     assert!(!new.exists(), "renamed, not copied");
     assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
 }
 
+#[cfg(windows)]
 #[test]
 fn stage_into_from_another_disk_copies() {
     let tmp = TempDir::new("stageother");
-    let dest = tmp.0.join(r"apps\tool");
+    let dest = tmp.0.join("apps").join("tool");
     tree(&dest, "old");
     fs::write(dest.join("gone.txt"), "old").unwrap();
-    let new = tmp.0.join(r"temp\x");
+    let new = tmp.0.join("temp").join("x");
     tree(&new, "new");
     // A copy interrupted earlier (the app closed in the middle).
-    fs::create_dir_all(tmp.0.join(r"apps\tool.devkit-new\bin")).unwrap();
-    fs::write(tmp.0.join(r"apps\tool.devkit-new\stale.txt"), "x").unwrap();
+    fs::create_dir_all(tmp.0.join("apps").join("tool.devkit-new").join("bin")).unwrap();
+    fs::write(
+        tmp.0.join("apps").join("tool.devkit-new").join("stale.txt"),
+        "x",
+    )
+    .unwrap();
     stage_with(&new, &dest, false).unwrap();
     assert_eq!(
-        fs::read_to_string(dest.join(r"bin\lib\a.dll")).unwrap(),
+        fs::read_to_string(dest.join("bin").join("lib").join("a.dll")).unwrap(),
         "new"
     );
     assert!(!dest.join("gone.txt").exists() && !dest.join("stale.txt").exists());
-    assert!(new.join(r"bin\tool.exe").is_file(), "the source is copied");
+    assert!(
+        new.join("bin").join("tool.exe").is_file(),
+        "the source is copied"
+    );
     assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
 
     // The swap refused (a file in use): the installed tree is intact and
@@ -570,7 +587,7 @@ fn stage_into_from_another_disk_copies() {
         fs::OpenOptions::new()
             .read(true)
             .share_mode(1)
-            .open(dest.join(r"bin\tool.exe"))
+            .open(dest.join("bin").join("tool.exe"))
             .unwrap()
     };
     tree(&new, "newer");
@@ -578,7 +595,7 @@ fn stage_into_from_another_disk_copies() {
     assert!(err.is::<InUse>(), "{err:#}");
     drop(busy);
     assert_eq!(
-        fs::read_to_string(dest.join(r"bin\tool.exe")).unwrap(),
+        fs::read_to_string(dest.join("bin").join("tool.exe")).unwrap(),
         "new"
     );
     assert_eq!(names(&tmp.0.join("apps")), ["tool"]);
@@ -600,7 +617,7 @@ fn interrupted_copy_is_cleaned() {
     clean_leftovers(&apps);
     assert_eq!(names(&apps), ["tool"]);
     assert_eq!(
-        fs::read_to_string(apps.join(r"tool\bin\tool.exe")).unwrap(),
+        fs::read_to_string(apps.join("tool").join("bin").join("tool.exe")).unwrap(),
         "1"
     );
 }
@@ -609,7 +626,7 @@ fn interrupted_copy_is_cleaned() {
 fn replace_file_leaves_no_staged_copy() {
     let tmp = TempDir::new("replstaged");
     let dest = tmp.0.join("uv.exe");
-    let new = tmp.0.join(r"temp\uv.exe");
+    let new = tmp.0.join("temp").join("uv.exe");
     fs::create_dir_all(new.parent().unwrap()).unwrap();
     fs::write(&new, "1").unwrap();
     replace_file(&new, &dest).unwrap();
@@ -620,6 +637,7 @@ fn replace_file_leaves_no_staged_copy() {
 
 /// A file over 4 GiB (sparse: nothing written) does not fit on FAT32;
 /// the error names it with its size.
+#[cfg(windows)]
 #[test]
 fn check_fits_refuses_a_file_too_large_for_fat32() {
     use std::os::windows::io::AsRawHandle;
@@ -631,9 +649,9 @@ fn check_fits_refuses_a_file_too_large_for_fat32() {
     tree(&new, "small");
     let fat32 = crate::os::volume::FsKind::Fat32.max_file_size();
     fits(&new, fat32, "FAT32").unwrap();
-    check_fits(&new, &tmp.0.join(r"apps\tool")).unwrap();
+    check_fits(&new, &tmp.0.join("apps").join("tool")).unwrap();
 
-    let big = new.join(r"bin\lib\model.bin");
+    let big = new.join("bin").join("lib").join("model.bin");
     let file = File::create(&big).unwrap();
     // SAFETY: the handle stays valid while `file` lives; no buffers.
     let sparse = unsafe {
@@ -661,7 +679,7 @@ fn check_fits_refuses_a_file_too_large_for_fat32() {
     // A single file is checked too (`replace_file`).
     assert!(fits(&big, fat32, "FAT32").is_err());
     // The test disk (NTFS) has no limit.
-    check_fits(&new, &tmp.0.join(r"apps\tool")).unwrap();
+    check_fits(&new, &tmp.0.join("apps").join("tool")).unwrap();
 }
 
 #[test]
@@ -669,7 +687,7 @@ fn check_space_needs_the_whole_tree() {
     let tmp = TempDir::new("space");
     let new = tmp.0.join("x");
     tree(&new, "12345");
-    let dest = tmp.0.join(r"apps\tool");
+    let dest = tmp.0.join("apps").join("tool");
     has_space(&new, 10, &dest).unwrap();
     let err = has_space(&new, 9, &dest).unwrap_err().to_string();
     assert!(
@@ -689,6 +707,7 @@ fn plain_file_kind() {
     assert!(tmp.0.join("out").join("agy.exe").is_file());
 }
 
+#[cfg(windows)]
 #[test]
 fn replace_and_remove() {
     let tmp = TempDir::new("replace");
@@ -734,4 +753,301 @@ fn replace_and_remove() {
     drop(held);
     remove_dir(&dest).unwrap();
     assert!(!dest.exists());
+}
+
+/// The refusal of exFAT and FAT, injected so it runs on every system.
+fn no_links(_: &str, _: &Path) -> io::Result<()> {
+    Err(io::Error::new(io::ErrorKind::Unsupported, "no links here"))
+}
+
+/// Without links the targets are copied: a file, a folder, a link to a
+/// link (whose copy comes first); a link outside, or a folder that would
+/// hold itself, is skipped.
+#[test]
+fn links_become_copies_where_refused() {
+    let tmp = TempDir::new("linkcopy");
+    let dest = tmp.0.join("out");
+    let pkg = dest.join("pkg");
+    fs::create_dir_all(pkg.join("lib")).unwrap();
+    fs::create_dir_all(pkg.join("bin")).unwrap();
+    fs::write(pkg.join("lib").join("tool.sh"), "run").unwrap();
+    let doc = pkg.join("share").join("doc");
+    fs::create_dir_all(&doc).unwrap();
+    fs::write(doc.join("a.txt"), "doc").unwrap();
+    fs::write(tmp.0.join("outside.txt"), "secret").unwrap();
+    let links = vec![
+        (pkg.join("chain"), "bin/tool".to_owned()),
+        (pkg.join("bin").join("tool"), "../lib/tool.sh".to_owned()),
+        (pkg.join("doc"), "share/doc".to_owned()),
+        (doc.join("up"), "..".to_owned()),
+        (pkg.join("out"), "../../outside.txt".to_owned()),
+    ];
+    let skipped = finish_links(&dest, links, no_links).unwrap();
+    assert_eq!(
+        fs::read_to_string(pkg.join("bin").join("tool")).unwrap(),
+        "run"
+    );
+    assert_eq!(fs::read_to_string(pkg.join("chain")).unwrap(), "run");
+    assert_eq!(
+        fs::read_to_string(pkg.join("doc").join("a.txt")).unwrap(),
+        "doc"
+    );
+    for copy in [pkg.join("chain"), pkg.join("doc")] {
+        assert!(!fs::symlink_metadata(&copy)
+            .unwrap()
+            .file_type()
+            .is_symlink());
+    }
+    assert!(!pkg.join("out").exists() && !doc.join("up").exists());
+    assert_eq!(skipped.len(), 2, "{skipped:?}");
+}
+
+/// Without links, a link whose way crosses another link (`x -> lib64/foo`,
+/// `lib64 -> lib`) is copied once that one is a copy; a way that still
+/// leaves the folder after it stays skipped.
+#[test]
+fn links_through_a_copied_link_where_refused() {
+    let tmp = TempDir::new("linkchain");
+    let dest = tmp.0.join("out");
+    fs::create_dir_all(dest.join("lib")).unwrap();
+    fs::write(dest.join("lib").join("foo"), "so").unwrap();
+    let links = vec![
+        (dest.join("x"), "lib64/foo".to_owned()),
+        (dest.join("y"), "lib64/../../secret".to_owned()),
+        (dest.join("lib64"), "lib".to_owned()),
+    ];
+    let skipped = finish_links(&dest, links, no_links).unwrap();
+    assert_eq!(fs::read_to_string(dest.join("x")).unwrap(), "so");
+    assert_eq!(
+        fs::read_to_string(dest.join("lib64").join("foo")).unwrap(),
+        "so"
+    );
+    assert!(!dest.join("y").exists());
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+
+    // With links, a way through a link is never followed.
+    let dest2 = tmp.0.join("out2");
+    fs::create_dir_all(dest2.join("lib")).unwrap();
+    let made = std::cell::RefCell::new(Vec::new());
+    let links = vec![
+        (dest2.join("x"), "lib64/foo".to_owned()),
+        (dest2.join("lib64"), "lib".to_owned()),
+    ];
+    let skipped = finish_links(&dest2, links, |t, p| {
+        made.borrow_mut().push((t.to_owned(), p.to_path_buf()));
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(made.borrow().len(), 1);
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+}
+
+/// Without links, a folder copied in place of a link (`d -> a`) waits for a
+/// link inside it that resolves only later (`a/x -> lib64/foo`, through
+/// the copy of `lib64 -> lib`), so the copy holds it too.
+#[test]
+fn a_copied_folder_gets_links_resolved_later() {
+    let tmp = TempDir::new("linklater");
+    let dest = tmp.0.join("out");
+    fs::create_dir_all(dest.join("a")).unwrap();
+    fs::create_dir_all(dest.join("lib")).unwrap();
+    fs::write(dest.join("lib").join("foo"), "so").unwrap();
+    let links = vec![
+        (dest.join("d"), "a".to_owned()),
+        (dest.join("a").join("x"), "../lib64/foo".to_owned()),
+        (dest.join("lib64"), "lib".to_owned()),
+    ];
+    let skipped = finish_links(&dest, links, no_links).unwrap();
+    assert!(skipped.is_empty(), "{skipped:?}");
+    assert_eq!(fs::read_to_string(dest.join("a").join("x")).unwrap(), "so");
+    assert_eq!(fs::read_to_string(dest.join("d").join("x")).unwrap(), "so");
+}
+
+/// A link whose target can never stay inside (absolute, climbing above the
+/// folder) is skipped before anything is made for it: no folder for its
+/// parent, no error.
+#[test]
+fn hopeless_links_make_no_folder() {
+    let tmp = TempDir::new("linkhopeless");
+    let dest = tmp.0.join("out");
+    fs::create_dir_all(&dest).unwrap();
+    let links = vec![
+        (dest.join("p").join("abs"), "/etc/passwd".to_owned()),
+        (dest.join("q").join("up"), "../../x".to_owned()),
+        (dest.join("r").join("win"), r"..\x".to_owned()),
+    ];
+    let skipped = finish_links(&dest, links, no_links).unwrap();
+    assert_eq!(skipped.len(), 3, "{skipped:?}");
+    for d in ["p", "q", "r"] {
+        assert!(!dest.join(d).exists(), "{d}");
+    }
+}
+
+#[test]
+fn lexically_inside_by_text() {
+    let top = Path::new("");
+    let pkg = Path::new("pkg");
+    assert!(lexically_inside(top, "a/b"));
+    assert!(lexically_inside(pkg, "../x"));
+    assert!(lexically_inside(pkg, "./b/../c"));
+    assert!(!lexically_inside(top, "../x"));
+    assert!(!lexically_inside(pkg, "../../x"));
+    assert!(!lexically_inside(pkg, "a/../../../x"));
+    assert!(!lexically_inside(pkg, "/abs"));
+    assert!(!lexically_inside(pkg, ""));
+    assert!(!lexically_inside(pkg, r"a\b"));
+    assert!(!lexically_inside(pkg, "C:x"));
+}
+
+/// Links to folders nested in each other double the tree at each step once
+/// each is a copy: past the budget the extraction stops with a clear error.
+#[test]
+fn copies_of_nested_links_have_a_budget() {
+    let tmp = TempDir::new("linkbomb");
+    let dest = tmp.0.join("out");
+    fs::create_dir_all(dest.join("d0")).unwrap();
+    fs::write(dest.join("d0").join("f"), vec![b'x'; 1024]).unwrap();
+    let mut links = Vec::new();
+    for i in 1..12 {
+        fs::create_dir_all(dest.join(format!("d{i}"))).unwrap();
+        for n in ["a", "b"] {
+            links.push((dest.join(format!("d{i}")).join(n), format!("../d{}", i - 1)));
+        }
+    }
+    let err = finish_links_within(&dest, links.clone(), no_links, 0).unwrap_err();
+    assert!(err.to_string().contains("too much space"), "{err:#}");
+    // The same links within the default budget: 2^11 KiB, well inside.
+    let dest2 = tmp.0.join("out2");
+    fs::create_dir_all(dest2.join("d0")).unwrap();
+    fs::write(dest2.join("d0").join("f"), vec![b'x'; 1024]).unwrap();
+    let links2: Vec<_> = links
+        .into_iter()
+        .map(|(p, t)| (dest2.join(p.strip_prefix(&dest).unwrap()), t))
+        .collect();
+    for i in 1..12 {
+        fs::create_dir_all(dest2.join(format!("d{i}"))).unwrap();
+    }
+    assert!(finish_links(&dest2, links2, no_links).unwrap().is_empty());
+    assert_eq!(tree_size(&dest2.join("d11")), 2048 * 1024);
+}
+
+/// A tar hard link where the file system has none (exFAT, FAT) is a copy;
+/// another refusal is an error, not a missing file.
+#[test]
+fn hard_links_become_copies_where_refused() {
+    let tmp = TempDir::new("hardcopy");
+    let target = tmp.0.join("a");
+    fs::write(&target, "data").unwrap();
+    hard_link_or_copy(&target, &tmp.0.join("b"), |_, _| {
+        Err(io::Error::new(io::ErrorKind::Unsupported, "no links here"))
+    })
+    .unwrap();
+    assert_eq!(fs::read_to_string(tmp.0.join("b")).unwrap(), "data");
+    let denied = hard_link_or_copy(&target, &tmp.0.join("c"), |_, _| {
+        Err(io::Error::new(io::ErrorKind::PermissionDenied, "denied"))
+    });
+    assert!(denied.is_err());
+    assert!(!tmp.0.join("c").exists());
+    hard_link_or_copy(&target, &tmp.0.join("d"), |t, p| fs::hard_link(t, p)).unwrap();
+    assert_eq!(fs::read_to_string(tmp.0.join("d")).unwrap(), "data");
+}
+
+/// A refusal for another reason (permissions) is an error, not a copy.
+#[test]
+fn other_link_errors_stop() {
+    let tmp = TempDir::new("linkerr");
+    let dest = tmp.0.join("out");
+    fs::create_dir_all(&dest).unwrap();
+    fs::write(dest.join("a"), "x").unwrap();
+    let denied = |_: &str, _: &Path| -> io::Result<()> {
+        Err(io::Error::new(io::ErrorKind::PermissionDenied, "denied"))
+    };
+    let links = vec![(dest.join("b"), "a".to_owned())];
+    assert!(finish_links(&dest, links, denied).is_err());
+    assert!(!dest.join("b").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn links_unsupported_codes() {
+    for code in [libc::EPERM, libc::ENOTSUP, libc::EOPNOTSUPP] {
+        assert!(
+            links_unsupported(&io::Error::from_raw_os_error(code)),
+            "{code}"
+        );
+    }
+    assert!(!links_unsupported(&io::Error::from_raw_os_error(
+        libc::EACCES
+    )));
+    assert!(!links_unsupported(&io::Error::from_raw_os_error(
+        libc::ENOENT
+    )));
+}
+
+#[test]
+fn links_unsupported_kind() {
+    assert!(links_unsupported(&io::Error::new(
+        io::ErrorKind::Unsupported,
+        "x"
+    )));
+    assert!(!links_unsupported(&io::Error::new(
+        io::ErrorKind::PermissionDenied,
+        "x"
+    )));
+}
+
+/// A tree installed from a temporary folder on another disk keeps its
+/// links (`bin/npm`, `bin/python3`), with the same relative target; one
+/// that leaves the tree is not copied.
+#[cfg(unix)]
+#[test]
+fn copy_tree_keeps_links_inside() {
+    use std::os::unix::fs::symlink;
+    let tmp = TempDir::new("copylinks");
+    let from = tmp.0.join("from");
+    fs::create_dir_all(from.join("lib")).unwrap();
+    fs::create_dir_all(from.join("bin")).unwrap();
+    fs::write(from.join("lib").join("npm-cli.js"), "js").unwrap();
+    fs::write(tmp.0.join("sibling.txt"), "no").unwrap();
+    symlink("../lib/npm-cli.js", from.join("bin").join("npm")).unwrap();
+    symlink("lib", from.join("cur")).unwrap();
+    symlink("../sibling.txt", from.join("esc")).unwrap();
+    symlink(tmp.0.join("sibling.txt"), from.join("abs")).unwrap();
+    let to = tmp.0.join("to");
+    copy_tree(&from, &to).unwrap();
+    let npm = to.join("bin").join("npm");
+    assert!(fs::symlink_metadata(&npm).unwrap().file_type().is_symlink());
+    assert_eq!(fs::read_link(&npm).unwrap(), Path::new("../lib/npm-cli.js"));
+    assert_eq!(fs::read_to_string(&npm).unwrap(), "js");
+    assert_eq!(fs::read_link(to.join("cur")).unwrap(), Path::new("lib"));
+    assert_eq!(
+        fs::read_to_string(to.join("cur").join("npm-cli.js")).unwrap(),
+        "js"
+    );
+    assert!(
+        fs::symlink_metadata(to.join("esc")).is_err(),
+        "outside the tree"
+    );
+    assert!(fs::symlink_metadata(to.join("abs")).is_err(), "absolute");
+}
+
+/// On Windows links are skipped by the copy, as before.
+#[cfg(windows)]
+#[test]
+fn copy_tree_copies_files_and_folders() {
+    let tmp = TempDir::new("copytree");
+    let from = tmp.0.join("from");
+    fs::create_dir_all(from.join("bin").join("lib")).unwrap();
+    fs::write(from.join("bin").join("tool.exe"), "1").unwrap();
+    fs::write(from.join("bin").join("lib").join("a.dll"), "2").unwrap();
+    let to = tmp.0.join("to");
+    copy_tree(&from, &to).unwrap();
+    assert_eq!(
+        fs::read_to_string(to.join("bin").join("tool.exe")).unwrap(),
+        "1"
+    );
+    assert_eq!(
+        fs::read_to_string(to.join("bin").join("lib").join("a.dll")).unwrap(),
+        "2"
+    );
 }

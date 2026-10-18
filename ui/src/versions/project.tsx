@@ -18,7 +18,7 @@ import { ComponentLogo } from "../logos";
 import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { useSetup } from "../setup";
-import { EditorSection } from "../workbench";
+import { EditorSection, Link, Notice } from "../workbench";
 import { isPresent, useOffers, useReloadOnSteps } from "./model";
 import { LineSelect, LineState, RefreshLines } from "./lines";
 
@@ -44,10 +44,12 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
 
   const running = setup?.running ?? false;
   const allTools = data?.tools ?? [];
+  // A language the project needs and the kit lacks (p.missing) stays in the
+  // first zone, with what to do instead of a line to choose.
   const activeTools = allTools.filter(
     (x) =>
       (p.requires.includes(x.id) || Boolean(data?.chosen[x.id])) &&
-      (x.installed || x.downloadable || x.saved.length > 0),
+      (p.missing.includes(x.id) || x.installed || x.downloadable || x.saved.length > 0),
   );
   const inactiveTools = allTools.filter(
     (x) => !p.requires.includes(x.id) && !data?.chosen[x.id] && x.installed && (x.downloadable || x.saved.length > 0),
@@ -61,6 +63,30 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
     const set = (line: string | null) => {
       run(tool.id, () => projectVersionsSet(project, tool.id, line).then(setData));
     };
+    // The line the project's containers name (Compose, Dockerfile): only
+    // proposed, applied by the user, when it is not the one in use.
+    const fromContainers = p.lines?.[tool.id];
+    const suggested = fromContainers && fromContainers !== (chosen || kitLine) ? fromContainers : null;
+    const applicable =
+      suggested !== null &&
+      (isPresent(tool, suggested) || (tool.downloadable && tool.available.includes(suggested))) &&
+      busy === null &&
+      !(running && !isPresent(tool, suggested));
+    if (p.missing.includes(tool.id)) {
+      return (
+        <div key={tool.id}>
+          <div className="flex items-center gap-2">
+            <ComponentLogo id={tool.id} size={16} />
+            <span className="w-28 shrink-0 truncate">{tool.name}</span>
+            <Notice tone="warning" className="min-w-0 flex-1 text-[12px]">
+              {t(
+                "Non installato: «Installa ciò che manca» in Componenti lo installa, poi qui se ne sceglie la versione.",
+              )}
+            </Notice>
+          </div>
+        </div>
+      );
+    }
     return (
       <div key={tool.id}>
         <div className="flex items-center gap-2">
@@ -94,6 +120,24 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
           {need && (
             <p className="mt-0.5 text-[12px] text-vsc-desc">{t("Richiesto da {0}: {1}", need.source, need.declared)}</p>
           )}
+          {suggested !== null && (
+            <p className="mt-0.5 text-[12px] text-vsc-desc">
+              {t("Dai container del progetto (Compose o Dockerfile): {0} {1}.", tool.name, suggested)}{" "}
+              {applicable ? (
+                <Link
+                  onClick={() => {
+                    set(suggested);
+                  }}
+                >
+                  {t("Usa {0}", suggested)}
+                </Link>
+              ) : (
+                !isPresent(tool, suggested) &&
+                !tool.available.includes(suggested) &&
+                t("Non è tra le versioni offerte.")
+              )}
+            </p>
+          )}
           <LineState
             tool={tool}
             line={chosen === "" ? null : chosen}
@@ -113,7 +157,7 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
     <EditorSection id="versions" title={t("Versioni")}>
       <p className="text-vsc-desc">
         {t(
-          "Valgono per terminale, azioni e agenti del progetto, e per i terminali dell'editor aperti da adesso. Una versione da scaricare si scarica appena scelta.",
+          "Valgono per terminale, azioni e agenti del progetto, per il server web che lo serve (Apache o Nginx, con il suo PHP) e per i terminali dell'editor aperti da adesso. Una versione da scaricare si scarica appena scelta.",
         )}
       </p>
       {data !== null && activeTools.length === 0 && inactiveTools.length === 0 && (

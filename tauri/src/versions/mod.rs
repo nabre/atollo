@@ -56,7 +56,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde::Serialize;
 
-use crate::fsx::write_atomic;
+use crate::fsx::{read_text, write_atomic};
 use crate::kit::Kit;
 use crate::setup::catalog::{Catalog, Component};
 
@@ -233,7 +233,7 @@ pub fn saved(kit: &Kit, c: &Component) -> Vec<Line> {
 
 /// The full version written in a line's folder.
 fn version_in(dir: &Path) -> Option<String> {
-    fs::read_to_string(dir.join(VERSION_FILE))
+    read_text(&dir.join(VERSION_FILE))
         .ok()
         .map(|v| v.trim().to_owned())
         .filter(|v| !v.is_empty())

@@ -3,10 +3,12 @@
 //!
 //! - every action runs in a job of its own, nested in the app's: stopping it
 //!   ends the whole tree (npm → node → esbuild…), closing the app ends all;
-//! - commands go through `cmd.exe /d /s /c` with the kit's environment plus
-//!   `PORT`, `ROCKET_PORT`, `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
+//! - commands go through `cmd.exe /d /s /c` (`/bin/sh -c` on macOS and
+//!   Linux, `jobs::shell_command`) with the kit's environment plus
+//!   `PORT`, `ROCKET_PORT`, `DB_PORT` (its MariaDB database), `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
 //!   action runs this exe as a file server (`Dev-Kit.exe serve`), an
-//!   `apache` action the kit's httpd with a configuration of the project;
+//!   `apache` action the kit's httpd with a configuration of the project,
+//!   `nginx` and `caddy` actions the same with their server and PHP;
 //! - web actions keep their port from one start to the next (bookmarks,
 //!   cookies, localStorage stay valid): 7100-7999, remembered in
 //!   `data\projects\<project>\ports.json`, or the one the user locked;
@@ -17,7 +19,6 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Read;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, TcpStream};
-use std::os::windows::process::CommandExt;
 use std::path::Path;
 use std::process::{Child, Stdio};
 use std::sync::{Arc, LazyLock, Mutex, PoisonError};
@@ -100,20 +101,28 @@ struct Entry {
     pool: Option<String>,
 }
 
-/// How «Avvia» serves an Apache or Nginx site.
+/// The `server` of a site in `panel.json` that keeps its own httpd/nginx
+/// instead of a pool; never the id of a server profile.
+pub const DEDICATED_SERVER: &str = "dedicated";
+
+/// How «Avvia» serves an Apache, Nginx or Caddy site.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SiteMode {
-    /// Its own httpd/nginx on the action's port (also `server` "auto").
+    /// Its own httpd/nginx on the action's port: any other action, or a
+    /// site whose `server` is [`DEDICATED_SERVER`].
     Dedicated,
-    /// The shared pool (manual profile) chosen in `panel.json` (`server`).
+    /// The automatic pool of the project's lines (engine, server line, PHP
+    /// line), started or reloaded (D-101): no `server`, or `auto`.
+    Auto,
+    /// The shared pool chosen in `panel.json` (`server`).
     Pool(String),
 }
 
-/// A site assigned to a manual server profile is served by that pool;
-/// everything else (no `server`, `auto`, not an Apache/Nginx site) runs on
-/// its own.
+/// A site assigned to a server profile is served by that pool, one with no
+/// `server` (or `auto`) by the automatic pool of its lines, one marked
+/// `dedicated` (and every action that is not an Apache/Nginx site) on its own.
 pub fn site_mode(action: &Action) -> SiteMode {
-    if action.apache_dir.is_none() && action.nginx_dir.is_none() {
+    if action.web_server_dir().is_none() {
         return SiteMode::Dedicated;
     }
     match action
@@ -122,8 +131,9 @@ pub fn site_mode(action: &Action) -> SiteMode {
         .map(str::trim)
         .filter(|s| !s.is_empty() && *s != "auto")
     {
+        Some(DEDICATED_SERVER) => SiteMode::Dedicated,
         Some(id) => SiteMode::Pool(id.to_owned()),
-        None => SiteMode::Dedicated,
+        None => SiteMode::Auto,
     }
 }
 
@@ -481,9 +491,16 @@ impl Runner {
         };
 
         let job = Job::new()?;
+        // The php-cgi of a project's Nginx, watched with the server.
+        let mut php: Option<Child> = None;
+        // The FastCGI server of a project's Caddy, kept until the action
+        // ends: php-fpm's private socket folder goes with its last copy.
+        let mut fcgi_kept: Option<crate::projects::fastcgi::FastCgi> = None;
         let (mut cmd, shown) = if let Some(folder) = &action.static_dir {
             let root = detect::inside_dir(&cwd, folder)?;
-            let exe = std::env::current_exe()?;
+            // The AppImage, not its inner program: `kit_command` clears
+            // APPIMAGE, and the image's mount is not this program's to keep.
+            let exe = crate::kit::app_exe().ok_or_else(|| anyhow!("current exe"))?;
             let mut cmd = jobs::kit_command(&exe, env);
             cmd.arg("serve")
                 .arg(&root)
@@ -512,15 +529,19 @@ impl Runner {
         } else if let Some(folder) = &action.nginx_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             // php-cgi lives in the action's job: stopping the action ends it too.
-            let fcgi_port = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job)
-                .map(|(port, _php)| port);
+            let fcgi = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job).map(
+                |(fcgi, child)| {
+                    php = Some(child);
+                    fcgi
+                },
+            );
             let cmd = crate::projects::nginx::command(
                 &self.kit,
                 id,
                 dir,
                 &root,
                 port.unwrap_or(PORT_FROM),
-                fcgi_port,
+                fcgi.as_ref(),
                 lan,
                 &action.domains,
                 &action.aliases,
@@ -530,12 +551,43 @@ impl Runner {
                 cmd,
                 format!("nginx.exe -c data\\projects\\{id}\\nginx\\nginx.conf ({folder})"),
             )
+        } else if let Some(folder) = &action.caddy_dir {
+            let root = detect::inside_dir(&cwd, folder)?;
+            // Its PHP (php-cgi, or php-fpm off Windows) lives in the action's
+            // job too, watched with the server.
+            let run_dir = crate::projects::caddy::dir(&self.kit, id)?;
+            let fcgi = crate::projects::fastcgi::spawn_fastcgi_if_present(
+                &self.kit,
+                env,
+                &job,
+                &run_dir,
+                &format!("project {id}"),
+            )
+            .map(|(fcgi, child)| {
+                php = Some(child);
+                fcgi
+            });
+            // php-fpm's socket folder lives as long as the action.
+            fcgi_kept = fcgi.clone();
+            let cmd = crate::projects::caddy::command(
+                &self.kit,
+                id,
+                dir,
+                &root,
+                port.unwrap_or(PORT_FROM),
+                fcgi.as_ref(),
+                lan,
+                &action.domains,
+                &action.aliases,
+                env,
+            )?;
+            (
+                cmd,
+                format!("caddy run --config data/projects/{id}/caddy/Caddyfile ({folder})"),
+            )
         } else {
             let command = listen(&action.command);
-            let system_root = env.get("SystemRoot").unwrap_or(r"C:\Windows");
-            let mut cmd = jobs::kit_command(Path::new(system_root).join(r"System32\cmd.exe"), env);
-            cmd.raw_arg(format!("/d /s /c \"{command}\""));
-            (cmd, command)
+            (jobs::shell_command(&command, env), command)
         };
         cmd.current_dir(&cwd)
             .env("BROWSER", "none")
@@ -547,6 +599,25 @@ impl Runner {
         if let Some(p) = port {
             cmd.env("PORT", p.to_string())
                 .env("ROCKET_PORT", p.to_string());
+        }
+        // The port of the MySQL or MariaDB version its database is on
+        // (D-102), unless a `.env` sets another one: dotenv loaders
+        // keep a variable already there, and the user's own port would be
+        // lost.
+        if let Some(p) = crate::db::services::project_db_port(&self.kit, id) {
+            let p = p.to_string();
+            let own = [dir, cwd.as_path()]
+                .into_iter()
+                .filter_map(|d| dotenv_value(d, "DB_PORT"))
+                .any(|v| v != p);
+            if !own {
+                cmd.env("DB_PORT", p);
+                // `mysql` and `mariadb` of its scripts log in on that
+                // version too (`MYSQL_HOME`, `DEVKIT_MYSQL_CNF`).
+                for (name, value) in crate::db::services::project_client_env(&self.kit, id) {
+                    cmd.env(name, value);
+                }
+            }
         }
         for (k, v) in &action.env {
             cmd.env(k, listen(v));
@@ -572,8 +643,12 @@ impl Runner {
             end: None,
             code: None,
             pid: None,
-            skipped_aliases: if action.apache_dir.is_some() || action.nginx_dir.is_some() {
+            skipped_aliases: if action.nginx_dir.is_some() {
+                crate::projects::alias::skipped_nginx(dir, &self.kit.projects(), &action.aliases)
+            } else if action.apache_dir.is_some() {
                 crate::projects::alias::skipped(dir, &self.kit.projects(), &action.aliases)
+            } else if action.caddy_dir.is_some() {
+                crate::projects::caddy::skipped_aliases(dir, &self.kit.projects(), &action.aliases)
             } else {
                 Vec::new()
             },
@@ -657,7 +732,11 @@ impl Runner {
         }
         let (me, key2, lang2) = (Arc::clone(self), key.clone(), lang.to_owned());
         std::thread::spawn(move || {
-            let code = child.wait().ok().and_then(|s| s.code());
+            let _fcgi = fcgi_kept;
+            let code = match php {
+                Some(php) => me.wait_with_php(&key2, &mut child, php, &lang2),
+                None => child.wait().ok().and_then(|s| s.code()),
+            };
             for r in readers {
                 let _ = r.join();
             }
@@ -765,6 +844,11 @@ impl Runner {
 
     /// `scan`: look for the address a web server prints (not in the app's
     /// own lines, which may hold one in the command).
+    /// A line of the kit (`[NEXKORA] …`) in the log of the run `key`.
+    pub fn note(&self, key: &str, text: &str) {
+        self.append(key, vec![format!("[NEXKORA] {text}")], false);
+    }
+
     fn append(&self, key: &str, lines: Vec<String>, scan: bool) {
         {
             let mut entries = self.entries();
@@ -864,6 +948,57 @@ impl Runner {
         (self.notify)(Event::State(info));
     }
 
+    /// Waits for a project's Nginx (`child`) and its `php` (php-cgi). When
+    /// php-cgi ends first the action is stopped and ends in error, never
+    /// left running with 502 for every `.php` (BUG-V3-01). The server's exit
+    /// code, `None` when it was stopped for its php-cgi.
+    fn wait_with_php(
+        &self,
+        key: &str,
+        child: &mut Child,
+        mut php: Child,
+        lang: &str,
+    ) -> Option<i32> {
+        loop {
+            if let Ok(Some(status)) = child.try_wait() {
+                return status.code();
+            }
+            if let Ok(Some(status)) = php.try_wait() {
+                let job = {
+                    let mut entries = self.entries();
+                    entries
+                        .get_mut(key)
+                        .filter(|e| !e.stopped)
+                        .and_then(|e| e.job.take())
+                };
+                // Stopped by the user: the job already ended both.
+                let Some(job) = job else {
+                    return child.wait().ok().and_then(|s| s.code());
+                };
+                let code = status
+                    .code()
+                    .map_or_else(|| "?".to_owned(), |c| c.to_string());
+                self.append(
+                    key,
+                    vec![format!(
+                        "[!] {}",
+                        tr(
+                            lang,
+                            "php-cgi terminato (codice {0}): server fermato",
+                            &[&code]
+                        )
+                    )],
+                    false,
+                );
+                // Closing the job's last handle ends the server too.
+                drop(job);
+                let _ = child.wait();
+                return None;
+            }
+            std::thread::sleep(Duration::from_millis(250));
+        }
+    }
+
     fn finish(&self, key: &str, code: Option<i32>, lang: &str) {
         let info = {
             let mut entries = self.entries();
@@ -890,9 +1025,18 @@ impl Runner {
         (self.notify)(Event::State(info));
     }
 
+    /// The pool serving the running action `key`, with its project and
+    /// action ids (`None`: not served by a pool, or not running).
+    pub fn pooled(&self, key: &str) -> Option<(String, String, String)> {
+        let entries = self.entries();
+        let e = entries.get(key)?;
+        let pool = e.pool.clone().filter(|_| e.info.state == State::Running)?;
+        Some((pool, e.info.project.clone(), e.info.action.clone()))
+    }
+
     /// Stops an action and everything it started. An action served by a
-    /// shared pool is only marked stopped: the pool serves other projects
-    /// too and is stopped from the "Server Web" page.
+    /// shared pool is only marked stopped here: the caller takes its site
+    /// out of the pool (`WebServers::detach`).
     pub fn stop(&self, key: &str) {
         let (job, unpooled) = {
             let mut entries = self.entries();
@@ -1008,6 +1152,25 @@ impl Runner {
 
 fn tr(lang: &str, source: &str, args: &[&str]) -> String {
     crate::i18n::t(lang, source, args)
+}
+
+/// The value of `key` in the `.env` of `dir` (`KEY=value`, `export KEY=`,
+/// quotes taken off), when set there.
+pub(crate) fn dotenv_value(dir: &Path, key: &str) -> Option<String> {
+    let text = crate::os::safe_path::read_text(dir, &dir.join(".env"))?;
+    text.lines().rev().find_map(|line| {
+        let line = line.trim();
+        let line = line.strip_prefix("export ").unwrap_or(line);
+        let (k, v) = line.split_once('=')?;
+        (!k.starts_with('#') && k.trim() == key).then(|| {
+            let v = v.trim();
+            v.strip_prefix('"')
+                .and_then(|v| v.strip_suffix('"'))
+                .or_else(|| v.strip_prefix('\'').and_then(|v| v.strip_suffix('\'')))
+                .unwrap_or(v)
+                .to_owned()
+        })
+    })
 }
 
 /// A command (or a variable) found by the app listens on 127.0.0.1; with

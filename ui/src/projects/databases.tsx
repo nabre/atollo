@@ -1,23 +1,28 @@
 // The Database section of a project's page: its own database and user on
 // the kit's servers, written in .env, and their copies.
-import { useState } from "react";
-import { VscCode } from "react-icons/vsc";
+import { useRef, useState } from "react";
+import { VscCloudDownload, VscCode } from "react-icons/vsc";
 import type { ProjectInfo } from "../api";
-import { useAction } from "../hooks";
+import { useAction, useSubscription } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
 import { VscArrowLeft } from "react-icons/vsc";
 import {
+  onSetup,
   projectDbCreate,
+  projectDbLine,
   projectEnvApply,
   projectEnvPreview,
+  versionsAdd,
+  versionsInstall,
+  type DbVersions,
   type EnvChange,
   type ProjectDatabases,
   type ProjectDb,
 } from "../api";
 import { SecretField } from "../databases";
-import { DatabaseCopies } from "../backups";
-import { DataTable, EditorSection, Notice, Properties } from "../workbench";
+import { DatabaseCopies } from "../databases";
+import { DataTable, EditorSection, Notice, Properties, Select } from "../workbench";
 import { COMPONENT_NAMES } from "./needs";
 
 function EnvPreview({
@@ -97,6 +102,102 @@ function EnvPreview({
   );
 }
 
+/** The version of the server for the project's database, when more than
+ * one is installed (D-102): each runs on its own port. */
+function DbVersionSelect({
+  project,
+  engine,
+  versions,
+  hasDb,
+  onChanged,
+}: {
+  project: string;
+  engine: ProjectDb["engine"];
+  versions: DbVersions | undefined;
+  hasDb: boolean;
+  onChanged: () => void;
+}) {
+  const { busy, error, run } = useAction(onChanged);
+  // After "Install", the section is read again when the preparation ends.
+  const installing = useRef<"start" | "run" | null>(null);
+  useSubscription(onSetup, (s) => {
+    if (installing.current === "start" && s.running) installing.current = "run";
+    else if (installing.current === "run" && !s.running) {
+      installing.current = null;
+      onChanged();
+    }
+  });
+  // The version chosen for the project and then uninstalled: start and
+  // creation would fail with "not installed".
+  const missing = versions?.chosen != null && !versions.lines.includes(versions.chosen) ? versions.chosen : null;
+  if (!versions || (versions.lines.length < 2 && missing === null)) return null;
+  const id = `pdb-line-${engine}`;
+  const name = COMPONENT_NAMES[engine] ?? engine;
+  return (
+    <div className="mb-3 space-y-1">
+      <label htmlFor={id} className="block font-semibold">
+        {t("Versione del server")}
+      </label>
+      {missing !== null && (
+        <Notice tone="warning">
+          <div className="space-y-2">
+            <p>
+              {hasDb
+                ? t(
+                    "{0} {1} non è installata: il database del progetto è su questa versione, che non si avvia. Installala, o scegli un'altra versione (database e utente si creano anche lì, vuoti).",
+                    name,
+                    missing,
+                  )
+                : t(
+                    "{0} {1} non è installata: installala, o scegli un'altra versione per il database del progetto.",
+                    name,
+                    missing,
+                  )}
+            </p>
+            <ActionButton
+              icon={VscCloudDownload}
+              label={t("Installa {0} {1}", name, missing)}
+              small
+              busy={busy === "install"}
+              onClick={() => {
+                run("install", async () => {
+                  installing.current = "start";
+                  await (versions.lines.length === 0 ? versionsInstall : versionsAdd)(engine, missing);
+                });
+              }}
+            />
+          </div>
+        </Notice>
+      )}
+      <p className="text-vsc-desc">
+        {hasDb
+          ? t(
+              "Ogni versione ha la sua porta e i suoi dati: cambiandola, database e utente si creano anche sulla nuova, vuoti (i dati si portano con una copia).",
+            )
+          : t("Ogni versione ha la sua porta e i suoi dati.")}
+      </p>
+      <Select
+        id={id}
+        value={versions.chosen ?? ""}
+        disabled={busy !== null}
+        onChange={(line) => {
+          if (line === missing) return;
+          run("line", async () => {
+            await projectDbLine(project, engine, line === "" ? null : line);
+          });
+        }}
+        options={[
+          { value: "", label: t("Quella del server ({0})", versions.server ?? "") },
+          ...versions.lines.map((l) => ({ value: l, label: l })),
+          ...(missing !== null ? [{ value: missing, label: t("{0} (non installata)", missing) }] : []),
+        ]}
+        className="w-48"
+      />
+      <ErrorLine error={error} />
+    </div>
+  );
+}
+
 export function Databases({
   p,
   dbs,
@@ -121,6 +222,13 @@ export function Databases({
             title={COMPONENT_NAMES[engine] ?? engine}
             actions={used ? <span className="text-[12px] text-vsc-desc">{t("usato dal progetto")}</span> : undefined}
           >
+            <DbVersionSelect
+              project={p.id}
+              engine={engine}
+              versions={dbs.versions[engine]}
+              hasDb={db !== undefined}
+              onChanged={onChanged}
+            />
             {db ? (
               <div className="space-y-3">
                 <Properties

@@ -9,7 +9,8 @@
 //! folder (as GNU tar does), and only if the target is relative, has no `\`
 //! or `:`, and resolves inside the target folder through real folders only
 //! (so a chain of links cannot climb out); a hard link is created only to a
-//! regular file already extracted there. Other links are skipped. File
+//! regular file already extracted there. Other links are skipped. On a disk
+//! without links (exFAT, FAT) the target is copied in place of the link. File
 //! times are not restored (exFAT rejects them; `tar -m` in the kit). Swaps are atomic from the user's point of view: the
 //! new folder is complete before the old one moves, and a failure puts the
 //! old one back.
@@ -185,29 +186,75 @@ fn extract_zip(archive: &Path, dest: &Path) -> Result<()> {
         }
     }
     #[cfg(unix)]
-    for (path, target) in links {
-        create_safe_symlink(dest, &path, &target)?;
-    }
+    finish_links_unix(dest, links)?;
     Ok(())
 }
 
-/// Creates the symbolic link `link_path -> link_target` if the target
-/// resolves inside `dest` the way the kernel resolves it: every name crossed
-/// on the way (all but the last) must be a real folder, not a link, so a
-/// link made earlier (`t -> .`, then `s -> t/..`) cannot be used to climb
-/// out. Called after every file and folder exists; other targets are skipped.
-#[cfg(unix)]
-fn create_safe_symlink(dest: &Path, link_path: &Path, link_target: &str) -> Result<()> {
-    if link_target.is_empty() || link_target.starts_with('/') || link_target.contains(['\\', ':']) {
-        return Ok(());
+/// The file system refuses symbolic links: exFAT and FAT answer `EPERM`
+/// (Linux) or `ENOTSUP`/`EOPNOTSUPP` (macOS). Any other error is a real one.
+#[cfg_attr(not(unix), allow(dead_code))]
+pub(crate) fn links_unsupported(e: &io::Error) -> bool {
+    #[cfg(unix)]
+    if let Some(code) = e.raw_os_error() {
+        return code == libc::EPERM || code == libc::ENOTSUP || code == libc::EOPNOTSUPP;
     }
-    let Some(parent) = link_path.parent() else {
-        return Ok(());
-    };
-    let Ok(rel_parent) = parent.strip_prefix(dest) else {
-        return Ok(());
-    };
-    prepare_dir(dest, parent)?;
+    e.kind() == io::ErrorKind::Unsupported
+}
+
+/// The hard link `path` of a tar entry to `target`, a regular file already
+/// checked to be inside the folder with no link on the way. Where the file
+/// system has no hard links ([`links_unsupported`]: exFAT, FAT) the file is
+/// copied; any other error stops the extraction. `make` creates the link
+/// (`fs::hard_link`; the tests inject a refusal).
+#[cfg_attr(not(unix), allow(dead_code))]
+fn hard_link_or_copy(
+    target: &Path,
+    path: &Path,
+    make: impl FnOnce(&Path, &Path) -> io::Result<()>,
+) -> Result<()> {
+    match make(target, path) {
+        Ok(()) => Ok(()),
+        Err(e) if links_unsupported(&e) => {
+            fs::copy(target, path).with_context(|| path.display().to_string())?;
+            Ok(())
+        }
+        Err(e) => Err(e).with_context(|| path.display().to_string()),
+    }
+}
+
+/// `link_target`, from the folder `rel_parent` (relative to the extraction
+/// folder), can only stay inside it by its text alone: not empty, not
+/// absolute, no `\` or drive, never climbing above the top. What lies on the
+/// way is checked later ([`resolve_inside`]); a target failing this never
+/// resolves, whatever is extracted.
+#[cfg_attr(not(unix), allow(dead_code))]
+fn lexically_inside(rel_parent: &Path, link_target: &str) -> bool {
+    if link_target.is_empty() || link_target.starts_with('/') || link_target.contains(['\\', ':']) {
+        return false;
+    }
+    let mut depth = rel_parent.components().count();
+    for step in link_target.split('/') {
+        match step {
+            "" | "." => {}
+            ".." if depth == 0 => return false,
+            ".." => depth -= 1,
+            _ => depth += 1,
+        }
+    }
+    true
+}
+
+/// Where the link `link_path -> link_target` lands, relative to `dest`, if
+/// it resolves inside `dest` the way the kernel resolves it: every name
+/// crossed on the way (all but the last) must be a real folder, not a link,
+/// so a link made earlier (`t -> .`, then `s -> t/..`) cannot be used to
+/// climb out. `None` for an absolute target or one outside `dest`.
+#[cfg_attr(not(unix), allow(dead_code))]
+fn resolve_inside(dest: &Path, link_path: &Path, link_target: &str) -> Option<PathBuf> {
+    if link_target.is_empty() || link_target.starts_with('/') || link_target.contains(['\\', ':']) {
+        return None;
+    }
+    let rel_parent = link_path.parent()?.strip_prefix(dest).ok()?;
     let mut steps: Vec<&std::ffi::OsStr> = rel_parent.iter().collect();
     steps.extend(
         link_target
@@ -219,7 +266,7 @@ fn create_safe_symlink(dest: &Path, link_path: &Path, link_target: &str) -> Resu
     for (i, step) in steps.iter().enumerate() {
         if *step == ".." {
             if !resolved.pop() {
-                return Ok(()); // Above `dest`.
+                return None; // Above `dest`.
             }
             continue;
         }
@@ -227,16 +274,231 @@ fn create_safe_symlink(dest: &Path, link_path: &Path, link_target: &str) -> Resu
         if i + 1 < steps.len() {
             match fs::symlink_metadata(dest.join(&resolved)) {
                 Ok(meta) if meta.is_dir() => {}
-                _ => return Ok(()), // A link, a file or nothing: not followed.
+                _ => return None, // A link, a file or nothing: not followed.
             }
         }
     }
-    match fs::symlink_metadata(link_path) {
-        Ok(meta) if meta.is_dir() => return Ok(()),
-        Ok(_) => fs::remove_file(link_path)?,
-        Err(_) => {}
+    Some(resolved)
+}
+
+/// Creates the symbolic links `(path, target)` collected while extracting or
+/// copying into `dest`, after every file and folder exists. A link whose
+/// target is outside `dest` (or crosses another link) is skipped. Where the
+/// file system has no links ([`links_unsupported`]: exFAT, FAT) the target
+/// is copied in place of the link, in a second pass, so a target that is
+/// itself such a copy is complete first; a link whose way crossed such a
+/// copy is then resolved again. `make` creates one link
+/// (`symlink(target, path)`; the tests inject a refusal). Returns the links
+/// skipped, for a warning.
+#[cfg_attr(not(unix), allow(dead_code))]
+fn finish_links(
+    dest: &Path,
+    links: Vec<(PathBuf, String)>,
+    make: impl FnMut(&str, &Path) -> io::Result<()>,
+) -> Result<Vec<String>> {
+    finish_links_within(dest, links, make, COPY_EXTRA)
+}
+
+/// Bytes the copies in place of links may add beyond [`COPY_FACTOR`] times
+/// the tree.
+const COPY_EXTRA: u64 = 256 << 20;
+/// Links to folders nested in each other (`d1/a -> ../d0`, `d2/a -> ../d1`,
+/// ...) double a small archive at every step once each is a copy. The
+/// copies may add this many times the tree as it was before them (plus
+/// [`COPY_EXTRA`]), far above a real package: a macOS framework's
+/// `Versions/Current` adds it once.
+const COPY_FACTOR: u64 = 4;
+
+/// Bytes of the files under `path`, links not followed.
+#[cfg_attr(not(unix), allow(dead_code))]
+fn tree_size(path: &Path) -> u64 {
+    let Ok(meta) = fs::symlink_metadata(path) else {
+        return 0;
+    };
+    if !meta.is_dir() {
+        return meta.len();
     }
-    std::os::unix::fs::symlink(link_target, link_path)?;
+    fs::read_dir(path)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| tree_size(&e.path()))
+        .sum()
+}
+
+/// [`finish_links`], with the copies in place of links limited to
+/// [`COPY_FACTOR`] times the tree plus `extra` bytes.
+#[cfg_attr(not(unix), allow(dead_code))]
+fn finish_links_within(
+    dest: &Path,
+    links: Vec<(PathBuf, String)>,
+    mut make: impl FnMut(&str, &Path) -> io::Result<()>,
+    extra: u64,
+) -> Result<Vec<String>> {
+    let mut skipped = Vec::new();
+    let mut copies: Vec<(PathBuf, PathBuf)> = Vec::new();
+    // Links whose way crosses a name that is not a real folder (yet).
+    let mut unresolved: Vec<(PathBuf, String)> = Vec::new();
+    let mut refused = false;
+    for (path, target) in links {
+        let Some(parent) = path.parent() else {
+            continue;
+        };
+        // Checked before any folder is made for it: a target that can never
+        // stay inside, or a parent reached through a link, is skipped as
+        // the extraction always did, never an error.
+        let inside = parent
+            .strip_prefix(dest)
+            .is_ok_and(|rel| lexically_inside(rel, &target));
+        if !inside || no_link_on_the_way(dest, parent).is_err() {
+            skipped.push(format!("{} -> {target}", path.display()));
+            continue;
+        }
+        prepare_dir(dest, parent)?;
+        let Some(resolved) = resolve_inside(dest, &path, &target) else {
+            unresolved.push((path, target));
+            continue;
+        };
+        match fs::symlink_metadata(&path) {
+            Ok(meta) if meta.is_dir() => continue, // A real folder stays.
+            Ok(_) => fs::remove_file(&path)?,
+            Err(_) => {}
+        }
+        match make(&target, &path) {
+            Ok(()) => {}
+            Err(e) if links_unsupported(&e) => {
+                refused = true;
+                copies.push((path, dest.join(resolved)));
+            }
+            Err(e) => return Err(e).with_context(|| path.display().to_string()),
+        }
+    }
+    let mut budget = if refused {
+        tree_size(dest)
+            .saturating_mul(COPY_FACTOR)
+            .saturating_add(extra)
+    } else {
+        0
+    };
+    loop {
+        // A source holding a link not resolved yet waits for it, so the
+        // copy of a folder (`d -> a`) also gets `a/x`, made only below.
+        let waiting: Vec<PathBuf> = unresolved.iter().map(|(p, _)| p.clone()).collect();
+        copy_in_place_of_links(&mut copies, &waiting, &mut budget, &mut skipped)?;
+        // Without links, a way through a link (`x -> lib64/foo`, with
+        // `lib64 -> lib`) crosses a real folder once that link is a copy:
+        // resolved again, by the same rules, until nothing more resolves.
+        let before = unresolved.len();
+        if refused {
+            unresolved.retain(|(path, target)| match resolve_inside(dest, path, target) {
+                Some(resolved) if fs::symlink_metadata(path).is_err() => {
+                    copies.push((path.clone(), dest.join(resolved)));
+                    false
+                }
+                _ => true,
+            });
+        }
+        if unresolved.len() != before {
+            continue;
+        }
+        // Nothing ready and nothing more resolves: links that point at
+        // each other, or a source holding a link that never resolves. One
+        // copy goes first, as it is, and the rest is tried again.
+        let there = |p: &Path| fs::symlink_metadata(p).is_ok();
+        let first = copies
+            .iter()
+            .position(|(path, s)| {
+                there(s) && !copies.iter().any(|(p, _)| p != path && p.starts_with(s))
+            })
+            .or_else(|| copies.iter().position(|(_, s)| there(s)));
+        match first {
+            Some(i) => {
+                let (path, source) = copies.remove(i);
+                copy_one(&path, &source, &mut budget, &mut skipped)?;
+            }
+            None => break,
+        }
+    }
+    skipped.extend(
+        copies
+            .drain(..)
+            .map(|(path, source)| format!("{} -> {}", path.display(), source.display())),
+    );
+    skipped.extend(
+        unresolved
+            .into_iter()
+            .map(|(path, target)| format!("{} -> {target}", path.display())),
+    );
+    Ok(skipped)
+}
+
+/// The copies of [`finish_links`] in place of the links `(path, source)`
+/// that are ready: the source exists and holds no copy still to make (a
+/// link to a link, a folder with links) and no link still `waiting` to be
+/// resolved. The others stay in `copies`. `budget`: see [`copy_one`].
+#[cfg_attr(not(unix), allow(dead_code))]
+fn copy_in_place_of_links(
+    copies: &mut Vec<(PathBuf, PathBuf)>,
+    waiting: &[PathBuf],
+    budget: &mut u64,
+    skipped: &mut Vec<String>,
+) -> Result<()> {
+    loop {
+        let ready = copies.iter().position(|(path, source)| {
+            fs::symlink_metadata(source).is_ok()
+                && !copies
+                    .iter()
+                    .any(|(p, _)| p != path && p.starts_with(source))
+                && !waiting.iter().any(|w| w.starts_with(source))
+        });
+        let Some(i) = ready else {
+            return Ok(());
+        };
+        let (path, source) = copies.remove(i);
+        copy_one(&path, &source, budget, skipped)?;
+    }
+}
+
+/// One copy of [`copy_in_place_of_links`]: the file or folder `source` at
+/// `path`, in place of a link. Its bytes come out of `budget` first; a copy
+/// beyond it stops the extraction, nothing of it written.
+#[cfg_attr(not(unix), allow(dead_code))]
+fn copy_one(path: &Path, source: &Path, budget: &mut u64, skipped: &mut Vec<String>) -> Result<()> {
+    let meta = fs::symlink_metadata(source)?;
+    if meta.file_type().is_symlink() || path.starts_with(source) {
+        // A link not followed, or a folder that would hold itself.
+        skipped.push(format!("{} -> {}", path.display(), source.display()));
+        return Ok(());
+    }
+    let size = tree_size(source);
+    if size > *budget {
+        bail!(
+            "the file system has no links, and copying them in their place would take \
+             too much space: {} -> {}",
+            path.display(),
+            source.display()
+        );
+    }
+    *budget -= size;
+    if meta.is_dir() {
+        copy_tree(source, path).with_context(|| path.display().to_string())?;
+    } else {
+        fs::copy(source, path).with_context(|| path.display().to_string())?;
+    }
+    Ok(())
+}
+
+/// [`finish_links`] with real links, the skipped ones in the log.
+#[cfg(unix)]
+fn finish_links_unix(dest: &Path, links: Vec<(PathBuf, String)>) -> Result<()> {
+    let skipped = finish_links(dest, links, |target, path| {
+        std::os::unix::fs::symlink(target, path)
+    })?;
+    for link in skipped {
+        crate::log::warn(&format!(
+            "link not made (outside the folder, or through another link): {link}"
+        ));
+    }
     Ok(())
 }
 
@@ -309,7 +571,13 @@ fn extract_tar_stream<R: Read>(reader: R, dest: &Path) -> Result<()> {
                             if fs::symlink_metadata(&path).is_ok_and(|m| !m.is_dir()) {
                                 fs::remove_file(&path)?;
                             }
-                            let _ = fs::hard_link(&target_path, &path);
+                            hard_link_or_copy(&target_path, &path, |t, p| fs::hard_link(t, p))?;
+                        } else {
+                            crate::log::warn(&format!(
+                                "hard link not made (not a file inside the folder): {} -> {}",
+                                path.display(),
+                                target.display()
+                            ));
                         }
                     }
                 }
@@ -319,9 +587,7 @@ fn extract_tar_stream<R: Read>(reader: R, dest: &Path) -> Result<()> {
         }
     }
     #[cfg(unix)]
-    for (path, target) in links {
-        create_safe_symlink(dest, &path, &target)?;
-    }
+    finish_links_unix(dest, links)?;
     Ok(())
 }
 
@@ -586,19 +852,43 @@ fn staged_path(dest: &Path) -> PathBuf {
 
 const STAGED: &str = ".devkit-new";
 
-/// Copies the folder `from` into `to` (created). Links are skipped, as in
-/// the extraction; hard links become separate files.
+/// Copies the folder `from` into `to` (created); hard links become separate
+/// files. On Unix a symbolic link is made again with the same relative
+/// target when that stays inside the copy (the rules of the extraction,
+/// [`finish_links`]): `bin/python3 -> python3.12` of a tree installed from
+/// a temporary folder on another disk. A link that leaves the tree is
+/// skipped with a warning; on a disk without links the target is copied.
+/// On Windows links are skipped, as in the extraction.
 pub fn copy_tree(from: &Path, to: &Path) -> io::Result<()> {
+    let mut links = Vec::new();
+    copy_entries(from, to, &mut links)?;
+    #[cfg(unix)]
+    finish_links_unix(to, links).map_err(io::Error::other)?;
+    Ok(())
+}
+
+/// The files and folders of `copy_tree`; the links to make in `links`
+/// (none on Windows).
+#[cfg_attr(not(unix), allow(clippy::only_used_in_recursion))]
+fn copy_entries(from: &Path, to: &Path, links: &mut Vec<(PathBuf, String)>) -> io::Result<()> {
     fs::create_dir_all(to)?;
     for entry in fs::read_dir(from)? {
         let entry = entry?;
         let kind = entry.file_type()?;
         let target = to.join(entry.file_name());
         if kind.is_symlink() {
+            #[cfg(unix)]
+            match fs::read_link(entry.path())?.to_str() {
+                Some(t) => links.push((target, t.to_owned())),
+                None => crate::log::warn(&format!(
+                    "link not copied (target not UTF-8): {}",
+                    entry.path().display()
+                )),
+            }
             continue;
         }
         if kind.is_dir() {
-            copy_tree(&entry.path(), &target)?;
+            copy_entries(&entry.path(), &target, links)?;
         } else {
             fs::copy(entry.path(), &target)?;
         }
@@ -607,7 +897,9 @@ pub fn copy_tree(from: &Path, to: &Path) -> io::Result<()> {
 }
 
 /// The files of `tree` (a folder or one file) with their sizes; links are
-/// skipped, as `copy_tree` does.
+/// not counted (`copy_tree` makes them again on Unix and skips them on
+/// Windows). On a disk without links their targets are copied too, so the
+/// count is short there by what they point at.
 fn sizes(tree: &Path) -> io::Result<Vec<(PathBuf, u64)>> {
     let meta = fs::symlink_metadata(tree)?;
     if !meta.is_dir() {

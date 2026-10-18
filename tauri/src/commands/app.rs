@@ -26,6 +26,12 @@ pub struct AppInfo {
     pub disk_fs: Option<&'static str>,
     /// `fixed`, `removable`, `remote` or `other`.
     pub disk_kind: Option<&'static str>,
+    /// The disk the kit's programs run from is mounted `noexec` (macOS and
+    /// Linux, D-105); `None` on Windows.
+    pub disk_noexec: Option<bool>,
+    /// The app's notice about the kit's disk, translated (noexec,
+    /// showexec, FAT32, exFAT); `None` on Windows or when all is well.
+    pub disk_note: Option<String>,
     /// The host's temporary folder when the programs' `TEMP` is in it;
     /// `None` when it is `data\tmp` in the kit.
     pub system_temp: Option<String>,
@@ -61,6 +67,9 @@ pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> 
             .collect(),
         disk_fs: kit.volume().map(|v| v.fs.as_str()),
         disk_kind: kit.volume().map(|v| v.drive.as_str()),
+        disk_noexec: (!crate::kit::Os::current().is_windows())
+            .then(|| crate::os::volume::kit_noexec(kit)),
+        disk_note: crate::os::volume::disk_notice(kit, state.lang()).map(|n| n.text),
         system_temp,
     })
 }
@@ -128,9 +137,9 @@ pub fn url_open<R: Runtime>(webview: Webview<R>, url: String) -> CmdResult<()> {
     open_in_browser(&url)
 }
 
-/// The PC's browser, through Explorer.
+/// The PC's browser.
 pub(super) fn open_in_browser(url: &str) -> CmdResult<()> {
-    crate::os::jobs::open_with_explorer(url).or_fail_chain("browser")
+    crate::os::jobs::open_url(url).or_fail_chain("browser")
 }
 
 /// `http://localhost:<port>/…` or `http://127.0.0.1:<port>/…` only.

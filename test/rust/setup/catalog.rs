@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::{tests::TempDir, Arch, Target};
 use std::collections::HashSet;
 
 #[test]
@@ -31,6 +31,17 @@ fn catalog_is_valid() {
     for c in catalog.all() {
         for n in &c.needs {
             assert!(ids.contains(n.as_str()), "{} needs unknown {n}", c.id);
+        }
+        for (t, needs) in &c.needs_by_target {
+            assert!(Target::parse(t).is_some(), "{}: needsByTarget {t}", c.id);
+            for n in needs {
+                assert!(
+                    ids.contains(n.as_str()),
+                    "{} needs unknown {n} on {t}",
+                    c.id
+                );
+                assert!(!c.needs.contains(n), "{}: {n} twice", c.id);
+            }
         }
     }
     // Always installed: the kit's shell and GitHub CLI only; the rest
@@ -77,6 +88,7 @@ fn choice_file_compatible_with_dev_kit() {
     // As written by nabre/dev-kit Save-ComponentChoice (plus a BOM and LF).
     let text =
         "\u{feff}# comment\napache=1\nphp=0\nrust=1\ngh=0\nunknown=1\nbad line\nkotlin = 1\nvscodium=1\n";
+    // Rust stays on: C and C++ is a need of Windows ARM64 only.
     let choice = Choice::parse(text, catalog);
     assert!(!choice.is_chosen("php"));
     assert!(!choice.is_chosen("apache"), "apache needs php");
@@ -117,6 +129,129 @@ fn dependencies_follow_both_ways() {
     assert!(!choice.is_chosen("git") && !choice.is_chosen("claude"));
     assert!(!catalog.is_locked("git") && catalog.is_locked("pwsh"));
     assert!(!catalog.is_locked("node"));
+}
+
+/// What a component needs on each target (D-108): C and C++ are
+/// `zig cc` on macOS and Linux, Rust links with llvm-mingw on Windows
+/// ARM64. Elsewhere nothing changes.
+#[test]
+fn needs_follow_the_target() {
+    let catalog = Catalog::get();
+    let needs =
+        |id: &str, t: Target| -> Vec<&str> { catalog.find(id).unwrap().needs_on(t).collect() };
+    let only = |ids: &[&str], t: Target| -> Vec<&str> {
+        catalog.needs_only_on(ids, t).into_iter().collect()
+    };
+    for t in Target::ALL {
+        let unix = t.is_unix();
+        assert_eq!(
+            needs("cc", t),
+            if unix { vec!["zig"] } else { vec![] },
+            "{t}"
+        );
+        let arm = t == Target::WIN32_ARM64;
+        assert_eq!(
+            needs("rust", t),
+            if arm { vec!["cc"] } else { vec![] },
+            "{t}"
+        );
+        assert_eq!(
+            catalog.find("rust").unwrap().needs_list_on(t).len(),
+            usize::from(arm)
+        );
+        // The same everywhere for the others.
+        assert_eq!(needs("kotlin", t), ["java"], "{t}");
+        assert_eq!(needs("claude", t), ["git"], "{t}");
+        let with: Vec<&str> = catalog.with_needs_on(&["rust"], t).into_iter().collect();
+        assert_eq!(
+            with,
+            if arm {
+                vec!["cc", "rust"]
+            } else {
+                vec!["rust"]
+            },
+            "{t}"
+        );
+        // What a run adds to the choice: the needs of this target only,
+        // never one of every target, nor the ids themselves.
+        assert_eq!(
+            only(&["cc"], t),
+            if unix { vec!["zig"] } else { vec![] },
+            "{t}"
+        );
+        assert_eq!(
+            only(&["cc", "zig"], t),
+            only(&["cc"], t),
+            "a chosen Zig is still a need of C and C++ on {t}"
+        );
+        assert!(only(&["kotlin", "claude"], t).is_empty(), "{t}");
+        assert!(only(&["zig"], t).is_empty(), "{t}");
+        assert_eq!(
+            only(&["rust"], t),
+            if arm { vec!["cc"] } else { vec![] },
+            "{t}"
+        );
+        // No cycle on any target: every chain ends.
+        for c in catalog.all() {
+            assert!(
+                !catalog
+                    .with_needs_on(&c.needs_on(t).collect::<Vec<_>>(), t)
+                    .contains(c.id.as_str()),
+                "{} needs itself on {t}",
+                c.id
+            );
+        }
+        // The system components need nothing per target: locked as before.
+        assert_eq!(catalog.locked_on(t), catalog.locked(), "{t}");
+    }
+}
+
+/// `components.txt` is one for every system the kit runs on (review of
+/// D-108): a need of one target never turns a component on or off in
+/// it. A Windows kit with C and C++ on and Zig off, read for Linux or
+/// macOS, keeps C and C++ on; ticking C and C++ does not save Zig.
+#[test]
+fn choice_ignores_the_needs_of_one_target() {
+    let catalog = Catalog::get();
+    let read = Choice::parse("cc=1\nzig=0\nrust=1\n", catalog);
+    assert!(read.is_chosen("cc") && !read.is_chosen("zig") && read.is_chosen("rust"));
+    assert_eq!(Choice::parse(&read.render(catalog), catalog), read);
+    let read = Choice::parse("cc=0\nrust=1\n", catalog);
+    assert!(read.is_chosen("rust") && !read.is_chosen("cc"));
+
+    let mut choice = Choice::parse("cc=0\nzig=0\nrust=0\n", catalog);
+    choice.set(catalog, "cc", true);
+    assert!(!choice.is_chosen("zig"), "cc does not save zig");
+    choice.set(catalog, "zig", true);
+    choice.set(catalog, "zig", false);
+    assert!(choice.is_chosen("cc"), "zig off keeps cc");
+    choice.set(catalog, "rust", true);
+    choice.set(catalog, "cc", false);
+    assert!(choice.is_chosen("rust"), "cc off keeps rust");
+    assert!(choice.chosen_ids(catalog).contains(&"rust"));
+    assert!(!choice.chosen_ids(catalog).contains(&"cc"));
+    // Dependencies of every target still follow both ways.
+    choice.set(catalog, "kotlin", true);
+    assert!(choice.is_chosen("java"));
+}
+
+/// A kit's choice is read as written, also on the first start.
+#[test]
+fn read_or_defaults_reads_the_kit() {
+    let tmp = TempDir::new("choice-target");
+    let catalog = Catalog::get();
+    for t in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(t.as_str()), t);
+        kit.prepare().unwrap();
+        assert_eq!(
+            Choice::read_or_defaults(&kit, catalog),
+            Choice::defaults(catalog)
+        );
+        let mut choice = Choice::defaults(catalog);
+        choice.set(catalog, "rust", true);
+        choice.write(&kit, catalog).unwrap();
+        assert_eq!(Choice::read_or_defaults(&kit, catalog), choice, "{t}");
+    }
 }
 
 #[test]
@@ -212,35 +347,50 @@ fn every_part_must_be_installed() {
     assert!(pnpm.key_paths(&kit)[1].starts_with(kit.data().join("npm-global")));
 }
 
+/// The server's layout on each target: `bin\codium-server.cmd` and
+/// `node.exe` on Windows, `bin/codium-server` and `node` elsewhere.
 #[test]
 fn editor_installed_means_the_files_started() {
+    use crate::kit::Target;
+
     let tmp = TempDir::new("catalog-editor");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    let dir = crate::editor::server_dir(&kit);
-    touch(&dir.join(r"bin\codium-server.cmd"));
-    assert!(!crate::editor::is_installed(&kit));
-    touch(&dir.join(r"out\server-main.js"));
-    assert!(!crate::editor::is_installed(&kit), "node.exe missing");
-    touch(&dir.join("node.exe"));
-    assert!(crate::editor::is_installed(&kit));
-    assert!(Catalog::get()
-        .find("vscodium-server")
-        .unwrap()
-        .is_installed(&kit));
+    for target in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
+        kit.prepare().unwrap();
+        let (launcher, node) = if target.is_windows() {
+            ("codium-server.cmd", "node.exe")
+        } else {
+            ("codium-server", "node")
+        };
+        let dir = crate::editor::server_dir(&kit);
+        touch(&dir.join("bin").join(launcher));
+        assert!(!crate::editor::is_installed(&kit), "{target}");
+        touch(&dir.join("out").join("server-main.js"));
+        assert!(
+            !crate::editor::is_installed(&kit),
+            "{target}: {node} missing"
+        );
+        touch(&dir.join(node));
+        assert!(crate::editor::is_installed(&kit), "{target}");
+        assert!(Catalog::get()
+            .find("vscodium-server")
+            .unwrap()
+            .is_installed(&kit));
+    }
 }
 
 #[test]
 fn shared_paths_go_with_the_last_owner() {
     let tmp = TempDir::new("catalog-shared");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    // PHP and Apache are Windows only (web_stack_is_windows_only).
+    let kit = Kit::at_target(tmp.0.clone(), crate::kit::Target::WIN32_X64);
     kit.prepare().unwrap();
     let catalog = Catalog::get();
     let (php, apache) = (
         catalog.find("php").unwrap(),
         catalog.find("apache").unwrap(),
     );
-    let vc = kit.apps().join(r"tools\vcruntime");
+    let vc = kit.apps().join("tools").join("vcruntime");
     for c in [php, apache] {
         for p in c.key_paths(&kit) {
             touch(&p);
@@ -269,15 +419,22 @@ fn shared_paths_go_with_the_last_owner() {
         .contains(&kit.apps().join("apache")));
 }
 
-/// Option C (BUG-23b, BUG-24a): PHP, Apache and Nginx are Windows only
-/// (Windows builds, php.ini and httpd.conf of Windows), so Adminer, which
-/// needs PHP, is too. Git stays everywhere: Claude Code needs it.
+/// Option C (BUG-23b, BUG-24a): Apache and Nginx are Windows only (Windows
+/// builds, httpd.conf of Windows). PHP (static-php-cli on macOS and Linux,
+/// D-112), phpMyAdmin on it and Caddy (D-111) are on every target. Git
+/// stays everywhere: Claude Code needs it.
 #[test]
 fn web_stack_is_windows_only() {
     use crate::kit::Target;
 
     let catalog = Catalog::get();
-    for id in ["php", "apache", "nginx", "adminer"] {
+    for id in ["php", "phpmyadmin", "caddy"] {
+        let c = catalog.find(id).unwrap();
+        for target in Target::ALL {
+            assert!(c.is_available_on(target), "{id} on {target}");
+        }
+    }
+    for id in ["apache", "nginx"] {
         let c = catalog.find(id).unwrap();
         for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
             assert!(c.is_available_on(target), "{id} on {target}");
@@ -299,13 +456,14 @@ fn web_stack_is_windows_only() {
     }
 }
 
-/// Asking for Adminer on Linux names the system, not ARM64.
+/// Asking for Apache on Linux names the system, not ARM64 (phpMyAdmin
+/// before D-112 made it available there).
 #[test]
-fn adminer_on_linux_names_the_system() {
+fn phpmyadmin_on_linux_names_the_system() {
     use crate::kit::Target;
     use crate::setup::runner::{plan, Options};
 
-    let tmp = TempDir::new("catalog-adminer-linux");
+    let tmp = TempDir::new("catalog-apache-linux");
     let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
     kit.prepare().unwrap();
     let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
@@ -319,7 +477,7 @@ fn adminer_on_linux_names_the_system() {
     };
     let catalog = Catalog::get();
     let opts = Options {
-        only: vec!["adminer".into()],
+        only: vec!["apache".into()],
         ..Options::default()
     };
     let e = plan(&ctx, catalog, &Choice::defaults(catalog), &opts)
@@ -327,8 +485,8 @@ fn adminer_on_linux_names_the_system() {
         .unwrap()
         .to_string();
     assert!(e.contains("linux-x64") && !e.contains("ARM64"), "{e}");
-    let msg = crate::commands::unavailable_msg("en", "Adminer", Target::LINUX_X64);
-    assert_eq!(msg, "Adminer is not available for linux-x64.");
+    let msg = crate::commands::unavailable_msg("en", "Apache", Target::LINUX_X64);
+    assert_eq!(msg, "Apache is not available for linux-x64.");
 }
 
 #[test]
@@ -339,8 +497,11 @@ fn multi_platform_availability_and_paths_across_targets() {
     let php = catalog.find("php").unwrap();
     assert!(php.is_available_on(Target::WIN32_X64));
     assert!(php.is_available_on(Target::WIN32_ARM64));
-    assert!(!php.is_available_on(Target::DARWIN_ARM64));
-    assert!(!php.is_available_on(Target::LINUX_X64));
+    assert!(php.is_available_on(Target::DARWIN_ARM64));
+    assert!(php.is_available_on(Target::LINUX_X64));
+    let apache = catalog.find("apache").unwrap();
+    assert!(!apache.is_available_on(Target::DARWIN_ARM64));
+    assert!(!apache.is_available_on(Target::LINUX_X64));
 
     let tex = catalog.find("tinytex").unwrap();
     assert!(tex.is_emulated_on(Target::WIN32_ARM64));
@@ -388,4 +549,148 @@ fn multi_platform_availability_and_paths_across_targets() {
     node.save_version(&kit_mac, "24.1.0").unwrap();
     assert_eq!(node.installed_version(&kit_win).as_deref(), Some("22.11.0"));
     assert_eq!(node.installed_version(&kit_mac).as_deref(), Some("24.1.0"));
+}
+
+/// D-108: a target with no build says why (Android on Linux ARM64; SQLite
+/// was there too until D-112), and nothing changes for the others.
+#[test]
+fn unavailable_targets_have_a_reason() {
+    use crate::kit::Target;
+
+    let catalog = Catalog::get();
+    let sqlite = catalog.find("sqlite").unwrap();
+    for t in Target::ALL {
+        assert!(sqlite.is_available_on(t), "sqlite on {t}");
+    }
+    for id in ["android"] {
+        let c = catalog.find(id).unwrap();
+        assert!(!c.is_available_on(Target::LINUX_ARM64), "{id}");
+        let reason = c.unavailable_reason(Target::LINUX_ARM64).unwrap();
+        assert!(reason.contains("Linux ARM64"), "{id}: {reason}");
+        for t in Target::ALL
+            .into_iter()
+            .filter(|t| *t != Target::LINUX_ARM64)
+        {
+            assert!(c.is_available_on(t), "{id} on {t}");
+            assert_eq!(c.unavailable_reason(t), None, "{id} on {t}");
+        }
+    }
+    // Outside `targets` or `noArm64`: not available, no reason of its own.
+    let apache = catalog.find("apache").unwrap();
+    assert!(!apache.is_available_on(Target::LINUX_X64));
+    assert_eq!(apache.unavailable_reason(Target::LINUX_X64), None);
+    let r = catalog.find("r").unwrap();
+    assert!(!r.is_available_on(Target::WIN32_ARM64));
+    assert_eq!(r.unavailable_reason(Target::WIN32_ARM64), None);
+
+    // Every key a target, every reason translated.
+    let i18n: BTreeMap<String, BTreeMap<String, String>> =
+        serde_json::from_str(include_str!("../../../tauri/i18n/catalog.json")).unwrap();
+    for c in catalog.all() {
+        for (t, reason) in &c.unavailable {
+            assert!(Target::parse(t).is_some(), "{}: unknown target {t}", c.id);
+            assert!(!reason.trim().is_empty(), "{}: empty reason", c.id);
+            for lang in ["en", "fr", "de"] {
+                assert!(
+                    i18n.get(reason).and_then(|tr| tr.get(lang)).is_some(),
+                    "{}: {lang} missing for {reason:?}",
+                    c.id
+                );
+            }
+        }
+        for t in c.targets.iter().chain(c.sha256_by_target.keys()) {
+            assert!(Target::parse(t).is_some(), "{}: unknown target {t}", c.id);
+        }
+    }
+}
+
+/// `rosetta` comes only with a reason to: no catalog entry needs it today
+/// (every x64Only component has an Apple Silicon build).
+#[test]
+fn rosetta_is_off_in_the_catalog() {
+    for c in Catalog::get().all() {
+        assert!(!c.rosetta, "{}: check the Apple Silicon build first", c.id);
+    }
+}
+
+/// `removeUnix` follows the rules of `remove` with Unix names, and takes its
+/// place on macOS and Linux only; Windows keeps `remove`.
+#[test]
+fn remove_unix_on_macos_and_linux() {
+    use crate::kit::Target;
+
+    let catalog = Catalog::get();
+    for c in catalog.all() {
+        for r in &c.remove_unix {
+            let windows_name = [".exe", ".cmd", ".bat", ".ps1"]
+                .iter()
+                .any(|e| r.ends_with(e));
+            assert!(!r.contains('\\') && !windows_name, "{}: {r}", c.id);
+        }
+        for t in [Target::WIN32_X64, Target::WIN32_ARM64] {
+            assert_eq!(c.remove_for(t), c.remove.as_slice(), "{}", c.id);
+        }
+        let unix = if c.remove_unix.is_empty() {
+            &c.remove
+        } else {
+            &c.remove_unix
+        };
+        for t in [
+            Target::DARWIN_ARM64,
+            Target::DARWIN_X64,
+            Target::LINUX_X64,
+            Target::LINUX_ARM64,
+        ] {
+            assert_eq!(c.remove_for(t), unix.as_slice(), "{}", c.id);
+        }
+    }
+    for (id, part) in [
+        ("pnpm", "@data/npm-global/lib/node_modules/pnpm"),
+        ("pnpm", "@data/npm-global/lib/node_modules/corepack"),
+        ("pnpm", "@data/npm-global/bin/pnpm"),
+        ("uv", "tools/uv"),
+        ("cmake", "tools/ninja"),
+        ("r", "tools/micromamba"),
+        ("ruby", "tools/micromamba"),
+        ("mongodb", "tools/micromamba"),
+        ("mongodb", "mongosh"),
+        ("sqlite", "tools/micromamba"),
+    ] {
+        let c = catalog.find(id).unwrap();
+        assert!(c.remove_unix.iter().any(|r| r == part), "{id}: {part}");
+    }
+    // Git is dugite-native off Windows (D-112): micromamba is not its own.
+    let git_unix = &catalog.find("git").unwrap().remove_unix;
+    assert!(!git_unix.iter().any(|r| r == "tools/micromamba"));
+
+    // On Linux: the Unix files, and micromamba goes with the last of Ruby and R.
+    let tmp = TempDir::new("catalog-remove-unix");
+    let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
+    kit.prepare().unwrap();
+    let npm_global = kit.data().join("npm-global");
+    let pnpm = catalog.find("pnpm").unwrap();
+    let owned = pnpm.owned_paths(&kit);
+    assert!(owned.contains(&npm_global.join("bin").join("pnpm")));
+    assert!(owned.contains(&npm_global.join("lib").join("node_modules").join("pnpm")));
+    assert!(
+        !owned.iter().any(|p| p.to_string_lossy().ends_with(".cmd")),
+        "{owned:?}"
+    );
+    let mm = kit.apps().join("tools").join("micromamba");
+    let (ruby, r) = (catalog.find("ruby").unwrap(), catalog.find("r").unwrap());
+    for c in [ruby, r] {
+        touch(&c.folder_path(&kit).unwrap().join("bin").join("x"));
+    }
+    assert!(!r.owned_paths(&kit).contains(&mm), "Ruby still uses it");
+    fs::remove_dir_all(ruby.folder_path(&kit).unwrap()).unwrap();
+    assert!(r.owned_paths(&kit).contains(&mm), "last owner");
+
+    // The same kit on Windows: the Windows names, as before.
+    let win = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+    assert!(pnpm
+        .owned_paths(&win)
+        .contains(&win.data().join("npm-global").join("pnpm.cmd")));
+    assert!(r
+        .owned_paths(&win)
+        .contains(&win.apps().join("tools").join("micromamba.exe")));
 }

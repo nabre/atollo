@@ -73,6 +73,7 @@ fn kept_in_the_host_temp_folder() {
     assert!(!here.join("tool.zip").exists(), "used once");
 }
 
+#[cfg(windows)]
 #[test]
 fn moved_across_disks_by_copy() {
     let tmp = TempDir::new("downloads-move");

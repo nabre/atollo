@@ -1,5 +1,5 @@
 // Data of the kit left by projects that are gone from projects\ (renamed or
-// deleted outside the app, PLAN-DATA.md WP-7). Rust: tauri/src/commands/orphans.rs.
+// deleted outside the app, D-89). Rust: tauri/src/commands/orphans.rs.
 
 import { act, query } from "./core";
 

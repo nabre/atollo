@@ -3,7 +3,8 @@
 //! with the current one (port of nabre/dev-kit `setup/agents/moved.js`).
 //!
 //! `kit.rs` notices the move at start and saves the old root in
-//! `data\app\old-root.txt`; it is removed here once the paths are updated,
+//! `data\app\old-root.txt` (`old-root-<os>.txt` on macOS and Linux,
+//! `Kit::old_root_file`); it is removed here once the paths are updated,
 //! so a move is never lost if this step does not run at that start.
 //! Spellings replaced: `E:\kit`, `E:\\kit` (JSON), `E:/kit`, and
 //! `file:///e%3A/kit` URIs, only as a whole path, keeping the drive letter's
@@ -20,7 +21,8 @@ use regex::bytes::{Captures, Regex};
 use serde_json::Value;
 
 use super::sync::{read_json, write_json, Paths, Report};
-use crate::kit::Kit;
+use crate::fsx::join_rel;
+use crate::kit::{same_root, Kit, Os};
 
 const TEXT_MAX: u64 = 8 * 1024 * 1024;
 const BINARY_MAX: u64 = 32 * 1024 * 1024;
@@ -63,10 +65,16 @@ fn uri_path(p: &str) -> String {
 pub struct Replacer {
     re: Regex,
     pairs: Vec<(Vec<u8>, Vec<u8>)>,
+    /// Paths of `os` ignore case (Windows): `E:\Kit` is found as `e:\kit`.
+    /// Elsewhere only the exact spelling is the old root, as in
+    /// [`crate::kit::same_root`]: `/media/u/Kit` and `/media/u/kit` differ.
+    fold: bool,
 }
 
 impl Replacer {
-    pub fn new(from: &str, to: &str) -> Replacer {
+    pub fn new(os: Os, from: &str, to: &str) -> Replacer {
+        let fold = os.is_windows();
+        let key = |a: &str| if fold { a.to_lowercase() } else { a.to_owned() };
         let mut pairs: Vec<(String, String)> = vec![
             (from.to_owned(), to.to_owned()),
             (uri_path(from), uri_path(to)),
@@ -74,7 +82,7 @@ impl Replacer {
             (from.replace('\\', "\\\\"), to.replace('\\', "\\\\")),
         ];
         let mut seen = std::collections::HashSet::new();
-        pairs.retain(|(a, _)| seen.insert(a.to_lowercase()));
+        pairs.retain(|(a, _)| seen.insert(key(a)));
         pairs.sort_by_key(|(a, _)| std::cmp::Reverse(a.len()));
         let alts: Vec<String> = pairs
             .iter()
@@ -82,7 +90,8 @@ impl Replacer {
             .collect();
         // (?-u) byte mode: files are read as bytes; no look-around in the
         // regex crate, so the boundaries are checked by hand in `replace`.
-        let re = Regex::new(&format!("(?i){}", alts.join("|")))
+        let flags = if fold { "(?i)" } else { "" };
+        let re = Regex::new(&format!("{flags}{}", alts.join("|")))
             .unwrap_or_else(|_| Regex::new("$^").unwrap_or_else(|_| unreachable!()));
         Replacer {
             re,
@@ -90,6 +99,7 @@ impl Replacer {
                 .into_iter()
                 .map(|(a, b)| (a.into_bytes(), b.into_bytes()))
                 .collect(),
+            fold,
         }
     }
 
@@ -120,35 +130,60 @@ impl Replacer {
         Some(out)
     }
 
-    /// The new spelling, with the drive letter in the case found.
+    /// The new spelling, with the drive letter in the case found where
+    /// paths ignore case (Windows; elsewhere the match is exact). Only a
+    /// real drive letter (`E:`, or `/e%3A` in a URI) is touched: the first
+    /// letter of a Unix path is part of a folder name, so `/home/u/kit`
+    /// moved to `/Users/u/kit` stays `/Users` (PORT-V4-02).
     fn substitute(&self, caps: &Captures, found: &[u8]) -> Vec<u8> {
         let i = (1..caps.len())
             .find(|i| caps.get(*i).is_some())
             .unwrap_or(1)
             - 1;
         let mut new = self.pairs[i].1.clone();
+        if !self.fold {
+            // An exact match: the case found says nothing more.
+            return new;
+        }
         let at = usize::from(new.first() == Some(&b'/'));
+        if !(has_drive_letter(found, at) && has_drive_letter(&new, at)) {
+            return new;
+        }
         if let (Some(f), Some(n)) = (found.get(at), new.get_mut(at)) {
-            if f.is_ascii_alphabetic() && n.is_ascii_alphabetic() {
-                *n = if f.is_ascii_lowercase() {
-                    n.to_ascii_lowercase()
-                } else {
-                    n.to_ascii_uppercase()
-                };
-            }
+            *n = if f.is_ascii_lowercase() {
+                n.to_ascii_lowercase()
+            } else {
+                n.to_ascii_uppercase()
+            };
         }
         new
     }
 
     fn has_length_change(&self, text: &[u8]) -> bool {
-        let lower = text.to_ascii_lowercase();
+        let fold = |b: &[u8]| {
+            if self.fold {
+                b.to_ascii_lowercase()
+            } else {
+                b.to_vec()
+            }
+        };
+        let text = fold(text);
         self.pairs.iter().any(|(a, b)| {
-            a.len() != b.len()
-                && lower
-                    .windows(a.len())
-                    .any(|w| w == a.to_ascii_lowercase().as_slice())
+            let a = fold(a);
+            a.len() != b.len() && text.windows(a.len()).any(|w| w == a.as_slice())
         })
     }
+}
+
+/// `path[at]` is a drive letter: `E:` (`at` 0) or `e%3A` after the slash
+/// of a `file:///` URI (`at` 1).
+fn has_drive_letter(path: &[u8], at: usize) -> bool {
+    let rest = path.get(at + 1..).unwrap_or_default();
+    path.get(at).is_some_and(u8::is_ascii_alphabetic)
+        && (rest.starts_with(b":")
+            || rest
+                .get(..3)
+                .is_some_and(|r| r.eq_ignore_ascii_case(b"%3A")))
 }
 
 #[derive(Default)]
@@ -176,7 +211,7 @@ fn relocate_file(file: &Path, r: &Replacer, report: &mut Moved) {
         return;
     }
     if file.file_name().is_some_and(|n| n == "config.toml") {
-        out = dedupe_toml(&String::from_utf8_lossy(&out)).into_bytes();
+        out = dedupe_toml(&String::from_utf8_lossy(&out), r.fold).into_bytes();
     }
     let readonly = meta.permissions().readonly();
     let result = (|| -> std::io::Result<()> {
@@ -199,8 +234,9 @@ fn relocate_file(file: &Path, r: &Replacer, report: &mut Moved) {
 }
 
 /// Codex refuses the same `[projects.x]` table twice: after the change an
-/// old key may equal one already there; the later one goes.
-fn dedupe_toml(text: &str) -> String {
+/// old key may equal one already there; the later one goes. `fold`: keys
+/// that differ only in case are the same folder (Windows).
+fn dedupe_toml(text: &str, fold: bool) -> String {
     let mut seen = std::collections::HashSet::new();
     let mut skip = false;
     text.split_inclusive('\n')
@@ -210,7 +246,12 @@ fn dedupe_toml(text: &str) -> String {
                 .strip_prefix("[projects.")
                 .and_then(|r| r.strip_suffix(']'))
             {
-                skip = !seen.insert(key.trim().to_lowercase());
+                let key = key.trim();
+                skip = !seen.insert(if fold {
+                    key.to_lowercase()
+                } else {
+                    key.to_owned()
+                });
             } else if t.starts_with('[') || t.starts_with("# >>>") || t.starts_with("# <<<") {
                 skip = false;
             }
@@ -308,7 +349,25 @@ fn merge_dir(src: &Path, dst: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-fn relocate_claude_projects(p: &Paths, from: &str, to: &str, report: &mut Moved) {
+/// The same entry on disk: a folder renamed only in case on a file system
+/// that ignores case (macOS, exFAT) already "exists" under its new name.
+#[cfg(unix)]
+fn same_entry(a: &Path, b: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    match (fs::metadata(a), fs::metadata(b)) {
+        (Ok(x), Ok(y)) => x.dev() == y.dev() && x.ino() == y.ino(),
+        _ => false,
+    }
+}
+
+/// On Windows a root that changed only in case is not a move
+/// ([`crate::kit::same_root`]), so a folder never meets itself.
+#[cfg(not(unix))]
+fn same_entry(_: &Path, _: &Path) -> bool {
+    false
+}
+
+fn relocate_claude_projects(p: &Paths, r: &Replacer, from: &str, to: &str, report: &mut Moved) {
     let dir = p.claude.join("projects");
     let (old, new) = (claude_folder_name(from), claude_folder_name(to));
     for e in fs::read_dir(&dir).into_iter().flatten().flatten() {
@@ -316,27 +375,32 @@ fn relocate_claude_projects(p: &Paths, from: &str, to: &str, report: &mut Moved)
             continue;
         }
         let name = e.file_name().to_string_lossy().into_owned();
-        if name.len() < old.len() || !name[..old.len()].eq_ignore_ascii_case(&old) {
+        let Some((head, rest)) = name.split_at_checked(old.len()) else {
             continue;
-        }
-        let rest = &name[old.len()..];
-        if !rest.is_empty() && !rest.starts_with('-') {
+        };
+        let matches = if r.fold {
+            head.eq_ignore_ascii_case(&old)
+        } else {
+            head == old
+        };
+        if !matches || (!rest.is_empty() && !rest.starts_with('-')) {
             continue;
         }
         let mut target = format!("{new}{rest}");
-        if name.starts_with(|c: char| c.is_ascii_lowercase()) {
+        // The drive letter keeps the case Claude gave it (`e--kit` or `E--kit`).
+        if r.fold && name.starts_with(|c: char| c.is_ascii_lowercase()) {
             target = format!("{}{}", target[..1].to_ascii_lowercase(), &target[1..]);
         }
         if target == name {
             continue;
         }
         let (src, dst) = (e.path(), dir.join(&target));
-        let r = if dst.exists() {
+        let done = if dst.exists() && !same_entry(&src, &dst) {
             merge_dir(&src, &dst)
         } else {
             fs::rename(&src, &dst)
         };
-        match r {
+        match done {
             Ok(()) => report.changed += 1,
             Err(err) => report.failed.push(format!("{} ({err})", src.display())),
         }
@@ -374,10 +438,7 @@ fn venv_files(venv: &Path) -> Vec<PathBuf> {
     let mut out = vec![venv.join("pyvenv.cfg")];
     out.extend(files_in(&venv.join("Scripts"), |_| true));
     out.extend(files_in(&venv.join("bin"), |_| true));
-    out.extend(files_in(
-        &crate::fsx::join_rel(venv, "Lib/site-packages"),
-        is_pth,
-    ));
+    out.extend(files_in(&join_rel(venv, "Lib/site-packages"), is_pth));
     for py_dir in subdirs(&venv.join("lib")) {
         out.extend(files_in(&py_dir.join("site-packages"), is_pth));
     }
@@ -398,8 +459,7 @@ fn targets(kit: &Kit, p: &Paths) -> Vec<PathBuf> {
     }));
     out.extend(files_in(&p.claude.join("chrome"), |_| true));
     out.extend(files_in(
-        &kit.home()
-            .join(r"AppData\Roaming\Claude Code\ChromeNativeHost"),
+        &join_rel(kit.home(), "AppData/Roaming/Claude Code/ChromeNativeHost"),
         |_| true,
     ));
     out.extend(files_in(&kit.home(), |_| true));
@@ -412,20 +472,21 @@ fn targets(kit: &Kit, p: &Paths) -> Vec<PathBuf> {
     }
     // The integrated editor.
     let server = data.join("vscodium-server");
-    out.push(server.join(r"data\Machine\settings.json"));
-    out.push(server.join(r"extensions\extensions.json"));
-    out.extend(files_in(&server.join(r"data\User"), |n| {
+    out.push(join_rel(&server, "data/Machine/settings.json"));
+    out.push(join_rel(&server, "extensions/extensions.json"));
+    out.extend(files_in(&join_rel(&server, "data/User"), |n| {
         n.ends_with(".json")
     }));
-    out.extend(files_in(&server.join(r"data\User\globalStorage"), |n| {
-        n.ends_with(".json")
-    }));
+    out.extend(files_in(
+        &join_rel(&server, "data/User/globalStorage"),
+        |n| n.ends_with(".json"),
+    ));
     // Python: pip --user and uv tool commands, and the projects' venvs.
     for d in subdirs(&data.join("python-user")) {
         out.extend(files_in(&d.join("Scripts"), |_| true));
     }
-    out.extend(files_in(&data.join(r"uv\bin"), |_| true));
-    for d in subdirs(&data.join(r"uv\tools")) {
+    out.extend(files_in(&join_rel(&data, "uv/bin"), |_| true));
+    for d in subdirs(&join_rel(&data, "uv/tools")) {
         out.extend(venv_files(&d));
     }
     for proj in subdirs(&kit.projects()) {
@@ -456,10 +517,10 @@ fn targets(kit: &Kit, p: &Paths) -> Vec<PathBuf> {
     out
 }
 
-/// Replaces the old root (from `data\app\old-root.txt`) everywhere.
+/// Replaces the old root (from [`Kit::old_root_file`]) everywhere.
 pub fn relocate(kit: &Kit, report: &mut Report) -> Result<()> {
-    let pending = kit.app_dir().join("old-root.txt");
-    let Ok(from) = fs::read_to_string(&pending) else {
+    let pending = kit.old_root_file();
+    let Ok(from) = crate::fsx::read_text(&pending) else {
         return Ok(());
     };
     let from = from
@@ -468,16 +529,16 @@ pub fn relocate(kit: &Kit, report: &mut Report) -> Result<()> {
         .trim_end_matches(['\\', '/'])
         .to_owned();
     let to = kit.root().display().to_string();
-    if !from.is_empty() && !from.eq_ignore_ascii_case(&to) {
+    if !from.is_empty() && !same_root(kit.os(), &from, &to) {
         let p = Paths::of(kit);
-        let r = Replacer::new(&from, &to);
+        let r = Replacer::new(kit.os(), &from, &to);
         let mut moved = Moved::default();
         if let Err(e) = relocate_claude_json(&p, &r, &mut moved) {
             moved
                 .failed
                 .push(format!("{} ({e:#})", p.claude_json().display()));
         }
-        relocate_claude_projects(&p, &from, &to, &mut moved);
+        relocate_claude_projects(&p, &r, &from, &to, &mut moved);
         for f in targets(kit, &p) {
             relocate_file(&f, &r, &mut moved);
         }

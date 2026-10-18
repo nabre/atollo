@@ -44,7 +44,9 @@ fn merging_keeps_what_is_there() {
     let mut kept = Vec::new();
     merge_into(&from, &to, &mut kept).unwrap();
     kept.sort();
-    assert_eq!(kept, ["README.md", r"src\app.css"]);
+    // with the system's separator: `src\app.css` on Windows
+    let nested = std::path::Path::new("src").join("app.css");
+    assert_eq!(kept, ["README.md", nested.to_str().unwrap()]);
     assert_eq!(fs::read_to_string(to.join("README.md")).unwrap(), "mine");
     assert_eq!(fs::read_to_string(to.join("package.json")).unwrap(), "new");
     assert_eq!(

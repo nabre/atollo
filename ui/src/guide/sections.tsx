@@ -1315,7 +1315,7 @@ function TopicGithubRole({ onSelectTopic }: { onSelectTopic: (id: GuideTopicId) 
             )}
           >
             {tr(
-              "Oltre metà del catalogo (Git, uv, Ripgrep, fd, Bat, jq, Pandoc, Typst, CMake, Ninja, Rust Analyzer, Bun, Ruby, Adminer, ecc.) risolve le versioni tramite api.github.com. Senza login GitHub applica un limite di 60 richieste/ora per IP (HTTP 403 Rate limit exceeded); con l'account collegato il kit inietta automaticamente Authorization: Bearer <token> portando la soglia a 5.000 richieste/ora.",
+              "Oltre metà del catalogo (Git, uv, Ripgrep, fd, Bat, jq, Pandoc, Typst, CMake, Ninja, Rust Analyzer, Bun, Ruby, ecc.) risolve le versioni tramite api.github.com. Senza login GitHub applica un limite di 60 richieste/ora per IP (HTTP 403 Rate limit exceeded); con l'account collegato il kit inietta automaticamente Authorization: Bearer <token> portando la soglia a 5.000 richieste/ora.",
               "Over half the catalog resolves versions via api.github.com. Without login, GitHub enforces a 60 req/hour limit per IP (HTTP 403 Rate limit exceeded); with a linked account, the kit automatically injects Authorization: Bearer <token>, raising the limit to 5,000 requests/hour.",
               "Plus de la moitié du catalogue résout les versions via api.github.com. Sans connexion, GitHub applique une limite de 60 requêtes/heure par IP (HTTP 403 Rate limit exceeded) ; avec un compte lié, le kit injecte automatiquement Authorization: Bearer <token>, portant le seuil à 5 000 requêtes/heure.",
               "Über die Hälfte des Katalogs ermittelt Versionen über api.github.com. Ohne Login gilt bei GitHub ein Limit von 60 Anfragen/Stunde pro IP (HTTP 403 Rate limit exceeded); mit verknüpftem Konto fügt das Kit automatisch Authorization: Bearer <token> hinzu und erhöht das Limit auf 5.000 Anfragen/Stunde.",
@@ -2044,10 +2044,10 @@ function TopicFeatServices({ onNavigate }: { onNavigate: (page: AppPageTarget) =
       <EditorSection
         id="guide-feat-databases"
         title={tr(
-          "Pagina Database: MariaDB (con Adminer), MongoDB e SQLite",
-          "Databases page: MariaDB (with Adminer), MongoDB & SQLite",
-          "Page Bases de données : MariaDB (avec Adminer), MongoDB et SQLite",
-          "Seite Datenbanken: MariaDB (mit Adminer), MongoDB & SQLite",
+          "Pagina Database: MariaDB (con phpMyAdmin), MongoDB e SQLite",
+          "Databases page: MariaDB (with phpMyAdmin), MongoDB & SQLite",
+          "Page Bases de données : MariaDB (avec phpMyAdmin), MongoDB et SQLite",
+          "Seite Datenbanken: MariaDB (mit phpMyAdmin), MongoDB & SQLite",
         )}
         actions={
           <Button
@@ -2073,22 +2073,22 @@ function TopicFeatServices({ onNavigate }: { onNavigate: (page: AppPageTarget) =
           <GuideShot
             src="11-database-mariadb-adminer.webp"
             title={tr(
-              "11 · MariaDB 11.4 + interfaccia web Adminer",
-              "11 · MariaDB 11.4 + Adminer web interface",
-              "11 · MariaDB 11.4 + interface web Adminer",
-              "11 · MariaDB 11.4 + Adminer-Weboberfläche",
+              "11 · MariaDB 11.4 + interfaccia web phpMyAdmin",
+              "11 · MariaDB 11.4 + phpMyAdmin web interface",
+              "11 · MariaDB 11.4 + interface web phpMyAdmin",
+              "11 · MariaDB 11.4 + phpMyAdmin-Weboberfläche",
             )}
             caption={tr(
-              "Controllo del motore MariaDB (127.0.0.1:3306, utente root), selettore di versione, avvio con 1 clic di Adminer con auto-login e backup/ripristino .sql.",
-              "MariaDB engine control (127.0.0.1:3306, root user), version selector, 1-click Adminer launch with auto-login and .sql backup/restore.",
-              "Contrôle du moteur MariaDB (127.0.0.1:3306, utilisateur root), sélecteur de version, lancement en 1 clic d'Adminer avec connexion automatique et sauvegarde/restauration .sql.",
-              "Steuerung des MariaDB-Motors (127.0.0.1:3306, Benutzer root), Versionsauswahl, 1-Klick-Start von Adminer mit Auto-Login sowie .sql-Backup/Wiederherstellung.",
+              "Controllo del motore MariaDB (127.0.0.1:3306, utente root), selettore di versione, avvio con 1 clic di phpMyAdmin con auto-login e backup/ripristino .sql.",
+              "MariaDB engine control (127.0.0.1:3306, root user), version selector, 1-click phpMyAdmin launch with auto-login and .sql backup/restore.",
+              "Contrôle du moteur MariaDB (127.0.0.1:3306, utilisateur root), sélecteur de version, lancement en 1 clic de phpMyAdmin avec connexion automatique et sauvegarde/restauration .sql.",
+              "Steuerung des MariaDB-Motors (127.0.0.1:3306, Benutzer root), Versionsauswahl, 1-Klick-Start von phpMyAdmin mit Auto-Login sowie .sql-Backup/Wiederherstellung.",
             )}
             example={tr(
-              "Tre database applicativi presenti: api_magazzino (18,4 MB), gestionale_fatture (42,1 MB) e portale_clienti (9,6 MB), con Adminer attivo su 127.0.0.1:18306.",
-              "Three application databases: api_magazzino (18.4 MB), gestionale_fatture (42.1 MB) and portale_clienti (9.6 MB), with Adminer active on 127.0.0.1:18306.",
-              "Trois bases de données applicatives présentes : api_magazzino (18,4 Mo), gestionale_fatture (42,1 Mo) et portale_clienti (9,6 Mo), avec Adminer actif sur 127.0.0.1:18306.",
-              "Drei Anwendungsdatenbanken vorhanden: api_magazzino (18,4 MB), gestionale_fatture (42,1 MB) und portale_clienti (9,6 MB), mit aktivem Adminer unter 127.0.0.1:18306.",
+              "Tre database applicativi presenti: api_magazzino (18,4 MB), gestionale_fatture (42,1 MB) e portale_clienti (9,6 MB), con phpMyAdmin attivo su 127.0.0.1:18306.",
+              "Three application databases: api_magazzino (18.4 MB), gestionale_fatture (42.1 MB) and portale_clienti (9.6 MB), with phpMyAdmin active on 127.0.0.1:18306.",
+              "Trois bases de données applicatives présentes : api_magazzino (18,4 Mo), gestionale_fatture (42,1 Mo) et portale_clienti (9,6 Mo), avec phpMyAdmin actif sur 127.0.0.1:18306.",
+              "Drei Anwendungsdatenbanken vorhanden: api_magazzino (18,4 MB), gestionale_fatture (42,1 MB) und portale_clienti (9,6 MB), mit aktivem phpMyAdmin unter 127.0.0.1:18306.",
             )}
           />
 

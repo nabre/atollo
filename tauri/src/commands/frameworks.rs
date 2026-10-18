@@ -147,7 +147,9 @@ pub(super) fn ignore_env(dir: &std::path::Path) -> anyhow::Result<()> {
 
 /// `merge_into` for a framework made on another disk, where a rename fails:
 /// what `to` already has stays (in `kept`), the rest is copied. Links are
-/// skipped, as `archive::copy_tree` does.
+/// skipped at the levels walked here; inside a new subfolder
+/// `archive::copy_tree` makes them again on Unix when they stay inside (a
+/// copy where the file system has none).
 fn merge_copy(
     from: &std::path::Path,
     to: &std::path::Path,
@@ -313,7 +315,7 @@ pub async fn frameworks_create<R: Runtime>(
                 let text = crate::i18n::t(lang, "Creo il database del progetto in {0}…", &[engine]);
                 emit(plan.create.len(), None, Some(text));
                 let db = services
-                    .start(engine, &env)
+                    .start_for(&name, engine, &env)
                     .and_then(|_port| services.project_db_create(&name, engine))
                     .or_fail_chain("database")?;
                 crate::db::auth::env_apply(&dir, &db).or_fail_chain(".env")?;

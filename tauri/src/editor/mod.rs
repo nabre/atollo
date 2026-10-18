@@ -1,6 +1,9 @@
 //! Editor and consoles: the VSCodium web server (this file), its windows
 //! (`window`), settings (`cfg`), extensions (`ext`) and theme (`theme`) and
-//! the consoles (`terminal`).
+//! the consoles (`terminal`, a console window, on macOS and Linux a session
+//! of the app's terminal, `pty`; `terminals`, the Terminals page: saved
+//! consoles with their own tools and versions; `picker`, the folder and file
+//! windows of macOS and Linux).
 //!
 //! The integrated editor: the VSCodium web server, one per session.
 //!
@@ -16,7 +19,11 @@
 
 pub mod cfg;
 pub mod ext;
+#[cfg(unix)]
+pub mod picker;
+pub mod pty;
 pub mod terminal;
+pub mod terminals;
 pub mod theme;
 pub mod window;
 
@@ -30,16 +37,11 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
-use windows::core::HSTRING;
-use windows::Win32::Foundation::{LocalFree, HLOCAL};
-use windows::Win32::Security::Authorization::{
-    ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
-};
+#[cfg(windows)]
 use windows::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
-use windows::Win32::Security::{SetFileSecurityW, DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
 
 use crate::env::{mask_secrets, KitEnv};
-use crate::kit::Kit;
+use crate::kit::{Kit, Os};
 use crate::os::jobs::{self, Job};
 
 pub const PORTS: std::ops::RangeInclusive<u16> = 7000..=7099;
@@ -251,8 +253,11 @@ impl Editor {
         log_path: &Path,
     ) -> Result<Server> {
         let dir = server_dir(&self.kit);
-        let mut cmd = jobs::kit_command(dir.join("node.exe"), &self.env());
-        cmd.arg(dir.join(r"out\server-main.js"))
+        let mut cmd = jobs::kit_command(
+            crate::router::bins::editor_node(&self.kit, &dir),
+            &self.env(),
+        );
+        cmd.arg(crate::router::bins::editor_server_main(&dir))
             .args(["--host", "127.0.0.1", "--port", &port.to_string()])
             .arg("--connection-token-file")
             .arg(token_file)
@@ -332,39 +337,29 @@ fn free_ports() -> impl Iterator<Item = u16> {
 
 pub fn random_token() -> Result<String> {
     let mut bytes = [0u8; 32];
+    #[cfg(windows)]
     // SAFETY: the buffer is valid for its length; system RNG, no algorithm handle.
     unsafe { BCryptGenRandom(None, &mut bytes, BCRYPT_USE_SYSTEM_PREFERRED_RNG) }
         .ok()
         .context("BCryptGenRandom")?;
+    #[cfg(unix)]
+    fs::File::open("/dev/urandom")
+        .and_then(|mut f| f.read_exact(&mut bytes))
+        .context("/dev/urandom")?;
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
 
-/// Protected DACL with full access for the owner only. Fails on disks
-/// without permissions (FAT32/exFAT): the caller only logs it.
+/// Protected DACL with full access for the owner only (mode 600 on Unix).
+/// Fails on disks without permissions (FAT32/exFAT): the caller only logs it.
 pub(crate) fn restrict_to_owner(path: &Path) -> Result<()> {
-    set_dacl(path, "D:P(A;;FA;;;OW)")
+    crate::router::fs::restrict_to_owner(path)
 }
 
 /// The same for a folder, inherited by every file and folder created in it
 /// afterwards (temporary files included): they are private from the start.
+/// On Unix the folder gets mode 700: what is inside cannot be reached.
 pub(crate) fn restrict_dir_to_owner(path: &Path) -> Result<()> {
-    set_dacl(path, "D:P(A;OICI;FA;;;OW)")
-}
-
-fn set_dacl(path: &Path, sddl: &str) -> Result<()> {
-    let sddl = HSTRING::from(sddl);
-    let mut sd = PSECURITY_DESCRIPTOR::default();
-    // SAFETY: valid SDDL string; `sd` receives a LocalAlloc'd descriptor freed below.
-    unsafe {
-        ConvertStringSecurityDescriptorToSecurityDescriptorW(&sddl, SDDL_REVISION_1, &mut sd, None)
-    }
-    .context("security descriptor")?;
-    let file = HSTRING::from(path.as_os_str());
-    // SAFETY: `sd` is a valid descriptor for the duration of the call.
-    let result = unsafe { SetFileSecurityW(&file, DACL_SECURITY_INFORMATION, sd) };
-    // SAFETY: frees the descriptor allocated above, once.
-    unsafe { LocalFree(Some(HLOCAL(sd.0))) };
-    result.ok().context("SetFileSecurityW")
+    crate::router::fs::restrict_dir_to_owner(path)
 }
 
 fn append_log(path: &Path, line: &str) {
@@ -382,15 +377,35 @@ fn pump(stream: impl Read + Send + 'static, log: PathBuf, token: String) {
     });
 }
 
-/// `http://127.0.0.1:<port>/?tkn=<token>&folder=/C:/path/to/project`.
+/// `http://127.0.0.1:<port>/?tkn=<token>&folder=/C:/path/to/project`
+/// (`folder=/home/me/kit/projects/app` on macOS and Linux).
 pub fn url(port: u16, token: &str, folder: Option<&Path>) -> String {
+    url_on(Os::current(), port, token, folder)
+}
+
+/// [`url`] for a folder of `os`.
+pub fn url_on(os: Os, port: u16, token: &str, folder: Option<&Path>) -> String {
     let mut url = format!("http://127.0.0.1:{port}/?tkn={token}");
     if let Some(folder) = folder {
-        let path = format!("/{}", folder.display().to_string().replace('\\', "/"));
         url.push_str("&folder=");
-        url.push_str(&encode_query(&path));
+        url.push_str(&encode_query(&folder_param_on(os, folder)));
     }
     url
+}
+
+/// `folder` of `os` as the server's `folder=` wants it: on Windows forward
+/// slashes after one more `/` (`/C:/x`, `///server/share/x`), as always; a
+/// Unix path as it is, since it has its `/` already (`//home/...` would be
+/// another path) and a `\` is a character of its names.
+pub fn folder_param_on(os: Os, folder: &Path) -> String {
+    let path = folder.display().to_string();
+    if os.is_windows() {
+        format!("/{}", path.replace('\\', "/"))
+    } else if path.starts_with('/') {
+        path
+    } else {
+        format!("/{path}")
+    }
 }
 
 fn encode_query(s: &str) -> String {

@@ -47,7 +47,7 @@ fn plan_windows_and_credits() {
 fn sessions_and_tokens() {
     let tmp = TempDir::new("stats-claude");
     let dir = tmp.0.join(".claude");
-    let proj = dir.join(r"projects\p1");
+    let proj = dir.join("projects").join("p1");
     fs::create_dir_all(proj.join("subagents")).unwrap();
     let now = super::super::util::now_ms();
     let t = now - 3_600_000;
@@ -69,7 +69,7 @@ fn sessions_and_tokens() {
     .unwrap();
     // the same reply copied in a resumed session
     fs::write(proj.join("s2.jsonl"), line("2", 1)).unwrap();
-    fs::write(proj.join(r"subagents\agent-x.jsonl"), line("3", 2)).unwrap();
+    fs::write(proj.join("subagents").join("agent-x.jsonl"), line("3", 2)).unwrap();
     let p = Period::now();
     let u = usage(&dir, &p);
     assert_eq!(u.week, Tokens::new(45, 300, 10));

@@ -37,6 +37,63 @@ Coprono, fra l'altro:
 - `useLoad` (`test\ui\hooks.test.ts`): prima lettura, le tre politiche d'errore, nuova lettura quando cambiano `load` o `key` ma non la politica, `enabled`, lettura periodica fermata allo smontaggio, `setData`;
 - controlli dell'interfaccia su `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): eventi che scattano davvero, valori controllati, Invio nei moduli, nomi accessibili, codicon; ogni variabile `--vscode-*` letta dai componenti definita nei due temi (`test\ui\theme.test.ts`).
 
+## Linux, macOS e Windows ARM64
+
+**CI** (`.github/workflows/app.yml`, WP-0.6). Su ogni push di `main` e `feature/platforms` e su ogni pull request:
+
+| Job | Runner | Cosa |
+| --- | --- | --- |
+| `Lint and test` | `windows-latest` | lint, Vitest, build dell'interfaccia, `cargo fmt`, `clippy`, `cargo test` |
+| `Test linux-x64` | `ubuntu-latest` | librerie di Tauri, build e Vitest dell'interfaccia, `clippy --all-targets -D warnings`, `cargo test` |
+| `Test linux-arm64` | `ubuntu-24.04-arm` | come sopra, senza Vitest |
+| `Test darwin-arm64` | `macos-latest` | build dell'interfaccia, `clippy`, `cargo test` |
+| `Test darwin-x64` | `macos-15-intel` | come sopra (`macos-13` non c'è più) |
+| `Test win32-arm64` | `windows-11-arm` | build dell'interfaccia, `cargo test` nativo |
+| `Build …` | `windows-latest` | exe x64 e arm64, prove reali (x64) |
+| `Bundle darwin-*` | `macos-latest`, `macos-15-intel` | `Atollo.app` con firma ad hoc verificata, `Info.plist`, zip, avvio di prova (D-113) |
+| `Bundle linux-*` | `ubuntu-24.04`, `ubuntu-24.04-arm`, contenitore `ubuntu:22.04` | AppImage e `tar.gz`, minimo di glibc con `objdump`, `--version` e `check` sotto `xvfb-run` |
+
+Ogni job di test scrive nel riepilogo della run le prove passate, fallite e ignorate, con i nomi di quelle fallite. Su macOS gira tutto `cargo test`: con tauri 2.12.1 il feature `test` (il runtime finto di `test\rust\main.rs`) compila anche lì, quindi non serve un feature a parte (con 2.12.0 mancava `transparent`). In un repository senza runner ARM64 (privato) la variabile del repository `ARM64_RUNNERS=off` toglie i job `linux-arm64` e `win32-arm64`, che altrimenti resterebbero in coda: `linux-arm64` esce dalla lista dei target della matrice (il runner si ricava dal target, senza `include`, che GitHub applica dopo `exclude` e rimetterebbe il target tolto). Il job `win32-arm64` installa la toolchain `stable-aarch64-pc-windows-msvc` e fallisce se `rustc -vV` non riporta `host: aarch64-pc-windows-msvc`: le prove non girano mai in emulazione x64 senza dirlo.
+
+Una prova che vale solo su Windows (percorsi con `\`, `cmd.exe`, `ping.exe`, junction con `mklink /J`, layout `.exe` del kit) porta `#[cfg_attr(not(windows), ignore = "<motivo>")]`: su Windows gira, altrove conta fra le ignorate con il motivo. Una prova nuova usa invece, quando può, funzioni pure con il target come parametro (`Kit::at_target`, `fsx::join_rel` con `/`), così vale per tutti e sei i target.
+
+**WSL2 in locale.** `scripts/test-linux.sh` copia il repository nel file system di Linux (una copia per checkout o worktree in `~/dev-kit2-copies/<cartella>-<hash>`, o `DEVKIT_LINUX_DIR`; due esecuzioni sulla stessa copia si danno il turno con `flock`; con `rsync`, senza `target*`, `node_modules`, `.claude/worktrees`, `.git` e le cartelle del kit `data` e `projects`), controlla Rust e le librerie di Tauri (lo stato `install ok installed` di `dpkg-query`), poi esegue `cargo test` e stampa il riepilogo:
+
+```
+wsl -d Ubuntu -- bash scripts/test-linux.sh            # da Windows, nella radice del repository
+bash scripts/test-linux.sh                             # dentro WSL o su Linux
+bash scripts/test-linux.sh --clippy -- servers::       # anche clippy; filtro e opzioni dopo --
+```
+
+Se manca qualcosa stampa il comando da eseguire (`sudo apt-get install -y …`, o `rustup` per l'utente) ed esce con 2; con prove fallite esce con 1. `target/` resta nella copia, quindi le esecuzioni dopo la prima compilano solo ciò che è cambiato. La copia usa `rsync --delete`: lo script copia solo in una cartella vuota o in una copia fatta da lui (file `.devkit-linux-copy`); altrimenti esce con 2 senza toccare nulla. Anche un clone del repository senza quel file (con il suo `.git` e lavoro non salvato) viene rifiutato: scegliere un'altra cartella con `DEVKIT_LINUX_DIR`. `bash scripts/test-linux.sh --check-dest` dice soltanto se la cartella va bene (0 sì, 2 no) e gira ovunque, anche in Git Bash. `cargo` gira dentro la copia, così valgono i suoi `.cargo/config.toml` e `rust-toolchain.toml`, non quelli sopra la cartella di Windows. L'interfaccia compilata (`dist\`) viene dalla copia di Windows (`npm -w ui run build`); senza, lo script la compila in Linux con Node.js. WSL2 richiede la virtualizzazione attiva nel BIOS e la «Piattaforma macchina virtuale» di Windows (`wsl.exe --install --no-distribution`, da amministratore). Prima dello script, in un worktree, `npm -w ui run build` da Windows: dentro WSL l'`npm` trovato può essere quello di Windows.
+
+**Controllo incrociato da Windows.** `bash scripts/cross-check/xcheck.sh <target> clippy --all-targets -- -D warnings` (target `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-apple-darwin`) compila il codice Unix con strumenti finti, senza linker: trova gli errori di tipo e di `cfg`, non quelli di link (un `_EMBED_INFO_PLIST` doppio su macOS l'ha visto solo la CI).
+
+**CI su un altro branch.** I push di `main` e `feature/platforms` avviano la CI da soli; per un altro branch: `git push -u origin <branch>`, poi `gh workflow run app.yml --ref <branch>`.
+
+**Prove con programmi veri** (`DEVKIT_TEST_KIT=<kit con i componenti>`, ignorate senza):
+- `real_databases_start_and_stop`: MySQL, MariaDB e MongoDB del kit su porte libere: avvio, database e utente di un progetto (accesso TCP come quell'utente), copia e ripristino, eliminazione, arresto senza resti (D-110); su Windows e in WSL;
+- `caddy_pool_two_php_sites_alias_and_reload`: un pool Caddy con due siti PHP e un alias, `caddy reload` dopo l'aggiunta di un sito senza fermare l'altro (D-111);
+- `a_new_kit_needs_mysql_for_every_sql_need` (`db::services::data`, senza kit): ogni bisogno SQL del catalogo e dei framework si risolve in MySQL su un kit nuovo.
+
+**Secret Service in WSL senza root** (D-115). Per provare Antigravity con un Secret Service vero:
+
+```
+mkdir -p ~/gk && cd ~/gk
+apt-get download gnome-keyring libgcr-base-3-1 libgck-1-0 libsecret-tools
+for f in *.deb; do dpkg -x "$f" root; done
+export LD_LIBRARY_PATH=~/gk/root/usr/lib/x86_64-linux-gnu PATH=~/gk/root/usr/bin:$PATH
+dbus-run-session -- sh -c 'echo | gnome-keyring-daemon --unlock --components=secrets; cargo test keyring'
+```
+
+Con `keyring.json` che contiene `gemini:antigravity` e un nome di Windows (`jetski:other`), dopo `restore` e `save` il Secret Service è vuoto e `keyring.json` ha tutte e due le voci. Senza Secret Service la copia in chiaro si scrive solo sul disco di Linux (600), mai su `/mnt/<lettera>`.
+
+**Kit condiviso fra Windows e WSL.** PHP 8.5 installato da Windows e da WSL nella stessa cartella del kit, nei due ordini: `data/php/8.5/php.ini` con le 12 righe `extension=` e `data/php/linux-x64/8.5/php.ini` senza nessuna; `php -v` su Linux senza «Unable to load». phpMyAdmin 5.2.3 sul PHP 8.5.8 di static-php-cli: `index.php` 200, nessun avviso con `E_ALL`.
+
+**Preparazione da Windows** (D-114). `Dev-Kit.exe prepare --target linux-x64 --only git` dice `(bootstrap linux-x64)`; sul target il primo avvio, o `prepare --only git`, scrive «bootstrap pre-downloaded» e `git clone https://…` funziona. In WSL: `prepare --only cc` senza Zig non mette `CC`/`CXX` né `cc/bin` nel PATH; `prepare --only zig,cc` dà `CC=…/cc/bin/cc` e un hello in C si compila con `make` ed esegue.
+
+**Bundle Linux in locale.** `docker run ubuntu:22.04` con i pacchetti del job `Bundle linux-*`, `tauri build --bundles appimage`, minimo di glibc con `objdump -T`, poi `--version` e `check` sotto `xvfb-run` per l'AppImage (`--appimage-extract-and-run`) e per il `tar.gz`.
+
 ## Prove sull'interfaccia reale
 
 Per le prove senza mani sull'exe di release (fase 6) si usa un kit di prova fuori dal repository, con tutti i componenti, in una cartella con spazi:
@@ -48,7 +105,7 @@ Per le prove senza mani sull'exe di release (fase 6) si usa un kit di prova fuor
 
 ## Checklist manuale
 
-Rispetto alla checklist del prompt:
+Rispetto alla checklist del prompt iniziale (i requisiti sono in ARCHITECTURE.md, «Requisiti»):
 - la voce sulla rete usa la pagina Impostazioni al posto di `data\proxy.cmd` (D-54);
 - la voce sul menu `setup\Windows.cmd` non si applica, perché questo è un prodotto separato, senza gli script del kit (Q1 del piano).
 
@@ -65,6 +122,8 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Senza rete.** L'app e l'editor partono, gli errori di download si leggono, il controllo degli aggiornamenti fallisce senza bloccare nulla.
 - [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, console del kit (`conhost.exe`, `pwsh.exe`) o server di progetto.
 - [ ] **ARM64.** L'exe è nativo, l'editor gira in emulazione e l'avviso si vede.
+- [ ] **R spostato** (D-104). Kit con R su `D:`, poi su `E:`: dopo l'avvio `lib\R\etc\x64\Makeconf` ha `LOCAL_SOFT` sulla cartella nuova e `install.packages(..., type="source")` compila.
+- [ ] **macOS e Linux**: la sezione «macOS, Linux e Windows ARM64» qui sotto.
 
 ### Progetti
 - [ ] **Nuovo progetto** «prova 1»: la cartella compare, ha il pulsante «Elimina la cartella vuota» e l'eliminazione funziona.
@@ -76,6 +135,58 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **«Servi come sito web».** Con la cartella `public` e PHP: `panel.json` contiene l'azione `site` e le altre chiavi del file restano.
 - [ ] **«Ferma»** su `npm run dev`: in Gestione attività non resta nessun `node.exe`/`esbuild.exe` del progetto.
 - [ ] **Electron o Tauri.** L'app apre la sua finestra e l'output arriva nella pagina.
+
+### Server web e database (sciame v3, D-96…D-102)
+- [ ] **Configurazioni valide.** Con un progetto PHP avviato su Apache e su Nginx dedicati, in un pool e con il sito del kit: `httpd -t -f <conf>` e `nginx -t -c <conf>` sulle configurazioni scritte dal kit non danno errori. Un `kit.conf` di un kit precedente, dopo l'avvio, ha i blocchi nuovi una volta sola.
+- [ ] **Estensioni PHP** (D-96). Con PHP: `a.phtml` si esegue; `a.inc`, `a.php5` e `.env` danno 403. Senza PHP (Apache senza modulo, Nginx senza php-cgi) `index.php` dà 403/503, mai il sorgente.
+- [ ] **`php -S`** (D-97). Progetto PHP semplice avviato con «Avvia»: `/.env`, `/a.inc`, `/index.php.` danno 403; `curl -H "Host: evil.com"` dà 421; `/` e un file statico 200. Con un `router.php` nel progetto vale il suo.
+- [ ] **Host estraneo sul server dedicato** (D-98). Senza «Rete locale»: `curl -H "Host: evil.com" http://127.0.0.1:<porta>/` dà 403 (Apache) o 421 (Nginx); `localhost`, `127.0.0.1`, `<progetto>.localhost` e i domini del progetto rispondono. Con «Rete locale» l'IP del PC da un altro PC apre il sito.
+- [ ] **php-cgi che muore** (D-99). Progetto PHP su Nginx dedicato avviato: chiudere `php-cgi.exe` dal Task Manager ferma anche `nginx.exe`; l'esecuzione va in errore e il log ha «php-cgi terminato».
+- [ ] **Pool che seguono i progetti** (D-101). Due progetti assegnati allo stesso profilo: «Avvia» sul primo avvia il pool, sul secondo lo ricarica; «Ferma» sul primo lo toglie (il suo indirizzo non risponde più) e il secondo resta servito. Con «Mantieni attivo» spento, fermare anche il secondo spegne il pool; acceso, il pool resta. Un pool avviato dalla pagina Server Web resta acceso comunque.
+- [ ] **Avvia con NEXKORA** (D-101). Profilo con «Avvia con NEXKORA»: chiusa e riaperta l'app, il pool è acceso senza nessun progetto avviato. Un `servers.json` di prima (senza i due campi) si legge con «Mantieni attivo» spuntato.
+- [ ] **Due azioni web di un progetto nello stesso pool** (BUG-V3-02). `http://<progetto>.localhost:<porta>` e `http://<azione>.<progetto>.localhost:<porta>` servono le due cartelle.
+- [ ] **Due versioni di MariaDB insieme** (D-102). Con 10.11 e 11.4 installati: Database › «Altre versioni» avvia 10.11 su una porta sua mentre 11.4 resta sulla 3306; `mariadb -uroot -h127.0.0.1 -P<porta> -e "select version()"` dà le due versioni. Progetto con «Versione del server» 10.11: «Crea» crea database e utente su 10.11; un programma del progetto vede `DB_PORT` di 10.11; con un `.env` che ha `DB_PORT=3310` vale quello. Cambiare la versione principale mentre 10.11 gira è rifiutato; chiusa l'app, nessun `mariadbd.exe` resta.
+- [ ] **Prove con kit reale.** `DEVKIT_TEST_KIT=<kit con Apache> cargo test start_reports_syntax_error apache_pool_reload_twice` passa.
+
+### macOS, Linux e Windows ARM64 (D-105, D-108…D-115)
+Su macOS Apple Silicon e Intel, Linux x64 e ARM64 (un PC o una VM con desktop: WSL2 non ha chiavette né `noexec` veri), con il bundle della CI o `tauri build --debug --no-bundle`.
+
+Primo avvio:
+- [ ] **Kit su disco interno e su chiavetta exFAT.** Avvio, `projects/` e `data/` accanto a `Atollo.app` o all'AppImage, niente dentro il bundle. Un `.app` scaricato con il browser e non spostato (App Translocation) ferma l'avvio con il comando `xattr`.
+- [ ] **Seconda apertura** porta in primo piano la prima.
+- [ ] **Componenti obbligatori** (PowerShell 7, GitHub CLI, Git, editor) installati e verificati; `Atollo check` verde.
+- [ ] **Progetti.** Nuovo progetto vuoto e clone di un repository privato.
+- [ ] **Editor**: apertura, terminale integrato con l'ambiente del kit (`echo $CP_DATA`), estensioni installate.
+- [ ] **Terminale del kit e Claude Code** da un progetto: si aprono in una scheda dell'app, rispondono ai tasti, chiudendo la scheda non resta nessun processo.
+- [ ] **Chiusura dell'app** con un terminale e un database aperti: nessun processo resta. `kill -9` dell'app: nessun processo del kit entro 6 s (`pgrep -f <kit>`).
+- [ ] **Kit spostato** in un'altra cartella: tutto riparte, Git senza reinstallare.
+- [ ] **Chiavetta montata `noexec`** (Linux): messaggio con il comando per rimontare, nessuna installazione.
+- [ ] **«Rimuovi l'unità»**: chiude tutto e lascia espellere.
+
+Componenti:
+- [ ] Ogni componente disponibile per il sistema: installazione, `check`, rimozione senza resti. Android su Linux ARM64 si mostra non disponibile con il motivo.
+- [ ] **C/C++** su Linux senza `build-essential` e su macOS senza Xcode CLT: `cc hello.c && ./a.out`, `cargo build` di un crate con `cc-rs`. Su macOS senza CLT la pagina del componente avvisa per i framework Apple.
+- [ ] **Rust su Windows 11 ARM64** senza Visual Studio: `cargo new x && cargo run`.
+- [ ] **Ruby**: `ruby -v`, `gem install json` (nativa); dopo uno spostamento del kit i comandi delle gem partono.
+
+Stack web e database:
+- [ ] **Laravel con MySQL** su macOS e Linux: `composer create-project`, migrazioni, sito su Caddy, phpMyAdmin.
+- [ ] **WordPress con Caddy**: permalink funzionanti senza `.htaccess`. Drupal su Windows propone Apache.
+- [ ] **Pool Caddy** con due siti e un alias verso un altro progetto; aggiungere un sito ricarica il pool senza fermare l'altro.
+- [ ] **Stessa cartella dati MySQL** letta da Windows e da Linux con la stessa linea.
+- [ ] **MySQL su Ubuntu 24.04** senza `libaio1` (solo `libaio1t64`): il server parte; senza `libnuma1` l'errore dice `sudo apt install libaio1t64 libnuma1`.
+
+Accessi e pacchetto:
+- [ ] **Antigravity e Claude Code** collegati su un Mac (Claude con «Collega con un token»), kit portato su un altro Mac: già collegati; nel Portachiavi del primo non resta nulla.
+- [ ] **Antigravity su Linux** con un Secret Service bloccato: nessuna voce spostata, avviso; senza Secret Service e kit su exFAT: rifiutato.
+- [ ] **Rilasci**: download con il browser, apertura su un sistema pulito, aggiornamento dell'app (il `tar.gz` dice che la versione nuova va scaricata a mano). Senza FUSE: `./Atollo.AppImage --appimage-extract-and-run`.
+
+Kit preparato su Windows per un altro sistema (a ogni rilascio):
+- [ ] Su Windows `Atollo.exe prepare --target linux-x64` (poi `darwin-arm64`, `linux-arm64`) su una chiavetta exFAT, con l'app per quel sistema copiata accanto.
+- [ ] Il selettore «Piattaforma» mostra per quel target cosa è pre-scaricato, cosa si completa al primo avvio e cosa non è disponibile.
+- [ ] Sull'altro sistema: primo avvio dalla chiavetta, installazioni da `.bootstrap` completate (Rust, Git di dugite-native, R e i componenti conda, Android, pnpm), nessun nuovo download per ciò che era già scaricato.
+- [ ] Di nuovo su Windows: il kit si apre come prima; `data/apps/win32-x64` e le impostazioni di Windows sono intatti, la scelta dei componenti non è cambiata.
+- [ ] Stesso progetto aperto sui due sistemi: impostazioni, porte e database del progetto condivisi (`data/projects/<p>`).
 
 ### Dati per progetto e file di passaggio (D-89, D-90)
 - [ ] **Migrazione da un kit della versione 1.** Con la copia di un kit reale (dati in `data\app\projects`, `ports.json`, `secrets.json`, `data\db\backup`): al primo avvio compaiono `data\projects\<progetto>\`, `data\app\layout.txt` vale `2`, `data\app\pre-v2\` ha le due copie. Progetti, porte (anche quelle bloccate), password e copie dei database intatti; `.env` dei progetti ancora validi; un secondo avvio non cambia nulla.
@@ -95,6 +206,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Alias dei siti.** Un sito con `/media` → `storage/uploads` e `/shared` → `@common/assets`, con Apache, con Nginx e in un pool: i file si aprono nel browser.
 - [ ] **Alias e giunzione.** `storage` sostituito da una giunzione verso `C:\Users`: l'alias non è servito e la pagina del sito lo dice.
 - [ ] **Impostazioni › Temporanei dei programmi.** La pagina mostra file system e tipo di disco del kit; Automatico, Nel kit e Nel sistema cambiano `$env:TEMP` in una console nuova del kit (`data\tmp\system` o `%TEMP%\Dev-Kit\<id>\system`).
+- [ ] **Alias e `.htaccess`** (D-100). In una cartella di alias servita da Apache, un collegamento simbolico non si apre; un `.htaccess` con `Options +FollowSymLinks` dà 500, uno con `RewriteRule` 403.
 - [ ] **File scaricati a mano** (D-82). Un file messo a mano nel riquadro finisce in `%TEMP%\Dev-Kit\<id>\downloads`; uno lasciato in `data\downloads` si usa lo stesso e si sposta.
 
 ### GitHub
@@ -145,6 +257,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 
 ### Accessibilità
 - [ ] **Solo tastiera.** Tutte le pagine si usano: Tab mostra sempre il contorno di focus, «Vai al contenuto» è il primo elemento, il dialogo di chiusura riceve il focus.
+- [ ] **Conferme nella pagina** (D-106). Uscita da un agente, da GitHub, ripristino di un database e «Applica» in Linguaggi e strumenti: l'Assistente vocale legge la domanda, il focus è su «Annulla», Esc chiude e il focus torna al pulsante di partenza. Lo zoom di una schermata della Guida tiene Tab dentro e si chiude con Esc.
 - [ ] **Assistente vocale.** Le pagine hanno titoli e le icone hanno un nome. Errori e stati sono annunciati (`role="alert"` e `role="status"`).
 - [ ] **Stesso aspetto dell'editor** (D-88). App ed editor affiancati, in tema scuro e in chiaro: stessi colori di sfondo, testo, focus, pulsanti, campi e menu a tendina; select, campi e caselle si usano con mouse e tastiera; le icone codicon si vedono (nessun quadratino).
 - [ ] **Tema e animazioni.** Il tema chiaro e quello scuro seguono Windows. Con «Effetti di animazione» spenti in Windows, nessuna icona gira.

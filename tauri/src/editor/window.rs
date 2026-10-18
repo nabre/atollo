@@ -17,13 +17,14 @@
 //!   new window: refused here and done on this window, still without IPC.
 
 use std::path::Path;
-use std::process::Command;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use anyhow::{Context, Result};
 use tauri::webview::NewWindowResponse;
 use tauri::{AppHandle, Manager, Runtime, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+#[cfg(windows)]
 use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+#[cfg(windows)]
 use windows::core::Interface;
 
 use crate::os::jobs;
@@ -506,8 +507,23 @@ pub fn same_origin(url: &Url, port: u16) -> bool {
 /// with `folder=` the project's folder. Another folder, a workspace file or
 /// an empty window (`ew=`) is refused, also in a new window.
 pub fn in_project(url: &Url, folder: &Path) -> bool {
-    let want = format!("/{}", folder.display().to_string().replace('\\', "/"));
-    let norm = |s: &str| s.trim_end_matches('/').to_lowercase();
+    in_project_on(crate::kit::Os::current(), url, folder)
+}
+
+/// [`in_project`] for a folder of `os`.
+pub fn in_project_on(os: crate::kit::Os, url: &Url, folder: &Path) -> bool {
+    let want = super::folder_param_on(os, folder);
+    // A Windows path (`/C:/...`) is matched in any case, as Windows does;
+    // a Unix one exactly: on Linux `/home/a/App` is another folder.
+    let fold = os.is_windows();
+    let norm = |s: &str| {
+        let s = s.trim_end_matches('/');
+        if fold {
+            s.to_lowercase()
+        } else {
+            s.to_owned()
+        }
+    };
     let mut found = false;
     for (key, value) in url.query_pairs() {
         match key.as_ref() {
@@ -538,12 +554,7 @@ pub fn open_in_browser(url: &Url) -> Result<()> {
     if classify_external(url) != Leave::Browser {
         anyhow::bail!("blocked link scheme: {}", url.scheme());
     }
-    let rundll = jobs::system_root().join(r"System32\rundll32.exe");
-    jobs::spawn_detached(
-        Command::new(rundll).args(["url.dll,FileProtocolHandler", url.as_str()]),
-        0,
-    )
-    .map(|_| ())
+    jobs::open_url(url.as_str())
 }
 
 /// An editor window on the project in `folder`, which it cannot leave.
@@ -639,8 +650,13 @@ pub fn open<R: Runtime>(
     Ok(())
 }
 
+/// WebView2 settings: nothing to change in WKWebView or WebKitGTK.
+#[cfg(not(windows))]
+pub fn quiet_webview<R: Runtime>(_window: &WebviewWindow<R>, _what: &'static str) {}
+
 /// Browser accelerator keys, context menu and status bar off, so Ctrl+W,
 /// Ctrl+N, Ctrl+F, F5... reach the page. `what` names the window in the log.
+#[cfg(windows)]
 pub fn quiet_webview<R: Runtime>(window: &WebviewWindow<R>, what: &'static str) {
     let applied = window.with_webview(move |webview| {
         let result = (|| -> windows::core::Result<()> {

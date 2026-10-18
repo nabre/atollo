@@ -36,7 +36,7 @@ use std::time::{Duration, SystemTime};
 use anyhow::{bail, Context, Result};
 use serde_json::Value;
 
-use crate::fsx::write_atomic;
+use crate::fsx::{join_rel, write_atomic};
 use crate::kit::Kit;
 
 /// Folders of the kit and of the three agents.
@@ -59,7 +59,7 @@ impl Paths {
         Paths {
             root: kit.root().to_path_buf(),
             agents: data.join("agents"),
-            state: data.join(r"agents\.sync"),
+            state: join_rel(&data, "agents/.sync"),
             claude: home.join(".claude"),
             codex: home.join(".codex"),
             gemini: home.join(".gemini"),
@@ -171,8 +171,8 @@ pub const KIT_RULE_TEXT: &str = "In this kit (NEXKORA) Claude Code, Codex and An
 fn sync_rules(p: &Paths) -> Result<()> {
     let rule = format!("<!-- Dev-Kit: regola del kit, riscritta a ogni avvio (non modificare) -->\n{KIT_RULE_TEXT}\n");
     for file in [
-        p.claude.join(r"rules\devkit.md"),
-        p.gemini.join(r"config\rules\devkit.md"),
+        join_rel(&p.claude, "rules/devkit.md"),
+        join_rel(&p.gemini, "config/rules/devkit.md"),
     ] {
         if fs::read_to_string(&file).ok().as_deref() != Some(rule.as_str()) {
             if let Some(dir) = file.parent() {
@@ -323,7 +323,20 @@ impl Drop for Lock {
     }
 }
 
+/// True if a process with this id runs (signal 0 checks without sending;
+/// EPERM: it runs under another user).
+#[cfg(unix)]
+pub fn alive(pid: u32) -> bool {
+    let Ok(pid @ 1..) = libc::pid_t::try_from(pid) else {
+        return false;
+    };
+    // SAFETY: signal 0 sends nothing.
+    let sent = unsafe { libc::kill(pid, 0) } == 0;
+    sent || std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
+}
+
 /// True if a process with this id runs.
+#[cfg(windows)]
 pub fn alive(pid: u32) -> bool {
     use windows::Win32::Foundation::CloseHandle;
     use windows::Win32::System::Threading::{
@@ -370,7 +383,7 @@ fn tools(p: &Paths) -> Vec<Tool> {
             id: "antigravity",
             name: "Antigravity",
             instructions: p.gemini.join("AGENTS.md"),
-            skills: p.gemini.join(r"antigravity-cli\skills"),
+            skills: join_rel(&p.gemini, "antigravity-cli/skills"),
             skills_key: "skills-antigravity-cli".into(),
         },
     ]

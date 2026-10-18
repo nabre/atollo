@@ -34,53 +34,100 @@ pub async fn run_start<R: Runtime>(
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
         };
-        // A site assigned to a server profile: started in that shared pool
-        // (GAP-RUN). A profile gone since: the pool `list` puts it in, or,
-        // not in any, its own server as before.
-        if let SiteMode::Pool(_) = site_mode(a) {
+        // An Apache/Nginx site is started in a shared pool: the profile it
+        // was assigned to (GAP-RUN), else the automatic pool of its lines
+        // (D-101). A profile gone since: the pool `list` puts it in,
+        // or, not in any, its own server as before.
+        let mode = site_mode(a);
+        let mut fallback = None;
+        if mode != SiteMode::Dedicated {
             // A fresh scan: the cached one may still name the pool the site
             // was moved from.
-            if let Some((pool, site)) = servers.pool_of(&project, &a.id, lang) {
+            if let Some((pool, _)) = servers.pool_of(&project, &a.id, lang) {
                 let mut wanted = vec![pool.engine.as_str()];
                 if pool.php_line.is_some() {
                     wanted.push("php");
                 }
                 let env = ensure(&app, &task, &kit, lang, &wanted)?;
-                servers.start(&pool.id, &env, lang).or_fail_chain("run")?;
-                // The run is attached to the very pool just started, and
-                // only while it runs (with its live port).
-                let Some(port) = servers.running_port(&pool.id) else {
-                    return Err(crate::i18n::t(
-                        lang,
-                        "Il server condiviso {0} non è partito: guarda la pagina Server Web.",
-                        &[&pool.id],
-                    )
-                    .into());
-                };
-                let url = format!("http://{}:{port}", site.server_name);
-                return Ok(runner.attach_pool(&project, a, &pool.id, port, &url, lang));
+                // The site joins the pool (started, or reloaded when it was
+                // left out of it); the run follows the pool while it runs.
+                let attached = servers.attach(&project, &a.id, &env, lang).and_then(
+                    |(pool_id, port, server_name)| {
+                        if servers.running_port(&pool_id) == Some(port) {
+                            Ok((pool_id, port, server_name))
+                        } else {
+                            Err(anyhow::anyhow!(crate::i18n::t(
+                                lang,
+                                "Il server condiviso {0} non è partito: guarda la pagina Server Web.",
+                                &[&pool_id],
+                            )))
+                        }
+                    },
+                );
+                match attached {
+                    Ok((pool_id, port, server_name)) => {
+                        let url = format!("http://{server_name}:{port}");
+                        return Ok(runner.attach_pool(&project, a, &pool_id, port, &url, lang));
+                    }
+                    // The pool the user chose: its error, never another server.
+                    Err(e) if mode != SiteMode::Auto => return Err(e).or_fail_chain("run"),
+                    // The automatic pool cannot start (D-101): the site's own
+                    // server, saying why in its log.
+                    Err(e) => {
+                        crate::log::warn(&format!("run {project} {}: pool: {e:#}", a.id));
+                        fallback = Some(crate::i18n::t(
+                            lang,
+                            "Il server condiviso {0} non è partito ({1}): il sito usa un server tutto suo.",
+                            &[&pool.id, &format!("{e:#}")],
+                        ));
+                    }
+                }
             }
         }
-        let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
+        // `mysql`/`mariadb` from a command name: the kit's SQL server.
+        let wanted: Vec<String> = crate::setup::needs::of_action(a)
+            .into_iter()
+            .map(|n| crate::db::services::sql_need(&kit, n))
+            .collect();
+        let wanted: Vec<&str> = wanted.iter().map(String::as_str).collect();
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
-        runner
+        let info = runner
             .start(&project, &dir, a, &env, lang)
-            .or_fail_chain("run")
+            .or_fail_chain("run")?;
+        if let Some(text) = fallback {
+            runner.note(&info.key, &text);
+        }
+        Ok(info)
     })
     .await
     .or_fail("run")?
 }
 
+/// Stops an action. A site served by a pool leaves it (a reload, or the
+/// pool stops when no project is left in it: D-101), off the IPC
+/// thread.
 #[tauri::command]
-pub fn run_stop<R: Runtime>(
+pub async fn run_stop<R: Runtime>(
     webview: Webview<R>,
+    state: State<'_, AppState>,
     runner: State<'_, Arc<Runner>>,
     key: String,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
+    let pooled = runner.pooled(&key);
     runner.stop(&key);
-    Ok(())
+    let Some((pool, project, action)) = pooled else {
+        return Ok(());
+    };
+    let (servers, env, lang) = (Arc::clone(&state.servers), state.env(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || {
+        servers
+            .detach(&pool, &project, &action, &env, lang)
+            .or_fail_chain("run")
+    })
+    .await
+    .or_fail("run")?
 }
 
 #[tauri::command]

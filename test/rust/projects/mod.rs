@@ -96,14 +96,7 @@ fn git_state_from_files() {
     // it points to: here the real repository of `p`.
     let linked = tmp.0.join("linked");
     fs::create_dir_all(&linked).unwrap();
-    let status = std::process::Command::new("cmd")
-        .args(["/d", "/c", "mklink", "/J"])
-        .arg(linked.join(".git"))
-        .arg(&g)
-        .stdout(std::process::Stdio::null())
-        .status()
-        .unwrap();
-    assert!(status.success(), "mklink /J");
+    crate::os::safe_path::tests::junction(&linked.join(".git"), &g);
     assert!(git_dir(&linked, &tmp.0).is_none(), "junction .git refused");
     assert!(git_info(&linked, &tmp.0).is_none());
 }
@@ -254,7 +247,7 @@ fn delete_refused_when_another_project_has_the_same_database() {
     );
 }
 
-/// Data given to a project renamed outside the app (WP-7) drops the
+/// Data given to a project renamed outside the app (D-89) drops the
 /// databases it was created with, named after the old name; names of
 /// before kept by the rule of their time (`config` on MariaDB), and one
 /// of the server's own never dropped.
@@ -264,7 +257,11 @@ fn delete_drops_the_names_in_use() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     // an orphan of before the names, adopted by "Nuovo"
-    let old = kit.project_data().join(r"Vecchio-Nome\private\db.json");
+    let old = kit
+        .project_data()
+        .join("Vecchio-Nome")
+        .join("private")
+        .join("db.json");
     fs::create_dir_all(old.parent().unwrap()).unwrap();
     fs::write(&old, r#"{"mariadb":"pw","mongodb":"pw2"}"#).unwrap();
     create(&kit, "Nuovo", "it").unwrap();
@@ -456,25 +453,28 @@ fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
 }
 
 /// A4 handoff: what a project can add follows the catalog's targets, not
-/// only ARM64 (no PHP/Apache/Nginx off Windows, R everywhere but Windows ARM64).
+/// only ARM64 (no Apache/Nginx off Windows, PHP everywhere since D-112, R
+/// everywhere but Windows ARM64).
 #[test]
 fn addable_follows_the_platform() {
     use crate::kit::Target;
     let tmp = TempDir::new("projects-addable");
     let catalog = Catalog::get();
-    let (php, r, node) = (
+    let (apache, php, r, node) = (
+        catalog.find("apache").unwrap(),
         catalog.find("php").unwrap(),
         catalog.find("r").unwrap(),
         catalog.find("node").unwrap(),
     );
     let on = |t: Target| Kit::at_target(tmp.0.clone(), t);
     let win = on(Target::WIN32_X64);
-    assert!(addable(&win, php) && addable(&win, r) && addable(&win, node));
+    assert!(addable(&win, apache) && addable(&win, r) && addable(&win, node));
     let win_arm = on(Target::WIN32_ARM64);
-    assert!(addable(&win_arm, php) && !addable(&win_arm, r));
+    assert!(addable(&win_arm, apache) && !addable(&win_arm, r));
     for t in [Target::LINUX_ARM64, Target::DARWIN_ARM64, Target::LINUX_X64] {
         let kit = on(t);
-        assert!(!addable(&kit, php), "{t:?}");
+        assert!(!addable(&kit, apache), "{t:?}");
+        assert!(addable(&kit, php), "{t:?}");
         assert!(addable(&kit, r) && addable(&kit, node), "{t:?}");
     }
 }

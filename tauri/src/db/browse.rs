@@ -21,7 +21,8 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::auth;
-use super::services::{bin, Services};
+use super::services::{client_at, Services};
+use super::DbEngine;
 use crate::os::jobs;
 
 /// Rows of one page.
@@ -65,14 +66,20 @@ pub struct Rows {
     pub offset: u64,
 }
 
-fn is_system(engine: &str, name: &str) -> bool {
+/// One of the server's own databases ([`DbEngine::system_databases`]):
+/// SQL names in any case (`MySQL` on Windows), MongoDB's as they are.
+fn system_db(engine: DbEngine, name: &str) -> bool {
+    let own = engine.system_databases();
     match engine {
-        "mongodb" => matches!(name, "admin" | "config" | "local"),
-        _ => matches!(
-            name.to_ascii_lowercase().as_str(),
-            "information_schema" | "mysql" | "performance_schema" | "sys"
-        ),
+        DbEngine::MariaDb | DbEngine::MySql => own.iter().any(|n| n.eq_ignore_ascii_case(name)),
+        DbEngine::MongoDb => own.contains(&name),
     }
+}
+
+/// [`system_db`] by id, as the tests write it.
+#[cfg(test)]
+fn is_system(engine: &str, name: &str) -> bool {
+    DbEngine::from_id(engine).is_some_and(|e| system_db(e, name))
 }
 
 /// Runs a client with `input` on stdin and returns its output; stdout and
@@ -145,24 +152,36 @@ fn json_lines(text: &str) -> Result<Vec<Value>> {
         .collect()
 }
 
-fn mariadb(services: &Services, sql: &str) -> Result<String> {
-    let (_, env) = services.running_server("mariadb")?;
-    let mut cmd = services.mariadb_tool("mariadb.exe", &env);
+/// Runs `sql` with the client of the SQL `engine`, one JSON value per line.
+fn run_sql(
+    services: &Services,
+    engine: DbEngine,
+    line: Option<&str>,
+    query: &str,
+) -> Result<String> {
+    let (port, env) = services.running_at(engine, line)?;
+    let mut cmd = services.sql_tool_at(engine, engine.client_bin(), &env, line, port);
     cmd.args([
         "--batch",
         "--raw",
         "--skip-column-names",
         "--default-character-set=utf8mb4",
     ]);
-    output(cmd, sql, WITHIN)
+    output(cmd, query, WITHIN)
 }
 
-fn mongosh(services: &Services, script: &str, vars: &[(&str, &str)]) -> Result<Value> {
-    let (port, env) = services.running_server("mongodb")?;
+fn mongosh(
+    services: &Services,
+    line: Option<&str>,
+    script: &str,
+    vars: &[(&str, &str)],
+) -> Result<Value> {
+    let engine = DbEngine::MongoDb;
+    let (port, env) = services.running_at(engine, line)?;
     let admin = auth::load(services.kit())
         .mongodb_admin
         .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
-    let mut cmd = jobs::kit_command(bin(services.kit(), "mongosh", "mongosh.exe"), &env);
+    let mut cmd = jobs::kit_command(client_at(services.kit(), engine, None), &env);
     cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
         .arg(port.to_string())
         .args(["--eval", script])
@@ -197,17 +216,19 @@ const MONGO_ROWS_JS: &str = "const a = db.getSiblingDB('admin'); \
     const docs = c.find().skip(Number(process.env.DEVKIT_DB_OFFSET)).limit(Number(process.env.DEVKIT_DB_LIMIT)).toArray(); \
     print(EJSON.stringify({ total: c.countDocuments(), docs }, undefined, undefined, { relaxed: true }));";
 
-/// The databases of a running server, with their tables or collections,
-/// sorted by name.
-pub fn tree(services: &Services, engine: &str) -> Result<Vec<Database>> {
+/// The databases of a running server, version `line` (None: the one the
+/// server runs; each version has its own port and data), with their tables
+/// or collections, sorted by name.
+pub fn tree(services: &Services, engine: &str, line: Option<&str>) -> Result<Vec<Database>> {
+    let engine = DbEngine::parse(engine)?;
     let mut out: Vec<Database> = Vec::new();
     match engine {
-        "mariadb" => {
-            for row in json_lines(&mariadb(services, MARIADB_TREE)?)? {
+        DbEngine::MariaDb | DbEngine::MySql => {
+            for row in json_lines(&run_sql(services, engine, line, MARIADB_TREE)?)? {
                 let db = row["db"].as_str().unwrap_or_default().to_owned();
                 if out.last().is_none_or(|d| d.name != db) {
                     out.push(Database {
-                        system: is_system(engine, &db),
+                        system: system_db(engine, &db),
                         name: db,
                         tables: Vec::new(),
                     });
@@ -223,8 +244,8 @@ pub fn tree(services: &Services, engine: &str) -> Result<Vec<Database>> {
                 }
             }
         }
-        "mongodb" => {
-            let answer = mongosh(services, MONGO_TREE_JS, &[])?;
+        DbEngine::MongoDb => {
+            let answer = mongosh(services, line, MONGO_TREE_JS, &[])?;
             for d in answer.as_array().into_iter().flatten() {
                 let name = d["name"].as_str().unwrap_or_default().to_owned();
                 let mut tables: Vec<Table> = d["tables"]
@@ -239,14 +260,13 @@ pub fn tree(services: &Services, engine: &str) -> Result<Vec<Database>> {
                     .collect();
                 tables.sort_by(|a, b| a.name.cmp(&b.name));
                 out.push(Database {
-                    system: is_system(engine, &name),
+                    system: system_db(engine, &name),
                     name,
                     tables,
                 });
             }
             out.sort_by(|a, b| a.name.cmp(&b.name));
         }
-        _ => bail!("unknown server {engine}"),
     }
     Ok(out)
 }
@@ -268,16 +288,19 @@ fn mariadb_value(name: &str, data_type: &str) -> String {
     }
 }
 
-/// One page of a table or collection, from `offset`.
+/// One page of a table or collection of version `line` ([`tree`]), from
+/// `offset`.
 pub fn rows(
     services: &Services,
     engine: &str,
+    line: Option<&str>,
     database: &str,
     table: &str,
     offset: u64,
 ) -> Result<Rows> {
+    let engine = DbEngine::parse(engine)?;
     match engine {
-        "mariadb" => {
+        DbEngine::MariaDb | DbEngine::MySql => {
             let sql = format!(
                 "SELECT JSON_OBJECT('c', COLUMN_NAME, 'k', DATA_TYPE, 'ct', COLUMN_TYPE) \
                  FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = {} AND TABLE_NAME = {} \
@@ -285,7 +308,7 @@ pub fn rows(
                 literal(database),
                 literal(table)
             );
-            let cols = json_lines(&mariadb(services, &sql)?)?;
+            let cols = json_lines(&run_sql(services, engine, line, &sql)?)?;
             if cols.is_empty() {
                 bail!("table not found: {database}.{table}");
             }
@@ -310,7 +333,7 @@ pub fn rows(
                 "SELECT COUNT(*) FROM {from};\nSELECT JSON_ARRAY({}) FROM {from} LIMIT {PAGE} OFFSET {offset};\n",
                 values.join(", ")
             );
-            let mut lines = json_lines(&mariadb(services, &sql)?)?.into_iter();
+            let mut lines = json_lines(&run_sql(services, engine, line, &sql)?)?.into_iter();
             let total = lines.next().and_then(|v| v.as_u64()).unwrap_or(0);
             let rows = lines
                 .map(|v| match v {
@@ -325,10 +348,11 @@ pub fn rows(
                 offset,
             })
         }
-        "mongodb" => {
+        DbEngine::MongoDb => {
             let (offset_s, limit_s) = (offset.to_string(), PAGE.to_string());
             let answer = mongosh(
                 services,
+                line,
                 MONGO_ROWS_JS,
                 &[
                     ("DEVKIT_DB_NAME", database),
@@ -339,7 +363,6 @@ pub fn rows(
             )?;
             Ok(documents(&answer, offset))
         }
-        _ => bail!("unknown server {engine}"),
     }
 }
 

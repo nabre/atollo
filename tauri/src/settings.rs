@@ -57,7 +57,7 @@ impl Default for Settings {
     }
 }
 
-/// Where the kit's programs keep `TEMP` (PLAN-DATA 4.2.5): `Auto` decides by
+/// Where the kit's programs keep `TEMP` (D-90): `Auto` decides by
 /// the kit's disk, `Kit` is `data\tmp`, `System` the host's temporary folder.
 /// An unknown value in the file reads as `Auto`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]

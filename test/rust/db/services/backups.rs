@@ -10,25 +10,41 @@ fn copies_in_the_private_folder() {
     let s = Services::new(kit);
     assert!(s.backup_dir("..").is_err());
     assert!(s.backups(r"..\x").is_empty());
+    assert!(s.backups("../x").is_empty());
 
     let dir = s.backup_dir("shop").unwrap();
-    assert_eq!(dir, tmp.0.join(r"data\projects\shop\private\backups"));
+    let private = tmp
+        .0
+        .join("data")
+        .join("projects")
+        .join("shop")
+        .join("private");
+    assert_eq!(dir, private.join("backups"));
     assert!(s.backups("shop").is_empty());
     // a copy written there (as mariadb-dump's output) is private by
-    // inheritance from private\
+    // inheritance from private\ on Windows; on Unix a new file keeps the
+    // umask's mode, and private/ (0700) is what keeps the others out
     for name in ["shop-1.sql", "shop-2.archive.gz", "notes.txt"] {
         fs::write(dir.join(name), "x").unwrap();
     }
+    #[cfg(windows)]
     assert_owner_only(&dir.join("shop-1.sql"));
+    #[cfg(unix)]
+    assert_owner_only(&private);
     let list = s.backups("shop");
     let names: Vec<(&str, &str)> = list
         .iter()
         .map(|b| (b.file.as_str(), b.engine.as_str()))
         .collect();
+    // A `.sql` copy is for the project's SQL server: MySQL on a new kit,
+    // MariaDB where the project's database is (D-110).
     assert_eq!(
         names,
-        [("shop-2.archive.gz", "mongodb"), ("shop-1.sql", "mariadb")]
+        [("shop-2.archive.gz", "mongodb"), ("shop-1.sql", "mysql")]
     );
+    crate::db::auth::set_project_password(s.kit(), "shop", "mariadb", "pw").unwrap();
+    let engines: Vec<String> = s.backups("shop").into_iter().map(|b| b.engine).collect();
+    assert_eq!(engines, ["mongodb", "mariadb"]);
     assert!(s.backups("other").is_empty(), "one folder per project");
 
     // no server: export fails before writing anything
@@ -36,7 +52,7 @@ fn copies_in_the_private_folder() {
     assert_eq!(fs::read_dir(&dir).unwrap().count(), 3);
 
     // names outside the folder are refused before any server is asked
-    let outside = tmp.0.join(r"data\projects\shop\private\x.sql");
+    let outside = private.join("x.sql");
     fs::write(&outside, "x").unwrap();
     for bad in [
         r"..\x.sql",
@@ -65,7 +81,7 @@ fn only_the_projects_own_database() {
     kit.prepare().unwrap();
     let s = Services::new(kit.clone());
     let db_json = |p: &str, json: &str| {
-        let file = kit.project_data().join(p).join(r"private\db.json");
+        let file = kit.project_data().join(p).join("private").join("db.json");
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(file, json).unwrap();
     };
