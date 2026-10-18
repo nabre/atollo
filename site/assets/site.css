@@ -80,7 +80,8 @@ section { padding: 72px 0; }
 }
 .top-row { display: flex; align-items: center; gap: 24px; height: 56px; }
 .brand { display: flex; }
-.logo { height: 24px; width: auto; }
+/* The wordmark alone: the symbol is an A too, and beside the word it reads "AATOLLO". */
+.logo { height: 20px; width: auto; }
 .logo-light { display: none; }
 @media (prefers-color-scheme: light) { .logo-dark { display: none; } .logo-light { display: block; } }
 .nav { display: flex; gap: 20px; margin-left: auto; font-size: 0.9rem; }
