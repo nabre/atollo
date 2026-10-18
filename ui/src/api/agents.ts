@@ -30,7 +30,16 @@ const SAMPLE_AGENTS: AgentInfo[] = [
     running: true,
     tokenLink: false,
   },
-  { id: "codex", name: "Codex", installed: true, version: "0.98.0", signedIn: false, signInKind: null, running: false, tokenLink: false },
+  {
+    id: "codex",
+    name: "Codex",
+    installed: true,
+    version: "0.98.0",
+    signedIn: false,
+    signInKind: null,
+    running: false,
+    tokenLink: false,
+  },
   {
     id: "antigravity",
     name: "Antigravity",

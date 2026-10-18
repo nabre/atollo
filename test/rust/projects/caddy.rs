@@ -424,9 +424,20 @@ fn reload_failure_keeps_the_reason() {
 fn stale_socket_leaves_are_swept() {
     use std::os::unix::net::UnixListener;
     use std::time::Duration;
-    let tmp = TempDir::new("caddy-sweep");
-    let parent = tmp.0.join("atollo-caddy-test");
-    private_leaf(&tmp.0, "atollo-caddy-test").unwrap();
+    // A short base: macOS's temporary folder (/var/folders/…/T/) would put
+    // the sockets past sun_path's 104 bytes.
+    let base = std::path::PathBuf::from(format!("/tmp/acs-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&base);
+    fs::create_dir_all(&base).unwrap();
+    struct Gone(std::path::PathBuf);
+    impl Drop for Gone {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+    let _gone = Gone(base.clone());
+    let parent = base.join("p");
+    private_leaf(&base, "p").unwrap();
     let dead = private_leaf(&parent, "c-dead").unwrap();
     drop(UnixListener::bind(dead.join("a.sock")).unwrap());
     assert!(
