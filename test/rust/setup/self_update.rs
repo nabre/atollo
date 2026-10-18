@@ -460,3 +460,41 @@ fn bundle_config_agrees() {
     // The release assets and the swap use the binary's name.
     assert_eq!(conf["mainBinaryName"], "Atollo");
 }
+
+/// A check that finds a newer version always reports it: staged where the
+/// copy replaces itself, to download by hand for a plain binary (the
+/// tar.gz, cargo run), never as a failed check.
+#[test]
+fn check_results_set_the_status() {
+    let mut s = Status {
+        current: "0.4.0".into(),
+        checking: true,
+        error: Some("earlier".into()),
+        ..Status::default()
+    };
+    record(&mut s, Ok(Found::Manual("0.5.0".into())));
+    assert_eq!(s.latest.as_deref(), Some("0.5.0"));
+    assert!(s.manual);
+    assert_eq!(s.error, None);
+    assert_eq!(s.staged, None);
+    assert!(!s.checking);
+
+    s.checking = true;
+    record(&mut s, Ok(Found::Staged("0.5.0".into())));
+    assert_eq!(s.staged.as_deref(), Some("0.5.0"));
+    assert!(!s.manual);
+
+    record(&mut s, Ok(Found::UpToDate("0.5.0".into())));
+    assert_eq!(s.latest.as_deref(), Some("0.5.0"));
+    // A version staged earlier stays staged.
+    assert_eq!(s.staged.as_deref(), Some("0.5.0"));
+
+    s.checking = true;
+    record(&mut s, Err(anyhow!("offline")));
+    assert_eq!(s.error.as_deref(), Some("offline"));
+    assert_eq!(s.latest.as_deref(), Some("0.5.0"));
+    assert!(!s.checking);
+
+    let json = serde_json::to_value(&s).unwrap();
+    assert_eq!(json["manual"], false);
+}

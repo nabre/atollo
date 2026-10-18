@@ -53,6 +53,41 @@ pub struct Status {
     pub staged: Option<String>,
     pub checking: bool,
     pub error: Option<String>,
+    /// `latest` is newer, but this copy cannot replace itself (a plain
+    /// binary off Windows: the tar.gz, `cargo run`): download it from the
+    /// release by hand. Not an error.
+    pub manual: bool,
+}
+
+/// What a check found.
+#[derive(Debug, PartialEq, Eq)]
+enum Found {
+    /// Nothing newer than this version (the version itself).
+    UpToDate(String),
+    /// Newer, downloaded and verified: swapped at exit.
+    Staged(String),
+    /// Newer, to download by hand (no copy that replaces itself).
+    Manual(String),
+}
+
+/// The status after a check, from what it found or why it failed.
+fn record(s: &mut Status, result: Result<Found>) {
+    s.checking = false;
+    match result {
+        Ok(found) => {
+            s.error = None;
+            s.manual = matches!(found, Found::Manual(_));
+            let (Found::UpToDate(v) | Found::Staged(v) | Found::Manual(v)) = &found;
+            s.latest = Some(v.clone());
+            if let Found::Staged(v) = found {
+                s.staged = Some(v);
+            }
+        }
+        Err(e) => {
+            crate::log::warn(&format!("update check: {e:#}"));
+            s.error = Some(format!("{e:#}"));
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -426,44 +461,31 @@ impl Updater {
             s.error = None;
         }
         let result = self.check_and_stage(net);
-        self.set(|s| {
-            s.checking = false;
-            match result {
-                Ok((latest, staged)) => {
-                    s.latest = Some(latest);
-                    if staged.is_some() {
-                        s.staged = staged;
-                    }
-                }
-                Err(e) => {
-                    crate::log::warn(&format!("update check: {e:#}"));
-                    s.error = Some(format!("{e:#}"));
-                }
-            }
-        });
+        self.set(|s| record(s, result));
         self.status()
     }
 
-    /// (newest version published, version staged now if any).
-    fn check_and_stage(&self, net: &Net) -> Result<(String, Option<String>)> {
+    fn check_and_stage(&self, net: &Net) -> Result<Found> {
         let releases: Vec<Release> = net.json(&format!(
             "https://api.github.com/repos/{REPO}/releases?per_page=30"
         ))?;
         let current = env!("CARGO_PKG_VERSION");
         let asset_name = asset_name(&self.kit);
         let Some(release) = newest(&releases, current, &asset_name) else {
-            return Ok((current.to_owned(), None));
+            return Ok(Found::UpToDate(current.to_owned()));
         };
         let version = release.tag_name.trim_start_matches(TAG_PREFIX).to_owned();
         if read_staged(&self.kit).is_some_and(|(s, _)| s.version == version) {
-            return Ok((version.clone(), Some(version)));
+            return Ok(Found::Staged(version));
         }
         let exe = std::env::current_exe().context("the app's own path")?;
+        // Only Atollo.app (macOS) and the AppImage (Linux) replace themselves
+        // off Windows: a plain binary learns of the version all the same.
         let Some(plan) = plan_for(&self.kit, &exe) else {
-            bail!(
-                "version {version} is out, but only Atollo.app (macOS) or the AppImage (Linux) \
-                 replaces itself: download it from the release"
-            );
+            crate::log::info(&format!(
+                "update {version} is out: this copy does not replace itself, download it"
+            ));
+            return Ok(Found::Manual(version));
         };
         let asset = release
             .assets
@@ -502,7 +524,7 @@ impl Updater {
         };
         crate::fsx::write_json(&staged_info(&self.kit), &info)?;
         crate::log::info(&format!("update {version} staged"));
-        Ok((version.clone(), Some(version)))
+        Ok(Found::Staged(version))
     }
 }
 

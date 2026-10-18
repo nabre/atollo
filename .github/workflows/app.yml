@@ -304,10 +304,19 @@ jobs:
   # its GTK plugin, so WebKitGTK and GTK travel inside the image; the
   # tar.gz holds only the binary, for systems without FUSE that have
   # WebKitGTK 4.1 installed. Artifacts only, as for macOS.
+  #
+  # 22.04 is a container on the 24.04 runners: GitHub retires its
+  # ubuntu-22.04 images (actions/runner-images#14254, gone on 2027-04-17),
+  # while the floor comes from the system the binary links against, not
+  # from the runner.
   bundle-linux:
     name: Bundle ${{ matrix.target }}
-    runs-on: ${{ matrix.target == 'linux-arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
+    runs-on: ${{ matrix.target == 'linux-arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    container: ubuntu:22.04
     timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -315,9 +324,19 @@ jobs:
         # as in test-unix.
         target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64"]' || '["linux-x64","linux-arm64"]') }}
     env:
-      # linuxdeploy is itself an AppImage: it runs without FUSE on the runner.
+      # linuxdeploy is itself an AppImage: it runs without FUSE (none in a
+      # container either).
       APPIMAGE_EXTRACT_AND_RUN: 1
+      DEBIAN_FRONTEND: noninteractive
     steps:
+      # Before checkout (a real clone needs git) and the toolchain (rustup
+      # comes through curl). The libraries of Tauri 2 (22.04 names), file
+      # and xdg-utils for the AppImage bundler, xvfb and xauth for the
+      # smoke test. Root in the container: no sudo.
+      - name: System packages
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git build-essential file xdg-utils xvfb xauth libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev patchelf libssl-dev libdbus-1-dev libxdo-dev pkg-config
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
@@ -328,12 +347,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: bundle-${{ matrix.target }}
-      # The libraries of Tauri 2 (22.04 names), file and xdg-utils for the
-      # AppImage bundler, xvfb for the smoke test.
-      - name: System libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev patchelf libssl-dev libdbus-1-dev libxdo-dev pkg-config build-essential file xdg-utils xvfb
       - name: Frontend dependencies
         run: npm ci --no-fund --no-audit
       - name: Build (AppImage)
