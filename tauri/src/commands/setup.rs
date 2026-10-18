@@ -129,7 +129,9 @@ pub(super) fn xcode_missing(
 }
 
 /// The folder of the active developer tools (`xcode-select -p`), on a Mac.
-/// `-p` only prints: it never opens the installation dialog.
+/// `-p` only prints: it never opens the installation dialog. The same as
+/// `install::lang::cc::xcode_selected`, which its private modules do not
+/// export yet: to be replaced by it once they do.
 #[cfg(target_os = "macos")]
 fn xcode_selected() -> Option<String> {
     let out = std::process::Command::new("/usr/bin/xcode-select")
@@ -157,6 +159,10 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let target = kit.target();
     let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
     let locked = catalog.locked_on(target);
+    // Chosen here also when a chosen one needs it on this target only (Zig
+    // for C and C++ on Linux): the run installs it, the choice does not
+    // save it (see `choice_text`).
+    let here = catalog.needs_only_on(&choice.chosen_ids(catalog), target);
     let xcode_missing = xcode_missing_on_host(target);
     // The order of the page, which an installation follows too.
     catalog
@@ -177,7 +183,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 group: c.group,
                 desc: crate::i18n::t(lang, &c.desc, &[]),
                 mb: c.mb,
-                chosen: choice.is_chosen(&c.id),
+                chosen: choice.is_chosen(&c.id) || here.contains(c.id.as_str()),
                 installed: c.is_installed(kit),
                 present: c.is_present(kit),
                 locked: locked.contains(c.id.as_str()),
@@ -287,7 +293,7 @@ pub fn components_apply<R: Runtime>(
         return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
     }
     let text = choice_text(&kit, &chosen);
-    let choice = Choice::parse_on(&text, catalog, kit.target());
+    let choice = Choice::parse(&text, catalog);
     choice.write(&kit, catalog).or_fail_chain("components")?;
     let opts = Options {
         target: Some(kit.target()),
@@ -300,16 +306,23 @@ pub fn components_apply<R: Runtime>(
 /// `components.txt` for the ids in `chosen`. What this target cannot install
 /// (`noArm64` on `win32-arm64`, `unavailable` or outside `targets`, an x64
 /// build on a Mac without Rosetta 2) keeps its saved choice: the same kit
-/// on another OS/arch must not lose it.
+/// on another OS/arch must not lose it. Nor does what a chosen one needs on
+/// this target only (Zig for C and C++ on Linux, ticked with them by the
+/// page): the run on this target installs it anyway, and saving it would
+/// install it on Windows too.
 pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
     let catalog = Catalog::get();
     let saved = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
+    let ids: Vec<&str> = chosen.iter().map(String::as_str).collect();
+    let here = catalog.needs_only_on(&ids, target);
     catalog
         .all()
         .iter()
         .map(|c| {
-            let on = if !crate::router::target::installable_on(c, target) {
+            let on = if !crate::router::target::installable_on(c, target)
+                || here.contains(c.id.as_str())
+            {
                 saved.is_chosen(&c.id)
             } else {
                 chosen.contains(&c.id)
