@@ -162,6 +162,12 @@ struct Fake {
     locked_now: Cell<bool>,
     /// A target that cannot be written.
     refuse: Option<&'static str>,
+    /// The only targets `list` returns, as the stores of macOS and Linux
+    /// ([`KNOWN`]); `None`: every one, as Windows.
+    only: Option<&'static [&'static str]>,
+    /// The sealing key is not this one (a "before" file of another
+    /// computer): sealed secrets cannot be opened.
+    other_key: bool,
 }
 
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -207,7 +213,13 @@ impl Store for Fake {
         if self.locked_now.get() {
             anyhow::bail!("Keychain: security exited with 36");
         }
-        Ok(self.items.borrow().clone())
+        Ok(self
+            .items
+            .borrow()
+            .iter()
+            .filter(|i| self.listable(&i.target))
+            .cloned()
+            .collect())
     }
     fn write(&self, item: &Item, persist: u32) -> Result<()> {
         if self.down != Down::Up {
@@ -237,11 +249,161 @@ impl Store for Fake {
         Ok(format!("sealed:{blob}"))
     }
     fn unprotect(&self, blob: &str) -> Result<String> {
-        Ok(blob.strip_prefix("sealed:").unwrap_or(blob).to_owned())
+        match blob.strip_prefix("sealed:") {
+            Some(_) if self.other_key => anyhow::bail!("sealed secret: wrong key or altered"),
+            Some(rest) => Ok(rest.to_owned()),
+            None => Ok(blob.to_owned()),
+        }
     }
     fn forget_key(&self) {
         self.forgot.set(self.forgot.get() + 1);
     }
+    fn listable(&self, target: &str) -> bool {
+        self.only.is_none_or(|only| only.contains(&target))
+    }
+    fn undo_partial(&self) -> bool {
+        true
+    }
+}
+
+/// The store of macOS and Linux: only the pairs in [`KNOWN`] are listed.
+const UNIX_ONLY: &[&str] = &["gemini:antigravity"];
+
+/// Every Windows-only name in keyring.json (`jetski…`) stays there and is
+/// never written to a store that cannot list it back.
+#[test]
+fn names_the_store_cannot_list_stay_in_the_kit() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item(T, "kit"), item("jetski:other", "win")]).unwrap();
+    let store = Fake {
+        only: Some(UNIX_ONLY),
+        ..Fake::default()
+    };
+    restore_with(&kit, &store).unwrap();
+    assert_eq!(store.secret_of(T).as_deref(), Some("kit"));
+    assert_eq!(store.secret_of("jetski:other"), None, "never moved in");
+    store.agy_writes(T, "kit-2");
+    end_run(&kit, &store);
+    assert!(store.items.borrow().is_empty(), "nothing left in the store");
+    let kept = read(&f.store);
+    assert_eq!(kept.len(), 2, "both kept: {kept:?}");
+    let blob = |t: &str| {
+        kept.iter()
+            .find(|i| i.target == t)
+            .and_then(|i| i.blob.clone())
+    };
+    assert_eq!(blob(T).as_deref(), Some("kit-2"));
+    assert_eq!(blob("jetski:other").as_deref(), Some("win"));
+    // Signed out inside agy: only the name agy uses here is forgotten.
+    restore_with(&kit, &store).unwrap();
+    store.delete(T);
+    end_run(&kit, &store);
+    let kept = read(&f.store);
+    assert_eq!(kept.len(), 1);
+    assert_eq!(kept[0].target, "jetski:other");
+}
+
+/// The real stores of macOS and Linux list and write only [`KNOWN`].
+#[test]
+fn known_targets_only() {
+    assert!(known_target("gemini:antigravity"));
+    assert!(!known_target("jetski:other"));
+    assert!(!known_target("antigravity:x"));
+    assert!(!known_target("gemini"));
+    assert!(!known_target("gemini:antigravity:x"));
+}
+
+/// A restore that fails after writing some of the kit's credentials
+/// deletes them: no "before" file would tell they are the kit's.
+#[test]
+fn failed_restore_takes_back_what_it_wrote() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item(T, "kit"), item("jetski:b", "kit-b")]).unwrap();
+    let store = Fake {
+        refuse: Some("jetski:b"),
+        ..Fake::default()
+    };
+    assert!(restore_with(&kit, &store).is_err());
+    assert!(!f.seen.exists() && !f.starting.exists());
+    assert!(store.items.borrow().is_empty(), "the first one taken back");
+    assert_eq!(read(&f.store).len(), 2, "the kit's copy untouched");
+}
+
+/// A "before" file whose sealed secrets cannot be opened here (another
+/// computer's, or its key gone): the save changes nothing, and never copies
+/// this computer's login into the kit.
+#[test]
+fn before_file_sealed_elsewhere_changes_nothing() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item(T, "kit")]).unwrap();
+    let mut other = item(T, "sealed:theirs");
+    other.kit = Some(false);
+    other.written = Some(-1);
+    save_file(&f.seen, &[other]).unwrap();
+    let kit_file = fs::read(&f.store).unwrap();
+    let store = Fake {
+        other_key: true,
+        ..Fake::with(&[(T, "mine")])
+    };
+    let e = save_with(&kit, &store).unwrap_err();
+    assert!(format!("{e:#}").contains("cannot be opened"), "{e:#}");
+    assert_eq!(
+        fs::read(&f.store).unwrap(),
+        kit_file,
+        "kit's copy unchanged"
+    );
+    assert_eq!(
+        store.secret_of(T).as_deref(),
+        Some("mine"),
+        "store untouched"
+    );
+    assert!(f.seen.exists(), "kept, not dropped");
+}
+
+/// The tag of a run's files: the machine and the account, never the host
+/// name (which changes with the network and repeats between Macs).
+#[test]
+fn run_files_tagged_by_machine_and_account() {
+    let mac = "4C4C4544-0042-3510-8051-B4C04F4D4C31";
+    let a = machine_tag(mac, 501);
+    assert_eq!(a, machine_tag(&mac.to_ascii_lowercase(), 501), "stable");
+    assert_eq!(a, machine_tag(&format!("{mac}\n"), 501));
+    assert_ne!(a, machine_tag(mac, 502), "another account");
+    assert_ne!(a, machine_tag("4C4C4544-0042-3510-8051-B4C04F4D4C32", 501));
+    assert_eq!(a.len(), 17);
+    assert!(a.starts_with('m') && a[1..].bytes().all(|b| b.is_ascii_hexdigit()));
+    assert!(
+        !a.to_ascii_uppercase().contains("4C4C4544"),
+        "the id is not written"
+    );
+    assert_eq!(host_tag(&a), a, "usable in a file name");
+}
+
+/// Two Macs with the same name (or the name changed between a crash and
+/// the next start): the other computer's "before" file is never read.
+#[cfg(unix)]
+#[test]
+fn another_computers_before_file_is_ignored() {
+    let (_tmp, kit) = kit();
+    let mine = files(&kit);
+    let dir = mine.store.parent().unwrap().to_path_buf();
+    let theirs = files_in(&dir, Some(&machine_tag("another-mac", 501)));
+    assert_ne!(theirs.seen, mine.seen);
+    let mut kit_item = item(T, "x");
+    kit_item.kit = Some(true);
+    save_file(&theirs.seen, &[kit_item]).unwrap();
+    let store = Fake::with(&[(T, "mine")]);
+    assert!(!pending(&kit));
+    save_with(&kit, &store).unwrap();
+    assert_eq!(store.secret_of(T).as_deref(), Some("mine"));
+    assert!(
+        !mine.store.exists(),
+        "this Mac's login never copied into the kit"
+    );
+    assert!(theirs.seen.exists(), "left for its own computer");
 }
 
 const T: &str = "gemini:antigravity";
