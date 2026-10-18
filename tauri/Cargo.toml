@@ -50,6 +50,10 @@ portable-pty = "=0.9.0"
 # tauri-plugin-dialog: the plugin replaces window.alert and window.confirm
 # in every webview, the editor's too.
 rfd = { version = "=0.16.0", default-features = false, features = ["gtk3"] }
+# Antigravity's login in the Keychain (macOS) and the Secret Service (Linux),
+# WP-4.1. 3.6.3: the last release with these features (4.x moved the stores
+# into separate crates). Windows keeps its own Credential Manager code.
+keyring = { version = "=3.6.3", default-features = false, features = ["apple-native", "sync-secret-service"] }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.62.2"
