@@ -28,6 +28,8 @@ const COMMANDS: &[&str] = &[
     "setup_by_hand_open",
     "components_apply",
     "components_install",
+    "conda_kept",
+    "conda_kept_free",
     "agents_status",
     "agents_stats",
     "agent_launch",

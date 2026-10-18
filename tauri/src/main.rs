@@ -253,6 +253,9 @@ fn run() -> i32 {
     // Leftovers of files in transit (D-90): only here, as the one app of the
     // kit (D-08); a command line run would race the open app's programs.
     os::temp::sweep(&kit);
+    // The kept conda packages no list names any more (D-118); left for the
+    // end of a preparation that runs now.
+    let _ = setup::runner::while_idle(&kit, || install::conda::sweep(&kit));
 
     // WebView2 lookup sets a variable for the fixed runtime: still single-threaded here.
     let runtime = os::webview::locate(&kit);

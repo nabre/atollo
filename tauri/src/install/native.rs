@@ -25,7 +25,7 @@ use crate::settings::Settings;
 use crate::setup::catalog::Component;
 
 /// Runs a kit program, sending its output lines to the progress notes.
-fn run(
+pub(super) fn run(
     ctx: &Ctx,
     program: &Path,
     args: &[&str],
@@ -59,6 +59,36 @@ fn run(
         );
     }
     Ok(())
+}
+
+/// Runs a kit program and returns what it printed on its standard output;
+/// its errors go to the progress notes only when it fails.
+pub(super) fn run_output(
+    ctx: &Ctx,
+    program: &Path,
+    args: &[&str],
+    envs: &[(&str, &Path)],
+) -> Result<String> {
+    let mut cmd = jobs::kit_command(program, ctx.env);
+    cmd.args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    for (k, v) in envs {
+        cmd.env(k, v);
+    }
+    let out = cmd
+        .output()
+        .with_context(|| program.display().to_string())?;
+    if !out.status.success() {
+        bail!(
+            "{} failed ({}): {}",
+            program.file_name().unwrap_or_default().to_string_lossy(),
+            out.status,
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
 fn can_hard_link(dir: &Path) -> bool {
@@ -584,12 +614,37 @@ pub fn micromamba_create_args(prefix: &Path, specs: &[&str]) -> Vec<String> {
     args
 }
 
+/// The environment of micromamba with its home, root prefix and package
+/// cache (`CONDA_PKGS_DIRS`, which it reads also with `--no-rc`) in the
+/// work folder `work`: nothing is written outside the kit and the
+/// temporary folder.
+pub(super) fn mamba_envs(work: &Path) -> Vec<(&'static str, PathBuf)> {
+    let home = work.join("mamba-home");
+    vec![
+        ("HOME", home.clone()),
+        ("USERPROFILE", home.clone()),
+        ("APPDATA", join_rel(&home, "AppData/Roaming")),
+        ("LOCALAPPDATA", join_rel(&home, "AppData/Local")),
+        ("MAMBA_ROOT_PREFIX", home.join("mamba")),
+        ("CONDA_PKGS_DIRS", work.join("pkgs")),
+    ]
+}
+
+/// `micromamba(.exe)` in the kit's `tools`, the one every environment is
+/// made with.
+pub(super) fn micromamba_path(kit: &Kit) -> PathBuf {
+    kit.apps()
+        .join("tools")
+        .join(format!("micromamba{}", kit.os().exe_suffix()))
+}
+
 /// Creates the conda environment `prefix` with `specs`, by the micromamba
 /// of `release` (`micromamba_release`), put into `tools`. Any old `prefix`
 /// goes first. Its home, root prefix and package cache are in the work
-/// folder, so nothing is written outside the kit and the temporary folder.
-/// The environment is created where it stays: conda writes `prefix` into
-/// some of its files, so it cannot be moved (D-92).
+/// folder (`mamba_envs`). The environment is created where it stays: conda
+/// writes `prefix` into some of its files, so it cannot be moved (D-92).
+/// For a component that cannot follow the kit its archives are then kept
+/// in the kit with the explicit list of the line (`conda::keep`, D-118).
 pub(super) fn micromamba_create(
     ctx: &Ctx,
     component: &Component,
@@ -613,9 +668,10 @@ pub(super) fn micromamba_create(
             work,
             progress,
         )?;
-        let tools = ctx.kit.apps().join("tools");
-        fs::create_dir_all(&tools)?;
-        let mm = tools.join(format!("micromamba{}", ctx.kit.os().exe_suffix()));
+        let mm = micromamba_path(ctx.kit);
+        if let Some(tools) = mm.parent() {
+            fs::create_dir_all(tools)?;
+        }
         crate::net::archive::replace_file(&mm_new, &mm)?;
         #[cfg(unix)]
         {
@@ -626,18 +682,11 @@ pub(super) fn micromamba_create(
                 let _ = fs::set_permissions(&mm, p);
             }
         }
-        let home = work.join("mamba-home");
         // The same line again (a patch): the old folder goes first.
         if prefix.exists() {
             crate::net::archive::remove_dir(prefix)?;
         }
-        let envs = [
-            ("HOME", home.clone()),
-            ("USERPROFILE", home.clone()),
-            ("APPDATA", join_rel(&home, "AppData/Roaming")),
-            ("LOCALAPPDATA", join_rel(&home, "AppData/Local")),
-            ("MAMBA_ROOT_PREFIX", home.join("mamba")),
-        ];
+        let envs = mamba_envs(work);
         let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
         progress.note(&format!("micromamba: {}", specs.join(" ")));
         let args = micromamba_create_args(prefix, specs);
@@ -646,6 +695,18 @@ pub(super) fn micromamba_create(
         // The package cache is in the work folder; a `pkgs` left in the
         // environment is only downloaded archives.
         let _ = fs::remove_dir_all(prefix.join("pkgs"));
+        if super::conda::wanted(ctx, component) {
+            super::conda::keep(
+                ctx,
+                component,
+                &release.version,
+                &mm,
+                &envs,
+                prefix,
+                &work.join("pkgs"),
+                progress,
+            );
+        }
         Ok(())
     })();
     drop(guard);
@@ -794,6 +855,24 @@ impl Installer for R {
             &[&spec, "libblas=*=*openblas"],
             progress,
         )?;
+        self.after_conda(ctx, component, target, progress)
+    }
+
+    fn conda_prefix(&self, _target: Target, dir: &Path) -> Option<PathBuf> {
+        Some(dir.to_path_buf())
+    }
+
+    /// The launchers on Windows and the CRAN mirror in `Rprofile.site`, the
+    /// same after `micromamba create` from the network or from the kept
+    /// packages (D-118). Makeconf's folder is conda's own here; `relocate`
+    /// sets it again on Windows after a move (D-104).
+    fn after_conda(
+        &self,
+        ctx: &Ctx,
+        _component: &Component,
+        target: &Path,
+        _progress: &mut dyn Progress,
+    ) -> Result<()> {
         if ctx.kit.os().is_windows() {
             if !join_rel(target, "lib/R/bin/x64/R.exe").is_file() {
                 bail!("R.exe not found after the installation");

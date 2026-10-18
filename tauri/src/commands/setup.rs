@@ -426,6 +426,41 @@ pub fn setup_by_hand_open<R: Runtime>(
     crate::os::jobs::open_url(&url).or_fail_chain("browser")
 }
 
+/// The packages kept to reinstall the conda environments without the
+/// network after a move (D-118), for the Settings page.
+#[tauri::command]
+pub fn conda_kept<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<crate::install::conda::Status> {
+    ensure_main(&webview)?;
+    Ok(crate::install::conda::status(&state.kit))
+}
+
+/// «Libera»: removes the kept packages of this target (D-118); not while a
+/// preparation runs, which may be writing them.
+#[tauri::command]
+pub async fn conda_kept_free<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<crate::install::conda::Status> {
+    ensure_main(&webview)?;
+    let kit = state.kit.clone();
+    let busy = tr(&state, "C'è già un'installazione in corso.", &[]);
+    tauri::async_runtime::spawn_blocking(move || {
+        let freed = crate::setup::runner::while_idle(&kit, || crate::install::conda::free(&kit))
+            .map_err(|_| busy)?
+            .or_fail_chain("conda")?;
+        crate::log::info(&format!(
+            "conda: kept packages freed, {} MB",
+            freed.div_ceil(1 << 20)
+        ));
+        Ok(crate::install::conda::status(&kit))
+    })
+    .await
+    .or_fail("conda")?
+}
+
 #[cfg(test)]
 #[path = "../../../test/rust/commands/setup.rs"]
 mod tests;

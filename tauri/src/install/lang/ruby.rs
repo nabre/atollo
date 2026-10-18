@@ -2,7 +2,7 @@
 //! and Linux.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
@@ -297,10 +297,27 @@ impl Installer for Ruby {
     ) -> Result<()> {
         let spec = ruby_conda_spec(&release.version);
         micromamba_create(ctx, component, release, target, &[&spec], progress)?;
-        if !crate::versions::has_key_for(target_of(ctx, component), component, target) {
+        self.after_conda(ctx, component, target, progress)
+    }
+
+    fn conda_prefix(&self, target: Target, dir: &Path) -> Option<PathBuf> {
+        (!target.is_windows()).then(|| dir.to_path_buf())
+    }
+
+    /// `gemrc` and `rbconfig.rb` fitted to the kit (`fit_conda_ruby`), the
+    /// same from the network and from the kept packages (D-118). The gems
+    /// are outside, in `data/ruby-gems` (D-112).
+    fn after_conda(
+        &self,
+        ctx: &Ctx,
+        component: &Component,
+        dir: &Path,
+        _progress: &mut dyn Progress,
+    ) -> Result<()> {
+        if !crate::versions::has_key_for(target_of(ctx, component), component, dir) {
             bail!("bin/ruby not found after the installation");
         }
-        fit_conda_ruby(target)
+        fit_conda_ruby(dir)
     }
 
     fn has_lines(&self) -> bool {

@@ -3,6 +3,7 @@
 import { LANGS, t } from "../i18n";
 import type { Settings, SettingsView } from "../api";
 import { CheckboxLabel, Link, Select, SettingItem, SettingsGroup, TextField } from "../workbench";
+import { CondaSettings } from "./conda";
 
 const empty = (s: string) => (s.trim() === "" ? null : s.trim());
 
@@ -39,7 +40,8 @@ function TextSetting({
   );
 }
 
-/** Generale: the language, the terminal, the automatic updates. */
+/** Generale: the language, the terminal, the automatic updates, the kept
+ * conda packages (D-118). */
 export function GeneralSettings({ s, set }: { s: Settings; set: (patch: Partial<Settings>) => void }) {
   const general = t("Generale");
   return (
@@ -95,6 +97,7 @@ export function GeneralSettings({ s, set }: { s: Settings; set: (patch: Partial<
           {t("Scarica da solo le nuove versioni di NEXKORA (sostituiscono l'exe alla chiusura)")}
         </CheckboxLabel>
       </SettingItem>
+      <CondaSettings category={general} s={s} set={set} />
     </SettingsGroup>
   );
 }

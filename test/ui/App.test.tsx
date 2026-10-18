@@ -97,6 +97,7 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
         phpVersion: null,
         rustToolchain: null,
         programTemp: "auto",
+        keepCondaPackages: true,
       },
       geminiKeySet: true,
       problem: null,

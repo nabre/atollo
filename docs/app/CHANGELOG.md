@@ -1,5 +1,14 @@
 # Novità
 
+## Spostare il kit senza rete su macOS e Linux (18/10/2026)
+
+- **R, Ruby, MongoDB (Linux), SQLite (Linux ARM64) e il `make` di C e C++** si reinstallano dopo che il kit cambia cartella, perché vengono da conda-forge e hanno il percorso scritto dentro (D-92). Ora i loro pacchetti restano nel kit, in `data/app/conda/<sistema>/`, e la reinstallazione li usa senza scaricare nulla, alla stessa versione: in WSL 43 s per R, Ruby, MongoDB e make, contro 86 s dalla rete con una connessione veloce, e funziona anche senza rete (D-118).
+- Ogni pacchetto si ricontrolla con il suo SHA-256 prima dell'uso: se qualcosa manca o è diverso, il kit li riscarica come prima e lo dice nel pannello Attività.
+- **Impostazioni → Generale**: «Pacchetti per reinstallare senza rete» (attivo di serie) con lo spazio che occupano, circa 380 MB per R, Ruby e MongoDB, e «Libera». I pacchetti che nessuna versione installata usa più si cancellano da soli.
+- I componenti installati prima di questa versione hanno la copia dalla loro prossima installazione o aggiornamento.
+
+**Verificato**: su Windows 759 test Rust e i test dell'interfaccia, lint e clippy puliti, clippy incrociato per macOS Apple Silicon pulito; in WSL2 (Ubuntu 24.04) 751 test e la prova reale `real_offline_reinstall_after_a_move` senza rete (`unshare -rn`): R 4.6.1, Ruby 4.0.7, MongoDB 8.0.23 e make 4.4.1 ricreati in una cartella nuova e di nuovo in quella di prima, gem e dati di MongoDB intatti. Non provati dal vivo: macOS e SQLite su Linux ARM64.
+
 ## Apache su macOS e Linux, alias più sicuri (18/10/2026)
 
 - **Apache anche su macOS e Linux** (D-116), da una build del kit: httpd 2.4.69 con OpenSSL 3.5, compilato in CI dai sorgenti con firma verificata (`scripts/build-httpd`), una cartella che si sposta con il kit. PHP passa da `php-fpm`, che parte con il pool o con il sito del progetto, come per Caddy. Come su Windows, Apache si propone solo per i progetti con regole proprie nel `.htaccess` (Drupal compreso); Caddy resta il server predefinito. Su Windows niente cambia: Apache Lounge con il modulo PHP, x64 anche su ARM64. Apache compare su macOS e Linux con il primo rilascio della build (`httpd-v2.4.69-1`).
