@@ -106,7 +106,9 @@ tauri\src\
     engine                    DbEngine: MySQL, MariaDB, MongoDB (D-110)
     services\                 server del kit (D-73): mod (impostazioni, avvio, arresto), data (cartelle per
                               versione), access (password e database dei progetti), backups (D-78), tools,
-                              mysql (inizializzazione, my.cnf, libaio: D-110)
+                              mysql (inizializzazione, my.cnf, libaio: D-110), to_mysql (i server per la
+                              migrazione, D-117)
+    migrate_engine            i dati di MariaDB passati a MySQL (D-117); filter (il dump letto da MySQL)
     auth  browse  phpmyadmin  password e .env (D-74); contenuto in sola lettura (D-79); phpMyAdmin (D-107)
   github\                     account GitHub del kit (D-70): mod (accesso, helper di Git), repos (elenco, clone,
                               rinomina, eliminazione)
