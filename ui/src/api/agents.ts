@@ -12,9 +12,11 @@ export interface AgentInfo {
   installed: boolean;
   version: string | null;
   signedIn: boolean;
-  /** "account" or "api key". */
+  /** "account", "api key" or "token" (Claude Code on macOS). */
   signInKind: string | null;
   running: boolean;
+  /** "Collega con un token" offered: Claude Code on macOS (Rust `token_link`). */
+  tokenLink: boolean;
 }
 
 const SAMPLE_AGENTS: AgentInfo[] = [
@@ -26,8 +28,9 @@ const SAMPLE_AGENTS: AgentInfo[] = [
     signedIn: true,
     signInKind: "account",
     running: true,
+    tokenLink: false,
   },
-  { id: "codex", name: "Codex", installed: true, version: "0.98.0", signedIn: false, signInKind: null, running: false },
+  { id: "codex", name: "Codex", installed: true, version: "0.98.0", signedIn: false, signInKind: null, running: false, tokenLink: false },
   {
     id: "antigravity",
     name: "Antigravity",
@@ -36,6 +39,7 @@ const SAMPLE_AGENTS: AgentInfo[] = [
     signedIn: false,
     signInKind: null,
     running: false,
+    tokenLink: false,
   },
 ];
 

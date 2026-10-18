@@ -86,7 +86,7 @@ export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, o
  * fails): C and C++ work, the programs that use the Apple frameworks do not.
  * Only a Mac can tell, so never for a kit inspected from another system. */
 export function xcodeMissing(c: ComponentInfo): boolean {
-  return (c as ComponentInfo & { xcodeMissing?: boolean }).xcodeMissing === true;
+  return c.xcodeMissing === true;
 }
 
 /** The versions on disk of a versioned tool: the default, then the saved. */

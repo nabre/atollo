@@ -32,6 +32,8 @@ const COMMANDS: &[&str] = &[
     "agents_stats",
     "agent_launch",
     "agent_sign_out",
+    "agent_token_link",
+    "agent_token_save",
     "folder_open",
     "project_create",
     "project_delete",

@@ -322,8 +322,18 @@ describe("App", () => {
         signedIn: true,
         signInKind: "account",
         running: false,
+        tokenLink: false,
       },
-      { id: "codex", name: "Codex", installed: true, version: "1", signedIn: false, signInKind: null, running: false },
+      {
+        id: "codex",
+        name: "Codex",
+        installed: true,
+        version: "1",
+        signedIn: false,
+        signInKind: null,
+        running: false,
+        tokenLink: false,
+      },
     ];
     invoke.mockImplementation(
       answers({

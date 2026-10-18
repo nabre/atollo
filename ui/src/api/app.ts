@@ -127,6 +127,9 @@ export interface UpdateStatus {
   staged: string | null;
   checking: boolean;
   error: string | null;
+  /** A newer version that this build cannot install itself (a plain binary
+   * off Windows, from the tar.gz): downloaded by hand from the release page. */
+  manual: boolean;
 }
 
 export function updateStatus(): Promise<UpdateStatus> {
@@ -136,6 +139,7 @@ export function updateStatus(): Promise<UpdateStatus> {
     staged: null,
     checking: false,
     error: null,
+    manual: false,
   });
 }
 

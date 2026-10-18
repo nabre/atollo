@@ -70,7 +70,30 @@ pub fn save(kit: &Kit, token: &str) -> Result<()> {
     if !is_token(token) {
         bail!("not a Claude Code token");
     }
-    crate::router::fs::write_private(&path(kit), token)
+    let file = path(kit);
+    crate::router::fs::write_private(&file, token)?;
+    // A kit on exFAT or FAT keeps no owner-only mode: anyone could read
+    // the token there, so it is not kept (as the Antigravity keyring).
+    if !owner_only(&file) {
+        let _ = std::fs::remove_file(&file);
+        bail!("the kit's disk does not keep owner-only permissions (600): the Claude Code token was not saved");
+    }
+    Ok(())
+}
+
+/// The file readable by its owner only (always true off Unix, where the
+/// app's folder is the user's own).
+fn owner_only(file: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(file).is_ok_and(|m| m.permissions().mode() & 0o077 == 0)
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = file;
+        true
+    }
 }
 
 /// "Esci": the token is forgotten (no file is not an error).
@@ -210,9 +233,6 @@ impl std::fmt::Debug for TokenScan {
 /// "Collega con un token": `claude setup-token` in a session of the app's
 /// terminal in the kit's home; when it ends, the token it printed is saved
 /// and `on_saved` runs. Errors in `lang`.
-// Called by the command `agent_token_link` (commands/agents.rs, added by
-// the coordinator): unused until then.
-#[allow(dead_code)]
 #[cfg(unix)]
 pub fn link<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
@@ -275,7 +295,6 @@ pub fn link<R: tauri::Runtime>(
 }
 
 /// Windows keeps Claude Code's login in the kit's home already.
-#[allow(dead_code)]
 #[cfg(not(unix))]
 pub fn link<R: tauri::Runtime>(
     _app: &tauri::AppHandle<R>,

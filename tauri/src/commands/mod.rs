@@ -328,6 +328,8 @@ macro_rules! command_handler {
             $crate::commands::agents::agents_stats,
             $crate::commands::agents::agent_launch,
             $crate::commands::agents::agent_sign_out,
+            $crate::commands::agents::agent_token_link,
+            $crate::commands::agents::agent_token_save,
             $crate::commands::app::folder_open,
             $crate::commands::projects::project_create,
             $crate::commands::projects::project_delete,
