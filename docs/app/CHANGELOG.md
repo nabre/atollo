@@ -3,6 +3,7 @@
 ## Arretrato di macOS e Linux (19/10/2026)
 
 - **Linux distingue le maiuscole nei percorsi** (D-119): un aggiornamento dell'editor o la rimozione dell'unità fermano solo i programmi della cartella giusta, non quelli di una cartella che differisce solo nelle maiuscole; lo stesso per le voci del PATH tolte da un profilo del terminale. Windows e macOS restano senza distinzione, come i loro file system.
+- **Salvataggi contemporanei su Windows**: due salvataggi dello stesso file nello stesso momento (per esempio le impostazioni da due finestre) potevano fallire con «accesso negato», perché Windows rifiuta una delle due sostituzioni; ora quella rifiutata riprova per al massimo un secondo e vince l'ultima, come su macOS e Linux. Era la causa del test instabile `write_atomic_concurrent_threads_do_not_collide_on_tmp`.
 
 ## Spostare il kit senza rete su macOS e Linux (18/10/2026)
 
