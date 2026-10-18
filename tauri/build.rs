@@ -20,6 +20,8 @@ const COMMANDS: &[&str] = &[
     "components_list",
     "components_sync",
     "components_check",
+    "target_profiles",
+    "tools_target_set",
     "setup_state",
     "setup_start",
     "setup_cancel",

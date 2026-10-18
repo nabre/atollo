@@ -16,6 +16,7 @@ mod zig;
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 
+pub(crate) use cc::xcode_selected;
 pub use cc::{make_launchers, Cc, Cmake};
 pub use dart::Dart;
 pub use dotnet::Dotnet;
