@@ -670,10 +670,11 @@ pub fn write_mysql_line_cnf(kit: &Kit, line: &str, port: u16, password: &str) ->
     write_private(&mysql_line_cnf(kit, line), &mysql_cnf_text(port, password))
 }
 
-/// SQL that gives MySQL's `root` its password on a data folder made with
-/// `--initialize-insecure` (only `root@localhost`, without one), and the
-/// same `root` for 127.0.0.1: the kit connects over TCP, and with
-/// `skip-name-resolve` a TCP login is not `localhost`.
+/// SQL that gives MySQL's `root` its password while `mysqld --initialize`
+/// makes the data folder (its `--init-file`: `root@localhost` only, with a
+/// random expired password until then), and the same `root` for
+/// 127.0.0.1: the kit connects over TCP, and with `skip-name-resolve` a TCP
+/// login is not `localhost`.
 pub fn mysql_root_sql(password: &str) -> String {
     format!(
         "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\

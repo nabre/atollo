@@ -170,12 +170,31 @@ impl Services {
         user: &str,
         password: &str,
     ) -> Result<(Command, PathBuf)> {
+        let program = bin_at(&self.kit, engine.component(), line, stem);
+        // The client's own commands off (`\!`, `system`, `source`, `tee`):
+        // the SQL may come from elsewhere. A client without the option
+        // never gets it (fail closed).
+        let help = jobs::kit_command(&program, env)
+            .arg("--help")
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .output()
+            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+            .unwrap_or_default();
+        let Some(guard) = super::mysql::restore_guard(engine, &help) else {
+            bail!(
+                "{}: this {engine} client cannot turn its own commands off (`--commands=OFF`, \
+                 `--sandbox`): update {engine} to restore a copy",
+                program.display()
+            );
+        };
         let exe = exe_name(self.kit.os(), stem);
         let login = auth::dir(&self.kit).join(format!("{exe}-{}.cnf", std::process::id()));
         auth::write_private_text(&login, &project_login_text(engine, user, password, port))?;
-        let mut cmd = jobs::kit_command(bin_at(&self.kit, engine.component(), line, stem), env);
+        let mut cmd = jobs::kit_command(program, env);
         // It must be the first option.
-        cmd.arg(format!("--defaults-file={}", login.display()));
+        cmd.arg(format!("--defaults-file={}", login.display()))
+            .arg(guard);
         Ok((cmd, login))
     }
 

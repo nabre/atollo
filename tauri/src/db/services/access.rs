@@ -73,24 +73,18 @@ impl Services {
                     .context("MariaDB: setting the password of root")?;
                     secrets.mariadb_root = Some(password.clone());
                 }
+                // The initialization gave root the stored password
+                // (`data::prepare`, `--init-file`): root is never without
+                // one, so a password unknown here is data the kit did not
+                // make, and the server is not used (fail closed).
                 DbEngine::MySql => {
-                    // `--initialize-insecure`: `root@localhost` without a
-                    // password, over TCP, no option file read.
-                    let mut cmd = jobs::kit_command(client, env);
-                    cmd.args([
-                        "--no-defaults",
-                        "--user=root",
-                        "--host=127.0.0.1",
-                        "--protocol=tcp",
-                    ])
-                    .arg(format!("--port={port}"));
-                    run_with_input(
-                        cmd,
-                        &auth::mysql_root_sql(&password),
-                        Duration::from_secs(60),
-                    )
-                    .context("MySQL: setting the password of root")?;
-                    secrets.mysql_root = Some(password.clone());
+                    let _ = client;
+                    if known.is_none() {
+                        bail!(
+                            "MySQL: its data has a root whose password the kit does not \
+                             know (data\\app\\db\\secrets.json): not used"
+                        );
+                    }
                 }
             }
             auth::save(&self.kit, &secrets)?;
@@ -127,6 +121,13 @@ impl Services {
                     auth::write_mysql_line_cnf(&self.kit, l, port, &password)?;
                 }
             }
+        }
+        // MySQL answers to root's login before anything else uses it; an
+        // error stops the server (`launch`).
+        if engine == DbEngine::MySql {
+            let cmd = self.sql_tool_at(engine, engine.client_bin(), env, line, port);
+            run_with_input(cmd, "SELECT 1;\n", Duration::from_secs(60))
+                .context("MySQL: root's login with the kit's password")?;
         }
         Ok(())
     }

@@ -240,6 +240,31 @@ fn real_databases_start_and_stop() {
             ),
         };
         admin(&fill);
+        // A trigger of the project's user: its dump has `DELIMITER ;;`,
+        // which the restore must still read with the client's commands off.
+        if engine.is_sql() {
+            let (mut cmd, login) = s
+                .sql_as_project(
+                    engine,
+                    engine.client_bin(),
+                    &env,
+                    None,
+                    port,
+                    &db.user,
+                    &db.password,
+                )
+                .unwrap();
+            cmd.arg("-e")
+                .arg("CREATE TRIGGER t_bi BEFORE INSERT ON t FOR EACH ROW SET NEW.x = NEW.x")
+                .arg(&db.database);
+            let out = cmd.output().unwrap();
+            let _ = fs::remove_file(login);
+            assert!(
+                out.status.success(),
+                "{id}: trigger: {}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+        }
         let n = admin(&count);
         assert!(
             n.parse::<u32>().is_ok_and(|n| n > 0),
@@ -293,9 +318,34 @@ fn real_databases_start_and_stop() {
             .any(|b| b.file == name && b.engine == id));
         s.restore(&project, &name).unwrap();
         assert_eq!(admin(&count), n, "{id}: data back after restore");
+        if engine.is_sql() {
+            let triggers = admin(&format!(
+                "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{database}'"
+            ));
+            assert_eq!(triggers, "1", "{id}: the trigger is back");
+        }
         eprintln!("{id}: restored as the project's user, {n} row(s) back");
         assert!(s.restore(&project, r"..\x.sql").is_err());
         let _ = fs::remove_file(&file);
+        // A copy from elsewhere with the client's own commands: none runs
+        // (`--commands=OFF`, `--sandbox`), whatever the restore answers.
+        if engine.is_sql() {
+            let dir = s.backup_dir(&project).unwrap();
+            let pwned = dir.join("pwned.txt");
+            let tee = dir.join("tee.txt");
+            let evil = format!(
+                "SELECT 1;\n\\! echo pwned > {p}\nsystem echo pwned > {p}\n\
+                 tee {t}\nSELECT 2;\n",
+                p = pwned.display(),
+                t = tee.display()
+            );
+            fs::write(dir.join("evil-1.sql"), evil).unwrap();
+            let answer = s.restore(&project, "evil-1.sql");
+            eprintln!("{id}: restore of a copy with client commands: {answer:?}");
+            assert!(!pwned.exists(), "{id}: a client command ran");
+            assert!(!tee.exists(), "{id}: tee ran");
+            let _ = fs::remove_file(dir.join("evil-1.sql"));
+        }
         // Deleting the project drops its database and user: a stopped
         // server is started for it and stopped again (PLAN-DATA.md WP-5).
         s.stop(id);
