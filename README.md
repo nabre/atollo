@@ -2,7 +2,7 @@
 
 Italiano · [English](docs/README.en.md) · [Français](docs/README.fr.md) · [Deutsch](docs/README.de.md)
 
-**Atollo** è un *Universal Portable Dev & AI Workspace* autonomo (`Atollo.exe`) che unisce **Editor** (VSCodium integrato), **Toolchain/Runtime Manager** (più di 20 linguaggi e strumenti scaricati su richiesta), **Server/Database locali** (MariaDB/MySQL, MongoDB, SQLite, Apache/Nginx) e **Orchestratore di Agenti AI** (Claude Code, Codex e Antigravity con istruzioni, skill e server MCP sincronizzati) in una singola cartella portabile. Niente installazione, niente diritti di amministratore, nessun servizio di sistema fuori dalla cartella del workspace.
+**Atollo** è un *Universal Portable Dev & AI Workspace* autonomo (`Atollo.exe`) che unisce **Editor** (VSCodium integrato), **Toolchain/Runtime Manager** (più di 20 linguaggi e strumenti scaricati su richiesta), **Server/Database locali** (MySQL, MongoDB, SQLite, Caddy/Apache) e **Orchestratore di Agenti AI** (Claude Code, Codex e Antigravity con istruzioni, skill e server MCP sincronizzati) in una singola cartella portabile. Niente installazione, niente diritti di amministratore, nessun servizio di sistema fuori dalla cartella del workspace.
 
 Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitHub CLI, l'editor e quello che serve a loro (Git per GitHub CLI). Il resto si sceglie nella pagina «Strumenti», oppure arriva quando serve: Node.js con un'azione `npm`, uv con un server MCP `uvx`, e così via.
 
@@ -20,7 +20,7 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 | --- | --- |
 | **Progetti** | i progetti con Avvia, Editor, Terminale e agente; **Nuovo progetto**: vuoto, dai tuoi repository GitHub (con clone, rinomina ed eliminazione su GitHub) o da un indirizzo Git; avvisi sull'ambiente. Ogni progetto ha la sua pagina: **Riepilogo** (l'azione principale con il suo output, linguaggi, database, agente, Git), **Risorse** (componenti, database del progetto con utente e password, estensioni dell'editor), **Avanzate** (azioni, porte, sito statico, Git, istruzioni degli agenti) |
 | **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
-| **Database** | i server MariaDB (compatibile con MySQL) e MongoDB di Atollo: avvio e arresto, password dell'amministratore, porta, dati in `data\db`, solo su questo PC; SQLite senza server |
+| **Database** | i server MySQL (con phpMyAdmin) e MongoDB di Atollo: avvio e arresto, password dell'amministratore, porta, dati in `data\db`, solo su questo PC; SQLite senza server. I dati di un MariaDB di prima passano da soli a MySQL, sulle stesse porte e con gli stessi utenti |
 | **Strumenti** | linguaggi e strumenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove; la matrice delle estensioni dell'editor |
 | **Impostazioni** | lingua, terminale, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python e PHP, compilatore di Rust (GNU o MSVC), aggiornamenti dell'app; l'**account GitHub** di Atollo, uno per tutto (app, Git, editor, console, agenti, GitHub CLI); dove si trova la cartella di Atollo |
 | **Rimuovi l'unità** | chiude tutto ciò che Atollo ha aperto, riporta in `data\` l'accesso di Antigravity e lascia espellere l'unità |
@@ -32,6 +32,7 @@ La console di Atollo è la console classica di Windows con PowerShell 7 integrat
 ## Limiti noti
 
 - Su Windows 10 e 11 (`x64` e `ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`). Su Windows ARM64 l'editor, PHP, Apache, MySQL e TinyTeX girano in emulazione x64 e R non c'è; su Linux ARM64 manca Android. Per macOS e Linux mancano ancora i rilasci ([#5](https://github.com/nabre/atollo/issues/5)) e gli accessi degli agenti vanno provati su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); componenti e fonti per sistema in [docs/app/CATALOG.md](docs/app/CATALOG.md).
+- Su Linux MySQL vuole due librerie del sistema, `libaio` e `libnuma`: su Ubuntu 24.04 e Debian 13 `sudo apt install libaio1t64 libnuma1` (su versioni precedenti `libaio1`), su Fedora e RHEL `sudo dnf install libaio numactl-libs`. Se mancano, Atollo lo dice con il comando da eseguire.
 - Fuori dalla cartella di Atollo restano solo le tracce di Windows, i file temporanei di passaggio nel temp di sistema (rimossi automaticamente alla chiusura), l'accesso di GitHub CLI nella Gestione credenziali se lo fai in una console con `gh auth login` (quello fatto nelle Impostazioni resta in `data\gh`) e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
 - Le cartelle in `projects\` sono attendibili per Claude Code e Codex: apri solo progetti di cui ti fidi. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.
 - I limiti d'uso degli agenti vengono da interfacce non documentate dei fornitori e possono smettere di funzionare dopo un loro aggiornamento.

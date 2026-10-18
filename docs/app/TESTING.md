@@ -72,9 +72,10 @@ Se manca qualcosa stampa il comando da eseguire (`sudo apt-get install -y …`, 
 **CI su un altro branch.** I push di `main` e `feature/platforms` avviano la CI da soli; per un altro branch: `git push -u origin <branch>`, poi `gh workflow run app.yml --ref <branch>`.
 
 **Prove con programmi veri** (`ATOLLO_TEST_KIT=<kit con i componenti>`, ignorate senza):
-- `real_databases_start_and_stop`: MySQL, MariaDB e MongoDB del kit su porte libere: avvio, database e utente di un progetto (accesso TCP come quell'utente), copia e ripristino, eliminazione, arresto senza resti (D-110); su Windows e in WSL;
+- `real_databases_start_and_stop`: MySQL, MongoDB (e MariaDB, se il kit ha ancora i suoi programmi) del kit su porte libere: avvio, database e utente di un progetto (accesso TCP come quell'utente), copia e ripristino, eliminazione, arresto senza resti (D-110); su Windows e in WSL;
 - `caddy_pool_two_php_sites_alias_and_reload`: un pool Caddy con due siti PHP e un alias, `caddy reload` dopo l'aggiunta di un sito senza fermare l'altro (D-111);
-- `a_new_kit_needs_mysql_for_every_sql_need` (`db::services::data`, senza kit): ogni bisogno SQL del catalogo e dei framework si risolve in MySQL su un kit nuovo.
+- `real_mariadb_to_mysql` (`db::services`, D-117): con MariaDB 12.3 e 11.4 e MySQL 9.7 e 8.4 in `ATOLLO_TEST_KIT` (senza, la prova si salta), un kit di prova accanto con i programmi collegati (collegamenti fisici, o copie): due progetti e un database di nessun progetto, una migrazione interrotta a metà del ripristino (MariaDB resta scrivibile), poi completa; MySQL sulle porte di MariaDB, stessi byte, utenti dei progetti con le loro password. Il kit non scarica più MariaDB: per preparare `ATOLLO_TEST_KIT` gli zip ufficiali vanno estratti a mano in `data/apps/<target>/mariadb/<linea>/` con `.atollo-version`, e `mariadb.txt` in `data/app/versions/<target>/` (circa 4 minuti su Windows);
+- `a_new_kit_needs_mysql_for_every_sql_need` (`db::services::data`, senza kit): ogni bisogno SQL del catalogo e dei framework è MySQL; `a_new_kit_installs_mysql_for_phpmyadmin_wordpress_and_laravel` (`commands::frameworks`): phpMyAdmin, WordPress e Laravel installano MySQL e mai MariaDB, sui sei target.
 
 **Secret Service in WSL senza root** (D-115). Per provare Antigravity con un Secret Service vero:
 
