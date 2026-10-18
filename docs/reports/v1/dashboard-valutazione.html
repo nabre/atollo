@@ -375,7 +375,7 @@
             <tr>
               <td><strong>6. Database &amp; Server Web</strong><br><code>db/</code>, <code>servers/</code></td>
               <td><span class="badge badge-amber">50%</span></td>
-              <td>Generazione config Apache, Nginx, MariaDB, MongoDB e Adminer.</td>
+              <td>Generazione config Apache, Nginx, MySQL, MongoDB e Adminer.</td>
               <td>Sostituire suffissi <code>.exe</code> (<code>mysqld.exe</code>, <code>httpd.exe</code>) e <code>icacls.exe</code> con helper OS e <code>chmod 0700</code>.</td>
             </tr>
             <tr>
@@ -515,7 +515,7 @@
       { id: "BUG-11", sev: "MEDIA", file: "ui/src/workbench/layout.tsx:57-104", desc: "Sash drag usa una closure stale (setWidth(width + d)) e scrive in localStorage in modo sincrono ad ogni pixel di movimento del mouse.", fix: "Usare updater funzionale setWidth(w => w + d) e salvare in localStorage solo su pointerup." },
       { id: "BUG-12", sev: "MEDIA", file: "ui/src/guide/sections.tsx & model.ts", desc: "La Guida chiama tr(it, en) omettendo fr e de: gli utenti francesi e tedeschi vedono la guida interamente in inglese (e parti di TOOL_SOURCES in italiano).", fix: "Fornire gli argomenti fr e de nelle chiamate tr() della Guida." },
       { id: "BUG-13", sev: "MEDIA", file: "tauri/src/db/adminer.rs:137-139", desc: "Usa jobs::spawn seguito da job.assign invece di jobs::spawn_in (che crea il processo sospeso prima di assegnarlo al Job dedicato).", fix: "Usare jobs::spawn_in(&mut cmd, &job) per coerenza e sicurezza." },
-      { id: "BUG-14", sev: "MEDIA", file: "tauri/src/detect/php.rs:44-47", desc: "Il rilevamento di WordPress non aggiunge mariadb a requires e mostra un avviso obsoleto.", fix: "Aggiungere mariadb ai componenti richiesti per WordPress." },
+      { id: "BUG-14", sev: "MEDIA", file: "tauri/src/detect/php.rs:44-47", desc: "Il rilevamento di WordPress non aggiunge mysql a requires e mostra un avviso obsoleto.", fix: "Aggiungere mysql ai componenti richiesti per WordPress." },
       { id: "BUG-15", sev: "BASSA", file: "ui/src/projects/site.tsx:191", desc: "Mostra il percorso obsoleto data\\app\\projects\\{0}\\apache invece di data\\projects\\{0}\\apache (migrato in D-89).", fix: "Aggiornare la stringa in site.tsx e nei file locales/*.json." },
       { id: "BUG-16", sev: "BASSA", file: "ui/src/guide/widgets.tsx:304 & sections.tsx", desc: "La Guida mostra ancora il pulsante data\\backup\\, cita .atollo.json e usa il vecchio nome del pulsante di rimozione sicura.", fix: "Allineare i riferimenti nella Guida a D-89 e alle etichette attuali." },
       { id: "BUG-17", sev: "BASSA", file: "tauri/src/cli.rs:353", desc: "Il messaggio CLI per i download manuali indica data\\downloads invece della nuova cartella temporanea di sistema (D-90).", fix: "Mostrare os::temp::downloads_dir(kit) nel messaggio CLI." },

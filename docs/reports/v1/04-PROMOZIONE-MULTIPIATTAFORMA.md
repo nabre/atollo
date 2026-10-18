@@ -101,7 +101,7 @@ flowchart LR
 
 ### 4.1 Estensione di [`tauri/src/kit.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/kit.rs) e [`tauri/src/env.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/env.rs)
 - In [`kit.rs:23-38`](file:///c:/Users/nabre/Projects/atollo/tauri/src/kit.rs#L23-L38), `Arch::platform()` restituisce solo `"win32-x64"` o `"win32-arm64"`. Va esteso per restituire `"darwin-arm64"`, `"darwin-x64"`, `"linux-x64"`, `"linux-arm64"`, in modo che una stessa chiavetta USB possa contenere `data/apps/win32-x64/`, `data/apps/darwin-arm64/` e `data/apps/linux-x64/` fianco a fianco condividendo la stessa cartella `projects/`!
-- In [`env.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/env.rs), usare `std::env::join_paths` (che usa `:` su Unix e `;` su Windows) e mappare i layout standard delle tarball Unix (dove i binari di Node, Python, PHP, Go, Java, MariaDB risiedono in `<tool>/bin/<name>` invece che nella radice `<tool>/<name>.exe`).
+- In [`env.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/env.rs), usare `std::env::join_paths` (che usa `:` su Unix e `;` su Windows) e mappare i layout standard delle tarball Unix (dove i binari di Node, Python, PHP, Go, Java, MySQL risiedono in `<tool>/bin/<name>` invece che nella radice `<tool>/<name>.exe`).
 
 ### 4.2 Matrice di Portabilità dei 26 Componenti del Catalogo (`tauri/src/install/**`)
 

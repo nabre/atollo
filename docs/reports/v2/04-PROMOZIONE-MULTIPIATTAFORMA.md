@@ -50,7 +50,7 @@ Sono stati implementati gli helper e i selettori di asset per `Windows`, `Macos`
 - [`tauri/src/install/jvm.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/jvm.rs): `Jdk` (Adoptium `mac`/`linux` `x64`/`aarch64` con appiattimento di `Contents/Home` su macOS), `Maven` (`bin/mvn` chmod `0o755`).
 - [`tauri/src/install/systems.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/systems.rs): `Clang` (`clang+llvm-*-arm64-apple-darwin*`, `*-linux-gnu.tar.xz`), `Rust` (`rustup-init` binario Unix), `Go` (`darwin`/`linux` `.tar.gz`), `Cmake` (con appiattimento `CMake.app/Contents` su macOS), `Dotnet` (`dotnet-install.sh` su Unix), `GnuMake` (wrapper verso `make` di sistema su Unix), `Gdb` (`gdb` su Linux e shim `lldb` su macOS).
 - [`tauri/src/install/scientific.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/scientific.rs): `R` (tarball `conda-forge/r-base` con `extract_conda_package`), `Julia` (`.tar.gz` ufficiali macOS/Linux x64/aarch64), `Octave` (`conda-forge/octave`), `Texlive` (`TinyTeX-1-v*.tar.gz` / `.tgz` per Linux/macOS x64/arm64), `Sqlite` (`sqlite-tools-osx-x64` su macOS, `conda-forge/sqlite` su Linux), `Duckdb` (`duckdb_cli-osx-universal.zip`, `duckdb_cli-linux-amd64/arm64.gz`).
-- [`tauri/src/install/web.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/web.rs): `Mariadb` (tarball `linux-systemd` su Linux e `conda-forge/mysql` su macOS), `Composer` (wrapper `bin/composer` POSIX + `composer.bat` Windows), `WpCli` (wrapper `bin/wp` POSIX + `wp.bat` Windows).
+- [`tauri/src/install/web.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/web.rs): `Composer` (wrapper `bin/composer` POSIX + `composer.bat` Windows), `WpCli` (wrapper `bin/wp` POSIX + `wp.bat` Windows).
 
 ---
 

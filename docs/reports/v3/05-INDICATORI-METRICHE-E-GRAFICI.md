@@ -69,7 +69,7 @@ L'analisi di [`tauri/src/install/`](file:///c:/Users/nabre/Projects/atollo/tauri
 
 | Metodo di Verifica (`Expect`) | N. Componenti / Sotto-tool | Componenti |
 |---|---:|---|
-| **`Expect::Sha256` (GitHub Release Digest / Checksum File / JSON API)** | 37 | `git`, `python`, `node`, `uv`, `gh`, `php`, `composer`, `apache`, `nginx`, `rust`, `go`, `java`, `gradle`, `kotlin`, `android`, `dart`, `zig`, `julia`, `bun`, `deno`, `typst`, `tinytex`, `cmake`, `ninja`, `cc`, `ruby`, `micromamba`, `mariadb`, `mongodb`, `mongosh`, `mongodb-tools`, `adminer`, `pwsh`, `terminal`, `vscodium-server`, `cacert.pem`, `codelldb` |
+| **`Expect::Sha256` (GitHub Release Digest / Checksum File / JSON API)** | 37 | `git`, `python`, `node`, `uv`, `gh`, `php`, `composer`, `apache`, `nginx`, `rust`, `go`, `java`, `gradle`, `kotlin`, `android`, `dart`, `zig`, `julia`, `bun`, `deno`, `typst`, `tinytex`, `cmake`, `ninja`, `cc`, `ruby`, `micromamba`, `mysql`, `mongodb`, `mongosh`, `mongodb-tools`, `adminer`, `pwsh`, `terminal`, `vscodium-server`, `cacert.pem`, `codelldb` |
 | **`Expect::Sha512` (Manifest / Maven / .NET Releases)** | 3 | `antigravity`, `dotnet`, `maven` |
 | **`Expect::Sha3_256` (SQLite Download CSV)** | 1 | `sqlite` |
 | **`Expect::NpmIntegrity` (SHA-512 Subresource Integrity npm + Authenticode)** | 2 | `claude` (+ verifica firma `Anthropic` su Windows), `codex` |
