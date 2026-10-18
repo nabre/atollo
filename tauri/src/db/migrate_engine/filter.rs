@@ -263,10 +263,11 @@ impl Filter {
     pub fn line(&mut self, line: &[u8]) -> Option<Vec<u8>> {
         let outside = self.quote.is_none() && !self.plain_comment && !self.mariadb_comment;
         if outside {
-            let text = String::from_utf8_lossy(line);
-            let trimmed = text.trim_start();
-            if trimmed.len() > 10 && trimmed[..10].eq_ignore_ascii_case("DELIMITER ") {
-                self.delimiter = trimmed[10..].trim().as_bytes().to_vec();
+            // Bytes, never `&str` slices: the dump's text may be any bytes
+            // (a slice off a character boundary would panic).
+            let trimmed = line.trim_ascii_start();
+            if trimmed.len() > 10 && trimmed[..10].eq_ignore_ascii_case(b"DELIMITER ") {
+                self.delimiter = trimmed[10..].trim_ascii().to_vec();
                 self.words.clear();
                 return Some(line.to_vec());
             }

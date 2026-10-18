@@ -196,3 +196,25 @@ fn adversarial_dumps_stop_the_filter() {
     let rows = "INSERT INTO `t` VALUES ('\\';DROP DATABASE x;--'),('/*M! x */'),('*/ DROP DATABASE y; /*M!');\n";
     assert_eq!(ok(rows), rows);
 }
+
+/// Security review of D-117: any bytes in the dump, never a panic (a
+/// release build aborts on one, half way through a move).
+#[test]
+fn any_bytes_never_panic() {
+    let mut dump: Vec<u8> = "ÀÀÀÀÀÀ DELIMITER ;;\n".as_bytes().to_vec();
+    dump.extend_from_slice(b"\xff\xfe\xc3 DELIMITER ;;\n\xe2\x82 SELECT 1;\n");
+    dump.extend_from_slice("ÀÀÀÀ\u{e9} 'é' /*M! x */;\n".as_bytes());
+    let mut out = Vec::new();
+    filter_dump(&dump[..], &mut out, None).unwrap();
+    assert!(out.starts_with("ÀÀÀÀÀÀ DELIMITER ;;\n".as_bytes()));
+    // Not a DELIMITER line: a string open at the end of a line stops.
+    let mut out = Vec::new();
+    let bad = b"\xc3\xc3\xc3\xc3\xc3 DELIMITER ;; 'x\nSELECT 1;\n";
+    let err = filter_dump(&bad[..], &mut out, None).unwrap_err();
+    assert!(err.downcast_ref::<Uncertain>().is_some(), "{err:#}");
+    // A real one, after spaces, still counts.
+    let fine = "  delimiter ;;\nCREATE PROCEDURE `p`() SELECT 'a\nb' ;;\nDELIMITER ;\n";
+    let mut out = Vec::new();
+    filter_dump(fine.as_bytes(), &mut out, None).unwrap();
+    assert_eq!(out, fine.as_bytes());
+}
