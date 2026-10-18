@@ -12,7 +12,7 @@
 - **🟢 Emu x64 (`x64Only`)**: installa il binario `x64` ufficiale ed esegue in modo trasparente tramite **Windows 11 Prism** (`win32-arm64`) o **Apple Rosetta 2** (`darwin-arm64`).
 - **🟡 Catalogo OK — Fix Runtime `v4`**: il componente è già configurato e scaricabile per quel target in `components.json`, ma richiede uno dei fix chirurgici dello Sciame `v4` (`PORT-V4-01` symlink `copy_tree`, `PORT-V4-03` `agy`/`bashrc`, `PORT-V4-04` `editor` `.exe`/backslash, `PORT-V4-05` `db` `.exe`/backslash, `PORT-V4-07` `x64Only` per Julia/Bun).
 - **🟠 Rilocazione `.reinstall` (`D-92`)**: funziona sul PC dove viene installato (`conda-unpack`), ma se la chiavetta viene spostata richiede `PORT-V4-08` per rilocare offline senza riscaricare.
-- **🔴 Non nel Target / Win-Only**: attualmente limitato a Windows (o Windows+Linux per MariaDB) in `components.json` (`php`, `apache`, `nginx`, `adminer`, e `mariadb` su macOS) o bloccato da assenza di `/lib64/ld-linux-x86-64.so.2` / ABI `musl`.
+- **🔴 Non nel Target / Win-Only**: attualmente limitato a Windows in `components.json` (`php`, `apache`, `nginx`, `adminer`) o bloccato da assenza di `/lib64/ld-linux-x86-64.so.2` / ABI `musl`.
 
 ---
 
@@ -49,7 +49,7 @@
 | 27 | `cc` | **C/C++ Toolchain (MinGW / LLVM)** (`sys`) | ✅ Nativo | 🟢 Prism (`x64Only`) | 🟡 Fix `PORT-V4-01` | 🟡 Fix `PORT-V4-01` | 🟡 Fix `PORT-V4-01` | 🔴 `glibc 2.34` | 🔴 Dynamic | `D-105` ha risolto `darwin-x64` (LLVM `20.1.7`); su Unix `clang -> clang-20` è un symlink (`PORT-V4-01`). |
 | 28 | `ruby` | **Ruby (3.2–3.4)** (`lang`) | ✅ Nativo | 🟢 Prism (`x64Only`) | 🟡 Fix `PORT-V4-01` | 🟡 Fix `PORT-V4-01` | 🟡 Fix `PORT-V4-01` | ✅ Nativo | 🔴 Dynamic | `ruby-build` / `PortableRuby` precompilato; usa symlink in `bin/` e `lib/`. |
 | 29 | `r` | **R Statistical Computing** (`lang`) | ✅ Nativo | 🟢 Prism (`x64Only`) | 🟠 `conda-forge` | 🟠 `conda-forge` | 🟠 `conda-forge` | 🟠 `conda-forge` | 🔴 `/lib64/ld` | Su Windows `Makeconf` aggiornato ad ogni avvio (`D-105`); su Unix usa `.reinstall` (`PORT-V4-08`). |
-| 30 | `mariadb` | **MariaDB (10.11 / 11.4+)** (`db`) | ✅ Nativo | 🟢 Prism (`x64Only`) | 🔴 Manca target | 🔴 Manca target | 🟡 Fix `PORT-V4-05` | 🟡 Fix `PORT-V4-05` | 🔴 Dynamic | `D-105` ha aggiunto `linux-x64` nel catalogo, ma `db/services/*` cerca ancora `mariadbd.exe` (`PORT-V4-05`). |
+| 30 | `mysql` | **MySQL (8.4 / 9.7 LTS)** (`db`) | ✅ Nativo | 🟢 Prism (`x64Only`) | 🟡 Fix `PORT-V4-05` | 🟡 Fix `PORT-V4-05` | 🟡 Fix `PORT-V4-05` | 🟡 Fix `PORT-V4-05` | 🔴 Dynamic | Build Oracle nel catalogo per tutti i 6 target (SHA-256 per linea in `sha256ByLine`), ma `db/services/*` cerca ancora `mysqld.exe` (`PORT-V4-05`). |
 | 31 | `mongodb` | **MongoDB + Mongosh + Tools** (`db`) | ✅ Nativo | 🟢 Prism (`x64Only`) | 🟡 Fix `PORT-V4-05` | 🟡 Fix `PORT-V4-05` | 🟡 Fix `PORT-V4-05` | 🔴 `libssl.so.3` | 🔴 Dynamic | Il catalogo scarica i tarball Unix, ma `db/services/*` cerca `mongod.exe` e `r"mongosh\bin"` (`PORT-V4-05`). |
 | 32 | `adminer` | **Adminer Web UI** (`db`) | ✅ Nativo | 🟢 Prism (`x64Only`) | 🔴 Dipende da `php` | 🔴 Dipende da `php` | 🔴 Dipende da `php` | 🔴 Dipende da `php` | 🔴 Dipende da `php` | È un singolo file `.php` multipiattaforma, ma richiede `php` + fix `kit_path("php/php.exe")` (`PORT-V4-05`). |
 | 33 | `sqlite` | **SQLite Tools (`sqlite3`)** (`db`) | ✅ Nativo | ✅ Nativo | ✅ Nativo | ✅ Nativo | ✅ Nativo | ✅ Nativo | 🔴 Dynamic | Binario CLI `sqlite3` + `sqlite3_analyzer`. |

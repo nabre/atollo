@@ -11,7 +11,7 @@ flowchart LR
     subgraph SWARM["Sciame v4 — 7 Agenti in Parallelo"]
         A1["Agente 1: Sicurezza Web & Alias<br/>(SEC-V4-01..04)"]
         A2["Agente 2: Pool Condivisi & Runner<br/>(BUG-V4-01..03, BUG-V4-11)"]
-        A3["Agente 3: MariaDB Multi-Linea & .env<br/>(BUG-V4-04..08, BUG-V4-10)"]
+        A3["Agente 3: MySQL Multi-Linea & .env<br/>(BUG-V4-04..08, BUG-V4-10)"]
         A4["Agente 4: Detection & Terminali<br/>(BUG-V4-09, BUG-V4-12..13)"]
         A5["Agente 5: Portabilità Core & Symlink<br/>(PORT-V4-01..03, PORT-V4-07)"]
         A6["Agente 6: Runtime Unix Editor/DB/Agents<br/>(PORT-V4-04..06, PORT-V4-08)"]
@@ -61,19 +61,19 @@ flowchart LR
 2. **Includere `conf.d/*.conf` di Progetto nei Pool (`BUG-V4-02`)**:
    - In `render_apache_vhost` e `render_nginx_vhost` di [`tauri/src/servers/mod.rs`](file:///d:/Projects/dev-kit2/tauri/src/servers/mod.rs#L408-L447), aggiungere `IncludeOptional` / `include` verso `data/projects/<project>/{apache,nginx}/conf.d/*.conf`.
 3. **Validazione Porte Cross-Sottosistema (`BUG-V4-03`)**:
-   - Estrarre un helper condiviso `ports::check_available_for(root, port, owner)` che verifichi l'assenza di conflitti tra `servers.json`, `projects` (`Runner`), `services.json` (`MariaDB`/`MongoDB`) e il range `editor::PORTS` (`7000..=7099`).
+   - Estrarre un helper condiviso `ports::check_available_for(root, port, owner)` che verifichi l'assenza di conflitti tra `servers.json`, `projects` (`Runner`), `services.json` (`MySQL`/`MongoDB`) e il range `editor::PORTS` (`7000..=7099`).
 4. **Invalidazione Cache `WebServers` (`BUG-V4-11`)**:
    - Chiamare `state.servers.invalidate()` alla fine di `project_clone`, `project_delete`, `github_clone` e `frameworks_create`.
 
 ---
 
-### Agente 3 — MariaDB Multi-Linea, Concorrenza `Services` e `.env` (`BUG-V4-04..08`, `BUG-V4-10`)
+### Agente 3 — MySQL Multi-Linea, Concorrenza `Services` e `.env` (`BUG-V4-04..08`, `BUG-V4-10`)
 1. **Serializzazione `Services` (`BUG-V4-04`)**:
    - Aggiungere `op_lock: Mutex<()>` e `cfg_lock: Mutex<()>` in [`Services`](file:///d:/Projects/dev-kit2/tauri/src/db/services/mod.rs#L75-L95) per proteggere `start_line`, `stop_line` e tutte le scritture su `services.json`.
-2. **Stabilità Porte MariaDB al Cambio di Linea Predefinita (`BUG-V4-05`)**:
+2. **Stabilità Porte MySQL al Cambio di Linea Predefinita (`BUG-V4-05`)**:
    - In [`db/services/mod.rs:188-222, 538-547`](file:///d:/Projects/dev-kit2/tauri/src/db/services/mod.rs#L188-L222), persistere sempre in `cfg.ports` anche la porta della linea predefinita (`keep_port(root, l, port)` senza il filtro `if line != default_line`) e dare precedenza a `cfg.ports.get(&line)` in `line_ports`.
 3. **Pulizia DB Multi-Linea e Browser/Adminer (`BUG-V4-06`, `BUG-V4-07`)**:
-   - In `drop_db`, iterare su tutte le linee MariaDB che hanno registrato il progetto; in `db/browse.rs` e `adminer_url`, usare la prima linea MariaDB in esecuzione se la primaria è ferma (o accettare `line: Option<&str>`).
+   - In `drop_db`, iterare su tutte le linee MySQL che hanno registrato il progetto; in `db/browse.rs` e `adminer_url`, usare la prima linea MySQL in esecuzione se la primaria è ferma (o accettare `line: Option<&str>`).
 4. **File `.cnf` Temporanei Thread-Safe (`BUG-V4-08`)**:
    - In [`db/services/tools.rs:115`](file:///d:/Projects/dev-kit2/tauri/src/db/services/tools.rs#L115), aggiungere un contatore atomico `AtomicU64` al nome del file `<stem>-<pid>-<seq>.cnf`.
 5. **Preservazione `.env.example` in `env_apply` e Ordine in `frameworks_create` (`BUG-V4-10`)**:
@@ -114,7 +114,7 @@ flowchart LR
    - In [`tauri/src/editor/mod.rs:258-261`](file:///d:/Projects/dev-kit2/tauri/src/editor/mod.rs#L258-L261) e [`editor/ext.rs:140, 504`](file:///d:/Projects/dev-kit2/tauri/src/editor/ext.rs#L140), usare `os::exe("node")` e `.join("out").join("server-main.js")`.
    - In [`tauri/src/editor/cfg.rs:127-228`](file:///d:/Projects/dev-kit2/tauri/src/editor/cfg.rs#L127-L228), generare anche `terminal.integrated.profiles.osx` / `.linux` e `defaultProfile.osx` / `.linux`.
 2. **Database Service & Tools Cross-OS (`PORT-V4-05`)**:
-   - In [`tauri/src/db/services/*`](file:///d:/Projects/dev-kit2/tauri/src/db/services/mod.rs) e [`tauri/src/db/browse.rs`](file:///d:/Projects/dev-kit2/tauri/src/db/browse.rs), sostituire i suffissi `.exe` hardcoded con `crate::os::exe("mariadbd")`, `crate::os::exe("mariadb")`, `crate::os::exe("mongod")`, `crate::os::exe("mongosh")`, e sostituire `r"mongosh\bin"` / `r"mongodb-tools\bin"` con `.join("mongosh").join("bin")`.
+   - In [`tauri/src/db/services/*`](file:///d:/Projects/dev-kit2/tauri/src/db/services/mod.rs) e [`tauri/src/db/browse.rs`](file:///d:/Projects/dev-kit2/tauri/src/db/browse.rs), sostituire i suffissi `.exe` hardcoded con `crate::os::exe("mysqld")`, `crate::os::exe("mysql")`, `crate::os::exe("mongod")`, `crate::os::exe("mongosh")`, e sostituire `r"mongosh\bin"` / `r"mongodb-tools\bin"` con `.join("mongosh").join("bin")`.
    - In [`tauri/src/db/adminer.rs:119`](file:///d:/Projects/dev-kit2/tauri/src/db/adminer.rs#L119), usare `r"php\php.exe"` (o supportare `/` in `catalog::translate_rel`).
 3. **Rimozione Backslash in `agents/*` (`PORT-V4-06`)**:
    - Normalizzare i separatori in `catalog::translate_rel` (`rel.replace('/', "\\").as_str()`) così che sia `"php/php.exe"` sia `r"php\php.exe"` vengano tradotti correttamente su ogni OS, e usare `.join(...)` in `agents/sync/mod.rs`.
@@ -122,8 +122,8 @@ flowchart LR
 ---
 
 ### Agente 7 — Allineamento UX/UI e Accessibilità (`UX-V4-01..06`)
-1. **Pool Web e Linee MariaDB Secondarie in `StatusBar` / `ActivityPanel` / *"Ferma tutto"* (`UX-V4-01`)**:
-   - Aggiornare [`ui/src/App.tsx`](file:///d:/Projects/dev-kit2/ui/src/App.tsx) e [`ui/src/activity.tsx`](file:///d:/Projects/dev-kit2/ui/src/activity.tsx) per conteggiare, mostrare e fermare i pool web attivi e le istanze `dbStatus.mariadb.others` in esecuzione.
+1. **Pool Web e Linee MySQL Secondarie in `StatusBar` / `ActivityPanel` / *"Ferma tutto"* (`UX-V4-01`)**:
+   - Aggiornare [`ui/src/App.tsx`](file:///d:/Projects/dev-kit2/ui/src/App.tsx) e [`ui/src/activity.tsx`](file:///d:/Projects/dev-kit2/ui/src/activity.tsx) per conteggiare, mostrare e fermare i pool web attivi e le istanze `dbStatus.mysql.others` in esecuzione.
 2. **Stato `detached` e Azione Secondaria in `servers.tsx` (`UX-V4-02`)**:
    - Esporre `detached: bool` e `serverName: string` in `AttachedSite` e visualizzare il badge *"Fermato"* e il nome dell'azione secondaria in [`ui/src/servers.tsx`](file:///d:/Projects/dev-kit2/ui/src/servers.tsx).
 3. **Etichette Dinamiche in `site.tsx`, `DbVersionSelect`, `Project.lines` e `InlineConfirm` (`UX-V4-03..06`)**:
