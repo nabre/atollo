@@ -188,6 +188,58 @@ fn laravel_and_plain() {
     assert!(!p.requires.contains(&"apache".to_owned()));
 }
 
+/// Deny rules in subfolders (review of WP-3.3): Caddy reads no `.htaccess`,
+/// so a private or uploads folder with rules of its own makes Apache first
+/// on Windows and a warning everywhere; stock files, dependencies and
+/// folders past the bounds do not count.
+#[test]
+fn nested_htaccess_rules() {
+    use crate::detect::php::{nested_htaccess, NESTED_DEPTH};
+    let deny = "Require all denied\n";
+    let drupal_files = "SetHandler Drupal_Security_Do_Not_Remove_See_SA_2006_006\n<IfModule mod_php.c>\n  php_flag engine off\n</IfModule>\n";
+    let deep = format!("public/{}.htaccess", "d/".repeat(NESTED_DEPTH + 1));
+    let p = project(
+        "php-nested-ht",
+        &[
+            ("composer.json", "{}"),
+            ("artisan", ""),
+            ("public/index.php", "<?php"),
+            ("public/.htaccess", LARAVEL_HTACCESS),
+            ("public/private/.htaccess", deny),
+            ("public/sites/default/files/.htaccess", drupal_files),
+            ("public/assets/.htaccess", "RewriteEngine On\n"),
+            ("public/vendor/x/.htaccess", deny),
+            (deep.as_str(), deny),
+        ],
+    );
+    assert_eq!(
+        nested_htaccess(&p.0, "public"),
+        [
+            "public/private/.htaccess",
+            "public/sites/default/files/.htaccess"
+        ]
+    );
+    let found = detect(&p.0, "it");
+    assert!(found
+        .warnings
+        .iter()
+        .any(|w| w.contains("public/private/.htaccess") && w.contains("Caddy")));
+    if cfg!(windows) {
+        assert_eq!(
+            ids(&found),
+            ["php:artisan", "apache", "caddy", "composer:install"]
+        );
+    } else {
+        assert_eq!(ids(&found), ["php:artisan", "caddy", "composer:install"]);
+    }
+    // The site's own `.htaccess` at the root is not a nested one.
+    let flat = project(
+        "php-flat-ht",
+        &[("index.php", "<?php"), (".htaccess", WORDPRESS_HTACCESS)],
+    );
+    assert!(nested_htaccess(&flat.0, ".").is_empty());
+}
+
 /// `php -S` always goes through the kit's router (no `.env`, `.git`, `.inc`):
 /// a project's own `router.php` runs after it, its path given relative to
 /// the document root (SEC-V3-02, D-97).

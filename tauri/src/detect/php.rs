@@ -97,6 +97,62 @@ pub(super) fn htaccess_texts(dir: &Path, root: &str) -> Vec<String> {
         .collect()
 }
 
+/// How deep below the site's folder, and through how many entries, the
+/// `.htaccess` of subfolders are looked for ([`nested_htaccess`]).
+pub const NESTED_DEPTH: usize = 8;
+pub const NESTED_ENTRIES: usize = 5000;
+
+/// Folders never looked into for `.htaccess`: dependencies and history.
+const NESTED_SKIP: [&str; 3] = ["vendor", "node_modules", ".git"];
+
+/// The `.htaccess` files of the subfolders of the site's folder `root`
+/// (relative to the project `dir`, with `/`) that have rules of their own
+/// ([`htaccess_has_own_rules`]): `Require all denied` of a private folder,
+/// `php_flag engine off` of an uploads folder (Drupal's `sites/default/files`).
+/// Caddy reads none of them, so what they hide would be served and PHP
+/// would run there. Bounded ([`NESTED_DEPTH`], [`NESTED_ENTRIES`]); links
+/// and [`NESTED_SKIP`] are not followed.
+pub fn nested_htaccess(dir: &Path, root: &str) -> Vec<String> {
+    let base = if root == "." {
+        dir.to_path_buf()
+    } else {
+        dir.join(root)
+    };
+    let mut found = Vec::new();
+    let mut seen = 0usize;
+    let mut stack: Vec<(std::path::PathBuf, usize)> = vec![(base.clone(), 0)];
+    while let Some((folder, depth)) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&folder) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            seen += 1;
+            if seen > NESTED_ENTRIES {
+                return found;
+            }
+            let Ok(kind) = entry.file_type() else {
+                continue;
+            };
+            let name = entry.file_name().to_string_lossy().into_owned();
+            let path = entry.path();
+            if kind.is_dir() {
+                if depth < NESTED_DEPTH && !NESTED_SKIP.contains(&name.as_str()) {
+                    stack.push((path, depth + 1));
+                }
+            } else if kind.is_file() && depth > 0 && name.eq_ignore_ascii_case(".htaccess") {
+                let text = std::fs::read_to_string(&path).unwrap_or_default();
+                if htaccess_has_own_rules(&text) {
+                    if let Ok(rel) = path.strip_prefix(dir) {
+                        found.push(rel.to_string_lossy().replace('\\', "/"));
+                    }
+                }
+            }
+        }
+    }
+    found.sort();
+    found
+}
+
 pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     let manifest = read_json(dir, "composer.json");
     let composer = manifest.is_some();
@@ -138,10 +194,31 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
         )
     };
     let caddy = || Action::caddy("caddy", &tr(lang, "sito web Caddy ({0})", &[&shown]), root);
-    let has_htaccess =
-        exists(dir, ".htaccess") || (root != "." && exists(dir, &format!(r"{root}\.htaccess")));
+    // The `.htaccess` of subfolders with rules of their own (a private or
+    // uploads folder): Caddy would serve what they hide.
+    let nested = nested_htaccess(dir, root);
+    let has_htaccess = exists(dir, ".htaccess")
+        || (root != "." && exists(dir, &format!(r"{root}\.htaccess")))
+        || !nested.is_empty();
     // Rules of its own Caddy cannot read: Apache first, on Windows.
-    let with_apache = apache_offered(Os::current(), &htaccess_texts(dir, root));
+    let with_apache = apache_offered(Os::current(), &htaccess_texts(dir, root))
+        || (Os::current().is_windows() && !nested.is_empty());
+    if !nested.is_empty() {
+        let mut shown_files = nested
+            .iter()
+            .take(3)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(", ");
+        if nested.len() > 3 {
+            shown_files.push_str(", …");
+        }
+        warnings.push(tr(
+            lang,
+            "Caddy non legge i .htaccess delle sottocartelle ({0}): ciò che nascondono è visibile e il PHP lì viene eseguito.",
+            &[&shown_files],
+        ));
+    }
     if exists(dir, "artisan") {
         platform = if requires("statamic/cms") {
             "Statamic"
