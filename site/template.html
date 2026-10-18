@@ -23,8 +23,8 @@
 <header class="top">
   <div class="wrap top-row">
     <a class="brand" href="{{root}}{{langPath}}" aria-label="Atollo">
-      <img class="logo logo-dark" src="{{root}}assets/lockup-dark.svg" alt="Atollo" width="168" height="24">
-      <img class="logo logo-light" src="{{root}}assets/lockup-light.svg" alt="Atollo" width="168" height="24">
+      <img class="logo logo-dark" src="{{root}}assets/wordmark-dark.svg" alt="Atollo" width="112" height="20">
+      <img class="logo logo-light" src="{{root}}assets/wordmark-light.svg" alt="Atollo" width="112" height="20">
     </a>
     <nav class="nav" aria-label="Atollo">
       <a href="#features">{{navFeatures}}</a>
@@ -100,17 +100,12 @@
 
   <section class="band">
     <div class="wrap">
-      <h2>{{compareTitle}}</h2>
-      <div class="table-scroll">
-        <table class="compare">
-          <thead><tr><th>{{compareTool}}</th><th>{{compareGap}}</th><th>{{compareAnswer}}</th></tr></thead>
-          <tbody>
-            <tr><th>Docker / Devcontainers</th><td>{{c1Gap}}</td><td>{{c1Answer}}</td></tr>
-            <tr><th>Nix / Devbox / mise / Scoop</th><td>{{c2Gap}}</td><td>{{c2Answer}}</td></tr>
-            <tr><th>Laragon / Herd / XAMPP</th><td>{{c3Gap}}</td><td>{{c3Answer}}</td></tr>
-            <tr><th>Cursor / VS Code / CLI AI</th><td>{{c4Gap}}</td><td>{{c4Answer}}</td></tr>
-          </tbody>
-        </table>
+      <h2>{{aspectsTitle}}</h2>
+      <div class="aspects">
+        <article><h3>{{a1Title}}</h3><p>{{a1Text}}</p></article>
+        <article><h3>{{a2Title}}</h3><p>{{a2Text}}</p></article>
+        <article><h3>{{a3Title}}</h3><p>{{a3Text}}</p></article>
+        <article><h3>{{a4Title}}</h3><p>{{a4Text}}</p></article>
       </div>
     </div>
   </section>
