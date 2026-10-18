@@ -26,6 +26,28 @@ fn official_catalog_is_valid() {
     }
 }
 
+/// A framework file of before may name `mariadb` as its database: MySQL,
+/// the kit's only SQL server, for the piece and for an addition.
+#[test]
+fn a_database_of_before_is_mysql() {
+    let piece: Piece = serde_json::from_str(
+        r#"{ "id": "mine", "kind": "addon", "name": "Mine", "database": "mariadb",
+             "on": { "vite": { "database": "mariadb" }, "laravel": { "database": "mongodb" } } }"#,
+    )
+    .unwrap();
+    assert_eq!(piece.database.as_deref(), Some("mysql"));
+    assert_eq!(piece.on["vite"].database.as_deref(), Some("mysql"));
+    assert_eq!(piece.on["laravel"].database.as_deref(), Some("mongodb"));
+    assert_eq!(
+        piece.on["vite"].needs,
+        Vec::<String>::new(),
+        "defaults kept"
+    );
+    let none: Piece =
+        serde_json::from_str(r#"{ "id": "x", "kind": "base", "name": "X" }"#).unwrap();
+    assert_eq!(none.database, None);
+}
+
 #[test]
 fn saves_only_the_changes() {
     let tmp = TempDir::new("frameworks");

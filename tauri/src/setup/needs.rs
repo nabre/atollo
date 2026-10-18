@@ -66,9 +66,7 @@ fn component_of_name(name: &str) -> Option<&'static str> {
         | "windres" => "cc",
         "ruby" | "gem" | "bundle" | "bundler" | "rails" | "rake" => "ruby",
         "r" | "rscript" => "r",
-        // The kit's SQL server for either name: MySQL (D-117).
-        "mariadb" | "mariadbd" | "mariadb-dump" | "mysql" | "mysqld" | "mysqldump"
-        | "mysqladmin" => "mysql",
+        "mysql" | "mysqld" | "mysqldump" | "mysqladmin" => "mysql",
         "mongod" | "mongosh" => "mongodb",
         "sqlite3" => "sqlite",
         "git" => "git",

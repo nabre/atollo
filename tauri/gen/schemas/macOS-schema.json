@@ -285,24 +285,6 @@
           "markdownDescription": "Enables the db_browse_tree command without any pre-configured scope."
         },
         {
-          "description": "Enables the db_migration command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-db-migration",
-          "markdownDescription": "Enables the db_migration command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the db_migration_drop_kept command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-db-migration-drop-kept",
-          "markdownDescription": "Enables the db_migration_drop_kept command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the db_migration_retry command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-db-migration-retry",
-          "markdownDescription": "Enables the db_migration_retry command without any pre-configured scope."
-        },
-        {
           "description": "Enables the downloads_add command without any pre-configured scope.",
           "type": "string",
           "const": "allow-downloads-add",
@@ -973,24 +955,6 @@
           "type": "string",
           "const": "deny-db-browse-tree",
           "markdownDescription": "Denies the db_browse_tree command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the db_migration command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-db-migration",
-          "markdownDescription": "Denies the db_migration command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the db_migration_drop_kept command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-db-migration-drop-kept",
-          "markdownDescription": "Denies the db_migration_drop_kept command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the db_migration_retry command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-db-migration-retry",
-          "markdownDescription": "Denies the db_migration_retry command without any pre-configured scope."
         },
         {
           "description": "Denies the downloads_add command without any pre-configured scope.",

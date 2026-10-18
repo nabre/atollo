@@ -106,13 +106,11 @@ pub(super) fn framework_action_id(name: &str, i: usize) -> String {
     }
 }
 
-/// What a creation installs first: the plan's needs, a SQL server as MySQL
-/// (D-117), also the `mariadb` of a framework file of before. The database
-/// itself goes to the project's SQL server (`Services::start_for`).
+/// What a creation installs first: the plan's needs, each once. The
+/// database itself goes to the project's server (`Services::start_for`).
 pub(super) fn plan_needs(plan: &crate::projects::frameworks::Plan) -> Vec<&str> {
     let mut out: Vec<&str> = Vec::new();
-    for n in &plan.needs {
-        let n = crate::db::services::sql_need(n);
+    for n in plan.needs.iter().map(String::as_str) {
         if !out.contains(&n) {
             out.push(n);
         }

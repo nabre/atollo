@@ -22,33 +22,33 @@ fn written_and_restored() {
 }
 
 /// The MySQL launchers (D-110): `.cmd` in CRLF and sh in LF, written with
-/// the other files, each passing the kit's login first, MariaDB's program
-/// on a kit without MySQL.
+/// the other files, each passing the kit's login first, a message on a
+/// kit without MySQL.
 #[test]
 fn mysql_launchers_written() {
     let tmp = TempDir::new("kitfiles-mysql");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     write_all(&kit).unwrap();
     let dir = kit.kit_files();
-    for (stem, mariadb) in MYSQL_LAUNCHERS {
+    for stem in MYSQL_LAUNCHERS {
         let cmd = fs::read_to_string(dir.join("bin").join(format!("{stem}.cmd"))).unwrap();
         assert_eq!(cmd.matches('\n').count(), cmd.matches("\r\n").count());
         assert!(cmd.contains(&format!(
             "\"%CP_MYSQL%\\bin\\{stem}.exe\" \"--defaults-extra-file=%ATOLLO_MYSQL_CNF%\" %*\r\n"
         )));
-        assert!(cmd.contains(&format!("\"%CP_MARIADB%\\bin\\{mariadb}.exe\" %*\r\n")));
+        assert!(cmd.contains("echo MySQL is not installed"));
         assert!(!cmd.contains('('), "no block around %*: {stem}");
         let sh = fs::read_to_string(dir.join("bin").join(stem)).unwrap();
         assert!(sh.starts_with("#!/bin/sh\n") && !sh.contains('\r'));
         assert!(sh.contains(&format!(
             "exec \"$CP_MYSQL/bin/{stem}\" --defaults-extra-file=\"$ATOLLO_MYSQL_CNF\" \"$@\"\n"
         )));
-        assert!(sh.contains(&format!("exec \"$CP_MARIADB/bin/{mariadb}\" \"$@\"\n")));
+        assert!(sh.contains("MySQL is not installed"));
     }
 }
 
 /// The sh launcher really runs MySQL's program with the login first, the
-/// arguments as given, and MariaDB's without MySQL.
+/// arguments as given, and a message without MySQL.
 #[cfg(unix)]
 #[test]
 fn mysql_launcher_runs_the_right_program() {
@@ -62,21 +62,19 @@ fn mysql_launcher_runs_the_right_program() {
         fs::write(&p, format!("#!/bin/sh\necho \"{name} $*\"\n")).unwrap();
         fs::set_permissions(&p, fs::Permissions::from_mode(0o755)).unwrap();
     };
-    let (mysql, mariadb) = (tmp.0.join("my"), tmp.0.join("ma"));
-    fake(&mariadb, "mariadb");
+    let mysql = tmp.0.join("my");
     let cnf = tmp.0.join("mysql.cnf");
     let launcher = kit.kit_files().join("bin").join("mysql");
     let run = || {
         let out = Command::new(&launcher)
             .args(["-e", "SELECT 1"])
             .env("CP_MYSQL", &mysql)
-            .env("CP_MARIADB", &mariadb)
             .env("ATOLLO_MYSQL_CNF", &cnf)
             .output()
             .unwrap();
         String::from_utf8_lossy(&out.stdout).trim().to_owned()
     };
-    assert_eq!(run(), "mariadb -e SELECT 1", "no MySQL: MariaDB's");
+    assert_eq!(run(), "", "no MySQL: only a message on stderr");
     fake(&mysql, "mysql");
     assert_eq!(run(), "mysql -e SELECT 1", "no login yet");
     fs::write(&cnf, "[client]\n").unwrap();

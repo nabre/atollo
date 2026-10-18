@@ -2,11 +2,11 @@
 //! the databases with their tables or collections, then one page of rows.
 //!
 //! - through the kit's own clients, logged in as the administrator as the
-//!   rest of `db/services/`: `mariadb` with the kit's `[client]` login and the
+//!   rest of `db/services/`: `mysql` with the kit's `[client]` login and the
 //!   SQL on stdin, mongosh with the password and the names in its
 //!   environment (`ATOLLO_DB_*`); never a password or a name on the command
 //!   line;
-//! - MariaDB answers one JSON value per line (`JSON_OBJECT`, `JSON_ARRAY`),
+//! - MySQL answers one JSON value per line (`JSON_OBJECT`, `JSON_ARRAY`),
 //!   so no escaping of tabs or `NULL` to undo; binary columns come as
 //!   `{"$bytes": n}` and long texts are cut;
 //! - MongoDB answers Extended JSON (relaxed): `{"$oid": …}`, `{"$date": …}`;
@@ -53,7 +53,7 @@ pub struct Database {
 #[serde(rename_all = "camelCase")]
 pub struct Column {
     pub name: String,
-    /// MariaDB's column type (`int(11)`, `varchar(255)`); empty for MongoDB.
+    /// MySQL's column type (`int(11)`, `varchar(255)`); empty for MongoDB.
     pub kind: String,
 }
 
@@ -71,7 +71,7 @@ pub struct Rows {
 fn system_db(engine: DbEngine, name: &str) -> bool {
     let own = engine.system_databases();
     match engine {
-        DbEngine::MariaDb | DbEngine::MySql => own.iter().any(|n| n.eq_ignore_ascii_case(name)),
+        DbEngine::MySql => own.iter().any(|n| n.eq_ignore_ascii_case(name)),
         DbEngine::MongoDb => own.contains(&name),
     }
 }
@@ -133,12 +133,12 @@ fn output(mut cmd: Command, input: &str, limit: Duration) -> Result<String> {
     Ok(String::from_utf8_lossy(&out).into_owned())
 }
 
-/// `name` as a MariaDB identifier.
+/// `name` as a MySQL identifier.
 fn ident(name: &str) -> String {
     format!("`{}`", name.replace('`', "``"))
 }
 
-/// `text` as a MariaDB string literal.
+/// `text` as a MySQL string literal.
 fn literal(text: &str) -> String {
     format!("'{}'", text.replace('\\', "\\\\").replace('\'', "\\'"))
 }
@@ -199,7 +199,7 @@ fn mongosh(
     serde_json::from_str(last).map_err(|e| anyhow!("mongosh: unexpected answer: {e}"))
 }
 
-const MARIADB_TREE: &str = "SELECT JSON_OBJECT('db', s.SCHEMA_NAME, 't', t.TABLE_NAME, \
+const SQL_TREE: &str = "SELECT JSON_OBJECT('db', s.SCHEMA_NAME, 't', t.TABLE_NAME, \
     'n', t.TABLE_ROWS, 'view', t.TABLE_TYPE = 'VIEW') \
     FROM information_schema.SCHEMATA s \
     LEFT JOIN information_schema.TABLES t ON t.TABLE_SCHEMA = s.SCHEMA_NAME \
@@ -223,8 +223,8 @@ pub fn tree(services: &Services, engine: &str, line: Option<&str>) -> Result<Vec
     let engine = DbEngine::parse(engine)?;
     let mut out: Vec<Database> = Vec::new();
     match engine {
-        DbEngine::MariaDb | DbEngine::MySql => {
-            for row in json_lines(&run_sql(services, engine, line, MARIADB_TREE)?)? {
+        DbEngine::MySql => {
+            for row in json_lines(&run_sql(services, engine, line, SQL_TREE)?)? {
                 let db = row["db"].as_str().unwrap_or_default().to_owned();
                 if out.last().is_none_or(|d| d.name != db) {
                     out.push(Database {
@@ -271,9 +271,9 @@ pub fn tree(services: &Services, engine: &str, line: Option<&str>) -> Result<Vec
     Ok(out)
 }
 
-/// A MariaDB column as an expression of `JSON_ARRAY`: binary data as its
+/// A MySQL column as an expression of `JSON_ARRAY`: binary data as its
 /// size, long texts cut.
-fn mariadb_value(name: &str, data_type: &str) -> String {
+fn sql_value(name: &str, data_type: &str) -> String {
     let c = ident(name);
     match data_type.to_ascii_lowercase().as_str() {
         "binary" | "varbinary" | "tinyblob" | "blob" | "mediumblob" | "longblob" | "bit"
@@ -300,7 +300,7 @@ pub fn rows(
 ) -> Result<Rows> {
     let engine = DbEngine::parse(engine)?;
     match engine {
-        DbEngine::MariaDb | DbEngine::MySql => {
+        DbEngine::MySql => {
             let sql = format!(
                 "SELECT JSON_OBJECT('c', COLUMN_NAME, 'k', DATA_TYPE, 'ct', COLUMN_TYPE) \
                  FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = {} AND TABLE_NAME = {} \
@@ -322,7 +322,7 @@ pub fn rows(
             let values: Vec<String> = cols
                 .iter()
                 .map(|c| {
-                    mariadb_value(
+                    sql_value(
                         c["c"].as_str().unwrap_or_default(),
                         c["k"].as_str().unwrap_or_default(),
                     )

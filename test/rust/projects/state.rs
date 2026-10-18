@@ -60,8 +60,8 @@ fn orphans_by_files_and_adopted() {
         "ports.json",
         r#"{"ports":{"web":8001},"locked":["web"]}"#,
     );
-    write("old", "private/db.json", r#"{"mariadb":"pw","future":{}}"#);
-    write("old", "private/backups/old-mariadb-1.sql", "x");
+    write("old", "private/db.json", r#"{"mysql":"pw","future":{}}"#);
+    write("old", "private/backups/old-mysql-1.sql", "x");
     assert_eq!(orphans(&kit), ["old"]);
     assert_eq!(
         holdings(&kit, "old").unwrap(),
@@ -69,7 +69,7 @@ fn orphans_by_files_and_adopted() {
             project: "old".into(),
             settings: true,
             ports: 1,
-            databases: vec!["mariadb".into()],
+            databases: vec!["mysql".into()],
             backups: 1,
         }
     );
@@ -105,10 +105,10 @@ fn orphans_by_files_and_adopted() {
         .dir()
         .join("private")
         .join("backups")
-        .join("old-mariadb-1.sql")
+        .join("old-mysql-1.sql")
         .is_file());
     assert_eq!(
-        crate::db::auth::project_password(&kit, "shop", "mariadb").as_deref(),
+        crate::db::auth::project_password(&kit, "shop", "mysql").as_deref(),
         Some("pw")
     );
     // the name of before travels with the passwords, other keys kept
@@ -117,10 +117,10 @@ fn orphans_by_files_and_adopted() {
         serde_json::from_str(&fs::read_to_string(db_file).unwrap()).unwrap();
     assert_eq!(
         db,
-        serde_json::json!({ "mariadb": "pw", "future": {}, "names": { "mariadb": "old" } })
+        serde_json::json!({ "mysql": "pw", "future": {}, "names": { "mysql": "old" } })
     );
     assert_eq!(
-        crate::db::auth::project_db_name(&kit, "shop", "mariadb").unwrap(),
+        crate::db::auth::project_db_name(&kit, "shop", "mysql").unwrap(),
         "old"
     );
     assert!(!kit.project_data().join("old").exists());
@@ -158,7 +158,7 @@ fn adopt_refuses_links_and_unreadable_passwords() {
         .join("old")
         .join("private")
         .join("db.json");
-    write("old", "private/db.json", r#"{"mariadb":"pw"}"#);
+    write("old", "private/db.json", r#"{"mysql":"pw"}"#);
     fs::create_dir_all(kit.projects().join("shop")).unwrap();
     // data\projects\shop is a junction to a folder outside
     let outside = tmp.0.join("outside");
@@ -187,10 +187,10 @@ fn adopt_refuses_links_and_unreadable_passwords() {
     assert!(adopt(&kit, "old", "shop").is_err());
     assert!(old_db.is_file());
     assert!(!kit.project_data().join("shop").exists());
-    write("old", "private/db.json", r#"{"mariadb":"pw"}"#);
+    write("old", "private/db.json", r#"{"mysql":"pw"}"#);
     adopt(&kit, "old", "shop").unwrap();
     assert_eq!(
-        crate::db::auth::project_db_name(&kit, "shop", "mariadb").unwrap(),
+        crate::db::auth::project_db_name(&kit, "shop", "mysql").unwrap(),
         "old"
     );
 }

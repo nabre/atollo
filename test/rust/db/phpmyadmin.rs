@@ -49,16 +49,16 @@ fn config_comes_from_the_environment() {
     assert!(CONFIG.contains("$cfg['VersionCheck'] = false"));
 }
 
-/// phpMyAdmin of the kit given by ATOLLO_TEST_KIT on its MariaDB already
-/// running at ATOLLO_TEST_MARIADB_PORT (an open Atollo, whose data the
+/// phpMyAdmin of the kit given by ATOLLO_TEST_KIT on its MySQL already
+/// running at ATOLLO_TEST_MYSQL_PORT (an open Atollo, whose data the
 /// real test of `db/services/` must not start a second server on).
 #[test]
-fn real_phpmyadmin_on_running_mariadb() {
+fn real_phpmyadmin_on_running_mysql() {
     let (Ok(root), Ok(db_port)) = (
         std::env::var("ATOLLO_TEST_KIT"),
-        std::env::var("ATOLLO_TEST_MARIADB_PORT"),
+        std::env::var("ATOLLO_TEST_MYSQL_PORT"),
     ) else {
-        eprintln!("ATOLLO_TEST_KIT or ATOLLO_TEST_MARIADB_PORT not set: skipped");
+        eprintln!("ATOLLO_TEST_KIT or ATOLLO_TEST_MYSQL_PORT not set: skipped");
         return;
     };
     let kit = Kit::at(PathBuf::from(root), crate::kit::Arch::detect());
@@ -69,8 +69,8 @@ fn real_phpmyadmin_on_running_mariadb() {
         &crate::env::Host::capture(),
     );
     let password = crate::db::auth::load(&kit)
-        .mariadb_root
-        .expect("MariaDB has a password of root");
+        .mysql_root
+        .expect("MySQL has a password of root");
     let pma = PhpMyAdmin::default();
     let url = pma
         .open(&kit, &env, db_port.parse().unwrap(), &password, "en")

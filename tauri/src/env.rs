@@ -306,21 +306,17 @@ impl KitEnv {
         env.set_path("ATOLLO", root);
         env.set_path("CP_ROOT", root);
         env.set_path("CP_DATA", &data);
-        // The `[client]` login of the kit's MariaDB (db/auth.rs, D-74), on
-        // the port of the version the server runs; a project's programs get
-        // the login of another version when its database is there
-        // (`db::services::project_mysql_home`).
-        env.set_path("MYSQL_HOME", data.join("app").join("db"));
-        // The kit's MySQL (D-110): MYSQL_HOME holds MariaDB's login, so the
-        // launchers of data\kit\bin (`mysql`, `mysqldump`, `mysqladmin`)
-        // run the programs of CP_MYSQL with `--defaults-extra-file` of this
-        // login; MariaDB's, through CP_MARIADB, on a kit without MySQL.
+        // The `[client]` login of the kit's MySQL (db/auth.rs, D-74, D-110),
+        // on the port of the version the server runs: the launchers of
+        // data\kit\bin (`mysql`, `mysqldump`, `mysqladmin`) run the programs
+        // of CP_MYSQL with `--defaults-extra-file` of this login; a project's
+        // programs get the login of another version when its database is
+        // there (`db::services::project_client_env`).
         env.set_path(
             "ATOLLO_MYSQL_CNF",
             data.join("app").join("db").join("mysql.cnf"),
         );
         env.set_path("CP_MYSQL", app("mysql"));
-        env.set_path("CP_MARIADB", app("mariadb"));
         env.set("CP_ARCH", arch);
         env.set_path("CP_APPS", &apps);
         // The app itself, for the kit's wrappers (data\kit\bin\agy.cmd):
@@ -750,15 +746,10 @@ impl KitEnv {
             path.push(gems.join("bin"));
         }
         when(&mut path, r"r\bin\R.cmd", &[app(r"r\bin")]);
-        // Databases (D-73): servers and clients; MySQL's first (D-110), its
-        // `mysql`, `mysqldump`, `mysqladmin` reached through the launchers
-        // of data\kit\bin, ahead of both.
+        // Databases (D-73): servers and clients; MySQL's `mysql`,
+        // `mysqldump`, `mysqladmin` reached through the launchers of
+        // data\kit\bin, ahead of its folder (D-110).
         when(&mut path, r"mysql\bin\mysql.exe", &[app(r"mysql\bin")]);
-        when(
-            &mut path,
-            r"mariadb\bin\mariadb.exe",
-            &[app(r"mariadb\bin")],
-        );
         when(&mut path, r"mongodb\bin\mongod.exe", &[app(r"mongodb\bin")]);
         when(
             &mut path,
