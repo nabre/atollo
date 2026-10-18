@@ -788,5 +788,7 @@
   "Chiudere il terminale?": "Close the terminal?",
   "In «{0}» un programma è ancora in esecuzione: chiudendo il terminale si ferma.": "A program is still running in “{0}”: closing the terminal stops it.",
   "Terminali aperti: {0}": "Open terminals: {0}",
-  "Ridimensiona i terminali": "Resize the terminals"
+  "Ridimensiona i terminali": "Resize the terminals",
+  "I programmi che usano i framework Apple richiedono Xcode Command Line Tools": "Programs that use the Apple frameworks need Xcode Command Line Tools",
+  "Si installano con xcode-select --install, da amministratore.": "Install them with xcode-select --install, as an administrator."
 }

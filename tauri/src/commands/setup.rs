@@ -30,8 +30,14 @@ pub struct ComponentInfo {
     /// only, on macOS or Linux). `None` for `noArm64` on Windows ARM64,
     /// where `no_arm64` says it.
     pub unavailable_reason: Option<String>,
-    /// Components it needs (Apache needs PHP, Kotlin needs Java).
+    /// Components it needs on this kit's target (Apache needs PHP, Kotlin
+    /// needs Java; C and C++ need Zig on macOS and Linux only).
     pub needs: Vec<String>,
+    /// C and C++ on a Mac without Xcode Command Line Tools (`xcode-select
+    /// -p` fails): C and C++ work, the Apple frameworks do not (T2.3.4).
+    /// Only the Mac itself can tell: false for a kit inspected or prepared
+    /// from another system.
+    pub xcode_missing: bool,
     /// x64 only, on an ARM64 PC with Windows 10: only Windows 11 runs x64
     /// programs there (D-81). Not available.
     pub needs_windows11: bool,
@@ -106,15 +112,58 @@ pub(super) fn emulates_x64() -> bool {
     crate::os::windows_build().is_none_or(|b| b >= 22000)
 }
 
+/// The Xcode Command Line Tools are missing on this Mac, for a kit of
+/// `target`: only a darwin kit on a Mac, where `xcode-select -p` fails.
+fn xcode_missing_on_host(target: crate::kit::Target) -> bool {
+    xcode_missing(target, crate::kit::Os::current(), xcode_selected)
+}
+
+/// [`xcode_missing_on_host`] with the host's system and `xcode-select -p`
+/// given (`None`: it failed), so that every target is tested anywhere.
+pub(super) fn xcode_missing(
+    target: crate::kit::Target,
+    host: crate::kit::Os,
+    selected: impl FnOnce() -> Option<String>,
+) -> bool {
+    target.is_macos() && host.is_macos() && selected().is_none_or(|s| s.trim().is_empty())
+}
+
+/// The folder of the active developer tools (`xcode-select -p`), on a Mac.
+/// `-p` only prints: it never opens the installation dialog. The same as
+/// `install::lang::cc::xcode_selected`, which its private modules do not
+/// export yet: to be replaced by it once they do.
+#[cfg(target_os = "macos")]
+fn xcode_selected() -> Option<String> {
+    let out = std::process::Command::new("/usr/bin/xcode-select")
+        .arg("-p")
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()
+        .filter(|o| o.status.success())?;
+    let path = String::from_utf8_lossy(&out.stdout).trim().to_owned();
+    std::path::Path::new(&path).is_dir().then_some(path)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn xcode_selected() -> Option<String> {
+    None
+}
+
 /// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`
 /// component is not available on a Windows ARM64 kit, one with an
 /// `unavailableReason` not on this target (see [`unavailable_reason`]).
 pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
-    let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+    let choice = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
     let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
-    let locked = catalog.locked();
+    let locked = catalog.locked_on(target);
+    // Chosen here also when a chosen one needs it on this target only (Zig
+    // for C and C++ on Linux): the run installs it, the choice does not
+    // save it (see `choice_text`).
+    let here = catalog.needs_only_on(&choice.chosen_ids(catalog), target);
+    let xcode_missing = xcode_missing_on_host(target);
     // The order of the page, which an installation follows too.
     catalog
         .in_page_order()
@@ -134,7 +183,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 group: c.group,
                 desc: crate::i18n::t(lang, &c.desc, &[]),
                 mb: c.mb,
-                chosen: choice.is_chosen(&c.id),
+                chosen: choice.is_chosen(&c.id) || here.contains(c.id.as_str()),
                 installed: c.is_installed(kit),
                 present: c.is_present(kit),
                 locked: locked.contains(c.id.as_str()),
@@ -146,7 +195,8 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 x64_only: c.x64_only,
                 no_arm64,
                 unavailable_reason,
-                needs: c.needs.clone(),
+                needs: c.needs_list_on(target),
+                xcode_missing: c.id == "cc" && xcode_missing,
                 needs_windows11,
                 versioned: c.versioned,
                 home: c.home.clone(),
@@ -256,26 +306,31 @@ pub fn components_apply<R: Runtime>(
 /// `components.txt` for the ids in `chosen`. What this target cannot install
 /// (`noArm64` on `win32-arm64`, `unavailable` or outside `targets`, an x64
 /// build on a Mac without Rosetta 2) keeps its saved choice: the same kit
-/// on another OS/arch must not lose it.
+/// on another OS/arch must not lose it. Nor does what a chosen one needs on
+/// this target only (Zig for C and C++ on Linux, ticked with them by the
+/// page): the run on this target installs it anyway, and saving it would
+/// install it on Windows too. The needs of the saved choice count as well:
+/// the page seeds Zig as ticked next to C and C++, and unticking C and C++
+/// leaves it in `chosen`, which must not turn it into a saved choice.
 pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
     let catalog = Catalog::get();
-    let saved = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+    let saved = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
+    let ids: Vec<&str> = chosen.iter().map(String::as_str).collect();
+    let mut here = catalog.needs_only_on(&ids, target);
+    here.extend(catalog.needs_only_on(&saved.chosen_ids(catalog), target));
     catalog
         .all()
         .iter()
         .map(|c| {
-            let on = if !crate::router::target::installable_on(c, target) {
+            let on = if !crate::router::target::installable_on(c, target)
+                || here.contains(c.id.as_str())
+            {
                 saved.is_chosen(&c.id)
             } else {
                 chosen.contains(&c.id)
             };
-            format!(
-                "{}={}
-",
-                c.id,
-                u8::from(on)
-            )
+            format!("{}={}\n", c.id, u8::from(on))
         })
         .collect()
 }

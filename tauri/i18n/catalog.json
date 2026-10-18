@@ -639,15 +639,15 @@
     "fr": "compilation de C et C++",
     "de": "Builds für C und C++"
   },
-  "compilatore C e C++ (Clang, MinGW-w64): gcc, g++, make; su macOS servono gli Xcode Command Line Tools, su Linux gli header della libc e make del sistema": {
-    "en": "C and C++ compiler (Clang, MinGW-w64): gcc, g++, make; on macOS it needs the Xcode Command Line Tools, on Linux the system's libc headers and make",
-    "fr": "compilateur C et C++ (Clang, MinGW-w64) : gcc, g++, make ; sur macOS il faut les Xcode Command Line Tools, sur Linux les en-têtes de la libc et make du système",
-    "de": "C- und C++-Compiler (Clang, MinGW-w64): gcc, g++, make; unter macOS werden die Xcode Command Line Tools benötigt, unter Linux die libc-Header und make des Systems"
+  "compilatore C e C++ (gcc, g++, make): Clang e MinGW-w64 su Windows, zig cc del kit e GNU make su macOS e Linux; i framework Apple richiedono Xcode Command Line Tools": {
+    "en": "C and C++ compiler (gcc, g++, make): Clang and MinGW-w64 on Windows, the kit's zig cc and GNU make on macOS and Linux; the Apple frameworks need Xcode Command Line Tools",
+    "fr": "compilateur C et C++ (gcc, g++, make) : Clang et MinGW-w64 sur Windows, zig cc du kit et GNU make sur macOS et Linux ; les frameworks Apple nécessitent les Xcode Command Line Tools",
+    "de": "C- und C++-Compiler (gcc, g++, make): Clang und MinGW-w64 unter Windows, zig cc des Kits und GNU make unter macOS und Linux; die Apple-Frameworks benötigen die Xcode Command Line Tools"
   },
-  "Ruby, gem e Bundler (RubyInstaller)": {
-    "en": "Ruby, gem and Bundler (RubyInstaller)",
-    "fr": "Ruby, gem et Bundler (RubyInstaller)",
-    "de": "Ruby, gem und Bundler (RubyInstaller)"
+  "Ruby, gem e Bundler: RubyInstaller su Windows, conda-forge su macOS e Linux": {
+    "en": "Ruby, gem and Bundler: RubyInstaller on Windows, conda-forge on macOS and Linux",
+    "fr": "Ruby, gem et Bundler : RubyInstaller sur Windows, conda-forge sur macOS et Linux",
+    "de": "Ruby, gem und Bundler: RubyInstaller unter Windows, conda-forge unter macOS und Linux"
   },
   "R da conda-forge, con il compilatore per i pacchetti": {
     "en": "R from conda-forge, with the compiler for packages",

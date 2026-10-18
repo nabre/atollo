@@ -34,6 +34,39 @@ fn deleted_by_hand_is_no_longer_chosen() {
     assert!(sync_with_disk(&kit).unwrap().is_empty());
 }
 
+/// D-81 with a need of one target: Zig deleted by hand on Linux turns off
+/// C and C++, which need it there, so the next run does not bring it back.
+/// On Windows C and C++ do not need Zig and stay chosen.
+#[test]
+fn deleted_need_of_one_target_turns_off_what_needs_it() {
+    use crate::kit::{Os, Target};
+    let catalog = Catalog::get();
+    let zig = catalog.find("zig").unwrap();
+    for (t, cc_after) in [
+        (Target::new(Os::Linux, Arch::X64), false),
+        (Target::new(Os::Darwin, Arch::Arm64), false),
+        (Target::WIN32_X64, true),
+    ] {
+        let tmp = TempDir::new("versions-sync-target");
+        let kit = Kit::at_target(tmp.0.clone(), t);
+        kit.prepare().unwrap();
+        install_fake(&kit, zig, &install_dir(&kit, zig, "0.14.0"));
+        zig.save_version(&kit, "0.14.0").unwrap();
+        let mut choice = crate::setup::catalog::Choice::defaults(catalog);
+        choice.set(catalog, "cc", true);
+        choice.write(&kit, catalog).unwrap();
+        assert!(sync_with_disk(&kit).unwrap().is_empty(), "{t}: all there");
+
+        fs::remove_dir_all(zig.folder_path(&kit).unwrap()).unwrap();
+        let off = sync_with_disk(&kit).unwrap();
+        let now = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
+        assert_eq!(now.is_chosen("cc"), cc_after, "{t}");
+        assert!(!now.is_chosen("zig"), "{t}");
+        assert_eq!(off.contains(&"C, C++".to_owned()), !cc_after, "{t}");
+        assert!(zig.installed_version(&kit).is_none(), "{t}");
+    }
+}
+
 #[test]
 fn folders_of_an_older_kit_move() {
     let tmp = TempDir::new("versions-migrate");
