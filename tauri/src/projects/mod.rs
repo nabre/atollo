@@ -11,6 +11,8 @@
 
 pub mod alias;
 pub mod apache;
+pub mod caddy;
+pub mod fastcgi;
 pub mod frameworks;
 pub mod mcp;
 pub mod migrate;

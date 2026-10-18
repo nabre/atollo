@@ -30,10 +30,10 @@ fn unavailable_for_the_system_is_not_arm64() {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
         let infos = component_infos(&kit, "en");
-        let php = infos.iter().find(|c| c.id == "php").unwrap();
-        assert!(!php.available && !php.no_arm64, "{target:?}");
+        let apache = infos.iter().find(|c| c.id == "apache").unwrap();
+        assert!(!apache.available && !apache.no_arm64, "{target:?}");
         assert_eq!(
-            php.unavailable_reason.as_deref(),
+            apache.unavailable_reason.as_deref(),
             Some(format!("not available for {}", target.as_str()).as_str())
         );
         let python = infos.iter().find(|c| c.id == "python").unwrap();
@@ -65,7 +65,7 @@ fn catalog_reasons_reach_the_page() {
     let sqlite = row("sqlite");
     assert!(sqlite.available && sqlite.unavailable_reason.is_none());
     assert_eq!(
-        row("php").unavailable_reason.as_deref(),
+        row("apache").unavailable_reason.as_deref(),
         Some("not available for linux-arm64")
     );
     assert_eq!(row("python").unavailable_reason, None);

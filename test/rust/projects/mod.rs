@@ -453,25 +453,28 @@ fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
 }
 
 /// A4 handoff: what a project can add follows the catalog's targets, not
-/// only ARM64 (no PHP/Apache/Nginx off Windows, R everywhere but Windows ARM64).
+/// only ARM64 (no Apache/Nginx off Windows, PHP everywhere since WP-3.2, R
+/// everywhere but Windows ARM64).
 #[test]
 fn addable_follows_the_platform() {
     use crate::kit::Target;
     let tmp = TempDir::new("projects-addable");
     let catalog = Catalog::get();
-    let (php, r, node) = (
+    let (apache, php, r, node) = (
+        catalog.find("apache").unwrap(),
         catalog.find("php").unwrap(),
         catalog.find("r").unwrap(),
         catalog.find("node").unwrap(),
     );
     let on = |t: Target| Kit::at_target(tmp.0.clone(), t);
     let win = on(Target::WIN32_X64);
-    assert!(addable(&win, php) && addable(&win, r) && addable(&win, node));
+    assert!(addable(&win, apache) && addable(&win, r) && addable(&win, node));
     let win_arm = on(Target::WIN32_ARM64);
-    assert!(addable(&win_arm, php) && !addable(&win_arm, r));
+    assert!(addable(&win_arm, apache) && !addable(&win_arm, r));
     for t in [Target::LINUX_ARM64, Target::DARWIN_ARM64, Target::LINUX_X64] {
         let kit = on(t);
-        assert!(!addable(&kit, php), "{t:?}");
+        assert!(!addable(&kit, apache), "{t:?}");
+        assert!(addable(&kit, php), "{t:?}");
         assert!(addable(&kit, r) && addable(&kit, node), "{t:?}");
     }
 }

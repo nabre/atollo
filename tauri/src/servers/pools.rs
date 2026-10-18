@@ -119,7 +119,7 @@ pub(super) fn name_sites(sites: &mut [AttachedSite], port: u16) {
 /// there is none of those, and then only the first, so that a project with
 /// a `site` action, or with both files, is not in two pools at once.
 pub(super) fn pooled_actions(actions: &[detect::Action]) -> Vec<&detect::Action> {
-    let web = |a: &&detect::Action| a.apache_dir.is_some() || a.nginx_dir.is_some();
+    let web = |a: &&detect::Action| a.web_server_dir().is_some();
     let custom: Vec<&detect::Action> = actions.iter().filter(web).filter(|a| a.custom).collect();
     if custom.is_empty() {
         actions.iter().filter(web).take(1).collect()
@@ -160,7 +160,7 @@ pub(super) fn auto_pool_id(
 /// [`auto_pool_id`], or the one of before SC-2 (`apache-2.4-php-7.4`).
 /// `None` for any other id (a profile's).
 pub(super) fn parse_auto_pool_id(id: &str) -> Option<PoolLines> {
-    let (engine, rest) = [WebServerEngine::Apache, WebServerEngine::Nginx]
+    let (engine, rest) = WebServerEngine::ALL
         .into_iter()
         .find_map(|e| Some((e, id.strip_prefix(e.as_str())?.strip_prefix('-')?)))?;
     let (srv, php) = match rest
@@ -304,7 +304,13 @@ impl WebServers {
     pub(super) fn scan(&self, lang: &str, prune: bool) -> WebServersView {
         let apache_lines = crate::db::services::server_lines(&self.kit, "apache");
         let nginx_lines = crate::db::services::server_lines(&self.kit, "nginx");
+        let caddy_lines = crate::db::services::server_lines(&self.kit, "caddy");
         let php_lines = crate::db::services::server_lines(&self.kit, "php");
+        let newest = |engine: WebServerEngine| match engine {
+            WebServerEngine::Apache => apache_lines.first().cloned(),
+            WebServerEngine::Nginx => nginx_lines.first().cloned(),
+            WebServerEngine::Caddy => caddy_lines.first().cloned(),
+        };
 
         let store_guard = self
             .store_lock
@@ -318,10 +324,7 @@ impl WebServers {
 
         for p in store.profiles.clone() {
             let port = self.assign_or_get_port(&mut store, &mut store_dirty, &p.id, p.port);
-            let server_line = p.server_line.clone().or_else(|| match p.engine {
-                WebServerEngine::Apache => apache_lines.first().cloned(),
-                WebServerEngine::Nginx => nginx_lines.first().cloned(),
-            });
+            let server_line = p.server_line.clone().or_else(|| newest(p.engine));
             // PHP only when chosen, or (below) when a site of the pool needs it:
             // never a php-cgi for a pool of static sites.
             let php_line = p.php_line.clone();
@@ -356,7 +359,7 @@ impl WebServers {
             if !detected
                 .actions
                 .iter()
-                .any(|a| a.apache_dir.is_some() || a.nginx_dir.is_some())
+                .any(|a| a.web_server_dir().is_some())
             {
                 continue;
             }
@@ -365,11 +368,7 @@ impl WebServers {
                 detected.requires.iter().any(|r| r == "php") || choice.contains_key("php");
 
             for action in pooled_actions(&detected.actions) {
-                let (engine, folder) = if let Some(f) = &action.apache_dir {
-                    (WebServerEngine::Apache, f.clone())
-                } else if let Some(f) = &action.nginx_dir {
-                    (WebServerEngine::Nginx, f.clone())
-                } else {
+                let Some((engine, folder)) = WebServerEngine::of_action(action) else {
                     continue;
                 };
 
@@ -393,14 +392,10 @@ impl WebServers {
                     {
                         Some((_, srv, php)) => (srv, php),
                         None => {
-                            let srv_line =
-                                choice
-                                    .get(engine.as_str())
-                                    .cloned()
-                                    .or_else(|| match engine {
-                                        WebServerEngine::Apache => apache_lines.first().cloned(),
-                                        WebServerEngine::Nginx => nginx_lines.first().cloned(),
-                                    });
+                            let srv_line = choice
+                                .get(engine.as_str())
+                                .cloned()
+                                .or_else(|| newest(engine));
                             let php_line = if needs_php {
                                 choice
                                     .get("php")
@@ -451,18 +446,18 @@ impl WebServers {
             }
         }
 
-        // If no pools exist yet but Apache or Nginx is installed, expose the default pool so the
-        // user can start/inspect it from the "Server Web" page immediately.
-        if pools_map.is_empty() && (!apache_lines.is_empty() || !nginx_lines.is_empty()) {
-            let engine = if !apache_lines.is_empty() {
-                WebServerEngine::Apache
-            } else {
-                WebServerEngine::Nginx
-            };
-            let srv_line = match engine {
-                WebServerEngine::Apache => apache_lines.first().cloned(),
-                WebServerEngine::Nginx => nginx_lines.first().cloned(),
-            };
+        // If no pools exist yet but a web server is installed, expose the default pool so the
+        // user can start/inspect it from the "Server Web" page immediately: Apache's as
+        // before, else Caddy's, else Nginx's.
+        let first_engine = [
+            WebServerEngine::Apache,
+            WebServerEngine::Caddy,
+            WebServerEngine::Nginx,
+        ]
+        .into_iter()
+        .find(|e| newest(*e).is_some());
+        if let (true, Some(engine)) = (pools_map.is_empty(), first_engine) {
+            let srv_line = newest(engine);
             // No project yet: no PHP project, so no php-cgi (BUG-05r).
             let pid = auto_pool_id(engine, srv_line.as_deref(), None);
             let port = self.assign_or_get_port(&mut store, &mut store_dirty, &pid, None);
@@ -503,6 +498,7 @@ impl WebServers {
             pools: pools_map.into_values().collect(),
             apache_lines,
             nginx_lines,
+            caddy_lines,
             php_lines,
         }
     }
@@ -618,7 +614,7 @@ impl WebServers {
         let existing = detected
             .actions
             .iter()
-            .find(|a| a.apache_dir.is_some() || a.nginx_dir.is_some());
+            .find(|a| a.web_server_dir().is_some());
         let opts = SiteOptions {
             server: server_id.filter(|s| !s.trim().is_empty()),
             domains: existing.map(|a| a.domains.clone()).unwrap_or_default(),
@@ -627,6 +623,7 @@ impl WebServers {
         let kind = match engine {
             WebServerEngine::Apache => SiteKind::Apache,
             WebServerEngine::Nginx => SiteKind::Nginx,
+            WebServerEngine::Caddy => SiteKind::Caddy,
         };
         let folder_clean = if folder.trim().is_empty() {
             "."

@@ -1,11 +1,9 @@
 use super::*;
+use crate::projects::fastcgi::{guard_args, php_cgi_exe};
 
 /// A php-cgi on `port` with a fixed key.
 fn cgi(port: u16) -> FastCgi {
-    FastCgi {
-        port,
-        key: "0123abcd".repeat(8),
-    }
+    FastCgi::tcp(port, "0123abcd".repeat(8))
 }
 
 #[test]

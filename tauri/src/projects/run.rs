@@ -7,7 +7,8 @@
 //!   Linux, `jobs::shell_command`) with the kit's environment plus
 //!   `PORT`, `ROCKET_PORT`, `DB_PORT` (its MariaDB database), `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
 //!   action runs this exe as a file server (`Dev-Kit.exe serve`), an
-//!   `apache` action the kit's httpd with a configuration of the project;
+//!   `apache` action the kit's httpd with a configuration of the project,
+//!   `nginx` and `caddy` actions the same with their server and PHP;
 //! - web actions keep their port from one start to the next (bookmarks,
 //!   cookies, localStorage stay valid): 7100-7999, remembered in
 //!   `data\projects\<project>\ports.json`, or the one the user locked;
@@ -104,7 +105,7 @@ struct Entry {
 /// instead of a pool; never the id of a server profile.
 pub const DEDICATED_SERVER: &str = "dedicated";
 
-/// How «Avvia» serves an Apache or Nginx site.
+/// How «Avvia» serves an Apache, Nginx or Caddy site.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SiteMode {
     /// Its own httpd/nginx on the action's port: any other action, or a
@@ -121,7 +122,7 @@ pub enum SiteMode {
 /// `server` (or `auto`) by the automatic pool of its lines, one marked
 /// `dedicated` (and every action that is not an Apache/Nginx site) on its own.
 pub fn site_mode(action: &Action) -> SiteMode {
-    if action.apache_dir.is_none() && action.nginx_dir.is_none() {
+    if action.web_server_dir().is_none() {
         return SiteMode::Dedicated;
     }
     match action
@@ -492,6 +493,9 @@ impl Runner {
         let job = Job::new()?;
         // The php-cgi of a project's Nginx, watched with the server.
         let mut php: Option<Child> = None;
+        // The FastCGI server of a project's Caddy, kept until the action
+        // ends: php-fpm's private socket folder goes with its last copy.
+        let mut fcgi_kept: Option<crate::projects::fastcgi::FastCgi> = None;
         let (mut cmd, shown) = if let Some(folder) = &action.static_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             // The AppImage, not its inner program: `kit_command` clears
@@ -546,6 +550,40 @@ impl Runner {
             (
                 cmd,
                 format!("nginx.exe -c data\\projects\\{id}\\nginx\\nginx.conf ({folder})"),
+            )
+        } else if let Some(folder) = &action.caddy_dir {
+            let root = detect::inside_dir(&cwd, folder)?;
+            // Its PHP (php-cgi, or php-fpm off Windows) lives in the action's
+            // job too, watched with the server.
+            let run_dir = crate::projects::caddy::dir(&self.kit, id)?;
+            let fcgi = crate::projects::fastcgi::spawn_fastcgi_if_present(
+                &self.kit,
+                env,
+                &job,
+                &run_dir,
+                &format!("project {id}"),
+            )
+            .map(|(fcgi, child)| {
+                php = Some(child);
+                fcgi
+            });
+            // php-fpm's socket folder lives as long as the action.
+            fcgi_kept = fcgi.clone();
+            let cmd = crate::projects::caddy::command(
+                &self.kit,
+                id,
+                dir,
+                &root,
+                port.unwrap_or(PORT_FROM),
+                fcgi.as_ref(),
+                lan,
+                &action.domains,
+                &action.aliases,
+                env,
+            )?;
+            (
+                cmd,
+                format!("caddy run --config data/projects/{id}/caddy/Caddyfile ({folder})"),
             )
         } else {
             let command = listen(&action.command);
@@ -609,6 +647,8 @@ impl Runner {
                 crate::projects::alias::skipped_nginx(dir, &self.kit.projects(), &action.aliases)
             } else if action.apache_dir.is_some() {
                 crate::projects::alias::skipped(dir, &self.kit.projects(), &action.aliases)
+            } else if action.caddy_dir.is_some() {
+                crate::projects::caddy::skipped_aliases(dir, &self.kit.projects(), &action.aliases)
             } else {
                 Vec::new()
             },
@@ -692,6 +732,7 @@ impl Runner {
         }
         let (me, key2, lang2) = (Arc::clone(self), key.clone(), lang.to_owned());
         std::thread::spawn(move || {
+            let _fcgi = fcgi_kept;
             let code = match php {
                 Some(php) => me.wait_with_php(&key2, &mut child, php, &lang2),
                 None => child.wait().ok().and_then(|s| s.code()),
