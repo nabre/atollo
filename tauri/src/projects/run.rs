@@ -511,21 +511,43 @@ impl Runner {
             )
         } else if let Some(folder) = &action.apache_dir {
             let root = detect::inside_dir(&cwd, folder)?;
+            // Off Windows PHP is php-fpm (D-116), in the action's job and
+            // watched with the server like Caddy's; on Windows the module.
+            let fcgi = if self.kit.os().is_windows() {
+                None
+            } else {
+                let run_dir = crate::projects::apache::dir(&self.kit, id)?;
+                crate::projects::fastcgi::spawn_fastcgi_if_present(
+                    &self.kit,
+                    env,
+                    &job,
+                    &run_dir,
+                    &format!("project {id}"),
+                )
+                .map(|(fcgi, child)| {
+                    php = Some(child);
+                    fcgi
+                })
+            };
+            fcgi_kept = fcgi.clone();
             let cmd = crate::projects::apache::command(
                 &self.kit,
                 id,
                 dir,
                 &root,
                 port.unwrap_or(PORT_FROM),
+                fcgi.as_ref(),
                 lan,
                 &action.domains,
                 &action.aliases,
                 env,
             )?;
-            (
-                cmd,
-                format!("httpd.exe -f data\\projects\\{id}\\apache\\httpd.conf ({folder})"),
-            )
+            let shown = if self.kit.os().is_windows() {
+                format!("httpd.exe -f data\\projects\\{id}\\apache\\httpd.conf ({folder})")
+            } else {
+                format!("httpd -f data/projects/{id}/apache/httpd.conf -DFOREGROUND ({folder})")
+            };
+            (cmd, shown)
         } else if let Some(folder) = &action.nginx_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             // php-cgi lives in the action's job: stopping the action ends it too.

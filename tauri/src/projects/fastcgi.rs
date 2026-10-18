@@ -53,6 +53,16 @@ impl FcgiAddr {
         }
     }
 
+    /// The handler of Apache's `mod_proxy_fcgi` (D-116):
+    /// `proxy:fcgi://127.0.0.1:<port>` or
+    /// `proxy:unix:<path>|fcgi://localhost` (2.4.10 and later).
+    pub fn apache_handler(&self) -> String {
+        match self {
+            FcgiAddr::Tcp(port) => format!("proxy:fcgi://127.0.0.1:{port}"),
+            FcgiAddr::Unix(sock) => format!("proxy:unix:{}|fcgi://localhost", fwd(&sock.path)),
+        }
+    }
+
     /// The address as the log says it.
     pub fn describe(&self) -> String {
         match self {

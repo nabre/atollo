@@ -16,9 +16,10 @@ use anyhow::{anyhow, bail, Context, Result};
 
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
-use crate::kit::Kit;
+use crate::kit::{Kit, Os};
 use crate::os::jobs;
 use crate::projects::alias::{self, valid_domain, SiteAlias};
+use crate::projects::fastcgi::{FastCgi, FCGI_KEY_PARAM};
 
 /// `C:\a\b` as Apache wants it: `C:/a/b`.
 pub fn fwd(p: &Path) -> String {
@@ -184,6 +185,71 @@ pub fn php_off_blocks() -> Vec<String> {
     out
 }
 
+/// PHP through php-fpm (macOS and Linux, D-116: static-php-cli has no
+/// Apache module): `mod_proxy_fcgi` runs the files of [`PHP_RUN`] on
+/// `fcgi`, whose key Apache reads from its own environment
+/// (`${ATOLLO_FCGI_KEY}`, set on the process, never written in a file) and
+/// sends with every request for `runtime/fcgi-guard.php`. The files of
+/// [`PHP_NEVER`] stay refused. A `.htaccess` that sets its own handler with
+/// `<Files>` (Drupal's `sites/default/files`) still wins: it is merged
+/// after these server sections.
+pub fn php_fpm_blocks(fcgi: &FastCgi) -> Vec<String> {
+    let mut out = Vec::new();
+    for (module, file) in [
+        ("proxy_module", "mod_proxy.so"),
+        ("proxy_fcgi_module", "mod_proxy_fcgi.so"),
+        ("env_module", "mod_env.so"),
+    ] {
+        out.extend([
+            format!("<IfModule !{module}>"),
+            format!("    LoadModule {module} modules/{file}"),
+            "</IfModule>".to_owned(),
+        ]);
+    }
+    out.extend([
+        format!("SetEnv {FCGI_KEY_PARAM} ${{{FCGI_KEY_PARAM}}}"),
+        format!("<FilesMatch \"(?i){PHP_RUN}\">"),
+        format!("    SetHandler \"{}\"", fcgi.addr.apache_handler()),
+        "</FilesMatch>".to_owned(),
+    ]);
+    out.extend(php_never_block());
+    out
+}
+
+/// PHP of an Apache configuration on `os`: the Apache module on Windows
+/// ([`php_module_blocks`]); elsewhere php-fpm when the server has one
+/// ([`php_fpm_blocks`]), else none ([`php_off_blocks`]).
+pub fn php_blocks(os: Os, fcgi: Option<&FastCgi>) -> Vec<String> {
+    match (os.is_windows(), fcgi) {
+        (true, _) => php_module_blocks("CP_PHP_FWD"),
+        (false, Some(f)) => php_fpm_blocks(f),
+        (false, None) => php_off_blocks(),
+    }
+}
+
+/// Run-time files of an Apache on macOS and Linux in `dir_fwd` (scoreboard,
+/// mutexes, cgid socket), never in the shared Apache folder: two servers
+/// of the same line must not share them. Windows keeps none.
+/// `Mutex file:` takes no path with a space: the default mutexes follow
+/// `DefaultRuntimeDir`, which does.
+pub fn runtime_dir_lines(os: Os, dir_fwd: &str) -> Vec<String> {
+    if os.is_windows() {
+        Vec::new()
+    } else {
+        vec![format!("DefaultRuntimeDir \"{dir_fwd}\"")]
+    }
+}
+
+/// `-DFOREGROUND` off Windows: httpd would otherwise detach, and the kit
+/// watches the process it started (on Windows it never detaches).
+pub fn foreground_args(os: Os) -> &'static [&'static str] {
+    if os.is_windows() {
+        &[]
+    } else {
+        &["-DFOREGROUND"]
+    }
+}
+
 /// Refuses (403) hidden files and folders (`.env`, `.git/`, `.htpasswd`)
 /// but `.well-known`: a site served from the project's root (WordPress
 /// `.`) would otherwise hand them out. By URL (`LocationMatch`, aliases
@@ -236,11 +302,12 @@ pub fn strip_kit_tail(base: &str) -> Result<String> {
 /// without its Atollo tail, then the project's site.
 #[cfg(test)]
 pub fn project_conf(base: &str, root: &Path, dir: &Path, port: u16, lan: bool) -> Result<String> {
-    project_conf_with_site(base, None, root, dir, port, lan, &[], &[])
+    project_conf_with_site(base, None, root, dir, port, lan, &[], &[], Os::Win32, None)
 }
 
 /// Like [`project_conf`], with optional project id (`.localhost` alias),
-/// extra `.localhost` domains, and portable path aliases.
+/// extra `.localhost` domains, portable path aliases, and the PHP of `os`
+/// ([`php_blocks`]: php-fpm on `fcgi` off Windows).
 #[allow(clippy::too_many_arguments)]
 pub fn project_conf_with_site(
     base: &str,
@@ -251,6 +318,8 @@ pub fn project_conf_with_site(
     lan: bool,
     domains: &[String],
     aliases: &[SiteAlias],
+    os: Os,
+    fcgi: Option<&FastCgi>,
 ) -> Result<String> {
     let kit_part = strip_kit_tail(base)?;
     let (root, dir) = (fwd(root), fwd(dir));
@@ -281,6 +350,7 @@ pub fn project_conf_with_site(
     if lan && !server_aliases.is_empty() {
         site.push(format!("ServerAlias {}", server_aliases.join(" ")));
     }
+    site.extend(runtime_dir_lines(os, &dir));
     site.extend([
         format!("PidFile \"{dir}/httpd.pid\""),
         format!("ErrorLog \"{dir}/error.log\""),
@@ -297,7 +367,7 @@ pub fn project_conf_with_site(
     site.extend(alias_directives("${CP_PROJECT_FWD}", aliases, ""));
     site.extend(hidden_deny(""));
     site.push("DirectoryIndex index.php index.html".to_owned());
-    site.extend(php_module_blocks("CP_PHP_FWD"));
+    site.extend(php_blocks(os, fcgi));
     if !lan {
         site.extend(local_hosts_only(port, &server_aliases));
     }
@@ -366,7 +436,9 @@ pub fn apache_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
         })
 }
 
-/// `httpd.exe -f <project conf>`, the configuration written for `root`.
+/// `httpd.exe -f <project conf>`, the configuration written for `root`;
+/// off Windows in the foreground, with PHP on `fcgi` (php-fpm) and its key
+/// in the process's environment only.
 #[allow(clippy::too_many_arguments)]
 pub fn command(
     kit: &Kit,
@@ -374,6 +446,7 @@ pub fn command(
     project_root: &Path,
     doc_root: &Path,
     port: u16,
+    fcgi: Option<&FastCgi>,
     lan: bool,
     domains: &[String],
     aliases: &BTreeMap<String, String>,
@@ -399,6 +472,8 @@ pub fn command(
             lan,
             domains,
             &alias::resolve(project_root, &kit.projects(), aliases),
+            kit.os(),
+            fcgi,
         )?
         .as_bytes(),
     )?;
@@ -408,7 +483,9 @@ pub fn command(
         .env("CP_PROJECT_FWD", fwd(project_root))
         .env("CP_PROJECTS_FWD", fwd(&kit.projects()))
         .arg("-f")
-        .arg(&conf);
+        .arg(&conf)
+        .args(foreground_args(kit.os()));
+    crate::projects::caddy::with_key(&mut cmd, fcgi);
     Ok(cmd)
 }
 
