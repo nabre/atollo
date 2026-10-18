@@ -191,6 +191,24 @@ fn makeconf_follows_the_folder_of_r() {
     assert_eq!(relocated_makeconf("CC = gcc\n", Path::new("D:/r")), None);
 }
 
+/// conda-forge's `bin/R` names its own sed, unquoted: the system's, so R
+/// starts from a folder with a space; the rest of the script unchanged.
+#[test]
+fn r_script_uses_the_system_sed() {
+    let text = "R_HOME_DIR=\"/k it/r/lib/R\"\n## sed\nSED=/k it/r/bin/sed\nexport SED\n  SED=x\n";
+    let new = plain_r_sed(text).unwrap();
+    assert_eq!(
+        new,
+        "R_HOME_DIR=\"/k it/r/lib/R\"\n## sed\nSED=sed\nexport SED\n  SED=x\n"
+    );
+    assert_eq!(plain_r_sed(&new), None, "already plain: nothing to write");
+    assert_eq!(
+        plain_r_sed("SED=\"/k it/sed\"\r\n").as_deref(),
+        Some("SED=sed\r\n")
+    );
+    assert_eq!(plain_r_sed("echo $SED\n"), None);
+}
+
 /// The kit moved to another drive letter or folder: at the next start every
 /// line of R on Windows (the default and a saved one) names its own folder.
 #[test]
