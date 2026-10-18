@@ -562,9 +562,10 @@ impl Runner {
             cmd.env("PORT", p.to_string())
                 .env("ROCKET_PORT", p.to_string());
         }
-        // The port of the MariaDB version its database is on (PLAN.md §13.2),
-        // unless a `.env` sets another one: dotenv loaders keep a variable
-        // already there, and the user's own port would be lost.
+        // The port of the MySQL or MariaDB version its database is on
+        // (PLAN.md §13.2), unless a `.env` sets another one: dotenv loaders
+        // keep a variable already there, and the user's own port would be
+        // lost.
         if let Some(p) = crate::db::services::project_db_port(&self.kit, id) {
             let p = p.to_string();
             let own = [dir, cwd.as_path()]
@@ -573,9 +574,10 @@ impl Runner {
                 .any(|v| v != p);
             if !own {
                 cmd.env("DB_PORT", p);
-                // `mariadb` of its scripts logs in on that version too.
-                if let Some(home) = crate::db::services::project_mysql_home(&self.kit, id) {
-                    cmd.env("MYSQL_HOME", home);
+                // `mysql` and `mariadb` of its scripts log in on that
+                // version too (`MYSQL_HOME`, `DEVKIT_MYSQL_CNF`).
+                for (name, value) in crate::db::services::project_client_env(&self.kit, id) {
+                    cmd.env(name, value);
                 }
             }
         }

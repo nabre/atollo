@@ -311,6 +311,16 @@ impl KitEnv {
         // the login of another version when its database is there
         // (`db::services::project_mysql_home`).
         env.set_path("MYSQL_HOME", data.join("app").join("db"));
+        // The kit's MySQL (D-110): MYSQL_HOME holds MariaDB's login, so the
+        // launchers of data\kit\bin (`mysql`, `mysqldump`, `mysqladmin`)
+        // run the programs of CP_MYSQL with `--defaults-extra-file` of this
+        // login; MariaDB's, through CP_MARIADB, on a kit without MySQL.
+        env.set_path(
+            "DEVKIT_MYSQL_CNF",
+            data.join("app").join("db").join("mysql.cnf"),
+        );
+        env.set_path("CP_MYSQL", app("mysql"));
+        env.set_path("CP_MARIADB", app("mariadb"));
         env.set("CP_ARCH", arch);
         env.set_path("CP_APPS", &apps);
         // The app itself, for the kit's wrappers (data\kit\bin\agy.cmd):
@@ -438,6 +448,9 @@ impl KitEnv {
         env.set("CP_APACHE_FWD", fwd(&app("apache")));
         env.set_path("CP_NGINX", app("nginx"));
         env.set("CP_NGINX_FWD", fwd(&app("nginx")));
+        // Caddy (WP-3.1, D-111): its folder, as Nginx's.
+        env.set_path("CP_CADDY", app("caddy"));
+        env.set("CP_CADDY_FWD", fwd(&app("caddy")));
         let composer = data.join("composer");
         env.set_path("COMPOSER_HOME", &composer);
         env.set_path("COMPOSER_CACHE_DIR", join_rel(&data, "cache/composer"));
@@ -643,6 +656,9 @@ impl KitEnv {
                 path.push(app("nginx/sbin"));
             }
         }
+        if has(r"caddy\caddy.exe") {
+            path.push(app("caddy"));
+        }
         let cargo_exe = if is_win { "bin/cargo.exe" } else { "bin/cargo" };
         let rustup_exe = if is_win {
             "bin/rustup.exe"
@@ -734,7 +750,10 @@ impl KitEnv {
             path.push(gems.join("bin"));
         }
         when(&mut path, r"r\bin\R.cmd", &[app(r"r\bin")]);
-        // Databases (D-73): servers and clients.
+        // Databases (D-73): servers and clients; MySQL's first (D-110), its
+        // `mysql`, `mysqldump`, `mysqladmin` reached through the launchers
+        // of data\kit\bin, ahead of both.
+        when(&mut path, r"mysql\bin\mysql.exe", &[app(r"mysql\bin")]);
         when(
             &mut path,
             r"mariadb\bin\mariadb.exe",

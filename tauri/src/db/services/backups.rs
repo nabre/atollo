@@ -12,10 +12,29 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
 
 use super::tools::run_with_input;
-use super::{auth, project_line, Services};
+use super::{auth, project_line, project_sql_engine, Services};
 use crate::db::DbEngine;
 use crate::os::jobs;
 use crate::projects::state::ProjectState;
+
+/// The options of a SQL dump (D-78): one consistent snapshot, with the
+/// routines and triggers; MySQL also the events and no GTID statement,
+/// which only an administrator could restore (the restore runs as the
+/// project's user).
+pub fn dump_args(engine: DbEngine) -> &'static [&'static str] {
+    match engine {
+        DbEngine::MySql => &[
+            "--single-transaction",
+            "--routines",
+            "--events",
+            "--triggers",
+            "--set-gtid-purged=OFF",
+        ],
+        DbEngine::MariaDb | DbEngine::MongoDb => {
+            &["--single-transaction", "--routines", "--triggers"]
+        }
+    }
+}
 
 /// A copy of a project's database (D-78).
 #[derive(Debug, Clone, Serialize)]
@@ -41,6 +60,9 @@ impl Services {
         let Ok(dir) = self.backup_dir(project) else {
             return Vec::new();
         };
+        // A `.sql` copy is for the project's SQL server (MySQL or MariaDB:
+        // the same extension).
+        let sql = project_sql_engine(&self.kit, project);
         let mut out: Vec<Backup> = fs::read_dir(dir)
             .into_iter()
             .flatten()
@@ -51,7 +73,7 @@ impl Services {
             })
             .filter_map(|e| {
                 let name = e.file_name().to_string_lossy().into_owned();
-                let engine = DbEngine::of_backup(&name)?;
+                let engine = DbEngine::of_backup(&name, sql)?;
                 Some(Backup {
                     file: name,
                     engine: engine.id().to_owned(),
@@ -66,7 +88,8 @@ impl Services {
     /// A copy of the project's database in its backup folder (D-78); the
     /// server must run.
     pub fn export(&self, project: &str, engine: &str) -> Result<PathBuf> {
-        let kind = DbEngine::parse(engine)?;
+        let kind = self.engine_for(project, engine)?;
+        let engine = kind.id();
         let line = project_line(&self.kit, project, engine);
         let (port, env) = self.running_at(kind, line.as_deref())?;
         // The dump runs as root/admin: only the database the kit made for
@@ -87,10 +110,10 @@ impl Services {
                 result.context(dump)?;
                 Ok(file)
             }
-            DbEngine::MariaDb => {
+            DbEngine::MariaDb | DbEngine::MySql => {
                 let out = fs::File::create(&file)?;
                 let mut cmd = self.sql_tool_at(kind, dump, &env, line.as_deref(), port);
-                cmd.args(["--single-transaction", "--routines", "--triggers"])
+                cmd.args(dump_args(kind))
                     .arg(&name)
                     .stdin(Stdio::null())
                     .stdout(Stdio::from(out))
@@ -117,7 +140,7 @@ impl Services {
         if !crate::os::safe_path::is_file(&dir, &path) {
             bail!("copy not found: {file}");
         }
-        let Some(engine) = DbEngine::of_backup(file) else {
+        let Some(engine) = DbEngine::of_backup(file, project_sql_engine(&self.kit, project)) else {
             bail!("not a database copy: {file}")
         };
         let id = engine.id();
@@ -136,11 +159,11 @@ impl Services {
                 let _ = fs::remove_file(config);
                 result.context(restore)
             }
-            DbEngine::MariaDb => {
+            DbEngine::MariaDb | DbEngine::MySql => {
                 // As the project's user, never root: the file may come from
                 // outside (D-78) and name other databases or `mysql.*`.
                 let password = auth::try_project_password(&self.kit, project, id)?
-                    .ok_or_else(|| anyhow!("the project has no MariaDB database yet"))?;
+                    .ok_or_else(|| anyhow!("the project has no {id} database yet"))?;
                 let line = project_line(&self.kit, project, id);
                 let (port, env) = self.running_at(engine, line.as_deref())?;
                 let sql = fs::read_to_string(&path)?;

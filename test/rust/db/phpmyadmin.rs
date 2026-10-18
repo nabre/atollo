@@ -68,9 +68,12 @@ fn real_phpmyadmin_on_running_mariadb() {
         "en",
         &crate::env::Host::capture(),
     );
+    let password = crate::db::auth::load(&kit)
+        .mariadb_root
+        .expect("MariaDB has a password of root");
     let pma = PhpMyAdmin::default();
     let url = pma
-        .open(&kit, &env, db_port.parse().unwrap(), "en")
+        .open(&kit, &env, db_port.parse().unwrap(), &password, "en")
         .unwrap();
     assert_logs_in(&url);
     pma.stop();
