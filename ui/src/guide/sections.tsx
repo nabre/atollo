@@ -2071,7 +2071,7 @@ function TopicFeatServices({ onNavigate }: { onNavigate: (page: AppPageTarget) =
       >
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <GuideShot
-            src="11-database-mariadb-adminer.webp"
+            src="11-database-mysql-phpmyadmin.webp"
             title={tr(
               "11 · MySQL 9.7 + interfaccia web phpMyAdmin",
               "11 · MySQL 9.7 + phpMyAdmin web interface",

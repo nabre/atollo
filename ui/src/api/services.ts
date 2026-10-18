@@ -6,7 +6,6 @@ import { query } from "./core";
 export type ServiceState = "stopped" | "starting" | "running" | "error";
 
 export interface ServiceInfo {
-  /** MariaDB is not a server of the kit any more (D-117). */
   id: "mysql" | "mongodb";
   name: string;
   installed: boolean;
