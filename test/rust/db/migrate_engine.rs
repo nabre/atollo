@@ -640,3 +640,20 @@ fn names_and_strings_of_the_checks() {
     assert_eq!(unescape("a\\tb\\\\c\\n"), "a\tb\\c\n");
     assert_eq!(names_of("shop\t1\n\nblog\n"), ["shop", "blog"]);
 }
+
+/// A dump holds every row of its database: its folder and its files are the
+/// owner's only (security review of D-117).
+#[cfg(unix)]
+#[test]
+fn dumps_are_owner_only() {
+    use std::os::unix::fs::PermissionsExt;
+    let tmp = crate::kit::tests::TempDir::new("dumps-private");
+    let dir = tmp.0.join("mariadb").join("dumps");
+    private_dumps(&dir).unwrap();
+    let file = dir.join("12.3.0.sql");
+    write_through(&file, |to| Ok(fs::write(to, "INSERT 1;")?)).unwrap();
+    let mode = |p: &Path| fs::metadata(p).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode(&dir), 0o700);
+    assert_eq!(mode(&file), 0o600);
+    assert!(!file.with_extension("partial").exists());
+}
