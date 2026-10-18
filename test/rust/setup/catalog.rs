@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::{tests::TempDir, Arch, Target};
 use std::collections::HashSet;
 
 #[test]
@@ -31,6 +31,17 @@ fn catalog_is_valid() {
     for c in catalog.all() {
         for n in &c.needs {
             assert!(ids.contains(n.as_str()), "{} needs unknown {n}", c.id);
+        }
+        for (t, needs) in &c.needs_by_target {
+            assert!(Target::parse(t).is_some(), "{}: needsByTarget {t}", c.id);
+            for n in needs {
+                assert!(
+                    ids.contains(n.as_str()),
+                    "{} needs unknown {n} on {t}",
+                    c.id
+                );
+                assert!(!c.needs.contains(n), "{}: {n} twice", c.id);
+            }
         }
     }
     // Always installed: the kit's shell and GitHub CLI only; the rest
@@ -77,6 +88,7 @@ fn choice_file_compatible_with_dev_kit() {
     // As written by nabre/dev-kit Save-ComponentChoice (plus a BOM and LF).
     let text =
         "\u{feff}# comment\napache=1\nphp=0\nrust=1\ngh=0\nunknown=1\nbad line\nkotlin = 1\nvscodium=1\n";
+    // Rust stays on: C and C++ is a need of Windows ARM64 only.
     let choice = Choice::parse(text, catalog);
     assert!(!choice.is_chosen("php"));
     assert!(!choice.is_chosen("apache"), "apache needs php");
@@ -117,6 +129,129 @@ fn dependencies_follow_both_ways() {
     assert!(!choice.is_chosen("git") && !choice.is_chosen("claude"));
     assert!(!catalog.is_locked("git") && catalog.is_locked("pwsh"));
     assert!(!catalog.is_locked("node"));
+}
+
+/// What a component needs on each target (T2.3.1, T2.4.2): C and C++ are
+/// `zig cc` on macOS and Linux, Rust links with llvm-mingw on Windows
+/// ARM64. Elsewhere nothing changes.
+#[test]
+fn needs_follow_the_target() {
+    let catalog = Catalog::get();
+    let needs =
+        |id: &str, t: Target| -> Vec<&str> { catalog.find(id).unwrap().needs_on(t).collect() };
+    let only = |ids: &[&str], t: Target| -> Vec<&str> {
+        catalog.needs_only_on(ids, t).into_iter().collect()
+    };
+    for t in Target::ALL {
+        let unix = t.is_unix();
+        assert_eq!(
+            needs("cc", t),
+            if unix { vec!["zig"] } else { vec![] },
+            "{t}"
+        );
+        let arm = t == Target::WIN32_ARM64;
+        assert_eq!(
+            needs("rust", t),
+            if arm { vec!["cc"] } else { vec![] },
+            "{t}"
+        );
+        assert_eq!(
+            catalog.find("rust").unwrap().needs_list_on(t).len(),
+            usize::from(arm)
+        );
+        // The same everywhere for the others.
+        assert_eq!(needs("kotlin", t), ["java"], "{t}");
+        assert_eq!(needs("claude", t), ["git"], "{t}");
+        let with: Vec<&str> = catalog.with_needs_on(&["rust"], t).into_iter().collect();
+        assert_eq!(
+            with,
+            if arm {
+                vec!["cc", "rust"]
+            } else {
+                vec!["rust"]
+            },
+            "{t}"
+        );
+        // What a run adds to the choice: the needs of this target only,
+        // never one of every target, nor the ids themselves.
+        assert_eq!(
+            only(&["cc"], t),
+            if unix { vec!["zig"] } else { vec![] },
+            "{t}"
+        );
+        assert_eq!(
+            only(&["cc", "zig"], t),
+            only(&["cc"], t),
+            "a chosen Zig is still a need of C and C++ on {t}"
+        );
+        assert!(only(&["kotlin", "claude"], t).is_empty(), "{t}");
+        assert!(only(&["zig"], t).is_empty(), "{t}");
+        assert_eq!(
+            only(&["rust"], t),
+            if arm { vec!["cc"] } else { vec![] },
+            "{t}"
+        );
+        // No cycle on any target: every chain ends.
+        for c in catalog.all() {
+            assert!(
+                !catalog
+                    .with_needs_on(&c.needs_on(t).collect::<Vec<_>>(), t)
+                    .contains(c.id.as_str()),
+                "{} needs itself on {t}",
+                c.id
+            );
+        }
+        // The system components need nothing per target: locked as before.
+        assert_eq!(catalog.locked_on(t), catalog.locked(), "{t}");
+    }
+}
+
+/// `components.txt` is one for every system the kit runs on (review of
+/// T2.3.1): a need of one target never turns a component on or off in
+/// it. A Windows kit with C and C++ on and Zig off, read for Linux or
+/// macOS, keeps C and C++ on; ticking C and C++ does not save Zig.
+#[test]
+fn choice_ignores_the_needs_of_one_target() {
+    let catalog = Catalog::get();
+    let read = Choice::parse("cc=1\nzig=0\nrust=1\n", catalog);
+    assert!(read.is_chosen("cc") && !read.is_chosen("zig") && read.is_chosen("rust"));
+    assert_eq!(Choice::parse(&read.render(catalog), catalog), read);
+    let read = Choice::parse("cc=0\nrust=1\n", catalog);
+    assert!(read.is_chosen("rust") && !read.is_chosen("cc"));
+
+    let mut choice = Choice::parse("cc=0\nzig=0\nrust=0\n", catalog);
+    choice.set(catalog, "cc", true);
+    assert!(!choice.is_chosen("zig"), "cc does not save zig");
+    choice.set(catalog, "zig", true);
+    choice.set(catalog, "zig", false);
+    assert!(choice.is_chosen("cc"), "zig off keeps cc");
+    choice.set(catalog, "rust", true);
+    choice.set(catalog, "cc", false);
+    assert!(choice.is_chosen("rust"), "cc off keeps rust");
+    assert!(choice.chosen_ids(catalog).contains(&"rust"));
+    assert!(!choice.chosen_ids(catalog).contains(&"cc"));
+    // Dependencies of every target still follow both ways.
+    choice.set(catalog, "kotlin", true);
+    assert!(choice.is_chosen("java"));
+}
+
+/// A kit's choice is read as written, also on the first start.
+#[test]
+fn read_or_defaults_reads_the_kit() {
+    let tmp = TempDir::new("choice-target");
+    let catalog = Catalog::get();
+    for t in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(t.as_str()), t);
+        kit.prepare().unwrap();
+        assert_eq!(
+            Choice::read_or_defaults(&kit, catalog),
+            Choice::defaults(catalog)
+        );
+        let mut choice = Choice::defaults(catalog);
+        choice.set(catalog, "rust", true);
+        choice.write(&kit, catalog).unwrap();
+        assert_eq!(Choice::read_or_defaults(&kit, catalog), choice, "{t}");
+    }
 }
 
 #[test]

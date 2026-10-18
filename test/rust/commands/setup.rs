@@ -93,6 +93,48 @@ fn catalog_reasons_reach_the_page() {
     }
 }
 
+/// The page gets what each component needs on the kit's target (C and C++
+/// need Zig on macOS and Linux, Rust needs C and C++ on Windows ARM64), and
+/// the Xcode notice only for C and C++ of a darwin kit on a Mac without the
+/// Command Line Tools.
+#[test]
+fn needs_and_xcode_follow_the_target() {
+    let tmp = TempDir::new("cmd-needs");
+    for target in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
+        kit.prepare().unwrap();
+        let infos = component_infos(&kit, "it");
+        let row = |id: &str| infos.iter().find(|c| c.id == id).unwrap();
+        let zig: &[&str] = if target.is_unix() { &["zig"] } else { &[] };
+        assert_eq!(row("cc").needs, zig, "{target}");
+        let cc: &[&str] = if target == Target::WIN32_ARM64 {
+            &["cc"]
+        } else {
+            &[]
+        };
+        assert_eq!(row("rust").needs, cc, "{target}");
+        assert_eq!(row("kotlin").needs, ["java"], "{target}");
+        // Only a Mac can tell; never for another component.
+        assert!(infos
+            .iter()
+            .all(|c| !c.xcode_missing || (c.id == "cc" && cfg!(target_os = "macos"))));
+    }
+    for target in Target::ALL {
+        for host in [Os::Win32, Os::Darwin, Os::Linux] {
+            let mac = target.is_macos() && host == Os::Darwin;
+            assert_eq!(
+                xcode_missing(target, host, || None),
+                mac,
+                "{target} {host:?}"
+            );
+            assert_eq!(xcode_missing(target, host, || Some(" ".into())), mac);
+            assert!(!xcode_missing(target, host, || Some(
+                "/Library/Developer/CommandLineTools".into()
+            )));
+        }
+    }
+}
+
 /// On Windows ARM64 (a Windows kit on every host) R keeps its choice.
 #[test]
 fn unavailable_components_keep_their_choice() {
@@ -108,5 +150,81 @@ fn unavailable_components_keep_their_choice() {
         let choice = Choice::parse(&text, catalog);
         assert_eq!(choice.is_chosen("r"), kept, "{arch:?}");
         assert!(choice.is_chosen("php") && !choice.is_chosen("go"));
+    }
+}
+
+/// One `components.txt` for every system (review of T2.3.1): a Windows kit
+/// with C and C++ on and Zig off, shown and applied on the page of another
+/// target, keeps C and C++ on and Zig off for Windows. The page shows Zig
+/// ticked where C and C++ need it; ticking C and C++ there saves C and C++
+/// only; Zig ticked alone is saved.
+#[test]
+fn needs_of_one_target_stay_out_of_the_choice() {
+    let tmp = TempDir::new("cmd-needs-choice");
+    let catalog = Catalog::get();
+    let windows = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+    windows.prepare().unwrap();
+    let page = |kit: &Kit| -> Vec<String> {
+        component_infos(kit, "it")
+            .into_iter()
+            .filter(|c| c.chosen)
+            .map(|c| c.id)
+            .collect()
+    };
+    for t in Target::ALL {
+        let kit = windows.for_target(t);
+        Choice::parse("cc=1\nzig=0\n", catalog)
+            .write(&kit, catalog)
+            .unwrap();
+        let chosen = page(&kit);
+        assert!(chosen.contains(&"cc".into()), "{t}");
+        assert_eq!(chosen.contains(&"zig".into()), t.is_unix(), "{t}");
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        choice.write(&kit, catalog).unwrap();
+        let back = Choice::read(&windows, catalog).unwrap();
+        assert!(back.is_chosen("cc") && !back.is_chosen("zig"), "{t}");
+
+        // Ticked on this page: the toggle of the page ticks what it needs.
+        Choice::parse("cc=0\nzig=0\n", catalog)
+            .write(&kit, catalog)
+            .unwrap();
+        let mut chosen = page(&kit);
+        chosen.extend(
+            component_infos(&kit, "it")
+                .into_iter()
+                .find(|c| c.id == "cc")
+                .unwrap()
+                .needs,
+        );
+        chosen.push("cc".into());
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        assert!(choice.is_chosen("cc") && !choice.is_chosen("zig"), "{t}");
+
+        let mut chosen = page(&kit);
+        chosen.push("zig".into());
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        assert!(choice.is_chosen("zig") && !choice.is_chosen("cc"), "{t}");
+
+        // Unticked on this page: the toggle removes C and C++ only, so Zig,
+        // seeded as ticked from the saved choice, stays in the page's set
+        // and must not be saved.
+        Choice::parse("cc=1\nzig=0\n", catalog)
+            .write(&kit, catalog)
+            .unwrap();
+        let chosen: Vec<String> = page(&kit).into_iter().filter(|id| id != "cc").collect();
+        assert_eq!(chosen.contains(&"zig".into()), t.is_unix(), "{t}");
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        assert!(!choice.is_chosen("cc") && !choice.is_chosen("zig"), "{t}");
+        choice.write(&kit, catalog).unwrap();
+        let back = Choice::read(&windows, catalog).unwrap();
+        assert!(!back.is_chosen("cc") && !back.is_chosen("zig"), "{t}");
+
+        // Zig chosen for every system stays chosen when C and C++ go off.
+        Choice::parse("cc=1\nzig=1\n", catalog)
+            .write(&kit, catalog)
+            .unwrap();
+        let chosen: Vec<String> = page(&kit).into_iter().filter(|id| id != "cc").collect();
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        assert!(!choice.is_chosen("cc") && choice.is_chosen("zig"), "{t}");
     }
 }
