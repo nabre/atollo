@@ -36,7 +36,64 @@ pub fn resolve(
     LANGS.into_iter().find(|l| *l == two).unwrap_or("en")
 }
 
+/// The user's locale on macOS and Linux, from `LC_ALL`, `LC_MESSAGES` or
+/// `LANG` (`it_IT.UTF-8` gives `it-IT`); `C` and `POSIX` are none. On
+/// macOS the first of the languages chosen in System Settings comes first
+/// (D-105): an app opened from the Finder gets no `LANG`.
+#[cfg(not(windows))]
+pub fn windows_locale() -> Option<String> {
+    #[cfg(target_os = "macos")]
+    if let Some(lang) = apple_language() {
+        return Some(lang);
+    }
+    ["LC_ALL", "LC_MESSAGES", "LANG"]
+        .iter()
+        .filter_map(|v| std::env::var(v).ok())
+        .find(|v| !v.is_empty())
+        .and_then(|v| posix_locale(&v))
+}
+
+/// `defaults read -g AppleLanguages`, read once: the first call comes at
+/// start, before the app points `HOME` into the kit.
+#[cfg(target_os = "macos")]
+fn apple_language() -> Option<String> {
+    static LANG: OnceLock<Option<String>> = OnceLock::new();
+    LANG.get_or_init(|| {
+        let out = std::process::Command::new("/usr/bin/defaults")
+            .args(["read", "-g", "AppleLanguages"])
+            .stdin(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .output()
+            .ok()
+            .filter(|o| o.status.success())?;
+        first_apple_language(&String::from_utf8_lossy(&out.stdout))
+    })
+    .clone()
+}
+
+/// The first language of the list `defaults` prints
+/// (`(\n    "it-IT",\n    en\n)`).
+#[cfg(any(target_os = "macos", test))]
+fn first_apple_language(output: &str) -> Option<String> {
+    output
+        .lines()
+        .map(|l| l.trim().trim_end_matches(',').trim().trim_matches('"'))
+        .find(|l| !l.is_empty() && *l != "(" && *l != ")")
+        .map(str::to_owned)
+}
+
+/// `it_IT.UTF-8@euro` → `it-IT`; `C` and `POSIX` → None.
+#[cfg(any(not(windows), test))]
+fn posix_locale(value: &str) -> Option<String> {
+    let name = value.split(['.', '@']).next().unwrap_or_default();
+    if name.is_empty() || name == "C" || name == "POSIX" {
+        return None;
+    }
+    Some(name.replace('_', "-"))
+}
+
 /// The user's default locale name from Windows, e.g. `it-IT`.
+#[cfg(windows)]
 pub fn windows_locale() -> Option<String> {
     use windows::Win32::Globalization::GetUserDefaultLocaleName;
     let mut buf = [0u16; 85];

@@ -37,7 +37,7 @@ pub fn project_create<R: Runtime>(
 }
 
 /// What deleting a project takes away: its folder, its databases on the
-/// kit's servers, the copies of them (PLAN-DATA.md WP-5).
+/// kit's servers, the copies of them (D-89).
 #[tauri::command]
 pub fn project_delete_plan<R: Runtime>(
     webview: Webview<R>,
@@ -69,6 +69,7 @@ pub async fn project_delete<R: Runtime>(
         let dbs = crate::db::services::ProjectDrops {
             services: &services,
             env,
+            project: project.clone(),
         };
         crate::projects::delete(&kit, &project, lang, &dbs, force_without_db == Some(true))
             .or_fail_chain("project delete")

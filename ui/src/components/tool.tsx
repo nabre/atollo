@@ -24,7 +24,7 @@ import {
   Notice,
   type NavItem,
 } from "../workbench";
-import { groups, sizeText } from "./model";
+import { groups, sizeText, xcodeMissing } from "./model";
 import { ComposerRow, Dependencies } from "./rows";
 import type { ComponentsState } from "./state";
 
@@ -101,6 +101,15 @@ export function ToolPage({
               <VscCheck size={14} aria-hidden="true" />
               {shown ?? t("installato")}
             </span>
+          ) : c.bootstrapStaged ? (
+            <span
+              key="state"
+              className="flex items-center gap-1 text-vsc-success"
+              title={t("Bootstrap pre-scaricato; l'installazione termina al primo avvio su quel sistema")}
+            >
+              <VscCheck size={14} aria-hidden="true" />
+              {shown ? `${shown} (${t("pre-scaricato")})` : t("pre-scaricato")}
+            </span>
           ) : c.noArm64 ? (
             <span key="state" className="text-vsc-desc">
               {t("non disponibile su PC ARM64")}
@@ -147,7 +156,7 @@ export function ToolPage({
                   choose(c.id, false);
                 }}
               >
-                {c.installed ? t("Rimuovi") : t("Non installare")}
+                {c.installed || c.bootstrapStaged ? t("Rimuovi") : t("Non installare")}
               </Button>
             ) : (
               <Button
@@ -157,7 +166,7 @@ export function ToolPage({
                   choose(c.id, true);
                 }}
               >
-                {c.installed ? t("Mantieni") : t("Installa")}
+                {c.installed || c.bootstrapStaged ? t("Mantieni") : t("Installa")}
               </Button>
             )}
             <IconButton
@@ -181,9 +190,17 @@ export function ToolPage({
               name={c.name}
               byHand={item.byHand}
               disabled={running}
-              onRetry={() => setupStart([c.id], false)}
+              onRetry={() => setupStart([c.id], false, state.target)}
             />
           )}
+        </div>
+      )}
+      {xcodeMissing(c) && (
+        <div className="px-5 pb-2">
+          <Notice tone="warning">
+            {t("I programmi che usano i framework Apple richiedono Xcode Command Line Tools")}{" "}
+            <span className="text-vsc-desc">{t("Si installano con xcode-select --install, da amministratore.")}</span>
+          </Notice>
         </div>
       )}
       <NavBar label={t("Sezioni dello strumento")} items={items} active={section} onSelect={setSection} />

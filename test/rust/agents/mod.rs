@@ -2,6 +2,7 @@ use super::*;
 use crate::kit::{tests::TempDir, Arch};
 
 #[test]
+#[cfg_attr(not(windows), ignore = "credential files written with backslash paths")]
 fn sign_in_detection() {
     let tmp = TempDir::new("agents");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
@@ -28,4 +29,29 @@ fn sign_in_detection() {
     assert!(!s[2].signed_in);
     sign_out(&kit, &env, "claude").unwrap();
     assert!(!status(&kit, &env)[0].signed_in);
+}
+
+/// Claude Code with the token of `claude setup-token` (macOS): signed in
+/// with a token; "Esci" deletes it.
+#[test]
+fn claude_token_sign_in() {
+    let tmp = TempDir::new("agents-token");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let env = KitEnv::default();
+    assert_eq!(sign_in(&kit, &env, "claude"), None);
+    let token = format!("sk-ant-oat01-{}", "a".repeat(90));
+    claude_token::save(&kit, &token).unwrap();
+    assert_eq!(sign_in(&kit, &env, "claude"), Some("token"));
+    let info = status(&kit, &env);
+    let claude = info.iter().find(|a| a.id == "claude").unwrap();
+    assert_eq!(
+        claude.token_link,
+        cfg!(target_os = "macos"),
+        "offered on macOS only"
+    );
+    assert!(info.iter().all(|a| a.id == "claude" || !a.token_link));
+    sign_out(&kit, &env, "claude").unwrap();
+    assert_eq!(sign_in(&kit, &env, "claude"), None);
+    assert!(!claude_token::path(&kit).exists());
 }

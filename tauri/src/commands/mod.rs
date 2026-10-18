@@ -99,6 +99,19 @@ fn ensure_main<R: Runtime>(webview: &Webview<R>) -> CmdResult<()> {
     }
 }
 
+/// Returns `kit` scoped to `target` (`win32-x64`, `linux-x64`, `darwin-arm64`…)
+/// when given, or `kit.clone()` when omitted.
+pub(super) fn kit_for(kit: &Kit, target: Option<&str>) -> CmdResult<Kit> {
+    match target.map(str::trim).filter(|s| !s.is_empty()) {
+        None => Ok(kit.clone()),
+        Some(raw) => {
+            let t =
+                crate::kit::Target::parse(raw).ok_or_else(|| format!("unknown target: {raw}"))?;
+            Ok(kit.for_target(t))
+        }
+    }
+}
+
 /// `None` = the projects folder itself; a name must be a valid project
 /// name of an existing folder (no paths, no `..`).
 fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> CmdResult<PathBuf> {
@@ -115,20 +128,8 @@ fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> CmdResult<PathBu
     }
 }
 
-/// Why `name` cannot be installed on `target`: no build for ARM64 PCs on
-/// Windows ARM64, otherwise not made for that system (PHP on macOS or
-/// Linux).
-pub(crate) fn unavailable_msg(lang: &str, name: &str, target: crate::kit::Target) -> String {
-    if target == crate::kit::Target::WIN32_ARM64 {
-        crate::i18n::t(lang, "{0} non è disponibile sui PC ARM64.", &[name])
-    } else {
-        crate::i18n::t(
-            lang,
-            "{0} non è disponibile per {1}.",
-            &[name, target.as_str()],
-        )
-    }
-}
+#[cfg(test)]
+pub(crate) use crate::router::availability::unavailable_msg;
 
 /// Installs what an action of the window needs and is missing, with the
 /// app's preparation task, and waits for it: the required components and
@@ -152,9 +153,14 @@ fn ensure<R: Runtime>(
     let catalog = Catalog::get();
     let target = kit.target();
     let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
-    let needed = with_needs(catalog, wanted);
-    if let Some(c) = needed.iter().find(|c| !c.is_available_on(target)) {
-        return Err(unavailable_msg(lang, &c.name, target).into());
+    let needed = with_needs(catalog, wanted, target);
+    // With the catalog's reason (Android, SQLite on Linux ARM64) or Rosetta 2
+    // missing; the same sentences as before otherwise.
+    if let Some(msg) = needed
+        .iter()
+        .find_map(|c| crate::router::availability::unavailable_message_on_host(c, target, lang))
+    {
+        return Err(msg.into());
     }
     if let Some(c) = needed
         .iter()
@@ -168,7 +174,7 @@ fn ensure<R: Runtime>(
         .into());
     }
     if !wanted.is_empty() {
-        let mut choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+        let mut choice = Choice::read_or_defaults(kit, catalog);
         let before = choice.clone();
         for id in wanted {
             choice.set(catalog, id, true);
@@ -257,17 +263,13 @@ fn settle_project<R: Runtime>(
     crate::versions::pin_newest(kit, project);
 }
 
-/// `ids` and, transitively, what they need, in catalog order.
-fn with_needs<'a>(catalog: &'a Catalog, ids: &[&str]) -> Vec<&'a crate::setup::catalog::Component> {
-    let mut found: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
-    let mut todo: Vec<&str> = ids.to_vec();
-    while let Some(id) = todo.pop() {
-        if let Some(c) = catalog.find(id) {
-            if found.insert(c.id.as_str()) {
-                todo.extend(c.needs.iter().map(String::as_str));
-            }
-        }
-    }
+/// `ids` and, transitively, what they need on `target`, in catalog order.
+fn with_needs<'a>(
+    catalog: &'a Catalog,
+    ids: &[&str],
+    target: crate::kit::Target,
+) -> Vec<&'a crate::setup::catalog::Component> {
+    let found = catalog.with_needs_on(ids, target);
     catalog
         .all()
         .iter()
@@ -299,8 +301,21 @@ macro_rules! command_handler {
             $crate::commands::terminals::terminal_remove,
             $crate::commands::terminals::terminal_launch,
             $crate::commands::terminals::terminal_dir_pick,
+            // The app's terminal of macOS and Linux; permission
+            // `allow-pty-sessions` (permissions/pty.toml).
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_sessions,
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_backlog,
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_write,
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_resize,
+            #[cfg(unix)]
+            $crate::commands::terminals::pty_close,
             $crate::commands::setup::components_list,
             $crate::commands::setup::components_sync,
+            $crate::commands::setup::components_check,
             $crate::commands::setup::setup_state,
             $crate::commands::setup::setup_start,
             $crate::commands::setup::setup_cancel,
@@ -313,6 +328,8 @@ macro_rules! command_handler {
             $crate::commands::agents::agents_stats,
             $crate::commands::agents::agent_launch,
             $crate::commands::agents::agent_sign_out,
+            $crate::commands::agents::agent_token_link,
+            $crate::commands::agents::agent_token_save,
             $crate::commands::app::folder_open,
             $crate::commands::projects::project_create,
             $crate::commands::projects::project_delete,
@@ -358,6 +375,7 @@ macro_rules! command_handler {
             $crate::commands::projects::project_status,
             $crate::commands::databases::project_databases,
             $crate::commands::databases::project_db_create,
+            $crate::commands::databases::project_db_line,
             $crate::commands::databases::project_env_preview,
             $crate::commands::databases::project_env_apply,
             $crate::commands::services::services_list,
@@ -365,6 +383,7 @@ macro_rules! command_handler {
             $crate::commands::services::service_stop,
             $crate::commands::services::service_set,
             $crate::commands::services::service_line,
+            $crate::commands::services::service_line_port,
             $crate::commands::servers::servers_list,
             $crate::commands::servers::server_save,
             $crate::commands::servers::server_remove,

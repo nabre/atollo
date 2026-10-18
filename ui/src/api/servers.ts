@@ -10,10 +10,17 @@ export interface AttachedSite {
   /** Id of the project's action this site comes from ("" in older data). */
   action: string;
   folder: string;
+  /** The site's own name in the pool, from Rust (`name_sites`):
+   * `<project>.localhost` for a project's main site,
+   * `<action>.<project>.localhost` for the others, `-2`… when taken. */
   serverName: string;
   domains: string[];
   aliases: Record<string, string>;
   url: string;
+  /** Its project chose this server in panel.json (not only detected). */
+  chosen?: boolean;
+  /** Its project was stopped: listed, but out of the pool until it starts. */
+  detached?: boolean;
 }
 
 export interface WebServerPool {
@@ -28,6 +35,12 @@ export interface WebServerPool {
   manual: boolean;
   sites: AttachedSite[];
   confDir: string;
+  /** Running, but no longer one of the pools of the profiles and the projects
+   * (an automatic pool whose id changed with a newer line): stop it. */
+  orphan: boolean;
+  /** The profile as saved (a manual pool), to save it again with its options
+   * changed; null for an automatic pool. */
+  profile: WebServerProfileInput | null;
 }
 
 export interface WebServerProfileInput {
@@ -37,6 +50,11 @@ export interface WebServerProfileInput {
   serverLine: string | null;
   phpLine: string | null;
   port: number | null;
+  /** «Mantieni attivo anche senza progetti»: started by a project, the pool
+   * stays on when its last project stops (true when left out). */
+  keepAlive?: boolean;
+  /** «Avvia con Atollo»: started when the app opens. */
+  autostart?: boolean;
 }
 
 export interface WebServersView {
@@ -49,7 +67,7 @@ export interface WebServersView {
 const SAMPLE_SERVERS: WebServersView = {
   pools: [
     {
-      id: "apache-2.4-php-8.4",
+      id: "apache-2.4_php-8.4",
       name: "Apache 2.4 · PHP 8.4",
       engine: "apache",
       serverLine: "2.4",
@@ -69,7 +87,9 @@ const SAMPLE_SERVERS: WebServersView = {
           url: "http://portale-legacy.localhost:8081",
         },
       ],
-      confDir: "data\\servers\\apache-2.4-php-8.4",
+      confDir: "data\\servers\\apache-2.4_php-8.4",
+      orphan: false,
+      profile: null,
     },
   ],
   apacheLines: ["2.4"],

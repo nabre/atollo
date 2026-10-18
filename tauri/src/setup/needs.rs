@@ -4,19 +4,37 @@
 //! a clone or a project action needs them.
 
 use std::collections::BTreeSet;
-use std::path::Path;
 
 use super::catalog::Catalog;
 use crate::detect::Action;
 use crate::kit::Kit;
 
 /// The component of a program, by its name (`npm`, `python.exe`,
-/// `.venv\Scripts\python.exe`...).
+/// `.venv\Scripts\python.exe`...). Both separators on every system: a
+/// command written on Windows reaches macOS and Linux in a shared kit.
 fn component_of(program: &str) -> Option<&'static str> {
-    let name = Path::new(program.trim_matches('"'))
-        .file_name()?
-        .to_string_lossy()
-        .to_ascii_lowercase();
+    file_name(program.trim_matches('"')).and_then(|name| component_of_name(&name))
+}
+
+/// The last part of a path, with `/` or `\` as separators, as Windows'
+/// `Path::file_name` reads it: trailing separators and `.` parts are
+/// skipped, a drive (`C:node.exe`) is not part of the name, `..` has none.
+pub(crate) fn file_name(path: &str) -> Option<String> {
+    let bytes = path.as_bytes();
+    let path = if bytes.len() >= 2 && bytes[1] == b':' && bytes[0].is_ascii_alphabetic() {
+        &path[2..]
+    } else {
+        path
+    };
+    let last = path
+        .rsplit(['/', '\\'])
+        .find(|part| !part.is_empty() && *part != ".")?;
+    (last != "..").then(|| last.to_owned())
+}
+
+/// The component of a program's file name (`npm`, `python.exe`).
+fn component_of_name(name: &str) -> Option<&'static str> {
+    let name = name.to_ascii_lowercase();
     let stem = [".exe", ".cmd", ".bat", ".ps1"]
         .iter()
         .find_map(|ext| name.strip_suffix(ext))
@@ -26,9 +44,10 @@ fn component_of(program: &str) -> Option<&'static str> {
         "pnpm" | "pnpx" | "yarn" | "yarnpkg" | "corepack" => "pnpm",
         "uv" | "uvx" => "uv",
         "python" | "python3" | "py" | "pythonw" | "pip" | "pip3" => "python",
-        "php" | "php-cgi" | "composer" => "php",
+        "php" | "php-cgi" | "php-fpm" | "composer" => "php",
         "httpd" => "apache",
         "nginx" => "nginx",
+        "caddy" => "caddy",
         "cargo" | "rustc" | "rustup" | "trunk" => "rust",
         "go" | "gofmt" => "go",
         "java" | "javac" | "jar" | "mvn" | "gradle" => "java",
@@ -47,7 +66,10 @@ fn component_of(program: &str) -> Option<&'static str> {
         | "windres" => "cc",
         "ruby" | "gem" | "bundle" | "bundler" | "rails" | "rake" => "ruby",
         "r" | "rscript" => "r",
-        "mariadb" | "mariadbd" | "mysql" | "mysqld" | "mariadb-dump" | "mysqldump" => "mariadb",
+        // The kit's SQL server for either name: the caller resolves it
+        // (db::services::sql_need), so a kit that runs only MariaDB keeps it.
+        "mariadb" | "mariadbd" | "mariadb-dump" => "mariadb",
+        "mysql" | "mysqld" | "mysqldump" | "mysqladmin" => "mysql",
         "mongod" | "mongosh" => "mongodb",
         "sqlite3" => "sqlite",
         "git" => "git",
@@ -86,6 +108,9 @@ pub fn of_action(action: &Action) -> BTreeSet<&'static str> {
     }
     if action.nginx_dir.is_some() {
         return BTreeSet::from(["nginx", "php"]);
+    }
+    if action.caddy_dir.is_some() {
+        return BTreeSet::from(["caddy", "php"]);
     }
     of_command(&action.command)
 }

@@ -5,9 +5,11 @@
 //! (`── N. Name ──`, `√`, `x`, `!`, `·`), so they read the same.
 
 use std::ffi::OsString;
+#[cfg(windows)]
 use std::fs::OpenOptions;
 use std::io::{self, Write};
 
+#[cfg(windows)]
 use windows::Win32::System::Console::{
     AttachConsole, GetStdHandle, ATTACH_PARENT_PROCESS, STD_OUTPUT_HANDLE,
 };
@@ -27,7 +29,9 @@ pub enum Cli {
         project: Option<String>,
     },
     Prepare(PrepareArgs),
-    Components,
+    /// The catalog; with `--target <id>`, for that system (what is not
+    /// available there says why).
+    Components(Option<crate::kit::Target>),
     /// The saved versions; with an id, the lines that can be downloaded.
     Versions(Option<String>),
     /// Every installed program answers its version command.
@@ -51,6 +55,7 @@ pub enum Cli {
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct PrepareArgs {
+    pub target: Option<crate::kit::Target>,
     pub only: Vec<String>,
     pub skip: Vec<String>,
     pub update_all: bool,
@@ -62,6 +67,7 @@ pub struct PrepareArgs {
 impl PrepareArgs {
     pub fn options(&self) -> Options {
         Options {
+            target: self.target,
             only: self.only.clone(),
             skip: self.skip.clone(),
             update_all: self.update_all,
@@ -98,7 +104,20 @@ pub fn parse(args: &[OsString]) -> Cli {
             },
             Some(other) => Cli::Unknown(format!("env {other}")),
         },
-        "components" => Cli::Components,
+        "components" => match args
+            .get(1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .as_deref()
+        {
+            None => Cli::Components(None),
+            Some("--target") if args.len() == 3 => {
+                match crate::kit::Target::parse(&args[2].to_string_lossy().to_lowercase()) {
+                    Some(t) => Cli::Components(Some(t)),
+                    None => Cli::Unknown("components --target".into()),
+                }
+            }
+            Some(other) => Cli::Unknown(format!("components {other}")),
+        },
         "versions" if args.len() <= 2 => {
             Cli::Versions(args.get(1).map(|a| a.to_string_lossy().to_lowercase()))
         }
@@ -139,6 +158,13 @@ pub fn parse(args: &[OsString]) -> Cli {
             let mut rest = args[1..].iter();
             while let Some(arg) = rest.next() {
                 match arg.to_string_lossy().as_ref() {
+                    "--target" => {
+                        let value = rest.next().map(|v| v.to_string_lossy().to_lowercase());
+                        match value.as_deref().and_then(crate::kit::Target::parse) {
+                            Some(t) => p.target = Some(t),
+                            None => return Cli::Unknown("prepare --target".into()),
+                        }
+                    }
                     "--only" => p.only.extend(ids(rest.next())),
                     "--skip" => p.skip.extend(ids(rest.next())),
                     "--update-all" => p.update_all = true,
@@ -161,7 +187,14 @@ pub fn parse(args: &[OsString]) -> Cli {
     }
 }
 
+/// Where command output goes: a Unix program always has its standard output.
+#[cfg(not(windows))]
+pub fn output() -> Box<dyn Write> {
+    Box::new(io::stdout())
+}
+
 /// Where command output goes.
+#[cfg(windows)]
 pub fn output() -> Box<dyn Write> {
     // SAFETY: plain handle query.
     let redirected =
@@ -244,7 +277,11 @@ pub fn print_components(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Resul
         } else {
             "[ ]"
         };
-        let state = if c.is_installed(kit) {
+        let unavailable =
+            crate::router::availability::unavailable_message_on_host(c, kit.target(), lang);
+        let state = if let Some(why) = unavailable {
+            why
+        } else if c.is_installed(kit) {
             c.installed_version(kit)
                 .unwrap_or_else(|| t(lang, "installato", &[]))
         } else {

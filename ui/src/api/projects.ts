@@ -16,11 +16,12 @@ export interface ProjectAction {
   env: Record<string, string>;
   /** A folder served by the app's file server. */
   static: string | null;
-  /** A folder served by an Apache of the project's own. */
+  /** A folder served by Apache (a shared pool, or the site's own server). */
   apache: string | null;
-  /** A folder served by an Nginx of the project's own. */
+  /** A folder served by Nginx (a shared pool, or the site's own server). */
   nginx?: string | null;
-  /** Web server profile id, or "auto". */
+  /** Web server profile id, "auto" (the automatic pool of the project's
+   * versions) or "dedicated" (the site's own server). */
   server?: string | null;
   /** RFC 6761 .localhost domain aliases. */
   domains?: string[];
@@ -44,6 +45,9 @@ export interface ProjectInfo {
   reason: string;
   languages: string[];
   requires: string[];
+  /** Lines of some of them named by the images of Compose and Dockerfile
+   * (`php:8.3-apache` → `{ php: "8.3" }`); absent when none. */
+  lines?: Record<string, string>;
   actions: ProjectAction[];
   warnings: string[];
   custom: boolean;
@@ -187,7 +191,7 @@ export interface PlannedDb {
   installed: boolean;
 }
 
-/** What deleting a project takes away (PLAN-DATA.md WP-5). */
+/** What deleting a project takes away (D-89). */
 export interface DeletePlan {
   folderExists: boolean;
   /** Only an empty folder is deleted from the app. */

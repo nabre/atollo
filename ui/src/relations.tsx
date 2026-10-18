@@ -7,8 +7,8 @@ import { useCallback, useEffect, useState } from "react";
 import { VscCheck, VscCloudDownload, VscRefresh, VscServerEnvironment, VscWarning } from "react-icons/vsc";
 import {
   projectVersionsSet,
+  projectDbLine,
   relationsMatrix,
-  serviceLine,
   versionsAdd,
   type RelationLink,
   type RelationNeed,
@@ -183,21 +183,19 @@ function NeedAction({
           ? need.server
             ? t("Scarica {0}", line)
             : t("Scarica e usa {0}", line)
-          : need.server
-            ? t("Server su {0}", line)
-            : t("Usa {0}", line)
+          : t("Usa {0}", line)
       }
       small
       busy={busy}
       disabled={running}
       onClick={() => {
         onRun(() =>
-          // A server runs one version for every project: it downloads, or
-          // becomes the version the server runs (stopped).
+          // A server: it downloads, or the project's database goes on that
+          // version, on its own port beside the others (D-102).
           need.server
             ? need.status === "download"
               ? versionsAdd(need.component, line)
-              : serviceLine(need.component as "mariadb" | "mongodb", line)
+              : projectDbLine(project, need.component as "mariadb" | "mongodb", line)
             : projectVersionsSet(project, need.component, line),
         );
       }}

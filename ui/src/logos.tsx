@@ -15,6 +15,7 @@ import {
   SiBulma,
   SiBun,
   SiC,
+  SiCaddy,
   SiCapacitor,
   SiClaude,
   SiCmake,
@@ -47,6 +48,7 @@ import {
   SiNodedotjs,
   SiOpenjdk,
   SiPhp,
+  SiPhpmyadmin,
   SiPnpm,
   SiPrettier,
   SiPython,
@@ -134,6 +136,7 @@ const COMPONENTS: Record<string, Logo> = {
   composer: { icon: SiComposer, color: "#885630" },
   apache: { icon: SiApache, color: "#D22128" },
   nginx: { icon: SiNginx, color: "#009639" },
+  caddy: { icon: SiCaddy, color: "#1F88C0" },
   rust: RUST,
   go: GO,
   java: JAVA,
@@ -154,6 +157,7 @@ const COMPONENTS: Record<string, Logo> = {
   // MariaDB's #003545 is unreadable on dark: the text colour, as for black brands.
   mariadb: { icon: SiMariadb },
   mongodb: { icon: SiMongodb, color: "#47A248" },
+  phpmyadmin: { icon: SiPhpmyadmin, color: "#6C78AF" },
   // SQLite's #003B57 is unreadable on dark: the light blue of its logo.
   sqlite: { icon: SiSqlite, color: "#0F80CC" },
   r: R,

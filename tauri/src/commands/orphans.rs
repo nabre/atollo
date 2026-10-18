@@ -1,7 +1,7 @@
-//! Data of the kit without a project (PLAN-DATA.md WP-7): the folders of
+//! Data of the kit without a project (D-89): the folders of
 //! `data\projects\` whose project is gone from `projects\`, what each one
 //! holds, and giving them to a project. Never deleted automatically:
-//! deleting one is the deletion of a project (WP-5), with its confirmation.
+//! deleting one is the deletion of a project, with its confirmation.
 
 use super::*;
 use crate::projects::state::{self as project_state, Holdings};

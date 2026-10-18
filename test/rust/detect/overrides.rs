@@ -1,6 +1,6 @@
 use super::*;
 use crate::detect::detect;
-use crate::detect::tests::{ids, project};
+use crate::detect::tests::{ids, project, sh};
 
 fn edit(id: &str, command: &str) -> ActionEdit {
     ActionEdit {
@@ -143,7 +143,10 @@ fn site_written_and_removed() {
     set_site(&tmp.0, "www", SiteKind::Php, "it").unwrap();
     assert_eq!(
         detect(&tmp.0, "it").actions[0].command,
-        "php -S 127.0.0.1:{port} -t www"
+        sh(
+            r#"php -S 127.0.0.1:{port} -t www "%CP_DATA%\kit\php-router.php""#,
+            r#"php -S 127.0.0.1:{port} -t www "$CP_DATA/kit/php-router.php""#
+        )
     );
     set_site(&tmp.0, "www", SiteKind::Apache, "it").unwrap();
     let p = detect(&tmp.0, "it");

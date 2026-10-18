@@ -7,6 +7,7 @@ import { setupCancel, type SetupSnapshot } from "../api";
 import { t } from "../i18n";
 import { ActionButton } from "../common";
 import { setupStatusText } from "../setup";
+import { InlineConfirm } from "../workbench";
 import type { KitVersions } from "../versions";
 import { linesOf, sizeText } from "./model";
 import type { ComponentsState } from "./state";
@@ -34,37 +35,47 @@ export function ApplyBar({
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-vsc-border px-5 py-2">
       {confirm ? (
-        <>
-          <span role="status" className="min-w-0 flex-1">
-            {plan.install.length > 0 &&
-              t("Da installare: {0} (circa {1}).", plan.install.map((c) => c.name).join(", "), sizeText(plan.mb)) + " "}
-            {plan.remove.length > 0 &&
-              t(
-                "Da rimuovere: {0}.",
-                plan.remove
-                  .map((c) => {
-                    const n = linesOf(kit.byId.get(c.id)).length;
-                    return n > 1 ? `${c.name} (${t("{0} versioni", n)})` : c.name;
-                  })
-                  .join(", "),
-              )}
-          </span>
-          <ActionButton
-            icon={VscCheck}
-            label={t("Conferma")}
-            primary
-            onClick={() => {
-              go(false);
-            }}
-          />
-          <ActionButton
-            icon={VscRefresh}
-            label={t("Indietro")}
-            onClick={() => {
-              setConfirm(false);
-            }}
-          />
-        </>
+        <InlineConfirm
+          row
+          question={t("Applicare le modifiche?")}
+          className="w-full"
+          textClassName="min-w-0 flex-1"
+          onCancel={() => {
+            setConfirm(false);
+          }}
+          actions={
+            <>
+              <ActionButton
+                icon={VscCheck}
+                label={t("Conferma")}
+                primary
+                onClick={() => {
+                  go(false);
+                }}
+              />
+              <ActionButton
+                icon={VscRefresh}
+                label={t("Indietro")}
+                onClick={() => {
+                  setConfirm(false);
+                }}
+              />
+            </>
+          }
+        >
+          {plan.install.length > 0 &&
+            t("Da installare: {0} (circa {1}).", plan.install.map((c) => c.name).join(", "), sizeText(plan.mb)) + " "}
+          {plan.remove.length > 0 &&
+            t(
+              "Da rimuovere: {0}.",
+              plan.remove
+                .map((c) => {
+                  const n = linesOf(kit.byId.get(c.id)).length;
+                  return n > 1 ? `${c.name} (${t("{0} versioni", n)})` : c.name;
+                })
+                .join(", "),
+            )}
+        </InlineConfirm>
       ) : (
         <>
           <span

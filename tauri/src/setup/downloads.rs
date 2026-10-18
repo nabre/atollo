@@ -17,7 +17,7 @@ use crate::net::verify::{self, Expect};
 /// Kept at most this long when no installation uses them.
 const KEEP: Duration = Duration::from_secs(30 * 24 * 3600);
 
-/// `downloads\` of the PC's temporary folder (D-90, Q-3), or `data\downloads`
+/// `downloads\` of the PC's temporary folder (D-90), or `data\downloads`
 /// without one. The files found in `data\downloads` (kept there by an older
 /// version, or put there by hand as the command line says) are moved into it
 /// first.
@@ -125,6 +125,8 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
 
 /// Windows' "Open" window over `owner` (a window handle), several files,
 /// starting in the Downloads folder. Empty when closed without a choice.
+/// macOS and Linux: `editor::picker::files`.
+#[cfg(windows)]
 pub fn pick(owner: isize, title: &str) -> Result<Vec<PathBuf>> {
     use windows::core::{HSTRING, PCWSTR};
     use windows::Win32::Foundation::{ERROR_CANCELLED, HWND};

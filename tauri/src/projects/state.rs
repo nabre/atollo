@@ -4,7 +4,8 @@
 //! ```text
 //! dev-settings.json   agent, last opened, extensions, versions
 //! ports.json          ports of its actions, those locked by the user
-//! apache\  nginx\     configurations of its own web servers
+//! apache\  nginx\  caddy\
+//!                     configurations of its own web servers
 //! private\            owner-only DACL, set before anything is written in it
 //!   db.json           passwords of its databases
 //!   backups\          copies of its databases
@@ -50,6 +51,9 @@ impl ProjectState {
     pub fn nginx_dir(&self) -> PathBuf {
         self.dir.join("nginx")
     }
+    pub fn caddy_dir(&self) -> PathBuf {
+        self.dir.join("caddy")
+    }
 
     /// `private\`, created and made owner-only before it is returned, so
     /// every file written in it is private from the start (as `db/auth.rs`).
@@ -57,7 +61,7 @@ impl ProjectState {
     pub fn private_dir(&self) -> io::Result<PathBuf> {
         let dir = self.dir.join("private");
         fs::create_dir_all(&dir)?;
-        if let Err(e) = crate::editor::restrict_dir_to_owner(&dir) {
+        if let Err(e) = crate::router::fs::restrict_dir_to_owner(&dir) {
             crate::log::warn(&format!("{}: permissions: {e:#}", dir.display()));
         }
         Ok(dir)
@@ -144,7 +148,7 @@ pub fn remove_empty_dirs(dir: &Path) -> bool {
 
 /// The folders of `data\projects\` whose project is gone from `projects\`
 /// (renamed or deleted outside the app) and that still hold files of the
-/// kit, sorted (PLAN-DATA.md WP-7). Never deleted automatically.
+/// kit, sorted (D-89). Never deleted automatically.
 pub fn orphans(kit: &Kit) -> Vec<String> {
     all(kit)
         .into_iter()

@@ -31,7 +31,7 @@ fn tools_have_a_folder_per_line() {
         "uv",
         "pwsh",
         "cmake",
-        "adminer",
+        "phpmyadmin",
         "sqlite",
         "node",
         "apache",
@@ -55,20 +55,33 @@ fn tools_have_a_folder_per_line() {
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
     let git = Catalog::get().find("git").unwrap();
     let dir = install_dir(&kit, git, "2.56.0.2");
-    assert!(dir.ends_with(r"git\2.56"));
+    assert!(dir.ends_with(Path::new("git").join("2.56")));
     install_fake(&kit, git, &dir);
     git.save_version(&kit, "2.56.0.2").unwrap();
+    // The catalog's Windows path, in the kit's layout: one `git` on Unix.
+    let git_exe = if cfg!(windows) {
+        dir.join("cmd").join("git.exe")
+    } else {
+        dir.join("bin").join("git")
+    };
     assert_eq!(
         crate::setup::catalog::kit_path(&kit, r"git\cmd\git.exe"),
-        dir.join(r"cmd\git.exe")
+        git_exe
     );
     assert!(saved(&kit, git).is_empty());
 }
 
+/// The key of `c` for the kit's target, relative to the component's
+/// folder: `node.exe` on Windows, `bin/node` on macOS and Linux.
+pub(super) fn key_rel(kit: &Kit, c: &Component) -> String {
+    let key = c.key_for(kit.target());
+    let rel = key.strip_prefix(c.folder.as_deref().unwrap()).unwrap();
+    rel.trim_start_matches('/').to_owned()
+}
+
+/// A folder `dir` of `c` with its key, as the kit's target names it.
 pub(super) fn install_fake(kit: &Kit, c: &Component, dir: &Path) {
-    let rel = c.key.strip_prefix(c.folder.as_deref().unwrap()).unwrap();
-    let key = dir.join(rel.trim_start_matches('/').replace('/', "\\"));
+    let key = crate::fsx::join_rel(dir, &key_rel(kit, c));
     fs::create_dir_all(key.parent().unwrap()).unwrap();
     fs::write(key, b"").unwrap();
-    let _ = kit;
 }

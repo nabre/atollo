@@ -4,13 +4,16 @@
 //! Rules kept from the kit: a component fails alone (the others go on);
 //! without "update all" an installed component is left as it is; "only"
 //! touches the listed components and removes nothing; one run at a time per
-//! kit (named mutex). Cancellation stops at once during a download and
-//! otherwise at the end of the current step, never in the middle of a swap.
+//! kit (named mutex on Windows, `flock` on macOS and Linux). Cancellation
+//! stops at once during a download and otherwise at the end of the current
+//! step, never in the middle of a swap.
 
 use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 
-use anyhow::{bail, Context, Result};
+#[cfg(windows)]
+use anyhow::Context;
+use anyhow::{bail, Result};
 use serde::Serialize;
 #[cfg(windows)]
 use windows::core::HSTRING;
@@ -21,12 +24,14 @@ use windows::Win32::System::Threading::CreateMutexW;
 
 use super::catalog::{Catalog, Choice, Component};
 use crate::install::{self, Ctx, Progress};
-use crate::kit::Target;
+use crate::kit::{Kit, Target};
 use crate::net::archive::{self, InUse};
 use crate::net::Cancelled;
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {
+    /// Target platform to prepare; defaults to `ctx.kit.target()`.
+    pub target: Option<Target>,
     /// Only these components (installed or updated); nothing removed.
     pub only: Vec<String>,
     /// Not these, on top of the choice (required components cannot be skipped).
@@ -133,15 +138,23 @@ impl Drop for RunLock {
     }
 }
 
+/// One run per kit on macOS and Linux: the kit's id in a set of this
+/// process, and an exclusive `flock` on `data/app/prepare.lock` for the
+/// other processes (another window, `prepare` from a terminal). The system
+/// drops the `flock` when the file closes, also after a crash.
 #[cfg(not(windows))]
 #[derive(Debug)]
-struct RunLock(String);
+struct RunLock {
+    id: String,
+    #[allow(dead_code)]
+    file: Option<std::fs::File>,
+}
 
 #[cfg(not(windows))]
 impl Drop for RunLock {
     fn drop(&mut self) {
         if let Ok(mut set) = active_locks().lock() {
-            set.remove(&self.0);
+            set.remove(&self.id);
         }
     }
 }
@@ -158,8 +171,8 @@ fn active_locks() -> &'static std::sync::Mutex<HashSet<String>> {
 pub struct Busy;
 
 #[cfg(windows)]
-fn lock(kit_id: &str) -> Result<RunLock> {
-    let name = HSTRING::from(format!(r"Local\Atollo-Prepare-{kit_id}"));
+fn lock(kit: &Kit) -> Result<RunLock> {
+    let name = HSTRING::from(format!(r"Local\Atollo-Prepare-{}", kit.id()));
     // SAFETY: valid name, default security.
     let handle = unsafe { CreateMutexW(None, false, &name) }.context("CreateMutexW")?;
     // SAFETY: last error of CreateMutexW on this thread.
@@ -172,14 +185,50 @@ fn lock(kit_id: &str) -> Result<RunLock> {
 }
 
 #[cfg(not(windows))]
-fn lock(kit_id: &str) -> Result<RunLock> {
-    let mut set = active_locks()
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if !set.insert(kit_id.to_owned()) {
-        return Err(Busy.into());
+fn lock(kit: &Kit) -> Result<RunLock> {
+    let id = kit.id();
+    {
+        let mut set = active_locks()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !set.insert(id.clone()) {
+            return Err(Busy.into());
+        }
     }
-    Ok(RunLock(kit_id.to_owned()))
+    // From here the guard takes the id out of the set again, also on error.
+    let mut guard = RunLock { id, file: None };
+    guard.file = Some(prepare_flock(kit)?);
+    Ok(guard)
+}
+
+/// The exclusive `flock` on `data/app/prepare.lock`, without waiting:
+/// `Busy` when another process holds it. Any other error (a file system
+/// without `flock`, some network shares) is returned: the run does not
+/// start unguarded.
+#[cfg(unix)]
+fn prepare_flock(kit: &Kit) -> Result<std::fs::File> {
+    use anyhow::Context;
+    use std::os::fd::AsRawFd;
+    let dir = kit.app_dir();
+    std::fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
+    let path = dir.join("prepare.lock");
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&path)
+        .with_context(|| path.display().to_string())?;
+    // SAFETY: a valid descriptor owned by `file`.
+    if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+        let e = std::io::Error::last_os_error();
+        if e.kind() == std::io::ErrorKind::WouldBlock {
+            return Err(Busy.into());
+        }
+        // No silent fallback: as `os::instance::acquire`, a file system
+        // without `flock` stops the run instead of preparing unguarded.
+        return Err(e).with_context(|| format!("flock {}", path.display()));
+    }
+    Ok(file)
 }
 
 /// What a run would do, before doing it (shown by the interface).
@@ -190,7 +239,8 @@ pub struct Plan {
 }
 
 /// Nothing unavailable on the kit's target (e.g. `noArm64` on `win32-arm64`,
-/// or `terminal` on macOS/Linux) is ever planned.
+/// PHP on macOS/Linux, Android on Linux ARM64, an x64 build on a Mac
+/// without Rosetta 2) is ever planned.
 pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Result<Plan> {
     for id in opts.only.iter().chain(&opts.skip) {
         if catalog.find(id).is_none() {
@@ -198,10 +248,13 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         }
     }
     let target = ctx.kit.target();
+    let can_run = crate::router::target::can_execute_on_host(target);
     let installed: HashSet<&str> = catalog
         .all()
         .iter()
-        .filter(|c| c.is_installed(ctx.kit))
+        .filter(|c| {
+            c.is_installed(ctx.kit) || (!can_run && crate::router::bootstrap::is_staged(ctx.kit, c))
+        })
         .map(|c| c.id.as_str())
         .collect();
     let wanted = if opts.only.is_empty() {
@@ -209,12 +262,20 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     } else {
         only_with_needs(catalog, &opts.only, &installed, target)?
     };
+    // What the chosen components need on this target only (Zig for C and
+    // C++ on macOS and Linux): not in the choice, yet not removed while
+    // they are chosen, also in a run that skips them.
+    let kept = catalog.needs_only_on(&choice.chosen_ids(catalog), target);
     let mut plan = Plan::default();
     // In the order of the Tools page: the progress goes down the list.
     for c in catalog.in_page_order() {
         if wanted.contains(c.id.as_str()) {
             plan.handle.push(c.id.clone());
-        } else if opts.only.is_empty() && !choice.is_chosen(&c.id) && c.is_present(ctx.kit) {
+        } else if opts.only.is_empty()
+            && !choice.is_chosen(&c.id)
+            && !kept.contains(c.id.as_str())
+            && c.is_present(ctx.kit)
+        {
             // Also when only part of it is there (an installation that
             // failed halfway).
             plan.remove.push(c.id.clone());
@@ -223,7 +284,7 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     Ok(plan)
 }
 
-/// `only`: the listed components plus, transitively, what they need and is
+/// `only`: the listed components plus, transitively, what they need on `target` and is
 /// not installed yet. A component unavailable on `target` is an error.
 fn only_with_needs<'a>(
     catalog: &'a Catalog,
@@ -238,8 +299,11 @@ fn only_with_needs<'a>(
         .map(|c| (c, None))
         .collect();
     while let Some((c, needed_by)) = todo.pop() {
-        if !c.is_available_on(target) {
-            let platform = if target == Target::WIN32_ARM64 {
+        if !crate::router::target::installable_on(c, target) {
+            let platform = if c.is_available_on(target) {
+                // Available, but this Mac has no Rosetta 2 for its x64 build.
+                "this Mac without Rosetta 2"
+            } else if target == Target::WIN32_ARM64 {
                 "ARM64"
             } else {
                 target.as_str()
@@ -252,7 +316,7 @@ fn only_with_needs<'a>(
         if !wanted.insert(c.id.as_str()) {
             continue;
         }
-        for need in c.needs.iter().filter_map(|n| catalog.find(n)) {
+        for need in c.needs_on(target).filter_map(|n| catalog.find(n)) {
             if !installed.contains(need.id.as_str()) {
                 todo.push((need, Some(c.id.as_str())));
             }
@@ -261,10 +325,12 @@ fn only_with_needs<'a>(
     Ok(wanted)
 }
 
-/// The choice without `skip` (system components and what they need cannot be
-/// skipped) and without what is unavailable on `target`; then,
+/// The choice, with what it needs on `target` only (never saved: see
+/// [`Choice`]), without `skip` (system components and what they need cannot
+/// be skipped) and without what is unavailable on `target`; then,
 /// transitively, without every component not installed yet (locked ones
-/// aside) that needs one neither planned nor installed.
+/// aside) that needs one neither planned nor installed. A need of this
+/// target skipped drops what needs it for this run only.
 fn chosen_without_skipped<'a>(
     catalog: &'a Catalog,
     choice: &Choice,
@@ -272,14 +338,23 @@ fn chosen_without_skipped<'a>(
     installed: &HashSet<&str>,
     target: Target,
 ) -> HashSet<&'a str> {
-    let locked = catalog.locked();
+    let locked = catalog.locked_on(target);
+    let can_plan = |c: &Component| {
+        crate::router::target::installable_on(c, target)
+            && (locked.contains(c.id.as_str()) || !skip.contains(&c.id))
+    };
     let mut wanted: HashSet<&str> = catalog
         .all()
         .iter()
-        .filter(|c| choice.is_chosen(&c.id) && c.is_available_on(target))
-        .filter(|c| locked.contains(c.id.as_str()) || !skip.contains(&c.id))
+        .filter(|c| choice.is_chosen(&c.id) && can_plan(c))
         .map(|c| c.id.as_str())
         .collect();
+    let planned: Vec<&str> = wanted.iter().copied().collect();
+    for id in catalog.needs_only_on(&planned, target) {
+        if catalog.find(id).is_some_and(can_plan) {
+            wanted.insert(id);
+        }
+    }
     loop {
         let missing_need: Vec<&str> = catalog
             .all()
@@ -287,9 +362,8 @@ fn chosen_without_skipped<'a>(
             .filter(|c| wanted.contains(c.id.as_str()) && !locked.contains(c.id.as_str()))
             .filter(|c| !installed.contains(c.id.as_str()))
             .filter(|c| {
-                c.needs
-                    .iter()
-                    .any(|n| !wanted.contains(n.as_str()) && !installed.contains(n.as_str()))
+                c.needs_on(target)
+                    .any(|n| !wanted.contains(n) && !installed.contains(n))
             })
             .map(|c| c.id.as_str())
             .collect();
@@ -334,7 +408,7 @@ impl Progress for StepProgress<'_> {
 
 /// Runs a preparation; returns the outcome of every component touched.
 pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String, Outcome)>> {
-    let _lock = lock(&ctx.kit.id())?;
+    let _lock = lock(ctx.kit)?;
     let catalog = Catalog::get();
     if !opts.lines.is_empty() {
         return Ok(run_lines(ctx, catalog, &opts.lines, sink));
@@ -563,6 +637,13 @@ fn line_step(
 /// are renamed first, so one in use is left untouched (`InUse`).
 fn remove_component(ctx: &Ctx, c: &Component) -> Result<()> {
     for path in c.owned_paths(ctx.kit) {
+        // A link (`bin/pnpm` of npm on macOS and Linux) goes as a link,
+        // also when what it points to went first.
+        #[cfg(unix)]
+        if std::fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) {
+            std::fs::remove_file(&path).map_err(|_| InUse(path.clone()))?;
+            continue;
+        }
         if path.is_dir() {
             archive::remove_dir(&path)?;
         } else if path.exists() {
@@ -581,22 +662,26 @@ fn step(
     sink: &mut dyn Sink,
 ) -> Outcome {
     let installed = c.is_installed(ctx.kit);
+    let staged = crate::router::bootstrap::is_staged(ctx.kit, c);
+    let can_run = crate::router::target::can_execute_on_host(ctx.kit.target());
     let current = c.installed_version(ctx.kit);
-    // Marked when the kit moved (a conda environment, D-92): installed
-    // again even at the same version, a versioned one at its own line.
-    let reinstall = installed && c.needs_reinstall(ctx.kit);
+    // Marked when the kit moved (a conda environment, D-92) or bootstrap-staged
+    // on another OS and now running on its target OS: installed again even at
+    // the same version, a versioned one at its own line.
+    let reinstall = (installed && c.needs_reinstall(ctx.kit)) || (staged && can_run);
     let force = force || reinstall;
     let keep_line = current
         .as_deref()
         .and_then(crate::versions::line_of)
         .filter(|_| reinstall && c.versioned);
+    let ready_for_target = installed || (staged && !can_run);
     // A part of the app at another version than this release's: installed
     // again without "update all", and never newer than the fixed one.
-    if installed && !update_all && !force && !c.outdated(ctx.kit) {
+    if ready_for_target && !update_all && !force && !c.outdated(ctx.kit) {
         return Outcome::UpToDate { version: current };
     }
     let Some(installer) = install::installer(&c.id) else {
-        return if installed {
+        return if ready_for_target {
             Outcome::UpToDate { version: current }
         } else {
             Outcome::Unsupported
@@ -608,7 +693,7 @@ fn step(
             (_, Some(line)) if installer.has_lines() => install::release_at(ctx, c, line)?,
             _ => installer.latest(ctx, c)?,
         };
-        if installed && !force && current.as_deref() == Some(release.version.as_str()) {
+        if ready_for_target && !force && current.as_deref() == Some(release.version.as_str()) {
             return Ok(Outcome::UpToDate {
                 version: current.clone(),
             });

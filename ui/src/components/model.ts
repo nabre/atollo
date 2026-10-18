@@ -82,6 +82,13 @@ export function toggle(list: ComponentInfo[], chosen: Set<string>, id: string, o
   return next;
 }
 
+/** C and C++ on a Mac without Xcode Command Line Tools (`xcode-select -p`
+ * fails): C and C++ work, the programs that use the Apple frameworks do not.
+ * Only a Mac can tell, so never for a kit inspected from another system. */
+export function xcodeMissing(c: ComponentInfo): boolean {
+  return c.xcodeMissing === true;
+}
+
 /** The versions on disk of a versioned tool: the default, then the saved. */
 export function linesOf(tool: VersionedTool | undefined): string[] {
   if (!tool) return [];

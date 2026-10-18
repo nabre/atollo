@@ -31,6 +31,7 @@ import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
 import {
   Button,
+  CheckboxLabel,
   Dot,
   EditorBody,
   EditorHeader,
@@ -48,6 +49,42 @@ import {
   ViewPane,
 } from "./workbench";
 
+/** The two options of a profile, as in the creation form and the details. */
+function ProfileOptions({
+  keepAlive,
+  autostart,
+  disabled = false,
+  onChange,
+}: {
+  keepAlive: boolean;
+  autostart: boolean;
+  disabled?: boolean;
+  onChange: (keepAlive: boolean, autostart: boolean) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <CheckboxLabel
+        checked={keepAlive}
+        disabled={disabled}
+        onChange={(v) => {
+          onChange(v, autostart);
+        }}
+      >
+        {t("Mantieni attivo anche senza progetti")}
+      </CheckboxLabel>
+      <CheckboxLabel
+        checked={autostart}
+        disabled={disabled}
+        onChange={(v) => {
+          onChange(keepAlive, v);
+        }}
+      >
+        {t("Avvia con Atollo")}
+      </CheckboxLabel>
+    </div>
+  );
+}
+
 function PoolDetails({
   pool,
   busy,
@@ -55,6 +92,7 @@ function PoolDetails({
   onStop,
   onReload,
   onRemove,
+  onOptions,
 }: {
   pool: WebServerPool;
   busy: boolean;
@@ -62,6 +100,7 @@ function PoolDetails({
   onStop: () => void;
   onReload: () => void;
   onRemove?: (() => void) | undefined;
+  onOptions?: ((keepAlive: boolean, autostart: boolean) => void) | undefined;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -92,17 +131,24 @@ function PoolDetails({
             ) : (
               <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />
             )}
-            <ActionButton icon={VscRefresh} label={t("Ricarica configurazione")} busy={busy} onClick={onReload} />
+            {!pool.orphan && (
+              <ActionButton icon={VscRefresh} label={t("Ricarica configurazione")} busy={busy} onClick={onReload} />
+            )}
             {onRemove && <ActionButton icon={VscTrash} label={t("Elimina profilo")} busy={busy} onClick={onRemove} />}
           </>
         }
       />
       <EditorBody narrow>
+        {pool.orphan && (
+          <Notice tone="warning">
+            {t("Questo pool è ancora acceso ma non corrisponde più ai progetti e ai profili: fermalo.")}
+          </Notice>
+        )}
         <EditorSection id={`srv-sites-${pool.id}`} title={t("VirtualHost collegati")}>
           {pool.sites.length === 0 ? (
             <Notice tone="info">
               {t(
-                "Nessun progetto collegato a questo pool. I progetti Apache o Nginx con la stessa combinazione di versioni (o assegnati a questo profilo dalla scheda Sito web del progetto) compaiono qui automaticamente.",
+                "Nessun sito in questo pool. Un sito Apache o Nginx compare qui quando il suo progetto lo avvia o lo sceglie nella scheda Sito web (pool automatico delle sue versioni, o questo profilo).",
               )}
             </Notice>
           ) : (
@@ -112,7 +158,12 @@ function PoolDetails({
                 return (
                   <div
                     key={`${site.project}:${site.action}`}
-                    className="rounded border border-vsc-border bg-vsc-sidebar/40 px-3 py-2.5 space-y-1.5"
+                    data-detached={site.detached ? "true" : undefined}
+                    className={`rounded border px-3 py-2.5 space-y-1.5 ${
+                      site.detached
+                        ? "border-dashed border-vsc-border opacity-60"
+                        : "border-vsc-border bg-vsc-sidebar/40"
+                    }`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -120,6 +171,11 @@ function PoolDetails({
                         <code className="rounded bg-vsc-badge px-1.5 py-0.5 font-mono text-[11px] text-vsc-badge-fg">
                           {site.folder}
                         </code>
+                        {site.detached && (
+                          <span className="rounded border border-vsc-border px-1.5 py-0.5 text-[11px] text-vsc-desc">
+                            {t("Sganciato: il progetto è fermo")}
+                          </span>
+                        )}
                       </div>
                       <Button
                         small
@@ -172,6 +228,22 @@ function PoolDetails({
             ]}
           />
         </EditorSection>
+        <EditorSection id={`srv-options-${pool.id}`} title={t("Avvio e arresto")}>
+          {pool.profile && onOptions ? (
+            <ProfileOptions
+              keepAlive={pool.profile.keepAlive ?? true}
+              autostart={pool.profile.autostart ?? false}
+              disabled={busy}
+              onChange={onOptions}
+            />
+          ) : (
+            <p className="text-[12px] text-vsc-desc">
+              {t(
+                "Un pool automatico parte con il primo progetto che lo usa e si ferma con l'ultimo, se non l'hai avviato da questa pagina.",
+              )}
+            </p>
+          )}
+        </EditorSection>
       </EditorBody>
     </div>
   );
@@ -190,6 +262,8 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
   const [newServerLine, setNewServerLine] = useState("");
   const [newPhpLine, setNewPhpLine] = useState("");
   const [newPort, setNewPort] = useState("");
+  const [newKeepAlive, setNewKeepAlive] = useState(true);
+  const [newAutostart, setNewAutostart] = useState(false);
 
   const load = useCallback((fresh: boolean) => {
     serversList(fresh).then(setView, (e: unknown) => {
@@ -387,6 +461,14 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
                 placeholder="8081"
               />
             </div>
+            <ProfileOptions
+              keepAlive={newKeepAlive}
+              autostart={newAutostart}
+              onChange={(keepAlive, autostart) => {
+                setNewKeepAlive(keepAlive);
+                setNewAutostart(autostart);
+              }}
+            />
             <Button
               small
               disabled={newName.trim().length === 0 || busy === "__create"}
@@ -400,9 +482,15 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
                     serverLine: newServerLine || null,
                     phpLine: newPhpLine || null,
                     port: portNum,
+                    keepAlive: newKeepAlive,
+                    autostart: newAutostart,
                   });
                   setNewName("");
                   setNewPort("");
+                  // The next profile starts from the defaults, not from
+                  // this one's options.
+                  setNewKeepAlive(true);
+                  setNewAutostart(false);
                   setCreateOpen(false);
                 });
               }}
@@ -438,6 +526,15 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
             activePool.manual
               ? () => {
                   run(activePool.id, () => serverRemove(activePool.id));
+                }
+              : undefined
+          }
+          onOptions={
+            activePool.profile
+              ? (keepAlive, autostart) => {
+                  const profile = activePool.profile;
+                  if (!profile) return;
+                  run(activePool.id, () => serverSave({ ...profile, keepAlive, autostart }));
                 }
               : undefined
           }

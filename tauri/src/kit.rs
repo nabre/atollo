@@ -1,9 +1,10 @@
 //! The kit on disk: its root (the folder that holds `Atollo.exe`), the
 //! processor platform and every path the app uses.
 //!
-//! Layout (docs/app/PLAN.md §2): `Atollo.exe`, `projects\` and `data\` side by
+//! Layout (DECISIONS.md D-00): `Atollo.exe`, `projects\` and `data\` side by
 //! side; everything the kit downloads or writes lives in `data\`. Nothing is
-//! ever created outside the root. The platform rule and the "kit was moved"
+//! ever created outside the root. On macOS the root holds `Atollo.app`, on
+//! Linux the AppImage (`root_from`). The platform rule and the "kit was moved"
 //! record follow nabre/atollo `setup/windows/_env.cmd` (lines 13-16, 238-267).
 
 use std::fs;
@@ -13,7 +14,7 @@ use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
-use crate::fsx::write_atomic;
+use crate::fsx::{read_text, write_atomic};
 use crate::os::volume::VolumeInfo;
 
 /// Operating system family of a kit target (`win32`, `darwin`, `linux`).
@@ -126,6 +127,7 @@ impl Arch {
         }
     }
 
+    #[cfg_attr(not(any(windows, test)), allow(dead_code))]
     fn from_env_values(arch: Option<&str>, wow64: Option<&str>) -> Arch {
         let is_arm = |v: Option<&str>| v.is_some_and(|v| v.eq_ignore_ascii_case("ARM64"));
         if is_arm(arch) || is_arm(wow64) {
@@ -323,10 +325,12 @@ impl Target {
         }
     }
 
-    /// Micromamba standalone binary asset name on GitHub releases.
+    /// Micromamba standalone binary asset name on GitHub releases (native
+    /// on every target, `win-arm64` too).
     pub const fn micromamba_asset(self) -> &'static str {
         match (self.os, self.arch) {
-            (Os::Win32, _) => "micromamba-win-64",
+            (Os::Win32, Arch::X64) => "micromamba-win-64",
+            (Os::Win32, Arch::Arm64) => "micromamba-win-arm64",
             (Os::Darwin, Arch::Arm64) => "micromamba-osx-arm64",
             (Os::Darwin, Arch::X64) => "micromamba-osx-64",
             (Os::Linux, Arch::X64) => "micromamba-linux-64",
@@ -364,21 +368,21 @@ pub enum KitError {
 pub struct Kit {
     root: PathBuf,
     target: Target,
-    /// `<host TEMP>\Atollo\<id>`, for files in transit (PLAN-DATA.md §4.2).
+    /// `<host TEMP>\Atollo\<id>`, for files in transit (D-90).
     system_temp: Option<PathBuf>,
     /// The disk of the root, read once at start.
     volume: Option<VolumeInfo>,
 }
 
 impl Kit {
-    /// The kit whose root is the folder of `exe`.
+    /// The kit of the program at `exe`: the folder of `exe`, or the folder
+    /// next to `Atollo.app` or the AppImage ([`root_from`]).
     pub fn from_exe(exe: &Path) -> Result<Kit, KitError> {
         let exe = strip_verbatim(exe);
-        let root = exe
-            .parent()
-            .filter(|p| !p.as_os_str().is_empty())
+        let image = running_appimage(&exe);
+        let root = root_from(Os::current(), &exe, image.as_deref())
             .ok_or_else(|| KitError::NoRoot(exe.clone()))?;
-        Ok(Kit::at_target(root.to_path_buf(), Target::detect()))
+        Ok(Kit::at_target(root, Target::detect()))
     }
 
     #[cfg(test)]
@@ -418,6 +422,17 @@ impl Kit {
         self
     }
 
+    /// The same kit root scoped to `target` (`data/apps/<target>`,
+    /// `data/app/versions/<target>`), preserving host temp and volume info.
+    pub fn for_target(&self, target: Target) -> Kit {
+        Kit {
+            root: self.root.clone(),
+            target,
+            system_temp: self.system_temp.clone(),
+            volume: self.volume,
+        }
+    }
+
     pub fn root(&self) -> &Path {
         &self.root
     }
@@ -455,7 +470,12 @@ impl Kit {
     }
     /// Installed component version files for this target: `data/app/versions/<os>-<arch>`.
     pub fn versions_dir(&self) -> PathBuf {
-        self.app_dir().join("versions").join(self.target.as_str())
+        self.versions_root().join(self.target.as_str())
+    }
+    /// `data/app/versions`: the folders of the targets, the app's own
+    /// `app.txt` and the component files from before the targets.
+    pub fn versions_root(&self) -> PathBuf {
+        self.app_dir().join("versions")
     }
     /// The app's own state: settings, component choice, versions, logs.
     pub fn app_dir(&self) -> PathBuf {
@@ -478,7 +498,7 @@ impl Kit {
     pub fn settings_file(&self) -> PathBuf {
         self.app_dir().join("settings.json")
     }
-    /// Before D-89: `data\app\projects`. Read only by the migration (WP-6).
+    /// Before D-89: `data\app\projects`. Read only by the migration (D-89).
     pub fn project_states(&self) -> PathBuf {
         self.app_dir().join("projects")
     }
@@ -493,7 +513,9 @@ impl Kit {
 
     /// Creates `data\`, `projects\` and the app folders; checks that the root
     /// can be written. Returns the previous root when the kit has moved since
-    /// the last start (another drive letter or folder).
+    /// the last start (another drive letter or folder). The components that
+    /// follow the kit set the folders written in their files to the current
+    /// ones (`install::relocate`: R's Makeconf on Windows).
     pub fn prepare(&self) -> Result<Option<PathBuf>, KitError> {
         for dir in [
             self.projects(),
@@ -506,10 +528,12 @@ impl Kit {
                 source,
             })?;
         }
-        self.check_moved().map_err(|source| KitError::NotWritable {
+        let moved = self.check_moved().map_err(|source| KitError::NotWritable {
             path: self.app_dir(),
             source,
-        })
+        })?;
+        crate::install::relocate(self);
+        Ok(moved)
     }
 
     /// `data/app/root.txt` (or `root-<os>.txt` on macOS/Linux) keeps the last
@@ -519,17 +543,11 @@ impl Kit {
     /// macOS/Linux: Git, R) are marked to be installed again (D-92), before
     /// the new root is recorded, so a failed start notices the move again.
     fn check_moved(&self) -> io::Result<Option<PathBuf>> {
-        let (record_name, pending_name) = match self.target.os {
-            Os::Win32 => ("root.txt", "old-root.txt"),
-            Os::Darwin => ("root-darwin.txt", "old-root-darwin.txt"),
-            Os::Linux => ("root-linux.txt", "old-root-linux.txt"),
-        };
-        let record = self.app_dir().join(record_name);
+        let (record, pending) = self.root_files();
         let now = self.root.to_string_lossy().into_owned();
-        let last = fs::read_to_string(&record).ok();
+        let last = read_text(&record).ok();
         let moved = match last.as_deref().map(str::trim) {
             Some(last) if !last.is_empty() && !same_root(self.target.os, last, &now) => {
-                let pending = self.app_dir().join(pending_name);
                 if !pending.exists() {
                     write_atomic(&pending, last.as_bytes())?;
                 }
@@ -542,6 +560,22 @@ impl Kit {
             write_atomic(&record, now.as_bytes())?;
         }
         Ok(moved)
+    }
+
+    /// The last root of this operating system and the old root waiting for
+    /// `agents::relocate` after a move (see [`Self::check_moved`]).
+    fn root_files(&self) -> (PathBuf, PathBuf) {
+        let (record, pending) = match self.target.os {
+            Os::Win32 => ("root.txt", "old-root.txt"),
+            Os::Darwin => ("root-darwin.txt", "old-root-darwin.txt"),
+            Os::Linux => ("root-linux.txt", "old-root-linux.txt"),
+        };
+        (self.app_dir().join(record), self.app_dir().join(pending))
+    }
+
+    /// The old root saved by a move, until the agents' files follow it.
+    pub fn old_root_file(&self) -> PathBuf {
+        self.root_files().1
     }
 }
 
@@ -558,6 +592,135 @@ pub(crate) fn same_root(os: Os, recorded: &str, now: &str) -> bool {
     } else {
         recorded == now
     }
+}
+
+/// The kit root for the program at `exe` on `os` (D-113):
+/// on Linux the folder of the AppImage when the app runs from one
+/// (`image`, its `$APPIMAGE`; the program itself is in a temporary mount),
+/// on macOS the folder that holds `Atollo.app` when `exe` is its
+/// `Contents/MacOS/` program (nothing is ever written inside the bundle),
+/// otherwise the folder of `exe`. `None`: no folder to use.
+pub fn root_from(os: Os, exe: &Path, image: Option<&Path>) -> Option<PathBuf> {
+    let non_empty = |p: &Path| (!p.as_os_str().is_empty()).then(|| p.to_path_buf());
+    if let Some(image) = image.filter(|i| os.is_linux() && i.has_root()) {
+        return image.parent().and_then(non_empty);
+    }
+    if os.is_macos() {
+        if let Some(bundle) = app_bundle(exe) {
+            return bundle.parent().and_then(non_empty);
+        }
+    }
+    exe.parent().and_then(non_empty)
+}
+
+/// The `*.app` bundle whose program is `exe` (`X.app/Contents/MacOS/x`).
+fn app_bundle(exe: &Path) -> Option<&Path> {
+    let macos = exe.parent()?;
+    let contents = macos.parent()?;
+    let bundle = contents.parent()?;
+    let named = |p: &Path, n: &str| p.file_name().is_some_and(|f| f == n);
+    let is_app = bundle
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("app"));
+    (named(macos, "MacOS") && named(contents, "Contents") && is_app).then_some(bundle)
+}
+
+/// The AppImage the app runs from: `$APPIMAGE`, when `exe` is inside the
+/// image's mount (`$APPDIR`). A plain binary started from a program that
+/// itself runs from an AppImage inherits both variables, but is not inside
+/// that mount.
+#[cfg_attr(not(any(target_os = "linux", test)), allow(dead_code))]
+fn appimage_of(
+    exe: &Path,
+    image: Option<&std::ffi::OsStr>,
+    appdir: Option<&std::ffi::OsStr>,
+) -> Option<PathBuf> {
+    let (image, appdir) = (image?, appdir?);
+    (!image.is_empty() && !appdir.is_empty() && exe.starts_with(appdir))
+        .then(|| PathBuf::from(image))
+}
+
+#[cfg(target_os = "linux")]
+fn running_appimage(exe: &Path) -> Option<PathBuf> {
+    appimage_of(
+        exe,
+        std::env::var_os("APPIMAGE").as_deref(),
+        std::env::var_os("APPDIR").as_deref(),
+    )
+}
+
+#[cfg(not(target_os = "linux"))]
+fn running_appimage(_exe: &Path) -> Option<PathBuf> {
+    None
+}
+
+/// The program the kit's wrappers start to run the app again
+/// (`ATOLLO_EXE`): the AppImage when the app runs from one, whose inner
+/// program goes away with its mount; otherwise this program.
+pub fn app_exe() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    Some(running_appimage(&exe).unwrap_or(exe))
+}
+
+/// The app bundle macOS runs from a random read-only copy (App
+/// Translocation, a downloaded app not yet moved or cleared of its
+/// quarantine): its name (`Atollo.app`), or `None` for a normal start.
+pub fn translocated_bundle(exe: &Path) -> Option<String> {
+    let moved = exe
+        .components()
+        .any(|c| c.as_os_str() == "AppTranslocation");
+    moved.then(|| {
+        app_bundle(exe).and_then(Path::file_name).map_or_else(
+            || "Atollo.app".to_owned(),
+            |n| n.to_string_lossy().into_owned(),
+        )
+    })
+}
+
+/// What stops the app at start before the kit is touched (D-113): on
+/// macOS a translocated bundle, whose folder is a temporary read-only copy
+/// where a kit would be created and lost. The text says how to fix it
+/// (D-113: no Developer ID signature, so the quarantine flag is cleared).
+pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
+    if !os.is_macos() {
+        return None;
+    }
+    let bundle = translocated_bundle(exe)?;
+    let quoted = crate::os::sh_quote(&bundle);
+    Some(format!(
+        "{}\n\n{}",
+        crate::i18n::t(lang, "macOS ha aperto Atollo da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.", &[]),
+        crate::i18n::t(lang, "Esci da Atollo, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.", &[&quoted]),
+    ))
+}
+
+/// The message for a kit whose folders cannot be created (D-113). On
+/// macOS and Linux a read-only disk (a locked card, a read-only mount, an
+/// image) is named as such; Windows keeps its message.
+pub fn prepare_error_message(os: Os, error: &KitError, lang: &str) -> String {
+    let path = match error {
+        KitError::NotWritable { path, .. } | KitError::NoRoot(path) => path.display().to_string(),
+    };
+    let read_only = matches!(error, KitError::NotWritable { source, .. }
+        if source.kind() == io::ErrorKind::ReadOnlyFilesystem);
+    let cannot = crate::i18n::t(lang, "Impossibile scrivere nella cartella {0}.", &[&path]);
+    if os.is_windows() {
+        return format!(
+            "{cannot}\n\n{}",
+            crate::i18n::t(lang, "Sposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
+        );
+    }
+    if read_only {
+        return format!(
+            "{}\n\n{}",
+            crate::i18n::t(lang, "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.", &[&path]),
+            crate::i18n::t(lang, "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia Atollo.", &[])
+        );
+    }
+    format!(
+        "{cannot}\n\n{}",
+        crate::i18n::t(lang, "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia Atollo.", &[])
+    )
 }
 
 /// `\\?\C:\x` -> `C:\x` (keeps `\\?\UNC\` and other forms unchanged).
@@ -577,6 +740,16 @@ fn strip_verbatim(path: &Path) -> PathBuf {
 /// changes made outside the editor are no longer noticed (verified with
 /// VSCodium 1.135.06055, @parcel/watcher 2.5.6, DECISIONS.md D-33). Parentheses, spaces and `&` are fine.
 pub fn watcher_unsafe_folder(path: &Path) -> Option<String> {
+    watcher_unsafe_folder_on(Os::current(), path)
+}
+
+/// [`watcher_unsafe_folder`] on `os`. Only Windows paths have backslashes:
+/// on macOS and Linux the globs hold `/` and every folder name is fine
+/// (`/home/user/2026` would otherwise be reported for `user` and `2026`).
+pub fn watcher_unsafe_folder_on(os: Os, path: &Path) -> Option<String> {
+    if !os.is_windows() {
+        return None;
+    }
     path.components().find_map(|c| match c {
         std::path::Component::Normal(name) => {
             let name = name.to_string_lossy();

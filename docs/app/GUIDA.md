@@ -32,7 +32,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
    - [4.3 Pagina «Progetti» e Scheda Dettaglio del Singolo Progetto](#43-pagina-progetti-e-scheda-dettaglio-del-singolo-progetto)
    - [4.4 Editor Integrato (VSCodium Web) e Terminale Esclusivo del Kit](#44-editor-integrato-vscodium-web-e-terminale-esclusivo-del-kit)
    - [4.5 Pagina «Agenti» (Claude Code, Codex, Antigravity e Sincronizzazione)](#45-pagina-agenti-claude-code-codex-antigravity-e-sincronizzazione)
-   - [4.6 Pagina «Database» (MariaDB, MongoDB, Adminer ed Esploratore Dati)](#46-pagina-database-mariadb-mongodb-adminer-ed-esploratore-dati)
+   - [4.6 Pagina «Database» (MariaDB, MongoDB, phpMyAdmin ed Esploratore Dati)](#46-pagina-database-mariadb-mongodb-phpmyadmin-ed-esploratore-dati)
    - [4.7 Pagina «Server Web» (Pool Condivisi Apache/Nginx e VirtualHost `.localhost`)](#47-pagina-server-web-pool-condivisi-apachenginx-e-virtualhost-localhost)
    - [4.8 Pagina «Strumenti» (Multi-Versione, Matrice delle Relazioni ed Estensioni)](#48-pagina-strumenti-multi-versione-matrice-delle-relazioni-ed-estensioni)
    - [4.9 Pagina «Impostazioni» e Albero di Personalizzazione dei Framework](#49-pagina-impostazioni-e-albero-di-personalizzazione-dei-framework)
@@ -58,7 +58,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
 
 ### 1.1 Principi Fondamentali: Portabilità Assoluta e Isolamento
 
-**Atollo** nasce per offrire un ambiente di sviluppo completo per Windows 10 e 11 (architetture `x64` e `ARM64`) racchiuso in un unico eseguibile (`Atollo.exe`), progettato attorno a cinque regole architetturali inderogabili:
+**Atollo** nasce per offrire un ambiente di sviluppo completo per Windows 10 e 11 (architetture `x64` e `ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`), racchiuso in un unico eseguibile (`Atollo.exe`; su macOS il bundle `.app`, su Linux un'AppImage). Lo stesso kit su una chiavetta si apre sui tre sistemi. Questa guida descrive Windows; su macOS e Linux il terminale del kit e gli agenti si aprono in una scheda dell'app, il server web è Caddy e il database SQL è MySQL, con i limiti elencati nelle [issue aperte](https://github.com/nabre/atollo/issues). Il progetto segue cinque regole architetturali inderogabili:
 
 1. **Zero installazione e nessun privilegio di amministratore (`asInvoker`)**: l'applicazione incorpora un manifesto Windows con `requestedExecutionLevel level="asInvoker"`. Non installa servizi di sistema, non crea attività pianificate e non modifica il registro di Windows (persino la chiave temporanea `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Rustup` creata forzosamente da `rustup-init` viene fotografata prima dell'installazione di Rust e ripristinata o rimossa subito dopo).
 2. **Isolamento totale dal PC ospite (`env_clear`)**: i programmi avviati dal kit (editor, terminale, agenti AI, server web, database, azioni dei progetti) non ereditano mai il `PATH` né le variabili di sviluppo del computer ospite (come `JAVA_HOME`, `CARGO_HOME`, `PYTHONPATH` o i moduli PowerShell in `Documenti`). Il motore Rust (`tauri/src/env.rs`) costruisce un ambiente pulito (~90 variabili) che punta esclusivamente a `data\`, aggiungendo al `PATH` soltanto le cartelle strettamente necessarie di Windows (`System32`, `System32\Wbem`, `System32\WindowsPowerShell\v1.0`).
@@ -129,7 +129,7 @@ Quando `Atollo.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD e
     ├── gh\                                 # Credenziali portabili di GitHub CLI (hosts.yml)
     ├── antigravity\                        # Credenziali di Antigravity salvate nel kit (keyring.json)
     ├── home\                               # Profilo utente portabile (.claude, .codex, .gemini, .gitconfig, .ssh, AppData)
-    ├── kit\                                # Script e helper estratti dall'exe (profile.ps1, loopback.js, adminer.php, bin\agy.cmd, bin\gradle.cmd)
+    ├── kit\                                # Script e helper estratti dall'exe (profile.ps1, loopback.js, phpmyadmin.php, bin\agy.cmd, bin\gradle.cmd)
     ├── vscodium-server\                    # Dati del server VSCodium, estensioni installate e Machine\settings.json
     ├── webview2\                           # Profilo browser isolato delle finestre dell'app e dell'editor
     └── tmp\                                # File temporanei di fallback quando non si usa il TEMP di sistema
@@ -208,7 +208,7 @@ La tabella seguente dichiara l'organizzazione esatta di tutti gli indirizzi da c
 | **`r`** (R da conda-forge) | Linguaggi (versionato) | `https://www.r-project.org` | `https://api.anaconda.org/package/conda-forge/r-base` (`subdir=win-64`) + GitHub `mamba-org/micromamba-releases` | `micromamba-win-64` + pacchetti `r-base` e `libblas=*=*openblas` da `conda-forge` | SHA-256 di `micromamba-win-64.sha256` + SHA-256 pacchetti conda | `r\<linea>\bin\R.cmd` e `Rscript.cmd` (+ `tools\micromamba.exe`) |
 | **`mariadb`** (MariaDB Server) | Database (versionato) | `https://mariadb.org` | REST API ufficiale: `https://downloads.mariadb.org/rest-api/mariadb/` (linee Stable LTS) → `/<major>/latest/` | `https://downloads.mariadb.org/rest-api/mariadb/<version>/mariadb-<v>-winx64.zip` | SHA-256 dal campo `checksum.sha256sum` dell'API | `mariadb\<linea>\bin\mariadbd.exe` e `mariadb.exe` |
 | **`mongodb`** (MongoDB + mongosh + Tools) | Database (versionato) | `https://www.mongodb.com` | `https://downloads.mongodb.org/current.json` (produzione `x.0.y`), GitHub `mongodb-js/mongosh`, `https://downloads.mongodb.org/tools/db/release.json` | Zip Windows x64 di `mongod`, `mongosh` e `mongodb-database-tools` | SHA-256 dai JSON MongoDB + `asset.digest` GitHub per `mongosh` | `mongodb\<linea>\bin\mongod.exe`, `mongosh\bin\mongosh.exe`, `mongodb-tools\bin\mongodump.exe` |
-| **`adminer`** (Adminer per MariaDB) | Database | `https://www.adminer.org` | GitHub API: `https://api.github.com/repos/vrana/adminer/releases/latest` | Asset `adminer-<v>-mysql.php` | SHA-256 da `asset.digest` GitHub + lint `php -l` | `adminer\<linea>\adminer.php` |
+| **`phpmyadmin`** (phpMyAdmin per MariaDB) | Database | `https://www.phpmyadmin.net` | `https://www.phpmyadmin.net/home_page/version.json` | `files.phpmyadmin.net/phpMyAdmin/<v>/phpMyAdmin-<v>-all-languages.zip` | SHA-256 dal file `.sha256` ufficiale + lint `php -l` | `phpmyadmin\<linea>\index.php` |
 | **`sqlite`** (SQLite CLI) | Database | `https://sqlite.org` | Pagina ufficiale: `https://sqlite.org/download.html` (righe CSV `PRODUCT,...`) | `https://sqlite.org/<anno>/sqlite-tools-win-(x64\|arm64)-<v>.zip` | **SHA3-256** pubblicato nella riga `PRODUCT` | `sqlite\<linea>\sqlite3.exe` |
 
 ---
@@ -261,7 +261,7 @@ In Atollo l'account GitHub non è un semplice accessorio per un singolo programm
    - Se eseguissi `gh auth login` manualmente in un terminale senza parametri, GitHub CLI salverebbe il token nella *Gestione credenziali di Windows* del PC ospite (lasciando il tuo accesso su quel computer e perdendolo quando sposti la chiavetta su un altro PC).
    - L'accesso avviato dall'app usa invece `--insecure-storage` con `GH_CONFIG_DIR` puntato a `data\gh\`: il token viene salvato in `data\gh\hosts.yml` dentro il kit, viaggia con te sulla chiavetta e non tocca mai la Gestione credenziali di Windows.
 3. **Eliminazione dei limiti di rete (Rate Limit di GitHub API)**:
-   - Moltissimi strumenti del catalogo (`pwsh`, `gh`, `git`, `uv`, `kotlin`, `bun`, `deno`, `typst`, `tinytex`, `cmake`, `ninja`, `cc`, `ruby`, `nginx`, `adminer`, `mongosh`, `codelldb`) risiedono su GitHub Releases. Senza autenticazione, GitHub limita le interrogazioni API a 60 all'ora per indirizzo IP (spesso condiviso in uffici, scuole o università). Con l'account collegato la soglia sale a **5.000 richieste all'ora**.
+   - Moltissimi strumenti del catalogo (`pwsh`, `gh`, `git`, `uv`, `kotlin`, `bun`, `deno`, `typst`, `tinytex`, `cmake`, `ninja`, `cc`, `ruby`, `nginx`, `mongosh`, `codelldb`) risiedono su GitHub Releases. Senza autenticazione, GitHub limita le interrogazioni API a 60 all'ora per indirizzo IP (spesso condiviso in uffici, scuole o università). Con l'account collegato la soglia sale a **5.000 richieste all'ora**.
 4. **Clonazione sicura dei repository privati senza esporre il token**:
    - Quando cloni un repository dall'app, il token non viene mai passato sulla riga di comando (dove sarebbe visibile agli altri processi del PC) né scritto in `.git\config` (dove resterebbe in chiaro nel progetto), ma viene iniettato per la sola durata del comando tramite variabili d'ambiente `GIT_CONFIG_*` come intestazione HTTP verso `https://github.com`.
 5. **Sopravvivenza allo spostamento del kit**:
@@ -449,23 +449,23 @@ La pagina **Agenti** (`ui/src/agents.tsx` e `tauri/src/agents/`) gestisce i tre 
 
 ---
 
-### 4.6 Pagina «Database» (MariaDB, MongoDB, Adminer ed Esploratore Dati)
+### 4.6 Pagina «Database» (MariaDB, MongoDB, phpMyAdmin ed Esploratore Dati)
 
 La pagina **Database** (`ui/src/databases.tsx` e `tauri/src/db/`) gestisce i server database condivisi del kit, in ascolto esclusivamente su `127.0.0.1`:
 - **MariaDB** (porta predefinita `3306`, pienamente compatibile con MySQL) e **MongoDB** (porta predefinita `27017`).
 - **Sicurezza automatica (`D-74`)**: al primo avvio di ciascun server, il kit genera una password casuale di 32 cifre esadecimali per l'amministratore (`root` su MariaDB, `admin` su MongoDB) e la salva in `data\app\db\secrets.json` (protetto da DACL proprietario). Inoltre genera `data\app\db\my.ini` (puntato da `MYSQL_HOME`), così digitando `mariadb` nel terminale del kit si entra già autenticati come `root` senza dover digitare la password.
-- **Adminer integrato per MariaDB (`D-85`)**: cliccando su **«Apri Adminer»**, il kit installa Adminer e PHP se mancano, avvia MariaDB se è fermo, lancia un server PHP locale con il router di sicurezza `data\kit\adminer.php` e apre Adminer nel browser effettuando il **login automatico come `root` tramite un token monouso** e un cookie `HttpOnly` + `SameSite=Strict` (senza mai esporre la password di `root` nell'URL o nel browser).
+- **phpMyAdmin integrato per MariaDB (`D-107`)**: cliccando su **«Apri phpMyAdmin»**, il kit installa phpMyAdmin e PHP se mancano, avvia MariaDB se è fermo, lancia un server PHP locale con il router di sicurezza `data\kit\phpmyadmin.php` e apre phpMyAdmin nel browser effettuando il **login automatico come `root` tramite un token monouso** e un cookie `HttpOnly` + `SameSite=Strict` (senza mai esporre la password di `root` nell'URL o nel browser).
 - **Esploratore Contenuto per MongoDB (`D-79`, `ui/src/dbbrowser.tsx`)**: quando MongoDB è avviato, la scheda **Contenuto** permette di sfogliare in sola lettura tutti i database e le collezioni (inclusi i database di sistema raggruppati a parte) visualizzando i documenti impaginati a 100 righe per volta.
 - **Dati multi-versione (`D-81`)**: a server fermo è possibile cambiare la versione del motore (es. MariaDB `12.3` o `11.8`; MongoDB `9.0` o `8.0`). Ogni versione mantiene la propria cartella dati in `data\db\<motore>\<linea>\` e, al primo avvio di una versione più recente, copia automaticamente in avanti i dati dalla versione precedente più vicina.
 
 ````carousel
-![Pagina Database — MariaDB 12.3 attivo con Adminer integrato e credenziali root](images/11-database-mariadb-adminer.png)
+![Pagina Database — MariaDB 12.3 attivo con phpMyAdmin integrato e credenziali root](images/11-database-mariadb-adminer.png)
 <!-- slide -->
 ![Pagina Database — MongoDB 8.0 con esploratore Contenuto delle collezioni in sola lettura](images/11b-database-mongodb-esploratore.png)
 ````
 
-> **Esempio pratico — Gestione relazionale (MariaDB + Adminer) e documentale (MongoDB Contenuto):**
-> - Nella **prima schermata** (`MariaDB 12.3`), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a Atollo; cliccando su **«Apri Adminer»** si accede subito a tutti i database senza copiare la password di `root`.
+> **Esempio pratico — Gestione relazionale (MariaDB + phpMyAdmin) e documentale (MongoDB Contenuto):**
+> - Nella **prima schermata** (`MariaDB 12.3`), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a Atollo; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
 > - Nella **seconda schermata** (`MongoDB 8.0`), la scheda **Contenuto** mostra i database `api_magazzino` e `portale_clienti` (con le collezioni `utenti (19)` e `ticket_supporto (73)`) permettendo di ispezionare i documenti JSON direttamente dentro l'app.
 
 ---
@@ -708,7 +708,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
   1. Seleziona **MariaDB** o **MongoDB** nella barra laterale.
   2. Nella sezione **Impostazioni** (scheda *Dettagli*), a server fermo puoi scegliere la **Versione** del motore, modificare la **Porta** (predefinite `3306` e `27017`, valide da `1024` a `65535`) e spuntare **«Avvia con Atollo»**.
   3. Clicca su **«Avvia»** per far partire il server (se il componente non è ancora installato, viene scaricato e inizializzato automaticamente al primo avvio).
-- **Scopo**: avere un'unica istanza leggera per motore condivisa da tutti i progetti, protetta da password amministrativa (`root`/`admin`) e accessibile via **Adminer** (per MariaDB) o tramite l'esploratore **Contenuto** (per MongoDB).
+- **Scopo**: avere un'unica istanza leggera per motore condivisa da tutti i progetti, protetta da password amministrativa (`root`/`admin`) e accessibile via **phpMyAdmin** (per MariaDB) o tramite l'esploratore **Contenuto** (per MongoDB).
 
 #### B. Creazione Database/Utente di un Progetto, Scrittura `.env` e Backup
 - **Dove si configura**: **Progetti › `<tuo-progetto>` › scheda Database** (credenziali e backup salvati in `data\projects\<progetto>\private\`).

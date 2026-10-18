@@ -17,7 +17,7 @@ use windows::Win32::System::Registry::{
 
 use super::{fetch, target_of, work_dir, Ctx, Installer, Progress, Release};
 use crate::fsx::{join_rel, write_atomic};
-use crate::kit::Target;
+use crate::kit::{Kit, Target};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
 use crate::os::jobs;
@@ -219,18 +219,58 @@ fn restore_rustup_key(_before: Option<Vec<(String, Option<String>)>>, _owned: &[
 
 /// Rust: rustup with the stable toolchain, rustfmt and clippy, all in
 /// `rust/` (`RUSTUP_HOME`, `CARGO_HOME`). Host `x86_64-pc-windows-gnu` by
-/// default on Windows x64 (own linker), `msvc` from the settings, or the
-/// native Rust target triple on Windows ARM64, macOS and Linux.
+/// default on Windows x64 (own linker), `aarch64-pc-windows-gnullvm` on
+/// Windows ARM64 (linked by the clang of llvm-mingw, the `cc` component:
+/// `CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER` in env.rs), `msvc` from
+/// the settings on both, the native Rust target triple on macOS and Linux.
 pub struct Rust;
 
+/// The host toolchain of Rust on `target` with the "Compilatore di Rust"
+/// setting (`toolchain`: `msvc`, `gnu` or none). MSVC needs Visual Studio
+/// on the PC; GNU is all in the kit.
+pub(crate) fn rust_host_for(target: Target, toolchain: Option<&str>) -> &'static str {
+    let msvc = toolchain == Some("msvc");
+    match target {
+        Target::WIN32_X64 if msvc => "x86_64-pc-windows-msvc",
+        Target::WIN32_X64 => "x86_64-pc-windows-gnu",
+        Target::WIN32_ARM64 if msvc => "aarch64-pc-windows-msvc",
+        Target::WIN32_ARM64 => "aarch64-pc-windows-gnullvm",
+        _ => target.rust_triple(),
+    }
+}
+
+/// The `gnullvm` host links with llvm-mingw (the `cc` component): without
+/// it `cargo build` stops at the link (D-112).
+pub(crate) fn host_needs_cc(host: &str) -> bool {
+    host.ends_with("-gnullvm")
+}
+
 fn rust_host(ctx: &Ctx) -> String {
-    if ctx.kit.target() != Target::WIN32_X64 {
-        return ctx.kit.target().rust_triple().into();
+    let target = ctx.kit.target();
+    if !target.is_windows() {
+        return target.rust_triple().into();
     }
-    match Settings::load(ctx.kit).settings.rust_toolchain.as_deref() {
-        Some("msvc") => "x86_64-pc-windows-msvc".into(),
-        _ => "x86_64-pc-windows-gnu".into(),
-    }
+    let settings = Settings::load(ctx.kit).settings;
+    rust_host_for(target, settings.rust_toolchain.as_deref()).into()
+}
+
+/// The arguments of `rustup-init` for a first installation with `host`:
+/// stable, minimal profile plus rustfmt and clippy, PATH left alone.
+pub(crate) fn rustup_init_args(host: &str) -> Vec<&str> {
+    vec![
+        "-y",
+        "--no-modify-path",
+        "--profile",
+        "minimal",
+        "--default-host",
+        host,
+        "--default-toolchain",
+        "stable",
+        "-c",
+        "rustfmt",
+        "-c",
+        "clippy",
+    ]
 }
 
 impl Installer for Rust {
@@ -283,6 +323,11 @@ impl Installer for Rust {
         };
         let in_place = rust_plan(installed, kit_links, || false).ok() == Some(RustPlan::InPlace);
         let host = rust_host(ctx);
+        if host_needs_cc(&host)
+            && !crate::setup::catalog::kit_path(ctx.kit, "cc/bin/clang.exe").is_file()
+        {
+            progress.note("C, C++ is not installed: Rust on Windows ARM64 links with its clang");
+        }
         let owned = [ctx.kit.root()];
         let rustup = rustup_bin(&rust, target);
         let envs_for = |root: &Path| -> [(&'static str, PathBuf); 3] {
@@ -355,26 +400,7 @@ impl Installer for Rust {
             let envs = envs_for(&root);
             let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
             progress.note(&format!("rustup-init: stable {host}"));
-            run(
-                ctx,
-                &init,
-                &[
-                    "-y",
-                    "--no-modify-path",
-                    "--profile",
-                    "minimal",
-                    "--default-host",
-                    &host,
-                    "--default-toolchain",
-                    "stable",
-                    "-c",
-                    "rustfmt",
-                    "-c",
-                    "clippy",
-                ],
-                &envs,
-                progress,
-            )?;
+            run(ctx, &init, &rustup_init_args(&host), &envs, progress)?;
             run(
                 ctx,
                 &rustup_bin(&root, target),
@@ -626,6 +652,37 @@ pub(super) fn micromamba_create(
     result
 }
 
+/// `Makeconf` with its `LOCAL_SOFT` lines set to `<prefix>/Library`
+/// (forward slashes, as conda writes it); `None` when they already are.
+pub(crate) fn relocated_makeconf(text: &str, prefix: &Path) -> Option<String> {
+    let library = format!(
+        "{}/Library",
+        prefix
+            .to_string_lossy()
+            .replace('\\', "/")
+            .trim_end_matches('/')
+    );
+    let mut changed = false;
+    let mut out = String::with_capacity(text.len() + library.len());
+    for line in text.split_inclusive('\n') {
+        let body = line.trim_end_matches(['\r', '\n']);
+        let ending = &line[body.len()..];
+        let value = body
+            .strip_prefix("LOCAL_SOFT")
+            .map(str::trim_start)
+            .and_then(|rest| rest.strip_prefix("?=").or_else(|| rest.strip_prefix('=')));
+        match value {
+            Some(old) if old.trim() != library => {
+                let op = if body.contains("?=") { "?=" } else { "=" };
+                out.push_str(&format!("LOCAL_SOFT {op} {library}{ending}"));
+                changed = true;
+            }
+            _ => out.push_str(line),
+        }
+    }
+    changed.then_some(out)
+}
+
 /// Packages compiled for one minor version of R do not load in another:
 /// one folder per line (versioned, D-81), `renv.lock` declares R's version.
 impl Installer for R {
@@ -676,6 +733,31 @@ impl Installer for R {
     /// would cost more.
     fn relocatable(&self, target: Target) -> bool {
         target.os.is_windows()
+    }
+
+    /// On Windows conda writes the environment's folder into
+    /// `lib/R/etc/x64/Makeconf` (`LOCAL_SOFT`, where a package built from
+    /// source finds the headers and libraries of `Library`): set again to
+    /// the folder of each line, which moves with the kit (BUG-V3-06).
+    fn relocate(&self, kit: &Kit, component: &Component) -> Result<()> {
+        if !kit.os().is_windows() {
+            return Ok(());
+        }
+        let Some(folder) = component.folder_path(kit) else {
+            return Ok(());
+        };
+        for entry in fs::read_dir(&folder).into_iter().flatten().flatten() {
+            let dir = entry.path();
+            let makeconf = join_rel(&dir, "lib/R/etc/x64/Makeconf");
+            let Ok(text) = fs::read_to_string(&makeconf) else {
+                continue;
+            };
+            if let Some(new) = relocated_makeconf(&text, &dir) {
+                write_atomic(&makeconf, new.as_bytes())
+                    .with_context(|| makeconf.display().to_string())?;
+            }
+        }
+        Ok(())
     }
 
     fn install_custom(

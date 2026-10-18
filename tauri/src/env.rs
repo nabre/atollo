@@ -18,7 +18,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::fsx::join_rel;
-use crate::kit::Kit;
+use crate::kit::{Kit, Os, Target};
 use crate::os::volume::{DriveKind, VolumeInfo};
 use crate::settings::{ProgramTemp, Settings};
 
@@ -63,7 +63,12 @@ const SYSTEM_VARS: &[&str] = &[
     "USERNAME",
     "WAYLAND_DISPLAY",
     "windir",
+    // The X11 cookie and the desktop session (Linux): windows of the kit's
+    // programs under X11/XWayland, and `xdg-open` picking the handler.
+    "XAUTHORITY",
+    "XDG_CURRENT_DESKTOP",
     "XDG_RUNTIME_DIR",
+    "XDG_SESSION_TYPE",
 ];
 
 /// Proxy variables of the PC: kept (as `_env.cmd` does), overridden by the
@@ -127,10 +132,22 @@ pub struct KitEnv {
     /// permissions: `create_dirs` gives it an owner-only DACL.
     private_tmp: Option<PathBuf>,
     path_sep: Option<char>,
+    /// `data/kit/shims` on the PATH (macOS, Linux): `create_dirs` writes
+    /// its `python` there ([`PYTHON_SHIM`]).
+    shims: Option<PathBuf>,
 }
 
+/// `python` on macOS and Linux, where the kit's Python has only `python3`
+/// and the commands the kit proposes start with `python`. A script, not a
+/// link (exFAT and FAT keep none), in a folder only the Unix PATH has: in
+/// Git Bash on Windows `python` stays the kit's `python.exe`. The folder
+/// comes right after the kit's Python, so `python3` is the kit's (or the
+/// version a project chose); a virtual environment has its own `python`.
+pub(crate) const PYTHON_SHIM: &str =
+    "#!/bin/sh\n# The kit's Python on macOS and Linux has only python3.\nexec python3 \"$@\"\n";
+
 /// Where the programs' temp (`TEMP`, `TMP`) or Claude's (`CLAUDE_CODE_TMPDIR`,
-/// `claude = true`) goes, PLAN-DATA 4.2.5. `data` is the kit's data folder.
+/// `claude = true`) goes, D-90. `data` is the kit's data folder.
 /// `Auto` is the host's temp when the kit is on a removable or remote disk or
 /// on a file system without permissions; with the disk unknown it is the kit.
 pub(crate) fn program_temp_dir(
@@ -207,6 +224,17 @@ impl KitEnv {
         self.set(name, value.as_ref().to_string_lossy().into_owned());
     }
 
+    /// The PHP in `php_dir` and its own `php.ini` (`data\php\<line>`,
+    /// install/web.rs): `CP_PHP`, `PHPRC` and, with `/` for Apache,
+    /// `CP_PHP_FWD` and `CP_PHPRC_FWD`.
+    pub fn set_php(&mut self, data: &Path, php_dir: &Path) {
+        let ini = crate::install::php_ini_dir(data, php_dir);
+        self.set_path("CP_PHP", php_dir);
+        self.set("CP_PHP_FWD", php_dir.to_string_lossy().replace('\\', "/"));
+        self.set_path("PHPRC", &ini);
+        self.set("CP_PHPRC_FWD", ini.to_string_lossy().replace('\\', "/"));
+    }
+
     /// The PATH separator used by this environment (`;` on Windows, `:` on Unix).
     pub fn path_sep(&self) -> char {
         self.path_sep
@@ -278,12 +306,26 @@ impl KitEnv {
         env.set_path("ATOLLO", root);
         env.set_path("CP_ROOT", root);
         env.set_path("CP_DATA", &data);
-        // The `[client]` login of the kit's MariaDB (db/auth.rs, D-74).
+        // The `[client]` login of the kit's MariaDB (db/auth.rs, D-74), on
+        // the port of the version the server runs; a project's programs get
+        // the login of another version when its database is there
+        // (`db::services::project_mysql_home`).
         env.set_path("MYSQL_HOME", data.join("app").join("db"));
+        // The kit's MySQL (D-110): MYSQL_HOME holds MariaDB's login, so the
+        // launchers of data\kit\bin (`mysql`, `mysqldump`, `mysqladmin`)
+        // run the programs of CP_MYSQL with `--defaults-extra-file` of this
+        // login; MariaDB's, through CP_MARIADB, on a kit without MySQL.
+        env.set_path(
+            "ATOLLO_MYSQL_CNF",
+            data.join("app").join("db").join("mysql.cnf"),
+        );
+        env.set_path("CP_MYSQL", app("mysql"));
+        env.set_path("CP_MARIADB", app("mariadb"));
         env.set("CP_ARCH", arch);
         env.set_path("CP_APPS", &apps);
-        // The app itself, for the kit's wrappers (data\kit\bin\agy.cmd).
-        if let Ok(exe) = std::env::current_exe() {
+        // The app itself, for the kit's wrappers (data\kit\bin\agy.cmd):
+        // on Linux the AppImage, not its program inside a temporary mount.
+        if let Some(exe) = crate::kit::app_exe() {
             env.set_path("ATOLLO_EXE", exe);
         }
         env.set("CP_LANG", lang);
@@ -334,7 +376,9 @@ impl KitEnv {
         env.set_path("HOME", &home);
         env.set_path("USERPROFILE", &home);
         let home_s = home.to_string_lossy().into_owned();
-        if let Some((drive, rest)) = home_s.split_once(':') {
+        // A drive letter exists only on Windows; a `:` in a Unix folder
+        // name is not one.
+        if let Some((drive, rest)) = home_s.split_once(':').filter(|_| is_win) {
             env.set("HOMEDRIVE", format!("{drive}:"));
             env.set("HOMEPATH", rest);
         }
@@ -360,11 +404,14 @@ impl KitEnv {
                 "Microsoft/Windows/PowerShell/ModuleAnalysisCache",
             ),
         );
-        env.set("GCM_CREDENTIAL_STORE", "dpapi");
-        env.set_path(
-            "GCM_DPAPI_STORE_PATH",
-            home.join(".gcm").join("dpapi_store"),
-        );
+        // Git Credential Manager's DPAPI store exists only on Windows.
+        if is_win {
+            env.set("GCM_CREDENTIAL_STORE", "dpapi");
+            env.set_path(
+                "GCM_DPAPI_STORE_PATH",
+                home.join(".gcm").join("dpapi_store"),
+            );
+        }
 
         // Python, pip, Node, npm, uv, gh, PHP, Composer (_env.cmd:101-139)
         let pyuser = data.join("python-user");
@@ -392,17 +439,18 @@ impl KitEnv {
         let uv_bin = join_rel(&data, "uv/bin");
         env.set_path("UV_TOOL_BIN_DIR", &uv_bin);
         env.set_path("GH_CONFIG_DIR", data.join("gh"));
-        env.set_path("PHPRC", data.join("php"));
         // The PHP in use: php.ini finds its extensions through it, so a
-        // saved version of PHP loads its own (versions/mod.rs).
-        env.set_path("CP_PHP", app("php"));
-        // Apache's PHP, with `/`: it follows CP_PHP when a version is chosen
-        // for the kit or a project (versions::apply).
-        env.set("CP_PHP_FWD", fwd(&app("php")));
+        // saved version of PHP loads its own (versions/mod.rs); each line
+        // has its php.ini (PHPRC). Apache's, with `/`, follow them when a
+        // version is chosen for the kit or a project (versions::apply).
+        env.set_php(&data, &app("php"));
         env.set_path("CP_APACHE", app("apache"));
         env.set("CP_APACHE_FWD", fwd(&app("apache")));
         env.set_path("CP_NGINX", app("nginx"));
         env.set("CP_NGINX_FWD", fwd(&app("nginx")));
+        // Caddy (D-111): its folder, as Nginx's.
+        env.set_path("CP_CADDY", app("caddy"));
+        env.set("CP_CADDY_FWD", fwd(&app("caddy")));
         let composer = data.join("composer");
         env.set_path("COMPOSER_HOME", &composer);
         env.set_path("COMPOSER_CACHE_DIR", join_rel(&data, "cache/composer"));
@@ -473,6 +521,72 @@ impl KitEnv {
             format!("{}", data.join("r").join(&platform).join("%v").display()),
         );
 
+        // Variables keyed on installed components, per system (D-112):
+        // each hook reads only what is on disk.
+        // C and C++ on macOS and Linux (D-112): the shims over Zig in
+        // `cc/bin`, for Makefiles, CMake, cc-rs, cgo and native gems, only
+        // with the kit's Zig ([`unix_cc_env`]). On Windows the PATH finds
+        // llvm-mingw's gcc and clang, as before.
+        let unix_cc = if is_win {
+            UnixCc::default()
+        } else {
+            unix_cc_env(&app(r"cc\bin"), has(r"zig\zig.exe"), |p| p.is_file())
+        };
+        for (name, value) in &unix_cc.vars {
+            env.set_path(name, value);
+        }
+        // rustc links with `cc` from the PATH, the shim then: on a Mac with
+        // the Command Line Tools, Apple's linker instead, which knows the
+        // flags and frameworks rustc passes.
+        if unix_cc.on_path {
+            if let Some((name, linker)) = macos_rust_linker(kit.target(), xcode_clt_present()) {
+                env.set(&name, linker);
+            }
+        }
+        // Rust on Windows ARM64 (D-112): the `gnullvm` host links with
+        // llvm-mingw's clang for aarch64 (the `cc` component).
+        if kit.target() == Target::WIN32_ARM64 {
+            if let Some(linker) = arm64_rust_linker(&app(r"cc\bin"), |p| p.is_file()) {
+                env.set_path("CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER", linker);
+            }
+        }
+        // Git of dugite-native on macOS and Linux (D-112).
+        if !is_win {
+            for (name, value) in git_unix_env(kit.os(), &app("git"), |p| p.exists()) {
+                env.set_path(name, value);
+            }
+        }
+        // Ruby on macOS and Linux (D-112): gems in the kit, one folder per
+        // system and line (native gems are built for both), for the line
+        // the kit uses: the newest on disk, as `apply_kit_choice` below
+        // moves the PATH to it. On Windows they stay in the folder of
+        // their Ruby.
+        let gem_home = if is_win || !has(r"ruby\bin\ruby.exe") {
+            None
+        } else {
+            crate::setup::catalog::Catalog::get()
+                .find("ruby")
+                .and_then(|ruby| {
+                    let line = crate::versions::newest_line(kit, ruby)?;
+                    let dir = crate::versions::dir_for(kit, ruby, Some(&line))?;
+                    gem_home_for_dir(&data, kit.target(), &dir)
+                })
+        };
+        if let Some(gems) = &gem_home {
+            env.set_path("GEM_HOME", gems);
+            // Gem commands start the Ruby on the PATH (`#!/usr/bin/env
+            // ruby`), not the absolute path of the Ruby that installed
+            // them: they survive a move of the kit and follow the line.
+            env.set_path("GEMRC", gemrc_path(&data));
+        }
+        // .NET on Linux without libicu (D-112): invariant globalization,
+        // or every `dotnet` command stops at start. Whether .NET is on disk
+        // or not: an environment built before its installation (the final
+        // check of `prepare`) needs it too, and nothing else reads it.
+        if kit.os() == Os::Linux && !libicu_present() {
+            env.set("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+        }
+
         // PowerShell 7 of the kit (new, D-23)
         env.set("POWERSHELL_TELEMETRY_OPTOUT", "1");
         env.set("POWERSHELL_CLI_TELEMETRY_OPTOUT", "1");
@@ -505,6 +619,9 @@ impl KitEnv {
                 path.push(app(r"python\Scripts"));
             } else {
                 path.push(app("python/bin"));
+                let shims = kit.kit_files().join("shims");
+                path.push(shims.clone());
+                env.shims = Some(shims);
             }
         }
         if is_win {
@@ -538,6 +655,9 @@ impl KitEnv {
             } else {
                 path.push(app("nginx/sbin"));
             }
+        }
+        if has(r"caddy\caddy.exe") {
+            path.push(app("caddy"));
         }
         let cargo_exe = if is_win { "bin/cargo.exe" } else { "bin/cargo" };
         let rustup_exe = if is_win {
@@ -614,15 +734,26 @@ impl KitEnv {
             }
             env.set("CMAKE_POLICY_VERSION_MINIMUM", "3.5");
         }
-        when(&mut path, r"cc\bin\clang.exe", &[app(r"cc\bin")]);
+        if is_win {
+            when(&mut path, r"cc\bin\clang.exe", &[app(r"cc\bin")]);
+        } else if unix_cc.on_path {
+            path.push(app(r"cc\bin"));
+        }
         when(
             &mut path,
             r"ruby\bin\ruby.exe",
-            // Gems and their commands live in the folder of their Ruby.
+            // Gems and their commands live in the folder of their Ruby
+            // (Windows), or in GEM_HOME (macOS and Linux).
             &[app(r"ruby\bin")],
         );
+        if let Some(gems) = &gem_home {
+            path.push(gems.join("bin"));
+        }
         when(&mut path, r"r\bin\R.cmd", &[app(r"r\bin")]);
-        // Databases (D-73): servers and clients.
+        // Databases (D-73): servers and clients; MySQL's first (D-110), its
+        // `mysql`, `mysqldump`, `mysqladmin` reached through the launchers
+        // of data\kit\bin, ahead of both.
+        when(&mut path, r"mysql\bin\mysql.exe", &[app(r"mysql\bin")]);
         when(
             &mut path,
             r"mariadb\bin\mariadb.exe",
@@ -661,7 +792,7 @@ impl KitEnv {
             if has("git/bin/git") {
                 path.push(app("git/bin"));
             }
-            for sys in ["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"] {
+            for sys in system_path(kit.os()) {
                 path.push(PathBuf::from(sys));
             }
             env.set_path("PSModulePath", join_rel(&data, "pwsh/Modules"));
@@ -713,9 +844,21 @@ impl KitEnv {
             "NPM_CONFIG_PREFIX",
             "UV_TOOL_BIN_DIR",
         ] {
+            // %APPDATA% and %LOCALAPPDATA% are Windows folders: off Windows the
+            // variables stay set (a few tools read them) but nothing creates
+            // data/home/AppData.
+            if self.path_sep() != ';' && matches!(name, "APPDATA" | "LOCALAPPDATA") {
+                continue;
+            }
             if let Some(dir) = self.get(name) {
                 fs::create_dir_all(dir)?;
             }
+        }
+        if let Some(dir) = &self.shims {
+            write_python_shim(dir)?;
+        }
+        if let Some(rc) = self.get("GEMRC") {
+            write_gemrc(Path::new(rc))?;
         }
         // Kit mode on NTFS/ReFS: the programs' leftovers are for the owner only.
         if let Some(tmp) = &self.private_tmp {
@@ -750,6 +893,245 @@ pub fn apply_to_current_process(env: &KitEnv, kit: &Kit) {
         }
     }
     std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", kit.webview_data());
+}
+
+/// The system folders that end the PATH off Windows: Homebrew's on macOS
+/// (`/opt/homebrew/bin` on Apple Silicon, `/usr/local/bin` on Intel) after
+/// the kit's programs, so a tool the kit lacks can still come from it.
+fn system_path(os: crate::kit::Os) -> &'static [&'static str] {
+    if os.is_macos() {
+        &[
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+            "/usr/sbin",
+            "/sbin",
+        ]
+    } else {
+        &["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+    }
+}
+
+/// The variables of the C and C++ toolchain on macOS and Linux and their
+/// program in `cc/bin` (install/lang/cc.rs writes them).
+pub(crate) const CC_VARS: [(&str, &str); 4] = [
+    ("CC", "cc"),
+    ("CXX", "c++"),
+    ("AR", "ar"),
+    ("RANLIB", "ranlib"),
+];
+
+/// What C and C++ of the kit give the environment on macOS and Linux:
+/// `cc/bin` on the PATH, and the [`CC_VARS`].
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(crate) struct UnixCc {
+    pub on_path: bool,
+    pub vars: Vec<(&'static str, PathBuf)>,
+}
+
+/// [`UnixCc`] for the `cc` component in `cc_bin` (`clang` is its key),
+/// `zig` when the kit's Zig is installed. The shims of D-112 (`make` is
+/// one of them) only with Zig: without it they would hide the system's
+/// compiler and fail. Each variable only for a program on disk. The LLVM
+/// of an older kit (no `make`, no `cc`) stays on the PATH as before, with
+/// no variables.
+pub(crate) fn unix_cc_env(cc_bin: &Path, zig: bool, is_file: impl Fn(&Path) -> bool) -> UnixCc {
+    if !is_file(&cc_bin.join("clang")) {
+        return UnixCc::default();
+    }
+    if !is_file(&cc_bin.join("make")) {
+        return UnixCc {
+            on_path: true,
+            vars: Vec::new(),
+        };
+    }
+    if !zig {
+        return UnixCc::default();
+    }
+    UnixCc {
+        on_path: true,
+        vars: CC_VARS
+            .iter()
+            .map(|(name, tool)| (*name, cc_bin.join(tool)))
+            .filter(|(_, p)| is_file(p))
+            .collect(),
+    }
+}
+
+/// The linker of Rust on a Mac whose PATH has the kit's `cc`, when the
+/// Command Line Tools are installed (`clt`): Apple's `/usr/bin/cc`, as
+/// `CARGO_TARGET_<TRIPLE>_LINKER`. Without them `/usr/bin/cc` only asks to
+/// install them: the shim (`zig cc`) stays. `None` off macOS.
+pub(crate) fn macos_rust_linker(target: Target, clt: bool) -> Option<(String, &'static str)> {
+    if !target.os.is_macos() || !clt {
+        return None;
+    }
+    let triple = target.rust_triple().to_ascii_uppercase().replace('-', "_");
+    Some((format!("CARGO_TARGET_{triple}_LINKER"), "/usr/bin/cc"))
+}
+
+/// The folders `xcode-select -p` prints when Xcode Command Line Tools, or
+/// Xcode itself, are installed, each with the `clang` of its own.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) const XCODE_DEVELOPER_DIRS: [&str; 2] = [
+    "/Library/Developer/CommandLineTools",
+    "/Applications/Xcode.app/Contents/Developer",
+];
+
+/// Xcode Command Line Tools (or Xcode) on this Mac; looked up once. False
+/// elsewhere: a macOS kit prepared on another system cannot know.
+fn xcode_clt_present() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        static PRESENT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        *PRESENT.get_or_init(|| {
+            XCODE_DEVELOPER_DIRS
+                .iter()
+                .any(|d| join_rel(Path::new(d), "usr/bin/clang").is_file())
+        })
+    }
+    #[cfg(not(target_os = "macos"))]
+    false
+}
+
+/// The linker of Rust's `aarch64-pc-windows-gnullvm` host in llvm-mingw's
+/// `cc_bin`: its aarch64 wrapper (the linker rustc looks for by default),
+/// else `clang.exe`; `None` without the `cc` component.
+pub(crate) fn arm64_rust_linker(cc_bin: &Path, is_file: impl Fn(&Path) -> bool) -> Option<PathBuf> {
+    ["aarch64-w64-mingw32-clang.exe", "clang.exe"]
+        .iter()
+        .map(|name| cc_bin.join(name))
+        .find(|p| is_file(p))
+}
+
+/// The environment of a Git laid out as dugite-native (`git/libexec/git-core`)
+/// on `os`, as dugite sets it (lib/git-environment.ts): its helpers,
+/// templates and system gitconfig in its folder, and on Linux its CA bundle
+/// when it has one. Empty on Windows and for a Git without `libexec`.
+/// `PREFIX` (dugite, Linux only) is left out: in the whole kit environment
+/// it would send every `make install` into Git's folder.
+pub(crate) fn git_unix_env(
+    os: Os,
+    git: &Path,
+    exists: impl Fn(&Path) -> bool,
+) -> Vec<(&'static str, PathBuf)> {
+    let exec = join_rel(git, "libexec/git-core");
+    if os.is_windows() || !exists(&exec) {
+        return Vec::new();
+    }
+    let mut out = vec![
+        ("GIT_EXEC_PATH", exec),
+        (
+            "GIT_TEMPLATE_DIR",
+            join_rel(git, "share/git-core/templates"),
+        ),
+        ("GIT_CONFIG_SYSTEM", join_rel(git, "etc/gitconfig")),
+    ];
+    let ca = join_rel(git, "ssl/cacert.pem");
+    if os == Os::Linux && exists(&ca) {
+        out.push(("GIT_SSL_CAINFO", ca));
+    }
+    out
+}
+
+/// `GEM_HOME` of Ruby `line` on macOS and Linux: `<data>/ruby-gems/<target>/<line>`.
+pub(crate) fn gem_home(data: &Path, target: Target, line: &str) -> PathBuf {
+    data.join("ruby-gems").join(target.as_str()).join(line)
+}
+
+/// `GEM_HOME` of the Ruby in `ruby_dir` (`data/apps/<target>/ruby/<line>`,
+/// named after its line), for the swap of a Ruby line (versions/choice.rs):
+/// `None` on Windows or for a folder not named after a line.
+pub(crate) fn gem_home_for_dir(data: &Path, target: Target, ruby_dir: &Path) -> Option<PathBuf> {
+    let line = ruby_dir.file_name()?.to_str()?;
+    (!target.is_windows() && crate::versions::valid_line(line))
+        .then(|| gem_home(data, target, line))
+}
+
+/// The kit's RubyGems configuration on macOS and Linux (`GEMRC`, merged
+/// over `~/.gemrc`): `<data>/ruby-gems/gemrc`.
+pub(crate) fn gemrc_path(data: &Path) -> PathBuf {
+    data.join("ruby-gems").join("gemrc")
+}
+
+/// [`gemrc_path`]: gem commands written with `#!/usr/bin/env ruby`
+/// (`--env-shebang`), so they run with the Ruby on the PATH after the kit
+/// moves (Ruby is installed again elsewhere, D-92) or another line is
+/// chosen. Bundler writes them so already.
+pub(crate) const GEMRC: &str = "# Atollo: gem commands start the Ruby on the PATH, so they keep\n\
+# working when the kit moves (written by Atollo, kept as it is).\n\
+gem: --env-shebang\n";
+
+/// Writes [`GEMRC`] at `rc` when missing (afterwards it is the user's).
+fn write_gemrc(rc: &Path) -> std::io::Result<()> {
+    if rc.exists() {
+        return Ok(());
+    }
+    if let Some(dir) = rc.parent() {
+        fs::create_dir_all(dir)?;
+    }
+    crate::fsx::write_atomic(rc, GEMRC.as_bytes())
+}
+
+/// The folders where Linux keeps shared libraries, for `arch` (`x86_64`,
+/// `aarch64`): the multiarch ones of Debian and Ubuntu, then the others.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub(crate) fn linux_lib_dirs(arch: &str) -> Vec<PathBuf> {
+    let multiarch = format!("{arch}-linux-gnu");
+    let mut out = Vec::new();
+    for base in ["/usr/lib", "/lib"] {
+        out.push(Path::new(base).join(&multiarch));
+    }
+    for dir in ["/usr/lib64", "/lib64", "/usr/lib", "/lib", "/usr/local/lib"] {
+        out.push(PathBuf::from(dir));
+    }
+    out
+}
+
+/// True when one of `dirs` has ICU's common library (`libicuuc.so.<n>`),
+/// which .NET loads by its versioned name.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub(crate) fn has_libicu(dirs: &[PathBuf]) -> bool {
+    dirs.iter().any(|dir| {
+        fs::read_dir(dir).into_iter().flatten().flatten().any(|e| {
+            e.file_name()
+                .to_str()
+                .is_some_and(|n| n.starts_with("libicuuc.so."))
+        })
+    })
+}
+
+/// ICU is installed on this Linux PC; looked up once. Elsewhere true:
+/// a Linux kit built on another system cannot know.
+#[cfg(target_os = "linux")]
+fn libicu_present() -> bool {
+    static PRESENT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *PRESENT.get_or_init(|| has_libicu(&linux_lib_dirs(std::env::consts::ARCH)))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn libicu_present() -> bool {
+    true
+}
+
+/// Writes `dir/python` ([`PYTHON_SHIM`]) when it is missing or different,
+/// executable (`LF`, 755). An unchanged script that lost its exec bits (a
+/// kit copied by a tool that drops modes) gets them back.
+fn write_python_shim(dir: &Path) -> std::io::Result<()> {
+    let file = dir.join("python");
+    if !fs::read(&file).is_ok_and(|b| b == PYTHON_SHIM.as_bytes()) {
+        fs::create_dir_all(dir)?;
+        crate::fsx::write_atomic(&file, PYTHON_SHIM.as_bytes())?;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if fs::metadata(&file)?.permissions().mode() & 0o111 != 0o111 {
+            fs::set_permissions(&file, fs::Permissions::from_mode(0o755))?;
+        }
+    }
+    Ok(())
 }
 
 fn subdirs_starting_with(dir: &Path, prefix: &str) -> impl Iterator<Item = PathBuf> {

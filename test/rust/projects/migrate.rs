@@ -8,7 +8,7 @@ use crate::db::auth::tests::assert_owner_only;
 use crate::kit::{tests::TempDir, Arch};
 
 thread_local! {
-    /// Stops the migration right after the ports (T6.4), as a crash would.
+    /// Stops the migration right after the ports, as a crash would.
     pub(super) static INTERRUPT: Cell<bool> = const { Cell::new(false) };
 }
 
@@ -34,20 +34,35 @@ fn v1_kit(tmp: &TempDir) -> Kit {
     kit.prepare().unwrap();
     let old = kit.project_states();
     write(
-        &old.join(r"shop\dev-settings.json"),
+        &old.join("shop").join("dev-settings.json"),
         r#"{"agent":"claude"}"#,
     );
-    write(&old.join(r"shop\apache\httpd.conf"), "Listen 8001\n");
-    write(&old.join(r"shop\apache\conf.d\user.conf"), "# mine\n");
-    write(&old.join(r"shop\versions.json"), r#"{"node":"22"}"#);
-    write(&old.join(r"shop\versions.txt"), "a\tb\n");
-    write(&old.join(r"blog\dev-settings.json"), r#"{"agent":"codex"}"#);
-    write(&old.join(r".old\dev-settings.json"), "{}");
+    write(
+        &old.join("shop").join("apache").join("httpd.conf"),
+        "Listen 8001\n",
+    );
+    write(
+        &old.join("shop")
+            .join("apache")
+            .join("conf.d")
+            .join("user.conf"),
+        "# mine\n",
+    );
+    write(&old.join("shop").join("versions.json"), r#"{"node":"22"}"#);
+    write(&old.join("shop").join("versions.txt"), "a\tb\n");
+    write(
+        &old.join("blog").join("dev-settings.json"),
+        r#"{"agent":"codex"}"#,
+    );
+    write(&old.join(".old").join("dev-settings.json"), "{}");
     write(&kit.app_dir().join("ports.json"), PORTS);
-    write(&secrets_file(&kit), SECRETS);
-    let backup = kit.data().join(r"db\backup");
-    write(&backup.join(r"shop\shop-mariadb-1.sql"), "CREATE TABLE t;");
-    write(&backup.join(r"shop\shop-mongodb-1.archive.gz"), "gz");
+    write(&auth::secrets_path(&kit), SECRETS);
+    let backup = kit.data().join("db").join("backup");
+    write(
+        &backup.join("shop").join("shop-mariadb-1.sql"),
+        "CREATE TABLE t;",
+    );
+    write(&backup.join("shop").join("shop-mongodb-1.archive.gz"), "gz");
     fs::create_dir_all(backup.join("blog")).unwrap();
     kit
 }
@@ -77,24 +92,38 @@ fn assert_migrated(kit: &Kit) {
     assert_eq!(read(&kit.app_dir().join("layout.txt")), "2");
     // states, Apache, versions files
     assert_eq!(
-        read(&new.join(r"shop\dev-settings.json")),
+        read(&new.join("shop").join("dev-settings.json")),
         r#"{"agent":"claude"}"#
     );
-    assert_eq!(read(&new.join(r"shop\apache\httpd.conf")), "Listen 8001\n");
-    assert_eq!(read(&new.join(r"shop\apache\conf.d\user.conf")), "# mine\n");
-    assert_eq!(read(&new.join(r"shop\versions.json")), r#"{"node":"22"}"#);
-    assert_eq!(read(&new.join(r"shop\versions.txt")), "a\tb\n");
     assert_eq!(
-        read(&new.join(r"blog\dev-settings.json")),
+        read(&new.join("shop").join("apache").join("httpd.conf")),
+        "Listen 8001\n"
+    );
+    assert_eq!(
+        read(
+            &new.join("shop")
+                .join("apache")
+                .join("conf.d")
+                .join("user.conf")
+        ),
+        "# mine\n"
+    );
+    assert_eq!(
+        read(&new.join("shop").join("versions.json")),
+        r#"{"node":"22"}"#
+    );
+    assert_eq!(read(&new.join("shop").join("versions.txt")), "a\tb\n");
+    assert_eq!(
+        read(&new.join("blog").join("dev-settings.json")),
         r#"{"agent":"codex"}"#
     );
     // ports, locked included
     assert_eq!(
-        json_of(&new.join(r"shop\ports.json")),
+        json_of(&new.join("shop").join("ports.json")),
         json!({"ports": {"web": 8001, "api": 8002}, "locked": ["web"]})
     );
     assert_eq!(
-        json_of(&new.join(r"blog\ports.json")),
+        json_of(&new.join("blog").join("ports.json")),
         json!({"ports": {"web": 8003}, "locked": []})
     );
     // passwords, private
@@ -102,14 +131,14 @@ fn assert_migrated(kit: &Kit) {
     assert_eq!(pw("shop", "mariadb").as_deref(), Some("pw-shop-maria"));
     assert_eq!(pw("shop", "mongodb").as_deref(), Some("pw-shop-mongo"));
     assert_eq!(pw("blog", "mariadb").as_deref(), Some("pw-blog"));
-    assert_owner_only(&new.join(r"shop\private\db.json"));
+    assert_owner_only(&new.join("shop").join("private").join("db.json"));
     // with the names their databases were created with (layout 1)
     assert_eq!(
-        json_of(&new.join(r"shop\private\db.json"))["names"],
+        json_of(&new.join("shop").join("private").join("db.json"))["names"],
         json!({"mariadb": "shop", "mongodb": "shop"})
     );
     assert_eq!(
-        json_of(&new.join(r"blog\private\db.json"))["names"],
+        json_of(&new.join("blog").join("private").join("db.json"))["names"],
         json!({"mariadb": "blog"})
     );
     assert_eq!(
@@ -117,7 +146,7 @@ fn assert_migrated(kit: &Kit) {
         "blog"
     );
     // copies, owner-only after the move
-    let backups = new.join(r"shop\private\backups");
+    let backups = new.join("shop").join("private").join("backups");
     assert_eq!(read(&backups.join("shop-mariadb-1.sql")), "CREATE TABLE t;");
     assert_owner_only(&backups.join("shop-mariadb-1.sql"));
     assert_owner_only(&backups.join("shop-mongodb-1.archive.gz"));
@@ -129,8 +158,8 @@ fn assert_migrated(kit: &Kit) {
     // the old places: emptied ones gone, an invalid name left
     let old = kit.project_states();
     assert!(!old.join("shop").exists() && !old.join("blog").exists());
-    assert!(old.join(r".old\dev-settings.json").is_file());
-    assert!(!kit.data().join(r"db\backup").exists());
+    assert!(old.join(".old").join("dev-settings.json").is_file());
+    assert!(!kit.data().join("db").join("backup").exists());
     assert_eq!(
         json_of(&kit.app_dir().join("ports.json")),
         json!({"ports": {".old|web": 8004}, "locked": [".old|web"]})
@@ -144,14 +173,14 @@ fn v1_kit_to_v2_nothing_lost() {
     let kit = v1_kit(&tmp);
     run(&kit);
     assert_migrated(&kit);
-    let secrets = json_of(&secrets_file(&kit));
+    let secrets = json_of(&auth::secrets_path(&kit));
     assert_eq!(
         secrets,
         json!({"mariadbRoot": "r00t", "mongodbAdmin": "adm1n",
                "projects": {".old": {"mariadb": "pw-old"}}}),
         "only what has no project left"
     );
-    assert_owner_only(&secrets_file(&kit));
+    assert_owner_only(&auth::secrets_path(&kit));
 
     // a second start does nothing; nor does a full run again
     let before = snapshot(&kit);
@@ -167,11 +196,11 @@ fn a_new_kit_has_nothing_to_move() {
     let tmp = TempDir::new("migrate-new");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    write(&secrets_file(&kit), r#"{"mariadbRoot":"r00t"}"#);
+    write(&auth::secrets_path(&kit), r#"{"mariadbRoot":"r00t"}"#);
     run(&kit);
     assert_eq!(read(&layout_file(&kit)), "2");
     assert!(!copies_dir(&kit).exists(), "no copy of a file of layout 2");
-    assert_eq!(read(&secrets_file(&kit)), r#"{"mariadbRoot":"r00t"}"#);
+    assert_eq!(read(&auth::secrets_path(&kit)), r#"{"mariadbRoot":"r00t"}"#);
     assert!(!kit.project_data().exists());
 }
 
@@ -184,12 +213,15 @@ fn interrupted_after_the_ports_then_retried() {
     INTERRUPT.set(false);
     assert!(!layout_file(&kit).exists(), "still layout 1");
     let new = kit.project_data();
-    assert!(new.join(r"shop\dev-settings.json").is_file());
-    assert!(new.join(r"shop\ports.json").is_file());
-    assert_eq!(read(&secrets_file(&kit)), SECRETS, "not touched yet");
+    assert!(new.join("shop").join("dev-settings.json").is_file());
+    assert!(new.join("shop").join("ports.json").is_file());
+    assert_eq!(read(&auth::secrets_path(&kit)), SECRETS, "not touched yet");
     assert!(kit
         .data()
-        .join(r"db\backup\shop\shop-mariadb-1.sql")
+        .join("db")
+        .join("backup")
+        .join("shop")
+        .join("shop-mariadb-1.sql")
         .is_file());
 
     // the next start finishes it, the ports not doubled
@@ -241,13 +273,18 @@ fn present_target_merged_and_password_conflict_kept() {
         json!({"mariadb": "kept", "mongodb": "shop"})
     );
     assert_eq!(
-        json_of(&secrets_file(&kit))["projects"],
+        json_of(&auth::secrets_path(&kit))["projects"],
         json!({"shop": {"mariadb": "pw-shop-maria"}, ".old": {"mariadb": "pw-old"}})
     );
     // copies: the one there wins, the other one moved
     let backups = shop.backups_dir().unwrap();
     assert_eq!(read(&backups.join("shop-mariadb-1.sql")), "newer");
     assert_eq!(read(&backups.join("shop-mongodb-1.archive.gz")), "gz");
-    let left = kit.data().join(r"db\backup\shop\shop-mariadb-1.sql");
+    let left = kit
+        .data()
+        .join("db")
+        .join("backup")
+        .join("shop")
+        .join("shop-mariadb-1.sql");
     assert_eq!(read(&left), "CREATE TABLE t;");
 }

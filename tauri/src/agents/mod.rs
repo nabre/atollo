@@ -5,17 +5,22 @@
 //!
 //! Claude Code, Codex and Antigravity: state, launch, sign-out.
 //!
-//! - signed in: Claude `.claude\.credentials.json` (OAuth token) or
+//! - signed in: Claude `.claude\.credentials.json` (OAuth token), the
+//!   token of `claude setup-token` in `data/agents/claude/oauth-token`
+//!   (macOS, `claude_token`, given as `CLAUDE_CODE_OAUTH_TOKEN`) or
 //!   `ANTHROPIC_API_KEY`; Codex `.codex\auth.json` (token or API key);
 //!   Antigravity a login saved in the kit (`agents/keyring.rs`) or `GEMINI_API_KEY`
 //!   (same sources as nabre/atollo `core/stats/*.js`);
 //! - launch: the agents are aligned first, the agent opens in a console
-//!   window of the app in the chosen folder, and they are aligned again when it
+//!   window of the app in the chosen folder (on macOS and Linux a session of
+//!   the app's terminal, `editor/pty.rs`), and they are aligned again when it
 //!   ends (`_agent.cmd` of the kit). Antigravity runs through
-//!   `data\kit\bin\agy.cmd`, which carries the login in and out of Windows;
+//!   `data\kit\bin\agy.cmd` (`agy`, sh, on macOS and Linux), which carries
+//!   the login in and out of the system's store;
 //! - a watcher thread aligns when an agent of the kit ends anywhere (editor
 //!   terminals, consoles) and saves Antigravity's login left in Windows.
 
+pub mod claude_token;
 pub mod keyring;
 pub mod relocate;
 pub mod stats;
@@ -57,6 +62,8 @@ pub struct AgentInfo {
     /// How: "account", "api key".
     pub sign_in_kind: Option<String>,
     pub running: bool,
+    /// "Collega con un token" is offered (Claude Code on macOS).
+    pub token_link: bool,
 }
 
 fn json(path: &Path) -> Option<Value> {
@@ -68,13 +75,15 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
     let has = |v: Option<&str>| v.is_some_and(|s| !s.is_empty());
     match id {
         "claude" => {
-            let creds = json(&home.join(r".claude\.credentials.json"));
+            let creds = json(&home.join(".claude").join(".credentials.json"));
             if has(creds
                 .as_ref()
                 .and_then(|c| c.pointer("/claudeAiOauth/accessToken"))
                 .and_then(Value::as_str))
             {
                 Some("account")
+            } else if claude_token::read(kit).is_some() {
+                Some("token")
             } else if has(env.get("ANTHROPIC_API_KEY")) {
                 Some("api key")
             } else {
@@ -82,7 +91,7 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
             }
         }
         "codex" => {
-            let auth = json(&home.join(r".codex\auth.json"));
+            let auth = json(&home.join(".codex").join("auth.json"));
             if has(auth
                 .as_ref()
                 .and_then(|a| a.pointer("/tokens/access_token"))
@@ -145,12 +154,13 @@ pub fn status(kit: &Kit, env: &KitEnv) -> Vec<AgentInfo> {
                 signed_in: kind.is_some(),
                 sign_in_kind: kind.map(str::to_owned),
                 running: now.contains(&c.id),
+                token_link: c.id == "claude" && claude_token::offered(crate::kit::Os::current()),
             }
         })
         .collect()
 }
 
-/// The command that starts `id` (Antigravity through the kit's `agy.cmd`).
+/// The command that starts `id` (Antigravity through the kit's `agy(.cmd)`).
 fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
     let Some(rel) = exe_of(id) else {
         bail!("unknown agent: {id}")
@@ -161,14 +171,15 @@ fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
         bail!("{}", crate::i18n::t(lang, "{0} non è installato.", &[name]));
     }
     Ok(if id == "antigravity" {
-        kit.kit_files().join(r"bin\agy.cmd")
+        crate::router::bins::agent_launcher(kit, id).unwrap_or(exe)
     } else {
         exe
     })
 }
 
-/// Aligns the agents, then opens `id` in a kit console in `dir`; aligns
-/// again when that console ends.
+/// Aligns the agents, then opens `id` in a kit console in `dir` (Windows)
+/// or a session of the app's terminal with the agent as its program (macOS
+/// and Linux, D-109); aligns again when that console or session ends.
 pub fn launch<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     kit: &Kit,
@@ -183,7 +194,12 @@ pub fn launch<R: tauri::Runtime>(
         crate::log::warn(&format!("before {id}: {w}"));
     }
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
-    crate::editor::terminal::open_command(app, kit, env, dir, &command, move || {
+    // Claude Code: the token saved in the kit, if any (D-115).
+    let mut env = env.clone();
+    if id == "claude" {
+        claude_token::apply(kit, &mut env);
+    }
+    crate::editor::terminal::open_command(app, kit, &env, dir, &command, move || {
         let _ = sync::run(&after, Some(&after_dir));
     })
 }
@@ -194,9 +210,12 @@ pub fn launch<R: tauri::Runtime>(
 pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
     let home = kit.home();
     match id {
-        "claude" => remove_if_exists(&home.join(r".claude\.credentials.json")),
+        "claude" => {
+            remove_if_exists(&home.join(".claude").join(".credentials.json"))?;
+            claude_token::remove(kit)
+        }
         "codex" => {
-            let codex = crate::setup::catalog::kit_path(kit, r"codex\bin\codex.exe");
+            let codex = crate::setup::catalog::kit_path(kit, "codex/bin/codex.exe");
             if codex.is_file() {
                 let status = crate::os::jobs::kit_command(&codex, env)
                     .arg("logout")
@@ -206,11 +225,11 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
                     return Ok(());
                 }
             }
-            remove_if_exists(&home.join(r".codex\auth.json"))
+            remove_if_exists(&home.join(".codex").join("auth.json"))
         }
         "antigravity" => {
             keyring::save(kit)?;
-            remove_if_exists(&kit.data().join(r"antigravity\keyring.json"))
+            remove_if_exists(&kit.data().join("antigravity").join("keyring.json"))
         }
         _ => bail!("unknown agent: {id}"),
     }

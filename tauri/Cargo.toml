@@ -1,7 +1,7 @@
 [package]
 name = "atollo"
 version = "0.2.0"
-description = "Atollo: portable development environment with integrated editor and AI agents"
+description = "Atollo — Universal Portable Dev & AI Workspace"
 authors = ["nabre"]
 license = "MIT"
 edition = "2021"
@@ -13,18 +13,17 @@ name = "Atollo"
 path = "src/main.rs"
 
 [build-dependencies]
-tauri-build = { version = "=2.7.0", features = [] }
+tauri-build = { version = "=2.7.1", features = [] }
 
 [dependencies]
-tauri = { version = "=2.12.0", features = [] }
+tauri = { version = "=2.12.1", features = [] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 anyhow = "1.0.104"
 thiserror = "2.0.21"
 sha2 = "0.11.0"
 sha3 = "0.11.0"
-webview2-com = "0.39.1"
-ureq = { version = "3.4.2", default-features = false, features = ["native-tls", "json", "gzip", "win-system-proxy"] }
+ureq = { version = "3.4.2", default-features = false, features = ["native-tls", "json", "gzip"] }
 native-tls = "0.2.18"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 tar = "0.4.46"
@@ -33,9 +32,30 @@ sevenz-rust2 = "0.23.0"
 lzma-rust2 = { version = "0.21", default-features = false, features = ["std", "optimization", "xz", "encoder"] }
 base64 = "0.23.1"
 regex = "1.13.1"
-junction = "2.1.0"
 
-[dependencies.windows]
+# Win32 APIs, WebView2, junctions and the system proxy: Windows only, so the
+# same crate also builds for macOS and Linux (B7 / N-A1).
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.39.1"
+junction = "2.1.0"
+ureq = { version = "3.4.2", default-features = false, features = ["win-system-proxy"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+# The in-app terminal of macOS and Linux (D-109): a PTY per session. Windows
+# keeps its classic consoles (D-57, D-95).
+portable-pty = "=0.9.0"
+# Folder and file pickers of macOS and Linux (NSOpenPanel, GTK), called from
+# Rust only; Windows keeps IFileOpenDialog. rfd directly, not
+# tauri-plugin-dialog: the plugin replaces window.alert and window.confirm
+# in every webview, the editor's too.
+rfd = { version = "=0.16.0", default-features = false, features = ["gtk3"] }
+# Antigravity's login in the Keychain (macOS) and the Secret Service (Linux),
+# WP-4.1. 3.6.3: the last release with these features (4.x moved the stores
+# into separate crates). Windows keeps its own Credential Manager code.
+keyring = { version = "=3.6.3", default-features = false, features = ["apple-native", "sync-secret-service"] }
+
+[target.'cfg(windows)'.dependencies.windows]
 version = "0.62.2"
 features = [
     "Win32_Foundation",
@@ -63,4 +83,4 @@ features = [
 ]
 
 [dev-dependencies]
-tauri = { version = "=2.12.0", features = ["test"] }
+tauri = { version = "=2.12.1", features = ["test"] }

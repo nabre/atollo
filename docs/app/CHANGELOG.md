@@ -1,5 +1,118 @@
 # Novità
 
+## macOS e Linux (18/10/2026)
+
+L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le prove, anche su Windows ARM64. Lo stesso kit su una chiavetta si apre sui tre sistemi: `projects/` e `data/` sono condivisi, i programmi stanno in `data/apps/<sistema>-<architettura>/`. Provato dall'utente su un Mac Apple Silicon, un Mac Intel e un PC Linux, in WSL2 e nella CI sui sei sistemi.
+
+**L'app**
+- **Pacchetti**: `Atollo.app` per macOS (firma ad hoc, D-113), AppImage e `tar.gz` per Linux, costruiti con glibc 2.35 come minimo. `projects/` e `data/` stanno accanto a `.app` o all'AppImage, mai dentro. Un `.app` messo in quarantena da macOS (App Translocation) ferma l'avvio con il comando da eseguire.
+- **Terminale dentro l'app** su macOS e Linux (D-109): il terminale del kit, gli agenti e i profili del terminale dell'editor si aprono in una scheda della finestra, con PowerShell del kit o Bash. Su Windows resta la console classica.
+- **Processi**: un guardiano chiude i programmi del kit anche se l'app viene uccisa; seconda apertura che porta in primo piano la prima; un disco montato `noexec` ferma l'avvio con il comando per rimontarlo; proxy e lingua letti dal sistema (D-105).
+- **Aggiornamento**: su macOS il nuovo `.app`, su Linux la nuova AppImage, scambiati alla chiusura. Il `tar.gz` dice che c'è una versione nuova da scaricare.
+- **Preparare per un altro sistema**: `prepare --target <id>` e `components --target <id>` da riga di comando, anche nell'aiuto (D-114). Un kit preparato su Windows completa al primo avvio sul Mac o su Linux ciò che serve.
+
+**Componenti** (D-108, D-112)
+- Il catalogo dice per ogni sistema cosa c'è e perché manca quello che manca (Android su Linux ARM64), senza ripiegare su un'architettura che non parte.
+- **Git** su macOS e Linux da dugite-native: segue il kit quando si sposta, senza reinstallare.
+- **PHP** 8.4 e 8.5 su macOS e Linux da static-php-cli, con Composer e phpMyAdmin; un `php.ini` per sistema.
+- **C e C++** su macOS e Linux con `zig cc` del kit e GNU make, senza `build-essential` né Xcode (i framework Apple vogliono le Command Line Tools); scegliendo C e C++ arriva Zig. **Rust** su Windows ARM64 senza Visual Studio (`gnullvm`, con il C/C++ del kit).
+- **Ruby** su macOS e Linux da conda-forge (linee 3.2 e successive), con le gem per linea; **MongoDB** su Linux da conda-forge; **SQLite** anche su Linux ARM64; **Antigravity** su macOS e Linux.
+- **Caddy**, nuovo componente su tutti i sistemi.
+
+**Server web e database**
+- **Caddy** è il server web dei pool e dei siti dei progetti su ogni sistema (D-111), con php-cgi su Windows e php-fpm su macOS e Linux. Apache resta su Windows per i progetti con regole proprie nel `.htaccess` (Drupal compreso).
+- **MySQL** 8.4 e 9.7 LTS al posto di MariaDB per i kit nuovi, sui sei sistemi (D-110), con le stesse porte, le password dei progetti e le copie. I kit che usano già MariaDB lo tengono fino alla migrazione.
+
+**Accessi** (D-115)
+- **Antigravity** su macOS (Portachiavi) e Linux (Secret Service): l'accesso resta nel kit, come su Windows.
+- **Claude Code su macOS**: «Collega con un token» nella pagina Agenti; il token resta nel kit e «Esci» lo cancella.
+
+**Sicurezza** (revisione dei commit)
+- L'admin di Caddy non è più su una porta TCP locale, da cui chiunque sul PC poteva leggere la chiave di PHP e caricare una configurazione: socket del solo utente in una cartella privata, `admin off` per i siti dei progetti, chiave di PHP solo nell'ambiente di Caddy.
+- Ripristino di una copia SQL con i comandi del client spenti (`\!`, `system`).
+- MySQL: `root` ha la password dalla prima inizializzazione; il socket non sta mai in `/tmp`.
+- Accesso di Antigravity: se il Portachiavi o il Secret Service non rispondono non si sposta nulla; una copia in chiaro solo su Linux senza Secret Service e solo su un disco che tiene i permessi 600.
+- Token di Claude Code rifiutato su un disco senza permessi (exFAT, FAT).
+
+**Resta da fare**: i bisogni SQL verso MySQL e la migrazione da MariaDB ([#3](https://github.com/nabre/atollo/issues/3)); interfaccia di Caddy, Nginx da togliere, PHP su Unix ([#4](https://github.com/nabre/atollo/issues/4)); rilasci per macOS e Linux ([#5](https://github.com/nabre/atollo/issues/5)); accessi da provare su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); griglia componente × sistema in «Strumenti» ([#7](https://github.com/nabre/atollo/issues/7)); arretrato ([#8](https://github.com/nabre/atollo/issues/8)).
+
+**Verificato**: su Windows 716 test Rust e 131 test dell'interfaccia, lint pulito, clippy pulito anche in modo incrociato sui quattro target Unix; in WSL2 708 test superati; CI verde su Windows x64 e ARM64, Linux x64 e ARM64, macOS Apple Silicon e Intel, con `.app` e AppImage costruiti e avviati (`ae42f65`). Installazioni reali in WSL: Git, Python, Ruby, MongoDB, SQLite, PHP, MySQL, Caddy con un pool di due siti.
+
+## phpMyAdmin al posto di Adminer (17/10/2026)
+
+- **«Apri phpMyAdmin»** nella pagina di MariaDB sostituisce «Apri Adminer» (D-107): phpMyAdmin 5.2.3, già entrato come `root`, nella lingua dell'app. Al primo clic installa phpMyAdmin (circa 60 MB) e, se mancano, PHP e MariaDB; avvia MariaDB se è fermo. Funziona anche sulle altre versioni di MariaDB («phpMyAdmin su 11.4»).
+- Stessa protezione di Adminer: token monouso nell'indirizzo, che viene subito tolto, cookie `HttpOnly`, password di `root` solo nell'ambiente del server. Il router serve solo le pagine e i file pubblici di phpMyAdmin.
+- Importazione di file SQL fino a 512 MB.
+- **Adminer viene tolto**: all'avvio l'app cancella la sua cartella, il router, le sessioni e il log.
+
+**Correzione**
+- **Browser che non si apriva**: «Apri Adminer» avviava il server di PHP, ma la pagina non si apriva mai. Su Windows 11 `explorer.exe` ignora un indirizzo con `?…`. Ora gli indirizzi web passano da `rundll32 url.dll,FileProtocolHandler`, come già faceva l'editor; vale anche per gli indirizzi dei progetti, per GitHub e per i download a mano.
+
+**Verificato**: `cargo fmt --check`, clippy con `-D warnings`, 455 test Rust, ESLint, Prettier, `tsc`, 117 test dell'interfaccia; installazione reale e test reale su MariaDB 12.3 con PHP 8.5.
+
+## Riordino di cartelle e file (17/10/2026)
+
+Struttura riallineata alle regole di [ARCHITECTURE.md](ARCHITECTURE.md), senza cambiare il comportamento (salvo la correzione qui sotto).
+
+**Correzione**
+- **Spostamento del kit su macOS e Linux**: `kit.rs` salvava la radice vecchia in `old-root-darwin.txt` / `old-root-linux.txt`, ma `agents::relocate` leggeva solo `old-root.txt`: fuori da Windows i percorsi degli agenti non venivano riscritti dopo uno spostamento e il file restava. Ora tutti e due usano `Kit::old_root_file`.
+
+**Motore Rust**
+- `servers\mod.rs` (1911 righe) diviso in `mod.rs` (tipi ed elenco), `pools.rs` (servers.json, pool automatici, scansione), `config.rs` (configurazione generata), `process.rs` (avvio, arresto, ricarica, siti collegati); codice copiato invariato.
+- `terminals.rs` passa da `src\` a `editor\terminals.rs`, accanto a `terminal.rs`: in cima a `src\` resta solo l'infrastruttura.
+- Percorsi in un solo posto: `Kit::versions_root()` (`data\app\versions`, prima scritto a mano in tre moduli), `ext::user_path` (`extensions.txt`, due volte), `auth::secrets_path` usato anche dalla migrazione.
+- Stato del kit letto con `fsx::read_text` / `fsx::read_json` (BOM e byte non UTF-8 tollerati): `components.txt`, file delle versioni, `layout.txt`, `root.txt`, la radice vecchia, `extensions.txt`, `secrets.json`.
+
+**Interfaccia**
+- Nuove cartelle `databases\` (`page`, `browser`, `backups`), `agents\` (`page`, `stats`), `theme\` (i tre CSS; `docs\brand\themes.py` scrive lì); `projectmcp.tsx` ed `editorsettings.tsx` passano in `projects\` (`mcp.tsx`, `editorsettings.tsx`). I test in `test\ui` seguono la stessa struttura. Il CSS compilato è identico.
+
+**Repository**
+- `Prompt.md` (il prompt iniziale) → `docs\app\`, `brand.png` → `docs\brand\`, `reports\` → `docs\reports\`: nella radice restano configurazione e README.
+
+**Verificato**: `cargo fmt --check`, clippy con `-D warnings`, 452 test Rust (uno nuovo), ESLint, Prettier, `tsc`, 117 test dell'interfaccia, build dell'interfaccia.
+
+## Correzioni e sviluppi della v3 (17/10/2026)
+
+Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../reports/v3/03-BUG-SICUREZZA-E-FUNZIONALITA-MANCANTI.md), i lavori aperti dei server web e la verifica della loro spec, chiusi da uno sciame di sette agenti (sicurezza web, pool, installazioni, database, rilevamento, interfaccia, multi-OS) più un giro di revisione con 17 rilievi, tutti corretti. Stato voce per voce in [reports/v3/03 §4](../reports/v3/03-BUG-SICUREZZA-E-FUNZIONALITA-MANCANTI.md).
+
+**Sicurezza**
+- **Estensioni PHP** (D-96, SEC-V3-01): con PHP, Apache e Nginx eseguono `.php`, `.phtml` e `.phar`; senza PHP li rifiutano (Apache 403, Nginx 503). `.inc` e `.php3`…`.php8` sono sempre rifiutati (403), nei server dedicati, nei pool e nel sito del kit. Un `kit.conf` esistente riceve i blocchi che mancano all'avvio, una volta sola.
+- **File nascosti nel sito del kit** (SEC-V3-02): `.env`, `.git` e simili rifiutati anche in `data\apache\kit.conf` (`.well-known` resta servito).
+- **`php -S` attraverso un router del kit** (D-97, SEC-V3-02): `data\kit\php-router.php` risponde 403 a file nascosti, `.inc`, `.php3`…`.php8`, `.phtml`, `.phar`, nomi come `index.php.` o `index.PHP`, nomi brevi 8.3 (`ENV~1`), `//.env`, `::$DATA` e `\` usato come separatore, e 421 a un `Host` che non è locale. Il percorso si legge da `REQUEST_URI` senza `parse_url`. Un `router.php` del progetto prende il suo posto. Su macOS e Linux la cartella del sito passa a `/bin/sh` tra apici singoli: `$(…)` nel nome di una cartella resta testo.
+- **DNS rebinding** (D-98, SEC-V3-03): fuori dalla modalità rete locale il server dedicato di un progetto risponde solo a `localhost`, `127.0.0.1`, `[::1]`, `*.localhost` e ai domini del progetto; un altro `Host` riceve 403 (Apache) o 421 (Nginx).
+- **Alias senza collegamenti** (D-100, WEB-8): nelle cartelle degli alias Apache non segue collegamenti e un `.htaccess` non può riattivarli; Nginx scrive `disable_symlinks on` fuori da Windows.
+
+**Server Web**
+- **I pool seguono i progetti** (D-101): «Ferma» toglie il sito dal pool e lo ricarica; un pool avviato dai progetti si spegne con l'ultimo, salvo «Mantieni attivo». Nuove opzioni dei profili «Mantieni attivo anche senza progetti» e «Avvia con Atollo» (`keepAlive`, `autostart` in `servers.json`), nel modulo di creazione e nella sezione «Avvio e arresto».
+- **Un nome per sito** (BUG-V3-02): nel pool il sito principale di un progetto è `<progetto>.localhost`, le altre azioni `<azione>.<progetto>.localhost`, ognuna con il suo file `vhosts\<nome>.conf`. Nomi di progetto con spazi o maiuscole danno ora una configurazione valida.
+- **php-cgi sorvegliato anche nel Nginx dedicato** (D-99, BUG-V3-01): se php-cgi si chiude, Nginx si ferma e l'esecuzione va in errore con una riga nel log. Nei pool php-cgi si aspetta sulla sua porta e si riprova su un'altra fino a tre volte; senza php-cgi il pool non parte.
+- Difetti dei pool (D-101): una linea non installata ferma l'avvio con un errore che la nomina (4); un pool acceso il cui id è cambiato resta in elenco per poterlo fermare (5, parziale); una porta per pool, anche nel ripiego e in un `servers.json` vecchio (6); un progetto entra nei pool una volta per sito (7); assegnare un progetto ricarica solo i suoi pool (8).
+
+**Database**
+- **Più versioni di MariaDB insieme** (D-102): la versione che il server usa tiene la sua porta (3306), le altre ne ricevono una propria, salvata al primo avvio. La pagina Database ha «Altre versioni» (stato, porta, avvia/ferma); la pagina del progetto «Versione del server», che crea database e utente sulla versione scelta. I dati non si spostano da soli.
+- **`DB_PORT`** nell'ambiente dei programmi del progetto, se il progetto ha un database MariaDB del kit e il suo `.env` non indica un'altra porta.
+- Le scritture di `db.json` di un progetto sono serializzate; la versione principale si cambia solo con nessuna versione accesa; un cambio di versione fallito lascia quella di prima.
+
+**Rilevamento dei progetti** (D-103)
+- CMS da archivio: PrestaShop, Drupal, Joomla e TYPO3 classico, con Apache e MariaDB.
+- Laravel e Statamic con `.htaccess` nella cartella pubblica ricevono l'azione Apache; PHP semplice propone Apache accanto a `php -S`; `nginx.conf` o `.nginx` danno l'azione Nginx anche ai siti statici.
+- Compose (`compose.yaml`, `docker-compose.yml`…) e `FROM` di `Dockerfile`/`Containerfile` letti per nome esatto dell'immagine, con la linea dal tag (`php:7.4-apache` → PHP 7.4 e Apache).
+- Apache e Nginx contano fra i requisiti solo se sono l'azione predefinita o scritti in `panel.json`. Tolto il testo orfano «MariaDB non incluso nel kit».
+
+**Installazione e piattaforme** (D-104, D-105)
+- **MariaDB** solo dove esiste una build: Windows (anche ARM64, in emulazione) e Linux x64, tarball `linux-systemd` (BUG-V3-04).
+- **C/C++ su macOS e Linux** usa l'ultimo rilascio di LLVM con l'archivio del sistema: macOS Intel resta su LLVM 20.1.7. La descrizione dice cosa serve sul PC (Xcode CLT; header della libc e `make`) (BUG-V3-05).
+- **Editor** con SHA-256 fissato per ogni sistema (BUG-V3-09).
+- **R su Windows**: `Makeconf` segue la cartella del kit a ogni avvio, così i pacchetti da sorgente si compilano dopo un cambio di lettera d'unità (BUG-V3-06, parte Windows).
+- **Il codice dell'app compila per macOS e Linux**: dipendenze Windows solo su Windows, icona PNG, strato `os` (istanza, temp, dischi, processi, job, sessioni) per Unix, programmi di shell e dei server web per sistema, altri kit aperti riconosciuti ovunque (B7, N-A1, BUG-V3-03/07/08). Nuovo job di CI `check-unix` su Ubuntu e macOS. Accesso di Antigravity, scelta di file e cartelle e console fuori dall'editor danno un errore chiaro fuori da Windows.
+
+**Interfaccia** (D-106)
+- Un'unica trappola del focus per i dialoghi (conferma e ingrandimento delle schermate della Guida).
+- Le quattro conferme sì/no nella pagina (uscita da un agente e da GitHub, ripristino di un database, «Applica» in Linguaggi e strumenti) sono `alertdialog` con il focus su «Annulla»; alla chiusura il focus torna al pulsante che le ha aperte.
+- Versioni del progetto: uno strumento mancante resta nella zona del progetto con il rimando a «Installa ciò che manca»; il testo nomina anche il server web.
+
+**Verificato**: 426 test Rust (3 ignorati), 107 test dell'interfaccia; fmt, clippy, ESLint, Prettier e build puliti su Windows. Il codice Unix è solo compilato (controllo incrociato per macOS e Linux). Da provare a mano: due versioni di MariaDB insieme, pool che si spengono e «Avvia con Atollo», `httpd -t`/`nginx -t` delle configurazioni nuove con `Host` estraneo, prove con `ATOLLO_TEST_KIT`, primo avvio reale su macOS e Linux ([TESTING.md](TESTING.md)).
+
 ## Niente Windows Terminal (16/10/2026)
 
 - **Console solo nella console classica di Windows** (D-95): Terminale, agenti e terminali del kit si aprono in `conhost.exe` con PowerShell 7 del kit, come succedeva già quando Windows Terminal mancava. Tolti il componente Windows Terminal, l'impostazione «Terminale» e il gruppo «Legati a un sistema operativo» della pagina «Linguaggi e strumenti».
@@ -23,7 +136,7 @@
 
 ## Correzioni dopo la verifica della v2 (16/10/2026)
 
-27 difetti confermati rileggendo il codice ([`reports/v2/07`](../../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)), chiusi da uno sciame di agenti in quattro onde; CI di nuovo verde (`cargo fmt`, clippy, ESLint, Prettier) e passo dell'interfaccia in CI che si ferma al primo comando fallito.
+27 difetti confermati rileggendo il codice ([`reports/v2/07`](../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)), chiusi da uno sciame di agenti in quattro onde; CI di nuovo verde (`cargo fmt`, clippy, ESLint, Prettier) e passo dell'interfaccia in CI che si ferma al primo comando fallito.
 
 **Sicurezza**
 - **Pool dei server web**: un sito la cui cartella manca, sta fuori dal progetto o è una giunzione si salta (avviso nel log), invece di servire la radice del progetto con `.env`, `.git` e `wp-config.php` (N-S1). I pool Apache hanno un VirtualHost di default `localhost` prima dei progetti: un `Host` sconosciuto, o l'IP dalla LAN, non arriva più al primo progetto (N-S5).
@@ -51,7 +164,7 @@
 - **Tastiera**: menu delle versioni con frecce, Home/End, Esc e focus restituito; il dialogo di conferma tiene Tab tra i controlli raggiungibili e rende il focus alla chiusura (BUG-20r).
 - I divisori salvano la misura a fine trascinamento, non a ogni pixel (BUG-11r). Badge «più recente»/«bloccata» tradotti, etichette dei giorni leggibili, Guida allineata ai nomi dell'app («Rimuovi l'unità») (UI-POLISH). La Guida si carica a parte, fuori dal pacchetto principale (ARCH-LAZY).
 
-**Verificato**: `cargo check`, clippy e fmt per Windows; 85 test dell'interfaccia, ESLint, Prettier e build puliti. I test Rust girano solo nella CI Windows. Da provare a mano: Git via micromamba su macOS e Linux reali, avvio di un progetto in un pool, morte di php-cgi ([reports/v2/07 §8](../../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)).
+**Verificato**: `cargo check`, clippy e fmt per Windows; 85 test dell'interfaccia, ESLint, Prettier e build puliti. I test Rust girano solo nella CI Windows. Da provare a mano: Git via micromamba su macOS e Linux reali, avvio di un progetto in un pool, morte di php-cgi ([reports/v2/07 §8](../reports/v2/07-PIANO-RISOLUZIONE-BUG-SCIAME.md)).
 
 ## Una cartella per versione minore per tutti gli strumenti (16/10/2026)
 
@@ -90,7 +203,7 @@ Apache ha una sola linea (2.4) e Apache Lounge cancella una build quando esce la
 
 ## Dati per progetto e file di passaggio nel temp del sistema (16/10/2026)
 
-Ciò che il kit tiene per un progetto sta in una cartella sola, e download ed estrazioni non scrivono più sulla chiavetta (D-89, D-90, [PLAN-DATA.md](PLAN-DATA.md)).
+Ciò che il kit tiene per un progetto sta in una cartella sola, e download ed estrazioni non scrivono più sulla chiavetta (D-89, D-90).
 
 **Fatto**
 - **`data\projects\<progetto>\`** al posto di cinque posti: impostazioni, porte, configurazioni di Apache e Nginx, e in `private\` (solo il proprietario, protetta prima di scrivere) le password e le copie dei database. La migrazione parte da sola al primo avvio dell'app, si può ripetere e conserva `ports.json` e `secrets.json` in `data\app\pre-v2\`.
@@ -134,7 +247,7 @@ Nessun cambiamento per chi usa l'app: stessi testi, comandi, eventi, log e file 
 - **Componenti di `workbench\`**: `Select` al posto di 13 `<select>`, `DataTable` di 5 `<table>`, `ConfirmDialog` e `InlineConfirm` per la chiusura dell'app e l'eliminazione di un repository GitHub; `useCopy` per le 3 copie negli appunti.
 - **Commenti**: i percorsi dei file Rust citati nell'interfaccia e nella CI puntano alle cartelle nuove; tolti i caratteri di controllo lasciati da escape sbagliati in tre commenti.
 
-**Non fatto** (elenco in ARCHITECTURE.md): 12 letture restano senza `useLoad` perché cambierebbe ciò che l'utente vede (un errore che oggi resta dopo una lettura riuscita); quattro conferme sì/no nella pagina restano senza il ruolo `alertdialog`.
+**Non fatto** (elenco in ARCHITECTURE.md): 12 letture restano senza `useLoad` perché cambierebbe ciò che l'utente vede (un errore che oggi resta dopo una lettura riuscita); quattro conferme sì/no nella pagina restano senza il ruolo `alertdialog` (fatte il 17/10/2026, D-106).
 
 **Verificato**: 274 test Rust (3 nuovi per `CmdError`, 3 in più dalla prova delle righe di versione divisa per linguaggio), 2 ignorati; clippy e fmt puliti; tipi, ESLint, Prettier e 36 test dell'interfaccia (9 nuovi per `useLoad`); nessun ciclo di import in `ui\src`. La build dell'interfaccia riesce, con un avviso: il file principale supera 500 kB (761 kB).
 
@@ -475,7 +588,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - App di debug guidata con il debug remoto di WebView2 (D-48): Terminale apre la finestra con il prompt del kit; `USERPROFILE` = `data\home`, `node` del kit, PowerShell 7.6.7, larghezza della console uguale a quella della finestra; Ctrl+C interrompe `ping -t`; `exit 7` mostra "Processo terminato (codice 7)"; chiudere la finestra termina `pwsh.exe` e `PING.EXE`; Node in modalità raw riceve tasti e frecce; una console ricaricata ritrova il suo output; la finestra console non può chiamare `app_info` né `terminal_open`.
 
 **Problema aperto**
-- Claude Code si apre e si disegna, ma non riceve i tasti. Causa probabile e rimedio (ConPTY aggiornato di Microsoft) in D-47; la prova aspetta il permesso dell'utente (PLAN.md §12, domanda 11). Chiuso dopo la fase 6: le console sono ora la console classica di Windows (D-57, sezione in alto).
+- Claude Code si apre e si disegna, ma non riceve i tasti. Causa probabile e rimedio (ConPTY aggiornato di Microsoft) in D-47; la prova aspetta il permesso dell'utente (domanda 11 del piano iniziale). Chiuso dopo la fase 6: le console sono ora la console classica di Windows (D-57, sezione in alto).
 
 **Da provare a mano**
 1. Home › Terminale: si apre una finestra "projects - Atollo" con PowerShell 7 del kit; `$env:USERPROFILE` punta a `data\home`.

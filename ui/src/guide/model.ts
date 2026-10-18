@@ -395,13 +395,13 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "MariaDB + Adminer con login monouso, MongoDB + esploratore Contenuto in sola lettura, e pool condivisi Apache/Nginx con VirtualHost .localhost.",
-        "MariaDB + Adminer one-time token login, MongoDB + read-only Content browser, and shared Apache/Nginx pools with .localhost VirtualHosts.",
-        "MariaDB + Adminer avec connexion à jeton unique, MongoDB + explorateur de contenu en lecture seule, et pools partagés Apache/Nginx avec VirtualHosts .localhost.",
-        "MariaDB + Adminer mit Einmal-Token-Login, MongoDB + schreibgeschützter Inhaltsbrowser sowie geteilte Apache-/Nginx-Pools mit .localhost-VirtualHosts.",
+        "MariaDB + phpMyAdmin con login monouso, MongoDB + esploratore Contenuto in sola lettura, e pool condivisi Apache/Nginx con VirtualHost .localhost.",
+        "MariaDB + phpMyAdmin one-time token login, MongoDB + read-only Content browser, and shared Apache/Nginx pools with .localhost VirtualHosts.",
+        "MariaDB + phpMyAdmin avec connexion à jeton unique, MongoDB + explorateur de contenu en lecture seule, et pools partagés Apache/Nginx avec VirtualHosts .localhost.",
+        "MariaDB + phpMyAdmin mit Einmal-Token-Login, MongoDB + schreibgeschützter Inhaltsbrowser sowie geteilte Apache-/Nginx-Pools mit .localhost-VirtualHosts.",
       ),
     icon: VscDatabase,
-    keywords: "database mariadb mongodb adminer dbbrowser server web apache nginx pool virtualhost localhost alias",
+    keywords: "database mariadb mongodb phpmyadmin dbbrowser server web apache nginx pool virtualhost localhost alias",
     targetPage: "databases",
   },
   {
@@ -1547,22 +1547,28 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     targetPath: () => `mongodb\\${lLine()}\\bin\\mongod.exe, mongosh\\, mongodb-tools\\`,
   }),
   defSource({
-    id: "adminer",
-    logoId: "adminer",
-    name: () => tr("Adminer (per MariaDB)", "Adminer (for MariaDB)", "Adminer (pour MariaDB)", "Adminer (für MariaDB)"),
+    id: "phpmyadmin",
+    logoId: "phpmyadmin",
+    name: () =>
+      tr(
+        "phpMyAdmin (per MariaDB)",
+        "phpMyAdmin (for MariaDB)",
+        "phpMyAdmin (pour MariaDB)",
+        "phpMyAdmin (für MariaDB)",
+      ),
     group: "databases",
-    home: "https://www.adminer.org",
-    metaSource: "api.github.com/repos/vrana/adminer/releases/latest",
-    binarySource: "Asset adminer-<v>-mysql.php",
+    home: "https://www.phpmyadmin.net",
+    metaSource: "www.phpmyadmin.net/home_page/version.json",
+    binarySource: "files.phpmyadmin.net/phpMyAdmin/<v>/phpMyAdmin-<v>-all-languages.zip",
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
-        "GitHub asset.digest + controllo sintattico php -l",
-        "GitHub asset.digest + php -l syntax check",
-        "GitHub asset.digest + vérification syntaxique php -l",
-        "GitHub asset.digest + Syntaxprüfung php -l",
+        "SHA-256 dal file .sha256 ufficiale + controllo sintattico php -l",
+        "SHA-256 from the official .sha256 file + php -l syntax check",
+        "SHA-256 depuis le fichier .sha256 officiel + vérification syntaxique php -l",
+        "SHA-256 aus der offiziellen .sha256-Datei + Syntaxprüfung php -l",
       ),
-    targetPath: () => `adminer\\${lLine()}\\adminer.php`,
+    targetPath: () => `phpmyadmin\\${lLine()}\\index.php`,
   }),
   defSource({
     id: "sqlite",

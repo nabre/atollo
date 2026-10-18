@@ -1,13 +1,18 @@
-//! Passwords of the kit's databases (DECISIONS.md D-74): MariaDB's `root`,
-//! MongoDB's `admin` and one user per project and database, each with a
-//! random password.
+//! Passwords of the kit's databases (DECISIONS.md D-74): the `root` of
+//! MySQL and MariaDB, MongoDB's `admin` and one user per project and
+//! database, each with a random password.
 //!
 //! - the administrators' in `data\app\db\secrets.json`, a project's in
 //!   `data\projects\<project>\private\db.json` (D-89), readable by the owner
 //!   only where the disk has permissions (NTFS; FAT32/exFAT sticks have none);
-//! - `data\app\db\my.ini` holds the `[client]` login of `root`: the kit's
-//!   `MYSQL_HOME` points there, so `mariadb` in the kit's terminal and the
-//!   app's own tools log in without a password on the command line;
+//! - `data\app\db\my.ini` holds the `[client]` login of MariaDB's `root`:
+//!   the kit's `MYSQL_HOME` points there, so `mariadb` in the kit's terminal
+//!   and the app's own tools log in without a password on the command line;
+//! - `data\app\db\mysql.cnf` holds MySQL's (D-110): MySQL reads
+//!   `$MYSQL_HOME/my.ini` (Windows) and `my.cnf` too, where MariaDB's login
+//!   is, so the kit's `mysql`, `mysqldump` and `mysqladmin` launchers
+//!   (`data\kit\bin`) pass it with `--defaults-extra-file` (read after the
+//!   other files, it wins) and the app's tools with `--defaults-file`;
 //! - passwords never go on a command line (other users can read those):
 //!   SQL goes through stdin, mongosh reads them from its environment;
 //! - a project's `.env` gets its connection only after the user saw the
@@ -20,7 +25,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::fsx::write_atomic;
+use super::DbEngine;
+use crate::fsx::{read_json, write_atomic};
 use crate::kit::Kit;
 use crate::projects::state::ProjectState;
 
@@ -32,6 +38,10 @@ use crate::projects::state::ProjectState;
 pub struct Secrets {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mariadb_root: Option<String>,
+    /// MySQL's `root` (D-110); MariaDB's stays as it is for its data, until
+    /// the move to MySQL (issue #3).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mysql_root: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mongodb_admin: Option<String>,
     #[serde(flatten)]
@@ -42,7 +52,7 @@ pub fn dir(kit: &Kit) -> PathBuf {
     kit.app_dir().join("db")
 }
 
-fn secrets_path(kit: &Kit) -> PathBuf {
+pub fn secrets_path(kit: &Kit) -> PathBuf {
     dir(kit).join("secrets.json")
 }
 
@@ -51,33 +61,20 @@ pub fn client_ini(kit: &Kit) -> PathBuf {
 }
 
 pub fn load(kit: &Kit) -> Secrets {
-    fs::read_to_string(secrets_path(kit))
-        .ok()
-        .and_then(|t| serde_json::from_str(&t).ok())
-        .unwrap_or_default()
+    read_json(&secrets_path(kit)).unwrap_or_default()
 }
 
 /// Written in a folder made private first, so neither the temporary file of
 /// `write_atomic` nor the file is ever readable by others, not even for a
 /// moment (security review of D-74); the file's own DACL is set again after.
 fn write_private(path: &Path, text: &str) -> Result<()> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-        if let Err(e) = crate::editor::restrict_dir_to_owner(parent) {
-            crate::log::warn(&format!("{}: permissions: {e:#}", parent.display()));
-        }
-    }
-    write_in_private(path, text)
+    crate::router::fs::write_private(path, text)
 }
 
 /// The atomic write and the file's own DACL, in a folder already private
 /// (`ProjectState::private_dir` sets its DACL before returning it).
 fn write_in_private(path: &Path, text: &str) -> Result<()> {
-    write_atomic(path, text.as_bytes())?;
-    if let Err(e) = crate::editor::restrict_to_owner(path) {
-        crate::log::warn(&format!("{}: permissions: {e:#}", path.display()));
-    }
-    Ok(())
+    crate::router::fs::write_in_private(path, text)
 }
 
 /// A private file of `data\app\db` (a tool's config with a password).
@@ -91,15 +88,215 @@ pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
 
 /// A project's `private\db.json`: engine (`mariadb`, `mongodb`) → password
 /// of its user, and `names`: engine → name of its database and user (an
-/// object, so the readers of passwords skip it); other keys kept as they are.
+/// object, so the readers of passwords skip it); `lines`: engine → version of
+/// the server its database is on, when not the one the server runs
+/// (D-102); `used`: engine → every version where it was created; other keys
+/// kept as they are.
 ///
 /// ```json
-/// { "mariadb": "<password>", "names": { "mariadb": "shop" } }
+/// { "mariadb": "<password>", "names": { "mariadb": "shop" }, "lines": { "mariadb": "10.6" },
+///   "used": { "mariadb": ["12.3", "10.6"] } }
 /// ```
 pub(crate) type ProjectSecrets = serde_json::Map<String, serde_json::Value>;
 
 /// The key of the names in `db.json`.
 const NAMES: &str = "names";
+
+/// Held by every read-change-write of a project's `db.json`: two commands
+/// on blocking threads (a version chosen while a database is created), or
+/// the command line beside the app, would otherwise each write back what
+/// they read, and one change would be lost. In this process a mutex; across
+/// the processes of the kit the lock of the Antigravity keyring
+/// (`agents/keyring.rs`): `Local\Atollo-db-json-<kit id>` on Windows, an
+/// exclusive `flock` on `data/app/db/db-json.lock` elsewhere.
+fn db_json_lock(kit: &Kit) -> Result<DbJsonLock> {
+    static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let process = ONE_AT_A_TIME
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    Ok(DbJsonLock {
+        _kit: KitLock::take(kit)?,
+        _process: process,
+    })
+}
+
+/// How long another process may hold `db.json`: then the change is refused
+/// (nothing written), never made without the lock.
+const DB_JSON_WAIT: std::time::Duration = std::time::Duration::from_secs(30);
+
+struct DbJsonLock {
+    // Released first: the other processes, then this one's threads.
+    _kit: KitLock,
+    _process: std::sync::MutexGuard<'static, ()>,
+}
+
+#[cfg(windows)]
+struct KitLock(windows::Win32::Foundation::HANDLE);
+
+#[cfg(windows)]
+impl KitLock {
+    fn take(kit: &Kit) -> Result<KitLock> {
+        use windows::Win32::Foundation::{CloseHandle, WAIT_ABANDONED, WAIT_OBJECT_0};
+        use windows::Win32::System::Threading::{CreateMutexW, WaitForSingleObject};
+        let name = windows::core::HSTRING::from(format!(r"Local\Atollo-db-json-{}", kit.id()));
+        // SAFETY: valid name, default security; the handle is closed here
+        // or by the guard's Drop.
+        unsafe {
+            let h = CreateMutexW(None, false, &name)?;
+            let r = WaitForSingleObject(h, DB_JSON_WAIT.as_millis() as u32);
+            // Abandoned: a process that held it ended; it is ours now.
+            if r != WAIT_OBJECT_0 && r != WAIT_ABANDONED {
+                let _ = CloseHandle(h);
+                bail!("db.json: another Atollo process holds it, try again");
+            }
+            Ok(KitLock(h))
+        }
+    }
+}
+
+#[cfg(windows)]
+impl Drop for KitLock {
+    fn drop(&mut self) {
+        use windows::Win32::Foundation::CloseHandle;
+        use windows::Win32::System::Threading::ReleaseMutex;
+        // SAFETY: handle from CreateMutexW, owned since the wait; released
+        // and closed once.
+        unsafe {
+            let _ = ReleaseMutex(self.0);
+            let _ = CloseHandle(self.0);
+        }
+    }
+}
+
+/// The lock file stays (it is empty); the system drops the `flock` when the
+/// file closes, also when the process dies.
+#[cfg(unix)]
+struct KitLock(#[allow(dead_code)] fs::File);
+
+#[cfg(unix)]
+impl KitLock {
+    fn take(kit: &Kit) -> Result<KitLock> {
+        use std::os::fd::AsRawFd;
+        let path = dir(kit).join("db-json.lock");
+        fs::create_dir_all(dir(kit))?;
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(&path)
+            .map_err(|e| anyhow::anyhow!("{}: {e}", path.display()))?;
+        let start = std::time::Instant::now();
+        // SAFETY: a valid descriptor owned by `file`.
+        while unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+            if start.elapsed() > DB_JSON_WAIT {
+                bail!("db.json: another Atollo process holds it, try again");
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+        Ok(KitLock(file))
+    }
+}
+
+/// The key of the versions in `db.json`.
+const LINES: &str = "lines";
+
+/// The version of `engine` chosen for the project's database (None: the
+/// one the server runs); an error when `db.json` cannot be read. A value
+/// that is not a version is ignored.
+pub fn project_line(kit: &Kit, project: &str, engine: &str) -> Result<Option<String>> {
+    let secrets = read_project(&project_file_to_read(kit, project)?)?.unwrap_or_default();
+    Ok(secrets
+        .get(LINES)
+        .and_then(|l| l.get(engine))
+        .and_then(serde_json::Value::as_str)
+        .filter(|l| crate::versions::valid_line(l))
+        .map(str::to_owned))
+}
+
+/// Stores (None: removes) the version of `engine` for the project's
+/// database; nothing is created to remove one.
+pub fn set_project_line(kit: &Kit, project: &str, engine: &str, line: Option<&str>) -> Result<()> {
+    if line.is_some_and(|l| !crate::versions::valid_line(l)) {
+        bail!("not a version line: {}", line.unwrap_or_default());
+    }
+    let _one = db_json_lock(kit)?;
+    let mut secrets = read_project(&project_file_to_read(kit, project)?)?;
+    if line.is_none() && secrets.is_none() {
+        return Ok(());
+    }
+    let secrets = secrets.get_or_insert_with(Default::default);
+    let lines = match secrets
+        .entry(LINES)
+        .or_insert_with(|| serde_json::Value::Object(Default::default()))
+    {
+        serde_json::Value::Object(lines) => lines,
+        _ => bail!("db.json: \"{LINES}\" is not an object"),
+    };
+    match line {
+        Some(l) => lines.insert(engine.to_owned(), l.into()),
+        None => lines.remove(engine),
+    };
+    if lines.is_empty() {
+        secrets.remove(LINES);
+    }
+    let path = project_file(kit, project)?;
+    write_in_private(&path, &serde_json::to_string_pretty(&secrets)?)
+}
+
+/// The key of the versions each database was created on, in `db.json`.
+const USED: &str = "used";
+
+/// The versions of `engine` where the project's database and user were
+/// created (`used` of `db.json`: engine → versions), so that deleting the
+/// project drops them from each. Empty for a `db.json` of before (only the
+/// version it is on now is known then); values that are not versions are
+/// ignored.
+pub fn project_used_lines(kit: &Kit, project: &str, engine: &str) -> Result<Vec<String>> {
+    let secrets = read_project(&project_file_to_read(kit, project)?)?.unwrap_or_default();
+    Ok(secrets
+        .get(USED)
+        .and_then(|u| u.get(engine))
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(serde_json::Value::as_str)
+        .filter(|l| crate::versions::valid_line(l))
+        .map(str::to_owned)
+        .collect())
+}
+
+/// Adds `line` to the versions of `engine` where the project's database
+/// exists ([`project_used_lines`]); nothing is created for a project
+/// without `db.json`.
+pub fn add_project_used_line(kit: &Kit, project: &str, engine: &str, line: &str) -> Result<()> {
+    if !crate::versions::valid_line(line) {
+        bail!("not a version line: {line}");
+    }
+    let _one = db_json_lock(kit)?;
+    let Some(mut secrets) = read_project(&project_file_to_read(kit, project)?)? else {
+        return Ok(());
+    };
+    let used = match secrets
+        .entry(USED)
+        .or_insert_with(|| serde_json::Value::Object(Default::default()))
+    {
+        serde_json::Value::Object(used) => used,
+        _ => bail!("db.json: \"{USED}\" is not an object"),
+    };
+    let lines = match used
+        .entry(engine)
+        .or_insert_with(|| serde_json::Value::Array(Vec::new()))
+    {
+        serde_json::Value::Array(lines) => lines,
+        _ => bail!("db.json: the versions used by {engine} are not a list"),
+    };
+    if lines.iter().any(|l| l.as_str() == Some(line)) {
+        return Ok(());
+    }
+    lines.push(line.into());
+    let path = project_file(kit, project)?;
+    write_in_private(&path, &serde_json::to_string_pretty(&secrets)?)
+}
 
 fn project_state(kit: &Kit, project: &str) -> Result<ProjectState> {
     match ProjectState::of(kit, project) {
@@ -114,7 +311,7 @@ fn project_file(kit: &Kit, project: &str) -> Result<PathBuf> {
 }
 
 /// The project's `db.json` to read: nothing is created (a project without
-/// databases gets no `private\`, PLAN-DATA.md WP-7).
+/// databases gets no `private\`, D-89).
 fn project_file_to_read(kit: &Kit, project: &str) -> Result<PathBuf> {
     Ok(project_state(kit, project)?
         .dir()
@@ -185,10 +382,7 @@ pub fn try_project_password(kit: &Kit, project: &str, engine: &str) -> Result<Op
 pub fn ensure_project_db(kit: &Kit, project: &str, engine: &str) -> Result<(String, String)> {
     // The check of the other projects' names and the write are one step:
     // two creations at once (`my-app`, `my_app`) cannot both pass.
-    static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    let _one = ONE_AT_A_TIME
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _one = db_json_lock(kit)?;
     let mut secrets = read_project(&project_file_to_read(kit, project)?)?.unwrap_or_default();
     let name = name_in(&secrets, project, engine)?;
     check_name_free(kit, project, engine, &name)?;
@@ -349,7 +543,7 @@ pub fn check_name_free(kit: &Kit, project: &str, engine: &str, name: &str) -> Re
 pub(crate) fn add_legacy_names(secrets: &mut ProjectSecrets, project: &str) -> Result<bool> {
     let engines: Vec<String> = secrets
         .iter()
-        .filter(|(k, v)| v.is_string() && crate::db::services::SERVERS.contains(&k.as_str()))
+        .filter(|(k, v)| v.is_string() && DbEngine::from_id(k).is_some())
         .map(|(k, _)| k.clone())
         .collect();
     let mut added = false;
@@ -366,6 +560,7 @@ pub(crate) fn add_legacy_names(secrets: &mut ProjectSecrets, project: &str) -> R
 /// [`add_legacy_names`] on the `db.json` of `project`, written back (in
 /// its private folder) only when something was added.
 pub(crate) fn keep_legacy_names(kit: &Kit, project: &str) -> Result<()> {
+    let _one = db_json_lock(kit)?;
     let path = project_file_to_read(kit, project)?;
     let Some(mut secrets) = read_project(&path)? else {
         return Ok(());
@@ -380,6 +575,7 @@ pub(crate) fn keep_legacy_names(kit: &Kit, project: &str) -> Result<()> {
 /// `db.json` of before the names; creations use [`ensure_project_db`]).
 #[allow(dead_code)] // the tests
 pub fn set_project_password(kit: &Kit, project: &str, engine: &str, password: &str) -> Result<()> {
+    let _one = db_json_lock(kit)?;
     let path = project_file(kit, project)?;
     let mut secrets = read_project(&path)?.unwrap_or_default();
     secrets.insert(engine.to_owned(), password.into());
@@ -387,9 +583,10 @@ pub fn set_project_password(kit: &Kit, project: &str, engine: &str, password: &s
 }
 
 /// Removes the project's `db.json` and returns its passwords by engine, so
-/// the users can be dropped from the servers (PLAN-DATA.md WP-5). Nothing is
+/// the users can be dropped from the servers (D-89). Nothing is
 /// created: after the project's folder of the kit is gone it stays gone.
 pub fn drop_project(kit: &Kit, project: &str) -> Result<BTreeMap<String, String>> {
+    let _one = db_json_lock(kit)?;
     let path = project_file_to_read(kit, project)?;
     let Some(secrets) = read_project(&path)? else {
         return Ok(BTreeMap::new());
@@ -405,13 +602,88 @@ pub fn new_password() -> Result<String> {
 
 /// The `[client]` login of `root` for the kit's MariaDB on `port`.
 pub fn write_client_ini(kit: &Kit, port: u16, password: &str) -> Result<()> {
+    write_private(&client_ini(kit), &client_ini_text(port, password))
+}
+
+/// The folder of the `[client]` login (`my.ini`) of another version of
+/// MariaDB, on its own port (D-102): the `MYSQL_HOME` of the
+/// programs of a project whose database is on it.
+pub fn line_client_dir(kit: &Kit, line: &str) -> PathBuf {
+    dir(kit).join("lines").join(line)
+}
+
+/// [`write_client_ini`] for version `line` on its `port`
+/// ([`line_client_dir`]).
+pub fn write_line_client_ini(kit: &Kit, line: &str, port: u16, password: &str) -> Result<()> {
+    if !crate::versions::valid_line(line) {
+        bail!("not a version line: {line}");
+    }
     write_private(
-        &client_ini(kit),
-        &format!(
-            "# Atollo: login of the kit's MariaDB (written by the app).\r\n\
-             [client]\r\nuser=root\r\npassword={password}\r\nhost=127.0.0.1\r\n\
-             port={port}\r\nprotocol=TCP\r\n"
-        ),
+        &line_client_dir(kit, line).join("my.ini"),
+        &client_ini_text(port, password),
+    )
+}
+
+fn client_ini_text(port: u16, password: &str) -> String {
+    format!(
+        "# Atollo: login of the kit's MariaDB (written by the app).\r\n\
+         [client]\r\nuser=root\r\npassword={password}\r\nhost=127.0.0.1\r\n\
+         port={port}\r\nprotocol=TCP\r\n"
+    )
+}
+
+/// The `[client]` login of `root` for the kit's MySQL, on the port of the
+/// version the server runs (D-110, [`write_mysql_cnf`]).
+pub fn mysql_cnf(kit: &Kit) -> PathBuf {
+    dir(kit).join("mysql.cnf")
+}
+
+/// The login of another version of MySQL, on its own port
+/// (D-102): the `ATOLLO_MYSQL_CNF` of the programs of a project whose
+/// database is on it (`services::project_client_env`).
+pub fn mysql_line_cnf(kit: &Kit, line: &str) -> PathBuf {
+    dir(kit).join("mysql-lines").join(line).join("mysql.cnf")
+}
+
+/// MySQL's `[client]` login: TCP on 127.0.0.1 (never a socket or a named
+/// pipe of another MySQL of the PC), no paths, so nothing to escape (a
+/// `\` is an escape in MySQL's option files). LF ends: read the same on
+/// every system.
+pub fn mysql_cnf_text(port: u16, password: &str) -> String {
+    format!(
+        "# Atollo: login of the kit's MySQL (written by the app).\n\
+         [client]\nuser=root\npassword={password}\nhost=127.0.0.1\n\
+         port={port}\nprotocol=TCP\n"
+    )
+}
+
+/// [`mysql_cnf`] for `port`.
+pub fn write_mysql_cnf(kit: &Kit, port: u16, password: &str) -> Result<()> {
+    write_private(&mysql_cnf(kit), &mysql_cnf_text(port, password))
+}
+
+/// [`mysql_line_cnf`] for version `line` on its `port`.
+pub fn write_mysql_line_cnf(kit: &Kit, line: &str, port: u16, password: &str) -> Result<()> {
+    if !crate::versions::valid_line(line) {
+        bail!("not a version line: {line}");
+    }
+    write_private(&mysql_line_cnf(kit, line), &mysql_cnf_text(port, password))
+}
+
+/// SQL that gives MySQL's `root` its password while `mysqld --initialize`
+/// makes the data folder (its `--init-file`: `root@localhost` only, with a
+/// random expired password until then), and the same `root` for
+/// 127.0.0.1: the kit connects over TCP, and a TCP login from 127.0.0.1
+/// matches `root@localhost` only when the server resolves that address to
+/// the name `localhost`, which the kit does not rely on.
+pub fn mysql_root_sql(password: &str) -> String {
+    format!(
+        "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+         CREATE USER IF NOT EXISTS 'root'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+         ALTER USER 'root'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+         GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION;\n\
+         GRANT PROXY ON ''@'' TO 'root'@'127.0.0.1' WITH GRANT OPTION;\n\
+         FLUSH PRIVILEGES;\n"
     )
 }
 
@@ -425,32 +697,19 @@ pub fn root_password_sql(password: &str) -> String {
     )
 }
 
-/// Databases and users of MariaDB itself: a project named after one would
-/// create, alter or drop it (`DROP DATABASE mysql`, the `root` user).
-const MARIADB_RESERVED: &[&str] = &[
-    "mysql",
-    "information_schema",
-    "performance_schema",
-    "sys",
-    "root",
-    "mariadb_sys",
-];
-
-/// MongoDB's own databases (`admin` holds every user of the server).
-const MONGODB_RESERVED: &[&str] = &["admin", "local", "config"];
-
-/// `name` is a database or user of the server of `engine` itself (of
-/// either server for an engine this version does not know).
+/// `name` is a database or user of the server of `engine` itself
+/// ([`DbEngine::reserved_names`]; of every server for an engine this
+/// version does not know).
 pub fn is_reserved(engine: &str, name: &str) -> bool {
-    let lists: &[&[&str]] = match engine {
-        "mariadb" => &[MARIADB_RESERVED],
-        "mongodb" => &[MONGODB_RESERVED],
-        _ => &[MARIADB_RESERVED, MONGODB_RESERVED],
+    let reserved = |e: DbEngine| {
+        e.reserved_names()
+            .iter()
+            .any(|r| r.eq_ignore_ascii_case(name))
     };
-    lists
-        .iter()
-        .flat_map(|l| l.iter())
-        .any(|r| r.eq_ignore_ascii_case(name))
+    match DbEngine::from_id(engine) {
+        Some(e) => reserved(e),
+        None => DbEngine::ALL.into_iter().any(reserved),
+    }
 }
 
 /// The rule of the names before they were stored: lower case letters,
@@ -508,6 +767,34 @@ pub fn project_sql(name: &str, password: &str) -> String {
     sql
 }
 
+/// [`project_sql`] for MySQL (D-110): `caching_sha2_password`, the default
+/// of 8.4 and the only one left in 9.x, for `localhost` and `127.0.0.1`
+/// (the server listens on 127.0.0.1 only); `_` escaped in the GRANT as for
+/// MariaDB. No wildcard grants of earlier versions to remove: the kit never
+/// made any on MySQL.
+pub fn mysql_project_sql(name: &str, password: &str) -> String {
+    let mut sql = format!("CREATE DATABASE IF NOT EXISTS `{name}` CHARACTER SET utf8mb4;\n");
+    let pattern = name.replace('_', "\\_");
+    for host in ["localhost", "127.0.0.1"] {
+        sql.push_str(&format!(
+            "CREATE USER IF NOT EXISTS '{name}'@'{host}' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+             ALTER USER '{name}'@'{host}' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+             GRANT ALL PRIVILEGES ON `{pattern}`.* TO '{name}'@'{host}';\n"
+        ));
+    }
+    sql.push_str("FLUSH PRIVILEGES;\n");
+    sql
+}
+
+/// The SQL that creates (or repairs) a project's database and user on the
+/// SQL `engine`.
+pub fn project_sql_for(engine: DbEngine, name: &str, password: &str) -> String {
+    match engine {
+        DbEngine::MySql => mysql_project_sql(name, password),
+        DbEngine::MariaDb | DbEngine::MongoDb => project_sql(name, password),
+    }
+}
+
 /// mongosh script for a project's user (names and passwords from the
 /// environment: `ATOLLO_DB_ADMIN`, `ATOLLO_DB_NAME`, `ATOLLO_DB_PASSWORD`).
 pub const MONGO_PROJECT_JS: &str = "const a = db.getSiblingDB('admin'); \
@@ -517,7 +804,7 @@ pub const MONGO_PROJECT_JS: &str = "const a = db.getSiblingDB('admin'); \
     if (d.getUser(n)) { d.updateUser(n, { pwd: p }); } \
     else { d.createUser({ user: n, pwd: p, roles: [{ role: 'dbOwner', db: n }] }); }";
 
-/// SQL that drops a project's database and user (PLAN-DATA.md WP-5); both
+/// SQL that drops a project's database and user (D-89); both
 /// may be missing already.
 pub fn project_drop_sql(name: &str) -> String {
     format!(
@@ -566,12 +853,11 @@ pub struct ProjectDb {
 /// The connection to the database and user `name` ([`project_db_name`]).
 pub fn project_db(engine: &str, name: &str, password: &str, port: u16) -> ProjectDb {
     let name = name.to_owned();
-    let url = match engine {
-        "mongodb" => {
-            format!("mongodb://{name}:{password}@127.0.0.1:{port}/{name}?authSource={name}")
-        }
-        _ => format!("mysql://{name}:{password}@127.0.0.1:{port}/{name}"),
-    };
+    // An id this version does not know: a SQL server, as before the engines
+    // were an enum.
+    let url = DbEngine::from_id(engine)
+        .unwrap_or(DbEngine::MariaDb)
+        .project_url(&name, password, port);
     ProjectDb {
         engine: engine.to_owned(),
         database: name.clone(),
@@ -605,14 +891,17 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
     let laravel = text
         .lines()
         .any(|l| l.trim_start().starts_with("DB_CONNECTION="));
-    let pairs: Vec<(&str, String)> = match db.engine.as_str() {
-        "mongodb" if laravel => vec![
+    // An id this version does not know: a SQL server, as before the engines
+    // were an enum.
+    let engine = DbEngine::from_id(&db.engine).unwrap_or(DbEngine::MariaDb);
+    let pairs: Vec<(&str, String)> = match engine {
+        DbEngine::MongoDb if laravel => vec![
             ("DB_CONNECTION", "mongodb".into()),
             ("DB_DATABASE", db.database.clone()),
             ("MONGODB_URI", db.url.clone()),
         ],
-        "mongodb" => vec![("MONGODB_URI", db.url.clone())],
-        _ if laravel => vec![
+        DbEngine::MongoDb => vec![("MONGODB_URI", db.url.clone())],
+        DbEngine::MariaDb | DbEngine::MySql if laravel => vec![
             ("DB_CONNECTION", "mysql".into()),
             ("DB_HOST", db.host.clone()),
             ("DB_PORT", db.port.to_string()),
@@ -620,7 +909,7 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
             ("DB_USERNAME", db.user.clone()),
             ("DB_PASSWORD", db.password.clone()),
         ],
-        _ => vec![("DATABASE_URL", db.url.clone())],
+        DbEngine::MariaDb | DbEngine::MySql => vec![("DATABASE_URL", db.url.clone())],
     };
     pairs.into_iter().map(|(k, v)| (k.to_owned(), v)).collect()
 }

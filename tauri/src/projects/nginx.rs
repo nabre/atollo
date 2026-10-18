@@ -1,44 +1,58 @@
 //! A project's own Nginx: the kit's `nginx.exe` with a configuration written at
 //! every start in `data\projects\<project>\nginx\` (never in the project),
-//! plus `php-cgi.exe` on an local FastCGI port when PHP is installed.
+//! plus `php-cgi.exe` on an local FastCGI port when PHP is installed
+//! (`projects/fastcgi.rs`).
 
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command};
+use std::process::Command;
 
 use anyhow::{anyhow, bail, Result};
 
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
-use crate::os::jobs::{self, Job};
+use crate::os::jobs;
 use crate::projects::alias::{self, valid_domain, SiteAlias};
-use crate::projects::apache::fwd;
+use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
+// The php-cgi of Nginx moved to the module it shares with Caddy (D-111).
+pub use crate::projects::fastcgi::{spawn_php_cgi_if_present, FastCgi, FCGI_KEY_PARAM};
+
+/// The `http` line that lets a `server_name` reach 120 characters (a
+/// domain, alias::valid_domain, or a pool's `<action>-N.<project>.localhost`):
+/// with a smaller bucket Nginx does not start.
+pub const SERVER_NAMES_HASH: &str = "    server_names_hash_bucket_size 128;";
+
+/// The server program of the Nginx in `dir` (BUG-V3-08): `nginx.exe` on
+/// Windows; `sbin/nginx` on macOS and Linux, or `bin/nginx` when only that
+/// one is there.
+pub fn nginx_exe(kit: &Kit, dir: &Path) -> PathBuf {
+    if kit.os().is_windows() {
+        return dir.join("nginx.exe");
+    }
+    let sbin = dir.join("sbin").join("nginx");
+    let bin = dir.join("bin").join("nginx");
+    if !sbin.is_file() && bin.is_file() {
+        bin
+    } else {
+        sbin
+    }
+}
 
 /// Resolves the Nginx installation directory from `env` (`CP_NGINX`) or the kit's default line.
 pub fn nginx_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
     env.get("CP_NGINX")
         .map(PathBuf::from)
-        .filter(|d| d.join("nginx.exe").is_file())
+        .filter(|d| nginx_exe(kit, d).is_file())
         .unwrap_or_else(|| {
             let resolved = crate::setup::catalog::kit_path(kit, "nginx");
-            if resolved.join("nginx.exe").is_file() {
+            if nginx_exe(kit, &resolved).is_file() {
                 resolved
             } else {
                 kit.apps().join("nginx")
             }
         })
-}
-
-/// Resolves the PHP directory (`php-cgi.exe`) from `env` (`CP_PHP`) or the kit's default line.
-pub fn php_dir(kit: &Kit, env: &KitEnv) -> Option<PathBuf> {
-    let dir = env
-        .get("CP_PHP")
-        .map(PathBuf::from)
-        .filter(|d| d.join("php-cgi.exe").is_file())
-        .unwrap_or_else(|| crate::setup::catalog::kit_path(kit, "php"));
-    dir.join("php-cgi.exe").is_file().then_some(dir)
 }
 
 /// The folder of the project's Nginx runtime files.
@@ -47,6 +61,10 @@ pub fn dir(kit: &Kit, project: &str) -> Result<PathBuf> {
         .map(|s| s.nginx_dir())
         .ok_or_else(|| anyhow!("not a project name: {project}"))
 }
+
+/// The local `Host` names a project's own Nginx answers besides `localhost`
+/// and the project's domains when not in LAN mode (SEC-V3-03).
+const LOCAL_HOSTS: [&str; 3] = ["127.0.0.1", "[::1]", "*.localhost"];
 
 /// Creates the required Nginx temporary directories inside `run_dir`.
 pub fn prepare_dirs(run_dir: &Path) -> Result<()> {
@@ -57,7 +75,8 @@ pub fn prepare_dirs(run_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Generates Nginx `location` blocks for checked path aliases.
+/// Generates Nginx `location` blocks for checked path aliases (no link
+/// followed in their folders where Nginx can do it).
 pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     let mut lines = Vec::new();
     for alias in aliases {
@@ -68,12 +87,22 @@ pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
         lines.push(format!("{indent}location {}/ {{", alias.url));
         lines.push(format!("{indent}    alias \"{target}\";"));
         lines.push(format!("{indent}    autoindex on;"));
+        // No link followed in an alias' folder (WEB-8). Nginx for Windows
+        // has no `disable_symlinks` (it needs `openat`) and would not start
+        // with it: there `alias::resolve_nginx` leaves out a folder with a
+        // link inside.
+        if !cfg!(windows) {
+            lines.push(format!("{indent}    disable_symlinks on;"));
+        }
         lines.push(format!("{indent}}}"));
     }
     lines
 }
 
-/// Generates an Nginx `server { ... }` VirtualHost block.
+/// Generates an Nginx `server { ... }` VirtualHost block. `dedicated`: the
+/// project's own Nginx, which answers `localhost` too; in LAN mode it is the
+/// `default_server` (any `Host`, an IP of the PC included), else it names
+/// the local hosts only and [`project_conf`] refuses the others.
 #[allow(clippy::too_many_arguments)]
 pub fn vhost_block(
     nginx_install: &Path,
@@ -81,18 +110,18 @@ pub fn vhost_block(
     doc_root: &Path,
     conf_d_dir: Option<&Path>,
     port: u16,
-    fcgi_port: Option<u16>,
+    fcgi: Option<&FastCgi>,
     lan: bool,
     domains: &[String],
     aliases: &[SiteAlias],
-    default_server: bool,
+    dedicated: bool,
 ) -> String {
     let listen = if lan {
         port.to_string()
     } else {
         format!("127.0.0.1:{port}")
     };
-    let listen_suffix = if default_server {
+    let listen_suffix = if dedicated && lan {
         " default_server"
     } else {
         ""
@@ -107,8 +136,11 @@ pub fn vhost_block(
             names.push(d);
         }
     }
-    if default_server || names.is_empty() {
+    if dedicated || names.is_empty() {
         names.push("localhost".to_owned());
+    }
+    if dedicated && !lan {
+        names.extend(LOCAL_HOSTS.iter().map(|h| (*h).to_owned()));
     }
     let root_fwd = fwd(doc_root);
     let nginx_fwd = fwd(nginx_install);
@@ -126,8 +158,12 @@ pub fn vhost_block(
         "        location ~ /\\.(?!well-known(/|$)) {".to_owned(),
         "            deny all;".to_owned(),
         "        }".to_owned(),
+        // `.inc` and the old `.php3`…`.php8`: never served, PHP or not.
+        format!("        location ~* {PHP_NEVER} {{"),
+        "            deny all;".to_owned(),
+        "        }".to_owned(),
     ];
-    if fcgi_port.is_some() {
+    if fcgi.is_some() {
         lines.extend([
             "        location / {".to_owned(),
             "            try_files $uri $uri/ /index.php?$query_string;".to_owned(),
@@ -141,24 +177,28 @@ pub fn vhost_block(
         ]);
     }
     lines.extend(alias_locations(aliases, "        "));
-    if let Some(fp) = fcgi_port {
+    if let Some(fcgi) = fcgi {
         // `~*`: on NTFS `/INDEX.PHP` is the same file, and must be run,
-        // never served as text by `location /`.
+        // never served as text by `location /`. `.phtml` and `.phar` as
+        // with Apache's PHP module.
         lines.extend([
-            "        location ~* \\.php$ {".to_owned(),
+            format!("        location ~* {PHP_RUN} {{"),
             "            try_files $uri =404;".to_owned(),
-            format!("            fastcgi_pass 127.0.0.1:{fp};"),
+            format!("            fastcgi_pass {};", fcgi.addr.nginx_pass()),
             "            fastcgi_index index.php;".to_owned(),
             format!("            include \"{nginx_fwd}/conf/fastcgi_params\";"),
             "            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;"
                 .to_owned(),
+            // What runtime\fcgi-guard.php asks of every request.
+            format!("            fastcgi_param {FCGI_KEY_PARAM} {};", fcgi.key),
             "        }".to_owned(),
         ]);
     } else {
-        // Without PHP-CGI a `.php` would be sent as a download, source and
-        // secrets included: refuse it (aliases too, regex wins over prefix).
+        // Without PHP-CGI a `.php` (`.phtml`, `.phar`) would be sent as a
+        // download, source and secrets included: refuse it (aliases too,
+        // regex wins over prefix).
         lines.extend([
-            "        location ~* \\.php$ {".to_owned(),
+            format!("        location ~* {PHP_RUN} {{"),
             "            return 503;".to_owned(),
             "        }".to_owned(),
         ]);
@@ -178,7 +218,7 @@ pub fn project_conf(
     doc_root: &Path,
     run_dir: &Path,
     port: u16,
-    fcgi_port: Option<u16>,
+    fcgi: Option<&FastCgi>,
     lan: bool,
     domains: &[String],
     aliases: &[SiteAlias],
@@ -191,13 +231,13 @@ pub fn project_conf(
         doc_root,
         Some(run_dir),
         port,
-        fcgi_port,
+        fcgi,
         lan,
         domains,
         aliases,
         true,
     );
-    [
+    let mut lines = vec![
         "# --- Atollo: this project's Nginx (written at every start) ---".to_owned(),
         "worker_processes 1;".to_owned(),
         format!("pid \"{run_fwd}/nginx.pid\";"),
@@ -216,45 +256,23 @@ pub fn project_conf(
         format!("    scgi_temp_path \"{run_fwd}/temp/scgi\";"),
         "    sendfile on;".to_owned(),
         "    keepalive_timeout 65;".to_owned(),
+        SERVER_NAMES_HASH.to_owned(),
         server,
-        "}".to_owned(),
-        String::new(),
-    ]
-    .join("\r\n")
-}
-
-/// Spawns `php-cgi.exe -b 127.0.0.1:<fcgi_port>` inside `job` when PHP is installed,
-/// returning the FastCGI port used and the process, whose death the caller
-/// watches (a Nginx without its php-cgi answers 502 to every `.php`).
-/// `None` when PHP is not installed or the spawn failed (in the log).
-pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(u16, Child)> {
-    let php = php_dir(kit, env)?;
-    let cgi = php.join("php-cgi.exe");
-    let fcgi_port = match std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
-        .and_then(|l| l.local_addr())
-    {
-        Ok(addr) => addr.port(),
-        Err(e) => {
-            crate::log::warn(&format!("php-cgi: no free FastCGI port: {e}"));
-            return None;
-        }
-    };
-    let mut cmd = jobs::kit_command(&cgi, env);
-    cmd.arg("-b")
-        .arg(format!("127.0.0.1:{fcgi_port}"))
-        .arg("-c")
-        .arg(kit.data().join("php"))
-        .env("PHP_FCGI_MAX_REQUESTS", "0")
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null());
-    match jobs::spawn_in(&mut cmd, job) {
-        Ok(child) => Some((fcgi_port, child)),
-        Err(e) => {
-            crate::log::warn(&format!("php-cgi {}: {e:#}", cgi.display()));
-            None
-        }
+    ];
+    if !lan {
+        // Against DNS rebinding (a page of another site that renames itself
+        // to 127.0.0.1 and reads the project): a `Host` the site does not
+        // name, or none, gets 421 from this default server.
+        lines.extend([
+            "    server {".to_owned(),
+            format!("        listen 127.0.0.1:{port} default_server;"),
+            "        server_name _;".to_owned(),
+            "        return 421;".to_owned(),
+            "    }".to_owned(),
+        ]);
     }
+    lines.extend(["}".to_owned(), String::new()]);
+    lines.join("\r\n")
 }
 
 /// Prepares `nginx.conf` and returns the `Command` to start `nginx.exe`.
@@ -265,14 +283,14 @@ pub fn command(
     project_root: &Path,
     doc_root: &Path,
     port: u16,
-    fcgi_port: Option<u16>,
+    fcgi: Option<&FastCgi>,
     lan: bool,
     domains: &[String],
     aliases: &BTreeMap<String, String>,
     env: &KitEnv,
 ) -> Result<Command> {
     let nginx = nginx_dir(kit, env);
-    let exe = nginx.join("nginx.exe");
+    let exe = nginx_exe(kit, &nginx);
     if !exe.is_file() {
         bail!("Nginx is not installed (Strumenti > Nginx)");
     }
@@ -285,10 +303,10 @@ pub fn command(
         doc_root,
         &run_dir,
         port,
-        fcgi_port,
+        fcgi,
         lan,
         domains,
-        &alias::resolve(project_root, &kit.projects(), aliases),
+        &alias::resolve_nginx(project_root, &kit.projects(), aliases),
     );
     write_atomic(&conf, content.as_bytes())?;
     let mut cmd = jobs::kit_command(&exe, env);

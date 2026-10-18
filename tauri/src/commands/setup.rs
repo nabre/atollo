@@ -2,6 +2,7 @@
 //! by hand (D-82).
 
 use super::*;
+use crate::router::availability::unavailable_reason;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,12 +24,20 @@ pub struct ComponentInfo {
     pub x64_only: bool,
     /// No ARM64 build and this kit is Windows ARM64: why it is not available.
     pub no_arm64: bool,
-    /// Not made for this kit's system (Windows only, on macOS or Linux): why
-    /// it is not available, already translated. `None` on Windows ARM64,
+    /// Why it is not available on this kit's target, already translated:
+    /// the catalog's own reason (`unavailable`, Android on Linux ARM64),
+    /// Rosetta 2 missing on this Mac, or not made for this system (Windows
+    /// only, on macOS or Linux). `None` for `noArm64` on Windows ARM64,
     /// where `no_arm64` says it.
     pub unavailable_reason: Option<String>,
-    /// Components it needs (Apache needs PHP, Kotlin needs Java).
+    /// Components it needs on this kit's target (Apache needs PHP, Kotlin
+    /// needs Java; C and C++ need Zig on macOS and Linux only).
     pub needs: Vec<String>,
+    /// C and C++ on a Mac without Xcode Command Line Tools (`xcode-select
+    /// -p` fails): C and C++ work, the Apple frameworks do not (D-112).
+    /// Only the Mac itself can tell: false for a kit inspected or prepared
+    /// from another system.
+    pub xcode_missing: bool,
     /// x64 only, on an ARM64 PC with Windows 10: only Windows 11 runs x64
     /// programs there (D-81). Not available.
     pub needs_windows11: bool,
@@ -37,21 +46,30 @@ pub struct ComponentInfo {
     pub versioned: bool,
     /// Its official site.
     pub home: String,
+    /// Bootstrap archives pre-downloaded for this target; finishes installing
+    /// on first start on that OS.
+    pub bootstrap_staged: bool,
 }
 
 /// When the Tools page opens: what was deleted by hand from the kit's
 /// folder is no longer chosen (versions::sync_with_disk); the names of
-/// those. Not while an installation runs (its folders come and go).
+/// those. Not while an installation runs (its folders come and go), nor when
+/// inspecting a non-host target.
 #[tauri::command]
 pub fn components_sync<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
+    target: Option<String>,
 ) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
     if state.setup.snapshot().running {
         return Ok(Vec::new());
     }
-    let off = crate::versions::sync_with_disk(&state.kit).or_fail_chain("components")?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    if kit.target() != state.kit.target() {
+        return Ok(Vec::new());
+    }
+    let off = crate::versions::sync_with_disk(&kit).or_fail_chain("components")?;
     if !off.is_empty() {
         apply_env(&state, Settings::load(&state.kit).settings);
     }
@@ -62,9 +80,30 @@ pub fn components_sync<R: Runtime>(
 pub fn components_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
+    target: Option<String>,
 ) -> CmdResult<Vec<ComponentInfo>> {
     ensure_main(&webview)?;
-    Ok(component_infos(&state.kit, state.lang()))
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    Ok(component_infos(&kit, state.lang()))
+}
+
+/// Verifies every installed or bootstrap-staged component on `target` (live
+/// version commands when executable on the host, static key/version check
+/// when probing a foreign target).
+#[tauri::command]
+pub async fn components_check<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    target: Option<String>,
+) -> CmdResult<Vec<crate::setup::checkup::Check>> {
+    ensure_main(&webview)?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    let env = state.env();
+    tauri::async_runtime::spawn_blocking(move || {
+        Ok(crate::router::Router::new(kit).probe_health(&env))
+    })
+    .await
+    .or_fail("check")?
 }
 
 /// The PC runs x64 programs: x64 itself, or Windows 11 on ARM64 (Windows 10
@@ -73,46 +112,95 @@ pub(super) fn emulates_x64() -> bool {
     crate::os::windows_build().is_none_or(|b| b >= 22000)
 }
 
+/// The Xcode Command Line Tools are missing on this Mac, for a kit of
+/// `target`: only a darwin kit on a Mac, where `xcode-select -p` fails.
+fn xcode_missing_on_host(target: crate::kit::Target) -> bool {
+    xcode_missing(target, crate::kit::Os::current(), xcode_selected)
+}
+
+/// [`xcode_missing_on_host`] with the host's system and `xcode-select -p`
+/// given (`None`: it failed), so that every target is tested anywhere.
+pub(super) fn xcode_missing(
+    target: crate::kit::Target,
+    host: crate::kit::Os,
+    selected: impl FnOnce() -> Option<String>,
+) -> bool {
+    target.is_macos() && host.is_macos() && selected().is_none_or(|s| s.trim().is_empty())
+}
+
+/// The folder of the active developer tools (`xcode-select -p`), on a Mac.
+/// `-p` only prints: it never opens the installation dialog. The same as
+/// `install::lang::cc::xcode_selected`, which its private modules do not
+/// export yet: to be replaced by it once they do.
+#[cfg(target_os = "macos")]
+fn xcode_selected() -> Option<String> {
+    let out = std::process::Command::new("/usr/bin/xcode-select")
+        .arg("-p")
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()
+        .filter(|o| o.status.success())?;
+    let path = String::from_utf8_lossy(&out.stdout).trim().to_owned();
+    std::path::Path::new(&path).is_dir().then_some(path)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn xcode_selected() -> Option<String> {
+    None
+}
+
 /// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`
 /// component is not available on a Windows ARM64 kit, one with an
-/// `unavailableReason` not on this system (macOS, Linux).
+/// `unavailableReason` not on this target (see [`unavailable_reason`]).
 pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
-    let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+    let choice = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
     let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
-    let locked = catalog.locked();
+    let locked = catalog.locked_on(target);
+    // Chosen here also when a chosen one needs it on this target only (Zig
+    // for C and C++ on Linux): the run installs it, the choice does not
+    // save it (see `choice_text`).
+    let here = catalog.needs_only_on(&choice.chosen_ids(catalog), target);
+    let xcode_missing = xcode_missing_on_host(target);
     // The order of the page, which an installation follows too.
     catalog
         .in_page_order()
         .into_iter()
         .map(|c| {
             let off = !c.is_available_on(target);
-            let no_arm64 = off && win_arm64;
-            let unavailable_reason = (off && !win_arm64)
-                .then(|| crate::i18n::t(lang, "non disponibile per {0}", &[target.as_str()]));
-            let needs_windows11 = win_arm64 && c.x64_only && !emulates_x64();
+            let no_rosetta = !off && crate::router::target::rosetta_missing_on_host(target, c);
+            let unavailable_reason = unavailable_reason(c, target, no_rosetta, lang);
+            let no_arm64 = off && win_arm64 && unavailable_reason.is_none();
+            let needs_windows11 = win_arm64
+                && c.x64_only
+                && crate::kit::Os::current().is_windows()
+                && !emulates_x64();
             ComponentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
                 group: c.group,
                 desc: crate::i18n::t(lang, &c.desc, &[]),
                 mb: c.mb,
-                chosen: choice.is_chosen(&c.id),
+                chosen: choice.is_chosen(&c.id) || here.contains(c.id.as_str()),
                 installed: c.is_installed(kit),
                 present: c.is_present(kit),
                 locked: locked.contains(c.id.as_str()),
                 version: c.installed_version(kit),
                 available: install::installer(&c.id).is_some()
-                    && c.is_available_on(target)
+                    && !off
+                    && !no_rosetta
                     && !needs_windows11,
                 x64_only: c.x64_only,
                 no_arm64,
                 unavailable_reason,
-                needs: c.needs.clone(),
+                needs: c.needs_list_on(target),
+                xcode_missing: c.id == "cc" && xcode_missing,
                 needs_windows11,
                 versioned: c.versioned,
                 home: c.home.clone(),
+                bootstrap_staged: crate::router::bootstrap::is_staged(kit, c),
             }
         })
         .collect()
@@ -152,13 +240,16 @@ pub fn setup_start<R: Runtime>(
     state: State<'_, AppState>,
     only: Option<Vec<String>>,
     update_all: bool,
+    target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
     let only = only.unwrap_or_default();
     if let Some(bad) = only.iter().find(|id| Catalog::get().find(id).is_none()) {
         return Err(format!("unknown component: {bad}").into());
     }
     let opts = Options {
+        target: Some(kit.target()),
         only,
         update_all,
         ..Options::default()
@@ -174,9 +265,10 @@ pub fn components_install<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     id: String,
+    target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    super::versions::install_now(app, &state, id, None)
+    super::versions::install_now(app, &state, id, None, target)
 }
 
 /// The choice of the "Linguaggi e strumenti" page: `chosen` are the ids to
@@ -189,8 +281,10 @@ pub fn components_apply<R: Runtime>(
     state: State<'_, AppState>,
     chosen: Vec<String>,
     update_all: bool,
+    target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
     let catalog = Catalog::get();
     if let Some(bad) = chosen.iter().find(|id| catalog.find(id).is_none()) {
         return Err(format!("unknown component: {bad}").into());
@@ -198,40 +292,47 @@ pub fn components_apply<R: Runtime>(
     if state.setup.snapshot().running {
         return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
     }
-    let text = choice_text(&state.kit, &chosen);
+    let text = choice_text(&kit, &chosen);
     let choice = Choice::parse(&text, catalog);
-    choice
-        .write(&state.kit, catalog)
-        .or_fail_chain("components")?;
+    choice.write(&kit, catalog).or_fail_chain("components")?;
     let opts = Options {
+        target: Some(kit.target()),
         update_all,
         ..Options::default()
     };
     Ok(state.setup.start(opts, false, setup_notify(app))?)
 }
 
-/// `components.txt` for the ids in `chosen`. What this kit cannot install
-/// (`noArm64` on ARM64) keeps its saved choice: the same kit, back on an x64
-/// PC, must not lose it.
+/// `components.txt` for the ids in `chosen`. What this target cannot install
+/// (`noArm64` on `win32-arm64`, `unavailable` or outside `targets`, an x64
+/// build on a Mac without Rosetta 2) keeps its saved choice: the same kit
+/// on another OS/arch must not lose it. Nor does what a chosen one needs on
+/// this target only (Zig for C and C++ on Linux, ticked with them by the
+/// page): the run on this target installs it anyway, and saving it would
+/// install it on Windows too. The needs of the saved choice count as well:
+/// the page seeds Zig as ticked next to C and C++, and unticking C and C++
+/// leaves it in `chosen`, which must not turn it into a saved choice.
 pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
     let catalog = Catalog::get();
-    let saved = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
-    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
+    let saved = Choice::read_or_defaults(kit, catalog);
+    let target = kit.target();
+    let ids: Vec<&str> = chosen.iter().map(String::as_str).collect();
+    let mut here = catalog.needs_only_on(&ids, target);
+    here.extend(catalog.needs_only_on(&saved.chosen_ids(catalog), target));
     catalog
         .all()
         .iter()
         .map(|c| {
-            let on = if c.no_arm64 && arm64 {
+            let on = if !crate::router::target::installable_on(c, target) {
                 saved.is_chosen(&c.id)
+            } else if here.contains(c.id.as_str()) {
+                // Saved on and still ticked: an untick on the page wins
+                // (C and C++ unticked on Windows ARM64 also untick Rust).
+                saved.is_chosen(&c.id) && chosen.contains(&c.id)
             } else {
                 chosen.contains(&c.id)
             };
-            format!(
-                "{}={}
-",
-                c.id,
-                u8::from(on)
-            )
+            format!("{}={}\n", c.id, u8::from(on))
         })
         .collect()
 }
@@ -266,18 +367,28 @@ pub async fn downloads_add<R: Runtime>(
     .or_fail_chain("downloads")
 }
 
-/// The same, picked in Windows' "Open" window; empty when closed.
+/// The same, picked in the system's "Open" window; empty when closed.
 #[tauri::command]
 pub async fn downloads_pick<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
 ) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
+    #[cfg(windows)]
     let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
+    #[cfg(unix)]
+    let window = webview.window();
     let title = crate::i18n::t(state.lang(), "Scegli il file scaricato", &[]);
     let kit = state.kit.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        #[cfg(windows)]
         let files = crate::setup::downloads::pick(owner, &title)?;
+        #[cfg(unix)]
+        let files = {
+            let home = std::env::var_os("HOME").map(PathBuf::from);
+            let start = crate::editor::picker::downloads_dir(home.as_deref());
+            crate::editor::picker::files(&window, &title, start.as_deref())?
+        };
         if files.is_empty() {
             return Ok(Vec::new());
         }
@@ -312,7 +423,7 @@ pub fn setup_by_hand_open<R: Runtime>(
         })
         .filter(|u| u.starts_with("https://") || u.starts_with("http://"))
         .ok_or_else(|| format!("{id}: no download to do by hand"))?;
-    crate::os::jobs::open_with_explorer(&url).or_fail_chain("browser")
+    crate::os::jobs::open_url(&url).or_fail_chain("browser")
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-// Deleting a project (PLAN-DATA.md WP-5, user choice Q-2): the confirmation
+// Deleting a project (D-89, a choice of the user): the confirmation
 // lists what goes with it, from project_delete_plan: its empty folder, its
 // databases and users on the kit's servers (dropped first, a stopped server
 // is started for it), the copies of them. A failed drop deletes nothing;

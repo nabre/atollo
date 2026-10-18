@@ -3,8 +3,9 @@
 // those shown) applied with "Apply" as on the tool's own page, and the
 // actions done at once: install (at a chosen version), add a version, update.
 import { useMemo, useState } from "react";
-import { VscArrowDown, VscArrowUp, VscCloudDownload, VscSync, VscWarning } from "react-icons/vsc";
+import { VscArrowDown, VscArrowUp, VscCheck, VscCloudDownload, VscSync, VscWarning } from "react-icons/vsc";
 import {
+  TARGETS,
   componentsInstall,
   setupStart,
   versionsAdd,
@@ -13,7 +14,7 @@ import {
   type SetupSnapshot,
 } from "../api";
 import { t } from "../i18n";
-import { ErrorLine } from "../common";
+import { ActionButton, ErrorLine } from "../common";
 import { ComponentLogo } from "../logos";
 import { ItemStatus, itemState } from "../setup";
 import { Tag } from "../tags";
@@ -29,13 +30,14 @@ type Show = "all" | "installed" | "missing" | "pending" | "needed";
  * version or at one chosen), add a version next to those on disk, update
  * it. Removing stays a choice applied with "Apply". */
 function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; setup: SetupSnapshot | null }) {
-  const { busy, run, offers } = kit;
+  const { busy, run, offers, target } = kit;
   const running = setup?.running ?? false;
   const tool = kit.byId.get(c.id);
   const lines = tool?.downloadable ? tool : null;
   const doing = running || busy !== null;
+  const ready = c.installed || Boolean(c.bootstrapStaged);
   if (c.noArm64 || c.unavailableReason !== null || c.needsWindows11) return null;
-  if (!c.installed) {
+  if (!ready) {
     if (!c.available) return null;
     return (
       <span className="flex items-center gap-1">
@@ -47,7 +49,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
           disabled={doing}
           className="text-vsc-link"
           onClick={() => {
-            run(c.id, `install:${c.id}`, () => componentsInstall(c.id));
+            run(c.id, `install:${c.id}`, () => componentsInstall(c.id, target));
           }}
         />
         {lines && (
@@ -58,7 +60,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
               busy={doing}
               label={t("Installa una versione di {0}", c.name)}
               onAdd={(line) => {
-                run(c.id, `install:${c.id}`, () => versionsInstall(c.id, line));
+                run(c.id, `install:${c.id}`, () => versionsInstall(c.id, line, target));
               }}
             />
             {lines.available.length === 0 && (
@@ -85,7 +87,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
         busy={busy === `update:${c.id}`}
         disabled={doing}
         onClick={() => {
-          run(c.id, `update:${c.id}`, () => setupStart([c.id], true));
+          run(c.id, `update:${c.id}`, () => setupStart([c.id], true, target));
         }}
       />
       {lines && (
@@ -94,7 +96,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
           setup={setup}
           busy={doing}
           onAdd={(line) => {
-            run(c.id, `add:${c.id}`, () => versionsAdd(c.id, line));
+            run(c.id, `add:${c.id}`, () => versionsAdd(c.id, line, target));
           }}
         />
       )}
@@ -105,7 +107,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
 /** The order of the states in the "State" column. */
 function stateRank(c: ComponentInfo, on: boolean): number {
   if (on !== (c.chosen || c.locked)) return 0;
-  if (c.installed) return 1;
+  if (c.installed || c.bootstrapStaged) return 1;
   return on ? 2 : 3;
 }
 
@@ -121,7 +123,8 @@ export function ToolsTable({
   onOpen: (id: string) => void;
 }) {
   const list = state.list ?? [];
-  const { chosen, choose, neededBy } = state;
+  const { chosen, choose, neededBy, target, setTarget, checks, checking, verifyTarget } = state;
+  const activeTarget = target ?? setup?.target ?? "win32-x64";
   const running = setup?.running ?? false;
   const all = groups();
   const [search, setSearch] = useState("");
@@ -133,13 +136,14 @@ export function ToolsTable({
   const rows = useMemo(() => {
     const shown = list.filter((c) => {
       const on = chosen.has(c.id);
+      const ready = c.installed || Boolean(c.bootstrapStaged);
       if (!matches(c, search)) return false;
       if (group !== "all" && all[groupOf(c)]?.id !== group) return false;
       switch (show) {
         case "installed":
-          return c.installed;
+          return ready;
         case "missing":
-          return !c.installed;
+          return !ready;
         case "pending":
           return on !== (c.chosen || c.locked);
         case "needed":
@@ -200,6 +204,12 @@ export function ToolsTable({
           <SearchBox value={search} onChange={setSearch} placeholder={t("Cerca negli strumenti")} />
         </div>
         <Select
+          label={t("Piattaforma")}
+          value={activeTarget}
+          onChange={setTarget}
+          options={TARGETS.map((id) => ({ value: id, label: id }))}
+        />
+        <Select
           label={t("Gruppo")}
           value={group}
           onChange={setGroup}
@@ -216,6 +226,13 @@ export function ToolsTable({
             { value: "pending", label: t("Da applicare") },
             { value: "needed", label: t("Usati dai progetti") },
           ]}
+        />
+        <ActionButton
+          icon={VscCheck}
+          label={t("Verifica")}
+          busy={checking}
+          disabled={running || checking}
+          onClick={verifyTarget}
         />
         <span className="ml-auto text-[12px] text-vsc-desc" role="status">
           {t("{0} di {1}", rows.length, list.length)}
@@ -273,6 +290,7 @@ export function ToolsTable({
             const needed = neededBy.get(c.id) ?? [];
             const lines = linesOf(kit.byId.get(c.id));
             const version = composerOf(c.version) ? splitVersion(c.version).main : c.version;
+            const check = checks.get(c.id);
             const cell = "h-[26px] border-b border-vsc-border px-2";
             return (
               <tr key={c.id} className={`hover:bg-vsc-list-hover ${pending ? "bg-vsc-settings-modified/5" : ""}`}>
@@ -312,19 +330,33 @@ export function ToolsTable({
                 </td>
                 <td className={`${cell} text-right whitespace-nowrap tabular-nums`}>{sizeText(c.mb)}</td>
                 <td className={`${cell} whitespace-nowrap`}>
-                  {item ? (
-                    <ItemStatus state={item} />
-                  ) : pending ? (
-                    <span className="text-vsc-settings-modified">{on ? t("da installare") : t("da rimuovere")}</span>
-                  ) : c.installed ? (
-                    <span className="text-vsc-success">{t("installato")}</span>
-                  ) : c.noArm64 ? (
-                    <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
-                  ) : c.unavailableReason !== null ? (
-                    <span className="text-vsc-desc">{c.unavailableReason}</span>
-                  ) : (
-                    <span className="text-vsc-desc">{t("non installato")}</span>
-                  )}
+                  <span className="flex items-center gap-1.5">
+                    {item ? (
+                      <ItemStatus state={item} />
+                    ) : pending ? (
+                      <span className="text-vsc-settings-modified">{on ? t("da installare") : t("da rimuovere")}</span>
+                    ) : c.installed ? (
+                      <span className="text-vsc-success">{t("installato")}</span>
+                    ) : c.bootstrapStaged ? (
+                      <span
+                        className="text-vsc-success"
+                        title={t("Bootstrap pre-scaricato; l'installazione termina al primo avvio su quel sistema")}
+                      >
+                        {t("pre-scaricato")}
+                      </span>
+                    ) : c.noArm64 ? (
+                      <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
+                    ) : c.unavailableReason !== null ? (
+                      <span className="text-vsc-desc">{c.unavailableReason}</span>
+                    ) : (
+                      <span className="text-vsc-desc">{t("non installato")}</span>
+                    )}
+                    {check && (
+                      <Tag tone={check.ok ? "focus" : "warning"}>
+                        {check.ok ? "√" : "x"} {check.answer}
+                      </Tag>
+                    )}
+                  </span>
                 </td>
                 <td className={`${cell} max-w-[16rem] truncate`} title={needed.join(", ") || undefined}>
                   {needed.length > 0 && !on && (

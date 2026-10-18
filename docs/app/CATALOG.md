@@ -2,7 +2,7 @@
 
 Fonte: `nabre/atollo` al commit `a61a354` (`setup/components.json` e script di `setup/windows/`). È la specifica che il motore Rust (`setup/catalog.rs`, `install/`) segue; il catalogo dell'app è `tauri/catalog/components.json`. I riferimenti `file:riga` puntano agli script originali.
 
-Percorsi nel nuovo kit (PLAN §2): `A` = `data\apps\win32-<arch>\`; versioni in `data\app\versions\<id>.txt`; aree di lavoro in `data\tmp\setup\`.
+Percorsi nel nuovo kit (D-00, D-114): `A` = `data\apps\<target>\` (`win32-x64`, `win32-arm64`, `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`); versioni in `data\app\versions\<target>\<id>.txt`; aree di lavoro nel temp del sistema, altrimenti in `data\tmp\setup\` (D-90). Le tabelle del §2 descrivono Windows; le fonti degli altri sistemi sono al §1, «Fonti per sistema».
 Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i componenti sono stati installati e rimossi a mano nella fase 4 (CHANGELOG.md).
 
 ## 1. Componenti e gruppi
@@ -16,11 +16,13 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `codex` | Codex | sì | 440 | | |
 | | `antigravity` | Antigravity | sì | 190 | | accesso salvato nel kit (`agents/keyring.rs`) |
 | linguaggi e strumenti (`languages`) | `git` | Git (Git Bash) | sempre (per GitHub CLI) | 350 | | shell dei comandi degli agenti; dipendenza obbligatoria di GitHub CLI (D-59) |
-| | `python` | Python + pip | sì | 70 | | 3.13 predefinito |
+| | `python` | Python + pip | sì | 70 | | l'ultima linea minore stabile, salvo `pythonVersion` nelle Impostazioni (D-81) |
 | | `node` | Node.js LTS + npm | no | 110 | | quando serve: azioni con `npm`, server MCP con `npx` (D-59) |
 | | `uv` | uv, uvx | no | 35 | | quando serve: azioni con `uv`, server MCP con `uvx` (D-59) |
-| | `php` | PHP + Composer | sì | 100 | | con VC++ locale; x64 anche su ARM64; solo Windows |
-| | `apache` | Apache | sì | 45 | `php` | x64 anche su ARM64; solo Windows |
+| | `php` | PHP + Composer | sì | 100 | | Windows: con VC++ locale, x64 anche su ARM64; macOS e Linux: static-php-cli (D-112) |
+| | `apache` | Apache | sì | 45 | `php` | x64 anche su ARM64; solo Windows (D-111) |
+| | `nginx` | Nginx | no | 10 | | solo Windows; da togliere dopo la migrazione dei pool a Caddy ([issue #4](https://github.com/nabre/atollo/issues/4)) |
+| | `caddy` | Caddy | no | 45 | | **nuovo** (D-111); server web dei pool e dei siti su tutti i sistemi |
 | | `rust` | Rust | no | 920 | | toolchain `gnu` su x64 |
 | | `go` | Go | no | 250 | | |
 | | `java` | Java (Temurin, Maven, Gradle) | no | 300 | | |
@@ -36,23 +38,56 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `tinytex` | TinyTeX | no | 280 | | x64 anche su ARM64 |
 | | `pnpm` | pnpm, yarn | no | 10 | `node` | in `data\npm-global\` |
 | | `cmake` | CMake, Ninja | no | 100 | | |
-| | `cc` | C, C++ (llvm-mingw) | no | 720 | | |
-| | `ruby` | Ruby | no | 270 | | |
+| | `cc` | C, C++ | no | 720 | `zig` su macOS e Linux | llvm-mingw su Windows; `zig cc` e GNU make su macOS e Linux (D-112); MB di Windows, su Unix circa 20 |
+| | `ruby` | Ruby | no | 270 | | RubyInstaller su Windows, conda-forge su macOS e Linux (D-112) |
 | | `r` | R (conda-forge) | no | 1100 | | solo x64: non disponibile sui kit ARM64 (`noArm64`) |
-| database (`databases`) | `mariadb` | MariaDB | no | 230 | | **nuovo** (D-73); compatibile con MySQL; x64 anche su ARM64 |
+| database (`databases`) | `mysql` | MySQL | no | 520 | | **nuovo** (D-110); server SQL dei kit nuovi, linee 8.4 e 9.7 LTS; x64 anche su Windows ARM64; su Linux ARM64 il download è di circa 940 MB |
+| | `mariadb` | MariaDB | no | 230 | | (D-73) solo per i kit che lo usano già, fino alla migrazione a MySQL ([issue #3](https://github.com/nabre/atollo/issues/3)); x64 anche su ARM64; solo win32-x64, win32-arm64 e linux-x64 (D-104) |
 | | `mongodb` | MongoDB, mongosh, Database Tools | no | 570 | | **nuovo** (D-73); Database Tools per le copie (D-78); x64 anche su ARM64 |
-| | `adminer` | Adminer | no | 1 | `php`, `mariadb` | **nuovo** (D-85); MariaDB nel browser, come phpMyAdmin; solo Windows (serve PHP) |
+| | `phpmyadmin` | phpMyAdmin | no | 60 | `php`, `mariadb` | **nuovo** (D-107, al posto di Adminer di D-85); il server SQL nel browser; i suoi `needs` dicono ancora MariaDB, quindi su macOS e Linux ARM64 non è disponibile finché non passano a MySQL ([issue #3](https://github.com/nabre/atollo/issues/3)) |
 | | `sqlite` | SQLite (sqlite3) | no | 15 | | **nuovo** (D-73) |
 
 I gruppi, i predefiniti e le dimensioni sono quelli di `components.json`. Proposta del primo avvio: obbligatori, editor, tre agenti, Python, PHP, Apache, più Git che arriva con GitHub CLI (e con Claude Code): circa 1,8 GB (1845 MB, di cui 250 dell'editor).
 
 Tolti dal catalogo il 14/10/2026: Windows Terminal (`terminal`), perché le console erano la console classica di Windows (DECISIONS.md D-57), poi tornato lo stesso giorno come terminale predefinito delle console (D-68) e tolto di nuovo il 16/10/2026 (D-95), con il gruppo `os` che conteneva solo lui; VSCodium desktop (`vscodium`), perché l'editor è integrato. Il componente `conpty` proposto in D-47 non è stato aggiunto.
 
-Campi del catalogo oltre a quelli del Atollo: `keys` (le altre parti di un componente: Maven e Gradle di Java, Ninja di CMake, Composer di PHP, yarn di pnpm, `node.exe` dell'editor; installato solo se ci sono tutte), `x64Only` (build x64 anche su ARM64, in emulazione), `noArm64` (nessuna build per ARM64), `targets` (i soli sistemi in cui è disponibile, es. `["win32-x64", "win32-arm64"]`; vuoto = tutti), `remove` (altri file posseduti; `tools\vcruntime` di PHP e Apache se ne va solo con l'ultimo dei due), `check` (comando della verifica finale, per tutti), `version` e `sha256` (gruppo `app`).
+Campi del catalogo oltre a quelli del Atollo: `keys` (le altre parti di un componente: Maven e Gradle di Java, Ninja di CMake, Composer di PHP, yarn di pnpm, `node.exe` dell'editor; installato solo se ci sono tutte), `remove` (altri file posseduti; `tools\vcruntime` di PHP e Apache se ne va solo con l'ultimo dei due), `check` (comando della verifica finale, per tutti), `version` e `sha256` (gruppo `app`). I file chiave si scrivono con i nomi di Windows e si traducono per macOS e Linux (`translate_rel`: `git/bin/bash.exe` → `git/bin/git`, `.exe` e `.cmd` tolti).
 
-**Disponibilità su macOS e Linux** (16/10/2026, opzione C di BUG-23b/BUG-24a). Solo Windows (`targets`): PHP, Apache e Nginx, perché le fonti sono build per Windows (`windows.php.net`, Apache Lounge; di Nginx su Unix c'è solo il tarball sorgente, che `nginx_asset_for` rifiuta con un errore esplicito) e `php.ini`/`httpd.conf` sono scritti per Windows; Adminer, che ha bisogno di PHP. Il porting (via micromamba, con le configurazioni rifatte) è rimandato a un ciclo separato. Git resta disponibile ovunque: serve a Claude Code. Un componente non disponibile per il sistema si mostra «non disponibile per `<os>-<arch>`» (es. `linux-x64`), non «non disponibile su PC ARM64», che resta solo per Windows ARM64 (BUG-24c).
+**Disponibilità per target** (D-108). Campi facoltativi:
 
-**Git su macOS e Linux** (16/10/2026, BUG-23a, D-92). Il pacchetto `git` di conda-forge, con le sue librerie, in un ambiente creato da micromamba nella cartella della sua linea (`git/<linea>`, chiave `git/bin/git`), come R: `Installer::custom(target)` vale per Git solo fuori da Windows. Un ambiente conda ha il suo percorso scritto dentro e non si sposta: quando il kit cambia cartella (`root-<os>.txt`), i componenti non rilocabili (`Installer::relocatable(target)` falso: Git e R fuori da Windows) ricevono `data/app/versions/<os>-<arch>/<id>.reinstall`, ogni loro linea salvata `<id>@<linea>.reinstall`, e l'installazione automatica all'avvio li reinstalla (R alla sua linea, le linee salvate ciascuna alla sua). Fuori da Windows la radice si confronta tenendo conto di maiuscole e minuscole: `/media/u/Kit` → `/media/u/kit` è uno spostamento.
+| Campo | Cosa dice | Esempio |
+| --- | --- | --- |
+| `targets` | i soli target dove il componente c'è; vuoto = tutti | Apache, Nginx: `["win32-x64", "win32-arm64"]` |
+| `unavailable` | target → motivo (in italiano, tradotto dai cataloghi), mostrato al posto di «non disponibile per `<target>`» | Android: `linux-arm64` |
+| `noArm64` | nessuna build gira su Windows ARM64, nemmeno in emulazione | R |
+| `x64Only` | build x64 in emulazione solo su Windows ARM64 | PHP, MySQL, MongoDB, editor |
+| `rosetta` | build x64 su `darwin-arm64` con Rosetta 2; senza Rosetta il componente non è disponibile | nessuno oggi |
+| `needsByTarget` | bisogni in più su un target, oltre a `needs`; `components.txt` salva solo quelli validi ovunque | `cc`: `zig` su macOS e Linux; `rust`: `cc` su `win32-arm64` |
+| `removeUnix` | i file posseduti su macOS e Linux, al posto di `remove` | pnpm: `bin/pnpm`, `lib/node_modules/corepack` |
+| `sha256ByTarget` | SHA-256 per target, con `version`, dove il fornitore non pubblica un hash | editor |
+| `sha256ByFile` | SHA-256 per nome di file | PHP: gli archivi di static-php-cli |
+| `sha256ByLine` | linea → `{ version, sha256ByTarget }`: si offrono solo le linee fissate | MySQL 8.4 e 9.7 |
+
+Un componente non disponibile per il sistema si mostra «non disponibile per `<target>`» con il motivo, mai con un binario di un'altra architettura; «non disponibile su PC ARM64» resta solo per Windows ARM64 (BUG-24c). `Atollo components --target <id>` mostra il catalogo di un altro target.
+
+**Fonti per sistema** (D-112). Dove la tabella del §2 dice Windows, gli altri sistemi usano:
+
+| Componente | macOS | Linux | Verifica |
+| --- | --- | --- | --- |
+| Git | `desktop/dugite-native` (`macOS-arm64`, `macOS-x64`) | dugite-native (`ubuntu-x64`, `ubuntu-arm64`) | `.sha256` dell'asset; rilocabile |
+| PHP | static-php-cli «bulk», `php-<v>-{cli,fpm}-macos-{aarch64,x86_64}.tar.gz` | stesso, `linux-{x86_64,aarch64}` | SHA-256 fissato (`sha256ByFile`) |
+| C, C++ | shim su `zig cc` del kit, GNU make da conda-forge | come macOS | indice di Zig; micromamba |
+| Ruby | conda-forge `ruby` (3.2 e successive) | come macOS | micromamba; non rilocabile |
+| MongoDB | build del fornitore | server da conda-forge; mongosh generico; Database Tools per distribuzione | micromamba, JSON del fornitore |
+| SQLite | sqlite.org | sqlite.org su x64, conda-forge `sqlite` su ARM64 | SHA3-256; micromamba |
+| MySQL | `cdn.mysql.com`, `mysql-<v>-macos15-{arm64,x86_64}.tar.gz` | `mysql-<v>-linux-glibc2.28-x86_64-minimal.tar.xz`, `-aarch64.tar.xz` | SHA-256 fissato (`sha256ByLine`) dopo la firma GPG di Oracle |
+| Caddy | GitHub `caddyserver/caddy`, `caddy_<v>_mac_{arm64,amd64}.tar.gz` | `caddy_<v>_linux_{arm64,amd64}.tar.gz` | `digest`, o SHA-512 di `checksums.txt` |
+| Antigravity | manifesto di Google, `.tar.gz` (dalla 1.4) | come macOS | SHA-512 del manifesto |
+| R | conda-forge `r-base` | come macOS | micromamba; non rilocabile (D-92) |
+
+Su Windows ARM64: MySQL in emulazione x64 (stesso archivio di Windows x64), Caddy nativo, Rust con l'host `aarch64-pc-windows-gnullvm` e llvm-mingw `ucrt-aarch64` di `cc` come linker, micromamba nativo (`micromamba-win-arm64`). Apache, Nginx e MariaDB restano solo dove sono oggi.
+
+**Componenti conda non rilocabili** (D-92). Un ambiente conda ha il suo percorso scritto dentro e non si sposta: quando il kit cambia cartella (`root-<os>.txt`), i componenti non rilocabili (`Installer::relocatable(target)` falso: R, Ruby, MongoDB su Linux, SQLite su Linux ARM64 e C/C++ fuori da Windows) ricevono `data/app/versions/<target>/<id>.reinstall`, ogni loro linea salvata `<id>@<linea>.reinstall`, e l'installazione automatica all'avvio li reinstalla. Git di dugite-native segue il kit. Fuori da Windows la radice si confronta tenendo conto di maiuscole e minuscole: `/media/u/Kit` → `/media/u/kit` è uno spostamento.
 
 ## 2. Come si installa ciascuno
 
@@ -68,7 +103,7 @@ Abbreviazioni:
 | claude | npm `@anthropic-ai/claude-code-win32-<arch>/latest` | `dist.tarball`, nativo per entrambe | integrità npm `sha512-…`, poi Authenticode `Anthropic` su `claude.exe` (avviso se la revoca non è verificabile) | `package/claude.exe` → `A\claude\claude.exe`, vecchio rinominato `.old` | `claude/claude.exe` | `_prepare-core.ps1:10-37` |
 | codex | npm `@openai/codex/latest`, poi `<ver>-win32-<arch>` | `dist.tarball`, nativo | integrità npm | `package/vendor/` con una sola cartella che contiene `bin/codex.exe` → `A\codex` | `codex/bin/codex.exe` | `_prepare-core.ps1:45-72` |
 | antigravity | manifesto `antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json` (`windows_arm64.json`) | `url` del manifesto | SHA-512 del manifesto (obbligatorio) | exe singolo → `A\antigravity\agy.exe`, vecchio rinominato `.old`; non eseguire `agy install` | `antigravity/agy.exe` | `_prepare-core.ps1:81-104` |
-| git | GHA `git-for-windows/git`, asset `PortableGit-<v>-(64-bit\|arm64).7z.exe`; versione dal nome dell'asset | asset del rilascio | SHA-256 da `digest`; senza API di GitHub l'installazione fallisce (nessun ripiego) | 7z SFX (in Rust: estrazione 7z diretta, nessuna finestra); controllo `bin\bash.exe`; poi `post-install.bat` nella cartella (lo lancerebbe l'SFX; si cancella da solo, quindi esce sempre con 1) e configurazione Git (§3). **macOS/Linux**: `api.anaconda.org/package/conda-forge/git`, versione di rilascio più alta per il `subdir` del target; `micromamba create … git=<v>` nella cartella della linea, poi `.gitconfig` portabile; da reinstallare se il kit si sposta (D-92) | `git/bin/bash.exe` (Unix: `git/bin/git`) | `_prepare-core.ps1:109-158` |
+| git | GHA `git-for-windows/git`, asset `PortableGit-<v>-(64-bit\|arm64).7z.exe`; versione dal nome dell'asset | asset del rilascio | SHA-256 da `digest`; senza API di GitHub l'installazione fallisce (nessun ripiego) | 7z SFX (in Rust: estrazione 7z diretta, nessuna finestra); controllo `bin\bash.exe`; poi `post-install.bat` nella cartella (lo lancerebbe l'SFX; si cancella da solo, quindi esce sempre con 1) e configurazione Git (§3). **macOS/Linux**: GHA `desktop/dugite-native`, `dugite-native-v<v>-<sha>-(macOS-arm64\|macOS-x64\|ubuntu-x64\|ubuntu-arm64).tar.gz`, `.sha256` dell'asset; link simbolici conservati; preparato a parte se il PC non può eseguire il target; `.gitconfig` portabile; segue il kit (D-112) | `git/bin/bash.exe` (Unix: `git/bin/git`) | `_prepare-core.ps1:109-158` |
 | python | `raw.githubusercontent.com/astral-sh/python-build-standalone/latest-release/latest-release.json` → `SHA256SUMS`, file `cpython-3.13.N+…-<triple>-install_only_stripped.tar.gz` (ultimo) | triple `x86_64-pc-windows-msvc` / `aarch64-pc-windows-msvc` | SHA-256 da `SHA256SUMS` | tar.gz `python\`; pacchetti conservati (§3); `python.exe` → copia `python3.exe`; pip offline da `Lib\ensurepip\_bundled\pip-*.whl` | `python/python.exe` | `_prepare-core.ps1:163-234` |
 | node | `nodejs.org/dist/index.json`, primo LTS con `win-<arch>-zip` | `nodejs.org/dist/<v>/node-<v>-win-<arch>.zip` | SHA-256 da `SHASUMS256.txt` (Lista) | zip `node-<v>-win-<arch>`; versione con la `v` iniziale | `node/node.exe` | `_prepare-core.ps1:239-268` |
 | uv | GHA `astral-sh/uv` | `uv-<triple>.zip` | SHA-256 da `digest` | `uv.exe`, `uvx.exe`, `uvw.exe` → `A\uv\<linea>\` | `uv/uv.exe` | `_prepare-core.ps1:273-302` |
@@ -97,14 +132,16 @@ Abbreviazioni:
 | pnpm | npm `pnpm@latest yarn@latest` | registro npm | integrità di npm | `node npm-cli.js install --global --no-fund --no-audit --ignore-scripts` con il Node del kit (senza `cmd.exe`), prefisso `data\npm-global` | `@data/npm-global/pnpm.cmd` + `@data/npm-global/yarn.cmd` | `_languages.ps1:254-281` |
 | cmake | GHA `Kitware/CMake`, `cmake-*-windows-(x86_64\|arm64).zip` | | `digest` | IA `*` | `cmake/bin/cmake.exe` + `tools/ninja.exe` | `_languages.ps1:286-291` |
 | ninja (parte di cmake) | GHA `ninja-build/ninja`, `ninja-win.zip` / `ninja-winarm64.zip` | | `digest` | `ninja.exe` → `A\tools\` | `tools/ninja.exe` | `_languages.ps1:292-298` |
-| cc | GHA `mstorsjo/llvm-mingw`, `llvm-mingw-*-ucrt-(x86_64\|aarch64).zip` | | `digest` | IA `*`; **eliminare** `bin\*-w64-mingw32-gcc.exe` e `-g++.exe` (romperebbero il linker di Rust `gnu`) | `cc/bin/clang.exe` | `_languages.ps1:308-317` |
+| cc | GHA `mstorsjo/llvm-mingw`, `llvm-mingw-*-ucrt-(x86_64\|aarch64).zip`; macOS/Linux: shim `cc`, `c++`, `gcc`, `g++`, `clang`, `clang++`, `ar`, `ranlib` sullo Zig del kit e GNU make da conda-forge (D-112; i framework Apple vogliono Xcode CLT) | | `digest`; micromamba | IA `*`; **eliminare** `bin\*-w64-mingw32-gcc.exe` e `-g++.exe` (romperebbero il linker di Rust `gnu`) | `cc/bin/clang.exe` | `_languages.ps1:308-317` |
 | ruby | `api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=30`, esclusi prerelease/bozze, versione e build più alte | `rubyinstaller-X.Y.Z-N-(x64\|arm).7z` | `digest` | IA `*`; versione `X.Y.Z-N`; senza MSYS2 | `ruby/bin/ruby.exe` | `_languages.ps1:321-340` |
-| micromamba (per r, e per git su macOS/Linux) | tag dell'ultima release di `mamba-org/micromamba-releases` (API di GitHub) | `micromamba-win-64` (solo x64; `micromamba-osx-*`, `micromamba-linux-*` fuori da Windows) | SHA-256 da `micromamba-win-64.sha256` della release | exe → `A\tools\micromamba.exe` | `tools/micromamba.exe` | `_languages.ps1:344-358` |
+| micromamba (per r, e su macOS/Linux per ruby, make, mongodb e sqlite) | tag dell'ultima release di `mamba-org/micromamba-releases` (API di GitHub) | `micromamba-win-64`, `micromamba-win-arm64` (`micromamba-osx-*`, `micromamba-linux-*` fuori da Windows) | SHA-256 da `micromamba-win-64.sha256` della release | exe → `A\tools\micromamba.exe` | `tools/micromamba.exe` | `_languages.ps1:344-358` |
 | r | `api.anaconda.org/package/conda-forge/r-base` → `latest_version` | solo x64 (ARM64: non disponibile) | SHA-256 di ogni pacchetto (micromamba) | `micromamba create --no-rc -y -q -p <lavoro>\r -c conda-forge --override-channels r-base=<v> "libblas=*=*openblas"` con profilo e `MAMBA_ROOT_PREFIX` nell'area di lavoro; lanciatori `bin\R.cmd`, `bin\Rscript.cmd`; CRAN `cloud.r-project.org` in `Rprofile.site`; via `pkgs\` | `r/bin/R.cmd` | `_languages.ps1:368-429` |
-| mariadb | `downloads.mariadb.org/rest-api/mariadb/` → LTS stabile più recente → `/<major>/latest/` | `mariadb-<v>-winx64.zip` (via https) | SHA-256 dell'API | IA singola; via `.pdb` | `mariadb/bin/mariadbd.exe` + `mariadb/bin/mariadb.exe` | nuovo (D-73) |
+| mariadb | `downloads.mariadb.org/rest-api/mariadb/` → LTS stabile più recente → `/<major>/latest/` | `mariadb-<v>-winx64.zip` (via https); Linux x64: tarball `-linux-systemd-` (altrimenti un altro tarball Linux, mai `debugsymbols`) | SHA-256 dell'API | IA singola; via `.pdb` | `mariadb/bin/mariadbd.exe` + `mariadb/bin/mariadb.exe` | nuovo (D-73) |
+| mysql | linee e versioni fissate nel catalogo (`sha256ByLine`: 8.4.11, 9.7.2) | `cdn.mysql.com/Downloads/MySQL-<linea>/mysql-<v>-winx64.zip` (x64 anche su ARM64) | SHA-256 fissato, calcolato dopo la firma GPG di Oracle | IA; via `mysql-test`, simboli e build di debug; su Linux `lib/private/libaio.so.1` verso `libaio.so.1t64` se serve | `mysql/bin/mysqld.exe` + `mysql.exe`, `mysqldump.exe`, `mysqladmin.exe` | nuovo (D-110) |
+| caddy | GHA `caddyserver/caddy` | `caddy_<v>_windows_(amd64\|arm64).zip` | `digest`, o SHA-512 di `caddy_<v>_checksums.txt` | `caddy.exe` → `A\caddy\<linea>\` | `caddy/caddy.exe` | nuovo (D-111) |
 | mongodb | `downloads.mongodb.org/current.json`, produzione `x.0.y`; mongosh da GHA `mongodb-js/mongosh` | `mongodb-windows-x86_64-<v>.zip`, `mongosh-<v>-win32-x64.zip` in `mongosh\`, Database Tools da `release.json` in `mongodb-tools\` | SHA-256 dell'elenco; `digest` | IA singola; via `.pdb` e `vc_redist`, VC++ del kit | `mongodb/bin/mongod.exe` + `mongosh/bin/mongosh.exe` + `mongodb-tools/bin/mongodump.exe` | nuovo (D-73) |
 | sqlite | `sqlite.org/download.html`, righe `PRODUCT,` | `sqlite-tools-win-(x64\|arm64)-<n>.zip` | **SHA3-256** della pagina | IA | `sqlite/sqlite3.exe` | nuovo (D-73) |
-| adminer | GHA `vrana/adminer` | `adminer-<v>-mysql.php` (un file, tutte le lingue) | `digest` | file → `adminer\adminer.php`; controllo `php -l` col PHP del kit | `adminer/adminer.php` | nuovo (D-85) |
+| phpmyadmin | `www.phpmyadmin.net/home_page/version.json` | `files.phpmyadmin.net/phpMyAdmin/<v>/phpMyAdmin-<v>-all-languages.zip` (tutte le lingue) | file `.sha256` accanto allo zip | zip → `phpmyadmin\<linea>\`, senza `setup\`; `config.inc.php` scritto dall'app a ogni avvio; controllo `php -l` su `libraries/classes/Version.php` col PHP del kit | `phpmyadmin/index.php` | nuovo (D-107) |
 | CodeLLDB (estensione) | GHA `vadimcn/codelldb` | `codelldb-win32-<arch>.vsix`; x64 anche su ARM64, come il server dell'editor | `digest` obbligatorio | installata nel server dell'editor con `--install-extension`, se un progetto ha Rust, Zig, C o C++ (matrice `extensions.json`, D-71), una volta sola | cartella `vadimcn.vscode-lldb-*` in `data\vscodium-server\extensions\` | `_vscodium-extensions.ps1:162-206` |
 
 ## 3. Regole trasversali
@@ -113,7 +150,7 @@ Abbreviazioni:
 - **Un errore non ferma gli altri**: ogni passo è isolato e finisce nel riepilogo; esito complessivo "con errori" se uno fallisce.
 - **Quando si installa**: file chiave o una parte di `keys` mancante, editor a una versione diversa da quella del rilascio (all'avvio dell'app, o in un `prepare` che lo comprende), oppure "Aggiorna tutto" (`--update-all`) / `--force`. `--only` installa o aggiorna i componenti elencati e ciò che serve loro e manca, obbligatori esclusi, senza rimuovere nulla; `--skip` salta anche ciò che ne dipende e non è ancora installato (mai gli obbligatori).
 - **Quando serve** (D-59): avvio di un agente, clone, azione di un progetto installano prima i componenti che servono e li segnano come scelti in `components.txt`.
-- **Parametri predefiniti**: Claude canale `latest`; Python `3.13` (`^3\.\d+$`); PHP ramo più recente (`^\d+\.\d+$`); Rust `gnu` su x64; architettura dell'host. Nell'app: pagina Impostazioni › Versioni.
+- **Parametri predefiniti**: Claude canale `latest`; Python: l'ultima linea minore stabile, salvo `pythonVersion` nelle Impostazioni (`^3\.\d+$`, D-81). `PYTHON_DEFAULT` (3.13) vale solo quando l'elenco delle linee non si legge: un kit nuovo ha 3.15 da ottobre 2026; PHP ramo più recente (`^\d+\.\d+$`); Rust `gnu` su x64; architettura dell'host. Nell'app: pagina Impostazioni › Versioni.
 - **VC++** estratto una volta in `tools\vcruntime\` e riusato; DLL copiate accanto a `php.exe` e in `apache\bin` (distribuzione locale permessa da Microsoft); x64 anche su ARM64. La cartella resta finché c'è PHP o Apache.
 - **File dell'utente creati una sola volta e mai sovrascritti**: `data\php\php.ini` (da `php.ini-development`: `extension_dir`, estensioni curl, fileinfo, gd, intl, mbstring, mysqli, openssl, pdo_mysql, pdo_sqlite, sodium, sqlite3, zip; `date.timezone = Europe/Rome`; `curl.cainfo` e `openssl.cafile` su `cacert.pem`), `data\apache\kit.conf` (porta 8080 su `127.0.0.1`, sito in `data\apache\htdocs`, PHP via `<IfFile>`, `conf.d\*.conf`), `data\home\.gitconfig`, `htdocs\index.php`. Testi in UTF-8 senza BOM. `httpd.conf` invece si riscrive a ogni installazione di Apache.
 - **Python**: prima di aggiornare, `pip freeze` in `data\python-packages-<vecchia>.txt`; stessa versione minore → copia di `Lib\site-packages` e `Scripts` (escluso pip); minore diversa → solo l'elenco.

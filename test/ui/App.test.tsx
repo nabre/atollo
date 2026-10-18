@@ -26,6 +26,8 @@ const info: AppInfo = {
   otherKits: [],
   diskFs: "NTFS",
   diskKind: "fixed",
+  diskNoexec: null,
+  diskNote: null,
   systemTemp: null,
 };
 
@@ -320,8 +322,18 @@ describe("App", () => {
         signedIn: true,
         signInKind: "account",
         running: false,
+        tokenLink: false,
       },
-      { id: "codex", name: "Codex", installed: true, version: "1", signedIn: false, signInKind: null, running: false },
+      {
+        id: "codex",
+        name: "Codex",
+        installed: true,
+        version: "1",
+        signedIn: false,
+        signInKind: null,
+        running: false,
+        tokenLink: false,
+      },
     ];
     invoke.mockImplementation(
       answers({
@@ -352,7 +364,14 @@ describe("App", () => {
       answers({
         projects_list: [{ ...project("negozio"), requires: ["php", "mariadb"], missing: ["mariadb"] }],
         project_status: { git: { branch: "main", upstream: null, synced: null, remote: null }, instructions: [] },
-        project_databases: { dbs: [], detected: ["mariadb"], envExists: true, envIgnored: true },
+        project_databases: {
+          dbs: [],
+          detected: ["mariadb"],
+          envExists: true,
+          envIgnored: true,
+          versions: { mariadb: { chosen: null, server: "11.4", lines: ["11.4", "10.6"] } },
+        },
+        project_db_line: null,
         project_db_create: {
           engine: "mariadb",
           database: "negozio",
@@ -380,6 +399,13 @@ describe("App", () => {
     fireEvent.click(creates[0] as HTMLElement);
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("project_db_create", { project: "negozio", engine: "mariadb" });
+    });
+    // The version of the server for its database, each on its own port.
+    const version = screen.getByLabelText<HTMLElementTagNameMap["vscode-single-select"]>("Versione del server");
+    expect(version.querySelectorAll("vscode-option")).toHaveLength(3);
+    fireEvent.change(version, { target: { value: "10.6" } });
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("project_db_line", { project: "negozio", engine: "mariadb", line: "10.6" });
     });
     // The activity bar's Projects again: back to the list
     fireEvent.click(screen.getAllByRole("button", { name: "Progetti" })[0] as HTMLElement);

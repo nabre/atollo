@@ -26,13 +26,17 @@ pub struct Check {
 
 const LIMIT: Duration = Duration::from_secs(60);
 
-/// As the only argument of a check: a PHP script (Adminer), compiled by the
-/// kit's PHP (`php -l`); the answer is the `@version` of its header.
+/// As the only argument of a check: a PHP script (phpMyAdmin's
+/// `Version.php`), compiled by the kit's PHP (`php -l`); the answer is the
+/// `@version` of its header or its `const VERSION`.
 pub const PHP_SCRIPT: &str = "<php>";
 
 /// Runs the check command of `c`; `None` if it has none or nothing of it is
 /// on disk. Half installed (a part missing): failed, naming the part.
 pub fn check(kit: &Kit, env: &KitEnv, c: &Component) -> Option<Check> {
+    if !crate::router::target::can_execute_on_host(kit.target()) {
+        return crate::router::probe::check_static(kit, c);
+    }
     let (program, args) = c.check.split_first()?;
     if !c.is_present(kit) {
         return None;
@@ -73,11 +77,17 @@ fn php_script(kit: &Kit, env: &KitEnv, script: &std::path::Path) -> Result<Strin
     Ok(header_version(&head).unwrap_or("compiled").to_owned())
 }
 
-/// `x.y.z` of the `@version x.y.z` line of a PHP header.
+/// `x.y.z` of the `@version x.y.z` line of a PHP header, or of a
+/// `const VERSION = 'x.y.z'` line.
 fn header_version(head: &str) -> Option<&str> {
     head.lines()
-        .find_map(|l| l.split("@version").nth(1))
-        .map(str::trim)
+        .find_map(|l| {
+            l.split("@version").nth(1).map(str::trim).or_else(|| {
+                l.split("const VERSION = '")
+                    .nth(1)
+                    .and_then(|v| v.split('\'').next())
+            })
+        })
         .filter(|v| !v.is_empty())
 }
 

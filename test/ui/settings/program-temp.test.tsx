@@ -1,5 +1,5 @@
-// The "Temporanei dei programmi" setting (PLAN-DATA.md T11.4) and the disk
-// facts of the Il kit group (T8.5).
+// The "Temporanei dei programmi" setting (D-90) and the disk
+// facts of the Il kit group (D-90).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AppInfo, Settings } from "../../../ui/src/api";
@@ -50,6 +50,8 @@ describe("KitInfo disk facts", () => {
     otherKits: [],
     diskFs: "exFAT",
     diskKind: "removable",
+    diskNoexec: null,
+    diskNote: null,
     systemTemp: "C:\\Users\\me\\AppData\\Local\\Temp\\Atollo\\ab12",
   };
 
@@ -57,6 +59,13 @@ describe("KitInfo disk facts", () => {
     render(<KitInfo info={info} />);
     expect(screen.getByText("exFAT, rimovibile")).toBeTruthy();
     expect(screen.getByText(info.systemTemp ?? "")).toBeTruthy();
+  });
+
+  it("adds noexec and the app's note on the kit's disk (D-105)", () => {
+    const note = "Il disco del kit è exFAT: niente link simbolici.";
+    render(<KitInfo info={{ ...info, diskFs: "POSIX", diskKind: "fixed", diskNoexec: true, diskNote: note }} />);
+    expect(screen.getByText("POSIX, fisso, noexec")).toBeTruthy();
+    expect(screen.getByText(note)).toBeTruthy();
   });
 
   it("falls back to data\\tmp and hides an unreadable disk", () => {

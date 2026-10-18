@@ -12,9 +12,29 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
 
 use super::tools::run_with_input;
-use super::{auth, Services};
+use super::{auth, project_line, project_sql_engine, Services};
+use crate::db::DbEngine;
 use crate::os::jobs;
 use crate::projects::state::ProjectState;
+
+/// The options of a SQL dump (D-78): one consistent snapshot, with the
+/// routines and triggers; MySQL also the events and no GTID statement,
+/// which only an administrator could restore (the restore runs as the
+/// project's user).
+pub fn dump_args(engine: DbEngine) -> &'static [&'static str] {
+    match engine {
+        DbEngine::MySql => &[
+            "--single-transaction",
+            "--routines",
+            "--events",
+            "--triggers",
+            "--set-gtid-purged=OFF",
+        ],
+        DbEngine::MariaDb | DbEngine::MongoDb => {
+            &["--single-transaction", "--routines", "--triggers"]
+        }
+    }
+}
 
 /// A copy of a project's database (D-78).
 #[derive(Debug, Clone, Serialize)]
@@ -40,6 +60,9 @@ impl Services {
         let Ok(dir) = self.backup_dir(project) else {
             return Vec::new();
         };
+        // A `.sql` copy is for the project's SQL server (MySQL or MariaDB:
+        // the same extension).
+        let sql = project_sql_engine(&self.kit, project);
         let mut out: Vec<Backup> = fs::read_dir(dir)
             .into_iter()
             .flatten()
@@ -50,16 +73,10 @@ impl Services {
             })
             .filter_map(|e| {
                 let name = e.file_name().to_string_lossy().into_owned();
-                let engine = if name.ends_with(".sql") {
-                    "mariadb"
-                } else if name.ends_with(".archive.gz") {
-                    "mongodb"
-                } else {
-                    return None;
-                };
+                let engine = DbEngine::of_backup(&name, sql)?;
                 Some(Backup {
                     file: name,
-                    engine: engine.to_owned(),
+                    engine: engine.id().to_owned(),
                     size: e.metadata().map(|m| m.len()).unwrap_or(0),
                 })
             })
@@ -71,29 +88,32 @@ impl Services {
     /// A copy of the project's database in its backup folder (D-78); the
     /// server must run.
     pub fn export(&self, project: &str, engine: &str) -> Result<PathBuf> {
-        let (port, env) = self.running_server(engine)?;
+        let kind = self.engine_for(project, engine)?;
+        let engine = kind.id();
+        let line = project_line(&self.kit, project, engine);
+        let (port, env) = self.running_at(kind, line.as_deref())?;
         // The dump runs as root/admin: only the database the kit made for
         // this project, never one another project (or someone else) uses.
         let name = self.own_database(project, engine)?;
         let dir = self.backup_dir(project)?;
         let stamp = crate::agents::sync::stamp();
-        match engine {
-            "mongodb" => {
-                let file = dir.join(format!("{name}-{stamp}.archive.gz"));
-                let (mut cmd, config) = self.mongo_tool("mongodump.exe", &env, port)?;
+        let file = dir.join(format!("{name}-{stamp}{}", kind.backup_ext()));
+        let dump = kind.dump_bin();
+        match kind {
+            DbEngine::MongoDb => {
+                let (mut cmd, config) = self.mongo_tool(dump, &env, port)?;
                 cmd.arg(format!("--db={name}"))
                     .arg(format!("--archive={}", file.display()))
                     .arg("--gzip");
                 let result = run_with_input(cmd, "", Duration::from_secs(600));
                 let _ = fs::remove_file(config);
-                result.context("mongodump")?;
+                result.context(dump)?;
                 Ok(file)
             }
-            _ => {
-                let file = dir.join(format!("{name}-{stamp}.sql"));
+            DbEngine::MariaDb | DbEngine::MySql => {
                 let out = fs::File::create(&file)?;
-                let mut cmd = self.mariadb_tool("mariadb-dump.exe", &env);
-                cmd.args(["--single-transaction", "--routines", "--triggers"])
+                let mut cmd = self.sql_tool_at(kind, dump, &env, line.as_deref(), port);
+                cmd.args(dump_args(kind))
                     .arg(&name)
                     .stdin(Stdio::null())
                     .stdout(Stdio::from(out))
@@ -102,10 +122,7 @@ impl Services {
                 let done = child.wait_with_output()?;
                 if !done.status.success() {
                     let _ = fs::remove_file(&file);
-                    bail!(
-                        "mariadb-dump: {}",
-                        String::from_utf8_lossy(&done.stderr).trim()
-                    );
+                    bail!("{dump}: {}", String::from_utf8_lossy(&done.stderr).trim());
                 }
                 Ok(file)
             }
@@ -123,33 +140,47 @@ impl Services {
         if !crate::os::safe_path::is_file(&dir, &path) {
             bail!("copy not found: {file}");
         }
-        if file.ends_with(".archive.gz") {
-            let name = self.own_database(project, "mongodb")?;
-            let (port, env) = self.running_server("mongodb")?;
-            let (mut cmd, config) = self.mongo_tool("mongorestore.exe", &env, port)?;
-            cmd.arg(format!("--archive={}", path.display()))
-                .arg("--gzip")
-                .arg("--drop")
-                .arg(format!("--nsInclude={name}.*"));
-            let result = run_with_input(cmd, "", Duration::from_secs(600));
-            let _ = fs::remove_file(config);
-            result.context("mongorestore")
-        } else if file.ends_with(".sql") {
-            let name = self.own_database(project, "mariadb")?;
-            // As the project's user, never root: the file may come from
-            // outside (D-78) and name other databases or `mysql.*`.
-            let password = auth::try_project_password(&self.kit, project, "mariadb")?
-                .ok_or_else(|| anyhow!("the project has no MariaDB database yet"))?;
-            let (port, env) = self.running_server("mariadb")?;
-            let sql = fs::read_to_string(&path)?;
-            let (mut cmd, login) =
-                self.mariadb_as_project("mariadb.exe", &env, port, &name, &password)?;
-            cmd.arg(&name);
-            let result = run_with_input(cmd, &sql, Duration::from_secs(600));
-            let _ = fs::remove_file(login);
-            result.context("mariadb")
-        } else {
+        let Some(engine) = DbEngine::of_backup(file, project_sql_engine(&self.kit, project)) else {
             bail!("not a database copy: {file}")
+        };
+        let id = engine.id();
+        let restore = engine.restore_bin();
+        let name = self.own_database(project, id)?;
+        match engine {
+            DbEngine::MongoDb => {
+                let line = project_line(&self.kit, project, id);
+                let (port, env) = self.running_at(engine, line.as_deref())?;
+                let (mut cmd, config) = self.mongo_tool(restore, &env, port)?;
+                cmd.arg(format!("--archive={}", path.display()))
+                    .arg("--gzip")
+                    .arg("--drop")
+                    .arg(format!("--nsInclude={name}.*"));
+                let result = run_with_input(cmd, "", Duration::from_secs(600));
+                let _ = fs::remove_file(config);
+                result.context(restore)
+            }
+            DbEngine::MariaDb | DbEngine::MySql => {
+                // As the project's user, never root: the file may come from
+                // outside (D-78) and name other databases or `mysql.*`.
+                let password = auth::try_project_password(&self.kit, project, id)?
+                    .ok_or_else(|| anyhow!("the project has no {id} database yet"))?;
+                let line = project_line(&self.kit, project, id);
+                let (port, env) = self.running_at(engine, line.as_deref())?;
+                let sql = fs::read_to_string(&path)?;
+                let (mut cmd, login) = self.sql_as_project(
+                    engine,
+                    restore,
+                    &env,
+                    line.as_deref(),
+                    port,
+                    &name,
+                    &password,
+                )?;
+                cmd.arg(&name);
+                let result = run_with_input(cmd, &sql, Duration::from_secs(600));
+                let _ = fs::remove_file(login);
+                result.context(restore)
+            }
         }
     }
 

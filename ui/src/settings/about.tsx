@@ -20,10 +20,10 @@ export function KitInfo({ info }: { info: AppInfo }) {
   facts.splice(3, 0, [t("Cartella temporanea dei programmi"), info.systemTemp ?? "data\\tmp"]);
   if (info.diskFs !== null) {
     const kind = { fixed: t("fisso"), removable: t("rimovibile"), remote: t("di rete"), other: t("altro") };
-    facts.splice(3, 0, [
-      t("Disco del kit"),
-      info.diskKind === null ? info.diskFs : `${info.diskFs}, ${kind[info.diskKind]}`,
-    ]);
+    const disk: string[] = [info.diskFs];
+    if (info.diskKind !== null) disk.push(kind[info.diskKind]);
+    if (info.diskNoexec) disk.push("noexec");
+    facts.splice(3, 0, [t("Disco del kit"), disk.join(", ")]);
   }
   const rows = facts.map(([k, v]): [string, React.ReactNode] => [
     k,
@@ -40,6 +40,7 @@ export function KitInfo({ info }: { info: AppInfo }) {
           <BrandSymbol size={40} />
           <Properties rows={rows} />
         </div>
+        {info.diskNote ? <p className="mt-2 text-vsc-warning">{info.diskNote}</p> : null}
       </SettingItem>
     </SettingsGroup>
   );
@@ -51,6 +52,8 @@ export function Updates() {
   if (!st) return null;
   let text: string;
   if (st.staged) text = t("La versione {0} è pronta: sostituisce questa alla chiusura di Atollo.", st.staged);
+  else if (st.manual && st.latest)
+    text = t("La versione {0} è disponibile: scaricala dalla pagina della release.", st.latest);
   else if (st.error) text = t("Controllo non riuscito: {0}", st.error);
   else if (st.latest && st.latest === st.current) text = t("Atollo {0} è la versione più recente.", st.current);
   else text = t("Versione installata: {0}", st.current);

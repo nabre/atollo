@@ -20,7 +20,7 @@ fn servers_flow_between_claude_shared_and_others() {
         "Claude's servers shared"
     );
     let agy: Value = serde_json::from_str(
-        &fs::read_to_string(p.gemini.join(r"config\mcp_config.json")).unwrap(),
+        &fs::read_to_string(p.gemini.join("config").join("mcp_config.json")).unwrap(),
     )
     .unwrap();
     assert_eq!(agy["mcpServers"]["fs"]["command"], "npx");
@@ -34,7 +34,7 @@ fn servers_flow_between_claude_shared_and_others() {
     run(&kit, None);
     assert!(!load(&p).unwrap().contains_key("fs"));
     let agy: Value = serde_json::from_str(
-        &fs::read_to_string(p.gemini.join(r"config\mcp_config.json")).unwrap(),
+        &fs::read_to_string(p.gemini.join("config").join("mcp_config.json")).unwrap(),
     )
     .unwrap();
     assert!(agy["mcpServers"].get("fs").is_none());
@@ -48,7 +48,7 @@ fn antigravity_own_servers_left_alone() {
     let (_t, kit, p) = kit("mcp-agy");
     fs::create_dir_all(p.gemini.join("config")).unwrap();
     fs::write(
-        p.gemini.join(r"config\mcp_config.json"),
+        p.gemini.join("config").join("mcp_config.json"),
         r#"{"mcpServers":{"mine":{"command":"x"}}}"#,
     )
     .unwrap();
@@ -56,7 +56,7 @@ fn antigravity_own_servers_left_alone() {
     fs::write(p.mcp_file(), r#"{"mcpServers":{"kit":{"command":"k"}}}"#).unwrap();
     run(&kit, None);
     let agy: Value = serde_json::from_str(
-        &fs::read_to_string(p.gemini.join(r"config\mcp_config.json")).unwrap(),
+        &fs::read_to_string(p.gemini.join("config").join("mcp_config.json")).unwrap(),
     )
     .unwrap();
     assert_eq!(agy["mcpServers"]["mine"]["command"], "x");

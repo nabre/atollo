@@ -51,7 +51,7 @@ fn damaged_file_is_a_problem_with_its_path() {
 #[test]
 fn write_json_creates_the_folder_and_leaves_no_temporary() {
     let dir = temp("write");
-    let file = dir.join(r"sub\a.json");
+    let file = dir.join("sub").join("a.json");
     write_json(&file, &BTreeMap::from([("a", 2)])).unwrap();
     let v: BTreeMap<String, u32> = read_json(&file).unwrap();
     assert_eq!(v["a"], 2);

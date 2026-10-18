@@ -2,8 +2,12 @@ name: App
 
 on:
   push:
-    branches: [main]
+    # feature/platforms is the integration branch of the macOS and Linux
+    # port (DECISIONS.md D-105, D-108 to D-115).
+    branches: [main, feature/platforms]
     tags: ['app-v*']
+  # Every base branch, feature/platforms too: the coordinator sees macOS
+  # and Linux before each merge (docs/app/TESTING.md).
   pull_request:
   workflow_dispatch:
 
@@ -20,8 +24,8 @@ jobs:
     name: Lint and test
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: lts/*
           cache: npm
@@ -46,8 +50,355 @@ jobs:
         run: cargo fmt --check
       - name: cargo clippy
         run: cargo clippy --all-targets -- -D warnings
+      # Still in pwsh, as before; stdout (where the results are) is kept for
+      # the counts in the job's summary, and the step ends with cargo's
+      # $LASTEXITCODE.
       - name: cargo test
-        run: cargo test
+        run: cargo test | Tee-Object -FilePath cargo-test.log
+      - name: Test summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### cargo test (win32-x64)"
+            if grep -q '^test result:' cargo-test.log 2>/dev/null; then
+              grep '^test result:' cargo-test.log | awk '{ p += $4; f += $6; i += $8 } END { printf "| passed | failed | ignored |\n| ---: | ---: | ---: |\n| %d | %d | %d |\n", p, f, i }'
+              grep -E '^test .* \.\.\. FAILED$' cargo-test.log | sed 's/^/- /' || true
+            else
+              echo "No test result: the tests did not build or run (see the log)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # cargo test on macOS and Linux (docs/app/TESTING.md). Tests that only hold on Windows
+  # (Windows paths, cmd.exe, junctions) carry
+  # #[cfg_attr(not(windows), ignore = "...")] and count as ignored here.
+  # tauri 2.12.1 builds its `test` feature on macOS too (2.12.0 did not:
+  # MockRuntime without `transparent`), so every job runs the whole suite.
+  test-unix:
+    name: Test ${{ matrix.target }}
+    # The runner comes from the target, so `target` is the only matrix key.
+    # macos-13 is retired; macos-15-intel is the last x64 macOS image.
+    # Linux pinned to 24.04 (the WSL2 Ubuntu of scripts/test-linux.sh), not
+    # ubuntu-latest: the package names of Tauri's system libraries below are
+    # those of 24.04, and ubuntu-latest moves to a newer release by itself.
+    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-24.04","linux-arm64":"ubuntu-24.04-arm","darwin-arm64":"macos-latest","darwin-x64":"macos-15-intel"}')[matrix.target] }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # A repository without ARM64 runners (a private one may have none)
+        # sets the variable ARM64_RUNNERS to off: linux-arm64 is left out of
+        # the list instead of waiting for a runner that never comes. Not an
+        # exclude plus include: GitHub applies include after exclude and
+        # would add the excluded target back as a new combination.
+        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64","darwin-x64"]' || '["linux-x64","linux-arm64","darwin-arm64","darwin-x64"]') }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: System libraries of Tauri 2 (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev patchelf libssl-dev libdbus-1-dev libxdo-dev pkg-config build-essential
+      # tauri::generate_context! needs the frontend in dist/.
+      - name: Frontend dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Frontend build
+        run: npm -w ui run build
+      # Vitest once off Windows (paths, line endings): the x64 Linux job.
+      - name: Frontend tests
+        if: matrix.target == 'linux-x64'
+        run: npm -w ui test
+      # scripts/test-linux.sh copies with rsync --delete: only into an empty
+      # folder or one it made (marker), never into a clone with its own work.
+      - name: test-linux.sh copy guard
+        if: matrix.target == 'linux-x64'
+        shell: bash
+        run: |
+          t="$RUNNER_TEMP/guard"
+          mkdir -p "$t/empty" "$t/copy" "$t/clone/.git" "$t/clone/tauri" "$t/other"
+          touch "$t/copy/.atollo-linux-copy" "$t/clone/Cargo.toml" "$t/other/x"
+          check() {
+            local got=0
+            ATOLLO_LINUX_DIR="$t/$1" bash scripts/test-linux.sh --check-dest >/dev/null 2>&1 || got=$?
+            echo "$1: exit $got (want $2)"
+            [ "$got" -eq "$2" ]
+          }
+          check empty 0 && check absent 0 && check copy 0 && check clone 2 && check other 2
+      - name: cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+      # The output is kept for the summary; pipefail keeps cargo's exit code
+      # through tee.
+      - name: cargo test
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo test 2>&1 | tee cargo-test.log
+      - name: Test summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### cargo test (${{ matrix.target }})"
+            if grep -q '^test result:' cargo-test.log 2>/dev/null; then
+              grep '^test result:' cargo-test.log | awk '{ p += $4; f += $6; i += $8 } END { printf "| passed | failed | ignored |\n| ---: | ---: | ---: |\n| %d | %d | %d |\n", p, f, i }'
+              grep -E '^test .* \.\.\. FAILED$' cargo-test.log | sed 's/^/- /' || true
+            else
+              echo "No test result: the tests did not build or run (see the log)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # cargo test natively on Windows ARM64: the build job only cross-compiles
+  # aarch64-pc-windows-msvc on x64. Left out with ARM64_RUNNERS=off.
+  test-windows-arm64:
+    name: Test win32-arm64
+    runs-on: windows-11-arm
+    if: vars.ARM64_RUNNERS != 'off'
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+      # The native toolchain by name: an x64 rustup (preinstalled, or
+      # rustup-init run under emulation) would otherwise pick an x64 host
+      # and test an emulated build.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable-aarch64-pc-windows-msvc
+      # No silent fallback to emulation: the job fails unless rustc is native.
+      - name: Native aarch64 toolchain
+        shell: bash
+        run: |
+          rustc -vV
+          rustc -vV | tr -d '\r' | grep -qx 'host: aarch64-pc-windows-msvc' || { echo "rustc is not aarch64-pc-windows-msvc: the tests would run under emulation" >&2; exit 1; }
+      - uses: Swatinem/rust-cache@v2
+      - name: Frontend dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Frontend build
+        run: npm -w ui run build
+      # pwsh, as in the x64 job.
+      - name: cargo test
+        run: cargo test | Tee-Object -FilePath cargo-test.log
+      - name: Test summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### cargo test (win32-arm64)"
+            if grep -q '^test result:' cargo-test.log 2>/dev/null; then
+              grep '^test result:' cargo-test.log | awk '{ p += $4; f += $6; i += $8 } END { printf "| passed | failed | ignored |\n| ---: | ---: | ---: |\n| %d | %d | %d |\n", p, f, i }'
+              grep -E '^test .* \.\.\. FAILED$' cargo-test.log | sed 's/^/- /' || true
+            else
+              echo "No test result: the tests did not build or run (see the log)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Atollo.app for macOS (D-113: ad hoc, no Developer ID), one
+  # native build per architecture, ad hoc signed under the hardened runtime
+  # with tauri/entitlements.plist, zipped as the self-updater reads it
+  # (Atollo-<target>.app.zip, setup/self_update.rs). An artifact only: the
+  # release job (D-113) does not publish it yet.
+  bundle-macos:
+    name: Bundle ${{ matrix.target }}
+    runs-on: ${{ matrix.target == 'darwin-x64' && 'macos-15-intel' || 'macos-latest' }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [darwin-arm64, darwin-x64]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: bundle-${{ matrix.target }}
+      - name: Frontend dependencies
+        run: npm ci --no-fund --no-audit
+      # bundle.macOS of tauri.conf.json: minimumSystemVersion 12.0 (also
+      # MACOSX_DEPLOYMENT_TARGET of the build), signingIdentity "-".
+      - name: Build (Atollo.app)
+        run: ./node_modules/.bin/tauri build --bundles app
+      # Signed again explicitly, so the signature never depends on how the
+      # bundler reads the identity: ad hoc (-), hardened runtime, the
+      # entitlements of the repository, no timestamp (none for ad hoc).
+      - name: Ad hoc signature
+        run: |
+          app=target/release/bundle/macos/Atollo.app
+          codesign --force --sign - --options runtime --timestamp=none --entitlements tauri/entitlements.plist "$app"
+          codesign --verify --strict --verbose=2 "$app"
+          info=$(codesign -dv --verbose=4 "$app" 2>&1)
+          echo "$info"
+          grep -q '^Signature=adhoc$' <<<"$info" || { echo "not ad hoc signed" >&2; exit 1; }
+          grep -Eq '^CodeDirectory .*flags=0x[0-9a-f]+\(adhoc,runtime\)' <<<"$info" || { echo "no hardened runtime" >&2; exit 1; }
+          ents=$(codesign -d --entitlements - --xml "$app" 2>/dev/null)
+          for key in com.apple.security.cs.allow-jit com.apple.security.cs.disable-library-validation; do
+            grep -q "$key" <<<"$ents" || { echo "entitlement $key missing" >&2; exit 1; }
+          done
+      - name: Info.plist and minimum macOS
+        run: |
+          app=target/release/bundle/macos/Atollo.app
+          plist="$app/Contents/Info.plist"
+          want() {
+            local got
+            got=$(plutil -extract "$1" raw -o - "$plist")
+            echo "$1 = $got"
+            [ "$got" = "$2" ] || { echo "$1: want $2" >&2; exit 1; }
+          }
+          want CFBundleIdentifier io.github.nabre.atollo
+          want CFBundleName Atollo
+          want CFBundleExecutable Atollo
+          want LSMinimumSystemVersion 12.0
+          minos=$(otool -l "$app/Contents/MacOS/Atollo" | awk '/LC_BUILD_VERSION/ { b = 1 } b && $1 == "minos" { print $2; exit }')
+          echo "minos = $minos"
+          [ "$minos" = "12.0" ] || { echo "the binary targets macOS $minos, not 12.0" >&2; exit 1; }
+          lipo -archs "$app/Contents/MacOS/Atollo"
+          want_arch=${{ matrix.target == 'darwin-x64' && 'x86_64' || 'arm64' }}
+          [ "$(lipo -archs "$app/Contents/MacOS/Atollo")" = "$want_arch" ] || { echo "not a $want_arch binary" >&2; exit 1; }
+      # ditto keeps the modes and the signature; no resource forks or
+      # extended attributes (__MACOSX), which the updater does not read.
+      - name: Zip
+        run: |
+          mkdir -p out
+          ditto -c -k --norsrc --noextattr --noacl --keepParent target/release/bundle/macos/Atollo.app "out/Atollo-${{ matrix.target }}.app.zip"
+          (cd out && shasum -a 256 "Atollo-${{ matrix.target }}.app.zip" | tee "Atollo-${{ matrix.target }}.app.zip.sha256")
+      # From the zip, as a user (and the updater) gets it, in a new kit
+      # folder with a space and a parenthesis in its path.
+      - name: Smoke test
+        run: |
+          kit="$RUNNER_TEMP/kit (1)"
+          mkdir -p "$kit"
+          ditto -x -k "out/Atollo-${{ matrix.target }}.app.zip" "$kit"
+          codesign --verify --strict "$kit/Atollo.app"
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' tauri/Cargo.toml | head -n 1)
+          out=$("$kit/Atollo.app/Contents/MacOS/Atollo" --version)
+          echo "$out"
+          grep -q " $version\$" <<<"$out" || { echo "--version: want $version" >&2; exit 1; }
+          # Nothing is ever written inside the bundle (its signature).
+          codesign --verify --strict "$kit/Atollo.app"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: bundle-${{ matrix.target }}
+          path: out/*
+          if-no-files-found: error
+
+  # The AppImage and the tar.gz for Linux (D-113), built on Ubuntu 22.04
+  # for its glibc 2.35 floor. Tauri's AppImage bundler runs linuxdeploy with
+  # its GTK plugin, so WebKitGTK and GTK travel inside the image; the
+  # tar.gz holds only the binary, for systems without FUSE that have
+  # WebKitGTK 4.1 installed. Artifacts only, as for macOS.
+  #
+  # 22.04 is a container on the 24.04 runners: GitHub retires its
+  # ubuntu-22.04 images (actions/runner-images#14254, gone on 2027-04-17),
+  # while the floor comes from the system the binary links against, not
+  # from the runner.
+  bundle-linux:
+    name: Bundle ${{ matrix.target }}
+    runs-on: ${{ matrix.target == 'linux-arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    container: ubuntu:22.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        # Without ARM64 runners (ARM64_RUNNERS=off) linux-arm64 is left out,
+        # as in test-unix.
+        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64"]' || '["linux-x64","linux-arm64"]') }}
+    env:
+      # linuxdeploy is itself an AppImage: it runs without FUSE (none in a
+      # container either).
+      APPIMAGE_EXTRACT_AND_RUN: 1
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      # Before checkout (a real clone needs git) and the toolchain (rustup
+      # comes through curl). The libraries of Tauri 2 (22.04 names), file
+      # and xdg-utils for the AppImage bundler, xvfb and xauth for the
+      # smoke test. Root in the container: no sudo.
+      - name: System packages
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git build-essential file xdg-utils xvfb xauth libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev patchelf libssl-dev libdbus-1-dev libxdo-dev pkg-config
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: bundle-${{ matrix.target }}
+      - name: Frontend dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Build (AppImage)
+        run: ./node_modules/.bin/tauri build --bundles appimage
+      # The newest glibc symbol the binary needs: never above the build
+      # system's 2.35, so the app starts on Ubuntu 22.04, Debian 12 and later.
+      - name: glibc floor
+        run: |
+          floor=$(objdump -T target/release/Atollo | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -n 1)
+          echo "needs $floor"
+          [ "$(printf '%s\n' "$floor" GLIBC_2.35 | sort -V | tail -n 1)" = GLIBC_2.35 ] || { echo "$floor is above GLIBC_2.35" >&2; exit 1; }
+      - name: Package
+        run: |
+          mkdir -p out
+          images=(target/release/bundle/appimage/*.AppImage)
+          [ "${#images[@]}" -eq 1 ] && [ -f "${images[0]}" ] || { echo "want one AppImage: ${images[*]}" >&2; exit 1; }
+          cp "${images[0]}" "out/Atollo-${{ matrix.target }}.AppImage"
+          chmod 755 "out/Atollo-${{ matrix.target }}.AppImage"
+          tar -czf "out/Atollo-${{ matrix.target }}.tar.gz" -C target/release Atollo
+          (cd out && for f in *; do sha256sum "$f" | tee "$f.sha256"; done)
+      # In new kit folders with a space and a parenthesis: --version, then
+      # check under a virtual display. The AppImage runs with
+      # --appimage-extract-and-run (the hint for systems without FUSE); its
+      # kit is the AppImage's folder, never the temporary extraction.
+      - name: Smoke test
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' tauri/Cargo.toml | head -n 1)
+          smoke() {
+            local kit="$1"; shift
+            local out code=0
+            out=$(cd "$kit" && "$@" --version)
+            echo "$out"
+            grep -q " $version\$" <<<"$out" || { echo "--version: want $version" >&2; exit 1; }
+            (cd "$kit" && xvfb-run -a "$@" check) || code=$?
+            # 0 every check passed, 1 something missing in an empty kit; a
+            # crash or a signal is above that.
+            [ "$code" -le 1 ] || { echo "check failed with $code" >&2; exit 1; }
+            [ -d "$kit/data" ] && [ -d "$kit/projects" ] || { echo "no kit next to the app in $kit" >&2; ls -la "$kit"; exit 1; }
+          }
+          image="$RUNNER_TEMP/image (1)"
+          mkdir -p "$image"
+          cp "out/Atollo-${{ matrix.target }}.AppImage" "$image/Atollo.AppImage"
+          smoke "$image" ./Atollo.AppImage --appimage-extract-and-run
+          plain="$RUNNER_TEMP/plain (1)"
+          mkdir -p "$plain"
+          tar -xzf "out/Atollo-${{ matrix.target }}.tar.gz" -C "$plain"
+          smoke "$plain" ./Atollo
+      - uses: actions/upload-artifact@v6
+        with:
+          name: bundle-${{ matrix.target }}
+          path: out/*
+          if-no-files-found: error
 
   build:
     name: Build ${{ matrix.target }}
@@ -58,8 +409,8 @@ jobs:
       matrix:
         target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: lts/*
           cache: npm
@@ -81,7 +432,61 @@ jobs:
           $text = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($exe))
           if ($text -notmatch 'requestedExecutionLevel level="asInvoker"') { throw "asInvoker missing" }
           if ($text -match 'requireAdministrator|highestAvailable') { throw "elevation requested" }
-      - name: Sign the exe (optional)
+      - name: PE VersionInfo metadata
+        shell: pwsh
+        run: |
+          $exe = "target/${{ matrix.target }}/release/Atollo.exe"
+          $vi = (Get-Item $exe).VersionInfo
+          $vi | Format-List ProductName, FileDescription, CompanyName, OriginalFilename, InternalName, FileVersion, ProductVersion
+          if ($vi.ProductName -ne 'Atollo') { throw "unexpected ProductName: '$($vi.ProductName)'" }
+          if ($vi.FileDescription -ne 'Atollo — Universal Portable Dev & AI Workspace') { throw "unexpected FileDescription: '$($vi.FileDescription)'" }
+          if ($vi.CompanyName -ne 'nabre') { throw "unexpected CompanyName: '$($vi.CompanyName)'" }
+          if ($vi.OriginalFilename -ne 'Atollo.exe') { throw "unexpected OriginalFilename: '$($vi.OriginalFilename)'" }
+          if (-not $vi.FileVersion) { throw "FileVersion missing" }
+      - name: Check signing configuration
+        id: sign-config
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+        run: |
+          $signpath = [bool]($env:SIGNPATH_API_TOKEN -and $env:SIGNPATH_ORGANIZATION_ID -and $env:SIGNPATH_PROJECT_SLUG -and $env:SIGNPATH_SIGNING_POLICY_SLUG)
+          "signpath=$($signpath.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+      - name: Upload unsigned artifact for SignPath
+        id: upload-unsigned
+        if: steps.sign-config.outputs.signpath == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: unsigned-Atollo-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/Atollo.exe
+          if-no-files-found: error
+      - name: Submit signing request to SignPath
+        if: steps.sign-config.outputs.signpath == 'true'
+        # Pinned to the commit of tag v1 (it receives the signing token).
+        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: target/${{ matrix.target }}/signed
+      - name: Replace exe with SignPath signed artifact
+        if: steps.sign-config.outputs.signpath == 'true'
+        shell: pwsh
+        run: |
+          $signed = "target/${{ matrix.target }}/signed/Atollo.exe"
+          $dest = "target/${{ matrix.target }}/release/Atollo.exe"
+          if (-not (Test-Path $signed)) { throw "Signed binary not found at $signed" }
+          Copy-Item $signed $dest -Force
+          $sig = Get-AuthenticodeSignature $dest
+          if ($sig.Status -ne 'Valid') { throw "Authenticode signature invalid: $($sig.Status) ($($sig.StatusMessage))" }
+      - name: Sign the exe with local PFX (optional fallback)
+        if: steps.sign-config.outputs.signpath != 'true'
         shell: pwsh
         env:
           # Base64 of a code-signing .pfx and its password; without them
@@ -119,7 +524,7 @@ jobs:
             if (-not ($entry.StartsWith("$kit\data") -or $entry -like "$env:SystemRoot\System32*")) { throw "foreign PATH entry: $entry" }
           }
           $names = (Get-ChildItem $kit -Force).Name | Sort-Object
-          if (($names -join ',') -ne 'data,Atollo.exe,projects') { throw "unexpected files: $names" }
+          if (($names -join ',') -ne 'Atollo.exe,data,projects') { throw "unexpected files: $names" }
       - name: Real install of pwsh, node, git and the editor server (x64)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
@@ -148,7 +553,7 @@ jobs:
         run: |
           $env:ATOLLO_TEST_KIT = Join-Path $env:RUNNER_TEMP "kit (1) & co"
           cargo test --target ${{ matrix.target }} real_ -- --nocapture --test-threads=1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: Atollo-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/Atollo.exe
@@ -162,7 +567,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Tag matches the app version
         shell: pwsh
         run: |
@@ -173,7 +578,7 @@ jobs:
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "version '$version' is not X.Y.Z: the updater would ignore it" }
           # The tag is read from the environment, never pasted into the script.
           if ($env:GITHUB_REF_NAME -ne "app-v$version") { throw "tag $env:GITHUB_REF_NAME does not match app-v$version" }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: Atollo-*
           path: artifacts
