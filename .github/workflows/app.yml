@@ -209,8 +209,9 @@ jobs:
   # Atollo.app for macOS (D-113: ad hoc, no Developer ID), one
   # native build per architecture, ad hoc signed under the hardened runtime
   # with tauri/entitlements.plist, zipped as the self-updater reads it
-  # (Atollo-<target>.app.zip, setup/self_update.rs). An artifact only: the
-  # release job (D-113) does not publish it yet.
+  # (Atollo-<target>.app.zip, setup/self_update.rs). The artifact
+  # bundle-<target> is what the release job publishes, after release-smoke
+  # has started it again (D-113, D-119).
   bundle-macos:
     name: Bundle ${{ matrix.target }}
     runs-on: ${{ matrix.target == 'darwin-x64' && 'macos-15-intel' || 'macos-latest' }}
@@ -303,7 +304,7 @@ jobs:
   # for its glibc 2.35 floor. Tauri's AppImage bundler runs linuxdeploy with
   # its GTK plugin, so WebKitGTK and GTK travel inside the image; the
   # tar.gz holds only the binary, for systems without FUSE that have
-  # WebKitGTK 4.1 installed. Artifacts only, as for macOS.
+  # WebKitGTK 4.1 installed. Published by the release job, as for macOS.
   #
   # 22.04 is a container on the 24.04 runners: GitHub retires its
   # ubuntu-22.04 images (actions/runner-images#14254, gone on 2027-04-17),
@@ -399,6 +400,112 @@ jobs:
           name: bundle-${{ matrix.target }}
           path: out/*
           if-no-files-found: error
+
+  # The release inputs themselves, started again (D-119): the artifact
+  # bundle-<target> downloaded as the release job gets it, checked against
+  # its .sha256, then started the way the README says, on a plain runner
+  # (not the build container): macOS after `xattr -dr com.apple.quarantine`,
+  # the AppImage with --appimage-extract-and-run under its release name, the
+  # tar.gz with WebKitGTK 4.1 from the system. Every run, not only on tags,
+  # so a release never publishes something that was not started here.
+  release-smoke:
+    name: Release smoke ${{ matrix.target }}
+    needs: [bundle-macos, bundle-linux]
+    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-24.04","linux-arm64":"ubuntu-24.04-arm","darwin-arm64":"macos-latest","darwin-x64":"macos-15-intel"}')[matrix.target] }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        # As in test-unix: linux-arm64 only with ARM64 runners.
+        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64","darwin-x64"]' || '["linux-x64","linux-arm64","darwin-arm64","darwin-x64"]') }}
+    steps:
+      # Only for the version in tauri/Cargo.toml; nothing is built here.
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: tauri/Cargo.toml
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v7
+        with:
+          name: bundle-${{ matrix.target }}
+          path: assets
+      # The names the release publishes and the updater looks for
+      # (setup/self_update.rs, asset_name), each with its .sha256.
+      - name: Names and checksums
+        run: |
+          case "${{ matrix.target }}" in
+            darwin-*) want="Atollo-${{ matrix.target }}.app.zip" ;;
+            *) want="Atollo-${{ matrix.target }}.AppImage Atollo-${{ matrix.target }}.tar.gz" ;;
+          esac
+          cd assets
+          ls -la
+          for f in $want; do
+            [ -f "$f" ] && [ -f "$f.sha256" ] || { echo "missing $f or $f.sha256" >&2; exit 1; }
+            want_hash=$(awk '{ print $1; exit }' "$f.sha256")
+            got_hash=$( (command -v sha256sum >/dev/null && sha256sum "$f" || shasum -a 256 "$f") | awk '{ print $1 }')
+            [ "$want_hash" = "$got_hash" ] || { echo "$f: SHA-256 $got_hash, its .sha256 says $want_hash" >&2; exit 1; }
+            echo "$f $got_hash"
+          done
+      - name: Smoke test (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' tauri/Cargo.toml | head -n 1)
+          kit="$RUNNER_TEMP/release kit (1)"
+          mkdir -p "$kit"
+          ditto -x -k "assets/Atollo-${{ matrix.target }}.app.zip" "$kit"
+          app="$kit/Atollo.app"
+          # As a browser download: quarantined. Then the README's command.
+          xattr -w com.apple.quarantine "0083;$(printf %x "$(date +%s)");Safari;" "$app"
+          xattr -dr com.apple.quarantine "$app"
+          if xattr -lr "$app" | grep -q com.apple.quarantine; then echo "quarantine still set" >&2; exit 1; fi
+          codesign --verify --strict --verbose=2 "$app"
+          out=$("$app/Contents/MacOS/Atollo" --version)
+          echo "$out"
+          grep -q " $version\$" <<<"$out" || { echo "--version: want $version" >&2; exit 1; }
+          code=0
+          (cd "$kit" && "$app/Contents/MacOS/Atollo" check) || code=$?
+          # 0 every check passed, 1 something missing in an empty kit.
+          [ "$code" -le 1 ] || { echo "check failed with $code" >&2; exit 1; }
+          [ -d "$kit/data" ] && [ -d "$kit/projects" ] || { echo "no kit next to Atollo.app" >&2; ls -la "$kit"; exit 1; }
+          # Nothing written inside the bundle (its signature).
+          codesign --verify --strict "$app"
+      # Only the runtime the README names for the tar.gz (no -dev packages),
+      # so the ldd check below holds the README to it; xvfb and xauth for
+      # the virtual display. The AppImage carries its own libraries.
+      - name: System packages (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb xauth libwebkit2gtk-4.1-0
+      - name: Smoke test (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' tauri/Cargo.toml | head -n 1)
+          smoke() {
+            local kit="$1"; shift
+            local out code=0
+            out=$(cd "$kit" && "$@" --version)
+            echo "$out"
+            grep -q " $version\$" <<<"$out" || { echo "--version: want $version" >&2; exit 1; }
+            (cd "$kit" && xvfb-run -a "$@" check) || code=$?
+            [ "$code" -le 1 ] || { echo "check failed with $code" >&2; exit 1; }
+            [ -d "$kit/data" ] && [ -d "$kit/projects" ] || { echo "no kit next to the app in $kit" >&2; ls -la "$kit"; exit 1; }
+          }
+          name="Atollo-${{ matrix.target }}.AppImage"
+          image="$RUNNER_TEMP/release image (1)"
+          mkdir -p "$image"
+          cp "assets/$name" "$image/"
+          # Artifacts lose the mode: the user's chmod +x, as in the README.
+          chmod +x "$image/$name"
+          smoke "$image" "./$name" --appimage-extract-and-run
+          plain="$RUNNER_TEMP/release plain (1)"
+          mkdir -p "$plain"
+          tar -xzf "assets/Atollo-${{ matrix.target }}.tar.gz" -C "$plain"
+          [ -x "$plain/Atollo" ] || { echo "Atollo in the tar.gz is not executable" >&2; exit 1; }
+          if ldd "$plain/Atollo" | grep 'not found'; then echo "the tar.gz needs libraries the README does not name" >&2; exit 1; fi
+          smoke "$plain" ./Atollo
 
   build:
     name: Build ${{ matrix.target }}
@@ -561,7 +668,8 @@ jobs:
 
   release:
     name: Release
-    needs: build
+    # release-smoke needs bundle-macos and bundle-linux.
+    needs: [build, release-smoke]
     if: startsWith(github.ref, 'refs/tags/app-v')
     runs-on: windows-latest
     permissions:
@@ -578,23 +686,47 @@ jobs:
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "version '$version' is not X.Y.Z: the updater would ignore it" }
           # The tag is read from the environment, never pasted into the script.
           if ($env:GITHUB_REF_NAME -ne "app-v$version") { throw "tag $env:GITHUB_REF_NAME does not match app-v$version" }
+      # Windows exes (Atollo-<triple>) and the macOS and Linux bundles
+      # (bundle-<target>), the same artifacts release-smoke started.
       - uses: actions/download-artifact@v7
         with:
           pattern: Atollo-*
           path: artifacts
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: bundle-*
+          path: artifacts
       - name: Release assets
         shell: pwsh
+        env:
+          ARM64_RUNNERS: ${{ vars.ARM64_RUNNERS }}
         run: |
-          # Names and .sha256 files as read by tauri/src/setup/self_update.rs.
+          # Names and .sha256 files as read by tauri/src/setup/self_update.rs
+          # (asset_name): Atollo-<arch>.exe, Atollo-<target>.app.zip,
+          # Atollo-<target>.AppImage; the tar.gz is downloaded by hand.
           New-Item -ItemType Directory -Force dist | Out-Null
-          $assets = @{ 'x86_64-pc-windows-msvc' = 'Atollo-x64.exe'; 'aarch64-pc-windows-msvc' = 'Atollo-arm64.exe' }
-          foreach ($target in $assets.Keys) {
-            $name = $assets[$target]
-            Move-Item "artifacts/Atollo-$target/Atollo.exe" "dist/$name"
+          function Publish([string]$from, [string]$name) {
+            if (-not (Test-Path $from)) { throw "missing release input: $from" }
+            Copy-Item $from "dist/$name"
             $hash = (Get-FileHash "dist/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
+            # A bundle comes with the .sha256 of its job: it must agree.
+            if (Test-Path "$from.sha256") {
+              $said = ((Get-Content "$from.sha256" -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
+              if ($said -ne $hash) { throw "${name}: SHA-256 $hash, its .sha256 says $said" }
+            }
             Set-Content "dist/$name.sha256" "$hash  $name" -Encoding ascii
           }
+          $exes = @{ 'x86_64-pc-windows-msvc' = 'Atollo-x64.exe'; 'aarch64-pc-windows-msvc' = 'Atollo-arm64.exe' }
+          foreach ($target in $exes.Keys) { Publish "artifacts/Atollo-$target/Atollo.exe" $exes[$target] }
+          $unix = @('darwin-arm64', 'darwin-x64', 'linux-x64')
+          # Without ARM64 runners there is no linux-arm64 build (bundle-linux).
+          if ($env:ARM64_RUNNERS -ne 'off') { $unix += 'linux-arm64' }
+          foreach ($target in $unix) {
+            $files = if ($target -like 'darwin-*') { @("Atollo-$target.app.zip") } else { @("Atollo-$target.AppImage", "Atollo-$target.tar.gz") }
+            foreach ($name in $files) { Publish "artifacts/bundle-$target/$name" $name }
+          }
           Get-ChildItem dist | Format-Table Name, Length
+      # The notes say how to start each download (README «Come si usa»).
       - name: GitHub release
         shell: pwsh
         env:
@@ -602,5 +734,18 @@ jobs:
         run: |
           $tag = $env:GITHUB_REF_NAME
           $version = $tag.Substring('app-v'.Length)
-          gh release create $tag (Get-ChildItem dist).FullName --verify-tag --title "Atollo $version" --notes "Atollo $version for Windows x64 and arm64: replace Atollo.exe, or let the app update itself."
+          $notes = @'
+          Atollo {0}. Put the app in an empty folder (a USB stick, an external drive, a folder of yours): `projects` and `data` are created next to it. A kit that already has the app updates itself.
+
+          **Windows** (x64, ARM64): `Atollo-x64.exe` or `Atollo-arm64.exe`: double-click it, or replace your `Atollo.exe` with it.
+
+          **macOS 12 or later** (Apple Silicon: `Atollo-darwin-arm64.app.zip`, Intel: `Atollo-darwin-x64.app.zip`): ad hoc signed, not notarized. Unzip, move `Atollo.app` with the Finder into the kit folder, then in Terminal `xattr -dr com.apple.quarantine /path/to/kit/Atollo.app` and open it from that folder. Without this step macOS starts it from a temporary copy (App Translocation) and Atollo stops with the same command.
+
+          **Linux** (x64, ARM64; glibc 2.35 or later): `Atollo-linux-<arch>.AppImage`, then `chmod +x` and start it. Without FUSE (containers, some minimal distributions): run `./Atollo-linux-<arch>.AppImage --appimage-extract-and-run`, or use `Atollo-linux-<arch>.tar.gz` with WebKitGTK 4.1 installed (the tar.gz does not update itself).
+
+          Each file has its `.sha256`.
+          '@ -f $version
+          $file = Join-Path $env:RUNNER_TEMP 'notes.md'
+          Set-Content $file $notes -Encoding utf8
+          gh release create $tag (Get-ChildItem dist).FullName --verify-tag --title "Atollo $version" --notes-file $file
           if ($LASTEXITCODE -ne 0) { throw "gh release create failed ($LASTEXITCODE)" }
