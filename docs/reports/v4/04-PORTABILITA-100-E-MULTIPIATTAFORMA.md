@@ -1,6 +1,6 @@
 # 04 — Portabilità 100% e Architettura Multipiattaforma (`v4`)
 
-> **Riferimento Codice**: `HEAD 18698f9` · **Decisioni di Riferimento**: `D-95` (ritiro `terminal`), `D-104` (sblocco compilazione Unix e job CI `check-unix`), `D-105` (`MariaDB` Linux, `vscodium-server` SHA-256, `Cc` LLVM 100 release, `R` `Makeconf`).
+> **Riferimento Codice**: `HEAD 18698f9` · **Decisioni di Riferimento**: `D-95` (ritiro `terminal`), `D-104` (sblocco compilazione Unix e job CI `check-unix`), `D-105` (`vscodium-server` SHA-256, `Cc` LLVM 100 release, `R` `Makeconf`).
 
 ---
 
@@ -19,7 +19,7 @@ La transizione da `v3` (`67/100`) a `v4` (`81/100`, `+14` punti) segna il passag
    - [`os/volume.rs`](file:///d:/Projects/dev-kit2/tauri/src/os/volume.rs): `libc::statvfs` per spazio libero/totale e `FsKind::Posix` per la classificazione del filesystem.
    - [`os/processes.rs`](file:///d:/Projects/dev-kit2/tauri/src/os/processes.rs): scansione dei processi in esecuzione sotto `<kit_root>` tramite `/proc/<pid>/exe` + `/proc/<pid>/cwd` su Linux e `libproc` (`PROC_PIDPATHINFO_MAXSIZE` / `PROC_PIDVNODEPATHINFO`) su macOS.
 3. **Catalogo Esteso su 35 Componenti (`D-95`, `D-105`)**:
-   - `MariaDB` include ora `linux-x64` ([`tauri/src/install/db.rs:14-60`](file:///d:/Projects/dev-kit2/tauri/src/install/db.rs#L14-L60) estrae i tarball `mariadb-*-linux-systemd-x86_64.tar.gz`).
+   - `MySQL` (linee 8.4 e 9.7 LTS) usa le build Oracle per tutti i 6 target (`win32-arm64` in emulazione x64), con SHA-256 fissati per linea in `sha256ByLine` dopo la verifica della firma GPG di Oracle ([`tauri/src/install/db.rs`](file:///d:/Projects/dev-kit2/tauri/src/install/db.rs)).
    - `vscodium-server` (`1.135.06055`) ha gli SHA-256 verificati in [`tauri/catalog/components.json`](file:///d:/Projects/dev-kit2/tauri/catalog/components.json) per tutti i 5 target (`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`).
    - `Cc` interroga fino a 100 release GitHub di `llvm/llvm-project` ([`tauri/src/install/sys.rs:180-210`](file:///d:/Projects/dev-kit2/tauri/src/install/sys.rs#L180-L210)), trovando `20.1.7` per `darwin-x64`.
    - `R` su Windows riscrive `LOCAL_SOFT` in `etc/x64/Makeconf` ad ogni avvio del kit ([`tauri/src/install/lang/r.rs:115-160`](file:///d:/Projects/dev-kit2/tauri/src/install/lang/r.rs#L115-L160) e [`tauri/src/kit.rs:510-520`](file:///d:/Projects/dev-kit2/tauri/src/kit.rs#L510-L520)).
@@ -42,7 +42,7 @@ Nonostante la compilazione pulita su Unix, l'audit del flusso di esecuzione runt
         continue;
     }
     ```
-  - Su macOS e Linux, i tarball ufficiali di **Python** (`python3 -> python3.13`, `libpython3.so -> ...`), **Node.js** (`npm -> ../lib/node_modules/npm/bin/npm-cli.js`, `npx`, `corepack`), **LLVM/Clang (`cc`)** (`clang -> clang-20`, `clang++ -> clang`), **TinyTeX** (tutti i binari in `bin/<arch>/` sono symlink verso `../../texmf-dist/...`), **MariaDB Linux**, **Java JDK** e **Rust** si basano interamente su symlink POSIX! Saltandoli, l'installazione termina con successo apparente ma i binari principali (`npm`, `clang++`, `python3`, `pdflatex`) non esistono nella cartella finale.
+  - Su macOS e Linux, i tarball ufficiali di **Python** (`python3 -> python3.13`, `libpython3.so -> ...`), **Node.js** (`npm -> ../lib/node_modules/npm/bin/npm-cli.js`, `npx`, `corepack`), **LLVM/Clang (`cc`)** (`clang -> clang-20`, `clang++ -> clang`), **TinyTeX** (tutti i binari in `bin/<arch>/` sono symlink verso `../../texmf-dist/...`), **MySQL**, **Java JDK** e **Rust** si basano interamente su symlink POSIX! Saltandoli, l'installazione termina con successo apparente ma i binari principali (`npm`, `clang++`, `python3`, `pdflatex`) non esistono nella cartella finale.
 - **Soluzione Ingegneristica**:
   1. Assicurare che la directory di staging dell'installatore venga sempre creata in `<kit_root>/data/tmp/staging-<id>` (stesso volume di `<kit_root>/data/apps`), così che `fs::rename` atomico funzioni sempre senza copia.
   2. In `copy_tree`, gestire esplicitamente `if kind.is_symlink()` leggendo `fs::read_link(&src_path)` e ricreando il symlink con `std::os::unix::fs::symlink(&target, &dst_path)` su Unix (con fallback a copia del file referenziato se il filesystem di destinazione, es. exFAT/FAT32, restituisce `EPERM`/`ENOTSUP`).
@@ -91,7 +91,7 @@ Nonostante la compilazione pulita su Unix, l'audit del flusso di esecuzione runt
   - [`tauri/src/db/services/access.rs:34`](file:///d:/Projects/dev-kit2/tauri/src/db/services/access.rs#L34), [`backups.rs:42`](file:///d:/Projects/dev-kit2/tauri/src/db/services/backups.rs#L42), [`tools.rs:28`](file:///d:/Projects/dev-kit2/tauri/src/db/services/tools.rs#L28), [`browse.rs:48`](file:///d:/Projects/dev-kit2/tauri/src/db/browse.rs#L48)
   - [`tauri/src/db/adminer.rs:119`](file:///d:/Projects/dev-kit2/tauri/src/db/adminer.rs#L119)
 - **Meccanismo del Bug**:
-  - Nonostante `D-105` abbia abilitato il download di MariaDB su `linux-x64`, `db/services/*` cerca ancora `mariadbd.exe`, `mariadb.exe`, `mariadb-admin.exe`, `mariadb-dump.exe`, `mysql_install_db.exe` (che su Linux è lo script `scripts/mysql_install_db` o `bin/mariadb-install-db` senza `.exe`) e `mongod.exe`, `mongosh.exe`, `mongodump.exe`, `mongorestore.exe` con join `r"mongosh\bin"`.
+  - Nonostante il catalogo scarichi MySQL anche per macOS e Linux, `db/services/*` cerca ancora `mysqld.exe`, `mysql.exe`, `mysqladmin.exe`, `mysqldump.exe` (su Unix sono `bin/mysqld`, `bin/mysql` ecc. senza `.exe`; l'inizializzazione usa `mysqld --initialize`) e `mongod.exe`, `mongosh.exe`, `mongodump.exe`, `mongorestore.exe` con join `r"mongosh\bin"`.
   - In `db/adminer.rs:119`, `kit::kit_path(root, "php/php.exe")` passa uno slash `/` invece di `r"php\php.exe"`, per cui `catalog::translate_rel` (che confronta con `r"php\php.exe"`) non traduce il path su Unix.
 
 ---
@@ -110,13 +110,13 @@ Nonostante la compilazione pulita su Unix, l'audit del flusso di esecuzione runt
 - **File e Righe**:
   - [`tauri/catalog/components.json:23-24`](file:///d:/Projects/dev-kit2/tauri/catalog/components.json#L23-L24), [`tauri/src/install/lang/julia.rs:18-37`](file:///d:/Projects/dev-kit2/tauri/src/install/lang/julia.rs#L18-L37), [`tauri/src/install/lang/js.rs:16-27`](file:///d:/Projects/dev-kit2/tauri/src/install/lang/js.rs#L16-L27): né Julia né Bun pubblicano build ufficiali `win32-arm64`; i rispettivi installatori cercano `aarch64` / `windows-aarch64` e restituiscono errore su Windows ARM64. Aggiungendo `"x64Only": true` in `components.json` (e mappando `win32-arm64` → `x64` nei due installatori), funzionano immediatamente tramite l'emulatore Prism di Windows 11 ARM64, portando `win32-arm64` a **35/35 componenti (100%)**.
   - [`tauri/src/setup/runner.rs:138-185`](file:///d:/Projects/dev-kit2/tauri/src/setup/runner.rs#L138-L185): `RunLock` su Unix usa solo un `AtomicBool` in-process anziché `flock` su `setup.lock`.
-  - [`tauri/src/versions/relations/checks.rs:75-130`](file:///d:/Projects/dev-kit2/tauri/src/versions/relations/checks.rs#L75-L130): `check_vcruntime` restituisce `false` su Unix (cercando `vcruntime140.dll`), segnalando un falso problema di prerequisito C++ per PHP/Apache/MariaDB/Python su macOS e Linux.
+  - [`tauri/src/versions/relations/checks.rs:75-130`](file:///d:/Projects/dev-kit2/tauri/src/versions/relations/checks.rs#L75-L130): `check_vcruntime` restituisce `false` su Unix (cercando `vcruntime140.dll`), segnalando un falso problema di prerequisito C++ per PHP/Apache/MySQL/Python su macOS e Linux.
   - [`tauri/Cargo.toml:26`](file:///d:/Projects/dev-kit2/tauri/Cargo.toml#L26): `tauri = "=2.12.0"` entra in conflitto con `tauri-runtime 2.12.1` nel `Cargo.lock` quando si esegue `cargo check --all-targets` su macOS (perché un esempio interno di `tauri` richiede `objc2`).
 
 ---
 
-### `PORT-V4-08` [MEDIA / STRATEGICA] — Sblocco Offline 100% per `git`/`r` su Unix e Stack Web (`php`, `apache`, `nginx`, `adminer`, `mariadb` macOS)
+### `PORT-V4-08` [MEDIA / STRATEGICA] — Sblocco Offline 100% per `git`/`r` su Unix e Stack Web (`php`, `apache`, `nginx`, `adminer`)
 - **File e Righe**: [`tauri/src/install/cli.rs:180-235`](file:///d:/Projects/dev-kit2/tauri/src/install/cli.rs#L180-L235), [`tauri/src/install/lang/r.rs:65-110`](file:///d:/Projects/dev-kit2/tauri/src/install/lang/r.rs#L65-L110), [`tauri/catalog/components.json`](file:///d:/Projects/dev-kit2/tauri/catalog/components.json).
 - **Soluzione**:
   1. Per `git` e `r` su Unix (installati da pacchetti `conda-forge`), salvare il manifesto `conda-meta/*.json` (`prefix_placeholder` e lista file text/binary) durante l'installazione e rieseguire la riscrittura del prefisso in [`agents/relocate.rs`](file:///d:/Projects/dev-kit2/tauri/src/agents/relocate.rs) quando il kit viene spostato, eliminando il marker `.reinstall` (`D-92`) e garantendo la **portabilità offline al 100%** anche su macOS e Linux.
-  2. Abilitare `php`, `apache`, `nginx`, `adminer` su `linux-x64`, `darwin-arm64`, `darwin-x64` e `mariadb` su `darwin-arm64`/`darwin-x64` attingendo alle build rilocabili `conda-forge` (`httpd`, `nginx`, `mariadb`) e `static-php-cli` (`php-cli` + `php-cgi` + `php-fpm`).
+  2. Abilitare `php`, `apache`, `nginx`, `adminer` su `linux-x64`, `darwin-arm64`, `darwin-x64` attingendo alle build rilocabili `conda-forge` (`httpd`, `nginx`) e `static-php-cli` (`php-cli` + `php-cgi` + `php-fpm`).

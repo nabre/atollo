@@ -115,7 +115,7 @@
 | **BUG-11** | [`ui/src/workbench/layout.tsx:57-104`](file:///c:/Users/nabre/Projects/dev-kit2/ui/src/workbench/layout.tsx#L57-L104) | **APERTO** | Closure stale (`setWidth(width + d)`) e scrittura sincrona `localStorage` ad ogni pixel durante il drag di `Sash`. |
 | **BUG-12** | [`ui/src/guide/sections.tsx`](file:///c:/Users/nabre/Projects/dev-kit2/ui/src/guide/sections.tsx) & [`model.ts`](file:///c:/Users/nabre/Projects/dev-kit2/ui/src/guide/model.ts) | **APERTO** | La Guida chiama `tr(it, en)` omettendo `fr` e `de`. |
 | **BUG-13** | [`tauri/src/db/adminer.rs:137-139`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/db/adminer.rs#L137-L139) | **APERTO** | Usa `jobs::spawn` + `job.assign` invece di `jobs::spawn_in(&mut cmd, &job)`. |
-| **BUG-14** | [`tauri/src/detect/php.rs:44-47`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/detect/php.rs#L44-L47) | **APERTO** | Il rilevamento di WordPress non aggiunge `mariadb` a `requires`. |
+| **BUG-14** | [`tauri/src/detect/php.rs:44-47`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/detect/php.rs#L44-L47) | **APERTO** | Il rilevamento di WordPress non aggiunge `mysql` a `requires`. |
 
 ### 3.3 Bug di Severità BASSA Aperti dalla `v1` (7)
 
@@ -137,6 +137,6 @@
 | :--- | :---: | :---: | :--- |
 | **1. Matrice Download & Isolamento Multi-Target (`6` Piattaforme)** | Assente (Solo `win32-*`) | **88% Completata** | **Implementata in `fa8a34d`**: `Target` a 6 piattaforme, isolamento `versions/<target>`, `translate_rel`, `CodeLLDB` multi-OS, `self_update` multi-OS e 23/26 installer aggiornati. Restano solo da rifinire le fonti Unix di `Git`, `Nginx`, `Php` e `Apache`. |
 | **2. Integrazione Completa Pool Server Condivisi (`WEB-1..8`)** | Parziale (64%) | **Parziale (64%)** | Da collegare `projects/run.rs` a `WebServers`, aggiungere listener per-progetto (`SC-5`), flag `keepAlive`/`autostart`, visualizzatore log del pool e badge sull'Activity Bar. |
-| **3. Server Database Multi-Versione Concorrenti (`WEB-6`)** | Parziale (65%) | **Parziale (65%)** | Più linee di MariaDB/MongoDB sono scaricabili fianco a fianco (su tutti i 6 target in `v2`), ma una sola istanza per motore può essere in esecuzione alla volta. |
+| **3. Server Database Multi-Versione Concorrenti (`WEB-6`)** | Parziale (65%) | **Parziale (65%)** | Più linee di MySQL/MongoDB sono scaricabili fianco a fianco (su tutti i 6 target in `v2`), ma una sola istanza per motore può essere in esecuzione alla volta. |
 | **4. Montaggio UI di `ProjectMcpBox` (`projectmcp.tsx`)** | 99% (Orfano) | **99% (Orfano)** | Basta importare e renderizzare `<ProjectMcpBox project={project.name} />` in `ui/src/projects/page.tsx`. |
 | **5. Rilevamento CMS Esteso & Lazy Loading Guida** | Parziale (70%) | **Parziale (70%)** | Da aggiungere Drupal/PrestaShop/Joomla in `detect/php.rs` e `React.lazy` per `GuidePage` in `ui/src/App.tsx`. |

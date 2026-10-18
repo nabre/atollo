@@ -36,7 +36,7 @@
   <text x="636" y="110" text-anchor="middle" class="row-sub">(php/ap/ng/adm: 4)</text>
 
   <text x="746" y="96" text-anchor="middle" class="col-hdr">Database</text>
-  <text x="746" y="110" text-anchor="middle" class="row-sub">(maria/mongo/sql: 3)</text>
+  <text x="746" y="110" text-anchor="middle" class="row-sub">(mysql/mongo/sqlite: 3)</text>
 
   <text x="856" y="96" text-anchor="middle" class="col-hdr">IDE &amp; Doc</text>
   <text x="856" y="110" text-anchor="middle" class="row-sub">(vsc/tex/typ: 3)</text>
@@ -68,7 +68,7 @@
   <rect x="365" y="226" width="102" height="42" rx="5" class="cell-warn"/><text x="416" y="252" text-anchor="middle" class="cell-txt">17/17 (symlink)</text>
   <rect x="475" y="226" width="102" height="42" rx="5" class="cell-warn"/><text x="526" y="252" text-anchor="middle" class="cell-txt">2/2 (.reinstall)</text>
   <rect x="585" y="226" width="102" height="42" rx="5" class="cell-err"/><text x="636" y="252" text-anchor="middle" class="cell-txt">0/4 (Win-only)</text>
-  <rect x="695" y="226" width="102" height="42" rx="5" class="cell-warn"/><text x="746" y="252" text-anchor="middle" class="cell-txt">2/3 (no Maria)</text>
+  <rect x="695" y="226" width="102" height="42" rx="5" class="cell-warn"/><text x="746" y="252" text-anchor="middle" class="cell-txt">3/3 (fix .exe)</text>
   <rect x="805" y="226" width="102" height="42" rx="5" class="cell-warn"/><text x="856" y="252" text-anchor="middle" class="cell-txt">3/3 (fix .exe)</text>
 
   <!-- Row 4: Linux Modern glibc FHS (Ubuntu 22.04+, Debian 12+, Fedora 39+, Arch) -->

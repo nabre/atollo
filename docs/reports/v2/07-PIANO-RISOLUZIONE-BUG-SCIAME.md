@@ -20,7 +20,7 @@
 | BUG-10 | ✅ già risolto | `useAction`: `if (id === seq.current) setBusy(null)` + test |
 | BUG-12 | ✅ già risolto | 464/464 chiamate `tr()` con 4 lingue |
 | BUG-13 | ✅ già risolto | `db/adminer.rs:137` usa `jobs::spawn_in` |
-| BUG-14 | ✅ già risolto | `detect/mod.rs:392-396, 617-620` aggiunge `mariadb` per WordPress |
+| BUG-14 | ✅ già risolto | `detect/mod.rs:392-396, 617-620` aggiunge `mysql` per WordPress |
 | BUG-15, 16, 19, 21 | ✅ già risolti | path `data\projects`, Guida aggiornata, errori azzerati, nessun `capitalize` |
 | BUG-17 | ✅ quasi | `cli.rs:353-363` sostituisce la cartella; resta il testo «del kit» e la nota obsoleta in `DECISIONS.md:683` |
 | Doc 06 §3.1 | ❌ falso | `install/scientific.rs`, `extract_conda_package`, `resolve_conda_forge` **non esistono** |

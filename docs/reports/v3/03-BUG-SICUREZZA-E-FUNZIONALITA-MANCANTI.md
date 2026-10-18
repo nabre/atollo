@@ -164,39 +164,8 @@ La tabella seguente certifica, tramite ispezione diretta del codice a `HEAD 39b7
 
 ---
 
-### `BUG-V3-04` (Alta Multi-OS) — `MariaDb::latest` Fallisce Sempre su macOS e Ignora l'OS esatto su Linux (`install/db.rs:116-129`)
-- **File e Righe**: [`tauri/src/install/db.rs:116-129`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/db.rs#L116-L129).
-- **Causa**:
-  1. Nel ramo `Os::Linux | Os::Darwin`, il filtro cerca `(f["os"] == "Linux" || f["os"] == "macOS")`: se su `Os::Darwin` l'API MariaDB elenca prima i file `"os": "Linux"`, un target macOS selezionerebbe **un binario ELF Linux**!
-  2. Inoltre, la REST API ufficiale di MariaDB (`https://downloads.mariadb.org/rest-api/mariadb/11.4/latest/`) **non pubblica alcun pacchetto binario per macOS** (pubblica solo `Windows`, `Linux` e `Source`). Di conseguenza, su `darwin-arm64` e `darwin-x64` l'installazione di MariaDB fallisce sempre.
-  3. Su Linux, MariaDB pubblica più tarball `.tar.gz` per la stessa architettura (es. `mariadb-11.4.5-linux-systemd-x86_64.tar.gz` vs `mariadb-11.4.5-linux-musl-x86_64.tar.gz` o vecchie build GLIBC_2.14). Senza preferire la build `systemd` (glibc moderna) o `conda-forge`, il match prende il primo elemento arbitrario dell'array.
-- **Patch Rust Concreta**:
-  1. Su **macOS (`Os::Darwin`)**: installare `mariadb` tramite `micromamba` da `conda-forge` (che fornisce `mysql`/`mariadb` server e client nativi sia per `osx-arm64` sia per `osx-64`, completi di tutte le librerie dinamiche!).
-  2. Su **Linux (`Os::Linux`)**: filtrare rigorosamente `f["os"] == "Linux"` (mai `"macOS"`) e preferire il tarball `linux-systemd-{cpu}.tar.gz`.
-
-```rust
-// In tauri/src/install/db.rs (mariadb_archive_for):
-Os::Linux => {
-    let cpu = target.gnu_arch();
-    let candidates: Vec<&Value> = files
-        .filter(|f| {
-            f["os"] == "Linux"
-                && f["cpu"] == cpu
-                && f["package_type"] == "gzipped tar file"
-                && f["file_name"]
-                    .as_str()
-                    .is_some_and(|n| n.ends_with(".tar.gz") && !n.contains("debugsymbols"))
-        })
-        .collect();
-    let f = candidates
-        .iter()
-        .copied()
-        .find(|f| f["file_name"].as_str().is_some_and(|n| n.contains("systemd")))
-        .or_else(|| candidates.into_iter().next())
-        .ok_or_else(|| anyhow!("MariaDB {version}: no Linux {cpu} tar.gz"))?;
-    (f, Kind::TarGz)
-}
-```
+### `BUG-V3-04` — Ritirato (18/10/2026)
+- Riguardava le build del server SQL su macOS e Linux. Il server SQL del kit è MySQL, con gli archivi ufficiali di Oracle per i sei target e gli SHA-256 fissati nel catalogo (`D-110`): il problema non esiste più.
 
 ---
 
@@ -281,7 +250,7 @@ Os::Linux => {
 | 4 | BUG-V3-01 | ✅ chiuso | `948a1f3` fix(run): stop a project's Nginx when its php-cgi ends (chiude anche BUG-05r di v2) |
 | 5 | BUG-V3-02 | ✅ chiuso | `8b50e51` fix(servers): one ServerName and vhost file per project action |
 | 6 | BUG-V3-03 | ✅ chiuso | `e48acda` fix(run): shell_command instead of a fixed cmd.exe |
-| 7 | BUG-V3-04 | ✅ chiuso | `2433781` fix(mariadb): Linux tarball only, systemd build first, no macOS (anche niente Linux arm64: nessuna build pubblicata) |
+| 7 | BUG-V3-04 | ➖ ritirato | il server SQL è MySQL, con build per i sei target (D-110) |
 | 8 | BUG-V3-05 | ✅ chiuso | `706dfb5` fix(cc): newest LLVM release with the system's archive — ripiego su un rilascio più vecchio (macOS Intel su 20.1.7) invece di conda-forge; requisiti del PC nella descrizione |
 | 9 | BUG-V3-06 | 🟡 parziale | `1412e9e` fix(r): R's Makeconf follows the kit on Windows — la parte Unix (rilocazione offline di Git e R dopo uno spostamento) non è fatta |
 | 10 | BUG-V3-07 | ✅ chiuso | `cbcca8e` fix(sessions): other kits on macOS and Linux too |
@@ -294,7 +263,7 @@ Voci dei piani chiuse nello stesso ramo:
 | Voce | Stato | Commit |
 | :-- | :-: | :-- |
 | PLAN §13.1 / PLAN-DATA 1.2c (sgancio, `keepAlive`, `autostart`) | 🟡 parziale | `2487dbe` feat(servers): pools follow their projects, keepAlive and autostart; `b964ff6` — resta l'aggancio al pool automatico per un sito senza `server` |
-| PLAN §13.2 / PLAN-DATA 1.3d (più versioni di MariaDB) | ✅ chiuso | `452acec`; dopo la revisione `0e5e0e8`, `d3c2389`, `f93adf4`, `ae9690b`, `3e7986f` |
+| PLAN §13.2 / PLAN-DATA 1.3d (più versioni di MySQL) | ✅ chiuso | `452acec`; dopo la revisione `0e5e0e8`, `d3c2389`, `f93adf4`, `ae9690b`, `3e7986f` |
 | PLAN-DATA §9 difetto 4 (linea non installata) | ✅ chiuso | `c347a3a` |
 | PLAN-DATA §9 difetto 5 (pool orfani) | 🟡 parziale | `d152706` — id stabili (SC-2) da fare |
 | PLAN-DATA §9 difetto 6 (porte) | ✅ chiuso | `699e823`, `9aec654` |
@@ -310,7 +279,7 @@ Voci dei piani chiuse nello stesso ramo:
 | B6 (temporanei con «Nel kit») | ➖ non un bug | voluto da D-90 |
 | R su Windows ARM64 | ➖ non fatto | R è `noArm64`; servirebbe rifare l'installatore |
 
-Totale per questo documento: **11 chiusi, 2 parziali** (BUG-V3-06 per la parte Unix, N-A1 in attesa di prova su macOS e Linux reali).
+Totale per questo documento: **10 chiusi, 1 ritirato, 2 parziali** (BUG-V3-06 per la parte Unix, N-A1 in attesa di prova su macOS e Linux reali).
 
 ### 4.1 Seguiti non fatti
 
@@ -326,16 +295,16 @@ Totale per questo documento: **11 chiusi, 2 parziali** (BUG-V3-06 per la parte U
 | Porte di pool spariti | `servers/mod.rs` | si tolgono solo con una lista nuova («Aggiorna»): una porta vecchia può bloccare un profilo |
 | Interfaccia dei pool | `ui/src/servers.tsx`, `ui/src/projects/site.tsx` | siti sganciati non distinti; i testi annunciano `<progetto>.localhost` anche per le azioni secondarie (`<azione>.<progetto>.localhost`) |
 | Pool con troppi siti | `servers/mod.rs` | Apache ora è proposto a ogni progetto PHP: i pool automatici elencano ogni progetto con un'azione Apache/Nginx (PLAN-DATA 1.1) |
-| Versioni di MariaDB: avvio automatico | `db/services` | parte solo la versione principale |
-| Versioni di MariaDB: strumenti | `env.rs`, Adminer, `DbBrowser` | `MYSQL_HOME`, Adminer e il browser dei database vedono solo la versione principale |
-| Versioni di MariaDB: eliminazione | `db/auth.rs` | un progetto che ha cambiato versione perde il database solo sull'ultima |
+| Versioni di MySQL: avvio automatico | `db/services` | parte solo la versione principale |
+| Versioni di MySQL: strumenti | `env.rs`, phpMyAdmin | il `mysql` del terminale e phpMyAdmin vedono solo la versione principale |
+| Versioni di MySQL: eliminazione | `db/auth.rs` | un progetto che ha cambiato versione perde il database solo sull'ultima |
 | Versione disinstallata | `db/services` | avvio e creazione falliscono con «not installed»; l'interfaccia non lo segnala |
 | Lock di `db.json` | `db/auth.rs` | per processo: un CLI insieme all'app potrebbe correre |
 | `Project.lines` | `ui/src/api/projects.ts`, `ui/src/versions/project.tsx` | rilevato da Compose/Dockerfile, non usato dall'interfaccia |
 | LLVM su macOS Intel | `install/lang/cc.rs` | quando 20.1.7 esce dagli ultimi 100 rilasci, `cc` su darwin-x64 fallisce: segnarlo non disponibile o fissare il rilascio |
 | Editor aggiornato | `tauri/catalog/components.json` | a ogni nuova versione di `vscodium-server` rinnovare tutti i `sha256ByTarget` |
 | Unix: prova reale | `os/*`, `os/jobs.rs`, `stats` | istanza (flock e socket), sweep del temp, `killpg`, `/proc` e libproc, `local_day_start` con l'ora legale, test `cfg(unix)` |
-| Unix: ancora a forma di Windows | `env.rs`, conf di Apache/Nginx, `db/services`, `editor/ext` | `apache\bin`, `httpd.exe`, `mongod.exe`, `mariadbd.exe`, `node.exe` senza `translate_rel` |
+| Unix: ancora a forma di Windows | `env.rs`, conf di Apache/Nginx, `db/services`, `editor/ext` | `apache\bin`, `httpd.exe`, `mongod.exe`, `mysqld.exe`, `node.exe` senza `translate_rel` |
 | CI macOS `--all-targets` | `tauri/Cargo.toml` | tauri 2.12.0 (feature `test`) contro tauri-runtime 2.12.1: allineare le versioni |
 | Prove con kit reale | `test/rust/servers/` | `start_reports_syntax_error` e `apache_pool_reload_twice` da eseguire in CI con `DEVKIT_TEST_KIT` |
 | Configurazioni vere | — | nessun `httpd -t`/`nginx -t` sulle configurazioni nuove: httpd e nginx non erano installati (prove in TESTING.md) |

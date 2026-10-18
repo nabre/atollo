@@ -39,7 +39,7 @@ flowchart TB
         Runner["projects/run.rs (Runner, porte 7100-7999, attach_pool)"]
         WebPools["servers/mod.rs (WebServers, ListCache 15s, php-cgi supervision)"]
         WebConf["projects/apache.rs · projects/nginx.rs · projects/alias.rs"]
-        DbSvc["db/ (MariaDB, MongoDB, SQLite, Adminer, auth, backup)"]
+        DbSvc["db/ (MySQL, MongoDB, SQLite, Adminer, auth, backup)"]
         Editor["editor.rs (VSCodium Server 7000-7099, WebView2 integration)"]
     end
 
@@ -65,7 +65,7 @@ A differenza dell'imprecisione documentale presente nei report `v2/04..06` (e co
 | [`install/core.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/core.rs) | `Git`, `Python`, `Node`, `Uv`, `Gh` | `git`, `python`, `node`, `uv`, `gh` (5) | `micromamba` (per `git` su Unix), `pip` wheel |
 | [`install/web.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/web.rs) | `Php`, `Apache`, `Nginx` | `php`, `apache`, `nginx` (3) | `composer.phar`, `vcruntime`, `cacert.pem` |
 | [`install/native.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/native.rs) | `Rust`, `Pnpm`, `R` | `rust`, `pnpm`, `r` (3) | `rustup-init`, `corepack` + `yarn`, `micromamba` |
-| [`install/db.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/db.rs) | `MariaDb`, `MongoDb`, `Sqlite`, `Adminer` | `mariadb`, `mongodb`, `sqlite`, `adminer` (4) | `mongosh`, `mongodb-tools` (`mongodump`/`mongorestore`) |
+| [`install/db.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/db.rs) | `MySql`, `MongoDb`, `Sqlite`, `Adminer` | `mysql`, `mongodb`, `sqlite`, `adminer` (4) | `mongosh`, `mongodb-tools` (`mongodump`/`mongorestore`) |
 | [`install/editor.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/editor.rs) | `Pwsh`, `Terminal`, `Server` | `pwsh`, `terminal`, `vscodium-server` (3) | Estensioni `.vsix` + `codelldb` in [`editor.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/editor.rs) |
 | [`install/android.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/android.rs) | `Android` | `android` (1) | `sdkmanager`, `platform-tools` (`adb`), `build-tools` |
 | [`install/lang/jvm.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/lang/jvm.rs) | `Java`, `Kotlin` | `java`, `kotlin` (2) | `maven` (3.x), `gradle` |

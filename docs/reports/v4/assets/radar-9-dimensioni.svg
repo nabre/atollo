@@ -157,7 +157,7 @@
   <text x="712" y="368" class="ring-label">DNS rebinding 403/421</text>
 
   <text x="712" y="392" class="legend-text" fill="#3fb950">● DB &amp; Pool (+5 pt)</text>
-  <text x="712" y="408" class="ring-label">MariaDB side-by-side (D-102)</text>
+  <text x="712" y="408" class="ring-label">MySQL side-by-side (D-102)</text>
   <text x="712" y="420" class="ring-label">Pool keepAlive &amp; vHost (D-101)</text>
 
   <text x="712" y="444" class="legend-text" fill="#3fb950">● UX &amp; Terminali (+4 pt)</text>
