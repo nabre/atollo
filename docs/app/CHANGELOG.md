@@ -6,6 +6,7 @@
 - Ogni pacchetto si ricontrolla con il suo SHA-256 prima dell'uso: se qualcosa manca o è diverso, il kit li riscarica come prima e lo dice nel pannello Attività.
 - **Impostazioni → Generale**: «Pacchetti per reinstallare senza rete» (attivo di serie) con lo spazio che occupano, circa 380 MB per R, Ruby e MongoDB, e «Libera». I pacchetti che nessuna versione installata usa più si cancellano da soli.
 - I componenti installati prima di questa versione hanno la copia dalla loro prossima installazione o aggiornamento.
+- **R su macOS e Linux parte anche da una cartella con uno spazio** (per esempio `/Volumes/My Kit`): lo script `R` di conda-forge si rompeva sul percorso del suo `sed`; ora usa quello del sistema. Vale dalla prossima installazione o reinstallazione di R.
 
 **Verificato**: su Windows 759 test Rust e i test dell'interfaccia, lint e clippy puliti, clippy incrociato per macOS Apple Silicon pulito; in WSL2 (Ubuntu 24.04) 751 test e la prova reale `real_offline_reinstall_after_a_move` senza rete (`unshare -rn`): R 4.6.1, Ruby 4.0.7, MongoDB 8.0.23 e make 4.4.1 ricreati in una cartella nuova e di nuovo in quella di prima, gem e dati di MongoDB intatti. Non provati dal vivo: macOS e SQLite su Linux ARM64.
 

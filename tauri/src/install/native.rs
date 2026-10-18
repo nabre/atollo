@@ -744,6 +744,29 @@ pub(crate) fn relocated_makeconf(text: &str, prefix: &Path) -> Option<String> {
     changed.then_some(out)
 }
 
+/// conda-forge's `bin/R` writes `SED=<prefix>/bin/sed` and uses `${SED}`
+/// without quotes everywhere (also `rtags`, through the export): in a folder
+/// with a space the shell runs the rest of the path as a command and `R`
+/// fails (`Rscript` is a binary and works). Quoting the line is not enough;
+/// the system's `sed` instead, POSIX on every Unix, as R's scripts expect
+/// (the BSD one on macOS too).
+pub(crate) fn plain_r_sed(text: &str) -> Option<String> {
+    let mut changed = false;
+    let mut out = String::with_capacity(text.len());
+    for line in text.split_inclusive('\n') {
+        let body = line.trim_end_matches(['\r', '\n']);
+        let ending = &line[body.len()..];
+        match body.strip_prefix("SED=") {
+            Some(value) if value != "sed" => {
+                out.push_str(&format!("SED=sed{ending}"));
+                changed = true;
+            }
+            _ => out.push_str(line),
+        }
+    }
+    changed.then_some(out)
+}
+
 /// Packages compiled for one minor version of R do not load in another:
 /// one folder per line (versioned, D-81), `renv.lock` declares R's version.
 impl Installer for R {
@@ -862,7 +885,8 @@ impl Installer for R {
         Some(dir.to_path_buf())
     }
 
-    /// The launchers on Windows and the CRAN mirror in `Rprofile.site`, the
+    /// The launchers on Windows, the plain `SED` of `bin/R` elsewhere and
+    /// the CRAN mirror in `Rprofile.site`, the
     /// same after `micromamba create` from the network or from the kept
     /// packages (D-118). Makeconf's folder is conda's own here; `relocate`
     /// sets it again on Windows after a move (D-104).
@@ -889,8 +913,21 @@ impl Installer for R {
                     );
                 write_atomic(&bin.join(exe), sh.as_bytes())?;
             }
-        } else if !join_rel(target, "bin/R").is_file() {
-            bail!("bin/R not found after the installation");
+        } else {
+            if !join_rel(target, "bin/R").is_file() {
+                bail!("bin/R not found after the installation");
+            }
+            // `bin/R` is a copy of `lib/R/bin/R`, not a link: both.
+            for script in ["bin/R", "lib/R/bin/R"] {
+                let path = join_rel(target, script);
+                let Ok(text) = fs::read_to_string(&path) else {
+                    continue;
+                };
+                if let Some(new) = plain_r_sed(&text) {
+                    crate::router::fs::write_executable(&path, new.as_bytes())
+                        .with_context(|| path.display().to_string())?;
+                }
+            }
         }
         let site = join_rel(target, "lib/R/etc/Rprofile.site");
         let mut text = fs::read_to_string(&site).unwrap_or_default();
