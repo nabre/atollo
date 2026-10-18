@@ -89,6 +89,8 @@ export interface ComponentInfo {
   /** Bootstrap archives pre-downloaded for this target; finishes installing on
    * first start on that OS. */
   bootstrapStaged?: boolean;
+  /** C and C++ on a Mac without Xcode Command Line Tools (Rust `xcode_missing`). */
+  xcodeMissing?: boolean;
 }
 
 const IDLE: SetupSnapshot = {

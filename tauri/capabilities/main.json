@@ -41,6 +41,8 @@
     "allow-agents-stats",
     "allow-agent-launch",
     "allow-agent-sign-out",
+    "allow-agent-token-link",
+    "allow-agent-token-save",
     "allow-folder-open",
     "allow-project-create",
     "allow-project-delete",

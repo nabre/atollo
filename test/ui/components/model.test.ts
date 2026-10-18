@@ -46,7 +46,7 @@ describe("toggle", () => {
 describe("xcodeMissing", () => {
   it("is true only when the backend says so", () => {
     expect(xcodeMissing(row("cc"))).toBe(false);
-    expect(xcodeMissing({ ...row("cc"), xcodeMissing: false } as ComponentInfo)).toBe(false);
-    expect(xcodeMissing({ ...row("cc"), xcodeMissing: true } as ComponentInfo)).toBe(true);
+    expect(xcodeMissing({ ...row("cc"), xcodeMissing: false })).toBe(false);
+    expect(xcodeMissing({ ...row("cc"), xcodeMissing: true })).toBe(true);
   });
 });

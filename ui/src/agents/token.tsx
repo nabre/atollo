@@ -13,11 +13,9 @@ import { ActionButton, ErrorLine } from "../common";
 import { useAction } from "../hooks";
 import { Button, Notice, TextField } from "../workbench";
 
-/** `tokenLink` (Rust `AgentInfo::token_link`): offered for Claude Code on macOS. */
-type WithTokenLink = AgentInfo & { tokenLink?: boolean };
-
+/** Offered for Claude Code on macOS (Rust `AgentInfo::token_link`). */
 export function tokenOffered(agent: AgentInfo): boolean {
-  return (agent as WithTokenLink).tokenLink === true;
+  return agent.tokenLink;
 }
 
 /** Runs `claude setup-token` in a session of the app's terminal. */

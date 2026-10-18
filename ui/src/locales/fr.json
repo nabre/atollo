@@ -797,5 +797,6 @@
   "Terminali aperti: {0}": "Terminaux ouverts : {0}",
   "Ridimensiona i terminali": "Redimensionner les terminaux",
   "I programmi che usano i framework Apple richiedono Xcode Command Line Tools": "Les programmes qui utilisent les frameworks Apple nécessitent les Xcode Command Line Tools",
-  "Si installano con xcode-select --install, da amministratore.": "Ils s'installent avec xcode-select --install, en tant qu'administrateur."
+  "Si installano con xcode-select --install, da amministratore.": "Ils s'installent avec xcode-select --install, en tant qu'administrateur.",
+  "La versione {0} è disponibile: scaricala dalla pagina della release.": "La version {0} est disponible : téléchargez-la depuis la page de la version."
 }

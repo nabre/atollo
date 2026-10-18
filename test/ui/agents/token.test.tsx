@@ -39,13 +39,9 @@ async function innerInput(host: Element) {
 describe("TokenLink", () => {
   it("is offered only where Rust says so and only while signed out", () => {
     expect(tokenOffered(CLAUDE)).toBe(true);
-    expect(tokenOffered({ ...CLAUDE, tokenLink: false } as AgentInfo)).toBe(false);
-    // Without the field (a Rust build before it): not offered.
-    const noField: Partial<AgentInfo & { tokenLink: boolean }> = { ...CLAUDE };
-    delete noField.tokenLink;
-    expect(tokenOffered(noField as AgentInfo)).toBe(false);
+    expect(tokenOffered({ ...CLAUDE, tokenLink: false })).toBe(false);
     const { container, rerender } = render(
-      <TokenLink agent={{ ...CLAUDE, tokenLink: false } as AgentInfo} onDone={vi.fn()} />,
+      <TokenLink agent={{ ...CLAUDE, tokenLink: false }} onDone={vi.fn()} />,
     );
     expect(container.textContent).toBe("");
     rerender(<TokenLink agent={{ ...CLAUDE, signedIn: true, signInKind: "token" }} onDone={vi.fn()} />);

@@ -123,18 +123,18 @@ impl Installer for Antigravity {
         } else {
             "agy"
         };
-        let file_name = format!("agy-{version}{}", target.exe_suffix());
+        let (kind, file_name, from) = antigravity_download(&url, &version, target);
         Ok(Release {
             parts: vec![Part {
                 url,
-                file_name: file_name.clone(),
+                file_name,
                 expect: Expect::Sha512(sha512),
-                kind: Kind::File,
+                kind,
                 inner: Inner::Root,
                 dest: Dest::File {
                     folder: "antigravity",
                     name: bin,
-                    from: file_name,
+                    from,
                 },
                 sign: None,
             }],
@@ -142,3 +142,33 @@ impl Installer for Antigravity {
         })
     }
 }
+
+/// How the manifest's download is unpacked: a `.tar.gz` (macOS and Linux
+/// since 1.4: one binary named `antigravity` inside) or the program itself
+/// (Windows' `.exe`). The kind, the downloaded file's name and the file
+/// that becomes `agy`.
+pub(crate) fn antigravity_download(
+    url: &str,
+    version: &str,
+    target: crate::kit::Target,
+) -> (Kind, String, String) {
+    let name = url
+        .rsplit('/')
+        .next()
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if name.ends_with(".tar.gz") || name.ends_with(".tgz") {
+        (
+            Kind::TarGz,
+            format!("agy-{version}.tar.gz"),
+            "antigravity".to_owned(),
+        )
+    } else {
+        let file_name = format!("agy-{version}{}", target.exe_suffix());
+        (Kind::File, file_name.clone(), file_name)
+    }
+}
+
+#[cfg(test)]
+#[path = "../../../test/rust/install/agents.rs"]
+mod tests;

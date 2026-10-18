@@ -81,6 +81,9 @@ fn token_file_is_private() {
     let mode = |p: &Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode(&path(&kit)), 0o600);
     assert_eq!(mode(path(&kit).parent().unwrap()), 0o700);
+    // A mode that did not stick (exFAT, FAT): not owner-only.
+    std::fs::set_permissions(path(&kit), std::fs::Permissions::from_mode(0o644)).unwrap();
+    assert!(!owner_only(&path(&kit)));
 }
 
 #[test]
