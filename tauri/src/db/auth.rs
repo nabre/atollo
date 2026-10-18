@@ -571,6 +571,75 @@ pub(crate) fn keep_legacy_names(kit: &Kit, project: &str) -> Result<()> {
     Ok(())
 }
 
+/// The project's `db.json` after its MariaDB database moved to MySQL
+/// (D-117): `mariadb` → `mysql` for the password, its name, its version
+/// (`lines`, through `lines`: MariaDB's → MySQL's; none when it is `main`,
+/// the version the MySQL server runs) and the versions it was created on
+/// (`used`). True when the file changed; nothing for a file without MariaDB
+/// (already moved: the call is repeatable). A project that has a MySQL
+/// database too keeps it, and its MariaDB entries stay as they are (the
+/// kit uses MySQL's first), with a warning.
+pub(crate) fn move_project_to_mysql(
+    kit: &Kit,
+    project: &str,
+    lines: &BTreeMap<String, String>,
+    main: &str,
+) -> Result<bool> {
+    let (from, to) = (DbEngine::MariaDb.id(), DbEngine::MySql.id());
+    let _one = db_json_lock(kit)?;
+    let path = project_file_to_read(kit, project)?;
+    let Some(mut secrets) = read_project(&path)? else {
+        return Ok(false);
+    };
+    if !secrets.get(from).is_some_and(serde_json::Value::is_string) {
+        return Ok(false);
+    }
+    if secrets.contains_key(to) {
+        crate::log::warn(&format!(
+            "{project}: a MySQL database already: its MariaDB entries of db.json stay"
+        ));
+        return Ok(false);
+    }
+    let mapped = |l: &str| lines.get(l).cloned();
+    if let Some(pw) = secrets.remove(from) {
+        secrets.insert(to.to_owned(), pw);
+    }
+    if let Some(serde_json::Value::Object(names)) = secrets.get_mut(NAMES) {
+        if let Some(name) = names.remove(from) {
+            names.insert(to.to_owned(), name);
+        }
+    }
+    if let Some(serde_json::Value::Object(chosen)) = secrets.get_mut(LINES) {
+        let line = chosen.remove(from);
+        if let Some(m) = line.as_ref().and_then(|l| l.as_str()).and_then(mapped) {
+            if m != main {
+                chosen.insert(to.to_owned(), m.into());
+            }
+        }
+    }
+    if secrets
+        .get(LINES)
+        .is_some_and(|l| l.as_object().is_some_and(|o| o.is_empty()))
+    {
+        secrets.remove(LINES);
+    }
+    if let Some(serde_json::Value::Object(used)) = secrets.get_mut(USED) {
+        if let Some(serde_json::Value::Array(old)) = used.remove(from) {
+            let mut new: Vec<serde_json::Value> = Vec::new();
+            for m in old.iter().filter_map(|l| l.as_str()).filter_map(mapped) {
+                if !new.iter().any(|n| n.as_str() == Some(m.as_str())) {
+                    new.push(m.into());
+                }
+            }
+            if !new.is_empty() {
+                used.insert(to.to_owned(), serde_json::Value::Array(new));
+            }
+        }
+    }
+    write_in_private(&path, &serde_json::to_string_pretty(&secrets)?)?;
+    Ok(true)
+}
+
 /// Stores the password of the project's user on `engine` (no name: as a
 /// `db.json` of before the names; creations use [`ensure_project_db`]).
 #[allow(dead_code)] // the tests

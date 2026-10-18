@@ -8,6 +8,19 @@
 
 **Verificato**: 725 test Rust su Windows e 717 in WSL; prove reali su Windows (Apache Lounge, PHP 8.5.11) e in WSL Ubuntu 24.04 (build del kit, `php-fpm` 8.5.8): due siti, un alias, file nascosti e host estranei rifiutati, script e `.htaccess` ostili in un alias neutralizzati, cartella dei file di Drupal senza PHP, ricarica; Caddy reale in WSL; la build Linux x64 provata in `ubuntu:22.04` (glibc richiesta 2.34). macOS e Linux ARM64: solo nella CI della build.
 
+## Solo MySQL (18/10/2026)
+
+MySQL è l'unico server SQL di Atollo, su ogni sistema (D-117, [#3](https://github.com/nabre/dev-kit2/issues/3)). MariaDB non si propone e non si installa più.
+
+- **I dati di MariaDB passano da soli a MySQL** al primo avvio: ogni versione di MariaDB va in una versione di MySQL (12.3 → 9.7, 11.4 → 8.4), sulla stessa porta, con gli stessi database, utenti e password dei progetti; i siti WordPress e Laravel continuano a funzionare senza toccare le loro `.env`. Ogni database viene controllato (tabelle, viste, routine, trigger, eventi, righe) prima del passaggio. Se qualcosa non va, MariaDB resta com'era e la pagina Database mostra l'errore, la copia salvata e «Riprova»; una migrazione interrotta riprende all'avvio dopo. Dopo il passaggio i dati di MariaDB restano in `data/db/mariadb.pre-mysql` finché non li elimini dalla pagina Database («Dati MariaDB conservati (N MB): Elimina»); i programmi di MariaDB vanno.
+- **phpMyAdmin** apre MySQL e c'è sui sei sistemi, macOS e Linux ARM64 compresi.
+- **Nuovo progetto**: WordPress, TYPO3, Drupal e l'aggiunta «MySQL» di Laravel creano il database su MySQL.
+- **Rilevamento**: immagini `mysql` e `mariadb` di Docker Compose, driver MySQL/MariaDB e CMS chiedono MySQL; un `.env` con `DB_CONNECTION=mariadb` riceve un avviso (meglio `mysql`).
+- **Sicurezza**: ogni database si ripristina in MySQL con un account che raggiunge solo quel database, mai come `root`, e la lettura delle copie si ferma invece di indovinare dove finisce una stringa (revisione di sicurezza).
+- Su Linux MySQL vuole `libaio1t64` e `libnuma1` (Ubuntu 24.04): il README lo dice.
+
+**Verificato**: su Windows 737 test Rust e 134 test dell'interfaccia, lint e clippy puliti, clippy incrociato per macOS Apple Silicon pulito; in WSL2 (Ubuntu 24.04) 729 test superati; la prova reale `real_mariadb_to_mysql` su Windows con MariaDB 12.3.3 e 11.4.13 e MySQL 9.7.2 e 8.4.11, interruzione compresa. La migrazione reale non è ancora stata provata su Linux.
+
 ## macOS e Linux (18/10/2026)
 
 L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le prove, anche su Windows ARM64. Lo stesso kit su una chiavetta si apre sui tre sistemi: `projects/` e `data/` sono condivisi, i programmi stanno in `data/apps/<sistema>-<architettura>/`. Provato dall'utente su un Mac Apple Silicon, un Mac Intel e un PC Linux, in WSL2 e nella CI sui sei sistemi.

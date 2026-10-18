@@ -47,11 +47,11 @@ const P = { id: "shop" } as ProjectInfo;
 function dbs(chosen: string | null, lines: string[]): ProjectDatabases {
   return {
     dbs: [],
-    detected: ["mariadb"],
+    detected: ["mysql"],
     envExists: false,
     envIgnored: true,
     versions: {
-      mariadb: { chosen, server: lines[0] ?? null, lines },
+      mysql: { chosen, server: lines[0] ?? null, lines },
       mongodb: { chosen: null, server: null, lines: [] },
     },
   };
@@ -62,12 +62,12 @@ describe("project databases", () => {
     invoke.mockResolvedValue(null);
     const changed = vi.fn();
     render(<Databases p={P} dbs={dbs("10.6", ["11.4"])} onChanged={changed} />);
-    expect(screen.getByText(/MariaDB 10\.6 non è installata/)).toBeTruthy();
+    expect(screen.getByText(/MySQL 10\.6 non è installata/)).toBeTruthy();
     const version = screen.getByLabelText<HTMLElementTagNameMap["vscode-single-select"]>("Versione del server");
     expect(version.querySelectorAll("vscode-option")).toHaveLength(3);
-    fireEvent.click(screen.getByRole("button", { name: "Installa MariaDB 10.6" }));
+    fireEvent.click(screen.getByRole("button", { name: "Installa MySQL 10.6" }));
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("versions_add", { id: "mariadb", line: "10.6" });
+      expect(invoke).toHaveBeenCalledWith("versions_add", { id: "mysql", line: "10.6" });
     });
     changed.mockClear();
     emit(true);
@@ -77,7 +77,7 @@ describe("project databases", () => {
     // another version: the project moves to it
     fireEvent.change(version, { target: { value: "11.4" } });
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("project_db_line", { project: "shop", engine: "mariadb", line: "11.4" });
+      expect(invoke).toHaveBeenCalledWith("project_db_line", { project: "shop", engine: "mysql", line: "11.4" });
     });
   });
 

@@ -5,7 +5,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
 > [!NOTE]
 > **Scenario reale usato negli esempi e nelle immagini della guida:**
 > Tutte le schermate di questa guida mostrano un ambiente di lavoro reale su unità portabile (`D:\Dev-Kit`) collegato all'account GitHub **`@mario-rossi`** (con l'organizzazione **`studio-rossi`**) e popolato da tre progetti concreti:
-> - **`gestionale-fatture`**: applicazione full-stack **Laravel 13 + React + Tailwind CSS 4 + MariaDB 12.3** (servita sia col comando di sviluppo `composer run dev` sia tramite pool condiviso **Apache 2.4 · PHP 8.4** su `http://gestionale-fatture.localhost:8081` con dominio aggiuntivo `fatture.studio.localhost` e alias `/allegati`).
+> - **`gestionale-fatture`**: applicazione full-stack **Laravel 13 + React + Tailwind CSS 4 + MySQL 9.7** (servita sia col comando di sviluppo `composer run dev` sia tramite pool condiviso **Apache 2.4 · PHP 8.4** su `http://gestionale-fatture.localhost:8081` con dominio aggiuntivo `fatture.studio.localhost` e alias `/allegati`).
 > - **`portale-clienti`**: applicazione frontend **Vite + React + TypeScript** (con database documentale **MongoDB 8.0** `portale_clienti` esplorato direttamente dall'interfaccia).
 > - **`api-magazzino`**: microservizio **Python 3.13 + FastAPI** con database relazionale e documentale.
 
@@ -32,7 +32,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
    - [4.3 Pagina «Progetti» e Scheda Dettaglio del Singolo Progetto](#43-pagina-progetti-e-scheda-dettaglio-del-singolo-progetto)
    - [4.4 Editor Integrato (VSCodium Web) e Terminale Esclusivo del Kit](#44-editor-integrato-vscodium-web-e-terminale-esclusivo-del-kit)
    - [4.5 Pagina «Agenti» (Claude Code, Codex, Antigravity e Sincronizzazione)](#45-pagina-agenti-claude-code-codex-antigravity-e-sincronizzazione)
-   - [4.6 Pagina «Database» (MariaDB, MongoDB, phpMyAdmin ed Esploratore Dati)](#46-pagina-database-mariadb-mongodb-phpmyadmin-ed-esploratore-dati)
+   - [4.6 Pagina «Database» (MySQL, MongoDB, phpMyAdmin ed Esploratore Dati)](#46-pagina-database-mysql-mongodb-phpmyadmin-ed-esploratore-dati)
    - [4.7 Pagina «Server Web» (Pool Condivisi Apache/Nginx e VirtualHost `.localhost`)](#47-pagina-server-web-pool-condivisi-apachenginx-e-virtualhost-localhost)
    - [4.8 Pagina «Strumenti» (Multi-Versione, Matrice delle Relazioni ed Estensioni)](#48-pagina-strumenti-multi-versione-matrice-delle-relazioni-ed-estensioni)
    - [4.9 Pagina «Impostazioni» e Albero di Personalizzazione dei Framework](#49-pagina-impostazioni-e-albero-di-personalizzazione-dei-framework)
@@ -99,14 +99,14 @@ Quando `Dev-Kit.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD 
     │   ├── version-lines.json              # Cache (valida 24h) delle linee major.minor offerte dalle fonti
     │   ├── relations.json                  # Cache con impronta della matrice di compatibilità (D-81)
     │   ├── frameworks.json                 # Personalizzazioni utente alle ricette del wizard "Nuovo progetto"
-    │   ├── services.json                   # Porte e avvio automatico dei server database (MariaDB, MongoDB)
+    │   ├── services.json                   # Porte e avvio automatico dei server database (MySQL, MongoDB)
     │   ├── servers.json                    # Profili manuali e porte assegnate ai pool Apache e Nginx
     │   ├── extensions.txt                  # Estensioni aggiuntive globali dell'utente
     │   ├── extensions-offered.txt          # Registro delle estensioni già proposte (installate una sola volta)
     │   ├── root.txt / old-root.txt         # Tracciamento del percorso per la rilocazione automatica
     │   ├── layout.txt                      # Versione dello schema dati su disco (2 = dati per progetto)
     │   ├── db\                             # Cartella protetta da DACL (solo proprietario su NTFS)
-    │   │   ├── secrets.json                # Password degli amministratori DB (root per MariaDB, admin per MongoDB)
+    │   │   ├── secrets.json                # Password degli amministratori DB (root per MySQL, admin per MongoDB)
     │   │   └── my.ini                      # Credenziali client root e porta per l'accesso diretto da terminale
     │   ├── logs\                           # Log dell'app (app.log con segreti mascherati) e dei servizi DB
     │   └── update\                         # Eseguibile scaricato per l'auto-aggiornamento (update.json)
@@ -117,10 +117,11 @@ Quando `Dev-Kit.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD 
     │   ├── apache\  nginx\                 # Configurazioni generate e conf.d\ per siti dedicati al progetto
     │   └── private\                        # Cartella protetta da DACL ereditabile (solo proprietario)
     │       ├── db.json                     # Nomi dei DB e password generate per l'utente del progetto
-    │       └── backups\                    # Esportazioni .sql (MariaDB) e .archive.gz (MongoDB) del progetto
+    │       └── backups\                    # Esportazioni .sql (MySQL) e .archive.gz (MongoDB) del progetto
     ├── servers\<id-pool>\                  # Configurazioni generate e vhosts\*.conf dei pool Apache e Nginx
     ├── db\                                 # File fisici dei database, separati per motore e versione
-    │   ├── mariadb\<linea>\                # Dati MariaDB per linea LTS (es. 12.3\)
+    │   ├── mysql\<linea>\                  # Dati MySQL per linea LTS (es. 9.7\)
+    │   ├── mariadb.pre-mysql\             # Dati di un MariaDB di prima, conservati dopo il passaggio a MySQL
     │   └── mongodb\<linea>\                # Dati MongoDB per linea major di produzione (es. 9.0\)
     ├── agents\                             # Risorse sincronizzate tra Claude Code, Codex e Antigravity
     │   ├── AGENTS.md                       # Istruzioni globali comuni ai tre agenti
@@ -206,9 +207,9 @@ La tabella seguente dichiara l'organizzazione esatta di tutti gli indirizzi da c
 | **`cc`** (C/C++ llvm-mingw) | Strumenti | `https://github.com/mstorsjo/llvm-mingw` | GitHub API: `https://api.github.com/repos/mstorsjo/llvm-mingw/releases/latest` | Asset `llvm-mingw-*-ucrt-(x86_64\|aarch64).zip` | SHA-256 da `asset.digest` GitHub | `cc\bin\clang.exe` (+ `make.cmd` generato) |
 | **`ruby`** (Ruby + Bundler) | Linguaggi (versionato) | `https://www.ruby-lang.org` | GitHub API: `https://api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=100` | Asset `rubyinstaller-<v>-(x64\|arm).7z` | SHA-256 da `asset.digest` GitHub | `ruby\<linea>\bin\ruby.exe` |
 | **`r`** (R da conda-forge) | Linguaggi (versionato) | `https://www.r-project.org` | `https://api.anaconda.org/package/conda-forge/r-base` (`subdir=win-64`) + GitHub `mamba-org/micromamba-releases` | `micromamba-win-64` + pacchetti `r-base` e `libblas=*=*openblas` da `conda-forge` | SHA-256 di `micromamba-win-64.sha256` + SHA-256 pacchetti conda | `r\<linea>\bin\R.cmd` e `Rscript.cmd` (+ `tools\micromamba.exe`) |
-| **`mariadb`** (MariaDB Server) | Database (versionato) | `https://mariadb.org` | REST API ufficiale: `https://downloads.mariadb.org/rest-api/mariadb/` (linee Stable LTS) → `/<major>/latest/` | `https://downloads.mariadb.org/rest-api/mariadb/<version>/mariadb-<v>-winx64.zip` | SHA-256 dal campo `checksum.sha256sum` dell'API | `mariadb\<linea>\bin\mariadbd.exe` e `mariadb.exe` |
+| **`mysql`** (MySQL Community Server) | Database (versionato) | `https://www.mysql.com` | linee 8.4 e 9.7 LTS fissate nel catalogo | `https://cdn.mysql.com/Downloads/MySQL-<linea>/mysql-<v>-winx64.zip` | SHA-256 fissato dopo la firma GPG di Oracle | `mysql\<linea>\bin\mysqld.exe` e `mysql.exe` |
 | **`mongodb`** (MongoDB + mongosh + Tools) | Database (versionato) | `https://www.mongodb.com` | `https://downloads.mongodb.org/current.json` (produzione `x.0.y`), GitHub `mongodb-js/mongosh`, `https://downloads.mongodb.org/tools/db/release.json` | Zip Windows x64 di `mongod`, `mongosh` e `mongodb-database-tools` | SHA-256 dai JSON MongoDB + `asset.digest` GitHub per `mongosh` | `mongodb\<linea>\bin\mongod.exe`, `mongosh\bin\mongosh.exe`, `mongodb-tools\bin\mongodump.exe` |
-| **`phpmyadmin`** (phpMyAdmin per MariaDB) | Database | `https://www.phpmyadmin.net` | `https://www.phpmyadmin.net/home_page/version.json` | `files.phpmyadmin.net/phpMyAdmin/<v>/phpMyAdmin-<v>-all-languages.zip` | SHA-256 dal file `.sha256` ufficiale + lint `php -l` | `phpmyadmin\<linea>\index.php` |
+| **`phpmyadmin`** (phpMyAdmin per MySQL) | Database | `https://www.phpmyadmin.net` | `https://www.phpmyadmin.net/home_page/version.json` | `files.phpmyadmin.net/phpMyAdmin/<v>/phpMyAdmin-<v>-all-languages.zip` | SHA-256 dal file `.sha256` ufficiale + lint `php -l` | `phpmyadmin\<linea>\index.php` |
 | **`sqlite`** (SQLite CLI) | Database | `https://sqlite.org` | Pagina ufficiale: `https://sqlite.org/download.html` (righe CSV `PRODUCT,...`) | `https://sqlite.org/<anno>/sqlite-tools-win-(x64\|arm64)-<v>.zip` | **SHA3-256** pubblicato nella riga `PRODUCT` | `sqlite\<linea>\sqlite3.exe` |
 
 ---
@@ -352,7 +353,7 @@ La pagina **Nuovo progetto** (`ui/src/wizard.tsx` e `tauri/src/projects/framewor
    - *Slot `frontend`*: **React**, **Vue**, **Svelte**, **Livewire** (su Laravel usano gli starter kit ufficiali `laravel/react-starter-kit`, `vue-starter-kit`, `livewire-starter-kit`; su Electron passano a `@quick-start/electron@1` con `electron-vite`).
    - *Slot `bundler`*: **Vite** per Symfony (`pentatrion/vite-bundle`).
    - *Slot `css`*: **Tailwind CSS 4** (`@tailwindcss/vite` o `symfonycasts/tailwind-bundle`), **Bootstrap 5**, **Bulma 1**.
-   - *Slot `database`* (per Laravel): **SQLite**, **MySQL (MariaDB)** (avvia MariaDB del kit, crea DB e utente del progetto, scrive il `.env` ed esegue `php artisan migrate --force`), **MongoDB** (avvia MongoDB del kit, crea DB e utente, scrive il `.env` e installa `mongodb/laravel-mongodb`).
+   - *Slot `database`* (per Laravel): **SQLite**, **MySQL** (avvia MySQL del kit, crea DB e utente del progetto, scrive il `.env` ed esegue `php artisan migrate --force`), **MongoDB** (avvia MongoDB del kit, crea DB e utente, scrive il `.env` e installa `mongodb/laravel-mongodb`).
    - *Slot `desktop`* (per Laravel): **Electron (NativePHP)** (`nativephp/desktop`, aggiunge le azioni *App desktop* e *Pacchetto*).
    - *Slot `mobile`*: **Android (NativePHP Mobile)** per Laravel; **Android (Capacitor 8)** per Vite (`@capacitor/core`, `@capacitor/android`); **Android (Tauri Mobile)** per Tauri (installa automaticamente l'NDK di Android via `sdkmanager`, aggiunge i target Rust Android ed esegue `tauri android init`).
    - *Slot `admin`*: **Filament 5** per Laravel (`filament:install --panels`).
@@ -367,11 +368,11 @@ La pagina **Nuovo progetto** (`ui/src/wizard.tsx` e `tauri/src/projects/framewor
 
 > [!TIP]
 > **Esempio pratico — Creazione di `gestionale-fatture` con un solo clic:**
-> Nella schermata sopra, lo sviluppatore seleziona la base **Laravel** e abbina le aggiunte **React** (interfaccia), **Tailwind CSS** (stile) e **MySQL (MariaDB)** (database), indicando come destinazione `projects\gestionale-fatture`.
+> Nella schermata sopra, lo sviluppatore seleziona la base **Laravel** e abbina le aggiunte **React** (interfaccia), **Tailwind CSS** (stile) e **MySQL** (database), indicando come destinazione `projects\gestionale-fatture`.
 > Il riepilogo in basso mostra esattamente cosa farà NEXKORA quando si preme **«Crea il progetto»**:
-> 1. verifica che **PHP (con Composer)**, **Node.js** e **MariaDB** siano installati nel kit;
-> 2. avvia MariaDB, crea il database `gestionale_fatture` e l'utente dedicato con password casuale a 32 cifre;
-> 3. esegue `composer create-project laravel/react-starter-kit . --no-interaction`, `npm install`, installa `@tailwindcss/vite`, popola il file `.env` con `APP_NAME="Gestionale Fatture Studio Rossi"` e le credenziali MariaDB, ed esegue `php artisan migrate --force`.
+> 1. verifica che **PHP (con Composer)**, **Node.js** e **MySQL** siano installati nel kit;
+> 2. avvia MySQL, crea il database `gestionale_fatture` e l'utente dedicato con password casuale a 32 cifre;
+> 3. esegue `composer create-project laravel/react-starter-kit . --no-interaction`, `npm install`, installa `@tailwindcss/vite`, popola il file `.env` con `APP_NAME="Gestionale Fatture Studio Rossi"` e le credenziali MySQL, ed esegue `php artisan migrate --force`.
 
 ---
 
@@ -390,7 +391,7 @@ Cliccando su un progetto si apre nella parte centrale la **Scheda del Progetto**
 ![Scheda Avvio del progetto gestionale-fatture con console live e pannello Attività aperto](images/05-progetto-avvio-log.png)
 
 > **Esempio pratico — Esecuzione di `gestionale-fatture` e controllo dal pannello Attività:**
-> Nella schermata sopra, l'azione predefinita **Avvia** (`composer run dev`) di `gestionale-fatture` è in esecuzione sulla porta bloccata `8000` (`http://127.0.0.1:8000/`). La console mostra l'output combinato di Laravel Server, Queue listener e Vite v6.2.1, mentre in basso il pannello **Attività** permette di controllare contemporaneamente tutti i progetti attivi (`gestionale-fatture :8000` e `portale-clienti :5173`), i database (`MariaDB :3306`, `MongoDB :27017`) e le installazioni.
+> Nella schermata sopra, l'azione predefinita **Avvia** (`composer run dev`) di `gestionale-fatture` è in esecuzione sulla porta bloccata `8000` (`http://127.0.0.1:8000/`). La console mostra l'output combinato di Laravel Server, Queue listener e Vite v6.2.1, mentre in basso il pannello **Attività** permette di controllare contemporaneamente tutti i progetti attivi (`gestionale-fatture :8000` e `portale-clienti :5173`), i database (`MySQL :3306`, `MongoDB :27017`) e le installazioni.
 
 2. **Sito web (`site`)**: permette di servire qualsiasi sottocartella del progetto (`.` o `public`, `dist`, ecc.) scegliendo tra 4 modalità:
    - *file statici* (server interno `Dev-Kit.exe serve` senza bisogno di Node o PHP);
@@ -405,7 +406,7 @@ Cliccando su un progetto si apre nella parte centrale la **Scheda del Progetto**
 
 ![Scheda Componenti del progetto con versioni di Node.js 22.21 e PHP 8.4 fissate](images/07-progetto-componenti-versioni.png)
 
-4. **Database (`databases`)**: gestisce i database dedicati al progetto su **MariaDB** e **MongoDB** (e mostra i file SQLite rilevati). Con un clic su **«Crea database e utente»**, il kit avvia il server, genera un database e un utente dedicati con password casuale a 32 cifre esadecimali (salvata in `data\projects\<progetto>\private\db.json`), mostra l'anteprima delle righe `.env` e permette di **scriverle nel file `.env`** del progetto con un clic, oltre a gestire **Esportazione (backup)** e **Ripristino** in `private\backups\`.
+4. **Database (`databases`)**: gestisce i database dedicati al progetto su **MySQL** e **MongoDB** (e mostra i file SQLite rilevati). Con un clic su **«Crea database e utente»**, il kit avvia il server, genera un database e un utente dedicati con password casuale a 32 cifre esadecimali (salvata in `data\projects\<progetto>\private\db.json`), mostra l'anteprima delle righe `.env` e permette di **scriverle nel file `.env`** del progetto con un clic, oltre a gestire **Esportazione (backup)** e **Ripristino** in `private\backups\`.
 
 ![Scheda Database del progetto con credenziali isolate, anteprima .env e copie di backup SQL](images/08-progetto-database-env.png)
 
@@ -449,23 +450,24 @@ La pagina **Agenti** (`ui/src/agents.tsx` e `tauri/src/agents/`) gestisce i tre 
 
 ---
 
-### 4.6 Pagina «Database» (MariaDB, MongoDB, phpMyAdmin ed Esploratore Dati)
+### 4.6 Pagina «Database» (MySQL, MongoDB, phpMyAdmin ed Esploratore Dati)
 
 La pagina **Database** (`ui/src/databases.tsx` e `tauri/src/db/`) gestisce i server database condivisi del kit, in ascolto esclusivamente su `127.0.0.1`:
-- **MariaDB** (porta predefinita `3306`, pienamente compatibile con MySQL) e **MongoDB** (porta predefinita `27017`).
-- **Sicurezza automatica (`D-74`)**: al primo avvio di ciascun server, il kit genera una password casuale di 32 cifre esadecimali per l'amministratore (`root` su MariaDB, `admin` su MongoDB) e la salva in `data\app\db\secrets.json` (protetto da DACL proprietario). Inoltre genera `data\app\db\my.ini` (puntato da `MYSQL_HOME`), così digitando `mariadb` nel terminale del kit si entra già autenticati come `root` senza dover digitare la password.
-- **phpMyAdmin integrato per MariaDB (`D-107`)**: cliccando su **«Apri phpMyAdmin»**, il kit installa phpMyAdmin e PHP se mancano, avvia MariaDB se è fermo, lancia un server PHP locale con il router di sicurezza `data\kit\phpmyadmin.php` e apre phpMyAdmin nel browser effettuando il **login automatico come `root` tramite un token monouso** e un cookie `HttpOnly` + `SameSite=Strict` (senza mai esporre la password di `root` nell'URL o nel browser).
+- **MySQL** (linee 8.4 e 9.7 LTS, porta predefinita `3306`) e **MongoDB** (porta predefinita `27017`).
+- **Dati di un MariaDB di prima (`D-117`)**: MySQL è l'unico server SQL del kit. Se il kit aveva MariaDB, al primo avvio i suoi dati passano a MySQL da soli (stesse porte, stessi utenti e password dei progetti, ogni database controllato); in cima alla pagina un riquadro dice a che punto è, mostra un errore con la copia salvata e «Riprova», e alla fine «Dati MariaDB conservati (N MB): Elimina» per la cartella `data\db\mariadb.pre-mysql\`.
+- **Sicurezza automatica (`D-74`)**: al primo avvio di ciascun server, il kit genera una password casuale di 32 cifre esadecimali per l'amministratore (`root` su MySQL, `admin` su MongoDB) e la salva in `data\app\db\secrets.json` (protetto da DACL proprietario). Inoltre genera `data\app\db\mysql.cnf`, letto dai lanciatori del kit, così digitando `mysql` nel terminale del kit si entra già autenticati come `root` senza dover digitare la password.
+- **phpMyAdmin integrato per MySQL (`D-107`)**: cliccando su **«Apri phpMyAdmin»**, il kit installa phpMyAdmin e PHP se mancano, avvia MySQL se è fermo, lancia un server PHP locale con il router di sicurezza `data\kit\phpmyadmin.php` e apre phpMyAdmin nel browser effettuando il **login automatico come `root` tramite un token monouso** e un cookie `HttpOnly` + `SameSite=Strict` (senza mai esporre la password di `root` nell'URL o nel browser).
 - **Esploratore Contenuto per MongoDB (`D-79`, `ui/src/dbbrowser.tsx`)**: quando MongoDB è avviato, la scheda **Contenuto** permette di sfogliare in sola lettura tutti i database e le collezioni (inclusi i database di sistema raggruppati a parte) visualizzando i documenti impaginati a 100 righe per volta.
-- **Dati multi-versione (`D-81`)**: a server fermo è possibile cambiare la versione del motore (es. MariaDB `12.3` o `11.8`; MongoDB `9.0` o `8.0`). Ogni versione mantiene la propria cartella dati in `data\db\<motore>\<linea>\` e, al primo avvio di una versione più recente, copia automaticamente in avanti i dati dalla versione precedente più vicina.
+- **Dati multi-versione (`D-81`)**: a server fermo è possibile cambiare la versione del motore (es. MySQL `9.7` o `8.4`; MongoDB `9.0` o `8.0`). Ogni versione mantiene la propria cartella dati in `data\db\<motore>\<linea>\` e, al primo avvio di una versione più recente, copia automaticamente in avanti i dati dalla versione precedente più vicina.
 
 ````carousel
-![Pagina Database — MariaDB 12.3 attivo con phpMyAdmin integrato e credenziali root](images/11-database-mariadb-adminer.png)
+![Pagina Database — il server SQL con phpMyAdmin integrato e credenziali root (schermata di prima, con MariaDB)](images/11-database-mariadb-adminer.png)
 <!-- slide -->
 ![Pagina Database — MongoDB 8.0 con esploratore Contenuto delle collezioni in sola lettura](images/11b-database-mongodb-esploratore.png)
 ````
 
-> **Esempio pratico — Gestione relazionale (MariaDB + phpMyAdmin) e documentale (MongoDB Contenuto):**
-> - Nella **prima schermata** (`MariaDB 12.3`), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a NEXKORA; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
+> **Esempio pratico — Gestione relazionale (MySQL + phpMyAdmin) e documentale (MongoDB Contenuto):**
+> - Nella **prima schermata** (del server SQL, ancora MariaDB quando è stata fatta), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a NEXKORA; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
 > - Nella **seconda schermata** (`MongoDB 8.0`), la scheda **Contenuto** mostra i database `api_magazzino` e `portale_clienti` (con le collezioni `utenti (19)` e `ticket_supporto (73)`) permettendo di ispezionare i documenti JSON direttamente dentro l'app.
 
 ---
@@ -525,7 +527,7 @@ La pagina **Rimuovi l'unità** (`ui/src/eject.tsx` e `tauri/src/os/sessions.rs`)
 - Cliccando su **«Chiudi tutto e prepara la rimozione»**, l'app:
   1. annulla eventuali installazioni in corso;
   2. ferma tutte le azioni dei progetti;
-  3. esegue lo shutdown pulito e autenticato di MariaDB e MongoDB;
+  3. esegue lo shutdown pulito e autenticato di MySQL e MongoDB;
   4. ferma i pool Apache e Nginx;
   5. chiude le finestre dell'editor, il server VSCodium, le console e tutti i processi con eseguibile dentro il kit;
   6. salva nel kit (`data\antigravity\keyring.json`) le credenziali di Antigravity rimuovendole dalla Gestione credenziali di Windows;
@@ -535,7 +537,7 @@ La pagina **Rimuovi l'unità** (`ui/src/eject.tsx` e `tauri/src/os/sessions.rs`)
 
 > [!IMPORTANT]
 > **Esempio pratico — Rimozione sicura della chiavetta a fine giornata:**
-> Nella schermata sopra, prima di sfilare l'unità `D:\Dev-Kit`, la pagina **Rimuovi l'unità** rileva automaticamente **1 finestra dell'editor**, **2 console**, **2 progetti avviati** (`gestionale-fatture` e `portale-clienti`), **2 database attivi** (`MariaDB` e `MongoDB`) e **4 processi** ancora in esecuzione da `data\apps\` (`php.exe`, `httpd.exe`, `mariadbd.exe`, `node.exe`). Un singolo clic su **«Chiudi tutto e prepara la rimozione»** arresta ordinatamente i database (evitando corruzioni delle tabelle InnoDB/WiredTiger), riporta le credenziali di Antigravity nel kit e libera ogni handle sul file system.
+> Nella schermata sopra, prima di sfilare l'unità `D:\Dev-Kit`, la pagina **Rimuovi l'unità** rileva automaticamente **1 finestra dell'editor**, **2 console**, **2 progetti avviati** (`gestionale-fatture` e `portale-clienti`), **2 database attivi** (`MySQL` e `MongoDB`) e **4 processi** ancora in esecuzione da `data\apps\` (`php.exe`, `httpd.exe`, `mysqld.exe`, `node.exe`). Un singolo clic su **«Chiudi tutto e prepara la rimozione»** arresta ordinatamente i database (evitando corruzioni delle tabelle InnoDB/WiredTiger), riporta le credenziali di Antigravity nel kit e libera ogni handle sul file system.
 
 ---
 
@@ -613,7 +615,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
      - *Scopo*: mentre i programmi che usano SChannel di Windows leggono l'archivio certificati del sistema, **Node.js** (e quindi anche il server dell'editor, `npm`, Claude Code e Codex) usa un proprio archivio CA statico e fallirebbe dietro un firewall aziendale con *SSL Inspection*. Questa impostazione valorizza automaticamente `NODE_EXTRA_CA_CERTS` per tutti i processi del kit.
   3. **Rete locale (`allowLan` / `DEVKIT_ALLOW_LAN=1`)**:
      - *Passaggi*: spunta *«Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete»* e salva.
-     - *Scopo*: per sicurezza predefinita, un file incorporato (`data\kit\loopback.js`, caricato via `NODE_OPTIONS=--require`) e i generatori di comandi costringono tutti i server di sviluppo dei progetti (Vite, Next.js, PHP, Apache, Nginx, `Dev-Kit.exe serve`) ad ascoltare **solo su `127.0.0.1`**, evitando avvisi del Firewall di Windows ed esposizioni su reti Wi-Fi pubbliche. Attivando questa opzione, i server web dei progetti ascoltano su `0.0.0.0` così puoi provare il sito o l'app da uno smartphone o da un altro PC collegato alla stessa rete locale (i database MariaDB e MongoDB restano comunque blindati su `127.0.0.1`).
+     - *Scopo*: per sicurezza predefinita, un file incorporato (`data\kit\loopback.js`, caricato via `NODE_OPTIONS=--require`) e i generatori di comandi costringono tutti i server di sviluppo dei progetti (Vite, Next.js, PHP, Apache, Nginx, `Dev-Kit.exe serve`) ad ascoltare **solo su `127.0.0.1`**, evitando avvisi del Firewall di Windows ed esposizioni su reti Wi-Fi pubbliche. Attivando questa opzione, i server web dei progetti ascoltano su `0.0.0.0` così puoi provare il sito o l'app da uno smartphone o da un altro PC collegato alla stessa rete locale (i database MySQL e MongoDB restano comunque blindati su `127.0.0.1`).
 
 ---
 
@@ -702,20 +704,20 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 
 ### 5.7 Configurazione dei Server Database, Utenti di Progetto, `.env` e Backup
 
-#### A. Configurazione dei Server MariaDB e MongoDB del Kit
+#### A. Configurazione dei Server MySQL e MongoDB del Kit
 - **Dove si configura**: pagina **Database** (salvato in `data\app\services.json`).
 - **Passaggi**:
-  1. Seleziona **MariaDB** o **MongoDB** nella barra laterale.
+  1. Seleziona **MySQL** o **MongoDB** nella barra laterale.
   2. Nella sezione **Impostazioni** (scheda *Dettagli*), a server fermo puoi scegliere la **Versione** del motore, modificare la **Porta** (predefinite `3306` e `27017`, valide da `1024` a `65535`) e spuntare **«Avvia con NEXKORA»**.
   3. Clicca su **«Avvia»** per far partire il server (se il componente non è ancora installato, viene scaricato e inizializzato automaticamente al primo avvio).
-- **Scopo**: avere un'unica istanza leggera per motore condivisa da tutti i progetti, protetta da password amministrativa (`root`/`admin`) e accessibile via **phpMyAdmin** (per MariaDB) o tramite l'esploratore **Contenuto** (per MongoDB).
+- **Scopo**: avere un'unica istanza leggera per motore condivisa da tutti i progetti, protetta da password amministrativa (`root`/`admin`) e accessibile via **phpMyAdmin** (per MySQL) o tramite l'esploratore **Contenuto** (per MongoDB).
 
 #### B. Creazione Database/Utente di un Progetto, Scrittura `.env` e Backup
 - **Dove si configura**: **Progetti › `<tuo-progetto>` › scheda Database** (credenziali e backup salvati in `data\projects\<progetto>\private\`).
 - **Passaggi**:
-  1. Sotto MariaDB o MongoDB, clicca su **«Crea database e utente»**: il kit avvia il server se è fermo, crea il database `<progetto>` e l'utente `<progetto>` con una password casuale di 32 cifre esadecimali e permessi limitati esclusivamente a quel database.
+  1. Sotto MySQL o MongoDB, clicca su **«Crea database e utente»**: il kit avvia il server se è fermo, crea il database `<progetto>` e l'utente `<progetto>` con una password casuale di 32 cifre esadecimali e permessi limitati esclusivamente a quel database.
   2. Clicca su **«Scrivi in .env»**: l'app mostra l'**anteprima esatta delle righe che cambieranno** (riconoscendo automaticamente lo stile Laravel `DB_CONNECTION`/`DB_PORT`/`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD` oppure lo standard `DATABASE_URL` / `MONGODB_URI`, e creando `.env` da `.env.example` se manca). Conferma per applicare. (Se `.env` non è elencato in `.gitignore`, la scheda mostra un avviso di sicurezza).
-  3. Nella sottosezione **Copie (Backup)**, clicca su **«Esporta»** per creare un dump `.sql` (`mariadb-dump --single-transaction --routines --triggers`) o `.archive.gz` (`mongodump --archive --gzip`) in `data\projects\<progetto>\private\backups\`, oppure su **«Ripristina…»** per importare un backup esistente.
+  3. Nella sottosezione **Copie (Backup)**, clicca su **«Esporta»** per creare un dump `.sql` (`mysqldump --single-transaction --routines --events --triggers`) o `.archive.gz` (`mongodump --archive --gzip`) in `data\projects\<progetto>\private\backups\`, oppure su **«Ripristina…»** per importare un backup esistente.
 - **Esempio delle righe `.env` generate automaticamente per `gestionale-fatture` (stile Laravel)**:
   ```dotenv
   DB_CONNECTION=mysql
@@ -815,7 +817,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 - **Passaggi**:
   1. Nella barra laterale di **Impostazioni**, espandi il riquadro **Framework**.
   2. Clicca su una **Base** (es. *Laravel*, *Vite*, *Tauri*) o su un'**Aggiunta** (es. *React*, *Tailwind CSS*, *Pest*) per aprirla in una scheda, oppure clicca sui pulsanti **`+`** nell'intestazione del riquadro per creare una nuova base o una nuova aggiunta.
-  3. Modifica gli strumenti richiesti dal kit (tag con logo), i comandi di creazione (`create`), i passi di configurazione (`steps`), il database richiesto (`mariadb` / `mongodb`), le variabili `.env` predefinite o le azioni salvate nel progetto.
+  3. Modifica gli strumenti richiesti dal kit (tag con logo), i comandi di creazione (`create`), i passi di configurazione (`steps`), il database richiesto (`mysql` / `mongodb`), le variabili `.env` predefinite o le azioni salvate nel progetto.
   4. Clicca su **«Prova una combinazione»** in cima all'albero per verificare in anteprima il piano completo generato dall'incrocio tra una base e più aggiunte.
   5. Clicca su **«Salva»** nella barra delle schede (in qualsiasi momento il pulsante **«Ripristina»** sulla singola voce riporta quella ricetta ai comandi ufficiali del catalogo).
 - **Scopo**: permettere a sviluppatori, team o docenti di adattare i template di creazione progetti alle proprie convenzioni (aggiungendo librerie aziendali, configurazioni di linting o versioni specifiche dei pacchetti) mantenendo sempre la possibilità di tornare con un clic alla configurazione ufficiale.
@@ -829,5 +831,5 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 - **Passaggi**:
   1. Nella barra laterale della pagina **Progetti**, individua la voce sotto **Dati senza progetto**.
   2. **Se avevi rinominato la cartella del progetto**: seleziona il nuovo nome del progetto nel menu **«Collega a…»** e conferma. Il kit sposta tutti i file di stato, i backup e le password sul nuovo progetto, **mantenendo invariato il nome fisico del database e dell'utente** salvato in `private\db.json` così che il file `.env` del progetto continui a funzionare senza alcuna modifica.
-  3. **Se invece avevi eliminato volontariamente il progetto**: clicca sul pulsante del cestino (**«Elimina»**). Si aprirà la finestra di conferma che elenca i database e i backup presenti e ti permetterà di eliminare in modo pulito sia i database e l'utente dentro MariaDB/MongoDB sia la cartella in `data\projects\`.
+  3. **Se invece avevi eliminato volontariamente il progetto**: clicca sul pulsante del cestino (**«Elimina»**). Si aprirà la finestra di conferma che elenca i database e i backup presenti e ti permetterà di eliminare in modo pulito sia i database e l'utente dentro MySQL/MongoDB sia la cartella in `data\projects\`.
 - **Scopo**: garantire che nessuna operazione esterna in Esplora file possa causare la perdita silenziosa di database o copie di sicurezza, offrendo al contempo uno strumento guidato per ricollegare i dati a un progetto rinominato o per ripulire completamente i server database.

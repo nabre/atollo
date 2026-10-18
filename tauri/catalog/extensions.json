@@ -66,8 +66,8 @@
     { "id": "ms-vscode.powershell", "name": "PowerShell", "languages": ["PowerShell"] },
     { "id": "timonwong.shellcheck", "name": "ShellCheck", "languages": ["Shell"] },
     { "id": "foxundermoon.shell-format", "name": "shell-format", "languages": ["Shell"] },
-    { "id": "mtxr.sqltools", "name": "SQLTools", "languages": ["SQL"], "tools": ["mariadb"], "note": "query e tabelle di MariaDB (D-73)" },
-    { "id": "mtxr.sqltools-driver-mysql", "name": "SQLTools MySQL/MariaDB", "tools": ["mariadb"] },
+    { "id": "mtxr.sqltools", "name": "SQLTools", "languages": ["SQL"], "tools": ["mysql"], "note": "query e tabelle di MySQL (D-73, D-117)" },
+    { "id": "mtxr.sqltools-driver-mysql", "name": "SQLTools MySQL/MariaDB", "tools": ["mysql"] },
     { "id": "mongodb.mongodb-vscode", "name": "MongoDB for VS Code", "tools": ["mongodb"] },
     { "id": "qwtel.sqlite-viewer", "name": "SQLite Viewer", "tools": ["sqlite"] },
 

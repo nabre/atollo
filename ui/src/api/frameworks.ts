@@ -22,7 +22,7 @@ export interface FrameworkVariant {
   create?: string[];
   steps?: string[];
   actions?: FrameworkAction[];
-  /** A database server of the kit (mariadb, mongodb): the project gets its database there. */
+  /** A database server of the kit (mysql, mongodb): the project gets its database there. */
   database?: string;
   env?: EnvVar[];
   note?: string;

@@ -65,7 +65,13 @@ const SAMPLE_TOOLS: TerminalTool[] = [
     lines: ["8.4", "7.4"],
     versions: { "8.4": "8.4.13", "7.4": "7.4.33" },
   },
-  { id: "mariadb", name: "MariaDB", group: "databases", lines: ["12.3"], versions: { "12.3": "12.3.1" } },
+  {
+    id: "mysql",
+    name: "MySQL",
+    group: "databases",
+    lines: ["9.7", "8.4"],
+    versions: { "9.7": "9.7.2", "8.4": "8.4.11" },
+  },
 ];
 
 const SAMPLE_TERMINALS: TerminalsView = {
@@ -82,7 +88,7 @@ const SAMPLE_TERMINALS: TerminalsView = {
       id: "legacy-php",
       name: "PHP 7.4 legacy",
       dir: "D:\\Siti\\gestionale",
-      tools: { git: null, php: "7.4", mariadb: null },
+      tools: { git: null, php: "7.4", mysql: null },
       builtin: false,
       missing: [],
     },

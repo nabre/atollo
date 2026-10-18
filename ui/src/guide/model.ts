@@ -240,7 +240,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: VscTable,
     keywords:
-      "tabella fonti link url download github api nodejs python php composer apache nginx mariadb mongodb rust go java",
+      "tabella fonti link url download github api nodejs python php composer apache nginx mysql mongodb rust go java",
     targetPage: "components",
   },
   {
@@ -395,13 +395,13 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "MariaDB + phpMyAdmin con login monouso, MongoDB + esploratore Contenuto in sola lettura, e pool condivisi Apache/Nginx con VirtualHost .localhost.",
-        "MariaDB + phpMyAdmin one-time token login, MongoDB + read-only Content browser, and shared Apache/Nginx pools with .localhost VirtualHosts.",
-        "MariaDB + phpMyAdmin avec connexion à jeton unique, MongoDB + explorateur de contenu en lecture seule, et pools partagés Apache/Nginx avec VirtualHosts .localhost.",
-        "MariaDB + phpMyAdmin mit Einmal-Token-Login, MongoDB + schreibgeschützter Inhaltsbrowser sowie geteilte Apache-/Nginx-Pools mit .localhost-VirtualHosts.",
+        "MySQL + phpMyAdmin con login monouso, MongoDB + esploratore Contenuto in sola lettura, e pool condivisi Apache/Nginx con VirtualHost .localhost.",
+        "MySQL + phpMyAdmin one-time token login, MongoDB + read-only Content browser, and shared Apache/Nginx pools with .localhost VirtualHosts.",
+        "MySQL + phpMyAdmin avec connexion à jeton unique, MongoDB + explorateur de contenu en lecture seule, et pools partagés Apache/Nginx avec VirtualHosts .localhost.",
+        "MySQL + phpMyAdmin mit Einmal-Token-Login, MongoDB + schreibgeschützter Inhaltsbrowser sowie geteilte Apache-/Nginx-Pools mit .localhost-VirtualHosts.",
       ),
     icon: VscDatabase,
-    keywords: "database mariadb mongodb phpmyadmin dbbrowser server web apache nginx pool virtualhost localhost alias",
+    keywords: "database mysql mongodb phpmyadmin dbbrowser server web apache nginx pool virtualhost localhost alias",
     targetPage: "databases",
   },
   {
@@ -614,10 +614,10 @@ export const DISK_TREE: DiskTreeNode[] = [
     depth: 1,
     desc: () =>
       tr(
-        "Dati fisici delle tabelle MariaDB e collezioni MongoDB + backup esportati per progetto.",
-        "Physical data of MariaDB tables and MongoDB collections + per-project exported backups.",
-        "Données physiques des tables MariaDB et collections MongoDB + sauvegardes exportées par projet.",
-        "Physische Daten der MariaDB-Tabellen und MongoDB-Sammlungen + pro Projekt exportierte Backups.",
+        "Dati fisici delle tabelle MySQL e collezioni MongoDB + backup esportati per progetto.",
+        "Physical data of MySQL tables and MongoDB collections + per-project exported backups.",
+        "Données physiques des tables MySQL et collections MongoDB + sauvegardes exportées par projet.",
+        "Physische Daten der MySQL-Tabellen und MongoDB-Sammlungen + pro Projekt exportierte Backups.",
       ),
   },
   {
@@ -1493,33 +1493,33 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
       ),
   }),
   defSource({
-    id: "mariadb",
-    logoId: "mariadb",
-    name: "MariaDB Server",
+    id: "mysql",
+    logoId: "mysql",
+    name: "MySQL Community Server",
     group: "databases",
-    home: "https://mariadb.org",
+    home: "https://www.mysql.com",
     metaSource: () =>
       tr(
-        "downloads.mariadb.org/rest-api/mariadb/ (linee Stable LTS)",
-        "downloads.mariadb.org/rest-api/mariadb/ (Stable LTS lines)",
-        "downloads.mariadb.org/rest-api/mariadb/ (lignes Stable LTS)",
-        "downloads.mariadb.org/rest-api/mariadb/ (Stable-LTS-Linien)",
+        "Linee 8.4 e 9.7 LTS fissate nel catalogo (sha256ByLine)",
+        "8.4 and 9.7 LTS lines pinned in the catalog (sha256ByLine)",
+        "Lignes LTS 8.4 et 9.7 fixées dans le catalogue (sha256ByLine)",
+        "LTS-Linien 8.4 und 9.7 im Katalog festgelegt (sha256ByLine)",
       ),
-    binarySource: "downloads.mariadb.org/rest-api/mariadb/<v>/mariadb-<v>-winx64.zip",
+    binarySource: "cdn.mysql.com/Downloads/MySQL-<linea>/mysql-<v>-winx64.zip",
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
-        "SHA-256 dal campo checksum.sha256sum dell'API",
-        "SHA-256 from the API checksum.sha256sum field",
-        "SHA-256 depuis le champ checksum.sha256sum de l'API",
-        "SHA-256 aus dem API-Feld checksum.sha256sum",
+        "SHA-256 fissato per linea e target dopo la firma GPG di Oracle",
+        "SHA-256 pinned per line and target after Oracle's GPG signature",
+        "SHA-256 fixé par ligne et cible après la signature GPG d'Oracle",
+        "SHA-256 pro Linie und Ziel nach Oracles GPG-Signatur festgelegt",
       ),
     targetPath: () =>
       tr(
-        `mariadb\\${lLine()}\\bin\\mariadbd.exe e mariadb.exe`,
-        `mariadb\\${lLine()}\\bin\\mariadbd.exe and mariadb.exe`,
-        `mariadb\\${lLine()}\\bin\\mariadbd.exe et mariadb.exe`,
-        `mariadb\\${lLine()}\\bin\\mariadbd.exe und mariadb.exe`,
+        `mysql\\${lLine()}\\bin\\mysqld.exe e mysql.exe`,
+        `mysql\\${lLine()}\\bin\\mysqld.exe and mysql.exe`,
+        `mysql\\${lLine()}\\bin\\mysqld.exe et mysql.exe`,
+        `mysql\\${lLine()}\\bin\\mysqld.exe und mysql.exe`,
       ),
   }),
   defSource({
@@ -1550,12 +1550,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "phpmyadmin",
     logoId: "phpmyadmin",
     name: () =>
-      tr(
-        "phpMyAdmin (per MariaDB)",
-        "phpMyAdmin (for MariaDB)",
-        "phpMyAdmin (pour MariaDB)",
-        "phpMyAdmin (für MariaDB)",
-      ),
+      tr("phpMyAdmin (per MySQL)", "phpMyAdmin (for MySQL)", "phpMyAdmin (pour MySQL)", "phpMyAdmin (für MySQL)"),
     group: "databases",
     home: "https://www.phpmyadmin.net",
     metaSource: "www.phpmyadmin.net/home_page/version.json",

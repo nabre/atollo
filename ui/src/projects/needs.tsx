@@ -41,7 +41,7 @@ export const COMPONENT_NAMES: Record<string, string> = {
   cc: "C, C++",
   ruby: "Ruby",
   r: "R",
-  mariadb: "MariaDB",
+  mysql: "MySQL",
   mongodb: "MongoDB",
   sqlite: "SQLite",
   pwsh: "PowerShell 7",

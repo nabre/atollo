@@ -1,5 +1,5 @@
 {
-  "about": "Framework of the new-project wizard (DECISIONS.md D-83): a base and the additions combined with it. Official instructions, versions checked on npm, Packagist and GitHub on 15/10/2026. Every base with a web interface but the CMS has the CSS frameworks (slot css); development goes through Vite or its equivalent (Turbopack for Next.js). env: variables written in .env before the steps ({name}, {package} filled in). database (of a base or of an addition): a server of the kit (mariadb, mongodb) where the project gets its database, its connection written in .env, before the steps; the steps get it as $env:DEVKIT_DB_HOST, _PORT, _NAME, _USER, _PASSWORD, _URL, and the variables of .env too ({password} = a new password, DECISIONS.md D-93). Each line is one command run with the kit's PowerShell and environment: 'create' in projects\\ (it makes the folder {name}), 'steps' inside projects\\{name}. {name} = project name, {package} = com.example.<name in lower case letters and digits>. needs: components of the kit, installed first. actions: name and command, saved as the project's actions. An addition has one entry in 'on' per base it works with: its 'create' replaces the base's (a starter kit, a template), its steps come after the base's, its actions replace those of the base with the same name. Two additions of the same 'slot' do not go together. desc and note: Italian, translated by i18n/catalog.json.",
+  "about": "Framework of the new-project wizard (DECISIONS.md D-83): a base and the additions combined with it. Official instructions, versions checked on npm, Packagist and GitHub on 15/10/2026. Every base with a web interface but the CMS has the CSS frameworks (slot css); development goes through Vite or its equivalent (Turbopack for Next.js). env: variables written in .env before the steps ({name}, {package} filled in). database (of a base or of an addition): a server of the kit (mysql, mongodb) where the project gets its database, its connection written in .env, before the steps; the steps get it as $env:DEVKIT_DB_HOST, _PORT, _NAME, _USER, _PASSWORD, _URL, and the variables of .env too ({password} = a new password, DECISIONS.md D-93). Each line is one command run with the kit's PowerShell and environment: 'create' in projects\\ (it makes the folder {name}), 'steps' inside projects\\{name}. {name} = project name, {package} = com.example.<name in lower case letters and digits>. needs: components of the kit, installed first. actions: name and command, saved as the project's actions. An addition has one entry in 'on' per base it works with: its 'create' replaces the base's (a starter kit, a template), its steps come after the base's, its actions replace those of the base with the same name. Two additions of the same 'slot' do not go together. desc and note: Italian, translated by i18n/catalog.json.",
   "pieces": [
     {
       "id": "laravel",
@@ -226,7 +226,7 @@
           "value": "admin@example.com"
         }
       ],
-      "database": "mariadb",
+      "database": "mysql",
       "note": "Pannello in /wp/wp-admin, con ADMIN_USER e ADMIN_PASSWORD del file .env. Il sito risponde all'indirizzo con cui lo apri, su qualsiasi porta."
     },
     {
@@ -266,7 +266,7 @@
           "value": "admin@example.com"
         }
       ],
-      "database": "mariadb",
+      "database": "mysql",
       "note": "Pannello in /typo3, con ADMIN_USER e ADMIN_PASSWORD del file .env. Una password scritta a mano vuole maiuscole, minuscole, cifre e un segno."
     },
     {
@@ -309,7 +309,7 @@
           "value": "admin@example.com"
         }
       ],
-      "database": "mariadb",
+      "database": "mysql",
       "note": "Accesso in /user/login, con ADMIN_USER e ADMIN_PASSWORD del file .env."
     },
     {
@@ -697,12 +697,12 @@
       "id": "mysql",
       "kind": "addon",
       "slot": "database",
-      "name": "MySQL (MariaDB)",
-      "desc": "Il server MariaDB del kit, compatibile con MySQL",
+      "name": "MySQL",
+      "desc": "Il server MySQL del kit",
       "home": "https://laravel.com/docs/13.x/database#configuration",
       "on": {
         "laravel": {
-          "database": "mariadb",
+          "database": "mysql",
           "steps": [
             "php artisan migrate --force"
           ],

@@ -23,10 +23,9 @@ fn commands() {
     for id in ids("npm i & go build & dotnet run & ruby x.rb & Rscript a.R") {
         assert!(Catalog::get().find(id).is_some(), "{id}");
     }
-    // Each SQL program names its own server; the caller resolves it to
-    // the kit's (db::services::sql_need).
+    // Every SQL program is MySQL's (D-117).
     assert_eq!(ids("mysql -e 'select 1'"), ["mysql"]);
-    assert_eq!(ids("mariadb-dump app"), ["mariadb"]);
+    assert_eq!(ids("mariadb-dump app"), ["mysql"], "MySQL (D-117)");
     assert_eq!(ids("caddy run & php-fpm -F"), ["caddy", "php"]);
 }
 

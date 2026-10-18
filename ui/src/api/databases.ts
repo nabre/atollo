@@ -21,7 +21,7 @@ export interface DbDatabase {
 }
 
 export interface DbRows {
-  /** kind: MariaDB's column type, empty for MongoDB. */
+  /** kind: MySQL's column type, empty for MongoDB. */
   columns: { name: string; kind: string }[];
   /** JSON values; binary data as {"$bytes": n}, MongoDB's as Extended JSON. */
   rows: unknown[][];
@@ -106,15 +106,56 @@ export function dbBrowseRows(
     : invoke<DbRows>("db_browse_rows", { engine, line, database, table, offset });
 }
 
-/** phpMyAdmin on the kit's MariaDB, in the browser (D-107): installed the first
- * time, MariaDB started when it is off; `line`: another version, on its
- * own port (null: the version the server runs). */
-export function dbAdminOpen(line: string | null = null): Promise<ServiceInfo[]> {
-  return query<ServiceInfo[]>("db_admin_open", SAMPLE_SERVICES, { line });
+/** phpMyAdmin on the kit's MySQL, in the browser (D-107, D-117): installed
+ * the first time, the server started when it is off; `line`: another
+ * version, on its own port (null: the version the server runs). `engine`
+ * (optional): `mysql`, the only SQL server the interface names. */
+export function dbAdminOpen(line: string | null = null, engine: "mysql" = "mysql"): Promise<ServiceInfo[]> {
+  return query<ServiceInfo[]>("db_admin_open", SAMPLE_SERVICES, { line, engine });
+}
+
+/** The move of MariaDB's data to MySQL (D-117,
+ * tauri/src/db/migrate_engine.rs): "none" when the kit has nothing of
+ * MariaDB, "pending" or "failed" while some data waits, "running", "done"
+ * while the data kept after the move is there. */
+export interface DbMigration {
+  state: "none" | "pending" | "running" | "failed" | "done";
+  /** Each MariaDB version with data, the MySQL version that takes it and its port. */
+  lines: { mariadb: string; mysql: string; port: number; done: boolean }[];
+  error: string | null;
+  /** The dump of the step that failed. */
+  dump: string | null;
+  /** data\db\mariadb.pre-mysql, while it is there. */
+  kept: string | null;
+  keptBytes: number;
+}
+
+export const SAMPLE_MIGRATION: DbMigration = {
+  state: "none",
+  lines: [],
+  error: null,
+  dump: null,
+  kept: null,
+  keptBytes: 0,
+};
+
+export function dbMigration(): Promise<DbMigration> {
+  return query<DbMigration>("db_migration", SAMPLE_MIGRATION);
+}
+
+/** Tries the move again; answers when it ends. */
+export function dbMigrationRetry(): Promise<DbMigration> {
+  return query<DbMigration>("db_migration_retry", SAMPLE_MIGRATION);
+}
+
+/** Deletes the MariaDB data kept after the move (asked by the user). */
+export function dbMigrationDropKept(): Promise<DbMigration> {
+  return query<DbMigration>("db_migration_drop_kept", SAMPLE_MIGRATION);
 }
 
 export interface ProjectDb {
-  engine: "mariadb" | "mongodb";
+  /** `mysql` for every SQL server (D-117). */
+  engine: "mysql" | "mongodb";
   database: string;
   user: string;
   password: string;
@@ -125,7 +166,7 @@ export interface ProjectDb {
 
 export interface ProjectDatabases {
   dbs: ProjectDb[];
-  /** "mariadb", "mongodb", "sqlite" the project seems to use. */
+  /** "mysql", "mongodb", "sqlite" the project seems to use. */
   detected: string[];
   envExists: boolean;
   envIgnored: boolean;
@@ -150,7 +191,7 @@ export interface EnvChange {
 const SAMPLE_PROJECT_DATABASES: ProjectDatabases = {
   dbs: [
     {
-      engine: "mariadb",
+      engine: "mysql",
       database: "negozio_online",
       user: "negozio_online",
       password: "5be1c0d29a7f4e8b93c6d2a1f0e47b58",
@@ -159,11 +200,11 @@ const SAMPLE_PROJECT_DATABASES: ProjectDatabases = {
       url: "mysql://negozio_online:5be1c0d29a7f4e8b93c6d2a1f0e47b58@127.0.0.1:3306/negozio_online",
     },
   ],
-  detected: ["mariadb", "sqlite"],
+  detected: ["mysql", "sqlite"],
   envExists: true,
   envIgnored: true,
   versions: {
-    mariadb: { chosen: null, server: "12.3", lines: ["12.3", "11.4"] },
+    mysql: { chosen: null, server: "9.7", lines: ["9.7", "8.4"] },
     mongodb: { chosen: null, server: null, lines: [] },
   },
 };
@@ -198,14 +239,14 @@ export function projectEnvApply(project: string, engine: ProjectDb["engine"]): P
 /** A copy of a project's database (data\projects\<project>\private\backups, D-78). */
 export interface Backup {
   file: string;
-  engine: "mariadb" | "mongodb";
+  engine: "mysql" | "mongodb";
   size: number;
 }
 
 export function projectBackups(project: string): Promise<Backup[]> {
   return query<Backup[]>(
     "project_backups",
-    [{ file: "negozio_online-20261014-171500.sql", engine: "mariadb", size: 48211 }],
+    [{ file: "negozio_online-20261014-171500.sql", engine: "mysql", size: 48211 }],
     { project },
   );
 }
