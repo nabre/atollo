@@ -36,7 +36,7 @@ fn arch_follows_env_rule() {
 #[test]
 fn root_is_exe_folder_with_odd_names() {
     for name in [
-        "Atollo",
+        "My Atollo",
         "kit (2)",
         "a&b",
         "percent%20",
@@ -141,12 +141,12 @@ fn appimage_only_from_inside_its_mount() {
 #[test]
 fn app_translocation_is_refused_on_macos() {
     let moved = Path::new(
-        "/private/var/folders/xy/abc/T/AppTranslocation/0A1B-2C/d/Atollo.app/Contents/MacOS/Atollo",
+        "/private/var/folders/xy/abc/T/AppTranslocation/0A1B-2C/d/My Atollo.app/Contents/MacOS/Atollo",
     );
-    assert_eq!(translocated_bundle(moved).as_deref(), Some("Atollo.app"));
+    assert_eq!(translocated_bundle(moved).as_deref(), Some("My Atollo.app"));
     let text = launch_problem(Os::Darwin, moved, "it").unwrap();
     assert!(
-        text.contains("xattr -dr com.apple.quarantine 'Atollo.app'"),
+        text.contains("xattr -dr com.apple.quarantine 'My Atollo.app'"),
         "{text}"
     );
     // Always quoted, so that a crafted name cannot run anything.
@@ -557,7 +557,7 @@ fn the_editor_watcher_is_safe_off_windows() {
 fn folders_that_break_the_editor_watcher() {
     assert_eq!(watcher_unsafe_folder(Path::new(r"E:\Atollo")), None);
     assert_eq!(
-        watcher_unsafe_folder(Path::new(r"E:\Atollo (1) & co")),
+        watcher_unsafe_folder(Path::new(r"E:\My Atollo (1) & co")),
         None
     );
     assert_eq!(

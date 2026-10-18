@@ -105,10 +105,7 @@ fn program_temp_decision_table() {
             Path::new(r"C:\Users\me\AppData\Local\Temp\Atollo\abc"),
         )
     } else {
-        (
-            Path::new("/media/u/Kit/data"),
-            Path::new("/tmp/Atollo/abc"),
-        )
+        (Path::new("/media/u/Kit/data"), Path::new("/tmp/Atollo/abc"))
     };
     let in_kit = data.join("tmp").join("system");
     let in_sys = host.join("system");

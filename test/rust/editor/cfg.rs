@@ -181,7 +181,7 @@ fn linux_profiles_bash_of_the_system_no_cmd() {
     assert!(s.get("terminal.integrated.profiles.windows").is_none());
     assert_eq!(
         shown(&s, "terminal.integrated.profiles.linux"),
-        ["Claude Code", "Atollo - Bash"]
+        ["Atollo - Bash", "Claude Code"]
     );
     let p = &s["terminal.integrated.profiles.linux"];
     assert_eq!(p["Atollo - Bash"]["path"], "/bin/bash");
@@ -223,10 +223,10 @@ fn macos_profiles_pwsh_default_zsh_and_agy() {
         shown(&s, "terminal.integrated.profiles.osx"),
         [
             "Antigravity",
-            "Codex",
             "Atollo",
             "Atollo - Bash",
-            "Atollo - zsh"
+            "Atollo - zsh",
+            "Codex"
         ]
     );
     let p = &s["terminal.integrated.profiles.osx"];

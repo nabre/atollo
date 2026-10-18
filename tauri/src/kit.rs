@@ -404,7 +404,7 @@ impl Kit {
     /// `data\`) and the disk of the root. Without them the kit works as before:
     /// every temporary file in `data\tmp`.
     ///
-    /// A `TEMP` that is already the kit's (a Atollo.exe started from a kit
+    /// A `TEMP` that is already the kit's (an Atollo.exe started from a kit
     /// console without `CP_HOST_TEMP`) is not the host's: inside the root it
     /// is ignored, inside `Atollo\<id>` it is taken back to its base.
     pub fn with_host(mut self, host_temp: Option<&Path>) -> Kit {

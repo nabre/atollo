@@ -21,8 +21,8 @@ fn initialization_with_the_same_case_rule_everywhere() {
 #[test]
 fn paths_in_option_files() {
     assert_eq!(
-        cnf_path(Os::Win32, Path::new(r"E:\Atollo\data\db\mysql\8.4")),
-        r#""E:/Atollo/data/db/mysql/8.4""#
+        cnf_path(Os::Win32, Path::new(r"E:\My Atollo\data\db\mysql\8.4")),
+        r#""E:/My Atollo/data/db/mysql/8.4""#
     );
     assert_eq!(
         cnf_path(Os::Linux, Path::new("/media/u/kit #1/data")),

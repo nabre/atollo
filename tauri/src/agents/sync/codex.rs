@@ -1,7 +1,6 @@
 //! Codex `config.toml`: kit blocks at the top (settings) and at the end (MCP
 //! servers, trusted folders); the user's text in between is kept as it is
-//! (port of `codex.js`, same block markers, so files of nabre/atollo read
-//! the same).
+//! (port of `codex.js`, same block layout).
 
 use std::collections::BTreeSet;
 use std::fs;

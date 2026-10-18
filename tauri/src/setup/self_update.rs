@@ -1,5 +1,5 @@
 //! New versions of the app (DECISIONS.md D-20), from the `app-v*` releases
-//! of nabre/atollo.
+//! of nabre/atollo2.
 //!
 //! - check: the newest `app-vX.Y.Z` release (no drafts or pre-releases)
 //!   newer than this app, with this system's asset ([`asset_name`]);

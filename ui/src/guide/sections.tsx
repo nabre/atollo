@@ -238,7 +238,7 @@ function TopicOverview({
             {tr(
               "Tutti i percorsi nei file di configurazione sono ricalcolati dinamicamente ad ogni avvio a partire dalla posizione corrente di Atollo.exe. Se la chiavetta passa da D:\\ a E:\\ su un altro PC, tutto continua a funzionare.",
               "All paths in configuration files are dynamically recomputed on every startup from Atollo.exe's location. If the drive changes from D:\\ to E:\\ on another PC, everything keeps working seamlessly.",
-              "Tous les chemins des fichiers de configuration sont recalculés dynamiquement à chaque démarrage depuis l'emplacement de Atollo.exe. Si la clé passe de D:\\ à E:\\ sur un autre PC, tout continue de fonctionner.",
+              "Tous les chemins des fichiers de configuration sont recalculés dynamiquement à chaque démarrage depuis l'emplacement d'Atollo.exe. Si la clé passe de D:\\ à E:\\ sur un autre PC, tout continue de fonctionner.",
               "Alle Pfade in Konfigurationsdateien werden bei jedem Start dynamisch aus dem Speicherort von Atollo.exe neu berechnet. Wechselt das Laufwerk an einem anderen PC von D:\\ zu E:\\, funktioniert alles nahtlos weiter.",
             )}
           </GuideCard>
@@ -668,7 +668,7 @@ function TopicLifecycle({ onNavigate }: { onNavigate: (page: AppPageTarget) => v
                   {tr(
                     "Individua la cartella di Atollo.exe, crea le sottocartelle mancanti in data\\ e scrive i file shim (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
                     "Detects Atollo.exe's folder, creates any missing subfolders under data\\ and writes shim files (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
-                    "Détecte le dossier de Atollo.exe, crée les sous-dossiers manquants dans data\\ et écrit les fichiers shim (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
+                    "Détecte le dossier d'Atollo.exe, crée les sous-dossiers manquants dans data\\ et écrit les fichiers shim (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
                     "Ermittelt den Ordner von Atollo.exe, erstellt fehlende Unterordner in data\\ und schreibt die Shim-Dateien (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
                   )}
                 </span>,
@@ -2296,7 +2296,7 @@ function TopicFeatToolsCli({ onNavigate }: { onNavigate: (page: AppPageTarget) =
         title={tr(
           "Interfaccia a riga di comando (CLI) di Atollo.exe",
           "Atollo.exe Command-Line Interface (CLI)",
-          "Interface en ligne de commande (CLI) de Atollo.exe",
+          "Interface en ligne de commande (CLI) d'Atollo.exe",
           "Befehlszeilenschnittstelle (CLI) von Atollo.exe",
         )}
       >
