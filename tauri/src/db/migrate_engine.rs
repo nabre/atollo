@@ -4,12 +4,15 @@
 //! For each version of MariaDB with data (`data\db\mariadb\<line>`), one at
 //! a time, the version of the server first: started on its own port (the
 //! sites' one) and made read-only for the projects' users, the
-//! databases dumped (`mariadb-dump --routines --events --triggers`, the
-//! server's own databases, users included, left out), the dump filtered
-//! for MySQL (`filter`), a MySQL version started aside on a port of its
-//! own, the projects' users created with their passwords of `db.json`,
-//! the dump restored, then databases, tables, views, routines, triggers,
-//! events and the rows of every table compared. Then the switch, last:
+//! databases dumped one by one (`mariadb-dump --routines --events
+//! --triggers`, the server's own databases, users included, left out),
+//! each dump filtered for MySQL (`filter`, which stops rather than guess),
+//! a MySQL version started aside on a port of its own, the projects' users
+//! created with their passwords of `db.json`, each dump restored by an
+//! account that reaches its database only (the project's user, or one made
+//! for the restore and dropped after: never `root`), then databases,
+//! tables, views, routines, triggers, events and the rows of every table
+//! compared. Then the switch, last:
 //! MariaDB and the MySQL used aside stop, `services.json`, `secrets.json`
 //! and the projects' `db.json` are copied (`<file>.pre-mysql`) and
 //! rewritten (`mariadb` → `mysql`, MySQL on MariaDB's ports),
@@ -60,11 +63,19 @@ pub trait Servers {
     /// SQL as the administrator; `query` returns the rows, tab separated.
     fn sql(&self, engine: DbEngine, line: &str, sql: &str) -> Result<()>;
     fn query(&self, engine: DbEngine, line: &str, sql: &str) -> Result<String>;
-    /// MariaDB's `databases` dumped into `to`.
-    fn dump(&self, line: &str, databases: &[String], to: &Path) -> Result<()>;
-    /// The file `from` read by MySQL's client as the administrator, its
-    /// own commands off.
-    fn restore(&self, line: &str, from: &Path) -> Result<()>;
+    /// MariaDB's `database` alone dumped into `to` (no `CREATE DATABASE`,
+    /// no `USE`).
+    fn dump(&self, line: &str, database: &str, to: &Path) -> Result<()>;
+    /// The file `from` read by MySQL's client into `database`, logged in as
+    /// `user` (who reaches that database only), its own commands off.
+    fn restore(
+        &self,
+        line: &str,
+        database: &str,
+        user: &str,
+        password: &str,
+        from: &Path,
+    ) -> Result<()>;
     /// After the switch: MySQL `line` on its own port, for the sites.
     fn serve(&self, line: &str) -> Result<()>;
 }
@@ -277,6 +288,43 @@ pub fn sql_name(value: &str) -> String {
     format!("`{}`", value.replace('`', "``"))
 }
 
+/// ` CHARACTER SET x COLLATE y` of a database from MariaDB's
+/// `default_character_set_name`, `default_collation_name` (a `--batch`
+/// row), in MySQL's names; nothing for what is not a plain name.
+pub fn charset_of(row: &str) -> String {
+    let plain = |s: &str| {
+        !s.is_empty()
+            && s.chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+    };
+    let mut cols = row.trim().split('\t').map(|c| {
+        let c = c.trim().to_ascii_lowercase();
+        filter::mysql_name(&c).unwrap_or(c)
+    });
+    match (cols.next(), cols.next()) {
+        (Some(cs), Some(co)) if plain(&cs) && plain(&co) => {
+            format!(" CHARACTER SET {cs} COLLATE {co}")
+        }
+        (Some(cs), _) if plain(&cs) => format!(" CHARACTER SET {cs}"),
+        _ => String::new(),
+    }
+}
+
+/// SQL for the account that restores the database `database` and nothing
+/// else (a database no project owns), dropped after: `_` and `%` of the
+/// name are not wildcards in the GRANT.
+pub fn restore_account_sql(user: &str, password: &str, database: &str) -> String {
+    let pattern = sql_name(&database.replace('_', "\\_").replace('%', "\\%"));
+    let mut sql = String::new();
+    for host in ["localhost", "127.0.0.1"] {
+        sql.push_str(&format!(
+            "CREATE USER '{user}'@'{host}' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+             GRANT ALL PRIVILEGES ON {pattern}.* TO '{user}'@'{host}';\n"
+        ));
+    }
+    sql
+}
+
 /// The projects' databases on MariaDB, by name: (project, password).
 fn project_users(kit: &Kit) -> BTreeMap<String, (String, String)> {
     let engine = DbEngine::MariaDb.id();
@@ -448,26 +496,54 @@ fn move_line(
             .into_iter()
             .filter(|d| !SYSTEM.iter().any(|x| x.eq_ignore_ascii_case(d)))
             .collect();
-    if let Some(bad) = databases.iter().find(|d| d.starts_with('-')) {
-        bail!("MariaDB {line}: the database {bad} has a name the dump cannot take");
+    if let Some(bad) = databases
+        .iter()
+        .find(|d| d.starts_with('-') || d.contains('\\'))
+    {
+        bail!("MariaDB {line}: the database {bad} has a name the move cannot take");
+    }
+    // A dump made with NO_BACKSLASH_ESCAPES ends strings where the filter
+    // would not (`filter`): refused, never guessed.
+    let modes = s.query(
+        DbEngine::MariaDb,
+        line,
+        "SELECT @@GLOBAL.sql_mode, @@SESSION.sql_mode;\n",
+    )?;
+    if modes.to_ascii_uppercase().contains("NO_BACKSLASH_ESCAPES") {
+        bail!(
+            "MariaDB {line} runs with NO_BACKSLASH_ESCAPES in its sql_mode: its dump cannot be \
+             read safely; remove that mode from MariaDB's my.ini, then the move is tried again"
+        );
     }
     let dumps = dumps_dir(kit);
     fs::create_dir_all(&dumps)?;
-    let raw = dumps.join(format!("{line}.sql"));
-    let filtered = dumps.join(format!("{line}.mysql.sql"));
-    if !databases.is_empty() {
+    // One dump per database, named by its place (a database's name may not
+    // be a file's); `<line>.txt` says which is which.
+    let index: String = databases
+        .iter()
+        .enumerate()
+        .map(|(i, d)| format!("{i}\t{d}\n"))
+        .collect();
+    fs::write(dumps.join(format!("{line}.txt")), index)?;
+    let mut files = Vec::new();
+    for (i, d) in databases.iter().enumerate() {
+        let raw = dumps.join(format!("{line}.{i}.sql"));
+        let filtered = dumps.join(format!("{line}.{i}.mysql.sql"));
         state.dump = Some(raw.display().to_string());
-        write_through(&raw, |to| s.dump(line, &databases, to)).context("mariadb-dump")?;
+        write_through(&raw, |to| s.dump(line, d, to))
+            .with_context(|| format!("mariadb-dump {d}"))?;
         write_through(&filtered, |to| {
             let input = BufReader::new(fs::File::open(&raw)?);
             let output = std::io::BufWriter::new(fs::File::create(to)?);
-            let report = filter::filter_dump(input, output)?;
+            let report = filter::filter_dump(input, output, Some(d))?;
             crate::log::info(&format!(
-                "mariadb {line}: dump filtered for MySQL: {report:?}"
+                "mariadb {line}: dump of {d} filtered for MySQL: {report:?}"
             ));
             Ok(())
-        })?;
+        })
+        .with_context(|| format!("the dump of {d}"))?;
         state.dump = Some(filtered.display().to_string());
+        files.push(filtered);
     }
     if !s.start(DbEngine::MySql, &mysql)? {
         undo.mysql_started.insert(mysql.clone());
@@ -497,18 +573,50 @@ fn move_line(
     }
     line_mut(state, line)?.restored = databases.clone();
     save(kit, state)?;
+    for (d, file) in databases.iter().zip(&files) {
+        // The database first, with MariaDB's character set and collation.
+        let charset = s.query(
+            DbEngine::MariaDb,
+            line,
+            &format!(
+                "SELECT default_character_set_name, default_collation_name \
+                 FROM information_schema.schemata WHERE schema_name = {};\n",
+                sql_str(d)
+            ),
+        )?;
+        s.sql(
+            DbEngine::MySql,
+            &mysql,
+            &format!("CREATE DATABASE {}{};\n", sql_name(d), charset_of(&charset)),
+        )?;
+        // Restored by an account that reaches this database only: the
+        // project's user, or one made for the restore and dropped after.
+        // Whatever the dump holds, it cannot touch another database, an
+        // account or the server.
+        let restored = match users.get(&d.to_ascii_lowercase()) {
+            Some((name, pw)) => {
+                s.sql(DbEngine::MySql, &mysql, &auth::mysql_project_sql(name, pw))
+                    .with_context(|| format!("MySQL {mysql}: the user {name}"))?;
+                s.restore(&mysql, d, name, pw, file)
+            }
+            None => {
+                let user = format!("dkmove_{}", &auth::new_password()?[..8]);
+                let pw = auth::new_password()?;
+                s.sql(DbEngine::MySql, &mysql, &restore_account_sql(&user, &pw, d))?;
+                let done = s.restore(&mysql, d, &user, &pw, file);
+                s.sql(
+                    DbEngine::MySql,
+                    &mysql,
+                    &format!("DROP USER IF EXISTS '{user}'@'localhost', '{user}'@'127.0.0.1';\n"),
+                )?;
+                done
+            }
+        };
+        restored.with_context(|| format!("restore of {d} on MySQL"))?;
+    }
     if databases.is_empty() {
         return Ok(());
     }
-    // The projects' users first: the dump's views and triggers name them
-    // as definers.
-    for d in &databases {
-        if let Some((name, pw)) = users.get(&d.to_ascii_lowercase()) {
-            s.sql(DbEngine::MySql, &mysql, &auth::mysql_project_sql(name, pw))
-                .with_context(|| format!("MySQL {mysql}: the user {name}"))?;
-        }
-    }
-    s.restore(&mysql, &filtered).context("restore on MySQL")?;
     verify(s, line, &mysql, &databases)?;
     crate::log::info(&format!(
         "mariadb {line}: {} databases copied to MySQL {mysql} and checked",

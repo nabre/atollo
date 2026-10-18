@@ -15,7 +15,20 @@
 //! - the table options of Aria `PAGE_CHECKSUM=n`, `TRANSACTIONAL=n` and
 //!   `ROW_FORMAT=PAGE` go, `ENGINE=Aria` is `ENGINE=InnoDB`;
 //! - the `sql_mode` of routines and triggers keeps only the modes MySQL
-//!   knows (MariaDB's default has `NO_AUTO_CREATE_USER`, gone in 8.0).
+//!   knows (MariaDB's default has `NO_AUTO_CREATE_USER`, gone in 8.0);
+//! - `DEFINER=…` clauses go: each database is restored by its own account
+//!   (`migrate_engine`), which becomes the definer, as the project's user
+//!   already is.
+//!
+//! **Fail closed.** The filter's idea of where a string ends must be
+//! MySQL's, or text it takes for data would run as SQL. So it stops
+//! ([`Uncertain`]) instead of guessing: `NO_BACKSLASH_ESCAPES` anywhere (a
+//! `\` would then end a string here and not there), a string, a name or a
+//! comment still open at the end of a line outside a `DELIMITER` block
+//! (`mariadb-dump` writes every row on one line, newlines escaped), a
+//! MariaDB comment over two lines, a `DEFINER` it cannot read, anything
+//! open at the end of the dump. The restore runs with an account that
+//! reaches that database only, so even a miss stays inside it.
 //!
 //! What is left that MySQL still refuses stops the restore, and the
 //! migration with it: MariaDB stays as it was (`migrate_engine`).
@@ -33,6 +46,7 @@ pub struct Report {
     pub table_options: usize,
     pub engines: usize,
     pub sql_modes: usize,
+    pub definers: usize,
 }
 
 /// The dump has sequences, which MySQL does not have (`database.name`).
@@ -53,6 +67,27 @@ impl std::fmt::Display for Sequences {
 }
 
 impl std::error::Error for Sequences {}
+
+/// The filter cannot tell for sure where the dump's strings and comments
+/// end (line `line`): it stops rather than guess.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Uncertain {
+    pub line: usize,
+    pub what: String,
+}
+
+impl std::fmt::Display for Uncertain {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "line {} of the dump: {}; the move to MySQL stops rather than guess \
+             (the dump is kept: move that database by hand)",
+            self.line, self.what
+        )
+    }
+}
+
+impl std::error::Error for Uncertain {}
 
 /// The modes of `sql_mode` MySQL 8.4 and 9.x know.
 const MYSQL_MODES: [&str; 21] = [
@@ -115,6 +150,10 @@ pub struct Filter {
     name: Vec<u8>,
     /// A `sql_mode` string being read.
     mode: Option<Vec<u8>>,
+    /// The client's statement end (`DELIMITER ;;` around routines).
+    delimiter: Vec<u8>,
+    /// Why the filter stops ([`Uncertain`]).
+    problem: Option<String>,
     pub report: Report,
 }
 
@@ -131,6 +170,8 @@ impl Default for Filter {
             sequences: Vec::new(),
             name: Vec::new(),
             mode: None,
+            delimiter: b";".to_vec(),
+            problem: None,
             report: Report::default(),
         }
     }
@@ -182,6 +223,18 @@ pub fn mysql_sql_mode(value: &str) -> String {
 }
 
 impl Filter {
+    /// A filter for the dump of `database` alone (no `USE` in it).
+    pub fn for_database(database: &str) -> Filter {
+        Filter {
+            database: Some(database.to_owned()),
+            ..Filter::default()
+        }
+    }
+
+    fn stop(&mut self, what: &str) {
+        self.problem.get_or_insert_with(|| what.to_owned());
+    }
+
     fn qualified(&self, name: &str) -> String {
         match &self.database {
             Some(db) => format!("{db}.{name}"),
@@ -208,6 +261,16 @@ impl Filter {
     /// One line of the dump, without its end; None: the line goes (it held
     /// only what MariaDB alone runs).
     pub fn line(&mut self, line: &[u8]) -> Option<Vec<u8>> {
+        let outside = self.quote.is_none() && !self.plain_comment && !self.mariadb_comment;
+        if outside {
+            let text = String::from_utf8_lossy(line);
+            let trimmed = text.trim_start();
+            if trimmed.len() > 10 && trimmed[..10].eq_ignore_ascii_case("DELIMITER ") {
+                self.delimiter = trimmed[10..].trim().as_bytes().to_vec();
+                self.words.clear();
+                return Some(line.to_vec());
+            }
+        }
         let mut out: Vec<u8> = Vec::with_capacity(line.len());
         let mut dropped = false;
         let mut i = 0;
@@ -314,6 +377,14 @@ impl Filter {
                 }
             }
         }
+        // `mariadb-dump` writes a row on one line (newlines escaped): only a
+        // routine's body, between `DELIMITER ;;` lines, goes on over lines.
+        if self.mariadb_comment {
+            self.stop("a MariaDB comment /*M! over more lines");
+        }
+        if self.delimiter == b";" && (self.quote.is_some() || self.plain_comment) {
+            self.stop("a string, a quoted name or a comment open at the end of the line");
+        }
         if dropped {
             let rest = String::from_utf8_lossy(&out);
             let rest = rest.trim();
@@ -358,6 +429,9 @@ impl Filter {
                 self.quote = None;
                 if let Some(m) = self.mode.take() {
                     let value = String::from_utf8_lossy(&m).into_owned();
+                    if value.to_ascii_uppercase().contains("NO_BACKSLASH_ESCAPES") {
+                        self.stop("sql_mode with NO_BACKSLASH_ESCAPES");
+                    }
                     let kept = mysql_sql_mode(&value);
                     if kept != value {
                         self.report.sql_modes += 1;
@@ -451,6 +525,24 @@ impl Filter {
                     return i;
                 }
             }
+            "DEFINER" => {
+                let mut j = i;
+                while line.get(j) == Some(&b' ') {
+                    j += 1;
+                }
+                if line.get(j) == Some(&b'=') {
+                    match account_end(line, j + 1) {
+                        Some(end) => {
+                            while out.last() == Some(&b' ') {
+                                out.pop();
+                            }
+                            self.report.definers += 1;
+                            return end;
+                        }
+                        None => self.stop("a DEFINER the filter cannot read"),
+                    }
+                }
+            }
             _ => {}
         }
         match self.expect {
@@ -498,13 +590,69 @@ impl Filter {
     }
 }
 
+/// Where the account of a `DEFINER=` that starts at `from` ends:
+/// `name@host`, each part quoted (with doubled quotes) or plain, or
+/// `CURRENT_USER[()]`; None when it is anything else.
+fn account_end(line: &[u8], from: usize) -> Option<usize> {
+    let skip = |mut j: usize| {
+        while line.get(j) == Some(&b' ') {
+            j += 1;
+        }
+        j
+    };
+    let part = |j: usize| -> Option<usize> {
+        let q = *line.get(j)?;
+        if matches!(q, b'`' | b'\'' | b'"') {
+            let mut k = j + 1;
+            loop {
+                match line.get(k) {
+                    Some(c) if *c == q && line.get(k + 1) == Some(&q) => k += 2,
+                    Some(c) if *c == q => return Some(k + 1),
+                    // A `\` would make MySQL and the filter disagree.
+                    Some(b'\\') | None => return None,
+                    Some(_) => k += 1,
+                }
+            }
+        }
+        let mut k = j;
+        while line
+            .get(k)
+            .is_some_and(|c| is_word(*c) || matches!(c, b'.' | b'-' | b'%'))
+        {
+            k += 1;
+        }
+        (k > j).then_some(k)
+    };
+    let j = skip(from);
+    if starts(line, j, b"CURRENT_USER") {
+        let k = j + 12;
+        return Some(if starts(line, k, b"()") { k + 2 } else { k });
+    }
+    let user = part(j)?;
+    let at = skip(user);
+    if line.get(at) != Some(&b'@') {
+        return None;
+    }
+    part(skip(at + 1))
+}
+
 /// Filters the whole dump from `input` into `output`, keeping each line's
-/// end (`\n` or `\r\n`). Fails with [`Sequences`] when the dump has any, after
-/// reading all of it (every sequence is named).
-pub fn filter_dump(mut input: impl BufRead, mut output: impl Write) -> Result<Report> {
-    let mut filter = Filter::default();
+/// end (`\n` or `\r\n`); `database`: the dump of that database alone (no
+/// `USE`). Fails with [`Sequences`] when the dump has any, after reading
+/// all of it (every sequence is named), and with [`Uncertain`] at once.
+pub fn filter_dump(
+    mut input: impl BufRead,
+    mut output: impl Write,
+    database: Option<&str>,
+) -> Result<Report> {
+    let mut filter = match database {
+        Some(d) => Filter::for_database(d),
+        None => Filter::default(),
+    };
     let mut buf = Vec::new();
+    let mut number = 0;
     loop {
+        number += 1;
         buf.clear();
         if input.read_until(b'\n', &mut buf)? == 0 {
             break;
@@ -516,10 +664,25 @@ pub fn filter_dump(mut input: impl BufRead, mut output: impl Write) -> Result<Re
         } else {
             (&buf[..], b"")
         };
-        if let Some(line) = filter.line(body) {
+        let line = filter.line(body);
+        if let Some(what) = filter.problem.take() {
+            return Err(Uncertain { line: number, what }.into());
+        }
+        if let Some(line) = line {
             output.write_all(&line)?;
             output.write_all(end)?;
         }
+    }
+    if filter.quote.is_some()
+        || filter.plain_comment
+        || filter.mariadb_comment
+        || filter.exec_comment
+    {
+        return Err(Uncertain {
+            line: number,
+            what: "a string, a quoted name or a comment open at the end of the dump".to_owned(),
+        }
+        .into());
     }
     output.flush()?;
     if !filter.sequences.is_empty() {
