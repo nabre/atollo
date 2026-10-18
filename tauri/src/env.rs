@@ -124,8 +124,9 @@ pub fn node_options(kit: &Kit) -> String {
     )
 }
 
-/// The computed environment. Keys are unique ignoring case.
-#[derive(Debug, Clone, Default)]
+/// The computed environment. Keys are unique ignoring case. Its `Debug`
+/// shows secrets masked ([`masked`]).
+#[derive(Clone, Default)]
 pub struct KitEnv {
     vars: BTreeMap<String, String>,
     /// `data\tmp` when the programs' temp is in the kit on a disk with
@@ -135,6 +136,19 @@ pub struct KitEnv {
     /// `data/kit/shims` on the PATH (macOS, Linux): `create_dirs` writes
     /// its `python` there ([`PYTHON_SHIM`]).
     shims: Option<PathBuf>,
+}
+
+/// Never a token or a key in a log or a panic message.
+impl std::fmt::Debug for KitEnv {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let vars: BTreeMap<&str, String> = self.iter().map(|(k, v)| (k, masked(k, v))).collect();
+        f.debug_struct("KitEnv")
+            .field("vars", &vars)
+            .field("private_tmp", &self.private_tmp)
+            .field("path_sep", &self.path_sep)
+            .field("shims", &self.shims)
+            .finish()
+    }
 }
 
 /// `python` on macOS and Linux, where the kit's Python has only `python3`
@@ -812,6 +826,9 @@ impl KitEnv {
         if net.allow_lan {
             env.set("ATOLLO_ALLOW_LAN", "1");
         }
+        // Claude Code's token saved in the kit (D-115): every program of
+        // the kit gets it, terminals and editor too.
+        crate::agents::claude_token::apply_in(&data, &mut env);
         // The versions preferred for the kit instead of the default folders.
         crate::versions::apply_kit_choice(kit, &mut env);
         env
@@ -1138,13 +1155,37 @@ fn subdirs_starting_with(dir: &Path, prefix: &str) -> impl Iterator<Item = PathB
     dirs.into_iter()
 }
 
+/// A variable whose name looks secret (`*_TOKEN`, `*_KEY`, `*SECRET*`,
+/// `*PASSWORD*`, `*PASSWD*`, `tkn`), ignoring case.
+pub fn is_secret(name: &str) -> bool {
+    const SECRET: [&str; 5] = ["KEY", "TOKEN", "SECRET", "PASSWORD", "PASSWD"];
+    let upper = name.to_ascii_uppercase();
+    SECRET.iter().any(|s| upper.contains(s)) || upper == "TKN"
+}
+
+/// `value` of the variable `name` as it may be shown (`Atollo env`,
+/// logs): `***` for a secret name ([`is_secret`]), the password of a URL
+/// (`http://user:pass@proxy:8080`) masked in any other.
+pub fn masked(name: &str, value: &str) -> String {
+    if is_secret(name) {
+        return "***".into();
+    }
+    let Some(scheme) = value.find("://").map(|i| i + 3) else {
+        return value.to_owned();
+    };
+    let rest = &value[scheme..];
+    let host_end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
+    match rest[..host_end].rfind('@') {
+        Some(at) => {
+            let user = rest[..at].split(':').next().unwrap_or_default();
+            format!("{}{user}:***{}", &value[..scheme], &rest[at..])
+        }
+        None => value.to_owned(),
+    }
+}
+
 /// Replaces the values of variables whose name looks secret, for logs.
 pub fn mask_secrets(text: &str) -> String {
-    const SECRET: [&str; 4] = ["KEY", "TOKEN", "SECRET", "PASSWORD"];
-    let is_secret = |name: &str| {
-        let upper = name.to_ascii_uppercase();
-        SECRET.iter().any(|s| upper.contains(s)) || upper == "TKN"
-    };
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while let Some(eq) = rest.find('=') {

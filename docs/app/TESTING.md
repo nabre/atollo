@@ -99,6 +99,12 @@ dbus-run-session -- sh -c 'echo | gnome-keyring-daemon --unlock --components=sec
 
 Con `keyring.json` che contiene `gemini:antigravity` e un nome di Windows (`jetski:other`), dopo `restore` e `save` il Secret Service è vuoto e `keyring.json` ha tutte e due le voci. Senza Secret Service la copia in chiaro si scrive solo sul disco di Linux (600), mai su `/mnt/<lettera>`.
 
+La collezione `login` (D-115, issue #6) con la prova ignorata `real_secret_service_login_collection`, due volte, ognuna con un `XDG_DATA_HOME` vuoto: con `echo | gnome-keyring-daemon --unlock --components=secrets` (c'è `login`) la voce di `agy` va in `/org/freedesktop/secrets/collection/login`, si rilegge e si cancella; con `gnome-keyring-daemon --start --components=secrets` (nessun portachiavi `login`) la scrittura fallisce con `NO_LOGIN_COLLECTION` e non resta nulla.
+
+```
+XDG_DATA_HOME=$(mktemp -d) dbus-run-session -- sh -c 'echo | gnome-keyring-daemon --unlock --components=secrets; cargo test real_secret_service_login_collection -- --ignored --nocapture'
+```
+
 **Kit condiviso fra Windows e WSL.** PHP 8.5 installato da Windows e da WSL nella stessa cartella del kit, nei due ordini: `data/php/8.5/php.ini` con le 12 righe `extension=` e `data/php/linux-x64/8.5/php.ini` senza nessuna; `php -v` su Linux senza «Unable to load». phpMyAdmin 5.2.3 sul PHP 8.5.8 di static-php-cli: `index.php` 200, nessun avviso con `E_ALL`.
 
 **Preparazione da Windows** (D-114). `Atollo.exe prepare --target linux-x64 --only git` dice `(bootstrap linux-x64)`; sul target il primo avvio, o `prepare --only git`, scrive «bootstrap pre-downloaded» e `git clone https://…` funziona. In WSL: `prepare --only cc` senza Zig non mette `CC`/`CXX` né `cc/bin` nel PATH; `prepare --only zig,cc` dà `CC=…/cc/bin/cc` e un hello in C si compila con `make` ed esegue.
@@ -190,7 +196,8 @@ Stack web e database:
 - [ ] **MySQL su Ubuntu 24.04** senza `libaio1` (solo `libaio1t64`): il server parte; senza `libnuma1` l'errore dice `sudo apt install libaio1t64 libnuma1`.
 
 Accessi e pacchetto:
-- [ ] **Antigravity e Claude Code** collegati su un Mac (Claude con «Collega con un token»), kit portato su un altro Mac: già collegati; nel Portachiavi del primo non resta nulla.
+- [ ] **Antigravity e Claude Code** collegati su un Mac (Claude con «Collega con un token»), kit portato su un altro Mac: già collegati; nel Portachiavi del primo non resta nulla. Con il token, `claude` parte collegato anche da un terminale e dall'editor del kit, e `Atollo env` mostra `CLAUDE_CODE_OAUTH_TOKEN=***`; dopo «Esci» un terminale nuovo non ha più la variabile.
+- [ ] **Antigravity su Linux con KeePassXC o KWallet** senza una collezione `login`: nessuna voce spostata, avviso «no "login" collection»; con GNOME `agy` trova l'accesso.
 - [ ] **Antigravity su Linux** con un Secret Service bloccato: nessuna voce spostata, avviso; senza Secret Service e kit su exFAT: rifiutato.
 - [ ] **Rilasci** (D-119, #5): su un Mac pulito `Atollo-darwin-<arch>.app.zip` scaricato con il browser, estratto su una chiavetta exFAT, aperto seguendo il README (`xattr -dr com.apple.quarantine`); senza quel passo l'avvio si ferma con il comando. AppImage avviata da exFAT su Ubuntu 24.04, Fedora 42 e Debian 13; senza FUSE `./Atollo-linux-<arch>.AppImage --appimage-extract-and-run`; il `tar.gz` con WebKitGTK 4.1. Aggiornamento dell'app da una versione di prova a un'altra su macOS e Linux (il `tar.gz` dice che la versione nuova va scaricata a mano).
 

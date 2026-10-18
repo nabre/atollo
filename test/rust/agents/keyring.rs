@@ -168,6 +168,9 @@ struct Fake {
     /// The sealing key is not this one (a "before" file of another
     /// computer): sealed secrets cannot be opened.
     other_key: bool,
+    /// The Secret Service's collections (object paths), as the real
+    /// `write` chooses among them ([`login_collection`]); `None`: any.
+    collections: Option<&'static [&'static str]>,
 }
 
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -227,6 +230,9 @@ impl Store for Fake {
         }
         if self.refuse == Some(item.target.as_str()) {
             anyhow::bail!("{}: not written", item.target);
+        }
+        if let Some(paths) = self.collections {
+            login_collection(paths.iter().copied())?;
         }
         self.clock.set(self.clock.get() + 1);
         let mut items = self.items.borrow_mut();
@@ -641,6 +647,82 @@ fn locked_store_fails_closed() {
     assert!(!pending(&kit) && !f.starting.exists());
 }
 
+/// The collection agy's sign-in goes into: `login` by its object path,
+/// whatever `default` is and wherever it sits; never another one.
+#[test]
+fn secret_service_login_collection_only() {
+    const BASE: &str = "/org/freedesktop/secrets/collection/";
+    assert_eq!(LOGIN_COLLECTION, format!("{BASE}login"));
+    // GNOME: `login` (also the `default` alias), `session`.
+    assert_eq!(
+        login_collection([
+            "/org/freedesktop/secrets/collection/session",
+            "/org/freedesktop/secrets/collection/login",
+        ])
+        .unwrap(),
+        1
+    );
+    // KWallet with a `login` collection next to the default `kdewallet`.
+    assert_eq!(
+        login_collection([
+            "/org/freedesktop/secrets/collection/kdewallet",
+            "/org/freedesktop/secrets/collection/login",
+        ])
+        .unwrap(),
+        1
+    );
+    // KeePassXC (a database `Passwords` as `default`), or nothing at all:
+    // fail closed, never `default` nor a collection named like login.
+    for paths in [
+        &[
+            "/org/freedesktop/secrets/collection/Passwords",
+            "/org/freedesktop/secrets/aliases/default",
+        ][..],
+        &[
+            "/org/freedesktop/secrets/collection/login2",
+            "/org/freedesktop/secrets/collection/Login",
+            "/org/freedesktop/secrets/collection/login/x",
+        ][..],
+        &[][..],
+    ] {
+        let e = login_collection(paths.iter().copied()).unwrap_err();
+        assert_eq!(e.to_string(), NO_LOGIN_COLLECTION);
+    }
+}
+
+/// A Secret Service without a `login` collection: the restore fails with
+/// the warning, the kit's sign-in stays in the kit and nothing of this
+/// computer is sealed into it.
+#[test]
+fn no_login_collection_fails_closed() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item(T, "kit")]).unwrap();
+    let store = Fake {
+        collections: Some(&["/org/freedesktop/secrets/collection/Passwords"]),
+        only: Some(UNIX_ONLY),
+        ..Fake::default()
+    };
+    let e = restore_checked(&kit, &store, Os::Linux, |_| Some(0o100600)).unwrap_err();
+    assert!(format!("{e:#}").contains(NO_LOGIN_COLLECTION));
+    assert!(store.items.borrow().is_empty(), "nothing written");
+    assert!(!f.seen.exists() && !f.starting.exists() && !pending(&kit));
+    assert_eq!(store.forgot.get(), 1, "no sealing key left behind");
+    assert_eq!(read(&f.store).len(), 1, "the kit's copy untouched");
+
+    // With `login` the same restore moves it.
+    let store = Fake {
+        collections: Some(&[
+            "/org/freedesktop/secrets/collection/Passwords",
+            "/org/freedesktop/secrets/collection/login",
+        ]),
+        only: Some(UNIX_ONLY),
+        ..Fake::default()
+    };
+    restore_checked(&kit, &store, Os::Linux, |_| Some(0o100600)).unwrap();
+    assert_eq!(store.secret_of(T).as_deref(), Some("kit"));
+}
+
 /// No sealing key for this computer's own sign-in: an error, and neither
 /// its secret nor the kit's sign-in is written anywhere (fail closed, as
 /// DPAPI).
@@ -767,6 +849,49 @@ fn kit_copy_is_private() {
     save_file(&f.store, &[item(T, "kit")]).unwrap();
     let mode = fs::metadata(&f.store).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode, 0o600);
+}
+
+/// The real Secret Service of Linux (`--ignored`, TESTING.md). With a
+/// `login` collection agy's sign-in is written there, as go-keyring reads
+/// it, listed back and deleted; without one nothing is written anywhere.
+/// Refuses to run where agy is signed in already.
+#[cfg(all(unix, not(target_os = "macos")))]
+#[test]
+#[ignore = "needs a Secret Service (TESTING.md)"]
+fn real_secret_service_login_collection() {
+    use dbus_secret_service::{EncryptionType, SecretService};
+    let (_tmp, kit) = kit();
+    let store = System::of(&kit);
+    assert!(store.list().unwrap().is_empty(), "agy signed in here");
+    let blob = base64::engine::general_purpose::STANDARD.encode(b"kit-secret");
+    let item = Item {
+        blob: Some(blob.clone()),
+        ..item(T, "")
+    };
+    let ss = SecretService::connect(EncryptionType::Plain).unwrap();
+    let all = ss.get_all_collections().unwrap();
+    let paths: Vec<&str> = all.iter().map(|c| &*c.path).collect();
+    eprintln!("collections: {paths:?}");
+    let Ok(at) = login_collection(paths.iter().copied()) else {
+        let e = store.write(&item, PERSIST_SESSION).unwrap_err();
+        assert_eq!(format!("{e:#}"), NO_LOGIN_COLLECTION);
+        assert!(store.list().unwrap().is_empty(), "nothing written");
+        return;
+    };
+    store.write(&item, PERSIST_SESSION).unwrap();
+    let found = all[at]
+        .search_items(std::collections::HashMap::from([
+            ("service", "gemini"),
+            ("username", "antigravity"),
+        ]))
+        .unwrap();
+    assert_eq!(found.len(), 1, "one item, in login");
+    assert_eq!(found[0].get_secret().unwrap(), b"kit-secret");
+    let listed = store.list().unwrap();
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].blob.as_deref(), Some(blob.as_str()));
+    store.delete(T);
+    assert!(store.list().unwrap().is_empty());
 }
 
 /// The real Credential Manager, with a test-only name: restore puts the

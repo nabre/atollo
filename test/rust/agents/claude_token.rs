@@ -37,37 +37,53 @@ fn tokens() {
     );
 }
 
-/// With the file, `CLAUDE_CODE_OAUTH_TOKEN` in Claude Code's environment;
-/// without it (or after "Esci") nothing.
+/// The kit's environment (`KitEnv::build`) of `kit`.
+fn kit_env(kit: &Kit) -> KitEnv {
+    KitEnv::build(
+        kit,
+        &crate::settings::Settings::default(),
+        "en",
+        &crate::env::Host::from_pairs(std::iter::empty()),
+    )
+}
+
+/// With the file, `CLAUDE_CODE_OAUTH_TOKEN` in the kit's environment, so
+/// in every program of the kit (terminals, editor, the Agents page);
+/// without it (or after "Esci") nothing. Never in `Atollo env` nor in
+/// `KitEnv`'s `Debug`.
 #[test]
 fn environment_with_and_without_token() {
     let tmp = TempDir::new("claude-token");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let mut env = KitEnv::default();
-    apply(&kit, &mut env);
-    assert_eq!(env.get(VAR), None);
+    assert_eq!(kit_env(&kit).get(VAR), None);
     assert_eq!(read(&kit), None);
 
     assert!(save(&kit, "not a token").is_err());
     save(&kit, &format!("  {}\n", sample())).unwrap();
     assert_eq!(read(&kit), Some(sample()));
-    apply(&kit, &mut env);
+    let env = kit_env(&kit);
     assert_eq!(env.get(VAR), Some(sample().as_str()));
+    let mut printed = Vec::new();
+    crate::cli::print_env(&env, &mut printed).unwrap();
+    let printed = String::from_utf8(printed).unwrap();
+    assert!(printed.contains(&format!("{VAR}=***\n")));
+    assert!(!printed.contains(PREFIX));
+    assert!(!format!("{env:?}").contains(PREFIX));
+    assert!(!format!("{env:#?}").contains(PREFIX));
 
     // A file edited by hand into something else is ignored.
     std::fs::write(path(&kit), "garbage").unwrap();
+    assert_eq!(kit_env(&kit).get(VAR), None);
     let mut other = KitEnv::default();
-    apply(&kit, &mut other);
+    apply_in(&kit.data(), &mut other);
     assert_eq!(other.get(VAR), None);
 
     save(&kit, &sample()).unwrap();
     remove(&kit).unwrap();
     assert!(!path(&kit).exists());
     remove(&kit).unwrap();
-    let mut after = KitEnv::default();
-    apply(&kit, &mut after);
-    assert_eq!(after.get(VAR), None);
+    assert_eq!(kit_env(&kit).get(VAR), None);
 }
 
 #[cfg(unix)]
