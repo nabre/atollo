@@ -471,13 +471,14 @@ jobs:
           [ -d "$kit/data" ] && [ -d "$kit/projects" ] || { echo "no kit next to Atollo.app" >&2; ls -la "$kit"; exit 1; }
           # Nothing written inside the bundle (its signature).
           codesign --verify --strict "$app"
-      # Runtime libraries only (no -dev packages): what a user installs for
-      # the tar.gz. The AppImage carries its own.
+      # Only the runtime the README names for the tar.gz (no -dev packages),
+      # so the ldd check below holds the README to it; xvfb and xauth for
+      # the virtual display. The AppImage carries its own libraries.
       - name: System packages (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xvfb xauth libwebkit2gtk-4.1-0 libgtk-3-0t64 libayatana-appindicator3-1 libxdo3
+          sudo apt-get install -y --no-install-recommends xvfb xauth libwebkit2gtk-4.1-0
       - name: Smoke test (Linux)
         if: runner.os == 'Linux'
         run: |
