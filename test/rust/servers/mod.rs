@@ -17,7 +17,7 @@ use super::process::{
 use super::*;
 use crate::detect::{set_site_with_options, SiteKind, SiteOptions};
 use crate::env::KitEnv;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::{tests::TempDir, Arch, Os};
 use crate::os::jobs::{self, Job};
 use crate::projects::alias;
 use crate::projects::fastcgi::FcgiAddr;
@@ -561,7 +561,15 @@ fn save_profile_takes_the_port_of_a_gone_pool() {
 #[test]
 fn apache_pool_conf_has_default_vhost_first() {
     let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\nServerRoot \"${SRVROOT}\"\r\n";
-    let conf = apache_pool_conf(base, Path::new(r"C:\kit\data\servers\p"), 8081, true).unwrap();
+    let conf = apache_pool_conf(
+        base,
+        Path::new(r"C:\kit\data\servers\p"),
+        8081,
+        true,
+        Os::Win32,
+        None,
+    )
+    .unwrap();
     let default = conf
         .find("<VirtualHost *:8081>\r\n    ServerName localhost\r\n    DocumentRoot \"${SRVROOT}/htdocs\"\r\n</VirtualHost>")
         .expect("default vhost");
@@ -584,7 +592,15 @@ fn apache_pool_conf_has_default_vhost_first() {
 #[test]
 fn apache_pool_conf_refuses_foreign_hosts() {
     let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\nServerRoot \"${SRVROOT}\"\r\n";
-    let conf = apache_pool_conf(base, Path::new(r"C:\kit\data\servers\p"), 8081, false).unwrap();
+    let conf = apache_pool_conf(
+        base,
+        Path::new(r"C:\kit\data\servers\p"),
+        8081,
+        false,
+        Os::Win32,
+        None,
+    )
+    .unwrap();
     let refused = conf
         .find("<VirtualHost *:8081>\r\n    ServerName refused.invalid\r\n    <Location \"/\">\r\n        Require all denied")
         .expect("refusing vhost");
@@ -1434,6 +1450,145 @@ fn apache_pool_reload_twice() {
     assert!(wait_port_released(port, Duration::from_secs(5)));
 }
 
+/// D-116 acceptance with a real Apache and PHP (ATOLLO_TEST_KIT; php-fpm
+/// off Windows, the module on Windows): a pool with two PHP sites and an
+/// alias to another project's folder, hidden files and other hosts
+/// refused, Drupal's `sites/default/files/.htaccess` keeping PHP off in its
+/// folder, and a third site after a reload (a restart for Apache).
+#[test]
+fn apache_pool_two_php_sites_alias_and_reload() {
+    let Some((kit, env, port)) = real_apache() else {
+        return;
+    };
+    let kit = kit.with_host(Some(&std::env::temp_dir()));
+    if !Catalog::get()
+        .find("php")
+        .is_some_and(|c| c.is_installed(&kit))
+    {
+        eprintln!("php not installed: skipped");
+        return;
+    }
+    crate::setup::kit_files::write_all(&kit).unwrap();
+    let id = "d116-apache-pool";
+    let projects = kit.projects();
+    let site = |name: &str, extra: &str| {
+        let public = projects.join(name).join("public");
+        fs::create_dir_all(&public).unwrap();
+        fs::write(
+            public.join("index.php"),
+            format!("<?php echo 'PHP ' . PHP_VERSION . ' {name} ' . $_SERVER['REQUEST_URI'];"),
+        )
+        .unwrap();
+        fs::write(public.join(".env"), "SECRET=1").unwrap();
+        fs::write(
+            projects.join(name).join("panel.json"),
+            format!(
+                r#"{{ "actions": [ {{ "id": "site", "apache": "public", "server": "{id}"{extra} }} ] }}"#
+            ),
+        )
+        .unwrap();
+    };
+    site(
+        "d116-alpha",
+        r#", "aliases": { "/shared": "@d116-beta/assets" }"#,
+    );
+    site("d116-beta", "");
+    fs::create_dir_all(projects.join("d116-beta").join("assets")).unwrap();
+    fs::write(
+        projects.join("d116-beta").join("assets").join("logo.txt"),
+        "beta asset",
+    )
+    .unwrap();
+    // SEC-V4-01: an uploaded script and `.htaccess` in an alias' folder.
+    fs::write(
+        projects
+            .join("d116-beta")
+            .join("assets")
+            .join("shell.phtml"),
+        "<?php echo 'RAN' . 'ALIAS';",
+    )
+    .unwrap();
+    fs::write(
+        projects.join("d116-beta").join("assets").join("pic.jpg"),
+        "<?php echo 'RAN' . 'JPG';",
+    )
+    .unwrap();
+    fs::write(
+        projects.join("d116-beta").join("assets").join(".htaccess"),
+        "AddHandler application/x-httpd-php .jpg\nAddType application/x-httpd-php .jpg\n<FilesMatch \"\\.phtml$\">\n  Require all granted\n  Allow from all\n</FilesMatch>\n",
+    )
+    .unwrap();
+    // Drupal's protection of its uploads folder (its own `.htaccess`).
+    let files = projects.join("d116-beta").join("public").join("files");
+    fs::create_dir_all(&files).unwrap();
+    fs::write(
+        files.join(".htaccess"),
+        "SetHandler Drupal_Security_Do_Not_Remove_See_SA_2006_006\nOptions None\nOptions +FollowSymLinks\n<Files *>\n  SetHandler Drupal_Security_Do_Not_Remove_See_SA_2006_006\n</Files>\n<IfModule mod_php.c>\n  php_flag engine off\n</IfModule>\n",
+    )
+    .unwrap();
+    fs::write(files.join("up.php"), "<?php echo 'RAN' . 'PHP';").unwrap();
+    let servers = WebServers::new(kit.clone());
+    real_profile(&servers, id, port);
+    let result = (|| -> Result<()> {
+        servers.start(id, &env, "en")?;
+        let (s, body) = http_get(port, "d116-alpha.localhost", "/x.php")?;
+        eprintln!("missing script: {s}");
+        anyhow::ensure!(s == 404, "a missing .php: {s} {body}");
+        let (s, body) = http_get(port, "d116-alpha.localhost", "/index.php?x=1")?;
+        eprintln!("alpha: {s} {body}");
+        anyhow::ensure!(
+            s == 200 && body.contains("d116-alpha /index.php?x=1"),
+            "alpha"
+        );
+        let (s, body) = http_get(port, "d116-beta.localhost", "/")?;
+        eprintln!("beta: {s} {body}");
+        anyhow::ensure!(s == 200 && body.contains("PHP 8.") && body.contains("d116-beta"));
+        let (s, body) = http_get(port, "d116-alpha.localhost", "/shared/logo.txt")?;
+        eprintln!("alias: {s} {body}");
+        anyhow::ensure!(s == 200 && body.contains("beta asset"), "alias");
+        let (s, body) = http_get(port, "d116-alpha.localhost", "/shared/shell.phtml")?;
+        eprintln!("alias script: {s}");
+        anyhow::ensure!(
+            s == 403 && !body.contains("RANALIAS"),
+            "a script in an alias: {s} {body}"
+        );
+        let (s, body) = http_get(port, "d116-alpha.localhost", "/shared/pic.jpg")?;
+        eprintln!("alias .htaccess handler: {s} {body}");
+        anyhow::ensure!(
+            !body.contains("RANJPG"),
+            "a .htaccess handler in an alias ran PHP"
+        );
+        let (s, _) = http_get(port, "d116-alpha.localhost", "/.env")?;
+        anyhow::ensure!(s == 403, ".env: {s}");
+        let (s, _) = http_get(port, "evil.example", "/")?;
+        anyhow::ensure!(s == 403, "other host: {s}");
+        let (s, body) = http_get(port, "d116-beta.localhost", "/files/up.php")?;
+        eprintln!("drupal files: {s} {body}");
+        anyhow::ensure!(!body.contains("RANPHP"), "PHP ran in Drupal's files folder");
+        site("d116-gamma", "");
+        servers.invalidate();
+        servers.reload(id, &env, "en")?;
+        let (s, body) = http_get(port, "d116-gamma.localhost", "/")?;
+        eprintln!("gamma: {s} {body}");
+        anyhow::ensure!(
+            s == 200 && body.contains("d116-gamma"),
+            "gamma after the reload"
+        );
+        let (s, body) = http_get(port, "d116-alpha.localhost", "/")?;
+        anyhow::ensure!(
+            s == 200 && body.contains("d116-alpha"),
+            "alpha after the reload: {s}"
+        );
+        Ok(())
+    })();
+    servers.stop(id);
+    drop_real_profile(&kit, &servers, id);
+    for p in ["d116-alpha", "d116-beta", "d116-gamma"] {
+        let _ = fs::remove_dir_all(projects.join(p));
+    }
+    result.unwrap();
+}
+
 /// `GET path` with `Host: host` on 127.0.0.1:`port`: the status and the body.
 fn http_get(port: u16, host: &str, path: &str) -> Result<(u16, String)> {
     use std::io::{Read, Write};
@@ -2135,4 +2290,34 @@ fn automatic_pools_come_back_from_their_ids() {
     assert_eq!(pool.server_line.as_deref(), Some("1.26"));
     assert_eq!(pool.php_line.as_deref(), Some("8.3"));
     assert!(!pool.manual);
+}
+
+/// D-116: an Apache pool off Windows has PHP through its php-fpm and its
+/// run-time files in the pool's folder.
+#[test]
+fn apache_pool_conf_off_windows() {
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\nServerRoot \"${SRVROOT}\"\n";
+    let fcgi = FastCgi::tcp(9002, "k");
+    let conf = apache_pool_conf(
+        base,
+        Path::new("/kit/data/servers/p"),
+        8090,
+        false,
+        Os::Linux,
+        Some(&fcgi),
+    )
+    .unwrap();
+    assert!(conf.contains("DefaultRuntimeDir \"/kit/data/servers/p\""));
+    assert!(conf.contains("SetHandler \"proxy:fcgi://127.0.0.1:9002\""));
+    assert!(!conf.contains("php8apache2_4.dll"));
+    let none = apache_pool_conf(
+        base,
+        Path::new("/kit/data/servers/p"),
+        8090,
+        false,
+        Os::Linux,
+        None,
+    )
+    .unwrap();
+    assert!(!none.contains("SetHandler") && none.contains("<IfModule !php_module>"));
 }

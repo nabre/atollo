@@ -5,14 +5,15 @@
 //! Caddy is the web server proposed on every system (D-111): it reads
 //! no `.htaccess`, and gets the rules of a front controller instead
 //! (`projects/caddy.rs`), which is what the stock `.htaccess` of WordPress
-//! and Laravel say (Drupal's denies more). Apache is proposed too only on Windows (the only
-//! system with the kit's Apache) and only for a project whose `.htaccess`
-//! has rules of its own: then it comes first.
+//! and Laravel say (Drupal's denies more). Apache is proposed too where the
+//! catalog has it (D-116: every system once the kit's macOS and Linux build
+//! is pinned) and only for a project whose `.htaccess` has rules of its
+//! own: then it comes first.
 
 use std::path::Path;
 
 use super::{exists, list_dir, php_server, read, read_json, tr, Action, Found, Kind};
-use crate::kit::Os;
+use crate::kit::Target;
 
 /// The CMS with a database: the kit's MariaDB in `requires` (`mod.rs`).
 pub(super) const CMS: [&str; 5] = ["WordPress", "PrestaShop", "Drupal", "Joomla", "TYPO3"];
@@ -72,11 +73,19 @@ pub fn htaccess_has_own_rules(text: &str) -> bool {
         .any(|l| !KNOWN_RULES.contains(&l.to_ascii_lowercase().as_str()))
 }
 
-/// Apache is proposed for a PHP project on `os`: only Windows has the
-/// kit's Apache, and only one of the `htaccess` texts has rules of its own
+/// The catalog has Apache for `target` (D-116: Windows, and macOS and
+/// Linux once the kit's build is pinned there).
+pub fn apache_available(target: Target) -> bool {
+    crate::setup::catalog::Catalog::get()
+        .find("apache")
+        .is_some_and(|c| c.is_available_on(target))
+}
+
+/// Apache is proposed for a PHP project on `target`: where the catalog has
+/// it, and only when one of the `htaccess` texts has rules of its own
 /// (Caddy serves the others as they are).
-pub fn apache_offered(os: Os, htaccess: &[String]) -> bool {
-    os.is_windows() && htaccess.iter().any(|t| htaccess_has_own_rules(t))
+pub fn apache_offered(target: Target, htaccess: &[String]) -> bool {
+    apache_available(target) && htaccess.iter().any(|t| htaccess_has_own_rules(t))
 }
 
 /// The texts of the `.htaccess` files of the project in `dir` whose site is
@@ -195,9 +204,10 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     let has_htaccess = exists(dir, ".htaccess")
         || (root != "." && exists(dir, &format!(r"{root}\.htaccess")))
         || !nested.is_empty();
-    // Rules of its own Caddy cannot read: Apache first, on Windows.
-    let with_apache = apache_offered(Os::current(), &htaccess_texts(dir, root))
-        || (Os::current().is_windows() && !nested.is_empty());
+    // Rules of its own Caddy cannot read: Apache first, where it is.
+    let host = Target::detect();
+    let with_apache = apache_offered(host, &htaccess_texts(dir, root))
+        || (apache_available(host) && !nested.is_empty());
     if !nested.is_empty() {
         let mut shown_files = nested
             .iter()

@@ -483,10 +483,23 @@ impl WebServers {
                 }
                 env.set("CP_APACHE", apache_dir.display().to_string());
                 env.set("CP_APACHE_FWD", fwd(&apache_dir));
-                let conf_path = self.write_pool_configs(&pool, None, lan)?;
+                // Off Windows PHP is php-fpm (D-116), started and watched as
+                // Caddy's; on Windows the Apache module, no FastCGI server.
+                let (fcgi, php) = if pool.php_line.is_some() && !self.kit.os().is_windows() {
+                    match spawn_fastcgi(&self.kit, &env, &job, &pool_dir, &pool.id) {
+                        (None, _) => bail!("PHP's FastCGI server did not start (see the log)"),
+                        started => started,
+                    }
+                } else {
+                    (None, None)
+                };
+                let conf_path = self.write_pool_configs(&pool, fcgi.as_ref(), lan)?;
                 let mut cmd = jobs::kit_command(&exe, &env);
-                cmd.arg("-f").arg(&conf_path);
-                (cmd, None, None)
+                cmd.arg("-f")
+                    .arg(&conf_path)
+                    .args(apache::foreground_args(self.kit.os()));
+                caddy::with_key(&mut cmd, fcgi.as_ref());
+                (cmd, fcgi, php)
             }
             WebServerEngine::Nginx => {
                 let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
