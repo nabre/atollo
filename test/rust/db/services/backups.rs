@@ -36,10 +36,15 @@ fn copies_in_the_private_folder() {
         .iter()
         .map(|b| (b.file.as_str(), b.engine.as_str()))
         .collect();
+    // A `.sql` copy is for the project's SQL server: MySQL on a new kit,
+    // MariaDB where the project's database is (D-110).
     assert_eq!(
         names,
-        [("shop-2.archive.gz", "mongodb"), ("shop-1.sql", "mariadb")]
+        [("shop-2.archive.gz", "mongodb"), ("shop-1.sql", "mysql")]
     );
+    crate::db::auth::set_project_password(s.kit(), "shop", "mariadb", "pw").unwrap();
+    let engines: Vec<String> = s.backups("shop").into_iter().map(|b| b.engine).collect();
+    assert_eq!(engines, ["mongodb", "mariadb"]);
     assert!(s.backups("other").is_empty(), "one folder per project");
 
     // no server: export fails before writing anything

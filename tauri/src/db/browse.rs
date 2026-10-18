@@ -71,7 +71,7 @@ pub struct Rows {
 fn system_db(engine: DbEngine, name: &str) -> bool {
     let own = engine.system_databases();
     match engine {
-        DbEngine::MariaDb => own.iter().any(|n| n.eq_ignore_ascii_case(name)),
+        DbEngine::MariaDb | DbEngine::MySql => own.iter().any(|n| n.eq_ignore_ascii_case(name)),
         DbEngine::MongoDb => own.contains(&name),
     }
 }
@@ -223,7 +223,7 @@ pub fn tree(services: &Services, engine: &str, line: Option<&str>) -> Result<Vec
     let engine = DbEngine::parse(engine)?;
     let mut out: Vec<Database> = Vec::new();
     match engine {
-        DbEngine::MariaDb => {
+        DbEngine::MariaDb | DbEngine::MySql => {
             for row in json_lines(&run_sql(services, engine, line, MARIADB_TREE)?)? {
                 let db = row["db"].as_str().unwrap_or_default().to_owned();
                 if out.last().is_none_or(|d| d.name != db) {
@@ -300,7 +300,7 @@ pub fn rows(
 ) -> Result<Rows> {
     let engine = DbEngine::parse(engine)?;
     match engine {
-        DbEngine::MariaDb => {
+        DbEngine::MariaDb | DbEngine::MySql => {
             let sql = format!(
                 "SELECT JSON_OBJECT('c', COLUMN_NAME, 'k', DATA_TYPE, 'ct', COLUMN_TYPE) \
                  FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = {} AND TABLE_NAME = {} \

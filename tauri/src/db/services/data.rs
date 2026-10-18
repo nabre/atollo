@@ -1,6 +1,7 @@
 //! The data of each version a server runs, `data\db\<id>\<line>` (D-81):
-//! created at the first start, copied forward from an older version, moved
-//! from the single folder of an older kit.
+//! created at the first start (MySQL with `mysqld --initialize-insecure`
+//! and the kit's `my.cnf`, `mysql.rs`), copied forward from an older
+//! version, moved from the single folder of an older kit.
 
 use std::fs;
 use std::path::PathBuf;
@@ -10,8 +11,8 @@ use anyhow::{bail, Context, Result};
 
 #[cfg(test)]
 use super::bin;
-use super::tools::run_tool;
-use super::{auth, bin_at, client_at, server_line, Services};
+use super::tools::{run_logged, run_tool};
+use super::{auth, bin_at, client_at, line_dir, log_path, mysql, server_line, Services};
 use crate::db::DbEngine;
 use crate::env::KitEnv;
 use crate::kit::Kit;
@@ -37,13 +38,20 @@ pub fn data_dir_at(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
     }
 }
 
-/// The data of a version that has it yet (MariaDB's `mysql`, MongoDB's
-/// `WiredTiger`).
+/// The data of a version that has it yet (MariaDB's `mysql`, MySQL's data
+/// dictionary `mysql.ibd`, MongoDB's `WiredTiger`).
 fn has_data(engine: DbEngine, dir: &std::path::Path) -> bool {
     match engine {
         DbEngine::MariaDb => dir.join("mysql").is_dir(),
+        DbEngine::MySql => dir.join("mysql.ibd").is_file(),
         DbEngine::MongoDb => dir.join("WiredTiger").is_file(),
     }
+}
+
+/// The kit has data of `engine` (`data\db\<id>` with something in it): for
+/// MariaDB, kept on the Database page of a kit that has it (D-110).
+pub(super) fn has_any_data(kit: &Kit, engine: DbEngine) -> bool {
+    fs::read_dir(data_root(kit, engine.id())).is_ok_and(|mut d| d.next().is_some())
 }
 
 /// The data of `line` the first time it starts: a copy of that of the
@@ -75,10 +83,11 @@ pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Resul
     let Some((key, from)) = older.pop() else {
         return Ok(None);
     };
-    // MariaDB opens the data of any older version; MongoDB only that of the
-    // same or the previous major.
+    // MariaDB opens the data of any older version, MySQL that of the LTS
+    // before (the kit's lines are LTS: 8.4 to 9.7) and upgrades it at its
+    // first start; MongoDB only that of the same or the previous major.
     let one_major_at_a_time = match engine {
-        DbEngine::MariaDb => false,
+        DbEngine::MariaDb | DbEngine::MySql => false,
         DbEngine::MongoDb => true,
     };
     if one_major_at_a_time
@@ -164,6 +173,46 @@ impl Services {
     ) -> Result<(PathBuf, bool)> {
         let data = data_dir_at(&self.kit, engine.id(), line);
         let fresh = !has_data(engine, &data);
+        if engine == DbEngine::MySql {
+            let basedir = line_dir(&self.kit, engine.component(), line);
+            let kit = &self.kit;
+            mysql::ensure_server_libs(kit.os(), kit.arch(), &basedir)?;
+            if fresh {
+                // `--initialize` wants a folder that is missing or empty: the
+                // kit's own my.cnf of a failed start goes; anything else is
+                // never removed (it may be someone's data).
+                if data.is_dir() {
+                    let _ = fs::remove_file(data.join("my.cnf"));
+                    if fs::read_dir(&data)?.next().is_some() {
+                        bail!(
+                            "{}: not a MySQL data folder (no mysql.ibd) and not empty: \
+                             move its files away, then start MySQL again",
+                            data.display()
+                        );
+                    }
+                    fs::remove_dir(&data)?;
+                }
+                if let Some(parent) = data.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                let mut cmd = jobs::kit_command(
+                    bin_at(kit, engine.component(), line, engine.server_bin()),
+                    env,
+                );
+                cmd.args(mysql::init_args(&basedir, &data));
+                let log = log_path(kit, engine.id(), line);
+                run_logged(cmd, &log, Duration::from_secs(300))
+                    .context("mysqld --initialize-insecure")?;
+            }
+            fs::create_dir_all(&data)?;
+            let fallback = std::env::temp_dir();
+            let socket = mysql::socket_path(kit.os(), &data, port, &fallback);
+            let cnf = mysql::server_cnf(kit.os(), &basedir, &data, port, socket.as_deref());
+            if fs::read_to_string(data.join("my.cnf")).ok().as_deref() != Some(cnf.as_str()) {
+                crate::fsx::write_atomic(&data.join("my.cnf"), cnf.as_bytes())?;
+            }
+            return Ok((data, fresh));
+        }
         match engine.install_db_bin() {
             Some(install) if fresh => {
                 // mariadb-install-db wants a folder that does not exist yet.
@@ -205,6 +254,12 @@ impl Services {
                 crate::log::info(&format!(
                     "mariadb {line}: data of {from}; run mariadb-upgrade to update the system tables"
                 ));
+                return;
+            }
+            // MySQL upgrades the data dictionary and the system tables
+            // itself at the first start of the new version.
+            DbEngine::MySql => {
+                crate::log::info(&format!("mysql {line}: data of {from} upgraded"));
                 return;
             }
             DbEngine::MongoDb => {}

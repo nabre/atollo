@@ -34,6 +34,74 @@ const FILES: &[(&str, &str)] = &[
     ("bin/gradle", include_str!("../../../runtime/bin/gradle")),
 ];
 
+/// The MySQL programs the kit's terminal reaches logged in as `root`
+/// (D-110), with MariaDB's program of the same use for a kit without MySQL.
+pub const MYSQL_LAUNCHERS: [(&str, &str); 3] = [
+    ("mysql", "mariadb"),
+    ("mysqldump", "mariadb-dump"),
+    ("mysqladmin", "mariadb-admin"),
+];
+
+/// `bin\<stem>.cmd`: MySQL's `<stem>.exe` of `%CP_MYSQL%` with the kit's
+/// login (`%ATOLLO_MYSQL_CNF%`, read after the other option files: it wins
+/// over MariaDB's `my.ini` in `MYSQL_HOME`), or MariaDB's `mariadb` program
+/// when the kit has no MySQL (its login comes from `MYSQL_HOME`, as
+/// before). Jumps instead of blocks: `%*` inside parentheses breaks on a
+/// `)` of the arguments.
+pub fn mysql_launcher_cmd(stem: &str, mariadb: &str) -> String {
+    format!(
+        "@echo off\r\n\
+         rem Atollo: {stem} of the kit's MySQL logged in as root with data\\app\\db\\mysql.cnf,\r\n\
+         rem or MariaDB's {mariadb} on a kit without MySQL.\r\n\
+         setlocal\r\n\
+         if not exist \"%CP_MYSQL%\\bin\\{stem}.exe\" goto mariadb\r\n\
+         if not exist \"%ATOLLO_MYSQL_CNF%\" goto bare\r\n\
+         \"%CP_MYSQL%\\bin\\{stem}.exe\" \"--defaults-extra-file=%ATOLLO_MYSQL_CNF%\" %*\r\n\
+         exit /b %ERRORLEVEL%\r\n\
+         :bare\r\n\
+         \"%CP_MYSQL%\\bin\\{stem}.exe\" %*\r\n\
+         exit /b %ERRORLEVEL%\r\n\
+         :mariadb\r\n\
+         if not exist \"%CP_MARIADB%\\bin\\{mariadb}.exe\" goto none\r\n\
+         \"%CP_MARIADB%\\bin\\{mariadb}.exe\" %*\r\n\
+         exit /b %ERRORLEVEL%\r\n\
+         :none\r\n\
+         echo MySQL is not installed: Tools ^> Databases 1>&2\r\n\
+         exit /b 1\r\n"
+    )
+}
+
+/// `bin/<stem>`: the same as [`mysql_launcher_cmd`] for sh (macOS, Linux,
+/// Git Bash).
+pub fn mysql_launcher_sh(stem: &str, mariadb: &str) -> String {
+    format!(
+        "#!/bin/sh\n\
+         # Atollo: {stem} of the kit's MySQL logged in as root (data/app/db/mysql.cnf),\n\
+         # or MariaDB's {mariadb} on a kit without MySQL.\n\
+         if [ -x \"$CP_MYSQL/bin/{stem}\" ]; then\n\
+         \x20   if [ -f \"$ATOLLO_MYSQL_CNF\" ]; then\n\
+         \x20       exec \"$CP_MYSQL/bin/{stem}\" --defaults-extra-file=\"$ATOLLO_MYSQL_CNF\" \"$@\"\n\
+         \x20   fi\n\
+         \x20   exec \"$CP_MYSQL/bin/{stem}\" \"$@\"\n\
+         fi\n\
+         if [ -x \"$CP_MARIADB/bin/{mariadb}\" ]; then\n\
+         \x20   exec \"$CP_MARIADB/bin/{mariadb}\" \"$@\"\n\
+         fi\n\
+         echo \"MySQL is not installed: Tools > Databases\" >&2\n\
+         exit 1\n"
+    )
+}
+
+/// The generated files: the MySQL launchers, `.cmd` and sh.
+fn generated() -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    for (stem, mariadb) in MYSQL_LAUNCHERS {
+        out.push((format!("bin/{stem}.cmd"), mysql_launcher_cmd(stem, mariadb)));
+        out.push((format!("bin/{stem}"), mysql_launcher_sh(stem, mariadb)));
+    }
+    out
+}
+
 /// Launchers run by a Unix shell (and Git Bash): mode 755 on Unix.
 fn is_unix_bin(name: &str) -> bool {
     name.starts_with("bin/") && !name.ends_with(".cmd")
@@ -60,7 +128,12 @@ fn with_line_endings(name: &str, content: &str) -> String {
 pub fn write_all(kit: &Kit) -> Result<()> {
     let dir = kit.kit_files();
     fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
-    for (name, content) in FILES {
+    let generated = generated();
+    let all = FILES
+        .iter()
+        .map(|(n, c)| (*n, *c))
+        .chain(generated.iter().map(|(n, c)| (n.as_str(), c.as_str())));
+    for (name, content) in all {
         let path = join_rel(&dir, name);
         let content = with_line_endings(name, content);
         let is_unix_bin = is_unix_bin(name);
