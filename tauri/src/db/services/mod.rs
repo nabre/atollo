@@ -278,6 +278,25 @@ pub fn sql_engine_with(installed: impl Fn(&str) -> bool) -> DbEngine {
     }
 }
 
+/// The component a need for a SQL server installs (T3.8.8): `mariadb` or
+/// `mysql` (of phpMyAdmin's `needs`, a framework's `database`, the
+/// detection of a project, its actions, its containers) is the kit's SQL
+/// server ([`sql_engine`]), so a new kit gets MySQL and a kit that runs
+/// only MariaDB keeps it; any other need is itself. An explicit choice of
+/// a component (`prepare --only mariadb`, its card) is never resolved.
+#[allow(dead_code)] // the tests; the needs outside `db` call it (T3.8.8)
+pub fn sql_need(kit: &Kit, need: &str) -> String {
+    sql_need_with(need, |id| installed(kit, id)).to_string()
+}
+
+/// [`sql_need`] with the installed components given by `installed`.
+pub fn sql_need_with(need: &str, installed: impl Fn(&str) -> bool) -> &str {
+    match need {
+        "mariadb" | "mysql" => sql_engine_with(installed).component(),
+        other => other,
+    }
+}
+
 /// The SQL server of the project's database: the one it was created on (a
 /// password stored, MySQL first), otherwise the kit's ([`sql_engine`]).
 pub fn project_sql_engine(kit: &Kit, project: &str) -> DbEngine {

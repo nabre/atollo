@@ -285,6 +285,48 @@ fn autostart_lines_follow_the_projects() {
     assert!(auth::write_line_client_ini(&kit, "..", 3307, "pw").is_err());
 }
 
+/// T3.8.8: every catalog need for a SQL server (phpMyAdmin's `needs`, a
+/// framework's `database`, an addition's) resolves through `sql_need` to
+/// MySQL on a new kit, to MariaDB on a kit that runs only MariaDB; other
+/// needs stay as they are. The callers outside `db` (setup runner, plan,
+/// detection) are wired by the coordinator (requests of p7).
+#[test]
+fn a_new_kit_needs_mysql_for_every_sql_need() {
+    use crate::db::services::sql_need_with;
+    use crate::projects::frameworks::official;
+    use crate::setup::catalog::Catalog;
+    let mut needs: Vec<String> = Catalog::get()
+        .find("phpmyadmin")
+        .expect("phpmyadmin in the catalog")
+        .needs
+        .clone();
+    for p in official() {
+        needs.extend(p.database.clone());
+        needs.extend(p.on.values().filter_map(|v| v.database.clone()));
+    }
+    assert!(needs.iter().any(|n| n == "mariadb"), "{needs:?}");
+    let new_kit = |_: &str| false;
+    let mariadb_kit = |id: &str| id == "mariadb";
+    let both = |id: &str| id == "mariadb" || id == "mysql";
+    for need in &needs {
+        let sql = need == "mariadb" || need == "mysql";
+        let on_new = sql_need_with(need, new_kit);
+        assert_eq!(on_new, if sql { "mysql" } else { need.as_str() }, "{need}");
+        assert_ne!(on_new, "mariadb", "a new kit never gets MariaDB: {need}");
+        let on_old = sql_need_with(need, mariadb_kit);
+        assert_eq!(
+            on_old,
+            if sql { "mariadb" } else { need.as_str() },
+            "{need}"
+        );
+        assert_eq!(
+            sql_need_with(need, both),
+            if sql { "mysql" } else { need.as_str() }
+        );
+    }
+    assert_eq!(sql_need_with("mongodb", new_kit), "mongodb");
+}
+
 /// MySQL (D-110): the SQL server of a new kit, MariaDB kept where it runs;
 /// a project's SQL database stays where it is; the login of another
 /// version of MySQL reaches the project's programs.
