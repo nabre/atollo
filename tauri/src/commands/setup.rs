@@ -30,8 +30,14 @@ pub struct ComponentInfo {
     /// only, on macOS or Linux). `None` for `noArm64` on Windows ARM64,
     /// where `no_arm64` says it.
     pub unavailable_reason: Option<String>,
-    /// Components it needs (Apache needs PHP, Kotlin needs Java).
+    /// Components it needs on this kit's target (Apache needs PHP, Kotlin
+    /// needs Java; C and C++ need Zig on macOS and Linux only).
     pub needs: Vec<String>,
+    /// C and C++ on a Mac without Xcode Command Line Tools (`xcode-select
+    /// -p` fails): C and C++ work, the Apple frameworks do not (T2.3.4).
+    /// Only the Mac itself can tell: false for a kit inspected or prepared
+    /// from another system.
+    pub xcode_missing: bool,
     /// x64 only, on an ARM64 PC with Windows 10: only Windows 11 runs x64
     /// programs there (D-81). Not available.
     pub needs_windows11: bool,
@@ -106,15 +112,52 @@ pub(super) fn emulates_x64() -> bool {
     crate::os::windows_build().is_none_or(|b| b >= 22000)
 }
 
+/// The Xcode Command Line Tools are missing on this Mac, for a kit of
+/// `target`: only a darwin kit on a Mac, where `xcode-select -p` fails.
+fn xcode_missing_on_host(target: crate::kit::Target) -> bool {
+    xcode_missing(target, crate::kit::Os::current(), xcode_selected)
+}
+
+/// [`xcode_missing_on_host`] with the host's system and `xcode-select -p`
+/// given (`None`: it failed), so that every target is tested anywhere.
+pub(super) fn xcode_missing(
+    target: crate::kit::Target,
+    host: crate::kit::Os,
+    selected: impl FnOnce() -> Option<String>,
+) -> bool {
+    target.is_macos() && host.is_macos() && selected().is_none_or(|s| s.trim().is_empty())
+}
+
+/// The folder of the active developer tools (`xcode-select -p`), on a Mac.
+/// `-p` only prints: it never opens the installation dialog.
+#[cfg(target_os = "macos")]
+fn xcode_selected() -> Option<String> {
+    let out = std::process::Command::new("/usr/bin/xcode-select")
+        .arg("-p")
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()
+        .filter(|o| o.status.success())?;
+    let path = String::from_utf8_lossy(&out.stdout).trim().to_owned();
+    std::path::Path::new(&path).is_dir().then_some(path)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn xcode_selected() -> Option<String> {
+    None
+}
+
 /// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`
 /// component is not available on a Windows ARM64 kit, one with an
 /// `unavailableReason` not on this target (see [`unavailable_reason`]).
 pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
-    let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+    let choice = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
     let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
-    let locked = catalog.locked();
+    let locked = catalog.locked_on(target);
+    let xcode_missing = xcode_missing_on_host(target);
     // The order of the page, which an installation follows too.
     catalog
         .in_page_order()
@@ -146,7 +189,8 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 x64_only: c.x64_only,
                 no_arm64,
                 unavailable_reason,
-                needs: c.needs.clone(),
+                needs: c.needs_list_on(target),
+                xcode_missing: c.id == "cc" && xcode_missing,
                 needs_windows11,
                 versioned: c.versioned,
                 home: c.home.clone(),
@@ -243,7 +287,7 @@ pub fn components_apply<R: Runtime>(
         return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
     }
     let text = choice_text(&kit, &chosen);
-    let choice = Choice::parse(&text, catalog);
+    let choice = Choice::parse_on(&text, catalog, kit.target());
     choice.write(&kit, catalog).or_fail_chain("components")?;
     let opts = Options {
         target: Some(kit.target()),
@@ -259,7 +303,7 @@ pub fn components_apply<R: Runtime>(
 /// on another OS/arch must not lose it.
 pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
     let catalog = Catalog::get();
-    let saved = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+    let saved = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
     catalog
         .all()
