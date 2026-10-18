@@ -36,7 +36,7 @@ L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le pr
 
 **Resta da fare**: i bisogni SQL verso MySQL e la migrazione da MariaDB ([#3](https://github.com/nabre/atollo/issues/3)); interfaccia di Caddy, Nginx da togliere, PHP su Unix ([#4](https://github.com/nabre/atollo/issues/4)); rilasci per macOS e Linux ([#5](https://github.com/nabre/atollo/issues/5)); accessi da provare su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); griglia componente × sistema in «Strumenti» ([#7](https://github.com/nabre/atollo/issues/7)); arretrato ([#8](https://github.com/nabre/atollo/issues/8)).
 
-**Verificato**: su Windows 716 test Rust e 131 test dell'interfaccia, lint pulito, clippy pulito anche in modo incrociato sui quattro target Unix; in WSL2 708 test superati; CI verde su Windows x64 e ARM64, Linux x64 e ARM64, macOS Apple Silicon e Intel prima dell'ondata 3 (`9cc2f90`). Installazioni reali in WSL: Git, Python, Ruby, MongoDB, SQLite, PHP, MySQL, Caddy con un pool di due siti.
+**Verificato**: su Windows 716 test Rust e 131 test dell'interfaccia, lint pulito, clippy pulito anche in modo incrociato sui quattro target Unix; in WSL2 708 test superati; CI verde su Windows x64 e ARM64, Linux x64 e ARM64, macOS Apple Silicon e Intel, con `.app` e AppImage costruiti e avviati (`ae42f65`). Installazioni reali in WSL: Git, Python, Ruby, MongoDB, SQLite, PHP, MySQL, Caddy con un pool di due siti.
 
 ## phpMyAdmin al posto di Adminer (17/10/2026)
 
