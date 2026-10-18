@@ -1,6 +1,6 @@
 //! The configuration a pool writes in `data\servers\<pool_id>\` at
 //! every start or reload: Apache `httpd.conf` and VirtualHosts, Nginx
-//! `nginx.conf` and `server` blocks.
+//! `nginx.conf` and `server` blocks, Caddy's `Caddyfile` with its sites.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -13,13 +13,14 @@ use crate::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::projects::alias;
 use crate::projects::apache::{self, fwd};
+use crate::projects::caddy;
 use crate::projects::nginx::{self, FastCgi};
 use crate::setup::catalog::Catalog;
 
 use super::pools::vhost_file;
 use super::{serves, AttachedSite, WebServerEngine, WebServerPool, WebServers};
 
-/// Resolves the directory of a versioned component (`apache`, `nginx`, `php`) for `line`.
+/// Resolves the directory of a versioned component (`apache`, `nginx`, `caddy`, `php`) for `line`.
 pub(super) fn component_dir(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
     if let Some(c) = Catalog::get().find(id) {
         if let Some(dir) = crate::versions::dir_for(kit, c, line) {
@@ -228,6 +229,36 @@ pub(super) fn site_doc_root(project_root: &Path, site: &AttachedSite) -> Option<
     }
 }
 
+/// The site block of `site` in a Caddy pool on `port`: its own name and
+/// its domains, the document root `doc_root`, its checked aliases, PHP
+/// when the pool has it. `None` (in the log) when its folder cannot be
+/// written in a Caddyfile.
+pub(super) fn caddy_site_conf(
+    port: u16,
+    lan: bool,
+    doc_root: &Path,
+    aliases: &[alias::SiteAlias],
+    fcgi: Option<&FastCgi>,
+    site: &AttachedSite,
+) -> Option<Vec<String>> {
+    // The site's own ServerName first, then its domains (BUG-V3-02).
+    let mut names = vec![site.server_name.clone()];
+    for d in &site.domains {
+        let d = d.trim().to_ascii_lowercase();
+        if alias::valid_domain(&d) && !names.contains(&d) {
+            names.push(d);
+        }
+    }
+    let Some(routes) = caddy::site_routes(doc_root, aliases, fcgi, "\t") else {
+        crate::log::warn(&format!(
+            "{}: not served by Caddy, its folder cannot be written in a Caddyfile",
+            doc_root.display()
+        ));
+        return None;
+    };
+    Some(caddy::site_block(port, lan, &names, &routes))
+}
+
 impl WebServers {
     /// Writes `httpd.conf` / `nginx.conf` and the `vhosts/*.conf` of the
     /// sites of `pool` it [`serves`], but those of the sites whose project
@@ -237,6 +268,19 @@ impl WebServers {
         pool: &WebServerPool,
         fcgi: Option<&FastCgi>,
         lan: bool,
+    ) -> Result<PathBuf> {
+        self.write_pool_configs_with(pool, fcgi, lan, None)
+    }
+
+    /// [`Self::write_pool_configs`] with the admin socket of a running Caddy
+    /// (`admin`; none for the other engines, or a file written for the
+    /// next start).
+    pub(super) fn write_pool_configs_with(
+        &self,
+        pool: &WebServerPool,
+        fcgi: Option<&FastCgi>,
+        lan: bool,
+        admin: Option<&Path>,
     ) -> Result<PathBuf> {
         let detached = self
             .detached
@@ -322,6 +366,34 @@ impl WebServers {
                 }
                 let main_conf = nginx_pool_conf(&nginx_dir, &pool_dir, pool.port, lan);
                 let conf_path = pool_dir.join("nginx.conf");
+                write_atomic(&conf_path, main_conf.as_bytes())?;
+                Ok(conf_path)
+            }
+            WebServerEngine::Caddy => {
+                // One Caddyfile with every site in it: `caddy reload` takes
+                // it whole, the sites that stay go on without a pause.
+                let mut sites = Vec::new();
+                for site in served {
+                    let proj_root = self.kit.projects().join(&site.project);
+                    let Some(doc_root) = site_doc_root(&proj_root, site) else {
+                        continue;
+                    };
+                    let aliases =
+                        caddy::resolve_aliases(&proj_root, &self.kit.projects(), &site.aliases);
+                    sites.extend(caddy_site_conf(
+                        pool.port, lan, &doc_root, &aliases, fcgi, site,
+                    ));
+                }
+                let user_snippets = fs::read_dir(&conf_d_dir).is_ok_and(|entries| {
+                    entries.flatten().any(|e| {
+                        e.path()
+                            .extension()
+                            .is_some_and(|x| x.eq_ignore_ascii_case("caddy"))
+                    })
+                });
+                let main_conf =
+                    caddy::pool_conf(&pool_dir, pool.port, admin, lan, &sites, user_snippets)?;
+                let conf_path = pool_dir.join("Caddyfile");
                 write_atomic(&conf_path, main_conf.as_bytes())?;
                 Ok(conf_path)
             }

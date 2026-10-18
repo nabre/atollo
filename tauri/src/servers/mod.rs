@@ -1,4 +1,4 @@
-//! Shared Web Server pools (Apache and Nginx VirtualHost pooling):
+//! Shared Web Server pools (Apache, Nginx and Caddy VirtualHost pooling):
 //! - Automatic pools grouped by `(engine, serverLine, phpLine)` from the
 //!   projects in `projects\`, plus user-defined profiles in `data\app\servers.json`.
 //! - Each pool writes its configuration and VirtualHost files in
@@ -33,13 +33,23 @@ const LIST_TTL: Duration = Duration::from_secs(15);
 pub enum WebServerEngine {
     Apache,
     Nginx,
+    /// The kit's web server on every system (Q-3, D-111, WP-3.3).
+    Caddy,
 }
 
 impl WebServerEngine {
+    pub const ALL: [WebServerEngine; 3] = [
+        WebServerEngine::Apache,
+        WebServerEngine::Nginx,
+        WebServerEngine::Caddy,
+    ];
+
+    /// Its id, also the id of its component in the catalog.
     pub fn as_str(self) -> &'static str {
         match self {
             WebServerEngine::Apache => "apache",
             WebServerEngine::Nginx => "nginx",
+            WebServerEngine::Caddy => "caddy",
         }
     }
 
@@ -47,6 +57,22 @@ impl WebServerEngine {
         match self {
             WebServerEngine::Apache => "Apache",
             WebServerEngine::Nginx => "Nginx",
+            WebServerEngine::Caddy => "Caddy",
+        }
+    }
+
+    /// The engine of a site of a project, from the folder its action
+    /// names (`apache`, `nginx`, `caddy` in `panel.json`), with that folder.
+    pub fn of_action(action: &crate::detect::Action) -> Option<(WebServerEngine, String)> {
+        if let Some(f) = &action.apache_dir {
+            Some((WebServerEngine::Apache, f.clone()))
+        } else if let Some(f) = &action.nginx_dir {
+            Some((WebServerEngine::Nginx, f.clone()))
+        } else {
+            action
+                .caddy_dir
+                .as_ref()
+                .map(|f| (WebServerEngine::Caddy, f.clone()))
         }
     }
 }
@@ -134,6 +160,7 @@ pub struct WebServersView {
     pub pools: Vec<WebServerPool>,
     pub apache_lines: Vec<String>,
     pub nginx_lines: Vec<String>,
+    pub caddy_lines: Vec<String>,
     pub php_lines: Vec<String>,
 }
 

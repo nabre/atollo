@@ -49,14 +49,15 @@ fn fake_php(kit: &crate::kit::Kit, dir: &Path, template: &str) {
 
 /// Defect 10: one php.ini per line of PHP, from that line's template; the
 /// single php.ini of an older kit becomes the default line's, with the
-/// user's changes.
+/// user's changes. A Windows kit on every host: that php.ini only existed
+/// there (the Unix layout: `php_ini_shared_kit_both_orders`).
 #[test]
 fn one_php_ini_per_line() {
-    use crate::kit::{Arch, Kit};
+    use crate::kit::{Kit, Target};
     use crate::setup::catalog::Catalog;
 
     let tmp = TempDir::new("php-ini-lines");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
     kit.prepare().unwrap();
     let data = kit.data();
     let php = Catalog::get().find("php").unwrap();
@@ -111,6 +112,107 @@ fn one_php_ini_per_line() {
         env.get("CP_PHPRC_FWD").unwrap(),
         ini_dir.to_str().unwrap().replace('\\', "/")
     );
+}
+
+/// The folder of the php.ini for each of the six targets: Windows keeps
+/// `data/php/<line>`, macOS and Linux get `data/php/<target>/<line>`.
+#[test]
+fn php_ini_dir_per_target() {
+    use crate::kit::{Kit, Target};
+    let tmp = TempDir::new("php-ini-targets");
+    for target in [
+        Target::WIN32_X64,
+        Target::WIN32_ARM64,
+        Target::DARWIN_ARM64,
+        Target::DARWIN_X64,
+        Target::LINUX_X64,
+        Target::LINUX_ARM64,
+    ] {
+        let kit = Kit::at_target(tmp.0.join("kit"), target);
+        let data = kit.data();
+        let dir = kit.apps().join("php").join("8.5");
+        let want = if target.os == crate::kit::Os::Win32 {
+            data.join("php").join("8.5")
+        } else {
+            data.join("php").join(target.as_str()).join("8.5")
+        };
+        assert_eq!(php_ini_dir(&data, &dir), want, "{}", target.as_str());
+    }
+    // A kit folder named like a target does not count: only below data/.
+    let odd = Kit::at_target(tmp.0.join("linux-x64"), Target::WIN32_X64);
+    let dir = odd.apps().join("php").join("8.4");
+    assert_eq!(
+        php_ini_dir(&odd.data(), &dir),
+        odd.data().join("php").join("8.4")
+    );
+}
+
+/// Review of WP-3.2: one kit with PHP 8.5 for Windows and for Linux gets two
+/// php.ini, in either order of install: Windows with its extension= lines,
+/// Linux with none. The single php.ini of an older kit stays Windows'.
+#[test]
+fn php_ini_shared_kit_both_orders() {
+    use crate::kit::{Kit, Target};
+    for windows_first in [true, false] {
+        let tmp = TempDir::new("php-ini-shared");
+        let win = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+        let linux = win.for_target(Target::LINUX_X64);
+        win.prepare().unwrap();
+        let data = win.data();
+        let win_dir = win.apps().join("php").join("8.5");
+        let linux_dir = linux.apps().join("php").join("8.5");
+        fake_php(&win, &win_dir, ";extension=curl\r\n");
+        fake_php(&linux, &linux_dir, "");
+        fs::remove_file(linux_dir.join("php.ini-development")).unwrap();
+        let order = if windows_first {
+            [&win_dir, &linux_dir]
+        } else {
+            [&linux_dir, &win_dir]
+        };
+        for dir in order {
+            ensure_php_ini(&data, dir).unwrap();
+        }
+        let win_ini = fs::read_to_string(data.join("php").join("8.5").join("php.ini")).unwrap();
+        let linux_ini = fs::read_to_string(
+            data.join("php")
+                .join("linux-x64")
+                .join("8.5")
+                .join("php.ini"),
+        )
+        .unwrap();
+        assert_eq!(
+            win_ini, "extension=curl\r\n",
+            "windows_first={windows_first}"
+        );
+        assert_eq!(linux_ini, php_ini_unix(), "windows_first={windows_first}");
+        assert!(!linux_ini
+            .lines()
+            .any(|l| l.trim_start().starts_with("extension")));
+
+        // PHPRC of each system names its own folder.
+        let mut env = crate::env::KitEnv::default();
+        env.set_php(&data, &linux_dir);
+        let want = data.join("php").join("linux-x64").join("8.5");
+        assert_eq!(env.get("PHPRC"), Some(want.to_str().unwrap()));
+    }
+
+    // An older kit's data/php/php.ini never becomes a Unix PHP's.
+    let tmp = TempDir::new("php-ini-legacy-unix");
+    let linux = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
+    linux.prepare().unwrap();
+    let php = crate::setup::catalog::Catalog::get().find("php").unwrap();
+    let version = "8.5.8 (Composer 2.8.12)";
+    let main = crate::versions::install_dir(&linux, php, version);
+    fake_php(&linux, &main, "");
+    fs::remove_file(main.join("php.ini-development")).unwrap();
+    php.save_version(&linux, version).unwrap();
+    let legacy = linux.data().join("php").join("php.ini");
+    fs::create_dir_all(legacy.parent().unwrap()).unwrap();
+    fs::write(&legacy, "extension=curl\r\n").unwrap();
+    migrate_php_ini(&linux).unwrap();
+    assert_eq!(fs::read_to_string(&legacy).unwrap(), "extension=curl\r\n");
+    let ini = php_ini_dir(&linux.data(), &main).join("php.ini");
+    assert_eq!(fs::read_to_string(ini).unwrap(), php_ini_unix());
 }
 
 /// Apache loads the php.ini of the PHP in use, also in an older kit.conf.
@@ -302,4 +404,188 @@ fn nginx_asset_only_on_windows() {
         let e = nginx_asset_for(target).unwrap_err().to_string();
         assert!(e.contains(target.as_str()), "{e}");
     }
+}
+
+/// WP-3.2: static-php-cli's archives for exactly the system and the
+/// architecture of each Unix target, none for Windows (windows.php.net).
+#[test]
+fn static_php_assets_per_target() {
+    let want = [
+        (Target::DARWIN_ARM64, "macos-aarch64"),
+        (Target::DARWIN_X64, "macos-x86_64"),
+        (Target::LINUX_X64, "linux-x86_64"),
+        (Target::LINUX_ARM64, "linux-aarch64"),
+    ];
+    for (target, suffix) in want {
+        assert_eq!(
+            static_php_assets(target, "8.4.23").unwrap(),
+            [
+                format!("php-8.4.23-cli-{suffix}.tar.gz"),
+                format!("php-8.4.23-fpm-{suffix}.tar.gz")
+            ],
+            "{target}"
+        );
+    }
+    for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
+        assert!(static_php_assets(target, "8.4.23").is_none(), "{target}");
+        assert!(static_php_os(target).is_none());
+    }
+}
+
+/// T3.2.2-T3.2.3: the lines offered are those with both archives pinned in
+/// the catalog for the target, the newest version of each; an archive of
+/// another architecture never stands in.
+#[test]
+fn static_php_lines_from_the_pins() {
+    let pins: BTreeMap<String, String> = [
+        "php-8.4.20-cli-linux-x86_64.tar.gz",
+        "php-8.4.20-fpm-linux-x86_64.tar.gz",
+        "php-8.4.23-cli-linux-x86_64.tar.gz",
+        "php-8.4.23-fpm-linux-x86_64.tar.gz",
+        // No FPM archive pinned for x86_64: not offered there.
+        "php-8.5.8-cli-linux-x86_64.tar.gz",
+        "php-8.5.8-cli-linux-aarch64.tar.gz",
+        "php-8.5.8-fpm-linux-aarch64.tar.gz",
+        "README.txt",
+    ]
+    .into_iter()
+    .map(|f| (f.to_owned(), "a".repeat(64)))
+    .collect();
+    assert_eq!(
+        static_php_versions(&pins, Target::LINUX_X64),
+        [("8.4".to_owned(), "8.4.23".to_owned())]
+    );
+    assert_eq!(
+        static_php_versions(&pins, Target::LINUX_ARM64),
+        [("8.5".to_owned(), "8.5.8".to_owned())]
+    );
+    assert!(static_php_versions(&pins, Target::DARWIN_ARM64).is_empty());
+    assert!(static_php_versions(&pins, Target::WIN32_X64).is_empty());
+    let parts = static_php_parts(&pins, Target::LINUX_X64, "8.4.23").unwrap();
+    assert_eq!(parts.len(), 2);
+    assert_eq!(
+        parts[0].url,
+        "https://dl.static-php.dev/static-php-cli/bulk/php-8.4.23-cli-linux-x86_64.tar.gz"
+    );
+    assert_eq!(parts[0].dest, Dest::Own);
+    assert_eq!(parts[0].kind, Kind::TarGz);
+    assert_eq!(parts[1].dest, Dest::Inside("php-fpm"));
+    assert!(matches!(&parts[1].expect, Expect::Sha256(s) if s == &"a".repeat(64)));
+    // An archive with no pin is never downloaded.
+    assert!(static_php_parts(&pins, Target::LINUX_X64, "8.5.8").is_err());
+}
+
+/// The pins of this catalog: 8.4 and 8.5 on the four Unix targets, every
+/// hash a SHA-256, nothing for Windows.
+#[test]
+fn static_php_pins_in_the_catalog() {
+    let catalog: Value =
+        serde_json::from_str(include_str!("../../../tauri/catalog/components.json")).unwrap();
+    let pins = static_php_pins(&catalog);
+    assert_eq!(pins.len(), 16);
+    for target in [
+        Target::DARWIN_ARM64,
+        Target::DARWIN_X64,
+        Target::LINUX_X64,
+        Target::LINUX_ARM64,
+    ] {
+        let lines: Vec<String> = static_php_versions(&pins, target)
+            .into_iter()
+            .map(|(l, _)| l)
+            .collect();
+        assert_eq!(lines, ["8.5", "8.4"], "{target}");
+    }
+    assert!(static_php_versions(&pins, Target::WIN32_X64).is_empty());
+    assert_eq!(&pins, catalog_pins());
+    // A bad value is not a pin.
+    let bad =
+        json!({"components": [{"id": "php", "sha256ByFile": {"a.tar.gz": "xyz", "b.tar.gz": 1}}]});
+    assert!(static_php_pins(&bad).is_empty());
+}
+
+/// An archive whose hash is not the pinned one is refused (and deleted).
+#[test]
+fn static_php_other_hash_refused() {
+    let tmp = TempDir::new("static-php-hash");
+    let file = tmp.0.join("php-8.4.23-cli-linux-x86_64.tar.gz");
+    fs::write(&file, b"not the pinned archive").unwrap();
+    let pinned = Expect::Sha256(
+        "5fa2b5f1cc9d7f79b19718926b4f4f0bb6949db52073b2fabf8ae52de3993af5".to_owned(),
+    );
+    let e = crate::net::verify::check(&file, &pinned)
+        .unwrap_err()
+        .to_string();
+    assert!(e.contains("checksum does not match"), "{e}");
+    assert!(!file.exists());
+}
+
+/// T3.2.1: `php` of the CLI archive goes to `bin/php`, `php-fpm` of the FPM
+/// one to `sbin/php-fpm`; Composer's launcher in `bin/`, on the PATH there.
+#[test]
+fn static_php_layout_and_composer() {
+    let tmp = TempDir::new("static-php-layout");
+    let tree = tmp.0.join("tree");
+    fs::create_dir_all(&tree).unwrap();
+    assert!(static_php_layout(&tree).is_err(), "no php in the archive");
+    fs::write(tree.join("php"), b"elf").unwrap();
+    static_php_layout(&tree).unwrap();
+    assert!(tree.join("bin").join("php").is_file() && !tree.join("php").exists());
+    // Again (an update of the same tree): nothing to move, still fine.
+    static_php_layout(&tree).unwrap();
+
+    fs::write(tree.join("php-fpm"), b"elf").unwrap();
+    static_php_fpm_in_place(&tree).unwrap();
+    assert!(tree.join("sbin").join("php-fpm").is_file() && !tree.join("php-fpm").exists());
+    static_php_fpm_in_place(&tree).unwrap();
+
+    composer_launchers(&tree).unwrap();
+    let sh = fs::read(tree.join("bin").join("composer")).unwrap();
+    assert_eq!(sh, COMPOSER_UNIX);
+    let text = String::from_utf8(sh).unwrap();
+    assert!(text.starts_with("#!/bin/sh\n") && !text.contains('\r'));
+    assert!(text.contains("\"$d/php\" \"$d/../composer.phar\""));
+    // A folder of windows.php.net gets no bin/composer.
+    let win = tmp.0.join("win");
+    fs::create_dir_all(&win).unwrap();
+    composer_launchers(&win).unwrap();
+    assert!(!win.join("bin").exists());
+}
+
+/// T3.2.4: the Unix `php.ini`, no `extension=` line (built-in extensions),
+/// the CA bundle with `/`, the time zone of the Windows one; written once
+/// for a folder of static-php-cli (no template), then the user's.
+#[test]
+fn php_ini_for_unix() {
+    let ini = php_ini_unix();
+    assert!(
+        !ini.lines().any(|l| l.trim_start().starts_with("extension")),
+        "{ini}"
+    );
+    assert!(!ini.contains('\\') && !ini.contains('\r'));
+    assert!(ini.contains("date.timezone = Europe/Rome\n"));
+    assert!(ini.contains("curl.cainfo = \"${CP_PHP}/extras/ssl/cacert.pem\"\n"));
+    assert!(ini.contains("openssl.cafile = \"${CP_PHP}/extras/ssl/cacert.pem\"\n"));
+    assert!(ini.contains("display_errors = On\n") && ini.contains("error_reporting = E_ALL\n"));
+    // The known gap of the bulk build is said where the user looks
+    // (review of WP-3.2): SQLite through PDO only, no ext-pdo_sqlite.
+    assert!(ini.contains("php -m does not list pdo_sqlite") && ini.contains("ext-pdo_sqlite"));
+    assert!(ini
+        .lines()
+        .filter(|l| l.contains("pdo_sqlite"))
+        .all(|l| l.starts_with(';')));
+    // The Windows one keeps its `\` and its extensions.
+    let win = php_ini(";extension=curl\n;curl.cainfo =\n").unwrap();
+    assert!(win.contains("extension=curl") && win.contains(r"\extras\ssl\cacert.pem"));
+
+    let tmp = TempDir::new("php-ini-unix");
+    let data = tmp.0.join("data");
+    let dir = tmp.0.join("apps").join("php").join("8.4");
+    fs::create_dir_all(dir.join("bin")).unwrap();
+    fs::write(dir.join("bin").join("php"), b"elf").unwrap();
+    ensure_php_ini(&data, &dir).unwrap();
+    let path = data.join("php").join("8.4").join("php.ini");
+    assert_eq!(fs::read_to_string(&path).unwrap(), ini);
+    fs::write(&path, "; mine\n").unwrap();
+    ensure_php_ini(&data, &dir).unwrap();
+    assert_eq!(fs::read_to_string(&path).unwrap(), "; mine\n");
 }

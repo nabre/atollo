@@ -6,7 +6,11 @@
 //! no checksum) and copied next to `php.exe` and `httpd.exe`, the app-local
 //! deployment Microsoft allows. PHP and Apache exist only for x64: on ARM64
 //! they run emulated with the x64 DLLs.
+//!
+//! On macOS and Linux PHP is static-php-cli's ([`STATIC_PHP`], D-112): the
+//! CLI and FPM archives of the lines with a SHA-256 fixed in the catalog.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -278,6 +282,11 @@ pub fn pick_composer(versions: &Value, php: &str) -> Result<(String, String)> {
 /// PHP `version` with the Composer that runs on it, inside its folder: each
 /// version of PHP has its own (`php\8.4\composer.phar`).
 fn php_release(ctx: &Ctx, version: String, path: String, sha: String) -> Result<Release> {
+    php_release_of(ctx, version, vec![php_part(path, sha)])
+}
+
+/// The release of PHP `version` made of `parts`, Composer added after them.
+fn php_release_of(ctx: &Ctx, version: String, mut parts: Vec<Part>) -> Result<Release> {
     let (composer_version, composer) =
         pick_composer(&ctx.net.json("https://getcomposer.org/versions")?, &version)?;
     let composer_sha = hash_in_list(
@@ -285,21 +294,172 @@ fn php_release(ctx: &Ctx, version: String, path: String, sha: String) -> Result<
         "composer.phar",
     )
     .ok_or_else(|| anyhow!("Composer: no SHA-256"))?;
+    parts.push(Part {
+        url: composer,
+        file_name: "composer.phar".into(),
+        expect: Expect::Sha256(composer_sha),
+        kind: Kind::File,
+        inner: Inner::Root,
+        dest: Dest::Inside("composer.phar"),
+        sign: None,
+    });
     Ok(Release {
         version: format!("{version} (Composer {composer_version})"),
-        parts: vec![
-            php_part(path, sha),
-            Part {
-                url: composer,
-                file_name: "composer.phar".into(),
-                expect: Expect::Sha256(composer_sha),
-                kind: Kind::File,
-                inner: Inner::Root,
-                dest: Dest::Inside("composer.phar"),
-                sign: None,
-            },
-        ],
+        parts,
     })
+}
+
+/// PHP for macOS and Linux (D-112, WP-3.2): the builds of static-php-cli,
+/// one static binary per archive, `php` (CLI) and `php-fpm` (the FastCGI
+/// server of Caddy, `projects/fastcgi.rs`), with their extensions built in.
+/// Its "bulk" set: the only one with `intl`, `mysqli` (phpMyAdmin,
+/// WordPress) and `sodium`. Its `php -m` does not name `pdo_sqlite`, but
+/// PDO has the `sqlite` driver (`PDO::getAvailableDrivers()`: mysql,
+/// pgsql, sqlite; a new Laravel migrates on SQLite with it).
+pub const STATIC_PHP: &str = "https://dl.static-php.dev/static-php-cli/bulk";
+
+/// static-php-cli's name of the system of `target`; `None` on Windows,
+/// whose PHP comes from windows.php.net.
+pub fn static_php_os(target: Target) -> Option<&'static str> {
+    match target.os {
+        Os::Darwin => Some("macos"),
+        Os::Linux => Some("linux"),
+        Os::Win32 => None,
+    }
+}
+
+/// The two archives of PHP `version` for `target`, CLI then FPM:
+/// `php-8.4.23-cli-linux-x86_64.tar.gz`, `php-8.4.23-fpm-linux-x86_64.tar.gz`.
+/// Only the exact system and architecture, never a build of another one.
+pub fn static_php_assets(target: Target, version: &str) -> Option<[String; 2]> {
+    let os = static_php_os(target)?;
+    let arch = target.gnu_arch();
+    Some(["cli", "fpm"].map(|sapi| format!("php-{version}-{sapi}-{os}-{arch}.tar.gz")))
+}
+
+/// The SHA-256 the catalog fixes for static-php-cli's archives
+/// (`sha256ByFile` of `php`, by file name): static-php-cli publishes no
+/// hash, so only an archive with a fixed hash is installed, and one with
+/// another hash is refused (D-108).
+pub fn static_php_pins(catalog: &Value) -> BTreeMap<String, String> {
+    catalog
+        .get("components")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .find(|c| c.get("id").and_then(Value::as_str) == Some("php"))
+        .and_then(|c| c.get("sha256ByFile"))
+        .and_then(Value::as_object)
+        .into_iter()
+        .flatten()
+        .filter_map(|(file, sha)| {
+            let sha = sha.as_str()?.to_ascii_lowercase();
+            (sha.len() == 64 && sha.chars().all(|c| c.is_ascii_hexdigit()))
+                .then(|| (file.clone(), sha))
+        })
+        .collect()
+}
+
+/// The pins of this build of the app's catalog.
+fn catalog_pins() -> &'static BTreeMap<String, String> {
+    static PINS: std::sync::OnceLock<BTreeMap<String, String>> = std::sync::OnceLock::new();
+    PINS.get_or_init(|| {
+        serde_json::from_str(include_str!("../../catalog/components.json"))
+            .map(|v: Value| static_php_pins(&v))
+            .unwrap_or_default()
+    })
+}
+
+/// The versions of PHP `pins` has both archives of for `target`, one per
+/// line (its newest), newest first: `[("8.5", "8.5.8"), ("8.4", "8.4.23")]`.
+pub fn static_php_versions(
+    pins: &BTreeMap<String, String>,
+    target: Target,
+) -> Vec<(String, String)> {
+    let mut best: BTreeMap<String, String> = BTreeMap::new();
+    for file in pins.keys() {
+        let Some(version) = file
+            .strip_prefix("php-")
+            .and_then(|rest| rest.split_once("-cli-"))
+            .map(|(v, _)| v)
+        else {
+            continue;
+        };
+        if !super::lang::is_release(version) {
+            continue;
+        }
+        let Some(assets) = static_php_assets(target, version) else {
+            continue;
+        };
+        if !assets.iter().all(|a| pins.contains_key(a)) {
+            continue;
+        }
+        let Some(line) = crate::versions::line_of(version) else {
+            continue;
+        };
+        let newer = best
+            .get(&line)
+            .is_none_or(|v| super::lang::version_key(version) > super::lang::version_key(v));
+        if newer {
+            best.insert(line, version.to_owned());
+        }
+    }
+    let mut out: Vec<(String, String)> = best.into_iter().collect();
+    out.sort_by_key(|(l, _)| std::cmp::Reverse(super::lang::version_key(l)));
+    out
+}
+
+/// The parts of PHP `version` for `target` from static-php-cli: the CLI
+/// archive is the folder (`php` put in `bin/` by `before_swap`), the FPM one
+/// its `php-fpm` (put in `sbin/` by `finish`), each checked against its
+/// fixed hash.
+pub fn static_php_parts(
+    pins: &BTreeMap<String, String>,
+    target: Target,
+    version: &str,
+) -> Result<Vec<Part>> {
+    let assets = static_php_assets(target, version)
+        .ok_or_else(|| anyhow!("PHP from static-php-cli is not for {target}"))?;
+    let [cli, fpm] = assets.map(|file| {
+        let sha = pins.get(&file).cloned();
+        (file, sha)
+    });
+    let part = |(file, sha): (String, Option<String>), dest: Dest| -> Result<Part> {
+        let sha = sha.ok_or_else(|| anyhow!("{file}: no SHA-256 fixed in the catalog"))?;
+        Ok(Part {
+            url: format!("{STATIC_PHP}/{file}"),
+            file_name: file,
+            expect: Expect::Sha256(sha),
+            kind: Kind::TarGz,
+            inner: Inner::Root,
+            dest,
+            sign: None,
+        })
+    };
+    Ok(vec![
+        part(cli, Dest::Own)?,
+        part(fpm, Dest::Inside("php-fpm"))?,
+    ])
+}
+
+/// The release of `line` (the newest pinned with `None`) for `target`
+/// from static-php-cli.
+fn static_php_release(ctx: &Ctx, target: Target, line: Option<&str>) -> Result<Release> {
+    let pins = catalog_pins();
+    let versions = static_php_versions(pins, target);
+    let found = match line {
+        Some(l) => versions.iter().find(|(vl, _)| vl == l),
+        None => versions.first(),
+    };
+    let (_, version) = found.ok_or_else(|| match line {
+        Some(l) => anyhow!("PHP {l} is not available for {target} (no build with a fixed hash)"),
+        None => anyhow!("no PHP build with a fixed hash for {target}"),
+    })?;
+    php_release_of(
+        ctx,
+        version.clone(),
+        static_php_parts(pins, target, version)?,
+    )
 }
 
 /// The branches of `releases.json` with a Thread Safe x64 build, newest first.
@@ -388,12 +548,20 @@ impl Installer for Php {
         true
     }
 
-    /// Composer comes after the zip (`php_release`).
+    /// Composer comes after the zip (`php_release`); on macOS and Linux the
+    /// CLI archive has `php` at its root, put in `bin/` by `before_swap`.
     fn inside(&self) -> &'static [&'static str] {
-        &["composer.phar"]
+        &["composer.phar", "bin/php"]
     }
 
-    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        let target = target_of(ctx, component);
+        if !target.is_windows() {
+            return Ok(static_php_versions(catalog_pins(), target)
+                .into_iter()
+                .map(|(line, _)| line)
+                .collect());
+        }
         let mut out = php_lines(&ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?);
         for (line, _, _, _) in PHP_ARCHIVES {
             if !out.iter().any(|l| l == line) {
@@ -404,7 +572,11 @@ impl Installer for Php {
         Ok(out)
     }
 
-    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        let target = target_of(ctx, component);
+        if !target.is_windows() {
+            return static_php_release(ctx, target, Some(line));
+        }
         let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
         let (version, path, sha) = match pick_php(&releases, Some(line)) {
             Ok(found) => found,
@@ -417,9 +589,24 @@ impl Installer for Php {
         php_release(ctx, version, path, sha)
     }
 
-    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
-        let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let target = target_of(ctx, component);
         let branch = Settings::load(ctx.kit).settings.php_version;
+        if !target.is_windows() {
+            // The line of the settings when it has a build with a fixed hash
+            // here (a kit prepared on Windows may name one that has none).
+            let pinned = static_php_versions(catalog_pins(), target);
+            let line = branch
+                .as_deref()
+                .filter(|b| pinned.iter().any(|(l, _)| l == b));
+            if let (Some(b), None) = (branch.as_deref(), line) {
+                crate::log::warn(&format!(
+                    "PHP {b} has no build for {target}: the newest one is installed"
+                ));
+            }
+            return static_php_release(ctx, target, line);
+        }
+        let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
         let (version, path, sha) = match pick_php(&releases, branch.as_deref()) {
             Ok(found) => found,
             Err(e) => branch
@@ -441,6 +628,9 @@ impl Installer for Php {
         _old: &Path,
     ) -> Result<()> {
         copy_vc_runtime(ctx, tree)?;
+        if !ctx.kit.os().is_windows() {
+            static_php_layout(tree)?;
+        }
         let ssl = join_rel(tree, "extras/ssl");
         fs::create_dir_all(&ssl)?;
         let pem = (|| -> Result<()> {
@@ -471,6 +661,9 @@ impl Installer for Php {
     /// `data\php\<line>\php.ini` of this line once (then it is the user's),
     /// Composer launchers.
     fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
+        if !ctx.kit.os().is_windows() {
+            static_php_fpm_in_place(dest)?;
+        }
         migrate_php_ini(ctx.kit)?;
         ensure_php_ini(&ctx.kit.data(), dest)?;
         composer_launchers(dest)?;
@@ -512,9 +705,17 @@ pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
     Ok(())
 }
 
+/// The launcher of Composer in `bin/` of static-php-cli's PHP (macOS and
+/// Linux), on the PATH with `php` (env.rs): the `php` beside it runs the
+/// `composer.phar` of its own folder.
+pub const COMPOSER_UNIX: &[u8] =
+    b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nexec \"$d/php\" \"$d/../composer.phar\" \"$@\"\n";
+
 /// `composer.cmd` and `composer` (Git Bash / POSIX sh) next to `composer.phar`
 /// in a folder of PHP: they run it with the `php.exe` or `bin/php` beside them,
-/// so each version of PHP uses its own Composer.
+/// so each version of PHP uses its own Composer. A folder of static-php-cli
+/// (`bin/php`, macOS and Linux) also gets `bin/composer` ([`COMPOSER_UNIX`]),
+/// since `bin/` is the folder on the PATH there.
 pub fn composer_launchers(dir: &Path) -> Result<()> {
     write_atomic(
         &dir.join("composer.cmd"),
@@ -525,11 +726,45 @@ pub fn composer_launchers(dir: &Path) -> Result<()> {
         &sh,
         b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nif [ -x \"$d/bin/php\" ]; then\n  exec \"$d/bin/php\" \"$d/composer.phar\" \"$@\"\nfi\nexec \"$d/php.exe\" \"$d/composer.phar\" \"$@\"\n",
     )?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = fs::set_permissions(&sh, fs::Permissions::from_mode(0o755));
+    let _ = crate::router::fs::set_executable(&sh);
+    let bin = dir.join("bin");
+    if bin.join("php").is_file() {
+        let launcher = bin.join("composer");
+        write_atomic(&launcher, COMPOSER_UNIX)?;
+        let _ = crate::router::fs::set_executable(&launcher);
     }
+    Ok(())
+}
+
+/// The CLI archive of static-php-cli has `php` at its root: it goes to
+/// `bin/php`, the key of PHP on macOS and Linux (`setup/catalog.rs`).
+pub fn static_php_layout(tree: &Path) -> Result<()> {
+    let bin = tree.join("bin");
+    let php = bin.join("php");
+    let top = tree.join("php");
+    if top.is_file() {
+        fs::create_dir_all(&bin)?;
+        fs::rename(&top, &php).context("bin/php")?;
+    }
+    if !php.is_file() {
+        bail!("the archive does not contain php");
+    }
+    Ok(())
+}
+
+/// The `php-fpm` of the FPM archive, put at the folder's root by its part
+/// (`Dest::Inside`), goes to `sbin/php-fpm` (`projects/fastcgi.rs`).
+pub fn static_php_fpm_in_place(dir: &Path) -> Result<()> {
+    let loose = dir.join("php-fpm");
+    if !loose.is_file() {
+        return Ok(());
+    }
+    let sbin = dir.join("sbin");
+    fs::create_dir_all(&sbin)?;
+    let fpm = sbin.join("php-fpm");
+    let _ = fs::remove_file(&fpm);
+    fs::rename(&loose, &fpm).context("sbin/php-fpm")?;
+    let _ = crate::router::fs::set_executable(&fpm);
     Ok(())
 }
 
@@ -538,12 +773,34 @@ pub fn composer_launchers(dir: &Path) -> Result<()> {
 /// line comes with its own `php.ini-development` (5.6 does not know the
 /// directives of 8.4). `data\php` for a folder of an older kit's layout,
 /// not named after its line.
+///
+/// The PHP of macOS and Linux (`data/apps/<target>/php/<line>`) gets
+/// `data/php/<target>/<line>`: one kit can hold the same line for Windows
+/// and for Unix, and the two `php.ini` cannot be one file (Windows needs its
+/// `extension=` lines and `ext` folder, static-php-cli has neither).
+/// Windows keeps `data\php\<line>`, as before the targets.
 pub fn php_ini_dir(data: &Path, php_dir: &Path) -> PathBuf {
-    let root = data.join("php");
+    let mut root = data.join("php");
+    if let Some(target) = php_target(data, php_dir) {
+        if target.os != crate::kit::Os::Win32 {
+            root = root.join(target.as_str());
+        }
+    }
     match php_dir.file_name().and_then(|n| n.to_str()) {
         Some(line) if crate::versions::valid_line(line) => root.join(line),
         _ => root,
     }
+}
+
+/// The target of the PHP folder `php_dir`, from the `<os>-<arch>` folder it
+/// sits in under `data` (`data/apps/<target>/…`); `None` for a folder of an
+/// older kit's layout, without one (Windows only). Folders above `data` are
+/// not looked at: the kit's own folder could have any name.
+fn php_target(data: &Path, php_dir: &Path) -> Option<crate::kit::Target> {
+    let rel = php_dir.strip_prefix(data).unwrap_or(php_dir);
+    rel.components()
+        .filter_map(|c| c.as_os_str().to_str())
+        .find_map(crate::kit::Target::parse)
 }
 
 /// The `php.ini` of the PHP in `php_dir`: written from that PHP's own
@@ -556,6 +813,10 @@ pub fn ensure_php_ini(data: &Path, php_dir: &Path) -> Result<()> {
         let template = fs::read_to_string(&dev_ini).context("php.ini-development")?;
         fs::create_dir_all(ini.parent().unwrap_or(php_dir))?;
         write_atomic(&ini, php_ini(&template)?.as_bytes())?;
+    } else if !ini.exists() && php_dir.join("bin").join("php").is_file() {
+        // static-php-cli (macOS, Linux) ships no template: the kit's own.
+        fs::create_dir_all(ini.parent().unwrap_or(php_dir))?;
+        write_atomic(&ini, php_ini_unix().as_bytes())?;
     } else if let Ok(text) = fs::read_to_string(&ini) {
         // Written before the saved versions (D-80): the paths follow the
         // PHP in use, not the default folder.
@@ -579,7 +840,14 @@ pub fn migrate_php_ini(kit: &crate::kit::Kit) -> Result<()> {
     let default = crate::versions::default_dir(kit, php);
     let old = data.join("php").join("php.ini");
     let new = php_ini_dir(data, &default).join("php.ini");
-    if old.is_file() && new != old && !new.exists() && crate::versions::has_key(php, &default) {
+    // That single php.ini was always Windows': never the one of a Unix PHP.
+    let windows = php_target(data, &default).is_none_or(|t| t.os == crate::kit::Os::Win32);
+    if windows
+        && old.is_file()
+        && new != old
+        && !new.exists()
+        && crate::versions::has_key(php, &default)
+    {
         fs::create_dir_all(new.parent().unwrap_or(data))?;
         fs::rename(&old, &new).with_context(|| new.display().to_string())?;
         crate::log::info(&format!("php.ini: moved to {}", new.display()));
@@ -632,6 +900,85 @@ pub fn php_ini(template: &str) -> Result<String> {
         t = pattern(re)?.replace_all(&t, with).into_owned();
     }
     Ok(t)
+}
+
+/// The kit's `php.ini` for static-php-cli's PHP (macOS and Linux), which
+/// ships no `php.ini-development`: that file's development values, no
+/// `extension=` line (the extensions are built in, there is no `ext`
+/// folder), Europe/Rome, the CA bundle for curl and OpenSSL through
+/// `${CP_PHP}` with `/`.
+pub fn php_ini_unix() -> String {
+    [
+        "; Atollo php.ini for the PHP of static-php-cli (macOS, Linux): yours,",
+        "; updates never touch it. Its extensions are built in: no extension= line.",
+        "; SQLite through PDO (new PDO('sqlite:...')) works with the driver of",
+        "; swoole-hook-sqlite, but php -m does not list pdo_sqlite: a composer.json",
+        "; that requires ext-pdo_sqlite, extension_loaded('pdo_sqlite') and the",
+        "; class Sqlite of PHP 8.4's Pdo namespace do not see it (static-php-cli's",
+        "; bulk build, the only one with intl, mysqli and sodium).",
+        "[PHP]",
+        "engine = On",
+        "short_open_tag = Off",
+        "precision = 14",
+        "output_buffering = 4096",
+        "zlib.output_compression = Off",
+        "implicit_flush = Off",
+        "serialize_precision = -1",
+        "zend.enable_gc = On",
+        "zend.exception_ignore_args = Off",
+        "zend.exception_string_param_max_len = 15",
+        "expose_php = On",
+        "max_execution_time = 30",
+        "max_input_time = 60",
+        "memory_limit = 128M",
+        "error_reporting = E_ALL",
+        "display_errors = On",
+        "display_startup_errors = On",
+        "log_errors = On",
+        "ignore_repeated_errors = Off",
+        "ignore_repeated_source = Off",
+        "report_memleaks = On",
+        "variables_order = \"GPCS\"",
+        "request_order = \"GP\"",
+        "register_argc_argv = Off",
+        "auto_globals_jit = On",
+        "post_max_size = 8M",
+        "default_mimetype = \"text/html\"",
+        "default_charset = \"UTF-8\"",
+        "enable_dl = Off",
+        "file_uploads = On",
+        "upload_max_filesize = 2M",
+        "max_file_uploads = 20",
+        "allow_url_fopen = On",
+        "allow_url_include = Off",
+        "default_socket_timeout = 60",
+        "",
+        "[Date]",
+        "date.timezone = Europe/Rome",
+        "",
+        "[Session]",
+        "session.save_handler = files",
+        "session.use_strict_mode = 0",
+        "session.use_cookies = 1",
+        "session.use_only_cookies = 1",
+        "session.name = PHPSESSID",
+        "session.cookie_httponly =",
+        "session.cookie_samesite =",
+        "session.gc_probability = 1",
+        "session.gc_divisor = 1000",
+        "session.gc_maxlifetime = 1440",
+        "",
+        "[Assertion]",
+        "zend.assertions = 1",
+        "",
+        "[curl]",
+        "curl.cainfo = \"${CP_PHP}/extras/ssl/cacert.pem\"",
+        "",
+        "[openssl]",
+        "openssl.cafile = \"${CP_PHP}/extras/ssl/cacert.pem\"",
+        "",
+    ]
+    .join("\n")
 }
 
 /// Apache httpd from Apache Lounge (the maintained Windows build). Port,

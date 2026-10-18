@@ -1,13 +1,157 @@
 //! PHP: Laravel (and Statamic), Symfony, the CMS (WordPress, also with
 //! Bedrock; PrestaShop, Drupal, Joomla, TYPO3), plain PHP (built-in server
-//! `php -S`, and an Apache of its own proposed beside it).
+//! `php -S`, and a site of Caddy proposed beside it).
+//!
+//! Caddy is the web server proposed on every system (Q-3, D-111): it reads
+//! no `.htaccess`, and gets the rules of a front controller instead
+//! (`projects/caddy.rs`), which is what the stock `.htaccess` of WordPress,
+//! Laravel and Drupal say. Apache is proposed too only on Windows (the only
+//! system with the kit's Apache) and only for a project whose `.htaccess`
+//! has rules of its own: then it comes first.
 
 use std::path::Path;
 
-use super::{exists, list_dir, php_server, read_json, tr, Action, Found, Kind};
+use super::{exists, list_dir, php_server, read, read_json, tr, Action, Found, Kind};
+use crate::kit::Os;
 
 /// The CMS with a database: the kit's MariaDB in `requires` (`mod.rs`).
 pub(super) const CMS: [&str; 5] = ["WordPress", "PrestaShop", "Drupal", "Joomla", "TYPO3"];
+
+/// The `.htaccess` files of a PHP project, besides `<root>\.htaccess`.
+pub(super) const HTACCESS: [&str; 4] = [
+    ".htaccess",
+    r"public\.htaccess",
+    r"web\.htaccess",
+    r"htdocs\.htaccess",
+];
+
+/// The directives of the stock `.htaccess` of WordPress and Laravel (and of
+/// small files that only turn rewriting on or listings off), lowercase with
+/// single spaces: what Caddy's front controller does already.
+const KNOWN_RULES: [&str; 26] = [
+    "<ifmodule mod_rewrite.c>",
+    "<ifmodule rewrite_module>",
+    "<ifmodule mod_negotiation.c>",
+    "</ifmodule>",
+    "rewriteengine on",
+    "rewritebase /",
+    // WordPress
+    r"rewriterule ^index\.php$ - [l]",
+    "rewritecond %{request_filename} !-f",
+    "rewritecond %{request_filename} !-d",
+    "rewriterule . /index.php [l]",
+    "rewriterule .* - [e=http_authorization:%{http:authorization}]",
+    // Laravel
+    "options -multiviews -indexes",
+    "options -multiviews",
+    "rewritecond %{http:authorization} .",
+    "rewritecond %{http:x-xsrf-token} .",
+    "rewriterule .* - [e=http_x_xsrf_token:%{http:x-xsrf-token}]",
+    "rewritecond %{request_uri} (.+)/$",
+    "rewriterule ^ %1 [l,r=301]",
+    "rewriterule ^(.*)/$ /$1 [l,r=301]",
+    "rewriterule ^ index.php [l]",
+    // Listings and index only.
+    "options -indexes",
+    "options +followsymlinks",
+    "options -indexes +followsymlinks",
+    "directoryindex index.php",
+    "directoryindex index.php index.html",
+    "directoryindex index.html index.php",
+];
+
+/// Drupal's stock `.htaccess`, recognised by its first lines: long, but
+/// all of it is what its front controller and Caddy's rules do.
+const DRUPAL_HTACCESS: &str = "Apache/PHP/Drupal settings";
+
+/// A `.htaccess` with rules of its own: any directive besides those of the
+/// stock files of WordPress, Laravel and Drupal ([`KNOWN_RULES`]).
+/// Comments and empty lines are not rules.
+pub fn htaccess_has_own_rules(text: &str) -> bool {
+    if text.contains(DRUPAL_HTACCESS) {
+        return false;
+    }
+    text.lines()
+        .map(|l| l.split_whitespace().collect::<Vec<_>>().join(" "))
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .any(|l| !KNOWN_RULES.contains(&l.to_ascii_lowercase().as_str()))
+}
+
+/// Apache is proposed for a PHP project on `os`: only Windows has the
+/// kit's Apache, and only one of the `htaccess` texts has rules of its own
+/// (Caddy serves the others as they are).
+pub fn apache_offered(os: Os, htaccess: &[String]) -> bool {
+    os.is_windows() && htaccess.iter().any(|t| htaccess_has_own_rules(t))
+}
+
+/// The texts of the `.htaccess` files of the project in `dir` whose site is
+/// `root` (the project folder and the usual document roots).
+pub(super) fn htaccess_texts(dir: &Path, root: &str) -> Vec<String> {
+    let site = format!(r"{root}\.htaccess");
+    HTACCESS
+        .iter()
+        .copied()
+        .chain((root != ".").then_some(site.as_str()))
+        .filter(|f| exists(dir, f))
+        .map(|f| read(dir, f))
+        .collect()
+}
+
+/// How deep below the site's folder, and through how many entries, the
+/// `.htaccess` of subfolders are looked for ([`nested_htaccess`]).
+pub const NESTED_DEPTH: usize = 8;
+pub const NESTED_ENTRIES: usize = 5000;
+
+/// Folders never looked into for `.htaccess`: dependencies and history.
+const NESTED_SKIP: [&str; 3] = ["vendor", "node_modules", ".git"];
+
+/// The `.htaccess` files of the subfolders of the site's folder `root`
+/// (relative to the project `dir`, with `/`) that have rules of their own
+/// ([`htaccess_has_own_rules`]): `Require all denied` of a private folder,
+/// `php_flag engine off` of an uploads folder (Drupal's `sites/default/files`).
+/// Caddy reads none of them, so what they hide would be served and PHP
+/// would run there. Bounded ([`NESTED_DEPTH`], [`NESTED_ENTRIES`]); links
+/// and [`NESTED_SKIP`] are not followed.
+pub fn nested_htaccess(dir: &Path, root: &str) -> Vec<String> {
+    let base = if root == "." {
+        dir.to_path_buf()
+    } else {
+        dir.join(root)
+    };
+    let mut found = Vec::new();
+    let mut seen = 0usize;
+    let mut stack: Vec<(std::path::PathBuf, usize)> = vec![(base.clone(), 0)];
+    while let Some((folder, depth)) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&folder) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            seen += 1;
+            if seen > NESTED_ENTRIES {
+                return found;
+            }
+            let Ok(kind) = entry.file_type() else {
+                continue;
+            };
+            let name = entry.file_name().to_string_lossy().into_owned();
+            let path = entry.path();
+            if kind.is_dir() {
+                if depth < NESTED_DEPTH && !NESTED_SKIP.contains(&name.as_str()) {
+                    stack.push((path, depth + 1));
+                }
+            } else if kind.is_file() && depth > 0 && name.eq_ignore_ascii_case(".htaccess") {
+                let text = std::fs::read_to_string(&path).unwrap_or_default();
+                if htaccess_has_own_rules(&text) {
+                    if let Ok(rel) = path.strip_prefix(dir) {
+                        found.push(rel.to_string_lossy().replace('\\', "/"));
+                    }
+                }
+            }
+        }
+    }
+    found.sort();
+    found
+}
 
 pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     let manifest = read_json(dir, "composer.json");
@@ -49,8 +193,32 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             root,
         )
     };
-    let has_htaccess =
-        exists(dir, ".htaccess") || (root != "." && exists(dir, &format!(r"{root}\.htaccess")));
+    let caddy = || Action::caddy("caddy", &tr(lang, "sito web Caddy ({0})", &[&shown]), root);
+    // The `.htaccess` of subfolders with rules of their own (a private or
+    // uploads folder): Caddy would serve what they hide.
+    let nested = nested_htaccess(dir, root);
+    let has_htaccess = exists(dir, ".htaccess")
+        || (root != "." && exists(dir, &format!(r"{root}\.htaccess")))
+        || !nested.is_empty();
+    // Rules of its own Caddy cannot read: Apache first, on Windows.
+    let with_apache = apache_offered(Os::current(), &htaccess_texts(dir, root))
+        || (Os::current().is_windows() && !nested.is_empty());
+    if !nested.is_empty() {
+        let mut shown_files = nested
+            .iter()
+            .take(3)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(", ");
+        if nested.len() > 3 {
+            shown_files.push_str(", …");
+        }
+        warnings.push(tr(
+            lang,
+            "Caddy non legge i .htaccess delle sottocartelle ({0}): ciò che nascondono è visibile e il PHP lì viene eseguito.",
+            &[&shown_files],
+        ));
+    }
     if exists(dir, "artisan") {
         platform = if requires("statamic/cms") {
             "Statamic"
@@ -65,10 +233,11 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             "php artisan serve --host=127.0.0.1 --port={port}",
             Kind::Web,
         ));
-        // Laravel's `public\.htaccess`: Apache too, after `artisan serve`.
-        if has_htaccess {
+        // Its site after `artisan serve`: Apache first for rules of its own.
+        if with_apache {
             actions.push(apache());
         }
+        actions.push(caddy());
     } else {
         // The CMS before Symfony: PrestaShop has a `bin\console` too.
         let cms = if exists(dir, "wp-config.php")
@@ -101,11 +270,15 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             reason = "bin/console".into();
         }
         let has_nginx = super::has_nginx(dir, root);
-        // A CMS or an `.htaccess`: Apache first, the main button. Otherwise
-        // proposed after `php -S`.
-        let apache_first = has_htaccess || cms.is_some();
-        if apache_first {
-            actions.push(apache());
+        // A CMS or an `.htaccess`: its site first, the main button (Apache
+        // before Caddy for rules of its own). Otherwise proposed after
+        // `php -S`.
+        let site_first = has_htaccess || cms.is_some();
+        if site_first {
+            if with_apache {
+                actions.push(apache());
+            }
+            actions.push(caddy());
         }
         if has_nginx {
             actions.push(Action::nginx(
@@ -120,8 +293,11 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             &php_server(dir, root),
             Kind::Web,
         ));
-        if !apache_first {
-            actions.push(apache());
+        if !site_first {
+            if with_apache {
+                actions.push(apache());
+            }
+            actions.push(caddy());
         }
     }
     if composer {

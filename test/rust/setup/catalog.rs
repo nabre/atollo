@@ -419,15 +419,22 @@ fn shared_paths_go_with_the_last_owner() {
         .contains(&kit.apps().join("apache")));
 }
 
-/// Option C (BUG-23b, BUG-24a): PHP, Apache and Nginx are Windows only
-/// (Windows builds, php.ini and httpd.conf of Windows), so phpMyAdmin, which
-/// needs PHP, is too. Git stays everywhere: Claude Code needs it.
+/// Option C (BUG-23b, BUG-24a): Apache and Nginx are Windows only (Windows
+/// builds, httpd.conf of Windows). PHP (static-php-cli on macOS and Linux,
+/// WP-3.2), phpMyAdmin on it and Caddy (WP-3.1) are on every target. Git
+/// stays everywhere: Claude Code needs it.
 #[test]
 fn web_stack_is_windows_only() {
     use crate::kit::Target;
 
     let catalog = Catalog::get();
-    for id in ["php", "apache", "nginx", "phpmyadmin"] {
+    for id in ["php", "phpmyadmin", "caddy"] {
+        let c = catalog.find(id).unwrap();
+        for target in Target::ALL {
+            assert!(c.is_available_on(target), "{id} on {target}");
+        }
+    }
+    for id in ["apache", "nginx"] {
         let c = catalog.find(id).unwrap();
         for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
             assert!(c.is_available_on(target), "{id} on {target}");
@@ -449,13 +456,14 @@ fn web_stack_is_windows_only() {
     }
 }
 
-/// Asking for phpMyAdmin on Linux names the system, not ARM64.
+/// Asking for Apache on Linux names the system, not ARM64 (phpMyAdmin
+/// before WP-3.2 made it available there).
 #[test]
 fn phpmyadmin_on_linux_names_the_system() {
     use crate::kit::Target;
     use crate::setup::runner::{plan, Options};
 
-    let tmp = TempDir::new("catalog-phpmyadmin-linux");
+    let tmp = TempDir::new("catalog-apache-linux");
     let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
     kit.prepare().unwrap();
     let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
@@ -469,7 +477,7 @@ fn phpmyadmin_on_linux_names_the_system() {
     };
     let catalog = Catalog::get();
     let opts = Options {
-        only: vec!["phpmyadmin".into()],
+        only: vec!["apache".into()],
         ..Options::default()
     };
     let e = plan(&ctx, catalog, &Choice::defaults(catalog), &opts)
@@ -477,8 +485,8 @@ fn phpmyadmin_on_linux_names_the_system() {
         .unwrap()
         .to_string();
     assert!(e.contains("linux-x64") && !e.contains("ARM64"), "{e}");
-    let msg = crate::commands::unavailable_msg("en", "phpMyAdmin", Target::LINUX_X64);
-    assert_eq!(msg, "phpMyAdmin is not available for linux-x64.");
+    let msg = crate::commands::unavailable_msg("en", "Apache", Target::LINUX_X64);
+    assert_eq!(msg, "Apache is not available for linux-x64.");
 }
 
 #[test]
@@ -489,8 +497,11 @@ fn multi_platform_availability_and_paths_across_targets() {
     let php = catalog.find("php").unwrap();
     assert!(php.is_available_on(Target::WIN32_X64));
     assert!(php.is_available_on(Target::WIN32_ARM64));
-    assert!(!php.is_available_on(Target::DARWIN_ARM64));
-    assert!(!php.is_available_on(Target::LINUX_X64));
+    assert!(php.is_available_on(Target::DARWIN_ARM64));
+    assert!(php.is_available_on(Target::LINUX_X64));
+    let apache = catalog.find("apache").unwrap();
+    assert!(!apache.is_available_on(Target::DARWIN_ARM64));
+    assert!(!apache.is_available_on(Target::LINUX_X64));
 
     let tex = catalog.find("tinytex").unwrap();
     assert!(tex.is_emulated_on(Target::WIN32_ARM64));
@@ -565,9 +576,9 @@ fn unavailable_targets_have_a_reason() {
         }
     }
     // Outside `targets` or `noArm64`: not available, no reason of its own.
-    let php = catalog.find("php").unwrap();
-    assert!(!php.is_available_on(Target::LINUX_X64));
-    assert_eq!(php.unavailable_reason(Target::LINUX_X64), None);
+    let apache = catalog.find("apache").unwrap();
+    assert!(!apache.is_available_on(Target::LINUX_X64));
+    assert_eq!(apache.unavailable_reason(Target::LINUX_X64), None);
     let r = catalog.find("r").unwrap();
     assert!(!r.is_available_on(Target::WIN32_ARM64));
     assert_eq!(r.unavailable_reason(Target::WIN32_ARM64), None);

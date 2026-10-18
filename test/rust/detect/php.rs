@@ -1,28 +1,124 @@
 use crate::detect::tests::{ids, project, sh};
 use crate::detect::{detect, Kind};
 
+/// The stock `.htaccess` of Laravel (`public\.htaccess`, Laravel 11).
+const LARAVEL_HTACCESS: &str = r"<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+";
+
+/// The stock `.htaccess` WordPress writes.
+const WORDPRESS_HTACCESS: &str = r"# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress
+";
+
+/// A `.htaccess` with a rule Caddy cannot know.
+const OWN_HTACCESS: &str = "RewriteEngine On\nRewriteRule ^shop/(.*)$ catalog.php?p=$1 [L,QSA]\n";
+
+/// T3.3.6: the stock files of WordPress, Laravel and Drupal are what Caddy's
+/// front controller does; any other directive is a rule of the project's own.
+#[test]
+fn htaccess_rules_of_its_own() {
+    use crate::detect::php::{apache_offered, htaccess_has_own_rules};
+    use crate::kit::Os;
+    assert!(!htaccess_has_own_rules(LARAVEL_HTACCESS));
+    assert!(!htaccess_has_own_rules(WORDPRESS_HTACCESS));
+    assert!(!htaccess_has_own_rules(
+        "#\n# Apache/PHP/Drupal settings:\n#\n<FilesMatch \"x\">\n  Require all denied\n</FilesMatch>\n"
+    ));
+    assert!(!htaccess_has_own_rules("RewriteEngine On\n\n# a comment\n"));
+    assert!(!htaccess_has_own_rules(""));
+    assert!(htaccess_has_own_rules(OWN_HTACCESS));
+    assert!(htaccess_has_own_rules("AuthType Basic\n"));
+    // Apache only on Windows, and only for rules of its own.
+    let own = [OWN_HTACCESS.to_owned()];
+    let stock = [WORDPRESS_HTACCESS.to_owned()];
+    assert!(apache_offered(Os::Win32, &own));
+    assert!(!apache_offered(Os::Win32, &stock));
+    assert!(!apache_offered(Os::Win32, &[]));
+    for os in [Os::Darwin, Os::Linux] {
+        assert!(!apache_offered(os, &own), "{os:?}");
+    }
+}
+
 #[test]
 fn laravel_and_plain() {
     let l = project("php-laravel", &[("composer.json", "{}"), ("artisan", "")]);
     let p = detect(&l.0, "it");
     assert_eq!(p.platform, "Laravel");
-    assert_eq!(ids(&p), ["php:artisan", "composer:install"]);
+    // Its site with Caddy after `artisan serve` (Q-3, D-111).
+    assert_eq!(ids(&p), ["php:artisan", "caddy", "composer:install"]);
     assert!(p.warnings.iter().any(|w| w.contains("composer install")));
 
-    // Laravel's public\.htaccess: Apache after `artisan serve`.
+    // Laravel's stock public\.htaccess: Caddy does what it says.
     let ht = project(
         "php-laravel-ht",
         &[
             ("composer.json", "{}"),
             ("artisan", ""),
             ("public/index.php", "<?php"),
-            ("public/.htaccess", "RewriteEngine On"),
+            ("public/.htaccess", LARAVEL_HTACCESS),
         ],
     );
     let p = detect(&ht.0, "it");
-    assert_eq!(ids(&p), ["php:artisan", "apache", "composer:install"]);
+    assert_eq!(ids(&p), ["php:artisan", "caddy", "composer:install"]);
     assert_eq!(p.default.as_deref(), Some("php:artisan"));
-    assert_eq!(p.actions[1].apache_dir.as_deref(), Some("public"));
+    assert_eq!(p.actions[1].caddy_dir.as_deref(), Some("public"));
+    assert!(!p.requires.contains(&"apache".to_owned()));
+
+    // Rules of its own: Apache first on Windows, Caddy only elsewhere.
+    let own = project(
+        "php-laravel-own",
+        &[
+            ("composer.json", "{}"),
+            ("artisan", ""),
+            ("public/index.php", "<?php"),
+            ("public/.htaccess", OWN_HTACCESS),
+        ],
+    );
+    let p = detect(&own.0, "it");
+    if cfg!(windows) {
+        assert_eq!(
+            ids(&p),
+            ["php:artisan", "apache", "caddy", "composer:install"]
+        );
+        assert_eq!(p.actions[1].apache_dir.as_deref(), Some("public"));
+        assert!(p.requires.contains(&"apache".to_owned()));
+    } else {
+        assert_eq!(ids(&p), ["php:artisan", "caddy", "composer:install"]);
+        assert!(!p.requires.contains(&"apache".to_owned()));
+    }
 
     let plain = project("php-plain", &[("public/index.php", "<?php")]);
     let p = detect(&plain.0, "it");
@@ -34,33 +130,114 @@ fn laravel_and_plain() {
             r#"php -S 127.0.0.1:{port} -t public "$CP_DATA/kit/php-router.php""#
         )
     );
-    // Apache proposed after `php -S`, not required.
-    assert_eq!(ids(&p), ["php:server", "apache"]);
+    // Caddy proposed after `php -S`, not required.
+    assert_eq!(ids(&p), ["php:server", "caddy"]);
     assert_eq!(p.default.as_deref(), Some("php:server"));
-    assert_eq!(p.actions[1].apache_dir.as_deref(), Some("public"));
+    assert_eq!(p.actions[1].caddy_dir.as_deref(), Some("public"));
+    assert!(!p.requires.contains(&"caddy".to_owned()));
     assert!(!p.requires.contains(&"apache".to_owned()));
 
+    // A `.htaccess`: the site first, Caddy (it is a stock one).
     let ht = project(
-        "php-apache",
+        "php-htaccess",
         &[
             ("public/index.php", "<?php"),
             ("public/.htaccess", "RewriteEngine On"),
         ],
     );
     let p = detect(&ht.0, "it");
-    assert_eq!(p.default.as_deref(), Some("apache"));
-    assert_eq!(p.actions[0].apache_dir.as_deref(), Some("public"));
-    assert!(p.requires.contains(&"apache".to_owned()));
+    assert_eq!(p.default.as_deref(), Some("caddy"));
+    assert_eq!(p.actions[0].caddy_dir.as_deref(), Some("public"));
+    assert!(p.requires.contains(&"caddy".to_owned()));
+    assert!(!p.requires.contains(&"apache".to_owned()));
+
+    // With rules of its own: Apache first on Windows, Caddy elsewhere.
+    let own = project(
+        "php-apache",
+        &[
+            ("public/index.php", "<?php"),
+            ("public/.htaccess", OWN_HTACCESS),
+        ],
+    );
+    let p = detect(&own.0, "it");
+    if cfg!(windows) {
+        assert_eq!(p.default.as_deref(), Some("apache"));
+        assert_eq!(p.actions[0].apache_dir.as_deref(), Some("public"));
+        assert_eq!(p.actions[1].caddy_dir.as_deref(), Some("public"));
+        assert!(p.requires.contains(&"apache".to_owned()));
+    } else {
+        assert_eq!(p.default.as_deref(), Some("caddy"));
+        assert!(!ids(&p).contains(&"apache"));
+        assert!(!p.requires.contains(&"apache".to_owned()));
+    }
 
     let wp = project(
         "php-wp",
-        &[("index.php", "<?php"), ("wp-settings.php", "<?php")],
+        &[
+            ("index.php", "<?php"),
+            ("wp-settings.php", "<?php"),
+            (".htaccess", WORDPRESS_HTACCESS),
+        ],
     );
     let p = detect(&wp.0, "it");
     assert_eq!(p.platform, "WordPress");
+    assert_eq!(p.default.as_deref(), Some("caddy"));
     assert!(p.requires.contains(&"mariadb".to_owned()));
-    assert!(p.requires.contains(&"apache".to_owned()));
+    assert!(p.requires.contains(&"caddy".to_owned()));
     assert!(p.requires.contains(&"php".to_owned()));
+    assert!(!p.requires.contains(&"apache".to_owned()));
+}
+
+/// Deny rules in subfolders (review of WP-3.3): Caddy reads no `.htaccess`,
+/// so a private or uploads folder with rules of its own makes Apache first
+/// on Windows and a warning everywhere; stock files, dependencies and
+/// folders past the bounds do not count.
+#[test]
+fn nested_htaccess_rules() {
+    use crate::detect::php::{nested_htaccess, NESTED_DEPTH};
+    let deny = "Require all denied\n";
+    let drupal_files = "SetHandler Drupal_Security_Do_Not_Remove_See_SA_2006_006\n<IfModule mod_php.c>\n  php_flag engine off\n</IfModule>\n";
+    let deep = format!("public/{}.htaccess", "d/".repeat(NESTED_DEPTH + 1));
+    let p = project(
+        "php-nested-ht",
+        &[
+            ("composer.json", "{}"),
+            ("artisan", ""),
+            ("public/index.php", "<?php"),
+            ("public/.htaccess", LARAVEL_HTACCESS),
+            ("public/private/.htaccess", deny),
+            ("public/sites/default/files/.htaccess", drupal_files),
+            ("public/assets/.htaccess", "RewriteEngine On\n"),
+            ("public/vendor/x/.htaccess", deny),
+            (deep.as_str(), deny),
+        ],
+    );
+    assert_eq!(
+        nested_htaccess(&p.0, "public"),
+        [
+            "public/private/.htaccess",
+            "public/sites/default/files/.htaccess"
+        ]
+    );
+    let found = detect(&p.0, "it");
+    assert!(found
+        .warnings
+        .iter()
+        .any(|w| w.contains("public/private/.htaccess") && w.contains("Caddy")));
+    if cfg!(windows) {
+        assert_eq!(
+            ids(&found),
+            ["php:artisan", "apache", "caddy", "composer:install"]
+        );
+    } else {
+        assert_eq!(ids(&found), ["php:artisan", "caddy", "composer:install"]);
+    }
+    // The site's own `.htaccess` at the root is not a nested one.
+    let flat = project(
+        "php-flat-ht",
+        &[("index.php", "<?php"), (".htaccess", WORDPRESS_HTACCESS)],
+    );
+    assert!(nested_htaccess(&flat.0, ".").is_empty());
 }
 
 /// `php -S` always goes through the kit's router (no `.env`, `.git`, `.inc`):
@@ -138,7 +315,7 @@ fn cms_with_composer() {
     );
     let p = detect(&bedrock.0, "it");
     assert_eq!(p.platform, "WordPress");
-    assert_eq!(p.actions[0].apache_dir.as_deref(), Some("web"));
+    assert_eq!(p.actions[0].caddy_dir.as_deref(), Some("web"));
     assert!(p.requires.contains(&"mariadb".to_owned()));
 
     for (pkg, docroot, platform) in [
@@ -160,7 +337,7 @@ fn cms_with_composer() {
         );
         let p = detect(&site.0, "it");
         assert_eq!(p.platform, platform);
-        assert_eq!(p.actions[0].apache_dir.as_deref(), Some(docroot));
+        assert_eq!(p.actions[0].caddy_dir.as_deref(), Some(docroot));
         assert!(p.requires.contains(&"mariadb".to_owned()));
     }
 
@@ -174,7 +351,7 @@ fn cms_with_composer() {
     assert_eq!(detect(&statamic.0, "it").platform, "Statamic");
 }
 
-/// The CMS from their archive, without Composer: Apache first and MariaDB.
+/// The CMS from their archive, without Composer: Caddy first and MariaDB.
 #[test]
 fn cms_from_archive() {
     for (marker, platform) in [
@@ -190,9 +367,9 @@ fn cms_from_archive() {
         );
         let p = detect(&site.0, "it");
         assert_eq!(p.platform, platform);
-        assert_eq!(p.default.as_deref(), Some("apache"));
-        assert_eq!(p.actions[0].apache_dir.as_deref(), Some("."));
-        for id in ["apache", "php", "mariadb"] {
+        assert_eq!(p.default.as_deref(), Some("caddy"));
+        assert_eq!(p.actions[0].caddy_dir.as_deref(), Some("."));
+        for id in ["caddy", "php", "mariadb"] {
             assert!(p.requires.contains(&id.to_owned()), "{platform}: {id}");
         }
     }

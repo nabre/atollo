@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use super::config::{apache_pool_conf, apache_vhost_conf, component_dir, nginx_pool_conf};
+use super::config::{apache_pool_conf, apache_vhost_conf, nginx_pool_conf};
 use super::pools::{
     auto_pool_id, canonical_auto_pool, host_label, load_store, migrate_port_ids, name_sites,
     parse_auto_pool_id, pooled_actions, save_store, store_path, StoredServers, POOL_PORT_FROM,
@@ -20,6 +20,7 @@ use crate::env::KitEnv;
 use crate::kit::{tests::TempDir, Arch};
 use crate::os::jobs::{self, Job};
 use crate::projects::alias;
+use crate::projects::fastcgi::FcgiAddr;
 use crate::projects::nginx::FastCgi;
 use crate::setup::catalog::Catalog;
 
@@ -327,6 +328,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
             fcgi: None,
             php_line: None,
             php: None,
+            admin: None,
             started: nginx_pool("gone", 8094, Vec::new()),
             by_user: true,
             attached: BTreeSet::new(),
@@ -727,12 +729,10 @@ fn pool_with_dead_php_cgi_is_not_running() {
         RunningPool {
             child: server,
             port: 8099,
-            fcgi: Some(FastCgi {
-                port: 9000,
-                key: "k".into(),
-            }),
+            fcgi: Some(FastCgi::tcp(9000, "k")),
             php_line: Some("8.4".into()),
             php: Some(php),
+            admin: None,
             started: nginx_pool("nginx-php", 8099, Vec::new()),
             by_user: true,
             attached: BTreeSet::new(),
@@ -848,10 +848,7 @@ fn reload_restarts_when_php_or_port_changes() {
     let live = |php: Option<&str>, fcgi: Option<u16>| LivePool {
         port: 8093,
         php_line: php.map(str::to_owned),
-        fcgi: fcgi.map(|port| FastCgi {
-            port,
-            key: "k".into(),
-        }),
+        fcgi: fcgi.map(|port| FastCgi::tcp(port, "k")),
     };
     let mut pool = nginx_pool("legacy", 8093, Vec::new());
     // Static pool, static sites: graceful.
@@ -1088,6 +1085,7 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
             fcgi: None,
             php_line: started.php_line.clone(),
             php: None,
+            admin: None,
             started,
             by_user: true,
             attached: BTreeSet::new(),
@@ -1182,21 +1180,55 @@ fn php_cgi_listening_tells_ended_from_ready() {
     let job = Job::new().unwrap();
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port();
+    let port = FcgiAddr::Tcp(port);
     let mut alive = jobs::spawn_in(&mut long_running(), &job).unwrap();
     let begun = Instant::now();
-    assert!(php_cgi_listening(&mut alive, port, Duration::from_secs(5)));
+    assert!(php_cgi_listening(&mut alive, &port, Duration::from_secs(5)));
     assert!(begun.elapsed() < Duration::from_secs(2), "answers at once");
     drop(listener);
     // Alive but not listening yet: slow, kept.
     assert!(php_cgi_listening(
         &mut alive,
-        port,
+        &port,
         Duration::from_millis(300)
     ));
     let _ = alive.kill();
     let _ = alive.wait();
     let mut ended = jobs::spawn_in(&mut exiting(1), &job).unwrap();
-    assert!(!php_cgi_listening(&mut ended, port, Duration::from_secs(5)));
+    assert!(!php_cgi_listening(
+        &mut ended,
+        &port,
+        Duration::from_secs(5)
+    ));
+}
+
+/// php-fpm on macOS and Linux is waited for on its Unix socket (never a
+/// TCP port, review of WP-3.3): a socket that takes connections answers,
+/// a file that is not one, or none, does not.
+#[cfg(unix)]
+#[test]
+fn fcgi_answers_on_a_unix_socket() {
+    use super::process::fcgi_answers;
+    // A short folder: a test folder's path may be too long for `sun_path`.
+    let base = std::env::temp_dir();
+    let sock = crate::projects::caddy::PrivateSocket::in_leaf(
+        &base,
+        &format!("fcgi-test-{}", std::process::id()),
+        "fpm.sock",
+    )
+    .unwrap();
+    let path = sock.path.clone();
+    let addr = FcgiAddr::Unix(std::sync::Arc::new(sock));
+    assert!(!fcgi_answers(&addr), "no socket yet");
+    let listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
+    assert!(fcgi_answers(&addr));
+    drop(listener);
+    fs::remove_file(&path).unwrap();
+    fs::write(&path, b"").unwrap();
+    assert!(!fcgi_answers(&addr), "a plain file is not a socket");
+    let dir = path.parent().unwrap().to_path_buf();
+    drop(addr);
+    assert!(!dir.exists(), "the folder goes with the last copy");
 }
 
 /// PLAN.md §13.1: a pool stops with its last project only when projects
@@ -1402,6 +1434,297 @@ fn apache_pool_reload_twice() {
     assert!(wait_port_released(port, Duration::from_secs(5)));
 }
 
+/// `GET path` with `Host: host` on 127.0.0.1:`port`: the status and the body.
+fn http_get(port: u16, host: &str, path: &str) -> Result<(u16, String)> {
+    use std::io::{Read, Write};
+    let mut s = TcpStream::connect_timeout(
+        &SocketAddr::from(([127, 0, 0, 1], port)),
+        Duration::from_secs(2),
+    )?;
+    s.set_read_timeout(Some(Duration::from_secs(10)))?;
+    write!(
+        s,
+        "GET {path} HTTP/1.1\r\nHost: {host}:{port}\r\nConnection: close\r\n\r\n"
+    )?;
+    let mut raw = Vec::new();
+    s.read_to_end(&mut raw)?;
+    let text = String::from_utf8_lossy(&raw).into_owned();
+    let status = text
+        .split_whitespace()
+        .nth(1)
+        .and_then(|c| c.parse().ok())
+        .unwrap_or(0);
+    let body = text.split_once("\r\n\r\n").map(|(_, b)| b).unwrap_or("");
+    Ok((status, body.to_owned()))
+}
+
+/// WP-3.3 acceptance with a real Caddy and PHP (ATOLLO_TEST_KIT): a pool
+/// with two PHP sites and an alias to another project's folder; a third
+/// site added with `caddy reload` while the first one keeps answering, the
+/// same Caddy process throughout.
+#[test]
+fn caddy_pool_two_php_sites_alias_and_reload() {
+    let Ok(root) = std::env::var("ATOLLO_TEST_KIT") else {
+        eprintln!("ATOLLO_TEST_KIT not set: skipped");
+        return;
+    };
+    // The host's temporary folder holds the pool's admin socket.
+    let kit = Kit::at(PathBuf::from(root), Arch::detect()).with_host(Some(&std::env::temp_dir()));
+    kit.prepare().unwrap();
+    let catalog = Catalog::get();
+    for id in ["caddy", "php"] {
+        if !catalog.find(id).is_some_and(|c| c.is_installed(&kit)) {
+            eprintln!("{id} not installed: skipped");
+            return;
+        }
+    }
+    crate::setup::kit_files::write_all(&kit).unwrap();
+    let env = KitEnv::build(
+        &kit,
+        &crate::settings::Settings::default(),
+        "en",
+        &crate::env::Host::capture(),
+    );
+    let port = {
+        let l = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        l.local_addr().unwrap().port()
+    };
+    let id = "p6-caddy-pool";
+    let projects = kit.projects();
+    let site = |name: &str, extra: &str| {
+        let public = projects.join(name).join("public");
+        fs::create_dir_all(&public).unwrap();
+        fs::write(
+            public.join("index.php"),
+            format!("<?php echo 'PHP ' . PHP_VERSION . ' {name} ' . $_SERVER['REQUEST_URI'];"),
+        )
+        .unwrap();
+        fs::write(public.join(".env"), "SECRET=1").unwrap();
+        fs::write(
+            projects.join(name).join("panel.json"),
+            format!(
+                r#"{{ "actions": [ {{ "id": "site", "caddy": "public", "server": "{id}"{extra} }} ] }}"#
+            ),
+        )
+        .unwrap();
+    };
+    site(
+        "p6-alpha",
+        r#", "aliases": { "/shared": "@p6-beta/assets" }"#,
+    );
+    site("p6-beta", "");
+    fs::create_dir_all(projects.join("p6-beta").join("assets")).unwrap();
+    fs::write(
+        projects.join("p6-beta").join("assets").join("logo.txt"),
+        "beta asset",
+    )
+    .unwrap();
+    let servers = WebServers::new(kit.clone());
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: id.into(),
+                name: id.into(),
+                engine: WebServerEngine::Caddy,
+                server_line: None,
+                php_line: None,
+                port: Some(port),
+                keep_alive: true,
+                autostart: false,
+            },
+            "en",
+        )
+        .unwrap();
+    let result = (|| -> Result<()> {
+        servers.start(id, &env, "en")?;
+        let (s, body) = http_get(port, "p6-alpha.localhost", "/some/route?x=1")?;
+        eprintln!("alpha: {s} {body}");
+        anyhow::ensure!(
+            s == 200 && body.contains("p6-alpha /some/route?x=1"),
+            "alpha"
+        );
+        let (s, body) = http_get(port, "p6-beta.localhost", "/")?;
+        eprintln!("beta: {s} {body}");
+        anyhow::ensure!(s == 200 && body.contains("PHP 8.") && body.contains("p6-beta"));
+        let (s, body) = http_get(port, "p6-alpha.localhost", "/shared/logo.txt")?;
+        eprintln!("alias: {s} {body}");
+        anyhow::ensure!(s == 200 && body.contains("beta asset"), "alias");
+        let (s, _) = http_get(port, "p6-alpha.localhost", "/.env")?;
+        anyhow::ensure!(s == 404, ".env: {s}");
+        let (s, _) = http_get(port, "evil.example", "/")?;
+        anyhow::ensure!(s == 421, "other host: {s}");
+        #[cfg(unix)]
+        probe_fpm_socket(&servers, id, &projects.join("p6-alpha/public/index.php"))?;
+        let pid = servers
+            .list("en", true)
+            .pools
+            .into_iter()
+            .find(|p| p.id == id)
+            .and_then(|p| p.pid);
+
+        // The first site is asked all along the reload.
+        let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let asker = {
+            let stop = std::sync::Arc::clone(&stop);
+            std::thread::spawn(move || {
+                let (mut ok, mut failed) = (0u32, Vec::new());
+                while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+                    match http_get(port, "p6-alpha.localhost", "/") {
+                        Ok((200, b)) if b.contains("p6-alpha") => ok += 1,
+                        other => failed.push(format!("{other:?}")),
+                    }
+                }
+                (ok, failed)
+            })
+        };
+        std::thread::sleep(Duration::from_millis(300));
+        site("p6-gamma", "");
+        servers.invalidate();
+        servers.reload(id, &env, "en")?;
+        std::thread::sleep(Duration::from_millis(300));
+        stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        let (ok, failed) = asker.join().unwrap();
+        eprintln!(
+            "during the reload: {ok} answers, {} failed {failed:?}",
+            failed.len()
+        );
+        anyhow::ensure!(ok > 0 && failed.is_empty(), "interrupted: {failed:?}");
+        let (s, body) = http_get(port, "p6-gamma.localhost", "/")?;
+        eprintln!("gamma: {s} {body}");
+        anyhow::ensure!(
+            s == 200 && body.contains("p6-gamma"),
+            "gamma after the reload"
+        );
+        let again = servers
+            .list("en", true)
+            .pools
+            .into_iter()
+            .find(|p| p.id == id)
+            .and_then(|p| p.pid);
+        anyhow::ensure!(
+            pid.is_some() && pid == again,
+            "same Caddy: {pid:?} {again:?}"
+        );
+        Ok(())
+    })();
+    servers.stop(id);
+    drop_real_profile(&kit, &servers, id);
+    for p in ["p6-alpha", "p6-beta", "p6-gamma"] {
+        let _ = fs::remove_dir_all(projects.join(p));
+    }
+    result.unwrap();
+}
+
+/// One FastCGI request (`FCGI_RESPONDER`) with `params` and no body on
+/// `stream`: what php-fpm writes on stdout.
+#[cfg(unix)]
+fn fcgi_request(stream: &mut std::os::unix::net::UnixStream, params: &[(&str, &str)]) -> String {
+    use std::io::{Read, Write};
+    fn record(kind: u8, body: &[u8]) -> Vec<u8> {
+        let len = body.len() as u16;
+        let mut r = vec![1, kind, 0, 1, (len >> 8) as u8, len as u8, 0, 0];
+        r.extend_from_slice(body);
+        r
+    }
+    fn length(n: usize, out: &mut Vec<u8>) {
+        if n < 128 {
+            out.push(n as u8);
+        } else {
+            out.extend_from_slice(&((n as u32) | 0x8000_0000).to_be_bytes());
+        }
+    }
+    let mut body = Vec::new();
+    for (k, v) in params {
+        length(k.len(), &mut body);
+        length(v.len(), &mut body);
+        body.extend_from_slice(k.as_bytes());
+        body.extend_from_slice(v.as_bytes());
+    }
+    let mut out = record(1, &[0, 1, 0, 0, 0, 0, 0, 0]);
+    out.extend(record(4, &body));
+    out.extend(record(4, &[]));
+    out.extend(record(5, &[]));
+    stream.write_all(&out).unwrap();
+    let mut answer = Vec::new();
+    let _ = stream.read_to_end(&mut answer);
+    // The stdout records' content, headers and records apart.
+    let mut text = Vec::new();
+    let mut at = 0;
+    while at + 8 <= answer.len() {
+        let kind = answer[at + 1];
+        let len = usize::from(answer[at + 4]) << 8 | usize::from(answer[at + 5]);
+        let pad = usize::from(answer[at + 6]);
+        let end = (at + 8 + len).min(answer.len());
+        if kind == 6 {
+            text.extend_from_slice(&answer[at + 8..end]);
+        }
+        at = end + pad;
+    }
+    String::from_utf8_lossy(&text).into_owned()
+}
+
+/// Review of WP-3.3 (the real test): php-fpm of a Caddy pool is on an
+/// owner-only Unix socket in an owner-only folder, `fpm.conf` has no TCP
+/// listen, and a request without the key is refused by the guard. What a
+/// request with `PHP_VALUE` or `PHP_ADMIN_VALUE` gets is only printed: php-fpm
+/// lets those turn `auto_prepend_file` off, so the socket's modes are the
+/// defence, the key a second one.
+#[cfg(unix)]
+fn probe_fpm_socket(servers: &WebServers, id: &str, script: &Path) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    let addr = servers
+        .running
+        .lock()
+        .unwrap()
+        .get(id)
+        .and_then(|r| r.fcgi.clone())
+        .map(|f| f.addr);
+    let Some(FcgiAddr::Unix(sock)) = addr else {
+        anyhow::bail!("php-fpm not on a Unix socket: {addr:?}");
+    };
+    let conf = fs::read_to_string(servers.kit.data().join("servers").join(id).join("fpm.conf"))?;
+    anyhow::ensure!(!conf.contains("127.0.0.1"), "TCP in fpm.conf: {conf}");
+    let mode = fs::metadata(&sock.path)?.permissions().mode() & 0o777;
+    let dir_mode = fs::metadata(sock.path.parent().unwrap())?
+        .permissions()
+        .mode()
+        & 0o777;
+    eprintln!(
+        "fpm socket: {} mode {mode:o}, folder {dir_mode:o}",
+        sock.path.display()
+    );
+    anyhow::ensure!(mode & 0o077 == 0 && dir_mode == 0o700, "socket modes");
+    let script = script.display().to_string();
+    let base = [
+        ("SCRIPT_FILENAME", script.as_str()),
+        ("REQUEST_METHOD", "GET"),
+        ("SERVER_PROTOCOL", "HTTP/1.1"),
+    ];
+    for (name, extra) in [
+        ("no key", None),
+        ("PHP_VALUE", Some(("PHP_VALUE", "auto_prepend_file=none"))),
+        (
+            "PHP_ADMIN_VALUE",
+            Some(("PHP_ADMIN_VALUE", "auto_prepend_file=none")),
+        ),
+    ] {
+        let mut params = base.to_vec();
+        params.extend(extra);
+        let mut stream = std::os::unix::net::UnixStream::connect(&sock.path)?;
+        stream.set_read_timeout(Some(Duration::from_secs(10)))?;
+        let out = fcgi_request(&mut stream, &params);
+        let status = out.lines().next().unwrap_or_default().to_owned();
+        let ran = out.contains("p6-alpha");
+        eprintln!("fpm without key, {name}: {status} (script ran: {ran})");
+        // Only the plain request must be refused: `PHP_VALUE` does turn the
+        // guard off, which is why nobody but the user reaches the socket.
+        if extra.is_none() {
+            anyhow::ensure!(out.starts_with("Status: 403") && !ran, "{name}: {out}");
+        }
+    }
+    Ok(())
+}
+
 /// BUG-V3-02: names that give the same label in one pool stay distinct.
 #[test]
 fn name_sites_keeps_names_unique() {
@@ -1423,16 +1746,16 @@ fn name_sites_keeps_names_unique() {
 
 /// PLAN-DATA §9 1.1: an automatic pool lists (and serves) the sites the
 /// projects chose in `panel.json` and those started, not every PHP project
-/// that was only offered Apache.
+/// that was only offered a site (Caddy since WP-3.3).
 #[test]
 fn automatic_pools_list_chosen_or_started_sites() {
     let tmp = TempDir::new("servers-chosen-sites");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    fake_server(&kit, "apache", "2.4.65");
+    fake_server(&kit, "caddy", "2.11.7");
     let servers = WebServers::new(kit.clone());
     let projects = kit.projects();
-    // Offered Apache next to `php -S`.
+    // Offered Caddy next to `php -S`.
     let plain = projects.join("plain").join("public");
     fs::create_dir_all(&plain).unwrap();
     fs::write(plain.join("index.php"), "<?php").unwrap();
@@ -1442,7 +1765,7 @@ fn automatic_pools_list_chosen_or_started_sites() {
     fs::write(shop.join("public").join("index.php"), "<?php").unwrap();
     fs::write(
         shop.join("panel.json"),
-        r#"{ "actions": [ { "id": "site", "apache": "public" } ] }"#,
+        r#"{ "actions": [ { "id": "site", "caddy": "public" } ] }"#,
     )
     .unwrap();
 
@@ -1457,45 +1780,38 @@ fn automatic_pools_list_chosen_or_started_sites() {
     let shown = servers.list("it", true);
     assert_eq!(projects_of(&shown.pools), ["shop"]);
     // Every project goes to the same pool: it is not left out with them.
-    let (pool, _) = servers.pool_of("plain", "apache", "it").unwrap();
+    let (pool, _) = servers.pool_of("plain", "caddy", "it").unwrap();
+    assert_eq!(pool.engine, WebServerEngine::Caddy);
     assert!(shown.pools.iter().any(|p| p.id == pool.id));
 
     let pool_dir = kit.data().join("servers").join(&pool.id);
-    let apache_dir = component_dir(&kit, "apache", pool.server_line.as_deref());
-    fs::create_dir_all(apache_dir.join("conf")).unwrap();
-    fs::write(
-        apache_dir.join("conf").join("httpd.conf"),
-        "Define SRVROOT \"x\"\r\nServerRoot \"${SRVROOT}\"\r\n",
-    )
-    .unwrap();
-    let vhosts = || -> Vec<String> {
-        let mut v: Vec<String> = fs::read_dir(pool_dir.join("vhosts"))
-            .unwrap()
-            .flatten()
-            .map(|e| e.file_name().to_string_lossy().into_owned())
-            .collect();
-        v.sort();
-        v
+    // The sites written in the pool's Caddyfile.
+    let served = || -> Vec<&'static str> {
+        let text = fs::read_to_string(pool_dir.join("Caddyfile")).unwrap();
+        ["plain", "shop"]
+            .into_iter()
+            .filter(|p| text.contains(&format!("http://{p}.localhost:{}", pool.port)))
+            .collect()
     };
     servers.write_pool_configs(&pool, None, false).unwrap();
-    assert_eq!(vhosts(), ["shop.localhost.conf"]);
+    assert_eq!(served(), ["shop"]);
 
     // Started by its project: listed and served.
     servers
         .started
         .lock()
         .unwrap()
-        .insert(("plain".into(), "apache".into()));
+        .insert(("plain".into(), "caddy".into()));
     assert_eq!(
         projects_of(&servers.list("it", true).pools),
         ["plain", "shop"]
     );
     servers.write_pool_configs(&pool, None, false).unwrap();
-    assert_eq!(vhosts(), ["plain.localhost.conf", "shop.localhost.conf"]);
+    assert_eq!(served(), ["plain", "shop"]);
 
     // Stopped: out again (the pool is not running, nothing to reload).
     servers
-        .detach(&pool.id, "plain", "apache", &KitEnv::default(), "it")
+        .detach(&pool.id, "plain", "caddy", &KitEnv::default(), "it")
         .unwrap();
     assert_eq!(projects_of(&servers.list("it", true).pools), ["shop"]);
 
@@ -1516,6 +1832,134 @@ fn automatic_pools_list_chosen_or_started_sites() {
     let shop = shop_site(&servers);
     assert!(shop.detached);
     assert_eq!(shop.server_name, "shop.localhost");
+}
+
+/// T3.3.1: Caddy is an engine of the pools: its automatic ids read back,
+/// its label, its sites in `panel.json` (`caddy`) pooled like the others.
+#[test]
+fn caddy_engine_of_the_pools() {
+    assert_eq!(WebServerEngine::Caddy.as_str(), "caddy");
+    assert_eq!(WebServerEngine::Caddy.label(), "Caddy");
+    let id = auto_pool_id(WebServerEngine::Caddy, Some("2.11"), Some("8.4"));
+    assert_eq!(id, "caddy-2.11_php-8.4");
+    assert_eq!(
+        parse_auto_pool_id(&id),
+        Some((
+            WebServerEngine::Caddy,
+            Some("2.11".into()),
+            Some("8.4".into())
+        ))
+    );
+    assert_eq!(
+        serde_json::to_string(&WebServerEngine::Caddy).unwrap(),
+        "\"caddy\""
+    );
+    let mut caddy = crate::detect::Action::for_test("site", "", crate::detect::Kind::Web);
+    caddy.caddy_dir = Some("public".into());
+    caddy.custom = true;
+    assert_eq!(
+        WebServerEngine::of_action(&caddy),
+        Some((WebServerEngine::Caddy, "public".into()))
+    );
+    let mut other = crate::detect::Action::for_test("dev", "npm run dev", crate::detect::Kind::Web);
+    other.custom = true;
+    let actions = [other, caddy];
+    let pooled: Vec<&str> = pooled_actions(&actions)
+        .into_iter()
+        .map(|a| a.id.as_str())
+        .collect();
+    assert_eq!(pooled, ["site"]);
+}
+
+/// T3.3.2: a Caddy pool's site block: its own name and its domains, its
+/// document root, PHP with the start's key, the aliases checked on disk
+/// only (no alias that was not resolved in the text, as Apache and Nginx).
+#[test]
+fn caddy_site_block_of_a_pool() {
+    let tmp = TempDir::new("servers-caddy-site");
+    let projs = tmp.0.join("projects");
+    fs::create_dir_all(projs.join("shop").join("public")).unwrap();
+    fs::create_dir_all(projs.join("blog").join("uploads")).unwrap();
+    let mut s = site("shop", "public", 8090);
+    s.domains = vec!["api.shop.localhost".into(), "no;way.localhost".into()];
+    s.aliases.insert("/blog".into(), "@blog/uploads".into());
+    s.aliases.insert("/gone".into(), "nowhere".into());
+    s.aliases.insert("/up".into(), "../blog/uploads".into());
+    let aliases = crate::projects::caddy::resolve_aliases(&projs.join("shop"), &projs, &s.aliases);
+    let fcgi = FastCgi::tcp(9333, "k".repeat(64));
+    let doc = projs.join("shop").join("public");
+    let block = super::config::caddy_site_conf(8090, false, &doc, &aliases, Some(&fcgi), &s)
+        .unwrap()
+        .join("\n");
+    assert!(
+        block.starts_with(
+            "http://shop.localhost:8090, http://api.shop.localhost:8090 {\n\tbind 127.0.0.1\n"
+        ),
+        "{block}"
+    );
+    assert!(block.contains(&format!(
+        "\t\troot * \"{}\"\n",
+        crate::projects::apache::fwd(&doc)
+    )));
+    assert!(block.contains("\t\t\tenv ATOLLO_FCGI_KEY {env.ATOLLO_FCGI_KEY}\n"));
+    assert!(!block.contains(&"k".repeat(64)), "the key is never written");
+    assert!(block.contains("\t\thandle_path /blog/* {\n"));
+    assert!(block.contains(&format!(
+        "\t\t\troot * \"{}/blog/uploads\"\n",
+        crate::projects::apache::fwd(&projs)
+    )));
+    for absent in ["/gone", "redir /up ", "/up/*", "nowhere", "no;way", ".."] {
+        assert!(!block.contains(absent), "{absent}: {block}");
+    }
+    // A folder Caddy cannot take is not served at all.
+    let bad = Path::new("/kit/{x}/public");
+    assert!(super::config::caddy_site_conf(8090, false, bad, &[], None, &s).is_none());
+}
+
+/// A Caddy pool's files: one Caddyfile with the sites it serves, the PHP
+/// key, its admin endpoint, the user's snippets only when there are some.
+#[test]
+fn caddy_pool_writes_one_caddyfile() {
+    let tmp = TempDir::new("servers-caddy-pool");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    for p in ["shop", "blog"] {
+        fs::create_dir_all(kit.projects().join(p).join("public")).unwrap();
+    }
+    let mut pool = nginx_pool(
+        "caddy-2.11_php-8.4",
+        8091,
+        vec![site("shop", "public", 8091), site("blog", "public", 8091)],
+    );
+    pool.engine = WebServerEngine::Caddy;
+    let fcgi = FastCgi::tcp(9444, "z".repeat(64));
+    let sock = tmp.0.join("host").join("caddy-1").join("a.sock");
+    let conf = servers
+        .write_pool_configs_with(&pool, Some(&fcgi), false, Some(&sock))
+        .unwrap();
+    assert_eq!(conf.file_name().unwrap(), "Caddyfile");
+    let text = fs::read_to_string(&conf).unwrap();
+    if crate::projects::caddy::socket_path_usable(&sock) {
+        assert!(text.contains(&format!(
+            "\tadmin \"{}|0600\"\n",
+            crate::projects::caddy::admin_address(&sock)
+        )));
+    }
+    assert!(!text.contains("admin 127.0.0.1") && !text.contains(&"z".repeat(64)));
+    assert!(text.contains("http://shop.localhost:8091 {\n"));
+    assert!(text.contains("http://blog.localhost:8091 {\n"));
+    assert!(text.contains("php_fastcgi 127.0.0.1:9444 {"));
+    assert!(text.contains("respond 421"));
+    assert!(!text.contains("import "));
+    let snippets = kit.data().join("servers").join(&pool.id).join("conf.d");
+    fs::write(snippets.join("mine.caddy"), "").unwrap();
+    let text = fs::read_to_string(servers.write_pool_configs(&pool, None, false).unwrap()).unwrap();
+    assert!(
+        text.contains("\tadmin off\n") && text.contains("import \""),
+        "{text}"
+    );
+    assert!(text.contains("respond @php 503"));
 }
 
 /// PLAN.md §13.1: a site marked `dedicated` keeps its own server (in no
