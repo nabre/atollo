@@ -276,10 +276,12 @@ pub const ALIAS_NO_RUN: &str = r"\.(?:php|phtml|phar|phps|inc|php[3-8])$";
 /// the expression of the project's folder (`${CP_PROJECT_FWD}`). No link is
 /// followed in their folders (WEB-8), and a `.htaccess` there cannot turn
 /// `FollowSymLinks` back on. Static files only (SEC-V4-01): the files of
-/// [`ALIAS_NO_RUN`] refused (403), and no `FileInfo` for a `.htaccess`
-/// there, so an uploaded one cannot give itself a handler (`SetHandler`,
-/// `AddHandler`) that runs a `.jpg`; `Nonfatal=Override` ignores such a
-/// line (a warning in the log) instead of answering 500 for the folder.
+/// [`ALIAS_NO_RUN`] refused (403), and a `.htaccess` there may only change
+/// listings: no `FileInfo` (an uploaded one would give a `.jpg` a PHP
+/// handler), no `AuthConfig` or `Limit` (its `Require all granted` or
+/// `Allow from all` in a `<FilesMatch>`, merged after this one, would open
+/// the scripts again). `Nonfatal=Override` ignores such a line (a warning
+/// in the log) instead of answering 500 for the folder.
 pub fn alias_directives(own: &str, aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     let mut lines = Vec::new();
     for alias in aliases {
@@ -288,7 +290,7 @@ pub fn alias_directives(own: &str, aliases: &[SiteAlias], indent: &str) -> Vec<S
         lines.push(format!("{indent}<Directory \"{target}\">"));
         lines.push(format!("{indent}    Options Indexes"));
         lines.push(format!(
-            "{indent}    AllowOverride AuthConfig Indexes Limit Options=Indexes,MultiViews Nonfatal=Override"
+            "{indent}    AllowOverride Indexes Options=Indexes,MultiViews Nonfatal=Override"
         ));
         lines.push(format!("{indent}    Require all granted"));
         lines.push(format!("{indent}    <FilesMatch \"(?i){ALIAS_NO_RUN}\">"));

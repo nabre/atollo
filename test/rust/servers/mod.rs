@@ -1515,7 +1515,7 @@ fn apache_pool_two_php_sites_alias_and_reload() {
     .unwrap();
     fs::write(
         projects.join("d116-beta").join("assets").join(".htaccess"),
-        "AddHandler application/x-httpd-php .jpg\nAddType application/x-httpd-php .jpg\n",
+        "AddHandler application/x-httpd-php .jpg\nAddType application/x-httpd-php .jpg\n<FilesMatch \"\\.phtml$\">\n  Require all granted\n  Allow from all\n</FilesMatch>\n",
     )
     .unwrap();
     // Drupal's protection of its uploads folder (its own `.htaccess`).

@@ -292,6 +292,15 @@ fn aliases_follow_no_links() {
     // SEC-V4-01: no handler of its own for an uploaded `.htaccess`, and
     // the scripts refused in the alias' folder.
     assert!(!lines.contains("FileInfo"), "{lines}");
+    assert!(
+        !lines.contains("AuthConfig") && !lines.contains("Limit"),
+        "{lines}"
+    );
+    assert!(
+        lines
+            .contains("    AllowOverride Indexes Options=Indexes,MultiViews Nonfatal=Override\r\n"),
+        "{lines}"
+    );
     assert!(lines.contains("    <FilesMatch \"(?i)\\.(?:php|phtml|phar|phps|inc|php[3-8])$\">\r\n        Require all denied\r\n    </FilesMatch>\r\n</Directory>"), "{lines}");
 
     let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\n";
