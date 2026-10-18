@@ -149,13 +149,11 @@ section { padding: 72px 0; }
 .shots figcaption { font-size: 0.875rem; color: var(--desc); margin-top: 8px; }
 @media (max-width: 760px) { .shots { grid-template-columns: 1fr; } }
 
-/* Comparison */
-.table-scroll { overflow-x: auto; }
-.compare { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 640px; }
-.compare th, .compare td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--border); }
-.compare thead th { color: var(--desc); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
-.compare tbody th { color: var(--title); white-space: nowrap; }
-.compare td:last-child { color: var(--title); }
+/* How it works: the program's own traits, never a comparison (MARKETING.md, section 4) */
+.aspects { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px 48px; }
+.aspects article { border-left: 2px solid var(--accent); padding-left: 16px; }
+.aspects p { margin: 0; }
+@media (max-width: 760px) { .aspects { grid-template-columns: 1fr; } }
 
 /* Targets */
 .targets { list-style: none; padding: 0; margin: 24px 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
