@@ -200,7 +200,7 @@ fn unix_gitconfig_gets_the_credential_helper_once() {
         "cache"
     )
     .is_some_and(|t| t.contains("example.com\"]\n\thelper = store\n#")));
-    assert!(gitconfig_with_helper("", "cache").is_some_and(|t| t.starts_with("# Dev-Kit")));
+    assert!(gitconfig_with_helper("", "cache").is_some_and(|t| t.starts_with("# Atollo")));
 }
 
 /// Review of D-112: dugite-native for macOS or Linux prepared from a
@@ -324,7 +324,7 @@ fn dugite_links_lost_on_windows_are_noticed() {
     assert_eq!(missing_git_links(&tmp.0.join("none")).len(), 3);
 }
 
-/// D-112: the conda-forge Git of an older Dev-Kit (the only one that
+/// D-112: the conda-forge Git of an older Atollo (the only one that
 /// cannot move) is marked once to be installed again; dugite's folder and
 /// Windows are left alone.
 #[test]

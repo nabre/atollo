@@ -85,14 +85,14 @@ pub fn gitconfig_with_helper(text: &str, helper: &str) -> Option<String> {
         out.push('\n');
     }
     out.push_str(&format!(
-        "# Dev-Kit: credentials of hosts other than GitHub\n[credential]\n\thelper = {helper}\n"
+        "# Atollo: credentials of hosts other than GitHub\n[credential]\n\thelper = {helper}\n"
     ));
     Some(out)
 }
 
 /// True when `dir`, the folder of the installed Git (its line, or `git`
 /// itself in the layout before lines), is a conda environment
-/// (`conda-meta`): the Git that Dev-Kit installed off Windows before
+/// (`conda-meta`): the Git that Atollo installed off Windows before
 /// dugite-native, which cannot follow the kit.
 pub fn has_conda_git(dir: &Path) -> bool {
     dir.join("conda-meta").is_dir()
@@ -142,7 +142,7 @@ impl Installer for Git {
         bail!("git: dugite-native is staged for its target, never unpacked on this system")
     }
 
-    /// A conda-forge Git left by an older Dev-Kit on macOS or Linux is
+    /// A conda-forge Git left by an older Atollo on macOS or Linux is
     /// marked once to be installed again (the start replaces it with
     /// dugite-native, whose folder has no `conda-meta`): it is the only Git
     /// that cannot move with the kit. Only the installed line counts: an
@@ -584,7 +584,7 @@ impl NodeEntry {
 /// asked; otherwise the newest LTS (`lts` not `false`), or the newest
 /// release when the index has no LTS for it. When the version installed
 /// (`installed`) is newer than that LTS (a "Current" release installed by
-/// an older Dev-Kit), the newest of its major instead: an update never takes
+/// an older Atollo), the newest of its major instead: an update never takes
 /// the kit back to an older major.
 pub fn node_pick<'a>(
     index: &'a [NodeEntry],

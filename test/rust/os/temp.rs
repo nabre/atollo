@@ -16,7 +16,7 @@ fn in_host_temp_or_data_tmp() {
 
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
     let work = TempWork::new(&host, "setup/x").unwrap();
-    assert!(work.path().starts_with(tmp.0.join("host").join("Dev-Kit")));
+    assert!(work.path().starts_with(tmp.0.join("host").join("Atollo")));
     // a second user of the same folder starts from empty
     fs::write(work.path().join("old"), "x").unwrap();
     drop(work);

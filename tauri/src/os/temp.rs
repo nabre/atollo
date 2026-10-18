@@ -1,6 +1,6 @@
 //! Folders for files in transit (D-90): downloads, extractions, a framework
 //! being created. They go in the host's temporary folder
-//! (`<TEMP>\Dev-Kit\<kit id>\`, `Kit::system_temp`), on the PC's own disk,
+//! (`<TEMP>\Atollo\<kit id>\`, `Kit::system_temp`), on the PC's own disk,
 //! so a kit on FAT32/exFAT has neither the 4 GiB limit nor a slow USB disk
 //! while they are written; `data\tmp` when the host gave no temporary folder
 //! or it cannot be written. Each folder holds an open `.lock` while it is in

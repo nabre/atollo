@@ -77,7 +77,7 @@ fn components_mark_the_needs_of_one_target() {
 /// with the catalog's reason.
 #[test]
 fn components_say_why_not_on_linux_arm64() {
-    let tmp = std::env::temp_dir().join(format!("devkit-cli-components-{}", std::process::id()));
+    let tmp = std::env::temp_dir().join(format!("atollo-cli-components-{}", std::process::id()));
     let kit = Kit::at(tmp.clone(), crate::kit::Arch::detect())
         .for_target(crate::kit::Target::LINUX_ARM64);
     let mut out = Vec::new();
@@ -199,7 +199,7 @@ fn failed_by_hand_shows_downloads_dir() {
             }),
         },
     };
-    let dir = std::path::PathBuf::from(r"C:\Temp\Dev-Kit\abc\downloads");
+    let dir = std::path::PathBuf::from(r"C:\Temp\Atollo\abc\downloads");
     for (lang, kit) in [
         ("it", "del kit"),
         ("en", "kit's"),

@@ -456,7 +456,7 @@ impl WebServers {
             env.set_php(&self.kit.data(), &php_dir);
         }
         env.set("CP_PROJECTS_FWD", fwd(&self.kit.projects()));
-        let lan = env.get("DEVKIT_ALLOW_LAN") == Some("1");
+        let lan = env.get("ATOLLO_ALLOW_LAN") == Some("1");
 
         let pool_dir = self.kit.data().join("servers").join(&pool.id);
         let _ = fs::remove_file(pool_dir.join("error.log"));
@@ -619,7 +619,7 @@ impl WebServers {
                 )
             );
         }
-        let lan = base_env.get("DEVKIT_ALLOW_LAN") == Some("1");
+        let lan = base_env.get("ATOLLO_ALLOW_LAN") == Some("1");
         let live = self
             .running
             .lock()

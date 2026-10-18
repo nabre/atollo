@@ -79,7 +79,7 @@ pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> 
 pub(super) fn apply_env(state: &AppState, settings: Settings) -> &'static str {
     let lang = crate::i18n::resolve(
         settings.lang.as_deref(),
-        state.host.get("DEVKIT_LANG"),
+        state.host.get("ATOLLO_LANG"),
         crate::i18n::windows_locale().as_deref(),
     );
     let env = KitEnv::build(&state.kit, &settings, lang, &state.host);

@@ -1,4 +1,4 @@
-//! Dev-Kit: portable development environment for Windows in one exe.
+//! Atollo: portable development environment for Windows in one exe.
 //!
 //! Start order (docs/app/ARCHITECTURE.md, Avvio): kit root → folders and settings →
 //! environment of this process inside `data\` → command line or window →
@@ -69,7 +69,7 @@ fn run() -> i32 {
     let host = Host::capture();
     let windows_lang = i18n::windows_locale();
     // Language before settings exist: for the "cannot write" message.
-    let early_lang = i18n::resolve(None, host.get("DEVKIT_LANG"), windows_lang.as_deref());
+    let early_lang = i18n::resolve(None, host.get("ATOLLO_LANG"), windows_lang.as_deref());
 
     let exe = match std::env::current_exe() {
         Ok(exe) => exe,
@@ -124,7 +124,7 @@ fn run() -> i32 {
     let loaded = Settings::load(&kit);
     let lang = i18n::resolve(
         loaded.settings.lang.as_deref(),
-        host.get("DEVKIT_LANG"),
+        host.get("ATOLLO_LANG"),
         windows_lang.as_deref(),
     );
     // A kit disk that runs no program (noexec, showexec) stops the app and
@@ -370,7 +370,7 @@ fn github_token(host: &Host) -> Option<String> {
         .map(str::to_owned)
 }
 
-/// `Dev-Kit.exe prepare`: 0 all good, 1 some component failed, 3 another
+/// `Atollo.exe prepare`: 0 all good, 1 some component failed, 3 another
 /// preparation is running.
 fn prepare(
     kit: &Kit,
@@ -457,17 +457,17 @@ fn prepare(
 /// are those of `Target::ALL`.
 const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
 
-/// The program's name in the help: `Dev-Kit.exe` on Windows, as always;
-/// elsewhere the file it was started from (`Atollo`, `Dev-Kit`, ...), or
-/// `Dev-Kit` when that is unknown.
+/// The program's name in the help: `Atollo.exe` on Windows, as always;
+/// elsewhere the file it was started from (`Atollo`, `Atollo`, ...), or
+/// `Atollo` when that is unknown.
 fn program_name(os: kit::Os, exe: Option<&Path>) -> String {
     if os.is_windows() {
-        return "Dev-Kit.exe".to_owned();
+        return "Atollo.exe".to_owned();
     }
     exe.and_then(Path::file_name)
         .map(|n| n.to_string_lossy().into_owned())
         .filter(|n| !n.is_empty())
-        .unwrap_or_else(|| "Dev-Kit".to_owned())
+        .unwrap_or_else(|| "Atollo".to_owned())
 }
 
 /// The help for `os`; `{1}` is the kit's Antigravity command (`agy.cmd`
@@ -586,7 +586,7 @@ fn build_app<R: tauri::Runtime>(
             open_main_window(app.handle(), &kit.webview_data())?;
             // Extensions follow the projects open in the editor; the editor
             // windows offer to restart them (D-71).
-            // Databases marked "start with Dev-Kit" (D-73).
+            // Databases marked "start with Atollo" (D-73).
             // Then the server profiles marked "Avvia con Atollo".
             let (services, servers, env, lang) = {
                 let state = app.state::<AppState>();
@@ -624,12 +624,12 @@ fn build_app<R: tauri::Runtime>(
             let updater = std::sync::Arc::new(setup::self_update::Updater::new(kit.clone()));
             app.manage(std::sync::Arc::clone(&updater));
             let settings = Settings::load(&kit).settings;
-            // DEVKIT_NO_UPDATE: no automatic check (as for the kit's scripts).
+            // ATOLLO_NO_UPDATE: no automatic check (as for the kit's scripts).
             if settings.auto_update
                 && app
                     .state::<AppState>()
                     .host
-                    .get("DEVKIT_NO_UPDATE")
+                    .get("ATOLLO_NO_UPDATE")
                     .is_none()
             {
                 let token = github_token(&app.state::<AppState>().host);
@@ -642,11 +642,11 @@ fn build_app<R: tauri::Runtime>(
                 });
             }
             // The versions each source offers, for the menus that download
-            // one; DEVKIT_NO_UPDATE: nothing asked automatically.
+            // one; ATOLLO_NO_UPDATE: nothing asked automatically.
             if app
                 .state::<AppState>()
                 .host
-                .get("DEVKIT_NO_UPDATE")
+                .get("ATOLLO_NO_UPDATE")
                 .is_none()
             {
                 let (lines_kit, env) = (kit.clone(), app.state::<AppState>().env());

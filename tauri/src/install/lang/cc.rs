@@ -122,7 +122,7 @@ pub(crate) fn make_version(version: &str) -> Option<&str> {
 /// environment built before Zig was installed, or outside the kit's
 /// shells) a line of the kit's Zig next to `cc/` is taken ([`FIND_ZIG`]).
 const COMPILER_SHIM: &str = r#"#!/bin/sh
-# Dev-Kit: @CMD@ of the kit is `zig @CMD@` (the kit's Zig on the PATH).
+# Atollo: @CMD@ of the kit is `zig @CMD@` (the kit's Zig on the PATH).
 # Target triples of Clang and Rust (x86_64-unknown-linux-gnu,
 # arm64-apple-macosx14.0) become Zig's (x86_64-linux-gnu, aarch64-macos).
 zt() {
@@ -157,7 +157,7 @@ done
 
 /// A tool shim: `zig ar`, `zig ranlib`.
 const TOOL_SHIM: &str = r#"#!/bin/sh
-# Dev-Kit: @CMD@ of the kit is `zig @CMD@` (the kit's Zig on the PATH).
+# Atollo: @CMD@ of the kit is `zig @CMD@` (the kit's Zig on the PATH).
 @ZIG@exec zig @CMD@ "$@"
 "#;
 
@@ -188,13 +188,13 @@ const FIND_ZIG: &str = r#"if ! command -v zig >/dev/null 2>&1; then
   done
   [ -z "$best" ] && [ -x "$d/zig" ] && best=$d
   [ -n "$best" ] && PATH="$best:$PATH"
-  command -v zig >/dev/null 2>&1 || { echo "Dev-Kit: @CMD@ needs Zig, install it from Tools" >&2; exit 127; }
+  command -v zig >/dev/null 2>&1 || { echo "Atollo: @CMD@ needs Zig, install it from Tools" >&2; exit 127; }
 fi
 "#;
 
 /// GNU make of the conda environment in `cc/make`, next to `cc/bin`.
 const MAKE_SHIM: &str = r#"#!/bin/sh
-# Dev-Kit: GNU make from conda-forge, in the folder of C and C++.
+# Atollo: GNU make from conda-forge, in the folder of C and C++.
 exec "$(dirname "$0")/../make/bin/make" "$@"
 "#;
 

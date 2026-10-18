@@ -236,10 +236,10 @@ function TopicOverview({
             )}
           >
             {tr(
-              "Tutti i percorsi nei file di configurazione sono ricalcolati dinamicamente ad ogni avvio a partire dalla posizione corrente di Dev-Kit.exe. Se la chiavetta passa da D:\\ a E:\\ su un altro PC, tutto continua a funzionare.",
-              "All paths in configuration files are dynamically recomputed on every startup from Dev-Kit.exe's location. If the drive changes from D:\\ to E:\\ on another PC, everything keeps working seamlessly.",
-              "Tous les chemins des fichiers de configuration sont recalculés dynamiquement à chaque démarrage depuis l'emplacement de Dev-Kit.exe. Si la clé passe de D:\\ à E:\\ sur un autre PC, tout continue de fonctionner.",
-              "Alle Pfade in Konfigurationsdateien werden bei jedem Start dynamisch aus dem Speicherort von Dev-Kit.exe neu berechnet. Wechselt das Laufwerk an einem anderen PC von D:\\ zu E:\\, funktioniert alles nahtlos weiter.",
+              "Tutti i percorsi nei file di configurazione sono ricalcolati dinamicamente ad ogni avvio a partire dalla posizione corrente di Atollo.exe. Se la chiavetta passa da D:\\ a E:\\ su un altro PC, tutto continua a funzionare.",
+              "All paths in configuration files are dynamically recomputed on every startup from Atollo.exe's location. If the drive changes from D:\\ to E:\\ on another PC, everything keeps working seamlessly.",
+              "Tous les chemins des fichiers de configuration sont recalculés dynamiquement à chaque démarrage depuis l'emplacement d'Atollo.exe. Si la clé passe de D:\\ à E:\\ sur un autre PC, tout continue de fonctionner.",
+              "Alle Pfade in Konfigurationsdateien werden bei jedem Start dynamisch aus dem Speicherort von Atollo.exe neu berechnet. Wechselt das Laufwerk an einem anderen PC von D:\\ zu E:\\, funktioniert alles nahtlos weiter.",
             )}
           </GuideCard>
 
@@ -436,10 +436,10 @@ function TopicDiskLayout({ info }: { info: AppInfo | null }) {
       >
         <p className="m-0 text-[12px] text-vsc-desc">
           {tr(
-            "Tutto ciò che appartiene al kit vive dentro la cartella in cui si trova Dev-Kit.exe (indicata come <Radice>, ad esempio D:\\Dev-Kit\\). Clicca sui pulsanti qui sotto per aprire direttamente le cartelle in Esplora file.",
-            "Everything belonging to the kit lives inside the folder where Dev-Kit.exe resides (denoted as <Root>, e.g. D:\\Dev-Kit\\). Click the buttons below to open folders directly in File Explorer.",
-            "Tout ce qui appartient au kit réside dans le dossier contenant Dev-Kit.exe (indiqué comme <Racine>, ex. D:\\Dev-Kit\\). Cliquez sur les boutons ci-dessous pour ouvrir directement les dossiers dans l'Explorateur de fichiers.",
-            "Alles, was zum Kit gehört, befindet sich im Ordner von Dev-Kit.exe (bezeichnet als <Stamm>, z. B. D:\\Dev-Kit\\). Klicke auf die Schaltflächen unten, um die Ordner direkt im Datei-Explorer zu öffnen.",
+            "Tutto ciò che appartiene al kit vive dentro la cartella in cui si trova Atollo.exe (indicata come <Radice>, ad esempio D:\\Atollo\\). Clicca sui pulsanti qui sotto per aprire direttamente le cartelle in Esplora file.",
+            "Everything belonging to the kit lives inside the folder where Atollo.exe resides (denoted as <Root>, e.g. D:\\Atollo\\). Click the buttons below to open folders directly in File Explorer.",
+            "Tout ce qui appartient au kit réside dans le dossier contenant Atollo.exe (indiqué comme <Racine>, ex. D:\\Atollo\\). Cliquez sur les boutons ci-dessous pour ouvrir directement les dossiers dans l'Explorateur de fichiers.",
+            "Alles, was zum Kit gehört, befindet sich im Ordner von Atollo.exe (bezeichnet als <Stamm>, z. B. D:\\Atollo\\). Klicke auf die Schaltflächen unten, um die Ordner direkt im Datei-Explorer zu öffnen.",
           )}
         </p>
         <KitFoldersBar />
@@ -595,7 +595,7 @@ function TopicDiskLayout({ info }: { info: AppInfo | null }) {
               "Vollständige Umgebung im Terminal prüfen",
             )}
             path={info.root}
-            code={`.\\Dev-Kit.exe env | Out-Host`}
+            code={`.\\Atollo.exe env | Out-Host`}
           />
         )}
       </EditorSection>
@@ -666,10 +666,10 @@ function TopicLifecycle({ onNavigate }: { onNavigate: (page: AppPageTarget) => v
                 </strong>,
                 <span key="d">
                   {tr(
-                    "Individua la cartella di Dev-Kit.exe, crea le sottocartelle mancanti in data\\ e scrive i file shim (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
-                    "Detects Dev-Kit.exe's folder, creates any missing subfolders under data\\ and writes shim files (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
-                    "Détecte le dossier de Dev-Kit.exe, crée les sous-dossiers manquants dans data\\ et écrit les fichiers shim (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
-                    "Ermittelt den Ordner von Dev-Kit.exe, erstellt fehlende Unterordner in data\\ und schreibt die Shim-Dateien (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
+                    "Individua la cartella di Atollo.exe, crea le sottocartelle mancanti in data\\ e scrive i file shim (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
+                    "Detects Atollo.exe's folder, creates any missing subfolders under data\\ and writes shim files (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
+                    "Détecte le dossier d'Atollo.exe, crée les sous-dossiers manquants dans data\\ et écrit les fichiers shim (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
+                    "Ermittelt den Ordner von Atollo.exe, erstellt fehlende Unterordner in data\\ und schreibt die Shim-Dateien (agy.cmd, ssh-wrapper.cmd, editor.cmd, gitconfig).",
                   )}
                 </span>,
               ],
@@ -821,10 +821,10 @@ function TopicSupplyChain({ onSelectTopic }: { onSelectTopic: (id: GuideTopicId)
       >
         <p className="m-0 text-[12px] text-vsc-desc">
           {tr(
-            "Dev-Kit non include binari di terze parti pre-impacchettati e non si appoggia a mirror non ufficiali: ogni componente viene scaricato direttamente dal fornitore originario e verificato crittograficamente.",
-            "Dev-Kit does not bundle pre-packaged third-party binaries and never relies on unofficial mirrors: every component is downloaded directly from its original vendor and cryptographically verified.",
-            "Dev-Kit n'inclut aucun binaire tiers pré-empaqueté et ne dépend jamais de miroirs non officiels : chaque composant est téléchargé directement auprès du fournisseur d'origine et vérifié cryptographiquement.",
-            "Dev-Kit enthält keine vorab gepackten Drittanbieter-Binärdateien und nutzt niemals inoffizielle Mirrors: Jede Komponente wird direkt vom ursprünglichen Hersteller heruntergeladen und kryptografisch geprüft.",
+            "Atollo non include binari di terze parti pre-impacchettati e non si appoggia a mirror non ufficiali: ogni componente viene scaricato direttamente dal fornitore originario e verificato crittograficamente.",
+            "Atollo does not bundle pre-packaged third-party binaries and never relies on unofficial mirrors: every component is downloaded directly from its original vendor and cryptographically verified.",
+            "Atollo n'inclut aucun binaire tiers pré-empaqueté et ne dépend jamais de miroirs non officiels : chaque composant est téléchargé directement auprès du fournisseur d'origine et vérifié cryptographiquement.",
+            "Atollo enthält keine vorab gepackten Drittanbieter-Binärdateien und nutzt niemals inoffizielle Mirrors: Jede Komponente wird direkt vom ursprünglichen Hersteller heruntergeladen und kryptografisch geprüft.",
           )}
         </p>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -1034,10 +1034,10 @@ function TopicSourcesTable({
       >
         <p className="m-0 text-[12px] text-vsc-desc">
           {tr(
-            "Elenco minuzioso di tutti i link da cui Dev-Kit attinge gli strumenti, il metodo di verifica crittografica applicato, la cartella di destinazione in data\\apps\\ e lo stato attuale su questa unità.",
-            "Detailed list of every URL from which Dev-Kit fetches tools, the cryptographic verification method applied, the destination folder in data\\apps\\ and the current status on this drive.",
-            "Liste détaillée de tous les liens depuis lesquels Dev-Kit télécharge les outils, la méthode de vérification cryptographique appliquée, le dossier de destination dans data\\apps\\ et l'état actuel sur ce lecteur.",
-            "Detaillierte Liste aller URLs, von denen Dev-Kit Werkzeuge bezieht, die angewandte kryptografische Prüfmethode, der Zielordner in data\\apps\\ sowie der aktuelle Status auf diesem Laufwerk.",
+            "Elenco minuzioso di tutti i link da cui Atollo attinge gli strumenti, il metodo di verifica crittografica applicato, la cartella di destinazione in data\\apps\\ e lo stato attuale su questa unità.",
+            "Detailed list of every URL from which Atollo fetches tools, the cryptographic verification method applied, the destination folder in data\\apps\\ and the current status on this drive.",
+            "Liste détaillée de tous les liens depuis lesquels Atollo télécharge les outils, la méthode de vérification cryptographique appliquée, le dossier de destination dans data\\apps\\ et l'état actuel sur ce lecteur.",
+            "Detaillierte Liste aller URLs, von denen Atollo Werkzeuge bezieht, die angewandte kryptografische Prüfmethode, der Zielordner in data\\apps\\ sowie der aktuelle Status auf diesem Laufwerk.",
           )}
         </p>
 
@@ -1158,10 +1158,10 @@ function TopicExtraSources() {
       >
         <p className="m-0 text-[12px] text-vsc-desc">
           {tr(
-            "Oltre ai repository di download dei binari, Dev-Kit comunica esclusivamente con i seguenti endpoint per quote IA, autenticazione GitHub e galleria estensioni dell'editor.",
-            "Beyond binary download repositories, Dev-Kit communicates exclusively with the following endpoints for AI quotas, GitHub authentication and the editor extension gallery.",
-            "Au-delà des dépôts de téléchargement de binaires, Dev-Kit communique exclusivement avec les points de terminaison suivants pour les quotas IA, l'authentification GitHub et la galerie d'extensions de l'éditeur.",
-            "Neben den Binär-Download-Repositorys kommuniziert Dev-Kit ausschließlich mit den folgenden Endpunkten für KI-Quoten, GitHub-Authentifizierung und die Erweiterungsgalerie des Editors.",
+            "Oltre ai repository di download dei binari, Atollo comunica esclusivamente con i seguenti endpoint per quote IA, autenticazione GitHub e galleria estensioni dell'editor.",
+            "Beyond binary download repositories, Atollo communicates exclusively with the following endpoints for AI quotas, GitHub authentication and the editor extension gallery.",
+            "Au-delà des dépôts de téléchargement de binaires, Atollo communique exclusivement avec les points de terminaison suivants pour les quotas IA, l'authentification GitHub et la galerie d'extensions de l'éditeur.",
+            "Neben den Binär-Download-Repositorys kommuniziert Atollo ausschließlich mit den folgenden Endpunkten für KI-Quoten, GitHub-Authentifizierung und die Erweiterungsgalerie des Editors.",
           )}
         </p>
         <SimpleTable
@@ -1289,10 +1289,10 @@ function TopicGithubRole({ onSelectTopic }: { onSelectTopic: (id: GuideTopicId) 
       <EditorSection
         id="guide-github-role"
         title={tr(
-          "Perché l'account GitHub è il pilastro dell'ecosistema Dev-Kit",
-          "Why a GitHub account is the cornerstone of the Dev-Kit ecosystem",
-          "Pourquoi le compte GitHub est le pilier de l'écosystème Dev-Kit",
-          "Warum das GitHub-Konto der Grundpfeiler des Dev-Kit-Ökosystems ist",
+          "Perché l'account GitHub è il pilastro dell'ecosistema Atollo",
+          "Why a GitHub account is the cornerstone of the Atollo ecosystem",
+          "Pourquoi le compte GitHub est le pilier de l'écosystème Atollo",
+          "Warum das GitHub-Konto der Grundpfeiler des Atollo-Ökosystems ist",
         )}
       >
         <p className="m-0 text-[12px] text-vsc-desc">
@@ -1461,10 +1461,10 @@ function TopicGithubSetup({ onNavigate }: { onNavigate: (page: AppPageTarget) =>
               "Klicke in der Anwendung auf die Schaltfläche „GitHub-Konto verknüpfen“.",
             ),
             tr(
-              "Dev-Kit avvia in background gh auth login --hostname github.com --git-protocol https --web --scopes repo,read:org,user:email,workflow.",
-              "Dev-Kit starts gh auth login --hostname github.com --git-protocol https --web --scopes repo,read:org,user:email,workflow in the background.",
-              "Dev-Kit lance en arrière-plan gh auth login --hostname github.com --git-protocol https --web --scopes repo,read:org,user:email,workflow.",
-              "Dev-Kit startet im Hintergrund gh auth login --hostname github.com --git-protocol https --web --scopes repo,read:org,user:email,workflow.",
+              "Atollo avvia in background gh auth login --hostname github.com --git-protocol https --web --scopes repo,read:org,user:email,workflow.",
+              "Atollo starts gh auth login --hostname github.com --git-protocol https --web --scopes repo,read:org,user:email,workflow in the background.",
+              "Atollo lance en arrière-plan gh auth login --hostname github.com --git-protocol https --web --scopes repo,read:org,user:email,workflow.",
+              "Atollo startet im Hintergrund gh auth login --hostname github.com --git-protocol https --web --scopes repo,read:org,user:email,workflow.",
             ),
             tr(
               "Sullo schermo compare un codice univoco a 8 caratteri (es. WDJB-4829), già copiato automaticamente negli appunti, e si apre https://github.com/login/device nel browser.",
@@ -1473,10 +1473,10 @@ function TopicGithubSetup({ onNavigate }: { onNavigate: (page: AppPageTarget) =>
               "Auf dem Bildschirm erscheint ein eindeutiger 8-stelliger Code (z. B. WDJB-4829), der automatisch in die Zwischenablage kopiert wird, und https://github.com/login/device öffnet sich im Browser.",
             ),
             tr(
-              "Incolla il codice nella pagina di GitHub e premi Authorize GitHub CLI: la finestra di Dev-Kit rileverà il completamento in tempo reale mostrando il tuo nome utente (@utente).",
-              "Paste the code into the GitHub page and click Authorize GitHub CLI: Dev-Kit will detect completion in real time and display your username (@user).",
-              "Collez le code sur la page GitHub et cliquez sur Authorize GitHub CLI : la fenêtre Dev-Kit détectera la validation en temps réel et affichera votre nom d'utilisateur (@utilisateur).",
-              "Füge den Code auf der GitHub-Seite ein und klicke auf Authorize GitHub CLI: Dev-Kit erkennt den Abschluss in Echtzeit und zeigt deinen Benutzernamen (@benutzer) an.",
+              "Incolla il codice nella pagina di GitHub e premi Authorize GitHub CLI: la finestra di Atollo rileverà il completamento in tempo reale mostrando il tuo nome utente (@utente).",
+              "Paste the code into the GitHub page and click Authorize GitHub CLI: Atollo will detect completion in real time and display your username (@user).",
+              "Collez le code sur la page GitHub et cliquez sur Authorize GitHub CLI : la fenêtre Atollo détectera la validation en temps réel et affichera votre nom d'utilisateur (@utilisateur).",
+              "Füge den Code auf der GitHub-Seite ein und klicke auf Authorize GitHub CLI: Atollo erkennt den Abschluss in Echtzeit und zeigt deinen Benutzernamen (@benutzer) an.",
             ),
           ]}
           purpose={tr(
@@ -1500,7 +1500,7 @@ function TopicGithubSetup({ onNavigate }: { onNavigate: (page: AppPageTarget) =>
 [core]
     autocrlf = true
     longpaths = true
-    editor = D:/Dev-Kit/data/kit/bin/editor.cmd
+    editor = D:/Atollo/data/kit/bin/editor.cmd
 [safe]
     directory = *
 [user]
@@ -1652,10 +1652,10 @@ function TopicFeatWorkbench({ onNavigate }: { onNavigate: (page: AppPageTarget) 
             "Schritte des Assistenten: 1. Willkommen & Speicherplatzprüfung · 2. Auswahl von Komponenten & Versionslinien · 3. GitHub-Kontoverknüpfung · 4. Installation & kryptografische Prüfung · 5. Abschlussübersicht.",
           )}
           example={tr(
-            "L'unità esterna D:\\Dev-Kit viene rilevata con 384 GB liberi (semaforo verde «Spazio disponibile più che sufficiente»).",
-            "External drive D:\\Dev-Kit is detected with 384 GB free (green badge 'More than enough free space').",
-            "Le lecteur externe D:\\Dev-Kit est détecté avec 384 Go libres (badge vert « Espace disponible largement suffisant »).",
-            "Das externe Laufwerk D:\\Dev-Kit wird mit 384 GB freiem Speicher erkannt (grüne Anzeige „Mehr als genug freier Speicherplatz“).",
+            "L'unità esterna D:\\Atollo viene rilevata con 384 GB liberi (semaforo verde «Spazio disponibile più che sufficiente»).",
+            "External drive D:\\Atollo is detected with 384 GB free (green badge 'More than enough free space').",
+            "Le lecteur externe D:\\Atollo est détecté avec 384 Go libres (badge vert « Espace disponible largement suffisant »).",
+            "Das externe Laufwerk D:\\Atollo wird mit 384 GB freiem Speicher erkannt (grüne Anzeige „Mehr als genug freier Speicherplatz“).",
           )}
         />
         <div>
@@ -1722,10 +1722,10 @@ function TopicFeatProjects({ onNavigate }: { onNavigate: (page: AppPageTarget) =
               "Auswahl der Vorlage starter-kit und Echtzeit-Validierung des Ordnernamens.",
             )}
             example={tr(
-              "Digitando gestionale-fatture, il kit mostra l'anteprima del percorso finale D:\\Dev-Kit\\projects\\gestionale-fatture.",
-              "Typing gestionale-fatture previews the target path D:\\Dev-Kit\\projects\\gestionale-fatture.",
-              "En saisissant gestionale-fatture, le kit affiche l'aperçu du chemin final D:\\Dev-Kit\\projects\\gestionale-fatture.",
-              "Bei Eingabe von gestionale-fatture zeigt das Kit den Zielpfad D:\\Dev-Kit\\projects\\gestionale-fatture in der Vorschau an.",
+              "Digitando gestionale-fatture, il kit mostra l'anteprima del percorso finale D:\\Atollo\\projects\\gestionale-fatture.",
+              "Typing gestionale-fatture previews the target path D:\\Atollo\\projects\\gestionale-fatture.",
+              "En saisissant gestionale-fatture, le kit affiche l'aperçu du chemin final D:\\Atollo\\projects\\gestionale-fatture.",
+              "Bei Eingabe von gestionale-fatture zeigt das Kit den Zielpfad D:\\Atollo\\projects\\gestionale-fatture in der Vorschau an.",
             )}
           />
           <GuideShot
@@ -1790,10 +1790,10 @@ function TopicFeatProjects({ onNavigate }: { onNavigate: (page: AppPageTarget) =
             "Die Seitenleiste listet alle Unterordner von projects\\ mit Sofortfilter und Tags der erkannten Sprachen auf.",
           )}
           example={tr(
-            "Tre progetti reali in D:\\Dev-Kit\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) e portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
-            "Three real projects in D:\\Dev-Kit\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) and portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
-            "Trois projets réels dans D:\\Dev-Kit\\projects\\ : api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) et portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
-            "Drei reale Projekte in D:\\Dev-Kit\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) und portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
+            "Tre progetti reali in D:\\Atollo\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) e portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
+            "Three real projects in D:\\Atollo\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) and portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
+            "Trois projets réels dans D:\\Atollo\\projects\\ : api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) et portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
+            "Drei reale Projekte in D:\\Atollo\\projects\\: api-magazzino (Python + FastAPI), gestionale-fatture (Node.js + Next.js) und portale-clienti (PHP 8.4 + Node 22 + MySQL + MongoDB).",
           )}
         />
 
@@ -1835,10 +1835,10 @@ function TopicFeatProjects({ onNavigate }: { onNavigate: (page: AppPageTarget) =
               "Konfiguration des projektspezifischen Webservers mit Modus, öffentlichem Unterordner (public), HTTP-Port, lokalem HTTPS und automatischem Start.",
             )}
             example={tr(
-              "Il progetto portale-clienti è attivo su http://localhost:8080 e https://localhost:8443 servendo D:\\Dev-Kit\\projects\\portale-clienti\\public con PHP 8.4.",
-              "Project portale-clienti is active on http://localhost:8080 and https://localhost:8443 serving D:\\Dev-Kit\\projects\\portale-clienti\\public with PHP 8.4.",
-              "Le projet portale-clienti est actif sur http://localhost:8080 et https://localhost:8443 en servant D:\\Dev-Kit\\projects\\portale-clienti\\public avec PHP 8.4.",
-              "Das Projekt portale-clienti läuft auf http://localhost:8080 und https://localhost:8443 und stellt D:\\Dev-Kit\\projects\\portale-clienti\\public mit PHP 8.4 bereit.",
+              "Il progetto portale-clienti è attivo su http://localhost:8080 e https://localhost:8443 servendo D:\\Atollo\\projects\\portale-clienti\\public con PHP 8.4.",
+              "Project portale-clienti is active on http://localhost:8080 and https://localhost:8443 serving D:\\Atollo\\projects\\portale-clienti\\public with PHP 8.4.",
+              "Le projet portale-clienti est actif sur http://localhost:8080 et https://localhost:8443 en servant D:\\Atollo\\projects\\portale-clienti\\public avec PHP 8.4.",
+              "Das Projekt portale-clienti läuft auf http://localhost:8080 und https://localhost:8443 und stellt D:\\Atollo\\projects\\portale-clienti\\public mit PHP 8.4 bereit.",
             )}
           />
 
@@ -2294,18 +2294,18 @@ function TopicFeatToolsCli({ onNavigate }: { onNavigate: (page: AppPageTarget) =
       <EditorSection
         id="guide-feat-cli"
         title={tr(
-          "Interfaccia a riga di comando (CLI) di Dev-Kit.exe",
-          "Dev-Kit.exe Command-Line Interface (CLI)",
-          "Interface en ligne de commande (CLI) de Dev-Kit.exe",
-          "Befehlszeilenschnittstelle (CLI) von Dev-Kit.exe",
+          "Interfaccia a riga di comando (CLI) di Atollo.exe",
+          "Atollo.exe Command-Line Interface (CLI)",
+          "Interface en ligne de commande (CLI) d'Atollo.exe",
+          "Befehlszeilenschnittstelle (CLI) von Atollo.exe",
         )}
       >
         <p className="m-0 text-[12px] text-vsc-desc">
           {tr(
-            "Poiché Dev-Kit.exe usa il sottosistema grafico di Windows per non aprire finestre console nere all'avvio, da PowerShell aggiungi sempre | Out-Host per leggere l'output testuale.",
-            "Because Dev-Kit.exe uses the Windows GUI subsystem to avoid flashing black console windows on startup, always pipe to | Out-Host in PowerShell to read text output.",
-            "Comme Dev-Kit.exe utilise le sous-système graphique de Windows pour éviter d'ouvrir des fenêtres de console noires au démarrage, ajoutez toujours | Out-Host dans PowerShell pour lire la sortie texte.",
-            "Da Dev-Kit.exe das grafische Windows-Subsystem nutzt, um beim Start keine schwarzen Konsolenfenster aufblitzen zu lassen, füge in PowerShell immer | Out-Host hinzu, um die Textausgabe zu lesen.",
+            "Poiché Atollo.exe usa il sottosistema grafico di Windows per non aprire finestre console nere all'avvio, da PowerShell aggiungi sempre | Out-Host per leggere l'output testuale.",
+            "Because Atollo.exe uses the Windows GUI subsystem to avoid flashing black console windows on startup, always pipe to | Out-Host in PowerShell to read text output.",
+            "Comme Atollo.exe utilise le sous-système graphique de Windows pour éviter d'ouvrir des fenêtres de console noires au démarrage, ajoutez toujours | Out-Host dans PowerShell pour lire la sortie texte.",
+            "Da Atollo.exe das grafische Windows-Subsystem nutzt, um beim Start keine schwarzen Konsolenfenster aufblitzen zu lassen, füge in PowerShell immer | Out-Host hinzu, um die Textausgabe zu lesen.",
           )}
         </p>
         <SimpleTable
@@ -2389,16 +2389,16 @@ function TopicCfgInitNet({ onNavigate }: { onNavigate: (page: AppPageTarget) => 
           onNavigate={onNavigate}
           steps={[
             tr(
-              "Formatta l'unità USB/SSD esterna in NTFS o exFAT (consigliato NTFS per prestazioni I/O su node_modules) e copia Dev-Kit.exe in una cartella dedicata (es. D:\\Dev-Kit\\Dev-Kit.exe).",
-              "Format your external USB/SSD drive as NTFS or exFAT (NTFS recommended for node_modules I/O performance) and copy Dev-Kit.exe into a dedicated folder (e.g. D:\\Dev-Kit\\Dev-Kit.exe).",
-              "Formatez le lecteur externe USB/SSD en NTFS ou exFAT (NTFS recommandé pour les performances E/S sur node_modules) et copiez Dev-Kit.exe dans un dossier dédié (ex. D:\\Dev-Kit\\Dev-Kit.exe).",
-              "Formatiere das externe USB-/SSD-Laufwerk mit NTFS oder exFAT (NTFS empfohlen für E/A-Leistung bei node_modules) und kopiere Dev-Kit.exe in einen eigenen Ordner (z. B. D:\\Dev-Kit\\Dev-Kit.exe).",
+              "Formatta l'unità USB/SSD esterna in NTFS o exFAT (consigliato NTFS per prestazioni I/O su node_modules) e copia Atollo.exe in una cartella dedicata (es. D:\\Atollo\\Atollo.exe).",
+              "Format your external USB/SSD drive as NTFS or exFAT (NTFS recommended for node_modules I/O performance) and copy Atollo.exe into a dedicated folder (e.g. D:\\Atollo\\Atollo.exe).",
+              "Formatez le lecteur externe USB/SSD en NTFS ou exFAT (NTFS recommandé pour les performances E/S sur node_modules) et copiez Atollo.exe dans un dossier dédié (ex. D:\\Atollo\\Atollo.exe).",
+              "Formatiere das externe USB-/SSD-Laufwerk mit NTFS oder exFAT (NTFS empfohlen für E/A-Leistung bei node_modules) und kopiere Atollo.exe in einen eigenen Ordner (z. B. D:\\Atollo\\Atollo.exe).",
             ),
             tr(
-              "Avvia Dev-Kit.exe e verifica nel Passo 1 del Wizard che lo spazio libero sia almeno 10–15 GB per un profilo completo.",
-              "Launch Dev-Kit.exe and check in Step 1 of the Wizard that free space is at least 10–15 GB for a full profile.",
-              "Lancez Dev-Kit.exe et vérifiez à l'Étape 1 de l'Assistant que l'espace libre est d'au moins 10 à 15 Go pour un profil complet.",
-              "Starte Dev-Kit.exe und prüfe in Schritt 1 des Assistenten, dass mindestens 10–15 GB freier Speicher für ein vollständiges Profil vorhanden sind.",
+              "Avvia Atollo.exe e verifica nel Passo 1 del Wizard che lo spazio libero sia almeno 10–15 GB per un profilo completo.",
+              "Launch Atollo.exe and check in Step 1 of the Wizard that free space is at least 10–15 GB for a full profile.",
+              "Lancez Atollo.exe et vérifiez à l'Étape 1 de l'Assistant que l'espace libre est d'au moins 10 à 15 Go pour un profil complet.",
+              "Starte Atollo.exe und prüfe in Schritt 1 des Assistenten, dass mindestens 10–15 GB freier Speicher für ein vollständiges Profil vorhanden sind.",
             ),
             tr(
               "Nel Passo 2 spunta gli strumenti desiderati e le linee major.minor di linguaggi e database.",
@@ -2621,10 +2621,10 @@ function TopicCfgLangsAgents({ onNavigate }: { onNavigate: (page: AppPageTarget)
               "Für Codex: Starte ihn aus einem Projekt und schließe die ChatGPT-/OpenAI-Anmeldung ab; das Token wird in data\\codex\\auth.json gespeichert.",
             ),
             tr(
-              "Per Antigravity: avvialo tramite il pulsante Antigravity (che passa per data\\kit\\bin\\agy.cmd); alla chiusura, Dev-Kit.exe keyring save esporta e cifra con Windows DPAPI il token in data\\antigravity\\.keyring.dpapi.",
-              "For Antigravity: launch it via the Antigravity button (which runs data\\kit\\bin\\agy.cmd); on exit, Dev-Kit.exe keyring save exports and encrypts the token with Windows DPAPI into data\\antigravity\\.keyring.dpapi.",
-              "Pour Antigravity : lancez-le via le bouton Antigravity (qui passe par data\\kit\\bin\\agy.cmd) ; à la fermeture, Dev-Kit.exe keyring save exporte et chiffre avec Windows DPAPI le jeton dans data\\antigravity\\.keyring.dpapi.",
-              "Für Antigravity: Starte ihn über die Schaltfläche Antigravity (über data\\kit\\bin\\agy.cmd); beim Beenden exportiert und verschlüsselt Dev-Kit.exe keyring save das Token mittels Windows DPAPI in data\\antigravity\\.keyring.dpapi.",
+              "Per Antigravity: avvialo tramite il pulsante Antigravity (che passa per data\\kit\\bin\\agy.cmd); alla chiusura, Atollo.exe keyring save esporta e cifra con Windows DPAPI il token in data\\antigravity\\.keyring.dpapi.",
+              "For Antigravity: launch it via the Antigravity button (which runs data\\kit\\bin\\agy.cmd); on exit, Atollo.exe keyring save exports and encrypts the token with Windows DPAPI into data\\antigravity\\.keyring.dpapi.",
+              "Pour Antigravity : lancez-le via le bouton Antigravity (qui passe par data\\kit\\bin\\agy.cmd) ; à la fermeture, Atollo.exe keyring save exporte et chiffre avec Windows DPAPI le jeton dans data\\antigravity\\.keyring.dpapi.",
+              "Für Antigravity: Starte ihn über die Schaltfläche Antigravity (über data\\kit\\bin\\agy.cmd); beim Beenden exportiert und verschlüsselt Atollo.exe keyring save das Token mittels Windows DPAPI in data\\antigravity\\.keyring.dpapi.",
             ),
           ]}
           purpose={tr(
@@ -2713,10 +2713,10 @@ function TopicCfgLangsAgents({ onNavigate }: { onNavigate: (page: AppPageTarget)
               "Füge im Objekt mcpServers die gewünschten Server mit command und args hinzu.",
             ),
             tr(
-              "All'avvio di un agente (o eseguendo .\\Dev-Kit.exe sync), il kit traduce automaticamente la definizione nei 3 formati (.claude.json, config.toml di Codex e mcp_config.json di Antigravity).",
-              "When launching an agent (or running .\\Dev-Kit.exe sync), the kit automatically translates the definition into all 3 formats (.claude.json, Codex config.toml and Antigravity mcp_config.json).",
-              "Au démarrage d'un agent (ou en exécutant .\\Dev-Kit.exe sync), le kit traduit automatiquement la définition dans les 3 formats (.claude.json, config.toml de Codex et mcp_config.json d'Antigravity).",
-              "Beim Start eines Agenten (oder über .\\Dev-Kit.exe sync) übersetzt das Kit die Definition automatisch in alle 3 Formate (.claude.json, Codex config.toml und Antigravity mcp_config.json).",
+              "All'avvio di un agente (o eseguendo .\\Atollo.exe sync), il kit traduce automaticamente la definizione nei 3 formati (.claude.json, config.toml di Codex e mcp_config.json di Antigravity).",
+              "When launching an agent (or running .\\Atollo.exe sync), the kit automatically translates the definition into all 3 formats (.claude.json, Codex config.toml and Antigravity mcp_config.json).",
+              "Au démarrage d'un agent (ou en exécutant .\\Atollo.exe sync), le kit traduit automatiquement la définition dans les 3 formats (.claude.json, config.toml de Codex et mcp_config.json d'Antigravity).",
+              "Beim Start eines Agenten (oder über .\\Atollo.exe sync) übersetzt das Kit die Definition automatisch in alle 3 Formate (.claude.json, Codex config.toml und Antigravity mcp_config.json).",
             ),
           ]}
           purpose={tr(
@@ -2738,7 +2738,7 @@ function TopicCfgLangsAgents({ onNavigate }: { onNavigate: (page: AppPageTarget)
   "mcpServers": {
     "filesystem-kit": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "D:/Dev-Kit/projects"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "D:/Atollo/projects"]
     },
     "github-mcp": {
       "command": "npx",

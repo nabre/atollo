@@ -5,7 +5,7 @@ fn address_carries_the_token() {
     let host = Ipv4Addr::new(127, 9, 8, 7);
     assert_eq!(
         address(host, 7400, "ab12"),
-        "http://127.9.8.7:7400/?devkit=ab12"
+        "http://127.9.8.7:7400/?atollo=ab12"
     );
 }
 
@@ -27,7 +27,7 @@ fn loopback_is_not_the_sites_one() {
 #[test]
 fn router_checks_its_own_host() {
     let router = include_str!("../../../runtime/phpmyadmin.php");
-    assert!(router.contains("getenv('DEVKIT_PMA_HOST')"));
+    assert!(router.contains("getenv('ATOLLO_PMA_HOST')"));
     assert!(router.contains("hash_equals($self, $host)"));
     assert!(!router.contains("localhost"), "no shared host accepted");
 }
@@ -37,11 +37,11 @@ fn router_checks_its_own_host() {
 #[test]
 fn config_comes_from_the_environment() {
     for name in [
-        "DEVKIT_PMA_TOKEN",
-        "DEVKIT_DB_PORT",
-        "DEVKIT_DB_PASSWORD",
-        "DEVKIT_PMA_SECRET",
-        "DEVKIT_PMA_TMP",
+        "ATOLLO_PMA_TOKEN",
+        "ATOLLO_DB_PORT",
+        "ATOLLO_DB_PASSWORD",
+        "ATOLLO_PMA_SECRET",
+        "ATOLLO_PMA_TMP",
     ] {
         assert!(CONFIG.contains(&format!("getenv('{name}')")), "{name}");
     }
@@ -49,16 +49,16 @@ fn config_comes_from_the_environment() {
     assert!(CONFIG.contains("$cfg['VersionCheck'] = false"));
 }
 
-/// phpMyAdmin of the kit given by DEVKIT_TEST_KIT on its MySQL already
-/// running at DEVKIT_TEST_MYSQL_PORT (an open Dev-Kit, whose data the
+/// phpMyAdmin of the kit given by ATOLLO_TEST_KIT on its MySQL already
+/// running at ATOLLO_TEST_MYSQL_PORT (an open Atollo, whose data the
 /// real test of `db/services/` must not start a second server on).
 #[test]
 fn real_phpmyadmin_on_running_mysql() {
     let (Ok(root), Ok(db_port)) = (
-        std::env::var("DEVKIT_TEST_KIT"),
-        std::env::var("DEVKIT_TEST_MYSQL_PORT"),
+        std::env::var("ATOLLO_TEST_KIT"),
+        std::env::var("ATOLLO_TEST_MYSQL_PORT"),
     ) else {
-        eprintln!("DEVKIT_TEST_KIT or DEVKIT_TEST_MYSQL_PORT not set: skipped");
+        eprintln!("ATOLLO_TEST_KIT or ATOLLO_TEST_MYSQL_PORT not set: skipped");
         return;
     };
     let kit = Kit::at(PathBuf::from(root), crate::kit::Arch::detect());
@@ -117,7 +117,7 @@ pub fn assert_logs_in(url: &str) {
         assert_eq!(answer.status().as_u16(), 403, "Host {other}");
         let _ = answer.body_mut().read_to_string();
     }
-    assert_eq!(status("/?devkit=0", ""), 403, "wrong token");
+    assert_eq!(status("/?atollo=0", ""), 403, "wrong token");
     assert_eq!(
         status("/themes/pmahomme/css/theme.css", ""),
         403,
@@ -139,7 +139,7 @@ pub fn assert_logs_in(url: &str) {
         .and_then(|v| v.to_str().ok())
         .unwrap()
         .to_owned();
-    assert!(!location.contains("devkit="), "token left in {location}");
+    assert!(!location.contains("atollo="), "token left in {location}");
     let mut page = agent
         .get(&format!("{base}/index.php?route=/server/databases"))
         .header("Cookie", &cookie)

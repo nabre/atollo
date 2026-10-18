@@ -96,13 +96,13 @@ fn swap_plan_per_system() {
     );
     // A renamed bundle keeps its name.
     let renamed = root
-        .join("Dev-Kit.app")
+        .join("Atollo.app")
         .join("Contents")
         .join("MacOS")
         .join("Atollo");
     let plan = swap_plan(Os::Darwin, &renamed, None, &update).unwrap();
-    assert_eq!(plan.staged, root.join("Dev-Kit.app.new"));
-    assert_eq!(plan.old, root.join("Dev-Kit.app.old"));
+    assert_eq!(plan.staged, root.join("Atollo.app.new"));
+    assert_eq!(plan.old, root.join("Atollo.app.old"));
     // A plain binary (cargo run, no bundle) does not replace itself.
     assert_eq!(
         swap_plan(Os::Darwin, &root.join("Atollo"), None, &update),

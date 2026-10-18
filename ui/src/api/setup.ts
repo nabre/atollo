@@ -105,7 +105,7 @@ export interface SetupSnapshot {
   error: string | null;
 }
 
-/** `app`: part of Dev-Kit (the editor), shown with the required ones. */
+/** `app`: part of Atollo (the editor), shown with the required ones. */
 export type Group = "required" | "app" | "agents" | "languages" | "databases";
 
 export interface ComponentInfo {

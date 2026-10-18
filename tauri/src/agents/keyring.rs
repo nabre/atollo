@@ -747,14 +747,14 @@ impl Lock {
     }
 }
 
-/// The kit's lock: `Local\Dev-Kit-agy-keyring-<kit id>` (same as the kit).
+/// The kit's lock: `Local\Atollo-agy-keyring-<kit id>` (same as the kit).
 #[cfg(windows)]
 struct Lock(windows::Win32::Foundation::HANDLE);
 
 #[cfg(windows)]
 impl Lock {
     fn take(kit: &Kit) -> Result<Lock> {
-        let name = HSTRING::from(format!(r"Local\Dev-Kit-agy-keyring-{}", kit.id()));
+        let name = HSTRING::from(format!(r"Local\Atollo-agy-keyring-{}", kit.id()));
         // SAFETY: valid name; waits at most 30 s like the kit.
         unsafe {
             let h = CreateMutexW(None, false, &name).context("CreateMutexW")?;

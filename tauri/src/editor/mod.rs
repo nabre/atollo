@@ -266,7 +266,7 @@ impl Editor {
             .args(["--accept-server-license-terms", "--telemetry-level", "off"])
             // Workspace trust stays on (D-67): the editor asks once per
             // project and opens the ones not trusted in Restricted Mode.
-            .env("DEVKIT_APP", "1")
+            .env("ATOLLO_APP", "1")
             .current_dir(self.kit.projects())
             .stdin(Stdio::null())
             .stdout(Stdio::piped())

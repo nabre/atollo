@@ -58,7 +58,7 @@ fn same(a: &Path, b: &Path) -> bool {
 }
 
 fn can_link(dir: &Path, target: &Path) -> bool {
-    let probe = dir.join(format!(".devkit-link-{}", std::process::id()));
+    let probe = dir.join(format!(".atollo-link-{}", std::process::id()));
     let _ = dirlink::delete(&probe);
     let _ = fs::remove_dir(&probe);
     let ok = dirlink::create(target, &probe).is_ok();

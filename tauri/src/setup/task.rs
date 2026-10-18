@@ -84,7 +84,7 @@ pub fn missing_required(kit: &Kit) -> Vec<String> {
 }
 
 /// Parts of the app installed at another version than this release's (the
-/// editor after an update of Dev-Kit). Brought to the fixed version once, at
+/// editor after an update of Atollo). Brought to the fixed version once, at
 /// start; until then the installed one keeps working, so nothing waits for
 /// it (a folder in use must not block the editor). Also the components
 /// marked to be installed again because the kit moved and they cannot

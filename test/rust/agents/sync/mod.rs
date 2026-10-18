@@ -72,14 +72,14 @@ fn rule_and_trust() {
     )
     .unwrap();
     run(&kit, None);
-    assert!(fs::read_to_string(p.claude.join("rules").join("devkit.md"))
+    assert!(fs::read_to_string(p.claude.join("rules").join("atollo.md"))
         .unwrap()
-        .contains("Dev-Kit"));
+        .contains("Atollo"));
     assert!(p
         .gemini
         .join("config")
         .join("rules")
-        .join("devkit.md")
+        .join("atollo.md")
         .is_file());
     let cfg: Value = serde_json::from_str(&fs::read_to_string(p.claude_json()).unwrap()).unwrap();
     let app = p

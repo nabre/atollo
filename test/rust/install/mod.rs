@@ -204,7 +204,7 @@ fn a_failed_later_part_leaves_the_installed_php_as_it_was() {
     );
     assert_eq!(php.installed_version(&kit).as_deref(), Some("8.4.22"));
     assert_eq!(
-        fs::read_to_string(old.join(".devkit-version")).unwrap(),
+        fs::read_to_string(old.join(".atollo-version")).unwrap(),
         "8.4.22"
     );
 }

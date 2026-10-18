@@ -132,13 +132,13 @@ fn as_project_user(
     )
 }
 
-/// A real MySQL and MongoDB of the kit given by DEVKIT_TEST_KIT,
+/// A real MySQL and MongoDB of the kit given by ATOLLO_TEST_KIT,
 /// on free ports: start, project database and user (a TCP login as that
 /// user), copy and restore, drop, stop with nothing left.
 #[test]
 fn real_databases_start_and_stop() {
-    let Ok(root) = std::env::var("DEVKIT_TEST_KIT") else {
-        eprintln!("DEVKIT_TEST_KIT not set: skipped");
+    let Ok(root) = std::env::var("ATOLLO_TEST_KIT") else {
+        eprintln!("ATOLLO_TEST_KIT not set: skipped");
         return;
     };
     let kit = Kit::at(PathBuf::from(root), Arch::detect());
@@ -194,9 +194,9 @@ fn real_databases_start_and_stop() {
                     cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                         .arg(port.to_string())
                         .args(["--eval", &format!(
-                            "db.getSiblingDB('admin').auth('admin', process.env.DEVKIT_DB_ADMIN); {script}"
+                            "db.getSiblingDB('admin').auth('admin', process.env.ATOLLO_DB_ADMIN); {script}"
                         )])
-                        .env("DEVKIT_DB_ADMIN", auth::load(&kit).mongodb_admin.unwrap());
+                        .env("ATOLLO_DB_ADMIN", auth::load(&kit).mongodb_admin.unwrap());
                     let out = cmd.output().unwrap();
                     String::from_utf8_lossy(&out.stdout).trim().to_owned()
                 }

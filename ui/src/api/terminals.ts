@@ -94,7 +94,7 @@ const SAMPLE_TERMINALS: TerminalsView = {
     },
   ],
   tools: SAMPLE_TOOLS,
-  projects: "E:\\Dev-Kit\\projects",
+  projects: "E:\\Atollo\\projects",
 };
 
 export function terminalsList(): Promise<TerminalsView> {

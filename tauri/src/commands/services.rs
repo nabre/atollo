@@ -85,7 +85,7 @@ pub async fn service_stop<R: Runtime>(
     .or_fail("service")
 }
 
-/// Port (null: the default) and "start with Dev-Kit" of a server; the port
+/// Port (null: the default) and "start with Atollo" of a server; the port
 /// applies at the next start.
 /// The version a database server runs (None: the newest installed), while
 /// it is stopped; each version keeps its own data (D-81).

@@ -13,9 +13,9 @@ import type {
 
 const info: AppInfo = {
   version: "0.1.0",
-  root: "E:\\Dev Kit",
-  data: "E:\\Dev Kit\\data",
-  projects: "E:\\Dev Kit\\projects",
+  root: "E:\\My Atollo",
+  data: "E:\\My Atollo\\data",
+  projects: "E:\\My Atollo\\projects",
   platform: "win32-x64",
   lang: "it",
   movedFrom: null,
@@ -185,7 +185,7 @@ const running: RunInfo = {
   action: "static",
   label: "sito statico",
   type: "web",
-  command: "Dev-Kit.exe serve . 7100",
+  command: "Atollo.exe serve . 7100",
   port: 7100,
   url: "http://localhost:7100/",
   state: "running",
@@ -214,7 +214,7 @@ describe("App", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
     fireEvent.click(await screen.findByRole("button", { name: "Il kit" }));
-    expect(await screen.findByText("E:\\Dev Kit")).toBeTruthy();
+    expect(await screen.findByText("E:\\My Atollo")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("app_info", undefined);
   });
 
@@ -440,7 +440,7 @@ describe("App", () => {
       answers({
         projects_list: [project("sito (1) & co")],
         run_start: { ...running, state: "starting" },
-        run_log: ["> Dev-Kit.exe serve . 7100"],
+        run_log: ["> Atollo.exe serve . 7100"],
       }),
     );
     render(<App />);

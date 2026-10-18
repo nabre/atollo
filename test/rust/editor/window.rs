@@ -5,12 +5,12 @@ fn editor_stays_in_its_project() {
     use crate::kit::Os;
     let u = |s: &str| s.parse::<Url>().unwrap();
     let in_project = |url: &Url, dir: &Path| in_project_on(Os::Win32, url, dir);
-    let dir = Path::new(r"E:\Dev Kit (1)\projects\app & co");
+    let dir = Path::new(r"E:\My Atollo (1)\projects\app & co");
     let page = crate::editor::url_on(Os::Win32, 7003, "tok", Some(dir));
     assert!(in_project(&u(&page), dir));
     // after the server's redirect: the token goes, the folder stays
     assert!(in_project(
-        &u("http://127.0.0.1:7003/?folder=/e:/Dev%20Kit%20(1)/projects/app%20%26%20co/"),
+        &u("http://127.0.0.1:7003/?folder=/e:/My%20Atollo%20(1)/projects/app%20%26%20co/"),
         dir
     ));
     // a share keeps its three slashes, as before macOS and Linux
@@ -30,8 +30,8 @@ fn editor_stays_in_its_project() {
     for out in [
         "http://127.0.0.1:7003/",
         "http://127.0.0.1:7003/?ew=true",
-        "http://127.0.0.1:7003/?folder=/E:/Dev%20Kit%20(1)/projects",
-        "http://127.0.0.1:7003/?folder=/E:/Dev%20Kit%20(1)/projects/app%20%26%20co/sub",
+        "http://127.0.0.1:7003/?folder=/E:/My%20Atollo%20(1)/projects",
+        "http://127.0.0.1:7003/?folder=/E:/My%20Atollo%20(1)/projects/app%20%26%20co/sub",
         "http://127.0.0.1:7003/?folder=/C:/Users",
         "http://127.0.0.1:7003/?workspace=/E:/x.code-workspace",
     ] {
@@ -75,26 +75,26 @@ fn editor_stays_in_a_unix_project() {
 fn title_bar_buttons() {
     let u = |s: &str| s.parse::<Url>().unwrap();
     let at = |p: &str| control(&u(&format!("http://127.0.0.1:7003{p}")), 7003);
-    assert_eq!(at("/__devkit/window/minimize"), Some(Control::Minimize));
+    assert_eq!(at("/__atollo/window/minimize"), Some(Control::Minimize));
     assert_eq!(
-        at("/__devkit/window/maximize"),
+        at("/__atollo/window/maximize"),
         Some(Control::ToggleMaximize)
     );
-    assert_eq!(at("/__devkit/window/close"), Some(Control::Close));
-    assert_eq!(at("/__devkit/window/close/x"), None);
-    assert_eq!(at("/__devkit/window/"), None);
+    assert_eq!(at("/__atollo/window/close"), Some(Control::Close));
+    assert_eq!(at("/__atollo/window/close/x"), None);
+    assert_eq!(at("/__atollo/window/"), None);
     assert_eq!(at("/?folder=/e:/p"), None);
-    let other = u("http://127.0.0.1:7004/__devkit/window/close");
+    let other = u("http://127.0.0.1:7004/__atollo/window/close");
     assert_eq!(control(&other, 7003), None);
     let js = controls_script("en", 7003, "my app", &["a.b".into()]);
     assert!(js.contains(r#"close: "Close""#), "{js}");
     assert!(js.contains(r#"restart: "Restart extensions""#), "{js}");
-    assert!(js.contains("window.__devkitExtensions = "), "{js}");
+    assert!(js.contains("window.__atolloExtensions = "), "{js}");
     assert!(js.contains(r#"c.productConfiguration = "#), "{js}");
     assert!(js.contains(r#"line("project", "my app")"#), "{js}");
     assert!(js.contains(r#"let ids = ["a.b"];"#), "{js}");
     assert!(
-        js.contains(r#"localStorage.getItem("devkit-hidden:my app")"#),
+        js.contains(r#"localStorage.getItem("atollo-hidden:my app")"#),
         "{js}"
     );
     assert!(js.contains("data:image/png;base64,iVBOR"), "logo embedded");
@@ -103,7 +103,7 @@ fn title_bar_buttons() {
         "{js}"
     );
     assert!(
-        js.contains(r#""http://127.0.0.1:7003/__devkit/window/" + what"#),
+        js.contains(r#""http://127.0.0.1:7003/__atollo/window/" + what"#),
         "{js}"
     );
 }

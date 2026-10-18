@@ -33,7 +33,7 @@ fn profiles_rewritten_user_ones_kept() {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(
         &path,
-        r#"{"terminal.integrated.profiles.windows":{"Mine":{"path":"x.exe"},"Dev-Kit":{"path":"old"},"Codex":{"path":"gone"}},"editor.fontSize":15,"files.dialog.defaultPath":"D:\\mine"}"#,
+        r#"{"terminal.integrated.profiles.windows":{"Mine":{"path":"x.exe"},"Atollo":{"path":"old"},"Codex":{"path":"gone"}},"editor.fontSize":15,"files.dialog.defaultPath":"D:\\mine"}"#,
     )
     .unwrap();
     assert_eq!(
@@ -45,15 +45,15 @@ fn profiles_rewritten_user_ones_kept() {
         .as_object()
         .unwrap();
     assert_eq!(p["Mine"]["path"], "x.exe");
-    assert!(slashed(&p["Dev-Kit"]["path"]).ends_with("win32-x64/pwsh/pwsh.exe"));
-    assert!(slashed(&p["Dev-Kit - Git Bash"]["path"]).ends_with("git/bin/bash.exe"));
-    assert!(slashed(&p["Dev-Kit - Git Bash"]["args"][1]).ends_with("data/kit/bashrc"));
+    assert!(slashed(&p["Atollo"]["path"]).ends_with("win32-x64/pwsh/pwsh.exe"));
+    assert!(slashed(&p["Atollo - Git Bash"]["path"]).ends_with("git/bin/bash.exe"));
+    assert!(slashed(&p["Atollo - Git Bash"]["args"][1]).ends_with("data/kit/bashrc"));
     assert!(
         p.get("Codex").is_none(),
         "agent not installed: profile removed"
     );
     assert!(p["PowerShell"].is_null() && p["Command Prompt"].is_null());
-    assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Dev-Kit");
+    assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Atollo");
     assert!(s["terminal.integrated.env.windows"]["NODE_OPTIONS"]
         .as_str()
         .unwrap()
@@ -77,13 +77,13 @@ fn user_default_profile_kept_when_valid() {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(
         &path,
-        r#"{"terminal.integrated.defaultProfile.windows":"Dev-Kit - Git Bash"}"#,
+        r#"{"terminal.integrated.defaultProfile.windows":"Atollo - Git Bash"}"#,
     )
     .unwrap();
     write(&kit, Path::new(r"C:\Windows")).unwrap();
     assert_eq!(
         read(&kit)["terminal.integrated.defaultProfile.windows"],
-        "Dev-Kit - Git Bash"
+        "Atollo - Git Bash"
     );
     fs::write(
         &path,
@@ -93,7 +93,7 @@ fn user_default_profile_kept_when_valid() {
     write(&kit, Path::new(r"C:\Windows")).unwrap();
     assert_eq!(
         read(&kit)["terminal.integrated.defaultProfile.windows"],
-        "Dev-Kit",
+        "Atollo",
         "hidden PC profile replaced"
     );
 }
@@ -181,13 +181,13 @@ fn linux_profiles_bash_of_the_system_no_cmd() {
     assert!(s.get("terminal.integrated.profiles.windows").is_none());
     assert_eq!(
         shown(&s, "terminal.integrated.profiles.linux"),
-        ["Claude Code", "Dev-Kit - Bash"]
+        ["Atollo - Bash", "Claude Code"]
     );
     let p = &s["terminal.integrated.profiles.linux"];
-    assert_eq!(p["Dev-Kit - Bash"]["path"], "/bin/bash");
-    assert_eq!(p["Dev-Kit - Bash"]["args"][0], "--rcfile");
-    assert!(slashed(&p["Dev-Kit - Bash"]["args"][1]).ends_with("data/kit/bashrc"));
-    assert_eq!(p["Dev-Kit - Bash"]["args"][2], "-i");
+    assert_eq!(p["Atollo - Bash"]["path"], "/bin/bash");
+    assert_eq!(p["Atollo - Bash"]["args"][0], "--rcfile");
+    assert!(slashed(&p["Atollo - Bash"]["args"][1]).ends_with("data/kit/bashrc"));
+    assert_eq!(p["Atollo - Bash"]["args"][2], "-i");
     assert!(slashed(&p["Claude Code"]["path"]).ends_with("linux-x64/claude/claude"));
     assert!(p["bash"].is_null() && p["zsh"].is_null() && p["pwsh"].is_null());
     let text = serde_json::to_string(&s).unwrap();
@@ -196,7 +196,7 @@ fn linux_profiles_bash_of_the_system_no_cmd() {
         "{text}"
     );
     assert_eq!(
-        s["terminal.integrated.defaultProfile.linux"], "Dev-Kit - Bash",
+        s["terminal.integrated.defaultProfile.linux"], "Atollo - Bash",
         "no PowerShell of the kit: bash"
     );
     assert_eq!(
@@ -223,15 +223,15 @@ fn macos_profiles_pwsh_default_zsh_and_agy() {
         shown(&s, "terminal.integrated.profiles.osx"),
         [
             "Antigravity",
-            "Codex",
-            "Dev-Kit",
-            "Dev-Kit - Bash",
-            "Dev-Kit - zsh"
+            "Atollo",
+            "Atollo - Bash",
+            "Atollo - zsh",
+            "Codex"
         ]
     );
     let p = &s["terminal.integrated.profiles.osx"];
-    assert!(slashed(&p["Dev-Kit"]["path"]).ends_with("darwin-arm64/pwsh/pwsh"));
-    assert_eq!(p["Dev-Kit - zsh"]["path"], "/bin/zsh");
+    assert!(slashed(&p["Atollo"]["path"]).ends_with("darwin-arm64/pwsh/pwsh"));
+    assert_eq!(p["Atollo - zsh"]["path"], "/bin/zsh");
     // Antigravity through the kit's agy (sh): it carries the login.
     let agy = slashed(&p["Antigravity"]["path"]);
     assert!(agy.ends_with("data/kit/bin/agy"), "{agy}");
@@ -240,7 +240,7 @@ fn macos_profiles_pwsh_default_zsh_and_agy() {
         assert!(p[shell].is_null(), "{shell} shown");
         assert!(p.get(shell).is_some(), "{shell} not hidden");
     }
-    assert_eq!(s["terminal.integrated.defaultProfile.osx"], "Dev-Kit");
+    assert_eq!(s["terminal.integrated.defaultProfile.osx"], "Atollo");
 }
 
 #[test]
@@ -249,11 +249,11 @@ fn windows_profiles_unchanged_by_the_unix_ones() {
     let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
     assert_eq!(
         shown(&s, "terminal.integrated.profiles.windows"),
-        ["Dev-Kit", "Dev-Kit - Git Bash", "Dev-Kit - cmd"]
+        ["Atollo", "Atollo - Git Bash", "Atollo - cmd"]
     );
     // Joined by the host's separator off Windows: compared with slashes.
     assert_eq!(
-        slashed(&s["terminal.integrated.profiles.windows"]["Dev-Kit - cmd"]["path"]),
+        slashed(&s["terminal.integrated.profiles.windows"]["Atollo - cmd"]["path"]),
         "C:/Windows/System32/cmd.exe"
     );
     let hidden = &s["terminal.integrated.profiles.windows"];
@@ -272,14 +272,14 @@ fn each_system_keeps_the_others_settings() {
     let linux = win.for_target(Target::LINUX_ARM64);
     write(&linux, Path::new(r"C:\Windows")).unwrap();
     let s = read(&linux);
-    assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Dev-Kit");
-    assert!(s["terminal.integrated.profiles.windows"]["Dev-Kit - cmd"].is_object());
+    assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Atollo");
+    assert!(s["terminal.integrated.profiles.windows"]["Atollo - cmd"].is_object());
     assert!(s["terminal.integrated.profiles.linux"]
-        .get("Dev-Kit - cmd")
+        .get("Atollo - cmd")
         .is_none());
     assert_eq!(
         s["terminal.integrated.defaultProfile.linux"],
-        "Dev-Kit - Bash"
+        "Atollo - Bash"
     );
     // The user's default kept when it is a profile of that system.
     let mut user = s.clone();

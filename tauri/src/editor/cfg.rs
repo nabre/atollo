@@ -21,9 +21,9 @@ use crate::kit::{Kit, Os};
 /// Profiles owned by the kit (rewritten) and the PC profiles hidden, on
 /// Windows.
 pub const KIT_PROFILES: &[&str] = &[
-    "Dev-Kit",
-    "Dev-Kit - Git Bash",
-    "Dev-Kit - cmd",
+    "Atollo",
+    "Atollo - Git Bash",
+    "Atollo - cmd",
     "Claude Code",
     "Codex",
     "Antigravity",
@@ -39,9 +39,9 @@ const HIDDEN: &[&str] = &[
 /// The same on macOS and Linux: the system's bash (Git of the kit has no
 /// shell there, D-109) and, on macOS, zsh; never cmd.
 pub const KIT_PROFILES_UNIX: &[&str] = &[
-    "Dev-Kit",
-    "Dev-Kit - Bash",
-    "Dev-Kit - zsh",
+    "Atollo",
+    "Atollo - Bash",
+    "Atollo - zsh",
     "Claude Code",
     "Codex",
     "Antigravity",
@@ -63,9 +63,9 @@ const HIDDEN_UNIX: &[&str] = &[
     "JavaScript Debug Terminal",
 ];
 
-pub const DEFAULT_PROFILE: &str = "Dev-Kit";
+pub const DEFAULT_PROFILE: &str = "Atollo";
 /// The default on macOS and Linux without the kit's PowerShell.
-pub const DEFAULT_PROFILE_UNIX: &str = "Dev-Kit - Bash";
+pub const DEFAULT_PROFILE_UNIX: &str = "Atollo - Bash";
 /// The shells of macOS and Linux the kit starts (never one of the user's
 /// PATH): bash for the kit's `bashrc`, zsh on macOS.
 pub const BASH: &str = "/bin/bash";
@@ -198,7 +198,7 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
     let pwsh = app(r"pwsh\pwsh.exe");
     if pwsh.is_file() {
         out.insert(
-            "Dev-Kit".into(),
+            "Atollo".into(),
             profile(&pwsh, &pwsh_args(kit), "terminal-powershell"),
         );
     }
@@ -206,27 +206,27 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
         let bash = app(r"git\bin\bash.exe");
         if bash.is_file() {
             out.insert(
-                "Dev-Kit - Git Bash".into(),
+                "Atollo - Git Bash".into(),
                 profile(&bash, &bash_args(kit), "terminal-bash"),
             );
         }
         let cmd = system_root.join(r"System32\cmd.exe");
         out.insert(
-            "Dev-Kit - cmd".into(),
+            "Atollo - cmd".into(),
             profile(&cmd, &["/d".into(), "/k".into()], "terminal-cmd"),
         );
     } else {
         // The system's bash with the kit's bashrc (bash 3.2 on macOS reads
         // it too, D-105); the environment is the kit's, from the server.
         out.insert(
-            "Dev-Kit - Bash".into(),
+            "Atollo - Bash".into(),
             profile(Path::new(BASH), &bash_args(kit), "terminal-bash"),
         );
         if os.is_macos() {
             // Interactive, not a login shell: path_helper of
             // /etc/zprofile would put the system's folders first.
             out.insert(
-                "Dev-Kit - zsh".into(),
+                "Atollo - zsh".into(),
                 profile(Path::new(ZSH), &["-i".into()], "terminal"),
             );
         }

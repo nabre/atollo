@@ -804,7 +804,7 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
 /// kit's disk) in place of `dest`. On the same disk it is `replace_dir`. From
 /// another disk, where a rename fails, the tree is first checked against the
 /// destination's disk (`check_fits`, `check_space`), then copied next to
-/// `dest` into `<dest>.devkit-new`, which `replace_dir` swaps in: an
+/// `dest` into `<dest>.atollo-new`, which `replace_dir` swaps in: an
 /// interrupted copy leaves only that folder, which `clean_leftovers` removes,
 /// and the installed version is never half replaced.
 pub fn stage_into(tree: &Path, dest: &Path) -> Result<()> {
@@ -841,7 +841,7 @@ fn stage_with(tree: &Path, dest: &Path, same_volume: bool) -> Result<()> {
     swapped
 }
 
-/// `<dest>.devkit-new`, where a tree from another disk is copied first.
+/// `<dest>.atollo-new`, where a tree from another disk is copied first.
 fn staged_path(dest: &Path) -> PathBuf {
     let name = dest
         .file_name()
@@ -850,7 +850,7 @@ fn staged_path(dest: &Path) -> PathBuf {
     dest.with_file_name(format!("{name}{STAGED}"))
 }
 
-const STAGED: &str = ".devkit-new";
+const STAGED: &str = ".atollo-new";
 
 /// Copies the folder `from` into `to` (created); hard links become separate
 /// files. On Unix a symbolic link is made again with the same relative
@@ -1062,7 +1062,7 @@ pub fn replace_file(new: &Path, dest: &Path) -> Result<()> {
     ));
     let _ = fs::remove_file(&old);
     // Copied next to `dest` first, not renamed: `new` may be on another disk
-    // (PC temp folder), and an interrupted copy leaves only `<name>.devkit-new`.
+    // (PC temp folder), and an interrupted copy leaves only `<name>.atollo-new`.
     let staged = staged_path(dest);
     retry_denied(|| fs::copy(new, &staged).map(|_| ()))
         .with_context(|| format!("writing {}", staged.display()))?;
@@ -1101,7 +1101,7 @@ fn sibling(dest: &Path, tag: &str) -> PathBuf {
 }
 
 /// Deletes leftovers of interrupted swaps (`*.old-*`, `*.new-*`) and copies
-/// (`*.devkit-new`, `stage_into`) in `dir`.
+/// (`*.atollo-new`, `stage_into`) in `dir`.
 pub fn clean_leftovers(dir: &Path) {
     for entry in fs::read_dir(dir).into_iter().flatten().flatten() {
         let name = entry.file_name().to_string_lossy().into_owned();

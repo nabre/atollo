@@ -1,6 +1,6 @@
-//! `Dev-Kit.exe serve <folder> <port>`: file server for HTML/CSS/JS-only
+//! `Atollo.exe serve <folder> <port>`: file server for HTML/CSS/JS-only
 //! projects (port of nabre/dev-kit `core/static-server.js`), on 127.0.0.1
-//! only, or on every interface with `DEVKIT_ALLOW_LAN=1` (Settings).
+//! only, or on every interface with `ATOLLO_ALLOW_LAN=1` (Settings).
 //!
 //! - only requests addressed to localhost, or with the local network
 //!   allowed to an IP address (a `Host` of another name that points to the
@@ -293,7 +293,7 @@ pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
     let root = crate::os::safe_path::lexical(&abs)
         .filter(|r| crate::os::safe_path::is_dir(r, r))
         .with_context(|| root.display().to_string())?;
-    let lan = std::env::var("DEVKIT_ALLOW_LAN").is_ok_and(|v| v == "1");
+    let lan = std::env::var("ATOLLO_ALLOW_LAN").is_ok_and(|v| v == "1");
     let ip = if lan {
         Ipv4Addr::UNSPECIFIED
     } else {

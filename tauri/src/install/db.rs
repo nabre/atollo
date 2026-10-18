@@ -832,7 +832,7 @@ fn sqlite_from_conda(target: Target) -> bool {
 /// `bin/sqlite3`, which finds its libraries from there (`$ORIGIN/../lib`):
 /// this launcher at the key starts it.
 pub const SQLITE_CONDA_LAUNCHER: &str =
-    "#!/bin/sh\n# Dev-Kit: sqlite3 of the conda-forge environment next to this file\nexec \"$(dirname \"$0\")/bin/sqlite3\" \"$@\"\n";
+    "#!/bin/sh\n# Atollo: sqlite3 of the conda-forge environment next to this file\nexec \"$(dirname \"$0\")/bin/sqlite3\" \"$@\"\n";
 
 pub struct Sqlite;
 

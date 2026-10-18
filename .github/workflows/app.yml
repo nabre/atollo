@@ -127,10 +127,10 @@ jobs:
         run: |
           t="$RUNNER_TEMP/guard"
           mkdir -p "$t/empty" "$t/copy" "$t/clone/.git" "$t/clone/tauri" "$t/other"
-          touch "$t/copy/.devkit-linux-copy" "$t/clone/Cargo.toml" "$t/other/x"
+          touch "$t/copy/.atollo-linux-copy" "$t/clone/Cargo.toml" "$t/other/x"
           check() {
             local got=0
-            DEVKIT_LINUX_DIR="$t/$1" bash scripts/test-linux.sh --check-dest >/dev/null 2>&1 || got=$?
+            ATOLLO_LINUX_DIR="$t/$1" bash scripts/test-linux.sh --check-dest >/dev/null 2>&1 || got=$?
             echo "$1: exit $got (want $2)"
             [ "$got" -eq "$2" ]
           }
@@ -658,7 +658,7 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
-          $env:DEVKIT_TEST_KIT = Join-Path $env:RUNNER_TEMP "kit (1) & co"
+          $env:ATOLLO_TEST_KIT = Join-Path $env:RUNNER_TEMP "kit (1) & co"
           cargo test --target ${{ matrix.target }} real_ -- --nocapture --test-threads=1
       - uses: actions/upload-artifact@v6
         with:

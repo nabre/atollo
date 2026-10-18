@@ -114,7 +114,7 @@ const MOUNTINFO: &str = "\
 #[test]
 fn linux_mount_options_from_mountinfo() {
     let at = |maj, min, p: &str| mount_from_info(MOUNTINFO, maj, min, Path::new(p));
-    let kit = at(8, 17, "/media/me/KIT A/Dev-Kit").unwrap();
+    let kit = at(8, 17, "/media/me/KIT A/Atollo").unwrap();
     assert_eq!(kit.point, PathBuf::from("/media/me/KIT A"));
     assert_eq!(kit.fs_type, "vfat");
     assert!(kit.noexec() && kit.showexec());

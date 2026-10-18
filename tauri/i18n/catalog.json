@@ -134,10 +134,10 @@
     "fr": "Impossible d'écrire dans le dossier {0}.",
     "de": "Im Ordner {0} kann nicht geschrieben werden."
   },
-  "Sposta Dev-Kit.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.": {
-    "en": "Move Dev-Kit.exe to a folder you can write to (for example a USB stick or a folder in your profile) and start it again.",
-    "fr": "Déplacez Dev-Kit.exe dans un dossier où vous pouvez écrire (par exemple une clé USB ou un dossier de votre profil) et relancez-le.",
-    "de": "Verschieben Sie Dev-Kit.exe in einen Ordner, in den Sie schreiben können (zum Beispiel einen USB-Stick oder einen Ordner in Ihrem Profil), und starten Sie es erneut."
+  "Sposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.": {
+    "en": "Move Atollo.exe to a folder you can write to (for example a USB stick or a folder in your profile) and start it again.",
+    "fr": "Déplacez Atollo.exe dans un dossier où vous pouvez écrire (par exemple une clé USB ou un dossier de votre profil) et relancez-le.",
+    "de": "Verschieben Sie Atollo.exe in einen Ordner, in den Sie schreiben können (zum Beispiel einen USB-Stick oder einen Ordner in Ihrem Profil), und starten Sie es erneut."
   },
   "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di Atollo.": {
     "en": "Microsoft Edge WebView2 is missing: Atollo needs it to show its windows.",

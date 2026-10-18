@@ -309,7 +309,7 @@ fn mysql_is_the_kits_sql_server() {
     auth::write_mysql_line_cnf(&kit, "8.4", 3307, "pw").unwrap();
     let env = project_client_env(&kit, "shop");
     let names: Vec<&str> = env.iter().map(|(n, _)| *n).collect();
-    assert_eq!(names, ["DEVKIT_MYSQL_CNF", "CP_MYSQL"]);
+    assert_eq!(names, ["ATOLLO_MYSQL_CNF", "CP_MYSQL"]);
     let cnf = fs::read_to_string(&env[0].1).unwrap();
     assert!(
         cnf.contains("port=3307\n") && cnf.contains("protocol=TCP\n"),

@@ -77,7 +77,7 @@ fn profile_and_temp_inside_kit() {
         assert!(Path::new(value).starts_with(&data), "{name} = {value}");
     }
     assert_eq!(env.get("CP_USER_PROFILE"), Some(r"C:\Users\me"));
-    assert_eq!(env.get("DEVKIT"), Some(kit.root().to_str().unwrap()));
+    assert_eq!(env.get("ATOLLO"), Some(kit.root().to_str().unwrap()));
     assert_eq!(env.get("CP_LANG"), Some("it"));
     assert_eq!(env.get("DISABLE_UPDATES"), Some("1"));
     // HOMEDRIVE and HOMEPATH only with a drive letter.
@@ -102,13 +102,10 @@ fn program_temp_decision_table() {
     let (data, host) = if cfg!(windows) {
         (
             Path::new(r"E:\Kit\data"),
-            Path::new(r"C:\Users\me\AppData\Local\Temp\Dev-Kit\abc"),
+            Path::new(r"C:\Users\me\AppData\Local\Temp\Atollo\abc"),
         )
     } else {
-        (
-            Path::new("/media/u/Kit/data"),
-            Path::new("/tmp/Dev-Kit/abc"),
-        )
+        (Path::new("/media/u/Kit/data"), Path::new("/tmp/Atollo/abc"))
     };
     let in_kit = data.join("tmp").join("system");
     let in_sys = host.join("system");
@@ -295,9 +292,9 @@ fn settings_override_and_add() {
     };
     let env = KitEnv::build(&kit, &s, "fr", &host());
     assert_eq!(env.get("HTTPS_PROXY"), Some("http://corp:3128"));
-    assert_eq!(env.get("DEVKIT_ALLOW_LAN"), Some("1"));
+    assert_eq!(env.get("ATOLLO_ALLOW_LAN"), Some("1"));
     assert_eq!(env.get("GEMINI_API_KEY"), Some("abc"));
-    assert_eq!(env.get("DEVKIT_LANG"), Some("fr"));
+    assert_eq!(env.get("ATOLLO_LANG"), Some("fr"));
 }
 
 #[test]
@@ -339,7 +336,7 @@ fn secret_values_are_masked_by_name() {
         "GH_TOKEN",
         "github_token",
         "GEMINI_API_KEY",
-        "DEVKIT_FCGI_KEY",
+        "ATOLLO_FCGI_KEY",
         "CLIENT_SECRET",
         "DB_PASSWORD",
         "MYSQL_PASSWD",
@@ -351,7 +348,7 @@ fn secret_values_are_masked_by_name() {
     for name in [
         "PATH",
         "HOME",
-        "DEVKIT_LANG",
+        "ATOLLO_LANG",
         "GCM_CREDENTIAL_STORE",
         "TERM",
     ] {

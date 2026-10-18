@@ -72,7 +72,7 @@ fn mysql_users_grants_and_login() {
     assert_eq!(
         cnf,
         format!(
-            "# Dev-Kit: login of the kit's MySQL (written by the app).\n[client]\nuser=root\n\
+            "# Atollo: login of the kit's MySQL (written by the app).\n[client]\nuser=root\n\
              password={pw}\nhost=127.0.0.1\nport=3307\nprotocol=TCP\n"
         )
     );
@@ -539,7 +539,7 @@ fn drop_scripts() {
         sql.contains("DROP USER IF EXISTS 'shop'@'localhost', 'shop'@'127.0.0.1', 'shop'@'::1';")
     );
     assert!(MONGO_DROP_JS.contains("dropUser(n)") && MONGO_DROP_JS.contains("dropDatabase()"));
-    assert!(!MONGO_DROP_JS.contains("DEVKIT_DB_PASSWORD"));
+    assert!(!MONGO_DROP_JS.contains("ATOLLO_DB_PASSWORD"));
 }
 
 /// The version of a server for the project's database (D-102):

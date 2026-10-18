@@ -19,7 +19,7 @@ pub struct Network {
     pub no_proxy: Option<String>,
     /// PEM file with extra CA certificates (SSL inspection), for Node.
     pub extra_ca_certs: Option<String>,
-    /// Lets the projects' servers listen on the network (`DEVKIT_ALLOW_LAN`).
+    /// Lets the projects' servers listen on the network (`ATOLLO_ALLOW_LAN`).
     pub allow_lan: bool,
 }
 

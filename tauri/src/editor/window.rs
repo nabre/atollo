@@ -13,7 +13,7 @@
 //!   Its drag region (`-webkit-app-region: drag`) moves the window through
 //!   WebView2's non-client regions, which wry turns on; a script puts the
 //!   three Windows buttons in the editor's empty `window-controls-container`.
-//!   A click opens `/__devkit/window/<action>` on the server's origin as a
+//!   A click opens `/__atollo/window/<action>` on the server's origin as a
 //!   new window: refused here and done on this window, still without IPC.
 
 use std::path::Path;
@@ -34,7 +34,7 @@ pub const LABEL_PREFIX: &str = "editor-";
 static NEXT: AtomicU32 = AtomicU32::new(1);
 
 /// Where the title bar buttons send their clicks (never served).
-const CONTROL_PATH: &str = "/__devkit/window/";
+const CONTROL_PATH: &str = "/__atollo/window/";
 
 /// A button of the editor's title bar.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -76,7 +76,7 @@ fn apply<R: Runtime>(window: &WebviewWindow<R>, what: Control) {
 pub fn sync_maximized<R: Runtime>(window: &WebviewWindow<R>) {
     let maximized = window.is_maximized().unwrap_or(false);
     let _ = window.eval(format!(
-        "window.__devkitMaximized && window.__devkitMaximized({maximized})"
+        "window.__atolloMaximized && window.__atolloMaximized({maximized})"
     ));
 }
 
@@ -86,7 +86,7 @@ pub fn sync_maximized<R: Runtime>(window: &WebviewWindow<R>) {
 /// they go in the page's `configurationDefaults`; the user's settings win.
 const TITLE_BAR_DEFAULTS: &str = r#"{"window.menuBarVisibility":"classic"}"#;
 
-/// Dev-Kit's logo (the app icon, ui/src/assets) in the editor's title bar
+/// Atollo's logo (the app icon, ui/src/assets) in the editor's title bar
 /// and on the empty editor (D-72).
 const LOGO_32: &[u8] = include_bytes!("../../../ui/src/assets/logo-32.png");
 const LOGO_256: &[u8] = include_bytes!("../../../ui/src/assets/logo-256.png");
@@ -123,8 +123,8 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
   const product = {PRODUCT};
   const configure = () => {{
     const el = document.getElementById("vscode-workbench-web-configuration");
-    if (!el || el.dataset.devkit) return;
-    el.dataset.devkit = "1";
+    if (!el || el.dataset.atollo) return;
+    el.dataset.atollo = "1";
     try {{
       const c = JSON.parse(el.getAttribute("data-settings"));
       c.configurationDefaults = {{ ...defaults, ...(c.configurationDefaults || {{}}) }};
@@ -137,7 +137,7 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
   // workspace, written in the workspace's storage of the workbench before
   // it reads it (the first transaction on the database wins). Which ones the
   // kit turned off is kept apart: the user's own choices stay, and one the
-  // project wants again is turned back on. Dev-Kit sends a newer list while
+  // project wants again is turned back on. Atollo sends a newer list while
   // the window is open (localStorage), used at the next reload.
   const hidden = () => {{
     let ids = {hidden};
@@ -150,7 +150,7 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
   const turnOff = (db) => {{
     const tx = db.transaction("ItemTable", "readwrite");
     const store = tx.objectStore("ItemTable");
-    const KEY = "extensionsIdentifiers/disabled", MINE = "devkit/disabled";
+    const KEY = "extensionsIdentifiers/disabled", MINE = "atollo/disabled";
     const parse = (v) => {{ try {{ const x = JSON.parse(v); return Array.isArray(x) ? x : []; }} catch (e) {{ return []; }} }};
     const now = store.get(KEY), mine = store.get(MINE);
     mine.onsuccess = () => {{
@@ -194,7 +194,7 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
       b.setAttribute("aria-label", t);
     }}
   }};
-  window.__devkitMaximized = (m) => {{ maximized = !!m; paint(); }};
+  window.__atolloMaximized = (m) => {{ maximized = !!m; paint(); }};
   const add = (box, cls, t, what, glyph) => {{
     const b = document.createElement("div");
     b.className = cls;
@@ -211,8 +211,8 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
   const fill = () => {{
     const box = document.querySelector(
       ".monaco-workbench .part.titlebar .titlebar-right .window-controls-container");
-    if (!box || box.dataset.devkit) return;
-    box.dataset.devkit = "1";
+    if (!box || box.dataset.atollo) return;
+    box.dataset.atollo = "1";
     const icon = "window-icon codicon ";
     add(box, icon + "window-minimize codicon-chrome-minimize", text.min, "minimize");
     add(box, icon + "window-max-restore codicon-chrome-maximize", text.max, "maximize");
@@ -233,7 +233,7 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
       fallback = null;
     }} else if (missing >= 3 && !fallback && document.body) {{
       fallback = document.createElement("div");
-      fallback.id = "devkit-titlebar";
+      fallback.id = "atollo-titlebar";
       const drag = document.createElement("div");
       drag.className = "drag";
       drag.textContent = document.title;
@@ -246,12 +246,12 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
     }}
   }};
   // Welcome on the empty editor: VSCodium's watermark (logo, then its
-  // shortcuts) with Dev-Kit's logo, name, project and what the kit is.
+  // shortcuts) with Atollo's logo, name, project and what the kit is.
   const welcome = () => {{
     for (const w of document.querySelectorAll(".editor-group-watermark")) {{
-      if (w.querySelector(".devkit-welcome")) continue;
+      if (w.querySelector(".atollo-welcome")) continue;
       const box = document.createElement("div");
-      box.className = "devkit-welcome";
+      box.className = "atollo-welcome";
       const line = (cls, value) => {{
         const d = document.createElement("div");
         d.className = cls;
@@ -265,12 +265,12 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
       if (logo) logo.after(box); else w.prepend(box);
     }}
   }};
-  // Extensions installed by Dev-Kit while the editor is open: a notice in
+  // Extensions installed by Atollo while the editor is open: a notice in
   // the editor's own colors offers to restart them (a page reload: the
   // page cannot run the editor's commands, D-14). Names grow while open.
   const installed = new Set();
   let notice = null;
-  window.__devkitExtensions = (names) => {{
+  window.__atolloExtensions = (names) => {{
     for (const n of names) installed.add(n);
     const list = [...installed].join(", ");
     if (notice) {{
@@ -278,7 +278,7 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
       return;
     }}
     notice = document.createElement("div");
-    notice.id = "devkit-notice";
+    notice.id = "atollo-notice";
     notice.setAttribute("role", "alert");
     notice.msg = document.createElement("div");
     notice.msg.className = "msg";
@@ -307,43 +307,43 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
     const style = document.createElement("style");
     style.textContent = ".monaco-workbench.web .part.titlebar .titlebar-right "
       + ".window-controls-container{{width:138px}}"
-      + "#devkit-titlebar{{position:fixed;top:0;left:0;right:0;height:30px;z-index:2147483647;"
+      + "#atollo-titlebar{{position:fixed;top:0;left:0;right:0;height:30px;z-index:2147483647;"
       + "display:flex;font:12px 'Segoe UI',sans-serif;user-select:none;"
       + "background:var(--vscode-titleBar-activeBackground,#1f1f1f);"
       + "color:var(--vscode-titleBar-activeForeground,#ccc)}}"
-      + "#devkit-titlebar .drag{{flex:1;padding-left:12px;line-height:30px;overflow:hidden;"
+      + "#atollo-titlebar .drag{{flex:1;padding-left:12px;line-height:30px;overflow:hidden;"
       + "white-space:nowrap;text-overflow:ellipsis;-webkit-app-region:drag}}"
-      + "#devkit-titlebar .btn{{width:46px;display:flex;align-items:center;justify-content:center;"
+      + "#atollo-titlebar .btn{{width:46px;display:flex;align-items:center;justify-content:center;"
       + "font:10px 'Segoe Fluent Icons','Segoe MDL2 Assets';-webkit-app-region:no-drag}}"
-      + "#devkit-titlebar .btn:hover{{background:#ffffff1a}}"
-      + "#devkit-titlebar .close:hover{{background:#e81123e6;color:#fff}}"
+      + "#atollo-titlebar .btn:hover{{background:#ffffff1a}}"
+      + "#atollo-titlebar .close:hover{{background:#e81123e6;color:#fff}}"
       + ".monaco-workbench .part.titlebar>.titlebar-container>.titlebar-left"
       + ">.window-appicon:not(.codicon){{background-image:url({logo32})!important}}"
       + ".monaco-workbench .part.editor>.content .editor-group-container"
       + " .editor-group-watermark .letterpress{{background-image:url({logo256})!important;"
       + "max-width:128px!important}}"
-      + ".devkit-welcome{{text-align:center;margin:12px 0 24px;"
+      + ".atollo-welcome{{text-align:center;margin:12px 0 24px;"
       + "color:var(--vscode-editorWatermark-foreground,var(--vscode-descriptionForeground))}}"
-      + ".devkit-welcome .name{{font-size:26px;font-weight:600;"
+      + ".atollo-welcome .name{{font-size:26px;font-weight:600;"
       + "color:var(--vscode-foreground)}}"
-      + ".devkit-welcome .project{{font-size:15px;margin-top:4px}}"
-      + ".devkit-welcome .tagline{{font-size:13px;margin-top:8px;opacity:.85}}"
-      + "#devkit-notice{{position:fixed;right:12px;bottom:34px;width:440px;z-index:3000;"
+      + ".atollo-welcome .project{{font-size:15px;margin-top:4px}}"
+      + ".atollo-welcome .tagline{{font-size:13px;margin-top:8px;opacity:.85}}"
+      + "#atollo-notice{{position:fixed;right:12px;bottom:34px;width:440px;z-index:3000;"
       + "box-sizing:border-box;padding:12px 14px;border-radius:6px;font-size:13px;"
       + "background:var(--vscode-notifications-background,#252526);"
       + "color:var(--vscode-notifications-foreground,#ccc);"
       + "border:1px solid var(--vscode-notificationToast-border,transparent);"
       + "box-shadow:0 0 8px 2px var(--vscode-widget-shadow,#0000005c)}}"
-      + "#devkit-notice .head{{display:flex;gap:8px;align-items:flex-start;line-height:1.4}}"
-      + "#devkit-notice .codicon{{color:var(--vscode-notificationsInfoIcon-foreground,#3794ff);"
+      + "#atollo-notice .head{{display:flex;gap:8px;align-items:flex-start;line-height:1.4}}"
+      + "#atollo-notice .codicon{{color:var(--vscode-notificationsInfoIcon-foreground,#3794ff);"
       + "margin-top:2px}}"
-      + "#devkit-notice .actions{{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}}"
-      + "#devkit-notice button{{border:none;border-radius:2px;padding:4px 10px;font:inherit;"
+      + "#atollo-notice .actions{{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}}"
+      + "#atollo-notice button{{border:none;border-radius:2px;padding:4px 10px;font:inherit;"
       + "cursor:pointer}}"
-      + "#devkit-notice .primary{{background:var(--vscode-button-background,#0e639c);"
+      + "#atollo-notice .primary{{background:var(--vscode-button-background,#0e639c);"
       + "color:var(--vscode-button-foreground,#fff)}}"
-      + "#devkit-notice .primary:hover{{background:var(--vscode-button-hoverBackground,#1177bb)}}"
-      + "#devkit-notice .secondary{{background:var(--vscode-button-secondaryBackground,#3a3d41);"
+      + "#atollo-notice .primary:hover{{background:var(--vscode-button-hoverBackground,#1177bb)}}"
+      + "#atollo-notice .secondary{{background:var(--vscode-button-secondaryBackground,#3a3d41);"
       + "color:var(--vscode-button-secondaryForeground,#fff)}}";
     document.head.appendChild(style);
     fill();
@@ -369,7 +369,7 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
 
 /// Where a window keeps the newer list of its hidden extensions.
 fn hidden_key(project: &str) -> String {
-    format!("devkit-hidden:{project}")
+    format!("atollo-hidden:{project}")
 }
 
 fn now_ms() -> u128 {
@@ -482,7 +482,7 @@ pub fn watch_projects(
     });
 }
 
-/// Tells the editor windows which extensions Dev-Kit just installed.
+/// Tells the editor windows which extensions Atollo just installed.
 pub fn notify_installed<R: Runtime>(app: &AppHandle<R>, ids: &[String]) {
     let names: Vec<String> = ids
         .iter()
@@ -492,7 +492,7 @@ pub fn notify_installed<R: Runtime>(app: &AppHandle<R>, ids: &[String]) {
     for (label, window) in app.webview_windows() {
         if label.starts_with(LABEL_PREFIX) {
             let _ = window.eval(format!(
-                "window.__devkitExtensions && window.__devkitExtensions({json})"
+                "window.__atolloExtensions && window.__atolloExtensions({json})"
             ));
         }
     }

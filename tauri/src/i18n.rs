@@ -20,16 +20,16 @@ fn catalog() -> &'static Catalog {
     })
 }
 
-/// The two-letter language to use: the setting, then `DEVKIT_LANG`, then the
+/// The two-letter language to use: the setting, then `ATOLLO_LANG`, then the
 /// language of Windows; anything other than it/fr/de becomes en.
 pub fn resolve(
     setting: Option<&str>,
-    devkit_lang: Option<&str>,
+    atollo_lang: Option<&str>,
     windows: Option<&str>,
 ) -> &'static str {
     let pick = setting
         .filter(|s| !s.is_empty())
-        .or(devkit_lang.filter(|s| !s.is_empty()))
+        .or(atollo_lang.filter(|s| !s.is_empty()))
         .or(windows)
         .unwrap_or("en");
     let two = pick.get(..2).unwrap_or("").to_ascii_lowercase();

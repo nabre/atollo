@@ -4,7 +4,7 @@
 // hand edit is replaced at the next start.
 //
 // - only whoever has this start's token gets in: the app opens
-//   `/?devkit=<token>`, which leaves a cookie (HttpOnly, SameSite=Strict)
+//   `/?atollo=<token>`, which leaves a cookie (HttpOnly, SameSite=Strict)
 //   and goes back to `/` without it; any other request without the cookie
 //   gets 403;
 // - root's password stays in this process's environment: never in the
@@ -17,21 +17,21 @@
 // - PHP runs only through phpMyAdmin's entry points; the other files are
 //   served only from its public folders (js, themes, doc), never its code.
 
-$token = (string) getenv('DEVKIT_PMA_TOKEN');
-$self = (string) getenv('DEVKIT_PMA_HOST') . ':' . (string) ($_SERVER['SERVER_PORT'] ?? '');
+$token = (string) getenv('ATOLLO_PMA_TOKEN');
+$self = (string) getenv('ATOLLO_PMA_HOST') . ':' . (string) ($_SERVER['SERVER_PORT'] ?? '');
 $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
-if ($token === '' || getenv('DEVKIT_PMA_HOST') === false || !hash_equals($self, $host)) {
+if ($token === '' || getenv('ATOLLO_PMA_HOST') === false || !hash_equals($self, $host)) {
     http_response_code(403);
     exit;
 }
-$given = $_GET['devkit'] ?? null;
+$given = $_GET['atollo'] ?? null;
 if (is_string($given) && hash_equals($token, $given)) {
-    setcookie('devkit_pma', $token, ['path' => '/', 'httponly' => true, 'samesite' => 'Strict']);
+    setcookie('atollo_pma', $token, ['path' => '/', 'httponly' => true, 'samesite' => 'Strict']);
     // The token leaves the address.
     header('Location: /index.php', true, 302);
     exit;
 }
-if (!hash_equals($token, (string) ($_COOKIE['devkit_pma'] ?? ''))) {
+if (!hash_equals($token, (string) ($_COOKIE['atollo_pma'] ?? ''))) {
     http_response_code(403);
     header('Content-Type: text/plain; charset=utf-8');
     echo "phpMyAdmin: open it from Atollo, Database page.\n";
@@ -41,7 +41,7 @@ if (!hash_equals($token, (string) ($_COOKIE['devkit_pma'] ?? ''))) {
 $path = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
 $entry = ['/' => 'index.php', '/index.php' => 'index.php', '/url.php' => 'url.php', '/js/messages.php' => 'js/messages.php'];
 if (isset($entry[$path])) {
-    $root = rtrim((string) getenv('DEVKIT_PMA_ROOT'), '\\/');
+    $root = rtrim((string) getenv('ATOLLO_PMA_ROOT'), '\\/');
     chdir($root);
     require $root . DIRECTORY_SEPARATOR . $entry[$path];
     return true;

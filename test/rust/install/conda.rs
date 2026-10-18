@@ -224,8 +224,8 @@ fn file_urls_of_a_kit_folder_with_spaces() {
         "file:///media/u/My%20Kit%20%281%29/tmp/kept/a-1-0.conda"
     );
     assert_eq!(
-        file_url(Path::new(r"C:\Temp\Dev-Kit\a b\x+1.conda")),
-        "file:///C:/Temp/Dev-Kit/a%20b/x%2B1.conda"
+        file_url(Path::new(r"C:\Temp\Atollo\a b\x+1.conda")),
+        "file:///C:/Temp/Atollo/a%20b/x%2B1.conda"
     );
 }
 
@@ -439,7 +439,7 @@ fn listing(dir: &Path) -> Vec<(String, u64)> {
     out
 }
 
-/// D-118 with the real environments of the kit given by DEVKIT_TEST_KIT
+/// D-118 with the real environments of the kit given by ATOLLO_TEST_KIT
 /// (prepared with `prepare --only r,ruby,mongodb,sqlite`, plus `cc` where
 /// it is conda): the kit folder is moved, the start marks them, a
 /// preparation through a proxy that does not exist (and, run under
@@ -448,8 +448,8 @@ fn listing(dir: &Path) -> Vec<(String, u64)> {
 /// data are untouched. Then the same back to the first folder.
 #[test]
 fn real_offline_reinstall_after_a_move() {
-    let Ok(first) = std::env::var("DEVKIT_TEST_KIT") else {
-        eprintln!("DEVKIT_TEST_KIT not set: skipped");
+    let Ok(first) = std::env::var("ATOLLO_TEST_KIT") else {
+        eprintln!("ATOLLO_TEST_KIT not set: skipped");
         return;
     };
     let first = PathBuf::from(first);
@@ -470,7 +470,7 @@ fn real_offline_reinstall_after_a_move() {
         .collect();
     // CI's Windows kit has none: R follows the kit there (D-92).
     if ids.is_empty() {
-        eprintln!("no conda environment installed in DEVKIT_TEST_KIT: skipped");
+        eprintln!("no conda environment installed in ATOLLO_TEST_KIT: skipped");
         return;
     }
     let lists = status(&kit).lists;

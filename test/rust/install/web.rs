@@ -366,7 +366,7 @@ fn httpd_conf_of_the_kit_build() {
     assert!(out.starts_with("Define SRVROOT \"${CP_APACHE_FWD}\"\nServerRoot \"${SRVROOT}\"\n"));
     assert!(out.contains("#Listen 80   (port in data/apache/kit.conf)\n"));
     assert!(out.contains("\nLoadModule rewrite_module"));
-    assert!(out.ends_with("\n# --- Dev-Kit ---\nInclude \"${CP_ROOT_FWD}/data/apache/kit.conf\"\n"));
+    assert!(out.ends_with("\n# --- Atollo ---\nInclude \"${CP_ROOT_FWD}/data/apache/kit.conf\"\n"));
 }
 
 /// D-116: off Windows the hand-started site has no PHP (php-fpm is the
@@ -415,7 +415,7 @@ fn httpd_pinned_releases() {
     assert_eq!(part.file_name, "httpd-2.4.69-1-darwin-arm64.tar.gz");
     assert_eq!(
         part.url,
-        "https://github.com/nabre/dev-kit2/releases/download/httpd-v2.4.69-1/httpd-2.4.69-1-darwin-arm64.tar.gz"
+        "https://github.com/nabre/atollo/releases/download/httpd-v2.4.69-1/httpd-2.4.69-1-darwin-arm64.tar.gz"
     );
     assert_eq!(part.expect, Expect::Sha256(sha.clone()));
     assert!(matches!(part.kind, Kind::TarGz));

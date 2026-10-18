@@ -38,7 +38,7 @@ impl Installer for Pwsh {
 }
 
 /// The editor (VSCodium web server, "reh-web"), part of the app. Always the
-/// version fixed in the catalog for this release of Dev-Kit (DECISIONS.md D-58).
+/// version fixed in the catalog for this release of Atollo (DECISIONS.md D-58).
 pub struct Server;
 
 impl Installer for Server {

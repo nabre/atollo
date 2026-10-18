@@ -133,7 +133,7 @@ pub fn migrate_data(kit: &Kit) {
         else {
             continue;
         };
-        let moving = kit.data().join("db").join(format!("{id}.devkit-move"));
+        let moving = kit.data().join("db").join(format!("{id}.atollo-move"));
         let moved = fs::rename(&root, &moving)
             .and_then(|()| fs::create_dir_all(&root))
             .and_then(|()| fs::rename(&moving, root.join(&line)));
@@ -268,10 +268,10 @@ impl Services {
             .arg(port.to_string())
             .args(["--eval", auth::MONGO_FCV_JS])
             .env(
-                "DEVKIT_DB_ADMIN",
+                "ATOLLO_DB_ADMIN",
                 auth::load(&self.kit).mongodb_admin.unwrap_or_default(),
             )
-            .env("DEVKIT_DB_FCV", line);
+            .env("ATOLLO_DB_FCV", line);
         match run_tool(cmd, Duration::from_secs(60)) {
             Ok(_) => crate::log::info(&format!("mongodb {line}: feature compatibility {line}")),
             Err(e) => crate::log::warn(&format!(

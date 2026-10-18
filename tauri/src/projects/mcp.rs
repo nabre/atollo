@@ -23,8 +23,8 @@ use crate::agents::sync::codex::{codex_server, strip_block};
 use crate::fsx::write_atomic;
 
 const CODEX_BEGIN: &str =
-    "# >>> Dev-Kit: server MCP del progetto da .mcp.json (non modificare: usa la pagina del progetto) >>>";
-const CODEX_END: &str = "# <<< Dev-Kit: server MCP del progetto <<<";
+    "# >>> Atollo: server MCP del progetto da .mcp.json (non modificare: usa la pagina del progetto) >>>";
+const CODEX_END: &str = "# <<< Atollo: server MCP del progetto <<<";
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

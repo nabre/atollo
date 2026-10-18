@@ -53,7 +53,7 @@ describe("KitInfo disk facts", () => {
     diskKind: "removable",
     diskNoexec: null,
     diskNote: null,
-    systemTemp: "C:\\Users\\me\\AppData\\Local\\Temp\\Dev-Kit\\ab12",
+    systemTemp: "C:\\Users\\me\\AppData\\Local\\Temp\\Atollo\\ab12",
   };
 
   it("names the file system, the kind of disk and the temp folder in use", () => {

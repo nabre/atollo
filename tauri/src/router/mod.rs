@@ -1,5 +1,5 @@
-//! Central multi-platform Router of Dev-Kit (`WIN / LIN / MAC` ↔ `ROUTER` ↔
-//! `DEV-KIT 2`): target capabilities (`target`), OS-aware binary and launcher
+//! Central multi-platform Router of Atollo (`WIN / LIN / MAC` ↔ `ROUTER` ↔
+//! `ATOLLO 2`): target capabilities (`target`), OS-aware binary and launcher
 //! resolution (`bins`), multi-target disk and health probing (`probe`), and
 //! OS-aware private/executable file operations (`fs`).
 

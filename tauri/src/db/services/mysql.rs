@@ -54,7 +54,7 @@ pub fn cnf_path(os: Os, path: &Path) -> String {
 /// A Unix socket's path must fit in `sun_path` (104 bytes on macOS, 108 on
 /// Linux) or the server does not start: deep kits get one in `fallback`,
 /// the kit's own private folder (0700) in the PC's temporary one
-/// (`<TEMP>/Dev-Kit/<kit id>/mysql`, [`socket_dir`]), named by the port;
+/// (`<TEMP>/Atollo/<kit id>/mysql`, [`socket_dir`]), named by the port;
 /// never a shared folder such as `/tmp` itself.
 const SOCKET_MAX: usize = 100;
 
@@ -81,7 +81,7 @@ pub fn socket_path(
     if inside.as_os_str().len() <= SOCKET_MAX {
         return Ok(Some(inside));
     }
-    match fallback.map(|f| f.join(format!("devkit-mysql-{port}.sock"))) {
+    match fallback.map(|f| f.join(format!("atollo-mysql-{port}.sock"))) {
         Some(s) if s.as_os_str().len() <= SOCKET_MAX => Ok(Some(s)),
         _ => anyhow::bail!(
             "{}: the folder of the kit is too deep for MySQL's socket and the PC has \
@@ -100,7 +100,7 @@ pub fn socket_path(
 /// disk of a stick with logs a development server never replays.
 pub fn server_cnf(os: Os, basedir: &Path, data: &Path, port: u16, socket: Option<&Path>) -> String {
     let mut text = format!(
-        "# Dev-Kit: options of the kit's MySQL (written by the app at every start).\n\
+        "# Atollo: options of the kit's MySQL (written by the app at every start).\n\
          [mysqld]\n\
          basedir={}\n\
          datadir={}\n\

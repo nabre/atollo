@@ -188,7 +188,7 @@ pub fn php_off_blocks() -> Vec<String> {
 /// PHP through php-fpm (macOS and Linux, D-116: static-php-cli has no
 /// Apache module): `mod_proxy_fcgi` runs the files of [`PHP_RUN`] on
 /// `fcgi`, whose key Apache reads from its own environment
-/// (`${DEVKIT_FCGI_KEY}`, set on the process, never written in a file) and
+/// (`${ATOLLO_FCGI_KEY}`, set on the process, never written in a file) and
 /// sends with every request for `runtime/fcgi-guard.php`. The files of
 /// [`PHP_NEVER`] stay refused. A `.htaccess` that sets its own handler with
 /// `<Files>` (Drupal's `sites/default/files`) still wins: it is merged
@@ -301,20 +301,20 @@ pub fn alias_directives(own: &str, aliases: &[SiteAlias], indent: &str) -> Vec<S
     lines
 }
 
-/// Strips the Dev-Kit tail from `conf\httpd.conf`.
+/// Strips the Atollo tail from `conf\httpd.conf`.
 pub fn strip_kit_tail(base: &str) -> Result<String> {
     if !base.contains("Define SRVROOT") {
         bail!("httpd.conf in an unexpected format (no Define SRVROOT)");
     }
     Ok(base
         .lines()
-        .filter(|l| !l.contains("# --- Dev-Kit ---") && !l.contains("/data/apache/kit.conf"))
+        .filter(|l| !l.contains("# --- Atollo ---") && !l.contains("/data/apache/kit.conf"))
         .collect::<Vec<_>>()
         .join("\r\n"))
 }
 
 /// The project's configuration: the kit's httpd.conf (modules, MIME types)
-/// without its Dev-Kit tail, then the project's site.
+/// without its Atollo tail, then the project's site.
 #[cfg(test)]
 pub fn project_conf(base: &str, root: &Path, dir: &Path, port: u16, lan: bool) -> Result<String> {
     project_conf_with_site(base, None, root, dir, port, lan, &[], &[], Os::Win32, None)
@@ -358,7 +358,7 @@ pub fn project_conf_with_site(
     }
 
     let mut site = vec![
-        "# --- Dev-Kit: this project's Apache (written at every start) ---".to_owned(),
+        "# --- Atollo: this project's Apache (written at every start) ---".to_owned(),
         format!("Listen {listen}"),
         format!("ServerName localhost:{port}"),
     ];

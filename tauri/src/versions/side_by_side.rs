@@ -5,7 +5,7 @@
 //!   (`org.gradle.java.installations.paths` in `data\gradle\gradle.properties`,
 //!   no detection of the PC's), Maven's in `~\.m2\toolchains.xml`; a project
 //!   on Java 11 compiles with the kit's 11 while Gradle 9 itself runs on the
-//!   newest JDK (`data\kit\bin\gradle.cmd`, `DEVKIT_GRADLE_JAVA`).
+//!   newest JDK (`data\kit\bin\gradle.cmd`, `ATOLLO_GRADLE_JAVA`).
 //! - **.NET**: every folder of a version gets the SDKs and runtimes of the
 //!   others, as junctions in `sdk\` and `shared\<framework>\` (the layout
 //!   dotnet itself uses side by side): a `net8.0` app runs under the 10 SDK,
@@ -48,7 +48,7 @@ pub fn refresh(kit: &Kit) {
 
 const GRADLE_PATHS: &str = "org.gradle.java.installations.paths";
 const GRADLE_DETECT: &str = "org.gradle.java.installations.auto-detect";
-const KIT_MARK: &str = "Dev-Kit";
+const KIT_MARK: &str = "Atollo";
 
 fn fwd(p: &Path) -> String {
     p.display().to_string().replace('\\', "/")
@@ -61,12 +61,12 @@ pub fn gradle_properties(text: &str, jdks: &[PathBuf]) -> String {
         .lines()
         .filter(|l| {
             let key = l.split('=').next().unwrap_or("").trim();
-            key != GRADLE_PATHS && key != GRADLE_DETECT && !l.contains("# Dev-Kit: the kit's JDKs")
+            key != GRADLE_PATHS && key != GRADLE_DETECT && !l.contains("# Atollo: the kit's JDKs")
         })
         .map(str::to_owned)
         .collect();
     if !jdks.is_empty() {
-        out.push("# Dev-Kit: the kit's JDKs for toolchains, none of the PC's".into());
+        out.push("# Atollo: the kit's JDKs for toolchains, none of the PC's".into());
         let list: Vec<String> = jdks.iter().map(|p| fwd(p)).collect();
         out.push(format!("{GRADLE_PATHS}={}", list.join(",")));
         out.push(format!("{GRADLE_DETECT}=false"));
@@ -170,11 +170,11 @@ fn create_dir_link(source: &Path, link: &Path) -> Result<()> {
 /// In a folder copied where a link could not be made: the folder it copies,
 /// relative to the copy (`../../../8.0/sdk/8.0.415`), so a kit on a disk
 /// mounted elsewhere (`/media/a/KIT`, `/Volumes/KIT`) still finds it.
-const COPY_MARK: &str = ".devkit-copy-of";
+const COPY_MARK: &str = ".atollo-copy-of";
 
 /// Suffix of the folder a copy is made in before it takes its name: an
 /// interrupted copy leaves only that, removed by [`link_dotnet`].
-const STAGED: &str = ".devkit-new";
+const STAGED: &str = ".atollo-new";
 
 /// The link `link -> source`, made by `make`; on a disk without links
 /// (exFAT, FAT: `archive::links_unsupported`) a copy of `source` marked
@@ -197,14 +197,14 @@ fn link_or_copy(
     }
 }
 
-/// `<link>.devkit-new`, where the copy of [`copy_marked`] is made.
+/// `<link>.atollo-new`, where the copy of [`copy_marked`] is made.
 fn staged_path(link: &Path) -> PathBuf {
     let mut name = link.file_name().unwrap_or_default().to_os_string();
     name.push(STAGED);
     link.with_file_name(name)
 }
 
-/// Copies `source` (with `copy`) into `<link>.devkit-new`, marks it, then
+/// Copies `source` (with `copy`) into `<link>.atollo-new`, marks it, then
 /// renames it to `link`: `link` is a complete, marked copy or nothing, and
 /// a copy that fails (a full disk) removes what it made.
 #[cfg_attr(windows, allow(dead_code))]

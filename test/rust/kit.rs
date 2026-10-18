@@ -5,7 +5,7 @@ pub struct TempDir(pub PathBuf);
 impl TempDir {
     pub fn new(name: &str) -> TempDir {
         let dir = std::env::temp_dir().join(format!(
-            "devkit-test-{}-{}-{name}",
+            "atollo-test-{}-{}-{name}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -36,21 +36,21 @@ fn arch_follows_env_rule() {
 #[test]
 fn root_is_exe_folder_with_odd_names() {
     for name in [
-        "Dev Kit",
+        "My Atollo",
         "kit (2)",
         "a&b",
         "percent%20",
         "già è",
         r"x\very\deep\path\to\the\kit",
     ] {
-        let exe = PathBuf::from(r"E:\").join(name).join("Dev-Kit.exe");
+        let exe = PathBuf::from(r"E:\").join(name).join("Atollo.exe");
         let kit = Kit::from_exe(&exe).unwrap();
         assert_eq!(kit.root(), exe.parent().unwrap());
         assert_eq!(kit.data(), exe.parent().unwrap().join("data"));
     }
 }
 
-/// D-113: the root next to `Dev-Kit.app` or to the AppImage, otherwise
+/// D-113: the root next to `Atollo.app` or to the AppImage, otherwise
 /// the folder of the program; Windows keeps the folder of the exe.
 #[test]
 fn root_next_to_the_bundle_or_the_appimage() {
@@ -61,7 +61,7 @@ fn root_next_to_the_bundle_or_the_appimage() {
     assert_eq!(
         root(
             Os::Darwin,
-            "/Users/u/Kit/Dev-Kit.app/Contents/MacOS/Atollo",
+            "/Users/u/Kit/Atollo.app/Contents/MacOS/Atollo",
             None
         ),
         Some(p("/Users/u/Kit"))
@@ -77,8 +77,8 @@ fn root_next_to_the_bundle_or_the_appimage() {
     // Not a bundle layout: the folder of the program.
     for exe in [
         "/Users/u/Kit/Atollo",
-        "/Users/u/Kit/Dev-Kit.app/Contents/Atollo",
-        "/Users/u/Kit/Dev-Kit/Contents/MacOS/Atollo",
+        "/Users/u/Kit/Atollo.app/Contents/Atollo",
+        "/Users/u/Kit/Atollo/Contents/MacOS/Atollo",
     ] {
         assert_eq!(
             root(Os::Darwin, exe, None),
@@ -90,8 +90,8 @@ fn root_next_to_the_bundle_or_the_appimage() {
     assert_eq!(
         root(
             Os::Linux,
-            "/tmp/.mount_DevKitx1/usr/bin/Atollo",
-            Some("/media/u/KIT/Dev-Kit.AppImage")
+            "/tmp/.mount_Atollox1/usr/bin/Atollo",
+            Some("/media/u/KIT/Atollo.AppImage")
         ),
         Some(p("/media/u/KIT"))
     );
@@ -101,7 +101,7 @@ fn root_next_to_the_bundle_or_the_appimage() {
     );
     // A relative $APPIMAGE is not used.
     assert_eq!(
-        root(Os::Linux, "/media/u/KIT/Atollo", Some("Dev-Kit.AppImage")),
+        root(Os::Linux, "/media/u/KIT/Atollo", Some("Atollo.AppImage")),
         Some(p("/media/u/KIT"))
     );
     // The bundle rule is macOS only, the AppImage Linux only.
@@ -125,10 +125,10 @@ fn root_next_to_the_bundle_or_the_appimage() {
 fn appimage_only_from_inside_its_mount() {
     let os = |s: &str| Some(std::ffi::OsString::from(s));
     let exe = Path::new("/tmp/.mount_ab/usr/bin/Atollo");
-    let (image, dir) = (os("/media/u/K/Dev-Kit.AppImage"), os("/tmp/.mount_ab"));
+    let (image, dir) = (os("/media/u/K/Atollo.AppImage"), os("/tmp/.mount_ab"));
     assert_eq!(
         appimage_of(exe, image.as_deref(), dir.as_deref()),
-        Some(PathBuf::from("/media/u/K/Dev-Kit.AppImage"))
+        Some(PathBuf::from("/media/u/K/Atollo.AppImage"))
     );
     // A plain binary started from inside another AppImage: not its image.
     let plain = Path::new("/media/u/K/Atollo");
@@ -141,12 +141,12 @@ fn appimage_only_from_inside_its_mount() {
 #[test]
 fn app_translocation_is_refused_on_macos() {
     let moved = Path::new(
-        "/private/var/folders/xy/abc/T/AppTranslocation/0A1B-2C/d/Dev Kit.app/Contents/MacOS/Atollo",
+        "/private/var/folders/xy/abc/T/AppTranslocation/0A1B-2C/d/My Atollo.app/Contents/MacOS/Atollo",
     );
-    assert_eq!(translocated_bundle(moved).as_deref(), Some("Dev Kit.app"));
+    assert_eq!(translocated_bundle(moved).as_deref(), Some("My Atollo.app"));
     let text = launch_problem(Os::Darwin, moved, "it").unwrap();
     assert!(
-        text.contains("xattr -dr com.apple.quarantine 'Dev Kit.app'"),
+        text.contains("xattr -dr com.apple.quarantine 'My Atollo.app'"),
         "{text}"
     );
     // Always quoted, so that a crafted name cannot run anything.
@@ -162,7 +162,7 @@ fn app_translocation_is_refused_on_macos() {
     assert!(text.contains("quarantine 'Kit.app'"), "{text}");
     let en = launch_problem(Os::Darwin, moved, "en").unwrap();
     assert!(en.contains("App Translocation") && en != text, "{en}");
-    let normal = Path::new("/Users/u/Kit/Dev-Kit.app/Contents/MacOS/Atollo");
+    let normal = Path::new("/Users/u/Kit/Atollo.app/Contents/MacOS/Atollo");
     assert_eq!(translocated_bundle(normal), None);
     assert_eq!(launch_problem(Os::Darwin, normal, "it"), None);
     assert_eq!(launch_problem(Os::Linux, moved, "it"), None);
@@ -183,7 +183,7 @@ fn read_only_root_message() {
     );
     let denied = prepare_error_message(Os::Darwin, &err(io::ErrorKind::PermissionDenied), "it");
     assert!(
-        !denied.contains("sola lettura") && !denied.contains("Dev-Kit.exe"),
+        !denied.contains("sola lettura") && !denied.contains("Atollo.exe"),
         "{denied}"
     );
     // Windows: the message of before, whatever the error.
@@ -193,7 +193,7 @@ fn read_only_root_message() {
     ] {
         assert_eq!(
             prepare_error_message(Os::Win32, &err(kind), "it"),
-            "Impossibile scrivere nella cartella /media/u/KIT/projects.\n\nSposta Dev-Kit.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo."
+            "Impossibile scrivere nella cartella /media/u/KIT/projects.\n\nSposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo."
         );
     }
     let en = prepare_error_message(Os::Linux, &err(io::ErrorKind::ReadOnlyFilesystem), "en");
@@ -225,7 +225,7 @@ fn verbatim_prefix_is_removed() {
         Path::new("/media/u/Kit")
     );
     if cfg!(windows) {
-        let kit = Kit::from_exe(Path::new(r"\\?\D:\Kit\Dev-Kit.exe")).unwrap();
+        let kit = Kit::from_exe(Path::new(r"\\?\D:\Kit\Atollo.exe")).unwrap();
         assert_eq!(kit.root(), Path::new(r"D:\Kit"));
     }
 }
@@ -327,7 +327,7 @@ fn host_temp_and_disk() {
     let host = kit.clone().with_host(Some(Path::new(host_temp)));
     assert_eq!(
         host.system_temp().unwrap(),
-        Path::new(host_temp).join("Dev-Kit").join(kit.id())
+        Path::new(host_temp).join("Atollo").join(kit.id())
     );
     assert!(host.volume().is_some_and(|v| v.free > 0));
     // started from the kit's own programs: never nested, never inside the kit
@@ -425,7 +425,7 @@ fn moving_the_kit_flags_the_conda_components_off_windows() {
 /// while relocate read only `old-root.txt`).
 #[test]
 fn old_root_file_is_the_one_check_moved_writes() {
-    let root = std::env::temp_dir().join("devkit-old-root");
+    let root = std::env::temp_dir().join("atollo-old-root");
     let names = [
         (Target::WIN32_X64, "old-root.txt"),
         (Target::DARWIN_ARM64, "old-root-darwin.txt"),
@@ -555,9 +555,9 @@ fn the_editor_watcher_is_safe_off_windows() {
 )]
 #[test]
 fn folders_that_break_the_editor_watcher() {
-    assert_eq!(watcher_unsafe_folder(Path::new(r"E:\Dev-Kit")), None);
+    assert_eq!(watcher_unsafe_folder(Path::new(r"E:\Atollo")), None);
     assert_eq!(
-        watcher_unsafe_folder(Path::new(r"E:\Dev Kit (1) & co")),
+        watcher_unsafe_folder(Path::new(r"E:\My Atollo (1) & co")),
         None
     );
     assert_eq!(

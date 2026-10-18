@@ -256,10 +256,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Open VSX, CodeLLDB, endpoint OAuth dei 3 agenti, auto-aggiornamento di Dev-Kit.exe, fallback HTML senza API e Drag & Drop manuale.",
-        "Open VSX, CodeLLDB, OAuth usage endpoints for the 3 agents, Dev-Kit.exe self-update, API-free HTML fallback and manual Drag & Drop.",
-        "Open VSX, CodeLLDB, points de terminaison OAuth des 3 agents, mise à jour automatique de Dev-Kit.exe, repli HTML sans API et glisser-déposer manuel.",
-        "Open VSX, CodeLLDB, OAuth-Nutzungsendpunkte der 3 Agenten, Selbstaktualisierung von Dev-Kit.exe, API-freier HTML-Fallback und manuelles Drag & Drop.",
+        "Open VSX, CodeLLDB, endpoint OAuth dei 3 agenti, auto-aggiornamento di Atollo.exe, fallback HTML senza API e Drag & Drop manuale.",
+        "Open VSX, CodeLLDB, OAuth usage endpoints for the 3 agents, Atollo.exe self-update, API-free HTML fallback and manual Drag & Drop.",
+        "Open VSX, CodeLLDB, points de terminaison OAuth des 3 agents, mise à jour automatique d'Atollo.exe, repli HTML sans API et glisser-déposer manuel.",
+        "Open VSX, CodeLLDB, OAuth-Nutzungsendpunkte der 3 Agenten, Selbstaktualisierung von Atollo.exe, API-freier HTML-Fallback und manuelles Drag & Drop.",
       ),
     icon: VscCheckAll,
     keywords:
@@ -418,10 +418,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Gestione multi-versione con il lucchetto «bloccata», matrice delle Relazioni, albero di personalizzazione Framework, espulsione sicura e CLI Dev-Kit.exe.",
-        "Multi-version management with the “locked” badge, Relations matrix, Framework customization tree, safe drive ejection and Dev-Kit.exe CLI.",
-        "Gestion multi-version avec le cadenas « verrouillée », matrice des Relations, arbre de personnalisation des Frameworks, éjection sécurisée et CLI Dev-Kit.exe.",
-        "Multi-Versions-Verwaltung mit dem Schloss „gesperrt“, Beziehungsmatrix, Framework-Anpassungsbaum, sicherem Auswerfen und Dev-Kit.exe-CLI.",
+        "Gestione multi-versione con il lucchetto «bloccata», matrice delle Relazioni, albero di personalizzazione Framework, espulsione sicura e CLI Atollo.exe.",
+        "Multi-version management with the “locked” badge, Relations matrix, Framework customization tree, safe drive ejection and Atollo.exe CLI.",
+        "Gestion multi-version avec le cadenas « verrouillée », matrice des Relations, arbre de personnalisation des Frameworks, éjection sécurisée et CLI Atollo.exe.",
+        "Multi-Versions-Verwaltung mit dem Schloss „gesperrt“, Beziehungsmatrix, Framework-Anpassungsbaum, sicherem Auswerfen und Atollo.exe-CLI.",
       ),
     icon: VscExtensions,
     keywords:
@@ -538,14 +538,14 @@ export const DISK_TREE: DiskTreeNode[] = [
     depth: 0,
     desc: () =>
       tr(
-        "Cartella radice portabile del kit (es. D:\\Dev-Kit\\), spostabile su qualsiasi unità o PC.",
-        "Portable root folder of the kit (e.g. D:\\Dev-Kit\\), movable across any drive or PC.",
-        "Dossier racine portable du kit (ex. D:\\Dev-Kit\\), déplaçable sur n'importe quel lecteur ou PC.",
-        "Portabler Stammordner des Kits (z. B. D:\\Dev-Kit\\), auf jedes Laufwerk oder jeden PC verschiebbar.",
+        "Cartella radice portabile del kit (es. D:\\Atollo\\), spostabile su qualsiasi unità o PC.",
+        "Portable root folder of the kit (e.g. D:\\Atollo\\), movable across any drive or PC.",
+        "Dossier racine portable du kit (ex. D:\\Atollo\\), déplaçable sur n'importe quel lecteur ou PC.",
+        "Portabler Stammordner des Kits (z. B. D:\\Atollo\\), auf jedes Laufwerk oder jeden PC verschiebbar.",
       ),
   },
   {
-    path: "Dev-Kit.exe",
+    path: "Atollo.exe",
     depth: 1,
     desc: () =>
       tr(
@@ -1611,7 +1611,7 @@ export interface CliCommandRow {
 
 export const CLI_COMMANDS: CliCommandRow[] = [
   {
-    cmd: ".\\Dev-Kit.exe env | Out-Host",
+    cmd: ".\\Atollo.exe env | Out-Host",
     desc: () =>
       tr(
         "Stampa tutte le ~90 variabili d'ambiente isolate calcolate per il kit.",
@@ -1621,7 +1621,7 @@ export const CLI_COMMANDS: CliCommandRow[] = [
       ),
   },
   {
-    cmd: ".\\Dev-Kit.exe components | Out-Host",
+    cmd: ".\\Atollo.exe components | Out-Host",
     desc: () =>
       tr(
         "Elenca tutti i componenti del catalogo, se sono scelti e la versione installata su disco.",
@@ -1631,7 +1631,7 @@ export const CLI_COMMANDS: CliCommandRow[] = [
       ),
   },
   {
-    cmd: ".\\Dev-Kit.exe versions <id> | Out-Host",
+    cmd: ".\\Atollo.exe versions <id> | Out-Host",
     desc: () =>
       tr(
         "Interroga la fonte ufficiale e mostra le linee major.minor disponibili per un componente versionato (es. node, php, python).",
@@ -1641,7 +1641,7 @@ export const CLI_COMMANDS: CliCommandRow[] = [
       ),
   },
   {
-    cmd: ".\\Dev-Kit.exe check | Out-Host",
+    cmd: ".\\Atollo.exe check | Out-Host",
     desc: () =>
       tr(
         "Esegue il comando di verifica finale su tutti i componenti installati per accertarne l'integrità.",
@@ -1651,7 +1651,7 @@ export const CLI_COMMANDS: CliCommandRow[] = [
       ),
   },
   {
-    cmd: ".\\Dev-Kit.exe prepare [--only a,b] [--skip c] [--update-all] [--force] | Out-Host",
+    cmd: ".\\Atollo.exe prepare [--only a,b] [--skip c] [--update-all] [--force] | Out-Host",
     desc: () =>
       tr(
         "Installa, aggiorna o rimuove da riga di comando i componenti scelti.",
@@ -1661,7 +1661,7 @@ export const CLI_COMMANDS: CliCommandRow[] = [
       ),
   },
   {
-    cmd: ".\\Dev-Kit.exe sync [--project <cartella>] [--verbose] | Out-Host",
+    cmd: ".\\Atollo.exe sync [--project <cartella>] [--verbose] | Out-Host",
     desc: () =>
       tr(
         "Allinea istruzioni (AGENTS.md), skill e server MCP fra Claude Code, Codex e Antigravity.",
@@ -1671,7 +1671,7 @@ export const CLI_COMMANDS: CliCommandRow[] = [
       ),
   },
   {
-    cmd: ".\\Dev-Kit.exe keyring restore|save | Out-Host",
+    cmd: ".\\Atollo.exe keyring restore|save | Out-Host",
     desc: () =>
       tr(
         "Ripristina o salva nel kit (con cifratura DPAPI) l'accesso di Antigravity (usato da agy.cmd).",
@@ -1681,7 +1681,7 @@ export const CLI_COMMANDS: CliCommandRow[] = [
       ),
   },
   {
-    cmd: ".\\Dev-Kit.exe serve <cartella> <porta> | Out-Host",
+    cmd: ".\\Atollo.exe serve <cartella> <porta> | Out-Host",
     desc: () =>
       tr(
         "Avvia il server HTTP statico integrato sulla cartella e porta indicate.",
@@ -1691,17 +1691,17 @@ export const CLI_COMMANDS: CliCommandRow[] = [
       ),
   },
   {
-    cmd: ".\\Dev-Kit.exe version | Out-Host",
+    cmd: ".\\Atollo.exe version | Out-Host",
     desc: () =>
       tr(
-        "Mostra la versione dell'eseguibile Dev-Kit.exe.",
-        "Shows the version of the Dev-Kit.exe executable.",
-        "Affiche la version de l'exécutable Dev-Kit.exe.",
-        "Zeigt die Version der ausführbaren Datei Dev-Kit.exe an.",
+        "Mostra la versione dell'eseguibile Atollo.exe.",
+        "Shows the version of the Atollo.exe executable.",
+        "Affiche la version de l'exécutable Atollo.exe.",
+        "Zeigt die Version der ausführbaren Datei Atollo.exe an.",
       ),
   },
   {
-    cmd: ".\\Dev-Kit.exe help | Out-Host",
+    cmd: ".\\Atollo.exe help | Out-Host",
     desc: () =>
       tr(
         "Mostra il riepilogo di tutti i comandi CLI disponibili.",

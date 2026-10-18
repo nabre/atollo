@@ -1,5 +1,5 @@
 'use strict';
-// From nabre/dev-kit (setup/node/loopback.js, MIT). Written by Dev-Kit.exe to
+// From nabre/dev-kit (setup/node/loopback.js, MIT). Written by Atollo.exe to
 // data\kit\loopback.js and loaded into every Node.js of the kit
 // (NODE_OPTIONS=--require, see tauri/src/env.rs). A server that listens on all
 // the network cards (no address, 0.0.0.0 or ::, the default of most dev
@@ -7,13 +7,13 @@
 // (and the macOS one, if on) asks to allow a program only when it listens on
 // the network, and in a portable kit that question should never come up.
 // Pipes, sockets and explicit addresses (192.168.1.5, localhost) are left as
-// they are. DEVKIT_ALLOW_LAN=1 (Settings > Local network): no change (a server to open
+// they are. ATOLLO_ALLOW_LAN=1 (Settings > Local network): no change (a server to open
 // from a phone on the same network; then the firewall asks).
 
 const net = require('net');
 const dgram = require('dgram');
 
-if (process.env.DEVKIT_ALLOW_LAN !== '1' && !net.Server.prototype.listen.devkitLoopback) {
+if (process.env.ATOLLO_ALLOW_LAN !== '1' && !net.Server.prototype.listen.atolloLoopback) {
     // Matches undefined/null/empty and every IPv4/IPv6 wildcard representation
     // ('0.0.0.0', '::', '[::]', '::0', '0:0:0:0:0:0:0:0',
     // '0000:0000:0000:0000:0000:0000:0000:0000' used by Vite's wildcardHosts,
@@ -41,7 +41,7 @@ if (process.env.DEVKIT_ALLOW_LAN !== '1' && !net.Server.prototype.listen.devkitL
         }
         return original.apply(this, args);
     };
-    listen.devkitLoopback = true;
+    listen.atolloLoopback = true;
     net.Server.prototype.listen = listen;
 
     const originalBind = dgram.Socket.prototype.bind;
@@ -64,6 +64,6 @@ if (process.env.DEVKIT_ALLOW_LAN !== '1' && !net.Server.prototype.listen.devkitL
         }
         return originalBind.apply(this, args);
     };
-    bind.devkitLoopback = true;
+    bind.atolloLoopback = true;
     dgram.Socket.prototype.bind = bind;
 }

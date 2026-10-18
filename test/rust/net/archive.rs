@@ -562,9 +562,9 @@ fn stage_into_from_another_disk_copies() {
     let new = tmp.0.join("temp").join("x");
     tree(&new, "new");
     // A copy interrupted earlier (the app closed in the middle).
-    fs::create_dir_all(tmp.0.join("apps").join("tool.devkit-new").join("bin")).unwrap();
+    fs::create_dir_all(tmp.0.join("apps").join("tool.atollo-new").join("bin")).unwrap();
     fs::write(
-        tmp.0.join("apps").join("tool.devkit-new").join("stale.txt"),
+        tmp.0.join("apps").join("tool.atollo-new").join("stale.txt"),
         "x",
     )
     .unwrap();
@@ -612,7 +612,7 @@ fn interrupted_copy_is_cleaned() {
     fs::write(staged_path(&apps.join("uv.exe")), "half").unwrap();
     assert_eq!(
         names(&apps),
-        ["tool", "tool.devkit-new", "uv.exe.devkit-new"]
+        ["tool", "tool.atollo-new", "uv.exe.atollo-new"]
     );
     clean_leftovers(&apps);
     assert_eq!(names(&apps), ["tool"]);

@@ -11,14 +11,14 @@ fn written_and_restored() {
     let path = kit.kit_files().join("loopback.js");
     assert!(fs::read_to_string(&path)
         .unwrap()
-        .contains("devkitLoopback"));
+        .contains("atolloLoopback"));
     assert!(kit.kit_files().join("php-router.php").is_file());
     assert!(kit.kit_files().join("fcgi-guard.php").is_file());
     fs::write(&path, "changed").unwrap();
     write_all(&kit).unwrap();
     assert!(fs::read_to_string(&path)
         .unwrap()
-        .contains("devkitLoopback"));
+        .contains("atolloLoopback"));
 }
 
 /// The MySQL launchers (D-110): `.cmd` in CRLF and sh in LF, written with
@@ -34,14 +34,14 @@ fn mysql_launchers_written() {
         let cmd = fs::read_to_string(dir.join("bin").join(format!("{stem}.cmd"))).unwrap();
         assert_eq!(cmd.matches('\n').count(), cmd.matches("\r\n").count());
         assert!(cmd.contains(&format!(
-            "\"%CP_MYSQL%\\bin\\{stem}.exe\" \"--defaults-extra-file=%DEVKIT_MYSQL_CNF%\" %*\r\n"
+            "\"%CP_MYSQL%\\bin\\{stem}.exe\" \"--defaults-extra-file=%ATOLLO_MYSQL_CNF%\" %*\r\n"
         )));
         assert!(cmd.contains("echo MySQL is not installed"));
         assert!(!cmd.contains('('), "no block around %*: {stem}");
         let sh = fs::read_to_string(dir.join("bin").join(stem)).unwrap();
         assert!(sh.starts_with("#!/bin/sh\n") && !sh.contains('\r'));
         assert!(sh.contains(&format!(
-            "exec \"$CP_MYSQL/bin/{stem}\" --defaults-extra-file=\"$DEVKIT_MYSQL_CNF\" \"$@\"\n"
+            "exec \"$CP_MYSQL/bin/{stem}\" --defaults-extra-file=\"$ATOLLO_MYSQL_CNF\" \"$@\"\n"
         )));
         assert!(sh.contains("MySQL is not installed"));
     }
@@ -69,7 +69,7 @@ fn mysql_launcher_runs_the_right_program() {
         let out = Command::new(&launcher)
             .args(["-e", "SELECT 1"])
             .env("CP_MYSQL", &mysql)
-            .env("DEVKIT_MYSQL_CNF", &cnf)
+            .env("ATOLLO_MYSQL_CNF", &cnf)
             .output()
             .unwrap();
         String::from_utf8_lossy(&out.stdout).trim().to_owned()
@@ -209,7 +209,7 @@ fn bash_cmd(bash: &Path, home: &Path) -> Command {
     for name in [
         "CP_ROOT",
         "CP_DATA",
-        "DEVKIT_TERMINAL",
+        "ATOLLO_TERMINAL",
         "BASH_ENV",
         "ENV",
         "PWD",
@@ -281,7 +281,7 @@ fn bashrc_swaps_project_versions() {
         fs::canonicalize(&here).unwrap(),
     );
     let probe = "echo \"J=$JAVA_HOME\"; shopt -q nocasematch && echo nocase; \
-                 type __devkit_p >/dev/null 2>&1 && echo leaked; true";
+                 type __atollo_p >/dev/null 2>&1 && echo leaked; true";
     let (ok, out, err) = run(bash_cmd(&bash, &tmp.0)
         .current_dir(&here)
         .env("CP_ROOT", &root)

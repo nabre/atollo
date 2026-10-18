@@ -97,7 +97,7 @@ const NAMES: &str = "names";
 /// the command line beside the app, would otherwise each write back what
 /// they read, and one change would be lost. In this process a mutex; across
 /// the processes of the kit the lock of the Antigravity keyring
-/// (`agents/keyring.rs`): `Local\Dev-Kit-db-json-<kit id>` on Windows, an
+/// (`agents/keyring.rs`): `Local\Atollo-db-json-<kit id>` on Windows, an
 /// exclusive `flock` on `data/app/db/db-json.lock` elsewhere.
 fn db_json_lock(kit: &Kit) -> Result<DbJsonLock> {
     static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -128,7 +128,7 @@ impl KitLock {
     fn take(kit: &Kit) -> Result<KitLock> {
         use windows::Win32::Foundation::{CloseHandle, WAIT_ABANDONED, WAIT_OBJECT_0};
         use windows::Win32::System::Threading::{CreateMutexW, WaitForSingleObject};
-        let name = windows::core::HSTRING::from(format!(r"Local\Dev-Kit-db-json-{}", kit.id()));
+        let name = windows::core::HSTRING::from(format!(r"Local\Atollo-db-json-{}", kit.id()));
         // SAFETY: valid name, default security; the handle is closed here
         // or by the guard's Drop.
         unsafe {
@@ -597,7 +597,7 @@ pub fn mysql_cnf(kit: &Kit) -> PathBuf {
 }
 
 /// The login of another version of MySQL, on its own port
-/// (D-102): the `DEVKIT_MYSQL_CNF` of the programs of a project whose
+/// (D-102): the `ATOLLO_MYSQL_CNF` of the programs of a project whose
 /// database is on it (`services::project_client_env`).
 pub fn mysql_line_cnf(kit: &Kit, line: &str) -> PathBuf {
     dir(kit).join("mysql-lines").join(line).join("mysql.cnf")
@@ -609,7 +609,7 @@ pub fn mysql_line_cnf(kit: &Kit, line: &str) -> PathBuf {
 /// every system.
 pub fn mysql_cnf_text(port: u16, password: &str) -> String {
     format!(
-        "# Dev-Kit: login of the kit's MySQL (written by the app).\n\
+        "# Atollo: login of the kit's MySQL (written by the app).\n\
          [client]\nuser=root\npassword={password}\nhost=127.0.0.1\n\
          port={port}\nprotocol=TCP\n"
     )
@@ -710,10 +710,10 @@ pub fn project_sql(name: &str, password: &str) -> String {
 }
 
 /// mongosh script for a project's user (names and passwords from the
-/// environment: `DEVKIT_DB_ADMIN`, `DEVKIT_DB_NAME`, `DEVKIT_DB_PASSWORD`).
+/// environment: `ATOLLO_DB_ADMIN`, `ATOLLO_DB_NAME`, `ATOLLO_DB_PASSWORD`).
 pub const MONGO_PROJECT_JS: &str = "const a = db.getSiblingDB('admin'); \
-    a.auth('admin', process.env.DEVKIT_DB_ADMIN); \
-    const n = process.env.DEVKIT_DB_NAME, p = process.env.DEVKIT_DB_PASSWORD; \
+    a.auth('admin', process.env.ATOLLO_DB_ADMIN); \
+    const n = process.env.ATOLLO_DB_NAME, p = process.env.ATOLLO_DB_PASSWORD; \
     const d = db.getSiblingDB(n); \
     if (d.getUser(n)) { d.updateUser(n, { pwd: p }); } \
     else { d.createUser({ user: n, pwd: p, roles: [{ role: 'dbOwner', db: n }] }); }";
@@ -731,25 +731,25 @@ pub fn project_drop_sql(name: &str) -> String {
 /// mongosh script that drops a project's user and database (names and the
 /// administrator's password from the environment, as `MONGO_PROJECT_JS`).
 pub const MONGO_DROP_JS: &str = "const a = db.getSiblingDB('admin'); \
-    a.auth('admin', process.env.DEVKIT_DB_ADMIN); \
-    const n = process.env.DEVKIT_DB_NAME, d = db.getSiblingDB(n); \
+    a.auth('admin', process.env.ATOLLO_DB_ADMIN); \
+    const n = process.env.ATOLLO_DB_NAME, d = db.getSiblingDB(n); \
     if (d.getUser(n)) { d.dropUser(n); } \
     d.dropDatabase();";
 
 /// mongosh script for the first `admin` (MongoDB's localhost exception: it
 /// works while the server has no users).
 pub const MONGO_ADMIN_JS: &str = "db.getSiblingDB('admin').createUser({ user: 'admin', \
-    pwd: process.env.DEVKIT_DB_PASSWORD, roles: ['root'] })";
+    pwd: process.env.ATOLLO_DB_PASSWORD, roles: ['root'] })";
 
 pub const MONGO_SHUTDOWN_JS: &str = "const a = db.getSiblingDB('admin'); \
-    a.auth('admin', process.env.DEVKIT_DB_ADMIN); a.shutdownServer()";
+    a.auth('admin', process.env.ATOLLO_DB_ADMIN); a.shutdownServer()";
 
 /// mongosh script after data of the previous major version was copied:
-/// the features of the new one (`DEVKIT_DB_FCV`, `9.0`), as MongoDB's
+/// the features of the new one (`ATOLLO_DB_FCV`, `9.0`), as MongoDB's
 /// upgrade guide asks; the next major needs it.
 pub const MONGO_FCV_JS: &str = "const a = db.getSiblingDB('admin'); \
-    a.auth('admin', process.env.DEVKIT_DB_ADMIN); \
-    a.adminCommand({ setFeatureCompatibilityVersion: process.env.DEVKIT_DB_FCV, confirm: true })";
+    a.auth('admin', process.env.ATOLLO_DB_ADMIN); \
+    a.adminCommand({ setFeatureCompatibilityVersion: process.env.ATOLLO_DB_FCV, confirm: true })";
 
 /// A project's connection to one of the kit's databases.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

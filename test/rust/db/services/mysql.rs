@@ -21,8 +21,8 @@ fn initialization_with_the_same_case_rule_everywhere() {
 #[test]
 fn paths_in_option_files() {
     assert_eq!(
-        cnf_path(Os::Win32, Path::new(r"E:\Dev Kit\data\db\mysql\8.4")),
-        r#""E:/Dev Kit/data/db/mysql/8.4""#
+        cnf_path(Os::Win32, Path::new(r"E:\My Atollo\data\db\mysql\8.4")),
+        r#""E:/My Atollo/data/db/mysql/8.4""#
     );
     assert_eq!(
         cnf_path(Os::Linux, Path::new("/media/u/kit #1/data")),
@@ -85,16 +85,16 @@ fn server_cnf_on_every_system() {
 /// fits, an error.
 #[test]
 fn long_socket_paths_move() {
-    let deep = Path::new("/media/someone/a-very-long-volume-name/Dev-Kit/data/db/mysql/9.7")
+    let deep = Path::new("/media/someone/a-very-long-volume-name/Atollo/data/db/mysql/9.7")
         .join("x".repeat(60));
-    let own = socket_dir(Some(Path::new("/tmp/Dev-Kit/k1"))).unwrap();
-    assert_eq!(own, Path::new("/tmp/Dev-Kit/k1").join("mysql"));
+    let own = socket_dir(Some(Path::new("/tmp/Atollo/k1"))).unwrap();
+    assert_eq!(own, Path::new("/tmp/Atollo/k1").join("mysql"));
     assert_eq!(socket_dir(None), None);
     assert_eq!(
         socket_path(Os::Linux, &deep, 3307, Some(&own))
             .unwrap()
             .unwrap(),
-        own.join("devkit-mysql-3307.sock")
+        own.join("atollo-mysql-3307.sock")
     );
     assert!(socket_path(Os::Linux, &deep, 3307, None).is_err());
     assert!(socket_path(Os::Linux, &deep, 3307, Some(&deep)).is_err());

@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn conf_of_a_project() {
-    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\nServerRoot \"${SRVROOT}\"\r\n\r\n# --- Dev-Kit ---\r\nInclude \"${CP_ROOT_FWD}/data/apache/kit.conf\"\r\n";
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\nServerRoot \"${SRVROOT}\"\r\n\r\n# --- Atollo ---\r\nInclude \"${CP_ROOT_FWD}/data/apache/kit.conf\"\r\n";
     let root = Path::new(r"D:\kit\projects\shop\public");
     let dir = Path::new(r"D:\kit\data\projects\shop\apache");
     let c = project_conf(base, root, dir, 7105, false).unwrap();
@@ -330,7 +330,7 @@ fn php_through_fpm_off_windows() {
     for os in [Os::Darwin, Os::Linux] {
         let text = php_blocks(os, Some(&fcgi)).join("\n");
         assert!(text.contains("LoadModule proxy_fcgi_module modules/mod_proxy_fcgi.so"));
-        assert!(text.contains("SetEnv DEVKIT_FCGI_KEY ${DEVKIT_FCGI_KEY}"));
+        assert!(text.contains("SetEnv ATOLLO_FCGI_KEY ${ATOLLO_FCGI_KEY}"));
         assert!(!text.contains("secret-key"), "the key is never in a file");
         assert!(text.contains(&format!(
             "<FilesMatch \"(?i)\\.(?:php|phtml|phar)$\">\n    SetHandler \"proxy:unix:{sock_fwd}|fcgi://localhost\"\n</FilesMatch>"

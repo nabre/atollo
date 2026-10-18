@@ -1,5 +1,5 @@
 //! New versions of the app (DECISIONS.md D-20), from the `app-v*` releases
-//! of nabre/dev-kit2.
+//! of nabre/atollo2.
 //!
 //! - check: the newest `app-vX.Y.Z` release (no drafts or pre-releases)
 //!   newer than this app, with this system's asset ([`asset_name`]);
@@ -40,7 +40,7 @@ use crate::net::archive::{self, Kind};
 use crate::net::verify::{self, Expect};
 use crate::net::{GhAsset, Net};
 
-pub const REPO: &str = "nabre/dev-kit2";
+pub const REPO: &str = "nabre/atollo";
 const TAG_PREFIX: &str = "app-v";
 
 #[derive(Debug, Clone, Default, Serialize)]

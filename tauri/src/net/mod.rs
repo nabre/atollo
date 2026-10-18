@@ -135,7 +135,7 @@ impl Net {
             .tls_config(tls)
             .proxy(proxy)
             .user_agent(format!(
-                "Dev-Kit/{} (+https://github.com/nabre/dev-kit2)",
+                "Atollo/{} (+https://github.com/nabre/atollo)",
                 env!("CARGO_PKG_VERSION")
             ))
             .timeout_connect(Some(Duration::from_secs(30)))

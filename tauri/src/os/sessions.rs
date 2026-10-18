@@ -4,7 +4,7 @@
 //! A process belongs to the kit when its program lives under the kit root;
 //! only the tops of process trees are listed (a terminal, not every shell
 //! inside it). Another kit: a process under `<other root>\data\apps\<os>-*`
-//! (`win32`, `darwin`, `linux`) or another `Dev-Kit.exe` (`Dev-Kit` on
+//! (`win32`, `darwin`, `linux`) or another `Atollo.exe` (`Atollo` on
 //! macOS and Linux) with a `data\app` folder next to it.
 
 use std::collections::{BTreeMap, BTreeSet};

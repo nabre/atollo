@@ -30,7 +30,7 @@ pub enum Group {
     Languages,
     /// Database servers and tools (D-73), with their own group too.
     Databases,
-    /// Part of Dev-Kit itself (the editor): not in "Linguaggi e strumenti",
+    /// Part of Atollo itself (the editor): not in "Linguaggi e strumenti",
     /// always installed, at the version fixed in the catalog for this
     /// release (`version`, `sha256`).
     App,
@@ -108,7 +108,7 @@ pub struct Component {
     /// `data/apps/<target>`, `@` = the kit root) and arguments.
     #[serde(default)]
     pub check: Vec<String>,
-    /// Group `app`: the version this release of Dev-Kit installs, and the
+    /// Group `app`: the version this release of Atollo installs, and the
     /// SHA-256 of its download.
     #[serde(default)]
     pub version: Option<String>,
@@ -523,7 +523,7 @@ impl Component {
     }
 
     /// A part of the app (fixed `version`) installed at another version: the
-    /// release of Dev-Kit changed, so it is installed again.
+    /// release of Atollo changed, so it is installed again.
     pub fn outdated(&self, kit: &Kit) -> bool {
         self.version
             .as_deref()
@@ -773,7 +773,7 @@ impl Choice {
 
     pub fn render(&self, catalog: &Catalog) -> String {
         let mut out = String::from(
-            "# Dev-Kit: components chosen on the \"Linguaggi e strumenti\" page.\r\n\
+            "# Atollo: components chosen on the \"Linguaggi e strumenti\" page.\r\n\
              # 1 = install, 0 = do not install (removed at the next update).\r\n\
              # Required components are always installed.\r\n",
         );

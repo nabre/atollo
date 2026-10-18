@@ -902,7 +902,7 @@ fn restore_and_save_round_trip() {
     let tmp = TempDir::new("keyring");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let target = format!("antigravity-devkit-test-{}:user", std::process::id());
+    let target = format!("antigravity-atollo-test-{}:user", std::process::id());
     let f = files(&kit);
     let blob = base64::engine::general_purpose::STANDARD.encode(b"token-1");
     save_file(

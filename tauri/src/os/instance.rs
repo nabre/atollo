@@ -1,6 +1,6 @@
 //! One running app per kit (DECISIONS.md D-08).
 //!
-//! A named mutex `Local\Dev-Kit-App-<kit id>` marks the running app; a second
+//! A named mutex `Local\Atollo-App-<kit id>` marks the running app; a second
 //! start of the same kit sends a message through the pipe of the same name
 //! (for now only "focus") and exits. Two different kits (two USB sticks) have
 //! different ids and run side by side. The pipe rejects remote clients and
@@ -10,8 +10,8 @@
 //! the running app and a socket carries the message (D-105), never inside
 //! the kit, whose disk (FAT, exFAT) may hold no socket and whose folder may
 //! be longer than a socket's name allows:
-//! - Linux: an abstract socket `\0Dev-Kit-<uid>-<id>`, nothing on disk;
-//! - macOS: `devkit-<id>.sock` in the user's own temporary folder
+//! - Linux: an abstract socket `\0Atollo-<uid>-<id>`, nothing on disk;
+//! - macOS: `atollo-<id>.sock` in the user's own temporary folder
 //!   (`/var/folders/…/T/`, short enough for the 104 bytes of a name);
 //! - when that socket cannot be made: a TCP port on 127.0.0.1 with a token,
 //!   both in `data/app/instance.json` (owner only where the disk allows).
@@ -72,7 +72,7 @@ impl Drop for MutexGuard {
 
 #[cfg(windows)]
 fn name(kit: &Kit) -> String {
-    format!("Dev-Kit-App-{}", kit.id())
+    format!("Atollo-App-{}", kit.id())
 }
 
 #[cfg(windows)]
@@ -149,9 +149,9 @@ pub(crate) fn socket_name(
     user_tmp: Option<&Path>,
 ) -> Option<SocketName> {
     if os.is_linux() {
-        return Some(SocketName::Abstract(format!("Dev-Kit-{uid}-{id}")));
+        return Some(SocketName::Abstract(format!("Atollo-{uid}-{id}")));
     }
-    let path = user_tmp?.join(format!("devkit-{id}.sock"));
+    let path = user_tmp?.join(format!("atollo-{id}.sock"));
     (path.as_os_str().len() <= MAX_SOCKET_NAME).then_some(SocketName::File(path))
 }
 

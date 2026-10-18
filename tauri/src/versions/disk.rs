@@ -225,7 +225,7 @@ fn drop_component(kit: &Kit, id: &str) {
     let _ = fs::remove_file(kit.versions_root().join(format!("{id}.txt")));
 }
 
-/// `node\node.exe` → `node\<line>\node.exe`, through `node.devkit-move`
+/// `node\node.exe` → `node\<line>\node.exe`, through `node.atollo-move`
 /// (left by an interrupted start: taken back first).
 fn migrate_default(kit: &Kit, c: &Component) -> Result<()> {
     if c.folder.is_none() {
@@ -233,7 +233,7 @@ fn migrate_default(kit: &Kit, c: &Component) -> Result<()> {
     }
     let store = store(kit, c);
     let mut moving = store.clone().into_os_string();
-    moving.push(".devkit-move");
+    moving.push(".atollo-move");
     let moving = PathBuf::from(moving);
     if moving.exists() && !store.exists() {
         fs::rename(&moving, &store).context("taking back the folder being moved")?;

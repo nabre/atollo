@@ -6,21 +6,21 @@ fn url_encodes_odd_folders() {
         Os::Win32,
         7001,
         "ab",
-        Some(Path::new(r"E:\Dev Kit (1) & co\projects\già")),
+        Some(Path::new(r"E:\My Atollo (1) & co\projects\già")),
     );
     assert_eq!(
         u,
-        "http://127.0.0.1:7001/?tkn=ab&folder=/E:/Dev%20Kit%20%281%29%20%26%20co/projects/gi%C3%A0"
+        "http://127.0.0.1:7001/?tkn=ab&folder=/E:/My%20Atollo%20%281%29%20%26%20co/projects/gi%C3%A0"
     );
     assert_eq!(url(7001, "ab", None), "http://127.0.0.1:7001/?tkn=ab");
 }
 
 #[test]
 fn url_of_a_unix_folder_has_one_leading_slash() {
-    let linux = Some(Path::new("/home/me/Dev Kit/projects/app"));
+    let linux = Some(Path::new("/home/me/My Atollo/projects/app"));
     assert_eq!(
         url_on(Os::Linux, 7001, "ab", linux),
-        "http://127.0.0.1:7001/?tkn=ab&folder=/home/me/Dev%20Kit/projects/app"
+        "http://127.0.0.1:7001/?tkn=ab&folder=/home/me/My%20Atollo/projects/app"
     );
     let mac = Some(Path::new("/Users/me/Kit/projects/già"));
     assert_eq!(
@@ -114,12 +114,12 @@ fn processes_under(dir: &Path) -> Vec<u32> {
 }
 
 /// The real server (prompt, "editor.rs" test): needs a kit with the
-/// editor installed, given by DEVKIT_TEST_KIT (CI runs it after prepare).
+/// editor installed, given by ATOLLO_TEST_KIT (CI runs it after prepare).
 #[cfg(windows)]
 #[test]
 fn real_server_token_redirect_and_stop() {
-    let Ok(root) = std::env::var("DEVKIT_TEST_KIT") else {
-        eprintln!("DEVKIT_TEST_KIT not set: skipped");
+    let Ok(root) = std::env::var("ATOLLO_TEST_KIT") else {
+        eprintln!("ATOLLO_TEST_KIT not set: skipped");
         return;
     };
     let kit = Kit::at(PathBuf::from(root), crate::kit::Arch::detect());

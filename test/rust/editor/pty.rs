@@ -432,7 +432,7 @@ mod real {
     fn env() -> crate::env::KitEnv {
         let mut env = crate::env::KitEnv::default();
         env.set("PATH", "/usr/bin:/bin");
-        env.set("DEVKIT_PROBE", "kit-env");
+        env.set("ATOLLO_PROBE", "kit-env");
         env
     }
 
@@ -463,7 +463,7 @@ mod real {
         let (tx, rx) = channel();
         let info = sessions
             .open(
-                &sh("printf 'pty-%s|%s|%s\\n' \"$DEVKIT_PROBE\" \"$TERM\" \"$(pwd)\"; exit 3"),
+                &sh("printf 'pty-%s|%s|%s\\n' \"$ATOLLO_PROBE\" \"$TERM\" \"$(pwd)\"; exit 3"),
                 &env(),
                 &tmp.0,
                 "it",
