@@ -13,9 +13,9 @@ import type {
 
 const info: AppInfo = {
   version: "0.1.0",
-  root: "E:\\Atollo",
-  data: "E:\\Atollo\\data",
-  projects: "E:\\Atollo\\projects",
+  root: "E:\\My Atollo",
+  data: "E:\\My Atollo\\data",
+  projects: "E:\\My Atollo\\projects",
   platform: "win32-x64",
   lang: "it",
   movedFrom: null,
@@ -214,7 +214,7 @@ describe("App", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
     fireEvent.click(await screen.findByRole("button", { name: "Il kit" }));
-    expect(await screen.findByText("E:\\Atollo")).toBeTruthy();
+    expect(await screen.findByText("E:\\My Atollo")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("app_info", undefined);
   });
 

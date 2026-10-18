@@ -49,7 +49,7 @@ I gruppi, i predefiniti e le dimensioni sono quelli di `components.json`. Propos
 
 Tolti dal catalogo il 14/10/2026: Windows Terminal (`terminal`), perché le console erano la console classica di Windows (DECISIONS.md D-57), poi tornato lo stesso giorno come terminale predefinito delle console (D-68) e tolto di nuovo il 16/10/2026 (D-95), con il gruppo `os` che conteneva solo lui; VSCodium desktop (`vscodium`), perché l'editor è integrato. Il componente `conpty` proposto in D-47 non è stato aggiunto.
 
-Campi del catalogo oltre a quelli del Atollo: `keys` (le altre parti di un componente: Maven e Gradle di Java, Ninja di CMake, Composer di PHP, yarn di pnpm, `node.exe` dell'editor; installato solo se ci sono tutte), `remove` (altri file posseduti; `tools\vcruntime` di PHP e Apache se ne va solo con l'ultimo dei due), `check` (comando della verifica finale, per tutti), `version` e `sha256` (gruppo `app`). I file chiave si scrivono con i nomi di Windows e si traducono per macOS e Linux (`translate_rel`: `git/bin/bash.exe` → `git/bin/git`, `.exe` e `.cmd` tolti).
+Campi del catalogo oltre a quelli di Atollo: `keys` (le altre parti di un componente: Maven e Gradle di Java, Ninja di CMake, Composer di PHP, yarn di pnpm, `node.exe` dell'editor; installato solo se ci sono tutte), `remove` (altri file posseduti; `tools\vcruntime` di PHP e Apache se ne va solo con l'ultimo dei due), `check` (comando della verifica finale, per tutti), `version` e `sha256` (gruppo `app`). I file chiave si scrivono con i nomi di Windows e si traducono per macOS e Linux (`translate_rel`: `git/bin/bash.exe` → `git/bin/git`, `.exe` e `.cmd` tolti).
 
 **Disponibilità per target** (D-108). Campi facoltativi:
 
@@ -144,7 +144,7 @@ Abbreviazioni:
 
 ## 3. Regole trasversali
 
-- **Ordine**: quello di `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, rust, go, java (+maven, gradle), kotlin, android, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, pwsh, vscodium-server. Prima le rimozioni, poi le installazioni; configurazione Git e sito Apache sono passi finali di quei componenti. Da riga di comando, in fondo a `prepare`, la verifica finale di ciò che è stato installato. Estensioni dell'editor dopo l'avvio dell'editor; allineamento degli agenti all'avvio dell'app e intorno a ogni agente. (Nel Atollo: `Prepare-Atollo.ps1:250-285`.)
+- **Ordine**: quello di `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, rust, go, java (+maven, gradle), kotlin, android, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, pwsh, vscodium-server. Prima le rimozioni, poi le installazioni; configurazione Git e sito Apache sono passi finali di quei componenti. Da riga di comando, in fondo a `prepare`, la verifica finale di ciò che è stato installato. Estensioni dell'editor dopo l'avvio dell'editor; allineamento degli agenti all'avvio dell'app e intorno a ogni agente. (In nabre/atollo: `Prepare-Atollo.ps1:250-285`.)
 - **Un errore non ferma gli altri**: ogni passo è isolato e finisce nel riepilogo; esito complessivo "con errori" se uno fallisce.
 - **Quando si installa**: file chiave o una parte di `keys` mancante, editor a una versione diversa da quella del rilascio (all'avvio dell'app, o in un `prepare` che lo comprende), oppure "Aggiorna tutto" (`--update-all`) / `--force`. `--only` installa o aggiorna i componenti elencati e ciò che serve loro e manca, obbligatori esclusi, senza rimuovere nulla; `--skip` salta anche ciò che ne dipende e non è ancora installato (mai gli obbligatori).
 - **Quando serve** (D-59): avvio di un agente, clone, azione di un progetto installano prima i componenti che servono e li segnano come scelti in `components.txt`.
@@ -152,7 +152,7 @@ Abbreviazioni:
 - **VC++** estratto una volta in `tools\vcruntime\` e riusato; DLL copiate accanto a `php.exe` e in `apache\bin` (distribuzione locale permessa da Microsoft); x64 anche su ARM64. La cartella resta finché c'è PHP o Apache.
 - **File dell'utente creati una sola volta e mai sovrascritti**: `data\php\php.ini` (da `php.ini-development`: `extension_dir`, estensioni curl, fileinfo, gd, intl, mbstring, mysqli, openssl, pdo_mysql, pdo_sqlite, sodium, sqlite3, zip; `date.timezone = Europe/Rome`; `curl.cainfo` e `openssl.cafile` su `cacert.pem`), `data\apache\kit.conf` (porta 8080 su `127.0.0.1`, sito in `data\apache\htdocs`, PHP via `<IfFile>`, `conf.d\*.conf`), `data\home\.gitconfig`, `htdocs\index.php`. Testi in UTF-8 senza BOM. `httpd.conf` invece si riscrive a ogni installazione di Apache.
 - **Python**: prima di aggiornare, `pip freeze` in `data\python-packages-<vecchia>.txt`; stessa versione minore → copia di `Lib\site-packages` e `Scripts` (escluso pip); minore diversa → solo l'elenco.
-- **Rust**: `gnu` predefinito su x64 (porta il proprio linker); ARM64 sempre `msvc`; `rustup-init` sempre build msvc. Senza collegamenti fisici (FAT32/exFAT) l'installazione si ferma con un errore; il ripiego del Atollo (toolchain sul disco del PC, copia nel kit di `rustup\`) non è portato.
+- **Rust**: `gnu` predefinito su x64 (porta il proprio linker); ARM64 sempre `msvc`; `rustup-init` sempre build msvc. Senza collegamenti fisici (FAT32/exFAT) l'installazione si ferma con un errore; il ripiego di Atollo (toolchain sul disco del PC, copia nel kit di `rustup\`) non è portato.
 - **Voce Rustup in HKCU** (`…\Uninstall\Rustup`): rustup la scrive sempre; si salva prima e si ripristina o si rimuove dopo (solo se punta al kit). È una scrittura temporanea nel registro **fatta da rustup, non dall'app** (DECISIONS.md D-38).
 - **Configurazione Git**: `credential.helper` di sistema impostato a `manager` se è vuoto, `helper-selector` o un percorso di GCM; `.gitconfig` con `init.defaultBranch=main` e `safe.directory=*` (FAT32/exFAT non registrano il proprietario); `GCM_CREDENTIAL_STORE=dpapi` nell'ambiente.
 - **Firma**: Authenticode con editore atteso; errore di revoca non verificabile = avviso, salvo dove la firma è l'unica verifica (VC++).
@@ -162,7 +162,7 @@ Abbreviazioni:
 - **Una preparazione alla volta** per kit (mutex sul percorso della radice).
 - **Versioni come stringhe**: node con la `v`; Go senza `go`; GHA senza `v`/`bun-v`; ruby `X.Y.Z-N`; componenti con più parti uniscono le versioni (`8.5.0 (Composer 2.10.3)`). I confronti con `data\app\versions\` usano le stesse stringhe.
 
-## 4. Differenze dal Atollo
+## 4. Differenze da Atollo
 
 | Atollo | Nuovo kit | Motivo |
 | --- | --- | --- |

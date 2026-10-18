@@ -467,7 +467,7 @@ La pagina **Database** (`ui/src/databases.tsx` e `tauri/src/db/`) gestisce i ser
 ````
 
 > **Esempio pratico — Gestione relazionale (MySQL + phpMyAdmin) e documentale (MongoDB Contenuto):**
-> - Nella **prima schermata** (il server SQL), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a Atollo; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
+> - Nella **prima schermata** (il server SQL), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme ad Atollo; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
 > - Nella **seconda schermata** (`MongoDB 8.0`), la scheda **Contenuto** mostra i database `api_magazzino` e `portale_clienti` (con le collezioni `utenti (19)` e `ticket_supporto (73)`) permettendo di ispezionare i documenti JSON direttamente dentro l'app.
 
 ---

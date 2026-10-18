@@ -258,7 +258,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       tr(
         "Open VSX, CodeLLDB, endpoint OAuth dei 3 agenti, auto-aggiornamento di Atollo.exe, fallback HTML senza API e Drag & Drop manuale.",
         "Open VSX, CodeLLDB, OAuth usage endpoints for the 3 agents, Atollo.exe self-update, API-free HTML fallback and manual Drag & Drop.",
-        "Open VSX, CodeLLDB, points de terminaison OAuth des 3 agents, mise à jour automatique de Atollo.exe, repli HTML sans API et glisser-déposer manuel.",
+        "Open VSX, CodeLLDB, points de terminaison OAuth des 3 agents, mise à jour automatique d'Atollo.exe, repli HTML sans API et glisser-déposer manuel.",
         "Open VSX, CodeLLDB, OAuth-Nutzungsendpunkte der 3 Agenten, Selbstaktualisierung von Atollo.exe, API-freier HTML-Fallback und manuelles Drag & Drop.",
       ),
     icon: VscCheckAll,

@@ -46,12 +46,12 @@ Tutte le metriche riportate di seguito sono state misurate direttamente sui file
 
 | File Spec (`test/ui/`) | Definizioni `it()` | Eseguiti (con `it.each`) | Copertura Specifica |
 |---|:---:|:---:|---|
-| [`test/ui/terminals.test.tsx`](file:///d:/Projects/atollo/test/ui/terminals.test.tsx) | 5 | 5 | **Nuovo in `v4` (`D-94`)**: lista terminali, creazione, toggle `allTools`, selezione linea e duplicazione. |
-| [`test/ui/dialog.test.tsx`](file:///d:/Projects/atollo/test/ui/dialog.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-106`)**: focus trap `useModalFocus`, chiusura `Escape`, focus iniziale su *Annulla* e `focusBack` in `InlineConfirm`. |
-| [`test/ui/servers.test.tsx`](file:///d:/Projects/atollo/test/ui/servers.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-101`)**: pool condivisi, toggle `keepAlive` e `autostart`, siti agganciati. |
-| [`test/ui/databases.test.tsx`](file:///d:/Projects/atollo/test/ui/databases.test.tsx) | 8 | 8 | **Esteso in `v4` (`D-102`)**: avvio/arresto linea primaria e linee secondarie MySQL (`s.others`). |
-| [`test/ui/versions.test.tsx`](file:///d:/Projects/atollo/test/ui/versions.test.tsx) | 9 | 9 | **Esteso in `v4`**: due zone in `versions/project.tsx` (*"Rilevate nel progetto"* e *"Altri strumenti multi-versione"*). |
-| [`test/ui/frameworks.test.tsx`](file:///d:/Projects/atollo/test/ui/frameworks.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-93`)**: categoria CMS (WordPress/Bedrock, TYPO3, Drupal, Statamic) nel wizard. |
+| [`test/ui/terminals.test.tsx`](../../../test/ui/terminals.test.tsx) | 5 | 5 | **Nuovo in `v4` (`D-94`)**: lista terminali, creazione, toggle `allTools`, selezione linea e duplicazione. |
+| [`test/ui/dialog.test.tsx`](../../../test/ui/dialog.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-106`)**: focus trap `useModalFocus`, chiusura `Escape`, focus iniziale su *Annulla* e `focusBack` in `InlineConfirm`. |
+| [`test/ui/servers.test.tsx`](../../../test/ui/servers.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-101`)**: pool condivisi, toggle `keepAlive` e `autostart`, siti agganciati. |
+| [`test/ui/databases.test.tsx`](../../../test/ui/databases.test.tsx) | 8 | 8 | **Esteso in `v4` (`D-102`)**: avvio/arresto linea primaria e linee secondarie MySQL (`s.others`). |
+| [`test/ui/versions.test.tsx`](../../../test/ui/versions.test.tsx) | 9 | 9 | **Esteso in `v4`**: due zone in `versions/project.tsx` (*"Rilevate nel progetto"* e *"Altri strumenti multi-versione"*). |
+| [`test/ui/frameworks.test.tsx`](../../../test/ui/frameworks.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-93`)**: categoria CMS (WordPress/Bedrock, TYPO3, Drupal, Statamic) nel wizard. |
 | Altri 10 file (`App`, `projects`, `agents`, `setup`, `backups`, `dbbrowser`, `i18n`, `relations`, `stats`, `workbench`) | 60 | 64 | Navigazione workbench, parità dizionari `en`/`de`/`fr`, filtri progetti, browser DB, statistiche token. |
 | **TOTALE TEST FRONTEND** | **103** | **107** | **`+17` nuovi test UI rispetto a `v3` (`+18,9%`)** |
 

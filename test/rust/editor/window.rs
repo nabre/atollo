@@ -5,12 +5,12 @@ fn editor_stays_in_its_project() {
     use crate::kit::Os;
     let u = |s: &str| s.parse::<Url>().unwrap();
     let in_project = |url: &Url, dir: &Path| in_project_on(Os::Win32, url, dir);
-    let dir = Path::new(r"E:\Atollo (1)\projects\app & co");
+    let dir = Path::new(r"E:\My Atollo (1)\projects\app & co");
     let page = crate::editor::url_on(Os::Win32, 7003, "tok", Some(dir));
     assert!(in_project(&u(&page), dir));
     // after the server's redirect: the token goes, the folder stays
     assert!(in_project(
-        &u("http://127.0.0.1:7003/?folder=/e:/Dev%20Kit%20(1)/projects/app%20%26%20co/"),
+        &u("http://127.0.0.1:7003/?folder=/e:/My%20Atollo%20(1)/projects/app%20%26%20co/"),
         dir
     ));
     // a share keeps its three slashes, as before macOS and Linux
@@ -30,8 +30,8 @@ fn editor_stays_in_its_project() {
     for out in [
         "http://127.0.0.1:7003/",
         "http://127.0.0.1:7003/?ew=true",
-        "http://127.0.0.1:7003/?folder=/E:/Dev%20Kit%20(1)/projects",
-        "http://127.0.0.1:7003/?folder=/E:/Dev%20Kit%20(1)/projects/app%20%26%20co/sub",
+        "http://127.0.0.1:7003/?folder=/E:/My%20Atollo%20(1)/projects",
+        "http://127.0.0.1:7003/?folder=/E:/My%20Atollo%20(1)/projects/app%20%26%20co/sub",
         "http://127.0.0.1:7003/?folder=/C:/Users",
         "http://127.0.0.1:7003/?workspace=/E:/x.code-workspace",
     ] {

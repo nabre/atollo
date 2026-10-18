@@ -7,6 +7,14 @@
 
 **Verificato**: build locale (quattro pagine, nessun segnaposto rimasto, chiavi uguali nelle quattro lingue), pagina aperta in Chrome in tema chiaro con Windows x64 riconosciuto e il messaggio «nessun rilascio pubblicato», workflow letto con PyYAML. Non provati: il deploy vero su Pages e il tema scuro a schermo.
 
+## Atollo anche negli identificatori (19/10/2026)
+
+- **Un solo nome, anche dentro** (D-127): le variabili d'ambiente del kit sono `ATOLLO_*` (`ATOLLO_TEST_KIT`, `ATOLLO_LANG`, `ATOLLO_ALLOW_LAN`, `ATOLLO_FCGI_KEY`, `ATOLLO_DB_*`…), i file di lavoro `.atollo-version`, `.atollo-new`, `.atollo-move`, i lock `Atollo-*`; i profili del terminale dell'editor si chiamano «Atollo», «Atollo - Git Bash», «Atollo - Bash»; i blocchi del kit nei file degli agenti e la regola `rules/atollo.md` portano il nome Atollo; l'user agent dei download è `Atollo/<versione>` con il link a `github.com/nabre/atollo`, come ogni link dei documenti.
+- **Nessuna compatibilità con i nomi di prima**: un kit fatto con una versione precedente riscrive accanto ai vecchi i blocchi di Codex, i profili del terminale e la regola degli agenti; le variabili vecchie impostate a mano non valgono più; **l'accesso ad Antigravity va rifatto una volta**, perché le credenziali salvate prima non si leggono più. Tolti gli id dei temi dell'editor del nome di prima.
+- **Documenti**: decisioni, novità e rapporti usano solo Atollo; i link dei rapporti a una cartella locale ora sono relativi al repository.
+
+**Verificato**: 745 test Rust (6 ignorati), 147 test dell'interfaccia; fmt, clippy, ESLint, Prettier e `tsc -b` puliti su Windows; workflow letti con PyYAML.
+
 ## Rilasci per macOS e Linux (19/10/2026)
 
 - **Ogni rilascio porta macOS e Linux** (D-119, [#5](https://github.com/nabre/atollo/issues/5)): accanto agli exe di Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) e `Atollo-darwin-x64.app.zip` (Intel), `Atollo-linux-x64` e `Atollo-linux-arm64` in AppImage e `tar.gz`, ognuno con il suo `.sha256`. Sono i nomi che l'aggiornamento dell'app già cerca: un kit con il `.app` o l'AppImage si aggiornerà da solo dal prossimo rilascio.
@@ -48,7 +56,7 @@
 
 - **Linux distingue le maiuscole nei percorsi** (D-123): un aggiornamento dell'editor o la rimozione dell'unità fermano solo i programmi della cartella giusta, non quelli di una cartella che differisce solo nelle maiuscole; lo stesso per le voci del PATH tolte da un profilo del terminale. Windows e macOS restano senza distinzione, come i loro file system.
 - **Salvataggi contemporanei su Windows**: due salvataggi dello stesso file nello stesso momento (per esempio le impostazioni da due finestre) potevano fallire con «accesso negato», perché Windows rifiuta una delle due sostituzioni; ora quella rifiutata riprova per al massimo un secondo e vince l'ultima, come su macOS e Linux. Era la causa del test instabile `write_atomic_concurrent_threads_do_not_collide_on_tmp`.
-- **Il nome è Atollo ovunque** (D-124): `version`, l'aiuto, i titoli della finestra e dell'editor, la pagina degli aggiornamenti, «Avvia con Atollo», i messaggi d'errore e la descrizione dell'editor dicevano ancora «Atollo». Nessun nome salvato nel kit cambia; i temi dell'editor con il vecchio nome passano da soli a quelli Atollo.
+- **Il nome è Atollo ovunque** (D-124): `version`, l'aiuto, i titoli della finestra e dell'editor, la pagina degli aggiornamenti, «Avvia con Atollo», i messaggi d'errore e la descrizione dell'editor dicono «Atollo».
 - **Ruby, R e MongoDB su macOS e Linux mettono nel PATH solo i loro programmi** (D-125): prima arrivava tutta la cartella `bin` del loro ambiente conda, con i programmi delle dipendenze (`openssl`, `tput`, `kinit`, `envsubst`...) che nei terminali del kit prendevano il posto di quelli del sistema. Ora nel PATH ci sono `ruby`, `gem`, `bundle`, `rake` e gli altri di Ruby, `R` e `Rscript`, `mongod` e `mongos`, attraverso dei lanciatori in `kit-bin`; i componenti già installati li ricevono al prossimo avvio.
 - **MongoDB Database Tools su Debian 9**: si sceglie la build `debian92`, come per RHEL a parità di versione maggiore; prima Debian 9 non la trovava e riceveva quella di Ubuntu 20.04, che lì non parte.
 
@@ -533,7 +541,7 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 ## Pagina GitHub e account GitHub del kit (14/10/2026)
 
 **Fatto**
-- **Pagina GitHub** (`github.rs`, `github.tsx`, D-70), porting dell'estensione `github-repos` del Atollo: i repository dell'account e delle sue organizzazioni con ricerca, clone in `projects\` con un clic, «Editor» sui repository già clonati, apertura su github.com, copia dell'indirizzo, rinomina (i remote del clone seguono) ed eliminazione su GitHub con conferma.
+- **Pagina GitHub** (`github.rs`, `github.tsx`, D-70), porting dell'estensione `github-repos` degli script PowerShell da cui l'app è nata: i repository dell'account e delle sue organizzazioni con ricerca, clone in `projects\` con un clic, «Editor» sui repository già clonati, apertura su github.com, copia dell'indirizzo, rinomina (i remote del clone seguono) ed eliminazione su GitHub con conferma.
 - **Un solo account GitHub per tutto il kit**: l'accesso dalla pagina (codice monouso su github.com/login/device) è quello di GitHub CLI in `data\gh`. Git del kit lo usa per github.com, quindi push e pull nell'editor, nelle console e negli agenti usano lo stesso account; «Esci» lo toglie a tutti. Anche «Clona» della pagina Progetti usa l'account per i repository privati.
 - Il permesso di eliminare i repository si chiede solo quando serve («Concedi il permesso»).
 
@@ -564,7 +572,7 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 - **Solo gli agenti installati** nella pagina Agenti e nella scelta dell'agente.
 - **Windows Terminal portabile del kit** (componente `terminal`, D-68), predefinito per Terminale e agenti; la console classica di Windows resta in Impostazioni › Generale › Terminale e fa da ripiego. Ogni scheda riceve l'ambiente del kit dall'app attraverso una named pipe.
 - **L'editor chiede se fidarsi** alla prima apertura di ogni progetto; quelli non attendibili si aprono in «Restricted Mode» (D-67, dopo la revisione di sicurezza che segnalava D-66).
-- **README in quattro lingue** (`README.md`, `docs/README.en.md`, `.fr.md`, `.de.md`): uso, pagine, cosa resta del Atollo, limiti noti.
+- **README in quattro lingue** (`README.md`, `docs/README.en.md`, `.fr.md`, `.de.md`): uso, pagine, cosa resta di Atollo, limiti noti.
 - **CI: firma facoltativa dell'exe** con i segreti `SIGN_PFX_BASE64` e `SIGN_PFX_PASSWORD`; senza, l'exe resta non firmato e il passo si salta.
 
 **Corretto durante le prove sull'exe di release**
@@ -613,7 +621,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 ## Fase 6: progetti e rifinitura (14/10/2026)
 
 **Fatto**
-- **Progetti** (`projects.rs`, `detect/`, `run.rs`): rilevamento del tipo, dei linguaggi e delle azioni (porting dei rilevatori del Atollo, `panel.json`/`pannello.json`). Creazione, clone da GitHub o da un indirizzo Git, eliminazione delle cartelle vuote. Avvio e arresto delle azioni, ognuna nel suo job, con porte 7100-7999 ricordate o scelte, output in diretta, apertura nel browser e «Servi come sito web» (D-50).
+- **Progetti** (`projects.rs`, `detect/`, `run.rs`): rilevamento del tipo, dei linguaggi e delle azioni (porting dei rilevatori di Atollo, `panel.json`/`pannello.json`). Creazione, clone da GitHub o da un indirizzo Git, eliminazione delle cartelle vuote. Avvio e arresto delle azioni, ognuna nel suo job, con porte 7100-7999 ricordate o scelte, output in diretta, apertura nel browser e «Servi come sito web» (D-50).
 - **Server di file nell'exe**: `Atollo.exe serve <cartella> <porta>`, al posto di `static-server.js` (D-51).
 - **Aggiornamento dell'app** (`self_update.rs`) dalle release `app-v*`: SHA-256, scambio dell'exe alla chiusura, `ATOLLO_NO_UPDATE`, versione in `data\app\versions\app.txt` (D-52).
 - **Impostazioni**: lingua, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python, PHP e Rust, aggiornamenti. Valori controllati; l'ambiente del kit viene ricostruito al salvataggio (D-54).
@@ -732,7 +740,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - pnpm 12 crea anche gli alias `pn` e `pnx`: aggiunti a ciò che si rimuove.
 
 **Limiti noti**
-- Rust su un kit in FAT32/exFAT non si installa (rustup vuole i collegamenti fisici); il ripiego del Atollo (toolchain sul disco del PC) non è ancora portato. **Chiuso il 16/10/2026** (D-90): rustup lavora nel temp del sistema e l'albero si copia nel kit.
+- Rust su un kit in FAT32/exFAT non si installa (rustup vuole i collegamenti fisici); il ripiego di Atollo (toolchain sul disco del PC) non è ancora portato. **Chiuso il 16/10/2026** (D-90): rustup lavora nel temp del sistema e l'albero si copia nel kit.
 - WebView2 "Fixed Version" non si scarica dall'app (D-37).
 - Estensioni di un programma tolto restano installate (D-36).
 
@@ -781,13 +789,13 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 ## Fase 2: motore di installazione (14/10/2026)
 
 **Fatto**
-- `catalog.rs` + `catalog/components.json`: i 32 componenti (agenti e linguaggi presi da nabre/atollo, più PowerShell 7, Windows Terminal, editor, WebView2) in ordine di installazione; scelta in `data\app\components.txt` nel formato del Atollo (`id=1|0`, CRLF); dipendenze a cascata (Apache con PHP, Kotlin con Java); versioni in `data\app\versions\`.
+- `catalog.rs` + `catalog/components.json`: i 32 componenti (agenti e linguaggi presi da nabre/atollo, più PowerShell 7, Windows Terminal, editor, WebView2) in ordine di installazione; scelta in `data\app\components.txt` nel formato di Atollo (`id=1|0`, CRLF); dipendenze a cascata (Apache con PHP, Kotlin con Java); versioni in `data\app\versions\`.
 - `net.rs`: HTTPS con il TLS di Windows e i certificati del suo archivio (funziona con l'ispezione SSL aziendale), proxy dalle impostazioni, dall'ambiente o di Windows; download in `.part` con 3 tentativi; API di GitHub.
 - `verify.rs`: SHA-256, SHA-512, integrità npm; un file che non corrisponde viene cancellato.
 - `archive.rs`: zip, tar.gz, 7z (anche dentro un `.7z.exe`), con rifiuto dei percorsi che escono dalla cartella; scambio delle cartelle con ripristino, "in uso" se un file è aperto.
 - `setup_runner.rs`: ordine dei passi, una preparazione alla volta per kit, rimozione dei componenti tolti, annullamento; un componente che fallisce non ferma gli altri.
 - Installatori: **PowerShell 7**, **Windows Terminal** (modalità portabile), **Git** (con `post-install` e configurazione: `credential.helper=manager`, `.gitconfig` del kit), **Node.js LTS**, **editor** (server web di VSCodium, SHA-256 di VSCodium confrontato con quello di GitHub).
-- Riga di comando: `Atollo.exe prepare [--only a,b] [--skip a,b] [--update-all] [--force]` e `Atollo.exe components`, con i marcatori del Atollo (`── N. Nome ──`, `√`, `x`, `!`).
+- Riga di comando: `Atollo.exe prepare [--only a,b] [--skip a,b] [--update-all] [--force]` e `Atollo.exe components`, con i marcatori di Atollo (`── N. Nome ──`, `√`, `x`, `!`).
 - CI: installazione reale dei cinque componenti e controllo degli aggiornamenti nel job x64.
 
 **Verificato su questo PC**
@@ -795,7 +803,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - `prepare --only pwsh,terminal,node` in 21 s e `--only git,vscodium-server` in 34 s, da una cartella `kit2 (prova) & co`: Node v24.21.0, PowerShell 7.6.7, Windows Terminal 1.25.2733.0 (con `.portable`), Git 2.56.0.2 (Bash funziona, post-install eseguito), editor 1.140.06880 (`bin\codium-server.cmd` presente). Spazio occupato: circa 1,1 GB.
 - `--update-all`: "già aggiornato" senza riscaricare.
 - PowerShell aperto durante `--force`: "in uso", cartella e versione intatte, nessun residuo.
-- Tre preparazioni consecutive: nessun file nuovo in `%LOCALAPPDATA%`, `%APPDATA%` o `%TEMP%` reali dovuto a Atollo (i file trovati erano di Chrome, Office, Notion, OneDrive, Teams, aperti sul PC).
+- Tre preparazioni consecutive: nessun file nuovo in `%LOCALAPPDATA%`, `%APPDATA%` o `%TEMP%` reali dovuto ad Atollo (i file trovati erano di Chrome, Office, Notion, OneDrive, Teams, aperti sul PC).
 
 **Corretto durante la fase**
 - Git: dopo l'estrazione diretta del 7z mancava il `post-install.bat` che l'SFX esegue da solo; aggiunto. Lo script esce sempre con 1 (si cancella da solo): il controllo ora guarda se lo script è sparito.

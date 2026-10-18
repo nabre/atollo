@@ -191,9 +191,7 @@ fn pool_caddyfile() {
     )
     .unwrap();
     assert!(
-        conf.contains(
-            "\tadmin \"unix//tmp/Atollo/0123456789abcdef/caddy-01234567/a.sock|0600\"\n"
-        ),
+        conf.contains("\tadmin \"unix//tmp/Atollo/0123456789abcdef/caddy-01234567/a.sock|0600\"\n"),
         "{conf}"
     );
     assert!(!conf.contains("admin 127.0.0.1"));
