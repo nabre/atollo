@@ -25,3 +25,6 @@ StartupProfileData-NonInteractive
 
 # Python bytecode
 __pycache__/
+
+# Landing page build (site/build.mjs)
+/_site/
