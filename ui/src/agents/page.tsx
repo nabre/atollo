@@ -20,6 +20,7 @@ import { rich, t } from "../i18n";
 import { ActionButton, ErrorLine } from "../common";
 import { ComponentLogo } from "../logos";
 import { AgentUsage, useStats } from "./stats";
+import { TokenLink } from "./token";
 import { useAction, useLoad } from "../hooks";
 import {
   Button,
@@ -51,7 +52,8 @@ export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } 
 
 function signInText(a: AgentInfo): string {
   if (!a.signedIn) return t("accesso non fatto: si fa al primo avvio dell'agente");
-  return a.signInKind === "api key" ? t("accesso con chiave API") : t("accesso fatto");
+  if (a.signInKind === "api key") return t("accesso con chiave API");
+  return a.signInKind === "token" ? t("accesso con un token") : t("accesso fatto");
 }
 
 const TONE: Record<Level, "ok" | "warn" | "err" | "off"> = { none: "off", ok: "ok", warning: "warn", critical: "err" };
@@ -196,6 +198,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
                 <Dot tone={agent.signedIn ? "ok" : "off"} />
                 {signInText(agent)}
               </p>
+              <TokenLink agent={agent} onDone={reload} />
               {agent.signedIn && agent.signInKind !== "api key" && (
                 <div className="flex flex-wrap items-center gap-1.5">
                   {confirm === agent.id ? (
