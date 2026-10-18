@@ -44,6 +44,11 @@ fn real_console_runs_and_ends() {
     std::fs::write(&script, "@echo %DEVKIT_PROBE%> ran.txt\r\n").unwrap();
     let mut env = KitEnv::default();
     env.set("DEVKIT_PROBE", "kit-env");
+    // The app's environment always has it: Windows on ARM64 starts no
+    // process without SystemRoot.
+    if let Some(root) = std::env::var_os("SystemRoot") {
+        env.set("SystemRoot", root.to_string_lossy());
+    }
     // Through cmd here: the test kit has no PowerShell.
     let l = Line {
         conhost: conhost(&env),
