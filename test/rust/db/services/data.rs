@@ -298,8 +298,9 @@ fn a_new_kit_needs_mysql_for_every_sql_need() {
     let mut needs: Vec<String> = Catalog::get()
         .find("phpmyadmin")
         .expect("phpmyadmin in the catalog")
-        .needs
-        .clone();
+        .needs_on_every_target()
+        .map(String::from)
+        .collect();
     for p in official() {
         needs.extend(p.database.clone());
         needs.extend(p.on.values().filter_map(|v| v.database.clone()));
