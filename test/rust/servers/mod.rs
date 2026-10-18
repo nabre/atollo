@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use super::config::{apache_pool_conf, apache_vhost_conf, component_dir, nginx_pool_conf};
+use super::config::{apache_pool_conf, apache_vhost_conf, nginx_pool_conf};
 use super::pools::{
     auto_pool_id, canonical_auto_pool, host_label, load_store, migrate_port_ids, name_sites,
     parse_auto_pool_id, pooled_actions, save_store, store_path, StoredServers, POOL_PORT_FROM,
@@ -327,6 +327,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
             fcgi: None,
             php_line: None,
             php: None,
+            admin: None,
             started: nginx_pool("gone", 8094, Vec::new()),
             by_user: true,
             attached: BTreeSet::new(),
@@ -733,6 +734,7 @@ fn pool_with_dead_php_cgi_is_not_running() {
             }),
             php_line: Some("8.4".into()),
             php: Some(php),
+            admin: None,
             started: nginx_pool("nginx-php", 8099, Vec::new()),
             by_user: true,
             attached: BTreeSet::new(),
@@ -1088,6 +1090,7 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
             fcgi: None,
             php_line: started.php_line.clone(),
             php: None,
+            admin: None,
             started,
             by_user: true,
             attached: BTreeSet::new(),
@@ -1423,16 +1426,16 @@ fn name_sites_keeps_names_unique() {
 
 /// PLAN-DATA §9 1.1: an automatic pool lists (and serves) the sites the
 /// projects chose in `panel.json` and those started, not every PHP project
-/// that was only offered Apache.
+/// that was only offered a site (Caddy since WP-3.3).
 #[test]
 fn automatic_pools_list_chosen_or_started_sites() {
     let tmp = TempDir::new("servers-chosen-sites");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    fake_server(&kit, "apache", "2.4.65");
+    fake_server(&kit, "caddy", "2.11.7");
     let servers = WebServers::new(kit.clone());
     let projects = kit.projects();
-    // Offered Apache next to `php -S`.
+    // Offered Caddy next to `php -S`.
     let plain = projects.join("plain").join("public");
     fs::create_dir_all(&plain).unwrap();
     fs::write(plain.join("index.php"), "<?php").unwrap();
@@ -1442,7 +1445,7 @@ fn automatic_pools_list_chosen_or_started_sites() {
     fs::write(shop.join("public").join("index.php"), "<?php").unwrap();
     fs::write(
         shop.join("panel.json"),
-        r#"{ "actions": [ { "id": "site", "apache": "public" } ] }"#,
+        r#"{ "actions": [ { "id": "site", "caddy": "public" } ] }"#,
     )
     .unwrap();
 
@@ -1457,45 +1460,38 @@ fn automatic_pools_list_chosen_or_started_sites() {
     let shown = servers.list("it", true);
     assert_eq!(projects_of(&shown.pools), ["shop"]);
     // Every project goes to the same pool: it is not left out with them.
-    let (pool, _) = servers.pool_of("plain", "apache", "it").unwrap();
+    let (pool, _) = servers.pool_of("plain", "caddy", "it").unwrap();
+    assert_eq!(pool.engine, WebServerEngine::Caddy);
     assert!(shown.pools.iter().any(|p| p.id == pool.id));
 
     let pool_dir = kit.data().join("servers").join(&pool.id);
-    let apache_dir = component_dir(&kit, "apache", pool.server_line.as_deref());
-    fs::create_dir_all(apache_dir.join("conf")).unwrap();
-    fs::write(
-        apache_dir.join("conf").join("httpd.conf"),
-        "Define SRVROOT \"x\"\r\nServerRoot \"${SRVROOT}\"\r\n",
-    )
-    .unwrap();
-    let vhosts = || -> Vec<String> {
-        let mut v: Vec<String> = fs::read_dir(pool_dir.join("vhosts"))
-            .unwrap()
-            .flatten()
-            .map(|e| e.file_name().to_string_lossy().into_owned())
-            .collect();
-        v.sort();
-        v
+    // The sites written in the pool's Caddyfile.
+    let served = || -> Vec<&'static str> {
+        let text = fs::read_to_string(pool_dir.join("Caddyfile")).unwrap();
+        ["plain", "shop"]
+            .into_iter()
+            .filter(|p| text.contains(&format!("http://{p}.localhost:{}", pool.port)))
+            .collect()
     };
     servers.write_pool_configs(&pool, None, false).unwrap();
-    assert_eq!(vhosts(), ["shop.localhost.conf"]);
+    assert_eq!(served(), ["shop"]);
 
     // Started by its project: listed and served.
     servers
         .started
         .lock()
         .unwrap()
-        .insert(("plain".into(), "apache".into()));
+        .insert(("plain".into(), "caddy".into()));
     assert_eq!(
         projects_of(&servers.list("it", true).pools),
         ["plain", "shop"]
     );
     servers.write_pool_configs(&pool, None, false).unwrap();
-    assert_eq!(vhosts(), ["plain.localhost.conf", "shop.localhost.conf"]);
+    assert_eq!(served(), ["plain", "shop"]);
 
     // Stopped: out again (the pool is not running, nothing to reload).
     servers
-        .detach(&pool.id, "plain", "apache", &KitEnv::default(), "it")
+        .detach(&pool.id, "plain", "caddy", &KitEnv::default(), "it")
         .unwrap();
     assert_eq!(projects_of(&servers.list("it", true).pools), ["shop"]);
 
@@ -1516,6 +1512,132 @@ fn automatic_pools_list_chosen_or_started_sites() {
     let shop = shop_site(&servers);
     assert!(shop.detached);
     assert_eq!(shop.server_name, "shop.localhost");
+}
+
+/// T3.3.1: Caddy is an engine of the pools: its automatic ids read back,
+/// its label, its sites in `panel.json` (`caddy`) pooled like the others.
+#[test]
+fn caddy_engine_of_the_pools() {
+    assert_eq!(WebServerEngine::Caddy.as_str(), "caddy");
+    assert_eq!(WebServerEngine::Caddy.label(), "Caddy");
+    let id = auto_pool_id(WebServerEngine::Caddy, Some("2.11"), Some("8.4"));
+    assert_eq!(id, "caddy-2.11_php-8.4");
+    assert_eq!(
+        parse_auto_pool_id(&id),
+        Some((
+            WebServerEngine::Caddy,
+            Some("2.11".into()),
+            Some("8.4".into())
+        ))
+    );
+    assert_eq!(
+        serde_json::to_string(&WebServerEngine::Caddy).unwrap(),
+        "\"caddy\""
+    );
+    let mut caddy = crate::detect::Action::for_test("site", "", crate::detect::Kind::Web);
+    caddy.caddy_dir = Some("public".into());
+    caddy.custom = true;
+    assert_eq!(
+        WebServerEngine::of_action(&caddy),
+        Some((WebServerEngine::Caddy, "public".into()))
+    );
+    let mut other = crate::detect::Action::for_test("dev", "npm run dev", crate::detect::Kind::Web);
+    other.custom = true;
+    let actions = [other, caddy];
+    let pooled: Vec<&str> = pooled_actions(&actions)
+        .into_iter()
+        .map(|a| a.id.as_str())
+        .collect();
+    assert_eq!(pooled, ["site"]);
+}
+
+/// T3.3.2: a Caddy pool's site block: its own name and its domains, its
+/// document root, PHP with the start's key, the aliases checked on disk
+/// only (no alias that was not resolved in the text, as Apache and Nginx).
+#[test]
+fn caddy_site_block_of_a_pool() {
+    let tmp = TempDir::new("servers-caddy-site");
+    let projs = tmp.0.join("projects");
+    fs::create_dir_all(projs.join("shop").join("public")).unwrap();
+    fs::create_dir_all(projs.join("blog").join("uploads")).unwrap();
+    let mut s = site("shop", "public", 8090);
+    s.domains = vec!["api.shop.localhost".into(), "no;way.localhost".into()];
+    s.aliases.insert("/blog".into(), "@blog/uploads".into());
+    s.aliases.insert("/gone".into(), "nowhere".into());
+    s.aliases.insert("/up".into(), "../blog/uploads".into());
+    let aliases = crate::projects::caddy::resolve_aliases(&projs.join("shop"), &projs, &s.aliases);
+    let fcgi = FastCgi {
+        port: 9333,
+        key: "k".repeat(64),
+    };
+    let doc = projs.join("shop").join("public");
+    let block = super::config::caddy_site_conf(8090, false, &doc, &aliases, Some(&fcgi), &s)
+        .unwrap()
+        .join("\n");
+    assert!(
+        block.starts_with(
+            "http://shop.localhost:8090, http://api.shop.localhost:8090 {\n\tbind 127.0.0.1\n"
+        ),
+        "{block}"
+    );
+    assert!(block.contains(&format!(
+        "\t\troot * \"{}\"\n",
+        crate::projects::apache::fwd(&doc)
+    )));
+    assert!(block.contains(&format!("\t\t\tenv ATOLLO_FCGI_KEY {}\n", "k".repeat(64))));
+    assert!(block.contains("\t\thandle_path /blog/* {\n"));
+    assert!(block.contains(&format!(
+        "\t\t\troot * \"{}/blog/uploads\"\n",
+        crate::projects::apache::fwd(&projs)
+    )));
+    for absent in ["/gone", "redir /up ", "/up/*", "nowhere", "no;way", ".."] {
+        assert!(!block.contains(absent), "{absent}: {block}");
+    }
+    // A folder Caddy cannot take is not served at all.
+    let bad = Path::new("/kit/{x}/public");
+    assert!(super::config::caddy_site_conf(8090, false, bad, &[], None, &s).is_none());
+}
+
+/// A Caddy pool's files: one Caddyfile with the sites it serves, the PHP
+/// key, its admin endpoint, the user's snippets only when there are some.
+#[test]
+fn caddy_pool_writes_one_caddyfile() {
+    let tmp = TempDir::new("servers-caddy-pool");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    for p in ["shop", "blog"] {
+        fs::create_dir_all(kit.projects().join(p).join("public")).unwrap();
+    }
+    let mut pool = nginx_pool(
+        "caddy-2.11_php-8.4",
+        8091,
+        vec![site("shop", "public", 8091), site("blog", "public", 8091)],
+    );
+    pool.engine = WebServerEngine::Caddy;
+    let fcgi = FastCgi {
+        port: 9444,
+        key: "z".repeat(64),
+    };
+    let conf = servers
+        .write_pool_configs_with(&pool, Some(&fcgi), false, Some(9555))
+        .unwrap();
+    assert_eq!(conf.file_name().unwrap(), "Caddyfile");
+    let text = fs::read_to_string(&conf).unwrap();
+    assert!(text.contains("\tadmin 127.0.0.1:9555\n"));
+    assert!(text.contains("http://shop.localhost:8091 {\n"));
+    assert!(text.contains("http://blog.localhost:8091 {\n"));
+    assert!(text.contains("php_fastcgi 127.0.0.1:9444 {"));
+    assert!(text.contains("respond 421"));
+    assert!(!text.contains("import "));
+    let snippets = kit.data().join("servers").join(&pool.id).join("conf.d");
+    fs::write(snippets.join("mine.caddy"), "").unwrap();
+    let text = fs::read_to_string(servers.write_pool_configs(&pool, None, false).unwrap()).unwrap();
+    assert!(
+        text.contains("\tadmin off\n") && text.contains("import \""),
+        "{text}"
+    );
+    assert!(text.contains("respond @php 503"));
 }
 
 /// PLAN.md §13.1: a site marked `dedicated` keeps its own server (in no

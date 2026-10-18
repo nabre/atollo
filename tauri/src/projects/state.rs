@@ -4,7 +4,8 @@
 //! ```text
 //! dev-settings.json   agent, last opened, extensions, versions
 //! ports.json          ports of its actions, those locked by the user
-//! apache\  nginx\     configurations of its own web servers
+//! apache\  nginx\  caddy\
+//!                     configurations of its own web servers
 //! private\            owner-only DACL, set before anything is written in it
 //!   db.json           passwords of its databases
 //!   backups\          copies of its databases
@@ -49,6 +50,9 @@ impl ProjectState {
     }
     pub fn nginx_dir(&self) -> PathBuf {
         self.dir.join("nginx")
+    }
+    pub fn caddy_dir(&self) -> PathBuf {
+        self.dir.join("caddy")
     }
 
     /// `private\`, created and made owner-only before it is returned, so

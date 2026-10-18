@@ -12,7 +12,8 @@
 //! - `static`: a folder of the project served by the exe's file server
 //!   (`Atollo.exe serve`), instead of a command;
 //! - `apache`: a folder of the project served by an Apache of its own
-//!   (`projects/apache.rs`), instead of a command.
+//!   (`projects/apache.rs`), instead of a command; `nginx` and `caddy` the
+//!   same with Nginx or Caddy (`projects/caddy.rs`).
 //!
 //! `panel.json` in the project (old name `pannello.json`) corrects or
 //! replaces what was detected (`overrides.rs`). One file per platform.
@@ -82,6 +83,9 @@ pub struct Action {
     /// A folder served by the project's own Nginx.
     #[serde(rename = "nginx")]
     pub nginx_dir: Option<String>,
+    /// A folder served by Caddy, its own or a pool's (WP-3.3).
+    #[serde(rename = "caddy")]
+    pub caddy_dir: Option<String>,
     /// Web server profile id, or `auto`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
@@ -108,6 +112,7 @@ impl Action {
             static_dir: None,
             apache_dir: None,
             nginx_dir: None,
+            caddy_dir: None,
             server: None,
             domains: Vec::new(),
             aliases: BTreeMap::new(),
@@ -142,6 +147,23 @@ impl Action {
             nginx_dir: Some(folder.to_owned()),
             ..Action::new(id, label, "", Kind::Web)
         }
+    }
+
+    /// A folder of the project served by Caddy.
+    fn caddy(id: &str, label: &str, folder: &str) -> Action {
+        Action {
+            caddy_dir: Some(folder.to_owned()),
+            ..Action::new(id, label, "", Kind::Web)
+        }
+    }
+
+    /// Served by a web server of the kit (Apache, Nginx, Caddy): a site
+    /// that can go in a shared pool.
+    pub fn web_server_dir(&self) -> Option<&str> {
+        self.apache_dir
+            .as_deref()
+            .or(self.nginx_dir.as_deref())
+            .or(self.caddy_dir.as_deref())
     }
 }
 
@@ -555,17 +577,13 @@ pub fn requires(dir: &Path) -> Vec<String> {
             found.insert("cc");
         }
     });
-    if [
-        ".htaccess",
-        r"public\.htaccess",
-        r"web\.htaccess",
-        r"htdocs\.htaccess",
-    ]
-    .iter()
-    .any(|f| exists(dir, f))
-    {
-        found.insert("apache");
+    // A `.htaccess` is PHP; Apache only on Windows and for rules of its own
+    // (Caddy serves the stock ones, detect/php.rs).
+    if php::HTACCESS.iter().any(|f| exists(dir, f)) {
         found.insert("php");
+        if php::apache_offered(crate::kit::Os::current(), &php::htaccess_texts(dir, ".")) {
+            found.insert("apache");
+        }
     }
     // The walk skips hidden names: `.nginx` is looked for here.
     if has_nginx(dir, ".") {
@@ -686,8 +704,9 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             .map(|a| a.id.clone());
     }
     // An Apache of its own needs Apache and its PHP module, a Nginx needs
-    // Nginx: when it is the main action or written in panel.json, not when
-    // it is only proposed beside `php -S` or `artisan serve`.
+    // Nginx, a Caddy Caddy and PHP: when it is the main action or written
+    // in panel.json, not when it is only proposed beside `php -S` or
+    // `artisan serve`.
     let used = |a: &&Action| a.custom || project.default.as_deref() == Some(a.id.as_str());
     let mut needed: Vec<&str> = Vec::new();
     if project
@@ -705,6 +724,14 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         .any(|a| a.nginx_dir.is_some())
     {
         needed.push("nginx");
+    }
+    if project
+        .actions
+        .iter()
+        .filter(used)
+        .any(|a| a.caddy_dir.is_some())
+    {
+        needed.extend(["caddy", "php"]);
     }
     // A CMS needs the kit's MariaDB (D-93).
     if php::CMS.iter().any(|c| project.platform.contains(c)) {

@@ -7,7 +7,8 @@
 //!   Linux, `jobs::shell_command`) with the kit's environment plus
 //!   `PORT`, `ROCKET_PORT`, `DB_PORT` (its MariaDB database), `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
 //!   action runs this exe as a file server (`Atollo.exe serve`), an
-//!   `apache` action the kit's httpd with a configuration of the project;
+//!   `apache` action the kit's httpd with a configuration of the project,
+//!   `nginx` and `caddy` actions the same with their server and PHP;
 //! - web actions keep their port from one start to the next (bookmarks,
 //!   cookies, localStorage stay valid): 7100-7999, remembered in
 //!   `data\projects\<project>\ports.json`, or the one the user locked;
@@ -104,7 +105,7 @@ struct Entry {
 /// instead of a pool; never the id of a server profile.
 pub const DEDICATED_SERVER: &str = "dedicated";
 
-/// How «Avvia» serves an Apache or Nginx site.
+/// How «Avvia» serves an Apache, Nginx or Caddy site.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SiteMode {
     /// Its own httpd/nginx on the action's port: any other action, or a
@@ -121,7 +122,7 @@ pub enum SiteMode {
 /// `server` (or `auto`) by the automatic pool of its lines, one marked
 /// `dedicated` (and every action that is not an Apache/Nginx site) on its own.
 pub fn site_mode(action: &Action) -> SiteMode {
-    if action.apache_dir.is_none() && action.nginx_dir.is_none() {
+    if action.web_server_dir().is_none() {
         return SiteMode::Dedicated;
     }
     match action
@@ -547,6 +548,33 @@ impl Runner {
                 cmd,
                 format!("nginx.exe -c data\\projects\\{id}\\nginx\\nginx.conf ({folder})"),
             )
+        } else if let Some(folder) = &action.caddy_dir {
+            let root = detect::inside_dir(&cwd, folder)?;
+            // Its PHP (php-cgi, or php-fpm off Windows) lives in the action's
+            // job too, watched with the server.
+            let run_dir = crate::projects::caddy::dir(&self.kit, id)?;
+            let fcgi =
+                crate::projects::fastcgi::spawn_fastcgi_if_present(&self.kit, env, &job, &run_dir)
+                    .map(|(fcgi, child)| {
+                        php = Some(child);
+                        fcgi
+                    });
+            let cmd = crate::projects::caddy::command(
+                &self.kit,
+                id,
+                dir,
+                &root,
+                port.unwrap_or(PORT_FROM),
+                fcgi.as_ref(),
+                lan,
+                &action.domains,
+                &action.aliases,
+                env,
+            )?;
+            (
+                cmd,
+                format!("caddy run --config data/projects/{id}/caddy/Caddyfile ({folder})"),
+            )
         } else {
             let command = listen(&action.command);
             (jobs::shell_command(&command, env), command)
@@ -607,6 +635,8 @@ impl Runner {
                 crate::projects::alias::skipped_nginx(dir, &self.kit.projects(), &action.aliases)
             } else if action.apache_dir.is_some() {
                 crate::projects::alias::skipped(dir, &self.kit.projects(), &action.aliases)
+            } else if action.caddy_dir.is_some() {
+                crate::projects::caddy::skipped_aliases(dir, &self.kit.projects(), &action.aliases)
             } else {
                 Vec::new()
             },
