@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Merged by the Tauri bundler into the Info.plist of Atollo.app (WP-5.1).
+  The name, the identifier and the minimum macOS repeat tauri.conf.json
+  (productName, identifier, bundle.macOS.minimumSystemVersion, which also
+  sets MACOSX_DEPLOYMENT_TARGET for the build): a test in
+  test/rust/setup/self_update.rs keeps the two files in agreement.
+-->
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key>
+  <string>Atollo</string>
+  <key>CFBundleDisplayName</key>
+  <string>Atollo</string>
+  <key>CFBundleIdentifier</key>
+  <string>io.github.nabre.atollo</string>
+  <!-- macOS 12 Monterey, the floor chosen for the app (WP-5.1). -->
+  <key>LSMinimumSystemVersion</key>
+  <string>12.0</string>
+</dict>
+</plist>
