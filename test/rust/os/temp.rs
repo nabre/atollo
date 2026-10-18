@@ -1,14 +1,14 @@
 use super::*;
+use crate::fsx::join_rel;
 use crate::kit::{tests::TempDir, Arch};
 use std::time::SystemTime;
 
 #[test]
-#[cfg_attr(not(windows), ignore = "expected paths given with backslashes")]
 fn in_host_temp_or_data_tmp() {
     let tmp = TempDir::new("temp-work");
     let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
     let work = TempWork::new(&kit, "setup/x").unwrap();
-    assert_eq!(work.path(), tmp.0.join(r"kit\data\tmp\setup\x"));
+    assert_eq!(work.path(), join_rel(&tmp.0, "kit/data/tmp/setup/x"));
     assert!(work.path().join(".lock").is_file());
     let dir = work.path().to_path_buf();
     drop(work);
@@ -16,7 +16,7 @@ fn in_host_temp_or_data_tmp() {
 
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
     let work = TempWork::new(&host, "setup/x").unwrap();
-    assert!(work.path().starts_with(tmp.0.join(r"host\Dev-Kit")));
+    assert!(work.path().starts_with(tmp.0.join("host").join("Dev-Kit")));
     // a second user of the same folder starts from empty
     fs::write(work.path().join("old"), "x").unwrap();
     drop(work);
@@ -34,10 +34,6 @@ fn age(dir: &Path, hours: u64) {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "temporary folders created with backslash paths"
-)]
 fn sweep_keeps_live_and_new_removes_old() {
     let tmp = TempDir::new("temp-sweep");
     let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
@@ -47,18 +43,18 @@ fn sweep_keeps_live_and_new_removes_old() {
     let live = TempWork::new(&host, "setup/live").unwrap();
     age(live.path(), 48);
     // old and unlocked (a dead app left its lock closed): removed
-    let dead = base.join(r"setup\dead");
+    let dead = base.join("setup").join("dead");
     fs::create_dir_all(&dead).unwrap();
     fs::write(dead.join(".lock"), "").unwrap();
     fs::write(dead.join("file"), "x").unwrap();
     age(&dead, 48);
     // old, in data\tmp, unlocked: removed
-    let old_data = host.data().join(r"tmp\frameworks\1");
+    let old_data = join_rel(host.data(), "tmp/frameworks/1");
     fs::create_dir_all(&old_data).unwrap();
     fs::write(old_data.join(".lock"), "").unwrap();
     age(&old_data, 48);
     // new and unlocked: kept
-    let fresh = base.join(r"frameworks\fresh");
+    let fresh = base.join("frameworks").join("fresh");
     fs::create_dir_all(&fresh).unwrap();
     fs::write(fresh.join(".lock"), "").unwrap();
     // files added by hand: their own 30 days, never swept
