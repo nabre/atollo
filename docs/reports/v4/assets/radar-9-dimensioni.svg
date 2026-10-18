@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 600" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #0d1117; }
+      .panel { fill: #161b22; stroke: #30363d; stroke-width: 1; }
+      .grid { fill: none; stroke: #21262d; stroke-width: 1; }
+      .axis { stroke: #30363d; stroke-width: 1; stroke-dasharray: 3,3; }
+      .poly-v2 { fill: rgba(139, 148, 158, 0.08); stroke: #8b949e; stroke-width: 1.5; stroke-dasharray: 3,3; }
+      .poly-v3 { fill: rgba(88, 166, 255, 0.12); stroke: #58a6ff; stroke-width: 2; stroke-dasharray: 6,3; }
+      .poly-v4 { fill: rgba(63, 185, 80, 0.20); stroke: #3fb950; stroke-width: 2.8; }
+      .poly-target { fill: rgba(163, 113, 247, 0.06); stroke: #a371f7; stroke-width: 1.8; stroke-dasharray: 2,4; }
+      .dot-v3 { fill: #58a6ff; }
+      .dot-v4 { fill: #3fb950; stroke: #0d1117; stroke-width: 1.5; }
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 19px; font-weight: 700; fill: #f0f6fc; }
+      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 12px; fill: #8b949e; }
+      .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #e6edf3; }
+      .score { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; fill: #3fb950; font-weight: 700; }
+      .score-delta { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: 10px; fill: #58a6ff; }
+      .ring-label { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: 9px; fill: #6e7681; }
+      .legend-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 11px; fill: #c9d1d9; }
+    </style>
+  </defs>
+
+  <rect width="920" height="600" rx="12" class="bg"/>
+  <rect x="16" y="16" width="888" height="568" rx="10" class="panel"/>
+
+  <text x="40" y="50" class="title">Valutazione Architetturale su 9 Dimensioni — Baseline v4 (HEAD 18698f9)</text>
+  <text x="40" y="70" class="subtitle">Confronto storico v2 (82,6) → v3 (88,3) → v4 Attuale (92,8/100) → Target Post-Sciame v4 (98,4/100)</text>
+
+  <!-- Radar Center: (370, 325), Radius R = 190 -->
+  <!-- Angles (9 axes, every 40 deg starting -90 deg):
+       0: -90°   (0.000, -1.000) Architettura & Modularità (v2:91, v3:94, v4:96, T:99)
+       1: -50°   (0.643, -0.766) Isolamento & Zero-Residui Windows (v2:96, v3:97, v4:98, T:100)
+       2: -10°   (0.985, -0.174) Rilocazione & Resilienza USB (v2:85, v3:92, v4:93, T:99)
+       3: +30°   (0.866,  0.500) Sicurezza Locale & Guard-Rail (v2:79, v3:83, v4:91, T:98)
+       4: +70°   (0.342,  0.940) UX, Facilitazione & Accessibilità (v2:84, v3:89, v4:93, T:98)
+       5: +110° (-0.342,  0.940) Ecosistema AI & Coding Agents (v2:92, v3:95, v4:96, T:99)
+       6: +150° (-0.866,  0.500) Gestione Dati, DB & Backup (v2:83, v3:87, v4:92, T:98)
+       7: +190° (-0.985, -0.174) Qualità Codice & Copertura Test (v2:86, v3:91, v4:95, T:98)
+       8: +230° (-0.643, -0.766) Readiness Multi-OS (macOS/Linux) (v2:48, v3:67, v4:81, T:97)
+  -->
+
+  <!-- Concentric Reference Polygons (20%, 40%, 60%, 80%, 100%) -->
+  <polygon class="grid" points="370,287 394,296 407,318 403,344 383,361 357,361 337,344 333,318 346,296"/>
+  <polygon class="grid" points="370,249 419,267 445,312 436,363 396,396 344,396 304,363 295,312 321,267"/>
+  <polygon class="grid" points="370,211 443,238 482,305 469,382 409,432 331,432 271,382 258,305 297,238"/>
+  <polygon class="grid" points="370,173 468,209 520,299 502,401 422,468 318,468 238,401 220,299 272,209"/>
+  <polygon class="grid" points="370,135 492,179 557,292 535,420 435,504 305,504 205,420 183,292 248,179"/>
+
+  <!-- Axes -->
+  <line x1="370" y1="325" x2="370" y2="135" class="axis"/>
+  <line x1="370" y1="325" x2="492" y2="179" class="axis"/>
+  <line x1="370" y1="325" x2="557" y2="292" class="axis"/>
+  <line x1="370" y1="325" x2="535" y2="420" class="axis"/>
+  <line x1="370" y1="325" x2="435" y2="504" class="axis"/>
+  <line x1="370" y1="325" x2="305" y2="504" class="axis"/>
+  <line x1="370" y1="325" x2="205" y2="420" class="axis"/>
+  <line x1="370" y1="325" x2="183" y2="292" class="axis"/>
+  <line x1="370" y1="325" x2="248" y2="179" class="axis"/>
+
+  <!-- Ring Labels -->
+  <text x="374" y="285" class="ring-label">20</text>
+  <text x="374" y="247" class="ring-label">40</text>
+  <text x="374" y="209" class="ring-label">60</text>
+  <text x="374" y="171" class="ring-label">80</text>
+  <text x="374" y="133" class="ring-label">100</text>
+
+  <!-- Target Post-Sciame v4 Polygon (99, 100, 99, 98, 98, 99, 98, 98, 97) -->
+  <polygon class="poly-target" points="370,137 492,179 555,292 531,418 434,500 306,502 209,418 187,293 251,184"/>
+
+  <!-- v2 Polygon (91, 96, 85, 79, 84, 92, 83, 86, 48) -->
+  <polygon class="poly-v2" points="370,152 487,185 529,297 500,400 425,475 310,489 233,404 209,297 311,255"/>
+
+  <!-- v3 Polygon (94, 97, 92, 83, 89, 95, 87, 91, 67) -->
+  <polygon class="poly-v3" points="370,146 489,184 542,295 507,404 428,484 308,495 227,408 200,295 288,227"/>
+
+  <!-- v4 Polygon (96, 98, 93, 91, 93, 96, 92, 95, 81) -->
+  <polygon class="poly-v4" points="370,143 490,182 544,294 520,411 430,491 308,497 219,412 192,294 271,207"/>
+
+  <!-- v3 Vertex Dots -->
+  <circle cx="370" cy="146" r="3" class="dot-v3"/>
+  <circle cx="489" cy="184" r="3" class="dot-v3"/>
+  <circle cx="542" cy="295" r="3" class="dot-v3"/>
+  <circle cx="507" cy="404" r="3" class="dot-v3"/>
+  <circle cx="428" cy="484" r="3" class="dot-v3"/>
+  <circle cx="308" cy="495" r="3" class="dot-v3"/>
+  <circle cx="227" cy="408" r="3" class="dot-v3"/>
+  <circle cx="200" cy="295" r="3" class="dot-v3"/>
+  <circle cx="288" cy="227" r="3" class="dot-v3"/>
+
+  <!-- v4 Vertex Dots -->
+  <circle cx="370" cy="143" r="5" class="dot-v4"/>
+  <circle cx="490" cy="182" r="5" class="dot-v4"/>
+  <circle cx="544" cy="294" r="5" class="dot-v4"/>
+  <circle cx="520" cy="411" r="5" class="dot-v4"/>
+  <circle cx="430" cy="491" r="5" class="dot-v4"/>
+  <circle cx="308" cy="497" r="5" class="dot-v4"/>
+  <circle cx="219" cy="412" r="5" class="dot-v4"/>
+  <circle cx="192" cy="294" r="5" class="dot-v4"/>
+  <circle cx="271" cy="207" r="5" class="dot-v4"/>
+
+  <!-- Labels around Radar -->
+  <text x="370" y="108" text-anchor="middle" class="label">1. Architettura &amp; Modularità</text>
+  <text x="370" y="123" text-anchor="middle" class="score">96/100 <tspan class="score-delta">(+2 vs v3)</tspan></text>
+
+  <text x="508" y="168" text-anchor="start" class="label">2. Isolamento Windows</text>
+  <text x="508" y="183" text-anchor="start" class="score">98/100 <tspan class="score-delta">(+1 vs v3)</tspan></text>
+
+  <text x="570" y="288" text-anchor="start" class="label">3. Rilocazione &amp; USB</text>
+  <text x="570" y="303" text-anchor="start" class="score">93/100 <tspan class="score-delta">(+1 vs v3)</tspan></text>
+
+  <text x="548" y="428" text-anchor="start" class="label">4. Sicurezza &amp; Guard-Rail</text>
+  <text x="548" y="443" text-anchor="start" class="score">91/100 <tspan class="score-delta">(+8 vs v3)</tspan></text>
+
+  <text x="442" y="528" text-anchor="start" class="label">5. UX, UI &amp; Accessibilità</text>
+  <text x="442" y="543" text-anchor="start" class="score">93/100 <tspan class="score-delta">(+4 vs v3)</tspan></text>
+
+  <text x="298" y="528" text-anchor="end" class="label">6. Ecosistema AI &amp; Agents</text>
+  <text x="298" y="543" text-anchor="end" class="score">96/100 <tspan class="score-delta">(+1 vs v3)</tspan></text>
+
+  <text x="192" y="428" text-anchor="end" class="label">7. Dati, DB Multi-Linea &amp; Backup</text>
+  <text x="192" y="443" text-anchor="end" class="score">92/100 <tspan class="score-delta">(+5 vs v3)</tspan></text>
+
+  <text x="170" y="288" text-anchor="end" class="label">8. Qualità &amp; Test (536 test)</text>
+  <text x="170" y="303" text-anchor="end" class="score">95/100 <tspan class="score-delta">(+4 vs v3)</tspan></text>
+
+  <text x="235" y="168" text-anchor="end" class="label">9. Readiness Multi-OS</text>
+  <text x="235" y="183" text-anchor="end" class="score">81/100 <tspan class="score-delta">(+14 vs v3)</tspan></text>
+
+  <!-- Right Side Summary Card -->
+  <rect x="695" y="95" width="190" height="465" rx="8" fill="#0d1117" stroke="#30363d"/>
+  <text x="712" y="122" class="label">Legenda &amp; Progressione</text>
+
+  <line x1="712" y1="145" x2="740" y2="145" stroke="#3fb950" stroke-width="3"/>
+  <circle cx="726" cy="145" r="4" class="dot-v4"/>
+  <text x="748" y="149" class="legend-text">v4 Attuale (92,8/100)</text>
+
+  <line x1="712" y1="170" x2="740" y2="170" stroke="#58a6ff" stroke-width="2" stroke-dasharray="6,3"/>
+  <circle cx="726" cy="170" r="3" class="dot-v3"/>
+  <text x="748" y="174" class="legend-text">v3 Baseline (88,3/100)</text>
+
+  <line x1="712" y1="195" x2="740" y2="195" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="748" y="199" class="legend-text">v2 Baseline (82,6/100)</text>
+
+  <line x1="712" y1="220" x2="740" y2="220" stroke="#a371f7" stroke-width="1.8" stroke-dasharray="2,4"/>
+  <text x="748" y="224" class="legend-text">Target Post-v4 (98,4)</text>
+
+  <line x1="712" y1="242" x2="868" y2="242" stroke="#21262d" stroke-width="1"/>
+  <text x="712" y="264" class="label">Salti Chiave v3 → v4</text>
+
+  <text x="712" y="288" class="legend-text" fill="#3fb950">● Multi-OS (+14 pt)</text>
+  <text x="712" y="304" class="ring-label">Win32 gated, os/* Unix,</text>
+  <text x="712" y="316" class="ring-label">CI check-unix Linux/macOS</text>
+
+  <text x="712" y="340" class="legend-text" fill="#3fb950">● Sicurezza Web (+8 pt)</text>
+  <text x="712" y="356" class="ring-label">PHP_RUN/NEVER, router PHP,</text>
+  <text x="712" y="368" class="ring-label">DNS rebinding 403/421</text>
+
+  <text x="712" y="392" class="legend-text" fill="#3fb950">● DB &amp; Pool (+5 pt)</text>
+  <text x="712" y="408" class="ring-label">MySQL side-by-side (D-102)</text>
+  <text x="712" y="420" class="ring-label">Pool keepAlive &amp; vHost (D-101)</text>
+
+  <text x="712" y="444" class="legend-text" fill="#3fb950">● UX &amp; Terminali (+4 pt)</text>
+  <text x="712" y="460" class="ring-label">Terminali kit (D-94), CMS (D-93),</text>
+  <text x="712" y="472" class="ring-label">useModalFocus &amp; InlineConfirm</text>
+
+  <text x="712" y="496" class="legend-text" fill="#3fb950">● Test Suite (+4 pt)</text>
+  <text x="712" y="512" class="ring-label">443 → 536 test (+21,0%)</text>
+  <text x="712" y="524" class="ring-label">429 Rust + 107 Vitest</text>
+</svg>

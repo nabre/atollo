@@ -47,7 +47,7 @@ flowchart TB
 | **Progetti, Server Dedicati & Framework** | [`projects/mod.rs`](file:///d:/Projects/atollo/tauri/src/projects/mod.rs), [`projects/run.rs`](file:///d:/Projects/atollo/tauri/src/projects/run.rs), [`projects/apache.rs`](file:///d:/Projects/atollo/tauri/src/projects/apache.rs), [`projects/nginx.rs`](file:///d:/Projects/atollo/tauri/src/projects/nginx.rs), [`projects/serve.rs`](file:///d:/Projects/atollo/tauri/src/projects/serve.rs), [`projects/alias.rs`](file:///d:/Projects/atollo/tauri/src/projects/alias.rs), [`projects/frameworks/*`](file:///d:/Projects/atollo/tauri/src/projects/frameworks/mod.rs) | 16 | 5.420 | Esecuzione azioni di progetto, generazione `httpd.conf` / `nginx.conf` dedicati, server statico HTTP integrato, alias web, scaffolding 16 framework/CMS (`D-93`). |
 | **Pool Web Condivisi (`D-101`)** | [`servers/mod.rs`](file:///d:/Projects/atollo/tauri/src/servers/mod.rs), [`commands/servers.rs`](file:///d:/Projects/atollo/tauri/src/commands/servers.rs) | 2 | 1.615 | Gestione pool condivisi Apache/Nginx per linea PHP, profili utente (`servers.json`), vHost `<azione>.<progetto>.localhost`, ciclo di vita `detached` / `keepAlive` / `autostart`. |
 | **Motore di Rilevamento (`D-103`)** | [`detect/mod.rs`](file:///d:/Projects/atollo/tauri/src/detect/mod.rs), [`detect/php.rs`](file:///d:/Projects/atollo/tauri/src/detect/php.rs), [`detect/node.rs`](file:///d:/Projects/atollo/tauri/src/detect/node.rs), [`detect/python.rs`](file:///d:/Projects/atollo/tauri/src/detect/python.rs), [`detect/container.rs`](file:///d:/Projects/atollo/tauri/src/detect/container.rs), ecc. | 13 | 3.180 | Rilevamento zero-config di 25+ stack, CMS classici (WordPress, PrestaShop, Drupal, Joomla, TYPO3), router `php -S` e versioni da `compose.yaml`/`Dockerfile`. |
-| **Database Multi-Linea (`D-102`)** | [`db/mod.rs`](file:///d:/Projects/atollo/tauri/src/db/mod.rs), [`db/services/mod.rs`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs), [`db/services/data.rs`](file:///d:/Projects/atollo/tauri/src/db/services/data.rs), [`db/services/access.rs`](file:///d:/Projects/atollo/tauri/src/db/services/access.rs), [`db/services/backups.rs`](file:///d:/Projects/atollo/tauri/src/db/services/backups.rs), [`db/services/tools.rs`](file:///d:/Projects/atollo/tauri/src/db/services/tools.rs), [`db/auth.rs`](file:///d:/Projects/atollo/tauri/src/db/auth.rs), [`db/browse.rs`](file:///d:/Projects/atollo/tauri/src/db/browse.rs), [`db/adminer.rs`](file:///d:/Projects/atollo/tauri/src/db/adminer.rs) | 9 | 3.640 | Esecuzione simultanea di più linee MariaDB + MongoDB, provisioning DB/utente per progetto, sincronizzazione `.env`, browser SQL/NoSQL nativo e Adminer. |
+| **Database Multi-Linea (`D-102`)** | [`db/mod.rs`](file:///d:/Projects/atollo/tauri/src/db/mod.rs), [`db/services/mod.rs`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs), [`db/services/data.rs`](file:///d:/Projects/atollo/tauri/src/db/services/data.rs), [`db/services/access.rs`](file:///d:/Projects/atollo/tauri/src/db/services/access.rs), [`db/services/backups.rs`](file:///d:/Projects/atollo/tauri/src/db/services/backups.rs), [`db/services/tools.rs`](file:///d:/Projects/atollo/tauri/src/db/services/tools.rs), [`db/auth.rs`](file:///d:/Projects/atollo/tauri/src/db/auth.rs), [`db/browse.rs`](file:///d:/Projects/atollo/tauri/src/db/browse.rs), [`db/adminer.rs`](file:///d:/Projects/atollo/tauri/src/db/adminer.rs) | 9 | 3.640 | Esecuzione simultanea di più linee MySQL + MongoDB, provisioning DB/utente per progetto, sincronizzazione `.env`, browser SQL/NoSQL nativo e Adminer. |
 | **Installatori & Versioni (`D-95`, `D-105`)** | [`install/*`](file:///d:/Projects/atollo/tauri/src/install/mod.rs), [`setup/*`](file:///d:/Projects/atollo/tauri/src/setup/mod.rs), [`versions/*`](file:///d:/Projects/atollo/tauri/src/versions/mod.rs), [`net/*`](file:///d:/Projects/atollo/tauri/src/net/mod.rs) | 38 | 9.810 | Download verificato SHA-256, estrazione atomica, gestione multi-versione side-by-side (`data/apps/<platform>/<id>/<line>`), grafo di relazioni e pulizia versioni. |
 | **Agenti AI, Editor & Rilocazione** | [`agents/*`](file:///d:/Projects/atollo/tauri/src/agents/mod.rs), [`editor/*`](file:///d:/Projects/atollo/tauri/src/editor/mod.rs) | 18 | 5.190 | Sincronizzazione skill/istruzioni/MCP per Claude/Codex/Antigravity, keyring AES-256-GCM, VSCodium Server integrato, rilocazione post-spostamento `relocate.rs`. |
 
@@ -61,36 +61,36 @@ Con la decisione `D-94` e il contestuale ritiro del componente esterno Windows T
 
 - **Modello Dati ([`terminals.rs:27-96`](file:///d:/Projects/atollo/tauri/src/terminals.rs#L27-L96))**:
   - Il terminale predefinito `default` (*"Tutti gli strumenti"*) è sempre presente in testa alla lista, non è eliminabile, espone `all_tools: true` e segue dinamicamente tutti i componenti installati con le loro linee di versione predefinite.
-  - I terminali personalizzati salvati in `data/app/terminals.json` specificano un vettore `tools: Vec<String>` e una mappa `lines: BTreeMap<String, String>` (es. `{"php": "8.2", "node": "20", "mariadb": "10.11"}`).
+  - I terminali personalizzati salvati in `data/app/terminals.json` specificano un vettore `tools: Vec<String>` e una mappa `lines: BTreeMap<String, String>` (es. `{"php": "8.2", "node": "20", "mysql": "8.4"}`).
 - **Costruzione dell'Ambiente Isolato ([`terminals.rs:265-360`](file:///d:/Projects/atollo/tauri/src/terminals.rs#L265-L360))**:
   - Per il terminale predefinito con `lines` vuota, `terminal_env` delega a [`env::kit_env(&root)`](file:///d:/Projects/atollo/tauri/src/env.rs#L316) e poi applica eventuali override di linea tramite [`versions::env::apply_overrides`](file:///d:/Projects/atollo/tauri/src/versions/env.rs#L230).
   - Per un terminale personalizzato (`all_tools == false`), `filtered_env` costruisce il `PATH` includendo **solo** i componenti selezionati nel profilo (più le relative dipendenze di runtime) con le linee di versione scelte, ed esporta `ATOLLO_TERMINAL=<nome>` affinché [`runtime/profile.ps1`](file:///d:/Projects/atollo/runtime/profile.ps1#L45) e [`runtime/bashrc`](file:///d:/Projects/atollo/runtime/bashrc#L60) mostrino il badge del terminale attivo nel prompt.
 
-### 2.2 MariaDB Multi-Versione Side-by-Side (`D-102`, [`tauri/src/db/services/mod.rs`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs))
+### 2.2 MySQL Multi-Versione Side-by-Side (`D-102`, [`tauri/src/db/services/mod.rs`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs))
 
-La revisione `D-102` ha trasformato `Services` da gestore mono-istanza a orchestratore multi-linea per MariaDB:
+La revisione `D-102` ha trasformato `Services` da gestore mono-istanza a orchestratore multi-linea per MySQL (linee 8.4 e 9.7 LTS):
 
 ```mermaid
 sequenceDiagram
     participant UI as UI / Runner Progetto
     participant Svc as Services (db/services/mod.rs)
     participant Data as data.rs (db_root_for)
-    participant Proc as mariadbd (per linea)
+    participant Proc as mysqld (per linea)
 
-    UI->>Svc: start_line(root, DbKind::Mariadb, Some("10.11"))
-    Svc->>Svc: line_ports(root) -> primaria=3306, "10.11"=3307
-    Svc->>Data: ensure_mariadb_for(root, port=3307, Some("10.11"))
-    Data-->>Svc: data/db/mariadb/10.11/my.ini + mysql_install_db
-    Svc->>Proc: spawn mariadbd --defaults-file=.../10.11/my.ini
+    UI->>Svc: start_line(root, DbKind::Mysql, Some("8.4"))
+    Svc->>Svc: line_ports(root) -> primaria=3306, "8.4"=3307
+    Svc->>Data: ensure_mysql_for(root, port=3307, Some("8.4"))
+    Data-->>Svc: data/db/mysql/8.4/my.ini + mysqld --initialize
+    Svc->>Proc: spawn mysqld --defaults-file=.../8.4/my.ini
     Svc->>Svc: wait_ready(port=3307) + persist runningLines & ports in services.json
 ```
 
-- **Separazione su Disco ([`db/services/data.rs:28-55`](file:///d:/Projects/atollo/tauri/src/db/services/data.rs#L28-L55))**: `db_root_for(root, DbKind::Mariadb, line)` risolve `data/db/mariadb/<line>` (con migrazione automatica di un eventuale `data/db/mariadb/data` legacy nella sottocartella della linea predefinita).
-- **Allocazione Porte ([`db/services/mod.rs:188-222`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs#L188-L222))**: la linea predefinita usa `cfg.mariadb_port` (`3306`); ogni linea secondaria ottiene la prima porta libera a partire da `3307` (`next_mariadb_port`), salvata in `services.json` sotto `ports: BTreeMap<String, u16>`.
-- **Iniezione `DB_PORT` nei Progetti ([`projects/run.rs:301-334`](file:///d:/Projects/atollo/tauri/src/projects/run.rs#L301-L334))**: quando un progetto ha scelto una linea MariaDB in `data/projects/<p>/private/db.json` (`lines.mariadb`), `Runner` risolve la porta tramite `Services::mariadb_port_for_line` e inietta `DB_PORT` e `ATOLLO_MARIADB_PORT` nell'ambiente del processo, a meno che il file `.env` del progetto non specifichi già una `DB_PORT` diversa da `3306` (commit `3e7986f`).
+- **Separazione su Disco ([`db/services/data.rs:28-55`](file:///d:/Projects/atollo/tauri/src/db/services/data.rs#L28-L55))**: `db_root_for(root, DbKind::Mysql, line)` risolve `data/db/mysql/<line>`, una cartella dati separata per ogni linea.
+- **Allocazione Porte ([`db/services/mod.rs:188-222`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs#L188-L222))**: la linea predefinita usa `cfg.mysql_port` (`3306`); ogni linea secondaria ottiene la prima porta libera a partire da `3307` (`next_mysql_port`), salvata in `services.json` sotto `ports: BTreeMap<String, u16>`.
+- **Iniezione `DB_PORT` nei Progetti ([`projects/run.rs:301-334`](file:///d:/Projects/atollo/tauri/src/projects/run.rs#L301-L334))**: quando un progetto ha scelto una linea MySQL in `data/projects/<p>/private/db.json` (`lines.mysql`), `Runner` risolve la porta tramite `Services::mysql_port_for_line` e inietta `DB_PORT` e `ATOLLO_MYSQL_PORT` nell'ambiente del processo, a meno che il file `.env` del progetto non specifichi già una `DB_PORT` diversa da `3306` (commit `3e7986f`).
 - **Punti Critici Individuati nell'Audit `v4`**:
   - Assenza di lock di serializzazione in `Services` su `services.json` e `start_line` (`BUG-V4-04`).
-  - Scambio silenzioso delle porte (`port swap`) quando l'utente cambia la linea predefinita di MariaDB in `Versions`, perché `keep_port` omette di salvare la porta della linea primaria in `services.json` (`BUG-V4-05`).
+  - Scambio silenzioso delle porte (`port swap`) quando l'utente cambia la linea predefinita di MySQL in `Versions`, perché `keep_port` omette di salvare la porta della linea primaria in `services.json` (`BUG-V4-05`).
 
 ### 2.3 Ciclo di Vita dei Pool Web Condivisi (`D-101`, [`tauri/src/servers/mod.rs`](file:///d:/Projects/atollo/tauri/src/servers/mod.rs))
 

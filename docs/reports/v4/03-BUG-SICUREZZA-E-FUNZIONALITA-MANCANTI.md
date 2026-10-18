@@ -98,19 +98,19 @@
 ### `BUG-V4-03` [MEDIA] — Assenza di validazione incrociata delle porte tra Pool Web, Progetti, Editor (`7000..=7099`) e Database + `php.ini` condiviso
 - **File e Righe**: [`tauri/src/servers/mod.rs:1043-1072`](file:///d:/Projects/atollo/tauri/src/servers/mod.rs#L1043-L1072), [`tauri/src/projects/run.rs:420-445`](file:///d:/Projects/atollo/tauri/src/projects/run.rs#L420-L445), [`tauri/src/db/services/mod.rs:739-807`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs#L739-L807).
 - **Analisi Tecnica**:
-  - `WebServers::save_profile` controlla le collisioni solo contro gli altri profili di `servers.json`, permettendo di salvare una porta già assegnata a MariaDB (`3306`/`3307`), MongoDB (`27017`), range VSCodium (`7000..=7099`) o a un progetto. Analogamente `Runner::set_port` e `Services::set_ports` non verificano i pool web.
+  - `WebServers::save_profile` controlla le collisioni solo contro gli altri profili di `servers.json`, permettendo di salvare una porta già assegnata a MySQL (`3306`/`3307`), MongoDB (`27017`), range VSCodium (`7000..=7099`) o a un progetto. Analogamente `Runner::set_port` e `Services::set_ports` non verificano i pool web.
   - Inoltre tutte le linee PHP (`8.2`, `8.3`, `8.4`, `8.5`) condividono un unico `data/php/php.ini` anziché `data/php/<line>/php.ini` (con fallback a `data/php/php.ini`), per cui `extension_dir` o estensioni specifiche di una linea rompono le altre linee nei pool multi-PHP.
 
 ---
 
 ### `BUG-V4-04` [ALTA] — Race Condition su `services.json` e avvii concorrenti in `Services::start_line`
 - **File e Righe**: [`tauri/src/db/services/mod.rs:150-169, 500-564, 739-807`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs#L500-L564).
-- **Analisi Tecnica**: a differenza di `WebServers` (che usa `op_lock` e `settings_lock`) e di `db.json` (che usa `db_json_lock` introdotto in `0e5e0e8`), la struct `Services` non possiede alcun mutex per serializzare le transizioni di avvio/arresto (`start_line`, `stop_line`) e i cicli read-modify-write su `data/app/db/services.json` (`remember_running`, `forget_running`, `keep_port`, `set_ports`). Se due progetti che richiedono MariaDB vengono avviati contemporaneamente, entrambi vedono `running_at == false`, allocano porte diverse o lanciano due processi `mariadbd` sulla stessa directory `data/db/mariadb/<line>` ed effettuano sovrascritture perse su `services.json`.
+- **Analisi Tecnica**: a differenza di `WebServers` (che usa `op_lock` e `settings_lock`) e di `db.json` (che usa `db_json_lock` introdotto in `0e5e0e8`), la struct `Services` non possiede alcun mutex per serializzare le transizioni di avvio/arresto (`start_line`, `stop_line`) e i cicli read-modify-write su `data/app/db/services.json` (`remember_running`, `forget_running`, `keep_port`, `set_ports`). Se due progetti che richiedono MySQL vengono avviati contemporaneamente, entrambi vedono `running_at == false`, allocano porte diverse o lanciano due processi `mysqld` sulla stessa directory `data/db/mysql/<line>` ed effettuano sovrascritture perse su `services.json`.
 - **Patch Proposta**: aggiungere `op_lock: Mutex<()>` e `cfg_lock: Mutex<()>` nella struct `Services`.
 
 ---
 
-### `BUG-V4-05` [ALTA] — Scambio silenzioso delle porte MariaDB (`Port Swap`) quando cambia la linea predefinita
+### `BUG-V4-05` [ALTA] — Scambio silenzioso delle porte MySQL (`Port Swap`) quando cambia la linea predefinita
 - **File e Righe**: [`tauri/src/db/services/mod.rs:188-222, 538-547, 788-807`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs#L188-L222).
 - **Analisi Tecnica**:
   - In `start_line` (riga 539), `keep_port` salva la porta in `services.json` (`cfg.ports`) **solo** quando `line != default_line`:
@@ -119,27 +119,27 @@
         Self::keep_port(root, l, port);
     }
     ```
-  - E in `line_ports` (riga 199), la linea che coincide con `default_line` riceve sempre `cfg.mariadb_port` (`3306`), ignorando `cfg.ports`.
-  - **Scenario di corruzione**: il Progetto A usa MariaDB `11.4` (default, porta `3306`) e il Progetto B usa MariaDB `10.11` (secondaria, porta `3307`). Se l'utente imposta `10.11` come linea predefinita nella pagina *Versioni*, `line_ports` assegna `3306` a `10.11` e sposta `11.4` su `3307` (o `3308`), rompendo tutte le stringhe di connessione salvate nei `.env` dei progetti!
-- **Patch Proposta**: salvare sempre in `cfg.ports` la porta effettiva di ogni linea avviata (inclusa la prima linea su `3306`) e in `line_ports` rispettare sempre `cfg.ports.get(&line)` se presente, usando `cfg.mariadb_port` (`3306`) come default solo per la prima linea che non ha ancora una porta registrata in `cfg.ports`.
+  - E in `line_ports` (riga 199), la linea che coincide con `default_line` riceve sempre `cfg.mysql_port` (`3306`), ignorando `cfg.ports`.
+  - **Scenario di corruzione**: il Progetto A usa MySQL `9.7` (default, porta `3306`) e il Progetto B usa MySQL `8.4` (secondaria, porta `3307`). Se l'utente imposta `8.4` come linea predefinita nella pagina *Versioni*, `line_ports` assegna `3306` a `8.4` e sposta `9.7` su `3307` (o `3308`), rompendo tutte le stringhe di connessione salvate nei `.env` dei progetti!
+- **Patch Proposta**: salvare sempre in `cfg.ports` la porta effettiva di ogni linea avviata (inclusa la prima linea su `3306`) e in `line_ports` rispettare sempre `cfg.ports.get(&line)` se presente, usando `cfg.mysql_port` (`3306`) come default solo per la prima linea che non ha ancora una porta registrata in `cfg.ports`.
 
 ---
 
 ### `BUG-V4-06` [MEDIA] — `ProjectDrops::drop_db` elimina il DB del progetto solo sulla linea attualmente selezionata
 - **File e Righe**: [`tauri/src/db/services/mod.rs:834-839`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs#L834-L839).
-- **Analisi Tecnica**: quando un progetto viene eliminato (o quando si cambia linea DB del progetto), `drop_db` interroga solo `project_db_line(root, project, DbKind::Mariadb)`. Se il progetto aveva precedentemente creato un DB su un'altra linea MariaDB, quel database e il relativo utente SQL restano orfani.
+- **Analisi Tecnica**: quando un progetto viene eliminato (o quando si cambia linea DB del progetto), `drop_db` interroga solo `project_db_line(root, project, DbKind::Mysql)`. Se il progetto aveva precedentemente creato un DB su un'altra linea MySQL, quel database e il relativo utente SQL restano orfani.
 
 ---
 
-### `BUG-V4-07` [MEDIA] — Browser Database (`db/browse.rs`) e Adminer (`db/adminer.rs`) interrogano solo la linea MariaDB primaria (`None`)
+### `BUG-V4-07` [MEDIA] — Browser Database (`db/browse.rs`) e Adminer (`db/adminer.rs`) interrogano solo la linea MySQL primaria (`None`)
 - **File e Righe**: [`tauri/src/db/browse.rs:148-181`](file:///d:/Projects/atollo/tauri/src/db/browse.rs#L148-L181), [`tauri/src/db/services/mod.rs:657-670`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs#L657-L670).
-- **Analisi Tecnica**: `browse::list_databases`, `list_tables`, `query_table` e `Services::adminer_url` passano sempre `None` come linea a `running_port(root, DbKind::Mariadb)` / `ensure_running`. Se l'utente ha avviato solo una linea secondaria di MariaDB (es. `10.11` sulla porta `3307`) mentre la primaria è ferma, il Database Browser mostra MariaDB come spento o avvia forzosamente la linea primaria invece di ispezionare la linea attiva.
+- **Analisi Tecnica**: `browse::list_databases`, `list_tables`, `query_table` e `Services::adminer_url` passano sempre `None` come linea a `running_port(root, DbKind::Mysql)` / `ensure_running`. Se l'utente ha avviato solo una linea secondaria di MySQL (es. `8.4` sulla porta `3307`) mentre la primaria è ferma, il Database Browser mostra MySQL come spento o avvia forzosamente la linea primaria invece di ispezionare la linea attiva.
 
 ---
 
 ### `BUG-V4-08` [BASSA] — Collisione del file temporaneo `<exe>-<pid>.cnf` tra thread concorrenti in `db/services/tools.rs`
 - **File e Righe**: [`tauri/src/db/services/tools.rs:115, 139`](file:///d:/Projects/atollo/tauri/src/db/services/tools.rs#L115).
-- **Analisi Tecnica**: `write_client_cnf` genera il nome file temporaneo con `format!("{}-{}.cnf", stem, std::process::id())`. Poiché tutti i worker thread del processo Tauri condividono lo stesso PID, due query concorrenti (es. poll di stato + browser DB) sovrascrivono e cancellano lo stesso file `.cnf` mentre il processo figlio `mariadb` lo sta leggendo.
+- **Analisi Tecnica**: `write_client_cnf` genera il nome file temporaneo con `format!("{}-{}.cnf", stem, std::process::id())`. Poiché tutti i worker thread del processo Tauri condividono lo stesso PID, due query concorrenti (es. poll di stato + browser DB) sovrascrivono e cancellano lo stesso file `.cnf` mentre il processo figlio `mysql` lo sta leggendo.
 - **Patch Proposta**: aggiungere un contatore atomico `static CNF_SEQ: AtomicU64 = AtomicU64::new(0);` nel nome del file: `format!("{}-{}-{}.cnf", stem, std::process::id(), CNF_SEQ.fetch_add(1, Ordering::Relaxed))`.
 
 ---
@@ -194,11 +194,11 @@ I dettagli architetturali completi e le patch per i rilievi `PORT-V4-01..08` son
 
 | ID | Severità | File Coinvolti | Descrizione Tecnica Sintetica |
 |---|:---:|---|---|
-| **`PORT-V4-01`** | **CRITICA** | [`tauri/src/net/archive.rs:597-599`](file:///d:/Projects/atollo/tauri/src/net/archive.rs#L597-L599) | `copy_tree` salta tutti i symlink (`if kind.is_symlink() { continue; }`) quando `same_volume` è `false` (sempre vero su Linux `/tmp` → disco e su USB), distruggendo i binari di `python`, `node`, `cc`, `tinytex`, `mariadb`. |
+| **`PORT-V4-01`** | **CRITICA** | [`tauri/src/net/archive.rs:597-599`](file:///d:/Projects/atollo/tauri/src/net/archive.rs#L597-L599) | `copy_tree` salta tutti i symlink (`if kind.is_symlink() { continue; }`) quando `same_volume` è `false` (sempre vero su Linux `/tmp` → disco e su USB), distruggendo i binari di `python`, `node`, `cc`, `tinytex`, `mysql`. |
 | **`PORT-V4-02`** | **CRITICA** | [`tauri/src/agents/relocate.rs:123-140, 389-435, 461`](file:///d:/Projects/atollo/tauri/src/agents/relocate.rs#L461) | `relocate.rs` cerca `"old-root.txt"` anziché `"old-root-{darwin,linux}.txt"`, corrompe il case del primo carattere dei path Unix (`/home` → `/Home`) e usa backslash letterali in `targets()`. |
 | **`PORT-V4-03`** | **CRITICA** | [`tauri/src/setup/kit_files.rs:21-35`](file:///d:/Projects/atollo/tauri/src/setup/kit_files.rs#L21-L35), [`runtime/bin/agy:5`](file:///d:/Projects/atollo/runtime/bin/agy#L5), [`runtime/bashrc:26,42,51`](file:///d:/Projects/atollo/runtime/bashrc#L26) | `kit_files.rs` scrive un file letterale `"bin\\agy"` senza `chmod 0o755` su Unix; `runtime/bin/agy` invoca `agy.exe`; `runtime/bashrc` usa `${var,,}` che crasha su `/bin/bash` 3.2 di macOS. |
 | **`PORT-V4-04`** | **CRITICA** | [`tauri/src/editor/mod.rs:258-261`](file:///d:/Projects/atollo/tauri/src/editor/mod.rs#L258-L261), [`editor/ext.rs:140, 504`](file:///d:/Projects/atollo/tauri/src/editor/ext.rs#L140), [`editor/cfg.rs:108, 127`](file:///d:/Projects/atollo/tauri/src/editor/cfg.rs#L108) | VSCodium Server hardcoda `node.exe`, `r"out\server-main.js"`, `r"vscodium-server\..."` e popola solo `terminal.integrated.profiles.windows`. |
-| **`PORT-V4-05`** | **ALTA** | [`tauri/src/db/services/*`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs), [`db/adminer.rs:119`](file:///d:/Projects/atollo/tauri/src/db/adminer.rs#L119) | `db/*` hardcoda `.exe` (`mariadbd.exe`, `mariadb.exe`, `mongod.exe`, `mongosh.exe`), `r"mongosh\bin"` e chiama `kit_path(root, "php/php.exe")` con `/` che non matcha `translate_rel` (`r"php\php.exe"`). |
+| **`PORT-V4-05`** | **ALTA** | [`tauri/src/db/services/*`](file:///d:/Projects/atollo/tauri/src/db/services/mod.rs), [`db/adminer.rs:119`](file:///d:/Projects/atollo/tauri/src/db/adminer.rs#L119) | `db/*` hardcoda `.exe` (`mysqld.exe`, `mysql.exe`, `mongod.exe`, `mongosh.exe`), `r"mongosh\bin"` e chiama `kit_path(root, "php/php.exe")` con `/` che non matcha `translate_rel` (`r"php\php.exe"`). |
 | **`PORT-V4-06`** | **ALTA** | [`agents/mod.rs`](file:///d:/Projects/atollo/tauri/src/agents/mod.rs#L70), [`agents/sync/mod.rs`](file:///d:/Projects/atollo/tauri/src/agents/sync/mod.rs#L62), [`projects/apache.rs`](file:///d:/Projects/atollo/tauri/src/projects/apache.rs#L33), [`detect/python.rs`](file:///d:/Projects/atollo/tauri/src/detect/python.rs#L33) | Backslash letterali residui nei join di path per Claude/Codex/Antigravity, Apache, runner framework e venv Python. |
 | **`PORT-V4-07`** | **MEDIA** | [`catalog/components.json:23-24`](file:///d:/Projects/atollo/tauri/catalog/components.json#L23-L24), [`install/lang/julia.rs`](file:///d:/Projects/atollo/tauri/src/install/lang/julia.rs#L18), [`install/lang/js.rs`](file:///d:/Projects/atollo/tauri/src/install/lang/js.rs#L16), [`setup/runner.rs:138`](file:///d:/Projects/atollo/tauri/src/setup/runner.rs#L138) | `Julia` e `Bun` falliscono su `win32-arm64` perché privi di `x64Only: true`; `RunLock` su Unix è solo in-process (serve `flock`); `vcruntime` segnalato mancante su Unix; pin `tauri = "=2.12.0"` vs `2.12.1`. |
-| **`PORT-V4-08`** | **MEDIA** | [`install/cli.rs`](file:///d:/Projects/atollo/tauri/src/install/cli.rs), [`install/lang/r.rs`](file:///d:/Projects/atollo/tauri/src/install/lang/r.rs), [`catalog/components.json`](file:///d:/Projects/atollo/tauri/catalog/components.json) | Rilocazione offline Conda per `git` e `r` su Unix (sostituendo `.reinstall`), sblocco di `php`, `apache`, `nginx`, `adminer` su macOS/Linux e `mariadb` su macOS via `conda-forge` / `static-php-cli`. |
+| **`PORT-V4-08`** | **MEDIA** | [`install/cli.rs`](file:///d:/Projects/atollo/tauri/src/install/cli.rs), [`install/lang/r.rs`](file:///d:/Projects/atollo/tauri/src/install/lang/r.rs), [`catalog/components.json`](file:///d:/Projects/atollo/tauri/catalog/components.json) | Rilocazione offline Conda per `git` e `r` su Unix (sostituendo `.reinstall`), sblocco di `php`, `apache`, `nginx`, `adminer` su macOS/Linux via `conda-forge` / `static-php-cli`. |
