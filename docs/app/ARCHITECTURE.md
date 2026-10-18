@@ -1,6 +1,24 @@
 # Architettura del codice
 
-Com'è organizzato il codice di Dev-Kit e dove va una modifica nuova. Il perché delle scelte è in [DECISIONS.md](DECISIONS.md), il piano e i requisiti in [PLAN.md](PLAN.md), le prove in [TESTING.md](TESTING.md).
+Com'è organizzato il codice di Dev-Kit e dove va una modifica nuova. Il perché delle scelte è in [DECISIONS.md](DECISIONS.md), l'uso in [GUIDA.md](GUIDA.md), le novità in [CHANGELOG.md](CHANGELOG.md), le prove in [TESTING.md](TESTING.md). Il lavoro aperto sta nelle [issue di GitHub](https://github.com/nabre/dev-kit2/issues).
+
+## Requisiti
+
+Dal prompt iniziale (13-14/10/2026), validi per ogni modifica; ognuno ha una prova o una voce della checklist di TESTING.md.
+
+1. **Nessuna installazione**: un solo eseguibile (su macOS il bundle `.app`, su Linux l'AppImage), nessun installer, servizio o attività pianificata.
+2. **Nessun diritto di amministratore** (manifesto `asInvoker` su Windows).
+3. **Nessuna scrittura fuori dal kit**: niente registro, `PATH` di sistema, `%APPDATA%`, `%LOCALAPPDATA%` o `%TEMP%` reali; le sole eccezioni sono quelle dichiarate nel README (D-41, D-70, D-90, D-115).
+4. **Percorsi relativi alla radice del kit**, che funziona da qualsiasi cartella (spazi, parentesi, `&`) e dopo uno spostamento (rilocazione all'avvio).
+5. **WebView nel kit**: WebView2 di sistema o fisso in `data\apps\…\webview2\`, mai il bootstrapper; dati della WebView in `data\webview2\` (su macOS restano in `~/Library/WebKit`, traccia dichiarata).
+6. **Ambiente sempre del kit**: ogni processo avviato riceve l'ambiente di `env.rs`, mai il `PATH` dell'utente senza filtro.
+7. **Una sola istanza per kit**, con l'avviso delle altre copie aperte.
+8. **Nessun processo orfano**, anche se l'app viene chiusa a forza (Job Object su Windows, gruppi e guardiano su macOS e Linux: D-07, D-105).
+9. **Sicurezza**: comandi Tauri solo per la finestra `main`, finestre dell'editor senza IPC, CSP stretta; server solo su `127.0.0.1` con un token; argomenti a vettore, mai una riga per la shell; nomi validati; download con checksum o firma; segreti mai nei log.
+
+## Avvio
+
+`main.rs`: riga di comando letta → radice del kit → creazione di `data\`, controllo di scrittura, spostamento del kit (`root.txt`) → log, pulizia della copia vecchia dell'exe, versione dell'app → impostazioni → ambiente del kit, applicato al processo → file in `data\kit\` → se c'è un comando, lo esegue ed esce → istanza singola (D-08) → migrazione dei dati dei progetti e pulizia del temp → WebView2 (o WebKitGTK su Linux) → Job Object, o guardiano su macOS e Linux → finestra `main` → installazione degli obbligatori e dell'editor mancanti; in background accesso di Antigravity in sospeso, allineamento degli agenti, sorvegliante degli agenti; controllo degli aggiornamenti dopo 20 s.
 
 ## Repository
 
@@ -18,7 +36,7 @@ tauri\
 ui\src\                       interfaccia React + TypeScript (sotto)
 test\rust\  test\ui\          prove, con la stessa struttura di tauri\src e ui\src
 runtime\                      file scritti in data\kit\ (profile.ps1, loopback.js, phpmyadmin.php, bin\…)
-docs\app\                     piano, decisioni, architettura, catalogo, prove, novità; PROMPT.md (il prompt iniziale)
+docs\app\                     decisioni, architettura, catalogo, prove, novità, guida
 docs\brand\                   logo, temi, script che li generano; brand.png (la tavola del brand)
 docs\reports\                 rapporti di analisi v1-v4
 ```
@@ -31,7 +49,7 @@ Un solo binario, `Dev-Kit.exe`: la finestra (Tauri 2) e la riga di comando (`cli
 
 | Livello | Moduli | Cosa fanno |
 | --- | --- | --- |
-| Avvio | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | ordine di avvio (PLAN.md §3), riga di comando, istanza singola, WebView2 |
+| Avvio | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | ordine di avvio («Avvio», sopra), riga di comando, istanza singola, WebView2 |
 | Comandi | `commands\` | l'unico ingresso dell'interfaccia: controllano la finestra, traducono gli errori, chiamano il dominio |
 | Dominio | le cartelle per area (sotto) | componenti, versioni, progetti, editor e console, agenti, database, server web, GitHub |
 | Infrastruttura | `kit.rs`, `fsx.rs`, `env.rs`, `settings.rs`, `log.rs`, `i18n.rs`, `net\`, `os\`, `router\` | percorsi del kit, file, ambiente, impostazioni, log, lingue, rete e controlli, processi, sistemi operativi di destinazione |
@@ -50,7 +68,7 @@ tauri\src\
     runner  task              piano e passi di una preparazione; la preparazione avviata dalla finestra
     checkup  downloads        verifica finale (D-39); file scaricati a mano (D-82)
     kit_files  self_update    file scritti in data\kit\; nuova versione dell'exe
-  install\                    un installatore per famiglia: core, agents, web, native, editor, db, android
+  install\                    un installatore per famiglia: core, agents, web, caddy, native, editor, db, android
     lang\                     un file per linguaggio o famiglia: go, jvm, dotnet, dart, zig, julia,
                               js (Bun, Deno), typeset (Typst, TinyTeX), cc (CMake, C/C++), ruby
   versions\                   versioni salvate (D-80)
@@ -65,12 +83,15 @@ tauri\src\
     settings  mcp  vscode     dev-settings.json (D-63), server MCP, .vscode\settings.json (D-78)
     run  serve  apache        azioni avviate e porte (D-50); server di file (D-51); Apache del progetto
     nginx                     Nginx del progetto
+    caddy  fastcgi            Caddy del progetto e testo dei Caddyfile, admin su socket (D-111); php-cgi e php-fpm
     frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner
   detect\                     tipo, linguaggi e azioni di un progetto
   editor\                     editor e console
     mod  window               server web di VSCodium; finestre editor-<n> (D-69)
     cfg  ext  theme           impostazioni e profili del terminale; estensioni (D-71); tema NEXKORA
+    picker                    selettori di file e cartelle (D-109)
     terminal                  console del kit: console classica di Windows (D-57, D-95)
+    pty                       terminale nell'app su macOS e Linux, sessioni PTY per xterm.js (D-109)
     terminals                 pagina Terminali: console salvate in data\app\terminals.json, con strumenti e versioni propri
   servers\                    pagina Server web: pool Apache/Nginx condivisi dai progetti
     mod                       tipi, elenco della pagina (con cache), WebServers
@@ -79,10 +100,13 @@ tauri\src\
   agents\                     agenti: stato, avvio, uscita, sorvegliante
     sync\                     istruzioni, skill, MCP, regole, cartelle attendibili
     stats\                    limiti d'uso e consumi (D-61)
-    keyring  relocate         accesso di Antigravity; percorsi riscritti dopo uno spostamento
+    keyring  relocate         accesso di Antigravity (D-115); percorsi riscritti dopo uno spostamento
+    claude_token              token di Claude Code su macOS (D-115)
   db\                         database
+    engine                    DbEngine: MySQL, MariaDB, MongoDB (D-110)
     services\                 server del kit (D-73): mod (impostazioni, avvio, arresto), data (cartelle per
-                              versione), access (password e database dei progetti), backups (D-78), tools
+                              versione), access (password e database dei progetti), backups (D-78), tools,
+                              mysql (inizializzazione, my.cnf, libaio: D-110)
     auth  browse  phpmyadmin  password e .env (D-74); contenuto in sola lettura (D-79); phpMyAdmin (D-107)
   github\                     account GitHub del kit (D-70): mod (accesso, helper di Git), repos (elenco, clone,
                               rinomina, eliminazione)
@@ -91,9 +115,11 @@ tauri\src\
   os\                         Windows e processi: jobs (Job Object, D-07), processes, sessions («Rimuovi
                               l'unità», altre copie), instance (D-08), webview (D-05), safe_path (D-77),
                               temp (TempWork, pulizia: file di passaggio nel temp del sistema, D-90),
-                              volume (file system e tipo di disco, spazio libero, stesso disco)
+                              volume (file system e tipo di disco, spazio libero, stesso disco, noexec),
+                              guard (guardiano dei processi su macOS e Linux, D-105)
   router\                     destinazioni (Windows, macOS, Linux × x64, ARM64): target, bins (programmi e lanciatori
                               per sistema), probe (cosa c'è su disco, salute), fs (file privati ed eseguibili), bootstrap
+                              (preparazione per un altro sistema, D-114)
 ```
 
 ### Dati del kit (`data\`)

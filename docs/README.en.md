@@ -6,7 +6,7 @@
 
 On first start the app downloads the system components by itself: PowerShell 7, GitHub CLI, the editor and what they need (Git for GitHub CLI). Everything else is chosen on the "Tools" page, or arrives when needed: Node.js with an `npm` action, uv with a `uvx` MCP server, and so on.
 
-> Status and plan (in Italian): [app/PLAN.md](app/PLAN.md), changes: [app/CHANGELOG.md](app/CHANGELOG.md).
+> In Italian: guide [app/GUIDA.md](app/GUIDA.md), decisions [app/DECISIONS.md](app/DECISIONS.md), changes [app/CHANGELOG.md](app/CHANGELOG.md); open work: [issues](https://github.com/nabre/dev-kit2/issues).
 
 ## How to use it
 
@@ -31,7 +31,7 @@ Atollo's console is the classic Windows console with integrated PowerShell 7 and
 
 ## Known limits
 
-- On Windows 10 and 11 (`x64` and `ARM64`), on ARM64 the editor, PHP, Apache and TinyTeX run under x64 emulation; R is not available (multi-platform details in [app/MATRICE-PIATTAFORME.html](app/MATRICE-PIATTAFORME.html)).
+- On Windows 10 and 11 (`x64` and `ARM64`), macOS (Apple Silicon and Intel) and Linux (`x64` and `ARM64`). On Windows ARM64 the editor, PHP, Apache, MySQL and TinyTeX run under x64 emulation and R is not available; on Linux ARM64 Android is missing. macOS and Linux have no releases yet ([#5](https://github.com/nabre/dev-kit2/issues/5)) and the agents' sign-in still has to be tried on a Mac ([#6](https://github.com/nabre/dev-kit2/issues/6)); components and sources per system in [app/CATALOG.md](app/CATALOG.md) (in Italian).
 - Outside the Atollo folder there are only Windows' own traces, transient temporary files in the system temp folder (automatically removed on exit), GitHub CLI's sign-in in the Credential Manager if you sign in from a console with `gh auth login` (the one made in Settings stays in `data\gh`) and Antigravity's while `agy` is open (for the session only).
 - The folders in `projects\` are trusted by Claude Code and Codex: open only projects you trust. The editor instead asks the first time it opens each project and opens the ones you don't trust in "Restricted Mode".
 - The agents' usage limits come from undocumented interfaces of the providers and may stop working after one of their updates.
