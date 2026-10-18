@@ -20,16 +20,14 @@
 
 ## Solo MySQL (18/10/2026)
 
-MySQL è l'unico server SQL di Atollo, su ogni sistema (D-117, [#3](https://github.com/nabre/atollo/issues/3)). MariaDB non si propone e non si installa più.
+MySQL è l'unico server SQL di Atollo, su ogni sistema (D-117, [#3](https://github.com/nabre/atollo/issues/3)): tutto ciò che chiede un database SQL usa MySQL.
 
-- **I dati di MariaDB passano da soli a MySQL** al primo avvio: ogni versione di MariaDB va in una versione di MySQL (12.3 → 9.7, 11.4 → 8.4), sulla stessa porta, con gli stessi database, utenti e password dei progetti; i siti WordPress e Laravel continuano a funzionare senza toccare le loro `.env`. Ogni database viene controllato (tabelle, viste, routine, trigger, eventi, righe) prima del passaggio. Se qualcosa non va, MariaDB resta com'era e la pagina Database mostra l'errore, la copia salvata e «Riprova»; una migrazione interrotta riprende all'avvio dopo. Dopo il passaggio i dati di MariaDB restano in `data/db/mariadb.pre-mysql` finché non li elimini dalla pagina Database («Dati MariaDB conservati (N MB): Elimina»); i programmi di MariaDB vanno.
 - **phpMyAdmin** apre MySQL e c'è sui sei sistemi, macOS e Linux ARM64 compresi.
 - **Nuovo progetto**: WordPress, TYPO3, Drupal e l'aggiunta «MySQL» di Laravel creano il database su MySQL.
-- **Rilevamento**: immagini `mysql` e `mariadb` di Docker Compose, driver MySQL/MariaDB e CMS chiedono MySQL; un `.env` con `DB_CONNECTION=mariadb` riceve un avviso (meglio `mysql`).
-- **Sicurezza**: ogni database si ripristina in MySQL con un account che raggiunge solo quel database, mai come `root`, e la lettura delle copie si ferma invece di indovinare dove finisce una stringa (revisione di sicurezza).
+- **Rilevamento**: le immagini Docker di un server SQL, i driver MySQL e i CMS chiedono MySQL; un `.env` di Laravel con un driver che MySQL non regge del tutto riceve un avviso (meglio `mysql`).
 - Su Linux MySQL vuole `libaio1t64` e `libnuma1` (Ubuntu 24.04): il README lo dice.
 
-**Verificato**: su Windows 737 test Rust e 134 test dell'interfaccia, lint e clippy puliti, clippy incrociato per macOS Apple Silicon pulito; in WSL2 (Ubuntu 24.04) 729 test superati; la prova reale `real_mariadb_to_mysql` su Windows con MariaDB 12.3.3 e 11.4.13 e MySQL 9.7.2 e 8.4.11, interruzione compresa. La migrazione reale non è ancora stata provata su Linux.
+**Verificato**: su Windows 737 test Rust e 134 test dell'interfaccia, lint e clippy puliti, clippy incrociato per macOS Apple Silicon pulito; in WSL2 (Ubuntu 24.04) 729 test superati.
 
 ## macOS e Linux (18/10/2026)
 
@@ -52,7 +50,7 @@ L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le pr
 
 **Server web e database**
 - **Caddy** è il server web dei pool e dei siti dei progetti su ogni sistema (D-111), con php-cgi su Windows e php-fpm su macOS e Linux. Apache resta su Windows per i progetti con regole proprie nel `.htaccess` (Drupal compreso).
-- **MySQL** 8.4 e 9.7 LTS al posto di MariaDB per i kit nuovi, sui sei sistemi (D-110), con le stesse porte, le password dei progetti e le copie. I kit che usano già MariaDB lo tengono fino alla migrazione.
+- **MySQL** 8.4 e 9.7 LTS sui sei sistemi (D-110), con le password dei progetti e le copie.
 
 **Accessi** (D-115)
 - **Antigravity** su macOS (Portachiavi) e Linux (Secret Service): l'accesso resta nel kit, come su Windows.
@@ -65,13 +63,13 @@ L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le pr
 - Accesso di Antigravity: se il Portachiavi o il Secret Service non rispondono non si sposta nulla; una copia in chiaro solo su Linux senza Secret Service e solo su un disco che tiene i permessi 600.
 - Token di Claude Code rifiutato su un disco senza permessi (exFAT, FAT).
 
-**Resta da fare**: i bisogni SQL verso MySQL e la migrazione da MariaDB ([#3](https://github.com/nabre/atollo/issues/3)); interfaccia di Caddy, Nginx da togliere, PHP su Unix ([#4](https://github.com/nabre/atollo/issues/4)); rilasci per macOS e Linux ([#5](https://github.com/nabre/atollo/issues/5)); accessi da provare su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); griglia componente × sistema in «Strumenti» ([#7](https://github.com/nabre/atollo/issues/7)); arretrato ([#8](https://github.com/nabre/atollo/issues/8)).
+**Resta da fare**: i bisogni SQL verso MySQL ([#3](https://github.com/nabre/atollo/issues/3)); interfaccia di Caddy, Nginx da togliere, PHP su Unix ([#4](https://github.com/nabre/atollo/issues/4)); rilasci per macOS e Linux ([#5](https://github.com/nabre/atollo/issues/5)); accessi da provare su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); griglia componente × sistema in «Strumenti» ([#7](https://github.com/nabre/atollo/issues/7)); arretrato ([#8](https://github.com/nabre/atollo/issues/8)).
 
 **Verificato**: su Windows 716 test Rust e 131 test dell'interfaccia, lint pulito, clippy pulito anche in modo incrociato sui quattro target Unix; in WSL2 708 test superati; CI verde su Windows x64 e ARM64, Linux x64 e ARM64, macOS Apple Silicon e Intel, con `.app` e AppImage costruiti e avviati (`ae42f65`). Installazioni reali in WSL: Git, Python, Ruby, MongoDB, SQLite, PHP, MySQL, Caddy con un pool di due siti.
 
 ## phpMyAdmin al posto di Adminer (17/10/2026)
 
-- **«Apri phpMyAdmin»** nella pagina di MariaDB sostituisce «Apri Adminer» (D-107): phpMyAdmin 5.2.3, già entrato come `root`, nella lingua dell'app. Al primo clic installa phpMyAdmin (circa 60 MB) e, se mancano, PHP e MariaDB; avvia MariaDB se è fermo. Funziona anche sulle altre versioni di MariaDB («phpMyAdmin su 11.4»).
+- **«Apri phpMyAdmin»** nella pagina di MySQL sostituisce «Apri Adminer» (D-107): phpMyAdmin 5.2.3, già entrato come `root`, nella lingua dell'app. Al primo clic installa phpMyAdmin (circa 60 MB) e, se mancano, PHP e MySQL; avvia MySQL se è fermo. Funziona anche sulle altre versioni di MySQL («phpMyAdmin su 8.4»).
 - Stessa protezione di Adminer: token monouso nell'indirizzo, che viene subito tolto, cookie `HttpOnly`, password di `root` solo nell'ambiente del server. Il router serve solo le pagine e i file pubblici di phpMyAdmin.
 - Importazione di file SQL fino a 512 MB.
 - **Adminer viene tolto**: all'avvio l'app cancella la sua cartella, il router, le sessioni e il log.
@@ -79,7 +77,7 @@ L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le pr
 **Correzione**
 - **Browser che non si apriva**: «Apri Adminer» avviava il server di PHP, ma la pagina non si apriva mai. Su Windows 11 `explorer.exe` ignora un indirizzo con `?…`. Ora gli indirizzi web passano da `rundll32 url.dll,FileProtocolHandler`, come già faceva l'editor; vale anche per gli indirizzi dei progetti, per GitHub e per i download a mano.
 
-**Verificato**: `cargo fmt --check`, clippy con `-D warnings`, 455 test Rust, ESLint, Prettier, `tsc`, 117 test dell'interfaccia; installazione reale e test reale su MariaDB 12.3 con PHP 8.5.
+**Verificato**: `cargo fmt --check`, clippy con `-D warnings`, 455 test Rust, ESLint, Prettier, `tsc`, 117 test dell'interfaccia; installazione reale e test reale sul server SQL del kit con PHP 8.5.
 
 ## Riordino di cartelle e file (17/10/2026)
 
@@ -120,18 +118,17 @@ Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../reports/v3/03-BUG-SI
 - Difetti dei pool (D-101): una linea non installata ferma l'avvio con un errore che la nomina (4); un pool acceso il cui id è cambiato resta in elenco per poterlo fermare (5, parziale); una porta per pool, anche nel ripiego e in un `servers.json` vecchio (6); un progetto entra nei pool una volta per sito (7); assegnare un progetto ricarica solo i suoi pool (8).
 
 **Database**
-- **Più versioni di MariaDB insieme** (D-102): la versione che il server usa tiene la sua porta (3306), le altre ne ricevono una propria, salvata al primo avvio. La pagina Database ha «Altre versioni» (stato, porta, avvia/ferma); la pagina del progetto «Versione del server», che crea database e utente sulla versione scelta. I dati non si spostano da soli.
-- **`DB_PORT`** nell'ambiente dei programmi del progetto, se il progetto ha un database MariaDB del kit e il suo `.env` non indica un'altra porta.
+- **Più versioni di MySQL insieme** (D-102): la versione che il server usa tiene la sua porta (3306), le altre ne ricevono una propria, salvata al primo avvio. La pagina Database ha «Altre versioni» (stato, porta, avvia/ferma); la pagina del progetto «Versione del server», che crea database e utente sulla versione scelta. I dati non si spostano da soli.
+- **`DB_PORT`** nell'ambiente dei programmi del progetto, se il progetto ha un database MySQL del kit e il suo `.env` non indica un'altra porta.
 - Le scritture di `db.json` di un progetto sono serializzate; la versione principale si cambia solo con nessuna versione accesa; un cambio di versione fallito lascia quella di prima.
 
 **Rilevamento dei progetti** (D-103)
-- CMS da archivio: PrestaShop, Drupal, Joomla e TYPO3 classico, con Apache e MariaDB.
+- CMS da archivio: PrestaShop, Drupal, Joomla e TYPO3 classico, con Apache e MySQL.
 - Laravel e Statamic con `.htaccess` nella cartella pubblica ricevono l'azione Apache; PHP semplice propone Apache accanto a `php -S`; `nginx.conf` o `.nginx` danno l'azione Nginx anche ai siti statici.
 - Compose (`compose.yaml`, `docker-compose.yml`…) e `FROM` di `Dockerfile`/`Containerfile` letti per nome esatto dell'immagine, con la linea dal tag (`php:7.4-apache` → PHP 7.4 e Apache).
-- Apache e Nginx contano fra i requisiti solo se sono l'azione predefinita o scritti in `panel.json`. Tolto il testo orfano «MariaDB non incluso nel kit».
+- Apache e Nginx contano fra i requisiti solo se sono l'azione predefinita o scritti in `panel.json`.
 
 **Installazione e piattaforme** (D-104, D-105)
-- **MariaDB** solo dove esiste una build: Windows (anche ARM64, in emulazione) e Linux x64, tarball `linux-systemd` (BUG-V3-04).
 - **C/C++ su macOS e Linux** usa l'ultimo rilascio di LLVM con l'archivio del sistema: macOS Intel resta su LLVM 20.1.7. La descrizione dice cosa serve sul PC (Xcode CLT; header della libc e `make`) (BUG-V3-05).
 - **Editor** con SHA-256 fissato per ogni sistema (BUG-V3-09).
 - **R su Windows**: `Makeconf` segue la cartella del kit a ogni avvio, così i pacchetti da sorgente si compilano dopo un cambio di lettera d'unità (BUG-V3-06, parte Windows).
@@ -142,7 +139,7 @@ Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../reports/v3/03-BUG-SI
 - Le quattro conferme sì/no nella pagina (uscita da un agente e da GitHub, ripristino di un database, «Applica» in Linguaggi e strumenti) sono `alertdialog` con il focus su «Annulla»; alla chiusura il focus torna al pulsante che le ha aperte.
 - Versioni del progetto: uno strumento mancante resta nella zona del progetto con il rimando a «Installa ciò che manca»; il testo nomina anche il server web.
 
-**Verificato**: 426 test Rust (3 ignorati), 107 test dell'interfaccia; fmt, clippy, ESLint, Prettier e build puliti su Windows. Il codice Unix è solo compilato (controllo incrociato per macOS e Linux). Da provare a mano: due versioni di MariaDB insieme, pool che si spengono e «Avvia con Atollo», `httpd -t`/`nginx -t` delle configurazioni nuove con `Host` estraneo, prove con `ATOLLO_TEST_KIT`, primo avvio reale su macOS e Linux ([TESTING.md](TESTING.md)).
+**Verificato**: 426 test Rust (3 ignorati), 107 test dell'interfaccia; fmt, clippy, ESLint, Prettier e build puliti su Windows. Il codice Unix è solo compilato (controllo incrociato per macOS e Linux). Da provare a mano: due versioni di MySQL insieme, pool che si spengono e «Avvia con Atollo», `httpd -t`/`nginx -t` delle configurazioni nuove con `Host` estraneo, prove con `ATOLLO_TEST_KIT`, primo avvio reale su macOS e Linux ([TESTING.md](TESTING.md)).
 
 ## Niente Windows Terminal (16/10/2026)
 
@@ -152,7 +149,7 @@ Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../reports/v3/03-BUG-SI
 
 ## CMS nel wizard dei progetti (16/10/2026)
 
-- **Nuove basi** nel wizard «Nuovo progetto»: WordPress (Bedrock), TYPO3, Drupal e Statamic, con database MariaDB del progetto, installazione completa e amministratore pronto (utente e password nel `.env`, D-93).
+- **Nuove basi** nel wizard «Nuovo progetto»: WordPress (Bedrock), TYPO3, Drupal e Statamic, con database MySQL del progetto, installazione completa e amministratore pronto (utente e password nel `.env`, D-93).
 - **Database chiesto dalla base**: una base può avere il suo server di database, come le aggiunte; il campo è anche nell'editor delle Impostazioni.
 - I comandi della creazione ricevono la connessione al database e le variabili del `.env` nell'ambiente, senza password nelle righe mostrate; `{password}` nel `.env` diventa una password nuova.
 - Un `.env` che Git prenderebbe si aggiunge al `.gitignore`.
@@ -240,7 +237,7 @@ Ciò che il kit tiene per un progetto sta in una cartella sola, e download ed es
 - **`data\projects\<progetto>\`** al posto di cinque posti: impostazioni, porte, configurazioni di Apache e Nginx, e in `private\` (solo il proprietario, protetta prima di scrivere) le password e le copie dei database. La migrazione parte da sola al primo avvio dell'app, si può ripetere e conserva `ports.json` e `secrets.json` in `data\app\pre-v2\`.
 - **Eliminare un progetto** toglie anche i suoi database e l'utente dai server, dopo una conferma che elenca cosa sparisce; «Elimina senza i database» se un server non risponde.
 - **Dati senza progetto**: una cartella di `data\projects\` il cui progetto è stato rinominato o tolto fuori dall'app compare nella pagina Progetti, con «Collega a…» ed «Elimina». Mai cancellata da sola.
-- **Database più sicuri.** Il nome del database si salva (prima si ricavava dal nome del progetto, e due progetti potevano contendersi lo stesso: eliminarne uno cancellava l'altro); nomi uguali rifiutati, nomi dei server riservati (`mysql`, `root`, `admin`…). Una copia `.sql` si ripristina come utente del progetto, non come `root`. Il `_` nel `GRANT` di MariaDB è escapato.
+- **Database più sicuri.** Il nome del database si salva (prima si ricavava dal nome del progetto, e due progetti potevano contendersi lo stesso: eliminarne uno cancellava l'altro); nomi uguali rifiutati, nomi dei server riservati (`mysql`, `root`, `admin`…). Una copia `.sql` si ripristina come utente del progetto, non come `root`. Il `_` nel `GRANT` di MySQL è escapato.
 - **Alias dei siti** (`/media` → `storage/uploads`, `/shared` → `@common/assets`) validati e risolti in un punto solo: niente `..`, nessun collegamento seguito, controllo anche al momento di scrivere la configurazione; con `@altro/cartella` funzionano per Apache, Nginx e i pool. Un alias saltato è detto nella pagina del sito.
 - **File di passaggio nel temp del sistema** (`<TEMP>\Atollo\<id>\`): download, estrazioni, framework in creazione, file scaricati a mano, caricamenti di Adminer. Un kit su FAT32/exFAT non ha più il limite di 4 GiB né la lentezza della chiavetta durante questi passi; il risultato si copia in `data\apps` accanto alla destinazione e si scambia in un colpo solo. Con meno di 4 GiB liberi nel temp o senza temp l'installazione ripiega su `data\tmp`, con un avviso nel log. Cartelle dimenticate da un'app chiusa male si tolgono all'avvio dopo 24 ore.
 - **Impostazioni › «Temporanei dei programmi»**: Automatico, Nel kit, Nel sistema (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`). Automatico sceglie secondo il disco: fisso NTFS/ReFS nel kit (con permessi); rimovibile, di rete, FAT32 o exFAT nel sistema. La pagina mostra file system e tipo del disco del kit.
@@ -300,14 +297,14 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 
 **Verificato**: 268 test Rust (4 nuovi per `fsx`), clippy e fmt puliti; tipi, ESLint, Prettier e 27 test dell'interfaccia.
 
-## Adminer per MariaDB, come phpMyAdmin (15/10/2026)
+## Adminer per MySQL, come phpMyAdmin (15/10/2026)
 
 **Fatto** (D-85)
-- **«Apri Adminer»** nella pagina di MariaDB: il database nel browser, come phpMyAdmin di EasyPHP e XAMPP (tabelle, righe da modificare, query SQL, importazione ed esportazione), già entrato come `root`. Al primo clic installa Adminer (1 MB, nuovo componente nel gruppo database) e avvia MariaDB se è fermo.
-- La pagina di MariaDB non ha più la scheda «Contenuto»: c'è Adminer. Resta per MongoDB.
-- Lo serve il PHP del kit solo su 127.0.0.1, con un token nuovo a ogni avvio: senza token nessuno entra, nemmeno gli altri utenti del PC. La password di `root` non passa dal browser. Si ferma con MariaDB o con l'app.
+- **«Apri Adminer»** nella pagina di MySQL: il database nel browser, come phpMyAdmin di EasyPHP e XAMPP (tabelle, righe da modificare, query SQL, importazione ed esportazione), già entrato come `root`. Al primo clic installa Adminer (1 MB, nuovo componente nel gruppo database) e avvia MySQL se è fermo.
+- La pagina di MySQL non ha più la scheda «Contenuto»: c'è Adminer. Resta per MongoDB.
+- Lo serve il PHP del kit solo su 127.0.0.1, con un token nuovo a ogni avvio: senza token nessuno entra, nemmeno gli altri utenti del PC. La password di `root` non passa dal browser. Si ferma con MySQL o con l'app.
 
-**Verificato**: 264 test Rust, clippy e fmt puliti; tipi, ESLint e 27 test dell'interfaccia. Installazione reale da GitHub (SHA-256 e controllo `php -l`: 6.1.2) e test reale con MariaDB 12.3 del kit: 403 senza token o con quello sbagliato, ingresso con il token, elenco dei database, server riusato, fermato con MariaDB. Da provare nell'app: il pulsante e il browser che si apre.
+**Verificato**: 264 test Rust, clippy e fmt puliti; tipi, ESLint e 27 test dell'interfaccia. Installazione reale da GitHub (SHA-256 e controllo `php -l`: 6.1.2) e test reale con il server SQL del kit: 403 senza token o con quello sbagliato, ingresso con il token, elenco dei database, server riusato, fermato con il server SQL. Da provare nell'app: il pulsante e il browser che si apre.
 
 ## SDK di Android nel kit e Capacitor (15/10/2026)
 
@@ -320,7 +317,7 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 ## Nuovo progetto da framework (15/10/2026)
 
 **Fatto** (D-83)
-- **Wizard «Nuovo progetto»** (icona sopra Progetti): una base (Laravel, Symfony, Vite, Next.js, Electron, Tauri, Android) e le aggiunte che vanno con lei: interfaccia (React, Vue, Svelte, Livewire), stili (Tailwind CSS, Bootstrap, Bulma), database (SQLite, MySQL/MariaDB, MongoDB), app desktop e Android con NativePHP, prove, formattazione, Vite per Symfony. Il kit installa gli strumenti che servono, esegue i comandi ufficiali mostrandone l'output, crea il database e scrive il `.env`, salva le azioni del progetto.
+- **Wizard «Nuovo progetto»** (icona sopra Progetti): una base (Laravel, Symfony, Vite, Next.js, Electron, Tauri, Android) e le aggiunte che vanno con lei: interfaccia (React, Vue, Svelte, Livewire), stili (Tailwind CSS, Bootstrap, Bulma), database (SQLite, MySQL, MongoDB), app desktop e Android con NativePHP, prove, formattazione, Vite per Symfony. Il kit installa gli strumenti che servono, esegue i comandi ufficiali mostrandone l'output, crea il database e scrive il `.env`, salva le azioni del progetto.
 - **Progetti esistenti**: si può riempire un progetto vuoto o uno con file ma senza Git (i file che ci sono restano).
 - **Impostazioni come Progetti**: sezioni e framework nella barra laterale, ogni voce in una scheda, ricerca; le istruzioni di ogni framework si modificano e si ripristinano.
 
@@ -360,10 +357,10 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 - **Typst di nuovo con più versioni** (le 0.x cambiano la sintassi; la matrice legge `typst.toml`), con l'elenco delle versioni da scaricare come Kotlin.
 - **pnpm e yarn alla versione del progetto**: pnpm 12 nativo usa da solo la versione di `packageManager`; yarn passa da corepack (Yarn 4 dove serve, la classica altrove). Corretto: con il vecchio installatore `pnpm.cmd` di pnpm 12 non partiva.
 - **R con più versioni**, ognuna con la sua libreria di pacchetti; l'ambiente nasce nella sua cartella finale; la matrice legge `renv.lock` e `DESCRIPTION`.
-- **MariaDB e MongoDB con più versioni**: nella pagina Database la versione del server (a server fermo); ogni versione ha i suoi dati, copiati in avanti dalla precedente al primo avvio (MongoDB una maggiore alla volta, con la FCV aggiornata); i dati esistenti passano nella cartella della loro versione. La matrice legge le immagini di `compose.yaml`.
+- **MySQL e MongoDB con più versioni**: nella pagina Database la versione del server (a server fermo); ogni versione ha i suoi dati, copiati in avanti dalla precedente al primo avvio (MongoDB una maggiore alla volta, con la FCV aggiornata); i dati esistenti passano nella cartella della loro versione. La matrice legge le immagini di `compose.yaml`.
 - **«locked»**: una versione usata da progetti ha il lucchetto con l'elenco dei progetti e non si rimuove; le altre hanno il cestino.
 
-**Verificato**: 239 test Rust (nuovi: intervalli di versione, matrice, versioni dei progetti, dati dei server per versione), clippy e fmt puliti; tipi, ESLint e 23 test dell'interfaccia; installazione di pnpm e yarn provata in una cartella di prova; anteprima nel browser. Da provare nell'app: la matrice su un kit reale con progetti, il primo avvio con i dati di MariaDB già presenti, R scaricato in due versioni.
+**Verificato**: 239 test Rust (nuovi: intervalli di versione, matrice, versioni dei progetti, dati dei server per versione), clippy e fmt puliti; tipi, ESLint e 23 test dell'interfaccia; installazione di pnpm e yarn provata in una cartella di prova; anteprima nel browser. Da provare nell'app: la matrice su un kit reale con progetti, il primo avvio con i dati di MySQL già presenti, R scaricato in due versioni.
 
 ## Una cartella per versione, Linguaggi e Strumenti separati (15/10/2026)
 
@@ -411,7 +408,7 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 - SQLite non compare più fra i server: non ne ha uno. Stato dei server con il pallino colorato.
 - **Pagina Agenti**: limiti del piano in riquadri con percentuale e azzeramento, consumi di oggi e della settimana in riquadri, nuova sezione «Accesso» con «Esci»; nella lista il limite più usato di ogni agente.
 
-**Verificato**: test Rust di `db_browse` e test reale su MariaDB e MongoDB del kit di sviluppo (albero, righe, nome malevolo rifiutato); 23 test dell'interfaccia; anteprima nel browser in tema chiaro e scuro.
+**Verificato**: test Rust di `db_browse` e test reale su MySQL e MongoDB del kit di sviluppo (albero, righe, nome malevolo rifiutato); 23 test dell'interfaccia; anteprima nel browser in tema chiaro e scuro.
 
 ## Editor per progetto e niente avvisi del Firewall (14/10/2026)
 
@@ -428,9 +425,9 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 - **Azioni modificabili** dalla pagina del progetto › Avanzate (D-78): nuova azione, modifica, predefinita, togli; con cartella, indirizzo e **variabili d'ambiente**. Salvate in `panel.json` nel progetto.
 - **Impostazioni dell'editor del progetto**: formatta al salvataggio, rientro, cartelle nascoste, in `.vscode\settings.json` (le altre impostazioni del file restano).
 - **Server MCP del progetto** per Claude Code (`.mcp.json`) e Codex (`.codex\config.toml`).
-- **Copie dei database**: Esporta e Ripristina per MariaDB e MongoDB nella pagina del progetto › Risorse; copie in `data\db\backup\<progetto>`. MongoDB porta con sé i Database Tools.
+- **Copie dei database**: Esporta e Ripristina per MySQL e MongoDB nella pagina del progetto › Risorse; copie in `data\db\backup\<progetto>`. MongoDB porta con sé i Database Tools.
 
-**Verificato**: 211 test Rust (con esportazione, cancellazione e ripristino reali su MariaDB e MongoDB), 23 test dell'interfaccia; prova nell'app: azione con variabile, impostazioni dell'editor e server MCP scritti nei file del progetto.
+**Verificato**: 211 test Rust (con esportazione, cancellazione e ripristino reali su MySQL e MongoDB), 23 test dell'interfaccia; prova nell'app: azione con variabile, impostazioni dell'editor e server MCP scritti nei file del progetto.
 
 ## Struttura più semplice (14/10/2026)
 
@@ -454,12 +451,12 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 ## Database del kit (14/10/2026)
 
 **Fatto**
-- **Password per i database** (D-74, dopo la revisione di sicurezza): `root` di MariaDB e `admin` di MongoDB con una password casuale, anche sui dati già creati; ogni progetto con il suo database e il suo utente; scrittura della connessione nel `.env` con anteprima delle righe che cambiano. Nel terminale del kit `mariadb` entra già come root.
-- **MariaDB** (compatibile con MySQL), **MongoDB** con mongosh e **SQLite** fra i componenti, nel nuovo gruppo «Database», verificati con SHA-256 o SHA3-256 (D-73).
+- **Password per i database** (D-74, dopo la revisione di sicurezza): `root` di MySQL e `admin` di MongoDB con una password casuale, anche sui dati già creati; ogni progetto con il suo database e il suo utente; scrittura della connessione nel `.env` con anteprima delle righe che cambiano. Nel terminale del kit `mysql` entra già come root.
+- **MySQL**, **MongoDB** con mongosh e **SQLite** fra i componenti, nel nuovo gruppo «Database», verificati con SHA-256 o SHA3-256 (D-73).
 - **Pagina «Database»**: avvio e arresto dei server, stringa di connessione da copiare, porta, cartella dei dati, log, «Avvia con Atollo». Solo 127.0.0.1; dati in `data\db`. «Avvia» installa il database se manca; chiusura dell'app e «Rimuovi l'unità» li fermano in modo pulito.
 - I progetti che usano un database (`.env`, driver npm/pip/Composer, file `.sqlite`) lo segnalano e ricevono le estensioni dell'editor: SQLTools, MongoDB for VS Code, SQLite Viewer; nuovo linguaggio SQL.
 
-**Verificato**: 200 test Rust, 22 test dell'interfaccia; installazione reale dei tre componenti; avvio, query e arresto di MariaDB 12.3.3 e MongoDB 9.0.4 dall'app.
+**Verificato**: 200 test Rust, 22 test dell'interfaccia; installazione reale dei tre componenti; avvio, query e arresto di MySQL e MongoDB 9.0.4 dall'app.
 
 ## Branding di app ed editor (14/10/2026)
 

@@ -34,7 +34,7 @@ Tutte le metriche riportate di seguito sono state misurate direttamente sui file
 | Area di Test (`test/rust/`) | File `.rs` | Test (`#[test]`) | Nuove Coperture Aggiunte in `v4` (`D-93..D-106`) |
 |---|:---:|:---:|---|
 | **Server Web, Pool Condivisi & Sicurezza** | 16 | 78 | `PHP_RUN`/`PHP_NEVER`, migrazione `kit.conf`, DNS rebinding `403`/`421`, router `php -S` (`parse_url`, quoting spazi), ciclo `detached`/`keepAlive` (`D-96..D-101`). |
-| **Database Multi-Versione & `.env`** | 14 | 64 | MariaDB side-by-side (`line_ports`, `running_lines`), lock `db.json` concorrente (`0e5e0e8`), precedenza `DB_PORT` in `.env` (`D-102`). |
+| **Database Multi-Versione & `.env`** | 14 | 64 | MySQL side-by-side (`line_ports`, `running_lines`), lock `db.json` concorrente (`0e5e0e8`), precedenza `DB_PORT` in `.env` (`D-102`). |
 | **Rilevamento Progetti & Container** | 15 | 68 | CMS classici (PrestaShop, Drupal, Joomla, TYPO3), Apache per Laravel/PHP, `detect/container.rs` per `compose.yaml`/`Dockerfile` (`D-103`). |
 | **Terminali del Kit & Ambiente (`env`)** | 8 | 36 | Creazione/modifica/duplicazione terminali, filtro `all_tools: false`, override linee in `PATH`, `ATOLLO_TERMINAL` (`D-94`). |
 | **Installatori, Versioni & Pulizia (`D-95`, `D-105`)** | 22 | 85 | Rimozione automatica residui `terminal` (`D-95`), `R` `Makeconf` `LOCAL_SOFT` (`D-105`), multi-versione side-by-side. |
@@ -49,7 +49,7 @@ Tutte le metriche riportate di seguito sono state misurate direttamente sui file
 | [`test/ui/terminals.test.tsx`](file:///d:/Projects/atollo/test/ui/terminals.test.tsx) | 5 | 5 | **Nuovo in `v4` (`D-94`)**: lista terminali, creazione, toggle `allTools`, selezione linea e duplicazione. |
 | [`test/ui/dialog.test.tsx`](file:///d:/Projects/atollo/test/ui/dialog.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-106`)**: focus trap `useModalFocus`, chiusura `Escape`, focus iniziale su *Annulla* e `focusBack` in `InlineConfirm`. |
 | [`test/ui/servers.test.tsx`](file:///d:/Projects/atollo/test/ui/servers.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-101`)**: pool condivisi, toggle `keepAlive` e `autostart`, siti agganciati. |
-| [`test/ui/databases.test.tsx`](file:///d:/Projects/atollo/test/ui/databases.test.tsx) | 8 | 8 | **Esteso in `v4` (`D-102`)**: avvio/arresto linea primaria e linee secondarie MariaDB (`s.others`). |
+| [`test/ui/databases.test.tsx`](file:///d:/Projects/atollo/test/ui/databases.test.tsx) | 8 | 8 | **Esteso in `v4` (`D-102`)**: avvio/arresto linea primaria e linee secondarie MySQL (`s.others`). |
 | [`test/ui/versions.test.tsx`](file:///d:/Projects/atollo/test/ui/versions.test.tsx) | 9 | 9 | **Esteso in `v4`**: due zone in `versions/project.tsx` (*"Rilevate nel progetto"* e *"Altri strumenti multi-versione"*). |
 | [`test/ui/frameworks.test.tsx`](file:///d:/Projects/atollo/test/ui/frameworks.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-93`)**: categoria CMS (WordPress/Bedrock, TYPO3, Drupal, Statamic) nel wizard. |
 | Altri 10 file (`App`, `projects`, `agents`, `setup`, `backups`, `dbbrowser`, `i18n`, `relations`, `stats`, `workbench`) | 60 | 64 | Navigazione workbench, parità dizionari `en`/`de`/`fr`, filtri progetti, browser DB, statistiche token. |
@@ -75,6 +75,6 @@ xychart-beta
 | **Componenti Operativi su Windows x64 (`win32-x64`)** | 36/36 (100%) | 36/36 (100%) | **35/35 (100%)** | **35/35 (100%)** |
 | **Componenti Operativi su Windows ARM64 (`win32-arm64`)** | 31/36 (86,1%) | 33/36 (91,7%) | **33/35 (94,3%)** | **35/35 (100%)** (con `x64Only` su Julia/Bun) |
 | **Componenti con Target Catalogo Linux x64 (`linux-x64`)** | 29/36 (80,6%) | 30/36 (83,3%) | **31/35 (88,6%)** | **35/35 (100%)** |
-| **Componenti con Target Catalogo macOS (`darwin-arm64` / `darwin-x64`)** | 28/36 (77,8%) | 29/36 (80,6%) | **30/35 (85,7%)** | **35/35 (100%)** |
+| **Componenti con Target Catalogo macOS (`darwin-arm64` / `darwin-x64`)** | 28/36 (77,8%) | 29/36 (80,6%) | **31/35 (88,6%)** | **35/35 (100%)** |
 | **Modali / Dialoghi con Focus Trap & ARIA (`useModalFocus` / `InlineConfirm`)** | 4 / 28 (14%) | 9 / 28 (32%) | **28 / 28 (100%)** | **28 / 28 + 3 distruttive inline** |
 | **Vulnerabilità Critiche Aperte (Sicurezza Locale)** | 3 | 1 | **0** (1 Alta `SEC-V4-01`) | **0** |

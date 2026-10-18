@@ -260,7 +260,7 @@
         <h2>Matrice Interattiva degli Strumenti Usabili in Funzione della Distribuzione del Sistema Operativo</h2>
         <p class="desc">Filtra i 36 componenti del catalogo per categoria, nome o comportamento sulle 9 famiglie di distribuzioni OS (18 edizioni specifiche).</p>
         <div class="filters">
-          <input type="text" id="searchTool" placeholder="Cerca componente (es. php, git, mariadb, rust...)" oninput="filterMatrix()" />
+          <input type="text" id="searchTool" placeholder="Cerca componente (es. php, git, mysql, rust...)" oninput="filterMatrix()" />
           <select id="catFilter" onchange="filterMatrix()">
             <option value="ALL">Tutte le categorie (36 componenti)</option>
             <option value="agents">Agenti IA (3)</option>
@@ -398,7 +398,7 @@
             <tr><td><code>BUG-V3-01</code></td><td><span class="pill p-warn">Media</span></td><td><code>projects/run.rs:515-516</code></td><td>Conservare e monitorare il <code>Child</code> di <code>php-cgi</code> anche nei server Nginx dedicati (non solo nei pool).</td></tr>
             <tr><td><code>BUG-V3-02</code></td><td><span class="pill p-warn">Media</span></td><td><code>servers/mod.rs:924,954</code></td><td>Nominare i file vHost <code>{project}--{action}.conf</code> per evitare sovrascritture con più siti dello stesso progetto.</td></tr>
             <tr><td><code>BUG-V3-03</code></td><td><span class="pill p-no">Critica Unix</span></td><td><code>projects/run.rs:20,535-537</code></td><td>Sostituire <code>cmd.exe /d /s /c</code> hardcoded con <code>jobs::shell_command</code> (<code>/bin/sh -c</code> su macOS/Linux).</td></tr>
-            <tr><td><code>BUG-V3-04</code></td><td><span class="pill p-no">Alta Unix</span></td><td><code>install/db.rs:116-129</code></td><td>MariaDB REST API non ha build macOS: usare <code>conda-forge::mariadb</code> su macOS e filtrare <code>os == "Linux"</code> + <code>systemd</code> su Linux.</td></tr>
+            <tr><td><code>BUG-V3-04</code></td><td><span class="pill p-no">Alta Unix</span></td><td><code>install/db.rs:116-129</code></td><td>Ritirato (18/10/2026): il server SQL è MySQL, con build ufficiali per i sei target (D-110).</td></tr>
             <tr><td><code>BUG-V3-05</code></td><td><span class="pill p-warn">Media Unix</span></td><td><code>install/lang/cc.rs:110-166</code></td><td>Usare <code>conda-forge</code> per <code>cc</code> su macOS/Linux per includere <code>make</code>, linker e header <code>stdio.h</code> senza Xcode CLT.</td></tr>
             <tr><td><code>BUG-V3-07</code></td><td><span class="pill p-emu">Bassa Unix</span></td><td><code>os/sessions.rs:157</code></td><td>Estendere <code>other_kits</code> a <code>/data/apps/darwin-</code> e <code>/data/apps/linux-</code> con separatori <code>/</code>.</td></tr>
           </tbody>
@@ -438,7 +438,7 @@
       [27, "cc", "C/C++ (llvm-mingw / Clang)", "lang", "UCRT / conda-forge v3", "NATIVO", "NATIVO", "NATIVO", "CONDA v3", "CONDA v3", "CONDA v3", "CONDA v3", "CONDA v3"],
       [28, "ruby", "Ruby", "lang", "RubyInstaller / ruby-builder", "NATIVO", "NATIVO", "NATIVO", "NATIVO", "NATIVO", "NATIVO", "SYSROOT v3", "SYSROOT v3"],
       [29, "r", "R + OpenBLAS", "lang", "conda-forge micromamba", "NATIVO", "PRISM v3", "NO x64 EMU", "RELOC v3", "RELOC v3", "RELOC v3", "RELOC v3", "SYSROOT v3"],
-      [30, "mariadb", "MariaDB Server", "db", "Win x64 / Linux / Conda Mac", "NATIVO", "PRISM x64", "NO x64 EMU", "CONDA v3", "CONDA v3", "NATIVO", "SYSROOT v3", "SYSROOT v3"],
+      [30, "mysql", "MySQL Server", "db", "Win x64 / macOS / Linux (Oracle)", "NATIVO", "PRISM x64", "NO x64 EMU", "NATIVO", "NATIVO", "NATIVO", "NATIVO", "NATIVO"],
       [31, "mongodb", "MongoDB + mongosh + tools", "db", "Win x64 / Ubuntu 22.04", "NATIVO", "PRISM x64", "NO x64 EMU", "NATIVO", "NATIVO", "NATIVO", "SYSROOT v3", "SYSROOT v3"],
       [32, "adminer", "Adminer", "web", "PHP single-file", "NATIVO", "PRISM x64", "NO x64 EMU", "STATIC-PHP v3", "STATIC-PHP v3", "STATIC-PHP v3", "STATIC-PHP v3", "STATIC-PHP v3"],
       [33, "sqlite", "SQLite Tools", "db", "Nativo 6 target", "NATIVO", "NATIVO", "NATIVO", "NATIVO", "NATIVO", "NATIVO", "NATIVO", "SYSROOT v3"],
