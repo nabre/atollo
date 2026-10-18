@@ -13,6 +13,7 @@ import {
   VscRefresh,
   VscServerProcess,
   VscTable,
+  VscVm,
   VscWarning,
 } from "react-icons/vsc";
 import type { ComponentInfo, SetupSnapshot } from "../api";
@@ -44,9 +45,16 @@ import { useComponents } from "./state";
 import { ApplyBar } from "./applybar";
 import { ToolPage } from "./tool";
 import { ToolsTable } from "./table";
+import { TargetMatrix } from "./matrix";
 
 /** The overviews of the kit, opened as tabs like the tools. */
-const OVERVIEWS = ["overview:table", "overview:extensions", "overview:relations", "overview:system"] as const;
+const OVERVIEWS = [
+  "overview:table",
+  "overview:matrix",
+  "overview:extensions",
+  "overview:relations",
+  "overview:system",
+] as const;
 type Overview = (typeof OVERVIEWS)[number];
 const TABLE: Overview = "overview:table";
 
@@ -56,6 +64,7 @@ function overviewOf(id: string): Overview | null {
 
 const OVERVIEW_ICON: Record<Overview, ReactNode> = {
   "overview:table": <VscTable size={16} aria-hidden="true" />,
+  "overview:matrix": <VscVm size={16} aria-hidden="true" />,
   "overview:extensions": <VscExtensions size={16} aria-hidden="true" />,
   "overview:relations": <VscReferences size={16} aria-hidden="true" />,
   "overview:system": <VscServerProcess size={16} aria-hidden="true" />,
@@ -64,6 +73,7 @@ const OVERVIEW_ICON: Record<Overview, ReactNode> = {
 function overviewTitle(id: Overview): string {
   return {
     "overview:table": t("Tutti gli strumenti"),
+    "overview:matrix": t("Matrice"),
     "overview:extensions": t("Estensioni dell'editor"),
     "overview:relations": t("Relazioni"),
     "overview:system": t("Requisiti del PC"),
@@ -82,7 +92,7 @@ export function ToolsPage({
   const state = useComponents(setup, false);
   const { list, chosen, choose, error, synced, neededBy, projects, load } = state;
   const kit = useKitVersions(setup, true, state.target);
-  const relations = useRelations(setup, list, true);
+  const relations = useRelations(setup, list, true, state.target);
   const links = relations.matrix?.links ?? [];
   const [search, setSearch] = useState("");
   const all = groups();
@@ -183,6 +193,7 @@ export function ToolsPage({
               label={t("Aggiorna")}
               onClick={() => {
                 load();
+                state.loadGrid();
                 relations.load();
               }}
             />
@@ -305,9 +316,16 @@ export function ToolsPage({
               tabs.show(id);
             }}
           />
+        ) : overview === "overview:matrix" ? (
+          <TargetMatrix
+            state={state}
+            onOpen={(id) => {
+              tabs.show(id);
+            }}
+          />
         ) : overview === "overview:extensions" ? (
           <EditorBody narrow>
-            <ExtensionsMatrixSection projects={projects} components={list ?? []} />
+            <ExtensionsMatrixSection projects={projects} components={list ?? []} target={state.target} />
           </EditorBody>
         ) : overview === "overview:relations" ? (
           <EditorBody narrow>
