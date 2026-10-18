@@ -1,6 +1,7 @@
 // Builds the landing page into _site/: one page per language (Italian at the
 // root, the others in en/, fr/, de/, as the READMEs), the brand files from
-// docs/brand and three screenshots from docs/app/images. No dependencies:
+// docs/brand (the wordmark, never the lockup: symbol and word both start
+// with an A) and three screenshots from docs/app/images. No dependencies:
 // node site/build.mjs. Published by .github/workflows/site.yml.
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -48,7 +49,7 @@ for (const lang of langs) {
 
 cpSync(join(site, "assets"), join(out, "assets"), { recursive: true });
 const brand = join(repo, "docs", "brand");
-for (const f of ["lockup-dark.svg", "lockup-light.svg", "symbol.svg", "brand.png"]) cpSync(join(brand, f), join(out, "assets", f));
+for (const f of ["wordmark-dark.svg", "wordmark-light.svg", "symbol.svg", "brand.png"]) cpSync(join(brand, f), join(out, "assets", f));
 const images = join(repo, "docs", "app", "images");
 const shots = { "shot-projects.png": "02-progetti-elenco.png", "shot-agents.png": "10-agenti-quote-statistiche.png", "shot-tools.png": "13-strumenti-catalogo-matrice.png" };
 for (const [to, from] of Object.entries(shots)) cpSync(join(images, from), join(out, "assets", to));
