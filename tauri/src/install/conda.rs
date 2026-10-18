@@ -896,7 +896,7 @@ pub fn package_programs(prefix: &Path, package: &str) -> Result<Vec<String>> {
 /// tools, as when the whole `bin` was on the kit's PATH).
 pub fn launcher_text(program: &str) -> String {
     format!(
-        "#!/bin/sh\n# Dev-Kit: {program} of the conda-forge environment, with its bin in its PATH only\nd=$(cd \"$(dirname \"$0\")/..\" && pwd)\nPATH=\"$d/bin:$PATH\" exec \"$d/bin/{program}\" \"$@\"\n"
+        "#!/bin/sh\n# Atollo: {program} of the conda-forge environment, with its bin in its PATH only\nd=$(cd \"$(dirname \"$0\")/..\" && pwd)\nPATH=\"$d/bin:$PATH\" exec \"$d/bin/{program}\" \"$@\"\n"
     )
 }
 

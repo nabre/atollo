@@ -96,7 +96,7 @@ pub(super) fn apache_pool_conf(
     };
     let default_htdocs = "${SRVROOT}/htdocs";
     let mut site = vec![
-        "# --- Dev-Kit: shared Apache VirtualHost pool (written at every start) ---".to_owned(),
+        "# --- Atollo: shared Apache VirtualHost pool (written at every start) ---".to_owned(),
         format!("Listen {listen}"),
         format!("ServerName localhost:{port}"),
     ];

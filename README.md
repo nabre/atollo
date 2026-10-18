@@ -6,7 +6,7 @@ Italiano · [English](docs/README.en.md) · [Français](docs/README.fr.md) · [D
 
 Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitHub CLI, l'editor e quello che serve a loro (Git per GitHub CLI). Il resto si sceglie nella pagina «Strumenti», oppure arriva quando serve: Node.js con un'azione `npm`, uv con un server MCP `uvx`, e così via.
 
-> Guida: [docs/app/GUIDA.md](docs/app/GUIDA.md), decisioni: [docs/app/DECISIONS.md](docs/app/DECISIONS.md), novità: [docs/app/CHANGELOG.md](docs/app/CHANGELOG.md), lavoro aperto: [issue](https://github.com/nabre/dev-kit2/issues).
+> Guida: [docs/app/GUIDA.md](docs/app/GUIDA.md), decisioni: [docs/app/DECISIONS.md](docs/app/DECISIONS.md), novità: [docs/app/CHANGELOG.md](docs/app/CHANGELOG.md), lavoro aperto: [issue](https://github.com/nabre/atollo/issues).
 
 ## Come si usa
 
@@ -14,7 +14,7 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 2. Doppio clic: l'app crea `projects\` e `data\`. Al primo avvio scegli agenti, linguaggi e strumenti: l'app li scarica e li verifica (checksum o firma).
 3. Crea o clona un progetto nella pagina **Progetti**. Editor, terminale e agenti si aprono sempre nella cartella di un progetto, mai altrove.
 
-Dalla [pagina dei rilasci](https://github.com/nabre/dev-kit2/releases): `Atollo-x64.exe` o `Atollo-arm64.exe` per Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) o `Atollo-darwin-x64.app.zip` (Intel) per macOS, `Atollo-linux-x64` o `Atollo-linux-arm64` (`.AppImage` e `.tar.gz`) per Linux; ogni file ha il suo `.sha256`.
+Dalla [pagina dei rilasci](https://github.com/nabre/atollo/releases): `Atollo-x64.exe` o `Atollo-arm64.exe` per Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) o `Atollo-darwin-x64.app.zip` (Intel) per macOS, `Atollo-linux-x64` o `Atollo-linux-arm64` (`.AppImage` e `.tar.gz`) per Linux; ogni file ha il suo `.sha256`.
 
 **macOS** (12 o successivo). L'app ha solo una firma ad hoc, senza notarizzazione di Apple:
 1. Estrai lo zip e sposta `Atollo.app` con il Finder nella cartella del kit (per esempio `/Volumes/KIT/Atollo/`).
@@ -42,7 +42,7 @@ La console di Atollo è la console classica di Windows con PowerShell 7 integrat
 
 ## Limiti noti
 
-- Su Windows 10 e 11 (`x64` e `ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`). Su Windows ARM64 l'editor, PHP, Apache, MySQL e TinyTeX girano in emulazione x64 e R non c'è; su Linux ARM64 manca Android. I rilasci per macOS e Linux, dal prossimo tag, sono provati in CI ma non ancora su macchine pulite ([#5](https://github.com/nabre/dev-kit2/issues/5)), e gli accessi degli agenti vanno provati su un Mac ([#6](https://github.com/nabre/dev-kit2/issues/6)); componenti e fonti per sistema in [docs/app/CATALOG.md](docs/app/CATALOG.md), la matrice componente × sistema in [docs/app/MATRICE-STRUMENTI.html](docs/app/MATRICE-STRUMENTI.html). Apache su macOS e Linux arriva con il primo rilascio della build del kit (D-116); fino ad allora lì il server web è Caddy.
+- Su Windows 10 e 11 (`x64` e `ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`). Su Windows ARM64 l'editor, PHP, Apache, MySQL e TinyTeX girano in emulazione x64 e R non c'è; su Linux ARM64 manca Android. I rilasci per macOS e Linux, dal prossimo tag, sono provati in CI ma non ancora su macchine pulite ([#5](https://github.com/nabre/atollo/issues/5)), e gli accessi degli agenti vanno provati su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); componenti e fonti per sistema in [docs/app/CATALOG.md](docs/app/CATALOG.md), la matrice componente × sistema in [docs/app/MATRICE-STRUMENTI.html](docs/app/MATRICE-STRUMENTI.html). Apache su macOS e Linux arriva con il primo rilascio della build del kit (D-116); fino ad allora lì il server web è Caddy.
 - Su Linux MySQL vuole due librerie del sistema, `libaio` e `libnuma`: su Ubuntu 24.04 e Debian 13 `sudo apt install libaio1t64 libnuma1` (su versioni precedenti `libaio1`), su Fedora e RHEL `sudo dnf install libaio numactl-libs`. Se mancano, Atollo lo dice con il comando da eseguire.
 - Fuori dalla cartella di Atollo restano solo le tracce di Windows, i file temporanei di passaggio nel temp di sistema (rimossi automaticamente alla chiusura), l'accesso di GitHub CLI nella Gestione credenziali se lo fai in una console con `gh auth login` (quello fatto nelle Impostazioni resta in `data\gh`) e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
 - Le cartelle in `projects\` sono attendibili per Claude Code e Codex: apri solo progetti di cui ti fidi. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.

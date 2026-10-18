@@ -3,13 +3,13 @@ use crate::kit::{tests::TempDir, Arch, Target};
 
 #[test]
 fn spellings_and_boundaries() {
-    let r = Replacer::new(Os::Win32, r"E:\kit", r"F:\Dev Kit");
+    let r = Replacer::new(Os::Win32, r"E:\kit", r"F:\My Atollo");
     let text = br#"a E:\kit\x "E:\\kit\\y" e:/kit/z file:///e%3A/kit/w E:\kit2\no E:\kitty"#;
     let out = String::from_utf8(r.replace(text).unwrap()).unwrap();
-    assert!(out.contains(r"F:\Dev Kit\x"), "{out}");
-    assert!(out.contains(r#""F:\\Dev Kit\\y""#), "{out}");
-    assert!(out.contains("f:/Dev Kit/z"), "drive case kept: {out}");
-    assert!(out.contains("file:///f%3A/Dev%20Kit/w"), "{out}");
+    assert!(out.contains(r"F:\My Atollo\x"), "{out}");
+    assert!(out.contains(r#""F:\\My Atollo\\y""#), "{out}");
+    assert!(out.contains("f:/My Atollo/z"), "drive case kept: {out}");
+    assert!(out.contains("file:///f%3A/My%20Atollo/w"), "{out}");
     assert!(
         out.contains(r"E:\kit2\no") && out.contains(r"E:\kitty"),
         "whole names only: {out}"

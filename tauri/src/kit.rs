@@ -1,9 +1,9 @@
-//! The kit on disk: its root (the folder that holds `Dev-Kit.exe`), the
+//! The kit on disk: its root (the folder that holds `Atollo.exe`), the
 //! processor platform and every path the app uses.
 //!
-//! Layout (DECISIONS.md D-00): `Dev-Kit.exe`, `projects\` and `data\` side by
+//! Layout (DECISIONS.md D-00): `Atollo.exe`, `projects\` and `data\` side by
 //! side; everything the kit downloads or writes lives in `data\`. Nothing is
-//! ever created outside the root. On macOS the root holds `Dev-Kit.app`, on
+//! ever created outside the root. On macOS the root holds `Atollo.app`, on
 //! Linux the AppImage (`root_from`). The platform rule and the "kit was moved"
 //! record follow nabre/dev-kit `setup/windows/_env.cmd` (lines 13-16, 238-267).
 
@@ -368,7 +368,7 @@ pub enum KitError {
 pub struct Kit {
     root: PathBuf,
     target: Target,
-    /// `<host TEMP>\Dev-Kit\<id>`, for files in transit (D-90).
+    /// `<host TEMP>\Atollo\<id>`, for files in transit (D-90).
     system_temp: Option<PathBuf>,
     /// The disk of the root, read once at start.
     volume: Option<VolumeInfo>,
@@ -376,7 +376,7 @@ pub struct Kit {
 
 impl Kit {
     /// The kit of the program at `exe`: the folder of `exe`, or the folder
-    /// next to `Dev-Kit.app` or the AppImage ([`root_from`]).
+    /// next to `Atollo.app` or the AppImage ([`root_from`]).
     pub fn from_exe(exe: &Path) -> Result<Kit, KitError> {
         let exe = strip_verbatim(exe);
         let image = running_appimage(&exe);
@@ -404,12 +404,12 @@ impl Kit {
     /// `data\`) and the disk of the root. Without them the kit works as before:
     /// every temporary file in `data\tmp`.
     ///
-    /// A `TEMP` that is already the kit's (a Dev-Kit.exe started from a kit
+    /// A `TEMP` that is already the kit's (an Atollo.exe started from a kit
     /// console without `CP_HOST_TEMP`) is not the host's: inside the root it
-    /// is ignored, inside `Dev-Kit\<id>` it is taken back to its base.
+    /// is ignored, inside `Atollo\<id>` it is taken back to its base.
     pub fn with_host(mut self, host_temp: Option<&Path>) -> Kit {
         let id = self.id();
-        let mine = Path::new("Dev-Kit").join(&id);
+        let mine = Path::new("Atollo").join(&id);
         self.system_temp = host_temp
             .filter(|t| t.is_absolute())
             .map(strip_verbatim)
@@ -455,7 +455,7 @@ impl Kit {
     pub fn project_data(&self) -> PathBuf {
         self.data().join("projects")
     }
-    /// `<host TEMP>\Dev-Kit\<id>`: files in transit only (D-90); `None` when
+    /// `<host TEMP>\Atollo\<id>`: files in transit only (D-90); `None` when
     /// the host gave no temporary folder.
     pub fn system_temp(&self) -> Option<&Path> {
         self.system_temp.as_deref()
@@ -597,7 +597,7 @@ pub(crate) fn same_root(os: Os, recorded: &str, now: &str) -> bool {
 /// The kit root for the program at `exe` on `os` (D-113):
 /// on Linux the folder of the AppImage when the app runs from one
 /// (`image`, its `$APPIMAGE`; the program itself is in a temporary mount),
-/// on macOS the folder that holds `Dev-Kit.app` when `exe` is its
+/// on macOS the folder that holds `Atollo.app` when `exe` is its
 /// `Contents/MacOS/` program (nothing is ever written inside the bundle),
 /// otherwise the folder of `exe`. `None`: no folder to use.
 pub fn root_from(os: Os, exe: &Path, image: Option<&Path>) -> Option<PathBuf> {
@@ -655,7 +655,7 @@ fn running_appimage(_exe: &Path) -> Option<PathBuf> {
 }
 
 /// The program the kit's wrappers start to run the app again
-/// (`DEVKIT_EXE`): the AppImage when the app runs from one, whose inner
+/// (`ATOLLO_EXE`): the AppImage when the app runs from one, whose inner
 /// program goes away with its mount; otherwise this program.
 pub fn app_exe() -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;
@@ -664,14 +664,14 @@ pub fn app_exe() -> Option<PathBuf> {
 
 /// The app bundle macOS runs from a random read-only copy (App
 /// Translocation, a downloaded app not yet moved or cleared of its
-/// quarantine): its name (`Dev-Kit.app`), or `None` for a normal start.
+/// quarantine): its name (`Atollo.app`), or `None` for a normal start.
 pub fn translocated_bundle(exe: &Path) -> Option<String> {
     let moved = exe
         .components()
         .any(|c| c.as_os_str() == "AppTranslocation");
     moved.then(|| {
         app_bundle(exe).and_then(Path::file_name).map_or_else(
-            || "Dev-Kit.app".to_owned(),
+            || "Atollo.app".to_owned(),
             |n| n.to_string_lossy().into_owned(),
         )
     })
@@ -707,7 +707,7 @@ pub fn prepare_error_message(os: Os, error: &KitError, lang: &str) -> String {
     if os.is_windows() {
         return format!(
             "{cannot}\n\n{}",
-            crate::i18n::t(lang, "Sposta Dev-Kit.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
+            crate::i18n::t(lang, "Sposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
         );
     }
     if read_only {

@@ -1,10 +1,10 @@
 # Guida Completa di Atollo: Struttura, Funzionalità, Fonti, Configurazione ed Esempi Illustrati
 
-Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi**, le **schermate reali dell'interfaccia** (`images/*.png`) e gli **esempi pratici guidati** della guida ufficiale di **Dev-Kit** (`Dev-Kit.exe`, brand **Atollo**). Esplora nel dettaglio l'architettura portabile, il funzionamento di tutte le viste dell'applicazione, l'organizzazione completa dei link e delle fonti da cui il kit attinge gli strumenti, il ruolo centrale dell'account GitHub e le procedure passo-passo per configurare ogni singolo elemento con la spiegazione dello scopo tecnico e pratico di ciascuna operazione.
+Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi**, le **schermate reali dell'interfaccia** (`images/*.png`) e gli **esempi pratici guidati** della guida ufficiale di **Atollo** (`Atollo.exe`, brand **Atollo**). Esplora nel dettaglio l'architettura portabile, il funzionamento di tutte le viste dell'applicazione, l'organizzazione completa dei link e delle fonti da cui il kit attinge gli strumenti, il ruolo centrale dell'account GitHub e le procedure passo-passo per configurare ogni singolo elemento con la spiegazione dello scopo tecnico e pratico di ciascuna operazione.
 
 > [!NOTE]
 > **Scenario reale usato negli esempi e nelle immagini della guida:**
-> Tutte le schermate di questa guida mostrano un ambiente di lavoro reale su unità portabile (`D:\Dev-Kit`) collegato all'account GitHub **`@mario-rossi`** (con l'organizzazione **`studio-rossi`**) e popolato da tre progetti concreti:
+> Tutte le schermate di questa guida mostrano un ambiente di lavoro reale su unità portabile (`D:\Atollo`) collegato all'account GitHub **`@mario-rossi`** (con l'organizzazione **`studio-rossi`**) e popolato da tre progetti concreti:
 > - **`gestionale-fatture`**: applicazione full-stack **Laravel 13 + React + Tailwind CSS 4 + MySQL 9.7** (servita sia col comando di sviluppo `composer run dev` sia tramite pool condiviso **Apache 2.4 · PHP 8.4** su `http://gestionale-fatture.localhost:8081` con dominio aggiuntivo `fatture.studio.localhost` e alias `/allegati`).
 > - **`portale-clienti`**: applicazione frontend **Vite + React + TypeScript** (con database documentale **MongoDB 8.0** `portale_clienti` esplorato direttamente dall'interfaccia).
 > - **`api-magazzino`**: microservizio **Python 3.13 + FastAPI** con database relazionale e documentale.
@@ -15,7 +15,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
 
 1. [Struttura della Guida e Filosofia dell'Applicazione](#1-struttura-della-guida-e-filosofia-dellapplicazione)
    - [1.1 Principi Fondamentali: Portabilità Assoluta e Isolamento](#11-principi-fondamentali-portabilità-assoluta-e-isolamento)
-   - [1.2 Organizzazione su Disco (`Dev-Kit.exe`, `projects\`, `data\`)](#12-organizzazione-su-disco-dev-kitexe-projects-data)
+   - [1.2 Organizzazione su Disco (`Atollo.exe`, `projects\`, `data\`)](#12-organizzazione-su-disco-atolloexe-projects-data)
    - [1.3 Ciclo di Vita dei Processi (Job Object) e Rilocazione Automatica](#13-ciclo-di-vita-dei-processi-job-object-e-rilocazione-automatica)
 2. [Organizzazione dei Link e delle Fonti degli Strumenti](#2-organizzazione-dei-link-e-delle-fonti-degli-strumenti)
    - [2.1 Architettura di Approvvigionamento e Verifica Crittografica](#21-architettura-di-approvvigionamento-e-verifica-crittografica)
@@ -37,7 +37,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
    - [4.8 Pagina «Strumenti» (Multi-Versione, Matrice delle Relazioni ed Estensioni)](#48-pagina-strumenti-multi-versione-matrice-delle-relazioni-ed-estensioni)
    - [4.9 Pagina «Impostazioni» e Albero di Personalizzazione dei Framework](#49-pagina-impostazioni-e-albero-di-personalizzazione-dei-framework)
    - [4.10 Pagina «Rimuovi l'unità» ed Espulsione Sicura](#410-pagina-rimuovi-lunità-ed-espulsione-sicura)
-   - [4.11 Interfaccia a Riga di Comando (CLI di `Dev-Kit.exe`)](#411-interfaccia-a-riga-di-comando-cli-di-dev-kitexe)
+   - [4.11 Interfaccia a Riga di Comando (CLI di `Atollo.exe`)](#411-interfaccia-a-riga-di-comando-cli-di-atolloexe)
 5. [Guida Passo-Passo alla Configurazione di Ogni Elemento e Relativi Scopi](#5-guida-passo-passo-alla-configurazione-di-ogni-elemento-e-relativi-scopi)
    - [5.1 Preparazione Iniziale del Kit e Scelta del Disco](#51-preparazione-iniziale-del-kit-e-scelta-del-disco)
    - [5.2 Configurazione Generale: Lingua, Temporanei e Aggiornamenti](#52-configurazione-generale-lingua-temporanei-e-aggiornamenti)
@@ -58,7 +58,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
 
 ### 1.1 Principi Fondamentali: Portabilità Assoluta e Isolamento
 
-**Dev-Kit** nasce per offrire un ambiente di sviluppo completo per Windows 10 e 11 (architetture `x64` e `ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`), racchiuso in un unico eseguibile (`Dev-Kit.exe`; su macOS il bundle `.app`, su Linux un'AppImage). Lo stesso kit su una chiavetta si apre sui tre sistemi. Questa guida descrive Windows; su macOS e Linux il terminale del kit e gli agenti si aprono in una scheda dell'app, il server web è Caddy e il database SQL è MySQL, con i limiti elencati nelle [issue aperte](https://github.com/nabre/dev-kit2/issues). Il progetto segue cinque regole architetturali inderogabili:
+**Atollo** nasce per offrire un ambiente di sviluppo completo per Windows 10 e 11 (architetture `x64` e `ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`), racchiuso in un unico eseguibile (`Atollo.exe`; su macOS il bundle `.app`, su Linux un'AppImage). Lo stesso kit su una chiavetta si apre sui tre sistemi. Questa guida descrive Windows; su macOS e Linux il terminale del kit e gli agenti si aprono in una scheda dell'app, il server web è Caddy e il database SQL è MySQL, con i limiti elencati nelle [issue aperte](https://github.com/nabre/atollo/issues). Il progetto segue cinque regole architetturali inderogabili:
 
 1. **Zero installazione e nessun privilegio di amministratore (`asInvoker`)**: l'applicazione incorpora un manifesto Windows con `requestedExecutionLevel level="asInvoker"`. Non installa servizi di sistema, non crea attività pianificate e non modifica il registro di Windows (persino la chiave temporanea `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Rustup` creata forzosamente da `rustup-init` viene fotografata prima dell'installazione di Rust e ripristinata o rimossa subito dopo).
 2. **Isolamento totale dal PC ospite (`env_clear`)**: i programmi avviati dal kit (editor, terminale, agenti AI, server web, database, azioni dei progetti) non ereditano mai il `PATH` né le variabili di sviluppo del computer ospite (come `JAVA_HOME`, `CARGO_HOME`, `PYTHONPATH` o i moduli PowerShell in `Documenti`). Il motore Rust (`tauri/src/env.rs`) costruisce un ambiente pulito (~90 variabili) che punta esclusivamente a `data/`, aggiungendo al `PATH` soltanto le cartelle strettamente necessarie del sistema: su Windows `System32`, `System32\Wbem` e `System32\WindowsPowerShell\v1.0`; su macOS `/opt/homebrew/bin` e `/usr/local/bin` (Homebrew, dopo i programmi del kit), `/usr/bin`, `/bin`, `/usr/sbin` e `/sbin`; su Linux `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin` e `/sbin`. Degli ambienti conda di macOS e Linux (Ruby, R e il server MongoDB su Linux) entrano nel `PATH` solo i programmi del componente, attraverso i lanciatori di `kit-bin`, non quelli delle loro dipendenze (D-125).
@@ -70,13 +70,13 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
 
 ---
 
-### 1.2 Organizzazione su Disco (`Dev-Kit.exe`, `projects\`, `data\`)
+### 1.2 Organizzazione su Disco (`Atollo.exe`, `projects\`, `data\`)
 
-Quando `Dev-Kit.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD esterno o disco interno, anche con spazi, parentesi `( )` o `&` nel percorso) e avviato, genera e mantiene la seguente gerarchia:
+Quando `Atollo.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD esterno o disco interno, anche con spazi, parentesi `( )` o `&` nel percorso) e avviato, genera e mantiene la seguente gerarchia:
 
 ```text
 <Radice-del-Kit>\
-├── Dev-Kit.exe                             # Unico binario (GUI Tauri 2 + CLI + cataloghi incorporati)
+├── Atollo.exe                             # Unico binario (GUI Tauri 2 + CLI + cataloghi incorporati)
 ├── projects\                               # Cartella che ospita tutti i progetti dell'utente
 │   └── <nome-progetto>\                    # Codice sorgente del singolo progetto
 │       ├── panel.json                      # (Opzionale) Azioni, sito web, domini e alias del progetto
@@ -142,8 +142,8 @@ Quando `Dev-Kit.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD 
 
 ### 1.3 Ciclo di Vita dei Processi (Job Object) e Rilocazione Automatica
 
-- **Job Object di Windows (`tauri/src/os/jobs.rs`)**: all'avvio, `Dev-Kit.exe` crea un Job Object di Windows configurato con `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_BREAKAWAY_OK` e vi assegna se stesso. Qualsiasi processo figlio (server VSCodium, database, server web, console, azioni dei progetti) nasce dentro questo Job (o in un sotto-job dedicato per singola azione/server). Se l'applicazione viene chiusa o termina in modo imprevisto, Windows arresta istantaneamente tutti i processi figli senza lasciare demoni orfani in background. Soltanto il browser di sistema ed Esplora risorse vengono aperti fuori dal job (`CREATE_BREAKAWAY_FROM_JOB`).
-- **Istanza singola per percorso (`tauri/src/os/instance.rs`)**: il mutex di istanza singola è calcolato sull'hash SHA-256 del percorso della radice (`Local\Dev-Kit-App-<hash>`). Due chiavette diverse collegate allo stesso PC possono quindi coesistere, e un banner nella finestra principale avvisa se sono attivi processi di un'altra copia del kit.
+- **Job Object di Windows (`tauri/src/os/jobs.rs`)**: all'avvio, `Atollo.exe` crea un Job Object di Windows configurato con `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_BREAKAWAY_OK` e vi assegna se stesso. Qualsiasi processo figlio (server VSCodium, database, server web, console, azioni dei progetti) nasce dentro questo Job (o in un sotto-job dedicato per singola azione/server). Se l'applicazione viene chiusa o termina in modo imprevisto, Windows arresta istantaneamente tutti i processi figli senza lasciare demoni orfani in background. Soltanto il browser di sistema ed Esplora risorse vengono aperti fuori dal job (`CREATE_BREAKAWAY_FROM_JOB`).
+- **Istanza singola per percorso (`tauri/src/os/instance.rs`)**: il mutex di istanza singola è calcolato sull'hash SHA-256 del percorso della radice (`Local\Atollo-App-<hash>`). Due chiavette diverse collegate allo stesso PC possono quindi coesistere, e un banner nella finestra principale avvisa se sono attivi processi di un'altra copia del kit.
 - **Rilocazione automatica (`tauri/src/agents/relocate.rs`)**: a ogni avvio il kit confronta il percorso attuale con `data\app\root.txt`. Se la cartella è stata spostata o la chiavetta USB ha cambiato lettera di unità (es. da `E:\` a `F:\`), l'applicazione scrive `old-root.txt` e riscrive automaticamente i percorsi assoluti nei file di configurazione degli agenti (`.claude.json`, `config.toml`), del server dell'editor e rigenera le giunzioni NTFS delle skill.
 
 ---
@@ -154,7 +154,7 @@ Quando `Dev-Kit.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD 
 
 Il motore di installazione (`tauri/src/net/` e `tauri/src/install/`) non esegue mai script esterni per scaricare i componenti e non accetta **mai** un pacchetto privo di verifica crittografica.
 - **Stack TLS nativo di Windows**: i download utilizzano `ureq` con `native-tls` (SChannel) e `RootCerts::PlatformVerifier`. In questo modo il kit rispetta automaticamente i certificati radice dell'archivio di Windows (fondamentale nelle reti aziendali o scolastiche con ispezione HTTPS).
-- **Download atomico con tentativi multipli**: ogni file viene scaricato con estensione `.part` nella cartella di lavoro temporanea (`<TEMP>\Dev-Kit\<id>\setup\<componente>\`, oppure `data\tmp\setup\` se il disco di sistema ha meno di 4 GiB liberi), con **3 tentativi automatici** (attesa di 5 s e 10 s).
+- **Download atomico con tentativi multipli**: ogni file viene scaricato con estensione `.part` nella cartella di lavoro temporanea (`<TEMP>\Atollo\<id>\setup\<componente>\`, oppure `data\tmp\setup\` se il disco di sistema ha meno di 4 GiB liberi), con **3 tentativi automatici** (attesa di 5 s e 10 s).
 - **5 metodi di verifica (`tauri/src/net/verify.rs` e `signature.rs`)**:
   1. **SHA-256** (da GitHub Release `asset.digest`, da file `.sha256`/`.sha256sum`/`SHASUMS256.txt` o da API JSON ufficiali).
   2. **SHA-512** (da file `.sha512` per Apache Maven, JSON di .NET SDK, manifesto di Antigravity).
@@ -166,7 +166,7 @@ Il motore di installazione (`tauri/src/net/` e `tauri/src/install/`) non esegue 
 
 ### 2.2 Tabella Completa delle Fonti per Componenti, Linguaggi e Database
 
-La tabella seguente dichiara l'organizzazione esatta di tutti gli indirizzi da cui `Dev-Kit.exe` attinge i metadati delle versioni, gli archivi binari e i checksum:
+La tabella seguente dichiara l'organizzazione esatta di tutti gli indirizzi da cui `Atollo.exe` attinge i metadati delle versioni, gli archivi binari e i checksum:
 
 | ID Componente | Gruppo | Sito Ufficiale (`home`) | Fonte Metadati / Ricerca Versioni | URL di Download dei Binari | Metodo di Verifica | Destinazione in `data\apps\win32-<arch>\` |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -184,7 +184,7 @@ La tabella seguente dichiara l'organizzazione esatta di tutti gli indirizzi da c
 | ↳ *Parte: Composer* | *(dentro PHP)* | `https://getcomposer.org` | `https://getcomposer.org/versions` (canale `stable` o `2.2` LTS in base a `min-php`) | `https://getcomposer.org<path>` (`composer.phar`) | SHA-256 da `<url>.sha256sum` | `php\<linea>\composer.phar` (+ `composer.cmd` e `composer`) |
 | ↳ *Parte: Bundle CA SSL* | *(dentro PHP)* | `https://curl.se` | — | `https://curl.se/ca/cacert.pem` | SHA-256 da `https://curl.se/ca/cacert.pem.sha256` | `php\<linea>\extras\ssl\cacert.pem` |
 | ↳ *Parte: VC++ Runtime* | *(per PHP, Apache, MongoDB)* | `https://learn.microsoft.com` | Estratto una sola volta se assente | `https://aka.ms/vc14/vc_redist.x64.exe` (estrazione CAB `vcRuntimeMinimum_amd64\cab1.cab`) | Firma Authenticode `O=Microsoft Corporation` su exe e `vcruntime140.dll` | `tools\vcruntime\` (copiato accanto a `php.exe`, `httpd.exe`, `mongod.exe`) |
-| **`apache`** (Apache httpd) | Linguaggi (versionato) | `https://httpd.apache.org` | Windows: pagina HTML `https://www.apachelounge.com/download/`; macOS e Linux: versioni fissate nel catalogo (build del kit, D-116) | Windows: `https://www.apachelounge.com/download/VS<nn>/binaries/httpd-<v>-Win64-VS<nn>.zip`; macOS e Linux: `https://github.com/nabre/dev-kit2/releases/download/httpd-v<v>/httpd-<v>-<target>.tar.gz` | SHA-256 da `<url>.txt` (`SHA256-Checksum for:`); macOS e Linux: SHA-256 fissato nel catalogo | `apache\<linea>\bin\httpd.exe` (macOS e Linux: `apache/<linea>/bin/httpd`, PHP con `php-fpm`) |
+| **`apache`** (Apache httpd) | Linguaggi (versionato) | `https://httpd.apache.org` | Windows: pagina HTML `https://www.apachelounge.com/download/`; macOS e Linux: versioni fissate nel catalogo (build del kit, D-116) | Windows: `https://www.apachelounge.com/download/VS<nn>/binaries/httpd-<v>-Win64-VS<nn>.zip`; macOS e Linux: `https://github.com/nabre/atollo/releases/download/httpd-v<v>/httpd-<v>-<target>.tar.gz` | SHA-256 da `<url>.txt` (`SHA256-Checksum for:`); macOS e Linux: SHA-256 fissato nel catalogo | `apache\<linea>\bin\httpd.exe` (macOS e Linux: `apache/<linea>/bin/httpd`, PHP con `php-fpm`) |
 | **`caddy`** (Caddy) | Linguaggi (versionato) | `https://caddyserver.com` | GitHub API: `https://api.github.com/repos/caddyserver/caddy/releases` | Asset `caddy_<v>_<sistema>_<arch>` dalla release GitHub | SHA-256 da `asset.digest` GitHub (da 2.10.1), prima SHA-512 da `caddy_<v>_checksums.txt` | `caddy\<linea>\caddy.exe` |
 | **`rust`** (Rustup, Cargo, Clippy) | Strumenti | `https://www.rust-lang.org` | `https://static.rust-lang.org/dist/channel-rust-stable.toml` (`[pkg.rustc]`) | `https://static.rust-lang.org/rustup/dist/<triple>/rustup-init.exe` | SHA-256 da `<url>.sha256` | `rust\cargo\bin\rustc.exe` e `rustup.exe` |
 | **`go`** (Go SDK) | Linguaggi (versionato) | `https://go.dev` | `https://go.dev/dl/?mode=json` (e `&include=all` per l'elenco linee) | `https://go.dev/dl/go<v>.windows-(amd64\|arm64).zip` | SHA-256 dal campo `sha256` del JSON | `go\<linea>\bin\go.exe` |
@@ -225,8 +225,8 @@ Oltre ai componenti principali, l'applicazione comunica con i seguenti indirizzi
    - **Codex**: `https://chatgpt.com/backend-api/wham/usage` (autenticato con `data\home\.codex\auth.json`, con fallback sulla lettura locale degli eventi `token_count` nei file di sessione).
    - **Antigravity**: `https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels` (autenticato con `data\antigravity\keyring.json`).
    - *Nota di sicurezza*: i token vengono solo letti e inviati esclusivamente al rispettivo fornitore (con parsimonia: cache minima di 2 minuti e rispetto di `Retry-After` in caso di HTTP 429).
-3. **Auto-aggiornamento di `Dev-Kit.exe` (`tauri/src/setup/self_update.rs`)**:
-   - Interroga le release con tag `app-vX.Y.Z` del repository `https://api.github.com/repos/nabre/dev-kit2/releases` cercando l'asset `Dev-Kit-x64.exe` o `Dev-Kit-arm64.exe`, verificato con SHA-256.
+3. **Auto-aggiornamento di `Atollo.exe` (`tauri/src/setup/self_update.rs`)**:
+   - Interroga le release con tag `app-vX.Y.Z` del repository `https://api.github.com/repos/nabre/atollo/releases` cercando l'asset `Atollo-x64.exe` o `Atollo-arm64.exe`, verificato con SHA-256.
 4. **Template Android e Pacchetti dei Framework (`tauri/catalog/frameworks.json`)**:
    - I comandi del wizard scaricano pacchetti dai registri ufficiali tramite gli strumenti del kit: **Packagist** (`composer`), **npm Registry** (`npm`/`npx`), **Google Android Repository** (`sdkmanager` per `ndk;30.0.16248370`) e clonano il template ufficiale Android da `https://github.com/android/architecture-templates.git`.
 
@@ -241,7 +241,7 @@ Oltre ai componenti principali, l'applicazione comunica con i seguenti indirizzi
 2. **Download Manuale Assistito («By Hand», `tauri/src/setup/downloads.rs` e `ui/src/byhand.tsx`)**:
    - Se un download fallisce per blocchi firewall o problemi di rete (ma i metadati con l'impronta SHA sono noti), la riga del componente nella pagina **Strumenti** mostra un riquadro tratteggiato con il link diretto al file.
    - Cliccando sul nome del file si apre il browser del PC per scaricarlo; l'utente può poi **trascinare il file (Drag & Drop)** nel riquadro o cliccare su **«sfoglia…»** (che apre la cartella `Download` di Windows).
-   - Il file viene copiato in `<TEMP>\Dev-Kit\<id>\downloads\` (o `data\downloads\`), **verificato contro l'hash SHA ufficiale** (anche se il browser ha aggiunto ` (1)` al nome) e l'installazione riparte da sola. I file non utilizzati vengono puliti dopo 30 giorni.
+   - Il file viene copiato in `<TEMP>\Atollo\<id>\downloads\` (o `data\downloads\`), **verificato contro l'hash SHA ufficiale** (anche se il browser ha aggiunto ` (1)` al nome) e l'installazione riparte da sola. I file non utilizzati vengono puliti dopo 30 giorni.
 
 ---
 
@@ -249,7 +249,7 @@ Oltre ai componenti principali, l'applicazione comunica con i seguenti indirizzi
 
 ### 3.1 Perché l'Account GitHub è Fondamentale nel Kit
 
-In Dev-Kit l'account GitHub non è un semplice accessorio per un singolo programma, ma è progettato come **identità unica e centralizzata dell'intero ambiente portabile** (`tauri/src/github/mod.rs`, decisione D-70). Configurare l'account GitHub nelle **Impostazioni** risolve contemporaneamente cinque esigenze critiche:
+In Atollo l'account GitHub non è un semplice accessorio per un singolo programma, ma è progettato come **identità unica e centralizzata dell'intero ambiente portabile** (`tauri/src/github/mod.rs`, decisione D-70). Configurare l'account GitHub nelle **Impostazioni** risolve contemporaneamente cinque esigenze critiche:
 
 1. **Un solo accesso per tutti gli strumenti ("Single Sign-On" del Kit)**:
    - Effettuando l'accesso una sola volta nella sezione **Impostazioni › Account GitHub**, l'autenticazione diventa immediatamente attiva per:
@@ -265,7 +265,7 @@ In Dev-Kit l'account GitHub non è un semplice accessorio per un singolo program
 4. **Clonazione sicura dei repository privati senza esporre il token**:
    - Quando cloni un repository dall'app, il token non viene mai passato sulla riga di comando (dove sarebbe visibile agli altri processi del PC) né scritto in `.git\config` (dove resterebbe in chiaro nel progetto), ma viene iniettato per la sola durata del comando tramite variabili d'ambiente `GIT_CONFIG_*` come intestazione HTTP verso `https://github.com`.
 5. **Sopravvivenza allo spostamento del kit**:
-   - A differenza del comando standard `gh auth setup-git` (che scrive il percorso assoluto `C:\...\gh.exe` nel `.gitconfig`, rompendosi non appena la chiavetta cambia lettera d'unità), Dev-Kit configura nel `.gitconfig` portabile (`data\home\.gitconfig`) la direttiva `helper = !gh auth git-credential` senza percorso fisso, sfruttando il `PATH` isolato del kit.
+   - A differenza del comando standard `gh auth setup-git` (che scrive il percorso assoluto `C:\...\gh.exe` nel `.gitconfig`, rompendosi non appena la chiavetta cambia lettera d'unità), Atollo configura nel `.gitconfig` portabile (`data\home\.gitconfig`) la direttiva `helper = !gh auth git-credential` senza percorso fisso, sfruttando il `PATH` isolato del kit.
 
 ---
 
@@ -275,7 +275,7 @@ In Dev-Kit l'account GitHub non è un semplice accessorio per un singolo program
    - L'app avvia in background `gh auth login --hostname github.com --git-protocol https --web --insecure-storage --scopes workflow`.
    - Oltre agli scope predefiniti di `gh` (`repo`, `read:org`, `gist`), il kit richiede subito lo scope **`workflow`** per consentire il push di file `.github/workflows/*.yml` (GitHub Actions) dall'editor o dagli agenti.
 2. **Sincronizzazione automatica del Credential Helper di Git (`sync_git`)**:
-   - Appena l'accesso va a buon fine (e a ogni avvio dell'app), Dev-Kit aggiorna `data\home\.gitconfig` per i due domini `https://github.com` e `https://gist.github.com` impostando:
+   - Appena l'accesso va a buon fine (e a ogni avvio dell'app), Atollo aggiorna `data\home\.gitconfig` per i due domini `https://github.com` e `https://gist.github.com` impostando:
      1. un valore vuoto `helper =` (che azzera eventuali helper di sistema come Git Credential Manager solo per GitHub);
      2. `helper = !gh auth git-credential` (che delega a `gh` del kit la fornitura del token).
    - Se l'utente esce dall'account («Esci»), l'app rimuove automaticamente queste righe dal `.gitconfig`. Se invece l'utente aveva configurato a mano un proprio helper personalizzato, il kit non lo sovrascrive.
@@ -297,7 +297,7 @@ In Dev-Kit l'account GitHub non è un semplice accessorio per un singolo program
 > [!TIP]
 > **Esempio pratico — Accesso unificato come `@mario-rossi`:**
 > Nella schermata sopra, l'utente ha effettuato l'accesso in **Impostazioni › Account GitHub** con l'account **`@mario-rossi`**. Da questo istante:
-> - `data\gh\hosts.yml` conserva il token OAuth sulla chiavetta (`D:\Dev-Kit`);
+> - `data\gh\hosts.yml` conserva il token OAuth sulla chiavetta (`D:\Atollo`);
 > - `data\home\.gitconfig` usa `!gh auth git-credential` per autenticare automaticamente `git push`, `git pull`, l'Editor VSCodium e i tre agenti AI (Claude Code, Codex, Antigravity);
 > - il limite delle API GitHub per scaricare strumenti e aggiornamenti sale da 60 a **5.000 richieste/ora**.
 
@@ -317,7 +317,7 @@ In Dev-Kit l'account GitHub non è un semplice accessorio per un singolo program
 
 ### 4.1 Finestra Principale, Barra di Stato e Pannello Attività
 
-L'interfaccia di Dev-Kit utilizza i componenti ufficiali e il sistema di design di VSCodium (`@vscode-elements/elements`) con il tema unificato **Atollo Dark / Light** (sincronizzato automaticamente col tema chiaro/scuro di Windows):
+L'interfaccia di Atollo utilizza i componenti ufficiali e il sistema di design di VSCodium (`@vscode-elements/elements`) con il tema unificato **Atollo Dark / Light** (sincronizzato automaticamente col tema chiaro/scuro di Windows):
 
 - **Barra del titolo personalizzata (`ui/src/titlebar.tsx`)**: priva della cornice standard di Windows, integra il logo Atollo, il titolo della vista corrente e i controlli finestra.
 - **Banner degli avvisi globali (`Banner` in `ui/src/App.tsx`)**: compare in alto solo quando necessario per segnalare:
@@ -359,7 +359,7 @@ La pagina **Nuovo progetto** (`ui/src/wizard.tsx` e `tauri/src/projects/framewor
    - *Slot `tests`*: **Pest 5** per Laravel, **Vitest 5** per Vite e Tauri.
    - *Slot `format`*: **Prettier 3** (aggiunge lo script `npm run format`).
 3. **Destinazione (Nome del progetto)**:
-   - Può essere una **nuova cartella** in `projects\`, oppure un **progetto già esistente** purché sia vuoto o contenga file **senza essere già un repository Git** (in quest'ultimo caso il framework viene generato in `<TEMP>\Dev-Kit\<id>\frameworks\` e i file vengono uniti senza sovrascrivere i file già presenti dell'utente).
+   - Può essere una **nuova cartella** in `projects\`, oppure un **progetto già esistente** purché sia vuoto o contenga file **senza essere già un repository Git** (in quest'ultimo caso il framework viene generato in `<TEMP>\Atollo\<id>\frameworks\` e i file vengono uniti senza sovrascrivere i file già presenti dell'utente).
 4. **Variabili `.env` e Riepilogo**:
    - Mostra le variabili predefinite (es. `APP_NAME={name}`, `NATIVEPHP_APP_ID={package}` dove `{package}` diventa `com.example.<nome>`) permettendo di modificarle o aggiungerne di nuove, elenca gli strumenti del kit che verranno installati automaticamente e mostra tutti i comandi PowerShell che verranno eseguiti con output in tempo reale.
 
@@ -393,7 +393,7 @@ Cliccando su un progetto si apre nella parte centrale la **Scheda del Progetto**
 > Nella schermata sopra, l'azione predefinita **Avvia** (`composer run dev`) di `gestionale-fatture` è in esecuzione sulla porta bloccata `8000` (`http://127.0.0.1:8000/`). La console mostra l'output combinato di Laravel Server, Queue listener e Vite v6.2.1, mentre in basso il pannello **Attività** permette di controllare contemporaneamente tutti i progetti attivi (`gestionale-fatture :8000` e `portale-clienti :5173`), i database (`MySQL :3306`, `MongoDB :27017`) e le installazioni.
 
 2. **Sito web (`site`)**: permette di servire qualsiasi sottocartella del progetto (`.` o `public`, `dist`, ecc.) scegliendo tra 4 modalità:
-   - *file statici* (server interno `Dev-Kit.exe serve` senza bisogno di Node o PHP);
+   - *file statici* (server interno `Atollo.exe serve` senza bisogno di Node o PHP);
    - *PHP (server integrato)* (`php -S`);
    - *Caddy* (il server web predefinito: istanza del progetto sulla sua porta, oppure un pool condiviso o un profilo manuale; non legge `.htaccess`, le regole di riscrittura si generano dal tipo di progetto);
    - *Apache dedicato* (per i progetti con regole proprie nel `.htaccess`: istanza Apache esclusiva del progetto sulla sua porta, oppure associata a un pool condiviso).
@@ -421,11 +421,11 @@ Cliccando su un progetto si apre nella parte centrale la **Scheda del Progetto**
 
 - **Editor VSCodium integrato (`tauri/src/editor/`)**:
   - Avviato su `127.0.0.1` (porte `7000-7099`) con token di sicurezza privato e senza telemetria.
-  - Si apre in finestre dedicate di Dev-Kit (`editor-<n>`) senza barra del titolo di Windows: utilizza direttamente la barra del titolo di VSCodium con i menu (`File`, `Edit`, ecc.) e i pulsanti di controllo finestra iniettati nativamente (D-69).
+  - Si apre in finestre dedicate di Atollo (`editor-<n>`) senza barra del titolo di Windows: utilizza direttamente la barra del titolo di VSCodium con i menu (`File`, `Edit`, ecc.) e i pulsanti di controllo finestra iniettati nativamente (D-69).
   - **Sicurezza delle finestre Editor**: le finestre dell'editor non hanno alcun accesso ai comandi IPC di Tauri (D-14), possono navigare solo verso l'URL del proprio progetto (`folder=`), chiedono conferma di fiducia (*Workspace Trust*) alla prima apertura di un progetto sconosciuto (D-67) e attivano nell'area di lavoro solo le estensioni pertinenti a quel progetto (D-71).
   - **Rilevamento live dei linguaggi (ogni 15 secondi)**: se mentre lavori nell'editor crei il primo file `.py` o `.rb` in un progetto, entro 15 secondi il kit se ne accorge, installa in background le estensioni per quel linguaggio e mostra nella finestra dell'editor un banner per riavviare le estensioni.
 - **Terminale esclusivo del kit (`tauri/src/editor/terminal.rs`)**:
-  - **Dentro l'editor**: i profili di sistema di Windows sono nascosti; il profilo predefinito è **Dev-Kit** (PowerShell 7 del kit con `profile.ps1`, che applica anche le versioni dei linguaggi scelte per quel progetto), affiancato da *Dev-Kit - Git Bash*, *Dev-Kit - cmd* e dai profili dei tre agenti AI installati.
+  - **Dentro l'editor**: i profili di sistema di Windows sono nascosti; il profilo predefinito è **Atollo** (PowerShell 7 del kit con `profile.ps1`, che applica anche le versioni dei linguaggi scelte per quel progetto), affiancato da *Atollo - Git Bash*, *Atollo - cmd* e dai profili dei tre agenti AI installati.
   - **Fuori dall'editor (pulsante «Terminale» o avvio di un Agente)**: apre la **console classica di Windows** (`conhost.exe` di System32, avviato direttamente: Windows non la passa al terminale predefinito del PC) con PowerShell 7 del kit e l'ambiente esatto del progetto, dentro il job dell'app (D-57, D-95).
   - **Su macOS e Linux** il terminale del kit e gli agenti si aprono in una scheda del terminale dentro la finestra dell'app (D-109), con PowerShell del kit o Bash e lo stesso ambiente del progetto; i programmi restano nel gruppo di processi del kit.
 
@@ -467,7 +467,7 @@ La pagina **Database** (`ui/src/databases.tsx` e `tauri/src/db/`) gestisce i ser
 ````
 
 > **Esempio pratico — Gestione relazionale (MySQL + phpMyAdmin) e documentale (MongoDB Contenuto):**
-> - Nella **prima schermata** (il server SQL), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a Atollo; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
+> - Nella **prima schermata** (il server SQL), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme ad Atollo; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
 > - Nella **seconda schermata** (`MongoDB 8.0`), la scheda **Contenuto** mostra i database `api_magazzino` e `portale_clienti` (con le collezioni `utenti (19)` e `ticket_supporto (73)`) permettendo di ispezionare i documenti JSON direttamente dentro l'app.
 
 ---
@@ -513,7 +513,7 @@ La pagina **Impostazioni** (`ui/src/settings/page.tsx`) è organizzata come l'ed
    - **Rete**: Proxy HTTPS, Proxy HTTP, Esclusioni proxy (`NO_PROXY`), Certificati CA aggiuntivi (`.pem`), Accesso dalla rete locale (LAN) ai server dei progetti.
    - **Agenti**: Chiave API di Gemini (per usare Antigravity senza account Google).
    - **Versioni**: Linea predefinita di Python, ramo predefinito di PHP, compilatore predefinito di Rust (`GNU` o `MSVC`).
-   - **Aggiornamenti**: Controllo immediato e stato degli aggiornamenti di `Dev-Kit.exe`.
+   - **Aggiornamenti**: Controllo immediato e stato degli aggiornamenti di `Atollo.exe`.
    - **Account GitHub**: Collegamento e disconnessione dell'account GitHub del kit.
    - **Il kit**: Informazioni dettagliate sul percorso della radice, architettura, tipo di volume e file system rilevato (`NTFS`, `exFAT`, `FAT32`, disco fisso o rimovibile) e pulsanti per aprire le cartelle del kit o dei log.
 2. **Riquadro Framework (`ui/src/frameworks/`)**:
@@ -532,33 +532,33 @@ La pagina **Rimuovi l'unità** (`ui/src/eject.tsx` e `tauri/src/os/sessions.rs`)
   4. ferma i pool Caddy e Apache;
   5. chiude le finestre dell'editor, il server VSCodium, le console e tutti i processi con eseguibile dentro il kit;
   6. salva nel kit (`data\antigravity\keyring.json`) le credenziali di Antigravity rimuovendole dalla Gestione credenziali di Windows;
-  7. invita infine a chiudere la finestra di `Dev-Kit.exe` stessa per rilasciare l'ultimo file sul disco ed espellere l'unità da Windows.
+  7. invita infine a chiudere la finestra di `Atollo.exe` stessa per rilasciare l'ultimo file sul disco ed espellere l'unità da Windows.
 
 ![Pagina Rimuovi l'unità con elenco completo dei processi e servizi attivi sull'unità portabile](images/15-rimuovi-unita.png)
 
 > [!IMPORTANT]
 > **Esempio pratico — Rimozione sicura della chiavetta a fine giornata:**
-> Nella schermata sopra, prima di sfilare l'unità `D:\Dev-Kit`, la pagina **Rimuovi l'unità** rileva automaticamente **1 finestra dell'editor**, **2 console**, **2 progetti avviati** (`gestionale-fatture` e `portale-clienti`), **2 database attivi** (`MySQL` e `MongoDB`) e **4 processi** ancora in esecuzione da `data\apps\` (`php.exe`, `httpd.exe`, `mysqld.exe`, `node.exe`). Un singolo clic su **«Chiudi tutto e prepara la rimozione»** arresta ordinatamente i database (evitando corruzioni delle tabelle InnoDB/WiredTiger), riporta le credenziali di Antigravity nel kit e libera ogni handle sul file system.
+> Nella schermata sopra, prima di sfilare l'unità `D:\Atollo`, la pagina **Rimuovi l'unità** rileva automaticamente **1 finestra dell'editor**, **2 console**, **2 progetti avviati** (`gestionale-fatture` e `portale-clienti`), **2 database attivi** (`MySQL` e `MongoDB`) e **4 processi** ancora in esecuzione da `data\apps\` (`php.exe`, `httpd.exe`, `mysqld.exe`, `node.exe`). Un singolo clic su **«Chiudi tutto e prepara la rimozione»** arresta ordinatamente i database (evitando corruzioni delle tabelle InnoDB/WiredTiger), riporta le credenziali di Antigravity nel kit e libera ogni handle sul file system.
 
 ---
 
-### 4.11 Interfaccia a Riga di Comando (CLI di `Dev-Kit.exe`)
+### 4.11 Interfaccia a Riga di Comando (CLI di `Atollo.exe`)
 
-Lo stesso eseguibile `Dev-Kit.exe` offre una CLI completa (`tauri/src/cli.rs`). Poiché `Dev-Kit.exe` è compilato come applicazione grafica Windows (`windows_subsystem = "windows"`), quando lo si invoca da PowerShell occorre aggiungere `| Out-Host` per attendere la fine del comando e leggerne l'output:
+Lo stesso eseguibile `Atollo.exe` offre una CLI completa (`tauri/src/cli.rs`). Poiché `Atollo.exe` è compilato come applicazione grafica Windows (`windows_subsystem = "windows"`), quando lo si invoca da PowerShell occorre aggiungere `| Out-Host` per attendere la fine del comando e leggerne l'output:
 
 ```powershell
-.\Dev-Kit.exe env | Out-Host                                 # Stampa tutte le variabili d'ambiente calcolate per il kit
-.\Dev-Kit.exe components | Out-Host                          # Elenca i componenti del catalogo, se sono scelti e la versione installata
-.\Dev-Kit.exe versions <id> | Out-Host                       # Scarica e mostra le linee major.minor disponibili per un componente versionato
-.\Dev-Kit.exe check | Out-Host                               # Esegue il comando di verifica finale su tutti i componenti installati
-.\Dev-Kit.exe prepare [--only a,b] [--skip c] [--update-all] [--force] | Out-Host
+.\Atollo.exe env | Out-Host                                 # Stampa tutte le variabili d'ambiente calcolate per il kit
+.\Atollo.exe components | Out-Host                          # Elenca i componenti del catalogo, se sono scelti e la versione installata
+.\Atollo.exe versions <id> | Out-Host                       # Scarica e mostra le linee major.minor disponibili per un componente versionato
+.\Atollo.exe check | Out-Host                               # Esegue il comando di verifica finale su tutti i componenti installati
+.\Atollo.exe prepare [--only a,b] [--skip c] [--update-all] [--force] | Out-Host
                                                              # Installa, aggiorna o rimuove i componenti scelti
-.\Dev-Kit.exe sync [--project <cartella>] [--verbose] | Out-Host
+.\Atollo.exe sync [--project <cartella>] [--verbose] | Out-Host
                                                              # Allinea istruzioni, skill, regole e MCP fra Claude, Codex e Antigravity
-.\Dev-Kit.exe keyring restore|save | Out-Host                # Ripristina o salva l'accesso di Antigravity (usato da agy.cmd)
-.\Dev-Kit.exe serve <cartella> <porta> | Out-Host            # Avvia il server HTTP statico integrato
-.\Dev-Kit.exe version | Out-Host                             # Mostra la versione dell'app
-.\Dev-Kit.exe help | Out-Host                                # Mostra il riepilogo dei comandi
+.\Atollo.exe keyring restore|save | Out-Host                # Ripristina o salva l'accesso di Antigravity (usato da agy.cmd)
+.\Atollo.exe serve <cartella> <porta> | Out-Host            # Avvia il server HTTP statico integrato
+.\Atollo.exe version | Out-Host                             # Mostra la versione dell'app
+.\Atollo.exe help | Out-Host                                # Mostra il riepilogo dei comandi
 ```
 
 ---
@@ -573,8 +573,8 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 
 - **Dove si configura**: nel file system di Windows prima del primo avvio, poi nella procedura guidata di **Primo Avvio**.
 - **Passaggi**:
-  1. Crea una cartella per il kit (es. `D:\Dev-Kit` su disco interno o `E:\Dev-Kit` su chiavetta USB). **Importante**: assicurati che nessun segmento del percorso inizi con una cifra (`0-9`) o con le lettere minuscole `x` o `u` (es. evita `D:\2026\kit` o `D:\utils\kit`, usa piuttosto `D:\Anno2026\kit` o `D:\Tools\kit`).
-  2. Copia `Dev-Kit.exe` dentro la cartella e avvialo con doppio clic.
+  1. Crea una cartella per il kit (es. `D:\Atollo` su disco interno o `E:\Atollo` su chiavetta USB). **Importante**: assicurati che nessun segmento del percorso inizi con una cifra (`0-9`) o con le lettere minuscole `x` o `u` (es. evita `D:\2026\kit` o `D:\utils\kit`, usa piuttosto `D:\Anno2026\kit` o `D:\Tools\kit`).
+  2. Copia `Atollo.exe` dentro la cartella e avvialo con doppio clic.
   3. Nella schermata di **Primo Avvio**, verifica i componenti preselezionati (di default: *PowerShell 7*, *GitHub CLI*, *Editor*, i tre *Agenti*, *Python*, *PHP*, *Apache*, più *Git* che arriva con GitHub CLI — circa 1,8 GB) oppure spunta subito altri linguaggi o database che usi abitualmente, quindi clicca su **«Installa»**.
 
 ![Schermata di Primo Avvio (Benvenuto in Atollo) con selezione iniziale degli strumenti](images/01-wizard-benvenuto.png)
@@ -591,16 +591,16 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 - **Passaggi e Scopi per ogni voce**:
   1. **Lingua (`lang`)**:
      - *Passaggi*: scegli tra *Lingua di Windows*, *Italiano*, *English*, *Français*, *Deutsch* e clicca su **«Salva»** in alto a destra nella barra delle schede.
-     - *Scopo*: cambia istantaneamente (senza riavvio) la lingua dell'interfaccia, dei messaggi d'errore del motore Rust e imposta la variabile `DEVKIT_LANG` per gli strumenti del kit.
+     - *Scopo*: cambia istantaneamente (senza riavvio) la lingua dell'interfaccia, dei messaggi d'errore del motore Rust e imposta la variabile `ATOLLO_LANG` per gli strumenti del kit.
   2. **Temporanei dei programmi (`programTemp`: `Automatico` / `Nel kit` / `Nel sistema`)**:
      - *Passaggi*: seleziona la modalità desiderata nel menu a tendina *Temporanei dei programmi* e salva.
      - *Scopo*: controlla dove puntano le variabili `TEMP`, `TMP` e `CLAUDE_CODE_TMPDIR` viste dai compilatori, da `npm`, `pip` e dagli agenti AI:
-       - **Automatico (consigliato)**: se il kit si trova su un disco interno fisso **NTFS/ReFS**, usa `data\tmp\system` dentro il kit (zero tracce sul PC e cartella protetta da DACL); se invece il kit si trova su una **chiavetta USB rimovibile**, su un **disco di rete** o su file system **FAT32/exFAT**, sposta automaticamente i temporanei in `<TEMP di Windows>\Dev-Kit\<id>\system` (e `\claude`). Questo **moltiplica la velocità di compilazione**, evita l'usura della memoria flash USB e impedisce che frammenti temporanei restino leggibili senza permessi su una chiavetta FAT32/exFAT (vengono poi cancellati automaticamente dal PC alla chiusura dell'app).
+       - **Automatico (consigliato)**: se il kit si trova su un disco interno fisso **NTFS/ReFS**, usa `data\tmp\system` dentro il kit (zero tracce sul PC e cartella protetta da DACL); se invece il kit si trova su una **chiavetta USB rimovibile**, su un **disco di rete** o su file system **FAT32/exFAT**, sposta automaticamente i temporanei in `<TEMP di Windows>\Atollo\<id>\system` (e `\claude`). Questo **moltiplica la velocità di compilazione**, evita l'usura della memoria flash USB e impedisce che frammenti temporanei restino leggibili senza permessi su una chiavetta FAT32/exFAT (vengono poi cancellati automaticamente dal PC alla chiusura dell'app).
        - **Nel kit**: forza l'uso esclusivo di `data\tmp` anche su chiavetta (massima riservatezza rispetto al PC ospite, ma più lento su USB).
        - **Nel sistema**: forza l'uso del disco del PC ospite anche quando il kit è su disco fisso (utile per risparmiare spazio o scritture sull'unità del kit).
   3. **Aggiornamento automatico (`autoUpdate`)**:
      - *Passaggi*: lascia attiva o deseleziona la casella *«Scarica da solo le nuove versioni di Atollo»*.
-     - *Scopo*: quando è attiva, 20 secondi dopo l'avvio l'app controlla silenziosamente se esiste una nuova release `app-v*` su GitHub, la scarica e ne verifica lo SHA-256 in `data\app\update\`, sostituendo `Dev-Kit.exe` alla chiusura senza mai interrompere il lavoro. Disattivala se lavori su connessioni a consumo stretto o vuoi bloccare la versione dell'ambiente.
+     - *Scopo*: quando è attiva, 20 secondi dopo l'avvio l'app controlla silenziosamente se esiste una nuova release `app-v*` su GitHub, la scarica e ne verifica lo SHA-256 in `data\app\update\`, sostituendo `Atollo.exe` alla chiusura senza mai interrompere il lavoro. Disattivala se lavori su connessioni a consumo stretto o vuoi bloccare la versione dell'ambiente.
 
 ---
 
@@ -610,13 +610,13 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 - **Passaggi e Scopi per ogni voce**:
   1. **Proxy HTTPS (`httpsProxy`), Proxy HTTP (`httpProxy`) e Senza proxy per (`noProxy`)**:
      - *Passaggi*: inserisci l'URL completo del proxy (es. `http://proxy.azienda.it:8080`) e gli host esclusi (es. `localhost,127.0.0.1,.azienda.it`), poi clicca su **«Salva»** (e su **«Riavvia l'editor»** se l'editor era già aperto).
-     - *Scopo*: propaga automaticamente `HTTPS_PROXY`, `HTTP_PROXY` e `NO_PROXY` sia al motore di download di Dev-Kit sia a tutti i sottoprocessi (`npm`, `pip`, `composer`, `cargo`, `rustup`, `git`, `gh` e i tre agenti AI). Necessario anche quando la rete aziendale usa file PAC (non letti automaticamente).
+     - *Scopo*: propaga automaticamente `HTTPS_PROXY`, `HTTP_PROXY` e `NO_PROXY` sia al motore di download di Atollo sia a tutti i sottoprocessi (`npm`, `pip`, `composer`, `cargo`, `rustup`, `git`, `gh` e i tre agenti AI). Necessario anche quando la rete aziendale usa file PAC (non letti automaticamente).
   2. **Certificati aggiuntivi — file PEM (`extraCaCerts`)**:
      - *Passaggi*: indica il percorso di un file `.pem` esistente contenente il certificato radice dell'azienda (consigliato: copialo dentro `data\` per averlo sempre con te) e salva.
      - *Scopo*: mentre i programmi che usano SChannel di Windows leggono l'archivio certificati del sistema, **Node.js** (e quindi anche il server dell'editor, `npm`, Claude Code e Codex) usa un proprio archivio CA statico e fallirebbe dietro un firewall aziendale con *SSL Inspection*. Questa impostazione valorizza automaticamente `NODE_EXTRA_CA_CERTS` per tutti i processi del kit.
-  3. **Rete locale (`allowLan` / `DEVKIT_ALLOW_LAN=1`)**:
+  3. **Rete locale (`allowLan` / `ATOLLO_ALLOW_LAN=1`)**:
      - *Passaggi*: spunta *«Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete»* e salva.
-     - *Scopo*: per sicurezza predefinita, un file incorporato (`data\kit\loopback.js`, caricato via `NODE_OPTIONS=--require`) e i generatori di comandi costringono tutti i server di sviluppo dei progetti (Vite, Next.js, PHP, Apache, Caddy, `Dev-Kit.exe serve`) ad ascoltare **solo su `127.0.0.1`**, evitando avvisi del Firewall di Windows ed esposizioni su reti Wi-Fi pubbliche. Attivando questa opzione, i server web dei progetti ascoltano su `0.0.0.0` così puoi provare il sito o l'app da uno smartphone o da un altro PC collegato alla stessa rete locale (i database MySQL e MongoDB restano comunque blindati su `127.0.0.1`).
+     - *Scopo*: per sicurezza predefinita, un file incorporato (`data\kit\loopback.js`, caricato via `NODE_OPTIONS=--require`) e i generatori di comandi costringono tutti i server di sviluppo dei progetti (Vite, Next.js, PHP, Apache, Caddy, `Atollo.exe serve`) ad ascoltare **solo su `127.0.0.1`**, evitando avvisi del Firewall di Windows ed esposizioni su reti Wi-Fi pubbliche. Attivando questa opzione, i server web dei progetti ascoltano su `0.0.0.0` così puoi provare il sito o l'app da uno smartphone o da un altro PC collegato alla stessa rete locale (i database MySQL e MongoDB restano comunque blindati su `127.0.0.1`).
 
 ---
 

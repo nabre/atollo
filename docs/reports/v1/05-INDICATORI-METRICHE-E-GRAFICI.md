@@ -1,7 +1,7 @@
 # 05 — Artefatto Complementare: Criteri, Indicatori (KPI), Valutazioni e Rappresentazioni Grafiche
 
 > [!IMPORTANT]
-> Questo documento costituisce l'**artefatto complementare** richiesto per promuovere **grafiche, criteri di valutazione, indicatori quantitativi (KPI) e valutazioni analitiche** sui singoli aspetti del progetto NEXKORA (Dev-Kit). È accompagnato dalla dashboard interattiva [`dashboard-valutazione.html`](file:///c:/Users/nabre/Projects/dev-kit2/reports/dashboard-valutazione.html).
+> Questo documento costituisce l'**artefatto complementare** richiesto per promuovere **grafiche, criteri di valutazione, indicatori quantitativi (KPI) e valutazioni analitiche** sui singoli aspetti del progetto Atollo. È accompagnato dalla dashboard interattiva [`dashboard-valutazione.html`](../../../reports/dashboard-valutazione.html).
 
 ---
 
@@ -15,7 +15,7 @@ Per garantire oggettività scientifica e ripetibilità nella verifica del softwa
 | **80 – 89** | **A / Molto Buono** | Implementazione solida e matura; presenti solo anomalie minori o edge-case di concorrenza facilmente risolvibili. |
 | **70 – 79** | **B / Buono-Discreto** | Funzionalità core operative, ma presenza di feature parzialmente collegate o bug di media/alta priorità da correggere prima del rilascio 1.0. |
 | **50 – 69** | **C / Parziale** | Base architetturale presente e ben progettata, ma copertura incompleta (es. supporto limitato a un solo OS). |
-| **< 50** | **D / Critico** | Ristrutturazione profonda necessaria. *(Nessuna dimensione di NEXKORA ricade in questa fascia).* |
+| **< 50** | **D / Critico** | Ristrutturazione profonda necessaria. *(Nessuna dimensione di Atollo ricade in questa fascia).* |
 
 ---
 
@@ -80,7 +80,7 @@ xychart-beta
     bar [95, 25, 40, 60]
     line [4, 1, 1, 2]
 ```
-> *Legenda*: **Barre** = Configurazione manuale tradizionale senza NEXKORA; **Linea** = Configurazione assistita con NEXKORA.
+> *Legenda*: **Barre** = Configurazione manuale tradizionale senza Atollo; **Linea** = Configurazione assistita con Atollo.
 
 ---
 
@@ -116,7 +116,7 @@ stateDiagram-v2
 
 | Indicatore Tecnico | Valore Rilevato nel Progetto | Benchmark Industria | Valutazione |
 | :--- | :---: | :---: | :---: |
-| **Occorrenze `unwrap()` / `expect()` in codice di produzione Rust** | **0** (`deny` in [`main.rs:7`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/main.rs#L7)) | `< 5` | **100 / 100** |
+| **Occorrenze `unwrap()` / `expect()` in codice di produzione Rust** | **0** (`deny` in [`main.rs:7`](../../../tauri/src/main.rs#L7)) | `< 5` | **100 / 100** |
 | **Comandi IPC protetti da `ensure_main(&webview)`** | **113 / 113 (100%)** | `100%` | **100 / 100** |
 | **Moduli di test Rust (`test/rust/**`) e UI (`test/ui/**`)** | **80+ file di test** (unitari, integrazione, contrasto temi, i18n) | Alta copertura | **92 / 100** |
 | **Lingue supportate nel catalogo UI/Backend** | **4** (`it`, `en`, `fr`, `de` — Guida parziale in FR/DE) | `>= 2` | **85 / 100** |

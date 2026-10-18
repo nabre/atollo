@@ -25,7 +25,7 @@ fn fpm_conf_expected() {
         Path::new("/kit/data/servers/caddy-2.11_php-8.4"),
         Path::new("/run/user/1000/atollo-caddy-1000/c-0123456789ab/fpm.sock"),
     );
-    let want = "; Dev-Kit: php-fpm of this web server (written at every start)\n\
+    let want = "; Atollo: php-fpm of this web server (written at every start)\n\
 [global]\n\
 pid = \"/kit/data/servers/caddy-2.11_php-8.4/php-fpm.pid\"\n\
 error_log = \"/kit/data/servers/caddy-2.11_php-8.4/php-fpm.log\"\n\
@@ -102,7 +102,7 @@ fn fpm_arguments() {
             "-c",
             "/kit/data/php/8.4",
             "-d",
-            "devkit.fcgi_key=k3y",
+            "atollo.fcgi_key=k3y",
             "-d",
             "auto_prepend_file=\"/kit/data/kit/fcgi-guard.php\""
         ]

@@ -4,7 +4,7 @@
 //! - through the kit's own clients, logged in as the administrator as the
 //!   rest of `db/services/`: `mysql` with the kit's `[client]` login and the
 //!   SQL on stdin, mongosh with the password and the names in its
-//!   environment (`DEVKIT_DB_*`); never a password or a name on the command
+//!   environment (`ATOLLO_DB_*`); never a password or a name on the command
 //!   line;
 //! - MySQL answers one JSON value per line (`JSON_OBJECT`, `JSON_ARRAY`),
 //!   so no escaping of tabs or `NULL` to undo; binary columns come as
@@ -185,7 +185,7 @@ fn mongosh(
     cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
         .arg(port.to_string())
         .args(["--eval", script])
-        .env("DEVKIT_DB_ADMIN", admin);
+        .env("ATOLLO_DB_ADMIN", admin);
     for (k, v) in vars {
         cmd.env(k, v);
     }
@@ -208,12 +208,12 @@ const SQL_TREE: &str = "SELECT JSON_OBJECT('db', s.SCHEMA_NAME, 't', t.TABLE_NAM
 // Plain loops: mongosh makes shell calls async and a callback of `map`
 // would not wait for them. Counting can be refused even to root
 // (`config.system.sessions`): null.
-const MONGO_TREE_JS: &str = "const a = db.getSiblingDB('admin');     a.auth('admin', process.env.DEVKIT_DB_ADMIN);     const out = [];     for (const d of a.adminCommand({ listDatabases: 1, nameOnly: true }).databases) {       const s = db.getSiblingDB(d.name);       let infos = [];       try { infos = s.getCollectionInfos(); } catch (e) {}       const tables = [];       for (const c of infos) {         let rows = null;         if (c.type !== 'view') { try { rows = s.getCollection(c.name).estimatedDocumentCount(); } catch (e) {} }         tables.push({ name: c.name, view: c.type === 'view', rows: rows });       }       out.push({ name: d.name, tables: tables });     }     print(JSON.stringify(out));";
+const MONGO_TREE_JS: &str = "const a = db.getSiblingDB('admin');     a.auth('admin', process.env.ATOLLO_DB_ADMIN);     const out = [];     for (const d of a.adminCommand({ listDatabases: 1, nameOnly: true }).databases) {       const s = db.getSiblingDB(d.name);       let infos = [];       try { infos = s.getCollectionInfos(); } catch (e) {}       const tables = [];       for (const c of infos) {         let rows = null;         if (c.type !== 'view') { try { rows = s.getCollection(c.name).estimatedDocumentCount(); } catch (e) {} }         tables.push({ name: c.name, view: c.type === 'view', rows: rows });       }       out.push({ name: d.name, tables: tables });     }     print(JSON.stringify(out));";
 
 const MONGO_ROWS_JS: &str = "const a = db.getSiblingDB('admin'); \
-    a.auth('admin', process.env.DEVKIT_DB_ADMIN); \
-    const c = db.getSiblingDB(process.env.DEVKIT_DB_NAME).getCollection(process.env.DEVKIT_DB_TABLE); \
-    const docs = c.find().skip(Number(process.env.DEVKIT_DB_OFFSET)).limit(Number(process.env.DEVKIT_DB_LIMIT)).toArray(); \
+    a.auth('admin', process.env.ATOLLO_DB_ADMIN); \
+    const c = db.getSiblingDB(process.env.ATOLLO_DB_NAME).getCollection(process.env.ATOLLO_DB_TABLE); \
+    const docs = c.find().skip(Number(process.env.ATOLLO_DB_OFFSET)).limit(Number(process.env.ATOLLO_DB_LIMIT)).toArray(); \
     print(EJSON.stringify({ total: c.countDocuments(), docs }, undefined, undefined, { relaxed: true }));";
 
 /// The databases of a running server, version `line` (None: the one the
@@ -355,10 +355,10 @@ pub fn rows(
                 line,
                 MONGO_ROWS_JS,
                 &[
-                    ("DEVKIT_DB_NAME", database),
-                    ("DEVKIT_DB_TABLE", table),
-                    ("DEVKIT_DB_OFFSET", &offset_s),
-                    ("DEVKIT_DB_LIMIT", &limit_s),
+                    ("ATOLLO_DB_NAME", database),
+                    ("ATOLLO_DB_TABLE", table),
+                    ("ATOLLO_DB_OFFSET", &offset_s),
+                    ("ATOLLO_DB_LIMIT", &limit_s),
                 ],
             )?;
             Ok(documents(&answer, offset))

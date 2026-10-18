@@ -123,12 +123,12 @@ pub(super) fn plan_needs(plan: &crate::projects::frameworks::Plan) -> Vec<&str> 
 /// Drupal's installers take it as options).
 pub(super) fn db_vars(db: &crate::db::auth::ProjectDb) -> Vec<(String, String)> {
     [
-        ("DEVKIT_DB_HOST", db.host.clone()),
-        ("DEVKIT_DB_PORT", db.port.to_string()),
-        ("DEVKIT_DB_NAME", db.database.clone()),
-        ("DEVKIT_DB_USER", db.user.clone()),
-        ("DEVKIT_DB_PASSWORD", db.password.clone()),
-        ("DEVKIT_DB_URL", db.url.clone()),
+        ("ATOLLO_DB_HOST", db.host.clone()),
+        ("ATOLLO_DB_PORT", db.port.to_string()),
+        ("ATOLLO_DB_NAME", db.database.clone()),
+        ("ATOLLO_DB_USER", db.user.clone()),
+        ("ATOLLO_DB_PASSWORD", db.password.clone()),
+        ("ATOLLO_DB_URL", db.url.clone()),
     ]
     .into_iter()
     .map(|(k, v)| (k.to_owned(), v))
@@ -320,7 +320,7 @@ pub async fn frameworks_create<R: Runtime>(
                 return Err(no_folder().into());
             }
             // What the steps get in their environment: the database's
-            // connection (`DEVKIT_DB_*`) and the variables of `.env`.
+            // connection (`ATOLLO_DB_*`) and the variables of `.env`.
             let mut step_vars: Vec<(String, String)> = Vec::new();
             if let Some(engine) = &plan.database {
                 let text = crate::i18n::t(lang, "Creo il database del progetto in {0}…", &[engine]);

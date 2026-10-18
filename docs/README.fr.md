@@ -6,7 +6,7 @@
 
 Au premier démarrage, l'application télécharge d'elle-même les composants système : PowerShell 7, GitHub CLI, l'éditeur et ce dont ils ont besoin (Git pour GitHub CLI). Le reste se choisit dans la page « Outils », ou arrive quand il sert : Node.js avec une action `npm`, uv avec un serveur MCP `uvx`, et ainsi de suite.
 
-> En italien : guide [app/GUIDA.md](app/GUIDA.md), décisions [app/DECISIONS.md](app/DECISIONS.md), nouveautés [app/CHANGELOG.md](app/CHANGELOG.md) ; travail ouvert : [issues](https://github.com/nabre/dev-kit2/issues).
+> En italien : guide [app/GUIDA.md](app/GUIDA.md), décisions [app/DECISIONS.md](app/DECISIONS.md), nouveautés [app/CHANGELOG.md](app/CHANGELOG.md) ; travail ouvert : [issues](https://github.com/nabre/atollo/issues).
 
 ## Utilisation
 
@@ -14,7 +14,7 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 2. Double-cliquez : l'application crée `projects\` et `data\`. Au premier démarrage, choisissez agents, langages et outils : l'application les télécharge et les vérifie (somme de contrôle ou signature).
 3. Créez ou clonez un projet dans la page **Projets**. L'éditeur, le terminal et les agents s'ouvrent toujours dans le dossier d'un projet, jamais ailleurs.
 
-Depuis la [page des versions publiées](https://github.com/nabre/dev-kit2/releases) : `Atollo-x64.exe` ou `Atollo-arm64.exe` pour Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) ou `Atollo-darwin-x64.app.zip` (Intel) pour macOS, `Atollo-linux-x64` ou `Atollo-linux-arm64` (`.AppImage` et `.tar.gz`) pour Linux ; chaque fichier a son `.sha256`.
+Depuis la [page des versions publiées](https://github.com/nabre/atollo/releases) : `Atollo-x64.exe` ou `Atollo-arm64.exe` pour Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) ou `Atollo-darwin-x64.app.zip` (Intel) pour macOS, `Atollo-linux-x64` ou `Atollo-linux-arm64` (`.AppImage` et `.tar.gz`) pour Linux ; chaque fichier a son `.sha256`.
 
 **macOS** (12 ou ultérieur). L'application n'a qu'une signature ad hoc, sans notarisation d'Apple :
 1. Décompressez le zip et déplacez `Atollo.app` avec le Finder dans le dossier du kit (par exemple `/Volumes/KIT/Atollo/`).
@@ -42,7 +42,7 @@ La console d'Atollo est la console classique de Windows avec PowerShell 7 intég
 
 ## Limites connues
 
-- Sur Windows 10 et 11 (`x64` et `ARM64`), macOS (Apple Silicon et Intel) et Linux (`x64` et `ARM64`). Sur Windows ARM64 l'éditeur, PHP, Apache, MySQL et TinyTeX tournent en émulation x64 et R n'est pas disponible ; sur Linux ARM64 Android manque. Les versions publiées pour macOS et Linux, à partir du prochain tag, sont essayées en CI mais pas encore sur des machines propres ([#5](https://github.com/nabre/dev-kit2/issues/5)), et la connexion des agents reste à essayer sur un Mac ([#6](https://github.com/nabre/dev-kit2/issues/6)) ; composants et sources par système dans [app/CATALOG.md](app/CATALOG.md) (en italien), la matrice composant × système dans [app/MATRICE-STRUMENTI.html](app/MATRICE-STRUMENTI.html). Apache sur macOS et Linux arrive avec la première version publiée du build du kit (D-116) ; d'ici là, le serveur web y est Caddy.
+- Sur Windows 10 et 11 (`x64` et `ARM64`), macOS (Apple Silicon et Intel) et Linux (`x64` et `ARM64`). Sur Windows ARM64 l'éditeur, PHP, Apache, MySQL et TinyTeX tournent en émulation x64 et R n'est pas disponible ; sur Linux ARM64 Android manque. Les versions publiées pour macOS et Linux, à partir du prochain tag, sont essayées en CI mais pas encore sur des machines propres ([#5](https://github.com/nabre/atollo/issues/5)), et la connexion des agents reste à essayer sur un Mac ([#6](https://github.com/nabre/atollo/issues/6)) ; composants et sources par système dans [app/CATALOG.md](app/CATALOG.md) (en italien), la matrice composant × système dans [app/MATRICE-STRUMENTI.html](app/MATRICE-STRUMENTI.html). Apache sur macOS et Linux arrive avec la première version publiée du build du kit (D-116) ; d'ici là, le serveur web y est Caddy.
 - Sous Linux, MySQL a besoin de deux bibliothèques du système, `libaio` et `libnuma` : sur Ubuntu 24.04 et Debian 13 `sudo apt install libaio1t64 libnuma1` (sur les versions précédentes `libaio1`), sur Fedora et RHEL `sudo dnf install libaio numactl-libs`. Si elles manquent, Atollo le dit avec la commande à exécuter.
 - Hors du dossier d'Atollo, il ne reste que les traces de Windows, les fichiers temporaires de transit dans le dossier temporaire du système (supprimés automatiquement à la fermeture), la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle faite dans les Paramètres reste dans `data\gh`) et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
 - Les dossiers de `projects\` sont considérés comme fiables par Claude Code et Codex : n'ouvrez que des projets de confiance. L'éditeur, lui, demande à la première ouverture de chaque projet et ouvre en « mode restreint » ceux auxquels vous ne faites pas confiance.

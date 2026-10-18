@@ -8,7 +8,7 @@
 //! Drupal and Laravel want it), hidden files and `.inc`/`.php3`…`.php8`
 //! refused with 404, aliases checked on disk. PHP is the kit's FastCGI
 //! server (`projects/fastcgi.rs`: php-cgi on Windows, php-fpm elsewhere),
-//! sent the start's key with every request (`env DEVKIT_FCGI_KEY`), which
+//! sent the start's key with every request (`env ATOLLO_FCGI_KEY`), which
 //! Caddy reads from its own environment, never from its configuration.
 //!
 //! A pool has its own admin endpoint on an owner-only Unix socket
@@ -189,11 +189,11 @@ pub fn socket_bases(kit: &Kit) -> Vec<PathBuf> {
     }
     let temp = kit.system_temp().map(Path::to_path_buf);
     if kit.os().is_windows() {
-        // `%TEMP%\Dev-Kit\<id>`: the user's own.
+        // `%TEMP%\Atollo\<id>`: the user's own.
         out.extend(temp);
     } else {
         // The host's temporary folder itself (`/tmp`), not the kit's
-        // `Dev-Kit/<id>` in it, which another user may have made first.
+        // `Atollo/<id>` in it, which another user may have made first.
         out.extend(
             temp.as_deref()
                 .and_then(|t| t.parent()?.parent())
@@ -449,7 +449,7 @@ pub fn global_options(admin: Option<&Path>, run_dir: &Path) -> Result<Vec<String
 /// The PHP of a site (or of an alias) at `indent`: the FastCGI server, the
 /// key of this start and the files PHP runs ([`PHP_RUN`]). The key is not
 /// in the text: Caddy reads it from its own environment at every request
-/// (`{env.DEVKIT_FCGI_KEY}`, set by [`with_key`]), so neither the file on
+/// (`{env.ATOLLO_FCGI_KEY}`, set by [`with_key`]), so neither the file on
 /// disk nor the configuration Caddy holds contains it.
 fn php_lines(fcgi: &FastCgi, indent: &str) -> Vec<String> {
     vec![
@@ -603,7 +603,7 @@ pub fn project_conf(
         )
     })?;
     let mut lines =
-        vec!["# --- Dev-Kit: this project's Caddy (written at every start) ---".to_owned()];
+        vec!["# --- Atollo: this project's Caddy (written at every start) ---".to_owned()];
     lines.extend(global_options(None, run_dir)?);
     let names = if lan {
         Vec::new()
@@ -635,7 +635,7 @@ pub fn pool_conf(
     user_snippets: bool,
 ) -> Result<String> {
     let mut lines =
-        vec!["# --- Dev-Kit: shared Caddy pool (written at every start or reload) ---".to_owned()];
+        vec!["# --- Atollo: shared Caddy pool (written at every start or reload) ---".to_owned()];
     lines.extend(global_options(admin, pool_dir)?);
     if user_snippets {
         if let Some(glob) = quoted_path(&pool_dir.join("conf.d").join("*.caddy")) {
@@ -645,7 +645,7 @@ pub fn pool_conf(
     for site in sites {
         lines.extend(site.iter().cloned());
     }
-    let page = ["\trespond \"Dev-Kit: Caddy pool\" 200".to_owned()];
+    let page = ["\trespond \"Atollo: Caddy pool\" 200".to_owned()];
     if lan {
         lines.extend(site_block(port, lan, &[], &page));
     } else {

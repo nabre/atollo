@@ -134,7 +134,7 @@ fn a_failed_copy_leaves_no_folder() {
     link_dotnet(&[ten.clone(), eight.clone(), nine.clone()]).unwrap();
     assert!(!staged.exists());
     assert!(join_rel(&ten, "sdk/8.0.415/dotnet.dll").is_file());
-    assert!(!join_rel(&nine, "sdk/8.0.415.devkit-new").exists());
+    assert!(!join_rel(&nine, "sdk/8.0.415.atollo-new").exists());
     assert!(join_rel(&nine, "sdk/8.0.415/dotnet.dll").is_file());
 }
 

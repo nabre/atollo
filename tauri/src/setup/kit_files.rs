@@ -39,17 +39,17 @@ const FILES: &[(&str, &str)] = &[
 pub const MYSQL_LAUNCHERS: [&str; 3] = ["mysql", "mysqldump", "mysqladmin"];
 
 /// `bin\<stem>.cmd`: MySQL's `<stem>.exe` of `%CP_MYSQL%` with the kit's
-/// login (`%DEVKIT_MYSQL_CNF%`, read after the other option files: it
+/// login (`%ATOLLO_MYSQL_CNF%`, read after the other option files: it
 /// wins). Jumps instead of blocks: `%*` inside parentheses breaks on a `)`
 /// of the arguments.
 pub fn mysql_launcher_cmd(stem: &str) -> String {
     format!(
         "@echo off\r\n\
-         rem Dev-Kit: {stem} of the kit's MySQL logged in as root with data\\app\\db\\mysql.cnf.\r\n\
+         rem Atollo: {stem} of the kit's MySQL logged in as root with data\\app\\db\\mysql.cnf.\r\n\
          setlocal\r\n\
          if not exist \"%CP_MYSQL%\\bin\\{stem}.exe\" goto none\r\n\
-         if not exist \"%DEVKIT_MYSQL_CNF%\" goto bare\r\n\
-         \"%CP_MYSQL%\\bin\\{stem}.exe\" \"--defaults-extra-file=%DEVKIT_MYSQL_CNF%\" %*\r\n\
+         if not exist \"%ATOLLO_MYSQL_CNF%\" goto bare\r\n\
+         \"%CP_MYSQL%\\bin\\{stem}.exe\" \"--defaults-extra-file=%ATOLLO_MYSQL_CNF%\" %*\r\n\
          exit /b %ERRORLEVEL%\r\n\
          :bare\r\n\
          \"%CP_MYSQL%\\bin\\{stem}.exe\" %*\r\n\
@@ -65,10 +65,10 @@ pub fn mysql_launcher_cmd(stem: &str) -> String {
 pub fn mysql_launcher_sh(stem: &str) -> String {
     format!(
         "#!/bin/sh\n\
-         # Dev-Kit: {stem} of the kit's MySQL logged in as root (data/app/db/mysql.cnf).\n\
+         # Atollo: {stem} of the kit's MySQL logged in as root (data/app/db/mysql.cnf).\n\
          if [ -x \"$CP_MYSQL/bin/{stem}\" ]; then\n\
-         \x20   if [ -f \"$DEVKIT_MYSQL_CNF\" ]; then\n\
-         \x20       exec \"$CP_MYSQL/bin/{stem}\" --defaults-extra-file=\"$DEVKIT_MYSQL_CNF\" \"$@\"\n\
+         \x20   if [ -f \"$ATOLLO_MYSQL_CNF\" ]; then\n\
+         \x20       exec \"$CP_MYSQL/bin/{stem}\" --defaults-extra-file=\"$ATOLLO_MYSQL_CNF\" \"$@\"\n\
          \x20   fi\n\
          \x20   exec \"$CP_MYSQL/bin/{stem}\" \"$@\"\n\
          fi\n\

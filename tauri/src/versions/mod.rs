@@ -7,7 +7,7 @@
 //!
 //! Every version has its folder inside the component's own, one per minor
 //! line (`major.minor`): `data\apps\<platform>\node\<line>`, with the full
-//! version in `.devkit-version`. The default is the folder of the installed
+//! version in `.atollo-version`. The default is the folder of the installed
 //! version (`data\app\versions\<id>.txt`), the one updates replace:
 //! - an update that changes the minor line installs next to the old one,
 //!   which stays as a saved line (a new patch of the same line replaces);
@@ -61,7 +61,7 @@ use crate::kit::Kit;
 use crate::setup::catalog::{Catalog, Component};
 
 /// The file with the full version, inside a saved folder.
-const VERSION_FILE: &str = ".devkit-version";
+const VERSION_FILE: &str = ".atollo-version";
 
 /// `major.minor` of a version: `v22.11.0` → `22.11`, `8.4.13 (Composer 2.8.1)`
 /// → `8.4`, `21.0.5+11` → `21.0`. `None` without two numbers.

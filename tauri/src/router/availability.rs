@@ -1,7 +1,7 @@
 //! Why a component of the catalog cannot be installed on a target, in the
 //! user's language: shared by the "Linguaggi e strumenti" page, the
 //! component × target grid, the actions that install what they need and
-//! `Dev-Kit components`.
+//! `Atollo components`.
 //!
 //! The texts are pure functions of the component, the target, the host and
 //! whether Rosetta 2 is missing (`no_rosetta`), so every target is tested
@@ -82,7 +82,7 @@ pub fn unavailable_msg(lang: &str, name: &str, target: Target, host: Target) -> 
 }
 
 /// [`unavailable_message`] with Rosetta 2 probed on this host: for
-/// `commands::ensure` and `Dev-Kit components` (cli.rs).
+/// `commands::ensure` and `Atollo components` (cli.rs).
 pub fn unavailable_message_on_host(c: &Component, target: Target, lang: &str) -> Option<String> {
     let no_rosetta = c.is_available_on(target) && super::target::rosetta_missing_on_host(target, c);
     unavailable_message(c, target, Target::detect(), no_rosetta, lang)

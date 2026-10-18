@@ -198,7 +198,7 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
     assert_eq!(all.tools.len(), 2);
     let env_all = env(&kit, &all, base.clone());
     assert_eq!(env_all.get("PATH"), base.get("PATH"));
-    assert_eq!(env_all.get("DEVKIT_TERMINAL"), Some(all.name.as_str()));
+    assert_eq!(env_all.get("ATOLLO_TERMINAL"), Some(all.name.as_str()));
 
     // Node 20.18 only: Python and its folders leave.
     let only_node = Terminal {
@@ -216,7 +216,7 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
             SYSTEM.to_owned(),
         ])
     );
-    assert_eq!(e.get("DEVKIT_TERMINAL"), Some("Node 20"));
+    assert_eq!(e.get("ATOLLO_TERMINAL"), Some("Node 20"));
 
     // Python at its newest line, no Node: npm's global packages leave too.
     let only_py = Terminal {

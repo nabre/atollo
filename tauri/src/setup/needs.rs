@@ -93,7 +93,7 @@ fn first_program(command: &str) -> Option<&str> {
     }
 }
 
-/// The components a project action needs (`Dev-Kit.exe serve` needs none,
+/// The components a project action needs (`Atollo.exe serve` needs none,
 /// the project's own Apache/Caddy needs the web server and PHP).
 pub fn of_action(action: &Action) -> BTreeSet<&'static str> {
     if action.static_dir.is_some() {

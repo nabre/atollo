@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEXKORA / Dev-Kit — Dashboard di Valutazione Tecnica v4 (HEAD 18698f9)</title>
+  <title>Atollo / Atollo — Dashboard di Valutazione Tecnica v4 (HEAD 18698f9)</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -171,7 +171,7 @@
   <header>
     <div class="header-top">
       <div>
-        <h1>NEXKORA / Dev-Kit — Dashboard Tecnica Integrale (Revisione v4)</h1>
+        <h1>Atollo / Atollo — Dashboard Tecnica Integrale (Revisione v4)</h1>
         <div class="sub">Commit Baseline: <code>HEAD 18698f9</code> (17 Ottobre 2026) · Evoluzione da <code>v3 (39b74bc)</code> · Decisioni <code>D-01..D-106</code></div>
       </div>
       <div class="score-pill">
@@ -302,7 +302,7 @@
             <tr data-sev="HIGH"><td><code>BUG-V4-10</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/db/auth.rs:581-598</code>, <code>commands/frameworks.rs:319-343</code></td><td><code>env_apply</code> tronca <code>.env</code> alle sole 6 righe DB quando parte da <code>.env.example</code>, e in <code>frameworks_create</code> viene eseguito prima di <code>env_set</code> (che sovrascrive la password DB).</td></tr>
             <tr data-sev="HIGH"><td><code>PORT-V4-05</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/db/services/*</code>, <code>db/adminer.rs:119</code></td><td><code>db/*</code> hardcoda <code>.exe</code> (<code>mysqld.exe</code>, <code>mongod.exe</code>, <code>mongosh.exe</code>), <code>r"mongosh\bin"</code> e chiama <code>kit_path("php/php.exe")</code> con slash non tradotto da <code>translate_rel</code>.</td></tr>
             <tr data-sev="HIGH"><td><code>PORT-V4-06</code></td><td><span class="badge b-high">ALTA</span></td><td><code>tauri/src/agents/mod.rs:70</code>, <code>agents/sync/mod.rs:62</code>, <code>detect/python.rs:33</code></td><td>Backslash letterali nei path di Claude/Codex/Antigravity, Apache, Composer e ricerca venv Python limitata a <code>Scripts/python.exe</code>.</td></tr>
-            <tr data-sev="MED"><td><code>SEC-V4-02</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>runtime/php-router.php:17-27</code>, <code>projects/run.rs:202</code></td><td><code>php-router.php</code> rifiuta le richieste LAN (<code>421</code>) perché <code>Runner</code> non esporta <code>DEVKIT_ALLOW_LAN=1</code>, e ammette richieste con header <code>Host</code> vuoto.</td></tr>
+            <tr data-sev="MED"><td><code>SEC-V4-02</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>runtime/php-router.php:17-27</code>, <code>projects/run.rs:202</code></td><td><code>php-router.php</code> rifiuta le richieste LAN (<code>421</code>) perché <code>Runner</code> non esporta <code>ATOLLO_ALLOW_LAN=1</code>, e ammette richieste con header <code>Host</code> vuoto.</td></tr>
             <tr data-sev="MED"><td><code>SEC-V4-03</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/projects/serve.rs:56-67</code></td><td>Il server statico integrato rifiuta <code>*.localhost</code> con <code>403 Forbidden</code>.</td></tr>
             <tr data-sev="MED"><td><code>BUG-V4-02</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/servers/mod.rs:408-447, 1273-1284</code></td><td>I pool condivisi ignorano <code>data/projects/&lt;p&gt;/{apache,nginx}/conf.d/*.conf</code>.</td></tr>
             <tr data-sev="MED"><td><code>BUG-V4-03</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>tauri/src/servers/mod.rs:1043</code>, <code>projects/run.rs:420</code></td><td>Manca la validazione incrociata delle porte tra pool web, progetti, DB e range VSCodium (<code>7000..=7099</code>), e <code>php.ini</code> è condiviso tra linee PHP.</td></tr>

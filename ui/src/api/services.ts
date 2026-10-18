@@ -45,8 +45,8 @@ export const SAMPLE_SERVICES: ServiceInfo[] = [
     state: "running",
     port: 3306,
     autostart: true,
-    dataDir: "E:\\Dev-Kit\\data\\db\\mysql\\9.7",
-    log: "E:\\Dev-Kit\\data\\app\\logs\\mysql.log",
+    dataDir: "E:\\Atollo\\data\\db\\mysql\\9.7",
+    log: "E:\\Atollo\\data\\app\\logs\\mysql.log",
     url: "mysql://root@127.0.0.1:3306/",
     user: "root",
     password: "3f9c2a71d8e04b6a9c51e2d7f0a8b346",
@@ -58,8 +58,8 @@ export const SAMPLE_SERVICES: ServiceInfo[] = [
         line: "8.4",
         state: "stopped",
         port: 3307,
-        dataDir: "E:\\Dev-Kit\\data\\db\\mysql\\8.4",
-        log: "E:\\Dev-Kit\\data\\app\\logs\\mysql-8.4.log",
+        dataDir: "E:\\Atollo\\data\\db\\mysql\\8.4",
+        log: "E:\\Atollo\\data\\app\\logs\\mysql-8.4.log",
         url: "mysql://root@127.0.0.1:3307/",
         message: null,
       },
@@ -72,8 +72,8 @@ export const SAMPLE_SERVICES: ServiceInfo[] = [
     state: "stopped",
     port: 27017,
     autostart: false,
-    dataDir: "E:\\Dev-Kit\\data\\db\\mongodb",
-    log: "E:\\Dev-Kit\\data\\app\\logs\\mongodb.log",
+    dataDir: "E:\\Atollo\\data\\db\\mongodb",
+    log: "E:\\Atollo\\data\\app\\logs\\mongodb.log",
     url: "mongodb://admin@127.0.0.1:27017/?authSource=admin",
     user: "admin",
     password: null,
@@ -104,7 +104,7 @@ export function serviceLinePort(id: ServiceInfo["id"], line: string, port: numbe
   return query<ServiceInfo[]>("service_line_port", SAMPLE_SERVICES, { id, line, port });
 }
 
-/** Port (null: the default) and "start with Dev-Kit"; the port applies at the next start. */
+/** Port (null: the default) and "start with Atollo"; the port applies at the next start. */
 export function serviceSet(id: ServiceInfo["id"], port: number | null, autostart: boolean): Promise<ServiceInfo[]> {
   return query<ServiceInfo[]>("service_set", SAMPLE_SERVICES, { id, port, autostart });
 }

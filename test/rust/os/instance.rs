@@ -6,7 +6,7 @@ use std::sync::mpsc;
 #[cfg(windows)]
 fn unique_kit(tag: &str) -> Kit {
     Kit::at(
-        PathBuf::from(format!(r"Z:\devkit-test-{}-{tag}", std::process::id())),
+        PathBuf::from(format!(r"Z:\atollo-test-{}-{tag}", std::process::id())),
         Arch::X64,
     )
 }
@@ -43,7 +43,7 @@ fn socket_names() {
     let id = "0123456789abcdef";
     assert_eq!(
         socket_name(Os::Linux, id, 1000, None),
-        Some(SocketName::Abstract(format!("Dev-Kit-1000-{id}")))
+        Some(SocketName::Abstract(format!("Atollo-1000-{id}")))
     );
     let tmp = Path::new("/var/folders/zz/zyxvpxvq6csfxvn_n0000000000000/T/");
     let mac = socket_name(Os::Darwin, id, 501, Some(tmp)).unwrap();

@@ -1,4 +1,4 @@
-# NEXKORA (Dev-Kit) — Relazione Tecnica di Valutazione `v3`
+# Atollo — Relazione Tecnica di Valutazione `v3`
 ## Documento 05 · Indicatori Quantitativi, Metriche, Test e Grafici Evolutivi (`v1 → v2 → v3`)
 
 **Punteggio Dimensione D8 (Qualità Codice, Testabilità e Documentazione)**: **94 / 100** *(v1: 85/100 · v2: 87/100 · Target v3.1: 97/100)*  
@@ -7,7 +7,7 @@
 
 ## 1. Cruscotto Completo dei 38 KPI Tecnici (`v1` vs `v2` vs `v3` vs `Target v3.1`)
 
-La tabella seguente confronta le metriche oggettive misurate sul repository tra `v1` (`66499b5`), `v2` (`fa8a34d`), l'attuale `HEAD` `v3` (`39b74bc`) e il target `v3.1` (dopo l'applicazione delle patch del [`Documento 07`](file:///c:/Users/nabre/Projects/dev-kit2/reports/v3/07-PIANO-ESECUTIVO-PORTABILITA-E-MULTI-OS.md)):
+La tabella seguente confronta le metriche oggettive misurate sul repository tra `v1` (`66499b5`), `v2` (`fa8a34d`), l'attuale `HEAD` `v3` (`39b74bc`) e il target `v3.1` (dopo l'applicazione delle patch del [`Documento 07`](../../../reports/v3/07-PIANO-ESECUTIVO-PORTABILITA-E-MULTI-OS.md)):
 
 | # | Indicatore / KPI | `v1` (`66499b5`) | `v2` (`fa8a34d`) | `v3` (`39b74bc`) | Delta (`v3 - v2`) | Target `v3.1` |
 |---|---|---|---|---|---|---|
@@ -46,9 +46,9 @@ La tabella seguente confronta le metriche oggettive misurate sul repository tra 
 
 Uno dei risultati più tangibili dello Sciame tra `v2` e `v3` è l'espansione della suite di test:
 - **Backend Rust (`test/rust/`)**: cresciuto a **358 `#[test]`** distribuiti in 39 file di test speculari a `tauri/src/`.
-  - Nuovi test di sicurezza per `symlink_chain_stays_in` e hard-link in [`test/rust/net/archive.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/net/archive.rs).
-  - Nuovi test per `Git` via `micromamba`, `relocatable` e `D-92` in [`test/rust/install/core.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/core.rs), [`test/rust/install/native.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/native.rs) e [`test/rust/kit.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/kit.rs).
-  - Nuovi test per `php_module_blocks` case-insensitive `(?i)\.php$`, `hidden_deny` (`.env`, `.git`, `.well-known`), `site_doc_root`, `needs_restart` e `Runner::attach_pool` in [`test/rust/projects/apache.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/projects/apache.rs), [`test/rust/projects/nginx.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/projects/nginx.rs), [`test/rust/servers/mod.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/servers/mod.rs) e [`test/rust/projects/run.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/projects/run.rs).
+  - Nuovi test di sicurezza per `symlink_chain_stays_in` e hard-link in [`test/rust/net/archive.rs`](../../../test/rust/net/archive.rs).
+  - Nuovi test per `Git` via `micromamba`, `relocatable` e `D-92` in [`test/rust/install/core.rs`](../../../test/rust/install/core.rs), [`test/rust/install/native.rs`](../../../test/rust/install/native.rs) e [`test/rust/kit.rs`](../../../test/rust/kit.rs).
+  - Nuovi test per `php_module_blocks` case-insensitive `(?i)\.php$`, `hidden_deny` (`.env`, `.git`, `.well-known`), `site_doc_root`, `needs_restart` e `Runner::attach_pool` in [`test/rust/projects/apache.rs`](../../../test/rust/projects/apache.rs), [`test/rust/projects/nginx.rs`](../../../test/rust/projects/nginx.rs), [`test/rust/servers/mod.rs`](../../../test/rust/servers/mod.rs) e [`test/rust/projects/run.rs`](../../../test/rust/projects/run.rs).
 - **Frontend UI (`test/ui/`)**: cresciuto da **66 a 85 test Vitest** (`+28,8%`), coprendo il focus trap di `ConfirmModal`, la navigazione da tastiera di `Sidebar`, il retry selettivo in `SetupModal` e i flussi di conferma in `ServersPage` e `DatabasesPage`.
 
 ```mermaid
@@ -65,7 +65,7 @@ xychart-beta
 
 ## 3. Distribuzione dei 36 Componenti per Metodo di Verifica Crittografica e Formato Archivio
 
-L'analisi di [`tauri/src/install/`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/mod.rs) mostra che il **100% dei 36 componenti** (e tutti i 9 sotto-strumenti) sono verificati crittograficamente prima dell'estrazione:
+L'analisi di [`tauri/src/install/`](../../../tauri/src/install/mod.rs) mostra che il **100% dei 36 componenti** (e tutti i 9 sotto-strumenti) sono verificati crittograficamente prima dell'estrazione:
 
 | Metodo di Verifica (`Expect`) | N. Componenti / Sotto-tool | Componenti |
 |---|---:|---|

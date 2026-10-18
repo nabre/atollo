@@ -653,7 +653,7 @@ pub fn open_with_explorer(target: impl AsRef<OsStr>) -> Result<()> {
 }
 
 /// Opens a web address in the PC's browser, outside the job. Not through
-/// `explorer.exe`: Windows 11 drops an address with a query (`?devkit=…`)
+/// `explorer.exe`: Windows 11 drops an address with a query (`?atollo=…`)
 /// without opening the browser.
 #[cfg(windows)]
 pub fn open_url(url: &str) -> Result<()> {

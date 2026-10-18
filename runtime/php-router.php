@@ -11,7 +11,7 @@
 //   run as PHP (`.inc`, `.php3`..`.php8`, `.phtml`, `.phar`): the built-in
 //   server runs only `.php` and would send them as text (SEC-V3-01);
 // - anything else goes to the project's own router when it has one
-//   (`router.php`, given as `-d devkit.router=<path>`: `php -S` takes one
+//   (`router.php`, given as `-d atollo.router=<path>`: `php -S` takes one
 //   router only), with its return value; else on to the server as without a
 //   router (`return false`): the file, the PHP script, or the `index.php` of
 //   the folder.
@@ -65,14 +65,14 @@
     }
 })();
 
-if ((string) get_cfg_var('devkit.router') !== '') {
+if ((string) get_cfg_var('atollo.router') !== '') {
     // As if `php -S` had been given the project's router (its path relative
     // to the document root, never to the working folder, which a script may
     // change): in SCRIPT_FILENAME where the server put this router's.
     if (realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
         $_SERVER['SCRIPT_FILENAME'] = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR
-            . get_cfg_var('devkit.router');
+            . get_cfg_var('atollo.router');
     }
-    return require $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . get_cfg_var('devkit.router');
+    return require $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . get_cfg_var('atollo.router');
 }
 return false;

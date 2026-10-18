@@ -125,7 +125,7 @@ pub trait Sink {
     fn emit(&mut self, event: Event);
 }
 
-/// One run per kit: `Local\Dev-Kit-Prepare-<kit id>`.
+/// One run per kit: `Local\Atollo-Prepare-<kit id>`.
 #[cfg(windows)]
 #[derive(Debug)]
 struct RunLock(HANDLE);
@@ -172,7 +172,7 @@ pub struct Busy;
 
 #[cfg(windows)]
 fn lock(kit: &Kit) -> Result<RunLock> {
-    let name = HSTRING::from(format!(r"Local\Dev-Kit-Prepare-{}", kit.id()));
+    let name = HSTRING::from(format!(r"Local\Atollo-Prepare-{}", kit.id()));
     // SAFETY: valid name, default security.
     let handle = unsafe { CreateMutexW(None, false, &name) }.context("CreateMutexW")?;
     // SAFETY: last error of CreateMutexW on this thread.

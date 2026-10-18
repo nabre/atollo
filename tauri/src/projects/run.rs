@@ -6,7 +6,7 @@
 //! - commands go through `cmd.exe /d /s /c` (`/bin/sh -c` on macOS and
 //!   Linux, `jobs::shell_command`) with the kit's environment plus
 //!   `PORT`, `ROCKET_PORT`, `DB_PORT` (its MySQL database), `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
-//!   action runs this exe as a file server (`Dev-Kit.exe serve`), an
+//!   action runs this exe as a file server (`Atollo.exe serve`), an
 //!   `apache` action the kit's httpd with a configuration of the project,
 //!   `caddy` actions the same with Caddy and PHP;
 //! - web actions keep their port from one start to the next (bookmarks,
@@ -482,8 +482,8 @@ impl Runner {
             None
         };
         let fill = |s: &str| s.replace("{port}", &port.map(|p| p.to_string()).unwrap_or_default());
-        // Settings > "Permetti ai server dei progetti..." (DEVKIT_ALLOW_LAN).
-        let lan = env.get("DEVKIT_ALLOW_LAN") == Some("1");
+        // Settings > "Permetti ai server dei progetti..." (ATOLLO_ALLOW_LAN).
+        let lan = env.get("ATOLLO_ALLOW_LAN") == Some("1");
         let listen = |s: &str| on_network(fill(s), lan);
         let cwd = match &action.folder {
             Some(f) => detect::inside_dir(dir, f)?,
@@ -508,7 +508,7 @@ impl Runner {
                 .arg(port.unwrap_or(PORT_FROM).to_string());
             (
                 cmd,
-                format!("Dev-Kit.exe serve {folder} {}", port.unwrap_or_default()),
+                format!("Atollo.exe serve {folder} {}", port.unwrap_or_default()),
             )
         } else if let Some(folder) = &action.apache_dir {
             let root = detect::inside_dir(&cwd, folder)?;
@@ -590,7 +590,7 @@ impl Runner {
         cmd.current_dir(&cwd)
             .env("BROWSER", "none")
             .env("PYTHONUNBUFFERED", "1")
-            .env("DEVKIT_LANG", lang)
+            .env("ATOLLO_LANG", lang)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
@@ -611,7 +611,7 @@ impl Runner {
             if !own {
                 cmd.env("DB_PORT", p);
                 // `mysql` of its scripts logs in on that version too
-                // (`DEVKIT_MYSQL_CNF`).
+                // (`ATOLLO_MYSQL_CNF`).
                 for (name, value) in crate::db::services::project_client_env(&self.kit, id) {
                     cmd.env(name, value);
                 }

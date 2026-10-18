@@ -1,10 +1,10 @@
 //! Database servers of the kit (DECISIONS.md D-73): MySQL (D-110, the SQL
 //! server) and MongoDB, one instance each for every project (as Laragon),
-//! started from the Database page or with Dev-Kit.
+//! started from the Database page or with Atollo.
 //!
 //! - they listen on 127.0.0.1 only and ask for a password (D-74): MySQL's
 //!   `root` and MongoDB's `admin` get a random one at the first start, also
-//!   on data made by an older Dev-Kit (`db/auth.rs`); each project gets its
+//!   on data made by an older Atollo (`db/auth.rs`); each project gets its
 //!   own database and user (`project_db_create`);
 //! - data in `data\db\<id>\<version>`, one folder per version the server
 //!   runs (D-81: a setting of the server, the newest by default), created
@@ -19,7 +19,7 @@
 //!   app ends it in any case; `stop` first asks the server to shut down
 //!   (`mysqladmin shutdown`, mongosh `shutdownServer`), so no recovery
 //!   is needed at the next start;
-//! - port and "start with Dev-Kit" of each server, and the ports of its
+//! - port and "start with Atollo" of each server, and the ports of its
 //!   other versions, in `data\app\services.json`.
 //!
 //! Here the settings and the life of a server (start, state, stop); the data
@@ -273,7 +273,7 @@ pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
 
 /// The login of the project's programs when its SQL database is on another
 /// version than the server's, written at that version's start (`mysql` of
-/// its scripts then logs in on its port): `DEVKIT_MYSQL_CNF` (read by the
+/// its scripts then logs in on its port): `ATOLLO_MYSQL_CNF` (read by the
 /// kit's launchers, `setup/kit_files.rs`) and `CP_MYSQL`, the folder of that
 /// version. Empty: the kit's own (`env.rs`), on the server's port.
 pub fn project_client_env(kit: &Kit, project: &str) -> Vec<(&'static str, PathBuf)> {
@@ -290,7 +290,7 @@ pub fn project_client_env(kit: &Kit, project: &str) -> Vec<(&'static str, PathBu
     let cnf = auth::mysql_line_cnf(kit, &line);
     if cnf.is_file() {
         vec![
-            ("DEVKIT_MYSQL_CNF", cnf),
+            ("ATOLLO_MYSQL_CNF", cnf),
             ("CP_MYSQL", line_dir(kit, id, Some(&line))),
         ]
     } else {
@@ -772,7 +772,7 @@ impl Services {
                     .arg(server.port.to_string())
                     .args(["--eval", auth::MONGO_SHUTDOWN_JS])
                     .env(
-                        "DEVKIT_DB_ADMIN",
+                        "ATOLLO_DB_ADMIN",
                         auth::load(&self.kit).mongodb_admin.unwrap_or_default(),
                     );
                 cmd
@@ -814,7 +814,7 @@ impl Services {
         }
     }
 
-    /// Port (None: default) and "start with Dev-Kit" of `id`.
+    /// Port (None: default) and "start with Atollo" of `id`.
     pub fn set(&self, id: &str, port: Option<u16>, autostart: bool) -> Result<()> {
         let engine = DbEngine::parse(id)?;
         if port.is_some_and(|p| p < 1024) {
@@ -877,7 +877,7 @@ impl Services {
         crate::fsx::write_json(&settings_path(&self.kit), &all)
     }
 
-    /// The installed servers marked "start with Dev-Kit": the version each
+    /// The installed servers marked "start with Atollo": the version each
     /// runs, then the other installed versions the projects' databases are
     /// on ([`lines_in_use`]), each on its own port.
     pub fn autostart(&self, env: &KitEnv) {

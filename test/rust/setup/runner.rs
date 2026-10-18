@@ -454,8 +454,8 @@ fn another_process_holds_the_lock() {
                 "--ignored",
                 "--test-threads=1",
             ])
-            .env("DEVKIT_TEST_PREPARE_LOCK_ROOT", &tmp.0)
-            .env("DEVKIT_TEST_PREPARE_LOCK_EXPECT", expect)
+            .env("ATOLLO_TEST_PREPARE_LOCK_ROOT", &tmp.0)
+            .env("ATOLLO_TEST_PREPARE_LOCK_EXPECT", expect)
             .stdout(std::process::Stdio::null())
             .status()
             .unwrap();
@@ -474,13 +474,13 @@ fn another_process_holds_the_lock() {
 #[test]
 #[ignore = "run by another_process_holds_the_lock as a second process"]
 fn prepare_lock_child() {
-    let Some(root) = std::env::var_os("DEVKIT_TEST_PREPARE_LOCK_ROOT") else {
+    let Some(root) = std::env::var_os("ATOLLO_TEST_PREPARE_LOCK_ROOT") else {
         return;
     };
     let root = std::path::PathBuf::from(root);
     let kit = Kit::at(root.clone(), Arch::X64);
     let result = lock(&kit);
-    match std::env::var("DEVKIT_TEST_PREPARE_LOCK_EXPECT").as_deref() {
+    match std::env::var("ATOLLO_TEST_PREPARE_LOCK_EXPECT").as_deref() {
         Ok("busy") => assert!(result.unwrap_err().is::<Busy>()),
         _ => assert!(result.is_ok()),
     }

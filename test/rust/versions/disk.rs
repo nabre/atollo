@@ -143,7 +143,7 @@ fn folders_of_an_older_kit_move() {
     let python = Catalog::get().find("python").unwrap();
     let py = python.folder_path(&kit).unwrap();
     let mut moving = py.clone().into_os_string();
-    moving.push(".devkit-move");
+    moving.push(".atollo-move");
     install_fake(&kit, python, &PathBuf::from(&moving));
     python.save_version(&kit, "3.13.10").unwrap();
     migrate(&kit);

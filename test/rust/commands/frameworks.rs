@@ -86,10 +86,10 @@ fn database_for_the_steps() {
     let db = crate::db::auth::project_db("mysql", "site", "pw", 3307);
     let vars = super::db_vars(&db);
     let get = |k: &str| vars.iter().find(|(n, _)| n == k).map(|(_, v)| v.as_str());
-    assert_eq!(get("DEVKIT_DB_PORT"), Some("3307"));
-    assert_eq!(get("DEVKIT_DB_NAME"), Some("site"));
+    assert_eq!(get("ATOLLO_DB_PORT"), Some("3307"));
+    assert_eq!(get("ATOLLO_DB_NAME"), Some("site"));
     assert_eq!(
-        get("DEVKIT_DB_URL"),
+        get("ATOLLO_DB_URL"),
         Some("mysql://site:pw@127.0.0.1:3307/site")
     );
 }

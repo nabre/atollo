@@ -41,9 +41,9 @@ fn real_console_runs_and_ends() {
     let dir = tmp.0.join("a b");
     std::fs::create_dir_all(&dir).unwrap();
     let script = dir.join("probe.cmd");
-    std::fs::write(&script, "@echo %DEVKIT_PROBE%> ran.txt\r\n").unwrap();
+    std::fs::write(&script, "@echo %ATOLLO_PROBE%> ran.txt\r\n").unwrap();
     let mut env = KitEnv::default();
-    env.set("DEVKIT_PROBE", "kit-env");
+    env.set("ATOLLO_PROBE", "kit-env");
     // The app's environment always has it: Windows on ARM64 starts no
     // process without SystemRoot.
     if let Some(root) = std::env::var_os("SystemRoot") {

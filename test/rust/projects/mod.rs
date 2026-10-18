@@ -104,8 +104,8 @@ fn git_state_from_files() {
 #[test]
 fn sources() {
     assert_eq!(
-        Source::parse("nabre/dev-kit"),
-        Some(Source::GitHub("nabre/dev-kit".into()))
+        Source::parse("nabre/atollo"),
+        Some(Source::GitHub("nabre/atollo".into()))
     );
     assert_eq!(
         Source::parse(" a/b.git "),
@@ -135,8 +135,8 @@ fn sources() {
         "y"
     );
     assert_eq!(
-        Source::parse("nabre/dev-kit").unwrap().default_name(),
-        "dev-kit"
+        Source::parse("nabre/atollo").unwrap().default_name(),
+        "atollo"
     );
 }
 

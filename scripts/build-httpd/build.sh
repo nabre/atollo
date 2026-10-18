@@ -186,7 +186,7 @@ cp "$work/src/expat/COPYING" "$tree/licenses/expat-COPYING"
 cp "$work/src/zlib/LICENSE" "$tree/licenses/zlib-LICENSE"
 {
   echo "Apache httpd $(ver httpd) for $target, kit build $build"
-  echo "Built by scripts/build-httpd/build.sh of github.com/nabre/dev-kit2"
+  echo "Built by scripts/build-httpd/build.sh of github.com/nabre/atollo"
   echo
   while read -r name ver sum link; do
     case "$name" in ''|'#'*) continue ;; esac

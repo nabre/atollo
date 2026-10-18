@@ -1,4 +1,4 @@
-# NEXKORA (Dev-Kit) — Relazione Tecnica di Valutazione `v3`
+# Atollo — Relazione Tecnica di Valutazione `v3`
 ## Documento 04 · Architettura "100% Portable" e "100% Multiplatform" (Soluzioni Concrete e Codice)
 
 **Punteggio Dimensione D2 (Portabilità 100% e Isolamento Host)**: **94 / 100 → Target 100 / 100**  
@@ -19,13 +19,13 @@ La tabella seguente mappa le **7 barriere residue** individuate nel codice a `HE
 
 | # | Barriera Individua a `HEAD 39b74bc` | File e Righe Esatti | Impatto Attuale | Soluzione Concreta Promossa in `v3` |
 |---|---|---|---|---|
-| **B1** | **Ambienti Conda non rilocabili (`D-92`)** per `git` e `r` su macOS/Linux + `Makeconf` di `r` su Windows | [`kit.rs:515-545`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs#L515-L545), [`install/core.rs:35-37`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/core.rs#L35-L37), [`install/native.rs:677-679`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/native.rs#L677-L679) | Spostare il kit su macOS/Linux marca `git` e `r` come `.reinstall`, rendendoli **inutilizzabili offline** finché non si riscaricano ~1,2 GB. | **§2**: Rilocazione offline automatica `relocate_conda_prefix` + wrapper relativi (`GIT_EXEC_PATH`, `R_HOME`) → **`relocatable = true` ovunque**. |
-| **B2** | **Keyring & DPAPI Windows-only** per il login di Antigravity e Git (`GCM_CREDENTIAL_STORE=dpapi`) | [`agents/keyring.rs:27-36, 179-227`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/agents/keyring.rs#L27-L36), [`env.rs:359-363`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/env.rs#L359-L363) | Non compila su macOS/Linux; su Windows `GCM_DPAPI_STORE_PATH` lega i token Git al SID del PC corrente (illeggibili spostando la USB su un altro PC!). | **§3**: Vault portatile cifrato (ChaCha20-Poly1305) + adapter nativi per macOS Keychain (`security`), Linux Secret Service e Windows CredMan. |
-| **B3** | **Quarantena Gatekeeper macOS (`com.apple.quarantine`)** sui binari della chiavetta USB | [`net/archive.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs), [`kit.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs) | Su macOS, i binari estratti o copiati da un'unità esterna vengono bloccati da Gatekeeper (*"cannot be opened because the developer cannot be verified"*). | **§2.4**: Rimozione automatica degli attributi estesi `com.apple.quarantine` e `com.apple.provenance` in `archive::extract` e all'avvio su macOS. |
-| **B4** | **Web Stack (`php`, `apache`, `nginx`, `adminer`) disabilitato su macOS e Linux** (Opzione C) | [`catalog/components.json:103,115,127,370`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/catalog/components.json#L103), [`install/web.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/web.rs) | Lo sviluppo PHP / WordPress / Laravel / Apache / Nginx e i pool Server Web non sono disponibili su macOS e Linux. | **§4**: `static-php-cli` (`php` + `php-cgi` 100% statici) + `conda-forge` `nginx` e `apache-httpd` con pool FastCGI unificato. |
-| **B5** | **Accoppiamento a `glibc >= 2.35` e `/lib64/ld-linux` su Linux** (Alpine `musl`, NixOS, Debian 11) | [`install/db.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/db.rs), [`install/lang/ruby.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/lang/ruby.rs), [`install/lang/cc.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/lang/cc.rs) | Su Alpine (`musl`), NixOS (non-FHS) o Debian 11 (`glibc 2.31`), i binari precompilati dinamicamente falliscono all'avvio. | **§6 (e Doc 06)**: Runtime `sysroot` portatile nel kit (`glibc 2.39` + `libstdc++` + `libcrypt.so.1`) con patching ELF `PT_INTERP` e `DT_RUNPATH`. |
-| **B6** | **`TempWork` (`D-90`) usa sempre il disco Host anche con `ProgramTemp::Kit`** | [`os/temp.rs:35-50`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/temp.rs#L35-L50) | Anche se l'utente sceglie nelle Impostazioni *"Cartella temporanea: Nel kit"*, i file di setup passano per `%TEMP%\Dev-Kit\<id>`. | **§3.3**: Rispetto rigoroso di `ProgramTemp::Kit` in `TempWork::new_with_space` quando il filesystem non è FAT32 (< 4 GiB). |
-| **B7** | **Dipendenze Win32 incondizionate in `Cargo.toml` e `tauri/src/os/*.rs`** | [`tauri/Cargo.toml:26-63`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/Cargo.toml#L26-L63), [`tauri/src/os/`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/mod.rs) | Impossibile eseguire `cargo check` / `cargo build` su host macOS o Linux. | **§5**: Partizionamento `[target.'cfg(windows)'.dependencies]` e implementazione `#[cfg(unix)]` completa per gli 8 moduli `os/`. |
+| **B1** | **Ambienti Conda non rilocabili (`D-92`)** per `git` e `r` su macOS/Linux + `Makeconf` di `r` su Windows | [`kit.rs:515-545`](../../../tauri/src/kit.rs#L515-L545), [`install/core.rs:35-37`](../../../tauri/src/install/core.rs#L35-L37), [`install/native.rs:677-679`](../../../tauri/src/install/native.rs#L677-L679) | Spostare il kit su macOS/Linux marca `git` e `r` come `.reinstall`, rendendoli **inutilizzabili offline** finché non si riscaricano ~1,2 GB. | **§2**: Rilocazione offline automatica `relocate_conda_prefix` + wrapper relativi (`GIT_EXEC_PATH`, `R_HOME`) → **`relocatable = true` ovunque**. |
+| **B2** | **Keyring & DPAPI Windows-only** per il login di Antigravity e Git (`GCM_CREDENTIAL_STORE=dpapi`) | [`agents/keyring.rs:27-36, 179-227`](../../../tauri/src/agents/keyring.rs#L27-L36), [`env.rs:359-363`](../../../tauri/src/env.rs#L359-L363) | Non compila su macOS/Linux; su Windows `GCM_DPAPI_STORE_PATH` lega i token Git al SID del PC corrente (illeggibili spostando la USB su un altro PC!). | **§3**: Vault portatile cifrato (ChaCha20-Poly1305) + adapter nativi per macOS Keychain (`security`), Linux Secret Service e Windows CredMan. |
+| **B3** | **Quarantena Gatekeeper macOS (`com.apple.quarantine`)** sui binari della chiavetta USB | [`net/archive.rs`](../../../tauri/src/net/archive.rs), [`kit.rs`](../../../tauri/src/kit.rs) | Su macOS, i binari estratti o copiati da un'unità esterna vengono bloccati da Gatekeeper (*"cannot be opened because the developer cannot be verified"*). | **§2.4**: Rimozione automatica degli attributi estesi `com.apple.quarantine` e `com.apple.provenance` in `archive::extract` e all'avvio su macOS. |
+| **B4** | **Web Stack (`php`, `apache`, `nginx`, `adminer`) disabilitato su macOS e Linux** (Opzione C) | [`catalog/components.json:103,115,127,370`](../../../tauri/catalog/components.json#L103), [`install/web.rs`](../../../tauri/src/install/web.rs) | Lo sviluppo PHP / WordPress / Laravel / Apache / Nginx e i pool Server Web non sono disponibili su macOS e Linux. | **§4**: `static-php-cli` (`php` + `php-cgi` 100% statici) + `conda-forge` `nginx` e `apache-httpd` con pool FastCGI unificato. |
+| **B5** | **Accoppiamento a `glibc >= 2.35` e `/lib64/ld-linux` su Linux** (Alpine `musl`, NixOS, Debian 11) | [`install/db.rs`](../../../tauri/src/install/db.rs), [`install/lang/ruby.rs`](../../../tauri/src/install/lang/ruby.rs), [`install/lang/cc.rs`](../../../tauri/src/install/lang/cc.rs) | Su Alpine (`musl`), NixOS (non-FHS) o Debian 11 (`glibc 2.31`), i binari precompilati dinamicamente falliscono all'avvio. | **§6 (e Doc 06)**: Runtime `sysroot` portatile nel kit (`glibc 2.39` + `libstdc++` + `libcrypt.so.1`) con patching ELF `PT_INTERP` e `DT_RUNPATH`. |
+| **B6** | **`TempWork` (`D-90`) usa sempre il disco Host anche con `ProgramTemp::Kit`** | [`os/temp.rs:35-50`](../../../tauri/src/os/temp.rs#L35-L50) | Anche se l'utente sceglie nelle Impostazioni *"Cartella temporanea: Nel kit"*, i file di setup passano per `%TEMP%\Atollo\<id>`. | **§3.3**: Rispetto rigoroso di `ProgramTemp::Kit` in `TempWork::new_with_space` quando il filesystem non è FAT32 (< 4 GiB). |
+| **B7** | **Dipendenze Win32 incondizionate in `Cargo.toml` e `tauri/src/os/*.rs`** | [`tauri/Cargo.toml:26-63`](../../../tauri/Cargo.toml#L26-L63), [`tauri/src/os/`](../../../tauri/src/os/mod.rs) | Impossibile eseguire `cargo check` / `cargo build` su host macOS o Linux. | **§5**: Partizionamento `[target.'cfg(windows)'.dependencies]` e implementazione `#[cfg(unix)]` completa per gli 8 moduli `os/`. |
 
 ---
 
@@ -40,21 +40,21 @@ Quando `micromamba create -p <prefix>` installa un pacchetto da `conda-forge`, r
 
 ```mermaid
 flowchart LR
-    Move["Spostamento USB / Cartella Kit\n(es. /Volumes/USB1 → /mnt/usb2\no D:\\ → E:\\)"] --> Startup["Avvio Dev-Kit\nkit.rs::relocate()"]
-    Startup --> RelocText["1. relocate_conda_prefix(dir)\nLegge .devkit-prefix e aggiorna\nin-place tutti i file di testo\n(Makeconf, .pc, shebang, bin/R)"]
+    Move["Spostamento USB / Cartella Kit\n(es. /Volumes/USB1 → /mnt/usb2\no D:\\ → E:\\)"] --> Startup["Avvio Atollo\nkit.rs::relocate()"]
+    Startup --> RelocText["1. relocate_conda_prefix(dir)\nLegge .atollo-prefix e aggiorna\nin-place tutti i file di testo\n(Makeconf, .pc, shebang, bin/R)"]
     RelocText --> Shims["2. Wrapper auto-rilocanti\nin bin/git e bin/R\nCalcolano $(dirname $0)/..\na runtime (GIT_EXEC_PATH, R_HOME)"]
     Shims --> Ready["100% Operativo Offline!\n0 byte scaricati da Internet\nNessun file .reinstall"]
 ```
 
 ### 2.2 Implementazione Rust Pronta all'Uso: `relocate_conda_prefix` e Wrapper Relativi
 
-#### A. Funzione di Rilocazione Testuale e Record `.devkit-prefix` (in `tauri/src/install/native.rs`)
-Alla fine di `micromamba_create` ([`tauri/src/install/native.rs:620`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/native.rs#L620)), salviamo il prefisso corrente in `<prefix>/.devkit-prefix`. Quando il kit si sposta ([`kit.rs:515`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs#L515)), anziché cancellare la versione e scrivere `<id>.reinstall`, invochiamo `relocate_conda_prefix(&dir)`:
+#### A. Funzione di Rilocazione Testuale e Record `.atollo-prefix` (in `tauri/src/install/native.rs`)
+Alla fine di `micromamba_create` ([`tauri/src/install/native.rs:620`](../../../tauri/src/install/native.rs#L620)), salviamo il prefisso corrente in `<prefix>/.atollo-prefix`. Quando il kit si sposta ([`kit.rs:515`](../../../tauri/src/kit.rs#L515)), anziché cancellare la versione e scrivere `<id>.reinstall`, invochiamo `relocate_conda_prefix(&dir)`:
 
 ```rust
 // Da aggiungere in tauri/src/install/native.rs:
 
-const PREFIX_MARKER: &str = ".devkit-prefix";
+const PREFIX_MARKER: &str = ".atollo-prefix";
 
 /// Registra il prefisso con cui l'ambiente Conda è stato creato o rilocato.
 pub fn write_conda_prefix_marker(prefix: &Path) -> Result<()> {
@@ -135,7 +135,7 @@ pub fn relocate_conda_prefix(prefix: &Path) -> Result<()> {
 ```
 
 #### B. Wrapper Auto-Rilocanti per `git` e `r` su macOS e Linux (`install/core.rs` e `install/native.rs`)
-In [`tauri/src/install/core.rs:48-55`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/core.rs#L48-L55) (`Git::install_custom`), dopo `micromamba_create`, rinominiamo `bin/git` in `bin/.git-real` e scriviamo un wrapper POSIX sh in `bin/git` che imposta dinamicamente i percorsi relativi alla posizione corrente della chiavetta USB:
+In [`tauri/src/install/core.rs:48-55`](../../../tauri/src/install/core.rs#L48-L55) (`Git::install_custom`), dopo `micromamba_create`, rinominiamo `bin/git` in `bin/.git-real` e scriviamo un wrapper POSIX sh in `bin/git` che imposta dinamicamente i percorsi relativi alla posizione corrente della chiavetta USB:
 
 ```rust
 // In tauri/src/install/core.rs (dentro Git::install_custom e Git::finish su Unix):
@@ -147,7 +147,7 @@ fn make_unix_git_relocatable(dir: &Path) -> Result<()> {
         fs::rename(&git, &real).context("rename bin/git -> bin/.git-real")?;
     }
     let wrapper = r#"#!/bin/sh
-# Dev-Kit 100% Portable Git Wrapper (eliminates D-92 hardcoded prefix)
+# Atollo 100% Portable Git Wrapper (eliminates D-92 hardcoded prefix)
 PREFIX="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 export GIT_EXEC_PATH="${GIT_EXEC_PATH:-$PREFIX/libexec/git-core}"
 export GIT_TEMPLATE_DIR="${GIT_TEMPLATE_DIR:-$PREFIX/share/git-core/templates}"
@@ -168,14 +168,14 @@ exec "$PREFIX/bin/.git-real" "$@"
 }
 ```
 
-Analogamente, in [`tauri/src/install/native.rs:731-733`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/native.rs#L731-L733) (`R::install_custom_at`), su macOS e Linux generiamo wrapper relativi in `bin/R` e `bin/Rscript` che esportano `R_HOME="$PREFIX/lib/R"` e `R_SHARE_DIR` / `R_INCLUDE_DIR` / `R_DOC_DIR` prima di eseguire `$PREFIX/lib/R/bin/exec/R`, e chiamiamo `write_conda_prefix_marker(target)`.  
+Analogamente, in [`tauri/src/install/native.rs:731-733`](../../../tauri/src/install/native.rs#L731-L733) (`R::install_custom_at`), su macOS e Linux generiamo wrapper relativi in `bin/R` e `bin/Rscript` che esportano `R_HOME="$PREFIX/lib/R"` e `R_SHARE_DIR` / `R_INCLUDE_DIR` / `R_DOC_DIR` prima di eseguire `$PREFIX/lib/R/bin/exec/R`, e chiamiamo `write_conda_prefix_marker(target)`.  
 Con queste due modifiche:
 - `Git::relocatable` e `R::relocatable` diventano **`true` su tutti i 6 target** (il metodo `Installer::relocatable` e il meccanismo distruttivo `.reinstall` di `D-92` possono essere sostituiti da una chiamata a `relocate_conda_prefix` in `kit.rs`!).
 - Spostare il kit offline su qualunque PC o cartella funziona **al 100% all'istante**.
 
 ### 2.3 Rimozione Automatica Quarantena Gatekeeper su macOS (`com.apple.quarantine`)
 Quando una chiavetta USB formattata exFAT/APFS viene inserita in un nuovo Mac, macOS può apporre l'attributo esteso `com.apple.quarantine` agli eseguibili non notarizzati individualmente da Apple, bloccandoli con un popup di sicurezza.  
-In [`tauri/src/net/archive.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs) (fine di `extract`) e in [`tauri/src/kit.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs) (quando `relocate` rileva un cambio di macchina o percorso su macOS), aggiungiamo la rimozione nativa via syscall `removexattr` (zero processi esterni lenti):
+In [`tauri/src/net/archive.rs`](../../../tauri/src/net/archive.rs) (fine di `extract`) e in [`tauri/src/kit.rs`](../../../tauri/src/kit.rs) (quando `relocate` rileva un cambio di macchina o percorso su macOS), aggiungiamo la rimozione nativa via syscall `removexattr` (zero processi esterni lenti):
 
 ```rust
 #[cfg(target_os = "macos")]
@@ -215,16 +215,16 @@ pub fn strip_macos_quarantine(root: &Path) {
 ## 3. Soluzione Concreta 2 — Vault Portatile Cross-OS (`agents/keyring.rs` & Git Credentials)
 
 ### 3.1 Il Doppio Problema di `DPAPI` per la Portabilità 100%
-In [`tauri/src/env.rs:359-363`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/env.rs#L359-L363):
+In [`tauri/src/env.rs:359-363`](../../../tauri/src/env.rs#L359-L363):
 ```rust
 env.set("GCM_CREDENTIAL_STORE", "dpapi");
 env.set_path("GCM_DPAPI_STORE_PATH", home.join(".gcm").join("dpapi_store"));
 ```
 1. **Problema Portabilità Windows→Windows**: `dpapi` cifra i token Git in `data/home/.gcm/dpapi_store` usando la master key DPAPI dell'utente Windows del **PC A**. Quando l'utente inserisce la chiavetta USB nel **PC B**, Git Credential Manager fallisce nel decifrare `dpapi_store` (`CryptUnprotectData failed: Key not valid for use in specified state`) e l'utente perde tutti i login Git salvati!
-2. **Problema Multipiattaforma**: su macOS e Linux, `GCM_CREDENTIAL_STORE=dpapi` non è supportato da Git Credential Manager, e [`tauri/src/agents/keyring.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/agents/keyring.rs) usa solo Win32 `CredWriteW` / `CryptProtectData`.
+2. **Problema Multipiattaforma**: su macOS e Linux, `GCM_CREDENTIAL_STORE=dpapi` non è supportato da Git Credential Manager, e [`tauri/src/agents/keyring.rs`](../../../tauri/src/agents/keyring.rs) usa solo Win32 `CredWriteW` / `CryptProtectData`.
 
 ### 3.2 Soluzione Concreta per Git e per `agents/keyring.rs`
-1. **In [`tauri/src/env.rs:359-363`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/env.rs#L359-L363)**:
+1. **In [`tauri/src/env.rs:359-363`](../../../tauri/src/env.rs#L359-L363)**:
    - Configurare Git Credential Manager e `gh` (`GH_CONFIG_DIR=data/gh`) in modo che i token viaggino con il kit tra PC diversi:
    ```rust
    if is_win {
@@ -236,8 +236,8 @@ env.set_path("GCM_DPAPI_STORE_PATH", home.join(".gcm").join("dpapi_store"));
    }
    ```
    *(Nota: `gh auth setup-git` configura già `gh` come credential helper primario di Git usando il token in `data/gh/hosts.yml`, che è 100% portatile tra PC Windows, macOS e Linux!)*
-2. **In [`tauri/src/agents/keyring.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/agents/keyring.rs)**:
-   - Separare con `#[cfg(windows)]` l'accesso al Windows Credential Manager e aggiungere il backend `#[cfg(target_os = "macos")]` (che usa `/usr/bin/security find-generic-password` / `add-generic-password` / `delete-generic-password` sul Keychain di sessione, poiché `go-keyring` usato da `agy` su macOS invoca esattamente `/usr/bin/security`!) e `#[cfg(target_os = "linux")]` (che usa `secret-tool` / `dbus` Secret Service se presente, altrimenti no-op sicuro). Il codice completo per `agents/keyring.rs` è riportato nel [`Documento 07 §Fase 2`](file:///c:/Users/nabre/Projects/dev-kit2/reports/v3/07-PIANO-ESECUTIVO-PORTABILITA-E-MULTI-OS.md).
+2. **In [`tauri/src/agents/keyring.rs`](../../../tauri/src/agents/keyring.rs)**:
+   - Separare con `#[cfg(windows)]` l'accesso al Windows Credential Manager e aggiungere il backend `#[cfg(target_os = "macos")]` (che usa `/usr/bin/security find-generic-password` / `add-generic-password` / `delete-generic-password` sul Keychain di sessione, poiché `go-keyring` usato da `agy` su macOS invoca esattamente `/usr/bin/security`!) e `#[cfg(target_os = "linux")]` (che usa `secret-tool` / `dbus` Secret Service se presente, altrimenti no-op sicuro). Il codice completo per `agents/keyring.rs` è riportato nel [`Documento 07 §Fase 2`](../../../reports/v3/07-PIANO-ESECUTIVO-PORTABILITA-E-MULTI-OS.md).
 
 ---
 
@@ -320,7 +320,7 @@ pub fn php_cgi_bin(php_dir: &Path) -> PathBuf {
 
 ## 5. Soluzione Concreta 4 — Astrazione Completa del Layer OS (`Cargo.toml` e `tauri/src/os/*.rs`)
 
-### 5.1 Partizionamento di [`tauri/Cargo.toml`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/Cargo.toml)
+### 5.1 Partizionamento di [`tauri/Cargo.toml`](../../../tauri/Cargo.toml)
 Attualmente `Cargo.toml` fallisce su macOS e Linux perché `webview2-com`, `junction`, `windows` e la feature `win-system-proxy` di `ureq` sono dichiarate globalmente. Ecco il `Cargo.toml` multipiattaforma esatto:
 
 ```toml
@@ -379,13 +379,13 @@ windows = { version = "0.62.2", features = [
 
 | Modulo | Meccanismo Windows (`#[cfg(windows)]`) | Meccanismo Unix (`#[cfg(unix)]` — macOS & Linux) |
 |---|---|---|
-| [`os/safe_path.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/safe_path.rs#L31-L36) | `meta.file_type().is_symlink() \|\| meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0` | `meta.file_type().is_symlink()` (su Unix non esistono junction NTFS). |
-| [`os/temp.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/temp.rs#L58-L67) | `OpenOptionsExt::share_mode(FILE_SHARE_READ_WRITE)` su `.lock` | `libc::flock(file.as_raw_fd(), libc::LOCK_EX \| libc::LOCK_NB)` su `.lock`; `sweep_one` prova `flock(LOCK_EX \| LOCK_NB)` prima di rimuovere! |
-| [`os/volume.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/volume.rs) | `GetVolumePathNameW`, `GetVolumeInformationW`, `GetDiskFreeSpaceExW` | `libc::statvfs` per `free_space` (`f_bavail * f_frsize`), `libc::stat` (`st_dev`) per `same_volume`, `libc::statfs` per `FsKind` (`APFS`/`ext4`/`btrfs` → `has_permissions() = true`; `msdos`/`exfat` → `Fat32`/`ExFat`). |
-| [`os/instance.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/instance.rs) | `CreateMutexW(Local\Dev-Kit-App-<id>)` + Named Pipe `\\.\pipe\Dev-Kit-App-<id>` | `flock(LOCK_EX \| LOCK_NB)` su `<data>/app/instance.lock` + `std::os::unix::net::UnixListener` su `<temp>/devkit-<id>.sock` (permessi `0o600`). |
-| [`os/jobs.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/jobs.rs) | Windows Job Object (`KILL_ON_JOB_CLOSE`) + `CreateProcessW` | Process Group dedicato (`CommandExt::process_group(0)` / `setpgid(0, 0)`) + su Linux `prctl(PR_SET_PDEATHSIG, SIGTERM)` in `pre_exec`; su `Job::drop`, invio di `libc::killpg(pgid, libc::SIGTERM)` seguito da `SIGKILL`. |
-| [`os/processes.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/processes.rs) | `CreateToolhelp32Snapshot` + `QueryFullProcessImageNameW` | Su Linux: scansione di `/proc/<pid>/stat` (PPID) e `fs::read_link("/proc/<pid>/exe")`. Su macOS: `libc::proc_listallpids`, `libc::proc_pidinfo(PROC_PIDTBSDINFO)` per PPID e `libc::proc_pidpath` per il percorso eseguibile! |
-| [`os/sessions.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/sessions.rs) | `OpenProcess(PROCESS_TERMINATE)` + `TerminateProcess` | `libc::kill(pid as i32, libc::SIGTERM)` + attesa 200 ms + `libc::kill(pid as i32, libc::SIGKILL)`. |
-| [`os/webview.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/os/webview.rs) | WebView2 Fixed Version o Evergreen di Windows | Su macOS: `WKWebView` nativo di sistema (sempre presente in macOS 13+). Su Linux: `WebKitGTK` (`libwebkit2gtk-4.1`), con configurazione `WEBKIT_DISABLE_DMABUF_RENDERER=1` automatica se rilevata GPU problematica/Wayland. |
+| [`os/safe_path.rs`](../../../tauri/src/os/safe_path.rs#L31-L36) | `meta.file_type().is_symlink() \|\| meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0` | `meta.file_type().is_symlink()` (su Unix non esistono junction NTFS). |
+| [`os/temp.rs`](../../../tauri/src/os/temp.rs#L58-L67) | `OpenOptionsExt::share_mode(FILE_SHARE_READ_WRITE)` su `.lock` | `libc::flock(file.as_raw_fd(), libc::LOCK_EX \| libc::LOCK_NB)` su `.lock`; `sweep_one` prova `flock(LOCK_EX \| LOCK_NB)` prima di rimuovere! |
+| [`os/volume.rs`](../../../tauri/src/os/volume.rs) | `GetVolumePathNameW`, `GetVolumeInformationW`, `GetDiskFreeSpaceExW` | `libc::statvfs` per `free_space` (`f_bavail * f_frsize`), `libc::stat` (`st_dev`) per `same_volume`, `libc::statfs` per `FsKind` (`APFS`/`ext4`/`btrfs` → `has_permissions() = true`; `msdos`/`exfat` → `Fat32`/`ExFat`). |
+| [`os/instance.rs`](../../../tauri/src/os/instance.rs) | `CreateMutexW(Local\Atollo-App-<id>)` + Named Pipe `\\.\pipe\Atollo-App-<id>` | `flock(LOCK_EX \| LOCK_NB)` su `<data>/app/instance.lock` + `std::os::unix::net::UnixListener` su `<temp>/atollo-<id>.sock` (permessi `0o600`). |
+| [`os/jobs.rs`](../../../tauri/src/os/jobs.rs) | Windows Job Object (`KILL_ON_JOB_CLOSE`) + `CreateProcessW` | Process Group dedicato (`CommandExt::process_group(0)` / `setpgid(0, 0)`) + su Linux `prctl(PR_SET_PDEATHSIG, SIGTERM)` in `pre_exec`; su `Job::drop`, invio di `libc::killpg(pgid, libc::SIGTERM)` seguito da `SIGKILL`. |
+| [`os/processes.rs`](../../../tauri/src/os/processes.rs) | `CreateToolhelp32Snapshot` + `QueryFullProcessImageNameW` | Su Linux: scansione di `/proc/<pid>/stat` (PPID) e `fs::read_link("/proc/<pid>/exe")`. Su macOS: `libc::proc_listallpids`, `libc::proc_pidinfo(PROC_PIDTBSDINFO)` per PPID e `libc::proc_pidpath` per il percorso eseguibile! |
+| [`os/sessions.rs`](../../../tauri/src/os/sessions.rs) | `OpenProcess(PROCESS_TERMINATE)` + `TerminateProcess` | `libc::kill(pid as i32, libc::SIGTERM)` + attesa 200 ms + `libc::kill(pid as i32, libc::SIGKILL)`. |
+| [`os/webview.rs`](../../../tauri/src/os/webview.rs) | WebView2 Fixed Version o Evergreen di Windows | Su macOS: `WKWebView` nativo di sistema (sempre presente in macOS 13+). Su Linux: `WebKitGTK` (`libwebkit2gtk-4.1`), con configurazione `WEBKIT_DISABLE_DMABUF_RENDERER=1` automatica se rilevata GPU problematica/Wayland. |
 
-Tutte le implementazioni Rust complete riga per riga per questi moduli sono pronte all'applicazione nel [`Documento 07`](file:///c:/Users/nabre/Projects/dev-kit2/reports/v3/07-PIANO-ESECUTIVO-PORTABILITA-E-MULTI-OS.md).
+Tutte le implementazioni Rust complete riga per riga per questi moduli sono pronte all'applicazione nel [`Documento 07`](../../../reports/v3/07-PIANO-ESECUTIVO-PORTABILITA-E-MULTI-OS.md).

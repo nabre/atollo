@@ -24,7 +24,7 @@ use crate::projects::caddy::{self, PrivateSocket};
 
 /// The FastCGI parameter that carries the key of [`FastCgi`], checked by
 /// `runtime\fcgi-guard.php` (D-99 «Resta»).
-pub const FCGI_KEY_PARAM: &str = "DEVKIT_FCGI_KEY";
+pub const FCGI_KEY_PARAM: &str = "ATOLLO_FCGI_KEY";
 
 /// Where a PHP FastCGI server listens: a port of 127.0.0.1 (php-cgi, which
 /// ignores `PHP_VALUE`), or an owner-only Unix socket (php-fpm on macOS and
@@ -163,7 +163,7 @@ fn guard_file(kit: &Kit, what: &str) -> Option<PathBuf> {
 /// Spawns `php-cgi.exe -b 127.0.0.1:<port>` inside `job` when PHP is
 /// installed, returning its [`FastCgi`] and the process, whose death the
 /// caller watches (a server without its php-cgi answers 502 to every `.php`).
-/// php-cgi gets a new key (`-d devkit.fcgi_key`), the kit's guard as
+/// php-cgi gets a new key (`-d atollo.fcgi_key`), the kit's guard as
 /// `auto_prepend_file`, and `FCGI_WEB_SERVER_ADDRS=127.0.0.1` (PHP's own
 /// list of the web servers it accepts). `None` when PHP is not installed,
 /// the guard is missing or the spawn failed (in the log).
@@ -199,7 +199,7 @@ pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(F
 pub fn guard_args(guard: &Path, key: &str) -> [String; 4] {
     [
         "-d".to_owned(),
-        format!("devkit.fcgi_key={key}"),
+        format!("atollo.fcgi_key={key}"),
         "-d".to_owned(),
         format!("auto_prepend_file=\"{}\"", fwd(guard)),
     ]
@@ -216,7 +216,7 @@ pub fn guard_args(guard: &Path, key: &str) -> [String; 4] {
 pub fn fpm_conf(run_dir: &Path, socket: &Path) -> String {
     let run = fwd(run_dir);
     [
-        "; Dev-Kit: php-fpm of this web server (written at every start)",
+        "; Atollo: php-fpm of this web server (written at every start)",
         "[global]",
         &format!("pid = \"{run}/php-fpm.pid\""),
         &format!("error_log = \"{run}/php-fpm.log\""),

@@ -60,7 +60,7 @@ fn project_caddyfile_with_php_and_aliases() {
     assert!(conf.contains("\t\troot * \"D:/kit/projects/shop/public\"\n"));
     // PHP with the key of the kit's guard (D-99), `.phtml` and `.phar` too.
     assert!(conf.contains(
-        "\t\tphp_fastcgi 127.0.0.1:9123 {\n\t\t\tenv DEVKIT_FCGI_KEY {env.DEVKIT_FCGI_KEY}\n\t\t\tsplit .php .phtml .phar\n\t\t}\n\t\tfile_server\n"
+        "\t\tphp_fastcgi 127.0.0.1:9123 {\n\t\t\tenv ATOLLO_FCGI_KEY {env.ATOLLO_FCGI_KEY}\n\t\t\tsplit .php .phtml .phar\n\t\t}\n\t\tfile_server\n"
     ), "{conf}");
     assert!(!conf.contains(&cgi(9123).key), "the key is never written");
     // Aliases: only those checked on disk, listed, PHP in them too.
@@ -180,7 +180,7 @@ fn pool_caddyfile() {
         &["shop.localhost".into()],
         &["\trespond \"x\"".into()],
     );
-    let sock = Path::new("/tmp/Dev-Kit/0123456789abcdef/caddy-01234567/a.sock");
+    let sock = Path::new("/tmp/Atollo/0123456789abcdef/caddy-01234567/a.sock");
     let conf = pool_conf(
         pool,
         8081,
@@ -191,15 +191,13 @@ fn pool_caddyfile() {
     )
     .unwrap();
     assert!(
-        conf.contains(
-            "\tadmin \"unix//tmp/Dev-Kit/0123456789abcdef/caddy-01234567/a.sock|0600\"\n"
-        ),
+        conf.contains("\tadmin \"unix//tmp/Atollo/0123456789abcdef/caddy-01234567/a.sock|0600\"\n"),
         "{conf}"
     );
     assert!(!conf.contains("admin 127.0.0.1"));
     assert!(conf.contains("http://shop.localhost:8081 {\n\tbind 127.0.0.1\n\trespond \"x\"\n}\n"));
     assert!(conf.contains(
-        "http://localhost:8081, http://127.0.0.1:8081, http://[::1]:8081 {\n\tbind 127.0.0.1\n\trespond \"Dev-Kit: Caddy pool\" 200\n}\n"
+        "http://localhost:8081, http://127.0.0.1:8081, http://[::1]:8081 {\n\tbind 127.0.0.1\n\trespond \"Atollo: Caddy pool\" 200\n}\n"
     ), "{conf}");
     assert!(conf.contains("http://:8081 {\n\tbind 127.0.0.1\n\trespond 421\n}\n"));
     assert!(!conf.contains("import"));
@@ -214,7 +212,7 @@ fn pool_caddyfile() {
     );
     let lan = pool_conf(pool, 8081, Some(sock), true, &[lan_site], false).unwrap();
     assert!(
-        lan.contains("http://:8081 {\n\trespond \"Dev-Kit: Caddy pool\" 200\n}\n"),
+        lan.contains("http://:8081 {\n\trespond \"Atollo: Caddy pool\" 200\n}\n"),
         "{lan}"
     );
     assert!(!lan.contains("bind ") && !lan.contains("respond 421"));
@@ -238,7 +236,7 @@ fn run_and_reload_arguments() {
             "caddyfile"
         ]
     );
-    let reload: Vec<String> = reload_args(conf, Path::new("/tmp/Dev-Kit/k/caddy-1/a.sock"))
+    let reload: Vec<String> = reload_args(conf, Path::new("/tmp/Atollo/k/caddy-1/a.sock"))
         .into_iter()
         .map(|a| a.to_string_lossy().into_owned())
         .collect();
@@ -251,7 +249,7 @@ fn run_and_reload_arguments() {
             "--adapter",
             "caddyfile",
             "--address",
-            "unix//tmp/Dev-Kit/k/caddy-1/a.sock"
+            "unix//tmp/Atollo/k/caddy-1/a.sock"
         ]
     );
 }
@@ -265,14 +263,14 @@ fn admin_line_per_system() {
     let run = Path::new("/kit/data/servers/p");
     let line = |sock: Option<&Path>| global_options(sock, run).unwrap()[1].clone();
     assert_eq!(
-        line(Some(Path::new("/tmp/Dev-Kit/0a1b/caddy-9f8e7d6c/a.sock"))),
-        "\tadmin \"unix//tmp/Dev-Kit/0a1b/caddy-9f8e7d6c/a.sock|0600\""
+        line(Some(Path::new("/tmp/Atollo/0a1b/caddy-9f8e7d6c/a.sock"))),
+        "\tadmin \"unix//tmp/Atollo/0a1b/caddy-9f8e7d6c/a.sock|0600\""
     );
     assert_eq!(
         line(Some(Path::new(
-            r"C:\Users\me\AppData\Local\Temp\Dev-Kit\0a1b\caddy-9f8e7d6c\a.sock"
+            r"C:\Users\me\AppData\Local\Temp\Atollo\0a1b\caddy-9f8e7d6c\a.sock"
         ))),
-        "\tadmin \"unix/C:/Users/me/AppData/Local/Temp/Dev-Kit/0a1b/caddy-9f8e7d6c/a.sock|0600\""
+        "\tadmin \"unix/C:/Users/me/AppData/Local/Temp/Atollo/0a1b/caddy-9f8e7d6c/a.sock|0600\""
     );
     assert_eq!(line(None), "\tadmin off");
     // Too long for `sun_path` (macOS: 104 bytes), or not writable: off.
@@ -297,7 +295,7 @@ fn admin_socket_in_a_private_folder() {
     let want = if kit.os().is_windows() {
         kit.system_temp()
     } else {
-        // `/tmp` itself, never `/tmp/Dev-Kit/<id>` another user may own.
+        // `/tmp` itself, never `/tmp/Atollo/<id>` another user may own.
         kit.system_temp().and_then(|t| t.parent()?.parent())
     };
     assert_eq!(bases.last().map(PathBuf::as_path), want);

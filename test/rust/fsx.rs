@@ -2,7 +2,7 @@ use super::*;
 use std::collections::BTreeMap;
 
 fn temp(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("devkit-fsx-{}-{name}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("atollo-fsx-{}-{name}", std::process::id()));
     let _ = fs::remove_dir_all(&dir);
     dir
 }

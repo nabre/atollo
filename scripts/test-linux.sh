@@ -6,7 +6,7 @@
 #   Inside WSL or on Linux:                bash scripts/test-linux.sh
 #
 # The repository is copied with rsync into the Linux file system
-# ($DEVKIT_LINUX_DIR, default ~/dev-kit2-copies/<folder>-<hash of its
+# ($ATOLLO_LINUX_DIR, default ~/atollo-copies/<folder>-<hash of its
 # path>, one per checkout or worktree): on /mnt/<drive> permissions and
 # symbolic links are not Linux's and the build is slow. target/ stays there
 # between runs, so the next build is incremental. Two runs on the same copy
@@ -15,7 +15,7 @@
 #
 # Options:
 #   --clippy       also cargo clippy --all-targets -- -D warnings, before the tests
-#   --check-dest   only say whether $DEVKIT_LINUX_DIR may be copied into
+#   --check-dest   only say whether $ATOLLO_LINUX_DIR may be copied into
 #                  (0 yes, 2 no); runs anywhere, also in Git Bash
 #   --         what follows goes to cargo test (a filter, -- --nocapture, ...)
 #
@@ -24,17 +24,17 @@
 
 set -euo pipefail
 
-# rsync --delete empties whatever $DEVKIT_LINUX_DIR names: only an empty
+# rsync --delete empties whatever $ATOLLO_LINUX_DIR names: only an empty
 # folder or a copy made by this script (marker file) is synced into. A
 # clone of this repository without the marker (its own .git, work not
 # committed) is someone's checkout, not a copy: it is refused too.
-marker=".devkit-linux-copy"
+marker=".atollo-linux-copy"
 check_dest() {
     local dir="$1"
     if [ -d "$dir" ] && [ -n "$(ls -A "$dir")" ] && [ ! -f "$dir/$marker" ]; then
         echo "$dir is not empty and was not made by this script (no $marker):" >&2
         echo "the copy would overwrite or delete its files. Choose another folder" >&2
-        echo "with DEVKIT_LINUX_DIR, or empty this one." >&2
+        echo "with ATOLLO_LINUX_DIR, or empty this one." >&2
         return 1
     fi
 }
@@ -42,7 +42,7 @@ check_dest() {
 src="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # One copy per source folder: worktrees of the swarm run in parallel.
 src_hash="$(printf '%s' "$src" | cksum | cut -d' ' -f1)"
-dest="${DEVKIT_LINUX_DIR:-$HOME/dev-kit2-copies/$(basename "$src")-$src_hash}"
+dest="${ATOLLO_LINUX_DIR:-$HOME/atollo-copies/$(basename "$src")-$src_hash}"
 clippy=0
 cargo_args=()
 while [ $# -gt 0 ]; do

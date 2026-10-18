@@ -6,7 +6,7 @@
 
 On first start the app downloads the system components by itself: PowerShell 7, GitHub CLI, the editor and what they need (Git for GitHub CLI). Everything else is chosen on the "Tools" page, or arrives when needed: Node.js with an `npm` action, uv with a `uvx` MCP server, and so on.
 
-> In Italian: guide [app/GUIDA.md](app/GUIDA.md), decisions [app/DECISIONS.md](app/DECISIONS.md), changes [app/CHANGELOG.md](app/CHANGELOG.md); open work: [issues](https://github.com/nabre/dev-kit2/issues).
+> In Italian: guide [app/GUIDA.md](app/GUIDA.md), decisions [app/DECISIONS.md](app/DECISIONS.md), changes [app/CHANGELOG.md](app/CHANGELOG.md); open work: [issues](https://github.com/nabre/atollo/issues).
 
 ## How to use it
 
@@ -14,7 +14,7 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 2. Double-click it: the app creates `projects\` and `data\`. On first start choose agents, languages and tools: the app downloads and verifies them (checksum or signature).
 3. Create or clone a project on the **Projects** page. The editor, the terminal and the agents always open in a project's folder, never anywhere else.
 
-From the [releases page](https://github.com/nabre/dev-kit2/releases): `Atollo-x64.exe` or `Atollo-arm64.exe` for Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) or `Atollo-darwin-x64.app.zip` (Intel) for macOS, `Atollo-linux-x64` or `Atollo-linux-arm64` (`.AppImage` and `.tar.gz`) for Linux; each file has its `.sha256`.
+From the [releases page](https://github.com/nabre/atollo/releases): `Atollo-x64.exe` or `Atollo-arm64.exe` for Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) or `Atollo-darwin-x64.app.zip` (Intel) for macOS, `Atollo-linux-x64` or `Atollo-linux-arm64` (`.AppImage` and `.tar.gz`) for Linux; each file has its `.sha256`.
 
 **macOS** (12 or later). The app only has an ad hoc signature, not notarized by Apple:
 1. Unzip it and move `Atollo.app` with the Finder into the kit folder (for example `/Volumes/KIT/Atollo/`).
@@ -42,7 +42,7 @@ Atollo's console is the classic Windows console with integrated PowerShell 7 and
 
 ## Known limits
 
-- On Windows 10 and 11 (`x64` and `ARM64`), macOS (Apple Silicon and Intel) and Linux (`x64` and `ARM64`). On Windows ARM64 the editor, PHP, Apache, MySQL and TinyTeX run under x64 emulation and R is not available; on Linux ARM64 Android is missing. The macOS and Linux releases, from the next tag, are tried in CI but not yet on clean machines ([#5](https://github.com/nabre/dev-kit2/issues/5)), and the agents' sign-in still has to be tried on a Mac ([#6](https://github.com/nabre/dev-kit2/issues/6)); components and sources per system in [app/CATALOG.md](app/CATALOG.md) (in Italian), the component × system matrix in [app/MATRICE-STRUMENTI.html](app/MATRICE-STRUMENTI.html). Apache on macOS and Linux comes with the first release of the kit's own build (D-116); until then the web server there is Caddy.
+- On Windows 10 and 11 (`x64` and `ARM64`), macOS (Apple Silicon and Intel) and Linux (`x64` and `ARM64`). On Windows ARM64 the editor, PHP, Apache, MySQL and TinyTeX run under x64 emulation and R is not available; on Linux ARM64 Android is missing. The macOS and Linux releases, from the next tag, are tried in CI but not yet on clean machines ([#5](https://github.com/nabre/atollo/issues/5)), and the agents' sign-in still has to be tried on a Mac ([#6](https://github.com/nabre/atollo/issues/6)); components and sources per system in [app/CATALOG.md](app/CATALOG.md) (in Italian), the component × system matrix in [app/MATRICE-STRUMENTI.html](app/MATRICE-STRUMENTI.html). Apache on macOS and Linux comes with the first release of the kit's own build (D-116); until then the web server there is Caddy.
 - On Linux MySQL needs two system libraries, `libaio` and `libnuma`: on Ubuntu 24.04 and Debian 13 `sudo apt install libaio1t64 libnuma1` (on older releases `libaio1`), on Fedora and RHEL `sudo dnf install libaio numactl-libs`. If they are missing, Atollo says so with the command to run.
 - Outside the Atollo folder there are only Windows' own traces, transient temporary files in the system temp folder (automatically removed on exit), GitHub CLI's sign-in in the Credential Manager if you sign in from a console with `gh auth login` (the one made in Settings stays in `data\gh`) and Antigravity's while `agy` is open (for the session only).
 - The folders in `projects\` are trusted by Claude Code and Codex: open only projects you trust. The editor instead asks the first time it opens each project and opens the ones you don't trust in "Restricted Mode".

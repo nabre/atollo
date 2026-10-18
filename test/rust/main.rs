@@ -4,7 +4,7 @@ use tauri::test::{get_ipc_response, mock_builder, INVOKE_KEY};
 use tauri::webview::InvokeRequest;
 
 fn state() -> AppState {
-    let kit = Kit::at(std::env::temp_dir().join("devkit-ipc-test"), Arch::X64);
+    let kit = Kit::at(std::env::temp_dir().join("atollo-ipc-test"), Arch::X64);
     let editor = std::sync::Arc::new(editor::Editor::new(kit.clone(), KitEnv::default()));
     let setup = std::sync::Arc::new(setup::task::SetupTask::new(
         kit.clone(),
@@ -80,13 +80,13 @@ fn disk_stop_only_for_blocking_notices() {
 #[test]
 fn start_checks_silent_on_windows() {
     let exe = std::path::Path::new(
-        "/private/var/folders/x/AppTranslocation/1/d/Dev-Kit.app/Contents/MacOS/Dev-Kit",
+        "/private/var/folders/x/AppTranslocation/1/d/Atollo.app/Contents/MacOS/Atollo",
     );
     assert_eq!(kit::launch_problem(kit::Os::Win32, exe, "it"), None);
     assert_eq!(kit::launch_problem(kit::Os::Linux, exe, "it"), None);
     assert!(kit::launch_problem(kit::Os::Darwin, exe, "it").is_some());
     if cfg!(windows) {
-        let kit = Kit::at(std::env::temp_dir().join("devkit-ipc-test"), Arch::X64);
+        let kit = Kit::at(std::env::temp_dir().join("atollo-ipc-test"), Arch::X64);
         assert_eq!(os::volume::disk_notice(&kit, "it"), None);
     }
 }
@@ -96,7 +96,7 @@ fn help_is_translated() {
     assert_ne!(i18n::t("en", HELP, &[]), HELP);
 }
 
-/// The help names the program as it is on each system: `Dev-Kit.exe` on
+/// The help names the program as it is on each system: `Atollo.exe` on
 /// Windows whatever the file is called, the started file elsewhere; it
 /// documents `--target` with every target id, in every language.
 #[test]
@@ -107,11 +107,11 @@ fn help_program_name_and_target_on_every_system() {
         let name = program_name(os, Some(exe));
         let unknown = program_name(os, None);
         if os.is_windows() {
-            assert_eq!(name, "Dev-Kit.exe", "{target}");
-            assert_eq!(unknown, "Dev-Kit.exe", "{target}");
+            assert_eq!(name, "Atollo.exe", "{target}");
+            assert_eq!(unknown, "Atollo.exe", "{target}");
         } else {
             assert_eq!(name, "Atollo", "{target}");
-            assert_eq!(unknown, "Dev-Kit", "{target}");
+            assert_eq!(unknown, "Atollo", "{target}");
         }
         for lang in ["it", "en", "fr", "de"] {
             let text = help_text(lang, os, Some(exe));
@@ -150,13 +150,13 @@ fn help_program_name_and_target_on_every_system() {
 
 /// The help printed before `--target` was documented, on Windows: the
 /// current text must be exactly this one with the `--target` lines added.
-const OLD_HELP_IT: &str = "Uso: Dev-Kit.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
+const OLD_HELP_IT: &str = "Uso: Atollo.exe [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa agy.cmd del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
 
-const OLD_HELP_EN: &str = "Usage: Dev-Kit.exe [command]\n\nCommands:\n  env                     show the kit environment\n      --project <name>    the one of a project's programs\n  components              list languages and tools, with the installed ones\n  versions [id]           the saved versions; with an id, those to download\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n      --line id=x.y       save this version next to the default\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's agy.cmd)\n  serve <folder> <port>   file server for a static site\n  version                 show the version\n  help                    show this help\n\nWithout a command, the Atollo window opens.";
+const OLD_HELP_EN: &str = "Usage: Atollo.exe [command]\n\nCommands:\n  env                     show the kit environment\n      --project <name>    the one of a project's programs\n  components              list languages and tools, with the installed ones\n  versions [id]           the saved versions; with an id, those to download\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n      --line id=x.y       save this version next to the default\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's agy.cmd)\n  serve <folder> <port>   file server for a static site\n  version                 show the version\n  help                    show this help\n\nWithout a command, the Atollo window opens.";
 
-const OLD_HELP_FR: &str = "Utilisation : Dev-Kit.exe [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par agy.cmd du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre d'Atollo s'ouvre.";
+const OLD_HELP_FR: &str = "Utilisation : Atollo.exe [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par agy.cmd du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre d'Atollo s'ouvre.";
 
-const OLD_HELP_DE: &str = "Verwendung: Dev-Kit.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von agy.cmd des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von Atollo.";
+const OLD_HELP_DE: &str = "Verwendung: Atollo.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von agy.cmd des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von Atollo.";
 
 /// `old` with `components_lines` inserted after the line of `components`
 /// and `prepare_line` after the line of `--line`.
@@ -175,7 +175,7 @@ fn splice_target_lines(old: &str, components_lines: &[&str], prepare_line: &str)
 }
 
 /// Windows keeps the help it has always printed, byte for byte, apart
-/// from the new `--target` lines: `Dev-Kit.exe` whatever the file is
+/// from the new `--target` lines: `Atollo.exe` whatever the file is
 /// called, and `agy.cmd` on the keyring line.
 #[test]
 fn help_on_windows_is_the_old_text_plus_target() {
@@ -247,10 +247,10 @@ fn help_off_windows_names_agy() {
 /// `kit::app_exe` returns there), not the inner program of its mount.
 #[test]
 fn help_names_the_appimage_on_linux() {
-    let exe = Path::new("/home/u/Kit/Dev-Kit.AppImage");
-    assert_eq!(program_name(kit::Os::Linux, Some(exe)), "Dev-Kit.AppImage");
+    let exe = Path::new("/home/u/Kit/Atollo.AppImage");
+    assert_eq!(program_name(kit::Os::Linux, Some(exe)), "Atollo.AppImage");
     assert!(help_text("en", kit::Os::Linux, Some(exe))
-        .starts_with("Usage: Dev-Kit.AppImage [command]\n"));
+        .starts_with("Usage: Atollo.AppImage [command]\n"));
 }
 
 /// DECISIONS.md D-14: an editor window (local server URL) cannot call
@@ -263,7 +263,7 @@ fn editor_windows_cannot_invoke_commands() {
         .build(context())
         .unwrap();
     let main = WebviewWindowBuilder::new(&app, MAIN, WebviewUrl::App("index.html".into()))
-        .data_directory(std::env::temp_dir().join("devkit-ipc-test-webview"))
+        .data_directory(std::env::temp_dir().join("atollo-ipc-test-webview"))
         .build()
         .unwrap();
     let r = invoke(&main, LOCAL);
@@ -281,7 +281,7 @@ fn editor_windows_cannot_invoke_commands() {
         "editor-1",
         WebviewUrl::External(editor_url.parse().unwrap()),
     )
-    .data_directory(std::env::temp_dir().join("devkit-ipc-test-webview"))
+    .data_directory(std::env::temp_dir().join("atollo-ipc-test-webview"))
     .build()
     .unwrap();
     assert!(
@@ -291,7 +291,7 @@ fn editor_windows_cannot_invoke_commands() {
 
     // Even a window labelled like an editor but loading app pages is refused.
     let other = WebviewWindowBuilder::new(&app, "editor-2", WebviewUrl::App("index.html".into()))
-        .data_directory(std::env::temp_dir().join("devkit-ipc-test-webview"))
+        .data_directory(std::env::temp_dir().join("atollo-ipc-test-webview"))
         .build()
         .unwrap();
     assert!(invoke(&other, LOCAL).is_err());
@@ -308,7 +308,7 @@ fn terminal_sessions_only_on_unix_and_only_for_main() {
         .invoke_handler(command_handler!())
         .build(context())
         .unwrap();
-    let data = std::env::temp_dir().join("devkit-ipc-test-webview-pty");
+    let data = std::env::temp_dir().join("atollo-ipc-test-webview-pty");
     let main = WebviewWindowBuilder::new(&app, MAIN, WebviewUrl::App("index.html".into()))
         .data_directory(data.clone())
         .build()

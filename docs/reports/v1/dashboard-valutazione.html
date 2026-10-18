@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEXKORA (Dev-Kit) — Dashboard di Verifica del Software &amp; KPI</title>
+  <title>Atollo — Dashboard di Verifica del Software &amp; KPI</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -186,7 +186,7 @@
     <header>
       <div>
         <span class="badge badge-blue">Rapporto Ufficiale di Verifica Software</span>
-        <h1>NEXKORA (Dev-Kit v0.5.3) — Dashboard Indicatori &amp; Valutazioni</h1>
+        <h1>Atollo v0.5.3 — Dashboard Indicatori &amp; Valutazioni</h1>
         <p class="subtitle">Verifica multidimensionale su Architettura, Logica, UX, UI, Esperienza d'Uso, Completezza, Bug, Multipiattaforma e Facilitazione Utente</p>
       </div>
       <div class="score-hero">
@@ -417,7 +417,7 @@
             <tr>
               <th>Operazione Comune</th>
               <th>Passaggi Manuali Tradizionali</th>
-              <th>Passaggi con NEXKORA (Dev-Kit)</th>
+              <th>Passaggi con Atollo</th>
               <th>Impatto sulla Facilitazione</th>
             </tr>
           </thead>
@@ -444,7 +444,7 @@
               <td><strong>4. Configurazione e allineamento di 4 Agenti IA</strong></td>
               <td>Modificare separatamente <code>~/.claude</code>, <code>~/.codex/config.toml</code>, <code>~/.gemini</code>, convertendo a mano JSON in TOML.</td>
               <td>Cliccare <strong>Sincronizza</strong> nella pagina <em>Agenti IA</em>: istruzioni, Skills e server MCP vengono tradotti e allineati automaticamente.</td>
-              <td><span class="badge badge-green">Esclusivo di NEXKORA</span></td>
+              <td><span class="badge badge-green">Esclusivo di Atollo</span></td>
             </tr>
           </tbody>
         </table>
@@ -517,7 +517,7 @@
       { id: "BUG-13", sev: "MEDIA", file: "tauri/src/db/adminer.rs:137-139", desc: "Usa jobs::spawn seguito da job.assign invece di jobs::spawn_in (che crea il processo sospeso prima di assegnarlo al Job dedicato).", fix: "Usare jobs::spawn_in(&mut cmd, &job) per coerenza e sicurezza." },
       { id: "BUG-14", sev: "MEDIA", file: "tauri/src/detect/php.rs:44-47", desc: "Il rilevamento di WordPress non aggiunge mysql a requires e mostra un avviso obsoleto.", fix: "Aggiungere mysql ai componenti richiesti per WordPress." },
       { id: "BUG-15", sev: "BASSA", file: "ui/src/projects/site.tsx:191", desc: "Mostra il percorso obsoleto data\\app\\projects\\{0}\\apache invece di data\\projects\\{0}\\apache (migrato in D-89).", fix: "Aggiornare la stringa in site.tsx e nei file locales/*.json." },
-      { id: "BUG-16", sev: "BASSA", file: "ui/src/guide/widgets.tsx:304 & sections.tsx", desc: "La Guida mostra ancora il pulsante data\\backup\\, cita .devkit.json e usa il vecchio nome del pulsante di rimozione sicura.", fix: "Allineare i riferimenti nella Guida a D-89 e alle etichette attuali." },
+      { id: "BUG-16", sev: "BASSA", file: "ui/src/guide/widgets.tsx:304 & sections.tsx", desc: "La Guida mostra ancora il pulsante data\\backup\\, cita .atollo.json e usa il vecchio nome del pulsante di rimozione sicura.", fix: "Allineare i riferimenti nella Guida a D-89 e alle etichette attuali." },
       { id: "BUG-17", sev: "BASSA", file: "tauri/src/cli.rs:353", desc: "Il messaggio CLI per i download manuali indica data\\downloads invece della nuova cartella temporanea di sistema (D-90).", fix: "Mostrare os::temp::downloads_dir(kit) nel messaggio CLI." },
       { id: "BUG-18", sev: "BASSA", file: "ui/src/editorsettings.tsx:21-43", desc: "In caso di errore di lettura, inghiotte l'eccezione e restituisce null, lasciando la scheda Editor completamente vuota.", fix: "Mostrare un banner d'errore con pulsante Riprova." },
       { id: "BUG-19", sev: "BASSA", file: "ui/src/App.tsx, databases.tsx, eject.tsx", desc: "Gli errori di lettura restano visibili (sticky) anche dopo che una lettura successiva ha avuto successo.", fix: "Eseguire setErr(null) quando il caricamento successivo riesce." },

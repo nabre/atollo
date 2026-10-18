@@ -1251,11 +1251,11 @@ fn detach_leaves_the_pool_and_stops_an_empty_automatic_one() {
         .contains(&("blog".into(), "site".into())));
 }
 
-/// The kit given by DEVKIT_TEST_KIT with Apache installed, its environment,
+/// The kit given by ATOLLO_TEST_KIT with Apache installed, its environment,
 /// and a free port; `None` (skipped) otherwise.
 fn real_apache() -> Option<(Kit, KitEnv, u16)> {
-    let Ok(root) = std::env::var("DEVKIT_TEST_KIT") else {
-        eprintln!("DEVKIT_TEST_KIT not set: skipped");
+    let Ok(root) = std::env::var("ATOLLO_TEST_KIT") else {
+        eprintln!("ATOLLO_TEST_KIT not set: skipped");
         return None;
     };
     let kit = Kit::at(PathBuf::from(root), Arch::detect());
@@ -1305,7 +1305,7 @@ fn drop_real_profile(kit: &Kit, servers: &WebServers, id: &str) {
     let _ = fs::remove_dir_all(kit.data().join("servers").join(id));
 }
 
-/// BUG-03 with a real httpd (DEVKIT_TEST_KIT): a syntax error in the pool's
+/// BUG-03 with a real httpd (ATOLLO_TEST_KIT): a syntax error in the pool's
 /// configuration reaches the error of the start, not only a log.
 #[test]
 fn start_reports_syntax_error() {
@@ -1313,7 +1313,7 @@ fn start_reports_syntax_error() {
         return;
     };
     let servers = WebServers::new(kit.clone());
-    let id = "devkit-test-syntax";
+    let id = "atollo-test-syntax";
     real_profile(&servers, id, port);
     // conf.d\ is the user's and is kept by every start.
     let conf_d = kit.data().join(r"servers").join(id).join("conf.d");
@@ -1326,7 +1326,7 @@ fn start_reports_syntax_error() {
     assert!(!servers.is_running(id));
 }
 
-/// BUG-04 with a real httpd (DEVKIT_TEST_KIT): two reloads in a row (each a
+/// BUG-04 with a real httpd (ATOLLO_TEST_KIT): two reloads in a row (each a
 /// stop and start, Apache has no graceful reload on Windows) find the port
 /// free again and leave the pool answering.
 #[test]
@@ -1335,7 +1335,7 @@ fn apache_pool_reload_twice() {
         return;
     };
     let servers = WebServers::new(kit.clone());
-    let id = "devkit-test-reload";
+    let id = "atollo-test-reload";
     real_profile(&servers, id, port);
     let answers = || {
         TcpStream::connect_timeout(
@@ -1364,7 +1364,7 @@ fn apache_pool_reload_twice() {
     assert!(wait_port_released(port, Duration::from_secs(5)));
 }
 
-/// D-116 acceptance with a real Apache and PHP (DEVKIT_TEST_KIT; php-fpm
+/// D-116 acceptance with a real Apache and PHP (ATOLLO_TEST_KIT; php-fpm
 /// off Windows, the module on Windows): a pool with two PHP sites and an
 /// alias to another project's folder, hidden files and other hosts
 /// refused, Drupal's `sites/default/files/.htaccess` keeping PHP off in its
@@ -1527,14 +1527,14 @@ fn http_get(port: u16, host: &str, path: &str) -> Result<(u16, String)> {
     Ok((status, body.to_owned()))
 }
 
-/// D-111 acceptance with a real Caddy and PHP (DEVKIT_TEST_KIT): a pool
+/// D-111 acceptance with a real Caddy and PHP (ATOLLO_TEST_KIT): a pool
 /// with two PHP sites and an alias to another project's folder; a third
 /// site added with `caddy reload` while the first one keeps answering, the
 /// same Caddy process throughout.
 #[test]
 fn caddy_pool_two_php_sites_alias_and_reload() {
-    let Ok(root) = std::env::var("DEVKIT_TEST_KIT") else {
-        eprintln!("DEVKIT_TEST_KIT not set: skipped");
+    let Ok(root) = std::env::var("ATOLLO_TEST_KIT") else {
+        eprintln!("ATOLLO_TEST_KIT not set: skipped");
         return;
     };
     // The host's temporary folder holds the pool's admin socket.
@@ -1970,7 +1970,7 @@ fn caddy_site_block_of_a_pool() {
         "\t\troot * \"{}\"\n",
         crate::projects::apache::fwd(&doc)
     )));
-    assert!(block.contains("\t\t\tenv DEVKIT_FCGI_KEY {env.DEVKIT_FCGI_KEY}\n"));
+    assert!(block.contains("\t\t\tenv ATOLLO_FCGI_KEY {env.ATOLLO_FCGI_KEY}\n"));
     assert!(!block.contains(&"k".repeat(64)), "the key is never written");
     assert!(block.contains("\t\thandle_path /blog/* {\n"));
     assert!(block.contains(&format!(

@@ -35,9 +35,9 @@ export interface AppInfo {
 
 const SAMPLE_INFO: AppInfo = {
   version: "0.1.0",
-  root: "E:\\Dev-Kit",
-  data: "E:\\Dev-Kit\\data",
-  projects: "E:\\Dev-Kit\\projects",
+  root: "E:\\Atollo",
+  data: "E:\\Atollo\\data",
+  projects: "E:\\Atollo\\projects",
   platform: "win32-x64",
   lang: "it",
   movedFrom: null,

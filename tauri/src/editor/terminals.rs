@@ -13,7 +13,7 @@
 //!   the system folders are always there.
 //! - Only what is on disk: a tool or a line removed meanwhile is left out
 //!   (a line falls back to the newest), never downloaded at the start.
-//! - Every console gets `DEVKIT_TERMINAL` (its name): the kit's profile
+//! - Every console gets `ATOLLO_TERMINAL` (its name): the kit's profile
 //!   then keeps the terminal's versions in a project folder too, instead of
 //!   the project's (profile.ps1, bashrc).
 
@@ -422,7 +422,7 @@ pub fn env(kit: &Kit, terminal: &Terminal, base: KitEnv) -> KitEnv {
         strip(&mut env, &left_out);
         env
     };
-    env.set("DEVKIT_TERMINAL", terminal.name.clone());
+    env.set("ATOLLO_TERMINAL", terminal.name.clone());
     env
 }
 

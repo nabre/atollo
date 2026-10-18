@@ -47,7 +47,7 @@ impl Services {
                     cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                         .arg(port.to_string())
                         .args(["--eval", auth::MONGO_ADMIN_JS])
-                        .env("DEVKIT_DB_PASSWORD", &password);
+                        .env("ATOLLO_DB_PASSWORD", &password);
                     run_with_input(cmd, "", Duration::from_secs(60)).context(
                         "MongoDB already has users that Atollo does not know: \
                          its administrator could not be created",
@@ -189,9 +189,9 @@ impl Services {
                 cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                     .arg(port.to_string())
                     .args(["--eval", auth::MONGO_PROJECT_JS])
-                    .env("DEVKIT_DB_ADMIN", admin)
-                    .env("DEVKIT_DB_NAME", &name)
-                    .env("DEVKIT_DB_PASSWORD", &password);
+                    .env("ATOLLO_DB_ADMIN", admin)
+                    .env("ATOLLO_DB_NAME", &name)
+                    .env("ATOLLO_DB_PASSWORD", &password);
                 run_with_input(cmd, "", Duration::from_secs(60))?;
             }
             DbEngine::MySql => {
@@ -261,8 +261,8 @@ impl Services {
                 cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                     .arg(port.to_string())
                     .args(["--eval", auth::MONGO_DROP_JS])
-                    .env("DEVKIT_DB_ADMIN", admin)
-                    .env("DEVKIT_DB_NAME", name);
+                    .env("ATOLLO_DB_ADMIN", admin)
+                    .env("ATOLLO_DB_NAME", name);
                 run_with_input(cmd, "", Duration::from_secs(60))?;
             }
             DbEngine::MySql => {

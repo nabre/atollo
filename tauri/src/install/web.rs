@@ -909,7 +909,7 @@ pub fn php_ini(template: &str) -> Result<String> {
 /// `${CP_PHP}` with `/`.
 pub fn php_ini_unix() -> String {
     [
-        "; Dev-Kit php.ini for the PHP of static-php-cli (macOS, Linux): yours,",
+        "; Atollo php.ini for the PHP of static-php-cli (macOS, Linux): yours,",
         "; updates never touch it. Its extensions are built in: no extension= line.",
         "; SQLite through PDO (new PDO('sqlite:...')) works with the driver of",
         "; swoole-hook-sqlite, but php -m does not list pdo_sqlite: a composer.json",
@@ -996,7 +996,7 @@ pub struct Apache;
 /// and the kit's build number) and the SHA-256 of each tarball are fixed in
 /// `sha256ByLine` of `apache`: only those are offered, and a tarball with
 /// another hash is refused.
-const HTTPD_RELEASES: &str = "https://github.com/nabre/dev-kit2/releases/download";
+const HTTPD_RELEASES: &str = "https://github.com/nabre/atollo/releases/download";
 
 /// The `sha256ByLine` pins of component `id` in a catalog file.
 pub fn line_pins_in(catalog: &Value, id: &str) -> BTreeMap<String, super::db::MysqlPin> {
@@ -1232,7 +1232,7 @@ pub fn httpd_conf(text: &str) -> Result<String> {
         bail!("httpd.conf in an unexpected format (no Define SRVROOT)");
     }
     Ok(format!(
-        "{}{nl}{nl}# --- Dev-Kit ---{nl}Include \"${{CP_ROOT_FWD}}/data/apache/kit.conf\"{nl}",
+        "{}{nl}{nl}# --- Atollo ---{nl}Include \"${{CP_ROOT_FWD}}/data/apache/kit.conf\"{nl}",
         t.trim_end()
     ))
 }
@@ -1252,8 +1252,8 @@ pub fn apache_site(dir: &Path, os: Os) -> Result<()> {
     let conf = dir.join("kit.conf");
     if !conf.exists() {
         let mut lines: Vec<String> = [
-            "# Dev-Kit Apache configuration (yours: updates never touch it).",
-            "# Paths use variables set by Dev-Kit, so they work on any drive letter.",
+            "# Atollo Apache configuration (yours: updates never touch it).",
+            "# Paths use variables set by Atollo, so they work on any drive letter.",
             "",
             "# Port: this PC only (127.0.0.1), so the firewall never asks.",
             "Define PORTA 8080",

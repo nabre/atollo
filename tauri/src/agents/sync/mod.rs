@@ -169,10 +169,10 @@ pub const KIT_RULE_TEXT: &str = "In this kit (Atollo) Claude Code, Codex and Ant
 - Global instructions and skills are shared through the kit as well: a change made in one agent reaches the others at their next start.";
 
 fn sync_rules(p: &Paths) -> Result<()> {
-    let rule = format!("<!-- Dev-Kit: regola del kit, riscritta a ogni avvio (non modificare) -->\n{KIT_RULE_TEXT}\n");
+    let rule = format!("<!-- Atollo: regola del kit, riscritta a ogni avvio (non modificare) -->\n{KIT_RULE_TEXT}\n");
     for file in [
-        join_rel(&p.claude, "rules/devkit.md"),
-        join_rel(&p.gemini, "config/rules/devkit.md"),
+        join_rel(&p.claude, "rules/atollo.md"),
+        join_rel(&p.gemini, "config/rules/atollo.md"),
     ] {
         if fs::read_to_string(&file).ok().as_deref() != Some(rule.as_str()) {
             if let Some(dir) = file.parent() {

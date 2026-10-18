@@ -36,7 +36,7 @@ Tutte le metriche riportate di seguito sono state misurate direttamente sui file
 | **Server Web, Pool Condivisi & Sicurezza** | 16 | 78 | `PHP_RUN`/`PHP_NEVER`, migrazione `kit.conf`, DNS rebinding `403`/`421`, router `php -S` (`parse_url`, quoting spazi), ciclo `detached`/`keepAlive` (`D-96..D-101`). |
 | **Database Multi-Versione & `.env`** | 14 | 64 | MySQL side-by-side (`line_ports`, `running_lines`), lock `db.json` concorrente (`0e5e0e8`), precedenza `DB_PORT` in `.env` (`D-102`). |
 | **Rilevamento Progetti & Container** | 15 | 68 | CMS classici (PrestaShop, Drupal, Joomla, TYPO3), Apache per Laravel/PHP, `detect/container.rs` per `compose.yaml`/`Dockerfile` (`D-103`). |
-| **Terminali del Kit & Ambiente (`env`)** | 8 | 36 | Creazione/modifica/duplicazione terminali, filtro `all_tools: false`, override linee in `PATH`, `DEVKIT_TERMINAL` (`D-94`). |
+| **Terminali del Kit & Ambiente (`env`)** | 8 | 36 | Creazione/modifica/duplicazione terminali, filtro `all_tools: false`, override linee in `PATH`, `ATOLLO_TERMINAL` (`D-94`). |
 | **Installatori, Versioni & Pulizia (`D-95`, `D-105`)** | 22 | 85 | Rimozione automatica residui `terminal` (`D-95`), `R` `Makeconf` `LOCAL_SOFT` (`D-105`), multi-versione side-by-side. |
 | **Agenti AI, MCP, Keyring & Rilocazione** | 16 | 54 | Sincronizzazione istruzioni/skill/MCP, cifratura AES-256-GCM, rilocazione path (`relocate.rs`). |
 | **Layer OS & Utility (`os/*`, `net/*`)** | 14 | 48 | Guardie PID reuse `os/jobs.rs`, estrazione archivi, verifica SHA-256 (`D-104`). |
@@ -46,12 +46,12 @@ Tutte le metriche riportate di seguito sono state misurate direttamente sui file
 
 | File Spec (`test/ui/`) | Definizioni `it()` | Eseguiti (con `it.each`) | Copertura Specifica |
 |---|:---:|:---:|---|
-| [`test/ui/terminals.test.tsx`](file:///d:/Projects/dev-kit2/test/ui/terminals.test.tsx) | 5 | 5 | **Nuovo in `v4` (`D-94`)**: lista terminali, creazione, toggle `allTools`, selezione linea e duplicazione. |
-| [`test/ui/dialog.test.tsx`](file:///d:/Projects/dev-kit2/test/ui/dialog.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-106`)**: focus trap `useModalFocus`, chiusura `Escape`, focus iniziale su *Annulla* e `focusBack` in `InlineConfirm`. |
-| [`test/ui/servers.test.tsx`](file:///d:/Projects/dev-kit2/test/ui/servers.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-101`)**: pool condivisi, toggle `keepAlive` e `autostart`, siti agganciati. |
-| [`test/ui/databases.test.tsx`](file:///d:/Projects/dev-kit2/test/ui/databases.test.tsx) | 8 | 8 | **Esteso in `v4` (`D-102`)**: avvio/arresto linea primaria e linee secondarie MySQL (`s.others`). |
-| [`test/ui/versions.test.tsx`](file:///d:/Projects/dev-kit2/test/ui/versions.test.tsx) | 9 | 9 | **Esteso in `v4`**: due zone in `versions/project.tsx` (*"Rilevate nel progetto"* e *"Altri strumenti multi-versione"*). |
-| [`test/ui/frameworks.test.tsx`](file:///d:/Projects/dev-kit2/test/ui/frameworks.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-93`)**: categoria CMS (WordPress/Bedrock, TYPO3, Drupal, Statamic) nel wizard. |
+| [`test/ui/terminals.test.tsx`](../../../test/ui/terminals.test.tsx) | 5 | 5 | **Nuovo in `v4` (`D-94`)**: lista terminali, creazione, toggle `allTools`, selezione linea e duplicazione. |
+| [`test/ui/dialog.test.tsx`](../../../test/ui/dialog.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-106`)**: focus trap `useModalFocus`, chiusura `Escape`, focus iniziale su *Annulla* e `focusBack` in `InlineConfirm`. |
+| [`test/ui/servers.test.tsx`](../../../test/ui/servers.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-101`)**: pool condivisi, toggle `keepAlive` e `autostart`, siti agganciati. |
+| [`test/ui/databases.test.tsx`](../../../test/ui/databases.test.tsx) | 8 | 8 | **Esteso in `v4` (`D-102`)**: avvio/arresto linea primaria e linee secondarie MySQL (`s.others`). |
+| [`test/ui/versions.test.tsx`](../../../test/ui/versions.test.tsx) | 9 | 9 | **Esteso in `v4`**: due zone in `versions/project.tsx` (*"Rilevate nel progetto"* e *"Altri strumenti multi-versione"*). |
+| [`test/ui/frameworks.test.tsx`](../../../test/ui/frameworks.test.tsx) | 7 | 7 | **Esteso in `v4` (`D-93`)**: categoria CMS (WordPress/Bedrock, TYPO3, Drupal, Statamic) nel wizard. |
 | Altri 10 file (`App`, `projects`, `agents`, `setup`, `backups`, `dbbrowser`, `i18n`, `relations`, `stats`, `workbench`) | 60 | 64 | Navigazione workbench, parità dizionari `en`/`de`/`fr`, filtri progetti, browser DB, statistiche token. |
 | **TOTALE TEST FRONTEND** | **103** | **107** | **`+17` nuovi test UI rispetto a `v3` (`+18,9%`)** |
 

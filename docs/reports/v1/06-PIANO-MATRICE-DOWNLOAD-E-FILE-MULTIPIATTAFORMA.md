@@ -1,7 +1,7 @@
 # Piano di Architettura e Implementazione: Matrice di Download e Gestione File Multipiattaforma
 
 > [!IMPORTANT]
-> **Obiettivo Operativo**: Ristrutturare l'intero sottosistema di catalogo, download, verifica, estrazione, posizionamento su disco, versionamento affiancato (`versions/`) e risoluzione `PATH` di **NEXKORA (Dev-Kit)** per supportare nativamente e in modo **coabitante sulla stessa unità portabile** le **6 combinazioni Piattaforma × Architettura**:
+> **Obiettivo Operativo**: Ristrutturare l'intero sottosistema di catalogo, download, verifica, estrazione, posizionamento su disco, versionamento affiancato (`versions/`) e risoluzione `PATH` di **Atollo** per supportare nativamente e in modo **coabitante sulla stessa unità portabile** le **6 combinazioni Piattaforma × Architettura**:
 > - **Windows**: `win32-x64`, `win32-arm64`
 > - **macOS**: `darwin-arm64` (Apple Silicon), `darwin-x64` (Intel)
 > - **Linux**: `linux-x64` (glibc/musl statico), `linux-arm64` (aarch64)
@@ -10,14 +10,14 @@
 
 ## 1. Principi Architetturali e Coabitazione Multi-Host nello Stesso Kit
 
-Il requisito cardine di NEXKORA ([`docs/app/PLAN.md`](file:///c:/Users/nabre/Projects/dev-kit2/docs/app/PLAN.md), [`tauri/src/kit.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs)) è che una singola cartella del kit (es. su disco esterno USB/SSD) possa essere collegata a un PC Windows, poi a un Mac e infine a una workstation Linux **senza sovrascrivere i binari o corrompere lo stato delle versioni installate**.
+Il requisito cardine di Atollo ([`docs/app/PLAN.md`](../../app/PLAN.md), [`tauri/src/kit.rs`](../../../tauri/src/kit.rs)) è che una singola cartella del kit (es. su disco esterno USB/SSD) possa essere collegata a un PC Windows, poi a un Mac e infine a una workstation Linux **senza sovrascrivere i binari o corrompere lo stato delle versioni installate**.
 
 ```mermaid
 flowchart TD
     ROOT["Radice del Kit (&lt;kit&gt;/)"]
-    ROOT --> BIN_WIN["Dev-Kit.exe (Windows)"]
-    ROOT --> BIN_MAC["Dev-Kit.app (macOS)"]
-    ROOT --> BIN_LIN["Dev-Kit / Dev-Kit.AppImage (Linux)"]
+    ROOT --> BIN_WIN["Atollo.exe (Windows)"]
+    ROOT --> BIN_MAC["Atollo.app (macOS)"]
+    ROOT --> BIN_LIN["Atollo / Atollo.AppImage (Linux)"]
     ROOT --> PROJ["projects/ (Condivisa tra tutti gli OS)"]
     ROOT --> DATA["data/"]
 
@@ -39,16 +39,16 @@ flowchart TD
 
 ### 1.1 I 4 Gap Critici Attuali da Risolvere per i File e la Matrice
 
-1. **Identificatore di Piattaforma Fisso su `win32-*` ([`tauri/src/kit.rs:19-57`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs#L19-L57))**:
+1. **Identificatore di Piattaforma Fisso su `win32-*` ([`tauri/src/kit.rs:19-57`](../../../tauri/src/kit.rs#L19-L57))**:
    - Oggi `Arch` distingue solo `X64` e `Arm64`, e `Arch::platform()` formatta staticamente `"win32-{}"`.
    - Va introdotto `Os` (`Win32`, `Darwin`, `Linux`) combinato in `Target { os: Os, arch: Arch }` la cui stringa canonica è `<os>-<arch>` (`win32-x64`, `win32-arm64`, `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`).
-2. **Stato delle Versioni Condiviso in `data/app/versions/<id>.txt` ([`tauri/src/setup/catalog.rs:274-303`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/setup/catalog.rs#L274-L303)) e `version-lines.json` ([`tauri/src/versions/offered.rs:20-22`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/offered.rs#L20-L22))**:
+2. **Stato delle Versioni Condiviso in `data/app/versions/<id>.txt` ([`tauri/src/setup/catalog.rs:274-303`](../../../tauri/src/setup/catalog.rs#L274-L303)) e `version-lines.json` ([`tauri/src/versions/offered.rs:20-22`](../../../tauri/src/versions/offered.rs#L20-L22))**:
    - **Problema**: Oggi `Component::version_file` scrive in `data/app/versions/<id>.txt` (senza piattaforma!). Se l'utente installa Node `22.11.0` su `win32-x64` e poi apre lo stesso kit su `darwin-arm64`, `installed_version()` legge `22.11.0` anche se `data/apps/darwin-arm64/node/` è vuoto, e `offered.rs` mescola le linee disponibili per Windows con quelle per macOS/Linux (es. Ruby o Java su ARM64).
    - **Soluzione**: Spostare i file di stato versione sotto `data/app/versions/<platform>/<id>.txt` (con migrazione automatica dei vecchi `data/app/versions/<id>.txt` in `data/app/versions/win32-<arch>/<id>.txt`) e `data/app/version-lines/<platform>.json`.
-3. **Chiavi del Catalogo (`key`, `keys`, `remove`, `check`, `sha256`) Monolitiche Windows ([`tauri/catalog/components.json`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/catalog/components.json))**:
+3. **Chiavi del Catalogo (`key`, `keys`, `remove`, `check`, `sha256`) Monolitiche Windows ([`tauri/catalog/components.json`](../../../tauri/catalog/components.json))**:
    - In `components.json`, tutti i path hanno `.exe`, `.cmd`, `.bat` e layout Windows (es. `python/python.exe` invece di `python/bin/python3`, `node/node.exe` invece di `node/bin/node`, `tinytex/bin/windows/pdftex.exe` invece di `tinytex/bin/<tl_platform>/pdftex`).
    - Inoltre `vscodium-server` ha un unico `sha256` hardcoded nel JSON valido solo per `vscodium-reh-web-win32-x64-<v>.tar.gz`.
-4. **Estrattore Archivi Cieco ai Permessi POSIX e ai Symlink Interni ([`tauri/src/net/archive.rs:76-124`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs#L76-L124))**:
+4. **Estrattore Archivi Cieco ai Permessi POSIX e ai Symlink Interni ([`tauri/src/net/archive.rs:76-124`](../../../tauri/src/net/archive.rs#L76-L124))**:
    - In `extract_tar_gz`, `tar.set_preserve_permissions(false)` e lo skip totale di `tar::EntryType::Symlink` funzionano su Windows, ma **rompono tutti i pacchetti Unix** (es. Node.js, Python standalone, JDK Temurin, Clang/LLVM, Rust, CMake, MySQL), dove i binari devono avere il bit eseguibile `0o755` e le librerie condivise (`.so`/`.dylib`) o gli alias (`python3 -> python3.13`, `clang++ -> clang`) sono symlink relativi dentro l'archivio.
    - Inoltre, molti pacchetti Linux/macOS (Zig, CMake, LLVM, MySQL, TinyTeX, Node) sono distribuiti come `.tar.xz` o `.tar.zst`, quindi serve aggiungere `Kind::TarXz` (crate `lzma-rs` o `xz2`) a `archive.rs`.
 
@@ -56,7 +56,7 @@ flowchart TD
 
 ## 2. Riprogettazione di `tauri/src/kit.rs`: `Os`, `Arch` e `Target`
 
-### 2.1 Nuovi Tipi in [`tauri/src/kit.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs)
+### 2.1 Nuovi Tipi in [`tauri/src/kit.rs`](../../../tauri/src/kit.rs)
 
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
@@ -123,7 +123,7 @@ impl Target {
 ```
 
 ### 2.2 Rilevamento dell'Architettura Reale (Anche sotto Emulazione Rosetta 2 / WOW64)
-- **Windows (`Os::Win32`)**: Mantiene la regola `PROCESSOR_ARCHITECTURE` + `PROCESSOR_ARCHITEW6432` già presente in [`kit.rs:30-44`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs#L30-L44).
+- **Windows (`Os::Win32`)**: Mantiene la regola `PROCESSOR_ARCHITECTURE` + `PROCESSOR_ARCHITEW6432` già presente in [`kit.rs:30-44`](../../../tauri/src/kit.rs#L30-L44).
 - **macOS (`Os::Darwin`)**: Se un binario `x64` gira sotto Rosetta 2 su Apple Silicon, `std::env::consts::ARCH` vale `"x86_64"`, ma l'host reale è ARM64 (`sysctl.proc_translated == 1` oppure `hw.optional.arm64 == 1`). `Arch::detect()` su macOS deve interrogare `sysctlbyname(b"hw.optional.arm64\0")` (o `uname -m`) per scaricare sempre i tool nativi `darwin-arm64`.
 - **Linux (`Os::Linux`)**: Usa `std::env::consts::ARCH` (`"aarch64"` → `Arch::Arm64`, `"x86_64"` → `Arch::X64`) o `libc::uname`.
 
@@ -131,10 +131,10 @@ impl Target {
 
 ## 3. Schema Evoluto del Catalogo (`tauri/catalog/components.json`) e `catalog.rs`
 
-Per evitare di duplicare i 26 componenti per 6 piattaforme nel file [`tauri/catalog/components.json`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/catalog/components.json) e mantenere la leggibilità, il catalogo adotterà **due meccanismi complementari**:
+Per evitare di duplicare i 26 componenti per 6 piattaforme nel file [`tauri/catalog/components.json`](../../../tauri/catalog/components.json) e mantenere la leggibilità, il catalogo adotterà **due meccanismi complementari**:
 
 ### 3.1 Token Dinamici nei Percorsi di `components.json`
-Nella funzione [`kit_path(kit: &Kit, rel: &str)`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/setup/catalog.rs#L170-L176) e in [`versions::has_key`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/mod.rs#L162-L173), i seguenti segnaposto nei campi `key`, `keys`, `remove` e `check[0]` vengono espansi automaticamente in base al `Target` del `Kit`:
+Nella funzione [`kit_path(kit: &Kit, rel: &str)`](../../../tauri/src/setup/catalog.rs#L170-L176) e in [`versions::has_key`](../../../tauri/src/versions/mod.rs#L162-L173), i seguenti segnaposto nei campi `key`, `keys`, `remove` e `check[0]` vengono espansi automaticamente in base al `Target` del `Kit`:
 - `{exe}` → `".exe"` su Windows, `""` su macOS/Linux.
 - `{cmd}` → `".cmd"` su Windows, `""` su macOS/Linux.
 - `{bat}` → `".bat"` su Windows, `""` su macOS/Linux.
@@ -144,7 +144,7 @@ Nella funzione [`kit_path(kit: &Kit, rel: &str)`](file:///c:/Users/nabre/Project
 
 ### 3.2 Override Espliciti per Piattaforma e Filtri di Disponibilità
 Alcuni componenti hanno differenze strutturali tra sistemi operativi (es. `vscodium-server` ha un `sha256` diverso per ciascuna delle 6 piattaforme; `terminal` esiste solo su Windows; `apache` e `nginx` su Unix possono avere layout specifici o dipendenze diverse).
-Aggiungiamo alla struct [`Component`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/setup/catalog.rs#L46-L96):
+Aggiungiamo alla struct [`Component`](../../../tauri/src/setup/catalog.rs#L46-L96):
 
 ```rust
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -198,7 +198,7 @@ Di seguito la mappatura esatta di **URL/API, formato archivio (`Kind`), sottocar
   | `darwin-x64` | `^powershell-\d+\.\d+\.\d+-osx-x64\.tar\.gz$` | `TarGz` | `Root` | `pwsh/pwsh` | `chmod 0755 pwsh/pwsh` |
   | `linux-x64` | `^powershell-\d+\.\d+\.\d+-linux-x64\.tar\.gz$` | `TarGz` | `Root` | `pwsh/pwsh` | `chmod 0755 pwsh/pwsh` |
   | `linux-arm64` | `^powershell-\d+\.\d+\.\d+-linux-arm64\.tar\.gz$` | `TarGz` | `Root` | `pwsh/pwsh` | `chmod 0755 pwsh/pwsh` |
-- **Nota Strategica**: Poiché PowerShell 7 rilascia tarball portabili ufficiali per tutte le 6 architetture (`osx-arm64`, `osx-x64`, `linux-x64`, `linux-arm64`), mantenerlo disponibile su tutti gli OS permette anche a [`runtime/profile.ps1`](file:///c:/Users/nabre/Projects/dev-kit2/runtime/profile.ps1) e [`runtime/console.ps1`](file:///c:/Users/nabre/Projects/dev-kit2/runtime/console.ps1) di girare identici ovunque, affiancati a `bash --rcfile data/kit/bashrc`!
+- **Nota Strategica**: Poiché PowerShell 7 rilascia tarball portabili ufficiali per tutte le 6 architetture (`osx-arm64`, `osx-x64`, `linux-x64`, `linux-arm64`), mantenerlo disponibile su tutti gli OS permette anche a [`runtime/profile.ps1`](../../../runtime/profile.ps1) e [`runtime/console.ps1`](../../../runtime/console.ps1) di girare identici ovunque, affiancati a `bash --rcfile data/kit/bashrc`!
 
 #### 3. `gh` — GitHub CLI (`tauri/src/install/core.rs` — `Gh`)
 - **Fonte**: GitHub Releases `cli/cli`.
@@ -214,7 +214,7 @@ Di seguito la mappatura esatta di **URL/API, formato archivio (`Kind`), sottocar
 
 #### 4. `terminal` — Windows Terminal (`tauri/src/install/editor.rs` — `Terminal`)
 - **Disponibilità**: `platforms: ["win32"]`.
-- **Comportamento su macOS e Linux**: Non mostrato/non pianificato su `darwin-*` e `linux-*` (dove [`editor/terminal.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/editor/terminal.rs) apre `Terminal.app` / `iTerm.app` su macOS e l'emulatore di terminale XDG/sistema su Linux). Scelta in `components.txt` preservata se il disco viene spostato tra Mac/Linux e Windows.
+- **Comportamento su macOS e Linux**: Non mostrato/non pianificato su `darwin-*` e `linux-*` (dove [`editor/terminal.rs`](../../../tauri/src/editor/terminal.rs) apre `Terminal.app` / `iTerm.app` su macOS e l'emulatore di terminale XDG/sistema su Linux). Scelta in `components.txt` preservata se il disco viene spostato tra Mac/Linux e Windows.
 
 ---
 
@@ -261,10 +261,10 @@ Di seguito la mappatura esatta di **URL/API, formato archivio (`Kind`), sottocar
 ### 4.3 Gruppo `languages` — Core & Runtimes
 
 #### 8. `git` — Git & Shell POSIX (`tauri/src/install/core.rs` — `Git`)
-- **Problema Architetturale**: `git-for-windows/git` (`PortableGit-*.7z.exe`) fornisce sia `git.exe` sia `bash.exe` (MSYS2) solo per Windows. Su macOS e Linux `/bin/bash` e `/bin/sh` fanno già parte del sistema operativo, ma NEXKORA richiede un binario `git` isolato e verificato dentro `data/apps/<platform>/git/`.
+- **Problema Architetturale**: `git-for-windows/git` (`PortableGit-*.7z.exe`) fornisce sia `git.exe` sia `bash.exe` (MSYS2) solo per Windows. Su macOS e Linux `/bin/bash` e `/bin/sh` fanno già parte del sistema operativo, ma Atollo richiede un binario `git` isolato e verificato dentro `data/apps/<platform>/git/`.
 - **Soluzione Multipiattaforma**:
   - **Windows (`win32-x64`, `win32-arm64`)**: Invariato (`PortableGit-<v>-(64-bit|arm64).7z.exe` da `git-for-windows/git`, `key: "git/bin/bash.exe"`, `check: ["git/cmd/git.exe", "--version"]`).
-  - **macOS (`darwin-arm64`, `darwin-x64`) e Linux (`linux-x64`, `linux-arm64`)**: Scaricare il pacchetto **`git` da `conda-forge` tramite `micromamba`** (esattamente come fa già [`install/native.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/native.rs) per R!) oppure estrarre i pacchetti rilocabili `conda-forge/git` (`osx-arm64`, `osx-64`, `linux-64`, `linux-aarch64`), che includono `bin/git`, `libexec/git-core/*` e certificati OpenSSL completamente autonomi e rilocabili senza dipendere da Xcode Command Line Tools!
+  - **macOS (`darwin-arm64`, `darwin-x64`) e Linux (`linux-x64`, `linux-arm64`)**: Scaricare il pacchetto **`git` da `conda-forge` tramite `micromamba`** (esattamente come fa già [`install/native.rs`](../../../tauri/src/install/native.rs) per R!) oppure estrarre i pacchetti rilocabili `conda-forge/git` (`osx-arm64`, `osx-64`, `linux-64`, `linux-aarch64`), che includono `bin/git`, `libexec/git-core/*` e certificati OpenSSL completamente autonomi e rilocabili senza dipendere da Xcode Command Line Tools!
   - **`key` su Unix**: `git/bin/git`, `check: ["git/bin/git", "--version"]`.
   - **`finish` (`core.rs:56-98`)**: Eseguire `post-install.bat` solo su `#[cfg(windows)]`; su Unix configurare `.gitconfig` nella home portabile (`defaultBranch = main`, `safe.directory = *`).
 
@@ -279,7 +279,7 @@ Di seguito la mappatura esatta di **URL/API, formato archivio (`Kind`), sottocar
   | `darwin-x64` | `x86_64-apple-darwin` | `bin/python3` | `lib/python{minor}/site-packages` | `bin` |
   | `linux-x64` | `x86_64-unknown-linux-gnu` | `bin/python3` | `lib/python{minor}/site-packages` | `bin` |
   | `linux-arm64` | `aarch64-unknown-linux-gnu` | `bin/python3` | `lib/python{minor}/site-packages` | `bin` |
-- **Adattamento Codice in [`core.rs:164-309`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/core.rs#L164-L309)**:
+- **Adattamento Codice in [`core.rs:164-309`](../../../tauri/src/install/core.rs#L164-L309)**:
   - Creare `fn python_triple(ctx: &Ctx, component: &Component) -> String` che mappa i 6 target alle triple sopra.
   - In `before_swap`: su Windows migrare `Lib\site-packages` e `Scripts`; su Unix migrare `lib/python{minor}/site-packages` e gli script non-core in `bin/`.
   - In `finish`: su Windows copiare `python.exe` → `python3.exe` e cercare il wheel di pip in `Lib\ensurepip\_bundled`; su Unix `bin/python3` e `bin/python` (symlink a `python3`) sono già presenti nell'archivio, e `ensurepip` si trova in `lib/python{minor}/ensurepip/_bundled`.
@@ -495,13 +495,13 @@ Di seguito la mappatura esatta di **URL/API, formato archivio (`Kind`), sottocar
 - **macOS (`darwin-arm64`, `darwin-x64`) e Linux (`linux-x64`, `linux-arm64`)**:
   - **Fonte**: **`static-php-cli` (`crazywhalecc/static-php-cli` / `dl.static-php.dev`)** oppure **`shivammathur/php-builder` / `conda-forge`**!
   - *Perché `static-php-cli` o `conda-forge`*: PHP su Unix richiede normalmente decine di librerie di sistema (`libxml2`, `libcurl`, `libpng`, `libzip`, `libicu`, `libsodium`, `libpq`, `openssl`). `static-php-cli` (usato anche da FrankenPHP e Laravel Herd) compila `php`, `php-cgi` e `php-fpm` come **singoli eseguibili statici zero-dependency** per `darwin-arm64`, `darwin-x64`, `linux-x64` e `linux-arm64` con tutte le estensioni standard (`curl`, `gd`, `intl`, `mbstring`, `mysqli`, `openssl`, `pdo_mysql`, `pdo_sqlite`, `sodium`, `sqlite3`, `zip`) già integrate! In alternativa, `conda-forge` fornisce pacchetti `php` rilocabili tramite `micromamba`.
-  - **Composer**: `composer.phar` da `getcomposer.org/versions` è identico su tutti gli OS; `composer_launchers` in [`web.rs:522-532`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/web.rs#L522-L532) su Unix scrive `composer` (`#!/bin/sh\nd="$(dirname "$0")"\nexec "$d/bin/php" "$d/composer.phar" "$@"`) con `chmod 0755`.
+  - **Composer**: `composer.phar` da `getcomposer.org/versions` è identico su tutti gli OS; `composer_launchers` in [`web.rs:522-532`](../../../tauri/src/install/web.rs#L522-L532) su Unix scrive `composer` (`#!/bin/sh\nd="$(dirname "$0")"\nexec "$d/bin/php" "$d/composer.phar" "$@"`) con `chmod 0755`.
 
 #### 31. `apache` (`tauri/src/install/web.rs` — `Apache`) e 32. `nginx` (`tauri/src/install/web.rs` — `Nginx`)
 - **Windows (`win32-x64`, `win32-arm64`)**: Apache Lounge (`httpd-*-win64-VS17.zip`) e Nginx ufficiale (`nginx/nginx` release `.zip`).
 - **macOS e Linux**:
   - **Fonti Portabili Rilocabili**: Pacchetti `httpd` (Apache 2.4) e `nginx` da **`conda-forge` tramite `micromamba`** (`osx-arm64`, `osx-64`, `linux-64`, `linux-aarch64`), che sono compilati con `rpath` relativi (`@loader_path/../lib` su macOS, `$ORIGIN/../lib` su Linux) e possono girare da qualsiasi cartella utente senza permessi di `root` sulla porta `8080` / `8081..8999`.
-  - **Integrazione PHP su Unix**: Mentre su Windows Apache carica `php8apache2_4.dll`, su macOS/Linux sia Apache (`mod_proxy_fcgi`) sia Nginx usano FastCGI (`php-cgi -b 127.0.0.1:<fcgi_port>` o `php-fpm`), già supportato dall'infrastruttura FastCGI di [`tauri/src/projects/nginx.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/projects/nginx.rs) e [`tauri/src/servers/mod.rs:121,754`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/servers/mod.rs#L754)!
+  - **Integrazione PHP su Unix**: Mentre su Windows Apache carica `php8apache2_4.dll`, su macOS/Linux sia Apache (`mod_proxy_fcgi`) sia Nginx usano FastCGI (`php-cgi -b 127.0.0.1:<fcgi_port>` o `php-fpm`), già supportato dall'infrastruttura FastCGI di [`tauri/src/projects/nginx.rs`](../../../tauri/src/projects/nginx.rs) e [`tauri/src/servers/mod.rs:121,754`](../../../tauri/src/servers/mod.rs#L754)!
 
 #### 33. `mysql` (`tauri/src/install/db.rs` — `MySql`)
 - **Fonte**: `cdn.mysql.com`, linee LTS di Oracle (8.4, 9.7), SHA-256 fissati nel catalogo dopo la verifica della firma GPG (Oracle pubblica solo MD5 e firme).
@@ -532,10 +532,10 @@ Di seguito la mappatura esatta di **URL/API, formato archivio (`Kind`), sottocar
   - `darwin-arm64` / `darwin-x64`: `sqlite-tools-osx-x64-\d+\.zip` (binario Universal Mach-O `x86_64` + `arm64` fornito da sqlite.org!)
   - `linux-x64`: `sqlite-tools-linux-x64-\d+\.zip`
   - `linux-arm64`: da GitHub `nalgeon/sqlite` o `conda-forge/sqlite` (poiché `sqlite.org` pubblica `sqlite-tools-linux` solo per `x64`).
-- **Adminer (`vrana/adminer`)**: `adminer-<v>-mysql.php` è un singolo file `.php` multipiattaforma al 100%. In [`setup/checkup.rs:112-124`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/setup/checkup.rs#L112-L124) sostituire `"php/php.exe"` con `"php/{bin}php{exe}"`.
+- **Adminer (`vrana/adminer`)**: `adminer-<v>-mysql.php` è un singolo file `.php` multipiattaforma al 100%. In [`setup/checkup.rs:112-124`](../../../tauri/src/setup/checkup.rs#L112-L124) sostituire `"php/php.exe"` con `"php/{bin}php{exe}"`.
 
 #### 37. Estensione Nativa `CodeLLDB` (`tauri/src/editor/ext.rs:612-623`)
-- In [`codelldb_asset(kit: &Kit)`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/editor/ext.rs#L612-L623):
+- In [`codelldb_asset(kit: &Kit)`](../../../tauri/src/editor/ext.rs#L612-L623):
   - `win32-x64` / `win32-arm64` → `codelldb-win32-x64.vsix` (o `arm64` se `vscodium-server` è nativo)
   - `darwin-arm64` → `codelldb-darwin-arm64.vsix`
   - `darwin-x64` → `codelldb-darwin-x64.vsix`
@@ -548,12 +548,12 @@ Di seguito la mappatura esatta di **URL/API, formato archivio (`Kind`), sottocar
 
 Oltre alla matrice di download, ecco tutti i moduli Rust che gestiscono i file estratti, i permessi, i link simbolici, le variabili d'ambiente e le migrazioni tra piattaforme, con le modifiche chirurgiche da apportare.
 
-### 5.1 Estrazione Archivi, Permessi POSIX, Symlink e `.tar.xz` ([`tauri/src/net/archive.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs))
+### 5.1 Estrazione Archivi, Permessi POSIX, Symlink e `.tar.xz` ([`tauri/src/net/archive.rs`](../../../tauri/src/net/archive.rs))
 
 1. **Aggiunta di `Kind::TarXz` e `Inner::SingleThen(&'static str)`**:
-   - Aggiungere la crate `lzma-rs` (pure Rust) o `xz2` a `Cargo.toml` e supportare `Kind::TarXz` in [`archive::extract`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs#L60-L74) condividendo il loop di estrazione `extract_tar_stream(reader, dest)`.
-   - Aggiungere `Inner::SingleThen(&'static str)` a [`archive::pick_inner`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs#L220-L255) per gestire i pacchetti macOS (come Temurin JDK `jdk-21.../Contents/Home` e CMake `cmake-.../CMake.app/Contents`).
-2. **Normalizzazione Separatori in `safe_join` ([`archive.rs:44-58`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs#L44-L58))**:
+   - Aggiungere la crate `lzma-rs` (pure Rust) o `xz2` a `Cargo.toml` e supportare `Kind::TarXz` in [`archive::extract`](../../../tauri/src/net/archive.rs#L60-L74) condividendo il loop di estrazione `extract_tar_stream(reader, dest)`.
+   - Aggiungere `Inner::SingleThen(&'static str)` a [`archive::pick_inner`](../../../tauri/src/net/archive.rs#L220-L255) per gestire i pacchetti macOS (come Temurin JDK `jdk-21.../Contents/Home` e CMake `cmake-.../CMake.app/Contents`).
+2. **Normalizzazione Separatori in `safe_join` ([`archive.rs:44-58`](../../../tauri/src/net/archive.rs#L44-L58))**:
    - **Bug Critico Unix**: Oggi la riga 47 fa `Path::new(&name.replace('/', "\\")).components()`. Su Linux e macOS il carattere `\` **non è un separatore di directory**, ma un normale carattere di nome file! Quindi su Unix `safe_join(dest, "bin/node")` creerebbe un unico file chiamato `"bin\\node"` nella radice invece della sottocartella `bin/node`!
    - **Correzione**: Fare `name.split(['/', '\\'])` e verificare che ogni segmento non sia vuoto, non sia `".."` e non contenga `':'`, facendo `out.push(segment)`.
 3. **Ripristino Permessi Eseguibili POSIX (`0o755`) e Symlink Relativi Sicuri**:
@@ -565,21 +565,21 @@ Oltre alla matrice di download, ecco tutti i moduli Rust che gestiscono i file e
        - Leggere il target del link (`entry.link_name()?`).
        - Verificare che il target risolto rispetto a `path.parent()` tramite `safe_join` **resti strettamente all'interno di `dest`** (nessun path assoluto o `..` che esca da `dest`).
        - Su `#[cfg(unix)]` creare il symlink con `std::os::unix::fs::symlink(link_target, &path)` (con fallback a copia del file se il filesystem della chiavetta è FAT32/exFAT!).
-   - In [`copy_tree`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs#L373-L389): preservare i symlink relativi (su Unix) e i permessi di esecuzione durante `stage_into` tra dischi diversi.
+   - In [`copy_tree`](../../../tauri/src/net/archive.rs#L373-L389): preservare i symlink relativi (su Unix) e i permessi di esecuzione durante `stage_into` tra dischi diversi.
 
 ### 5.2 Rimozione dell'Assunzione `replace('/', "\\")` in Tutti i Moduli di Catalogo e Versioni
 
 In molti file del progetto viene chiamato `.replace('/', "\\")` prima di passare una stringa a `Path::join`. Su Windows entrambi i separatori funzionano, ma **su macOS e Linux `Path::join("bin\\node")` cerca un file col backslash nel nome e fallisce sempre!**
 
 Ecco la lista completa dei punti da convertire a una funzione helper `crate::fsx::join_rel(base: &Path, rel: &str) -> PathBuf` (che fa `rel.split(['/', '\\']).filter(|s| !s.is_empty()).fold(base.to_path_buf(), |p, s| p.join(s))`):
-1. [`tauri/src/setup/catalog.rs:170-176`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/setup/catalog.rs#L170-L176) (`kit_path`)
-2. [`tauri/src/versions/mod.rs:149-159`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/mod.rs#L149-L159) (`resolve`) e [`162-173`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/mod.rs#L162-L173) (`has_key`)
-3. [`tauri/src/versions/disk.rs:237`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/disk.rs#L237) (`migrate_from_tools`)
-4. [`tauri/src/install/mod.rs:487,531,589`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/mod.rs#L487) (`install_part`, `check_key`)
-5. [`tauri/src/net/archive.rs:47,243`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs#L47) (`safe_join`, `pick_inner`)
+1. [`tauri/src/setup/catalog.rs:170-176`](../../../tauri/src/setup/catalog.rs#L170-L176) (`kit_path`)
+2. [`tauri/src/versions/mod.rs:149-159`](../../../tauri/src/versions/mod.rs#L149-L159) (`resolve`) e [`162-173`](../../../tauri/src/versions/mod.rs#L162-L173) (`has_key`)
+3. [`tauri/src/versions/disk.rs:237`](../../../tauri/src/versions/disk.rs#L237) (`migrate_from_tools`)
+4. [`tauri/src/install/mod.rs:487,531,589`](../../../tauri/src/install/mod.rs#L487) (`install_part`, `check_key`)
+5. [`tauri/src/net/archive.rs:47,243`](../../../tauri/src/net/archive.rs#L47) (`safe_join`, `pick_inner`)
 6. Tutte le stringhe literal `r"..."` passate a `.join(...)` in `env.rs`, `install/*.rs`, `editor/*.rs`, `db/*.rs`, `servers/mod.rs`, `agents/*.rs`.
 
-### 5.3 Costruzione di `KitEnv` e `PATH` per Architettura ([`tauri/src/env.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/env.rs))
+### 5.3 Costruzione di `KitEnv` e `PATH` per Architettura ([`tauri/src/env.rs`](../../../tauri/src/env.rs))
 
 | Aspetto in `env.rs` | Comportamento Windows (`Os::Win32`) | Comportamento macOS (`Os::Darwin`) & Linux (`Os::Linux`) |
 | :--- | :--- | :--- |
@@ -588,36 +588,36 @@ Ecco la lista completa dei punti da convertire a una funzione helper `crate::fsx
 | **Percorsi Strumenti nel `PATH`** | `app("python")`, `app("python/Scripts")`, `app("node")`, `npm_prefix`, `app("php")`, `app("nginx")`, `app("dotnet")`, `app("zig")`, `app("bun")`, `app("deno")`, `app("typst")`, `app("sqlite")` | `app("python/bin")`, `app("node/bin")`, `npm_prefix.join("bin")`, `app("php/bin")`, `app("nginx/sbin")`, `app("dotnet")`, `app("zig")`, `app("bun")`, `app("deno")`, `app("typst")`, `app("sqlite")` |
 | **Code di Sistema in fondo al `PATH` (`env.rs:548-556`)** | `C:\Windows\System32`, `Wbem`, `WindowsPowerShell\v1.0` | `/usr/bin`, `/bin`, `/usr/sbin`, `/sbin` |
 | **Profilo Utente Portabile (`env.rs:274-298`)** | `HOME`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, `TEMP`, `TMP` | `HOME` = `data/home`, `XDG_CONFIG_HOME` = `data/home/.config`, `XDG_CACHE_HOME` = `data/cache/xdg`, `XDG_DATA_HOME` = `data/home/.local/share`, `TMPDIR` = `program_tmp` |
-| **Riscrittura Versioni in Shell ([`runtime/bashrc`](file:///c:/Users/nabre/Projects/dev-kit2/runtime/bashrc))** | Usa `cygpath -u` (Git Bash su Windows) | Se `command -v cygpath >/dev/null 2>&1`, usa `cygpath -u`; altrimenti (macOS/Linux nativo) usa direttamente i percorsi POSIX di `versions.txt` e confronta con `/` anziché `\\`! |
+| **Riscrittura Versioni in Shell ([`runtime/bashrc`](../../../runtime/bashrc))** | Usa `cygpath -u` (Git Bash su Windows) | Se `command -v cygpath >/dev/null 2>&1`, usa `cygpath -u`; altrimenti (macOS/Linux nativo) usa direttamente i percorsi POSIX di `versions.txt` e confronta con `/` anziché `\\`! |
 
 ### 5.4 Auto-Aggiornamento (`tauri/src/setup/self_update.rs`) e Scambio Binario App
 
-In [`tauri/src/setup/self_update.rs:69-71`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/setup/self_update.rs#L69-L71), `asset_name(kit)` oggi restituisce solo `Dev-Kit-<x64|arm64>.exe`:
-- **Estensione Matrice Asset App (`nabre/dev-kit2`)**:
-  - `win32-x64`: `Dev-Kit-win32-x64.exe` (con fallback a `Dev-Kit-x64.exe` per retrocompatibilità)
-  - `win32-arm64`: `Dev-Kit-win32-arm64.exe` (con fallback a `Dev-Kit-arm64.exe`)
-  - `darwin-arm64`: `Dev-Kit-darwin-arm64.app.tar.gz`
-  - `darwin-x64`: `Dev-Kit-darwin-x64.app.tar.gz`
-  - `linux-x64`: `Dev-Kit-linux-x64.AppImage` (o `.tar.gz`)
-  - `linux-arm64`: `Dev-Kit-linux-arm64.AppImage` (o `.tar.gz`)
+In [`tauri/src/setup/self_update.rs:69-71`](../../../tauri/src/setup/self_update.rs#L69-L71), `asset_name(kit)` oggi restituisce solo `Atollo-<x64|arm64>.exe`:
+- **Estensione Matrice Asset App (`nabre/atollo`)**:
+  - `win32-x64`: `Atollo-win32-x64.exe` (con fallback a `Atollo-x64.exe` per retrocompatibilità)
+  - `win32-arm64`: `Atollo-win32-arm64.exe` (con fallback a `Atollo-arm64.exe`)
+  - `darwin-arm64`: `Atollo-darwin-arm64.app.tar.gz`
+  - `darwin-x64`: `Atollo-darwin-x64.app.tar.gz`
+  - `linux-x64`: `Atollo-linux-x64.AppImage` (o `.tar.gz`)
+  - `linux-arm64`: `Atollo-linux-arm64.AppImage` (o `.tar.gz`)
 
-### 5.5 Rilocazione del Kit tra Sistemi Operativi Diversi ([`tauri/src/agents/relocate.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/agents/relocate.rs) & [`tauri/src/kit.rs:208-226`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs#L208-L226))
+### 5.5 Rilocazione del Kit tra Sistemi Operativi Diversi ([`tauri/src/agents/relocate.rs`](../../../tauri/src/agents/relocate.rs) & [`tauri/src/kit.rs:208-226`](../../../tauri/src/kit.rs#L208-L226))
 
-- **Scenario**: L'utente usa il kit su Windows (`E:\DevKit`), poi collega il disco esterno al Mac (`/Volumes/USB/DevKit`) o a Linux (`/media/user/USB/DevKit`).
-- **Adattamento di `Replacer::new(from, to)` in [`relocate.rs:69-152`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/agents/relocate.rs#L69-L152)**:
-  - `uri_path(p)` gestisce già sia i percorsi con lettera d'unità (`E:\kit` → `/e%3A/kit`) sia i percorsi POSIX (`/Volumes/USB/DevKit` → `/Volumes/USB/DevKit`).
-  - Quando `from` è un path Windows (`E:\DevKit`) e `to` è un path Unix (`/Volumes/USB/DevKit`), o viceversa:
+- **Scenario**: L'utente usa il kit su Windows (`E:\Atollo`), poi collega il disco esterno al Mac (`/Volumes/USB/Atollo`) o a Linux (`/media/user/USB/Atollo`).
+- **Adattamento di `Replacer::new(from, to)` in [`relocate.rs:69-152`](../../../tauri/src/agents/relocate.rs#L69-L152)**:
+  - `uri_path(p)` gestisce già sia i percorsi con lettera d'unità (`E:\kit` → `/e%3A/kit`) sia i percorsi POSIX (`/Volumes/USB/Atollo` → `/Volumes/USB/Atollo`).
+  - Quando `from` è un path Windows (`E:\Atollo`) e `to` è un path Unix (`/Volumes/USB/Atollo`), o viceversa:
     - In `relocate_claude_projects`, `claude_folder_name` converte già qualunque carattere non alfanumerico in `-` (`E:\kit` → `E--kit`, `/Volumes/USB/kit` → `-Volumes-USB-kit`), quindi la rinomina/merge delle cartelle di progetto di Claude funziona automaticamente tra OS diversi!
-    - In `venv_files` ([`relocate.rs:368-378`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/agents/relocate.rs#L368-L378)): aggiungere anche `bin` e `lib/python*/site-packages` accanto a `Scripts` e `Lib\site-packages`.
+    - In `venv_files` ([`relocate.rs:368-378`](../../../tauri/src/agents/relocate.rs#L368-L378)): aggiungere anche `bin` e `lib/python*/site-packages` accanto a `Scripts` e `Lib\site-packages`.
 
-### 5.6 Selezione File Scaricati a Mano (`ByHand`) Multipiattaforma ([`tauri/src/setup/downloads.rs:128-184`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/setup/downloads.rs#L128-L184))
+### 5.6 Selezione File Scaricati a Mano (`ByHand`) Multipiattaforma ([`tauri/src/setup/downloads.rs:128-184`](../../../tauri/src/setup/downloads.rs#L128-L184))
 
 - Oggi `downloads::pick(owner, title)` usa COM `IFileOpenDialog` (`windows::Win32::UI::Shell`).
 - **Soluzione Multipiattaforma**:
   - Su `#[cfg(windows)]`: mantenere `IFileOpenDialog`.
   - Su `#[cfg(target_os = "macos")]`: invocare `osascript -e 'choose file with prompt "..." default location (path to downloads folder) with multiple selections allowed'` (zero dipendenze esterne, dialogo nativo macOS Finder) oppure usare `rfd` (`Rusty File Dialog`).
   - Su `#[cfg(target_os = "linux")]`: usare `zenity --file-selection --multiple` / `kdialog --getopenfilename` o `rfd`.
-  - Inoltre, il Drag & Drop sulla finestra Tauri (`onDragDropEvent` in [`ui/src/api/setup.ts:191-204`](file:///c:/Users/nabre/Projects/dev-kit2/ui/src/api/setup.ts#L191-L204)) funziona già nativamente su Windows, macOS e Linux!
+  - Inoltre, il Drag & Drop sulla finestra Tauri (`onDragDropEvent` in [`ui/src/api/setup.ts:191-204`](../../../ui/src/api/setup.ts#L191-L204)) funziona già nativamente su Windows, macOS e Linux!
 
 ---
 
@@ -625,11 +625,11 @@ In [`tauri/src/setup/self_update.rs:69-71`](file:///c:/Users/nabre/Projects/dev-
 
 | Fase | File da Modificare | Intervento Specifico | Test di Verifica |
 | :---: | :--- | :--- | :--- |
-| **1** | [`tauri/src/kit.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs), [`tauri/src/fsx.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/fsx.rs) | • Aggiungere `Os` (`Win32`, `Darwin`, `Linux`) e `Target { os, arch }`.<br>• Aggiornare `Kit::apps()` per usare `self.target.as_str()` (`win32-x64`, `darwin-arm64`, `linux-x64`, ecc.).<br>• Aggiungere `fsx::join_rel(base, rel)` per unire path con `/` o `\` su qualunque OS senza backslash nei nomi file Unix. | [`test/rust/kit.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/kit.rs), [`test/rust/fsx.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/fsx.rs) |
-| **2** | [`tauri/catalog/components.json`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/catalog/components.json), [`tauri/src/setup/catalog.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/setup/catalog.rs), [`tauri/src/versions/offered.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/offered.rs) | • Espandere i token `{exe}`, `{cmd}`, `{bat}`, `{bin}`, `{tl_bin}` in `kit_path` e `versions::has_key`.<br>• Aggiungere `platforms`, `emulated_on` e `targets` (`sha256` per target su `vscodium-server`).<br>• Isolare `version_file` in `data/app/versions/<target>/<id>.txt` e `offered_file` in `data/app/version-lines-<target>.json` (con fallback/migrazione automatica dei file esistenti a `win32-<arch>`). | [`test/rust/setup/catalog.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/setup/catalog.rs), [`test/rust/versions/offered.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/versions/offered.rs) |
-| **3** | [`tauri/src/net/archive.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs), [`tauri/Cargo.toml`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/Cargo.toml) | • Correggere `safe_join` per splittare su `['/', '\\']`.<br>• Aggiungere `Kind::TarXz` e `Inner::SingleThen`.<br>• Su `#[cfg(unix)]`, preservare i bit di esecuzione `0o755` da Tar/Zip/File e ricreare i symlink relativi interni sicuri. | [`test/rust/net/archive.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/net/archive.rs) |
-| **4** | [`tauri/src/install/agents.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/agents.rs), [`tauri/src/install/core.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/core.rs), [`tauri/src/install/editor.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/editor.rs) | • Parametrizzare `Claude`, `Codex`, `Antigravity` sui 6 target.<br>• Parametrizzare `Python`, `Node`, `Uv`, `Gh`, `Git` sui 6 target.<br>• Parametrizzare `Pwsh`, `Server` (`vscodium-server`) e limitare `Terminal` a `Os::Win32`. | [`test/rust/install/core.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/core.rs), [`test/rust/install/editor.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/editor.rs) |
-| **5** | [`tauri/src/install/lang/*.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/lang/mod.rs), [`tauri/src/install/native.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/native.rs), [`tauri/src/install/android.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/android.rs) | • Aggiornare `Go`, `Java` (`Contents/Home` su macOS), `Kotlin`, `Dotnet`, `Dart`, `Zig` (`TarXz` su Unix), `Julia`, `Bun`, `Deno`, `Typst` (`TarXz` su Unix), `TinyTex`, `Cmake`, `Cc`, `Ruby`, `Rust`, `Pnpm`, `R`, `Android` secondo la Matrice §4. | [`test/rust/install/lang/*.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/lang/mod.rs), [`test/rust/install/native.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/native.rs) |
-| **6** | [`tauri/src/install/db.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/db.rs), [`tauri/src/install/web.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/web.rs) | • Aggiornare `MySql`, `MongoDb`, `Sqlite`, `Adminer`, `Php`, `Apache`, `Nginx` per i 6 target.<br>• Eseguire `vc_runtime` solo su `Os::Win32`. | [`test/rust/install/db.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/db.rs), [`test/rust/install/web.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/web.rs) |
-| **7** | [`tauri/src/env.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/env.rs), [`tauri/src/versions/choice.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/choice.rs), [`tauri/src/versions/side_by_side.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/side_by_side.rs), [`runtime/bashrc`](file:///c:/Users/nabre/Projects/dev-kit2/runtime/bashrc) | • Usare `PATH_SEP` (`:` su Unix, `;` su Windows) in `env.rs` e `choice.rs`.<br>• Mappare le directory `bin/` Unix in `env.rs`.<br>• In `side_by_side.rs`, usare symlink Unix per `.NET` su macOS/Linux.<br>• In `runtime/bashrc`, rendere opzionale `cygpath -u`. | [`test/rust/env.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/env.rs), [`test/rust/versions/choice.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/versions/choice.rs) |
-| **8** | [`docs/app/CATALOG.md`](file:///c:/Users/nabre/Projects/dev-kit2/docs/app/CATALOG.md), [`test/rust/install/mod.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/mod.rs) | • Estendere il test `live_lines` / `live_latest` per verificare in un'unica esecuzione (senza scaricare gli archivi, interrogando solo i manifesti JSON/SHA256) che **tutte le 6 architetture risolvano un URL e un SHA-256 validi per ogni componente**! | `cargo test live_matrix -- --ignored --nocapture` |
+| **1** | [`tauri/src/kit.rs`](../../../tauri/src/kit.rs), [`tauri/src/fsx.rs`](../../../tauri/src/fsx.rs) | • Aggiungere `Os` (`Win32`, `Darwin`, `Linux`) e `Target { os, arch }`.<br>• Aggiornare `Kit::apps()` per usare `self.target.as_str()` (`win32-x64`, `darwin-arm64`, `linux-x64`, ecc.).<br>• Aggiungere `fsx::join_rel(base, rel)` per unire path con `/` o `\` su qualunque OS senza backslash nei nomi file Unix. | [`test/rust/kit.rs`](../../../test/rust/kit.rs), [`test/rust/fsx.rs`](../../../test/rust/fsx.rs) |
+| **2** | [`tauri/catalog/components.json`](../../../tauri/catalog/components.json), [`tauri/src/setup/catalog.rs`](../../../tauri/src/setup/catalog.rs), [`tauri/src/versions/offered.rs`](../../../tauri/src/versions/offered.rs) | • Espandere i token `{exe}`, `{cmd}`, `{bat}`, `{bin}`, `{tl_bin}` in `kit_path` e `versions::has_key`.<br>• Aggiungere `platforms`, `emulated_on` e `targets` (`sha256` per target su `vscodium-server`).<br>• Isolare `version_file` in `data/app/versions/<target>/<id>.txt` e `offered_file` in `data/app/version-lines-<target>.json` (con fallback/migrazione automatica dei file esistenti a `win32-<arch>`). | [`test/rust/setup/catalog.rs`](../../../test/rust/setup/catalog.rs), [`test/rust/versions/offered.rs`](../../../test/rust/versions/offered.rs) |
+| **3** | [`tauri/src/net/archive.rs`](../../../tauri/src/net/archive.rs), [`tauri/Cargo.toml`](../../../tauri/Cargo.toml) | • Correggere `safe_join` per splittare su `['/', '\\']`.<br>• Aggiungere `Kind::TarXz` e `Inner::SingleThen`.<br>• Su `#[cfg(unix)]`, preservare i bit di esecuzione `0o755` da Tar/Zip/File e ricreare i symlink relativi interni sicuri. | [`test/rust/net/archive.rs`](../../../test/rust/net/archive.rs) |
+| **4** | [`tauri/src/install/agents.rs`](../../../tauri/src/install/agents.rs), [`tauri/src/install/core.rs`](../../../tauri/src/install/core.rs), [`tauri/src/install/editor.rs`](../../../tauri/src/install/editor.rs) | • Parametrizzare `Claude`, `Codex`, `Antigravity` sui 6 target.<br>• Parametrizzare `Python`, `Node`, `Uv`, `Gh`, `Git` sui 6 target.<br>• Parametrizzare `Pwsh`, `Server` (`vscodium-server`) e limitare `Terminal` a `Os::Win32`. | [`test/rust/install/core.rs`](../../../test/rust/install/core.rs), [`test/rust/install/editor.rs`](../../../test/rust/install/editor.rs) |
+| **5** | [`tauri/src/install/lang/*.rs`](../../../tauri/src/install/lang/mod.rs), [`tauri/src/install/native.rs`](../../../tauri/src/install/native.rs), [`tauri/src/install/android.rs`](../../../tauri/src/install/android.rs) | • Aggiornare `Go`, `Java` (`Contents/Home` su macOS), `Kotlin`, `Dotnet`, `Dart`, `Zig` (`TarXz` su Unix), `Julia`, `Bun`, `Deno`, `Typst` (`TarXz` su Unix), `TinyTex`, `Cmake`, `Cc`, `Ruby`, `Rust`, `Pnpm`, `R`, `Android` secondo la Matrice §4. | [`test/rust/install/lang/*.rs`](../../../test/rust/install/lang/mod.rs), [`test/rust/install/native.rs`](../../../test/rust/install/native.rs) |
+| **6** | [`tauri/src/install/db.rs`](../../../tauri/src/install/db.rs), [`tauri/src/install/web.rs`](../../../tauri/src/install/web.rs) | • Aggiornare `MySql`, `MongoDb`, `Sqlite`, `Adminer`, `Php`, `Apache`, `Nginx` per i 6 target.<br>• Eseguire `vc_runtime` solo su `Os::Win32`. | [`test/rust/install/db.rs`](../../../test/rust/install/db.rs), [`test/rust/install/web.rs`](../../../test/rust/install/web.rs) |
+| **7** | [`tauri/src/env.rs`](../../../tauri/src/env.rs), [`tauri/src/versions/choice.rs`](../../../tauri/src/versions/choice.rs), [`tauri/src/versions/side_by_side.rs`](../../../tauri/src/versions/side_by_side.rs), [`runtime/bashrc`](../../../runtime/bashrc) | • Usare `PATH_SEP` (`:` su Unix, `;` su Windows) in `env.rs` e `choice.rs`.<br>• Mappare le directory `bin/` Unix in `env.rs`.<br>• In `side_by_side.rs`, usare symlink Unix per `.NET` su macOS/Linux.<br>• In `runtime/bashrc`, rendere opzionale `cygpath -u`. | [`test/rust/env.rs`](../../../test/rust/env.rs), [`test/rust/versions/choice.rs`](../../../test/rust/versions/choice.rs) |
+| **8** | [`docs/app/CATALOG.md`](../../app/CATALOG.md), [`test/rust/install/mod.rs`](../../../test/rust/install/mod.rs) | • Estendere il test `live_lines` / `live_latest` per verificare in un'unica esecuzione (senza scaricare gli archivi, interrogando solo i manifesti JSON/SHA256) che **tutte le 6 architetture risolvano un URL e un SHA-256 validi per ogni componente**! | `cargo test live_matrix -- --ignored --nocapture` |

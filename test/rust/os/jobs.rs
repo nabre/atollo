@@ -28,7 +28,7 @@ fn spawn_in_runs_and_drop_kills() {
 
 #[test]
 fn batch_files_in_odd_folders() {
-    let root = std::env::temp_dir().join(format!("devkit-bat-{}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("atollo-bat-{}", std::process::id()));
     for name in ["a b (x) & y", "50%", "a!b", "%SystemRoot%", "%OS% & !OS!"] {
         let dir = root.join(name);
         std::fs::create_dir_all(&dir).unwrap();

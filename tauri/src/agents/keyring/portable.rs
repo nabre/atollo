@@ -228,7 +228,7 @@ fn hmac_sha256(key: &[u8; 32], data: &[&[u8]]) -> [u8; 32] {
 
 /// SHA-256 in counter mode as the key stream (encrypt and decrypt).
 fn keystream_xor(key: &[u8; 32], nonce: &[u8], data: &mut [u8]) {
-    let enc = sha256(&[b"devkit-agy-enc", key]);
+    let enc = sha256(&[b"atollo-agy-enc", key]);
     for (i, chunk) in data.chunks_mut(32).enumerate() {
         let block = sha256(&[&enc, nonce, &(i as u64).to_be_bytes()]);
         for (b, k) in chunk.iter_mut().zip(block) {
@@ -238,7 +238,7 @@ fn keystream_xor(key: &[u8; 32], nonce: &[u8], data: &mut [u8]) {
 }
 
 fn mac_key(key: &[u8; 32]) -> [u8; 32] {
-    sha256(&[b"devkit-agy-mac", key])
+    sha256(&[b"atollo-agy-mac", key])
 }
 
 /// `blob` (base64) sealed with `key`: encrypt-then-MAC, SHA-256 in counter

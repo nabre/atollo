@@ -1,7 +1,7 @@
 //! The kit environment given to every program the app starts.
 //!
 //! Port of nabre/dev-kit `setup/windows/_env.cmd` (commit a61a354), adapted to
-//! the layout `Dev-Kit.exe` + `data\` + `projects\` (DECISIONS.md D-00, D-01):
+//! the layout `Atollo.exe` + `data\` + `projects\` (DECISIONS.md D-00, D-01):
 //! profile, AppData, temp, caches, agents and language tools all point inside
 //! `data\`. Differences from `_env.cmd`, on purpose:
 //! - the environment starts from an allow-list of system variables, not from
@@ -317,7 +317,7 @@ impl KitEnv {
         let has = |rel: &str| app(rel).is_file();
 
         // Kit folders (_env.cmd:7-16, 22)
-        env.set_path("DEVKIT", root);
+        env.set_path("ATOLLO", root);
         env.set_path("CP_ROOT", root);
         env.set_path("CP_DATA", &data);
         // The `[client]` login of the kit's MySQL (db/auth.rs, D-74, D-110),
@@ -327,7 +327,7 @@ impl KitEnv {
         // programs get the login of another version when its database is
         // there (`db::services::project_client_env`).
         env.set_path(
-            "DEVKIT_MYSQL_CNF",
+            "ATOLLO_MYSQL_CNF",
             data.join("app").join("db").join("mysql.cnf"),
         );
         env.set_path("CP_MYSQL", app("mysql"));
@@ -336,7 +336,7 @@ impl KitEnv {
         // The app itself, for the kit's wrappers (data\kit\bin\agy.cmd):
         // on Linux the AppImage, not its program inside a temporary mount.
         if let Some(exe) = crate::kit::app_exe() {
-            env.set_path("DEVKIT_EXE", exe);
+            env.set_path("ATOLLO_EXE", exe);
         }
         env.set("CP_LANG", lang);
         env.set("CP_ROOT_FWD", fwd(root));
@@ -374,7 +374,7 @@ impl KitEnv {
             env.set("CP_USER_PROFILE", real);
         }
         // The host's temporary folder for files in transit (D-90), kept for a
-        // Dev-Kit.exe started from the kit's own consoles, whose TEMP is the kit's.
+        // Atollo.exe started from the kit's own consoles, whose TEMP is the kit's.
         if let Some(real) = host
             .get("CP_HOST_TEMP")
             .or(host.get("TEMP"))
@@ -492,7 +492,7 @@ impl KitEnv {
             if let (true, Some(dir)) =
                 (fits, crate::versions::dir_for(kit, java, newest.as_deref()))
             {
-                env.set("DEVKIT_GRADLE_JAVA", fwd(&dir));
+                env.set("ATOLLO_GRADLE_JAVA", fwd(&dir));
             }
         }
         let dotnet_home = data.join("dotnet").join(&platform);
@@ -825,14 +825,14 @@ impl KitEnv {
             ("NO_PROXY", &net.no_proxy),
             ("NODE_EXTRA_CA_CERTS", &net.extra_ca_certs),
             ("GEMINI_API_KEY", &settings.gemini_api_key),
-            ("DEVKIT_LANG", &settings.lang),
+            ("ATOLLO_LANG", &settings.lang),
         ] {
             if let Some(value) = value.as_deref().filter(|v| !v.is_empty()) {
                 env.set(name, value);
             }
         }
         if net.allow_lan {
-            env.set("DEVKIT_ALLOW_LAN", "1");
+            env.set("ATOLLO_ALLOW_LAN", "1");
         }
         // Claude Code's token saved in the kit (D-115): every program of
         // the kit gets it, terminals and editor too.
@@ -1075,8 +1075,8 @@ pub(crate) fn gemrc_path(data: &Path) -> PathBuf {
 /// (`--env-shebang`), so they run with the Ruby on the PATH after the kit
 /// moves (Ruby is installed again elsewhere, D-92) or another line is
 /// chosen. Bundler writes them so already.
-pub(crate) const GEMRC: &str = "# Dev-Kit: gem commands start the Ruby on the PATH, so they keep\n\
-# working when the kit moves (written by Dev-Kit, kept as it is).\n\
+pub(crate) const GEMRC: &str = "# Atollo: gem commands start the Ruby on the PATH, so they keep\n\
+# working when the kit moves (written by Atollo, kept as it is).\n\
 gem: --env-shebang\n";
 
 /// Writes [`GEMRC`] at `rc` when missing (afterwards it is the user's).

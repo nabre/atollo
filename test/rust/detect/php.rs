@@ -296,8 +296,8 @@ fn php_server_router() {
     assert_eq!(
         p.actions[0].command,
         sh(
-            r#"php -d "devkit.router=router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#,
-            r#"php -d 'devkit.router=router.php' -S 127.0.0.1:{port} -t public "$CP_DATA/kit/php-router.php""#
+            r#"php -d "atollo.router=router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#,
+            r#"php -d 'atollo.router=router.php' -S 127.0.0.1:{port} -t public "$CP_DATA/kit/php-router.php""#
         )
     );
     let up = project(
@@ -308,8 +308,8 @@ fn php_server_router() {
     assert_eq!(
         p.actions[0].command,
         sh(
-            r#"php -d "devkit.router=..\router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#,
-            r#"php -d 'devkit.router=../router.php' -S 127.0.0.1:{port} -t public "$CP_DATA/kit/php-router.php""#
+            r#"php -d "atollo.router=..\router.php" -S 127.0.0.1:{port} -t public "%CP_DATA%\kit\php-router.php""#,
+            r#"php -d 'atollo.router=../router.php' -S 127.0.0.1:{port} -t public "$CP_DATA/kit/php-router.php""#
         )
     );
     let root = project(
@@ -320,8 +320,8 @@ fn php_server_router() {
     assert_eq!(
         p.actions[0].command,
         sh(
-            r#"php -d "devkit.router=router.php" -S 127.0.0.1:{port} -t . "%CP_DATA%\kit\php-router.php""#,
-            r#"php -d 'devkit.router=router.php' -S 127.0.0.1:{port} -t . "$CP_DATA/kit/php-router.php""#
+            r#"php -d "atollo.router=router.php" -S 127.0.0.1:{port} -t . "%CP_DATA%\kit\php-router.php""#,
+            r#"php -d 'atollo.router=router.php' -S 127.0.0.1:{port} -t . "$CP_DATA/kit/php-router.php""#
         )
     );
 

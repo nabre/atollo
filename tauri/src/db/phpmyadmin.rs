@@ -19,7 +19,7 @@
 //! - `config.inc.php` in phpMyAdmin's folder is the app's
 //!   (`runtime/phpmyadmin.config.php`), written at every start: root's
 //!   password, the MySQL port and the cookie key come from the server's
-//!   environment (`DEVKIT_*`), never the command line or the browser;
+//!   environment (`ATOLLO_*`), never the command line or the browser;
 //! - sessions and phpMyAdmin's cache in `data\app\phpmyadmin`, uploaded
 //!   files in `phpmyadmin\` of the PC's temporary folder (D-90), the
 //!   server's output in `data\app\logs\phpmyadmin.log`.
@@ -111,7 +111,7 @@ fn responds_at(host: Ipv4Addr, port: u16) -> bool {
 }
 
 pub fn address(host: Ipv4Addr, port: u16, token: &str) -> String {
-    format!("http://{host}:{port}/?devkit={token}")
+    format!("http://{host}:{port}/?atollo={token}")
 }
 
 impl PhpMyAdmin {
@@ -208,14 +208,14 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str, lang: &str) -> R
         .arg(root)
         .arg(&router)
         .current_dir(root)
-        .env("DEVKIT_PMA_ROOT", root)
-        .env("DEVKIT_PMA_HOST", host.to_string())
-        .env("DEVKIT_PMA_TOKEN", &token)
-        .env("DEVKIT_PMA_SECRET", &secret)
-        .env("DEVKIT_PMA_TMP", &cache)
-        .env("DEVKIT_LANG", lang)
-        .env("DEVKIT_DB_PORT", db_port.to_string())
-        .env("DEVKIT_DB_PASSWORD", password)
+        .env("ATOLLO_PMA_ROOT", root)
+        .env("ATOLLO_PMA_HOST", host.to_string())
+        .env("ATOLLO_PMA_TOKEN", &token)
+        .env("ATOLLO_PMA_SECRET", &secret)
+        .env("ATOLLO_PMA_TMP", &cache)
+        .env("ATOLLO_LANG", lang)
+        .env("ATOLLO_DB_PORT", db_port.to_string())
+        .env("ATOLLO_DB_PASSWORD", password)
         .stdin(Stdio::null())
         .stdout(Stdio::from(out.try_clone()?))
         .stderr(Stdio::from(out));

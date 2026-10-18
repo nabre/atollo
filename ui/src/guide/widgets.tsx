@@ -27,7 +27,7 @@ export function GuideShot({
   title,
   caption,
   example,
-  scenario = "D:\\Dev-Kit · @mario-rossi",
+  scenario = "D:\\Atollo · @mario-rossi",
 }: {
   src: string;
   title: string;

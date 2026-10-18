@@ -10,7 +10,7 @@
 //! - `folder`: a subfolder to run it in (composite projects);
 //! - `env`, `url`: optional, `{port}` replaced at start;
 //! - `static`: a folder of the project served by the exe's file server
-//!   (`Dev-Kit.exe serve`), instead of a command;
+//!   (`Atollo.exe serve`), instead of a command;
 //! - `apache`: a folder of the project served by an Apache of its own
 //!   (`projects/apache.rs`), instead of a command; `caddy` the same with
 //!   Caddy (`projects/caddy.rs`).
@@ -299,7 +299,7 @@ const PHP_ROUTER: &str = r#""$CP_DATA/kit/php-router.php""#;
 /// `php -S` on the folder `root` of the project, always through the kit's
 /// router. A project's own `router.php` (in `root`, else in the project
 /// folder) runs after the kit's checks: `php -S` takes one router only, so
-/// the kit's includes it, given as `-d devkit.router=<path>` relative to
+/// the kit's includes it, given as `-d atollo.router=<path>` relative to
 /// `root` (hidden files and `.inc` stay refused, D-97).
 fn php_server(dir: &Path, root: &str) -> String {
     let depth = root
@@ -315,7 +315,7 @@ fn php_server(dir: &Path, root: &str) -> String {
         None
     };
     let own = own
-        .map(|f| format!("-d {} ", quote(&format!("devkit.router={}", native(&f)))))
+        .map(|f| format!("-d {} ", quote(&format!("atollo.router={}", native(&f)))))
         .unwrap_or_default();
     format!(
         "php {own}-S 127.0.0.1:{{port}} -t {} {PHP_ROUTER}",

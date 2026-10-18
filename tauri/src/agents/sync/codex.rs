@@ -1,7 +1,6 @@
 //! Codex `config.toml`: kit blocks at the top (settings) and at the end (MCP
 //! servers, trusted folders); the user's text in between is kept as it is
-//! (port of `codex.js`, same block markers, so files of nabre/dev-kit read
-//! the same).
+//! (port of `codex.js`, same block layout).
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -13,13 +12,13 @@ use super::mcp::{server_type, Servers};
 use super::{trusted_folders, Paths, Report, KIT_RULE_TEXT};
 use crate::fsx::write_atomic;
 
-const TOP_BEGIN: &str = "# >>> Dev-Kit: impostazioni del kit (non modificare questo blocco) >>>";
-const TOP_END: &str = "# <<< Dev-Kit <<<";
-const MCP_BEGIN: &str = "# >>> Dev-Kit: server MCP da data/agents/mcp.json (non modificare: cambia quel file o usa \"claude mcp\") >>>";
-const MCP_END: &str = "# <<< Dev-Kit: server MCP <<<";
+const TOP_BEGIN: &str = "# >>> Atollo: impostazioni del kit (non modificare questo blocco) >>>";
+const TOP_END: &str = "# <<< Atollo <<<";
+const MCP_BEGIN: &str = "# >>> Atollo: server MCP da data/agents/mcp.json (non modificare: cambia quel file o usa \"claude mcp\") >>>";
+const MCP_END: &str = "# <<< Atollo: server MCP <<<";
 const TRUST_BEGIN: &str =
-    "# >>> Dev-Kit: cartelle attendibili (projects del kit, riscritte a ogni avvio) >>>";
-const TRUST_END: &str = "# <<< Dev-Kit: cartelle attendibili <<<";
+    "# >>> Atollo: cartelle attendibili (projects del kit, riscritte a ogni avvio) >>>";
+const TRUST_END: &str = "# <<< Atollo: cartelle attendibili <<<";
 
 /// A JSON value as TOML (JSON strings, numbers and booleans are TOML too).
 fn toml(v: &Value) -> String {

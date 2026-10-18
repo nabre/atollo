@@ -17,7 +17,7 @@
   <rect width="900" height="620" rx="16" fill="url(#bgGrad)" stroke="#1f2937" stroke-width="1.5"/>
 
   <text x="450" y="38" fill="#f9fafb" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" text-anchor="middle">
-    NEXKORA Dev-Kit — Radar Evoluzione 9 Dimensioni (v1 → v2 → v3 Audit → Target v3.1 100% Portable)
+    Atollo — Radar Evoluzione 9 Dimensioni (v1 → v2 → v3 Audit → Target v3.1 100% Portable)
   </text>
   <text x="450" y="60" fill="#9ca3af" font-family="system-ui, -apple-system, sans-serif" font-size="13" text-anchor="middle">
     Confronto metrico su base 100 dopo il merge dello Sciame PR #1 (HEAD 39b74bc) e piano di promozione v3

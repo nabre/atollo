@@ -83,9 +83,9 @@ fn catalog_is_valid() {
 }
 
 #[test]
-fn choice_file_compatible_with_dev_kit() {
+fn choice_file_compatible_with_atollo() {
     let catalog = Catalog::get();
-    // As written by nabre/dev-kit Save-ComponentChoice (plus a BOM and LF).
+    // As written by nabre/atollo Save-ComponentChoice (plus a BOM and LF).
     let text =
         "\u{feff}# comment\napache=1\nphp=0\nrust=1\ngh=0\nunknown=1\nbad line\nkotlin = 1\nvscodium=1\n";
     // Rust stays on: C and C++ is a need of Windows ARM64 only.

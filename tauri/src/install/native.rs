@@ -911,11 +911,11 @@ impl Installer for R {
             fs::create_dir_all(&bin)?;
             for exe in ["R", "Rscript"] {
                 let cmd = format!(
-                        "@echo off\r\nrem Dev-Kit: R with its DLLs (Library\\bin) in the PATH of R only\r\nsetlocal\r\nset \"PATH=%~dp0..\\lib\\R\\bin\\x64;%~dp0..\\Library\\bin;%PATH%\"\r\n\"%~dp0..\\lib\\R\\bin\\x64\\{exe}.exe\" %*\r\nexit /b %ERRORLEVEL%\r\n"
+                        "@echo off\r\nrem Atollo: R with its DLLs (Library\\bin) in the PATH of R only\r\nsetlocal\r\nset \"PATH=%~dp0..\\lib\\R\\bin\\x64;%~dp0..\\Library\\bin;%PATH%\"\r\n\"%~dp0..\\lib\\R\\bin\\x64\\{exe}.exe\" %*\r\nexit /b %ERRORLEVEL%\r\n"
                     );
                 write_atomic(&bin.join(format!("{exe}.cmd")), cmd.as_bytes())?;
                 let sh = format!(
-                        "#!/bin/sh\n# Dev-Kit: R with its DLLs (Library/bin) in the PATH of R only\nd=$(dirname \"$0\")/..\nPATH=\"$d/lib/R/bin/x64:$d/Library/bin:$PATH\" exec \"$d/lib/R/bin/x64/{exe}.exe\" \"$@\"\n"
+                        "#!/bin/sh\n# Atollo: R with its DLLs (Library/bin) in the PATH of R only\nd=$(dirname \"$0\")/..\nPATH=\"$d/lib/R/bin/x64:$d/Library/bin:$PATH\" exec \"$d/lib/R/bin/x64/{exe}.exe\" \"$@\"\n"
                     );
                 write_atomic(&bin.join(exe), sh.as_bytes())?;
             }
@@ -940,7 +940,7 @@ impl Installer for R {
         }
         let site = join_rel(target, "lib/R/etc/Rprofile.site");
         let mut text = fs::read_to_string(&site).unwrap_or_default();
-        text.push_str("\n# Dev-Kit: CRAN without asking for a mirror\nlocal({ r <- getOption('repos'); if (is.null(r) || identical(unname(r['CRAN']), '@CRAN@')) options(repos = c(CRAN = 'https://cloud.r-project.org')) })\n");
+        text.push_str("\n# Atollo: CRAN without asking for a mirror\nlocal({ r <- getOption('repos'); if (is.null(r) || identical(unname(r['CRAN']), '@CRAN@')) options(repos = c(CRAN = 'https://cloud.r-project.org')) })\n");
         fs::write(&site, text)?;
         Ok(())
     }

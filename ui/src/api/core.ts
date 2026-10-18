@@ -7,7 +7,7 @@
 import { invoke, isTauri, type InvokeArgs } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-/** True when the page runs in the browser instead of the Dev-Kit window. */
+/** True when the page runs in the browser instead of the Atollo window. */
 export const browserPreview = !isTauri();
 
 /** A command that answers with data; `preview` is the answer in the browser. */
