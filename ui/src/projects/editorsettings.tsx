@@ -44,7 +44,7 @@ export function EditorSettingsBox({ project }: { project: string }) {
       {view.readOnly ? (
         <p className="px-3 py-2 text-vsc-desc">
           {t(
-            ".vscode\\settings.json ha commenti o non è JSON semplice: NEXKORA non lo riscrive. Modificalo nell'editor.",
+            ".vscode\\settings.json ha commenti o non è JSON semplice: Atollo non lo riscrive. Modificalo nell'editor.",
           )}
         </p>
       ) : (

@@ -4,6 +4,7 @@
 
 - **Linux distingue le maiuscole nei percorsi** (D-119): un aggiornamento dell'editor o la rimozione dell'unità fermano solo i programmi della cartella giusta, non quelli di una cartella che differisce solo nelle maiuscole; lo stesso per le voci del PATH tolte da un profilo del terminale. Windows e macOS restano senza distinzione, come i loro file system.
 - **Salvataggi contemporanei su Windows**: due salvataggi dello stesso file nello stesso momento (per esempio le impostazioni da due finestre) potevano fallire con «accesso negato», perché Windows rifiuta una delle due sostituzioni; ora quella rifiutata riprova per al massimo un secondo e vince l'ultima, come su macOS e Linux. Era la causa del test instabile `write_atomic_concurrent_threads_do_not_collide_on_tmp`.
+- **Il nome è Atollo ovunque** (D-120): `version`, l'aiuto, i titoli della finestra e dell'editor, la pagina degli aggiornamenti, «Avvia con Atollo», i messaggi d'errore e la descrizione dell'editor dicevano ancora «NEXKORA». Nessun nome salvato nel kit cambia; i temi dell'editor con il vecchio nome passano da soli a quelli Atollo.
 
 ## Spostare il kit senza rete su macOS e Linux (18/10/2026)
 

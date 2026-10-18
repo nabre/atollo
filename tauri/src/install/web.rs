@@ -1421,7 +1421,7 @@ pub fn apache_site(dir: &Path, os: Os) -> Result<()> {
             let page = [
                 "<!doctype html>",
                 "<meta charset=\"utf-8\">",
-                "<title>NEXKORA</title>",
+                "<title>Atollo</title>",
                 "<h1>Apache funziona</h1>",
                 "<p>PHP <?= PHP_VERSION ?> &middot; <a href=\"?info\">phpinfo()</a></p>",
                 "<p>I file del sito stanno nella cartella <code>data\\apache\\htdocs\\</code> del kit.</p>",
@@ -1433,7 +1433,7 @@ pub fn apache_site(dir: &Path, os: Os) -> Result<()> {
             let page = [
                 "<!doctype html>",
                 "<meta charset=\"utf-8\">",
-                "<title>NEXKORA</title>",
+                "<title>Atollo</title>",
                 "<h1>Apache funziona</h1>",
                 "<p>I file del sito stanno nella cartella <code>data/apache/htdocs/</code> del kit.</p>",
             ]

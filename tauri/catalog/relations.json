@@ -24,7 +24,7 @@
   ],
   "runtimes": [
     { "id": "vcruntime", "name": "Visual C++ 2015-2026 x64", "for": ["php", "apache", "mongodb"], "note": "DLL copiate dal kit accanto ai programmi" },
-    { "id": "webview2", "name": "WebView2", "for": ["@app"], "note": "la finestra di NEXKORA" },
+    { "id": "webview2", "name": "WebView2", "for": ["@app"], "note": "la finestra di Atollo" },
     { "id": "x64-emulation", "name": "Emulazione x64 (Windows 11)", "for": ["@x64Only", "git"], "arm64": true, "note": "su PC ARM64 i programmi solo x64 e Git Bash girano emulati, solo con Windows 11" }
   ],
   "projects": [

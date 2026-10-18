@@ -689,8 +689,8 @@ pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
     let quoted = crate::os::sh_quote(&bundle);
     Some(format!(
         "{}\n\n{}",
-        crate::i18n::t(lang, "macOS ha aperto NEXKORA da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.", &[]),
-        crate::i18n::t(lang, "Esci da NEXKORA, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.", &[&quoted]),
+        crate::i18n::t(lang, "macOS ha aperto Atollo da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.", &[]),
+        crate::i18n::t(lang, "Esci da Atollo, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.", &[&quoted]),
     ))
 }
 
@@ -714,12 +714,12 @@ pub fn prepare_error_message(os: Os, error: &KitError, lang: &str) -> String {
         return format!(
             "{}\n\n{}",
             crate::i18n::t(lang, "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.", &[&path]),
-            crate::i18n::t(lang, "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia NEXKORA.", &[])
+            crate::i18n::t(lang, "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia Atollo.", &[])
         );
     }
     format!(
         "{cannot}\n\n{}",
-        crate::i18n::t(lang, "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia NEXKORA.", &[])
+        crate::i18n::t(lang, "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia Atollo.", &[])
     )
 }
 

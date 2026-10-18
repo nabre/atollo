@@ -53,7 +53,7 @@ export interface WebServerProfileInput {
   /** «Mantieni attivo anche senza progetti»: started by a project, the pool
    * stays on when its last project stops (true when left out). */
   keepAlive?: boolean;
-  /** «Avvia con NEXKORA»: started when the app opens. */
+  /** «Avvia con Atollo»: started when the app opens. */
   autostart?: boolean;
 }
 

@@ -378,7 +378,7 @@ impl Sink for Printer<'_> {
                         "  ! {}",
                         t(
                             lang,
-                            "{0}: non ancora disponibile in questa versione di NEXKORA",
+                            "{0}: non ancora disponibile in questa versione di Atollo",
                             &[&name]
                         )
                     ),

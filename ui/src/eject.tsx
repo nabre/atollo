@@ -67,10 +67,10 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "lifecycle") => void 
               <OpenList open={open} />
             </>
           )}
-          <p>{t("Ora chiudi NEXKORA, poi rimuovi l'unità con «Rimozione sicura dell'hardware» di Windows.")}</p>
+          <p>{t("Ora chiudi Atollo, poi rimuovi l'unità con «Rimozione sicura dell'hardware» di Windows.")}</p>
           <ActionButton
             icon={VscClose}
-            label={t("Chiudi NEXKORA")}
+            label={t("Chiudi Atollo")}
             primary
             onClick={() => {
               run("quit", appQuit);
@@ -136,7 +136,7 @@ export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () =>
   const { busy, error, run } = useAction();
   return (
     <ConfirmDialog
-      title={t("Chiudere NEXKORA?")}
+      title={t("Chiudere Atollo?")}
       cancelLabel={t("Annulla")}
       onCancel={onCancel}
       actions={

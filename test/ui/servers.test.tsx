@@ -96,7 +96,7 @@ describe("ServersPage", () => {
     // The profile's (the creation form is closed): checked, as for an older
     // servers.json with no option saved.
     expect(keep.map((c) => (c as HTMLInputElement).checked)).toEqual([true]);
-    const auto = screen.getAllByRole("checkbox", { name: "Avvia con NEXKORA" });
+    const auto = screen.getAllByRole("checkbox", { name: "Avvia con Atollo" });
     const last = auto[auto.length - 1];
     if (!last) throw new Error("no checkbox");
     await act(async () => {

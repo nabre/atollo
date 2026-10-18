@@ -1,6 +1,6 @@
 <?php
 // Router of PHP's server for phpMyAdmin on the kit's MySQL (DECISIONS.md
-// D-107), started by NEXKORA from the Database page. Written by the app: a
+// D-107), started by Atollo from the Database page. Written by the app: a
 // hand edit is replaced at the next start.
 //
 // - only whoever has this start's token gets in: the app opens
@@ -34,7 +34,7 @@ if (is_string($given) && hash_equals($token, $given)) {
 if (!hash_equals($token, (string) ($_COOKIE['devkit_pma'] ?? ''))) {
     http_response_code(403);
     header('Content-Type: text/plain; charset=utf-8');
-    echo "phpMyAdmin: open it from NEXKORA, Database page.\n";
+    echo "phpMyAdmin: open it from Atollo, Database page.\n";
     exit;
 }
 

@@ -498,15 +498,15 @@ pub fn notice_for(
         };
         return blocking(format!(
             "{}\n\n{}",
-            t(lang, "Il disco del kit ({0}) è montato con l'opzione noexec: da lì non può partire nessun programma, e NEXKORA non installa nulla.", &[&point]),
-            t(lang, "Rimontalo permettendo i programmi, per esempio con: {0}. Poi riavvia NEXKORA.", &[&remount]),
+            t(lang, "Il disco del kit ({0}) è montato con l'opzione noexec: da lì non può partire nessun programma, e Atollo non installa nulla.", &[&point]),
+            t(lang, "Rimontalo permettendo i programmi, per esempio con: {0}. Poi riavvia Atollo.", &[&remount]),
         ));
     }
     if os.is_linux() && mount.is_some_and(Mount::showexec) {
         return blocking(format!(
             "{}\n\n{}",
             t(lang, "Il disco del kit ({0}) è FAT32 montato con l'opzione showexec: Linux lascia partire solo i file .exe, .com e .bat, non i programmi del kit.", &[&point]),
-            t(lang, "Formatta la chiavetta in exFAT (il kit funziona così anche su Windows e macOS), oppure rimontala senza showexec. Poi riavvia NEXKORA.", &[]),
+            t(lang, "Formatta la chiavetta in exFAT (il kit funziona così anche su Windows e macOS), oppure rimontala senza showexec. Poi riavvia Atollo.", &[]),
         ));
     }
     let warning = match fs {

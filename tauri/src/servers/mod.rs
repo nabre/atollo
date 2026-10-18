@@ -145,7 +145,7 @@ pub struct WebServerProfileInput {
     /// of an older `servers.json` behaves as before).
     #[serde(default = "keep_alive_default")]
     pub keep_alive: bool,
-    /// «Avvia con NEXKORA»: started when the app opens.
+    /// «Avvia con Atollo»: started when the app opens.
     #[serde(default)]
     pub autostart: bool,
 }

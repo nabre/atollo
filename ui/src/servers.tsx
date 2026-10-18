@@ -79,7 +79,7 @@ function ProfileOptions({
           onChange(keepAlive, v);
         }}
       >
-        {t("Avvia con NEXKORA")}
+        {t("Avvia con Atollo")}
       </CheckboxLabel>
     </div>
   );

@@ -1,6 +1,6 @@
 <?php
 // phpMyAdmin's config.inc.php on the kit's MySQL (DECISIONS.md D-107),
-// copied into phpMyAdmin's folder at every start by NEXKORA: a hand edit is
+// copied into phpMyAdmin's folder at every start by Atollo: a hand edit is
 // replaced. Everything comes from the environment of the server the app
 // starts (`db/phpmyadmin.rs`); outside it nothing is set and no one logs in.
 

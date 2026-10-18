@@ -246,7 +246,7 @@ pub(super) fn pool_error_tail(pool_dir: &Path) -> String {
 }
 
 impl WebServers {
-    /// Starts the profiles marked «Avvia con NEXKORA» (when the app opens),
+    /// Starts the profiles marked «Avvia con Atollo» (when the app opens),
     /// as if from the "Server Web" page; a failure only goes to the log.
     pub fn autostart(&self, env: &KitEnv, lang: &str) {
         // A fresh list when the app opens: the ports of pools gone since

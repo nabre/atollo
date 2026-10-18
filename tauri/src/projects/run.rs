@@ -822,7 +822,7 @@ impl Runner {
             info
         };
         let line = format!(
-            "[NEXKORA] {}",
+            "[Atollo] {}",
             tr(
                 lang,
                 "servito dal pool condiviso {0}: {1}",
@@ -866,9 +866,9 @@ impl Runner {
 
     /// `scan`: look for the address a web server prints (not in the app's
     /// own lines, which may hold one in the command).
-    /// A line of the kit (`[NEXKORA] …`) in the log of the run `key`.
+    /// A line of the kit (`[Atollo] …`) in the log of the run `key`.
     pub fn note(&self, key: &str, text: &str) {
-        self.append(key, vec![format!("[NEXKORA] {text}")], false);
+        self.append(key, vec![format!("[Atollo] {text}")], false);
     }
 
     fn append(&self, key: &str, lines: Vec<String>, scan: bool) {
@@ -946,7 +946,7 @@ impl Runner {
             let mut line = Vec::new();
             if let Some(a) = actual {
                 line.push(format!(
-                    "[NEXKORA] {}",
+                    "[Atollo] {}",
                     tr(
                         lang,
                         "il server usa la porta {0} invece della {1}",
@@ -957,7 +957,7 @@ impl Runner {
             }
             e.info.state = State::Running;
             line.push(format!(
-                "[NEXKORA] {}",
+                "[Atollo] {}",
                 tr(
                     lang,
                     "server pronto: {0}",

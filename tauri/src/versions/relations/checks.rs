@@ -94,7 +94,7 @@ pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) ->
             let mut needed_by: Vec<String> = Vec::new();
             for f in &s.for_ {
                 match f.as_str() {
-                    "@app" => needed_by.push("NEXKORA".into()),
+                    "@app" => needed_by.push("Atollo".into()),
                     "@x64Only" => needed_by.extend(
                         catalog
                             .all()
