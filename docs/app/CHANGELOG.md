@@ -3,7 +3,7 @@
 ## Atollo anche negli identificatori (19/10/2026)
 
 - **Un solo nome, anche dentro** (D-126): le variabili d'ambiente del kit sono `ATOLLO_*` (`ATOLLO_TEST_KIT`, `ATOLLO_LANG`, `ATOLLO_ALLOW_LAN`, `ATOLLO_FCGI_KEY`, `ATOLLO_DB_*`…), i file di lavoro `.atollo-version`, `.atollo-new`, `.atollo-move`, i lock `Atollo-*`; i profili del terminale dell'editor si chiamano «Atollo», «Atollo - Git Bash», «Atollo - Bash»; i blocchi del kit nei file degli agenti e la regola `rules/atollo.md` portano il nome Atollo; l'user agent dei download è `Atollo/<versione>` con il link a `github.com/nabre/atollo`, come ogni link dei documenti.
-- **Nessuna compatibilità con i nomi di prima**: un kit fatto con una versione precedente riscrive accanto ai vecchi i blocchi di Codex, i profili del terminale e la regola degli agenti; le variabili vecchie impostate a mano non valgono più. Tolti gli id dei temi dell'editor del nome di prima.
+- **Nessuna compatibilità con i nomi di prima**: un kit fatto con una versione precedente riscrive accanto ai vecchi i blocchi di Codex, i profili del terminale e la regola degli agenti; le variabili vecchie impostate a mano non valgono più; **l'accesso ad Antigravity va rifatto una volta**, perché le credenziali salvate prima non si leggono più. Tolti gli id dei temi dell'editor del nome di prima.
 - **Documenti**: decisioni, novità e rapporti usano solo Atollo; i link dei rapporti a una cartella locale ora sono relativi al repository.
 
 **Verificato**: 745 test Rust (6 ignorati), 147 test dell'interfaccia; fmt, clippy, ESLint, Prettier e `tsc -b` puliti su Windows; workflow letti con PyYAML.
