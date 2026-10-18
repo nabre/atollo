@@ -1,5 +1,13 @@
 # Novità
 
+## Accessi degli agenti su macOS e Linux (19/10/2026)
+
+- **Claude Code collegato con un token** («Collega con un token», macOS) è collegato in ogni programma del kit: nei terminali e nell'editor, non più solo avviato dalla pagina Agenti. Dopo «Esci» i terminali aperti da lì in poi non hanno più il token (D-115, [#6](https://github.com/nabre/dev-kit2/issues/6)).
+- **`Atollo env` non mostra più i segreti**: token, chiavi e password (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`, ogni `*_TOKEN`…) e la password di un proxy compaiono come `***`.
+- **Antigravity su Linux** scrive l'accesso nella collezione `login` del Secret Service, l'unica che `agy` legge: ora funziona anche dove la collezione predefinita è un'altra (alcune configurazioni di KWallet). Dove `login` non c'è (KeePassXC) l'accesso non si sposta e un avviso lo dice, invece di finire dove `agy` non lo trova.
+
+**Verificato**: su Windows 741 test Rust, fmt e clippy puliti; in WSL2 (Ubuntu 24.04) 733 test, fmt e clippy puliti, e la prova reale `real_secret_service_login_collection` con gnome-keyring: con `login` la voce va lì e si rilegge, senza `login` non si scrive nulla. Da provare su un Mac vero.
+
 ## Spostare il kit senza rete su macOS e Linux (18/10/2026)
 
 - **R, Ruby, MongoDB (Linux), SQLite (Linux ARM64) e il `make` di C e C++** si reinstallano dopo che il kit cambia cartella, perché vengono da conda-forge e hanno il percorso scritto dentro (D-92). Ora i loro pacchetti restano nel kit, in `data/app/conda/<sistema>/`, e la reinstallazione li usa senza scaricare nulla, alla stessa versione: in WSL 43 s per R, Ruby, MongoDB e make, contro 86 s dalla rete con una connessione veloce, e funziona anche senza rete (D-118).
