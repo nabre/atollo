@@ -136,3 +136,42 @@ fn links_and_projects() {
         "a project file changed"
     );
 }
+
+/// The matrix of a target chosen on the Tools page (D-121): only the links
+/// of components that target can have, its own name, its own file.
+#[test]
+fn matrix_follows_the_target() {
+    let tmp = TempDir::new("relations-target");
+    let catalog = Catalog::get();
+    let mut counts = Vec::new();
+    for target in crate::kit::Target::ALL {
+        let kit = Kit::at_target(tmp.0.clone(), target);
+        kit.prepare().unwrap();
+        let m = build(&kit, "en");
+        assert_eq!(m.platform, target.as_str());
+        for l in &m.links {
+            for id in [split(&l.from).0, l.to.as_str()] {
+                let c = catalog.find(id).unwrap();
+                assert!(
+                    c.is_available_on(target),
+                    "{} > {} on {target}",
+                    l.from,
+                    l.to
+                );
+            }
+        }
+        let name = file(&kit)
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        if target == crate::kit::Target::detect() {
+            assert_eq!(name, "relations.json");
+        } else {
+            assert_eq!(name, format!("relations-{target}.json"));
+        }
+        counts.push(m.links.len());
+    }
+    // Some system lacks a component another one has (Apache, Android).
+    assert!(counts.iter().any(|n| *n != counts[0]), "{counts:?}");
+}

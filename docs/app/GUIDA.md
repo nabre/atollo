@@ -498,6 +498,7 @@ La pagina **Strumenti** (`ui/src/components/page.tsx`) è il centro di controllo
    - verifica i **legami tra strumenti** (es. Composer rispetto a PHP, Apache/Caddy rispetto a PHP, Gradle/Maven/Kotlin rispetto alla JDK, Corepack/Yarn rispetto a Node.js);
    - legge i **vincoli di versione dichiarati nei file dei progetti** (`package.json`, `.nvmrc`, `pyproject.toml`, `composer.json`, `compose.yaml`, `go.mod`, `pom.xml`, `build.gradle`, `global.json`, `Gemfile`, `pubspec.yaml`, `Project.toml`, `build.zig.zon`, `renv.lock`, `Cargo.toml`, `CMakeLists.txt`, `typst.toml`) e offre un pulsante diretto (**«Usa X.Y»** o **«Scarica e usa X.Y»**) per allineare il progetto con un clic.
 4. **Sezione «Matrice delle estensioni» (`ui/src/extensions.tsx`)**: mostra in sola lettura la tabella completa degli abbinamenti tra linguaggi/strumenti ed estensioni di VSCodium.
+5. **Vista «Matrice» (`ui/src/components/matrix.tsx`, D-121)**: una riga per componente e una colonna per ognuno dei sei sistemi (Windows x64 e ARM64, macOS Apple Silicon e Intel, Linux x64 e ARM64), con «questo PC», «in emulazione» o «non eseguibile qui». Ogni casella dice se il componente è disponibile, in emulazione, pre-scaricato, se si completa al primo avvio su quel sistema o se non è disponibile, con il motivo; un clic apre il dettaglio e «Mostra questo sistema». Il sistema scelto con «Piattaforma» resta fra le sessioni, e relazioni ed estensioni lo seguono.
 
 ![Pagina Strumenti con catalogo componenti, versioni affiancate e schede Relazioni/Requisiti](images/13-strumenti-catalogo-matrice.png)
 

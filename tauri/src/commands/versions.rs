@@ -250,14 +250,17 @@ pub fn project_versions_set<R: Runtime>(
 /// The relations matrix (versions/relations/, D-81): the saved one while nothing
 /// it was made from changed; `force` builds it again. Off the window's
 /// thread: it reads every project's files and asks WebView2 its version.
+/// `target`: the system chosen on the Tools page (D-121), this PC's when
+/// omitted.
 #[tauri::command]
 pub async fn relations_matrix<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     force: bool,
+    target: Option<String>,
 ) -> CmdResult<crate::versions::relations::Matrix> {
     ensure_main(&webview)?;
-    let (kit, lang) = (state.kit.clone(), state.lang());
+    let (kit, lang) = (kit_for(&state.kit, target.as_deref())?, state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         crate::versions::relations::matrix(&kit, lang, force).or_fail_chain("relations")
     })

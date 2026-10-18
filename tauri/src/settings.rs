@@ -44,6 +44,11 @@ pub struct Settings {
     /// stay in `data/app/conda`, so a move reinstalls them without the
     /// network (D-118).
     pub keep_conda_packages: bool,
+    /// The system the Tools page shows (`linux-x64`, `darwin-arm64`…),
+    /// chosen last there with «Piattaforma» (D-121); `None` = this PC's.
+    /// Only `commands::setup::tools_target_set` writes it: the Settings
+    /// page keeps it as it is.
+    pub tools_target: Option<String>,
 }
 
 impl Default for Settings {
@@ -58,6 +63,7 @@ impl Default for Settings {
             rust_toolchain: None,
             program_temp: ProgramTemp::Auto,
             keep_conda_packages: true,
+            tools_target: None,
         }
     }
 }
@@ -156,6 +162,11 @@ impl Settings {
         }
         if let Some(t) = &self.rust_toolchain {
             if t != "gnu" && t != "msvc" {
+                return Err(("Valore non valido: {0}", t.clone()));
+            }
+        }
+        if let Some(t) = &self.tools_target {
+            if crate::kit::Target::parse(t).is_none() {
                 return Err(("Valore non valido: {0}", t.clone()));
             }
         }

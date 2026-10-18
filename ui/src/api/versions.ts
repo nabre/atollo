@@ -260,9 +260,10 @@ const SAMPLE_RELATIONS: RelationsMatrix = {
 };
 
 /** The relations matrix: the saved one while nothing it is made from
- * changed; `force` builds it again. */
-export function relationsMatrix(force = false): Promise<RelationsMatrix> {
-  return query<RelationsMatrix>("relations_matrix", SAMPLE_RELATIONS, { force });
+ * changed; `force` builds it again. For `target`, the system chosen on the
+ * Tools page (this PC's when omitted). */
+export function relationsMatrix(force = false, target?: string): Promise<RelationsMatrix> {
+  return query<RelationsMatrix>("relations_matrix", SAMPLE_RELATIONS, target ? { force, target } : { force });
 }
 
 export function projectVersionsSet(project: string, id: string, line: string | null): Promise<ProjectVersions> {

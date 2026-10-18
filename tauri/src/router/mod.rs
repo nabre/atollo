@@ -46,14 +46,14 @@ impl Router {
         target::can_execute_on_host(self.kit.target())
     }
 
-    /// Static disk probe of this router's target.
-    pub fn probe_target(&self) -> probe::TargetSummary {
-        probe::probe_target(&self.kit, self.kit.target())
+    /// Static disk probe of this router's target, reasons in `lang`.
+    pub fn probe_target(&self, lang: &str) -> probe::TargetSummary {
+        probe::probe_target(&self.kit, self.kit.target(), lang)
     }
 
     /// Static disk probe of all 6 supported targets (`Target::ALL`).
-    pub fn probe_all_targets(&self) -> Vec<probe::TargetSummary> {
-        probe::probe_all_targets(&self.kit)
+    pub fn probe_all_targets(&self, lang: &str) -> Vec<probe::TargetSummary> {
+        probe::probe_all_targets(&self.kit, lang)
     }
 
     /// Health check of installed tools on this router's target (live version

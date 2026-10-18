@@ -111,9 +111,10 @@ const SAMPLE_MATRIX: ExtensionsMatrix = {
   ],
 };
 
-/** The kit's matrix of editor extensions by language. */
-export function extensionsMatrix(): Promise<ExtensionsMatrix> {
-  return query<ExtensionsMatrix>("extensions_matrix", SAMPLE_MATRIX);
+/** The kit's matrix of editor extensions by language, for `target` (the
+ * system chosen on the Tools page; this PC's when omitted). */
+export function extensionsMatrix(target?: string): Promise<ExtensionsMatrix> {
+  return query<ExtensionsMatrix>("extensions_matrix", SAMPLE_MATRIX, target ? { target } : undefined);
 }
 
 /** Opens a kit console (a console window of the app) in a project. */

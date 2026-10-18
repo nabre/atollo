@@ -388,8 +388,21 @@ pub struct MatrixRow {
     pub installed: bool,
 }
 
+/// The matrix for the kit's target (D-121): without the tools that target
+/// cannot have, and without the extensions only for those tools or only
+/// for programs it cannot have (`programs`).
 pub fn matrix_info(kit: &Kit) -> MatrixInfo {
-    let rows = matrix();
+    let target = kit.target();
+    let here = |id: &String| {
+        Catalog::get()
+            .find(id)
+            .is_none_or(|c| c.is_available_on(target))
+    };
+    let rows: Vec<&Extension> = matrix()
+        .iter()
+        .filter(|e| e.tools.is_empty() || e.tools.iter().any(here))
+        .filter(|e| e.programs.is_empty() || e.programs.iter().any(here))
+        .collect();
     let languages = crate::detect::LANGUAGES
         .iter()
         .map(|(name, _)| *name)
@@ -397,7 +410,7 @@ pub fn matrix_info(kit: &Kit) -> MatrixInfo {
         .map(str::to_owned)
         .collect();
     let mut tools: Vec<(String, String)> = Vec::new();
-    for t in rows.iter().flat_map(|e| &e.tools) {
+    for t in rows.iter().flat_map(|e| &e.tools).filter(|t| here(t)) {
         if !tools.iter().any(|(id, _)| id == t) {
             let name = Catalog::get()
                 .find(t)
@@ -413,7 +426,7 @@ pub fn matrix_info(kit: &Kit) -> MatrixInfo {
             .iter()
             .map(|e| MatrixRow {
                 installed: have.contains(&e.id),
-                extension: e.clone(),
+                extension: (*e).clone(),
             })
             .collect(),
     }

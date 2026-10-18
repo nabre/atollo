@@ -64,6 +64,11 @@ fn deleted_need_of_one_target_turns_off_what_needs_it() {
         assert!(!now.is_chosen("zig"), "{t}");
         assert_eq!(off.contains(&"C, C++".to_owned()), !cc_after, "{t}");
         assert!(zig.installed_version(&kit).is_none(), "{t}");
+        // D-122: the choice is one for every system, so C and C++ are off
+        // on Windows too, accepted.
+        let windows = kit.for_target(Target::WIN32_X64);
+        let there = crate::setup::catalog::Choice::read(&windows, catalog).unwrap();
+        assert_eq!(there.is_chosen("cc"), cc_after, "{t}");
     }
 }
 

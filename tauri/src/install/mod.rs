@@ -41,6 +41,7 @@ use crate::net::Net;
 use crate::os::temp::TempWork;
 use crate::setup::catalog::Component;
 
+pub(crate) use lang::xcode_selected;
 pub use lang::{make_launchers, version_key};
 pub use web::{adopt_composer, migrate_php_ini, php_ini_dir};
 

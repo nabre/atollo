@@ -1,6 +1,8 @@
 // The state of the Tools page, shared by the first-start page and the
 // explorer: the catalog as it is on disk, the choice not applied yet, what
-// applying it installs and removes, the projects that need each component.
+// applying it installs and removes, the projects that need each component;
+// on the Tools page also the component × system grid and the system shown
+// («Piattaforma»), remembered between sessions (D-121).
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   componentsApply,
@@ -8,10 +10,13 @@ import {
   componentsList,
   componentsSync,
   projectsList,
+  targetProfiles,
+  toolsTargetSet,
   type ComponentCheck,
   type ComponentInfo,
   type ProjectInfo,
   type SetupSnapshot,
+  type TargetGrid,
 } from "../api";
 import { toggle } from "./model";
 
@@ -24,13 +29,57 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
   const [synced, setSynced] = useState<string[]>([]);
   const [checks, setChecks] = useState<Map<string, ComponentCheck>>(new Map());
   const [checking, setChecking] = useState(false);
+  const [grid, setGrid] = useState<TargetGrid | null>(null);
+  const [gridError, setGridError] = useState<string | null>(null);
+  // The first-start page always shows this PC's system; the Tools page
+  // waits for the system chosen last before reading the list.
+  const [ready, setReady] = useState(firstRun);
+  const host = grid?.profiles.find((p) => p.isHost)?.id;
 
-  const setTarget = useCallback((next: string) => {
-    setChecks(new Map());
-    setTargetState(next);
-  }, []);
+  const loadGrid = useCallback(() => {
+    if (firstRun) return;
+    targetProfiles().then(
+      (g) => {
+        setGrid(g);
+        setGridError(null);
+      },
+      (e: unknown) => {
+        setGridError(String(e));
+      },
+    );
+  }, [firstRun]);
+
+  // Opening the Tools page: the grid, with «Piattaforma» chosen last.
+  useEffect(() => {
+    if (firstRun) return;
+    targetProfiles().then(
+      (g) => {
+        setGrid(g);
+        const own = g.profiles.find((p) => p.isHost)?.id;
+        if (g.chosen && g.chosen !== own) setTargetState(g.chosen);
+        setReady(true);
+      },
+      (e: unknown) => {
+        setGridError(String(e));
+        setReady(true);
+      },
+    );
+  }, [firstRun]);
+
+  /** Shows `next`, remembered in settings.json; this PC's system is saved
+   * as none, so the kit opened on another PC shows that one. */
+  const setTarget = useCallback(
+    (next: string) => {
+      setChecks(new Map());
+      setTargetState(next === host ? undefined : next);
+      // Remembering is a convenience: the page works without it.
+      toolsTargetSet(next === host ? null : next).then(undefined, () => undefined);
+    },
+    [host],
+  );
 
   const load = useCallback(() => {
+    if (!ready) return;
     // Only for the highlight: the page works without the projects.
     projectsList().then(setProjects, () => {
       setProjects([]);
@@ -44,7 +93,7 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
         setError(String(e));
       },
     );
-  }, [target]);
+  }, [target, ready]);
 
   const verifyTarget = useCallback(() => {
     setChecking(true);
@@ -68,6 +117,7 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
       load();
       return;
     }
+    if (!ready) return;
     componentsSync(target).then(
       (off) => {
         setSynced(off);
@@ -77,7 +127,7 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
         load();
       },
     );
-  }, [firstRun, load, target]);
+  }, [firstRun, load, target, ready]);
   // Reload as each component of an installation ends, and when it ends:
   // versions and "installed" change.
   const finished = setup?.steps.filter((s) => s.outcome !== null).length ?? 0;
@@ -85,6 +135,9 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
   useEffect(() => {
     if (finished > 0 || ended) load();
   }, [finished, ended, load]);
+  useEffect(() => {
+    if (finished > 0 || ended) loadGrid();
+  }, [finished, ended, loadGrid]);
 
   const plan = useMemo(() => {
     const items = list ?? [];
@@ -125,6 +178,11 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
   return {
     target,
     setTarget,
+    /** This PC's system, once the grid is read. */
+    host,
+    grid,
+    gridError,
+    loadGrid,
     checks,
     checking,
     verifyTarget,

@@ -2,7 +2,7 @@
 // matrix, read only, in "Linguaggi e strumenti", and the extensions of a
 // project in its panel: those of its languages, ticked unless removed, and
 // those added by hand. Installed extensions work in the whole editor.
-import { useMemo, useState, type ReactNode, type SyntheticEvent } from "react";
+import { useCallback, useMemo, useState, type ReactNode, type SyntheticEvent } from "react";
 import { VscAdd, VscCheck, VscTools } from "react-icons/vsc";
 import {
   extensionsMatrix,
@@ -22,16 +22,21 @@ import { Checkbox, DataTable } from "./workbench";
 export function ExtensionsMatrixSection({
   projects,
   components,
+  target,
 }: {
   projects: ProjectInfo[];
   /** A new list when the page reloads: the installed marks follow. */
   components: ComponentInfo[];
+  /** The system chosen on the Tools page (D-121): only its tools and
+   * their extensions. This PC's when omitted. */
+  target?: string | undefined;
 }) {
+  const read = useCallback(() => extensionsMatrix(target), [target]);
   const {
     data: matrix,
     error: loadErr,
     retry,
-  } = useLoad<ExtensionsMatrix | null>(extensionsMatrix, null, {
+  } = useLoad<ExtensionsMatrix | null>(read, null, {
     onError: "show",
     key: components,
   });

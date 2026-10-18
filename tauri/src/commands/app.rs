@@ -204,6 +204,8 @@ pub fn settings_set<R: Runtime>(
         Some(k) if k.trim().is_empty() => None,
         Some(k) => Some(k.trim().to_owned()),
     };
+    // The Tools page's own choice (`tools_target_set`), not this page's.
+    settings.tools_target = Settings::load(kit).settings.tools_target;
     for v in [
         &mut settings.lang,
         &mut settings.network.https_proxy,

@@ -9,7 +9,7 @@ fn r_is_not_available_on_arm64() {
     for (arch, arm64) in [(Arch::X64, false), (Arch::Arm64, true)] {
         let kit = Kit::at_target(tmp.0.join(arch.as_str()), Target::new(Os::Win32, arch));
         kit.prepare().unwrap();
-        let infos = component_infos(&kit, "it");
+        let infos = component_infos_from(&kit, "it", Target::WIN32_ARM64);
         let r = infos.iter().find(|c| c.id == "r").unwrap();
         assert_eq!(
             (r.available, r.no_arm64, r.x64_only),
@@ -41,9 +41,20 @@ fn unavailable_for_the_system_is_not_arm64() {
     }
     let kit = Kit::at_target(tmp.0.join("arm"), Target::WIN32_ARM64);
     kit.prepare().unwrap();
-    let infos = component_infos(&kit, "en");
+    let infos = component_infos_from(&kit, "en", Target::WIN32_ARM64);
     let r = infos.iter().find(|c| c.id == "r").unwrap();
     assert!(r.no_arm64 && r.unavailable_reason.is_none());
+    // "Not available on ARM64 PCs" only on such a PC: from another one the
+    // system is named, as for macOS and Linux.
+    for host in [Target::WIN32_X64, Target::DARWIN_ARM64, Target::LINUX_ARM64] {
+        let infos = component_infos_from(&kit, "en", host);
+        let r = infos.iter().find(|c| c.id == "r").unwrap();
+        assert!(!r.available && !r.no_arm64, "{host}");
+        assert_eq!(
+            r.unavailable_reason.as_deref(),
+            Some("not available for win32-arm64")
+        );
+    }
 }
 
 /// The catalog's own reason, translated, in place of "not available for
@@ -241,4 +252,52 @@ fn needs_of_one_target_stay_out_of_the_choice() {
         .collect();
     let choice = Choice::parse(&choice_text(&arm, &chosen), catalog);
     assert!(!choice.is_chosen("cc") && !choice.is_chosen("rust"));
+}
+
+/// «Piattaforma» is remembered in settings.json (D-121): the grid gives it
+/// back, the other settings stay, an unknown system is refused, `None`
+/// forgets it; a file that cannot be read is not overwritten.
+#[test]
+fn tools_target_is_remembered() {
+    let tmp = TempDir::new("cmd-tools-target");
+    let kit = Kit::at_target(tmp.0.clone(), Target::detect());
+    kit.prepare().unwrap();
+    let grid = target_grid(&kit, "en");
+    assert_eq!(grid.chosen, None);
+    assert_eq!(grid.profiles.map(|p| p.id), Target::ALL.map(Target::as_str));
+    assert_eq!(grid.targets.len(), 6);
+    assert_eq!(grid.profiles.iter().filter(|p| p.is_host).count(), 1);
+
+    let mut settings = Settings::load(&kit).settings;
+    settings.lang = Some("de".into());
+    settings.save(&kit).unwrap();
+    save_tools_target(&kit, Some(" linux-arm64 ")).unwrap();
+    let saved = Settings::load(&kit).settings;
+    assert_eq!(saved.tools_target.as_deref(), Some("linux-arm64"));
+    assert_eq!(saved.lang.as_deref(), Some("de"));
+    assert!(saved.validate().is_ok());
+    assert_eq!(
+        target_grid(&kit, "en").chosen.as_deref(),
+        Some("linux-arm64")
+    );
+
+    assert!(save_tools_target(&kit, Some("beos-x64")).is_err());
+    assert_eq!(
+        Settings::load(&kit).settings.tools_target.as_deref(),
+        Some("linux-arm64")
+    );
+    save_tools_target(&kit, None).unwrap();
+    assert_eq!(Settings::load(&kit).settings.tools_target, None);
+
+    // A value written by hand that the app does not know is not chosen.
+    std::fs::write(kit.settings_file(), r#"{"toolsTarget":"beos-x64"}"#).unwrap();
+    assert_eq!(target_grid(&kit, "en").chosen, None);
+    assert!(Settings::load(&kit).settings.validate().is_err());
+
+    std::fs::write(kit.settings_file(), "{ broken").unwrap();
+    assert!(save_tools_target(&kit, Some("win32-x64")).is_err());
+    assert_eq!(
+        std::fs::read_to_string(kit.settings_file()).unwrap(),
+        "{ broken"
+    );
 }

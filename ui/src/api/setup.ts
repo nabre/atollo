@@ -31,9 +31,60 @@ export interface SetupStep {
   outcome: Outcome | null;
 }
 
-export const TARGETS = ["win32-x64", "win32-arm64", "linux-x64", "linux-arm64", "darwin-arm64", "darwin-x64"] as const;
+/** The six systems, in the order of the columns of the grid (Rust
+ * `Target::ALL`). */
+export const TARGETS = ["win32-x64", "win32-arm64", "darwin-arm64", "darwin-x64", "linux-x64", "linux-arm64"] as const;
 
 export type TargetId = (typeof TARGETS)[number];
+
+/** What a system can do on this PC (Rust `router::target::TargetProfile`). */
+export interface TargetProfile {
+  id: TargetId;
+  os: "win32" | "darwin" | "linux";
+  arch: "x64" | "arm64";
+  isHost: boolean;
+  executableOnHost: boolean;
+  emulatedOnHost: boolean;
+}
+
+/** One cell of the grid: a component on a system (Rust
+ * `router::probe::TargetToolStatus`). */
+export interface TargetToolStatus {
+  id: string;
+  name: string;
+  available: boolean;
+  emulated: boolean;
+  /** Chosen, or needed on this system only by a chosen one (Zig next to C
+   * and C++ on macOS and Linux). */
+  chosen: boolean;
+  installed: boolean;
+  present: boolean;
+  version: string | null;
+  needsReinstall: boolean;
+  bootstrapStaged: boolean;
+  /** Prepared from this PC it is only pre-downloaded: it completes on the
+   * first start on that system. */
+  firstStart: boolean;
+  /** No ARM64 build, on a Windows ARM64 PC looking at its own system. */
+  noArm64: boolean;
+  /** Why it is not available, already translated. */
+  unavailableReason: string | null;
+}
+
+export interface TargetSummary extends Omit<TargetProfile, "id"> {
+  target: TargetId;
+  availableCount: number;
+  installedCount: number;
+  tools: TargetToolStatus[];
+}
+
+/** The component × system grid of the Tools page (D-121). */
+export interface TargetGrid {
+  profiles: TargetProfile[];
+  targets: TargetSummary[];
+  /** «Piattaforma» chosen last (settings.json); null: this PC's. */
+  chosen: TargetId | null;
+}
 
 export interface ComponentCheck {
   id: string;
@@ -73,10 +124,12 @@ export interface ComponentInfo {
   /** This version of the app can install it on this kit. */
   available: boolean;
   x64Only: boolean;
-  /** No ARM64 build and this kit is Windows ARM64: why it is not available. */
+  /** No ARM64 build, this kit is Windows ARM64 and so is this PC: why it is
+   * not available. */
   noArm64: boolean;
-  /** Not made for this kit's system (Windows only, on macOS or Linux): why it
-   * is not available, already translated. null on Windows ARM64 (noArm64). */
+  /** Not made for this kit's system (Windows only, on macOS or Linux; no
+   * ARM64 build, for Windows ARM64 seen from another PC): why it is not
+   * available, already translated. null on a Windows ARM64 PC (noArm64). */
   unavailableReason: string | null;
   needs: string[];
   /** x64 only, on an ARM64 PC with Windows 10 (no x64 emulation there). */
@@ -191,6 +244,57 @@ export function componentsList(target?: string): Promise<ComponentInfo[]> {
 
 export function componentsCheck(target?: string): Promise<ComponentCheck[]> {
   return query<ComponentCheck[]>("components_check", [], target ? { target } : undefined);
+}
+
+/** The preview's grid: the sample components on the six systems, this PC
+ * Windows x64. */
+function sampleGrid(): TargetGrid {
+  const profiles: TargetProfile[] = TARGETS.map((id) => {
+    const [os, arch] = id.split("-") as [TargetProfile["os"], TargetProfile["arch"]];
+    const win = os === "win32";
+    return { id, os, arch, isHost: id === "win32-x64", executableOnHost: win, emulatedOnHost: false };
+  });
+  const targets = profiles.map(({ id, ...p }): TargetSummary => {
+    const tools = SAMPLE_COMPONENTS.map((c): TargetToolStatus => {
+      const apache = c.id === "apache" && p.os !== "win32";
+      const emulated = c.x64Only && p.arch === "arm64" && p.os !== "linux";
+      const available = !apache && !(c.x64Only && p.os === "linux" && p.arch === "arm64");
+      const here = id === "win32-x64";
+      return {
+        id: c.id,
+        name: c.name,
+        available,
+        emulated,
+        chosen: c.chosen,
+        installed: here && c.installed,
+        present: here && c.present,
+        version: here ? c.version : null,
+        needsReinstall: false,
+        bootstrapStaged: false,
+        firstStart: available && !p.executableOnHost && ["git", "python"].includes(c.id),
+        noArm64: false,
+        unavailableReason: available ? null : `non disponibile per ${id}`,
+      };
+    });
+    return {
+      ...p,
+      target: id,
+      availableCount: tools.filter((x) => x.available).length,
+      installedCount: tools.filter((x) => x.installed).length,
+      tools,
+    };
+  });
+  return { profiles, targets, chosen: null };
+}
+
+/** The component × system grid and the system chosen last (D-121). */
+export function targetProfiles(): Promise<TargetGrid> {
+  return query<TargetGrid>("target_profiles", sampleGrid());
+}
+
+/** Remembers «Piattaforma» between sessions; null: this PC's system. */
+export function toolsTargetSet(target: string | null): Promise<void> {
+  return act("tools_target_set", { target });
 }
 
 export function setupStart(only: string[] | null, updateAll: boolean, target?: string): Promise<void> {
