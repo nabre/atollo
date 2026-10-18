@@ -313,8 +313,9 @@ fn php_release_of(ctx: &Ctx, version: String, mut parts: Vec<Part>) -> Result<Re
 /// one static binary per archive, `php` (CLI) and `php-fpm` (the FastCGI
 /// server of Caddy, `projects/fastcgi.rs`), with their extensions built in.
 /// Its "bulk" set: the only one with `intl`, `mysqli` (phpMyAdmin,
-/// WordPress) and `sodium`; it lacks `pdo_sqlite`, which "common" has
-/// without those three.
+/// WordPress) and `sodium`. Its `php -m` does not name `pdo_sqlite`, but
+/// PDO has the `sqlite` driver (`PDO::getAvailableDrivers()`: mysql,
+/// pgsql, sqlite; a new Laravel migrates on SQLite with it).
 pub const STATIC_PHP: &str = "https://dl.static-php.dev/static-php-cli/bulk";
 
 /// static-php-cli's name of the system of `target`; `None` on Windows,

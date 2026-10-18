@@ -91,22 +91,20 @@ pub const SOCKET_PATH_MAX: usize = 100;
 /// and later have them too), never a TCP port, which any local program of
 /// any user could reach to read the configuration or load another one
 /// (D-111). The socket is created owner-only (`|0600`, ignored by Windows)
-/// in an owner-only folder of the host's temporary folder (`%TEMP%` is
-/// per user on Windows), short enough for `sun_path`; the folder lives as
-/// long as `_dir` (the running pool).
+/// in a folder of its own ([`private_leaf`]): new, with a random name,
+/// owner-only and checked before Caddy binds, in a per-user folder when the
+/// system has one ([`socket_bases`]). Short enough for `sun_path`; the
+/// folder is removed when this is dropped (the pool ends).
 #[derive(Debug)]
 pub struct AdminSocket {
     pub path: PathBuf,
-    _dir: crate::os::temp::TempWork,
+    dir: PathBuf,
 }
 
-/// The folder name of the admin socket of the instance `id` in the host's
-/// temporary folder: short, the same for the same instance.
-pub fn admin_dir_name(id: &str) -> String {
-    use sha2::{Digest, Sha256};
-    let digest = Sha256::digest(id.as_bytes());
-    let hex: String = digest.iter().take(4).map(|b| format!("{b:02x}")).collect();
-    format!("caddy-{hex}")
+impl Drop for AdminSocket {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.dir);
+    }
 }
 
 /// The socket path `path` can be written in a Caddyfile and fits `sun_path`.
@@ -114,38 +112,113 @@ pub fn socket_path_usable(path: &Path) -> bool {
     quoted_path(path).is_some() && fwd(path).len() <= SOCKET_PATH_MAX
 }
 
-/// The admin socket of the instance `id`, `None` (in the log; the instance
-/// then runs with `admin off` and a reload restarts it) without a host
-/// temporary folder, when its folder cannot be made owner-only, or when
-/// the path is too long.
-pub fn admin_socket(kit: &Kit, id: &str) -> Option<AdminSocket> {
-    let base = kit.system_temp()?;
-    let name = admin_dir_name(id);
-    let work = match crate::os::temp::TempWork::new(kit, &name) {
-        Ok(work) => work,
-        Err(e) => {
-            crate::log::warn(&format!("caddy {id}: no admin folder: {e}"));
-            return None;
-        }
+/// A folder only its owner can enter: owned by the current user, not a
+/// link, nobody else with any right on it (Unix: mode `0700` or tighter).
+/// On Windows the folders are per user (`%TEMP%`) and get an owner-only
+/// DACL ([`private_leaf`]): only that it is a folder and not a link.
+pub fn is_private_dir(path: &Path) -> bool {
+    let Ok(meta) = fs::symlink_metadata(path) else {
+        return false;
     };
-    // Only in the host's temporary folder, never the kit's `data\tmp`
-    // (a USB disk without permissions).
-    if !work.path().starts_with(base) {
-        return None;
+    if !meta.is_dir() || meta.file_type().is_symlink() || crate::os::safe_path::is_reparse(&meta) {
+        return false;
     }
-    if let Err(e) = crate::router::fs::restrict_dir_to_owner(work.path()) {
-        crate::log::warn(&format!("caddy {id}: admin folder not private: {e:#}"));
-        return None;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        // SAFETY: geteuid has no preconditions.
+        let me = unsafe { libc::geteuid() };
+        meta.uid() == me && meta.mode() & 0o077 == 0
     }
-    let path = work.path().join("a.sock");
-    if !socket_path_usable(&path) {
-        crate::log::warn(&format!(
-            "caddy {id}: {} too long for a socket: no admin endpoint",
-            path.display()
-        ));
-        return None;
+    #[cfg(not(unix))]
+    {
+        true
     }
-    Some(AdminSocket { path, _dir: work })
+}
+
+/// Where the admin sockets may go, best first. On Linux the session's
+/// `$XDG_RUNTIME_DIR`, on macOS the per-user `$TMPDIR`, each only when it
+/// is private ([`is_private_dir`]); then the host's temporary folder of the
+/// kit (per user on Windows; shared `/tmp` maybe on Unix, where the leaf is
+/// what keeps it private).
+pub fn socket_bases(kit: &Kit) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let var = match kit.os() {
+        Os::Linux => Some("XDG_RUNTIME_DIR"),
+        Os::Darwin => Some("TMPDIR"),
+        Os::Win32 => None,
+    };
+    if let Some(dir) = var.and_then(std::env::var_os).map(PathBuf::from) {
+        if dir.is_absolute() && is_private_dir(&dir) {
+            out.push(dir);
+        }
+    }
+    out.extend(kit.system_temp().map(Path::to_path_buf));
+    out
+}
+
+/// Makes the folder `base/name` for a socket: created here and now (never
+/// one that exists: `create_dir`, not `create_dir_all`, refused when it is
+/// there or is a link), mode `0700` from the start on Unix, owner-only DACL
+/// on Windows, then checked ([`is_private_dir`]) before it is used. A
+/// folder that fails the check is removed when it is ours.
+pub fn private_leaf(base: &Path, name: &str) -> std::io::Result<PathBuf> {
+    let leaf = base.join(name);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        fs::DirBuilder::new().mode(0o700).create(&leaf)?;
+    }
+    #[cfg(not(unix))]
+    fs::DirBuilder::new().create(&leaf)?;
+    #[cfg(windows)]
+    if let Err(e) = crate::router::fs::restrict_dir_to_owner(&leaf) {
+        let _ = fs::remove_dir(&leaf);
+        return Err(std::io::Error::other(format!("{e:#}")));
+    }
+    if !is_private_dir(&leaf) {
+        let _ = fs::remove_dir(&leaf);
+        return Err(std::io::Error::other(format!(
+            "{}: not a private folder",
+            leaf.display()
+        )));
+    }
+    Ok(leaf)
+}
+
+/// The admin socket of the instance `id`, `None` (in the log; the instance
+/// then runs with `admin off` and a reload restarts it) when no folder of
+/// [`socket_bases`] gives a private one with a path short enough.
+pub fn admin_socket(kit: &Kit, id: &str) -> Option<AdminSocket> {
+    for base in socket_bases(kit) {
+        let random = match crate::editor::random_token() {
+            Ok(t) => t.chars().take(12).collect::<String>(),
+            Err(e) => {
+                crate::log::warn(&format!("caddy {id}: no random name: {e:#}"));
+                return None;
+            }
+        };
+        let parent = base.join("atollo-caddy");
+        let probe = parent.join(format!("c-{random}")).join("a.sock");
+        if !socket_path_usable(&probe) {
+            continue;
+        }
+        // The common folder may be another user's: only the leaf matters.
+        let _ = fs::create_dir_all(&parent);
+        match private_leaf(&parent, &format!("c-{random}")) {
+            Ok(dir) => {
+                return Some(AdminSocket {
+                    path: dir.join("a.sock"),
+                    dir,
+                })
+            }
+            Err(e) => crate::log::warn(&format!("caddy {id}: admin folder: {e}")),
+        }
+    }
+    crate::log::warn(&format!(
+        "caddy {id}: no private folder for the admin socket: admin off, a reload restarts the pool"
+    ));
+    None
 }
 
 /// The address of the admin socket `path` for Caddy: `unix/<path>`, with
