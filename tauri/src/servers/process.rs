@@ -94,7 +94,7 @@ impl RunningPool {
     }
 }
 
-/// A running pool stops when a project leaves it (PLAN.md §13.1): only one
+/// A running pool stops when a project leaves it (D-101): only one
 /// started by projects (`by_user` false), with none of them `left`, and not
 /// a profile «Mantieni attivo anche senza progetti» (an automatic pool
 /// never is). One started from the page or with the app is the user's to stop.
@@ -347,7 +347,7 @@ impl WebServers {
     /// The project's site (`project`, `action`) stopped: its VirtualHost
     /// leaves the pool `id` with a reload; a pool started by projects that
     /// is left with none stops, unless its profile keeps it alive
-    /// (PLAN.md §13.1).
+    /// (D-101).
     pub fn detach(
         &self,
         id: &str,

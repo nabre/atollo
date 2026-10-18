@@ -64,7 +64,7 @@ pub async fn agent_launch<R: Runtime>(
     .or_fail("agent")?
 }
 
-/// "Collega con un token" (Claude Code on macOS, WP-4.2): `claude
+/// "Collega con un token" (Claude Code on macOS, D-115): `claude
 /// setup-token` in a session of the app's terminal, its token saved in the
 /// kit. Async: the session runs until the user finishes in the browser.
 /// The page polls `agents_status`, so it sees the saved token by itself.

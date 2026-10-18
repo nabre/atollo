@@ -36,7 +36,7 @@ fn message_reaches_primary() {
     assert_eq!(rx.recv_timeout(Duration::from_secs(5)).unwrap(), "focus");
 }
 
-/// T1.6.1, T1.6.2: never a socket inside the kit; on macOS a name that
+/// D-105: never a socket inside the kit; on macOS a name that
 /// fits the 104 bytes of `sun_path`, whatever the kit's folder.
 #[test]
 fn socket_names() {
@@ -66,7 +66,7 @@ fn socket_names() {
     assert_eq!(deep.id().len(), 16);
 }
 
-/// T1.6.3: the TCP fallback takes the message with the right token only.
+/// D-105: the TCP fallback takes the message with the right token only.
 #[test]
 fn tcp_fallback_checks_the_token() {
     let tmp = crate::kit::tests::TempDir::new("instance-tcp");

@@ -29,7 +29,7 @@ pub fn fixed_folder(kit: &Kit) -> PathBuf {
 }
 
 /// The system's web view; there is no fixed runtime in a folder. On Linux
-/// only when WebKitGTK loads (T1.8.2).
+/// only when WebKitGTK loads (D-105).
 #[cfg(not(windows))]
 fn version_in(folder: Option<&Path>) -> Option<String> {
     let name = if cfg!(target_os = "macos") {
@@ -45,7 +45,7 @@ pub const WEBKITGTK: &str = "libwebkit2gtk-4.1.so.0";
 
 /// WebKitGTK can be loaded. A program linked with it does not even start
 /// without it, so this matters when the library is opened at run time
-/// (and for the launcher of WP-5.3, which shows [`missing_message`]).
+/// (and for the launcher of D-113, which shows [`missing_message`]).
 #[cfg(target_os = "linux")]
 fn webkit_present() -> bool {
     // SAFETY: a NUL-terminated name; the handle stays open on purpose

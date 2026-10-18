@@ -214,7 +214,7 @@ fn site_mode_pool_when_assigned() {
     );
 }
 
-/// PLAN.md §13.1: no profile (or `auto`, or empty) goes to the automatic
+/// D-101: no profile (or `auto`, or empty) goes to the automatic
 /// pool of the project's lines; `dedicated` keeps the site's own server,
 /// and a `server` on another kind of action means nothing.
 #[test]

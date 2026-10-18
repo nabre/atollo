@@ -1,4 +1,4 @@
-//! The database servers the kit runs (PLAN-PIATTAFORME.md §4.3): one enum
+//! The database servers the kit runs (D-110): one enum
 //! instead of the ids `"mariadb"` / `"mysql"` / `"mongodb"` matched as
 //! strings, so a new engine is a compile error at every place that has to
 //! know it.
@@ -8,8 +8,8 @@
 //! binaries are stems, the router adds `.exe` on Windows
 //! (`router::bins::db_bin_in`).
 //!
-//! MySQL is the kit's SQL server (Q-4, D-110); MariaDB stays for the kits
-//! that already run it, until their data moves to MySQL (WP-3.9).
+//! MySQL is the kit's SQL server (D-110); MariaDB stays for the kits
+//! that already run it, until their data moves to MySQL (issue #3).
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
@@ -60,7 +60,7 @@ impl DbEngine {
 
     /// The port of the version the server runs when none is set: MySQL
     /// takes MariaDB's, so the `DB_PORT` of the projects stays valid when
-    /// their data moves (§4.3).
+    /// their data moves (issue #3).
     pub const fn default_port(self) -> u16 {
         match self {
             DbEngine::MariaDb | DbEngine::MySql => 3306,

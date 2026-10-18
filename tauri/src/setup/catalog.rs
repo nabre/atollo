@@ -59,7 +59,7 @@ pub struct Component {
     needs: Vec<String>,
     /// Components it needs on one target only, after `needs`: C and C++
     /// are `zig cc` on macOS and Linux (`{"linux-x64": ["zig"]}`), Rust
-    /// links with llvm-mingw on Windows ARM64 (T2.3.1, T2.4.2).
+    /// links with llvm-mingw on Windows ARM64 (D-108).
     #[serde(default)]
     needs_by_target: BTreeMap<String, Vec<String>>,
     /// Italian; translated by the catalogs.
@@ -268,7 +268,7 @@ pub fn translate_rel(target: Target, rel: &str) -> String {
         // Git's catalog key (`git/bin/bash.exe` on Windows) is its `git` on
         // Unix: Git of the kit has no shell there. The kit's bash profiles
         // and terminal use the system's `/bin/bash` (editor/cfg.rs,
-        // editor/pty.rs), never this path as a shell (T1.3.2).
+        // editor/pty.rs), never this path as a shell (D-109).
         "git/bin/bash.exe" | "git/cmd/git.exe" => return "git/bin/git".to_owned(),
         "python/python.exe" => return "python/bin/python3".to_owned(),
         "node/node.exe" => return "node/bin/node".to_owned(),

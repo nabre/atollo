@@ -294,7 +294,7 @@ fn linux_distro_from_os_release() {
     assert_eq!(linux_distro(""), None);
 }
 
-/// T2.5.1: the Database Tools of this PC's distribution (names of
+/// D-112: the Database Tools of this PC's distribution (names of
 /// release.json 100.19.1), the oldest Ubuntu build from 20.04 on when it is
 /// unknown; only builds of the right CPU are offered by the caller.
 #[test]
@@ -412,7 +412,7 @@ fn mongodb_tools_for_linux_follow_the_distribution() {
     );
 }
 
-/// T2.5.1: the server on Linux from conda-forge (production lines only;
+/// D-112: the server on Linux from conda-forge (production lines only;
 /// conda-forge has 8.3.7, 8.0.23, 7.0.34 for linux-64 and linux-aarch64 on
 /// api.anaconda.org), not movable there; MongoDB's archives elsewhere.
 #[test]
@@ -454,7 +454,7 @@ fn mongodb_server_from_conda_on_linux() {
     );
 }
 
-/// T2.5.3: SQLite on Linux ARM64 from conda-forge (sqlite 3.54.x for
+/// D-112: SQLite on Linux ARM64 from conda-forge (sqlite 3.54.x for
 /// linux-aarch64 on api.anaconda.org), available there now; sqlite.org's
 /// zips elsewhere, and still no x64 build on Linux ARM64.
 #[test]
@@ -601,7 +601,7 @@ fn mysql_refuses_other_hashes() {
     assert!(mysql_pins_in(&serde_json::json!({})).is_empty());
 }
 
-/// T3.7.4: the test suite, debug symbols and debug builds go.
+/// D-110: the test suite, debug symbols and debug builds go.
 #[test]
 fn mysql_strips_what_the_kit_never_runs() {
     let tmp = crate::kit::tests::TempDir::new("mysql-strip");

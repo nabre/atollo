@@ -1,5 +1,5 @@
-//! The kit's data of the projects from layout 1 to layout 2 (D-89,
-//! PLAN-DATA.md WP-6), at start before anything reads it:
+//! The kit's data of the projects from layout 1 to layout 2 (D-89), at
+//! start before anything reads it:
 //!
 //! ```text
 //! data\app\projects\<p>\              → data\projects\<p>\
@@ -83,7 +83,7 @@ fn migrate(kit: &Kit) -> Result<()> {
             failed.push(format!("{name}: {e:#}"));
         }
     };
-    // T6.2 then T6.4 and T6.5: a global file is rewritten only once copied.
+    // The copies in pre-v2 first, then ports and passwords: a global file is rewritten only once copied.
     let ports_copied = copy_ports(kit);
     let secrets_copied = copy_secrets(kit);
     step("states", move_states(kit));
@@ -103,7 +103,7 @@ fn migrate(kit: &Kit) -> Result<()> {
     if !failed.is_empty() {
         bail!("{}", failed.join("; "));
     }
-    // T6.7: the layout first, then the old places emptied by the steps.
+    // The layout first, then the old places emptied by the steps.
     write_atomic(&layout_file(kit), LAYOUT.as_bytes()).context("layout.txt")?;
     remove_empty_dirs(&kit.project_states());
     remove_empty_dirs(&old_backups(kit));
@@ -123,7 +123,7 @@ fn read_map(path: &Path) -> Result<Option<Map<String, Value>>> {
     try_read_json(path)
 }
 
-/// T6.2: `data\app\pre-v2\ports.json`, once (a later try keeps the first).
+/// The copy `data\app\pre-v2\ports.json`, once (a later try keeps the first).
 fn copy_ports(kit: &Kit) -> Result<()> {
     let (from, to) = (old_ports(kit), copies_dir(kit).join("ports.json"));
     if !from.is_file() || to.exists() {
@@ -134,7 +134,7 @@ fn copy_ports(kit: &Kit) -> Result<()> {
     Ok(())
 }
 
-/// T6.2: `data\app\pre-v2\secrets.json`, private like the original, only
+/// The copy `data\app\pre-v2\secrets.json`, private like the original, only
 /// when it still has the projects' passwords (or cannot be read).
 fn copy_secrets(kit: &Kit) -> Result<()> {
     let (from, to) = (
@@ -152,7 +152,7 @@ fn copy_secrets(kit: &Kit) -> Result<()> {
     auth::write_private_text(&to, &text)
 }
 
-/// T6.3: each `data\app\projects\<p>\` to `data\projects\<p>\`.
+/// Each `data\app\projects\<p>\` to `data\projects\<p>\`.
 fn move_states(kit: &Kit) -> Result<()> {
     let old = kit.project_states();
     if is_link(&old) {
@@ -175,7 +175,7 @@ fn move_states(kit: &Kit) -> Result<()> {
     Ok(())
 }
 
-/// T6.4: `{ "ports": {"<p>|<action>": port}, "locked": ["<p>|<action>"] }`
+/// The ports, `{ "ports": {"<p>|<action>": port}, "locked": ["<p>|<action>"] }`
 /// into each project's `ports.json`, keeping what it already has. The old
 /// file keeps only what could not move (other keys included).
 fn split_ports(kit: &Kit) -> Result<()> {
@@ -306,7 +306,7 @@ fn merge_ports(file: &Path, ports: &Map<String, Value>, locked: &[Value]) -> Res
     Ok(())
 }
 
-/// T6.5: `projects` of `secrets.json` into each project's `private\db.json`,
+/// The passwords, `projects` of `secrets.json` into each project's `private\db.json`,
 /// a password already there kept; `secrets.json` rewritten only after every
 /// project's file was written, with only what could not move.
 fn split_passwords(kit: &Kit) -> Result<()> {
@@ -384,7 +384,7 @@ fn merge_passwords(
     Ok(conflicts)
 }
 
-/// T6.6: `data\db\backup\<p>\` into `private\backups\`, made private
+/// The copies of the databases, `data\db\backup\<p>\` into `private\backups\`, made private
 /// before the first copy arrives; each copy owner-only once there.
 fn move_backups(kit: &Kit) -> Result<()> {
     let old = old_backups(kit);

@@ -157,7 +157,7 @@ impl Services {
     }
 
     /// The version of `engine` for the project's database (None: the one
-    /// the server runs), in its `db.json` (PLAN.md §13.2). A project that
+    /// the server runs), in its `db.json` (D-102). A project that
     /// has a database already gets it, with the same name and password,
     /// on the version chosen (started for it); its data stays on the
     /// version it was on (a copy and a restore move it).
@@ -246,8 +246,8 @@ impl Services {
         Ok(auth::project_db(engine, &name, &password, port))
     }
 
-    /// Drops the project's database and user from `engine` (PLAN-DATA.md
-    /// WP-5), as the administrator: the server is started first when it is
+    /// Drops the project's database and user from `engine` (D-89),
+    /// as the administrator: the server is started first when it is
     /// stopped, and stopped again after. Database and user may be missing.
     /// Their name is the project's ([`auth::project_db_name`]); refused when
     /// another project of the kit uses it too.

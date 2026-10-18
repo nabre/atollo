@@ -114,7 +114,7 @@ pub(super) fn name_sites(sites: &mut [AttachedSite], port: u16) {
 }
 
 /// The Apache/Nginx sites of a project that go in a pool, each project
-/// once per site (PLAN-DATA §9, defect 7): every one written in
+/// once per site (D-101, defect 7): every one written in
 /// `panel.json`; the detected ones (`.htaccess`, `nginx.conf`) only when
 /// there is none of those, and then only the first, so that a project with
 /// a `site` action, or with both files, is not in two pools at once.

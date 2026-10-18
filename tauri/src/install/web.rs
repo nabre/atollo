@@ -309,7 +309,7 @@ fn php_release_of(ctx: &Ctx, version: String, mut parts: Vec<Part>) -> Result<Re
     })
 }
 
-/// PHP for macOS and Linux (D-112, WP-3.2): the builds of static-php-cli,
+/// PHP for macOS and Linux (D-112): the builds of static-php-cli,
 /// one static binary per archive, `php` (CLI) and `php-fpm` (the FastCGI
 /// server of Caddy, `projects/fastcgi.rs`), with their extensions built in.
 /// Its "bulk" set: the only one with `intl`, `mysqli` (phpMyAdmin,

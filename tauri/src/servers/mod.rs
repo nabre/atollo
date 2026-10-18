@@ -33,7 +33,7 @@ const LIST_TTL: Duration = Duration::from_secs(15);
 pub enum WebServerEngine {
     Apache,
     Nginx,
-    /// The kit's web server on every system (Q-3, D-111, WP-3.3).
+    /// The kit's web server on every system (D-111).
     Caddy,
 }
 
@@ -92,7 +92,7 @@ pub struct AttachedSite {
     /// The project chose this server: a site written in `panel.json` (or
     /// assigned to the pool), not one only detected (`.htaccess`, a PHP
     /// project offered Apache). One that is not goes in the pool only while
-    /// a project runs it (PLAN-DATA §9 1.1, TW1.3).
+    /// a project runs it (D-101).
     #[serde(default)]
     pub chosen: bool,
     /// Its project was stopped in this session ([`WebServers::detach`]):
@@ -189,7 +189,7 @@ pub struct WebServers {
     cache: Mutex<ListCache>,
     /// The sites (`project`, `action`) whose project was stopped: their
     /// VirtualHost is left out of the pool until the project starts again
-    /// (PLAN.md §13.1). A leaf lock, like `cache`.
+    /// (D-101). A leaf lock, like `cache`.
     detached: Mutex<BTreeSet<(String, String)>>,
     /// The sites (`project`, `action`) started by their project in this
     /// session ([`Self::attach`]): with the sites the projects chose, the
@@ -198,7 +198,7 @@ pub struct WebServers {
 }
 
 /// A site is in its pool when its project chose that server, or while its
-/// project runs it (PLAN-DATA §9 1.1, TW1.3): never every PHP project that
+/// project runs it (D-101): never every PHP project that
 /// was only offered Apache.
 fn serves(site: &AttachedSite, started: &BTreeSet<(String, String)>) -> bool {
     site.chosen || started.contains(&(site.project.clone(), site.action.clone()))

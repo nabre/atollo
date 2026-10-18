@@ -36,7 +36,7 @@ fn ruby_highest_version_and_build() {
     assert!(ruby_lines(&old, "x64").is_empty());
 }
 
-/// WP-2.2: conda-forge on macOS and Linux (micromamba, not movable),
+/// D-112: conda-forge on macOS and Linux (micromamba, not movable),
 /// RubyInstaller on Windows (unchanged).
 #[test]
 fn ruby_from_conda_off_windows() {
@@ -87,7 +87,7 @@ fn ruby_conda_lines_and_pick() {
     );
 }
 
-/// T2.2.4: conda-forge's `etc/gemrc` (ruby 4.0.7, linux-64) sends gems
+/// D-112: conda-forge's `etc/gemrc` (ruby 4.0.7, linux-64) sends gems
 /// into the environment over `GEM_HOME`: its `gemhome:` goes, the rest
 /// stays.
 #[test]
@@ -101,7 +101,7 @@ fn conda_gemrc_leaves_gem_home_to_the_kit() {
     assert_eq!(gemrc_without_gemhome(""), None);
 }
 
-/// T2.2.4: the build tools of conda's `rbconfig.rb` (lines of ruby 4.0.7
+/// D-112: the build tools of conda's `rbconfig.rb` (lines of ruby 4.0.7
 /// for linux-64; the macOS triplet of osx-arm64) under their plain names,
 /// so a native gem builds with the kit's or the system's `cc`.
 #[test]

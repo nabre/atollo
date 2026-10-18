@@ -1,4 +1,4 @@
-//! Caddy, the kit's web server on every system (Q-3, D-111, WP-3.3): a
+//! Caddy, the kit's web server on every system (D-111): a
 //! project's own Caddy, with a `Caddyfile` written at every start in
 //! `data\projects\<project>\caddy\` (never in the project), and the text of
 //! the shared pools' `Caddyfile` (`servers/config.rs`).
@@ -35,7 +35,7 @@ use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
 use crate::projects::fastcgi::{FastCgi, FCGI_KEY_PARAM};
 
 /// The server program of the Caddy in `dir` on `os`: `caddy.exe` on
-/// Windows, `caddy` elsewhere, at the root of its folder (WP-3.1).
+/// Windows, `caddy` elsewhere, at the root of its folder (D-111).
 pub fn caddy_exe_for(os: Os, dir: &Path) -> PathBuf {
     dir.join(if os.is_windows() {
         "caddy.exe"

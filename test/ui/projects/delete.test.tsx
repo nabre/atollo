@@ -1,4 +1,4 @@
-// The confirmation of a project's deletion (PLAN-DATA.md WP-5): it lists
+// The confirmation of a project's deletion (D-89): it lists
 // the plan (folder, databases, copies), "Elimina" drops the databases with
 // the folder, and only after an error "Elimina senza i database" appears.
 import { afterEach, describe, expect, it, vi } from "vitest";

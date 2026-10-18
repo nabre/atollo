@@ -1,5 +1,5 @@
 //! No `Path::join`/`push` with a separator written inside the string
-//! (WP-0.1, T0.1.3): on macOS and Linux `\` is a character of a file name,
+//! (D-105): on macOS and Linux `\` is a character of a file name,
 //! so `data.join(r"a\b")` names one file `a\b` instead of `a/b`. Paths go
 //! through `fsx::join_rel` or chained `.join()` calls.
 

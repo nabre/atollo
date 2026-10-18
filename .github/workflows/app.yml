@@ -3,11 +3,11 @@ name: App
 on:
   push:
     # feature/platforms is the integration branch of the macOS and Linux
-    # port (PLAN-PIATTAFORME.md §7).
+    # port (DECISIONS.md D-105, D-108 to D-115).
     branches: [main, feature/platforms]
     tags: ['app-v*']
   # Every base branch, feature/platforms too: the coordinator sees macOS
-  # and Linux before each merge (T0.6.7).
+  # and Linux before each merge (docs/app/TESTING.md).
   pull_request:
   workflow_dispatch:
 
@@ -69,7 +69,7 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # cargo test on macOS and Linux (WP-0.6). Tests that only hold on Windows
+  # cargo test on macOS and Linux (docs/app/TESTING.md). Tests that only hold on Windows
   # (Windows paths, cmd.exe, junctions) carry
   # #[cfg_attr(not(windows), ignore = "...")] and count as ignored here.
   # tauri 2.12.1 builds its `test` feature on macOS too (2.12.0 did not:
@@ -159,7 +159,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # cargo test natively on Windows ARM64: the build job only cross-compiles
-  # aarch64-pc-windows-msvc on x64 (T0.6.5). Left out with ARM64_RUNNERS=off.
+  # aarch64-pc-windows-msvc on x64. Left out with ARM64_RUNNERS=off.
   test-windows-arm64:
     name: Test win32-arm64
     runs-on: windows-11-arm
@@ -206,11 +206,11 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # Atollo.app for macOS (WP-5.1, WP-5.2 without Developer ID: Q-2), one
+  # Atollo.app for macOS (D-113: ad hoc, no Developer ID), one
   # native build per architecture, ad hoc signed under the hardened runtime
   # with tauri/entitlements.plist, zipped as the self-updater reads it
   # (Atollo-<target>.app.zip, setup/self_update.rs). An artifact only: the
-  # release job (WP-5.5) does not publish it yet.
+  # release job (D-113) does not publish it yet.
   bundle-macos:
     name: Bundle ${{ matrix.target }}
     runs-on: ${{ matrix.target == 'darwin-x64' && 'macos-15-intel' || 'macos-latest' }}
@@ -299,7 +299,7 @@ jobs:
           path: out/*
           if-no-files-found: error
 
-  # The AppImage and the tar.gz for Linux (WP-5.3), built on Ubuntu 22.04
+  # The AppImage and the tar.gz for Linux (D-113), built on Ubuntu 22.04
   # for its glibc 2.35 floor. Tauri's AppImage bundler runs linuxdeploy with
   # its GTK plugin, so WebKitGTK and GTK travel inside the image; the
   # tar.gz holds only the binary, for systems without FUSE that have

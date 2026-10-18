@@ -148,7 +148,7 @@ pub fn remove_empty_dirs(dir: &Path) -> bool {
 
 /// The folders of `data\projects\` whose project is gone from `projects\`
 /// (renamed or deleted outside the app) and that still hold files of the
-/// kit, sorted (PLAN-DATA.md WP-7). Never deleted automatically.
+/// kit, sorted (D-89). Never deleted automatically.
 pub fn orphans(kit: &Kit) -> Vec<String> {
     all(kit)
         .into_iter()

@@ -16,7 +16,7 @@ fn rust_plan_by_kit_and_temp() {
     assert_eq!(rust_plan(false, false, || true).unwrap(), RustPlan::Fresh);
 }
 
-/// WP-2.4: GNU by default on both Windows, `gnullvm` on ARM64 (linked by
+/// D-112: GNU by default on both Windows, `gnullvm` on ARM64 (linked by
 /// llvm-mingw's clang); MSVC only when chosen; the native triple elsewhere,
 /// whatever the setting says.
 #[test]

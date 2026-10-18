@@ -205,7 +205,7 @@ fn locale_of_macos_and_linux() {
     );
 }
 
-/// T1.8.5: the output of `defaults read -g AppleLanguages`.
+/// D-105: the output of `defaults read -g AppleLanguages`.
 #[test]
 fn apple_languages() {
     let out = "(\n    \"it-IT\",\n    \"en-US\"\n)\n";

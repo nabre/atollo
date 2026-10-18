@@ -48,7 +48,7 @@ fn unavailable_for_the_system_is_not_arm64() {
 
 /// The catalog's own reason, translated, in place of "not available for
 /// <target>" (D-108): Android on Linux ARM64 (SQLite is there since
-/// WP-2.5). The Windows rows are as before.
+/// D-112). The Windows rows are as before.
 #[test]
 fn catalog_reasons_reach_the_page() {
     let tmp = TempDir::new("cmd-comps-reason");
@@ -153,7 +153,7 @@ fn unavailable_components_keep_their_choice() {
     }
 }
 
-/// One `components.txt` for every system (review of T2.3.1): a Windows kit
+/// One `components.txt` for every system (review of D-108): a Windows kit
 /// with C and C++ on and Zig off, shown and applied on the page of another
 /// target, keeps C and C++ on and Zig off for Windows. The page shows Zig
 /// ticked where C and C++ need it; ticking C and C++ there saves C and C++

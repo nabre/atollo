@@ -405,7 +405,7 @@ fn tree_digest_sees_content_and_names() {
     assert_ne!(first, tree_sha256(&a).unwrap());
 }
 
-/// The bundle configuration (WP-5.1): Info.plist repeats tauri.conf.json,
+/// The bundle configuration (D-113): Info.plist repeats tauri.conf.json,
 /// the icons and the entitlements it names are there, and the bundles are
 /// the macOS app and the AppImage only (Windows stays one exe).
 #[test]

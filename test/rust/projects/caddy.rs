@@ -9,7 +9,7 @@ fn cgi(port: u16) -> FastCgi {
 }
 
 /// `caddy.exe` on Windows, `caddy` elsewhere, at the root of its folder:
-/// the key of the component on each of the six targets (WP-3.1).
+/// the key of the component on each of the six targets (D-111).
 #[test]
 fn caddy_program_per_target() {
     let dir = Path::new("kit/caddy/2.11");
@@ -24,7 +24,7 @@ fn caddy_program_per_target() {
     }
 }
 
-/// The project's Caddyfile (§4.4): no admin endpoint, no automatic HTTPS,
+/// The project's Caddyfile (D-111): no admin endpoint, no automatic HTTPS,
 /// nothing saved outside, its storage in its folder; the site on its names
 /// and the local ones, on 127.0.0.1 only, any other `Host` refused with 421;
 /// the FastCGI key read from Caddy's environment, never in the text.
@@ -77,7 +77,7 @@ fn project_caddyfile_with_php_and_aliases() {
 }
 
 /// Hidden files and folders (but `.well-known`) and `.inc`/`.php3`…`.php8`
-/// refused with 404 before anything else, aliases included (T3.3.7, as
+/// refused with 404 before anything else, aliases included (D-111, as
 /// Apache's `hidden_deny`); the PHP files refused with 503 without PHP.
 #[test]
 fn hidden_files_and_php_without_fastcgi() {
@@ -306,7 +306,7 @@ fn admin_socket_in_a_private_folder() {
 /// The kit's folder of sockets is per user on Unix (a shared `/tmp` may be
 /// the base): one that is there and not private (another user's, open to
 /// others, a link) makes that base unused, never a place for a leaf whose
-/// parent someone else could rename (review of WP-3.3).
+/// parent someone else could rename (review of D-111).
 #[test]
 fn socket_parent_is_the_users_own() {
     assert_eq!(socket_parent_name(Some(1000)), "atollo-caddy-1000");
@@ -394,7 +394,7 @@ fn private_leaf_refuses_what_exists() {
     }
 }
 
-/// Review of WP-3.3: a failed `caddy reload` logs why (the end of its
+/// Review of D-111: a failed `caddy reload` logs why (the end of its
 /// stderr), never nothing.
 #[test]
 fn reload_failure_keeps_the_reason() {
@@ -416,7 +416,7 @@ fn reload_failure_keeps_the_reason() {
     assert!(short.ends_with("..."));
 }
 
-/// Review of WP-3.3: the leaves a crash left in the sockets' folder go at
+/// Review of D-111: the leaves a crash left in the sockets' folder go at
 /// the next socket; those with a live server, young ones and other names
 /// stay.
 #[cfg(unix)]

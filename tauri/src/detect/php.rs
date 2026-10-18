@@ -2,7 +2,7 @@
 //! Bedrock; PrestaShop, Drupal, Joomla, TYPO3), plain PHP (built-in server
 //! `php -S`, and a site of Caddy proposed beside it).
 //!
-//! Caddy is the web server proposed on every system (Q-3, D-111): it reads
+//! Caddy is the web server proposed on every system (D-111): it reads
 //! no `.htaccess`, and gets the rules of a front controller instead
 //! (`projects/caddy.rs`), which is what the stock `.htaccess` of WordPress
 //! and Laravel say (Drupal's denies more). Apache is proposed too only on Windows (the only

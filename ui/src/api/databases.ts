@@ -88,7 +88,7 @@ function sampleRows(table: string, offset: number): DbRows {
   };
 }
 
-/** `line`: another version of the server, on its own port (PLAN.md §13.2);
+/** `line`: another version of the server, on its own port (D-102);
  * null: the version the server runs. */
 export function dbBrowseTree(engine: ServiceInfo["id"], line: string | null = null): Promise<DbDatabase[]> {
   return query<DbDatabase[]>("db_browse_tree", SAMPLE_TREE, { engine, line });
@@ -129,7 +129,7 @@ export interface ProjectDatabases {
   detected: string[];
   envExists: boolean;
   envIgnored: boolean;
-  /** By engine: the version its database is on (PLAN.md §13.2). */
+  /** By engine: the version its database is on (D-102). */
   versions: Partial<Record<ProjectDb["engine"], DbVersions>>;
 }
 

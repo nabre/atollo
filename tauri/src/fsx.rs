@@ -100,7 +100,7 @@ pub fn write_json<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()> {
 #[path = "../../test/rust/fsx.rs"]
 mod tests;
 
-/// No separator written inside a joined path, in the whole crate (WP-0.1).
+/// No separator written inside a joined path, in the whole crate (D-105).
 #[cfg(test)]
 #[path = "../../test/rust/paths.rs"]
 mod paths;

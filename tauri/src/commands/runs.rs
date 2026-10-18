@@ -36,7 +36,7 @@ pub async fn run_start<R: Runtime>(
         };
         // An Apache/Nginx site is started in a shared pool: the profile it
         // was assigned to (GAP-RUN), else the automatic pool of its lines
-        // (PLAN.md §13.1). A profile gone since: the pool `list` puts it in,
+        // (D-101). A profile gone since: the pool `list` puts it in,
         // or, not in any, its own server as before.
         let mode = site_mode(a);
         let mut fallback = None;
@@ -71,7 +71,7 @@ pub async fn run_start<R: Runtime>(
                     }
                     // The pool the user chose: its error, never another server.
                     Err(e) if mode != SiteMode::Auto => return Err(e).or_fail_chain("run"),
-                    // The automatic pool cannot start (TW1.6): the site's own
+                    // The automatic pool cannot start (D-101): the site's own
                     // server, saying why in its log.
                     Err(e) => {
                         crate::log::warn(&format!("run {project} {}: pool: {e:#}", a.id));
@@ -105,7 +105,7 @@ pub async fn run_start<R: Runtime>(
 }
 
 /// Stops an action. A site served by a pool leaves it (a reload, or the
-/// pool stops when no project is left in it: PLAN.md §13.1), off the IPC
+/// pool stops when no project is left in it: D-101), off the IPC
 /// thread.
 #[tauri::command]
 pub async fn run_stop<R: Runtime>(

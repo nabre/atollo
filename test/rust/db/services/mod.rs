@@ -347,7 +347,7 @@ fn real_databases_start_and_stop() {
             let _ = fs::remove_file(dir.join("evil-1.sql"));
         }
         // Deleting the project drops its database and user: a stopped
-        // server is started for it and stopped again (PLAN-DATA.md WP-5).
+        // server is started for it and stopped again (D-89).
         s.stop(id);
         assert!(!responds(port), "{id}: stopped");
         s.project_db_drop(&project, id, &env).unwrap();

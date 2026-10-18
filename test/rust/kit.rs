@@ -50,7 +50,7 @@ fn root_is_exe_folder_with_odd_names() {
     }
 }
 
-/// T1.1.1: the root next to `Atollo.app` or to the AppImage, otherwise
+/// D-113: the root next to `Atollo.app` or to the AppImage, otherwise
 /// the folder of the program; Windows keeps the folder of the exe.
 #[test]
 fn root_next_to_the_bundle_or_the_appimage() {
@@ -137,7 +137,7 @@ fn appimage_only_from_inside_its_mount() {
     assert_eq!(appimage_of(exe, os("").as_deref(), dir.as_deref()), None);
 }
 
-/// T1.1.2: a translocated bundle stops the start with the command to run.
+/// D-113: a translocated bundle stops the start with the command to run.
 #[test]
 fn app_translocation_is_refused_on_macos() {
     let moved = Path::new(
@@ -169,7 +169,7 @@ fn app_translocation_is_refused_on_macos() {
     assert_eq!(launch_problem(Os::Win32, moved, "it"), None);
 }
 
-/// T1.1.3: a read-only disk is named off Windows; Windows keeps its text.
+/// D-113: a read-only disk is named off Windows; Windows keeps its text.
 #[test]
 fn read_only_root_message() {
     let err = |kind| KitError::NotWritable {
@@ -371,7 +371,7 @@ fn prepare_creates_only_inside_root_and_detects_move() {
 
 /// D-92: a conda environment (R and Ruby off Windows) has its folder
 /// written inside, so a moved kit marks it to be installed again; Git
-/// (dugite-native, WP-2.1) follows the kit; on Windows every component
+/// (dugite-native, D-112) follows the kit; on Windows every component
 /// moves with the kit.
 #[test]
 fn moving_the_kit_flags_the_conda_components_off_windows() {

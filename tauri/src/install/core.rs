@@ -19,7 +19,7 @@ use crate::settings::Settings;
 use crate::setup::catalog::Component;
 
 /// Git: Git for Windows Portable (`.7z.exe`) on Windows; on macOS and Linux
-/// the relocatable build of GitHub Desktop (`desktop/dugite-native`, WP-2.1):
+/// the relocatable build of GitHub Desktop (`desktop/dugite-native`, D-112):
 /// `bin/git`, `libexec/git-core`, `share/git-core/templates` and its own
 /// `etc/gitconfig`. It finds them through the kit's environment
 /// (`GIT_EXEC_PATH`, `GIT_TEMPLATE_DIR`, `GIT_CONFIG_SYSTEM`, env.rs), so the

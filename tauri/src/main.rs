@@ -1,6 +1,6 @@
 //! Atollo: portable development environment for Windows in one exe.
 //!
-//! Start order (docs/app/PLAN.md §3): kit root → folders and settings →
+//! Start order (docs/app/ARCHITECTURE.md, Avvio): kit root → folders and settings →
 //! environment of this process inside `data\` → command line or window →
 //! one instance per kit → WebView2 → Job Object → main window.
 #![cfg_attr(not(test), windows_subsystem = "windows")]
@@ -82,7 +82,7 @@ fn run() -> i32 {
         }
     };
     // macOS App Translocation: a read-only copy where a kit would be lost
-    // (T1.1.2); `None` elsewhere.
+    // (D-113); `None` elsewhere.
     if let Some(text) = kit::launch_problem(kit::Os::current(), &exe, early_lang) {
         fatal(early_lang, &text);
         return 1;
@@ -128,7 +128,7 @@ fn run() -> i32 {
         windows_lang.as_deref(),
     );
     // A kit disk that runs no program (noexec, showexec) stops the app and
-    // every command, `prepare` included (WP-1.7); FAT32 and exFAT are only
+    // every command, `prepare` included (D-105); FAT32 and exFAT are only
     // logged. Nothing on Windows.
     if let Some(text) = disk_stop(os::volume::disk_notice(&kit, lang)) {
         fatal(lang, &text);
@@ -344,7 +344,7 @@ fn run() -> i32 {
 
 use std::io::Write as _;
 
-/// What the notice on the kit's disk means at start (WP-1.7): the text
+/// What the notice on the kit's disk means at start (D-105): the text
 /// that stops the app, logged as an error; a warning is only logged.
 fn disk_stop(notice: Option<os::volume::DiskNotice>) -> Option<String> {
     let notice = notice?;

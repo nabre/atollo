@@ -112,7 +112,7 @@ pub enum SiteMode {
     /// site whose `server` is [`DEDICATED_SERVER`].
     Dedicated,
     /// The automatic pool of the project's lines (engine, server line, PHP
-    /// line), started or reloaded (PLAN.md §13.1): no `server`, or `auto`.
+    /// line), started or reloaded (D-101): no `server`, or `auto`.
     Auto,
     /// The shared pool chosen in `panel.json` (`server`).
     Pool(String),
@@ -601,7 +601,7 @@ impl Runner {
                 .env("ROCKET_PORT", p.to_string());
         }
         // The port of the MySQL or MariaDB version its database is on
-        // (PLAN.md §13.2), unless a `.env` sets another one: dotenv loaders
+        // (D-102), unless a `.env` sets another one: dotenv loaders
         // keep a variable already there, and the user's own port would be
         // lost.
         if let Some(p) = crate::db::services::project_db_port(&self.kit, id) {

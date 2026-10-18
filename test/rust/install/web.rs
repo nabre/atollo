@@ -147,7 +147,7 @@ fn php_ini_dir_per_target() {
     );
 }
 
-/// Review of WP-3.2: one kit with PHP 8.5 for Windows and for Linux gets two
+/// Review of D-112: one kit with PHP 8.5 for Windows and for Linux gets two
 /// php.ini, in either order of install: Windows with its extension= lines,
 /// Linux with none. The single php.ini of an older kit stays Windows'.
 #[test]
@@ -406,7 +406,7 @@ fn nginx_asset_only_on_windows() {
     }
 }
 
-/// WP-3.2: static-php-cli's archives for exactly the system and the
+/// D-112: static-php-cli's archives for exactly the system and the
 /// architecture of each Unix target, none for Windows (windows.php.net).
 #[test]
 fn static_php_assets_per_target() {
@@ -432,7 +432,7 @@ fn static_php_assets_per_target() {
     }
 }
 
-/// T3.2.2-T3.2.3: the lines offered are those with both archives pinned in
+/// D-112: the lines offered are those with both archives pinned in
 /// the catalog for the target, the newest version of each; an archive of
 /// another architecture never stands in.
 #[test]
@@ -519,7 +519,7 @@ fn static_php_other_hash_refused() {
     assert!(!file.exists());
 }
 
-/// T3.2.1: `php` of the CLI archive goes to `bin/php`, `php-fpm` of the FPM
+/// D-112: `php` of the CLI archive goes to `bin/php`, `php-fpm` of the FPM
 /// one to `sbin/php-fpm`; Composer's launcher in `bin/`, on the PATH there.
 #[test]
 fn static_php_layout_and_composer() {
@@ -551,7 +551,7 @@ fn static_php_layout_and_composer() {
     assert!(!win.join("bin").exists());
 }
 
-/// T3.2.4: the Unix `php.ini`, no `extension=` line (built-in extensions),
+/// D-112: the Unix `php.ini`, no `extension=` line (built-in extensions),
 /// the CA bundle with `/`, the time zone of the Windows one; written once
 /// for a folder of static-php-cli (no template), then the user's.
 #[test]
@@ -567,7 +567,7 @@ fn php_ini_for_unix() {
     assert!(ini.contains("openssl.cafile = \"${CP_PHP}/extras/ssl/cacert.pem\"\n"));
     assert!(ini.contains("display_errors = On\n") && ini.contains("error_reporting = E_ALL\n"));
     // The known gap of the bulk build is said where the user looks
-    // (review of WP-3.2): SQLite through PDO only, no ext-pdo_sqlite.
+    // (review of D-112): SQLite through PDO only, no ext-pdo_sqlite.
     assert!(ini.contains("php -m does not list pdo_sqlite") && ini.contains("ext-pdo_sqlite"));
     assert!(ini
         .lines()

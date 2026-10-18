@@ -58,7 +58,7 @@ pub(super) fn has_any_data(kit: &Kit, engine: DbEngine) -> bool {
 /// nearest older version, if the server can take it (MariaDB from any
 /// older one; MongoDB from the same or the previous major only). The old
 /// data stays as it was, for its own version. Returns the version copied.
-/// Refused while that version is among `running` (PLAN.md §13.2: versions
+/// Refused while that version is among `running` (D-102: versions
 /// run side by side): its files are in use.
 pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Result<Option<String>> {
     let engine = DbEngine::parse(id)?;

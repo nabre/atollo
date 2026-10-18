@@ -1,6 +1,6 @@
 use super::*;
 
-/// T2.7.2: the asset names of oven-sh/bun v1.4.3 (checked with `gh api`
+/// D-112: the asset names of oven-sh/bun v1.4.3 (checked with `gh api`
 /// on 17/10/2026); the baseline build only on x64, never the musl,
 /// Android or profile builds.
 #[test]

@@ -147,7 +147,7 @@ pub(crate) const PYTHON_SHIM: &str =
     "#!/bin/sh\n# The kit's Python on macOS and Linux has only python3.\nexec python3 \"$@\"\n";
 
 /// Where the programs' temp (`TEMP`, `TMP`) or Claude's (`CLAUDE_CODE_TMPDIR`,
-/// `claude = true`) goes, PLAN-DATA 4.2.5. `data` is the kit's data folder.
+/// `claude = true`) goes, D-90. `data` is the kit's data folder.
 /// `Auto` is the host's temp when the kit is on a removable or remote disk or
 /// on a file system without permissions; with the disk unknown it is the kit.
 pub(crate) fn program_temp_dir(
@@ -448,7 +448,7 @@ impl KitEnv {
         env.set("CP_APACHE_FWD", fwd(&app("apache")));
         env.set_path("CP_NGINX", app("nginx"));
         env.set("CP_NGINX_FWD", fwd(&app("nginx")));
-        // Caddy (WP-3.1, D-111): its folder, as Nginx's.
+        // Caddy (D-111): its folder, as Nginx's.
         env.set_path("CP_CADDY", app("caddy"));
         env.set("CP_CADDY_FWD", fwd(&app("caddy")));
         let composer = data.join("composer");
@@ -521,9 +521,9 @@ impl KitEnv {
             format!("{}", data.join("r").join(&platform).join("%v").display()),
         );
 
-        // Variables keyed on installed components, per system (Phase 2 of
-        // PLAN-PIATTAFORME): each hook reads only what is on disk.
-        // C and C++ on macOS and Linux (WP-2.3): the shims over Zig in
+        // Variables keyed on installed components, per system (D-112):
+        // each hook reads only what is on disk.
+        // C and C++ on macOS and Linux (D-112): the shims over Zig in
         // `cc/bin`, for Makefiles, CMake, cc-rs, cgo and native gems, only
         // with the kit's Zig ([`unix_cc_env`]). On Windows the PATH finds
         // llvm-mingw's gcc and clang, as before.
@@ -543,20 +543,20 @@ impl KitEnv {
                 env.set(&name, linker);
             }
         }
-        // Rust on Windows ARM64 (WP-2.4): the `gnullvm` host links with
+        // Rust on Windows ARM64 (D-112): the `gnullvm` host links with
         // llvm-mingw's clang for aarch64 (the `cc` component).
         if kit.target() == Target::WIN32_ARM64 {
             if let Some(linker) = arm64_rust_linker(&app(r"cc\bin"), |p| p.is_file()) {
                 env.set_path("CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER", linker);
             }
         }
-        // Git of dugite-native on macOS and Linux (WP-2.1).
+        // Git of dugite-native on macOS and Linux (D-112).
         if !is_win {
             for (name, value) in git_unix_env(kit.os(), &app("git"), |p| p.exists()) {
                 env.set_path(name, value);
             }
         }
-        // Ruby on macOS and Linux (WP-2.2): gems in the kit, one folder per
+        // Ruby on macOS and Linux (D-112): gems in the kit, one folder per
         // system and line (native gems are built for both), for the line
         // the kit uses: the newest on disk, as `apply_kit_choice` below
         // moves the PATH to it. On Windows they stay in the folder of
@@ -579,7 +579,7 @@ impl KitEnv {
             // them: they survive a move of the kit and follow the line.
             env.set_path("GEMRC", gemrc_path(&data));
         }
-        // .NET on Linux without libicu (T2.7.4): invariant globalization,
+        // .NET on Linux without libicu (D-112): invariant globalization,
         // or every `dotnet` command stops at start. Whether .NET is on disk
         // or not: an environment built before its installation (the final
         // check of `prepare`) needs it too, and nothing else reads it.
@@ -931,7 +931,7 @@ pub(crate) struct UnixCc {
 }
 
 /// [`UnixCc`] for the `cc` component in `cc_bin` (`clang` is its key),
-/// `zig` when the kit's Zig is installed. The shims of WP-2.3 (`make` is
+/// `zig` when the kit's Zig is installed. The shims of D-112 (`make` is
 /// one of them) only with Zig: without it they would hide the system's
 /// compiler and fail. Each variable only for a program on disk. The LLVM
 /// of an older kit (no `make`, no `cc`) stays on the PATH as before, with

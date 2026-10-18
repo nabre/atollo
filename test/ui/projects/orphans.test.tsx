@@ -1,4 +1,4 @@
-// Data of the kit without a project (PLAN-DATA.md WP-7): a closed section
+// Data of the kit without a project (D-89): a closed section
 // with what each one holds, "Collega a…" and "Elimina".
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";

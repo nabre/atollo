@@ -296,7 +296,7 @@ pub fn mysql_release_for(
     ))
 }
 
-/// The parts of a MySQL build the kit never runs (T3.7.4, `mysql::STRIP_*`
+/// The parts of a MySQL build the kit never runs (D-110, `mysql::STRIP_*`
 /// of the service): removed from the new tree before the swap.
 pub fn strip_mysql(tree: &Path) -> Result<()> {
     use crate::db::services::mysql::{STRIP_DIRS, STRIP_FILES};
@@ -692,7 +692,7 @@ pub fn mongodb_server_version(release_version: &str) -> &str {
     release_version.split('+').next().unwrap_or(release_version)
 }
 
-/// The server on Linux comes from conda-forge (WP-2.5): MongoDB's own
+/// The server on Linux comes from conda-forge (D-112): MongoDB's own
 /// archives are built for one distribution each.
 fn mongodb_from_conda(target: Target) -> bool {
     target.os == Os::Linux
@@ -945,7 +945,7 @@ pub(crate) fn sqlite_fallback_arch(target: Target) -> Option<&'static str> {
 }
 
 /// sqlite.org publishes no command-line tools for Linux ARM64: there SQLite
-/// is conda-forge `sqlite` (WP-2.5).
+/// is conda-forge `sqlite` (D-112).
 fn sqlite_from_conda(target: Target) -> bool {
     target == Target::LINUX_ARM64
 }

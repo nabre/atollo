@@ -417,7 +417,7 @@ fn one_run_at_a_time() {
 }
 
 /// macOS and Linux: another process holding `data/app/prepare.lock` makes
-/// this one busy (T0.5.1); its id is not left in the set.
+/// this one busy (D-105); its id is not left in the set.
 #[cfg(unix)]
 #[test]
 fn another_process_holds_the_lock() {

@@ -565,7 +565,7 @@ fn drop_scripts() {
     assert!(!MONGO_DROP_JS.contains("ATOLLO_DB_PASSWORD"));
 }
 
-/// The version of a server for the project's database (PLAN.md §13.2):
+/// The version of a server for the project's database (D-102):
 /// in `lines` of `db.json`, beside the passwords and the names, which its
 /// readers do not take for a password.
 #[test]

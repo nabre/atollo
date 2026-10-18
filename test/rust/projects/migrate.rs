@@ -8,7 +8,7 @@ use crate::db::auth::tests::assert_owner_only;
 use crate::kit::{tests::TempDir, Arch};
 
 thread_local! {
-    /// Stops the migration right after the ports (T6.4), as a crash would.
+    /// Stops the migration right after the ports, as a crash would.
     pub(super) static INTERRUPT: Cell<bool> = const { Cell::new(false) };
 }
 

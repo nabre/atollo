@@ -18,8 +18,8 @@ pub async fn services_list<R: Runtime>(
 }
 
 /// Starts a database server, installing it first if needed; waits until it
-/// answers. `line`: another installed version, on its own port (PLAN.md
-/// §13.2); null: the version the server runs.
+/// answers. `line`: another installed version, on its own port
+/// (D-102); null: the version the server runs.
 #[tauri::command]
 pub async fn service_start<R: Runtime>(
     app: AppHandle<R>,
@@ -109,7 +109,7 @@ pub async fn service_line<R: Runtime>(
 }
 
 /// The port of another version of a database server (null: the first free
-/// one after the server's), from its next start (PLAN.md §13.2).
+/// one after the server's), from its next start (D-102).
 #[tauri::command]
 pub async fn service_line_port<R: Runtime>(
     webview: Webview<R>,

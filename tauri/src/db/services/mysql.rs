@@ -216,7 +216,7 @@ impl std::fmt::Display for SystemLibsMissing {
 
 impl std::error::Error for SystemLibsMissing {}
 
-/// The files a MySQL build carries that the kit never runs (T3.7.4): the
+/// The files a MySQL build carries that the kit never runs (D-110): the
 /// test suite, debug symbols (`.pdb`), the debug plugins and server (most of
 /// the Linux ARM64 build's 1.8 GB), relative to the build's folder.
 pub const STRIP_DIRS: [&str; 2] = ["mysql-test", "lib/plugin/debug"];

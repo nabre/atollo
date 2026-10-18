@@ -6,7 +6,7 @@
 //!
 //! The projects in `projects\` (port of nabre/atollo `core/projects.js`):
 //! list with what each one is, new empty project, delete an empty one (with
-//! its databases on the kit's servers, PLAN-DATA.md WP-5), clone from GitHub
+//! its databases on the kit's servers, D-89), clone from GitHub
 //! or a Git URL.
 
 pub mod alias;
@@ -169,7 +169,7 @@ pub fn create(kit: &Kit, name: &str, lang: &str) -> Result<PathBuf> {
 }
 
 /// The databases of the kit's servers, as a project's deletion sees them
-/// (PLAN-DATA.md WP-5): `db::services::ProjectDrops` for the real servers,
+/// (D-89): `db::services::ProjectDrops` for the real servers,
 /// a fake in the tests.
 pub trait ProjectDatabases {
     /// The server of `engine` is installed (otherwise its database is left).
@@ -192,7 +192,7 @@ pub struct PlannedDb {
     pub installed: bool,
 }
 
-/// What deleting a project takes away (PLAN-DATA.md T5.1).
+/// What deleting a project takes away (D-89).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DeletePlan {
@@ -276,7 +276,7 @@ fn databases_of(kit: &Kit, name: &str) -> Result<Vec<(String, String)>> {
         .collect()
 }
 
-/// Deletes a project (PLAN-DATA.md WP-5): its databases and users on the
+/// Deletes a project (D-89): its databases and users on the
 /// kit's servers first, then its folder, which must be empty (never a link,
 /// never files: `remove_dir` fails by itself if something appeared
 /// meanwhile), then everything the kit keeps for it in `data\projects`.
@@ -297,7 +297,7 @@ pub fn delete(
     check_name(name, lang)?;
     let dir = kit.projects().join(name);
     // No folder at all: the data of the kit left by a project that is gone
-    // (an orphan, WP-7) is deleted with its databases.
+    // (an orphan) is deleted with its databases.
     let no_folder = matches!(
         fs::symlink_metadata(&dir),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound

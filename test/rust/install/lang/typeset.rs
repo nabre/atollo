@@ -16,7 +16,7 @@ fn release(tag: &str, names: &[&str]) -> GhRelease {
     }
 }
 
-/// T2.7.1: the asset names of rstudio/tinytex-releases v2026.10 (checked
+/// D-112: the asset names of rstudio/tinytex-releases v2026.10 (checked
 /// with `gh api` on 17/10/2026), the layout since v2026.04: TinyTeX-1 of
 /// each system, never TinyTeX-0/-2, the bundle without a version or the
 /// musl build.
@@ -130,7 +130,7 @@ fn tinytex_old_asset_names_as_fallback() {
     );
 }
 
-/// T2.7.1: tlmgr inside the TinyTeX folder, in the binary folder of each
+/// D-112: tlmgr inside the TinyTeX folder, in the binary folder of each
 /// system (before, on macOS and Linux, `bin/windows/tlmgr`).
 #[test]
 fn tlmgr_in_the_binary_folder_of_each_system() {

@@ -131,7 +131,7 @@ fn dependencies_follow_both_ways() {
     assert!(!catalog.is_locked("node"));
 }
 
-/// What a component needs on each target (T2.3.1, T2.4.2): C and C++ are
+/// What a component needs on each target (D-108): C and C++ are
 /// `zig cc` on macOS and Linux, Rust links with llvm-mingw on Windows
 /// ARM64. Elsewhere nothing changes.
 #[test]
@@ -207,7 +207,7 @@ fn needs_follow_the_target() {
 }
 
 /// `components.txt` is one for every system the kit runs on (review of
-/// T2.3.1): a need of one target never turns a component on or off in
+/// D-108): a need of one target never turns a component on or off in
 /// it. A Windows kit with C and C++ on and Zig off, read for Linux or
 /// macOS, keeps C and C++ on; ticking C and C++ does not save Zig.
 #[test]
@@ -421,7 +421,7 @@ fn shared_paths_go_with_the_last_owner() {
 
 /// Option C (BUG-23b, BUG-24a): Apache and Nginx are Windows only (Windows
 /// builds, httpd.conf of Windows). PHP (static-php-cli on macOS and Linux,
-/// WP-3.2), phpMyAdmin on it and Caddy (WP-3.1) are on every target. Git
+/// D-112), phpMyAdmin on it and Caddy (D-111) are on every target. Git
 /// stays everywhere: Claude Code needs it.
 #[test]
 fn web_stack_is_windows_only() {
@@ -457,7 +457,7 @@ fn web_stack_is_windows_only() {
 }
 
 /// Asking for Apache on Linux names the system, not ARM64 (phpMyAdmin
-/// before WP-3.2 made it available there).
+/// before D-112 made it available there).
 #[test]
 fn phpmyadmin_on_linux_names_the_system() {
     use crate::kit::Target;
@@ -552,7 +552,7 @@ fn multi_platform_availability_and_paths_across_targets() {
 }
 
 /// D-108: a target with no build says why (Android on Linux ARM64; SQLite
-/// was there too until WP-2.5), and nothing changes for the others.
+/// was there too until D-112), and nothing changes for the others.
 #[test]
 fn unavailable_targets_have_a_reason() {
     use crate::kit::Target;
@@ -659,7 +659,7 @@ fn remove_unix_on_macos_and_linux() {
         let c = catalog.find(id).unwrap();
         assert!(c.remove_unix.iter().any(|r| r == part), "{id}: {part}");
     }
-    // Git is dugite-native off Windows (WP-2.1): micromamba is not its own.
+    // Git is dugite-native off Windows (D-112): micromamba is not its own.
     let git_unix = &catalog.find("git").unwrap().remove_unix;
     assert!(!git_unix.iter().any(|r| r == "tools/micromamba"));
 

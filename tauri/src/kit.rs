@@ -1,7 +1,7 @@
 //! The kit on disk: its root (the folder that holds `Atollo.exe`), the
 //! processor platform and every path the app uses.
 //!
-//! Layout (docs/app/PLAN.md §2): `Atollo.exe`, `projects\` and `data\` side by
+//! Layout (DECISIONS.md D-00): `Atollo.exe`, `projects\` and `data\` side by
 //! side; everything the kit downloads or writes lives in `data\`. Nothing is
 //! ever created outside the root. On macOS the root holds `Atollo.app`, on
 //! Linux the AppImage (`root_from`). The platform rule and the "kit was moved"
@@ -368,7 +368,7 @@ pub enum KitError {
 pub struct Kit {
     root: PathBuf,
     target: Target,
-    /// `<host TEMP>\Atollo\<id>`, for files in transit (PLAN-DATA.md §4.2).
+    /// `<host TEMP>\Atollo\<id>`, for files in transit (D-90).
     system_temp: Option<PathBuf>,
     /// The disk of the root, read once at start.
     volume: Option<VolumeInfo>,
@@ -498,7 +498,7 @@ impl Kit {
     pub fn settings_file(&self) -> PathBuf {
         self.app_dir().join("settings.json")
     }
-    /// Before D-89: `data\app\projects`. Read only by the migration (WP-6).
+    /// Before D-89: `data\app\projects`. Read only by the migration (D-89).
     pub fn project_states(&self) -> PathBuf {
         self.app_dir().join("projects")
     }
@@ -594,8 +594,8 @@ pub(crate) fn same_root(os: Os, recorded: &str, now: &str) -> bool {
     }
 }
 
-/// The kit root for the program at `exe` on `os` (PLAN-PIATTAFORME.md
-/// §4.6): on Linux the folder of the AppImage when the app runs from one
+/// The kit root for the program at `exe` on `os` (D-113):
+/// on Linux the folder of the AppImage when the app runs from one
 /// (`image`, its `$APPIMAGE`; the program itself is in a temporary mount),
 /// on macOS the folder that holds `Atollo.app` when `exe` is its
 /// `Contents/MacOS/` program (nothing is ever written inside the bundle),
@@ -677,10 +677,10 @@ pub fn translocated_bundle(exe: &Path) -> Option<String> {
     })
 }
 
-/// What stops the app at start before the kit is touched (T1.1.2): on
+/// What stops the app at start before the kit is touched (D-113): on
 /// macOS a translocated bundle, whose folder is a temporary read-only copy
 /// where a kit would be created and lost. The text says how to fix it
-/// (Q-2: no Developer ID signature, so the quarantine flag is cleared).
+/// (D-113: no Developer ID signature, so the quarantine flag is cleared).
 pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
     if !os.is_macos() {
         return None;
@@ -694,7 +694,7 @@ pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
     ))
 }
 
-/// The message for a kit whose folders cannot be created (T1.1.3). On
+/// The message for a kit whose folders cannot be created (D-113). On
 /// macOS and Linux a read-only disk (a locked card, a read-only mount, an
 /// image) is named as such; Windows keeps its message.
 pub fn prepare_error_message(os: Os, error: &KitError, lang: &str) -> String {

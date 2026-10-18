@@ -1,5 +1,5 @@
 //! No program of the kit outlives the app on macOS and Linux, even when the
-//! app is killed (T1.5.2, the Unix side of `KILL_ON_JOB_CLOSE`, D-07).
+//! app is killed (D-105, the Unix side of `KILL_ON_JOB_CLOSE`, D-07).
 //!
 //! At start the app forks a guard: a copy of itself that does nothing but
 //! read a pipe. The app writes there the process group of every program it

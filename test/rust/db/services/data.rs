@@ -99,7 +99,7 @@ fn each_version_has_its_data() {
     );
 }
 
-/// The data of a running version is never copied (PLAN.md §13.2).
+/// The data of a running version is never copied (D-102).
 #[test]
 fn no_copy_of_a_running_version() {
     let tmp = TempDir::new("services-seed-running");
@@ -118,7 +118,7 @@ fn no_copy_of_a_running_version() {
     );
 }
 
-/// Two versions of MariaDB side by side (PLAN.md §13.2): the one the
+/// Two versions of MariaDB side by side (D-102): the one the
 /// server runs on its port, the other on the next free one, stored at
 /// its first start; each with its data, program and log; the project's
 /// database on the version chosen for it, at that version's port.
@@ -285,7 +285,7 @@ fn autostart_lines_follow_the_projects() {
     assert!(auth::write_line_client_ini(&kit, "..", 3307, "pw").is_err());
 }
 
-/// T3.8.8: every catalog need for a SQL server (phpMyAdmin's `needs`, a
+/// issue #3: every catalog need for a SQL server (phpMyAdmin's `needs`, a
 /// framework's `database`, an addition's) resolves through `sql_need` to
 /// MySQL on a new kit, to MariaDB on a kit that runs only MariaDB; other
 /// needs stay as they are. The callers outside `db` (setup runner, plan,

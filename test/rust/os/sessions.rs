@@ -98,7 +98,7 @@ fn tree_of_the_stopped_processes() {
     assert_eq!(tree_of(&[1], &all, 1), Vec::<u32>::new());
 }
 
-/// T1.5.3: `SIGTERM` to all, `SIGKILL` only to those still running after
+/// D-105: `SIGTERM` to all, `SIGKILL` only to those still running after
 /// the wait; nothing waits when all have ended.
 #[test]
 fn gentle_stop_waits_then_kills() {

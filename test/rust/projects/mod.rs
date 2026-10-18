@@ -247,7 +247,7 @@ fn delete_refused_when_another_project_has_the_same_database() {
     );
 }
 
-/// Data given to a project renamed outside the app (WP-7) drops the
+/// Data given to a project renamed outside the app (D-89) drops the
 /// databases it was created with, named after the old name; names of
 /// before kept by the rule of their time (`config` on MariaDB), and one
 /// of the server's own never dropped.
@@ -453,7 +453,7 @@ fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
 }
 
 /// A4 handoff: what a project can add follows the catalog's targets, not
-/// only ARM64 (no Apache/Nginx off Windows, PHP everywhere since WP-3.2, R
+/// only ARM64 (no Apache/Nginx off Windows, PHP everywhere since D-112, R
 /// everywhere but Windows ARM64).
 #[test]
 fn addable_follows_the_platform() {

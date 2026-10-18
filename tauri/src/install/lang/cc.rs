@@ -93,7 +93,7 @@ impl Installer for Cmake {
 
 /// C and C++: llvm-mingw (UCRT) on Windows; on macOS and Linux shims over
 /// the kit's Zig (`zig cc`, `zig c++`, `zig ar`, `zig ranlib`) with GNU make
-/// from conda-forge (WP-2.3). Zig brings the headers and libraries of the C
+/// from conda-forge (D-112). Zig brings the headers and libraries of the C
 /// library for every target, so neither `build-essential` nor Xcode Command
 /// Line Tools are needed; only the Apple frameworks need those on macOS.
 /// On Windows the cross `*-w64-mingw32-gcc/g++` are removed: on the PATH they
@@ -238,7 +238,7 @@ pub(crate) fn write_zig_shims(bin: &Path) -> Result<()> {
 
 /// What to say about Xcode Command Line Tools on `target`, given the
 /// folder `xcode-select -p` printed (`None`: not installed). Only macOS
-/// needs them, and only for the Apple frameworks (T2.3.4).
+/// needs them, and only for the Apple frameworks (D-112).
 pub(crate) fn xcode_note(target: Target, selected: Option<&str>) -> Option<&'static str> {
     if target.os != Os::Darwin || selected.is_some_and(|s| !s.trim().is_empty()) {
         return None;

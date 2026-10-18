@@ -1,5 +1,5 @@
-// The "Temporanei dei programmi" setting (PLAN-DATA.md T11.4) and the disk
-// facts of the Il kit group (T8.5).
+// The "Temporanei dei programmi" setting (D-90) and the disk
+// facts of the Il kit group (D-90).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AppInfo, Settings } from "../../../ui/src/api";
@@ -61,7 +61,7 @@ describe("KitInfo disk facts", () => {
     expect(screen.getByText(info.systemTemp ?? "")).toBeTruthy();
   });
 
-  it("adds noexec and the app's note on the kit's disk (WP-1.7)", () => {
+  it("adds noexec and the app's note on the kit's disk (D-105)", () => {
     const note = "Il disco del kit è exFAT: niente link simbolici.";
     render(<KitInfo info={{ ...info, diskFs: "POSIX", diskKind: "fixed", diskNoexec: true, diskNote: note }} />);
     expect(screen.getByText("POSIX, fisso, noexec")).toBeTruthy();

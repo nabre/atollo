@@ -11,7 +11,7 @@
 //!   `data\kit\phpmyadmin.php` (`runtime/phpmyadmin.php`), started at the
 //!   first "phpMyAdmin" and ended with the MariaDB version it logs in to or
 //!   the app (the app's job);
-//! - one at a time, on the version chosen (PLAN.md §13.2: each on its own
+//! - one at a time, on the version chosen (D-102: each on its own
 //!   port): opening it on another version starts it again there;
 //! - a new token at every start: the address the app opens carries it,
 //!   any request without it (or its cookie) gets 403, so the other users

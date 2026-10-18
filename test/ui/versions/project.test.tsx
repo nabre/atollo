@@ -1,4 +1,4 @@
-// The versions of a project's page (PLAN-DATA.md §9, S 4): the languages
+// The versions of a project's page (D-106): the languages
 // of the project in the first zone, the other installed ones in the second,
 // closed; a language the project needs and the kit lacks (p.missing) stays
 // in the first zone with what to do, without a line to choose. The text

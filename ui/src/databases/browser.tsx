@@ -161,7 +161,7 @@ function TableView({
   );
 }
 
-/** `line`: another version of the server, on its own port (PLAN.md §13.2);
+/** `line`: another version of the server, on its own port (D-102);
  * null: the version the server runs. */
 export function DbBrowser({ engine, line = null }: { engine: Engine; line?: string | null }) {
   const [tree, setTree] = useState<DbDatabase[] | null>(null);

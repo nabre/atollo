@@ -55,7 +55,7 @@ pub struct ProjectDatabases {
     pub versions: std::collections::BTreeMap<String, DbVersions>,
 }
 
-/// The versions of a server for a project (PLAN.md §13.2).
+/// The versions of a server for a project (D-102).
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DbVersions {
@@ -105,7 +105,7 @@ pub fn project_databases<R: Runtime>(
 }
 
 /// The version of a server for the project's database (null: the one the
-/// server runs), each on its own port (PLAN.md §13.2). A database already
+/// server runs), each on its own port (D-102). A database already
 /// created is created on that version too: the server is installed and
 /// started for it.
 #[tauri::command]
@@ -284,8 +284,8 @@ pub async fn project_db_restore<R: Runtime>(
 }
 
 /// The databases of a running server with their tables or collections
-/// (D-79), read only. `line`: another version, on its own port (PLAN.md
-/// §13.2); null: the version the server runs.
+/// (D-79), read only. `line`: another version, on its own port
+/// (D-102); null: the version the server runs.
 #[tauri::command]
 pub async fn db_browse_tree<R: Runtime>(
     webview: Webview<R>,
@@ -337,7 +337,7 @@ pub async fn db_browse_rows<R: Runtime>(
 /// phpMyAdmin (with PHP and the server) installed the first time, the
 /// server started when it is off. `engine`: `mysql` or `mariadb` (null: the
 /// kit's SQL server, `db::services::sql_engine`). `line`: another installed
-/// version, on its own port (PLAN.md §13.2); null: the version the server
+/// version, on its own port (D-102); null: the version the server
 /// runs.
 #[tauri::command]
 pub async fn db_admin_open<R: Runtime>(
