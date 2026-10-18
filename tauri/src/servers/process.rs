@@ -695,12 +695,24 @@ impl WebServers {
                         let caddy_dir =
                             component_dir(&self.kit, "caddy", pool.server_line.as_deref());
                         let exe = caddy::caddy_exe(&self.kit, &caddy_dir);
-                        caddy::caddy_command(&exe, &pool_dir, base_env)
+                        let out = caddy::caddy_command(&exe, &pool_dir, base_env)
                             .args(caddy::reload_args(&conf_path, &admin))
                             .stdin(Stdio::null())
                             .stdout(Stdio::null())
-                            .stderr(Stdio::null())
-                            .status()
+                            .stderr(Stdio::piped())
+                            .output();
+                        match &out {
+                            Ok(o) if !o.status.success() => crate::log::warn(&format!(
+                                "server pool {id}: caddy reload failed ({}): {}; the pool is restarted",
+                                o.status,
+                                caddy::reload_failure(&o.stderr)
+                            )),
+                            Err(e) => crate::log::warn(&format!(
+                                "server pool {id}: caddy reload: {e}; the pool is restarted"
+                            )),
+                            _ => {}
+                        }
+                        out.map(|o| o.status)
                     }
                     None => Err(std::io::Error::other("no admin endpoint")),
                 },

@@ -304,7 +304,70 @@ pub fn socket_parent(base: &Path) -> Option<PathBuf> {
     {
         let _ = fs::DirBuilder::new().create(&parent);
     }
-    is_private_dir(&parent).then_some(parent)
+    let private = is_private_dir(&parent);
+    #[cfg(unix)]
+    if private {
+        sweep_stale_leaves(&parent, STALE_LEAF_AGE);
+    }
+    private.then_some(parent)
+}
+
+/// How old a leaf of the sockets' folder must be before [`sweep_stale_leaves`]
+/// looks at it: a new one gets its socket within seconds of being made.
+#[cfg(unix)]
+pub const STALE_LEAF_AGE: std::time::Duration = std::time::Duration::from_secs(600);
+
+/// Removes the `c-*` leaves of the sockets' folder `parent` that a crash
+/// left behind ([`PrivateSocket`] removes its own when the instance ends):
+/// older than `min_age`, and with no socket in them that a server still
+/// listens on (a connect is refused or finds nothing). The leaves of a
+/// running Caddy or php-fpm, of this app or of another kit of the same
+/// user, answer and stay. Unix only: on Windows the folder is the kit's own
+/// in the user's temporary folder.
+#[cfg(unix)]
+pub fn sweep_stale_leaves(parent: &Path, min_age: std::time::Duration) {
+    use std::os::unix::net::UnixStream;
+    let Ok(entries) = fs::read_dir(parent) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        if !name.to_str().is_some_and(|n| n.starts_with("c-")) {
+            continue;
+        }
+        let leaf = entry.path();
+        if !is_private_dir(&leaf) {
+            continue;
+        }
+        let old = fs::symlink_metadata(&leaf)
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.elapsed().ok())
+            .is_some_and(|age| age >= min_age);
+        if !old {
+            continue;
+        }
+        let alive = fs::read_dir(&leaf)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .any(|f| {
+                let is_socket = {
+                    use std::os::unix::fs::FileTypeExt;
+                    f.file_type().is_ok_and(|t| t.is_socket())
+                };
+                is_socket && UnixStream::connect(f.path()).is_ok()
+            });
+        if !alive {
+            match fs::remove_dir_all(&leaf) {
+                Ok(()) => crate::log::info(&format!(
+                    "caddy: {}: left by an instance that ended, removed",
+                    leaf.display()
+                )),
+                Err(e) => crate::log::warn(&format!("caddy: {}: {e}", leaf.display())),
+            }
+        }
+    }
 }
 
 /// A new [`PrivateSocket`] named `file` for the instance `id` (`what` says
@@ -672,6 +735,29 @@ pub fn reload_args(conf: &Path, admin: &Path) -> Vec<OsString> {
     args.push("--address".into());
     args.push(admin_address(admin).into());
     args
+}
+
+/// The reason of a failed `caddy reload` from its `stderr`, for the log:
+/// the last non-empty lines (Caddy ends with the error, an adapt error
+/// names the Caddyfile's line), at most 2000 characters.
+pub fn reload_failure(stderr: &[u8]) -> String {
+    let text = String::from_utf8_lossy(stderr);
+    let lines: Vec<&str> = text
+        .lines()
+        .map(str::trim_end)
+        .filter(|l| !l.trim().is_empty())
+        .collect();
+    let tail = lines[lines.len().saturating_sub(5)..].join(" | ");
+    if tail.is_empty() {
+        return "no output".to_owned();
+    }
+    let mut chars = tail.chars();
+    let short: String = chars.by_ref().take(2000).collect();
+    if chars.next().is_some() {
+        format!("{short}...")
+    } else {
+        short
+    }
 }
 
 /// The key of `fcgi` in the environment of the Caddy that runs (never in
