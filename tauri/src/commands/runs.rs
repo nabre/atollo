@@ -84,7 +84,12 @@ pub async fn run_start<R: Runtime>(
                 }
             }
         }
-        let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
+        // `mysql`/`mariadb` from a command name: the kit's SQL server.
+        let wanted: Vec<String> = crate::setup::needs::of_action(a)
+            .into_iter()
+            .map(|n| crate::db::services::sql_need(&kit, n))
+            .collect();
+        let wanted: Vec<&str> = wanted.iter().map(String::as_str).collect();
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
         let info = runner

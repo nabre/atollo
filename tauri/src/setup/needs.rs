@@ -44,9 +44,10 @@ fn component_of_name(name: &str) -> Option<&'static str> {
         "pnpm" | "pnpx" | "yarn" | "yarnpkg" | "corepack" => "pnpm",
         "uv" | "uvx" => "uv",
         "python" | "python3" | "py" | "pythonw" | "pip" | "pip3" => "python",
-        "php" | "php-cgi" | "composer" => "php",
+        "php" | "php-cgi" | "php-fpm" | "composer" => "php",
         "httpd" => "apache",
         "nginx" => "nginx",
+        "caddy" => "caddy",
         "cargo" | "rustc" | "rustup" | "trunk" => "rust",
         "go" | "gofmt" => "go",
         "java" | "javac" | "jar" | "mvn" | "gradle" => "java",
@@ -65,7 +66,10 @@ fn component_of_name(name: &str) -> Option<&'static str> {
         | "windres" => "cc",
         "ruby" | "gem" | "bundle" | "bundler" | "rails" | "rake" => "ruby",
         "r" | "rscript" => "r",
-        "mariadb" | "mariadbd" | "mysql" | "mysqld" | "mariadb-dump" | "mysqldump" => "mariadb",
+        // The kit's SQL server for either name: the caller resolves it
+        // (db::services::sql_need), so a kit that runs only MariaDB keeps it.
+        "mariadb" | "mariadbd" | "mariadb-dump" => "mariadb",
+        "mysql" | "mysqld" | "mysqldump" | "mysqladmin" => "mysql",
         "mongod" | "mongosh" => "mongodb",
         "sqlite3" => "sqlite",
         "git" => "git",
@@ -104,6 +108,9 @@ pub fn of_action(action: &Action) -> BTreeSet<&'static str> {
     }
     if action.nginx_dir.is_some() {
         return BTreeSet::from(["nginx", "php"]);
+    }
+    if action.caddy_dir.is_some() {
+        return BTreeSet::from(["caddy", "php"]);
     }
     of_command(&action.command)
 }

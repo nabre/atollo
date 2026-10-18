@@ -461,6 +461,37 @@ fn kit_login_in_and_out_of_the_store() {
     assert!(has_login(&kit));
 }
 
+/// A second start of agy within 20 s of the first, before the first shows
+/// as running: the kit's login already in the store is not taken for this
+/// computer's own, so it does not stay in the store after the run.
+#[test]
+fn second_start_right_after_the_first() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item(T, "kit-1")]).unwrap();
+    let store = Fake::default();
+
+    restore_with(&kit, &store).unwrap();
+    restore_with(&kit, &store).unwrap();
+    assert_eq!(store.secret_of(T).as_deref(), Some("kit-1"));
+    assert!(
+        read(&f.seen).iter().all(|i| i.kit == Some(true)),
+        "nothing of this computer's: {:?}",
+        read(&f.seen)
+    );
+
+    let old = std::time::SystemTime::now() - Duration::from_secs(60);
+    fs::File::options()
+        .write(true)
+        .open(&f.starting)
+        .unwrap()
+        .set_modified(old)
+        .unwrap();
+    end_run(&kit, &store);
+    assert_eq!(store.secret_of(T), None, "the kit's login left the store");
+    assert_eq!(read(&f.store)[0].blob.as_deref(), Some("kit-1"));
+}
+
 #[test]
 fn computer_login_left_as_it_was() {
     let (_tmp, kit) = kit();

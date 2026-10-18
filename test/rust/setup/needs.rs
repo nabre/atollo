@@ -23,6 +23,22 @@ fn commands() {
     for id in ids("npm i & go build & dotnet run & ruby x.rb & Rscript a.R") {
         assert!(Catalog::get().find(id).is_some(), "{id}");
     }
+    // Each SQL program names its own server; the caller resolves it to
+    // the kit's (db::services::sql_need).
+    assert_eq!(ids("mysql -e 'select 1'"), ["mysql"]);
+    assert_eq!(ids("mariadb-dump app"), ["mariadb"]);
+    assert_eq!(ids("caddy run & php-fpm -F"), ["caddy", "php"]);
+}
+
+/// A project's own Caddy site needs Caddy and PHP before it starts.
+#[test]
+fn a_caddy_site_needs_caddy_and_php() {
+    let mut a = crate::detect::Action::for_test("site", "", crate::detect::Kind::Web);
+    a.caddy_dir = Some("public".into());
+    assert_eq!(
+        of_action(&a).into_iter().collect::<Vec<_>>(),
+        ["caddy", "php"]
+    );
 }
 
 /// Both separators on every system, and on Windows the same name as
