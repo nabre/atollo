@@ -1,7 +1,7 @@
 // The Server Web page (R3-4): two web actions of one project in the same
 // pool are two VirtualHosts, each with its own row (key project:action).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { WebServersView } from "../../ui/src/api/servers";
 import { ServersPage } from "../../ui/src/servers";
 
@@ -26,8 +26,8 @@ const VIEW: WebServersView = {
     {
       id: "legacy",
       name: "Legacy",
-      engine: "nginx",
-      serverLine: "1.28",
+      engine: "caddy",
+      serverLine: "2.11",
       phpLine: null,
       port: 8090,
       running: false,
@@ -39,8 +39,8 @@ const VIEW: WebServersView = {
       profile: null,
     },
   ],
-  apacheLines: [],
-  nginxLines: ["1.28"],
+  apacheLines: ["2.4"],
+  caddyLines: ["2.11", "2.10"],
   phpLines: [],
 };
 
@@ -78,7 +78,7 @@ describe("ServersPage", () => {
     const profile = {
       id: "legacy",
       name: "Legacy",
-      engine: "nginx" as const,
+      engine: "caddy" as const,
       serverLine: null,
       phpLine: null,
       port: 8090,
@@ -141,7 +141,7 @@ describe("ServersPage", () => {
   it("marks an orphan pool, with no reload, still stoppable", async () => {
     const [legacy] = VIEW.pools;
     if (!legacy) throw new Error("fixture");
-    const orphan = { ...legacy, id: "nginx-1.25", running: true, pid: 42, orphan: true };
+    const orphan = { ...legacy, id: "caddy-2.10", running: true, pid: 42, orphan: true };
     invoke.mockImplementation((cmd) => {
       if (cmd === "servers_list") return Promise.resolve({ ...VIEW, pools: [orphan] });
       return Promise.reject(new Error(`unexpected ${cmd}`));
@@ -153,5 +153,82 @@ describe("ServersPage", () => {
     expect(screen.getByText(/non corrisponde più ai progetti/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Ricarica configurazione" })).toBeNull();
     expect(screen.getAllByRole("button", { name: "Ferma" }).length).toBeGreaterThan(0);
+  });
+
+  it("shows a Caddy pool as Caddy", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve(VIEW);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText("Caddy")).toBeTruthy();
+    expect(screen.queryByText("Apache httpd")).toBeNull();
+  });
+
+  it("creates a Caddy profile by default, with the lines of Caddy, and offers only Caddy and Apache", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve(VIEW);
+      if (cmd === "server_save") return Promise.resolve(null);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Nuovo profilo server", expanded: false }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const engine = document.getElementById("srv-new-engine") as HTMLElementTagNameMap["vscode-single-select"];
+    const engines = [...engine.querySelectorAll("vscode-option")].map((o) => o.value);
+    expect(engines).toEqual(["caddy", "apache"]);
+    expect(engine.value).toBe("caddy");
+    const line = document.getElementById("srv-new-sline") as HTMLElementTagNameMap["vscode-single-select"];
+    const lines = [...line.querySelectorAll("vscode-option")].map((o) => o.value);
+    expect(lines).toEqual(["", "2.11", "2.10"]);
+    fireEvent.change(line, { target: { value: "2.11" } });
+    fireEvent.change(document.getElementById("srv-new-name") as HTMLElement, { target: { value: "Shop" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Crea profilo" }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(invoke).toHaveBeenCalledWith("server_save", {
+      profile: {
+        id: "",
+        name: "Shop",
+        engine: "caddy",
+        serverLine: "2.11",
+        phpLine: null,
+        port: null,
+        keepAlive: true,
+        autostart: false,
+      },
+    });
+  });
+
+  it("lists the lines of Apache when Apache is chosen", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve(VIEW);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Nuovo profilo server", expanded: false }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const engine = document.getElementById("srv-new-engine") as HTMLElementTagNameMap["vscode-single-select"];
+    await act(async () => {
+      fireEvent.change(engine, { target: { value: "apache" } });
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const line = document.getElementById("srv-new-sline") as HTMLElementTagNameMap["vscode-single-select"];
+    const lines = [...line.querySelectorAll("vscode-option")].map((o) => o.value);
+    expect(lines).toEqual(["", "2.4"]);
   });
 });

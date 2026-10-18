@@ -116,7 +116,23 @@ const NESTED_SKIP: [&str; 3] = ["vendor", "node_modules", ".git"];
 /// Caddy reads none of them, so what they hide would be served and PHP
 /// would run there. Bounded ([`NESTED_DEPTH`], [`NESTED_ENTRIES`]); links
 /// and [`NESTED_SKIP`] are not followed.
+#[cfg(test)]
 pub fn nested_htaccess(dir: &Path, root: &str) -> Vec<String> {
+    nested_htaccess_within(dir, root, NESTED_ENTRIES).files
+}
+
+/// The `.htaccess` [`nested_htaccess`] found, and whether the walk stopped
+/// at its bound of entries before the end (`cut`): then a `.htaccess` in a
+/// folder not visited yet (`sites/default/files`, `uploads`) may be missed,
+/// and the detection says so.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct Nested {
+    pub files: Vec<String>,
+    pub cut: bool,
+}
+
+/// [`nested_htaccess`] through at most `max_entries` entries.
+pub fn nested_htaccess_within(dir: &Path, root: &str, max_entries: usize) -> Nested {
     let base = if root == "." {
         dir.to_path_buf()
     } else {
@@ -124,15 +140,17 @@ pub fn nested_htaccess(dir: &Path, root: &str) -> Vec<String> {
     };
     let mut found = Vec::new();
     let mut seen = 0usize;
+    let mut cut = false;
     let mut stack: Vec<(std::path::PathBuf, usize)> = vec![(base.clone(), 0)];
-    while let Some((folder, depth)) = stack.pop() {
+    'walk: while let Some((folder, depth)) = stack.pop() {
         let Ok(entries) = std::fs::read_dir(&folder) else {
             continue;
         };
         for entry in entries.flatten() {
             seen += 1;
-            if seen > NESTED_ENTRIES {
-                return found;
+            if seen > max_entries {
+                cut = true;
+                break 'walk;
             }
             let Ok(kind) = entry.file_type() else {
                 continue;
@@ -154,7 +172,7 @@ pub fn nested_htaccess(dir: &Path, root: &str) -> Vec<String> {
         }
     }
     found.sort();
-    found
+    Nested { files: found, cut }
 }
 
 pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
@@ -200,7 +218,14 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
     let caddy = || Action::caddy("caddy", &tr(lang, "sito web Caddy ({0})", &[&shown]), root);
     // The `.htaccess` of subfolders with rules of their own (a private or
     // uploads folder): Caddy would serve what they hide.
-    let nested = nested_htaccess(dir, root);
+    let Nested { files: nested, cut } = nested_htaccess_within(dir, root, NESTED_ENTRIES);
+    if cut {
+        warnings.push(tr(
+            lang,
+            "Cartella del sito troppo grande: cercati i .htaccess delle sottocartelle solo fra le prime {0} voci. Caddy non legge quelli che restano (caricamenti, file privati).",
+            &[&NESTED_ENTRIES.to_string()],
+        ));
+    }
     let has_htaccess = exists(dir, ".htaccess")
         || (root != "." && exists(dir, &format!(r"{root}\.htaccess")))
         || !nested.is_empty();
@@ -274,7 +299,6 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
             platform = "Symfony".into();
             reason = "bin/console".into();
         }
-        let has_nginx = super::has_nginx(dir, root);
         // A CMS or an `.htaccess`: its site first, the main button (Apache
         // before Caddy for rules of its own). Otherwise proposed after
         // `php -S`.
@@ -284,13 +308,6 @@ pub(super) fn detect(dir: &Path, lang: &str) -> Option<Found> {
                 actions.push(apache());
             }
             actions.push(caddy());
-        }
-        if has_nginx {
-            actions.push(Action::nginx(
-                "nginx",
-                &tr(lang, "sito web Nginx ({0})", &[&shown]),
-                root,
-            ));
         }
         actions.push(Action::new(
             "php:server",

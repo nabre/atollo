@@ -117,12 +117,12 @@ fn resolved_only_inside_the_projects_without_links() {
     assert!(resolve(&shop, &projects, &via).is_empty());
 }
 
-/// Nginx for Windows follows a link inside an alias' folder (no
-/// `disable_symlinks`): such an alias is left out of its configuration,
-/// found at any depth within the limits; a folder past them is not trusted.
+/// Caddy's file server follows a link inside an alias' folder: such an
+/// alias is left out of its configuration, found at any depth within the
+/// limits; a folder past them is not trusted.
 #[cfg(windows)]
 #[test]
-fn nginx_skips_aliases_with_links_inside() {
+fn caddy_skips_aliases_with_links_inside() {
     let tmp = TempDir::new("site-alias-inside");
     let projects = tmp.0.join("projects");
     let shop = projects.join("shop");
@@ -154,13 +154,12 @@ fn nginx_skips_aliases_with_links_inside() {
     aliases.insert("/missing".to_owned(), "nope".to_owned());
     // Apache does not follow them (no FollowSymLinks): all three served.
     assert_eq!(resolve(&shop, &projects, &aliases).len(), 3);
-    let urls: Vec<String> = resolve_nginx(&shop, &projects, &aliases)
+    let urls: Vec<String> = crate::projects::caddy::resolve_aliases(&shop, &projects, &aliases)
         .into_iter()
         .map(|a| a.url)
         .collect();
     assert_eq!(urls, ["/clean"]);
-    assert_eq!(
-        skipped_nginx(&shop, &projects, &aliases),
-        ["/deep", "/dirty", "/missing"]
-    );
+    let mut skipped = crate::projects::caddy::skipped_aliases(&shop, &projects, &aliases);
+    skipped.sort();
+    assert_eq!(skipped, ["/deep", "/dirty", "/missing"]);
 }

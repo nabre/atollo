@@ -4,7 +4,7 @@
 //! ```text
 //! dev-settings.json   agent, last opened, extensions, versions
 //! ports.json          ports of its actions, those locked by the user
-//! apache\  nginx\  caddy\
+//! apache\  caddy\
 //!                     configurations of its own web servers
 //! private\            owner-only DACL, set before anything is written in it
 //!   db.json           passwords of its databases
@@ -47,9 +47,6 @@ impl ProjectState {
     }
     pub fn apache_dir(&self) -> PathBuf {
         self.dir.join("apache")
-    }
-    pub fn nginx_dir(&self) -> PathBuf {
-        self.dir.join("nginx")
     }
     pub fn caddy_dir(&self) -> PathBuf {
         self.dir.join("caddy")

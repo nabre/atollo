@@ -12,8 +12,8 @@
 //! - `static`: a folder of the project served by the exe's file server
 //!   (`Atollo.exe serve`), instead of a command;
 //! - `apache`: a folder of the project served by an Apache of its own
-//!   (`projects/apache.rs`), instead of a command; `nginx` and `caddy` the
-//!   same with Nginx or Caddy (`projects/caddy.rs`).
+//!   (`projects/apache.rs`), instead of a command; `caddy` the same with
+//!   Caddy (`projects/caddy.rs`).
 //!
 //! `panel.json` in the project (old name `pannello.json`) corrects or
 //! replaces what was detected (`overrides.rs`). One file per platform.
@@ -80,9 +80,6 @@ pub struct Action {
     /// A folder served by the project's own Apache.
     #[serde(rename = "apache")]
     pub apache_dir: Option<String>,
-    /// A folder served by the project's own Nginx.
-    #[serde(rename = "nginx")]
-    pub nginx_dir: Option<String>,
     /// A folder served by Caddy, its own or a pool's (D-111).
     #[serde(rename = "caddy")]
     pub caddy_dir: Option<String>,
@@ -111,7 +108,6 @@ impl Action {
             env: BTreeMap::new(),
             static_dir: None,
             apache_dir: None,
-            nginx_dir: None,
             caddy_dir: None,
             server: None,
             domains: Vec::new(),
@@ -141,14 +137,6 @@ impl Action {
         }
     }
 
-    /// A folder of the project served by its own Nginx.
-    fn nginx(id: &str, label: &str, folder: &str) -> Action {
-        Action {
-            nginx_dir: Some(folder.to_owned()),
-            ..Action::new(id, label, "", Kind::Web)
-        }
-    }
-
     /// A folder of the project served by Caddy.
     fn caddy(id: &str, label: &str, folder: &str) -> Action {
         Action {
@@ -157,13 +145,10 @@ impl Action {
         }
     }
 
-    /// Served by a web server of the kit (Apache, Nginx, Caddy): a site
-    /// that can go in a shared pool.
+    /// Served by a web server of the kit (Apache, Caddy): a site that can
+    /// go in a shared pool.
     pub fn web_server_dir(&self) -> Option<&str> {
-        self.apache_dir
-            .as_deref()
-            .or(self.nginx_dir.as_deref())
-            .or(self.caddy_dir.as_deref())
+        self.apache_dir.as_deref().or(self.caddy_dir.as_deref())
     }
 }
 
@@ -338,16 +323,6 @@ fn php_server(dir: &Path, root: &str) -> String {
     )
 }
 
-/// Files that ask for Nginx, in the project folder or in the site's.
-const NGINX_FILES: [&str; 2] = ["nginx.conf", ".nginx"];
-
-/// A `nginx.conf` or `.nginx` in the project folder or in `root`.
-fn has_nginx(dir: &Path, root: &str) -> bool {
-    NGINX_FILES
-        .iter()
-        .any(|f| exists(dir, f) || (root != "." && exists(dir, &format!(r"{root}\{f}"))))
-}
-
 /// One walk of the project: 3 levels, at most 3000 files, no IGNORED folders.
 fn walk_files(dir: &Path, on_file: &mut dyn FnMut(&str)) {
     fn walk(d: &Path, depth: u32, seen: &mut u32, on_file: &mut dyn FnMut(&str)) {
@@ -477,7 +452,6 @@ fn need_of_file(name: &str) -> Option<&'static str> {
         "Gemfile" | "Gemfile.lock" => "ruby",
         "renv.lock" => "r",
         "AndroidManifest.xml" => "android",
-        "nginx.conf" => "nginx",
         _ => return None,
     })
 }
@@ -602,10 +576,6 @@ pub fn requires(dir: &Path) -> Vec<String> {
             found.insert("apache");
         }
     }
-    // The walk skips hidden names: `.nginx` is looked for here.
-    if has_nginx(dir, ".") {
-        found.insert("nginx");
-    }
     found.extend(container::servers(dir).into_keys());
     found.extend(databases(dir));
     let catalog = crate::setup::catalog::Catalog::get();
@@ -729,8 +699,8 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             .or(project.actions.first())
             .map(|a| a.id.clone());
     }
-    // An Apache of its own needs Apache and its PHP module, a Nginx needs
-    // Nginx, a Caddy Caddy and PHP: when it is the main action or written
+    // An Apache of its own needs Apache and its PHP module, a Caddy Caddy
+    // and PHP: when it is the main action or written
     // in panel.json, not when it is only proposed beside `php -S` or
     // `artisan serve`.
     let used = |a: &&Action| a.custom || project.default.as_deref() == Some(a.id.as_str());
@@ -742,14 +712,6 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         .any(|a| a.apache_dir.is_some())
     {
         needed.extend(["apache", "php"]);
-    }
-    if project
-        .actions
-        .iter()
-        .filter(used)
-        .any(|a| a.nginx_dir.is_some())
-    {
-        needed.push("nginx");
     }
     if project
         .actions

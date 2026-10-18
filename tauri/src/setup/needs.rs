@@ -46,7 +46,6 @@ fn component_of_name(name: &str) -> Option<&'static str> {
         "python" | "python3" | "py" | "pythonw" | "pip" | "pip3" => "python",
         "php" | "php-cgi" | "php-fpm" | "composer" => "php",
         "httpd" => "apache",
-        "nginx" => "nginx",
         "caddy" => "caddy",
         "cargo" | "rustc" | "rustup" | "trunk" => "rust",
         "go" | "gofmt" => "go",
@@ -95,16 +94,13 @@ fn first_program(command: &str) -> Option<&str> {
 }
 
 /// The components a project action needs (`Atollo.exe serve` needs none,
-/// the project's own Apache/Nginx needs the web server and PHP).
+/// the project's own Apache/Caddy needs the web server and PHP).
 pub fn of_action(action: &Action) -> BTreeSet<&'static str> {
     if action.static_dir.is_some() {
         return BTreeSet::new();
     }
     if action.apache_dir.is_some() {
         return BTreeSet::from(["apache", "php"]);
-    }
-    if action.nginx_dir.is_some() {
-        return BTreeSet::from(["nginx", "php"]);
     }
     if action.caddy_dir.is_some() {
         return BTreeSet::from(["caddy", "php"]);

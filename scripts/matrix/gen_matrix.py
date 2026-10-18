@@ -30,7 +30,7 @@ GROUPS = {
 }
 MB = {
     "gh": 40, "pwsh": 110, "vscodium-server": 250, "claude": 250, "codex": 440, "antigravity": 190,
-    "git": 350, "python": 70, "node": 110, "uv": 35, "php": 100, "apache": 45, "nginx": 10, "caddy": 45,
+    "git": 350, "python": 70, "node": 110, "uv": 35, "php": 100, "apache": 45, "caddy": 45,
     "rust": 920, "go": 250, "java": 300, "kotlin": 80, "android": 600, "dotnet": 250, "dart": 200,
     "zig": 200, "julia": 500, "bun": 90, "deno": 100, "typst": 50, "tinytex": 280, "pnpm": 10,
     "cmake": 100, "cc": 720, "ruby": 270, "r": 1100, "mysql": 520, "mongodb": 570,
@@ -48,7 +48,6 @@ SRC = {
     "gh": ("GitHub cli/cli", "GitHub cli/cli"),
     "php": ("windows.php.net + VC++ locale", "static-php-cli"),
     "apache": ("Apache Lounge (modulo PHP)", "build del kit, rilascio httpd-v<v> (php-fpm)"),
-    "nginx": ("nginx.org", "—"),
     "caddy": ("GitHub caddyserver/caddy", "GitHub caddyserver/caddy"),
     "rust": ("rustup (gnu su x64, gnullvm su ARM64)", "rustup"),
     "go": ("go.dev", "go.dev"),
@@ -257,9 +256,9 @@ tr.hide {{ display:none; }}
 </table>
 </div>
 <ul class="notes">
-  <li><b>Windows ARM64</b>: PHP, Apache, Nginx, MySQL, MongoDB, Android SDK, Julia, TinyTeX e l'editor usano la build x64 in emulazione; R non ha build. Rust usa l'host <code>aarch64-pc-windows-gnullvm</code> con llvm-mingw di C/C++ come linker.</li>
+  <li><b>Windows ARM64</b>: PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX e l'editor usano la build x64 in emulazione; R non ha build. Rust usa l'host <code>aarch64-pc-windows-gnullvm</code> con llvm-mingw di C/C++ come linker.</li>
   <li><b>Apache</b>: su Windows Apache Lounge con il modulo PHP; su macOS e Linux la build del kit con <code>php-fpm</code> (D-116), offerta lì quando il primo rilascio <code>httpd-v2.4.69-1</code> è fissato nel catalogo. Si propone solo per i progetti con regole proprie nel <code>.htaccess</code>; Caddy è il server web predefinito su tutti i sistemi.</li>
-  <li><b>Nginx</b>: solo Windows (D-111), da togliere dopo la migrazione dei pool a Caddy (issue #4).</li>
+  <li><b>Nginx</b>: non c'è più; i suoi pool e siti passano a Caddy all'avvio (D-120).</li>
   <li><b>MySQL</b> è l'unico server SQL del kit (D-117): phpMyAdmin apre MySQL su tutti i sistemi.</li>
   <li><b>Android SDK</b>: Google non pubblica platform-tools e build-tools per Linux ARM64.</li>
   <li><b>C/C++</b> su macOS e Linux: shim su <code>zig cc</code> del kit (richiede Zig); i framework Apple vogliono Xcode CLT.</li>

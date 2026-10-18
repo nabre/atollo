@@ -33,7 +33,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
    - [4.4 Editor Integrato (VSCodium Web) e Terminale Esclusivo del Kit](#44-editor-integrato-vscodium-web-e-terminale-esclusivo-del-kit)
    - [4.5 Pagina «Agenti» (Claude Code, Codex, Antigravity e Sincronizzazione)](#45-pagina-agenti-claude-code-codex-antigravity-e-sincronizzazione)
    - [4.6 Pagina «Database» (MySQL, MongoDB, phpMyAdmin ed Esploratore Dati)](#46-pagina-database-mysql-mongodb-phpmyadmin-ed-esploratore-dati)
-   - [4.7 Pagina «Server Web» (Pool Condivisi Apache/Nginx e VirtualHost `.localhost`)](#47-pagina-server-web-pool-condivisi-apachenginx-e-virtualhost-localhost)
+   - [4.7 Pagina «Server Web» (Pool Condivisi Caddy/Apache e VirtualHost `.localhost`)](#47-pagina-server-web-pool-condivisi-caddyapache-e-virtualhost-localhost)
    - [4.8 Pagina «Strumenti» (Multi-Versione, Matrice delle Relazioni ed Estensioni)](#48-pagina-strumenti-multi-versione-matrice-delle-relazioni-ed-estensioni)
    - [4.9 Pagina «Impostazioni» e Albero di Personalizzazione dei Framework](#49-pagina-impostazioni-e-albero-di-personalizzazione-dei-framework)
    - [4.10 Pagina «Rimuovi l'unità» ed Espulsione Sicura](#410-pagina-rimuovi-lunità-ed-espulsione-sicura)
@@ -46,7 +46,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
    - [5.5 Configurazione delle Versioni per Singolo Progetto e Risoluzione Conflitti](#55-configurazione-delle-versioni-per-singolo-progetto-e-risoluzione-conflitti)
    - [5.6 Configurazione degli Agenti AI, Chiave Gemini, Skill, Istruzioni e Server MCP](#56-configurazione-degli-agenti-ai-chiave-gemini-skill-istruzioni-e-server-mcp)
    - [5.7 Configurazione dei Server Database, Utenti di Progetto, `.env` e Backup](#57-configurazione-dei-server-database-utenti-di-progetto-env-e-backup)
-   - [5.8 Configurazione di Siti Web, Pool Apache/Nginx, Domini `.localhost` e Alias](#58-configurazione-di-siti-web-pool-apachenginx-domini-localhost-e-alias)
+   - [5.8 Configurazione di Siti Web, Pool Caddy/Apache, Domini `.localhost` e Alias](#58-configurazione-di-siti-web-pool-caddyapache-domini-localhost-e-alias)
    - [5.9 Configurazione delle Azioni Personalizzate (`panel.json`) e Porte](#59-configurazione-delle-azioni-personalizzate-paneljson-e-porte)
    - [5.10 Configurazione delle Estensioni e Impostazioni dell'Editor per Progetto](#510-configurazione-delle-estensioni-e-impostazioni-delleditor-per-progetto)
    - [5.11 Configurazione e Modifica delle Ricette del Wizard Framework](#511-configurazione-e-modifica-delle-ricette-del-wizard-framework)
@@ -100,7 +100,7 @@ Quando `Atollo.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD e
     │   ├── relations.json                  # Cache con impronta della matrice di compatibilità (D-81)
     │   ├── frameworks.json                 # Personalizzazioni utente alle ricette del wizard "Nuovo progetto"
     │   ├── services.json                   # Porte e avvio automatico dei server database (MySQL, MongoDB)
-    │   ├── servers.json                    # Profili manuali e porte assegnate ai pool Apache e Nginx
+    │   ├── servers.json                    # Profili manuali e porte assegnate ai pool Caddy e Apache
     │   ├── extensions.txt                  # Estensioni aggiuntive globali dell'utente
     │   ├── extensions-offered.txt          # Registro delle estensioni già proposte (installate una sola volta)
     │   ├── root.txt / old-root.txt         # Tracciamento del percorso per la rilocazione automatica
@@ -114,11 +114,11 @@ Quando `Atollo.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD e
     │   ├── dev-settings.json               # Agente preferito, estensioni scelte/escluse, versioni linguaggi
     │   ├── versions.json                   # Riscritture d'ambiente per i terminali dell'editor nel progetto
     │   ├── ports.json                      # Porte ricordate (7100-7999) e porte bloccate per le azioni
-    │   ├── apache\  nginx\                 # Configurazioni generate e conf.d\ per siti dedicati al progetto
+    │   ├── apache\  caddy\                 # Configurazioni generate per i siti dedicati al progetto
     │   └── private\                        # Cartella protetta da DACL ereditabile (solo proprietario)
     │       ├── db.json                     # Nomi dei DB e password generate per l'utente del progetto
     │       └── backups\                    # Esportazioni .sql (MySQL) e .archive.gz (MongoDB) del progetto
-    ├── servers\<id-pool>\                  # Configurazioni generate e vhosts\*.conf dei pool Apache e Nginx
+    ├── servers\<id-pool>\                  # Configurazioni generate e vhosts\*.conf dei pool Caddy e Apache
     ├── db\                                 # File fisici dei database, separati per motore e versione
     │   ├── mysql\<linea>\                  # Dati MySQL per linea LTS (es. 9.7\)
     │   └── mongodb\<linea>\                # Dati MongoDB per linea major di produzione (es. 9.0\)
@@ -185,7 +185,7 @@ La tabella seguente dichiara l'organizzazione esatta di tutti gli indirizzi da c
 | ↳ *Parte: Bundle CA SSL* | *(dentro PHP)* | `https://curl.se` | — | `https://curl.se/ca/cacert.pem` | SHA-256 da `https://curl.se/ca/cacert.pem.sha256` | `php\<linea>\extras\ssl\cacert.pem` |
 | ↳ *Parte: VC++ Runtime* | *(per PHP, Apache, MongoDB)* | `https://learn.microsoft.com` | Estratto una sola volta se assente | `https://aka.ms/vc14/vc_redist.x64.exe` (estrazione CAB `vcRuntimeMinimum_amd64\cab1.cab`) | Firma Authenticode `O=Microsoft Corporation` su exe e `vcruntime140.dll` | `tools\vcruntime\` (copiato accanto a `php.exe`, `httpd.exe`, `mongod.exe`) |
 | **`apache`** (Apache httpd) | Linguaggi (versionato) | `https://httpd.apache.org` | Windows: pagina HTML `https://www.apachelounge.com/download/`; macOS e Linux: versioni fissate nel catalogo (build del kit, D-116) | Windows: `https://www.apachelounge.com/download/VS<nn>/binaries/httpd-<v>-Win64-VS<nn>.zip`; macOS e Linux: `https://github.com/nabre/atollo/releases/download/httpd-v<v>/httpd-<v>-<target>.tar.gz` | SHA-256 da `<url>.txt` (`SHA256-Checksum for:`); macOS e Linux: SHA-256 fissato nel catalogo | `apache\<linea>\bin\httpd.exe` (macOS e Linux: `apache/<linea>/bin/httpd`, PHP con `php-fpm`) |
-| **`nginx`** (Nginx) | Linguaggi (versionato) | `https://nginx.org` | GitHub API: `https://api.github.com/repos/nginx/nginx/releases?per_page=100` | Asset `nginx-<v>.zip` dalla release GitHub | SHA-256 da `asset.digest` GitHub | `nginx\<linea>\nginx.exe` |
+| **`caddy`** (Caddy) | Linguaggi (versionato) | `https://caddyserver.com` | GitHub API: `https://api.github.com/repos/caddyserver/caddy/releases` | Asset `caddy_<v>_<sistema>_<arch>` dalla release GitHub | SHA-256 da `asset.digest` GitHub (da 2.10.1), prima SHA-512 da `caddy_<v>_checksums.txt` | `caddy\<linea>\caddy.exe` |
 | **`rust`** (Rustup, Cargo, Clippy) | Strumenti | `https://www.rust-lang.org` | `https://static.rust-lang.org/dist/channel-rust-stable.toml` (`[pkg.rustc]`) | `https://static.rust-lang.org/rustup/dist/<triple>/rustup-init.exe` | SHA-256 da `<url>.sha256` | `rust\cargo\bin\rustc.exe` e `rustup.exe` |
 | **`go`** (Go SDK) | Linguaggi (versionato) | `https://go.dev` | `https://go.dev/dl/?mode=json` (e `&include=all` per l'elenco linee) | `https://go.dev/dl/go<v>.windows-(amd64\|arm64).zip` | SHA-256 dal campo `sha256` del JSON | `go\<linea>\bin\go.exe` |
 | **`java`** (JDK Temurin + Maven + Gradle) | Linguaggi (versionato) | `https://adoptium.net` | `https://api.adoptium.net/v3/info/available_releases` + `/v3/assets/latest/<major>/hotspot?architecture=...` | URL del pacchetto `.zip` restituito dall'API Adoptium | SHA-256 da `binary.package.checksum` | `java\<linea>\bin\java.exe` |
@@ -261,7 +261,7 @@ In Atollo l'account GitHub non è un semplice accessorio per un singolo programm
    - Se eseguissi `gh auth login` manualmente in un terminale senza parametri, GitHub CLI salverebbe il token nella *Gestione credenziali di Windows* del PC ospite (lasciando il tuo accesso su quel computer e perdendolo quando sposti la chiavetta su un altro PC).
    - L'accesso avviato dall'app usa invece `--insecure-storage` con `GH_CONFIG_DIR` puntato a `data\gh\`: il token viene salvato in `data\gh\hosts.yml` dentro il kit, viaggia con te sulla chiavetta e non tocca mai la Gestione credenziali di Windows.
 3. **Eliminazione dei limiti di rete (Rate Limit di GitHub API)**:
-   - Moltissimi strumenti del catalogo (`pwsh`, `gh`, `git`, `uv`, `kotlin`, `bun`, `deno`, `typst`, `tinytex`, `cmake`, `ninja`, `cc`, `ruby`, `nginx`, `mongosh`, `codelldb`) risiedono su GitHub Releases. Senza autenticazione, GitHub limita le interrogazioni API a 60 all'ora per indirizzo IP (spesso condiviso in uffici, scuole o università). Con l'account collegato la soglia sale a **5.000 richieste all'ora**.
+   - Moltissimi strumenti del catalogo (`pwsh`, `gh`, `git`, `uv`, `kotlin`, `bun`, `deno`, `typst`, `tinytex`, `cmake`, `ninja`, `cc`, `ruby`, `caddy`, `mongosh`, `codelldb`) risiedono su GitHub Releases. Senza autenticazione, GitHub limita le interrogazioni API a 60 all'ora per indirizzo IP (spesso condiviso in uffici, scuole o università). Con l'account collegato la soglia sale a **5.000 richieste all'ora**.
 4. **Clonazione sicura dei repository privati senza esporre il token**:
    - Quando cloni un repository dall'app, il token non viene mai passato sulla riga di comando (dove sarebbe visibile agli altri processi del PC) né scritto in `.git\config` (dove resterebbe in chiaro nel progetto), ma viene iniettato per la sola durata del comando tramite variabili d'ambiente `GIT_CONFIG_*` come intestazione HTTP verso `https://github.com`.
 5. **Sopravvivenza allo spostamento del kit**:
@@ -395,8 +395,8 @@ Cliccando su un progetto si apre nella parte centrale la **Scheda del Progetto**
 2. **Sito web (`site`)**: permette di servire qualsiasi sottocartella del progetto (`.` o `public`, `dist`, ecc.) scegliendo tra 4 modalità:
    - *file statici* (server interno `Atollo.exe serve` senza bisogno di Node o PHP);
    - *PHP (server integrato)* (`php -S`);
-   - *Apache dedicato* (istanza Apache esclusiva del progetto sulla sua porta, oppure associata a un pool condiviso);
-   - *Nginx* (servito tramite PHP-CGI e VirtualHost `.localhost` nel pool condiviso o in un profilo manuale).
+   - *Caddy* (il server web predefinito: istanza del progetto sulla sua porta, oppure un pool condiviso o un profilo manuale; non legge `.htaccess`, le regole di riscrittura si generano dal tipo di progetto);
+   - *Apache dedicato* (per i progetti con regole proprie nel `.htaccess`: istanza Apache esclusiva del progetto sulla sua porta, oppure associata a un pool condiviso).
    Permette inoltre di dichiarare **domini `.localhost` aggiuntivi** e **alias di percorso portabili** (anche verso altri progetti con `@altro-progetto/cartella`).
 
 ![Scheda Sito web del progetto con configurazione Apache, domini .localhost e alias](images/06-progetto-sito-web.png)
@@ -471,18 +471,18 @@ La pagina **Database** (`ui/src/databases.tsx` e `tauri/src/db/`) gestisce i ser
 
 ---
 
-### 4.7 Pagina «Server Web» (Pool Condivisi Apache/Nginx e VirtualHost `.localhost`)
+### 4.7 Pagina «Server Web» (Pool Condivisi Caddy/Apache e VirtualHost `.localhost`)
 
 La pagina **Server Web** (`ui/src/servers.tsx` e `tauri/src/servers/mod.rs`) permette di servire contemporaneamente decine di progetti web senza conflitti di porta e senza toccare il file `C:\Windows\System32\drivers\etc\hosts` (che richiederebbe diritti di amministratore):
-- **Pool automatici per versione**: il kit raggruppa automaticamente tutti i progetti configurati con Apache o Nginx in base alla combinazione `(motore, versione server, versione PHP)` (es. `apache-2.4-php-8.4` sulla porta `8081`).
+- **Pool automatici per versione**: il kit raggruppa automaticamente tutti i progetti configurati con Caddy o Apache in base alla combinazione `(motore, versione server, versione PHP)` (es. `apache-2.4-php-8.4` sulla porta `8081`).
 - **Profili server manuali**: dalla barra laterale puoi creare profili personalizzati (es. *"Apache Legacy PHP 7.4"* su una porta specifica da `8081` a `8999`) e assegnarvi i progetti dalla scheda *Sito web* del progetto.
 - **VirtualHost `.localhost` (RFC 6761)**: ogni progetto associato a un pool riceve automaticamente un proprio file `data\servers\<pool>\vhosts\<progetto>.conf` con `ServerName <progetto>.localhost` (più eventuali domini `.localhost` aggiuntivi) e risponde all'indirizzo `http://<progetto>.localhost:<porta>`.
-- **Ricarica a caldo**: il pulsante **«Ricarica configurazione»** rigenera tutti i file dei VirtualHost e ricarica Nginx (`nginx -s reload`) o riavvia pulitamente Apache.
+- **Ricarica a caldo**: il pulsante **«Ricarica configurazione»** rigenera tutti i file dei VirtualHost e ricarica Caddy (`caddy reload`, sul socket privato del pool) o riavvia pulitamente Apache. Nginx non c'è più (D-120): i suoi pool e siti passano a Caddy all'avvio, con una copia dei file in `data\app\pre-caddy\`.
 
 ![Pagina Server Web con il pool Apache 2.4 · PHP 8.4 attivo sulla porta 8081](images/12-server-web-pool.png)
 
 > **Esempio pratico — Pool condiviso `Apache 2.4 · PHP 8.4` sulla porta `8081`:**
-> Nella schermata sopra, il pool automatico `apache-2.4-php-8.4` serve il progetto `gestionale-fatture` (cartella `public`) sia sul dominio primario `http://gestionale-fatture.localhost:8081` sia sul dominio aggiuntivo `http://fatture.studio.localhost:8081`, mappando inoltre l'alias `/allegati` verso `storage/app/public/allegati`. Accanto, nella barra laterale, è pronto anche un secondo pool `Nginx 1.28 · PHP 8.3` sulla porta `8082`.
+> Nella schermata sopra, il pool automatico `apache-2.4-php-8.4` serve il progetto `gestionale-fatture` (cartella `public`) sia sul dominio primario `http://gestionale-fatture.localhost:8081` sia sul dominio aggiuntivo `http://fatture.studio.localhost:8081`, mappando inoltre l'alias `/allegati` verso `storage/app/public/allegati`. Accanto, nella barra laterale, è pronto anche un secondo pool `Caddy 2.10 · PHP 8.3` sulla porta `8082`.
 
 ---
 
@@ -495,7 +495,7 @@ La pagina **Strumenti** (`ui/src/components/page.tsx`) è il centro di controllo
    - le versioni libere possono essere rimosse singolarmente con l'icona del cestino;
    - il menu **«Scarica un'altra versione…»** mostra tutte le linee offerte dalla fonte ufficiale (raggruppate per versione maggiore) e avvia subito il download della linea scelta.
 3. **Sezione «Relazioni» (`ui/src/relations.tsx`)**: espone la matrice calcolata da `tauri/src/versions/relations/`:
-   - verifica i **legami tra strumenti** (es. Composer rispetto a PHP, Apache/Nginx rispetto a PHP, Gradle/Maven/Kotlin rispetto alla JDK, Corepack/Yarn rispetto a Node.js);
+   - verifica i **legami tra strumenti** (es. Composer rispetto a PHP, Apache/Caddy rispetto a PHP, Gradle/Maven/Kotlin rispetto alla JDK, Corepack/Yarn rispetto a Node.js);
    - legge i **vincoli di versione dichiarati nei file dei progetti** (`package.json`, `.nvmrc`, `pyproject.toml`, `composer.json`, `compose.yaml`, `go.mod`, `pom.xml`, `build.gradle`, `global.json`, `Gemfile`, `pubspec.yaml`, `Project.toml`, `build.zig.zon`, `renv.lock`, `Cargo.toml`, `CMakeLists.txt`, `typst.toml`) e offre un pulsante diretto (**«Usa X.Y»** o **«Scarica e usa X.Y»**) per allineare il progetto con un clic.
 4. **Sezione «Matrice delle estensioni» (`ui/src/extensions.tsx`)**: mostra in sola lettura la tabella completa degli abbinamenti tra linguaggi/strumenti ed estensioni di VSCodium.
 
@@ -527,7 +527,7 @@ La pagina **Rimuovi l'unità** (`ui/src/eject.tsx` e `tauri/src/os/sessions.rs`)
   1. annulla eventuali installazioni in corso;
   2. ferma tutte le azioni dei progetti;
   3. esegue lo shutdown pulito e autenticato di MySQL e MongoDB;
-  4. ferma i pool Apache e Nginx;
+  4. ferma i pool Caddy e Apache;
   5. chiude le finestre dell'editor, il server VSCodium, le console e tutti i processi con eseguibile dentro il kit;
   6. salva nel kit (`data\antigravity\keyring.json`) le credenziali di Antigravity rimuovendole dalla Gestione credenziali di Windows;
   7. invita infine a chiudere la finestra di `Atollo.exe` stessa per rilasciare l'ultimo file sul disco ed espellere l'unità da Windows.
@@ -614,7 +614,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
      - *Scopo*: mentre i programmi che usano SChannel di Windows leggono l'archivio certificati del sistema, **Node.js** (e quindi anche il server dell'editor, `npm`, Claude Code e Codex) usa un proprio archivio CA statico e fallirebbe dietro un firewall aziendale con *SSL Inspection*. Questa impostazione valorizza automaticamente `NODE_EXTRA_CA_CERTS` per tutti i processi del kit.
   3. **Rete locale (`allowLan` / `ATOLLO_ALLOW_LAN=1`)**:
      - *Passaggi*: spunta *«Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete»* e salva.
-     - *Scopo*: per sicurezza predefinita, un file incorporato (`data\kit\loopback.js`, caricato via `NODE_OPTIONS=--require`) e i generatori di comandi costringono tutti i server di sviluppo dei progetti (Vite, Next.js, PHP, Apache, Nginx, `Atollo.exe serve`) ad ascoltare **solo su `127.0.0.1`**, evitando avvisi del Firewall di Windows ed esposizioni su reti Wi-Fi pubbliche. Attivando questa opzione, i server web dei progetti ascoltano su `0.0.0.0` così puoi provare il sito o l'app da uno smartphone o da un altro PC collegato alla stessa rete locale (i database MySQL e MongoDB restano comunque blindati su `127.0.0.1`).
+     - *Scopo*: per sicurezza predefinita, un file incorporato (`data\kit\loopback.js`, caricato via `NODE_OPTIONS=--require`) e i generatori di comandi costringono tutti i server di sviluppo dei progetti (Vite, Next.js, PHP, Apache, Caddy, `Atollo.exe serve`) ad ascoltare **solo su `127.0.0.1`**, evitando avvisi del Firewall di Windows ed esposizioni su reti Wi-Fi pubbliche. Attivando questa opzione, i server web dei progetti ascoltano su `0.0.0.0` così puoi provare il sito o l'app da uno smartphone o da un altro PC collegato alla stessa rete locale (i database MySQL e MongoDB restano comunque blindati su `127.0.0.1`).
 
 ---
 
@@ -731,7 +731,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 
 ---
 
-### 5.8 Configurazione di Siti Web, Pool Apache/Nginx, Domini `.localhost` e Alias
+### 5.8 Configurazione di Siti Web, Pool Caddy/Apache, Domini `.localhost` e Alias
 
 - **Dove si configura**: **Progetti › `<tuo-progetto>` › scheda Sito web** (salvato in `projects\<progetto>\panel.json`) e pagina **Server Web** (`data\app\servers.json`).
 - **Passaggi**:
@@ -740,15 +740,15 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
   3. Nel menu *«con»*, scegli il motore:
      - **file statici**: usa il server integrato nell'exe (ideale per HTML/CSS/JS puri);
      - **PHP (server integrato)**: usa `php -S` per sviluppo rapido singolo;
-     - **Apache dedicato** o **Nginx**: attiva le opzioni avanzate di VirtualHost.
-  4. Se hai scelto Apache o Nginx:
+     - **Caddy** (predefinito) o **Apache dedicato** (per regole proprie nel `.htaccess`): attiva le opzioni avanzate di VirtualHost.
+  4. Se hai scelto Caddy o Apache:
      - Scegli il **Profilo server**: *Automatico (pool per versione)* (consigliato: raggruppa automaticamente il sito nel pool della pagina **Server Web** corrispondente alle versioni del server e di PHP scelte dal progetto) oppure un profilo manuale creato nella pagina **Server Web**.
      - *(Opzionale)* Inserisci **Domini `.localhost` aggiuntivi** separati da virgola (es. `api.mio-sito.localhost, admin.mio-sito.localhost`).
      - *(Opzionale)* Clicca su **«Aggiungi alias»** per mappare un percorso URL (es. `/media`) a una cartella interna al progetto (`storage/uploads`) o a una cartella di un altro progetto del kit (`@altro-progetto/public`). Le cartelle degli alias servono solo file statici: uno script PHP lì dentro viene rifiutato e un `.htaccess` lì può cambiare solo gli elenchi dei file (SEC-V4-01, D-116).
   5. Clicca su **«Salva»**. Poi avvia il progetto (o avvia il pool corrispondente nella pagina **Server Web**) e apri `http://<progetto>.localhost:<porta>`.
      - Con *Automatico* «Avvia» apre un'istanza dedicata del progetto sulla sua porta; con un **profilo manuale** «Avvia» avvia (se è fermo) il pool di quel profilo e mostra l'indirizzo del sito nel pool. «Ferma» su un sito servito da un pool lo segna soltanto come fermo: il pool, condiviso con altri progetti, si ferma dalla pagina **Server Web**.
 - **Scopo**:
-  - Permettere architetture multi-sito e multi-dominio (`.htaccess` su Apache, FastCGI `php-cgi.exe` su Nginx) e condivisione di asset tra progetti diversi (`@altro-progetto/...`) mantenendo il 100% della portabilità: i file `httpd.conf`/`nginx.conf` vengono rigenerati a ogni avvio in `data\servers\<pool>\` usando le variabili del kit (`${CP_PROJECTS_FWD}`) e validando ogni alias con `safe_path` (nessuna giunzione malevola verso server esterni viene mai seguita, D-77).
+  - Permettere architetture multi-sito e multi-dominio (`.htaccess` su Apache, FastCGI `php-cgi.exe` o `php-fpm` su Caddy) e condivisione di asset tra progetti diversi (`@altro-progetto/...`) mantenendo il 100% della portabilità: i file `httpd.conf`/`Caddyfile` vengono rigenerati a ogni avvio in `data\servers\<pool>\` usando le variabili del kit (`${CP_PROJECTS_FWD}`) e validando ogni alias con `safe_path` (nessuna giunzione malevola verso server esterni viene mai seguita, D-77).
 
 ---
 

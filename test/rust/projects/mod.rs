@@ -453,7 +453,7 @@ fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
 }
 
 /// A4 handoff: what a project can add follows the catalog's targets, not
-/// only ARM64 (no Apache/Nginx off Windows, PHP everywhere since D-112, R
+/// only ARM64 (no Apache off Windows, PHP everywhere since D-112, R
 /// everywhere but Windows ARM64).
 #[test]
 fn addable_follows_the_platform() {

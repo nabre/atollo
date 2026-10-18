@@ -113,9 +113,9 @@ pub(super) fn name_sites(sites: &mut [AttachedSite], port: u16) {
     }
 }
 
-/// The Apache/Nginx sites of a project that go in a pool, each project
+/// The Apache/Caddy sites of a project that go in a pool, each project
 /// once per site (D-101, defect 7): every one written in
-/// `panel.json`; the detected ones (`.htaccess`, `nginx.conf`) only when
+/// `panel.json`; the detected ones (`.htaccess`, a CMS) only when
 /// there is none of those, and then only the first, so that a project with
 /// a `site` action, or with both files, is not in two pools at once.
 pub(super) fn pooled_actions(actions: &[detect::Action]) -> Vec<&detect::Action> {
@@ -141,7 +141,7 @@ fn conf_dir_text(id: &str) -> String {
 }
 
 /// The id of the automatic pool of (engine, server line, PHP line), SC-2:
-/// `apache-2.4_php-7.4`, `nginx-1.27` (no PHP), `apache-default` (no line
+/// `apache-2.4_php-7.4`, `caddy-2.10` (no PHP), `apache-default` (no line
 /// installed). It names the lines it runs, so it can be read back
 /// ([`parse_auto_pool_id`]) whatever is installed later.
 pub(super) fn auto_pool_id(
@@ -303,12 +303,10 @@ impl WebServers {
     /// dropped from `servers.json`.
     pub(super) fn scan(&self, lang: &str, prune: bool) -> WebServersView {
         let apache_lines = crate::db::services::server_lines(&self.kit, "apache");
-        let nginx_lines = crate::db::services::server_lines(&self.kit, "nginx");
         let caddy_lines = crate::db::services::server_lines(&self.kit, "caddy");
         let php_lines = crate::db::services::server_lines(&self.kit, "php");
         let newest = |engine: WebServerEngine| match engine {
             WebServerEngine::Apache => apache_lines.first().cloned(),
-            WebServerEngine::Nginx => nginx_lines.first().cloned(),
             WebServerEngine::Caddy => caddy_lines.first().cloned(),
         };
 
@@ -318,6 +316,10 @@ impl WebServers {
             .unwrap_or_else(PoisonError::into_inner);
         let mut store = load_store(&self.kit);
         let mut store_dirty = migrate_port_ids(&mut store);
+        // The ports of the pools of Nginx go to Caddy's once Caddy is
+        // installed (its line names the pool, D-120).
+        store_dirty |=
+            super::migrate::nginx_ports(&mut store, caddy_lines.first().map(String::as_str));
         let mut pools_map: BTreeMap<String, WebServerPool> = BTreeMap::new();
         // Manual pools with a site that needs PHP.
         let mut php_wanted: BTreeSet<String> = Default::default();
@@ -448,14 +450,10 @@ impl WebServers {
 
         // If no pools exist yet but a web server is installed, expose the default pool so the
         // user can start/inspect it from the "Server Web" page immediately: Apache's as
-        // before, else Caddy's, else Nginx's.
-        let first_engine = [
-            WebServerEngine::Apache,
-            WebServerEngine::Caddy,
-            WebServerEngine::Nginx,
-        ]
-        .into_iter()
-        .find(|e| newest(*e).is_some());
+        // before, else Caddy's.
+        let first_engine = [WebServerEngine::Apache, WebServerEngine::Caddy]
+            .into_iter()
+            .find(|e| newest(*e).is_some());
         if let (true, Some(engine)) = (pools_map.is_empty(), first_engine) {
             let srv_line = newest(engine);
             // No project yet: no PHP project, so no php-cgi (BUG-05r).
@@ -484,9 +482,12 @@ impl WebServers {
         if prune {
             let running = self.running.lock().unwrap_or_else(PoisonError::into_inner);
             let before = store.ports.len();
-            store
-                .ports
-                .retain(|id, _| pools_map.contains_key(id) || running.contains_key(id));
+            // A port of Nginx's waits for Caddy ([`super::migrate::nginx_ports`]).
+            store.ports.retain(|id, _| {
+                pools_map.contains_key(id)
+                    || running.contains_key(id)
+                    || super::migrate::is_nginx_pool(id)
+            });
             store_dirty |= store.ports.len() != before;
         }
         if store_dirty {
@@ -497,7 +498,6 @@ impl WebServers {
         WebServersView {
             pools: pools_map.into_values().collect(),
             apache_lines,
-            nginx_lines,
             caddy_lines,
             php_lines,
         }
@@ -622,7 +622,6 @@ impl WebServers {
         };
         let kind = match engine {
             WebServerEngine::Apache => SiteKind::Apache,
-            WebServerEngine::Nginx => SiteKind::Nginx,
             WebServerEngine::Caddy => SiteKind::Caddy,
         };
         let folder_clean = if folder.trim().is_empty() {

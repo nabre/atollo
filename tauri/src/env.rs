@@ -442,9 +442,7 @@ impl KitEnv {
         env.set_php(&data, &app("php"));
         env.set_path("CP_APACHE", app("apache"));
         env.set("CP_APACHE_FWD", fwd(&app("apache")));
-        env.set_path("CP_NGINX", app("nginx"));
-        env.set("CP_NGINX_FWD", fwd(&app("nginx")));
-        // Caddy (D-111): its folder, as Nginx's.
+        // Caddy (D-111): its folder, as Apache's.
         env.set_path("CP_CADDY", app("caddy"));
         env.set("CP_CADDY_FWD", fwd(&app("caddy")));
         let composer = data.join("composer");
@@ -644,13 +642,6 @@ impl KitEnv {
         }
         if has(r"apache\bin\httpd.exe") {
             path.push(app(r"apache\bin"));
-        }
-        if has(r"nginx\nginx.exe") {
-            if is_win {
-                path.push(app("nginx"));
-            } else {
-                path.push(app("nginx/sbin"));
-            }
         }
         if has(r"caddy\caddy.exe") {
             path.push(app("caddy"));

@@ -1,6 +1,6 @@
 //! The configuration a pool writes in `data\servers\<pool_id>\` at
-//! every start or reload: Apache `httpd.conf` and VirtualHosts, Nginx
-//! `nginx.conf` and `server` blocks, Caddy's `Caddyfile` with its sites.
+//! every start or reload: Apache `httpd.conf` and VirtualHosts, Caddy's
+//! `Caddyfile` with its sites.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -14,13 +14,13 @@ use crate::kit::{Kit, Os};
 use crate::projects::alias;
 use crate::projects::apache::{self, fwd};
 use crate::projects::caddy;
-use crate::projects::nginx::{self, FastCgi};
+use crate::projects::fastcgi::FastCgi;
 use crate::setup::catalog::Catalog;
 
 use super::pools::vhost_file;
 use super::{serves, AttachedSite, WebServerEngine, WebServerPool, WebServers};
 
-/// Resolves the directory of a versioned component (`apache`, `nginx`, `caddy`, `php`) for `line`.
+/// Resolves the directory of a versioned component (`apache`, `caddy`, `php`) for `line`.
 pub(super) fn component_dir(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
     if let Some(c) = Catalog::get().find(id) {
         if let Some(dir) = crate::versions::dir_for(kit, c, line) {
@@ -144,78 +144,6 @@ pub(super) fn apache_pool_conf(
     ))
 }
 
-/// Generates the master `nginx.conf` for an Nginx pool.
-pub(super) fn nginx_pool_conf(
-    nginx_install: &Path,
-    pool_dir: &Path,
-    port: u16,
-    lan: bool,
-) -> String {
-    let run_fwd = fwd(pool_dir);
-    let nginx_fwd = fwd(nginx_install);
-    let listen = if lan {
-        port.to_string()
-    } else {
-        format!("127.0.0.1:{port}")
-    };
-    let mut lines = vec![
-        "# --- Atollo: shared Nginx VirtualHost pool (written at every start) ---".to_owned(),
-        "worker_processes 1;".to_owned(),
-        format!("pid \"{run_fwd}/nginx.pid\";"),
-        format!("error_log \"{run_fwd}/error.log\";"),
-        "events {".to_owned(),
-        "    worker_connections 1024;".to_owned(),
-        "}".to_owned(),
-        "http {".to_owned(),
-        format!("    include \"{nginx_fwd}/conf/mime.types\";"),
-        "    default_type application/octet-stream;".to_owned(),
-        format!("    access_log \"{run_fwd}/access.log\";"),
-        format!("    client_body_temp_path \"{run_fwd}/temp/client_body\";"),
-        format!("    proxy_temp_path \"{run_fwd}/temp/proxy\";"),
-        format!("    fastcgi_temp_path \"{run_fwd}/temp/fastcgi\";"),
-        format!("    uwsgi_temp_path \"{run_fwd}/temp/uwsgi\";"),
-        format!("    scgi_temp_path \"{run_fwd}/temp/scgi\";"),
-        "    sendfile on;".to_owned(),
-        "    keepalive_timeout 65;".to_owned(),
-        nginx::SERVER_NAMES_HASH.to_owned(),
-        format!("    include \"{run_fwd}/vhosts/*.conf\";"),
-        format!("    include \"{run_fwd}/conf.d/*.conf\";"),
-    ];
-    if lan {
-        // An IP of the PC as `Host`: Nginx's own page, never a project.
-        lines.extend([
-            "    server {".to_owned(),
-            format!("        listen {listen} default_server;"),
-            "        server_name localhost;".to_owned(),
-            format!("        root \"{nginx_fwd}/html\";"),
-            "        index index.html index.htm;".to_owned(),
-            "    }".to_owned(),
-        ]);
-    } else {
-        // Nginx's own page for the pool's local names; any other `Host`, or
-        // none, gets 421 from the default server, as a project's own Nginx
-        // (D-98: DNS rebinding).
-        lines.extend([
-            "    server {".to_owned(),
-            format!("        listen {listen};"),
-            format!(
-                "        server_name localhost {};",
-                POOL_LOCAL_HOSTS.join(" ")
-            ),
-            format!("        root \"{nginx_fwd}/html\";"),
-            "        index index.html index.htm;".to_owned(),
-            "    }".to_owned(),
-            "    server {".to_owned(),
-            format!("        listen {listen} default_server;"),
-            "        server_name _;".to_owned(),
-            "        return 421;".to_owned(),
-            "    }".to_owned(),
-        ]);
-    }
-    lines.extend(["}".to_owned(), String::new()]);
-    lines.join("\r\n")
-}
-
 /// The document root of an attached site: its folder inside the project,
 /// checked without following links (D-77). `None` (the site is not served,
 /// with a warning in the log, as for a skipped alias) when the folder is
@@ -266,7 +194,7 @@ pub(super) fn caddy_site_conf(
 }
 
 impl WebServers {
-    /// Writes `httpd.conf` / `nginx.conf` and the `vhosts/*.conf` of the
+    /// Writes `httpd.conf` / `Caddyfile` and the `vhosts/*.conf` of the
     /// sites of `pool` it [`serves`], but those of the sites whose project
     /// was stopped ([`Self::detach`]).
     pub(super) fn write_pool_configs(
@@ -338,41 +266,6 @@ impl WebServers {
                 let main_conf =
                     apache_pool_conf(&base, &pool_dir, pool.port, lan, self.kit.os(), fcgi)?;
                 let conf_path = pool_dir.join("httpd.conf");
-                write_atomic(&conf_path, main_conf.as_bytes())?;
-                Ok(conf_path)
-            }
-            WebServerEngine::Nginx => {
-                nginx::prepare_dirs(&pool_dir)?;
-                let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
-                for site in served {
-                    let proj_root = self.kit.projects().join(&site.project);
-                    let Some(doc_root) = site_doc_root(&proj_root, site) else {
-                        continue;
-                    };
-                    // The site's own ServerName first (never `<project>.localhost`
-                    // for every action of the project: BUG-V3-02).
-                    let names: Vec<String> = std::iter::once(site.server_name.clone())
-                        .chain(site.domains.iter().cloned())
-                        .collect();
-                    let vhost = nginx::vhost_block(
-                        &nginx_dir,
-                        None,
-                        &doc_root,
-                        None,
-                        pool.port,
-                        fcgi,
-                        lan,
-                        &names,
-                        &alias::resolve_nginx(&proj_root, &self.kit.projects(), &site.aliases),
-                        false,
-                    );
-                    write_atomic(
-                        &vhosts_dir.join(vhost_file(site)),
-                        format!("{vhost}\r\n").as_bytes(),
-                    )?;
-                }
-                let main_conf = nginx_pool_conf(&nginx_dir, &pool_dir, pool.port, lan);
-                let conf_path = pool_dir.join("nginx.conf");
                 write_atomic(&conf_path, main_conf.as_bytes())?;
                 Ok(conf_path)
             }

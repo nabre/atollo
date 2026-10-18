@@ -18,8 +18,8 @@ export interface ProjectAction {
   static: string | null;
   /** A folder served by Apache (a shared pool, or the site's own server). */
   apache: string | null;
-  /** A folder served by Nginx (a shared pool, or the site's own server). */
-  nginx?: string | null;
+  /** A folder served by Caddy (a shared pool, or the site's own server). */
+  caddy?: string | null;
   /** Web server profile id, "auto" (the automatic pool of the project's
    * versions) or "dedicated" (the site's own server). */
   server?: string | null;
@@ -81,7 +81,7 @@ function sampleAction(id: string, label: string, command: string, staticDir: str
     env: {},
     static: staticDir,
     apache: null,
-    nginx: null,
+    caddy: null,
     custom: false,
   };
 }
@@ -229,7 +229,7 @@ export function projectClone(source: string, name: string | null): Promise<strin
   return query<string>("project_clone", name ?? "clone", { source, name });
 }
 
-export type SiteKind = "static" | "php" | "apache" | "nginx" | "none";
+export type SiteKind = "static" | "php" | "apache" | "caddy" | "none";
 
 export interface SiteOptions {
   server?: string | null;

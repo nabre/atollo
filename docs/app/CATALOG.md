@@ -21,8 +21,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `uv` | uv, uvx | no | 35 | | quando serve: azioni con `uv`, server MCP con `uvx` (D-59) |
 | | `php` | PHP + Composer | sì | 100 | | Windows: con VC++ locale, x64 anche su ARM64; macOS e Linux: static-php-cli (D-112) |
 | | `apache` | Apache | sì | 45 | `php` | x64 anche su ARM64; su Windows Apache Lounge con il modulo PHP, su macOS e Linux la build del kit con `php-fpm` (D-116), offerta lì quando il primo rilascio è fissato nel catalogo |
-| | `nginx` | Nginx | no | 10 | | solo Windows; da togliere dopo la migrazione dei pool a Caddy ([issue #4](https://github.com/nabre/atollo/issues/4)) |
-| | `caddy` | Caddy | no | 45 | | **nuovo** (D-111); server web dei pool e dei siti su tutti i sistemi |
+| | `caddy` | Caddy | no | 45 | | **nuovo** (D-111); server web dei pool e dei siti su tutti i sistemi; al posto di Nginx, tolto con la migrazione dei suoi pool e siti all'avvio (D-120) |
 | | `rust` | Rust | no | 920 | | toolchain `gnu` su x64 |
 | | `go` | Go | no | 250 | | |
 | | `java` | Java (Temurin, Maven, Gradle) | no | 300 | | |
@@ -56,7 +55,7 @@ Campi del catalogo oltre a quelli del Atollo: `keys` (le altre parti di un compo
 
 | Campo | Cosa dice | Esempio |
 | --- | --- | --- |
-| `targets` | i soli target dove il componente c'è; vuoto = tutti | Apache, Nginx: `["win32-x64", "win32-arm64"]` |
+| `targets` | i soli target dove il componente c'è; vuoto = tutti | Apache: `["win32-x64", "win32-arm64"]` |
 | `unavailable` | target → motivo (in italiano, tradotto dai cataloghi), mostrato al posto di «non disponibile per `<target>`» | Android: `linux-arm64` |
 | `noArm64` | nessuna build gira su Windows ARM64, nemmeno in emulazione | R |
 | `x64Only` | build x64 in emulazione solo su Windows ARM64 | PHP, MySQL, MongoDB, editor |
@@ -85,7 +84,7 @@ Un componente non disponibile per il sistema si mostra «non disponibile per `<t
 | Antigravity | manifesto di Google, `.tar.gz` (dalla 1.4) | come macOS | SHA-512 del manifesto |
 | R | conda-forge `r-base` | come macOS | micromamba; non rilocabile (D-92) |
 
-Su Windows ARM64: MySQL in emulazione x64 (stesso archivio di Windows x64), Caddy nativo, Rust con l'host `aarch64-pc-windows-gnullvm` e llvm-mingw `ucrt-aarch64` di `cc` come linker, micromamba nativo (`micromamba-win-arm64`). Apache resta Apache Lounge x64 in emulazione: non c'è un Apache né un PHP nativo per Windows ARM64 (D-116). Nginx resta solo su Windows.
+Su Windows ARM64: MySQL in emulazione x64 (stesso archivio di Windows x64), Caddy nativo, Rust con l'host `aarch64-pc-windows-gnullvm` e llvm-mingw `ucrt-aarch64` di `cc` come linker, micromamba nativo (`micromamba-win-arm64`). Apache resta Apache Lounge x64 in emulazione: non c'è un Apache né un PHP nativo per Windows ARM64 (D-116).
 
 **Componenti conda non rilocabili** (D-92). Un ambiente conda ha il suo percorso scritto dentro e non si sposta: quando il kit cambia cartella (`root-<os>.txt`), i componenti non rilocabili (`Installer::relocatable(target)` falso: R, Ruby, MongoDB su Linux, SQLite su Linux ARM64 e C/C++ fuori da Windows) ricevono `data/app/versions/<target>/<id>.reinstall`, ogni loro linea salvata `<id>@<linea>.reinstall`, e l'installazione automatica all'avvio li reinstalla: dagli archivi conservati in `data/app/conda/<target>/` (`pkgs/` e l'elenco esplicito `locks/<id>@<linea>.txt` con il suo `.json`), senza rete, dopo il controllo dello SHA-256 di ogni archivio; dalla rete come prima se qualcosa manca o è diverso (D-118). Git di dugite-native segue il kit. Fuori da Windows la radice si confronta tenendo conto di maiuscole e minuscole: `/media/u/Kit` → `/media/u/kit` è uno spostamento.
 
@@ -94,7 +93,7 @@ Su Windows ARM64: MySQL in emulazione x64 (stesso archivio di Windows x64), Cadd
 Abbreviazioni:
 - **IA**: installazione da archivio (`Install-Archive`, `_languages.ps1:43-68`). Lettura della versione, salto se aggiornato, download, verifica (SHA-512 se disponibile, altrimenti SHA-256; hash mancante = errore), estrazione, sostituzione della cartella. `inner`: `''` = archivio così com'è, `*` = unica cartella di primo livello, altrimenti nome della sottocartella. Il file chiave (e le parti di `keys` nella stessa cartella) deve esistere prima dello scambio.
 - **GHA**: `api.github.com/repos/<repo>/releases/latest`; prima asset che corrisponde alla regex; SHA-256 da `asset.digest`, e per i rilasci più vecchi (senza `digest`) dal file di checksum del rilascio: `<asset>.sha256` (Kotlin), `<nome>.sha256sum` (Deno), `SHASUMS256.txt` (Bun); versione = tag senza `v` / `bun-v`.
-- **Versioni** (componenti `versioned`, D-80): l'elenco delle `major.minor` scaricabili e l'ultima build di ognuna vengono dalla stessa fonte dell'ultima versione: per GHA gli ultimi 100 rilasci non prerelease (`releases?per_page=100`); Julia da `versions.json` (solo `stable` con zip `winnt`); Dart dalle cartelle di `channels/stable/release/` del bucket `dart-archive` (API JSON di Google Cloud Storage, da Dart 2); MySQL dalle linee fissate nel catalogo; MongoDB da `current.json`. Si offre solo una versione verificabile: un rilascio senza SHA-256 (né `digest` né file di checksum: Typst fino a 0.13, nginx fino a 1.27, RubyInstaller 3.1) non compare. Apache Lounge pubblica solo l'ultima build di Apache 2.4: Apache ha una sola versione. All'avvio l'app aggiorna in background gli elenchi mancanti o più vecchi di un giorno (`version-lines.json`), salvo con `ATOLLO_NO_UPDATE`. Verifica dal vivo di tutte le fonti: `cargo test live_lines -- --ignored --nocapture` (con `GITHUB_TOKEN`).
+- **Versioni** (componenti `versioned`, D-80): l'elenco delle `major.minor` scaricabili e l'ultima build di ognuna vengono dalla stessa fonte dell'ultima versione: per GHA gli ultimi 100 rilasci non prerelease (`releases?per_page=100`); Julia da `versions.json` (solo `stable` con zip `winnt`); Dart dalle cartelle di `channels/stable/release/` del bucket `dart-archive` (API JSON di Google Cloud Storage, da Dart 2); MySQL dalle linee fissate nel catalogo; MongoDB da `current.json`. Si offre solo una versione verificabile: un rilascio senza SHA-256 (né `digest` né file di checksum: Typst fino a 0.13, RubyInstaller 3.1) non compare. Apache Lounge pubblica solo l'ultima build di Apache 2.4: Apache ha una sola versione. All'avvio l'app aggiorna in background gli elenchi mancanti o più vecchi di un giorno (`version-lines.json`), salvo con `ATOLLO_NO_UPDATE`. Verifica dal vivo di tutte le fonti: `cargo test live_lines -- --ignored --nocapture` (con `GITHUB_TOKEN`).
 - **Cartella per linea** (D-80, D-91): i componenti `versioned` e `minorFolder` stanno in `A\<cartella>\<major.minor>\` (`A\git\2.56`, `A\node\22.11`); la tabella scrive la cartella del componente, i file chiave sono relativi a quella della linea. Una patch sostituisce la sua linea; per i `minorFolder` una linea nuova toglie la vecchia.
 - **Lista**: righe `^([0-9a-f]{64})\s+\*?(\S+)\s*$`, nome del file esatto.
 
