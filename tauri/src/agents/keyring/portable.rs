@@ -37,6 +37,26 @@ pub fn no_secret_service(error: &str) -> bool {
     .any(|p| error.contains(p))
 }
 
+/// The only Secret Service collection go-keyring (agy) reads and writes:
+/// this object path, whatever the `default` alias points at. The same
+/// collection on GNOME; KeePassXC and some KWallet setups have none.
+pub const LOGIN_COLLECTION: &str = "/org/freedesktop/secrets/collection/login";
+
+/// Told when the Secret Service has no [`LOGIN_COLLECTION`].
+pub const NO_LOGIN_COLLECTION: &str = "the Secret Service has no \"login\" collection (/org/freedesktop/secrets/collection/login), the only one agy reads: the kit does not move the Antigravity sign-in (KeePassXC, some KWallet setups: create a collection named login)";
+
+/// Which of the Secret Service's collections (the index among their object
+/// paths) gets agy's sign-in: [`LOGIN_COLLECTION`] only. Never `default`
+/// or another one when it is missing: agy would not find the sign-in there
+/// (fail closed, [`NO_LOGIN_COLLECTION`]).
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+pub fn login_collection<'a>(paths: impl IntoIterator<Item = &'a str>) -> Result<usize> {
+    paths
+        .into_iter()
+        .position(|p| p == LOGIN_COLLECTION)
+        .ok_or_else(|| anyhow::anyhow!("{NO_LOGIN_COLLECTION}"))
+}
+
 /// The go-keyring (service, user) pairs agy uses on macOS and Linux, where
 /// the stores cannot be listed by a name pattern as on Windows. Verified on
 /// agy 1.4.1 (17/10/2026): the Windows credential agy writes is

@@ -6,11 +6,12 @@
 //! runs `claude setup-token` in a session of the app's terminal; the
 //! long-lived token it prints is read from the session's output and saved
 //! in `data/agents/claude/oauth-token` (600, in a 700 folder). While that
-//! file exists Claude Code gets it as `CLAUDE_CODE_OAUTH_TOKEN`: when
-//! started from the Agents page ([`super::launch`]), and from the kit's
-//! terminals and editor once the kit's environment calls [`apply`] on
-//! macOS (`env.rs`). "Esci" deletes it. The token is never logged: only
-//! "saved" or "not found".
+//! file exists every program of the kit gets it as
+//! `CLAUDE_CODE_OAUTH_TOKEN` ([`apply_in`] in `KitEnv::build`): Claude Code
+//! from the Agents page, the kit's terminals and editor. Saving it or
+//! "Esci" (which deletes it) builds the kit's environment again. The token
+//! is never logged nor printed by `Atollo env` (masked): only "saved" or
+//! "not found".
 //!
 //! The reading of the output is plain code, tested on every system; only
 //! the terminal session is Unix code.
@@ -104,11 +105,9 @@ pub fn remove(kit: &Kit) -> Result<()> {
     }
 }
 
-/// Claude Code's environment: the saved token when there is one.
-pub fn apply(kit: &Kit, env: &mut KitEnv) {
-    apply_in(&kit.data(), env);
-}
-
+/// The kit's environment (`KitEnv::build`, `data`: the kit's `data`): the
+/// saved token when there is one. Never printed (`cli::print_env` and
+/// `KitEnv`'s `Debug` mask it) nor written to a file by the kit.
 pub fn apply_in(data: &Path, env: &mut KitEnv) {
     if let Some(token) = read_in(data) {
         env.set(VAR, token);

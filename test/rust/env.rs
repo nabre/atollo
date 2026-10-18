@@ -305,6 +305,89 @@ fn secrets_are_masked() {
     assert_eq!(mask_secrets("no secrets here"), "no secrets here");
 }
 
+/// What `Atollo env` and `KitEnv`'s `Debug` show: every `*_TOKEN`,
+/// `*_KEY`, secret and password masked, a proxy's password too; the rest
+/// as it is.
+#[test]
+fn secret_values_are_masked_by_name() {
+    for name in [
+        "CLAUDE_CODE_OAUTH_TOKEN",
+        "GH_TOKEN",
+        "github_token",
+        "GEMINI_API_KEY",
+        "DEVKIT_FCGI_KEY",
+        "CLIENT_SECRET",
+        "DB_PASSWORD",
+        "MYSQL_PASSWD",
+        "tkn",
+    ] {
+        assert!(is_secret(name), "{name}");
+        assert_eq!(masked(name, "sk-ant-oat01-x"), "***", "{name}");
+    }
+    for name in [
+        "PATH",
+        "HOME",
+        "DEVKIT_LANG",
+        "GCM_CREDENTIAL_STORE",
+        "TERM",
+    ] {
+        assert!(!is_secret(name), "{name}");
+    }
+    assert_eq!(masked("PATH", "/a:/b"), "/a:/b");
+    assert_eq!(
+        masked("HTTPS_PROXY", "http://me:p%40ss@proxy:8080/x"),
+        "http://me:***@proxy:8080/x"
+    );
+    assert_eq!(
+        masked("HTTP_PROXY", "http://token@proxy:8080"),
+        "http://token:***@proxy:8080"
+    );
+    assert_eq!(
+        masked("HTTP_PROXY", "http://proxy:8080/a@b"),
+        "http://proxy:8080/a@b"
+    );
+    assert_eq!(
+        masked("HTTP_PROXY", "http://proxy:8080"),
+        "http://proxy:8080"
+    );
+}
+
+/// `Atollo env` (`cli::print_env`) and `{:?}` of the kit's environment
+/// never show a secret's value.
+#[test]
+fn print_env_and_debug_mask_secrets() {
+    let (_tmp, kit) = fake_kit("env-print", &[]);
+    let s = Settings {
+        network: crate::settings::Network {
+            https_proxy: Some("http://me:hunter2@proxy:8080".into()),
+            ..Default::default()
+        },
+        gemini_api_key: Some("AIzaSECRET".into()),
+        ..Settings::default()
+    };
+    let mut env = KitEnv::build(&kit, &s, "en", &host());
+    env.set("GH_TOKEN", "ghp_SECRET");
+    env.set("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat01-SECRET");
+    let mut out = Vec::new();
+    crate::cli::print_env(&env, &mut out).unwrap();
+    let out = String::from_utf8(out).unwrap();
+    for line in [
+        "GEMINI_API_KEY=***",
+        "GH_TOKEN=***",
+        "CLAUDE_CODE_OAUTH_TOKEN=***",
+        "HTTPS_PROXY=http://me:***@proxy:8080",
+    ] {
+        assert!(out.lines().any(|l| l == line), "{line}");
+    }
+    assert!(out.lines().any(|l| l.starts_with("PATH=") && l.len() > 5));
+    for debug in [format!("{env:?}"), format!("{env:#?}")] {
+        for secret in ["SECRET", "hunter2"] {
+            assert!(!out.contains(secret) && !debug.contains(secret), "{secret}");
+        }
+        assert!(debug.contains("GH_TOKEN"));
+    }
+}
+
 #[test]
 #[cfg_attr(
     not(windows),
