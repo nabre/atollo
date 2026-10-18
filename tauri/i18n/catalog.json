@@ -1374,6 +1374,11 @@
     "fr": "site web Caddy ({0})",
     "de": "Caddy-Website ({0})"
   },
+  "Caddy non legge i .htaccess delle sottocartelle ({0}): ciò che nascondono è visibile e il PHP lì viene eseguito.": {
+    "en": "Caddy does not read the .htaccess files of subfolders ({0}): what they hide is visible and PHP runs there.",
+    "fr": "Caddy ne lit pas les .htaccess des sous-dossiers ({0}) : ce qu'ils cachent est visible et PHP y est exécuté.",
+    "de": "Caddy liest die .htaccess-Dateien der Unterordner nicht ({0}): Was sie verbergen, ist sichtbar, und PHP wird dort ausgeführt."
+  },
   "Identificativo del server non valido.": {
     "en": "Invalid server identifier.",
     "fr": "Identifiant de serveur non valide.",
