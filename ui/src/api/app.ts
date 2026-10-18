@@ -87,6 +87,9 @@ export interface Settings {
   rustToolchain: "gnu" | "msvc" | null;
   /** `TEMP` of the programs; applies to the consoles opened after saving. */
   programTemp: "auto" | "kit" | "system";
+  /** Keeps the packages of the conda environments to reinstall them
+   * without the network after a move (D-118). */
+  keepCondaPackages: boolean;
 }
 
 export interface SettingsView {
@@ -106,6 +109,7 @@ const SAMPLE_SETTINGS: SettingsView = {
     phpVersion: null,
     rustToolchain: null,
     programTemp: "auto",
+    keepCondaPackages: true,
   },
   geminiKeySet: false,
   problem: null,

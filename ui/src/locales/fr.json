@@ -811,5 +811,10 @@
   "Eliminare i dati MariaDB conservati?": "Supprimer les données MariaDB conservées ?",
   "I database sono già in MySQL: si cancellano la cartella e le copie dei file di prima.": "Les bases sont déjà dans MySQL : le dossier et les copies des fichiers d'avant sont supprimés.",
   "Dati MariaDB conservati ({0} MB)": "Données MariaDB conservées ({0} Mo)",
-  "MariaDB → MySQL": "MariaDB → MySQL"
+  "MariaDB → MySQL": "MariaDB → MySQL",
+  "Pacchetti per reinstallare senza rete": "Paquets pour réinstaller sans réseau",
+  "Su questo sistema alcuni componenti (R, Ruby, MongoDB, SQLite, make) non seguono il kit quando cambia cartella e si reinstallano: con i loro pacchetti nel kit la reinstallazione non scarica nulla.": "Sur ce système, certains composants (R, Ruby, MongoDB, SQLite, make) ne suivent pas le kit quand il change de dossier et sont réinstallés : avec leurs paquets dans le kit, la réinstallation ne télécharge rien.",
+  "Conserva i pacchetti nel kit": "Conserver les paquets dans le kit",
+  "Copia per reinstallare senza rete: {0} MB": "Copie pour réinstaller sans réseau : {0} Mo",
+  "Libera": "Libérer"
 }
