@@ -394,6 +394,61 @@ fn private_leaf_refuses_what_exists() {
     }
 }
 
+/// Review of WP-3.3: a failed `caddy reload` logs why (the end of its
+/// stderr), never nothing.
+#[test]
+fn reload_failure_keeps_the_reason() {
+    let err = b"2026/10/18 info using config\n\nError: adapting config using caddyfile: Caddyfile:12: unrecognized directive: bogus\n";
+    assert_eq!(
+        reload_failure(err),
+        "2026/10/18 info using config | Error: adapting config using caddyfile: Caddyfile:12: unrecognized directive: bogus"
+    );
+    assert_eq!(reload_failure(b""), "no output");
+    assert_eq!(reload_failure(b"\n \n"), "no output");
+    let many: String = (1..=9).map(|i| format!("line {i}\n")).collect();
+    assert_eq!(
+        reload_failure(many.as_bytes()),
+        "line 5 | line 6 | line 7 | line 8 | line 9"
+    );
+    let long = "x".repeat(3000);
+    let short = reload_failure(long.as_bytes());
+    assert_eq!(short.chars().count(), 2003);
+    assert!(short.ends_with("..."));
+}
+
+/// Review of WP-3.3: the leaves a crash left in the sockets' folder go at
+/// the next socket; those with a live server, young ones and other names
+/// stay.
+#[cfg(unix)]
+#[test]
+fn stale_socket_leaves_are_swept() {
+    use std::os::unix::net::UnixListener;
+    use std::time::Duration;
+    let tmp = TempDir::new("caddy-sweep");
+    let parent = tmp.0.join("atollo-caddy-test");
+    private_leaf(&tmp.0, "atollo-caddy-test").unwrap();
+    let dead = private_leaf(&parent, "c-dead").unwrap();
+    drop(UnixListener::bind(dead.join("a.sock")).unwrap());
+    assert!(
+        dead.join("a.sock").exists(),
+        "the file of a socket that ended"
+    );
+    let empty = private_leaf(&parent, "c-empty").unwrap();
+    let live = private_leaf(&parent, "c-live").unwrap();
+    let _listener = UnixListener::bind(live.join("a.sock")).unwrap();
+    let other = private_leaf(&parent, "keep").unwrap();
+
+    // Young leaves are never looked at.
+    sweep_stale_leaves(&parent, Duration::from_secs(3600));
+    assert!(dead.exists() && empty.exists() && live.exists());
+
+    sweep_stale_leaves(&parent, Duration::ZERO);
+    assert!(!dead.exists());
+    assert!(!empty.exists());
+    assert!(live.join("a.sock").exists(), "a server still listens");
+    assert!(other.exists(), "not a leaf of the kit");
+}
+
 /// Caddy's file server follows links on every system: an alias whose folder
 /// has one inside is left out (with Apache it would be served).
 #[test]
