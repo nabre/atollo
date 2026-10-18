@@ -1,9 +1,9 @@
-// Web Servers (tauri/src/servers/): shared Apache and Nginx VirtualHost pools,
+// Web Servers (tauri/src/servers/): shared Caddy and Apache VirtualHost pools,
 // manual server profiles, and attached projects. Rust: tauri/src/commands/servers.rs.
 
 import { act, query } from "./core";
 
-export type WebServerEngine = "apache" | "nginx";
+export type WebServerEngine = "apache" | "caddy";
 
 export interface AttachedSite {
   project: string;
@@ -60,7 +60,7 @@ export interface WebServerProfileInput {
 export interface WebServersView {
   pools: WebServerPool[];
   apacheLines: string[];
-  nginxLines: string[];
+  caddyLines: string[];
   phpLines: string[];
 }
 
@@ -93,7 +93,7 @@ const SAMPLE_SERVERS: WebServersView = {
     },
   ],
   apacheLines: ["2.4"],
-  nginxLines: ["1.28"],
+  caddyLines: ["2.11"],
   phpLines: ["8.4", "8.3", "7.4", "5.6"],
 };
 

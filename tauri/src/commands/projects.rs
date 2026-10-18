@@ -176,7 +176,7 @@ pub fn project_action_default<R: Runtime>(
 }
 
 /// "Servi come sito web": a folder of the project served by the file server
-/// (`static`), PHP (`php`), Apache (`apache`) or Nginx (`nginx`), or the site removed (`none`).
+/// (`static`), PHP (`php`), Apache (`apache`) or Caddy (`caddy`), or the site removed (`none`).
 #[tauri::command]
 pub fn project_site<R: Runtime>(
     webview: Webview<R>,

@@ -179,8 +179,9 @@ pub fn migrate(kit: &Kit) {
 }
 
 /// Components no longer in the catalog: Windows Terminal (D-95), Adminer
-/// (phpMyAdmin in its place, D-107).
-const RETIRED: [&str; 2] = ["terminal", "adminer"];
+/// (phpMyAdmin in its place, D-107), Nginx (Caddy in its place, D-120;
+/// its pools and sites become Caddy's in `servers::migrate`).
+const RETIRED: [&str; 3] = ["terminal", "adminer", "nginx"];
 
 /// What an older kit kept of a component no longer in the catalog: its
 /// folder in `data\apps`, its version files and its files in `data\kit`. A

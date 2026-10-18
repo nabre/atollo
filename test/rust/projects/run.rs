@@ -195,7 +195,7 @@ fn site_action(apache: bool, server: Option<&str>) -> Action {
     if apache {
         a.apache_dir = Some("public".into());
     } else {
-        a.nginx_dir = Some("public".into());
+        a.caddy_dir = Some("public".into());
     }
     a.server = server.map(str::to_owned);
     a
@@ -321,12 +321,12 @@ fn pool_runs_follow_their_pool() {
     assert_eq!(r.list().len(), 1);
 }
 
-/// BUG-V3-01: when the php-cgi of a project's Nginx ends, the server is
+/// BUG-V3-01: when the php-cgi of a project's Caddy ends, the server is
 /// stopped and the run ends in error with the reason in its log; stopped by
 /// the user, nothing is added.
 #[cfg(windows)]
 #[test]
-fn nginx_stops_when_its_php_cgi_ends() {
+fn site_stops_when_its_php_cgi_ends() {
     let tmp = TempDir::new("run-php-cgi");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();

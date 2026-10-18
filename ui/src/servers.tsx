@@ -1,4 +1,4 @@
-// The Web Servers page: shared Apache and Nginx VirtualHost server pools
+// The Web Servers page: shared Caddy and Apache VirtualHost server pools
 // (automatic by engine + PHP version or manual profiles), with .localhost
 // VirtualHosts and portable relative path aliases.
 
@@ -148,7 +148,7 @@ function PoolDetails({
           {pool.sites.length === 0 ? (
             <Notice tone="info">
               {t(
-                "Nessun sito in questo pool. Un sito Apache o Nginx compare qui quando il suo progetto lo avvia o lo sceglie nella scheda Sito web (pool automatico delle sue versioni, o questo profilo).",
+                "Nessun sito in questo pool. Un sito Caddy o Apache compare qui quando il suo progetto lo avvia o lo sceglie nella scheda Sito web (pool automatico delle sue versioni, o questo profilo).",
               )}
             </Notice>
           ) : (
@@ -216,7 +216,7 @@ function PoolDetails({
         <EditorSection id={`srv-info-${pool.id}`} title={t("Dettagli del pool")}>
           <Properties
             rows={[
-              [t("Motore"), pool.engine === "apache" ? "Apache httpd" : "Nginx"],
+              [t("Motore"), pool.engine === "apache" ? "Apache httpd" : "Caddy"],
               [t("Versione server"), pool.serverLine ?? t("Predefinita")],
               [t("Versione PHP"), pool.phpLine ?? t("Nessuna (solo file statici)")],
               [t("Porta"), <code className="font-mono">127.0.0.1:{String(pool.port)}</code>],
@@ -258,7 +258,7 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
   const [createOpen, setCreateOpen] = useState(false);
 
   const [newName, setNewName] = useState("");
-  const [newEngine, setNewEngine] = useState<WebServerEngine>("apache");
+  const [newEngine, setNewEngine] = useState<WebServerEngine>("caddy");
   const [newServerLine, setNewServerLine] = useState("");
   const [newPhpLine, setNewPhpLine] = useState("");
   const [newPort, setNewPort] = useState("");
@@ -297,7 +297,7 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
   const current = chosen ?? pools[0]?.id ?? null;
   const activePool = pools.find((p) => p.id === current) ?? pools[0];
   const runningCount = pools.filter((p) => p.running).length;
-  const engineLines = newEngine === "apache" ? (view?.apacheLines ?? []) : (view?.nginxLines ?? []);
+  const engineLines = newEngine === "apache" ? (view?.apacheLines ?? []) : (view?.caddyLines ?? []);
   const phpLines = view?.phpLines ?? [];
 
   const side = (
@@ -341,7 +341,7 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
             <p className="px-5 py-1 text-vsc-desc">{t("Caricamento…")}</p>
           ) : pools.length === 0 ? (
             <p className="px-5 py-2 text-[12px] text-vsc-desc">
-              {t("Nessun pool configurato. Crea un profilo manuale o aggiungi un progetto Apache/Nginx.")}
+              {t("Nessun pool configurato. Crea un profilo manuale o aggiungi un progetto Caddy/Apache.")}
             </p>
           ) : (
             <List label={t("Server Web")}>
@@ -409,8 +409,8 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
                   setNewServerLine("");
                 }}
                 options={[
+                  { value: "caddy", label: "Caddy" },
                   { value: "apache", label: "Apache httpd" },
-                  { value: "nginx", label: "Nginx" },
                 ]}
               />
             </div>
@@ -546,7 +546,7 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
       )}
       <p className="shrink-0 border-t border-vsc-border px-5 py-2 text-[12px] text-vsc-desc">
         {t(
-          "Ogni pool Apache o Nginx può servire più progetti contemporaneamente tramite VirtualHost .localhost (RFC 6761, senza toccare il file hosts di Windows) e alias di percorso 100% portabili.",
+          "Ogni pool Caddy o Apache può servire più progetti contemporaneamente tramite VirtualHost .localhost (RFC 6761, senza toccare il file hosts di Windows) e alias di percorso 100% portabili.",
         )}
       </p>
     </ViewContainer>

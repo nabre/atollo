@@ -7,7 +7,7 @@
 //   `127.0.0.1`, `[::1]`): a page of another site whose name was re-pointed
 //   to 127.0.0.1 (DNS rebinding) must not read the project (SEC-V3-03);
 // - 403 for a hidden file or folder (`.env`, `.git/config`, `.htaccess`),
-//   except `.well-known`, and for the files Apache and Nginx never serve or
+//   except `.well-known`, and for the files Apache and Caddy never serve or
 //   run as PHP (`.inc`, `.php3`..`.php8`, `.phtml`, `.phar`): the built-in
 //   server runs only `.php` and would send them as text (SEC-V3-01);
 // - anything else goes to the project's own router when it has one

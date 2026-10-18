@@ -1,4 +1,4 @@
-//! Shared Web Server pools (Apache, Nginx and Caddy VirtualHost pooling):
+//! Shared Web Server pools (Caddy and Apache VirtualHost pooling):
 //! - Automatic pools grouped by `(engine, serverLine, phpLine)` from the
 //!   projects in `projects\`, plus user-defined profiles in `data\app\servers.json`.
 //! - Each pool writes its configuration and VirtualHost files in
@@ -9,9 +9,10 @@
 //!
 //! Files: `mod` (types, the page's list), `pools` (servers.json, automatic
 //! pools, scan), `config` (generated configuration), `process` (start, stop,
-//! reload, attach).
+//! reload, attach), `migrate` (the pools and sites of Nginx to Caddy, D-120).
 
 mod config;
+pub mod migrate;
 mod pools;
 mod process;
 
@@ -32,23 +33,19 @@ const LIST_TTL: Duration = Duration::from_secs(15);
 #[serde(rename_all = "lowercase")]
 pub enum WebServerEngine {
     Apache,
-    Nginx,
-    /// The kit's web server on every system (D-111).
+    /// The kit's web server on every system (D-111); a profile of Nginx,
+    /// no longer in the kit, reads as Caddy (D-120, `migrate.rs`).
+    #[serde(alias = "nginx")]
     Caddy,
 }
 
 impl WebServerEngine {
-    pub const ALL: [WebServerEngine; 3] = [
-        WebServerEngine::Apache,
-        WebServerEngine::Nginx,
-        WebServerEngine::Caddy,
-    ];
+    pub const ALL: [WebServerEngine; 2] = [WebServerEngine::Apache, WebServerEngine::Caddy];
 
     /// Its id, also the id of its component in the catalog.
     pub fn as_str(self) -> &'static str {
         match self {
             WebServerEngine::Apache => "apache",
-            WebServerEngine::Nginx => "nginx",
             WebServerEngine::Caddy => "caddy",
         }
     }
@@ -56,18 +53,15 @@ impl WebServerEngine {
     pub fn label(self) -> &'static str {
         match self {
             WebServerEngine::Apache => "Apache",
-            WebServerEngine::Nginx => "Nginx",
             WebServerEngine::Caddy => "Caddy",
         }
     }
 
     /// The engine of a site of a project, from the folder its action
-    /// names (`apache`, `nginx`, `caddy` in `panel.json`), with that folder.
+    /// names (`apache`, `caddy` in `panel.json`), with that folder.
     pub fn of_action(action: &crate::detect::Action) -> Option<(WebServerEngine, String)> {
         if let Some(f) = &action.apache_dir {
             Some((WebServerEngine::Apache, f.clone()))
-        } else if let Some(f) = &action.nginx_dir {
-            Some((WebServerEngine::Nginx, f.clone()))
         } else {
             action
                 .caddy_dir
@@ -159,7 +153,6 @@ fn keep_alive_default() -> bool {
 pub struct WebServersView {
     pub pools: Vec<WebServerPool>,
     pub apache_lines: Vec<String>,
-    pub nginx_lines: Vec<String>,
     pub caddy_lines: Vec<String>,
     pub php_lines: Vec<String>,
 }
@@ -206,7 +199,7 @@ fn serves(site: &AttachedSite, started: &BTreeSet<(String, String)>) -> bool {
 
 /// The pools as the page shows them: only the sites [`serves`] keeps, and
 /// no automatic pool left with none (unless it runs), but one, so that a kit
-/// with Apache or Nginx and no site still has a pool to start.
+/// with Caddy or Apache and no site still has a pool to start.
 fn shown_pools(
     pools: Vec<WebServerPool>,
     started: &BTreeSet<(String, String)>,

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use super::config::{apache_pool_conf, apache_vhost_conf, nginx_pool_conf};
+use super::config::{apache_pool_conf, apache_vhost_conf};
 use super::pools::{
     auto_pool_id, canonical_auto_pool, host_label, load_store, migrate_port_ids, name_sites,
     parse_auto_pool_id, pooled_actions, save_store, store_path, StoredServers, POOL_PORT_FROM,
@@ -20,8 +20,7 @@ use crate::env::KitEnv;
 use crate::kit::{tests::TempDir, Arch, Os};
 use crate::os::jobs::{self, Job};
 use crate::projects::alias;
-use crate::projects::fastcgi::FcgiAddr;
-use crate::projects::nginx::FastCgi;
+use crate::projects::fastcgi::{FastCgi, FcgiAddr};
 use crate::setup::catalog::Catalog;
 
 #[test]
@@ -96,87 +95,12 @@ fn profile_crud_and_vhost_generation() {
     assert!(servers.list("it", false).pools.is_empty());
 }
 
-#[test]
-fn nginx_pool_conf_and_vhosts_have_no_duplicate_localhost() {
-    let tmp = TempDir::new("servers-nginx-pool");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    let servers = WebServers::new(kit.clone());
-
-    let projects = kit.projects();
-    fs::create_dir_all(projects.join("alpha").join("public")).unwrap();
-    fs::create_dir_all(projects.join("beta").join("public")).unwrap();
-
-    let pool = WebServerPool {
-        id: "nginx-default".into(),
-        name: "Nginx".into(),
-        engine: WebServerEngine::Nginx,
-        server_line: None,
-        php_line: None,
-        port: 8088,
-        running: false,
-        pid: None,
-        manual: false,
-        sites: vec![
-            AttachedSite {
-                project: "alpha".into(),
-                action: "site".into(),
-                folder: "public".into(),
-                server_name: "alpha.localhost".into(),
-                domains: vec!["api.alpha.localhost".into()],
-                aliases: BTreeMap::new(),
-                url: "http://alpha.localhost:8088".into(),
-                chosen: true,
-                detached: false,
-            },
-            AttachedSite {
-                project: "beta".into(),
-                action: "site".into(),
-                folder: "public".into(),
-                server_name: "beta.localhost".into(),
-                domains: Vec::new(),
-                aliases: BTreeMap::new(),
-                url: "http://beta.localhost:8088".into(),
-                chosen: true,
-                detached: false,
-            },
-        ],
-        conf_dir: conf_dir_text("nginx-default"),
-        orphan: false,
-        profile: None,
-    };
-
-    let conf_path = servers.write_pool_configs(&pool, None, false).unwrap();
-    let main_conf = fs::read_to_string(&conf_path).unwrap();
-    // The pool's page for its local names; any other Host gets 421 (D-98).
-    assert!(main_conf.contains(
-        "        listen 127.0.0.1:8088;\r\n        server_name localhost 127.0.0.1 [::1];"
-    ));
-    assert!(main_conf.contains(
-        "        listen 127.0.0.1:8088 default_server;\r\n        server_name _;\r\n        return 421;"
-    ));
-    assert_eq!(main_conf.matches("default_server").count(), 1);
-
-    let vhosts_dir = conf_path.parent().unwrap().join("vhosts");
-    let alpha_vhost = fs::read_to_string(vhosts_dir.join("alpha.localhost.conf")).unwrap();
-    let beta_vhost = fs::read_to_string(vhosts_dir.join("beta.localhost.conf")).unwrap();
-
-    assert!(alpha_vhost.contains("listen 127.0.0.1:8088;"));
-    assert!(!alpha_vhost.contains("default_server"));
-    assert!(alpha_vhost.contains("location ~ /\\.(?!well-known(/|$)) {"));
-    assert!(alpha_vhost.contains("server_name alpha.localhost api.alpha.localhost;"));
-    assert!(!alpha_vhost.contains("server_name alpha.localhost api.alpha.localhost localhost;"));
-
-    assert!(beta_vhost.contains("listen 127.0.0.1:8088;"));
-    assert!(!beta_vhost.contains("default_server"));
-    assert!(beta_vhost.contains("server_name beta.localhost;"));
-}
-
-fn nginx_pool(id: &str, port: u16, sites: Vec<AttachedSite>) -> WebServerPool {
+/// An automatic-looking Caddy pool `id` on `port` with `sites`, not running.
+fn caddy_pool(id: &str, port: u16, sites: Vec<AttachedSite>) -> WebServerPool {
     WebServerPool {
         id: id.into(),
-        name: "Nginx".into(),
-        engine: WebServerEngine::Nginx,
+        name: "Caddy".into(),
+        engine: WebServerEngine::Caddy,
         server_line: None,
         php_line: None,
         port,
@@ -230,8 +154,8 @@ fn pool_skips_site_with_missing_or_linked_docroot() {
     fs::create_dir_all(&outside).unwrap();
     crate::os::safe_path::tests::junction(&projects.join("linked").join("public"), &outside);
 
-    let pool = nginx_pool(
-        "nginx-docroot",
+    let pool = caddy_pool(
+        "caddy-docroot",
         8089,
         vec![
             site("good", "public", 8089),
@@ -240,18 +164,11 @@ fn pool_skips_site_with_missing_or_linked_docroot() {
         ],
     );
     let conf_path = servers.write_pool_configs(&pool, None, false).unwrap();
-    let vhosts = conf_path.parent().unwrap().join("vhosts");
-    let good = fs::read_to_string(vhosts.join("good.localhost.conf")).unwrap();
-    assert!(good.contains("good/public"), "{good}");
-    assert!(!vhosts.join("missing.localhost.conf").exists());
-    assert!(!vhosts.join("linked.localhost.conf").exists());
-    let all: String = fs::read_dir(&vhosts)
-        .unwrap()
-        .flatten()
-        .map(|e| fs::read_to_string(e.path()).unwrap())
-        .collect();
+    let all = fs::read_to_string(&conf_path).unwrap();
+    assert!(all.contains("http://good.localhost:8089 {"), "{all}");
+    assert!(all.contains("good/public"), "{all}");
     assert!(
-        !all.contains("missing") && !all.contains("outside"),
+        !all.contains("missing") && !all.contains("linked") && !all.contains("outside"),
         "{all}"
     );
 }
@@ -272,7 +189,7 @@ fn concurrent_list_and_save_profile_keep_profile() {
                         WebServerProfileInput {
                             id: String::new(),
                             name: format!("p{i}"),
-                            engine: WebServerEngine::Nginx,
+                            engine: WebServerEngine::Caddy,
                             server_line: None,
                             php_line: None,
                             port: None,
@@ -308,7 +225,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
             WebServerProfileInput {
                 id: "gone".into(),
                 name: "gone".into(),
-                engine: WebServerEngine::Nginx,
+                engine: WebServerEngine::Caddy,
                 server_line: None,
                 php_line: None,
                 port: Some(8094),
@@ -329,7 +246,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
             php_line: None,
             php: None,
             admin: None,
-            started: nginx_pool("gone", 8094, Vec::new()),
+            started: caddy_pool("gone", 8094, Vec::new()),
             by_user: true,
             attached: BTreeSet::new(),
             _job: job,
@@ -365,7 +282,7 @@ fn start_waits_for_a_port_being_released() {
             WebServerProfileInput {
                 id: "busy".into(),
                 name: "busy".into(),
-                engine: WebServerEngine::Nginx,
+                engine: WebServerEngine::Caddy,
                 server_line: None,
                 php_line: None,
                 port: Some(port),
@@ -384,7 +301,7 @@ fn start_waits_for_a_port_being_released() {
         .to_string();
     assert!(err.starts_with(busy), "{err}");
 
-    // Released while waiting: on to the start (no Nginx in this kit).
+    // Released while waiting: on to the start (no Caddy in this kit).
     std::thread::scope(|s| {
         s.spawn(move || {
             std::thread::sleep(Duration::from_millis(400));
@@ -395,7 +312,7 @@ fn start_waits_for_a_port_being_released() {
             .unwrap_err()
             .to_string();
         assert!(!err.starts_with(busy), "{err}");
-        assert!(err.contains("Nginx is not installed"), "{err}");
+        assert!(err.contains("Caddy is not installed"), "{err}");
     });
 }
 
@@ -413,7 +330,7 @@ fn list_uses_cache_until_invalidated() {
     let profile = |id: &str| WebServerProfileInput {
         id: id.into(),
         name: id.into(),
-        engine: WebServerEngine::Nginx,
+        engine: WebServerEngine::Caddy,
         server_line: None,
         php_line: None,
         port: Some(if id == "outside" { 8097 } else { 8086 }),
@@ -446,7 +363,7 @@ fn list_uses_cache_until_invalidated() {
     assert!(servers.list("en", false).pools.is_empty());
 }
 
-/// BUG-03: what httpd/nginx print on stderr (a syntax error, before their
+/// BUG-03: what httpd/caddy print on stderr (a syntax error, before their
 /// error log is open) reaches the error shown to the user.
 #[test]
 fn pool_error_tail_reads_stderr_log() {
@@ -500,7 +417,7 @@ fn fresh_list_prunes_ports_of_gone_pools() {
         profiles: vec![WebServerProfileInput {
             id: "keep".into(),
             name: "Keep".into(),
-            engine: WebServerEngine::Nginx,
+            engine: WebServerEngine::Caddy,
             server_line: None,
             php_line: None,
             port: Some(8097),
@@ -535,7 +452,7 @@ fn save_profile_takes_the_port_of_a_gone_pool() {
             WebServerProfileInput {
                 id: "mine".into(),
                 name: "Mine".into(),
-                engine: WebServerEngine::Nginx,
+                engine: WebServerEngine::Caddy,
                 server_line: None,
                 php_line: None,
                 port: Some(8124),
@@ -548,12 +465,16 @@ fn save_profile_takes_the_port_of_a_gone_pool() {
     let ports = load_store(&kit).ports;
     assert_eq!(ports.keys().collect::<Vec<_>>(), ["mine"]);
 
-    // Opening the app drops them too.
+    // Opening the app drops them too; the port of a pool of Nginx's waits
+    // for Caddy (no Caddy in this kit) to move to its pool.
     let mut store = load_store(&kit);
-    store.ports.insert("nginx-1.20".to_owned(), 8125);
+    store.ports.insert("caddy-2.10".to_owned(), 8125);
+    store.ports.insert("nginx-1.20".to_owned(), 8126);
     save_store(&kit, &store).unwrap();
     servers.autostart(&KitEnv::default(), "it");
-    assert!(!load_store(&kit).ports.contains_key("nginx-1.20"));
+    let ports = load_store(&kit).ports;
+    assert!(!ports.contains_key("caddy-2.10"));
+    assert_eq!(ports.get("nginx-1.20"), Some(&8126));
 }
 
 /// N-S5: a Host no project names (an IP from the LAN) gets Apache's own
@@ -616,21 +537,8 @@ fn apache_pool_conf_refuses_foreign_hosts() {
     assert!(!conf.contains("*.localhost"));
 }
 
-/// In LAN mode the Nginx pool keeps its own page as default server.
-#[test]
-fn nginx_pool_conf_lan_keeps_default_page() {
-    let conf = nginx_pool_conf(
-        Path::new(r"C:\kit\apps\nginx"),
-        Path::new(r"C:\kit\data\servers\p"),
-        8082,
-        true,
-    );
-    assert!(conf.contains("        listen 8082 default_server;\r\n        server_name localhost;"));
-    assert!(!conf.contains("return 421;"));
-}
-
 /// `id` installed at `version`, the default folder of its line, with the
-/// key paths of the kit's target (`nginx.exe` on Windows, `sbin/nginx`
+/// key paths of the kit's target (`caddy.exe` on Windows, `caddy`
 /// elsewhere).
 fn fake_server(kit: &Kit, id: &str, version: &str) {
     let c = Catalog::get().find(id).unwrap();
@@ -647,14 +555,14 @@ fn fake_server(kit: &Kit, id: &str, version: &str) {
     c.save_version(kit, version).unwrap();
 }
 
-/// BUG-05r: with Nginx and PHP installed but no project, the default pool
+/// BUG-05r: with Caddy and PHP installed but no project, the default pool
 /// starts no php-cgi; nor does a manual profile without a chosen PHP.
 #[test]
-fn default_nginx_pool_has_no_php_without_php_projects() {
+fn default_caddy_pool_has_no_php_without_php_projects() {
     let tmp = TempDir::new("servers-default-php");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    fake_server(&kit, "nginx", "1.27.4");
+    fake_server(&kit, "caddy", "2.11.7");
     fake_server(&kit, "php", "8.4.13");
     let servers = WebServers::new(kit.clone());
 
@@ -662,16 +570,16 @@ fn default_nginx_pool_has_no_php_without_php_projects() {
     assert_eq!(view.php_lines, ["8.4"]);
     assert_eq!(view.pools.len(), 1);
     let pool = &view.pools[0];
-    assert_eq!(pool.engine, WebServerEngine::Nginx);
+    assert_eq!(pool.engine, WebServerEngine::Caddy);
     assert_eq!(pool.php_line, None);
-    assert_eq!(pool.id, "nginx-1.27");
+    assert_eq!(pool.id, "caddy-2.11");
 
     servers
         .save_profile(
             WebServerProfileInput {
                 id: String::new(),
                 name: "Static".into(),
-                engine: WebServerEngine::Nginx,
+                engine: WebServerEngine::Caddy,
                 server_line: None,
                 php_line: None,
                 port: Some(8098),
@@ -684,7 +592,7 @@ fn default_nginx_pool_has_no_php_without_php_projects() {
     let view = servers.list("it", true);
     let manual = view.pools.iter().find(|p| p.id == "static").unwrap();
     assert_eq!(manual.php_line, None);
-    assert_eq!(manual.server_line.as_deref(), Some("1.27"));
+    assert_eq!(manual.server_line.as_deref(), Some("2.11"));
 }
 
 #[cfg(windows)]
@@ -741,7 +649,7 @@ fn pool_with_dead_php_cgi_is_not_running() {
     }
     let mut running = BTreeMap::new();
     running.insert(
-        "nginx-php".to_owned(),
+        "caddy-php".to_owned(),
         RunningPool {
             child: server,
             port: 8099,
@@ -749,7 +657,7 @@ fn pool_with_dead_php_cgi_is_not_running() {
             php_line: Some("8.4".into()),
             php: Some(php),
             admin: None,
-            started: nginx_pool("nginx-php", 8099, Vec::new()),
+            started: caddy_pool("caddy-php", 8099, Vec::new()),
             by_user: true,
             attached: BTreeSet::new(),
             _job: job,
@@ -758,13 +666,13 @@ fn pool_with_dead_php_cgi_is_not_running() {
     // I2: `is_running` (what the runs follow) says so too.
     let servers = WebServers::new(Kit::at(std::env::temp_dir(), Arch::X64));
     std::mem::swap(&mut *servers.running.lock().unwrap(), &mut running);
-    assert!(!servers.is_running("nginx-php"));
+    assert!(!servers.is_running("caddy-php"));
     assert!(!servers.is_running("nope"));
     std::mem::swap(&mut *servers.running.lock().unwrap(), &mut running);
     let dead = take_dead(&mut running);
     assert!(running.is_empty());
     assert_eq!(dead.len(), 1);
-    assert_eq!(dead[0].0, "nginx-php");
+    assert_eq!(dead[0].0, "caddy-php");
     end_dead(dead);
 }
 
@@ -780,7 +688,7 @@ fn pool_of_finds_assigned_project() {
             WebServerProfileInput {
                 id: String::new(),
                 name: "Legacy".into(),
-                engine: WebServerEngine::Nginx,
+                engine: WebServerEngine::Caddy,
                 server_line: None,
                 php_line: None,
                 port: Some(8096),
@@ -798,7 +706,7 @@ fn pool_of_finds_assigned_project() {
         .assign_project(
             "shop",
             "public",
-            WebServerEngine::Nginx,
+            WebServerEngine::Caddy,
             Some("legacy".into()),
             &KitEnv::default(),
             "it",
@@ -817,7 +725,7 @@ fn pool_of_finds_assigned_project() {
             WebServerProfileInput {
                 id: "modern".into(),
                 name: "Modern".into(),
-                engine: WebServerEngine::Nginx,
+                engine: WebServerEngine::Caddy,
                 server_line: None,
                 php_line: None,
                 port: Some(8091),
@@ -835,7 +743,7 @@ fn pool_of_finds_assigned_project() {
     set_site_with_options(
         &shop,
         "public",
-        SiteKind::Nginx,
+        SiteKind::Caddy,
         &SiteOptions {
             server: Some("modern".into()),
             ..SiteOptions::default()
@@ -856,9 +764,9 @@ fn pool_of_finds_assigned_project() {
     assert!(!servers.is_running("modern"));
 }
 
-/// I1: a reload restarts the pool (never a graceful Nginx reload keeping
-/// no php-cgi) when PHP is wanted and not running, or changed; Apache and
-/// a new port always restart.
+/// I1: a reload restarts the Caddy pool (never a graceful `caddy reload`
+/// keeping no php-cgi) when PHP is wanted and not running, or changed;
+/// Apache and a new port always restart.
 #[test]
 fn reload_restarts_when_php_or_port_changes() {
     let live = |php: Option<&str>, fcgi: Option<u16>| LivePool {
@@ -866,7 +774,7 @@ fn reload_restarts_when_php_or_port_changes() {
         php_line: php.map(str::to_owned),
         fcgi: fcgi.map(|port| FastCgi::tcp(port, "k")),
     };
-    let mut pool = nginx_pool("legacy", 8093, Vec::new());
+    let mut pool = caddy_pool("legacy", 8093, Vec::new());
     // Static pool, static sites: graceful.
     assert!(!needs_restart(&pool, &live(None, None)));
     // A PHP site assigned to a running static pool: restart (I1).
@@ -884,13 +792,13 @@ fn reload_restarts_when_php_or_port_changes() {
     pool.port = 8092;
     assert!(needs_restart(&pool, &live(None, None)));
     // Apache: always.
-    let mut apache = nginx_pool("a", 8093, Vec::new());
+    let mut apache = caddy_pool("a", 8093, Vec::new());
     apache.engine = WebServerEngine::Apache;
     assert!(needs_restart(&apache, &live(None, None)));
 }
 
 /// BUG-V3-02: two web actions of one project in the same pool are two
-/// VirtualHosts with their own ServerName and file; a stale file goes.
+/// site blocks with their own name in the Caddyfile; a stale vhost file goes.
 #[test]
 fn two_actions_of_one_project_get_distinct_vhosts() {
     let tmp = TempDir::new("servers-two-actions");
@@ -902,7 +810,7 @@ fn two_actions_of_one_project_get_distinct_vhosts() {
             WebServerProfileInput {
                 id: "legacy".into(),
                 name: "Legacy".into(),
-                engine: WebServerEngine::Nginx,
+                engine: WebServerEngine::Caddy,
                 server_line: None,
                 php_line: None,
                 port: Some(8087),
@@ -918,8 +826,8 @@ fn two_actions_of_one_project_get_distinct_vhosts() {
     fs::write(
         shop.join("panel.json"),
         r#"{ "actions": [
-            { "id": "npm:docs", "nginx": "docs", "server": "legacy" },
-            { "id": "site", "nginx": "public", "server": "legacy" } ] }"#,
+            { "id": "npm:docs", "caddy": "docs", "server": "legacy" },
+            { "id": "site", "caddy": "public", "server": "legacy" } ] }"#,
     )
     .unwrap();
     let view = servers.list("it", true);
@@ -938,30 +846,32 @@ fn two_actions_of_one_project_get_distinct_vhosts() {
     let vhosts = kit.data().join("servers").join("legacy").join("vhosts");
     fs::create_dir_all(&vhosts).unwrap();
     fs::write(vhosts.join("shop.conf"), "stale").unwrap();
-    servers.write_pool_configs(pool, None, false).unwrap();
-    let mut files: Vec<String> = fs::read_dir(&vhosts)
-        .unwrap()
-        .flatten()
-        .map(|e| e.file_name().to_string_lossy().into_owned())
-        .collect();
-    files.sort();
-    assert_eq!(
-        files,
-        ["npm-docs.shop.localhost.conf", "shop.localhost.conf"]
-    );
-    let main = fs::read_to_string(vhosts.join("shop.localhost.conf")).unwrap();
-    assert!(main.contains("server_name shop.localhost;"), "{main}");
-    assert!(main.contains("shop/public"), "{main}");
-    let other = fs::read_to_string(vhosts.join("npm-docs.shop.localhost.conf")).unwrap();
+    let conf = servers.write_pool_configs(pool, None, false).unwrap();
+    assert!(!vhosts.join("shop.conf").exists());
+    let text = fs::read_to_string(conf).unwrap();
+    // Each block with its own name and its own folder.
+    let block = |name: &str| {
+        let start = text
+            .find(&format!("http://{name}:8087 {{"))
+            .unwrap_or_else(|| panic!("{name}: {text}"));
+        let rest = &text[start..];
+        let end = rest[1..].find("\nhttp://").map_or(rest.len(), |e| e + 1);
+        rest[..end].to_owned()
+    };
+    let main = block("shop.localhost");
     assert!(
-        other.contains("server_name npm-docs.shop.localhost;"),
+        main.contains("shop/public") && !main.contains("shop/docs"),
+        "{main}"
+    );
+    let other = block("npm-docs.shop.localhost");
+    assert!(
+        other.contains("shop/docs") && !other.contains("shop/public"),
         "{other}"
     );
-    assert!(other.contains("shop/docs"), "{other}");
 }
 
 /// Defect 7 of the pools (D-101): a project is put in the pools once per site:
-/// the detected `apache` and `nginx` give way to the sites of `panel.json`,
+/// the detected `apache` and `caddy` give way to the sites of `panel.json`,
 /// and only the first of them is taken.
 #[test]
 fn pooled_actions_drop_detected_duplicates() {
@@ -971,7 +881,7 @@ fn pooled_actions_drop_detected_duplicates() {
         if apache {
             a.apache_dir = Some("public".into());
         } else {
-            a.nginx_dir = Some("public".into());
+            a.caddy_dir = Some("public".into());
         }
         a.custom = custom;
         a
@@ -983,7 +893,7 @@ fn pooled_actions_drop_detected_duplicates() {
             .collect()
     };
     let cmd = Action::for_test("php:server", "php -S", Kind::Web);
-    let detected = [web("apache", true, false), web("nginx", false, false), cmd];
+    let detected = [web("apache", true, false), web("caddy", false, false), cmd];
     assert_eq!(ids(&detected), ["apache"]);
     let mut with_site = detected.to_vec();
     with_site.push(web("site", false, true));
@@ -1003,7 +913,7 @@ fn ports_are_unique_among_pools() {
     let profile = |id: &str, port: u16| WebServerProfileInput {
         id: id.into(),
         name: id.into(),
-        engine: WebServerEngine::Nginx,
+        engine: WebServerEngine::Caddy,
         server_line: None,
         php_line: None,
         port: Some(port),
@@ -1057,7 +967,7 @@ fn start_refuses_a_line_not_installed() {
     let tmp = TempDir::new("servers-missing-line");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    fake_server(&kit, "nginx", "1.27.4");
+    fake_server(&kit, "caddy", "2.11.7");
     fake_server(&kit, "php", "8.4.13");
     let servers = WebServers::new(kit.clone());
     let port = {
@@ -1067,20 +977,20 @@ fn start_refuses_a_line_not_installed() {
     let profile = |server_line: &str, php_line: &str| WebServerProfileInput {
         id: "old".into(),
         name: "Old".into(),
-        engine: WebServerEngine::Nginx,
+        engine: WebServerEngine::Caddy,
         server_line: Some(server_line.into()),
         php_line: Some(php_line.into()),
         port: Some(port),
         keep_alive: true,
         autostart: false,
     };
-    servers.save_profile(profile("1.25", "8.4"), "it").unwrap();
+    servers.save_profile(profile("2.10", "8.4"), "it").unwrap();
     let err = servers
         .start("old", &KitEnv::default(), "it")
         .unwrap_err()
         .to_string();
-    assert!(err.starts_with("Nginx 1.25 non è installato"), "{err}");
-    servers.save_profile(profile("1.27", "7.4"), "it").unwrap();
+    assert!(err.starts_with("Caddy 2.10 non è installato"), "{err}");
+    servers.save_profile(profile("2.11", "7.4"), "it").unwrap();
     let err = servers
         .start("old", &KitEnv::default(), "it")
         .unwrap_err()
@@ -1121,7 +1031,7 @@ fn orphan_running_pool_is_listed_until_stopped() {
     let servers = WebServers::new(kit.clone());
     fake_running(
         &servers,
-        nginx_pool("gone", 8083, vec![site("shop", "public", 8083)]),
+        caddy_pool("gone", 8083, vec![site("shop", "public", 8083)]),
     );
     let view = servers.list("it", true);
     assert_eq!(view.pools.len(), 1);
@@ -1158,7 +1068,7 @@ fn assign_project_reloads_only_its_pool_and_reports_errors() {
                 WebServerProfileInput {
                     id: id.into(),
                     name: id.into(),
-                    engine: WebServerEngine::Nginx,
+                    engine: WebServerEngine::Caddy,
                     server_line: None,
                     php_line: None,
                     port: Some(port),
@@ -1168,22 +1078,23 @@ fn assign_project_reloads_only_its_pool_and_reports_errors() {
                 "it",
             )
             .unwrap();
-        fake_running(&servers, nginx_pool(id, port, Vec::new()));
+        fake_running(&servers, caddy_pool(id, port, Vec::new()));
     }
     fs::create_dir_all(kit.projects().join("shop").join("public")).unwrap();
-    // The reload of `legacy` restarts it, and there is no Nginx here.
+    // The reload of `legacy` restarts it (a fake pool has no admin socket
+    // for `caddy reload`), and there is no Caddy here.
     let err = servers
         .assign_project(
             "shop",
             "public",
-            WebServerEngine::Nginx,
+            WebServerEngine::Caddy,
             Some("legacy".into()),
             &KitEnv::default(),
             "it",
         )
         .unwrap_err()
         .to_string();
-    assert!(err.contains("Nginx is not installed"), "{err}");
+    assert!(err.contains("Caddy is not installed"), "{err}");
     assert!(!servers.is_running("legacy"));
     assert!(servers.is_running("other"), "not touched");
     servers.stop("other");
@@ -1259,6 +1170,7 @@ fn stops_when_left_follows_who_started_it() {
 
 /// D-101: an older `servers.json` (no options) keeps its profiles
 /// alive and starts none with the app; the options are saved and read back.
+/// A profile of Nginx's of before reads as a Caddy one.
 #[test]
 fn profile_options_default_and_round_trip() {
     let old: StoredServers = serde_json::from_str(
@@ -1266,6 +1178,7 @@ fn profile_options_default_and_round_trip() {
             "port": 8090 } ], "ports": { "legacy": 8090 } }"#,
     )
     .unwrap();
+    assert_eq!(old.profiles[0].engine, WebServerEngine::Caddy);
     assert!(old.profiles[0].keep_alive);
     assert!(!old.profiles[0].autostart);
 
@@ -1279,6 +1192,7 @@ fn profile_options_default_and_round_trip() {
     servers.save_profile(profile, "it").unwrap();
     let text = fs::read_to_string(store_path(&kit)).unwrap();
     assert!(text.contains("\"keepAlive\": false") && text.contains("\"autostart\": true"));
+    assert!(text.contains("\"engine\": \"caddy\""), "{text}");
     let view = servers.list("it", true);
     let saved = view.pools[0].profile.as_ref().unwrap();
     assert!(!saved.keep_alive && saved.autostart);
@@ -1287,7 +1201,7 @@ fn profile_options_default_and_round_trip() {
         "the profile as saved, not resolved"
     );
 
-    // With the app: tried, and with no Nginx in this kit only logged.
+    // With the app: tried, and with no Caddy in this kit only logged.
     servers.autostart(&KitEnv::default(), "it");
     assert!(!servers.is_running("legacy"));
 }
@@ -1303,33 +1217,33 @@ fn detach_leaves_the_pool_and_stops_an_empty_automatic_one() {
     let projects = kit.projects();
     fs::create_dir_all(projects.join("shop").join("public")).unwrap();
     fs::create_dir_all(projects.join("blog").join("public")).unwrap();
-    let pool = nginx_pool(
-        "nginx-auto",
+    let pool = caddy_pool(
+        "caddy-auto",
         8082,
         vec![site("shop", "public", 8082), site("blog", "public", 8082)],
     );
 
     // Not running: only left out of the files written for the next start.
     servers
-        .detach("nginx-auto", "shop", "site", &KitEnv::default(), "it")
+        .detach("caddy-auto", "shop", "site", &KitEnv::default(), "it")
         .unwrap();
     let conf = servers.write_pool_configs(&pool, None, false).unwrap();
-    let vhosts = conf.parent().unwrap().join("vhosts");
-    assert!(!vhosts.join("shop.localhost.conf").exists());
-    assert!(vhosts.join("blog.localhost.conf").exists());
+    let text = fs::read_to_string(conf).unwrap();
+    assert!(!text.contains("http://shop.localhost:8082"), "{text}");
+    assert!(text.contains("http://blog.localhost:8082 {"), "{text}");
 
     // Started by the blog only: its stop stops the automatic pool.
     fake_running(&servers, pool.clone());
     {
         let mut running = servers.running.lock().unwrap();
-        let r = running.get_mut("nginx-auto").unwrap();
+        let r = running.get_mut("caddy-auto").unwrap();
         r.by_user = false;
         r.attached.insert(("blog".into(), "site".into()));
     }
     servers
-        .detach("nginx-auto", "blog", "site", &KitEnv::default(), "it")
+        .detach("caddy-auto", "blog", "site", &KitEnv::default(), "it")
         .unwrap();
-    assert!(!servers.is_running("nginx-auto"));
+    assert!(!servers.is_running("caddy-auto"));
     assert!(servers
         .detached
         .lock()
@@ -2028,7 +1942,7 @@ fn caddy_engine_of_the_pools() {
 
 /// D-111: a Caddy pool's site block: its own name and its domains, its
 /// document root, PHP with the start's key, the aliases checked on disk
-/// only (no alias that was not resolved in the text, as Apache and Nginx).
+/// only (no alias that was not resolved in the text, as Apache).
 #[test]
 fn caddy_site_block_of_a_pool() {
     let tmp = TempDir::new("servers-caddy-site");
@@ -2082,12 +1996,11 @@ fn caddy_pool_writes_one_caddyfile() {
     for p in ["shop", "blog"] {
         fs::create_dir_all(kit.projects().join(p).join("public")).unwrap();
     }
-    let mut pool = nginx_pool(
+    let pool = caddy_pool(
         "caddy-2.11_php-8.4",
         8091,
         vec![site("shop", "public", 8091), site("blog", "public", 8091)],
     );
-    pool.engine = WebServerEngine::Caddy;
     let fcgi = FastCgi::tcp(9444, "z".repeat(64));
     let sock = tmp.0.join("host").join("caddy-1").join("a.sock");
     let conf = servers
@@ -2166,19 +2079,19 @@ fn shown_pools_drop_empty_automatic_ones() {
     hidden.chosen = false;
     let started = BTreeSet::new();
     let pools = vec![
-        nginx_pool("nginx-1.27", 8081, vec![hidden.clone()]),
-        nginx_pool("nginx-1.26", 8082, vec![site("shop", "public", 8082)]),
+        caddy_pool("caddy-2.11", 8081, vec![hidden.clone()]),
+        caddy_pool("caddy-2.10", 8082, vec![site("shop", "public", 8082)]),
     ];
     let ids =
         |pools: &[WebServerPool]| -> Vec<String> { pools.iter().map(|p| p.id.clone()).collect() };
-    assert_eq!(ids(&shown_pools(pools.clone(), &started)), ["nginx-1.26"]);
+    assert_eq!(ids(&shown_pools(pools.clone(), &started)), ["caddy-2.10"]);
     let mut running = pools.clone();
     running[0].running = true;
     let shown = shown_pools(running, &started);
-    assert_eq!(ids(&shown), ["nginx-1.27", "nginx-1.26"]);
+    assert_eq!(ids(&shown), ["caddy-2.11", "caddy-2.10"]);
     assert!(shown[0].sites.is_empty());
     let only = shown_pools(vec![pools[0].clone()], &started);
-    assert_eq!(ids(&only), ["nginx-1.27"]);
+    assert_eq!(ids(&only), ["caddy-2.11"]);
 }
 
 /// SC-2: automatic ids name their lines (`apache-2.4_php-7.4`); the ids of
@@ -2191,8 +2104,8 @@ fn auto_pool_ids_name_their_lines() {
         "apache-2.4_php-7.4"
     );
     assert_eq!(
-        auto_pool_id(WebServerEngine::Nginx, Some("1.27"), None),
-        "nginx-1.27"
+        auto_pool_id(WebServerEngine::Caddy, Some("2.11"), None),
+        "caddy-2.11"
     );
     assert_eq!(auto_pool_id(apache, None, None), "apache-default");
     let lines = |s: Option<&str>, p: Option<&str>| {
@@ -2219,7 +2132,9 @@ fn auto_pool_ids_name_their_lines() {
         "legacy",
         "apache",
         "apache-test",
-        "nginx-1.27-php-x",
+        "caddy-2.11-php-x",
+        // Nginx is no engine of the pools any more (its ports: `migrate`).
+        "nginx-1.27",
         "iis-1.0",
     ] {
         assert_eq!(parse_auto_pool_id(other), None, "{other}");
@@ -2227,14 +2142,16 @@ fn auto_pool_ids_name_their_lines() {
 }
 
 /// SC-2: the ports stored under the ids of before move to the new ones (a
-/// port already stored there wins); a profile's id stays as it is.
+/// port already stored there wins); a profile's id stays as it is, and so
+/// does a pool of Nginx's (moved to Caddy's by `migrate`, not here).
 #[test]
 fn ports_move_to_the_new_automatic_ids() {
     let mut store = StoredServers::default();
     store.ports.insert("apache-2.4-php-7.4".into(), 8081);
-    store.ports.insert("nginx-1.27-php-8.4".into(), 8082);
-    store.ports.insert("nginx-1.27_php-8.4".into(), 8090);
-    store.ports.insert("nginx-1.26".into(), 8083);
+    store.ports.insert("caddy-2.11-php-8.4".into(), 8082);
+    store.ports.insert("caddy-2.11_php-8.4".into(), 8090);
+    store.ports.insert("caddy-2.10".into(), 8083);
+    store.ports.insert("nginx-1.27-php-8.4".into(), 8085);
     store.ports.insert("apache-2.2-php-5.6".into(), 8084);
     store.profiles.push(WebServerProfileInput {
         id: "apache-2.2-php-5.6".into(),
@@ -2253,8 +2170,9 @@ fn ports_move_to_the_new_automatic_ids() {
         [
             ("apache-2.2-php-5.6", 8084),
             ("apache-2.4_php-7.4", 8081),
-            ("nginx-1.26", 8083),
-            ("nginx-1.27_php-8.4", 8090),
+            ("caddy-2.10", 8083),
+            ("caddy-2.11_php-8.4", 8090),
+            ("nginx-1.27-php-8.4", 8085),
         ]
     );
     assert!(!migrate_port_ids(&mut store));
@@ -2262,32 +2180,34 @@ fn ports_move_to_the_new_automatic_ids() {
 
 /// SC-2: a running automatic pool no project goes to any more stays a pool
 /// of the list (not an orphan), rebuilt from its id; a site naming an
-/// automatic pool in `panel.json` (old id too) goes to the lines it names.
+/// automatic pool in `panel.json` (old id too) goes to the lines it names;
+/// a site of Nginx's (`"nginx"` in `panel.json`) is a Caddy one.
 #[test]
 fn automatic_pools_come_back_from_their_ids() {
     let tmp = TempDir::new("servers-stable-ids");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    fake_server(&kit, "nginx", "1.27.4");
+    fake_server(&kit, "caddy", "2.11.7");
     let servers = WebServers::new(kit.clone());
-    fake_running(&servers, nginx_pool("nginx-1.25", 8083, Vec::new()));
+    fake_running(&servers, caddy_pool("caddy-2.9", 8083, Vec::new()));
     let view = servers.list("it", true);
-    let old = view.pools.iter().find(|p| p.id == "nginx-1.25").unwrap();
+    let old = view.pools.iter().find(|p| p.id == "caddy-2.9").unwrap();
     assert!(!old.orphan && old.running);
-    assert_eq!(old.server_line.as_deref(), Some("1.25"));
-    assert!(load_store(&kit).ports.contains_key("nginx-1.25"));
-    servers.stop("nginx-1.25");
+    assert_eq!(old.server_line.as_deref(), Some("2.9"));
+    assert!(load_store(&kit).ports.contains_key("caddy-2.9"));
+    servers.stop("caddy-2.9");
 
     let shop = kit.projects().join("shop");
     fs::create_dir_all(shop.join("public")).unwrap();
     fs::write(
         shop.join("panel.json"),
-        r#"{ "actions": [ { "id": "site", "nginx": "public", "server": "nginx-1.26-php-8.3" } ] }"#,
+        r#"{ "actions": [ { "id": "site", "nginx": "public", "server": "caddy-2.10-php-8.3" } ] }"#,
     )
     .unwrap();
     let (pool, _) = servers.pool_of("shop", "site", "it").unwrap();
-    assert_eq!(pool.id, "nginx-1.26_php-8.3");
-    assert_eq!(pool.server_line.as_deref(), Some("1.26"));
+    assert_eq!(pool.engine, WebServerEngine::Caddy);
+    assert_eq!(pool.id, "caddy-2.10_php-8.3");
+    assert_eq!(pool.server_line.as_deref(), Some("2.10"));
     assert_eq!(pool.php_line.as_deref(), Some("8.3"));
     assert!(!pool.manual);
 }

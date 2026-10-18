@@ -8,7 +8,7 @@
 //!   `PORT`, `ROCKET_PORT`, `DB_PORT` (its MySQL database), `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
 //!   action runs this exe as a file server (`Dev-Kit.exe serve`), an
 //!   `apache` action the kit's httpd with a configuration of the project,
-//!   `nginx` and `caddy` actions the same with their server and PHP;
+//!   `caddy` actions the same with Caddy and PHP;
 //! - web actions keep their port from one start to the next (bookmarks,
 //!   cookies, localStorage stay valid): 7100-7999, remembered in
 //!   `data\projects\<project>\ports.json`, or the one the user locked;
@@ -101,14 +101,14 @@ struct Entry {
     pool: Option<String>,
 }
 
-/// The `server` of a site in `panel.json` that keeps its own httpd/nginx
+/// The `server` of a site in `panel.json` that keeps its own httpd/caddy
 /// instead of a pool; never the id of a server profile.
 pub const DEDICATED_SERVER: &str = "dedicated";
 
-/// How «Avvia» serves an Apache, Nginx or Caddy site.
+/// How «Avvia» serves an Apache or Caddy site.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SiteMode {
-    /// Its own httpd/nginx on the action's port: any other action, or a
+    /// Its own httpd/caddy on the action's port: any other action, or a
     /// site whose `server` is [`DEDICATED_SERVER`].
     Dedicated,
     /// The automatic pool of the project's lines (engine, server line, PHP
@@ -120,7 +120,7 @@ pub enum SiteMode {
 
 /// A site assigned to a server profile is served by that pool, one with no
 /// `server` (or `auto`) by the automatic pool of its lines, one marked
-/// `dedicated` (and every action that is not an Apache/Nginx site) on its own.
+/// `dedicated` (and every action that is not an Apache/Caddy site) on its own.
 pub fn site_mode(action: &Action) -> SiteMode {
     if action.web_server_dir().is_none() {
         return SiteMode::Dedicated;
@@ -491,7 +491,8 @@ impl Runner {
         };
 
         let job = Job::new()?;
-        // The php-cgi of a project's Nginx, watched with the server.
+        // The FastCGI server of a project's Caddy (or of its Apache off
+        // Windows), watched with the server.
         let mut php: Option<Child> = None;
         // The FastCGI server of a project's Caddy, kept until the action
         // ends: php-fpm's private socket folder goes with its last copy.
@@ -548,31 +549,6 @@ impl Runner {
                 format!("httpd -f data/projects/{id}/apache/httpd.conf -DFOREGROUND ({folder})")
             };
             (cmd, shown)
-        } else if let Some(folder) = &action.nginx_dir {
-            let root = detect::inside_dir(&cwd, folder)?;
-            // php-cgi lives in the action's job: stopping the action ends it too.
-            let fcgi = crate::projects::nginx::spawn_php_cgi_if_present(&self.kit, env, &job).map(
-                |(fcgi, child)| {
-                    php = Some(child);
-                    fcgi
-                },
-            );
-            let cmd = crate::projects::nginx::command(
-                &self.kit,
-                id,
-                dir,
-                &root,
-                port.unwrap_or(PORT_FROM),
-                fcgi.as_ref(),
-                lan,
-                &action.domains,
-                &action.aliases,
-                env,
-            )?;
-            (
-                cmd,
-                format!("nginx.exe -c data\\projects\\{id}\\nginx\\nginx.conf ({folder})"),
-            )
         } else if let Some(folder) = &action.caddy_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             // Its PHP (php-cgi, or php-fpm off Windows) lives in the action's
@@ -665,9 +641,7 @@ impl Runner {
             end: None,
             code: None,
             pid: None,
-            skipped_aliases: if action.nginx_dir.is_some() {
-                crate::projects::alias::skipped_nginx(dir, &self.kit.projects(), &action.aliases)
-            } else if action.apache_dir.is_some() {
+            skipped_aliases: if action.apache_dir.is_some() {
                 crate::projects::alias::skipped(dir, &self.kit.projects(), &action.aliases)
             } else if action.caddy_dir.is_some() {
                 crate::projects::caddy::skipped_aliases(dir, &self.kit.projects(), &action.aliases)
@@ -970,8 +944,8 @@ impl Runner {
         (self.notify)(Event::State(info));
     }
 
-    /// Waits for a project's Nginx (`child`) and its `php` (php-cgi). When
-    /// php-cgi ends first the action is stopped and ends in error, never
+    /// Waits for a project's web server (`child`) and its `php` (php-cgi or
+    /// php-fpm). When PHP ends first the action is stopped and ends in error, never
     /// left running with 502 for every `.php` (BUG-V3-01). The server's exit
     /// code, `None` when it was stopped for its php-cgi.
     fn wait_with_php(

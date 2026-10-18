@@ -157,7 +157,7 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
     <EditorSection id="versions" title={t("Versioni")}>
       <p className="text-vsc-desc">
         {t(
-          "Valgono per terminale, azioni e agenti del progetto, per il server web che lo serve (Apache o Nginx, con il suo PHP) e per i terminali dell'editor aperti da adesso. Una versione da scaricare si scarica appena scelta.",
+          "Valgono per terminale, azioni e agenti del progetto, per il server web che lo serve (Caddy o Apache, con il suo PHP) e per i terminali dell'editor aperti da adesso. Una versione da scaricare si scarica appena scelta.",
         )}
       </p>
       {data !== null && activeTools.length === 0 && inactiveTools.length === 0 && (

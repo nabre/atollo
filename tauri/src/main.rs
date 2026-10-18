@@ -250,6 +250,9 @@ fn run() -> i32 {
     // (D-08): a command line run or a second start would race the open app's
     // writes of passwords and ports. Before the Runner reads the ports.
     projects::migrate::run(&kit);
+    // The pools and sites of Nginx become Caddy's (D-120), before the
+    // pools and the projects are read.
+    servers::migrate::run(&kit);
     // Leftovers of files in transit (D-90): only here, as the one app of the
     // kit (D-08); a command line run would race the open app's programs.
     os::temp::sweep(&kit);

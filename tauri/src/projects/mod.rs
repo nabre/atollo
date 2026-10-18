@@ -16,7 +16,6 @@ pub mod fastcgi;
 pub mod frameworks;
 pub mod mcp;
 pub mod migrate;
-pub mod nginx;
 pub mod run;
 pub mod serve;
 pub mod settings;
@@ -82,8 +81,7 @@ pub fn folders(kit: &Kit) -> Vec<PathBuf> {
 }
 
 /// What can be added from "Linguaggi e strumenti": not installed, and
-/// available for the kit's platform (no PHP, Apache, Nginx off Windows, no
-/// R on Windows ARM64).
+/// available for the kit's platform (no R on Windows ARM64).
 fn addable(kit: &Kit, c: &crate::setup::catalog::Component) -> bool {
     !c.is_installed(kit) && c.is_available_on(kit.target())
 }

@@ -154,11 +154,11 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Electron o Tauri.** L'app apre la sua finestra e l'output arriva nella pagina.
 
 ### Server web e database (sciame v3, D-96…D-102)
-- [ ] **Configurazioni valide.** Con un progetto PHP avviato su Apache e su Nginx dedicati, in un pool e con il sito del kit: `httpd -t -f <conf>` e `nginx -t -c <conf>` sulle configurazioni scritte dal kit non danno errori. Un `kit.conf` di un kit precedente, dopo l'avvio, ha i blocchi nuovi una volta sola.
-- [ ] **Estensioni PHP** (D-96). Con PHP: `a.phtml` si esegue; `a.inc`, `a.php5` e `.env` danno 403. Senza PHP (Apache senza modulo, Nginx senza php-cgi) `index.php` dà 403/503, mai il sorgente.
+- [ ] **Configurazioni valide.** Con un progetto PHP avviato su Apache e su Caddy dedicati, in un pool e con il sito del kit: `httpd -t -f <conf>` e `caddy validate --config <Caddyfile>` sulle configurazioni scritte dal kit non danno errori. Un `kit.conf` di un kit precedente, dopo l'avvio, ha i blocchi nuovi una volta sola.
+- [ ] **Estensioni PHP** (D-96). Con PHP: `a.phtml` si esegue; `a.inc`, `a.php5` e `.env` danno 403. Senza PHP (Apache senza modulo, Caddy senza php-cgi) `index.php` dà 403/503, mai il sorgente.
 - [ ] **`php -S`** (D-97). Progetto PHP semplice avviato con «Avvia»: `/.env`, `/a.inc`, `/index.php.` danno 403; `curl -H "Host: evil.com"` dà 421; `/` e un file statico 200. Con un `router.php` nel progetto vale il suo.
-- [ ] **Host estraneo sul server dedicato** (D-98). Senza «Rete locale»: `curl -H "Host: evil.com" http://127.0.0.1:<porta>/` dà 403 (Apache) o 421 (Nginx); `localhost`, `127.0.0.1`, `<progetto>.localhost` e i domini del progetto rispondono. Con «Rete locale» l'IP del PC da un altro PC apre il sito.
-- [ ] **php-cgi che muore** (D-99). Progetto PHP su Nginx dedicato avviato: chiudere `php-cgi.exe` dal Task Manager ferma anche `nginx.exe`; l'esecuzione va in errore e il log ha «php-cgi terminato».
+- [ ] **Host estraneo sul server dedicato** (D-98). Senza «Rete locale»: `curl -H "Host: evil.com" http://127.0.0.1:<porta>/` dà 403 (Apache) o 421 (Caddy); `localhost`, `127.0.0.1`, `<progetto>.localhost` e i domini del progetto rispondono. Con «Rete locale» l'IP del PC da un altro PC apre il sito.
+- [ ] **php-cgi che muore** (D-99). Progetto PHP su Caddy dedicato avviato (Windows): chiudere `php-cgi.exe` dal Task Manager ferma anche `caddy.exe`; l'esecuzione va in errore e il log ha «php-cgi terminato».
 - [ ] **Pool che seguono i progetti** (D-101). Due progetti assegnati allo stesso profilo: «Avvia» sul primo avvia il pool, sul secondo lo ricarica; «Ferma» sul primo lo toglie (il suo indirizzo non risponde più) e il secondo resta servito. Con «Mantieni attivo» spento, fermare anche il secondo spegne il pool; acceso, il pool resta. Un pool avviato dalla pagina Server Web resta acceso comunque.
 - [ ] **Avvia con NEXKORA** (D-101). Profilo con «Avvia con NEXKORA»: chiusa e riaperta l'app, il pool è acceso senza nessun progetto avviato. Un `servers.json` di prima (senza i due campi) si legge con «Mantieni attivo» spuntato.
 - [ ] **Due azioni web di un progetto nello stesso pool** (BUG-V3-02). `http://<progetto>.localhost:<porta>` e `http://<azione>.<progetto>.localhost:<porta>` servono le due cartelle.
@@ -223,10 +223,10 @@ Kit preparato su Windows per un altro sistema (a ogni rilascio):
 - [ ] **Nomi simili.** Progetto `my-app` (database `my_app`) e progetto `my2app`: l'utente `my_app` non vede `my2app` (`SHOW GRANTS`). Un progetto chiamato `mysql` o `admin` non può cancellare né cambiare i database dei server.
 - [ ] **Progetto rinominato in Esplora file.** Compare in «Dati senza progetto» nella pagina Progetti; «Collega a…» lo riporta con password e copie, e la `.env` continua a funzionare. Un orfano con database si elimina con la stessa conferma.
 - [ ] **C: quasi pieno.** Le installazioni ripiegano su `data\tmp` e il log ha l'avviso.
-- [ ] **Alias dei siti.** Un sito con `/media` → `storage/uploads` e `/shared` → `@common/assets`, con Apache, con Nginx e in un pool: i file si aprono nel browser.
+- [ ] **Alias dei siti.** Un sito con `/media` → `storage/uploads` e `/shared` → `@common/assets`, con Apache, con Caddy e in un pool: i file si aprono nel browser.
 - [ ] **Alias e giunzione.** `storage` sostituito da una giunzione verso `C:\Users`: l'alias non è servito e la pagina del sito lo dice.
 - [ ] **Impostazioni › Temporanei dei programmi.** La pagina mostra file system e tipo di disco del kit; Automatico, Nel kit e Nel sistema cambiano `$env:TEMP` in una console nuova del kit (`data\tmp\system` o `%TEMP%\Dev-Kit\<id>\system`).
-- [ ] **Alias e `.htaccess`** (D-100, SEC-V4-01). In una cartella di alias servita da Apache, un collegamento simbolico non si apre; un `.htaccess` con `Options +FollowSymLinks`, `RewriteRule`, `AddHandler` o `Require all granted` non cambia nulla (avviso nel log di Apache, la cartella resta servita); un `.php` o `.phtml` lì dà 403 con Apache e Nginx, 404 con Caddy.
+- [ ] **Alias e `.htaccess`** (D-100, SEC-V4-01). In una cartella di alias servita da Apache, un collegamento simbolico non si apre; un `.htaccess` con `Options +FollowSymLinks`, `RewriteRule`, `AddHandler` o `Require all granted` non cambia nulla (avviso nel log di Apache, la cartella resta servita); un `.php` o `.phtml` lì dà 403 con Apache, 404 con Caddy.
 - [ ] **File scaricati a mano** (D-82). Un file messo a mano nel riquadro finisce in `%TEMP%\Dev-Kit\<id>\downloads`; uno lasciato in `data\downloads` si usa lo stesso e si sposta.
 
 ### GitHub

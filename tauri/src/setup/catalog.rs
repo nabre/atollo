@@ -275,7 +275,6 @@ pub fn translate_rel(target: Target, rel: &str) -> String {
         "node/npm.cmd" => return "node/bin/npm".to_owned(),
         "node/npx.cmd" => return "node/bin/npx".to_owned(),
         "php/php.exe" => return "php/bin/php".to_owned(),
-        "nginx/nginx.exe" => return "nginx/sbin/nginx".to_owned(),
         "@data/npm-global/pnpm.cmd" => return "@data/npm-global/bin/pnpm".to_owned(),
         "@data/npm-global/pnpx.cmd" => return "@data/npm-global/bin/pnpx".to_owned(),
         "@data/npm-global/pn.cmd" => return "@data/npm-global/bin/pn".to_owned(),

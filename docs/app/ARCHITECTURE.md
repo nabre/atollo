@@ -82,7 +82,6 @@ tauri\src\
     alias                     alias dei siti: URL e destinazione validati, un solo risolutore (D-77)
     settings  mcp  vscode     dev-settings.json (D-63), server MCP, .vscode\settings.json (D-78)
     run  serve  apache        azioni avviate e porte (D-50); server di file (D-51); Apache del progetto
-    nginx                     Nginx del progetto
     caddy  fastcgi            Caddy del progetto e testo dei Caddyfile, admin su socket (D-111); php-cgi e php-fpm
     frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner
   detect\                     tipo, linguaggi e azioni di un progetto
@@ -93,7 +92,7 @@ tauri\src\
     terminal                  console del kit: console classica di Windows (D-57, D-95)
     pty                       terminale nell'app su macOS e Linux, sessioni PTY per xterm.js (D-109)
     terminals                 pagina Terminali: console salvate in data\app\terminals.json, con strumenti e versioni propri
-  servers\                    pagina Server web: pool Apache/Nginx condivisi dai progetti
+  servers\                    pagina Server web: pool Caddy/Apache condivisi dai progetti
     mod                       tipi, elenco della pagina (con cache), WebServers
     pools  config  process    servers.json e pool automatici, scansione; configurazione generata in
                               data\servers\<pool>\; avvio, arresto, ricarica, siti collegati dai progetti
@@ -131,12 +130,13 @@ data\
                               frameworks.json, servers.json, logs\, layout.txt (2 = dati per progetto)
     db\                       secrets.json (solo root e admin), my.ini; la cartella ha il DACL del proprietario
     pre-v2\                   copia di ports.json e secrets.json prima della migrazione (D-89)
+    pre-caddy\                copia di servers.json e dei panel.json prima del passaggio da Nginx a Caddy (D-120)
   projects\<progetto>\        tutto ciò che il kit tiene per un progetto (D-89)
-    dev-settings.json  ports.json  apache\  nginx\
+    dev-settings.json  ports.json  apache\  caddy\
     private\                  DACL del proprietario prima di ogni scrittura
       db.json                 password e nomi dei database del progetto
       backups\                copie dei database (D-78)
-  servers\<pool>\             configurazioni generate dei pool Apache/Nginx
+  servers\<pool>\             configurazioni generate dei pool Caddy/Apache
   tmp\                        passaggio nel kit quando il temp del sistema non c'è o non basta; TEMP dei programmi nel kit
 ```
 

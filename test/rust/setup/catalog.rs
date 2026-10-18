@@ -419,10 +419,11 @@ fn shared_paths_go_with_the_last_owner() {
         .contains(&kit.apps().join("apache")));
 }
 
-/// Option C (BUG-23b, BUG-24a): Apache and Nginx are Windows only (Windows
-/// builds, httpd.conf of Windows). PHP (static-php-cli on macOS and Linux,
-/// D-112), phpMyAdmin on it and Caddy (D-111) are on every target. Git
-/// stays everywhere: Claude Code needs it.
+/// Option C (BUG-23b, BUG-24a): Apache is Windows only until the kit's
+/// build is pinned (D-116). PHP (static-php-cli on macOS and Linux,
+/// D-112), phpMyAdmin on it and Caddy (D-111) are on every target; Nginx
+/// is no longer in the catalog (D-120). Git stays everywhere: Claude Code
+/// needs it.
 #[test]
 fn web_stack_is_windows_only() {
     use crate::kit::Target;
@@ -434,7 +435,8 @@ fn web_stack_is_windows_only() {
             assert!(c.is_available_on(target), "{id} on {target}");
         }
     }
-    for id in ["apache", "nginx"] {
+    assert!(catalog.find("nginx").is_none());
+    for id in ["apache"] {
         let c = catalog.find(id).unwrap();
         for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
             assert!(c.is_available_on(target), "{id} on {target}");

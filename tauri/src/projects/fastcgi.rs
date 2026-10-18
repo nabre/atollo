@@ -1,4 +1,5 @@
-//! The kit's PHP as a FastCGI server, shared by Nginx and Caddy: on Windows
+//! The kit's PHP as a FastCGI server for Caddy (and Apache off Windows,
+//! D-116): on Windows
 //! `php-cgi.exe -b 127.0.0.1:<port>`, on macOS and Linux `php-fpm` (the
 //! static-php-cli build has no php-cgi) with a pool written at every start,
 //! listening on an owner-only Unix socket ([`PrivateSocket`]), never on
@@ -44,15 +45,6 @@ impl FcgiAddr {
         }
     }
 
-    /// The address of Nginx's `fastcgi_pass`: `127.0.0.1:<port>` or
-    /// `unix:<path>`.
-    pub fn nginx_pass(&self) -> String {
-        match self {
-            FcgiAddr::Tcp(port) => format!("127.0.0.1:{port}"),
-            FcgiAddr::Unix(sock) => format!("unix:{}", fwd(&sock.path)),
-        }
-    }
-
     /// The handler of Apache's `mod_proxy_fcgi` (D-116):
     /// `proxy:fcgi://127.0.0.1:<port>` or
     /// `proxy:unix:<path>|fcgi://localhost` (2.4.10 and later).
@@ -74,8 +66,8 @@ impl FcgiAddr {
 
 /// A running PHP FastCGI server as the web server reaches it: its address
 /// ([`FcgiAddr`]) and the random key the web server sends with every
-/// request. php-cgi has no authentication and Nginx for Windows speaks
-/// FastCGI over TCP only (no Unix socket, no named pipe): without the key
+/// request. php-cgi has no authentication and on Windows listens on TCP
+/// only (no Unix socket, no named pipe): without the key
 /// the kit's guard, prepended to every script, answers 403 and runs nothing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FastCgi {
@@ -93,7 +85,7 @@ impl FastCgi {
     }
 }
 
-/// The FastCGI program of the PHP in `dir` for Nginx: `php-cgi.exe` on
+/// The php-cgi program of the PHP in `dir`: `php-cgi.exe` on
 /// Windows, `bin/php-cgi` on macOS and Linux (BUG-V3-08).
 pub fn php_cgi_exe(kit: &Kit, dir: &Path) -> PathBuf {
     if kit.os().is_windows() {
@@ -219,7 +211,7 @@ pub fn guard_args(guard: &Path, key: &str) -> [String; 4] {
 /// the user can enter; never a TCP port, where any local program could send
 /// `PHP_ADMIN_VALUE` and turn the guard off), workers started on demand,
 /// the kit's environment passed to the scripts (`clear_env = no`: `PATH`,
-/// `CP_*`, `DB_PORT`), and the files PHP runs for Apache and Nginx
+/// `CP_*`, `DB_PORT`), and the files PHP runs for Apache
 /// (`.php`, `.phtml`, `.phar`).
 pub fn fpm_conf(run_dir: &Path, socket: &Path) -> String {
     let run = fwd(run_dir);

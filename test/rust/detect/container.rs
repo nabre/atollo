@@ -28,6 +28,13 @@ fn image_names_and_lines() {
         Some("mariadb:11.4")
     );
     assert_eq!(first_word(" mongo:8.0 # db").as_deref(), Some("mongo:8.0"));
+    // Nginx is no longer in the kit: its image is the kit's web server,
+    // Caddy, without Nginx's line (D-120).
+    assert_eq!(components("nginx:1.27-alpine"), vec![("caddy", None)]);
+    assert_eq!(
+        components("caddy:2.10-alpine"),
+        vec![("caddy", Some("2.10".to_owned()))]
+    );
     // Exact names: not a substring of another image.
     assert!(components("nginx-proxy-manager:latest").is_empty());
     assert!(components("httpd-exporter").is_empty());
