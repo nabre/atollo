@@ -882,6 +882,11 @@ pub fn php_ini_unix() -> String {
     [
         "; Dev-Kit php.ini for the PHP of static-php-cli (macOS, Linux): yours,",
         "; updates never touch it. Its extensions are built in: no extension= line.",
+        "; SQLite through PDO (new PDO('sqlite:...')) works with the driver of",
+        "; swoole-hook-sqlite, but php -m does not list pdo_sqlite: a composer.json",
+        "; that requires ext-pdo_sqlite, extension_loaded('pdo_sqlite') and the",
+        "; class Sqlite of PHP 8.4's Pdo namespace do not see it (static-php-cli's",
+        "; bulk build, the only one with intl, mysqli and sodium).",
         "[PHP]",
         "engine = On",
         "short_open_tag = Off",

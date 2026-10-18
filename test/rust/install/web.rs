@@ -464,6 +464,13 @@ fn php_ini_for_unix() {
     assert!(ini.contains("curl.cainfo = \"${CP_PHP}/extras/ssl/cacert.pem\"\n"));
     assert!(ini.contains("openssl.cafile = \"${CP_PHP}/extras/ssl/cacert.pem\"\n"));
     assert!(ini.contains("display_errors = On\n") && ini.contains("error_reporting = E_ALL\n"));
+    // The known gap of the bulk build is said where the user looks
+    // (review of WP-3.2): SQLite through PDO only, no ext-pdo_sqlite.
+    assert!(ini.contains("php -m does not list pdo_sqlite") && ini.contains("ext-pdo_sqlite"));
+    assert!(ini
+        .lines()
+        .filter(|l| l.contains("pdo_sqlite"))
+        .all(|l| l.starts_with(';')));
     // The Windows one keeps its `\` and its extensions.
     let win = php_ini(";extension=curl\n;curl.cainfo =\n").unwrap();
     assert!(win.contains("extension=curl") && win.contains(r"\extras\ssl\cacert.pem"));
