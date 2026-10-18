@@ -6,8 +6,11 @@
 //! runs `claude setup-token` in a session of the app's terminal; the
 //! long-lived token it prints is read from the session's output and saved
 //! in `data/agents/claude/oauth-token` (600, in a 700 folder). While that
-//! file exists Claude Code gets it as `CLAUDE_CODE_OAUTH_TOKEN`; "Esci"
-//! deletes it. The token is never logged: only "saved" or "not found".
+//! file exists Claude Code gets it as `CLAUDE_CODE_OAUTH_TOKEN`: when
+//! started from the Agents page ([`super::launch`]), and from the kit's
+//! terminals and editor once the kit's environment calls [`apply`] on
+//! macOS (`env.rs`). "Esci" deletes it. The token is never logged: only
+//! "saved" or "not found".
 //!
 //! The reading of the output is plain code, tested on every system; only
 //! the terminal session is Unix code.

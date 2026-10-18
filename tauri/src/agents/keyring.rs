@@ -31,10 +31,14 @@
 //! nothing and writes no secret of the computer into the kit. Only on
 //! Linux with no Secret Service at all (WSL, minimal desktops), and only on
 //! a disk that really keeps the 600 mode, the sign-in stays unencrypted in
-//! the kit (agy's own file, keyring.json), with a warning; on a disk
-//! without permissions (exFAT, FAT) the kit refuses. The "before" files
-//! carry the computer's name on macOS and Linux, so a kit moved after a
-//! crash never mixes two computers' credentials.
+//! the kit (keyring.json, 600), with a warning; on a disk without
+//! permissions (exFAT, FAT) the kit refuses. Only the names the store can
+//! list back ([`KNOWN`]) are moved; any other name in keyring.json (saved
+//! on Windows) stays there untouched. The "before" files carry a tag of the
+//! machine's id and the user's uid on macOS and Linux ([`machine_tag`]), so
+//! a kit moved after a crash never mixes two computers' (or two accounts')
+//! credentials, and a host name changed by the network does not orphan
+//! them.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -134,6 +138,18 @@ pub trait Store {
     fn unprotect(&self, blob: &str) -> Result<String>;
     /// keyring-before.json is gone: a sealing key kept for it goes too.
     fn forget_key(&self) {}
+    /// `target` is one `list` can return. A kit credential it cannot list
+    /// is never moved in: the save would not see it and it would stay in
+    /// the store. Windows: every Antigravity name is listed.
+    fn listable(&self, target: &str) -> bool {
+        let _ = target;
+        true
+    }
+    /// A restore that fails partway deletes the kit's credentials it had
+    /// already written (macOS and Linux; Windows as nabre/atollo).
+    fn undo_partial(&self) -> bool {
+        false
+    }
 }
 
 /// The store of this system.
@@ -216,6 +232,9 @@ impl Store for System {
         unix::list()
     }
     fn write(&self, item: &Item, _persist: u32) -> Result<()> {
+        if !known_target(&item.target) {
+            bail!("{}: not a name agy uses here", item.target);
+        }
         unix::write(item)
     }
     fn delete(&self, target: &str) {
@@ -243,6 +262,12 @@ impl Store for System {
         if let Ok(entry) = self.key_entry() {
             let _ = entry.delete_credential();
         }
+    }
+    fn listable(&self, target: &str) -> bool {
+        known_target(target)
+    }
+    fn undo_partial(&self) -> bool {
+        true
     }
 }
 
@@ -493,9 +518,9 @@ struct Files {
     starting: PathBuf,
 }
 
-/// The kit's files in `dir` (`data\antigravity`). `host`: the computer's
-/// name on macOS and Linux, in the names of the files of a run (Windows:
-/// `None`, the names of nabre/atollo).
+/// The kit's files in `dir` (`data\antigravity`). `host`: the tag of this
+/// computer and account on macOS and Linux ([`machine_tag`]), in the names
+/// of the files of a run (Windows: `None`, the names of nabre/atollo).
 fn files_in(dir: &Path, host: Option<&str>) -> Files {
     let (seen, starting) = match host {
         Some(h) => (
@@ -511,17 +536,65 @@ fn files_in(dir: &Path, host: Option<&str>) -> Files {
     }
 }
 
+/// This computer and account ([`machine_tag`]); the host name and the uid
+/// only where no machine id can be read (a Linux without systemd nor
+/// D-Bus, which has no Secret Service either: nothing is moved there).
 #[cfg(unix)]
 fn host() -> Option<String> {
+    // SAFETY: getuid has no failure mode.
+    let uid = unsafe { libc::getuid() };
+    Some(match machine_id() {
+        Some(id) => machine_tag(&id, uid),
+        None => format!("{}-{uid}", host_tag(&host_name())),
+    })
+}
+
+#[cfg(unix)]
+fn host_name() -> String {
     let mut buf = [0u8; 256];
     // SAFETY: the buffer and its length; the name is NUL-terminated within.
     let ok = unsafe { libc::gethostname(buf.as_mut_ptr().cast(), buf.len()) } == 0;
     let end = buf.iter().position(|b| *b == 0).unwrap_or(buf.len());
-    Some(host_tag(if ok {
-        std::str::from_utf8(&buf[..end]).unwrap_or_default()
+    if ok {
+        String::from_utf8_lossy(&buf[..end]).into_owned()
     } else {
-        ""
-    }))
+        String::new()
+    }
+}
+
+/// macOS: `kern.uuid` (the hardware's IOPlatformUUID, the same `ioreg`
+/// prints), fixed for the life of the Mac.
+#[cfg(target_os = "macos")]
+fn machine_id() -> Option<String> {
+    let mut buf = [0u8; 64];
+    let mut len = buf.len();
+    // SAFETY: a NUL-terminated name, the buffer and its length; nothing is
+    // written (new value null).
+    let ok = unsafe {
+        libc::sysctlbyname(
+            c"kern.uuid".as_ptr(),
+            buf.as_mut_ptr().cast(),
+            &mut len,
+            std::ptr::null_mut(),
+            0,
+        )
+    } == 0;
+    let end = buf[..len.min(buf.len())]
+        .iter()
+        .position(|b| *b == 0)
+        .unwrap_or(len.min(buf.len()));
+    let id = std::str::from_utf8(&buf[..end]).ok()?.trim().to_owned();
+    (ok && !id.is_empty()).then_some(id)
+}
+
+/// Linux: systemd's machine id, or D-Bus's copy of it.
+#[cfg(all(unix, not(target_os = "macos")))]
+fn machine_id() -> Option<String> {
+    ["/etc/machine-id", "/var/lib/dbus/machine-id"]
+        .iter()
+        .filter_map(|p| fs::read_to_string(p).ok())
+        .map(|t| t.trim().to_owned())
+        .find(|t| !t.is_empty())
 }
 
 #[cfg(windows)]
@@ -730,19 +803,33 @@ fn save_login(kit: &Kit, f: &Files, store: &dyn Store) -> Result<()> {
             to_restore.push(o.clone());
         }
     }
-    // Signed out inside agy: a kit credential no longer there is forgotten.
+    // Signed out inside agy: a kit credential no longer there is forgotten
+    // (only one the store can list: any other was never moved in).
     keep.retain(|k| {
         !before.iter().any(|o| {
-            o.target == k.target && o.kit == Some(true) && !now.iter().any(|c| c.target == k.target)
+            o.target == k.target
+                && o.kit == Some(true)
+                && store.listable(&k.target)
+                && !now.iter().any(|c| c.target == k.target)
         })
     });
+    // This computer's secrets opened before anything is written: a file
+    // sealed elsewhere (another computer's, its key not here) changes
+    // nothing, neither the kit's copy nor the store.
+    let to_restore = to_restore
+        .into_iter()
+        .map(|mut o| {
+            o.blob = o.blob.as_deref().map(|b| store.unprotect(b)).transpose()?;
+            Ok(o)
+        })
+        .collect::<Result<Vec<_>>>()
+        .context("this computer's own Antigravity sign-in cannot be opened, nothing changed")?;
     // The kit's copy first; the system is cleaned only once it is written.
     save_file(&f.store, &keep)?;
     for t in to_delete {
         store.delete(&t);
     }
-    for mut o in to_restore {
-        o.blob = o.blob.as_deref().map(|b| store.unprotect(b)).transpose()?;
+    for o in to_restore {
         store.write(&o, o.persist.unwrap_or(PERSIST_SESSION))?;
     }
     fs::remove_file(&f.seen)?;
@@ -795,7 +882,7 @@ pub fn restore(kit: &Kit) -> Result<()> {
 
 /// Told when the system has no store for agy (Linux without a Secret
 /// Service) and the kit's disk keeps the 600 mode: nothing is moved.
-pub const NO_STORE: &str = "no Secret Service on this system: the Antigravity sign-in is stored UNENCRYPTED in the kit (data/antigravity/keyring.json and agy's own file, owner-only 600): whoever copies the kit gets it";
+pub const NO_STORE: &str = "no Secret Service on this system: the Antigravity sign-in is stored UNENCRYPTED in the kit (data/antigravity/keyring.json, owner-only 600): whoever copies the kit gets it";
 
 /// Told when there is no store and the kit's disk does not keep the 600
 /// mode (exFAT, FAT, NTFS through FUSE), or on macOS.
@@ -909,28 +996,41 @@ fn move_in(f: &Files, store: &dyn Store, existing: &[Item]) -> Result<()> {
             ));
         })
         .context("the Antigravity sign-in was not moved: this computer's own sign-in cannot be sealed")?;
-    for c in read(&f.store) {
-        // A credential with the same name already on this computer is not
-        // the kit's.
-        if existing.iter().any(|e| e.target == c.target) {
-            continue;
+    let mut moved: Vec<String> = Vec::new();
+    let result = (|| {
+        for c in read(&f.store) {
+            // A name the store cannot list back stays in keyring.json only;
+            // a credential with the same name already on this computer is
+            // not the kit's.
+            if !store.listable(&c.target) || existing.iter().any(|e| e.target == c.target) {
+                continue;
+            }
+            moved.push(c.target.clone());
+            store.write(&c, PERSIST_SESSION)?;
+            let written = store
+                .list()?
+                .into_iter()
+                .find(|x| x.target == c.target)
+                .and_then(|x| x.written);
+            before.push(Item {
+                target: c.target.clone(),
+                user: None,
+                blob: None,
+                written,
+                persist: None,
+                kit: Some(true),
+            });
         }
-        store.write(&c, PERSIST_SESSION)?;
-        let written = store
-            .list()?
-            .into_iter()
-            .find(|x| x.target == c.target)
-            .and_then(|x| x.written);
-        before.push(Item {
-            target: c.target.clone(),
-            user: None,
-            blob: None,
-            written,
-            persist: None,
-            kit: Some(true),
-        });
+        save_file(&f.seen, &before)
+    })();
+    if result.is_err() && store.undo_partial() {
+        // No "before" file records them: the kit's credentials written so
+        // far would later look like this computer's own.
+        for t in &moved {
+            store.delete(t);
+        }
     }
-    save_file(&f.seen, &before)
+    result
 }
 
 /// The secrets (base64) of the login saved in `dir` (`data\antigravity`),

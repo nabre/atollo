@@ -46,6 +46,31 @@ pub fn no_secret_service(error: &str) -> bool {
 /// `secretServiceProvider`) and the strings `gemini` and `antigravity`.
 pub const KNOWN: &[(&str, &str)] = &[("gemini", "antigravity")];
 
+/// A target the stores of macOS and Linux list back (one of [`KNOWN`]).
+/// Any other name (a `jetski…` one saved on Windows) is never moved there:
+/// it would stay in the store unseen by the save.
+pub fn known_target(target: &str) -> bool {
+    split_target(target).is_some_and(|(s, u)| KNOWN.iter().any(|(ks, ku)| *ks == s && *ku == u))
+}
+
+/// The tag of this computer and account in the names of a run's files on
+/// macOS and Linux: from the machine's id (`kern.uuid` on macOS,
+/// `/etc/machine-id` on Linux) and the user's uid, so it does not change
+/// with the network as the host name does, and two Macs with the same name
+/// or two accounts sharing a kit never read each other's file. Hashed: the
+/// machine id is not written in the kit.
+pub fn machine_tag(machine_id: &str, uid: u32) -> String {
+    let id = machine_id.trim().to_ascii_lowercase();
+    let digest = sha256(&[
+        b"atollo-agy-before\0",
+        id.as_bytes(),
+        b"\0",
+        &uid.to_le_bytes(),
+    ]);
+    let hex: String = digest[..8].iter().map(|b| format!("{b:02x}")).collect();
+    format!("m{hex}")
+}
+
 /// The exit status of `security find-generic-password`: `Ok(true)` found,
 /// `Ok(false)` no such item (44, errSecItemNotFound), an error for anything
 /// else (36 interaction not allowed, 128 unlock cancelled, killed): a
@@ -238,7 +263,8 @@ pub fn open_sealed(key: &[u8; 32], sealed: &str) -> Result<String> {
     Ok(base64::engine::general_purpose::STANDARD.encode(data))
 }
 
-/// A computer's name usable in a file name (`-` for anything else).
+/// A computer's name usable in a file name (`-` for anything else): only
+/// where no machine id can be read (see [`machine_tag`]).
 pub fn host_tag(name: &str) -> String {
     let tag: String = name
         .trim()
