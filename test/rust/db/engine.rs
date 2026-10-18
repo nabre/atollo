@@ -8,8 +8,11 @@ use std::path::Path;
 #[test]
 fn all_covers_the_servers_of_before() {
     let ids: Vec<&str> = DbEngine::ALL.iter().map(|e| e.id()).collect();
-    assert_eq!(ids, ["mariadb", "mongodb"]);
-    assert_eq!(crate::db::services::SERVERS, ["mariadb", "mongodb"]);
+    assert_eq!(ids, ["mariadb", "mysql", "mongodb"]);
+    assert_eq!(
+        crate::db::services::SERVERS,
+        ["mariadb", "mysql", "mongodb"]
+    );
     for e in DbEngine::ALL {
         assert_eq!(DbEngine::from_id(e.id()), Some(e));
         assert_eq!(DbEngine::parse(e.id()).unwrap(), e);
@@ -32,7 +35,7 @@ fn serde_keeps_the_saved_ids() {
         assert_eq!(json, format!("\"{}\"", e.id()));
         assert_eq!(serde_json::from_str::<DbEngine>(&json).unwrap(), e);
     }
-    assert!(serde_json::from_str::<DbEngine>("\"mysql\"").is_err());
+    assert!(serde_json::from_str::<DbEngine>("\"MySQL\"").is_err());
 }
 
 #[test]
@@ -144,11 +147,54 @@ fn urls_and_copies() {
         DbEngine::MongoDb.project_url("shop", "pw", 27017),
         "mongodb://shop:pw@127.0.0.1:27017/shop?authSource=shop"
     );
-    assert_eq!(DbEngine::of_backup("shop-1.sql"), Some(DbEngine::MariaDb));
+    // `.sql` is MariaDB's and MySQL's: the project's SQL server decides.
+    for sql in DbEngine::SQL {
+        assert_eq!(DbEngine::of_backup("shop-1.sql", sql), Some(sql));
+        assert_eq!(
+            DbEngine::of_backup("shop-1.archive.gz", sql),
+            Some(DbEngine::MongoDb)
+        );
+        assert_eq!(DbEngine::of_backup("shop-1.gz", sql), None);
+        assert_eq!(DbEngine::of_backup("notes.txt", sql), None);
+    }
     assert_eq!(
-        DbEngine::of_backup("shop-1.archive.gz"),
-        Some(DbEngine::MongoDb)
+        DbEngine::of_backup("shop-1.sql", DbEngine::MongoDb),
+        None,
+        "never MongoDB for a SQL dump"
     );
-    assert_eq!(DbEngine::of_backup("shop-1.gz"), None);
-    assert_eq!(DbEngine::of_backup("notes.txt"), None);
+    assert_eq!(
+        DbEngine::MySql.admin_url(3306),
+        "mysql://root@127.0.0.1:3306/"
+    );
+    assert_eq!(
+        DbEngine::MySql.project_url("shop", "pw", 3307),
+        "mysql://shop:pw@127.0.0.1:3307/shop"
+    );
+}
+
+#[test]
+fn mysql_programs() {
+    let m = DbEngine::MySql;
+    assert_eq!((m.id(), m.component()), ("mysql", "mysql"));
+    assert_eq!(m.default_port(), DbEngine::MariaDb.default_port());
+    assert_eq!(m.server_bin(), "mysqld");
+    assert_eq!(m.install_db_bin(), None, "mysqld --initialize");
+    assert_eq!((m.client_component(), m.client_bin()), ("mysql", "mysql"));
+    assert_eq!((m.tools_component(), m.dump_bin()), ("mysql", "mysqldump"));
+    assert_eq!(m.restore_bin(), "mysql");
+    assert_eq!(m.admin_bin(), Some("mysqladmin"));
+    assert_eq!(m.admin_user(), "root");
+    assert_eq!(m.backup_ext(), ".sql");
+    assert!(m.is_sql());
+    assert_eq!(
+        m.reserved_names(),
+        [
+            "mysql",
+            "information_schema",
+            "performance_schema",
+            "sys",
+            "root"
+        ]
+    );
+    assert_eq!(DbEngine::SQL, [DbEngine::MySql, DbEngine::MariaDb]);
 }

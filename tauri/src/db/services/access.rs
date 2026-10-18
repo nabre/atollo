@@ -15,6 +15,7 @@ pub(super) fn admin_password(secrets: &auth::Secrets, engine: DbEngine) -> Optio
     match engine {
         DbEngine::MongoDb => secrets.mongodb_admin.clone(),
         DbEngine::MariaDb => secrets.mariadb_root.clone(),
+        DbEngine::MySql => secrets.mysql_root.clone(),
     }
 }
 
@@ -72,6 +73,19 @@ impl Services {
                     .context("MariaDB: setting the password of root")?;
                     secrets.mariadb_root = Some(password.clone());
                 }
+                // The initialization gave root the stored password
+                // (`data::prepare`, `--init-file`): root is never without
+                // one, so a password unknown here is data the kit did not
+                // make, and the server is not used (fail closed).
+                DbEngine::MySql => {
+                    let _ = client;
+                    if known.is_none() {
+                        bail!(
+                            "MySQL: its data has a root whose password the kit does not \
+                             know (data\\app\\db\\secrets.json): not used"
+                        );
+                    }
+                }
             }
             auth::save(&self.kit, &secrets)?;
             crate::log::info(&format!("{id}: administrator password set"));
@@ -94,6 +108,26 @@ impl Services {
                     auth::write_line_client_ini(&self.kit, l, port, &password)?;
                 }
             }
+            // The same for MySQL's login (`mysql.cnf`, D-110): every tool
+            // of the app and the kit's launchers read it.
+            DbEngine::MySql if main => {
+                auth::write_mysql_cnf(&self.kit, port, &password)?;
+            }
+            DbEngine::MySql => {
+                if !auth::mysql_cnf(&self.kit).is_file() {
+                    auth::write_mysql_cnf(&self.kit, line_port(&self.kit, id, None), &password)?;
+                }
+                if let Some(l) = line {
+                    auth::write_mysql_line_cnf(&self.kit, l, port, &password)?;
+                }
+            }
+        }
+        // MySQL answers to root's login before anything else uses it; an
+        // error stops the server (`launch`).
+        if engine == DbEngine::MySql {
+            let cmd = self.sql_tool_at(engine, engine.client_bin(), env, line, port);
+            run_with_input(cmd, "SELECT 1;\n", Duration::from_secs(60))
+                .context("MySQL: root's login with the kit's password")?;
         }
         Ok(())
     }
@@ -117,6 +151,7 @@ impl Services {
 
     /// Starts the version of `engine` the project's database is on.
     pub fn start_for(&self, project: &str, engine: &str, env: &KitEnv) -> Result<u16> {
+        let engine = self.engine_for(project, engine)?.id();
         let line = project_line(&self.kit, project, engine);
         self.start_line(engine, line.as_deref(), env)
     }
@@ -133,7 +168,7 @@ impl Services {
         line: Option<&str>,
         env: &KitEnv,
     ) -> Result<Option<auth::ProjectDb>> {
-        DbEngine::parse(engine)?;
+        let engine = self.engine_for(project, engine)?.id();
         if let Some(l) = line {
             check_line(&self.kit, engine, l)?;
         }
@@ -173,7 +208,8 @@ impl Services {
     /// running again, never a password lost nor another project's user
     /// altered.
     pub fn project_db_create(&self, project: &str, engine: &str) -> Result<auth::ProjectDb> {
-        let kind = DbEngine::parse(engine)?;
+        let kind = self.engine_for(project, engine)?;
+        let engine = kind.id();
         let line = project_line(&self.kit, project, engine);
         let (port, env) = self.running_at(kind, line.as_deref())?;
         let (name, password) = auth::ensure_project_db(&self.kit, project, engine)
@@ -192,11 +228,11 @@ impl Services {
                     .env("ATOLLO_DB_PASSWORD", &password);
                 run_with_input(cmd, "", Duration::from_secs(60))?;
             }
-            DbEngine::MariaDb => {
+            DbEngine::MariaDb | DbEngine::MySql => {
                 let cmd = self.sql_tool_at(kind, kind.client_bin(), &env, line.as_deref(), port);
                 run_with_input(
                     cmd,
-                    &auth::project_sql(&name, &password),
+                    &auth::project_sql_for(kind, &name, &password),
                     Duration::from_secs(60),
                 )?;
             }
@@ -217,6 +253,7 @@ impl Services {
     /// another project of the kit uses it too.
     #[allow(dead_code)] // the tests; `projects::delete` resolves the names first
     pub fn project_db_drop(&self, project: &str, engine: &str, env: &KitEnv) -> Result<()> {
+        let engine = self.engine_for(project, engine)?.id();
         let name = auth::project_db_name(&self.kit, project, engine)?;
         auth::check_name_free(&self.kit, project, engine, &name)?;
         let line = project_line(&self.kit, project, engine);
@@ -262,7 +299,7 @@ impl Services {
                     .env("ATOLLO_DB_NAME", name);
                 run_with_input(cmd, "", Duration::from_secs(60))?;
             }
-            DbEngine::MariaDb => {
+            DbEngine::MariaDb | DbEngine::MySql => {
                 let cmd = self.sql_tool_at(engine, engine.client_bin(), &env, line, port);
                 run_with_input(cmd, &auth::project_drop_sql(name), Duration::from_secs(60))?;
             }

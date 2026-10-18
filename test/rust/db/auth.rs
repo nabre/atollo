@@ -50,6 +50,56 @@ fn names_and_sql() {
     assert!(root_password_sql(pw).contains("'root'@'::1' IDENTIFIED BY"));
 }
 
+/// MySQL (D-110): `caching_sha2_password` on localhost and 127.0.0.1, `_`
+/// escaped in the GRANT, root also for 127.0.0.1; a login without paths.
+#[test]
+fn mysql_users_grants_and_login() {
+    let pw = "0123456789abcdef0123456789abcdef";
+    let sql = mysql_project_sql("my_app", pw);
+    assert_eq!(sql, project_sql_for(DbEngine::MySql, "my_app", pw));
+    assert!(sql.starts_with("CREATE DATABASE IF NOT EXISTS `my_app` CHARACTER SET utf8mb4;\n"));
+    for host in ["localhost", "127.0.0.1"] {
+        assert!(sql.contains(&format!(
+            "CREATE USER IF NOT EXISTS 'my_app'@'{host}' IDENTIFIED WITH caching_sha2_password BY '{pw}';"
+        )));
+        assert!(sql.contains(&format!(
+            "ALTER USER 'my_app'@'{host}' IDENTIFIED WITH caching_sha2_password BY '{pw}';"
+        )));
+        assert!(sql.contains(&format!(
+            r"GRANT ALL PRIVILEGES ON `my\_app`.* TO 'my_app'@'{host}';"
+        )));
+    }
+    assert!(!sql.contains("::1") && !sql.contains("mysql.db"), "{sql}");
+    assert!(!sql.contains("mysql_native_password"), "gone in 9.x");
+    assert_eq!(
+        project_sql_for(DbEngine::MariaDb, "shop", pw),
+        project_sql("shop", pw)
+    );
+    let root = mysql_root_sql(pw);
+    assert!(root.starts_with(&format!(
+        "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '{pw}';"
+    )));
+    assert!(root.contains("CREATE USER IF NOT EXISTS 'root'@'127.0.0.1'"));
+    assert!(root.contains("GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION;"));
+    let cnf = mysql_cnf_text(3307, pw);
+    assert_eq!(
+        cnf,
+        format!(
+            "# Atollo: login of the kit's MySQL (written by the app).\n[client]\nuser=root\n\
+             password={pw}\nhost=127.0.0.1\nport=3307\nprotocol=TCP\n"
+        )
+    );
+    // Laravel and URL keys as for MariaDB.
+    let db = project_db("mysql", "shop", "pw1", 3307);
+    assert_eq!(db.url, "mysql://shop:pw1@127.0.0.1:3307/shop");
+    let out = env_apply_text("DB_CONNECTION=sqlite\n", &db);
+    assert!(
+        out.contains("DB_CONNECTION=mysql") && out.contains("DB_PORT=3307"),
+        "{out}"
+    );
+    assert!(is_reserved("mysql", "sys") && !is_reserved("mysql", "mariadb_sys"));
+}
+
 #[test]
 fn env_for_laravel_with_mongodb() {
     let db = project_db("mongodb", "shop", "pw1", 27018);

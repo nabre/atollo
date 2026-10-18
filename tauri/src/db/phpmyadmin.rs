@@ -1,5 +1,6 @@
-//! phpMyAdmin on the kit's MariaDB (DECISIONS.md D-107, in place of Adminer
-//! of D-85): what EasyPHP and XAMPP give, from the Database page.
+//! phpMyAdmin on the kit's SQL server, MySQL or MariaDB (DECISIONS.md
+//! D-107, in place of Adminer of D-85; D-110): what EasyPHP and XAMPP give,
+//! from the Database page.
 //!
 //! - PHP's own server (`php -S`) of the kit's default PHP, on a loopback
 //!   address of its own (`127.x.y.z`, new at every start) and a port the
@@ -30,9 +31,8 @@ use std::process::{Child, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 
-use super::auth;
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
@@ -118,7 +118,15 @@ impl PhpMyAdmin {
     /// The address that logs in to phpMyAdmin, on MariaDB at `db_port`, in
     /// `lang` (`it`, `en`...); starts PHP's server when it is not running or
     /// serves another port.
-    pub fn open(&self, kit: &Kit, env: &KitEnv, db_port: u16, lang: &str) -> Result<String> {
+    /// `password`: root's of the server on `db_port` (MySQL or MariaDB).
+    pub fn open(
+        &self,
+        kit: &Kit,
+        env: &KitEnv,
+        db_port: u16,
+        password: &str,
+        lang: &str,
+    ) -> Result<String> {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(s) = running.as_mut() {
             if matches!(s.child.try_wait(), Ok(None)) && s.db_port == db_port {
@@ -126,7 +134,7 @@ impl PhpMyAdmin {
             }
         }
         *running = None;
-        let server = start(kit, env, db_port, lang)?;
+        let server = start(kit, env, db_port, password, lang)?;
         let url = address(server.host, server.port, &server.token);
         *running = Some(server);
         Ok(url)
@@ -155,7 +163,7 @@ impl PhpMyAdmin {
     }
 }
 
-fn start(kit: &Kit, env: &KitEnv, db_port: u16, lang: &str) -> Result<Server> {
+fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str, lang: &str) -> Result<Server> {
     let index = entry(kit);
     let Some(root) = index.parent().filter(|_| index.is_file()) else {
         bail!("phpMyAdmin is not installed: {} missing", index.display());
@@ -168,9 +176,6 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, lang: &str) -> Result<Server> {
     if fs::read(&config).ok().as_deref() != Some(CONFIG.as_bytes()) {
         write_atomic(&config, CONFIG.as_bytes()).with_context(|| config.display().to_string())?;
     }
-    let password = auth::load(kit)
-        .mariadb_root
-        .ok_or_else(|| anyhow!("MariaDB has no password of root yet"))?;
     let dir = kit.app_dir().join("phpmyadmin");
     let (sessions, cache) = (dir.join("sessions"), dir.join("tmp"));
     for d in [&sessions, &cache] {
@@ -210,7 +215,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, lang: &str) -> Result<Server> {
         .env("ATOLLO_PMA_TMP", &cache)
         .env("ATOLLO_LANG", lang)
         .env("ATOLLO_DB_PORT", db_port.to_string())
-        .env("ATOLLO_DB_PASSWORD", &password)
+        .env("ATOLLO_DB_PASSWORD", password)
         .stdin(Stdio::null())
         .stdout(Stdio::from(out.try_clone()?))
         .stderr(Stdio::from(out));

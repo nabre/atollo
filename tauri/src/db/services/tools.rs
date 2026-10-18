@@ -68,12 +68,66 @@ pub(super) fn run_tool(mut cmd: Command, limit: Duration) -> Result<()> {
     }
 }
 
+/// Runs a tool of a server with its output appended to `log` (the server's
+/// own: MySQL's initialization tells there why it failed) and waits at
+/// most `limit`.
+pub(super) fn run_logged(mut cmd: Command, log: &std::path::Path, limit: Duration) -> Result<()> {
+    let file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log)?;
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::from(file.try_clone()?))
+        .stderr(Stdio::from(file));
+    let mut child = jobs::spawn(&mut cmd)?;
+    let start = Instant::now();
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return if status.success() {
+                Ok(())
+            } else {
+                let text = std::fs::read_to_string(log).unwrap_or_default();
+                let tail: Vec<&str> = text.lines().filter(|l| !l.trim().is_empty()).collect();
+                Err(anyhow!(
+                    "exit {status}: {}",
+                    tail[tail.len().saturating_sub(3)..].join("\n")
+                ))
+            };
+        }
+        if start.elapsed() > limit {
+            let _ = child.kill();
+            bail!("{:?}: no answer", cmd.get_program());
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
+/// The text of a project's own login for a SQL `engine` (only for its
+/// tool, then removed): MariaDB's as before, CRLF; MySQL's with LF and TCP.
+pub(super) fn project_login_text(
+    engine: DbEngine,
+    user: &str,
+    password: &str,
+    port: u16,
+) -> String {
+    match engine {
+        DbEngine::MySql => format!(
+            "[client]\nuser={user}\npassword={password}\nhost=127.0.0.1\nport={port}\nprotocol=TCP\n"
+        ),
+        DbEngine::MariaDb | DbEngine::MongoDb => format!(
+            "[client]\r\nuser={user}\r\npassword={password}\r\nhost=127.0.0.1\r\nport={port}\r\n"
+        ),
+    }
+}
+
 impl Services {
     /// A tool of a SQL `engine` (`stem`: [`DbEngine::client_bin`],
     /// [`DbEngine::dump_bin`]…) logged in as `root` (the kit's `[client]`
     /// login), of version `line` (None: the one the server runs) on `port`:
     /// the `[client]` login names the port of the version the server runs
-    /// only (PLAN.md §13.2).
+    /// only (PLAN.md §13.2). MySQL reads its login alone
+    /// (`--defaults-file`, D-110): MariaDB's `my.ini` in `MYSQL_HOME` and
+    /// the PC's option files never reach it.
     pub(crate) fn sql_tool_at(
         &self,
         engine: DbEngine,
@@ -85,24 +139,18 @@ impl Services {
         debug_assert!(engine.is_sql(), "{engine} has no [client] login");
         let mut cmd = jobs::kit_command(bin_at(&self.kit, engine.component(), line, stem), env);
         // It must be the first option; the port from here wins over it.
-        cmd.arg(format!(
-            "--defaults-extra-file={}",
-            auth::client_ini(&self.kit).display()
-        ))
-        .arg(format!("--port={port}"));
+        match engine {
+            DbEngine::MySql => cmd.arg(format!(
+                "--defaults-file={}",
+                auth::mysql_cnf(&self.kit).display()
+            )),
+            DbEngine::MariaDb | DbEngine::MongoDb => cmd.arg(format!(
+                "--defaults-extra-file={}",
+                auth::client_ini(&self.kit).display()
+            )),
+        };
+        cmd.arg(format!("--port={port}"));
         cmd
-    }
-
-    /// [`Services::sql_tool_at`] of MariaDB, `exe` as the tests name it.
-    #[cfg(test)]
-    pub(crate) fn mariadb_tool_at(
-        &self,
-        exe: &str,
-        env: &KitEnv,
-        line: Option<&str>,
-        port: u16,
-    ) -> Command {
-        self.sql_tool_at(DbEngine::MariaDb, exe, env, line, port)
     }
 
     /// A tool of a SQL `engine` logged in as the project's own user, which
@@ -122,17 +170,31 @@ impl Services {
         user: &str,
         password: &str,
     ) -> Result<(Command, PathBuf)> {
+        let program = bin_at(&self.kit, engine.component(), line, stem);
+        // The client's own commands off (`\!`, `system`, `source`, `tee`):
+        // the SQL may come from elsewhere. A client without the option
+        // never gets it (fail closed).
+        let help = jobs::kit_command(&program, env)
+            .arg("--help")
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .output()
+            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+            .unwrap_or_default();
+        let Some(guard) = super::mysql::restore_guard(engine, &help) else {
+            bail!(
+                "{}: this {engine} client cannot turn its own commands off (`--commands=OFF`, \
+                 `--sandbox`): update {engine} to restore a copy",
+                program.display()
+            );
+        };
         let exe = exe_name(self.kit.os(), stem);
         let login = auth::dir(&self.kit).join(format!("{exe}-{}.cnf", std::process::id()));
-        auth::write_private_text(
-            &login,
-            &format!(
-                "[client]\r\nuser={user}\r\npassword={password}\r\nhost=127.0.0.1\r\nport={port}\r\n"
-            ),
-        )?;
-        let mut cmd = jobs::kit_command(bin_at(&self.kit, engine.component(), line, stem), env);
+        auth::write_private_text(&login, &project_login_text(engine, user, password, port))?;
+        let mut cmd = jobs::kit_command(program, env);
         // It must be the first option.
-        cmd.arg(format!("--defaults-file={}", login.display()));
+        cmd.arg(format!("--defaults-file={}", login.display()))
+            .arg(guard);
         Ok((cmd, login))
     }
 
