@@ -31,6 +31,7 @@ import {
 } from "../api";
 import { t } from "../i18n";
 import { DbBrowser } from "./browser";
+import { MigrationPanel } from "./migration";
 import { ComponentLogo } from "../logos";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction, useCopy, useLoad } from "../hooks";
@@ -598,6 +599,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
         <ErrorLine error={loadError} />
         <ErrorLine error={error} />
       </div>
+      <MigrationPanel />
       {service ? (
         <ServiceDetails
           // A new key when the port changes: the field starts from it.

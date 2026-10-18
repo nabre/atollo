@@ -40,6 +40,7 @@ mod access;
 mod backups;
 mod data;
 pub mod mysql;
+mod to_mysql;
 mod tools;
 
 use std::collections::BTreeMap;
@@ -60,8 +61,10 @@ use crate::projects::run::{is_port_free, responds};
 use crate::setup::catalog::Catalog;
 use access::admin_password;
 pub use backups::Backup;
+pub(crate) use data::lines_with_data;
 use data::seed;
 pub use data::{data_dir, data_dir_at, migrate_data};
+pub use to_mysql::ToMysql;
 use tools::run_tool;
 
 /// The ids of the servers, in the order of the page: [`DbEngine::ALL`], for
@@ -651,6 +654,11 @@ impl Services {
         env: &KitEnv,
     ) -> Result<u16> {
         let id = engine.id();
+        // While its data is being switched to MySQL, MariaDB must not take
+        // writes the copy would miss (D-117).
+        if engine == DbEngine::MariaDb && crate::db::migrate_engine::switching(&self.kit) {
+            bail!("{id}: its data is moving to MySQL; the move ends at the next start");
+        }
         // The version named first: one uninstalled is told as such
         // (`LineMissing`), the interface offers to install it.
         if let Some(l) = line {
@@ -681,7 +689,7 @@ impl Services {
                 self.keep_port(id, l, port)?;
             }
         }
-        let result = self.launch(engine, line.as_deref(), main, env, port);
+        let result = self.launch(engine, line.as_deref(), main, env, port, true);
         let mut errors = self.errors.lock().unwrap_or_else(|e| e.into_inner());
         match &result {
             Ok(_) => {
@@ -706,6 +714,25 @@ impl Services {
         crate::fsx::write_json(&settings_path(&self.kit), &all)
     }
 
+    /// Starts version `line` of `engine` on `port`, not the port of its
+    /// settings, and never with the data of an older version (D-117: the
+    /// migration's MySQL on a port of its own, MariaDB still on the
+    /// sites' one). As a version other than the server's: its own login
+    /// (`mysql-lines`), the kit's `mysql.cnf` untouched.
+    pub(crate) fn start_aside(
+        &self,
+        engine: DbEngine,
+        line: &str,
+        env: &KitEnv,
+        port: u16,
+    ) -> Result<u16> {
+        check_line(&self.kit, engine.id(), line)?;
+        if !is_port_free(port) {
+            return Err(PortInUse(port).into());
+        }
+        self.launch(engine, Some(line), false, env, port, false)
+    }
+
     fn launch(
         &self,
         engine: DbEngine,
@@ -713,13 +740,14 @@ impl Services {
         main: bool,
         env: &KitEnv,
         port: u16,
+        seeding: bool,
     ) -> Result<u16> {
         let id = engine.id();
         // The first start of a version: the data of the nearest older one,
         // never while that one runs (its files are in use).
         let seeded = match line {
-            Some(l) => seed(&self.kit, id, l, &self.running_lines(engine))?,
-            None => None,
+            Some(l) if seeding => seed(&self.kit, id, l, &self.running_lines(engine))?,
+            _ => None,
         };
         let key = Self::key(engine, line);
         let (data, fresh) = self.prepare(engine, line, env, port)?;

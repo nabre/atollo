@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-db-migration"
+description = "Enables the db_migration command without any pre-configured scope."
+commands.allow = ["db_migration"]
+
+[[permission]]
+identifier = "deny-db-migration"
+description = "Denies the db_migration command without any pre-configured scope."
+commands.deny = ["db_migration"]
