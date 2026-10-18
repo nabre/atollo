@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#1F1F1F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<link rel="canonical" href="{{base}}{{path}}">
+{{alternates}}
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{base}}{{path}}">
+<meta property="og:image" content="{{base}}assets/brand.png">
+<link rel="icon" type="image/svg+xml" href="{{root}}assets/symbol.svg">
+<link rel="stylesheet" href="{{root}}assets/site.css">
+<script src="{{root}}assets/download.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="{{root}}{{langPath}}" aria-label="Atollo">
+      <img class="logo logo-dark" src="{{root}}assets/lockup-dark.svg" alt="Atollo" width="168" height="24">
+      <img class="logo logo-light" src="{{root}}assets/lockup-light.svg" alt="Atollo" width="168" height="24">
+    </a>
+    <nav class="nav" aria-label="Atollo">
+      <a href="#features">{{navFeatures}}</a>
+      <a href="#how">{{navHow}}</a>
+      <a href="#platforms">{{navPlatforms}}</a>
+      <a href="https://github.com/nabre/atollo">GitHub</a>
+    </nav>
+    <nav class="langs" aria-label="Language">{{langLinks}}</nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-text">
+        <p class="kicker">{{heroKicker}}</p>
+        <h1>{{heroTitle}}</h1>
+        <p class="lead">{{heroLead}}</p>
+        <p class="zero">{{heroZero}}</p>
+        <div class="cta" id="download"
+             data-for="{{downloadFor}}" data-generic="{{downloadGeneric}}" data-none="{{noRelease}}"
+             data-version="{{versionLabel}}">
+          <a class="btn btn-primary" id="dl-main" href="https://github.com/nabre/atollo/releases/latest">{{downloadGeneric}}</a>
+          <a class="btn btn-secondary" href="#platforms">{{otherSystems}}</a>
+        </div>
+        <p class="release-note" id="dl-note"><a href="https://github.com/nabre/atollo">{{sourceCode}}</a> · MIT</p>
+      </div>
+      <img class="hero-symbol" src="{{root}}assets/symbol.svg" alt="" width="320" height="320">
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap narrow">
+      <h2>{{metaphorTitle}}</h2>
+      <p>{{metaphorText}}</p>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>{{featuresTitle}}</h2>
+      <div class="cards">
+        <article class="card"><span class="num">1</span><h3>{{f1Title}}</h3><p>{{f1Text}}</p></article>
+        <article class="card"><span class="num">2</span><h3>{{f2Title}}</h3><p>{{f2Text}}</p></article>
+        <article class="card"><span class="num">3</span><h3>{{f3Title}}</h3><p>{{f3Text}}</p></article>
+        <article class="card"><span class="num">4</span><h3>{{f4Title}}</h3><p>{{f4Text}}</p></article>
+        <article class="card card-wide"><span class="num num-warm">6/6</span><h3>{{f5Title}}</h3><p>{{f5Text}}</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="band">
+    <div class="wrap">
+      <h2>{{howTitle}}</h2>
+      <ol class="steps">
+        <li><p>{{how1}}</p></li>
+        <li><p>{{how2}}</p></li>
+        <li><p>{{how3}}</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>{{shotsTitle}}</h2>
+      <div class="shots">
+        <figure><img src="{{root}}assets/shot-projects.png" alt="{{shot1}}" loading="lazy"><figcaption>{{shot1}}</figcaption></figure>
+        <figure><img src="{{root}}assets/shot-agents.png" alt="{{shot2}}" loading="lazy"><figcaption>{{shot2}}</figcaption></figure>
+        <figure><img src="{{root}}assets/shot-tools.png" alt="{{shot3}}" loading="lazy"><figcaption>{{shot3}}</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <h2>{{compareTitle}}</h2>
+      <div class="table-scroll">
+        <table class="compare">
+          <thead><tr><th>{{compareTool}}</th><th>{{compareGap}}</th><th>{{compareAnswer}}</th></tr></thead>
+          <tbody>
+            <tr><th>Docker / Devcontainers</th><td>{{c1Gap}}</td><td>{{c1Answer}}</td></tr>
+            <tr><th>Nix / Devbox / mise / Scoop</th><td>{{c2Gap}}</td><td>{{c2Answer}}</td></tr>
+            <tr><th>Laragon / Herd / XAMPP</th><td>{{c3Gap}}</td><td>{{c3Answer}}</td></tr>
+            <tr><th>Cursor / VS Code / CLI AI</th><td>{{c4Gap}}</td><td>{{c4Answer}}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="platforms">
+    <div class="wrap">
+      <h2>{{platformsTitle}}</h2>
+      <p class="muted">{{platformsLead}}</p>
+      <ul class="targets">
+        <li data-target="win32-x64"><span class="os">Windows</span><code>win32-x64</code><span class="note">{{pWinX64}}</span><span class="files"><a data-asset="Atollo-x64.exe" href="https://github.com/nabre/atollo/releases/latest">Atollo-x64.exe</a></span></li>
+        <li data-target="win32-arm64"><span class="os">Windows</span><code>win32-arm64</code><span class="note">{{pWinArm}}</span><span class="files"><a data-asset="Atollo-arm64.exe" href="https://github.com/nabre/atollo/releases/latest">Atollo-arm64.exe</a></span></li>
+        <li data-target="darwin-arm64"><span class="os">macOS</span><code>darwin-arm64</code><span class="note">{{pMacArm}}</span><span class="files"><a data-asset="Atollo-darwin-arm64.app.zip" href="https://github.com/nabre/atollo/releases/latest">Atollo-darwin-arm64.app.zip</a></span></li>
+        <li data-target="darwin-x64"><span class="os">macOS</span><code>darwin-x64</code><span class="note">{{pMacX64}}</span><span class="files"><a data-asset="Atollo-darwin-x64.app.zip" href="https://github.com/nabre/atollo/releases/latest">Atollo-darwin-x64.app.zip</a></span></li>
+        <li data-target="linux-x64"><span class="os">Linux</span><code>linux-x64</code><span class="note">{{pLinX64}}</span><span class="files"><a data-asset="Atollo-linux-x64.AppImage" href="https://github.com/nabre/atollo/releases/latest">.AppImage</a><a data-asset="Atollo-linux-x64.tar.gz" href="https://github.com/nabre/atollo/releases/latest">.tar.gz</a></span></li>
+        <li data-target="linux-arm64"><span class="os">Linux</span><code>linux-arm64</code><span class="note">{{pLinArm}}</span><span class="files"><a data-asset="Atollo-linux-arm64.AppImage" href="https://github.com/nabre/atollo/releases/latest">.AppImage</a><a data-asset="Atollo-linux-arm64.tar.gz" href="https://github.com/nabre/atollo/releases/latest">.tar.gz</a></span></li>
+      </ul>
+      <p class="muted small">{{checksum}}. {{platformsNote}}</p>
+      <p><a class="link" href="{{readmeHref}}">{{readGuide}} →</a></p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap narrow">
+      <h2>{{privacyTitle}}</h2>
+      <p>{{privacyText}}</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-row">
+    <span>© Atollo · <a href="https://github.com/nabre/atollo/blob/main/LICENSE">{{footerLicense}}</a></span>
+    <span class="small">{{footerSigning}}</span>
+  </div>
+</footer>
+</body>
+</html>
