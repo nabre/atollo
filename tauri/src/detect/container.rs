@@ -77,7 +77,7 @@ fn components(image: &str) -> Vec<(&'static str, Option<String>)> {
         "nginx" => vec![("nginx", line)],
         "php" if tag.contains("apache") => vec![("php", line), ("apache", None)],
         "php" => vec![("php", line)],
-        // The kit's SQL server is MySQL (D-117): MariaDB's lines are not
+        // The kit's only SQL server is MySQL: MariaDB's lines are not
         // MySQL's, so `mariadb:11.4` gives none.
         "mysql" => vec![("mysql", line)],
         "mariadb" => vec![("mysql", None)],

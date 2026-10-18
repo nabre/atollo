@@ -29,7 +29,7 @@ fn junctions_are_not_projects_nor_read() {
     crate::os::safe_path::tests::junction(&real.join("server"), &outside);
     let req = crate::detect::requires(&real);
     assert!(
-        !req.iter().any(|r| r == "mongodb" || r == "mariadb"),
+        !req.iter().any(|r| r == "mongodb" || r == "mysql"),
         "{req:?}"
     );
     let p = crate::detect::detect(&real, "it");
@@ -215,7 +215,7 @@ fn delete_refused_when_another_project_has_the_same_database() {
     kit.prepare().unwrap();
     for name in ["my-app", "my_app"] {
         create(&kit, name, "it").unwrap();
-        crate::db::auth::set_project_password(&kit, name, "mariadb", "pw").unwrap();
+        crate::db::auth::set_project_password(&kit, name, "mysql", "pw").unwrap();
     }
     crate::db::auth::set_project_password(&kit, "my-app", "mongodb", "pw").unwrap();
     assert!(delete_plan(&kit, "my_app", "it")
@@ -223,12 +223,12 @@ fn delete_refused_when_another_project_has_the_same_database() {
         .databases
         .iter()
         .all(|d| d.database == "my_app"));
-    let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+    let dbs = FakeDbs::new(&["mysql", "mongodb"]);
     let e = delete(&kit, "my-app", "it", &dbs, false).unwrap_err();
     assert!(format!("{e:#}").contains("my_app"), "{e:#}");
     assert!(dbs.calls().is_empty(), "{:?}", dbs.calls());
     assert!(kit.projects().join("my-app").is_dir());
-    assert!(crate::db::auth::project_password(&kit, "my-app", "mariadb").is_some());
+    assert!(crate::db::auth::project_password(&kit, "my-app", "mysql").is_some());
 
     // a server not installed is not touched: no reason to refuse
     let only_mongo = FakeDbs::new(&["mongodb"]);
@@ -239,17 +239,17 @@ fn delete_refused_when_another_project_has_the_same_database() {
     assert_eq!(
         dbs.calls(),
         [
-            "start mariadb",
-            "drop mariadb my_app",
             "start mongodb",
-            "drop mongodb my_app"
+            "drop mongodb my_app",
+            "start mysql",
+            "drop mysql my_app"
         ]
     );
 }
 
 /// Data given to a project renamed outside the app (D-89) drops the
 /// databases it was created with, named after the old name; names of
-/// before kept by the rule of their time (`config` on MariaDB), and one
+/// before kept by the rule of their time (`config` on MySQL), and one
 /// of the server's own never dropped.
 #[test]
 fn delete_drops_the_names_in_use() {
@@ -263,28 +263,28 @@ fn delete_drops_the_names_in_use() {
         .join("private")
         .join("db.json");
     fs::create_dir_all(old.parent().unwrap()).unwrap();
-    fs::write(&old, r#"{"mariadb":"pw","mongodb":"pw2"}"#).unwrap();
+    fs::write(&old, r#"{"mysql":"pw","mongodb":"pw2"}"#).unwrap();
     create(&kit, "Nuovo", "it").unwrap();
     state::adopt(&kit, "Vecchio-Nome", "Nuovo").unwrap();
     let plan = delete_plan(&kit, "Nuovo", "it").unwrap();
     assert!(plan.databases.iter().all(|d| d.database == "vecchio_nome"));
-    let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+    let dbs = FakeDbs::new(&["mysql", "mongodb"]);
     delete(&kit, "Nuovo", "it", &dbs, false).unwrap();
     assert_eq!(
         dbs.calls(),
         [
-            "start mariadb",
-            "drop mariadb vecchio_nome",
             "start mongodb",
-            "drop mongodb vecchio_nome"
+            "drop mongodb vecchio_nome",
+            "start mysql",
+            "drop mysql vecchio_nome"
         ]
     );
 
-    // `config` of before: its own database on MariaDB; on MongoDB the
+    // `config` of before: its own database on MySQL; on MongoDB the
     // server's, so nothing is dropped and the user is told
     create(&kit, "config", "it").unwrap();
-    crate::db::auth::set_project_password(&kit, "config", "mariadb", "pw").unwrap();
-    let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+    crate::db::auth::set_project_password(&kit, "config", "mysql", "pw").unwrap();
+    let dbs = FakeDbs::new(&["mysql", "mongodb"]);
     assert_eq!(
         delete_plan(&kit, "config", "it").unwrap().databases[0].database,
         "config"
@@ -304,7 +304,7 @@ fn delete_drops_the_names_in_use() {
 fn project_with_dbs(kit: &Kit, name: &str) -> state::ProjectState {
     create(kit, name, "it").unwrap();
     settings::update(kit, name, |s| s.agent = Some("claude".into()));
-    crate::db::auth::set_project_password(kit, name, "mariadb", "pw-maria").unwrap();
+    crate::db::auth::set_project_password(kit, name, "mysql", "pw-sql").unwrap();
     crate::db::auth::set_project_password(kit, name, "mongodb", "pw-mongo").unwrap();
     let state = state::ProjectState::of(kit, name).unwrap();
     fs::write(state.backups_dir().unwrap().join("x-1.sql"), "12345").unwrap();
@@ -342,7 +342,7 @@ fn delete_plan_with_and_without_databases() {
     let plan = delete_plan(&kit, "Shop Online", "it").unwrap();
     assert!(plan.folder_exists && !plan.folder_empty);
     let engines: Vec<_> = plan.databases.iter().map(|d| d.engine.as_str()).collect();
-    assert_eq!(engines, ["mariadb", "mongodb"]);
+    assert_eq!(engines, ["mongodb", "mysql"]);
     assert!(plan
         .databases
         .iter()
@@ -366,15 +366,15 @@ fn delete_drops_the_databases_first() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     let state = project_with_dbs(&kit, "shop");
-    let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+    let dbs = FakeDbs::new(&["mysql", "mongodb"]);
     delete(&kit, "shop", "it", &dbs, false).unwrap();
     assert_eq!(
         dbs.calls(),
         [
-            "start mariadb",
-            "drop mariadb shop",
             "start mongodb",
-            "drop mongodb shop"
+            "drop mongodb shop",
+            "start mysql",
+            "drop mysql shop"
         ]
     );
     assert!(!kit.projects().join("shop").exists());
@@ -398,7 +398,7 @@ fn an_orphan_without_a_folder_is_deleted_with_its_databases() {
     kit.prepare().unwrap();
     let state = project_with_dbs(&kit, "gone");
     fs::remove_dir(kit.projects().join("gone")).unwrap();
-    let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+    let dbs = FakeDbs::new(&["mysql", "mongodb"]);
     delete(&kit, "gone", "it", &dbs, false).unwrap();
     assert_eq!(dbs.calls().len(), 4, "{:?}", dbs.calls());
     assert!(!state.dir().exists(), "nothing left in data\\projects");
@@ -412,7 +412,7 @@ fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     let state = project_with_dbs(&kit, "shop");
-    let mut dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+    let mut dbs = FakeDbs::new(&["mysql", "mongodb"]);
     dbs.failing.push("mongodb");
     let e = delete(&kit, "shop", "it", &dbs, false).unwrap_err();
     assert!(format!("{e:#}").contains("mongodb did not start"), "{e:#}");
@@ -429,7 +429,7 @@ fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
     );
 
     // forced: no server touched, the folders go
-    let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+    let dbs = FakeDbs::new(&["mysql", "mongodb"]);
     delete(&kit, "shop", "it", &dbs, true).unwrap();
     assert!(dbs.calls().is_empty(), "{:?}", dbs.calls());
     assert!(!kit.projects().join("shop").exists() && !state.dir().exists());
@@ -437,7 +437,7 @@ fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
     // a non-empty folder stops before any server is touched
     let state = project_with_dbs(&kit, "shop");
     fs::write(kit.projects().join("shop").join("a.txt"), "x").unwrap();
-    let dbs = FakeDbs::new(&["mariadb", "mongodb"]);
+    let dbs = FakeDbs::new(&["mysql", "mongodb"]);
     assert!(delete(&kit, "shop", "it", &dbs, false).is_err());
     assert!(delete(&kit, "shop", "it", &dbs, true).is_err());
     assert!(dbs.calls().is_empty());

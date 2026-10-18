@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn names_and_sql() {
-    for engine in ["mariadb", "mongodb"] {
+    for engine in ["mysql", "mongodb"] {
         assert_eq!(db_name("Negozio-Online", engine), "negozio_online");
         assert_eq!(db_name("app & co (1)", engine), "app___co__1_");
         assert_eq!(db_name("---", engine), "progetto");
@@ -11,7 +11,7 @@ fn names_and_sql() {
     }
     // never the server's own databases or users; those of the other
     // server are ordinary names
-    for (project, maria, mongo) in [
+    for (project, sql, mongo) in [
         ("mysql", "mysql_db", "mysql"),
         ("MySQL", "mysql_db", "mysql"),
         ("sys", "sys_db", "sys"),
@@ -26,14 +26,13 @@ fn names_and_sql() {
             "performance_schema",
         ),
         ("root", "root_db", "root"),
-        ("mariadb.sys", "mariadb_sys_db", "mariadb_sys"),
         ("admin", "admin", "admin_db"),
         ("local", "local", "local_db"),
         ("Config", "config", "config_db"),
     ] {
-        assert_eq!(db_name(project, "mariadb"), maria, "{project}");
+        assert_eq!(db_name(project, "mysql"), sql, "{project}");
         assert_eq!(db_name(project, "mongodb"), mongo, "{project}");
-        assert!(project_drop_sql(&db_name(project, "mariadb")).contains(&format!("`{maria}`")));
+        assert!(project_drop_sql(&db_name(project, "mysql")).contains(&format!("`{sql}`")));
     }
     assert!(is_reserved("other", "admin") && is_reserved("other", "mysql"));
     assert_eq!(legacy_db_name("mysql"), "mysql");
@@ -41,22 +40,14 @@ fn names_and_sql() {
     let sql = project_sql("shop", pw);
     assert!(sql.contains("CREATE DATABASE IF NOT EXISTS `shop`"));
     assert!(sql.contains("GRANT ALL PRIVILEGES ON `shop`.* TO 'shop'@'127.0.0.1'"));
-    // `_` is a wildcard in a database-level GRANT: only my_app, never my2app
-    let sql = project_sql("my_app", pw);
-    assert!(sql.contains("CREATE DATABASE IF NOT EXISTS `my_app`"));
-    assert!(sql.contains(r"GRANT ALL PRIVILEGES ON `my\_app`.* TO 'my_app'@'::1'"));
-    assert!(sql.contains("DELETE FROM mysql.db WHERE Db = 'my_app' AND User = 'my_app'"));
-    assert!(!project_sql("shop", pw).contains("mysql.db"));
-    assert!(root_password_sql(pw).contains("'root'@'::1' IDENTIFIED BY"));
 }
 
 /// MySQL (D-110): `caching_sha2_password` on localhost and 127.0.0.1, `_`
-/// escaped in the GRANT, root also for 127.0.0.1; a login without paths.
+/// escaped in the GRANT (a wildcard there: only my_app, never my2app), root also for 127.0.0.1; a login without paths.
 #[test]
 fn mysql_users_grants_and_login() {
     let pw = "0123456789abcdef0123456789abcdef";
-    let sql = mysql_project_sql("my_app", pw);
-    assert_eq!(sql, project_sql_for(DbEngine::MySql, "my_app", pw));
+    let sql = project_sql("my_app", pw);
     assert!(sql.starts_with("CREATE DATABASE IF NOT EXISTS `my_app` CHARACTER SET utf8mb4;\n"));
     for host in ["localhost", "127.0.0.1"] {
         assert!(sql.contains(&format!(
@@ -71,10 +62,6 @@ fn mysql_users_grants_and_login() {
     }
     assert!(!sql.contains("::1") && !sql.contains("mysql.db"), "{sql}");
     assert!(!sql.contains("mysql_native_password"), "gone in 9.x");
-    assert_eq!(
-        project_sql_for(DbEngine::MariaDb, "shop", pw),
-        project_sql("shop", pw)
-    );
     let root = mysql_root_sql(pw);
     assert!(root.starts_with(&format!(
         "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '{pw}';"
@@ -89,7 +76,7 @@ fn mysql_users_grants_and_login() {
              password={pw}\nhost=127.0.0.1\nport=3307\nprotocol=TCP\n"
         )
     );
-    // Laravel and URL keys as for MariaDB.
+    // Laravel and URL keys.
     let db = project_db("mysql", "shop", "pw1", 3307);
     assert_eq!(db.url, "mysql://shop:pw1@127.0.0.1:3307/shop");
     let out = env_apply_text("DB_CONNECTION=sqlite\n", &db);
@@ -97,7 +84,7 @@ fn mysql_users_grants_and_login() {
         out.contains("DB_CONNECTION=mysql") && out.contains("DB_PORT=3307"),
         "{out}"
     );
-    assert!(is_reserved("mysql", "sys") && !is_reserved("mysql", "mariadb_sys"));
+    assert!(is_reserved("mysql", "sys") && !is_reserved("mysql", "admin"));
 }
 
 #[test]
@@ -114,7 +101,7 @@ fn env_for_laravel_with_mongodb() {
 
 #[test]
 fn env_for_laravel_and_others() {
-    let db = project_db("mariadb", "shop", "pw1", 3307);
+    let db = project_db("mysql", "shop", "pw1", 3307);
     let laravel = "APP_NAME=Shop\r\n# DB_HOST=old\r\nDB_CONNECTION=sqlite\r\nDB_HOST=10.0.0.1\r\n";
     let changes = env_changes(laravel, &db);
     assert_eq!(changes[0].key, "DB_CONNECTION");
@@ -152,21 +139,21 @@ fn secrets_round_trip_and_gitignore() {
     kit.prepare().unwrap();
     let mut s = load(&kit);
     assert_eq!(s, Secrets::default());
-    s.mariadb_root = Some(new_password().unwrap());
+    s.mysql_root = Some(new_password().unwrap());
     save(&kit, &s).unwrap();
     assert_eq!(load(&kit), s);
-    assert_eq!(s.mariadb_root.as_ref().unwrap().len(), 32);
-    write_client_ini(&kit, 3306, "abc").unwrap();
-    assert!(fs::read_to_string(client_ini(&kit))
+    assert_eq!(s.mysql_root.as_ref().unwrap().len(), 32);
+    write_mysql_cnf(&kit, 3306, "abc").unwrap();
+    assert!(fs::read_to_string(mysql_cnf(&kit))
         .unwrap()
-        .contains("password=abc\r\nhost=127.0.0.1\r\nport=3306"));
+        .contains("password=abc\nhost=127.0.0.1\nport=3306"));
     let p = tmp.0.join("p");
     fs::create_dir_all(&p).unwrap();
     assert!(!env_ignored(&p));
     fs::write(p.join(".gitignore"), "/vendor\n.env\n").unwrap();
     assert!(env_ignored(&p));
     fs::write(p.join(".env.example"), "DB_CONNECTION=mysql\n").unwrap();
-    env_apply(&p, &project_db("mariadb", "p", "z", 3306)).unwrap();
+    env_apply(&p, &project_db("mysql", "p", "z", 3306)).unwrap();
     assert!(fs::read_to_string(p.join(".env"))
         .unwrap()
         .contains("DB_PASSWORD=z"));
@@ -239,8 +226,8 @@ fn project_passwords_in_private_folder() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-project");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
     kit.prepare().unwrap();
-    assert_eq!(project_password(&kit, "shop", "mariadb"), None);
-    assert!(set_project_password(&kit, "..", "mariadb", "x").is_err());
+    assert_eq!(project_password(&kit, "shop", "mysql"), None);
+    assert!(set_project_password(&kit, "..", "mysql", "x").is_err());
     assert!(project_passwords(&kit, r"..\x").is_empty());
 
     // private\ is owner-only before db.json exists: a file created in it
@@ -256,7 +243,7 @@ fn project_passwords_in_private_folder() {
     fs::remove_file(private.join("probe")).unwrap();
 
     let pw = new_password().unwrap();
-    set_project_password(&kit, "shop", "mariadb", &pw).unwrap();
+    set_project_password(&kit, "shop", "mysql", &pw).unwrap();
     set_project_password(&kit, "shop", "mongodb", "m1").unwrap();
     let file = tmp
         .0
@@ -266,8 +253,8 @@ fn project_passwords_in_private_folder() {
         .join("private")
         .join("db.json");
     assert_owner_only(&file);
-    assert_eq!(project_password(&kit, "shop", "mariadb"), Some(pw.clone()));
-    assert_eq!(project_password(&kit, "other", "mariadb"), None);
+    assert_eq!(project_password(&kit, "shop", "mysql"), Some(pw.clone()));
+    assert_eq!(project_password(&kit, "other", "mysql"), None);
 
     // keys of a newer version stay; a file that is not JSON is never
     // overwritten
@@ -286,18 +273,18 @@ fn project_passwords_in_private_folder() {
 
     // secrets.json keeps the administrators and an old `projects`
     // untouched (for the migration), never the new passwords
-    let old = r#"{"mariadbRoot":"r1","projects":{"old":{"mariadb":"o1"}}}"#;
+    let old = r#"{"mysqlRoot":"r1","projects":{"old":{"mysql":"o1"}}}"#;
     fs::create_dir_all(dir(&kit)).unwrap();
     fs::write(secrets_path(&kit), old).unwrap();
     let mut s = load(&kit);
-    assert_eq!(s.mariadb_root.as_deref(), Some("r1"));
+    assert_eq!(s.mysql_root.as_deref(), Some("r1"));
     s.mongodb_admin = Some("a1".into());
     save(&kit, &s).unwrap();
     let saved: serde_json::Value =
         serde_json::from_str(&fs::read_to_string(secrets_path(&kit)).unwrap()).unwrap();
     assert_eq!(
         saved["projects"],
-        serde_json::json!({ "old": { "mariadb": "o1" } })
+        serde_json::json!({ "old": { "mysql": "o1" } })
     );
     assert_eq!(saved["mongodbAdmin"], "a1");
     let text = saved.to_string();
@@ -305,15 +292,15 @@ fn project_passwords_in_private_folder() {
 
     // dropped: the passwords come back once, the file goes
     let dropped = drop_project(&kit, "shop").unwrap();
-    assert_eq!(dropped.get("mariadb"), Some(&pw));
+    assert_eq!(dropped.get("mysql"), Some(&pw));
     assert_eq!(dropped.get("mongodb").map(String::as_str), Some("m2"));
     assert_eq!(dropped.len(), 2);
     assert!(!file.exists());
     assert!(drop_project(&kit, "shop").unwrap().is_empty());
-    assert_eq!(project_password(&kit, "shop", "mariadb"), None);
+    assert_eq!(project_password(&kit, "shop", "mysql"), None);
 
     fs::write(&file, "{ not json").unwrap();
-    assert!(set_project_password(&kit, "shop", "mariadb", "x").is_err());
+    assert!(set_project_password(&kit, "shop", "mysql", "x").is_err());
     assert!(drop_project(&kit, "shop").is_err());
     assert_eq!(fs::read_to_string(&file).unwrap(), "{ not json");
 }
@@ -329,46 +316,46 @@ fn unreadable_passwords_stop_the_creation() {
     let private = projects.join("shop").join("private");
 
     // reading creates nothing
-    assert_eq!(try_project_password(&kit, "shop", "mariadb").unwrap(), None);
+    assert_eq!(try_project_password(&kit, "shop", "mysql").unwrap(), None);
     assert!(try_project_passwords(&kit, "shop").unwrap().is_empty());
     assert!(!private.exists(), "reading made private\\");
-    assert!(try_project_password(&kit, "..", "mariadb").is_err());
+    assert!(try_project_password(&kit, "..", "mysql").is_err());
 
     // a new password and its name are stored before they are returned
     // (to the server)
-    let (name, pw) = ensure_project_db(&kit, "shop", "mariadb").unwrap();
+    let (name, pw) = ensure_project_db(&kit, "shop", "mysql").unwrap();
     assert_eq!(name, "shop");
     assert_eq!(pw.len(), 32);
-    assert_eq!(project_password(&kit, "shop", "mariadb"), Some(pw.clone()));
+    assert_eq!(project_password(&kit, "shop", "mysql"), Some(pw.clone()));
     let json: serde_json::Value =
         serde_json::from_str(&fs::read_to_string(private.join("db.json")).unwrap()).unwrap();
-    assert_eq!(json["names"]["mariadb"], "shop");
+    assert_eq!(json["names"]["mysql"], "shop");
     assert_eq!(
-        ensure_project_db(&kit, "shop", "mariadb").unwrap(),
+        ensure_project_db(&kit, "shop", "mysql").unwrap(),
         (name, pw)
     );
 
     // not JSON: an error, the file untouched
     let file = private.join("db.json");
     fs::write(&file, "{ not json").unwrap();
-    assert!(try_project_password(&kit, "shop", "mariadb").is_err());
+    assert!(try_project_password(&kit, "shop", "mysql").is_err());
     assert!(try_project_passwords(&kit, "shop").is_err());
-    assert_eq!(project_password(&kit, "shop", "mariadb"), None, "lenient");
-    assert!(ensure_project_db(&kit, "shop", "mariadb").is_err());
+    assert_eq!(project_password(&kit, "shop", "mysql"), None, "lenient");
+    assert!(ensure_project_db(&kit, "shop", "mysql").is_err());
     assert!(ensure_project_db(&kit, "shop", "mongodb").is_err());
-    assert!(project_db_name(&kit, "shop", "mariadb").is_err());
+    assert!(project_db_name(&kit, "shop", "mysql").is_err());
     assert_eq!(fs::read_to_string(&file).unwrap(), "{ not json");
 
     // another project's unreadable file stops a creation too: what it
     // names is unknown
-    assert!(ensure_project_db(&kit, "blog", "mariadb").is_err());
+    assert!(ensure_project_db(&kit, "blog", "mysql").is_err());
     assert!(!projects.join("blog").exists());
 
     // a folder where the file should be: cannot be read either
     fs::remove_file(&file).unwrap();
     fs::create_dir(&file).unwrap();
-    assert!(try_project_password(&kit, "shop", "mariadb").is_err());
-    assert!(ensure_project_db(&kit, "shop", "mariadb").is_err());
+    assert!(try_project_password(&kit, "shop", "mysql").is_err());
+    assert!(ensure_project_db(&kit, "shop", "mysql").is_err());
     fs::remove_dir(&file).unwrap();
 
     // dropping reads without creating: nothing comes back after
@@ -411,36 +398,30 @@ fn names_stored_legacy_and_new() {
         project_db_name(&kit, "admin", "mongodb").unwrap(),
         "admin_db"
     );
-    assert_eq!(project_db_name(&kit, "admin", "mariadb").unwrap(), "admin");
-    assert_eq!(
-        project_db_name(&kit, "mysql", "mariadb").unwrap(),
-        "mysql_db"
-    );
+    assert_eq!(project_db_name(&kit, "admin", "mysql").unwrap(), "admin");
+    assert_eq!(project_db_name(&kit, "mysql", "mysql").unwrap(), "mysql_db");
     assert!(!kit.project_data().join("admin").exists());
     let (name, _) = ensure_project_db(&kit, "admin", "mongodb").unwrap();
     assert_eq!(name, "admin_db");
-    let (name, _) = ensure_project_db(&kit, "admin", "mariadb").unwrap();
+    let (name, _) = ensure_project_db(&kit, "admin", "mysql").unwrap();
     assert_eq!(name, "admin");
     assert_eq!(
         db_json(&kit, "admin")["names"],
-        serde_json::json!({ "mongodb": "admin_db", "mariadb": "admin" })
+        serde_json::json!({ "mongodb": "admin_db", "mysql": "admin" })
     );
     // the passwords' readers skip the names
     assert_eq!(project_passwords(&kit, "admin").len(), 2);
 
     // a project of before the names (a password, no name): the rule of
-    // its time, `config` on MariaDB kept; on MongoDB never touched
-    write_db_json(&kit, "config", r#"{"mariadb":"pw1","mongodb":"pw2"}"#);
-    assert_eq!(
-        project_db_name(&kit, "config", "mariadb").unwrap(),
-        "config"
-    );
+    // its time, `config` on MySQL kept; on MongoDB never touched
+    write_db_json(&kit, "config", r#"{"mysql":"pw1","mongodb":"pw2"}"#);
+    assert_eq!(project_db_name(&kit, "config", "mysql").unwrap(), "config");
     let err = project_db_name(&kit, "config", "mongodb").unwrap_err();
     assert!(format!("{err:#}").contains("by hand"), "{err:#}");
     assert!(ensure_project_db(&kit, "config", "mongodb").is_err());
-    let (name, pw) = ensure_project_db(&kit, "config", "mariadb").unwrap();
+    let (name, pw) = ensure_project_db(&kit, "config", "mysql").unwrap();
     assert_eq!((name.as_str(), pw.as_str()), ("config", "pw1"));
-    assert_eq!(db_json(&kit, "config")["names"]["mariadb"], "config");
+    assert_eq!(db_json(&kit, "config")["names"]["mysql"], "config");
     assert!(db_json(&kit, "config")["names"].get("mongodb").is_none());
 
     // a stored name wins over the project's name; one of the server's
@@ -448,34 +429,30 @@ fn names_stored_legacy_and_new() {
     write_db_json(
         &kit,
         "renamed",
-        r#"{"mariadb":"pw","names":{"mariadb":"old_name"},"future":1}"#,
+        r#"{"mysql":"pw","names":{"mysql":"old_name"},"future":1}"#,
     );
     assert_eq!(
-        project_db_name(&kit, "renamed", "mariadb").unwrap(),
+        project_db_name(&kit, "renamed", "mysql").unwrap(),
         "old_name"
     );
-    write_db_json(
-        &kit,
-        "bad",
-        r#"{"mariadb":"pw","names":{"mariadb":"mysql"}}"#,
-    );
-    assert!(project_db_name(&kit, "bad", "mariadb").is_err());
-    write_db_json(&kit, "bad", r#"{"mariadb":"pw","names":{"mariadb":"a`b"}}"#);
-    assert!(project_db_name(&kit, "bad", "mariadb").is_err());
-    write_db_json(&kit, "bad", r#"{"mariadb":"pw","names":"x"}"#);
-    assert!(project_db_name(&kit, "bad", "mariadb").is_err());
+    write_db_json(&kit, "bad", r#"{"mysql":"pw","names":{"mysql":"mysql"}}"#);
+    assert!(project_db_name(&kit, "bad", "mysql").is_err());
+    write_db_json(&kit, "bad", r#"{"mysql":"pw","names":{"mysql":"a`b"}}"#);
+    assert!(project_db_name(&kit, "bad", "mysql").is_err());
+    write_db_json(&kit, "bad", r#"{"mysql":"pw","names":"x"}"#);
+    assert!(project_db_name(&kit, "bad", "mysql").is_err());
     fs::remove_dir_all(kit.project_data().join("bad")).unwrap();
 
     // the names of before are pinned (adopt, migration); never replaced
     write_db_json(
         &kit,
         "old",
-        r#"{"mariadb":"pw","mongodb":"pw2","names":{"mongodb":"kept"}}"#,
+        r#"{"mysql":"pw","mongodb":"pw2","names":{"mongodb":"kept"}}"#,
     );
     keep_legacy_names(&kit, "old").unwrap();
     assert_eq!(
         db_json(&kit, "old")["names"],
-        serde_json::json!({ "mariadb": "old", "mongodb": "kept" })
+        serde_json::json!({ "mysql": "old", "mongodb": "kept" })
     );
     let mut s = ProjectSecrets::new();
     s.insert("mongodb".into(), "pw".into());
@@ -497,7 +474,7 @@ fn data_of_before_is_never_unseen() {
     kit.prepare().unwrap();
     // layout 1 still there: refused, nothing stored
     fs::create_dir_all(kit.project_states().join("my-app")).unwrap();
-    let err = ensure_project_db(&kit, "my_app", "mariadb").unwrap_err();
+    let err = ensure_project_db(&kit, "my_app", "mysql").unwrap_err();
     assert!(format!("{err:#}").contains("not all moved"), "{err:#}");
     assert!(!kit.project_data().join("my_app").exists());
     fs::remove_dir_all(kit.project_states()).unwrap();
@@ -506,13 +483,13 @@ fn data_of_before_is_never_unseen() {
     let secrets = Secrets {
         other: [(
             "projects".to_owned(),
-            serde_json::json!({ "my-app": { "mariadb": "pw" } }),
+            serde_json::json!({ "my-app": { "mysql": "pw" } }),
         )]
         .into(),
         ..Secrets::default()
     };
     save(&kit, &secrets).unwrap();
-    let err = ensure_project_db(&kit, "my_app", "mariadb").unwrap_err();
+    let err = ensure_project_db(&kit, "my_app", "mysql").unwrap_err();
     assert!(format!("{err:#}").contains("my-app"), "{err:#}");
     assert!(ensure_project_db(&kit, "my_app", "mongodb").is_ok());
 }
@@ -524,15 +501,15 @@ fn same_name_refused_on_creation() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-collision");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
     kit.prepare().unwrap();
-    ensure_project_db(&kit, "my-app", "mariadb").unwrap();
-    let err = ensure_project_db(&kit, "my_app", "mariadb").unwrap_err();
+    ensure_project_db(&kit, "my-app", "mysql").unwrap();
+    let err = ensure_project_db(&kit, "my_app", "mysql").unwrap_err();
     assert!(format!("{err:#}").contains("my-app"), "{err:#}");
     assert!(
         !kit.project_data().join("my_app").exists(),
         "nothing stored"
     );
     assert_eq!(
-        name_used_by(&kit, "my_app", "mariadb", "my_app")
+        name_used_by(&kit, "my_app", "mysql", "my_app")
             .unwrap()
             .as_deref(),
         Some("my-app")
@@ -541,16 +518,16 @@ fn same_name_refused_on_creation() {
     ensure_project_db(&kit, "my_app", "mongodb").unwrap();
 
     // a project of before the names counts with the rule of its time
-    write_db_json(&kit, "città", r#"{"mariadb":"pw"}"#);
-    assert!(ensure_project_db(&kit, "cittè", "mariadb").is_err());
-    assert!(check_name_free(&kit, "città", "mariadb", "citt_").is_ok());
+    write_db_json(&kit, "città", r#"{"mysql":"pw"}"#);
+    assert!(ensure_project_db(&kit, "cittè", "mysql").is_err());
+    assert!(check_name_free(&kit, "città", "mysql", "citt_").is_ok());
     // a name stored by an adopted project counts too
     write_db_json(
         &kit,
         "new-name",
-        r#"{"mariadb":"pw","names":{"mariadb":"shop"}}"#,
+        r#"{"mysql":"pw","names":{"mysql":"shop"}}"#,
     );
-    assert!(ensure_project_db(&kit, "shop", "mariadb").is_err());
+    assert!(ensure_project_db(&kit, "shop", "mysql").is_err());
     assert!(ensure_project_db(&kit, "SHOP", "mongodb").is_ok());
 }
 
@@ -573,8 +550,8 @@ fn project_lines_in_db_json() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-lines");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
     kit.prepare().unwrap();
-    assert_eq!(project_line(&kit, "shop", "mariadb").unwrap(), None);
-    set_project_line(&kit, "shop", "mariadb", None).unwrap();
+    assert_eq!(project_line(&kit, "shop", "mysql").unwrap(), None);
+    set_project_line(&kit, "shop", "mysql", None).unwrap();
     assert!(
         !kit.project_data()
             .join("shop")
@@ -586,32 +563,32 @@ fn project_lines_in_db_json() {
     write_db_json(
         &kit,
         "shop",
-        r#"{ "mariadb": "pw", "names": { "mariadb": "shop_old" } }"#,
+        r#"{ "mysql": "pw", "names": { "mysql": "shop_old" } }"#,
     );
-    set_project_line(&kit, "shop", "mariadb", Some("10.6")).unwrap();
+    set_project_line(&kit, "shop", "mysql", Some("8.4")).unwrap();
     assert_eq!(
-        project_line(&kit, "shop", "mariadb").unwrap().as_deref(),
-        Some("10.6")
+        project_line(&kit, "shop", "mysql").unwrap().as_deref(),
+        Some("8.4")
     );
     assert_eq!(project_line(&kit, "shop", "mongodb").unwrap(), None);
     let json = db_json(&kit, "shop");
-    assert_eq!(json["mariadb"], "pw", "password kept");
-    assert_eq!(json["names"]["mariadb"], "shop_old", "name kept");
+    assert_eq!(json["mysql"], "pw", "password kept");
+    assert_eq!(json["names"]["mysql"], "shop_old", "name kept");
     assert_eq!(
         project_passwords(&kit, "shop").keys().collect::<Vec<_>>(),
-        ["mariadb"],
+        ["mysql"],
         "lines is not a password"
     );
-    assert!(set_project_line(&kit, "shop", "mariadb", Some("x; DROP")).is_err());
-    set_project_line(&kit, "shop", "mariadb", None).unwrap();
+    assert!(set_project_line(&kit, "shop", "mysql", Some("x; DROP")).is_err());
+    set_project_line(&kit, "shop", "mysql", None).unwrap();
     assert!(
         db_json(&kit, "shop").get("lines").is_none(),
         "empty lines removed"
     );
-    assert_eq!(project_line(&kit, "shop", "mariadb").unwrap(), None);
+    assert_eq!(project_line(&kit, "shop", "mysql").unwrap(), None);
     // A value that is not a version is ignored, never used in a path.
-    write_db_json(&kit, "shop", r#"{ "lines": { "mariadb": "..\\x" } }"#);
-    assert_eq!(project_line(&kit, "shop", "mariadb").unwrap(), None);
+    write_db_json(&kit, "shop", r#"{ "lines": { "mysql": "..\\x" } }"#);
+    assert_eq!(project_line(&kit, "shop", "mysql").unwrap(), None);
 }
 
 /// The versions a database was created on (`used`), for the deletion: kept
@@ -622,7 +599,7 @@ fn used_lines_in_db_json() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-used");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
     kit.prepare().unwrap();
-    add_project_used_line(&kit, "shop", "mariadb", "12.3").unwrap();
+    add_project_used_line(&kit, "shop", "mysql", "9.7").unwrap();
     assert!(
         !kit.project_data()
             .join("shop")
@@ -634,41 +611,38 @@ fn used_lines_in_db_json() {
     write_db_json(
         &kit,
         "shop",
-        r#"{ "mariadb": "pw", "names": { "mariadb": "shop" }, "lines": { "mariadb": "10.6" } }"#,
+        r#"{ "mysql": "pw", "names": { "mysql": "shop" }, "lines": { "mysql": "8.4" } }"#,
     );
-    assert!(project_used_lines(&kit, "shop", "mariadb")
+    assert!(project_used_lines(&kit, "shop", "mysql")
         .unwrap()
         .is_empty());
-    add_project_used_line(&kit, "shop", "mariadb", "12.3").unwrap();
-    add_project_used_line(&kit, "shop", "mariadb", "10.6").unwrap();
-    add_project_used_line(&kit, "shop", "mariadb", "12.3").unwrap();
+    add_project_used_line(&kit, "shop", "mysql", "9.7").unwrap();
+    add_project_used_line(&kit, "shop", "mysql", "8.4").unwrap();
+    add_project_used_line(&kit, "shop", "mysql", "9.7").unwrap();
     assert_eq!(
-        project_used_lines(&kit, "shop", "mariadb").unwrap(),
-        ["12.3", "10.6"]
+        project_used_lines(&kit, "shop", "mysql").unwrap(),
+        ["9.7", "8.4"]
     );
     assert!(project_used_lines(&kit, "shop", "mongodb")
         .unwrap()
         .is_empty());
-    assert!(add_project_used_line(&kit, "shop", "mariadb", "..\\x").is_err());
+    assert!(add_project_used_line(&kit, "shop", "mysql", "..\\x").is_err());
     let json = db_json(&kit, "shop");
-    assert_eq!(json["mariadb"], "pw");
-    assert_eq!(json["names"]["mariadb"], "shop");
-    assert_eq!(json["lines"]["mariadb"], "10.6");
+    assert_eq!(json["mysql"], "pw");
+    assert_eq!(json["names"]["mysql"], "shop");
+    assert_eq!(json["lines"]["mysql"], "8.4");
     assert_eq!(
         project_passwords(&kit, "shop").keys().collect::<Vec<_>>(),
-        ["mariadb"],
+        ["mysql"],
         "used is not a password"
     );
     // A value that is not a version is never used.
     write_db_json(
         &kit,
         "shop",
-        r#"{ "mariadb": "pw", "used": { "mariadb": ["..\\x", 3, "11.4"] } }"#,
+        r#"{ "mysql": "pw", "used": { "mysql": ["..\\x", 3, "8.0"] } }"#,
     );
-    assert_eq!(
-        project_used_lines(&kit, "shop", "mariadb").unwrap(),
-        ["11.4"]
-    );
+    assert_eq!(project_used_lines(&kit, "shop", "mysql").unwrap(), ["8.0"]);
 }
 
 /// The lock of `db.json` holds across processes (the command line beside
@@ -679,7 +653,7 @@ fn db_json_lock_waits_for_the_kit_lock() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-lock");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
     kit.prepare().unwrap();
-    write_db_json(&kit, "shop", r#"{ "mariadb": "pw" }"#);
+    write_db_json(&kit, "shop", r#"{ "mysql": "pw" }"#);
     let (held_tx, held_rx) = std::sync::mpsc::channel();
     let other = {
         let kit = kit.clone();
@@ -693,10 +667,10 @@ fn db_json_lock_waits_for_the_kit_lock() {
         })
     };
     held_rx.recv().unwrap();
-    set_project_line(&kit, "shop", "mariadb", Some("10.6")).unwrap();
+    set_project_line(&kit, "shop", "mysql", Some("8.4")).unwrap();
     let written = std::time::Instant::now();
     let released = other.join().unwrap();
     assert!(written >= released, "written while the other held the lock");
-    assert_eq!(db_json(&kit, "shop")["lines"]["mariadb"], "10.6");
-    assert_eq!(db_json(&kit, "shop")["mariadb"], "pw");
+    assert_eq!(db_json(&kit, "shop")["lines"]["mysql"], "8.4");
+    assert_eq!(db_json(&kit, "shop")["mysql"], "pw");
 }

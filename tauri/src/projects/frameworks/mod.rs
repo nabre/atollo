@@ -65,9 +65,12 @@ pub struct Variant {
     pub steps: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub actions: Vec<Action>,
-    /// A server of the kit (`mariadb`, `mongodb`): the project gets its
+    /// A server of the kit (`mysql`, `mongodb`): the project gets its
     /// database there and the connection in `.env`, before the steps.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        deserialize_with = "database_of_before",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub database: Option<String>,
     /// Variables written in the project's `.env`, before the steps.
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -105,13 +108,29 @@ pub struct Piece {
     pub env: Vec<EnvVar>,
     /// Of a base that cannot do without one (a CMS): the kit's server
     /// where the project gets its database, as an addition's `database`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "database_of_before",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub database: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
     /// Of an addition: what it does with each base, by base id.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub on: BTreeMap<String, Variant>,
+}
+
+/// A `database`, as a framework file of before may name it: its `mariadb`
+/// is MySQL, the kit's only SQL server.
+fn database_of_before<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+    Ok(Option::<String>::deserialize(d)?.map(|db| {
+        if db.trim() == "mariadb" {
+            "mysql".to_owned()
+        } else {
+            db
+        }
+    }))
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]

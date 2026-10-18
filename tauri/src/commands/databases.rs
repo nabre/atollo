@@ -4,51 +4,20 @@
 use super::*;
 use crate::db::DbEngine;
 
-/// The engine the interface names (`mysql`, `mariadb`, `mongodb`), or the
-/// error of an unknown one, logged under `context`.
+/// The engine the interface names (`mysql`, `mongodb`), or the error of an
+/// unknown one, logged under `context`.
 fn engine_of(engine: &str, context: &str) -> CmdResult<DbEngine> {
     DbEngine::from_id(engine).ok_or_else(|| fail(context, format!("unknown server {engine}")))
 }
 
-/// The server of the project's database `engine` names (D-110): a SQL one
-/// is the project's SQL server, MySQL for a new database of a new kit
-/// (`db::services::project_engine`), so the interface's `mariadb` reaches
-/// it too.
-fn project_engine_of(kit: &Kit, project: &str, engine: &str, context: &str) -> CmdResult<DbEngine> {
-    Ok(crate::db::services::project_engine(
-        kit,
-        project,
-        engine_of(engine, context)?,
-    ))
-}
-
-/// The id the interface gets for a server (D-117): `mysql` for every SQL
-/// one, also for a project's database still on a MariaDB whose data has
-/// not moved yet (the interface's `mysql` reaches it,
-/// `db::services::project_engine`); others as they are.
-pub(super) fn ui_id(engine: &str) -> String {
-    match DbEngine::from_id(engine) {
-        Some(e) if e.is_sql() => DbEngine::MySql.id().to_owned(),
-        _ => engine.to_owned(),
-    }
-}
-
-/// The connection of a project's database as the interface names it.
-fn for_ui(mut db: crate::db::auth::ProjectDb) -> crate::db::auth::ProjectDb {
-    db.engine = ui_id(&db.engine);
-    db
-}
-
-/// The servers `detect::requires` found (`mysql`, `mongodb`, `sqlite`), a
-/// SQL one as `mysql` ([`ui_id`]), each once.
+/// The servers `detect::requires` found (`mysql`, `mongodb`, `sqlite`),
+/// each once.
 fn detected_as(found: Vec<String>) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for id in found {
-        let id = match DbEngine::from_id(&id) {
-            Some(e) => ui_id(e.id()),
-            None if id == "sqlite" => id,
-            None => continue,
-        };
+        if DbEngine::from_id(&id).is_none() && id != "sqlite" {
+            continue;
+        }
         if !out.contains(&id) {
             out.push(id);
         }
@@ -83,10 +52,9 @@ pub struct DbVersions {
 }
 
 fn db_versions(kit: &Kit, project: &str) -> std::collections::BTreeMap<String, DbVersions> {
-    DbEngine::OFFERED
+    DbEngine::ALL
         .into_iter()
-        .map(|offered| {
-            let engine = crate::db::services::project_engine(kit, project, offered);
+        .map(|engine| {
             let id = engine.id();
             let chosen = crate::db::auth::project_line(kit, project, id)
                 .ok()
@@ -96,7 +64,7 @@ fn db_versions(kit: &Kit, project: &str) -> std::collections::BTreeMap<String, D
                 server: crate::db::services::server_line(kit, id),
                 lines: crate::db::services::server_lines(kit, id),
             };
-            (offered.id().to_owned(), versions)
+            (id.to_owned(), versions)
         })
         .collect()
 }
@@ -110,12 +78,7 @@ pub fn project_databases<R: Runtime>(
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     Ok(ProjectDatabases {
-        dbs: state
-            .services
-            .project_dbs(&project)
-            .into_iter()
-            .map(for_ui)
-            .collect(),
+        dbs: state.services.project_dbs(&project),
         detected: detected_as(crate::detect::requires(&dir)),
         env_exists: dir.join(".env").is_file(),
         env_ignored: crate::db::auth::env_ignored(&dir),
@@ -138,7 +101,7 @@ pub async fn project_db_line<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    let kind = project_engine_of(&state.kit, &project, &engine, "database")?;
+    let kind = engine_of(&engine, "database")?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
@@ -164,7 +127,7 @@ pub async fn project_db_create<R: Runtime>(
 ) -> CmdResult<crate::db::auth::ProjectDb> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    let kind = project_engine_of(&state.kit, &project, &engine, "database")?;
+    let kind = engine_of(&engine, "database")?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
@@ -174,7 +137,6 @@ pub async fn project_db_create<R: Runtime>(
             .map_err(|e| start_error(lang, &e))?;
         services
             .project_db_create(&project, kind.id())
-            .map(for_ui)
             .or_fail_chain("database")
     })
     .await
@@ -186,11 +148,6 @@ pub(super) fn project_db_of(
     project: &str,
     engine: &str,
 ) -> CmdResult<crate::db::auth::ProjectDb> {
-    // `mariadb` of the interface: the project's SQL database, wherever it is.
-    let engine = match DbEngine::from_id(engine) {
-        Some(e) => crate::db::services::project_engine(&state.kit, project, e).id(),
-        None => engine,
-    };
     state
         .services
         .project_dbs(project)
@@ -240,15 +197,7 @@ pub fn project_backups<R: Runtime>(
 ) -> CmdResult<Vec<crate::db::services::Backup>> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    Ok(state
-        .services
-        .backups(&project)
-        .into_iter()
-        .map(|mut b| {
-            b.engine = ui_id(&b.engine);
-            b
-        })
-        .collect())
+    Ok(state.services.backups(&project))
 }
 
 /// A copy of the project's database; starts the server if needed.
@@ -262,7 +211,7 @@ pub async fn project_db_export<R: Runtime>(
 ) -> CmdResult<String> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    let kind = project_engine_of(&state.kit, &project, &engine, "database")?;
+    let kind = engine_of(&engine, "database")?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
@@ -293,11 +242,8 @@ pub async fn project_db_restore<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    // A `.sql` copy is for the project's SQL server (MySQL and MariaDB share
-    // the extension); a name that is no copy goes there too, and its
-    // restore refuses it.
-    let sql = crate::db::services::project_sql_engine(&state.kit, &project);
-    let engine = DbEngine::of_backup(&file, sql).unwrap_or(sql);
+    // A name that is no copy goes to MySQL, and its restore refuses it.
+    let engine = DbEngine::of_backup(&file).unwrap_or(DbEngine::MySql);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
@@ -363,11 +309,9 @@ pub async fn db_browse_rows<R: Runtime>(
 
 /// phpMyAdmin on the kit's SQL server in the browser (D-107, D-110):
 /// phpMyAdmin (with PHP and the server) installed the first time, the
-/// server started when it is off. `engine`: `mysql` (null too): the kit's
-/// SQL server, `db::services::sql_engine` (a MariaDB whose data has not
-/// moved yet, D-117). `line`: another installed
-/// version, on its own port (D-102); null: the version the server
-/// runs.
+/// server started when it is off. `engine`: `mysql` (null too). `line`:
+/// another installed version, on its own port (D-102); null: the version
+/// the server runs.
 #[tauri::command]
 pub async fn db_admin_open<R: Runtime>(
     app: AppHandle<R>,
@@ -377,10 +321,9 @@ pub async fn db_admin_open<R: Runtime>(
     engine: Option<String>,
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
-    let engine = match engine.as_deref().map(|id| engine_of(id, "phpmyadmin")) {
-        Some(Err(e)) => return Err(e),
-        Some(Ok(e)) if !e.is_sql() => e,
-        _ => crate::db::services::sql_engine(&state.kit),
+    let engine = match engine.as_deref() {
+        Some(id) => engine_of(id, "phpmyadmin")?,
+        None => DbEngine::MySql,
     };
     if !engine.is_sql() {
         return Err(fail(
@@ -403,117 +346,6 @@ pub async fn db_admin_open<R: Runtime>(
     })
     .await
     .or_fail("phpmyadmin")?
-}
-
-/// Installs the versions of MySQL the move of MariaDB's data needs
-/// (D-117) with the app's preparation, and waits for it: the first at that
-/// version when MySQL is not installed, the others beside it.
-fn install_mysql_lines<R: Runtime>(
-    app: &AppHandle<R>,
-    task: &Arc<SetupTask>,
-    kit: &Kit,
-    wanted: &[(String, String)],
-) -> anyhow::Result<()> {
-    let wait = || {
-        while task.snapshot().running {
-            std::thread::sleep(std::time::Duration::from_millis(300));
-        }
-    };
-    let mysql = Catalog::get().find(DbEngine::MySql.component());
-    let mut rest = wanted.to_vec();
-    if !mysql.is_some_and(|c| c.is_installed(kit)) && !rest.is_empty() {
-        let first = rest.remove(0);
-        let opts = Options {
-            only: vec![first.0.clone()],
-            at: vec![first],
-            ..Options::default()
-        };
-        wait();
-        task.start(opts, true, setup_notify(app.clone()))
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-        wait();
-    }
-    if !rest.is_empty() {
-        let opts = Options {
-            lines: rest,
-            ..Options::default()
-        };
-        wait();
-        task.start(opts, true, setup_notify(app.clone()))
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-        wait();
-    }
-    match task.snapshot().error {
-        Some(e) => Err(anyhow::anyhow!("{e}")),
-        None => Ok(()),
-    }
-}
-
-/// Moves MariaDB's data to MySQL when the kit has some (D-117): at start,
-/// before the servers marked "start with the app", and from the Database
-/// page. The Activity panel and the page read its state.
-pub fn move_to_mysql<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
-    use tauri::Manager;
-    let state = app.state::<AppState>();
-    let (kit, task) = (state.kit.clone(), Arc::clone(&state.setup));
-    if crate::db::migrate_engine::pending_lines(&kit).is_empty()
-        && !crate::db::migrate_engine::switching(&kit)
-    {
-        return Ok(());
-    }
-    let _ = app.emit_to(MAIN, "db-migration", ());
-    let servers = crate::db::services::ToMysql {
-        services: &state.services,
-        env: state.env(),
-    };
-    let install = |wanted: &[(String, String)]| install_mysql_lines(app, &task, &kit, wanted);
-    let result = crate::db::migrate_engine::run(&servers, &install).map(|_| ());
-    let _ = app.emit_to(MAIN, "db-migration", ());
-    result
-}
-
-/// The move of MariaDB's data to MySQL (D-117), for the Database page and
-/// the Activity panel.
-#[tauri::command]
-pub fn db_migration<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-) -> CmdResult<crate::db::migrate_engine::Status> {
-    ensure_main(&webview)?;
-    Ok(crate::db::migrate_engine::status(&state.kit))
-}
-
-/// Tries the move of MariaDB's data again (D-117), off the window's thread.
-#[tauri::command]
-pub async fn db_migration_retry<R: Runtime>(
-    app: AppHandle<R>,
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-) -> CmdResult<crate::db::migrate_engine::Status> {
-    ensure_main(&webview)?;
-    let kit = state.kit.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        move_to_mysql(&app).or_fail_chain("migration")?;
-        Ok(crate::db::migrate_engine::status(&kit))
-    })
-    .await
-    .or_fail("migration")?
-}
-
-/// Deletes the MariaDB data kept after the move (D-117), asked by the user.
-#[tauri::command]
-pub async fn db_migration_drop_kept<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-) -> CmdResult<crate::db::migrate_engine::Status> {
-    ensure_main(&webview)?;
-    let kit = state.kit.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        crate::db::migrate_engine::drop_kept(&kit).or_fail_chain("migration")?;
-        Ok(crate::db::migrate_engine::status(&kit))
-    })
-    .await
-    .or_fail("migration")?
 }
 
 #[cfg(test)]

@@ -69,20 +69,15 @@
     "fr": "base de données SQL du kit : serveur et client MySQL",
     "de": "SQL-Datenbank des Kits: MySQL-Server und -Client"
   },
-  "server SQL dei kit di prima: i suoi dati passano a MySQL al primo avvio": {
-    "en": "SQL server of earlier kits: its data moves to MySQL at the first start",
-    "fr": "serveur SQL des kits précédents : ses données passent à MySQL au premier démarrage",
-    "de": "SQL-Server früherer Kits: seine Daten wechseln beim ersten Start zu MySQL"
-  },
   "database a documenti: server e shell mongosh": {
     "en": "document database: server and the mongosh shell",
     "fr": "base de données documentaire : serveur et shell mongosh",
     "de": "Dokumentendatenbank: Server und mongosh-Shell"
   },
-  "MySQL e MariaDB nel browser: database, tabelle, righe, query SQL, utenti, importazione ed esportazione": {
-    "en": "MySQL and MariaDB in the browser: databases, tables, rows, SQL queries, users, import and export",
-    "fr": "MySQL et MariaDB dans le navigateur : bases de données, tables, lignes, requêtes SQL, utilisateurs, import et export",
-    "de": "MySQL und MariaDB im Browser: Datenbanken, Tabellen, Zeilen, SQL-Abfragen, Benutzer, Import und Export"
+  "MySQL nel browser: database, tabelle, righe, query SQL, utenti, importazione ed esportazione": {
+    "en": "MySQL in the browser: databases, tables, rows, SQL queries, users, import and export",
+    "fr": "MySQL dans le navigateur : bases de données, tables, lignes, requêtes SQL, utilisateurs, import et export",
+    "de": "MySQL im Browser: Datenbanken, Tabellen, Zeilen, SQL-Abfragen, Benutzer, Import und Export"
   },
   "database in un file: riga di comando sqlite3": {
     "en": "database in a file: the sqlite3 command line",

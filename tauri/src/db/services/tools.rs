@@ -45,95 +45,6 @@ pub(super) fn run_with_input(mut cmd: Command, input: &str, limit: Duration) -> 
     }
 }
 
-/// Runs a SQL client with `input` on its stdin and returns what it writes
-/// (`--batch --skip-column-names` given by the caller); waits at most
-/// `limit`, fails with its error output.
-pub(crate) fn run_query(mut cmd: Command, input: &str, limit: Duration) -> Result<String> {
-    use std::io::{Read, Write};
-    cmd.stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    let mut child = jobs::spawn(&mut cmd)?;
-    // The output is read aside: a large one would fill the pipe.
-    let mut stdout = child.stdout.take();
-    let reader = std::thread::spawn(move || {
-        let mut text = String::new();
-        if let Some(out) = stdout.as_mut() {
-            let _ = out.read_to_string(&mut text);
-        }
-        text
-    });
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(input.as_bytes())?;
-    }
-    let status = wait(&mut child, &cmd, limit)?;
-    let text = reader.join().unwrap_or_default();
-    let mut err = String::new();
-    if let Some(mut e) = child.stderr.take() {
-        let _ = e.read_to_string(&mut err);
-    }
-    if status.success() {
-        Ok(text)
-    } else {
-        Err(anyhow!("{}", err.trim()))
-    }
-}
-
-/// Runs a tool with its stdin from `from` or its stdout to `to` (a dump
-/// and its restore, D-117), at most `limit`; fails with its error output.
-pub(crate) fn run_with_files(
-    mut cmd: Command,
-    from: Option<&std::path::Path>,
-    to: Option<&std::path::Path>,
-    limit: Duration,
-) -> Result<()> {
-    use std::io::Read;
-    let stdin = match from {
-        Some(p) => Stdio::from(std::fs::File::open(p)?),
-        None => Stdio::null(),
-    };
-    let stdout = match to {
-        Some(p) => Stdio::from(std::fs::File::create(p)?),
-        None => Stdio::null(),
-    };
-    cmd.stdin(stdin).stdout(stdout).stderr(Stdio::piped());
-    let mut child = jobs::spawn(&mut cmd)?;
-    let mut stderr = child.stderr.take();
-    let reader = std::thread::spawn(move || {
-        let mut text = String::new();
-        if let Some(e) = stderr.as_mut() {
-            let _ = e.read_to_string(&mut text);
-        }
-        text
-    });
-    let status = wait(&mut child, &cmd, limit)?;
-    let err = reader.join().unwrap_or_default();
-    if status.success() {
-        Ok(())
-    } else {
-        Err(anyhow!("{}", err.trim()))
-    }
-}
-
-/// Waits for `child` at most `limit` (then ends it).
-fn wait(
-    child: &mut std::process::Child,
-    cmd: &Command,
-    limit: Duration,
-) -> Result<std::process::ExitStatus> {
-    let start = Instant::now();
-    loop {
-        if let Some(status) = child.try_wait()? {
-            return Ok(status);
-        }
-        if start.elapsed() > limit {
-            let _ = child.kill();
-            bail!("{:?}: no answer", cmd.get_program());
-        }
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
 /// Runs a tool of a server and waits at most `limit`.
 pub(super) fn run_tool(mut cmd: Command, limit: Duration) -> Result<()> {
     cmd.stdin(Stdio::null())
@@ -191,22 +102,12 @@ pub(super) fn run_logged(mut cmd: Command, log: &std::path::Path, limit: Duratio
     }
 }
 
-/// The text of a project's own login for a SQL `engine` (only for its
-/// tool, then removed): MariaDB's as before, CRLF; MySQL's with LF and TCP.
-pub(super) fn project_login_text(
-    engine: DbEngine,
-    user: &str,
-    password: &str,
-    port: u16,
-) -> String {
-    match engine {
-        DbEngine::MySql => format!(
-            "[client]\nuser={user}\npassword={password}\nhost=127.0.0.1\nport={port}\nprotocol=TCP\n"
-        ),
-        DbEngine::MariaDb | DbEngine::MongoDb => format!(
-            "[client]\r\nuser={user}\r\npassword={password}\r\nhost=127.0.0.1\r\nport={port}\r\n"
-        ),
-    }
+/// The text of a project's own MySQL login (only for its tool, then
+/// removed): LF ends and TCP.
+pub(super) fn project_login_text(user: &str, password: &str, port: u16) -> String {
+    format!(
+        "[client]\nuser={user}\npassword={password}\nhost=127.0.0.1\nport={port}\nprotocol=TCP\n"
+    )
 }
 
 impl Services {
@@ -214,9 +115,8 @@ impl Services {
     /// [`DbEngine::dump_bin`]…) logged in as `root` (the kit's `[client]`
     /// login), of version `line` (None: the one the server runs) on `port`:
     /// the `[client]` login names the port of the version the server runs
-    /// only (D-102). MySQL reads its login alone
-    /// (`--defaults-file`, D-110): MariaDB's `my.ini` in `MYSQL_HOME` and
-    /// the PC's option files never reach it.
+    /// only (D-102). MySQL reads its login alone (`--defaults-file`,
+    /// D-110): the PC's option files never reach it.
     pub(crate) fn sql_tool_at(
         &self,
         engine: DbEngine,
@@ -228,16 +128,10 @@ impl Services {
         debug_assert!(engine.is_sql(), "{engine} has no [client] login");
         let mut cmd = jobs::kit_command(bin_at(&self.kit, engine.component(), line, stem), env);
         // It must be the first option; the port from here wins over it.
-        match engine {
-            DbEngine::MySql => cmd.arg(format!(
-                "--defaults-file={}",
-                auth::mysql_cnf(&self.kit).display()
-            )),
-            DbEngine::MariaDb | DbEngine::MongoDb => cmd.arg(format!(
-                "--defaults-extra-file={}",
-                auth::client_ini(&self.kit).display()
-            )),
-        };
+        cmd.arg(format!(
+            "--defaults-file={}",
+            auth::mysql_cnf(&self.kit).display()
+        ));
         cmd.arg(format!("--port={port}"));
         cmd
     }
@@ -246,7 +140,7 @@ impl Services {
     /// has rights on its database only: for SQL the kit did not write (a
     /// copy brought from outside), so a `USE other` or `mysql.*` in it
     /// fails. Its login is in a file of the private folder read instead of
-    /// every other (`--defaults-file`: root's `my.ini` is not read), removed
+    /// every other (`--defaults-file`: root's `mysql.cnf` is not read), removed
     /// after.
     #[allow(clippy::too_many_arguments)]
     pub(super) fn sql_as_project(
@@ -279,7 +173,7 @@ impl Services {
         };
         let exe = exe_name(self.kit.os(), stem);
         let login = auth::dir(&self.kit).join(format!("{exe}-{}.cnf", std::process::id()));
-        auth::write_private_text(&login, &project_login_text(engine, user, password, port))?;
+        auth::write_private_text(&login, &project_login_text(user, password, port))?;
         let mut cmd = jobs::kit_command(program, env);
         // It must be the first option.
         cmd.arg(format!("--defaults-file={}", login.display()))

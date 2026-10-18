@@ -260,7 +260,7 @@ tr.hide {{ display:none; }}
   <li><b>Windows ARM64</b>: PHP, Apache, Nginx, MySQL, MongoDB, Android SDK, Julia, TinyTeX e l'editor usano la build x64 in emulazione; R non ha build. Rust usa l'host <code>aarch64-pc-windows-gnullvm</code> con llvm-mingw di C/C++ come linker.</li>
   <li><b>Apache</b>: su Windows Apache Lounge con il modulo PHP; su macOS e Linux la build del kit con <code>php-fpm</code> (D-116), offerta lì quando il primo rilascio <code>httpd-v2.4.69-1</code> è fissato nel catalogo. Si propone solo per i progetti con regole proprie nel <code>.htaccess</code>; Caddy è il server web predefinito su tutti i sistemi.</li>
   <li><b>Nginx</b>: solo Windows (D-111), da togliere dopo la migrazione dei pool a Caddy (issue #4).</li>
-  <li><b>MySQL</b> è l'unico server SQL del kit (D-117): MariaDB non si offre più, i suoi dati passano a MySQL al primo avvio; phpMyAdmin apre MySQL su tutti i sistemi.</li>
+  <li><b>MySQL</b> è l'unico server SQL del kit (D-117): phpMyAdmin apre MySQL su tutti i sistemi.</li>
   <li><b>Android SDK</b>: Google non pubblica platform-tools e build-tools per Linux ARM64.</li>
   <li><b>C/C++</b> su macOS e Linux: shim su <code>zig cc</code> del kit (richiede Zig); i framework Apple vogliono Xcode CLT.</li>
   <li>Fonte dei dati: <code>components.json</code> (campi <code>targets</code>, <code>unavailable</code>, <code>noArm64</code>, <code>x64Only</code>, <code>rosetta</code>, <code>needs</code>, <code>needsByTarget</code>) con la logica di <code>Component::is_available_on</code> in <code>tauri/src/setup/catalog.rs</code>; dimensioni e fonti da <code>docs/app/CATALOG.md</code>.</li>

@@ -16,7 +16,7 @@ afterEach(() => {
   invoke.mockReset();
 });
 
-const OLD: Holdings = { project: "vecchio", settings: true, ports: 2, databases: ["mariadb"], backups: 3 };
+const OLD: Holdings = { project: "vecchio", settings: true, ports: 2, databases: ["mysql"], backups: 3 };
 const PROJECTS = [{ id: "nuovo", name: "nuovo" }] as ProjectInfo[];
 
 function answer(orphans: Holdings[], extra: Record<string, () => Promise<unknown>> = {}) {
@@ -45,7 +45,7 @@ describe("Orphans", () => {
     expect(screen.queryByText("vecchio")).toBeNull();
     fireEvent.click(header);
     expect(await screen.findByText("vecchio")).toBeTruthy();
-    expect(screen.getByText("impostazioni, porte: 2, database: MariaDB, copie: 3")).toBeTruthy();
+    expect(screen.getByText("impostazioni, porte: 2, database: MySQL, copie: 3")).toBeTruthy();
   });
 
   it("gives the data to a project", async () => {

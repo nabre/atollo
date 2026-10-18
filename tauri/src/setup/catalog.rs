@@ -134,15 +134,10 @@ pub struct Component {
 #[derive(Debug, Deserialize)]
 struct File {
     components: Vec<Component>,
-    /// No longer offered nor installed (MariaDB, D-117): only
-    /// [`Catalog::find_internal`] sees them.
-    #[serde(default)]
-    internal: Vec<Component>,
 }
 
 pub struct Catalog {
     components: Vec<Component>,
-    internal: Vec<Component>,
 }
 
 impl Catalog {
@@ -153,27 +148,11 @@ impl Catalog {
             let file: File = serde_json::from_str(include_str!("../../catalog/components.json"))
                 .unwrap_or(File {
                     components: Vec::new(),
-                    internal: Vec::new(),
                 });
             Catalog {
                 components: file.components,
-                internal: file.internal,
             }
         })
-    }
-
-    /// The components no longer offered whose programs on disk the kit
-    /// still reads ([`Catalog::find_internal`]).
-    pub fn internal(&self) -> &[Component] {
-        &self.internal
-    }
-
-    /// [`Catalog::find`], or a component no longer offered whose programs
-    /// on disk the kit still reads: MariaDB, to move its data to MySQL
-    /// (D-117). Never in the pages, the choice or a preparation.
-    pub fn find_internal(&self, id: &str) -> Option<&Component> {
-        self.find(id)
-            .or_else(|| self.internal.iter().find(|c| c.id == id))
     }
 
     pub fn all(&self) -> &[Component] {
@@ -355,8 +334,7 @@ impl Component {
 
     /// What it needs on `target`: `needs`, then `needs_by_target` of that
     /// target (C and C++ need Zig on macOS and Linux only). The only way to
-    /// read its dependencies, so none is taken for the wrong system. A
-    /// need for a SQL server is MySQL (`db::services::sql_need`, D-117).
+    /// read its dependencies, so none is taken for the wrong system.
     pub fn needs_on(&self, target: Target) -> impl Iterator<Item = &str> + '_ {
         self.needs
             .iter()
@@ -367,7 +345,7 @@ impl Component {
                     .flatten()
                     .filter(|n| !self.needs.contains(n)),
             )
-            .map(|n| crate::db::services::sql_need(n))
+            .map(String::as_str)
     }
 
     /// What it needs on every target (`needs` alone). The saved choice
@@ -376,7 +354,7 @@ impl Component {
     /// component on or off for the others; a run adds those of its own
     /// target ([`Catalog::needs_only_on`]).
     pub fn needs_on_every_target(&self) -> impl Iterator<Item = &str> + '_ {
-        self.needs.iter().map(|n| crate::db::services::sql_need(n))
+        self.needs.iter().map(String::as_str)
     }
 
     /// [`Component::needs_on`] as a list, for the interface.
