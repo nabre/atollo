@@ -614,6 +614,10 @@ fn restore(
     fs::write(&list_file, explicit)?;
     let envs = mamba_envs(work);
     let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
+    // What an interrupted run set aside next to it goes first.
+    if let Some(parent) = prefix.parent() {
+        crate::net::archive::clean_leftovers(parent);
+    }
     let old = set_aside(prefix)?;
     let created = (|| -> Result<()> {
         let prefix_arg = prefix.display().to_string();
