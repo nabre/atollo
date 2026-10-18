@@ -29,7 +29,7 @@ La tabella seguente mappa le **7 barriere residue** individuate nel codice a `HE
 
 ---
 
-## 2. Soluzione Concreta 1 — Eliminazione Definitiva di `D-92`: Rilocazione Offline al 100% degli Ambienti Conda (`git`, `r`, `apache`, `nginx`, `mariadb`)
+## 2. Soluzione Concreta 1 — Eliminazione Definitiva di `D-92`: Rilocazione Offline al 100% degli Ambienti Conda (`git`, `r`, `apache`, `nginx`)
 
 ### 2.1 Perché gli Ambienti `micromamba` Sembrano Non Rilocabili (e Come Renderli Rilocabili al 100%)
 Quando `micromamba create -p <prefix>` installa un pacchetto da `conda-forge`, registra per ogni pacchetto un file JSON in `<prefix>/conda-meta/<pkg>.json`. All'interno di quel JSON, il campo `"paths_data"."paths"` elenca esattamente **quali file contengono il prefisso hardcoded** (`"prefix_placeholder"` e `"file_mode": "text"` oppure `"binary"`):
@@ -62,7 +62,7 @@ pub fn write_conda_prefix_marker(prefix: &Path) -> Result<()> {
     write_atomic(&prefix.join(PREFIX_MARKER), clean.as_bytes())
 }
 
-/// Riloca offline un ambiente Conda (`git`, `r`, `apache`, `nginx`, `mariadb`)
+/// Riloca offline un ambiente Conda (`git`, `r`, `apache`, `nginx`)
 /// quando la cartella del kit cambia percorso o lettera di unità, senza rete.
 /// Aggiorna tutti i file testuali (Makeconf, pkgconfig/*.pc, shebang, bin/R)
 /// sostituendo il vecchio prefisso col nuovo (sia con `\` sia con `/`).

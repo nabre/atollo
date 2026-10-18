@@ -49,8 +49,8 @@ flowchart TD
    - In `components.json`, tutti i path hanno `.exe`, `.cmd`, `.bat` e layout Windows (es. `python/python.exe` invece di `python/bin/python3`, `node/node.exe` invece di `node/bin/node`, `tinytex/bin/windows/pdftex.exe` invece di `tinytex/bin/<tl_platform>/pdftex`).
    - Inoltre `vscodium-server` ha un unico `sha256` hardcoded nel JSON valido solo per `vscodium-reh-web-win32-x64-<v>.tar.gz`.
 4. **Estrattore Archivi Cieco ai Permessi POSIX e ai Symlink Interni ([`tauri/src/net/archive.rs:76-124`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs#L76-L124))**:
-   - In `extract_tar_gz`, `tar.set_preserve_permissions(false)` e lo skip totale di `tar::EntryType::Symlink` funzionano su Windows, ma **rompono tutti i pacchetti Unix** (es. Node.js, Python standalone, JDK Temurin, Clang/LLVM, Rust, CMake, MariaDB), dove i binari devono avere il bit eseguibile `0o755` e le librerie condivise (`.so`/`.dylib`) o gli alias (`python3 -> python3.13`, `clang++ -> clang`) sono symlink relativi dentro l'archivio.
-   - Inoltre, molti pacchetti Linux/macOS (Zig, CMake, LLVM, MariaDB, TinyTeX, Node) sono distribuiti come `.tar.xz` o `.tar.zst`, quindi serve aggiungere `Kind::TarXz` (crate `lzma-rs` o `xz2`) a `archive.rs`.
+   - In `extract_tar_gz`, `tar.set_preserve_permissions(false)` e lo skip totale di `tar::EntryType::Symlink` funzionano su Windows, ma **rompono tutti i pacchetti Unix** (es. Node.js, Python standalone, JDK Temurin, Clang/LLVM, Rust, CMake, MySQL), dove i binari devono avere il bit eseguibile `0o755` e le librerie condivise (`.so`/`.dylib`) o gli alias (`python3 -> python3.13`, `clang++ -> clang`) sono symlink relativi dentro l'archivio.
+   - Inoltre, molti pacchetti Linux/macOS (Zig, CMake, LLVM, MySQL, TinyTeX, Node) sono distribuiti come `.tar.xz` o `.tar.zst`, quindi serve aggiungere `Kind::TarXz` (crate `lzma-rs` o `xz2`) a `archive.rs`.
 
 ---
 
@@ -488,7 +488,7 @@ Di seguito la mappatura esatta di **URL/API, formato archivio (`Kind`), sottocar
 
 ---
 
-### 4.4 Gruppo Web (`php`, `apache`, `nginx`) e Gruppo `databases` (`mariadb`, `mongodb`, `sqlite`, `adminer`)
+### 4.4 Gruppo Web (`php`, `apache`, `nginx`) e Gruppo `databases` (`mysql`, `mongodb`, `sqlite`, `adminer`)
 
 #### 30. `php` (+ Composer) (`tauri/src/install/web.rs` — `Php`)
 - **Windows (`win32-x64`, `win32-arm64`)**: Invariato (`windows.php.net/downloads/releases/releases.json`, `vc_runtime`, `php/php.exe`, `php/php-cgi.exe`).
@@ -503,13 +503,13 @@ Di seguito la mappatura esatta di **URL/API, formato archivio (`Kind`), sottocar
   - **Fonti Portabili Rilocabili**: Pacchetti `httpd` (Apache 2.4) e `nginx` da **`conda-forge` tramite `micromamba`** (`osx-arm64`, `osx-64`, `linux-64`, `linux-aarch64`), che sono compilati con `rpath` relativi (`@loader_path/../lib` su macOS, `$ORIGIN/../lib` su Linux) e possono girare da qualsiasi cartella utente senza permessi di `root` sulla porta `8080` / `8081..8999`.
   - **Integrazione PHP su Unix**: Mentre su Windows Apache carica `php8apache2_4.dll`, su macOS/Linux sia Apache (`mod_proxy_fcgi`) sia Nginx usano FastCGI (`php-cgi -b 127.0.0.1:<fcgi_port>` o `php-fpm`), già supportato dall'infrastruttura FastCGI di [`tauri/src/projects/nginx.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/projects/nginx.rs) e [`tauri/src/servers/mod.rs:121,754`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/servers/mod.rs#L754)!
 
-#### 33. `mariadb` (`tauri/src/install/db.rs` — `MariaDb`)
-- **Fonte**: REST API `https://downloads.mariadb.org/rest-api/mariadb/{major}/latest/`.
-- **Matrice Filtri REST API MariaDB**:
-  - **Windows (`win32-x64`, `win32-arm64`)**: `os == "Windows"`, `cpu == "x86_64"`, `package_type == "ZIP file"`.
-  - **Linux (`linux-x64`, `linux-arm64`)**: `os == "Linux"`, `cpu == "x86_64"` (o `"aarch64"`), `package_type == "gzipped tar file"` (`mariadb-<v>-linux-systemd-x86_64.tar.gz`), `Kind::TarGz`.
-  - **macOS (`darwin-arm64`, `darwin-x64`)**: MariaDB Foundation non pubblica tarball binarie generiche per macOS nella REST API; su macOS si scarica da `conda-forge` (`mariadb`) o Homebrew Bottle rilocabile.
-- **Nota Eseguibili MariaDB su Unix**: Su Windows `mariadb-install-db.exe` crea il datadir; su Linux/macOS lo script è `scripts/mariadb-install-db --no-defaults --datadir=<dir> --basedir=<mariadb_dir>`.
+#### 33. `mysql` (`tauri/src/install/db.rs` — `MySql`)
+- **Fonte**: `cdn.mysql.com`, linee LTS di Oracle (8.4, 9.7), SHA-256 fissati nel catalogo dopo la verifica della firma GPG (Oracle pubblica solo MD5 e firme).
+- **Archivi per target**:
+  - **Windows (`win32-x64`, `win32-arm64`)**: `mysql-<v>-winx64.zip` (x64 in emulazione su ARM64).
+  - **Linux (`linux-x64`, `linux-arm64`)**: `mysql-<v>-linux-glibc2.28-x86_64-minimal.tar.xz` e `-aarch64.tar.xz`, `Kind::TarXz`.
+  - **macOS (`darwin-arm64`, `darwin-x64`)**: `mysql-<v>-macos15-{arm64,x86_64}.tar.gz`.
+- **Nota Eseguibili MySQL su Unix**: su tutti i sistemi il datadir si crea con `bin/mysqld --initialize --datadir=<dir> --basedir=<mysql_dir>`.
 
 #### 34. `mongodb` (+ `mongosh` + `mongodb-tools`) (`tauri/src/install/db.rs` — `MongoDb`)
 - **Fonte Server**: `https://downloads.mongodb.org/current.json`.
@@ -561,7 +561,7 @@ Oltre alla matrice di download, ecco tutti i moduli Rust che gestiscono i file e
      - **In `extract_tar_stream` (`.tar.gz` / `.tar.xz`)**: leggere `entry.header().mode()?`; se `(mode & 0o111) != 0`, applicare `fs::set_permissions(&path, PermissionsExt::from_mode(0o755))` (altrimenti `0o644`).
      - **In `extract_zip` (`.zip`)**: leggere `entry.unix_mode()`; se presente e `(mode & 0o111) != 0`, oppure se il file si trova in una cartella `bin/`, applicare `0o755`.
      - **In `Kind::File` (es. `agy`, `rustup-init`, `micromamba`)**: su `#[cfg(unix)]`, se non termina con `.php` o `.txt`, impostare `0o755`.
-     - **Symlink Interni (`tar::EntryType::Symlink` e `entry.is_symlink()` in Zip)**: su Unix molte tarball (Python standalone, Node, JDK, LLVM, MariaDB) usano symlink relativi interni (es. `bin/python3 -> python3.13`, `lib/libpython3.so -> libpython3.13.so.1.0`). Invece di ignorarli su Unix:
+     - **Symlink Interni (`tar::EntryType::Symlink` e `entry.is_symlink()` in Zip)**: su Unix molte tarball (Python standalone, Node, JDK, LLVM, MySQL) usano symlink relativi interni (es. `bin/python3 -> python3.13`, `lib/libpython3.so -> libpython3.13.so.1.0`). Invece di ignorarli su Unix:
        - Leggere il target del link (`entry.link_name()?`).
        - Verificare che il target risolto rispetto a `path.parent()` tramite `safe_join` **resti strettamente all'interno di `dest`** (nessun path assoluto o `..` che esca da `dest`).
        - Su `#[cfg(unix)]` creare il symlink con `std::os::unix::fs::symlink(link_target, &path)` (con fallback a copia del file se il filesystem della chiavetta è FAT32/exFAT!).
@@ -630,6 +630,6 @@ In [`tauri/src/setup/self_update.rs:69-71`](file:///c:/Users/nabre/Projects/dev-
 | **3** | [`tauri/src/net/archive.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/net/archive.rs), [`tauri/Cargo.toml`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/Cargo.toml) | • Correggere `safe_join` per splittare su `['/', '\\']`.<br>• Aggiungere `Kind::TarXz` e `Inner::SingleThen`.<br>• Su `#[cfg(unix)]`, preservare i bit di esecuzione `0o755` da Tar/Zip/File e ricreare i symlink relativi interni sicuri. | [`test/rust/net/archive.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/net/archive.rs) |
 | **4** | [`tauri/src/install/agents.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/agents.rs), [`tauri/src/install/core.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/core.rs), [`tauri/src/install/editor.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/editor.rs) | • Parametrizzare `Claude`, `Codex`, `Antigravity` sui 6 target.<br>• Parametrizzare `Python`, `Node`, `Uv`, `Gh`, `Git` sui 6 target.<br>• Parametrizzare `Pwsh`, `Server` (`vscodium-server`) e limitare `Terminal` a `Os::Win32`. | [`test/rust/install/core.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/core.rs), [`test/rust/install/editor.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/editor.rs) |
 | **5** | [`tauri/src/install/lang/*.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/lang/mod.rs), [`tauri/src/install/native.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/native.rs), [`tauri/src/install/android.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/android.rs) | • Aggiornare `Go`, `Java` (`Contents/Home` su macOS), `Kotlin`, `Dotnet`, `Dart`, `Zig` (`TarXz` su Unix), `Julia`, `Bun`, `Deno`, `Typst` (`TarXz` su Unix), `TinyTex`, `Cmake`, `Cc`, `Ruby`, `Rust`, `Pnpm`, `R`, `Android` secondo la Matrice §4. | [`test/rust/install/lang/*.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/lang/mod.rs), [`test/rust/install/native.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/native.rs) |
-| **6** | [`tauri/src/install/db.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/db.rs), [`tauri/src/install/web.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/web.rs) | • Aggiornare `MariaDb`, `MongoDb`, `Sqlite`, `Adminer`, `Php`, `Apache`, `Nginx` per i 6 target.<br>• Eseguire `vc_runtime` solo su `Os::Win32`. | [`test/rust/install/db.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/db.rs), [`test/rust/install/web.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/web.rs) |
+| **6** | [`tauri/src/install/db.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/db.rs), [`tauri/src/install/web.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/install/web.rs) | • Aggiornare `MySql`, `MongoDb`, `Sqlite`, `Adminer`, `Php`, `Apache`, `Nginx` per i 6 target.<br>• Eseguire `vc_runtime` solo su `Os::Win32`. | [`test/rust/install/db.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/db.rs), [`test/rust/install/web.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/web.rs) |
 | **7** | [`tauri/src/env.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/env.rs), [`tauri/src/versions/choice.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/choice.rs), [`tauri/src/versions/side_by_side.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/side_by_side.rs), [`runtime/bashrc`](file:///c:/Users/nabre/Projects/dev-kit2/runtime/bashrc) | • Usare `PATH_SEP` (`:` su Unix, `;` su Windows) in `env.rs` e `choice.rs`.<br>• Mappare le directory `bin/` Unix in `env.rs`.<br>• In `side_by_side.rs`, usare symlink Unix per `.NET` su macOS/Linux.<br>• In `runtime/bashrc`, rendere opzionale `cygpath -u`. | [`test/rust/env.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/env.rs), [`test/rust/versions/choice.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/versions/choice.rs) |
 | **8** | [`docs/app/CATALOG.md`](file:///c:/Users/nabre/Projects/dev-kit2/docs/app/CATALOG.md), [`test/rust/install/mod.rs`](file:///c:/Users/nabre/Projects/dev-kit2/test/rust/install/mod.rs) | • Estendere il test `live_lines` / `live_latest` per verificare in un'unica esecuzione (senza scaricare gli archivi, interrogando solo i manifesti JSON/SHA256) che **tutte le 6 architetture risolvano un URL e un SHA-256 validi per ogni componente**! | `cargo test live_matrix -- --ignored --nocapture` |

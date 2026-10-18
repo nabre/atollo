@@ -121,7 +121,6 @@ Quando `Dev-Kit.exe` viene copiato in una cartella vuota (su chiavetta USB, SSD 
     ├── servers\<id-pool>\                  # Configurazioni generate e vhosts\*.conf dei pool Apache e Nginx
     ├── db\                                 # File fisici dei database, separati per motore e versione
     │   ├── mysql\<linea>\                  # Dati MySQL per linea LTS (es. 9.7\)
-    │   ├── mariadb.pre-mysql\             # Dati di un MariaDB di prima, conservati dopo il passaggio a MySQL
     │   └── mongodb\<linea>\                # Dati MongoDB per linea major di produzione (es. 9.0\)
     ├── agents\                             # Risorse sincronizzate tra Claude Code, Codex e Antigravity
     │   ├── AGENTS.md                       # Istruzioni globali comuni ai tre agenti
@@ -364,7 +363,7 @@ La pagina **Nuovo progetto** (`ui/src/wizard.tsx` e `tauri/src/projects/framewor
 4. **Variabili `.env` e Riepilogo**:
    - Mostra le variabili predefinite (es. `APP_NAME={name}`, `NATIVEPHP_APP_ID={package}` dove `{package}` diventa `com.example.<nome>`) permettendo di modificarle o aggiungerne di nuove, elenca gli strumenti del kit che verranno installati automaticamente e mostra tutti i comandi PowerShell che verranno eseguiti con output in tempo reale.
 
-![Wizard Nuovo progetto con combinazione Laravel + React + Tailwind CSS + MariaDB](images/03-nuovo-progetto-template.png)
+![Wizard Nuovo progetto con combinazione Laravel + React + Tailwind CSS + MySQL](images/03-nuovo-progetto-template.png)
 
 > [!TIP]
 > **Esempio pratico — Creazione di `gestionale-fatture` con un solo clic:**
@@ -454,20 +453,20 @@ La pagina **Agenti** (`ui/src/agents.tsx` e `tauri/src/agents/`) gestisce i tre 
 
 La pagina **Database** (`ui/src/databases.tsx` e `tauri/src/db/`) gestisce i server database condivisi del kit, in ascolto esclusivamente su `127.0.0.1`:
 - **MySQL** (linee 8.4 e 9.7 LTS, porta predefinita `3306`) e **MongoDB** (porta predefinita `27017`).
-- **Dati di un MariaDB di prima (`D-117`)**: MySQL è l'unico server SQL del kit. Se il kit aveva MariaDB, al primo avvio i suoi dati passano a MySQL da soli (stesse porte, stessi utenti e password dei progetti, ogni database controllato); in cima alla pagina un riquadro dice a che punto è, mostra un errore con la copia salvata e «Riprova», e alla fine «Dati MariaDB conservati (N MB): Elimina» per la cartella `data\db\mariadb.pre-mysql\`.
+- **Solo MySQL (`D-117`)**: MySQL è l'unico server SQL del kit; ogni progetto, framework o componente che chiede un database SQL usa MySQL.
 - **Sicurezza automatica (`D-74`)**: al primo avvio di ciascun server, il kit genera una password casuale di 32 cifre esadecimali per l'amministratore (`root` su MySQL, `admin` su MongoDB) e la salva in `data\app\db\secrets.json` (protetto da DACL proprietario). Inoltre genera `data\app\db\mysql.cnf`, letto dai lanciatori del kit, così digitando `mysql` nel terminale del kit si entra già autenticati come `root` senza dover digitare la password.
 - **phpMyAdmin integrato per MySQL (`D-107`)**: cliccando su **«Apri phpMyAdmin»**, il kit installa phpMyAdmin e PHP se mancano, avvia MySQL se è fermo, lancia un server PHP locale con il router di sicurezza `data\kit\phpmyadmin.php` e apre phpMyAdmin nel browser effettuando il **login automatico come `root` tramite un token monouso** e un cookie `HttpOnly` + `SameSite=Strict` (senza mai esporre la password di `root` nell'URL o nel browser).
 - **Esploratore Contenuto per MongoDB (`D-79`, `ui/src/dbbrowser.tsx`)**: quando MongoDB è avviato, la scheda **Contenuto** permette di sfogliare in sola lettura tutti i database e le collezioni (inclusi i database di sistema raggruppati a parte) visualizzando i documenti impaginati a 100 righe per volta.
 - **Dati multi-versione (`D-81`)**: a server fermo è possibile cambiare la versione del motore (es. MySQL `9.7` o `8.4`; MongoDB `9.0` o `8.0`). Ogni versione mantiene la propria cartella dati in `data\db\<motore>\<linea>\` e, al primo avvio di una versione più recente, copia automaticamente in avanti i dati dalla versione precedente più vicina.
 
 ````carousel
-![Pagina Database — il server SQL con phpMyAdmin integrato e credenziali root (schermata di prima, con MariaDB)](images/11-database-mariadb-adminer.png)
+![Pagina Database — il server SQL con phpMyAdmin integrato e credenziali root](images/11-database-sql-phpmyadmin.png)
 <!-- slide -->
 ![Pagina Database — MongoDB 8.0 con esploratore Contenuto delle collezioni in sola lettura](images/11b-database-mongodb-esploratore.png)
 ````
 
 > **Esempio pratico — Gestione relazionale (MySQL + phpMyAdmin) e documentale (MongoDB Contenuto):**
-> - Nella **prima schermata** (del server SQL, ancora MariaDB quando è stata fatta), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a NEXKORA; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
+> - Nella **prima schermata** (il server SQL), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a NEXKORA; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
 > - Nella **seconda schermata** (`MongoDB 8.0`), la scheda **Contenuto** mostra i database `api_magazzino` e `portale_clienti` (con le collezioni `utenti (19)` e `ticket_supporto (73)`) permettendo di ispezionare i documenti JSON direttamente dentro l'app.
 
 ---

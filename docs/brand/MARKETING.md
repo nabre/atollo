@@ -66,7 +66,7 @@ Ogni presentazione completa di Atollo deve articolarsi su questi **5 punti**:
    * Più di 20 linguaggi, compilatori e strumenti (Node.js, Python, uv, PHP, Rust, Go, JDK/Temurin, .NET, Dart, Zig, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…) scaricati solo quando servono, verificati tramite checksum SHA-256 o firma digitale.
    * Gestione di versioni *side-by-side* per singolo progetto o terminale, con verifica automatica della matrice delle relazioni e compatibilità.
 3. **Local Server & Database Stack (Zero Servizi di Sistema)**
-   * Motori database locali (MariaDB/MySQL, MongoDB, SQLite) avviabili e arrestabili con un clic, con creazione automatica di database, utenti e credenziali `.env` isolati per ciascun progetto, backup integrati e phpMyAdmin/Adminer pronti all'uso.
+   * Motori database locali (MySQL, MongoDB, SQLite) avviabili e arrestabili con un clic, con creazione automatica di database, utenti e credenziali `.env` isolati per ciascun progetto, backup integrati e phpMyAdmin/Adminer pronti all'uso.
    * Pool di server web condivisi o dedicati per progetto e scaffolding guidato dei principali framework.
 4. **AI Agent Hub & Orchestrator (3 Agenti, 1 Sola Mente)**
    * Installazione, accesso e avvio diretto di **Claude Code**, **Codex** e **Antigravity**.
@@ -170,7 +170,7 @@ Quando generi copy per una campagna, una sezione del sito o un post social, sceg
 * **Funzionalità da evidenziare:** Pagina **Agenti**, comando `atollo sync`, allineamento automatico di istruzioni/skill/MCP in `data/agents`, grafico dei consumi giornalieri e settimanali, salvataggio delle credenziali nel kit.
 
 ### Persona 2: Lo Sviluppatore Full-Stack / Poliglotta
-* **Dolore:** Ha il PC lento e il `PATH` inquinato da 4 versioni di Node, 3 di Python, Java, PHP, servizi di MariaDB e MongoDB che partono all'avvio di Windows/macOS, oppure Docker Desktop che consuma 8 GB di RAM solo per far girare un sito locale.
+* **Dolore:** Ha il PC lento e il `PATH` inquinato da 4 versioni di Node, 3 di Python, Java, PHP, servizi di MySQL e MongoDB che partono all'avvio di Windows/macOS, oppure Docker Desktop che consuma 8 GB di RAM solo per far girare un sito locale.
 * **Hook:** *"L'isolamento di un Devcontainer. La velocità del metallo nativo. Zero servizi nel sistema."*
 * **Funzionalità da evidenziare:** Pagine **Progetti**, **Database** e **Strumenti**, versioni *side-by-side* per progetto, matrice delle relazioni, avvio e arresto istantaneo di DB e web server solo quando servono.
 
@@ -195,10 +195,10 @@ Quando generi copy per una campagna, una sezione del sito o un post social, sceg
 ### 8.2 Elevator Pitch Completo (Per GitHub README / Pagina "Informazioni")
 
 **Italiano:**
-> **Atollo** è un *Universal Portable Dev & AI Workspace* per Windows, macOS e Linux (`x64` e `ARM64`). Racchiude in un'unica cartella portabile un editor integrato (VSCodium), più di 20 linguaggi e strumenti scaricati su richiesta, database e server web locali (MariaDB/MySQL, MongoDB, SQLite, Apache/Nginx/Caddy) e gli agenti **Claude Code, Codex e Antigravity** con istruzioni, skill e server MCP sincronizzati. Non richiede installazione né diritti di amministratore, isola completamente il proprio ambiente dal sistema ospite e ti segue su qualsiasi disco o computer.
+> **Atollo** è un *Universal Portable Dev & AI Workspace* per Windows, macOS e Linux (`x64` e `ARM64`). Racchiude in un'unica cartella portabile un editor integrato (VSCodium), più di 20 linguaggi e strumenti scaricati su richiesta, database e server web locali (MySQL, MongoDB, SQLite, Apache/Nginx/Caddy) e gli agenti **Claude Code, Codex e Antigravity** con istruzioni, skill e server MCP sincronizzati. Non richiede installazione né diritti di amministratore, isola completamente il proprio ambiente dal sistema ospite e ti segue su qualsiasi disco o computer.
 
 **English:**
-> **Atollo** is a *Universal Portable Dev & AI Workspace* for Windows, macOS, and Linux (`x64` and `ARM64`). It packs into a single portable folder a built-in editor (VSCodium), 20+ on-demand languages and toolchains, local databases and web servers (MariaDB/MySQL, MongoDB, SQLite, Apache/Nginx/Caddy), and **Claude Code, Codex, and Antigravity** agents with synchronized instructions, skills, and MCP servers. It requires no installation and no administrator rights, completely isolates its environment from the host OS, and travels with you on any drive or machine.
+> **Atollo** is a *Universal Portable Dev & AI Workspace* for Windows, macOS, and Linux (`x64` and `ARM64`). It packs into a single portable folder a built-in editor (VSCodium), 20+ on-demand languages and toolchains, local databases and web servers (MySQL, MongoDB, SQLite, Apache/Nginx/Caddy), and **Claude Code, Codex, and Antigravity** agents with synchronized instructions, skills, and MCP servers. It requires no installation and no administrator rights, completely isolates its environment from the host OS, and travels with you on any drive or machine.
 
 ---
 
