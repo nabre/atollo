@@ -745,7 +745,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
   4. Se hai scelto Apache o Nginx:
      - Scegli il **Profilo server**: *Automatico (pool per versione)* (consigliato: raggruppa automaticamente il sito nel pool della pagina **Server Web** corrispondente alle versioni del server e di PHP scelte dal progetto) oppure un profilo manuale creato nella pagina **Server Web**.
      - *(Opzionale)* Inserisci **Domini `.localhost` aggiuntivi** separati da virgola (es. `api.mio-sito.localhost, admin.mio-sito.localhost`).
-     - *(Opzionale)* Clicca su **«Aggiungi alias»** per mappare un percorso URL (es. `/media`) a una cartella interna al progetto (`storage/uploads`) o a una cartella di un altro progetto del kit (`@altro-progetto/public`).
+     - *(Opzionale)* Clicca su **«Aggiungi alias»** per mappare un percorso URL (es. `/media`) a una cartella interna al progetto (`storage/uploads`) o a una cartella di un altro progetto del kit (`@altro-progetto/public`). Le cartelle degli alias servono solo file statici: uno script PHP lì dentro viene rifiutato e un `.htaccess` lì può cambiare solo gli elenchi dei file (SEC-V4-01, D-116).
   5. Clicca su **«Salva»**. Poi avvia il progetto (o avvia il pool corrispondente nella pagina **Server Web**) e apri `http://<progetto>.localhost:<porta>`.
      - Con *Automatico* «Avvia» apre un'istanza dedicata del progetto sulla sua porta; con un **profilo manuale** «Avvia» avvia (se è fermo) il pool di quel profilo e mostra l'indirizzo del sito nel pool. «Ferma» su un sito servito da un pool lo segna soltanto come fermo: il pool, condiviso con altri progetti, si ferma dalla pagina **Server Web**.
 - **Scopo**:
