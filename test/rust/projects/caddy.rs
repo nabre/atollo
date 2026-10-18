@@ -5,10 +5,7 @@ use crate::os::safe_path::tests::junction;
 
 /// A FastCGI server on `port` with a fixed key.
 fn cgi(port: u16) -> FastCgi {
-    FastCgi {
-        port,
-        key: "0123abcd".repeat(8),
-    }
+    FastCgi::tcp(port, "0123abcd".repeat(8))
 }
 
 /// `caddy.exe` on Windows, `caddy` elsewhere, at the root of its folder:
@@ -275,10 +272,16 @@ fn admin_socket_in_a_private_folder() {
     let kit = Kit::at_target(tmp.0.join("kit"), Target::detect()).with_host(Some(&host));
     kit.prepare().unwrap();
     let bases = socket_bases(&kit);
-    assert_eq!(bases.last().map(PathBuf::as_path), kit.system_temp());
+    let want = if kit.os().is_windows() {
+        kit.system_temp()
+    } else {
+        // `/tmp` itself, never `/tmp/Dev-Kit/<id>` another user may own.
+        kit.system_temp().and_then(|t| t.parent()?.parent())
+    };
+    assert_eq!(bases.last().map(PathBuf::as_path), want);
     let Some(sock) = admin_socket(&kit, "caddy-2.11_php-8.4") else {
         let probe = bases[0]
-            .join("atollo-caddy")
+            .join(socket_parent_name(current_uid()))
             .join("c-0123456789ab")
             .join("a.sock");
         assert!(!socket_path_usable(&probe), "{}", probe.display());
@@ -297,6 +300,60 @@ fn admin_socket_in_a_private_folder() {
     bare.prepare().unwrap();
     if socket_bases(&bare).is_empty() {
         assert!(admin_socket(&bare, "p").is_none());
+    }
+}
+
+/// The kit's folder of sockets is per user on Unix (a shared `/tmp` may be
+/// the base): one that is there and not private (another user's, open to
+/// others, a link) makes that base unused, never a place for a leaf whose
+/// parent someone else could rename (review of WP-3.3).
+#[test]
+fn socket_parent_is_the_users_own() {
+    assert_eq!(socket_parent_name(Some(1000)), "atollo-caddy-1000");
+    assert_eq!(socket_parent_name(None), "atollo-caddy");
+    assert_eq!(current_uid().is_some(), cfg!(unix));
+    let tmp = TempDir::new("caddy-socket-parent");
+    let name = socket_parent_name(current_uid());
+    let made = socket_parent(&tmp.0).unwrap();
+    assert_eq!(made, tmp.0.join(&name));
+    assert!(is_private_dir(&made));
+    // Already there and ours: reused.
+    assert_eq!(socket_parent(&tmp.0).unwrap(), made);
+    // A link in its place: that base is not used.
+    let other = TempDir::new("caddy-socket-parent-2");
+    let target = other.0.join("elsewhere");
+    fs::create_dir(&target).unwrap();
+    junction(&other.0.join(&name), &target);
+    assert!(socket_parent(&other.0).is_none());
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let open = TempDir::new("caddy-socket-parent-3");
+        let dir = open.0.join(&name);
+        fs::create_dir(&dir).unwrap();
+        fs::set_permissions(&dir, fs::Permissions::from_mode(0o1777)).unwrap();
+        assert!(socket_parent(&open.0).is_none(), "open to others");
+        // A base others can write in without the sticky bit: not used.
+        let shared = TempDir::new("caddy-socket-base");
+        fs::set_permissions(&shared.0, fs::Permissions::from_mode(0o777)).unwrap();
+        assert!(!base_trusted(&shared.0));
+        assert!(socket_parent(&shared.0).is_none());
+        assert!(!shared.0.join(&name).exists(), "nothing made there");
+        fs::set_permissions(&shared.0, fs::Permissions::from_mode(0o1777)).unwrap();
+        assert!(base_trusted(&shared.0), "sticky, as /tmp");
+        assert!(socket_parent(&shared.0).is_some());
+        let mode = fs::metadata(&made).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o700);
+    }
+    // A socket checks its folder again before a client connects.
+    let sock = PrivateSocket::in_leaf(&made, "c-1", "a.sock").unwrap();
+    assert!(sock.still_private());
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let leaf = sock.path.parent().unwrap();
+        fs::set_permissions(leaf, fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(!sock.still_private());
     }
 }
 

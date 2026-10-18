@@ -17,7 +17,7 @@ use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
 use crate::projects::apache::{self, fwd};
 use crate::projects::caddy;
-use crate::projects::fastcgi;
+use crate::projects::fastcgi::{self, FcgiAddr};
 use crate::projects::nginx::{self, FastCgi};
 use crate::projects::run::is_port_free;
 use crate::setup::catalog::Catalog;
@@ -142,17 +142,32 @@ pub(super) fn wait_port_released(port: u16, within: Duration) -> bool {
     }
 }
 
-/// True once `child` (php-cgi) answers on `port`, or is still running after
-/// `within` (slow, not failed); false if it ended: its FastCGI port is
-/// chosen free and let go before it starts, and another program may have
-/// taken it in between (defect 9). In that case the port answers at once,
-/// before php-cgi fails to bind it: an answer counts only if php-cgi is
-/// still running a moment after.
-pub(super) fn php_cgi_listening(child: &mut Child, port: u16, within: Duration) -> bool {
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+/// `addr` takes a connection now: a TCP port of 127.0.0.1, or a Unix
+/// socket (php-fpm on macOS and Linux).
+pub(super) fn fcgi_answers(addr: &FcgiAddr) -> bool {
+    match addr {
+        FcgiAddr::Tcp(port) => {
+            let addr = SocketAddr::from(([127, 0, 0, 1], *port));
+            TcpStream::connect_timeout(&addr, Duration::from_millis(80)).is_ok()
+        }
+        #[cfg(unix)]
+        FcgiAddr::Unix(sock) => std::os::unix::net::UnixStream::connect(&sock.path).is_ok(),
+        // php-fpm runs on macOS and Linux only; php-cgi listens on TCP.
+        #[cfg(not(unix))]
+        FcgiAddr::Unix(sock) => sock.path.exists(),
+    }
+}
+
+/// True once `child` (php-cgi or php-fpm) answers on `addr`, or is still
+/// running after `within` (slow, not failed); false if it ended: its
+/// FastCGI port is chosen free and let go before it starts, and another
+/// program may have taken it in between (defect 9). In that case the port
+/// answers at once, before php-cgi fails to bind it: an answer counts only
+/// if php-cgi is still running a moment after.
+pub(super) fn php_cgi_listening(child: &mut Child, addr: &FcgiAddr, within: Duration) -> bool {
     let begun = Instant::now();
     loop {
-        if TcpStream::connect_timeout(&addr, Duration::from_millis(80)).is_ok() {
+        if fcgi_answers(addr) {
             std::thread::sleep(Duration::from_millis(250));
             return matches!(child.try_wait(), Ok(None));
         }
@@ -177,14 +192,16 @@ pub(super) fn spawn_php_cgi(
 }
 
 /// The FastCGI server of a Caddy pool (php-cgi on Windows, php-fpm with
-/// its `fpm.conf` in `pool_dir` elsewhere), retried as [`spawn_php_cgi`].
+/// its `fpm.conf` in `pool_dir` and its private socket elsewhere), retried
+/// as [`spawn_php_cgi`].
 pub(super) fn spawn_fastcgi(
     kit: &Kit,
     env: &KitEnv,
     job: &Job,
     pool_dir: &Path,
+    id: &str,
 ) -> (Option<FastCgi>, Option<Child>) {
-    spawn_with_retries(|| fastcgi::spawn_fastcgi_if_present(kit, env, job, pool_dir))
+    spawn_with_retries(|| fastcgi::spawn_fastcgi_if_present(kit, env, job, pool_dir, id))
 }
 
 fn spawn_with_retries(
@@ -194,12 +211,12 @@ fn spawn_with_retries(
         let Some((fcgi, mut child)) = spawn() else {
             break;
         };
-        if php_cgi_listening(&mut child, fcgi.port, Duration::from_secs(5)) {
+        if php_cgi_listening(&mut child, &fcgi.addr, Duration::from_secs(5)) {
             return (Some(fcgi), Some(child));
         }
         crate::log::warn(&format!(
-            "PHP's FastCGI server ended at once on port {}: trying another port",
-            fcgi.port
+            "PHP's FastCGI server ended at once on {}: trying again",
+            fcgi.addr.describe()
         ));
     }
     (None, None)
@@ -507,7 +524,7 @@ impl WebServers {
                 }
                 env.set("CP_CADDY", caddy_dir.display().to_string());
                 let (fcgi, php) = if pool.php_line.is_some() {
-                    match spawn_fastcgi(&self.kit, &env, &job, &pool_dir) {
+                    match spawn_fastcgi(&self.kit, &env, &job, &pool_dir, &pool.id) {
                         // A PHP pool never runs without its PHP (as Nginx).
                         (None, _) => bail!("PHP's FastCGI server did not start (see the log)"),
                         started => started,
@@ -648,7 +665,20 @@ impl WebServers {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .get(id)
-            .and_then(|r| r.admin.as_ref().map(|a| a.path.clone()));
+            // Its folder checked again just before `caddy reload` connects:
+            // one put in its place is never talked to (a restart instead).
+            .and_then(|r| r.admin.as_ref())
+            .filter(|a| {
+                let ok = a.still_private();
+                if !ok {
+                    crate::log::warn(&format!(
+                        "server pool {id}: {}: no longer a private folder, the pool is restarted",
+                        a.path.display()
+                    ));
+                }
+                ok
+            })
+            .map(|a| a.path.clone());
         if !needs_restart(&pool, &live) {
             // Nginx or Caddy with the same PHP and port: a graceful reload,
             // the sites that stay are served without a pause.

@@ -184,7 +184,7 @@ pub fn vhost_block(
         lines.extend([
             format!("        location ~* {PHP_RUN} {{"),
             "            try_files $uri =404;".to_owned(),
-            format!("            fastcgi_pass 127.0.0.1:{};", fcgi.port),
+            format!("            fastcgi_pass {};", fcgi.addr.nginx_pass()),
             "            fastcgi_index index.php;".to_owned(),
             format!("            include \"{nginx_fwd}/conf/fastcgi_params\";"),
             "            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;"

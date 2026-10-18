@@ -493,6 +493,9 @@ impl Runner {
         let job = Job::new()?;
         // The php-cgi of a project's Nginx, watched with the server.
         let mut php: Option<Child> = None;
+        // The FastCGI server of a project's Caddy, kept until the action
+        // ends: php-fpm's private socket folder goes with its last copy.
+        let mut fcgi_kept: Option<crate::projects::fastcgi::FastCgi> = None;
         let (mut cmd, shown) = if let Some(folder) = &action.static_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             // The AppImage, not its inner program: `kit_command` clears
@@ -553,12 +556,19 @@ impl Runner {
             // Its PHP (php-cgi, or php-fpm off Windows) lives in the action's
             // job too, watched with the server.
             let run_dir = crate::projects::caddy::dir(&self.kit, id)?;
-            let fcgi =
-                crate::projects::fastcgi::spawn_fastcgi_if_present(&self.kit, env, &job, &run_dir)
-                    .map(|(fcgi, child)| {
-                        php = Some(child);
-                        fcgi
-                    });
+            let fcgi = crate::projects::fastcgi::spawn_fastcgi_if_present(
+                &self.kit,
+                env,
+                &job,
+                &run_dir,
+                &format!("project {id}"),
+            )
+            .map(|(fcgi, child)| {
+                php = Some(child);
+                fcgi
+            });
+            // php-fpm's socket folder lives as long as the action.
+            fcgi_kept = fcgi.clone();
             let cmd = crate::projects::caddy::command(
                 &self.kit,
                 id,
@@ -720,6 +730,7 @@ impl Runner {
         }
         let (me, key2, lang2) = (Arc::clone(self), key.clone(), lang.to_owned());
         std::thread::spawn(move || {
+            let _fcgi = fcgi_kept;
             let code = match php {
                 Some(php) => me.wait_with_php(&key2, &mut child, php, &lang2),
                 None => child.wait().ok().and_then(|s| s.code()),
