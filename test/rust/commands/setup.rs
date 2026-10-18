@@ -227,4 +227,18 @@ fn needs_of_one_target_stay_out_of_the_choice() {
         let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
         assert!(!choice.is_chosen("cc") && choice.is_chosen("zig"), "{t}");
     }
+
+    // Windows ARM64, where Rust needs C and C++: unticking C and C++ (the
+    // page unticks Rust with it) saves both off, though the saved choice
+    // has them on and cc is a need of this target only.
+    let arm = windows.for_target(Target::WIN32_ARM64);
+    Choice::parse("rust=1\ncc=1\n", catalog)
+        .write(&arm, catalog)
+        .unwrap();
+    let chosen: Vec<String> = page(&arm)
+        .into_iter()
+        .filter(|id| id != "cc" && id != "rust")
+        .collect();
+    let choice = Choice::parse(&choice_text(&arm, &chosen), catalog);
+    assert!(!choice.is_chosen("cc") && !choice.is_chosen("rust"));
 }

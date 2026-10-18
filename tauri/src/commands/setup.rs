@@ -323,10 +323,12 @@ pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
         .all()
         .iter()
         .map(|c| {
-            let on = if !crate::router::target::installable_on(c, target)
-                || here.contains(c.id.as_str())
-            {
+            let on = if !crate::router::target::installable_on(c, target) {
                 saved.is_chosen(&c.id)
+            } else if here.contains(c.id.as_str()) {
+                // Saved on and still ticked: an untick on the page wins
+                // (C and C++ unticked on Windows ARM64 also untick Rust).
+                saved.is_chosen(&c.id) && chosen.contains(&c.id)
             } else {
                 chosen.contains(&c.id)
             };
