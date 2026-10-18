@@ -25,7 +25,12 @@ fn fake_kit(name: &str, installed: &[&str]) -> (TempDir, Kit) {
     let tmp = TempDir::new(name);
     let kit = Kit::at(tmp.0.join("My Kit (1) & co"), Arch::X64);
     for rel in installed {
-        let file = kit.apps().join(rel);
+        // The layout of the kit's system: `node/node.exe` is `node/bin/node`
+        // on macOS and Linux.
+        let file = crate::fsx::join_rel(
+            kit.apps(),
+            &crate::setup::catalog::translate_rel(kit.target(), rel),
+        );
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(file, b"").unwrap();
     }
@@ -50,10 +55,6 @@ fn appdata_folders_only_on_windows() {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "HOMEDRIVE and HOMEPATH exist only with a drive letter"
-)]
 fn profile_and_temp_inside_kit() {
     let (_tmp, kit) = fake_kit("env-profile", &[]);
     let env = KitEnv::build(&kit, &Settings::default(), "it", &host());
@@ -79,17 +80,15 @@ fn profile_and_temp_inside_kit() {
     assert_eq!(env.get("ATOLLO"), Some(kit.root().to_str().unwrap()));
     assert_eq!(env.get("CP_LANG"), Some("it"));
     assert_eq!(env.get("DISABLE_UPDATES"), Some("1"));
+    // HOMEDRIVE and HOMEPATH only with a drive letter.
     assert_eq!(
-        env.get("HOMEPATH").map(|p| p.ends_with(r"\data\home")),
-        Some(true)
+        env.get("HOMEPATH")
+            .map(|p| Path::new(p).ends_with(Path::new("data").join("home"))),
+        cfg!(windows).then_some(true)
     );
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "Windows paths with backslashes in the expected values"
-)]
 fn program_temp_decision_table() {
     use crate::os::volume::FsKind;
     let vol = |fs, drive| {
@@ -100,9 +99,18 @@ fn program_temp_decision_table() {
             noexec: false,
         })
     };
-    let data = Path::new(r"E:\Kit\data");
-    let host = Path::new(r"C:\Users\me\AppData\Local\Temp\Atollo\abc");
-    let in_kit = PathBuf::from(r"E:\Kit\data\tmp\system");
+    let (data, host) = if cfg!(windows) {
+        (
+            Path::new(r"E:\Kit\data"),
+            Path::new(r"C:\Users\me\AppData\Local\Temp\Atollo\abc"),
+        )
+    } else {
+        (
+            Path::new("/media/u/Kit/data"),
+            Path::new("/tmp/Atollo/abc"),
+        )
+    };
+    let in_kit = data.join("tmp").join("system");
     let in_sys = host.join("system");
     let ntfs_fixed = vol(FsKind::Ntfs, DriveKind::Fixed);
     let get = |choice, v, h: Option<&Path>| program_temp_dir(choice, v, h, data, false);
@@ -197,8 +205,8 @@ fn nothing_from_the_user_profile_leaks() {
 }
 
 #[test]
-#[cfg_attr(not(windows), ignore = "Windows PATH: System32 and git/cmd")]
 fn path_is_kit_then_system_only() {
+    let windows = cfg!(windows);
     let (_tmp, kit) = fake_kit(
         "env-path",
         &[
@@ -211,16 +219,21 @@ fn path_is_kit_then_system_only() {
     );
     let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
     let entries = env.path_entries();
-    let n = entries.len();
-    assert_eq!(
-        &entries[n - 3..],
-        [
-            r"C:\Windows\System32",
-            r"C:\Windows\System32\Wbem",
-            r"C:\Windows\System32\WindowsPowerShell\v1.0"
+    let system: Vec<String> = if windows {
+        vec![
+            r"C:\Windows\System32".into(),
+            r"C:\Windows\System32\Wbem".into(),
+            r"C:\Windows\System32\WindowsPowerShell\v1.0".into(),
         ]
-    );
-    for entry in &entries[..n - 3] {
+    } else {
+        system_path(kit.os())
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
+    };
+    let n = entries.len() - system.len();
+    assert_eq!(&entries[n..], system);
+    for entry in &entries[..n] {
         assert!(Path::new(entry).starts_with(kit.data()), "{entry}");
     }
     let apps = kit.apps();
@@ -230,19 +243,30 @@ fn path_is_kit_then_system_only() {
             .position(|e| Path::new(e) == p)
             .unwrap_or_else(|| panic!("{} missing", p.display()))
     };
-    assert!(pos(apps.join("claude")) < pos(apps.join("python")));
-    assert!(pos(apps.join("node")) < pos(apps.join(r"go\bin")));
-    assert!(pos(apps.join(r"go\bin")) < pos(apps.join(r"git\cmd")));
+    // Node and Python have their programs in `bin` off Windows; Git is
+    // `cmd` on Windows, `bin` elsewhere.
+    let bin = |d: &str| {
+        if windows {
+            apps.join(d)
+        } else {
+            apps.join(d).join("bin")
+        }
+    };
+    let git = apps.join("git").join(if windows { "cmd" } else { "bin" });
+    assert!(pos(apps.join("claude")) < pos(bin("python")));
+    assert!(pos(bin("node")) < pos(apps.join("go").join("bin")));
+    assert!(pos(apps.join("go").join("bin")) < pos(git));
     assert!(
         entries
             .iter()
             .all(|e| !Path::new(e).starts_with(apps.join("java"))),
         "java not installed"
     );
+    let bash = Path::new("git").join("bin").join("bash.exe");
     assert_eq!(
         env.get("CLAUDE_CODE_GIT_BASH_PATH")
-            .map(|p| p.ends_with(r"git\bin\bash.exe")),
-        Some(true)
+            .map(|p| Path::new(p).ends_with(&bash)),
+        windows.then_some(true)
     );
     assert!(env.get("JAVA_HOME").is_none());
 }
@@ -306,19 +330,22 @@ fn secrets_are_masked() {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "Windows layout: backslash folders, .exe keys and ';' in PATH"
-)]
 fn languages_from_the_folder_of_their_version() {
-    let (_tmp, kit) = fake_kit(
-        "env-versions",
+    let windows = cfg!(windows);
+    let files: &[&str] = if windows {
         &[
-            r"node\22.11\node.exe",
-            r"php\8.4\php.exe",
-            r"java\21.0\bin\java.exe",
-        ],
-    );
+            "node/22.11/node.exe",
+            "php/8.4/php.exe",
+            "java/21.0/bin/java.exe",
+        ]
+    } else {
+        &[
+            "node/22.11/bin/node",
+            "php/8.4/bin/php",
+            "java/21.0/bin/java",
+        ]
+    };
+    let (_tmp, kit) = fake_kit("env-versions", files);
     let catalog = crate::setup::catalog::Catalog::get();
     for (id, version) in [
         ("node", "v22.11.0"),
@@ -333,20 +360,16 @@ fn languages_from_the_folder_of_their_version() {
     }
     let env = KitEnv::build(&kit, &Settings::default(), "it", &host());
     let apps = kit.apps();
-    let path = env.get("PATH").unwrap();
-    assert!(path
-        .split(';')
-        .any(|e| Path::new(e) == apps.join(r"node\22.11")));
-    assert!(path
-        .split(';')
-        .any(|e| Path::new(e) == apps.join(r"java\21.0\bin")));
-    assert_eq!(env.get("CP_PHP"), apps.join(r"php\8.4").to_str());
-    assert_eq!(env.get("JAVA_HOME"), apps.join(r"java\21.0").to_str());
-    let fwd = apps
-        .join(r"php\8.4")
-        .display()
-        .to_string()
-        .replace('\\', "/");
+    let entries = env.path_entries();
+    let node = apps.join("node").join("22.11");
+    let node_bin = if windows { node } else { node.join("bin") };
+    assert!(entries.iter().any(|e| Path::new(e) == node_bin));
+    let java = apps.join("java").join("21.0");
+    assert!(entries.iter().any(|e| Path::new(e) == java.join("bin")));
+    let php = apps.join("php").join("8.4");
+    assert_eq!(env.get("CP_PHP"), php.to_str());
+    assert_eq!(env.get("JAVA_HOME"), java.to_str());
+    let fwd = php.display().to_string().replace('\\', "/");
     assert_eq!(env.get("CP_PHP_FWD"), Some(fwd.as_str()));
 }
 

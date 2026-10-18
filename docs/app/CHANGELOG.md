@@ -1,5 +1,9 @@
 # Novità
 
+## Arretrato di macOS e Linux (19/10/2026)
+
+- **Linux distingue le maiuscole nei percorsi** (D-119): un aggiornamento dell'editor o la rimozione dell'unità fermano solo i programmi della cartella giusta, non quelli di una cartella che differisce solo nelle maiuscole; lo stesso per le voci del PATH tolte da un profilo del terminale. Windows e macOS restano senza distinzione, come i loro file system.
+
 ## Spostare il kit senza rete su macOS e Linux (18/10/2026)
 
 - **R, Ruby, MongoDB (Linux), SQLite (Linux ARM64) e il `make` di C e C++** si reinstallano dopo che il kit cambia cartella, perché vengono da conda-forge e hanno il percorso scritto dentro (D-92). Ora i loro pacchetti restano nel kit, in `data/app/conda/<sistema>/`, e la reinstallazione li usa senza scaricare nulla, alla stessa versione: in WSL 43 s per R, Ruby, MongoDB e make, contro 86 s dalla rete con una connessione veloce, e funziona anche senza rete (D-118).

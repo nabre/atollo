@@ -2,11 +2,6 @@ use super::*;
 use crate::setup::catalog::Catalog;
 
 #[test]
-#[cfg_attr(
-    target_os = "linux",
-    ignore = "production defect: os::processes::prefix_of/is_under lower-case both paths on every OS, \
-              so on Linux VSCODIUM-SERVER (another folder) is matched against DECISIONS F7a"
-)]
 fn processes_of_the_old_editor() {
     // Paths of the system's form: the comparison uses its separator.
     let apps = if cfg!(windows) {

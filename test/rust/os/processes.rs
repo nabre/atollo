@@ -28,8 +28,26 @@ fn trailing_separator_does_not_matter() {
     };
     let dir = format!(
         "{}{MAIN_SEPARATOR}",
-        Path::new("KIT").join("apps").display()
+        Path::new("kit").join("apps").display()
     );
     assert_eq!(running_from(std::slice::from_ref(&p), Path::new(&dir)), [1]);
-    assert_eq!(running_from(&[p], &Path::new("KIT").join("apps")), [1]);
+    assert_eq!(
+        running_from(std::slice::from_ref(&p), &Path::new("kit").join("apps")),
+        [1]
+    );
+}
+
+/// Case as the usual file system of the PC (D-119): `KIT` is `kit` on
+/// Windows and macOS, another folder on Linux.
+#[test]
+fn case_follows_the_file_system() {
+    let p = Proc {
+        pid: 1,
+        parent: 0,
+        name: "x".into(),
+        path: Path::new("kit").join("apps").join("x"),
+    };
+    let upper = running_from(&[p], &Path::new("KIT").join("apps"));
+    let expected: &[u32] = if cfg!(target_os = "linux") { &[] } else { &[1] };
+    assert_eq!(upper, expected);
 }

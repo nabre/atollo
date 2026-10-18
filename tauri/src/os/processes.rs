@@ -26,24 +26,32 @@ pub struct Proc {
     pub path: PathBuf,
 }
 
-/// `folder` as a lower-case prefix ending with the separator.
+/// A path of this PC as its usual file system compares it: without case on
+/// Windows (NTFS) and macOS (APFS by default), exact on Linux, where
+/// `VSCODIUM-SERVER` and `vscodium-server` are two folders (D-119).
+pub(crate) fn path_key(path: &str) -> String {
+    if cfg!(any(windows, target_os = "macos")) {
+        path.to_lowercase()
+    } else {
+        path.to_owned()
+    }
+}
+
+/// `folder` as a prefix ending with the separator ([`path_key`]).
 fn prefix_of(folder: &Path) -> String {
     format!(
         "{}{MAIN_SEPARATOR}",
-        folder
-            .display()
-            .to_string()
-            .trim_end_matches(MAIN_SEPARATOR)
-            .to_lowercase()
+        path_key(
+            folder
+                .display()
+                .to_string()
+                .trim_end_matches(MAIN_SEPARATOR)
+        )
     )
 }
 
 fn is_under(p: &Proc, prefix: &str) -> bool {
-    p.path
-        .display()
-        .to_string()
-        .to_lowercase()
-        .starts_with(prefix)
+    path_key(&p.path.display().to_string()).starts_with(prefix)
 }
 
 /// The processes in `all` whose program is in `folder`.
