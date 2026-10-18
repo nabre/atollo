@@ -981,12 +981,94 @@ pub fn php_ini_unix() -> String {
     .join("\n")
 }
 
-/// Apache httpd from Apache Lounge (the maintained Windows build). Port,
-/// site and PHP live in `data\apache\kit.conf`, which updates never touch.
+/// Apache httpd: Apache Lounge on Windows (the maintained Windows build),
+/// the kit's own build on macOS and Linux (D-116). Port, site and PHP live
+/// in `data\apache\kit.conf`, which updates never touch.
 ///
 /// Apache Lounge keeps only the latest build of 2.4, its only line: a new
-/// build replaces the folder `apache\2.4`.
+/// build replaces the folder `apache\2.4`. The kit's builds are pinned per
+/// line in the catalog, like MySQL's.
 pub struct Apache;
+
+/// The kit's httpd builds (`scripts/build-httpd`, D-116): GitHub releases
+/// `httpd-v<version>` of this repository, one tarball per macOS and Linux
+/// target with the tree at its root. Each line's version (`2.4.69-1`: httpd
+/// and the kit's build number) and the SHA-256 of each tarball are fixed in
+/// `sha256ByLine` of `apache`: only those are offered, and a tarball with
+/// another hash is refused.
+const HTTPD_RELEASES: &str = "https://github.com/nabre/atollo/releases/download";
+
+/// The `sha256ByLine` pins of component `id` in a catalog file.
+pub fn line_pins_in(catalog: &Value, id: &str) -> BTreeMap<String, super::db::MysqlPin> {
+    catalog["components"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .find(|c| c["id"] == id)
+        .and_then(|c| serde_json::from_value(c["sha256ByLine"].clone()).ok())
+        .unwrap_or_default()
+}
+
+/// Apache's pins in the catalog embedded in the app.
+fn httpd_pins() -> &'static BTreeMap<String, super::db::MysqlPin> {
+    static PINS: std::sync::OnceLock<BTreeMap<String, super::db::MysqlPin>> =
+        std::sync::OnceLock::new();
+    PINS.get_or_init(|| {
+        serde_json::from_str::<Value>(include_str!("../../catalog/components.json"))
+            .map(|v| line_pins_in(&v, "apache"))
+            .unwrap_or_default()
+    })
+}
+
+/// The tarball of the kit's httpd `version` for a macOS or Linux `target`.
+pub fn httpd_file(target: Target, version: &str) -> String {
+    format!("httpd-{version}-{target}.tar.gz")
+}
+
+/// The address of `file` in the release of `version`.
+pub fn httpd_url(version: &str, file: &str) -> String {
+    format!("{HTTPD_RELEASES}/httpd-v{version}/{file}")
+}
+
+/// The lines of the kit's httpd with a pinned tarball for `target`, newest
+/// first.
+pub fn httpd_lines_for(
+    pins: &BTreeMap<String, super::db::MysqlPin>,
+    target: Target,
+) -> Vec<String> {
+    super::db::mysql_lines_for(pins, target)
+}
+
+/// The release of `line` for `target`, with its pinned SHA-256; an error for
+/// a line or target without one (never a download that cannot be verified).
+pub fn httpd_release_for(
+    pins: &BTreeMap<String, super::db::MysqlPin>,
+    target: Target,
+    line: &str,
+) -> Result<Release> {
+    if target.os == Os::Win32 {
+        bail!("the kit's httpd build is for macOS and Linux; Windows uses Apache Lounge");
+    }
+    if !httpd_lines_for(pins, target).iter().any(|l| l == line) {
+        bail!(
+            "Apache {line}: no build with a fixed SHA-256 for {target} in this version of the app"
+        );
+    }
+    let pin = &pins[line];
+    let sha = &pin.sha256_by_target[target.as_str()];
+    if sha.len() != 64 || !sha.chars().all(|c| c.is_ascii_hexdigit()) {
+        bail!("Apache {line}: the SHA-256 fixed for {target} is not one");
+    }
+    let file = httpd_file(target, &pin.version);
+    Ok(Release::single(
+        pin.version.clone(),
+        httpd_url(&pin.version, &file),
+        file,
+        Expect::Sha256(sha.to_ascii_lowercase()),
+        Kind::TarGz,
+        Inner::Root,
+    ))
+}
 
 const APACHE_SITE: &str = "https://www.apachelounge.com";
 
@@ -1049,8 +1131,13 @@ impl Installer for Apache {
         true
     }
 
-    /// The lines on Apache Lounge, newest first (only 2.4).
-    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
+    /// The lines on Apache Lounge, newest first (only 2.4); off Windows the
+    /// pinned lines of the kit's build.
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        let target = target_of(ctx, component);
+        if target.os != Os::Win32 {
+            return Ok(httpd_lines_for(httpd_pins(), target));
+        }
         let mut out: Vec<String> = Vec::new();
         for line in apache_builds(ctx)?
             .iter()
@@ -1064,7 +1151,11 @@ impl Installer for Apache {
         Ok(out)
     }
 
-    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        let target = target_of(ctx, component);
+        if target.os != Os::Win32 {
+            return httpd_release_for(httpd_pins(), target, line);
+        }
         let build = apache_builds(ctx)?
             .into_iter()
             .find(|b| crate::versions::line_of(&b.version).as_deref() == Some(line))
@@ -1072,7 +1163,16 @@ impl Installer for Apache {
         apache_release_of(ctx, &build)
     }
 
-    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let target = target_of(ctx, component);
+        if target.os != Os::Win32 {
+            let pins = httpd_pins();
+            let line = httpd_lines_for(pins, target)
+                .into_iter()
+                .next()
+                .ok_or_else(|| anyhow!("Apache: no build with a fixed SHA-256 for {target}"))?;
+            return httpd_release_for(pins, target, &line);
+        }
         let build = apache_builds(ctx)?
             .into_iter()
             .next()
@@ -1080,6 +1180,9 @@ impl Installer for Apache {
         apache_release_of(ctx, &build)
     }
 
+    /// The same on every system: the kit's build ships a `httpd.conf` in
+    /// Apache Lounge's shape (`Define SRVROOT`, D-116). The VC++ runtime is
+    /// Windows only (`copy_vc_runtime` does nothing elsewhere).
     fn before_swap(
         &self,
         ctx: &Ctx,
@@ -1097,8 +1200,11 @@ impl Installer for Apache {
         Ok(())
     }
 
-    fn finish(&self, ctx: &Ctx, _component: &Component, _dest: &Path) -> Result<()> {
-        apache_site(ctx.kit.data().join("apache").as_path())
+    fn finish(&self, ctx: &Ctx, component: &Component, _dest: &Path) -> Result<()> {
+        apache_site(
+            ctx.kit.data().join("apache").as_path(),
+            target_of(ctx, component).os,
+        )
     }
 }
 
@@ -1213,13 +1319,21 @@ impl Installer for Nginx {
 }
 
 /// httpd.conf of the kit: root from the kit variables, no port 80 (it is
-/// in kit.conf), mod_rewrite on, kit.conf included.
+/// in kit.conf), mod_rewrite on, kit.conf included. Lines end as in the
+/// file: CRLF in Apache Lounge's, LF in the kit's macOS and Linux build.
 pub fn httpd_conf(text: &str) -> Result<String> {
+    let crlf = text.contains("\r\n");
+    let nl = if crlf { "\r\n" } else { "\n" };
+    let listen = if crlf {
+        "#Listen 80   (port in data\\apache\\kit.conf)$1"
+    } else {
+        "#Listen 80   (port in data/apache/kit.conf)$1"
+    };
     let mut t = pattern(r"(?m)^Define SRVROOT [^\r\n]*")?
         .replace(text, r#"Define SRVROOT "$${CP_APACHE_FWD}""#)
         .into_owned();
     t = pattern(r"(?m)^Listen 80[ \t]*(\r?)$")?
-        .replace(&t, "#Listen 80   (port in data\\apache\\kit.conf)$1")
+        .replace(&t, listen)
         .into_owned();
     t = pattern(r"(?m)^#(LoadModule rewrite_module [^\r\n]*)")?
         .replace(&t, "$1")
@@ -1228,14 +1342,20 @@ pub fn httpd_conf(text: &str) -> Result<String> {
         bail!("httpd.conf in an unexpected format (no Define SRVROOT)");
     }
     Ok(format!(
-        "{}\r\n\r\n# --- Atollo ---\r\nInclude \"${{CP_ROOT_FWD}}/data/apache/kit.conf\"\r\n",
+        "{}{nl}{nl}# --- Atollo ---{nl}Include \"${{CP_ROOT_FWD}}/data/apache/kit.conf\"{nl}",
         t.trim_end()
     ))
 }
 
 /// `data\apache\kit.conf`, `conf.d\`, `htdocs\` with a test page; each
-/// created once (they belong to the user).
-pub fn apache_site(dir: &Path) -> Result<()> {
+/// created once (they belong to the user). On Windows PHP is the Apache
+/// module; on macOS and Linux PHP runs in php-fpm, which only the kit's
+/// pools and project sites start (D-116): this site, started by hand with
+/// the stock `httpd.conf`, refuses PHP files (403) and gets an HTML page.
+pub fn apache_site(dir: &Path, os: Os) -> Result<()> {
+    let windows = os == Os::Win32;
+    let nl = if windows { "\r\n" } else { "\n" };
+    let sep = if windows { "\\" } else { "/" };
     fs::create_dir_all(dir.join("conf.d"))?;
     let htdocs = dir.join("htdocs");
     fs::create_dir_all(&htdocs)?;
@@ -1250,7 +1370,7 @@ pub fn apache_site(dir: &Path) -> Result<()> {
             "Listen 127.0.0.1:${PORTA}",
             "ServerName localhost:${PORTA}",
             "",
-            "# Site folder: data\\apache\\htdocs\\ in the kit",
+            &format!("# Site folder: data{sep}apache{sep}htdocs{sep} in the kit"),
             "DocumentRoot \"${CP_ROOT_FWD}/data/apache/htdocs\"",
             "<Directory \"${CP_ROOT_FWD}/data/apache/htdocs\">",
             "    Options Indexes FollowSymLinks",
@@ -1265,38 +1385,61 @@ pub fn apache_site(dir: &Path) -> Result<()> {
         .map(str::to_owned)
         .collect();
         lines.extend(crate::projects::apache::hidden_deny(""));
+        if windows {
+            lines.extend(
+                [
+                    "",
+                    "# The kit's PHP (Apache module), php.ini in data\\php\\<line>; without it a .php is refused (403).",
+                    "# .inc and .php3 ... .php8 are never served.",
+                ]
+                .map(str::to_owned),
+            );
+            lines.extend(crate::projects::apache::php_module_blocks("CP_PHP_FWD"));
+        } else {
+            lines.extend(
+                [
+                    "",
+                    "# PHP runs in php-fpm, started by the kit's web server pools and project sites:",
+                    "# here a .php is refused (403). .inc and .php3 ... .php8 are never served.",
+                ]
+                .map(str::to_owned),
+            );
+            lines.extend(crate::projects::apache::php_off_blocks());
+        }
         lines.extend(
             [
-                "",
-                "# The kit's PHP (Apache module), php.ini in data\\php\\<line>; without it a .php is refused (403).",
-                "# .inc and .php3 ... .php8 are never served.",
-            ]
-            .map(str::to_owned),
+                "".to_owned(),
+                format!("# Other configurations (virtual hosts, aliases...): .conf files in data{sep}apache{sep}conf.d"),
+                "IncludeOptional \"${CP_ROOT_FWD}/data/apache/conf.d/*.conf\"".to_owned(),
+            ],
         );
-        lines.extend(crate::projects::apache::php_module_blocks("CP_PHP_FWD"));
-        lines.extend(
-            [
-                "",
-                "# Other configurations (virtual hosts, aliases...): .conf files in data\\apache\\conf.d",
-                "IncludeOptional \"${CP_ROOT_FWD}/data/apache/conf.d/*.conf\"",
-            ]
-            .map(str::to_owned),
-        );
-        let text = lines.join("\r\n");
-        write_atomic(&conf, format!("{text}\r\n").as_bytes())?;
+        let text = lines.join(nl);
+        write_atomic(&conf, format!("{text}{nl}").as_bytes())?;
     }
     if fs::read_dir(&htdocs)?.next().is_none() {
-        let page = [
-            "<!doctype html>",
-            "<meta charset=\"utf-8\">",
-            "<title>Atollo</title>",
-            "<h1>Apache funziona</h1>",
-            "<p>PHP <?= PHP_VERSION ?> &middot; <a href=\"?info\">phpinfo()</a></p>",
-            "<p>I file del sito stanno nella cartella <code>data\\apache\\htdocs\\</code> del kit.</p>",
-            "<?php if (isset($_GET['info'])) phpinfo(); ?>",
-        ]
-        .join("\r\n");
-        write_atomic(&htdocs.join("index.php"), format!("{page}\r\n").as_bytes())?;
+        if windows {
+            let page = [
+                "<!doctype html>",
+                "<meta charset=\"utf-8\">",
+                "<title>Atollo</title>",
+                "<h1>Apache funziona</h1>",
+                "<p>PHP <?= PHP_VERSION ?> &middot; <a href=\"?info\">phpinfo()</a></p>",
+                "<p>I file del sito stanno nella cartella <code>data\\apache\\htdocs\\</code> del kit.</p>",
+                "<?php if (isset($_GET['info'])) phpinfo(); ?>",
+            ]
+            .join("\r\n");
+            write_atomic(&htdocs.join("index.php"), format!("{page}\r\n").as_bytes())?;
+        } else {
+            let page = [
+                "<!doctype html>",
+                "<meta charset=\"utf-8\">",
+                "<title>Atollo</title>",
+                "<h1>Apache funziona</h1>",
+                "<p>I file del sito stanno nella cartella <code>data/apache/htdocs/</code> del kit.</p>",
+            ]
+            .join("\n");
+            write_atomic(&htdocs.join("index.html"), format!("{page}\n").as_bytes())?;
+        }
     }
     Ok(())
 }

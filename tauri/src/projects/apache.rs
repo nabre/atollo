@@ -175,6 +175,15 @@ pub fn php_module_blocks(php_var: &str) -> Vec<String> {
     out
 }
 
+/// No PHP at all: the PHP files ([`PHP_RUN`]) and those of [`PHP_NEVER`]
+/// refused (403). The site started by hand on macOS and Linux, where PHP is
+/// php-fpm and only the kit starts it (D-116).
+pub fn php_off_blocks() -> Vec<String> {
+    let mut out = php_missing_block();
+    out.extend(php_never_block());
+    out
+}
+
 /// Refuses (403) hidden files and folders (`.env`, `.git/`, `.htpasswd`)
 /// but `.well-known`: a site served from the project's root (WordPress
 /// `.`) would otherwise hand them out. By URL (`LocationMatch`, aliases
