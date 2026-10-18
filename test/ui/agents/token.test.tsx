@@ -40,9 +40,7 @@ describe("TokenLink", () => {
   it("is offered only where Rust says so and only while signed out", () => {
     expect(tokenOffered(CLAUDE)).toBe(true);
     expect(tokenOffered({ ...CLAUDE, tokenLink: false })).toBe(false);
-    const { container, rerender } = render(
-      <TokenLink agent={{ ...CLAUDE, tokenLink: false }} onDone={vi.fn()} />,
-    );
+    const { container, rerender } = render(<TokenLink agent={{ ...CLAUDE, tokenLink: false }} onDone={vi.fn()} />);
     expect(container.textContent).toBe("");
     rerender(<TokenLink agent={{ ...CLAUDE, signedIn: true, signInKind: "token" }} onDone={vi.fn()} />);
     expect(container.textContent).toBe("");
