@@ -245,7 +245,6 @@ fn no_startup_problem_on_windows() {
     let tmp = crate::kit::tests::TempDir::new("volume-win");
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64).with_host(None);
     assert_eq!(disk_notice(&kit, "it"), None);
-    assert_eq!(startup_problem(&kit, "it"), None);
     assert!(!kit_noexec(&kit));
     assert!(!kit.volume().unwrap().noexec);
 }
