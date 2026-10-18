@@ -194,12 +194,9 @@ pub fn launch<R: tauri::Runtime>(
         crate::log::warn(&format!("before {id}: {w}"));
     }
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
-    // Claude Code: the token saved in the kit, if any (D-115).
-    let mut env = env.clone();
-    if id == "claude" {
-        claude_token::apply(kit, &mut env);
-    }
-    crate::editor::terminal::open_command(app, kit, &env, dir, &command, move || {
+    // Claude Code's token saved in the kit, if any, is in `env` already
+    // (`KitEnv::build`, D-115).
+    crate::editor::terminal::open_command(app, kit, env, dir, &command, move || {
         let _ = sync::run(&after, Some(&after_dir));
     })
 }

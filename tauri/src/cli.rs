@@ -211,10 +211,12 @@ pub fn output() -> Box<dyn Write> {
     Box::new(io::sink())
 }
 
-/// `KEY=VALUE` lines, sorted, as `set` prints them.
+/// `KEY=VALUE` lines, sorted, as `set` prints them. Secrets masked
+/// (`CLAUDE_CODE_OAUTH_TOKEN=***`, a proxy's password; `env::masked`): the
+/// output ends up in terminals, logs and bug reports.
 pub fn print_env(env: &KitEnv, out: &mut dyn Write) -> io::Result<()> {
     for (name, value) in env.iter() {
-        writeln!(out, "{name}={value}")?;
+        writeln!(out, "{name}={}", crate::env::masked(name, value))?;
     }
     out.flush()
 }
