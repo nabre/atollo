@@ -152,3 +152,57 @@ fn unavailable_components_keep_their_choice() {
         assert!(choice.is_chosen("php") && !choice.is_chosen("go"));
     }
 }
+
+/// One `components.txt` for every system (review of T2.3.1): a Windows kit
+/// with C and C++ on and Zig off, shown and applied on the page of another
+/// target, keeps C and C++ on and Zig off for Windows. The page shows Zig
+/// ticked where C and C++ need it; ticking C and C++ there saves C and C++
+/// only; Zig ticked alone is saved.
+#[test]
+fn needs_of_one_target_stay_out_of_the_choice() {
+    let tmp = TempDir::new("cmd-needs-choice");
+    let catalog = Catalog::get();
+    let windows = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+    windows.prepare().unwrap();
+    let page = |kit: &Kit| -> Vec<String> {
+        component_infos(kit, "it")
+            .into_iter()
+            .filter(|c| c.chosen)
+            .map(|c| c.id)
+            .collect()
+    };
+    for t in Target::ALL {
+        let kit = windows.for_target(t);
+        Choice::parse("cc=1\nzig=0\n", catalog)
+            .write(&kit, catalog)
+            .unwrap();
+        let chosen = page(&kit);
+        assert!(chosen.contains(&"cc".into()), "{t}");
+        assert_eq!(chosen.contains(&"zig".into()), t.is_unix(), "{t}");
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        choice.write(&kit, catalog).unwrap();
+        let back = Choice::read(&windows, catalog).unwrap();
+        assert!(back.is_chosen("cc") && !back.is_chosen("zig"), "{t}");
+
+        // Ticked on this page: the toggle of the page ticks what it needs.
+        Choice::parse("cc=0\nzig=0\n", catalog)
+            .write(&kit, catalog)
+            .unwrap();
+        let mut chosen = page(&kit);
+        chosen.extend(
+            component_infos(&kit, "it")
+                .into_iter()
+                .find(|c| c.id == "cc")
+                .unwrap()
+                .needs,
+        );
+        chosen.push("cc".into());
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        assert!(choice.is_chosen("cc") && !choice.is_chosen("zig"), "{t}");
+
+        let mut chosen = page(&kit);
+        chosen.push("zig".into());
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        assert!(choice.is_chosen("zig") && !choice.is_chosen("cc"), "{t}");
+    }
+}

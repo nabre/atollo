@@ -73,7 +73,7 @@ pub fn sync_with_disk(kit: &Kit) -> Result<Vec<String>> {
     let before = choice.clone();
     for c in &gone {
         c.forget_version(kit);
-        if !catalog.is_locked_on(kit.target(), &c.id) {
+        if !catalog.is_locked(&c.id) {
             choice.set(catalog, &c.id, false);
         }
     }

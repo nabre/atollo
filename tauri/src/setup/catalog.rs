@@ -177,47 +177,71 @@ impl Catalog {
         self.with_needs_on(&always, target)
     }
 
-    pub fn is_locked_on(&self, target: Target, id: &str) -> bool {
-        self.locked_on(target).contains(id)
-    }
-
-    /// [`Catalog::locked_on`] for the host's own target. For a kit, use
-    /// `locked_on(kit.target())`: a kit prepared for another system needs
-    /// what that system needs.
+    /// Locked on every target: the system components and what they need
+    /// on every target (`needs` alone). What the saved choice keeps on,
+    /// the same whatever system reads it; a run on a target installs
+    /// [`Catalog::locked_on`] that target.
     pub fn locked(&self) -> BTreeSet<&str> {
-        self.locked_on(Target::detect())
+        let always: Vec<&str> = self
+            .components
+            .iter()
+            .filter(|c| c.group.always())
+            .map(|c| c.id.as_str())
+            .collect();
+        self.closure(&always, Component::needs_on_every_target)
     }
 
-    /// [`Catalog::is_locked_on`] for the host's own target (tests).
-    #[cfg(test)]
+    /// [`Catalog::locked`] contains `id`.
     pub fn is_locked(&self, id: &str) -> bool {
-        self.is_locked_on(Target::detect(), id)
+        self.locked().contains(id)
     }
 
     /// `ids` (those in the catalog) and, transitively, what they need on
     /// `target`.
     pub fn with_needs_on<'a>(&'a self, ids: &[&str], target: Target) -> BTreeSet<&'a str> {
+        self.closure(ids, |c| c.needs_on(target))
+    }
+
+    /// What `ids` need on `target`, transitively, and not on every target:
+    /// Zig for C and C++ on macOS and Linux. Never in the saved choice
+    /// (see [`Component::needs_on_every_target`]): a run on `target` adds
+    /// it to the chosen components that need it, and keeps it while they
+    /// are chosen. An id of `ids` is in it only when another one needs it.
+    pub fn needs_only_on<'a>(&'a self, ids: &[&str], target: Target) -> BTreeSet<&'a str> {
+        let found: Vec<&Component> = ids.iter().filter_map(|id| self.find(id)).collect();
+        let here: Vec<&str> = found.iter().flat_map(|c| c.needs_on(target)).collect();
+        let everywhere: Vec<&str> = found
+            .iter()
+            .flat_map(|c| c.needs_on_every_target())
+            .collect();
+        let here = self.with_needs_on(&here, target);
+        let everywhere = self.closure(&everywhere, Component::needs_on_every_target);
+        here.difference(&everywhere).copied().collect()
+    }
+
+    /// `ids` (those in the catalog) and, transitively, what `needs` gives.
+    fn closure<'a, I>(
+        &'a self,
+        ids: &[&str],
+        needs: impl Fn(&'a Component) -> I,
+    ) -> BTreeSet<&'a str>
+    where
+        I: Iterator<Item = &'a str>,
+    {
         let mut out = BTreeSet::new();
-        let mut todo: Vec<&str> = ids.to_vec();
+        let mut todo: Vec<&'a str> = ids
+            .iter()
+            .filter_map(|id| self.find(id))
+            .map(|c| c.id.as_str())
+            .collect();
         while let Some(id) = todo.pop() {
             if let Some(c) = self.find(id) {
                 if out.insert(c.id.as_str()) {
-                    todo.extend(c.needs_on(target));
+                    todo.extend(needs(c));
                 }
             }
         }
         out
-    }
-
-    /// The components that need `id` on `target`.
-    pub fn needing_on<'a>(
-        &'a self,
-        id: &'a str,
-        target: Target,
-    ) -> impl Iterator<Item = &'a Component> + 'a {
-        self.components
-            .iter()
-            .filter(move |o| o.needs_on(target).any(|n| n == id))
     }
 
     /// The components in the order of the Tools page: by section, then by
@@ -322,6 +346,15 @@ impl Component {
                     .filter(|n| !self.needs.contains(n)),
             )
             .map(String::as_str)
+    }
+
+    /// What it needs on every target (`needs` alone). The saved choice
+    /// follows these only: `components.txt` is one for every system the
+    /// kit runs on, so a dependency of one target must not turn a
+    /// component on or off for the others; a run adds those of its own
+    /// target ([`Catalog::needs_only_on`]).
+    pub fn needs_on_every_target(&self) -> impl Iterator<Item = &str> + '_ {
+        self.needs.iter().map(String::as_str)
     }
 
     /// [`Component::needs_on`] as a list, for the interface.
@@ -613,47 +646,31 @@ impl Component {
     }
 }
 
-/// Which components the user wants, with the dependencies of the target it
-/// is for (`components.txt` is one for the whole kit, the dependencies are
-/// those of the system it runs on: C and C++ need Zig only on macOS and
-/// Linux).
-#[derive(Debug, Clone)]
+/// Which components the user wants. `components.txt` is one for the whole
+/// kit, read on every system it runs on: it follows the dependencies that
+/// hold on every target only (`needs`). Those of one target (C and C++
+/// need Zig on macOS and Linux) are added by the run on that target
+/// ([`Catalog::needs_only_on`]) and never saved, so opening or preparing
+/// the kit on Linux leaves the choice of Windows as it was.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Choice {
     chosen: BTreeMap<String, bool>,
-    target: Target,
 }
-
-/// The same components chosen, whatever target the dependencies were
-/// followed for.
-impl PartialEq for Choice {
-    fn eq(&self, other: &Choice) -> bool {
-        self.chosen == other.chosen
-    }
-}
-
-impl Eq for Choice {}
 
 impl Choice {
     fn path(kit: &Kit) -> PathBuf {
         kit.app_dir().join("components.txt")
     }
 
-    /// [`Choice::defaults_on`] the host's own target. For a kit, use
-    /// [`Choice::read_or_defaults`] or `defaults_on(catalog, kit.target())`.
+    /// The defaults of the catalog, with what they need (Claude Code is a
+    /// default, Git is not: Git comes with it). The same on every target.
     pub fn defaults(catalog: &Catalog) -> Choice {
-        Self::defaults_on(catalog, Target::detect())
-    }
-
-    /// The defaults of the catalog, with what they need on `target` (Claude
-    /// Code is a default, Git is not: Git comes with it).
-    pub fn defaults_on(catalog: &Catalog, target: Target) -> Choice {
         let mut choice = Choice {
             chosen: catalog
                 .all()
                 .iter()
                 .map(|c| (c.id.clone(), false))
                 .collect(),
-            target,
         };
         for c in catalog.all().iter().filter(|c| c.def) {
             choice.set(catalog, &c.id, true);
@@ -662,34 +679,20 @@ impl Choice {
         choice
     }
 
-    /// Reads `components.txt`, following the dependencies of the kit's
-    /// target; ids it does not mention take the default. Returns `None`
-    /// when the file does not exist (first start).
+    /// Reads `components.txt`; ids it does not mention take the default.
+    /// Returns `None` when the file does not exist (first start).
     pub fn read(kit: &Kit, catalog: &Catalog) -> Option<Choice> {
         let text = read_text(&Self::path(kit)).ok()?;
-        Some(Self::parse_on(&text, catalog, kit.target()))
+        Some(Self::parse(&text, catalog))
     }
 
-    /// [`Choice::read`], or the defaults for the kit's target on the first
-    /// start.
+    /// [`Choice::read`], or the defaults on the first start.
     pub fn read_or_defaults(kit: &Kit, catalog: &Catalog) -> Choice {
-        Self::read(kit, catalog).unwrap_or_else(|| Self::defaults_on(catalog, kit.target()))
+        Self::read(kit, catalog).unwrap_or_else(|| Self::defaults(catalog))
     }
 
-    /// The target whose dependencies it follows.
-    #[cfg(test)]
-    pub fn target(&self) -> Target {
-        self.target
-    }
-
-    /// [`Choice::parse_on`] the host's own target (tests).
-    #[cfg(test)]
     pub fn parse(text: &str, catalog: &Catalog) -> Choice {
-        Self::parse_on(text, catalog, Target::detect())
-    }
-
-    pub fn parse_on(text: &str, catalog: &Catalog, target: Target) -> Choice {
-        let mut choice = Self::defaults_on(catalog, target);
+        let mut choice = Self::defaults(catalog);
         for line in text.lines() {
             let line = line.trim().trim_start_matches('\u{feff}');
             let Some((id, value)) = line.split_once('=') else {
@@ -705,15 +708,16 @@ impl Choice {
     }
 
     /// Required components are always on; a component whose dependency on
-    /// its target is off is off too (`Repair-ComponentChoice`).
+    /// every target is off is off too (`Repair-ComponentChoice`). One of a
+    /// single target does not count: see [`Choice`].
     pub fn repair(&mut self, catalog: &Catalog) {
-        for id in catalog.locked_on(self.target) {
+        for id in catalog.locked() {
             self.chosen.insert(id.to_owned(), true);
         }
         loop {
             let mut changed = false;
             for c in catalog.all() {
-                if self.is_chosen(&c.id) && c.needs_on(self.target).any(|n| !self.is_chosen(n)) {
+                if self.is_chosen(&c.id) && c.needs_on_every_target().any(|n| !self.is_chosen(n)) {
                     self.chosen.insert(c.id.clone(), false);
                     changed = true;
                 }
@@ -728,11 +732,22 @@ impl Choice {
         self.chosen.get(id).copied().unwrap_or(false)
     }
 
-    /// Turns a component on or off, following the dependencies of its
+    /// The ids chosen, in catalog order.
+    pub fn chosen_ids<'a>(&self, catalog: &'a Catalog) -> Vec<&'a str> {
+        catalog
+            .all()
+            .iter()
+            .filter(|c| self.is_chosen(&c.id))
+            .map(|c| c.id.as_str())
+            .collect()
+    }
+
+    /// Turns a component on or off, following the dependencies on every
     /// target both ways, as the "Languages and tools" page of
-    /// nabre/dev-kit does.
+    /// nabre/dev-kit does. Those of one target only are not saved (see
+    /// [`Choice`]).
     pub fn set(&mut self, catalog: &Catalog, id: &str, on: bool) {
-        let locked = catalog.locked_on(self.target);
+        let locked = catalog.locked();
         self.set_with(catalog, &locked, id, on);
     }
 
@@ -742,13 +757,16 @@ impl Choice {
             return;
         }
         self.chosen.insert(id.to_owned(), on);
-        let target = self.target;
         if on {
-            for need in c.needs_on(target) {
+            for need in c.needs_on_every_target() {
                 self.set_with(catalog, locked, need, true);
             }
         } else {
-            for other in catalog.needing_on(id, target) {
+            for other in catalog
+                .all()
+                .iter()
+                .filter(|o| o.needs_on_every_target().any(|n| n == id))
+            {
                 self.set_with(catalog, locked, &other.id, false);
             }
         }

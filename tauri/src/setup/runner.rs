@@ -262,12 +262,20 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     } else {
         only_with_needs(catalog, &opts.only, &installed, target)?
     };
+    // What the chosen components need on this target only (Zig for C and
+    // C++ on macOS and Linux): not in the choice, yet not removed while
+    // they are chosen, also in a run that skips them.
+    let kept = catalog.needs_only_on(&choice.chosen_ids(catalog), target);
     let mut plan = Plan::default();
     // In the order of the Tools page: the progress goes down the list.
     for c in catalog.in_page_order() {
         if wanted.contains(c.id.as_str()) {
             plan.handle.push(c.id.clone());
-        } else if opts.only.is_empty() && !choice.is_chosen(&c.id) && c.is_present(ctx.kit) {
+        } else if opts.only.is_empty()
+            && !choice.is_chosen(&c.id)
+            && !kept.contains(c.id.as_str())
+            && c.is_present(ctx.kit)
+        {
             // Also when only part of it is there (an installation that
             // failed halfway).
             plan.remove.push(c.id.clone());
@@ -317,10 +325,12 @@ fn only_with_needs<'a>(
     Ok(wanted)
 }
 
-/// The choice without `skip` (system components and what they need cannot be
-/// skipped) and without what is unavailable on `target`; then,
+/// The choice, with what it needs on `target` only (never saved: see
+/// [`Choice`]), without `skip` (system components and what they need cannot
+/// be skipped) and without what is unavailable on `target`; then,
 /// transitively, without every component not installed yet (locked ones
-/// aside) that needs one neither planned nor installed.
+/// aside) that needs one neither planned nor installed. A need of this
+/// target skipped drops what needs it for this run only.
 fn chosen_without_skipped<'a>(
     catalog: &'a Catalog,
     choice: &Choice,
@@ -329,13 +339,22 @@ fn chosen_without_skipped<'a>(
     target: Target,
 ) -> HashSet<&'a str> {
     let locked = catalog.locked_on(target);
+    let can_plan = |c: &Component| {
+        crate::router::target::installable_on(c, target)
+            && (locked.contains(c.id.as_str()) || !skip.contains(&c.id))
+    };
     let mut wanted: HashSet<&str> = catalog
         .all()
         .iter()
-        .filter(|c| choice.is_chosen(&c.id) && crate::router::target::installable_on(c, target))
-        .filter(|c| locked.contains(c.id.as_str()) || !skip.contains(&c.id))
+        .filter(|c| choice.is_chosen(&c.id) && can_plan(c))
         .map(|c| c.id.as_str())
         .collect();
+    let planned: Vec<&str> = wanted.iter().copied().collect();
+    for id in catalog.needs_only_on(&planned, target) {
+        if catalog.find(id).is_some_and(can_plan) {
+            wanted.insert(id);
+        }
+    }
     loop {
         let missing_need: Vec<&str> = catalog
             .all()
@@ -397,7 +416,7 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
     let choice = match Choice::read(ctx.kit, catalog) {
         Some(choice) => choice,
         None => {
-            let choice = Choice::defaults_on(catalog, ctx.kit.target());
+            let choice = Choice::defaults(catalog);
             choice.write(ctx.kit, catalog)?;
             choice
         }

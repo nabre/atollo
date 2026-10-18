@@ -276,7 +276,7 @@ fn plans_follow_the_needs_of_the_target() {
     for target in Target::ALL {
         let catalog = Catalog::get();
         with_target_ctx(&format!("plan-needs-{}", target.as_str()), target, |ctx| {
-            let choice = Choice::defaults_on(catalog, target);
+            let choice = Choice::defaults(catalog);
             let p = plan_with(ctx, &choice, &["cc"], &[]).unwrap();
             let want: &[&str] = if target.is_unix() {
                 &["zig", "cc"]
@@ -297,12 +297,44 @@ fn plans_follow_the_needs_of_the_target() {
             assert_eq!(p.handle, ["cc"], "{target}");
             fs::remove_dir_all(ctx.kit.apps().join("zig")).unwrap();
 
-            let mut choice = Choice::defaults_on(catalog, target);
-            choice.set(catalog, "cc", true);
+            // The choice of the review: C and C++ on, Zig off (saved on
+            // Windows). A run here adds Zig where C and C++ need it, and
+            // removes neither.
+            let choice = Choice::parse("cc=1\nzig=0\n", catalog);
+            assert!(choice.is_chosen("cc") && !choice.is_chosen("zig"));
+            let p = plan_with(ctx, &choice, &[], &[]).unwrap();
+            let unix = target.is_unix();
+            assert!(p.handle.contains(&"cc".into()), "{target}");
+            assert_eq!(p.handle.contains(&"zig".into()), unix, "{target}");
+            assert!(!p.remove.contains(&"cc".into()), "{target}");
+            // Not installed yet: a skipped Zig drops C and C++ for this run
+            // only, the choice is not touched.
             let p = plan_with(ctx, &choice, &[], &["zig"]).unwrap();
+            assert_eq!(p.handle.contains(&"cc".into()), !unix, "{target}");
+            assert!(!p.remove.contains(&"cc".into()), "{target}");
+            assert!(choice.is_chosen("cc"));
+            // C and C++ skipped: its Zig is not planned either.
+            let p = plan_with(ctx, &choice, &[], &["cc"]).unwrap();
+            assert!(!p.handle.contains(&"zig".into()), "{target}");
+            // Zig present: kept where C and C++ need it, removed elsewhere
+            // as before (not chosen).
+            fake_install(ctx, "zig");
+            fake_install(ctx, "cc");
+            let p = plan_with(ctx, &choice, &[], &[]).unwrap();
+            assert_eq!(p.remove.contains(&"zig".into()), !unix, "{target}");
+            assert!(!p.remove.contains(&"cc".into()), "{target}");
+            // Zig skipped: C and C++ already installed stay planned, Zig is
+            // not removed for this run.
+            let p = plan_with(ctx, &choice, &[], &["zig"]).unwrap();
+            assert!(p.handle.contains(&"cc".into()), "{target}");
+            assert!(!p.handle.contains(&"zig".into()), "{target}");
+            assert_eq!(p.remove.contains(&"zig".into()), !unix, "{target}");
+            // Rust on Windows ARM64 brings C and C++ (and nothing else).
+            let rust = Choice::parse("rust=1\ncc=0\n", catalog);
+            let p = plan_with(ctx, &rust, &[], &[]).unwrap();
             assert_eq!(
                 p.handle.contains(&"cc".into()),
-                !target.is_unix(),
+                target == Target::WIN32_ARM64,
                 "{target}"
             );
         });
