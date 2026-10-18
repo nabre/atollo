@@ -26,7 +26,7 @@
 ### 2.1 Bug Risolti in `v2` (Commit `fa8a34d`)
 
 #### ✅ [RISOLTO IN v2] BUG-02 [ALTA / CONCORRENZA] — Race Condition Intra-Processo in `fsx::write_atomic`
-- **Posizione verificata**: [`tauri/src/fsx.rs:79-88`](file:///c:/Users/nabre/Projects/atollo/tauri/src/fsx.rs#L79-L88) e test in [`test/rust/fsx.rs:68-95`](file:///c:/Users/nabre/Projects/atollo/test/rust/fsx.rs#L68-L95)
+- **Posizione verificata**: [`tauri/src/fsx.rs:79-88`](../../../tauri/src/fsx.rs#L79-L88) e test in [`test/rust/fsx.rs:68-95`](../../../test/rust/fsx.rs#L68-L95)
 - **Come è stato risolto**:
   ```rust
   pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
@@ -47,7 +47,7 @@
 ### 2.2 Nuovi Bug Individuati nel Codice Multi-Piattaforma `v2` (`BUG-22..24`)
 
 #### 🆕 BUG-22 [MEDIA / SICUREZZA ARCHIVI] — `extract_tar_xz` invoca `tar -xJf` esterno senza validare i path con `safe_join`
-- **Posizione**: [`tauri/src/net/archive.rs:175-190`](file:///c:/Users/nabre/Projects/atollo/tauri/src/net/archive.rs#L175-L190)
+- **Posizione**: [`tauri/src/net/archive.rs:175-190`](../../../tauri/src/net/archive.rs#L175-L190)
 - **Analisi Tecnica**:
   ```rust
   fn extract_tar_xz(archive: &Path, dest: &Path) -> Result<()> {
@@ -68,7 +68,7 @@
   - Eseguire prima `tar -tJf <archive>` verificando che ogni riga superi `safe_join(dest, line)` (rifiutando path assoluti o `..`), oppure usare una crate Rust di decompressione XZ (`lzma-rs` o `xz2`) collegata in streaming a `extract_tar_stream(xz_reader, dest)`, riutilizzando così al 100% la logica sicura di `extract_tar_gz`!
 
 #### 🆕 BUG-23 [MEDIA / INSTALLER UNIX] — `Git::latest` su macOS/Linux passa `Kind::Zip` per un file `.tar.bz2`/`.conda` e `Nginx::latest` scarica i sorgenti C
-- **Posizione**: [`tauri/src/install/core.rs:28-75`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/core.rs#L28-L75) e [`tauri/src/install/web.rs:711-718`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/web.rs#L711-L718)
+- **Posizione**: [`tauri/src/install/core.rs:28-75`](../../../tauri/src/install/core.rs#L28-L75) e [`tauri/src/install/web.rs:711-718`](../../../tauri/src/install/web.rs#L711-L718)
 - **Analisi Tecnica**:
   1. **`Git` su macOS/Linux (`core.rs:28-75`)**:
      - Interroga `https://api.anaconda.org/package/conda-forge/git`, seleziona un file `.tar.bz2` o `.conda`, lo salva come `git-{version}-{subdir}.tar.bz2` ma restituisce `Release::single(..., Kind::Zip, Inner::Root)`.
@@ -77,10 +77,10 @@
      - Su `Os::Darwin | Os::Linux`, `nginx_asset_for` seleziona `^nginx-\d+\.\d+\.\d+\.tar\.gz$` dalle release GitHub di `nginx/nginx`.
      - Nelle release ufficiali di `nginx/nginx`, mentre `nginx-1.28.0.zip` contiene i binari precompilati per Win64 (`nginx.exe`), **`nginx-1.28.0.tar.gz` è l'archivio del codice sorgente C** (`configure`, `src/`, `auto/`)! Estrarlo non produce alcun eseguibile `nginx/sbin/nginx`, facendo fallire `check_key_for` con `"the archive does not contain nginx/sbin/nginx"`.
 - **Soluzione Raccomandata**:
-  - Sia per `Git` sia per `Nginx` (e `Apache`) su macOS/Linux, utilizzare un installer `custom` basato su **`micromamba create -p <target> -c conda-forge --override-channels git`** (o `nginx` / `httpd`), esattamente come già implementato e collaudato per **`R`** in [`tauri/src/install/native.rs:601-699`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/native.rs#L601-L699). In questo modo `micromamba` risolve ed estrae anche le librerie condivise necessarie (`openssl`, `pcre2`, `zlib`) con `rpath` rilocabile!
+  - Sia per `Git` sia per `Nginx` (e `Apache`) su macOS/Linux, utilizzare un installer `custom` basato su **`micromamba create -p <target> -c conda-forge --override-channels git`** (o `nginx` / `httpd`), esattamente come già implementato e collaudato per **`R`** in [`tauri/src/install/native.rs:601-699`](../../../tauri/src/install/native.rs#L601-L699). In questo modo `micromamba` risolve ed estrae anche le librerie condivise necessarie (`openssl`, `pcre2`, `zlib`) con `rpath` rilocabile!
 
 #### 🆕 BUG-24 [BASSA / INSTALLER UNIX & PYTHON] — `Php`/`Apache` ancora cablati su URL Windows e `Python::before_swap`/`finish` usa `python_minor(ctx)` fisso
-- **Posizione**: [`tauri/src/install/web.rs:407-432, 668-682`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/web.rs#L407-L432), [`tauri/src/install/core.rs:306, 342`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/core.rs#L306) e [`tauri/src/commands/mod.rs:141`](file:///c:/Users/nabre/Projects/atollo/tauri/src/commands/mod.rs#L141)
+- **Posizione**: [`tauri/src/install/web.rs:407-432, 668-682`](../../../tauri/src/install/web.rs#L407-L432), [`tauri/src/install/core.rs:306, 342`](../../../tauri/src/install/core.rs#L306) e [`tauri/src/commands/mod.rs:141`](../../../tauri/src/commands/mod.rs#L141)
 - **Analisi Tecnica**:
   1. In `install/web.rs`, `Php` e `Apache` scaricano ancora gli zip da `windows.php.net` e `apachelounge.com` anche quando `target.is_unix()`, mentre `setup/catalog.rs:189` (`translate_rel`) si aspetta `php/bin/php` e `apache/bin/httpd`.
   2. In `install/core.rs:237-254`, `Python::latest` scarica la minor line più recente disponibile (es. `3.14` se `settings.python_version` è `None`), ma in `before_swap` (riga 306) e `finish` (riga 342) chiama `python_minor(ctx)` che quando `settings.python_version` è `None` restituisce la costante `PYTHON_DEFAULT` (`"3.13"`). Di conseguenza, su Unix cerca `lib/python3.13/ensurepip/_bundled` anche dentro un'installazione di Python `3.14` o di una linea salvata `3.12`!
@@ -97,37 +97,37 @@
 
 | ID | Posizione (`file:linea`) | Stato `v2` | Sintesi Tecnica e Fix Richiesto |
 | :--- | :--- | :---: | :--- |
-| **BUG-01** | [`tauri/src/projects/serve.rs:215, 234-246`](file:///c:/Users/nabre/Projects/atollo/tauri/src/projects/serve.rs#L215) | **APERTO** | Usa `fs::canonicalize` (che segue symlink/junction violando `D-77`, rischio NTLM leak) e spawna 1 thread per connessione senza timeout né limite su `read_line`. **Fix**: usare `os::safe_path::is_file`/`is_dir`, `set_read_timeout(5s)`, `take(8192)` e limite thread concorrenti. |
-| ~~**BUG-02**~~ | [`tauri/src/fsx.rs:79-88`](file:///c:/Users/nabre/Projects/atollo/tauri/src/fsx.rs#L79-L88) | **✅ RISOLTO** | Race condition in `fsx::write_atomic` risolta in `fa8a34d` con `AtomicU64` (`TMP_SEQ`) e `with_file_name`. |
-| **BUG-03** | [`tauri/src/servers/mod.rs:715-740`](file:///c:/Users/nabre/Projects/atollo/tauri/src/servers/mod.rs#L715-L740) | **APERTO** | `WebServers::start` redirige stderr a null, non controlla `child.try_wait()` e restituisce `Ok(())` anche se `httpd`/`nginx` crasha subito o la porta non risponde dopo 6s. **Fix**: controllare `child.try_wait()` e restituire `Err` con le ultime righe di `error.log`. |
-| **BUG-04** | [`tauri/src/servers/mod.rs:648, 789`](file:///c:/Users/nabre/Projects/atollo/tauri/src/servers/mod.rs#L648) | **APERTO** | Race condition su `start()` concorrenti (controllo `pool.running` fuori dal lock) e reload Apache con `sleep(120ms)` insufficiente su Windows. **Fix**: lock per-pool e attesa rilascio porta TCP. |
-| **BUG-05** | [`tauri/src/projects/nginx.rs:213-228`](file:///c:/Users/nabre/Projects/atollo/tauri/src/projects/nginx.rs#L213-L228) | **APERTO** | `php-cgi.exe` avviato con `PHP_FCGI_MAX_REQUESTS=500` e handle `Child` scartato: dopo 500 richieste muore lasciando Nginx in `502 Bad Gateway`. **Fix**: `PHP_FCGI_MAX_REQUESTS=0` o supervisore processo. |
+| **BUG-01** | [`tauri/src/projects/serve.rs:215, 234-246`](../../../tauri/src/projects/serve.rs#L215) | **APERTO** | Usa `fs::canonicalize` (che segue symlink/junction violando `D-77`, rischio NTLM leak) e spawna 1 thread per connessione senza timeout né limite su `read_line`. **Fix**: usare `os::safe_path::is_file`/`is_dir`, `set_read_timeout(5s)`, `take(8192)` e limite thread concorrenti. |
+| ~~**BUG-02**~~ | [`tauri/src/fsx.rs:79-88`](../../../tauri/src/fsx.rs#L79-L88) | **✅ RISOLTO** | Race condition in `fsx::write_atomic` risolta in `fa8a34d` con `AtomicU64` (`TMP_SEQ`) e `with_file_name`. |
+| **BUG-03** | [`tauri/src/servers/mod.rs:715-740`](../../../tauri/src/servers/mod.rs#L715-L740) | **APERTO** | `WebServers::start` redirige stderr a null, non controlla `child.try_wait()` e restituisce `Ok(())` anche se `httpd`/`nginx` crasha subito o la porta non risponde dopo 6s. **Fix**: controllare `child.try_wait()` e restituire `Err` con le ultime righe di `error.log`. |
+| **BUG-04** | [`tauri/src/servers/mod.rs:648, 789`](../../../tauri/src/servers/mod.rs#L648) | **APERTO** | Race condition su `start()` concorrenti (controllo `pool.running` fuori dal lock) e reload Apache con `sleep(120ms)` insufficiente su Windows. **Fix**: lock per-pool e attesa rilascio porta TCP. |
+| **BUG-05** | [`tauri/src/projects/nginx.rs:213-228`](../../../tauri/src/projects/nginx.rs#L213-L228) | **APERTO** | `php-cgi.exe` avviato con `PHP_FCGI_MAX_REQUESTS=500` e handle `Child` scartato: dopo 500 richieste muore lasciando Nginx in `502 Bad Gateway`. **Fix**: `PHP_FCGI_MAX_REQUESTS=0` o supervisore processo. |
 
 ### 3.2 Bug di Severità MEDIA Aperti dalla `v1` (9)
 
 | ID | Posizione (`file:linea`) | Stato `v2` | Sintesi Tecnica e Fix Richiesto |
 | :--- | :--- | :---: | :--- |
-| **BUG-06** | [`ui/src/projectmcp.tsx:99-172`](file:///c:/Users/nabre/Projects/atollo/ui/src/projectmcp.tsx#L99-L172) | **APERTO** | Componente `ProjectMcpBox` completo e testato ma mai montato in [`ui/src/projects/page.tsx`](file:///c:/Users/nabre/Projects/atollo/ui/src/projects/page.tsx). |
-| **BUG-07** | [`tauri/src/servers/mod.rs:337-512`](file:///c:/Users/nabre/Projects/atollo/tauri/src/servers/mod.rs#L337-L512) | **APERTO** | `WebServers::list()` scansiona tutti i progetti con `detect::detect` e scrive `servers.json` su disco ogni 3s durante il polling UI. |
-| **BUG-08** | [`tauri/src/servers/mod.rs:293, 633`](file:///c:/Users/nabre/Projects/atollo/tauri/src/servers/mod.rs#L293) | **APERTO** | Conflitto `server_name localhost` e `default_server` tra il primo vhost (`idx == 0`) e il server fallback in `nginx_pool_conf`. |
-| **BUG-09** | [`ui/src/hooks.ts:92-107`](file:///c:/Users/nabre/Projects/atollo/ui/src/hooks.ts#L92-L107) & [`runs.ts:17`](file:///c:/Users/nabre/Projects/atollo/ui/src/projects/runs.ts#L17) | **APERTO** | Race condition nelle chiamate asincrone `useLoad` (manca `reqId`) e `useRuns` (`runList()` sovrascrive eventi `onRun`). |
-| **BUG-10** | [`ui/src/hooks.ts:120-141`](file:///c:/Users/nabre/Projects/atollo/ui/src/hooks.ts#L120-L141) | **APERTO** | Concorrenza non protetta in `useAction` (`setBusy(null)` nel `finally` azzera lo stato se due azioni si sovrappongono). |
-| **BUG-11** | [`ui/src/workbench/layout.tsx:57-104`](file:///c:/Users/nabre/Projects/atollo/ui/src/workbench/layout.tsx#L57-L104) | **APERTO** | Closure stale (`setWidth(width + d)`) e scrittura sincrona `localStorage` ad ogni pixel durante il drag di `Sash`. |
-| **BUG-12** | [`ui/src/guide/sections.tsx`](file:///c:/Users/nabre/Projects/atollo/ui/src/guide/sections.tsx) & [`model.ts`](file:///c:/Users/nabre/Projects/atollo/ui/src/guide/model.ts) | **APERTO** | La Guida chiama `tr(it, en)` omettendo `fr` e `de`. |
-| **BUG-13** | [`tauri/src/db/adminer.rs:137-139`](file:///c:/Users/nabre/Projects/atollo/tauri/src/db/adminer.rs#L137-L139) | **APERTO** | Usa `jobs::spawn` + `job.assign` invece di `jobs::spawn_in(&mut cmd, &job)`. |
-| **BUG-14** | [`tauri/src/detect/php.rs:44-47`](file:///c:/Users/nabre/Projects/atollo/tauri/src/detect/php.rs#L44-L47) | **APERTO** | Il rilevamento di WordPress non aggiunge `mysql` a `requires`. |
+| **BUG-06** | [`ui/src/projectmcp.tsx:99-172`](../../../ui/src/projectmcp.tsx#L99-L172) | **APERTO** | Componente `ProjectMcpBox` completo e testato ma mai montato in [`ui/src/projects/page.tsx`](../../../ui/src/projects/page.tsx). |
+| **BUG-07** | [`tauri/src/servers/mod.rs:337-512`](../../../tauri/src/servers/mod.rs#L337-L512) | **APERTO** | `WebServers::list()` scansiona tutti i progetti con `detect::detect` e scrive `servers.json` su disco ogni 3s durante il polling UI. |
+| **BUG-08** | [`tauri/src/servers/mod.rs:293, 633`](../../../tauri/src/servers/mod.rs#L293) | **APERTO** | Conflitto `server_name localhost` e `default_server` tra il primo vhost (`idx == 0`) e il server fallback in `nginx_pool_conf`. |
+| **BUG-09** | [`ui/src/hooks.ts:92-107`](../../../ui/src/hooks.ts#L92-L107) & [`runs.ts:17`](../../../ui/src/projects/runs.ts#L17) | **APERTO** | Race condition nelle chiamate asincrone `useLoad` (manca `reqId`) e `useRuns` (`runList()` sovrascrive eventi `onRun`). |
+| **BUG-10** | [`ui/src/hooks.ts:120-141`](../../../ui/src/hooks.ts#L120-L141) | **APERTO** | Concorrenza non protetta in `useAction` (`setBusy(null)` nel `finally` azzera lo stato se due azioni si sovrappongono). |
+| **BUG-11** | [`ui/src/workbench/layout.tsx:57-104`](../../../ui/src/workbench/layout.tsx#L57-L104) | **APERTO** | Closure stale (`setWidth(width + d)`) e scrittura sincrona `localStorage` ad ogni pixel durante il drag di `Sash`. |
+| **BUG-12** | [`ui/src/guide/sections.tsx`](../../../ui/src/guide/sections.tsx) & [`model.ts`](../../../ui/src/guide/model.ts) | **APERTO** | La Guida chiama `tr(it, en)` omettendo `fr` e `de`. |
+| **BUG-13** | [`tauri/src/db/adminer.rs:137-139`](../../../tauri/src/db/adminer.rs#L137-L139) | **APERTO** | Usa `jobs::spawn` + `job.assign` invece di `jobs::spawn_in(&mut cmd, &job)`. |
+| **BUG-14** | [`tauri/src/detect/php.rs:44-47`](../../../tauri/src/detect/php.rs#L44-L47) | **APERTO** | Il rilevamento di WordPress non aggiunge `mysql` a `requires`. |
 
 ### 3.3 Bug di Severità BASSA Aperti dalla `v1` (7)
 
 | ID | Posizione (`file:linea`) | Stato `v2` | Sintesi Tecnica e Fix Richiesto |
 | :--- | :--- | :---: | :--- |
-| **BUG-15** | [`ui/src/projects/site.tsx:191`](file:///c:/Users/nabre/Projects/atollo/ui/src/projects/site.tsx#L191) | **APERTO** | Mostra ancora `data\app\projects\{0}\apache` anziché `data\projects\{0}\apache` (`D-89`). |
-| **BUG-16** | [`ui/src/guide/widgets.tsx:304`](file:///c:/Users/nabre/Projects/atollo/ui/src/guide/widgets.tsx#L304) & [`sections.tsx`](file:///c:/Users/nabre/Projects/atollo/ui/src/guide/sections.tsx#L236) | **APERTO** | Riferimenti obsoleti a `data\backup\`, `.atollo.json` e vecchio nome pulsante rimozione sicura nella Guida. |
-| **BUG-17** | [`tauri/src/cli.rs:353`](file:///c:/Users/nabre/Projects/atollo/tauri/src/cli.rs#L353) | **APERTO** | Suggerimento CLI per download manuali indica `data\downloads` anziché `os::temp::downloads_dir(kit)` (`D-90`). |
-| **BUG-18** | [`ui/src/editorsettings.tsx:21-43`](file:///c:/Users/nabre/Projects/atollo/ui/src/editorsettings.tsx#L21-L43) & [`extensions.tsx:36`](file:///c:/Users/nabre/Projects/atollo/ui/src/extensions.tsx#L36) | **APERTO** | Errori di caricamento inghiottiti con resa bianca (`return null`). |
-| **BUG-19** | [`ui/src/App.tsx`](file:///c:/Users/nabre/Projects/atollo/ui/src/App.tsx), [`databases.tsx`](file:///c:/Users/nabre/Projects/atollo/ui/src/databases.tsx), [`eject.tsx`](file:///c:/Users/nabre/Projects/atollo/ui/src/eject.tsx) | **APERTO** | Errori di lettura "sticky" non azzerati al successivo caricamento riuscito. |
-| **BUG-20** | [`ui/src/workbench/dialog.tsx:37-60`](file:///c:/Users/nabre/Projects/atollo/ui/src/workbench/dialog.tsx#L37-L60) & [`versions/kit.tsx`](file:///c:/Users/nabre/Projects/atollo/ui/src/versions/kit.tsx#L156) | **APERTO** | Mancanza di focus trap in `ConfirmDialog` e navigazione frecce nei menu `versions/kit.tsx`. |
-| **BUG-21** | [`ui/src/workbench/layout.tsx:165,218,535`](file:///c:/Users/nabre/Projects/atollo/ui/src/workbench/layout.tsx#L165) | **APERTO** | Classe CSS `capitalize` impropria su titoli IT/FR e `aria-label="Editor"` non localizzato. |
+| **BUG-15** | [`ui/src/projects/site.tsx:191`](../../../ui/src/projects/site.tsx#L191) | **APERTO** | Mostra ancora `data\app\projects\{0}\apache` anziché `data\projects\{0}\apache` (`D-89`). |
+| **BUG-16** | [`ui/src/guide/widgets.tsx:304`](../../../ui/src/guide/widgets.tsx#L304) & [`sections.tsx`](../../../ui/src/guide/sections.tsx#L236) | **APERTO** | Riferimenti obsoleti a `data\backup\`, `.atollo.json` e vecchio nome pulsante rimozione sicura nella Guida. |
+| **BUG-17** | [`tauri/src/cli.rs:353`](../../../tauri/src/cli.rs#L353) | **APERTO** | Suggerimento CLI per download manuali indica `data\downloads` anziché `os::temp::downloads_dir(kit)` (`D-90`). |
+| **BUG-18** | [`ui/src/editorsettings.tsx:21-43`](../../../ui/src/editorsettings.tsx#L21-L43) & [`extensions.tsx:36`](../../../ui/src/extensions.tsx#L36) | **APERTO** | Errori di caricamento inghiottiti con resa bianca (`return null`). |
+| **BUG-19** | [`ui/src/App.tsx`](../../../ui/src/App.tsx), [`databases.tsx`](../../../ui/src/databases.tsx), [`eject.tsx`](../../../ui/src/eject.tsx) | **APERTO** | Errori di lettura "sticky" non azzerati al successivo caricamento riuscito. |
+| **BUG-20** | [`ui/src/workbench/dialog.tsx:37-60`](../../../ui/src/workbench/dialog.tsx#L37-L60) & [`versions/kit.tsx`](../../../ui/src/versions/kit.tsx#L156) | **APERTO** | Mancanza di focus trap in `ConfirmDialog` e navigazione frecce nei menu `versions/kit.tsx`. |
+| **BUG-21** | [`ui/src/workbench/layout.tsx:165,218,535`](../../../ui/src/workbench/layout.tsx#L165) | **APERTO** | Classe CSS `capitalize` impropria su titoli IT/FR e `aria-label="Editor"` non localizzato. |
 
 ---
 

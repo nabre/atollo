@@ -1,7 +1,7 @@
 # 05 — Artefatto Complementare: Criteri, Indicatori (KPI), Valutazioni e Rappresentazioni Grafiche
 
 > [!IMPORTANT]
-> Questo documento costituisce l'**artefatto complementare** richiesto per promuovere **grafiche, criteri di valutazione, indicatori quantitativi (KPI) e valutazioni analitiche** sui singoli aspetti del progetto Atollo (Atollo). È accompagnato dalla dashboard interattiva [`dashboard-valutazione.html`](file:///c:/Users/nabre/Projects/atollo/reports/dashboard-valutazione.html).
+> Questo documento costituisce l'**artefatto complementare** richiesto per promuovere **grafiche, criteri di valutazione, indicatori quantitativi (KPI) e valutazioni analitiche** sui singoli aspetti del progetto Atollo. È accompagnato dalla dashboard interattiva [`dashboard-valutazione.html`](../../../reports/dashboard-valutazione.html).
 
 ---
 
@@ -116,7 +116,7 @@ stateDiagram-v2
 
 | Indicatore Tecnico | Valore Rilevato nel Progetto | Benchmark Industria | Valutazione |
 | :--- | :---: | :---: | :---: |
-| **Occorrenze `unwrap()` / `expect()` in codice di produzione Rust** | **0** (`deny` in [`main.rs:7`](file:///c:/Users/nabre/Projects/atollo/tauri/src/main.rs#L7)) | `< 5` | **100 / 100** |
+| **Occorrenze `unwrap()` / `expect()` in codice di produzione Rust** | **0** (`deny` in [`main.rs:7`](../../../tauri/src/main.rs#L7)) | `< 5` | **100 / 100** |
 | **Comandi IPC protetti da `ensure_main(&webview)`** | **113 / 113 (100%)** | `100%` | **100 / 100** |
 | **Moduli di test Rust (`test/rust/**`) e UI (`test/ui/**`)** | **80+ file di test** (unitari, integrazione, contrasto temi, i18n) | Alta copertura | **92 / 100** |
 | **Lingue supportate nel catalogo UI/Backend** | **4** (`it`, `en`, `fr`, `de` — Guida parziale in FR/DE) | `>= 2` | **85 / 100** |

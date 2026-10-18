@@ -1,4 +1,4 @@
-# Atollo (Atollo) — Relazione Tecnica di Valutazione `v3`
+# Atollo — Relazione Tecnica di Valutazione `v3`
 ## Documento 07 · Piano Esecutivo Ingegnerizzato per Portabilità 100% e Multipiattaforma Universale
 
 **Oggetto**: Blueprint operativo in **6 Fasi** (organizzate per essere eseguite in parallelo da uno sciame di agenti o sequenzialmente senza conflitti di merge) con riferimenti esatti a file/righe di `HEAD 39b74bc` e **codice Rust / TypeScript completo pronto all'uso** per portare Atollo da **93,1 / 100** a **98,2 / 100** (**100% Portable** e **100% Multiplatform**).
@@ -17,18 +17,18 @@ flowchart LR
 
 | Fase | Obiettivo | File Toccati | Bug / Gap Chiusi |
 |---|---|---|---|
-| **Fase 1** | **Portabilità 100% Offline (Eliminazione `D-92`, `TempWork` in-kit, Gatekeeper macOS)** | [`kit.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/kit.rs), [`install/mod.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/mod.rs), [`install/core.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/core.rs), [`install/native.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/native.rs) | `B1` (`D-92`), `B3`, `B6`, `BUG-V3-06` |
-| **Fase 2** | **Hardening Sicurezza Web & Supervisione Dedicata `php-cgi`** | [`projects/apache.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/projects/apache.rs), [`projects/nginx.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/projects/nginx.rs), [`projects/run.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/projects/run.rs), [`servers/mod.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/servers/mod.rs) | `SEC-V3-01`, `SEC-V3-02`, `SEC-V3-03`, `BUG-V3-01`, `BUG-V3-02`, `BUG-V3-08` |
-| **Fase 3** | **Sblocco Compilazione Multi-OS (`Cargo.toml` + `os/*.rs` + `keyring.rs`)** | [`tauri/Cargo.toml`](file:///c:/Users/nabre/Projects/atollo/tauri/Cargo.toml), [`os/safe_path.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/safe_path.rs), [`os/temp.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/temp.rs), [`os/volume.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/volume.rs), [`os/instance.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/instance.rs), [`os/jobs.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/jobs.rs), [`os/processes.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/processes.rs), [`os/sessions.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/sessions.rs), [`agents/keyring.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/agents/keyring.rs) | `N-A1`, `B2`, `B7`, `BUG-V3-03`, `BUG-V3-07` |
-| **Fase 4** | **Abilitazione Web Stack (`php`, `apache`, `nginx`, `adminer`), `cc` su Unix e `r` su Win11 ARM64** | [`catalog/components.json`](file:///c:/Users/nabre/Projects/atollo/tauri/catalog/components.json), [`install/web.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/web.rs), [`install/db.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/db.rs), [`install/lang/cc.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/lang/cc.rs) | `B4`, `BUG-V3-04`, `BUG-V3-05`, `BUG-V3-09` |
-| **Fase 5** | **Resilienza Universale Distro Linux (`Portable Sysroot` per Fedora/RHEL, Deb 11, Alpine `musl`, NixOS)** | `tauri/src/install/sysroot.rs` (nuovo), [`env.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/env.rs) | `B5` (Compatibilità 18 distro OS) |
-| **Fase 6** | **Diagnostica Visuale Distro OS (`StatusPage`) & Focus Trap Universale (`useModalFocusTrap`)** | [`tauri/src/status.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/status.rs), `src/hooks/useModalFocusTrap.ts`, [`src/pages/StatusPage.tsx`](file:///c:/Users/nabre/Projects/atollo/src/pages/StatusPage.tsx) | Miglioramenti UX/A11y `D4`/`D5` |
+| **Fase 1** | **Portabilità 100% Offline (Eliminazione `D-92`, `TempWork` in-kit, Gatekeeper macOS)** | [`kit.rs`](../../../tauri/src/kit.rs), [`install/mod.rs`](../../../tauri/src/install/mod.rs), [`install/core.rs`](../../../tauri/src/install/core.rs), [`install/native.rs`](../../../tauri/src/install/native.rs) | `B1` (`D-92`), `B3`, `B6`, `BUG-V3-06` |
+| **Fase 2** | **Hardening Sicurezza Web & Supervisione Dedicata `php-cgi`** | [`projects/apache.rs`](../../../tauri/src/projects/apache.rs), [`projects/nginx.rs`](../../../tauri/src/projects/nginx.rs), [`projects/run.rs`](../../../tauri/src/projects/run.rs), [`servers/mod.rs`](../../../tauri/src/servers/mod.rs) | `SEC-V3-01`, `SEC-V3-02`, `SEC-V3-03`, `BUG-V3-01`, `BUG-V3-02`, `BUG-V3-08` |
+| **Fase 3** | **Sblocco Compilazione Multi-OS (`Cargo.toml` + `os/*.rs` + `keyring.rs`)** | [`tauri/Cargo.toml`](../../../tauri/Cargo.toml), [`os/safe_path.rs`](../../../tauri/src/os/safe_path.rs), [`os/temp.rs`](../../../tauri/src/os/temp.rs), [`os/volume.rs`](../../../tauri/src/os/volume.rs), [`os/instance.rs`](../../../tauri/src/os/instance.rs), [`os/jobs.rs`](../../../tauri/src/os/jobs.rs), [`os/processes.rs`](../../../tauri/src/os/processes.rs), [`os/sessions.rs`](../../../tauri/src/os/sessions.rs), [`agents/keyring.rs`](../../../tauri/src/agents/keyring.rs) | `N-A1`, `B2`, `B7`, `BUG-V3-03`, `BUG-V3-07` |
+| **Fase 4** | **Abilitazione Web Stack (`php`, `apache`, `nginx`, `adminer`), `cc` su Unix e `r` su Win11 ARM64** | [`catalog/components.json`](../../../tauri/catalog/components.json), [`install/web.rs`](../../../tauri/src/install/web.rs), [`install/db.rs`](../../../tauri/src/install/db.rs), [`install/lang/cc.rs`](../../../tauri/src/install/lang/cc.rs) | `B4`, `BUG-V3-04`, `BUG-V3-05`, `BUG-V3-09` |
+| **Fase 5** | **Resilienza Universale Distro Linux (`Portable Sysroot` per Fedora/RHEL, Deb 11, Alpine `musl`, NixOS)** | `tauri/src/install/sysroot.rs` (nuovo), [`env.rs`](../../../tauri/src/env.rs) | `B5` (Compatibilità 18 distro OS) |
+| **Fase 6** | **Diagnostica Visuale Distro OS (`StatusPage`) & Focus Trap Universale (`useModalFocusTrap`)** | [`tauri/src/status.rs`](../../../tauri/src/status.rs), `src/hooks/useModalFocusTrap.ts`, [`src/pages/StatusPage.tsx`](../../../src/pages/StatusPage.tsx) | Miglioramenti UX/A11y `D4`/`D5` |
 
 ---
 
 ## 2. FASE 1 — Portabilità 100% Offline: Eliminazione di `D-92` (`kit.rs`, `install/core.rs`, `install/native.rs`)
 
-### 2.1 Sostituzione di `relocate_non_relocatable` in [`tauri/src/kit.rs:515-545`](file:///c:/Users/nabre/Projects/atollo/tauri/src/kit.rs#L515-L545)
+### 2.1 Sostituzione di `relocate_non_relocatable` in [`tauri/src/kit.rs:515-545`](../../../tauri/src/kit.rs#L515-L545)
 Invece di distruggere la registrazione della versione di `git` e `r` creando `git.reinstall` / `r.reinstall` quando il kit si sposta, `kit.rs` invoca `crate::install::native::relocate_all_conda_envs(self)`:
 
 ```rust
@@ -54,7 +54,7 @@ fn relocate_conda_environments(&self) {
 }
 ```
 
-### 2.2 Wrapper Relativi `bin/R` e `bin/Rscript` su macOS e Linux ([`tauri/src/install/native.rs:731-738`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/native.rs#L731-L738))
+### 2.2 Wrapper Relativi `bin/R` e `bin/Rscript` su macOS e Linux ([`tauri/src/install/native.rs:731-738`](../../../tauri/src/install/native.rs#L731-L738))
 In `R::install_custom_at`:
 ```rust
         } else {
@@ -95,7 +95,7 @@ E impostare `fn relocatable(&self, _target: Target) -> bool { true }` sia per `G
 
 Di seguito il codice Rust esatto e completo per ciascuno dei moduli di sistema in `tauri/src/os/` affinché compilino e funzionino nativamente su **Windows, macOS e Linux**:
 
-### 3.1 [`tauri/src/os/safe_path.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/safe_path.rs#L31-L36)
+### 3.1 [`tauri/src/os/safe_path.rs`](../../../tauri/src/os/safe_path.rs#L31-L36)
 ```rust
 /// A symbolic link or (on Windows) a junction / reparse point, seen without following it.
 pub fn is_reparse(meta: &fs::Metadata) -> bool {
@@ -112,7 +112,7 @@ pub fn is_reparse(meta: &fs::Metadata) -> bool {
 }
 ```
 
-### 3.2 [`tauri/src/os/temp.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/temp.rs#L52-L72)
+### 3.2 [`tauri/src/os/temp.rs`](../../../tauri/src/os/temp.rs#L52-L72)
 ```rust
     fn at(dir: &Path) -> io::Result<TempWork> {
         let _ = fs::remove_dir_all(dir);
@@ -162,7 +162,7 @@ E in `sweep_one(dir: &Path)`:
     }
 ```
 
-### 3.3 [`tauri/src/os/volume.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/volume.rs) (Implementazione Unix con `statvfs` e `stat`)
+### 3.3 [`tauri/src/os/volume.rs`](../../../tauri/src/os/volume.rs) (Implementazione Unix con `statvfs` e `stat`)
 ```rust
 #[cfg(unix)]
 pub fn root_of(path: &Path) -> io::Result<PathBuf> {
@@ -222,7 +222,7 @@ pub fn same_volume(a: &Path, b: &Path) -> bool {
 }
 ```
 
-### 3.4 [`tauri/src/os/instance.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/instance.rs) (Implementazione Unix con `flock` e `UnixListener`)
+### 3.4 [`tauri/src/os/instance.rs`](../../../tauri/src/os/instance.rs) (Implementazione Unix con `flock` e `UnixListener`)
 ```rust
 #[cfg(unix)]
 pub struct MutexGuard(std::fs::File);
@@ -294,7 +294,7 @@ pub fn listen(kit: &Kit, on_message: impl Fn(String) + Send + 'static) {
 }
 ```
 
-### 3.5 [`tauri/src/os/processes.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/os/processes.rs) (Linux `/proc` + macOS `libproc`)
+### 3.5 [`tauri/src/os/processes.rs`](../../../tauri/src/os/processes.rs) (Linux `/proc` + macOS `libproc`)
 ```rust
 #[cfg(target_os = "linux")]
 pub fn all() -> Vec<Proc> {
@@ -404,7 +404,7 @@ pub fn running_from(all: &[Proc], folder: &Path) -> Vec<u32> {
 
 ## 4. FASE 4 — Abilitazione Completa di `php`, `apache`, `nginx` e `adminer` in `components.json`
 
-Una volta applicate le estensioni multi-OS in [`tauri/src/install/web.rs`](file:///c:/Users/nabre/Projects/atollo/tauri/src/install/web.rs) descritte nel [`Documento 04 §4`](file:///c:/Users/nabre/Projects/atollo/reports/v3/04-PORTABILITA-100-E-MULTIPIATTAFORMA.md), in [`tauri/catalog/components.json`](file:///c:/Users/nabre/Projects/atollo/tauri/catalog/components.json):
+Una volta applicate le estensioni multi-OS in [`tauri/src/install/web.rs`](../../../tauri/src/install/web.rs) descritte nel [`Documento 04 §4`](../../../reports/v3/04-PORTABILITA-100-E-MULTIPIATTAFORMA.md), in [`tauri/catalog/components.json`](../../../tauri/catalog/components.json):
 1. Rimuovere `"targets": ["win32-x64", "win32-arm64"]` da `php` (riga 103), `apache` (riga 115), `nginx` (riga 127) e `adminer` (riga 370), abilitandoli su tutti i **6 target**!
 2. In `r` (riga 336), aggiungere `"win32-arm64"` all'array `targets` (eseguito tramite Prism `win-64` su Windows 11 ARM64).
 3. In `vscodium-server` (riga 39), aggiungere `sha256ByTarget` per tutti i 6 target della release `1.112.01907`.

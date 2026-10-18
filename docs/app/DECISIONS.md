@@ -7,7 +7,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 - **Scelta.** Tutta la logica, i testi, il catalogo dei componenti e le estensioni del kit sono nell'exe. Tutto ciò che si scarica o si genera sta in `data\` accanto all'exe: programmi (`data\apps\win32-<arch>\`), stato, impostazioni, cache, temporanei. I progetti stanno in `projects\` nella radice, accanto all'exe (indicazione dell'utente, 14/10/2026).
 - **Motivo.** Indicazione dell'utente (14/10/2026). Un solo file da distribuire e da aggiornare; una sola cartella da salvare.
-- **Scartata.** Struttura del Atollo attuale (`setup\`, `apps\`, `projects\`, `data\` nella radice) con script richiamati dall'app.
+- **Scartata.** Struttura del kit di script PowerShell da cui l'app è nata (`setup\`, `apps\`, `projects\`, `data\` nella radice) con script richiamati dall'app.
 - **Conseguenze.** Il prompt chiedeva di riusare gli script e di non rompere `setup\Windows.cmd`: superato (PLAN, Q1). `setup\` non si aggiorna più da `main`: si aggiorna solo l'exe.
 - **Oggi** (16/10/2026). Ciò che il kit tiene per ogni progetto sta in `data\projects\<progetto>\` (D-89, non più in cinque posti). I file di passaggio (download, estrazioni, framework in creazione) non stanno più in `data\tmp` ma nella cartella temporanea del sistema, quando c'è (D-90, eccezione limitata): stato, impostazioni, programmi e copie restano in `data\`.
 
@@ -15,7 +15,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 - **Scelta.** `env.rs` produce le stesse variabili di `setup\windows\_env.cmd` (commit `a61a354`), con `CP_APPS = data\apps\win32-<arch>` e le stesse condizioni (per esempio `JAVA_HOME` solo se c'è `java\bin\java.exe`). PATH = cartelle del kit nell'ordine di `_env.cmd` + `System32`, `System32\Wbem`, `System32\WindowsPowerShell\v1.0`. Mai il PATH del PC.
 - **Impostazioni di rete** (proxy, `NODE_EXTRA_CA_CERTS`, `GEMINI_API_KEY`, `ATOLLO_LANG`, `ATOLLO_ALLOW_LAN`) in `data\app\settings.json`, modificate dalla pagina Impostazioni; nessun `proxy.cmd` eseguito.
-- **Test.** Tabella attesa per ogni variabile; con un Atollo attuale disponibile in CI, confronto con l'esito di `_env.cmd` (differenze ammesse elencate: radice di `apps`, PATH filtrato, `CP_MOVED_FROM`, `PROMPT`).
+- **Test.** Tabella attesa per ogni variabile; con il kit di script PowerShell disponibile in CI, confronto con l'esito di `_env.cmd` (differenze ammesse elencate: radice di `apps`, PATH filtrato, `CP_MOVED_FROM`, `PROMPT`).
 - **Scartata.** Eseguire `_env.cmd`: nel nuovo kit non c'è.
 
 ## D-02 Frontend: React + TypeScript + Tailwind + react-icons
@@ -81,7 +81,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 ## D-12 Rilevatori dei progetti in Rust
 
-- Porting di `core/detectors` (Node, PHP, Python, Rust, Go, statico; priorità desktop > web > comando; `panel.json`). Usati solo dall'app (editor pulito, Q4 = a): test su progetti di esempio presi dai casi del Atollo.
+- Porting di `core/detectors` (Node, PHP, Python, Rust, Go, statico; priorità desktop > web > comando; `panel.json`). Usati solo dall'app (editor pulito, Q4 = a): test su progetti di esempio presi dai casi di Atollo.
 
 ## D-13 Console fuori dall'editor
 
@@ -101,13 +101,13 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 ## D-16 Catalogo dei componenti incorporato
 
 - Il catalogo è un file JSON nel codice sorgente, incorporato con `include_str!` e validato da un test (id unici, `needs` esistenti, gruppi validi). Id liberi (il vincolo `^[a-z]+$` era degli script): `vscodium-server`, `pwsh` (`terminal`, Windows Terminal: tolto con D-44, tornato con D-68, tolto con D-95; WebView2 non è un componente: D-37).
-- Campi oltre a quelli del Atollo: `keys` (le altre parti: Maven, Ninja, Composer…; il componente è installato solo se ci sono tutte), `noArm64` (nessuna build per ARM64, nemmeno emulata: R), `remove` condiviso (`tools\vcruntime` di PHP e Apache se ne va con l'ultimo dei due), `version` e `sha256` per il gruppo `app` (D-58). Gruppi: `required`, `agents`, `languages`, `app`.
-- Scelta in `data\app\components.txt` (formato `id=1|0` del Atollo: semplice e leggibile a mano); versioni in `data\app\versions\<id>.txt`.
+- Campi oltre a quelli di Atollo: `keys` (le altre parti: Maven, Ninja, Composer…; il componente è installato solo se ci sono tutte), `noArm64` (nessuna build per ARM64, nemmeno emulata: R), `remove` condiviso (`tools\vcruntime` di PHP e Apache se ne va con l'ultimo dei due), `version` e `sha256` per il gruppo `app` (D-58). Gruppi: `required`, `agents`, `languages`, `app`.
+- Scelta in `data\app\components.txt` (formato `id=1|0` di Atollo: semplice e leggibile a mano); versioni in `data\app\versions\<id>.txt`.
 
 ## D-17 `cmd.exe` solo dove serve
 
 - Il motore non usa `cmd`. Restano solo il profilo "Atollo - cmd" del terminale e gli strumenti installati come `.cmd`/`.bat` (per esempio `mvn.cmd`, `gradle.bat`): avvio con `raw_arg` da una sola funzione (`jobs::batch_command`), che lancia `.\<nome>` dalla cartella dello script: il percorso non passa da `cmd`, che espanderebbe `%VAR%` anche fra virgolette (trovato il 14/10/2026: con una cartella `%SystemRoot%` lo script non partiva). Test `batch_files_in_odd_folders` con `a b (x) & y`, `50%`, `a!b`, `%SystemRoot%`, `%OS% & !OS!`.
-- **Oggi** `cmd.exe` gira anche: per le azioni dei progetti (`cmd.exe /d /s /c`, come nel Atollo, D-50); per `post-install.bat` di Git (D-29); per i `.cmd`/`.bat` della verifica finale (`jobs::batch_command`, D-38); per `data\kit\bin\agy.cmd` (D-41), che la console avvia dalla PowerShell del kit e che il profilo «Antigravity» dell'editor usa. Questi ultimi passano il percorso completo a `cmd`: un percorso del kit con `%VAR%` di una variabile esistente non funziona (limite noto, come D-33).
+- **Oggi** `cmd.exe` gira anche: per le azioni dei progetti (`cmd.exe /d /s /c`, come in Atollo, D-50); per `post-install.bat` di Git (D-29); per i `.cmd`/`.bat` della verifica finale (`jobs::batch_command`, D-38); per `data\kit\bin\agy.cmd` (D-41), che la console avvia dalla PowerShell del kit e che il profilo «Antigravity» dell'editor usa. Questi ultimi passano il percorso completo a `cmd`: un percorso del kit con `%VAR%` di una variabile esistente non funziona (limite noto, come D-33).
 
 ## D-18 Testi
 
@@ -115,7 +115,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 
 ## D-19 Toolchain
 
-- CI: `x86_64-pc-windows-msvc`, `aarch64-pc-windows-msvc`. Compilazione con il Rust `gnu` del Atollo: da verificare in fase 1.
+- CI: `x86_64-pc-windows-msvc`, `aarch64-pc-windows-msvc`. Compilazione con il Rust `gnu` di Atollo: da verificare in fase 1.
 
 ## D-20 Aggiornamento dell'exe
 
@@ -158,7 +158,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 - **Scambio**: la cartella vecchia viene rinominata prima di tutto; se Windows rifiuta (un file in uso) non cambia nulla e il componente risulta "in uso". Verificato con PowerShell aperto.
 - **Git**: `post-install.bat` di Git Portable eseguito nella sua cartella con l'ambiente del kit; riuscito se lo script si è cancellato (il suo codice di uscita è sempre 1, perché cmd non trova più il file che stava eseguendo).
 - **`-Skip` sugli obbligatori**: ignorato, come negli script del kit.
-- **Id con trattino**: ammessi (`vscodium-server`), perché il catalogo è dell'app e non viene letto dagli script del Atollo.
+- **Id con trattino**: ammessi (`vscodium-server`), perché il catalogo è dell'app e non viene letto dagli script PowerShell da cui l'app è nata.
 - **Annullamento**: immediato durante un download (il file parziale viene cancellato); altrimenti alla fine del passo in corso.
 
 ## D-23 Terminale esclusivo del kit
@@ -220,7 +220,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 - Matrice del kit linguaggio-estensione (`tauri/catalog/extensions.json`, D-71; fino al 14/10/2026 l'elenco `extensions.txt` con `@programma`) più `data\app\extensions.txt` dell'utente (`@programma` = solo se quel componente è nel kit); proposta una volta sola (`data\app\extensions-offered.txt`); una che fallisce viene ritentata al prossimo avvio dell'editor; CodeLLDB dalla release GitHub (SHA-256).
 - Installate con la riga di comando del server (`--install-extension`, Open VSX) **dopo** l'avvio dell'editor, non prima come chiedeva il prompt: misurate circa 35 s per estensione al primo giro, l'editor non può aspettare minuti. Le estensioni compaiono ricaricando la finestra; lo stato è in `editor_status.extensions`.
 - **Si fermano con il server** (correzione del 14/10/2026, trovata dalla prova reale della CI su un kit nuovo): l'installazione usa `node.exe` della cartella del server e gira in un job suo, che `Editor::stop` chiude. Prima restava accesa dopo lo stop, e un aggiornamento dell'editor o «Riavvia editor» la trovavano ancora nella cartella del server. Le estensioni interrotte non risultano offerte e si riprovano alla partenza successiva. Il job nasce quando parte la sincronizzazione, prima della lettura dei progetti, e l'installazione si avvia sotto il suo lucchetto: uno stop durante la lettura (che con la matrice di D-71 legge tutti i progetti) chiude il job e l'installazione non parte (trovato dalla CI il 14/10/2026: partiva dopo lo stop, fuori da ogni job).
-- Scartato: disattivare le estensioni di un programma tolto (il Atollo lo faceva scrivendo nel database SQLite di VSCodium). Restano installate: non fanno danni e si riattivano da sole se il programma torna.
+- Scartato: disattivare le estensioni di un programma tolto (Atollo lo faceva scrivendo nel database SQLite di VSCodium). Restano installate: non fanno danni e si riattivano da sole se il programma torna.
 
 ## D-37 WebView2 "Fixed Version" non è un componente
 
@@ -232,7 +232,7 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 - Firma Authenticode (`signature.rs`, `WinVerifyTrust` + soggetto del firmatario): Claude Code (`Anthropic`, revoca non verificabile = avviso), runtime VC++ (`O=Microsoft Corporation`, obbligatoria sull'exe e sulla DLL).
 - Installatori fatti di processi (`custom`): Rust (`rustup-init`, poi `rustup update` sul posto per non perdere crate e `cargo install`; voce "Rustup" in HKCU ripristinata com'era: verificato con il rustup dell'utente già presente), pnpm/yarn (`node npm-cli.js`, senza `cmd.exe`), R (micromamba con profilo nell'area di lavoro).
 - File `.bat`/`.cmd` (verifica di Kotlin): `jobs::batch_command`, `cmd /d /s /c ""percorso" argomenti"` con `raw_arg`; trovato in prova che `cmd /c` con un percorso tra virgolette e `&` si rompe.
-- Limite: Rust su un kit FAT32/exFAT non si installa (rustup richiede i collegamenti fisici): l'installazione si ferma con un errore. Il Atollo installava la toolchain sul disco del PC e copiava solo `rustup\`. Da portare (vedi CHANGELOG).
+- Limite: Rust su un kit FAT32/exFAT non si installa (rustup richiede i collegamenti fisici): l'installazione si ferma con un errore. Atollo installava la toolchain sul disco del PC e copiava solo `rustup\`. Da portare (vedi CHANGELOG).
 
 ## D-39 Verifica finale
 
@@ -240,20 +240,20 @@ Versioni pubblicate da almeno due settimane, fissate in `Cargo.lock`.
 
 ## D-40 Allineamento degli agenti in Rust
 
-- Porting completo di `setup/agents/*.js` (`agents_sync/`): istruzioni (copia a tre vie con stato e conflitti), skill (giunzioni NTFS con il crate `junction`, copie su FAT32/exFAT), MCP (Claude ↔ `mcp.json`, Codex `config.toml` a blocchi di testo, Antigravity solo i server del kit), regola del kit, cartelle attendibili, skill di progetto. Stessi file di stato e stessi marcatori del Atollo.
-- Miglioria: due passaggi di collegamento delle skill, così una skill nata in un agente arriva a tutti nello stesso allineamento (nel Atollo serviva il giro successivo).
+- Porting completo di `setup/agents/*.js` (`agents_sync/`): istruzioni (copia a tre vie con stato e conflitti), skill (giunzioni NTFS con il crate `junction`, copie su FAT32/exFAT), MCP (Claude ↔ `mcp.json`, Codex `config.toml` a blocchi di testo, Antigravity solo i server del kit), regola del kit, cartelle attendibili, skill di progetto. Stessi file di stato e stessi marcatori di Atollo.
+- Miglioria: due passaggi di collegamento delle skill, così una skill nata in un agente arriva a tutti nello stesso allineamento (in Atollo serviva il giro successivo).
 - Messaggi in inglese nel log (`data\app\logs\app.log`); l'interfaccia mostra lo stato, non i dettagli.
 - Quando: all'avvio dell'app, prima di ogni agente lanciato dall'app e quando un agente del kit termina, ovunque sia stato aperto (sorvegliante ogni 3 s). Scartato: il wrapper `claude.cmd`/`codex.cmd` nel PATH, che avrebbe aggiunto la domanda "Terminare il processo batch?" di cmd a ogni Ctrl+C.
 
 ## D-41 Accesso di Antigravity: `agy.cmd` del kit e sorvegliante dell'app
 
 - `data\kit\bin\agy.cmd` (primo nel PATH, anche per Git Bash con `bin\agy`): `Atollo.exe keyring restore`, `agy.exe`, `Atollo.exe keyring save`. In un file batch `cmd` aspetta la fine anche di un programma grafico. `agy.exe` non è nel PATH: non si scavalca il wrapper.
-- Il processo "watch" nascosto del Atollo è sostituito dal sorvegliante dell'app; inoltre il `save` a fine esecuzione toglie il segnale "in avvio" quando nessun agy del kit gira (trovato in prova: con un agy brevissimo il login restava in Windows fino al sorvegliante).
+- Il processo "watch" nascosto di Atollo è sostituito dal sorvegliante dell'app; inoltre il `save` a fine esecuzione toglie il segnale "in avvio" quando nessun agy del kit gira (trovato in prova: con un agy brevissimo il login restava in Windows fino al sorvegliante).
 - Verificato con Gestione credenziali reale: persistenza "solo sessione" al restore; dopo il save la credenziale del kit è sparita da Windows e il token aggiornato è nel kit; la credenziale `gemini:antigravity` dell'Antigravity installato sul PC non viene toccata.
 
 ## D-42 `claudeCode.environmentVariables` non serve nel server web
 
-- Nel Atollo l'estensione Atollo le scriveva perché VSCodium desktop poteva partire senza l'ambiente del kit. Nel server web l'extension host eredita l'ambiente del server, che è quello del kit: l'estensione Claude Code vede già `CLAUDE_CONFIG_DIR`, `DISABLE_UPDATES`, `NODE_OPTIONS`, `CLAUDE_CODE_GIT_BASH_PATH`.
+- In Atollo l'estensione Atollo le scriveva perché VSCodium desktop poteva partire senza l'ambiente del kit. Nel server web l'extension host eredita l'ambiente del server, che è quello del kit: l'estensione Claude Code vede già `CLAUDE_CONFIG_DIR`, `DISABLE_UPDATES`, `NODE_OPTIONS`, `CLAUDE_CODE_GIT_BASH_PATH`.
 
 ## D-43 Rilocazione
 
@@ -321,13 +321,13 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 
 ## D-50 Progetti: rilevamento e avvio in Rust
 
-- Porting di `core/detectors`, `core/processes.js`, `core/panel/ports.js` e `site.js` del Atollo (`detect/`, `run.rs`, `projects.rs`). Restano le stesse regole: priorità desktop > web > comando, progetti composti (`frontend\`, `backend\`), `panel.json` e il vecchio `pannello.json` con le chiavi italiane e `{porta}`, argomenti di porta per Vite/Next/Nuxt/Angular/Astro e gli altri.
-- Le azioni girano con `cmd.exe /d /s /c` e l'ambiente del kit, come nel Atollo (`shell: true`). PowerShell è stato scartato: `npm.ps1` consuma il `--` di `npm run dev -- --port`. `cmd.exe` serve solo da interprete delle righe di comando dei progetti: il terminale dell'utente resta la PowerShell del kit.
+- Porting di `core/detectors`, `core/processes.js`, `core/panel/ports.js` e `site.js` di Atollo (`detect/`, `run.rs`, `projects.rs`). Restano le stesse regole: priorità desktop > web > comando, progetti composti (`frontend\`, `backend\`), `panel.json` e il vecchio `pannello.json` con le chiavi italiane e `{porta}`, argomenti di porta per Vite/Next/Nuxt/Angular/Astro e gli altri.
+- Le azioni girano con `cmd.exe /d /s /c` e l'ambiente del kit, come in Atollo (`shell: true`). PowerShell è stato scartato: `npm.ps1` consuma il `--` di `npm run dev -- --port`. `cmd.exe` serve solo da interprete delle righe di comando dei progetti: il terminale dell'utente resta la PowerShell del kit.
 - Ogni azione gira in un job annidato in quello dell'app. «Ferma» chiude l'handle del job (`KILL_ON_JOB_CLOSE`): finisce tutto l'albero (npm → node → esbuild) senza `taskkill`, e chiudendo l'app si chiude tutto.
 - Porte 7100-7999 ricordate per azione in `data\app\ports.json`, così segnalibri, cookie e localStorage restano validi. La porta scelta dall'utente è bloccata: se è occupata l'avvio fallisce, non si sposta. Una porta è libera se nessuno risponde e se ci si può mettere in ascolto su `127.0.0.1` e su `::1`. Le porte 7000-7099 sono dell'editor: una porta scelta lì viene rifiutata.
 - **Rete locale.** Con «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» (Impostazioni, `ATOLLO_ALLOW_LAN=1`) i comandi trovati dall'app ascoltano su `0.0.0.0` al posto di `127.0.0.1`, per tutti i tipi di progetto, non solo Node.
 - **Componenti al volo.** Prima di un'azione l'app installa il componente del primo programma di ogni comando (`npm` → Node.js, `php` → PHP…), come in D-59.
-- I comandi di `panel.json` sono comandi arbitrari del progetto. Partono solo con un clic su «Avvia», come nel Atollo; la pagina ricorda che le cartelle di `projects` sono attendibili (D-53).
+- I comandi di `panel.json` sono comandi arbitrari del progetto. Partono solo con un clic su «Avvia», come in Atollo; la pagina ricorda che le cartelle di `projects` sono attendibili (D-53).
 - Clonazione: con il Git del kit (`git clone -- <url> <cartella>`, `GIT_TERMINAL_PROMPT=0`), accettando solo `owner/repo` di GitHub o indirizzi `https://` senza caratteri speciali. Niente `ssh://`, `file://` né argomenti che iniziano con `-`. I repository privati usano l'accesso di `gh` del kit.
 
 ## D-51 Server di file nell'exe
@@ -343,7 +343,7 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 
 ## D-53 Cartelle attendibili e sicurezza dei progetti (revisione di sicurezza)
 
-- Le sottocartelle di `projects` sono attendibili per Claude e Codex (comportamento del Atollo, `trust.js`), così gli agenti non chiedono conferma a ogni progetto. È un rischio accettato: un progetto clonato da fonte sconosciuta ha subito i permessi di un progetto fidato. Lo ricordano la pagina Progetti e Linguaggi e strumenti al primo avvio. Scartato: l'attendibilità progetto per progetto, che il Atollo aveva tolto perché gli agenti la chiedevano di continuo.
+- Le sottocartelle di `projects` sono attendibili per Claude e Codex (comportamento di Atollo, `trust.js`), così gli agenti non chiedono conferma a ogni progetto. È un rischio accettato: un progetto clonato da fonte sconosciuta ha subito i permessi di un progetto fidato. Lo ricordano la pagina Progetti e Linguaggi e strumenti al primo avvio. Scartato: l'attendibilità progetto per progetto, che Atollo aveva tolto perché gli agenti la chiedevano di continuo.
 - `keyring-before.json` contiene per pochi istanti le credenziali di Antigravity già presenti nel PC, per rimetterle com'erano dopo `agy`. Ora i loro segreti sono cifrati con DPAPI per l'utente di Windows (`CryptProtectData`, senza diritti di amministratore): una chiavetta persa o un file copiato non li rivela. Il file viene comunque cancellato al salvataggio successivo.
 - Windows Terminal interpretava `;` negli argomenti come separatore di comandi (una cartella chiamata `a; new-tab cmd` avrebbe aperto un altro programma). Con Windows Terminal del kit (D-68, tolto con D-95) ogni `;` veniva protetto. Nella console classica (D-57) la cartella è la cartella di lavoro del processo e un argomento con le virgolette viene rifiutato.
 
@@ -356,7 +356,7 @@ Chiusa il 14/10/2026: senza pseudo console il ConPTY aggiornato non serve e il c
 ## D-55 Chiusura e «Rimuovi l'unità»
 
 - Chiudendo la finestra con editor, console, progetti avviati o un'installazione in corso, l'app chiede conferma (`close-requested`) ed elenca cosa si chiude. Senza nulla aperto si chiude subito.
-- «Rimuovi l'unità» (porting di `Eject.ps1`) ferma installazione, progetti, finestre di editor e console, server dell'editor e ogni programma del kit (cime degli alberi di processi con l'eseguibile nel kit). Poi salva l'accesso di Antigravity e chiede di chiudere l'app, che tiene aperto il proprio exe. Non trova i programmi del PC che hanno solo un file del kit aperto: il Atollo li cercava nella riga di comando, che senza WMI non si legge. In quel caso Windows dirà «dispositivo in uso».
+- «Rimuovi l'unità» (porting di `Eject.ps1`) ferma installazione, progetti, finestre di editor e console, server dell'editor e ogni programma del kit (cime degli alberi di processi con l'eseguibile nel kit). Poi salva l'accesso di Antigravity e chiede di chiudere l'app, che tiene aperto il proprio exe. Non trova i programmi del PC che hanno solo un file del kit aperto: Atollo li cercava nella riga di comando, che senza WMI non si legge. In quel caso Windows dirà «dispositivo in uso».
 - Il dialogo di chiusura e la pagina elencano per categoria ciò che l'app ha avviato (editor, console, progetti, installazione) e, come singoli programmi, solo quelli del kit che **non** discendono dall'app (avviati da altri strumenti o rimasti da una sessione precedente). Quelli dell'app finiscono comunque con il suo job; elencarli anche come processi li mostrava due volte (trovato in prova). L'arresto invece colpisce tutti i programmi del kit.
 - Altre copie del kit: processi con l'eseguibile in un `<radice>\data\apps\win32-*` diverso, oppure un altro `Atollo.exe` con `data\app` accanto. Sono segnalate nella Home.
 
@@ -422,11 +422,11 @@ Dal 14/10/2026 è stata l'alternativa a Windows Terminal del kit (D-68); dal 16/
 
 ## D-61 Limiti d'uso e consumi degli agenti (`stats/`)
 
-- **Scelta.** Porting di `core/stats/*.js` del Atollo in `tauri/src/stats/` (un file per agente, `util.rs` per periodo, token e file di sessione). La pagina Agenti mostra per ogni agente installato i limiti del piano come «% usato» con l'ora in cui si azzerano (soglie 70 e 90 %), i crediti extra di Claude a parte, e i consumi di oggi e degli ultimi 7 giorni locali (token nuovi, dalla cache, in uscita; sessioni; ultima attività; grafico per giorno). Comando `agents_stats` (con `force` per «Aggiorna i consumi»).
+- **Scelta.** Porting di `core/stats/*.js` di Atollo in `tauri/src/stats/` (un file per agente, `util.rs` per periodo, token e file di sessione). La pagina Agenti mostra per ogni agente installato i limiti del piano come «% usato» con l'ora in cui si azzerano (soglie 70 e 90 %), i crediti extra di Claude a parte, e i consumi di oggi e degli ultimi 7 giorni locali (token nuovi, dalla cache, in uscita; sessioni; ultima attività; grafico per giorno). Comando `agents_stats` (con `force` per «Aggiorna i consumi»).
 - **Fonti, tutte nel kit.** Claude: `api.anthropic.com/api/oauth/usage` con l'accesso di `data\home\.claude\.credentials.json`; Codex: `chatgpt.com/backend-api/wham/usage` con `.codex\auth.json`, altrimenti l'ultimo evento `token_count` delle sessioni; Antigravity: `cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels` con l'accesso salvato in `data\antigravity\keyring.json`. Interfacce non documentate: possono smettere di funzionare dopo un aggiornamento di un agente, e allora la pagina mostra l'errore senza bloccare nulla.
 - **Accessi solo letti**, mai rinnovati (un rinnovo sostituirebbe il token che l'agente tiene); ogni token va solo al server del suo fornitore, mai nel log. Proxy e certificati come i download (`net::Net::api_json`, un solo tentativo, 15 s).
-- **Server interrogati con parsimonia:** al massimo ogni 2 minuti, ogni 20 s con «Aggiorna»; dopo un 429 nessuna richiesta prima di `Retry-After` (o di un'attesa che raddoppia da 2 a 30 minuti), e restano i limiti letti per ultimi. Il Atollo condivideva questa cache fra le finestre di VSCodium con un file; nell'app c'è un solo processo, quindi resta in memoria.
-- **Scartato: il language server locale di Antigravity.** Il Atollo chiedeva le quote anche ad Antigravity in esecuzione, trovandone il processo dalla riga di comando (PowerShell `Get-CimInstance`) e le porte (`netstat`), compreso un Antigravity installato sul PC con un altro account. Nell'app servirebbero letture della riga di comando di processi altrui e un TLS senza verifica verso 127.0.0.1, per dati che il server di Google dà già con l'accesso del kit. Limite: mentre `agy` è aperto il suo accesso sta in Windows e il token del kit può essere scaduto; le quote tornano dopo il salvataggio dell'accesso.
+- **Server interrogati con parsimonia:** al massimo ogni 2 minuti, ogni 20 s con «Aggiorna»; dopo un 429 nessuna richiesta prima di `Retry-After` (o di un'attesa che raddoppia da 2 a 30 minuti), e restano i limiti letti per ultimi. Atollo condivideva questa cache fra le finestre di VSCodium con un file; nell'app c'è un solo processo, quindi resta in memoria.
+- **Scartato: il language server locale di Antigravity.** Atollo chiedeva le quote anche ad Antigravity in esecuzione, trovandone il processo dalla riga di comando (PowerShell `Get-CimInstance`) e le porte (`netstat`), compreso un Antigravity installato sul PC con un altro account. Nell'app servirebbero letture della riga di comando di processi altrui e un TLS senza verifica verso 127.0.0.1, per dati che il server di Google dà già con l'accesso del kit. Limite: mentre `agy` è aperto il suo accesso sta in Windows e il token del kit può essere scaduto; le quote tornano dopo il salvataggio dell'accesso.
 - **Periodo.** I giorni sono quelli locali di Windows (`SystemTimeToTzSpecificLocalTime`), giusti anche al cambio dell'ora legale; niente crate per le date.
 
 ## D-62 Editor, terminale e agenti solo nella cartella di un progetto
@@ -494,7 +494,7 @@ Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le consol
 
 ## D-70 Account GitHub del kit, uno per tutto, e pagina GitHub
 
-- **Scelta dell'utente** (14/10/2026): l'estensione `setup/extensions/github-repos` del Atollo (elenco dei repository dell'account, clone, rinomina, eliminazione) diventa una pagina nativa dell'app, non un'estensione dell'editor (coerente con Q4). L'accesso deve essere «un tutt'uno» con quello dell'editor: un solo account GitHub per l'app, Git (editor, console, agenti) e GitHub CLI.
+- **Scelta dell'utente** (14/10/2026): l'estensione `setup/extensions/github-repos` degli script PowerShell da cui l'app è nata (elenco dei repository dell'account, clone, rinomina, eliminazione) diventa una pagina nativa dell'app, non un'estensione dell'editor (coerente con Q4). L'accesso deve essere «un tutt'uno» con quello dell'editor: un solo account GitHub per l'app, Git (editor, console, agenti) e GitHub CLI.
 - **L'account è quello di GitHub CLI** (`gh`, componente di sistema sempre installato) in `data\gh` con `--insecure-storage`: viaggia con il kit e non entra nella Gestione credenziali. Gli agenti usavano già `gh`. Scartato l'account del menu Account di VSCodium: nell'editor web a `127.0.0.1` l'estensione `github-authentication` gira nel web worker, dove resta solo il flusso con reindirizzamento verso i client riconosciuti (vscode.dev, github.dev, app desktop), e i suoi segreti sono nei dati di WebView2. Scartato anche Git Credential Manager: il suo token non ha `read:org` e l'app non lo legge senza aprirne la finestra.
 - **Accesso.** `gh auth login --hostname github.com --git-protocol https --web --insecure-storage --scopes workflow` senza console (stdin nullo, stderr in pipe, nel job dell'app). Senza terminale `gh` non chiede «Premi Invio»: scrive il codice monouso (`! First copy your one-time code: XXXX-XXXX`) e aspetta l'autorizzazione (flusso «device» di GitHub). L'app mostra il codice, apre `https://github.com/login/device` nel browser del PC (indirizzo fisso, non letto dall'output) e alla fine manda l'evento `github`. «Annulla» ferma `gh`. `workflow` si aggiunge a `repo`, `read:org`, `gist` di `gh`, come chiede `gh auth setup-git`, per poter fare push dei workflow di Actions.
 - **Git usa lo stesso account.** Nel `.gitconfig` del kit (`data\home`), per `https://github.com` e `https://gist.github.com`: `helper =` (azzera Git Credential Manager ereditato dalla configurazione di sistema, solo per questi host) e `helper = !gh auth git-credential`. Si trova `gh` nel PATH del kit, senza il suo percorso, quindi l'impostazione resta valida dopo uno spostamento del kit. Non si usa `gh auth setup-git`, che scrive il percorso assoluto. Dopo l'accesso il helper viene scritto. Dopo l'uscita, o all'avvio senza accesso, viene tolto e Git torna com'era. Un helper scritto dall'utente per questi host resta com'è. All'avvio dell'app il helper segue lo stato di `gh`, anche dopo `gh auth login` o `logout` in una console.
@@ -739,7 +739,7 @@ Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le consol
 
 ## D-88 Interfaccia con i controlli di VSCodium e un solo tema per app ed editor
 
-- **Richiesta dell'utente** (15/10/2026): sviluppare l'app con componenti identici a VSCodium, così app ed editor hanno lo stesso modello con il brand Atollo (oggi Atollo, D-124). Proposto da lui `@vscode/webview-ui-toolkit`: archiviato da Microsoft il 6/1/2025 (dismesso dal 1/1/2025), costruito su FAST, con wrapper React per le versioni 16-18 (l'app usa React 19). **Scelta dell'utente**: `@vscode-elements/elements` 2.5.1, web components Lit con l'aspetto di VS Code e mantenuti, con `@vscode-elements/react-elements` 2.4.0 e `@vscode/codicons` 0.0.45 (l'ultima stabile: il tag `latest` di npm punta a una versione di prova). Versioni fissate.
+- **Richiesta dell'utente** (15/10/2026): sviluppare l'app con componenti identici a VSCodium, così app ed editor hanno lo stesso modello con il brand Atollo. Proposto da lui `@vscode/webview-ui-toolkit`: archiviato da Microsoft il 6/1/2025 (dismesso dal 1/1/2025), costruito su FAST, con wrapper React per le versioni 16-18 (l'app usa React 19). **Scelta dell'utente**: `@vscode-elements/elements` 2.5.1, web components Lit con l'aspetto di VS Code e mantenuti, con `@vscode-elements/react-elements` 2.4.0 e `@vscode/codicons` 0.0.45 (l'ultima stabile: il tag `latest` di npm punta a una versione di prova). Versioni fissate.
 - **Variabili fuori da VS Code.** I componenti leggono le variabili `--vscode-*` che VS Code mette nelle sue webview; nell'app non le mette nessuno. Le genera `themes.py` dallo stesso tema dell'editor (ARCHITECTURE.md, «Tema»), in un file CSS servito dall'app: niente `<style>` in linea né `setProperty`, la CSP non cambia. Le chiavi che il tema non ha vengono dalle tabelle Dark Modern e Light Modern di `@vscode-elements/webview-playground` (scartato: portare in Python il registro dei colori di VS Code con le sue trasformazioni, più lavoro per lo stesso risultato), più i colori che VS Code deriva dalle chiavi del brand (`DERIVED`), altrimenti resterebbe il blu di VS Code dove l'editor mostra il verde. I `--vsc-*` di prima diventano alias: una fonte sola.
 - **Wrapper o tag.** Campi, aree di testo e select mandano un `change` che non risale e React ascolta alla radice: con i tag scritti a mano `onChange` non scatterebbe. Per loro i wrapper di `@vscode-elements/react-elements`; gli altri componenti come tag, con i tipi JSX in `workbench\elements.ts`. Valori controllati con `useControlled`: il componente non ha legame nei due sensi, un valore rifiutato dalla pagina va riscritto anche nell'input interno.
 - **Nativi dove il componente toglie qualcosa.** Checkbox, radio e pulsanti a icona tengono il controllo nello shadow root: etichette esterne (`<label for>`), ruoli e nomi cercati dai test e dall'Assistente vocale non ci arrivano, e il pulsante della barra non ha lo stato spento. Lo stesso per tabella (niente didascalia, colonne uguali), riquadri e schede (intestazioni classiche, non quelle moderne di VSCodium 1.140). Restano elementi nativi disegnati con le variabili e le misure dei componenti: stesso aspetto, stessa accessibilità.
@@ -1145,9 +1145,9 @@ Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le consol
 
 ## D-124 Il nome è Atollo ovunque
 
-- **Richiesta** ([issue #8](https://github.com/nabre/atollo/issues/8)). `version`, la pagina degli aggiornamenti, il titolo della finestra e dell'editor, l'aiuto, i messaggi d'errore e la descrizione dell'editor nel catalogo dicevano ancora «Atollo», mentre il prodotto è Atollo ([brand](../brand/MARKETING.md): nome «Atollo», binario `Atollo`).
-- **Scelta.** Nessun rilascio pubblico ha avuto il vecchio nome: «Atollo» diventa «Atollo» in `tauri/src`, `ui/src` (le quattro lingue), nei cataloghi (`tauri/i18n/catalog.json`, `components.json`, `relations.json`), nei file di `runtime/` scritti da phpMyAdmin, nei test e nei documenti dell'app. In francese «de Atollo» diventa «d'Atollo». La storia (CHANGELOG, rapporti in `docs/reports`) resta com'era.
-- **Nomi salvati.** Nessuna variabile d'ambiente, servizio del portachiavi, chiave del registro o file del kit porta il nome (le variabili sono `ATOLLO_*`, i lock `Atollo-*`, i marcatori dei file degli agenti `Atollo:`), quindi un kit fatto oggi non si rompe. Restano come testo libero, riscritti al prossimo uso: la regola del kit per gli agenti (`rules/atollo.md`, riscritta a ogni avvio), il prefisso `[Atollo]` nei log dei progetti, la pagina `index.php` di Apache (scritta solo in una cartella `htdocs` vuota). Gli id dei temi `Atollo Dark` e `Atollo Light` restano in `editor/cfg.rs` fra quelli che il kit sostituisce con i temi Atollo, così un `settings.json` dell'editor che li ha ancora li aggiorna.
+- **Richiesta** ([issue #8](https://github.com/nabre/atollo/issues/8)). `version`, la pagina degli aggiornamenti, il titolo della finestra e dell'editor, l'aiuto, i messaggi d'errore e la descrizione dell'editor nel catalogo non usavano ancora il nome del prodotto, Atollo ([brand](../brand/MARKETING.md): nome «Atollo», binario `Atollo`).
+- **Scelta.** Nessun rilascio pubblico ha avuto un altro nome: i testi dicono «Atollo» in `tauri/src`, `ui/src` (le quattro lingue), nei cataloghi (`tauri/i18n/catalog.json`, `components.json`, `relations.json`), nei file di `runtime/` scritti da phpMyAdmin, nei test e nei documenti dell'app. In francese «d'Atollo».
+- **Nomi salvati.** Variabili d'ambiente, lock, marcatori e file del kit: D-126.
 
 ## D-125 Ambienti conda: nel PATH solo i programmi del componente
 
@@ -1156,3 +1156,11 @@ Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le consol
 - **Scelta.** `kit-bin` accanto a `bin` in ogni ambiente, con un lanciatore `sh` per ogni programma del pacchetto del componente (`conda::write_launchers`): l'elenco è quello del record del pacchetto in `conda-meta` (`files` sotto `bin/`, pacchetti `ruby`, `mongodb`, `r-base`, scelti da `Installer::conda_programs`), quindi segue la versione senza elenchi scritti a mano. Il lanciatore trova la sua cartella da `$0` (nessun percorso assoluto scritto: regge uno spostamento e una cartella con uno spazio) e avvia `bin/<programma>` con quella `bin` in testa al PATH **del solo programma**, come i lanciatori di R su Windows: Ruby, R e MongoDB e i programmi che avviano vedono gli strumenti dell'ambiente come prima, il terminale no. `env.rs` mette `kit-bin` nel PATH al posto di `bin`; un ambiente senza `kit-bin` resta con `bin`.
 - **Quando si scrivono.** In `Installer::after_conda` di Ruby, MongoDB e R, quindi dopo l'installazione dalla rete e dopo la reinstallazione dagli archivi conservati (D-118); `kit-bin` si rifà da capo ogni volta. All'avvio (`versions::side_by_side::refresh`, `conda::launchers_of_older_installations`) per ogni linea installata prima di questa versione che non l'ha. Su Windows niente: Ruby è RubyInstaller, MongoDB l'archivio del fornitore e R ha già i suoi lanciatori in `bin`. SQLite su Linux ARM64 ha già il suo lanciatore alla chiave (`sqlite/sqlite3`), il `make` di C/C++ gli shim di `cc/bin`.
 - **Prove.** Unitarie (`install/conda`): solo i programmi del pacchetto (un pacchetto con lo stesso inizio del nome e le dipendenze esclusi), lanciatori vecchi tolti, eseguibili, errore senza record; un lanciatore avviato da un'altra cartella e attraverso un percorso con uno spazio passa gli argomenti e mette la sua `bin` in testa; all'avvio solo le linee senza `kit-bin` e mai su Windows. `env`: `kit-bin` nel PATH al posto di `bin`, `bin` senza lanciatori. Reale in WSL Ubuntu 24.04 su ambienti conda-forge veri in una cartella con uno spazio: `ruby -v`, `gem`, `rake`, `bundle`, `ruby -ropenssl`, `mongod --version`, `R --version`, `Rscript -e 'R.home()'` rispondono dai lanciatori, e `tput` e `openssl` del terminale sono quelli del sistema.
+
+## D-126 Atollo ovunque, anche negli identificatori
+
+- **Richiesta dell'utente** (19/10/2026). Tutto coerente con il nome del prodotto ([brand](../brand/MARKETING.md)), anche i nomi interni: nessun rilascio pubblico, quindi nessuna compatibilità dovuta con i nomi di prima.
+- **Scelta.** Diventano `atollo`/`Atollo`/`ATOLLO` nel codice (Rust, TypeScript, script di `runtime/` e `scripts/`, workflow), nei test, nei cataloghi, nelle traduzioni e in tutti i documenti, storia compresa (CHANGELOG, decisioni, rapporti in `docs/reports`). Nomi salvati o visibili fuori dall'app: le variabili d'ambiente `ATOLLO_*` (34, fra cui `ATOLLO_TEST_KIT`, `ATOLLO_LANG`, `ATOLLO_ALLOW_LAN`, `ATOLLO_TERMINAL`, `ATOLLO_EXE`, `ATOLLO_FCGI_KEY`, `ATOLLO_DB_*`, `ATOLLO_PMA_*`, `ATOLLO_NO_UPDATE`); i file e le cartelle di lavoro del kit (`.atollo-version`, `.atollo-new`, `.atollo-move`, `.atollo-link-*`, `.atollo-linux-copy`); i lock e le pipe (`Atollo-App-<id>`, `Atollo-Prepare-<id>`, `Atollo-db-json-*`, `Atollo-agy-keyring-*`); i parametri di PHP `atollo.router` e `atollo.fcgi_key`; il parametro `?atollo=` di phpMyAdmin; i segni dei blocchi dei file degli agenti (`# >>> Atollo: …`) e la regola `rules/atollo.md`; i profili del terminale dell'editor (`Atollo`, `Atollo - Git Bash`, `Atollo - Bash`…); i nomi interni dell'editor (`__atollo`, `atollo-titlebar`, `atollo/disabled`); l'user agent `Atollo/<versione> (+https://github.com/nabre/atollo)`; ogni link a `github.com/nabre/atollo`. I link dei rapporti a una cartella locale diventano relativi al repository.
+- **Tolto.** Gli id dei temi dell'editor del nome di prima in `editor/cfg.rs` (D-124): un `settings.json` che li avesse ancora resta col tema scelto dall'utente.
+- **Conseguenze.** Un kit fatto prima di questa versione perde ciò che dipende dai nomi vecchi: i blocchi del kit in `config.toml` di Codex e i profili del terminale si riscrivono accanto ai vecchi, che restano come testo dell'utente; la vecchia regola degli agenti resta accanto a `rules/atollo.md`; le variabili d'ambiente vecchie impostate a mano non valgono più. Accettato: non c'è un kit pubblico da conservare.
+- **Restano** con il nome di prima solo i riferimenti al repository da cui l'app è nata, che è un altro progetto (`nabre/atollo` e il suo `Prepare-Atollo.ps1`, citati come origine dei porting), e `w64devkit`, un programma di terzi.
