@@ -277,8 +277,9 @@ mod unix {
                 .args(["find-generic-password", "-s", service, "-a", user, "-w"])
                 .output()
                 .context(SECURITY)?;
-            // 44: no such item.
-            if !o.status.success() {
+            // Only 44 means "no such item"; a locked or refused Keychain
+            // is an error, so restore and save stop before touching anything.
+            if !super::mac_found(o.status.code())? {
                 continue;
             }
             let raw = super::mac_decode(&String::from_utf8_lossy(&o.stdout))?;
@@ -877,6 +878,19 @@ fn restore_checked(
             return Err(e.context("the Antigravity sign-in was not moved"));
         }
     };
+    let moved = move_in(&f, store, &existing);
+    if moved.is_err() && !f.seen.exists() {
+        // A sealing key made for a keyring-before.json never written.
+        store.forget_key();
+    }
+    moved?;
+    fs::write(&f.starting, b"")?;
+    Ok(())
+}
+
+/// This computer's own sign-in sealed into keyring-before.json, the kit's
+/// written into the store.
+fn move_in(f: &Files, store: &dyn Store, existing: &[Item]) -> Result<()> {
     // Every secret of this computer sealed first: if one cannot be (no
     // sealing key), nothing is written anywhere (fail closed, as DPAPI).
     let mut before: Vec<Item> = existing
@@ -916,9 +930,7 @@ fn restore_checked(
             kit: Some(true),
         });
     }
-    save_file(&f.seen, &before)?;
-    fs::write(&f.starting, b"")?;
-    Ok(())
+    save_file(&f.seen, &before)
 }
 
 /// The secrets (base64) of the login saved in `dir` (`data\antigravity`),
