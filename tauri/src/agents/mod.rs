@@ -5,7 +5,9 @@
 //!
 //! Claude Code, Codex and Antigravity: state, launch, sign-out.
 //!
-//! - signed in: Claude `.claude\.credentials.json` (OAuth token) or
+//! - signed in: Claude `.claude\.credentials.json` (OAuth token), the
+//!   token of `claude setup-token` in `data/agents/claude/oauth-token`
+//!   (macOS, `claude_token`, given as `CLAUDE_CODE_OAUTH_TOKEN`) or
 //!   `ANTHROPIC_API_KEY`; Codex `.codex\auth.json` (token or API key);
 //!   Antigravity a login saved in the kit (`agents/keyring.rs`) or `GEMINI_API_KEY`
 //!   (same sources as nabre/atollo `core/stats/*.js`);
@@ -18,6 +20,7 @@
 //! - a watcher thread aligns when an agent of the kit ends anywhere (editor
 //!   terminals, consoles) and saves Antigravity's login left in Windows.
 
+pub mod claude_token;
 pub mod keyring;
 pub mod relocate;
 pub mod stats;
@@ -59,6 +62,8 @@ pub struct AgentInfo {
     /// How: "account", "api key".
     pub sign_in_kind: Option<String>,
     pub running: bool,
+    /// "Collega con un token" is offered (Claude Code on macOS).
+    pub token_link: bool,
 }
 
 fn json(path: &Path) -> Option<Value> {
@@ -77,6 +82,8 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
                 .and_then(Value::as_str))
             {
                 Some("account")
+            } else if claude_token::read(kit).is_some() {
+                Some("token")
             } else if has(env.get("ANTHROPIC_API_KEY")) {
                 Some("api key")
             } else {
@@ -147,6 +154,7 @@ pub fn status(kit: &Kit, env: &KitEnv) -> Vec<AgentInfo> {
                 signed_in: kind.is_some(),
                 sign_in_kind: kind.map(str::to_owned),
                 running: now.contains(&c.id),
+                token_link: c.id == "claude" && claude_token::offered(crate::kit::Os::current()),
             }
         })
         .collect()
@@ -186,7 +194,12 @@ pub fn launch<R: tauri::Runtime>(
         crate::log::warn(&format!("before {id}: {w}"));
     }
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
-    crate::editor::terminal::open_command(app, kit, env, dir, &command, move || {
+    // Claude Code: the token saved in the kit, if any (WP-4.2).
+    let mut env = env.clone();
+    if id == "claude" {
+        claude_token::apply(kit, &mut env);
+    }
+    crate::editor::terminal::open_command(app, kit, &env, dir, &command, move || {
         let _ = sync::run(&after, Some(&after_dir));
     })
 }
@@ -197,7 +210,10 @@ pub fn launch<R: tauri::Runtime>(
 pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
     let home = kit.home();
     match id {
-        "claude" => remove_if_exists(&home.join(".claude").join(".credentials.json")),
+        "claude" => {
+            remove_if_exists(&home.join(".claude").join(".credentials.json"))?;
+            claude_token::remove(kit)
+        }
         "codex" => {
             let codex = crate::setup::catalog::kit_path(kit, "codex/bin/codex.exe");
             if codex.is_file() {
