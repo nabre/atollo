@@ -51,7 +51,7 @@ export function ActionsList({
             icon={<Icon size={16} aria-hidden="true" />}
             label={a.label}
             description={r ? stateText(r) : kindText(a.type)}
-            title={a.static ?? a.apache ?? a.command}
+            title={a.static ?? a.apache ?? a.caddy ?? a.command}
             selected={a.id === selected}
             onSelect={() => {
               onSelect(a.id);
@@ -128,7 +128,9 @@ export function ActionDetail({
           ? t("file server del kit: {0}", a.static)
           : a.apache !== null
             ? t("Apache del progetto: {0}", a.apache)
-            : a.command}
+            : a.caddy
+              ? t("Caddy del progetto: {0}", a.caddy)
+              : a.command}
       </span>,
     ],
   ];

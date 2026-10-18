@@ -1,5 +1,5 @@
 // The Sito web section of a project's page: a folder of it served on its
-// own port or attached to a pooled Apache/Nginx VirtualHost.
+// own port or attached to a pooled Caddy/Apache VirtualHost.
 import { useState, type SyntheticEvent } from "react";
 import { VscAdd, VscGlobe, VscTrash } from "react-icons/vsc";
 import { projectSite, serversList, type ProjectInfo, type SiteKind } from "../api";
@@ -34,15 +34,15 @@ function initialAliases(aliases: Record<string, string> | undefined): AliasRow[]
 /** "Servi come sito web": a folder of the project served on its own port or VirtualHost. */
 export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChanged: () => void }) {
   const site = project.actions.find((a) => a.id === "site");
-  const [folder, setFolder] = useState(site?.static ?? site?.apache ?? site?.nginx ?? ".");
+  const [folder, setFolder] = useState(site?.static ?? site?.apache ?? site?.caddy ?? ".");
   const [kind, setKind] = useState<SiteKind>(
     site
       ? site.static !== null
         ? "static"
         : site.apache !== null
           ? "apache"
-          : site.nginx
-            ? "nginx"
+          : site.caddy
+            ? "caddy"
             : "php"
       : "static",
   );
@@ -52,7 +52,7 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
   const { data: servers } = useLoad(serversList, null, { onError: { fallback: null } });
   const { busy, error, run } = useAction(onChanged);
 
-  const isWebServer = kind === "apache" || kind === "nginx";
+  const isWebServer = kind === "apache" || kind === "caddy";
   const matchingPools = (servers?.pools ?? []).filter((p) => p.engine === kind);
   // The name Rust gave the site in its pool (`name_sites`: lowercase labels,
   // `-2` when taken); before the site is saved, the project's own label.
@@ -105,8 +105,8 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
             options={[
               { value: "static", label: t("file statici") },
               { value: "php", label: t("PHP (server integrato)") },
+              { value: "caddy", label: t("Caddy") },
               { value: "apache", label: t("Apache") },
-              { value: "nginx", label: t("Nginx") },
             ]}
           />
         </label>
@@ -208,7 +208,7 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
             {server !== "dedicated"
               ? t(
                   "Servito da {0} nel server condiviso delle versioni del progetto (o nel profilo scelto), su http://{1}.",
-                  kind === "apache" ? "Apache" : "Nginx",
+                  kind === "apache" ? "Apache" : "Caddy",
                   siteName,
                 )
               : kind === "apache"
@@ -216,8 +216,13 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
                     "Un Apache solo per questo progetto, sulla sua porta, con .htaccess e il PHP del kit. La configurazione è in data\\projects\\{0}\\apache; le tue direttive vanno in conf.d.",
                     project.id,
                   )
-                : t("Un Nginx solo per questo progetto, sulla sua porta, con il PHP del kit.")}
+                : t("Un Caddy solo per questo progetto, sulla sua porta, con il PHP del kit.")}
           </p>
+          {kind === "caddy" && (
+            <p className="w-full text-[12px] text-vsc-desc">
+              {t("Caddy non legge .htaccess: le regole di riscrittura si generano dal tipo di progetto.")}
+            </p>
+          )}
         </div>
       )}
 

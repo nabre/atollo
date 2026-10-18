@@ -2,7 +2,7 @@ use super::*;
 use crate::kit::Target;
 
 /// The FastCGI server Caddy runs on each of the six targets: php-cgi on
-/// Windows (as Nginx's), static-php-cli's `php-fpm` elsewhere (no php-cgi).
+/// Windows, static-php-cli's `php-fpm` elsewhere (no php-cgi).
 #[test]
 fn fastcgi_program_per_target() {
     let dir = Path::new("kit/php/8.4");
@@ -18,7 +18,7 @@ fn fastcgi_program_per_target() {
 
 /// `fpm.conf` (D-111): in the foreground, its files in the server's
 /// folder, on an owner-only Unix socket, workers on demand, the kit's
-/// environment kept, the files PHP runs for Apache and Nginx.
+/// environment kept, the files PHP runs for Apache and Caddy.
 #[test]
 fn fpm_conf_expected() {
     let conf = fpm_conf(
@@ -70,18 +70,16 @@ fn fpm_conf_has_no_tcp_listen() {
 }
 
 /// The address a web server is given: php-cgi on a TCP port of 127.0.0.1,
-/// php-fpm on its socket (`unix/` for Caddy, `unix:` for Nginx).
+/// php-fpm on its socket (`unix/` for Caddy).
 #[test]
 fn fastcgi_addresses() {
     let tcp = FcgiAddr::Tcp(9123);
     assert_eq!(tcp.caddy_upstream(), "127.0.0.1:9123");
-    assert_eq!(tcp.nginx_pass(), "127.0.0.1:9123");
     let tmp = crate::kit::tests::TempDir::new("fastcgi-addr");
     let sock = PrivateSocket::in_leaf(&tmp.0, "c-1", "fpm.sock").unwrap();
     let path = fwd(&sock.path);
     let unix = FcgiAddr::Unix(Arc::new(sock));
     assert_eq!(unix.caddy_upstream(), format!("\"unix/{path}\""));
-    assert_eq!(unix.nginx_pass(), format!("unix:{path}"));
     assert!(unix.describe().starts_with("socket "));
 }
 

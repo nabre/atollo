@@ -1,4 +1,4 @@
-//! The running pools: Apache, Nginx or Caddy (and PHP's FastCGI server) in
+//! The running pools: Caddy or Apache (and PHP's FastCGI server) in
 //! the app's Job Object, started, stopped and reloaded; sites attached and
 //! detached by their projects.
 
@@ -17,8 +17,7 @@ use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
 use crate::projects::apache::{self, fwd};
 use crate::projects::caddy;
-use crate::projects::fastcgi::{self, FcgiAddr};
-use crate::projects::nginx::{self, FastCgi};
+use crate::projects::fastcgi::{self, FastCgi, FcgiAddr};
 use crate::projects::run::is_port_free;
 use crate::setup::catalog::Catalog;
 
@@ -36,7 +35,8 @@ pub(super) struct RunningPool {
     pub(super) fcgi: Option<FastCgi>,
     /// The PHP line the pool was started with (`None`: no PHP).
     pub(super) php_line: Option<String>,
-    /// The pool's php-cgi (Nginx with PHP; php-fpm for Caddy off Windows):
+    /// The pool's FastCGI server (php-cgi of Caddy on Windows, php-fpm
+    /// of Caddy and Apache elsewhere):
     /// when it dies the pool is stopped, never left "running" answering
     /// 502 to every `.php`.
     pub(super) php: Option<Child>,
@@ -63,9 +63,8 @@ pub(super) struct LivePool {
     pub(super) fcgi: Option<FastCgi>,
 }
 
-/// A reload of a running pool needs a full stop and start (not Nginx's
-/// graceful `-s reload` or `caddy reload`, which keep their php-cgi and
-/// port): Apache (no
+/// A reload of a running pool needs a full stop and start (not
+/// `caddy reload`, which keeps its php-cgi and port): Apache (no
 /// graceful signal on Windows), another port, another PHP line, or PHP
 /// wanted with no php-cgi running (a manual pool that just got its first
 /// PHP site: else every `.php` answers 503 until a manual restart).
@@ -181,19 +180,10 @@ pub(super) fn php_cgi_listening(child: &mut Child, addr: &FcgiAddr, within: Dura
     }
 }
 
-/// The pool's php-cgi with its FastCGI port, started again on another
-/// port (up to 3 times) when it ends at once because its port was taken.
-pub(super) fn spawn_php_cgi(
-    kit: &Kit,
-    env: &KitEnv,
-    job: &Job,
-) -> (Option<FastCgi>, Option<Child>) {
-    spawn_with_retries(|| nginx::spawn_php_cgi_if_present(kit, env, job))
-}
-
 /// The FastCGI server of a Caddy pool (php-cgi on Windows, php-fpm with
-/// its `fpm.conf` in `pool_dir` and its private socket elsewhere), retried
-/// as [`spawn_php_cgi`].
+/// its `fpm.conf` in `pool_dir` and its private socket elsewhere), started
+/// again on another port (up to 3 times) when it ends at once because its
+/// port was taken.
 pub(super) fn spawn_fastcgi(
     kit: &Kit,
     env: &KitEnv,
@@ -501,34 +491,6 @@ impl WebServers {
                 caddy::with_key(&mut cmd, fcgi.as_ref());
                 (cmd, fcgi, php)
             }
-            WebServerEngine::Nginx => {
-                let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
-                let exe = nginx::nginx_exe(&self.kit, &nginx_dir);
-                if !exe.is_file() {
-                    bail!("Nginx is not installed");
-                }
-                env.set("CP_NGINX", nginx_dir.display().to_string());
-                env.set("CP_NGINX_FWD", fwd(&nginx_dir));
-                let (fcgi, php) = if pool.php_line.is_some() {
-                    match spawn_php_cgi(&self.kit, &env, &job) {
-                        // A PHP pool never runs without its PHP: every
-                        // `.php` would answer 503, with nothing watched.
-                        (None, _) => bail!("php-cgi did not start (see the log)"),
-                        started => started,
-                    }
-                } else {
-                    (None, None)
-                };
-                let conf_path = self.write_pool_configs(&pool, fcgi.as_ref(), lan)?;
-                let mut cmd = jobs::kit_command(&exe, &env);
-                cmd.arg("-p")
-                    .arg(&pool_dir)
-                    .arg("-c")
-                    .arg(&conf_path)
-                    .arg("-g")
-                    .arg("daemon off;");
-                (cmd, fcgi, php)
-            }
             WebServerEngine::Caddy => {
                 let caddy_dir = component_dir(&self.kit, "caddy", pool.server_line.as_deref());
                 let exe = caddy::caddy_exe(&self.kit, &caddy_dir);
@@ -538,7 +500,8 @@ impl WebServers {
                 env.set("CP_CADDY", caddy_dir.display().to_string());
                 let (fcgi, php) = if pool.php_line.is_some() {
                     match spawn_fastcgi(&self.kit, &env, &job, &pool_dir, &pool.id) {
-                        // A PHP pool never runs without its PHP (as Nginx).
+                        // A PHP pool never runs without its PHP: every
+                        // `.php` would fail, with nothing watched.
                         (None, _) => bail!("PHP's FastCGI server did not start (see the log)"),
                         started => started,
                     }
@@ -693,7 +656,7 @@ impl WebServers {
             })
             .map(|a| a.path.clone());
         if !needs_restart(&pool, &live) {
-            // Nginx or Caddy with the same PHP and port: a graceful reload,
+            // Caddy with the same PHP and port: a graceful reload,
             // the sites that stay are served without a pause.
             let pool_dir = self.kit.data().join("servers").join(&pool.id);
             let status = match pool.engine {
@@ -729,18 +692,8 @@ impl WebServers {
                     }
                     None => Err(std::io::Error::other("no admin endpoint")),
                 },
-                _ => {
-                    let conf_path = self.write_pool_configs(&pool, live.fcgi.as_ref(), lan)?;
-                    let nginx_dir = component_dir(&self.kit, "nginx", pool.server_line.as_deref());
-                    let exe = nginx::nginx_exe(&self.kit, &nginx_dir);
-                    jobs::kit_command(&exe, base_env)
-                        .arg("-p")
-                        .arg(&pool_dir)
-                        .arg("-c")
-                        .arg(&conf_path)
-                        .args(["-s", "reload"])
-                        .status()
-                }
+                // Never here ([`needs_restart`]): restarted below.
+                WebServerEngine::Apache => Err(std::io::Error::other("no graceful reload")),
             };
             if status.is_ok_and(|s| s.success()) {
                 if let Some(r) = self
@@ -756,7 +709,7 @@ impl WebServers {
         }
 
         // A clean restart: Apache (no graceful signal on Windows), a pool
-        // whose PHP or port changed, or a failed Nginx or Caddy reload. Who started
+        // whose PHP or port changed, or a failed Caddy reload. Who started
         // it and its projects carry over to the new process.
         let (by_user, attached) = self
             .running

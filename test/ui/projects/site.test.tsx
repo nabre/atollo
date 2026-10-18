@@ -1,7 +1,7 @@
 // The Sito web form: the name it announces is the one Rust gave the site in
 // its pool (name_sites), not `<project>.localhost` written by the page.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ProjectAction, ProjectInfo } from "../../../ui/src/api";
 import type { AttachedSite, WebServersView } from "../../../ui/src/api/servers";
 import { SiteForm } from "../../../ui/src/projects/site";
@@ -27,7 +27,7 @@ const SITE: ProjectAction = {
   env: {},
   static: null,
   apache: "public",
-  nginx: null,
+  caddy: null,
   server: null,
   domains: [],
   aliases: {},
@@ -56,9 +56,18 @@ function view(sites: AttachedSite[]): WebServersView {
       },
     ],
     apacheLines: ["2.4"],
-    nginxLines: [],
+    caddyLines: [],
     phpLines: ["8.4"],
   };
+}
+
+/** The «con» select, once it shows `value` (the component settles after render). */
+async function kindSelect(value: string): Promise<HTMLElementTagNameMap["vscode-single-select"]> {
+  const kind = screen.getByLabelText<HTMLElementTagNameMap["vscode-single-select"]>("con");
+  await waitFor(() => {
+    expect(kind.value).toBe(value);
+  });
+  return kind;
 }
 
 describe("SiteForm", () => {
@@ -86,5 +95,53 @@ describe("SiteForm", () => {
     );
     render(<SiteForm project={PROJECT} onChanged={vi.fn()} />);
     expect(await screen.findByText(/predefinito: my-shop\.localhost\)/)).toBeTruthy();
+  });
+
+  // The web servers of the kit: Caddy first, then Apache, and no other.
+  it("offers Caddy first, then Apache, and no other web server", async () => {
+    invoke.mockImplementation((cmd) =>
+      cmd === "servers_list" ? Promise.resolve(view([])) : Promise.reject(new Error(`unexpected ${cmd}`)),
+    );
+    render(<SiteForm project={PROJECT} onChanged={vi.fn()} />);
+    const kind = await kindSelect("apache");
+    const kinds = [...kind.querySelectorAll("vscode-option")].map((o) => o.value);
+    expect(kinds).toEqual(["static", "php", "caddy", "apache"]);
+  });
+
+  it("chosen, Caddy is saved as kind caddy, with the note on .htaccess", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve(view([]));
+      if (cmd === "project_site") return Promise.resolve(null);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    const onChanged = vi.fn();
+    render(<SiteForm project={PROJECT} onChanged={onChanged} />);
+    // Apache, as saved: no note on .htaccess.
+    expect(screen.queryByText(/Caddy non legge \.htaccess/)).toBeNull();
+    const kind = await kindSelect("apache");
+    fireEvent.change(kind, { target: { value: "caddy" } });
+    expect(
+      screen.getByText("Caddy non legge .htaccess: le regole di riscrittura si generano dal tipo di progetto."),
+    ).toBeTruthy();
+    expect(screen.getByText(/Servito da Caddy nel server condiviso/)).toBeTruthy();
+    fireEvent.submit(screen.getByRole("form", { name: "Servi come sito web" }));
+    await waitFor(() => {
+      expect(onChanged).toHaveBeenCalled();
+    });
+    const call = invoke.mock.calls.find(([cmd]) => cmd === "project_site");
+    expect(call?.[1]).toMatchObject({ project: "My Shop", folder: "public", kind: "caddy" });
+  });
+
+  it("a site served by Caddy opens with Caddy chosen", async () => {
+    invoke.mockImplementation((cmd) =>
+      cmd === "servers_list" ? Promise.resolve(view([])) : Promise.reject(new Error(`unexpected ${cmd}`)),
+    );
+    const caddySite = { ...SITE, apache: null, caddy: "web" };
+    render(<SiteForm project={{ ...PROJECT, actions: [caddySite] }} onChanged={vi.fn()} />);
+    await kindSelect("caddy");
+    expect(screen.getByText(/Caddy non legge \.htaccess/)).toBeTruthy();
+    expect(
+      screen.getByLabelText<HTMLElementTagNameMap["vscode-textfield"]>("Servi come sito web la cartella").value,
+    ).toBe("web");
   });
 });

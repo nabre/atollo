@@ -3,8 +3,8 @@
 //! `data\projects\<project>\caddy\` (never in the project), and the text of
 //! the shared pools' `Caddyfile` (`servers/config.rs`).
 //!
-//! Caddy reads no `.htaccess`: the site gets the rules Nginx's site has
-//! (`projects/nginx.rs`), front controller (`index.php`, as WordPress,
+//! Caddy reads no `.htaccess`: the site gets rules of its own, front
+//! controller (`index.php`, as WordPress,
 //! Drupal and Laravel want it), hidden files and `.inc`/`.php3`…`.php8`
 //! refused with 404, aliases checked on disk. PHP is the kit's FastCGI
 //! server (`projects/fastcgi.rs`: php-cgi on Windows, php-fpm elsewhere),
@@ -544,7 +544,7 @@ pub fn site_block(port: u16, lan: bool, names: &[String], body: &[String]) -> Ve
 
 /// Against DNS rebinding (a page of another site that renames itself to
 /// 127.0.0.1 and reads the project): a `Host` no site names, or none, gets
-/// 421, as from a project's own Nginx (D-98). Caddy tries this block last.
+/// 421 (D-98). Caddy tries this block last.
 fn refuse_other_hosts(port: u16) -> Vec<String> {
     site_block(port, false, &[], &["\trespond 421".to_owned()])
 }

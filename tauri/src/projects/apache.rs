@@ -65,7 +65,7 @@ pub fn fix_kit_conf(kit: &Kit) -> Result<()> {
 
 /// The files PHP runs, in any case (`INDEX.PHP` is PHP on Windows too):
 /// `.php`, `.phtml` templates and `.phar` archives, as Debian's PHP module
-/// does. Nginx uses the same pattern for its FastCGI location.
+/// does.
 pub const PHP_RUN: &str = r"\.(?:php|phtml|phar)$";
 
 /// Files never served, with or without PHP: `.inc` includes and the old
@@ -269,7 +269,7 @@ pub fn hidden_deny(indent: &str) -> Vec<String> {
 /// What an alias' folder never runs or serves (SEC-V4-01): the files PHP
 /// runs ([`PHP_RUN`]), `.phps` source and those of [`PHP_NEVER`]. Aliases
 /// hold uploads and shared assets: a script that got there is refused,
-/// never run with the site's rights. Apache, Nginx and Caddy alike.
+/// never run with the site's rights. Apache and Caddy alike.
 pub const ALIAS_NO_RUN: &str = r"\.(?:php|phtml|phar|phps|inc|php[3-8])$";
 
 /// Directives (`Alias` + `<Directory>`) for checked path aliases; `own` is

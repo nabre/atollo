@@ -16,6 +16,15 @@
 
 **Verificato**: su Windows 741 test Rust, fmt e clippy puliti; in WSL2 (Ubuntu 24.04) 733 test, fmt e clippy puliti, e la prova reale `real_secret_service_login_collection` con gnome-keyring: con `login` la voce va lì e si rilegge, senza `login` non si scrive nulla. Da provare su un Mac vero.
 
+## Caddy al posto di Nginx (19/10/2026)
+
+- **Nginx non c'è più** (D-120, [#4](https://github.com/nabre/atollo/issues/4)): Caddy è il server web del kit su ogni sistema, Apache resta per i progetti con regole proprie nel `.htaccess`. All'avvio i profili e i siti di Nginx diventano di Caddy, nella pagina Server web e nel `panel.json` dei progetti; prima di cambiarli il kit ne fa una copia in `data/app/pre-caddy/`. Un pool automatico di Nginx riparte con Caddy sulla stessa porta appena Caddy è installato. La cartella di Nginx in `data/apps` si cancella.
+- **Caddy nell'interfaccia**: nella pagina Server web è il motore proposto per un profilo nuovo, accanto ad Apache; nella scheda Sito web del progetto è la prima scelta, con la nota «Caddy non legge .htaccess: le regole di riscrittura si generano dal tipo di progetto.».
+- **PHP si aggiorna tutto o niente**: le parti di una versione (PHP, `php-fpm` su macOS e Linux, Composer) si scaricano e si verificano tutte prima di toccare la cartella installata. Prima un errore di rete a metà poteva lasciare un PHP senza `php-fpm` o senza Composer.
+- **Rilevamento**: in un sito con moltissimi file la ricerca dei `.htaccess` delle sottocartelle si ferma a 5000 voci; ora lo dice con un avviso, perché un `.htaccess` di una cartella di caricamenti potrebbe sfuggire.
+
+**Verificato**: su Windows 730 test Rust, fmt e clippy puliti; interfaccia: lint, tsc e 139 test. Nuovi: il passaggio di pool, siti e porte da Nginx a Caddy (ripetibile, con la copia `pre-caddy`), un download di PHP che fallisce a metà lascia la versione installata com'era, l'avviso sulla cartella troppo grande. Non eseguite le prove reali dei server web (`ATOLLO_TEST_KIT`).
+
 ## Spostare il kit senza rete su macOS e Linux (18/10/2026)
 
 - **R, Ruby, MongoDB (Linux), SQLite (Linux ARM64) e il `make` di C e C++** si reinstallano dopo che il kit cambia cartella, perché vengono da conda-forge e hanno il percorso scritto dentro (D-92). Ora i loro pacchetti restano nel kit, in `data/app/conda/<sistema>/`, e la reinstallazione li usa senza scaricare nulla, alla stessa versione: in WSL 43 s per R, Ruby, MongoDB e make, contro 86 s dalla rete con una connessione veloce, e funziona anche senza rete (D-118).

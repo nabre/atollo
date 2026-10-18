@@ -71,7 +71,7 @@ pub struct AppState {
     pub setup: Arc<SetupTask>,
     /// Database servers (D-73).
     pub services: Arc<crate::db::services::Services>,
-    /// Shared Apache and Nginx VirtualHost server pools.
+    /// Shared Caddy and Apache VirtualHost server pools.
     pub servers: Arc<crate::servers::WebServers>,
 }
 

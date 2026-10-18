@@ -1339,11 +1339,6 @@
     "fr": "Télécharge aussi le NDK Android (environ 2 Go) et les cibles Rust pour Android.",
     "de": "Lädt auch das Android NDK (etwa 2 GB) und die Rust-Ziele für Android herunter."
   },
-  "server web e reverse proxy, con PHP-CGI": {
-    "en": "web server and reverse proxy, with PHP-CGI",
-    "fr": "serveur web et proxy inverse, avec PHP-CGI",
-    "de": "Webserver und Reverse-Proxy, mit PHP-CGI"
-  },
   "server web e reverse proxy, con HTTPS automatico": {
     "en": "web server and reverse proxy, with automatic HTTPS",
     "fr": "serveur web et proxy inverse, avec HTTPS automatique",
@@ -1354,10 +1349,10 @@
     "fr": "module php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64",
     "de": "Modul php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64"
   },
-  "PHP via FastCGI (php-cgi.exe)": {
-    "en": "PHP via FastCGI (php-cgi.exe)",
-    "fr": "PHP via FastCGI (php-cgi.exe)",
-    "de": "PHP über FastCGI (php-cgi.exe)"
+  "PHP via FastCGI (php-cgi.exe su Windows, php-fpm su macOS e Linux)": {
+    "en": "PHP via FastCGI (php-cgi.exe on Windows, php-fpm on macOS and Linux)",
+    "fr": "PHP via FastCGI (php-cgi.exe sous Windows, php-fpm sous macOS et Linux)",
+    "de": "PHP über FastCGI (php-cgi.exe unter Windows, php-fpm unter macOS und Linux)"
   },
   "Alias non valido: usa un percorso /url e una cartella relativa (niente percorsi assoluti o ..).": {
     "en": "Invalid alias: use a /url path and a relative folder (no absolute paths or ..).",
@@ -1369,11 +1364,6 @@
     "fr": "Domaine non valide : utilisez un nom se terminant par .localhost (ex. mon-site.localhost).",
     "de": "Ungültige Domain: Verwende einen Namen mit der Endung .localhost (z. B. meine-seite.localhost)."
   },
-  "sito web Nginx ({0})": {
-    "en": "Nginx website ({0})",
-    "fr": "site web Nginx ({0})",
-    "de": "Nginx-Website ({0})"
-  },
   "sito web Caddy ({0})": {
     "en": "Caddy website ({0})",
     "fr": "site web Caddy ({0})",
@@ -1383,6 +1373,11 @@
     "en": "Caddy does not read the .htaccess files of subfolders ({0}): what they hide is visible and PHP runs there.",
     "fr": "Caddy ne lit pas les .htaccess des sous-dossiers ({0}) : ce qu'ils cachent est visible et PHP y est exécuté.",
     "de": "Caddy liest die .htaccess-Dateien der Unterordner nicht ({0}): Was sie verbergen, ist sichtbar, und PHP wird dort ausgeführt."
+  },
+  "Cartella del sito troppo grande: cercati i .htaccess delle sottocartelle solo fra le prime {0} voci. Caddy non legge quelli che restano (caricamenti, file privati).": {
+    "en": "Site folder too large: the .htaccess files of subfolders were looked for only among the first {0} entries. Caddy does not read the others (uploads, private files).",
+    "fr": "Dossier du site trop grand : les .htaccess des sous-dossiers ont été cherchés seulement parmi les {0} premières entrées. Caddy ne lit pas les autres (téléversements, fichiers privés).",
+    "de": "Website-Ordner zu groß: Die .htaccess-Dateien der Unterordner wurden nur unter den ersten {0} Einträgen gesucht. Caddy liest die übrigen nicht (Uploads, private Dateien)."
   },
   "Identificativo del server non valido.": {
     "en": "Invalid server identifier.",

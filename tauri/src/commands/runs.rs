@@ -34,7 +34,7 @@ pub async fn run_start<R: Runtime>(
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
         };
-        // An Apache/Nginx site is started in a shared pool: the profile it
+        // An Apache/Caddy site is started in a shared pool: the profile it
         // was assigned to (GAP-RUN), else the automatic pool of its lines
         // (D-101). A profile gone since: the pool `list` puts it in,
         // or, not in any, its own server as before.

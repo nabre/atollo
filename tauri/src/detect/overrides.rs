@@ -12,8 +12,9 @@
 //!
 //! `static` (instead of `command`): that folder served by the exe's file
 //! server, always a web action; `apache` (instead of `command`): that folder
-//! served by an Apache of the project's own, always a web action; `nginx`
-//! and `caddy` the same with Nginx or Caddy. The old `pannello.json` (read only when
+//! served by an Apache of the project's own, always a web action; `caddy`
+//! the same with Caddy (`nginx`, of before D-120, read as `caddy`). The old
+//! `pannello.json` (read only when
 //! `panel.json` is missing) uses the Italian keys `nome`, `tipo`,
 //! `piattaforma`, `sostituisci`, `predefinita`, `azioni`, `etichetta`,
 //! `comando`, `cartella`, `statico` and `{porta}`; both sets are accepted in
@@ -111,27 +112,24 @@ pub(super) fn apply(project: &mut Project, dir: &Path, lang: &str) {
                 .and_then(Value::as_str)
                 .map(str::to_owned);
             let apache = a.get("apache").and_then(Value::as_str).map(str::to_owned);
-            let nginx = a.get("nginx").and_then(Value::as_str).map(str::to_owned);
-            let caddy = a.get("caddy").and_then(Value::as_str).map(str::to_owned);
-            if command.is_none()
-                && served.is_none()
-                && apache.is_none()
-                && nginx.is_none()
-                && caddy.is_none()
-            {
+            // `nginx` of a site of before Caddy (D-120) is Caddy's, as the
+            // migration at start writes it.
+            let caddy = a
+                .get("caddy")
+                .and_then(Value::as_str)
+                .or_else(|| a.get("nginx").and_then(Value::as_str))
+                .map(str::to_owned);
+            if command.is_none() && served.is_none() && apache.is_none() && caddy.is_none() {
                 return None;
             }
             let a_kind = text(pick(a, "type", "tipo")).and_then(|t| Kind::parse(&t));
             let label = text(pick(a, "label", "etichetta")).unwrap_or_else(|| id.clone());
             let mut action = match &command {
                 Some(c) => Action::new(&id, &label, c, a_kind.unwrap_or(Kind::Command)),
-                None => match (&apache, &nginx, &caddy) {
-                    (Some(folder), _, _) => Action::apache(&id, &label, folder),
-                    (None, Some(folder), _) => Action::nginx(&id, &label, folder),
-                    (None, None, Some(folder)) => Action::caddy(&id, &label, folder),
-                    (None, None, None) => {
-                        Action::serve(&id, &label, served.as_deref().unwrap_or("."))
-                    }
+                None => match (&apache, &caddy) {
+                    (Some(folder), _) => Action::apache(&id, &label, folder),
+                    (None, Some(folder)) => Action::caddy(&id, &label, folder),
+                    (None, None) => Action::serve(&id, &label, served.as_deref().unwrap_or(".")),
                 },
             };
             action.folder = text(pick(a, "folder", "cartella"));
@@ -239,8 +237,6 @@ pub enum SiteKind {
     Php,
     /// An Apache of the project's own (`projects/apache.rs` or pooled server).
     Apache,
-    /// An Nginx of the project's own or pooled server.
-    Nginx,
     /// A Caddy of the project's own or pooled server (D-111).
     Caddy,
     None,
@@ -362,8 +358,6 @@ pub fn set_site_with_options(
             }
             SiteKind::Apache => serde_json::json!({ "id": SITE_ACTION,
                 "label": tr(lang, "sito web Apache ({0})", &[&shown]), "apache": rel }),
-            SiteKind::Nginx => serde_json::json!({ "id": SITE_ACTION,
-                "label": tr(lang, "sito web Nginx ({0})", &[&shown]), "nginx": rel }),
             SiteKind::Caddy => serde_json::json!({ "id": SITE_ACTION,
                 "label": tr(lang, "sito web Caddy ({0})", &[&shown]), "caddy": rel }),
             SiteKind::Php | SiteKind::None => {
@@ -371,7 +365,7 @@ pub fn set_site_with_options(
                     "command": php_server(project_dir, &rel) })
             }
         };
-        if matches!(kind, SiteKind::Apache | SiteKind::Nginx | SiteKind::Caddy) {
+        if matches!(kind, SiteKind::Apache | SiteKind::Caddy) {
             if let Some(s) = options
                 .server
                 .as_deref()

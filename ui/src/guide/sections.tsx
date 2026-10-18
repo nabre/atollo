@@ -2874,10 +2874,10 @@ MONGODB_URI="mongodb://127.0.0.1:27017/portale_clienti"`}
               "Öffne Projekte → <projekt> → Registerkarte „Website“.",
             ),
             tr(
-              "Scegli il motore web (es. Apache, Nginx o server di sviluppo), la cartella pubblica (es. public) ed eventuali alias relativi.",
-              "Choose the web engine (e.g. Apache, Nginx or dev server), the document root (e.g. public) and any relative aliases.",
-              "Choisissez le moteur web (ex. Apache, Nginx ou serveur de développement), le dossier public (ex. public) et les éventuels alias relatifs.",
-              "Wähle die Web-Engine (z. B. Apache, Nginx oder Entwicklungsserver), den öffentlichen Ordner (z. B. public) und eventuelle relative Aliase.",
+              "Scegli il motore web (Caddy, il predefinito; Apache se il progetto ha regole .htaccess sue; o server di sviluppo), la cartella pubblica (es. public) ed eventuali alias relativi.",
+              "Choose the web engine (Caddy, the default; Apache if the project has its own .htaccess rules; or dev server), the document root (e.g. public) and any relative aliases.",
+              "Choisissez le moteur web (Caddy, par défaut ; Apache si le projet a ses propres règles .htaccess ; ou serveur de développement), le dossier public (ex. public) et les éventuels alias relatifs.",
+              "Wähle die Web-Engine (Caddy, der Standard; Apache, wenn das Projekt eigene .htaccess-Regeln hat; oder Entwicklungsserver), den öffentlichen Ordner (z. B. public) und eventuelle relative Aliase.",
             ),
             tr(
               "Nella pagina «Server Web» avvia o ricarica il pool corrispondente e apri il sito su <progetto>.localhost con un clic.",
