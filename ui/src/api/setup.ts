@@ -172,7 +172,10 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
   sampleComponent("apache", "Apache", "languages", "server web per PHP", 30, { needs: ["php"] }),
   sampleComponent("uv", "uv", "languages", "ambienti e pacchetti Python", 40, { ...ON, version: "0.9.5" }),
   sampleComponent("typst", "Typst", "languages", "documenti e PDF da testo", 50),
-  sampleComponent("mariadb", "MariaDB", "databases", "compatibile con MySQL", 210, { ...ON, version: "11.8.3" }),
+  sampleComponent("mysql", "MySQL", "databases", "database SQL del kit: server e client MySQL", 520, {
+    ...ON,
+    version: "9.7.2",
+  }),
   sampleComponent("mongodb", "MongoDB", "databases", "database a documenti", 650, { x64Only: true }),
 ];
 

@@ -195,7 +195,7 @@ function NeedAction({
           need.server
             ? need.status === "download"
               ? versionsAdd(need.component, line)
-              : projectDbLine(project, need.component as "mariadb" | "mongodb", line)
+              : projectDbLine(project, need.component as "mysql" | "mongodb", line)
             : projectVersionsSet(project, need.component, line),
         );
       }}

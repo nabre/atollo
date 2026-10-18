@@ -184,7 +184,8 @@ export function projectCreate(name: string): Promise<string> {
 
 /** A database a project's deletion drops (tauri/src/projects/mod.rs). */
 export interface PlannedDb {
-  engine: "mariadb" | "mongodb";
+  /** `mariadb` only while its data has not moved to MySQL (D-117). */
+  engine: "mysql" | "mongodb" | "mariadb";
   /** Name of the database and of its user. */
   database: string;
   /** Not installed: skipped, the database stays in the server's data. */
@@ -209,7 +210,7 @@ export function projectDeletePlan(project: string): Promise<DeletePlan> {
     {
       folderExists: true,
       folderEmpty: true,
-      databases: [{ engine: "mariadb", database: project.toLowerCase(), installed: true }],
+      databases: [{ engine: "mysql", database: project.toLowerCase(), installed: true }],
       backups: 2,
       backupsSize: 3_400_000,
     },

@@ -39,8 +39,8 @@ fn combinations() {
     // A CMS has its database from the base, and an administrator in .env.
     for cms in ["wordpress", "typo3", "drupal"] {
         let site = plan(p, cms, &[]).unwrap();
-        assert_eq!(site.database.as_deref(), Some("mariadb"), "{cms}");
-        assert_eq!(site.needs, ["php", "mariadb"], "{cms}");
+        assert_eq!(site.database.as_deref(), Some("mysql"), "{cms}");
+        assert_eq!(site.needs, ["php", "mysql"], "{cms}");
         assert!(
             site.env.iter().any(|e| e.value == "{password}"),
             "{cms}: administrator's password"
@@ -64,8 +64,8 @@ fn combinations() {
     );
 
     let mysql = plan(p, "laravel", &ids(&["mysql", "bootstrap"])).unwrap();
-    assert_eq!(mysql.database.as_deref(), Some("mariadb"));
-    assert!(mysql.needs.contains(&"mariadb".to_owned()));
+    assert_eq!(mysql.database.as_deref(), Some("mysql"));
+    assert!(mysql.needs.contains(&"mysql".to_owned()));
     assert!(
         plan(p, "laravel", &ids(&["mysql", "mongodb"])).is_err(),
         "one database"

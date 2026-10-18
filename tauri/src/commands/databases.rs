@@ -22,14 +22,30 @@ fn project_engine_of(kit: &Kit, project: &str, engine: &str, context: &str) -> C
     ))
 }
 
-/// The servers `detect::requires` found (`mariadb`, `mongodb`, `sqlite`),
-/// a SQL one as the project's SQL server (`sql`), each once.
-fn detected_as(found: Vec<String>, sql: DbEngine) -> Vec<String> {
+/// The id the interface gets for a server (D-117): `mysql` for every SQL
+/// one, also for a project's database still on a MariaDB whose data has
+/// not moved yet (the interface's `mysql` reaches it,
+/// `db::services::project_engine`); others as they are.
+pub(super) fn ui_id(engine: &str) -> String {
+    match DbEngine::from_id(engine) {
+        Some(e) if e.is_sql() => DbEngine::MySql.id().to_owned(),
+        _ => engine.to_owned(),
+    }
+}
+
+/// The connection of a project's database as the interface names it.
+fn for_ui(mut db: crate::db::auth::ProjectDb) -> crate::db::auth::ProjectDb {
+    db.engine = ui_id(&db.engine);
+    db
+}
+
+/// The servers `detect::requires` found (`mysql`, `mongodb`, `sqlite`), a
+/// SQL one as `mysql` ([`ui_id`]), each once.
+fn detected_as(found: Vec<String>) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for id in found {
         let id = match DbEngine::from_id(&id) {
-            Some(e) if e.is_sql() => sql.id().to_owned(),
-            Some(_) => id,
+            Some(e) => ui_id(e.id()),
             None if id == "sqlite" => id,
             None => continue,
         };
@@ -46,12 +62,12 @@ fn detected_as(found: Vec<String>, sql: DbEngine) -> Vec<String> {
 #[serde(rename_all = "camelCase")]
 pub struct ProjectDatabases {
     pub dbs: Vec<crate::db::auth::ProjectDb>,
-    /// `mysql` (or `mariadb` where the project's database is there),
-    /// `mongodb`, `sqlite` found by `detect::requires`.
+    /// `mysql`, `mongodb`, `sqlite` found by `detect::requires`.
     pub detected: Vec<String>,
     pub env_exists: bool,
     pub env_ignored: bool,
-    /// By engine: the version its database is on and those installed.
+    /// By engine (`mysql`, `mongodb`): the version its database is on and
+    /// those installed, of the server it reaches.
     pub versions: std::collections::BTreeMap<String, DbVersions>,
 }
 
@@ -67,9 +83,10 @@ pub struct DbVersions {
 }
 
 fn db_versions(kit: &Kit, project: &str) -> std::collections::BTreeMap<String, DbVersions> {
-    DbEngine::ALL
+    DbEngine::OFFERED
         .into_iter()
-        .map(|engine| {
+        .map(|offered| {
+            let engine = crate::db::services::project_engine(kit, project, offered);
             let id = engine.id();
             let chosen = crate::db::auth::project_line(kit, project, id)
                 .ok()
@@ -79,7 +96,7 @@ fn db_versions(kit: &Kit, project: &str) -> std::collections::BTreeMap<String, D
                 server: crate::db::services::server_line(kit, id),
                 lines: crate::db::services::server_lines(kit, id),
             };
-            (id.to_owned(), versions)
+            (offered.id().to_owned(), versions)
         })
         .collect()
 }
@@ -93,11 +110,13 @@ pub fn project_databases<R: Runtime>(
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     Ok(ProjectDatabases {
-        dbs: state.services.project_dbs(&project),
-        detected: detected_as(
-            crate::detect::requires(&dir),
-            crate::db::services::project_sql_engine(&state.kit, &project),
-        ),
+        dbs: state
+            .services
+            .project_dbs(&project)
+            .into_iter()
+            .map(for_ui)
+            .collect(),
+        detected: detected_as(crate::detect::requires(&dir)),
         env_exists: dir.join(".env").is_file(),
         env_ignored: crate::db::auth::env_ignored(&dir),
         versions: db_versions(&state.kit, &project),
@@ -155,6 +174,7 @@ pub async fn project_db_create<R: Runtime>(
             .map_err(|e| start_error(lang, &e))?;
         services
             .project_db_create(&project, kind.id())
+            .map(for_ui)
             .or_fail_chain("database")
     })
     .await
@@ -220,7 +240,15 @@ pub fn project_backups<R: Runtime>(
 ) -> CmdResult<Vec<crate::db::services::Backup>> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    Ok(state.services.backups(&project))
+    Ok(state
+        .services
+        .backups(&project)
+        .into_iter()
+        .map(|mut b| {
+            b.engine = ui_id(&b.engine);
+            b
+        })
+        .collect())
 }
 
 /// A copy of the project's database; starts the server if needed.
@@ -335,8 +363,9 @@ pub async fn db_browse_rows<R: Runtime>(
 
 /// phpMyAdmin on the kit's SQL server in the browser (D-107, D-110):
 /// phpMyAdmin (with PHP and the server) installed the first time, the
-/// server started when it is off. `engine`: `mysql` or `mariadb` (null: the
-/// kit's SQL server, `db::services::sql_engine`). `line`: another installed
+/// server started when it is off. `engine`: `mysql` (null too): the kit's
+/// SQL server, `db::services::sql_engine` (a MariaDB whose data has not
+/// moved yet, D-117). `line`: another installed
 /// version, on its own port (D-102); null: the version the server
 /// runs.
 #[tauri::command]
@@ -348,9 +377,10 @@ pub async fn db_admin_open<R: Runtime>(
     engine: Option<String>,
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
-    let engine = match engine.as_deref() {
-        Some(id) => engine_of(id, "phpmyadmin")?,
-        None => crate::db::services::sql_engine(&state.kit),
+    let engine = match engine.as_deref().map(|id| engine_of(id, "phpmyadmin")) {
+        Some(Err(e)) => return Err(e),
+        Some(Ok(e)) if !e.is_sql() => e,
+        _ => crate::db::services::sql_engine(&state.kit),
     };
     if !engine.is_sql() {
         return Err(fail(

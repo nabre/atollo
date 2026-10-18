@@ -239,10 +239,10 @@ describe("DatabaseCopies", () => {
   it("asks before a restore with an alertdialog, and Esc gives up", async () => {
     invoke.mockImplementation((cmd) =>
       cmd === "project_backups"
-        ? Promise.resolve([{ file: "shop-1.sql", engine: "mariadb", size: 2048 }])
+        ? Promise.resolve([{ file: "shop-1.sql", engine: "mysql", size: 2048 }])
         : Promise.reject(new Error(`unexpected ${cmd}`)),
     );
-    render(<DatabaseCopies project="shop" engine="mariadb" />);
+    render(<DatabaseCopies project="shop" engine="mysql" />);
     fireEvent.click(await screen.findByRole("button", { name: "Ripristina…" }));
     const dialog = screen.getByRole("alertdialog", { name: "Ripristinare shop-1.sql?" });
     expect(dialog.getAttribute("aria-describedby")).toBeTruthy();

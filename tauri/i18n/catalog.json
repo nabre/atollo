@@ -1264,10 +1264,15 @@
     "fr": "Par défaut dans Laravel : database/database.sqlite existe déjà.",
     "de": "Standard von Laravel: database/database.sqlite ist schon da."
   },
-  "Il server MariaDB del kit, compatibile con MySQL": {
-    "en": "The kit's MariaDB server, compatible with MySQL",
-    "fr": "Le serveur MariaDB du kit, compatible avec MySQL",
-    "de": "Der MariaDB-Server des Kits, kompatibel mit MySQL"
+  "Il server MySQL del kit": {
+    "en": "The kit's MySQL server",
+    "fr": "Le serveur MySQL du kit",
+    "de": "Der MySQL-Server des Kits"
+  },
+  "DB_CONNECTION=mariadb nel file .env: il server SQL del kit è MySQL. Usa DB_CONNECTION=mysql: il driver mariadb di Laravel scrive tipi che MySQL non ha.": {
+    "en": "DB_CONNECTION=mariadb in the .env file: the kit's SQL server is MySQL. Use DB_CONNECTION=mysql: Laravel's mariadb driver writes types MySQL does not have.",
+    "fr": "DB_CONNECTION=mariadb dans le fichier .env : le serveur SQL du kit est MySQL. Utilisez DB_CONNECTION=mysql : le pilote mariadb de Laravel écrit des types que MySQL n'a pas.",
+    "de": "DB_CONNECTION=mariadb in der .env-Datei: Der SQL-Server des Kits ist MySQL. Verwende DB_CONNECTION=mysql: Laravels mariadb-Treiber schreibt Typen, die MySQL nicht kennt."
   },
   "Il kit crea il database del progetto e scrive la connessione nel file .env.": {
     "en": "The kit creates the project's database and writes the connection in the .env file.",

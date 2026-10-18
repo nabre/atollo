@@ -11,17 +11,17 @@ fn stale_lists_are_asked_for_again() {
     kit.prepare().unwrap();
     // Installed or not, every list that can be asked for is missing.
     let missing = stale_offers(&kit);
-    assert!(missing.iter().any(|id| id == "mariadb"));
+    assert!(missing.iter().any(|id| id == "mongodb"));
     assert!(missing.iter().any(|id| id == "mongodb"));
 
-    save_offered(&kit, "mariadb", &["11.8".into()]).unwrap();
-    assert!(!stale_offers(&kit).iter().any(|id| id == "mariadb"));
+    save_offered(&kit, "mongodb", &["9.0".into()]).unwrap();
+    assert!(!stale_offers(&kit).iter().any(|id| id == "mongodb"));
 
     // Older than a day: asked for again.
     let mut all = offered(&kit);
-    all.get_mut("mariadb").unwrap().checked -= STALE_SECS + 1;
+    all.get_mut("mongodb").unwrap().checked -= STALE_SECS + 1;
     crate::fsx::write_json(&offered_file(&kit), &all).unwrap();
-    assert!(stale_offers(&kit).iter().any(|id| id == "mariadb"));
+    assert!(stale_offers(&kit).iter().any(|id| id == "mongodb"));
 
     // Apache's list of a kit with one folder per patch: asked for again.
     let mut all = offered(&kit);
@@ -29,7 +29,7 @@ fn stale_lists_are_asked_for_again() {
         "apache".into(),
         Offered {
             lines: vec!["2.4.69".into()],
-            checked: all["mariadb"].checked + STALE_SECS,
+            checked: all["mongodb"].checked + STALE_SECS,
         },
     );
     crate::fsx::write_json(&offered_file(&kit), &all).unwrap();
