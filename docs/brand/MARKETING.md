@@ -8,13 +8,14 @@
 
 Quando ti viene chiesto di lavorare su qualsiasi aspetto di comunicazione, marketing, design o rebranding del progetto, **attieniti rigorosamente a queste regole**:
 
-1. **Non alterare mai la definizione di categoria:** Il posizionamento ufficiale è **"Universal Portable Dev & AI Workspace"**. Non ridurlo mai a "utility per Windows", "alternativa a XAMPP" o "semplice launcher di agenti".
-2. **Coerenza cromatica assoluta con `vscode-defaults`:** Ogni pagina web, presentazione, grafico SVG, documento HTML o componente UI deve utilizzare esclusivamente la tavolozza definita nella **Sezione 5**, derivata da [`docs/brand/vscode-defaults/dark.json`](vscode-defaults/dark.json), [`docs/brand/vscode-defaults/light.json`](vscode-defaults/light.json), [`docs/brand/themes.py`](themes.py) e [`docs/brand/make.py`](make.py).
-3. **Tono di voce (*Voice & Tone*):**
+1. **Non alterare mai la definizione di categoria:** Il posizionamento ufficiale è **"Universal Portable Dev & AI Workspace"**. Non ridurlo mai a "utility per Windows", "alternativa a" un altro prodotto o "semplice launcher di agenti".
+2. **Nessun confronto con altri prodotti:** Non nominare né paragonare altri strumenti, servizi o sistemi (niente tabelle "noi contro loro", niente "meglio di…", niente "l'isolamento di X senza Y"). Atollo si presenta con le sue funzionalità e il suo modo di lavorare: cosa fa, come lo fa, cosa garantisce. Alla domanda «in cosa è diverso?» si risponde con gli aspetti della **Sezione 4**.
+3. **Coerenza cromatica assoluta con `vscode-defaults`:** Ogni pagina web, presentazione, grafico SVG, documento HTML o componente UI deve utilizzare esclusivamente la tavolozza definita nella **Sezione 5**, derivata da [`docs/brand/vscode-defaults/dark.json`](vscode-defaults/dark.json), [`docs/brand/vscode-defaults/light.json`](vscode-defaults/light.json), [`docs/brand/themes.py`](themes.py) e [`docs/brand/make.py`](make.py).
+4. **Tono di voce (*Voice & Tone*):**
    * **Sobrio, ingegneristico, concreto, mai gonfiato:** Evita superlativi vuoti (*"rivoluzionario"*, *"magico"*, *"il migliore al mondo"*). Gli sviluppatori si convincono con i fatti tecnici (*zero installazione, zero diritti di amministratore, 6 architetture native, isolamento del PATH, sincronizzazione di 3 agenti AI*).
    * **Evocativo ma funzionale:** La metafora marina dell'**Atollo** (laguna protetta, isola autosufficiente in qualsiasi oceano/OS) serve a rendere immediato il concetto di isolamento e portabilità, senza mai appesantire l'interfaccia tecnica con gergo nautico forzato.
-4. **Parità multilingua obbligatoria (`IT`, `EN`, `FR`, `DE`):** Ogni testo rivolto all'utente finale va mantenuto allineato nelle quattro lingue supportate dal progetto.
-5. **Trasparenza tecnica:** Dichiara sempre con onestà cosa gira nativo (`✓`), cosa in emulazione (`≈`) e quali sono i limiti fisici dei sistemi operativi ospiti (come documentato in [`docs/app/CATALOG.md`](../app/CATALOG.md), «Disponibilità per target» e «Fonti per sistema»).
+5. **Parità multilingua obbligatoria (`IT`, `EN`, `FR`, `DE`):** Ogni testo rivolto all'utente finale va mantenuto allineato nelle quattro lingue supportate dal progetto.
+6. **Trasparenza tecnica:** Dichiara sempre con onestà cosa gira nativo (`✓`), cosa in emulazione (`≈`) e quali sono i limiti fisici dei sistemi operativi ospiti (come documentato in [`docs/app/CATALOG.md`](../app/CATALOG.md), «Disponibilità per target» e «Fonti per sistema»).
 
 ---
 
@@ -78,14 +79,16 @@ Ogni presentazione completa di Atollo deve articolarsi su questi **5 punti**:
 
 ---
 
-## 4. Posizionamento Competitivo (Come rispondere a "In cosa è diverso da…?")
+## 4. Aspetti Distintivi del Programma ("Come funziona")
 
-| Strumento esistente | Problema che lascia aperto | La risposta di **Atollo** |
+Alla domanda «in cosa è diverso?» non si risponde con un confronto (Direttiva 2) ma con questi quattro aspetti di Atollo, che descrivono **come lavora** il programma. Sono anche la sezione «Come funziona» del sito (`site/strings/*.json`, chiavi `aspectsTitle` e `a1`…`a4`).
+
+| Aspetto | Cosa dire | Fatti da citare |
 | :--- | :--- | :--- |
-| **Docker / Devcontainers** | Richiede diritti di amministratore, Docker Desktop o WSL2; lento sul filesystem; impossibile da avviare su PC ospiti da una chiavetta USB. | **Isolamento senza virtualizzazione:** binari nativi sul metallo, zero permessi di root/admin, avvio istantaneo anche da disco esterno. |
-| **Nix / Devbox / mise / Scoop** | Solo riga di comando, curva di apprendimento ripida, su Windows spesso dipende da WSL2; non include editor, DB manager né orchestrazione AI. | **Potenza visuale e completa:** interfaccia grafica immediata, nativa su Windows/macOS/Linux, con Editor, DB e Agenti AI già integrati. |
-| **Laragon / Laravel Herd / XAMPP** | Legati a 1 o 2 sistemi operativi, focalizzati quasi solo su PHP/Web, non portabili tra OS diversi sullo stesso disco, privi di gestione multi-agente AI. | **Poliglotta e Cross-OS:** 20+ ecosistemi di linguaggi, rilocazione automatica tra 6 target hardware/OS e gestione nativa degli agenti AI. |
-| **Cursor / VS Code / CLI AI sparse** | Si installano nel sistema ospite, dipendono dai runtime globali del PC e costringono a configurare tre volte MCP, skill e regole per ogni agente. | **Sovranità e allineamento:** l'editor e i 3 agenti AI vivono dentro il kit, vedono gli stessi runtime del progetto e condividono un'unica configurazione. |
+| **Isolato, con i programmi nativi** | Nessun container e nessuna macchina virtuale: ogni sistema esegue i propri programmi, direttamente. | Nessun diritto di amministratore, nessun servizio di sistema, registro e `PATH` del sistema mai toccati; avvio anche da chiavetta USB o SSD esterno. |
+| **Tutto da una finestra** | Ogni area del lavoro ha la sua pagina, e ciò che succede si vede in un posto solo. | Pagine **Progetti**, **Agenti**, **Database**, **Strumenti**, **Impostazioni**; pannello **Attività** con output ed errori; riga di comando per gli script (`atollo check`, `atollo prepare`, `atollo sync`). |
+| **La cartella viaggia con te** | Cambiano unità, cartella o sistema: il lavoro resta lo stesso. | Percorsi riallineati al cambio di lettera o cartella; su ognuno dei 6 target i programmi di quel sistema; progetti, database, accessi e configurazioni degli agenti intatti. |
+| **Ogni componente verificato** | Nulla si usa senza essere controllato, e le versioni non si pestano i piedi. | Checksum SHA-256 o firma su ogni download; versioni *side-by-side* per progetto; matrice delle relazioni che avvisa delle incompatibilità. |
 
 ---
 
@@ -155,7 +158,9 @@ Per garantire che il sito web, la documentazione HTML, i componenti UI React (`-
 2. **Font Monospace (Codice, CLI, Percorsi, Versioni, Badge):**
    * Stack: `Consolas, "JetBrains Mono", "SF Mono", "Courier New", ui-monospace, monospace`
    * Dimensione base Editor/Code: `14px` (`11px–12px` per badge tecnici, SHA, identificatori di target come `win32-x64` o `darwin-arm64`).
-3. **Uso dei Tag Tecnici:**
+3. **Logo nelle intestazioni:**
+   * In header, barre di navigazione e firme si usa il solo wordmark (`wordmark-dark.svg` / `wordmark-light.svg`), mai il lockup simbolo + scritta: il simbolo è una `A` e accanto a «ATOLLO» si legge «AATOLLO». Il simbolo da solo resta per favicon, icona dell'app e immagini hero.
+4. **Uso dei Tag Tecnici:**
    * Tutti i nomi di target (`win32-x64`, `darwin-arm64`, `linux-x64`…), i percorsi (`projects/`, `data/apps/`), i comandi CLI (`atollo check`, `atollo sync`) e i formati di archivio (`.tar.gz`, `.zip`, `.AppImage`) vanno sempre resi in **monospace** con bordo sottile `1px solid var(--vsc-border)`.
 
 ---
@@ -170,8 +175,8 @@ Quando generi copy per una campagna, una sezione del sito o un post social, sceg
 * **Funzionalità da evidenziare:** Pagina **Agenti**, comando `atollo sync`, allineamento automatico di istruzioni/skill/MCP in `data/agents`, grafico dei consumi giornalieri e settimanali, salvataggio delle credenziali nel kit.
 
 ### Persona 2: Lo Sviluppatore Full-Stack / Poliglotta
-* **Dolore:** Ha il PC lento e il `PATH` inquinato da 4 versioni di Node, 3 di Python, Java, PHP, servizi di MySQL e MongoDB che partono all'avvio di Windows/macOS, oppure Docker Desktop che consuma 8 GB di RAM solo per far girare un sito locale.
-* **Hook:** *"L'isolamento di un Devcontainer. La velocità del metallo nativo. Zero servizi nel sistema."*
+* **Dolore:** Ha il PC lento e il `PATH` inquinato da 4 versioni di Node, 3 di Python, Java, PHP, servizi di MySQL e MongoDB che partono all'avvio di Windows/macOS, oppure una macchina virtuale che consuma 8 GB di RAM solo per far girare un sito locale.
+* **Hook:** *"Ambienti isolati. Programmi nativi. Zero servizi nel sistema."*
 * **Funzionalità da evidenziare:** Pagine **Progetti**, **Database** e **Strumenti**, versioni *side-by-side* per progetto, matrice delle relazioni, avvio e arresto istantaneo di DB e web server solo quando servono.
 
 ### Persona 3: Lo Studente, Docente o Consulente Nomade
@@ -240,3 +245,5 @@ Se all'agente viene chiesto di applicare o aggiornare il brand **Atollo** nel co
    * [`tauri/i18n/catalog.json`](../../tauri/i18n/catalog.json) (stringhe del motore Rust in `it`, `en`, `fr`, `de`)
    * [`ui/src/locales/en.json`](../../ui/src/locales/en.json), [`fr.json`](../../ui/src/locales/fr.json), [`de.json`](../../ui/src/locales/de.json) e testi italiani nei componenti `ui/src/**`
    * [`README.md`](../../README.md), `docs/README.{en,fr,de}.md`, [`docs/app/GUIDA.md`](../app/GUIDA.md), [`docs/app/ARCHITECTURE.md`](../app/ARCHITECTURE.md)
+4. **Sito (`https://nabre.github.io/atollo/`):**
+   * [`site/strings/`](../../site/strings/) (`it`, `en`, `fr`, `de`, stesse chiavi: la build si ferma se una manca), [`site/template.html`](../../site/template.html), [`site/assets/site.css`](../../site/assets/site.css) (i colori della Sezione 5); compilato da [`site/build.mjs`](../../site/build.mjs) e pubblicato da `.github/workflows/site.yml` (DECISIONS.md D-126).

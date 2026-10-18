@@ -3,6 +3,7 @@
 ## Sito di Atollo (19/10/2026)
 
 - **Pagina di presentazione** su GitHub Pages, `https://nabre.github.io/atollo/` (D-126): in italiano, inglese, francese e tedesco come i README, con i testi di [MARKETING.md](../brand/MARKETING.md), i colori dell'app e tre schermate della guida. Il pulsante «Scarica» riconosce il sistema del visitatore (Windows, macOS, Linux, x64 o ARM64) e punta al file giusto dell'ultimo rilascio; l'elenco dei sei sistemi ha il link a ogni file. Prima del primo rilascio, o senza JavaScript, ogni link apre la pagina dei rilasci.
+- **«Come funziona»** al posto del confronto con altri prodotti: quattro aspetti di Atollo (isolato con i programmi nativi, tutto da una finestra, la cartella che viaggia, ogni componente verificato). In alto solo la scritta «ATOLLO», senza il simbolo accanto. [MARKETING.md](../brand/MARKETING.md) ora vieta i confronti e fissa la regola del logo.
 - **Sorgente in `site/`**, compilata da `node site/build.mjs` in `_site/` (ignorata da Git) e pubblicata dal workflow `site.yml` a ogni push su `main` che tocca `site/`, `docs/brand/` o `docs/app/images/`.
 
 **Verificato**: build locale (quattro pagine, nessun segnaposto rimasto, chiavi uguali nelle quattro lingue), pagina aperta in Chrome in tema chiaro con Windows x64 riconosciuto e il messaggio «nessun rilascio pubblicato», workflow letto con PyYAML. Non provati: il deploy vero su Pages e il tema scuro a schermo.
