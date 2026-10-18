@@ -4,8 +4,8 @@
 //!
 //! Caddy is the web server proposed on every system (Q-3, D-111): it reads
 //! no `.htaccess`, and gets the rules of a front controller instead
-//! (`projects/caddy.rs`), which is what the stock `.htaccess` of WordPress,
-//! Laravel and Drupal say. Apache is proposed too only on Windows (the only
+//! (`projects/caddy.rs`), which is what the stock `.htaccess` of WordPress
+//! and Laravel say (Drupal's denies more). Apache is proposed too only on Windows (the only
 //! system with the kit's Apache) and only for a project whose `.htaccess`
 //! has rules of its own: then it comes first.
 
@@ -60,17 +60,12 @@ const KNOWN_RULES: [&str; 26] = [
     "directoryindex index.html index.php",
 ];
 
-/// Drupal's stock `.htaccess`, recognised by its first lines: long, but
-/// all of it is what its front controller and Caddy's rules do.
-const DRUPAL_HTACCESS: &str = "Apache/PHP/Drupal settings";
-
 /// A `.htaccess` with rules of its own: any directive besides those of the
-/// stock files of WordPress, Laravel and Drupal ([`KNOWN_RULES`]).
-/// Comments and empty lines are not rules.
+/// stock files of WordPress and Laravel ([`KNOWN_RULES`]). Drupal's stock
+/// file counts as its own rules: its FilesMatch block denies *.yml, *.twig,
+/// *.module, composer.json and backups, which Caddy's rules do not, so on
+/// Windows Apache comes first for it. Comments and empty lines are not rules.
 pub fn htaccess_has_own_rules(text: &str) -> bool {
-    if text.contains(DRUPAL_HTACCESS) {
-        return false;
-    }
     text.lines()
         .map(|l| l.split_whitespace().collect::<Vec<_>>().join(" "))
         .filter(|l| !l.is_empty() && !l.starts_with('#'))

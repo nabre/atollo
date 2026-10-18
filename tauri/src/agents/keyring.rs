@@ -756,19 +756,23 @@ impl Drop for Lock {
     }
 }
 
+/// An agy of the kit started less than 20 s ago (the starting mark), and
+/// may not show as running yet.
+fn starting_is_fresh(f: &Files) -> bool {
+    fs::metadata(&f.starting)
+        .and_then(|m| m.modified())
+        .map(|t| t.elapsed().unwrap_or_default() < Duration::from_secs(20))
+        .unwrap_or(false)
+}
+
 fn save_login(kit: &Kit, f: &Files, store: &dyn Store) -> Result<()> {
     if !f.seen.exists() || kit_agy_running(kit) {
         return Ok(());
     }
-    if let Ok(age) = fs::metadata(&f.starting)
-        .and_then(|m| m.modified())
-        .map(|t| t.elapsed().unwrap_or_default())
-    {
-        if age < Duration::from_secs(20) {
-            return Ok(());
-        }
-        let _ = fs::remove_file(&f.starting);
+    if starting_is_fresh(f) {
+        return Ok(());
     }
+    let _ = fs::remove_file(&f.starting);
     let before = read(&f.seen);
     let now = store.list()?;
     let mut keep: Vec<Item> = read(&f.store);
@@ -945,8 +949,10 @@ fn restore_checked(
 ) -> Result<()> {
     let f = files(kit);
     let _lock = Lock::take(kit)?;
-    if f.seen.exists() && kit_agy_running(kit) {
-        // Another agy of the kit runs: the login is already in place.
+    if f.seen.exists() && (kit_agy_running(kit) || starting_is_fresh(&f)) {
+        // Another agy of the kit runs, or has just been started: the login
+        // is already in place, and listing the store now would take the
+        // kit's own login for this computer's.
         fs::write(&f.starting, b"")?;
         return Ok(());
     }

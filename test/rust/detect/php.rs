@@ -54,7 +54,8 @@ fn htaccess_rules_of_its_own() {
     use crate::kit::Os;
     assert!(!htaccess_has_own_rules(LARAVEL_HTACCESS));
     assert!(!htaccess_has_own_rules(WORDPRESS_HTACCESS));
-    assert!(!htaccess_has_own_rules(
+    // Drupal's stock file denies files Caddy's rules serve: its own rules.
+    assert!(htaccess_has_own_rules(
         "#\n# Apache/PHP/Drupal settings:\n#\n<FilesMatch \"x\">\n  Require all denied\n</FilesMatch>\n"
     ));
     assert!(!htaccess_has_own_rules("RewriteEngine On\n\n# a comment\n"));
