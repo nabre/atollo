@@ -929,6 +929,7 @@ Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le consol
   - **ambiente**: `XAUTHORITY` e `WAYLAND_DISPLAY` conservati, Homebrew dopo i programmi del kit su macOS, `python` nel PATH su Unix, `data/home/AppData` creata solo su Windows; proxy del sistema da `scutil --proxy` e da GNOME; lingua da `AppleLanguages`; WebKitGTK controllato prima della finestra;
   - **lock della preparazione**: `flock` su `data/app/prepare.lock` fra processi; la rilocazione degli agenti distingue le maiuscole fuori da Windows.
   PHP, server web e database su macOS e Linux: D-110, D-111, D-112. Terminale e agenti: D-109, accessi: D-115.
+- **Oggi** (19/10/2026, [issue #8](https://github.com/nabre/atollo/issues/8)). Tolta `os::volume::startup_problem`, mai chiamata: il blocco all'avvio di un disco `noexec` lo fa `disk_stop` in `main.rs` con `disk_notice`, che in più scrive nel log l'avviso di FAT32 ed exFAT; la pagina Impostazioni legge lo stesso `disk_notice` (`commands::app`). Nessun cambio di comportamento.
 
 ## D-106 Conferme nella pagina come `alertdialog` e un'unica trappola del focus
 
