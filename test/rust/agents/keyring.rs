@@ -157,6 +157,11 @@ struct Fake {
     /// No sealing key (store locked, access denied).
     no_key: bool,
     forgot: Cell<u32>,
+    /// Locked meanwhile (the Keychain locked after N minutes, an unlock
+    /// prompt cancelled): `list` fails from now on.
+    locked_now: Cell<bool>,
+    /// A target that cannot be written.
+    refuse: Option<&'static str>,
 }
 
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -199,11 +204,17 @@ impl Store for Fake {
             Down::Missing => return Err(anyhow::Error::new(NoStore("not provided".into()))),
             Down::Locked => anyhow::bail!("collection is locked"),
         }
+        if self.locked_now.get() {
+            anyhow::bail!("Keychain: security exited with 36");
+        }
         Ok(self.items.borrow().clone())
     }
     fn write(&self, item: &Item, persist: u32) -> Result<()> {
         if self.down != Down::Up {
             anyhow::bail!("no Secret Service");
+        }
+        if self.refuse == Some(item.target.as_str()) {
+            anyhow::bail!("{}: not written", item.target);
         }
         self.clock.set(self.clock.get() + 1);
         let mut items = self.items.borrow_mut();
@@ -470,6 +481,71 @@ fn no_sealing_key_fails_closed() {
     };
     restore_with(&kit, &empty).unwrap();
     assert_eq!(empty.secret_of("jetski:other").as_deref(), Some("kit"));
+}
+
+/// `security find-generic-password`: only 44 is "no such item"; 36
+/// (interaction not allowed), 128 (unlock cancelled) or a kill are errors,
+/// never an empty Keychain.
+#[test]
+fn keychain_read_failures_are_errors() {
+    assert!(mac_found(Some(0)).unwrap());
+    assert!(!mac_found(Some(44)).unwrap());
+    for code in [Some(36), Some(128), Some(1), Some(51), None] {
+        assert!(mac_found(code).is_err(), "{code:?}");
+    }
+    assert!(format!("{:#}", mac_found(Some(36)).unwrap_err()).contains("36"));
+}
+
+/// The store becomes unreadable between the start and the end of agy: the
+/// save stops before touching anything (the kit's login kept, the
+/// "before" file kept to retry), and the next save cleans up.
+#[test]
+fn unreadable_store_at_save_changes_nothing() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item(T, "kit")]).unwrap();
+    let store = Fake::default();
+    restore_with(&kit, &store).unwrap();
+    let kit_file = fs::read(&f.store).unwrap();
+    let seen_file = fs::read(&f.seen).unwrap();
+
+    store.locked_now.set(true);
+    let _ = fs::remove_file(&f.starting);
+    assert!(save_with(&kit, &store).is_err());
+    assert_eq!(
+        fs::read(&f.store).unwrap(),
+        kit_file,
+        "the kit's login not dropped"
+    );
+    assert_eq!(fs::read(&f.seen).unwrap(), seen_file, "kept to retry");
+    assert_eq!(store.forgot.get(), 0, "the sealing key kept");
+    assert_eq!(store.secret_of(T).as_deref(), Some("kit"));
+    // A restore refuses too, without overwriting anything.
+    assert!(restore_with(&kit, &store).is_err());
+    assert_eq!(fs::read(&f.seen).unwrap(), seen_file);
+
+    store.locked_now.set(false);
+    save_with(&kit, &store).unwrap();
+    assert!(!pending(&kit));
+    assert_eq!(store.secret_of(T), None, "cleaned once readable");
+    assert_eq!(read(&f.store)[0].blob.as_deref(), Some("kit"));
+}
+
+/// A restore that fails after the computer's sign-in was sealed: no
+/// "before" file, so the sealing key made for it goes too.
+#[test]
+fn failed_restore_forgets_the_sealing_key() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item("jetski:other", "kit")]).unwrap();
+    let store = Fake {
+        refuse: Some("jetski:other"),
+        ..Fake::with(&[(T, "own")])
+    };
+    assert!(restore_with(&kit, &store).is_err());
+    assert!(!f.seen.exists() && !f.starting.exists());
+    assert_eq!(store.forgot.get(), 1);
+    assert_eq!(store.secret_of(T).as_deref(), Some("own"));
 }
 
 #[test]

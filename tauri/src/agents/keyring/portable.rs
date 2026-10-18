@@ -46,6 +46,20 @@ pub fn no_secret_service(error: &str) -> bool {
 /// `secretServiceProvider`) and the strings `gemini` and `antigravity`.
 pub const KNOWN: &[(&str, &str)] = &[("gemini", "antigravity")];
 
+/// The exit status of `security find-generic-password`: `Ok(true)` found,
+/// `Ok(false)` no such item (44, errSecItemNotFound), an error for anything
+/// else (36 interaction not allowed, 128 unlock cancelled, killed): a
+/// Keychain that cannot be read is never taken for an empty one.
+#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
+pub fn mac_found(code: Option<i32>) -> Result<bool> {
+    match code {
+        Some(0) => Ok(true),
+        Some(44) => Ok(false),
+        Some(c) => bail!("Keychain: security exited with {c}"),
+        None => bail!("Keychain: security was killed"),
+    }
+}
+
 /// `(service, user)` of a go-keyring target `<service>:<user>`.
 pub fn split_target(target: &str) -> Option<(&str, &str)> {
     target
