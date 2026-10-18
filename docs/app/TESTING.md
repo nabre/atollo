@@ -50,6 +50,8 @@ Coprono, fra l'altro:
 | `Test darwin-x64` | `macos-15-intel` | come sopra (`macos-13` non c'è più) |
 | `Test win32-arm64` | `windows-11-arm` | build dell'interfaccia, `cargo test` nativo |
 | `Build …` | `windows-latest` | exe x64 e arm64, prove reali (x64) |
+| `Bundle darwin-*` | `macos-latest`, `macos-15-intel` | `Atollo.app` con firma ad hoc verificata, `Info.plist`, zip, avvio di prova (D-113) |
+| `Bundle linux-*` | `ubuntu-24.04`, `ubuntu-24.04-arm`, contenitore `ubuntu:22.04` | AppImage e `tar.gz`, minimo di glibc con `objdump`, `--version` e `check` sotto `xvfb-run` |
 
 Ogni job di test scrive nel riepilogo della run le prove passate, fallite e ignorate, con i nomi di quelle fallite. Su macOS gira tutto `cargo test`: con tauri 2.12.1 il feature `test` (il runtime finto di `test\rust\main.rs`) compila anche lì, quindi non serve un feature a parte (con 2.12.0 mancava `transparent`). In un repository senza runner ARM64 (privato) la variabile del repository `ARM64_RUNNERS=off` toglie i job `linux-arm64` e `win32-arm64`, che altrimenti resterebbero in coda: `linux-arm64` esce dalla lista dei target della matrice (il runner si ricava dal target, senza `include`, che GitHub applica dopo `exclude` e rimetterebbe il target tolto). Il job `win32-arm64` installa la toolchain `stable-aarch64-pc-windows-msvc` e fallisce se `rustc -vV` non riporta `host: aarch64-pc-windows-msvc`: le prove non girano mai in emulazione x64 senza dirlo.
 
@@ -63,7 +65,34 @@ bash scripts/test-linux.sh                             # dentro WSL o su Linux
 bash scripts/test-linux.sh --clippy -- servers::       # anche clippy; filtro e opzioni dopo --
 ```
 
-Se manca qualcosa stampa il comando da eseguire (`sudo apt-get install -y …`, o `rustup` per l'utente) ed esce con 2; con prove fallite esce con 1. `target/` resta nella copia, quindi le esecuzioni dopo la prima compilano solo ciò che è cambiato. La copia usa `rsync --delete`: lo script copia solo in una cartella vuota o in una copia fatta da lui (file `.atollo-linux-copy`); altrimenti esce con 2 senza toccare nulla. Anche un clone del repository senza quel file (con il suo `.git` e lavoro non salvato) viene rifiutato: scegliere un'altra cartella con `ATOLLO_LINUX_DIR`. `bash scripts/test-linux.sh --check-dest` dice soltanto se la cartella va bene (0 sì, 2 no) e gira ovunque, anche in Git Bash. `cargo` gira dentro la copia, così valgono i suoi `.cargo/config.toml` e `rust-toolchain.toml`, non quelli sopra la cartella di Windows. L'interfaccia compilata (`dist\`) viene dalla copia di Windows (`npm -w ui run build`); senza, lo script la compila in Linux con Node.js. WSL2 richiede la virtualizzazione attiva nel BIOS e la «Piattaforma macchina virtuale» di Windows (`wsl.exe --install --no-distribution`, da amministratore).
+Se manca qualcosa stampa il comando da eseguire (`sudo apt-get install -y …`, o `rustup` per l'utente) ed esce con 2; con prove fallite esce con 1. `target/` resta nella copia, quindi le esecuzioni dopo la prima compilano solo ciò che è cambiato. La copia usa `rsync --delete`: lo script copia solo in una cartella vuota o in una copia fatta da lui (file `.atollo-linux-copy`); altrimenti esce con 2 senza toccare nulla. Anche un clone del repository senza quel file (con il suo `.git` e lavoro non salvato) viene rifiutato: scegliere un'altra cartella con `ATOLLO_LINUX_DIR`. `bash scripts/test-linux.sh --check-dest` dice soltanto se la cartella va bene (0 sì, 2 no) e gira ovunque, anche in Git Bash. `cargo` gira dentro la copia, così valgono i suoi `.cargo/config.toml` e `rust-toolchain.toml`, non quelli sopra la cartella di Windows. L'interfaccia compilata (`dist\`) viene dalla copia di Windows (`npm -w ui run build`); senza, lo script la compila in Linux con Node.js. WSL2 richiede la virtualizzazione attiva nel BIOS e la «Piattaforma macchina virtuale» di Windows (`wsl.exe --install --no-distribution`, da amministratore). Prima dello script, in un worktree, `npm -w ui run build` da Windows: dentro WSL l'`npm` trovato può essere quello di Windows.
+
+**Controllo incrociato da Windows.** `bash scripts/cross-check/xcheck.sh <target> clippy --all-targets -- -D warnings` (target `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-apple-darwin`) compila il codice Unix con strumenti finti, senza linker: trova gli errori di tipo e di `cfg`, non quelli di link (un `_EMBED_INFO_PLIST` doppio su macOS l'ha visto solo la CI).
+
+**CI su un altro branch.** I push di `main` e `feature/platforms` avviano la CI da soli; per un altro branch: `git push -u origin <branch>`, poi `gh workflow run app.yml --ref <branch>`.
+
+**Prove con programmi veri** (`ATOLLO_TEST_KIT=<kit con i componenti>`, ignorate senza):
+- `real_databases_start_and_stop`: MySQL, MariaDB e MongoDB del kit su porte libere: avvio, database e utente di un progetto (accesso TCP come quell'utente), copia e ripristino, eliminazione, arresto senza resti (D-110); su Windows e in WSL;
+- `caddy_pool_two_php_sites_alias_and_reload`: un pool Caddy con due siti PHP e un alias, `caddy reload` dopo l'aggiunta di un sito senza fermare l'altro (D-111);
+- `a_new_kit_needs_mysql_for_every_sql_need` (`db::services::data`, senza kit): ogni bisogno SQL del catalogo e dei framework si risolve in MySQL su un kit nuovo.
+
+**Secret Service in WSL senza root** (D-115). Per provare Antigravity con un Secret Service vero:
+
+```
+mkdir -p ~/gk && cd ~/gk
+apt-get download gnome-keyring libgcr-base-3-1 libgck-1-0 libsecret-tools
+for f in *.deb; do dpkg -x "$f" root; done
+export LD_LIBRARY_PATH=~/gk/root/usr/lib/x86_64-linux-gnu PATH=~/gk/root/usr/bin:$PATH
+dbus-run-session -- sh -c 'echo | gnome-keyring-daemon --unlock --components=secrets; cargo test keyring'
+```
+
+Con `keyring.json` che contiene `gemini:antigravity` e un nome di Windows (`jetski:other`), dopo `restore` e `save` il Secret Service è vuoto e `keyring.json` ha tutte e due le voci. Senza Secret Service la copia in chiaro si scrive solo sul disco di Linux (600), mai su `/mnt/<lettera>`.
+
+**Kit condiviso fra Windows e WSL.** PHP 8.5 installato da Windows e da WSL nella stessa cartella del kit, nei due ordini: `data/php/8.5/php.ini` con le 12 righe `extension=` e `data/php/linux-x64/8.5/php.ini` senza nessuna; `php -v` su Linux senza «Unable to load». phpMyAdmin 5.2.3 sul PHP 8.5.8 di static-php-cli: `index.php` 200, nessun avviso con `E_ALL`.
+
+**Preparazione da Windows** (D-114). `Atollo.exe prepare --target linux-x64 --only git` dice `(bootstrap linux-x64)`; sul target il primo avvio, o `prepare --only git`, scrive «bootstrap pre-downloaded» e `git clone https://…` funziona. In WSL: `prepare --only cc` senza Zig non mette `CC`/`CXX` né `cc/bin` nel PATH; `prepare --only zig,cc` dà `CC=…/cc/bin/cc` e un hello in C si compila con `make` ed esegue.
+
+**Bundle Linux in locale.** `docker run ubuntu:22.04` con i pacchetti del job `Bundle linux-*`, `tauri build --bundles appimage`, minimo di glibc con `objdump -T`, poi `--version` e `check` sotto `xvfb-run` per l'AppImage (`--appimage-extract-and-run`) e per il `tar.gz`.
 
 ## Prove sull'interfaccia reale
 
@@ -76,7 +105,7 @@ Per le prove senza mani sull'exe di release (fase 6) si usa un kit di prova fuor
 
 ## Checklist manuale
 
-Rispetto alla checklist del prompt:
+Rispetto alla checklist del prompt iniziale (i requisiti sono in ARCHITECTURE.md, «Requisiti»):
 - la voce sulla rete usa la pagina Impostazioni al posto di `data\proxy.cmd` (D-54);
 - la voce sul menu `setup\Windows.cmd` non si applica, perché questo è un prodotto separato, senza gli script del kit (Q1 del piano).
 
@@ -94,7 +123,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, console del kit (`conhost.exe`, `pwsh.exe`) o server di progetto.
 - [ ] **ARM64.** L'exe è nativo, l'editor gira in emulazione e l'avviso si vede.
 - [ ] **R spostato** (D-104). Kit con R su `D:`, poi su `E:`: dopo l'avvio `lib\R\etc\x64\Makeconf` ha `LOCAL_SOFT` sulla cartella nuova e `install.packages(..., type="source")` compila.
-- [ ] **macOS e Linux** (D-105, primo avvio reale). L'app parte; una seconda apertura porta in primo piano la prima; un progetto avviato e poi l'app chiusa non lasciano processi; il temp del kit si pulisce; MariaDB su Linux x64 si installa dal tarball `linux-systemd`; C/C++ su macOS Intel installa LLVM 20.1.7. Accesso di Antigravity e «Apri in…» danno un errore chiaro.
+- [ ] **macOS e Linux**: la sezione «macOS, Linux e Windows ARM64» qui sotto.
 
 ### Progetti
 - [ ] **Nuovo progetto** «prova 1»: la cartella compare, ha il pulsante «Elimina la cartella vuota» e l'eliminazione funziona.
@@ -118,6 +147,46 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Due azioni web di un progetto nello stesso pool** (BUG-V3-02). `http://<progetto>.localhost:<porta>` e `http://<azione>.<progetto>.localhost:<porta>` servono le due cartelle.
 - [ ] **Due versioni di MariaDB insieme** (D-102). Con 10.11 e 11.4 installati: Database › «Altre versioni» avvia 10.11 su una porta sua mentre 11.4 resta sulla 3306; `mariadb -uroot -h127.0.0.1 -P<porta> -e "select version()"` dà le due versioni. Progetto con «Versione del server» 10.11: «Crea» crea database e utente su 10.11; un programma del progetto vede `DB_PORT` di 10.11; con un `.env` che ha `DB_PORT=3310` vale quello. Cambiare la versione principale mentre 10.11 gira è rifiutato; chiusa l'app, nessun `mariadbd.exe` resta.
 - [ ] **Prove con kit reale.** `ATOLLO_TEST_KIT=<kit con Apache> cargo test start_reports_syntax_error apache_pool_reload_twice` passa.
+
+### macOS, Linux e Windows ARM64 (D-105, D-108…D-115)
+Su macOS Apple Silicon e Intel, Linux x64 e ARM64 (un PC o una VM con desktop: WSL2 non ha chiavette né `noexec` veri), con il bundle della CI o `tauri build --debug --no-bundle`.
+
+Primo avvio:
+- [ ] **Kit su disco interno e su chiavetta exFAT.** Avvio, `projects/` e `data/` accanto a `Atollo.app` o all'AppImage, niente dentro il bundle. Un `.app` scaricato con il browser e non spostato (App Translocation) ferma l'avvio con il comando `xattr`.
+- [ ] **Seconda apertura** porta in primo piano la prima.
+- [ ] **Componenti obbligatori** (PowerShell 7, GitHub CLI, Git, editor) installati e verificati; `Atollo check` verde.
+- [ ] **Progetti.** Nuovo progetto vuoto e clone di un repository privato.
+- [ ] **Editor**: apertura, terminale integrato con l'ambiente del kit (`echo $CP_DATA`), estensioni installate.
+- [ ] **Terminale del kit e Claude Code** da un progetto: si aprono in una scheda dell'app, rispondono ai tasti, chiudendo la scheda non resta nessun processo.
+- [ ] **Chiusura dell'app** con un terminale e un database aperti: nessun processo resta. `kill -9` dell'app: nessun processo del kit entro 6 s (`pgrep -f <kit>`).
+- [ ] **Kit spostato** in un'altra cartella: tutto riparte, Git senza reinstallare.
+- [ ] **Chiavetta montata `noexec`** (Linux): messaggio con il comando per rimontare, nessuna installazione.
+- [ ] **«Rimuovi l'unità»**: chiude tutto e lascia espellere.
+
+Componenti:
+- [ ] Ogni componente disponibile per il sistema: installazione, `check`, rimozione senza resti. Android su Linux ARM64 si mostra non disponibile con il motivo.
+- [ ] **C/C++** su Linux senza `build-essential` e su macOS senza Xcode CLT: `cc hello.c && ./a.out`, `cargo build` di un crate con `cc-rs`. Su macOS senza CLT la pagina del componente avvisa per i framework Apple.
+- [ ] **Rust su Windows 11 ARM64** senza Visual Studio: `cargo new x && cargo run`.
+- [ ] **Ruby**: `ruby -v`, `gem install json` (nativa); dopo uno spostamento del kit i comandi delle gem partono.
+
+Stack web e database:
+- [ ] **Laravel con MySQL** su macOS e Linux: `composer create-project`, migrazioni, sito su Caddy, phpMyAdmin.
+- [ ] **WordPress con Caddy**: permalink funzionanti senza `.htaccess`. Drupal su Windows propone Apache.
+- [ ] **Pool Caddy** con due siti e un alias verso un altro progetto; aggiungere un sito ricarica il pool senza fermare l'altro.
+- [ ] **Stessa cartella dati MySQL** letta da Windows e da Linux con la stessa linea.
+- [ ] **MySQL su Ubuntu 24.04** senza `libaio1` (solo `libaio1t64`): il server parte; senza `libnuma1` l'errore dice `sudo apt install libaio1t64 libnuma1`.
+
+Accessi e pacchetto:
+- [ ] **Antigravity e Claude Code** collegati su un Mac (Claude con «Collega con un token»), kit portato su un altro Mac: già collegati; nel Portachiavi del primo non resta nulla.
+- [ ] **Antigravity su Linux** con un Secret Service bloccato: nessuna voce spostata, avviso; senza Secret Service e kit su exFAT: rifiutato.
+- [ ] **Rilasci**: download con il browser, apertura su un sistema pulito, aggiornamento dell'app (il `tar.gz` dice che la versione nuova va scaricata a mano). Senza FUSE: `./Atollo.AppImage --appimage-extract-and-run`.
+
+Kit preparato su Windows per un altro sistema (a ogni rilascio):
+- [ ] Su Windows `Atollo.exe prepare --target linux-x64` (poi `darwin-arm64`, `linux-arm64`) su una chiavetta exFAT, con l'app per quel sistema copiata accanto.
+- [ ] Il selettore «Piattaforma» mostra per quel target cosa è pre-scaricato, cosa si completa al primo avvio e cosa non è disponibile.
+- [ ] Sull'altro sistema: primo avvio dalla chiavetta, installazioni da `.bootstrap` completate (Rust, Git di dugite-native, R e i componenti conda, Android, pnpm), nessun nuovo download per ciò che era già scaricato.
+- [ ] Di nuovo su Windows: il kit si apre come prima; `data/apps/win32-x64` e le impostazioni di Windows sono intatti, la scelta dei componenti non è cambiata.
+- [ ] Stesso progetto aperto sui due sistemi: impostazioni, porte e database del progetto condivisi (`data/projects/<p>`).
 
 ### Dati per progetto e file di passaggio (D-89, D-90)
 - [ ] **Migrazione da un kit della versione 1.** Con la copia di un kit reale (dati in `data\app\projects`, `ports.json`, `secrets.json`, `data\db\backup`): al primo avvio compaiono `data\projects\<progetto>\`, `data\app\layout.txt` vale `2`, `data\app\pre-v2\` ha le due copie. Progetti, porte (anche quelle bloccate), password e copie dei database intatti; `.env` dei progetti ancora validi; un secondo avvio non cambia nulla.

@@ -6,7 +6,7 @@
 
 Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShell 7, GitHub CLI, den Editor und was diese brauchen (Git für GitHub CLI). Alles andere wird auf der Seite „Werkzeuge“ gewählt oder kommt, wenn es gebraucht wird: Node.js mit einer `npm`-Aktion, uv mit einem `uvx`-MCP-Server und so weiter.
 
-> Stand und Plan (auf Italienisch): [app/PLAN.md](app/PLAN.md), Neuigkeiten: [app/CHANGELOG.md](app/CHANGELOG.md).
+> Auf Italienisch: Anleitung [app/GUIDA.md](app/GUIDA.md), Entscheidungen [app/DECISIONS.md](app/DECISIONS.md), Neuigkeiten [app/CHANGELOG.md](app/CHANGELOG.md); offene Arbeit: [Issues](https://github.com/nabre/atollo/issues).
 
 ## Verwendung
 
@@ -31,7 +31,7 @@ Die Konsole von Atollo ist die klassische Windows-Konsole mit integrierter Power
 
 ## Bekannte Grenzen
 
-- Auf Windows 10 und 11 (`x64` und `ARM64`), auf ARM64 laufen Editor, PHP, Apache und TinyTeX in x64-Emulation; R ist nicht verfügbar (Details zu den Plattformen in [app/MATRICE-PIATTAFORME.html](app/MATRICE-PIATTAFORME.html)).
+- Auf Windows 10 und 11 (`x64` und `ARM64`), macOS (Apple Silicon und Intel) und Linux (`x64` und `ARM64`). Auf Windows ARM64 laufen Editor, PHP, Apache, MySQL und TinyTeX in x64-Emulation, R ist nicht verfügbar; auf Linux ARM64 fehlt Android. Für macOS und Linux gibt es noch keine Releases ([#5](https://github.com/nabre/atollo/issues/5)), und die Anmeldung der Agenten muss noch auf einem Mac getestet werden ([#6](https://github.com/nabre/atollo/issues/6)); Komponenten und Quellen pro System in [app/CATALOG.md](app/CATALOG.md) (auf Italienisch).
 - Außerhalb des Atollo-Ordners bleiben nur die Spuren von Windows, temporäre Übergangsdateien im System-Temp-Ordner (werden beim Beenden automatisch gelöscht), die Anmeldung von GitHub CLI in der Anmeldeinformationsverwaltung, wenn Sie sich in einer Konsole mit `gh auth login` anmelden (die in den Einstellungen bleibt in `data\gh`), und die von Antigravity, solange `agy` geöffnet ist (nur für die Sitzung).
 - Die Ordner in `projects\` gelten für Claude Code und Codex als vertrauenswürdig: nur Projekte öffnen, denen man vertraut. Der Editor fragt dagegen beim ersten Öffnen jedes Projekts und öffnet nicht vertrauenswürdige im „eingeschränkten Modus“.
 - Die Nutzungslimits der Agenten stammen aus nicht dokumentierten Schnittstellen der Anbieter und können nach einem ihrer Updates nicht mehr funktionieren.

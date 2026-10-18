@@ -6,7 +6,7 @@
 
 Au premier démarrage, l'application télécharge d'elle-même les composants système : PowerShell 7, GitHub CLI, l'éditeur et ce dont ils ont besoin (Git pour GitHub CLI). Le reste se choisit dans la page « Outils », ou arrive quand il sert : Node.js avec une action `npm`, uv avec un serveur MCP `uvx`, et ainsi de suite.
 
-> État et plan (en italien) : [app/PLAN.md](app/PLAN.md), nouveautés : [app/CHANGELOG.md](app/CHANGELOG.md).
+> En italien : guide [app/GUIDA.md](app/GUIDA.md), décisions [app/DECISIONS.md](app/DECISIONS.md), nouveautés [app/CHANGELOG.md](app/CHANGELOG.md) ; travail ouvert : [issues](https://github.com/nabre/atollo/issues).
 
 ## Utilisation
 
@@ -31,7 +31,7 @@ La console d'Atollo est la console classique de Windows avec PowerShell 7 intég
 
 ## Limites connues
 
-- Sur Windows 10 et 11 (`x64` et `ARM64`), sur ARM64 l'éditeur, PHP, Apache et TinyTeX tournent en émulation x64 ; R n'est pas disponible (détails multi-plateformes dans [app/MATRICE-PIATTAFORME.html](app/MATRICE-PIATTAFORME.html)).
+- Sur Windows 10 et 11 (`x64` et `ARM64`), macOS (Apple Silicon et Intel) et Linux (`x64` et `ARM64`). Sur Windows ARM64 l'éditeur, PHP, Apache, MySQL et TinyTeX tournent en émulation x64 et R n'est pas disponible ; sur Linux ARM64 Android manque. macOS et Linux n'ont pas encore de versions publiées ([#5](https://github.com/nabre/atollo/issues/5)) et la connexion des agents reste à essayer sur un Mac ([#6](https://github.com/nabre/atollo/issues/6)) ; composants et sources par système dans [app/CATALOG.md](app/CATALOG.md) (en italien).
 - Hors du dossier d'Atollo, il ne reste que les traces de Windows, les fichiers temporaires de transit dans le dossier temporaire du système (supprimés automatiquement à la fermeture), la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle faite dans les Paramètres reste dans `data\gh`) et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
 - Les dossiers de `projects\` sont considérés comme fiables par Claude Code et Codex : n'ouvrez que des projets de confiance. L'éditeur, lui, demande à la première ouverture de chaque projet et ouvre en « mode restreint » ceux auxquels vous ne faites pas confiance.
 - Les limites d'utilisation des agents viennent d'interfaces non documentées des fournisseurs et peuvent cesser de fonctionner après une de leurs mises à jour.

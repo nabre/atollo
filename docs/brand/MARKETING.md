@@ -14,7 +14,7 @@ Quando ti viene chiesto di lavorare su qualsiasi aspetto di comunicazione, marke
    * **Sobrio, ingegneristico, concreto, mai gonfiato:** Evita superlativi vuoti (*"rivoluzionario"*, *"magico"*, *"il migliore al mondo"*). Gli sviluppatori si convincono con i fatti tecnici (*zero installazione, zero diritti di amministratore, 6 architetture native, isolamento del PATH, sincronizzazione di 3 agenti AI*).
    * **Evocativo ma funzionale:** La metafora marina dell'**Atollo** (laguna protetta, isola autosufficiente in qualsiasi oceano/OS) serve a rendere immediato il concetto di isolamento e portabilità, senza mai appesantire l'interfaccia tecnica con gergo nautico forzato.
 4. **Parità multilingua obbligatoria (`IT`, `EN`, `FR`, `DE`):** Ogni testo rivolto all'utente finale va mantenuto allineato nelle quattro lingue supportate dal progetto.
-5. **Trasparenza tecnica:** Dichiara sempre con onestà cosa gira nativo (`✓`), cosa in emulazione (`≈`) e quali sono i limiti fisici dei sistemi operativi ospiti (come documentato in [`docs/app/MATRICE-PIATTAFORME.html`](../app/MATRICE-PIATTAFORME.html)).
+5. **Trasparenza tecnica:** Dichiara sempre con onestà cosa gira nativo (`✓`), cosa in emulazione (`≈`) e quali sono i limiti fisici dei sistemi operativi ospiti (come documentato in [`docs/app/CATALOG.md`](../app/CATALOG.md), «Disponibilità per target» e «Fonti per sistema»).
 
 ---
 
@@ -239,4 +239,4 @@ Se all'agente viene chiesto di applicare o aggiornare il brand **Atollo** nel co
 3. **Localizzazione e Documentazione:**
    * [`tauri/i18n/catalog.json`](../../tauri/i18n/catalog.json) (stringhe del motore Rust in `it`, `en`, `fr`, `de`)
    * [`ui/src/locales/en.json`](../../ui/src/locales/en.json), [`fr.json`](../../ui/src/locales/fr.json), [`de.json`](../../ui/src/locales/de.json) e testi italiani nei componenti `ui/src/**`
-   * [`README.md`](../../README.md), `docs/README.{en,fr,de}.md`, [`docs/app/PLAN.md`](../app/PLAN.md), [`docs/app/GUIDA.md`](../app/GUIDA.md), [`docs/app/ARCHITECTURE.md`](../app/ARCHITECTURE.md)
+   * [`README.md`](../../README.md), `docs/README.{en,fr,de}.md`, [`docs/app/GUIDA.md`](../app/GUIDA.md), [`docs/app/ARCHITECTURE.md`](../app/ARCHITECTURE.md)
