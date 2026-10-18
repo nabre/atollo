@@ -71,10 +71,29 @@ pub fn sync_with_disk(kit: &Kit) -> Result<Vec<String>> {
         .filter(|c| c.installed_version(kit).is_some() && !c.is_present(kit))
         .collect();
     let before = choice.clone();
+    let target = kit.target();
+    // What the chosen ones need on this target only (Zig for C and C++ on
+    // Linux) is not in the saved choice, so `Choice::set` cannot follow it:
+    // the chosen components that need it on this target go off here.
+    let kept = catalog.needs_only_on(&before.chosen_ids(catalog), target);
     for c in &gone {
         c.forget_version(kit);
-        if !catalog.is_locked(&c.id) {
-            choice.set(catalog, &c.id, false);
+        if catalog.is_locked(&c.id) {
+            continue;
+        }
+        choice.set(catalog, &c.id, false);
+        if kept.contains(c.id.as_str()) {
+            for d in catalog.all() {
+                if choice.is_chosen(&d.id)
+                    && !catalog.is_locked(&d.id)
+                    && d.id != c.id
+                    && catalog
+                        .with_needs_on(&[&d.id], target)
+                        .contains(c.id.as_str())
+                {
+                    choice.set(catalog, &d.id, false);
+                }
+            }
         }
     }
     if choice == before {

@@ -309,13 +309,16 @@ pub fn components_apply<R: Runtime>(
 /// on another OS/arch must not lose it. Nor does what a chosen one needs on
 /// this target only (Zig for C and C++ on Linux, ticked with them by the
 /// page): the run on this target installs it anyway, and saving it would
-/// install it on Windows too.
+/// install it on Windows too. The needs of the saved choice count as well:
+/// the page seeds Zig as ticked next to C and C++, and unticking C and C++
+/// leaves it in `chosen`, which must not turn it into a saved choice.
 pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
     let catalog = Catalog::get();
     let saved = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
     let ids: Vec<&str> = chosen.iter().map(String::as_str).collect();
-    let here = catalog.needs_only_on(&ids, target);
+    let mut here = catalog.needs_only_on(&ids, target);
+    here.extend(catalog.needs_only_on(&saved.chosen_ids(catalog), target));
     catalog
         .all()
         .iter()
@@ -327,12 +330,7 @@ pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
             } else {
                 chosen.contains(&c.id)
             };
-            format!(
-                "{}={}
-",
-                c.id,
-                u8::from(on)
-            )
+            format!("{}={}\n", c.id, u8::from(on))
         })
         .collect()
 }

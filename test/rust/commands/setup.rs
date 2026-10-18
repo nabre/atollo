@@ -204,5 +204,27 @@ fn needs_of_one_target_stay_out_of_the_choice() {
         chosen.push("zig".into());
         let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
         assert!(choice.is_chosen("zig") && !choice.is_chosen("cc"), "{t}");
+
+        // Unticked on this page: the toggle removes C and C++ only, so Zig,
+        // seeded as ticked from the saved choice, stays in the page's set
+        // and must not be saved.
+        Choice::parse("cc=1\nzig=0\n", catalog)
+            .write(&kit, catalog)
+            .unwrap();
+        let chosen: Vec<String> = page(&kit).into_iter().filter(|id| id != "cc").collect();
+        assert_eq!(chosen.contains(&"zig".into()), t.is_unix(), "{t}");
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        assert!(!choice.is_chosen("cc") && !choice.is_chosen("zig"), "{t}");
+        choice.write(&kit, catalog).unwrap();
+        let back = Choice::read(&windows, catalog).unwrap();
+        assert!(!back.is_chosen("cc") && !back.is_chosen("zig"), "{t}");
+
+        // Zig chosen for every system stays chosen when C and C++ go off.
+        Choice::parse("cc=1\nzig=1\n", catalog)
+            .write(&kit, catalog)
+            .unwrap();
+        let chosen: Vec<String> = page(&kit).into_iter().filter(|id| id != "cc").collect();
+        let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
+        assert!(!choice.is_chosen("cc") && choice.is_chosen("zig"), "{t}");
     }
 }
