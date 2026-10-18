@@ -21,7 +21,7 @@ const PLAN: DeletePlan = {
   folderExists: true,
   folderEmpty: true,
   databases: [
-    { engine: "mariadb", database: "shop", installed: true },
+    { engine: "mysql", database: "shop", installed: true },
     { engine: "mongodb", database: "shop", installed: false },
   ],
   backups: 2,
@@ -49,7 +49,7 @@ describe("DeleteProjectDialog", () => {
     answer(PLAN, () => Promise.resolve(null));
     const { onDeleted } = show();
     expect(screen.getByRole("alertdialog", { name: "Eliminare shop?" })).toBeTruthy();
-    await screen.findByText("Il database shop e il suo utente su MariaDB");
+    await screen.findByText("Il database shop e il suo utente su MySQL");
     expect(screen.getByText("MongoDB non è installato: il database shop resta nei suoi dati")).toBeTruthy();
     expect(screen.getByText(/Copie dei database: 2 \(3 MB\)/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Elimina senza i database" })).toBeNull();
@@ -66,11 +66,9 @@ describe("DeleteProjectDialog", () => {
 
   it("offers to delete without the databases after a failed drop", async () => {
     let calls = 0;
-    answer(PLAN, () =>
-      ++calls === 1 ? Promise.reject(new Error("mariadb: port 3306 in use")) : Promise.resolve(null),
-    );
+    answer(PLAN, () => (++calls === 1 ? Promise.reject(new Error("mysql: port 3306 in use")) : Promise.resolve(null)));
     const { onDeleted, onCancel } = show();
-    await screen.findByText("Il database shop e il suo utente su MariaDB");
+    await screen.findByText("Il database shop e il suo utente su MySQL");
     fireEvent.click(screen.getByRole("button", { name: "Elimina" }));
     await screen.findByText(/port 3306 in use/);
     expect(onDeleted).not.toHaveBeenCalled();

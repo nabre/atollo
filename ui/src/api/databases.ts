@@ -114,45 +114,6 @@ export function dbAdminOpen(line: string | null = null, engine: "mysql" = "mysql
   return query<ServiceInfo[]>("db_admin_open", SAMPLE_SERVICES, { line, engine });
 }
 
-/** The move of MariaDB's data to MySQL (D-117,
- * tauri/src/db/migrate_engine.rs): "none" when the kit has nothing of
- * MariaDB, "pending" or "failed" while some data waits, "running", "done"
- * while the data kept after the move is there. */
-export interface DbMigration {
-  state: "none" | "pending" | "running" | "failed" | "done";
-  /** Each MariaDB version with data, the MySQL version that takes it and its port. */
-  lines: { mariadb: string; mysql: string; port: number; done: boolean }[];
-  error: string | null;
-  /** The dump of the step that failed. */
-  dump: string | null;
-  /** data\db\mariadb.pre-mysql, while it is there. */
-  kept: string | null;
-  keptBytes: number;
-}
-
-export const SAMPLE_MIGRATION: DbMigration = {
-  state: "none",
-  lines: [],
-  error: null,
-  dump: null,
-  kept: null,
-  keptBytes: 0,
-};
-
-export function dbMigration(): Promise<DbMigration> {
-  return query<DbMigration>("db_migration", SAMPLE_MIGRATION);
-}
-
-/** Tries the move again; answers when it ends. */
-export function dbMigrationRetry(): Promise<DbMigration> {
-  return query<DbMigration>("db_migration_retry", SAMPLE_MIGRATION);
-}
-
-/** Deletes the MariaDB data kept after the move (asked by the user). */
-export function dbMigrationDropKept(): Promise<DbMigration> {
-  return query<DbMigration>("db_migration_drop_kept", SAMPLE_MIGRATION);
-}
-
 export interface ProjectDb {
   /** `mysql` for every SQL server (D-117). */
   engine: "mysql" | "mongodb";

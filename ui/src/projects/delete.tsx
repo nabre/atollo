@@ -12,7 +12,7 @@ import { useAction, useLoad } from "../hooks";
 import { locale, t } from "../i18n";
 import { ConfirmDialog } from "../workbench";
 
-const ENGINE_NAMES: Record<PlannedDb["engine"], string> = { mysql: "MySQL", mongodb: "MongoDB", mariadb: "MariaDB" };
+const ENGINE_NAMES: Record<PlannedDb["engine"], string> = { mysql: "MySQL", mongodb: "MongoDB" };
 
 function size(bytes: number): string {
   const kb = bytes / 1024;
