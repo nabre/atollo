@@ -93,6 +93,48 @@ fn catalog_reasons_reach_the_page() {
     }
 }
 
+/// The page gets what each component needs on the kit's target (C and C++
+/// need Zig on macOS and Linux, Rust needs C and C++ on Windows ARM64), and
+/// the Xcode notice only for C and C++ of a darwin kit on a Mac without the
+/// Command Line Tools.
+#[test]
+fn needs_and_xcode_follow_the_target() {
+    let tmp = TempDir::new("cmd-needs");
+    for target in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
+        kit.prepare().unwrap();
+        let infos = component_infos(&kit, "it");
+        let row = |id: &str| infos.iter().find(|c| c.id == id).unwrap();
+        let zig: &[&str] = if target.is_unix() { &["zig"] } else { &[] };
+        assert_eq!(row("cc").needs, zig, "{target}");
+        let cc: &[&str] = if target == Target::WIN32_ARM64 {
+            &["cc"]
+        } else {
+            &[]
+        };
+        assert_eq!(row("rust").needs, cc, "{target}");
+        assert_eq!(row("kotlin").needs, ["java"], "{target}");
+        // Only a Mac can tell; never for another component.
+        assert!(infos
+            .iter()
+            .all(|c| !c.xcode_missing || (c.id == "cc" && cfg!(target_os = "macos"))));
+    }
+    for target in Target::ALL {
+        for host in [Os::Win32, Os::Darwin, Os::Linux] {
+            let mac = target.is_macos() && host == Os::Darwin;
+            assert_eq!(
+                xcode_missing(target, host, || None),
+                mac,
+                "{target} {host:?}"
+            );
+            assert_eq!(xcode_missing(target, host, || Some(" ".into())), mac);
+            assert!(!xcode_missing(target, host, || Some(
+                "/Library/Developer/CommandLineTools".into()
+            )));
+        }
+    }
+}
+
 /// On Windows ARM64 (a Windows kit on every host) R keeps its choice.
 #[test]
 fn unavailable_components_keep_their_choice() {

@@ -153,7 +153,7 @@ fn ensure<R: Runtime>(
     let catalog = Catalog::get();
     let target = kit.target();
     let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
-    let needed = with_needs(catalog, wanted);
+    let needed = with_needs(catalog, wanted, target);
     // With the catalog's reason (Android, SQLite on Linux ARM64) or Rosetta 2
     // missing; the same sentences as before otherwise.
     if let Some(msg) = needed
@@ -174,7 +174,7 @@ fn ensure<R: Runtime>(
         .into());
     }
     if !wanted.is_empty() {
-        let mut choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+        let mut choice = Choice::read_or_defaults(kit, catalog);
         let before = choice.clone();
         for id in wanted {
             choice.set(catalog, id, true);
@@ -263,17 +263,13 @@ fn settle_project<R: Runtime>(
     crate::versions::pin_newest(kit, project);
 }
 
-/// `ids` and, transitively, what they need, in catalog order.
-fn with_needs<'a>(catalog: &'a Catalog, ids: &[&str]) -> Vec<&'a crate::setup::catalog::Component> {
-    let mut found: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
-    let mut todo: Vec<&str> = ids.to_vec();
-    while let Some(id) = todo.pop() {
-        if let Some(c) = catalog.find(id) {
-            if found.insert(c.id.as_str()) {
-                todo.extend(c.needs.iter().map(String::as_str));
-            }
-        }
-    }
+/// `ids` and, transitively, what they need on `target`, in catalog order.
+fn with_needs<'a>(
+    catalog: &'a Catalog,
+    ids: &[&str],
+    target: crate::kit::Target,
+) -> Vec<&'a crate::setup::catalog::Component> {
+    let found = catalog.with_needs_on(ids, target);
     catalog
         .all()
         .iter()

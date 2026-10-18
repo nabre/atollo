@@ -266,6 +266,49 @@ fn unix_plans_follow_the_unix_catalog() {
     }
 }
 
+/// The needs of the kit's target: `--only cc` brings Zig on macOS and
+/// Linux (first, in the order of the page), `--only rust` brings C and C++
+/// on Windows ARM64; a chosen C and C++ whose Zig is skipped is not planned
+/// there. Windows x64 as before.
+#[test]
+fn plans_follow_the_needs_of_the_target() {
+    use crate::kit::Target;
+    for target in Target::ALL {
+        let catalog = Catalog::get();
+        with_target_ctx(&format!("plan-needs-{}", target.as_str()), target, |ctx| {
+            let choice = Choice::defaults_on(catalog, target);
+            let p = plan_with(ctx, &choice, &["cc"], &[]).unwrap();
+            let want: &[&str] = if target.is_unix() {
+                &["zig", "cc"]
+            } else {
+                &["cc"]
+            };
+            assert_eq!(p.handle, want, "{target}");
+            let p = plan_with(ctx, &choice, &["rust"], &[]).unwrap();
+            let want: &[&str] = if target == Target::WIN32_ARM64 {
+                &["cc", "rust"]
+            } else {
+                &["rust"]
+            };
+            assert_eq!(p.handle, want, "{target}");
+            // Installed already: not again.
+            fake_install(ctx, "zig");
+            let p = plan_with(ctx, &choice, &["cc"], &[]).unwrap();
+            assert_eq!(p.handle, ["cc"], "{target}");
+            fs::remove_dir_all(ctx.kit.apps().join("zig")).unwrap();
+
+            let mut choice = Choice::defaults_on(catalog, target);
+            choice.set(catalog, "cc", true);
+            let p = plan_with(ctx, &choice, &[], &["zig"]).unwrap();
+            assert_eq!(
+                p.handle.contains(&"cc".into()),
+                !target.is_unix(),
+                "{target}"
+            );
+        });
+    }
+}
+
 /// No network: everything chosen is already installed.
 #[test]
 fn installed_components_are_left_alone_without_update_all() {

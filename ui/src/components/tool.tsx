@@ -24,7 +24,7 @@ import {
   Notice,
   type NavItem,
 } from "../workbench";
-import { groups, sizeText } from "./model";
+import { groups, sizeText, xcodeMissing } from "./model";
 import { ComposerRow, Dependencies } from "./rows";
 import type { ComponentsState } from "./state";
 
@@ -193,6 +193,14 @@ export function ToolPage({
               onRetry={() => setupStart([c.id], false, state.target)}
             />
           )}
+        </div>
+      )}
+      {xcodeMissing(c) && (
+        <div className="px-5 pb-2">
+          <Notice tone="warning">
+            {t("I programmi che usano i framework Apple richiedono Xcode Command Line Tools")}{" "}
+            <span className="text-vsc-desc">{t("Si installano con xcode-select --install, da amministratore.")}</span>
+          </Notice>
         </div>
       )}
       <NavBar label={t("Sezioni dello strumento")} items={items} active={section} onSelect={setSection} />

@@ -276,7 +276,7 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     Ok(plan)
 }
 
-/// `only`: the listed components plus, transitively, what they need and is
+/// `only`: the listed components plus, transitively, what they need on `target` and is
 /// not installed yet. A component unavailable on `target` is an error.
 fn only_with_needs<'a>(
     catalog: &'a Catalog,
@@ -308,7 +308,7 @@ fn only_with_needs<'a>(
         if !wanted.insert(c.id.as_str()) {
             continue;
         }
-        for need in c.needs.iter().filter_map(|n| catalog.find(n)) {
+        for need in c.needs_on(target).filter_map(|n| catalog.find(n)) {
             if !installed.contains(need.id.as_str()) {
                 todo.push((need, Some(c.id.as_str())));
             }
@@ -328,7 +328,7 @@ fn chosen_without_skipped<'a>(
     installed: &HashSet<&str>,
     target: Target,
 ) -> HashSet<&'a str> {
-    let locked = catalog.locked();
+    let locked = catalog.locked_on(target);
     let mut wanted: HashSet<&str> = catalog
         .all()
         .iter()
@@ -343,9 +343,8 @@ fn chosen_without_skipped<'a>(
             .filter(|c| wanted.contains(c.id.as_str()) && !locked.contains(c.id.as_str()))
             .filter(|c| !installed.contains(c.id.as_str()))
             .filter(|c| {
-                c.needs
-                    .iter()
-                    .any(|n| !wanted.contains(n.as_str()) && !installed.contains(n.as_str()))
+                c.needs_on(target)
+                    .any(|n| !wanted.contains(n) && !installed.contains(n))
             })
             .map(|c| c.id.as_str())
             .collect();
@@ -398,7 +397,7 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
     let choice = match Choice::read(ctx.kit, catalog) {
         Some(choice) => choice,
         None => {
-            let choice = Choice::defaults(catalog);
+            let choice = Choice::defaults_on(catalog, ctx.kit.target());
             choice.write(ctx.kit, catalog)?;
             choice
         }
