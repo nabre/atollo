@@ -240,7 +240,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: VscTable,
     keywords:
-      "tabella fonti link url download github api nodejs python php composer apache nginx mysql mongodb rust go java",
+      "tabella fonti link url download github api nodejs python php composer caddy apache mysql mongodb rust go java",
     targetPage: "components",
   },
   {
@@ -395,13 +395,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "MySQL + phpMyAdmin con login monouso, MongoDB + esploratore Contenuto in sola lettura, e pool condivisi Apache/Nginx con VirtualHost .localhost.",
-        "MySQL + phpMyAdmin one-time token login, MongoDB + read-only Content browser, and shared Apache/Nginx pools with .localhost VirtualHosts.",
-        "MySQL + phpMyAdmin avec connexion à jeton unique, MongoDB + explorateur de contenu en lecture seule, et pools partagés Apache/Nginx avec VirtualHosts .localhost.",
-        "MySQL + phpMyAdmin mit Einmal-Token-Login, MongoDB + schreibgeschützter Inhaltsbrowser sowie geteilte Apache-/Nginx-Pools mit .localhost-VirtualHosts.",
+        "MySQL + phpMyAdmin con login monouso, MongoDB + esploratore Contenuto in sola lettura, e pool condivisi Caddy (predefinito) o Apache (per le regole .htaccess) con VirtualHost .localhost.",
+        "MySQL + phpMyAdmin one-time token login, MongoDB + read-only Content browser, and shared Caddy (default) or Apache (for .htaccess rules) pools with .localhost VirtualHosts.",
+        "MySQL + phpMyAdmin avec connexion à jeton unique, MongoDB + explorateur de contenu en lecture seule, et pools partagés Caddy (par défaut) ou Apache (pour les règles .htaccess) avec VirtualHosts .localhost.",
+        "MySQL + phpMyAdmin mit Einmal-Token-Login, MongoDB + schreibgeschützter Inhaltsbrowser sowie geteilte Caddy- (Standard) oder Apache-Pools (für .htaccess-Regeln) mit .localhost-VirtualHosts.",
       ),
     icon: VscDatabase,
-    keywords: "database mysql mongodb phpmyadmin dbbrowser server web apache nginx pool virtualhost localhost alias",
+    keywords:
+      "database mysql mongodb phpmyadmin dbbrowser server web caddy apache htaccess pool virtualhost localhost alias",
     targetPage: "databases",
   },
   {
@@ -481,10 +482,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     sectionCode: "§ 5.7–5.8",
     title: () =>
       tr(
-        "7–8. Database Isolati, .env, Backup e Siti Apache/Nginx",
-        "7–8. Isolated Databases, .env, Backups & Apache/Nginx Sites",
-        "7–8. Bases Isolées, .env, Sauvegardes et Sites Apache/Nginx",
-        "7–8. Isolierte Datenbanken, .env, Backups & Apache/Nginx-Sites",
+        "7–8. Database Isolati, .env, Backup e Siti Caddy/Apache",
+        "7–8. Isolated Databases, .env, Backups & Caddy/Apache Sites",
+        "7–8. Bases Isolées, .env, Sauvegardes et Sites Caddy/Apache",
+        "7–8. Isolierte Datenbanken, .env, Backups & Caddy/Apache-Sites",
       ),
     subtitle: () =>
       tr(
@@ -495,7 +496,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: VscGlobe,
     keywords:
-      "database utente isolato .env backup sql archive.gz ripristino sito web apache nginx virtualhost localhost alias",
+      "database utente isolato .env backup sql archive.gz ripristino sito web caddy apache virtualhost localhost alias",
     targetPage: "servers",
   },
   {
@@ -1031,22 +1032,28 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     targetPath: () => `apache\\${lLine()}\\bin\\httpd.exe`,
   }),
   defSource({
-    id: "nginx",
-    logoId: "nginx",
-    name: "Nginx",
+    id: "caddy",
+    logoId: "caddy",
+    name: "Caddy",
     group: "languages",
-    home: "https://nginx.org",
-    metaSource: "api.github.com/repos/nginx/nginx/releases?per_page=100",
+    home: "https://caddyserver.com",
+    metaSource: "api.github.com/repos/caddyserver/caddy/releases?per_page=100",
     binarySource: () =>
       tr(
-        "Asset nginx-<v>.zip dalla release GitHub ufficiale",
-        "nginx-<v>.zip asset from the official GitHub release",
-        "Asset nginx-<v>.zip depuis la release GitHub officielle",
-        "Asset nginx-<v>.zip aus dem offiziellen GitHub-Release",
+        "Asset caddy_<v>_windows_amd64.zip dalla release GitHub ufficiale",
+        "caddy_<v>_windows_amd64.zip asset from the official GitHub release",
+        "Asset caddy_<v>_windows_amd64.zip depuis la release GitHub officielle",
+        "Asset caddy_<v>_windows_amd64.zip aus dem offiziellen GitHub-Release",
       ),
     verifyKind: "SHA-256",
-    verifyDetail: "GitHub Release asset.digest",
-    targetPath: () => `nginx\\${lLine()}\\nginx.exe`,
+    verifyDetail: () =>
+      tr(
+        "GitHub Release asset.digest (dalla 2.10.1), altrimenti SHA-512 da caddy_<v>_checksums.txt",
+        "GitHub Release asset.digest (from 2.10.1), otherwise SHA-512 from caddy_<v>_checksums.txt",
+        "GitHub Release asset.digest (depuis 2.10.1), sinon SHA-512 depuis caddy_<v>_checksums.txt",
+        "GitHub Release asset.digest (ab 2.10.1), sonst SHA-512 aus caddy_<v>_checksums.txt",
+      ),
+    targetPath: () => `caddy\\${lLine()}\\caddy.exe`,
   }),
   defSource({
     id: "rust",

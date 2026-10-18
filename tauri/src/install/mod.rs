@@ -245,7 +245,6 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "gh" => &core::Gh,
         "php" => &web::Php,
         "apache" => &web::Apache,
-        "nginx" => &web::Nginx,
         "caddy" => &caddy::Caddy,
         "rust" => &native::Rust,
         "go" => &lang::Go,
@@ -370,17 +369,16 @@ pub fn install(
         } else {
             component.folder_path(ctx.kit)
         };
-        let result = release.parts.iter().enumerate().try_for_each(|(i, part)| {
-            install_part(
-                ctx,
-                inst,
-                component,
-                part,
-                own.as_deref(),
-                &work.path().join(i.to_string()),
-                progress,
-            )
-        });
+        let parts: Vec<&Part> = release.parts.iter().collect();
+        let result = install_parts(
+            ctx,
+            inst,
+            component,
+            &parts,
+            own.as_deref(),
+            work.path(),
+            progress,
+        );
         drop(work);
         result?;
         match &own {
@@ -539,22 +537,20 @@ pub fn install_line(
     }
     let work = work_dir(ctx, component)?;
     // Its folder and what goes inside it (Composer), in order.
-    let result = release
+    let parts: Vec<&Part> = release
         .parts
         .iter()
         .filter(|p| matches!(p.dest, Dest::Own | Dest::Inside(_)))
-        .enumerate()
-        .try_for_each(|(i, part)| {
-            install_part(
-                ctx,
-                inst,
-                component,
-                part,
-                Some(&target),
-                &work.path().join(i.to_string()),
-                progress,
-            )
-        });
+        .collect();
+    let result = install_parts(
+        ctx,
+        inst,
+        component,
+        &parts,
+        Some(&target),
+        work.path(),
+        progress,
+    );
     drop(work);
     result?;
     inst.finish(ctx, component, &target)?;
@@ -570,6 +566,32 @@ pub fn install_line(
     Ok(line)
 }
 
+/// Every part of a release downloaded, checked and extracted, each in its
+/// own `work\<i>`, before the first one is put in place: a download that
+/// fails (the FPM archive of PHP, Composer) leaves the installed folder as
+/// it was, never a new `bin/php` without its `sbin/php-fpm` or
+/// `composer.phar` (issue #4).
+pub(crate) fn install_parts(
+    ctx: &Ctx,
+    inst: &dyn Installer,
+    component: &Component,
+    parts: &[&Part],
+    own: Option<&Path>,
+    work: &Path,
+    progress: &mut dyn Progress,
+) -> Result<()> {
+    let mut trees = Vec::with_capacity(parts.len());
+    for (i, part) in parts.iter().enumerate() {
+        trees.push(fetch_part(ctx, part, &work.join(i.to_string()), progress)?);
+    }
+    for (part, tree) in parts.iter().zip(&trees) {
+        place_part(ctx, inst, component, part, tree, own)?;
+    }
+    Ok(())
+}
+
+/// One part downloaded and put in place at once (the bootstrap's tools,
+/// the parts of MongoDB after its environment).
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn install_part(
     ctx: &Ctx,
@@ -580,6 +602,13 @@ pub(crate) fn install_part(
     work: &Path,
     progress: &mut dyn Progress,
 ) -> Result<()> {
+    let tree = fetch_part(ctx, part, work, progress)?;
+    place_part(ctx, inst, component, part, &tree, own)
+}
+
+/// Downloads and verifies `part` into `work` and extracts it: the tree it
+/// brings (its signature checked on Windows), nothing in place yet.
+fn fetch_part(ctx: &Ctx, part: &Part, work: &Path, progress: &mut dyn Progress) -> Result<PathBuf> {
     fs::create_dir_all(work)?;
     let file = fetch(
         ctx,
@@ -612,6 +641,19 @@ pub(crate) fn install_part(
             }
         }
     }
+    Ok(tree)
+}
+
+/// Puts the tree [`fetch_part`] extracted where `part` goes.
+fn place_part(
+    ctx: &Ctx,
+    inst: &dyn Installer,
+    component: &Component,
+    part: &Part,
+    tree: &Path,
+    own: Option<&Path>,
+) -> Result<()> {
+    let tree = tree.to_path_buf();
     let apps = ctx.kit.apps();
     match &part.dest {
         Dest::Own => {

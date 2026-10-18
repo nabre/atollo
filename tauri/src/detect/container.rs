@@ -74,7 +74,10 @@ fn components(image: &str) -> Vec<(&'static str, Option<String>)> {
     let line = line_of_tag(&tag);
     match name.as_str() {
         "httpd" | "apache" => vec![("apache", line)],
-        "nginx" => vec![("nginx", line)],
+        "caddy" => vec![("caddy", line)],
+        // Nginx is no longer in the kit (D-120): its web server is Caddy,
+        // whose lines are not Nginx's.
+        "nginx" => vec![("caddy", None)],
         "php" if tag.contains("apache") => vec![("php", line), ("apache", None)],
         "php" => vec![("php", line)],
         // The kit's only SQL server is MySQL: MariaDB's lines are not

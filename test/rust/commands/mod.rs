@@ -39,7 +39,7 @@ fn unavailable_msg_names_the_system_elsewhere() {
     let linux = unavailable_msg("en", "PHP", Target::LINUX_X64);
     assert_eq!(linux, "PHP is not available for linux-x64.");
     for lang in ["it", "en", "fr", "de"] {
-        let text = unavailable_msg(lang, "Nginx", Target::LINUX_ARM64);
+        let text = unavailable_msg(lang, "Caddy", Target::LINUX_ARM64);
         assert!(
             text.contains("linux-arm64") && !text.contains("ARM64"),
             "{text}"

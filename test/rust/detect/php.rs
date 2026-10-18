@@ -242,6 +242,43 @@ fn nested_htaccess_rules() {
     assert!(nested_htaccess(&flat.0, ".").is_empty());
 }
 
+/// Issue #4: the walk of [`nested_htaccess`] that stops at its bound says
+/// so (`cut`), and the detection warns that a `.htaccess` may be missed.
+#[test]
+fn nested_htaccess_cut_is_a_warning() {
+    use crate::detect::php::{nested_htaccess_within, Nested, NESTED_ENTRIES};
+    let p = project(
+        "php-nested-cut",
+        &[
+            ("index.php", "<?php"),
+            ("a/b.txt", ""),
+            ("a/c.txt", ""),
+            ("a/d.txt", ""),
+        ],
+    );
+    assert_eq!(
+        nested_htaccess_within(&p.0, ".", 100),
+        Nested {
+            files: vec![],
+            cut: false
+        }
+    );
+    assert!(nested_htaccess_within(&p.0, ".", 3).cut);
+    let warned = |dir: &std::path::Path| {
+        detect(dir, "it")
+            .warnings
+            .iter()
+            .any(|w| w.contains(&NESTED_ENTRIES.to_string()) && w.contains("Caddy"))
+    };
+    assert!(!warned(&p.0));
+    let many = p.0.join("uploads");
+    std::fs::create_dir_all(&many).unwrap();
+    for i in 0..=NESTED_ENTRIES {
+        std::fs::write(many.join(format!("{i}.jpg")), b"").unwrap();
+    }
+    assert!(warned(&p.0));
+}
+
 /// `php -S` always goes through the kit's router (no `.env`, `.git`, `.inc`):
 /// a project's own `router.php` runs after it, its path given relative to
 /// the document root (SEC-V3-02, D-97).
@@ -290,7 +327,7 @@ fn php_server_router() {
 
     let router = include_str!("../../../runtime/php-router.php");
     assert!(router.contains("well-known") && router.contains(".inc") && router.contains("403"));
-    // Same never-serve set as Apache and Nginx (SEC-V3-01), local hosts only
+    // Same never-serve set as Apache and Caddy (SEC-V3-01), local hosts only
     // (SEC-V3-03).
     assert!(router.contains("php[3-8]|phtml|phar") && router.contains("421"));
     // The path is cut at `?` by hand, not read with `parse_url` (`//.env`),

@@ -123,7 +123,7 @@ describe("ProjectVersions", () => {
   it("says the versions apply to the project's web server too", async () => {
     answer();
     render(<ProjectVersions p={{ ...P, missing: [] }} />);
-    expect(await screen.findByText(/per il server web che lo serve \(Apache o Nginx, con il suo PHP\)/)).toBeTruthy();
+    expect(await screen.findByText(/per il server web che lo serve \(Caddy o Apache, con il suo PHP\)/)).toBeTruthy();
     expect(screen.queryByText(/Non installato: «Installa ciò che manca»/)).toBeNull();
     expect(document.getElementById("ver-php")).not.toBeNull();
   });

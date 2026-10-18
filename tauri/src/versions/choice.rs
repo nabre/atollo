@@ -178,7 +178,6 @@ fn apply(env: &mut KitEnv, swaps: &[Swap]) {
         ("CP_PHP", "CP_PHP_FWD"),
         ("PHPRC", "CP_PHPRC_FWD"),
         ("CP_APACHE", "CP_APACHE_FWD"),
-        ("CP_NGINX", "CP_NGINX_FWD"),
     ] {
         if let Some(p) = env.get(from).map(|p| p.replace('\\', "/")) {
             env.set(to, p);

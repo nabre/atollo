@@ -105,3 +105,106 @@ fn check_key_wants_every_part_of_the_folder() {
     assert!(check_key(php, &[], &tree).is_err());
     check_key(php, installer("php").unwrap().inside(), &tree).unwrap();
 }
+
+struct Quiet;
+
+impl Progress for Quiet {
+    fn note(&mut self, _text: &str) {}
+    fn bytes(&mut self, _done: u64, _total: Option<u64>) {}
+}
+
+/// A `.tar.gz` with `files` (name, content), for a part added by hand.
+fn tar_gz(path: &Path, files: &[(&str, &[u8])]) {
+    let gz =
+        flate2::write::GzEncoder::new(fs::File::create(path).unwrap(), flate2::Compression::fast());
+    let mut tar = tar::Builder::new(gz);
+    for (name, data) in files {
+        let mut header = tar::Header::new_gnu();
+        header.set_size(data.len() as u64);
+        header.set_mode(0o755);
+        header.set_cksum();
+        tar.append_data(&mut header, name, *data).unwrap();
+    }
+    tar.into_inner().unwrap().finish().unwrap();
+}
+
+/// Issue #4: the CLI archive of PHP is there (added by hand), the FPM one
+/// cannot be downloaded. Nothing is put in place: the installed `bin/php`,
+/// `sbin/php-fpm`, `composer.phar` and version stay as they were, the new
+/// CLI never replaces the folder without its FPM.
+#[test]
+fn a_failed_later_part_leaves_the_installed_php_as_it_was() {
+    let tmp = TempDir::new("php-parts");
+    let kit = Kit::at_target(tmp.0.clone(), crate::kit::Target::LINUX_X64);
+    kit.prepare().unwrap();
+    let php = Catalog::get().find("php").unwrap();
+
+    // PHP 8.4.22 installed: its folder with every part, and its version.
+    let old = crate::versions::install_dir(&kit, php, "8.4.22");
+    fs::create_dir_all(old.join("bin")).unwrap();
+    fs::create_dir_all(old.join("sbin")).unwrap();
+    fs::write(old.join("bin").join("php"), b"old php").unwrap();
+    fs::write(old.join("sbin").join("php-fpm"), b"old fpm").unwrap();
+    fs::write(old.join("composer.phar"), b"old composer").unwrap();
+    crate::versions::write_version(&old, "8.4.22").unwrap();
+    php.save_version(&kit, "8.4.22").unwrap();
+
+    // The same line again (8.4.23 goes in the folder of 8.4): the CLI
+    // archive added by hand, the FPM one only on the network, offline.
+    assert_eq!(crate::versions::install_dir(&kit, php, "8.4.23"), old);
+    let downloads = crate::setup::downloads::dir(&kit);
+    fs::create_dir_all(&downloads).unwrap();
+    let cli = downloads.join("php-8.4.23-cli-linux-x86_64.tar.gz");
+    tar_gz(&cli, &[("php", b"new php")]);
+    let part = |file: &str, sha: String, dest: Dest| Part {
+        url: format!("http://127.0.0.1:9/{file}"),
+        file_name: file.to_owned(),
+        expect: Expect::Sha256(sha),
+        kind: Kind::TarGz,
+        inner: Inner::Root,
+        dest,
+        sign: None,
+    };
+    let release = Release {
+        version: "8.4.23".to_owned(),
+        parts: vec![
+            part(
+                "php-8.4.23-cli-linux-x86_64.tar.gz",
+                verify::sha256_hex(&cli).unwrap(),
+                Dest::Own,
+            ),
+            part(
+                "php-8.4.23-fpm-linux-x86_64.tar.gz",
+                "0".repeat(64),
+                Dest::Inside("php-fpm"),
+            ),
+        ],
+    };
+    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let env = KitEnv::default();
+    // Cancelled: the network part fails at once; the one added by hand is
+    // taken without the network.
+    let cancel = AtomicBool::new(true);
+    let ctx = Ctx {
+        kit: &kit,
+        net: &net,
+        env: &env,
+        cancel: &cancel,
+    };
+    assert!(install(&ctx, php, &release, &mut Quiet).is_err());
+
+    assert_eq!(fs::read(old.join("bin").join("php")).unwrap(), b"old php");
+    assert_eq!(
+        fs::read(old.join("sbin").join("php-fpm")).unwrap(),
+        b"old fpm"
+    );
+    assert_eq!(
+        fs::read(old.join("composer.phar")).unwrap(),
+        b"old composer"
+    );
+    assert_eq!(php.installed_version(&kit).as_deref(), Some("8.4.22"));
+    assert_eq!(
+        fs::read_to_string(old.join(".devkit-version")).unwrap(),
+        "8.4.22"
+    );
+}
