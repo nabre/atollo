@@ -52,6 +52,8 @@ Coprono, fra l'altro:
 | `Build …` | `windows-latest` | exe x64 e arm64, prove reali (x64) |
 | `Bundle darwin-*` | `macos-latest`, `macos-15-intel` | `Atollo.app` con firma ad hoc verificata, `Info.plist`, zip, avvio di prova (D-113) |
 | `Bundle linux-*` | `ubuntu-24.04`, `ubuntu-24.04-arm`, contenitore `ubuntu:22.04` | AppImage e `tar.gz`, minimo di glibc con `objdump`, `--version` e `check` sotto `xvfb-run` |
+| `Release smoke *` | `macos-latest`, `macos-15-intel`, `ubuntu-24.04`, `ubuntu-24.04-arm` (senza contenitore) | gli artefatti `bundle-<target>` che il rilascio pubblica: nomi di `self_update.rs` e `.sha256`; macOS: quarantena messa e tolta con `xattr -dr`, firma, `--version`, `check`, kit accanto al `.app`; Linux: AppImage col nome del rilascio con `--appimage-extract-and-run`, `tar.gz` con il solo `libwebkit2gtk-4.1-0` (`ldd` senza «not found»), `--version` e `check` sotto `xvfb-run` (D-119) |
+| `Release` | `windows-latest` | solo sui tag `app-v*`, dopo `Build …` e `Release smoke *`: exe, `.app.zip`, AppImage e `tar.gz` con i `.sha256` ricontrollati, note del rilascio |
 
 **Build di Apache** (`.github/workflows/httpd.yml`, D-116), solo sulle pull request che toccano `scripts/build-httpd/**`, a mano (`gh workflow run httpd.yml --ref <branch>`) e sul tag `httpd-v<versione>-<build>`, che pubblica il rilascio: `httpd <target>` per i quattro target Unix (Linux nel contenitore `ubuntu:22.04`), `build.sh` e poi `test.sh`, che avvia Apache da una cartella con spazio e parentesi e dopo averla spostata, controlla i moduli che il kit carica, il minimo di glibc e le librerie (Linux), il minimo macOS 12 e le firme (macOS). In locale per Linux x64: `docker run ubuntu:22.04` con i pacchetti del job, `WORK=/w bash scripts/build-httpd/build.sh linux-x64 0 /out`, poi `test.sh /out/httpd-*.tar.gz`.
 
@@ -190,7 +192,7 @@ Stack web e database:
 Accessi e pacchetto:
 - [ ] **Antigravity e Claude Code** collegati su un Mac (Claude con «Collega con un token»), kit portato su un altro Mac: già collegati; nel Portachiavi del primo non resta nulla.
 - [ ] **Antigravity su Linux** con un Secret Service bloccato: nessuna voce spostata, avviso; senza Secret Service e kit su exFAT: rifiutato.
-- [ ] **Rilasci**: download con il browser, apertura su un sistema pulito, aggiornamento dell'app (il `tar.gz` dice che la versione nuova va scaricata a mano). Senza FUSE: `./Atollo.AppImage --appimage-extract-and-run`.
+- [ ] **Rilasci** (D-119, #5): su un Mac pulito `Atollo-darwin-<arch>.app.zip` scaricato con il browser, estratto su una chiavetta exFAT, aperto seguendo il README (`xattr -dr com.apple.quarantine`); senza quel passo l'avvio si ferma con il comando. AppImage avviata da exFAT su Ubuntu 24.04, Fedora 42 e Debian 13; senza FUSE `./Atollo-linux-<arch>.AppImage --appimage-extract-and-run`; il `tar.gz` con WebKitGTK 4.1. Aggiornamento dell'app da una versione di prova a un'altra su macOS e Linux (il `tar.gz` dice che la versione nuova va scaricata a mano).
 
 Kit preparato su Windows per un altro sistema (a ogni rilascio):
 - [ ] Su Windows `Atollo.exe prepare --target linux-x64` (poi `darwin-arm64`, `linux-arm64`) su una chiavetta exFAT, con l'app per quel sistema copiata accanto.
