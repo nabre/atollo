@@ -246,3 +246,24 @@ export function componentsApply(chosen: string[], updateAll: boolean, target?: s
 export function componentsInstall(id: string, target?: string): Promise<void> {
   return act("components_install", target ? { id, target } : { id });
 }
+
+/** The packages kept to reinstall the conda environments without the
+ * network after the kit moves (D-118). */
+export interface CondaKept {
+  /** Some component cannot follow the kit on this system. */
+  applies: boolean;
+  bytes: number;
+  /** `<id>@<line>` of each list. */
+  lists: string[];
+}
+
+const SAMPLE_CONDA: CondaKept = { applies: true, bytes: 412 << 20, lists: ["r@4.5", "ruby@3.4"] };
+
+export function condaKept(): Promise<CondaKept> {
+  return query<CondaKept>("conda_kept", SAMPLE_CONDA);
+}
+
+/** «Libera»: the next move downloads them again. */
+export function condaKeptFree(): Promise<CondaKept> {
+  return query<CondaKept>("conda_kept_free", { ...SAMPLE_CONDA, bytes: 0, lists: [] });
+}
