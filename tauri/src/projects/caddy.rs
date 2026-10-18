@@ -87,21 +87,55 @@ pub fn quoted_path(path: &Path) -> Option<String> {
 /// `sun_path`, Linux and Windows 108; a longer one means no admin endpoint.
 pub const SOCKET_PATH_MAX: usize = 100;
 
-/// Caddy's admin endpoint of a pool: a Unix domain socket (Windows 10 1803
-/// and later have them too), never a TCP port, which any local program of
-/// any user could reach to read the configuration or load another one
-/// (D-111). The socket is created owner-only (`|0600`, ignored by Windows)
-/// in a folder of its own ([`private_leaf`]): new, with a random name,
-/// owner-only and checked before Caddy binds, in a per-user folder when the
-/// system has one ([`socket_bases`]). Short enough for `sun_path`; the
-/// folder is removed when this is dropped (the pool ends).
+/// A Unix domain socket of one instance in a folder of its own: Caddy's
+/// admin endpoint of a pool ([`admin_socket`]) and, on macOS and Linux,
+/// the php-fpm a Caddy talks to (`projects/fastcgi.rs`). Never a TCP port,
+/// which any local program of any user could reach: to read Caddy's
+/// configuration or load another one (D-111), or to send php-fpm the
+/// FastCGI parameters `PHP_VALUE`/`PHP_ADMIN_VALUE`, which turn off the
+/// key guard. The socket is created owner-only (`|0600` for Caddy,
+/// `listen.mode = 0600` for php-fpm, ignored by Windows) in a folder of its
+/// own ([`private_leaf`]): new, with a random name, owner-only and checked
+/// before the server binds, in a per-user folder ([`socket_bases`],
+/// [`socket_parent`]). Short enough for `sun_path`; the folder is removed
+/// when this is dropped (the instance ends).
 #[derive(Debug)]
-pub struct AdminSocket {
+pub struct PrivateSocket {
     pub path: PathBuf,
     dir: PathBuf,
 }
 
-impl Drop for AdminSocket {
+/// Caddy's admin endpoint of a pool ([`PrivateSocket`]).
+pub type AdminSocket = PrivateSocket;
+
+impl PrivateSocket {
+    /// The socket `file` in a new private folder `parent/name`
+    /// ([`private_leaf`]).
+    pub fn in_leaf(parent: &Path, name: &str, file: &str) -> std::io::Result<Self> {
+        let dir = private_leaf(parent, name)?;
+        Ok(PrivateSocket {
+            path: dir.join(file),
+            dir,
+        })
+    }
+
+    /// Its folder is still the private one made for it ([`is_private_dir`]):
+    /// checked again before a client connects (`caddy reload`), so that a
+    /// folder put in its place is never talked to.
+    pub fn still_private(&self) -> bool {
+        is_private_dir(&self.dir) && self.path.parent() == Some(self.dir.as_path())
+    }
+}
+
+impl PartialEq for PrivateSocket {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+    }
+}
+
+impl Eq for PrivateSocket {}
+
+impl Drop for PrivateSocket {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.dir);
     }
@@ -138,9 +172,9 @@ pub fn is_private_dir(path: &Path) -> bool {
 
 /// Where the admin sockets may go, best first. On Linux the session's
 /// `$XDG_RUNTIME_DIR`, on macOS the per-user `$TMPDIR`, each only when it
-/// is private ([`is_private_dir`]); then the host's temporary folder of the
-/// kit (per user on Windows; shared `/tmp` maybe on Unix, where the leaf is
-/// what keeps it private).
+/// is private ([`is_private_dir`]); then the host's temporary folder: the
+/// kit's own in it on Windows (per user), the folder itself on Unix (maybe
+/// a shared `/tmp`, where [`socket_parent`] and the leaf keep it private).
 pub fn socket_bases(kit: &Kit) -> Vec<PathBuf> {
     let mut out = Vec::new();
     let var = match kit.os() {
@@ -153,8 +187,47 @@ pub fn socket_bases(kit: &Kit) -> Vec<PathBuf> {
             out.push(dir);
         }
     }
-    out.extend(kit.system_temp().map(Path::to_path_buf));
+    let temp = kit.system_temp().map(Path::to_path_buf);
+    if kit.os().is_windows() {
+        // `%TEMP%\Atollo\<id>`: the user's own.
+        out.extend(temp);
+    } else {
+        // The host's temporary folder itself (`/tmp`), not the kit's
+        // `Atollo/<id>` in it, which another user may have made first.
+        out.extend(
+            temp.as_deref()
+                .and_then(|t| t.parent()?.parent())
+                .map(Path::to_path_buf),
+        );
+    }
     out
+}
+
+/// A folder the kit's folder of sockets may be made in: on Unix one only
+/// the user can write in (theirs, no write for group and others), or a
+/// sticky one (`/tmp`: nobody renames another's entries) of root or the
+/// user; on Windows any folder (not a link: [`is_private_dir`] of the
+/// parent checks what matters).
+pub fn base_trusted(base: &Path) -> bool {
+    let Ok(meta) = fs::symlink_metadata(base) else {
+        return false;
+    };
+    if !meta.is_dir() {
+        return false;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        // SAFETY: geteuid has no preconditions.
+        let me = unsafe { libc::geteuid() };
+        let sticky = meta.mode() & 0o1000 != 0;
+        let owner_ok = meta.uid() == me || meta.uid() == 0;
+        owner_ok && (sticky || (meta.uid() == me && meta.mode() & 0o022 == 0))
+    }
+    #[cfg(not(unix))]
+    {
+        true
+    }
 }
 
 /// Makes the folder `base/name` for a socket: created here and now (never
@@ -186,39 +259,100 @@ pub fn private_leaf(base: &Path, name: &str) -> std::io::Result<PathBuf> {
     Ok(leaf)
 }
 
-/// The admin socket of the instance `id`, `None` (in the log; the instance
-/// then runs with `admin off` and a reload restarts it) when no folder of
-/// [`socket_bases`] gives a private one with a path short enough.
-pub fn admin_socket(kit: &Kit, id: &str) -> Option<AdminSocket> {
+/// The name of the kit's folder for sockets in a base of [`socket_bases`]:
+/// per user on Unix (`atollo-caddy-<uid>`), where the base may be a shared
+/// `/tmp`, so that another user cannot have made it first; `atollo-caddy`
+/// on Windows, whose temporary folder is the user's own.
+pub fn socket_parent_name(uid: Option<u32>) -> String {
+    match uid {
+        Some(uid) => format!("atollo-caddy-{uid}"),
+        None => "atollo-caddy".to_owned(),
+    }
+}
+
+/// The current user's id on Unix, `None` on Windows.
+fn current_uid() -> Option<u32> {
+    #[cfg(unix)]
+    {
+        // SAFETY: geteuid has no preconditions.
+        Some(unsafe { libc::geteuid() })
+    }
+    #[cfg(not(unix))]
+    {
+        None
+    }
+}
+
+/// The kit's folder for sockets in `base` ([`socket_parent_name`]), made
+/// owner-only (`0700`) when it is not there; `None` when it is there and
+/// not private ([`is_private_dir`]: another user's, a link, open to
+/// others): that base is not used, since its owner could rename a leaf and
+/// put another folder or socket in its place.
+pub fn socket_parent(base: &Path) -> Option<PathBuf> {
+    #[cfg(windows)]
+    let _ = fs::create_dir_all(base);
+    if !base_trusted(base) {
+        return None;
+    }
+    let parent = base.join(socket_parent_name(current_uid()));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        let _ = fs::DirBuilder::new().mode(0o700).create(&parent);
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = fs::DirBuilder::new().create(&parent);
+    }
+    is_private_dir(&parent).then_some(parent)
+}
+
+/// A new [`PrivateSocket`] named `file` for the instance `id` (`what` says
+/// which, in the log), in the first folder of [`socket_bases`] that gives a
+/// private one with a path short enough; `None` (in the log) when none does.
+pub fn private_socket(kit: &Kit, id: &str, what: &str, file: &str) -> Option<PrivateSocket> {
     for base in socket_bases(kit) {
         let random = match crate::editor::random_token() {
             Ok(t) => t.chars().take(12).collect::<String>(),
             Err(e) => {
-                crate::log::warn(&format!("caddy {id}: no random name: {e:#}"));
+                crate::log::warn(&format!("{what} {id}: no random name: {e:#}"));
                 return None;
             }
         };
-        let parent = base.join("atollo-caddy");
-        let probe = parent.join(format!("c-{random}")).join("a.sock");
+        let probe = base
+            .join(socket_parent_name(current_uid()))
+            .join(format!("c-{random}"))
+            .join(file);
         if !socket_path_usable(&probe) {
             continue;
         }
-        // The common folder may be another user's: only the leaf matters.
-        let _ = fs::create_dir_all(&parent);
-        match private_leaf(&parent, &format!("c-{random}")) {
-            Ok(dir) => {
-                return Some(AdminSocket {
-                    path: dir.join("a.sock"),
-                    dir,
-                })
-            }
-            Err(e) => crate::log::warn(&format!("caddy {id}: admin folder: {e}")),
+        let Some(parent) = socket_parent(&base) else {
+            crate::log::warn(&format!(
+                "{what} {id}: {}: not a private folder, not used",
+                base.join(socket_parent_name(current_uid())).display()
+            ));
+            continue;
+        };
+        match PrivateSocket::in_leaf(&parent, &format!("c-{random}"), file) {
+            Ok(sock) => return Some(sock),
+            Err(e) => crate::log::warn(&format!("{what} {id}: socket folder: {e}")),
         }
     }
-    crate::log::warn(&format!(
-        "caddy {id}: no private folder for the admin socket: admin off, a reload restarts the pool"
-    ));
+    crate::log::warn(&format!("{what} {id}: no private folder for its socket"));
     None
+}
+
+/// The admin socket of the instance `id`, `None` (in the log; the instance
+/// then runs with `admin off` and a reload restarts it) when no folder of
+/// [`socket_bases`] gives a private one with a path short enough.
+pub fn admin_socket(kit: &Kit, id: &str) -> Option<AdminSocket> {
+    let sock = private_socket(kit, id, "caddy", "a.sock");
+    if sock.is_none() {
+        crate::log::warn(&format!(
+            "caddy {id}: no admin socket: admin off, a reload restarts the pool"
+        ));
+    }
+    sock
 }
 
 /// The address of the admin socket `path` for Caddy: `unix/<path>`, with
@@ -256,7 +390,7 @@ pub fn global_options(admin: Option<&Path>, run_dir: &Path) -> Result<Vec<String
 /// disk nor the configuration Caddy holds contains it.
 fn php_lines(fcgi: &FastCgi, indent: &str) -> Vec<String> {
     vec![
-        format!("{indent}php_fastcgi 127.0.0.1:{} {{", fcgi.port),
+        format!("{indent}php_fastcgi {} {{", fcgi.addr.caddy_upstream()),
         format!("{indent}\tenv {FCGI_KEY_PARAM} {{env.{FCGI_KEY_PARAM}}}"),
         format!("{indent}\tsplit .php .phtml .phar"),
         format!("{indent}}}"),

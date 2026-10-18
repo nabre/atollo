@@ -1,33 +1,86 @@
 //! The kit's PHP as a FastCGI server, shared by Nginx and Caddy: on Windows
 //! `php-cgi.exe -b 127.0.0.1:<port>`, on macOS and Linux `php-fpm` (the
-//! static-php-cli build has no php-cgi) with a pool written at every start.
-//! Either way the FastCGI port is on 127.0.0.1 only and every request must
-//! carry a random key, new at every start, that `runtime/fcgi-guard.php`
-//! (prepended to every script) checks (D-99 «Resta»).
+//! static-php-cli build has no php-cgi) with a pool written at every start,
+//! listening on an owner-only Unix socket ([`PrivateSocket`]), never on
+//! TCP: php-fpm, unlike php-cgi, takes `PHP_VALUE` and `PHP_ADMIN_VALUE`
+//! from whoever connects, which can turn the guard off. Every request must
+//! also carry a random key, new at every start, that
+//! `runtime/fcgi-guard.php` (prepended to every script) checks (D-99
+//! «Resta»): the only defence of php-cgi's TCP port, a second one of
+//! php-fpm's socket.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Stdio};
+use std::sync::Arc;
 
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::{Kit, Os};
 use crate::os::jobs::{self, Job};
 use crate::projects::apache::fwd;
+use crate::projects::caddy::{self, PrivateSocket};
 
 /// The FastCGI parameter that carries the key of [`FastCgi`], checked by
 /// `runtime\fcgi-guard.php` (D-99 «Resta»).
 pub const FCGI_KEY_PARAM: &str = "ATOLLO_FCGI_KEY";
 
-/// A running PHP FastCGI server as the web server reaches it: its port on
-/// 127.0.0.1 and the random key the web server sends with every request.
-/// php-cgi has no authentication and Nginx for Windows speaks FastCGI over
-/// TCP only (no Unix socket, no named pipe): without the key the kit's
-/// guard, prepended to every script, answers 403 and runs nothing.
+/// Where a PHP FastCGI server listens: a port of 127.0.0.1 (php-cgi, which
+/// ignores `PHP_VALUE`), or an owner-only Unix socket (php-fpm on macOS and
+/// Linux), whose folder is removed when the last copy of this is dropped.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FcgiAddr {
+    Tcp(u16),
+    Unix(Arc<PrivateSocket>),
+}
+
+impl FcgiAddr {
+    /// The upstream of Caddy's `php_fastcgi`: `127.0.0.1:<port>` or
+    /// `"unix/<path>"` (the path was checked usable in a Caddyfile).
+    pub fn caddy_upstream(&self) -> String {
+        match self {
+            FcgiAddr::Tcp(port) => format!("127.0.0.1:{port}"),
+            FcgiAddr::Unix(sock) => format!("\"{}\"", caddy::admin_address(&sock.path)),
+        }
+    }
+
+    /// The address of Nginx's `fastcgi_pass`: `127.0.0.1:<port>` or
+    /// `unix:<path>`.
+    pub fn nginx_pass(&self) -> String {
+        match self {
+            FcgiAddr::Tcp(port) => format!("127.0.0.1:{port}"),
+            FcgiAddr::Unix(sock) => format!("unix:{}", fwd(&sock.path)),
+        }
+    }
+
+    /// The address as the log says it.
+    pub fn describe(&self) -> String {
+        match self {
+            FcgiAddr::Tcp(port) => format!("port {port}"),
+            FcgiAddr::Unix(sock) => format!("socket {}", sock.path.display()),
+        }
+    }
+}
+
+/// A running PHP FastCGI server as the web server reaches it: its address
+/// ([`FcgiAddr`]) and the random key the web server sends with every
+/// request. php-cgi has no authentication and Nginx for Windows speaks
+/// FastCGI over TCP only (no Unix socket, no named pipe): without the key
+/// the kit's guard, prepended to every script, answers 403 and runs nothing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FastCgi {
-    pub port: u16,
+    pub addr: FcgiAddr,
     pub key: String,
+}
+
+impl FastCgi {
+    /// A FastCGI server on `port` of 127.0.0.1 with `key`.
+    pub fn tcp(port: u16, key: impl Into<String>) -> Self {
+        FastCgi {
+            addr: FcgiAddr::Tcp(port),
+            key: key.into(),
+        }
+    }
 }
 
 /// The FastCGI program of the PHP in `dir` for Nginx: `php-cgi.exe` on
@@ -66,16 +119,21 @@ fn php_dir_with(kit: &Kit, env: &KitEnv, program: impl Fn(&Path) -> PathBuf) -> 
     program(&dir).is_file().then_some(dir)
 }
 
+/// A new key for a FastCGI server; `None` (in the log) when it cannot be had.
+fn new_key(what: &str) -> Option<String> {
+    match crate::editor::random_token() {
+        Ok(key) => Some(key),
+        Err(e) => {
+            crate::log::warn(&format!("{what}: no FastCGI key: {e:#}"));
+            None
+        }
+    }
+}
+
 /// A new key and a free port of 127.0.0.1 for a FastCGI server; `None`
 /// (in the log) when either cannot be had.
 fn key_and_port(what: &str) -> Option<(String, u16)> {
-    let key = match crate::editor::random_token() {
-        Ok(key) => key,
-        Err(e) => {
-            crate::log::warn(&format!("{what}: no FastCGI key: {e:#}"));
-            return None;
-        }
-    };
+    let key = new_key(what)?;
     let port = match std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
         .and_then(|l| l.local_addr())
     {
@@ -124,7 +182,7 @@ pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(F
         .stdout(Stdio::null())
         .stderr(Stdio::null());
     match jobs::spawn_in(&mut cmd, job) {
-        Ok(child) => Some((FastCgi { port, key }, child)),
+        Ok(child) => Some((FastCgi::tcp(port, key), child)),
         Err(e) => {
             crate::log::warn(&format!("php-cgi {}: {e:#}", cgi.display()));
             None
@@ -146,12 +204,14 @@ pub fn guard_args(guard: &Path, key: &str) -> [String; 4] {
 }
 
 /// The `php-fpm` configuration of one web server (`fpm.conf` in its folder
-/// `run_dir`): in the foreground, its pid and log there, one pool on
-/// 127.0.0.1:`port` that accepts 127.0.0.1 only, workers started on demand,
+/// `run_dir`): in the foreground, its pid and log there, one pool on the
+/// Unix socket `socket` (owner-only: `listen.mode = 0600`, in a folder only
+/// the user can enter; never a TCP port, where any local program could send
+/// `PHP_ADMIN_VALUE` and turn the guard off), workers started on demand,
 /// the kit's environment passed to the scripts (`clear_env = no`: `PATH`,
 /// `CP_*`, `DB_PORT`), and the files PHP runs for Apache and Nginx
 /// (`.php`, `.phtml`, `.phar`).
-pub fn fpm_conf(run_dir: &Path, port: u16) -> String {
+pub fn fpm_conf(run_dir: &Path, socket: &Path) -> String {
     let run = fwd(run_dir);
     [
         "; Atollo: php-fpm of this web server (written at every start)",
@@ -161,8 +221,8 @@ pub fn fpm_conf(run_dir: &Path, port: u16) -> String {
         "daemonize = no",
         "",
         "[www]",
-        &format!("listen = 127.0.0.1:{port}"),
-        "listen.allowed_clients = 127.0.0.1",
+        &format!("listen = \"{}\"", fwd(socket)),
+        "listen.mode = 0600",
         "pm = ondemand",
         "pm.max_children = 16",
         "pm.process_idle_timeout = 30s",
@@ -193,13 +253,15 @@ pub fn fpm_args(conf: &Path, ini_dir: &Path, guard: &Path, key: &str) -> Vec<Str
 
 /// Spawns the FastCGI server Caddy talks to, inside `job`: php-cgi on
 /// Windows ([`spawn_php_cgi_if_present`]), `php-fpm` with `fpm.conf` in
-/// `run_dir` on macOS and Linux. `None` when PHP is not installed, the
-/// guard is missing or the spawn failed (in the log).
+/// `run_dir` on macOS and Linux, on a new [`PrivateSocket`] of the instance
+/// `id`. `None` when PHP is not installed, the guard is missing, no private
+/// socket can be had or the spawn failed (in the log): never php-fpm on TCP.
 pub fn spawn_fastcgi_if_present(
     kit: &Kit,
     env: &KitEnv,
     job: &Job,
     run_dir: &Path,
+    id: &str,
 ) -> Option<(FastCgi, Child)> {
     if kit.os().is_windows() {
         return spawn_php_cgi_if_present(kit, env, job);
@@ -208,10 +270,11 @@ pub fn spawn_fastcgi_if_present(
     let php = php_dir_with(kit, env, |d| fastcgi_exe(os, d))?;
     let fpm = fastcgi_exe(os, &php);
     let guard = guard_file(kit, "php-fpm")?;
-    let (key, port) = key_and_port("php-fpm")?;
+    let key = new_key("php-fpm")?;
+    let socket = Arc::new(caddy::private_socket(kit, id, "php-fpm", "fpm.sock")?);
     let conf = run_dir.join("fpm.conf");
     if let Err(e) = fs::create_dir_all(run_dir)
-        .and_then(|()| write_atomic(&conf, fpm_conf(run_dir, port).as_bytes()))
+        .and_then(|()| write_atomic(&conf, fpm_conf(run_dir, &socket.path).as_bytes()))
     {
         crate::log::warn(&format!("php-fpm: {}: {e}", conf.display()));
         return None;
@@ -223,7 +286,13 @@ pub fn spawn_fastcgi_if_present(
         .stdout(Stdio::null())
         .stderr(Stdio::null());
     match jobs::spawn_in(&mut cmd, job) {
-        Ok(child) => Some((FastCgi { port, key }, child)),
+        Ok(child) => Some((
+            FastCgi {
+                addr: FcgiAddr::Unix(socket),
+                key,
+            },
+            child,
+        )),
         Err(e) => {
             crate::log::warn(&format!("php-fpm {}: {e:#}", fpm.display()));
             None
