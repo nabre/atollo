@@ -1405,6 +1405,185 @@ fn apache_pool_reload_twice() {
     assert!(wait_port_released(port, Duration::from_secs(5)));
 }
 
+/// `GET path` with `Host: host` on 127.0.0.1:`port`: the status and the body.
+fn http_get(port: u16, host: &str, path: &str) -> Result<(u16, String)> {
+    use std::io::{Read, Write};
+    let mut s = TcpStream::connect_timeout(
+        &SocketAddr::from(([127, 0, 0, 1], port)),
+        Duration::from_secs(2),
+    )?;
+    s.set_read_timeout(Some(Duration::from_secs(10)))?;
+    write!(
+        s,
+        "GET {path} HTTP/1.1\r\nHost: {host}:{port}\r\nConnection: close\r\n\r\n"
+    )?;
+    let mut raw = Vec::new();
+    s.read_to_end(&mut raw)?;
+    let text = String::from_utf8_lossy(&raw).into_owned();
+    let status = text
+        .split_whitespace()
+        .nth(1)
+        .and_then(|c| c.parse().ok())
+        .unwrap_or(0);
+    let body = text.split_once("\r\n\r\n").map(|(_, b)| b).unwrap_or("");
+    Ok((status, body.to_owned()))
+}
+
+/// WP-3.3 acceptance with a real Caddy and PHP (ATOLLO_TEST_KIT): a pool
+/// with two PHP sites and an alias to another project's folder; a third
+/// site added with `caddy reload` while the first one keeps answering, the
+/// same Caddy process throughout.
+#[test]
+fn caddy_pool_two_php_sites_alias_and_reload() {
+    let Ok(root) = std::env::var("ATOLLO_TEST_KIT") else {
+        eprintln!("ATOLLO_TEST_KIT not set: skipped");
+        return;
+    };
+    // The host's temporary folder holds the pool's admin socket.
+    let kit = Kit::at(PathBuf::from(root), Arch::detect()).with_host(Some(&std::env::temp_dir()));
+    kit.prepare().unwrap();
+    let catalog = Catalog::get();
+    for id in ["caddy", "php"] {
+        if !catalog.find(id).is_some_and(|c| c.is_installed(&kit)) {
+            eprintln!("{id} not installed: skipped");
+            return;
+        }
+    }
+    crate::setup::kit_files::write_all(&kit).unwrap();
+    let env = KitEnv::build(
+        &kit,
+        &crate::settings::Settings::default(),
+        "en",
+        &crate::env::Host::capture(),
+    );
+    let port = {
+        let l = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        l.local_addr().unwrap().port()
+    };
+    let id = "p6-caddy-pool";
+    let projects = kit.projects();
+    let site = |name: &str, extra: &str| {
+        let public = projects.join(name).join("public");
+        fs::create_dir_all(&public).unwrap();
+        fs::write(
+            public.join("index.php"),
+            format!("<?php echo 'PHP ' . PHP_VERSION . ' {name} ' . $_SERVER['REQUEST_URI'];"),
+        )
+        .unwrap();
+        fs::write(public.join(".env"), "SECRET=1").unwrap();
+        fs::write(
+            projects.join(name).join("panel.json"),
+            format!(
+                r#"{{ "actions": [ {{ "id": "site", "caddy": "public", "server": "{id}"{extra} }} ] }}"#
+            ),
+        )
+        .unwrap();
+    };
+    site(
+        "p6-alpha",
+        r#", "aliases": { "/shared": "@p6-beta/assets" }"#,
+    );
+    site("p6-beta", "");
+    fs::create_dir_all(projects.join("p6-beta").join("assets")).unwrap();
+    fs::write(
+        projects.join("p6-beta").join("assets").join("logo.txt"),
+        "beta asset",
+    )
+    .unwrap();
+    let servers = WebServers::new(kit.clone());
+    servers
+        .save_profile(
+            WebServerProfileInput {
+                id: id.into(),
+                name: id.into(),
+                engine: WebServerEngine::Caddy,
+                server_line: None,
+                php_line: None,
+                port: Some(port),
+                keep_alive: true,
+                autostart: false,
+            },
+            "en",
+        )
+        .unwrap();
+    let result = (|| -> Result<()> {
+        servers.start(id, &env, "en")?;
+        let (s, body) = http_get(port, "p6-alpha.localhost", "/some/route?x=1")?;
+        eprintln!("alpha: {s} {body}");
+        anyhow::ensure!(
+            s == 200 && body.contains("p6-alpha /some/route?x=1"),
+            "alpha"
+        );
+        let (s, body) = http_get(port, "p6-beta.localhost", "/")?;
+        eprintln!("beta: {s} {body}");
+        anyhow::ensure!(s == 200 && body.contains("PHP 8.") && body.contains("p6-beta"));
+        let (s, body) = http_get(port, "p6-alpha.localhost", "/shared/logo.txt")?;
+        eprintln!("alias: {s} {body}");
+        anyhow::ensure!(s == 200 && body.contains("beta asset"), "alias");
+        let (s, _) = http_get(port, "p6-alpha.localhost", "/.env")?;
+        anyhow::ensure!(s == 404, ".env: {s}");
+        let (s, _) = http_get(port, "evil.example", "/")?;
+        anyhow::ensure!(s == 421, "other host: {s}");
+        let pid = servers
+            .list("en", true)
+            .pools
+            .into_iter()
+            .find(|p| p.id == id)
+            .and_then(|p| p.pid);
+
+        // The first site is asked all along the reload.
+        let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let asker = {
+            let stop = std::sync::Arc::clone(&stop);
+            std::thread::spawn(move || {
+                let (mut ok, mut failed) = (0u32, Vec::new());
+                while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+                    match http_get(port, "p6-alpha.localhost", "/") {
+                        Ok((200, b)) if b.contains("p6-alpha") => ok += 1,
+                        other => failed.push(format!("{other:?}")),
+                    }
+                }
+                (ok, failed)
+            })
+        };
+        std::thread::sleep(Duration::from_millis(300));
+        site("p6-gamma", "");
+        servers.invalidate();
+        servers.reload(id, &env, "en")?;
+        std::thread::sleep(Duration::from_millis(300));
+        stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        let (ok, failed) = asker.join().unwrap();
+        eprintln!(
+            "during the reload: {ok} answers, {} failed {failed:?}",
+            failed.len()
+        );
+        anyhow::ensure!(ok > 0 && failed.is_empty(), "interrupted: {failed:?}");
+        let (s, body) = http_get(port, "p6-gamma.localhost", "/")?;
+        eprintln!("gamma: {s} {body}");
+        anyhow::ensure!(
+            s == 200 && body.contains("p6-gamma"),
+            "gamma after the reload"
+        );
+        let again = servers
+            .list("en", true)
+            .pools
+            .into_iter()
+            .find(|p| p.id == id)
+            .and_then(|p| p.pid);
+        anyhow::ensure!(
+            pid.is_some() && pid == again,
+            "same Caddy: {pid:?} {again:?}"
+        );
+        Ok(())
+    })();
+    servers.stop(id);
+    drop_real_profile(&kit, &servers, id);
+    for p in ["p6-alpha", "p6-beta", "p6-gamma"] {
+        let _ = fs::remove_dir_all(projects.join(p));
+    }
+    result.unwrap();
+}
+
 /// BUG-V3-02: names that give the same label in one pool stay distinct.
 #[test]
 fn name_sites_keeps_names_unique() {
@@ -1584,7 +1763,8 @@ fn caddy_site_block_of_a_pool() {
         "\t\troot * \"{}\"\n",
         crate::projects::apache::fwd(&doc)
     )));
-    assert!(block.contains(&format!("\t\t\tenv ATOLLO_FCGI_KEY {}\n", "k".repeat(64))));
+    assert!(block.contains("\t\t\tenv ATOLLO_FCGI_KEY {env.ATOLLO_FCGI_KEY}\n"));
+    assert!(!block.contains(&"k".repeat(64)), "the key is never written");
     assert!(block.contains("\t\thandle_path /blog/* {\n"));
     assert!(block.contains(&format!(
         "\t\t\troot * \"{}/blog/uploads\"\n",
@@ -1619,12 +1799,19 @@ fn caddy_pool_writes_one_caddyfile() {
         port: 9444,
         key: "z".repeat(64),
     };
+    let sock = tmp.0.join("host").join("caddy-1").join("a.sock");
     let conf = servers
-        .write_pool_configs_with(&pool, Some(&fcgi), false, Some(9555))
+        .write_pool_configs_with(&pool, Some(&fcgi), false, Some(&sock))
         .unwrap();
     assert_eq!(conf.file_name().unwrap(), "Caddyfile");
     let text = fs::read_to_string(&conf).unwrap();
-    assert!(text.contains("\tadmin 127.0.0.1:9555\n"));
+    if crate::projects::caddy::socket_path_usable(&sock) {
+        assert!(text.contains(&format!(
+            "\tadmin \"{}|0600\"\n",
+            crate::projects::caddy::admin_address(&sock)
+        )));
+    }
+    assert!(!text.contains("admin 127.0.0.1") && !text.contains(&"z".repeat(64)));
     assert!(text.contains("http://shop.localhost:8091 {\n"));
     assert!(text.contains("http://blog.localhost:8091 {\n"));
     assert!(text.contains("php_fastcgi 127.0.0.1:9444 {"));

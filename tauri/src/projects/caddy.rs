@@ -8,13 +8,15 @@
 //! Drupal and Laravel want it), hidden files and `.inc`/`.php3`…`.php8`
 //! refused with 404, aliases checked on disk. PHP is the kit's FastCGI
 //! server (`projects/fastcgi.rs`: php-cgi on Windows, php-fpm elsewhere),
-//! sent the start's key with every request (`env ATOLLO_FCGI_KEY`).
+//! sent the start's key with every request (`env ATOLLO_FCGI_KEY`), which
+//! Caddy reads from its own environment, never from its configuration.
 //!
-//! Every instance has its own admin endpoint on a free port of 127.0.0.1
-//! (two pools never meet on Caddy's `:2019`), used by `caddy reload` to
-//! change the sites without stopping the others; its data and config
-//! folders are in the instance's folder, nothing goes to the user's
-//! profile.
+//! A pool has its own admin endpoint on an owner-only Unix socket
+//! ([`AdminSocket`]; two pools never meet on Caddy's `:2019`, and no TCP
+//! port lets another program read or replace the configuration), used by
+//! `caddy reload` to change the sites without stopping the others. A
+//! project's own Caddy has none (`admin off`). The data and config folders
+//! are in the instance's folder, nothing goes to the user's profile.
 
 use std::collections::BTreeMap;
 use std::ffi::OsString;
@@ -22,7 +24,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, bail, Result};
 
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
@@ -81,25 +83,90 @@ pub fn quoted_path(path: &Path) -> Option<String> {
     Some(format!("\"{text}\""))
 }
 
-/// A free port of 127.0.0.1 for an instance's admin endpoint, chosen as
-/// the kit's other ports (the system's, let go before Caddy takes it).
-pub fn free_port() -> Result<u16> {
-    let listener = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
-        .context("no free port for Caddy's admin endpoint")?;
-    Ok(listener.local_addr()?.port())
+/// The longest admin socket path written: macOS takes 104 bytes in
+/// `sun_path`, Linux and Windows 108; a longer one means no admin endpoint.
+pub const SOCKET_PATH_MAX: usize = 100;
+
+/// Caddy's admin endpoint of a pool: a Unix domain socket (Windows 10 1803
+/// and later have them too), never a TCP port, which any local program of
+/// any user could reach to read the configuration or load another one
+/// (D-111). The socket is created owner-only (`|0600`, ignored by Windows)
+/// in an owner-only folder of the host's temporary folder (`%TEMP%` is
+/// per user on Windows), short enough for `sun_path`; the folder lives as
+/// long as `_dir` (the running pool).
+#[derive(Debug)]
+pub struct AdminSocket {
+    pub path: PathBuf,
+    _dir: crate::os::temp::TempWork,
 }
 
-/// The global options of an instance whose folder is `run_dir`: its own
-/// admin endpoint (none with `admin` `None`, a file written only for the
-/// next start), no automatic HTTPS, nothing saved outside the
+/// The folder name of the admin socket of the instance `id` in the host's
+/// temporary folder: short, the same for the same instance.
+pub fn admin_dir_name(id: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::digest(id.as_bytes());
+    let hex: String = digest.iter().take(4).map(|b| format!("{b:02x}")).collect();
+    format!("caddy-{hex}")
+}
+
+/// The socket path `path` can be written in a Caddyfile and fits `sun_path`.
+pub fn socket_path_usable(path: &Path) -> bool {
+    quoted_path(path).is_some() && fwd(path).len() <= SOCKET_PATH_MAX
+}
+
+/// The admin socket of the instance `id`, `None` (in the log; the instance
+/// then runs with `admin off` and a reload restarts it) without a host
+/// temporary folder, when its folder cannot be made owner-only, or when
+/// the path is too long.
+pub fn admin_socket(kit: &Kit, id: &str) -> Option<AdminSocket> {
+    let base = kit.system_temp()?;
+    let name = admin_dir_name(id);
+    let work = match crate::os::temp::TempWork::new(kit, &name) {
+        Ok(work) => work,
+        Err(e) => {
+            crate::log::warn(&format!("caddy {id}: no admin folder: {e}"));
+            return None;
+        }
+    };
+    // Only in the host's temporary folder, never the kit's `data\tmp`
+    // (a USB disk without permissions).
+    if !work.path().starts_with(base) {
+        return None;
+    }
+    if let Err(e) = crate::router::fs::restrict_dir_to_owner(work.path()) {
+        crate::log::warn(&format!("caddy {id}: admin folder not private: {e:#}"));
+        return None;
+    }
+    let path = work.path().join("a.sock");
+    if !socket_path_usable(&path) {
+        crate::log::warn(&format!(
+            "caddy {id}: {} too long for a socket: no admin endpoint",
+            path.display()
+        ));
+        return None;
+    }
+    Some(AdminSocket { path, _dir: work })
+}
+
+/// The address of the admin socket `path` for Caddy: `unix/<path>`, with
+/// `/` (`unix//tmp/…` on Unix, `unix/C:/…` on Windows).
+pub fn admin_address(path: &Path) -> String {
+    format!("unix/{}", fwd(path))
+}
+
+/// The global options of an instance whose folder is `run_dir`: its admin
+/// endpoint on the socket `admin` (owner-only), else none (`admin off`: a
+/// project's own Caddy, which restarts with its action, or a file written
+/// only for the next start); no automatic HTTPS, nothing saved outside the
 /// configuration, its storage in its folder.
-pub fn global_options(admin: Option<u16>, run_dir: &Path) -> Result<Vec<String>> {
+pub fn global_options(admin: Option<&Path>, run_dir: &Path) -> Result<Vec<String>> {
     let storage = quoted_path(&run_dir.join("storage"))
         .ok_or_else(|| anyhow!("{}: not usable in a Caddyfile", run_dir.display()))?;
+    let admin = admin.filter(|p| socket_path_usable(p));
     Ok(vec![
         "{".to_owned(),
         match admin {
-            Some(port) => format!("\tadmin 127.0.0.1:{port}"),
+            Some(path) => format!("\tadmin \"{}|0600\"", admin_address(path)),
             None => "\tadmin off".to_owned(),
         },
         "\tauto_https off".to_owned(),
@@ -109,12 +176,15 @@ pub fn global_options(admin: Option<u16>, run_dir: &Path) -> Result<Vec<String>>
     ])
 }
 
-/// The PHP of a site (or of an alias) at `indent`: the FastCGI server with
-/// the key of this start and the files PHP runs ([`PHP_RUN`]).
+/// The PHP of a site (or of an alias) at `indent`: the FastCGI server, the
+/// key of this start and the files PHP runs ([`PHP_RUN`]). The key is not
+/// in the text: Caddy reads it from its own environment at every request
+/// (`{env.ATOLLO_FCGI_KEY}`, set by [`with_key`]), so neither the file on
+/// disk nor the configuration Caddy holds contains it.
 fn php_lines(fcgi: &FastCgi, indent: &str) -> Vec<String> {
     vec![
         format!("{indent}php_fastcgi 127.0.0.1:{} {{", fcgi.port),
-        format!("{indent}\tenv {FCGI_KEY_PARAM} {}", fcgi.key),
+        format!("{indent}\tenv {FCGI_KEY_PARAM} {{env.{FCGI_KEY_PARAM}}}"),
         format!("{indent}\tsplit .php .phtml .phar"),
         format!("{indent}}}"),
     ]
@@ -240,7 +310,8 @@ pub fn site_names(
     names
 }
 
-/// The complete `Caddyfile` of a project's own Caddy: in LAN mode the site
+/// The complete `Caddyfile` of a project's own Caddy: no admin endpoint
+/// (it restarts with its action, never reloads); in LAN mode the site
 /// answers any `Host` (an IP of the PC included), else only its names and
 /// the local ones, every other `Host` refused with 421.
 #[allow(clippy::too_many_arguments)]
@@ -249,7 +320,6 @@ pub fn project_conf(
     doc_root: &Path,
     run_dir: &Path,
     port: u16,
-    admin: Option<u16>,
     fcgi: Option<&FastCgi>,
     lan: bool,
     domains: &[String],
@@ -263,7 +333,7 @@ pub fn project_conf(
     })?;
     let mut lines =
         vec!["# --- Atollo: this project's Caddy (written at every start) ---".to_owned()];
-    lines.extend(global_options(admin, run_dir)?);
+    lines.extend(global_options(None, run_dir)?);
     let names = if lan {
         Vec::new()
     } else {
@@ -288,7 +358,7 @@ const POOL_LOCAL_HOSTS: [&str; 3] = ["localhost", "127.0.0.1", "[::1]"];
 pub fn pool_conf(
     pool_dir: &Path,
     port: u16,
-    admin: Option<u16>,
+    admin: Option<&Path>,
     lan: bool,
     sites: &[Vec<String>],
     user_snippets: bool,
@@ -387,15 +457,22 @@ pub fn run_args(conf: &Path) -> Vec<OsString> {
     ]
 }
 
-/// `caddy reload` of `conf` on the instance whose admin endpoint is
-/// 127.0.0.1:`admin`: the new sites are served, the others go on
-/// without a pause.
-pub fn reload_args(conf: &Path, admin: u16) -> Vec<OsString> {
+/// `caddy reload` of `conf` on the instance whose admin socket is `admin`:
+/// the new sites are served, the others go on without a pause.
+pub fn reload_args(conf: &Path, admin: &Path) -> Vec<OsString> {
     let mut args = run_args(conf);
     args[0] = "reload".into();
     args.push("--address".into());
-    args.push(format!("127.0.0.1:{admin}").into());
+    args.push(admin_address(admin).into());
     args
+}
+
+/// The key of `fcgi` in the environment of the Caddy that runs (never in
+/// its configuration, [`php_lines`]): the only place it reads it from.
+pub fn with_key(cmd: &mut Command, fcgi: Option<&FastCgi>) {
+    if let Some(f) = fcgi {
+        cmd.env(FCGI_KEY_PARAM, &f.key);
+    }
 }
 
 /// `caddy` with the kit's environment, its data and config folders in the
@@ -436,7 +513,6 @@ pub fn command(
         doc_root,
         &run_dir,
         port,
-        Some(free_port()?),
         fcgi,
         lan,
         domains,
@@ -445,6 +521,7 @@ pub fn command(
     write_atomic(&conf, content.as_bytes())?;
     let mut cmd = caddy_command(&exe, &run_dir, env);
     cmd.args(run_args(&conf));
+    with_key(&mut cmd, fcgi);
     Ok(cmd)
 }
 
