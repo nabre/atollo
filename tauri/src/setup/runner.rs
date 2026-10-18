@@ -411,7 +411,9 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
     let _lock = lock(ctx.kit)?;
     let catalog = Catalog::get();
     if !opts.lines.is_empty() {
-        return Ok(run_lines(ctx, catalog, &opts.lines, sink));
+        let results = run_lines(ctx, catalog, &opts.lines, sink);
+        install::conda::sweep(ctx.kit);
+        return Ok(results);
     }
     let choice = match Choice::read(ctx.kit, catalog) {
         Some(choice) => choice,
@@ -519,7 +521,18 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
         let outcome = line_step(ctx, c, line, current, (index, total), sink);
         results.push((c.id.clone(), outcome));
     }
+    // The kept conda packages no list names any more (D-118): after the
+    // installations and removals of the run, under its lock.
+    install::conda::sweep(ctx.kit);
     Ok(results)
+}
+
+/// `f` while no preparation runs on the kit, under the same lock
+/// (`Busy` otherwise): the start's sweep of the kept conda packages and
+/// «Libera» of the Settings page (D-118).
+pub fn while_idle<T>(kit: &Kit, f: impl FnOnce() -> T) -> Result<T> {
+    let _lock = lock(kit)?;
+    Ok(f())
 }
 
 /// Downloads saved lines of versioned components, one step each.
@@ -604,6 +617,18 @@ fn line_step(
         let Some(installer) = install::installer(&c.id) else {
             return Ok(Outcome::Unsupported);
         };
+        // A line marked when the kit moved: from the kept packages first
+        // (D-118), at its own version.
+        if current.is_none() && c.lines_to_reinstall(ctx.kit).iter().any(|l| l == line) {
+            let mut progress = StepProgress {
+                id: &c.id,
+                sink: &mut *sink,
+                last_percent: None,
+            };
+            if let Some(version) = install::conda::reinstall(ctx, c, Some(line), &mut progress) {
+                return Ok(Outcome::Installed { version });
+            }
+        }
         let release = installer.release_line(ctx, c, line)?;
         if current == Some(release.version.as_str()) {
             return Ok(Outcome::UpToDate {
@@ -687,6 +712,19 @@ fn step(
             Outcome::Unsupported
         };
     };
+    // Moved: a conda environment is created again from the packages kept
+    // in the kit, without the network; from the network as before when
+    // they are missing or changed (D-118).
+    if installed && c.needs_reinstall(ctx.kit) {
+        let mut progress = StepProgress {
+            id: &c.id,
+            sink: &mut *sink,
+            last_percent: None,
+        };
+        if let Some(version) = install::conda::reinstall(ctx, c, None, &mut progress) {
+            return Outcome::Installed { version };
+        }
+    }
     let result = (|| -> Result<Outcome> {
         let release = match (at, &keep_line) {
             (Some(line), _) if !installed => install::release_at(ctx, c, line)?,

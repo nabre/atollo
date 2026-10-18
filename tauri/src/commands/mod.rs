@@ -324,6 +324,8 @@ macro_rules! command_handler {
             $crate::commands::setup::setup_by_hand_open,
             $crate::commands::setup::components_apply,
             $crate::commands::setup::components_install,
+            $crate::commands::setup::conda_kept,
+            $crate::commands::setup::conda_kept_free,
             $crate::commands::agents::agents_status,
             $crate::commands::agents::agents_stats,
             $crate::commands::agents::agent_launch,

@@ -17,6 +17,7 @@ const SETTINGS: Settings = {
   phpVersion: null,
   rustToolchain: null,
   programTemp: "auto",
+  keepCondaPackages: true,
 };
 
 describe("program temp setting", () => {

@@ -40,6 +40,10 @@ pub struct Settings {
     pub rust_toolchain: Option<String>,
     /// `TEMP` of the programs: `auto`, `kit` or `system`.
     pub program_temp: ProgramTemp,
+    /// The archives of the conda environments that cannot follow the kit
+    /// stay in `data/app/conda`, so a move reinstalls them without the
+    /// network (D-118).
+    pub keep_conda_packages: bool,
 }
 
 impl Default for Settings {
@@ -53,6 +57,7 @@ impl Default for Settings {
             php_version: None,
             rust_toolchain: None,
             program_temp: ProgramTemp::Auto,
+            keep_conda_packages: true,
         }
     }
 }

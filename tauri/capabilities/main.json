@@ -37,6 +37,8 @@
     "allow-setup-by-hand-open",
     "allow-components-apply",
     "allow-components-install",
+    "allow-conda-kept",
+    "allow-conda-kept-free",
     "allow-agents-status",
     "allow-agents-stats",
     "allow-agent-launch",
