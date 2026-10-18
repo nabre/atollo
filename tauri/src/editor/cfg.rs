@@ -100,9 +100,7 @@ fn hidden(os: Os) -> &'static [&'static str] {
 /// The kit's themes (editor/theme.rs) in place of VSCodium's own: a theme
 /// setting missing or on one of these becomes Atollo's; any other theme is
 /// the user's choice and stays. VSCodium 1.140 calls its themes "Dark
-/// Modern" and "Light Modern" (older ids: "Default ..."). "Atollo Dark"
-/// and "Atollo Light" are the kit's own themes before the name Atollo
-/// (D-124): a settings file that still has them gets the new ones.
+/// Modern" and "Light Modern" (older ids: "Default ...").
 const THEMES: &[(&str, &[&str], &str)] = &[
     (
         "workbench.colorTheme",
@@ -111,7 +109,6 @@ const THEMES: &[(&str, &[&str], &str)] = &[
             "Default Dark Modern",
             "Dark+",
             "Default Dark+",
-            "Atollo Dark",
         ],
         crate::editor::theme::DARK,
     ),
@@ -122,7 +119,6 @@ const THEMES: &[(&str, &[&str], &str)] = &[
             "Default Dark Modern",
             "Dark+",
             "Default Dark+",
-            "Atollo Dark",
         ],
         crate::editor::theme::DARK,
     ),
@@ -133,7 +129,6 @@ const THEMES: &[(&str, &[&str], &str)] = &[
             "Default Light Modern",
             "Light+",
             "Default Light+",
-            "Atollo Light",
         ],
         crate::editor::theme::LIGHT,
     ),
