@@ -453,8 +453,11 @@ fn real_offline_reinstall_after_a_move() {
         return;
     };
     let first = PathBuf::from(first);
+    // No space in the new name: conda-forge's `bin/R` writes `SED=<prefix>/bin/sed`
+    // without quotes, so R's shell script breaks in any folder with a space,
+    // after a move or not.
     let moved = first.with_file_name(format!(
-        "{} moved (D-118)",
+        "{}-moved-d118",
         first.file_name().unwrap().to_string_lossy()
     ));
     let target = Target::detect();
