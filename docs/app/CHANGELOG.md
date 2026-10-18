@@ -1,5 +1,13 @@
 # Novità
 
+## Apache su macOS e Linux, alias più sicuri (18/10/2026)
+
+- **Apache anche su macOS e Linux** (D-116), da una build del kit: httpd 2.4.69 con OpenSSL 3.5, compilato in CI dai sorgenti con firma verificata (`scripts/build-httpd`), una cartella che si sposta con il kit. PHP passa da `php-fpm`, che parte con il pool o con il sito del progetto, come per Caddy. Come su Windows, Apache si propone solo per i progetti con regole proprie nel `.htaccess` (Drupal compreso); Caddy resta il server predefinito. Su Windows niente cambia: Apache Lounge con il modulo PHP, x64 anche su ARM64. Apache compare su macOS e Linux con il primo rilascio della build (`httpd-v2.4.69-1`).
+- **Alias solo per file statici** (SEC-V4-01), con Apache, Nginx e Caddy: uno script finito in una cartella di alias (caricamenti, file condivisi) non viene più eseguito, e un `.htaccess` caricato lì non può dargli un gestore né riaprirlo. Un alias protetto da password con `.htaccess` non è più possibile.
+- `php_value` e `php_flag` in un `.htaccess` funzionano solo con il modulo di Windows: con `php-fpm` danno errore; al loro posto `.user.ini`.
+
+**Verificato**: 725 test Rust su Windows e 717 in WSL; prove reali su Windows (Apache Lounge, PHP 8.5.11) e in WSL Ubuntu 24.04 (build del kit, `php-fpm` 8.5.8): due siti, un alias, file nascosti e host estranei rifiutati, script e `.htaccess` ostili in un alias neutralizzati, cartella dei file di Drupal senza PHP, ricarica; Caddy reale in WSL; la build Linux x64 provata in `ubuntu:22.04` (glibc richiesta 2.34). macOS e Linux ARM64: solo nella CI della build.
+
 ## macOS e Linux (18/10/2026)
 
 L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le prove, anche su Windows ARM64. Lo stesso kit su una chiavetta si apre sui tre sistemi: `projects/` e `data/` sono condivisi, i programmi stanno in `data/apps/<sistema>-<architettura>/`. Provato dall'utente su un Mac Apple Silicon, un Mac Intel e un PC Linux, in WSL2 e nella CI sui sei sistemi.

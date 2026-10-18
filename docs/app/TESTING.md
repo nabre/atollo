@@ -53,6 +53,8 @@ Coprono, fra l'altro:
 | `Bundle darwin-*` | `macos-latest`, `macos-15-intel` | `Atollo.app` con firma ad hoc verificata, `Info.plist`, zip, avvio di prova (D-113) |
 | `Bundle linux-*` | `ubuntu-24.04`, `ubuntu-24.04-arm`, contenitore `ubuntu:22.04` | AppImage e `tar.gz`, minimo di glibc con `objdump`, `--version` e `check` sotto `xvfb-run` |
 
+**Build di Apache** (`.github/workflows/httpd.yml`, D-116), solo sulle pull request che toccano `scripts/build-httpd/**`, a mano (`gh workflow run httpd.yml --ref <branch>`) e sul tag `httpd-v<versione>-<build>`, che pubblica il rilascio: `httpd <target>` per i quattro target Unix (Linux nel contenitore `ubuntu:22.04`), `build.sh` e poi `test.sh`, che avvia Apache da una cartella con spazio e parentesi e dopo averla spostata, controlla i moduli che il kit carica, il minimo di glibc e le librerie (Linux), il minimo macOS 12 e le firme (macOS). In locale per Linux x64: `docker run ubuntu:22.04` con i pacchetti del job, `WORK=/w bash scripts/build-httpd/build.sh linux-x64 0 /out`, poi `test.sh /out/httpd-*.tar.gz`.
+
 Ogni job di test scrive nel riepilogo della run le prove passate, fallite e ignorate, con i nomi di quelle fallite. Su macOS gira tutto `cargo test`: con tauri 2.12.1 il feature `test` (il runtime finto di `test\rust\main.rs`) compila anche lì, quindi non serve un feature a parte (con 2.12.0 mancava `transparent`). In un repository senza runner ARM64 (privato) la variabile del repository `ARM64_RUNNERS=off` toglie i job `linux-arm64` e `win32-arm64`, che altrimenti resterebbero in coda: `linux-arm64` esce dalla lista dei target della matrice (il runner si ricava dal target, senza `include`, che GitHub applica dopo `exclude` e rimetterebbe il target tolto). Il job `win32-arm64` installa la toolchain `stable-aarch64-pc-windows-msvc` e fallisce se `rustc -vV` non riporta `host: aarch64-pc-windows-msvc`: le prove non girano mai in emulazione x64 senza dirlo.
 
 Una prova che vale solo su Windows (percorsi con `\`, `cmd.exe`, `ping.exe`, junction con `mklink /J`, layout `.exe` del kit) porta `#[cfg_attr(not(windows), ignore = "<motivo>")]`: su Windows gira, altrove conta fra le ignorate con il motivo. Una prova nuova usa invece, quando può, funzioni pure con il target come parametro (`Kit::at_target`, `fsx::join_rel` con `/`), così vale per tutti e sei i target.
@@ -74,6 +76,7 @@ Se manca qualcosa stampa il comando da eseguire (`sudo apt-get install -y …`, 
 **Prove con programmi veri** (`DEVKIT_TEST_KIT=<kit con i componenti>`, ignorate senza):
 - `real_databases_start_and_stop`: MySQL, MariaDB e MongoDB del kit su porte libere: avvio, database e utente di un progetto (accesso TCP come quell'utente), copia e ripristino, eliminazione, arresto senza resti (D-110); su Windows e in WSL;
 - `caddy_pool_two_php_sites_alias_and_reload`: un pool Caddy con due siti PHP e un alias, `caddy reload` dopo l'aggiunta di un sito senza fermare l'altro (D-111);
+- `apache_pool_two_php_sites_alias_and_reload` (con `start_reports_syntax_error` e `apache_pool_reload_twice`): un pool Apache con due siti PHP (modulo su Windows, `php-fpm` su macOS e Linux), un alias, `.env` e host estranei 403, uno script e un `.htaccess` ostile nella cartella dell'alias neutralizzati, la cartella `files` di Drupal senza PHP, un terzo sito dopo la ricarica (D-116, SEC-V4-01); su Windows e in WSL. In WSL, finché la build non è fissata nel catalogo, Apache si mette a mano: l'archivio in `data/apps/linux-x64/apache/2.4/`, `httpd.conf` riscritto come fa `httpd_conf`, `data/app/versions/linux-x64/apache.txt`;
 - `a_new_kit_needs_mysql_for_every_sql_need` (`db::services::data`, senza kit): ogni bisogno SQL del catalogo e dei framework si risolve in MySQL su un kit nuovo.
 
 **Secret Service in WSL senza root** (D-115). Per provare Antigravity con un Secret Service vero:
@@ -146,7 +149,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Avvia con NEXKORA** (D-101). Profilo con «Avvia con NEXKORA»: chiusa e riaperta l'app, il pool è acceso senza nessun progetto avviato. Un `servers.json` di prima (senza i due campi) si legge con «Mantieni attivo» spuntato.
 - [ ] **Due azioni web di un progetto nello stesso pool** (BUG-V3-02). `http://<progetto>.localhost:<porta>` e `http://<azione>.<progetto>.localhost:<porta>` servono le due cartelle.
 - [ ] **Due versioni di MariaDB insieme** (D-102). Con 10.11 e 11.4 installati: Database › «Altre versioni» avvia 10.11 su una porta sua mentre 11.4 resta sulla 3306; `mariadb -uroot -h127.0.0.1 -P<porta> -e "select version()"` dà le due versioni. Progetto con «Versione del server» 10.11: «Crea» crea database e utente su 10.11; un programma del progetto vede `DB_PORT` di 10.11; con un `.env` che ha `DB_PORT=3310` vale quello. Cambiare la versione principale mentre 10.11 gira è rifiutato; chiusa l'app, nessun `mariadbd.exe` resta.
-- [ ] **Prove con kit reale.** `DEVKIT_TEST_KIT=<kit con Apache> cargo test start_reports_syntax_error apache_pool_reload_twice` passa.
+- [ ] **Prove con kit reale.** `DEVKIT_TEST_KIT=<kit con Apache e PHP> cargo test -- start_reports_syntax_error apache_pool_reload_twice apache_pool_two_php_sites_alias_and_reload --test-threads=1` passa.
 
 ### macOS, Linux e Windows ARM64 (D-105, D-108…D-115)
 Su macOS Apple Silicon e Intel, Linux x64 e ARM64 (un PC o una VM con desktop: WSL2 non ha chiavette né `noexec` veri), con il bundle della CI o `tauri build --debug --no-bundle`.
@@ -171,7 +174,8 @@ Componenti:
 
 Stack web e database:
 - [ ] **Laravel con MySQL** su macOS e Linux: `composer create-project`, migrazioni, sito su Caddy, phpMyAdmin.
-- [ ] **WordPress con Caddy**: permalink funzionanti senza `.htaccess`. Drupal su Windows propone Apache.
+- [ ] **WordPress con Caddy**: permalink funzionanti senza `.htaccess`. Drupal propone Apache dove il catalogo lo offre (Windows; macOS e Linux dopo il primo rilascio della build, D-116).
+- [ ] **Apache su macOS e Linux** (D-116). Un progetto Laravel con un `.htaccess` proprio, sito Apache: `php-fpm` parte con Apache (`data/projects/<p>/apache/fpm.conf`), le rotte rispondono, `httpd` gira con `-DFOREGROUND`; fermando il sito si fermano entrambi.
 - [ ] **Pool Caddy** con due siti e un alias verso un altro progetto; aggiungere un sito ricarica il pool senza fermare l'altro.
 - [ ] **Stessa cartella dati MySQL** letta da Windows e da Linux con la stessa linea.
 - [ ] **MySQL su Ubuntu 24.04** senza `libaio1` (solo `libaio1t64`): il server parte; senza `libnuma1` l'errore dice `sudo apt install libaio1t64 libnuma1`.
@@ -206,7 +210,7 @@ Kit preparato su Windows per un altro sistema (a ogni rilascio):
 - [ ] **Alias dei siti.** Un sito con `/media` → `storage/uploads` e `/shared` → `@common/assets`, con Apache, con Nginx e in un pool: i file si aprono nel browser.
 - [ ] **Alias e giunzione.** `storage` sostituito da una giunzione verso `C:\Users`: l'alias non è servito e la pagina del sito lo dice.
 - [ ] **Impostazioni › Temporanei dei programmi.** La pagina mostra file system e tipo di disco del kit; Automatico, Nel kit e Nel sistema cambiano `$env:TEMP` in una console nuova del kit (`data\tmp\system` o `%TEMP%\Dev-Kit\<id>\system`).
-- [ ] **Alias e `.htaccess`** (D-100). In una cartella di alias servita da Apache, un collegamento simbolico non si apre; un `.htaccess` con `Options +FollowSymLinks` dà 500, uno con `RewriteRule` 403.
+- [ ] **Alias e `.htaccess`** (D-100, SEC-V4-01). In una cartella di alias servita da Apache, un collegamento simbolico non si apre; un `.htaccess` con `Options +FollowSymLinks`, `RewriteRule`, `AddHandler` o `Require all granted` non cambia nulla (avviso nel log di Apache, la cartella resta servita); un `.php` o `.phtml` lì dà 403 con Apache e Nginx, 404 con Caddy.
 - [ ] **File scaricati a mano** (D-82). Un file messo a mano nel riquadro finisce in `%TEMP%\Dev-Kit\<id>\downloads`; uno lasciato in `data\downloads` si usa lo stesso e si sposta.
 
 ### GitHub
