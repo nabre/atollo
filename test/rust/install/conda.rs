@@ -571,7 +571,7 @@ fn env_with(prefix: &Path, records: &[(&str, &str, &[&str])]) {
     }
 }
 
-/// D-121: the launchers are the programs of the component's package only,
+/// D-125: the launchers are the programs of the component's package only,
 /// from its record (Ruby 4.0.7 of conda-forge: 16 of the 30 of `bin`).
 #[test]
 fn launchers_only_for_the_programs_of_the_package() {

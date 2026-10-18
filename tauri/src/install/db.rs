@@ -680,7 +680,7 @@ impl Installer for MongoDb {
     }
 
     /// The check of the server and the launchers of `mongod` and `mongos`
-    /// (D-121): its data is in `data/db`, never in the environment, and
+    /// (D-125): its data is in `data/db`, never in the environment, and
     /// mongosh and the tools have their own folders, which follow the kit
     /// (D-118).
     fn after_conda(

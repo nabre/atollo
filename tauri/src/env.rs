@@ -738,7 +738,7 @@ impl KitEnv {
         // A conda environment (Ruby and R off Windows, MongoDB on Linux)
         // has the programs of its dependencies in `bin` too (`openssl`,
         // `tput`, `kinit`...): its `kit-bin` instead, the launchers of the
-        // component's own programs (D-121); `bin` while it has none.
+        // component's own programs (D-125); `bin` while it has none.
         let own_bin = |rel: &str| {
             let bin = app(rel);
             let launchers = bin.with_file_name(crate::install::conda::LAUNCHERS);
