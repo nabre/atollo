@@ -740,22 +740,39 @@ impl KitEnv {
         } else if unix_cc.on_path {
             path.push(app(r"cc\bin"));
         }
+        // A conda environment (Ruby and R off Windows, MongoDB on Linux)
+        // has the programs of its dependencies in `bin` too (`openssl`,
+        // `tput`, `kinit`...): its `kit-bin` instead, the launchers of the
+        // component's own programs (D-125); `bin` while it has none.
+        let own_bin = |rel: &str| {
+            let bin = app(rel);
+            let launchers = bin.with_file_name(crate::install::conda::LAUNCHERS);
+            if launchers.is_dir() {
+                launchers
+            } else {
+                bin
+            }
+        };
         when(
             &mut path,
             r"ruby\bin\ruby.exe",
             // Gems and their commands live in the folder of their Ruby
             // (Windows), or in GEM_HOME (macOS and Linux).
-            &[app(r"ruby\bin")],
+            &[own_bin(r"ruby\bin")],
         );
         if let Some(gems) = &gem_home {
             path.push(gems.join("bin"));
         }
-        when(&mut path, r"r\bin\R.cmd", &[app(r"r\bin")]);
+        when(&mut path, r"r\bin\R.cmd", &[own_bin(r"r\bin")]);
         // Databases (D-73): servers and clients; MySQL's `mysql`,
         // `mysqldump`, `mysqladmin` reached through the launchers of
         // data\kit\bin, ahead of its folder (D-110).
         when(&mut path, r"mysql\bin\mysql.exe", &[app(r"mysql\bin")]);
-        when(&mut path, r"mongodb\bin\mongod.exe", &[app(r"mongodb\bin")]);
+        when(
+            &mut path,
+            r"mongodb\bin\mongod.exe",
+            &[own_bin(r"mongodb\bin")],
+        );
         when(
             &mut path,
             r"mongosh\bin\mongosh.exe",

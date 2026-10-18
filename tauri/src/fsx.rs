@@ -82,9 +82,33 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
     let tmp = path.with_file_name(format!("{name}.tmp-{}-{seq}", std::process::id()));
     fs::write(&tmp, bytes)?;
-    fs::rename(&tmp, path).inspect_err(|_| {
+    rename_over(&tmp, path).inspect_err(|_| {
         let _ = fs::remove_file(&tmp);
     })
+}
+
+/// `fs::rename`, again for up to a second while Windows answers "access
+/// denied" (os error 5) or "in use" (32): it does so when two renames
+/// replace the same file at once (two threads saving the same state), or
+/// while another program holds the target without sharing its deletion.
+/// The rename that comes last wins, as on macOS and Linux, where it never
+/// fails this way.
+fn rename_over(from: &Path, to: &Path) -> io::Result<()> {
+    let start = std::time::Instant::now();
+    let mut wait = std::time::Duration::from_millis(1);
+    loop {
+        match fs::rename(from, to) {
+            Err(e)
+                if cfg!(windows)
+                    && matches!(e.raw_os_error(), Some(5 | 32))
+                    && start.elapsed() < std::time::Duration::from_secs(1) =>
+            {
+                std::thread::sleep(wait);
+                wait = (wait * 2).min(std::time::Duration::from_millis(50));
+            }
+            other => return other,
+        }
+    }
 }
 
 /// `value` as indented JSON in `path`, creating its folder, atomically.

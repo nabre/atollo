@@ -102,3 +102,40 @@ fn join_rel_normalizes_both_slashes_and_skips_dot() {
     assert_eq!(join_rel(base, r"a\b\c.txt"), expected);
     assert_eq!(join_rel(base, "./a//b/./c.txt"), expected);
 }
+
+/// Many threads saving the same file at once: on Windows two renames over
+/// one target answer "access denied" to one of them (seen 7 times in 4800
+/// writes before `rename_over`); every write must succeed.
+#[test]
+fn write_atomic_same_file_from_many_threads_never_fails() {
+    let dir = temp("same-file");
+    fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("one.json");
+    let handles: Vec<_> = (0..16u32)
+        .map(|i| {
+            let file = file.clone();
+            std::thread::spawn(move || {
+                let mut errs = Vec::new();
+                for step in 0..150u32 {
+                    if let Err(e) = write_atomic(&file, format!("{i}-{step}").as_bytes()) {
+                        errs.push(format!("{:?} {:?}", e.kind(), e.raw_os_error()));
+                    }
+                }
+                errs
+            })
+        })
+        .collect();
+    let errs: Vec<String> = handles
+        .into_iter()
+        .flat_map(|h| h.join().unwrap())
+        .collect();
+    let names: Vec<_> = fs::read_dir(&dir).unwrap().flatten().collect();
+    let _ = fs::remove_dir_all(&dir);
+    assert!(
+        errs.is_empty(),
+        "{} errors: {:?}",
+        errs.len(),
+        &errs[..errs.len().min(5)]
+    );
+    assert_eq!(names.len(), 1, "no temporary left");
+}

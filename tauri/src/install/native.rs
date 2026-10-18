@@ -885,8 +885,14 @@ impl Installer for R {
         Some(dir.to_path_buf())
     }
 
-    /// The launchers on Windows, the plain `SED` of `bin/R` elsewhere and
-    /// the CRAN mirror in `Rprofile.site`, the
+    /// Windows has its own launchers in `bin` (`after_conda`).
+    fn conda_programs(&self, target: Target) -> Option<&'static str> {
+        (!target.is_windows()).then_some("r-base")
+    }
+
+    /// The launchers on Windows, the plain `SED` of `bin/R` and the
+    /// launchers of `kit-bin` elsewhere, and the CRAN mirror in
+    /// `Rprofile.site`, the
     /// same after `micromamba create` from the network or from the kept
     /// packages (D-118). Makeconf's folder is conda's own here; `relocate`
     /// sets it again on Windows after a move (D-104).
@@ -928,6 +934,9 @@ impl Installer for R {
                         .with_context(|| path.display().to_string())?;
                 }
             }
+            // `R` and `Rscript` on the PATH, not the 150 programs of the
+            // environment's `bin` (D-125).
+            crate::install::conda::write_launchers(target, "r-base")?;
         }
         let site = join_rel(target, "lib/R/etc/Rprofile.site");
         let mut text = fs::read_to_string(&site).unwrap_or_default();

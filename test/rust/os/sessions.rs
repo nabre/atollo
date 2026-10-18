@@ -4,25 +4,31 @@ use std::process::Command;
 use std::time::Duration;
 
 #[test]
-#[cfg_attr(not(windows), ignore = "copies and runs PING.EXE from System32")]
 fn lists_and_stops_a_kit_program() {
     let tmp = TempDir::new("sessions");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    // A "program of the kit": a copy of ping in data\apps.
-    let exe = kit.apps().join(r"tools\ping-test.exe");
+    // A "program of the kit": a copy of a program of the system in
+    // data/apps, that waits 30 s (ping on Windows, sleep elsewhere).
+    let (source, name, args): (PathBuf, &str, &[&str]) = if cfg!(windows) {
+        let system = std::env::var("SystemRoot").unwrap();
+        (
+            Path::new(&system).join("System32").join("PING.EXE"),
+            "ping-test.exe",
+            &["-n", "30", "127.0.0.1"],
+        )
+    } else {
+        (PathBuf::from("/bin/sleep"), "sleep-test", &["30"])
+    };
+    let exe = kit.apps().join("tools").join(name);
     std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
-    let system = std::env::var("SystemRoot").unwrap();
-    std::fs::copy(Path::new(&system).join(r"System32\PING.EXE"), &exe).unwrap();
-    let mut child = Command::new(&exe)
-        .args(["-n", "30", "127.0.0.1"])
-        .spawn()
-        .unwrap();
+    std::fs::copy(source, &exe).unwrap();
+    let mut child = Command::new(&exe).args(args).spawn().unwrap();
     std::thread::sleep(Duration::from_millis(300));
     let open = kit_processes(&kit);
     assert!(
         open.iter()
-            .any(|p| p.pid == child.id() && p.program.ends_with("ping-test.exe")),
+            .any(|p| p.pid == child.id() && p.program.ends_with(name)),
         "{open:?}"
     );
     // Started by this process: not "foreign".

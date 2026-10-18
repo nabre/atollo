@@ -41,6 +41,9 @@ pub fn refresh(kit: &Kit) {
     if let Err(e) = crate::install::make_launchers(&cc_bin) {
         crate::log::warn(&format!("make for C/C++: {e:#}"));
     }
+    // `kit-bin` for a Ruby, MongoDB or R environment installed before the
+    // kit wrote it (D-125).
+    crate::install::conda::launchers_of_older_installations(kit);
 }
 
 const GRADLE_PATHS: &str = "org.gradle.java.installations.paths";

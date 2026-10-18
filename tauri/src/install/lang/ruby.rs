@@ -304,9 +304,14 @@ impl Installer for Ruby {
         (!target.is_windows()).then(|| dir.to_path_buf())
     }
 
-    /// `gemrc` and `rbconfig.rb` fitted to the kit (`fit_conda_ruby`), the
-    /// same from the network and from the kept packages (D-118). The gems
-    /// are outside, in `data/ruby-gems` (D-112).
+    fn conda_programs(&self, target: Target) -> Option<&'static str> {
+        (!target.is_windows()).then_some("ruby")
+    }
+
+    /// `gemrc` and `rbconfig.rb` fitted to the kit (`fit_conda_ruby`) and
+    /// the launchers of Ruby's programs (D-125), the same from the network
+    /// and from the kept packages (D-118). The gems are outside, in
+    /// `data/ruby-gems` (D-112).
     fn after_conda(
         &self,
         ctx: &Ctx,
@@ -317,7 +322,8 @@ impl Installer for Ruby {
         if !crate::versions::has_key_for(target_of(ctx, component), component, dir) {
             bail!("bin/ruby not found after the installation");
         }
-        fit_conda_ruby(dir)
+        fit_conda_ruby(dir)?;
+        crate::install::conda::write_launchers(dir, "ruby")
     }
 
     fn has_lines(&self) -> bool {

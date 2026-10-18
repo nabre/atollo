@@ -256,11 +256,23 @@ fn mongodb_tools_build_by_distribution() {
         pick(Some("ID=ubuntu\nVERSION_ID=\"28.04\"\n"), &x64),
         Some("ubuntu2604")
     );
-    // Debian 12 has no arm64 build; Arch, an old Debian and a kit prepared
-    // from another system (no os-release): the oldest Ubuntu from 20.04.
+    // Debian by major, as RHEL: Debian 9 (`VERSION_ID="9"`) takes
+    // debian92, whose glibc it has (the Ubuntu 20.04 build needs a newer
+    // one); Debian 10 its own build, not debian92.
+    assert_eq!(pick(Some(DEBIAN_9), &x64), Some("debian92"));
+    assert_eq!(
+        pick(Some("ID=debian\nVERSION_ID=\"10\"\n"), &x64),
+        Some("debian10")
+    );
+    // Debian 8: no build of its family that old.
+    assert_eq!(
+        pick(Some("ID=debian\nVERSION_ID=\"8\"\n"), &x64),
+        Some("ubuntu2004")
+    );
+    // Debian 12 has no arm64 build; Arch and a kit prepared from another
+    // system (no os-release): the oldest Ubuntu from 20.04.
     assert_eq!(pick(Some(DEBIAN_13), &arm64), Some("ubuntu2004"));
     assert_eq!(pick(Some(ARCH), &x64), Some("ubuntu2004"));
-    assert_eq!(pick(Some(DEBIAN_9), &x64), Some("ubuntu2004"));
     assert_eq!(pick(None, &arm64), Some("ubuntu2004"));
     assert_eq!(pick(None, &["rhel93"]), None);
     // RHEL-like systems by major: CentOS 7 (`VERSION_ID="7"`) takes

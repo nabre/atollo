@@ -383,10 +383,11 @@ pub fn mongodb_tools_linux_name<'a>(
         .filter_map(|n| mongodb_build_version(n).map(|(f, v)| (*n, f, v)))
         .collect();
     if let Some((family, version)) = os_release.and_then(linux_distro) {
-        // RHEL-like systems keep one glibc per major (`VERSION_ID="7"` of
-        // CentOS 7 takes `rhel70`, `8.2` takes the newest `rhel8x`).
+        // RHEL-like systems and Debian keep one glibc per major
+        // (`VERSION_ID="7"` of CentOS 7 takes `rhel70`, `8.2` takes the
+        // newest `rhel8x`, Debian 9's `VERSION_ID="9"` takes `debian92`).
         let fits = |v: &Vec<u64>| {
-            if family == "rhel" {
+            if family == "rhel" || family == "debian" {
                 v.first() <= version.first()
             } else {
                 *v <= version
@@ -674,9 +675,14 @@ impl Installer for MongoDb {
         mongodb_from_conda(target).then(|| dir.to_path_buf())
     }
 
-    /// Only the check of the server: its data is in `data/db`, never in the
-    /// environment, and mongosh and the tools have their own folders, which
-    /// follow the kit (D-118).
+    fn conda_programs(&self, target: Target) -> Option<&'static str> {
+        mongodb_from_conda(target).then_some("mongodb")
+    }
+
+    /// The check of the server and the launchers of `mongod` and `mongos`
+    /// (D-125): its data is in `data/db`, never in the environment, and
+    /// mongosh and the tools have their own folders, which follow the kit
+    /// (D-118).
     fn after_conda(
         &self,
         ctx: &Ctx,
@@ -687,7 +693,7 @@ impl Installer for MongoDb {
         if !crate::versions::has_key_for(target_of(ctx, component), component, dir) {
             bail!("bin/mongod not found after the installation");
         }
-        Ok(())
+        crate::install::conda::write_launchers(dir, "mongodb")
     }
 
     fn has_lines(&self) -> bool {

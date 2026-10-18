@@ -191,7 +191,7 @@
   },
   "{0}: non ancora disponibile in questa versione di Atollo": {
     "en": "{0}: not yet available in this version of Atollo",
-    "fr": "{0} : pas encore disponible dans cette version de Atollo",
+    "fr": "{0} : pas encore disponible dans cette version d'Atollo",
     "de": "{0}: in dieser Version von Atollo noch nicht verfügbar"
   },
   "{0}: annullato": {
@@ -661,7 +661,7 @@
   },
   "VSCodium integrato nella finestra di Atollo": {
     "en": "VSCodium integrated in the Atollo window",
-    "fr": "VSCodium intégré à la fenêtre de Atollo",
+    "fr": "VSCodium intégré à la fenêtre d'Atollo",
     "de": "VSCodium im Fenster von Atollo"
   },
   "C'è già un'installazione in corso.": {
@@ -671,7 +671,7 @@
   },
   "Un'altra installazione è in corso in questo kit (un'altra finestra di Atollo o il menu del kit).": {
     "en": "Another installation is running in this kit (another Atollo window or the kit's menu).",
-    "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre de Atollo ou le menu du kit).",
+    "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre d'Atollo ou le menu du kit).",
     "de": "In diesem Kit läuft eine andere Installation (ein anderes Atollo-Fenster oder das Menü des Kits)."
   },
   "Progetto non trovato: {0}": {
@@ -861,7 +861,7 @@
   },
   "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.": {
     "en": "Usage: {0} [command]\n\nCommands:\n  env                     show the kit environment\n      --project <name>    the one of a project's programs\n  components              list languages and tools, with the installed ones\n      --target <id>       for another system: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           the saved versions; with an id, those to download\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components\n      --only a,b          only these components\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n      --line id=x.y       save this version next to the default\n      --target <id>       prepare for another system (ids as for components)\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's {1})\n  serve <folder> <port>   file server for a static site\n  version                 show the version\n  help                    show this help\n\nWithout a command, the Atollo window opens.",
-    "fr": "Utilisation : {0} [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n      --target <id>       pour un autre système : win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n      --target <id>       prépare pour un autre système (id comme pour components)\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par {1} du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre de Atollo s'ouvre.",
+    "fr": "Utilisation : {0} [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n      --target <id>       pour un autre système : win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis\n      --only a,b          seulement ces composants\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n      --target <id>       prépare pour un autre système (id comme pour components)\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par {1} du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre d'Atollo s'ouvre.",
     "de": "Verwendung: {0} [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n      --target <id>       für ein anderes System: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten\n      --only a,b          nur diese Komponenten\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n      --target <id>       bereitet für ein anderes System vor (ids wie bei components)\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von {1} des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von Atollo."
   },
   "predefinita": {
@@ -936,7 +936,7 @@
   },
   "la finestra di Atollo": {
     "en": "the Atollo window",
-    "fr": "la fenêtre de Atollo",
+    "fr": "la fenêtre d'Atollo",
     "de": "das Fenster von Atollo"
   },
   "su PC ARM64 i programmi solo x64 e Git Bash girano emulati, solo con Windows 11": {
@@ -1432,7 +1432,7 @@
   "Esci da Atollo, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.": {
     "en": "Quit Atollo, open Terminal in the kit's folder and run: xattr -dr com.apple.quarantine {0}. Then open the app again from the kit's folder.",
     "fr": "Quittez Atollo, ouvrez le Terminal dans le dossier du kit et exécutez : xattr -dr com.apple.quarantine {0}. Puis rouvrez l'app depuis le dossier du kit.",
-    "de": "Beende Atollo, öffne das Terminal im Ordner des Kits und führe aus: xattr -dr com.apple.quarantine {0}. Öffne die App dann erneut aus dem Ordner des Kits."
+    "de": "Beend'Atollo, öffne das Terminal im Ordner des Kits und führe aus: xattr -dr com.apple.quarantine {0}. Öffne die App dann erneut aus dem Ordner des Kits."
   },
   "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.": {
     "en": "The kit's disk is read-only: cannot write to the folder {0}.",
@@ -1486,12 +1486,12 @@
   },
   "Installalo con {0}, poi riavvia Atollo. In alternativa usa l'AppImage di Atollo, che lo contiene.": {
     "en": "Install it with {0}, then restart Atollo. Or use the Atollo AppImage, which includes it.",
-    "fr": "Installez-le avec {0}, puis redémarrez Atollo. Ou utilisez l'AppImage de Atollo, qui le contient.",
+    "fr": "Installez-le avec {0}, puis redémarrez Atollo. Ou utilisez l'AppImage d'Atollo, qui le contient.",
     "de": "Installiere es mit {0} und starte Atollo dann neu. Oder verwende das AppImage von Atollo, das es enthält."
   },
   "Installa il pacchetto WebKitGTK 4.1 della tua distribuzione ({0}), poi riavvia Atollo. In alternativa usa l'AppImage di Atollo, che lo contiene.": {
     "en": "Install your distribution's WebKitGTK 4.1 package ({0}), then restart Atollo. Or use the Atollo AppImage, which includes it.",
-    "fr": "Installez le paquet WebKitGTK 4.1 de votre distribution ({0}), puis redémarrez Atollo. Ou utilisez l'AppImage de Atollo, qui le contient.",
+    "fr": "Installez le paquet WebKitGTK 4.1 de votre distribution ({0}), puis redémarrez Atollo. Ou utilisez l'AppImage d'Atollo, qui le contient.",
     "de": "Installiere das WebKitGTK-4.1-Paket deiner Distribution ({0}) und starte Atollo dann neu. Oder verwende das AppImage von Atollo, das es enthält."
   }
 }
