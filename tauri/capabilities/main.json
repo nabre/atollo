@@ -29,6 +29,8 @@
     "allow-components-list",
     "allow-components-sync",
     "allow-components-check",
+    "allow-target-profiles",
+    "allow-tools-target-set",
     "allow-setup-state",
     "allow-setup-start",
     "allow-setup-cancel",

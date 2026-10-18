@@ -42,6 +42,37 @@ fn components_for_a_target() {
     );
 }
 
+/// Zig is ticked next to C and C++ on macOS and Linux, as on the Tools
+/// page, though the saved choice does not have it; not on Windows.
+#[test]
+fn components_mark_the_needs_of_one_target() {
+    use crate::kit::{tests::TempDir, Target};
+    let tmp = TempDir::new("cli-components-zig");
+    let catalog = Catalog::get();
+    for target in [Target::LINUX_X64, Target::DARWIN_ARM64, Target::WIN32_X64] {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
+        kit.prepare().unwrap();
+        let mut choice = Choice::defaults(catalog);
+        choice.set(catalog, "cc", true);
+        choice.set(catalog, "zig", false);
+        choice.write(&kit, catalog).unwrap();
+        assert!(!Choice::read(&kit, catalog).unwrap().is_chosen("zig"));
+        let mut out = Vec::new();
+        print_components(&kit, "en", &mut out).unwrap();
+        let text = String::from_utf8(out).unwrap();
+        let mark = |id: &str| {
+            text.lines()
+                .find(|l| l.get(4..).and_then(|r| r.split_whitespace().next()) == Some(id))
+                .and_then(|l| l.get(..3))
+                .unwrap_or_else(|| panic!("no line for {id}: {text}"))
+                .to_owned()
+        };
+        assert_eq!(mark("cc"), "[x]", "{target}");
+        let zig = if target.is_unix() { "[x]" } else { "[ ]" };
+        assert_eq!(mark("zig"), zig, "{target}");
+    }
+}
+
 /// D-108: `components --target linux-arm64` names what is missing there,
 /// with the catalog's reason.
 #[test]

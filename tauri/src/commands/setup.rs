@@ -22,12 +22,14 @@ pub struct ComponentInfo {
     /// This version of the app can install it on this kit.
     pub available: bool,
     pub x64_only: bool,
-    /// No ARM64 build and this kit is Windows ARM64: why it is not available.
+    /// No ARM64 build, this kit is Windows ARM64 and so is this PC: why it
+    /// is not available.
     pub no_arm64: bool,
     /// Why it is not available on this kit's target, already translated:
     /// the catalog's own reason (`unavailable`, Android on Linux ARM64),
     /// Rosetta 2 missing on this Mac, or not made for this system (Windows
-    /// only, on macOS or Linux). `None` for `noArm64` on Windows ARM64,
+    /// only, on macOS or Linux; no ARM64 build, for a Windows ARM64 kit
+    /// seen from another PC). `None` for `noArm64` on a Windows ARM64 PC,
     /// where `no_arm64` says it.
     pub unavailable_reason: Option<String>,
     /// Components it needs on this kit's target (Apache needs PHP, Kotlin
@@ -106,6 +108,84 @@ pub async fn components_check<R: Runtime>(
     .or_fail("check")?
 }
 
+/// The component × target grid of the Tools page («Matrice», D-119): what
+/// each of the six systems can run from this PC, the state of every
+/// component on each of them, and the system chosen last there.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TargetGrid {
+    /// In the order of the columns (`Target::ALL`).
+    pub profiles: [crate::router::target::TargetProfile; 6],
+    /// The same order, one per system.
+    pub targets: Vec<crate::router::probe::TargetSummary>,
+    /// `tools_target` of settings.json, when it is a system the app knows.
+    pub chosen: Option<String>,
+}
+
+/// The grid: off the window's thread, it reads the disk of the six systems.
+#[tauri::command]
+pub async fn target_profiles<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<TargetGrid> {
+    ensure_main(&webview)?;
+    let (kit, lang) = (state.kit.clone(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || target_grid(&kit, lang))
+        .await
+        .or_fail("targets")
+}
+
+pub(super) fn target_grid(kit: &Kit, lang: &str) -> TargetGrid {
+    let chosen = Settings::load(kit)
+        .settings
+        .tools_target
+        .and_then(|t| crate::kit::Target::parse(&t))
+        .map(|t| t.as_str().to_owned());
+    TargetGrid {
+        profiles: crate::router::target::all_profiles(),
+        targets: crate::router::probe::probe_all_targets(kit, lang),
+        chosen,
+    }
+}
+
+/// «Piattaforma» of the Tools page, remembered between sessions in
+/// settings.json (`None`: this PC's system again). Only that value
+/// changes: the kit's environment is not rebuilt.
+#[tauri::command]
+pub fn tools_target_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    target: Option<String>,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    save_tools_target(&state.kit, target.as_deref()).or_fail_chain("settings")
+}
+
+/// Writes `tools_target` into settings.json, keeping the rest of the file;
+/// one that cannot be read is not overwritten (settings.rs). An unknown
+/// system is refused.
+pub(super) fn save_tools_target(kit: &Kit, target: Option<&str>) -> anyhow::Result<()> {
+    let target = match target.map(str::trim).filter(|s| !s.is_empty()) {
+        None => None,
+        Some(raw) => Some(
+            crate::kit::Target::parse(raw)
+                .ok_or_else(|| anyhow::anyhow!("unknown target: {raw}"))?
+                .as_str()
+                .to_owned(),
+        ),
+    };
+    let loaded = Settings::load(kit);
+    if let Some(problem) = loaded.problem {
+        anyhow::bail!("{problem}");
+    }
+    let mut settings = loaded.settings;
+    if settings.tools_target == target {
+        return Ok(());
+    }
+    settings.tools_target = target;
+    settings.save(kit)
+}
+
 /// The PC runs x64 programs: x64 itself, or Windows 11 on ARM64 (Windows 10
 /// on ARM emulates x86 only). An unknown build counts as yes.
 pub(super) fn emulates_x64() -> bool {
@@ -114,8 +194,14 @@ pub(super) fn emulates_x64() -> bool {
 
 /// The Xcode Command Line Tools are missing on this Mac, for a kit of
 /// `target`: only a darwin kit on a Mac, where `xcode-select -p` fails.
+/// The answer is the installer's, kept for a while (`xcode_selected`):
+/// the page asks at every load.
 fn xcode_missing_on_host(target: crate::kit::Target) -> bool {
-    xcode_missing(target, crate::kit::Os::current(), xcode_selected)
+    xcode_missing(
+        target,
+        crate::kit::Os::current(),
+        crate::install::xcode_selected,
+    )
 }
 
 /// [`xcode_missing_on_host`] with the host's system and `xcode-select -p`
@@ -128,32 +214,21 @@ pub(super) fn xcode_missing(
     target.is_macos() && host.is_macos() && selected().is_none_or(|s| s.trim().is_empty())
 }
 
-/// The folder of the active developer tools (`xcode-select -p`), on a Mac.
-/// `-p` only prints: it never opens the installation dialog. The same as
-/// `install::lang::cc::xcode_selected`, which its private modules do not
-/// export yet: to be replaced by it once they do.
-#[cfg(target_os = "macos")]
-fn xcode_selected() -> Option<String> {
-    let out = std::process::Command::new("/usr/bin/xcode-select")
-        .arg("-p")
-        .stdin(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .output()
-        .ok()
-        .filter(|o| o.status.success())?;
-    let path = String::from_utf8_lossy(&out.stdout).trim().to_owned();
-    std::path::Path::new(&path).is_dir().then_some(path)
-}
-
-#[cfg(not(target_os = "macos"))]
-fn xcode_selected() -> Option<String> {
-    None
-}
-
-/// The catalog as the "Linguaggi e strumenti" page shows it. A `noArm64`
-/// component is not available on a Windows ARM64 kit, one with an
-/// `unavailableReason` not on this target (see [`unavailable_reason`]).
+/// The catalog as the "Linguaggi e strumenti" page shows it, from this PC.
 pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
+    component_infos_from(kit, lang, crate::kit::Target::detect())
+}
+
+/// [`component_infos`] seen from `host`. A `noArm64` component is not
+/// available on a Windows ARM64 kit (said "not available on ARM64 PCs"
+/// only on such a PC, `host`; from another one it gets "not available for
+/// win32-arm64" as `unavailableReason`), one with an `unavailableReason`
+/// not on this target (see [`unavailable_reason`]).
+pub(super) fn component_infos_from(
+    kit: &Kit,
+    lang: &str,
+    host: crate::kit::Target,
+) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
     let choice = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
@@ -171,7 +246,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
         .map(|c| {
             let off = !c.is_available_on(target);
             let no_rosetta = !off && crate::router::target::rosetta_missing_on_host(target, c);
-            let unavailable_reason = unavailable_reason(c, target, no_rosetta, lang);
+            let unavailable_reason = unavailable_reason(c, target, host, no_rosetta, lang);
             let no_arm64 = off && win_arm64 && unavailable_reason.is_none();
             let needs_windows11 = win_arm64
                 && c.x64_only

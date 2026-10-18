@@ -137,6 +137,7 @@ pub struct Matrix {
 
 /// What the kit has of a component: installed, and its lines with their
 /// full versions (default first), the kit's line.
+#[derive(Clone)]
 struct Have {
     installed: bool,
     /// `(line, version)`, the default first.
@@ -227,14 +228,14 @@ fn admits(range: &Range, have: &Have, line: &str) -> bool {
 }
 
 /// Everything the matrix is made from, hashed: the app and its knowledge,
-/// the platform and language, the installed versions and lines, the
+/// the kit's target and the language, the installed versions and lines, the
 /// choices, the lines offered, and each project's files that declare
 /// versions (size and time).
 fn fingerprint(kit: &Kit, lang: &str) -> String {
     let mut h = std::collections::hash_map::DefaultHasher::new();
     env!("CARGO_PKG_VERSION").hash(&mut h);
     KNOWN.hash(&mut h);
-    kit.arch().platform().hash(&mut h);
+    kit.target().as_str().hash(&mut h);
     lang.hash(&mut h);
     let read = |p: &Path| fs::read(p).unwrap_or_default();
     for c in Catalog::get().all() {
@@ -263,8 +264,16 @@ fn fingerprint(kit: &Kit, lang: &str) -> String {
     format!("{:016x}", h.finish())
 }
 
+/// `relations.json` for this PC's system, `relations-<target>.json` for
+/// another one chosen on the Tools page: switching does not build again
+/// the matrix of the other.
 fn file(kit: &Kit) -> std::path::PathBuf {
-    kit.app_dir().join("relations.json")
+    if kit.target() == crate::kit::Target::detect() {
+        kit.app_dir().join("relations.json")
+    } else {
+        kit.app_dir()
+            .join(format!("relations-{}.json", kit.target().as_str()))
+    }
 }
 
 /// Alphabetical by the component, then by what it needs.
@@ -273,7 +282,9 @@ fn sorted_links(mut links: Vec<Link>) -> Vec<Link> {
     links
 }
 
-/// Builds the matrix from the state of the kit now.
+/// Builds the matrix from the state of the kit now, for the kit's target:
+/// the links between components that target cannot have (PHP's on a
+/// system without PHP, Android's on Linux ARM64) are left out.
 pub fn build(kit: &Kit, lang: &str) -> Matrix {
     let catalog = Catalog::get();
     let haves: BTreeMap<String, Have> = catalog
@@ -281,13 +292,19 @@ pub fn build(kit: &Kit, lang: &str) -> Matrix {
         .iter()
         .map(|c| (c.id.clone(), have(kit, c)))
         .collect();
+    let target = kit.target();
+    let here: BTreeMap<String, Have> = haves
+        .iter()
+        .filter(|(id, _)| catalog.find(id).is_some_and(|c| c.is_available_on(target)))
+        .map(|(id, h)| (id.clone(), h.clone()))
+        .collect();
     Matrix {
         fingerprint: fingerprint(kit, lang),
         generated: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs()),
-        platform: kit.arch().platform(),
-        links: sorted_links(links(lang, &haves)),
+        platform: target.as_str().to_owned(),
+        links: sorted_links(links(lang, &here)),
         runtimes: {
             let mut r = runtimes(kit, lang, &haves);
             r.sort_by_key(|x| x.name.to_lowercase());

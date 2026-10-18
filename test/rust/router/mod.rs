@@ -171,7 +171,7 @@ fn probe_all_targets_and_static_health_work_without_spawning() {
         .unwrap();
 
     let router = Router::new(kit.clone());
-    let all = router.probe_all_targets();
+    let all = router.probe_all_targets("en");
     assert_eq!(all.len(), 6);
 
     let linux_summary = all.iter().find(|s| s.target == "linux-arm64").unwrap();
@@ -192,6 +192,76 @@ fn probe_all_targets_and_static_health_work_without_spawning() {
     assert!(rust_check.ok);
     assert_eq!(rust_check.answer, "1.91.0 (bootstrap darwin-arm64)");
     assert!(crate::setup::task::outdated_app(&mac_kit).contains(&"rust".to_owned()));
+}
+
+/// The cells of the grid of the Tools page: the needs of one target are
+/// chosen there (Zig next to C and C++ on macOS and Linux), every
+/// unavailable cell says why (or "no ARM64 build" only on a Windows ARM64
+/// PC), and what this host cannot run completes on the first start.
+#[test]
+fn grid_cells_say_chosen_reason_and_first_start() {
+    use crate::setup::catalog::Choice;
+    let tmp = TempDir::new("router-grid");
+    let kit = Kit::at_target(tmp.0.clone(), Target::detect());
+    kit.prepare().unwrap();
+    let catalog = Catalog::get();
+    let mut choice = Choice::defaults(catalog);
+    choice.set(catalog, "cc", true);
+    choice.set(catalog, "zig", false);
+    choice.write(&kit, catalog).unwrap();
+
+    let all = Router::new(kit.clone()).probe_all_targets("en");
+    assert_eq!(
+        all.iter().map(|s| s.target.as_str()).collect::<Vec<_>>(),
+        target::all_profiles().map(|p| p.id)
+    );
+    let host = Target::detect();
+    for s in &all {
+        let t = Target::parse(&s.target).unwrap();
+        let tool = |id: &str| s.tools.iter().find(|x| x.id == id).unwrap();
+        if tool("cc").available && tool("zig").available {
+            assert_eq!(tool("zig").chosen, t.is_unix(), "{t}");
+        }
+        for x in &s.tools {
+            assert_eq!(
+                !x.available,
+                x.unavailable_reason.is_some() || x.no_arm64,
+                "{} {t}",
+                x.id
+            );
+            assert!(!(x.no_arm64 && x.unavailable_reason.is_some()));
+            assert!(!x.first_start || (x.available && !x.installed && !x.bootstrap_staged));
+            // The host's own target runs its installers now.
+            if t == host {
+                assert!(!x.first_start, "{} {t}", x.id);
+            }
+        }
+        // Rust's installer runs rustup-init: from another system it waits
+        // for the first start there.
+        let rust = tool("rust");
+        if rust.available && !target::can_execute_on_host(t) {
+            assert!(rust.first_start, "{t}");
+        }
+        if t == Target::WIN32_ARM64 {
+            let r = tool("r");
+            assert!(!r.available);
+            if host == Target::WIN32_ARM64 {
+                assert!(r.no_arm64 && r.unavailable_reason.is_none());
+            } else {
+                assert!(!r.no_arm64);
+                assert_eq!(
+                    r.unavailable_reason.as_deref(),
+                    Some("not available for win32-arm64")
+                );
+            }
+        }
+        if t == Target::LINUX_ARM64 {
+            assert_eq!(
+                tool("android").unavailable_reason.as_deref(),
+                Some("Google does not publish platform-tools and build-tools for Linux ARM64")
+            );
+        }
+    }
 }
 
 #[test]

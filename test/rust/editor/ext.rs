@@ -217,3 +217,31 @@ fn output_parsing() {
     assert!(got.contains("mikestead.dotenv") && got.contains("x.y"));
     assert!(!got.contains("a.b") && !got.contains("c.d"));
 }
+
+/// The matrix of a target chosen on the Tools page (D-119): no tool column
+/// nor extension that only serves what the target cannot have; the
+/// general extensions stay.
+#[test]
+fn matrix_follows_the_target() {
+    let catalog = Catalog::get();
+    let on = |id: &str, target| catalog.find(id).is_none_or(|c| c.is_available_on(target));
+    let general = matrix().iter().filter(|e| e.general()).count();
+    for target in crate::kit::Target::ALL {
+        let kit = Kit::at_target(std::env::temp_dir(), target);
+        let info = matrix_info(&kit);
+        for (id, _) in &info.tools {
+            assert!(on(id, target), "{id} on {target}");
+        }
+        for r in &info.extensions {
+            let e = &r.extension;
+            assert!(e.tools.is_empty() || e.tools.iter().any(|t| on(t, target)));
+            assert!(e.programs.is_empty() || e.programs.iter().any(|p| on(p, target)));
+        }
+        let shown = info
+            .extensions
+            .iter()
+            .filter(|r| r.extension.general())
+            .count();
+        assert_eq!(shown, general, "{target}");
+    }
+}

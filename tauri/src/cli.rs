@@ -271,8 +271,12 @@ pub fn print_checks(
 pub fn print_components(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Result<()> {
     let catalog = Catalog::get();
     let choice = Choice::read(kit, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+    // Chosen also when a chosen one needs it on this target only (Zig for
+    // C and C++ on macOS and Linux), as the Tools page shows it: the run
+    // installs it, the saved choice does not have it.
+    let here = catalog.needs_only_on(&choice.chosen_ids(catalog), kit.target());
     for c in catalog.all() {
-        let mark = if choice.is_chosen(&c.id) {
+        let mark = if choice.is_chosen(&c.id) || here.contains(c.id.as_str()) {
             "[x]"
         } else {
             "[ ]"
