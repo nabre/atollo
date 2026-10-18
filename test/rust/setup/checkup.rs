@@ -54,7 +54,13 @@ fn check_program_at_the_kit_root() {
             std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o755)).unwrap();
         }
     }
-    let mut result = check(&kit, &KitEnv::default(), pnpm).unwrap();
+    // The batch file runs through cmd.exe with this environment only, as
+    // in the app's: Windows on ARM64 starts no process without SystemRoot.
+    let mut env = KitEnv::default();
+    if let Some(root) = std::env::var_os("SystemRoot") {
+        env.set("SystemRoot", root.to_string_lossy());
+    }
+    let mut result = check(&kit, &env, pnpm).unwrap();
     // A process forked by another test while the script was still open for
     // writing holds the descriptor until its exec: the exec of the script
     // fails with ETXTBSY until then. Retry for a short while there.
@@ -64,7 +70,7 @@ fn check_program_at_the_kit_root() {
             break;
         }
         std::thread::sleep(std::time::Duration::from_millis(50));
-        result = check(&kit, &KitEnv::default(), pnpm).unwrap();
+        result = check(&kit, &env, pnpm).unwrap();
     }
     assert!(result.ok, "{}", result.answer);
     assert_eq!(result.answer, "10.0.0");
