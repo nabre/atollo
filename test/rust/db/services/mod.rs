@@ -417,20 +417,27 @@ impl crate::db::migrate_engine::Servers for FailOnce<'_> {
     fn query(&self, engine: DbEngine, line: &str, sql: &str) -> Result<String> {
         self.inner.query(engine, line, sql)
     }
-    fn dump(&self, line: &str, databases: &[String], to: &std::path::Path) -> Result<()> {
-        self.inner.dump(line, databases, to)
+    fn dump(&self, line: &str, database: &str, to: &std::path::Path) -> Result<()> {
+        self.inner.dump(line, database, to)
     }
-    fn restore(&self, line: &str, from: &std::path::Path) -> Result<()> {
+    fn restore(
+        &self,
+        line: &str,
+        database: &str,
+        user: &str,
+        password: &str,
+        from: &std::path::Path,
+    ) -> Result<()> {
         if line == self.fail && !self.failed.replace(true) {
             // Half of it restored, then the stop.
-            let text = fs::read_to_string(from)?;
+            let text = fs::read(from)?;
             let half = from.with_extension("half");
             fs::write(&half, &text[..text.len() / 2])?;
-            let _ = self.inner.restore(line, &half);
+            let _ = self.inner.restore(line, database, user, password, &half);
             let _ = fs::remove_file(half);
             bail!("interrupted (test)");
         }
-        self.inner.restore(line, from)
+        self.inner.restore(line, database, user, password, from)
     }
     fn serve(&self, line: &str) -> Result<()> {
         self.inner.serve(line)
@@ -481,6 +488,12 @@ fn real_mariadb_to_mysql() {
         "en",
         &crate::env::Host::capture(),
     );
+    // The temporary folder the app makes at its start (InnoDB needs it).
+    for var in ["TEMP", "TMPDIR"] {
+        if let Some(t) = env.get(var) {
+            fs::create_dir_all(t).unwrap();
+        }
+    }
     let s = Services::new(kit.clone());
     s.set_line("mariadb", Some("12.3")).unwrap();
     s.set("mariadb", Some(13406), true).unwrap();
@@ -518,13 +531,19 @@ fn real_mariadb_to_mysql() {
          CREATE TABLE shop.names (s VARCHAR(10) COLLATE utf8mb4_uca1400_ai_ci); \
          INSERT INTO shop.names VALUES ('a'); \
          CREATE VIEW shop.notes AS SELECT note FROM shop.orders; \
-         CREATE TRIGGER shop.orders_bi BEFORE INSERT ON shop.orders FOR EACH ROW SET NEW.note = NEW.note;",
+         CREATE TRIGGER shop.orders_bi BEFORE INSERT ON shop.orders FOR EACH ROW SET NEW.note = NEW.note; \
+         CREATE DATABASE by_hand; CREATE TABLE by_hand.x (id INT); INSERT INTO by_hand.x VALUES (1);",
     );
     admin(
         DbEngine::MariaDb,
         "11.4",
         "CREATE TABLE blog.wp_posts (id INT PRIMARY KEY, title TEXT); \
          INSERT INTO blog.wp_posts VALUES (1, 'Hello'), (2, 'World');",
+    );
+    let note_hex = admin(
+        DbEngine::MariaDb,
+        "12.3",
+        "SELECT HEX(note) FROM shop.orders WHERE id = 1",
     );
     // 11.4 stopped: the move starts it, and stops it after.
     s.stop_line("mariadb", Some("11.4"));
@@ -544,7 +563,8 @@ fn real_mariadb_to_mysql() {
     let err = migrate_engine::run(&once, &no_install).unwrap_err();
     eprintln!("first move: {err:#}");
     assert!(format!("{err:#}").contains("interrupted"), "{err:#}");
-    assert_eq!(admin(DbEngine::MariaDb, "12.3", "SELECT @@read_only"), "0");
+    let read_only = admin(DbEngine::MariaDb, "12.3", "SELECT @@read_only");
+    assert!(read_only == "0" || read_only == "OFF", "{read_only}");
     assert_eq!(
         admin(
             DbEngine::MariaDb,
@@ -575,8 +595,9 @@ fn real_mariadb_to_mysql() {
     assert_eq!(count("9.7", "SELECT COUNT(*) FROM shop.legacy"), "2");
     assert_eq!(count("9.7", "SELECT COUNT(*) FROM shop.notes"), "3");
     assert_eq!(
-        count("9.7", "SELECT note FROM shop.orders WHERE id = 1"),
-        "caffè"
+        count("9.7", "SELECT HEX(note) FROM shop.orders WHERE id = 1"),
+        note_hex,
+        "the same bytes"
     );
     assert_eq!(
         count(
@@ -586,6 +607,11 @@ fn real_mariadb_to_mysql() {
         "1"
     );
     assert_eq!(count("8.4", "SELECT COUNT(*) FROM blog.wp_posts"), "2");
+    assert_eq!(
+        count("9.7", "SELECT COUNT(*) FROM by_hand.x"),
+        "1",
+        "a database of no project"
+    );
     // The projects' users, their passwords, MariaDB's ports.
     for (project, before) in [("shop", &shop), ("blog", &blog)] {
         let db = s.project_dbs(project).into_iter().next().unwrap();

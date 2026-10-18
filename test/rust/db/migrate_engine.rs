@@ -18,10 +18,12 @@ struct Fake {
     mysql_lines: RefCell<Vec<String>>,
     running: RefCell<BTreeSet<(DbEngine, String)>>,
     calls: RefCell<Vec<String>>,
-    /// A step that fails: `restore 8.4`, `start mysql 8.4`…
+    /// A step that fails: `restore 8.4 blog as blog`, `start mysql 8.4`…
     fail: RefCell<Option<String>>,
     /// Rows the fake restore loses (a check that must fail).
     lose_rows: RefCell<bool>,
+    /// MariaDB's global sql_mode.
+    sql_mode: RefCell<String>,
 }
 
 impl Fake {
@@ -81,10 +83,16 @@ impl Servers for Fake {
             }
             return Ok(());
         }
-        if let Some(rest) = sql.strip_prefix("CREATE DATABASE IF NOT EXISTS `") {
+        let created = sql
+            .strip_prefix("CREATE DATABASE IF NOT EXISTS `")
+            .map(|rest| ("user", rest))
+            .or_else(|| {
+                sql.strip_prefix("CREATE DATABASE `")
+                    .map(|rest| ("database", rest))
+            });
+        if let Some((what, rest)) = created {
             let name = rest.split('`').next().unwrap_or_default();
-            assert!(!sql.contains("PASSWORD_IN_LOG"));
-            self.call(format!("user {engine} {line} {name}"))?;
+            self.call(format!("{what} {engine} {line} {name}"))?;
             self.store(engine)
                 .borrow_mut()
                 .entry(line.to_owned())
@@ -92,6 +100,12 @@ impl Servers for Fake {
                 .entry(name.to_owned())
                 .or_default();
             return Ok(());
+        }
+        if sql.starts_with("CREATE USER 'dkmove_") {
+            return self.call(format!("account {engine} {line}"));
+        }
+        if sql.starts_with("DROP USER IF EXISTS 'dkmove_") {
+            return self.call(format!("drop account {engine} {line}"));
         }
         self.call(format!("sql {engine} {line} {}", sql.trim()))
     }
@@ -106,6 +120,12 @@ impl Servers for Fake {
                 .collect();
             names.extend(dbs.keys().cloned());
             return Ok(names.join("\n") + "\n");
+        }
+        if sql.starts_with("SELECT @@GLOBAL.sql_mode") {
+            return Ok(format!("{}\tSTRICT_TRANS_TABLES\n", self.sql_mode.borrow()));
+        }
+        if sql.starts_with("SELECT default_character_set_name") {
+            return Ok("utf8mb4\tutf8mb4_uca1400_ai_ci\n".to_owned());
         }
         if sql.starts_with("SELECT 'table'") {
             let mut out = String::new();
@@ -137,25 +157,36 @@ impl Servers for Fake {
         Ok(out)
     }
 
-    fn dump(&self, line: &str, databases: &[String], to: &Path) -> Result<()> {
-        self.call(format!("dump {line}"))?;
+    fn dump(&self, line: &str, database: &str, to: &Path) -> Result<()> {
+        self.call(format!("dump {line} {database}"))?;
         let store = self.mariadb.borrow();
         let mut text = String::from("/*M!999999\\- enable the sandbox mode */\n");
-        for d in databases {
-            text.push_str(&format!("USE `{d}`;\n"));
-            for (t, n) in &store[line][d] {
-                if t == "seq" {
-                    text.push_str("CREATE SEQUENCE `seq` start with 1;\n");
-                }
-                text.push_str(&format!("-- table {d} {t} {n}\n"));
+        for (t, n) in &store[line][database] {
+            if t == "seq" {
+                text.push_str("CREATE SEQUENCE `seq` start with 1;\n");
             }
+            text.push_str(&format!("-- table {database} {t} {n}\n"));
         }
         fs::write(to, text)?;
         Ok(())
     }
 
-    fn restore(&self, line: &str, from: &Path) -> Result<()> {
-        self.call(format!("restore {line}"))?;
+    fn restore(
+        &self,
+        line: &str,
+        database: &str,
+        user: &str,
+        password: &str,
+        from: &Path,
+    ) -> Result<()> {
+        assert_ne!(user, "root", "never the administrator");
+        assert!(!password.is_empty());
+        let who = if user.starts_with("dkmove_") {
+            "dkmove"
+        } else {
+            user
+        };
+        self.call(format!("restore {line} {database} as {who}"))?;
         let text = fs::read_to_string(from)?;
         assert!(!text.contains("/*M!"), "the filtered dump");
         let mut store = self.mysql.borrow_mut();
@@ -163,6 +194,7 @@ impl Servers for Fake {
         for l in text.lines() {
             if let Some(rest) = l.strip_prefix("-- table ") {
                 let p: Vec<&str> = rest.split(' ').collect();
+                assert_eq!(p[0], database, "only its own database");
                 let n: u64 = p[2].parse().unwrap();
                 let n = if *self.lose_rows.borrow() { n / 2 } else { n };
                 dbs.entry(p[0].to_owned())
@@ -309,9 +341,12 @@ fn every_version_moves_and_the_configuration_last() {
         .collect();
     assert_eq!(
         order,
-        ["dump 12.3", "dump 11.4"],
+        ["dump 12.3 shop", "dump 11.4 blog"],
         "the server's version first"
     );
+    // Each database restored by its project's user, never root.
+    assert!(fake.called("restore 9.7 shop as shop") && fake.called("restore 8.4 blog as blog"));
+    assert!(fake.called("database mysql 9.7 shop"), "created first");
 
     // db.json, services.json, secrets.json rewritten, copies kept.
     let shop: serde_json::Value = crate::fsx::read_json(&db_json(&kit, "shop")).unwrap();
@@ -347,7 +382,7 @@ fn every_version_moves_and_the_configuration_last() {
     let kept = kept_dir(&kit);
     assert!(
         kept.join("12.3").join("mysql").is_dir()
-            && kept.join("dumps").join("11.4.mysql.sql").is_file()
+            && kept.join("dumps").join("11.4.0.mysql.sql").is_file()
     );
     assert!(!kit.data().join("db").join("mariadb").exists());
     let st = status(&kit);
@@ -372,7 +407,7 @@ fn a_failed_step_leaves_mariadb_active_and_a_new_run_resumes() {
     let kit = fake.kit().clone();
     let services = fs::read_to_string(kit.app_dir().join("services.json")).unwrap();
     let blog = fs::read_to_string(db_json(&kit, "blog")).unwrap();
-    *fake.fail.borrow_mut() = Some("restore 8.4".into());
+    *fake.fail.borrow_mut() = Some("restore 8.4 blog as blog".into());
     let err = run(&fake, &installs(&fake)).unwrap_err();
     assert!(format!("{err:#}").contains("MariaDB 11.4"), "{err:#}");
     assert!(fake.called("sql mariadb 12.3 SET GLOBAL read_only = OFF;"));
@@ -400,7 +435,7 @@ fn a_failed_step_leaves_mariadb_active_and_a_new_run_resumes() {
     assert!(
         st.dump
             .as_deref()
-            .is_some_and(|d| d.ends_with("11.4.mysql.sql")),
+            .is_some_and(|d| d.ends_with("11.4.0.mysql.sql")),
         "{st:?}"
     );
     assert_eq!(load(&kit).lines["11.4"].restored, ["blog"]);
@@ -411,7 +446,7 @@ fn a_failed_step_leaves_mariadb_active_and_a_new_run_resumes() {
     assert_eq!(run(&fake, &installs(&fake)).unwrap(), Outcome::Done);
     assert!(fake.called("drop mysql 9.7 shop") && fake.called("drop mysql 8.4 blog"));
     assert!(
-        fake.called("dump 12.3"),
+        fake.called("dump 12.3 shop"),
         "dumped again: MariaDB may have changed"
     );
     assert_eq!(
@@ -457,11 +492,15 @@ fn sequences_stop_the_move_with_their_names() {
         .push(("seq".into(), 1));
     let err = run(&fake, &installs(&fake)).unwrap_err();
     assert!(format!("{err:#}").contains("shop.seq"), "{err:#}");
-    assert!(!fake.called("restore 9.7"));
+    assert!(fake
+        .calls
+        .borrow()
+        .iter()
+        .all(|c| !c.starts_with("restore")));
     assert!(
         load(fake.kit())
             .dump
-            .is_some_and(|d| d.ends_with("12.3.sql")),
+            .is_some_and(|d| d.ends_with("12.3.0.sql")),
         "the dump kept"
     );
 }
@@ -550,6 +589,48 @@ fn mariadbs_programs_go_once_nothing_waits() {
         kept_dir(&kit).join("11.4").join("mysql").is_dir(),
         "the data stays"
     );
+}
+
+/// Security review of D-117: a database no project owns is restored by an
+/// account made for it alone, dropped after; a MariaDB that runs with
+/// NO_BACKSLASH_ESCAPES is not dumped at all.
+#[test]
+fn every_database_is_restored_by_an_account_of_its_own() {
+    let (_tmp, fake) = kit_with_mariadb("move-accounts");
+    let mine: Vec<(String, u64)> = vec![("notes".to_owned(), 2)];
+    fake.mariadb
+        .borrow_mut()
+        .get_mut("12.3")
+        .unwrap()
+        .insert("by_hand".to_owned(), mine.clone());
+    run(&fake, &installs(&fake)).unwrap();
+    assert!(fake.called("account mysql 9.7"));
+    assert!(fake.called("restore 9.7 by_hand as dkmove"));
+    assert!(fake.called("drop account mysql 9.7"), "the account goes");
+    assert_eq!(fake.mysql.borrow()["9.7"]["by_hand"], mine);
+    assert!(
+        fake.calls.borrow().iter().all(|c| !c.ends_with("as root")),
+        "never the administrator"
+    );
+    assert!(restore_account_sql("dkmove_1", "pw", "a_b%c").contains("ON `a\\_b\\%c`.*"));
+    assert_eq!(
+        charset_of("utf8mb3\tutf8mb3_general_ci\n"),
+        " CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
+    );
+    assert_eq!(charset_of("x;DROP\ty"), "", "only plain names");
+}
+
+#[test]
+fn a_mariadb_with_no_backslash_escapes_is_not_dumped() {
+    let (_tmp, fake) = kit_with_mariadb("move-nbe");
+    *fake.sql_mode.borrow_mut() = "STRICT_TRANS_TABLES,NO_BACKSLASH_ESCAPES".into();
+    let err = run(&fake, &installs(&fake)).unwrap_err();
+    assert!(
+        format!("{err:#}").contains("NO_BACKSLASH_ESCAPES"),
+        "{err:#}"
+    );
+    assert!(fake.calls.borrow().iter().all(|c| !c.starts_with("dump")));
+    assert!(fake.called("sql mariadb 12.3 SET GLOBAL read_only = OFF;"));
 }
 
 #[test]

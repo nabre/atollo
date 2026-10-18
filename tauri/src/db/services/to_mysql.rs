@@ -3,10 +3,9 @@
 //! a port the system gives, the tools logged in as `root` (D-74, D-110).
 
 use std::path::Path;
-use std::process::Stdio;
 use std::time::Duration;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 
 use super::tools::{run_query, run_with_files, run_with_input};
 use super::{server_lines, Services};
@@ -14,7 +13,6 @@ use crate::db::migrate_engine::Servers;
 use crate::db::DbEngine;
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs;
 
 /// How long a dump or a restore may take: a development kit's databases,
 /// on a stick too.
@@ -85,11 +83,13 @@ impl Servers for ToMysql<'_> {
         run_query(cmd, sql, BIG)
     }
 
-    fn dump(&self, line: &str, databases: &[String], to: &Path) -> Result<()> {
+    fn dump(&self, line: &str, database: &str, to: &Path) -> Result<()> {
         let engine = DbEngine::MariaDb;
         let mut cmd = self.client(engine, line, engine.dump_bin())?;
         // One consistent snapshot with routines, triggers and events; binary
-        // columns as hexadecimal, so no character set touches them.
+        // columns as hexadecimal, so no character set touches them. The
+        // database alone: no `CREATE DATABASE`, no `USE` (the restore names
+        // it, as an account that reaches only it).
         cmd.args([
             "--single-transaction",
             "--routines",
@@ -97,36 +97,36 @@ impl Servers for ToMysql<'_> {
             "--triggers",
             "--hex-blob",
             "--default-character-set=utf8mb4",
-            "--databases",
         ])
-        .args(databases);
+        .arg(database);
         run_with_files(cmd, None, Some(to), BIG)
     }
 
-    fn restore(&self, line: &str, from: &Path) -> Result<()> {
+    fn restore(
+        &self,
+        line: &str,
+        database: &str,
+        user: &str,
+        password: &str,
+        from: &Path,
+    ) -> Result<()> {
         let engine = DbEngine::MySql;
         let (port, env) = self.services.running_at(engine, Some(line))?;
-        let program = super::bin_at(&self.services.kit, engine.component(), Some(line), "mysql");
-        // The client's own commands off, as for a copy (D-110): a `\!` in a
-        // row of the dump runs nothing.
-        let help = jobs::kit_command(&program, &env)
-            .arg("--help")
-            .stdin(Stdio::null())
-            .stderr(Stdio::null())
-            .output()
-            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
-            .unwrap_or_default();
-        let Some(guard) = super::mysql::restore_guard(engine, &help) else {
-            bail!(
-                "{}: this MySQL client cannot turn its own commands off: update MySQL",
-                program.display()
-            );
-        };
-        let mut cmd =
-            self.services
-                .sql_tool_at(engine, engine.client_bin(), &env, Some(line), port);
-        cmd.arg(guard).arg("--default-character-set=utf8mb4");
-        run_with_files(cmd, Some(from), None, BIG)
+        // The account's own login (a private file, removed after), the
+        // client's own commands off (D-110): a `\!` in a row runs nothing.
+        let (mut cmd, login) = self.services.sql_as_project(
+            engine,
+            engine.client_bin(),
+            &env,
+            Some(line),
+            port,
+            user,
+            password,
+        )?;
+        cmd.arg("--default-character-set=utf8mb4").arg(database);
+        let done = run_with_files(cmd, Some(from), None, BIG);
+        let _ = std::fs::remove_file(login);
+        done
     }
 
     fn serve(&self, line: &str) -> Result<()> {

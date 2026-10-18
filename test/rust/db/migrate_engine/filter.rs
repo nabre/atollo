@@ -2,7 +2,7 @@ use super::*;
 
 fn run(dump: &str) -> Result<(String, Report)> {
     let mut out = Vec::new();
-    let report = filter_dump(dump.as_bytes(), &mut out)?;
+    let report = filter_dump(dump.as_bytes(), &mut out, None)?;
     Ok((String::from_utf8(out).unwrap(), report))
 }
 
@@ -73,13 +73,15 @@ fn aria_options_go_and_the_table_is_innodb() {
 }
 
 /// The rows' data never changes: the same words inside strings, quoted
-/// names and comments stay as they are, also over several lines and with
-/// escaped quotes.
+/// names and comments stay as they are, also over several lines in a
+/// routine's body and with escaped quotes.
 #[test]
 fn data_and_names_stay_as_they_are() {
     let rows = "INSERT INTO `t` VALUES (1,'utf8mb3 PAGE_CHECKSUM=1 /*M!1 x */ it\\'s','ENGINE=Aria'),(2,\"uca1400_ai_ci\",'a''b /*M!');\n\
-                INSERT INTO `utf8mb3_general_ci` VALUES ('line one\n\
-                CREATE SEQUENCE s; TRANSACTIONAL=1 \\\\');\n\
+                DELIMITER ;;\n\
+                CREATE PROCEDURE `p`() SELECT 'line one\n\
+                CREATE SEQUENCE s; TRANSACTIONAL=1 \\\\' ;;\n\
+                DELIMITER ;\n\
                 -- utf8mb3 in a comment, CREATE SEQUENCE x\n\
                 /* plain utf8mb3_general_ci */ SELECT 1;\n\
                 INSERT INTO `t` VALUES ('caf\u{e9}');\n";
@@ -89,7 +91,7 @@ fn data_and_names_stay_as_they_are() {
     // Bytes that are not UTF-8 (a latin1 column) pass as they are.
     let mut out = Vec::new();
     let latin1 = b"INSERT INTO `t` VALUES ('caf\xe9');\r\n";
-    filter_dump(&latin1[..], &mut out).unwrap();
+    filter_dump(&latin1[..], &mut out, None).unwrap();
     assert_eq!(out, latin1, "byte for byte, CRLF kept");
 }
 
@@ -126,10 +128,14 @@ fn sequences_stop_the_filter_with_their_names() {
         text.contains("CREATE SEQUENCE") && text.contains("shop.orders_seq"),
         "{text}"
     );
+    // The dump of one database names it without `USE`.
+    let mut out = Vec::new();
+    let err = filter_dump(&b"CREATE SEQUENCE `s`;\n"[..], &mut out, Some("shop")).unwrap_err();
+    assert_eq!(err.downcast_ref::<Sequences>().unwrap().0, ["shop.s"]);
 }
 
-/// A routine's body (DELIMITER ;;) with a string over two lines and the
-/// MariaDB-only sql_mode.
+/// A routine's body (DELIMITER ;;) with a string over two lines; the
+/// DEFINER goes (the restoring account becomes it).
 #[test]
 fn a_trigger_of_a_dump() {
     let dump = "DELIMITER ;;\n\
@@ -137,5 +143,56 @@ fn a_trigger_of_a_dump() {
                 lines' */;;\n\
                 DELIMITER ;\n\
                 /*!50003 SET sql_mode              = @saved_sql_mode */ ;\n";
-    assert_eq!(ok(dump), dump);
+    let (out, report) = run(dump).unwrap();
+    assert_eq!(out, dump.replace(" DEFINER=`shop`@`localhost`", ""));
+    assert_eq!(report.definers, 1);
+    let view = ok(
+        "/*!50013 DEFINER='root'@'localhost' SQL SECURITY DEFINER */\n\
+                   CREATE DEFINER=CURRENT_USER() PROCEDURE `p`() SELECT 1;\n\
+                   CREATE DEFINER = `a``b`@`%` EVENT `e` ON SCHEDULE EVERY 1 DAY DO SELECT 1;\n",
+    );
+    assert_eq!(
+        view,
+        "/*!50013 SQL SECURITY DEFINER */\n\
+         CREATE PROCEDURE `p`() SELECT 1;\n\
+         CREATE EVENT `e` ON SCHEDULE EVERY 1 DAY DO SELECT 1;\n"
+    );
+}
+
+fn uncertain(dump: &str) -> Uncertain {
+    let err = run(dump).expect_err(dump);
+    err.downcast_ref::<Uncertain>()
+        .unwrap_or_else(|| panic!("{err:#}"))
+        .clone()
+}
+
+/// Security review of D-117: wherever the filter and MySQL could disagree on
+/// where a string ends, the filter stops instead of writing what MySQL
+/// would run as SQL.
+#[test]
+fn adversarial_dumps_stop_the_filter() {
+    // NO_BACKSLASH_ESCAPES: `'a\'` is a whole string to MySQL, not here.
+    let u = uncertain(
+        "/*!40101 SET SQL_MODE='NO_BACKSLASH_ESCAPES' */;\n\
+         INSERT INTO `t` VALUES ('a\\');DROP DATABASE x;-- ');\n",
+    );
+    assert_eq!(u.line, 1, "{u}");
+    assert!(u.to_string().contains("NO_BACKSLASH_ESCAPES"));
+    // Without it the same row is one string to both, data that passes.
+    let row = "INSERT INTO `t` VALUES ('a\\');DROP DATABASE x;-- ');\n";
+    assert_eq!(ok(row), row);
+    // A string open at the end of a row's line (rows are one line each).
+    let u = uncertain("INSERT INTO `t` VALUES ('a\\');\nDROP DATABASE x;\n");
+    assert!(u.to_string().contains("open at the end of the line"), "{u}");
+    // A MariaDB comment that does not close on its line.
+    let u = uncertain("/*M!100616 SET NOTE_VERBOSITY=0\n*/ DROP DATABASE x;\n");
+    assert!(u.to_string().contains("/*M!"), "{u}");
+    // A comment or a name left open at the end of the dump.
+    uncertain("SELECT 1; /* not closed\n");
+    uncertain("DELIMITER ;;\nCREATE PROCEDURE `p`() SELECT 'open\n");
+    // A DEFINER it cannot read.
+    uncertain("CREATE DEFINER=`a\\`@`b` VIEW `v` AS SELECT 1;\n");
+    // Well escaped, the same texts are data and pass untouched.
+    let rows = "INSERT INTO `t` VALUES ('\\';DROP DATABASE x;--'),('/*M! x */'),('*/ DROP DATABASE y; /*M!');\n";
+    assert_eq!(ok(rows), rows);
 }
