@@ -84,12 +84,11 @@ pub async fn run_start<R: Runtime>(
                 }
             }
         }
-        // `mysql`/`mariadb` from a command name: the kit's SQL server.
-        let wanted: Vec<String> = crate::setup::needs::of_action(a)
+        // `mysql`/`mariadb` from a command name: MySQL (D-117).
+        let wanted: Vec<&str> = crate::setup::needs::of_action(a)
             .into_iter()
-            .map(|n| crate::db::services::sql_need(&kit, n))
+            .map(crate::db::services::sql_need)
             .collect();
-        let wanted: Vec<&str> = wanted.iter().map(String::as_str).collect();
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
         let info = runner
