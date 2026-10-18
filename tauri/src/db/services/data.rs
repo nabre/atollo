@@ -48,12 +48,6 @@ fn has_data(engine: DbEngine, dir: &std::path::Path) -> bool {
     }
 }
 
-/// The kit has data of `engine` (`data\db\<id>` with something in it): for
-/// MariaDB, kept on the Database page of a kit that has it (D-110).
-pub(super) fn has_any_data(kit: &Kit, engine: DbEngine) -> bool {
-    fs::read_dir(data_root(kit, engine.id())).is_ok_and(|mut d| d.next().is_some())
-}
-
 /// The versions of `engine` with data in `data\db\<id>\<line>`, newest
 /// first: for MariaDB, those whose data has not moved to MySQL yet (D-117).
 pub(crate) fn lines_with_data(kit: &Kit, engine: DbEngine) -> Vec<String> {
@@ -152,7 +146,7 @@ pub fn migrate_data(kit: &Kit) {
             continue;
         }
         let Some(line) = Catalog::get()
-            .find(engine.component())
+            .find_internal(engine.component())
             .and_then(|c| crate::versions::default_line(kit, c))
         else {
             continue;

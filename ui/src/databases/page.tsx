@@ -1,5 +1,5 @@
-// The Database page (DECISIONS.md D-73): the kit's MariaDB and MongoDB
-// servers, one for every project, on 127.0.0.1 only. SQLite needs no server:
+// The Database page (DECISIONS.md D-73): the kit's MySQL and MongoDB
+// servers (D-117: MariaDB only as data moving to MySQL, `migration.tsx`), one for every project, on 127.0.0.1 only. SQLite needs no server:
 // it is a tool (Tools) and a section of the project's page, not listed here.
 // As the Extensions view: the servers in the side bar, the chosen one's
 // page in the editor.
@@ -138,7 +138,7 @@ function OtherLine({
   onStart: () => void;
   onStop: () => void;
   onPort: (port: number) => void;
-  /** MariaDB only: phpMyAdmin on this version. */
+  /** MySQL only: phpMyAdmin on this version. */
   onPhpMyAdmin?: (() => void) | undefined;
 }) {
   const [port, setPort] = useState(String(o.port));
@@ -219,9 +219,9 @@ function ServiceDetails({
   busy: boolean;
   onStart: () => void;
   onStop: () => void;
-  /** MariaDB only: phpMyAdmin in the browser. */
+  /** MySQL only: phpMyAdmin in the browser. */
   onPhpMyAdmin?: (() => void) | undefined;
-  /** MariaDB only: phpMyAdmin on another version. */
+  /** MySQL only: phpMyAdmin on another version. */
   onLinePhpMyAdmin?: ((line: string) => void) | undefined;
   onSet: (port: number | null, autostart: boolean) => void;
   onLine: (line: string | null) => void;
@@ -236,8 +236,8 @@ function ServiceDetails({
   const portValue = Number(port);
   const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
   const portId = `port-${s.id}`;
-  // MariaDB's content is in phpMyAdmin (D-107): no explorer, only the details.
-  const explorer = s.id !== "mariadb";
+  // MySQL's content is in phpMyAdmin (D-107): no explorer, only the details.
+  const explorer = s.id !== "mysql";
   const [chosen, setSection] = useState<"content" | "details">(s.state === "running" ? "content" : "details");
   const section = explorer ? chosen : "details";
   // The version the explorer reads (null: the one the server runs); each
@@ -284,7 +284,7 @@ function ServiceDetails({
               <ActionButton
                 icon={VscLinkExternal}
                 label={t("Apri phpMyAdmin")}
-                title={t("MariaDB nel browser; al primo uso si installa e il server si avvia")}
+                title={t("MySQL nel browser; al primo uso si installa e il server si avvia")}
                 busy={busy}
                 onClick={onPhpMyAdmin}
               />
@@ -627,16 +627,16 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
             act(`${service.id}@${line}`, () => serviceLinePort(service.id, line, port));
           }}
           onPhpMyAdmin={
-            service.id === "mariadb"
+            service.id === "mysql"
               ? () => {
-                  act(service.id, () => dbAdminOpen());
+                  act(service.id, () => dbAdminOpen(null, "mysql"));
                 }
               : undefined
           }
           onLinePhpMyAdmin={
-            service.id === "mariadb"
+            service.id === "mysql"
               ? (line) => {
-                  act(`${service.id}@${line}`, () => dbAdminOpen(line));
+                  act(`${service.id}@${line}`, () => dbAdminOpen(line, "mysql"));
                 }
               : undefined
           }
@@ -646,7 +646,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
       )}
       <p className="shrink-0 border-t border-vsc-border px-5 py-2 text-[12px] text-vsc-desc">
         {t(
-          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. MariaDB è compatibile con MySQL; nel terminale del kit il comando mariadb entra già come root, e «Apri phpMyAdmin» lo apre nel browser. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
+          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. Nel terminale del kit il comando mysql entra già come root, e «Apri phpMyAdmin» apre MySQL nel browser. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
         )}
       </p>
     </ViewContainer>

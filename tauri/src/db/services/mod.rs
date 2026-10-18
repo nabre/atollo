@@ -177,7 +177,7 @@ pub struct Services {
 /// The version of `id` the server runs: the one in its settings while it is
 /// on disk, otherwise the newest on disk.
 pub fn server_line(kit: &Kit, id: &str) -> Option<String> {
-    let c = Catalog::get().find(id)?;
+    let c = Catalog::get().find_internal(id)?;
     load_settings(kit)
         .get(id)
         .and_then(|s| s.line.clone())
@@ -187,7 +187,7 @@ pub fn server_line(kit: &Kit, id: &str) -> Option<String> {
 
 /// The installed versions of `id`, newest first.
 pub fn server_lines(kit: &Kit, id: &str) -> Vec<String> {
-    let Some(c) = Catalog::get().find(id) else {
+    let Some(c) = Catalog::get().find_internal(id) else {
         return Vec::new();
     };
     let mut lines: Vec<String> = crate::versions::default_line(kit, c)
@@ -380,24 +380,11 @@ pub fn project_client_env(kit: &Kit, project: &str) -> Vec<(&'static str, PathBu
 /// The folder of version `line` of the versioned component `id` (None: the
 /// version it runs).
 pub(crate) fn line_dir(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
-    let Some(c) = Catalog::get().find(id) else {
+    let Some(c) = Catalog::get().find_internal(id) else {
         return kit.apps().join(id);
     };
     let line = line.map(str::to_owned).or_else(|| server_line(kit, id));
     crate::versions::dir_for(kit, c, line.as_deref()).unwrap_or_else(|| kit.apps().join(id))
-}
-
-/// Shown on the Database page: every server but MariaDB, which only a kit
-/// that has it (installed, data, settings) shows (D-110).
-fn shown(kit: &Kit, engine: DbEngine, settings: &BTreeMap<String, Setting>) -> bool {
-    match engine {
-        DbEngine::MariaDb => {
-            installed(kit, engine.id())
-                || data::has_any_data(kit, engine)
-                || settings.contains_key(engine.id())
-        }
-        DbEngine::MySql | DbEngine::MongoDb => true,
-    }
 }
 
 /// The output of `line`: `<id>.log` for the version the server runs,
@@ -418,7 +405,9 @@ pub fn load_settings(kit: &Kit) -> BTreeMap<String, Setting> {
 }
 
 fn installed(kit: &Kit, id: &str) -> bool {
-    Catalog::get().find(id).is_some_and(|c| c.is_installed(kit))
+    Catalog::get()
+        .find_internal(id)
+        .is_some_and(|c| c.is_installed(kit))
 }
 
 #[cfg(test)]
@@ -433,7 +422,7 @@ pub(crate) fn bin(kit: &Kit, id: &str, exe: &str) -> PathBuf {
 /// MongoDB installer, not in the catalog) one folder.
 pub(crate) fn bin_at(kit: &Kit, id: &str, line: Option<&str>, exe: &str) -> PathBuf {
     let stem = exe.strip_suffix(".exe").unwrap_or(exe);
-    match Catalog::get().find(id).filter(|c| c.versioned) {
+    match Catalog::get().find_internal(id).filter(|c| c.versioned) {
         Some(c) => {
             let line = line.map(str::to_owned).or_else(|| server_line(kit, id));
             let dir = crate::versions::dir_for(kit, c, line.as_deref())
@@ -513,14 +502,15 @@ impl Services {
         }
     }
 
+    /// The servers of the Database page, [`DbEngine::OFFERED`]: MariaDB
+    /// is not one (D-117), its data on the way to MySQL is the migration's.
     pub fn list(&self) -> Vec<ServiceInfo> {
         let settings = load_settings(&self.kit);
         let secrets = auth::load(&self.kit);
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         let mut errors = self.errors.lock().unwrap_or_else(|e| e.into_inner());
-        DbEngine::ALL
+        DbEngine::OFFERED
             .into_iter()
-            .filter(|e| shown(&self.kit, *e, &settings))
             .map(|engine| {
                 let id = engine.id();
                 let setting = settings.get(id).cloned().unwrap_or_default();

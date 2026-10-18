@@ -1,7 +1,7 @@
 use super::*;
 use crate::db::services::{
     bin_at, line_port, line_ports, lines_in_use, load_settings, log_path, project_client_env,
-    project_db_port, project_line, server_lines, Setting, State,
+    project_db_port, project_line, server_lines, Setting,
 };
 use crate::kit::{tests::TempDir, Arch};
 
@@ -9,7 +9,7 @@ use crate::kit::{tests::TempDir, Arch};
 /// key paths of the kit's target (`bin/mariadbd.exe` on Windows,
 /// `bin/mariadbd` elsewhere).
 fn fake_server(kit: &Kit, id: &str, version: &str) {
-    let c = Catalog::get().find(id).unwrap();
+    let c = Catalog::get().find_internal(id).unwrap();
     let dir = crate::versions::install_dir(kit, c, version);
     let folder = c.folder.as_deref().unwrap();
     let target = kit.target();
@@ -48,7 +48,7 @@ fn each_version_has_its_data() {
     assert_eq!(data_dir(&kit, "mariadb"), root.join("11.8"));
 
     // A newer version starts with a copy; the old data stays.
-    let c = Catalog::get().find("mariadb").unwrap();
+    let c = Catalog::get().find_internal("mariadb").unwrap();
     let newer = crate::versions::saved_dir(&kit, c, "12.3");
     fake_mariadb_line(&kit, &newer);
     assert_eq!(server_line(&kit, "mariadb").as_deref(), Some("12.3"));
@@ -128,7 +128,7 @@ fn versions_side_by_side() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     fake_server(&kit, "mariadb", "11.4.5");
-    let c = Catalog::get().find("mariadb").unwrap();
+    let c = Catalog::get().find_internal("mariadb").unwrap();
     let older = crate::versions::saved_dir(&kit, c, "10.6");
     fake_mariadb_line(&kit, &older);
     assert_eq!(server_lines(&kit, "mariadb"), ["11.4", "10.6"]);
@@ -150,15 +150,9 @@ fn versions_side_by_side() {
         kit.logs().join("mariadb.log")
     );
 
-    // The page: the other version with its port and data.
+    // Never on the page (D-117): its versions are the migration's.
     let s = Services::new(kit.clone());
-    let info = s.list().into_iter().find(|i| i.id == "mariadb").unwrap();
-    assert_eq!((info.port, info.line.as_deref()), (3306, Some("11.4")));
-    assert_eq!(info.others.len(), 1);
-    let other = &info.others[0];
-    assert_eq!((other.line.as_str(), other.port), ("10.6", 3307));
-    assert_eq!(other.state, State::Stopped);
-    assert_eq!(other.url, "mysql://root@127.0.0.1:3307/");
+    assert!(s.list().iter().all(|i| i.id != "mariadb"));
 
     // Ports of the other versions: stored, never the server's nor another's.
     s.set_line_port("mariadb", "10.6", Some(3316)).unwrap();
@@ -226,7 +220,7 @@ fn autostart_lines_follow_the_projects() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     fake_server(&kit, "mariadb", "11.4.5");
-    let c = Catalog::get().find("mariadb").unwrap();
+    let c = Catalog::get().find_internal("mariadb").unwrap();
     let older = crate::versions::saved_dir(&kit, c, "10.6");
     fake_mariadb_line(&kit, &older);
     assert!(lines_in_use(&kit, "mariadb").is_empty());

@@ -23,16 +23,16 @@ fn settings_round_trip_and_defaults() {
     assert_eq!(all["mongodb"].port, None, "the default port is not stored");
     assert!(s.set("mariadb", Some(80), false).is_err());
     assert!(s.set("redis", None, false).is_err());
+    s.set("mysql", Some(3308), false).unwrap();
     let list = s.list();
-    // MariaDB has settings: shown beside MySQL (D-110).
+    // MariaDB has settings, yet it is not a server of the page (D-117).
     let ids: Vec<&str> = list.iter().map(|i| i.id.as_str()).collect();
-    assert_eq!(ids, ["mariadb", "mysql", "mongodb"]);
-    assert_eq!(list[0].port, 3307);
-    assert_eq!(list[0].url, "mysql://root@127.0.0.1:3307/");
-    assert_eq!(list[1].port, 3306);
-    assert_eq!(list[1].user, "root");
+    assert_eq!(ids, ["mysql", "mongodb"]);
+    assert_eq!(list[0].port, 3308);
+    assert_eq!(list[0].url, "mysql://root@127.0.0.1:3308/");
+    assert_eq!(list[0].user, "root");
     assert_eq!(
-        list[2].url,
+        list[1].url,
         "mongodb://admin@127.0.0.1:27017/?authSource=admin"
     );
     assert!(list.iter().all(|i| i.password.is_none()), "no password yet");

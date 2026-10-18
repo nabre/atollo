@@ -6,7 +6,8 @@ import { query } from "./core";
 export type ServiceState = "stopped" | "starting" | "running" | "error";
 
 export interface ServiceInfo {
-  id: "mariadb" | "mongodb";
+  /** MariaDB is not a server of the kit any more (D-117). */
+  id: "mysql" | "mongodb";
   name: string;
   installed: boolean;
   state: ServiceState;
@@ -39,27 +40,27 @@ export interface LineInfo {
 
 export const SAMPLE_SERVICES: ServiceInfo[] = [
   {
-    id: "mariadb",
-    name: "MariaDB",
+    id: "mysql",
+    name: "MySQL",
     installed: true,
     state: "running",
     port: 3306,
     autostart: true,
-    dataDir: "E:\\Dev-Kit\\data\\db\\mariadb",
-    log: "E:\\Dev-Kit\\data\\app\\logs\\mariadb.log",
+    dataDir: "E:\\Dev-Kit\\data\\db\\mysql\\9.7",
+    log: "E:\\Dev-Kit\\data\\app\\logs\\mysql.log",
     url: "mysql://root@127.0.0.1:3306/",
     user: "root",
     password: "3f9c2a71d8e04b6a9c51e2d7f0a8b346",
     message: null,
-    line: "12.3",
-    lines: ["12.3", "11.4"],
+    line: "9.7",
+    lines: ["9.7", "8.4"],
     others: [
       {
-        line: "11.4",
+        line: "8.4",
         state: "stopped",
         port: 3307,
-        dataDir: "E:\\Dev-Kit\\data\\db\\mariadb\\11.4",
-        log: "E:\\Dev-Kit\\data\\app\\logs\\mariadb-11.4.log",
+        dataDir: "E:\\Dev-Kit\\data\\db\\mysql\\8.4",
+        log: "E:\\Dev-Kit\\data\\app\\logs\\mysql-8.4.log",
         url: "mysql://root@127.0.0.1:3307/",
         message: null,
       },

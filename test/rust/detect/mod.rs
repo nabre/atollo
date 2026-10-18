@@ -31,7 +31,7 @@ fn databases_a_project_uses() {
             ("composer.json", "{}"),
         ],
     );
-    assert_eq!(databases(&laravel.0), BTreeSet::from(["mariadb"]));
+    assert_eq!(databases(&laravel.0), BTreeSet::from(["mysql"]));
     let node = project(
         "db-node",
         &[(
@@ -57,7 +57,44 @@ fn databases_a_project_uses() {
         )],
     );
     assert!(databases(&none.0).is_empty());
-    assert!(requires(&laravel.0).contains(&"mariadb".to_owned()));
+    assert!(requires(&laravel.0).contains(&"mysql".to_owned()));
+}
+
+/// D-117: MariaDB in a project is the kit's MySQL; Laravel's `mariadb`
+/// driver is told to become `mysql`, never MariaDB proposed.
+#[test]
+fn mariadb_of_a_project_is_mysql_with_a_warning() {
+    let laravel = project(
+        "db-laravel-mariadb",
+        &[
+            (".env", "APP_NAME=x\nDB_CONNECTION=\"mariadb\"\n"),
+            ("composer.json", "{}"),
+            ("compose.yaml", "services:\n  db:\n    image: mysql:8.4\n"),
+        ],
+    );
+    let p = detect(&laravel.0, "it");
+    assert!(p.requires.contains(&"mysql".to_owned()), "{:?}", p.requires);
+    assert!(!p.requires.contains(&"mariadb".to_owned()));
+    assert_eq!(p.lines.get("mysql").map(String::as_str), Some("8.4"));
+    assert!(
+        p.warnings.iter().any(|w| w.contains("DB_CONNECTION=mysql")),
+        "{:?}",
+        p.warnings
+    );
+    let mysql = project(
+        "db-laravel-mysql",
+        &[(".env", "DB_CONNECTION=mysql\n"), ("composer.json", "{}")],
+    );
+    assert!(!env_wants_mariadb(&mysql.0));
+    assert!(!detect(&mysql.0, "it")
+        .warnings
+        .iter()
+        .any(|w| w.contains("DB_CONNECTION")));
+    let example = project(
+        "db-example-mariadb",
+        &[(".env.example", "DB_CONNECTION=mariadb\n")],
+    );
+    assert!(env_wants_mariadb(&example.0), ".env.example without .env");
 }
 
 pub fn ids(p: &Project) -> Vec<&str> {

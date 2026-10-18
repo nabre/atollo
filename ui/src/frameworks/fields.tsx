@@ -232,7 +232,7 @@ export function DatabaseField({
         }}
         options={[
           { value: "", label: t("Nessuno") },
-          { value: "mariadb", label: "MariaDB (MySQL)" },
+          { value: "mysql", label: "MySQL" },
           { value: "mongodb", label: "MongoDB" },
         ]}
         className="w-full"

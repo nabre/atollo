@@ -10,7 +10,7 @@ export interface Holdings {
   settings: boolean;
   /** Ports remembered for its actions. */
   ports: number;
-  /** Engines with a user of the project (`mariadb`, `mongodb`). */
+  /** Engines with a user of the project (`mysql`, `mongodb`; `mariadb` while its data has not moved to MySQL, D-117). */
   databases: string[];
   /** Copies of its databases. */
   backups: number;

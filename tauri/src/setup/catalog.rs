@@ -134,10 +134,15 @@ pub struct Component {
 #[derive(Debug, Deserialize)]
 struct File {
     components: Vec<Component>,
+    /// No longer offered nor installed (MariaDB, D-117): only
+    /// [`Catalog::find_internal`] sees them.
+    #[serde(default)]
+    internal: Vec<Component>,
 }
 
 pub struct Catalog {
     components: Vec<Component>,
+    internal: Vec<Component>,
 }
 
 impl Catalog {
@@ -148,11 +153,27 @@ impl Catalog {
             let file: File = serde_json::from_str(include_str!("../../catalog/components.json"))
                 .unwrap_or(File {
                     components: Vec::new(),
+                    internal: Vec::new(),
                 });
             Catalog {
                 components: file.components,
+                internal: file.internal,
             }
         })
+    }
+
+    /// The components no longer offered whose programs on disk the kit
+    /// still reads ([`Catalog::find_internal`]).
+    pub fn internal(&self) -> &[Component] {
+        &self.internal
+    }
+
+    /// [`Catalog::find`], or a component no longer offered whose programs
+    /// on disk the kit still reads: MariaDB, to move its data to MySQL
+    /// (D-117). Never in the pages, the choice or a preparation.
+    pub fn find_internal(&self, id: &str) -> Option<&Component> {
+        self.find(id)
+            .or_else(|| self.internal.iter().find(|c| c.id == id))
     }
 
     pub fn all(&self) -> &[Component] {

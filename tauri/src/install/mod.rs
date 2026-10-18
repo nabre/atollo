@@ -247,7 +247,6 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "pwsh" => &editor::Pwsh,
         "vscodium-server" => &editor::Server,
         "mysql" => &db::MySql,
-        "mariadb" => &db::MariaDb,
         "mongodb" => &db::MongoDb,
         "sqlite" => &db::Sqlite,
         "phpmyadmin" => &db::PhpMyAdmin,

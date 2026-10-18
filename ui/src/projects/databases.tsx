@@ -209,7 +209,7 @@ export function Databases({
 }) {
   const { busy, error, run } = useAction(onChanged);
   if (dbs === null) return <p className="text-vsc-desc">{t("Caricamento…")}</p>;
-  const engines: ProjectDb["engine"][] = ["mariadb", "mongodb"];
+  const engines: ProjectDb["engine"][] = ["mysql", "mongodb"];
   return (
     <>
       {engines.map((engine) => {
