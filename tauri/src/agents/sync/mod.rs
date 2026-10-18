@@ -163,7 +163,7 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
 
 /// The kit rule: each agent loads its own project file; the rule makes all
 /// three read all of them (`rules.js`).
-pub const KIT_RULE_TEXT: &str = "In this kit (NEXKORA) Claude Code, Codex and Antigravity share the same instructions and skills.
+pub const KIT_RULE_TEXT: &str = "In this kit (Atollo) Claude Code, Codex and Antigravity share the same instructions and skills.
 - Project instructions: CLAUDE.md, AGENTS.md and GEMINI.md are equivalent. At the start of a task, read each of these files in the workspace root that is not already in your context, and follow all of them together.
 - Project skills: the shared folder is .agents/skills/<name>/SKILL.md in the project root (read by Codex and Antigravity). The kit copies it to and from .claude/skills/ for Claude Code at every start. Create new project skills in .agents/skills/.
 - Global instructions and skills are shared through the kit as well: a change made in one agent reaches the others at their next start.";

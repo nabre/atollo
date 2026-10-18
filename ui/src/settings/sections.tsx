@@ -49,7 +49,7 @@ export function GeneralSettings({ s, set }: { s: Settings; set: (patch: Partial<
       <SettingItem
         category={general}
         title={t("Lingua")}
-        description={t("La lingua di NEXKORA.")}
+        description={t("La lingua di Atollo.")}
         modified={s.lang !== null}
       >
         <Select
@@ -94,7 +94,7 @@ export function GeneralSettings({ s, set }: { s: Settings; set: (patch: Partial<
             set({ autoUpdate: v });
           }}
         >
-          {t("Scarica da solo le nuove versioni di NEXKORA (sostituiscono l'exe alla chiusura)")}
+          {t("Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)")}
         </CheckboxLabel>
       </SettingItem>
       <CondaSettings category={general} s={s} set={set} />

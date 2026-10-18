@@ -92,24 +92,24 @@ pub fn missing_message(kit: &Kit, os_release: Option<&str>, lang: &str) -> Strin
     use crate::i18n::t;
     if kit.os().is_linux() {
         let install = match os_release.and_then(webkit_install_command) {
-            Some(command) => t(lang, "Installalo con {0}, poi riavvia NEXKORA. In alternativa usa l'AppImage di NEXKORA, che lo contiene.", &[command]),
-            None => t(lang, "Installa il pacchetto WebKitGTK 4.1 della tua distribuzione ({0}), poi riavvia NEXKORA. In alternativa usa l'AppImage di NEXKORA, che lo contiene.", &[WEBKITGTK]),
+            Some(command) => t(lang, "Installalo con {0}, poi riavvia Atollo. In alternativa usa l'AppImage di Atollo, che lo contiene.", &[command]),
+            None => t(lang, "Installa il pacchetto WebKitGTK 4.1 della tua distribuzione ({0}), poi riavvia Atollo. In alternativa usa l'AppImage di Atollo, che lo contiene.", &[WEBKITGTK]),
         };
         return format!(
             "{}\n\n{install}",
             t(
                 lang,
-                "Manca WebKitGTK 4.1, che serve per mostrare le finestre di NEXKORA.",
+                "Manca WebKitGTK 4.1, che serve per mostrare le finestre di Atollo.",
                 &[]
             ),
         );
     }
     format!(
         "{}\n\n{}",
-        t(lang, "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di NEXKORA.", &[]),
+        t(lang, "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di Atollo.", &[]),
         t(
             lang,
-            "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia NEXKORA. Non serve installare nulla.",
+            "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia Atollo. Non serve installare nulla.",
             &[kit.arch().as_str(), DOWNLOAD_URL, &fixed_folder(kit).display().to_string()]
         )
     )

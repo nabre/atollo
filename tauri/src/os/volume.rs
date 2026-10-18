@@ -6,7 +6,8 @@
 //!
 //! On macOS and Linux also how the disk is mounted (D-105): a `noexec`
 //! mount, or a FAT32 one with `showexec` (Linux), runs none of the kit's
-//! programs, and the app says so at start ([`startup_problem`]).
+//! programs: [`disk_notice`] says so, and `main.rs` stops the app at
+//! start when the notice is blocking (FAT32 and exFAT are only logged).
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -497,15 +498,15 @@ pub fn notice_for(
         };
         return blocking(format!(
             "{}\n\n{}",
-            t(lang, "Il disco del kit ({0}) è montato con l'opzione noexec: da lì non può partire nessun programma, e NEXKORA non installa nulla.", &[&point]),
-            t(lang, "Rimontalo permettendo i programmi, per esempio con: {0}. Poi riavvia NEXKORA.", &[&remount]),
+            t(lang, "Il disco del kit ({0}) è montato con l'opzione noexec: da lì non può partire nessun programma, e Atollo non installa nulla.", &[&point]),
+            t(lang, "Rimontalo permettendo i programmi, per esempio con: {0}. Poi riavvia Atollo.", &[&remount]),
         ));
     }
     if os.is_linux() && mount.is_some_and(Mount::showexec) {
         return blocking(format!(
             "{}\n\n{}",
             t(lang, "Il disco del kit ({0}) è FAT32 montato con l'opzione showexec: Linux lascia partire solo i file .exe, .com e .bat, non i programmi del kit.", &[&point]),
-            t(lang, "Formatta la chiavetta in exFAT (il kit funziona così anche su Windows e macOS), oppure rimontala senza showexec. Poi riavvia NEXKORA.", &[]),
+            t(lang, "Formatta la chiavetta in exFAT (il kit funziona così anche su Windows e macOS), oppure rimontala senza showexec. Poi riavvia Atollo.", &[]),
         ));
     }
     let warning = match fs {
@@ -563,15 +564,6 @@ pub fn disk_notice(kit: &Kit, lang: &str) -> Option<DiskNotice> {
         ));
     }
     notice_for(os, fs, noexec, mount.as_ref(), &folder, lang)
-}
-
-/// The message that stops the app at start (D-105): the kit's disk runs
-/// no program. `None`: the app can start.
-#[allow(dead_code)] // called by main.rs at start (D-105)
-pub fn startup_problem(kit: &Kit, lang: &str) -> Option<String> {
-    disk_notice(kit, lang)
-        .filter(|n| n.blocking)
-        .map(|n| n.text)
 }
 
 #[cfg(test)]

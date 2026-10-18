@@ -227,7 +227,7 @@ impl SetupTask {
             Ok(_) => Ok(()),
             Err(e) if e.is::<Busy>() => Err(crate::i18n::t(
                 self.lang(),
-                "Un'altra installazione è in corso in questo kit (un'altra finestra di NEXKORA o il menu del kit).",
+                "Un'altra installazione è in corso in questo kit (un'altra finestra di Atollo o il menu del kit).",
                 &[],
             )),
             Err(e) => Err(format!("{e:#}")),

@@ -59,7 +59,7 @@ export function ExtensionsMatrixSection({
         </h2>
         <p className="text-[12px] text-vsc-desc">
           {t(
-            "NEXKORA abbina a ogni linguaggio le sue estensioni: un progetto riceve quelle dei suoi linguaggi e dal suo pannello puoi aggiungerne o toglierne. Le generali valgono per tutti.",
+            "Atollo abbina a ogni linguaggio le sue estensioni: un progetto riceve quelle dei suoi linguaggi e dal suo pannello puoi aggiungerne o toglierne. Le generali valgono per tutti.",
           )}
         </p>
       </header>

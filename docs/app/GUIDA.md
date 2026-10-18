@@ -1,6 +1,6 @@
-# Guida Completa di Dev-Kit (NEXKORA): Struttura, Funzionalità, Fonti, Configurazione ed Esempi Illustrati
+# Guida Completa di Atollo: Struttura, Funzionalità, Fonti, Configurazione ed Esempi Illustrati
 
-Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi**, le **schermate reali dell'interfaccia** (`images/*.png`) e gli **esempi pratici guidati** della guida ufficiale di **Dev-Kit** (`Dev-Kit.exe`, brand **NEXKORA**). Esplora nel dettaglio l'architettura portabile, il funzionamento di tutte le viste dell'applicazione, l'organizzazione completa dei link e delle fonti da cui il kit attinge gli strumenti, il ruolo centrale dell'account GitHub e le procedure passo-passo per configurare ogni singolo elemento con la spiegazione dello scopo tecnico e pratico di ciascuna operazione.
+Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi**, le **schermate reali dell'interfaccia** (`images/*.png`) e gli **esempi pratici guidati** della guida ufficiale di **Dev-Kit** (`Dev-Kit.exe`, brand **Atollo**). Esplora nel dettaglio l'architettura portabile, il funzionamento di tutte le viste dell'applicazione, l'organizzazione completa dei link e delle fonti da cui il kit attinge gli strumenti, il ruolo centrale dell'account GitHub e le procedure passo-passo per configurare ogni singolo elemento con la spiegazione dello scopo tecnico e pratico di ciascuna operazione.
 
 > [!NOTE]
 > **Scenario reale usato negli esempi e nelle immagini della guida:**
@@ -61,7 +61,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
 **Dev-Kit** nasce per offrire un ambiente di sviluppo completo per Windows 10 e 11 (architetture `x64` e `ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`), racchiuso in un unico eseguibile (`Dev-Kit.exe`; su macOS il bundle `.app`, su Linux un'AppImage). Lo stesso kit su una chiavetta si apre sui tre sistemi. Questa guida descrive Windows; su macOS e Linux il terminale del kit e gli agenti si aprono in una scheda dell'app, il server web è Caddy e il database SQL è MySQL, con i limiti elencati nelle [issue aperte](https://github.com/nabre/dev-kit2/issues). Il progetto segue cinque regole architetturali inderogabili:
 
 1. **Zero installazione e nessun privilegio di amministratore (`asInvoker`)**: l'applicazione incorpora un manifesto Windows con `requestedExecutionLevel level="asInvoker"`. Non installa servizi di sistema, non crea attività pianificate e non modifica il registro di Windows (persino la chiave temporanea `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Rustup` creata forzosamente da `rustup-init` viene fotografata prima dell'installazione di Rust e ripristinata o rimossa subito dopo).
-2. **Isolamento totale dal PC ospite (`env_clear`)**: i programmi avviati dal kit (editor, terminale, agenti AI, server web, database, azioni dei progetti) non ereditano mai il `PATH` né le variabili di sviluppo del computer ospite (come `JAVA_HOME`, `CARGO_HOME`, `PYTHONPATH` o i moduli PowerShell in `Documenti`). Il motore Rust (`tauri/src/env.rs`) costruisce un ambiente pulito (~90 variabili) che punta esclusivamente a `data\`, aggiungendo al `PATH` soltanto le cartelle strettamente necessarie di Windows (`System32`, `System32\Wbem`, `System32\WindowsPowerShell\v1.0`).
+2. **Isolamento totale dal PC ospite (`env_clear`)**: i programmi avviati dal kit (editor, terminale, agenti AI, server web, database, azioni dei progetti) non ereditano mai il `PATH` né le variabili di sviluppo del computer ospite (come `JAVA_HOME`, `CARGO_HOME`, `PYTHONPATH` o i moduli PowerShell in `Documenti`). Il motore Rust (`tauri/src/env.rs`) costruisce un ambiente pulito (~90 variabili) che punta esclusivamente a `data/`, aggiungendo al `PATH` soltanto le cartelle strettamente necessarie del sistema: su Windows `System32`, `System32\Wbem` e `System32\WindowsPowerShell\v1.0`; su macOS `/opt/homebrew/bin` e `/usr/local/bin` (Homebrew, dopo i programmi del kit), `/usr/bin`, `/bin`, `/usr/sbin` e `/sbin`; su Linux `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin` e `/sbin`. Degli ambienti conda di macOS e Linux (Ruby, R e il server MongoDB su Linux) entrano nel `PATH` solo i programmi del componente, attraverso i lanciatori di `kit-bin`, non quelli delle loro dipendenze (D-125).
 3. **Separazione netta tra Progetto e Kit**:
    - Tutto ciò che appartiene al codice sorgente e può essere condiviso in un repository Git risiede in `projects\<progetto>\` (inclusi eventuali file dichiarativi come `panel.json`, `.vscode\settings.json`, `.mcp.json`).
    - Tutto ciò che riguarda lo stato locale, le scelte della macchina, le porte bloccate, le credenziali dei database e i backup risiede in `data\projects\<progetto>\`. In questo modo la cartella del progetto non viene mai "sporcata" da file di servizio locali.
@@ -292,7 +292,7 @@ In Dev-Kit l'account GitHub non è un semplice accessorio per un singolo program
 5. Nel browser, accedi al tuo account GitHub (se non sei già autenticato), incolla il codice `XXXX-XXXX` e autorizza **GitHub CLI**.
 6. La pagina dell'app rileva automaticamente il completamento, mostra il tuo nome utente GitHub e configura il Git del kit.
 
-![Configurazione dell'Account GitHub nelle Impostazioni di NEXKORA](images/14-impostazioni-github-rete.png)
+![Configurazione dell'Account GitHub nelle Impostazioni di Atollo](images/14-impostazioni-github-rete.png)
 
 > [!TIP]
 > **Esempio pratico — Accesso unificato come `@mario-rossi`:**
@@ -317,9 +317,9 @@ In Dev-Kit l'account GitHub non è un semplice accessorio per un singolo program
 
 ### 4.1 Finestra Principale, Barra di Stato e Pannello Attività
 
-L'interfaccia di Dev-Kit utilizza i componenti ufficiali e il sistema di design di VSCodium (`@vscode-elements/elements`) con il tema unificato **NEXKORA Dark / Light** (sincronizzato automaticamente col tema chiaro/scuro di Windows):
+L'interfaccia di Dev-Kit utilizza i componenti ufficiali e il sistema di design di VSCodium (`@vscode-elements/elements`) con il tema unificato **Atollo Dark / Light** (sincronizzato automaticamente col tema chiaro/scuro di Windows):
 
-- **Barra del titolo personalizzata (`ui/src/titlebar.tsx`)**: priva della cornice standard di Windows, integra il logo NEXKORA, il titolo della vista corrente e i controlli finestra.
+- **Barra del titolo personalizzata (`ui/src/titlebar.tsx`)**: priva della cornice standard di Windows, integra il logo Atollo, il titolo della vista corrente e i controlli finestra.
 - **Banner degli avvisi globali (`Banner` in `ui/src/App.tsx`)**: compare in alto solo quando necessario per segnalare:
   - che il kit è stato **spostato** da un percorso precedente (`movedFrom` → `root`) e che la rilocazione è avvenuta;
   - che sullo stesso PC sono in esecuzione programmi di **un'altra copia del kit** (ricordando che le due copie sono completamente separate);
@@ -328,7 +328,7 @@ L'interfaccia di Dev-Kit utilizza i componenti ufficiali e il sistema di design 
   - In alto: **Nuovo progetto** (bacchetta magica), **Progetti** (con badge numerico dei progetti avviati), **Agenti**, **Database**, **Server Web**, **Strumenti**.
   - In basso: **Impostazioni**, **Rimuovi l'unità**.
 - **Barra di Stato (in basso)**:
-  - A sinistra: badge **NEXKORA** (con percorso della radice al passaggio del mouse), contatore dei **progetti avviati** e degli **errori** (cliccabile per aprire il pannello Attività) e indicatore animato delle **installazioni in corso**.
+  - A sinistra: badge **Atollo** (con percorso della radice al passaggio del mouse), contatore dei **progetti avviati** e degli **errori** (cliccabile per aprire il pannello Attività) e indicatore animato delle **installazioni in corso**.
   - A destra: indicatore **«Editor attivo»** (con la porta `127.0.0.1:70xx` del server VSCodium), architettura (`win32-x64` o `win32-arm64`), versione dell'app (`vX.Y.Z`) e pulsante per mostrare/nascondere il pannello **Attività**.
 - **Pannello Attività (`ui/src/activity.tsx`)**: pannello ridimensionabile in basso (trascinando il divisore o facendo doppio clic per riportarlo a `240px`) presente su tutte le pagine. Raccoglie in un unico posto l'output in tempo reale delle azioni dei progetti (con pulsanti *Apri nel browser*, *Ferma*, *Dimentica*), lo stato e i log dei database e l'avanzamento dettagliato delle installazioni dei componenti.
 
@@ -368,7 +368,7 @@ La pagina **Nuovo progetto** (`ui/src/wizard.tsx` e `tauri/src/projects/framewor
 > [!TIP]
 > **Esempio pratico — Creazione di `gestionale-fatture` con un solo clic:**
 > Nella schermata sopra, lo sviluppatore seleziona la base **Laravel** e abbina le aggiunte **React** (interfaccia), **Tailwind CSS** (stile) e **MySQL** (database), indicando come destinazione `projects\gestionale-fatture`.
-> Il riepilogo in basso mostra esattamente cosa farà NEXKORA quando si preme **«Crea il progetto»**:
+> Il riepilogo in basso mostra esattamente cosa farà Atollo quando si preme **«Crea il progetto»**:
 > 1. verifica che **PHP (con Composer)**, **Node.js** e **MySQL** siano installati nel kit;
 > 2. avvia MySQL, crea il database `gestionale_fatture` e l'utente dedicato con password casuale a 32 cifre;
 > 3. esegue `composer create-project laravel/react-starter-kit . --no-interaction`, `npm install`, installa `@tailwindcss/vite`, popola il file `.env` con `APP_NAME="Gestionale Fatture Studio Rossi"` e le credenziali MySQL, ed esegue `php artisan migrate --force`.
@@ -427,6 +427,7 @@ Cliccando su un progetto si apre nella parte centrale la **Scheda del Progetto**
 - **Terminale esclusivo del kit (`tauri/src/editor/terminal.rs`)**:
   - **Dentro l'editor**: i profili di sistema di Windows sono nascosti; il profilo predefinito è **Dev-Kit** (PowerShell 7 del kit con `profile.ps1`, che applica anche le versioni dei linguaggi scelte per quel progetto), affiancato da *Dev-Kit - Git Bash*, *Dev-Kit - cmd* e dai profili dei tre agenti AI installati.
   - **Fuori dall'editor (pulsante «Terminale» o avvio di un Agente)**: apre la **console classica di Windows** (`conhost.exe` di System32, avviato direttamente: Windows non la passa al terminale predefinito del PC) con PowerShell 7 del kit e l'ambiente esatto del progetto, dentro il job dell'app (D-57, D-95).
+  - **Su macOS e Linux** il terminale del kit e gli agenti si aprono in una scheda del terminale dentro la finestra dell'app (D-109), con PowerShell del kit o Bash e lo stesso ambiente del progetto; i programmi restano nel gruppo di processi del kit.
 
 ---
 
@@ -466,14 +467,14 @@ La pagina **Database** (`ui/src/databases.tsx` e `tauri/src/db/`) gestisce i ser
 ````
 
 > **Esempio pratico — Gestione relazionale (MySQL + phpMyAdmin) e documentale (MongoDB Contenuto):**
-> - Nella **prima schermata** (il server SQL), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a NEXKORA; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
+> - Nella **prima schermata** (il server SQL), il server è attivo su `127.0.0.1:3306` con avvio automatico insieme a Atollo; cliccando su **«Apri phpMyAdmin»** si accede subito a tutti i database senza copiare la password di `root`.
 > - Nella **seconda schermata** (`MongoDB 8.0`), la scheda **Contenuto** mostra i database `api_magazzino` e `portale_clienti` (con le collezioni `utenti (19)` e `ticket_supporto (73)`) permettendo di ispezionare i documenti JSON direttamente dentro l'app.
 
 ---
 
 ### 4.7 Pagina «Server Web» (Pool Condivisi Caddy/Apache e VirtualHost `.localhost`)
 
-La pagina **Server Web** (`ui/src/servers.tsx` e `tauri/src/servers/mod.rs`) permette di servire contemporaneamente decine di progetti web senza conflitti di porta e senza toccare il file `C:\Windows\System32\drivers\etc\hosts` (che richiederebbe diritti di amministratore):
+La pagina **Server Web** (`ui/src/servers.tsx` e `tauri/src/servers/mod.rs`) permette di servire contemporaneamente decine di progetti web senza conflitti di porta e senza toccare il file `hosts` del sistema (`C:\Windows\System32\drivers\etc\hosts` su Windows, `/etc/hosts` su macOS e Linux, che richiederebbe diritti di amministratore):
 - **Pool automatici per versione**: il kit raggruppa automaticamente tutti i progetti configurati con Caddy o Apache in base alla combinazione `(motore, versione server, versione PHP)` (es. `apache-2.4-php-8.4` sulla porta `8081`).
 - **Profili server manuali**: dalla barra laterale puoi creare profili personalizzati (es. *"Apache Legacy PHP 7.4"* su una porta specifica da `8081` a `8999`) e assegnarvi i progetti dalla scheda *Sito web* del progetto.
 - **VirtualHost `.localhost` (RFC 6761)**: ogni progetto associato a un pool riceve automaticamente un proprio file `data\servers\<pool>\vhosts\<progetto>.conf` con `ServerName <progetto>.localhost` (più eventuali domini `.localhost` aggiuntivi) e risponde all'indirizzo `http://<progetto>.localhost:<porta>`.
@@ -576,7 +577,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
   2. Copia `Dev-Kit.exe` dentro la cartella e avvialo con doppio clic.
   3. Nella schermata di **Primo Avvio**, verifica i componenti preselezionati (di default: *PowerShell 7*, *GitHub CLI*, *Editor*, i tre *Agenti*, *Python*, *PHP*, *Apache*, più *Git* che arriva con GitHub CLI — circa 1,8 GB) oppure spunta subito altri linguaggi o database che usi abitualmente, quindi clicca su **«Installa»**.
 
-![Schermata di Primo Avvio (Benvenuto in NEXKORA) con selezione iniziale degli strumenti](images/01-wizard-benvenuto.png)
+![Schermata di Primo Avvio (Benvenuto in Atollo) con selezione iniziale degli strumenti](images/01-wizard-benvenuto.png)
 
 - **Scopo**:
   - Evitare cartelle che iniziano con cifre, `x` o `u` impedisce il bug delle espressioni regolari di `@parcel/watcher` in VSCodium (D-33), garantendo che l'editor aggiorni istantaneamente l'albero dei file quando gli agenti AI o il terminale creano o modificano file nel progetto.
@@ -598,7 +599,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
        - **Nel kit**: forza l'uso esclusivo di `data\tmp` anche su chiavetta (massima riservatezza rispetto al PC ospite, ma più lento su USB).
        - **Nel sistema**: forza l'uso del disco del PC ospite anche quando il kit è su disco fisso (utile per risparmiare spazio o scritture sull'unità del kit).
   3. **Aggiornamento automatico (`autoUpdate`)**:
-     - *Passaggi*: lascia attiva o deseleziona la casella *«Scarica da solo le nuove versioni di NEXKORA»*.
+     - *Passaggi*: lascia attiva o deseleziona la casella *«Scarica da solo le nuove versioni di Atollo»*.
      - *Scopo*: quando è attiva, 20 secondi dopo l'avvio l'app controlla silenziosamente se esiste una nuova release `app-v*` su GitHub, la scarica e ne verifica lo SHA-256 in `data\app\update\`, sostituendo `Dev-Kit.exe` alla chiusura senza mai interrompere il lavoro. Disattivala se lavori su connessioni a consumo stretto o vuoi bloccare la versione dell'ambiente.
 
 ---
@@ -708,7 +709,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
 - **Dove si configura**: pagina **Database** (salvato in `data\app\services.json`).
 - **Passaggi**:
   1. Seleziona **MySQL** o **MongoDB** nella barra laterale.
-  2. Nella sezione **Impostazioni** (scheda *Dettagli*), a server fermo puoi scegliere la **Versione** del motore, modificare la **Porta** (predefinite `3306` e `27017`, valide da `1024` a `65535`) e spuntare **«Avvia con NEXKORA»**.
+  2. Nella sezione **Impostazioni** (scheda *Dettagli*), a server fermo puoi scegliere la **Versione** del motore, modificare la **Porta** (predefinite `3306` e `27017`, valide da `1024` a `65535`) e spuntare **«Avvia con Atollo»**.
   3. Clicca su **«Avvia»** per far partire il server (se il componente non è ancora installato, viene scaricato e inizializzato automaticamente al primo avvio).
 - **Scopo**: avere un'unica istanza leggera per motore condivisa da tutti i progetti, protetta da password amministrativa (`root`/`admin`) e accessibile via **phpMyAdmin** (per MySQL) o tramite l'esploratore **Contenuto** (per MongoDB).
 

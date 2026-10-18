@@ -1,4 +1,4 @@
-// The sections of Settings about NEXKORA itself: its updates, where the kit
+// The sections of Settings about Atollo itself: its updates, where the kit
 // is.
 import { updateCheck, updateStatus, type UpdateStatus, type AppInfo } from "../api";
 import { BrandSymbol } from "../brand";
@@ -32,7 +32,7 @@ export function KitInfo({ info }: { info: AppInfo }) {
   return (
     <SettingsGroup id="s-kit" title={t("Il kit")}>
       <SettingItem
-        title="NEXKORA"
+        title="Atollo"
         description={t("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella.")}
         keywords={rows.map(([k]) => k).join(" ")}
       >
@@ -51,15 +51,15 @@ export function Updates() {
   const { busy, error, run } = useAction();
   if (!st) return null;
   let text: string;
-  if (st.staged) text = t("La versione {0} è pronta: sostituisce questa alla chiusura di NEXKORA.", st.staged);
+  if (st.staged) text = t("La versione {0} è pronta: sostituisce questa alla chiusura di Atollo.", st.staged);
   else if (st.manual && st.latest)
     text = t("La versione {0} è disponibile: scaricala dalla pagina della release.", st.latest);
   else if (st.error) text = t("Controllo non riuscito: {0}", st.error);
-  else if (st.latest && st.latest === st.current) text = t("NEXKORA {0} è la versione più recente.", st.current);
+  else if (st.latest && st.latest === st.current) text = t("Atollo {0} è la versione più recente.", st.current);
   else text = t("Versione installata: {0}", st.current);
   return (
     <SettingsGroup id="s-update" title={t("Aggiornamenti")}>
-      <SettingItem title={t("Aggiornamenti di NEXKORA")} description={text}>
+      <SettingItem title={t("Aggiornamenti di Atollo")} description={text}>
         <Button
           busy={busy === "check" || st.checking}
           onClick={() => {

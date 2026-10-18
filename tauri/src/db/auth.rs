@@ -137,7 +137,7 @@ impl KitLock {
             // Abandoned: a process that held it ended; it is ours now.
             if r != WAIT_OBJECT_0 && r != WAIT_ABANDONED {
                 let _ = CloseHandle(h);
-                bail!("db.json: another NEXKORA process holds it, try again");
+                bail!("db.json: another Atollo process holds it, try again");
             }
             Ok(KitLock(h))
         }
@@ -179,7 +179,7 @@ impl KitLock {
         // SAFETY: a valid descriptor owned by `file`.
         while unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
             if start.elapsed() > DB_JSON_WAIT {
-                bail!("db.json: another NEXKORA process holds it, try again");
+                bail!("db.json: another Atollo process holds it, try again");
             }
             std::thread::sleep(std::time::Duration::from_millis(50));
         }

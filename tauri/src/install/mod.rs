@@ -179,6 +179,12 @@ pub trait Installer: Sync {
     fn conda_prefix(&self, _target: crate::kit::Target, _dir: &Path) -> Option<PathBuf> {
         None
     }
+    /// The conda package whose programs go on the kit's PATH on `target`,
+    /// through the launchers of `kit-bin` (`conda::write_launchers`, D-125),
+    /// instead of the whole `bin` of the environment. Default: none.
+    fn conda_programs(&self, _target: crate::kit::Target) -> Option<&'static str> {
+        None
+    }
     /// The component's own steps after its conda environment is created in
     /// `dir` (launchers, files rewritten, shims): the same after an
     /// installation from the network and after one from the kept packages

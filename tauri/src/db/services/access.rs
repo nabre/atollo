@@ -49,7 +49,7 @@ impl Services {
                         .args(["--eval", auth::MONGO_ADMIN_JS])
                         .env("DEVKIT_DB_PASSWORD", &password);
                     run_with_input(cmd, "", Duration::from_secs(60)).context(
-                        "MongoDB already has users that NEXKORA does not know: \
+                        "MongoDB already has users that Atollo does not know: \
                          its administrator could not be created",
                     )?;
                     secrets.mongodb_admin = Some(password.clone());

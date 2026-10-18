@@ -57,7 +57,7 @@ fn fatal(_lang: &str, message: &str) {
 #[cfg(windows)]
 fn fatal(lang: &str, message: &str) {
     eprintln!("{message}");
-    let title = HSTRING::from(i18n::t(lang, "NEXKORA non può partire", &[]));
+    let title = HSTRING::from(i18n::t(lang, "Atollo non può partire", &[]));
     let text = HSTRING::from(message);
     // SAFETY: both strings outlive the modal call.
     unsafe { MessageBoxW(None, &text, &title, MB_OK | MB_ICONERROR) };
@@ -209,7 +209,7 @@ fn run() -> i32 {
             return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0);
         }
         Cli::Version => {
-            let _ = writeln!(cli::output(), "NEXKORA {}", env!("CARGO_PKG_VERSION"));
+            let _ = writeln!(cli::output(), "Atollo {}", env!("CARGO_PKG_VERSION"));
             return 0;
         }
         Cli::Help => {
@@ -455,7 +455,7 @@ fn prepare(
 /// catalog). `{0}` is the program's name ([`program_name`]), `{1}` the
 /// kit's Antigravity command ([`help_text`]); the target ids
 /// are those of `Target::ALL`.
-const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di NEXKORA.";
+const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
 
 /// The program's name in the help: `Dev-Kit.exe` on Windows, as always;
 /// elsewhere the file it was started from (`Atollo`, `Dev-Kit`, ...), or
@@ -587,7 +587,7 @@ fn build_app<R: tauri::Runtime>(
             // Extensions follow the projects open in the editor; the editor
             // windows offer to restart them (D-71).
             // Databases marked "start with Dev-Kit" (D-73).
-            // Then the server profiles marked "Avvia con NEXKORA".
+            // Then the server profiles marked "Avvia con Atollo".
             let (services, servers, env, lang) = {
                 let state = app.state::<AppState>();
                 (
@@ -716,7 +716,7 @@ fn open_main_window<R: tauri::Runtime>(
     data_dir: &Path,
 ) -> tauri::Result<()> {
     WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()))
-        .title("NEXKORA")
+        .title("Atollo")
         .inner_size(1180.0, 760.0)
         .min_inner_size(820.0, 560.0)
         // The interface draws its own title bar (ui/src/titlebar.tsx).

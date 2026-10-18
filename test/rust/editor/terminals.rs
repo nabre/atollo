@@ -1,13 +1,17 @@
 use super::*;
+use crate::fsx::join_rel;
 use crate::kit::{tests::TempDir, Arch};
+use crate::setup::catalog::translate_rel;
 use crate::versions::{install_dir, saved_dir, write_version};
 use std::fs;
 use std::path::Path;
 
-/// The key file of `c` in `dir`, a copy of its folder.
-fn install_fake(c: &Component, dir: &Path) {
-    let rel = c.key.strip_prefix(c.folder.as_deref().unwrap()).unwrap();
-    let key = dir.join(rel.trim_start_matches('/').replace('/', "\\"));
+/// The key file of `c` in `dir`, a copy of its folder, in the layout of the
+/// kit's system (`node/node.exe` on Windows, `node/bin/node` elsewhere).
+fn install_fake(kit: &Kit, c: &Component, dir: &Path) {
+    let key = translate_rel(kit.target(), &c.key);
+    let rel = key.strip_prefix(c.folder.as_deref().unwrap()).unwrap();
+    let key = join_rel(dir, rel);
     fs::create_dir_all(key.parent().unwrap()).unwrap();
     fs::write(key, b"").unwrap();
 }
@@ -19,25 +23,60 @@ fn kit(name: &str) -> (TempDir, Kit) {
     (tmp, kit)
 }
 
+/// `entries` as a PATH of this system.
+fn path_of(entries: &[String]) -> String {
+    entries.join(if cfg!(windows) { ";" } else { ":" })
+}
+
+/// A folder of the system, outside the kit.
+const SYSTEM: &str = if cfg!(windows) {
+    r"C:\Windows\System32"
+} else {
+    "/usr/bin"
+};
+
 #[test]
-#[cfg_attr(not(windows), ignore = "Windows PATH with ';' and drive letters")]
 fn strip_drops_entries_and_variables_inside_the_folders() {
+    let apps = if cfg!(windows) {
+        PathBuf::from(r"C:\K\apps")
+    } else {
+        PathBuf::from("/K/apps")
+    };
+    let s = |p: PathBuf| p.display().to_string();
+    let tools = s(apps.join("mongodb-tools").join("bin"));
+    let node = s(apps.join("node").join("22.11"));
     let mut env = KitEnv::default();
     env.set(
         "PATH",
-        r"C:\K\apps\mongodb\8.0\bin;C:\K\apps\mongodb-tools\bin;C:\K\apps\node\22.11;C:\Windows\System32",
+        path_of(&[
+            s(apps.join("mongodb").join("8.0").join("bin")),
+            tools.clone(),
+            node.clone(),
+            SYSTEM.to_owned(),
+        ]),
     );
-    env.set("MONGO_HOME", "C:/K/apps/MongoDB/8.0/");
-    env.set("NODE_HOME", r"C:\K\apps\node\22.11");
-    env.set("OTHER", r"C:\K\apps\mongodbx");
-    strip(&mut env, &[PathBuf::from(r"C:\K\apps\mongodb")]);
+    // Windows: another case and `/` are the same folder.
+    let home = if cfg!(windows) {
+        "C:/K/apps/MongoDB/8.0/".to_owned()
+    } else {
+        format!("{}/", s(apps.join("mongodb").join("8.0")))
+    };
+    env.set("MONGO_HOME", home);
+    env.set("NODE_HOME", node.clone());
+    env.set("OTHER", s(apps.join("mongodbx")));
+    // Linux: another case is another folder.
+    let other_case = s(apps.join("MongoDB"));
+    env.set("UPPER", other_case.clone());
+    strip(&mut env, &[apps.join("mongodb")]);
     assert_eq!(
         env.get("PATH"),
-        Some(r"C:\K\apps\mongodb-tools\bin;C:\K\apps\node\22.11;C:\Windows\System32")
+        Some(path_of(&[tools, node.clone(), SYSTEM.to_owned()]).as_str())
     );
     assert_eq!(env.get("MONGO_HOME"), None);
-    assert_eq!(env.get("NODE_HOME"), Some(r"C:\K\apps\node\22.11"));
-    assert_eq!(env.get("OTHER"), Some(r"C:\K\apps\mongodbx"));
+    assert_eq!(env.get("NODE_HOME"), Some(node.as_str()));
+    assert_eq!(env.get("OTHER"), Some(s(apps.join("mongodbx")).as_str()));
+    let kept = cfg!(target_os = "linux").then_some(other_case.as_str());
+    assert_eq!(env.get("UPPER"), kept);
 }
 
 #[test]
@@ -115,23 +154,19 @@ fn saved_terminals_are_cleaned_and_get_unique_ids() {
 }
 
 #[test]
-#[cfg_attr(
-    not(windows),
-    ignore = "install_fake writes the Windows layout; Windows PATH"
-)]
 fn a_terminal_keeps_its_tools_at_their_lines() {
     let (_tmp, kit) = kit("terminals-env");
     let catalog = Catalog::get();
     let node = catalog.find("node").unwrap();
     let python = catalog.find("python").unwrap();
     let node_main = install_dir(&kit, node, "v22.11.0");
-    install_fake(node, &node_main);
+    install_fake(&kit, node, &node_main);
     node.save_version(&kit, "v22.11.0").unwrap();
     let node_old = saved_dir(&kit, node, "20.18");
-    install_fake(node, &node_old);
+    install_fake(&kit, node, &node_old);
     write_version(&node_old, "v20.18.1").unwrap();
     let py = install_dir(&kit, python, "3.13.1");
-    install_fake(python, &py);
+    install_fake(&kit, python, &py);
     python.save_version(&kit, "3.13.1").unwrap();
 
     let options = tools(&kit);
@@ -148,13 +183,13 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
     let mut base = KitEnv::default();
     base.set(
         "PATH",
-        format!(
-            r"{};{};{};{}\Scripts;C:\Windows\System32",
-            node_main.display(),
-            npm.display(),
-            py.display(),
-            py.display()
-        ),
+        path_of(&[
+            node_main.display().to_string(),
+            npm.display().to_string(),
+            py.display().to_string(),
+            py.join("Scripts").display().to_string(),
+            SYSTEM.to_owned(),
+        ]),
     );
     base.set("NPM_CONFIG_PREFIX", npm.display().to_string());
 
@@ -175,11 +210,11 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
     let e = env(&kit, &only_node, base.clone());
     assert_eq!(
         e.get("PATH").unwrap(),
-        format!(
-            r"{};{};C:\Windows\System32",
-            node_old.display(),
-            npm.display()
-        )
+        path_of(&[
+            node_old.display().to_string(),
+            npm.display().to_string(),
+            SYSTEM.to_owned(),
+        ])
     );
     assert_eq!(e.get("DEVKIT_TERMINAL"), Some("Node 20"));
 
@@ -193,11 +228,11 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
     let e = env(&kit, &only_py, base);
     assert_eq!(
         e.get("PATH").unwrap(),
-        format!(
-            r"{};{}\Scripts;C:\Windows\System32",
-            py.display(),
-            py.display()
-        )
+        path_of(&[
+            py.display().to_string(),
+            py.join("Scripts").display().to_string(),
+            SYSTEM.to_owned(),
+        ])
     );
     assert_eq!(e.get("NPM_CONFIG_PREFIX"), None);
 

@@ -46,7 +46,7 @@ export function Git({ status }: { status: ProjectStatus | null }) {
       />
       <p className="text-[12px] text-vsc-desc">
         {t(
-          "Commit, push e l'elenco delle modifiche sono nell'editor o in un agente. NEXKORA legge lo stato dai file di .git, senza eseguire Git nel progetto.",
+          "Commit, push e l'elenco delle modifiche sono nell'editor o in un agente. Atollo legge lo stato dai file di .git, senza eseguire Git nel progetto.",
         )}
       </p>
     </EditorSection>

@@ -224,8 +224,8 @@ const SAMPLE_RELATIONS: RelationsMatrix = {
     {
       id: "webview2",
       name: "WebView2",
-      note: "la finestra di NEXKORA",
-      neededBy: ["NEXKORA"],
+      note: "la finestra di Atollo",
+      neededBy: ["Atollo"],
       present: true,
       detail: "141.0.3537.71",
     },

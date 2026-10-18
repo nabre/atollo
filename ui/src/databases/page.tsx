@@ -423,7 +423,7 @@ function ServiceDetails({
                   onSet(portValid ? portValue : null, v);
                 }}
               >
-                {t("Avvia con NEXKORA")}
+                {t("Avvia con Atollo")}
               </CheckboxLabel>
               {s.others.length > 0 && (
                 <p className="text-vsc-desc">
@@ -565,7 +565,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
                     name={s.name}
                     meta={`:${String(s.port)}`}
                     description={<StateText s={s} />}
-                    footer={s.autostart ? t("Avvia con NEXKORA") : undefined}
+                    footer={s.autostart ? t("Avvia con Atollo") : undefined}
                     selected={current === s.id}
                     onSelect={() => {
                       setChosen(s.id);

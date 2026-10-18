@@ -506,12 +506,12 @@ function StatusBar({
       {/* First, as VSCodium's remote indicator. */}
       <span
         role="img"
-        aria-label="NEXKORA"
-        title={info ? `NEXKORA - ${info.root}` : "NEXKORA"}
+        aria-label="Atollo"
+        title={info ? `Atollo - ${info.root}` : "Atollo"}
         className="flex h-6 items-center gap-1.5 rounded bg-vsc-statusbar-remote px-2 font-semibold tracking-wide text-vsc-statusbar-remote-fg"
       >
         <VscRemote size={16} aria-hidden="true" />
-        <span aria-hidden="true">NEXKORA</span>
+        <span aria-hidden="true">Atollo</span>
       </span>
       <StatusItem
         title={t("Attività: progetti avviati, database, installazioni")}
