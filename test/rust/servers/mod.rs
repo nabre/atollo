@@ -1499,6 +1499,25 @@ fn apache_pool_two_php_sites_alias_and_reload() {
         "beta asset",
     )
     .unwrap();
+    // SEC-V4-01: an uploaded script and `.htaccess` in an alias' folder.
+    fs::write(
+        projects
+            .join("d116-beta")
+            .join("assets")
+            .join("shell.phtml"),
+        "<?php echo 'RAN' . 'ALIAS';",
+    )
+    .unwrap();
+    fs::write(
+        projects.join("d116-beta").join("assets").join("pic.jpg"),
+        "<?php echo 'RAN' . 'JPG';",
+    )
+    .unwrap();
+    fs::write(
+        projects.join("d116-beta").join("assets").join(".htaccess"),
+        "AddHandler application/x-httpd-php .jpg\nAddType application/x-httpd-php .jpg\n",
+    )
+    .unwrap();
     // Drupal's protection of its uploads folder (its own `.htaccess`).
     let files = projects.join("d116-beta").join("public").join("files");
     fs::create_dir_all(&files).unwrap();
@@ -1527,6 +1546,18 @@ fn apache_pool_two_php_sites_alias_and_reload() {
         let (s, body) = http_get(port, "d116-alpha.localhost", "/shared/logo.txt")?;
         eprintln!("alias: {s} {body}");
         anyhow::ensure!(s == 200 && body.contains("beta asset"), "alias");
+        let (s, body) = http_get(port, "d116-alpha.localhost", "/shared/shell.phtml")?;
+        eprintln!("alias script: {s}");
+        anyhow::ensure!(
+            s == 403 && !body.contains("RANALIAS"),
+            "a script in an alias: {s} {body}"
+        );
+        let (s, body) = http_get(port, "d116-alpha.localhost", "/shared/pic.jpg")?;
+        eprintln!("alias .htaccess handler: {s} {body}");
+        anyhow::ensure!(
+            !body.contains("RANJPG"),
+            "a .htaccess handler in an alias ran PHP"
+        );
         let (s, _) = http_get(port, "d116-alpha.localhost", "/.env")?;
         anyhow::ensure!(s == 403, ".env: {s}");
         let (s, _) = http_get(port, "evil.example", "/")?;

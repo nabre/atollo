@@ -31,7 +31,7 @@ use crate::fsx::write_atomic;
 use crate::kit::{Kit, Os};
 use crate::os::jobs;
 use crate::projects::alias::{self, look_inside, valid_domain, Inside, SiteAlias};
-use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
+use crate::projects::apache::{fwd, ALIAS_NO_RUN, PHP_NEVER, PHP_RUN};
 use crate::projects::fastcgi::{FastCgi, FCGI_KEY_PARAM};
 
 /// The server program of the Caddy in `dir` on `os`: `caddy.exe` on
@@ -464,7 +464,8 @@ fn php_lines(fcgi: &FastCgi, indent: &str) -> Vec<String> {
 /// folders (`.env`, `.git/`) but `.well-known`, and the files of
 /// [`PHP_NEVER`], refused with 404 everywhere, aliases included; without
 /// PHP the files of [`PHP_RUN`] refused with 503 (never sent as text); the
-/// aliases (their folders listed, PHP run in them as Apache does); then
+/// aliases (their folders listed, static files only: the files of
+/// [`ALIAS_NO_RUN`] refused with 404, SEC-V4-01); then
 /// the document root with PHP's front controller and the files. `None`
 /// when the document root cannot be written in a Caddyfile; an alias that
 /// cannot is left out (in the log).
@@ -505,9 +506,9 @@ pub fn site_routes(
         lines.push(format!("{i}\tredir {} {}/ 308", a.url, a.url));
         lines.push(format!("{i}\thandle_path {}/* {{", a.url));
         lines.push(format!("{inner}root * {target}"));
-        if let Some(f) = fcgi {
-            lines.extend(php_lines(f, &inner));
-        }
+        // Static files only (SEC-V4-01): no PHP in an alias' folder.
+        lines.push(format!("{inner}@script path_regexp (?i){ALIAS_NO_RUN}"));
+        lines.push(format!("{inner}respond @script 404"));
         lines.push(format!("{inner}file_server browse"));
         lines.push(format!("{i}\t}}"));
     }

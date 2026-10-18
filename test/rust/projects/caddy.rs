@@ -106,6 +106,28 @@ fn hidden_files_and_php_without_fastcgi() {
     assert!(never < php && php < alias, "{routes}");
 }
 
+/// SEC-V4-01: an alias' folder serves static files only, with or without
+/// PHP for the site: its scripts are refused, never run.
+#[test]
+fn aliases_run_no_php() {
+    let doc = Path::new("/kit/projects/site/public");
+    let tmp = TempDir::new("caddy-alias-nophp");
+    let projs = tmp.0.join("projects");
+    fs::create_dir_all(projs.join("site").join("up")).unwrap();
+    let mut aliases = BTreeMap::new();
+    aliases.insert("/up".into(), "up".into());
+    let aliases = resolve_aliases(&projs.join("site"), &projs, &aliases);
+    let routes = site_routes(doc, &aliases, Some(&cgi(9001)), "")
+        .unwrap()
+        .join("\n");
+    let start = routes.find("handle_path /up/*").unwrap();
+    let block = &routes[start..start + routes[start..].find("\n\t}").unwrap()];
+    assert!(!block.contains("php_fastcgi"), "{block}");
+    assert!(block.contains("@script path_regexp (?i)\\.(?:php|phtml|phar|phps|inc|php[3-8])$\n\t\trespond @script 404\n\t\tfile_server browse"), "{block}");
+    // The document root keeps its PHP.
+    assert_eq!(routes.matches("php_fastcgi").count(), 1);
+}
+
 /// In LAN mode the site answers any `Host` (an IP of the PC), on every
 /// interface, and nothing is refused with 421.
 #[test]
