@@ -485,7 +485,8 @@ fn phpmyadmin_on_linux_names_the_system() {
         .unwrap()
         .to_string();
     assert!(e.contains("linux-x64") && !e.contains("ARM64"), "{e}");
-    let msg = crate::commands::unavailable_msg("en", "Apache", Target::LINUX_X64);
+    let msg =
+        crate::commands::unavailable_msg("en", "Apache", Target::LINUX_X64, Target::WIN32_ARM64);
     assert_eq!(msg, "Apache is not available for linux-x64.");
 }
 

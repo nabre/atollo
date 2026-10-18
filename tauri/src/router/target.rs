@@ -129,8 +129,8 @@ pub fn profile(target: Target) -> TargetProfile {
     }
 }
 
-/// Capability profiles of all 6 supported targets (`Target::ALL`).
-#[allow(dead_code)]
+/// Capability profiles of all 6 supported targets (`Target::ALL`), in
+/// the order of the grid of the Tools page.
 pub fn all_profiles() -> [TargetProfile; 6] {
     Target::ALL.map(profile)
 }

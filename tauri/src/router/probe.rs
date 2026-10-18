@@ -4,6 +4,7 @@
 
 use serde::Serialize;
 
+use super::availability::{on_arm64_pc, unavailable_reason};
 use super::target::{can_execute_on_host, profile};
 use crate::env::KitEnv;
 use crate::kit::{Arch, Kit, Os, Target};
@@ -18,12 +19,25 @@ pub struct TargetToolStatus {
     pub name: String,
     pub available: bool,
     pub emulated: bool,
+    /// Chosen in the kit's choice, or needed by a chosen one on this target
+    /// only (Zig for C and C++ on macOS and Linux).
     pub chosen: bool,
     pub installed: bool,
     pub present: bool,
     pub version: Option<String>,
     pub needs_reinstall: bool,
     pub bootstrap_staged: bool,
+    /// Prepared from this host it only pre-downloads its bootstrap: the
+    /// installation completes on the first start on that system
+    /// ([`super::bootstrap::stages_for`]). False once it is installed or
+    /// staged.
+    pub first_start: bool,
+    /// No ARM64 build, the target is Windows ARM64 and so is this PC: the
+    /// interface says "not available on ARM64 PCs" (as `ComponentInfo`).
+    pub no_arm64: bool,
+    /// Why it is not available, already translated (see
+    /// [`unavailable_reason`]); `None` when available or `no_arm64`.
+    pub unavailable_reason: Option<String>,
 }
 
 /// Summary of a [`Target`]'s tools on disk inside `data/apps/<target>` and
@@ -43,12 +57,16 @@ pub struct TargetSummary {
 }
 
 /// Probes the on-disk state of every catalog component for `target` without
-/// spawning any child processes.
-pub fn probe_target(kit: &Kit, target: Target) -> TargetSummary {
+/// spawning any child processes (Rosetta 2 aside, asked once on a Mac with
+/// Apple Silicon); the reasons are in `lang`.
+pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
     let scoped = kit.for_target(target);
     let catalog = Catalog::get();
     let choice = Choice::read(&scoped, catalog).unwrap_or_else(|| Choice::defaults(catalog));
+    // As the Tools page: what a chosen one needs on this target only.
+    let here = catalog.needs_only_on(&choice.chosen_ids(catalog), target);
     let prof = profile(target);
+    let host = Target::detect();
 
     let mut available_count = 0;
     let mut installed_count = 0;
@@ -57,12 +75,22 @@ pub fn probe_target(kit: &Kit, target: Target) -> TargetSummary {
     for c in catalog.all() {
         let available = super::target::installable_on(c, target);
         let emulated = c.is_emulated_on(target);
-        let chosen = available && choice.is_chosen(&c.id);
+        let chosen = available && (choice.is_chosen(&c.id) || here.contains(c.id.as_str()));
         let installed = available && c.is_installed(&scoped);
         let present = c.is_present(&scoped);
         let version = c.installed_version(&scoped);
         let needs_reinstall = c.needs_reinstall(&scoped);
         let bootstrap_staged = available && super::bootstrap::is_staged(&scoped, c);
+        let first_start = available
+            && !installed
+            && !bootstrap_staged
+            && crate::install::installer(&c.id)
+                .is_some_and(|i| super::bootstrap::stages_for(i, c, target));
+        let no_rosetta = c.is_available_on(target) && !available;
+        let unavailable_reason = (!available)
+            .then(|| unavailable_reason(c, target, host, no_rosetta, lang))
+            .flatten();
+        let no_arm64 = !available && unavailable_reason.is_none() && on_arm64_pc(target, host);
 
         if available {
             available_count += 1;
@@ -82,6 +110,9 @@ pub fn probe_target(kit: &Kit, target: Target) -> TargetSummary {
             version,
             needs_reinstall,
             bootstrap_staged,
+            first_start,
+            no_arm64,
+            unavailable_reason,
         });
     }
 
@@ -98,11 +129,12 @@ pub fn probe_target(kit: &Kit, target: Target) -> TargetSummary {
     }
 }
 
-/// Probes all 6 supported targets (`Target::ALL`) on the kit's disk.
-pub fn probe_all_targets(kit: &Kit) -> Vec<TargetSummary> {
+/// Probes all 6 supported targets (`Target::ALL`) on the kit's disk: the
+/// component × target grid of the Tools page (`commands::setup::target_profiles`).
+pub fn probe_all_targets(kit: &Kit, lang: &str) -> Vec<TargetSummary> {
     Target::ALL
         .into_iter()
-        .map(|t| probe_target(kit, t))
+        .map(|t| probe_target(kit, t, lang))
         .collect()
 }
 

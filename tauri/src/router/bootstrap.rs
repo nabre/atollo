@@ -52,11 +52,19 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
 /// cannot run for `ctx.kit.target()` on the current host and should therefore
 /// have its bootstrap pre-downloaded and staged on disk.
 pub fn should_stage(ctx: &Ctx, inst: &dyn Installer, component: &Component) -> bool {
-    let target = effective_target(ctx.kit.target(), component);
-    if !inst.custom(target) {
+    stages_for(inst, component, ctx.kit.target())
+}
+
+/// [`should_stage`] for a kit of `target`: preparing `component` there
+/// from this host pre-downloads its bootstrap, and the installation
+/// finishes on the first start on that system (the grid's "completes on
+/// first start").
+pub fn stages_for(inst: &dyn Installer, component: &Component, target: Target) -> bool {
+    let effective = effective_target(target, component);
+    if !inst.custom(effective) {
         return false;
     }
-    !can_execute_on_host(target) || (component.id == "rust" && ctx.kit.target() != Target::detect())
+    !can_execute_on_host(effective) || (component.id == "rust" && target != Target::detect())
 }
 
 /// Returns `true` when `component`'s bootstrap has been pre-downloaded for `kit`
