@@ -353,7 +353,7 @@ fn cms_with_composer() {
     assert_eq!(detect(&statamic.0, "it").platform, "Statamic");
 }
 
-/// The CMS from their archive, without Composer: Caddy first and MariaDB.
+/// The CMS from their archive, without Composer: Caddy first and MySQL.
 #[test]
 fn cms_from_archive() {
     for (marker, platform) in [

@@ -1,18 +1,15 @@
 //! Passwords of the kit's databases (DECISIONS.md D-74): the `root` of
-//! MySQL and MariaDB, MongoDB's `admin` and one user per project and
-//! database, each with a random password.
+//! MySQL, MongoDB's `admin` and one user per project and database, each
+//! with a random password.
 //!
 //! - the administrators' in `data\app\db\secrets.json`, a project's in
 //!   `data\projects\<project>\private\db.json` (D-89), readable by the owner
 //!   only where the disk has permissions (NTFS; FAT32/exFAT sticks have none);
-//! - `data\app\db\my.ini` holds the `[client]` login of MariaDB's `root`:
-//!   the kit's `MYSQL_HOME` points there, so `mariadb` in the kit's terminal
-//!   and the app's own tools log in without a password on the command line;
-//! - `data\app\db\mysql.cnf` holds MySQL's (D-110): MySQL reads
-//!   `$MYSQL_HOME/my.ini` (Windows) and `my.cnf` too, where MariaDB's login
-//!   is, so the kit's `mysql`, `mysqldump` and `mysqladmin` launchers
+//! - `data\app\db\mysql.cnf` holds the `[client]` login of MySQL's `root`
+//!   (D-110): the kit's `mysql`, `mysqldump` and `mysqladmin` launchers
 //!   (`data\kit\bin`) pass it with `--defaults-extra-file` (read after the
-//!   other files, it wins) and the app's tools with `--defaults-file`;
+//!   other files, it wins) and the app's tools with `--defaults-file`, so
+//!   they log in without a password on the command line;
 //! - passwords never go on a command line (other users can read those):
 //!   SQL goes through stdin, mongosh reads them from its environment;
 //! - a project's `.env` gets its connection only after the user saw the
@@ -36,10 +33,7 @@ use crate::projects::state::ProjectState;
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Secrets {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub mariadb_root: Option<String>,
-    /// MySQL's `root` (D-110); MariaDB's stays as it is for its data, until
-    /// the move to MySQL (issue #3).
+    /// MySQL's `root` (D-110).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mysql_root: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -54,10 +48,6 @@ pub fn dir(kit: &Kit) -> PathBuf {
 
 pub fn secrets_path(kit: &Kit) -> PathBuf {
     dir(kit).join("secrets.json")
-}
-
-pub fn client_ini(kit: &Kit) -> PathBuf {
-    dir(kit).join("my.ini")
 }
 
 pub fn load(kit: &Kit) -> Secrets {
@@ -86,7 +76,7 @@ pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
     write_private(&secrets_path(kit), &serde_json::to_string_pretty(secrets)?)
 }
 
-/// A project's `private\db.json`: engine (`mariadb`, `mongodb`) → password
+/// A project's `private\db.json`: engine (`mysql`, `mongodb`) → password
 /// of its user, and `names`: engine → name of its database and user (an
 /// object, so the readers of passwords skip it); `lines`: engine → version of
 /// the server its database is on, when not the one the server runs
@@ -94,8 +84,8 @@ pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
 /// kept as they are.
 ///
 /// ```json
-/// { "mariadb": "<password>", "names": { "mariadb": "shop" }, "lines": { "mariadb": "10.6" },
-///   "used": { "mariadb": ["12.3", "10.6"] } }
+/// { "mysql": "<password>", "names": { "mysql": "shop" }, "lines": { "mysql": "8.4" },
+///   "used": { "mysql": ["9.7", "8.4"] } }
 /// ```
 pub(crate) type ProjectSecrets = serde_json::Map<String, serde_json::Value>;
 
@@ -571,75 +561,6 @@ pub(crate) fn keep_legacy_names(kit: &Kit, project: &str) -> Result<()> {
     Ok(())
 }
 
-/// The project's `db.json` after its MariaDB database moved to MySQL
-/// (D-117): `mariadb` → `mysql` for the password, its name, its version
-/// (`lines`, through `lines`: MariaDB's → MySQL's; none when it is `main`,
-/// the version the MySQL server runs) and the versions it was created on
-/// (`used`). True when the file changed; nothing for a file without MariaDB
-/// (already moved: the call is repeatable). A project that has a MySQL
-/// database too keeps it, and its MariaDB entries stay as they are (the
-/// kit uses MySQL's first), with a warning.
-pub(crate) fn move_project_to_mysql(
-    kit: &Kit,
-    project: &str,
-    lines: &BTreeMap<String, String>,
-    main: &str,
-) -> Result<bool> {
-    let (from, to) = (DbEngine::MariaDb.id(), DbEngine::MySql.id());
-    let _one = db_json_lock(kit)?;
-    let path = project_file_to_read(kit, project)?;
-    let Some(mut secrets) = read_project(&path)? else {
-        return Ok(false);
-    };
-    if !secrets.get(from).is_some_and(serde_json::Value::is_string) {
-        return Ok(false);
-    }
-    if secrets.contains_key(to) {
-        crate::log::warn(&format!(
-            "{project}: a MySQL database already: its MariaDB entries of db.json stay"
-        ));
-        return Ok(false);
-    }
-    let mapped = |l: &str| lines.get(l).cloned();
-    if let Some(pw) = secrets.remove(from) {
-        secrets.insert(to.to_owned(), pw);
-    }
-    if let Some(serde_json::Value::Object(names)) = secrets.get_mut(NAMES) {
-        if let Some(name) = names.remove(from) {
-            names.insert(to.to_owned(), name);
-        }
-    }
-    if let Some(serde_json::Value::Object(chosen)) = secrets.get_mut(LINES) {
-        let line = chosen.remove(from);
-        if let Some(m) = line.as_ref().and_then(|l| l.as_str()).and_then(mapped) {
-            if m != main {
-                chosen.insert(to.to_owned(), m.into());
-            }
-        }
-    }
-    if secrets
-        .get(LINES)
-        .is_some_and(|l| l.as_object().is_some_and(|o| o.is_empty()))
-    {
-        secrets.remove(LINES);
-    }
-    if let Some(serde_json::Value::Object(used)) = secrets.get_mut(USED) {
-        if let Some(serde_json::Value::Array(old)) = used.remove(from) {
-            let mut new: Vec<serde_json::Value> = Vec::new();
-            for m in old.iter().filter_map(|l| l.as_str()).filter_map(mapped) {
-                if !new.iter().any(|n| n.as_str() == Some(m.as_str())) {
-                    new.push(m.into());
-                }
-            }
-            if !new.is_empty() {
-                used.insert(to.to_owned(), serde_json::Value::Array(new));
-            }
-        }
-    }
-    write_in_private(&path, &serde_json::to_string_pretty(&secrets)?)?;
-    Ok(true)
-}
-
 /// Stores the password of the project's user on `engine` (no name: as a
 /// `db.json` of before the names; creations use [`ensure_project_db`]).
 #[allow(dead_code)] // the tests
@@ -667,38 +588,6 @@ pub fn drop_project(kit: &Kit, project: &str) -> Result<BTreeMap<String, String>
 /// 32 hex characters: nothing to escape in SQL, ini files or URLs.
 pub fn new_password() -> Result<String> {
     Ok(crate::editor::random_token()?[..32].to_owned())
-}
-
-/// The `[client]` login of `root` for the kit's MariaDB on `port`.
-pub fn write_client_ini(kit: &Kit, port: u16, password: &str) -> Result<()> {
-    write_private(&client_ini(kit), &client_ini_text(port, password))
-}
-
-/// The folder of the `[client]` login (`my.ini`) of another version of
-/// MariaDB, on its own port (D-102): the `MYSQL_HOME` of the
-/// programs of a project whose database is on it.
-pub fn line_client_dir(kit: &Kit, line: &str) -> PathBuf {
-    dir(kit).join("lines").join(line)
-}
-
-/// [`write_client_ini`] for version `line` on its `port`
-/// ([`line_client_dir`]).
-pub fn write_line_client_ini(kit: &Kit, line: &str, port: u16, password: &str) -> Result<()> {
-    if !crate::versions::valid_line(line) {
-        bail!("not a version line: {line}");
-    }
-    write_private(
-        &line_client_dir(kit, line).join("my.ini"),
-        &client_ini_text(port, password),
-    )
-}
-
-fn client_ini_text(port: u16, password: &str) -> String {
-    format!(
-        "# Atollo: login of the kit's MariaDB (written by the app).\r\n\
-         [client]\r\nuser=root\r\npassword={password}\r\nhost=127.0.0.1\r\n\
-         port={port}\r\nprotocol=TCP\r\n"
-    )
 }
 
 /// The `[client]` login of `root` for the kit's MySQL, on the port of the
@@ -756,16 +645,6 @@ pub fn mysql_root_sql(password: &str) -> String {
     )
 }
 
-/// SQL that gives every `root` account the password (Windows creates
-/// `localhost`, `127.0.0.1` and `::1`).
-pub fn root_password_sql(password: &str) -> String {
-    format!(
-        "ALTER USER IF EXISTS 'root'@'localhost' IDENTIFIED BY '{password}', \
-         'root'@'127.0.0.1' IDENTIFIED BY '{password}', \
-         'root'@'::1' IDENTIFIED BY '{password}';\nFLUSH PRIVILEGES;\n"
-    )
-}
-
 /// `name` is a database or user of the server of `engine` itself
 /// ([`DbEngine::reserved_names`]; of every server for an engine this
 /// version does not know).
@@ -782,7 +661,7 @@ pub fn is_reserved(engine: &str, name: &str) -> bool {
 }
 
 /// The rule of the names before they were stored: lower case letters,
-/// digits and `_`, at most 64 characters (MariaDB's limit for databases).
+/// digits and `_`, at most 64 characters (MySQL's limit for databases).
 /// Many projects give the same name (`my-app`, `my_app`), so it is only
 /// read for data created with it; [`project_db_name`] is the name in use.
 fn legacy_db_name(project: &str) -> String {
@@ -811,37 +690,12 @@ pub fn db_name(project: &str, engine: &str) -> String {
 }
 
 /// SQL that creates (or brings back to `password`) a project's database and
-/// user, with every right on that database only. In a database-level GRANT
-/// `_` is a wildcard (`my_app` would also match `my2app`): escaped there.
+/// user on MySQL (D-110), with every right on that database only:
+/// `caching_sha2_password`, the default of 8.4 and the only one left in
+/// 9.x, for `localhost` and `127.0.0.1` (the server listens on 127.0.0.1
+/// only). In a database-level GRANT `_` is a wildcard (`my_app` would also
+/// match `my2app`): escaped there.
 pub fn project_sql(name: &str, password: &str) -> String {
-    let mut sql = format!("CREATE DATABASE IF NOT EXISTS `{name}` CHARACTER SET utf8mb4;\n");
-    let pattern = name.replace('_', "\\_");
-    for host in ["localhost", "127.0.0.1", "::1"] {
-        sql.push_str(&format!(
-            "CREATE USER IF NOT EXISTS '{name}'@'{host}' IDENTIFIED BY '{password}';\n\
-             ALTER USER '{name}'@'{host}' IDENTIFIED BY '{password}';\n"
-        ));
-        if name.contains('_') {
-            // The wildcard grant of earlier versions (no REVOKE IF EXISTS);
-            // `name` is only [a-z0-9_] (`is_valid_name`).
-            sql.push_str(&format!(
-                "DELETE FROM mysql.db WHERE Db = '{name}' AND User = '{name}' AND Host = '{host}';\n"
-            ));
-        }
-        sql.push_str(&format!(
-            "GRANT ALL PRIVILEGES ON `{pattern}`.* TO '{name}'@'{host}';\n"
-        ));
-    }
-    sql.push_str("FLUSH PRIVILEGES;\n");
-    sql
-}
-
-/// [`project_sql`] for MySQL (D-110): `caching_sha2_password`, the default
-/// of 8.4 and the only one left in 9.x, for `localhost` and `127.0.0.1`
-/// (the server listens on 127.0.0.1 only); `_` escaped in the GRANT as for
-/// MariaDB. No wildcard grants of earlier versions to remove: the kit never
-/// made any on MySQL.
-pub fn mysql_project_sql(name: &str, password: &str) -> String {
     let mut sql = format!("CREATE DATABASE IF NOT EXISTS `{name}` CHARACTER SET utf8mb4;\n");
     let pattern = name.replace('_', "\\_");
     for host in ["localhost", "127.0.0.1"] {
@@ -853,15 +707,6 @@ pub fn mysql_project_sql(name: &str, password: &str) -> String {
     }
     sql.push_str("FLUSH PRIVILEGES;\n");
     sql
-}
-
-/// The SQL that creates (or repairs) a project's database and user on the
-/// SQL `engine`.
-pub fn project_sql_for(engine: DbEngine, name: &str, password: &str) -> String {
-    match engine {
-        DbEngine::MySql => mysql_project_sql(name, password),
-        DbEngine::MariaDb | DbEngine::MongoDb => project_sql(name, password),
-    }
 }
 
 /// mongosh script for a project's user (names and passwords from the
@@ -925,7 +770,7 @@ pub fn project_db(engine: &str, name: &str, password: &str, port: u16) -> Projec
     // An id this version does not know: a SQL server, as before the engines
     // were an enum.
     let url = DbEngine::from_id(engine)
-        .unwrap_or(DbEngine::MariaDb)
+        .unwrap_or(DbEngine::MySql)
         .project_url(&name, password, port);
     ProjectDb {
         engine: engine.to_owned(),
@@ -955,14 +800,14 @@ fn env_value(text: &str, key: &str) -> Option<String> {
 }
 
 /// The keys `db` sets in a `.env` like `text`: Laravel's `DB_*` when the
-/// file uses them (MariaDB), otherwise `DATABASE_URL` / `MONGODB_URI`.
+/// file uses them (MySQL), otherwise `DATABASE_URL` / `MONGODB_URI`.
 pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
     let laravel = text
         .lines()
         .any(|l| l.trim_start().starts_with("DB_CONNECTION="));
     // An id this version does not know: a SQL server, as before the engines
     // were an enum.
-    let engine = DbEngine::from_id(&db.engine).unwrap_or(DbEngine::MariaDb);
+    let engine = DbEngine::from_id(&db.engine).unwrap_or(DbEngine::MySql);
     let pairs: Vec<(&str, String)> = match engine {
         DbEngine::MongoDb if laravel => vec![
             ("DB_CONNECTION", "mongodb".into()),
@@ -970,7 +815,7 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
             ("MONGODB_URI", db.url.clone()),
         ],
         DbEngine::MongoDb => vec![("MONGODB_URI", db.url.clone())],
-        DbEngine::MariaDb | DbEngine::MySql if laravel => vec![
+        DbEngine::MySql if laravel => vec![
             ("DB_CONNECTION", "mysql".into()),
             ("DB_HOST", db.host.clone()),
             ("DB_PORT", db.port.to_string()),
@@ -978,7 +823,7 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
             ("DB_USERNAME", db.user.clone()),
             ("DB_PASSWORD", db.password.clone()),
         ],
-        DbEngine::MariaDb | DbEngine::MySql => vec![("DATABASE_URL", db.url.clone())],
+        DbEngine::MySql => vec![("DATABASE_URL", db.url.clone())],
     };
     pairs.into_iter().map(|(k, v)| (k.to_owned(), v)).collect()
 }

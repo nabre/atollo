@@ -12,7 +12,7 @@ thread_local! {
     pub(super) static INTERRUPT: Cell<bool> = const { Cell::new(false) };
 }
 
-const SECRETS: &str = r#"{"mariadbRoot":"r00t","mongodbAdmin":"adm1n","projects":{"shop":{"mariadb":"pw-shop-maria","mongodb":"pw-shop-mongo"},"blog":{"mariadb":"pw-blog"},".old":{"mariadb":"pw-old"}}}"#;
+const SECRETS: &str = r#"{"mysqlRoot":"r00t","mongodbAdmin":"adm1n","projects":{"shop":{"mysql":"pw-shop-sql","mongodb":"pw-shop-mongo"},"blog":{"mysql":"pw-blog"},".old":{"mysql":"pw-old"}}}"#;
 const PORTS: &str = r#"{"ports":{"shop|web":8001,"shop|api":8002,"blog|web":8003,".old|web":8004},"locked":["shop|web",".old|web"]}"#;
 
 fn write(path: &Path, text: &str) {
@@ -59,7 +59,7 @@ fn v1_kit(tmp: &TempDir) -> Kit {
     write(&auth::secrets_path(&kit), SECRETS);
     let backup = kit.data().join("db").join("backup");
     write(
-        &backup.join("shop").join("shop-mariadb-1.sql"),
+        &backup.join("shop").join("shop-mysql-1.sql"),
         "CREATE TABLE t;",
     );
     write(&backup.join("shop").join("shop-mongodb-1.archive.gz"), "gz");
@@ -128,27 +128,24 @@ fn assert_migrated(kit: &Kit) {
     );
     // passwords, private
     let pw = |p, e| auth::project_password(kit, p, e);
-    assert_eq!(pw("shop", "mariadb").as_deref(), Some("pw-shop-maria"));
+    assert_eq!(pw("shop", "mysql").as_deref(), Some("pw-shop-sql"));
     assert_eq!(pw("shop", "mongodb").as_deref(), Some("pw-shop-mongo"));
-    assert_eq!(pw("blog", "mariadb").as_deref(), Some("pw-blog"));
+    assert_eq!(pw("blog", "mysql").as_deref(), Some("pw-blog"));
     assert_owner_only(&new.join("shop").join("private").join("db.json"));
     // with the names their databases were created with (layout 1)
     assert_eq!(
         json_of(&new.join("shop").join("private").join("db.json"))["names"],
-        json!({"mariadb": "shop", "mongodb": "shop"})
+        json!({"mysql": "shop", "mongodb": "shop"})
     );
     assert_eq!(
         json_of(&new.join("blog").join("private").join("db.json"))["names"],
-        json!({"mariadb": "blog"})
+        json!({"mysql": "blog"})
     );
-    assert_eq!(
-        auth::project_db_name(kit, "blog", "mariadb").unwrap(),
-        "blog"
-    );
+    assert_eq!(auth::project_db_name(kit, "blog", "mysql").unwrap(), "blog");
     // copies, owner-only after the move
     let backups = new.join("shop").join("private").join("backups");
-    assert_eq!(read(&backups.join("shop-mariadb-1.sql")), "CREATE TABLE t;");
-    assert_owner_only(&backups.join("shop-mariadb-1.sql"));
+    assert_eq!(read(&backups.join("shop-mysql-1.sql")), "CREATE TABLE t;");
+    assert_owner_only(&backups.join("shop-mysql-1.sql"));
     assert_owner_only(&backups.join("shop-mongodb-1.archive.gz"));
     // copies of the global files, as they were; the secrets private
     let copies = kit.app_dir().join("pre-v2");
@@ -176,8 +173,8 @@ fn v1_kit_to_v2_nothing_lost() {
     let secrets = json_of(&auth::secrets_path(&kit));
     assert_eq!(
         secrets,
-        json!({"mariadbRoot": "r00t", "mongodbAdmin": "adm1n",
-               "projects": {".old": {"mariadb": "pw-old"}}}),
+        json!({"mysqlRoot": "r00t", "mongodbAdmin": "adm1n",
+               "projects": {".old": {"mysql": "pw-old"}}}),
         "only what has no project left"
     );
     assert_owner_only(&auth::secrets_path(&kit));
@@ -196,11 +193,11 @@ fn a_new_kit_has_nothing_to_move() {
     let tmp = TempDir::new("migrate-new");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    write(&auth::secrets_path(&kit), r#"{"mariadbRoot":"r00t"}"#);
+    write(&auth::secrets_path(&kit), r#"{"mysqlRoot":"r00t"}"#);
     run(&kit);
     assert_eq!(read(&layout_file(&kit)), "2");
     assert!(!copies_dir(&kit).exists(), "no copy of a file of layout 2");
-    assert_eq!(read(&auth::secrets_path(&kit)), r#"{"mariadbRoot":"r00t"}"#);
+    assert_eq!(read(&auth::secrets_path(&kit)), r#"{"mysqlRoot":"r00t"}"#);
     assert!(!kit.project_data().exists());
 }
 
@@ -221,7 +218,7 @@ fn interrupted_after_the_ports_then_retried() {
         .join("db")
         .join("backup")
         .join("shop")
-        .join("shop-mariadb-1.sql")
+        .join("shop-mysql-1.sql")
         .is_file());
 
     // the next start finishes it, the ports not doubled
@@ -241,10 +238,10 @@ fn present_target_merged_and_password_conflict_kept() {
     );
     write(
         &shop.db_file().unwrap(),
-        r#"{"mariadb":"pw-newer","names":{"mariadb":"kept"}}"#,
+        r#"{"mysql":"pw-newer","names":{"mysql":"kept"}}"#,
     );
     write(
-        &shop.backups_dir().unwrap().join("shop-mariadb-1.sql"),
+        &shop.backups_dir().unwrap().join("shop-mysql-1.sql"),
         "newer",
     );
     run(&kit);
@@ -265,26 +262,26 @@ fn present_target_merged_and_password_conflict_kept() {
     );
     // passwords: the newer kept, the missing added, the old one kept too
     let pw = |e| auth::project_password(&kit, "shop", e);
-    assert_eq!(pw("mariadb").as_deref(), Some("pw-newer"));
+    assert_eq!(pw("mysql").as_deref(), Some("pw-newer"));
     assert_eq!(pw("mongodb").as_deref(), Some("pw-shop-mongo"));
     // a name already there is never replaced; the missing one added
     assert_eq!(
         json_of(&shop.db_file().unwrap())["names"],
-        json!({"mariadb": "kept", "mongodb": "shop"})
+        json!({"mysql": "kept", "mongodb": "shop"})
     );
     assert_eq!(
         json_of(&auth::secrets_path(&kit))["projects"],
-        json!({"shop": {"mariadb": "pw-shop-maria"}, ".old": {"mariadb": "pw-old"}})
+        json!({"shop": {"mysql": "pw-shop-sql"}, ".old": {"mysql": "pw-old"}})
     );
     // copies: the one there wins, the other one moved
     let backups = shop.backups_dir().unwrap();
-    assert_eq!(read(&backups.join("shop-mariadb-1.sql")), "newer");
+    assert_eq!(read(&backups.join("shop-mysql-1.sql")), "newer");
     assert_eq!(read(&backups.join("shop-mongodb-1.archive.gz")), "gz");
     let left = kit
         .data()
         .join("db")
         .join("backup")
         .join("shop")
-        .join("shop-mariadb-1.sql");
+        .join("shop-mysql-1.sql");
     assert_eq!(read(&left), "CREATE TABLE t;");
 }

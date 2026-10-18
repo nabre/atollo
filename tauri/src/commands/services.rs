@@ -29,12 +29,7 @@ pub async fn service_start<R: Runtime>(
     line: Option<String>,
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
-    // MariaDB is no longer a server of the kit (D-117): its data moves to
-    // MySQL, `db::migrate_engine` starts it for that.
-    if !crate::db::DbEngine::OFFERED
-        .iter()
-        .any(|e| e.id() == id.as_str())
-    {
+    if crate::db::DbEngine::from_id(&id).is_none() {
         return Err(fail("service", format!("unknown server {id}")));
     }
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());

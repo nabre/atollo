@@ -2,4 +2,3 @@
 // password field and the copies of a project's database.
 export { DatabasesPage, SecretField } from "./page";
 export { DatabaseCopies } from "./backups";
-export { MigrationPanel, migrationText } from "./migration";

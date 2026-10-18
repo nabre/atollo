@@ -184,8 +184,7 @@ pub trait ProjectDatabases {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlannedDb {
-    /// `mysql`, `mongodb`, or `mariadb` while its data has not moved to
-    /// MySQL (D-117).
+    /// `mysql` or `mongodb`.
     pub engine: String,
     /// Name of the database and of its user.
     pub database: String,
@@ -229,9 +228,8 @@ pub fn delete_plan(kit: &Kit, name: &str, lang: &str) -> Result<DeletePlan> {
     let databases = databases_of(kit, name)?
         .into_iter()
         .map(|(engine, database)| PlannedDb {
-            // MariaDB too, while its data has not moved (D-117).
             installed: Catalog::get()
-                .find_internal(&engine)
+                .find(&engine)
                 .is_some_and(|c| c.is_installed(kit)),
             engine,
             database,

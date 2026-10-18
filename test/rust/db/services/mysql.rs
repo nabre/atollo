@@ -109,7 +109,7 @@ fn long_socket_paths_move() {
 }
 
 /// The client's own commands are off on a restore (`\!`, `system`,
-/// `source`): MySQL `--commands=OFF`, MariaDB `--sandbox`; a client
+/// `source`): MySQL `--commands=OFF`; a client
 /// without the option gets no file (None).
 #[test]
 fn restores_without_client_commands() {
@@ -117,17 +117,12 @@ fn restores_without_client_commands() {
     let mysql_help =
         "  --commands          Enable or disable processing of local mysql commands.\n  \
                       --system-command    Enable or disable (by default) the 'system' mysql\n";
-    let maria_help = "  --sandbox           Disallow commands that access the file system (except \\P without an argument and \\e).\n";
+    let other_help = "  --sandbox           Disallow commands that access the file system (except \\P without an argument and \\e).\n";
     assert_eq!(
         restore_guard(DbEngine::MySql, mysql_help),
         Some("--commands=OFF")
     );
-    assert_eq!(
-        restore_guard(DbEngine::MariaDb, maria_help),
-        Some("--sandbox")
-    );
-    assert_eq!(restore_guard(DbEngine::MariaDb, mysql_help), None);
-    assert_eq!(restore_guard(DbEngine::MySql, maria_help), None);
+    assert_eq!(restore_guard(DbEngine::MySql, other_help), None);
     assert_eq!(restore_guard(DbEngine::MySql, ""), None, "an old client");
     assert_eq!(restore_guard(DbEngine::MongoDb, mysql_help), None);
 }

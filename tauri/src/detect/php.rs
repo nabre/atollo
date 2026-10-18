@@ -15,7 +15,7 @@ use std::path::Path;
 use super::{exists, list_dir, php_server, read, read_json, tr, Action, Found, Kind};
 use crate::kit::Target;
 
-/// The CMS with a database: the kit's MariaDB in `requires` (`mod.rs`).
+/// The CMS with a database: the kit's MySQL in `requires` (`mod.rs`).
 pub(super) const CMS: [&str; 5] = ["WordPress", "PrestaShop", "Drupal", "Joomla", "TYPO3"];
 
 /// The `.htaccess` files of a PHP project, besides `<root>\.htaccess`.

@@ -1,5 +1,5 @@
 // The Database page (DECISIONS.md D-73): the kit's MySQL and MongoDB
-// servers (D-117: MariaDB only as data moving to MySQL, `migration.tsx`), one for every project, on 127.0.0.1 only. SQLite needs no server:
+// servers, one for every project, on 127.0.0.1 only. SQLite needs no server:
 // it is a tool (Tools) and a section of the project's page, not listed here.
 // As the Extensions view: the servers in the side bar, the chosen one's
 // page in the editor.
@@ -31,7 +31,6 @@ import {
 } from "../api";
 import { t } from "../i18n";
 import { DbBrowser } from "./browser";
-import { MigrationPanel } from "./migration";
 import { ComponentLogo } from "../logos";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction, useCopy, useLoad } from "../hooks";
@@ -599,7 +598,6 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
         <ErrorLine error={loadError} />
         <ErrorLine error={error} />
       </div>
-      <MigrationPanel />
       {service ? (
         <ServiceDetails
           // A new key when the port changes: the field starts from it.

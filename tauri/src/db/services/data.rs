@@ -38,35 +38,18 @@ pub fn data_dir_at(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
     }
 }
 
-/// The data of a version that has it yet (MariaDB's `mysql`, MySQL's data
+/// The data of a version that has it yet (MySQL's data
 /// dictionary `mysql.ibd`, MongoDB's `WiredTiger`).
 fn has_data(engine: DbEngine, dir: &std::path::Path) -> bool {
     match engine {
-        DbEngine::MariaDb => dir.join("mysql").is_dir(),
         DbEngine::MySql => dir.join("mysql.ibd").is_file(),
         DbEngine::MongoDb => dir.join("WiredTiger").is_file(),
     }
 }
 
-/// The versions of `engine` with data in `data\db\<id>\<line>`, newest
-/// first: for MariaDB, those whose data has not moved to MySQL yet (D-117).
-pub(crate) fn lines_with_data(kit: &Kit, engine: DbEngine) -> Vec<String> {
-    let mut lines: Vec<String> = fs::read_dir(data_root(kit, engine.id()))
-        .into_iter()
-        .flatten()
-        .flatten()
-        .filter_map(|e| {
-            let name = e.file_name().to_string_lossy().into_owned();
-            (crate::versions::valid_line(&name) && has_data(engine, &e.path())).then_some(name)
-        })
-        .collect();
-    lines.sort_by_key(|l| std::cmp::Reverse(crate::install::version_key(l)));
-    lines
-}
-
 /// The data of `line` the first time it starts: a copy of that of the
-/// nearest older version, if the server can take it (MariaDB from any
-/// older one; MongoDB from the same or the previous major only). The old
+/// nearest older version, if the server can take it (MongoDB from the same
+/// or the previous major only). The old
 /// data stays as it was, for its own version. Returns the version copied.
 /// Refused while that version is among `running` (D-102: versions
 /// run side by side): its files are in use.
@@ -93,11 +76,10 @@ pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Resul
     let Some((key, from)) = older.pop() else {
         return Ok(None);
     };
-    // MariaDB opens the data of any older version, MySQL that of the LTS
-    // before (the kit's lines are LTS: 8.4 to 9.7) and upgrades it at its
+    // MySQL opens the data of the LTS before (the kit's lines are LTS: 8.4 to 9.7) and upgrades it at its
     // first start; MongoDB only that of the same or the previous major.
     let one_major_at_a_time = match engine {
-        DbEngine::MariaDb | DbEngine::MySql => false,
+        DbEngine::MySql => false,
         DbEngine::MongoDb => true,
     };
     if one_major_at_a_time
@@ -146,7 +128,7 @@ pub fn migrate_data(kit: &Kit) {
             continue;
         }
         let Some(line) = Catalog::get()
-            .find_internal(engine.component())
+            .find(engine.component())
             .and_then(|c| crate::versions::default_line(kit, c))
         else {
             continue;
@@ -254,30 +236,12 @@ impl Services {
             }
             return Ok((data, fresh));
         }
-        match engine.install_db_bin() {
-            Some(install) if fresh => {
-                // mariadb-install-db wants a folder that does not exist yet.
-                if data.is_dir() && fs::read_dir(&data)?.next().is_none() {
-                    fs::remove_dir(&data)?;
-                }
-                if let Some(parent) = data.parent() {
-                    fs::create_dir_all(parent)?;
-                }
-                let mut cmd =
-                    jobs::kit_command(bin_at(&self.kit, engine.component(), line, install), env);
-                cmd.arg(format!("--datadir={}", data.display()))
-                    .arg(format!("--port={port}"));
-                run_tool(cmd, Duration::from_secs(120)).context(install)?;
-            }
-            _ => {}
-        }
         fs::create_dir_all(&data)?;
         Ok((data, fresh))
     }
 
     /// After the data of `from` was copied for `line`: MongoDB takes the
-    /// features of the new major (its next one needs it); MariaDB's system
-    /// tables are brought up to date by hand (`mariadb-upgrade`, D-73).
+    /// features of the new major (its next one needs it).
     pub(super) fn after_copy(
         &self,
         engine: DbEngine,
@@ -291,12 +255,6 @@ impl Services {
             return;
         }
         match engine {
-            DbEngine::MariaDb => {
-                crate::log::info(&format!(
-                    "mariadb {line}: data of {from}; run mariadb-upgrade to update the system tables"
-                ));
-                return;
-            }
             // MySQL upgrades the data dictionary and the system tables
             // itself at the first start of the new version.
             DbEngine::MySql => {

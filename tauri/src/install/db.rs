@@ -1,6 +1,6 @@
 //! Database servers and tools of the kit (DECISIONS.md D-73): MySQL
-//! (D-110), MongoDB with mongosh, SQLite. MariaDB is no longer installed
-//! (D-117). Sources and checks in docs/app/CATALOG.md §2.
+//! (D-110), MongoDB with mongosh, SQLite. Sources and checks in
+//! docs/app/CATALOG.md §2.
 
 use std::fs;
 use std::path::{Path, PathBuf};

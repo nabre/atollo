@@ -4,25 +4,14 @@
 // Activity item opens and closes it.
 import { useEffect, useRef, useState } from "react";
 import { VscClearAll, VscClose, VscDebugStop, VscGlobe } from "react-icons/vsc";
-import {
-  dbMigration,
-  servicesList,
-  serviceStop,
-  urlOpen,
-  type DbMigration,
-  type RunInfo,
-  type ServiceInfo,
-  type SetupSnapshot,
-} from "./api";
-import { migrationText } from "./databases";
+import { servicesList, serviceStop, urlOpen, type RunInfo, type ServiceInfo, type SetupSnapshot } from "./api";
 import { t } from "./i18n";
 import { alive, stateText } from "./projects";
 import { SetupProgress, setupStatusText } from "./setup";
 import { ActionBar, Dot, IconButton, List, ListRow, Panel } from "./workbench";
 import { useLoad } from "./hooks";
 
-type Selected =
-  { kind: "run"; key: string } | { kind: "service"; id: string } | { kind: "setup" } | { kind: "migration" } | null;
+type Selected = { kind: "run"; key: string } | { kind: "service"; id: string } | { kind: "setup" } | null;
 
 function runTone(r: RunInfo): "ok" | "warn" | "err" | "off" {
   if (r.state === "error") return "err";
@@ -54,9 +43,6 @@ export function ActivityPanel({
     onError: "keep",
     every: 4000,
   });
-  // MariaDB's data on the way to MySQL (D-117).
-  const { data: migration } = useLoad<DbMigration | null>(dbMigration, null, { onError: "keep", every: 4000 });
-  const moving = migrationText(migration);
   const logRef = useRef<HTMLPreElement>(null);
 
   const list = Object.values(runs).sort((a, b) => b.start - a.start);
@@ -68,13 +54,11 @@ export function ActivityPanel({
     selected ??
     (installing
       ? { kind: "setup" }
-      : moving
-        ? { kind: "migration" }
-        : list[0]
-          ? { kind: "run", key: list[0].key }
-          : liveServices[0]
-            ? { kind: "service", id: liveServices[0].id }
-            : null);
+      : list[0]
+        ? { kind: "run", key: list[0].key }
+        : liveServices[0]
+          ? { kind: "service", id: liveServices[0].id }
+          : null);
   const currentRun = current?.kind === "run" ? runs[current.key] : undefined;
   const currentService = current?.kind === "service" ? services.find((s) => s.id === current.id) : undefined;
   const lines = currentRun ? (logs[currentRun.key] ?? []) : [];
@@ -87,8 +71,8 @@ export function ActivityPanel({
     if (el) el.scrollTop = el.scrollHeight;
   }, [lines.length]);
 
-  const nothing = list.length === 0 && liveServices.length === 0 && !installing && !moving;
-  const count = list.length + liveServices.length + (moving ? 1 : 0);
+  const nothing = list.length === 0 && liveServices.length === 0 && !installing;
+  const count = list.length + liveServices.length;
 
   return (
     <Panel
@@ -111,16 +95,6 @@ export function ActivityPanel({
                   selected={current?.kind === "setup"}
                   onSelect={() => {
                     setSelected({ kind: "setup" });
-                  }}
-                />
-              )}
-              {moving && (
-                <ListRow
-                  icon={<Dot tone={migration?.state === "failed" ? "err" : "warn"} />}
-                  label={t("MariaDB → MySQL")}
-                  selected={current?.kind === "migration"}
-                  onSelect={() => {
-                    setSelected({ kind: "migration" });
                   }}
                 />
               )}
@@ -223,19 +197,6 @@ export function ActivityPanel({
                 <p className="text-[12px] text-vsc-desc">
                   {t("Log")}: <span className="font-mono select-text">{currentService.log}</span>
                 </p>
-              </div>
-            )}
-            {current?.kind === "migration" && moving && (
-              <div className="space-y-2 overflow-auto px-3 py-2">
-                <p>{moving}</p>
-                {migration?.error && (
-                  <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap text-vsc-error">{migration.error}</pre>
-                )}
-                {migration?.dump && (
-                  <p className="text-[12px] text-vsc-desc">
-                    {t("Copia dei dati salvata in")} <span className="font-mono select-text">{migration.dump}</span>
-                  </p>
-                )}
               </div>
             )}
             {current?.kind === "setup" && setup && (

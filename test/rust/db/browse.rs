@@ -4,16 +4,16 @@ use super::*;
 fn names_are_quoted() {
     assert_eq!(ident("a`b"), "`a``b`");
     assert_eq!(literal(r"it's\x"), r"'it\'s\\x'");
-    assert!(is_system("mariadb", "MySQL"));
+    assert!(is_system("mysql", "MySQL"));
     assert!(is_system("mongodb", "local"));
     assert!(!is_system("mongodb", "shop"));
 }
 
 #[test]
-fn mariadb_values_hide_binary_and_cut_text() {
-    assert_eq!(mariadb_value("id", "int"), "`id`");
-    assert_eq!(mariadb_value("t", "longtext"), "LEFT(`t`, 2000)");
-    assert!(mariadb_value("b", "BLOB").contains("'$bytes', OCTET_LENGTH(`b`)"));
+fn sql_values_hide_binary_and_cut_text() {
+    assert_eq!(sql_value("id", "int"), "`id`");
+    assert_eq!(sql_value("t", "longtext"), "LEFT(`t`, 2000)");
+    assert!(sql_value("b", "BLOB").contains("'$bytes', OCTET_LENGTH(`b`)"));
 }
 
 #[test]
