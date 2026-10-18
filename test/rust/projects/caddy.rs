@@ -27,9 +27,10 @@ fn caddy_program_per_target() {
     }
 }
 
-/// The project's Caddyfile (§4.4): its own admin port, no automatic HTTPS,
+/// The project's Caddyfile (§4.4): no admin endpoint, no automatic HTTPS,
 /// nothing saved outside, its storage in its folder; the site on its names
-/// and the local ones, on 127.0.0.1 only, any other `Host` refused with 421.
+/// and the local ones, on 127.0.0.1 only, any other `Host` refused with 421;
+/// the FastCGI key read from Caddy's environment, never in the text.
 #[test]
 fn project_caddyfile_with_php_and_aliases() {
     let tmp = TempDir::new("caddy-conf");
@@ -48,24 +49,23 @@ fn project_caddyfile_with_php_and_aliases() {
         doc,
         run,
         7106,
-        Some(9321),
         Some(&cgi(9123)),
         false,
         &["api.shop.localhost".into(), "x;y.localhost".into()],
         &aliases,
     )
     .unwrap();
-    let start = "{\n\tadmin 127.0.0.1:9321\n\tauto_https off\n\tpersist_config off\n\tstorage file_system \"D:/kit/data/projects/shop/caddy/storage\"\n}\n";
+    let start = "{\n\tadmin off\n\tauto_https off\n\tpersist_config off\n\tstorage file_system \"D:/kit/data/projects/shop/caddy/storage\"\n}\n";
     assert!(conf.contains(start), "{conf}");
     assert!(conf.contains(
         "http://shop.localhost:7106, http://api.shop.localhost:7106, http://localhost:7106, http://127.0.0.1:7106, http://[::1]:7106, http://*.localhost:7106 {\n\tbind 127.0.0.1\n\troute {\n"
     ), "{conf}");
     assert!(conf.contains("\t\troot * \"D:/kit/projects/shop/public\"\n"));
     // PHP with the key of the kit's guard (D-99), `.phtml` and `.phar` too.
-    assert!(conf.contains(&format!(
-        "\t\tphp_fastcgi 127.0.0.1:9123 {{\n\t\t\tenv DEVKIT_FCGI_KEY {}\n\t\t\tsplit .php .phtml .phar\n\t\t}}\n\t\tfile_server\n",
-        cgi(9123).key
-    )), "{conf}");
+    assert!(conf.contains(
+        "\t\tphp_fastcgi 127.0.0.1:9123 {\n\t\t\tenv DEVKIT_FCGI_KEY {env.DEVKIT_FCGI_KEY}\n\t\t\tsplit .php .phtml .phar\n\t\t}\n\t\tfile_server\n"
+    ), "{conf}");
+    assert!(!conf.contains(&cgi(9123).key), "the key is never written");
     // Aliases: only those checked on disk, listed, PHP in them too.
     let projs_fwd = fwd(&projs);
     assert!(conf.contains("\t\tredir /media /media/ 308\n\t\thandle_path /media/* {\n"));
@@ -115,18 +115,7 @@ fn hidden_files_and_php_without_fastcgi() {
 fn lan_mode_answers_any_host() {
     let doc = Path::new("/kit/projects/shop/public");
     let run = Path::new("/kit/data/projects/shop/caddy");
-    let conf = project_conf(
-        Some("shop"),
-        doc,
-        run,
-        7113,
-        Some(9400),
-        None,
-        true,
-        &[],
-        &[],
-    )
-    .unwrap();
+    let conf = project_conf(Some("shop"), doc, run, 7113, None, true, &[], &[]).unwrap();
     assert!(conf.contains("http://:7113 {\n\troute {\n"), "{conf}");
     assert!(
         !conf.contains("bind ") && !conf.contains("respond 421"),
@@ -152,7 +141,6 @@ fn paths_caddy_cannot_take() {
         Path::new("/kit/run"),
         7100,
         None,
-        None,
         false,
         &[],
         &[],
@@ -173,16 +161,23 @@ fn pool_caddyfile() {
         &["shop.localhost".into()],
         &["\trespond \"x\"".into()],
     );
+    let sock = Path::new("/tmp/Dev-Kit/0123456789abcdef/caddy-01234567/a.sock");
     let conf = pool_conf(
         pool,
         8081,
-        Some(9500),
+        Some(sock),
         false,
         std::slice::from_ref(&site),
         false,
     )
     .unwrap();
-    assert!(conf.contains("\tadmin 127.0.0.1:9500\n"));
+    assert!(
+        conf.contains(
+            "\tadmin \"unix//tmp/Dev-Kit/0123456789abcdef/caddy-01234567/a.sock|0600\"\n"
+        ),
+        "{conf}"
+    );
+    assert!(!conf.contains("admin 127.0.0.1"));
     assert!(conf.contains("http://shop.localhost:8081 {\n\tbind 127.0.0.1\n\trespond \"x\"\n}\n"));
     assert!(conf.contains(
         "http://localhost:8081, http://127.0.0.1:8081, http://[::1]:8081 {\n\tbind 127.0.0.1\n\trespond \"Dev-Kit: Caddy pool\" 200\n}\n"
@@ -198,7 +193,7 @@ fn pool_caddyfile() {
         &["shop.localhost".into()],
         &["\trespond \"x\"".into()],
     );
-    let lan = pool_conf(pool, 8081, Some(9500), true, &[lan_site], false).unwrap();
+    let lan = pool_conf(pool, 8081, Some(sock), true, &[lan_site], false).unwrap();
     assert!(
         lan.contains("http://:8081 {\n\trespond \"Dev-Kit: Caddy pool\" 200\n}\n"),
         "{lan}"
@@ -224,7 +219,7 @@ fn run_and_reload_arguments() {
             "caddyfile"
         ]
     );
-    let reload: Vec<String> = reload_args(conf, 9600)
+    let reload: Vec<String> = reload_args(conf, Path::new("/tmp/Dev-Kit/k/caddy-1/a.sock"))
         .into_iter()
         .map(|a| a.to_string_lossy().into_owned())
         .collect();
@@ -237,11 +232,79 @@ fn run_and_reload_arguments() {
             "--adapter",
             "caddyfile",
             "--address",
-            "127.0.0.1:9600"
+            "unix//tmp/Dev-Kit/k/caddy-1/a.sock"
         ]
     );
-    let port = free_port().unwrap();
-    assert!(port >= 1024);
+}
+
+/// The admin endpoint is never a TCP port (any local program could read the
+/// configuration and load another one): a Unix socket on every system,
+/// written as Caddy wants it on Unix (`unix//tmp/…`) and on Windows
+/// (`unix/C:/…`), owner-only; `admin off` without a usable socket path.
+#[test]
+fn admin_line_per_system() {
+    let run = Path::new("/kit/data/servers/p");
+    let line = |sock: Option<&Path>| global_options(sock, run).unwrap()[1].clone();
+    assert_eq!(
+        line(Some(Path::new("/tmp/Dev-Kit/0a1b/caddy-9f8e7d6c/a.sock"))),
+        "\tadmin \"unix//tmp/Dev-Kit/0a1b/caddy-9f8e7d6c/a.sock|0600\""
+    );
+    assert_eq!(
+        line(Some(Path::new(
+            r"C:\Users\me\AppData\Local\Temp\Dev-Kit\0a1b\caddy-9f8e7d6c\a.sock"
+        ))),
+        "\tadmin \"unix/C:/Users/me/AppData/Local/Temp/Dev-Kit/0a1b/caddy-9f8e7d6c/a.sock|0600\""
+    );
+    assert_eq!(line(None), "\tadmin off");
+    // Too long for `sun_path` (macOS: 104 bytes), or not writable: off.
+    let long = format!("/tmp/{}/a.sock", "x".repeat(100));
+    assert_eq!(line(Some(Path::new(&long))), "\tadmin off");
+    assert_eq!(line(Some(Path::new("/tmp/{x}/a.sock"))), "\tadmin off");
+    assert_eq!(
+        admin_dir_name("caddy-2.11_php-8.4").len(),
+        "caddy-".len() + 8
+    );
+    assert_eq!(
+        admin_dir_name("caddy-2.11_php-8.4"),
+        admin_dir_name("caddy-2.11_php-8.4")
+    );
+}
+
+/// A pool's socket is in an owner-only folder of the host's temporary
+/// folder, removed when the pool ends; none without a host temporary folder
+/// (never in the kit's `data\tmp`, maybe on a disk without permissions).
+#[test]
+fn admin_socket_in_the_host_temp() {
+    let tmp = TempDir::new("caddy-admin-socket");
+    // The system's own temporary folder: a test folder's path is too long
+    // for a socket (it would rightly give none).
+    let host = std::env::temp_dir();
+    let kit = Kit::at_target(tmp.0.join("kit"), Target::detect()).with_host(Some(&host));
+    kit.prepare().unwrap();
+    let want = kit
+        .system_temp()
+        .unwrap()
+        .join(admin_dir_name("caddy-2.11_php-8.4"))
+        .join("a.sock");
+    let Some(sock) = admin_socket(&kit, "caddy-2.11_php-8.4") else {
+        assert!(!socket_path_usable(&want), "{}", want.display());
+        return;
+    };
+    assert_eq!(sock.path, want);
+    let dir = sock.path.parent().unwrap().to_path_buf();
+    assert!(sock.path.starts_with(kit.system_temp().unwrap()));
+    assert!(dir.is_dir() && sock.path.ends_with("a.sock"));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = fs::metadata(&dir).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o700);
+    }
+    drop(sock);
+    assert!(!dir.exists(), "removed with the pool");
+    let bare = Kit::at_target(tmp.0.join("bare"), Target::detect());
+    bare.prepare().unwrap();
+    assert!(admin_socket(&bare, "p").is_none());
 }
 
 /// Caddy's file server follows links on every system: an alias whose folder

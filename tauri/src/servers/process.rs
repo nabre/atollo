@@ -40,8 +40,9 @@ pub(super) struct RunningPool {
     /// when it dies the pool is stopped, never left "running" answering
     /// 502 to every `.php`.
     pub(super) php: Option<Child>,
-    /// Caddy's admin endpoint on 127.0.0.1, which `caddy reload` talks to.
-    pub(super) admin: Option<u16>,
+    /// Caddy's owner-only admin socket, which `caddy reload` talks to
+    /// (none: a reload restarts the pool).
+    pub(super) admin: Option<caddy::AdminSocket>,
     /// The pool as it was started: what the page shows of it when it is
     /// no longer in the scan (an orphan, defect 5).
     pub(super) started: WebServerPool,
@@ -514,10 +515,16 @@ impl WebServers {
                 } else {
                     (None, None)
                 };
-                admin = Some(caddy::free_port()?);
-                let conf_path = self.write_pool_configs_with(&pool, fcgi.as_ref(), lan, admin)?;
+                admin = caddy::admin_socket(&self.kit, &pool.id);
+                let conf_path = self.write_pool_configs_with(
+                    &pool,
+                    fcgi.as_ref(),
+                    lan,
+                    admin.as_ref().map(|a| a.path.as_path()),
+                )?;
                 let mut cmd = caddy::caddy_command(&exe, &pool_dir, &env);
                 cmd.args(caddy::run_args(&conf_path));
+                caddy::with_key(&mut cmd, fcgi.as_ref());
                 (cmd, fcgi, php)
             }
         };
@@ -641,7 +648,7 @@ impl WebServers {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .get(id)
-            .and_then(|r| r.admin);
+            .and_then(|r| r.admin.as_ref().map(|a| a.path.clone()));
         if !needs_restart(&pool, &live) {
             // Nginx or Caddy with the same PHP and port: a graceful reload,
             // the sites that stay are served without a pause.
@@ -653,13 +660,13 @@ impl WebServers {
                             &pool,
                             live.fcgi.as_ref(),
                             lan,
-                            Some(admin),
+                            Some(&admin),
                         )?;
                         let caddy_dir =
                             component_dir(&self.kit, "caddy", pool.server_line.as_deref());
                         let exe = caddy::caddy_exe(&self.kit, &caddy_dir);
                         caddy::caddy_command(&exe, &pool_dir, base_env)
-                            .args(caddy::reload_args(&conf_path, admin))
+                            .args(caddy::reload_args(&conf_path, &admin))
                             .stdin(Stdio::null())
                             .stdout(Stdio::null())
                             .stderr(Stdio::null())

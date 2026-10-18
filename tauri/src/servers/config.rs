@@ -272,7 +272,7 @@ impl WebServers {
         self.write_pool_configs_with(pool, fcgi, lan, None)
     }
 
-    /// [`Self::write_pool_configs`] with the admin port of a running Caddy
+    /// [`Self::write_pool_configs`] with the admin socket of a running Caddy
     /// (`admin`; none for the other engines, or a file written for the
     /// next start).
     pub(super) fn write_pool_configs_with(
@@ -280,7 +280,7 @@ impl WebServers {
         pool: &WebServerPool,
         fcgi: Option<&FastCgi>,
         lan: bool,
-        admin: Option<u16>,
+        admin: Option<&Path>,
     ) -> Result<PathBuf> {
         let detached = self
             .detached
