@@ -998,3 +998,47 @@ fn dotnet_invariant_off_linux_never() {
         );
     }
 }
+
+/// D-121: a conda environment puts its `kit-bin` on the PATH, the
+/// launchers of the component's programs, never its `bin` with those of
+/// its dependencies; `bin` while it has no `kit-bin` (installed before).
+#[test]
+fn conda_environments_give_only_their_programs() {
+    use crate::kit::Target;
+
+    let tmp = TempDir::new("env-conda-launchers");
+    let kit = Kit::at_target(tmp.0.join("Kit"), Target::LINUX_X64);
+    touch(
+        &kit,
+        &[
+            "ruby/4.0/bin/ruby",
+            "ruby/4.0/kit-bin/ruby",
+            "mongodb/8.0/bin/mongod",
+            "mongodb/8.0/kit-bin/mongod",
+            "r/4.6/bin/R",
+        ],
+    );
+    let catalog = crate::setup::catalog::Catalog::get();
+    for (id, version) in [("ruby", "4.0.7"), ("mongodb", "8.0.23"), ("r", "4.6.1")] {
+        catalog
+            .find(id)
+            .unwrap()
+            .save_version(&kit, version)
+            .unwrap();
+    }
+    let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
+    let entries = env.path_entries();
+    let has = |rel: &str| {
+        let p = crate::fsx::join_rel(kit.apps(), rel);
+        entries.iter().any(|e| Path::new(e) == p)
+    };
+    assert!(
+        has("ruby/4.0/kit-bin") && !has("ruby/4.0/bin"),
+        "{entries:?}"
+    );
+    assert!(
+        has("mongodb/8.0/kit-bin") && !has("mongodb/8.0/bin"),
+        "{entries:?}"
+    );
+    assert!(has("r/4.6/bin"), "R without launchers yet: {entries:?}");
+}

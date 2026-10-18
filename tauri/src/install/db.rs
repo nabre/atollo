@@ -675,9 +675,14 @@ impl Installer for MongoDb {
         mongodb_from_conda(target).then(|| dir.to_path_buf())
     }
 
-    /// Only the check of the server: its data is in `data/db`, never in the
-    /// environment, and mongosh and the tools have their own folders, which
-    /// follow the kit (D-118).
+    fn conda_programs(&self, target: Target) -> Option<&'static str> {
+        mongodb_from_conda(target).then_some("mongodb")
+    }
+
+    /// The check of the server and the launchers of `mongod` and `mongos`
+    /// (D-121): its data is in `data/db`, never in the environment, and
+    /// mongosh and the tools have their own folders, which follow the kit
+    /// (D-118).
     fn after_conda(
         &self,
         ctx: &Ctx,
@@ -688,7 +693,7 @@ impl Installer for MongoDb {
         if !crate::versions::has_key_for(target_of(ctx, component), component, dir) {
             bail!("bin/mongod not found after the installation");
         }
-        Ok(())
+        crate::install::conda::write_launchers(dir, "mongodb")
     }
 
     fn has_lines(&self) -> bool {
