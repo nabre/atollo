@@ -8,6 +8,8 @@
 - **Ruby, R e MongoDB su macOS e Linux mettono nel PATH solo i loro programmi** (D-121): prima arrivava tutta la cartella `bin` del loro ambiente conda, con i programmi delle dipendenze (`openssl`, `tput`, `kinit`, `envsubst`...) che nei terminali del kit prendevano il posto di quelli del sistema. Ora nel PATH ci sono `ruby`, `gem`, `bundle`, `rake` e gli altri di Ruby, `R` e `Rscript`, `mongod` e `mongos`, attraverso dei lanciatori in `kit-bin`; i componenti già installati li ricevono al prossimo avvio.
 - **MongoDB Database Tools su Debian 9**: si sceglie la build `debian92`, come per RHEL a parità di versione maggiore; prima Debian 9 non la trovava e riceveva quella di Ubuntu 20.04, che lì non parte.
 
+**Verificato**: su Windows 742 test Rust (6 ignorati) e 133 test dell'interfaccia, fmt, clippy, ESLint, Prettier e `tsc` puliti; in WSL2 (Ubuntu 24.04) 746 test (5 ignorati, contro i 16 di prima) e clippy pulito; i lanciatori di Ruby, R e MongoDB provati su ambienti conda-forge veri in una cartella con uno spazio.
+
 ## Spostare il kit senza rete su macOS e Linux (18/10/2026)
 
 - **R, Ruby, MongoDB (Linux), SQLite (Linux ARM64) e il `make` di C e C++** si reinstallano dopo che il kit cambia cartella, perché vengono da conda-forge e hanno il percorso scritto dentro (D-92). Ora i loro pacchetti restano nel kit, in `data/app/conda/<sistema>/`, e la reinstallazione li usa senza scaricare nulla, alla stessa versione: in WSL 43 s per R, Ruby, MongoDB e make, contro 86 s dalla rete con una connessione veloce, e funziona anche senza rete (D-118).
