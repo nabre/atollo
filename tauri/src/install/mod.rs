@@ -19,6 +19,7 @@
 mod agents;
 mod android;
 mod caddy;
+pub mod conda;
 mod core;
 mod db;
 mod editor;
@@ -169,6 +170,26 @@ pub trait Installer: Sync {
     /// file (R's Makeconf on Windows): those files are set to the folders
     /// it is in now (`relocate`). Default: nothing to do.
     fn relocate(&self, _kit: &Kit, _component: &Component) -> Result<()> {
+        Ok(())
+    }
+    /// The conda environment of `dir`, the folder of a line (or the
+    /// component's own folder), on `target`: the folder itself, or one
+    /// inside it (`cc/make`). It is what is created again from the kept
+    /// packages when the kit moves (`conda`, D-118). Default: none.
+    fn conda_prefix(&self, _target: crate::kit::Target, _dir: &Path) -> Option<PathBuf> {
+        None
+    }
+    /// The component's own steps after its conda environment is created in
+    /// `dir` (launchers, files rewritten, shims): the same after an
+    /// installation from the network and after one from the kept packages
+    /// (D-118). Default: nothing.
+    fn after_conda(
+        &self,
+        _ctx: &Ctx,
+        _component: &Component,
+        _dir: &Path,
+        _progress: &mut dyn Progress,
+    ) -> Result<()> {
         Ok(())
     }
     fn install_custom(

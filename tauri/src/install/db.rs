@@ -3,7 +3,7 @@
 //! (D-117). Sources and checks in docs/app/CATALOG.md §2.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
 use serde_json::Value;
@@ -648,9 +648,7 @@ impl Installer for MongoDb {
     ) -> Result<()> {
         let spec = format!("mongodb={}", mongodb_server_version(&release.version));
         micromamba_create(ctx, component, release, target, &[&spec], progress)?;
-        if !crate::versions::has_key_for(target_of(ctx, component), component, target) {
-            bail!("bin/mongod not found after the installation");
-        }
+        self.after_conda(ctx, component, target, progress)?;
         let work = super::work_dir(ctx, component)?;
         let result = release
             .parts
@@ -670,6 +668,26 @@ impl Installer for MongoDb {
             });
         drop(work);
         result
+    }
+
+    fn conda_prefix(&self, target: Target, dir: &Path) -> Option<PathBuf> {
+        mongodb_from_conda(target).then(|| dir.to_path_buf())
+    }
+
+    /// Only the check of the server: its data is in `data/db`, never in the
+    /// environment, and mongosh and the tools have their own folders, which
+    /// follow the kit (D-118).
+    fn after_conda(
+        &self,
+        ctx: &Ctx,
+        component: &Component,
+        dir: &Path,
+        _progress: &mut dyn Progress,
+    ) -> Result<()> {
+        if !crate::versions::has_key_for(target_of(ctx, component), component, dir) {
+            bail!("bin/mongod not found after the installation");
+        }
+        Ok(())
     }
 
     fn has_lines(&self) -> bool {
@@ -835,6 +853,22 @@ impl Installer for Sqlite {
         let dir = crate::versions::install_dir(ctx.kit, component, &release.version);
         let spec = format!("sqlite={}", release.version);
         micromamba_create(ctx, component, release, &dir, &[&spec], progress)?;
+        self.after_conda(ctx, component, &dir, progress)
+    }
+
+    fn conda_prefix(&self, target: Target, dir: &Path) -> Option<PathBuf> {
+        sqlite_from_conda(target).then(|| dir.to_path_buf())
+    }
+
+    /// The launcher at the catalog's key, after the environment is created
+    /// from the network or from the kept packages (D-118).
+    fn after_conda(
+        &self,
+        _ctx: &Ctx,
+        _component: &Component,
+        dir: &Path,
+        _progress: &mut dyn Progress,
+    ) -> Result<()> {
         if !dir.join("bin").join("sqlite3").is_file() {
             bail!("bin/sqlite3 not found after the installation");
         }
