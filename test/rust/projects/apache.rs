@@ -37,6 +37,8 @@ fn conf_of_a_project() {
         false,
         &["api.shop.localhost".into(), "bad\"domain.localhost".into()],
         &aliases,
+        Os::Win32,
+        None,
     )
     .unwrap();
     assert!(with_site.contains(
@@ -65,6 +67,8 @@ fn only_local_hosts_without_lan() {
             lan,
             &["api.shop.localhost".into()],
             &[],
+            Os::Win32,
+            None,
         )
         .unwrap()
     };
@@ -296,4 +300,74 @@ fn aliases_follow_no_links() {
     )
     .unwrap();
     assert!(conf.contains("    Options Indexes FollowSymLinks\r\n    AllowOverride All"));
+}
+
+/// D-116: off Windows PHP is php-fpm through `mod_proxy_fcgi`, its key
+/// read from Apache's environment (never written), the old extensions
+/// still refused; never the Windows module.
+#[test]
+fn php_through_fpm_off_windows() {
+    let tmp = crate::kit::tests::TempDir::new("apache-fpm");
+    let sock = crate::projects::caddy::PrivateSocket::in_leaf(&tmp.0, "a-1", "fpm.sock").unwrap();
+    let sock_fwd = fwd(&sock.path);
+    let fcgi = FastCgi {
+        addr: crate::projects::fastcgi::FcgiAddr::Unix(std::sync::Arc::new(sock)),
+        key: "secret-key".into(),
+    };
+    for os in [Os::Darwin, Os::Linux] {
+        let text = php_blocks(os, Some(&fcgi)).join("\n");
+        assert!(text.contains("LoadModule proxy_fcgi_module modules/mod_proxy_fcgi.so"));
+        assert!(text.contains("SetEnv DEVKIT_FCGI_KEY ${DEVKIT_FCGI_KEY}"));
+        assert!(!text.contains("secret-key"), "the key is never in a file");
+        assert!(text.contains(&format!(
+            "<FilesMatch \"(?i)\\.(?:php|phtml|phar)$\">\n    SetHandler \"proxy:unix:{sock_fwd}|fcgi://localhost\"\n</FilesMatch>"
+        )));
+        assert!(text.contains("<FilesMatch \"(?i)\\.(?:inc|php[3-8])$\">\n    Require all denied"));
+        assert!(!text.contains(".dll"));
+        // Without php-fpm: PHP files refused, never sent as text.
+        let off = php_blocks(os, None).join("\n");
+        assert!(off.contains("<IfModule !php_module>") && off.contains("Require all denied"));
+        assert!(!off.contains("SetHandler"));
+    }
+    // Windows keeps the module, php-fpm or not.
+    assert_eq!(
+        php_blocks(Os::Win32, Some(&fcgi)),
+        php_module_blocks("CP_PHP_FWD")
+    );
+    assert_eq!(
+        crate::projects::fastcgi::FcgiAddr::Tcp(9001).apache_handler(),
+        "proxy:fcgi://127.0.0.1:9001"
+    );
+}
+
+/// D-116: a project's Apache off Windows keeps its run-time files in its
+/// own folder and runs in the foreground; Windows gets neither.
+#[test]
+fn project_conf_off_windows() {
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\nServerRoot \"${SRVROOT}\"\n";
+    let root = Path::new("/kit (1)/projects/shop/public");
+    let dir = Path::new("/kit (1)/data/projects/shop/apache");
+    let conf = project_conf_with_site(
+        base,
+        Some("shop"),
+        root,
+        dir,
+        7120,
+        false,
+        &[],
+        &[],
+        Os::Linux,
+        None,
+    )
+    .unwrap();
+    assert!(conf.contains("DefaultRuntimeDir \"/kit (1)/data/projects/shop/apache\""));
+    assert!(
+        !conf.contains("Mutex"),
+        "Mutex file: takes no path with a space"
+    );
+    assert!(!conf.contains(".dll"));
+    assert_eq!(foreground_args(Os::Linux), ["-DFOREGROUND"]);
+    assert_eq!(foreground_args(Os::Darwin), ["-DFOREGROUND"]);
+    assert!(foreground_args(Os::Win32).is_empty());
+    assert!(runtime_dir_lines(Os::Win32, "C:/x").is_empty());
 }

@@ -10,7 +10,7 @@ use anyhow::{Context, Result};
 
 use crate::detect::{self};
 use crate::fsx::write_atomic;
-use crate::kit::Kit;
+use crate::kit::{Kit, Os};
 use crate::projects::alias;
 use crate::projects::apache::{self, fwd};
 use crate::projects::caddy;
@@ -77,12 +77,15 @@ pub(super) fn apache_vhost_conf(
 /// projects' sites).
 pub(super) const POOL_LOCAL_HOSTS: [&str; 2] = ["127.0.0.1", "[::1]"];
 
-/// Generates the master `httpd.conf` for an Apache pool.
+/// Generates the master `httpd.conf` for an Apache pool, with the PHP of
+/// `os` ([`apache::php_blocks`]: php-fpm on `fcgi` off Windows, D-116).
 pub(super) fn apache_pool_conf(
     base: &str,
     pool_dir: &Path,
     port: u16,
     lan: bool,
+    os: Os,
+    fcgi: Option<&FastCgi>,
 ) -> Result<String> {
     let kit_part = apache::strip_kit_tail(base)?;
     let dir_fwd = fwd(pool_dir);
@@ -96,6 +99,9 @@ pub(super) fn apache_pool_conf(
         "# --- Dev-Kit: shared Apache VirtualHost pool (written at every start) ---".to_owned(),
         format!("Listen {listen}"),
         format!("ServerName localhost:{port}"),
+    ];
+    site.extend(apache::runtime_dir_lines(os, &dir_fwd));
+    site.extend([
         format!("PidFile \"{dir_fwd}/httpd.pid\""),
         format!("ErrorLog \"{dir_fwd}/error.log\""),
         "<IfModule log_config_module>".to_owned(),
@@ -103,8 +109,8 @@ pub(super) fn apache_pool_conf(
         "</IfModule>".to_owned(),
         format!("DocumentRoot \"{default_htdocs}\""),
         "DirectoryIndex index.php index.html".to_owned(),
-    ];
-    site.extend(apache::php_module_blocks("CP_PHP_FWD"));
+    ]);
+    site.extend(apache::php_blocks(os, fcgi));
     // The first VirtualHost answers any Host no other one names, never a
     // project. Out of LAN mode it refuses it with 403, as a project's own
     // Apache does (D-98: a page of another site re-pointed to 127.0.0.1,
@@ -329,7 +335,8 @@ impl WebServers {
                     );
                     write_atomic(&vhosts_dir.join(vhost_file(site)), vhost.as_bytes())?;
                 }
-                let main_conf = apache_pool_conf(&base, &pool_dir, pool.port, lan)?;
+                let main_conf =
+                    apache_pool_conf(&base, &pool_dir, pool.port, lan, self.kit.os(), fcgi)?;
                 let conf_path = pool_dir.join("httpd.conf");
                 write_atomic(&conf_path, main_conf.as_bytes())?;
                 Ok(conf_path)
