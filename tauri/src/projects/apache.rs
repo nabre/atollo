@@ -266,10 +266,20 @@ pub fn hidden_deny(indent: &str) -> Vec<String> {
     ]
 }
 
+/// What an alias' folder never runs or serves (SEC-V4-01): the files PHP
+/// runs ([`PHP_RUN`]), `.phps` source and those of [`PHP_NEVER`]. Aliases
+/// hold uploads and shared assets: a script that got there is refused,
+/// never run with the site's rights. Apache, Nginx and Caddy alike.
+pub const ALIAS_NO_RUN: &str = r"\.(?:php|phtml|phar|phps|inc|php[3-8])$";
+
 /// Directives (`Alias` + `<Directory>`) for checked path aliases; `own` is
 /// the expression of the project's folder (`${CP_PROJECT_FWD}`). No link is
 /// followed in their folders (WEB-8), and a `.htaccess` there cannot turn
-/// `FollowSymLinks` back on: everything else of `AllowOverride All` stays.
+/// `FollowSymLinks` back on. Static files only (SEC-V4-01): the files of
+/// [`ALIAS_NO_RUN`] refused (403), and no `FileInfo` for a `.htaccess`
+/// there, so an uploaded one cannot give itself a handler (`SetHandler`,
+/// `AddHandler`) that runs a `.jpg`; `Nonfatal=Override` ignores such a
+/// line (a warning in the log) instead of answering 500 for the folder.
 pub fn alias_directives(own: &str, aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     let mut lines = Vec::new();
     for alias in aliases {
@@ -278,9 +288,12 @@ pub fn alias_directives(own: &str, aliases: &[SiteAlias], indent: &str) -> Vec<S
         lines.push(format!("{indent}<Directory \"{target}\">"));
         lines.push(format!("{indent}    Options Indexes"));
         lines.push(format!(
-            "{indent}    AllowOverride AuthConfig FileInfo Indexes Limit Options=Indexes,MultiViews"
+            "{indent}    AllowOverride AuthConfig Indexes Limit Options=Indexes,MultiViews Nonfatal=Override"
         ));
         lines.push(format!("{indent}    Require all granted"));
+        lines.push(format!("{indent}    <FilesMatch \"(?i){ALIAS_NO_RUN}\">"));
+        lines.push(format!("{indent}        Require all denied"));
+        lines.push(format!("{indent}    </FilesMatch>"));
         lines.push(format!("{indent}</Directory>"));
     }
     lines

@@ -43,7 +43,7 @@ fn nginx_conf_with_aliases_and_php() {
         "            fastcgi_param DEVKIT_FCGI_KEY {};\r\n        }}",
         cgi(9123).key
     )));
-    assert!(conf.contains("location /media/ {"));
+    assert!(conf.contains("location ^~ /media/ {"));
     assert!(conf.contains(&format!("alias \"{projs_fwd}/shop/storage/media/\";")));
     assert!(conf.contains(&format!("alias \"{projs_fwd}/common/assets/\";")));
     assert!(!conf.contains("location /up/") && !conf.contains("x;y"));
@@ -177,7 +177,20 @@ fn aliases_follow_no_links_where_nginx_can() {
     aliases.insert("/media".into(), "storage/media".into());
     let aliases = alias::resolve(&projs.join("shop"), &projs, &aliases);
     let lines = alias_locations(&aliases, "").join("\r\n");
-    assert!(lines.starts_with("location /media/ {"), "{lines}");
+    assert!(lines.starts_with("location ^~ /media/ {"), "{lines}");
+    // SEC-V4-01: `^~` skips the server's regex locations, so the hidden
+    // files and the scripts are refused inside the alias.
+    assert!(
+        lines.contains("    location ~ /\\.(?!well-known(/|$)) {\r\n        deny all;"),
+        "{lines}"
+    );
+    assert!(
+        lines.contains(
+            "    location ~* \\.(?:php|phtml|phar|phps|inc|php[3-8])$ {\r\n        deny all;"
+        ),
+        "{lines}"
+    );
+    assert!(!lines.contains("fastcgi_pass"), "{lines}");
     assert_eq!(
         lines.contains("disable_symlinks on;"),
         !cfg!(windows),

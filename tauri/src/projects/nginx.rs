@@ -15,7 +15,7 @@ use crate::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::os::jobs;
 use crate::projects::alias::{self, valid_domain, SiteAlias};
-use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
+use crate::projects::apache::{fwd, ALIAS_NO_RUN, PHP_NEVER, PHP_RUN};
 // The php-cgi of Nginx moved to the module it shares with Caddy (D-111).
 pub use crate::projects::fastcgi::{spawn_php_cgi_if_present, FastCgi, FCGI_KEY_PARAM};
 
@@ -75,8 +75,16 @@ pub fn prepare_dirs(run_dir: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Hidden files and folders (`.env`, `.git/`) but `.well-known`, as a
+/// location regex.
+const HIDDEN: &str = r"/\.(?!well-known(/|$))";
+
 /// Generates Nginx `location` blocks for checked path aliases (no link
-/// followed in their folders where Nginx can do it).
+/// followed in their folders where Nginx can do it). Static files only
+/// (SEC-V4-01): `^~` keeps the server's PHP regex location from taking a
+/// `.php` under the alias, so the hidden files and the files of
+/// [`ALIAS_NO_RUN`] are refused inside it (the server's regex locations
+/// are no longer looked at there).
 pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
     let mut lines = Vec::new();
     for alias in aliases {
@@ -84,9 +92,15 @@ pub fn alias_locations(aliases: &[SiteAlias], indent: &str) -> Vec<String> {
         if !target.ends_with('/') {
             target.push('/');
         }
-        lines.push(format!("{indent}location {}/ {{", alias.url));
+        lines.push(format!("{indent}location ^~ {}/ {{", alias.url));
         lines.push(format!("{indent}    alias \"{target}\";"));
         lines.push(format!("{indent}    autoindex on;"));
+        lines.push(format!("{indent}    location ~ {HIDDEN} {{"));
+        lines.push(format!("{indent}        deny all;"));
+        lines.push(format!("{indent}    }}"));
+        lines.push(format!("{indent}    location ~* {ALIAS_NO_RUN} {{"));
+        lines.push(format!("{indent}        deny all;"));
+        lines.push(format!("{indent}    }}"));
         // No link followed in an alias' folder (WEB-8). Nginx for Windows
         // has no `disable_symlinks` (it needs `openat`) and would not start
         // with it: there `alias::resolve_nginx` leaves out a folder with a
