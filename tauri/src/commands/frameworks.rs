@@ -106,6 +106,20 @@ pub(super) fn framework_action_id(name: &str, i: usize) -> String {
     }
 }
 
+/// What a creation installs first: the plan's needs, a SQL server as MySQL
+/// (D-117), also the `mariadb` of a framework file of before. The database
+/// itself goes to the project's SQL server (`Services::start_for`).
+pub(super) fn plan_needs(plan: &crate::projects::frameworks::Plan) -> Vec<&str> {
+    let mut out: Vec<&str> = Vec::new();
+    for n in &plan.needs {
+        let n = crate::db::services::sql_need(n);
+        if !out.contains(&n) {
+            out.push(n);
+        }
+    }
+    out
+}
+
 /// The connection to the project's database for the commands of a
 /// creation, by name, whatever the framework calls it (TYPO3's and
 /// Drupal's installers take it as options).
@@ -232,8 +246,7 @@ pub async fn frameworks_create<R: Runtime>(
             let _ = app.emit_to(MAIN, "framework", event);
         };
         emit(0, None, None);
-        let needs: Vec<&str> = plan.needs.iter().map(String::as_str).collect();
-        let env = ensure(&app, &task, &kit, lang, &needs)?;
+        let env = ensure(&app, &task, &kit, lang, &plan_needs(&plan))?;
         std::fs::create_dir_all(kit.projects()).or_fail("frameworks")?;
         // A project with files: the framework is made aside, in the PC's
         // temporary folder (D-90; removed when `staging` is dropped), then

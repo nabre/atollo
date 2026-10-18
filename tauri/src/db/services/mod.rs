@@ -262,37 +262,40 @@ pub fn project_line(kit: &Kit, project: &str, engine: &str) -> Option<String> {
         .or_else(|| server_line(kit, engine))
 }
 
-/// The kit's SQL server (D-110, issue #3): MySQL, unless the kit runs
-/// MariaDB and has no MySQL, where MariaDB stays until its data moves
-/// (issue #3): a new project there gets its database next to the others.
+/// The kit's SQL server (D-110, D-117): MySQL. MariaDB only while its data
+/// has not moved to MySQL yet (`migrate_engine`) on a kit where it is
+/// installed: the sites keep the server their databases are on, and a new
+/// project gets its database next to theirs, moved with them. Once moved,
+/// `data\db\mariadb` is `mariadb.pre-mysql` and the kit is MySQL only.
 pub fn sql_engine(kit: &Kit) -> DbEngine {
-    sql_engine_with(|id| installed(kit, id))
+    sql_engine_with(
+        installed(kit, DbEngine::MariaDb.component()),
+        !data::lines_with_data(kit, DbEngine::MariaDb).is_empty(),
+    )
 }
 
-/// [`sql_engine`] with the installed components given by `installed`.
-pub fn sql_engine_with(installed: impl Fn(&str) -> bool) -> DbEngine {
-    if !installed(DbEngine::MySql.component()) && installed(DbEngine::MariaDb.component()) {
+/// [`sql_engine`] with MariaDB installed or not, and with data that has
+/// not moved to MySQL or not. Data of a MariaDB this system cannot run (a
+/// kit made on Windows opened on a Mac) waits for the system that runs it:
+/// meanwhile MySQL.
+pub fn sql_engine_with(mariadb_installed: bool, mariadb_data: bool) -> DbEngine {
+    if mariadb_installed && mariadb_data {
         DbEngine::MariaDb
     } else {
         DbEngine::MySql
     }
 }
 
-/// The component a need for a SQL server installs (issue #3): `mariadb` or
+/// The component a need for a SQL server installs (D-117): `mariadb` or
 /// `mysql` (of phpMyAdmin's `needs`, a framework's `database`, the
-/// detection of a project, its actions, its containers) is the kit's SQL
-/// server ([`sql_engine`]), so a new kit gets MySQL and a kit that runs
-/// only MariaDB keeps it; any other need is itself. An explicit choice of
-/// a component (`prepare --only mariadb`, its card) is never resolved.
-#[allow(dead_code)] // the tests; the needs outside `db` call it (issue #3)
-pub fn sql_need(kit: &Kit, need: &str) -> String {
-    sql_need_with(need, |id| installed(kit, id)).to_string()
-}
-
-/// [`sql_need`] with the installed components given by `installed`.
-pub fn sql_need_with(need: &str, installed: impl Fn(&str) -> bool) -> &str {
+/// detection of a project, its actions, its containers) is always MySQL,
+/// also on a kit whose MariaDB has not moved yet: the move needs MySQL
+/// anyway, and nothing proposes MariaDB again. Any other need is itself.
+/// An explicit choice of a component (`prepare --only mariadb`, a card of
+/// the Tools page) is never resolved: only needs are.
+pub fn sql_need(need: &str) -> &str {
     match need {
-        "mariadb" | "mysql" => sql_engine_with(installed).component(),
+        "mariadb" | "mysql" => DbEngine::MySql.component(),
         other => other,
     }
 }
