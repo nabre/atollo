@@ -260,51 +260,81 @@ fn admin_line_per_system() {
     let long = format!("/tmp/{}/a.sock", "x".repeat(100));
     assert_eq!(line(Some(Path::new(&long))), "\tadmin off");
     assert_eq!(line(Some(Path::new("/tmp/{x}/a.sock"))), "\tadmin off");
-    assert_eq!(
-        admin_dir_name("caddy-2.11_php-8.4").len(),
-        "caddy-".len() + 8
-    );
-    assert_eq!(
-        admin_dir_name("caddy-2.11_php-8.4"),
-        admin_dir_name("caddy-2.11_php-8.4")
-    );
 }
 
-/// A pool's socket is in an owner-only folder of the host's temporary
-/// folder, removed when the pool ends; none without a host temporary folder
-/// (never in the kit's `data\tmp`, maybe on a disk without permissions).
+/// A pool's socket is in a new owner-only folder with a random name, in the
+/// first base of [`socket_bases`], removed when the pool ends; none without
+/// any base (never in the kit's `data\tmp`, maybe on a disk without
+/// permissions).
 #[test]
-fn admin_socket_in_the_host_temp() {
+fn admin_socket_in_a_private_folder() {
     let tmp = TempDir::new("caddy-admin-socket");
     // The system's own temporary folder: a test folder's path is too long
     // for a socket (it would rightly give none).
     let host = std::env::temp_dir();
     let kit = Kit::at_target(tmp.0.join("kit"), Target::detect()).with_host(Some(&host));
     kit.prepare().unwrap();
-    let want = kit
-        .system_temp()
-        .unwrap()
-        .join(admin_dir_name("caddy-2.11_php-8.4"))
-        .join("a.sock");
+    let bases = socket_bases(&kit);
+    assert_eq!(bases.last().map(PathBuf::as_path), kit.system_temp());
     let Some(sock) = admin_socket(&kit, "caddy-2.11_php-8.4") else {
-        assert!(!socket_path_usable(&want), "{}", want.display());
+        let probe = bases[0]
+            .join("atollo-caddy")
+            .join("c-0123456789ab")
+            .join("a.sock");
+        assert!(!socket_path_usable(&probe), "{}", probe.display());
         return;
     };
-    assert_eq!(sock.path, want);
     let dir = sock.path.parent().unwrap().to_path_buf();
-    assert!(sock.path.starts_with(kit.system_temp().unwrap()));
-    assert!(dir.is_dir() && sock.path.ends_with("a.sock"));
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mode = fs::metadata(&dir).unwrap().permissions().mode() & 0o777;
-        assert_eq!(mode, 0o700);
-    }
+    assert!(bases.iter().any(|b| sock.path.starts_with(b)));
+    assert!(is_private_dir(&dir) && sock.path.ends_with("a.sock"));
+    assert!(socket_path_usable(&sock.path));
+    // Two pools, two folders.
+    let other = admin_socket(&kit, "caddy-2.11_php-8.4").unwrap();
+    assert_ne!(other.path, sock.path);
     drop(sock);
     assert!(!dir.exists(), "removed with the pool");
     let bare = Kit::at_target(tmp.0.join("bare"), Target::detect());
     bare.prepare().unwrap();
-    assert!(admin_socket(&bare, "p").is_none());
+    if socket_bases(&bare).is_empty() {
+        assert!(admin_socket(&bare, "p").is_none());
+    }
+}
+
+/// The leaf is made here and now, owner-only: a folder that is already
+/// there (another user's, pre-created) or a link in its place is refused.
+#[test]
+fn private_leaf_refuses_what_exists() {
+    let tmp = TempDir::new("caddy-private-leaf");
+    let leaf = private_leaf(&tmp.0, "c-1").unwrap();
+    assert!(is_private_dir(&leaf));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = fs::metadata(&leaf).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o700);
+    }
+    // Already there: refused, not reused.
+    assert!(private_leaf(&tmp.0, "c-1").is_err());
+    fs::create_dir(tmp.0.join("c-2")).unwrap();
+    assert!(private_leaf(&tmp.0, "c-2").is_err());
+    // A link in its place: refused, and never taken as private.
+    let target = tmp.0.join("elsewhere");
+    fs::create_dir(&target).unwrap();
+    junction(&tmp.0.join("c-3"), &target);
+    assert!(private_leaf(&tmp.0, "c-3").is_err());
+    assert!(!is_private_dir(&tmp.0.join("c-3")));
+    assert!(!is_private_dir(&tmp.0.join("missing")));
+    // A folder others can enter is not private (Unix).
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let open = tmp.0.join("open");
+        fs::create_dir(&open).unwrap();
+        fs::set_permissions(&open, fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(!is_private_dir(&open));
+        fs::set_permissions(&open, fs::Permissions::from_mode(0o700)).unwrap();
+        assert!(is_private_dir(&open));
+    }
 }
 
 /// Caddy's file server follows links on every system: an alias whose folder
