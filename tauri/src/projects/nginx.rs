@@ -1,20 +1,23 @@
 //! A project's own Nginx: the kit's `nginx.exe` with a configuration written at
 //! every start in `data\projects\<project>\nginx\` (never in the project),
-//! plus `php-cgi.exe` on an local FastCGI port when PHP is installed.
+//! plus `php-cgi.exe` on an local FastCGI port when PHP is installed
+//! (`projects/fastcgi.rs`).
 
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command};
+use std::process::Command;
 
 use anyhow::{anyhow, bail, Result};
 
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
-use crate::os::jobs::{self, Job};
+use crate::os::jobs;
 use crate::projects::alias::{self, valid_domain, SiteAlias};
 use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
+// The php-cgi of Nginx moved to the module it shares with Caddy (WP-3.3).
+pub use crate::projects::fastcgi::{spawn_php_cgi_if_present, FastCgi, FCGI_KEY_PARAM};
 
 /// The `http` line that lets a `server_name` reach 120 characters (a
 /// domain, alias::valid_domain, or a pool's `<action>-N.<project>.localhost`):
@@ -37,16 +40,6 @@ pub fn nginx_exe(kit: &Kit, dir: &Path) -> PathBuf {
     }
 }
 
-/// The FastCGI program of the PHP in `dir`: `php-cgi.exe` on Windows,
-/// `bin/php-cgi` on macOS and Linux (BUG-V3-08).
-pub fn php_cgi_exe(kit: &Kit, dir: &Path) -> PathBuf {
-    if kit.os().is_windows() {
-        dir.join("php-cgi.exe")
-    } else {
-        dir.join("bin").join("php-cgi")
-    }
-}
-
 /// Resolves the Nginx installation directory from `env` (`CP_NGINX`) or the kit's default line.
 pub fn nginx_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
     env.get("CP_NGINX")
@@ -60,16 +53,6 @@ pub fn nginx_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
                 kit.apps().join("nginx")
             }
         })
-}
-
-/// Resolves the PHP directory (`php-cgi`) from `env` (`CP_PHP`) or the kit's default line.
-pub fn php_dir(kit: &Kit, env: &KitEnv) -> Option<PathBuf> {
-    let dir = env
-        .get("CP_PHP")
-        .map(PathBuf::from)
-        .filter(|d| php_cgi_exe(kit, d).is_file())
-        .unwrap_or_else(|| crate::setup::catalog::kit_path(kit, "php"));
-    php_cgi_exe(kit, &dir).is_file().then_some(dir)
 }
 
 /// The folder of the project's Nginx runtime files.
@@ -290,86 +273,6 @@ pub fn project_conf(
     }
     lines.extend(["}".to_owned(), String::new()]);
     lines.join("\r\n")
-}
-
-/// The FastCGI parameter that carries the key of [`FastCgi`], checked by
-/// `runtime\fcgi-guard.php` (D-99 «Resta»).
-pub const FCGI_KEY_PARAM: &str = "DEVKIT_FCGI_KEY";
-
-/// A running php-cgi as Nginx reaches it: its port on 127.0.0.1 and the
-/// random key Nginx sends with every request. php-cgi has no authentication
-/// and Nginx for Windows speaks FastCGI over TCP only (no Unix socket, no
-/// named pipe): without the key the kit's guard, prepended to every script,
-/// answers 403 and runs nothing.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FastCgi {
-    pub port: u16,
-    pub key: String,
-}
-
-/// Spawns `php-cgi.exe -b 127.0.0.1:<port>` inside `job` when PHP is
-/// installed, returning its [`FastCgi`] and the process, whose death the
-/// caller watches (a Nginx without its php-cgi answers 502 to every `.php`).
-/// php-cgi gets a new key (`-d devkit.fcgi_key`), the kit's guard as
-/// `auto_prepend_file`, and `FCGI_WEB_SERVER_ADDRS=127.0.0.1` (PHP's own
-/// list of the web servers it accepts). `None` when PHP is not installed,
-/// the guard is missing or the spawn failed (in the log).
-pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(FastCgi, Child)> {
-    let php = php_dir(kit, env)?;
-    let cgi = php_cgi_exe(kit, &php);
-    let guard = kit.kit_files().join("fcgi-guard.php");
-    if !guard.is_file() {
-        // Never a php-cgi that runs whatever it is asked.
-        crate::log::warn(&format!("php-cgi: {} is missing", guard.display()));
-        return None;
-    }
-    let key = match crate::editor::random_token() {
-        Ok(key) => key,
-        Err(e) => {
-            crate::log::warn(&format!("php-cgi: no FastCGI key: {e:#}"));
-            return None;
-        }
-    };
-    let port = match std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
-        .and_then(|l| l.local_addr())
-    {
-        Ok(addr) => addr.port(),
-        Err(e) => {
-            crate::log::warn(&format!("php-cgi: no free FastCGI port: {e}"));
-            return None;
-        }
-    };
-    let mut cmd = jobs::kit_command(&cgi, env);
-    cmd.arg("-b")
-        .arg(format!("127.0.0.1:{port}"))
-        .arg("-c")
-        .arg(crate::install::php_ini_dir(&kit.data(), &php))
-        .args(guard_args(&guard, &key))
-        .env("PHP_FCGI_MAX_REQUESTS", "0")
-        .env("FCGI_WEB_SERVER_ADDRS", "127.0.0.1")
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null());
-    match jobs::spawn_in(&mut cmd, job) {
-        Ok(child) => Some((FastCgi { port, key }, child)),
-        Err(e) => {
-            crate::log::warn(&format!("php-cgi {}: {e:#}", cgi.display()));
-            None
-        }
-    }
-}
-
-/// The php-cgi arguments of the guard: the key as an ini value of the
-/// command line (`get_cfg_var`, out of reach of a request and of
-/// `.user.ini`) and the guard in double quotes with `/`, so that a space or
-/// a `;` of the kit's path stays in the ini value.
-pub fn guard_args(guard: &Path, key: &str) -> [String; 4] {
-    [
-        "-d".to_owned(),
-        format!("devkit.fcgi_key={key}"),
-        "-d".to_owned(),
-        format!("auto_prepend_file=\"{}\"", fwd(guard)),
-    ]
 }
 
 /// Prepares `nginx.conf` and returns the `Command` to start `nginx.exe`.

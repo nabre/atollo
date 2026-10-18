@@ -6,7 +6,7 @@ use crate::setup::catalog::Catalog;
 fn rosetta_reason() {
     let catalog = Catalog::get();
     let python = catalog.find("python").unwrap();
-    let php = catalog.find("php").unwrap();
+    let apache = catalog.find("apache").unwrap();
     assert_eq!(
         unavailable_reason(python, Target::DARWIN_ARM64, true, "en").as_deref(),
         Some("needs Rosetta 2: install it with softwareupdate --install-rosetta (an administrator is needed)")
@@ -16,7 +16,7 @@ fn rosetta_reason() {
         None
     );
     assert_eq!(
-        unavailable_reason(php, Target::DARWIN_ARM64, false, "en").as_deref(),
+        unavailable_reason(apache, Target::DARWIN_ARM64, false, "en").as_deref(),
         Some("not available for darwin-arm64")
     );
     // Windows ARM64 without a build: the page's own "no ARM64" text.
@@ -62,15 +62,15 @@ fn linux_arm64_messages_give_the_catalog_reason() {
 fn messages_without_a_catalog_reason() {
     let catalog = Catalog::get();
     let r = catalog.find("r").unwrap();
-    let php = catalog.find("php").unwrap();
+    let apache = catalog.find("apache").unwrap();
     let python = catalog.find("python").unwrap();
     assert_eq!(
         unavailable_message(r, Target::WIN32_ARM64, false, "en").as_deref(),
         Some("R is not available on ARM64 PCs.")
     );
     assert_eq!(
-        unavailable_message(php, Target::LINUX_X64, false, "en").as_deref(),
-        Some("PHP is not available for linux-x64.")
+        unavailable_message(apache, Target::LINUX_X64, false, "en").as_deref(),
+        Some("Apache is not available for linux-x64.")
     );
     assert_eq!(
         unavailable_message(python, Target::DARWIN_ARM64, true, "en").as_deref(),
