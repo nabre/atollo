@@ -254,7 +254,7 @@ fn needs_of_one_target_stay_out_of_the_choice() {
     assert!(!choice.is_chosen("cc") && !choice.is_chosen("rust"));
 }
 
-/// «Piattaforma» is remembered in settings.json (D-119): the grid gives it
+/// «Piattaforma» is remembered in settings.json (D-121): the grid gives it
 /// back, the other settings stay, an unknown system is refused, `None`
 /// forgets it; a file that cannot be read is not overwritten.
 #[test]

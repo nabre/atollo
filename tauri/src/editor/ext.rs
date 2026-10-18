@@ -388,7 +388,7 @@ pub struct MatrixRow {
     pub installed: bool,
 }
 
-/// The matrix for the kit's target (D-119): without the tools that target
+/// The matrix for the kit's target (D-121): without the tools that target
 /// cannot have, and without the extensions only for those tools or only
 /// for programs it cannot have (`programs`).
 pub fn matrix_info(kit: &Kit) -> MatrixInfo {

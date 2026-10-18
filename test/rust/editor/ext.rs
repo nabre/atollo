@@ -218,7 +218,7 @@ fn output_parsing() {
     assert!(!got.contains("a.b") && !got.contains("c.d"));
 }
 
-/// The matrix of a target chosen on the Tools page (D-119): no tool column
+/// The matrix of a target chosen on the Tools page (D-121): no tool column
 /// nor extension that only serves what the target cannot have; the
 /// general extensions stay.
 #[test]

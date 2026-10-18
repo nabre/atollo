@@ -137,7 +137,7 @@ fn links_and_projects() {
     );
 }
 
-/// The matrix of a target chosen on the Tools page (D-119): only the links
+/// The matrix of a target chosen on the Tools page (D-121): only the links
 /// of components that target can have, its own name, its own file.
 #[test]
 fn matrix_follows_the_target() {

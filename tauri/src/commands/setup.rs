@@ -108,7 +108,7 @@ pub async fn components_check<R: Runtime>(
     .or_fail("check")?
 }
 
-/// The component × target grid of the Tools page («Matrice», D-119): what
+/// The component × target grid of the Tools page («Matrice», D-121): what
 /// each of the six systems can run from this PC, the state of every
 /// component on each of them, and the system chosen last there.
 #[derive(Debug, Serialize)]

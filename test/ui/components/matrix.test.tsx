@@ -1,4 +1,4 @@
-// «Matrice» of the Tools page (D-119): one row per component, the six
+// «Matrice» of the Tools page (D-121): one row per component, the six
 // systems as columns with their readable names and marks, the states of
 // the cells with the reason, the details on a click; «Piattaforma»
 // remembered between sessions.

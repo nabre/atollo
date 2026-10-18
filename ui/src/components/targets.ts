@@ -1,6 +1,6 @@
 // The six systems as people call them («macOS Apple Silicon», not
 // darwin-arm64), with what each one is for this PC: the «Piattaforma»
-// selector of the Tools page and the columns of its grid (D-119).
+// selector of the Tools page and the columns of its grid (D-121).
 import type { TargetProfile, TargetToolStatus } from "../api";
 import { t } from "../i18n";
 

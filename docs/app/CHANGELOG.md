@@ -2,13 +2,13 @@
 
 ## Griglia dei sistemi in «Strumenti» (19/10/2026)
 
-- **«Matrice»**, nella Panoramica di «Strumenti» (D-119, [#7](https://github.com/nabre/dev-kit2/issues/7)): una riga per componente e una colonna per ognuno dei sei sistemi (Windows x64 e ARM64, macOS Apple Silicon e Intel, Linux x64 e ARM64). Ogni casella dice se il componente lì è disponibile, in emulazione, pre-scaricato, se si completa al primo avvio su quel sistema o se non è disponibile, con il motivo; un punto verde se è installato. Un clic apre il dettaglio, con la versione e «Mostra questo sistema».
+- **«Matrice»**, nella Panoramica di «Strumenti» (D-121, [#7](https://github.com/nabre/dev-kit2/issues/7)): una riga per componente e una colonna per ognuno dei sei sistemi (Windows x64 e ARM64, macOS Apple Silicon e Intel, Linux x64 e ARM64). Ogni casella dice se il componente lì è disponibile, in emulazione, pre-scaricato, se si completa al primo avvio su quel sistema o se non è disponibile, con il motivo; un punto verde se è installato. Un clic apre il dettaglio, con la versione e «Mostra questo sistema».
 - **«Piattaforma»** ha i nomi dei sistemi al posto degli id, con «questo PC», «in emulazione» o «non eseguibile qui», e il sistema scelto resta al prossimo avvio (`settings.json`). Il sistema di questo PC non si salva: lo stesso kit aperto su un altro PC mostra il suo.
 - **Relazioni ed estensioni dell'editor** seguono il sistema scelto: niente collegamenti né colonne per i componenti che quel sistema non ha.
 - «non disponibile sui PC ARM64» solo su un PC Windows ARM64: da un altro PC un kit Windows ARM64 dice «non disponibile per win32-arm64».
 - `Atollo components` segna come scelto Zig accanto a C e C++ su macOS e Linux, come la pagina.
 - Su un Mac la pagina non lancia più `xcode-select` a ogni apertura: la risposta resta valida (gli strumenti installati intanto si vedono entro un minuto).
-- Zig cancellato a mano su macOS o Linux toglie dalla scelta anche C e C++, su ogni sistema del kit: ora è una decisione scritta (D-120).
+- Zig cancellato a mano su macOS o Linux toglie dalla scelta anche C e C++, su ogni sistema del kit: ora è una decisione scritta (D-122).
 
 **Verificato**: su Windows 743 test Rust e 141 test dell'interfaccia, lint, clippy e formattazione puliti; clippy incrociato per macOS Apple Silicon e Linux x64 pulito. La griglia vista da un Mac o da un PC Linux veri non è provata.
 

@@ -2,7 +2,7 @@
 // explorer: the catalog as it is on disk, the choice not applied yet, what
 // applying it installs and removes, the projects that need each component;
 // on the Tools page also the component × system grid and the system shown
-// («Piattaforma»), remembered between sessions (D-119).
+// («Piattaforma»), remembered between sessions (D-121).
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   componentsApply,

@@ -250,7 +250,7 @@ pub fn project_versions_set<R: Runtime>(
 /// The relations matrix (versions/relations/, D-81): the saved one while nothing
 /// it was made from changed; `force` builds it again. Off the window's
 /// thread: it reads every project's files and asks WebView2 its version.
-/// `target`: the system chosen on the Tools page (D-119), this PC's when
+/// `target`: the system chosen on the Tools page (D-121), this PC's when
 /// omitted.
 #[tauri::command]
 pub async fn relations_matrix<R: Runtime>(

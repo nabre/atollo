@@ -1,4 +1,4 @@
-// «Matrice», an overview of the Tools page (D-119): one row per component,
+// «Matrice», an overview of the Tools page (D-121): one row per component,
 // one column per system (Rust `router::probe::probe_all_targets`), each
 // cell with the state of the component there and its details on a click.
 // The column of the system shown by «Piattaforma» is highlighted; the

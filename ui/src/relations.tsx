@@ -26,7 +26,7 @@ import { DataTable } from "./workbench";
 /** The matrix, read again when the preparation finishes a step or `key`
  * (the components on disk) changes; the backend rebuilds it only when what
  * it is made from changed. `target`: the system chosen on the Tools page
- * (D-119), whose components alone it relates; this PC's when omitted. */
+ * (D-121), whose components alone it relates; this PC's when omitted. */
 export function useRelations(setup: SetupSnapshot | null, key: unknown, enabled: boolean, target?: string) {
   const [matrix, setMatrix] = useState<RelationsMatrix | null>(null);
   const load = useCallback(
