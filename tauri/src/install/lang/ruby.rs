@@ -309,7 +309,7 @@ impl Installer for Ruby {
     }
 
     /// `gemrc` and `rbconfig.rb` fitted to the kit (`fit_conda_ruby`) and
-    /// the launchers of Ruby's programs (D-121), the same from the network
+    /// the launchers of Ruby's programs (D-125), the same from the network
     /// and from the kept packages (D-118). The gems are outside, in
     /// `data/ruby-gems` (D-112).
     fn after_conda(

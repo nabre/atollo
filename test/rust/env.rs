@@ -999,7 +999,7 @@ fn dotnet_invariant_off_linux_never() {
     }
 }
 
-/// D-121: a conda environment puts its `kit-bin` on the PATH, the
+/// D-125: a conda environment puts its `kit-bin` on the PATH, the
 /// launchers of the component's programs, never its `bin` with those of
 /// its dependencies; `bin` while it has no `kit-bin` (installed before).
 #[test]

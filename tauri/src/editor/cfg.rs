@@ -102,7 +102,7 @@ fn hidden(os: Os) -> &'static [&'static str] {
 /// the user's choice and stays. VSCodium 1.140 calls its themes "Dark
 /// Modern" and "Light Modern" (older ids: "Default ..."). "NEXKORA Dark"
 /// and "NEXKORA Light" are the kit's own themes before the name Atollo
-/// (D-120): a settings file that still has them gets the new ones.
+/// (D-124): a settings file that still has them gets the new ones.
 const THEMES: &[(&str, &[&str], &str)] = &[
     (
         "workbench.colorTheme",

@@ -179,7 +179,7 @@ pub trait Installer: Sync {
         None
     }
     /// The conda package whose programs go on the kit's PATH on `target`,
-    /// through the launchers of `kit-bin` (`conda::write_launchers`, D-121),
+    /// through the launchers of `kit-bin` (`conda::write_launchers`, D-125),
     /// instead of the whole `bin` of the environment. Default: none.
     fn conda_programs(&self, _target: crate::kit::Target) -> Option<&'static str> {
         None

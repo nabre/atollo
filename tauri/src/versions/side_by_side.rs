@@ -42,7 +42,7 @@ pub fn refresh(kit: &Kit) {
         crate::log::warn(&format!("make for C/C++: {e:#}"));
     }
     // `kit-bin` for a Ruby, MongoDB or R environment installed before the
-    // kit wrote it (D-121).
+    // kit wrote it (D-125).
     crate::install::conda::launchers_of_older_installations(kit);
 }
 

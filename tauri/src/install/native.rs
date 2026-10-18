@@ -935,7 +935,7 @@ impl Installer for R {
                 }
             }
             // `R` and `Rscript` on the PATH, not the 150 programs of the
-            // environment's `bin` (D-121).
+            // environment's `bin` (D-125).
             crate::install::conda::write_launchers(target, "r-base")?;
         }
         let site = join_rel(target, "lib/R/etc/Rprofile.site");

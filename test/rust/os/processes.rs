@@ -37,7 +37,7 @@ fn trailing_separator_does_not_matter() {
     );
 }
 
-/// Case as the usual file system of the PC (D-119): `KIT` is `kit` on
+/// Case as the usual file system of the PC (D-123): `KIT` is `kit` on
 /// Windows and macOS, another folder on Linux.
 #[test]
 fn case_follows_the_file_system() {

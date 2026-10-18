@@ -850,7 +850,7 @@ pub fn status(kit: &Kit) -> Status {
 }
 
 /// The folder of a conda environment with the launchers of the
-/// component's own programs (D-121): on the PATH in place of `bin`, which
+/// component's own programs (D-125): on the PATH in place of `bin`, which
 /// also holds those of every dependency (`openssl`, `tput`, `kinit`,
 /// `envsubst`... 30 programs for Ruby's 16, 56 for MongoDB's 2, 156 for
 /// R's 2).

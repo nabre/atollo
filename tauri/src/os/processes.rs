@@ -28,7 +28,7 @@ pub struct Proc {
 
 /// A path of this PC as its usual file system compares it: without case on
 /// Windows (NTFS) and macOS (APFS by default), exact on Linux, where
-/// `VSCODIUM-SERVER` and `vscodium-server` are two folders (D-119).
+/// `VSCODIUM-SERVER` and `vscodium-server` are two folders (D-123).
 pub(crate) fn path_key(path: &str) -> String {
     if cfg!(any(windows, target_os = "macos")) {
         path.to_lowercase()
