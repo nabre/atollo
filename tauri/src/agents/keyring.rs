@@ -26,9 +26,11 @@
 //! so `keyring.json` is the same file on every system. On macOS the items
 //! are read and written with `/usr/bin/security`, as go-keyring does, so
 //! that agy reads them without a Keychain prompt; on Linux through the
-//! Secret Service. Fail closed: a store that exists but cannot be used
-//! (locked, denied), or a sealing key that cannot be read or created, moves
-//! nothing and writes no secret of the computer into the kit. Only on
+//! Secret Service, into its `login` collection (the only one go-keyring
+//! reads). Fail closed: a store that exists but cannot be used (locked,
+//! denied, no `login` collection), or a sealing key that cannot be read or
+//! created, moves nothing and writes no secret of the computer into the
+//! kit. Only on
 //! Linux with no Secret Service at all (WSL, minimal desktops), and only on
 //! a disk that really keeps the 600 mode, the sign-in stays unencrypted in
 //! the kit (keyring.json, 600), with a warning; on a disk without
@@ -273,7 +275,8 @@ impl Store for System {
 
 /// macOS: go-keyring calls `/usr/bin/security` (so do we: items it writes
 /// are then read by agy without a Keychain prompt). Linux: the Secret
-/// Service, through the `keyring` crate.
+/// Service, through the `keyring` crate; written into its `login`
+/// collection, the only one go-keyring reads ([`LOGIN_COLLECTION`]).
 #[cfg(unix)]
 mod unix {
     #[cfg(not(target_os = "macos"))]
@@ -364,8 +367,6 @@ mod unix {
     }
 
     #[cfg(not(target_os = "macos"))]
-    use keyring::credential::CredentialApi;
-    #[cfg(not(target_os = "macos"))]
     use keyring::secret_service::{
         delete_item, get_item_attributes, get_item_secret, SsCredential,
     };
@@ -406,8 +407,14 @@ mod unix {
         Ok(out)
     }
 
+    /// Into the `login` collection only, whatever `default` is: go-keyring
+    /// reads nothing else. Without it (KeePassXC, some KWallet setups)
+    /// nothing is written and the restore fails closed with
+    /// [`super::NO_LOGIN_COLLECTION`].
     #[cfg(not(target_os = "macos"))]
     pub fn write(item: &Item) -> Result<()> {
+        use dbus_secret_service::{EncryptionType, SecretService};
+
         let Some((service, user)) = split_target(&item.target) else {
             anyhow::bail!("{}: not a go-keyring name", item.target);
         };
@@ -416,10 +423,26 @@ mod unix {
             item.blob.as_deref().unwrap_or_default(),
         )
         .context("credential blob")?;
+        // The same session the `keyring` crate opens (no crypto feature).
+        let ss = SecretService::connect(EncryptionType::Plain).context("Secret Service")?;
+        let all = ss.get_all_collections().context("Secret Service")?;
+        let login = &all[super::login_collection(all.iter().map(|c| &*c.path))?];
+        login
+            .ensure_unlocked()
+            .context("Secret Service: the login collection is locked")?;
         delete(&item.target);
-        SsCredential::new_with_target(None, service, user)?
-            .set_secret(&raw)
-            .with_context(|| format!("Secret Service {}", item.target))
+        // The attributes and label the crate gives its items (`application`
+        // = `rust-keyring`: `list` prefers agy's own copy to these).
+        let cred = SsCredential::new_with_target(Some("login"), service, user)?;
+        let attributes = cred
+            .attributes
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        login
+            .create_item(&cred.label, attributes, &raw, true, "text/plain")
+            .with_context(|| format!("Secret Service {}", item.target))?;
+        Ok(())
     }
 
     #[cfg(not(target_os = "macos"))]
