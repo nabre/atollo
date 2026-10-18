@@ -78,7 +78,7 @@ export interface TargetSummary extends Omit<TargetProfile, "id"> {
   tools: TargetToolStatus[];
 }
 
-/** The component × system grid of the Tools page (D-119). */
+/** The component × system grid of the Tools page (D-121). */
 export interface TargetGrid {
   profiles: TargetProfile[];
   targets: TargetSummary[];
@@ -287,7 +287,7 @@ function sampleGrid(): TargetGrid {
   return { profiles, targets, chosen: null };
 }
 
-/** The component × system grid and the system chosen last (D-119). */
+/** The component × system grid and the system chosen last (D-121). */
 export function targetProfiles(): Promise<TargetGrid> {
   return query<TargetGrid>("target_profiles", sampleGrid());
 }

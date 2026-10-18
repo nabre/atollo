@@ -90,7 +90,7 @@ export interface Settings {
   /** Keeps the packages of the conda environments to reinstall them
    * without the network after a move (D-118). */
   keepCondaPackages: boolean;
-  /** «Piattaforma» of the Tools page (D-119): kept by `settings_set`,
+  /** «Piattaforma» of the Tools page (D-121): kept by `settings_set`,
    * written only by `tools_target_set`. */
   toolsTarget?: string | null;
 }

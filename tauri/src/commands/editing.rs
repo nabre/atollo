@@ -112,7 +112,7 @@ pub fn project_editor_settings_set<R: Runtime>(
 }
 
 /// The kit's matrix of editor extensions by language ("Linguaggi e
-/// strumenti"), for `target`: the system chosen on the Tools page (D-119),
+/// strumenti"), for `target`: the system chosen on the Tools page (D-121),
 /// this PC's when omitted.
 #[tauri::command]
 pub fn extensions_matrix<R: Runtime>(

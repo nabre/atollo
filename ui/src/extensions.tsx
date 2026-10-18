@@ -27,7 +27,7 @@ export function ExtensionsMatrixSection({
   projects: ProjectInfo[];
   /** A new list when the page reloads: the installed marks follow. */
   components: ComponentInfo[];
-  /** The system chosen on the Tools page (D-119): only its tools and
+  /** The system chosen on the Tools page (D-121): only its tools and
    * their extensions. This PC's when omitted. */
   target?: string | undefined;
 }) {
