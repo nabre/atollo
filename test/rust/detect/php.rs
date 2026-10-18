@@ -50,8 +50,8 @@ const OWN_HTACCESS: &str = "RewriteEngine On\nRewriteRule ^shop/(.*)$ catalog.ph
 /// front controller does; any other directive is a rule of the project's own.
 #[test]
 fn htaccess_rules_of_its_own() {
-    use crate::detect::php::{apache_offered, htaccess_has_own_rules};
-    use crate::kit::Os;
+    use crate::detect::php::{apache_available, apache_offered, htaccess_has_own_rules};
+    use crate::kit::Target;
     assert!(!htaccess_has_own_rules(LARAVEL_HTACCESS));
     assert!(!htaccess_has_own_rules(WORDPRESS_HTACCESS));
     // Drupal's stock file denies files Caddy's rules serve: its own rules.
@@ -62,14 +62,15 @@ fn htaccess_rules_of_its_own() {
     assert!(!htaccess_has_own_rules(""));
     assert!(htaccess_has_own_rules(OWN_HTACCESS));
     assert!(htaccess_has_own_rules("AuthType Basic\n"));
-    // Apache only on Windows, and only for rules of its own.
+    // Apache where the catalog has it (D-116), only for rules of its own.
     let own = [OWN_HTACCESS.to_owned()];
     let stock = [WORDPRESS_HTACCESS.to_owned()];
-    assert!(apache_offered(Os::Win32, &own));
-    assert!(!apache_offered(Os::Win32, &stock));
-    assert!(!apache_offered(Os::Win32, &[]));
-    for os in [Os::Darwin, Os::Linux] {
-        assert!(!apache_offered(os, &own), "{os:?}");
+    assert!(apache_offered(Target::WIN32_X64, &own));
+    assert!(!apache_offered(Target::WIN32_X64, &stock));
+    assert!(!apache_offered(Target::WIN32_X64, &[]));
+    for t in Target::ALL {
+        assert_eq!(apache_offered(t, &own), apache_available(t), "{t}");
+        assert!(!apache_offered(t, &stock), "{t}");
     }
 }
 

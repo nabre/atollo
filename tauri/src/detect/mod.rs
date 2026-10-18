@@ -577,11 +577,11 @@ pub fn requires(dir: &Path) -> Vec<String> {
             found.insert("cc");
         }
     });
-    // A `.htaccess` is PHP; Apache only on Windows and for rules of its own
-    // (Caddy serves the stock ones, detect/php.rs).
+    // A `.htaccess` is PHP; Apache where the catalog has it and for rules
+    // of its own (Caddy serves the stock ones, detect/php.rs).
     if php::HTACCESS.iter().any(|f| exists(dir, f)) {
         found.insert("php");
-        if php::apache_offered(crate::kit::Os::current(), &php::htaccess_texts(dir, ".")) {
+        if php::apache_offered(crate::kit::Target::detect(), &php::htaccess_texts(dir, ".")) {
             found.insert("apache");
         }
     }
