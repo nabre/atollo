@@ -484,8 +484,8 @@ fn need_of_file(name: &str) -> Option<&'static str> {
 
 /// The database servers a project uses (D-73), from its root: SQLite files,
 /// `.env` (Laravel's `DB_CONNECTION`, `DATABASE_URL`) and the drivers in
-/// its manifests (npm, pip, Composer). A `.env` of MariaDB means the kit's
-/// MySQL, its only SQL server.
+/// its manifests (npm, pip, Composer). A `.env` or a driver of MariaDB
+/// means the kit's MySQL, its only SQL server.
 fn databases(dir: &Path) -> BTreeSet<&'static str> {
     let mut found = BTreeSet::new();
     if exists(dir, "wp-config.php")
@@ -526,7 +526,14 @@ fn databases(dir: &Path) -> BTreeSet<&'static str> {
             })
         })
     };
-    if has(&["mysql", "mysql2", "pymysql", "mysqlclient", "aiomysql"]) {
+    if has(&[
+        "mysql",
+        "mysql2",
+        "mariadb",
+        "pymysql",
+        "mysqlclient",
+        "aiomysql",
+    ]) {
         found.insert("mysql");
     }
     if has(&[
