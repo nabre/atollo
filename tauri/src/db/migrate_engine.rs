@@ -441,13 +441,35 @@ fn verify(s: &dyn Servers, line: &str, mysql: &str, databases: &[String]) -> Res
 }
 
 /// `from` into `to` through a `.partial` file: an interrupted write never
-/// leaves a file that looks whole.
+/// leaves a file that looks whole. The file is the owner's only, like the
+/// folder ([`private_dumps`]): a dump holds every row of the databases.
 fn write_through(to: &Path, write: impl FnOnce(&Path) -> Result<()>) -> Result<()> {
     let partial = to.with_extension("partial");
     let _ = fs::remove_file(&partial);
     write(&partial)?;
+    owner_only(&partial);
     fs::rename(&partial, to).with_context(|| to.display().to_string())?;
     Ok(())
+}
+
+/// The dumps' folder, created owner-only (DACL on Windows, `0700` on Unix):
+/// on a shared PC the other users read no dump. A disk without permissions
+/// (exFAT, FAT) only gets a warning in the log, as the kit's other private
+/// files (`router::fs`).
+fn private_dumps(dir: &Path) -> Result<()> {
+    fs::create_dir_all(dir)?;
+    if let Err(e) = crate::router::fs::restrict_dir_to_owner(dir) {
+        crate::log::warn(&format!("{}: permissions: {e:#}", dir.display()));
+    }
+    Ok(())
+}
+
+/// `path` the owner's only, or a warning in the log where the disk has no
+/// permissions.
+fn owner_only(path: &Path) {
+    if let Err(e) = crate::router::fs::restrict_to_owner(path) {
+        crate::log::warn(&format!("{}: permissions: {e:#}", path.display()));
+    }
 }
 
 /// The run's own record of what to undo when a step fails.
@@ -516,7 +538,7 @@ fn move_line(
         );
     }
     let dumps = dumps_dir(kit);
-    fs::create_dir_all(&dumps)?;
+    private_dumps(&dumps)?;
     // One dump per database, named by its place (a database's name may not
     // be a file's); `<line>.txt` says which is which.
     let index: String = databases
@@ -524,7 +546,9 @@ fn move_line(
         .enumerate()
         .map(|(i, d)| format!("{i}\t{d}\n"))
         .collect();
-    fs::write(dumps.join(format!("{line}.txt")), index)?;
+    let index_file = dumps.join(format!("{line}.txt"));
+    fs::write(&index_file, index)?;
+    owner_only(&index_file);
     let mut files = Vec::new();
     for (i, d) in databases.iter().enumerate() {
         let raw = dumps.join(format!("{line}.{i}.sql"));
