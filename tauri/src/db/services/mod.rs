@@ -1,6 +1,12 @@
-//! Database servers of the kit (DECISIONS.md D-73): MariaDB and MongoDB,
-//! one instance each for every project (as Laragon), started from the
-//! Database page or with Dev-Kit.
+//! Database servers of the kit (DECISIONS.md D-73): MySQL (D-110, the SQL
+//! server of new kits), MariaDB (kept on the kits that run it, until its
+//! data moves to MySQL, WP-3.9) and MongoDB, one instance each for every
+//! project (as Laragon), started from the Database page or with Dev-Kit.
+//!
+//! - a project's SQL database is on the server it was created on (a
+//!   password stored for `mysql` or `mariadb`); a new one goes to the kit's
+//!   SQL server ([`sql_engine`]): the callers that still say `mariadb`
+//!   (detection, frameworks) reach it through [`project_engine`];
 //!
 //! - they listen on 127.0.0.1 only and ask for a password (D-74): MariaDB's
 //!   `root` and MongoDB's `admin` get a random one at the first start, also
@@ -33,6 +39,7 @@
 mod access;
 mod backups;
 mod data;
+pub mod mysql;
 mod tools;
 
 use std::collections::BTreeMap;
@@ -255,11 +262,51 @@ pub fn project_line(kit: &Kit, project: &str, engine: &str) -> Option<String> {
         .or_else(|| server_line(kit, engine))
 }
 
-/// The port of the project's MariaDB database, when it has one: the
-/// `DB_PORT` of its programs (PLAN.md §13.2).
+/// The kit's SQL server (D-110, T3.8.8): MySQL, unless the kit runs
+/// MariaDB and has no MySQL, where MariaDB stays until its data moves
+/// (WP-3.9): a new project there gets its database next to the others.
+pub fn sql_engine(kit: &Kit) -> DbEngine {
+    sql_engine_with(|id| installed(kit, id))
+}
+
+/// [`sql_engine`] with the installed components given by `installed`.
+pub fn sql_engine_with(installed: impl Fn(&str) -> bool) -> DbEngine {
+    if !installed(DbEngine::MySql.component()) && installed(DbEngine::MariaDb.component()) {
+        DbEngine::MariaDb
+    } else {
+        DbEngine::MySql
+    }
+}
+
+/// The SQL server of the project's database: the one it was created on (a
+/// password stored, MySQL first), otherwise the kit's ([`sql_engine`]).
+pub fn project_sql_engine(kit: &Kit, project: &str) -> DbEngine {
+    project_sql_db(kit, project).unwrap_or_else(|| sql_engine(kit))
+}
+
+/// The server a request for the project's `engine` reaches: for a SQL one
+/// (`mariadb` of the detection and the frameworks, `mysql`), the project's
+/// SQL server ([`project_sql_engine`]); MongoDB as it is.
+pub fn project_engine(kit: &Kit, project: &str, engine: DbEngine) -> DbEngine {
+    if engine.is_sql() {
+        project_sql_engine(kit, project)
+    } else {
+        engine
+    }
+}
+
+/// The SQL server the project's database is on, when it has one.
+fn project_sql_db(kit: &Kit, project: &str) -> Option<DbEngine> {
+    let stored = auth::project_passwords(kit, project);
+    DbEngine::SQL
+        .into_iter()
+        .find(|e| stored.contains_key(e.id()))
+}
+
+/// The port of the project's SQL database, when it has one: the `DB_PORT`
+/// of its programs (PLAN.md §13.2).
 pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
-    let id = DbEngine::MariaDb.id();
-    auth::project_passwords(kit, project).get(id)?;
+    let id = project_sql_db(kit, project)?.id();
     Some(line_port(
         kit,
         id,
@@ -267,19 +314,68 @@ pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
     ))
 }
 
-/// The `MYSQL_HOME` of the project's programs when its MariaDB database is
-/// on another version than the server's: the folder of that version's
-/// `[client]` login, written at its start (`mariadb` then logs in on its
-/// port). None: the kit's own (`env.rs`), on the server's port.
-pub fn project_mysql_home(kit: &Kit, project: &str) -> Option<PathBuf> {
-    let id = DbEngine::MariaDb.id();
-    auth::project_passwords(kit, project).get(id)?;
-    let line = auth::project_line(kit, project, id).ok().flatten()?;
+/// The login of the project's programs when its SQL database is on another
+/// version than the server's, written at that version's start (`mariadb`
+/// or `mysql` of its scripts then log in on its port): `MYSQL_HOME` with
+/// MariaDB's `my.ini`, or `DEVKIT_MYSQL_CNF` (read by the kit's launchers,
+/// `setup/kit_files.rs`) and `CP_MYSQL`, the folder of that version. Empty:
+/// the kit's own (`env.rs`), on the server's port.
+pub fn project_client_env(kit: &Kit, project: &str) -> Vec<(&'static str, PathBuf)> {
+    let Some(engine) = project_sql_db(kit, project) else {
+        return Vec::new();
+    };
+    let id = engine.id();
+    let Some(line) = auth::project_line(kit, project, id).ok().flatten() else {
+        return Vec::new();
+    };
     if Some(&line) == server_line(kit, id).as_ref() {
-        return None;
+        return Vec::new();
     }
-    let dir = auth::line_client_dir(kit, &line);
-    dir.join("my.ini").is_file().then_some(dir)
+    match engine {
+        DbEngine::MariaDb => {
+            let dir = auth::line_client_dir(kit, &line);
+            if dir.join("my.ini").is_file() {
+                vec![("MYSQL_HOME", dir)]
+            } else {
+                Vec::new()
+            }
+        }
+        DbEngine::MySql => {
+            let cnf = auth::mysql_line_cnf(kit, &line);
+            if cnf.is_file() {
+                vec![
+                    ("DEVKIT_MYSQL_CNF", cnf),
+                    ("CP_MYSQL", line_dir(kit, id, Some(&line))),
+                ]
+            } else {
+                Vec::new()
+            }
+        }
+        DbEngine::MongoDb => Vec::new(),
+    }
+}
+
+/// The folder of version `line` of the versioned component `id` (None: the
+/// version it runs).
+pub(crate) fn line_dir(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
+    let Some(c) = Catalog::get().find(id) else {
+        return kit.apps().join(id);
+    };
+    let line = line.map(str::to_owned).or_else(|| server_line(kit, id));
+    crate::versions::dir_for(kit, c, line.as_deref()).unwrap_or_else(|| kit.apps().join(id))
+}
+
+/// Shown on the Database page: every server but MariaDB, which only a kit
+/// that has it (installed, data, settings) shows (D-110).
+fn shown(kit: &Kit, engine: DbEngine, settings: &BTreeMap<String, Setting>) -> bool {
+    match engine {
+        DbEngine::MariaDb => {
+            installed(kit, engine.id())
+                || data::has_any_data(kit, engine)
+                || settings.contains_key(engine.id())
+        }
+        DbEngine::MySql | DbEngine::MongoDb => true,
+    }
 }
 
 /// The output of `line`: `<id>.log` for the version the server runs,
@@ -402,6 +498,7 @@ impl Services {
         let mut errors = self.errors.lock().unwrap_or_else(|e| e.into_inner());
         DbEngine::ALL
             .into_iter()
+            .filter(|e| shown(&self.kit, *e, &settings))
             .map(|engine| {
                 let id = engine.id();
                 let setting = settings.get(id).cloned().unwrap_or_default();
@@ -503,8 +600,23 @@ impl Services {
                     .arg("--bind-address=127.0.0.1")
                     .arg("--console");
             }
+            DbEngine::MySql => {
+                // Only the kit's my.cnf (`data::prepare`, port and address
+                // in it); errors on stderr, which the log gets (on Windows
+                // they would go to a file of the data folder).
+                cmd.arg(format!("--defaults-file={}", data.join("my.cnf").display()));
+                if self.kit.os().is_windows() {
+                    cmd.arg("--console");
+                }
+            }
         }
         cmd
+    }
+
+    /// The server `engine` names for the project (`mariadb` of the callers
+    /// that know no other: its SQL server, [`project_engine`]).
+    pub(crate) fn engine_for(&self, project: &str, engine: &str) -> Result<DbEngine> {
+        Ok(project_engine(&self.kit, project, DbEngine::parse(engine)?))
     }
 
     /// Starts `id` and waits until it answers on its port. Errors: not
@@ -689,11 +801,22 @@ impl Services {
         }
     }
 
-    /// The address that opens phpMyAdmin logged in to the running MariaDB
-    /// (D-107), version `line` (None: the one the server runs), in `lang`.
-    pub fn phpmyadmin_url(&self, line: Option<&str>, lang: &str) -> Result<String> {
-        let (port, env) = self.running_at(DbEngine::MariaDb, line)?;
-        self.phpmyadmin.open(&self.kit, &env, port, lang)
+    /// The address that opens phpMyAdmin logged in to the running SQL
+    /// `engine` (D-107), version `line` (None: the one the server runs), in
+    /// `lang`.
+    pub fn phpmyadmin_url(
+        &self,
+        engine: DbEngine,
+        line: Option<&str>,
+        lang: &str,
+    ) -> Result<String> {
+        if !engine.is_sql() {
+            bail!("phpMyAdmin does not open {engine}");
+        }
+        let (port, env) = self.running_at(engine, line)?;
+        let password = admin_password(&auth::load(&self.kit), engine)
+            .ok_or_else(|| anyhow::anyhow!("{engine} has no password of root yet"))?;
+        self.phpmyadmin.open(&self.kit, &env, port, &password, lang)
     }
 
     /// Asks the server to shut down, then ends whatever is left.
@@ -739,7 +862,7 @@ impl Services {
                     );
                 cmd
             }
-            DbEngine::MariaDb => {
+            DbEngine::MariaDb | DbEngine::MySql => {
                 // phpMyAdmin logged in to this version ends with it.
                 self.phpmyadmin.stop_for(server.port);
                 let admin = engine.admin_bin().unwrap_or(engine.client_bin());

@@ -1,7 +1,7 @@
 use super::*;
 use crate::db::services::{
-    bin_at, line_port, line_ports, lines_in_use, load_settings, log_path, project_db_port,
-    project_line, project_mysql_home, server_lines, Setting, State,
+    bin_at, line_port, line_ports, lines_in_use, load_settings, log_path, project_client_env,
+    project_db_port, project_line, server_lines, Setting, State,
 };
 use crate::kit::{tests::TempDir, Arch};
 
@@ -263,21 +263,114 @@ fn autostart_lines_follow_the_projects() {
 
     // `MYSQL_HOME` of a project on another version: that version's login,
     // once its start wrote it; none on the server's version.
-    assert_eq!(project_mysql_home(&kit, "shop"), None, "not started yet");
+    assert!(
+        project_client_env(&kit, "shop").is_empty(),
+        "not started yet"
+    );
     auth::write_line_client_ini(&kit, "10.6", 3307, "pw").unwrap();
-    let home = project_mysql_home(&kit, "shop").unwrap();
-    assert_eq!(home, kit.app_dir().join("db").join("lines").join("10.6"));
+    let env = project_client_env(&kit, "shop");
+    assert_eq!(env.len(), 1);
+    let (name, home) = &env[0];
+    assert_eq!(*name, "MYSQL_HOME");
+    assert_eq!(*home, kit.app_dir().join("db").join("lines").join("10.6"));
     let ini = fs::read_to_string(home.join("my.ini")).unwrap();
     assert!(
         ini.contains("port=3307") && ini.contains("user=root"),
         "{ini}"
     );
-    assert_eq!(
-        project_mysql_home(&kit, "blog"),
-        None,
+    assert!(
+        project_client_env(&kit, "blog").is_empty(),
         "the server's version"
     );
     assert!(auth::write_line_client_ini(&kit, "..", 3307, "pw").is_err());
+}
+
+/// MySQL (D-110): the SQL server of a new kit, MariaDB kept where it runs;
+/// a project's SQL database stays where it is; the login of another
+/// version of MySQL reaches the project's programs.
+#[test]
+fn mysql_is_the_kits_sql_server() {
+    use crate::db::auth;
+    use crate::db::services::{project_engine, project_sql_engine, sql_engine, sql_engine_with};
+    use crate::db::DbEngine;
+    assert_eq!(sql_engine_with(|_| false), DbEngine::MySql, "a new kit");
+    assert_eq!(sql_engine_with(|id| id == "mariadb"), DbEngine::MariaDb);
+    assert_eq!(sql_engine_with(|id| id == "mysql"), DbEngine::MySql);
+    assert_eq!(sql_engine_with(|_| true), DbEngine::MySql, "both: MySQL");
+
+    let tmp = TempDir::new("services-mysql");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let s = Services::new(kit.clone());
+    // A new kit: MySQL and MongoDB on the page, no MariaDB.
+    let ids: Vec<String> = s.list().into_iter().map(|i| i.id).collect();
+    assert_eq!(ids, ["mysql", "mongodb"]);
+    assert_eq!(sql_engine(&kit), DbEngine::MySql);
+    assert_eq!(
+        project_engine(&kit, "shop", DbEngine::MariaDb),
+        DbEngine::MySql,
+        "`mariadb` of the detection reaches MySQL"
+    );
+    assert_eq!(
+        project_engine(&kit, "shop", DbEngine::MongoDb),
+        DbEngine::MongoDb
+    );
+    let err = s
+        .start_for("shop", "mariadb", &KitEnv::default())
+        .unwrap_err();
+    assert!(
+        format!("{err:#}").contains("mysql is not installed"),
+        "{err:#}"
+    );
+
+    // A kit with MariaDB and no MySQL keeps MariaDB, on the page too.
+    fake_server(&kit, "mariadb", "11.4.5");
+    assert_eq!(sql_engine(&kit), DbEngine::MariaDb);
+    let ids: Vec<String> = s.list().into_iter().map(|i| i.id).collect();
+    assert_eq!(ids, ["mariadb", "mysql", "mongodb"]);
+    auth::set_project_password(&kit, "old", "mariadb", "pw").unwrap();
+
+    // MySQL installed: new databases there, the old one stays on MariaDB.
+    fake_server(&kit, "mysql", "9.7.2");
+    let c = Catalog::get().find("mysql").unwrap();
+    let older = crate::versions::saved_dir(&kit, c, "8.4");
+    fs::create_dir_all(older.join("bin")).unwrap();
+    for stem in ["mysqld", "mysql"] {
+        let exe = crate::router::bins::exe_name(kit.os(), stem);
+        fs::write(older.join("bin").join(exe), b"").unwrap();
+    }
+    assert_eq!(sql_engine(&kit), DbEngine::MySql);
+    assert_eq!(project_sql_engine(&kit, "new"), DbEngine::MySql);
+    assert_eq!(project_sql_engine(&kit, "old"), DbEngine::MariaDb);
+    assert_eq!(
+        project_engine(&kit, "old", DbEngine::MySql),
+        DbEngine::MariaDb
+    );
+    assert_eq!(server_lines(&kit, "mysql"), ["9.7", "8.4"]);
+    assert_eq!(line_port(&kit, "mysql", None), 3306);
+    assert_eq!(line_port(&kit, "mysql", Some("8.4")), 3307);
+    assert!(bin_at(&kit, "mysql", Some("8.4"), "mysqld").starts_with(&older));
+
+    // A project on MySQL 8.4: its port, then the login of 8.4 once written.
+    auth::set_project_password(&kit, "shop", "mysql", "pw").unwrap();
+    assert_eq!(project_db_port(&kit, "shop"), Some(3306));
+    auth::set_project_line(&kit, "shop", "mysql", Some("8.4")).unwrap();
+    assert_eq!(project_db_port(&kit, "shop"), Some(3307));
+    assert!(
+        project_client_env(&kit, "shop").is_empty(),
+        "not started yet"
+    );
+    auth::write_mysql_line_cnf(&kit, "8.4", 3307, "pw").unwrap();
+    let env = project_client_env(&kit, "shop");
+    let names: Vec<&str> = env.iter().map(|(n, _)| *n).collect();
+    assert_eq!(names, ["DEVKIT_MYSQL_CNF", "CP_MYSQL"]);
+    let cnf = fs::read_to_string(&env[0].1).unwrap();
+    assert!(
+        cnf.contains("port=3307\n") && cnf.contains("protocol=TCP\n"),
+        "{cnf}"
+    );
+    assert_eq!(env[1].1, older);
+    assert!(auth::write_mysql_line_cnf(&kit, "../x", 3307, "pw").is_err());
 }
 
 #[test]

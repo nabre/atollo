@@ -1,11 +1,15 @@
 //! The database servers the kit runs (PLAN-PIATTAFORME.md §4.3): one enum
-//! instead of the ids `"mariadb"` / `"mongodb"` matched as strings, so a new
-//! engine is a compile error at every place that has to know it.
+//! instead of the ids `"mariadb"` / `"mysql"` / `"mongodb"` matched as
+//! strings, so a new engine is a compile error at every place that has to
+//! know it.
 //!
 //! The ids stay the strings saved in `services.json`, `db.json`,
 //! `secrets.json` and sent to the interface (serde, [`DbEngine::id`]); the
 //! binaries are stems, the router adds `.exe` on Windows
 //! (`router::bins::db_bin_in`).
+//!
+//! MySQL is the kit's SQL server (Q-4, D-110); MariaDB stays for the kits
+//! that already run it, until their data moves to MySQL (WP-3.9).
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
@@ -15,17 +19,23 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "lowercase")]
 pub enum DbEngine {
     MariaDb,
+    MySql,
     MongoDb,
 }
 
 impl DbEngine {
     /// Every engine, in the order of the Database page.
-    pub const ALL: [DbEngine; 2] = [DbEngine::MariaDb, DbEngine::MongoDb];
+    pub const ALL: [DbEngine; 3] = [DbEngine::MariaDb, DbEngine::MySql, DbEngine::MongoDb];
+
+    /// The SQL servers, the kit's own first (D-110): the one a project gets
+    /// when it has none yet and the kit has both.
+    pub const SQL: [DbEngine; 2] = [DbEngine::MySql, DbEngine::MariaDb];
 
     /// The id saved in the kit's files and used by the interface.
     pub const fn id(self) -> &'static str {
         match self {
             DbEngine::MariaDb => "mariadb",
+            DbEngine::MySql => "mysql",
             DbEngine::MongoDb => "mongodb",
         }
     }
@@ -45,16 +55,15 @@ impl DbEngine {
 
     /// The catalog component of the server (versioned: one folder per line).
     pub const fn component(self) -> &'static str {
-        match self {
-            DbEngine::MariaDb => "mariadb",
-            DbEngine::MongoDb => "mongodb",
-        }
+        self.id()
     }
 
-    /// The port of the version the server runs when none is set.
+    /// The port of the version the server runs when none is set: MySQL
+    /// takes MariaDB's, so the `DB_PORT` of the projects stays valid when
+    /// their data moves (§4.3).
     pub const fn default_port(self) -> u16 {
         match self {
-            DbEngine::MariaDb => 3306,
+            DbEngine::MariaDb | DbEngine::MySql => 3306,
             DbEngine::MongoDb => 27017,
         }
     }
@@ -63,16 +72,18 @@ impl DbEngine {
     pub const fn server_bin(self) -> &'static str {
         match self {
             DbEngine::MariaDb => "mariadbd",
+            DbEngine::MySql => "mysqld",
             DbEngine::MongoDb => "mongod",
         }
     }
 
     /// The program that creates a new data folder before the first start
-    /// (in [`DbEngine::component`]); None: the server creates it itself.
+    /// (in [`DbEngine::component`]); None: the server creates it itself
+    /// (MySQL with `mysqld --initialize-insecure`, `services::data`).
     pub const fn install_db_bin(self) -> Option<&'static str> {
         match self {
             DbEngine::MariaDb => Some("mariadb-install-db"),
-            DbEngine::MongoDb => None,
+            DbEngine::MySql | DbEngine::MongoDb => None,
         }
     }
 
@@ -80,6 +91,7 @@ impl DbEngine {
     pub const fn client_bin(self) -> &'static str {
         match self {
             DbEngine::MariaDb => "mariadb",
+            DbEngine::MySql => "mysql",
             DbEngine::MongoDb => "mongosh",
         }
     }
@@ -88,7 +100,7 @@ impl DbEngine {
     /// separate unversioned one (`mongosh`).
     pub const fn client_component(self) -> &'static str {
         match self {
-            DbEngine::MariaDb => "mariadb",
+            DbEngine::MariaDb | DbEngine::MySql => self.id(),
             DbEngine::MongoDb => "mongosh",
         }
     }
@@ -97,6 +109,7 @@ impl DbEngine {
     pub const fn dump_bin(self) -> &'static str {
         match self {
             DbEngine::MariaDb => "mariadb-dump",
+            DbEngine::MySql => "mysqldump",
             DbEngine::MongoDb => "mongodump",
         }
     }
@@ -106,6 +119,7 @@ impl DbEngine {
     pub const fn restore_bin(self) -> &'static str {
         match self {
             DbEngine::MariaDb => "mariadb",
+            DbEngine::MySql => "mysql",
             DbEngine::MongoDb => "mongorestore",
         }
     }
@@ -113,7 +127,7 @@ impl DbEngine {
     /// The component of the dump and restore programs.
     pub const fn tools_component(self) -> &'static str {
         match self {
-            DbEngine::MariaDb => "mariadb",
+            DbEngine::MariaDb | DbEngine::MySql => self.id(),
             DbEngine::MongoDb => "mongodb-tools",
         }
     }
@@ -123,31 +137,40 @@ impl DbEngine {
     pub const fn admin_bin(self) -> Option<&'static str> {
         match self {
             DbEngine::MariaDb => Some("mariadb-admin"),
+            DbEngine::MySql => Some("mysqladmin"),
             DbEngine::MongoDb => None,
         }
     }
 
     /// The end of the name of a copy of a project's database (D-78):
-    /// `<name>-<stamp><ext>` in its backup folder.
+    /// `<name>-<stamp><ext>` in its backup folder. MariaDB and MySQL share
+    /// `.sql`: the server of such a copy is the project's
+    /// ([`DbEngine::of_backup`]).
     pub const fn backup_ext(self) -> &'static str {
         match self {
-            DbEngine::MariaDb => ".sql",
+            DbEngine::MariaDb | DbEngine::MySql => ".sql",
             DbEngine::MongoDb => ".archive.gz",
         }
     }
 
-    /// The engine a copy named `file` is for ([`DbEngine::backup_ext`]);
-    /// None: not a database copy.
-    pub fn of_backup(file: &str) -> Option<DbEngine> {
-        DbEngine::ALL
-            .into_iter()
-            .find(|e| file.ends_with(e.backup_ext()))
+    /// The engine a copy named `file` is for ([`DbEngine::backup_ext`]),
+    /// `sql` for a `.sql` file: the extension does not tell MariaDB from
+    /// MySQL, the caller gives the SQL server of the project
+    /// (`services::project_sql_engine`). None: not a database copy.
+    pub fn of_backup(file: &str, sql: DbEngine) -> Option<DbEngine> {
+        if file.ends_with(DbEngine::MongoDb.backup_ext()) {
+            Some(DbEngine::MongoDb)
+        } else if file.ends_with(sql.backup_ext()) && sql.is_sql() {
+            Some(sql)
+        } else {
+            None
+        }
     }
 
     /// A SQL server (MySQL protocol, `mysql://` URLs, `DB_*` of Laravel).
     pub const fn is_sql(self) -> bool {
         match self {
-            DbEngine::MariaDb => true,
+            DbEngine::MariaDb | DbEngine::MySql => true,
             DbEngine::MongoDb => false,
         }
     }
@@ -155,14 +178,16 @@ impl DbEngine {
     /// The administrator the kit logs in as (D-74).
     pub const fn admin_user(self) -> &'static str {
         match self {
-            DbEngine::MariaDb => "root",
+            DbEngine::MariaDb | DbEngine::MySql => "root",
             DbEngine::MongoDb => "admin",
         }
     }
 
     /// Databases and users of the server itself: a project named after one
     /// would create, alter or drop it (`DROP DATABASE mysql`, the `root`
-    /// user; MongoDB's `admin` holds every user of the server).
+    /// user; MongoDB's `admin` holds every user of the server). MySQL's own
+    /// users (`mysql.sys`, `mysql.session`…) have a dot, never in a name of
+    /// the kit (`auth::is_valid_name`).
     pub const fn reserved_names(self) -> &'static [&'static str] {
         match self {
             DbEngine::MariaDb => &[
@@ -173,6 +198,13 @@ impl DbEngine {
                 "root",
                 "mariadb_sys",
             ],
+            DbEngine::MySql => &[
+                "mysql",
+                "information_schema",
+                "performance_schema",
+                "sys",
+                "root",
+            ],
             DbEngine::MongoDb => &["admin", "local", "config"],
         }
     }
@@ -180,7 +212,9 @@ impl DbEngine {
     /// The server's own databases, marked in the content explorer (D-79).
     pub const fn system_databases(self) -> &'static [&'static str] {
         match self {
-            DbEngine::MariaDb => &["information_schema", "mysql", "performance_schema", "sys"],
+            DbEngine::MariaDb | DbEngine::MySql => {
+                &["information_schema", "mysql", "performance_schema", "sys"]
+            }
             DbEngine::MongoDb => &["admin", "config", "local"],
         }
     }
@@ -188,7 +222,7 @@ impl DbEngine {
     /// The administrator's connection string (no password in it).
     pub fn admin_url(self, port: u16) -> String {
         match self {
-            DbEngine::MariaDb => format!("mysql://root@127.0.0.1:{port}/"),
+            DbEngine::MariaDb | DbEngine::MySql => format!("mysql://root@127.0.0.1:{port}/"),
             DbEngine::MongoDb => format!("mongodb://admin@127.0.0.1:{port}/?authSource=admin"),
         }
     }
@@ -196,7 +230,9 @@ impl DbEngine {
     /// A project's connection string: its database and user `name`.
     pub fn project_url(self, name: &str, password: &str, port: u16) -> String {
         match self {
-            DbEngine::MariaDb => format!("mysql://{name}:{password}@127.0.0.1:{port}/{name}"),
+            DbEngine::MariaDb | DbEngine::MySql => {
+                format!("mysql://{name}:{password}@127.0.0.1:{port}/{name}")
+            }
             DbEngine::MongoDb => {
                 format!("mongodb://{name}:{password}@127.0.0.1:{port}/{name}?authSource={name}")
             }

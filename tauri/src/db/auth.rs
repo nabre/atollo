@@ -1,13 +1,18 @@
-//! Passwords of the kit's databases (DECISIONS.md D-74): MariaDB's `root`,
-//! MongoDB's `admin` and one user per project and database, each with a
-//! random password.
+//! Passwords of the kit's databases (DECISIONS.md D-74): the `root` of
+//! MySQL and MariaDB, MongoDB's `admin` and one user per project and
+//! database, each with a random password.
 //!
 //! - the administrators' in `data\app\db\secrets.json`, a project's in
 //!   `data\projects\<project>\private\db.json` (D-89), readable by the owner
 //!   only where the disk has permissions (NTFS; FAT32/exFAT sticks have none);
-//! - `data\app\db\my.ini` holds the `[client]` login of `root`: the kit's
-//!   `MYSQL_HOME` points there, so `mariadb` in the kit's terminal and the
-//!   app's own tools log in without a password on the command line;
+//! - `data\app\db\my.ini` holds the `[client]` login of MariaDB's `root`:
+//!   the kit's `MYSQL_HOME` points there, so `mariadb` in the kit's terminal
+//!   and the app's own tools log in without a password on the command line;
+//! - `data\app\db\mysql.cnf` holds MySQL's (D-110): MySQL reads
+//!   `$MYSQL_HOME/my.ini` (Windows) and `my.cnf` too, where MariaDB's login
+//!   is, so the kit's `mysql`, `mysqldump` and `mysqladmin` launchers
+//!   (`data\kit\bin`) pass it with `--defaults-extra-file` (read after the
+//!   other files, it wins) and the app's tools with `--defaults-file`;
 //! - passwords never go on a command line (other users can read those):
 //!   SQL goes through stdin, mongosh reads them from its environment;
 //! - a project's `.env` gets its connection only after the user saw the
@@ -33,6 +38,10 @@ use crate::projects::state::ProjectState;
 pub struct Secrets {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mariadb_root: Option<String>,
+    /// MySQL's `root` (D-110); MariaDB's stays as it is for its data, until
+    /// the move to MySQL (WP-3.9).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mysql_root: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mongodb_admin: Option<String>,
     #[serde(flatten)]
@@ -623,6 +632,59 @@ fn client_ini_text(port: u16, password: &str) -> String {
     )
 }
 
+/// The `[client]` login of `root` for the kit's MySQL, on the port of the
+/// version the server runs (D-110, [`write_mysql_cnf`]).
+pub fn mysql_cnf(kit: &Kit) -> PathBuf {
+    dir(kit).join("mysql.cnf")
+}
+
+/// The login of another version of MySQL, on its own port (PLAN.md
+/// §13.2): the `DEVKIT_MYSQL_CNF` of the programs of a project whose
+/// database is on it (`services::project_client_env`).
+pub fn mysql_line_cnf(kit: &Kit, line: &str) -> PathBuf {
+    dir(kit).join("mysql-lines").join(line).join("mysql.cnf")
+}
+
+/// MySQL's `[client]` login: TCP on 127.0.0.1 (never a socket or a named
+/// pipe of another MySQL of the PC), no paths, so nothing to escape (a
+/// `\` is an escape in MySQL's option files). LF ends: read the same on
+/// every system.
+pub fn mysql_cnf_text(port: u16, password: &str) -> String {
+    format!(
+        "# Dev-Kit: login of the kit's MySQL (written by the app).\n\
+         [client]\nuser=root\npassword={password}\nhost=127.0.0.1\n\
+         port={port}\nprotocol=TCP\n"
+    )
+}
+
+/// [`mysql_cnf`] for `port`.
+pub fn write_mysql_cnf(kit: &Kit, port: u16, password: &str) -> Result<()> {
+    write_private(&mysql_cnf(kit), &mysql_cnf_text(port, password))
+}
+
+/// [`mysql_line_cnf`] for version `line` on its `port`.
+pub fn write_mysql_line_cnf(kit: &Kit, line: &str, port: u16, password: &str) -> Result<()> {
+    if !crate::versions::valid_line(line) {
+        bail!("not a version line: {line}");
+    }
+    write_private(&mysql_line_cnf(kit, line), &mysql_cnf_text(port, password))
+}
+
+/// SQL that gives MySQL's `root` its password on a data folder made with
+/// `--initialize-insecure` (only `root@localhost`, without one), and the
+/// same `root` for 127.0.0.1: the kit connects over TCP, and with
+/// `skip-name-resolve` a TCP login is not `localhost`.
+pub fn mysql_root_sql(password: &str) -> String {
+    format!(
+        "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+         CREATE USER IF NOT EXISTS 'root'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+         ALTER USER 'root'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+         GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION;\n\
+         GRANT PROXY ON ''@'' TO 'root'@'127.0.0.1' WITH GRANT OPTION;\n\
+         FLUSH PRIVILEGES;\n"
+    )
+}
+
 /// SQL that gives every `root` account the password (Windows creates
 /// `localhost`, `127.0.0.1` and `::1`).
 pub fn root_password_sql(password: &str) -> String {
@@ -701,6 +763,34 @@ pub fn project_sql(name: &str, password: &str) -> String {
     }
     sql.push_str("FLUSH PRIVILEGES;\n");
     sql
+}
+
+/// [`project_sql`] for MySQL (D-110): `caching_sha2_password`, the default
+/// of 8.4 and the only one left in 9.x, for `localhost` and `127.0.0.1`
+/// (the server listens on 127.0.0.1 only); `_` escaped in the GRANT as for
+/// MariaDB. No wildcard grants of earlier versions to remove: the kit never
+/// made any on MySQL.
+pub fn mysql_project_sql(name: &str, password: &str) -> String {
+    let mut sql = format!("CREATE DATABASE IF NOT EXISTS `{name}` CHARACTER SET utf8mb4;\n");
+    let pattern = name.replace('_', "\\_");
+    for host in ["localhost", "127.0.0.1"] {
+        sql.push_str(&format!(
+            "CREATE USER IF NOT EXISTS '{name}'@'{host}' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+             ALTER USER '{name}'@'{host}' IDENTIFIED WITH caching_sha2_password BY '{password}';\n\
+             GRANT ALL PRIVILEGES ON `{pattern}`.* TO '{name}'@'{host}';\n"
+        ));
+    }
+    sql.push_str("FLUSH PRIVILEGES;\n");
+    sql
+}
+
+/// The SQL that creates (or repairs) a project's database and user on the
+/// SQL `engine`.
+pub fn project_sql_for(engine: DbEngine, name: &str, password: &str) -> String {
+    match engine {
+        DbEngine::MySql => mysql_project_sql(name, password),
+        DbEngine::MariaDb | DbEngine::MongoDb => project_sql(name, password),
+    }
 }
 
 /// mongosh script for a project's user (names and passwords from the
@@ -809,7 +899,7 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
             ("MONGODB_URI", db.url.clone()),
         ],
         DbEngine::MongoDb => vec![("MONGODB_URI", db.url.clone())],
-        DbEngine::MariaDb if laravel => vec![
+        DbEngine::MariaDb | DbEngine::MySql if laravel => vec![
             ("DB_CONNECTION", "mysql".into()),
             ("DB_HOST", db.host.clone()),
             ("DB_PORT", db.port.to_string()),
@@ -817,7 +907,7 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
             ("DB_USERNAME", db.user.clone()),
             ("DB_PASSWORD", db.password.clone()),
         ],
-        DbEngine::MariaDb => vec![("DATABASE_URL", db.url.clone())],
+        DbEngine::MariaDb | DbEngine::MySql => vec![("DATABASE_URL", db.url.clone())],
     };
     pairs.into_iter().map(|(k, v)| (k.to_owned(), v)).collect()
 }

@@ -4,10 +4,40 @@
 use super::*;
 use crate::db::DbEngine;
 
-/// The engine the interface names (`mariadb`, `mongodb`), or the error of
-/// an unknown one, logged under `context`.
+/// The engine the interface names (`mysql`, `mariadb`, `mongodb`), or the
+/// error of an unknown one, logged under `context`.
 fn engine_of(engine: &str, context: &str) -> CmdResult<DbEngine> {
     DbEngine::from_id(engine).ok_or_else(|| fail(context, format!("unknown server {engine}")))
+}
+
+/// The server of the project's database `engine` names (D-110): a SQL one
+/// is the project's SQL server, MySQL for a new database of a new kit
+/// (`db::services::project_engine`), so the interface's `mariadb` reaches
+/// it too.
+fn project_engine_of(kit: &Kit, project: &str, engine: &str, context: &str) -> CmdResult<DbEngine> {
+    Ok(crate::db::services::project_engine(
+        kit,
+        project,
+        engine_of(engine, context)?,
+    ))
+}
+
+/// The servers `detect::requires` found (`mariadb`, `mongodb`, `sqlite`),
+/// a SQL one as the project's SQL server (`sql`), each once.
+fn detected_as(found: Vec<String>, sql: DbEngine) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for id in found {
+        let id = match DbEngine::from_id(&id) {
+            Some(e) if e.is_sql() => sql.id().to_owned(),
+            Some(_) => id,
+            None if id == "sqlite" => id,
+            None => continue,
+        };
+        if !out.contains(&id) {
+            out.push(id);
+        }
+    }
+    out
 }
 
 /// The databases of a project (D-74): those created, those it seems to use,
@@ -16,7 +46,8 @@ fn engine_of(engine: &str, context: &str) -> CmdResult<DbEngine> {
 #[serde(rename_all = "camelCase")]
 pub struct ProjectDatabases {
     pub dbs: Vec<crate::db::auth::ProjectDb>,
-    /// `mariadb`, `mongodb`, `sqlite` found by `detect::requires`.
+    /// `mysql` (or `mariadb` where the project's database is there),
+    /// `mongodb`, `sqlite` found by `detect::requires`.
     pub detected: Vec<String>,
     pub env_exists: bool,
     pub env_ignored: bool,
@@ -63,10 +94,10 @@ pub fn project_databases<R: Runtime>(
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     Ok(ProjectDatabases {
         dbs: state.services.project_dbs(&project),
-        detected: crate::detect::requires(&dir)
-            .into_iter()
-            .filter(|id| DbEngine::from_id(id).is_some() || id == "sqlite")
-            .collect(),
+        detected: detected_as(
+            crate::detect::requires(&dir),
+            crate::db::services::project_sql_engine(&state.kit, &project),
+        ),
         env_exists: dir.join(".env").is_file(),
         env_ignored: crate::db::auth::env_ignored(&dir),
         versions: db_versions(&state.kit, &project),
@@ -88,13 +119,13 @@ pub async fn project_db_line<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    let kind = engine_of(&engine, "database")?;
+    let kind = project_engine_of(&state.kit, &project, &engine, "database")?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[kind.component()])?;
         services
-            .project_db_line(&project, &engine, line.as_deref(), &env)
+            .project_db_line(&project, kind.id(), line.as_deref(), &env)
             .map_err(|e| super::services::start_error(lang, &e))?;
         Ok(())
     })
@@ -114,16 +145,16 @@ pub async fn project_db_create<R: Runtime>(
 ) -> CmdResult<crate::db::auth::ProjectDb> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    let kind = engine_of(&engine, "database")?;
+    let kind = project_engine_of(&state.kit, &project, &engine, "database")?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[kind.component()])?;
         services
-            .start_for(&project, &engine, &env)
+            .start_for(&project, kind.id(), &env)
             .map_err(|e| start_error(lang, &e))?;
         services
-            .project_db_create(&project, &engine)
+            .project_db_create(&project, kind.id())
             .or_fail_chain("database")
     })
     .await
@@ -135,6 +166,11 @@ pub(super) fn project_db_of(
     project: &str,
     engine: &str,
 ) -> CmdResult<crate::db::auth::ProjectDb> {
+    // `mariadb` of the interface: the project's SQL database, wherever it is.
+    let engine = match DbEngine::from_id(engine) {
+        Some(e) => crate::db::services::project_engine(&state.kit, project, e).id(),
+        None => engine,
+    };
     state
         .services
         .project_dbs(project)
@@ -198,15 +234,17 @@ pub async fn project_db_export<R: Runtime>(
 ) -> CmdResult<String> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    let kind = engine_of(&engine, "database")?;
+    let kind = project_engine_of(&state.kit, &project, &engine, "database")?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &[kind.component()])?;
         services
-            .start_for(&project, &engine, &env)
+            .start_for(&project, kind.id(), &env)
             .map_err(|e| start_error(lang, &e))?;
-        let file = services.export(&project, &engine).or_fail_chain("export")?;
+        let file = services
+            .export(&project, kind.id())
+            .or_fail_chain("export")?;
         Ok(file
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
@@ -227,8 +265,11 @@ pub async fn project_db_restore<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    // A name that is no copy goes to the SQL server, whose restore refuses it.
-    let engine = DbEngine::of_backup(&file).unwrap_or(DbEngine::MariaDb);
+    // A `.sql` copy is for the project's SQL server (MySQL and MariaDB share
+    // the extension); a name that is no copy goes there too, and its
+    // restore refuses it.
+    let sql = crate::db::services::project_sql_engine(&state.kit, &project);
+    let engine = DbEngine::of_backup(&file, sql).unwrap_or(sql);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
@@ -292,28 +333,40 @@ pub async fn db_browse_rows<R: Runtime>(
     .or_fail("browse")?
 }
 
-/// phpMyAdmin on the kit's MariaDB in the browser (D-107): phpMyAdmin (with
-/// PHP and MariaDB) installed the first time, MariaDB started when it is off.
-/// `line`: another installed version, on its own port (PLAN.md §13.2);
-/// null: the version the server runs.
+/// phpMyAdmin on the kit's SQL server in the browser (D-107, D-110):
+/// phpMyAdmin (with PHP and the server) installed the first time, the
+/// server started when it is off. `engine`: `mysql` or `mariadb` (null: the
+/// kit's SQL server, `db::services::sql_engine`). `line`: another installed
+/// version, on its own port (PLAN.md §13.2); null: the version the server
+/// runs.
 #[tauri::command]
 pub async fn db_admin_open<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
     line: Option<String>,
+    engine: Option<String>,
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
+    let engine = match engine.as_deref() {
+        Some(id) => engine_of(id, "phpmyadmin")?,
+        None => crate::db::services::sql_engine(&state.kit),
+    };
+    if !engine.is_sql() {
+        return Err(fail(
+            "phpmyadmin",
+            format!("phpMyAdmin does not open {engine}"),
+        ));
+    }
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        let engine = DbEngine::MariaDb;
         let env = ensure(&app, &task, &kit, lang, &[engine.component(), "phpmyadmin"])?;
         services
             .start_engine(engine, line.as_deref(), &env)
             .map_err(|e| start_error(lang, &e))?;
         let url = services
-            .phpmyadmin_url(line.as_deref(), lang)
+            .phpmyadmin_url(engine, line.as_deref(), lang)
             .or_fail_chain("phpmyadmin")?;
         open_in_browser(&url)?;
         Ok(services.list())
@@ -321,3 +374,7 @@ pub async fn db_admin_open<R: Runtime>(
     .await
     .or_fail("phpmyadmin")?
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/commands/databases.rs"]
+mod tests;

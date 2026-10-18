@@ -64,6 +64,11 @@
     "fr": "Le port {0} appartient déjà au serveur {1} : choisissez-en un autre.",
     "de": "Port {0} gehört bereits zum Server {1}: Wähle einen anderen."
   },
+  "database SQL del kit: server e client MySQL": {
+    "en": "the kit's SQL database: MySQL server and client",
+    "fr": "base de données SQL du kit : serveur et client MySQL",
+    "de": "SQL-Datenbank des Kits: MySQL-Server und -Client"
+  },
   "database compatibile con MySQL: server e client": {
     "en": "MySQL-compatible database: server and client",
     "fr": "base de données compatible MySQL : serveur et client",
