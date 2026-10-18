@@ -255,6 +255,18 @@
           "markdownDescription": "Enables the components_sync command without any pre-configured scope."
         },
         {
+          "description": "Enables the conda_kept command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-conda-kept",
+          "markdownDescription": "Enables the conda_kept command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the conda_kept_free command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-conda-kept-free",
+          "markdownDescription": "Enables the conda_kept_free command without any pre-configured scope."
+        },
+        {
           "description": "Enables the db_admin_open command without any pre-configured scope.",
           "type": "string",
           "const": "allow-db-admin-open",
@@ -931,6 +943,18 @@
           "type": "string",
           "const": "deny-components-sync",
           "markdownDescription": "Denies the components_sync command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the conda_kept command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-conda-kept",
+          "markdownDescription": "Denies the conda_kept command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the conda_kept_free command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-conda-kept-free",
+          "markdownDescription": "Denies the conda_kept_free command without any pre-configured scope."
         },
         {
           "description": "Denies the db_admin_open command without any pre-configured scope.",

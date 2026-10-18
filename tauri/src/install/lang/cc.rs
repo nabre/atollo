@@ -2,7 +2,7 @@
 //! `zig cc` on macOS and Linux.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
 
@@ -332,10 +332,7 @@ impl Installer for Cc {
             &[&spec],
             progress,
         )?;
-        if !join_rel(&folder, "make/bin/make").is_file() {
-            bail!("make not found after the installation");
-        }
-        write_zig_shims(&folder.join("bin"))?;
+        self.after_conda(ctx, component, &folder, progress)?;
         if !crate::setup::catalog::kit_path(ctx.kit, "zig/zig.exe").is_file() {
             progress.note(
                 "Zig is not installed: cc, c++, ar and ranlib need it, and stay off the PATH until it is",
@@ -349,6 +346,27 @@ impl Installer for Cc {
             }
         }
         Ok(())
+    }
+
+    /// Off Windows only make is a conda environment, in `cc/make`.
+    fn conda_prefix(&self, target: Target, dir: &Path) -> Option<PathBuf> {
+        (!target.is_windows()).then(|| dir.join("make"))
+    }
+
+    /// The shims of `cc/bin`, with `make` among them, after make's
+    /// environment is created, from the network or the kept packages
+    /// (D-118).
+    fn after_conda(
+        &self,
+        _ctx: &Ctx,
+        _component: &Component,
+        dir: &Path,
+        _progress: &mut dyn Progress,
+    ) -> Result<()> {
+        if !join_rel(dir, "make/bin/make").is_file() {
+            bail!("make not found after the installation");
+        }
+        write_zig_shims(&dir.join("bin"))
     }
 
     fn finish(&self, _ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
