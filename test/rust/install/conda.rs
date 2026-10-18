@@ -453,9 +453,8 @@ fn real_offline_reinstall_after_a_move() {
         return;
     };
     let first = PathBuf::from(first);
-    // No space in the new name: conda-forge's `bin/R` writes `SED=<prefix>/bin/sed`
-    // without quotes, so R's shell script breaks in any folder with a space,
-    // after a move or not.
+    // No space in the new name: kept from before `plain_r_sed`, when
+    // conda-forge's `bin/R` broke in any folder with a space.
     let moved = first.with_file_name(format!(
         "{}-moved-d118",
         first.file_name().unwrap().to_string_lossy()
@@ -469,10 +468,11 @@ fn real_offline_reinstall_after_a_move() {
         .filter(|c| installer(&c.id).is_some_and(|i| !i.relocatable(target)))
         .map(|c| c.id.clone())
         .collect();
-    assert!(
-        !ids.is_empty(),
-        "no conda environment installed in DEVKIT_TEST_KIT"
-    );
+    // CI's Windows kit has none: R follows the kit there (D-92).
+    if ids.is_empty() {
+        eprintln!("no conda environment installed in DEVKIT_TEST_KIT: skipped");
+        return;
+    }
     let lists = status(&kit).lists;
     for id in &ids {
         assert!(
