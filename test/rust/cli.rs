@@ -42,7 +42,7 @@ fn components_for_a_target() {
     );
 }
 
-/// WP-0.4: `components --target linux-arm64` names what is missing there,
+/// D-108: `components --target linux-arm64` names what is missing there,
 /// with the catalog's reason.
 #[test]
 fn components_say_why_not_on_linux_arm64() {
@@ -64,7 +64,7 @@ fn components_say_why_not_on_linux_arm64() {
         "{}",
         line("android")
     );
-    // SQLite comes from conda-forge there (WP-2.5).
+    // SQLite comes from conda-forge there (D-112).
     for id in ["node", "sqlite"] {
         assert!(!line(id).contains("not available"), "{}", line(id));
     }

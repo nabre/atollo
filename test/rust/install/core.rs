@@ -75,7 +75,7 @@ fn node_lines_are_lts_majors_and_the_newest() {
     assert_eq!(node_lines(&index, "win-arm64-zip"), ["20.19"]);
 }
 
-/// The newest LTS, not the newest release (T0.4.6); a line asked for gives
+/// The newest LTS, not the newest release (D-108); a line asked for gives
 /// its newest; a newer major already installed is not taken back.
 #[test]
 fn node_pick_is_the_newest_lts() {
@@ -118,7 +118,7 @@ fn node_pick_is_the_newest_lts() {
 fn custom_by_target() {
     for t in Target::ALL {
         // Git: an archive everywhere (PortableGit, dugite-native), and it
-        // follows the kit everywhere (WP-2.1); off Windows it is staged
+        // follows the kit everywhere (D-112); off Windows it is staged
         // where its target cannot run (`git_staged`).
         assert_eq!(
             Git.custom(t),
@@ -134,7 +134,7 @@ fn custom_by_target() {
     }
 }
 
-/// WP-2.1: the dugite-native asset of each Unix target (names of the
+/// D-112: the dugite-native asset of each Unix target (names of the
 /// v2.53.0-4 release, checked on GitHub), never the 32-bit builds;
 /// PortableGit on Windows.
 #[test]
@@ -175,7 +175,7 @@ fn dugite_asset_per_target() {
     );
 }
 
-/// T2.1.4: the credential helper goes into dugite's `etc/gitconfig` once,
+/// D-112: the credential helper goes into dugite's `etc/gitconfig` once,
 /// next to what is there; a helper already set stays.
 #[test]
 fn unix_gitconfig_gets_the_credential_helper_once() {
@@ -203,8 +203,8 @@ fn unix_gitconfig_gets_the_credential_helper_once() {
     assert!(gitconfig_with_helper("", "cache").is_some_and(|t| t.starts_with("# Dev-Kit")));
 }
 
-/// Review of WP-2.1: dugite-native for macOS or Linux prepared from a
-/// host that cannot run it (Windows above all, plan §6.5) is staged, not
+/// Review of D-112: dugite-native for macOS or Linux prepared from a
+/// host that cannot run it (Windows above all, D-114) is staged, not
 /// unpacked there; PortableGit and the host's own target install directly.
 #[test]
 fn git_is_staged_where_its_target_cannot_run() {
@@ -264,7 +264,7 @@ fn git_is_staged_where_its_target_cannot_run() {
     }
 }
 
-/// Review of WP-2.1: dugite's links (`git-remote-https` → `git-remote-http`,
+/// Review of D-112: dugite's links (`git-remote-https` → `git-remote-http`,
 /// `git-upload-pack` → `git`) are lost when its tarball is unpacked on
 /// Windows; the Git left behind answers `--version` but cannot clone, so
 /// `finish` refuses it (`missing_git_links`).
@@ -324,7 +324,7 @@ fn dugite_links_lost_on_windows_are_noticed() {
     assert_eq!(missing_git_links(&tmp.0.join("none")).len(), 3);
 }
 
-/// T2.1.3: the conda-forge Git of an older Dev-Kit (the only one that
+/// D-112: the conda-forge Git of an older Dev-Kit (the only one that
 /// cannot move) is marked once to be installed again; dugite's folder and
 /// Windows are left alone.
 #[test]

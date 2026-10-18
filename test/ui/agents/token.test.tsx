@@ -1,4 +1,4 @@
-// "Collega con un token" (WP-4.2): offered for Claude Code on macOS only
+// "Collega con un token" (D-115): offered for Claude Code on macOS only
 // (tokenLink from Rust), not once signed in; runs claude setup-token, or
 // saves a token pasted by hand.
 import { afterEach, describe, expect, it, vi } from "vitest";

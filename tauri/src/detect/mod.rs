@@ -83,7 +83,7 @@ pub struct Action {
     /// A folder served by the project's own Nginx.
     #[serde(rename = "nginx")]
     pub nginx_dir: Option<String>,
-    /// A folder served by Caddy, its own or a pool's (WP-3.3).
+    /// A folder served by Caddy, its own or a pool's (D-111).
     #[serde(rename = "caddy")]
     pub caddy_dir: Option<String>,
     /// Web server profile id, or `auto`.

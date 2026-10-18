@@ -27,7 +27,7 @@ fn start_time_from_proc_stat() {
 }
 
 /// The table forgets emptied groups at every tick, so that a stale number
-/// never reaches a group that is not the kit's (review of WP-1.5).
+/// never reaches a group that is not the kit's (review of D-105).
 #[test]
 fn table_forgets_the_groups_that_emptied() {
     let mut groups = [(0i32, 0u64); 3];

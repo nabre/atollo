@@ -241,7 +241,7 @@ pub enum SiteKind {
     Apache,
     /// An Nginx of the project's own or pooled server.
     Nginx,
-    /// A Caddy of the project's own or pooled server (WP-3.3).
+    /// A Caddy of the project's own or pooled server (D-111).
     Caddy,
     None,
 }

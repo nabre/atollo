@@ -240,7 +240,7 @@ pub(crate) fn rust_host_for(target: Target, toolchain: Option<&str>) -> &'static
 }
 
 /// The `gnullvm` host links with llvm-mingw (the `cc` component): without
-/// it `cargo build` stops at the link (WP-2.4).
+/// it `cargo build` stops at the link (D-112).
 pub(crate) fn host_needs_cc(host: &str) -> bool {
     host.ends_with("-gnullvm")
 }

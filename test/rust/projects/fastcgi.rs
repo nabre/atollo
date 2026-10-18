@@ -16,7 +16,7 @@ fn fastcgi_program_per_target() {
     }
 }
 
-/// `fpm.conf` (T3.3.4): in the foreground, its files in the server's
+/// `fpm.conf` (D-111): in the foreground, its files in the server's
 /// folder, on an owner-only Unix socket, workers on demand, the kit's
 /// environment kept, the files PHP runs for Apache and Nginx.
 #[test]
@@ -45,7 +45,7 @@ security.limit_extensions = .php .phtml .phar\n";
     assert_eq!(conf, want);
 }
 
-/// php-fpm never listens on TCP (review of WP-3.3): it takes `PHP_VALUE`
+/// php-fpm never listens on TCP (review of D-111): it takes `PHP_VALUE`
 /// and `PHP_ADMIN_VALUE` from whoever connects, and on a port of 127.0.0.1
 /// any local program, or an SSRF of a local site, could set
 /// `auto_prepend_file=none` and run scripts without the key.

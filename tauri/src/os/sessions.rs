@@ -181,7 +181,7 @@ pub(crate) enum Signal {
 }
 
 /// `SIGTERM` to every process, a wait of up to `grace` (checked every
-/// `step`) for them to end, then `SIGKILL` to those left (T1.5.3): the
+/// `step`) for them to end, then `SIGKILL` to those left (D-105): the
 /// databases write their files to disk on `SIGTERM`. `identity` is when a
 /// running process started (`None`: it has ended): a pid that ends and is
 /// taken by another program during the wait no longer matches, and that

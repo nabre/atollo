@@ -37,7 +37,7 @@ const HIDDEN: &[&str] = &[
 ];
 
 /// The same on macOS and Linux: the system's bash (Git of the kit has no
-/// shell there, T1.3.2) and, on macOS, zsh; never cmd.
+/// shell there, D-109) and, on macOS, zsh; never cmd.
 pub const KIT_PROFILES_UNIX: &[&str] = &[
     "Dev-Kit",
     "Dev-Kit - Bash",
@@ -220,7 +220,7 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
         );
     } else {
         // The system's bash with the kit's bashrc (bash 3.2 on macOS reads
-        // it too, WP-0.3); the environment is the kit's, from the server.
+        // it too, D-105); the environment is the kit's, from the server.
         out.insert(
             "Dev-Kit - Bash".into(),
             profile(Path::new(BASH), &bash_args(kit), "terminal-bash"),

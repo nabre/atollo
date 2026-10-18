@@ -39,7 +39,7 @@ pub struct Secrets {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mariadb_root: Option<String>,
     /// MySQL's `root` (D-110); MariaDB's stays as it is for its data, until
-    /// the move to MySQL (WP-3.9).
+    /// the move to MySQL (issue #3).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mysql_root: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -89,8 +89,8 @@ pub fn save(kit: &Kit, secrets: &Secrets) -> Result<()> {
 /// A project's `private\db.json`: engine (`mariadb`, `mongodb`) → password
 /// of its user, and `names`: engine → name of its database and user (an
 /// object, so the readers of passwords skip it); `lines`: engine → version of
-/// the server its database is on, when not the one the server runs (PLAN.md
-/// §13.2); `used`: engine → every version where it was created; other keys
+/// the server its database is on, when not the one the server runs
+/// (D-102); `used`: engine → every version where it was created; other keys
 /// kept as they are.
 ///
 /// ```json
@@ -311,7 +311,7 @@ fn project_file(kit: &Kit, project: &str) -> Result<PathBuf> {
 }
 
 /// The project's `db.json` to read: nothing is created (a project without
-/// databases gets no `private\`, PLAN-DATA.md WP-7).
+/// databases gets no `private\`, D-89).
 fn project_file_to_read(kit: &Kit, project: &str) -> Result<PathBuf> {
     Ok(project_state(kit, project)?
         .dir()
@@ -583,7 +583,7 @@ pub fn set_project_password(kit: &Kit, project: &str, engine: &str, password: &s
 }
 
 /// Removes the project's `db.json` and returns its passwords by engine, so
-/// the users can be dropped from the servers (PLAN-DATA.md WP-5). Nothing is
+/// the users can be dropped from the servers (D-89). Nothing is
 /// created: after the project's folder of the kit is gone it stays gone.
 pub fn drop_project(kit: &Kit, project: &str) -> Result<BTreeMap<String, String>> {
     let _one = db_json_lock(kit)?;
@@ -606,7 +606,7 @@ pub fn write_client_ini(kit: &Kit, port: u16, password: &str) -> Result<()> {
 }
 
 /// The folder of the `[client]` login (`my.ini`) of another version of
-/// MariaDB, on its own port (PLAN.md §13.2): the `MYSQL_HOME` of the
+/// MariaDB, on its own port (D-102): the `MYSQL_HOME` of the
 /// programs of a project whose database is on it.
 pub fn line_client_dir(kit: &Kit, line: &str) -> PathBuf {
     dir(kit).join("lines").join(line)
@@ -638,8 +638,8 @@ pub fn mysql_cnf(kit: &Kit) -> PathBuf {
     dir(kit).join("mysql.cnf")
 }
 
-/// The login of another version of MySQL, on its own port (PLAN.md
-/// §13.2): the `DEVKIT_MYSQL_CNF` of the programs of a project whose
+/// The login of another version of MySQL, on its own port
+/// (D-102): the `DEVKIT_MYSQL_CNF` of the programs of a project whose
 /// database is on it (`services::project_client_env`).
 pub fn mysql_line_cnf(kit: &Kit, line: &str) -> PathBuf {
     dir(kit).join("mysql-lines").join(line).join("mysql.cnf")
@@ -804,7 +804,7 @@ pub const MONGO_PROJECT_JS: &str = "const a = db.getSiblingDB('admin'); \
     if (d.getUser(n)) { d.updateUser(n, { pwd: p }); } \
     else { d.createUser({ user: n, pwd: p, roles: [{ role: 'dbOwner', db: n }] }); }";
 
-/// SQL that drops a project's database and user (PLAN-DATA.md WP-5); both
+/// SQL that drops a project's database and user (D-89); both
 /// may be missing already.
 pub fn project_drop_sql(name: &str) -> String {
     format!(

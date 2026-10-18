@@ -1,4 +1,4 @@
-//! Caddy, the kit's web server on every target (Q-3, D-111, WP-3.1): the
+//! Caddy, the kit's web server on every target (D-111): the
 //! official build from GitHub `caddyserver/caddy`, one binary per archive
 //! (`caddy.exe` or `caddy` at the archive root, next to its licence).
 //!

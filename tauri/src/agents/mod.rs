@@ -179,7 +179,7 @@ fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
 
 /// Aligns the agents, then opens `id` in a kit console in `dir` (Windows)
 /// or a session of the app's terminal with the agent as its program (macOS
-/// and Linux, T1.2.4); aligns again when that console or session ends.
+/// and Linux, D-109); aligns again when that console or session ends.
 pub fn launch<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     kit: &Kit,
@@ -194,7 +194,7 @@ pub fn launch<R: tauri::Runtime>(
         crate::log::warn(&format!("before {id}: {w}"));
     }
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
-    // Claude Code: the token saved in the kit, if any (WP-4.2).
+    // Claude Code: the token saved in the kit, if any (D-115).
     let mut env = env.clone();
     if id == "claude" {
         claude_token::apply(kit, &mut env);

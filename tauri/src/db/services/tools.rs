@@ -125,7 +125,7 @@ impl Services {
     /// [`DbEngine::dump_bin`]…) logged in as `root` (the kit's `[client]`
     /// login), of version `line` (None: the one the server runs) on `port`:
     /// the `[client]` login names the port of the version the server runs
-    /// only (PLAN.md §13.2). MySQL reads its login alone
+    /// only (D-102). MySQL reads its login alone
     /// (`--defaults-file`, D-110): MariaDB's `my.ini` in `MYSQL_HOME` and
     /// the PC's option files never reach it.
     pub(crate) fn sql_tool_at(

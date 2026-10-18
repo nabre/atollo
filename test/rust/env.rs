@@ -373,7 +373,7 @@ fn unix_target_builds_colon_path_and_xdg_dirs() {
     assert!(path.contains(':'), "Unix target must join PATH with ':'");
     let entries = env.path_entries();
     let n = entries.len();
-    // macOS: Homebrew after the kit's programs (T1.8.1).
+    // macOS: Homebrew after the kit's programs (D-105).
     assert_eq!(
         &entries[n - 6..],
         [
@@ -407,7 +407,7 @@ fn unix_target_builds_colon_path_and_xdg_dirs() {
     }
 }
 
-/// The environment of a Linux and a macOS kit (T1.8.1), as the table of
+/// The environment of a Linux and a macOS kit (D-105), as the table of
 /// Windows above: the desktop session kept, no Windows-only variable, the
 /// system folders after the kit's.
 #[test]
@@ -574,7 +574,7 @@ const CC_SHIMS: [&str; 9] = [
     "cc/bin/make",
 ];
 
-/// WP-2.3: with C and C++ and the kit's Zig on macOS and Linux, CC, CXX,
+/// D-112: with C and C++ and the kit's Zig on macOS and Linux, CC, CXX,
 /// AR and RANLIB are the shims of `cc/bin`, on the PATH. Without Zig the
 /// shims would fail and hide the system's compiler: neither the PATH nor
 /// the variables. The LLVM of an older kit: on the PATH, no variables (they
@@ -687,7 +687,7 @@ fn macos_rust_linker_with_command_line_tools() {
     }
 }
 
-/// WP-2.4: the linker of Rust's gnullvm host on Windows ARM64 only, the
+/// D-112: the linker of Rust's gnullvm host on Windows ARM64 only, the
 /// aarch64 wrapper of llvm-mingw first.
 #[test]
 fn rust_linker_on_windows_arm64() {
@@ -726,7 +726,7 @@ fn rust_linker_on_windows_arm64() {
     assert_eq!(env.get(var), None);
 }
 
-/// WP-2.1 hook: a Git with `libexec/git-core` (dugite-native) on macOS and
+/// D-112 hook: a Git with `libexec/git-core` (dugite-native) on macOS and
 /// Linux gets dugite's variables; Linux its CA bundle when it has one; never
 /// PREFIX; nothing on Windows.
 #[test]
@@ -786,7 +786,7 @@ fn git_variables_for_a_dugite_layout() {
     assert_eq!(env.get("PREFIX"), None);
 }
 
-/// WP-2.2 hook: GEM_HOME of the default Ruby line on macOS and Linux, its
+/// D-112 hook: GEM_HOME of the default Ruby line on macOS and Linux, its
 /// `bin` on the PATH after Ruby's; Windows unchanged.
 #[test]
 fn gem_home_per_system_and_line() {
@@ -921,7 +921,7 @@ fn gemrc_written_once_with_env_shebang() {
     assert_eq!(fs::read_to_string(&other).unwrap(), GEMRC);
 }
 
-/// T2.7.4: ICU's library found by its versioned name in a library folder.
+/// D-112: ICU's library found by its versioned name in a library folder.
 #[test]
 fn libicu_lookup() {
     let tmp = TempDir::new("env-libicu");
@@ -939,7 +939,7 @@ fn libicu_lookup() {
     assert!(dirs.contains(&PathBuf::from("/usr/lib64")));
 }
 
-/// T2.7.4: the invariant mode on a Linux kit when the PC has no ICU, with
+/// D-112: the invariant mode on a Linux kit when the PC has no ICU, with
 /// or without .NET on disk (the final check of `prepare` uses the
 /// environment built before .NET was installed); never on Windows or macOS
 /// (where .NET carries or finds ICU).

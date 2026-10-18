@@ -1,5 +1,5 @@
 // "Collega con un token": Claude Code's sign-in on macOS kept in the kit
-// (PLAN-PIATTAFORME WP-4.2). On macOS Claude Code keeps its login in the
+// (D-115). On macOS Claude Code keeps its login in the
 // Keychain, which stays on that Mac: `claude setup-token` runs in the app's
 // terminal and the token it prints is saved in data/agents/claude/oauth-token
 // (Rust: tauri/src/agents/claude_token.rs). If it is not recognized, it can

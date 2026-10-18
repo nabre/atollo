@@ -842,7 +842,7 @@ pub(crate) fn gnome_proxy(mode: &str, https: (&str, &str), http: (&str, &str)) -
         .find_map(|(host, port)| proxy_url(&unquote(host), Some(&unquote(port))))
 }
 
-/// The system's proxy on macOS and Linux (T1.8.4), with its exceptions:
+/// The system's proxy on macOS and Linux (D-105), with its exceptions:
 /// used only when neither the settings nor `HTTPS_PROXY`/`HTTP_PROXY` give
 /// one. Read once per run (every `Net` would start `scutil` or
 /// `gsettings` again): a proxy changed in the system counts from the next

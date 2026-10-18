@@ -7,7 +7,7 @@
 //! keeps the default security of the user's session.
 //!
 //! macOS and Linux: an exclusive `flock` on `data/app/instance.lock` marks
-//! the running app and a socket carries the message (WP-1.6), never inside
+//! the running app and a socket carries the message (D-105), never inside
 //! the kit, whose disk (FAT, exFAT) may hold no socket and whose folder may
 //! be longer than a socket's name allows:
 //! - Linux: an abstract socket `\0Dev-Kit-<uid>-<id>`, nothing on disk;

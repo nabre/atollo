@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Cross "cargo check" / "cargo clippy" of the crate for a Unix target from
-# Windows (PLAN-PIATTAFORME.md §2.1): fake cc, ar and pkg-config (node
+# Windows (docs/app/TESTING.md): fake cc, ar and pkg-config (node
 # scripts) and an empty OpenSSL let the -sys build scripts pass. Nothing is
 # linked and no test runs: it only proves that the cfg(unix) code compiles
 # and passes clippy. Tests on Unix: scripts/test-linux.sh (WSL2) and the CI.

@@ -46,7 +46,7 @@ RewriteRule . /index.php [L]
 /// A `.htaccess` with a rule Caddy cannot know.
 const OWN_HTACCESS: &str = "RewriteEngine On\nRewriteRule ^shop/(.*)$ catalog.php?p=$1 [L,QSA]\n";
 
-/// T3.3.6: the stock files of WordPress, Laravel and Drupal are what Caddy's
+/// D-111: the stock files of WordPress, Laravel and Drupal are what Caddy's
 /// front controller does; any other directive is a rule of the project's own.
 #[test]
 fn htaccess_rules_of_its_own() {
@@ -78,7 +78,7 @@ fn laravel_and_plain() {
     let l = project("php-laravel", &[("composer.json", "{}"), ("artisan", "")]);
     let p = detect(&l.0, "it");
     assert_eq!(p.platform, "Laravel");
-    // Its site with Caddy after `artisan serve` (Q-3, D-111).
+    // Its site with Caddy after `artisan serve` (D-111).
     assert_eq!(ids(&p), ["php:artisan", "caddy", "composer:install"]);
     assert!(p.warnings.iter().any(|w| w.contains("composer install")));
 
@@ -189,7 +189,7 @@ fn laravel_and_plain() {
     assert!(!p.requires.contains(&"apache".to_owned()));
 }
 
-/// Deny rules in subfolders (review of WP-3.3): Caddy reads no `.htaccess`,
+/// Deny rules in subfolders (review of D-111): Caddy reads no `.htaccess`,
 /// so a private or uploads folder with rules of its own makes Apache first
 /// on Windows and a warning everywhere; stock files, dependencies and
 /// folders past the bounds do not count.

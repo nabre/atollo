@@ -191,7 +191,7 @@ export interface PlannedDb {
   installed: boolean;
 }
 
-/** What deleting a project takes away (PLAN-DATA.md WP-5). */
+/** What deleting a project takes away (D-89). */
 export interface DeletePlan {
   folderExists: boolean;
   /** Only an empty folder is deleted from the app. */

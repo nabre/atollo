@@ -17,7 +17,7 @@ use crate::net::verify::Expect;
 use crate::setup::catalog::Component;
 
 /// Ruby: RubyInstaller2 7z on Windows (without the MSYS2 devkit), or
-/// conda-forge `ruby` by micromamba on macOS and Linux (WP-2.2), in place
+/// conda-forge `ruby` by micromamba on macOS and Linux (D-112), in place
 /// of the ruby/ruby-builder archives, built for the folder of GitHub's
 /// runners (`/opt/hostedtoolcache`) and for Ubuntu only.
 pub struct Ruby;
@@ -129,7 +129,7 @@ pub fn gemrc_without_gemhome(text: &str) -> Option<String> {
 /// names (`x86_64-conda-linux-gnu-cc` → `cc`,
 /// `arm64-apple-darwin20.0.0-clang` → `clang`): conda's compilers are not
 /// in the environment, so a native gem would stop at "cc: not found". The
-/// plain names are the kit's `cc` (WP-2.3) or the system's. The
+/// plain names are the kit's `cc` (D-112) or the system's. The
 /// preprocessor is `$(CC) -E`, as Ruby's own default. On macOS conda's
 /// `NM` is `llvm-nm --no-llvm-bc`, which the Xcode Command Line Tools do
 /// not ship: it becomes their `nm`. `None` when nothing changes.
@@ -255,7 +255,7 @@ fn ruby_release(ctx: &Ctx, component: &Component, line: Option<&str>) -> Result<
 
 /// Windows: RubyInstaller2, gems in the folder of their Ruby
 /// (`lib\ruby\gems\3.4.0`, commands in `bin\`), one set per minor version
-/// (D-81). macOS and Linux (WP-2.2): conda-forge `ruby` in an environment
+/// (D-81). macOS and Linux (D-112): conda-forge `ruby` in an environment
 /// created by micromamba in the folder of its line, like R; it has its
 /// folder written inside, so it is installed again when the kit moves
 /// (D-92), and gems belong outside it (`GEM_HOME`, env.rs).

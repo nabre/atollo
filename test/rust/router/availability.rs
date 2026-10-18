@@ -27,9 +27,9 @@ fn rosetta_reason() {
     );
 }
 
-/// The acceptance of WP-0.4: on `linux-arm64` Android says why, in the
+/// The acceptance of D-108: on `linux-arm64` Android says why, in the
 /// sentence of an action and in every language of the catalog. SQLite is
-/// there since WP-2.5 (conda-forge).
+/// there since D-112 (conda-forge).
 #[test]
 fn linux_arm64_messages_give_the_catalog_reason() {
     let catalog = Catalog::get();

@@ -1,5 +1,5 @@
 //! The kit's terminal inside the app on macOS and Linux (DECISIONS.md
-//! D-109, plan §4.5): one PTY per session, shown by the main window with
+//! D-109): one PTY per session, shown by the main window with
 //! xterm.js (`ui/src/terminal`). Windows keeps its classic consoles
 //! (`terminal.rs`, D-57, D-95): no session ever opens there.
 //!
@@ -199,9 +199,9 @@ fn title(dir: &Path, what: &str) -> String {
     format!("{name} · {what}")
 }
 
-/// The kit's shell for `kit`'s system (T1.2.3): its PowerShell when
+/// The kit's shell for `kit`'s system (D-109): its PowerShell when
 /// installed, else `/bin/bash --rcfile <kit>/data/kit/bashrc -i` (bash 3.2
-/// on macOS reads it too, WP-0.3). Never a shell of the user's PATH.
+/// on macOS reads it too, D-105). Never a shell of the user's PATH.
 pub fn shell(kit: &Kit, dir: &Path) -> Launch {
     let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");
     if pwsh.is_file() {

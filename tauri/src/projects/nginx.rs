@@ -16,7 +16,7 @@ use crate::kit::Kit;
 use crate::os::jobs;
 use crate::projects::alias::{self, valid_domain, SiteAlias};
 use crate::projects::apache::{fwd, PHP_NEVER, PHP_RUN};
-// The php-cgi of Nginx moved to the module it shares with Caddy (WP-3.3).
+// The php-cgi of Nginx moved to the module it shares with Caddy (D-111).
 pub use crate::projects::fastcgi::{spawn_php_cgi_if_present, FastCgi, FCGI_KEY_PARAM};
 
 /// The `http` line that lets a `server_name` reach 120 characters (a

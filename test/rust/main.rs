@@ -61,7 +61,7 @@ fn invoke_cmd(
     .map(|b| b.deserialize::<serde_json::Value>().unwrap())
 }
 
-/// WP-1.7: a blocking notice stops the start with its text; a warning
+/// D-105: a blocking notice stops the start with its text; a warning
 /// (FAT32, exFAT) and no notice let it go on.
 #[test]
 fn disk_stop_only_for_blocking_notices() {
@@ -268,7 +268,7 @@ fn editor_windows_cannot_invoke_commands() {
         .unwrap();
     let r = invoke(&main, LOCAL);
     assert!(r.is_ok(), "main window must work: {r:?}");
-    // The mount of the kit's disk (WP-1.7) is never sent on Windows.
+    // The mount of the kit's disk (D-105) is never sent on Windows.
     if cfg!(windows) {
         let info = r.as_ref().unwrap();
         assert_eq!(info["diskNoexec"], serde_json::Value::Null);

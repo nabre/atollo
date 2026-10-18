@@ -39,7 +39,7 @@ pub fn resolve(
 /// The user's locale on macOS and Linux, from `LC_ALL`, `LC_MESSAGES` or
 /// `LANG` (`it_IT.UTF-8` gives `it-IT`); `C` and `POSIX` are none. On
 /// macOS the first of the languages chosen in System Settings comes first
-/// (T1.8.5): an app opened from the Finder gets no `LANG`.
+/// (D-105): an app opened from the Finder gets no `LANG`.
 #[cfg(not(windows))]
 pub fn windows_locale() -> Option<String> {
     #[cfg(target_os = "macos")]

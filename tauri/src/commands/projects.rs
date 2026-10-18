@@ -37,7 +37,7 @@ pub fn project_create<R: Runtime>(
 }
 
 /// What deleting a project takes away: its folder, its databases on the
-/// kit's servers, the copies of them (PLAN-DATA.md WP-5).
+/// kit's servers, the copies of them (D-89).
 #[tauri::command]
 pub fn project_delete_plan<R: Runtime>(
     webview: Webview<R>,

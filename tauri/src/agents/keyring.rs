@@ -21,7 +21,7 @@
 //! The app saves as well at start and when an agy of the kit ends, so a
 //! window closed abruptly does not leave the login on the computer.
 //!
-//! macOS and Linux (WP-4.1): agy uses go-keyring's service `gemini` and user
+//! macOS and Linux (D-115): agy uses go-keyring's service `gemini` and user
 //! `antigravity` (the Windows target `gemini:antigravity`; see [`KNOWN`]),
 //! so `keyring.json` is the same file on every system. On macOS the items
 //! are read and written with `/usr/bin/security`, as go-keyring does, so
@@ -892,7 +892,7 @@ pub const NO_STORE: &str = "no Secret Service on this system: the Antigravity si
 /// mode (exFAT, FAT, NTFS through FUSE), or on macOS.
 pub const NO_STORE_REFUSED: &str = "no Secret Service on this system and the kit's disk does not keep owner-only permissions (600): the kit does not move the Antigravity sign-in; anything agy stores here is readable by whoever can read or copy the kit";
 
-/// What the kit does without a store: the unencrypted fallback of §4.7
+/// What the kit does without a store: the unencrypted fallback of D-115
 /// only on Linux, and only on a disk that really keeps the 600 mode
 /// (`mode`: the permissions read back after setting 600).
 pub fn plaintext_allowed(os: crate::kit::Os, mode: Option<u32>) -> bool {

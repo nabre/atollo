@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs the Rust tests of the app on Linux, from a Windows checkout through
-# WSL2 (PLAN-PIATTAFORME.md §2.1, WP-0.6) or from a Linux checkout.
+# WSL2 (docs/app/TESTING.md) or from a Linux checkout.
 #
 #   From Windows, in the repository root:  wsl -d Ubuntu -- bash scripts/test-linux.sh
 #   Inside WSL or on Linux:                bash scripts/test-linux.sh

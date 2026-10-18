@@ -12,7 +12,7 @@
 //! what the app started is stopped at exit by `sessions::stop_children`.
 //! If the app is killed, the guard (`os/guard.rs`) ends the groups of the
 //! programs it started; on Linux a program started from the main thread
-//! also gets `SIGTERM` from the kernel when the app dies (T1.5.1).
+//! also gets `SIGTERM` from the kernel when the app dies (D-105).
 
 use std::ffi::OsStr;
 #[cfg(unix)]
@@ -148,7 +148,7 @@ impl Drop for Job {
     }
 }
 
-/// No Job Object on this system: the guard takes its place (T1.5.2). Must
+/// No Job Object on this system: the guard takes its place (D-105). Must
 /// run before the app starts its first program. A guard that cannot start
 /// leaves the programs to `sessions::stop_children` at a normal exit; the
 /// returned text says so, for the log.

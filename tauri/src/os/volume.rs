@@ -1,10 +1,10 @@
 //! The disk a folder is on: its file system (FAT32 has a 4 GiB limit per
 //! file and, like exFAT, no hard links and no permissions), its kind (fixed,
 //! removable, network) and its free space. Read when the app starts for the
-//! kit's root (PLAN-DATA.md §4.2.3) and before an installation copies
+//! kit's root (D-90) and before an installation copies
 //! between two disks.
 //!
-//! On macOS and Linux also how the disk is mounted (WP-1.7): a `noexec`
+//! On macOS and Linux also how the disk is mounted (D-105): a `noexec`
 //! mount, or a FAT32 one with `showexec` (Linux), runs none of the kit's
 //! programs, and the app says so at start ([`startup_problem`]).
 
@@ -448,7 +448,7 @@ pub fn same_volume(a: &Path, b: &Path) -> bool {
     }
 }
 
-/// What the kit's disk means for the app (WP-1.7).
+/// What the kit's disk means for the app (D-105).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiskNotice {
     /// The kit cannot work there: the app stops at start with the text.
@@ -465,7 +465,7 @@ pub struct DiskNotice {
 /// stops with the command that fixes it, on the mount point or, unknown,
 /// on the folder. FAT32 and exFAT otherwise: a warning, since links,
 /// sockets and permissions are missing (installations do without them,
-/// WP-0.2).
+/// D-105).
 pub fn notice_for(
     os: Os,
     fs: FsKind,
@@ -531,7 +531,7 @@ fn exec_folder(kit: &Kit) -> PathBuf {
 }
 
 /// The disk the kit's programs run from is mounted `noexec` (always
-/// `false` on Windows): for the Settings row (T1.7.4).
+/// `false` on Windows): for the Settings row (D-105).
 pub fn kit_noexec(kit: &Kit) -> bool {
     !Os::current().is_windows() && info(&exec_folder(kit)).is_ok_and(|v| v.noexec)
 }
@@ -565,9 +565,9 @@ pub fn disk_notice(kit: &Kit, lang: &str) -> Option<DiskNotice> {
     notice_for(os, fs, noexec, mount.as_ref(), &folder, lang)
 }
 
-/// The message that stops the app at start (T1.7.1): the kit's disk runs
+/// The message that stops the app at start (D-105): the kit's disk runs
 /// no program. `None`: the app can start.
-#[allow(dead_code)] // called by main.rs at start (WP-1.7)
+#[allow(dead_code)] // called by main.rs at start (D-105)
 pub fn startup_problem(kit: &Kit, lang: &str) -> Option<String> {
     disk_notice(kit, lang)
         .filter(|n| n.blocking)

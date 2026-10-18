@@ -46,7 +46,7 @@ fn unix_names() {
     assert_eq!(FsKind::from_name(linux_name(1).0), FsKind::Other);
 }
 
-/// T1.7.2: a partition's `removable` is its disk's; a disk on USB is
+/// D-105: a partition's `removable` is its disk's; a disk on USB is
 /// removable whatever it says; no flag at all is `Other`.
 #[test]
 fn linux_removable_from_a_fake_sys_tree() {

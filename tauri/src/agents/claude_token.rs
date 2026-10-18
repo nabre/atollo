@@ -1,4 +1,4 @@
-//! Claude Code's sign-in on macOS kept in the kit (WP-4.2).
+//! Claude Code's sign-in on macOS kept in the kit (D-115).
 //!
 //! On macOS Claude Code keeps its login in the Keychain, not in
 //! `.claude/.credentials.json` of the kit's home: a kit taken to another

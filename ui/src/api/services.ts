@@ -22,7 +22,7 @@ export interface ServiceInfo {
   line: string | null;
   lines: string[];
   /** The other installed versions, each on its own port, newest first
-   * (PLAN.md §13.2). */
+   * (D-102). */
   others: LineInfo[];
 }
 

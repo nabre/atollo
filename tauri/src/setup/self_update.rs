@@ -10,7 +10,7 @@
 //!   `old` name, the staged one takes its place; the old one is deleted at
 //!   the next start. A failed move puts the old one back.
 //!
-//! What is staged and swapped, per system (WP-5.4):
+//! What is staged and swapped, per system (D-113):
 //!
 //! - Windows: `data\app\update\Atollo.exe`; `Atollo.exe` → `Atollo.old.exe`
 //!   (Windows lets a running exe be renamed);

@@ -191,7 +191,7 @@ function NeedAction({
       onClick={() => {
         onRun(() =>
           // A server: it downloads, or the project's database goes on that
-          // version, on its own port beside the others (PLAN.md §13.2).
+          // version, on its own port beside the others (D-102).
           need.server
             ? need.status === "download"
               ? versionsAdd(need.component, line)

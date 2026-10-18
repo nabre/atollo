@@ -165,7 +165,7 @@ fn retry_stops_on_cancel() {
     assert_eq!(calls, 1);
 }
 
-/// T1.8.4: the proxy of System Settings on macOS, from `scutil --proxy`.
+/// D-105: the proxy of System Settings on macOS, from `scutil --proxy`.
 #[test]
 fn macos_proxy_from_scutil() {
     let both = "<dictionary> {
@@ -198,7 +198,7 @@ fn macos_proxy_from_scutil() {
     assert!(scutil_exceptions("<dictionary> {\n  HTTPEnable : 1\n}\n").is_empty());
 }
 
-/// T1.8.4: the system's exceptions reach the proxy (review of WP-1.8).
+/// D-105: the system's exceptions reach the proxy (a review finding).
 #[test]
 fn system_proxy_exceptions() {
     assert_eq!(
@@ -220,7 +220,7 @@ fn system_proxy_exceptions() {
     assert!(!plain.is_no_proxy(&uri("http://localhost/x")));
 }
 
-/// T1.8.4: GNOME's proxy, only when set by hand.
+/// D-105: GNOME's proxy, only when set by hand.
 #[test]
 fn gnome_proxy_from_gsettings() {
     let https = ("'secure.corp.example'\n", "8443\n");

@@ -27,7 +27,7 @@ pub struct AppInfo {
     /// `fixed`, `removable`, `remote` or `other`.
     pub disk_kind: Option<&'static str>,
     /// The disk the kit's programs run from is mounted `noexec` (macOS and
-    /// Linux, WP-1.7); `None` on Windows.
+    /// Linux, D-105); `None` on Windows.
     pub disk_noexec: Option<bool>,
     /// The app's notice about the kit's disk, translated (noexec,
     /// showexec, FAT32, exFAT); `None` on Windows or when all is well.

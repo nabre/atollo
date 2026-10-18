@@ -1,6 +1,6 @@
 //! Database servers of the kit (DECISIONS.md D-73): MySQL (D-110, the SQL
 //! server of new kits), MariaDB (kept on the kits that run it, until its
-//! data moves to MySQL, WP-3.9) and MongoDB, one instance each for every
+//! data moves to MySQL, issue #3) and MongoDB, one instance each for every
 //! project (as Laragon), started from the Database page or with Dev-Kit.
 //!
 //! - a project's SQL database is on the server it was created on (a
@@ -19,7 +19,7 @@
 //!   new (MariaDB with its `mariadb-install-db`); output in
 //!   `data\app\logs\<id>.log`;
 //! - the other installed versions can run at the same time, each on a port
-//!   of its own (PLAN.md §13.2: MariaDB 10.6 on 3307 beside 11.4 on 3306),
+//!   of its own (D-102: MariaDB 10.6 on 3307 beside 11.4 on 3306),
 //!   for the projects that ask for them (`lines` of the project's
 //!   `db.json`); their output in `data\app\logs\<id>-<version>.log`;
 //! - each server runs in a job of its own, nested in the app's: closing the
@@ -99,7 +99,7 @@ pub struct Setting {
     /// newest on disk (D-81).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub line: Option<String>,
-    /// The ports of the other versions (PLAN.md §13.2), version → port:
+    /// The ports of the other versions (D-102), version → port:
     /// stored at their first start or set on the page; one not stored gets
     /// the first free one after `port` ([`line_ports`]).
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
@@ -137,8 +137,8 @@ pub struct ServiceInfo {
     /// The version it runs, and those installed (newest first).
     pub line: Option<String>,
     pub lines: Vec<String>,
-    /// The other installed versions, each with its own port (PLAN.md
-    /// §13.2), newest first.
+    /// The other installed versions, each with its own port
+    /// (D-102), newest first.
     pub others: Vec<LineInfo>,
 }
 
@@ -262,9 +262,9 @@ pub fn project_line(kit: &Kit, project: &str, engine: &str) -> Option<String> {
         .or_else(|| server_line(kit, engine))
 }
 
-/// The kit's SQL server (D-110, T3.8.8): MySQL, unless the kit runs
+/// The kit's SQL server (D-110, issue #3): MySQL, unless the kit runs
 /// MariaDB and has no MySQL, where MariaDB stays until its data moves
-/// (WP-3.9): a new project there gets its database next to the others.
+/// (issue #3): a new project there gets its database next to the others.
 pub fn sql_engine(kit: &Kit) -> DbEngine {
     sql_engine_with(|id| installed(kit, id))
 }
@@ -278,13 +278,13 @@ pub fn sql_engine_with(installed: impl Fn(&str) -> bool) -> DbEngine {
     }
 }
 
-/// The component a need for a SQL server installs (T3.8.8): `mariadb` or
+/// The component a need for a SQL server installs (issue #3): `mariadb` or
 /// `mysql` (of phpMyAdmin's `needs`, a framework's `database`, the
 /// detection of a project, its actions, its containers) is the kit's SQL
 /// server ([`sql_engine`]), so a new kit gets MySQL and a kit that runs
 /// only MariaDB keeps it; any other need is itself. An explicit choice of
 /// a component (`prepare --only mariadb`, its card) is never resolved.
-#[allow(dead_code)] // the tests; the needs outside `db` call it (T3.8.8)
+#[allow(dead_code)] // the tests; the needs outside `db` call it (issue #3)
 pub fn sql_need(kit: &Kit, need: &str) -> String {
     sql_need_with(need, |id| installed(kit, id)).to_string()
 }
@@ -323,7 +323,7 @@ fn project_sql_db(kit: &Kit, project: &str) -> Option<DbEngine> {
 }
 
 /// The port of the project's SQL database, when it has one: the `DB_PORT`
-/// of its programs (PLAN.md §13.2).
+/// of its programs (D-102).
 pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
     let id = project_sql_db(kit, project)?.id();
     Some(line_port(
@@ -645,7 +645,7 @@ impl Services {
     }
 
     /// Starts version `line` of `id` (None: the version the server runs),
-    /// on its own port beside the others (PLAN.md §13.2).
+    /// on its own port beside the others (D-102).
     pub fn start_line(&self, id: &str, line: Option<&str>, env: &KitEnv) -> Result<u16> {
         self.start_engine(DbEngine::parse(id)?, line, env)
     }
@@ -1037,7 +1037,7 @@ pub fn project_drop_lines(kit: &Kit, project: &str, engine: &str) -> Vec<String>
     lines
 }
 
-/// The kit's servers for the deletion of `project` (PLAN-DATA.md WP-5),
+/// The kit's servers for the deletion of `project` (D-89),
 /// started with `env` when stopped: every version its databases are on
 /// ([`project_drop_lines`]); a version no longer installed is skipped and
 /// named in the log.

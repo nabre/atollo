@@ -121,7 +121,7 @@ export function SecretField({ value, label }: { value: string; label: string }) 
   );
 }
 
-/** Another version of a server, on its own port (PLAN.md §13.2): state,
+/** Another version of a server, on its own port (D-102): state,
  * port and start/stop. */
 function OtherLine({
   id,
@@ -225,7 +225,7 @@ function ServiceDetails({
   onLinePhpMyAdmin?: ((line: string) => void) | undefined;
   onSet: (port: number | null, autostart: boolean) => void;
   onLine: (line: string | null) => void;
-  /** The other versions (PLAN.md §13.2). */
+  /** The other versions (D-102). */
   lineBusy: (line: string) => boolean;
   onLineStart: (line: string) => void;
   onLineStop: (line: string) => void;
@@ -241,7 +241,7 @@ function ServiceDetails({
   const [chosen, setSection] = useState<"content" | "details">(s.state === "running" ? "content" : "details");
   const section = explorer ? chosen : "details";
   // The version the explorer reads (null: the one the server runs); each
-  // has its own port and data (PLAN.md §13.2).
+  // has its own port and data (D-102).
   const [browseLine, setBrowseLine] = useState<string | null>(null);
   const browsed = s.others.find((o) => o.line === browseLine);
   const browsedState = browsed ? browsed.state : s.state;

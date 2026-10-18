@@ -14,7 +14,7 @@ const BUN_REPO: &str = "oven-sh/bun";
 
 /// The Bun zip for `target`; with `baseline`, on x64 only, the build for
 /// CPUs without AVX2 (`bun-<os>-x64-baseline.zip`), which the other one
-/// stops on with "Illegal instruction" (T2.7.2).
+/// stops on with "Illegal instruction" (D-112).
 pub(crate) fn bun_asset_for(target: Target, baseline: bool) -> String {
     let os = match target.os {
         Os::Win32 => "windows",

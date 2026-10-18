@@ -101,7 +101,7 @@ describe("DatabasesPage", () => {
     expect(screen.getAllByRole("button", { name: "Ferma" }).length).toBeGreaterThan(0);
   });
 
-  it("starts another version on its own port and sets that port (PLAN.md 13.2)", async () => {
+  it("starts another version on its own port and sets that port (D-102)", async () => {
     invoke.mockImplementation((cmd) => {
       if (cmd === "services_list") return Promise.resolve(STOPPED);
       if (cmd === "service_start" || cmd === "service_line_port") return Promise.resolve(STOPPED);

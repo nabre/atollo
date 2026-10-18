@@ -944,7 +944,7 @@ fn two_actions_of_one_project_get_distinct_vhosts() {
     assert!(other.contains("shop/docs"), "{other}");
 }
 
-/// Defect 7 (PLAN-DATA §9): a project is put in the pools once per site:
+/// Defect 7 of the pools (D-101): a project is put in the pools once per site:
 /// the detected `apache` and `nginx` give way to the sites of `panel.json`,
 /// and only the first of them is taken.
 #[test]
@@ -1203,7 +1203,7 @@ fn php_cgi_listening_tells_ended_from_ready() {
 }
 
 /// php-fpm on macOS and Linux is waited for on its Unix socket (never a
-/// TCP port, review of WP-3.3): a socket that takes connections answers,
+/// TCP port, review of D-111): a socket that takes connections answers,
 /// a file that is not one, or none, does not.
 #[cfg(unix)]
 #[test]
@@ -1231,7 +1231,7 @@ fn fcgi_answers_on_a_unix_socket() {
     assert!(!dir.exists(), "the folder goes with the last copy");
 }
 
-/// PLAN.md §13.1: a pool stops with its last project only when projects
+/// D-101: a pool stops with its last project only when projects
 /// started it and it is not kept alive.
 #[test]
 fn stops_when_left_follows_who_started_it() {
@@ -1241,7 +1241,7 @@ fn stops_when_left_follows_who_started_it() {
     assert!(!stops_when_left(true, 0, false), "started by the user");
 }
 
-/// PLAN.md §13.1: an older `servers.json` (no options) keeps its profiles
+/// D-101: an older `servers.json` (no options) keeps its profiles
 /// alive and starts none with the app; the options are saved and read back.
 #[test]
 fn profile_options_default_and_round_trip() {
@@ -1276,7 +1276,7 @@ fn profile_options_default_and_round_trip() {
     assert!(!servers.is_running("legacy"));
 }
 
-/// PLAN.md §13.1: a stopped project's site leaves the pool's files; an
+/// D-101: a stopped project's site leaves the pool's files; an
 /// automatic pool started by projects stops with the last of them.
 #[test]
 fn detach_leaves_the_pool_and_stops_an_empty_automatic_one() {
@@ -1458,7 +1458,7 @@ fn http_get(port: u16, host: &str, path: &str) -> Result<(u16, String)> {
     Ok((status, body.to_owned()))
 }
 
-/// WP-3.3 acceptance with a real Caddy and PHP (DEVKIT_TEST_KIT): a pool
+/// D-111 acceptance with a real Caddy and PHP (DEVKIT_TEST_KIT): a pool
 /// with two PHP sites and an alias to another project's folder; a third
 /// site added with `caddy reload` while the first one keeps answering, the
 /// same Caddy process throughout.
@@ -1663,7 +1663,7 @@ fn fcgi_request(stream: &mut std::os::unix::net::UnixStream, params: &[(&str, &s
     String::from_utf8_lossy(&text).into_owned()
 }
 
-/// Review of WP-3.3 (the real test): php-fpm of a Caddy pool is on an
+/// Review of D-111 (the real test): php-fpm of a Caddy pool is on an
 /// owner-only Unix socket in an owner-only folder, `fpm.conf` has no TCP
 /// listen, and a request without the key is refused by the guard. What a
 /// request with `PHP_VALUE` or `PHP_ADMIN_VALUE` gets is only printed: php-fpm
@@ -1744,9 +1744,9 @@ fn name_sites_keeps_names_unique() {
     assert_eq!(host_label("Ünï Côde_42"), "n-c-de-42");
 }
 
-/// PLAN-DATA §9 1.1: an automatic pool lists (and serves) the sites the
+/// D-101: an automatic pool lists (and serves) the sites the
 /// projects chose in `panel.json` and those started, not every PHP project
-/// that was only offered a site (Caddy since WP-3.3).
+/// that was only offered a site (Caddy since D-111).
 #[test]
 fn automatic_pools_list_chosen_or_started_sites() {
     let tmp = TempDir::new("servers-chosen-sites");
@@ -1834,7 +1834,7 @@ fn automatic_pools_list_chosen_or_started_sites() {
     assert_eq!(shop.server_name, "shop.localhost");
 }
 
-/// T3.3.1: Caddy is an engine of the pools: its automatic ids read back,
+/// D-111: Caddy is an engine of the pools: its automatic ids read back,
 /// its label, its sites in `panel.json` (`caddy`) pooled like the others.
 #[test]
 fn caddy_engine_of_the_pools() {
@@ -1871,7 +1871,7 @@ fn caddy_engine_of_the_pools() {
     assert_eq!(pooled, ["site"]);
 }
 
-/// T3.3.2: a Caddy pool's site block: its own name and its domains, its
+/// D-111: a Caddy pool's site block: its own name and its domains, its
 /// document root, PHP with the start's key, the aliases checked on disk
 /// only (no alias that was not resolved in the text, as Apache and Nginx).
 #[test]
@@ -1962,7 +1962,7 @@ fn caddy_pool_writes_one_caddyfile() {
     assert!(text.contains("respond @php 503"));
 }
 
-/// PLAN.md §13.1: a site marked `dedicated` keeps its own server (in no
+/// D-101: a site marked `dedicated` keeps its own server (in no
 /// pool); a new profile never takes an id a site's `server` means otherwise.
 #[test]
 fn dedicated_sites_and_reserved_profile_ids() {

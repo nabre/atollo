@@ -103,7 +103,7 @@ function EnvPreview({
 }
 
 /** The version of the server for the project's database, when more than
- * one is installed (PLAN.md §13.2): each runs on its own port. */
+ * one is installed (D-102): each runs on its own port. */
 function DbVersionSelect({
   project,
   engine,

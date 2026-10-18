@@ -34,7 +34,7 @@ pub struct ComponentInfo {
     /// needs Java; C and C++ need Zig on macOS and Linux only).
     pub needs: Vec<String>,
     /// C and C++ on a Mac without Xcode Command Line Tools (`xcode-select
-    /// -p` fails): C and C++ work, the Apple frameworks do not (T2.3.4).
+    /// -p` fails): C and C++ work, the Apple frameworks do not (D-112).
     /// Only the Mac itself can tell: false for a kit inspected or prepared
     /// from another system.
     pub xcode_missing: bool,

@@ -24,7 +24,7 @@ export interface AppInfo {
   diskFs: "NTFS" | "ReFS" | "FAT32" | "exFAT" | "POSIX" | "other" | null;
   diskKind: "fixed" | "removable" | "remote" | "other" | null;
   /** The disk the kit's programs run from is mounted `noexec` (macOS and
-   * Linux, WP-1.7); `null` on Windows. */
+   * Linux, D-105); `null` on Windows. */
   diskNoexec: boolean | null;
   /** The app's notice about the kit's disk, translated; `null` on Windows
    * or when all is well. */
