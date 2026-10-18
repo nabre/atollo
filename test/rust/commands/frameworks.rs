@@ -51,9 +51,8 @@ fn env_goes_in_gitignore() {
     );
 }
 
-/// D-117, issue #3: on a new kit phpMyAdmin and the databases of WordPress
-/// and Laravel install MySQL, never MariaDB, and phpMyAdmin is available on
-/// the six targets.
+/// Issue #3: phpMyAdmin and the databases of WordPress and Laravel install
+/// MySQL, and phpMyAdmin is available on the six targets.
 #[test]
 fn a_new_kit_installs_mysql_for_phpmyadmin_wordpress_and_laravel() {
     use crate::kit::Target;
@@ -75,10 +74,6 @@ fn a_new_kit_installs_mysql_for_phpmyadmin_wordpress_and_laravel() {
                 needed.contains(&"mysql"),
                 "{what} on {target:?}: {needed:?}"
             );
-            assert!(
-                !needed.contains(&"mariadb"),
-                "{what} on {target:?}: {needed:?}"
-            );
         }
         for id in crate::commands::with_needs(catalog, &["phpmyadmin"], target) {
             assert!(id.is_available_on(target), "{} on {target:?}", id.id);
@@ -88,7 +83,7 @@ fn a_new_kit_installs_mysql_for_phpmyadmin_wordpress_and_laravel() {
 
 #[test]
 fn database_for_the_steps() {
-    let db = crate::db::auth::project_db("mariadb", "site", "pw", 3307);
+    let db = crate::db::auth::project_db("mysql", "site", "pw", 3307);
     let vars = super::db_vars(&db);
     let get = |k: &str| vars.iter().find(|(n, _)| n == k).map(|(_, v)| v.as_str());
     assert_eq!(get("DEVKIT_DB_PORT"), Some("3307"));

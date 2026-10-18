@@ -21,7 +21,7 @@ fn copies_in_the_private_folder() {
         .join("private");
     assert_eq!(dir, private.join("backups"));
     assert!(s.backups("shop").is_empty());
-    // a copy written there (as mariadb-dump's output) is private by
+    // a copy written there (as mysqldump's output) is private by
     // inheritance from private\ on Windows; on Unix a new file keeps the
     // umask's mode, and private/ (0700) is what keeps the others out
     for name in ["shop-1.sql", "shop-2.archive.gz", "notes.txt"] {
@@ -36,19 +36,14 @@ fn copies_in_the_private_folder() {
         .iter()
         .map(|b| (b.file.as_str(), b.engine.as_str()))
         .collect();
-    // A `.sql` copy is for the project's SQL server: MySQL on a new kit,
-    // MariaDB where the project's database is (D-110).
     assert_eq!(
         names,
         [("shop-2.archive.gz", "mongodb"), ("shop-1.sql", "mysql")]
     );
-    crate::db::auth::set_project_password(s.kit(), "shop", "mariadb", "pw").unwrap();
-    let engines: Vec<String> = s.backups("shop").into_iter().map(|b| b.engine).collect();
-    assert_eq!(engines, ["mongodb", "mariadb"]);
     assert!(s.backups("other").is_empty(), "one folder per project");
 
     // no server: export fails before writing anything
-    assert!(s.export("shop", "mariadb").is_err());
+    assert!(s.export("shop", "mysql").is_err());
     assert_eq!(fs::read_dir(&dir).unwrap().count(), 3);
 
     // names outside the folder are refused before any server is asked
@@ -86,12 +81,12 @@ fn only_the_projects_own_database() {
         fs::write(file, json).unwrap();
     };
     // no database made by the kit: nothing, whatever exists on the server
-    let e = s.own_database("shop", "mariadb").unwrap_err().to_string();
-    assert!(e.contains("no mariadb database"), "{e}");
-    db_json("shop", r#"{"mariadb":"pw","names":{"mariadb":"shop"}}"#);
-    assert_eq!(s.own_database("shop", "mariadb").unwrap(), "shop");
+    let e = s.own_database("shop", "mysql").unwrap_err().to_string();
+    assert!(e.contains("no mysql database"), "{e}");
+    db_json("shop", r#"{"mysql":"pw","names":{"mysql":"shop"}}"#);
+    assert_eq!(s.own_database("shop", "mysql").unwrap(), "shop");
     // another project with the same name: refused
-    db_json("other", r#"{"mariadb":"pw","names":{"mariadb":"shop"}}"#);
-    let e = format!("{:#}", s.own_database("shop", "mariadb").unwrap_err());
+    db_json("other", r#"{"mysql":"pw","names":{"mysql":"shop"}}"#);
+    let e = format!("{:#}", s.own_database("shop", "mysql").unwrap_err());
     assert!(e.contains("other"), "{e}");
 }

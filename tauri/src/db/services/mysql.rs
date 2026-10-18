@@ -1,8 +1,7 @@
-//! What MySQL needs that MariaDB does not (D-110), as functions of the
+//! What the kit's MySQL needs (D-110), as functions of the
 //! target and the folders, so the tests cover every system on Windows:
 //!
-//! - a new data folder from `mysqld --initialize --init-file` (no
-//!   `mariadb-install-db`), always with `lower_case_table_names=1`: MySQL
+//! - a new data folder from `mysqld --initialize --init-file`, always with `lower_case_table_names=1`: MySQL
 //!   refuses another value after the initialization, and with the same one
 //!   everywhere the folder opens on Windows, macOS and Linux alike;
 //! - `my.cnf` in the data folder, written by the kit at every start and
@@ -95,7 +94,7 @@ pub fn socket_path(
 /// The kit's `my.cnf` of the server: the folders, its port on 127.0.0.1
 /// only, no X Protocol (its port 33060 would be taken by every version),
 /// `lower_case_table_names=1` as at the initialization, no binary log
-/// (`skip-log-bin`, as MariaDB's default): on since 8.0, it would refuse
+/// (`skip-log-bin`): on since 8.0, it would refuse
 /// the triggers and functions of a project's own user without `SUPER`
 /// (error 1419, seen on 9.7 with a Laravel-style trigger) and fill the
 /// disk of a stick with logs a development server never replays.
@@ -125,8 +124,7 @@ pub fn server_cnf(os: Os, basedir: &Path, data: &Path, port: u16, socket: Option
 /// while it reads a file given to it (a copy restored, D-78): a dump from
 /// elsewhere could hold `\! cmd`, `system`, `source`, `tee` or `pager` and
 /// run programs or write files as the user. MySQL: `--commands=OFF` (in the
-/// clients of 8.4 and 9.7, checked with `mysql --help`); MariaDB:
-/// `--sandbox` (from 10.5.25, 10.6.18, 10.11.8, 11.4.2). `help` is the
+/// clients of 8.4 and 9.7, checked with `mysql --help`). `help` is the
 /// client's `--help`; None: this client has no such option, and the file
 /// is not given to it.
 pub fn restore_guard(engine: crate::db::DbEngine, help: &str) -> Option<&'static str> {
@@ -137,8 +135,7 @@ pub fn restore_guard(engine: crate::db::DbEngine, help: &str) -> Option<&'static
     };
     match engine {
         DbEngine::MySql if has("--commands") => Some("--commands=OFF"),
-        DbEngine::MariaDb if has("--sandbox") => Some("--sandbox"),
-        DbEngine::MySql | DbEngine::MariaDb | DbEngine::MongoDb => None,
+        DbEngine::MySql | DbEngine::MongoDb => None,
     }
 }
 

@@ -1,4 +1,4 @@
-//! phpMyAdmin on the kit's SQL server, MySQL or MariaDB (DECISIONS.md
+//! phpMyAdmin on the kit's SQL server, MySQL (DECISIONS.md
 //! D-107, in place of Adminer of D-85; D-110): what EasyPHP and XAMPP give,
 //! from the Database page.
 //!
@@ -9,7 +9,7 @@
 //!   the projects' sites (their PHP could read them and log in as root);
 //!   serving phpMyAdmin's folder through the router
 //!   `data\kit\phpmyadmin.php` (`runtime/phpmyadmin.php`), started at the
-//!   first "phpMyAdmin" and ended with the MariaDB version it logs in to or
+//!   first "phpMyAdmin" and ended with the MySQL version it logs in to or
 //!   the app (the app's job);
 //! - one at a time, on the version chosen (D-102: each on its own
 //!   port): opening it on another version starts it again there;
@@ -18,7 +18,7 @@
 //!   of the PC that reach 127.0.0.1 cannot use root's login;
 //! - `config.inc.php` in phpMyAdmin's folder is the app's
 //!   (`runtime/phpmyadmin.config.php`), written at every start: root's
-//!   password, the MariaDB port and the cookie key come from the server's
+//!   password, the MySQL port and the cookie key come from the server's
 //!   environment (`DEVKIT_*`), never the command line or the browser;
 //! - sessions and phpMyAdmin's cache in `data\app\phpmyadmin`, uploaded
 //!   files in `phpmyadmin\` of the PC's temporary folder (D-90), the
@@ -49,7 +49,7 @@ struct Server {
     child: Child,
     host: Ipv4Addr,
     port: u16,
-    /// The MariaDB port it logs in to.
+    /// The MySQL port it logs in to.
     db_port: u16,
     token: String,
     // Dropped after the fields above: ends PHP's server.
@@ -115,10 +115,10 @@ pub fn address(host: Ipv4Addr, port: u16, token: &str) -> String {
 }
 
 impl PhpMyAdmin {
-    /// The address that logs in to phpMyAdmin, on MariaDB at `db_port`, in
+    /// The address that logs in to phpMyAdmin, on MySQL at `db_port`, in
     /// `lang` (`it`, `en`...); starts PHP's server when it is not running or
     /// serves another port.
-    /// `password`: root's of the server on `db_port` (MySQL or MariaDB).
+    /// `password`: root's of the server on `db_port`.
     pub fn open(
         &self,
         kit: &Kit,
@@ -152,7 +152,7 @@ impl PhpMyAdmin {
         }
     }
 
-    /// Ends phpMyAdmin when it logs in to the MariaDB at `db_port` (a
+    /// Ends phpMyAdmin when it logs in to the MySQL at `db_port` (a
     /// version that stops); one on another version stays.
     pub fn stop_for(&self, db_port: u16) {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());

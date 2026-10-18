@@ -672,7 +672,7 @@ fn lock_in_use(kit: &Kit, stem: &str) -> bool {
     let Some((id, line)) = stem.split_once('@') else {
         return false;
     };
-    let Some(c) = Catalog::get().find_internal(id) else {
+    let Some(c) = Catalog::get().find(id) else {
         return false;
     };
     let Some(inst) = installer(id).filter(|i| !i.relocatable(target)) else {

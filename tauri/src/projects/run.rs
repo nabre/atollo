@@ -5,7 +5,7 @@
 //!   ends the whole tree (npm → node → esbuild…), closing the app ends all;
 //! - commands go through `cmd.exe /d /s /c` (`/bin/sh -c` on macOS and
 //!   Linux, `jobs::shell_command`) with the kit's environment plus
-//!   `PORT`, `ROCKET_PORT`, `DB_PORT` (its MariaDB database), `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
+//!   `PORT`, `ROCKET_PORT`, `DB_PORT` (its MySQL database), `BROWSER=none`, `PYTHONUNBUFFERED=1`; a `static`
 //!   action runs this exe as a file server (`Dev-Kit.exe serve`), an
 //!   `apache` action the kit's httpd with a configuration of the project,
 //!   `nginx` and `caddy` actions the same with their server and PHP;
@@ -622,7 +622,7 @@ impl Runner {
             cmd.env("PORT", p.to_string())
                 .env("ROCKET_PORT", p.to_string());
         }
-        // The port of the MySQL or MariaDB version its database is on
+        // The port of the MySQL version its database is on
         // (D-102), unless a `.env` sets another one: dotenv loaders
         // keep a variable already there, and the user's own port would be
         // lost.
@@ -634,8 +634,8 @@ impl Runner {
                 .any(|v| v != p);
             if !own {
                 cmd.env("DB_PORT", p);
-                // `mysql` and `mariadb` of its scripts log in on that
-                // version too (`MYSQL_HOME`, `DEVKIT_MYSQL_CNF`).
+                // `mysql` of its scripts logs in on that version too
+                // (`DEVKIT_MYSQL_CNF`).
                 for (name, value) in crate::db::services::project_client_env(&self.kit, id) {
                     cmd.env(name, value);
                 }

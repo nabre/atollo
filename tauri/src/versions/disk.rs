@@ -167,9 +167,6 @@ pub fn migrate(kit: &Kit) {
     drop_retired(kit);
     // The databases' data, one folder per version too.
     crate::db::services::migrate_data(kit);
-    // After that move: MariaDB's programs go once none of its data waits
-    // for them (D-117).
-    retire_mariadb(kit);
     if let Err(e) = crate::install::adopt_composer(kit) {
         crate::log::warn(&format!("Composer of the older kit: {e:#}"));
     }
@@ -225,20 +222,6 @@ fn drop_component(kit: &Kit, id: &str) {
         }
     }
     let _ = fs::remove_file(kit.versions_root().join(format!("{id}.txt")));
-}
-
-/// MariaDB is no longer a server of the kit (D-117): its programs (every
-/// version) go once no data of it waits to move to MySQL, moved already or
-/// never there. Its data, in `data\db`, is never touched here.
-pub fn retire_mariadb(kit: &Kit) {
-    use crate::db::DbEngine;
-    let root = kit.data().join("db").join(DbEngine::MariaDb.id());
-    let waiting = !crate::db::migrate_engine::pending_lines(kit).is_empty()
-        || root.join("mysql").is_dir()
-        || crate::db::migrate_engine::switching(kit);
-    if !waiting {
-        drop_component(kit, DbEngine::MariaDb.id());
-    }
 }
 
 /// `node\node.exe` → `node\<line>\node.exe`, through `node.devkit-move`

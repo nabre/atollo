@@ -1,5 +1,5 @@
 <?php
-// Router of PHP's server for phpMyAdmin on the kit's MariaDB (DECISIONS.md
+// Router of PHP's server for phpMyAdmin on the kit's MySQL (DECISIONS.md
 // D-107), started by NEXKORA from the Database page. Written by the app: a
 // hand edit is replaced at the next start.
 //

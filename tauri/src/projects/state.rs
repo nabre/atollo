@@ -167,7 +167,7 @@ pub struct Holdings {
     pub settings: bool,
     /// Ports remembered for its actions.
     pub ports: usize,
-    /// Engines with a user of the project (`mariadb`, `mongodb`).
+    /// Engines with a user of the project (`mysql`, `mongodb`).
     pub databases: Vec<String>,
     /// Copies of its databases.
     pub backups: usize,

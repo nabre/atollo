@@ -88,20 +88,13 @@ pub fn versioned() -> impl Iterator<Item = &'static Component> {
     Catalog::get().all().iter().filter(|c| c.versioned)
 }
 
-/// The components with one folder per line: versioned, or `minor_folder`;
-/// also those no longer offered whose folders are still read (MariaDB,
-/// to move its data, D-117).
+/// The components with one folder per line: versioned, or `minor_folder`.
 pub fn lined() -> impl Iterator<Item = &'static Component> {
-    let catalog = Catalog::get();
-    catalog
-        .all()
-        .iter()
-        .chain(catalog.internal())
-        .filter(|c| c.per_line())
+    Catalog::get().all().iter().filter(|c| c.per_line())
 }
 
 fn find(id: &str) -> Option<&'static Component> {
-    Catalog::get().find_internal(id).filter(|c| c.versioned)
+    Catalog::get().find(id).filter(|c| c.versioned)
 }
 
 /// `data\apps\<platform>\<folder>`: the folder of every version.

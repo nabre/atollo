@@ -23,9 +23,8 @@ fn commands() {
     for id in ids("npm i & go build & dotnet run & ruby x.rb & Rscript a.R") {
         assert!(Catalog::get().find(id).is_some(), "{id}");
     }
-    // Every SQL program is MySQL's (D-117).
     assert_eq!(ids("mysql -e 'select 1'"), ["mysql"]);
-    assert_eq!(ids("mariadb-dump app"), ["mysql"], "MySQL (D-117)");
+    assert_eq!(ids("mysqldump app"), ["mysql"]);
     assert_eq!(ids("caddy run & php-fpm -F"), ["caddy", "php"]);
 }
 
