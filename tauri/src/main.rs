@@ -591,7 +591,13 @@ fn build_app<R: tauri::Runtime>(
                     state.lang(),
                 )
             };
+            // MariaDB's data moves to MySQL first, once (D-117): the
+            // servers started with the app are then MySQL's.
+            let moving = app.handle().clone();
             std::thread::spawn(move || {
+                if let Err(e) = commands::databases::move_to_mysql(&moving) {
+                    log::warn(&format!("mariadb → mysql: {e:#}"));
+                }
                 services.autostart(&env);
                 servers.autostart(&env, lang);
             });

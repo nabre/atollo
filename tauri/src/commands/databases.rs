@@ -405,6 +405,117 @@ pub async fn db_admin_open<R: Runtime>(
     .or_fail("phpmyadmin")?
 }
 
+/// Installs the versions of MySQL the move of MariaDB's data needs
+/// (D-117) with the app's preparation, and waits for it: the first at that
+/// version when MySQL is not installed, the others beside it.
+fn install_mysql_lines<R: Runtime>(
+    app: &AppHandle<R>,
+    task: &Arc<SetupTask>,
+    kit: &Kit,
+    wanted: &[(String, String)],
+) -> anyhow::Result<()> {
+    let wait = || {
+        while task.snapshot().running {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+        }
+    };
+    let mysql = Catalog::get().find(DbEngine::MySql.component());
+    let mut rest = wanted.to_vec();
+    if !mysql.is_some_and(|c| c.is_installed(kit)) && !rest.is_empty() {
+        let first = rest.remove(0);
+        let opts = Options {
+            only: vec![first.0.clone()],
+            at: vec![first],
+            ..Options::default()
+        };
+        wait();
+        task.start(opts, true, setup_notify(app.clone()))
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        wait();
+    }
+    if !rest.is_empty() {
+        let opts = Options {
+            lines: rest,
+            ..Options::default()
+        };
+        wait();
+        task.start(opts, true, setup_notify(app.clone()))
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        wait();
+    }
+    match task.snapshot().error {
+        Some(e) => Err(anyhow::anyhow!("{e}")),
+        None => Ok(()),
+    }
+}
+
+/// Moves MariaDB's data to MySQL when the kit has some (D-117): at start,
+/// before the servers marked "start with the app", and from the Database
+/// page. The Activity panel and the page read its state.
+pub fn move_to_mysql<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
+    use tauri::Manager;
+    let state = app.state::<AppState>();
+    let (kit, task) = (state.kit.clone(), Arc::clone(&state.setup));
+    if crate::db::migrate_engine::pending_lines(&kit).is_empty()
+        && !crate::db::migrate_engine::switching(&kit)
+    {
+        return Ok(());
+    }
+    let _ = app.emit_to(MAIN, "db-migration", ());
+    let servers = crate::db::services::ToMysql {
+        services: &state.services,
+        env: state.env(),
+    };
+    let install = |wanted: &[(String, String)]| install_mysql_lines(app, &task, &kit, wanted);
+    let result = crate::db::migrate_engine::run(&servers, &install).map(|_| ());
+    let _ = app.emit_to(MAIN, "db-migration", ());
+    result
+}
+
+/// The move of MariaDB's data to MySQL (D-117), for the Database page and
+/// the Activity panel.
+#[tauri::command]
+pub fn db_migration<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<crate::db::migrate_engine::Status> {
+    ensure_main(&webview)?;
+    Ok(crate::db::migrate_engine::status(&state.kit))
+}
+
+/// Tries the move of MariaDB's data again (D-117), off the window's thread.
+#[tauri::command]
+pub async fn db_migration_retry<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<crate::db::migrate_engine::Status> {
+    ensure_main(&webview)?;
+    let kit = state.kit.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        move_to_mysql(&app).or_fail_chain("migration")?;
+        Ok(crate::db::migrate_engine::status(&kit))
+    })
+    .await
+    .or_fail("migration")?
+}
+
+/// Deletes the MariaDB data kept after the move (D-117), asked by the user.
+#[tauri::command]
+pub async fn db_migration_drop_kept<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<crate::db::migrate_engine::Status> {
+    ensure_main(&webview)?;
+    let kit = state.kit.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::db::migrate_engine::drop_kept(&kit).or_fail_chain("migration")?;
+        Ok(crate::db::migrate_engine::status(&kit))
+    })
+    .await
+    .or_fail("migration")?
+}
+
 #[cfg(test)]
 #[path = "../../../test/rust/commands/databases.rs"]
 mod tests;

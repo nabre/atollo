@@ -798,5 +798,18 @@
   "Ridimensiona i terminali": "Resize the terminals",
   "I programmi che usano i framework Apple richiedono Xcode Command Line Tools": "Programs that use the Apple frameworks need Xcode Command Line Tools",
   "Si installano con xcode-select --install, da amministratore.": "Install them with xcode-select --install, as an administrator.",
-  "La versione {0} è disponibile: scaricala dalla pagina della release.": "Version {0} is available: download it from the release page."
+  "La versione {0} è disponibile: scaricala dalla pagina della release.": "Version {0} is available: download it from the release page.",
+  "I dati di MariaDB passano a MySQL…": "MariaDB's data is moving to MySQL…",
+  "I dati di MariaDB non sono passati a MySQL: MariaDB resta attivo.": "MariaDB's data did not move to MySQL: MariaDB stays active.",
+  "I dati di MariaDB passano a MySQL al prossimo avvio.": "MariaDB's data moves to MySQL at the next start.",
+  "Dati di MariaDB": "MariaDB data",
+  "MySQL è il server SQL del kit: ogni versione di MariaDB passa a una di MySQL, sulla stessa porta, con gli stessi utenti e password.": "MySQL is the kit's SQL server: each MariaDB version moves to a MySQL one, on the same port, with the same users and passwords.",
+  "MariaDB {0} → MySQL {1}, porta {2}": "MariaDB {0} → MySQL {1}, port {2}",
+  "copiato": "copied",
+  "Copia dei dati salvata in": "Copy of the data saved in",
+  "Sposta ora": "Move now",
+  "Eliminare i dati MariaDB conservati?": "Delete the MariaDB data kept?",
+  "I database sono già in MySQL: si cancellano la cartella e le copie dei file di prima.": "The databases are in MySQL already: the folder and the copies of the earlier files are deleted.",
+  "Dati MariaDB conservati ({0} MB)": "MariaDB data kept ({0} MB)",
+  "MariaDB → MySQL": "MariaDB → MySQL"
 }

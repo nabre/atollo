@@ -38,7 +38,7 @@ pub mod relations;
 pub mod side_by_side;
 
 mod choice;
-mod disk;
+pub(crate) mod disk;
 mod offered;
 
 pub use choice::{
