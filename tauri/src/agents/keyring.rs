@@ -26,9 +26,13 @@
 //! so `keyring.json` is the same file on every system. On macOS the items
 //! are read and written with `/usr/bin/security`, as go-keyring does, so
 //! that agy reads them without a Keychain prompt; on Linux through the
-//! Secret Service. Without a Secret Service (WSL, minimal desktops) nothing
-//! is moved: agy keeps its login in its own file inside the kit's home, and
-//! the kit's files stay owner-only (600) with a warning. The "before" files
+//! Secret Service. Fail closed: a store that exists but cannot be used
+//! (locked, denied), or a sealing key that cannot be read or created, moves
+//! nothing and writes no secret of the computer into the kit. Only on
+//! Linux with no Secret Service at all (WSL, minimal desktops), and only on
+//! a disk that really keeps the 600 mode, the sign-in stays unencrypted in
+//! the kit (agy's own file, keyring.json), with a warning; on a disk
+//! without permissions (exFAT, FAT) the kit refuses. The "before" files
 //! carry the computer's name on macOS and Linux, so a kit moved after a
 //! crash never mixes two computers' credentials.
 
@@ -36,9 +40,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-#[cfg(unix)]
-use anyhow::bail;
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 #[cfg(windows)]
@@ -119,8 +121,9 @@ const DPAPI: &str = "dpapi:";
 /// Where agy keeps its login on this system. Behind a trait so that the
 /// moves in and out of the kit are tested with a fake store.
 pub trait Store {
-    /// agy's credentials in the store now. An error: no store on this
-    /// system (Linux without a Secret Service).
+    /// agy's credentials in the store now. A [`NoStore`] error: no store
+    /// at all on this system (Linux without a Secret Service); any other
+    /// error: a store that cannot be used now (locked, denied).
     fn list(&self) -> Result<Vec<Item>>;
     fn write(&self, item: &Item, persist: u32) -> Result<()>;
     /// A missing credential is not an error.
@@ -218,17 +221,14 @@ impl Store for System {
     fn delete(&self, target: &str) {
         unix::delete(target);
     }
+    /// Fails closed, like DPAPI: without the sealing key (store locked,
+    /// access denied, any error) the computer's secret never reaches the
+    /// kit.
     fn protect(&self, blob: &str) -> Result<String> {
-        match self.key(true) {
-            Ok(key) => seal(&key, &random()?, blob),
-            // The file stays owner-only (600): the secret as it is.
-            Err(e) => {
-                crate::log::warn(&format!(
-                    "antigravity keyring: no sealing key ({e:#}): the computer's login stays only in a private file"
-                ));
-                Ok(blob.to_owned())
-            }
-        }
+        let key = self
+            .key(true)
+            .context("sealing key in the Keychain or the Secret Service")?;
+        seal(&key, &random()?, blob)
     }
     fn unprotect(&self, blob: &str) -> Result<String> {
         if blob.starts_with(DPAPI) {
@@ -358,7 +358,13 @@ mod unix {
             ) {
                 Ok(found) => found,
                 Err(keyring::Error::NoEntry) => Vec::new(),
-                Err(e) => return Err(e).context("Secret Service"),
+                Err(e) => {
+                    let text = format!("{e:#}");
+                    if super::no_secret_service(&text) {
+                        return Err(anyhow::Error::new(super::NoStore(text)));
+                    }
+                    return Err(e).context("Secret Service");
+                }
             };
             let ours = |a: &std::collections::HashMap<String, String>| {
                 a.get("application").is_some_and(|v| v == "rust-keyring")
@@ -787,10 +793,68 @@ pub fn restore(kit: &Kit) -> Result<()> {
 }
 
 /// Told when the system has no store for agy (Linux without a Secret
-/// Service): nothing is moved and agy keeps its login in its own file.
-pub const NO_STORE: &str = "no Secret Service on this system: agy keeps its login in its own file inside the kit, and the kit's copy stays owner-only (600)";
+/// Service) and the kit's disk keeps the 600 mode: nothing is moved.
+pub const NO_STORE: &str = "no Secret Service on this system: the Antigravity sign-in is stored UNENCRYPTED in the kit (data/antigravity/keyring.json and agy's own file, owner-only 600): whoever copies the kit gets it";
+
+/// Told when there is no store and the kit's disk does not keep the 600
+/// mode (exFAT, FAT, NTFS through FUSE), or on macOS.
+pub const NO_STORE_REFUSED: &str = "no Secret Service on this system and the kit's disk does not keep owner-only permissions (600): the kit does not move the Antigravity sign-in; anything agy stores here is readable by whoever can read or copy the kit";
+
+/// What the kit does without a store: the unencrypted fallback of §4.7
+/// only on Linux, and only on a disk that really keeps the 600 mode
+/// (`mode`: the permissions read back after setting 600).
+pub fn plaintext_allowed(os: crate::kit::Os, mode: Option<u32>) -> bool {
+    os.is_linux() && mode.map(|m| m & 0o777) == Some(0o600)
+}
+
+/// The permissions a file in `dir` really has after being set to 600.
+#[cfg(unix)]
+fn mode_after_600(dir: &Path) -> Option<u32> {
+    use std::os::unix::fs::PermissionsExt;
+    fs::create_dir_all(dir).ok()?;
+    let probe = dir.join(".mode-probe");
+    fs::write(&probe, b"").ok()?;
+    let _ = fs::set_permissions(&probe, fs::Permissions::from_mode(0o600));
+    let mode = fs::metadata(&probe).ok().map(|m| m.permissions().mode());
+    let _ = fs::remove_file(&probe);
+    mode
+}
+
+#[cfg(not(unix))]
+fn mode_after_600(_dir: &Path) -> Option<u32> {
+    None
+}
+
+/// No store at all: the kit moves nothing. Allowed (with the warning that
+/// the sign-in is unencrypted in the kit) only where [`plaintext_allowed`].
+fn without_store(f: &Files, detail: &str, os: crate::kit::Os, mode: Option<u32>) -> Result<()> {
+    if !plaintext_allowed(os, mode) {
+        crate::log::warn(&format!(
+            "antigravity keyring: {NO_STORE_REFUSED} ({detail})"
+        ));
+        bail!("{NO_STORE_REFUSED}");
+    }
+    crate::log::warn(&format!("antigravity keyring: {NO_STORE} ({detail})"));
+    eprintln!("  [!] Antigravity: {NO_STORE}.");
+    if f.store.exists() {
+        // Owner-only even when it came from another system.
+        let _ = crate::router::fs::restrict_to_owner(&f.store);
+    }
+    Ok(())
+}
 
 pub fn restore_with(kit: &Kit, store: &dyn Store) -> Result<()> {
+    restore_checked(kit, store, crate::kit::Os::current(), mode_after_600)
+}
+
+/// `restore_with`, with the system and the check of the 600 mode given
+/// (tests).
+fn restore_checked(
+    kit: &Kit,
+    store: &dyn Store,
+    os: crate::kit::Os,
+    mode_of: impl Fn(&Path) -> Option<u32>,
+) -> Result<()> {
     let f = files(kit);
     let _lock = Lock::take(kit)?;
     if f.seen.exists() && kit_agy_running(kit) {
@@ -801,16 +865,20 @@ pub fn restore_with(kit: &Kit, store: &dyn Store) -> Result<()> {
     save_login(kit, &f, store)?;
     let existing = match store.list() {
         Ok(items) => items,
+        Err(e) if e.downcast_ref::<NoStore>().is_some() => {
+            let dir = f.store.parent().map(Path::to_path_buf).unwrap_or_default();
+            return without_store(&f, &format!("{e:#}"), os, mode_of(&dir));
+        }
+        // A store that cannot be used now (locked, denied): nothing moved.
         Err(e) => {
-            crate::log::warn(&format!("antigravity keyring: {NO_STORE} ({e:#})"));
-            eprintln!("  [!] Antigravity: {NO_STORE}.");
-            if f.store.exists() {
-                // Owner-only even when it came from another system.
-                let _ = crate::router::fs::restrict_to_owner(&f.store);
-            }
-            return Ok(());
+            crate::log::warn(&format!(
+                "antigravity keyring: store not usable, sign-in not moved: {e:#}"
+            ));
+            return Err(e.context("the Antigravity sign-in was not moved"));
         }
     };
+    // Every secret of this computer sealed first: if one cannot be (no
+    // sealing key), nothing is written anywhere (fail closed, as DPAPI).
     let mut before: Vec<Item> = existing
         .iter()
         .map(|c| {
@@ -820,7 +888,13 @@ pub fn restore_with(kit: &Kit, store: &dyn Store) -> Result<()> {
                 ..c.clone()
             })
         })
-        .collect::<Result<_>>()?;
+        .collect::<Result<_>>()
+        .inspect_err(|e| {
+            crate::log::warn(&format!(
+                "antigravity keyring: this computer's sign-in cannot be sealed, the kit's sign-in is not moved: {e:#}"
+            ));
+        })
+        .context("the Antigravity sign-in was not moved: this computer's own sign-in cannot be sealed")?;
     for c in read(&f.store) {
         // A credential with the same name already on this computer is not
         // the kit's.

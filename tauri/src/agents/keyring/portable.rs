@@ -9,6 +9,34 @@ use sha2::{Digest, Sha256};
 
 use super::Item;
 
+/// No credential store at all on this system (Linux without a Secret
+/// Service), as opposed to a store that cannot be used now.
+#[derive(Debug)]
+pub struct NoStore(pub String);
+
+impl std::fmt::Display for NoStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "no Secret Service: {}", self.0)
+    }
+}
+
+impl std::error::Error for NoStore {}
+
+/// A Secret Service error that means "there is none" (nobody owns or can
+/// start `org.freedesktop.secrets`, or no session bus), never a locked or
+/// refused one.
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+pub fn no_secret_service(error: &str) -> bool {
+    [
+        "org.freedesktop.secrets was not provided by any .service files",
+        "org.freedesktop.DBus.Error.ServiceUnknown",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "Unable to autolaunch a dbus-daemon",
+    ]
+    .iter()
+    .any(|p| error.contains(p))
+}
+
 /// The go-keyring (service, user) pairs agy uses on macOS and Linux, where
 /// the stores cannot be listed by a name pattern as on Windows. Verified on
 /// agy 1.4.1 (17/10/2026): the Windows credential agy writes is

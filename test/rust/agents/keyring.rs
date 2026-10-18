@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::{tests::TempDir, Arch, Os};
 use std::cell::{Cell, RefCell};
 
 #[cfg(windows)]
@@ -153,8 +153,20 @@ fn files_of_a_run_per_computer() {
 struct Fake {
     items: RefCell<Vec<Item>>,
     clock: Cell<i64>,
-    down: bool,
+    down: Down,
+    /// No sealing key (store locked, access denied).
+    no_key: bool,
     forgot: Cell<u32>,
+}
+
+#[derive(Default, Clone, Copy, PartialEq)]
+enum Down {
+    #[default]
+    Up,
+    /// No Secret Service at all.
+    Missing,
+    /// A store that cannot be used now.
+    Locked,
 }
 
 impl Fake {
@@ -182,13 +194,15 @@ impl Fake {
 
 impl Store for Fake {
     fn list(&self) -> Result<Vec<Item>> {
-        if self.down {
-            anyhow::bail!("no Secret Service");
+        match self.down {
+            Down::Up => {}
+            Down::Missing => return Err(anyhow::Error::new(NoStore("not provided".into()))),
+            Down::Locked => anyhow::bail!("collection is locked"),
         }
         Ok(self.items.borrow().clone())
     }
     fn write(&self, item: &Item, persist: u32) -> Result<()> {
-        if self.down {
+        if self.down != Down::Up {
             anyhow::bail!("no Secret Service");
         }
         self.clock.set(self.clock.get() + 1);
@@ -206,6 +220,9 @@ impl Store for Fake {
         self.items.borrow_mut().retain(|i| i.target != target);
     }
     fn protect(&self, blob: &str) -> Result<String> {
+        if self.no_key {
+            anyhow::bail!("sealing key: access denied");
+        }
         Ok(format!("sealed:{blob}"))
     }
     fn unprotect(&self, blob: &str) -> Result<String> {
@@ -354,21 +371,121 @@ fn leftover_deleted_at_the_next_start() {
     assert_eq!(read(&f.store)[0].blob.as_deref(), Some("kit"));
 }
 
-/// Linux without a Secret Service: nothing moved, agy starts anyway.
+/// Linux without a Secret Service, on a disk that keeps 600: nothing
+/// moved, agy starts anyway (the plan's unencrypted fallback).
 #[test]
 fn no_store_moves_nothing() {
     let (_tmp, kit) = kit();
     let f = files(&kit);
     save_file(&f.store, &[item(T, "kit")]).unwrap();
     let store = Fake {
-        down: true,
+        down: Down::Missing,
         ..Fake::default()
     };
-    restore_with(&kit, &store).unwrap();
+    restore_checked(&kit, &store, Os::Linux, |_| Some(0o100600)).unwrap();
     assert!(!pending(&kit));
     save_with(&kit, &store).unwrap();
     end_run(&kit, &store);
     assert_eq!(read(&f.store)[0].blob.as_deref(), Some("kit"));
+}
+
+/// The unencrypted fallback only on Linux and only where 600 sticks.
+#[test]
+fn no_store_refused_without_permissions_or_on_macos() {
+    assert!(plaintext_allowed(Os::Linux, Some(0o100600)));
+    assert!(
+        !plaintext_allowed(Os::Linux, Some(0o100644)),
+        "exFAT, FAT: the mode does not stick"
+    );
+    assert!(!plaintext_allowed(Os::Linux, Some(0o100777)));
+    assert!(!plaintext_allowed(Os::Linux, None));
+    assert!(
+        !plaintext_allowed(Os::Darwin, Some(0o100600)),
+        "the Keychain always exists"
+    );
+    assert!(!plaintext_allowed(Os::Win32, Some(0o100600)));
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item(T, "kit")]).unwrap();
+    let store = Fake {
+        down: Down::Missing,
+        ..Fake::default()
+    };
+    for (os, mode) in [(Os::Linux, Some(0o100755)), (Os::Darwin, Some(0o100600))] {
+        let e = restore_checked(&kit, &store, os, |_| mode).unwrap_err();
+        assert!(format!("{e:#}").contains("does not keep owner-only permissions"));
+        assert!(!pending(&kit));
+    }
+    assert!(
+        NO_STORE.contains("UNENCRYPTED") && NO_STORE.contains("whoever copies the kit gets it")
+    );
+}
+
+/// A store that exists but cannot be used (locked, denied): an error,
+/// nothing moved, nothing written.
+#[test]
+fn locked_store_fails_closed() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item(T, "kit")]).unwrap();
+    let store = Fake {
+        down: Down::Locked,
+        ..Fake::default()
+    };
+    let e = restore_checked(&kit, &store, Os::Linux, |_| Some(0o100600)).unwrap_err();
+    assert!(format!("{e:#}").contains("not moved"));
+    assert!(!pending(&kit) && !f.starting.exists());
+}
+
+/// No sealing key for this computer's own sign-in: an error, and neither
+/// its secret nor the kit's sign-in is written anywhere (fail closed, as
+/// DPAPI).
+#[test]
+fn no_sealing_key_fails_closed() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    save_file(&f.store, &[item("jetski:other", "kit")]).unwrap();
+    let store = Fake {
+        no_key: true,
+        ..Fake::with(&[(T, "own")])
+    };
+    let e = restore_with(&kit, &store).unwrap_err();
+    assert!(format!("{e:#}").contains("cannot be sealed"));
+    assert!(!f.seen.exists(), "no secret of the computer in the kit");
+    assert!(!f.starting.exists());
+    assert_eq!(
+        store.secret_of("jetski:other"),
+        None,
+        "the kit's sign-in not moved"
+    );
+    assert_eq!(
+        store.secret_of(T).as_deref(),
+        Some("own"),
+        "the computer's untouched"
+    );
+    // Without secrets of the computer nothing needs sealing: it works.
+    let empty = Fake {
+        no_key: true,
+        ..Fake::default()
+    };
+    restore_with(&kit, &empty).unwrap();
+    assert_eq!(empty.secret_of("jetski:other").as_deref(), Some("kit"));
+}
+
+#[test]
+fn missing_secret_service_recognized() {
+    let real = "Secret Service: Platform secure storage failure: DBus error: The name org.freedesktop.secrets was not provided by any .service files";
+    assert!(no_secret_service(real));
+    assert!(no_secret_service(
+        "org.freedesktop.DBus.Error.ServiceUnknown: x"
+    ));
+    assert!(no_secret_service(
+        "Unable to autolaunch a dbus-daemon without a $DISPLAY"
+    ));
+    assert!(!no_secret_service(
+        "Secret Service: Couldn't access platform secure storage: collection is locked"
+    ));
+    assert!(!no_secret_service("prompt dismissed"));
 }
 
 /// The kit's copy is owner-only on macOS and Linux.
