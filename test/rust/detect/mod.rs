@@ -40,6 +40,12 @@ fn databases_a_project_uses() {
         )],
     );
     assert_eq!(databases(&node.0), BTreeSet::from(["mongodb", "sqlite"]));
+    // The npm driver of MariaDB: the kit's MySQL.
+    let maria = project(
+        "db-node-maria",
+        &[("package.json", r#"{"dependencies":{"mariadb":"^3"}}"#)],
+    );
+    assert_eq!(databases(&maria.0), BTreeSet::from(["mysql"]));
     let py = project(
         "db-py",
         &[

@@ -460,7 +460,7 @@ La pagina **Database** (`ui/src/databases.tsx` e `tauri/src/db/`) gestisce i ser
 - **Dati multi-versione (`D-81`)**: a server fermo è possibile cambiare la versione del motore (es. MySQL `9.7` o `8.4`; MongoDB `9.0` o `8.0`). Ogni versione mantiene la propria cartella dati in `data\db\<motore>\<linea>\` e, al primo avvio di una versione più recente, copia automaticamente in avanti i dati dalla versione precedente più vicina.
 
 ````carousel
-![Pagina Database — il server SQL con phpMyAdmin integrato e credenziali root](images/11-database-sql-phpmyadmin.png)
+![Pagina Database — il server SQL con phpMyAdmin integrato e credenziali root](images/11-database-mysql-phpmyadmin.png)
 <!-- slide -->
 ![Pagina Database — MongoDB 8.0 con esploratore Contenuto delle collezioni in sola lettura](images/11b-database-mongodb-esploratore.png)
 ````
