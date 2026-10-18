@@ -22,6 +22,7 @@ import { AddLine, composerOf, RefreshLines, splitVersion, type KitVersions } fro
 import { Checkbox, DataTable, IconButton, Link, SearchBox, Select } from "../workbench";
 import { groups, linesOf, matches, sizeText } from "./model";
 import type { ComponentsState } from "./state";
+import { targetLabel } from "./targets";
 
 type Sort = "name" | "group" | "version" | "size" | "state";
 type Show = "all" | "installed" | "missing" | "pending" | "needed";
@@ -123,8 +124,8 @@ export function ToolsTable({
   onOpen: (id: string) => void;
 }) {
   const list = state.list ?? [];
-  const { chosen, choose, neededBy, target, setTarget, checks, checking, verifyTarget } = state;
-  const activeTarget = target ?? setup?.target ?? "win32-x64";
+  const { chosen, choose, neededBy, target, setTarget, checks, checking, verifyTarget, grid, host } = state;
+  const activeTarget = target ?? host ?? setup?.target ?? "win32-x64";
   const running = setup?.running ?? false;
   const all = groups();
   const [search, setSearch] = useState("");
@@ -207,7 +208,7 @@ export function ToolsTable({
           label={t("Piattaforma")}
           value={activeTarget}
           onChange={setTarget}
-          options={TARGETS.map((id) => ({ value: id, label: id }))}
+          options={TARGETS.map((id) => ({ value: id, label: targetLabel(id, grid?.profiles ?? []) }))}
         />
         <Select
           label={t("Gruppo")}
