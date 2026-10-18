@@ -127,10 +127,10 @@ function TopicOverview({
       <EditorSection
         id="guide-overview-mission"
         title={tr(
-          "Cos'è Atollo (Atollo) e quale problema risolve",
-          "What Atollo (Atollo) is and what problem it solves",
-          "Qu'est-ce que Atollo (Atollo) et quel problème il résout",
-          "Was Atollo (Atollo) ist und welches Problem es löst",
+          "Cos'è Atollo e quale problema risolve",
+          "What Atollo is and what problem it solves",
+          "Qu'est-ce qu'Atollo et quel problème il résout",
+          "Was Atollo ist und welches Problem es löst",
         )}
       >
         <p className="m-0 text-[12px] text-vsc-desc">

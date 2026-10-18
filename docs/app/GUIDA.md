@@ -1,4 +1,4 @@
-# Guida Completa di Atollo (Atollo): Struttura, Funzionalità, Fonti, Configurazione ed Esempi Illustrati
+# Guida Completa di Atollo: Struttura, Funzionalità, Fonti, Configurazione ed Esempi Illustrati
 
 Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi**, le **schermate reali dell'interfaccia** (`images/*.png`) e gli **esempi pratici guidati** della guida ufficiale di **Atollo** (`Atollo.exe`, brand **Atollo**). Esplora nel dettaglio l'architettura portabile, il funzionamento di tutte le viste dell'applicazione, l'organizzazione completa dei link e delle fonti da cui il kit attinge gli strumenti, il ruolo centrale dell'account GitHub e le procedure passo-passo per configurare ogni singolo elemento con la spiegazione dello scopo tecnico e pratico di ciascuna operazione.
 
