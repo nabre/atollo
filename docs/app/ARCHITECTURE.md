@@ -1,6 +1,6 @@
 # Architettura del codice
 
-Com'è organizzato il codice di Dev-Kit e dove va una modifica nuova. Il perché delle scelte è in [DECISIONS.md](DECISIONS.md), l'uso in [GUIDA.md](GUIDA.md), le novità in [CHANGELOG.md](CHANGELOG.md), le prove in [TESTING.md](TESTING.md). Il lavoro aperto sta nelle [issue di GitHub](https://github.com/nabre/dev-kit2/issues).
+Com'è organizzato il codice di Atollo e dove va una modifica nuova. Il perché delle scelte è in [DECISIONS.md](DECISIONS.md), l'uso in [GUIDA.md](GUIDA.md), le novità in [CHANGELOG.md](CHANGELOG.md), le prove in [TESTING.md](TESTING.md). Il lavoro aperto sta nelle [issue di GitHub](https://github.com/nabre/atollo/issues).
 
 ## Requisiti
 
@@ -45,7 +45,7 @@ Nella radice restano solo i file di configurazione (workspace, lint, formattazio
 
 ## Motore Rust (`tauri\src`)
 
-Un solo binario, `Dev-Kit.exe`: la finestra (Tauri 2) e la riga di comando (`cli.rs`). In cima restano solo l'avvio e l'infrastruttura comune; il resto sta in una cartella per area (D-87). Si leggono per livelli: chi sta sopra chiama chi sta sotto, mai il contrario.
+Un solo binario, `Atollo.exe`: la finestra (Tauri 2) e la riga di comando (`cli.rs`). In cima restano solo l'avvio e l'infrastruttura comune; il resto sta in una cartella per area (D-87). Si leggono per livelli: chi sta sopra chiama chi sta sotto, mai il contrario.
 
 | Livello | Moduli | Cosa fanno |
 | --- | --- | --- |
@@ -140,7 +140,7 @@ data\
   tmp\                        passaggio nel kit quando il temp del sistema non c'è o non basta; TEMP dei programmi nel kit
 ```
 
-Nel temp del sistema, `<TEMP>\Dev-Kit\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `os\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`os::temp::sweep`); alla chiusura, dopo il job, `os::temp::cleanup_at_exit`.
+Nel temp del sistema, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `os\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`os::temp::sweep`); alla chiusura, dopo il job, `os::temp::cleanup_at_exit`.
 
 Regole delle cartelle:
 - un modulo con il nome della sua area è il `mod.rs` della cartella (`editor\mod.rs`, non `editor\editor.rs`: clippy lo rifiuta), così `crate::editor::Editor` e `crate::versions::*` restano brevi; le cartelle senza logica propria (`db\`, `setup\`, `os\`) hanno in `mod.rs` solo la descrizione dell'area;

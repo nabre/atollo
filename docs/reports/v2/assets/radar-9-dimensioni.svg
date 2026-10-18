@@ -22,7 +22,7 @@
   <rect width="960" height="540" rx="16" fill="url(#bgGrad)" stroke="#334155" stroke-width="1.5"/>
 
   <!-- Header -->
-  <text x="32" y="40" fill="#f8fafc" font-size="20" font-weight="700">NEXKORA (Dev-Kit) — Radar Comparativo v1 vs v2 sulle 9 Dimensioni</text>
+  <text x="32" y="40" fill="#f8fafc" font-size="20" font-weight="700">Atollo — Radar Comparativo v1 vs v2 sulle 9 Dimensioni</text>
   <text x="32" y="62" fill="#94a3b8" font-size="13">Media ponderata globale: da 82.4/100 (v1) a 85.4/100 (v2, +3.0 pt) — Balzo di +17 pt su Multipiattaforma e fix concorrenza fsx</text>
 
   <!-- Radar Center at (280, 298), Radius R = 165 -->

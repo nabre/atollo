@@ -15,13 +15,13 @@ Ogni dimensione principale è scomposta in **4 KPI misurabili** (scala `0–100`
 | Codice KPI | Indicatore | Score `v1` | Score `v2` | Delta | Target `1.0` | Evidenza Tecnica in `v2` |
 | :--- | :--- | :-: | :-: | :-: | :-: | :--- |
 | **ARC-01** | Modularità e Separazione dei Domini | 95 | **95** | `=` | 96 | 12 moduli Rust netti, zero dipendenze circolari |
-| **ARC-02** | Disaccoppiamento Piattaforma & Layout | 84 | **94** | **`+10`** | 95 | `Os`/`Arch`/`Target`, `apps/<target>`, `root-<os>.txt` ([`kit.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/kit.rs#L17-L234)) |
-| **ARC-03** | Estensibilità Trait & Catalogo Dichiarativo | 94 | **96** | **`+2`** | 96 | `translate_rel` centralizzato per 26 componenti ([`catalog.rs:747`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/setup/catalog.rs#L747-L855)) |
+| **ARC-02** | Disaccoppiamento Piattaforma & Layout | 84 | **94** | **`+10`** | 95 | `Os`/`Arch`/`Target`, `apps/<target>`, `root-<os>.txt` ([`kit.rs`](../../../tauri/src/kit.rs#L17-L234)) |
+| **ARC-03** | Estensibilità Trait & Catalogo Dichiarativo | 94 | **96** | **`+2`** | 96 | `translate_rel` centralizzato per 26 componenti ([`catalog.rs:747`](../../../tauri/src/setup/catalog.rs#L747-L855)) |
 | **ARC-04** | Isolamento Stato e Concorrenza | 95 | **91** | `-4` | 94 | Ricalibrato per tener conto della coesistenza multi-target su USB |
-| **LOG-01** | Atomicità Transazionale (`stage -> swap -> backup`) | 91 | **95** | **`+4`** | 96 | Risolto `BUG-02` in [`fsx::write_atomic`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/fsx.rs#L79-L97) con `TMP_SEQ` |
-| **LOG-02** | Determinismo Costruzione Ambiente (`KitEnv`) | 85 | **90** | **`+5`** | 92 | Supporto `PATH_SEP`, `XDG_*`, `TMPDIR`, `split_path` ([`env.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/env.rs#L86-L103)) |
+| **LOG-01** | Atomicità Transazionale (`stage -> swap -> backup`) | 91 | **95** | **`+4`** | 96 | Risolto `BUG-02` in [`fsx::write_atomic`](../../../tauri/src/fsx.rs#L79-L97) con `TMP_SEQ` |
+| **LOG-02** | Determinismo Costruzione Ambiente (`KitEnv`) | 85 | **90** | **`+5`** | 92 | Supporto `PATH_SEP`, `XDG_*`, `TMPDIR`, `split_path` ([`env.rs`](../../../tauri/src/env.rs#L86-L103)) |
 | **LOG-03** | Resilienza di Rete e Validazione Input | 78 | **79** | **`+1`** | 90 | Validazione `safe_join` con slash misti; resta `BUG-01` (SHA-256 opzionale) |
-| **LOG-04** | Correttezza Side-by-Side e Shim | 82 | **84** | **`+2`** | 90 | Symlink Unix `.NET` e `version-lines-<target>.json` ([`side_by_side.rs`](file:///c:/Users/nabre/Projects/dev-kit2/tauri/src/versions/side_by_side.rs#L228-L243)) |
+| **LOG-04** | Correttezza Side-by-Side e Shim | 82 | **84** | **`+2`** | 90 | Symlink Unix `.NET` e `version-lines-<target>.json` ([`side_by_side.rs`](../../../tauri/src/versions/side_by_side.rs#L228-L243)) |
 
 ### 1.2 UX (`86 → 86 / 100`), UI (`90 → 90 / 100`), Utilizzo (`88 → 89 / 100`) e Facilitazione (`91 → 91 / 100`)
 
