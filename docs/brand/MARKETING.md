@@ -201,7 +201,7 @@ Quando generi copy per una campagna, una sezione del sito o un post social, sceg
 | Formato | Italiano (`IT`) | English (`EN`) | Français (`FR`) | Deutsch (`DE`) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Definizione di Categoria** | Universal Portable Dev & AI Workspace | Universal Portable Dev & AI Workspace | Universal Portable Dev & AI Workspace | Universal Portable Dev & AI Workspace |
-| **Headline Hero (Primaria)** | Il tuo spazio di sviluppo sovrano, su qualsiasi computer. | Your sovereign dev & AI workspace, on any machine. | Votre espace de développement souverain, sur n'importe quel ordinateur. | Dein souveräner Dev- & KI-Workspace auf jedem Computer. |
+| **Headline Hero (Primaria)** | Il tuo spazio di sviluppo, tutto in una cartella, su qualsiasi computer. | Your dev & AI workspace, all in one folder, on any machine. | Votre espace de développement, tout dans un dossier, sur n'importe quel ordinateur. | Dein Dev- & KI-Workspace, alles in einem Ordner, auf jedem Computer. |
 | **Headline Tecnica** | Editor, Runtime, Database e Agenti AI. In una sola cartella, su 6 architetture. | Editor, Runtimes, Databases, and AI Agents. One portable folder across 6 targets. | Éditeur, Runtimes, Bases de données et Agents IA. Un seul dossier sur 6 architectures. | Editor, Runtimes, Datenbanken und KI-Agenten. Ein portabler Ordner für 6 Architekturen. |
 | **Sottotitolo "Zero-Friction"** | Niente installazione. Niente diritti di amministratore. Nessuna traccia fuori dal tuo Atollo. | Zero install. Zero admin rights. Zero footprint outside your Atollo. | Aucune installation. Aucun droit d'administrateur. Aucune trace hors de votre Atollo. | Keine Installation. Keine Admin-Rechte. Keine Spuren außerhalb deines Atollo. |
 
