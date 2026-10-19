@@ -37,6 +37,8 @@ export interface FrameworkPiece {
   home: string;
   /** Additions of the same slot do not go together. */
   slot?: string;
+  /** Of a base: its group in the wizard's tree (CATEGORIES in frameworks/model.ts). */
+  category?: string;
   needs?: string[];
   /** Run in projects\: makes the folder {name}. */
   create?: string[];
@@ -93,6 +95,7 @@ const SAMPLE_PIECES: FrameworkPiece[] = [
     id: "laravel",
     kind: "base",
     name: "Laravel",
+    category: "web-php",
     desc: "Framework PHP per applicazioni web",
     home: "https://laravel.com/docs/13.x/installation",
     needs: ["php", "node"],
@@ -104,6 +107,7 @@ const SAMPLE_PIECES: FrameworkPiece[] = [
     id: "vite",
     kind: "base",
     name: "Vite",
+    category: "web-js",
     desc: "Sito o applicazione web in TypeScript",
     home: "https://vite.dev/guide/",
     needs: ["node"],

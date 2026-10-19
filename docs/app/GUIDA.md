@@ -336,9 +336,13 @@ L'interfaccia di Atollo utilizza i componenti ufficiali e il sistema di design d
 
 ---
 
+### 4.1.1 Pannello rapido di Progetti
+
+La prima scheda dell'editor di Progetti (`ui/src/projects/home.tsx`, D-130) è sempre presente: **In esecuzione** (indirizzo, output, *Ferma*), **Preferiti** e **Recenti** (Avvia/Ferma, Editor, Terminale, agente, stella dei preferiti), **Da sistemare** (avvii falliti, componenti mancanti) e **Nuovo progetto**. Ogni riga della barra laterale ha ▶ per l'azione predefinita. **Ctrl+P** (⌘P su macOS) apre un progetto per nome da qualsiasi pagina: *Invio* apre la pagina, *Maiusc+Invio* avvia.
+
 ### 4.2 Scheda «Nuovo progetto» (Wizard Framework e Combinazioni)
 
-La scheda **Nuovo progetto** della pagina Progetti (`ui/src/projects/wizard.tsx` e `tauri/src/projects/frameworks/`) si apre dall'albero «Nuovo progetto» della barra laterale (Progetto vuoto, Da un indirizzo Git, Da framework o CMS e le sue basi) o dalla bacchetta magica in alto; permette di generare l'armatura completa di un'applicazione moderna combinando blocchi ufficiali:
+La scheda **Nuovo progetto** della pagina Progetti (`ui/src/projects/wizard.tsx` e `tauri/src/projects/frameworks/`) si apre dall'albero «Nuovo progetto» della barra laterale (Progetto vuoto, Da un indirizzo Git, Da framework o CMS e le sue basi) o dalla bacchetta magica in alto; permette di generare l'armatura completa di un'applicazione moderna combinando blocchi ufficiali. Le basi sono divise in gruppi (D-131): Web con PHP, Web con JavaScript e TypeScript, Web con Python, Web con altri linguaggi, CMS, Siti statici e documentazione, App desktop, App mobile, Dati e documenti, Riga di comando e librerie; i chip sopra le basi scelgono il gruppo. Oltre a quelle elencate qui sotto ci sono, fra le altre, Nuxt, SvelteKit, Astro, Angular, Django, FastAPI, ASP.NET Core, Spring Boot, Craft CMS, Joomla, Strapi, Docusaurus, Avalonia, Streamlit, JupyterLab, Typst e LaTeX. I blocchi:
 
 1. **Scelta della Base (`kind: "base"`)**:
    - **Laravel** (PHP 8.x + Node.js, Laravel 13, azioni *Avvia* `composer run dev` e *Prove* `php artisan test`).

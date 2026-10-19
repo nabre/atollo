@@ -241,3 +241,82 @@ export function PieceGroup({ fw, id, onRemoved }: { fw: Frameworks; id: string; 
     </SettingsGroup>
   );
 }
+
+/** What addition `addon` does with base `base` alone (a tab of Settings
+ * opened from under the base in the tree), with the way to the others. */
+export function IntegrationGroup({
+  fw,
+  addon,
+  base,
+  onOpen,
+  onRemoved,
+}: {
+  fw: Frameworks;
+  addon: string;
+  base: string;
+  onOpen: (tab: string) => void;
+  onRemoved: () => void;
+}) {
+  const { view, pieces, change } = fw;
+  const i = pieces.findIndex((p) => p.id === addon);
+  const piece = pieces[i];
+  const b = pieces.find((p) => p.id === base);
+  const variant = piece?.on?.[base];
+  if (!piece || !b || !variant) return null;
+  const official = view?.official.find((p) => p.id === addon)?.on?.[base];
+  const set = (on: NonNullable<FrameworkPiece["on"]>) => {
+    change(pieces.map((x, j) => (j === i ? { ...piece, on } : x)));
+  };
+  return (
+    <SettingsGroup
+      id={`s-${pieceTab(addon)}-${base}`}
+      title={t("{0} con {1}", piece.name || piece.id, b.name || b.id)}
+      description={t(
+        "I comandi di {0} quando si sceglie con {1}: dopo quelli della base; se crea il progetto, la sua creazione prende il posto di quella della base.",
+        piece.name || piece.id,
+        b.name || b.id,
+      )}
+    >
+      <FrameworksProblems fw={fw} />
+      <SettingItem
+        category={slotLabel(piece.slot)}
+        title={piece.name || piece.id}
+        description={textOf(view, piece.desc)}
+        modified={official === undefined || JSON.stringify(official) !== JSON.stringify(variant)}
+        keywords={[piece.id, base].join(" ")}
+      >
+        <VariantFields
+          title={t("Con {0}", b.name || b.id)}
+          note={textOf(view, variant.note)}
+          variant={variant}
+          onChange={(v) => {
+            set({ ...piece.on, [base]: v });
+          }}
+          onRemove={() => {
+            const on = { ...piece.on };
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+            delete on[base];
+            set(on);
+            onRemoved();
+          }}
+        />
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <Link
+            onClick={() => {
+              onOpen(pieceTab(addon));
+            }}
+          >
+            {t("{0} con tutte le basi", piece.name || piece.id)}
+          </Link>
+          <Link
+            onClick={() => {
+              onOpen(pieceTab(base));
+            }}
+          >
+            {t("Apri {0}", b.name || b.id)}
+          </Link>
+        </div>
+      </SettingItem>
+    </SettingsGroup>
+  );
+}

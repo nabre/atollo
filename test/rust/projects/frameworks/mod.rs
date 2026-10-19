@@ -17,6 +17,7 @@ fn official_catalog_is_valid() {
         );
         assert_eq!(p.kind == Kind::Addon, p.slot.is_some(), "{}: slot", p.id);
         if p.kind == Kind::Base {
+            assert!(p.category.is_some(), "{}: category", p.id);
             assert!(p.on.is_empty(), "{}", p.id);
             assert!(p.create.iter().all(|l| l.contains("{name}")), "{}", p.id);
         }

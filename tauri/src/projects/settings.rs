@@ -4,7 +4,8 @@
 //! last opened in it (the default of the agent choice) and when the editor,
 //! a console or an agent last opened it (the order of the projects), the
 //! editor extensions added to or removed from those of its languages, the
-//! versions of its languages.
+//! versions of its languages, whether it is among the favorites of the
+//! Projects home.
 //! Keys written by a newer version of the app are kept as they are.
 
 use std::collections::BTreeMap;
@@ -24,6 +25,9 @@ pub struct ProjectSettings {
     /// Seconds since 1970 of the last editor, console or agent opened in it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_opened: Option<u64>,
+    /// Among the favorites, first on the Projects home.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub pinned: bool,
     /// Editor extensions changed from those of its languages (`editor/ext.rs`).
     #[serde(default, skip_serializing_if = "Extensions::is_empty")]
     pub extensions: Extensions,

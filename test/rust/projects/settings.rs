@@ -16,6 +16,12 @@ fn saved_in_data_and_kept() {
         .join("dev-settings.json");
     let text = std::fs::read_to_string(&file).unwrap();
     assert!(text.contains("\"agent\": \"codex\"") && text.contains("lastOpened"));
+    // a favorite is written only while it is one
+    assert!(!text.contains("pinned"));
+    update(&kit, "app", |s| s.pinned = true);
+    assert!(load(&kit, "app").pinned);
+    update(&kit, "app", |s| s.pinned = false);
+    assert!(!std::fs::read_to_string(&file).unwrap().contains("pinned"));
     // a key of a newer version stays
     std::fs::write(&file, r#"{"agent":"claude","future":{"x":1}}"#).unwrap();
     opened(&kit, "app");

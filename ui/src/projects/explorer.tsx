@@ -1,23 +1,30 @@
 // Projects page, as VSCodium's Explorer: the side bar lists the projects in
 // projects\ (detected by tauri/src/detect, corrected by panel.json) with
 // their inline actions, and the ways to make a new one; the editor opens
-// each project in its own tab (page.tsx). Web actions get their own
+// each project in its own tab (page.tsx), and the new-project wizard in one
+// of its own (wizard.tsx, D-83). Its first tab, always there, is the home
+// (home.tsx): what runs, favorites and recent projects, what needs a hand.
+// Ctrl+P finds a project by name (quickopen.tsx). Web actions get their own
 // port and open in the browser.
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   VscBook,
   VscCode,
+  VscDebugStart,
+  VscDebugStop,
   VscFolderOpened,
   VscGlobe,
+  VscHome,
   VscNewFolder,
   VscRefresh,
-  VscRepoClone,
+  VscSearch,
   VscTerminal,
   VscWand,
 } from "react-icons/vsc";
 import {
   editorOpen,
   folderOpen,
+  projectPin,
   projectsList,
   runPorts,
   runStart,
@@ -31,17 +38,16 @@ import {
   type RunInfo,
 } from "../api";
 import { AgentButton } from "../agents";
+import { useFrameworks } from "../frameworks";
 import { GithubRepositories } from "../github";
 import type { GuideTopicId } from "../guide";
 import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { BrandSymbol } from "../brand";
 import {
   Button,
   EditorTabs,
   IconButton,
-  Link,
   List,
   ListRow,
   PaneStack,
@@ -49,15 +55,21 @@ import {
   SideBarTitle,
   ViewContainer,
   ViewPane,
-  Watermark,
   type useTabs,
 } from "../workbench";
-import { ProjectPage } from "./page";
+import { mainAction, ProjectsHome, type HomeHandlers } from "./home";
+import { ProjectPage, type ProjectSection } from "./page";
+import { QuickOpen } from "./quickopen";
+import { alive } from "./runs";
 import { KIND_ICON, ProjectState } from "./kind";
-import { CloneProject, NewProject } from "./new";
+import { EmptyProjectEditor, GitProjectEditor, NewProjectTree, wayLabel, type NewWay } from "./new";
 import { Orphans } from "./orphans";
+import { NewProjectWizard, WIZARD_TAB } from "./wizard";
 
 type PaneId = "projects" | "new" | "github";
+
+/** The home's tab: never in `tabs.open`, shown while no other is active. */
+const HOME_TAB = "\u0000home";
 
 /** Stable while the list is loading (Orphans reads again when it changes). */
 const NO_PROJECTS: ProjectInfo[] = [];
@@ -72,7 +84,9 @@ export function ProjectsPage({
   forget,
   tabs,
   onGuide,
-  onWizard,
+  onSettings,
+  quickOpen = false,
+  onQuickOpen,
 }: {
   status: EditorStatus | null;
   agents: AgentInfo[] | null;
@@ -85,20 +99,34 @@ export function ProjectsPage({
   /** The projects open in the editor (kept by the app across pages). */
   tabs: ReturnType<typeof useTabs>;
   onGuide?: (topic: GuideTopicId) => void;
-  /** Opens the new-project wizard (frameworks and CMS, D-83). */
-  onWizard?: () => void;
+  /** Opens Settings (the wizard's instructions). */
+  onSettings?: (() => void) | undefined;
+  /** The Quick Open box is open (Ctrl+P, kept by the app). */
+  quickOpen?: boolean;
+  onQuickOpen?: ((open: boolean) => void) | undefined;
 }) {
   const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["projects"]));
   const [filter, setFilter] = useState("");
   /** Raised to focus the new project's name (NewProject). */
   const [focusNew, setFocusNew] = useState(0);
+  /** The procedure in the «Nuovo progetto» tab; the wizard's base. */
+  const [way, setWay] = useState<NewWay>("framework");
+  const [base, setBase] = useState("");
+  const [preset, setPreset] = useState<{ base: string; at: number } | null>(null);
+  /** The wizard runs its commands: its tab stays open. */
+  const [wizardRunning, setWizardRunning] = useState(false);
+  const fw = useFrameworks();
+  const { load: loadFrameworks } = fw;
+  useEffect(loadFrameworks, [loadFrameworks]);
   const { busy, error, run } = useAction(onChanged);
   const { keep } = tabs;
+  /** Where the next project page opens (the home's links). */
+  const [jump, setJump] = useState<{ id: string; section?: ProjectSection; action?: string } | null>(null);
 
   const readProjects = useCallback(
     () =>
       projectsList().then((list) => {
-        keep(list.map((p) => p.id));
+        keep([...list.map((p) => p.id), WIZARD_TAB]);
         return list;
       }),
     [keep],
@@ -125,13 +153,14 @@ export function ProjectsPage({
       else next.delete(id);
       return next;
     });
-    // A collapsed pane drops its content: reopened from its header, the
-    // name must not take the focus again.
-    if (id === "new" && open !== true) setFocusNew(0);
   };
-  const openNew = () => {
+  /** Opens a procedure in the «Nuovo progetto» tab, the tree in view. */
+  const openNew = (next: NewWay, pick?: string) => {
     toggle("new", true);
-    setFocusNew((n) => n + 1);
+    setWay(next);
+    if (next === "empty") setFocusNew((n) => n + 1);
+    if (pick) setPreset({ base: pick, at: Date.now() });
+    tabs.show(WIZARD_TAB);
   };
   const created = (name: string) => {
     tabs.show(name);
@@ -144,6 +173,47 @@ export function ProjectsPage({
       loadLog(key);
       reloadPorts();
     });
+  };
+  const stop = (key: string) => {
+    run(`stop:${key}`, () => runStop(key));
+  };
+  const openProject = (id: string, at?: { section?: ProjectSection; action?: string }) => {
+    setJump(at ? { id, ...at } : null);
+    if (at?.action) loadLog(`${id}|${at.action}`);
+    tabs.show(id);
+  };
+  const selectTab = (id: string) => {
+    setJump(null);
+    tabs.setActive(id === HOME_TAB ? null : id);
+  };
+  const home: HomeHandlers = {
+    onOpen: openProject,
+    onStart: start,
+    onStop: stop,
+    onEditor: (p) => {
+      run(`editor:${p.id}`, () => editorOpen(p.id));
+    },
+    onTerminal: (p) => {
+      run(`terminal:${p.id}`, () => terminalOpen(p.id));
+    },
+    onPin: (p, pinned) => {
+      run(`pin:${p.id}`, async () => {
+        await projectPin(p.id, pinned);
+        reloadProjects();
+      });
+    },
+    onNew: openNew,
+    onGithub: () => {
+      toggle("github", true);
+    },
+    onFolder: () => {
+      run("folder", () => folderOpen("projects"));
+    },
+    onGuide: onGuide
+      ? () => {
+          onGuide("feat-projects");
+        }
+      : undefined,
   };
 
   const words = filter.toLowerCase().split(/\s+/).filter(Boolean);
@@ -166,7 +236,21 @@ export function ProjectsPage({
               icon={VscNewFolder}
               label={t("Nuovo progetto")}
               onClick={() => {
-                openNew();
+                openNew("empty");
+              }}
+            />
+            <IconButton
+              icon={VscWand}
+              label={t("Nuovo progetto da framework o CMS")}
+              onClick={() => {
+                openNew("framework");
+              }}
+            />
+            <IconButton
+              icon={VscSearch}
+              label={t("Apri un progetto (Ctrl+P)")}
+              onClick={() => {
+                onQuickOpen?.(true);
               }}
             />
             <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
@@ -217,7 +301,7 @@ export function ProjectsPage({
                 variant="primary"
                 wide
                 onClick={() => {
-                  openNew();
+                  openNew("empty");
                 }}
               >
                 {t("Nuovo progetto")}
@@ -237,10 +321,11 @@ export function ProjectsPage({
                     title={t("Apre la pagina di {0}", p.name)}
                     selected={tabs.active === p.id}
                     onSelect={() => {
-                      tabs.show(p.id);
+                      openProject(p.id);
                     }}
                     actions={
                       <>
+                        <StartStop p={p} runs={runs} busy={busy} onStart={start} onStop={stop} />
                         <IconButton
                           icon={VscCode}
                           label={t("Editor")}
@@ -278,10 +363,7 @@ export function ProjectsPage({
             toggle("new");
           }}
         >
-          <div className="space-y-4 px-5 pt-1 pb-4">
-            <NewProject onDone={created} focus={focusNew} />
-            <CloneProject onDone={created} />
-          </div>
+          <NewProjectTree fw={fw} way={tabs.active === WIZARD_TAB ? way : null} base={base} onSelect={openNew} />
         </ViewPane>
         <ViewPane
           fill
@@ -301,19 +383,51 @@ export function ProjectsPage({
 
   return (
     <ViewContainer id="projects" side={side}>
-      {tabs.open.length > 0 && (
-        <EditorTabs
-          tabs={tabs.open.map((id) => {
+      <EditorTabs
+        tabs={[
+          { id: HOME_TAB, label: t("Pannello rapido"), icon: <VscHome size={16} aria-hidden="true" />, pinned: true },
+          ...tabs.open.map((id) => {
+            if (id === WIZARD_TAB) {
+              return {
+                id,
+                label: t("Nuovo progetto"),
+                description: wayLabel(way),
+                icon: <VscWand size={16} aria-hidden="true" />,
+                pinned: wizardRunning,
+              };
+            }
             const p = byId(id);
             const Icon = p ? KIND_ICON[p.type] : VscGlobe;
             return { id, label: p?.name ?? id, icon: <Icon size={16} aria-hidden="true" /> };
-          })}
-          active={tabs.active}
-          onSelect={tabs.setActive}
-          onClose={tabs.close}
-        />
+          }),
+        ]}
+        active={tabs.active ?? HOME_TAB}
+        onSelect={selectTab}
+        onClose={tabs.close}
+      />
+      {/* Kept while another tab is shown: its choices and the commands'
+          output stay. */}
+      {tabs.open.includes(WIZARD_TAB) && (
+        <div className={tabs.active === WIZARD_TAB && way === "framework" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
+          <NewProjectWizard
+            fw={fw}
+            preset={preset}
+            onBase={setBase}
+            onOpen={tabs.show}
+            onCreated={load}
+            onRunning={setWizardRunning}
+            onSettings={onSettings}
+            onGuide={onGuide}
+          />
+        </div>
       )}
-      {page ? (
+      {tabs.active === WIZARD_TAB ? (
+        way === "empty" ? (
+          <EmptyProjectEditor onDone={created} focus={focusNew} />
+        ) : way === "git" ? (
+          <GitProjectEditor onDone={created} />
+        ) : null
+      ) : page ? (
         <ProjectPage
           key={page.id}
           p={page}
@@ -326,81 +440,81 @@ export function ProjectsPage({
           onStart={(a) => {
             start(page, a);
           }}
-          onStop={(key) => {
-            run(`stop:${key}`, () => runStop(key));
-          }}
+          onStop={stop}
           onPorts={setPorts}
           onShowLog={loadLog}
           onForget={forget}
           onChanged={load}
+          initial={jump?.id === page.id ? jump : undefined}
         />
+      ) : projects === null ? (
+        <p className="p-5 text-vsc-desc">{t("Caricamento…")}</p>
       ) : (
-        <Watermark>
-          <BrandSymbol size={96} />
-          <div className="w-full max-w-[420px] space-y-4">
-            <section aria-labelledby="start-title" className="space-y-1.5">
-              <h2 id="start-title" className="text-[13px] font-semibold text-vsc-settings-header">
-                {t("Inizia")}
-              </h2>
-              <ul className="m-0 list-none space-y-1 p-0">
-                <li className="flex items-center gap-2">
-                  <VscNewFolder size={16} aria-hidden="true" className="text-vsc-link" />
-                  <Link
-                    onClick={() => {
-                      openNew();
-                    }}
-                  >
-                    {t("Nuovo progetto…")}
-                  </Link>
-                </li>
-                {onWizard && (
-                  <li className="flex items-center gap-2">
-                    <VscWand size={16} aria-hidden="true" className="text-vsc-link" />
-                    <Link onClick={onWizard}>{t("Nuovo progetto da framework o CMS…")}</Link>
-                  </li>
-                )}
-                <li className="flex items-center gap-2">
-                  <VscRepoClone size={16} aria-hidden="true" className="text-vsc-link" />
-                  <Link
-                    onClick={() => {
-                      toggle("github", true);
-                    }}
-                  >
-                    {t("Clona dai tuoi repository GitHub…")}
-                  </Link>
-                </li>
-                <li className="flex items-center gap-2">
-                  <VscFolderOpened size={16} aria-hidden="true" className="text-vsc-link" />
-                  <Link
-                    onClick={() => {
-                      run("folder", () => folderOpen("projects"));
-                    }}
-                  >
-                    {t("Apri la cartella dei progetti")}
-                  </Link>
-                </li>
-                {onGuide && (
-                  <li className="flex items-center gap-2">
-                    <VscBook size={16} aria-hidden="true" className="text-vsc-link" />
-                    <Link
-                      onClick={() => {
-                        onGuide("overview");
-                      }}
-                    >
-                      {t("Guida")}
-                    </Link>
-                  </li>
-                )}
-              </ul>
-            </section>
-            <p className="text-[12px] text-vsc-desc">
-              {t(
-                "Le cartelle in projects sono attendibili per Claude e Codex e i loro comandi partono dai pulsanti dei progetti: apri qui solo codice di cui ti fidi.",
-              )}
-            </p>
-          </div>
-        </Watermark>
+        <ProjectsHome
+          projects={projects}
+          runs={runs}
+          busy={busy}
+          status={status}
+          agents={agents}
+          fw={fw}
+          handlers={home}
+        />
+      )}
+      {quickOpen && (
+        <QuickOpen
+          projects={projects ?? NO_PROJECTS}
+          runs={runs}
+          onOpen={openProject}
+          onStart={(p) => {
+            const a = mainAction(p);
+            if (a) start(p, a);
+          }}
+          onNew={openNew}
+          onClose={() => {
+            onQuickOpen?.(false);
+          }}
+        />
       )}
     </ViewContainer>
+  );
+}
+
+/** The row's ▶ (the action «Avvia» starts), or ■ while it runs. */
+function StartStop({
+  p,
+  runs,
+  busy,
+  onStart,
+  onStop,
+}: {
+  p: ProjectInfo;
+  runs: Record<string, RunInfo>;
+  busy: string | null;
+  onStart: (p: ProjectInfo, a: ProjectAction) => void;
+  onStop: (key: string) => void;
+}) {
+  const main = mainAction(p);
+  if (!main) return null;
+  const key = `${p.id}|${main.id}`;
+  return alive(runs[key]?.state) ? (
+    <IconButton
+      icon={VscDebugStop}
+      label={t("Ferma")}
+      title={t("Ferma {0}", main.label)}
+      busy={busy === `stop:${key}`}
+      onClick={() => {
+        onStop(key);
+      }}
+    />
+  ) : (
+    <IconButton
+      icon={VscDebugStart}
+      label={t("Avvia")}
+      title={t("Avvia {0}", main.label)}
+      busy={busy === `run:${key}`}
+      onClick={() => {
+        onStart(p, main);
+      }}
+    />
   );
 }
