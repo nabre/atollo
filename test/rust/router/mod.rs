@@ -286,3 +286,75 @@ fn bootstrap_take_verifies_and_consumes_on_host_target() {
     assert!(bootstrap::take(&host_kit, "rustup-init", &expect, &host_dest).unwrap());
     assert!(!host_boot.exists());
 }
+
+/// Each component's pre-downloaded files are in its own folder of
+/// `.bootstrap`: found by checksum wherever they are, and removed with
+/// their component only. Micromamba of Git stays while R goes; the files
+/// an older version left at the top go with the last component staged.
+#[test]
+fn bootstrap_files_go_with_their_component_only() {
+    let tmp = TempDir::new("router-boot-remove");
+    let foreign = Target::ALL
+        .into_iter()
+        .find(|t| !target::can_execute_on_host(*t))
+        .unwrap();
+    let kit = Kit::at_target(tmp.0.clone(), foreign);
+    kit.prepare().unwrap();
+    let catalog = Catalog::get();
+    let (git, r) = (catalog.find("git").unwrap(), catalog.find("r").unwrap());
+    let payload = b"micromamba-binary";
+    for id in ["git", "r"] {
+        let dir = bootstrap::staged_dir(&kit, id, None);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("micromamba"), payload).unwrap();
+    }
+    let r_line = bootstrap::staged_dir(&kit, "r", Some("4.4"));
+    fs::create_dir_all(&r_line).unwrap();
+    fs::write(r_line.join("micromamba"), b"older").unwrap();
+    let top = kit.apps().join(".bootstrap");
+    fs::write(top.join("legacy.tar.gz"), b"old layout").unwrap();
+    assert!(bootstrap::has_staged(&kit, "git") && bootstrap::has_staged(&kit, "r"));
+    assert!(!bootstrap::has_staged(&kit, "rust"));
+
+    let expect =
+        Expect::Sha256(crate::net::verify::sha256_hex(&r_line.join("micromamba")).unwrap());
+    let dest = tmp.0.join("work").join("micromamba");
+    assert!(bootstrap::take(&kit, "micromamba", &expect, &dest).unwrap());
+    assert_eq!(
+        fs::read(&dest).unwrap(),
+        b"older",
+        "found in a line's folder"
+    );
+    let other = Expect::Sha256("0".repeat(64));
+    assert!(!bootstrap::take(&kit, "micromamba", &other, &dest).unwrap());
+    assert!(
+        r_line.join("micromamba").is_file(),
+        "another version of the same name is skipped, not deleted"
+    );
+
+    bootstrap::remove(&kit, r).unwrap();
+    assert!(!bootstrap::staged_dir(&kit, "r", None).exists());
+    assert!(!r_line.exists(), "its saved lines too");
+    assert_eq!(
+        fs::read(bootstrap::staged_dir(&kit, "git", None).join("micromamba")).unwrap(),
+        payload,
+        "Git keeps its own copy"
+    );
+    assert!(
+        top.join("legacy.tar.gz").is_file(),
+        "Git may still need what the older layout staged"
+    );
+
+    bootstrap::remove(&kit, git).unwrap();
+    assert!(!top.exists(), "the emptied .bootstrap goes");
+
+    // A line removed from the Tools page takes its own folder only.
+    for line in [None, Some("4.4")] {
+        let dir = bootstrap::staged_dir(&kit, "r", line);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("micromamba"), payload).unwrap();
+    }
+    bootstrap::remove_line(&kit, "r", Some("4.4")).unwrap();
+    assert!(!bootstrap::staged_dir(&kit, "r", Some("4.4")).exists());
+    assert!(bootstrap::has_staged(&kit, "r"));
+}

@@ -2,16 +2,29 @@
 
 ## La Guida ripensata (19/10/2026)
 
-- **Nove capitoli** (D-135), dal più semplice al più tecnico: Primi passi, Progetti, Database siti e terminali, Agenti IA, Strumenti e linguaggi, Account e impostazioni, Portare il kit con sé, Come funziona dentro, Aiuto. 36 argomenti, ognuno con «In breve», i passi con le etichette dell'interfaccia, consigli, la parte tecnica ripiegata e gli argomenti collegati.
+- **Nove capitoli** (D-136), dal più semplice al più tecnico: Primi passi, Progetti, Database siti e terminali, Agenti IA, Strumenti e linguaggi, Account e impostazioni, Portare il kit con sé, Come funziona dentro, Aiuto. 36 argomenti, ognuno con «In breve», i passi con le etichette dell'interfaccia, consigli, la parte tecnica ripiegata e gli argomenti collegati.
 - **Nuovi argomenti**: un primo progetto passo per passo, la finestra spiegata parte per parte, la pagina Terminali, problemi comuni con il loro messaggio, domande frequenti, glossario.
 - **Corretta** su ogni punto rispetto all'app di oggi: niente più funzioni che non esistono, percorsi e variabili verificati nel codice; screenshot nuovi dall'anteprima, senza il vecchio marchio.
 - La pagina **Terminali** ha il suo pulsante della guida.
+
+## Documentazione in inglese prima di tutto (19/10/2026)
+
+- **README** (D-135): `README.md` è in inglese, l'italiano è in `docs/README.it.md`; nelle quattro lingue wordmark, badge in inglese, screenshot, «Features» e tabella dei documenti, con l'inglese primo nella barra delle lingue. Il tedesco dà del «du» ovunque.
+- **Guida e documenti tecnici in inglese**: `GUIDE.md` (prima `GUIDA.md`), `ARCHITECTURE.md`, `CATALOG.md`, `TESTING.md`; l'italiano resta in `GUIDE.it.md`, `ARCHITECTURE.it.md`, `CATALOG.it.md`, `TESTING.it.md`. Schermate con nomi inglesi.
+- **Matrice degli strumenti** in inglese: `docs/app/TOOLS-MATRIX.html` (prima `MATRICE-STRUMENTI.html`).
+- **Sito**: l'inglese alla radice, l'italiano in `it/`, `en/` rimanda alla radice; `sitemap.xml` con le alternative, JSON-LD `SoftwareApplication`, Open Graph e Twitter card completi, parole chiave in inglese.
+- **Metadati**: `keywords`, `homepage` e `repository` in `package.json` e `tauri/Cargo.toml`; descrizione e topic del repository su GitHub.
+
+## Rimuovere uno strumento toglie anche i file scaricati in anticipo (19/10/2026)
+
+- **Rimozione** (D-114): togliendo uno strumento dalla scelta, su ogni sistema del kit vanno anche i file scaricati in anticipo per il primo avvio su un altro sistema (`.bootstrap`, ora una cartella per strumento), gli elenchi e gli archivi dei suoi pacchetti conda conservati e i file aggiunti a mano per lui; un file che serve ancora a un altro strumento resta. Si toglie anche uno strumento di cui c'era solo quanto scaricato in anticipo.
+- **Versioni**: rimuovere una linea dalla pagina Strumenti toglie anche i suoi file scaricati in anticipo e il suo elenco conda.
 
 ## Testi al passo con il rilascio 0.2.0 (19/10/2026)
 
 - **«C'è ancora da fare»** (README e sito, nelle quattro lingue): la 0.2.0 alpha è su GitHub per i sei sistemi e va provata su macchine pulite; su Windows esce senza firma, SignPath è ancora da attivare.
 - **Sistemi**: la hero e la statistica del sito nominano Windows, macOS e Linux, ognuno su x64 e ARM64; «Limiti noti» non parla più del «prossimo tag».
-- **GUIDA.md** e **CATALOG.md**: su macOS e Linux c'è anche Apache, build del kit con `php-fpm` (D-116), fissata su `2.4.69-1`; per Linux anche il `tar.gz`.
+- **GUIDE.it.md** e **CATALOG.it.md**: su macOS e Linux c'è anche Apache, build del kit con `php-fpm` (D-116), fissata su `2.4.69-1`; per Linux anche il `tar.gz`.
 - **Sito**: il titolo è «Sviluppo, tutto in una cartella, su qualsiasi computer.», il sottotitolo nomina Windows, macOS e Linux; le statistiche fanno parte della hero e restano sullo schermo con il titolo anche su finestre basse; tolta la sezione «Perché «Atollo»».
 - **Scarica**: il sito prende l'ultimo rilascio `app-v*`, mai quelli di Apache o PHP dello stesso repository; senza rilascio dell'app il pulsante porta all'elenco dei rilasci.
 
@@ -19,7 +32,7 @@
 
 - **«Dentro l'app»**: le tre schermate stanno in una finestra vestita come il sistema di chi visita, la stessa della cartella nella hero (Windows 11, macOS, Linux con GNOME); senza JavaScript restano i puntini del brand. Barra e controlli sono un componente solo del sito, `.win`.
 - **Testi**: «Come si usa» nomina le oltre 60 basi dei progetti, «Tutto da una finestra» il pannello rapido e Ctrl+P, i server web dicono «su ogni sistema». In «C'è ancora da fare» Apache fuori da Windows non è più in arrivo (D-116): resta da provare su macchine vere, con il PHP del kit con `pdo_sqlite` che arriva con il suo primo rilascio (D-133).
-- **README**: la riga Progetti descrive pannello rapido, ▶ nella lista, Ctrl+P e la scheda Nuovo progetto con le 63 basi in gruppi; la voce da fare su Apache come nel sito. **CATALOG.md** e **TESTING.md** non dicono più R assente su Windows ARM64 (D-132) né Apache solo su Windows.
+- **README**: la riga Progetti descrive pannello rapido, ▶ nella lista, Ctrl+P e la scheda Nuovo progetto con le 63 basi in gruppi; la voce da fare su Apache come nel sito. **CATALOG.it.md** e **TESTING.it.md** non dicono più R assente su Windows ARM64 (D-132) né Apache solo su Windows.
 
 ## PHP del kit per macOS e Linux, con pdo_sqlite (19/10/2026)
 
@@ -93,7 +106,7 @@
 - **Git** non arriva più con GitHub CLI (D-81): arriva con Claude Code, un clone o un progetto. README e catalogo dicevano ancora «Git per GitHub CLI». La sua descrizione dice che Git Bash c'è solo su Windows.
 - **Rust su Windows ARM64** usa l'host `gnullvm` collegato da C/C++ (D-112), non sempre MSVC come dicevano guida e catalogo; preparato da un altro sistema si completa al primo avvio, non dà errore.
 - **Guida nell'app**: la tabella delle fonti conta le sue righe (35 componenti e 5 parti, prima «36»), dice per Git, PHP, Apache, C/C++, Ruby, R, MongoDB, SQLite, Rust, TinyTeX, Antigravity e l'editor da dove li prendono macOS e Linux, e segna i componenti non disponibili sul sistema. La presentazione nomina macOS e Linux accanto a Windows.
-- **Matrice degli strumenti** ([MATRICE-STRUMENTI.html](MATRICE-STRUMENTI.html)): note, dimensioni e componenti tolti vengono dal catalogo e dal codice; R su Windows non è più segnato «conda» (segue il kit, D-104); la pagina non cambia se il catalogo non cambia (niente data né commit). Le fonti stanno in `scripts/matrix/sources.json`, che `cargo test` confronta con gli installatori.
+- **Matrice degli strumenti** ([TOOLS-MATRIX.html](TOOLS-MATRIX.html)): note, dimensioni e componenti tolti vengono dal catalogo e dal codice; R su Windows non è più segnato «conda» (segue il kit, D-104); la pagina non cambia se il catalogo non cambia (niente data né commit). Le fonti stanno in `scripts/matrix/sources.json`, che `cargo test` confronta con gli installatori.
 - **Altro**: ordine dei componenti, pnpm (corepack e yarn), SQLite x64 su Windows ARM64 quando manca lo zip arm64, phpMyAdmin al posto di Adminer nel testo di presentazione.
 
 **Verificato**: `cargo test`, fmt e clippy, ESLint, `tsc -b` e i test dell'interfaccia (uno nuovo per la tabella delle fonti); `gen_matrix.py` rigenera la matrice senza differenze; build del sito.
@@ -244,7 +257,7 @@ L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le pr
 
 ## Riordino di cartelle e file (17/10/2026)
 
-Struttura riallineata alle regole di [ARCHITECTURE.md](ARCHITECTURE.md), senza cambiare il comportamento (salvo la correzione qui sotto).
+Struttura riallineata alle regole di [ARCHITECTURE.it.md](ARCHITECTURE.it.md), senza cambiare il comportamento (salvo la correzione qui sotto).
 
 **Correzione**
 - **Spostamento del kit su macOS e Linux**: `kit.rs` salvava la radice vecchia in `old-root-darwin.txt` / `old-root-linux.txt`, ma `agents::relocate` leggeva solo `old-root.txt`: fuori da Windows i percorsi degli agenti non venivano riscritti dopo uno spostamento e il file restava. Ora tutti e due usano `Kit::old_root_file`.
@@ -302,7 +315,7 @@ Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../reports/v3/03-BUG-SI
 - Le quattro conferme sì/no nella pagina (uscita da un agente e da GitHub, ripristino di un database, «Applica» in Linguaggi e strumenti) sono `alertdialog` con il focus su «Annulla»; alla chiusura il focus torna al pulsante che le ha aperte.
 - Versioni del progetto: uno strumento mancante resta nella zona del progetto con il rimando a «Installa ciò che manca»; il testo nomina anche il server web.
 
-**Verificato**: 426 test Rust (3 ignorati), 107 test dell'interfaccia; fmt, clippy, ESLint, Prettier e build puliti su Windows. Il codice Unix è solo compilato (controllo incrociato per macOS e Linux). Da provare a mano: due versioni di MySQL insieme, pool che si spengono e «Avvia con Atollo», `httpd -t`/`nginx -t` delle configurazioni nuove con `Host` estraneo, prove con `ATOLLO_TEST_KIT`, primo avvio reale su macOS e Linux ([TESTING.md](TESTING.md)).
+**Verificato**: 426 test Rust (3 ignorati), 107 test dell'interfaccia; fmt, clippy, ESLint, Prettier e build puliti su Windows. Il codice Unix è solo compilato (controllo incrociato per macOS e Linux). Da provare a mano: due versioni di MySQL insieme, pool che si spengono e «Avvia con Atollo», `httpd -t`/`nginx -t` delle configurazioni nuove con `Host` estraneo, prove con `ATOLLO_TEST_KIT`, primo avvio reale su macOS e Linux ([TESTING.it.md](TESTING.it.md)).
 
 ## Niente Windows Terminal (16/10/2026)
 
@@ -344,7 +357,7 @@ Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../reports/v3/03-BUG-SI
 
 **Installazione e piattaforme**
 - **Git su macOS e Linux via micromamba** (D-92): il pacchetto `git` di conda-forge, con le sue librerie, in un ambiente nella cartella della sua linea, come R (BUG-23a). Un ambiente conda ha il percorso scritto dentro: quando il kit cambia cartella, Git e R fuori da Windows si segnano da reinstallare e l'installazione automatica all'avvio li rifà.
-- **PHP, Apache, Nginx e Adminer solo su Windows, per ora**: le fonti sono build Windows e `php.ini`/`httpd.conf` sono scritti per Windows; su macOS e Linux Nginx scaricava il sorgente (BUG-23b, BUG-24a). I progetti propongono solo componenti disponibili sul sistema del kit; [CATALOG.md](CATALOG.md) dice cosa c'è dove.
+- **PHP, Apache, Nginx e Adminer solo su Windows, per ora**: le fonti sono build Windows e `php.ini`/`httpd.conf` sono scritti per Windows; su macOS e Linux Nginx scaricava il sorgente (BUG-23b, BUG-24a). I progetti propongono solo componenti disponibili sul sistema del kit; [CATALOG.it.md](CATALOG.it.md) dice cosa c'è dove.
 - Python conserva i pacchetti e trova `pip` usando la linea davvero installata, non quella delle impostazioni (BUG-24b).
 - Un componente non disponibile dice perché: «non disponibile sui PC ARM64» solo su Windows ARM64, altrimenti il sistema (BUG-24c).
 - Il file da scaricare a mano nomina la cartella giusta (nel temp del sistema) in tutte e quattro le lingue (BUG-17r).
@@ -374,7 +387,7 @@ Ogni strumento sta in una cartella col nome della sua versione minore, e una cor
 
 ## Guida operativa e pagina «Guida» nell'app (16/10/2026)
 
-Manuale completo del kit in [`GUIDA.md`](GUIDA.md) (con 16 schermate commentate in `images\`) e pagina interattiva **Guida** (`VscBook`) in basso a sinistra nella barra delle attività.
+Manuale completo del kit in [`GUIDE.it.md`](GUIDE.it.md) (con 16 schermate commentate in `images\`) e pagina interattiva **Guida** (`VscBook`) in basso a sinistra nella barra delle attività.
 
 **Fatto**
 - **5 capitoli e 16 sezioni navigabili** nello stile Workbench di VSCodium (`ui/src/guide/`): architettura portabile e layout su disco, 36 fonti ufficiali con tabella ricercabile e stato live dei componenti installati, account GitHub unificato (D-70), panoramica visiva di tutte le viste e 12 ricette di configurazione passo-passo.
@@ -411,11 +424,11 @@ Ciò che il kit tiene per un progetto sta in una cartella sola, e download ed es
 - **Da riga di comando su un kit vecchio** (`Atollo.exe` senza finestra, prima del primo avvio dell'app) i dati dei progetti non si vedono: la migrazione gira solo come unica copia dell'app del kit, al primo avvio.
 - I file aggiunti a mano ora sono nel temp del sistema; `data\downloads` si accetta ancora e il suo contenuto si sposta al primo uso.
 
-**Verificato**: 322 test Rust e 66 test dell'interfaccia; clippy, fmt e lint puliti. Da provare a mano: migrazione di un kit reale, chiavetta exFAT e FAT32, eliminazione con database veri, alias con un collegamento ([TESTING.md](TESTING.md)).
+**Verificato**: 322 test Rust e 66 test dell'interfaccia; clippy, fmt e lint puliti. Da provare a mano: migrazione di un kit reale, chiavetta exFAT e FAT32, eliminazione con database veri, alias con un collegamento ([TESTING.it.md](TESTING.it.md)).
 
 ## Interfaccia con i componenti di VSCodium (15/10/2026)
 
-L'app usa gli stessi controlli di VSCodium e gli stessi colori dell'editor, chiave per chiave, con il brand Atollo (D-88, [ARCHITECTURE.md](ARCHITECTURE.md)).
+L'app usa gli stessi controlli di VSCodium e gli stessi colori dell'editor, chiave per chiave, con il brand Atollo (D-88, [ARCHITECTURE.it.md](ARCHITECTURE.it.md)).
 
 **Fatto**
 - **Controlli di VSCodium** (`@vscode-elements/elements`): pulsanti, campi, aree di testo, select, badge, barre di avanzamento, divisori, icone codicon, voci delle impostazioni. Checkbox, radio, pulsanti a icona, tabelle, riquadri e schede restano elementi propri disegnati come i componenti, perché quelli dei componenti nasconderebbero etichette e ruoli all'Assistente vocale.
@@ -427,7 +440,7 @@ L'app usa gli stessi controlli di VSCodium e gli stessi colori dell'editor, chia
 
 ## Struttura del codice, seconda parte (15/10/2026)
 
-Nessun cambiamento per chi usa l'app: stessi testi, comandi, eventi, log e file su disco (D-87, [ARCHITECTURE.md](ARCHITECTURE.md)).
+Nessun cambiamento per chi usa l'app: stessi testi, comandi, eventi, log e file su disco (D-87, [ARCHITECTURE.it.md](ARCHITECTURE.it.md)).
 
 **Fatto**
 - **Moduli Rust in cartelle per area**: `setup\`, `versions\`, `projects\`, `editor\`, `agents\` (con `sync\` e `stats\`), `db\`, `github\`, `net\`, `os\`, accanto a `commands\`, `install\` e `detect\`. In cima a `tauri\src` restano `main`, `cli`, `kit`, `env`, `fsx`, `log`, `i18n` e `settings`. Spostamenti con `git mv`; i prefissi spariscono (`editor_cfg.rs` → `editor\cfg.rs`, `db_auth.rs` → `db\auth.rs`, `setup_task.rs` → `setup\task.rs`).
@@ -438,13 +451,13 @@ Nessun cambiamento per chi usa l'app: stessi testi, comandi, eventi, log e file 
 - **Componenti di `workbench\`**: `Select` al posto di 13 `<select>`, `DataTable` di 5 `<table>`, `ConfirmDialog` e `InlineConfirm` per la chiusura dell'app e l'eliminazione di un repository GitHub; `useCopy` per le 3 copie negli appunti.
 - **Commenti**: i percorsi dei file Rust citati nell'interfaccia e nella CI puntano alle cartelle nuove; tolti i caratteri di controllo lasciati da escape sbagliati in tre commenti.
 
-**Non fatto** (elenco in ARCHITECTURE.md): 12 letture restano senza `useLoad` perché cambierebbe ciò che l'utente vede (un errore che oggi resta dopo una lettura riuscita); quattro conferme sì/no nella pagina restano senza il ruolo `alertdialog` (fatte il 17/10/2026, D-106).
+**Non fatto** (elenco in ARCHITECTURE.it.md): 12 letture restano senza `useLoad` perché cambierebbe ciò che l'utente vede (un errore che oggi resta dopo una lettura riuscita); quattro conferme sì/no nella pagina restano senza il ruolo `alertdialog` (fatte il 17/10/2026, D-106).
 
 **Verificato**: 274 test Rust (3 nuovi per `CmdError`, 3 in più dalla prova delle righe di versione divisa per linguaggio), 2 ignorati; clippy e fmt puliti; tipi, ESLint, Prettier e 36 test dell'interfaccia (9 nuovi per `useLoad`); nessun ciclo di import in `ui\src`. La build dell'interfaccia riesce, con un avviso: il file principale supera 500 kB (761 kB).
 
 ## Struttura del codice (15/10/2026)
 
-Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile da leggere e da cambiare (D-86, [ARCHITECTURE.md](ARCHITECTURE.md)).
+Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile da leggere e da cambiare (D-86, [ARCHITECTURE.it.md](ARCHITECTURE.it.md)).
 
 **Fatto**
 - **Comandi divisi per area**: `commands.rs` (2655 righe, 87 comandi) diventa la cartella `commands\` con un file per pagina o area (`app`, `window`, `editing`, `setup`, `versions`, `agents`, `projects`, `frameworks`, `github`, `databases`, `services`, `runs`); in `mod.rs` restano lo stato condiviso, i controlli comuni e l'elenco per Tauri.
@@ -646,7 +659,7 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 - **Un solo account GitHub per tutto il kit**: l'accesso dalla pagina (codice monouso su github.com/login/device) è quello di GitHub CLI in `data\gh`. Git del kit lo usa per github.com, quindi push e pull nell'editor, nelle console e negli agenti usano lo stesso account; «Esci» lo toglie a tutti. Anche «Clona» della pagina Progetti usa l'account per i repository privati.
 - Il permesso di eliminare i repository si chiede solo quando serve («Concedi il permesso»).
 
-**Verificato**: 190 test Rust, 22 test dell'interfaccia; `clippy -D warnings`, ESLint, Prettier, `cargo fmt` puliti. Da provare con un account vero: la checklist «GitHub» di TESTING.md (accesso senza console di `gh`, push dall'editor).
+**Verificato**: 190 test Rust, 22 test dell'interfaccia; `clippy -D warnings`, ESLint, Prettier, `cargo fmt` puliti. Da provare con un account vero: la checklist «GitHub» di TESTING.it.md (accesso senza console di `gh`, push dall'editor).
 
 ## Documentazione allineata al codice (14/10/2026)
 
@@ -683,7 +696,7 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 **Verificato**
 - 181 test Rust (fra cui periodo locale, date ISO, `Retry-After`, finestre e crediti di Claude, conteggi delle sessioni di Codex senza doppioni, quote di Antigravity, cache con attesa dopo 429, editor che non esce dal progetto, `dev-settings.json`), 20 test dell'interfaccia; `clippy -D warnings`, ESLint, Prettier puliti.
 
-**Da provare a mano** (checklist in [TESTING.md](TESTING.md))
+**Da provare a mano** (checklist in [TESTING.it.md](TESTING.it.md))
 1. Agenti con accesso fatto: i limiti coincidono con `/usage` di Claude Code e `/status` di Codex.
 2. Editor su un progetto: File › Apri cartella su un'altra cartella non cambia la finestra.
 3. Barra del titolo: trascinamento, doppio clic, riduci, ingrandisci, chiudi con la conferma se qualcosa è aperto; ridimensionamento dai bordi.
@@ -712,7 +725,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - Console: avviata così resta nella finestra classica (`ConsoleWindowClass`), nessun `WindowsTerminal.exe`, su Windows 11 (D-57).
 - Editor 1.135.06055: lo SHA-256 pubblicato da VSCodium e il digest di GitHub sono uguali (D-58).
 
-**Da provare a mano** (checklist completa in [TESTING.md](TESTING.md))
+**Da provare a mano** (checklist completa in [TESTING.it.md](TESTING.it.md))
 1. Agenti › Apri su Claude Code: si apre una console classica di Windows e Claude Code riceve i tasti (Invio, frecce, Ctrl+C).
 2. Avviare l'app su un kit con l'editor di un'altra versione: all'avvio viene installato di nuovo alla versione fissata; Editor e Terminale si aprono anche se l'aggiornamento non riesce.
 3. Su un kit senza Git: all'avvio Git si installa con GitHub CLI; in Linguaggi e strumenti è spuntato e non modificabile («per GitHub CLI»).
@@ -729,7 +742,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - **Rimuovi l'unità** e conferma alla chiusura quando sono aperti editor, console, progetti o un'installazione. Nella Home c'è un avviso se è aperta un'altra copia del kit (`sessions.rs`, D-55).
 - **Interfaccia in italiano, inglese, francese e tedesco**, con la lingua che cambia senza riavvio. Accessibilità: collegamento «Vai al contenuto», ruoli ARIA, dialogo accessibile, «riduci animazioni», contrasto del rosso nel tema chiaro (D-56).
 - **Revisione di sicurezza**: le credenziali del PC in `keyring-before.json` sono cifrate con DPAPI. Le cartelle attendibili di `projects` sono documentate come rischio accettato (D-53).
-- **Checklist manuale** in [TESTING.md](TESTING.md).
+- **Checklist manuale** in [TESTING.it.md](TESTING.it.md).
 
 **Verificato su questo PC**
 - `cargo fmt`, `clippy -D warnings` puliti, 133 test Rust. `tsc`, `eslint`, `prettier` puliti, 19 test dell'interfaccia; i test dei cataloghi controllano 194 testi dell'interfaccia e 66 di Rust.
@@ -752,7 +765,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - L'aggiornamento dell'app non è ancora stato provato con una release vera: il repository e il workflow di release arrivano nella fase 7.
 - Fase committata in `7187483`, insieme al terminale integrato (PLAN, domanda 13).
 
-**Da provare a mano** (checklist completa in [TESTING.md](TESTING.md))
+**Da provare a mano** (checklist completa in [TESTING.it.md](TESTING.it.md))
 1. Progetti › Clona `nabre/atollo`: la cartella compare con il nome del repository.
 2. Un progetto Vite: «Avvia» usa una porta tra 7100 e 7999, e un secondo avvio riusa la stessa.
 3. Impostazioni con un proxy e un file PEM: un'installazione da Linguaggi e strumenti passa dal proxy.
@@ -819,7 +832,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 ## Fase 4: tutti i componenti, Linguaggi e strumenti, Primo avvio (14/10/2026)
 
 **Fatto**
-- Installatori di tutti i 31 componenti del catalogo (specifica in CATALOG.md): agenti (Claude Code con firma Anthropic, Codex, Antigravity), Git, Python (pacchetti dell'utente conservati), Node.js, uv, gh, PHP con Composer, `cacert.pem` e runtime VC++ estratto da `vc_redist` (firma Microsoft), Apache con `kit.conf`, Rust (rustup, voce di registro ripristinata), Go, Java con Maven e Gradle, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, TinyTeX, pnpm e yarn, CMake con Ninja, C/C++ (llvm-mingw), Ruby, R (micromamba), PowerShell 7, Windows Terminal, editor, VSCodium desktop (facoltativo).
+- Installatori di tutti i 31 componenti del catalogo (specifica in CATALOG.it.md): agenti (Claude Code con firma Anthropic, Codex, Antigravity), Git, Python (pacchetti dell'utente conservati), Node.js, uv, gh, PHP con Composer, `cacert.pem` e runtime VC++ estratto da `vc_redist` (firma Microsoft), Apache con `kit.conf`, Rust (rustup, voce di registro ripristinata), Go, Java con Maven e Gradle, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, TinyTeX, pnpm e yarn, CMake con Ninja, C/C++ (llvm-mingw), Ruby, R (micromamba), PowerShell 7, Windows Terminal, editor, VSCodium desktop (facoltativo).
 - Motore: parti multiple per componente, sostituzione di singoli file anche se in uso, firma Authenticode (`signature.rs`), installatori fatti di processi, rimozione di tutto ciò che un componente possiede (cartelle e file in `tools\` o `npm-global`).
 - Verifica finale (`checkup.rs`): `Atollo.exe check`, e in fondo a `prepare` per ciò che è stato installato.
 - Pagina **Linguaggi e strumenti**: componenti per gruppo, spunte con dipendenze a cascata, dimensioni, versioni, riepilogo di cosa verrà installato e rimosso, "Aggiorna tutto", avanzamento con annullamento.

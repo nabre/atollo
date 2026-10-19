@@ -4,6 +4,10 @@
 //! (`data\downloads` without one, D-90) until an installation uses it. A
 //! file is used only when its checksum is the one the source publishes,
 //! whatever its name (a browser may add ` (1)`).
+//!
+//! Which component a file is for is known from its checksum only: every
+//! failed download writes it in `.wanted` ([`want`]), so removing the
+//! component also removes the file added for it ([`forget`]).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -11,11 +15,145 @@ use std::time::{Duration, SystemTime};
 
 use anyhow::{bail, Context, Result};
 
+use crate::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::net::verify::{self, Expect};
 
 /// Kept at most this long when no installation uses them.
 const KEEP: Duration = Duration::from_secs(30 * 24 * 3600);
+
+/// The checksums the failed downloads wanted, in `dir(kit)`: one line per
+/// file, `<target>\t<component>\t<checksum>`. The folder is the kit's own,
+/// shared by the systems it is prepared for, hence the target.
+const WANTED: &str = ".wanted";
+
+/// One line of `.wanted`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Wanted {
+    target: String,
+    id: String,
+    expect: Expect,
+}
+
+impl Wanted {
+    fn of(kit: &Kit, id: &str, expect: &Expect) -> Wanted {
+        Wanted {
+            target: kit.target().to_string(),
+            id: id.to_owned(),
+            expect: expect.clone(),
+        }
+    }
+
+    fn render(&self) -> String {
+        let expect = match &self.expect {
+            Expect::Sha256(h) => format!("sha256:{h}"),
+            Expect::Sha512(h) => format!("sha512:{h}"),
+            Expect::NpmIntegrity(h) => format!("npm:{h}"),
+            Expect::Sha3_256(h) => format!("sha3-256:{h}"),
+        };
+        format!("{}\t{}\t{expect}", self.target, self.id)
+    }
+
+    fn parse(line: &str) -> Option<Wanted> {
+        let mut fields = line.trim().split('\t');
+        let (target, id) = (fields.next()?, fields.next()?);
+        let expect = match fields.next()?.split_once(':')? {
+            ("sha256", h) => Expect::Sha256(h.to_owned()),
+            ("sha512", h) => Expect::Sha512(h.to_owned()),
+            ("npm", h) => Expect::NpmIntegrity(h.to_owned()),
+            ("sha3-256", h) => Expect::Sha3_256(h.to_owned()),
+            _ => return None,
+        };
+        Some(Wanted {
+            target: target.to_owned(),
+            id: id.to_owned(),
+            expect,
+        })
+    }
+
+    fn is_for(&self, kit: &Kit, id: &str) -> bool {
+        self.target == kit.target().to_string() && self.id == id
+    }
+}
+
+fn read_wanted(dir: &Path) -> Vec<Wanted> {
+    fs::read_to_string(dir.join(WANTED))
+        .unwrap_or_default()
+        .lines()
+        .filter_map(Wanted::parse)
+        .collect()
+}
+
+/// `.wanted` written again with `list`, removed when empty. A failure is
+/// logged only: the files are still found by checksum without it.
+fn write_wanted(dir: &Path, list: &[Wanted]) {
+    let path = dir.join(WANTED);
+    let result = if list.is_empty() {
+        match fs::remove_file(&path) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e),
+            _ => Ok(()),
+        }
+    } else {
+        let text: String = list.iter().map(|w| w.render() + "\n").collect();
+        fs::create_dir_all(dir).and_then(|()| write_atomic(&path, text.as_bytes()))
+    };
+    if let Err(e) = result {
+        crate::log::warn(&format!("{}: {e}", path.display()));
+    }
+}
+
+/// A download of component `id` failed for `kit`: the file the browser
+/// will save, with checksum `expect`, is its own.
+pub fn want(kit: &Kit, id: &str, expect: &Expect) {
+    let dir = dir(kit);
+    let mut list = read_wanted(&dir);
+    let wanted = Wanted::of(kit, id, expect);
+    if !list.contains(&wanted) {
+        list.push(wanted);
+        write_wanted(&dir, &list);
+    }
+}
+
+/// Component `id` was removed from `kit`: the files added by hand for it
+/// go, except one another component (or the same one on another system)
+/// still waits for with the same checksum. A file that cannot be deleted
+/// (open elsewhere) stays, with a warning in the log, and goes after a
+/// month as the others.
+pub fn forget(kit: &Kit, id: &str) {
+    let dir = dir(kit);
+    let (mine, others): (Vec<Wanted>, Vec<Wanted>) = read_wanted(&dir)
+        .into_iter()
+        .partition(|w| w.is_for(kit, id));
+    if mine.is_empty() {
+        return;
+    }
+    let wanted_by = |file: &Path, list: &[Wanted]| {
+        list.iter()
+            .any(|w| verify::matches(file, &w.expect).unwrap_or(false))
+    };
+    for file in added(&dir) {
+        if wanted_by(&file, &mine) && !wanted_by(&file, &others) {
+            if let Err(e) = fs::remove_file(&file) {
+                crate::log::warn(&format!("{}: {e}", file.display()));
+            }
+        }
+    }
+    write_wanted(&dir, &others);
+}
+
+/// The files added by hand in `dir`: not the `.part` ones being copied,
+/// nor `.wanted`.
+fn added(dir: &Path) -> Vec<PathBuf> {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    entries
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_file() && p.extension().is_none_or(|e| e != "part"))
+        .filter(|p| p.file_name().is_some_and(|n| n != WANTED))
+        .collect()
+}
 
 /// `downloads\` of the PC's temporary folder (D-90), or `data\downloads`
 /// without one. The files found in `data\downloads` (kept there by an older
@@ -43,6 +181,18 @@ fn move_files(from: &Path, to: &Path) {
             continue;
         };
         if !path.is_file() || name.ends_with(".part") {
+            continue;
+        }
+        // Joined to the one there, which a rename would overwrite.
+        if name == WANTED {
+            let mut list = read_wanted(to);
+            for w in read_wanted(from) {
+                if !list.contains(&w) {
+                    list.push(w);
+                }
+            }
+            write_wanted(to, &list);
+            let _ = fs::remove_file(&path);
             continue;
         }
         let moved = (|| -> Result<()> {
@@ -93,14 +243,7 @@ pub fn add(kit: &Kit, files: &[PathBuf]) -> Result<Vec<String>> {
 /// first the one named `file_name`, then any other. `false` when none.
 pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<bool> {
     let dir = dir(kit);
-    let Ok(entries) = fs::read_dir(&dir) else {
-        return Ok(false);
-    };
-    let mut candidates: Vec<PathBuf> = entries
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| p.is_file() && p.extension().is_none_or(|e| e != "part"))
-        .collect();
+    let mut candidates = added(&dir);
     // The expected name first; the others only if none matches.
     candidates.sort_by_key(|p| {
         p.file_name()
@@ -118,6 +261,12 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
             "{file_name}: the file added by hand {}",
             file.display()
         ));
+        // Used: no component waits for it any more.
+        let list = read_wanted(&dir);
+        if list.iter().any(|w| w.expect == *expect) {
+            let left: Vec<Wanted> = list.into_iter().filter(|w| w.expect != *expect).collect();
+            write_wanted(&dir, &left);
+        }
         return Ok(true);
     }
     Ok(false)

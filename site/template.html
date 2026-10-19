@@ -5,16 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{title}}</title>
 <meta name="description" content="{{description}}">
+<meta name="keywords" content="{{keywords}}">
+<meta name="author" content="nabre">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
 <link rel="canonical" href="{{base}}{{path}}">
 {{alternates}}
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Atollo">
 <meta property="og:title" content="{{title}}">
 <meta property="og:description" content="{{description}}">
 <meta property="og:url" content="{{base}}{{path}}">
+{{ogLocales}}
 <meta property="og:image" content="{{base}}assets/brand.png">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="1200">
+<meta property="og:image:alt" content="Atollo — Universal Portable Dev &amp; AI Workspace">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{title}}">
+<meta name="twitter:description" content="{{description}}">
+<meta name="twitter:image" content="{{base}}assets/brand.png">
+<link rel="sitemap" type="application/xml" href="{{base}}sitemap.xml">
+<script type="application/ld+json">{{jsonLd}}</script>
 <link rel="icon" type="image/svg+xml" href="{{root}}assets/symbol.svg">
 <!-- Geist, self-hosted (assets/fonts): the text font is on every first screen. -->
 <link rel="preload" href="{{root}}assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -74,7 +88,7 @@
            screens only (site.css), on its
            own: never beside the wordmark. -->
       <img class="app-icon rise" style="--d:2" src="{{root}}assets/symbol.svg" alt="" width="72" height="72">
-      <!-- The kit's real layout (README, «Struttura»), not a mock of the app.
+      <!-- The kit's real layout (README, "Layout"), not a mock of the app.
            download.js dresses it as the visitor's system (html[data-os]):
            the window's bar, the app's file, the path on a stick. -->
       <figure class="kit win rise" style="--d:3" aria-label="{{folderTitle}}" data-version="{{version}}">
@@ -201,7 +215,7 @@
   </section>
 
   <!-- Honest state of the project: kept in step with the READMEs'
-       «C'è ancora da fare» and with docs/app/TESTING.md. -->
+       "Still to do" and with docs/app/TESTING.md. -->
   <section id="todo">
     <div class="wrap">
       <p class="eyebrow reveal">07</p>
