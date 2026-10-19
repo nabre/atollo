@@ -204,7 +204,7 @@ export function ToolPage({
         </div>
       )}
       <NavBar label={t("Sezioni dello strumento")} items={items} active={section} onSelect={setSection} />
-      <EditorBody narrow>
+      <EditorBody>
         {section === "versions" && (
           <EditorSection id="versions" title={t("Versioni")}>
             {versioned?.installed ? (

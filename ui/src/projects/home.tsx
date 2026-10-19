@@ -92,7 +92,7 @@ export function ProjectsHome({
 
   return (
     <EditorBody>
-      <div className="max-w-5xl space-y-6">
+      <div className="space-y-6">
         {live.length > 0 && (
           <EditorSection id="home-running" title={t("In esecuzione")}>
             <ul aria-labelledby="home-running" className="m-0 list-none space-y-1 p-0">

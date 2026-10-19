@@ -90,10 +90,7 @@ export function ComposerRow({
     .filter((l): l is { line: string; composer: string } => l.composer !== null);
   const kit = all.find((l) => l.line === kitLine) ?? all[0];
   return (
-    <div
-      data-setting
-      className="max-w-[880px] border-l-2 border-l-transparent py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50"
-    >
+    <div data-setting className="border-l-2 border-l-transparent py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50">
       <div className="flex items-center gap-3">
         <Checkbox id="comp-composer" checked={on} disabled onChange={() => undefined} />
         <span className="flex w-5 shrink-0 justify-center">
@@ -196,7 +193,7 @@ export function ComponentRow({
   const shown = composerOf(c.version) ? splitVersion(c.version).main : c.version;
   return (
     <>
-      <div data-setting className={`max-w-[880px] border-l-2 py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50 ${mark}`}>
+      <div data-setting className={`border-l-2 py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50 ${mark}`}>
         <div className="flex items-center gap-3">
           <Checkbox
             id={inputId}

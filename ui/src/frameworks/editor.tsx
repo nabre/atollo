@@ -192,7 +192,7 @@ function FrameworksProblems({ fw }: { fw: Frameworks }) {
   const problem = fw.view?.problem;
   if (!fw.error && !problem) return null;
   return (
-    <div className="max-w-[880px] space-y-1 px-[14px] pb-2">
+    <div className="space-y-1 px-[14px] pb-2">
       <ErrorLine error={fw.error} />
       {problem && (
         <ErrorLine

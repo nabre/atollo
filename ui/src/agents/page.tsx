@@ -188,7 +188,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
             ]}
             description={t("Gli agenti si aprono sempre nella cartella di un progetto, dalla pagina Progetti.")}
           />
-          <EditorBody narrow>
+          <EditorBody>
             <ErrorLine error={stats.error ?? error} />
             <EditorSection id="agent-usage" title={t("Limiti e consumi")}>
               {st ? <AgentUsage stats={st} /> : <p className="text-vsc-desc">{t("Caricamento…")}</p>}

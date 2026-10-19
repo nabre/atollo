@@ -246,7 +246,7 @@ export function NewProjectWizard({
           </>
         }
       />
-      <EditorBody narrow>
+      <EditorBody>
         <ErrorLine error={fw.error} />
 
         <EditorSection id="wizard-base" title={t("1. Base")}>

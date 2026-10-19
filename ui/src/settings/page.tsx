@@ -353,7 +353,7 @@ export function SettingsPage({
         />
         <div className="min-h-0 flex-1 overflow-y-auto pb-10">
           {(loadError ?? view?.problem ?? error ?? (saved && editorRunning)) && (
-            <div className="max-w-[880px] space-y-2 px-[14px] pt-3">
+            <div className="space-y-2 px-[14px] pt-3">
               <ErrorLine error={loadError} />
               {view?.problem && (
                 <ErrorLine
