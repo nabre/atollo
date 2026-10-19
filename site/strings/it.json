@@ -46,7 +46,7 @@
   "how2": "Avvialo: crea <code>projects/</code> e <code>data/</code>. Al primo avvio scegli agenti, linguaggi e strumenti; Atollo li scarica e li verifica.",
   "how3": "Crea un progetto da una delle oltre 60 basi (Laravel, Next.js, Django, WordPress, Astro, Tauri…), clonalo da GitHub o parti da una cartella vuota. Editor, terminale e agenti si aprono sempre nella cartella del progetto.",
   "shotsTitle": "Dentro l'app",
-  "shot1": "Progetti: avvio, output e attività",
+  "shot1": "Progetti: pannello rapido e attività",
   "shot2": "Agenti: limiti e consumi",
   "shot3": "Strumenti: componenti × sistemi",
   "aspectsTitle": "Come funziona",
