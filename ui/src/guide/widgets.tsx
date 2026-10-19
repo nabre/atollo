@@ -1,33 +1,38 @@
-// Reusable UI components for the in-app Guide: screenshot cards with
-// full-screen zoom modal, copyable code/config blocks, step-by-step recipe
-// cards and quick folder openers.
-import { useRef, useState, type ReactNode } from "react";
+// The building blocks of the Guide's text: screenshots with a zoom, code
+// blocks to copy, cards, the "in short" box, steps, tips, the folded
+// technical part, links between topics and to the app's pages, flows,
+// tables and quick folder openers.
+import { createContext, useContext, useId, useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
   VscArrowRight,
   VscCheck,
+  VscChevronRight,
   VscClose,
   VscCopy,
   VscFileCode,
   VscFolderOpened,
   VscInfo,
+  VscLightbulb,
   VscScreenFull,
+  VscTools,
+  VscWarning,
 } from "react-icons/vsc";
-import { folderOpen } from "../api";
+import { folderOpen, type AppInfo, type ComponentInfo } from "../api";
 import { useCopy } from "../hooks";
 import { t } from "../i18n";
 import { Tag } from "../tags";
-import { Button, IconButton, useModalFocus } from "../workbench";
-import { tr, type AppPageTarget } from "./model";
+import { Button, DataTable, EditorSection, IconButton, Link, useModalFocus } from "../workbench";
+import { sectionCode, topicOf, tr, type AppPageTarget, type GuideTopicId } from "./model";
 
-/** An application screenshot from /guide/*.webp with caption, practical
- * example callout and click-to-zoom modal. */
+/** A screenshot of the app from /guide/*.webp (taken in the browser preview,
+ * on its sample data) with a caption, an optional example and a zoom. */
 export function GuideShot({
   src,
   title,
   caption,
   example,
-  scenario = "D:\\Atollo · @mario-rossi",
+  scenario = tr("dati di esempio", "sample data", "données d'exemple", "Beispieldaten"),
 }: {
   src: string;
   title: string;
@@ -237,104 +242,259 @@ export function GuideCard({
   );
 }
 
-/** Step-by-step configuration procedure card with "Dove si configura",
- * numbered steps, "Scopo tecnico e pratico" and direct navigation button. */
-export function GuideRecipe({
-  number,
-  title,
-  whereUi,
-  whereFile,
-  steps,
-  purpose,
-  targetPage,
-  targetLabel,
-  onNavigate,
-  children,
-}: {
-  number: string;
-  title: string;
-  whereUi: string;
-  whereFile: string;
-  steps: ReactNode[];
-  purpose: ReactNode;
-  targetPage?: AppPageTarget;
-  targetLabel?: string;
-  onNavigate?: (page: AppPageTarget) => void;
-  children?: ReactNode;
-}) {
+/** The opening box of a topic: what it is for and the few things to keep in
+ * mind, before the details. */
+export function InBrief({ points }: { points: ReactNode[] }) {
   return (
-    <div className="space-y-3 rounded-md border border-vsc-border bg-vsc-sidebar/35 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-vsc-border pb-2.5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Tag tone="focus">{number}</Tag>
-            <h4 className="m-0 text-[14px] font-semibold text-vsc-settings-header">{title}</h4>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-vsc-desc">
-            <span>
-              <strong>
-                {tr("Dove si configura:", "Where to configure:", "Où configurer :", "Wo zu konfigurieren:")}
-              </strong>{" "}
-              {whereUi}
-            </span>
-            <span>·</span>
-            <span>
-              <strong>
-                {tr("File su disco:", "File on disk:", "Fichier sur le disque :", "Datei auf dem Datenträger:")}
-              </strong>{" "}
-              <code className="rounded bg-vsc-input px-1.5 py-0.5 font-mono text-[11px] text-vsc-fg select-text">
-                {whereFile}
-              </code>
-            </span>
-          </div>
-        </div>
-        {targetPage && onNavigate && (
-          <Button
-            small
-            variant="primary"
-            onClick={() => {
-              onNavigate(targetPage);
-            }}
-          >
-            <span className="inline-flex items-center gap-1">
-              {targetLabel ?? tr("Configura ora", "Configure now", "Configurer maintenant", "Jetzt konfigurieren")}
-              <VscArrowRight size={12} aria-hidden="true" />
-            </span>
-          </Button>
-        )}
+    <div className="rounded-md border border-vsc-focus/50 bg-vsc-badge/10 px-3.5 py-2.5 text-[12px]">
+      <div className="mb-1 flex items-center gap-1.5 font-semibold text-vsc-settings-header">
+        <VscLightbulb size={14} aria-hidden="true" className="text-vsc-focus" />
+        {tr("In breve", "In short", "En bref", "Kurz gesagt")}
       </div>
-
-      <div className="space-y-1.5 text-[12px]">
-        <div className="font-semibold text-vsc-settings-header">
-          {tr(
-            "Passaggi operativi:",
-            "Step-by-step procedure:",
-            "Procédure étape par étape :",
-            "Schritt-für-Schritt-Anleitung:",
-          )}
-        </div>
-        <ol className="m-0 list-decimal space-y-1.5 pl-5 leading-relaxed">
-          {steps.map((s, i) => (
-            <li key={i}>{s}</li>
-          ))}
-        </ol>
-      </div>
-
-      <div className="rounded border-l-2 border-l-vsc-focus bg-vsc-bg/60 px-3 py-2 text-[12px]">
-        <div className="mb-0.5 font-semibold text-vsc-settings-header">
-          {tr(
-            "Scopo tecnico e perché va fatto:",
-            "Technical purpose & why it matters:",
-            "Objectif technique et pourquoi le faire :",
-            "Technischer Zweck und warum es wichtig ist:",
-          )}
-        </div>
-        <div className="leading-relaxed text-vsc-fg/90">{purpose}</div>
-      </div>
-
-      {children}
+      <ul className="m-0 list-disc space-y-1 pl-5 leading-relaxed">
+        {points.map((p, i) => (
+          <li key={i}>{p}</li>
+        ))}
+      </ul>
     </div>
   );
+}
+
+/** A paragraph of the guide's running text. */
+export function P({ children }: { children: ReactNode }) {
+  return <p className="m-0 text-[12px] leading-relaxed text-vsc-fg/90">{children}</p>;
+}
+
+/** Numbered steps: what to click, in order. */
+export function Steps({ steps }: { steps: ReactNode[] }) {
+  return (
+    <ol className="m-0 list-decimal space-y-1.5 pl-5 text-[12px] leading-relaxed">
+      {steps.map((s, i) => (
+        <li key={i}>{s}</li>
+      ))}
+    </ol>
+  );
+}
+
+/** A bulleted list of the running text. */
+export function Bullets({ items }: { items: ReactNode[] }) {
+  return (
+    <ul className="m-0 list-disc space-y-1 pl-5 text-[12px] leading-relaxed">
+      {items.map((s, i) => (
+        <li key={i}>{s}</li>
+      ))}
+    </ul>
+  );
+}
+
+const CALLOUT = {
+  tip: { icon: VscLightbulb, color: "text-vsc-success", border: "border-l-vsc-success" },
+  info: { icon: VscInfo, color: "text-vsc-info", border: "border-l-vsc-info" },
+  warn: { icon: VscWarning, color: "text-vsc-warning", border: "border-l-vsc-warning" },
+} as const;
+
+/** A tip, a note or a warning beside the text. */
+export function Callout({
+  tone,
+  title,
+  children,
+}: {
+  tone: keyof typeof CALLOUT;
+  title?: string;
+  children: ReactNode;
+}) {
+  const { icon: Icon, color, border } = CALLOUT[tone];
+  const fallback = {
+    tip: tr("Consiglio", "Tip", "Conseil", "Tipp"),
+    info: tr("Da sapere", "Good to know", "À savoir", "Gut zu wissen"),
+    warn: tr("Attenzione", "Watch out", "Attention", "Achtung"),
+  }[tone];
+  return (
+    <div className={`rounded border-l-2 ${border} bg-vsc-bg/60 px-3 py-2 text-[12px]`}>
+      <div className="mb-0.5 flex items-center gap-1.5 font-semibold text-vsc-settings-header">
+        <Icon size={14} aria-hidden="true" className={color} />
+        {title ?? fallback}
+      </div>
+      <div className="leading-relaxed text-vsc-fg/90 select-text">{children}</div>
+    </div>
+  );
+}
+
+/** The technical side of a topic, folded: who wants it opens it. */
+export function Under({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <details className="group rounded-md border border-vsc-border bg-vsc-sidebar/35 text-[12px]">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 font-semibold text-vsc-settings-header select-none">
+        <VscChevronRight size={14} aria-hidden="true" className="transition-transform group-open:rotate-90" />
+        <VscTools size={14} aria-hidden="true" className="text-vsc-desc" />
+        {title ?? tr("Sotto il cofano", "Under the hood", "Sous le capot", "Unter der Haube")}
+      </summary>
+      <div className="space-y-2 border-t border-vsc-border px-3.5 py-2.5 leading-relaxed">{children}</div>
+    </details>
+  );
+}
+
+/** A label of the interface as the user sees it: «Avvia». */
+export function Ui({ children }: { children: ReactNode }) {
+  return <strong className="font-semibold text-vsc-settings-header">«{children}»</strong>;
+}
+
+/** A path, a file name, a command or a value to type. */
+export function Code({ children }: { children: ReactNode }) {
+  return (
+    <code className="rounded bg-vsc-input px-1 py-px font-mono text-[11px] break-all text-vsc-fg select-text">
+      {children}
+    </code>
+  );
+}
+
+/** A question and its answer (FAQ, problems). */
+export function QA({ q, children }: { q: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1 rounded-md border border-vsc-border bg-vsc-sidebar/35 px-3.5 py-2.5 text-[12px]">
+      <div className="font-semibold text-vsc-settings-header">{q}</div>
+      <div className="space-y-1.5 leading-relaxed text-vsc-fg/90">{children}</div>
+    </div>
+  );
+}
+
+/** A titled part of a topic. */
+export function Section({ title, children }: { title: string; children: ReactNode }) {
+  const id = useId();
+  return (
+    <EditorSection id={id} title={title}>
+      <div className="space-y-3">{children}</div>
+    </EditorSection>
+  );
+}
+
+/** What a topic receives: the kit it describes, when known. */
+export interface TopicProps {
+  info: AppInfo | null;
+  components: ComponentInfo[] | null;
+}
+
+/** The text of the topics of a chapter, by topic. */
+export type TopicTexts = Partial<Record<GuideTopicId, (p: TopicProps) => ReactNode>>;
+
+/** What a topic can do besides showing text: open another topic or a page. */
+export interface GuideNav {
+  select: (id: GuideTopicId) => void;
+  open: (page: AppPageTarget) => void;
+}
+
+export const GuideNavContext = createContext<GuideNav>({
+  select: () => undefined,
+  open: () => undefined,
+});
+
+/** A link to another topic, named by its title unless told otherwise. */
+export function See({ id, children }: { id: GuideTopicId; children?: ReactNode }) {
+  const nav = useContext(GuideNavContext);
+  return (
+    <Link
+      onClick={() => {
+        nav.select(id);
+      }}
+    >
+      {children ?? `${topicOf(id).title()} (${sectionCode(topicOf(id))})`}
+    </Link>
+  );
+}
+
+/** "Read next": the topics close to this one. */
+export function Related({ ids }: { ids: GuideTopicId[] }) {
+  return (
+    <div className="rounded-md border border-vsc-border bg-vsc-sidebar/35 px-3.5 py-2.5 text-[12px]">
+      <div className="mb-1 font-semibold text-vsc-settings-header">
+        {tr("Argomenti collegati", "Related topics", "Sujets liés", "Verwandte Themen")}
+      </div>
+      <ul className="m-0 list-none space-y-0.5 p-0">
+        {ids.map((id) => (
+          <li key={id} className="flex items-center gap-1.5">
+            <VscArrowRight size={12} aria-hidden="true" className="text-vsc-desc" />
+            <See id={id} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** A button that opens a page of the app. */
+export function Go({ page, children }: { page: AppPageTarget; children: ReactNode }) {
+  const nav = useContext(GuideNavContext);
+  return (
+    <Button
+      small
+      variant="secondary"
+      onClick={() => {
+        nav.open(page);
+      }}
+    >
+      <span className="inline-flex items-center gap-1">
+        {children}
+        <VscArrowRight size={12} aria-hidden="true" />
+      </span>
+    </Button>
+  );
+}
+
+/** A chain of steps drawn as boxes and arrows: how something flows. */
+export function Flow({ steps }: { steps: { title: string; text: string }[] }) {
+  return (
+    <ol className="m-0 flex list-none flex-wrap items-stretch gap-1.5 p-0 text-[12px]">
+      {steps.map((s, i) => (
+        <li key={s.title} className="flex items-stretch gap-1.5">
+          <div className="flex w-40 flex-col gap-0.5 rounded-md border border-vsc-border bg-vsc-sidebar/50 px-2.5 py-2">
+            <div className="flex items-center gap-1.5 font-semibold text-vsc-settings-header">
+              <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-vsc-badge text-[10px] text-vsc-badge-fg">
+                {i + 1}
+              </span>
+              {s.title}
+            </div>
+            <div className="leading-snug text-vsc-desc">{s.text}</div>
+          </div>
+          {i < steps.length - 1 && (
+            <VscArrowRight size={14} aria-hidden="true" className="shrink-0 self-center text-vsc-desc" />
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** A plain table of the running text. */
+export function Table({ columns, rows }: { columns: string[]; rows: ReactNode[][] }) {
+  return (
+    <div className="overflow-x-auto rounded border border-vsc-border">
+      <DataTable columns={columns} className="w-full border-collapse text-[12px]">
+        {rows.map((r, i) => (
+          <tr key={i} className="border-t border-vsc-border hover:bg-vsc-list-hover/40">
+            {r.map((c, j) => (
+              <td key={j} className="px-2.5 py-2 align-top leading-relaxed">
+                {c}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </DataTable>
+    </div>
+  );
+}
+
+/** A key of the keyboard: Ctrl, Invio. */
+export function Key({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="rounded border border-b-2 border-vsc-keybinding-border border-b-vsc-keybinding-bottom bg-vsc-keybinding px-1 font-mono text-[11px] text-vsc-keybinding-fg">
+      {children}
+    </kbd>
+  );
+}
+
+/** A labelled group of cards, two per row on wide windows. */
+export function Cards({ children }: { children: ReactNode }) {
+  return <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{children}</div>;
 }
 
 /** Quick buttons to open the kit's key folders in Windows Explorer. */

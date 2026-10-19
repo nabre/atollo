@@ -249,7 +249,7 @@ function PoolDetails({
   );
 }
 
-export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") => void } = {}) {
+export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void } = {}) {
   const [view, setView] = useState<WebServersView | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -319,7 +319,7 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "feat-services") =>
                 icon={VscBook}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
-                  onGuide("feat-services");
+                  onGuide("websites");
                 }}
               />
             )}

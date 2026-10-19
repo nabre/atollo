@@ -483,7 +483,7 @@ function ServiceDetails({
   );
 }
 
-export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") => void } = {}) {
+export function DatabasesPage({ onGuide }: { onGuide?: (topic: "databases") => void } = {}) {
   // The list is read now and every 3 s; an action answers with the new list.
   // The read's error and the action's are kept apart: a read that works
   // clears the first, not the second. After an action the list is read
@@ -534,7 +534,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "feat-services") 
                 icon={VscBook}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
-                  onGuide("feat-services");
+                  onGuide("databases");
                 }}
               />
             )}

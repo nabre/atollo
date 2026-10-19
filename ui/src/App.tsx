@@ -85,8 +85,8 @@ function pages(): Page[] {
 
 export function App() {
   const [page, setPage] = useState<PageId>("projects");
-  const [guideTopic, setGuideTopic] = useState<GuideTopicId>("overview");
-  const openGuide = useCallback((topic: GuideTopicId = "overview") => {
+  const [guideTopic, setGuideTopic] = useState<GuideTopicId>("welcome");
+  const openGuide = useCallback((topic: GuideTopicId = "welcome") => {
     setGuideTopic(topic);
     setPage("guide");
   }, []);
@@ -207,6 +207,7 @@ export function App() {
               onTools={() => {
                 setPage("components");
               }}
+              onGuide={openGuide}
             />
           ) : page === "guide" ? (
             <Suspense fallback={<div className="flex-1 p-5 text-vsc-desc">{t("Caricamento…")}</div>}>
