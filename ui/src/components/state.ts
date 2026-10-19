@@ -142,9 +142,14 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
   const plan = useMemo(() => {
     const items = list ?? [];
     const install = items.filter((c) => chosen.has(c.id) && !c.installed && !c.bootstrapStaged && c.available);
-    const remove = items.filter((c) => !chosen.has(c.id) && c.present);
+    // The choice is one for every system: a component taken out goes also
+    // from the other systems that still have it (Rust `remove_elsewhere`).
+    const shown = target ?? host;
+    const elsewhere = (id: string) =>
+      grid?.targets.some((s) => s.target !== shown && s.tools.some((x) => x.id === id && x.present)) ?? false;
+    const remove = items.filter((c) => !chosen.has(c.id) && (c.present || elsewhere(c.id)));
     return { install, remove, mb: install.reduce((n, c) => n + c.mb, 0) };
-  }, [list, chosen]);
+  }, [list, chosen, grid, target, host]);
 
   /** Component id → names of the projects that need it. */
   const neededBy = useMemo(() => {
