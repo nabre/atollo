@@ -29,7 +29,7 @@ export const PORTABLE: TopicTexts = {
             "Prima di staccare la chiavetta o il disco del kit, usa la pagina «Rimuovi l'unità».",
             "Before unplugging the kit's USB stick or drive, use the “Remove drive” page.",
             "Avant de débrancher la clé USB ou le disque du kit, utilisez la page « Retirer le lecteur ».",
-            "Bevor Sie den USB-Stick oder das Laufwerk des Kits abziehen, verwenden Sie die Seite „Laufwerk entfernen“.",
+            "Bevor du den USB-Stick oder das Laufwerk des Kits abziehst, verwende die Seite „Laufwerk entfernen“.",
           ),
           tr(
             "Chiude con ordine tutto ciò che il kit ha aperto: progetti, server, editor, console, database.",
@@ -41,7 +41,7 @@ export const PORTABLE: TopicTexts = {
             "Poi chiudi Atollo e rimuovi l'unità con la «Rimozione sicura dell'hardware» di Windows.",
             "Then close Atollo and remove the drive with Windows' “Safely Remove Hardware”.",
             "Fermez ensuite Atollo et retirez le lecteur avec le « Retirer le périphérique en toute sécurité » de Windows.",
-            "Schließen Sie dann Atollo und entfernen Sie das Laufwerk mit „Hardware sicher entfernen“ von Windows.",
+            "Schließe dann Atollo und entferne das Laufwerk mit „Hardware sicher entfernen“ von Windows.",
           ),
         ]}
       />
@@ -58,7 +58,7 @@ export const PORTABLE: TopicTexts = {
           "Che cosa è aperto adesso e il pulsante che chiude tutto prima di staccare l'unità.",
           "What is open right now and the button that closes everything before you unplug the drive.",
           "Ce qui est ouvert maintenant et le bouton qui ferme tout avant de débrancher le lecteur.",
-          "Was gerade geöffnet ist und die Schaltfläche, die alles schließt, bevor Sie das Laufwerk abziehen.",
+          "Was gerade geöffnet ist und die Schaltfläche, die alles schließt, bevor du das Laufwerk abziehst.",
         )}
       />
 
@@ -80,31 +80,31 @@ export const PORTABLE: TopicTexts = {
               "Salva il lavoro aperto nell'editor e negli altri programmi.",
               "Save the open work in the editor and the other programs.",
               "Enregistrez le travail ouvert dans l'éditeur et les autres programmes.",
-              "Speichern Sie die offene Arbeit im Editor und in den anderen Programmen.",
+              "Speichere die offene Arbeit im Editor und in den anderen Programmen.",
             ),
             tr(
               "Apri «Rimuovi l'unità» (l'ultima icona in basso nella barra delle attività). La parte «Aperti adesso» elenca che cosa è aperto: installazione in corso, editor, console, progetti avviati, database avviati e i programmi del kit avviati fuori dall'app, con nome e PID.",
               "Open “Remove drive” (the last icon at the bottom of the activity bar). The “Open now” part lists what is open: installation in progress, editor, consoles, running projects, running databases and the kit programs started outside the app, with name and PID.",
               "Ouvrez « Retirer le lecteur » (la dernière icône en bas de la barre d'activité). La partie « Ouverts actuellement » liste ce qui est ouvert : installation en cours, éditeur, consoles, projets lancés, bases de données démarrées et les programmes du kit lancés hors de l'application, avec nom et PID.",
-              "Öffnen Sie „Laufwerk entfernen“ (das letzte Symbol unten in der Aktivitätsleiste). Der Teil „Derzeit geöffnet“ listet auf, was geöffnet ist: laufende Installation, Editor, Konsolen, gestartete Projekte, gestartete Datenbanken und die außerhalb der App gestarteten Programme des Kits, mit Name und PID.",
+              "Öffne „Laufwerk entfernen“ (das letzte Symbol unten in der Aktivitätsleiste). Der Teil „Derzeit geöffnet“ listet auf, was geöffnet ist: laufende Installation, Editor, Konsolen, gestartete Projekte, gestartete Datenbanken und die außerhalb der App gestarteten Programme des Kits, mit Name und PID.",
             ),
             tr(
               "Premi «Chiudi tutto e prepara la rimozione».",
               "Press “Close everything and prepare for removal”.",
               "Appuyez sur « Tout fermer et préparer le retrait ».",
-              "Klicken Sie auf „Alles schließen und Entfernen vorbereiten“.",
+              "Klicke auf „Alles schließen und Entfernen vorbereiten“.",
             ),
             tr(
               "Quando compare «Programmi del kit chiusi e accesso di Antigravity salvato nel kit.», premi «Chiudi Atollo». Se qualcosa è rimasto aperto, è elencato sotto «Ancora aperti (chiudili a mano)».",
               "When “Kit programs closed and Antigravity sign-in saved in the kit.” appears, press “Close Atollo”. If something is still open, it is listed under “Still open (close them manually)”.",
               "Quand « Programmes du kit fermés et connexion d'Antigravity enregistrée dans le kit. » apparaît, appuyez sur « Fermer Atollo ». Si quelque chose est resté ouvert, c'est listé sous « Encore ouverts (fermez-les manuellement) ».",
-              "Wenn „Programme des Kits geschlossen und Antigravity-Anmeldung im Kit gespeichert.“ erscheint, klicken Sie auf „Atollo schließen“. Wenn etwas geöffnet geblieben ist, steht es unter „Noch geöffnet (schließen Sie sie manuell)“.",
+              "Wenn „Programme des Kits geschlossen und Antigravity-Anmeldung im Kit gespeichert.“ erscheint, klicke auf „Atollo schließen“. Wenn etwas geöffnet geblieben ist, steht es unter „Noch geöffnet (schließe sie manuell)“.",
             ),
             tr(
               "Rimuovi l'unità dal sistema: su Windows con l'icona «Rimozione sicura dell'hardware»; su macOS espellendola dal Finder.",
               "Remove the drive from the system: on Windows with the “Safely Remove Hardware” icon; on macOS by ejecting it from the Finder.",
               "Retirez le lecteur du système : sur Windows avec l'icône « Retirer le périphérique en toute sécurité » ; sur macOS en l'éjectant depuis le Finder.",
-              "Entfernen Sie das Laufwerk über das System: unter Windows mit dem Symbol „Hardware sicher entfernen“; unter macOS, indem Sie es im Finder auswerfen.",
+              "Entferne das Laufwerk über das System: unter Windows mit dem Symbol „Hardware sicher entfernen“; unter macOS, indem du es im Finder auswirfst.",
             ),
           ]}
         />
@@ -113,7 +113,7 @@ export const PORTABLE: TopicTexts = {
             "I file non salvati nei programmi elencati andranno persi. La pagina non espelle l'unità da sola: l'ultimo passo lo fai tu dal sistema.",
             "Unsaved files in the listed programs will be lost. The page does not eject the drive by itself: you do the last step from the system.",
             "Les fichiers non enregistrés dans les programmes listés seront perdus. La page n'éjecte pas le lecteur toute seule : c'est vous qui faites la dernière étape depuis le système.",
-            "Nicht gespeicherte Dateien in den aufgelisteten Programmen gehen verloren. Die Seite wirft das Laufwerk nicht selbst aus: Den letzten Schritt machen Sie über das System.",
+            "Nicht gespeicherte Dateien in den aufgelisteten Programmen gehen verloren. Die Seite wirft das Laufwerk nicht selbst aus: Den letzten Schritt machst du über das System.",
           )}
         </Callout>
         <Go page="eject">
@@ -139,7 +139,7 @@ export const PORTABLE: TopicTexts = {
             "Se c'è qualcosa di aperto, Atollo chiede «Chiudere Atollo?» ed elenca che cosa si chiuderà. «Chiudi tutto» ferma azioni e server, spegne i database con ordine ed esce. È sicuro anche questo; la pagina «Rimuovi l'unità» in più chiude i programmi del kit avviati fuori dall'app (per esempio da una console) e ti dice se resta qualcosa.",
             "If something is open, Atollo asks “Close Atollo?” and lists what will be closed. “Close everything” stops actions and servers, shuts down the databases neatly and exits. This is safe too; the “Remove drive” page also closes the kit programs started outside the app (for example from a console) and tells you if anything is left.",
             "Si quelque chose est ouvert, Atollo demande « Fermer Atollo ? » et liste ce qui va être fermé. « Tout fermer » arrête les actions et les serveurs, éteint proprement les bases de données et quitte. C'est sûr aussi ; la page « Retirer le lecteur » ferme en plus les programmes du kit lancés hors de l'application (par exemple depuis une console) et vous dit s'il reste quelque chose.",
-            "Wenn etwas geöffnet ist, fragt Atollo „Atollo schließen?“ und listet auf, was geschlossen wird. „Alles schließen“ stoppt Aktionen und Server, fährt die Datenbanken geordnet herunter und beendet sich. Auch das ist sicher; die Seite „Laufwerk entfernen“ schließt zusätzlich die außerhalb der App gestarteten Programme des Kits (zum Beispiel aus einer Konsole) und sagt Ihnen, ob etwas übrig bleibt.",
+            "Wenn etwas geöffnet ist, fragt Atollo „Atollo schließen?“ und listet auf, was geschlossen wird. „Alles schließen“ stoppt Aktionen und Server, fährt die Datenbanken geordnet herunter und beendet sich. Auch das ist sicher; die Seite „Laufwerk entfernen“ schließt zusätzlich die außerhalb der App gestarteten Programme des Kits (zum Beispiel aus einer Konsole) und sagt dir, ob etwas übrig bleibt.",
           )}
         </P>
       </Section>
@@ -225,7 +225,7 @@ export const PORTABLE: TopicTexts = {
             "Il kit non trova i programmi del PC che hanno aperto un file della chiavetta (per esempio un documento aperto in un'app esterna): chiudili tu.",
             "The kit cannot find the PC's programs that have opened a file on the USB stick (for example a document open in an outside app): close them yourself.",
             "Le kit ne trouve pas les programmes du PC qui ont ouvert un fichier de la clé USB (par exemple un document ouvert dans une application externe) : fermez-les vous-même.",
-            "Das Kit findet keine Programme des PCs, die eine Datei des USB-Sticks geöffnet haben (zum Beispiel ein Dokument in einer externen App): Schließen Sie sie selbst.",
+            "Das Kit findet keine Programme des PCs, die eine Datei des USB-Sticks geöffnet haben (zum Beispiel ein Dokument in einer externen App): Schließe sie selbst.",
           )}
         </P>
       </Under>
@@ -242,7 +242,7 @@ export const PORTABLE: TopicTexts = {
             "Puoi spostare o copiare la cartella del kit dove vuoi: un'altra lettera, un'altra cartella, un altro PC.",
             "You can move or copy the kit folder wherever you like: another drive letter, another folder, another PC.",
             "Vous pouvez déplacer ou copier le dossier du kit où vous voulez : une autre lettre, un autre dossier, un autre PC.",
-            "Sie können den Kit-Ordner verschieben oder kopieren, wohin Sie wollen: ein anderer Laufwerksbuchstabe, ein anderer Ordner, ein anderer PC.",
+            "Du kannst den Kit-Ordner verschieben oder kopieren, wohin du willst: ein anderer Laufwerksbuchstabe, ein anderer Ordner, ein anderer PC.",
           ),
           tr(
             "Al primo avvio nel nuovo posto il kit se ne accorge e sistema da solo i percorsi.",
@@ -272,7 +272,7 @@ export const PORTABLE: TopicTexts = {
             "Su un altro PC la chiavetta potrebbe diventare E: invece di D:. Non devi fare niente: all'avvio il kit confronta la cartella attuale con quella dell'ultima volta e, se è cambiata, mostra «Il kit è stato spostato: prima era in …, ora in …» e aggiorna i percorsi.",
             "On another PC the USB stick might become E: instead of D:. You do not have to do anything: at start the kit compares the current folder with the one from last time and, if it changed, shows “The kit has been moved: it was in …, it is now in …” and updates the paths.",
             "Sur un autre PC, la clé USB pourrait devenir E: au lieu de D:. Vous n'avez rien à faire : au démarrage, le kit compare le dossier actuel avec celui de la dernière fois et, s'il a changé, affiche « Le kit a été déplacé : il était dans …, il est maintenant dans … » et met à jour les chemins.",
-            "Auf einem anderen PC könnte der USB-Stick zu E: statt D: werden. Sie müssen nichts tun: Beim Start vergleicht das Kit den aktuellen Ordner mit dem vom letzten Mal und zeigt, wenn er sich geändert hat, „Das Kit wurde verschoben: Es lag in …, jetzt liegt es in …“ und aktualisiert die Pfade.",
+            "Auf einem anderen PC könnte der USB-Stick zu E: statt D: werden. Du musst nichts tun: Beim Start vergleicht das Kit den aktuellen Ordner mit dem vom letzten Mal und zeigt, wenn er sich geändert hat, „Das Kit wurde verschoben: Es lag in …, jetzt liegt es in …“ und aktualisiert die Pfade.",
           )}
         </P>
         <Bullets
@@ -308,7 +308,7 @@ export const PORTABLE: TopicTexts = {
             "Si può aprire un kit alla volta per cartella: avviare di nuovo Atollo dalla stessa cartella porta in primo piano la finestra già aperta. Due kit diversi (due chiavette) possono invece girare insieme.",
             "Only one kit at a time can be open per folder: starting Atollo again from the same folder brings the window already open to the front. Two different kits (two USB sticks), on the other hand, can run together.",
             "On ne peut ouvrir qu'un kit à la fois par dossier : relancer Atollo depuis le même dossier met au premier plan la fenêtre déjà ouverte. Deux kits différents (deux clés USB) peuvent en revanche tourner ensemble.",
-            "Pro Ordner kann jeweils nur ein Kit geöffnet sein: Wenn Sie Atollo aus demselben Ordner erneut starten, wird das bereits geöffnete Fenster in den Vordergrund geholt. Zwei verschiedene Kits (zwei USB-Sticks) können dagegen gleichzeitig laufen.",
+            "Pro Ordner kann jeweils nur ein Kit geöffnet sein: Wenn du Atollo aus demselben Ordner erneut startest, wird das bereits geöffnete Fenster in den Vordergrund geholt. Zwei verschiedene Kits (zwei USB-Sticks) können dagegen gleichzeitig laufen.",
           )}
         </Callout>
       </Section>
@@ -335,19 +335,19 @@ export const PORTABLE: TopicTexts = {
               "Formatta la chiavetta in exFAT, che tutti e tre i sistemi leggono e scrivono.",
               "Format the USB stick as exFAT, which all three systems can read and write.",
               "Formatez la clé USB en exFAT, que les trois systèmes savent lire et écrire.",
-              "Formatieren Sie den USB-Stick mit exFAT, das alle drei Systeme lesen und schreiben können.",
+              "Formatiere den USB-Stick mit exFAT, das alle drei Systeme lesen und schreiben können.",
             ),
             tr(
               "Metti nella cartella del kit l'eseguibile di ciascun sistema (Atollo.exe, Atollo.app, il file AppImage).",
               "Put the executable of each system in the kit folder (Atollo.exe, Atollo.app, the AppImage file).",
               "Placez dans le dossier du kit l'exécutable de chaque système (Atollo.exe, Atollo.app, le fichier AppImage).",
-              "Legen Sie die ausführbare Datei jedes Systems in den Kit-Ordner (Atollo.exe, Atollo.app, die AppImage-Datei).",
+              "Leg die ausführbare Datei jedes Systems in den Kit-Ordner (Atollo.exe, Atollo.app, die AppImage-Datei).",
             ),
             tr(
               "Su ogni sistema, apri Atollo: alla prima apertura installa i componenti scelti per quel sistema. In alternativa, dalla pagina Strumenti scegli quel sistema in «Piattaforma» e prepara i programmi in anticipo da un altro PC.",
               "On each system, open Atollo: the first time it installs the components chosen for that system. Alternatively, on the Tools page choose that system in “Platform” and prepare the programs in advance from another PC.",
               "Sur chaque système, ouvrez Atollo : à la première ouverture, il installe les composants choisis pour ce système. Sinon, dans la page Outils, choisissez ce système dans « Plateforme » et préparez les programmes à l'avance depuis un autre PC.",
-              "Öffnen Sie Atollo auf jedem System: Beim ersten Öffnen installiert es die für dieses System gewählten Komponenten. Alternativ wählen Sie auf der Seite Werkzeuge dieses System unter „Plattform“ und bereiten die Programme vorab auf einem anderen PC vor.",
+              "Öffne Atollo auf jedem System: Beim ersten Öffnen installiert es die für dieses System gewählten Komponenten. Alternativ wählst du auf der Seite Werkzeuge dieses System unter „Plattform“ und bereitest die Programme vorab auf einem anderen PC vor.",
             ),
           ]}
         />
@@ -356,7 +356,7 @@ export const PORTABLE: TopicTexts = {
             "Un database usato da più sistemi va sempre spento prima di cambiare PC (usa «Rimuovi l'unità»). Su macOS e Linux alcuni componenti (R, Ruby, MongoDB e SQLite su Linux, make) vanno reinstallati quando il kit cambia cartella: compaiono come «da aggiornare» e il kit li reinstalla da solo, senza rete se hai attivato «Pacchetti per reinstallare senza rete».",
             "A database used from several systems must always be shut down before changing PC (use “Remove drive”). On macOS and Linux some components (R, Ruby, MongoDB and SQLite on Linux, make) must be reinstalled when the kit changes folder: they show as “to update” and the kit reinstalls them by itself, without the network if you turned on “Packages to reinstall without the network”.",
             "Une base de données utilisée par plusieurs systèmes doit toujours être arrêtée avant de changer de PC (utilisez « Retirer le lecteur »). Sur macOS et Linux, certains composants (R, Ruby, MongoDB et SQLite sur Linux, make) doivent être réinstallés quand le kit change de dossier : ils apparaissent comme « à mettre à jour » et le kit les réinstalle tout seul, sans réseau si vous avez activé « Paquets pour réinstaller sans réseau ».",
-            "Eine Datenbank, die von mehreren Systemen genutzt wird, muss vor dem PC-Wechsel immer heruntergefahren werden (verwenden Sie „Laufwerk entfernen“). Unter macOS und Linux müssen einige Komponenten (R, Ruby, MongoDB und SQLite unter Linux, make) neu installiert werden, wenn das Kit den Ordner wechselt: Sie erscheinen als „zu aktualisieren“ und das Kit installiert sie selbst neu, ohne Netzwerk, wenn Sie „Pakete zum Neuinstallieren ohne Netzwerk“ aktiviert haben.",
+            "Eine Datenbank, die von mehreren Systemen genutzt wird, muss vor dem PC-Wechsel immer heruntergefahren werden (verwende „Laufwerk entfernen“). Unter macOS und Linux müssen einige Komponenten (R, Ruby, MongoDB und SQLite unter Linux, make) neu installiert werden, wenn das Kit den Ordner wechselt: Sie erscheinen als „zu aktualisieren“ und das Kit installiert sie selbst neu, ohne Netzwerk, wenn du „Pakete zum Neuinstallieren ohne Netzwerk“ aktiviert hast.",
           )}
         </Callout>
         <Under>
@@ -384,7 +384,7 @@ export const PORTABLE: TopicTexts = {
                 "macOS: l'app non è autenticata da Apple. Se macOS la apre da una posizione temporanea («App Translocation»), Atollo si ferma e mostra il comando xattr da eseguire per togliere la quarantena. Linux: servono glibc 2.35 o più recente e WebKitGTK 4.1; se mancano, Atollo mostra il comando per installarli.",
                 "macOS: the app is not notarized by Apple. If macOS opens it from a temporary location (“App Translocation”), Atollo stops and shows the xattr command to run to remove the quarantine. Linux: glibc 2.35 or newer and WebKitGTK 4.1 are needed; if they are missing, Atollo shows the command to install them.",
                 "macOS : l'application n'est pas notarisée par Apple. Si macOS l'ouvre depuis un emplacement temporaire (« App Translocation »), Atollo s'arrête et affiche la commande xattr à exécuter pour retirer la quarantaine. Linux : il faut glibc 2.35 ou plus récent et WebKitGTK 4.1 ; s'ils manquent, Atollo affiche la commande pour les installer.",
-                "macOS: Die App ist nicht von Apple beglaubigt. Wenn macOS sie von einem temporären Ort öffnet („App Translocation“), hält Atollo an und zeigt den xattr-Befehl, mit dem Sie die Quarantäne aufheben. Linux: Benötigt werden glibc 2.35 oder neuer und WebKitGTK 4.1; fehlen sie, zeigt Atollo den Befehl zum Installieren.",
+                "macOS: Die App ist nicht von Apple beglaubigt. Wenn macOS sie von einem temporären Ort öffnet („App Translocation“), hält Atollo an und zeigt den xattr-Befehl, mit dem du die Quarantäne aufhebst. Linux: Benötigt werden glibc 2.35 oder neuer und WebKitGTK 4.1; fehlen sie, zeigt Atollo den Befehl zum Installieren.",
               ),
             ]}
           />
@@ -403,7 +403,7 @@ export const PORTABLE: TopicTexts = {
             "Atollo si aggiorna da solo: scarica la nuova versione e la mette al posto della vecchia quando chiudi l'app.",
             "Atollo updates itself: it downloads the new version and puts it in place of the old one when you close the app.",
             "Atollo se met à jour tout seul : il télécharge la nouvelle version et la met à la place de l'ancienne quand vous fermez l'application.",
-            "Atollo aktualisiert sich selbst: Es lädt die neue Version herunter und setzt sie an die Stelle der alten, wenn Sie die App schließen.",
+            "Atollo aktualisiert sich selbst: Es lädt die neue Version herunter und setzt sie an die Stelle der alten, wenn du die App schließt.",
           ),
           tr(
             "Gli strumenti si aggiornano dalla pagina Strumenti, con «Aggiorna» su una riga o «Aggiorna tutto».",
@@ -426,7 +426,7 @@ export const PORTABLE: TopicTexts = {
             "Con «Aggiornamento automatico» attivo (Impostazioni › Generale), venti secondi dopo l'avvio il kit controlla se c'è una nuova versione, la scarica, ne verifica l'impronta e la prepara. Quando chiudi l'app, la nuova versione prende il posto della vecchia; al successivo avvio la vecchia copia viene cancellata.",
             "With “Automatic update” on (Settings › General), twenty seconds after start the kit checks whether there is a new version, downloads it, verifies its hash and prepares it. When you close the app, the new version takes the place of the old one; at the next start the old copy is deleted.",
             "Avec « Mise à jour automatique » activée (Paramètres › Général), vingt secondes après le démarrage le kit vérifie s'il y a une nouvelle version, la télécharge, en vérifie l'empreinte et la prépare. Quand vous fermez l'application, la nouvelle version prend la place de l'ancienne ; au démarrage suivant, l'ancienne copie est supprimée.",
-            "Mit aktivem „Automatisches Update“ (Einstellungen › Allgemein) prüft das Kit zwanzig Sekunden nach dem Start, ob es eine neue Version gibt, lädt sie herunter, prüft ihren Hash und bereitet sie vor. Wenn Sie die App schließen, tritt die neue Version an die Stelle der alten; beim nächsten Start wird die alte Kopie gelöscht.",
+            "Mit aktivem „Automatisches Update“ (Einstellungen › Allgemein) prüft das Kit zwanzig Sekunden nach dem Start, ob es eine neue Version gibt, lädt sie herunter, prüft ihren Hash und bereitet sie vor. Wenn du die App schließt, tritt die neue Version an die Stelle der alten; beim nächsten Start wird die alte Kopie gelöscht.",
           )}
         </P>
         <P>
@@ -434,7 +434,7 @@ export const PORTABLE: TopicTexts = {
             "In Impostazioni › «Aggiornamenti» vedi lo stato («Atollo … è la versione più recente.», «La versione … è pronta: sostituisce questa alla chiusura di Atollo.») e il pulsante «Cerca aggiornamenti», che controlla e scarica subito anche con l'aggiornamento automatico spento.",
             "In Settings › “Updates” you see the state (“Atollo … is the latest version.”, “Version … is ready: it replaces this one when Atollo closes.”) and the “Check for updates” button, which checks and downloads right away even with automatic update off.",
             "Dans Paramètres › « Mises à jour », vous voyez l'état (« Atollo … est la version la plus récente. », « La version … est prête : elle remplacera celle-ci à la fermeture d'Atollo. ») et le bouton « Rechercher des mises à jour », qui vérifie et télécharge tout de suite, même avec la mise à jour automatique désactivée.",
-            "Unter Einstellungen › „Updates“ sehen Sie den Stand („Atollo … ist die neueste Version.“, „Version … ist bereit: Sie ersetzt diese beim Schließen von Atollo.“) und die Schaltfläche „Nach Updates suchen“, die sofort prüft und herunterlädt, auch wenn das automatische Update ausgeschaltet ist.",
+            "Unter Einstellungen › „Updates“ siehst du den Stand („Atollo … ist die neueste Version.“, „Version … ist bereit: Sie ersetzt diese beim Schließen von Atollo.“) und die Schaltfläche „Nach Updates suchen“, die sofort prüft und herunterlädt, auch wenn das automatische Update ausgeschaltet ist.",
           )}
         </P>
         <Callout tone="info">
@@ -442,7 +442,7 @@ export const PORTABLE: TopicTexts = {
             "Su macOS e Linux, se usi il programma semplice (dall'archivio tar.gz) invece di Atollo.app o dell'AppImage, il kit non può sostituirlo: ti dice che la nuova versione è disponibile e la scarichi dalla pagina della release.",
             "On macOS and Linux, if you use the plain program (from the tar.gz archive) instead of Atollo.app or the AppImage, the kit cannot replace it: it tells you the new version is available and you download it from the release page.",
             "Sur macOS et Linux, si vous utilisez le programme simple (de l'archive tar.gz) au lieu d'Atollo.app ou de l'AppImage, le kit ne peut pas le remplacer : il vous dit que la nouvelle version est disponible et vous la téléchargez depuis la page de la release.",
-            "Wenn Sie unter macOS und Linux das einfache Programm (aus dem tar.gz-Archiv) statt Atollo.app oder des AppImage verwenden, kann das Kit es nicht ersetzen: Es teilt Ihnen mit, dass die neue Version verfügbar ist, und Sie laden sie von der Seite des Releases herunter.",
+            "Wenn du unter macOS und Linux das einfache Programm (aus dem tar.gz-Archiv) statt Atollo.app oder des AppImage verwendest, kann das Kit es nicht ersetzen: Es teilt dir mit, dass die neue Version verfügbar ist, und du lädst sie von der Seite des Releases herunter.",
           )}
         </Callout>
         <Go page="settings">
@@ -476,7 +476,7 @@ export const PORTABLE: TopicTexts = {
               "Gli agenti seguono sempre l'ultima versione e non si aggiornano da soli mentre lavori: lo fa il kit con «Aggiorna».",
               "The agents always follow the latest version and do not update themselves while you work: the kit does it with “Refresh”.",
               "Les agents suivent toujours la dernière version et ne se mettent pas à jour tout seuls pendant que vous travaillez : c'est le kit qui le fait avec « Actualiser ».",
-              "Die Agenten folgen immer der neuesten Version und aktualisieren sich nicht selbst, während Sie arbeiten: Das macht das Kit mit „Aktualisieren“.",
+              "Die Agenten folgen immer der neuesten Version und aktualisieren sich nicht selbst, während du arbeitest: Das macht das Kit mit „Aktualisieren“.",
             ),
           ]}
         />
@@ -485,7 +485,7 @@ export const PORTABLE: TopicTexts = {
             "Aggiorna quando non hai progetti avviati: i programmi in uso non si possono sostituire, e la riga mostrerebbe «in uso: chiudi i programmi del kit e riprova».",
             "Update when you have no projects running: programs in use cannot be replaced, and the row would show “in use: close the kit programs and try again”.",
             "Mettez à jour quand aucun projet n'est lancé : les programmes en cours d'utilisation ne peuvent pas être remplacés, et la ligne afficherait « en cours d'utilisation : fermez les programmes du kit et réessayez ».",
-            "Aktualisieren Sie, wenn keine Projekte laufen: Programme in Verwendung lassen sich nicht ersetzen, und die Zeile würde „in Verwendung: Schließen Sie die Programme des Kits und versuchen Sie es erneut“ zeigen.",
+            "Aktualisiere, wenn keine Projekte laufen: Programme in Verwendung lassen sich nicht ersetzen, und die Zeile würde „in Verwendung: Schließe die Programme des Kits und versuche es erneut“ zeigen.",
           )}
         </Callout>
       </Section>
@@ -496,7 +496,7 @@ export const PORTABLE: TopicTexts = {
           rows={[
             [
               <Code key="p">projects\</Code>,
-              tr("I tuoi progetti.", "Your projects.", "Vos projets.", "Ihre Projekte."),
+              tr("I tuoi progetti.", "Your projects.", "Vos projets.", "Deine Projekte."),
             ],
             [
               <Code key="d">data\</Code>,
@@ -514,7 +514,7 @@ export const PORTABLE: TopicTexts = {
             "Dentro data puoi lasciare fuori data\\apps (i programmi) e data\\cache (file scaricati che si possono riscaricare): sono la parte più grande e il kit li ricostruisce. Per copiare i dati dei database in modo coerente, spegni prima i server (o usa «Rimuovi l'unità»).",
             "Inside data you can leave out data\\apps (the programs) and data\\cache (downloaded files that can be downloaded again): they are the biggest part and the kit rebuilds them. To copy the database data consistently, shut down the servers first (or use “Remove drive”).",
             "Dans data, vous pouvez laisser de côté data\\apps (les programmes) et data\\cache (fichiers téléchargés qui peuvent se retélécharger) : c'est la plus grosse partie et le kit les reconstruit. Pour copier les données des bases de données de façon cohérente, arrêtez d'abord les serveurs (ou utilisez « Retirer le lecteur »).",
-            "Innerhalb von data können Sie data\\apps (die Programme) und data\\cache (heruntergeladene Dateien, die sich erneut herunterladen lassen) weglassen: Sie sind der größte Teil, und das Kit baut sie neu auf. Um die Daten der Datenbanken konsistent zu kopieren, fahren Sie zuerst die Server herunter (oder verwenden Sie „Laufwerk entfernen“).",
+            "Innerhalb von data kannst du data\\apps (die Programme) und data\\cache (heruntergeladene Dateien, die sich erneut herunterladen lassen) weglassen: Sie sind der größte Teil, und das Kit baut sie neu auf. Um die Daten der Datenbanken konsistent zu kopieren, fahr zuerst die Server herunter (oder verwende „Laufwerk entfernen“).",
           )}
         </P>
         <Callout tone="warn">
@@ -522,7 +522,7 @@ export const PORTABLE: TopicTexts = {
             "La cartella data contiene accessi e password. Tieni le copie in un posto sicuro, e cifra la chiavetta se la porti in giro (per esempio con BitLocker To Go su Windows).",
             "The data folder contains sign-ins and passwords. Keep the backups in a safe place, and encrypt the USB stick if you carry it around (for example with BitLocker To Go on Windows).",
             "Le dossier data contient des connexions et des mots de passe. Gardez les copies en lieu sûr, et chiffrez la clé USB si vous la transportez (par exemple avec BitLocker To Go sur Windows).",
-            "Der Ordner data enthält Anmeldungen und Passwörter. Bewahren Sie die Sicherungen an einem sicheren Ort auf, und verschlüsseln Sie den USB-Stick, wenn Sie ihn mitnehmen (zum Beispiel mit BitLocker To Go unter Windows).",
+            "Der Ordner data enthält Anmeldungen und Passwörter. Bewahre die Sicherungen an einem sicheren Ort auf, und verschlüssele den USB-Stick, wenn du ihn mitnimmst (zum Beispiel mit BitLocker To Go unter Windows).",
           )}
         </Callout>
         <P>

@@ -52,13 +52,13 @@ export const SERVICES: TopicTexts = {
             "Ogni progetto ha poi il suo database e il suo utente, che si creano dalla pagina del progetto.",
             "Each project then has its own database and its own user, which you create from the project's page.",
             "Chaque projet a ensuite sa propre base de données et son propre utilisateur, que vous créez depuis la page du projet.",
-            "Jedes Projekt hat dann eine eigene Datenbank und einen eigenen Benutzer, die Sie auf der Seite des Projekts erstellen.",
+            "Jedes Projekt hat dann eine eigene Datenbank und einen eigenen Benutzer, die du auf der Seite des Projekts erstellst.",
           ),
           tr(
             "MySQL si esplora con phpMyAdmin; MongoDB con la scheda «Contenuto», in sola lettura.",
             "You browse MySQL with phpMyAdmin; MongoDB with the “Content” tab, read-only.",
             "MySQL s'explore avec phpMyAdmin ; MongoDB avec l'onglet « Contenu », en lecture seule.",
-            "MySQL durchsuchen Sie mit phpMyAdmin, MongoDB mit der Registerkarte „Inhalt“, nur lesend.",
+            "MySQL durchsuchst du mit phpMyAdmin, MongoDB mit der Registerkarte „Inhalt“, nur lesend.",
           ),
         ]}
       />
@@ -190,7 +190,7 @@ export const SERVICES: TopicTexts = {
                 "«Versione» (se ne hai più di una; si cambia a server fermo), «Porta» (tra 1024 e 65535, vale dal prossimo avvio) e «Avvia con Atollo» (il server parte da solo all'apertura dell'app).",
                 "“Version” (if you have more than one; you change it while the server is stopped), “Port” (between 1024 and 65535, applies from the next start) and “Start with Atollo” (the server starts by itself when the app opens).",
                 "« Version » (si vous en avez plusieurs ; elle se change serveur arrêté), « Port » (entre 1024 et 65535, valable dès le prochain démarrage) et « Démarrer avec Atollo » (le serveur démarre tout seul à l'ouverture de l'application).",
-                "„Version“ (wenn Sie mehrere haben; sie wird bei gestopptem Server geändert), „Port“ (zwischen 1024 und 65535, gilt ab dem nächsten Start) und „Mit Atollo starten“ (der Server startet von selbst, wenn die App geöffnet wird).",
+                "„Version“ (wenn du mehrere hast; sie wird bei gestopptem Server geändert), „Port“ (zwischen 1024 und 65535, gilt ab dem nächsten Start) und „Mit Atollo starten“ (der Server startet von selbst, wenn die App geöffnet wird).",
               ),
             ],
             [
@@ -199,7 +199,7 @@ export const SERVICES: TopicTexts = {
                 "Compare se hai installato più versioni dello stesso server: ognuna gira sulla sua porta con i suoi dati (vedi sotto).",
                 "Appears if you have installed several versions of the same server: each runs on its own port with its own data (see below).",
                 "Apparaît si vous avez installé plusieurs versions du même serveur : chacune tourne sur son port avec ses données (voir plus bas).",
-                "Erscheint, wenn Sie mehrere Versionen desselben Servers installiert haben: Jede läuft auf ihrem eigenen Port mit ihren eigenen Daten (siehe unten).",
+                "Erscheint, wenn du mehrere Versionen desselben Servers installiert hast: Jede läuft auf ihrem eigenen Port mit ihren eigenen Daten (siehe unten).",
               ),
             ],
             [
@@ -235,7 +235,7 @@ export const SERVICES: TopicTexts = {
         <Table
           columns={[
             tr("Server", "Server", "Serveur", "Server"),
-            tr("Come vedi i dati", "How you see the data", "Comment voir les données", "Wie Sie die Daten sehen"),
+            tr("Come vedi i dati", "How you see the data", "Comment voir les données", "Wie du die Daten siehst"),
           ]}
           rows={[
             [
@@ -290,7 +290,7 @@ export const SERVICES: TopicTexts = {
             "Puoi installare più versioni di MySQL o di MongoDB (dalla pagina Strumenti). Il server usa quella scelta in «Versione», di solito la più recente. Le altre compaiono nella parte «Altre versioni»: ciascuna ha la sua porta (3307, 3308… per MySQL, assegnate al primo avvio) e la sua cartella dei dati, e si avvia insieme al server principale se un progetto la usa.",
             "You can install several versions of MySQL or MongoDB (from the Tools page). The server uses the one chosen in “Version”, usually the newest. The others appear in the “Other versions” part: each has its own port (3307, 3308… for MySQL, assigned at the first start) and its own data folder, and starts together with the main server if a project uses it.",
             "Vous pouvez installer plusieurs versions de MySQL ou de MongoDB (depuis la page Outils). Le serveur utilise celle choisie dans « Version », en général la plus récente. Les autres apparaissent dans la partie « Autres versions » : chacune a son port (3307, 3308… pour MySQL, attribués au premier démarrage) et son dossier de données, et démarre avec le serveur principal si un projet l'utilise.",
-            "Sie können mehrere Versionen von MySQL oder MongoDB installieren (auf der Seite Werkzeuge). Der Server verwendet die unter „Version“ gewählte, meist die neueste. Die anderen erscheinen im Teil „Weitere Versionen“: Jede hat ihren eigenen Port (3307, 3308… bei MySQL, beim ersten Start vergeben) und ihren eigenen Datenordner und startet zusammen mit dem Hauptserver, wenn ein Projekt sie verwendet.",
+            "Du kannst mehrere Versionen von MySQL oder MongoDB installieren (auf der Seite Werkzeuge). Der Server verwendet die unter „Version“ gewählte, meist die neueste. Die anderen erscheinen im Teil „Weitere Versionen“: Jede hat ihren eigenen Port (3307, 3308… bei MySQL, beim ersten Start vergeben) und ihren eigenen Datenordner und startet zusammen mit dem Hauptserver, wenn ein Projekt sie verwendet.",
           )}
         </P>
         <Bullets
@@ -299,7 +299,7 @@ export const SERVICES: TopicTexts = {
               "Al primo avvio di una versione più recente il kit copia i dati della precedente, che restano com'erano: puoi tornare indietro.",
               "At the first start of a newer version, the kit copies the data of the previous one, which stays as it was: you can go back.",
               "Au premier démarrage d'une version plus récente, le kit copie les données de la précédente, qui restent telles quelles : vous pouvez revenir en arrière.",
-              "Beim ersten Start einer neueren Version kopiert das Kit die Daten der vorherigen, die unverändert bleiben: Sie können zurückwechseln.",
+              "Beim ersten Start einer neueren Version kopiert das Kit die Daten der vorherigen, die unverändert bleiben: Du kannst zurückwechseln.",
             ),
             tr(
               "Un progetto sceglie la versione del server nella sua sezione «Database»; la porta gli arriva come DB_PORT.",
@@ -354,7 +354,7 @@ export const SERVICES: TopicTexts = {
             "La cartella data\\app\\db è leggibile solo dal tuo utente sui dischi NTFS. MySQL usa un file my.cnf scritto dal kit a ogni avvio (solo 127.0.0.1, niente log binario, nomi delle tabelle in minuscolo); MongoDB parte sempre con l'autenticazione. Il comando mysql nella console entra come root solo sulla versione principale.",
             "The data\\app\\db folder can be read only by your user on NTFS drives. MySQL uses a my.cnf file written by the kit at every start (only 127.0.0.1, no binary log, lowercase table names); MongoDB always starts with authentication. The mysql command in the console logs in as root only on the main version.",
             "Le dossier data\\app\\db n'est lisible que par votre utilisateur sur les disques NTFS. MySQL utilise un fichier my.cnf écrit par le kit à chaque démarrage (uniquement 127.0.0.1, pas de journal binaire, noms de tables en minuscules) ; MongoDB démarre toujours avec l'authentification. La commande mysql dans la console se connecte en tant que root uniquement sur la version principale.",
-            "Der Ordner data\\app\\db ist auf NTFS-Laufwerken nur für Ihren Benutzer lesbar. MySQL verwendet eine my.cnf-Datei, die das Kit bei jedem Start schreibt (nur 127.0.0.1, kein Binärlog, Tabellennamen in Kleinbuchstaben); MongoDB startet immer mit Authentifizierung. Der Befehl mysql in der Konsole meldet sich nur bei der Hauptversion als root an.",
+            "Der Ordner data\\app\\db ist auf NTFS-Laufwerken nur für deinen Benutzer lesbar. MySQL verwendet eine my.cnf-Datei, die das Kit bei jedem Start schreibt (nur 127.0.0.1, kein Binärlog, Tabellennamen in Kleinbuchstaben); MongoDB startet immer mit Authentifizierung. Der Befehl mysql in der Konsole meldet sich nur bei der Hauptversion als root an.",
           )}
         </P>
       </Under>
@@ -377,7 +377,7 @@ export const SERVICES: TopicTexts = {
             "«Scrivi in .env» mette la connessione nel file .env del progetto, dopo averti mostrato che cosa cambia.",
             "“Write to .env” puts the connection in the project's .env file, after showing you what changes.",
             "« Écrire dans .env » place la connexion dans le fichier .env du projet, après vous avoir montré ce qui change.",
-            "„In .env schreiben“ trägt die Verbindung in die .env-Datei des Projekts ein, nachdem es Ihnen gezeigt hat, was sich ändert.",
+            "„In .env schreiben“ trägt die Verbindung in die .env-Datei des Projekts ein, nachdem es dir gezeigt hat, was sich ändert.",
           ),
           tr(
             "«Esporta» salva una copia del database; «Ripristina…» la rimette.",
@@ -432,7 +432,7 @@ export const SERVICES: TopicTexts = {
               "Premi «Crea database e utente» nella parte del server che ti serve.",
               "Press “Create database and user” in the part of the server you need.",
               "Appuyez sur « Créer la base et l'utilisateur » dans la partie du serveur qu'il vous faut.",
-              "Drücken Sie „Datenbank und Benutzer erstellen“ im Teil des Servers, den Sie brauchen.",
+              "Drück „Datenbank und Benutzer erstellen“ im Teil des Servers, den du brauchst.",
             ),
             tr(
               "Il kit installa e avvia il server se serve, poi crea un database e un utente con il nome del progetto (minuscole, cifre e trattino basso: gestionale-fatture diventa gestionale_fatture) e una password di 32 caratteri.",
@@ -472,7 +472,7 @@ export const SERVICES: TopicTexts = {
               "Premi «Scrivi in .env».",
               "Press “Write to .env”.",
               "Appuyez sur « Écrire dans .env ».",
-              "Drücken Sie „In .env schreiben“.",
+              "Drück „In .env schreiben“.",
             ),
             tr(
               "Compare «Righe di .env che cambiano»: per ogni chiave il valore vecchio barrato e quello nuovo (password nascoste).",
@@ -484,7 +484,7 @@ export const SERVICES: TopicTexts = {
               "Premi «Scrivi» per confermare o «Annulla».",
               "Press “Write” to confirm, or “Cancel”.",
               "Appuyez sur « Écrire » pour confirmer ou sur « Annuler ».",
-              "Drücken Sie „Schreiben“ zum Bestätigen oder „Abbrechen“.",
+              "Drück „Schreiben“ zum Bestätigen oder „Abbrechen“.",
             ),
           ]}
         />
@@ -493,7 +493,7 @@ export const SERVICES: TopicTexts = {
             "Il kit sceglie le chiavi in base al tuo file .env:",
             "The kit chooses the keys based on your .env file:",
             "Le kit choisit les clés en fonction de votre fichier .env :",
-            "Das Kit wählt die Schlüssel anhand Ihrer .env-Datei:",
+            "Das Kit wählt die Schlüssel anhand deiner .env-Datei:",
           )}
         </P>
         <Table
@@ -561,7 +561,7 @@ export const SERVICES: TopicTexts = {
             "Il file .env contiene la password: non deve finire nel repository. Se .env non è nel file .gitignore, il kit lo segnala: aggiungilo.",
             "The .env file contains the password: it must not end up in the repository. If .env is not in the .gitignore file, the kit points it out: add it.",
             "Le fichier .env contient le mot de passe : il ne doit pas finir dans le dépôt. Si .env n'est pas dans le fichier .gitignore, le kit le signale : ajoutez-le.",
-            "Die .env-Datei enthält das Passwort: Sie darf nicht ins Repository gelangen. Steht .env nicht in der Datei .gitignore, weist das Kit darauf hin: Fügen Sie sie hinzu.",
+            "Die .env-Datei enthält das Passwort: Sie darf nicht ins Repository gelangen. Steht .env nicht in der Datei .gitignore, weist das Kit darauf hin: Füg sie hinzu.",
           )}
         </Callout>
       </Section>
@@ -575,19 +575,19 @@ export const SERVICES: TopicTexts = {
               "Nella parte «Copie» premi «Esporta»: compare «Copia salvata: …» e la copia si aggiunge all'elenco.",
               "In the “Copies” part press “Export”: “Copy saved: …” appears and the copy is added to the list.",
               "Dans la partie « Copies », appuyez sur « Exporter » : « Copie enregistrée : … » apparaît et la copie s'ajoute à la liste.",
-              "Drücken Sie im Teil „Kopien“ auf „Exportieren“: „Kopie gespeichert: …“ erscheint und die Kopie wird der Liste hinzugefügt.",
+              "Drück im Teil „Kopien“ auf „Exportieren“: „Kopie gespeichert: …“ erscheint und die Kopie wird der Liste hinzugefügt.",
             ),
             tr(
               "Per tornare a una copia premi «Ripristina…» accanto al file e conferma: «I dati attuali vengono sostituiti.»",
               "To go back to a copy, press “Restore…” next to the file and confirm: “The current data is replaced.”",
               "Pour revenir à une copie, appuyez sur « Restaurer… » à côté du fichier et confirmez : « Les données actuelles sont remplacées. »",
-              "Um zu einer Kopie zurückzukehren, drücken Sie „Wiederherstellen…“ neben der Datei und bestätigen: „Die aktuellen Daten werden ersetzt.“",
+              "Um zu einer Kopie zurückzukehren, drück „Wiederherstellen…“ neben der Datei und bestätige: „Die aktuellen Daten werden ersetzt.“",
             ),
             tr(
               "«Apri la cartella delle copie» apre la cartella: per ripristinare una copia arrivata da fuori (da un collega, da un altro kit) mettila lì e comparirà nell'elenco.",
               "“Open the copies folder” opens the folder: to restore a copy that came from outside (from a colleague, from another kit), put it there and it will appear in the list.",
               "« Ouvrir le dossier des copies » ouvre le dossier : pour restaurer une copie venue de l'extérieur (d'un collègue, d'un autre kit), placez-la là et elle apparaîtra dans la liste.",
-              "„Ordner der Kopien öffnen“ öffnet den Ordner: Um eine Kopie von außerhalb (von einem Kollegen, aus einem anderen Kit) wiederherzustellen, legen Sie sie dort ab, und sie erscheint in der Liste.",
+              "„Ordner der Kopien öffnen“ öffnet den Ordner: Um eine Kopie von außerhalb (von einem Kollegen, aus einem anderen Kit) wiederherzustellen, leg sie dort ab, und sie erscheint in der Liste.",
             ),
           ]}
         />
@@ -596,7 +596,7 @@ export const SERVICES: TopicTexts = {
             "Le copie stanno nel kit, in data\\projects\\<progetto>\\private\\backups. Per sicurezza tienine una anche fuori dal kit: se perdi la chiavetta, perdi anche le copie.",
             "The copies are in the kit, in data\\projects\\<project>\\private\\backups. To be safe, keep one outside the kit too: if you lose the USB stick, you also lose the copies.",
             "Les copies sont dans le kit, dans data\\projects\\<projet>\\private\\backups. Par sécurité, gardez-en aussi une hors du kit : si vous perdez la clé USB, vous perdez aussi les copies.",
-            "Die Kopien liegen im Kit, unter data\\projects\\<Projekt>\\private\\backups. Bewahren Sie zur Sicherheit auch eine außerhalb des Kits auf: Wenn Sie den USB-Stick verlieren, verlieren Sie auch die Kopien.",
+            "Die Kopien liegen im Kit, unter data\\projects\\<Projekt>\\private\\backups. Bewahr zur Sicherheit auch eine außerhalb des Kits auf: Wenn du den USB-Stick verlierst, verlierst du auch die Kopien.",
           )}
         </Callout>
       </Section>
@@ -614,7 +614,7 @@ export const SERVICES: TopicTexts = {
             "Se hai più versioni di MySQL o MongoDB, il menu «Versione del server» sceglie su quale gira il database del progetto. Cambiandola, database e utente si creano anche sulla nuova versione, vuoti: i dati si portano con una copia (Esporta sulla vecchia, Ripristina sulla nuova). Se la versione scelta non è installata, compare «Installa …».",
             "If you have several versions of MySQL or MongoDB, the “Server version” menu chooses which one the project's database runs on. When you change it, the database and user are also created on the new version, empty: you carry the data over with a copy (Export on the old one, Restore on the new one). If the chosen version is not installed, “Install …” appears.",
             "Si vous avez plusieurs versions de MySQL ou MongoDB, le menu « Version du serveur » choisit sur laquelle tourne la base de données du projet. Quand vous la changez, la base et l'utilisateur sont créés aussi sur la nouvelle version, vides : les données se transfèrent avec une copie (Exporter sur l'ancienne, Restaurer sur la nouvelle). Si la version choisie n'est pas installée, « Installer … » apparaît.",
-            "Wenn Sie mehrere Versionen von MySQL oder MongoDB haben, wählt das Menü „Server-Version“, auf welcher die Datenbank des Projekts läuft. Wenn Sie sie wechseln, werden Datenbank und Benutzer auch auf der neuen Version angelegt, leer: Die Daten übertragen Sie mit einer Kopie (Exportieren auf der alten, Wiederherstellen auf der neuen). Ist die gewählte Version nicht installiert, erscheint „… installieren“.",
+            "Wenn du mehrere Versionen von MySQL oder MongoDB hast, wählt das Menü „Server-Version“, auf welcher die Datenbank des Projekts läuft. Wenn du sie wechselst, werden Datenbank und Benutzer auch auf der neuen Version angelegt, leer: Die Daten überträgst du mit einer Kopie (Exportieren auf der alten, Wiederherstellen auf der neuen). Ist die gewählte Version nicht installiert, erscheint „… installieren“.",
           )}
         </P>
       </Section>
@@ -626,7 +626,7 @@ export const SERVICES: TopicTexts = {
               "Nomi, password e versioni del database del progetto: data\\projects\\<progetto>\\private\\db.json, leggibile solo dal tuo utente su NTFS.",
               "Names, passwords and versions of the project's database: data\\projects\\<project>\\private\\db.json, readable only by your user on NTFS.",
               "Noms, mots de passe et versions de la base de données du projet : data\\projects\\<projet>\\private\\db.json, lisible uniquement par votre utilisateur sur NTFS.",
-              "Namen, Passwörter und Versionen der Projektdatenbank: data\\projects\\<Projekt>\\private\\db.json, auf NTFS nur für Ihren Benutzer lesbar.",
+              "Namen, Passwörter und Versionen der Projektdatenbank: data\\projects\\<Projekt>\\private\\db.json, auf NTFS nur für deinen Benutzer lesbar.",
             ),
             tr(
               "MySQL: utente con caching_sha2_password su localhost e 127.0.0.1, tutti i permessi sul solo database del progetto. MongoDB: ruolo dbOwner sul database, authSource uguale al nome del database.",
@@ -644,7 +644,7 @@ export const SERVICES: TopicTexts = {
               "Eliminando il progetto dall'app, il kit elimina anche database e utente su ogni versione in cui li aveva creati.",
               "When you delete the project from the app, the kit also deletes the database and user on every version where it had created them.",
               "Quand vous supprimez le projet depuis l'application, le kit supprime aussi la base et l'utilisateur sur chaque version où il les avait créés.",
-              "Wenn Sie das Projekt in der App löschen, löscht das Kit auch Datenbank und Benutzer auf jeder Version, auf der es sie angelegt hatte.",
+              "Wenn du das Projekt in der App löschst, löscht das Kit auch Datenbank und Benutzer auf jeder Version, auf der es sie angelegt hatte.",
             ),
           ]}
         />
@@ -662,7 +662,7 @@ export const SERVICES: TopicTexts = {
             "Nella sezione «Sito web» di un progetto scegli una cartella e come servirla: file statici, PHP, Caddy o Apache.",
             "In a project's “Website” section you choose a folder and how to serve it: static files, PHP, Caddy or Apache.",
             "Dans la section « Site web » d'un projet, vous choisissez un dossier et la façon de le servir : fichiers statiques, PHP, Caddy ou Apache.",
-            "Im Abschnitt „Website“ eines Projekts wählen Sie einen Ordner und wie er bereitgestellt wird: statische Dateien, PHP, Caddy oder Apache.",
+            "Im Abschnitt „Website“ eines Projekts wählst du einen Ordner und wie er bereitgestellt wird: statische Dateien, PHP, Caddy oder Apache.",
           ),
           tr(
             "Con Caddy e Apache il sito entra in un server condiviso con gli altri progetti delle stesse versioni, su un indirizzo come http://mio-sito.localhost:8081.",
@@ -674,13 +674,13 @@ export const SERVICES: TopicTexts = {
             "La pagina «Server Web» mostra questi server condivisi (pool) e permette di crearne di tuoi (profili).",
             "The “Web Servers” page shows these shared servers (pools) and lets you create your own (profiles).",
             "La page « Serveurs Web » montre ces serveurs partagés (pools) et permet d'en créer à vous (profils).",
-            "Die Seite „Webserver“ zeigt diese gemeinsamen Server (Pools) und lässt Sie eigene erstellen (Profile).",
+            "Die Seite „Webserver“ zeigt diese gemeinsamen Server (Pools) und lässt dich eigene erstellen (Profile).",
           ),
           tr(
             "I siti rispondono solo a questo PC, salvo che tu non attivi la rete locale nelle Impostazioni.",
             "The sites respond only to this PC, unless you turn on the local network in Settings.",
             "Les sites ne répondent qu'à ce PC, sauf si vous activez le réseau local dans les Paramètres.",
-            "Die Websites antworten nur diesem PC, es sei denn, Sie aktivieren das lokale Netzwerk in den Einstellungen.",
+            "Die Websites antworten nur diesem PC, es sei denn, du aktivierst das lokale Netzwerk in den Einstellungen.",
           ),
         ]}
       />
@@ -726,31 +726,31 @@ export const SERVICES: TopicTexts = {
               "Apri il progetto e la sezione «Sito web».",
               "Open the project and its “Website” section.",
               "Ouvrez le projet et la section « Site web ».",
-              "Öffnen Sie das Projekt und den Abschnitt „Website“.",
+              "Öffne das Projekt und den Abschnitt „Website“.",
             ),
             tr(
               "In «Servi come sito web la cartella» scrivi la cartella da pubblicare: . per tutto il progetto, oppure per esempio public.",
               "In “Folder to serve as a website” write the folder to publish: . for the whole project, or for example public.",
               "Dans « Dossier à servir comme site web », écrivez le dossier à publier : . pour tout le projet, ou par exemple public.",
-              "Schreiben Sie in „Als Website bereitzustellender Ordner“ den zu veröffentlichenden Ordner: . für das ganze Projekt oder zum Beispiel public.",
+              "Schreib in „Als Website bereitzustellender Ordner“ den zu veröffentlichenden Ordner: . für das ganze Projekt oder zum Beispiel public.",
             ),
             tr(
               "In «con» scegli come servirla (vedi la tabella).",
               "In “with” choose how to serve it (see the table).",
               "Dans « avec », choisissez comment le servir (voir le tableau).",
-              "Wählen Sie unter „mit“, wie er bereitgestellt wird (siehe Tabelle).",
+              "Wähle unter „mit“, wie er bereitgestellt wird (siehe Tabelle).",
             ),
             tr(
               "Per Caddy e Apache scegli anche il «Profilo server».",
               "For Caddy and Apache, also choose the “Server profile”.",
               "Pour Caddy et Apache, choisissez aussi le « Profil de serveur ».",
-              "Wählen Sie bei Caddy und Apache auch das „Serverprofil“.",
+              "Wähle bei Caddy und Apache auch das „Serverprofil“.",
             ),
             tr(
               "Premi «Salva». Il sito diventa l'azione predefinita del progetto: si avvia con «Avvia».",
               "Press “Save”. The site becomes the project's default action: it starts with “Start”.",
               "Appuyez sur « Enregistrer ». Le site devient l'action par défaut du projet : il démarre avec « Démarrer ».",
-              "Drücken Sie „Speichern“. Die Website wird zur Standardaktion des Projekts: Sie startet mit „Starten“.",
+              "Drück „Speichern“. Die Website wird zur Standardaktion des Projekts: Sie startet mit „Starten“.",
             ),
           ]}
         />
@@ -808,7 +808,7 @@ export const SERVICES: TopicTexts = {
             "«Togli il sito» toglie la configurazione. Per cambiarla, ferma prima il sito: la modifica vale dal prossimo avvio.",
             "“Remove the website” removes the configuration. To change it, stop the site first: the change applies from the next start.",
             "« Retirer le site » retire la configuration. Pour la changer, arrêtez d'abord le site : la modification vaut dès le prochain démarrage.",
-            "„Website entfernen“ entfernt die Konfiguration. Um sie zu ändern, stoppen Sie zuerst die Website: Die Änderung gilt ab dem nächsten Start.",
+            "„Website entfernen“ entfernt die Konfiguration. Um sie zu ändern, stoppe zuerst die Website: Die Änderung gilt ab dem nächsten Start.",
           )}
         </P>
       </Section>
@@ -852,7 +852,7 @@ export const SERVICES: TopicTexts = {
                 "Un Caddy o un Apache solo per questo progetto, sulla porta del progetto. Con Apache la configurazione è in data\\projects\\<progetto>\\apache e le tue direttive vanno nella sottocartella conf.d.",
                 "A Caddy or an Apache just for this project, on the project's port. With Apache the configuration is in data\\projects\\<project>\\apache and your directives go in the conf.d subfolder.",
                 "Un Caddy ou un Apache rien que pour ce projet, sur le port du projet. Avec Apache, la configuration est dans data\\projects\\<projet>\\apache et vos directives vont dans le sous-dossier conf.d.",
-                "Ein Caddy oder Apache nur für dieses Projekt, auf dem Port des Projekts. Bei Apache liegt die Konfiguration in data\\projects\\<Projekt>\\apache, und Ihre Direktiven gehören in den Unterordner conf.d.",
+                "Ein Caddy oder Apache nur für dieses Projekt, auf dem Port des Projekts. Bei Apache liegt die Konfiguration in data\\projects\\<Projekt>\\apache, und deine Direktiven gehören in den Unterordner conf.d.",
               ),
             ],
             [
@@ -874,7 +874,7 @@ export const SERVICES: TopicTexts = {
                 "Premi «Avvia» nel progetto.",
                 "Press “Start” in the project.",
                 "Appuyez sur « Démarrer » dans le projet.",
-                "Drücken Sie „Starten“ im Projekt.",
+                "Drück „Starten“ im Projekt.",
               ),
             },
             {
@@ -901,7 +901,7 @@ export const SERVICES: TopicTexts = {
                 "Lo apri su http://<progetto>.localhost:<porta del pool>.",
                 "You open it at http://<project>.localhost:<pool port>.",
                 "Vous l'ouvrez sur http://<projet>.localhost:<port du pool>.",
-                "Sie öffnen sie unter http://<Projekt>.localhost:<Port des Pools>.",
+                "Du öffnest sie unter http://<Projekt>.localhost:<Port des Pools>.",
               ),
             },
           ]}
@@ -912,7 +912,7 @@ export const SERVICES: TopicTexts = {
               "«Ferma» sgancia il sito dal pool. Un pool acceso dai progetti si spegne con l'ultimo progetto, a meno che tu non l'abbia avviato dalla pagina Server Web o che il suo profilo dica «Mantieni attivo anche senza progetti».",
               "“Stop” detaches the site from the pool. A pool turned on by projects shuts down with the last project, unless you started it from the Web Servers page or its profile says “Keep running even without projects”.",
               "« Arrêter » détache le site du pool. Un pool allumé par les projets s'éteint avec le dernier projet, sauf si vous l'avez démarré depuis la page Serveurs Web ou si son profil indique « Garder actif même sans projets ».",
-              "„Beenden“ trennt die Website vom Pool. Ein von Projekten eingeschalteter Pool geht mit dem letzten Projekt aus, es sei denn, Sie haben ihn auf der Seite Webserver gestartet oder sein Profil sagt „Auch ohne Projekte aktiv lassen“.",
+              "„Beenden“ trennt die Website vom Pool. Ein von Projekten eingeschalteter Pool geht mit dem letzten Projekt aus, es sei denn, du hast ihn auf der Seite Webserver gestartet oder sein Profil sagt „Auch ohne Projekte aktiv lassen“.",
             ),
             tr(
               "Se il pool automatico non riesce a partire, il sito usa un server tutto suo e l'output lo dice: «Il server condiviso … non è partito (…): il sito usa un server tutto suo.»",
@@ -937,7 +937,7 @@ export const SERVICES: TopicTexts = {
             "Con Caddy e Apache puoi dare al sito altri nomi e collegare cartelle di altri posti. I nomi che finiscono in .localhost portano sempre a questo PC, senza toccare il file hosts di Windows.",
             "With Caddy and Apache you can give the site other names and link folders from other places. Names ending in .localhost always lead to this PC, without touching the Windows hosts file.",
             "Avec Caddy et Apache, vous pouvez donner au site d'autres noms et relier des dossiers d'autres emplacements. Les noms qui finissent par .localhost mènent toujours à ce PC, sans toucher au fichier hosts de Windows.",
-            "Mit Caddy und Apache können Sie der Website weitere Namen geben und Ordner von anderen Orten einbinden. Namen, die auf .localhost enden, führen immer zu diesem PC, ohne die hosts-Datei von Windows anzufassen.",
+            "Mit Caddy und Apache kannst du der Website weitere Namen geben und Ordner von anderen Orten einbinden. Namen, die auf .localhost enden, führen immer zu diesem PC, ohne die hosts-Datei von Windows anzufassen.",
           )}
         </P>
         <Table
@@ -974,7 +974,7 @@ export const SERVICES: TopicTexts = {
                 "L'indirizzo /media serve la cartella storage/uploads del progetto. Con @altro-progetto/public puoi servire la cartella di un altro progetto.",
                 "The address /media serves the project's storage/uploads folder. With @altro-progetto/public you can serve a folder of another project.",
                 "L'adresse /media sert le dossier storage/uploads du projet. Avec @altro-progetto/public, vous pouvez servir le dossier d'un autre projet.",
-                "Die Adresse /media liefert den Ordner storage/uploads des Projekts. Mit @altro-progetto/public können Sie den Ordner eines anderen Projekts bereitstellen.",
+                "Die Adresse /media liefert den Ordner storage/uploads des Projekts. Mit @altro-progetto/public kannst du den Ordner eines anderen Projekts bereitstellen.",
               ),
             ],
           ]}
@@ -1045,7 +1045,7 @@ export const SERVICES: TopicTexts = {
             "I pulsanti in alto: «Avvia» o «Ferma», «Ricarica configurazione» e, per i profili, «Elimina profilo». Un pool ancora acceso ma non più legato a progetti o profili mostra un avviso: fermalo.",
             "The buttons at the top: “Start” or “Stop”, “Reload configuration” and, for profiles, “Delete profile”. A pool still on but no longer tied to projects or profiles shows a warning: stop it.",
             "Les boutons en haut : « Démarrer » ou « Arrêter », « Recharger la configuration » et, pour les profils, « Supprimer le profil ». Un pool encore allumé mais qui n'est plus lié à des projets ou à des profils affiche un avertissement : arrêtez-le.",
-            "Die Schaltflächen oben: „Starten“ oder „Beenden“, „Konfiguration neu laden“ und bei Profilen „Profil löschen“. Ein Pool, der noch läuft, aber an keine Projekte oder Profile mehr gebunden ist, zeigt eine Warnung: Stoppen Sie ihn.",
+            "Die Schaltflächen oben: „Starten“ oder „Beenden“, „Konfiguration neu laden“ und bei Profilen „Profil löschen“. Ein Pool, der noch läuft, aber an keine Projekte oder Profile mehr gebunden ist, zeigt eine Warnung: Stoppe ihn.",
           )}
         </P>
         <Steps
@@ -1054,25 +1054,25 @@ export const SERVICES: TopicTexts = {
               "Per creare un profilo premi «Nuovo profilo server» in cima alla barra laterale.",
               "To create a profile, press “New server profile” at the top of the sidebar.",
               "Pour créer un profil, appuyez sur « Nouveau profil de serveur » en haut de la barre latérale.",
-              "Um ein Profil zu erstellen, drücken Sie „Neues Serverprofil“ oben in der Seitenleiste.",
+              "Um ein Profil zu erstellen, drück „Neues Serverprofil“ oben in der Seitenleiste.",
             ),
             tr(
               "Compila «Nome del profilo», «Server web» (Caddy o Apache httpd), «Versione server», «Versione PHP» e, se vuoi, «Porta» (altrimenti il kit ne sceglie una tra 8081 e 8999).",
               "Fill in “Profile name”, “Web server” (Caddy or Apache httpd), “Server version”, “PHP version” and, if you want, “Port” (otherwise the kit picks one between 8081 and 8999).",
               "Remplissez « Nom du profil », « Serveur web » (Caddy ou Apache httpd), « Version du serveur », « Version de PHP » et, si vous voulez, « Port » (sinon le kit en choisit un entre 8081 et 8999).",
-              "Füllen Sie „Profilname“, „Webserver“ (Caddy oder Apache httpd), „Serverversion“, „PHP-Version“ und, wenn Sie möchten, „Port“ aus (sonst wählt das Kit einen zwischen 8081 und 8999).",
+              "Füll „Profilname“, „Webserver“ (Caddy oder Apache httpd), „Serverversion“, „PHP-Version“ und, wenn du möchtest, „Port“ aus (sonst wählt das Kit einen zwischen 8081 und 8999).",
             ),
             tr(
               "Scegli se tenerlo acceso anche senza progetti e se avviarlo con Atollo, poi premi «Crea profilo».",
               "Choose whether to keep it on even without projects and whether to start it with Atollo, then press “Create profile”.",
               "Choisissez s'il reste allumé même sans projets et s'il démarre avec Atollo, puis appuyez sur « Créer le profil ».",
-              "Wählen Sie, ob er auch ohne Projekte laufen und ob er mit Atollo starten soll, und drücken Sie dann „Profil erstellen“.",
+              "Wähle, ob er auch ohne Projekte laufen und ob er mit Atollo starten soll, und drück dann „Profil erstellen“.",
             ),
             tr(
               "Nella sezione «Sito web» dei progetti, scegli il profilo nel menu «Profilo server».",
               "In the projects' “Website” section, choose the profile in the “Server profile” menu.",
               "Dans la section « Site web » des projets, choisissez le profil dans le menu « Profil de serveur ».",
-              "Wählen Sie im Abschnitt „Website“ der Projekte das Profil im Menü „Serverprofil“.",
+              "Wähle im Abschnitt „Website“ der Projekte das Profil im Menü „Serverprofil“.",
             ),
           ]}
         />
@@ -1100,7 +1100,7 @@ export const SERVICES: TopicTexts = {
               "Di norma i siti rispondono solo a questo PC. Per provarli da un telefono o da un altro computer della stessa rete, attiva «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» in Impostazioni › Rete: {0}. Gli altri dispositivi usano l'indirizzo IP di questo PC e la porta; i nomi .localhost funzionano solo qui. Database e phpMyAdmin restano comunque chiusi alla rete.",
               "Normally the sites respond only to this PC. To try them from a phone or another computer on the same network, turn on “Let other PCs on the network reach the project servers” in Settings › Network: {0}. The other devices use this PC's IP address and the port; .localhost names work only here. Databases and phpMyAdmin stay closed to the network in any case.",
               "Normalement, les sites ne répondent qu'à ce PC. Pour les essayer depuis un téléphone ou un autre ordinateur du même réseau, activez « Permettre aux autres PC du réseau d'accéder aux serveurs des projets » dans Paramètres › Réseau : {0}. Les autres appareils utilisent l'adresse IP de ce PC et le port ; les noms .localhost ne fonctionnent qu'ici. Les bases de données et phpMyAdmin restent de toute façon fermés au réseau.",
-              "Normalerweise antworten die Websites nur diesem PC. Um sie von einem Telefon oder einem anderen Computer im selben Netzwerk auszuprobieren, aktivieren Sie „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ unter Einstellungen › Netzwerk: {0}. Die anderen Geräte verwenden die IP-Adresse dieses PCs und den Port; .localhost-Namen funktionieren nur hier. Datenbanken und phpMyAdmin bleiben für das Netzwerk in jedem Fall gesperrt.",
+              "Normalerweise antworten die Websites nur diesem PC. Um sie von einem Telefon oder einem anderen Computer im selben Netzwerk auszuprobieren, aktiviere „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ unter Einstellungen › Netzwerk: {0}. Die anderen Geräte verwenden die IP-Adresse dieses PCs und den Port; .localhost-Namen funktionieren nur hier. Datenbanken und phpMyAdmin bleiben für das Netzwerk in jedem Fall gesperrt.",
             ),
             <See key="n" id="network" />,
           )}
@@ -1168,7 +1168,7 @@ export const SERVICES: TopicTexts = {
             "Il terminale «Tutti gli strumenti» è sempre pronto; puoi crearne di tuoi con strumenti e versioni scelti.",
             "The “All tools” terminal is always ready; you can create your own with the tools and versions you choose.",
             "Le terminal « Tous les outils » est toujours prêt ; vous pouvez en créer à vous avec les outils et versions choisis.",
-            "Das Terminal „Alle Werkzeuge“ ist immer bereit; Sie können eigene mit ausgewählten Werkzeugen und Versionen erstellen.",
+            "Das Terminal „Alle Werkzeuge“ ist immer bereit; du kannst eigene mit ausgewählten Werkzeugen und Versionen erstellen.",
           ),
         ]}
       />
@@ -1180,7 +1180,7 @@ export const SERVICES: TopicTexts = {
           "Il terminale «Tutti gli strumenti» e quelli tuoi; a destra cartella di partenza, strumenti e versioni.",
           "The “All tools” terminal and your own; on the right the start folder, tools and versions.",
           "Le terminal « Tous les outils » et les vôtres ; à droite le dossier de départ, les outils et les versions.",
-          "Das Terminal „Alle Werkzeuge“ und Ihre eigenen; rechts Startordner, Werkzeuge und Versionen.",
+          "Das Terminal „Alle Werkzeuge“ und deine eigenen; rechts Startordner, Werkzeuge und Versionen.",
         )}
       />
 
@@ -1190,7 +1190,7 @@ export const SERVICES: TopicTexts = {
             "Il riquadro «Terminali» elenca il terminale predefinito «Tutti gli strumenti» («Ogni strumento alla versione più recente») e quelli che hai creato tu. «Apri» su una riga apre la console nella sua cartella di partenza.",
             "The “Terminals” box lists the default “All tools” terminal (“Every tool at its newest version”) and the ones you created. “Open” on a row opens the console in its starting folder.",
             "Le panneau « Terminaux » liste le terminal par défaut « Tous les outils » (« Chaque outil à sa version la plus récente ») et ceux que vous avez créés. « Ouvrir » sur une ligne ouvre la console dans son dossier de départ.",
-            "Der Bereich „Terminals“ listet das Standardterminal „Alle Werkzeuge“ („Jedes Werkzeug in der neuesten Version“) und die von Ihnen erstellten auf. „Öffnen“ in einer Zeile öffnet die Konsole in ihrem Startordner.",
+            "Der Bereich „Terminals“ listet das Standardterminal „Alle Werkzeuge“ („Jedes Werkzeug in der neuesten Version“) und die von dir erstellten auf. „Öffnen“ in einer Zeile öffnet die Konsole in ihrem Startordner.",
           )}
         </P>
         <Bullets
@@ -1238,7 +1238,7 @@ export const SERVICES: TopicTexts = {
             "Utile quando ti serve sempre lo stesso insieme: per esempio un terminale «PHP 7.4 legacy» con solo PHP 7.4 e Composer, aperto nella cartella di un vecchio progetto fuori dal kit.",
             "Useful when you always need the same set: for example a “PHP 7.4 legacy” terminal with only PHP 7.4 and Composer, opened in the folder of an old project outside the kit.",
             "Utile quand il vous faut toujours le même ensemble : par exemple un terminal « PHP 7.4 legacy » avec uniquement PHP 7.4 et Composer, ouvert dans le dossier d'un ancien projet hors du kit.",
-            "Nützlich, wenn Sie immer dieselbe Zusammenstellung brauchen: zum Beispiel ein Terminal „PHP 7.4 legacy“ nur mit PHP 7.4 und Composer, geöffnet im Ordner eines alten Projekts außerhalb des Kits.",
+            "Nützlich, wenn du immer dieselbe Zusammenstellung brauchst: zum Beispiel ein Terminal „PHP 7.4 legacy“ nur mit PHP 7.4 und Composer, geöffnet im Ordner eines alten Projekts außerhalb des Kits.",
           )}
         </P>
         <Steps
@@ -1247,25 +1247,25 @@ export const SERVICES: TopicTexts = {
               "Premi «Nuovo terminale» in cima alla barra laterale, oppure «Duplica» su un terminale esistente.",
               "Press “New terminal” at the top of the sidebar, or “Duplicate” on an existing terminal.",
               "Appuyez sur « Nouveau terminal » en haut de la barre latérale, ou sur « Dupliquer » sur un terminal existant.",
-              "Drücken Sie „Neues Terminal“ oben in der Seitenleiste oder „Duplizieren“ bei einem vorhandenen Terminal.",
+              "Drück „Neues Terminal“ oben in der Seitenleiste oder „Duplizieren“ bei einem vorhandenen Terminal.",
             ),
             tr(
               "In «Generale» scrivi il «Nome» e la «Cartella di partenza» (qualsiasi cartella del PC: «Scegli…» per sfogliare, «Usa projects» per la cartella dei progetti).",
               "In “General” write the “Name” and the “Starting folder” (any folder on the PC: “Choose…” to browse, “Use projects” for the projects folder).",
               "Dans « Général », écrivez le « Nom » et le « Dossier de départ » (n'importe quel dossier du PC : « Choisir… » pour parcourir, « Utiliser projects » pour le dossier des projets).",
-              "Geben Sie unter „Allgemein“ den „Name“ und den „Startordner“ ein (jeder Ordner des PCs: „Wählen…“ zum Durchsuchen, „projects verwenden“ für den Projektordner).",
+              "Gib unter „Allgemein“ den „Name“ und den „Startordner“ ein (jeder Ordner des PCs: „Wählen…“ zum Durchsuchen, „projects verwenden“ für den Projektordner).",
             ),
             tr(
               "In «Strumenti e versioni» spunta gli strumenti (gruppi Agenti, Linguaggi, Database; «Tutti» e «Nessuno» per fare in fretta) e per ciascuno la versione, o «La più recente».",
               "In “Tools and versions” tick the tools (groups Agents, Languages, Databases; “All” and “None” to go quickly) and for each one the version, or “The newest”.",
               "Dans « Outils et versions », cochez les outils (groupes Agents, Langages, Bases de données ; « Tous » et « Aucun » pour aller vite) et pour chacun la version, ou « La plus récente ».",
-              "Haken Sie unter „Werkzeuge und Versionen“ die Werkzeuge an (Gruppen Agenten, Sprachen, Datenbanken; „Alle“ und „Keiner“ für den schnellen Weg) und für jedes die Version oder „Die neueste“.",
+              "Hak unter „Werkzeuge und Versionen“ die Werkzeuge an (Gruppen Agenten, Sprachen, Datenbanken; „Alle“ und „Keiner“ für den schnellen Weg) und für jedes die Version oder „Die neueste“.",
             ),
             tr(
               "Premi «Crea terminale» (o «Salva» per uno esistente), poi «Apri».",
               "Press “Create terminal” (or “Save” for an existing one), then “Open”.",
               "Appuyez sur « Créer le terminal » (ou « Enregistrer » pour un terminal existant), puis sur « Ouvrir ».",
-              "Drücken Sie „Terminal erstellen“ (oder „Speichern“ bei einem vorhandenen), dann „Öffnen“.",
+              "Drück „Terminal erstellen“ (oder „Speichern“ bei einem vorhandenen), dann „Öffnen“.",
             ),
           ]}
         />
@@ -1287,13 +1287,13 @@ export const SERVICES: TopicTexts = {
               "Scegliere uno strumento di database mette nel PATH il suo client (per esempio mysql), ma non avvia il server: quello si avvia dalla pagina Database.",
               "Choosing a database tool puts its client in the PATH (for example mysql), but does not start the server: you start that from the Databases page.",
               "Choisir un outil de base de données met son client dans le PATH (par exemple mysql), mais ne démarre pas le serveur : celui-ci se démarre depuis la page Bases de données.",
-              "Wenn Sie ein Datenbankwerkzeug wählen, kommt sein Client in den PATH (zum Beispiel mysql), aber der Server startet nicht: Den starten Sie auf der Seite Datenbanken.",
+              "Wenn du ein Datenbankwerkzeug wählst, kommt sein Client in den PATH (zum Beispiel mysql), aber der Server startet nicht: Den startest du auf der Seite Datenbanken.",
             ),
             tr(
               "Il terminale predefinito non si modifica: duplicalo per crearne uno tuo. «Elimina» toglie solo il terminale, non gli strumenti.",
               "The default terminal cannot be changed: duplicate it to create your own. “Delete” removes only the terminal, not the tools.",
               "Le terminal par défaut ne se modifie pas : dupliquez-le pour créer le vôtre. « Supprimer » retire uniquement le terminal, pas les outils.",
-              "Das Standardterminal lässt sich nicht ändern: Duplizieren Sie es, um ein eigenes zu erstellen. „Löschen“ entfernt nur das Terminal, nicht die Werkzeuge.",
+              "Das Standardterminal lässt sich nicht ändern: Dupliziere es, um ein eigenes zu erstellen. „Löschen“ entfernt nur das Terminal, nicht die Werkzeuge.",
             ),
           ]}
         />
@@ -1324,13 +1324,13 @@ export const SERVICES: TopicTexts = {
               "I terminali creati da te sono in data\\app\\terminals.json (nome, cartella, strumenti e versioni).",
               "The terminals you created are in data\\app\\terminals.json (name, folder, tools and versions).",
               "Les terminaux que vous avez créés sont dans data\\app\\terminals.json (nom, dossier, outils et versions).",
-              "Die von Ihnen erstellten Terminals stehen in data\\app\\terminals.json (Name, Ordner, Werkzeuge und Versionen).",
+              "Die von dir erstellten Terminals stehen in data\\app\\terminals.json (Name, Ordner, Werkzeuge und Versionen).",
             ),
             tr(
               "La console parte con pwsh -NoProfile e il profilo del kit (data\\kit\\profile.ps1): i tuoi profili e moduli di PowerShell del PC non vengono caricati.",
               "The console starts with pwsh -NoProfile and the kit's profile (data\\kit\\profile.ps1): your PowerShell profiles and modules on the PC are not loaded.",
               "La console démarre avec pwsh -NoProfile et le profil du kit (data\\kit\\profile.ps1) : vos profils et modules PowerShell du PC ne sont pas chargés.",
-              "Die Konsole startet mit pwsh -NoProfile und dem Profil des Kits (data\\kit\\profile.ps1): Ihre PowerShell-Profile und -Module auf dem PC werden nicht geladen.",
+              "Die Konsole startet mit pwsh -NoProfile und dem Profil des Kits (data\\kit\\profile.ps1): Deine PowerShell-Profile und -Module auf dem PC werden nicht geladen.",
             ),
             tr(
               "In un terminale della pagina Terminali la variabile ATOLLO_TERMINAL dice il suo nome: entrando nella cartella di un progetto non cambia versioni, tiene quelle scelte per il terminale. Il «Terminale» di un progetto invece usa le versioni del progetto.",
