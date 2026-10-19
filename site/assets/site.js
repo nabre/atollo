@@ -1,10 +1,41 @@
 // The page's motion: the header's background once the hero is scrolled past,
 // sections revealed as they enter the view, the numbers counted up, the
-// glow under the pointer on the feature tiles. Everything is visible
-// without it (the .js class on <html> gates the hidden states).
+// glow under the pointer on the feature tiles, and the theme switch. Everything
+// is visible without it (the .js class on <html> gates the hidden states).
 (function () {
   "use strict";
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // The theme: "system" (no html[data-theme]), "light" or "dark", kept in
+  // localStorage (the <head> sets it before the first paint). What a media
+  // query picks by itself (the gallery's <source>, theme-color) follows the
+  // choice: its own query for the system, all or none of it otherwise.
+  const root = document.documentElement;
+  const media = Array.from(document.querySelectorAll("[media*='prefers-color-scheme']"));
+  media.forEach((el) => (el.dataset.media = el.media));
+  const picks = document.querySelectorAll("[data-theme-pick]");
+  function theme(pick) {
+    if (pick === "system") delete root.dataset.theme;
+    else root.dataset.theme = pick;
+    media.forEach((el) => {
+      const scheme = /light/.test(el.dataset.media) ? "light" : "dark";
+      el.media = pick === "system" ? el.dataset.media : pick === scheme ? "all" : "not all";
+    });
+    picks.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themePick === pick)));
+  }
+  theme(root.dataset.theme || "system");
+  picks.forEach((b) =>
+    b.addEventListener("click", () => {
+      const pick = b.dataset.themePick;
+      theme(pick);
+      try {
+        if (pick === "system") localStorage.removeItem("atollo-theme");
+        else localStorage.setItem("atollo-theme", pick);
+      } catch (e) {
+        // Storage blocked: the choice lasts for this page.
+      }
+    }),
+  );
 
   const top = document.querySelector(".top");
   const onScroll = () => top && top.classList.toggle("scrolled", window.scrollY > 24);
