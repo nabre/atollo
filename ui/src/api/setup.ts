@@ -221,7 +221,7 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
   sampleComponent("node", "Node.js", "languages", "JavaScript e TypeScript", 90, { ...ON, version: "24.3.0" }),
   sampleComponent("python", "Python", "languages", "con uv", 120),
   sampleComponent("php", "PHP", "languages", "linguaggio per il web", 60, { ...ON, version: "8.4.12" }),
-  sampleComponent("apache", "Apache", "languages", "server web per PHP", 30, { needs: ["php"] }),
+  sampleComponent("apache", "Apache", "languages", "server web per PHP", 30, { needs: ["php"], x64Only: true }),
   sampleComponent("uv", "uv", "languages", "ambienti e pacchetti Python", 40, { ...ON, version: "0.9.5" }),
   sampleComponent("typst", "Typst", "languages", "documenti e PDF da testo", 50),
   sampleComponent("mysql", "MySQL", "databases", "database SQL del kit: server e client MySQL", 520, {
@@ -255,14 +255,14 @@ function sampleGrid(): TargetGrid {
   });
   const targets = profiles.map(({ id, ...p }): TargetSummary => {
     const tools = SAMPLE_COMPONENTS.map((c): TargetToolStatus => {
-      const apache = c.id === "apache" && p.os !== "win32";
+      // Every sample component has a build for every system (Apache too,
+      // D-116); the x64 ones run emulated on Windows ARM64.
       const emulated = c.x64Only && id === "win32-arm64";
-      const available = !apache;
       const here = id === "win32-x64";
       return {
         id: c.id,
         name: c.name,
-        available,
+        available: true,
         emulated,
         chosen: c.chosen,
         installed: here && c.installed,
@@ -270,9 +270,9 @@ function sampleGrid(): TargetGrid {
         version: here ? c.version : null,
         needsReinstall: false,
         bootstrapStaged: false,
-        firstStart: available && !p.executableOnHost && ["git", "python"].includes(c.id),
+        firstStart: !p.executableOnHost && ["git", "python"].includes(c.id),
         noArm64: false,
-        unavailableReason: available ? null : `non disponibile per ${id}`,
+        unavailableReason: null,
       };
     });
     return {

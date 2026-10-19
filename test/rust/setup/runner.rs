@@ -223,7 +223,7 @@ fn no_arm64_components_are_never_planned_on_arm64() {
 fn unix_plans_follow_the_unix_catalog() {
     use crate::kit::Target;
     let catalog = Catalog::get();
-    for target in [Target::LINUX_X64, Target::DARWIN_ARM64] {
+    for target in [Target::LINUX_ARM64, Target::DARWIN_ARM64] {
         let mut choice = Choice::defaults(catalog);
         for c in catalog.all() {
             choice.set(catalog, &c.id, true);
@@ -240,9 +240,12 @@ fn unix_plans_follow_the_unix_catalog() {
                 .iter()
                 .filter(|c| !c.is_available_on(target))
                 .collect();
-            assert!(
-                !missing.is_empty(),
-                "{}: some component has no build",
+            // Linux ARM64 has no Android SDK; macOS has everything since
+            // Apache came there (D-116).
+            assert_eq!(
+                missing.is_empty(),
+                target != Target::LINUX_ARM64,
+                "{}: components without a build",
                 target.as_str()
             );
             for c in missing {

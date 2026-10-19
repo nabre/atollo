@@ -20,7 +20,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `node` | Node.js LTS + npm | no | 110 | | quando serve: azioni con `npm`, server MCP con `npx` (D-59) |
 | | `uv` | uv, uvx | no | 35 | | quando serve: azioni con `uv`, server MCP con `uvx` (D-59) |
 | | `php` | PHP + Composer | sì | 100 | | Windows: con VC++ locale, x64 in emulazione su Windows ARM64; macOS e Linux: static-php-cli (D-112) |
-| | `apache` | Apache | sì | 45 | `php` | oggi solo su Windows (`targets`): Apache Lounge con il modulo PHP, x64 in emulazione su Windows ARM64; su macOS e Linux l'installatore della build del kit con `php-fpm` è pronto (D-116), ma il catalogo lo offre lì solo quando il primo rilascio è fissato in `sha256ByLine` |
+| | `apache` | Apache | sì | 45 | `php` | Windows: Apache Lounge con il modulo PHP, x64 in emulazione su Windows ARM64; macOS e Linux: build del kit (`httpd-v<versione>`, SHA-256 fissati in `sha256ByLine`) con `php-fpm` (D-116) |
 | | `caddy` | Caddy | no | 45 | | **nuovo** (D-111); server web dei pool e dei siti su tutti i sistemi; al posto di Nginx, tolto con la migrazione dei suoi pool e siti all'avvio (D-120) |
 | | `rust` | Rust | no | 920 | `cc` su Windows ARM64 | host `gnu` su Windows x64, `gnullvm` su Windows ARM64 (collegato da llvm-mingw di `cc`), `msvc` dalle Impostazioni; nativo su macOS e Linux |
 | | `go` | Go | no | 250 | | |
@@ -55,7 +55,7 @@ Campi del catalogo oltre a quelli di Atollo: `keys` (le altre parti di un compon
 
 | Campo | Cosa dice | Esempio |
 | --- | --- | --- |
-| `targets` | i soli target dove il componente c'è; vuoto = tutti | Apache: `["win32-x64", "win32-arm64"]` |
+| `targets` | i soli target dove il componente c'è; vuoto = tutti | nessuno oggi (Apache fino a D-116: `["win32-x64", "win32-arm64"]`) |
 | `unavailable` | target → motivo (in italiano, tradotto dai cataloghi), mostrato al posto di «non disponibile per `<target>`» | Android: `linux-arm64` |
 | `noArm64` | nessuna build gira su Windows ARM64, nemmeno in emulazione | R |
 | `x64Only` | build x64 in emulazione solo su Windows ARM64 | PHP, Apache, Android SDK, Julia, TinyTeX, MySQL, MongoDB, editor |
@@ -64,7 +64,7 @@ Campi del catalogo oltre a quelli di Atollo: `keys` (le altre parti di un compon
 | `removeUnix` | i file posseduti su macOS e Linux, al posto di `remove` | pnpm: `bin/pnpm`, `lib/node_modules/corepack` |
 | `sha256ByTarget` | SHA-256 per target, con `version`, dove il fornitore non pubblica un hash | editor |
 | `sha256ByFile` | SHA-256 per nome di file | PHP: gli archivi di static-php-cli |
-| `sha256ByLine` | linea → `{ version, sha256ByTarget }`: si offrono solo le linee fissate | MySQL 8.4 e 9.7 |
+| `sha256ByLine` | linea → `{ version, sha256ByTarget }`: si offrono solo le linee fissate | MySQL 8.4 e 9.7, Apache 2.4 su macOS e Linux |
 
 Un componente non disponibile per il sistema si mostra «non disponibile per `<target>`» con il motivo, mai con un binario di un'altra architettura; «non disponibile su PC ARM64» resta solo per Windows ARM64 (BUG-24c). `Atollo components --target <id>` mostra il catalogo di un altro target.
 
