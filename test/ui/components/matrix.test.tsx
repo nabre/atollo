@@ -61,6 +61,7 @@ const status = (id: string, extra: Partial<TargetToolStatus> = {}): TargetToolSt
   chosen: false,
   installed: false,
   present: false,
+  missing: null,
   version: null,
   needsReinstall: false,
   bootstrapStaged: false,

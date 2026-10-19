@@ -59,6 +59,9 @@ export interface TargetToolStatus {
   chosen: boolean;
   installed: boolean;
   present: boolean;
+  /** Something of it is on disk but not all: the first part missing, under
+   * the kit's folder. A download or an installation that did not finish. */
+  missing: string | null;
   version: string | null;
   needsReinstall: boolean;
   bootstrapStaged: boolean;
@@ -267,6 +270,7 @@ function sampleGrid(): TargetGrid {
         chosen: c.chosen,
         installed: here && c.installed,
         present: here && c.present,
+        missing: null,
         version: here ? c.version : null,
         needsReinstall: false,
         bootstrapStaged: false,
