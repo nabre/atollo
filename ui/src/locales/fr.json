@@ -695,7 +695,7 @@
   "Collega a…": "Lier à…",
   "Collegare {0} a un progetto?": "Lier {0} à un projet ?",
   "Collega": "Lier",
-  "Impostazioni, porte, database e copie passano al progetto scelto, che non deve averne già.": "Paramètres, ports, bases de données et copies passent au projet choisi, qui ne doit pas en avoir déjà.",
+  "Impostazioni, porte, database e copie passano al progetto scelto, le cui impostazioni lasciano il posto a queste; non deve avere porte, server, database o copie suoi.": "Paramètres, ports, bases de données et copies passent au projet choisi, dont les paramètres cèdent la place à ceux-ci ; il ne doit pas avoir de ports, serveurs, bases de données ou copies à lui.",
   "Nessun progetto a cui collegare i dati.": "Aucun projet auquel lier les données.",
   "Requisiti del PC": "Configuration requise du PC",
   "Rimuovi {0}": "Supprimer {0}",
