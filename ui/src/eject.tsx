@@ -36,7 +36,7 @@ export function OpenList({ open }: { open: OpenNow }) {
   );
 }
 
-export function EjectPage({ onGuide }: { onGuide?: (topic: "lifecycle") => void } = {}) {
+export function EjectPage({ onGuide }: { onGuide?: (topic: "eject") => void } = {}) {
   const [open, setOpen] = useState<OpenNow | null>(null);
   const [done, setDone] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -108,7 +108,7 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "lifecycle") => void 
               icon={VscBook}
               label={t("Guida")}
               onClick={() => {
-                onGuide("lifecycle");
+                onGuide("eject");
               }}
             />
           )}

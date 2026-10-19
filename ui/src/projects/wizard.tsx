@@ -237,7 +237,7 @@ export function NewProjectWizard({
             {onGuide && (
               <Link
                 onClick={() => {
-                  onGuide("feat-projects");
+                  onGuide("project-new");
                 }}
               >
                 {t("Guida")}

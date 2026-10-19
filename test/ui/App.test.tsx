@@ -892,18 +892,19 @@ describe("App", () => {
     // Open Guide from the bottom-left Activity Bar icon
     const [guideBtn] = screen.getAllByRole("button", { name: "Guida" });
     if (guideBtn) fireEvent.click(guideBtn);
-    expect(await screen.findByText(/I 6 principi architetturali cardine/)).toBeTruthy();
+    // It opens on the welcome topic, with a card per chapter
+    expect(await screen.findByText("Che cos'è, in parole semplici")).toBeTruthy();
+    expect(screen.getByText("Come funziona dentro")).toBeTruthy();
 
-    // Jump to the sources table: 35 components and 5 parts, counted from the table
-    fireEvent.click(screen.getByRole("button", { name: /Esplora le 40 fonti/ }));
-    expect(
-      await screen.findByText(/Catalogo completo delle fonti esterne \(35 componenti e 5 sotto-parti\)/),
-    ).toBeTruthy();
+    // The search narrows the topics; the sources table counts its rows
+    fireEvent.change(screen.getByLabelText("Cerca nella guida"), { target: { value: "sha-256" } });
+    fireEvent.click(await screen.findByText("Da dove arrivano gli strumenti"));
+    expect(await screen.findByText("Tabella completa delle fonti (35 componenti e 5 parti)")).toBeTruthy();
     expect(screen.getByText("PortableGit-<v>-(64-bit|arm64).7z.exe (estratto in Rust)")).toBeTruthy();
     expect(screen.getByText(/macOS e Linux: GitHub desktop\/dugite-native/)).toBeTruthy();
 
-    // Jump to a visual feature topic with screenshots
-    fireEvent.click(screen.getByText(/Pagina «Progetti»/));
-    expect(await screen.findByText(/05 · Scheda 1 — Avvio/)).toBeTruthy();
+    // A link inside a topic opens another topic
+    fireEvent.click(screen.getByRole("button", { name: /Rete aziendale: proxy, certificati, rete locale/ }));
+    expect(await screen.findByText("Capire se ti servono")).toBeTruthy();
   });
 });

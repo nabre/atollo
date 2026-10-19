@@ -118,7 +118,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
                 icon={VscBook}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
-                  onGuide("feat-agents");
+                  onGuide("agents");
                 }}
               />
             )}
