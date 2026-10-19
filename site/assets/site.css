@@ -202,7 +202,7 @@ section { padding: 96px 0; position: relative; }
 .release-note { font-size: 0.875rem; color: var(--desc); }
 
 /* The app icon floating over the kit folder card */
-.hero-side { position: relative; justify-self: end; width: 100%; max-width: 480px; padding-top: 84px; }
+.hero-side { position: relative; justify-self: end; width: 100%; max-width: 480px; padding-top: 148px; }
 .app-icon {
   position: absolute; top: 0; right: 32px; z-index: 2; width: 132px; height: 132px;
   filter: drop-shadow(0 18px 36px rgb(0 0 0 / 0.45)) drop-shadow(0 0 40px color-mix(in srgb, var(--accent) 30%, transparent));
@@ -218,12 +218,48 @@ section { padding: 96px 0; position: relative; }
   border-radius: 14px; box-shadow: var(--shadow); overflow: hidden;
 }
 .kit-bar, .frame-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--border); font: 0.75rem var(--mono); color: var(--desc); }
-.kit-bar i, .frame-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--button2); }
-.kit-bar i:first-child, .frame-bar i:first-child { background: var(--warm); }
-.kit-bar i:nth-child(2), .frame-bar i:nth-child(2) { background: var(--amber); }
-.kit-bar i:nth-child(3), .frame-bar i:nth-child(3) { background: var(--accent); }
-.kit-bar span, .frame-bar span { margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.kit-tree { margin: 0; padding: 20px 20px 8px; font: 0.85rem/1.9 var(--mono); color: var(--fg); overflow-x: auto; }
+.frame-bar i, .kit-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--button2); }
+.frame-bar i:first-child, .kit-dots i:first-child { background: var(--warm); }
+.frame-bar i:nth-child(2), .kit-dots i:nth-child(2) { background: var(--amber); }
+.frame-bar i:nth-child(3), .kit-dots i:nth-child(3) { background: var(--accent); }
+.frame-bar span, .kit-title { margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kit-tree { margin: 0; padding: 20px 20px 8px; font: 0.85rem/1.75 var(--mono); color: var(--fg); overflow-x: auto; }
+
+/* The kit's window bar, as the visitor's system draws it (download.js sets
+   html[data-os]); the brand's dots until then, or without JavaScript. */
+.kit-bar { position: relative; min-height: 40px; }
+.kit-dots { display: flex; gap: 6px; }
+.kit-ctl { display: none; margin-left: auto; color: var(--fg); }
+.kit-ctl i { position: relative; display: block; }
+.kit-ctl i::before, .kit-ctl i::after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 1px; background: currentColor; transform: translate(-50%, -50%); }
+.kit-ctl .max::before { width: 9px; height: 9px; background: none; border: 1px solid currentColor; box-sizing: border-box; }
+.kit-ctl .min::after, .kit-ctl .max::after { content: none; }
+.kit-ctl .close::before { transform: translate(-50%, -50%) rotate(45deg); }
+.kit-ctl .close::after { transform: translate(-50%, -50%) rotate(-45deg); }
+/* macOS: the three lights on the left, the title in the middle. */
+:root[data-os="darwin"] .kit-dots i { width: 12px; height: 12px; }
+:root[data-os="darwin"] .kit-dots i:first-child { background: #ff5f57; }
+:root[data-os="darwin"] .kit-dots i:nth-child(2) { background: #febc2e; }
+:root[data-os="darwin"] .kit-dots i:nth-child(3) { background: #28c840; }
+:root[data-os="darwin"] .kit-title,
+:root[data-os="linux"] .kit-title { position: absolute; left: 50%; transform: translateX(-50%); max-width: 55%; margin: 0; font-family: var(--ui); font-weight: 600; color: var(--title); }
+/* Windows 11: the title on the left, minimise, maximise and close on the right. */
+:root[data-os="win32"] .kit { border-radius: 8px; }
+:root[data-os="win32"] .kit-bar { padding: 0 0 0 14px; font-family: var(--ui); }
+:root[data-os="win32"] .kit-dots { display: none; }
+:root[data-os="win32"] .kit-title { margin-left: 0; color: var(--title); }
+:root[data-os="win32"] .kit-ctl { display: flex; align-self: stretch; }
+:root[data-os="win32"] .kit-ctl i { width: 46px; }
+:root[data-os="win32"] .kit-ctl .close::before, :root[data-os="win32"] .kit-ctl .close::after { width: 13px; }
+:root[data-os="win32"] .kit:hover .kit-ctl .close { background: #c42b1c; color: #fff; }
+/* Linux (GNOME): the title in the middle, one round close button on the right. */
+:root[data-os="linux"] .kit-bar { min-height: 46px; padding: 8px 11px; }
+:root[data-os="linux"] .kit-dots { display: none; }
+:root[data-os="linux"] .kit-title { font-weight: 700; }
+:root[data-os="linux"] .kit-ctl { display: flex; }
+:root[data-os="linux"] .kit-ctl .min, :root[data-os="linux"] .kit-ctl .max { display: none; }
+:root[data-os="linux"] .kit-ctl .close { width: 24px; height: 24px; border-radius: 50%; background: color-mix(in srgb, var(--fg) 14%, transparent); }
+:root[data-os="linux"] .kit-ctl .close::before, :root[data-os="linux"] .kit-ctl .close::after { width: 9px; height: 1.5px; }
 .t-dir { color: var(--link); font-weight: 600; }
 .t-exe { color: var(--warm); font-weight: 600; }
 .t-l { color: var(--desc); }
@@ -237,7 +273,7 @@ section { padding: 96px 0; position: relative; }
   .hero { min-height: auto; padding-top: 110px; }
   .hero-grid { grid-template-columns: 1fr; gap: 40px; }
   .hero::after { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-deep) 55%, transparent), var(--bg-deep) 70%), linear-gradient(0deg, var(--bg) 0%, transparent 18%); }
-  .hero-side { justify-self: stretch; max-width: none; padding-top: 60px; }
+  .hero-side { justify-self: stretch; max-width: none; padding-top: 110px; }
   .app-icon { width: 96px; height: 96px; right: 20px; }
 }
 
