@@ -1,7 +1,8 @@
 // Main window, laid out like VSCodium: the banner, the activity bar, the
 // page (side bar and editor, workbench/), the Activity panel and the
-// status bar. Seven pages (D-76, D-83): the new-project wizard, then what
-// concerns one project on its page, what concerns the kit on the kit's pages.
+// status bar. The pages (D-76): what concerns the projects on Projects (the
+// new-project wizard among its tabs, D-83), what concerns the kit on the
+// kit's pages.
 // Texts go through t() (i18n.ts) in the language of the settings or of
 // Windows, sent by app_info.
 import { lazy, Suspense, useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
@@ -21,7 +22,6 @@ import {
   VscRemote,
   VscSettingsGear,
   VscTerminal,
-  VscWand,
 } from "react-icons/vsc";
 import {
   appInfo,
@@ -35,7 +35,7 @@ import {
   type RunInfo,
   type SetupSnapshot,
 } from "./api";
-import { alive, ProjectsPage, useRuns } from "./projects";
+import { alive, ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel } from "./activity";
 import { TitleBar } from "./titlebar";
 import { ComponentsPage, ToolsPage } from "./components";
@@ -48,7 +48,6 @@ import { DatabasesPage } from "./databases";
 import { ServersPage } from "./servers";
 import { TerminalsPage } from "./terminals";
 import { tauriPty, useTerminals, type Terminals } from "./terminal";
-import { NewProjectPage } from "./wizard";
 import type { GuideTopicId } from "./guide";
 import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./hooks";
@@ -62,7 +61,7 @@ const GuidePage = lazy(() => import("./guide").then((m) => ({ default: m.GuidePa
 const TerminalPanel = lazy(() => import("./terminal/panel").then((m) => ({ default: m.TerminalPanel })));
 
 type PageId =
-  "new" | "projects" | "agents" | "databases" | "servers" | "terminals" | "components" | "guide" | "settings" | "eject";
+  "projects" | "agents" | "databases" | "servers" | "terminals" | "components" | "guide" | "settings" | "eject";
 
 interface Page {
   id: PageId;
@@ -72,7 +71,6 @@ interface Page {
 
 function pages(): Page[] {
   return [
-    { id: "new", label: t("Nuovo progetto"), icon: VscWand },
     { id: "projects", label: t("Progetti"), icon: VscFolderLibrary },
     { id: "agents", label: t("Agenti"), icon: VscHubot },
     { id: "databases", label: t("Database"), icon: VscDatabase },
@@ -133,6 +131,21 @@ export function App() {
 
   useSubscription(onCloseRequested, setClosing);
 
+  /** Ctrl+P (⌘P on macOS), as the editor's Quick Open: Projects, its box. */
+  const [quickOpen, setQuickOpen] = useState(false);
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== "p") return;
+      e.preventDefault();
+      setPage("projects");
+      setQuickOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
   const all = pages();
   const current = all.find((p) => p.id === page) ?? all[0];
   const [panelOpen, setPanelOpen] = useState(false);
@@ -164,17 +177,6 @@ export function App() {
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {info?.firstRun ? (
             <ComponentsPage setup={setup} onDone={loadInfo} />
-          ) : page === "new" ? (
-            <NewProjectPage
-              onOpen={(project) => {
-                projectTabs.show(project);
-                setPage("projects");
-              }}
-              onSettings={() => {
-                setPage("settings");
-              }}
-              onGuide={openGuide}
-            />
           ) : page === "projects" ? (
             <ProjectsPage
               tabs={projectTabs}
@@ -186,9 +188,11 @@ export function App() {
               loadLog={loadLog}
               forget={forget}
               onGuide={openGuide}
-              onWizard={() => {
-                setPage("new");
+              onSettings={() => {
+                setPage("settings");
               }}
+              quickOpen={quickOpen}
+              onQuickOpen={setQuickOpen}
             />
           ) : page === "agents" ? (
             <AgentsPage onGuide={openGuide} />
@@ -211,7 +215,9 @@ export function App() {
                 info={info}
                 initialTopic={guideTopic}
                 onNavigate={(target) => {
-                  setPage(target);
+                  // The wizard is a tab of Projects.
+                  if (target === "new") projectTabs.show(WIZARD_TAB);
+                  setPage(target === "new" ? "projects" : target);
                 }}
               />
             </Suspense>

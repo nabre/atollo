@@ -32,6 +32,20 @@ use serde::{Deserialize, Serialize};
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
 
+/// The groups of the bases, in the order of the wizard's tree.
+pub const CATEGORIES: [&str; 10] = [
+    "web-php",
+    "web-js",
+    "web-python",
+    "web-other",
+    "cms",
+    "docs",
+    "desktop",
+    "mobile",
+    "data",
+    "cli",
+];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Kind {
@@ -93,6 +107,9 @@ pub struct Piece {
     /// Additions of the same slot do not go together (one frontend…).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub slot: Option<String>,
+    /// Of a base: its group in the wizard's tree (`CATEGORIES`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub needs: Vec<String>,
     /// Run in `projects\`: makes the folder `{name}`.
@@ -221,6 +238,9 @@ pub fn clean(p: &mut Piece) {
     p.home = p.home.trim().to_owned();
     if p.slot.as_deref().is_some_and(|s| s.trim().is_empty()) {
         p.slot = None;
+    }
+    if p.category.as_deref().is_some_and(|s| s.trim().is_empty()) {
+        p.category = None;
     }
     clean_lines(&mut p.needs);
     clean_lines(&mut p.create);

@@ -28,7 +28,17 @@ import type { GuideTopicId } from "../guide";
 import { BrandSymbol } from "../brand";
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
-import { addPiece, FrameworksTree, PieceGroup, pieceTab, TRY_TAB, TryGroup, useFrameworks } from "../frameworks";
+import {
+  addPiece,
+  FrameworksTree,
+  IntegrationGroup,
+  parseIntegrationTab,
+  PieceGroup,
+  pieceTab,
+  TRY_TAB,
+  TryGroup,
+  useFrameworks,
+} from "../frameworks";
 import { t } from "../i18n";
 import {
   Button,
@@ -189,6 +199,21 @@ export function SettingsPage({
   /** What a tab shows: a section, a framework or the trial. */
   const content = (tab: string): ReactNode => {
     if (tab === TRY_TAB) return <TryGroup fw={fw} />;
+    const integration = parseIntegrationTab(tab);
+    if (integration) {
+      return (
+        <IntegrationGroup
+          key={tab}
+          fw={fw}
+          addon={integration.addon}
+          base={integration.base}
+          onOpen={open}
+          onRemoved={() => {
+            tabs.close(tab);
+          }}
+        />
+      );
+    }
     if (tab.startsWith("fw:")) {
       return (
         <PieceGroup
@@ -211,6 +236,17 @@ export function SettingsPage({
     }
     if (id === TRY_TAB) {
       return { id, label: t("Prova una combinazione"), icon: <VscBeaker size={16} aria-hidden="true" /> };
+    }
+    const integration = parseIntegrationTab(id);
+    if (integration) {
+      const addon = fw.pieces.find((p) => p.id === integration.addon);
+      const base = fw.pieces.find((p) => p.id === integration.base);
+      return {
+        id,
+        label: addon?.name ?? integration.addon,
+        description: base?.name ?? integration.base,
+        icon: <VscExtensions size={16} aria-hidden="true" />,
+      };
     }
     const piece = fw.pieces.find((p) => pieceTab(p.id) === id);
     const Icon = piece?.kind === "addon" ? VscExtensions : VscPackage;

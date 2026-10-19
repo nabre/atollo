@@ -1,10 +1,24 @@
 # Novità
 
+## 52 nuove basi per i progetti, in gruppi (19/10/2026)
+
+- **Gruppi** (D-131): il wizard e gli alberi dei progetti e delle Impostazioni dividono le basi in Web con PHP, Web con JavaScript e TypeScript, Web con Python, Web con altri linguaggi, CMS, Siti statici e documentazione, App desktop, App mobile, Dati e documenti, Riga di comando e librerie.
+- **Basi nuove**: Nuxt, SvelteKit, Astro, Angular, React Router, NestJS, Hono, Fresh, Elysia; Django, FastAPI, Flask; ASP.NET Core, Blazor, Spring Boot, Ktor, Gin, Axum, Dart; Craft CMS, Kirby, Grav, Joomla, Strapi, Payload; Docusaurus, Starlight, VitePress, Eleventy, MkDocs Material; Avalonia, Wails, Neutralinojs; Streamlit, JupyterLab, marimo, Shiny, Pluto, Typst, LaTeX; programmi in Rust, Go, Zig, C++, .NET, Python, Deno, Dart, Kotlin, Java e Julia.
+- **Aggiunte** su più basi: Tailwind CSS, Bootstrap e Bulma, Vitest, Prettier, i componenti React, Vue e Svelte in Astro, MySQL per Django.
+- Ogni base ha il suo logo.
+
 ## Arretrato delle piattaforme (19/10/2026, issue #8)
 
 - **pnpm su Windows**: rimuovendo il componente «pnpm, yarn» va via anche il corepack che aveva installato, come già su macOS e Linux.
 - **exFAT e FAT su macOS e Linux**: il README dice che lì i link diventano copie (per esempio i 142 link interni di Git) e consiglia APFS o ext4 per una chiavetta usata solo con un Mac o con Linux.
 - **Pool automatici** (D-101): la decisione ora dice che i siti senza server scelto entrano già nel pool automatico delle loro linee.
+
+## Pannello rapido dei progetti (19/10/2026)
+
+- **Pannello rapido** (D-130): la prima scheda di Progetti mostra cosa è in esecuzione (con indirizzo, output e «Ferma»), i progetti preferiti e recenti con Avvia, Editor, Terminale e agente, cosa c'è da sistemare (avvii falliti, componenti mancanti) e i modi di creare un progetto.
+- **Preferiti**: la stella su una scheda del pannello porta il progetto tra i preferiti; resta nelle impostazioni del progetto nel kit.
+- **▶ nella lista dei progetti**: ogni riga avvia e ferma l'azione predefinita senza aprire la pagina.
+- **Ctrl+P** apre un progetto per nome da qualsiasi pagina; Maiusc+Invio lo avvia.
 
 ## Nuovo progetto dentro Progetti (19/10/2026)
 

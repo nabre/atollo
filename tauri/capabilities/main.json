@@ -89,6 +89,7 @@
     "allow-project-action-save",
     "allow-project-action-remove",
     "allow-project-action-default",
+    "allow-project-pin",
     "allow-project-status",
     "allow-project-databases",
     "allow-project-db-create",
