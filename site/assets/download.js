@@ -50,14 +50,16 @@
     return os + "-" + arch;
   }
 
+  // The newest app release (app-v*): Apache and PHP have their own
+  // releases in this repository, and GitHub's «latest» may be one of them.
   async function release() {
     try {
-      const r = await fetch("https://api.github.com/repos/" + repo + "/releases/latest", {
+      const r = await fetch("https://api.github.com/repos/" + repo + "/releases?per_page=30", {
         headers: { Accept: "application/vnd.github+json" },
       });
-      if (r.status === 404) return { none: true };
       if (!r.ok) return null;
-      return await r.json();
+      const app = (await r.json()).find((x) => !x.draft && !x.prerelease && /^app-v/.test(x.tag_name || ""));
+      return app || { none: true };
     } catch (e) {
       return null;
     }
@@ -101,6 +103,7 @@
     if (!rel) return;
     if (rel.none) {
       button.textContent = cta.dataset.generic;
+      button.href = "https://github.com/" + repo + "/releases";
       note.textContent = cta.dataset.none;
       return;
     }

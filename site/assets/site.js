@@ -24,6 +24,9 @@
     requestAnimationFrame(step);
   }
 
+  // The hero's numbers count up as its stats rise in (--d:6).
+  setTimeout(() => document.querySelectorAll(".hero [data-count]").forEach(count), 780);
+
   const items = document.querySelectorAll(".reveal");
   if (!("IntersectionObserver" in window)) {
     items.forEach((el) => el.classList.add("in"));
