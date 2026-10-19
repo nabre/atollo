@@ -66,13 +66,18 @@
       <!-- The app icon (docs/brand/symbol.svg, the same as tauri/icons), on its
            own: never beside the wordmark. -->
       <img class="app-icon rise" style="--d:2" src="{{root}}assets/symbol.svg" alt="" width="132" height="132">
-      <!-- The kit's real layout (README, «Struttura»), not a mock of the app. -->
-      <figure class="kit rise" style="--d:3" aria-label="{{folderTitle}}">
-        <div class="kit-bar"><i></i><i></i><i></i><span>{{folderTitle}}</span></div>
-        <pre class="kit-tree"><span class="t-dir">Atollo/</span>
-<span class="t-l">├─</span> <span class="t-exe">Atollo</span>     <span class="t-c">{{folderExe}}</span>
-<span class="t-l">├─</span> <span class="t-dir">projects/</span>  <span class="t-c">{{folderProjects}}</span>
-<span class="t-l">└─</span> <span class="t-dir">data/</span>      <span class="t-c">{{folderData}}</span></pre>
+      <!-- The kit's real layout (README, «Struttura»), not a mock of the app.
+           download.js dresses it as the visitor's system (html[data-os]):
+           the window's bar, the app's file, the path on a stick. -->
+      <figure class="kit rise" style="--d:3" aria-label="{{folderTitle}}" data-version="{{version}}">
+        <div class="kit-bar"><span class="kit-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="kit-title">{{folderTitle}}</span><span class="kit-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
+        <pre class="kit-tree"><span class="t-dir" data-kit="root">Atollo/</span>
+<span class="t-l">├─</span> <span class="t-exe" data-kit="app">Atollo</span>
+<span class="t-l">│</span>  <span class="t-c">{{folderExe}}</span>
+<span class="t-l">├─</span> <span class="t-dir" data-kit="projects">projects/</span>
+<span class="t-l">│</span>  <span class="t-c">{{folderProjects}}</span>
+<span class="t-l">└─</span> <span class="t-dir" data-kit="data">data/</span>
+   <span class="t-c">{{folderData}}</span></pre>
         <ul class="kit-targets" aria-label="{{navPlatforms}}">
           <li data-target="win32-x64">win32-x64</li><li data-target="win32-arm64">win32-arm64</li>
           <li data-target="darwin-arm64">darwin-arm64</li><li data-target="darwin-x64">darwin-x64</li>
