@@ -51,6 +51,7 @@
   "toolsTitle": "Werkzeuge nach System",
   "toolsLead": "Alle Komponenten aus Atollos Katalog, nach Art, auf jedem der sechs Systeme. Heruntergeladen werden nur die, die du wählst, oder wenn ein Projekt sie braucht. Die Tabelle wird bei jeder Veröffentlichung der Website aus dem Katalog der App erzeugt.",
   "mxComponent": "Komponente",
+  "mxHere": "dieser PC",
   "mxLegendOk": "nativ",
   "mxLegendEmu": "x64-Build in Emulation",
   "mxLegendNo": "nicht verfügbar (Zelle überfahren für den Grund)",

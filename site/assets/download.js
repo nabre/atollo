@@ -68,8 +68,8 @@
     const [target, rel] = await Promise.all([detect(), release()]);
 
     if (target) {
-      const row = document.querySelector('[data-target="' + target + '"]');
-      if (row) row.classList.add("here");
+      // The card in «Sistemi» and the column of «Strumenti per sistema».
+      document.querySelectorAll('[data-target="' + target + '"]').forEach((el) => el.classList.add("here"));
       button.textContent = cta.dataset.for + " " + names[target];
     }
     // Rate limit or network error: the links stay on the releases page.

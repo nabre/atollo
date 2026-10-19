@@ -61,7 +61,8 @@ export function matrixHtml({ components, i18n }, lang, s) {
   const kindOf = (c) => KIND_OF[c.id] || KIND_OF_GROUP[c.group] || "tools";
 
   const osHead = [["Windows", 2], ["macOS", 2], ["Linux", 2]].map(([os, n]) => `<th colspan="${n}" class="os-head">${os}</th>`).join("");
-  const archHead = TARGETS.map(([t, , arch]) => `<th class="arch" title="${t}">${escape(arch)}</th>`).join("");
+  // data-target lets assets/download.js mark the visitor's column.
+  const archHead = TARGETS.map(([t, , arch]) => `<th class="arch" title="${t}" data-target="${t}">${escape(arch)}<span class="mx-here">${escape(s.mxHere)}</span></th>`).join("");
 
   const body = KINDS.map((kind) => {
     const items = components.filter((c) => kindOf(c) === kind);
@@ -70,7 +71,7 @@ export function matrixHtml({ components, i18n }, lang, s) {
       const cells = TARGETS.map(([t, os, arch]) => {
         const [k, why] = status(c, t, byId, s);
         const tip = `${os} ${arch}: ${reason(why)}`;
-        return `<td class="mx-${k}" title="${escape(tip)}"><span aria-hidden="true">${MARK[k]}</span><span class="sr">${escape(tip)}</span></td>`;
+        return `<td class="mx-${k}" data-target="${t}" title="${escape(tip)}"><span aria-hidden="true">${MARK[k]}</span><span class="sr">${escape(tip)}</span></td>`;
       }).join("");
       const name = c.home ? `<a href="${escape(c.home)}">${escape(c.name)}</a>` : escape(c.name);
       return `<tr><th scope="row"><span class="mx-name">${name}</span><span class="mx-desc">${escape(tr(c.desc))}</span></th>${cells}</tr>`;
