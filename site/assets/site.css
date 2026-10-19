@@ -46,67 +46,51 @@
   unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F;
 }
 
+/* The theme: the system's (color-scheme: dark light), or the one picked in
+   the header (html[data-theme], site.js). Each color is light-dark(light,
+   dark); what is not a color (the hero, the logos) is set just below. */
 :root {
-  --bg: #1f1f1f;
+  --bg: light-dark(#ffffff, #1f1f1f);
   /* The hero SVG's own top-left color: hero and page meet without a seam. */
-  --bg-deep: #1f1f1f;
-  --panel: #181818;
-  --widget: #202020;
-  --border: #2b2b2b;
-  --fg: #cccccc;
-  --title: #f2f2f2;
-  --desc: #9d9d9d;
-  --accent: #10b981;
-  --accent-hover: #0ea572;
-  --on-accent: #04140d;
-  --link: #34d399;
-  --mint: #6ee7b7;
-  --warm: #f97316;
-  --amber: #fbbf24;
-  --code-bg: #0a0a0a;
-  --button2: #313131;
-  --button2-hover: #3c3c3c;
-  --hover: #2a2d2e;
-  --ok: #73c991;
-  --emu: #cca700;
-  --no: #6b6b6b;
-  --glass: rgb(24 24 24 / 0.72);
-  --shadow: 0 30px 80px rgb(0 0 0 / 0.55);
+  --bg-deep: light-dark(#ffffff, #1f1f1f);
+  --panel: light-dark(#f8f8f8, #181818);
+  --widget: light-dark(#ffffff, #202020);
+  --border: light-dark(#e5e5e5, #2b2b2b);
+  --fg: light-dark(#3b3b3b, #cccccc);
+  --title: light-dark(#0f3d2e, #f2f2f2);
+  --desc: light-dark(#717171, #9d9d9d);
+  --accent: light-dark(#047857, #10b981);
+  --accent-hover: light-dark(#065f46, #0ea572);
+  --on-accent: light-dark(#ffffff, #04140d);
+  --link: light-dark(#047857, #34d399);
+  --mint: light-dark(#047857, #6ee7b7);
+  --warm: light-dark(#c2410c, #f97316);
+  --amber: light-dark(#b45309, #fbbf24);
+  --code-bg: light-dark(#f8f8f8, #0a0a0a);
+  --button2: light-dark(#e5e5e5, #313131);
+  --button2-hover: light-dark(#cccccc, #3c3c3c);
+  --hover: light-dark(#f2f2f2, #2a2d2e);
+  --ok: light-dark(#007100, #73c991);
+  --emu: light-dark(#855f00, #cca700);
+  --no: light-dark(#a0a0a0, #6b6b6b);
+  --glass: light-dark(rgb(255 255 255 / 0.78), rgb(24 24 24 / 0.72));
+  --shadow: 0 30px 76px light-dark(rgb(15 61 46 / 0.16), rgb(0 0 0 / 0.55));
   --hero: url("hero-dark.svg");
   --ui: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Consolas, monospace;
-  color-scheme: dark;
+  color-scheme: dark light;
 }
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+/* Light, by the system or by choice: the two selectors hold the same rules. */
 @media (prefers-color-scheme: light) {
-  :root {
-    --bg: #ffffff;
-    --bg-deep: #ffffff;
-    --panel: #f8f8f8;
-    --widget: #ffffff;
-    --border: #e5e5e5;
-    --fg: #3b3b3b;
-    --title: #0f3d2e;
-    --desc: #717171;
-    --accent: #047857;
-    --accent-hover: #065f46;
-    --on-accent: #ffffff;
-    --link: #047857;
-    --mint: #047857;
-    --warm: #c2410c;
-    --amber: #b45309;
-    --code-bg: #f8f8f8;
-    --button2: #e5e5e5;
-    --button2-hover: #cccccc;
-    --hover: #f2f2f2;
-    --ok: #007100;
-    --emu: #855f00;
-    --no: #a0a0a0;
-    --glass: rgb(255 255 255 / 0.78);
-    --shadow: 0 30px 70px rgb(15 61 46 / 0.16);
-    --hero: url("hero-light.svg");
-    color-scheme: light;
-  }
+  :root:not([data-theme="dark"]) { --hero: url("hero-light.svg"); }
+  :root:not([data-theme="dark"]) .logo-dark { display: none; }
+  :root:not([data-theme="dark"]) .logo-light { display: block; }
 }
+:root[data-theme="light"] { --hero: url("hero-light.svg"); }
+:root[data-theme="light"] .logo-dark { display: none; }
+:root[data-theme="light"] .logo-light { display: block; }
 
 * { box-sizing: border-box; }
 /* overflow-x on html too: on body it does not reach the viewport, and a phone
@@ -153,14 +137,24 @@ section { padding: 96px 0; position: relative; }
 .brand { display: flex; }
 .logo { height: 25px; width: auto; }
 .logo-light { display: none; }
-@media (prefers-color-scheme: light) { .logo-dark { display: none; } .logo-light { display: block; } }
 .nav { display: flex; gap: 22px; margin-left: auto; font-size: 0.9rem; }
 .nav a { color: var(--fg); }
 .nav a:hover { color: var(--title); text-decoration: none; }
 .langs { display: flex; gap: 2px; font: 0.8rem var(--mono); }
 .langs a, .langs span { padding: 2px 6px; border-radius: 4px; color: var(--desc); }
 .langs [aria-current] { color: var(--title); background: var(--button2); }
-@media (max-width: 820px) { .nav { display: none; } .langs { margin-left: auto; } }
+/* The theme switch: system, light, dark. It needs site.js, so only with .js. */
+.themes { display: none; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 7px; }
+.js .themes { display: flex; }
+.themes button {
+  display: grid; place-items: center; width: 26px; height: 22px; padding: 0;
+  border: 0; border-radius: 4px; background: none; color: var(--desc); cursor: pointer;
+}
+.themes button:hover { color: var(--title); }
+.themes button[aria-pressed="true"] { color: var(--title); background: var(--button2); }
+.themes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.themes svg { width: 15px; height: 15px; }
+@media (max-width: 820px) { .nav { display: none; } .langs { margin-left: auto; } .top-row { gap: 12px; } }
 
 /* Hero */
 .hero { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: min(104px, 10vh) 0 min(40px, 2vh); overflow: hidden; background: var(--bg-deep); }
