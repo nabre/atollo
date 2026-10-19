@@ -6,7 +6,7 @@
 <title>{{title}}</title>
 <meta name="description" content="{{description}}">
 <meta name="color-scheme" content="dark light">
-<meta name="theme-color" content="#1F1F1F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
 <link rel="canonical" href="{{base}}{{path}}">
 {{alternates}}
@@ -17,11 +17,15 @@
 <meta property="og:image" content="{{base}}assets/brand.png">
 <link rel="icon" type="image/svg+xml" href="{{root}}assets/symbol.svg">
 <link rel="stylesheet" href="{{root}}assets/site.css">
+<!-- Without JavaScript nothing waits for a reveal: .js gates the animations. -->
+<script>document.documentElement.classList.add("js")</script>
 <script src="{{root}}assets/download.js" defer></script>
+<script src="{{root}}assets/site.js" defer></script>
 </head>
 <body>
 <header class="top">
   <div class="wrap top-row">
+    <!-- The wordmark alone: the symbol is an A too (MARKETING.md, section 6). -->
     <a class="brand" href="{{root}}{{langPath}}" aria-label="Atollo">
       <img class="logo logo-dark" src="{{root}}assets/wordmark-dark.svg" alt="Atollo" width="112" height="20">
       <img class="logo logo-light" src="{{root}}assets/wordmark-light.svg" alt="Atollo" width="112" height="20">
@@ -39,107 +43,158 @@
 
 <main>
   <section class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
     <div class="wrap hero-grid">
       <div class="hero-text">
-        <p class="kicker">{{heroKicker}}</p>
-        <h1>{{heroTitle}}</h1>
-        <p class="lead">{{heroLead}}</p>
-        <p class="zero">{{heroZero}}</p>
-        <div class="cta" id="download"
+        <p class="kicker rise" style="--d:0">{{heroKicker}}</p>
+        <h1 class="rise" style="--d:1">{{heroTitle}}</h1>
+        <p class="lead rise" style="--d:2">{{heroLead}}</p>
+        <p class="zero rise" style="--d:3">{{heroZero}}</p>
+        <div class="cta rise" style="--d:4" id="download"
              data-for="{{downloadFor}}" data-generic="{{downloadGeneric}}" data-none="{{noRelease}}"
              data-version="{{versionLabel}}">
           <a class="btn btn-primary" id="dl-main" href="https://github.com/nabre/atollo/releases/latest">{{downloadGeneric}}</a>
-          <a class="btn btn-secondary" href="#platforms">{{otherSystems}}</a>
+          <a class="btn btn-ghost" href="#platforms">{{otherSystems}}</a>
         </div>
-        <p class="release-note" id="dl-note"><a href="https://github.com/nabre/atollo">{{sourceCode}}</a> · MIT</p>
+        <p class="release-note rise" style="--d:5" id="dl-note"><a href="https://github.com/nabre/atollo">{{sourceCode}}</a> · MIT</p>
       </div>
-      <img class="hero-symbol" src="{{root}}assets/symbol.svg" alt="" width="320" height="320">
+
+      <!-- The kit's real layout (README, «Struttura»), not a mock of the app. -->
+      <figure class="kit rise" style="--d:3" aria-label="{{folderTitle}}">
+        <div class="kit-bar"><i></i><i></i><i></i><span>{{folderTitle}}</span></div>
+        <pre class="kit-tree"><span class="t-dir">Atollo/</span>
+<span class="t-l">├─</span> <span class="t-exe">Atollo</span>     <span class="t-c">{{folderExe}}</span>
+<span class="t-l">├─</span> <span class="t-dir">projects/</span>  <span class="t-c">{{folderProjects}}</span>
+<span class="t-l">└─</span> <span class="t-dir">data/</span>      <span class="t-c">{{folderData}}</span></pre>
+        <ul class="kit-targets" aria-label="{{navPlatforms}}">
+          <li data-target="win32-x64">win32-x64</li><li data-target="win32-arm64">win32-arm64</li>
+          <li data-target="darwin-arm64">darwin-arm64</li><li data-target="darwin-x64">darwin-x64</li>
+          <li data-target="linux-x64">linux-x64</li><li data-target="linux-arm64">linux-arm64</li>
+        </ul>
+      </figure>
     </div>
   </section>
 
-  <section class="band">
-    <div class="wrap narrow">
-      <h2>{{metaphorTitle}}</h2>
-      <p>{{metaphorText}}</p>
+  <section class="stats" aria-label="Atollo">
+    <div class="wrap stats-row">
+      <div class="stat reveal"><b data-count="6">6</b><span>{{statTargets}}</span></div>
+      <div class="stat reveal"><b data-count="{{componentCount}}">{{componentCount}}</b><span>{{statComponents}}</span></div>
+      <div class="stat reveal"><b data-count="3">3</b><span>{{statAgents}}</span></div>
+      <div class="stat reveal"><b>0</b><span>{{statZero}}</span></div>
+    </div>
+  </section>
+
+  <section class="lagoon">
+    <div class="wrap lagoon-grid">
+      <h2 class="reveal">{{metaphorTitle}}</h2>
+      <p class="lagoon-text reveal">{{metaphorText}}</p>
     </div>
   </section>
 
   <section id="features">
     <div class="wrap">
-      <h2>{{featuresTitle}}</h2>
-      <div class="cards">
-        <article class="card"><span class="num">1</span><h3>{{f1Title}}</h3><p>{{f1Text}}</p></article>
-        <article class="card"><span class="num">2</span><h3>{{f2Title}}</h3><p>{{f2Text}}</p></article>
-        <article class="card"><span class="num">3</span><h3>{{f3Title}}</h3><p>{{f3Text}}</p></article>
-        <article class="card"><span class="num">4</span><h3>{{f4Title}}</h3><p>{{f4Text}}</p></article>
-        <article class="card card-wide"><span class="num num-warm">6/6</span><h3>{{f5Title}}</h3><p>{{f5Text}}</p></article>
+      <p class="eyebrow reveal">01</p>
+      <h2 class="reveal">{{featuresTitle}}</h2>
+      <div class="bento">
+        <article class="tile tile-a reveal"><span class="tile-n">1</span><h3>{{f1Title}}</h3><p>{{f1Text}}</p></article>
+        <article class="tile tile-b reveal"><span class="tile-n">2</span><h3>{{f2Title}}</h3><p>{{f2Text}}</p></article>
+        <article class="tile tile-c reveal"><span class="tile-n">3</span><h3>{{f3Title}}</h3><p>{{f3Text}}</p></article>
+        <article class="tile tile-d reveal"><span class="tile-n">4</span><h3>{{f4Title}}</h3><p>{{f4Text}}</p></article>
+        <article class="tile tile-e reveal">
+          <span class="tile-n warm">6/6</span><h3>{{f5Title}}</h3><p>{{f5Text}}</p>
+        </article>
       </div>
     </div>
   </section>
 
-  <section id="how" class="band">
+  <section class="gallery">
     <div class="wrap">
-      <h2>{{howTitle}}</h2>
-      <ol class="steps">
-        <li><p>{{how1}}</p></li>
-        <li><p>{{how2}}</p></li>
-        <li><p>{{how3}}</p></li>
-      </ol>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <h2>{{shotsTitle}}</h2>
+      <p class="eyebrow reveal">02</p>
+      <h2 class="reveal">{{shotsTitle}}</h2>
       <div class="shots">
-        <figure><img src="{{root}}assets/shot-projects.png" alt="{{shot1}}" loading="lazy"><figcaption>{{shot1}}</figcaption></figure>
-        <figure><img src="{{root}}assets/shot-agents.png" alt="{{shot2}}" loading="lazy"><figcaption>{{shot2}}</figcaption></figure>
-        <figure><img src="{{root}}assets/shot-tools.png" alt="{{shot3}}" loading="lazy"><figcaption>{{shot3}}</figcaption></figure>
+        <!-- The screenshots' own title and status bars are cropped (.crop):
+             a frame of the site stands in for them. -->
+        <figure class="shot shot-main reveal">
+          <div class="frame"><div class="frame-bar"><i></i><i></i><i></i><span>Atollo — {{shot1}}</span></div>
+            <div class="crop"><img src="{{root}}assets/shot-projects.png" alt="{{shot1}}" loading="lazy" width="2560" height="1640"></div></div>
+          <figcaption>{{shot1}}</figcaption>
+        </figure>
+        <figure class="shot shot-side reveal">
+          <div class="frame"><div class="frame-bar"><i></i><i></i><i></i><span>Atollo — {{shot2}}</span></div>
+            <div class="crop"><img src="{{root}}assets/shot-agents.png" alt="{{shot2}}" loading="lazy" width="2560" height="1640"></div></div>
+          <figcaption>{{shot2}}</figcaption>
+        </figure>
+        <figure class="shot shot-side reveal">
+          <div class="frame"><div class="frame-bar"><i></i><i></i><i></i><span>Atollo — {{shot3}}</span></div>
+            <div class="crop"><img src="{{root}}assets/shot-tools.png" alt="{{shot3}}" loading="lazy" width="2560" height="1640"></div></div>
+          <figcaption>{{shot3}}</figcaption>
+        </figure>
       </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <p class="eyebrow reveal">03</p>
+      <h2 class="reveal">{{howTitle}}</h2>
+      <ol class="steps">
+        <li class="reveal"><p>{{how1}}</p></li>
+        <li class="reveal"><p>{{how2}}</p></li>
+        <li class="reveal"><p>{{how3}}</p></li>
+      </ol>
     </div>
   </section>
 
   <section class="band">
     <div class="wrap">
-      <h2>{{aspectsTitle}}</h2>
+      <p class="eyebrow reveal">04</p>
+      <h2 class="reveal">{{aspectsTitle}}</h2>
       <div class="aspects">
-        <article><h3>{{a1Title}}</h3><p>{{a1Text}}</p></article>
-        <article><h3>{{a2Title}}</h3><p>{{a2Text}}</p></article>
-        <article><h3>{{a3Title}}</h3><p>{{a3Text}}</p></article>
-        <article><h3>{{a4Title}}</h3><p>{{a4Text}}</p></article>
+        <article class="reveal"><h3>{{a1Title}}</h3><p>{{a1Text}}</p></article>
+        <article class="reveal"><h3>{{a2Title}}</h3><p>{{a2Text}}</p></article>
+        <article class="reveal"><h3>{{a3Title}}</h3><p>{{a3Text}}</p></article>
+        <article class="reveal"><h3>{{a4Title}}</h3><p>{{a4Text}}</p></article>
       </div>
     </div>
   </section>
 
   <section id="tools">
     <div class="wrap">
-      <h2>{{toolsTitle}}</h2>
-      <p class="muted">{{toolsLead}}</p>
+      <p class="eyebrow reveal">05</p>
+      <h2 class="reveal">{{toolsTitle}}</h2>
+      <p class="muted reveal">{{toolsLead}}</p>
       {{toolsMatrix}}
     </div>
   </section>
 
   <section id="platforms" class="band">
     <div class="wrap">
-      <h2>{{platformsTitle}}</h2>
-      <p class="muted">{{platformsLead}}</p>
+      <p class="eyebrow reveal">06</p>
+      <h2 class="reveal">{{platformsTitle}}</h2>
+      <p class="muted reveal">{{platformsLead}}</p>
       <ul class="targets">
-        <li data-target="win32-x64"><span class="os">Windows</span><code>win32-x64</code><span class="note">{{pWinX64}}</span><span class="files"><a data-asset="Atollo-x64.exe" href="https://github.com/nabre/atollo/releases/latest">Atollo-x64.exe</a></span></li>
-        <li data-target="win32-arm64"><span class="os">Windows</span><code>win32-arm64</code><span class="note">{{pWinArm}}</span><span class="files"><a data-asset="Atollo-arm64.exe" href="https://github.com/nabre/atollo/releases/latest">Atollo-arm64.exe</a></span></li>
-        <li data-target="darwin-arm64"><span class="os">macOS</span><code>darwin-arm64</code><span class="note">{{pMacArm}}</span><span class="files"><a data-asset="Atollo-darwin-arm64.app.zip" href="https://github.com/nabre/atollo/releases/latest">Atollo-darwin-arm64.app.zip</a></span></li>
-        <li data-target="darwin-x64"><span class="os">macOS</span><code>darwin-x64</code><span class="note">{{pMacX64}}</span><span class="files"><a data-asset="Atollo-darwin-x64.app.zip" href="https://github.com/nabre/atollo/releases/latest">Atollo-darwin-x64.app.zip</a></span></li>
-        <li data-target="linux-x64"><span class="os">Linux</span><code>linux-x64</code><span class="note">{{pLinX64}}</span><span class="files"><a data-asset="Atollo-linux-x64.AppImage" href="https://github.com/nabre/atollo/releases/latest">.AppImage</a><a data-asset="Atollo-linux-x64.tar.gz" href="https://github.com/nabre/atollo/releases/latest">.tar.gz</a></span></li>
-        <li data-target="linux-arm64"><span class="os">Linux</span><code>linux-arm64</code><span class="note">{{pLinArm}}</span><span class="files"><a data-asset="Atollo-linux-arm64.AppImage" href="https://github.com/nabre/atollo/releases/latest">.AppImage</a><a data-asset="Atollo-linux-arm64.tar.gz" href="https://github.com/nabre/atollo/releases/latest">.tar.gz</a></span></li>
+        <li class="reveal" data-target="win32-x64"><span class="os">Windows</span><code>win32-x64</code><span class="note">{{pWinX64}}</span><span class="files"><a data-asset="Atollo-x64.exe" href="https://github.com/nabre/atollo/releases/latest">Atollo-x64.exe</a></span></li>
+        <li class="reveal" data-target="win32-arm64"><span class="os">Windows</span><code>win32-arm64</code><span class="note">{{pWinArm}}</span><span class="files"><a data-asset="Atollo-arm64.exe" href="https://github.com/nabre/atollo/releases/latest">Atollo-arm64.exe</a></span></li>
+        <li class="reveal" data-target="darwin-arm64"><span class="os">macOS</span><code>darwin-arm64</code><span class="note">{{pMacArm}}</span><span class="files"><a data-asset="Atollo-darwin-arm64.app.zip" href="https://github.com/nabre/atollo/releases/latest">Atollo-darwin-arm64.app.zip</a></span></li>
+        <li class="reveal" data-target="darwin-x64"><span class="os">macOS</span><code>darwin-x64</code><span class="note">{{pMacX64}}</span><span class="files"><a data-asset="Atollo-darwin-x64.app.zip" href="https://github.com/nabre/atollo/releases/latest">Atollo-darwin-x64.app.zip</a></span></li>
+        <li class="reveal" data-target="linux-x64"><span class="os">Linux</span><code>linux-x64</code><span class="note">{{pLinX64}}</span><span class="files"><a data-asset="Atollo-linux-x64.AppImage" href="https://github.com/nabre/atollo/releases/latest">.AppImage</a><a data-asset="Atollo-linux-x64.tar.gz" href="https://github.com/nabre/atollo/releases/latest">.tar.gz</a></span></li>
+        <li class="reveal" data-target="linux-arm64"><span class="os">Linux</span><code>linux-arm64</code><span class="note">{{pLinArm}}</span><span class="files"><a data-asset="Atollo-linux-arm64.AppImage" href="https://github.com/nabre/atollo/releases/latest">.AppImage</a><a data-asset="Atollo-linux-arm64.tar.gz" href="https://github.com/nabre/atollo/releases/latest">.tar.gz</a></span></li>
       </ul>
       <p class="muted small">{{checksum}}. {{platformsNote}}</p>
       <p><a class="link" href="{{readmeHref}}">{{readGuide}} →</a></p>
     </div>
   </section>
 
-  <section>
-    <div class="wrap narrow">
-      <h2>{{privacyTitle}}</h2>
-      <p>{{privacyText}}</p>
+  <section class="finale">
+    <div class="finale-bg" aria-hidden="true"></div>
+    <div class="wrap finale-inner reveal">
+      <h2>{{ctaTitle}}</h2>
+      <p>{{ctaText}}</p>
+      <div class="cta">
+        <a class="btn btn-primary" data-download href="https://github.com/nabre/atollo/releases/latest">{{downloadGeneric}}</a>
+        <a class="btn btn-ghost" href="https://github.com/nabre/atollo">{{sourceCode}}</a>
+      </div>
+      <p class="finale-privacy"><b>{{privacyTitle}}.</b> {{privacyText}}</p>
     </div>
   </section>
 </main>

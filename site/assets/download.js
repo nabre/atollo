@@ -98,5 +98,16 @@
     }
   }
 
-  run();
+  // The other download buttons ([data-download], the page's finale) follow
+  // the hero's, whatever run() decided.
+  function follow() {
+    const button = document.getElementById("dl-main");
+    if (!button) return;
+    document.querySelectorAll("[data-download]").forEach((a) => {
+      a.href = button.href;
+      a.textContent = button.textContent;
+    });
+  }
+
+  run().finally(follow);
 })();
