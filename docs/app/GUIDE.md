@@ -1,842 +1,2649 @@
-# Atollo Complete Guide: Structure, Features, Sources, Configuration and Illustrated Examples
+# Atollo Guide
 
 English · [Italiano](GUIDE.it.md)
 
-This document sets out the **editorial structure**, the **detailed content**, the **real screenshots of the interface** (`images/*.png`) and the **guided practical examples** of the official guide to **Atollo** (`Atollo.exe`, brand **Atollo**). It covers in detail the portable architecture, how every view of the application works, the full organization of the links and sources the kit draws its tools from, the central role of the GitHub account, and the step-by-step procedures to configure each element, with an explanation of the technical and practical purpose of each operation.
+Atollo is a complete development environment that lives in a single folder: on a USB stick, an external disk or the PC's own disk. It does not install and does not ask for administrator rights: copy the folder to another PC and you find everything again, projects included.
+
+## Contents
+
+1. [First steps](#1-first-steps)
+   - [1.1 Welcome to Atollo](#11-welcome-to-atollo)
+   - [1.2 The first start](#12-the-first-start)
+   - [1.3 Getting to know the window](#13-getting-to-know-the-window)
+   - [1.4 The first project, step by step](#14-the-first-project-step-by-step)
+2. [Projects](#2-projects)
+   - [2.1 Creating a project](#21-creating-a-project)
+   - [2.2 The Projects page and the “Quick panel”](#22-the-projects-page-and-the-quick-panel)
+   - [2.3 Starting a project: actions and ports](#23-starting-a-project-actions-and-ports)
+   - [2.4 Components and versions of a project](#24-components-and-versions-of-a-project)
+   - [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions)
+   - [2.6 A project's Git](#26-a-projects-git)
+   - [2.7 Deleting a project and the “Data without a project”](#27-deleting-a-project-and-the-data-without-a-project)
+3. [Databases, websites and terminals](#3-databases-websites-and-terminals)
+   - [3.1 The database servers](#31-the-database-servers)
+   - [3.2 A project's database](#32-a-projects-database)
+   - [3.3 Websites and .localhost addresses](#33-websites-and-localhost-addresses)
+   - [3.4 The kit's terminals](#34-the-kits-terminals)
+4. [AI agents](#4-ai-agents)
+   - [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity)
+   - [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers)
+   - [4.3 Agent limits and usage](#43-agent-limits-and-usage)
+5. [Tools and languages](#5-tools-and-languages)
+   - [5.1 The Tools page](#51-the-tools-page)
+   - [5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool)
+   - [5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements)
+6. [Account and settings](#6-account-and-settings)
+   - [6.1 The kit's GitHub account](#61-the-kits-github-account)
+   - [6.2 The Settings, one by one](#62-the-settings-one-by-one)
+   - [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network)
+   - [6.4 The framework instructions](#64-the-framework-instructions)
+7. [Taking the kit with you](#7-taking-the-kit-with-you)
+   - [7.1 Safely removing the drive](#71-safely-removing-the-drive)
+   - [7.2 On another PC, another letter, another folder](#72-on-another-pc-another-letter-another-folder)
+   - [7.3 Updates and backups](#73-updates-and-backups)
+8. [How it works inside](#8-how-it-works-inside)
+   - [8.1 Portable and isolated: what it means](#81-portable-and-isolated-what-it-means)
+   - [8.2 The kit's folders on disk](#82-the-kits-folders-on-disk)
+   - [8.3 Background processes](#83-background-processes)
+   - [8.4 Where the tools come from](#84-where-the-tools-come-from)
+   - [8.5 The command line](#85-the-command-line)
+9. [Help](#9-help)
+   - [9.1 When something goes wrong](#91-when-something-goes-wrong)
+   - [9.2 Frequently asked questions](#92-frequently-asked-questions)
+   - [9.3 Glossary](#93-glossary)
+
+## 1. First steps
+
+### 1.1 Welcome to Atollo
+
+*What Atollo is, what you find inside and how this guide is organized. The place to start if it is your first time.*
+
+> **In short**
+>
+> - Atollo is a complete development environment that lives in a single folder: on a USB stick, an external disk or the PC's own disk.
+> - It does not install and does not ask for administrator rights: copy the folder to another PC and you find everything again, projects included.
+> - Inside you find languages in several versions, databases, web servers, an editor, consoles, Git and GitHub, and three AI agents.
+> - This guide goes from the simplest things to the most technical ones: you can read it in order or jump to what you need.
+
+#### What it is, in simple words
+
+Picture a work backpack that is already packed: inside is everything you need to write programs and websites, tidy and working. You carry it with you, open it on any computer and work, without installing anything and without leaving a mess on the PC that hosts you. When you are done, you close it and take it away.
+
+Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors.
 
 > [!NOTE]
-> **Real scenario used in the examples and images of this guide:**
-> All the screenshots in this guide show a real work environment on a portable drive (`D:\Atollo`) connected to the GitHub account **`@mario-rossi`** (with the organization **`studio-rossi`**) and populated with three concrete projects:
-> - **`gestionale-fatture`**: a full-stack **Laravel 13 + React + Tailwind CSS 4 + MySQL 9.7** application (served both with the development command `composer run dev` and through the shared **Apache 2.4 · PHP 8.4** pool at `http://gestionale-fatture.localhost:8081`, with the extra domain `fatture.studio.localhost` and the alias `/allegati`).
-> - **`portale-clienti`**: a **Vite + React + TypeScript** frontend application (with the **MongoDB 8.0** document database `portale_clienti` explored directly from the interface).
-> - **`api-magazzino`**: a **Python 3.13 + FastAPI** microservice with a relational and a document database.
+> **Who it is for**
+>
+> For people who code on several computers (home, office, lab), people who cannot install programs on their work PC, people who teach or study and want the same environment for everyone, and people who want to try a language or a framework without cluttering their own system.
 
----
+#### What you find inside
 
-## Table of Contents
+| What | What it is for | Where it is in the app |
+| --- | --- | --- |
+| Projects | Your working folders, each with its own actions, versions, database and website. | Projects |
+| Languages and tools | Python, Node.js, PHP, Java, .NET, Go, Rust and many others, even several versions side by side. | Tools |
+| Databases | A MySQL server and a MongoDB one, for this PC only, with passwords already set up. | Databases |
+| Web servers | Caddy and Apache, to see your websites at addresses like mio-sito.localhost. | Web Servers |
+| Editor | VSCodium, the free version of Visual Studio Code, in an Atollo window. | Projects › Editor |
+| Console | PowerShell 7 with all the kit's tools ready to use. | Terminals |
+| Git and GitHub | Git and GitHub CLI with a single sign-in to your account for the whole kit. | Settings › GitHub account |
+| AI agents | Claude Code, Codex and Antigravity, with shared instructions, skills and MCP servers. | Agents |
 
-1. [Guide Structure and Application Philosophy](#1-guide-structure-and-application-philosophy)
-   - [1.1 Core Principles: Full Portability and Isolation](#11-core-principles-full-portability-and-isolation)
-   - [1.2 Layout on Disk (`Atollo.exe`, `projects\`, `data\`)](#12-layout-on-disk-atolloexe-projects-data)
-   - [1.3 Process Lifecycle (Job Object) and Automatic Relocation](#13-process-lifecycle-job-object-and-automatic-relocation)
-2. [Organization of Tool Links and Sources](#2-organization-of-tool-links-and-sources)
-   - [2.1 Sourcing Architecture and Cryptographic Verification](#21-sourcing-architecture-and-cryptographic-verification)
-   - [2.2 Complete Table of Sources for Components, Languages and Databases](#22-complete-table-of-sources-for-components-languages-and-databases)
-   - [2.3 Sources for Editor Extensions, Agent Limits and App Updates](#23-sources-for-editor-extensions-agent-limits-and-app-updates)
-   - [2.4 Fallback Without the API and Manual Download ("By Hand")](#24-fallback-without-the-api-and-manual-download-by-hand)
-3. [Why a GitHub Account Is Needed and Its Central Role](#3-why-a-github-account-is-needed-and-its-central-role)
-   - [3.1 Why the GitHub Account Is Essential in the Kit](#31-why-the-github-account-is-essential-in-the-kit)
-   - [3.2 How Unified Authentication Works (`data\gh` and `.gitconfig`)](#32-how-unified-authentication-works-datagh-and-gitconfig)
-   - [3.3 Steps to Set Up the GitHub Account and Permissions (`workflow`, `delete_repo`)](#33-steps-to-set-up-the-github-account-and-permissions-workflow-delete_repo)
-4. [Detailed Tour of the Application's Features (with Images and Examples)](#4-detailed-tour-of-the-applications-features-with-images-and-examples)
-   - [4.1 Main Window, Status Bar and Activity Panel](#41-main-window-status-bar-and-activity-panel)
-   - [4.2 The "New project" Tab (Framework Wizard and Combinations)](#42-the-new-project-tab-framework-wizard-and-combinations)
-   - [4.3 The "Projects" Page and the Project Detail Tab](#43-the-projects-page-and-the-project-detail-tab)
-   - [4.4 Integrated Editor (VSCodium Web) and the Kit's Own Terminal](#44-integrated-editor-vscodium-web-and-the-kits-own-terminal)
-   - [4.5 The "Agents" Page (Claude Code, Codex, Antigravity and Synchronization)](#45-the-agents-page-claude-code-codex-antigravity-and-synchronization)
-   - [4.6 The "Databases" Page (MySQL, MongoDB, phpMyAdmin and Data Explorer)](#46-the-databases-page-mysql-mongodb-phpmyadmin-and-data-explorer)
-   - [4.7 The "Web Servers" Page (Shared Caddy/Apache Pools and `.localhost` VirtualHosts)](#47-the-web-servers-page-shared-caddyapache-pools-and-localhost-virtualhosts)
-   - [4.8 The "Tools" Page (Multiple Versions, Relations Matrix and Extensions)](#48-the-tools-page-multiple-versions-relations-matrix-and-extensions)
-   - [4.9 The "Settings" Page and the Framework Customization Tree](#49-the-settings-page-and-the-framework-customization-tree)
-   - [4.10 The "Remove drive" Page and Safe Ejection](#410-the-remove-drive-page-and-safe-ejection)
-   - [4.11 Command-Line Interface (`Atollo.exe` CLI)](#411-command-line-interface-atolloexe-cli)
-5. [Step-by-Step Guide to Configuring Each Element and Its Purpose](#5-step-by-step-guide-to-configuring-each-element-and-its-purpose)
-   - [5.1 Initial Kit Setup and Choice of Drive](#51-initial-kit-setup-and-choice-of-drive)
-   - [5.2 General Configuration: Language, Temporary Files and Updates](#52-general-configuration-language-temporary-files-and-updates)
-   - [5.3 Network Configuration: Corporate Proxies, CA Certificates (SSL Inspection) and LAN](#53-network-configuration-corporate-proxies-ca-certificates-ssl-inspection-and-lan)
-   - [5.4 Configuring Compilers and Default Lines (Python, PHP, Rust)](#54-configuring-compilers-and-default-lines-python-php-rust)
-   - [5.5 Configuring Versions per Project and Resolving Conflicts](#55-configuring-versions-per-project-and-resolving-conflicts)
-   - [5.6 Configuring AI Agents, Gemini Key, Skills, Instructions and MCP Servers](#56-configuring-ai-agents-gemini-key-skills-instructions-and-mcp-servers)
-   - [5.7 Configuring Database Servers, Project Users, `.env` and Backups](#57-configuring-database-servers-project-users-env-and-backups)
-   - [5.8 Configuring Websites, Caddy/Apache Pools, `.localhost` Domains and Aliases](#58-configuring-websites-caddyapache-pools-localhost-domains-and-aliases)
-   - [5.9 Configuring Custom Actions (`panel.json`) and Ports](#59-configuring-custom-actions-paneljson-and-ports)
-   - [5.10 Configuring Extensions and Editor Settings per Project](#510-configuring-extensions-and-editor-settings-per-project)
-   - [5.11 Configuring and Editing the Framework Wizard Recipes](#511-configuring-and-editing-the-framework-wizard-recipes)
-   - [5.12 Managing "Data without a project" (Adopting or Cleaning Up Orphans)](#512-managing-data-without-a-project-adopting-or-cleaning-up-orphans)
+#### Three ideas to keep in mind
 
----
+**Everything in one folder** — The kit writes only inside its own folder (with a few declared exceptions). To make a copy of everything, just copy the folder; to remove it, just delete it.
 
-## 1. Guide Structure and Application Philosophy
+**The kit takes care of the tools** — When a project or an agent needs a program that is missing, the kit downloads it from the official source, checks it and puts it in its place. You choose, it installs.
 
-### 1.1 Core Principles: Full Portability and Isolation
+**Only on this PC** — Databases and websites answer only the computer you are working on (address 127.0.0.1), with passwords generated by the kit. Nobody on the network sees them, unless you ask for it.
 
-**Atollo** was created to provide a complete development environment for Windows 10 and 11 (`x64` and `ARM64` architectures), macOS (Apple Silicon and Intel) and Linux (`x64` and `ARM64`), packed into a single executable (`Atollo.exe`; on macOS the `.app` bundle, on Linux an AppImage or a `tar.gz`). The same kit on a USB stick opens on all three systems. This guide describes Windows; on macOS and Linux the kit's terminal and the agents open in a tab of the app and Apache is a build made by the kit, with PHP through `php-fpm` (D-116), with the limits listed in the [open issues](https://github.com/nabre/atollo/issues). The project follows five strict architectural rules:
+#### How this guide is organized
 
-1. **Zero installation and no administrator rights (`asInvoker`)**: the application embeds a Windows manifest with `requestedExecutionLevel level="asInvoker"`. It installs no system services, creates no scheduled tasks and does not modify the Windows registry (even the temporary key `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Rustup`, which `rustup-init` forces into place, is snapshotted before Rust is installed and restored or removed right after).
-2. **Full isolation from the host PC (`env_clear`)**: the programs started by the kit (editor, terminal, AI agents, web servers, databases, project actions) never inherit the host computer's `PATH` or development variables (such as `JAVA_HOME`, `CARGO_HOME`, `PYTHONPATH` or the PowerShell modules in `Documents`). The Rust engine (`tauri/src/env.rs`) builds a clean environment (~90 variables) that points only to `data/`, adding to the `PATH` only the system folders that are strictly needed: on Windows `System32`, `System32\Wbem` and `System32\WindowsPowerShell\v1.0`; on macOS `/opt/homebrew/bin` and `/usr/local/bin` (Homebrew, after the kit's programs), `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`; on Linux `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`. Of the conda environments on macOS and Linux (Ruby, R and the MongoDB server on Linux), only the component's own programs enter the `PATH`, through the `kit-bin` launchers, not those of their dependencies (D-125).
-3. **Clear separation between Project and Kit**:
-   - Everything that belongs to the source code and can be shared in a Git repository lives in `projects\<project>\` (including any declarative files such as `panel.json`, `.vscode\settings.json`, `.mcp.json`).
-   - Everything related to local state, machine-specific choices, locked ports, database credentials and backups lives in `data\projects\<project>\`. This way the project folder is never "polluted" by local service files.
-4. **Golden rule of the interface**: *what concerns a single project is configured on that project's page; what concerns the whole kit is configured on the kit's pages*.
-5. **Work context locked to the project**: the integrated editor, the terminal and the AI agents can be opened **only** inside a project's folder, never in the kit's root or in arbitrary folders on the PC.
+The guide has nine chapters. The first three are for everyone: how to get started, how to work on projects, how to use databases and websites. Then agents, tools and settings. The “How it works inside” chapter is for those who want to understand the technical details; the last one gathers common problems, frequently asked questions and a glossary.
 
----
+In every topic you find: an “In short” box at the start, the steps to follow, tips and warnings, and a collapsed “Under the hood” part with the technical details (files, folders, commands). The button at the top right opens the app page the topic is about. The search box on the left searches titles, descriptions and keywords.
 
-### 1.2 Layout on Disk (`Atollo.exe`, `projects\`, `data\`)
+1. **[First steps](#1-first-steps)** — Welcome to Atollo · The first start · Getting to know the window · The first project, step by step
+2. **[Projects](#2-projects)** — Creating a project · The Projects page and the “Quick panel” · Starting a project: actions and ports · Components and versions of a project · Editor, terminal and extensions · A project's Git · Deleting a project and the “Data without a project”
+3. **[Databases, websites and terminals](#3-databases-websites-and-terminals)** — The database servers · A project's database · Websites and .localhost addresses · The kit's terminals
+4. **[AI agents](#4-ai-agents)** — The agents: Claude Code, Codex, Antigravity · Shared instructions, skills and MCP servers · Agent limits and usage
+5. **[Tools and languages](#5-tools-and-languages)** — The Tools page · Several versions of the same tool · Overviews: matrix, relations, extensions, requirements
+6. **[Account and settings](#6-account-and-settings)** — The kit's GitHub account · The Settings, one by one · Company network: proxy, certificates, local network · The framework instructions
+7. **[Taking the kit with you](#7-taking-the-kit-with-you)** — Safely removing the drive · On another PC, another letter, another folder · Updates and backups
+8. **[How it works inside](#8-how-it-works-inside)** — Portable and isolated: what it means · The kit's folders on disk · Background processes · Where the tools come from · The command line
+9. **[Help](#9-help)** — When something goes wrong · Frequently asked questions · Glossary
 
-When `Atollo.exe` is copied into an empty folder (on a USB stick, an external SSD or an internal disk, even with spaces, brackets `( )` or `&` in the path) and started, it creates and maintains the following hierarchy:
+Related topics: [1.2 The first start](#12-the-first-start), [1.3 Getting to know the window](#13-getting-to-know-the-window), [1.4 The first project, step by step](#14-the-first-project-step-by-step)
 
-```text
-<Kit-Root>\
-├── Atollo.exe                             # Single binary (Tauri 2 GUI + CLI + embedded catalogs)
-├── projects\                               # Folder that holds all the user's projects
-│   └── <project-name>\                     # Source code of a single project
-│       ├── panel.json                      # (Optional) Project actions, website, domains and aliases
-│       ├── .mcp.json                       # (Optional) Project-specific MCP servers (Claude Code)
-│       ├── .codex\config.toml              # (Optional) Project MCP block for Codex
-│       └── .vscode\settings.json           # (Optional) Editor formatting, indentation and exclusions
-└── data\                                   # All state, programs, configuration and data
-    ├── apps\win32-<x64|arm64>\             # Downloaded executables and languages
-    │   ├── pwsh\<major.minor>\             # Portable PowerShell 7 (required)
-    │   ├── vscodium-server\                # VSCodium editor web server (version pinned at release)
-    │   ├── claude\  codex\  antigravity\   # The three AI agents, each in <major.minor>\
-    │   ├── git\  gh\  uv\  cmake\ ...      # Always at the latest version: a single <major.minor>\ folder
-    │   ├── rust\  android\  tinytex\  cc\  # No version folder (packages added inside, date-based versions)
-    │   ├── tools\                          # Single utilities (ninja.exe, vcruntime\...)
-    │   └── <language>\<major.minor>\       # Versioned languages and DBs, several versions side by side (e.g. node\22.11\, php\8.4\)
-    ├── app\                                # Global application state and configuration
-    │   ├── settings.json                   # User settings (language, network, proxy, versions, temp)
-    │   ├── components.txt                  # Choice of installed components (id=1|0)
-    │   ├── versions\<id>.txt               # Default installed version of each component
-    │   ├── version-lines.json              # Cache (valid 24h) of the major.minor lines offered by the sources
-    │   ├── relations.json                  # Fingerprinted cache of the compatibility matrix (D-81)
-    │   ├── frameworks.json                 # User customizations to the "New project" wizard recipes
-    │   ├── services.json                   # Ports and autostart of the database servers (MySQL, MongoDB)
-    │   ├── servers.json                    # Manual profiles and ports assigned to the Caddy and Apache pools
-    │   ├── extensions.txt                  # The user's additional global extensions
-    │   ├── extensions-offered.txt          # Record of extensions already offered (installed only once)
-    │   ├── root.txt / old-root.txt         # Path tracking for automatic relocation
-    │   ├── layout.txt                      # Version of the on-disk data schema (2 = per-project data)
-    │   ├── db\                             # Folder protected by a DACL (owner only on NTFS)
-    │   │   ├── secrets.json                # DB administrator passwords (root for MySQL, admin for MongoDB)
-    │   │   └── my.ini                      # Root client credentials and port for direct access from the terminal
-    │   ├── logs\                           # App logs (app.log with masked secrets) and DB service logs
-    │   └── update\                         # Executable downloaded for self-update (update.json)
-    ├── projects\<project-name>\            # Local state kept by the kit for each project (D-89)
-    │   ├── dev-settings.json               # Preferred agent, chosen/excluded extensions, language versions
-    │   ├── versions.json                   # Environment overrides for the editor terminals in the project
-    │   ├── ports.json                      # Remembered ports (7100-7999) and locked ports for the actions
-    │   ├── apache\  caddy\                 # Generated configurations for the project's dedicated sites
-    │   └── private\                        # Folder protected by an inheritable DACL (owner only)
-    │       ├── db.json                     # DB names and generated passwords for the project user
-    │       └── backups\                    # The project's .sql (MySQL) and .archive.gz (MongoDB) exports
-    ├── servers\<pool-id>\                  # Generated configurations and vhosts\*.conf of the Caddy and Apache pools
-    ├── db\                                 # Physical database files, separated by engine and version
-    │   ├── mysql\<line>\                   # MySQL data per LTS line (e.g. 9.7\)
-    │   └── mongodb\<line>\                 # MongoDB data per production major line (e.g. 9.0\)
-    ├── agents\                             # Resources synchronized between Claude Code, Codex and Antigravity
-    │   ├── AGENTS.md                       # Global instructions shared by the three agents
-    │   ├── skills\                         # Shared skills (linked via NTFS junction or copy)
-    │   └── mcp.json                        # Single definition of the global MCP servers
-    ├── gh\                                 # Portable GitHub CLI credentials (hosts.yml)
-    ├── antigravity\                        # Antigravity credentials saved in the kit (keyring.json)
-    ├── home\                               # Portable user profile (.claude, .codex, .gemini, .gitconfig, .ssh, AppData)
-    ├── kit\                                # Scripts and helpers extracted from the exe (profile.ps1, loopback.js, phpmyadmin.php, bin\agy.cmd, bin\gradle.cmd)
-    ├── vscodium-server\                    # VSCodium server data, installed extensions and Machine\settings.json
-    ├── webview2\                           # Isolated browser profile for the app and editor windows
-    └── tmp\                                # Fallback temporary files when the system TEMP is not used
+### 1.2 The first start
+
+*Where to put the kit, the “Welcome” page, which components to choose and what happens while they download.*
+
+> **In short**
+>
+> - Put the Atollo program in an empty folder, where you want to keep the kit, and open it.
+> - The first time, the “Welcome” page appears: choose agents and languages and press “Install”.
+> - The components download in the background from the official sources: you can already use the app while they arrive.
+> - Nothing is final: everything can be added or removed later from the Tools page.
+
+#### 1. Where to put the kit
+
+The kit lives where its executable is: the folder that contains it becomes the “kit folder”, and that is where projects and data will be created. So choose an empty folder with a simple name, for example `D:\Atollo` on a USB stick or an external disk, or `C:\Atollo` on the PC's disk.
+
+- On Windows the executable is called Atollo.exe, or Atollo-\<version\>-win32-x64.exe as you download it from the releases page. On macOS it is Atollo.app, on Linux an AppImage file.
+- Space: the choice suggested at the first start takes about 1.8 GB. Each extra language or version adds space, and projects with their dependencies grow over time: on a USB stick it is best to have at least 16 GB free.
+- Speed: an external SSD is much faster than a cheap USB stick. The kit works on both, but installing packages with npm or Composer on a slow USB stick takes patience.
+
+> [!WARNING]
+> **Two things to avoid in the path**
+>
+> - On Windows, a folder in the path whose name starts with a digit, with the letter x or with the letter u (for example `D:\2024\Atollo` or `D:\utenti\Atollo`) stops the editor from noticing changed files. If that happens, the app warns you: move the kit to a different path.
+> - On macOS and Linux a disk mounted without execute permission (noexec) stops the app: the kit must be able to start its programs.
+
+<details>
+<summary>Which file system to choose</summary>
+
+On Windows the best format is NTFS: it is the only one that lets the kit protect the folders holding passwords (databases, sign-ins) so that only your user can read them, and use links instead of copies. On exFAT and FAT32 the kit works, but without that protection; FAT32 also does not accept files larger than 4 GB. If you use the same USB stick on Windows, macOS and Linux, exFAT is the format all of them can read and write: in that case keep in mind that links become copies.
+
+The Settings › “The kit” page shows the disk the kit is on: file system and type (fixed, removable, network).
+
+</details>
+
+#### 2. The “Welcome” page
+
+At the first start, instead of the usual pages, the “Welcome to Atollo” tab appears. It explains that agents and languages will be downloaded from the official sources, checked and placed in the kit's data folder, with no installation and no administrator rights.
+
+Below is the list of components, split into five groups, with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.
+
+| Group | What it contains | What to choose |
+| --- | --- | --- |
+| Required | The editor, PowerShell 7 (the kit's console) and GitHub CLI. Below, the PC requirements. | They are always installed: the checkboxes are locked. |
+| Agents | Claude Code, Codex and Antigravity. | Optional. Keep the ones you have an account for; they require a subscription or an API key from the provider. |
+| Languages | Python, Node.js, PHP, Java, .NET, Go, Ruby and the others that can have several versions, plus the Apache and Caddy web servers. | The ones you use. Others can be added when needed. |
+| Tools | Git, uv, Rust, Android SDK, CMake, C/C++ compiler, pnpm and the like: a single version, always the latest. | Usually nothing: the kit installs them by itself when a project or an agent asks for them. |
+| Databases | MySQL, MongoDB, phpMyAdmin, SQLite. | Only if you need them. MySQL is also installed the first time the server starts. |
+
+The suggested choice includes the three agents, Python, PHP with Apache and the required components; Git comes along with Claude Code. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).
+
+1. Untick what does not interest you and add what you use.
+2. Press “Install” at the bottom. There is no confirmation: the choice is saved and the download starts right away.
+3. The app leaves the “Welcome” page and shows the normal pages. The download continues in the background: you see it in the status bar at the bottom and in the “Activity” panel.
+
+> [!TIP]
+> **Tip**
+>
+> At the first start you do not choose versions: for each language the latest one is installed. Other versions can be added later, from the Tools page.
+
+> [!WARNING]
+> **Trust in projects**
+>
+> The folders in projects are considered trusted by Claude Code and Codex, which can therefore run commands in them without asking every time. Put in projects only code you trust.
+
+#### 3. What happens while it downloads
+
+1. **Download** — From the manufacturer's official source, over HTTPS.
+2. **Check** — Compares the file's fingerprint with the published one; if they do not match, it discards it.
+3. **Extract** — Into a temporary working folder.
+4. **Set up** — Puts the program in `data\apps` and checks that it responds.
+
+Every component goes through these four steps. If a download fails (no network, company proxy, manufacturer's site unreachable) the kit tries three times; if it still does not work, the row shows the error and, when possible, a box to download the file with the browser and hand it to the kit.
+
+The details on sources and checks are in [8.4 Where the tools come from](#84-where-the-tools-come-from); if you are behind a company proxy, read [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network) first.
+
+<details>
+<summary>Under the hood</summary>
+
+- The choice of components is saved in `data\app\components.txt`, one line per component (id=1 chosen, id=0 not).
+- At every start the kit checks that the required components are there and reinstalls them by itself if they are missing, without asking.
+- If the first start is interrupted, the “Welcome” page does not come back on reopening if the choice has already been saved: you pick up from Tools, where the rows not downloaded show the state “not present” or “error”.
+
+</details>
+
+Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window), [1.4 The first project, step by step](#14-the-first-project-step-by-step), [5.1 The Tools page](#51-the-tools-page), [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network)
+
+### 1.3 Getting to know the window
+
+*Activity bar, sidebar, tabs, status bar and the “Activity” panel: where things are and what they are for.*
+
+> **In short**
+>
+> - The window looks like Visual Studio Code's: if you know it, you will find your way right away.
+> - On the left the activity bar changes page; next to it, the sidebar shows lists and trees.
+> - In the center the tabs; at the bottom the status bar and the “Activity” panel with what is in progress.
+> - <kbd>Ctrl+P</kbd> opens a project by name from any page.
+
+#### The parts of the window
+
+```
++-------------------------------------------------------------+
+| 1 · Title bar                                               |
++------------+-----------------+------------------------------+
+| 2 ·        | 3 · Sidebar     | 4 · Tab area                 |
+| Activity   |                 |                              |
+| bar        |                 +------------------------------+
+|            |                 | 5 · “Activity” panel         |
++------------+-----------------+------------------------------+
+| 6 · Status bar                                              |
++-------------------------------------------------------------+
+```
+
+| Part | What it contains |
+| --- | --- |
+| 1 · Title bar | The name Atollo and the open page; on the right minimize, maximize and close. Drag it to move the window, double-click to maximize it. |
+| 2 · Activity bar | The page icons. At the top the working ones: Projects, Agents, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many projects are running. |
+| 3 · Sidebar | The page title with its icons (including the book “Open the guide for this page”), often a search box, and panes that open and close with a click on their title. |
+| 4 · Tab area | What you choose in the sidebar opens in a tab. The first tab of some pages is fixed: the “Quick panel” in Projects, “All tools” in Tools. |
+| 5 · “Activity” panel | It opens from the status bar. It lists the installation in progress, the running database servers and the project actions, each with its output. |
+| 6 · Status bar | On the left the counter of running projects and errors; on the right the editor status, the system (for example win32-x64) and the Atollo version. |
+
+#### The pages
+
+**Projects** — The heart of the work: the list of projects, the “Quick panel”, creating new projects and the page of each project. [How it works](#22-the-projects-page-and-the-quick-panel)
+
+**Agents** — The installed AI agents: signing in to your account, plan limits and usage, shared folder. [How it works](#41-the-agents-claude-code-codex-antigravity)
+
+**Databases** — The kit's MySQL and MongoDB servers: starting, passwords, ports, versions, phpMyAdmin. [How it works](#31-the-database-servers)
+
+**Web Servers** — The Caddy and Apache servers shared among projects and the .localhost websites they serve. [How it works](#33-websites-and-localhost-addresses)
+
+**Terminals** — Consoles with the kit's tools, in any folder on the PC. [How it works](#34-the-kits-terminals)
+
+**Tools** — The kit's languages, agents, databases and programs: install, update, remove, several versions. [How it works](#51-the-tools-page)
+
+**Guide** — This guide. Every page also has a book-shaped icon that opens the right topic. [How it works](#11-welcome-to-atollo)
+
+**Settings** — Language, network, GitHub account, Gemini key, updates and framework instructions. [How it works](#62-the-settings-one-by-one)
+
+**Remove drive** — Closes everything the kit has opened, before you unplug the USB stick. [How it works](#71-safely-removing-the-drive)
+
+#### The status bar and the “Activity” panel
+
+| Item | What it says | What a click does |
+| --- | --- | --- |
+| Atollo (on the left) | Hovering over it shows the kit folder. | — |
+| ▶ number · ⨯ number | How many project actions are running and how many stopped with an error. It turns red if there is at least one error. Databases are not counted here. | Opens or closes the “Activity” panel. |
+| Spinner with text | A component installation in progress and the step it is on. | Opens the panel. |
+| Editor running | The editor server is on (hovering over it shows its address). | — |
+| Open terminals (macOS and Linux) | How many sessions the app's terminal panel has. | Shows or hides the terminals. |
+| win32-x64, darwin-arm64… | The system and the processor the kit runs on. | — |
+| v0.x.y | The Atollo version. | — |
+
+In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.
+
+#### Useful shortcuts and habits
+
+| Keys | What it does |
+| --- | --- |
+| <kbd>Ctrl+P</kbd> | Opens “Open a project” (⌘P on macOS): type part of the name, the platform or the language. Enter opens the project's page, Shift+Enter starts its default action, Esc closes. |
+| <kbd>Esc</kbd> | Closes confirmation dialogs and image zoom. |
+
+- Hover the mouse over icons, dots and tags: almost everything has a tooltip that explains what it is or what it does.
+- The light or dark theme follows the operating system's. The language is changed in Settings › General › “Language”.
+- The book-shaped icon in the sidebar of every page opens the guide topic that explains it.
+
+Related topics: [2.2 The Projects page and the “Quick panel”](#22-the-projects-page-and-the-quick-panel), [8.3 Background processes](#83-background-processes), [1.4 The first project, step by step](#14-the-first-project-step-by-step)
+
+### 1.4 The first project, step by step
+
+*A complete walkthrough in ten minutes: create a project, start it, see it in the browser and open it in the editor.*
+
+> **In short**
+>
+> - A complete example: a small TypeScript website with Vite, from creation to the browser.
+> - All you need is the Node.js component, which the kit installs by itself if it is missing, and an Internet connection.
+> - By the end you will know how to create a project, start it, open it in the browser and edit it in the editor.
+
+#### 1. Create the project
+
+1. Open the “Projects” page from the activity bar.
+2. In the “Quick panel”, under “New project”, click “From a framework or CMS”. The “New project” tab opens.
+3. In “1. Base” choose the “Web with JavaScript and TypeScript” group and the “Vite” card (“Website or web application in TypeScript”).
+4. In “2. Additions” nothing is needed for this test.
+5. In “3. Name” type primo-sito. The name becomes the `projects\primo-sito` folder.
+6. Look at the “Summary”: you will see that the kit will use Node.js, run npm create vite in the projects folder and then npm install in the project, and save the “Start” and “Build” actions.
+7. Press “Create the project”. In the “Progress” part the commands and their output scroll by.
+8. When “Project primo-sito created.” appears, press “Open the project”.
+
+> [!NOTE]
+> **Good to know**
+>
+> If Node.js was not installed, the kit downloads it before running the commands: you see it in the first lines of the progress (“Installing the kit tools needed…”).
+
+#### 2. Start it and open it in the browser
+
+1. The project page opens on the “Run” section. At the bottom, the “Actions” list shows what the project can do: the actions recognized from the package.json file (npm run dev, npm run build, npm install) and those from the recipe (Start, Build).
+2. Press ▶ next to “npm run dev”. It is a web action: the kit assigns it a port, starts it and waits for it to respond. The status goes from “starting” to “listening”.
+3. Press “Open in the browser”: Vite's sample site opens at http://localhost:\<port\>/, where the port is a number between 7100 and 7999 chosen by the kit and kept the same at every start.
+4. Do you want the big “Start” button at the top to always start this action? Select it and press the “Default” star.
+
+#### 3. Edit it in the editor
+
+1. Press “Editor” at the top of the project page. The kit starts the editor (the first time it may take a few seconds) and opens an Atollo window with the project folder.
+2. Open src/main.ts, change some text and save with Ctrl+S.
+3. Go back to the browser: Vite updates the page by itself.
+4. To stop the website go back to Atollo and press “Stop” (or ■ next to the action). Closing Atollo stops everything anyway.
+
+#### What next?
+
+- Putting the project on GitHub or cloning one: [6.1 The kit's GitHub account](#61-the-kits-github-account).
+- Giving the project a database: [3.2 A project's database](#32-a-projects-database).
+- Getting help from an AI agent in the project: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity).
+- Trying other bases (Laravel, Django, WordPress, Astro…): [2.1 Creating a project](#21-creating-a-project).
+
+Related topics: [2.1 Creating a project](#21-creating-a-project), [2.3 Starting a project: actions and ports](#23-starting-a-project-actions-and-ports), [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions)
+
+## 2. Projects
+
+### 2.1 Creating a project
+
+*The three ways: an empty folder, a Git repository, or a framework or CMS base with its additions. Plus your GitHub repositories.*
+
+> **In short**
+>
+> - A project is simply a folder inside projects: the kit recognizes it by itself.
+> - There are three ways to create one: “Empty project”, “From a Git address” and “From a framework or CMS”. Plus the list of your GitHub repositories.
+> - With a framework, the kit installs the tools needed and runs the framework's official commands.
+> - You can also copy a folder into projects by hand: it appears in the list after “Refresh”.
+
+![The “From a framework or CMS” procedure](../../ui/public/guide/en/project-new.webp)
+
+*Base, add-ons, name, .env file and summary, one below the other. On the left, the tree of the three ways.*
+
+#### Where you create a project
+
+All roads lead to the “New project” tab of the Projects page, which opens in one of these ways:
+
+- from the “Quick panel”, with the three boxes under “New project”;
+- from the icons at the top of the sidebar: “New project” (folder with a plus) and “New project from a framework or CMS” (wand);
+- from the “New project” pane of the sidebar, a tree with the three ways; under “From a framework or CMS” are the groups and the bases: a click on a base opens the wizard with that base already chosen;
+- from <kbd>Ctrl+P</kbd>, which has the three “New project” entries at the bottom of the list.
+
+#### Way 1 · “Empty project”
+
+A new, empty folder in projects, to fill as you like (even by copying files into it).
+
+1. Type the folder name in the “Empty” field.
+2. Press “Create”. The new project's page opens.
+
+The name cannot contain `\` / : \* ? " \< \> |, cannot start or end with a dot and cannot be a reserved Windows name (like CON or NUL). If a folder with that name already exists, the kit tells you.
+
+#### Way 2 · “From a Git address”
+
+Copies (clones) an existing Git repository into a folder in projects.
+
+1. In the first field type owner/repository for a GitHub repository (for example laravel/laravel), or the full https:// address of any Git server.
+2. In the second field, optional, the folder name; if you leave it empty it is the last part of the address.
+3. Press “Clone”.
+
+After the copy the kit looks at the project's files, installs the components needed and picks the versions the project declares (for example the Node version written in .nvmrc or the PHP one in composer.json), downloading them if missing.
+
+> [!NOTE]
+> **Good to know**
+>
+> Only https:// addresses are accepted, not ssh. A private GitHub repository needs you to be signed in with the kit's GitHub account; public repositories do not. If the copy fails, the folder is removed and the last line of Git's error appears.
+
+#### Way 3 · “From a framework or CMS”
+
+A wizard that creates a project starting from a base (a framework like Laravel, Django or Vite, a CMS like WordPress, a site generator, a desktop or mobile app…) and from optional additions (Tailwind, React, a database, testing tools…). The kit installs the tools needed and runs the framework's official commands, the same ones you would find in its documentation.
+
+| Step | What you do |
+| --- | --- |
+| 1. Base | Choose a group with the tags at the top (Web with PHP, Web with JavaScript and TypeScript, Web with Python, Web with other languages, CMS, Static sites and documentation, Desktop app, Mobile app, Data and documents, Command line and libraries) and then the base's card. |
+| 2. Additions | Tick the additions you want. They are divided by type (Interface, Styles, Tests, Databases…): you choose only one of each type, and choosing another replaces the first. |
+| 3. Name | Type the project name. Alternatively use an existing project that is empty (“empty”) or has files but no Git (“with files”): the framework's files are added and the ones already there stay as they are. A Git repository cannot be used. |
+| 4. .env file | The variables the kit will write in the project's .env file. {name} becomes the project name, {package} an identifier like com.example.nome, {password} a new password. You can change the values, remove lines or add some with “Add a variable”. |
+| Summary | What will happen: the kit tools, the project database, the commands in the projects folder, those in the project folder and the actions the project will have. |
+
+1. Check the “Summary” and press “Create the project”.
+2. In the “Progress” part you see “Installing the kit tools needed…”, then “Command 1 of N” with the output of each command.
+3. At the end “Project … created.” appears with “Open the project”. If a command fails, the wizard stops and shows the error.
+
+<!-- -->
+
+1. **Tools** — Installs what the base and the additions ask for (Node, PHP, Composer…).
+2. **Creation** — Runs the creation commands in the projects folder.
+3. **Databases** — If planned, creates the database and user and writes the connection in .env.
+4. **Finishing** — Runs the steps in the project folder (installations, migrations).
+5. **Actions** — Saves the recipe's actions in the project's panel.json file.
+
+> [!TIP]
+> **Tip**
+>
+> The recipes can be edited, or you can add your own: [6.4 The framework instructions](#64-the-framework-instructions).
+
+<details>
+<summary>Under the hood</summary>
+
+- One project is created at a time. “Cancel”, during the progress, stops the running command.
+- Each line of the recipe is a command run with the kit's PowerShell and the kit's environment, so with the versions of the kit's tools.
+- If you use an existing project with files, the framework is generated in a temporary system folder and then moved into the project: the files already there stay, and the progress shows “Already in the project, left as is”.
+- If the plan includes MySQL or MongoDB, the kit starts the server, creates the project's database and user and passes the variables ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD and ATOLLO_DB_URL to the commands.
+- At the end, if there is a .env file that Git would pick up, the kit adds /.env to the .gitignore file.
+- The recipe's actions go into the project's panel.json file with an identifier that starts with fw- (for example fw-avvia).
+- Some bases require particular components: Android apps want the Android SDK component; Laravel with MongoDB wants PHP's mongodb extension, which the kit does not install.
+
+</details>
+
+#### Your GitHub repositories
+
+If you have connected the GitHub account, the “From your GitHub repositories” pane of the sidebar lists your repositories and those of the organizations you belong to, grouped by owner, with a “Search the repositories” box.
+
+- “Clone” copies the repository into projects (into the folder with its name, or owner-name if the name is already taken). An already cloned repository has its name in green and the “Editor” button.
+- “GitHub” opens the repository in the browser.
+- A click on the row opens the details: private or public, language, stars, last push, where it is cloned, “Copy the Git address” and, for the repositories you administer, “Rename” and “Delete from GitHub”.
+
+> [!WARNING]
+> **Watch out**
+>
+> Unlike “From a Git address”, “Clone” from this list does not install the components and does not pick the versions: open the project and, in “Components”, press “Install what is missing”. All about the account in [6.1 The kit's GitHub account](#61-the-kits-github-account).
+
+Related topics: [1.4 The first project, step by step](#14-the-first-project-step-by-step), [2.2 The Projects page and the “Quick panel”](#22-the-projects-page-and-the-quick-panel), [6.4 The framework instructions](#64-the-framework-instructions), [6.1 The kit's GitHub account](#61-the-kits-github-account)
+
+### 2.2 The Projects page and the “Quick panel”
+
+*The list of projects, the “Quick panel” with favorites and recent ones, quick open with Ctrl+P and the seven sections of a project.*
+
+> **In short**
+>
+> - In the sidebar you find the list of projects; a click opens a project's page in a tab.
+> - The “Quick panel” gathers what is running, the favorites, the recent ones and what needs fixing.
+> - A project's page has the main buttons at the top and seven sections below.
+
+![The “Quick panel”](../../ui/public/guide/en/projects-home.webp)
+
+*Recent projects, things to fix and the three ways to a new project. On the left, the list of projects.*
+
+#### The sidebar
+
+At the top, the icons: “New project”, “New project from a framework or CMS”, “Open a project (Ctrl+P)”, “Refresh”, “Open folder” (opens projects) and the guide's book. Below, four panes:
+
+| Pane | What it contains |
+| --- | --- |
+| Projects | All the projects in alphabetical order, with the count at the top. Folders starting with a dot and links do not count. With more than six projects the “Search projects” box appears. |
+| Data without a project | It appears only if the kit has data of projects that are no longer in projects. See [2.7 Deleting a project and the “Data without a project”](#27-deleting-a-project-and-the-data-without-a-project). |
+| New project | The tree of the three ways to create a project, with the framework bases. |
+| From your GitHub repositories | The repositories of your account, ready to clone. |
+
+Each project row has an icon that says what kind of project it is: a globe for a website, a window for an app with a window, a terminal for a command-line program. A green dot means something is running; a yellow triangle that components are missing. Hovering over the row shows the buttons ▶ “Start” (or ■ “Stop”), “Editor”, “Terminal” and “Agent”.
+
+#### The “Quick panel”
+
+It is the first tab of the page, always there. It only shows the parts that have something to show:
+
+| Part | What it shows |
+| --- | --- |
+| Running | The actions started in this session, with the address and the “Open in the browser”, “Show the output”, “Stop” buttons. |
+| Favorites | The projects you have marked with the star (“Add … to favorites”), as cards with their languages and buttons. |
+| Recent | The six projects used or changed most recently, excluding those already among the favorites. |
+| Needs attention | The actions stopped with an error (“Show the output”) and the projects missing components (“Install”, which opens the project's Components section). |
+| New project | The three ways to create a project, plus the links to GitHub repositories, the projects folder and the guide. |
+
+#### Opening a project by name
+
+From any page press <kbd>Ctrl+P</kbd> (⌘P on macOS): “Open a project” appears. Type part of the name, the platform or a language; projects are sorted by recent use. <kbd>Enter</kbd> opens the page, <kbd>Shift+Enter</kbd> immediately starts the default action.
+
+#### A project's page
+
+At the top are the name, the type and the recognized platform (for example “Laravel · website”), the language logos, the Git branch and, if components are missing, a “Missing: …” warning. Then the buttons:
+
+| Button | What it does |
+| --- | --- |
+| Start / Stop | Starts the project's default action, or stops it if it is running. |
+| Editor | Opens the project in the editor, in an Atollo window. |
+| Terminal | Opens a kit console in the project folder, with its versions. |
+| Agent logos and “Agent” | Choose an agent by its logo and open it in the project. |
+| Open folder | Opens the project folder in File Explorer (or Finder). |
+| Refresh | Rereads the project: useful after changing panel.json or the project's files by hand. |
+
+Below, the seven sections:
+
+| Section | What it is for | Topic |
+| --- | --- | --- |
+| Run | The project's actions, their status, the port and the output. | [2.3 Starting a project: actions and ports](#23-starting-a-project-actions-and-ports) |
+| Website | Serving a project folder as a website, with static files, PHP, Caddy or Apache. | [3.3 Websites and .localhost addresses](#33-websites-and-localhost-addresses) |
+| Components | The tools needed, how the project was recognized, the versions. | [2.4 Components and versions of a project](#24-components-and-versions-of-a-project) |
+| Databases | The project's database and user, the connection in the .env file, the copies. | [3.2 A project's database](#32-a-projects-database) |
+| Extensions | The editor extensions active in this project. | [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions) |
+| Editor | Editor settings and the project's MCP servers. | [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions) |
+| Git | Remote, branch and sync, read-only. | [2.6 A project's Git](#26-a-projects-git) |
+
+> [!NOTE]
+> **How the kit recognizes a project**
+>
+> The kit looks at the files in the folder: package.json means Node.js (and with vite or next inside, a website), composer.json PHP, artisan Laravel, pyproject.toml Python, Cargo.toml Rust, go.mod Go and so on. From there it works out the type, the platform, the languages, the components needed and the actions. The “Components” › “How it was recognised” section says which files it started from. The recognition can be corrected with the panel.json file.
+
+Related topics: [2.3 Starting a project: actions and ports](#23-starting-a-project-actions-and-ports), [2.1 Creating a project](#21-creating-a-project), [1.3 Getting to know the window](#13-getting-to-know-the-window)
+
+### 2.3 Starting a project: actions and ports
+
+*What an action is, how to start and stop it, the output, the port, the default action and how to add your own in the panel.json file.*
+
+> **In short**
+>
+> - An action is a project command with a name: “npm run dev”, “php artisan serve”, the website…
+> - Web actions get a port from the kit, which waits for them to respond and gives you the address to open.
+> - The “Default” star picks the action of the “Start” button.
+> - Actions are recognized by themselves; your own are written in the project's panel.json file.
+
+![A project's page, “Run” section](../../ui/public/guide/en/project-run.webp)
+
+*At the top the Start, Editor, Terminal and Agent buttons; below, the chosen action with state, command and port, and the list of actions.*
+
+#### The “Run” section
+
+At the top is the detail of the chosen action (at first the default one), below the “Actions” list. A click on a row selects it and shows its output; ▶ and ■ on the row start and stop it.
+
+| Item | What it says |
+| --- | --- |
+| Status | stopped, starting, listening (web action ready), running, exited, stopped, error (with the exit code). |
+| Command | The command run, or the server that serves the website (the kit's file server, Apache or Caddy). |
+| Folder | Where the command is run. |
+| Port | Only for web actions: “automatic” or a number you choose. |
+| Address | While the action is listening, the address to open (a link). |
+| Source | panel.json, if the action is written by hand in the project. |
+
+Below the detail is the “Output of …” pane with the “Follow” checkbox, which keeps the last lines in view. The kit keeps the last 3000 lines of each action; its notes appear as lines starting with \[Atollo\]. The buttons at the top: the “Default” star, “Open in the browser” (while a web action is listening) and “Clear the output” (when the action has finished).
+
+#### What happens when you press “Start”
+
+1. **Rereads** — Recognizes the project again: panel.json might have changed.
+2. **Installs** — If the action is missing a component, it installs it first.
+3. **Prepares** — The kit's environment, the project's versions, port, the action's variables.
+4. **Starts** — Runs the command in the action's folder.
+5. **Waits** — For a web action, until the port responds: then it is “listening”.
+
+- The browser does not open by itself: use “Open in the browser” (here, in the “Quick panel” or in the “Activity” panel). The address is usually http://localhost:\<port\>/.
+- If the program ignores the assigned port and prints another one in the output, the kit follows that one.
+- “Stop” closes the action's whole process tree. Closing Atollo stops all actions.
+- Running actions also appear in the “Activity” panel and in the status bar counter.
+
+#### The port
+
+Each web action has a port of its own, chosen by the kit between 7100 and 7999 the first time and then kept the same at every start: that way the address does not change. If you need a specific number, type it in the “Port” field and press Enter (or leave the field); emptying it takes you back to the automatic port.
+
+- The port must be between 1024 and 65535.
+- Ports 7000 to 7099 are reserved for the editor.
+- A port already used by another action is refused with “Port already assigned to …”.
+
+#### The default action
+
+It is the one that starts with the page's “Start” button, with ▶ in the project row and with Shift+Enter in “Open a project”. To change it, choose the action in the list and press the “Default” star. When you serve the project as a website, the website becomes the default action by itself.
+
+#### Your own actions: the panel.json file
+
+The recognized actions are almost always enough. If you want others, or want to change one, write them in the panel.json file in the project folder (you create it if it is not there) and press “Refresh”. The file lives in the project, so it goes into Git and applies to anyone who uses the project with Atollo.
+
+**Example panel.json** `projects\gestionale\panel.json`
+
+```
+{
+  "default": "dev",
+  "actions": [
+    {
+      "id": "dev",
+      "label": "Avvia tutto",
+      "type": "web",
+      "command": "npm run dev -- --port {port}",
+      "folder": "frontend",
+      "env": { "API_URL": "http://localhost:8000" }
+    },
+    {
+      "id": "test",
+      "label": "Prove",
+      "type": "command",
+      "command": "php artisan test"
+    }
+  ]
+}
+```
+
+| Key | Meaning |
+| --- | --- |
+| `id` | Identifier of the action: lowercase letters, digits and - _ : . (40 characters at most). |
+| `label` | The name you see in the list. |
+| `type` | web (a server with a port), desktop (an app with a window) or command (a command that does something and finishes). |
+| `command` | The command. {port} is replaced with the action's port. |
+| `folder` | The subfolder to run it in (optional). |
+| `url` | The address to open, if it is not http://localhost:{port}/ (optional). |
+| `env` | Extra environment variables just for this action (optional). |
+| `default` | At the top of the file: the id of the default action. |
+| `replace` | At the top of the file: true to remove all the recognized actions and keep only yours. |
+
+> [!NOTE]
+> **Good to know**
+>
+> An action with the same id as a recognized one replaces it. If the file is not valid JSON, the kit ignores it and says so in “Components” › “How it was recognised”; fix it before using the star or the website, which write to the same file. There is no form in the app to add or edit actions: it is done in the file.
+
+<details>
+<summary>Under the hood</summary>
+
+- The command is run with cmd.exe on Windows and /bin/sh on macOS and Linux, in the action's folder, with the kit's environment and the project's versions.
+- Web actions get the PORT (and ROCKET_PORT) variables with the port; all of them get BROWSER=none, PYTHONUNBUFFERED=1 and ATOLLO_LANG. If the project has a kit MySQL database and its .env does not name another port, they also get DB_PORT.
+- The assigned ports and the ones you chose are in `data\projects\<project>\ports.json`, outside the project.
+- Each action runs in its own process group (a Job Object on Windows): “Stop” also closes the child processes, for example the server started by npm.
+- In old files the Italian keys (azioni, etichetta, comando, cartella, predefinita) and {porta} instead of {port} are still accepted.
+
+</details>
+
+Related topics: [3.3 Websites and .localhost addresses](#33-websites-and-localhost-addresses), [2.2 The Projects page and the “Quick panel”](#22-the-projects-page-and-the-quick-panel), [9.1 When something goes wrong](#91-when-something-goes-wrong)
+
+### 2.4 Components and versions of a project
+
+*The tools a project needs, the version of each language chosen just for it and how the kit recognizes it from the project's files.*
+
+> **In short**
+>
+> - The “Components” section says which kit tools the project needs and installs them with one click.
+> - In “Versions” you choose, for this project only, the version of each language: for example Node 20 here and Node 24 elsewhere.
+> - A new project keeps the latest versions that were there when it was created, until you change them.
+> - The choice applies to the project's actions, terminal, agents, editor and web server.
+
+![The “Components” section](../../ui/public/guide/en/project-versions.webp)
+
+*The components the project needs, how it was recognized and the versions of its languages.*
+
+#### Components needed
+
+The “Components” part lists the kit tools the project needs, each “installed” or “to install”. If something is missing, “Install what is missing” installs them and waits for them to finish. The “How it was recognised” part explains from which files the kit worked out the project type, with any warnings (for example “Dependencies not installed: run npm install first”).
+
+> [!NOTE]
+> **Good to know**
+>
+> “Install what is missing” installs the kit's components (Node.js, PHP, Python…), not the project's dependencies: for those run npm install, composer install or similar, with an action or in the project terminal.
+
+#### Choosing the project's versions
+
+The “Versions” part has two groups: “Languages active in the project”, open, and “Languages not present in the project”, closed, to set other languages to use in the terminal or in scripts.
+
+1. Open the menu next to the language.
+2. The first entry, “The newest (…)”, lets the kit decide: it will always use the newest version on disk.
+3. Under “Downloaded” are the versions already in the kit; under “To download: 8.x” those the source offers and the kit does not have yet.
+4. Choose a version: if it is not downloaded, the download starts right away (“Downloading …”). Until it is ready the project uses the newest one (“… is not downloaded: … is used for now”, with “Download” or “Retry”).
+5. The button with the arrows, “Look for other versions of …”, asks the source again for the list of versions.
+
+Below the menu the kit can show some suggestions: “Required by package.json: \>=20” if the project declares a version, or “From the project's containers (Compose or Dockerfile): php 8.3” with the “Use 8.3” button.
+
+> [!TIP]
+> **When the new version takes effect**
+>
+> For the actions, the project terminal and the agents from the next start; for the editor's terminals from those opened after the change; for the website served by Caddy or Apache from the next start of the website (the server picks the project's PHP).
+
+#### Where the starting versions come from
+
+- A project created by the app (empty or with a framework) pins the latest versions present at that moment: a future kit update does not change things under the feet of a project that works.
+- A project cloned “From a Git address” uses the versions its code asks for, if the kit recognizes them: .nvmrc, .node-version, .python-version, pyproject.toml, composer.json, .php-version, go.mod, global.json, .ruby-version, pom.xml and others.
+- The summary of who asks for what is in the “Relations” view of the Tools page: [5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements).
+
+<details>
+<summary>Under the hood</summary>
+
+- The choice is saved in `data\projects\<project>\dev-settings.json`, under versions; the first menu entry removes it.
+- The kit also writes versions.json and versions.txt in the same folder: the PowerShell and Git Bash profiles read them to put the right versions in the PATH when a terminal opens in that project.
+- Besides the PATH, the kit sets JAVA_HOME, DOTNET_ROOT and CP_PHP to the chosen versions.
+- The version of the project's database server is chosen in the “Databases” section, not here.
+
+</details>
+
+Related topics: [5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool), [3.2 A project's database](#32-a-projects-database), [5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements)
+
+### 2.5 Editor, terminal and extensions
+
+*Opening the project in the editor or in a kit console, choosing the extensions, the editor settings and the project's MCP servers.*
+
+> **In short**
+>
+> - “Editor” opens the project in VSCodium, inside an Atollo window, with all the kit's tools.
+> - “Terminal” opens a kit console in the project folder.
+> - Extensions are chosen per project; the installed ones apply to the whole editor.
+> - In the “Editor” section you set indentation, formatting, hidden folders and the project's MCP servers.
+
+#### The editor
+
+The kit's editor is VSCodium, the free version of Visual Studio Code. The “Editor” button (on the project page, in the list row or in the “Quick panel”) starts the editor server the first time and opens an Atollo window on the project. “Editor running” appears in the status bar.
+
+- The editor's terminals already have the kit's environment. On Windows the profiles are “Atollo” (PowerShell, default), “Atollo - Git Bash” and “Atollo - cmd”; on macOS and Linux “Atollo”, “Atollo - Bash” and, on macOS, “Atollo - zsh”.
+- Commit, push, comparing changes: everything Git does in the editor works with the kit's GitHub account.
+- The editor's “Accounts” menu and its “Publish to GitHub” and “Clone from GitHub” functions do not see the kit's account: use Git, the Projects page or GitHub CLI.
+
+> [!NOTE]
+> **Good to know**
+>
+> After changing the Settings (for example the proxy) the app suggests “Restart the editor”, so that the editor's terminals use the new values.
+
+#### The project terminal
+
+“Terminal” opens a kit console in the project folder: on Windows a classic console window with the kit's PowerShell 7; on macOS and Linux a tab of the terminal panel inside Atollo. The tools are the kit's, at the versions chosen for the project. The prompt shows Atollo and the folder.
+
+For consoles in other folders or with tools you choose there is the Terminals page: [3.4 The kit's terminals](#34-the-kits-terminals).
+
+#### The “Extensions” section
+
+Atollo pairs each language with its editor extensions, taken from Open VSX (the free extension catalog). A project gets those of its languages: the section shows them in groups (one per language, then “Tools” and “Added by you”), with the status “installed”, “to install” or “off”.
+
+1. Untick an extension to turn it off in this project, or tick it again.
+2. To add one that is not there, type its publisher.name identifier (for example ms-python.python) in the “Add an extension” field and press “Add”.
+
+> [!NOTE]
+> **Good to know**
+>
+> Installed extensions apply to the whole editor; new ones are installed when the editor is open. At the top, the summary says how many are active and how many are to install.
+
+#### The “Editor” section
+
+Two panes.
+
+| Setting | Values |
+| --- | --- |
+| Format on save | like the editor, yes, no |
+| Indentation | like the editor, 2 spaces, 4 spaces, tab |
+| Folders hidden in the editor | One per line, for example \*\*/vendor or \*\*/node_modules: they do not appear in the file list. |
+
+“Save” writes them in the project's `.vscode\settings.json` file; the other settings in the file stay. If the file contains comments or is not plain JSON, Atollo does not rewrite it and asks you to edit it in the editor.
+
+The second pane, “Project MCP servers”, adds MCP servers that apply only in this project, on top of the kit's. How they work and how to add them: [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers).
+
+Related topics: [3.4 The kit's terminals](#34-the-kits-terminals), [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers), [5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements)
+
+### 2.6 A project's Git
+
+*What the “Git” section shows, where you commit and push, and why the kit reads the status without running Git.*
+
+> **In short**
+>
+> - The “Git” section shows the repository status: remote, branch, link to the remote, sync.
+> - It is read-only: commits, pushes and the list of changes are done in the editor, in a terminal or with an agent.
+> - Git uses the kit's GitHub account without asking for passwords.
+
+#### What it shows
+
+| Item | What it says |
+| --- | --- |
+| Remote | The address of the remote repository (origin), or “none”. |
+| Branch | The current branch; “no branch” if you are on a specific commit. |
+| Remote branch | The linked remote branch, or “branch not linked to a remote”. |
+| In sync | “yes, at the same commit”, “no: there are commits to push or to pull”, or “unknown”. It refers to the last update from the remote (fetch). |
+
+“Open on the web” opens the repository in the browser (for https addresses and for GitHub via ssh). If the folder is not a repository, the section says so.
+
+#### Where you work with Git
+
+- In the editor: the “Source Control” panel for commits, push, pull, branches and comparisons.
+- In the project or editor terminal: the git and gh commands, already authenticated.
+- With an agent: Claude Code, Codex and Antigravity can commit, create branches and open pull requests.
+
+> [!WARNING]
+> **Before the first commit**
+>
+> The kit does not set your name and email for commits. Once only, in a kit terminal, type: git config --global user.name "Jane Doe" and git config --global user.email "you@example.com". They are saved in the kit's .gitconfig file and follow you on every PC.
+
+<details>
+<summary>Under the hood</summary>
+
+Atollo reads the status directly from the files in the .git folder (HEAD, config, refs), without running Git in the project: that way it cannot start the repository's hooks or programs just because you opened the page.
+
+</details>
+
+Related topics: [6.1 The kit's GitHub account](#61-the-kits-github-account), [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions), [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity)
+
+### 2.7 Deleting a project and the “Data without a project”
+
+*What gets deleted and what stays, and how to relink or clean up the data of a project renamed or deleted outside the app.*
+
+> **In short**
+>
+> - The kit keeps some data of each project outside the project, in `data\projects`: settings, ports, database passwords, copies.
+> - From the app you can only delete a project with an empty folder; for the others you delete the folder yourself.
+> - When the folder disappears, its data becomes “Data without a project”: you relink it or delete it.
+> - Data without a project is never deleted by itself.
+
+#### Where a project's data is
+
+| Inside the project (goes into Git) | Outside, in `data\projects\<project>` (stays in the kit) |
+| --- | --- |
+| Your code, panel.json, .env, `.vscode\settings.json`, .mcp.json | Chosen versions, extensions, favorites (dev-settings.json), ports (ports.json), Apache and Caddy configurations, database passwords and names (private), database copies (`private\backups`) |
+
+#### Deleting a project
+
+If the project folder is empty, the “Run” section shows “Delete the empty folder”. For a project with files, the kit does not delete anything for you: delete or move the folder in File Explorer, then press “Refresh”; its data appears in “Data without a project”.
+
+The “Delete …?” window lists what will disappear:
+
+- the empty folder and the kit's settings for that project;
+- the database and its user on MySQL or MongoDB (a stopped server is started for the purpose);
+- the database copies, with “Open the copies folder” to save them elsewhere first.
+
+If deleting a database fails, nothing else is deleted; “Delete without the databases” then also appears, which leaves databases and users on the servers.
+
+> [!WARNING]
+> **Watch out**
+>
+> The database copies are deleted together with the project. If you need them, copy them outside the kit first.
+
+#### The “Data without a project”
+
+If you rename or delete a project's folder outside the app, the kit ends up with data without a project. The “Data without a project (N)” pane lists it, with what it contains: settings, ports, databases, copies.
+
+| Button | What it does |
+| --- | --- |
+| Link to… | Moves settings, ports, databases and copies to a project you choose in the “Project” menu. Database and user keep the old name, so the .env file keeps working. |
+| Delete | Deletes that data, databases included, with the same confirmation window as when deleting a project. |
+
+> [!NOTE]
+> **When “Link to…” cannot be used**
+>
+> The target project must not have any data in the kit yet. A project created, cloned or opened at least once from the app already has some, so the link is refused. It works for the typical case: you renamed the folder in File Explorer and have not opened it in Atollo yet.
+
+> [!TIP]
+> **Tip**
+>
+> To rename a project without losing anything: rename the folder in File Explorer, go back to Atollo, press “Refresh” and, before opening the renamed project, use “Link to…” on its old data.
+
+Related topics: [3.2 A project's database](#32-a-projects-database), [8.2 The kit's folders on disk](#82-the-kits-folders-on-disk), [7.3 Updates and backups](#73-updates-and-backups)
+
+## 3. Databases, websites and terminals
+
+### 3.1 The database servers
+
+*The kit's MySQL and MongoDB: starting them, passwords, ports, several versions side by side, phpMyAdmin and the data explorer.*
+
+> **In short**
+>
+> - The kit has a MySQL server and a MongoDB server, shared by all projects and reachable only from this PC.
+> - “Start” installs the server if it is missing, turns it on and generates the administrator password.
+> - Each project then has its own database and its own user, which you create from the project's page.
+> - You browse MySQL with phpMyAdmin; MongoDB with the “Content” tab, read-only.
+
+![The Databases page, MySQL server](../../ui/public/guide/en/databases.webp)
+
+*State and address, connection, version, port, “Start with Atollo” and the other installed versions.*
+
+#### The Databases page
+
+In the sidebar, the “Servers” box lists MySQL and MongoDB with their port, status and the “Start” or “Stop” button. Clicking a server opens its page. At the top of the sidebar: “Refresh”, “Open the data folder” (`data\db`) and the guide's book.
+
+| Status | Meaning |
+| --- | --- |
+| Stopped (grey) | The server is off. |
+| Starting… (yellow) | The server is starting; the kit waits for it to respond (up to 90 seconds). |
+| Running (green) | The server responds on 127.0.0.1 at its port. |
+| Error (red) | It did not start: the page shows the last error and the log file. |
+| Not installed: installed at the first start | The component is not there yet; “Start” downloads it first. |
+
+#### A server's page
+
+At the top: the status, the address 127.0.0.1:\<port\>, the version and the “Start” or “Stop” buttons; for MySQL also “Open phpMyAdmin”.
+
+| Part | What it contains |
+| --- | --- |
+| Connection | “String”: the address to connect as administrator (without the password). “Password of root” (MySQL) or “Password of admin” (MongoDB): hidden, with “Show” and “Copy”. Before the first start: “Generated at the first start.” |
+| Settings | “Version” (if you have more than one; you change it while the server is stopped), “Port” (between 1024 and 65535, applies from the next start) and “Start with Atollo” (the server starts by itself when the app opens). |
+| Other versions | Appears if you have installed several versions of the same server: each runs on its own port with its own data (see below). |
+| Files | “Data”: the data folder of that version. “Log”: the file with the server's output. |
+
+> [!NOTE]
+> **Only from this PC, always with a password**
+>
+> The servers respond only at the address 127.0.0.1, that is, to this computer: nobody on the network can connect, not even with the “Local network” option in Settings. The administrator passwords are generated by the kit (32 random characters) at the first start. In the kit console the mysql command already logs in as root.
+
+#### Browsing the data
+
+| Server | How you see the data |
+| --- | --- |
+| MySQL | “Open phpMyAdmin”. The first time, the kit installs phpMyAdmin (and PHP if it is missing), turns MySQL on if it is off and opens phpMyAdmin in the browser, already connected as root. For another version there is “phpMyAdmin on …” in the “Other versions” part. |
+| MongoDB | The “Content” tab: on the left the databases with their collections and an estimate of the documents (the system ones under “System”); on the right the documents of the chosen collection, 100 per page, read-only, with “Previous page”, “Next page” and “Refresh”. |
+
+<details>
+<summary>Under the hood: phpMyAdmin</summary>
+
+phpMyAdmin runs with the kit's built-in PHP server on a random loopback address (127.x.y.z, not 127.0.0.1) and on a port chosen by the system, with a new token at every start: without the token it responds 403. Only one is open at a time; it stops with the MySQL version it is connected to or with the app. Its language is Atollo's.
+
+</details>
+
+#### Several versions of the same server
+
+You can install several versions of MySQL or MongoDB (from the Tools page). The server uses the one chosen in “Version”, usually the newest. The others appear in the “Other versions” part: each has its own port (3307, 3308… for MySQL, assigned at the first start) and its own data folder, and starts together with the main server if a project uses it.
+
+- At the first start of a newer version, the kit copies the data of the previous one, which stays as it was: you can go back.
+- A project chooses the server version in its “Databases” section; it receives the port as DB_PORT.
+
+<details>
+<summary>Under the hood</summary>
+
+| What | Where |
+| --- | --- |
+| Data of each version | `data\db\mysql\8.4 · data\db\mongodb\8.0` |
+| Ports, automatic start, chosen version | `data\app\services.json` |
+| root and admin passwords | `data\app\db\secrets.json` |
+| mysql login in the console | `data\app\db\mysql.cnf` |
+| Logs | `data\app\logs\mysql.log · mongodb.log` |
+
+The `data\app\db` folder can be read only by your user on NTFS drives. MySQL uses a my.cnf file written by the kit at every start (only 127.0.0.1, no binary log, lowercase table names); MongoDB always starts with authentication. The mysql command in the console logs in as root only on the main version.
+
+</details>
+
+Related topics: [3.2 A project's database](#32-a-projects-database), [5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool), [9.1 When something goes wrong](#91-when-something-goes-wrong)
+
+### 3.2 A project's database
+
+*A database and a user just for the project, the connection written in the .env file, backups and restoring.*
+
+> **In short**
+>
+> - Each project has a database and a user all its own, with a password generated by the kit.
+> - “Write to .env” puts the connection in the project's .env file, after showing you what changes.
+> - “Export” saves a copy of the database; “Restore…” puts it back.
+> - Everything is done from Projects › the project › “Databases” section.
+
+![A project's “Database” section](../../ui/public/guide/en/project-db.webp)
+
+*The project's database, user, password and address, “Write to .env” and the copies, with “Export” and “Restore…”.*
+
+#### Creating the database and user
+
+The section has one part for MySQL and one for MongoDB (with “used by the project” if the kit sees that the project uses it). If the project uses SQLite, a note explains that the database is a file of the project and no server is needed.
+
+1. Press “Create database and user” in the part of the server you need.
+2. The kit installs and starts the server if needed, then creates a database and a user with the project's name (lowercase letters, digits and underscore: gestionale-fatture becomes gestionale_fatture) and a 32-character password.
+3. The part shows “Database”, “User”, “Password” and “String” (hidden, with “Show” and “Copy”) and “Address”.
+
+> [!NOTE]
+> **Good to know**
+>
+> The project's user can do everything, but only on its own database: a project does not see the data of the others. If the name is reserved (like mysql or admin), the kit adds _db.
+
+#### Writing the connection to the .env file
+
+1. Press “Write to .env”.
+2. “Lines of .env that change” appears: for each key, the old value crossed out and the new one (passwords hidden).
+3. Press “Write” to confirm, or “Cancel”.
+
+The kit chooses the keys based on your .env file:
+
+| If the .env… | MySQL writes | MongoDB writes |
+| --- | --- | --- |
+| already contains DB_CONNECTION= (Laravel style) | `DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD` | `DB_CONNECTION=mongodb, DB_DATABASE, MONGODB_URI` |
+| does not contain it | `DATABASE_URL` | `MONGODB_URI` |
+
+**Example: Laravel project with MySQL** `.env`
+
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=gestionale
+DB_USERNAME=gestionale
+DB_PASSWORD=3f9c…(32 caratteri generati dal kit)
+```
+
+**Example: another project with MySQL and MongoDB** `.env`
+
+```
+DATABASE_URL=mysql://portale:3f9c…@127.0.0.1:3306/portale
+MONGODB_URI=mongodb://portale:a71e…@127.0.0.1:27017/portale?authSource=portale
+```
+
+- If the .env file does not exist, it is created by copying .env.example. The other lines and the comments stay.
+- If the connection is already the right one: “The .env file already has this connection.”
+
+> [!WARNING]
+> **Watch out**
+>
+> The .env file contains the password: it must not end up in the repository. If .env is not in the .gitignore file, the kit points it out: add it.
+
+#### Copies and restore
+
+1. In the “Copies” part press “Export”: “Copy saved: …” appears and the copy is added to the list.
+2. To go back to a copy, press “Restore…” next to the file and confirm: “The current data is replaced.”
+3. “Open the copies folder” opens the folder: to restore a copy that came from outside (from a colleague, from another kit), put it there and it will appear in the list.
+
+> [!TIP]
+> **Tip**
+>
+> The copies are in the kit, in `data\projects\<project>\private\backups`. To be safe, keep one outside the kit too: if you lose the USB stick, you also lose the copies.
+
+#### Changing the server version
+
+If you have several versions of MySQL or MongoDB, the “Server version” menu chooses which one the project's database runs on. When you change it, the database and user are also created on the new version, empty: you carry the data over with a copy (Export on the old one, Restore on the new one). If the chosen version is not installed, “Install …” appears.
+
+<details>
+<summary>Under the hood</summary>
+
+- Names, passwords and versions of the project's database: `data\projects\<project>\private\db.json`, readable only by your user on NTFS.
+- MySQL: user with caching_sha2_password on localhost and 127.0.0.1, all privileges on the project's database only. MongoDB: dbOwner role on the database, authSource equal to the database name.
+- MySQL copies are .sql files made with mysqldump (--single-transaction, with routines, triggers and events); MongoDB copies are .archive.gz files made with mongodump. The MySQL restore runs with the project's user and without client commands; the MongoDB one touches only the project's database.
+- When you delete the project from the app, the kit also deletes the database and user on every version where it had created them.
+
+</details>
+
+Related topics: [3.1 The database servers](#31-the-database-servers), [2.7 Deleting a project and the “Data without a project”](#27-deleting-a-project-and-the-data-without-a-project), [7.3 Updates and backups](#73-updates-and-backups)
+
+### 3.3 Websites and .localhost addresses
+
+*Serving a folder as a website: static files, PHP, Caddy or Apache. The shared servers of the “Web Servers” page, .localhost domains and aliases.*
+
+> **In short**
+>
+> - In a project's “Website” section you choose a folder and how to serve it: static files, PHP, Caddy or Apache.
+> - With Caddy and Apache the site joins a server shared with the other projects of the same versions, at an address like http://mio-sito.localhost:8081.
+> - The “Web Servers” page shows these shared servers (pools) and lets you create your own (profiles).
+> - The sites respond only to this PC, unless you turn on the local network in Settings.
+
+![A project's “Website” section](../../ui/public/guide/en/project-site.webp)
+
+*The folder to serve, the way (static files, PHP, Caddy, Apache) and, for Caddy and Apache, profile, domains and aliases.*
+
+![The Web Servers page](../../ui/public/guide/en/servers.webp)
+
+*Pools and profiles on the left; on the right the linked sites, the details and the start options of the chosen pool.*
+
+#### Serving a project as a website
+
+1. Open the project and its “Website” section.
+2. In “Folder to serve as a website” write the folder to publish: . for the whole project, or for example public.
+3. In “with” choose how to serve it (see the table).
+4. For Caddy and Apache, also choose the “Server profile”.
+5. Press “Save”. The site becomes the project's default action: it starts with “Start”.
+
+| Choice | When to use it |
+| --- | --- |
+| static files | Ready-made HTML, CSS, JavaScript. It is the initial choice. The kit uses its small file server. |
+| PHP (built-in server) | A simple PHP site, served by PHP's built-in server. |
+| Caddy | A PHP or static site served by Caddy. Caddy does not read .htaccess files: the kit generates the rewrite rules from the project type. |
+| Apache | A site that needs Apache and its .htaccess files (many PHP CMSs). |
+
+“Remove the website” removes the configuration. To change it, stop the site first: the change applies from the next start.
+
+#### The server profile: shared or its own
+
+| Profile | What happens |
+| --- | --- |
+| Automatic (pool by version) | The initial choice. The site joins the shared server of its versions (for example Apache 2.4 with PHP 8.4), together with the other projects that use the same ones: a single port, one name per site. |
+| Its own server (the project's port) | A Caddy or an Apache just for this project, on the project's port. With Apache the configuration is in `data\projects\<project>\apache` and your directives go in the conf.d subfolder. |
+| A profile of your own | One of the profiles created on the Web Servers page, for example with a specific PHP version. |
+
+1. **Start** — Press “Start” in the project.
+2. **Pool** — The kit turns on the pool of its versions, or reloads it if it is already on.
+3. **Name** — The site gets the name \<project\>.localhost.
+4. **Address** — You open it at http://\<project\>.localhost:\<pool port\>.
+
+- “Stop” detaches the site from the pool. A pool turned on by projects shuts down with the last project, unless you started it from the Web Servers page or its profile says “Keep running even without projects”.
+- If the automatic pool fails to start, the site uses its own server and the output says so: “The shared server … did not start (…): the site uses its own server.”
+
+#### .localhost domains and aliases
+
+With Caddy and Apache you can give the site other names and link folders from other places. Names ending in .localhost always lead to this PC, without touching the Windows hosts file.
+
+| Field | Example | Effect |
+| --- | --- | --- |
+| Extra .localhost domains | `api.negozio.localhost, admin.negozio.localhost` | The site also responds to these names. Only names ending in .localhost. |
+| Portable path aliases | `/media → storage/uploads` | The address /media serves the project's storage/uploads folder. With @altro-progetto/public you can serve a folder of another project. |
+
+“Add alias” adds a “URL path” → “Relative folder” row; “Remove” removes it. The folders must be relative (no absolute paths and no ..), so the site keeps working if the kit changes drive letter or PC.
+
+#### The “Web Servers” page
+
+The “Active pools and profiles” box lists the shared servers with their port, status and number of sites. Clicking one opens its page:
+
+| Part | What it contains |
+| --- | --- |
+| Attached VirtualHosts | The pool's sites: project, folder, clickable address, names and aliases. “Detached: the project is stopped” if the project has been stopped. |
+| Pool details | Engine, server version, PHP version, port, type (automatic pool or manual profile), configuration folder. |
+| Start and stop | For a profile: “Keep running even without projects” and “Start with Atollo”. An automatic pool starts with the first project that uses it and stops with the last one. |
+
+The buttons at the top: “Start” or “Stop”, “Reload configuration” and, for profiles, “Delete profile”. A pool still on but no longer tied to projects or profiles shows a warning: stop it.
+
+1. To create a profile, press “New server profile” at the top of the sidebar.
+2. Fill in “Profile name”, “Web server” (Caddy or Apache httpd), “Server version”, “PHP version” and, if you want, “Port” (otherwise the kit picks one between 8081 and 8999).
+3. Choose whether to keep it on even without projects and whether to start it with Atollo, then press “Create profile”.
+4. In the projects' “Website” section, choose the profile in the “Server profile” menu.
+
+#### Being reachable from other PCs on the network
+
+Normally the sites respond only to this PC. To try them from a phone or another computer on the same network, turn on “Let other PCs on the network reach the project servers” in Settings › Network: [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network). The other devices use this PC's IP address and the port; .localhost names work only here. Databases and phpMyAdmin stay closed to the network in any case.
+
+<details>
+<summary>Under the hood</summary>
+
+- The site configuration is in the project's panel.json file (site action); the profiles in `data\app\servers.json`.
+- The pools' configuration is regenerated at every start and reload in `data\servers\<pool>` (httpd.conf or Caddyfile, a vhosts folder with one file per site, the logs), never in the project.
+- Automatic pools have a name like apache-2.4_php-8.4 or caddy-2.11 and a port between 8081 and 8999 that is remembered from one start to the next.
+- HTTP only, no HTTPS. PHP runs as FastCGI (php-cgi with Caddy on Windows, php-fpm on macOS and Linux).
+- Reload: Caddy reloads without stopping; Apache, or a change of port or PHP, restarts the pool.
+
+</details>
+
+Related topics: [2.3 Starting a project: actions and ports](#23-starting-a-project-actions-and-ports), [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network), [9.1 When something goes wrong](#91-when-something-goes-wrong)
+
+### 3.4 The kit's terminals
+
+*Consoles with the kit's tools in any folder on the PC, and terminals of your own with the tools and versions you choose.*
+
+> **In short**
+>
+> - A kit terminal is a console with only the kit's environment: no profile and no programs from the PC.
+> - It opens in any folder on the PC, not only in projects.
+> - The “All tools” terminal is always ready; you can create your own with the tools and versions you choose.
+
+![The Terminals page](../../ui/public/guide/en/terminals.webp)
+
+*The “All tools” terminal and your own; on the right the start folder, tools and versions.*
+
+#### The Terminals page
+
+The “Terminals” box lists the default “All tools” terminal (“Every tool at its newest version”) and the ones you created. “Open” on a row opens the console in its starting folder.
+
+- On Windows a classic console window opens with the kit's PowerShell 7.
+- On macOS and Linux a tab opens in the terminal panel inside Atollo (with the kit's PowerShell if there is one, otherwise bash).
+- When it opens, “Atollo · \<terminal name\>” appears with the list of tools found; the prompt shows Atollo and the current folder.
+
+#### Creating your own terminal
+
+Useful when you always need the same set: for example a “PHP 7.4 legacy” terminal with only PHP 7.4 and Composer, opened in the folder of an old project outside the kit.
+
+1. Press “New terminal” at the top of the sidebar, or “Duplicate” on an existing terminal.
+2. In “General” write the “Name” and the “Starting folder” (any folder on the PC: “Choose…” to browse, “Use projects” for the projects folder).
+3. In “Tools and versions” tick the tools (groups Agents, Languages, Databases; “All” and “None” to go quickly) and for each one the version, or “The newest”.
+4. Press “Create terminal” (or “Save” for an existing one), then “Open”.
+
+- The tools not chosen stay out of the PATH. PowerShell 7, GitHub CLI, the kit's commands and the system's are always there.
+- “Open in…” opens the terminal in another folder just that once.
+- Choosing a database tool puts its client in the PATH (for example mysql), but does not start the server: you start that from the Databases page.
+- The default terminal cannot be changed: duplicate it to create your own. “Delete” removes only the terminal, not the tools.
+
+#### Terminals on macOS and Linux
+
+The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · bash”, “app · claude”…); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.
+
+<details>
+<summary>Under the hood</summary>
+
+- The terminals you created are in `data\app\terminals.json` (name, folder, tools and versions).
+- The console starts with pwsh -NoProfile and the kit's profile (`data\kit\profile.ps1`): your PowerShell profiles and modules on the PC are not loaded.
+- In a terminal from the Terminals page, the ATOLLO_TERMINAL variable holds its name: when you enter a project's folder it does not switch versions, it keeps the ones chosen for the terminal. A project's “Terminal”, on the other hand, uses the project's versions.
+- Nothing is downloaded when it opens (except the kit's PowerShell if it is missing): what counts is what is already on disk.
+
+</details>
+
+Related topics: [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions), [8.1 Portable and isolated: what it means](#81-portable-and-isolated-what-it-means), [5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool)
+
+## 4. AI agents
+
+### 4.1 The agents: Claude Code, Codex, Antigravity
+
+*What they are, how to install them, how to open them in a project, signing in to your account and signing out.*
+
+> **In short**
+>
+> - An AI agent is an assistant that works in the project folder: it reads the code, changes it, runs commands.
+> - The kit offers three: Claude Code (Anthropic), Codex (OpenAI) and Antigravity (Google). You install them from Tools.
+> - They always open inside a project, from the Projects page, with the “Agent” button.
+> - You sign in to your account the first time the agent starts, and the sign-in stays in the kit, even on another PC.
+
+![The Agents page](../../ui/public/guide/en/agents.webp)
+
+*The installed agents with sign-in and highest limit; on the right limits and usage, sign-in and shared folder.*
+
+#### What they are and what you need
+
+An agent is a command-line program that talks with an artificial intelligence model from its provider. You tell it in plain English what to do (“add a contact page”, “why does this test fail?”) and it reads the files, proposes changes, runs commands and shows you the results. To use it you need an account with the provider and a plan that includes it, or an API key.
+
+| Agent | Provider | Sign-in |
+| --- | --- | --- |
+| Claude Code | Anthropic | Claude account (subscription) or API key ANTHROPIC_API_KEY. |
+| Codex | OpenAI | ChatGPT account or API key OPENAI_API_KEY. |
+| Antigravity | Google | Google account or a Gemini API key, to enter in Settings › Agents. |
+
+Agents are installed from the Tools page, “Agents” group (the first start already suggests them). They always follow the latest version and bring along what they need: Claude Code, for example, brings Git.
+
+#### Opening an agent in a project
+
+The Agents page does not start agents: an agent always works in a project's folder, so you open it from the Projects page.
+
+1. Open the project.
+2. At the top, next to “Editor” and “Terminal”, click the logo of the agent you want to use.
+3. Press “Agent”. On Windows a kit console opens in the project folder with the agent started; on macOS and Linux, a tab in the terminal panel.
+
+Quicker: the “Agent” button on the project's row (sidebar or “Quick panel”) opens the last agent used in that project, or the first one installed.
+
+<details>
+<summary>Under the hood</summary>
+
+- The chosen agent is remembered in the project's dev-settings.json file.
+- Before the start, the kit installs what is missing (the agent, its dependencies, the programs of the MCP servers such as Node.js or uv), applies the project's versions and syncs instructions, skills and MCP servers. When the agent ends, it syncs them again.
+- Antigravity starts through a small kit program (agy) that puts your sign-in back into the system before the start and brings it back into the kit at the end.
+
+</details>
+
+#### The Agents page
+
+On the left, the “Installed” box lists the agents with their version, sign-in status, “running” when they are open and the highest limit reached (for example “5 hours 42%”). On the right, for the chosen agent, three parts:
+
+| Part | What it contains |
+| --- | --- |
+| Limits and usage | [4.3 Agent limits and usage](#43-agent-limits-and-usage) |
+| Sign-in | The sign-in status, “Sign out” and, on macOS for Claude Code, “Connect with a token”. |
+| Shared by the agents | [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers) |
+
+At the top of the sidebar: “Refresh usage”, “Open shared folder” (`data\agents`) and the guide's book. If there is no agent: “No agent installed: add them from Tools.”
+
+#### Signing in to your account
+
+| Text | Meaning |
+| --- | --- |
+| not signed in: you sign in the first time the agent starts | Open the agent in a project and follow its instructions (usually a page in the browser). |
+| signed in | The agent is signed in with your account, saved in the kit. |
+| signed in with an API key | The agent uses an API key: no plan limits, you pay for what you use. |
+| signed in with a token | Only Claude Code on macOS, connected with a token (see below). |
+
+The sign-in stays in the kit folder: when you take the kit to another PC you do not have to sign in again. “Sign out” removes the sign-in saved in the kit (with the agent closed: while it is open the button says “Close the agent first”).
+
+> [!WARNING]
+> **If you lose the USB stick**
+>
+> The sign-ins of the agents and of GitHub are saved in the kit, unencrypted. “Sign out” does not revoke the sessions on the provider's site: if you lose the USB stick, revoke them from your account settings at Anthropic, OpenAI, Google and GitHub.
+
+> [!NOTE]
+> **Claude Code on macOS**
+>
+> On macOS Claude Code would save the sign-in in the Keychain, which stays on that Mac. “Connect with a token” opens claude setup-token in the app's terminal: you complete the sign-in in the browser and the token (valid for one year) is saved in the kit, so it works on every Mac. If it is not recognized, paste it into the “Claude Code token” field and press “Save the token”.
+
+<details>
+<summary>Under the hood</summary>
+
+| Agent | Where the sign-in is stored |
+| --- | --- |
+| Claude Code | `data\home\.claude\.credentials.json` |
+| Codex | `data\home\.codex\auth.json` |
+| Antigravity | `data\antigravity\keyring.json` |
+| Claude Code, token on macOS | `data\agents\claude\oauth-token` |
+
+Antigravity saves its sign-in only in the system keychain (Credential Manager on Windows, Keychain on macOS, Secret Service on Linux). The kit puts it there before the start and brings it back into keyring.json at the end, restoring any Antigravity credentials of the PC (kept, encrypted, in keyring-before.json). On Windows the sign-in in the system lasts only for the Windows session.
+
+</details>
+
+Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers), [4.3 Agent limits and usage](#43-agent-limits-and-usage), [6.2 The Settings, one by one](#62-the-settings-one-by-one)
+
+### 4.2 Shared instructions, skills and MCP servers
+
+*A single folder to instruct all three agents at once: AGENTS.md, the skills, the kit's MCP servers and those of a project.*
+
+> **In short**
+>
+> - Instructions, skills and MCP servers are written only once, in the `data\agents` folder, and apply to all three agents.
+> - The kit syncs them when the app starts, before and after each agent and when an agent ends.
+> - You can also edit an agent's files: the change passes to the others.
+> - MCP servers for a single project are added in the project's “Editor” section.
+
+#### What is shared
+
+| What | What it is for | The file to edit |
+| --- | --- | --- |
+| Global instructions | Rules and preferences that apply in every project (“reply in English”, “use pnpm”, your coding style). | `data\agents\AGENTS.md` |
+| Skills | Reusable procedures that the agent loads when needed, one folder per skill with a SKILL.md file. | `data\agents\skills\<name>\SKILL.md` |
+| MCP servers | Programs or services that give the agent new tools (reading documentation, querying a service, using the browser). | `data\agents\mcp.json` |
+
+1. On the Agents page, press “Open shared folder”.
+2. Edit AGENTS.md with a text editor, add folders in skills or servers in mcp.json.
+3. The change reaches the agents at their next start (or right away, if you restart the app).
+
+**Example mcp.json** `data\agents\mcp.json`
+
+```
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    },
+    "docs": {
+      "type": "http",
+      "url": "https://example.com/mcp"
+    }
+  }
+}
 ```
 
 > [!TIP]
-> **How to back up the kit:** to save all your work, just copy `projects\` and `data\`, excluding `data\apps\` and `data\cache\` (which only contain binaries and packages that are downloaded again automatically).
+> **Tip**
+>
+> The MCP servers' programs install themselves when an agent starts: npx and node bring Node.js, uvx and uv bring uv, python brings Python.
 
----
+#### How the sync works
 
-### 1.3 Process Lifecycle (Job Object) and Automatic Relocation
+- Instructions: AGENTS.md is copied as CLAUDE.md for Claude Code, AGENTS.md for Codex and AGENTS.md for Antigravity. If you edit one of those files, the change goes back into AGENTS.md and on to the others. If both sides change, the most recent wins and the other is kept in the conflicts folder.
+- Skills: each agent sees the skills folder through a link (copies on FAT32 and exFAT drives). A skill created inside an agent is moved to `data\agents\skills` and becomes everyone's; a skill deleted in an agent is set aside and can be recovered.
+- MCP servers: mcp.json is translated into each agent's format. With Claude Code it works in both directions: a server added with claude mcp add -s user goes back into mcp.json. Codex and Antigravity receive the kit's servers and leave alone the ones you added by hand in their configurations.
 
-- **Windows Job Object (`tauri/src/os/jobs.rs`)**: at startup, `Atollo.exe` creates a Windows Job Object configured with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_BREAKAWAY_OK` and assigns itself to it. Every child process (VSCodium server, databases, web servers, consoles, project actions) starts inside this Job (or in a dedicated sub-job for a single action/server). If the application is closed or ends unexpectedly, Windows instantly stops all child processes without leaving orphaned daemons in the background. Only the system browser and File Explorer are opened outside the job (`CREATE_BREAKAWAY_FROM_JOB`).
-- **Single instance per path (`tauri/src/os/instance.rs`)**: the single-instance mutex is computed from the SHA-256 hash of the root path (`Local\Atollo-App-<hash>`). Two different USB sticks connected to the same PC can therefore coexist, and a banner in the main window warns if processes from another copy of the kit are running.
-- **Automatic relocation (`tauri/src/agents/relocate.rs`)**: at every startup the kit compares the current path with `data\app\root.txt`. If the folder has been moved or the USB stick has changed drive letter (e.g. from `E:\` to `F:\`), the application writes `old-root.txt`, automatically rewrites the absolute paths in the configuration files of the agents (`.claude.json`, `config.toml`) and of the editor server, and regenerates the NTFS junctions of the skills.
+> [!NOTE]
+> **The kit's rule**
+>
+> At every sync the kit gives the agents a common rule: in projects the files CLAUDE.md, AGENTS.md and GEMINI.md are equivalent, and a project's skills are in its .agents/skills folder.
 
----
+#### MCP servers for a single project
 
-## 2. Organization of Tool Links and Sources
+1. Open the project, “Editor” section, “Project MCP servers” box.
+2. Press “Add a server”.
+3. Write the “Name” (letters, digits, - and _) and choose the “Type”: “program” (with “Program”, for example npx, and the “Arguments, one per line”) or “address (http)” (with the “Address”).
+4. Press “Add”. “Remove” on a row removes it.
 
-### 2.1 Sourcing Architecture and Cryptographic Verification
+These servers apply only in that project, in addition to the kit's. Claude Code reads them from the project's .mcp.json file (and asks for confirmation on first use); Codex from `.codex\config.toml`, which Atollo keeps in sync; Antigravity uses only the kit's servers.
 
-The installation engine (`tauri/src/net/` and `tauri/src/install/`) never runs external scripts to download components and **never** accepts a package without cryptographic verification.
-- **Native Windows TLS stack**: downloads use `ureq` with `native-tls` (SChannel) and `RootCerts::PlatformVerifier`. This way the kit automatically honors the root certificates in the Windows store (essential on corporate or school networks with HTTPS inspection).
-- **Atomic download with multiple attempts**: each file is downloaded with a `.part` extension into the temporary work folder (`<TEMP>\Atollo\<id>\setup\<component>\`, or `data\tmp\setup\` if the system disk has less than 4 GiB free), with **3 automatic attempts** (waiting 5 s and 10 s).
-- **5 verification methods (`tauri/src/net/verify.rs` and `signature.rs`)**:
-  1. **SHA-256** (from the GitHub Release `asset.digest`, from `.sha256`/`.sha256sum`/`SHASUMS256.txt` files or from official JSON APIs).
-  2. **SHA-512** (from `.sha512` files for Apache Maven, the .NET SDK JSON, the Antigravity manifest).
-  3. **SHA3-256** (published on SQLite's official download page).
-  4. **npm integrity (`sha512-<base64>`)** (from the npm registry for Claude Code and Codex).
-  5. **Authenticode digital signature (`WinVerifyTrust`)** (cryptographic verification of the signer's certificate: required for the Visual C++ runtime `O=Microsoft Corporation` on both the installer and `vcruntime140.dll`, and applied to `claude.exe` for `Anthropic`).
+<details>
+<summary>Under the hood</summary>
 
----
+| Original | Copies for the agents |
+| --- | --- |
+| `data\agents\AGENTS.md` | `data\home\.claude\CLAUDE.md · data\home\.codex\AGENTS.md · data\home\.gemini\AGENTS.md` |
+| `data\agents\skills` | `data\home\.claude\skills · data\home\.codex\skills · data\home\.gemini\antigravity-cli\skills` |
+| `data\agents\mcp.json` | `data\home\.claude\.claude.json · data\home\.codex\config.toml · data\home\.gemini\config\mcp_config.json` |
 
-### 2.2 Complete Table of Sources for Components, Languages and Databases
+- The sync state, the conflicts and the deleted skills are in `data\agents\.sync` (conflicts, deleted).
+- Sync warnings end up in the app's log, `data\app\logs\app.log`.
+- You can also run the sync from the command line: `Atollo.exe sync [--project <folder>] [--verbose]`.
+- Claude Code and Codex consider projects and its subfolders trusted: they can run commands there without asking for trust every time.
+- In Codex ${VAR} variables are not expanded: the kit translates them where Codex has a dedicated key, otherwise it copies them as they are with a comment.
 
-The following table sets out exactly how all the addresses are organized from which `Atollo.exe` takes version metadata, binary archives and checksums:
+</details>
 
-| Component ID | Group | Official Site (`home`) | Metadata Source / Version Lookup | Binary Download URL | Verification Method | Destination in `data\apps\win32-<arch>\` |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`pwsh`** (PowerShell 7) | Required (`required`) | `https://github.com/PowerShell/PowerShell` | GitHub API: `https://api.github.com/repos/PowerShell/PowerShell/releases/latest` | Asset `PowerShell-<v>-win-(x64\|arm64).zip` from `github.com/PowerShell/PowerShell/releases/download/...` | SHA-256 from GitHub `asset.digest` | `pwsh\<line>\pwsh.exe` |
-| **`gh`** (GitHub CLI) | Required (`required`) | `https://cli.github.com` | GitHub API: `https://api.github.com/repos/cli/cli/releases/latest` | Asset `gh_<v>_windows_(amd64\|arm64).zip` | SHA-256 from GitHub `asset.digest` | `gh\<line>\bin\gh.exe` |
-| **`vscodium-server`** (Editor) | App (`app`) | `https://vscodium.com` | Version pinned in the catalog (`1.135.06055`, D-58) | `https://github.com/VSCodium/vscodium/releases/download/<v>/vscodium-reh-web-win32-x64-<v>.tar.gz` | SHA-256 hardcoded in the catalog (`components.json`) | `vscodium-server\` |
-| **`claude`** (Claude Code) | Agents (`agents`) | `https://claude.com/product/claude-code` | npm registry: `https://registry.npmjs.org/@anthropic-ai/claude-code-win32-<arch>/latest` | `dist.tarball` field of the npm JSON | npm integrity `sha512-...` + Authenticode signature `Anthropic` | `claude\<line>\claude.exe` |
-| **`codex`** (Codex) | Agents (`agents`) | `https://github.com/openai/codex` | npm registry: `https://registry.npmjs.org/@openai/codex/latest` → then `/<ver>-win32-<arch>` | `dist.tarball` field of the architecture-specific package | npm integrity `sha512-...` | `codex\<line>\bin\codex.exe` |
-| **`antigravity`** (Antigravity) | Agents (`agents`) | `https://antigravity.google` | Google Cloud Run manifest: `https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_(amd64\|arm64).json` | `url` field of the JSON manifest | SHA-512 (128 hex) from the manifest's `sha512` field | `antigravity\<line>\agy.exe` (invoked through `data\kit\bin\agy.cmd`) |
-| **`git`** (Git + Git Bash) | Tools | `https://git-scm.com` | GitHub API: `https://api.github.com/repos/git-for-windows/git/releases/latest` | Asset `PortableGit-<v>-(64-bit\|arm64).7z.exe` (extracted in Rust without a 7z window) | SHA-256 from GitHub `asset.digest` | `git\<line>\cmd\git.exe` and `git\<line>\bin\bash.exe` |
-| **`python`** (Python + pip) | Languages (versioned) | `https://www.python.org` | `https://raw.githubusercontent.com/astral-sh/python-build-standalone/latest-release/latest-release.json` → `<asset_url_prefix>/SHA256SUMS` | `<asset_url_prefix>/cpython-3.<minor>.<patch>+<date>-<triple>-install_only_stripped.tar.gz` | SHA-256 from the `SHA256SUMS` list | `python\<line>\python.exe` (plus a `python3.exe` copy and `pip` from the internal wheel) |
-| **`node`** (Node.js + npm) | Languages (versioned) | `https://nodejs.org` | `https://nodejs.org/dist/index.json` (even LTS lines >= 18 and the latest major) | `https://nodejs.org/dist/<v>/node-<v>-win-<arch>.zip` | SHA-256 from `https://nodejs.org/dist/<v>/SHASUMS256.txt` | `node\<line>\node.exe` |
-| **`uv`** (`uv`, `uvx`, `uvw`) | Tools | `https://docs.astral.sh/uv/` | GitHub API: `https://api.github.com/repos/astral-sh/uv/releases/latest` | Asset `uv-<triple>.zip` | SHA-256 from GitHub `asset.digest` | `uv\<line>\uv.exe`, `uvx.exe`, `uvw.exe` |
-| **`php`** (PHP + Composer + CA + VC++) | Languages (versioned) | `https://www.php.net` | `https://windows.php.net/downloads/releases/releases.json` + hardcoded EOL archives (`8.1`, `8.0`, `7.4`..`5.6`) | `https://windows.php.net/downloads/releases/<path>` (Thread Safe build `ts-vs*-x64` / `ts-vc*-x64`) | SHA-256 from `releases.json` (or verified EOL table) | `php\<line>\php.exe` |
-| ↳ *Part: Composer* | *(inside PHP)* | `https://getcomposer.org` | `https://getcomposer.org/versions` (`stable` channel or `2.2` LTS depending on `min-php`) | `https://getcomposer.org<path>` (`composer.phar`) | SHA-256 from `<url>.sha256sum` | `php\<line>\composer.phar` (+ `composer.cmd` and `composer`) |
-| ↳ *Part: SSL CA bundle* | *(inside PHP)* | `https://curl.se` | — | `https://curl.se/ca/cacert.pem` | SHA-256 from `https://curl.se/ca/cacert.pem.sha256` | `php\<line>\extras\ssl\cacert.pem` |
-| ↳ *Part: VC++ Runtime* | *(for PHP, Apache, MongoDB)* | `https://learn.microsoft.com` | Extracted only once if missing | `https://aka.ms/vc14/vc_redist.x64.exe` (CAB extraction `vcRuntimeMinimum_amd64\cab1.cab`) | Authenticode signature `O=Microsoft Corporation` on the exe and `vcruntime140.dll` | `tools\vcruntime\` (copied next to `php.exe`, `httpd.exe`, `mongod.exe`) |
-| **`apache`** (Apache httpd) | Languages (versioned) | `https://httpd.apache.org` | Windows: HTML page `https://www.apachelounge.com/download/`; macOS and Linux: versions pinned in the catalog (kit build, D-116) | Windows: `https://www.apachelounge.com/download/VS<nn>/binaries/httpd-<v>-Win64-VS<nn>.zip`; macOS and Linux: `https://github.com/nabre/atollo/releases/download/httpd-v<v>/httpd-<v>-<target>.tar.gz` | SHA-256 from `<url>.txt` (`SHA256-Checksum for:`); macOS and Linux: SHA-256 pinned in the catalog | `apache\<line>\bin\httpd.exe` (macOS and Linux: `apache/<line>/bin/httpd`, PHP with `php-fpm`) |
-| **`caddy`** (Caddy) | Languages (versioned) | `https://caddyserver.com` | GitHub API: `https://api.github.com/repos/caddyserver/caddy/releases` | Asset `caddy_<v>_<system>_<arch>` from the GitHub release | SHA-256 from GitHub `asset.digest` (from 2.10.1), before that SHA-512 from `caddy_<v>_checksums.txt` | `caddy\<line>\caddy.exe` |
-| **`rust`** (Rustup, Cargo, Clippy) | Tools | `https://www.rust-lang.org` | `https://static.rust-lang.org/dist/channel-rust-stable.toml` (`[pkg.rustc]`) | `https://static.rust-lang.org/rustup/dist/<triple>/rustup-init.exe` | SHA-256 from `<url>.sha256` | `rust\cargo\bin\rustc.exe` and `rustup.exe` |
-| **`go`** (Go SDK) | Languages (versioned) | `https://go.dev` | `https://go.dev/dl/?mode=json` (and `&include=all` for the list of lines) | `https://go.dev/dl/go<v>.windows-(amd64\|arm64).zip` | SHA-256 from the `sha256` field of the JSON | `go\<line>\bin\go.exe` |
-| **`java`** (Temurin JDK + Maven + Gradle) | Languages (versioned) | `https://adoptium.net` | `https://api.adoptium.net/v3/info/available_releases` + `/v3/assets/latest/<major>/hotspot?architecture=...` | URL of the `.zip` package returned by the Adoptium API | SHA-256 from `binary.package.checksum` | `java\<line>\bin\java.exe` |
-| ↳ *Part: Apache Maven* | *(inside Java)* | `https://maven.apache.org` | `https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml` (3.x) | `https://repo.maven.apache.org/.../apache-maven-<v>-bin.zip` | SHA-512 from `<url>.sha512` | `maven\bin\mvn.cmd` |
-| ↳ *Part: Gradle* | *(inside Java)* | `https://gradle.org` | `https://services.gradle.org/versions/current` | `downloadUrl` field of the JSON | SHA-256 from the JSON's `checksumUrl` | `gradle\bin\gradle.bat` (started by `data\kit\bin\gradle.cmd`) |
-| **`kotlin`** (Kotlin Compiler) | Languages (versioned) | `https://kotlinlang.org` | GitHub API: `https://api.github.com/repos/JetBrains/kotlin/releases?per_page=100` | Asset `kotlin-compiler-<v>.zip` | SHA-256 from `asset.digest` or from `<asset>.sha256` | `kotlin\<line>\bin\kotlinc.bat` |
-| **`android`** (Android SDK) | Tools | `https://developer.android.com/studio` | HTML page: `https://developer.android.com/studio` (`commandlinetools-win-<build>_latest.zip`) | `https://dl.google.com/android/repository/commandlinetools-win-<build>_latest.zip` + packages via `sdkmanager` | SHA-256 read from the table on the official page | `android\cmdline-tools\latest\bin\sdkmanager.bat` and `android\platform-tools\adb.exe` |
-| **`dotnet`** (.NET SDK) | Languages (versioned) | `https://dotnet.microsoft.com` | `https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json` → `releases.json` | `.zip` URL for `rid=win-x64\|win-arm64` | SHA-512 from the `hash` field of `releases.json` | `dotnet\<line>\dotnet.exe` (with side-by-side SDK/runtime junctions) |
-| **`dart`** (Dart SDK) | Languages (versioned) | `https://dart.dev` | `https://storage.googleapis.com/dart-archive/channels/stable/release/latest/VERSION` (and GCS bucket for the lines) | `https://storage.googleapis.com/dart-archive/channels/stable/release/<v>/sdk/dartsdk-windows-<arch>-release.zip` | SHA-256 from `<url>.sha256sum` | `dart\<line>\bin\dart.exe` |
-| **`zig`** (Zig) | Languages (versioned) | `https://ziglang.org` | `https://ziglang.org/download/index.json` | `tarball` field for `(x86_64\|aarch64)-windows` | SHA-256 from the `shasum` field of the JSON | `zig\<line>\zig.exe` |
-| **`julia`** (Julia) | Languages (versioned) | `https://julialang.org` | `https://julialang-s3.julialang.org/bin/versions.json` | `.zip` file for `os=winnt`, `arch=x86_64` | SHA-256 from the `sha256` field of `versions.json` | `julia\<line>\bin\julia.exe` |
-| **`bun`** (Bun) | Languages (versioned) | `https://bun.sh` | GitHub API: `https://api.github.com/repos/oven-sh/bun/releases` | Asset `bun-windows-(x64\|aarch64).zip` | SHA-256 from `asset.digest` or from `SHASUMS256.txt` | `bun\<line>\bun.exe` |
-| **`deno`** (Deno) | Languages (versioned) | `https://deno.com` | GitHub API: `https://api.github.com/repos/denoland/deno/releases` | Asset `deno-(x86_64\|aarch64)-pc-windows-msvc.zip` | SHA-256 from `asset.digest` or from `<asset>.sha256sum` | `deno\<line>\deno.exe` |
-| **`typst`** (Typst) | Languages (versioned) | `https://typst.app` | GitHub API: `https://api.github.com/repos/typst/typst/releases` | Asset `typst-(x86_64\|aarch64)-pc-windows-msvc.zip` | SHA-256 from GitHub `asset.digest` | `typst\<line>\typst.exe` |
-| **`tinytex`** (TinyTeX / LaTeX) | Tools | `https://yihui.org/tinytex/` | GitHub API: `https://api.github.com/repos/rstudio/tinytex-releases/releases/latest` | Asset `TinyTeX-1-windows-v*.exe` (7z SFX extracted in Rust) | SHA-256 from GitHub `asset.digest` | `tinytex\bin\windows\tlmgr.bat` and `pdftex.exe` |
-| **`pnpm`** (pnpm + yarn/corepack) | Tools | `https://pnpm.io` | npm registry: `https://registry.npmjs.org/pnpm/latest` and `/corepack/latest` | Global installation through the kit's Node.js `npm-cli.js` | npm registry integrity | `data\npm-global\pnpm.cmd` and `yarn.cmd` |
-| **`cmake`** (CMake + Ninja) | Tools | `https://cmake.org` | GitHub API: `Kitware/CMake` and `ninja-build/ninja` (`releases/latest`) | Asset `cmake-*-windows-(x86_64\|arm64).zip` and `ninja-win(arm64).zip` | SHA-256 from GitHub `asset.digest` | `cmake\<line>\bin\cmake.exe` and `tools\ninja.exe` |
-| **`cc`** (C/C++ llvm-mingw) | Tools | `https://github.com/mstorsjo/llvm-mingw` | GitHub API: `https://api.github.com/repos/mstorsjo/llvm-mingw/releases/latest` | Asset `llvm-mingw-*-ucrt-(x86_64\|aarch64).zip` | SHA-256 from GitHub `asset.digest` | `cc\bin\clang.exe` (+ generated `make.cmd`) |
-| **`ruby`** (Ruby + Bundler) | Languages (versioned) | `https://www.ruby-lang.org` | GitHub API: `https://api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=30` | Asset `rubyinstaller-<v>-(x64\|arm).7z` | SHA-256 from GitHub `asset.digest` | `ruby\<line>\bin\ruby.exe` |
-| **`r`** (R from conda-forge) | Languages (versioned) | `https://www.r-project.org` | `https://api.anaconda.org/package/conda-forge/r-base` (`subdir=win-64`) + GitHub `mamba-org/micromamba-releases` | `micromamba-win-64` + `r-base` and `libblas=*=*openblas` packages from `conda-forge` | SHA-256 of `micromamba-win-64.sha256` + SHA-256 of the conda packages | `r\<line>\bin\R.cmd` and `Rscript.cmd` (+ `tools\micromamba.exe`) |
-| **`mysql`** (MySQL Community Server) | Databases (versioned) | `https://www.mysql.com` | 8.4 and 9.7 LTS lines pinned in the catalog | `https://cdn.mysql.com/Downloads/MySQL-<line>/mysql-<v>-winx64.zip` | SHA-256 pinned after checking Oracle's GPG signature | `mysql\<line>\bin\mysqld.exe` and `mysql.exe` |
-| **`mongodb`** (MongoDB + mongosh + Tools) | Databases (versioned) | `https://www.mongodb.com` | `https://downloads.mongodb.org/current.json` (production `x.0.y`), GitHub `mongodb-js/mongosh`, `https://downloads.mongodb.org/tools/db/release.json` | Windows x64 zips of `mongod`, `mongosh` and `mongodb-database-tools` | SHA-256 from the MongoDB JSON files + GitHub `asset.digest` for `mongosh` | `mongodb\<line>\bin\mongod.exe`, `mongosh\bin\mongosh.exe`, `mongodb-tools\bin\mongodump.exe` |
-| **`phpmyadmin`** (phpMyAdmin for MySQL) | Databases | `https://www.phpmyadmin.net` | `https://www.phpmyadmin.net/home_page/version.json` | `files.phpmyadmin.net/phpMyAdmin/<v>/phpMyAdmin-<v>-all-languages.zip` | SHA-256 from the official `.sha256` file + `php -l` lint | `phpmyadmin\<line>\index.php` |
-| **`sqlite`** (SQLite CLI) | Databases | `https://sqlite.org` | Official page: `https://sqlite.org/download.html` (CSV rows `PRODUCT,...`) | `https://sqlite.org/<year>/sqlite-tools-win-(x64\|arm64)-<v>.zip` | **SHA3-256** published in the `PRODUCT` row | `sqlite\<line>\sqlite3.exe` |
+Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity), [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions), [8.5 The command line](#85-the-command-line)
 
----
+### 4.3 Agent limits and usage
 
-### 2.3 Sources for Editor Extensions, Agent Limits and App Updates
+*How much of your plan you have used, when it resets, and the tokens and sessions of today and the last seven days.*
 
-Besides the main components, the application contacts the following addresses for specific functions:
+> **In short**
+>
+> - “Plan limits” shows how much of your plan you have used in each window and when it resets.
+> - “Usage” shows tokens and sessions for today and the last seven days, with a chart per day.
+> - The limits are read from the provider's servers every two minutes; “Refresh usage” reads them again right away.
 
-1. **Editor extensions (`tauri/catalog/extensions.json` and `tauri/src/editor/ext.rs`)**:
-   - **Open VSX Registry** (through `vscodium-server --install-extension <publisher.name>`): all the extensions in the language-extension matrix (Python, ESLint, Prettier, Volar, Intelephense, rust-analyzer, Tinymist, SQLTools, etc.) are downloaded from the open-source Open VSX registry preconfigured in VSCodium.
-   - **CodeLLDB (`vadimcn.vscode-lldb`)**: downloaded directly from GitHub Releases (`https://api.github.com/repos/vadimcn/codelldb/releases/latest`, asset `codelldb-win32-x64.vsix`, verified through the SHA-256 `digest`) and installed from the local `.vsix` file when a project uses Rust, Zig, C or C++.
-2. **AI agents' plan limits and usage (`tauri/src/agents/stats/`)**:
-   - **Claude Code**: `https://api.anthropic.com/api/oauth/usage` (authenticated with the OAuth token in `data\home\.claude\.credentials.json`).
-   - **Codex**: `https://chatgpt.com/backend-api/wham/usage` (authenticated with `data\home\.codex\auth.json`, falling back to reading the `token_count` events locally from the session files).
-   - **Antigravity**: `https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels` (authenticated with `data\antigravity\keyring.json`).
-   - *Security note*: the tokens are only read and are sent exclusively to their own provider (sparingly: a minimum cache of 2 minutes and honoring `Retry-After` on HTTP 429).
-3. **Self-update of `Atollo.exe` (`tauri/src/setup/self_update.rs`)**:
-   - Queries the releases tagged `app-vX.Y.Z` of the repository `https://api.github.com/repos/nabre/atollo/releases`, looking for the system's asset with the version in its name (`Atollo-X.Y.Z-win32-x64.exe`, `-win32-arm64.exe`, `-darwin-<arch>.app.zip`, `-linux-<arch>.AppImage`), verified with SHA-256.
-4. **Android template and framework packages (`tauri/catalog/frameworks.json`)**:
-   - The wizard commands download packages from the official registries through the kit's tools: **Packagist** (`composer`), **npm Registry** (`npm`/`npx`), **Google Android Repository** (`sdkmanager` for `ndk;30.0.16248370`), and clone the official Android template from `https://github.com/android/architecture-templates.git`.
+#### Plan limits
 
----
+For each limit window there is a box with the percentage used, a bar and “resets …”. The windows are “5 hours” and “Week” for Claude Code, “… hours” and “Week” for Codex, and per-model quotas for Antigravity. Above: the plan, the data source and when the data was read.
 
-### 2.4 Fallback Without the API and Manual Download ("By Hand")
+| Color | When |
+| --- | --- |
+| Green | below 70% |
+| Orange | from 70% |
+| Red | from 90% |
 
-1. **Getting past GitHub's API limit of 60 calls/hour (`tauri/src/net/mod.rs`)**:
-   - If the user has not yet connected a GitHub account and the IP address runs out of the anonymous `api.github.com` quota, the kit automatically switches to reading GitHub's web pages directly (which do not use API quota):
-     - it follows the redirect of `https://github.com/<owner>/<repo>/releases/latest` to find the tag of the latest version;
-     - it downloads `https://github.com/<owner>/<repo>/releases/expanded_assets/<tag>` to extract the asset links and the `sha256:` hashes published by GitHub.
-2. **Assisted manual download ("By Hand", `tauri/src/setup/downloads.rs` and `ui/src/byhand.tsx`)**:
-   - If a download fails because of firewall blocks or network problems (but the metadata with the SHA fingerprint are known), the component's row on the **Tools** page shows a dashed box with the direct link to the file.
-   - Clicking the file name opens the PC's browser to download it; the user can then **drag the file (Drag & Drop)** into the box or click **"browse…"** (which opens the Windows `Downloads` folder).
-   - The file is copied to `<TEMP>\Atollo\<id>\downloads\` (or `data\downloads\`), **verified against the official SHA hash** (even if the browser added ` (1)` to the name), and the installation resumes by itself. Unused files are cleaned up after 30 days.
+The highest value also appears on the agent's row in the sidebar. For Claude Code, paid extra credits are shown separately (“Extra credits: … of …”).
 
----
+| Message | What to do |
+| --- | --- |
+| not signed in: open … to see limits and usage | Open the agent in a project and sign in. |
+| sign-in expired: open Claude Code to renew it | Open the agent: it renews the sign-in by itself. |
+| API key: no plan limits | With an API key there are no limit windows. |
+| no data yet: the limits arrive with Codex's next response | Use Codex once: the limits arrive with the response. |
+| The server asks to wait: next reading … | The provider has limited the readings: the kit tries again by itself later. |
 
-## 3. Why a GitHub Account Is Needed and Its Central Role
+#### Usage
 
-### 3.1 Why the GitHub Account Is Essential in the Kit
+- “Tokens · Today” with the tokens of today and the last 7 days; hovering over it shows how many are new, how many come from the cache and how many are output.
+- “Sessions · Today” with the sessions of today and the last 7 days.
+- A bar chart for the 7 days, the last activity and the three most used models.
+- Antigravity does not save tokens: for it only sessions are counted.
 
-In Atollo the GitHub account is not a mere accessory for a single program: it is designed as the **single, centralized identity of the whole portable environment** (`tauri/src/github/mod.rs`, decision D-70). Setting up the GitHub account in **Settings** meets five critical needs at once:
+> [!NOTE]
+> **Good to know**
+>
+> Usage is calculated from the session files saved in the kit, so it includes the sessions opened from this kit on any PC. There are no money costs: only tokens and sessions.
 
-1. **One sign-in for all tools (the kit's "Single Sign-On")**:
-   - By signing in only once in the **Settings › GitHub account** section, authentication becomes immediately active for:
-     - the **app's interface** (browsing, cloning, renaming and deleting your repositories in "Projects");
-     - the **kit's Git** (used by the Push/Pull/Sync buttons of the **VSCodium Editor**, by the **Terminal** and by scripts);
-     - **GitHub CLI (`gh`)** in the kit's consoles (`gh pr`, `gh issue`, `gh repo`, `gh run`);
-     - the **three AI agents** (Claude Code, Codex and Antigravity), which can then create branches, open Pull Requests or clone private repositories at your request without asking you for tokens or credentials.
-2. **Full portability on the USB stick (zero traces on the host PC)**:
-   - If you ran `gh auth login` manually in a terminal without parameters, GitHub CLI would save the token in the host PC's *Windows Credential Manager* (leaving your sign-in on that computer and losing it when you move the USB stick to another PC).
-   - The sign-in started from the app instead uses `--insecure-storage` with `GH_CONFIG_DIR` pointed at `data\gh\`: the token is saved in `data\gh\hosts.yml` inside the kit, travels with you on the USB stick and never touches the Windows Credential Manager.
-3. **Removing network limits (GitHub API rate limit)**:
-   - Many tools in the catalog (`pwsh`, `gh`, `git`, `uv`, `kotlin`, `bun`, `deno`, `typst`, `tinytex`, `cmake`, `ninja`, `cc`, `ruby`, `caddy`, `mongosh`, `codelldb`) are hosted on GitHub Releases. Without authentication, GitHub limits API queries to 60 per hour per IP address (often shared in offices, schools or universities). With the account connected the limit rises to **5,000 requests per hour**.
-4. **Secure cloning of private repositories without exposing the token**:
-   - When you clone a repository from the app, the token is never passed on the command line (where it would be visible to the PC's other processes) nor written into `.git\config` (where it would remain in plain text in the project); instead it is injected only for the duration of the command through `GIT_CONFIG_*` environment variables as an HTTP header toward `https://github.com`.
-5. **Surviving a move of the kit**:
-   - Unlike the standard `gh auth setup-git` command (which writes the absolute path `C:\...\gh.exe` into `.gitconfig` and breaks as soon as the USB stick changes drive letter), Atollo configures in the portable `.gitconfig` (`data\home\.gitconfig`) the directive `helper = !gh auth git-credential` without a fixed path, relying on the kit's isolated `PATH`.
+<details>
+<summary>Under the hood</summary>
 
----
+- Sources of the limits: for Claude Code the Anthropic server, for Codex the OpenAI one (or, failing that, Codex's last response), for Antigravity the Google one. The kit uses the saved sign-in only to read: it does not renew it and does not send it anywhere else.
+- Readings at most every 2 minutes, every 20 seconds with “Refresh usage”; after a “too many requests” response it waits as long as the server asks (from 2 to 30 minutes).
+- Session files: `data\home\.claude\projects`, `data\home\.codex\sessions`, `data\home\.gemini` (Antigravity conversations).
 
-### 3.2 How Unified Authentication Works (`data\gh` and `.gitconfig`)
+</details>
 
-1. **Starting the Device flow (`gh auth login --web`)**:
-   - The app runs `gh auth login --hostname github.com --git-protocol https --web --insecure-storage --scopes workflow` in the background.
-   - In addition to `gh`'s default scopes (`repo`, `read:org`, `gist`), the kit immediately requests the **`workflow`** scope to allow pushing `.github/workflows/*.yml` files (GitHub Actions) from the editor or the agents.
-2. **Automatic synchronization of Git's credential helper (`sync_git`)**:
-   - As soon as the sign-in succeeds (and at every app startup), Atollo updates `data\home\.gitconfig` for the two domains `https://github.com` and `https://gist.github.com`, setting:
-     1. an empty value `helper =` (which clears any system helpers such as Git Credential Manager, for GitHub only);
-     2. `helper = !gh auth git-credential` (which delegates supplying the token to the kit's `gh`).
-   - If the user signs out of the account ("Sign out"), the app automatically removes these lines from `.gitconfig`. If instead the user had manually configured a custom helper of their own, the kit does not overwrite it.
+Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity), [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers)
 
----
+## 5. Tools and languages
 
-### 3.3 Steps to Set Up the GitHub Account and Permissions (`workflow`, `delete_repo`)
+### 5.1 The Tools page
 
-#### Sign-In Procedure
-1. Open the **Settings** page (gear icon at the bottom of the activity bar on the left).
-2. In the Settings side bar click **GitHub account** (or go there directly from the **Clone or create** panel on the **Projects** page).
-3. Click the **"Sign in to GitHub"** button.
-4. The application generates an **8-character one-time code** in the format `XXXX-XXXX` (e.g. `1A2B-3C4D`), shows it on the page with the **"Copy the code"** button and automatically opens the PC's default browser at `https://github.com/login/device`.
-5. In the browser, sign in to your GitHub account (if you are not already signed in), paste the `XXXX-XXXX` code and authorize **GitHub CLI**.
-6. The app's page detects the completion automatically, shows your GitHub user name and configures the kit's Git.
+*The table of all the tools, the five states, installing and updating right away or choosing first and then “Apply”.*
 
-![GitHub account configuration in Atollo's Settings](images/14-settings-github-network.png)
+> **In short**
+>
+> - The Tools page lists all the components the kit can install: agents, languages, tools, databases.
+> - The icons on the rows act right away: “Install” and “Update” start as soon as you press them.
+> - The checkboxes, instead, prepare a choice that you confirm with “Apply”: this way you install and remove several things at once.
+> - Each row shows the status on disk with an icon: not present, pre-installed, installed, to update, error.
+
+![The “All tools” table](../../ui/public/guide/en/tools.webp)
+
+*Filters at the top, one row per component with state, versions and actions; at the bottom the bar with “Update all” and “Apply”.*
+
+#### How the page is laid out
+
+| Part | What it contains |
+| --- | --- |
+| Search tools | Searches the name, the description and the identifier. |
+| “Components” box | A tree with the five groups and their components, with how many are installed. A click opens the component's tab. |
+| “Overview” box | The overall views: “All tools”, “Grid”, “Editor extensions”, “Relations”, “PC requirements” ([5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements)). |
+| “All tools” tab | The first tab, always open: the table of all components. |
+| “Apply” bar | At the bottom, always visible: the pending changes, “Update all”, “Apply”. |
+
+| Group | What it contains |
+| --- | --- |
+| Required | Editor, PowerShell 7, GitHub CLI: always installed. |
+| Agents | Claude Code, Codex, Antigravity: optional, always at the latest version. |
+| Languages | Python, Node.js, PHP, Apache, Caddy, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, Ruby, R: they can have several versions side by side. |
+| Tools | Git, uv, Rust, Android SDK, TinyTeX, pnpm/yarn, CMake/Ninja, C/C++: a single version, always the latest; the ones that are needed install themselves. |
+| Databases | MySQL, MongoDB (several versions), phpMyAdmin, SQLite. |
+
+#### The “All tools” table
+
+Above the table are the filters: the search, “Platform”, “Group” and “Status” (All, Installed, Not installed, To apply, Used by projects), plus the “Expand” and “Verify” buttons. The columns: name, group, version, versions on disk, size, status, projects that use it, what it requires and the actions.
+
+| Status | Icon | Meaning |
+| --- | --- | --- |
+| not present | empty circle | There is nothing on disk. The tooltip says why (not chosen, not available on that system…). |
+| pre-installed | green package | The archives are already in the kit and the installation completes at the first start on that system. |
+| installed | green check mark | Ready to use. |
+| to update | yellow triangle | It must be reinstalled because the kit was moved and that component does not follow it (this happens only on macOS and Linux). It does not mean that a new version exists. |
+| error | red X | The last installation failed, or a part is missing on disk. The tooltip says what. |
+
+While work is in progress, four more states appear, only on the system shown: “in progress” (with the download percentage), “queued”, “to install” and “to remove” (choices not yet applied).
 
 > [!TIP]
-> **Practical example — Unified sign-in as `@mario-rossi`:**
-> In the screenshot above, the user has signed in under **Settings › GitHub account** with the account **`@mario-rossi`**. From this moment:
-> - `data\gh\hosts.yml` keeps the OAuth token on the USB stick (`D:\Atollo`);
-> - `data\home\.gitconfig` uses `!gh auth git-credential` to authenticate `git push`, `git pull`, the VSCodium Editor and the three AI agents (Claude Code, Codex, Antigravity) automatically;
-> - the GitHub API limit for downloading tools and updates rises from 60 to **5,000 requests/hour**.
-
-#### Repository Management and the `delete_repo` Permission on Request
-- For security reasons (principle of least privilege), at the first sign-in the kit does **not** ask for permission to delete repositories (`delete_repo`).
-- When on the **Projects** page you select one of your GitHub repositories and click **"Delete from GitHub"**, if the current token does not have the `delete_repo` scope, the app shows the **"Grant the permission"** button, which starts a quick new sign-in with `--scopes workflow,delete_repo`.
-- *Note*: deleting a repository on GitHub through the app never deletes any folder already cloned in `projects\`.
-
-![Browsing and managing personal and organization GitHub repositories](images/04-new-project-github.png)
+> **Tip**
+>
+> Hover over the status icon: the tooltip gives the component, system, status and the detail (for example “download 42%” or “in use: close the kit programs and try again”).
 
-> **Practical example — Cloning from `@mario-rossi` and `studio-rossi`:**
-> When you open the **Clone or create** panel in the **Projects** side bar, the app automatically lists both the personal repositories (`mario-rossi/gestionale-fatture`, `portale-clienti`, `api-magazzino`, `preventivi-pdf`) and those of the organization (`studio-rossi/design-system`). Repositories already present in `projects\` show the **"cloned"** badge with the quick **"Open"** button, while for remote ones a click on **"Clone"** is enough to download them into `projects\<name>` and configure their language versions automatically.
+#### Acting right away, or choosing and applying
 
----
+| Command | Where | What it does |
+| --- | --- | --- |
+| Install (cloud) | Row of a component that is not installed | Installs it right away, at the latest version. |
+| Install a version (+) | Row of a language that is not installed | Installs it right away in the version you choose from the menu. |
+| Update | Row of an installed component | Downloads the new version right away, if there is one. |
+| Add a version (+) | Row of an installed language | Downloads another version alongside the ones you have. |
+| Checkbox | Every row that is not required | Marks the component to install or remove, waiting for “Apply”. |
+| Apply | Bar at the bottom | Shows the summary and, with “Confirm”, installs and removes what you marked. |
+| Update all | Bar at the bottom | Brings every installed component to the latest version and every version to the latest patch. |
 
-## 4. Detailed Tour of the Application's Features (with Images and Examples)
+1. Tick the components to add and untick the ones to remove. The changed rows are highlighted in color.
+2. At the bottom the bar says, for example, “2 to install (about 180 MB), 1 to remove”.
+3. Press “Apply”: “Apply the changes?” appears with the list of what will be installed and removed.
+4. Press “Confirm”. First things are removed, then installed; the progress runs in the bar (“Installing 1/3: …”). “Cancel” stops at the end of the current step.
 
-### 4.1 Main Window, Status Bar and Activity Panel
+> [!WARNING]
+> **Watch out**
+>
+> “Update all” also applies the pending choices, without the confirmation window. If you have changed checkboxes that you do not want to apply, put them back as they were first.
 
-Atollo's interface uses VSCodium's official components and design system (`@vscode-elements/elements`) with the unified **Atollo Dark / Light** theme (synchronized automatically with Windows' light/dark theme):
+- Removing a component is possible only with the checkbox and “Apply”, never with an icon: it is an operation that needs confirmation.
+- Dependencies follow in both directions: choosing Kotlin chooses Java, removing Java removes Kotlin and Android. The labels on the rows explain it (“Needs Java: installed with it”, “Needed by Kotlin: stays installed while it is needed”).
+- A component required by a project but not chosen has a triangle and the label “Needed by the projects: … Not chosen: choose it so they work.”
+- A component deleted by hand from the disk is removed from the selection when the page opens, with a warning.
 
-- **Custom title bar (`ui/src/titlebar.tsx`)**: without the standard Windows frame, it includes the Atollo logo, the title of the current view and the window controls.
-- **Global alerts banner (`Banner` in `ui/src/App.tsx`)**: appears at the top only when needed, to report:
-  - that the kit has been **moved** from a previous path (`movedFrom` → `root`) and that the relocation has taken place;
-  - that programs from **another copy of the kit** are running on the same PC (recalling that the two copies are completely separate);
-  - that a folder in the kit's path starts with a **digit (`0-9`), lowercase `x` or `u`** (`watcherUnsafeFolder`, a known limit of `@parcel/watcher` in VSCodium that prevents the editor from detecting external changes to files).
-- **Activity Bar (on the left)**: holds the 8 main views, with keyboard navigation too (`Up/Down Arrow`, `Home`, `End`):
-  - At the top: **Projects** (with a numeric badge for the running projects), **Agents**, **Databases**, **Web Servers**, **Tools**.
-  - At the bottom: **Settings**, **Remove drive**.
-- **Status Bar (at the bottom)**:
-  - On the left: the **Atollo** badge (with the root path on mouse hover), the counter of **running projects** and of **errors** (clickable to open the Activity panel) and an animated indicator of **installations in progress**.
-  - On the right: the **"Editor running"** indicator (with the port `127.0.0.1:70xx` of the VSCodium server), the architecture (`win32-x64` or `win32-arm64`), the app version (`vX.Y.Z`) and a button to show/hide the **Activity** panel.
-- **Activity panel (`ui/src/activity.tsx`)**: a resizable panel at the bottom (drag the divider, or double-click to bring it back to `240px`) present on every page. It gathers in one place the real-time output of the project actions (with the buttons *Open in the browser*, *Stop*, *Forget*), the state and logs of the databases and the detailed progress of component installations.
+#### A component's tab
 
-![Main window in the Projects view with the status bar active](images/02-projects-list.png)
+A click on the name opens the tab: at the top the logo, description, group, status, size and the buttons “Install”/“Keep” and “Remove”/“Do not install” (choices to apply), plus “Official site”. Below, three sections:
 
----
+| Section | What it contains |
+| --- | --- |
+| Versions | Only for languages: the versions on disk and the ones to download ([5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool)). |
+| Details | Group, version, size, what it requires, what needs it, site. |
+| Projects | The projects that use it and, for languages, the version each one chose. |
 
-### 4.1.1 Projects Quick Panel
+#### “Platform”, “Expand” and “Verify”
 
-The first tab of the Projects editor (`ui/src/projects/home.tsx`, D-130) is always present: **Running** (address, output, *Stop*), **Favorites** and **Recent** (Start/Stop, Editor, Terminal, agent, favorites star), **Needs attention** (failed starts, missing components) and **New project**. Every row of the side bar has ▶ for the default action. **Ctrl+P** (⌘P on macOS) opens a project by name from any page: *Enter* opens the page, *Shift+Enter* starts it.
+- “Platform” chooses which system to view (and prepare) the components for: Windows x64 or ARM64, macOS Apple Silicon or Intel, Linux x64 or ARM64. The same kit on a USB stick opens on all six: from here you can prepare the programs for another system before taking the stick there.
+- “Expand” adds a status column for each of the six systems.
+- “Verify” asks every installed component to respond with its version, and adds a ✓ or ⚠ mark in the status cell.
 
-### 4.2 The "New project" Tab (Framework Wizard and Combinations)
+<details>
+<summary>Under the hood</summary>
 
-The **New project** tab of the Projects page (`ui/src/projects/wizard.tsx` and `tauri/src/projects/frameworks/`) opens from the "New project" tree in the side bar (Empty project, From a Git address, From a framework or CMS and its bases) or from the magic wand at the top; it generates the complete scaffolding of a modern application by combining official building blocks. The bases are divided into groups (D-131): Web with PHP, Web with JavaScript and TypeScript, Web with Python, Web with other languages, CMS, Static sites and documentation, Desktop app, Mobile app, Data and documents, Command line and libraries; the chips above the bases choose the group. Besides those listed below there are, among others, Nuxt, SvelteKit, Astro, Angular, Django, FastAPI, ASP.NET Core, Spring Boot, Craft CMS, Joomla, Strapi, Docusaurus, Avalonia, Streamlit, JupyterLab, Typst and LaTeX. The building blocks:
+- The selection is in `data\app\components.txt`, one for all systems.
+- The programs are in `data\apps\<system>\<component>`; the installed version in `data\app\versions\<system>\<component>.txt`.
+- A removed component is also removed from the folders of the other systems that have it on disk.
+- The “to update” status corresponds to a \<component\>.reinstall file, written when the kit changes folder and a conda environment (R, Ruby, MongoDB and SQLite on Linux, make) cannot follow it.
 
-1. **Choosing the Base (`kind: "base"`)**:
-   - **Laravel** (PHP 8.x + Node.js, Laravel 13, actions *Start* `composer run dev` and *Tests* `php artisan test`).
-   - **Symfony** (PHP, Symfony 8.1 skeleton + `webapp`, action *Start* `php -S 127.0.0.1:8000 -t public`).
-   - **Vite** (Node.js, `npm create vite@9` template `vanilla-ts`, actions *Start* and *Build*).
-   - **Next.js** (Node.js, `create-next-app@16` with TypeScript, Tailwind CSS, ESLint, App Router).
-   - **Electron** (Node.js, `create-electron-app@8` Electron Forge with Vite and TypeScript).
-   - **Tauri** (Rust + Node.js, `npm create tauri-app@4`, identifier `{package}`).
-   - **Android** (Git + Java + Android SDK, clones `android/architecture-templates` branch `base`, runs `customizer.sh {package} Item {name}` and initializes Git).
-2. **Choosing compatible Additions (`kind: "addon"`, divided into mutually exclusive `slot`s)**:
-   - *`frontend` slot*: **React**, **Vue**, **Svelte**, **Livewire** (on Laravel they use the official starter kits `laravel/react-starter-kit`, `vue-starter-kit`, `livewire-starter-kit`; on Electron they switch to `@quick-start/electron@1` with `electron-vite`).
-   - *`bundler` slot*: **Vite** for Symfony (`pentatrion/vite-bundle`).
-   - *`css` slot*: **Tailwind CSS 4** (`@tailwindcss/vite` or `symfonycasts/tailwind-bundle`), **Bootstrap 5**, **Bulma 1**.
-   - *`database` slot* (for Laravel): **SQLite**, **MySQL** (starts the kit's MySQL, creates the project's DB and user, writes the `.env` and runs `php artisan migrate --force`), **MongoDB** (starts the kit's MongoDB, creates the DB and user, writes the `.env` and installs `mongodb/laravel-mongodb`).
-   - *`desktop` slot* (for Laravel): **Electron (NativePHP)** (`nativephp/desktop`, adds the *Desktop app* and *Package* actions).
-   - *`mobile` slot*: **Android (NativePHP Mobile)** for Laravel; **Android (Capacitor 8)** for Vite (`@capacitor/core`, `@capacitor/android`); **Android (Tauri Mobile)** for Tauri (automatically installs the Android NDK via `sdkmanager`, adds the Android Rust targets and runs `tauri android init`).
-   - *`admin` slot*: **Filament 5** for Laravel (`filament:install --panels`).
-   - *`tests` slot*: **Pest 5** for Laravel, **Vitest 5** for Vite and Tauri.
-   - *`format` slot*: **Prettier 3** (adds the `npm run format` script).
-3. **Destination (Project name)**:
-   - It can be a **new folder** in `projects\`, or an **existing project** as long as it is empty or contains files **without already being a Git repository** (in the latter case the framework is generated in `<TEMP>\Atollo\<id>\frameworks\` and the files are merged without overwriting the user's existing files).
-4. **`.env` variables and Summary**:
-   - Shows the default variables (e.g. `APP_NAME={name}`, `NATIVEPHP_APP_ID={package}` where `{package}` becomes `com.example.<name>`), letting you edit them or add new ones, lists the kit tools that will be installed automatically and shows all the PowerShell commands that will be run, with real-time output.
+</details>
 
-![New project wizard with the Laravel + React + Tailwind CSS + MySQL combination](images/03-new-project-template.png)
+Related topics: [5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool), [5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements), [8.4 Where the tools come from](#84-where-the-tools-come-from)
 
-> [!TIP]
-> **Practical example — Creating `gestionale-fatture` with a single click:**
-> In the screenshot above, the developer selects the **Laravel** base and combines it with the additions **React** (interface), **Tailwind CSS** (styling) and **MySQL** (database), choosing `projects\gestionale-fatture` as the destination.
-> The summary at the bottom shows exactly what Atollo will do when **"Create the project"** is pressed:
-> 1. checks that **PHP (with Composer)**, **Node.js** and **MySQL** are installed in the kit;
-> 2. starts MySQL, creates the `gestionale_fatture` database and the dedicated user with a random 32-digit password;
-> 3. runs `composer create-project laravel/react-starter-kit . --no-interaction`, `npm install`, installs `@tailwindcss/vite`, fills the `.env` file with `APP_NAME="Gestionale Fatture Studio Rossi"` and the MySQL credentials, and runs `php artisan migrate --force`.
+### 5.2 Several versions of the same tool
 
----
+*Keeping PHP 8.3 and 8.4 or Node 20 and 24 side by side: adding, removing, pinned versions and which one the kit uses.*
 
-### 4.3 The "Projects" Page and the Project Detail Tab
+> **In short**
+>
+> - Languages and servers can have several versions installed together, one per minor version (8.3, 8.4…).
+> - The kit always uses the newest one on disk; each project can choose another one on its page.
+> - A version used by a project is “locked”: it cannot be removed while the project uses it.
+> - “Update all” brings every version to the latest patch (8.4.1 → 8.4.3) without removing any.
 
-The **Projects** page (`ui/src/projects/`) is divided into:
-- **A side bar with three panels**:
-  1. **Projects**: list of all the valid folders in `projects\` with quick search, run state (green dot), and quick inline buttons for **Start/Stop**, **Editor**, **Terminal** and **Agent**.
-  2. **Clone or create**: lets you create an empty project, clone from an `https://` Git URL or `owner/repo`, or browse the full list of **your GitHub repositories** (grouped by owner/organization, with a search bar, a *Clone* button, *Open in the Editor* if already cloned, *Rename* and *Delete from GitHub*).
-  3. **Data without a project** (visible only if there are orphaned folders in `data\projects\` without a matching folder in `projects\`): lets you **link (adopt)** the data, passwords and backups to an existing project or **delete them** permanently (including the databases in the servers).
+#### A component's versions
 
-Clicking a project opens the **Project tab** (`ui/src/projects/page.tsx`) in the central area, with a header showing the detected type, language icons, Git branch, main buttons (*Start/Stop*, *Editor*, *Terminal*, *Agent* selector, *Open folder*, *Refresh*) and **7 navigation sections**:
+In the tab's “Versions” section (or under the row, in the table) there is a row for each version on disk, for example “8.4 (8.4.3)”, with some labels:
 
-1. **Run (`run`)**: shows the details of the selected action (state, port assigned in the `7100-7999` range, a box to lock/change the port, an *Open in the browser* button, real-time console output) and the table of all the project's actions (detected automatically from `package.json`, `composer.json`, `Cargo.toml`, `pyproject.toml`, etc., or defined in `panel.json`), with the option to add, edit or remove actions and environment variables. If the project folder is empty, it also offers a button to delete it.
+| Label | Meaning |
+| --- | --- |
+| latest | It is the newest version offered by the source. |
+| locked (padlock) | Some projects use it: the “Used by” menu says which ones. It cannot be removed. |
+| not for … | Another component is not compatible with this version (for example an extension that does not support it). |
+| trash can “Remove …” | Removes that version. It appears only if there are at least two: the last one is removed with the component's checkbox. |
 
-![Run tab of the gestionale-fatture project with live console and Activity panel open](images/05-project-run-log.png)
+1. To add a version, press + “Add a version of …”: the “Versions to download” menu groups them (8.x, 7.x…).
+2. Choose the version: the download starts and the row appears in grey until it is ready.
+3. If the list seems old, “Look for other versions of …” asks the source for it again.
 
-> **Practical example — Running `gestionale-fatture` and controlling it from the Activity panel:**
-> In the screenshot above, the default **Start** action (`composer run dev`) of `gestionale-fatture` is running on the locked port `8000` (`http://127.0.0.1:8000/`). The console shows the combined output of Laravel Server, Queue listener and Vite v6.2.1, while the **Activity** panel at the bottom lets you control at the same time all the active projects (`gestionale-fatture :8000` and `portale-clienti :5173`), the databases (`MySQL :3306`, `MongoDB :27017`) and the installations.
+> [!NOTE]
+> **Which version the kit uses**
+>
+> There is no “default” version to choose: the kit uses the newest one it has on disk. A new project pins the one available when it is created; to change it, go to the project's page, “Components” › “Versions” ([2.4 Components and versions of a project](#24-components-and-versions-of-a-project)).
 
-2. **Website (`site`)**: lets you serve any subfolder of the project (`.` or `public`, `dist`, etc.) choosing among 4 modes:
-   - *static files* (the built-in server `Atollo.exe serve`, with no need for Node or PHP);
-   - *PHP (built-in server)* (`php -S`);
-   - *Caddy* (the default web server: an instance of the project on its own port, or a shared pool or a manual profile; it does not read `.htaccess`, the rewrite rules are generated from the project type);
-   - *Dedicated Apache* (for projects with their own rules in `.htaccess`: an Apache instance exclusive to the project on its own port, or attached to a shared pool).
-   It also lets you declare **extra `.localhost` domains** and **portable path aliases** (also toward other projects with `@other-project/folder`).
+#### Special cases
 
-![Website tab of the project with Apache configuration, .localhost domains and aliases](images/06-project-website.png)
+- Composer follows PHP: there is one copy for each PHP version, compatible with it; it is installed, updated and removed with PHP.
+- Maven and Gradle follow Java and appear as labels on the version's row.
+- MySQL and MongoDB: each version has its own data and its own port; see the Databases page.
+- In Settings › “Versions” you choose which version of Python and PHP to install when the component is installed or updated, and the Rust compiler: this does not change the version used by the kit.
 
-3. **Components (`components`)**: lists the kit tools the project requires (with the **"Install what is missing"** button if any dependency is not installed) and lets you pin the **specific version of each language** (e.g. Python, Node.js, PHP, Java, .NET, Go, Ruby, etc.) for this project only, showing any compatibility warnings detected from the project's files (`package.json`, `composer.json`, `.nvmrc`, `pyproject.toml`, etc.).
+<details>
+<summary>Under the hood</summary>
 
-![Components tab of the project with Node.js 22.21 and PHP 8.4 pinned](images/07-project-components-versions.png)
+- Each version lives in its own folder: `data\apps\<system>\<component>\<minor version>`, with the full version in the .atollo-version file.
+- The lists of offered versions are in `data\app\version-lines.json`, refreshed when they are more than 24 hours old.
+- On Windows PHP also offers the last builds of versions no longer supported (8.1, 8.0, 7.4…), useful for old projects; on macOS and Linux only those with a build pinned by the kit.
 
-4. **Databases (`databases`)**: manages the project's dedicated databases on **MySQL** and **MongoDB** (and shows the detected SQLite files). With one click on **"Create database and user"**, the kit starts the server, generates a dedicated database and user with a random password of 32 hexadecimal digits (saved in `data\projects\<project>\private\db.json`), shows a preview of the `.env` lines and lets you **write them to the project's `.env` file** with one click, as well as managing **Export (backup)** and **Restore** in `private\backups\`.
+</details>
 
-![Databases tab of the project with isolated credentials, .env preview and SQL backup copies](images/08-project-database-env.png)
+Related topics: [2.4 Components and versions of a project](#24-components-and-versions-of-a-project), [5.1 The Tools page](#51-the-tools-page), [3.1 The database servers](#31-the-database-servers)
 
-5. **Extensions (`extensions`)**: shows the VSCodium extensions active for this project (defaults based on the detected languages + those added manually) and lets you disable some of them or add new ones from the matrix or from Open VSX.
-6. **Editor (`editor`)**: visually edits the project's `.vscode\settings.json` (format on save, indentation size of 2 or 4 spaces or tab, folders hidden in `files.exclude`).
-7. **Git (`git`)**: shows safely (by reading `.git/HEAD` and `.git/config` without running Git hooks) the local branch, the remote branch, the synchronization state and the URL of the remote repository, with a button to open it in the browser.
+### 5.3 Overviews: matrix, relations, extensions, requirements
 
-![Git tab of the project with origin/main synchronization state](images/09-project-git-mcp.png)
+*The overall views of the Tools page: the six systems, who requires whom, the extensions per language and what the PC needs.*
 
----
+> **In short**
+>
+> - “Grid”: where each component can be, on the six systems the kit supports.
+> - “Relations”: what requires what and with which versions, and the versions the projects ask for.
+> - “Editor extensions”: which extensions each language receives.
+> - “PC requirements”: the system components the PC needs.
 
-### 4.4 Integrated Editor (VSCodium Web) and the Kit's Own Terminal
+#### Grid
 
-- **Integrated VSCodium editor (`tauri/src/editor/`)**:
-  - Started on `127.0.0.1` (ports `7000-7099`) with a private security token and without telemetry.
-  - Opens in dedicated Atollo windows (`editor-<n>`) without the Windows title bar: it uses VSCodium's own title bar directly, with the menus (`File`, `Edit`, etc.) and the window control buttons injected natively (D-69).
-  - **Security of the Editor windows**: the editor windows have no access to Tauri's IPC commands (D-14), can only navigate to their own project's URL (`folder=`), ask for trust confirmation (*Workspace Trust*) the first time an unknown project is opened (D-67), and enable in the workspace only the extensions relevant to that project (D-71).
-  - **Live language detection (every 15 seconds)**: if while working in the editor you create the first `.py` or `.rb` file in a project, within 15 seconds the kit notices it, installs the extensions for that language in the background and shows a banner in the editor window to restart the extensions.
-- **The kit's own terminal (`tauri/src/editor/terminal.rs`)**:
-  - **Inside the editor**: the Windows system profiles are hidden; the default profile is **Atollo** (the kit's PowerShell 7 with `profile.ps1`, which also applies the language versions chosen for that project), alongside *Atollo - Git Bash*, *Atollo - cmd* and the profiles of the three installed AI agents.
-  - **Outside the editor ("Terminal" button or starting an Agent)**: opens the **classic Windows console** (`conhost.exe` from System32, started directly: Windows does not hand it over to the PC's default terminal) with the kit's PowerShell 7 and the project's exact environment, inside the app's job (D-57, D-95).
-  - **On macOS and Linux** the kit's terminal and the agents open in a terminal tab inside the app window (D-109), with the kit's PowerShell or Bash and the same project environment; the programs stay in the kit's process group.
+A table with one component per row and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-downloaded, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.
 
----
+> [!NOTE]
+> **Good to know**
+>
+> The Grid says what is possible; the “All tools” table says what is really on disk.
 
-### 4.5 The "Agents" Page (Claude Code, Codex, Antigravity and Synchronization)
+#### Relations
 
-The **Agents** page (`ui/src/agents.tsx` and `tauri/src/agents/`) manages the three AI coding assistants:
-- **Claude Code** (Anthropic), **Codex** (OpenAI) and **Antigravity** (Google).
-- **Limits and usage monitoring (`ui/src/stats.tsx`)**: for each installed agent it shows the usage bars of the plan limits (with reset time and visual warnings at 70% and 90%), any extra credits, and a detailed summary of the tokens used **today** and in the **last 7 days** (new tokens, read from cache, output tokens, number of sessions and a daily chart).
-- **Sign-in management and portable keyring**: shows whether the sign-in is active (OAuth or API key) and lets you sign out (**"Sign out"**) when the agent is closed. For **Antigravity**, the wrapper `data\kit\bin\agy.cmd` and the app's watcher temporarily move the credential into the Windows Credential Manager with *session-only* persistence when `agy` starts, encrypt it with **DPAPI** (`CryptProtectData`) and bring it back to `data\antigravity\keyring.json` as soon as `agy` ends, deleting it from Windows.
-- **Automatic three-way synchronization (`tauri/src/agents/sync/`)**: at every app startup, before launching an agent and every time an agent ends (checked by the watcher every 3 seconds), the kit automatically aligns:
-  - the **global instructions** between `data\agents\AGENTS.md`, `CLAUDE.md` (Claude), `AGENTS.md` (Codex) and `GEMINI.md` (Antigravity);
-  - the **skills** in `data\agents\skills\` (linked with NTFS junctions, or copied on FAT32/exFAT, into the three agents' folders, in a double pass so that a skill created in one agent appears right away in the other two);
-  - the **MCP servers** defined in `data\agents\mcp.json` into the configurations of Claude, Codex and Antigravity;
-  - the **trusted folders** (`projects\`).
+Two tables, recalculated when something changes (or with “Compute the relations again”):
 
-![Agents page with plan limits, 7-day token chart and synchronized resources](images/10-agents-limits-usage.png)
+| Table | What it says |
+| --- | --- |
+| Relations matrix | For each tool, what it requires, with which versions, and whether it is fine (“yes”, “no: the kit uses …”, “… missing”). |
+| Versions the projects ask for | For each project, the version its files ask for, from which file, and the status (“uses …”, “to download: …”), with the “Use …” and “Download and use …” buttons. |
 
-> **Practical example — Checking the limits of Claude Code, Codex and Antigravity:**
-> In the screenshot above, all three agents are installed with an **active sign-in**. For **Claude Code** the 5-hour window is at **38%** while the weekly limit has reached **74%** (highlighted in amber because it exceeds the 70% warning threshold), with **138.4k tokens** used today in 3 sessions and **804.6k tokens** in the last 7 days. At the top right, the **Shared folder (`data\agents\`)** box opens with one click the folder holding `AGENTS.md`, `skills\` and `mcp.json`, shared by all three assistants.
+#### Editor extensions
 
----
+A read-only table: the extensions as rows, the languages and tools as columns. ● means the extension is on by default in projects with that language, ○ that it is optional; ✓ that it is installed. The languages of your projects are highlighted. Extensions are chosen per project: [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions).
 
-### 4.6 The "Databases" Page (MySQL, MongoDB, phpMyAdmin and Data Explorer)
+#### PC requirements
 
-The **Databases** page (`ui/src/databases.tsx` and `tauri/src/db/`) manages the kit's shared database servers, listening only on `127.0.0.1`:
-- **MySQL** (8.4 and 9.7 LTS lines, default port `3306`) and **MongoDB** (default port `27017`).
-- **MySQL only (`D-117`)**: MySQL is the kit's only SQL server; every project, framework or component that asks for an SQL database uses MySQL.
-- **Automatic security (`D-74`)**: the first time each server starts, the kit generates a random password of 32 hexadecimal digits for the administrator (`root` on MySQL, `admin` on MongoDB) and saves it in `data\app\db\secrets.json` (protected by an owner DACL). It also generates `data\app\db\mysql.cnf`, read by the kit's launchers, so that typing `mysql` in the kit's terminal logs you in as `root` already, without having to type the password.
-- **Integrated phpMyAdmin for MySQL (`D-107`)**: when you click **"Open phpMyAdmin"**, the kit installs phpMyAdmin and PHP if they are missing, starts MySQL if it is stopped, launches a local PHP server with the security router `data\kit\phpmyadmin.php` and opens phpMyAdmin in the browser, performing an **automatic login as `root` through a one-time token** and an `HttpOnly` + `SameSite=Strict` cookie (without ever exposing the `root` password in the URL or in the browser).
-- **Content explorer for MongoDB (`D-79`, `ui/src/dbbrowser.tsx`)**: when MongoDB is running, the **Content** tab lets you browse all the databases and collections read-only (including the system databases, grouped separately), showing the documents paginated 100 rows at a time.
-- **Multi-version data (`D-81`)**: with the server stopped you can change the engine version (e.g. MySQL `9.7` or `8.4`; MongoDB `9.0` or `8.0`). Each version keeps its own data folder in `data\db\<engine>\<line>\` and, the first time a newer version starts, it automatically copies the data forward from the nearest previous version.
+Some components need something from the system: Visual C++ 2015-2026 for PHP, Apache and MongoDB on Windows, WebView2 for the app window, the Windows 11 x64 emulation on ARM64 PCs. Each row says which components need it and whether it is “present”, “missing” or “not needed”.
 
-````carousel
-![Databases page — the SQL server with integrated phpMyAdmin and root credentials](images/11-databases-mysql-phpmyadmin.png)
-<!-- slide -->
-![Databases page — MongoDB 8.0 with the read-only Content explorer of the collections](images/11b-databases-mongodb-explorer.png)
-````
+<details>
+<summary>Under the hood</summary>
 
-> **Practical example — Relational (MySQL + phpMyAdmin) and document (MongoDB Content) management:**
-> - In the **first screenshot** (the SQL server), the server is running on `127.0.0.1:3306` and starts automatically together with Atollo; clicking **"Open phpMyAdmin"** gives immediate access to all the databases without copying the `root` password.
-> - In the **second screenshot** (`MongoDB 8.0`), the **Content** tab shows the `api_magazzino` and `portale_clienti` databases (with the collections `utenti (19)` and `ticket_supporto (73)`), letting you inspect the JSON documents directly inside the app.
+- The relation rules are in the kit's catalog (tauri/catalog/relations.json); the result in `data\app\relations.json`.
+- Project files the kit reads for the versions: `package.json, .nvmrc, .python-version, pyproject.toml, composer.json, go.mod, global.json, pom.xml, Gemfile, Cargo.toml` and others.
+- The extension catalog (from Open VSX) is tauri/catalog/extensions.json.
 
----
+</details>
 
-### 4.7 The "Web Servers" Page (Shared Caddy/Apache Pools and `.localhost` VirtualHosts)
+Related topics: [5.1 The Tools page](#51-the-tools-page), [2.4 Components and versions of a project](#24-components-and-versions-of-a-project), [7.2 On another PC, another letter, another folder](#72-on-another-pc-another-letter-another-folder)
 
-The **Web Servers** page (`ui/src/servers.tsx` and `tauri/src/servers/mod.rs`) lets you serve dozens of web projects at the same time without port conflicts and without touching the system's `hosts` file (`C:\Windows\System32\drivers\etc\hosts` on Windows, `/etc/hosts` on macOS and Linux, which would require administrator rights):
-- **Automatic pools by version**: the kit automatically groups all the projects configured with Caddy or Apache by the combination `(engine, server version, PHP version)` (e.g. `apache-2.4-php-8.4` on port `8081`).
-- **Manual server profiles**: from the side bar you can create custom profiles (e.g. *"Apache Legacy PHP 7.4"* on a specific port from `8081` to `8999`) and assign projects to them from the project's *Website* tab.
-- **`.localhost` VirtualHosts (RFC 6761)**: every project attached to a pool automatically gets its own file `data\servers\<pool>\vhosts\<project>.conf` with `ServerName <project>.localhost` (plus any extra `.localhost` domains) and answers at the address `http://<project>.localhost:<port>`.
-- **Hot reload**: the **"Reload configuration"** button regenerates all the VirtualHost files and reloads Caddy (`caddy reload`, on the pool's private socket) or cleanly restarts Apache. Nginx is no longer there (D-120): its pools and sites move to Caddy at startup, with a copy of the files in `data\app\pre-caddy\`.
+## 6. Account and settings
 
-![Web Servers page with the Apache 2.4 · PHP 8.4 pool running on port 8081](images/12-web-server-pool.png)
+### 6.1 The kit's GitHub account
 
-> **Practical example — Shared `Apache 2.4 · PHP 8.4` pool on port `8081`:**
-> In the screenshot above, the automatic pool `apache-2.4-php-8.4` serves the `gestionale-fatture` project (`public` folder) both on the primary domain `http://gestionale-fatture.localhost:8081` and on the extra domain `http://fatture.studio.localhost:8081`, and also maps the alias `/allegati` to `storage/app/public/allegati`. Next to it, in the side bar, a second pool `Caddy 2.10 · PHP 8.3` on port `8082` is also ready.
+*Why to connect it, how to sign in, what it unlocks (repositories, Git, GitHub CLI) and what works without it too.*
 
----
+> **In short**
+>
+> - One GitHub sign-in works for the whole kit: the Projects page, Git (in the editor, the consoles and the agents too) and GitHub CLI.
+> - You do it in Settings › “GitHub account” with “Sign in to GitHub” and a code to type in the browser.
+> - Without an account the kit works all the same: you clone public repositories and work locally.
+> - The sign-in stays in the kit: on another PC you are already signed in.
 
-### 4.8 The "Tools" Page (Multiple Versions, Relations Matrix and Extensions)
+#### What it unlocks
 
-The **Tools** page (`ui/src/components/page.tsx`) is the control center for all the kit's packages:
-1. **Component list divided by category**: *Required and system* (with the state of the system runtimes: Visual C++, WebView2, x64 emulation on ARM64), *Agents*, *Languages* (multi-version), *Tools* (single version) and *Databases*.
-2. **Inline multi-version management (`ui/src/versions/kit.tsx`)**: under each installed versioned language or database, all the `major.minor` lines present on disk are listed:
-   - the versions currently chosen by at least one project show the **"locked"** badge with the padlock (clickable to see which projects use it) and cannot be removed by mistake;
-   - free versions can be removed one by one with the trash icon;
-   - the **"Download another version…"** menu shows all the lines offered by the official source (grouped by major version) and immediately starts downloading the chosen line.
-3. **"Relations" section (`ui/src/relations.tsx`)**: shows the matrix computed by `tauri/src/versions/relations/`:
-   - checks the **links between tools** (e.g. Composer against PHP, Apache/Caddy against PHP, Gradle/Maven/Kotlin against the JDK, Corepack/Yarn against Node.js);
-   - reads the **version constraints declared in the projects' files** (`package.json`, `.nvmrc`, `pyproject.toml`, `composer.json`, `compose.yaml`, `go.mod`, `pom.xml`, `build.gradle`, `global.json`, `Gemfile`, `pubspec.yaml`, `Project.toml`, `build.zig.zon`, `renv.lock`, `Cargo.toml`, `CMakeLists.txt`, `typst.toml`) and offers a direct button (**"Use X.Y"** or **"Download and use X.Y"**) to align the project with one click.
-4. **"Extension matrix" section (`ui/src/extensions.tsx`)**: shows, read-only, the full table of pairings between languages/tools and VSCodium extensions.
-5. **"Grid" view (`ui/src/components/matrix.tsx`, D-121)**: one row per component and one column for each of the six systems (Windows x64 and ARM64, macOS Apple Silicon and Intel, Linux x64 and ARM64), with "this PC", "in emulation" or "cannot run here". Each cell says whether the component is available, in emulation, pre-downloaded, whether it completes on first start on that system or whether it is not available, with the reason; a click opens the details and "Show this system". The system chosen with "Platform" is kept across sessions, and relations and extensions follow it.
+| With the account | Even without |
+| --- | --- |
+| The list of your repositories in Projects, with clone, rename and delete | Cloning public repositories with “From a Git address” |
+| Cloning private repositories | Creating projects, starting them, databases, sites, agents, tools |
+| git push and git pull to GitHub without a password | Using Git locally (commits, branches) |
+| The gh commands in the consoles, the editor and the agents | — |
+| More requests to the GitHub API for downloads (5,000 an hour instead of 60) | Downloading the components (with the lower limit and a few fallbacks) |
 
-![Tools page with the component catalog, side-by-side versions and Relations/Requirements tabs](images/13-tools-catalog-matrix.png)
+#### Signing in
 
----
+1. Open Settings › “GitHub account”.
+2. Press “Sign in to GitHub”. After “Preparing the sign-in…” an eight-character code appears (XXXX-XXXX) and github.com opens in the browser.
+3. Press “Copy the code”, paste it into the GitHub page and authorize GitHub CLI. If the page did not open, use “Open the GitHub page”.
+4. Go back to Atollo: “Signed in as @your-name” appears.
 
-### 4.9 The "Settings" Page and the Framework Customization Tree
+“Sign out” removes the sign-in from the kit after the confirmation “Sign out of GitHub? Git, the editor and the kit's agents lose the access too.”
 
-The **Settings** page (`ui/src/settings/page.tsx`) is organized like the VSCodium editor, with an instant search bar at the top of the side bar and two panels:
-1. **Settings panel (7 sections that open as tabs)**:
-   - **General**: Interface language, Default terminal, Location of the programs' temporary files, Automatic update of the app.
-   - **Network**: HTTPS proxy, HTTP proxy, Proxy exclusions (`NO_PROXY`), Additional CA certificates (`.pem`), Access from the local network (LAN) to the project servers.
-   - **Agents**: Gemini API key (to use Antigravity without a Google account).
-   - **Versions**: Default Python line, default PHP branch, default Rust compiler (`GNU` or `MSVC`).
-   - **Updates**: Immediate check and state of the `Atollo.exe` updates.
-   - **GitHub account**: Connecting and disconnecting the kit's GitHub account.
-   - **The kit**: Detailed information on the root path, architecture, volume type and detected file system (`NTFS`, `exFAT`, `FAT32`, fixed or removable disk), and buttons to open the kit or log folders.
-2. **Frameworks panel (`ui/src/frameworks/`)**:
-   - Shows the tree of all the **Bases** and **Additions** of the "New project" wizard, lets you **edit the official creation commands**, the subsequent steps, the `.env` variables, the required components and the generated actions (saving only the differences in `data\app\frameworks.json`, with a *Restore* button to go back to the official values), **create new custom bases or additions**, and test any combination in the **"Try a combination"** tab.
+> [!WARNING]
+> **Watch out**
+>
+> The GitHub token is saved in the kit, in plain text, so that it follows you to every PC. “Sign out” does not revoke the session on github.com: if you lose the USB stick, revoke the GitHub CLI authorization from your GitHub account settings (Applications).
 
----
+#### The permission to delete repositories
 
-### 4.10 The "Remove drive" Page and Safe Ejection
+The normal sign-in does not include the permission to delete repositories. The first time you press “Delete from GitHub” on one of your repositories, the panel says the permission is missing and shows “Grant the permission”: the kit signs in again, asking for that too. The code to type appears in Settings › “GitHub account”. Then press “Delete from GitHub” again.
 
-The **Remove drive** page (`ui/src/eject.tsx` and `tauri/src/os/sessions.rs`) prepares the USB stick or external drive for physical removal:
-- It lists in real time everything the kit has open: editor windows, consoles, running projects, running databases, installations in progress and any external processes started from `data\apps\`.
-- When you click **"Close everything and prepare for removal"**, the app:
-  1. cancels any installations in progress;
-  2. stops all the project actions;
-  3. performs a clean, authenticated shutdown of MySQL and MongoDB;
-  4. stops the Caddy and Apache pools;
-  5. closes the editor windows, the VSCodium server, the consoles and all the processes whose executable is inside the kit;
-  6. saves the Antigravity credentials in the kit (`data\antigravity\keyring.json`), removing them from the Windows Credential Manager;
-  7. finally asks you to close the `Atollo.exe` window itself to release the last file on the drive and eject the drive from Windows.
+> [!WARNING]
+> **Watch out**
+>
+> Deleting a repository from GitHub cannot be undone: issues, pull requests, wiki and releases disappear too. The copy in the kit, if there is one, stays.
 
-![Remove drive page with the full list of processes and services running on the portable drive](images/15-remove-drive.png)
+#### Your name in commits
 
-> [!IMPORTANT]
-> **Practical example — Safely removing the USB stick at the end of the day:**
-> In the screenshot above, before unplugging the drive `D:\Atollo`, the **Remove drive** page automatically detects **1 editor window**, **2 consoles**, **2 running projects** (`gestionale-fatture` and `portale-clienti`), **2 active databases** (`MySQL` and `MongoDB`) and **4 processes** still running from `data\apps\` (`php.exe`, `httpd.exe`, `mysqld.exe`, `node.exe`). A single click on **"Close everything and prepare for removal"** shuts down the databases in an orderly way (avoiding corruption of the InnoDB/WiredTiger tables), brings the Antigravity credentials back into the kit and releases every handle on the file system.
+The sign-in is for reading and writing on GitHub; it does not tell Git who signs the commits. Set your name and email once, in a kit terminal:
 
----
+**Name and email for commits**
 
-### 4.11 Command-Line Interface (`Atollo.exe` CLI)
-
-The same `Atollo.exe` executable offers a complete CLI (`tauri/src/cli.rs`). Since `Atollo.exe` is built as a Windows GUI application (`windows_subsystem = "windows"`), when you invoke it from PowerShell you need to add `| Out-Host` to wait for the command to finish and read its output:
-
-```powershell
-.\Atollo.exe env | Out-Host                                 # Prints all the environment variables computed for the kit
-.\Atollo.exe components | Out-Host                          # Lists the catalog components, whether they are chosen and the installed version
-.\Atollo.exe versions <id> | Out-Host                       # Downloads and shows the major.minor lines available for a versioned component
-.\Atollo.exe check | Out-Host                               # Runs the final check command on all installed components
-.\Atollo.exe prepare [--only a,b] [--skip c] [--update-all] [--force] | Out-Host
-                                                             # Installs, updates or removes the chosen components
-.\Atollo.exe sync [--project <folder>] [--verbose] | Out-Host
-                                                             # Aligns instructions, skills, rules and MCP between Claude, Codex and Antigravity
-.\Atollo.exe keyring restore|save | Out-Host                # Restores or saves the Antigravity sign-in (used by agy.cmd)
-.\Atollo.exe serve <folder> <port> | Out-Host               # Starts the built-in static HTTP server
-.\Atollo.exe version | Out-Host                             # Shows the app version
-.\Atollo.exe help | Out-Host                                # Shows the command summary
+```
+git config --global user.name "Nome Cognome"
+git config --global user.email "tu@esempio.it"
 ```
 
----
+To keep your email private you can use the noreply address GitHub gives you (you find it in the Email settings of your account).
 
-## 5. Step-by-Step Guide to Configuring Each Element and Its Purpose
+<details>
+<summary>Under the hood</summary>
 
-This section documents in detail **how to configure each element** of the application, **where the changes are saved** and **for what exact purpose** each configuration should be made.
+- The sign-in runs gh auth login --web --insecure-storage --scopes workflow: besides the standard GitHub CLI permissions (repo, read:org, gist) it asks for workflow; delete_repo only with “Grant the permission”.
+- The token is in `data\gh\hosts.yml` (GH_CONFIG_DIR points there), never in the Windows Credential Manager.
+- Git uses the same account through a credential helper (gh auth git-credential) written in the file `data\home\.gitconfig` for github.com and gist.github.com, without absolute paths: it survives moving the kit. At every start the kit aligns it with the state of gh; a helper you wrote yourself for those addresses stays as it is.
+- To clone a private repository the token is passed to Git only for that operation, never on the command line nor in the `.git\config` file.
+- For downloads the kit first uses the PC's GITHUB_TOKEN or GH_TOKEN, if present, then the kit's account. The API responses are kept in `data\cache\github`.
+- The editor's “Accounts” menu does not see the kit's account; push and pull in the editor work anyway, through Git.
 
----
+</details>
 
-### 5.1 Initial Kit Setup and Choice of Drive
+Related topics: [2.1 Creating a project](#21-creating-a-project), [2.6 A project's Git](#26-a-projects-git), [8.4 Where the tools come from](#84-where-the-tools-come-from)
 
-- **Where to configure it**: in the Windows file system before the first start, then in the **First start** wizard.
-- **Steps**:
-  1. Create a folder for the kit (e.g. `D:\Atollo` on an internal disk or `E:\Atollo` on a USB stick). **Important**: make sure that no segment of the path starts with a digit (`0-9`) or with the lowercase letters `x` or `u` (e.g. avoid `D:\2026\kit` or `D:\utils\kit`; use `D:\Anno2026\kit` or `D:\Tools\kit` instead).
-  2. Copy `Atollo.exe` into the folder and start it with a double-click.
-  3. On the **First start** screen, check the preselected components (by default: *PowerShell 7*, *GitHub CLI*, *Editor*, the three *Agents*, *Python*, *PHP*, *Apache*, plus *Git*, which comes with GitHub CLI — about 1.8 GB) or tick right away other languages or databases you use regularly, then click **"Install"**.
+### 6.2 The Settings, one by one
 
-![First start screen (Welcome to Atollo) with the initial selection of tools](images/01-welcome-wizard.png)
+*Language, temporary files, automatic updates, Gemini key, versions to install and the information about the kit.*
 
-- **Purpose**:
-  - Avoiding folders that start with digits, `x` or `u` prevents the regular expression bug of `@parcel/watcher` in VSCodium (D-33), ensuring that the editor updates the file tree instantly when the AI agents or the terminal create or modify files in the project.
-  - If you use a USB stick, formatting it as **NTFS** (instead of FAT32 or exFAT) gives three advantages: it supports single files larger than 4 GiB, it allows native hard links for Rust, and it lets Windows apply **DACL** security permissions to the reserved folders `data\app\db\` and `data\projects\<p>\private\`.
+> **In short**
+>
+> - Settings has seven sections in the sidebar and, below them, the framework instructions.
+> - Changes are saved with “Save” on the tab bar.
+> - They apply at once to the app, the consoles and the agents; to the editor's terminals after “Restart the editor”.
 
----
+![The Settings page](../../ui/public/guide/en/settings.webp)
 
-### 5.2 General Configuration: Language, Temporary Files and Updates
+*The sections on the left, the framework instructions below them; “Save” on the tab bar.*
 
-- **Where to configure it**: **Settings › General** (saved in `data\app\settings.json`).
-- **Steps and purpose of each item**:
-  1. **Language (`lang`)**:
-     - *Steps*: choose among *Windows language*, *Italiano*, *English*, *Français*, *Deutsch* and click **"Save"** at the top right of the tab bar.
-     - *Purpose*: instantly changes (without restarting) the language of the interface and of the Rust engine's error messages, and sets the `ATOLLO_LANG` variable for the kit's tools.
-  2. **Temporary files of programs (`programTemp`: `Automatic` / `In the kit` / `In the system`)**:
-     - *Steps*: select the desired mode in the *Temporary files of programs* drop-down menu and save.
-     - *Purpose*: controls where the `TEMP`, `TMP` and `CLAUDE_CODE_TMPDIR` variables seen by the compilers, `npm`, `pip` and the AI agents point to:
-       - **Automatic (recommended)**: if the kit is on a fixed internal **NTFS/ReFS** disk, it uses `data\tmp\system` inside the kit (zero traces on the PC and a folder protected by a DACL); if instead the kit is on a **removable USB stick**, on a **network drive** or on a **FAT32/exFAT** file system, it automatically moves the temporary files to `<Windows TEMP>\Atollo\<id>\system` (and `\claude`). This **greatly increases build speed**, avoids wear on the USB flash memory and prevents temporary fragments from remaining readable without permissions on a FAT32/exFAT USB stick (they are then deleted from the PC automatically when the app closes).
-       - **In the kit**: forces the exclusive use of `data\tmp` even on a USB stick (maximum privacy toward the host PC, but slower on USB).
-       - **In the system**: forces the use of the host PC's disk even when the kit is on a fixed disk (useful to save space or writes on the kit's drive).
-  3. **Automatic update (`autoUpdate`)**:
-     - *Steps*: leave the *"Download new versions of Atollo automatically"* box ticked or untick it.
-     - *Purpose*: when it is on, 20 seconds after startup the app silently checks whether a new `app-v*` release exists on GitHub, downloads it and verifies its SHA-256 in `data\app\update\`, replacing `Atollo.exe` on close without ever interrupting your work. Turn it off if you work on tightly metered connections or want to freeze the environment's version.
+#### General
 
----
+| Setting | What it does |
+| --- | --- |
+| Language | The language of Atollo: the system's (“Windows language”), Italian, English, French or German. It changes at once. |
+| Temporary files of programs | Where the kit's programs put their temporary files. “Automatic” uses the system's temporary folder if the kit is on a USB stick, a network drive or a FAT32/exFAT drive, otherwise `data\tmp`. “In the kit” always `data\tmp`; “In the system” always the system's folder (the files stay on the PC until you close the app). |
+| Automatic update | “Download new versions of Atollo automatically”: the new version replaces the current one when you close the app. On by default. |
+| Packages to reinstall without the network | Only on macOS and Linux: keeps in the kit the packages of the components that must be reinstalled when the kit changes folder (R, Ruby, MongoDB, SQLite, make), so the network is not needed. “Free” deletes them. |
 
-### 5.3 Network Configuration: Corporate Proxies, CA Certificates (SSL Inspection) and LAN
+> [!TIP]
+> **Why temporary files go outside the kit on a USB stick**
+>
+> Programs constantly write and delete temporary files: on a USB stick this slows everything down and wears it out. On the PC's disk they are much faster, and the kit deletes them when you close the app.
 
-- **Where to configure it**: **Settings › Network** (saved in `data\app\settings.json`, applied in `env.rs`).
-- **Steps and purpose of each item**:
-  1. **HTTPS proxy (`httpsProxy`), HTTP proxy (`httpProxy`) and No proxy for (`noProxy`)**:
-     - *Steps*: enter the full proxy URL (e.g. `http://proxy.azienda.it:8080`) and the excluded hosts (e.g. `localhost,127.0.0.1,.azienda.it`), then click **"Save"** (and **"Restart the editor"** if the editor was already open).
-     - *Purpose*: automatically propagates `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` both to Atollo's download engine and to all subprocesses (`npm`, `pip`, `composer`, `cargo`, `rustup`, `git`, `gh` and the three AI agents). Also needed when the corporate network uses PAC files (which are not read automatically).
-  2. **Additional certificates — PEM file (`extraCaCerts`)**:
-     - *Steps*: enter the path of an existing `.pem` file containing the company's root certificate (recommended: copy it inside `data\` so you always have it with you) and save.
-     - *Purpose*: while programs that use Windows SChannel read the system certificate store, **Node.js** (and therefore also the editor server, `npm`, Claude Code and Codex) uses its own static CA store and would fail behind a corporate firewall with *SSL Inspection*. This setting automatically sets `NODE_EXTRA_CA_CERTS` for all the kit's processes.
-  3. **Local network (`allowLan` / `ATOLLO_ALLOW_LAN=1`)**:
-     - *Steps*: tick *"Let other PCs on the network reach the project servers"* and save.
-     - *Purpose*: as a security default, an embedded file (`data\kit\loopback.js`, loaded via `NODE_OPTIONS=--require`) and the command generators force all the projects' development servers (Vite, Next.js, PHP, Apache, Caddy, `Atollo.exe serve`) to listen **only on `127.0.0.1`**, avoiding Windows Firewall prompts and exposure on public Wi-Fi networks. When this option is on, the projects' web servers listen on `0.0.0.0`, so you can try the site or app from a smartphone or from another PC connected to the same local network (the MySQL and MongoDB databases still stay locked to `127.0.0.1`).
+#### Network
 
----
+Proxy, additional certificates and local network: [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network).
 
-### 5.4 Configuring Compilers and Default Lines (Python, PHP, Rust)
+#### Agents
 
-- **Where to configure it**: **Settings › Versions** (saved in `data\app\settings.json`).
-- **Steps and purpose**:
-  1. **Python (`pythonVersion`, e.g. `3.13`) and PHP (`phpVersion`, e.g. `8.4`)**:
-     - *Steps*: leave it empty to always download the latest stable line, or write a specific `major.minor` line (e.g. `3.12` or `8.3`), save and start the installation/update in **Tools**.
-     - *Purpose*: defines which main line is installed or updated by default when Python or PHP is installed for the first time.
-  2. **Rust compiler (`rustToolchain`: `GNU` by default, or `MSVC`)**:
-     - *Steps*: on an `x64` PC, choose between *GNU (default, all in the kit)* and *MSVC (requires Visual Studio Build Tools on the PC)*, save and run the Rust installation/update in **Tools**. (On `ARM64`, GNU means the `aarch64-pc-windows-gnullvm` host, linked by the llvm-mingw clang of the C/C++ component, which is installed together with Rust; MSVC remains an option. On macOS and Linux Rust always uses the native host.)
-     - *Purpose*:
-       - **GNU (`x86_64-pc-windows-gnu`)** is the default because it includes its own linker inside the kit: it lets you build Rust programs on any "bare" Windows PC without having to install anything on the host computer.
-       - **MSVC (`x86_64-pc-windows-msvc`)** should be chosen if you develop applications that depend on Windows C++/COM libraries or crates that explicitly require Microsoft's `link.exe` linker (such as some Tauri configurations), provided that the *Visual Studio C++ Build Tools* are installed on the host PC.
+“Gemini API key (Antigravity without a Google account)”: paste the key and press “Save”. The field then shows “saved: type to replace it” and the key is no longer shown; “Remove the key” deletes it at the next save. Antigravity will show “signed in with an API key”. The key is saved in plain text in `data\app\settings.json` and passed to the kit's programs as GEMINI_API_KEY.
 
----
+#### Versions
 
-### 5.5 Configuring Versions per Project and Resolving Conflicts
+| Setting | What it does |
+| --- | --- |
+| Python | The Python version to install (for example 3.13). Empty: the latest. |
+| PHP | The PHP version to install (for example 8.4). Empty: the latest. |
+| Rust compiler | GNU (all in the kit, the default choice) or MSVC, which requires Visual Studio Build Tools installed on the PC. |
 
-- **Where to configure it**:
-  - For a single project: **Projects › `<your-project>` › Components tab** (saved in `data\projects\<project>\dev-settings.json` under `versions` and in `versions.json`).
-  - For all projects at once: **Tools › Relations section**.
-- **Steps**:
-  1. Open the project's **Components** tab (or the **Relations** section in **Tools**).
-  2. Next to each versioned language (Node.js, Python, PHP, Java, .NET, Go, Kotlin, Dart, Zig, Julia, Bun, Deno, Ruby, R, Typst), open the version drop-down menu.
-  3. Choose **"The newest (X.Y)"**, or a **version already on disk**, or directly select a **version offered by the source** under the *"Download…"* group (the kit will automatically start the download and pin the version on the project).
-- **Example of the generated `data\projects\gestionale-fatture\dev-settings.json` file**:
-  ```json
-  {
-    "agent": "claude",
-    "versions": {
-      "node": "22.21",
-      "php": "8.4"
-    },
-    "extensions": {
-      "added": ["bmewburn.vscode-intelephense-client"],
-      "removed": []
-    }
-  }
-  ```
-- **Purpose**:
-  - **Protection against code aging (`pin_newest`, D-81)**: when you create a new project, the kit automatically pins in its `dev-settings.json` the current versions of the installed languages; when you clone a project, it reads its configuration files (`package.json`, `composer.json`, `.python-version`, `pom.xml`, etc.) and downloads/sets the compatible version. This way, if six months from now you update Node.js or PHP in the kit for new projects, the earlier projects will keep running with exactly the version they were written for (which will be protected by the **"locked"** padlock on the Tools page).
-  - **Transparent coexistence (side by side)**:
-    - For **PHP**, changing the project's version also changes the `composer` in the `PATH` (each PHP version has its own compatible `composer.phar`) and the extensions loaded by `php.ini` (`${CP_PHP}\ext`).
-    - For **Java**, Gradle 9 is started by the kit's wrapper (`data\kit\bin\gradle.cmd`) with the most recent JDK (>= 17) so that the Gradle daemon can start, but it compiles the project's code with the JDK chosen by the project (e.g. Java 8 or 11) thanks to `data\gradle\gradle.properties` and `data\home\.m2\toolchains.xml`, generated automatically by `side_by_side.rs`.
-    - For **.NET**, all installed versions share runtimes and SDKs through NTFS junctions, allowing `global.json` to find any installed SDK.
+> [!NOTE]
+> **Good to know**
+>
+> They apply from the next installation or update in Tools. They do not choose the version the kit uses (always the latest on disk): to keep several versions see [5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool).
 
----
+#### Updates
 
-### 5.6 Configuring AI Agents, Gemini Key, Skills, Instructions and MCP Servers
+The state of Atollo's updates and the “Check for updates” button: [7.3 Updates and backups](#73-updates-and-backups).
 
-#### A. Gemini API Key (Antigravity Without a Google Account)
-- **Where to configure it**: **Settings › Agents**.
-- **Steps**: paste your key into the *Gemini API key* field and click **"Save"**. (The key is never read back by the interface; to remove it click *"Remove the key"* and then *"Save"*.)
-- **Purpose**: sets the `GEMINI_API_KEY` variable in the kit's environment, letting you use Antigravity and Gemini-based tools even on machines where you do not want to sign in via OAuth with a personal Google account.
+#### GitHub account
 
-#### B. Global Instructions, Shared Skills and Global MCP Servers
-- **Where to configure it**: in the `data\agents\` folder (which you can open from the **Agents** page by clicking **"Open shared folder"**).
-- **Steps**:
-  1. **Common instructions**: edit `data\agents\AGENTS.md` (or the specific file of one of the three agents: at the end of the session the 3-way synchronization engine will merge the changes).
-  2. **Common skills**: add a subfolder with your `SKILL.md` in `data\agents\skills\<skill-name>\`.
-  3. **Global MCP servers**: add the server in `data\agents\mcp.json` (using `npx`, `uvx`, `node` or `python`).
-- **Example of `data\agents\mcp.json` shared between Claude Code, Codex and Antigravity**:
-  ```json
-  {
-    "mcpServers": {
-      "playwright": {
-        "command": "npx",
-        "args": ["-y", "@playwright/mcp@latest"]
-      },
-      "fetch": {
-        "command": "uvx",
-        "args": ["mcp-server-fetch"]
-      }
-    }
-  }
-  ```
-- **Purpose**: avoid having to configure the same rules, skills and MCP tools three times for Claude Code, Codex and Antigravity. In addition, when you start an agent, the kit analyzes `data\agents\mcp.json` (`needs.rs`) and **automatically installs Node.js (if an MCP server uses `npx`/`node`), uv (if it uses `uvx`/`uv`) or Python** before opening the agent.
+The GitHub sign-in for the whole kit: [6.1 The kit's GitHub account](#61-the-kits-github-account).
 
-#### C. Project-Specific MCP Servers
-- **Where to configure it**: the `.mcp.json` and `.codex\config.toml` files in the project folder (managed by `tauri/src/projects/mcp.rs`).
-- **Purpose**: lets you version, in the project's Git repository, the MCP servers dedicated to that project only, making them available to both Claude Code and Codex.
+#### The kit
 
----
+Read-only information: kit folder, projects folder, data and programs folder, the kit's disk (file system and type: fixed, removable, network), programs' temporary folder, platform, WebView2 and Atollo versions. If the disk has something to report, a warning appears.
 
-### 5.7 Configuring Database Servers, Project Users, `.env` and Backups
+#### Frameworks
 
-#### A. Configuring the Kit's MySQL and MongoDB Servers
-- **Where to configure it**: the **Databases** page (saved in `data\app\services.json`).
-- **Steps**:
-  1. Select **MySQL** or **MongoDB** in the side bar.
-  2. In the **Settings** section (*Details* tab), with the server stopped you can choose the engine **Version**, change the **Port** (defaults `3306` and `27017`, valid from `1024` to `65535`) and tick **"Start with Atollo"**.
-  3. Click **"Start"** to start the server (if the component is not installed yet, it is downloaded and initialized automatically on first start).
-- **Purpose**: have a single lightweight instance per engine shared by all projects, protected by an administrative password (`root`/`admin`) and accessible via **phpMyAdmin** (for MySQL) or through the **Content** explorer (for MongoDB).
+The instructions of “New project”: [6.4 The framework instructions](#64-the-framework-instructions).
 
-#### B. Creating a Project's Database/User, Writing `.env` and Backups
-- **Where to configure it**: **Projects › `<your-project>` › Databases tab** (credentials and backups saved in `data\projects\<project>\private\`).
-- **Steps**:
-  1. Under MySQL or MongoDB, click **"Create database and user"**: the kit starts the server if it is stopped, creates the `<project>` database and the `<project>` user with a random password of 32 hexadecimal digits and permissions limited exclusively to that database.
-  2. Click **"Write to .env"**: the app shows the **exact preview of the lines that will change** (automatically recognizing the Laravel style `DB_CONNECTION`/`DB_PORT`/`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD` or the standard `DATABASE_URL` / `MONGODB_URI`, and creating `.env` from `.env.example` if it is missing). Confirm to apply. (If `.env` is not listed in `.gitignore`, the tab shows a security warning.)
-  3. In the **Copies (Backup)** subsection, click **"Export"** to create a `.sql` dump (`mysqldump --single-transaction --routines --events --triggers`) or `.archive.gz` dump (`mongodump --archive --gzip`) in `data\projects\<project>\private\backups\`, or **"Restore…"** to import an existing backup.
-- **Example of the `.env` lines generated automatically for `gestionale-fatture` (Laravel style)**:
-  ```dotenv
-  DB_CONNECTION=mysql
-  DB_HOST=127.0.0.1
-  DB_PORT=3306
-  DB_DATABASE=gestionale_fatture
-  DB_USERNAME=gestionale_fatture
-  DB_PASSWORD=9f4e2c8a71b30d5e6f12a98c4d3e7b10
-  ```
-- **Purpose**:
-  - **Security isolation between projects (`D-74`, `D-89`)**: each project has its own credentials and cannot read or alter the databases of other projects. Even restoring an external `.sql` file is done with the project's restricted user (never as `root`), preventing a malicious SQL dump from modifying `mysql.*` or other databases.
+<details>
+<summary>Under the hood</summary>
 
----
+- The settings are in `data\app\settings.json`. Every save checks the values, writes the file safely (first a copy, then the replacement) and rebuilds the kit's environment.
+- If the file cannot be read, the app uses the default values and does not overwrite it: “The settings in … cannot be read: using the defaults and leaving the file as it is.”
+- The Settings search box also searches the framework bases and additions.
 
-### 5.8 Configuring Websites, Caddy/Apache Pools, `.localhost` Domains and Aliases
+</details>
 
-- **Where to configure it**: **Projects › `<your-project>` › Website tab** (saved in `projects\<project>\panel.json`) and the **Web Servers** page (`data\app\servers.json`).
-- **Steps**:
-  1. Open the project's **Website** tab.
-  2. In the *"Folder to serve as a website"* field, enter the document root relative to the project (e.g. `.` or `public` for Laravel/Symfony, `dist` for frontend builds).
-  3. In the *"with"* menu, choose the engine:
-     - **static files**: uses the server built into the exe (ideal for plain HTML/CSS/JS);
-     - **PHP (built-in server)**: uses `php -S` for quick single-site development;
-     - **Caddy** (default) or **Dedicated Apache** (for your own rules in `.htaccess`): enables the advanced VirtualHost options.
-  4. If you chose Caddy or Apache:
-     - Choose the **Server profile**: *Automatic (pool by version)* (recommended: it automatically groups the site into the pool on the **Web Servers** page that matches the server and PHP versions chosen by the project) or a manual profile created on the **Web Servers** page.
-     - *(Optional)* Enter **Extra .localhost domains** separated by commas (e.g. `api.mio-sito.localhost, admin.mio-sito.localhost`).
-     - *(Optional)* Click **"Add alias"** to map a URL path (e.g. `/media`) to a folder inside the project (`storage/uploads`) or to a folder of another project in the kit (`@other-project/public`). Alias folders serve static files only: a PHP script in them is refused, and an `.htaccess` there can only change the file listings (SEC-V4-01, D-116).
-  5. Click **"Save"**. Then start the project (or start the corresponding pool on the **Web Servers** page) and open `http://<project>.localhost:<port>`.
-     - With *Automatic*, "Start" opens a dedicated instance of the project on its own port; with a **manual profile**, "Start" starts that profile's pool (if it is stopped) and shows the site's address in the pool. "Stop" on a site served by a pool only marks it as stopped: the pool, shared with other projects, is stopped from the **Web Servers** page.
-- **Purpose**:
-  - Allow multi-site and multi-domain architectures (`.htaccess` on Apache, FastCGI `php-cgi.exe` or `php-fpm` on Caddy) and sharing of assets between different projects (`@other-project/...`) while keeping 100% portability: the `httpd.conf`/`Caddyfile` files are regenerated at every start in `data\servers\<pool>\` using the kit's variables (`${CP_PROJECTS_FWD}`) and validating every alias with `safe_path` (no malicious junction toward external servers is ever followed, D-77).
+Related topics: [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network), [7.3 Updates and backups](#73-updates-and-backups), [6.4 The framework instructions](#64-the-framework-instructions)
 
----
+### 6.3 Company network: proxy, certificates, local network
 
-### 5.9 Configuring Custom Actions (`panel.json`) and Ports
+*When you need them, how to fill them in and what they apply to. Plus how to let the other PCs on the network see your websites.*
 
-- **Where to configure it**: **Projects › `<your-project>` › Run tab** (the actions are saved in `projects\<project>\panel.json`, the ports in `data\projects\<project>\ports.json`).
-- **Steps**:
-  1. In the **Run** tab, click **"New action"** (or select an existing action and click **"Edit"**).
-  2. Fill in:
-     - **Name** (e.g. `Start Worker` or `Dev Server`);
-     - **Type**: *Website or web server* (`web`, waits for the port to respond and enables *Open in the browser*), *Desktop application* (`desktop`), or *Command* (`command`);
-     - **Command**: the command line to run (e.g. `npm run dev -- --port {port}`: the `{port}` placeholder is replaced with the port assigned by the kit);
-     - **Folder** (optional, e.g. `frontend` for a monorepo);
-     - **Environment variables** (one per line in the format `KEY=value`).
-  3. Click **"Save"**. You can also click **"Default"** to make the action the one bound to the project's main **"Start"** button.
-  4. To pin a specific port (between `1024` and `65535`, excluding `7000-7099`, reserved for the editor), write it in the **Port** field of the action details: the kit locks it (`locked` in `ports.json`) so that cookies, localStorage and local OAuth redirects always use the same address.
-- **Complete example of `projects\gestionale-fatture\panel.json` (Actions + Apache Website)**:
-  ```json
-  {
-    "default": "dev",
-    "site": {
-      "root": "public",
-      "engine": "apache",
-      "domains": ["fatture.studio.localhost"],
-      "aliases": [
-        { "url": "/allegati", "target": "storage/app/public/allegati" }
-      ]
-    },
-    "actions": [
-      {
-        "id": "dev",
-        "label": "Avvia",
-        "kind": "web",
-        "cmd": "composer run dev"
-      },
-      {
-        "id": "test",
-        "label": "Prove (Pest)",
-        "kind": "command",
-        "cmd": "php artisan test"
-      }
-    ]
-  }
-  ```
-- **Purpose**: automate starting any stack (even multi-process ones, by starting several actions in parallel and monitoring them all from the **Activity** panel) and share the start commands in the Git repository through `panel.json`, without tying other developers to the local ports of your machine.
+> **In short**
+>
+> - They are needed only if the network goes through a proxy or inspects HTTPS traffic, as in many companies and schools.
+> - They apply to the kit's downloads, to the agents and to the tools in the consoles.
+> - “Local network” lets the other PCs on the network see the projects' sites.
 
----
+#### Working out whether you need them
 
-### 5.10 Configuring Extensions and Editor Settings per Project
+If everything downloads at home but at the office downloads fail with connection or certificate errors, the company network probably uses a proxy, or inspects HTTPS traffic with its own certificate. Your IT support can give you the right values; often they are the same as those set in the company browser.
 
-- **Where to configure it**:
-  - **Projects › `<your-project>` › Extensions tab** (saved in `data\projects\<project>\dev-settings.json` under `extensions.added` and `extensions.removed`).
-  - **Projects › `<your-project>` › Editor tab** (saved in `projects\<project>\.vscode\settings.json`).
-- **Steps**:
-  1. In the **Extensions** tab, untick any default extensions you do not want in this project, or write the `publisher.name` identifier in the add field (with help from the matrix suggestions, such as `eamodio.gitlens`, `humao.rest-client`, `dart-code.flutter`, or any extension available on Open VSX) and click **"Add"**.
-  2. In the **Editor** tab, set *Format on save*, the *Indentation* size (2 spaces, 4 spaces, tab) and the *Hidden folders* (`files.exclude`), then click **"Save"**.
-- **Purpose**:
-  - **Extension isolation per workspace (`D-71`)**: even though all extensions are installed in a single `vscodium-server` folder, each editor window enables in its own IndexedDB **only** the general extensions and those required by the languages/settings of *that* single project. This way a Python project is not slowed down by the Java or PHP extensions installed for other projects, keeping the editor light and responsive.
+#### The fields
 
----
+| Field | Example | Notes |
+| --- | --- | --- |
+| HTTPS proxy | `http://proxy.azienda.it:8080` | The most important one: Atollo's downloads use it too. |
+| HTTP proxy | `http://proxy.azienda.it:8080` | For unencrypted connections. |
+| No proxy for | `localhost,127.0.0.1,.azienda.it` | Addresses to reach directly, separated by commas. |
+| Additional certificates (PEM file) | `E:\certificati\azienda.pem` | The company's certificate, for programs like Node.js that do not use the system's ones. |
 
-### 5.11 Configuring and Editing the Framework Wizard Recipes
+1. Open Settings › “Network” and fill in the fields you need.
+2. Press “Save”. If the editor is open, also press “Restart the editor”.
+3. Go back to Tools and retry the download that was failing.
 
-- **Where to configure it**: **Settings › Frameworks side panel** (the differences from the built-in catalog are saved in `data\app\frameworks.json`).
-- **Steps**:
-  1. In the **Settings** side bar, expand the **Frameworks** panel.
-  2. Click a **Base** (e.g. *Laravel*, *Vite*, *Tauri*) or an **Addition** (e.g. *React*, *Tailwind CSS*, *Pest*) to open it in a tab, or click the **`+`** buttons in the panel header to create a new base or a new addition.
-  3. Edit the kit tools required (tags with logo), the creation commands (`create`), the configuration steps (`steps`), the required database (`mysql` / `mongodb`), the default `.env` variables or the actions saved in the project.
-  4. Click **"Try a combination"** at the top of the tree to preview the complete plan generated by combining one base with several additions.
-  5. Click **"Save"** in the tab bar (at any time the **"Restore"** button on a single item brings that recipe back to the catalog's official commands).
-- **Purpose**: let developers, teams or teachers adapt the project creation templates to their own conventions (adding company libraries, linting configurations or specific package versions) while always keeping the option to return to the official configuration with one click.
+- The proxy must start with http:// or https:// and have no spaces; if a user is needed: http://user:password@host:port.
+- The PEM file must exist: the kit checks the path when you save.
 
----
+#### Local network
 
-### 5.12 Managing "Data without a project" (Adopting or Cleaning Up Orphans)
+The “Let other PCs on the network reach the project servers” checkbox opens the projects' sites to the network: useful to try a site from your phone. From the other devices you use this PC's IP address with the site's port. Databases and phpMyAdmin stay reachable only from this PC.
 
-- **Where to configure it**: **Projects › side bar › Data without a project panel** (`ui/src/projects/orphans.tsx` and `tauri/src/projects/state.rs`).
-- **When it appears**: if you rename or move a folder inside `projects\` using Windows File Explorer while the app is closed (or if you delete the code folder by hand), the corresponding data in `data\projects\<old-name>\` (database passwords, `.sql`/`.archive.gz` backups, ports, extensions) **is never deleted on its own** by the kit, to avoid accidental loss of databases or backups.
-- **Steps**:
-  1. In the side bar of the **Projects** page, find the entry under **Data without a project**.
-  2. **If you had renamed the project folder**: select the new project name in the **"Link to…"** menu and confirm. The kit moves all the state files, backups and passwords to the new project, **keeping the physical name of the database and user** saved in `private\db.json` unchanged, so that the project's `.env` file keeps working without any change.
-  3. **If instead you had deleted the project on purpose**: click the trash button (**"Delete"**). A confirmation dialog opens that lists the existing databases and backups and lets you cleanly delete both the databases and the user inside MySQL/MongoDB and the folder in `data\projects\`.
-- **Purpose**: ensure that no external operation in File Explorer can cause the silent loss of databases or backup copies, while offering a guided tool to relink the data to a renamed project or to completely clean up the database servers.
+> [!WARNING]
+> **Watch out**
+>
+> Anyone on the same network will be able to see your test sites. Turn it on only on networks you trust and turn it off when you are done. Windows may ask for the firewall permission the first time.
+
+<details>
+<summary>Under the hood</summary>
+
+- The values end up in the HTTPS_PROXY, HTTP_PROXY, NO_PROXY and NODE_EXTRA_CA_CERTS variables of all the kit's programs.
+- Atollo's downloads use the “HTTPS proxy” (or, if empty, the PC's variables or the system proxy) and the system's certificates: that is why company HTTPS inspection already works, if the company certificate is installed on the PC. The PEM file is for Node.js and the tools that read NODE_EXTRA_CA_CERTS.
+- PAC files (automatic proxy configuration) are not supported: ask for the proxy address.
+- “Local network” sets ATOLLO_ALLOW_LAN=1: the projects' commands listen on all interfaces, and so do the file server and the Caddy and Apache pools.
+
+</details>
+
+Related topics: [8.4 Where the tools come from](#84-where-the-tools-come-from), [9.1 When something goes wrong](#91-when-something-goes-wrong), [3.3 Websites and .localhost addresses](#33-websites-and-localhost-addresses)
+
+### 6.4 The framework instructions
+
+*Editing the recipes of “New project”: bases, additions, commands, .env variables, actions. And trying a combination before using it.*
+
+> **In short**
+>
+> - The bases and additions of “New project” are recipes: lists of commands you can read and change.
+> - You find them in Settings, in the “Frameworks” panel.
+> - You can change an official recipe (and restore it) or create your own.
+> - “Try a combination” shows what a base with some additions would do, before you use it.
+
+#### What a recipe is made of
+
+1. **Tools** — The kit components it needs (Node.js, PHP…).
+2. **Create** — The commands that create the project, run in the projects folder.
+3. **Then** — The commands to run in the project's folder.
+4. **Extras** — Database, .env variables, project actions.
+
+Each line is a command run with PowerShell and the kit's tools. {name} becomes the project's name (in quotes), {package} com.example. followed by the name in lowercase.
+
+#### The “Frameworks” panel
+
+The tree has the “Bases”, divided by group, and under each base the additions that go with it; then the “Additions” by type; at the bottom “Try a combination”. At the top, the “Add a base” and “Add an addition” icons.
+
+| Field | What to write |
+| --- | --- |
+| Name, Description, Official page | How it appears in the wizard and the link to the documentation. |
+| Kit tools | The components to install first (“Add a kit tool”). |
+| Create the project (in the projects folder) | For example: npm create vite@latest {name} -- --template vanilla-ts |
+| Then, in the project's folder | For example: npm install |
+| Kit database for the project | None, MySQL or MongoDB. |
+| .env file variables (KEY=value) | For example: APP_NAME={name} |
+| Project actions (Name: command) | For example: Start: npm run dev |
+
+An addition also has the “Group” (two additions of the same group do not go together), “Use it also with” for the compatible bases and, for each base, the commands to add or “Create the project instead of the base”.
+
+1. Choose a base or an addition in the tree and edit the fields.
+2. Press “Save” on the tab bar. A changed official recipe shows “Modified”.
+3. To go back to the original version use “Restore the official instructions”; a recipe of your own is removed with “Remove”.
+
+#### Try a combination
+
+Choose a base and some additions: the tab shows the complete plan the wizard would run (tools, commands, database, .env, actions), with the instructions as they are now, even if you have not saved them yet. It runs nothing.
+
+<details>
+<summary>Under the hood</summary>
+
+- The official recipes are in the kit's catalog (tauri/catalog/frameworks.json): 63 bases and 18 additions.
+- Your changes are in `data\app\frameworks.json`, which contains only the differences from the official recipes.
+- If that file cannot be read, the kit uses the official recipes and does not touch it: “The instructions in … cannot be read: using the official ones and leaving the file as it is.”
+
+</details>
+
+Related topics: [2.1 Creating a project](#21-creating-a-project), [6.2 The Settings, one by one](#62-the-settings-one-by-one)
+
+## 7. Taking the kit with you
+
+### 7.1 Safely removing the drive
+
+*Closing everything the kit has opened before unplugging the USB stick or the disk, without losing data.*
+
+> **In short**
+>
+> - Before unplugging the kit's USB stick or drive, use the “Remove drive” page.
+> - It neatly closes everything the kit has opened: projects, servers, editor, consoles, databases.
+> - Then close Atollo and remove the drive with Windows' “Safely Remove Hardware”.
+
+![The “Remove drive” page](../../ui/public/guide/en/eject.webp)
+
+*What is open right now and the button that closes everything before you unplug the drive.*
+
+#### Why it matters
+
+A database switched off abruptly can lose the last data written, and a program with a file open on the USB stick prevents Windows from removing it. The page closes everything the right way: the databases with their shutdown command, the servers and the programs one by one. And it saves the Antigravity sign-in in the kit, so nothing is left on the PC.
+
+#### Step by step
+
+1. Save the open work in the editor and the other programs.
+2. Open “Remove drive” (the last icon at the bottom of the activity bar). The “Open now” part lists what is open: installation in progress, editor, consoles, running projects, running databases and the kit programs started outside the app, with name and PID.
+3. Press “Close everything and prepare for removal”.
+4. When “Kit programs closed and Antigravity sign-in saved in the kit.” appears, press “Close Atollo”. If something is still open, it is listed under “Still open (close them manually)”.
+5. Remove the drive from the system: on Windows with the “Safely Remove Hardware” icon; on macOS by ejecting it from the Finder.
+
+> [!WARNING]
+> **Watch out**
+>
+> Unsaved files in the listed programs will be lost. The page does not eject the drive by itself: you do the last step from the system.
+
+#### And if I just close the window?
+
+If something is open, Atollo asks “Close Atollo?” and lists what will be closed. “Close everything” stops actions and servers, shuts down the databases neatly and exits. This is safe too; the “Remove drive” page also closes the kit programs started outside the app (for example from a console) and tells you if anything is left.
+
+<details>
+<summary>Under the hood</summary>
+
+The order in which the page closes things:
+
+1. **Installation** — It stops at the end of the current step.
+2. **Projects** — The running actions.
+3. **Web servers** — The Caddy and Apache pools.
+4. **Editor** — The windows and then the editor server.
+5. **Databases** — Orderly shutdown of MySQL and MongoDB.
+6. **The rest** — Consoles and every process whose program is inside the kit.
+7. **Antigravity** — The sign-in goes back into the kit, the system goes back to how it was.
+
+The kit cannot find the PC's programs that have opened a file on the USB stick (for example a document open in an outside app): close them yourself.
+
+</details>
+
+Related topics: [7.2 On another PC, another letter, another folder](#72-on-another-pc-another-letter-another-folder), [8.3 Background processes](#83-background-processes), [7.3 Updates and backups](#73-updates-and-backups)
+
+### 7.2 On another PC, another letter, another folder
+
+*What happens when the kit changes place, and how it behaves on the same disk opened from Windows, macOS and Linux.*
+
+> **In short**
+>
+> - You can move or copy the kit folder wherever you like: another drive letter, another folder, another PC.
+> - At the first start in the new place the kit notices and fixes the paths by itself.
+> - The same USB stick opens on Windows, macOS and Linux: projects and data are shared, the programs are kept separate for each system.
+
+#### Changing letter, folder or PC
+
+On another PC the USB stick might become E: instead of D:. You do not have to do anything: at start the kit compares the current folder with the one from last time and, if it changed, shows “The kit has been moved: it was in …, it is now in …” and updates the paths.
+
+- The programs' environment (PATH and variables) is rebuilt at every start from the current folder.
+- The paths written in the agents' and the editor's files are rewritten with the new path.
+- The web servers' configurations are regenerated at every start and use relative paths.
+- Sign-ins, settings, projects and databases are in the folder: they travel with it.
+
+> [!NOTE]
+> **Good to know**
+>
+> Only one kit at a time can be open per folder: starting Atollo again from the same folder brings the window already open to the front. Two different kits (two USB sticks), on the other hand, can run together.
+
+#### The same kit on Windows, macOS and Linux
+
+The programs are different for each system, and the kit keeps them in separate folders (`data\apps\win32-x64`, `data\apps\darwin-arm64`, `data\apps\linux-x64…`). Everything else is shared: projects, settings, sign-ins, agent instructions, databases.
+
+1. Format the USB stick as exFAT, which all three systems can read and write.
+2. Put the executable of each system in the kit folder (Atollo.exe, Atollo.app, the AppImage file).
+3. On each system, open Atollo: the first time it installs the components chosen for that system. Alternatively, on the Tools page choose that system in “Platform” and prepare the programs in advance from another PC.
+
+> [!WARNING]
+> **Watch out**
+>
+> A database used from several systems must always be shut down before changing PC (use “Remove drive”). On macOS and Linux some components (R, Ruby, MongoDB and SQLite on Linux, make) must be reinstalled when the kit changes folder: they show as “to update” and the kit reinstalls them by itself, without the network if you turned on “Packages to reinstall without the network”.
+
+<details>
+<summary>Under the hood</summary>
+
+- The last folder is in `data\app\root.txt` (root-darwin.txt and root-linux.txt on macOS and Linux); the previous one in old-root.txt until the agents' files have been updated.
+- On Windows the folder comparison ignores upper and lower case; on macOS and Linux it does not.
+- The installed versions of each system are in `data\app\versions\<system>`.
+- macOS: the app is not notarized by Apple. If macOS opens it from a temporary location (“App Translocation”), Atollo stops and shows the xattr command to run to remove the quarantine. Linux: glibc 2.35 or newer and WebKitGTK 4.1 are needed; if they are missing, Atollo shows the command to install them.
+
+</details>
+
+Related topics: [7.1 Safely removing the drive](#71-safely-removing-the-drive), [8.1 Portable and isolated: what it means](#81-portable-and-isolated-what-it-means), [5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements)
+
+### 7.3 Updates and backups
+
+*Updating Atollo and its tools, and what to copy to have a complete backup of your work.*
+
+> **In short**
+>
+> - Atollo updates itself: it downloads the new version and puts it in place of the old one when you close the app.
+> - The tools are updated from the Tools page, with “Refresh” on a row or “Update all”.
+> - For a complete backup it is enough to copy projects and data (without the programs, which can be downloaded again).
+
+#### Updating Atollo
+
+With “Automatic update” on (Settings › General), twenty seconds after start the kit checks whether there is a new version, downloads it, verifies its hash and prepares it. When you close the app, the new version takes the place of the old one; at the next start the old copy is deleted.
+
+In Settings › “Updates” you see the state (“Atollo … is the latest version.”, “Version … is ready: it replaces this one when Atollo closes.”) and the “Check for updates” button, which checks and downloads right away even with automatic update off.
+
+> [!NOTE]
+> **Good to know**
+>
+> On macOS and Linux, if you use the plain program (from the tar.gz archive) instead of Atollo.app or the AppImage, the kit cannot replace it: it tells you the new version is available and you download it from the release page.
+
+#### Updating the tools
+
+- “Refresh” on a component's row downloads its new version right away, if there is one.
+- “Update all”, at the bottom of the Tools page, updates every installed component and brings every version to its latest fix (for example PHP 8.4.1 → 8.4.3), without adding or removing versions.
+- The agents always follow the latest version and do not update themselves while you work: the kit does it with “Refresh”.
+
+> [!TIP]
+> **Tip**
+>
+> Update when you have no projects running: programs in use cannot be replaced, and the row would show “in use: close the kit programs and try again”.
+
+#### Backups
+
+| To copy | Why |
+| --- | --- |
+| `projects\` | Your projects. |
+| `data\` | Settings, sign-ins, agent instructions, database data, database backups, project data. |
+
+Inside data you can leave out `data\apps` (the programs) and `data\cache` (downloaded files that can be downloaded again): they are the biggest part and the kit rebuilds them. To copy the database data consistently, shut down the servers first (or use “Remove drive”).
+
+> [!WARNING]
+> **Watch out**
+>
+> The data folder contains sign-ins and passwords. Keep the backups in a safe place, and encrypt the USB stick if you carry it around (for example with BitLocker To Go on Windows).
+
+For a single database there is the backup from the project page: [3.2 A project's database](#32-a-projects-database).
+
+<details>
+<summary>Under the hood</summary>
+
+- New versions come from the app-v… releases of the GitHub repository nabre/atollo; the SHA-256 hash comes from GitHub or from the .sha256 file next to the file.
+- On Windows the new version waits in `data\app\update`; the replaced copy stays as Atollo.old.exe until the next start.
+- The ATOLLO_NO_UPDATE variable, set on the PC, turns off the automatic check.
+
+</details>
+
+Related topics: [5.1 The Tools page](#51-the-tools-page), [7.1 Safely removing the drive](#71-safely-removing-the-drive), [8.2 The kit's folders on disk](#82-the-kits-folders-on-disk)
+
+## 8. How it works inside
+
+### 8.1 Portable and isolated: what it means
+
+*Why the kit does not install, does not ask for administrator rights and does not touch the PC that hosts it. And the exceptions.*
+
+> **In short**
+>
+> - Atollo does not install itself, does not write to the registry and does not ask for administrator rights.
+> - The kit's programs start in an environment built from scratch, which points only to kit folders.
+> - So they do not see the PC's programs and the PC does not see them: no conflicts, no traces.
+> - A few exceptions are declared: the system's temporary folder and, for a few seconds, the keychain.
+
+#### The idea, with an example
+
+A colleague's PC already has Node.js 18 installed, with its global packages and its npm settings. If you open a kit console and type node --version, the kit's Node 24 answers, not the PC's 18: the kit console does not even know the other one exists. And when you install a global package, it ends up in the kit folder, not in your colleague's profile.
+
+This happens because every program started by the kit receives an environment built from scratch: the kit takes only a handful of system variables from the PC (computer name, Windows folders, language…) and sets all the others so that they point inside data.
+
+#### What is redirected
+
+| Group | Main variables | Where they point |
+| --- | --- | --- |
+| User folder | `HOME, USERPROFILE, APPDATA, LOCALAPPDATA` | `data\home` |
+| Temporary files | `TEMP, TMP (TMPDIR su macOS e Linux)` | `data\tmp\system` or the system's temporary folder, depending on Settings |
+| Agents | `CLAUDE_CONFIG_DIR, CODEX_HOME` | `data\home\.claude, data\home\.codex` |
+| GitHub CLI | `GH_CONFIG_DIR` | `data\gh` |
+| Package caches | `NPM_CONFIG_CACHE, PIP_CACHE_DIR, UV_CACHE_DIR, COMPOSER_CACHE_DIR, GOCACHE, NUGET_PACKAGES` | `data\cache\…` |
+| Global packages | `NPM_CONFIG_PREFIX, PYTHONUSERBASE, COMPOSER_HOME, GOPATH, GRADLE_USER_HOME, CARGO_HOME` | `data\npm-global, data\python-user, data\composer, data\go, data\gradle…` |
+| Languages | `JAVA_HOME, DOTNET_ROOT, PHPRC, RUSTUP_HOME…` | The folders of the kit's programs, at the versions in use |
+| No telemetry and no automatic updates | `DOTNET_CLI_TELEMETRY_OPTOUT, POWERSHELL_TELEMETRY_OPTOUT, GOTELEMETRY=off, DISABLE_UPDATES` | Off: the tools send no data and do not update themselves |
+| PATH | `PATH` | First the kit folders, then only the system folders (System32 on Windows, /usr/bin and similar on macOS and Linux) |
+
+To see the complete environment open a console in the kit folder and use the command `.\Atollo.exe env | Out-Host` (keys and passwords are masked with \*\*\*).
+
+#### What stays on the PC
+
+The kit does not write to the Windows registry, does not change the system PATH, and creates no services or scheduled tasks. The exceptions, declared:
+
+- The system's temporary folder, in `Atollo\<kit id>`: the downloads' work area, files handed over manually, programs' temporary files. It is cleaned on closing and at the following starts.
+- While Antigravity is open, its sign-in is in the system keychain (on Windows only for the session); on closing it goes back into the kit.
+- An empty folder that PowerShell always creates in `%LOCALAPPDATA%\Microsoft\PowerShell`.
+- If you run gh auth login manually in a console, GitHub CLI may save the sign-in in the Windows Credential Manager: sign in from Settings instead.
+- On macOS: the window's data in ~/Library/WebKit and, if you do not use the token, the Claude Code sign-in in the Keychain.
+
+> [!NOTE]
+> **Administrator rights**
+>
+> Atollo always starts as a normal user. The only things that need an administrator are outside the kit and optional: Visual Studio Build Tools for Rust's MSVC compiler, the Xcode Command Line Tools on macOS for some C/C++ programs.
+
+<details>
+<summary>Under the hood</summary>
+
+- The environment starts empty and copies about 40 system variables from the PC (ComSpec, SystemRoot, PROCESSOR_ARCHITECTURE, LANG, DISPLAY…) plus the proxy variables; the kit sets about a hundred. Atollo env on Windows prints about 130 lines.
+- Every child program starts with the environment emptied and then filled with the kit's: nothing leaks in from the PC.
+- The app's process too redirects its own user folder and temporary files, before starting anything.
+- Variables containing KEY, TOKEN, SECRET or PASSWORD are masked in the env command and in the log.
+
+</details>
+
+Related topics: [8.2 The kit's folders on disk](#82-the-kits-folders-on-disk), [8.3 Background processes](#83-background-processes), [7.2 On another PC, another letter, another folder](#72-on-another-pc-another-letter-another-folder)
+
+### 8.2 The kit's folders on disk
+
+*projects and data: what is in each folder, which files are yours, which belong to the kit and which are protected.*
+
+> **In short**
+>
+> - Everything is in the kit folder: the executable, projects (yours) and data (the kit's).
+> - In data the programs are separated by system; the rest is shared between Windows, macOS and Linux.
+> - The folders with passwords can be read only by your user (on NTFS drives).
+
+#### The folders
+
+- **Projects folder** — `projects\`
+- **Shared agents** — `data\agents\`
+- **Database data** — `data\db\`
+- **Database backups** — `data\projects\<project>\private\backups\`
+
+| Folder or file | What it contains |
+| --- | --- |
+| `<kit folder>\` | The folder that contains the executable, for example `D:\Atollo`. |
+| &emsp;`Atollo.exe` | The only program: it is the app with the window and also the command line. On macOS Atollo.app, on Linux the AppImage. |
+| &emsp;`projects\` | Your projects, one folder each. It is yours: the kit does not write there unless you ask. |
+| &emsp;`data\` | Everything that belongs to the kit. |
+| &emsp;&emsp;`app\` | The app's state: settings.json (Settings), components.txt (chosen components), `versions\` (installed versions), `logs\`, services.json and servers.json (databases and web servers), terminals.json, frameworks.json, root.txt (last kit folder). |
+| &emsp;&emsp;&emsp;`app\db\` | Database administrator passwords and mysql logins. Protected: only your user can read it. |
+| &emsp;&emsp;`apps\<system>\` | The programs, by system (win32-x64, darwin-arm64…), one folder per component and per version. |
+| &emsp;&emsp;`projects\<project>\` | The kit's data for each project: dev-settings.json (versions, extensions, favorites), ports.json, Apache and Caddy configurations, `private\` (database passwords and backups, protected). |
+| &emsp;&emsp;`db\<mysql\|mongodb>\<version>\` | The databases' data, one folder per version. |
+| &emsp;&emsp;`servers\<pool>\` | The generated configurations of the shared web servers. |
+| &emsp;&emsp;`agents\` | What the three agents share: AGENTS.md, `skills\`, mcp.json, and the sync state in `.sync\`. |
+| &emsp;&emsp;`antigravity\` | The Antigravity sign-in kept in the kit (keyring.json). |
+| &emsp;&emsp;`home\` | The “user folder” of the kit's programs: .claude, .codex, .gemini (agent profiles), .gitconfig, .npmrc, AppData (on Windows). |
+| &emsp;&emsp;`gh\` | The GitHub CLI sign-in (hosts.yml). |
+| &emsp;&emsp;`vscodium-server\` | Settings and extensions of the editor server. |
+| &emsp;&emsp;`kit\` | Files the kit rewrites at every start: the PowerShell profile, helper commands (agy, mysql, gradle). |
+| &emsp;&emsp;`cache\` | Cache of the package managers (npm, pip, uv, Composer, Go, NuGet…) and of GitHub's responses. It can be deleted. |
+| &emsp;&emsp;`python-user\, npm-global\, composer\, go\, gradle\…` | Packages and tools installed globally with pip, npm, Composer, Go and the others. |
+| &emsp;&emsp;`tmp\` | Temporary files, when Settings wants them in the kit. |
+| &emsp;&emsp;`webview2\` | The data of the app window. |
+
+#### What is yours and what is the kit's
+
+| You can edit by hand | Better left to the kit |
+| --- | --- |
+| Everything in projects; `data\agents` (instructions, skills, mcp.json); `data\home\.gitconfig` | `data\app`, `data\apps`, `data\kit`, `data\servers`, `data\db`: the kit manages them, and some are rewritten at every start |
+
+> [!WARNING]
+> **Watch out**
+>
+> Do not delete the database folders (`data\db`) or the projects' private folders by hand: you would lose data and passwords. To remove a component use the Tools page; to clean up a project's data use “Data without a project”.
+
+<details>
+<summary>Under the hood</summary>
+
+- Protected folders (only your user, on NTFS; permissions 700 on macOS and Linux): `data\app\db`, `data\projects\<project>\private`, `data\agents\claude`, `data\tmp` when it is Claude's temporary folder.
+- On exFAT and FAT32 permissions do not exist: the kit works, but those folders are not protected.
+- Configuration files are written safely: first a temporary file, then the replacement, so an interruption does not leave half-written files.
+- `data\kit` is rewritten at every start: do not put your own files there.
+
+</details>
+
+Related topics: [8.1 Portable and isolated: what it means](#81-portable-and-isolated-what-it-means), [7.3 Updates and backups](#73-updates-and-backups), [2.7 Deleting a project and the “Data without a project”](#27-deleting-a-project-and-the-data-without-a-project)
+
+### 8.3 Background processes
+
+*What starts with the app, what stops when you close it, and why no programs stay running without your knowledge.*
+
+> **In short**
+>
+> - When you open Atollo only the things you asked for start: the databases and servers with “Start with Atollo”.
+> - Every program started by the kit is tied to the app: if the app closes, even in the worst way, they close with it.
+> - Only one window per kit folder: opening it again brings the existing one to the front.
+
+#### At start
+
+1. **Folders** — Creates projects and data if they are missing and checks that it can write.
+2. **Place** — Notices if the kit has been moved and takes note.
+3. **Environment** — Reads Settings and builds the kit's environment.
+4. **Window** — Only one per folder; then it opens the window.
+5. **Background** — Starts what is marked “Start with Atollo”, syncs the agents, checks for updates.
+
+- Database servers and web server profiles with “Start with Atollo” start right after opening.
+- Missing required components and those to reinstall are installed automatically.
+- The agents' instructions, skills and MCP servers are synced; if the kit has been moved, the paths are updated.
+- After 20 seconds, if turned on, the check for Atollo updates.
+
+> [!NOTE]
+> **Good to know**
+>
+> Opening the Databases page does not start the databases: they start with “Start”, with “Start with Atollo” or when a project needs them (to create its database or make a backup).
+
+#### While you work
+
+| What | When it starts | When it stops |
+| --- | --- | --- |
+| Project actions | With “Start” or ▶ | With “Stop”, or when the app closes |
+| Shared web servers | With the first project that uses them, or from the Web Servers page | With the last project, unless “Keep running”; on closing |
+| Databases | With “Start”, “Start with Atollo” or when a project asks for them | With “Stop”, or on closing (orderly shutdown) |
+| Editor | With the first “Editor” | When the app closes |
+| Consoles and agents | With “Terminal”, “Open”, “Agent” | When you close them, or when the app closes |
+
+Closing a console does not shut down the databases: they stay on until you stop them or close the app.
+
+#### On closing
+
+If something is open, Atollo asks “Close Atollo?” with the list; “Close everything” stops the actions and the web servers and shuts down the databases neatly, then exits. Before unplugging the drive use [7.1 Safely removing the drive](#71-safely-removing-the-drive).
+
+<details>
+<summary>Under the hood</summary>
+
+- On Windows all the kit's programs live in a Job Object with the “kill on close” option: if the app ends in any way, Windows closes them too. The editor and actions have their own Job, inside the app's.
+- On macOS and Linux a small watchdog process notices if the app dies and closes the kit's process groups (SIGTERM, then SIGKILL after 5 seconds).
+- The single instance uses an identifier derived from the kit folder (a mutex on Windows, a lock on macOS and Linux): two different kits do not get in each other's way.
+- The browser and File Explorer are opened outside the Job: they stay open even after Atollo closes.
+- On closing, if an update is ready, the executable is replaced.
+
+</details>
+
+Related topics: [7.1 Safely removing the drive](#71-safely-removing-the-drive), [8.1 Portable and isolated: what it means](#81-portable-and-isolated-what-it-means), [3.1 The database servers](#31-the-database-servers)
+
+### 8.4 Where the tools come from
+
+*The official sources of each component, the cryptographic checks, downloading by hand and the full table of sources.*
+
+> **In short**
+>
+> - Every component comes from its maker's official source, over HTTPS: no mirrors, no third-party copies.
+> - Every file is verified with its cryptographic hash before it is used; if it does not match, it is discarded.
+> - If a download fails, you can download the file with the browser and hand it to the kit, which verifies it the same way.
+
+#### The path of a download
+
+1. **Request** — Which is the latest version and what its hash is, from the official source.
+2. **Download** — Into a .part file in the work folder; three attempts.
+3. **Check** — Computes the file's hash and compares it with the expected one.
+4. **Extract** — zip, tar.gz, tar.xz, 7z or single file.
+5. **Replace** — Puts the new folder in place of the old one, all at once.
+6. **Test** — Runs the program to check that it responds.
+
+| Check | What it means | Examples |
+| --- | --- | --- |
+| SHA-256, SHA-512, SHA3-256 | The file's hash must be the one published by the maker (or pinned in the kit's catalog). | Python, Node.js, Go, Maven, Caddy, SQLite, the editor |
+| npm sha512 | The integrity hash of the npm registry. | Claude Code, Codex |
+| Authenticode (Windows only) | In addition, the maker's digital signature on the program, with the revocation check. | Claude Code, Visual C++ runtime |
+
+> [!TIP]
+> **Tip**
+>
+> Every part of a component (for example PHP and its Composer) is downloaded and verified before touching the installed one: if something goes wrong, the version you had stays as it was.
+
+#### When a download fails: “manually”
+
+If the download fails after three attempts (a blocking proxy, an unreachable site), a panel appears under the component's row:
+
+1. Click “Download it in the browser: \<file name\>”: the exact address opens in the browser.
+2. When the file has downloaded, drag it onto the panel or use “browse…”.
+3. The kit keeps it and uses it only if its hash is the published one; the installation restarts by itself (“Added …: trying again.”).
+
+The panel appears only when the file's hash is known. Files handed over and not used are deleted after 30 days.
+
+#### GitHub and the API limits
+
+Many components are published on GitHub. Without a sign-in, the GitHub API allows 60 requests an hour; with the kit's account ([6.1 The kit's GitHub account](#61-the-kits-github-account)) or with a GITHUB_TOKEN variable on the PC, 5,000. The kit keeps the responses and, if the limit is reached, reads the latest version straight from the GitHub pages.
+
+#### Other services the app contacts
+
+| Service | Why |
+| --- | --- |
+| `api.github.com/repos/nabre/atollo/releases` | Atollo's updates. |
+| `open-vsx.org` | The editor's extensions. |
+| `api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com` | The limits of the agents' plans, with the saved sign-in, read-only. |
+| `registry.npmjs.org · pypi.org · packagist.org…` | Only when the commands of projects and frameworks ask for it. |
+
+#### Complete table of sources (35 components and 5 parts)
+
+For each component: where the kit reads the versions from, where it downloads the file from, how it verifies it and where it puts it. The columns describe Windows; where macOS and Linux use another source, it is written under the address.
+
+| Component | Versions from | Files from | Check | In `data\apps\<system>\` |
+| --- | --- | --- | --- | --- |
+| [PowerShell 7 (pwsh)](https://github.com/PowerShell/PowerShell) | api.github.com/repos/PowerShell/PowerShell/releases/latest | PowerShell-\<v\>-win-(x64\|arm64).zip | SHA-256 — GitHub Release asset.digest | `pwsh\<line>\pwsh.exe` |
+| [GitHub CLI (gh)](https://cli.github.com) | api.github.com/repos/cli/cli/releases/latest | gh_\<v\>_windows_(amd64\|arm64).zip | SHA-256 — GitHub Release asset.digest | `gh\<line>\bin\gh.exe` |
+| [Editor (VSCodium Reh Web)](https://vscodium.com) | Built-in catalog (pinned version 1.135.06055, D-58) | github.com/VSCodium/vscodium/releases/download/\<v\>/vscodium-reh-web-win32-x64-\<v\>.tar.gz<br>macOS and Linux: vscodium-reh-web-\<target\>-\<v\>.tar.gz, SHA-256 pinned per target (native on ARM64 too) | SHA-256 — SHA-256 hardcoded in components.json | `vscodium-server\` |
+| [Claude Code](https://claude.com/product/claude-code) | registry.npmjs.org/@anthropic-ai/claude-code-win32-\<arch\>/latest | dist.tarball field of the npm package | Authenticode + SHA — npm sha512 integrity + Anthropic Authenticode signature | `claude\<line>\claude.exe` |
+| [Codex (OpenAI)](https://github.com/openai/codex) | registry.npmjs.org/@openai/codex/latest → /\<ver\>-win32-\<arch\> | dist.tarball field of the architecture-specific package | npm sha512 — npm dist.integrity (sha512-...) | `codex\<line>\bin\codex.exe` |
+| [Antigravity (Google)](https://antigravity.google) | antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_(amd64\|arm64).json | url field of the official JSON manifest<br>macOS and Linux: manifests/\<os\>_\<arch\>.json, .tar.gz archive | SHA-512 — SHA-512 (128 hex) from the manifest sha512 field | `antigravity\<line>\agy.exe (via data\kit\bin\agy.cmd)` |
+| [Git + Git Bash (PortableGit)](https://git-scm.com) | api.github.com/repos/git-for-windows/git/releases/latest | PortableGit-\<v\>-(64-bit\|arm64).7z.exe (extracted in Rust)<br>macOS and Linux: GitHub desktop/dugite-native (dugite-native-v\<v\>-\<sha\>-\<system\>.tar.gz, the asset's .sha256), follows the kit | SHA-256 — GitHub Release asset.digest | `git\<line>\cmd\git.exe and git\<line>\bin\bash.exe` |
+| [Python + pip](https://www.python.org) | raw.githubusercontent.com/astral-sh/python-build-standalone/latest-release/latest-release.json | cpython-3.\<minor\>.\<patch\>+\<date\>-\<triple\>-install_only_stripped.tar.gz | SHA-256 — SHA-256 from the official SHA256SUMS list | `python\<line>\python.exe (+ pip)` |
+| [Node.js + npm](https://nodejs.org) | nodejs.org/dist/index.json (even LTS \>= 18 + latest major) | nodejs.org/dist/\<v\>/node-\<v\>-win-\<arch\>.zip | SHA-256 — SHA-256 from nodejs.org/dist/\<v\>/SHASUMS256.txt | `node\<line>\node.exe` |
+| [uv (uv, uvx, uvw)](https://docs.astral.sh/uv/) | api.github.com/repos/astral-sh/uv/releases/latest | uv-\<triple\>.zip | SHA-256 — GitHub Release asset.digest | `uv\<line>\uv.exe, uvx.exe, uvw.exe` |
+| [PHP (Thread Safe)](https://www.php.net) | windows.php.net/downloads/releases/releases.json (+ EOL archives 8.1..5.6) | windows.php.net/downloads/releases/php-\<v\>-Win32-vs\*-x64.zip<br>macOS and Linux: static-php-cli “bulk”, cli and fpm archives with SHA-256 pinned in the catalog (8.4 and 8.5) | SHA-256 — SHA-256 from releases.json (or verified EOL table) | `php\<line>\php.exe` |
+| [↳ Part: Composer](https://getcomposer.org) | getcomposer.org/versions (stable channel or 2.2 LTS for PHP \< 7.2.5) | getcomposer.org/download/\<v\>/composer.phar | SHA-256 — SHA-256 from \<url\>.sha256sum | `php\<line>\composer.phar (+ composer.cmd)` |
+| [↳ Part: SSL CA Bundle (curl)](https://curl.se) | curl.se/ca/cacert.pem.sha256 | curl.se/ca/cacert.pem | SHA-256 — SHA-256 from cacert.pem.sha256 | `php\<line>\extras\ssl\cacert.pem` |
+| [↳ Part: Visual C++ Runtime](https://learn.microsoft.com) | Extracted from CAB `vcRuntimeMinimum_amd64\cab1.cab` if missing | aka.ms/vc14/vc_redist.x64.exe<br>Windows only | Authenticode + SHA — Authenticode signature O=Microsoft Corporation on exe and vcruntime140.dll | `tools\vcruntime\ (copied into PHP, Apache, MongoDB)` |
+| [Apache httpd](https://httpd.apache.org) | apachelounge.com/download/ (version and checksum scraping) | apachelounge.com/download/VS\<nn\>/binaries/httpd-\<v\>-Win64-VS\<nn\>.zip<br>macOS and Linux: not offered yet; the installer of the kit's build (httpd-v\<v\>, php-fpm) waits for the first release pinned in the catalog (D-116) | SHA-256 — SHA-256 from \<url\>.txt (SHA256-Checksum for:) | `apache\<line>\bin\httpd.exe` |
+| [Caddy](https://caddyserver.com) | api.github.com/repos/caddyserver/caddy/releases?per_page=100 | caddy_\<v\>_windows_amd64.zip asset from the official GitHub release | SHA-256 — GitHub Release asset.digest (from 2.10.1), otherwise SHA-512 from caddy_\<v\>_checksums.txt | `caddy\<line>\caddy.exe` |
+| [Rust (rustup, cargo, clippy)](https://www.rust-lang.org) | static.rust-lang.org/dist/channel-rust-stable.toml (\[pkg.rustc\]) | static.rust-lang.org/rustup/dist/\<triple\>/rustup-init.exe<br>Host gnu on Windows x64, gnullvm on Windows ARM64 (with C/C++), msvc from Settings; macOS and Linux: rustup with the native host | SHA-256 — SHA-256 from \<url\>.sha256 | `rust\cargo\bin\rustc.exe and rustup.exe` |
+| [Go SDK](https://go.dev) | go.dev/dl/?mode=json (&include=all) | go.dev/dl/go\<v\>.windows-(amd64\|arm64).zip | SHA-256 — SHA-256 from the sha256 field of the official JSON | `go\<line>\bin\go.exe` |
+| [Java JDK (Eclipse Temurin)](https://adoptium.net) | api.adoptium.net/v3/info/available_releases + /v3/assets/latest/\<major\>/hotspot | .zip package returned by the Adoptium API | SHA-256 — SHA-256 from binary.package.checksum | `java\<line>\bin\java.exe` |
+| [↳ Part: Apache Maven](https://maven.apache.org) | repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml | apache-maven-\<v\>-bin.zip | SHA-512 — SHA-512 from \<url\>.sha512 | `maven\bin\mvn.cmd` |
+| [↳ Part: Gradle](https://gradle.org) | services.gradle.org/versions/current | downloadUrl field of the official JSON | SHA-256 — SHA-256 from checksumUrl of the JSON | `gradle\bin\gradle.bat (via data\kit\bin\gradle.cmd)` |
+| [Kotlin Compiler](https://kotlinlang.org) | api.github.com/repos/JetBrains/kotlin/releases?per_page=100 | Asset kotlin-compiler-\<v\>.zip | SHA-256 — GitHub asset.digest or \<asset\>.sha256 | `kotlin\<line>\bin\kotlinc.bat` |
+| [Android SDK + Command-line Tools](https://developer.android.com/studio) | developer.android.com/studio (commandlinetools-win-\*_latest.zip table) | dl.google.com/android/repository/commandlinetools-win-\<build\>_latest.zip | SHA-256 — SHA-256 published in the official Android table | `android\cmdline-tools\latest\bin\sdkmanager.bat and adb.exe` |
+| [.NET SDK](https://dotnet.microsoft.com) | builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json | .zip archive for rid=win-x64\|win-arm64 | SHA-512 — SHA-512 from the hash field of releases.json | `dotnet\<line>\dotnet.exe (with shared SDK junctions)` |
+| [Dart SDK](https://dart.dev) | storage.googleapis.com/dart-archive/channels/stable/release/latest/VERSION | dartsdk-windows-\<arch\>-release.zip | SHA-256 — SHA-256 from \<url\>.sha256sum | `dart\<line>\bin\dart.exe` |
+| [Zig](https://ziglang.org) | ziglang.org/download/index.json | tarball field for (x86_64\|aarch64)-windows | SHA-256 — SHA-256 from the shasum field of the JSON | `zig\<line>\zig.exe` |
+| [Julia](https://julialang.org) | julialang-s3.julialang.org/bin/versions.json | .zip archive for os=winnt, arch=x86_64 | SHA-256 — SHA-256 from the sha256 field of versions.json | `julia\<line>\bin\julia.exe` |
+| [Bun](https://bun.sh) | api.github.com/repos/oven-sh/bun/releases | Asset bun-windows-(x64\|aarch64).zip | SHA-256 — GitHub asset.digest or SHASUMS256.txt | `bun\<line>\bun.exe` |
+| [Deno](https://deno.com) | api.github.com/repos/denoland/deno/releases | Asset deno-(x86_64\|aarch64)-pc-windows-msvc.zip | SHA-256 — GitHub asset.digest or \<asset\>.sha256sum | `deno\<line>\deno.exe` |
+| [Typst](https://typst.app) | api.github.com/repos/typst/typst/releases | Asset typst-(x86_64\|aarch64)-pc-windows-msvc.zip | SHA-256 — GitHub Release asset.digest | `typst\<line>\typst.exe` |
+| [TinyTeX (LaTeX)](https://yihui.org/tinytex/) | api.github.com/repos/rstudio/tinytex-releases/releases/latest | Asset TinyTeX-1-windows-v\*.exe (7z SFX extracted in Rust)<br>macOS and Linux: TinyTeX-1-\<os\>-\<arch\>-v\*.tar.xz (universal on macOS) | SHA-256 — GitHub Release asset.digest | `tinytex\bin\windows\tlmgr.bat and pdftex.exe` |
+| [pnpm + yarn (corepack)](https://pnpm.io) | registry.npmjs.org/pnpm/latest and /corepack/latest | Installed via npm-cli.js of the kit's Node.js | npm sha512 — npm registry integrity | `data\npm-global\pnpm.cmd and yarn.cmd` |
+| [CMake + Ninja](https://cmake.org) | GitHub API: Kitware/CMake and ninja-build/ninja (releases/latest) | cmake-\*-windows-(x86_64\|arm64).zip and ninja-win(arm64).zip | SHA-256 — GitHub Release asset.digest | `cmake\<line>\bin\cmake.exe and tools\ninja.exe` |
+| [C/C++ (llvm-mingw)](https://github.com/mstorsjo/llvm-mingw) | api.github.com/repos/mstorsjo/llvm-mingw/releases/latest | Asset llvm-mingw-\*-ucrt-(x86_64\|aarch64).zip<br>macOS and Linux: cc, c++, gcc, g++, clang shims over the kit's zig cc (needs Zig) and GNU make from conda-forge, not relocatable | SHA-256 — GitHub Release asset.digest | `cc\bin\clang.exe (+ make.cmd)` |
+| [Ruby + Bundler](https://www.ruby-lang.org) | api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=30 | Asset rubyinstaller-\<v\>-(x64\|arm).7z<br>macOS and Linux: conda-forge ruby (3.2 and later) via micromamba, not relocatable | SHA-256 — GitHub Release asset.digest | `ruby\<line>\bin\ruby.exe` |
+| [R (conda-forge + OpenBLAS)](https://www.r-project.org) | api.anaconda.org/package/conda-forge/r-base + mamba-org/micromamba-releases | micromamba-win-64 + r-base and libblas=\*=\*openblas packages<br>Windows ARM64: the win-64 packages under x64 emulation, from the native micromamba (--platform win-64). macOS and Linux: the same packages for osx-\* and linux-\*, launchers in kit-bin, not relocatable | SHA-256 — micromamba SHA-256 + conda-forge package SHA-256 | `r\<line>\bin\R.cmd and Rscript.cmd` |
+| [MySQL Community Server](https://www.mysql.com) | 8.4 and 9.7 LTS lines pinned in the catalog (sha256ByLine) | cdn.mysql.com/Downloads/MySQL-\<linea\>/mysql-\<v\>-winx64.zip | SHA-256 — SHA-256 pinned per line and target after Oracle's GPG signature | `mysql\<line>\bin\mysqld.exe and mysql.exe` |
+| [MongoDB + mongosh + Database Tools](https://www.mongodb.com) | downloads.mongodb.org/current.json, GitHub mongodb-js/mongosh, tools/db/release.json | Windows x64 .zip archives of mongod, mongosh and mongodump/mongorestore<br>macOS: vendor archives; Linux: server from conda-forge (not relocatable), generic mongosh, Database Tools per distribution | SHA-256 — SHA-256 from MongoDB JSONs + GitHub asset.digest for mongosh | `mongodb\<line>\bin\mongod.exe, mongosh\, mongodb-tools\` |
+| [phpMyAdmin (for MySQL)](https://www.phpmyadmin.net) | www.phpmyadmin.net/home_page/version.json | files.phpmyadmin.net/phpMyAdmin/\<v\>/phpMyAdmin-\<v\>-all-languages.zip | SHA-256 — SHA-256 from the official .sha256 file + php -l syntax check | `phpmyadmin\<line>\index.php` |
+| [SQLite CLI](https://sqlite.org) | sqlite.org/download.html (PRODUCT,... CSV rows) | sqlite.org/\<year\>/sqlite-tools-win-(x64\|arm64)-\<v\>.zip<br>Linux ARM64: conda-forge sqlite (sqlite.org publishes no tools), not relocatable; Windows ARM64: the x64 zip when there is no arm64 one | SHA3-256 — SHA3-256 published in the PRODUCT row of the official page | `sqlite\<line>\sqlite3.exe` |
+
+<details>
+<summary>Under the hood</summary>
+
+- Work folder: `<system temp>\Atollo\<kit id>\setup`, or `data\tmp\setup` if the system disk has less than 4 GB free or cannot be written to.
+- Three attempts 5 and 10 seconds apart; the download starts over at every attempt.
+- Connections use the system's certificates: company HTTPS inspection works if its certificate is installed on the PC.
+- The installed version is written in `data\app\versions\<system>\<component>.txt`.
+
+</details>
+
+Related topics: [5.1 The Tools page](#51-the-tools-page), [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network), [6.1 The kit's GitHub account](#61-the-kits-github-account)
+
+### 8.5 The command line
+
+*The commands of the Atollo executable to prepare, check and sync the kit without opening the window.*
+
+> **In short**
+>
+> - Atollo's executable is also a command-line program: given a command, it does the job and exits, without opening the window.
+> - Useful to prepare a kit for another system, check the components, or see the environment.
+> - It works even while the app is open.
+
+#### How to use it
+
+Open a console in the kit folder. On Windows, in PowerShell, add | Out-Host so the output appears in the console (the executable is a windowed program); in Command Prompt it is not needed. On macOS and Linux use the program's path (for example ./Atollo.AppImage).
+
+**Example**
+
+```
+cd D:\Atollo
+.\Atollo.exe components | Out-Host
+.\Atollo.exe prepare --only node,php --line php=8.3 | Out-Host
+.\Atollo.exe check | Out-Host
+```
+
+#### The commands
+
+| Command | What it does |
+| --- | --- |
+| `env [--project <name>]` | Prints the kit's environment (secrets masked); with a project, with its versions. |
+| `components [--target <system>]` | Lists the components: chosen or not, group, installed version or why it is not available. |
+| `versions [<id>]` | Without id: the versions on disk of the installed tools. With an id: asks the source for the versions offered and saves them. |
+| `check` | Asks every installed component for its version and marks ✓ or ✗. |
+| `prepare [options]` | Installs, updates and removes components according to the choice. The options are in the table below. |
+| `sync [--project <folder>] [--verbose]` | Syncs the agents' instructions, skills and MCP servers. |
+| `serve <folder> <port>` | Serves a folder as a static site (the kit's file server). |
+| `keyring restore \| save` | Used by the kit around Antigravity: restores or saves its sign-in. |
+| `version · help` | The version (also --version, -V) and the help (also --help, -h, /?). |
+
+| prepare option | Effect |
+| --- | --- |
+| `--only a,b` | Only these components (plus what they need), without removing the others. |
+| `--skip a,b` | All except these (the required ones cannot be skipped). |
+| `--update-all` | Also updates what is already installed. |
+| `--force` | Reinstalls even if the version is already that one. |
+| `--line id=x.y` | Adds that version next to the others (can be repeated). |
+| `--target <system>` | Prepares for another system: win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64, linux-arm64. |
+
+> [!WARNING]
+> **Watch out**
+>
+> Without --only, prepare removes the components not chosen, from the other systems' folders too. If you are not sure, look at components first.
+
+<details>
+<summary>Under the hood</summary>
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | All good. |
+| `1` | prepare or check: something failed. |
+| `2` | Unknown command (the help is printed too). |
+| `3` | prepare: another preparation of the same kit is already running. |
+
+From the command line prepare uses the console's GITHUB_TOKEN or GH_TOKEN, if present, to raise the GitHub API limit; it does not use the kit's account. If a download fails it prints the address to download by hand and the folder to put it in.
+
+</details>
+
+Related topics: [5.1 The Tools page](#51-the-tools-page), [7.2 On another PC, another letter, another folder](#72-on-another-pc-another-letter-another-folder), [8.1 Portable and isolated: what it means](#81-portable-and-isolated-what-it-means)
+
+## 9. Help
+
+### 9.1 When something goes wrong
+
+*The most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins.*
+
+> **In short**
+>
+> - Search for the message you see in the box below: the guide collects the most common ones, with the remedy.
+> - Almost every error has a tooltip on mouse-over and a line of output or log that tells you more.
+> - The app's log is in `data\app\logs\app.log`; the servers' logs are next to it.
+
+#### Download and installation
+
+**A component stays in “error” with “failed” and a network or certificate message.**
+
+Often it is the network: a company proxy or HTTPS inspection. Fill in Settings › Network and try again. If that is not enough, use the “Download it in the browser” panel under the row and hand the file to the kit.
+
+Learn more: [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network)
+
+**“in use: close the kit programs and try again”**
+
+A kit program (a running project, a console, the editor, a database) is using the files to be replaced. Stop it, close the consoles and try again. If you do not know what is open, the “Remove drive” page lists it.
+
+Learn more: [7.1 Safely removing the drive](#71-safely-removing-the-drive)
+
+**“An installation is already running.” or “An installation is already in progress”**
+
+Wait for it to finish (the status bar shows the step) or press “Cancel” in the “Apply” bar.
+
+**A component is “to update” (yellow triangle).**
+
+On macOS and Linux, after the kit is moved, some components must be reinstalled: the kit does it by itself at start. If it stays that way, press “Refresh” on the row.
+
+Learn more: [7.2 On another PC, another letter, another folder](#72-on-another-pc-another-letter-another-folder)
+
+#### Projects and sites
+
+**“Port already assigned to …” or a program saying the port is taken.**
+
+Another action uses that port, or a program on the PC does. Empty the “Port” field to go back to the automatic port or choose another one between 1024 and 65535 (not 7000-7099).
+
+Learn more: [2.3 Starting a project: actions and ports](#23-starting-a-project-actions-and-ports)
+
+**An action stops at once with “error (code 1)”.**
+
+Read the last lines of the output: they usually say what is missing. Common cases: dependencies not installed (run npm install or composer install first), a missing component (“Components” section › “Install what is missing”), a wrong version (“Versions” section).
+
+Learn more: [2.4 Components and versions of a project](#24-components-and-versions-of-a-project)
+
+**“Action not found: press Refresh”**
+
+The project has changed (for example panel.json). Press “Refresh” on the project page.
+
+**“panel.json is not valid JSON: ignored.”**
+
+There is a syntax error in the file (an extra comma, a missing quote). Fix it in the editor and press “Refresh”.
+
+Learn more: [2.3 Starting a project: actions and ports](#23-starting-a-project-actions-and-ports)
+
+**“The shared server … did not start: see the Web Servers page.”**
+
+Open the Web Servers page, choose the pool and look at the error. Often the port is taken: change the profile's port, or choose “Its own server” in the project's “Website” section.
+
+Learn more: [3.3 Websites and .localhost addresses](#33-websites-and-localhost-addresses)
+
+**The site opens but shows old files or a blank page.**
+
+Check the folder in “Folder to serve as a website” (for many PHP frameworks it is public) and reload the browser page bypassing the cache (Ctrl+F5).
+
+**The editor does not notice changed files.**
+
+On Windows this happens if a folder in the kit's path starts with a digit, with x or with u: the app flags it with a warning. Move the kit to a different path.
+
+Learn more: [1.2 The first start](#12-the-first-start)
+
+#### Databases
+
+**“Port … is already used by another program: change it below.”**
+
+Another MySQL or MongoDB (installed separately) runs on the PC on the same port. Change the “Port” on the server page (for example 3307) and start it again; then rewrite the connection in the projects' .env with “Write to .env”.
+
+Learn more: [3.1 The database servers](#31-the-database-servers)
+
+**The server stays in “Error” after starting.**
+
+The server page shows the last error and the path of the log (`data\app\logs`). On Linux MySQL may ask for the libaio and libnuma libraries: the message gives the command to install them.
+
+**The project does not connect to the database.**
+
+Check that the server is “Running”, then use “Write to .env” in the project's “Databases” section: the .env will have the right user, password and port. If the project uses another version of the server, the port is different (3307…).
+
+Learn more: [3.2 A project's database](#32-a-projects-database)
+
+#### Agents, Git and GitHub
+
+**“sign-in expired” in the agents.**
+
+Open the agent in a project: it renews the sign-in, or has you sign in again.
+
+Learn more: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity)
+
+**Git says “Please tell me who you are” at the first commit.**
+
+Set your name and email with git config --global user.name and user.email in a kit terminal.
+
+Learn more: [6.1 The kit's GitHub account](#61-the-kits-github-account)
+
+**“GitHub refused the sign-in: sign in again.”**
+
+The token is no longer valid (revoked or expired). In Settings › “GitHub account” press “Sign out” and then “Sign in to GitHub”.
+
+Learn more: [6.1 The kit's GitHub account](#61-the-kits-github-account)
+
+#### App start
+
+**“The kit's disk is read-only: cannot write to the folder …”**
+
+The USB stick is write-protected (sometimes there is a switch) or mounted read-only. The kit must be able to write in its folder.
+
+**macOS: “macOS opened Atollo from a temporary read-only copy (App Translocation)”.**
+
+It happens with downloaded apps that are not notarized. The message shows an xattr command: run it in Terminal and reopen Atollo.
+
+Learn more: [7.2 On another PC, another letter, another folder](#72-on-another-pc-another-letter-another-folder)
+
+**Linux: the disk is mounted with noexec, or WebKitGTK is missing.**
+
+The message explains what to do: remount the disk with execute permission, or install the packages it names.
+
+**Windows: WebView2 is missing.**
+
+WebView2 is the Windows component that draws the window; it is already in Windows 11 and almost always in Windows 10. If it is missing, Atollo shows the link to install it.
+
+**Warning: “Programs from another copy of the kit are open on this PC”.**
+
+Just information: another kit is open. The two copies share nothing.
+
+#### If the problem is not here
+
+- Read the action's output (“Run” section) or the server's log: the last line usually gives the cause.
+- Close Atollo and open it again: many things (environment, agents, kit files) are regenerated at every start.
+- Check the components with “Verify” on the Tools page, or with `.\Atollo.exe check | Out-Host`.
+- Report the problem in the issues of the GitHub repository nabre/atollo, attaching the log lines (passwords are already masked).
+
+Related topics: [9.2 Frequently asked questions](#92-frequently-asked-questions), [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network), [8.3 Background processes](#83-background-processes)
+
+### 9.2 Frequently asked questions
+
+*Short answers to the questions that come up most often.*
+
+> **In short**
+>
+> - Short answers; each one points to the topic that explains more.
+
+#### Frequently asked questions
+
+**Does it work without the Internet?**
+
+Yes, for everything already installed: projects, databases, sites, editor, consoles. The Internet is needed for component downloads, for commands that download packages (npm, Composer, pip) and for the AI agents, which talk to the provider's servers.
+
+**How much does it cost?**
+
+Atollo is free and open source (MIT license), like the components it downloads. The AI agents require an account or an API key from the provider, which may be paid.
+
+**Does my code go anywhere?**
+
+The kit sends nothing: no telemetry, and the tools have telemetry turned off. When you use an AI agent, however, the code you have it read is sent to the model's provider (Anthropic, OpenAI, Google), under its terms.
+
+**How do I uninstall Atollo?**
+
+Close the app and delete the kit folder (after putting the projects you need somewhere safe). There are no registry entries or installed programs to remove. The system's temporary folder is cleaned on closing.
+
+**Can I keep projects outside projects?**
+
+The Projects page shows only the folders inside projects. To work with the kit's tools on any folder of the PC use the Terminals page ([3.4 The kit's terminals](#34-the-kits-terminals)), which opens consoles anywhere.
+
+**Can I use another editor?**
+
+Projects are normal folders: you can open them with any editor. But the kit's tools (Node, PHP…) and the project's versions are ready only in the kit's consoles and editor, because it is the kit that prepares their environment.
+
+**Does Atollo replace Docker?**
+
+No, and it does not include it. It uses native programs for each system, lighter and without an administrator. If a project has a compose.yaml or a Dockerfile, the kit reads them only to suggest the right versions (PHP, Node, MySQL…).
+
+**Can I have two kits?**
+
+Yes: each folder is an independent kit, with its own projects, sign-ins and settings, and two kits can be open together. The same kit, however, opens only once.
+
+**Does it work on a network drive?**
+
+Yes, but it is slower: the programs read many small files. With “Temporary files of programs” set to “Automatic”, temporary files go to the PC's disk anyway.
+
+**How much space does it need?**
+
+The initial selection takes about 1.8 GB. Each language adds from a few tens to a few hundred MB (the Android SDK and TinyTeX more), each extra version as much again. Projects with their dependencies (node_modules, vendor) grow over time. The Tools page shows the size of each component.
+
+**Do the tools update themselves?**
+
+Atollo does (if you leave automatic update on); the components do not, you update them from the Tools page. See [7.3 Updates and backups](#73-updates-and-backups).
+
+**Why doesn't the Agents page open the agents?**
+
+Because an agent always works in a project: you open it from the Projects page, with the “Agent” button. The Agents page is for sign-in, limits and the shared folder.
+
+> [!TIP]
+> **Tip**
+>
+> Can't find the answer? Try [9.1 When something goes wrong](#91-when-something-goes-wrong) or the guide's search box.
+
+Related topics: [9.1 When something goes wrong](#91-when-something-goes-wrong), [9.3 Glossary](#93-glossary), [1.1 Welcome to Atollo](#11-welcome-to-atollo)
+
+### 9.3 Glossary
+
+*The words of the guide explained simply, from A to Z.*
+
+> **In short**
+>
+> - The words that come up in the guide and the app, explained without taking anything for granted.
+
+#### From A to Z
+
+- **.env** — A text file in the project with settings and secrets (like the database password), one KEY=value line each. It must not go into Git.
+- **Action** — A named project command, started and stopped from the “Run” section.
+- **Addition** — In the “From a framework or CMS” wizard, an extra piece to add to the base (Tailwind, React, a database, tests).
+- **AI agent** — A command-line assistant that works in the project folder: it reads, edits and runs commands. In the kit: Claude Code, Codex, Antigravity.
+- **API key** — A secret code that lets you use a service (for example an AI model) paying as you go, without a subscription.
+- **Backup** — A file with the whole content of a database, to put it back as it was.
+- **Base** — The starting point of a project created with a framework or a CMS: Laravel, Vite, Django, WordPress…
+- **Clone** — Copy a Git repository to your computer, with all its history.
+- **Commit** — A save in Git's history: a set of changes with a message.
+- **Component** — A program the kit can install: a language, an agent, a database, a tool.
+- **Console (terminal)** — A window where you type commands. The kit's one is PowerShell 7 with the kit's tools.
+- **exFAT, FAT32, NTFS** — Disk formats. NTFS (Windows) lets you protect folders; exFAT is read by Windows, macOS and Linux; FAT32 does not accept files over 4 GB.
+- **Extension** — An add-on for the editor that makes it able to understand a language or do new things.
+- **Framework** — A ready-made structure for building a type of application (Laravel for PHP sites, Django for Python…).
+- **Git** — The program that keeps the history of a project's changes.
+- **GitHub, GitHub CLI** — GitHub is the online service that hosts Git repositories; GitHub CLI (gh) is its command-line program.
+- **Hash** — A code computed from a file's content: if the file changes by even one byte, the hash changes. It is used to verify that a download is the right one.
+- **Kit folder** — The folder that contains the Atollo executable, projects and data.
+- **localhost, 127.0.0.1** — The name and address a computer uses to call itself. A name ending in .localhost always leads to this PC.
+- **MCP (MCP server)** — Model Context Protocol: a standard way to give agents new tools, through a program or a service.
+- **Minor version** — The first two parts of a version: for PHP 8.4.3 the minor version is 8.4. The kit keeps one folder per minor version.
+- **Open VSX** — The free extension catalog used by VSCodium.
+- **PATH** — The list of folders where the system looks for programs when you type a command.
+- **Path alias** — An address of the site that serves a different folder, for example /media → storage/uploads.
+- **Pool** — A web server (Caddy or Apache) shared by several projects, each with its own .localhost name.
+- **Port** — A number that tells services apart on the same computer: http://localhost:7100 and http://localhost:7101 are two different sites.
+- **Project** — A folder inside projects. The kit recognizes its type from the files.
+- **Proxy** — An intermediate server that Internet traffic goes through, common in company networks.
+- **Push, pull** — Sending commits to the remote repository (push) and receiving them (pull).
+- **Repository** — A project managed with Git, with its history. It can live on your computer and on GitHub.
+- **Server profile** — A pool you create on the Web Servers page, with the versions and port you choose.
+- **Skill** — A written procedure an agent loads when needed, in a folder with a SKILL.md file.
+- **Token** — A secret code that proves a sign-in already done (GitHub, Claude). For AI models, “token” is also the unit used to count text and usage.
+- **VirtualHost** — A site inside a web server, recognized by the name you call it with.
+- **VSCodium** — The free version of Visual Studio Code: the kit's editor.
+
+Related topics: [1.1 Welcome to Atollo](#11-welcome-to-atollo), [9.2 Frequently asked questions](#92-frequently-asked-questions)
+
+The same guide is in the app, on the Guide page, in four languages.
