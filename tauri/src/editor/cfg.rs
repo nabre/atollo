@@ -71,6 +71,10 @@ pub const DEFAULT_PROFILE_UNIX: &str = "Atollo - Bash";
 pub const BASH: &str = "/bin/bash";
 pub const ZSH: &str = "/bin/zsh";
 
+/// The editor's and its terminal's font: Geist Mono, which the editor
+/// window loads itself (`window.rs`), with the system's monospace behind.
+pub const EDITOR_FONT: &str = "'Geist Mono', ui-monospace, Consolas, 'Courier New', monospace";
+
 /// The suffix of the editor's per-system settings
 /// (`terminal.integrated.profiles.<os>`).
 fn os_key(os: Os) -> &'static str {
@@ -340,6 +344,12 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
         ("workbench.experimental.modernUI", json!(true)),
         ("update.mode", json!("none")),
         ("extensions.autoUpdate", json!(false)),
+        // Atollo's monospace (MARKETING.md, section 6). Ligatures off, as
+        // VSCodium's default and the app's own views
+        // (--vscode-editor-font-feature-settings): code reads as typed.
+        ("editor.fontFamily", json!(EDITOR_FONT)),
+        ("editor.fontLigatures", json!(false)),
+        ("terminal.integrated.fontFamily", json!(EDITOR_FONT)),
     ] {
         out.entry(key).or_insert(value);
     }

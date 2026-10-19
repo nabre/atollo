@@ -25,6 +25,9 @@
   };
 
   async function detect() {
+    // ?os=<target> shows the page as another system sees it.
+    const forced = new URLSearchParams(location.search).get("os");
+    if (forced && names[forced]) return forced;
     const ua = navigator.userAgent;
     let os = /Windows/.test(ua) ? "win32" : /Mac OS X|Macintosh/.test(ua) ? "darwin" : /Linux|X11/.test(ua) && !/Android/.test(ua) ? "linux" : null;
     if (!os) return null;
@@ -60,6 +63,27 @@
     }
   }
 
+  // The hero's kit folder as it looks on the visitor's system: the window
+  // bar (site.css, html[data-os]), the app's file under its release name
+  // (the macOS bundle keeps its name), the folder on a stick.
+  function kit(target, version) {
+    const card = document.querySelector(".kit");
+    if (!card) return;
+    const os = target.split("-")[0];
+    const v = version || card.dataset.version;
+    const look = {
+      win32: { root: "E:\\Atollo\\", app: "Atollo-" + v + "-" + target + ".exe", sep: "\\" },
+      darwin: { root: "/Volumes/KIT/Atollo/", app: "Atollo.app", sep: "/" },
+      linux: { root: "/media/kit/Atollo/", app: "Atollo-" + v + "-" + target + ".AppImage", sep: "/" },
+    }[os];
+    if (!look) return;
+    document.documentElement.dataset.os = os;
+    const text = { root: look.root, app: look.app, projects: "projects" + look.sep, data: "data" + look.sep };
+    card.querySelectorAll("[data-kit]").forEach((el) => {
+      el.textContent = text[el.dataset.kit];
+    });
+  }
+
   async function run() {
     const cta = document.getElementById("download");
     const button = document.getElementById("dl-main");
@@ -68,6 +92,7 @@
     const [target, rel] = await Promise.all([detect(), release()]);
 
     if (target) {
+      kit(target);
       // The card in «Sistemi» and the column of «Strumenti per sistema».
       document.querySelectorAll('[data-target="' + target + '"]').forEach((el) => el.classList.add("here"));
       button.textContent = cta.dataset.for + " " + names[target];
@@ -81,6 +106,7 @@
     }
 
     const version = String(rel.tag_name || "").replace(/^app-v/, "");
+    if (target && version) kit(target, version);
     const assets = new Map((rel.assets || []).map((a) => [a.name, a.browser_download_url]));
     const file = (rest) => "Atollo-" + version + "-" + rest;
     document.querySelectorAll("[data-asset]").forEach((a) => {

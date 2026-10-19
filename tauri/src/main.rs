@@ -467,7 +467,9 @@ fn program_name(os: kit::Os, exe: Option<&Path>) -> String {
         .map(|n| n.to_string_lossy().into_owned())
         .filter(|n| !n.is_empty());
     if os.is_windows() {
+        // A Windows path read anywhere: `\` separates there, not on Unix.
         return name
+            .and_then(|n| n.rsplit(['\\', '/']).next().map(str::to_owned))
             .filter(|n| n.to_ascii_lowercase().ends_with(".exe"))
             .unwrap_or_else(|| "Atollo.exe".to_owned());
     }
