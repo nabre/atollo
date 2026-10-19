@@ -371,7 +371,7 @@ export function ToolVersions({
     run(tool.id, `add:${tool.id}`, () => versionsAdd(tool.id, line, target));
   };
   return (
-    <div className="mt-1.5 max-w-[620px]">
+    <div className="mt-1.5">
       <div className="flex items-center gap-1">
         <span className="flex-1 text-[12px] text-vsc-desc">
           {t("Versioni: il kit usa la più recente; un progetto nuovo tiene quella che c'è alla sua creazione")}
@@ -429,7 +429,7 @@ export function ToolInstallLine({
   const running = setup?.running ?? false;
   const none = offered(tool).length === 0;
   return (
-    <div className="mt-1.5 max-w-[620px]">
+    <div className="mt-1.5">
       <div className="flex items-center gap-1">
         <span className="flex-1 text-[12px] text-vsc-desc">
           {none

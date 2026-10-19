@@ -90,7 +90,7 @@ export function RuntimeRows({ runtimes }: { runtimes: RelationRuntime[] }) {
           <div
             key={r.id}
             data-setting
-            className={`flex max-w-[880px] items-center gap-3 border-l-2 py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50 ${
+            className={`flex items-center gap-3 border-l-2 py-2 pr-[14px] pl-3 hover:bg-vsc-list-hover/50 ${
               missing ? "border-l-vsc-orange bg-vsc-orange/5" : "border-l-transparent"
             }`}
           >

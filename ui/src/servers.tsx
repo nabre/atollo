@@ -138,7 +138,7 @@ function PoolDetails({
           </>
         }
       />
-      <EditorBody narrow>
+      <EditorBody>
         {pool.orphan && (
           <Notice tone="warning">
             {t("Questo pool è ancora acceso ma non corrisponde più ai progetti e ai profili: fermalo.")}

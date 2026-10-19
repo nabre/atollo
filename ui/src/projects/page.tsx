@@ -217,7 +217,7 @@ export function ProjectPage({
         <ErrorLine error={error} />
       </div>
       <NavBar label={t("Sezioni del progetto")} items={items} active={section} onSelect={setSection} />
-      <EditorBody narrow fill={section === "run"}>
+      <EditorBody fill={section === "run"}>
         {section === "run" && (
           <>
             {action && (

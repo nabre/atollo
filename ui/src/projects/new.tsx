@@ -132,7 +132,7 @@ function WayEditor({
         meta={[<span key="way">{wayLabel(way)}</span>]}
         description={description}
       />
-      <EditorBody narrow>
+      <EditorBody>
         <div className="max-w-105">{children}</div>
       </EditorBody>
     </div>

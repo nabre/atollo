@@ -253,7 +253,7 @@ function TerminalEditor({
           </>
         }
       />
-      <EditorBody narrow>
+      <EditorBody>
         {confirmRemove && (
           <InlineConfirm
             label={t("Elimina il terminale")}
