@@ -267,7 +267,8 @@ pub(super) fn component_infos_from(
                     && !off
                     && !no_rosetta
                     && !needs_windows11,
-                x64_only: c.x64_only,
+                // The «x64» mark: only where that build runs emulated.
+                x64_only: c.is_emulated_on(target),
                 no_arm64,
                 unavailable_reason,
                 needs: c.needs_list_on(target),

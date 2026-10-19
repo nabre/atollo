@@ -47,7 +47,11 @@ const component = (id: string, name: string, group: ComponentInfo["group"]): Com
   home: "https://example.org",
 });
 
-const LIST = [component("git", "Git", "required"), component("r", "R", "languages")];
+const LIST = [
+  component("git", "Git", "required"),
+  component("r", "R", "languages"),
+  component("android", "Android SDK", "languages"),
+];
 
 const status = (id: string, extra: Partial<TargetToolStatus> = {}): TargetToolStatus => ({
   id,
@@ -66,7 +70,9 @@ const status = (id: string, extra: Partial<TargetToolStatus> = {}): TargetToolSt
   ...extra,
 });
 
-/** This PC Windows ARM64: x64 Windows in emulation, the others not run here. */
+/** This PC Windows ARM64: x64 Windows in emulation, the others not run here.
+ *  The cells say what the catalog says: R not on Windows ARM64, Android SDK
+ *  x64 there and missing on Linux ARM64. */
 function grid(chosen: TargetGrid["chosen"] = null): TargetGrid {
   const profiles: TargetProfile[] = TARGETS.map((id) => {
     const [os, arch] = id.split("-") as [TargetProfile["os"], TargetProfile["arch"]];
@@ -80,14 +86,22 @@ function grid(chosen: TargetGrid["chosen"] = null): TargetGrid {
     };
   });
   const cells: Record<string, TargetToolStatus[]> = {
-    "win32-x64": [status("git", { installed: true, version: "2.56.0", chosen: true }), status("r")],
-    "win32-arm64": [status("git", { installed: true }), status("r", { available: false, noArm64: true })],
-    "darwin-arm64": [status("git", { bootstrapStaged: true }), status("r", { emulated: true })],
-    "darwin-x64": [status("git", { firstStart: true }), status("r")],
-    "linux-x64": [status("git"), status("r")],
+    "win32-x64": [status("git", { installed: true, version: "2.56.0", chosen: true }), status("r"), status("android")],
+    "win32-arm64": [
+      status("git", { installed: true }),
+      status("r", { available: false, noArm64: true }),
+      status("android", { emulated: true }),
+    ],
+    "darwin-arm64": [status("git", { bootstrapStaged: true }), status("r"), status("android")],
+    "darwin-x64": [status("git", { firstStart: true }), status("r"), status("android")],
+    "linux-x64": [status("git"), status("r"), status("android")],
     "linux-arm64": [
       status("git"),
-      status("r", { available: false, unavailableReason: "non disponibile per linux-arm64" }),
+      status("r"),
+      status("android", {
+        available: false,
+        unavailableReason: "Google non pubblica platform-tools e build-tools per Linux ARM64",
+      }),
     ],
   };
   return {
@@ -162,13 +176,16 @@ describe("TargetMatrix", () => {
     expect(screen.getByRole("button", { name: "Git, Windows x64: disponibile" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Git, macOS Apple Silicon: pre-scaricato" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Git, macOS Intel: si completa al primo avvio" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "R, macOS Apple Silicon: in emulazione" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Android SDK, Windows ARM64: in emulazione" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "R, macOS Apple Silicon: disponibile" })).toBeTruthy();
     // "On ARM64 PCs" here, since this PC is Windows ARM64.
     expect(
       screen.getByRole("button", { name: "R, Windows ARM64: non disponibile (non disponibile su PC ARM64)" }),
     ).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: "R, Linux ARM64: non disponibile (non disponibile per linux-arm64)" }),
+      screen.getByRole("button", {
+        name: "Android SDK, Linux ARM64: non disponibile (Google non pubblica platform-tools e build-tools per Linux ARM64)",
+      }),
     ).toBeTruthy();
   });
 
