@@ -96,11 +96,17 @@ fn help_is_translated() {
     assert_ne!(i18n::t("en", HELP, &[]), HELP);
 }
 
-/// The help names the program as it is on each system: `Atollo.exe` on
-/// Windows whatever the file is called, the started file elsewhere; it
-/// documents `--target` with every target id, in every language.
+/// The help names the program as it is on each system: the started file
+/// (on Windows only an `.exe`, else `Atollo.exe`); it documents `--target`
+/// with every target id, in every language.
 #[test]
 fn help_program_name_and_target_on_every_system() {
+    // `/` separates on every system the tests run on.
+    let release = Path::new("/media/usb/Kit/Atollo-0.2.0-win32-x64.exe");
+    assert_eq!(
+        program_name(kit::Os::Win32, Some(release)),
+        "Atollo-0.2.0-win32-x64.exe"
+    );
     let exe = Path::new("/media/usb/Kit/Atollo");
     for target in kit::Target::ALL {
         let os = target.os;

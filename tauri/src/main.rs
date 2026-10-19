@@ -457,17 +457,21 @@ fn prepare(
 /// are those of `Target::ALL`.
 const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti\n      --only a,b          solo questi componenti\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
 
-/// The program's name in the help: `Atollo.exe` on Windows, as always;
-/// elsewhere the file it was started from (`Atollo`, `Atollo`, ...), or
-/// `Atollo` when that is unknown.
+/// The program's name in the help: the file it was started from
+/// (`Atollo-0.2.0-win32-x64.exe`, `Atollo.AppImage`, `Atollo`, ...); on
+/// Windows only an `.exe` name, else `Atollo.exe`; elsewhere `Atollo`
+/// when that is unknown.
 fn program_name(os: kit::Os, exe: Option<&Path>) -> String {
-    if os.is_windows() {
-        return "Atollo.exe".to_owned();
-    }
-    exe.and_then(Path::file_name)
+    let name = exe
+        .and_then(Path::file_name)
         .map(|n| n.to_string_lossy().into_owned())
-        .filter(|n| !n.is_empty())
-        .unwrap_or_else(|| "Atollo".to_owned())
+        .filter(|n| !n.is_empty());
+    if os.is_windows() {
+        return name
+            .filter(|n| n.to_ascii_lowercase().ends_with(".exe"))
+            .unwrap_or_else(|| "Atollo.exe".to_owned());
+    }
+    name.unwrap_or_else(|| "Atollo".to_owned())
 }
 
 /// The help for `os`; `{1}` is the kit's Antigravity command (`agy.cmd`
