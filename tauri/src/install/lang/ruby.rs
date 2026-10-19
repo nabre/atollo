@@ -16,7 +16,7 @@ use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
 use crate::setup::catalog::Component;
 
-/// Ruby: RubyInstaller2 7z on Windows (without the MSYS2 atollo), or
+/// Ruby: RubyInstaller2 7z on Windows (without MSYS2), or
 /// conda-forge `ruby` by micromamba on macOS and Linux (D-112), in place
 /// of the ruby/ruby-builder archives, built for the folder of GitHub's
 /// runners (`/opt/hostedtoolcache`) and for Ubuntu only.

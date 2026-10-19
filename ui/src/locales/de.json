@@ -299,7 +299,7 @@
   "Sessioni": "Sitzungen",
   "Sessioni per giorno": "Sitzungen pro Tag",
   "Solo se la rete passa da un proxy o ispeziona il traffico HTTPS: valgono per download, agenti e strumenti del kit.": "Nur wenn das Netzwerk über einen Proxy läuft oder HTTPS-Verkehr prüft: Sie gelten für Downloads, Agenten und Werkzeuge des Kits.",
-  "Su PC ARM64 gira in emulazione x64": "Läuft auf ARM64-PCs in x64-Emulation",
+  "Su Windows ARM64 gira in emulazione x64": "Läuft auf Windows ARM64 in x64-Emulation",
   "Su questo PC (ARM64) l'editor gira in emulazione x64: può essere più lento.": "Auf diesem PC (ARM64) läuft der Editor in x64-Emulation: Er kann langsamer sein.",
   "Su questo PC sono aperti programmi di un'altra copia del kit ({0}). Le due copie non condividono nulla: progetti, accessi e impostazioni restano separati.": "Auf diesem PC sind Programme einer anderen Kopie des Kits geöffnet ({0}). Die beiden Kopien teilen nichts: Projekte, Anmeldungen und Einstellungen bleiben getrennt.",
   "Terminale": "Terminal",

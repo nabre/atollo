@@ -131,7 +131,7 @@ export function ToolPage({
             {sizeText(c.mb)}
           </span>,
           c.x64Only ? (
-            <span key="x64" className="text-vsc-desc" title={t("Su PC ARM64 gira in emulazione x64")}>
+            <span key="x64" className="text-vsc-desc" title={t("Su Windows ARM64 gira in emulazione x64")}>
               x64
             </span>
           ) : null,

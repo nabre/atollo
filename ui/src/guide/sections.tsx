@@ -37,6 +37,7 @@ import {
   CLI_COMMANDS,
   DISK_TREE,
   TOOL_SOURCES,
+  sourceCounts,
   tr,
   type AppPageTarget,
   type GuideTopicId,
@@ -135,10 +136,10 @@ function TopicOverview({
       >
         <p className="m-0 text-[12px] text-vsc-desc">
           {tr(
-            "Ambiente di sviluppo integrato, 100% portabile e auto-contenuto per Windows 10/11 (x64 e ARM64), progettato per risiedere su un'unità esterna (SSD/USB) o in una singola cartella locale senza lasciare tracce sul PC ospite.",
-            "Integrated, 100% portable and self-contained development environment for Windows 10/11 (x64 & ARM64), designed to live on an external drive (SSD/USB) or in a single local folder without leaving traces on the host PC.",
-            "Environnement de développement intégré, 100 % portable et autonome pour Windows 10/11 (x64 et ARM64), conçu pour résider sur un lecteur externe (SSD/USB) ou dans un seul dossier local sans laisser de traces sur le PC hôte.",
-            "Integrierte, 100 % portable und eigenständige Entwicklungsumgebung für Windows 10/11 (x64 & ARM64), entwickelt für den Betrieb auf einem externen Laufwerk (SSD/USB) oder in einem einzelnen lokalen Ordner ohne Spuren auf dem Host-PC.",
+            "Ambiente di sviluppo integrato, 100% portabile e auto-contenuto per Windows 10/11, macOS e Linux (x64 e ARM64), progettato per risiedere su un'unità esterna (SSD/USB) o in una singola cartella locale senza lasciare tracce sul PC ospite.",
+            "Integrated, 100% portable and self-contained development environment for Windows 10/11, macOS and Linux (x64 & ARM64), designed to live on an external drive (SSD/USB) or in a single local folder without leaving traces on the host PC.",
+            "Environnement de développement intégré, 100 % portable et autonome pour Windows 10/11, macOS et Linux (x64 et ARM64), conçu pour résider sur un lecteur externe (SSD/USB) ou dans un seul dossier local sans laisser de traces sur le PC hôte.",
+            "Integrierte, 100 % portable und eigenständige Entwicklungsumgebung für Windows 10/11, macOS und Linux (x64 & ARM64), entwickelt für den Betrieb auf einem externen Laufwerk (SSD/USB) oder in einem einzelnen lokalen Ordner ohne Spuren auf dem Host-PC.",
           )}
         </p>
         <Notice tone="info">
@@ -253,10 +254,10 @@ function TopicOverview({
               "3. Offizielle Quellen & kryptografische Prüfung",
             )}
             actionLabel={tr(
-              "Esplora le 36 fonti",
-              "Explore all 36 sources",
-              "Explorer les 36 sources",
-              "Alle 36 Quellen ansehen",
+              `Esplora le ${String(sourceCounts().all)} fonti`,
+              `Explore all ${String(sourceCounts().all)} sources`,
+              `Explorer les ${String(sourceCounts().all)} sources`,
+              `Alle ${String(sourceCounts().all)} Quellen ansehen`,
             )}
             onAction={() => {
               onSelectTopic("sources-table");
@@ -357,10 +358,10 @@ function TopicOverview({
             <span className="inline-flex items-center gap-1.5">
               <VscGlobe size={14} aria-hidden="true" />
               {tr(
-                "Tabella completa delle 36 fonti",
-                "Complete table of all 36 sources",
-                "Tableau complet des 36 sources",
-                "Vollständige Tabelle aller 36 Quellen",
+                `Tabella completa delle ${String(sourceCounts().all)} fonti`,
+                `Complete table of all ${String(sourceCounts().all)} sources`,
+                `Tableau complet des ${String(sourceCounts().all)} sources`,
+                `Vollständige Tabelle aller ${String(sourceCounts().all)} Quellen`,
               )}
             </span>
           </Button>
@@ -946,10 +947,10 @@ function TopicSupplyChain({ onSelectTopic }: { onSelectTopic: (id: GuideTopicId)
           >
             <span className="inline-flex items-center gap-1.5">
               {tr(
-                "Consulta la tabella completa delle 36 fonti",
-                "View the complete table of all 36 sources",
-                "Consulter le tableau complet des 36 sources",
-                "Vollständige Tabelle aller 36 Quellen ansehen",
+                `Consulta la tabella completa delle ${String(sourceCounts().all)} fonti`,
+                `View the complete table of all ${String(sourceCounts().all)} sources`,
+                `Consulter le tableau complet des ${String(sourceCounts().all)} sources`,
+                `Vollständige Tabelle aller ${String(sourceCounts().all)} Quellen ansehen`,
               )}
               <VscArrowRight size={14} aria-hidden="true" />
             </span>
@@ -961,7 +962,7 @@ function TopicSupplyChain({ onSelectTopic }: { onSelectTopic: (id: GuideTopicId)
 }
 
 // ---------------------------------------------------------------------------
-// 2.2 Complete Table of all 36 Tool Sources (Interactive & Filterable)
+// 2.2 Complete Table of the Tool Sources (Interactive & Filterable)
 // ---------------------------------------------------------------------------
 
 function TopicSourcesTable({
@@ -1012,10 +1013,10 @@ function TopicSourcesTable({
       <EditorSection
         id="guide-sources-table"
         title={tr(
-          "Catalogo completo delle fonti esterne (36 componenti e sotto-parti)",
-          "Complete catalog of external sources (36 components & sub-parts)",
-          "Catalogue complet des sources externes (36 composants et sous-parties)",
-          "Vollständiger Katalog externer Quellen (36 Komponenten & Teilpakete)",
+          `Catalogo completo delle fonti esterne (${String(sourceCounts().components)} componenti e ${String(sourceCounts().parts)} sotto-parti)`,
+          `Complete catalog of external sources (${String(sourceCounts().components)} components & ${String(sourceCounts().parts)} sub-parts)`,
+          `Catalogue complet des sources externes (${String(sourceCounts().components)} composants et ${String(sourceCounts().parts)} sous-parties)`,
+          `Vollständiger Katalog externer Quellen (${String(sourceCounts().components)} Komponenten & ${String(sourceCounts().parts)} Teilpakete)`,
         )}
         actions={
           <Button
@@ -1034,10 +1035,10 @@ function TopicSourcesTable({
       >
         <p className="m-0 text-[12px] text-vsc-desc">
           {tr(
-            "Elenco minuzioso di tutti i link da cui Atollo attinge gli strumenti, il metodo di verifica crittografica applicato, la cartella di destinazione in data\\apps\\ e lo stato attuale su questa unità.",
-            "Detailed list of every URL from which Atollo fetches tools, the cryptographic verification method applied, the destination folder in data\\apps\\ and the current status on this drive.",
-            "Liste détaillée de tous les liens depuis lesquels Atollo télécharge les outils, la méthode de vérification cryptographique appliquée, le dossier de destination dans data\\apps\\ et l'état actuel sur ce lecteur.",
-            "Detaillierte Liste aller URLs, von denen Atollo Werkzeuge bezieht, die angewandte kryptografische Prüfmethode, der Zielordner in data\\apps\\ sowie der aktuelle Status auf diesem Laufwerk.",
+            "Elenco minuzioso di tutti i link da cui Atollo attinge gli strumenti, il metodo di verifica crittografica applicato, la cartella di destinazione in data\\apps\\ e lo stato attuale su questa unità. Le colonne descrivono Windows; dove macOS e Linux usano un'altra fonte, è scritta sotto l'URL.",
+            "Detailed list of every URL from which Atollo fetches tools, the cryptographic verification method applied, the destination folder in data\\apps\\ and the current status on this drive. The columns describe Windows; where macOS and Linux use another source, it is written below the URL.",
+            "Liste détaillée de tous les liens depuis lesquels Atollo télécharge les outils, la méthode de vérification cryptographique appliquée, le dossier de destination dans data\\apps\\ et l'état actuel sur ce lecteur. Les colonnes décrivent Windows ; quand macOS et Linux utilisent une autre source, elle est écrite sous l'URL.",
+            "Detaillierte Liste aller URLs, von denen Atollo Werkzeuge bezieht, die angewandte kryptografische Prüfmethode, der Zielordner in data\\apps\\ sowie der aktuelle Status auf diesem Laufwerk. Die Spalten beschreiben Windows; wo macOS und Linux eine andere Quelle nutzen, steht sie unter der URL.",
           )}
         </p>
 
@@ -1100,6 +1101,15 @@ function TopicSourcesTable({
                     <code className="font-mono text-[11px] text-vsc-desc">{row.id}</code>
                     {installedVer ? (
                       <Tag tone="focus">{installedVer}</Tag>
+                    ) : live && (!live.available || live.noArm64 || live.unavailableReason !== null) ? (
+                      <Tag title={live.unavailableReason ?? undefined}>
+                        {tr(
+                          "Non disponibile su questo sistema",
+                          "Not available on this system",
+                          "Non disponible sur ce système",
+                          "Auf diesem System nicht verfügbar",
+                        )}
+                      </Tag>
                     ) : live ? (
                       <Tag>{tr("Non installato", "Not installed", "Non installé", "Nicht installiert")}</Tag>
                     ) : (
@@ -1121,8 +1131,11 @@ function TopicSourcesTable({
                 <div key="meta" className="font-mono text-[11px] leading-snug break-all text-vsc-fg/90 select-text">
                   {row.metaSource}
                 </div>,
-                <div key="bin" className="font-mono text-[11px] leading-snug break-all text-vsc-desc select-text">
-                  {row.binarySource}
+                <div key="bin" className="space-y-1">
+                  <div className="font-mono text-[11px] leading-snug break-all text-vsc-desc select-text">
+                    {row.binarySource}
+                  </div>
+                  {row.unix && <div className="text-[11px] leading-snug text-vsc-fg/90 select-text">{row.unix}</div>}
                 </div>,
                 <div key="ver" className="space-y-0.5">
                   <Tag tone="focus">{row.verifyKind}</Tag>

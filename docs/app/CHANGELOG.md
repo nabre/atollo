@@ -1,5 +1,17 @@
 # Novità
 
+## Strumenti descritti come li installa il codice (19/10/2026)
+
+- **Windows ARM64**: README, sito e catalogo elencano tutti i componenti che lì usano la build x64 in emulazione (editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX); prima mancavano MongoDB, Android SDK e Julia. L'etichetta «x64» della pagina Strumenti dice «Su Windows ARM64 gira in emulazione x64», non «sui PC ARM64»: su un Mac o un Linux ARM64 quei componenti sono nativi.
+- **R** non c'è solo su Windows ARM64: su macOS e Linux, ARM64 compreso, viene da conda-forge (il catalogo diceva «non disponibile sui kit ARM64»). **Apache** oggi il catalogo lo offre solo su Windows: su macOS e Linux arriva quando la build del kit è fissata (D-116); il sito diceva «Caddy e Apache per i siti» senza distinguere.
+- **Git** non arriva più con GitHub CLI (D-81): arriva con Claude Code, un clone o un progetto. README e catalogo dicevano ancora «Git per GitHub CLI». La sua descrizione dice che Git Bash c'è solo su Windows.
+- **Rust su Windows ARM64** usa l'host `gnullvm` collegato da C/C++ (D-112), non sempre MSVC come dicevano guida e catalogo; preparato da un altro sistema si completa al primo avvio, non dà errore.
+- **Guida nell'app**: la tabella delle fonti conta le sue righe (35 componenti e 5 parti, prima «36»), dice per Git, PHP, Apache, C/C++, Ruby, R, MongoDB, SQLite, Rust, TinyTeX, Antigravity e l'editor da dove li prendono macOS e Linux, e segna i componenti non disponibili sul sistema. La presentazione nomina macOS e Linux accanto a Windows.
+- **Matrice degli strumenti** ([MATRICE-STRUMENTI.html](MATRICE-STRUMENTI.html)): note, dimensioni e componenti tolti vengono dal catalogo e dal codice; R su Windows non è più segnato «conda» (segue il kit, D-104); la pagina non cambia se il catalogo non cambia (niente data né commit). Le fonti stanno in `scripts/matrix/sources.json`, che `cargo test` confronta con gli installatori.
+- **Altro**: ordine dei componenti, pnpm (corepack e yarn), SQLite x64 su Windows ARM64 quando manca lo zip arm64, phpMyAdmin al posto di Adminer nel testo di presentazione.
+
+**Verificato**: `cargo test`, fmt e clippy, ESLint, `tsc -b` e i test dell'interfaccia (uno nuovo per la tabella delle fonti); `gen_matrix.py` rigenera la matrice senza differenze; build del sito.
+
 ## Sito di Atollo (19/10/2026)
 
 - **Pagina di presentazione** su GitHub Pages, `https://nabre.github.io/atollo/` (D-126): in italiano, inglese, francese e tedesco come i README, con i testi di [MARKETING.md](../brand/MARKETING.md), i colori dell'app e tre schermate della guida. Il pulsante «Scarica» riconosce il sistema del visitatore (Windows, macOS, Linux, x64 o ARM64) e punta al file giusto dell'ultimo rilascio; l'elenco dei sei sistemi ha il link a ogni file. Prima del primo rilascio, o senza JavaScript, ogni link apre la pagina dei rilasci.

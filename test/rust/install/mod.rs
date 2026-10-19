@@ -61,6 +61,47 @@ fn every_catalog_component_has_an_installer() {
     }
 }
 
+/// The tool matrix (`scripts/matrix/gen_matrix.py`) reads sources and
+/// relocation from `scripts/matrix/sources.json`: one entry per catalog
+/// component, and `notRelocatable` exactly the targets where the
+/// installer does not follow the kit (D-92, D-118).
+#[test]
+fn the_matrix_sources_match_the_installers() {
+    let sources: serde_json::Value =
+        serde_json::from_str(include_str!("../../../scripts/matrix/sources.json")).unwrap();
+    let entries = sources["components"].as_object().unwrap();
+    let ids: Vec<&str> = Catalog::get().all().iter().map(|c| c.id.as_str()).collect();
+    let mut listed: Vec<&str> = entries.keys().map(String::as_str).collect();
+    let mut expected = ids.clone();
+    listed.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(
+        listed, expected,
+        "sources.json and the catalog list different ids"
+    );
+    for id in ids {
+        let entry = &entries[id];
+        for side in ["windows", "unix"] {
+            assert!(
+                entry[side].as_str().is_some_and(|s| !s.is_empty()),
+                "{id}: no {side} source"
+            );
+        }
+        let fixed: Vec<&str> = entry["notRelocatable"]
+            .as_array()
+            .map(|a| a.iter().filter_map(serde_json::Value::as_str).collect())
+            .unwrap_or_default();
+        let inst = installer(id).unwrap();
+        for t in crate::kit::Target::ALL {
+            assert_eq!(
+                !inst.relocatable(t),
+                fixed.contains(&t.as_str()),
+                "{id} on {t}: notRelocatable in sources.json differs from the installer"
+            );
+        }
+    }
+}
+
 #[test]
 fn find_file_is_case_insensitive_and_recursive() {
     let tmp = TempDir::new("findfile");

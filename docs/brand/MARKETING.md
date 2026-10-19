@@ -67,14 +67,14 @@ Ogni presentazione completa di Atollo deve articolarsi su questi **5 punti**:
    * Più di 20 linguaggi, compilatori e strumenti (Node.js, Python, uv, PHP, Rust, Go, JDK/Temurin, .NET, Dart, Zig, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…) scaricati solo quando servono, verificati tramite checksum SHA-256 o firma digitale.
    * Gestione di versioni *side-by-side* per singolo progetto o terminale, con verifica automatica della matrice delle relazioni e compatibilità.
 3. **Local Server & Database Stack (Zero Servizi di Sistema)**
-   * Motori database locali (MySQL, MongoDB, SQLite) avviabili e arrestabili con un clic, con creazione automatica di database, utenti e credenziali `.env` isolati per ciascun progetto, backup integrati e phpMyAdmin/Adminer pronti all'uso.
+   * Motori database locali (MySQL, MongoDB, SQLite) avviabili e arrestabili con un clic, con creazione automatica di database, utenti e credenziali `.env` isolati per ciascun progetto, backup integrati e phpMyAdmin pronto all'uso.
    * Pool di server web condivisi o dedicati per progetto e scaffolding guidato dei principali framework.
 4. **AI Agent Hub & Orchestrator (3 Agenti, 1 Sola Mente)**
    * Installazione, accesso e avvio diretto di **Claude Code**, **Codex** e **Antigravity**.
    * **Sincronizzazione unificata (`sync`):** scrivi una sola volta istruzioni, skill, regole e server MCP in `data/agents` (o per singolo progetto) e Atollo li mantiene allineati automaticamente per tutti e tre gli agenti.
    * **Controllo dei consumi:** monitoraggio in tempo reale dei limiti del piano e dei consumi giornalieri e degli ultimi 7 giorni.
 5. **Il Fondamento: Continuità Fisica Multi-OS (`6/6`) e Rimozione Sicura**
-   * Grazie al Router multipiattaforma (`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`), la stessa cartella o lo stesso SSD esterno può passare da Windows a macOS a Linux mantenendo intatti progetti, database, credenziali e configurazioni AI, eseguendo su ogni macchina i binari nativi del sistema ospite.
+   * Grazie al Router multipiattaforma (`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`), la stessa cartella o lo stesso SSD esterno può passare da Windows a macOS a Linux mantenendo intatti progetti, database, credenziali e configurazioni AI, eseguendo su ogni macchina i binari nativi del sistema ospite (su Windows ARM64 alcuni componenti usano la build x64 in emulazione, come dice la matrice in [`docs/app/MATRICE-STRUMENTI.html`](../app/MATRICE-STRUMENTI.html)).
    * La funzione **Rimuovi l'unità** chiude tutti i processi figli, mette in sicurezza le sessioni e le credenziali nel kit e permette di espellere il disco senza rischi.
 
 ---

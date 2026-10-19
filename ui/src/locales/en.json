@@ -299,7 +299,7 @@
   "Sessioni": "Sessions",
   "Sessioni per giorno": "Sessions per day",
   "Solo se la rete passa da un proxy o ispeziona il traffico HTTPS: valgono per download, agenti e strumenti del kit.": "Only if the network goes through a proxy or inspects HTTPS traffic: they apply to downloads, agents and the kit's tools.",
-  "Su PC ARM64 gira in emulazione x64": "Runs under x64 emulation on ARM64 PCs",
+  "Su Windows ARM64 gira in emulazione x64": "Runs under x64 emulation on Windows ARM64",
   "Su questo PC (ARM64) l'editor gira in emulazione x64: può essere più lento.": "On this PC (ARM64) the editor runs under x64 emulation: it may be slower.",
   "Su questo PC sono aperti programmi di un'altra copia del kit ({0}). Le due copie non condividono nulla: progetti, accessi e impostazioni restano separati.": "Programs from another copy of the kit are open on this PC ({0}). The two copies share nothing: projects, sign-ins and settings stay separate.",
   "Terminale": "Terminal",
