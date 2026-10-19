@@ -284,6 +284,38 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     Ok(plan)
 }
 
+/// The components to remove from the kit's other systems in the same run:
+/// `components.txt` is one for every system, so a component taken out of
+/// the choice goes from each `data/apps/<target>` that still has some of
+/// it, not only from the one prepared. What a chosen one needs on that
+/// system only (Zig next to C and C++) stays. Nothing with `only` (a run
+/// that removes nothing).
+pub fn remove_elsewhere(
+    kit: &Kit,
+    catalog: &Catalog,
+    choice: &Choice,
+    opts: &Options,
+) -> Vec<(Target, String)> {
+    if !opts.only.is_empty() {
+        return Vec::new();
+    }
+    let chosen = choice.chosen_ids(catalog);
+    let mut out = Vec::new();
+    for target in Target::ALL {
+        if target == kit.target() {
+            continue;
+        }
+        let other = kit.for_target(target);
+        let kept = catalog.needs_only_on(&chosen, target);
+        for c in catalog.in_page_order() {
+            if !choice.is_chosen(&c.id) && !kept.contains(c.id.as_str()) && c.is_present(&other) {
+                out.push((target, c.id.clone()));
+            }
+        }
+    }
+    out
+}
+
 /// `only`: the listed components plus, transitively, what they need on `target` and is
 /// not installed yet. A component unavailable on `target` is an error.
 fn only_with_needs<'a>(
@@ -424,6 +456,7 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
         }
     };
     let plan = plan(ctx, catalog, &choice, opts)?;
+    let elsewhere = remove_elsewhere(ctx.kit, catalog, &choice, opts);
     let update_all = opts.update_all || !opts.only.is_empty();
     // "Update all" also brings every saved line to its latest patch.
     let mut patches = if opts.update_all {
@@ -446,6 +479,11 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
             .iter()
             .chain(&plan.handle)
             .filter_map(named)
+            .chain(elsewhere.iter().filter_map(|(target, id)| {
+                catalog
+                    .find(id)
+                    .map(|c| (c.id.clone(), elsewhere_name(c, *target)))
+            }))
             .chain(patches.iter().filter_map(|(id, line, _)| {
                 catalog
                     .find(id)
@@ -453,7 +491,7 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
             }))
             .collect(),
     });
-    let total = plan.handle.len() + plan.remove.len() + patches.len();
+    let total = plan.handle.len() + plan.remove.len() + elsewhere.len() + patches.len();
     let mut results = Vec::new();
     let mut index = 0;
 
@@ -471,6 +509,35 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
             Err(e) => Outcome::failed(&e),
             Ok(()) => {
                 c.forget_version(ctx.kit);
+                Outcome::Removed
+            }
+        };
+        sink.emit(Event::Done {
+            id: c.id.clone(),
+            outcome: outcome.clone(),
+        });
+        results.push((c.id.clone(), outcome));
+    }
+
+    for (target, id) in &elsewhere {
+        let Some(c) = catalog.find(id) else { continue };
+        index += 1;
+        sink.emit(Event::Step {
+            index,
+            total,
+            id: c.id.clone(),
+            name: elsewhere_name(c, *target),
+        });
+        let other = ctx.kit.for_target(*target);
+        let there = Ctx {
+            kit: &other,
+            ..*ctx
+        };
+        let outcome = match remove_component(&there, c) {
+            Err(e) if e.is::<InUse>() => Outcome::InUse,
+            Err(e) => Outcome::failed(&e),
+            Ok(()) => {
+                c.forget_version(&other);
                 Outcome::Removed
             }
         };
@@ -656,6 +723,12 @@ fn line_step(
         outcome: outcome.clone(),
     });
     outcome
+}
+
+/// The name of a step of [`remove_elsewhere`]: the component and its system
+/// (`Python (linux-x64)`), apart from the steps of the system prepared.
+fn elsewhere_name(c: &Component, target: Target) -> String {
+    format!("{} ({target})", c.name)
 }
 
 /// Removes the component's folder and the other files it owns. Folders

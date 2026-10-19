@@ -496,3 +496,67 @@ fn prepare_lock_child() {
     }
     fs::write(root.join("child-ran"), b"").unwrap();
 }
+
+/// One choice for every system: a component taken out of it goes from each
+/// system that still has it, in the same run, not only from the one
+/// prepared. What a chosen one needs there only (Zig for C and C++ on
+/// Linux) stays.
+#[test]
+fn removal_reaches_every_system() {
+    with_ctx("run-remove-everywhere", |ctx| {
+        let catalog = Catalog::get();
+        let mut choice = Choice::defaults(catalog);
+        choice.set(catalog, "zig", false);
+        choice.set(catalog, "typst", false);
+        choice.write(ctx.kit, catalog).unwrap();
+        let linux = ctx.kit.for_target(crate::kit::Target::LINUX_X64);
+        let mac = ctx.kit.for_target(crate::kit::Target::DARWIN_ARM64);
+        for kit in [ctx.kit, &linux, &mac] {
+            let there = Ctx { kit, ..*ctx };
+            fake_install(&there, "typst");
+        }
+        fake_install(
+            &Ctx {
+                kit: &linux,
+                ..*ctx
+            },
+            "zig",
+        );
+        let typst = catalog.find("typst").unwrap();
+        let zig = catalog.find("zig").unwrap();
+
+        let elsewhere = remove_elsewhere(ctx.kit, catalog, &choice, &Options::default());
+        assert!(elsewhere.contains(&(crate::kit::Target::LINUX_X64, "typst".into())));
+        assert!(elsewhere.contains(&(crate::kit::Target::DARWIN_ARM64, "typst".into())));
+        let only = Options {
+            only: vec!["git".into()],
+            ..Options::default()
+        };
+        assert!(remove_elsewhere(ctx.kit, catalog, &choice, &only).is_empty());
+        // C and C++ chosen: their Zig stays on Linux.
+        assert_eq!(
+            choice.is_chosen("cc"),
+            !elsewhere.contains(&(crate::kit::Target::LINUX_X64, "zig".into()))
+        );
+
+        ctx.cancel.store(true, Ordering::Relaxed);
+        let mut sink = Collect::default();
+        run(ctx, &Options::default(), &mut sink).unwrap();
+        for kit in [ctx.kit, &linux, &mac] {
+            assert!(!typst.is_present(kit), "{}", kit.target());
+        }
+        assert_eq!(zig.is_present(&linux), choice.is_chosen("cc"));
+        let names: Vec<String> = sink
+            .0
+            .iter()
+            .filter_map(|e| match e {
+                Event::Step { name, .. } => Some(name.clone()),
+                _ => None,
+            })
+            .collect();
+        assert!(
+            names.contains(&format!("{} (linux-x64)", typst.name)),
+            "{names:?}"
+        );
+    });
+}
