@@ -1,7 +1,7 @@
 // Projects (tauri/src/projects/): list, creation, clone, status, actions
 // (panel.json), site and MCP servers. Rust: tauri/src/commands/projects.rs.
 
-import { act, query } from "./core";
+import { act, engineText, query } from "./core";
 
 export type ActionKind = "web" | "desktop" | "command";
 
@@ -101,7 +101,7 @@ export const SAMPLE_PROJECTS: ProjectInfo[] = [
     modified: 1_791_900_000,
     empty: false,
     missing: [],
-    platform: "Sito statico",
+    platform: engineText("Sito statico", { en: "Static site", fr: "Site statique", de: "Statische Website" }),
     type: "web",
     reason: "index.html",
     languages: ["HTML", "CSS"],

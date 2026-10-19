@@ -2,7 +2,7 @@
 // (the PC's browser, File Explorer). Rust: tauri/src/commands/app.rs.
 
 import { invoke } from "@tauri-apps/api/core";
-import { act, browserPreview, query } from "./core";
+import { act, browserPreview, previewLang, query } from "./core";
 
 export interface AppInfo {
   version: string;
@@ -33,20 +33,13 @@ export interface AppInfo {
   systemTemp: string | null;
 }
 
-/** The browser preview's language: `?lang=en` (the site's screenshots,
- * site/shots/make.mjs), Italian otherwise. */
-function previewLang(): AppInfo["lang"] {
-  const asked = new URLSearchParams(location.search).get("lang");
-  return asked === "en" || asked === "fr" || asked === "de" ? asked : "it";
-}
-
 const SAMPLE_INFO: AppInfo = {
   version: "0.1.0",
   root: "E:\\Atollo",
   data: "E:\\Atollo\\data",
   projects: "E:\\Atollo\\projects",
   platform: "win32-x64",
-  lang: previewLang(),
+  lang: previewLang,
   movedFrom: null,
   webview: "anteprima nel browser",
   pathEntries: 0,
