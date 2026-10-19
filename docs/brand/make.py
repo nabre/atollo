@@ -414,7 +414,7 @@ def brand_board_svg():
   <rect x="16" y="16" width="590" height="348" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
   <text x="42" y="48" font-family="{font}" font-size="12" font-weight="700" letter-spacing="2" fill="#64748B">BRAND OVERVIEW</text>
   <g transform="translate(42 70) scale(0.76)">{wm_forest}</g>
-  <text x="42" y="198" font-family="{font}" font-size="27" font-weight="600" fill="#0F172A">Your sovereign dev &amp; AI workspace.</text>
+  <text x="42" y="198" font-family="{font}" font-size="27" font-weight="600" fill="#0F172A">Your dev &amp; AI workspace, all in one folder.</text>
   <text x="42" y="236" font-family="{font}" font-size="16" fill="#475569">Atollo is a Universal Portable Dev &amp; AI Workspace that unifies</text>
   <text x="42" y="258" font-family="{font}" font-size="16" fill="#475569">editor, toolchains, databases, and AI agents into one portable folder.</text>
   <g font-family="{font}" font-size="14" font-weight="600" fill="#1E293B">
@@ -454,7 +454,7 @@ def brand_board_svg():
   <!-- 4 subcards -->
   <rect x="1148" y="64" width="200" height="134" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
   <circle cx="1174" cy="92" r="12" fill="#D1F0E0"/><polygon points="1174,83 1182,97 1166,97" fill="#10B981"/>
-  <text x="1164" y="128" font-family="{font}" font-size="16" font-weight="700" fill="#0F172A">Sovereign</text>
+  <text x="1164" y="128" font-family="{font}" font-size="16" font-weight="700" fill="#0F172A">Self-contained</text>
   <text x="1164" y="148" font-family="{font}" font-size="12.5" fill="#64748B">Zero install, zero admin</text>
   <text x="1164" y="165" font-family="{font}" font-size="12.5" fill="#64748B">rights, zero host trace.</text>
 
@@ -554,7 +554,7 @@ def brand_board_svg():
   <rect x="16" y="852" width="540" height="332" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
   <text x="42" y="884" font-family="{font}" font-size="12" font-weight="700" letter-spacing="2" fill="#64748B">TYPE SCALE EXAMPLE</text>
   <text x="42" y="924" font-family="{font}" font-size="12" fill="#64748B">H1</text>
-  <text x="96" y="928" font-family="{font}" font-size="28" font-weight="700" fill="#0F172A">Your sovereign workspace.</text>
+  <text x="96" y="928" font-family="{font}" font-size="28" font-weight="700" fill="#0F172A">All in one folder.</text>
   <text x="42" y="968" font-family="{font}" font-size="12" fill="#64748B">H2</text>
   <text x="96" y="972" font-family="{font}" font-size="22" font-weight="600" fill="#0F172A">Code. Configure. Unplug.</text>
   <text x="42" y="1008" font-family="{font}" font-size="12" fill="#64748B">H3</text>
