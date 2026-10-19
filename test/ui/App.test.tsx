@@ -803,10 +803,13 @@ describe("App", () => {
     if (guideBtn) fireEvent.click(guideBtn);
     expect(await screen.findByText(/I 6 principi architetturali cardine/)).toBeTruthy();
 
-    // Jump to the 36-source table
-    fireEvent.click(screen.getByRole("button", { name: /Esplora le 36 fonti/ }));
-    expect(await screen.findByText(/Catalogo completo delle fonti esterne/)).toBeTruthy();
+    // Jump to the sources table: 35 components and 5 parts, counted from the table
+    fireEvent.click(screen.getByRole("button", { name: /Esplora le 40 fonti/ }));
+    expect(
+      await screen.findByText(/Catalogo completo delle fonti esterne \(35 componenti e 5 sotto-parti\)/),
+    ).toBeTruthy();
     expect(screen.getByText("PortableGit-<v>-(64-bit|arm64).7z.exe (estratto in Rust)")).toBeTruthy();
+    expect(screen.getByText(/macOS e Linux: GitHub desktop\/dugite-native/)).toBeTruthy();
 
     // Jump to a visual feature topic with screenshots
     fireEvent.click(screen.getByText(/Pagina «Progetti»/));

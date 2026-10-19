@@ -1,7 +1,7 @@
 // Structured model and reference catalogs for the in-app Guide (ui/src/guide/):
 // architecture, disk layout tree, complete external sources & cryptographic
-// verification table (36 entries), GitHub SSO, page-by-page feature tour,
-// CLI reference and 12 step-by-step configuration procedures.
+// verification table (a row per catalog component and per part), GitHub SSO,
+// page-by-page feature tour, CLI reference and 12 step-by-step configuration procedures.
 import type { IconType } from "react-icons";
 import {
   VscBook,
@@ -233,10 +233,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Tutti i 36 componenti, linguaggi, database e runtime: URL ufficiali, endpoint metadati, binari, metodo di verifica e cartella in data\\apps\\.",
-        "All 36 components, languages, databases and runtimes: official URLs, metadata endpoints, binaries, verification method and target folder.",
-        "Les 36 composants, langages, bases de données et runtimes : URL officielles, points de terminaison de métadonnées, binaires, méthode de vérification et dossier dans data\\apps\\.",
-        "Alle 36 Komponenten, Sprachen, Datenbanken und Laufzeitumgebungen: offizielle URLs, Metadaten-Endpunkte, Binärdateien, Prüfmethode und Zielordner in data\\apps\\.",
+        `Tutti i ${String(sourceCounts().components)} componenti, linguaggi, database e runtime: URL ufficiali, endpoint metadati, binari, metodo di verifica e cartella in data\\apps\\.`,
+        `All ${String(sourceCounts().components)} components, languages, databases and runtimes: official URLs, metadata endpoints, binaries, verification method and target folder.`,
+        `Les ${String(sourceCounts().components)} composants, langages, bases de données et runtimes : URL officielles, points de terminaison de métadonnées, binaires, méthode de vérification et dossier dans data\\apps\\.`,
+        `Alle ${String(sourceCounts().components)} Komponenten, Sprachen, Datenbanken und Laufzeitumgebungen: offizielle URLs, Metadaten-Endpunkte, Binärdateien, Prüfmethode und Zielordner in data\\apps\\.`,
       ),
     icon: VscTable,
     keywords:
@@ -656,6 +656,10 @@ export interface ToolSourceRow {
   verifyKind: "SHA-256" | "SHA-512" | "SHA3-256" | "npm sha512" | "Authenticode + SHA";
   verifyDetail: string;
   targetPath: string;
+  /** Where macOS and Linux get it when not the same source as Windows
+   * (the other columns describe Windows); null when only the file names
+   * change. */
+  unix: string | null;
 }
 
 type LazyStr = string | (() => string);
@@ -673,6 +677,7 @@ function defSource(r: {
   verifyKind: ToolSourceRow["verifyKind"];
   verifyDetail: LazyStr;
   targetPath: LazyStr;
+  unix?: LazyStr;
 }): ToolSourceRow {
   return {
     id: r.id,
@@ -695,7 +700,17 @@ function defSource(r: {
     get targetPath() {
       return evalStr(r.targetPath);
     },
+    get unix() {
+      return r.unix === undefined ? null : evalStr(r.unix);
+    },
   };
+}
+
+/** The rows of the sources table: the catalog's components and their
+ * parts (Composer, Maven...), counted from the table itself. */
+export function sourceCounts(): { components: number; parts: number; all: number } {
+  const parts = TOOL_SOURCES.filter((r) => r.group === "part").length;
+  return { components: TOOL_SOURCES.length - parts, parts, all: TOOL_SOURCES.length };
 }
 
 const lLine = () => tr("<linea>", "<line>", "<ligne>", "<Linie>");
@@ -739,6 +754,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
         "Integrierter Katalog (fixierte Version 1.135.06055, D-58)",
       ),
     binarySource: "github.com/VSCodium/vscodium/releases/download/<v>/vscodium-reh-web-win32-x64-<v>.tar.gz",
+    unix: () =>
+      tr(
+        "macOS e Linux: vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 fissato per target (nativo anche su ARM64)",
+        "macOS and Linux: vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 pinned per target (native on ARM64 too)",
+        "macOS et Linux : vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 fixé par cible (natif aussi sur ARM64)",
+        "macOS und Linux: vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 pro Ziel festgelegt (auch auf ARM64 nativ)",
+      ),
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
@@ -804,6 +826,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "agents",
     home: "https://antigravity.google",
     metaSource: "antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_(amd64|arm64).json",
+    unix: () =>
+      tr(
+        "macOS e Linux: manifests/<os>_<arch>.json, archivio .tar.gz",
+        "macOS and Linux: manifests/<os>_<arch>.json, .tar.gz archive",
+        "macOS et Linux : manifests/<os>_<arch>.json, archive .tar.gz",
+        "macOS und Linux: manifests/<os>_<arch>.json, .tar.gz-Archiv",
+      ),
     binarySource: () =>
       tr(
         "Campo url del manifesto JSON ufficiale",
@@ -828,6 +857,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "tools",
     home: "https://git-scm.com",
     metaSource: "api.github.com/repos/git-for-windows/git/releases/latest",
+    unix: () =>
+      tr(
+        "macOS e Linux: GitHub desktop/dugite-native (dugite-native-v<v>-<sha>-<sistema>.tar.gz, .sha256 dell'asset), segue il kit",
+        "macOS and Linux: GitHub desktop/dugite-native (dugite-native-v<v>-<sha>-<system>.tar.gz, the asset's .sha256), follows the kit",
+        "macOS et Linux : GitHub desktop/dugite-native (dugite-native-v<v>-<sha>-<système>.tar.gz, .sha256 de l'asset), suit le kit",
+        "macOS und Linux: GitHub desktop/dugite-native (dugite-native-v<v>-<sha>-<System>.tar.gz, .sha256 des Assets), zieht mit dem Kit um",
+      ),
     binarySource: () =>
       tr(
         "PortableGit-<v>-(64-bit|arm64).7z.exe (estratto in Rust)",
@@ -913,6 +949,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
         "windows.php.net/downloads/releases/releases.json (+ EOL-Archive 8.1..5.6)",
       ),
     binarySource: "windows.php.net/downloads/releases/php-<v>-Win32-vs*-x64.zip",
+    unix: () =>
+      tr(
+        "macOS e Linux: static-php-cli «bulk», archivi cli e fpm con SHA-256 fissato nel catalogo (8.4 e 8.5)",
+        "macOS and Linux: static-php-cli “bulk”, cli and fpm archives with SHA-256 pinned in the catalog (8.4 and 8.5)",
+        "macOS et Linux : static-php-cli « bulk », archives cli et fpm avec SHA-256 fixé dans le catalogue (8.4 et 8.5)",
+        "macOS und Linux: static-php-cli „bulk“, cli- und fpm-Archive mit im Katalog festgelegtem SHA-256 (8.4 und 8.5)",
+      ),
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
@@ -991,6 +1034,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
         "Bei Fehlen aus CAB vcRuntimeMinimum_amd64\\cab1.cab entpackt",
       ),
     binarySource: "aka.ms/vc14/vc_redist.x64.exe",
+    unix: () => tr("Solo Windows", "Windows only", "Windows uniquement", "Nur Windows"),
     verifyKind: "Authenticode + SHA",
     verifyDetail: () =>
       tr(
@@ -1021,6 +1065,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
         "apachelounge.com/download/ (Auslesen von Version und Prüfsumme)",
       ),
     binarySource: "apachelounge.com/download/VS<nn>/binaries/httpd-<v>-Win64-VS<nn>.zip",
+    unix: () =>
+      tr(
+        "macOS e Linux: non ancora offerto; l'installatore della build del kit (httpd-v<v>, php-fpm) attende il primo rilascio fissato nel catalogo (D-116)",
+        "macOS and Linux: not offered yet; the installer of the kit's build (httpd-v<v>, php-fpm) waits for the first release pinned in the catalog (D-116)",
+        "macOS et Linux : pas encore proposé ; l'installateur du build du kit (httpd-v<v>, php-fpm) attend la première version fixée dans le catalogue (D-116)",
+        "macOS und Linux: noch nicht angeboten; der Installer des Kit-Builds (httpd-v<v>, php-fpm) wartet auf das erste im Katalog festgelegte Release (D-116)",
+      ),
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
@@ -1063,6 +1114,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     home: "https://www.rust-lang.org",
     metaSource: "static.rust-lang.org/dist/channel-rust-stable.toml ([pkg.rustc])",
     binarySource: "static.rust-lang.org/rustup/dist/<triple>/rustup-init.exe",
+    unix: () =>
+      tr(
+        "Host gnu su Windows x64, gnullvm su Windows ARM64 (con C/C++), msvc dalle Impostazioni; macOS e Linux: rustup con l'host nativo",
+        "Host gnu on Windows x64, gnullvm on Windows ARM64 (with C/C++), msvc from Settings; macOS and Linux: rustup with the native host",
+        "Hôte gnu sur Windows x64, gnullvm sur Windows ARM64 (avec C/C++), msvc depuis les Paramètres ; macOS et Linux : rustup avec l'hôte natif",
+        "Host gnu auf Windows x64, gnullvm auf Windows ARM64 (mit C/C++), msvc aus den Einstellungen; macOS und Linux: rustup mit nativem Host",
+      ),
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
@@ -1362,6 +1420,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "tools",
     home: "https://yihui.org/tinytex/",
     metaSource: "api.github.com/repos/rstudio/tinytex-releases/releases/latest",
+    unix: () =>
+      tr(
+        "macOS e Linux: TinyTeX-1-<os>-<arch>-v*.tar.xz (universale su macOS)",
+        "macOS and Linux: TinyTeX-1-<os>-<arch>-v*.tar.xz (universal on macOS)",
+        "macOS et Linux : TinyTeX-1-<os>-<arch>-v*.tar.xz (universel sur macOS)",
+        "macOS und Linux: TinyTeX-1-<os>-<arch>-v*.tar.xz (universell auf macOS)",
+      ),
     binarySource: () =>
       tr(
         "Asset TinyTeX-1-windows-v*.exe (7z SFX estratto in Rust)",
@@ -1453,6 +1518,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     home: "https://github.com/mstorsjo/llvm-mingw",
     metaSource: "api.github.com/repos/mstorsjo/llvm-mingw/releases/latest",
     binarySource: "Asset llvm-mingw-*-ucrt-(x86_64|aarch64).zip",
+    unix: () =>
+      tr(
+        "macOS e Linux: shim cc, c++, gcc, g++, clang sullo zig cc del kit (richiede Zig) e GNU make da conda-forge, non rilocabile",
+        "macOS and Linux: cc, c++, gcc, g++, clang shims over the kit's zig cc (needs Zig) and GNU make from conda-forge, not relocatable",
+        "macOS et Linux : shims cc, c++, gcc, g++, clang sur le zig cc du kit (requiert Zig) et GNU make de conda-forge, non relocalisable",
+        "macOS und Linux: Shims cc, c++, gcc, g++, clang über das zig cc des Kits (braucht Zig) und GNU make aus conda-forge, nicht verschiebbar",
+      ),
     verifyKind: "SHA-256",
     verifyDetail: "GitHub Release asset.digest",
     targetPath: "cc\\bin\\clang.exe (+ make.cmd)",
@@ -1463,8 +1535,15 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     name: "Ruby + Bundler",
     group: "languages",
     home: "https://www.ruby-lang.org",
-    metaSource: "api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=100",
+    metaSource: "api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=30",
     binarySource: "Asset rubyinstaller-<v>-(x64|arm).7z",
+    unix: () =>
+      tr(
+        "macOS e Linux: conda-forge ruby (3.2 e successive) con micromamba, non rilocabile",
+        "macOS and Linux: conda-forge ruby (3.2 and later) via micromamba, not relocatable",
+        "macOS et Linux : ruby de conda-forge (3.2 et suivantes) via micromamba, non relocalisable",
+        "macOS und Linux: conda-forge ruby (ab 3.2) über micromamba, nicht verschiebbar",
+      ),
     verifyKind: "SHA-256",
     verifyDetail: "GitHub Release asset.digest",
     targetPath: () => `ruby\\${lLine()}\\bin\\ruby.exe`,
@@ -1476,6 +1555,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "languages",
     home: "https://www.r-project.org",
     metaSource: "api.anaconda.org/package/conda-forge/r-base + mamba-org/micromamba-releases",
+    unix: () =>
+      tr(
+        "Windows ARM64: non disponibile. macOS e Linux: gli stessi pacchetti per osx-* e linux-*, lanciatori in kit-bin, non rilocabile",
+        "Windows ARM64: not available. macOS and Linux: the same packages for osx-* and linux-*, launchers in kit-bin, not relocatable",
+        "Windows ARM64 : non disponible. macOS et Linux : mêmes paquets pour osx-* et linux-*, lanceurs dans kit-bin, non relocalisable",
+        "Windows ARM64: nicht verfügbar. macOS und Linux: dieselben Pakete für osx-* und linux-*, Starter in kit-bin, nicht verschiebbar",
+      ),
     binarySource: () =>
       tr(
         "micromamba-win-64 + pacchetti r-base e libblas=*=*openblas",
@@ -1536,6 +1622,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "databases",
     home: "https://www.mongodb.com",
     metaSource: "downloads.mongodb.org/current.json, GitHub mongodb-js/mongosh, tools/db/release.json",
+    unix: () =>
+      tr(
+        "macOS: archivi del fornitore; Linux: server da conda-forge (non rilocabile), mongosh generico, Database Tools per distribuzione",
+        "macOS: vendor archives; Linux: server from conda-forge (not relocatable), generic mongosh, Database Tools per distribution",
+        "macOS : archives de l'éditeur ; Linux : serveur depuis conda-forge (non relocalisable), mongosh générique, Database Tools par distribution",
+        "macOS: Archive des Herstellers; Linux: Server aus conda-forge (nicht verschiebbar), generisches mongosh, Database Tools je Distribution",
+      ),
     binarySource: () =>
       tr(
         "Archivi .zip Windows x64 di mongod, mongosh e mongodump/mongorestore",
@@ -1576,6 +1669,13 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "sqlite",
     logoId: "sqlite",
     name: "SQLite CLI",
+    unix: () =>
+      tr(
+        "Linux ARM64: conda-forge sqlite (sqlite.org non pubblica gli strumenti), non rilocabile; Windows ARM64: lo zip x64 se manca quello arm64",
+        "Linux ARM64: conda-forge sqlite (sqlite.org publishes no tools), not relocatable; Windows ARM64: the x64 zip when there is no arm64 one",
+        "Linux ARM64 : sqlite de conda-forge (sqlite.org ne publie pas les outils), non relocalisable ; Windows ARM64 : le zip x64 s'il manque le zip arm64",
+        "Linux ARM64: conda-forge sqlite (sqlite.org veröffentlicht keine Tools), nicht verschiebbar; Windows ARM64: das x64-Zip, wenn das arm64-Zip fehlt",
+      ),
     group: "databases",
     home: "https://sqlite.org",
     metaSource: () =>
