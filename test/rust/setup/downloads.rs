@@ -98,3 +98,49 @@ fn moved_across_disks_by_copy() {
     assert!(!from.join("a.zip").exists());
     assert_eq!(fs::read(to.join("a.zip")).unwrap(), b"a");
 }
+
+/// A failed download notes which component wants the file: removing it
+/// removes the file added for it, never another file, nor one another
+/// component or system waits for with the same checksum.
+#[test]
+fn files_added_for_a_component_go_with_it() {
+    let tmp = TempDir::new("downloads-forget");
+    let host = tmp.0.join("host");
+    let kit = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&host));
+    kit.prepare().unwrap();
+    let linux = kit.for_target(crate::kit::Target::LINUX_X64);
+    let dir = dir(&kit);
+    fs::create_dir_all(&dir).unwrap();
+    for (name, bytes) in [
+        ("zig.zip", &b"zig"[..]),
+        ("both.zip", b"both"),
+        ("elsewhere.zip", b"elsewhere"),
+        ("other.zip", b"other"),
+    ] {
+        fs::write(dir.join(name), bytes).unwrap();
+    }
+    want(&kit, "zig", &sha256(b"zig"));
+    want(&kit, "zig", &sha256(b"zig"));
+    want(&kit, "zig", &sha256(b"both"));
+    want(&kit, "zig", &sha256(b"elsewhere"));
+    want(&kit, "uv", &sha256(b"both"));
+    want(&linux, "zig", &sha256(b"elsewhere"));
+    assert_eq!(read_wanted(&dir).len(), 5, "noted once");
+
+    forget(&kit, "zig");
+    assert!(!dir.join("zig.zip").exists());
+    assert!(dir.join("both.zip").is_file(), "uv waits for it");
+    assert!(dir.join("elsewhere.zip").is_file(), "Linux waits for it");
+    assert!(dir.join("other.zip").is_file(), "never noted");
+    assert_eq!(read_wanted(&dir).len(), 2);
+    assert!(read_wanted(&dir).iter().all(|w| !w.is_for(&kit, "zig")));
+
+    // Used by an installation: nobody waits for it any more.
+    let dest = tmp.0.join("both.zip");
+    assert!(take(&kit, "both.zip", &sha256(b"both"), &dest).unwrap());
+    assert_eq!(read_wanted(&dir).len(), 1);
+    assert!(
+        !take(&kit, WANTED, &sha256(b"none"), &dest).unwrap(),
+        "the notes are never a candidate"
+    );
+}

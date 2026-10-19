@@ -274,10 +274,10 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         } else if opts.only.is_empty()
             && !choice.is_chosen(&c.id)
             && !kept.contains(c.id.as_str())
-            && c.is_present(ctx.kit)
+            && has_trace(ctx.kit, c)
         {
             // Also when only part of it is there (an installation that
-            // failed halfway).
+            // failed halfway), or only what was pre-downloaded for it.
             plan.remove.push(c.id.clone());
         }
     }
@@ -308,7 +308,7 @@ pub fn remove_elsewhere(
         let other = kit.for_target(target);
         let kept = catalog.needs_only_on(&chosen, target);
         for c in catalog.in_page_order() {
-            if !choice.is_chosen(&c.id) && !kept.contains(c.id.as_str()) && c.is_present(&other) {
+            if !choice.is_chosen(&c.id) && !kept.contains(c.id.as_str()) && has_trace(&other, c) {
                 out.push((target, c.id.clone()));
             }
         }
@@ -508,7 +508,7 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
             Err(e) if e.is::<InUse>() => Outcome::InUse,
             Err(e) => Outcome::failed(&e),
             Ok(()) => {
-                c.forget_version(ctx.kit);
+                forget(ctx.kit, c);
                 Outcome::Removed
             }
         };
@@ -537,7 +537,7 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
             Err(e) if e.is::<InUse>() => Outcome::InUse,
             Err(e) => Outcome::failed(&e),
             Ok(()) => {
-                c.forget_version(&other);
+                forget(&other, c);
                 Outcome::Removed
             }
         };
@@ -546,6 +546,15 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
             outcome: outcome.clone(),
         });
         results.push((c.id.clone(), outcome));
+    }
+    // The end of the run sweeps the prepared system only: the kept conda
+    // packages of the other systems that lost a component go now (D-118).
+    let mut swept: Vec<Target> = Vec::new();
+    for (target, _) in &elsewhere {
+        if !swept.contains(target) {
+            swept.push(*target);
+            install::conda::sweep(&ctx.kit.for_target(*target));
+        }
     }
 
     for id in &plan.handle {
@@ -716,7 +725,7 @@ fn line_step(
         Ok(outcome) => outcome,
         Err(e) if e.is::<Cancelled>() => Outcome::Cancelled,
         Err(e) if e.is::<InUse>() => Outcome::InUse,
-        Err(e) => Outcome::failed(&e),
+        Err(e) => failed(ctx, c, &e),
     };
     sink.emit(Event::Done {
         id: c.id.clone(),
@@ -731,8 +740,36 @@ fn elsewhere_name(c: &Component, target: Target) -> String {
     format!("{} ({target})", c.name)
 }
 
-/// Removes the component's folder and the other files it owns. Folders
-/// are renamed first, so one in use is left untouched (`InUse`).
+/// Something of `c` is on `kit`'s system: a part or its folder
+/// (`Component::is_present`), or only what was pre-downloaded for it there
+/// (bootstrap-staged for another system, its folder still empty).
+fn has_trace(kit: &Kit, c: &Component) -> bool {
+    c.is_present(kit)
+        || crate::router::bootstrap::is_staged(kit, c)
+        || crate::router::bootstrap::has_staged(kit, &c.id)
+}
+
+/// After a removal: its version and marks, the lists of its kept conda
+/// packages (the archives go with the sweep) and the files added by hand
+/// for it, on `kit`'s system.
+fn forget(kit: &Kit, c: &Component) {
+    c.forget_version(kit);
+    install::conda::forget(kit, &c.id, None);
+    crate::setup::downloads::forget(kit, &c.id);
+}
+
+/// [`Outcome::failed`]; a download to do in the browser is noted as
+/// wanted by `c`, so removing `c` also removes the file added for it.
+fn failed(ctx: &Ctx, c: &Component, e: &anyhow::Error) -> Outcome {
+    if let Some(by_hand) = e.downcast_ref::<crate::net::ByHand>() {
+        crate::setup::downloads::want(ctx.kit, &c.id, &by_hand.expect);
+    }
+    Outcome::failed(e)
+}
+
+/// Removes the component's folder, the other files it owns and what was
+/// pre-downloaded for it (`.bootstrap`). Folders are renamed first, so one
+/// in use is left untouched (`InUse`).
 fn remove_component(ctx: &Ctx, c: &Component) -> Result<()> {
     for path in c.owned_paths(ctx.kit) {
         // A link (`bin/pnpm` of npm on macOS and Linux) goes as a link,
@@ -748,7 +785,7 @@ fn remove_component(ctx: &Ctx, c: &Component) -> Result<()> {
             std::fs::remove_file(&path).map_err(|_| InUse(path.clone()))?;
         }
     }
-    Ok(())
+    crate::router::bootstrap::remove(ctx.kit, c)
 }
 
 fn step(
@@ -823,7 +860,7 @@ fn step(
         Ok(outcome) => outcome,
         Err(e) if e.is::<Cancelled>() => Outcome::Cancelled,
         Err(e) if e.is::<InUse>() => Outcome::InUse,
-        Err(e) => Outcome::failed(&e),
+        Err(e) => failed(ctx, c, &e),
     }
 }
 
