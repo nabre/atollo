@@ -99,7 +99,7 @@ fn laravel_and_plain() {
     assert_eq!(p.actions[1].caddy_dir.as_deref(), Some("public"));
     assert!(!p.requires.contains(&"apache".to_owned()));
 
-    // Rules of its own: Apache first on Windows, Caddy only elsewhere.
+    // Rules of its own: Apache first, on every system since D-116.
     let own = project(
         "php-laravel-own",
         &[
@@ -110,17 +110,12 @@ fn laravel_and_plain() {
         ],
     );
     let p = detect(&own.0, "it");
-    if cfg!(windows) {
-        assert_eq!(
-            ids(&p),
-            ["php:artisan", "apache", "caddy", "composer:install"]
-        );
-        assert_eq!(p.actions[1].apache_dir.as_deref(), Some("public"));
-        assert!(p.requires.contains(&"apache".to_owned()));
-    } else {
-        assert_eq!(ids(&p), ["php:artisan", "caddy", "composer:install"]);
-        assert!(!p.requires.contains(&"apache".to_owned()));
-    }
+    assert_eq!(
+        ids(&p),
+        ["php:artisan", "apache", "caddy", "composer:install"]
+    );
+    assert_eq!(p.actions[1].apache_dir.as_deref(), Some("public"));
+    assert!(p.requires.contains(&"apache".to_owned()));
 
     let plain = project("php-plain", &[("public/index.php", "<?php")]);
     let p = detect(&plain.0, "it");
@@ -226,14 +221,10 @@ fn nested_htaccess_rules() {
         .warnings
         .iter()
         .any(|w| w.contains("public/private/.htaccess") && w.contains("Caddy")));
-    if cfg!(windows) {
-        assert_eq!(
-            ids(&found),
-            ["php:artisan", "apache", "caddy", "composer:install"]
-        );
-    } else {
-        assert_eq!(ids(&found), ["php:artisan", "caddy", "composer:install"]);
-    }
+    assert_eq!(
+        ids(&found),
+        ["php:artisan", "apache", "caddy", "composer:install"]
+    );
     // The site's own `.htaccess` at the root is not a nested one.
     let flat = project(
         "php-flat-ht",
