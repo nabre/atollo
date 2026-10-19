@@ -283,3 +283,33 @@ fn moving_the_kit_rewrites_makeconf_on_windows() {
         "LOCAL_SOFT ?= /old/Library\n"
     );
 }
+
+/// R x64 for a Windows ARM64 kit prepared from Windows x64: the kit's ARM64
+/// micromamba does not start there (os error 216), so this PC's x64 one
+/// creates the `win-64` environment. Where the PC runs the kit, or the
+/// systems differ (the component is staged), the kit's own.
+#[test]
+fn micromamba_runs_on_this_pc() {
+    use crate::kit::Target;
+    assert_eq!(
+        micromamba_runner_on(Target::WIN32_ARM64, Target::WIN32_X64, false),
+        Target::WIN32_X64
+    );
+    assert_eq!(
+        micromamba_runner_on(Target::WIN32_ARM64, Target::WIN32_ARM64, true),
+        Target::WIN32_ARM64
+    );
+    assert_eq!(
+        micromamba_runner_on(Target::WIN32_X64, Target::WIN32_ARM64, true),
+        Target::WIN32_X64
+    );
+    assert_eq!(
+        micromamba_runner_on(Target::LINUX_X64, Target::WIN32_X64, false),
+        Target::LINUX_X64
+    );
+    // On the runner's own platform `win-64` needs no `--platform`.
+    assert_eq!(
+        micromamba_runner_on(Target::WIN32_ARM64, Target::WIN32_X64, false).conda_subdir(),
+        "win-64"
+    );
+}

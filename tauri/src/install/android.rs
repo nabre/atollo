@@ -17,7 +17,7 @@ use anyhow::{anyhow, bail, Context, Result};
 
 use super::{fetch, target_of, work_dir, Ctx, Installer, Progress, Release};
 use crate::fsx::join_rel;
-use crate::kit::{Kit, Os, Target};
+use crate::kit::{Arch, Kit, Os, Target};
 use crate::net::archive::{self, Inner, Kind};
 use crate::net::verify::Expect;
 use crate::setup::catalog::{translate_rel, Catalog, Component};
@@ -27,13 +27,24 @@ pub struct Android;
 const STUDIO: &str = "https://developer.android.com/studio";
 const REPOSITORY: &str = "https://dl.google.com/android/repository/";
 
-fn os_tag_of(target: Target) -> &'static str {
-    match target.os {
-        Os::Win32 => "win",
-        Os::Darwin => "mac",
-        Os::Linux => "linux",
+/// The names of the zip of `target` on the download page, the preferred
+/// first: since build 15859902 a Mac has one zip per processor
+/// (`commandlinetools-mac_arm64-…`, `commandlinetools-mac_x86_64-…`),
+/// before that one for both (`commandlinetools-mac-…`).
+pub fn os_tags_of(target: Target) -> &'static [&'static str] {
+    match (target.os, target.arch) {
+        (Os::Win32, _) => &["win"],
+        (Os::Darwin, Arch::Arm64) => &["mac_arm64", "mac"],
+        (Os::Darwin, Arch::X64) => &["mac_x86_64", "mac"],
+        (Os::Linux, _) => &["linux"],
     }
 }
+
+/// The text sdkmanager's script prints, exiting 0, when it judges Java too
+/// old. Its test reads the first two numbers of the version: a JDK that
+/// says only `"27"` (no minor) counts as 27, below 170, so the check is
+/// skipped ([`sdkmanager`]) and this text is an error if it still comes.
+const OLD_JAVA: &str = "Java version 17 or higher is required";
 
 /// The Windows zip of the command-line tools on the download page: its
 /// name, build number and SHA-256.
@@ -43,7 +54,8 @@ pub fn tools_on_page(page: &str) -> Option<(String, String, String)> {
 }
 
 /// The zip of the command-line tools on the download page for `os_tag`
-/// (`"win"`, `"mac"`, or `"linux"`): its name, build number and SHA-256.
+/// (`"win"`, `"mac_arm64"`, `"mac"`, `"linux"`…): its name, build number
+/// and SHA-256.
 pub fn tools_on_page_for(page: &str, os_tag: &str) -> Option<(String, String, String)> {
     let re = regex::Regex::new(&format!(
         r#">\s*(commandlinetools-{os_tag}-(\d+)_latest\.zip)\s*</button>\s*</td>\s*<td>[^<]*</td>\s*<td>\s*([0-9a-f]{{64}})\s*</td>"#
@@ -115,7 +127,10 @@ fn sdkmanager(
         c.args(args);
         c
     };
+    // `java_home` already asks for 17 or newer; the script's own test
+    // misreads a version without a minor (see [`OLD_JAVA`]).
     cmd.env("JAVA_HOME", java)
+        .env("SKIP_JDK_VERSION_CHECK", "1")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -132,6 +147,13 @@ fn sdkmanager(
         if !line.is_empty() && !line.starts_with('[') {
             progress.note(line);
         }
+    }
+    if text.contains(OLD_JAVA) || err.contains(OLD_JAVA) {
+        bail!(
+            "sdkmanager {}: {OLD_JAVA} ({})",
+            args.join(" "),
+            java.display()
+        );
     }
     if !out.status.success() {
         let last = err
@@ -154,11 +176,17 @@ fn sdkmanager(
 impl Installer for Android {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let target = target_of(ctx, component);
-        let os_tag = os_tag_of(target);
+        let tags = os_tags_of(target);
         let page = ctx.net.text(STUDIO)?;
-        let (name, build, sha) = tools_on_page_for(&page, os_tag).ok_or_else(|| {
-            anyhow!("Android command-line tools ({os_tag}): not found on {STUDIO}")
-        })?;
+        let (name, build, sha) = tags
+            .iter()
+            .find_map(|tag| tools_on_page_for(&page, tag))
+            .ok_or_else(|| {
+                anyhow!(
+                    "Android command-line tools ({}): not found on {STUDIO}",
+                    tags.join(", ")
+                )
+            })?;
         Ok(Release::single(
             build,
             format!("{REPOSITORY}{name}"),
