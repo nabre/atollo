@@ -1,0 +1,209 @@
+<p align="center">
+  <a href="https://nabre.github.io/atollo/it/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="brand/wordmark-dark.svg">
+      <img src="brand/wordmark-light.svg" alt="Atollo" width="280">
+    </picture>
+  </a>
+</p>
+
+<h1 align="center">Atollo — Universal Portable Dev & AI Workspace</h1>
+
+<p align="center">
+  Un ambiente di sviluppo portabile e senza installazione per Windows, macOS e Linux, su x64 e ARM64.<br>
+  Editor, più di 20 linguaggi e runtime, database locali e gli agenti AI Claude Code, Codex e Antigravity in una cartella da portare su una chiavetta USB.
+</p>
+
+<p align="center">
+  <a href="https://github.com/nabre/atollo/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/nabre/atollo?include_prereleases&label=release"></a>
+  <a href="https://github.com/nabre/atollo/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/nabre/atollo/total?label=downloads"></a>
+  <a href="https://github.com/nabre/atollo/actions/workflows/app.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/nabre/atollo/app.yml?branch=main&label=build"></a>
+  <a href="../LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/nabre/atollo?label=license"></a>
+  <img alt="Platforms: Windows, macOS, Linux" src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-informational">
+  <img alt="Architectures: x64, ARM64" src="https://img.shields.io/badge/arch-x64%20%7C%20ARM64-informational">
+  <img alt="Built with Rust and Tauri 2" src="https://img.shields.io/badge/built%20with-Rust%20%2B%20Tauri%202-informational">
+</p>
+
+<p align="center">
+  <a href="https://nabre.github.io/atollo/it/"><b>Sito</b></a> ·
+  <a href="https://github.com/nabre/atollo/releases/latest"><b>Download</b></a> ·
+  <a href="app/GUIDE.it.md"><b>Guida</b></a> ·
+  <a href="https://github.com/nabre/atollo/issues"><b>Segnalazioni</b></a>
+</p>
+
+<p align="center"><a href="../README.md">English</a> · Italiano · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a></p>
+
+**Atollo** è un *Universal Portable Dev & AI Workspace* autonomo (`Atollo.exe`) che unisce **Editor** (VSCodium integrato), **Toolchain/Runtime Manager** (più di 20 linguaggi e strumenti scaricati su richiesta), **Server/Database locali** (MySQL, MongoDB, SQLite, Caddy/Apache) e **Orchestratore di Agenti AI** (Claude Code, Codex e Antigravity con istruzioni, skill e server MCP sincronizzati) in una singola cartella portabile. Niente installazione, niente diritti di amministratore, nessun servizio di sistema fuori dalla cartella del workspace.
+
+Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitHub CLI e l'editor. Il resto si sceglie nella pagina «Strumenti», oppure arriva quando serve: Node.js con un'azione `npm`, uv con un server MCP `uvx`, e così via.
+
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../site/shots/shot-projects-light.png">
+  <img src="../site/shots/shot-projects-dark.png" alt="La pagina Progetti di Atollo: pannello rapido e attività" width="100%">
+</picture>
+
+## Funzionalità
+
+- **Editor e terminali isolati.** VSCodium integrato con i temi Atollo scuro e chiaro. I terminali vedono solo il `PATH` e le variabili del kit: i programmi del PC ospite non interferiscono, e il PC non si sporca.
+- **Linguaggi e strumenti su richiesta.** Più di 20 linguaggi e strumenti (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), scaricati quando servono e verificati con checksum SHA-256 o firma. Più versioni affiancate, una per progetto.
+- **Database e server web locali.** MySQL con phpMyAdmin, MongoDB e SQLite, avviati e fermati con un clic, con database, utente e password per ogni progetto. Caddy e Apache per i siti, su ogni sistema. Nessun servizio di sistema.
+- **Tre agenti AI, una sola configurazione.** Claude Code, Codex e Antigravity: installazione, accesso e avvio. Istruzioni, skill e server MCP si scrivono una volta in `data/agents` e `atollo sync` li allinea per tutti e tre. Limiti del piano e consumi di oggi e degli ultimi 7 giorni.
+- **Una cartella per sei sistemi.** La stessa cartella, o lo stesso SSD esterno, passa da Windows a macOS a Linux con progetti, database e configurazioni degli agenti intatti: su ogni macchina girano i programmi nativi di quel sistema. «Rimuovi l'unità» chiude tutto ciò che Atollo ha aperto e lascia espellere il disco.
+
+## Documentazione
+
+| Documento | Cosa contiene |
+| --- | --- |
+| [Guida](app/GUIDE.it.md) | ogni pagina dell'app, passo per passo, con le schermate |
+| [Catalogo dei componenti](app/CATALOG.it.md) | i componenti, da dove si scarica ciascuno, la disponibilità per sistema |
+| [Matrice strumenti × sistemi](app/TOOLS-MATRIX.html) | ogni componente sui sei target: nativo, emulato o assente (in inglese) |
+| [Architettura](app/ARCHITECTURE.it.md) | com'è organizzato il codice e dove va una modifica |
+| [Prove](app/TESTING.it.md) | controlli automatici e checklist manuale per sistema |
+| [Decisioni](app/DECISIONS.md) e [novità](app/CHANGELOG.md) | il perché di ogni scelta e cosa è cambiato |
+
+Il lavoro aperto è nelle [segnalazioni](https://github.com/nabre/atollo/issues). La documentazione principale è in inglese: [README](../README.md), [guide](app/GUIDE.md).
+
+## Come si usa
+
+1. Copia l'exe di Atollo (per esempio `Atollo-0.2.0-win32-x64.exe`) in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
+2. Doppio clic: l'app crea `projects\` e `data\`. Al primo avvio scegli agenti, linguaggi e strumenti: l'app li scarica e li verifica (checksum o firma).
+3. Crea o clona un progetto nella pagina **Progetti**. Editor, terminale e agenti si aprono sempre nella cartella di un progetto, mai altrove.
+
+Dalla [pagina dei rilasci](https://github.com/nabre/atollo/releases): `Atollo-<versione>-win32-x64.exe` o `Atollo-<versione>-win32-arm64.exe` per Windows, `Atollo-<versione>-darwin-arm64.app.zip` (Apple Silicon) o `Atollo-<versione>-darwin-x64.app.zip` (Intel) per macOS, `Atollo-<versione>-linux-x64` o `Atollo-<versione>-linux-arm64` (`.AppImage` e `.tar.gz`) per Linux; ogni file ha il suo `.sha256`. Il nome dice la versione: quando l'app si aggiorna da sola, l'exe e l'AppImage prendono il nome della versione nuova. Negli esempi qui sotto `Atollo.exe` sta per il tuo exe.
+
+**macOS** (12 o successivo). L'app ha solo una firma ad hoc, senza notarizzazione di Apple:
+1. Estrai lo zip e sposta `Atollo.app` con il Finder nella cartella del kit (per esempio `/Volumes/KIT/Atollo/`).
+2. Nel Terminale togli la quarantena del browser: `xattr -dr com.apple.quarantine /Volumes/KIT/Atollo/Atollo.app`.
+3. Apri `Atollo.app` da quella cartella: `projects/` e `data/` nascono accanto a lei, mai dentro.
+
+Senza il passo 2 macOS avvia l'app da una copia temporanea (App Translocation) e Atollo si ferma mostrando lo stesso comando, invece di creare il kit in una cartella che sparisce.
+
+**Linux** (x64 e ARM64, glibc 2.35 o successiva: Ubuntu 22.04, Debian 12 e più recenti). Copia `Atollo-<versione>-linux-<arch>.AppImage` nella cartella del kit, `chmod +x Atollo-<versione>-linux-<arch>.AppImage` e avviala: il kit è la cartella dell'AppImage. Senza FUSE (container, alcune distribuzioni minime): `./Atollo-<versione>-linux-<arch>.AppImage --appimage-extract-and-run`, oppure `Atollo-<versione>-linux-<arch>.tar.gz` con WebKitGTK 4.1 installato (su Ubuntu e Debian `sudo apt install libwebkit2gtk-4.1-0`): estrai `Atollo` nella cartella del kit e avvia `./Atollo`. L'AppImage si aggiorna da sola, il `tar.gz` dice che c'è una versione nuova da scaricare.
+
+## Pagine
+
+| Pagina | Cosa c'è |
+| --- | --- |
+| **Progetti** | il **pannello rapido** (cosa è in esecuzione, preferiti e recenti con Avvia, Editor, Terminale e agente, cosa c'è da sistemare), la lista dei progetti con ▶ su ogni riga, Ctrl+P per aprirne uno per nome; **Nuovo progetto**, una scheda accanto ai progetti: vuoto, dai tuoi repository GitHub (con clone, rinomina ed eliminazione su GitHub), da un indirizzo Git o da una delle 63 basi in gruppi (Laravel, Next.js, Django, WordPress, Astro, Tauri…); avvisi sull'ambiente. Ogni progetto ha la sua pagina: **Riepilogo** (l'azione principale con il suo output, linguaggi, database, agente, Git), **Risorse** (componenti, database del progetto con utente e password, estensioni dell'editor), **Avanzate** (azioni, porte, sito statico, Git, istruzioni degli agenti) |
+| **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
+| **Database** | i server MySQL (con phpMyAdmin) e MongoDB di Atollo: avvio e arresto, password dell'amministratore, porta, dati in `data\db`, solo su questo PC; SQLite senza server |
+| **Strumenti** | linguaggi e strumenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove; la matrice delle estensioni dell'editor |
+| **Impostazioni** | lingua, terminale, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python e PHP, compilatore di Rust (GNU o MSVC), aggiornamenti dell'app; l'**account GitHub** di Atollo, uno per tutto (app, Git, editor, console, agenti, GitHub CLI); dove si trova la cartella di Atollo |
+| **Rimuovi l'unità** | chiude tutto ciò che Atollo ha aperto, riporta in `data\` l'accesso di Antigravity e lascia espellere l'unità |
+
+In basso, su ogni pagina, il pannello **Attività**: cosa è avviato o in installazione (progetti, database, componenti), con l'output e gli errori in un solo posto.
+
+La console di Atollo è la console classica di Windows con PowerShell 7 integrata e il solo ambiente isolato di Atollo: i programmi installati sul PC ospite non interferiscono.
+
+## C'è ancora da fare
+
+Atollo è in alpha (versione 0.2.0). Windows x64 è il sistema provato di più, anche con installazioni reali in CI; macOS, Linux e Windows ARM64 sono costruiti e provati solo in CI. La checklist completa è in [docs/app/TESTING.it.md](app/TESTING.it.md).
+
+- **Il primo rilascio, da provare.** [La 0.2.0 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.2.0) è su GitHub per Windows, macOS e Linux, ognuno su x64 e ARM64. I file pubblicati sono costruiti e provati in CI: ora vanno scaricati e avviati su macchine pulite.
+- **Alpha test.** Servono persone che usino Atollo su progetti veri e su PC diversi, e che segnalino cosa non va: installazione dei componenti, progetti, database, agenti.
+- **macOS su Mac veri** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). Apple Silicon e Intel sono costruiti e avviati in CI, mai su un Mac pulito: lo zip scaricato con il browser, quarantena e Gatekeeper, App Translocation, il kit su una chiavetta exFAT, gli accessi degli agenti portati da un Mac all'altro.
+- **Linux su macchine vere** ([#5](https://github.com/nabre/atollo/issues/5)). x64 e ARM64 su Ubuntu 24.04, Fedora 42 e Debian 13: AppImage con e senza FUSE, il `tar.gz` con WebKitGTK 4.1, chiavette exFAT o montate `noexec`, accessi con GNOME, KeePassXC o KWallet.
+- **Aggiornamenti e build del kit fuori da Windows.** L'aggiornamento dell'app da una versione all'altra su macOS e Linux non è ancora provato. L'Apache del kit (2.4.69, D-116) è nel catalogo ma provato solo in CI; anche il PHP del kit con `pdo_sqlite` (8.4.26 e 8.5.11, D-133), che l'app usa dalla versione dopo la 0.2.0 (la 0.2.0 prende ancora PHP da static-php-cli).
+- **Firma del codice.** Su macOS solo una firma ad hoc, senza notarizzazione di Apple: serve `xattr -dr com.apple.quarantine`. Su Windows la 0.2.0 esce senza firma: la firma con SignPath è ancora da attivare, e fino ad allora SmartScreen può avvisare al primo avvio.
+
+Hai un Mac, un PC Linux o un PC con Windows ARM64? Prova Atollo e raccontaci com'è andata: [apri una segnalazione su GitHub](https://github.com/nabre/atollo/issues).
+
+## Limiti noti
+
+- Su Windows 10 e 11 (`x64` e `ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`). Su Windows ARM64 l'editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX e R girano in emulazione x64; su Linux ARM64 manca Android. I rilasci per macOS e Linux sono provati in CI ma non ancora su macchine pulite ([#5](https://github.com/nabre/atollo/issues/5)), e gli accessi degli agenti vanno provati su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); componenti e fonti per sistema in [docs/app/CATALOG.it.md](app/CATALOG.it.md), la matrice componente × sistema in [docs/app/TOOLS-MATRIX.html](app/TOOLS-MATRIX.html) (in inglese). Apache su macOS e Linux è una build del kit (D-116), con PHP tramite `php-fpm`.
+- Su Linux MySQL vuole due librerie del sistema, `libaio` e `libnuma`: su Ubuntu 24.04 e Debian 13 `sudo apt install libaio1t64 libnuma1` (su versioni precedenti `libaio1`), su Fedora e RHEL `sudo dnf install libaio numactl-libs`. Se mancano, Atollo lo dice con il comando da eseguire.
+- Su macOS e Linux una cartella di Atollo su exFAT o FAT (una chiavetta formattata per Windows) funziona, ma quei file system non hanno link: dove un programma ne porta, Atollo copia i file (per esempio i 142 link interni di Git), con più spazio occupato. Su una chiavetta solo per Mac o Linux conviene APFS o ext4.
+- Fuori dalla cartella di Atollo restano solo le tracce di Windows, i file temporanei di passaggio nel temp di sistema (rimossi automaticamente alla chiusura), l'accesso di GitHub CLI nella Gestione credenziali se lo fai in una console con `gh auth login` (quello fatto nelle Impostazioni resta in `data\gh`) e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
+- Le cartelle in `projects\` sono attendibili per Claude Code e Codex: apri solo progetti di cui ti fidi. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.
+- I limiti d'uso degli agenti vengono da interfacce non documentate dei fornitori e possono smettere di funzionare dopo un loro aggiornamento.
+- «Rimuovi l'unità» non vede i programmi del PC che tengono aperto solo un file della cartella di Atollo.
+
+## Struttura
+
+```
+Atollo\
+  Atollo.exe      tutta la logica
+  projects\       i tuoi progetti
+  data\           programmi scaricati, impostazioni, accessi, cache, temporanei
+                  (le impostazioni di ogni progetto: data\projects\<progetto>\dev-settings.json)
+```
+
+Per un backup basta copiare `projects\` e `data\` (meno `data\apps\` e `data\cache\`, che si riscaricano).
+
+## Disinstallazione
+
+Atollo non usa un installer, non registra servizi di sistema né attività pianificate e non modifica il registro o il `PATH` di Windows:
+
+1. Apri la pagina **Rimuovi l'unità** (oppure chiudi l'applicazione) per arrestare tutti i processi avviati da Atollo e riportare in `data\` l'eventuale sessione di Antigravity.
+2. Elimina la cartella che contiene `Atollo.exe`, `data\` e `projects\` (dopo aver salvato i progetti che vuoi conservare).
+3. Eventuali cartelle temporanee di passaggio in `%TEMP%` vengono rimosse automaticamente alla chiusura; se avevi eseguito `gh auth login` manualmente da terminale (anziché dalla pagina **Impostazioni**), puoi rimuovere la voce corrispondente dalla **Gestione credenziali** di Windows.
+
+## Riga di comando
+
+```
+Atollo.exe                           apre la finestra
+Atollo.exe env                       mostra l'ambiente che ricevono i programmi di Atollo
+Atollo.exe components                elenca linguaggi e strumenti, con quelli installati
+Atollo.exe check                     verifica che i programmi installati rispondano
+Atollo.exe prepare [opzioni]         installa, aggiorna e rimuove i componenti scelti
+    --only a,b                       solo questi (e ciò che serve loro)
+    --skip a,b                       non questi
+    --update-all                     aggiorna anche quelli già installati
+    --force                          scarica di nuovo
+Atollo.exe sync [--project <cartella>] [--verbose]
+                                     allinea istruzioni, skill e MCP dei tre agenti
+Atollo.exe keyring restore|save      accesso di Antigravity (usato da agy.cmd)
+Atollo.exe serve <cartella> <porta>  server di file per un sito statico
+Atollo.exe version                   mostra la versione
+Atollo.exe help                      mostra l'aiuto
+```
+
+Da PowerShell aggiungi `| Out-Host` (per esempio `.\Atollo.exe check | Out-Host`): `Atollo.exe` è un programma a finestra, e senza una pipe PowerShell non lo aspetta e non ne legge l'output né il codice di uscita.
+
+## Compilare
+
+Prerequisiti: Rust stabile (almeno 1.93) con il toolchain MSVC (Visual Studio Build Tools, carico di lavoro C++), Node.js LTS.
+
+```
+npm ci
+npm run build
+```
+
+Le dipendenze JavaScript stanno solo nella radice (`node_modules` e `package-lock.json`): `ui` è un workspace npm.
+
+L'exe è in `target\release\Atollo.exe`. Nessun installer viene creato (`--no-bundle`).
+
+Controlli prima di una modifica:
+
+```
+npm run lint
+npm test
+npm -w ui run build
+```
+
+`npm run lint` esegue `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, ESLint e Prettier; `npm test` esegue `cargo test` e i test dell'interfaccia; `npm -w ui run build` controlla i tipi e compila l'interfaccia. Dettagli in [docs/app/TESTING.it.md](app/TESTING.it.md). Com'è organizzato il codice e dove va una modifica: [docs/app/ARCHITECTURE.it.md](app/ARCHITECTURE.it.md).
+
+Sviluppo con ricarica automatica: `npm run dev`.
+
+## Se Windows blocca l'exe
+
+Finché il certificato di firma non è attivo sulla release scaricata, se SmartScreen mostra "Windows ha protetto il PC", scegli **Ulteriori informazioni** › **Esegui comunque**. Se l'exe è stato scaricato da Internet: tasto destro › **Proprietà** › **Sblocca**. Su PC aziendali con AppLocker serve il permesso del reparto IT.
+
+## Code signing policy
+
+Free code signing on Windows provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+- **Ruoli del progetto (Committer, Reviewer e Approver):** [nabre](https://github.com/nabre)
+- **Provenienza dei binari:** gli eseguibili delle release ufficiali vengono compilati e firmati esclusivamente dalla pipeline automatizzata GitHub Actions ([`.github/workflows/app.yml`](../.github/workflows/app.yml)) a partire dai sorgenti pubblici di questo repository, senza interventi manuali sui binari.
+
+## Privacy policy
+
+Atollo (`Atollo.exe`) rispetta pienamente la riservatezza dell'utente:
+
+- **Nessuna telemetria o raccolta dati:** l'applicazione non raccoglie dati personali, statistiche d'uso, telemetria o report di crash, e non contatta alcun server gestito dall'autore del progetto. Disattiva inoltre la telemetria predefinita dei componenti gestiti (come PowerShell 7 e il server di VSCodium).
+- **Archiviazione locale:** impostazioni, progetti, database locali, log e credenziali sono salvati esclusivamente in locale nella cartella `data\` (e `projects\`) di Atollo sul dispositivo dell'utente.
+- **Connessioni di rete:** l'applicazione effettua richieste di rete solo verso le fonti ufficiali upstream per verificare gli aggiornamenti e scaricare i componenti richiesti dall'utente (`api.github.com`, mirror ufficiali dei linguaggi/strumenti, registro Open VSX per le estensioni dell'editor) e, quando l'utente configura e utilizza l'integrazione GitHub o gli agenti AI (**Claude Code**, **Codex**, **Antigravity**) o la chiave API Gemini, direttamente verso le rispettive API dei fornitori secondo le loro informative sulla privacy.
+
+## Licenza
+
+MIT.

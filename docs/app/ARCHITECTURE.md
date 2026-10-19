@@ -1,302 +1,304 @@
-# Architettura del codice
+# Code architecture
 
-Com'è organizzato il codice di Atollo e dove va una modifica nuova. Il perché delle scelte è in [DECISIONS.md](DECISIONS.md), l'uso in [GUIDA.md](GUIDA.md), le novità in [CHANGELOG.md](CHANGELOG.md), le prove in [TESTING.md](TESTING.md). Il lavoro aperto sta nelle [issue di GitHub](https://github.com/nabre/atollo/issues).
+English · [Italiano](ARCHITECTURE.it.md)
 
-## Requisiti
+How Atollo's code is organized and where a new change goes. The reasons behind the choices are in [DECISIONS.md](DECISIONS.md) (in Italian), usage in [GUIDE.md](GUIDE.md), what is new in [CHANGELOG.md](CHANGELOG.md) (in Italian), tests in [TESTING.md](TESTING.md). Open work is in the [GitHub issues](https://github.com/nabre/atollo/issues).
 
-Dal prompt iniziale (13-14/10/2026), validi per ogni modifica; ognuno ha una prova o una voce della checklist di TESTING.md.
+## Requirements
 
-1. **Nessuna installazione**: un solo eseguibile (su macOS il bundle `.app`, su Linux l'AppImage), nessun installer, servizio o attività pianificata.
-2. **Nessun diritto di amministratore** (manifesto `asInvoker` su Windows).
-3. **Nessuna scrittura fuori dal kit**: niente registro, `PATH` di sistema, `%APPDATA%`, `%LOCALAPPDATA%` o `%TEMP%` reali; le sole eccezioni sono quelle dichiarate nel README (D-41, D-70, D-90, D-115).
-4. **Percorsi relativi alla radice del kit**, che funziona da qualsiasi cartella (spazi, parentesi, `&`) e dopo uno spostamento (rilocazione all'avvio).
-5. **WebView nel kit**: WebView2 di sistema o fisso in `data\apps\…\webview2\`, mai il bootstrapper; dati della WebView in `data\webview2\` (su macOS restano in `~/Library/WebKit`, traccia dichiarata).
-6. **Ambiente sempre del kit**: ogni processo avviato riceve l'ambiente di `env.rs`, mai il `PATH` dell'utente senza filtro.
-7. **Una sola istanza per kit**, con l'avviso delle altre copie aperte.
-8. **Nessun processo orfano**, anche se l'app viene chiusa a forza (Job Object su Windows, gruppi e guardiano su macOS e Linux: D-07, D-105).
-9. **Sicurezza**: comandi Tauri solo per la finestra `main`, finestre dell'editor senza IPC, CSP stretta; server solo su `127.0.0.1` con un token; argomenti a vettore, mai una riga per la shell; nomi validati; download con checksum o firma; segreti mai nei log.
+From the initial prompt (October 13-14, 2026), valid for every change; each one has a test or an item in the TESTING.md checklist.
 
-## Avvio
+1. **No installation**: a single executable (on macOS the `.app` bundle, on Linux the AppImage), no installer, service or scheduled task.
+2. **No administrator rights** (`asInvoker` manifest on Windows).
+3. **No writes outside the kit**: no registry, system `PATH`, real `%APPDATA%`, `%LOCALAPPDATA%` or `%TEMP%`; the only exceptions are the ones declared in the README (D-41, D-70, D-90, D-115).
+4. **Paths relative to the kit root**, which works from any folder (spaces, parentheses, `&`) and after a move (relocation at startup).
+5. **WebView in the kit**: the system WebView2 or a fixed one in `data\apps\…\webview2\`, never the bootstrapper; WebView data in `data\webview2\` (on macOS it stays in `~/Library/WebKit`, a declared trace).
+6. **Always the kit's environment**: every process started gets the environment from `env.rs`, never the user's `PATH` unfiltered.
+7. **A single instance per kit**, with a notice about the other open copies.
+8. **No orphan processes**, even if the app is force-closed (Job Object on Windows, groups and a guard on macOS and Linux: D-07, D-105).
+9. **Security**: Tauri commands only for the `main` window, editor windows without IPC, strict CSP; servers only on `127.0.0.1` with a token; arguments as a vector, never a line for the shell; validated names; downloads with a checksum or signature; secrets never in the logs.
 
-`main.rs`: riga di comando letta → radice del kit → creazione di `data\`, controllo di scrittura, spostamento del kit (`root.txt`) → log, pulizia della copia vecchia dell'exe, versione dell'app → impostazioni → ambiente del kit, applicato al processo → file in `data\kit\` → se c'è un comando, lo esegue ed esce → istanza singola (D-08) → migrazione dei dati dei progetti e pulizia del temp → WebView2 (o WebKitGTK su Linux) → Job Object, o guardiano su macOS e Linux → finestra `main` → installazione degli obbligatori e dell'editor mancanti; in background accesso di Antigravity in sospeso, allineamento degli agenti, sorvegliante degli agenti; controllo degli aggiornamenti dopo 20 s.
+## Startup
+
+`main.rs`: command line read → kit root → creation of `data\`, write check, kit move (`root.txt`) → log, cleanup of the old copy of the exe, app version → settings → kit environment, applied to the process → files in `data\kit\` → if there is a command, it runs it and exits → single instance (D-08) → migration of the projects' data and temp cleanup → WebView2 (or WebKitGTK on Linux) → Job Object, or guard on macOS and Linux → `main` window → installation of the missing required components and editor; in the background pending Antigravity sign-in, agent sync, agent watcher; update check after 20 s.
 
 ## Repository
 
 ```
-Cargo.toml  Cargo.lock        workspace Rust (un solo crate: tauri)
-package.json                  workspace npm (ui) e i comandi dev, build, test, lint
+Cargo.toml  Cargo.lock        Rust workspace (a single crate: tauri)
+package.json                  npm workspace (ui) and the dev, build, test, lint commands
 tauri\
-  src\                        tutta la logica, in Rust (sotto)
-  catalog\                    catalogo dei componenti, estensioni, framework, relazioni (JSON incorporati)
-  i18n\catalog.json           testi in quattro lingue del motore Rust
-  editor-theme\               tema Atollo dell'editor, incorporato
-  capabilities\main.json      i comandi permessi alla sola finestra main
-  permissions\autogenerated\  permessi generati da build.rs (non si modificano a mano)
-  build.rs                    elenco dei comandi (COMMANDS) e manifesto asInvoker
-ui\src\                       interfaccia React + TypeScript (sotto)
-test\rust\  test\ui\          prove, con la stessa struttura di tauri\src e ui\src
-runtime\                      file scritti in data\kit\ (profile.ps1, loopback.js, phpmyadmin.php, bin\…)
-docs\app\                     decisioni, architettura, catalogo, prove, novità, guida
-docs\brand\                   logo, temi, script che li generano; brand.png (la tavola del brand)
-docs\reports\                 rapporti di analisi v1-v4
+  src\                        all the logic, in Rust (below)
+  catalog\                    catalog of components, extensions, frameworks, relations (embedded JSON)
+  i18n\catalog.json           texts of the Rust engine in four languages
+  editor-theme\               Atollo theme of the editor, embedded
+  capabilities\main.json      the commands allowed to the main window only
+  permissions\autogenerated\  permissions generated by build.rs (not edited by hand)
+  build.rs                    list of commands (COMMANDS) and asInvoker manifest
+ui\src\                       React + TypeScript interface (below)
+test\rust\  test\ui\          tests, with the same structure as tauri\src and ui\src
+runtime\                      files written to data\kit\ (profile.ps1, loopback.js, phpmyadmin.php, bin\…)
+docs\app\                     decisions, architecture, catalog, tests, changelog, guide
+docs\brand\                   logo, themes, the scripts that generate them; brand.png (the brand board)
+docs\reports\                 analysis reports v1-v4
 ```
 
-Nella radice restano solo i file di configurazione (workspace, lint, formattazione, CI) e il README.
+Only the configuration files (workspace, lint, formatting, CI) and the README stay in the root.
 
-## Motore Rust (`tauri\src`)
+## Rust engine (`tauri\src`)
 
-Un solo binario, `Atollo.exe`: la finestra (Tauri 2) e la riga di comando (`cli.rs`). In cima restano solo l'avvio e l'infrastruttura comune; il resto sta in una cartella per area (D-87). Si leggono per livelli: chi sta sopra chiama chi sta sotto, mai il contrario.
+A single binary, `Atollo.exe`: the window (Tauri 2) and the command line (`cli.rs`). Only startup and the shared infrastructure stay at the top; the rest is in one folder per area (D-87). They read by layers: a layer above calls the one below, never the reverse.
 
-| Livello | Moduli | Cosa fanno |
+| Layer | Modules | What they do |
 | --- | --- | --- |
-| Avvio | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | ordine di avvio («Avvio», sopra), riga di comando, istanza singola, WebView2 |
-| Comandi | `commands\` | l'unico ingresso dell'interfaccia: controllano la finestra, traducono gli errori, chiamano il dominio |
-| Dominio | le cartelle per area (sotto) | componenti, versioni, progetti, editor e console, agenti, database, server web, GitHub |
-| Infrastruttura | `kit.rs`, `fsx.rs`, `env.rs`, `settings.rs`, `log.rs`, `i18n.rs`, `net\`, `os\`, `router\` | percorsi del kit, file, ambiente, impostazioni, log, lingue, rete e controlli, processi, sistemi operativi di destinazione |
+| Startup | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | startup order ("Startup", above), command line, single instance, WebView2 |
+| Commands | `commands\` | the interface's only entry point: they check the window, translate the errors, call the domain |
+| Domain | the folders per area (below) | components, versions, projects, editor and console, agents, databases, web servers, GitHub |
+| Infrastructure | `kit.rs`, `fsx.rs`, `env.rs`, `settings.rs`, `log.rs`, `i18n.rs`, `net\`, `os\`, `router\` | kit paths, files, environment, settings, log, languages, network and checks, processes, target operating systems |
 
 ```
 tauri\src\
-  main.rs  cli.rs             avvio, finestre, chiusura; riga di comando
-  kit.rs                      radice, percorsi, primo avvio, spostamento, nomi validi
-  env.rs                      ambiente del kit e PATH
-  fsx.rs                      file del kit: lettura, JSON, scrittura atomica (sotto)
+  main.rs  cli.rs             startup, windows, shutdown; command line
+  kit.rs                      root, paths, first run, move, valid names
+  env.rs                      kit environment and PATH
+  fsx.rs                      kit files: reading, JSON, atomic writes (below)
   settings.rs                 data\app\settings.json
-  log.rs  i18n.rs             log con segreti mascherati; lingua e cataloghi
-  commands\                   comandi Tauri (sotto)
-  setup\                      componenti e installazione
-    catalog  needs            catalogo incorporato, components.txt; cosa serve ad agenti, clone, azioni (D-59)
-    runner  task              piano e passi di una preparazione; la preparazione avviata dalla finestra
-    checkup  downloads        verifica finale (D-39); file scaricati a mano (D-82)
-    kit_files  self_update    file scritti in data\kit\; nuova versione dell'exe
-  install\                    un installatore per famiglia: core, agents, web, caddy, native, editor, db, android
-    lang\                     un file per linguaggio o famiglia: go, jvm, dotnet, dart, zig, julia,
+  log.rs  i18n.rs             log with masked secrets; language and catalogs
+  commands\                   Tauri commands (below)
+  setup\                      components and installation
+    catalog  needs            embedded catalog, components.txt; what agents, clone, actions need (D-59)
+    runner  task              plan and steps of a setup; the setup started from the window
+    checkup  downloads        final check (D-39); files downloaded by hand (D-82)
+    kit_files  self_update    files written to data\kit\; new version of the exe
+  install\                    one installer per family: core, agents, web, caddy, native, editor, db, android
+    lang\                     one file per language or family: go, jvm, dotnet, dart, zig, julia,
                               js (Bun, Deno), typeset (Typst, TinyTeX), cc (CMake, C/C++), ruby
-  versions\                   versioni salvate (D-80)
-    mod                       cartelle e righe su disco, pagina Strumenti
-    choice  offered  disk     scelta del kit e dei progetti; righe offerte dalle fonti; rimozione, riparazione
-    side_by_side  ranges      JDK, .NET e simili fianco a fianco (D-81); intervalli npm, Composer, PEP 440
-    relations\                matrice delle relazioni (D-81): mod, known (relations.json), checks, projects
-  projects\                   progetti
-    mod                       elenco, creazione, clone, eliminazione (con i database, D-89), stato Git
-    state  migrate            data\projects\<p>\ (D-89): percorsi, orfani, adozione; migrazione 1 → 2 all'avvio
-    alias                     alias dei siti: URL e destinazione validati, un solo risolutore (D-77)
-    settings  mcp  vscode     dev-settings.json (D-63), server MCP, .vscode\settings.json (D-78)
-    run  serve  apache        azioni avviate e porte (D-50); server di file (D-51); Apache del progetto
-    caddy  fastcgi            Caddy del progetto e testo dei Caddyfile, admin su socket (D-111); php-cgi e php-fpm
-    frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner
-  detect\                     tipo, linguaggi e azioni di un progetto
-  editor\                     editor e console
-    mod  window               server web di VSCodium; finestre editor-<n> (D-69)
-    cfg  ext  theme           impostazioni e profili del terminale; estensioni (D-71); tema Atollo
-    picker                    selettori di file e cartelle (D-109)
-    terminal                  console del kit: console classica di Windows (D-57, D-95)
-    pty                       terminale nell'app su macOS e Linux, sessioni PTY per xterm.js (D-109)
-    terminals                 pagina Terminali: console salvate in data\app\terminals.json, con strumenti e versioni propri
-  servers\                    pagina Server web: pool Caddy/Apache condivisi dai progetti
-    mod                       tipi, elenco della pagina (con cache), WebServers
-    pools  config  process    servers.json e pool automatici, scansione; configurazione generata in
-                              data\servers\<pool>\; avvio, arresto, ricarica, siti collegati dai progetti
-  agents\                     agenti: stato, avvio, uscita, sorvegliante
-    sync\                     istruzioni, skill, MCP, regole, cartelle attendibili
-    stats\                    limiti d'uso e consumi (D-61)
-    keyring  relocate         accesso di Antigravity (D-115); percorsi riscritti dopo uno spostamento
-    claude_token              token di Claude Code su macOS (D-115)
-  db\                         database
+  versions\                   saved versions (D-80)
+    mod                       folders and lines on disk, Tools page
+    choice  offered  disk     choice of the kit and of the projects; lines offered by the sources; removal, repair
+    side_by_side  ranges      JDK, .NET and the like side by side (D-81); npm, Composer, PEP 440 ranges
+    relations\                relations matrix (D-81): mod, known (relations.json), checks, projects
+  projects\                   projects
+    mod                       list, creation, clone, deletion (with the databases, D-89), Git status
+    state  migrate            data\projects\<p>\ (D-89): paths, orphans, adoption; migration 1 → 2 at startup
+    alias                     site aliases: validated URL and target, a single resolver (D-77)
+    settings  mcp  vscode     dev-settings.json (D-63), MCP servers, .vscode\settings.json (D-78)
+    run  serve  apache        started actions and ports (D-50); file server (D-51); the project's Apache
+    caddy  fastcgi            the project's Caddy and Caddyfile text, admin on a socket (D-111); php-cgi and php-fpm
+    frameworks\               "New project" (D-83): mod (catalog and edits), validate, plan, target, runner
+  detect\                     type, languages and actions of a project
+  editor\                     editor and console
+    mod  window               VSCodium web server; editor-<n> windows (D-69)
+    cfg  ext  theme           settings and terminal profiles; extensions (D-71); Atollo theme
+    picker                    file and folder pickers (D-109)
+    terminal                  kit console: classic Windows console (D-57, D-95)
+    pty                       in-app terminal on macOS and Linux, PTY sessions for xterm.js (D-109)
+    terminals                 Terminals page: consoles saved in data\app\terminals.json, with their own tools and versions
+  servers\                    Web server page: Caddy/Apache pools shared by the projects
+    mod                       types, the page's list (with cache), WebServers
+    pools  config  process    servers.json and automatic pools, scan; configuration generated in
+                              data\servers\<pool>\; start, stop, reload, sites linked from the projects
+  agents\                     agents: status, launch, exit, watcher
+    sync\                     instructions, skills, MCP, rules, trusted folders
+    stats\                    usage limits and consumption (D-61)
+    keyring  relocate         Antigravity sign-in (D-115); paths rewritten after a move
+    claude_token              Claude Code token on macOS (D-115)
+  db\                         databases
     engine                    DbEngine: MySQL, MongoDB (D-110)
-    services\                 server del kit (D-73): mod (impostazioni, avvio, arresto), data (cartelle per
-                              versione), access (password e database dei progetti), backups (D-78), tools,
-                              mysql (inizializzazione, my.cnf, libaio: D-110)
-    auth  browse  phpmyadmin  password e .env (D-74); contenuto in sola lettura (D-79); phpMyAdmin (D-107)
-  github\                     account GitHub del kit (D-70): mod (accesso, helper di Git), repos (elenco, clone,
-                              rinomina, eliminazione)
-  net\                        rete: mod (HTTPS, proxy, API di GitHub), verify (SHA), signature (Authenticode),
-                              archive (estrazione, scambio cartelle)
-  os\                         Windows e processi: jobs (Job Object, D-07), processes, sessions («Rimuovi
-                              l'unità», altre copie), instance (D-08), webview (D-05), safe_path (D-77),
-                              temp (TempWork, pulizia: file di passaggio nel temp del sistema, D-90),
-                              volume (file system e tipo di disco, spazio libero, stesso disco, noexec),
-                              guard (guardiano dei processi su macOS e Linux, D-105)
-  router\                     destinazioni (Windows, macOS, Linux × x64, ARM64): target, bins (programmi e lanciatori
-                              per sistema), probe (cosa c'è su disco, salute), fs (file privati ed eseguibili), bootstrap
-                              (preparazione per un altro sistema, D-114)
+    services\                 kit servers (D-73): mod (settings, start, stop), data (folders per
+                              version), access (passwords and databases of the projects), backups (D-78), tools,
+                              mysql (initialization, my.cnf, libaio: D-110)
+    auth  browse  phpmyadmin  passwords and .env (D-74); read-only content (D-79); phpMyAdmin (D-107)
+  github\                     the kit's GitHub account (D-70): mod (sign-in, Git helper), repos (list, clone,
+                              rename, deletion)
+  net\                        network: mod (HTTPS, proxy, GitHub API), verify (SHA), signature (Authenticode),
+                              archive (extraction, folder swap)
+  os\                         Windows and processes: jobs (Job Object, D-07), processes, sessions ("Remove
+                              drive", other copies), instance (D-08), webview (D-05), safe_path (D-77),
+                              temp (TempWork, cleanup: staging files in the system temp, D-90),
+                              volume (file system and disk type, free space, same disk, noexec),
+                              guard (process guard on macOS and Linux, D-105)
+  router\                     targets (Windows, macOS, Linux × x64, ARM64): target, bins (programs and launchers
+                              per system), probe (what is on disk, health), fs (private and executable files), bootstrap
+                              (setup for another system, D-114)
 ```
 
-### Dati del kit (`data\`)
+### Kit data (`data\`)
 
 ```
 data\
-  apps\win32-<arch>\          programmi installati
-  app\                        stato del kit: settings.json, services.json, components.txt, versions\,
-                              frameworks.json, servers.json, logs\, layout.txt (2 = dati per progetto)
-    db\                       secrets.json (solo root e admin), my.ini; la cartella ha il DACL del proprietario
-    pre-v2\                   copia di ports.json e secrets.json prima della migrazione (D-89)
-    pre-caddy\                copia di servers.json e dei panel.json prima del passaggio da Nginx a Caddy (D-120)
-  projects\<progetto>\        tutto ciò che il kit tiene per un progetto (D-89)
+  apps\win32-<arch>\          installed programs
+  app\                        kit state: settings.json, services.json, components.txt, versions\,
+                              frameworks.json, servers.json, logs\, layout.txt (2 = data per project)
+    db\                       secrets.json (root and admin only), my.ini; the folder has the owner's DACL
+    pre-v2\                   copy of ports.json and secrets.json before the migration (D-89)
+    pre-caddy\                copy of servers.json and of the panel.json files before the switch from Nginx to Caddy (D-120)
+  projects\<project>\         everything the kit keeps for a project (D-89)
     dev-settings.json  ports.json  apache\  caddy\
-    private\                  DACL del proprietario prima di ogni scrittura
-      db.json                 password e nomi dei database del progetto
-      backups\                copie dei database (D-78)
-  servers\<pool>\             configurazioni generate dei pool Caddy/Apache
-  tmp\                        passaggio nel kit quando il temp del sistema non c'è o non basta; TEMP dei programmi nel kit
+    private\                  owner's DACL before every write
+      db.json                 passwords and names of the project's databases
+      backups\                copies of the databases (D-78)
+  servers\<pool>\             generated configurations of the Caddy/Apache pools
+  tmp\                        staging in the kit when the system temp is missing or not enough; TEMP of the programs in the kit
 ```
 
-Nel temp del sistema, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `os\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`os::temp::sweep`); alla chiusura, dopo il job, `os::temp::cleanup_at_exit`.
+In the system temp, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` and `claude\` (`TEMP` of the programs and `CLAUDE_CODE_TMPDIR`, when the choice or the disk calls for it). `Kit::system_temp()` returns it, `os\temp.rs` creates its work folders and cleans them up, `net\archive.rs` (`stage_into`) moves the result into `data\apps`. The startup order: the migration of the projects' data (`projects\migrate.rs`) runs after the single instance (D-08), followed by the temp cleanup (`os::temp::sweep`); at shutdown, after the job, `os::temp::cleanup_at_exit`.
 
-Regole delle cartelle:
-- un modulo con il nome della sua area è il `mod.rs` della cartella (`editor\mod.rs`, non `editor\editor.rs`: clippy lo rifiuta), così `crate::editor::Editor` e `crate::versions::*` restano brevi; le cartelle senza logica propria (`db\`, `setup\`, `os\`) hanno in `mod.rs` solo la descrizione dell'area;
-- ogni `mod.rs` comincia con un `//!` che nomina l'area e i suoi sottomoduli;
-- i percorsi si scrivono interi (`crate::setup::task::SetupTask`, `use crate::db::auth;`), senza alias e senza `pub use x::*`; nella stessa cartella `use super::x;`;
-- un modulo diviso in file (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) riesporta in `mod.rs` solo ciò che si usa da fuori; i suoi file si chiamano fra loro con `pub(super)` e si importano per nome (`use super::pools::load_store;`), mai con `use super::*`; anche i metodi di un tipo possono stare in più file, con un `impl` per file (`servers\`: `WebServers`);
-- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`), `projects\run.rs` (una macchina a stati, 1143 righe) ed `editor\ext.rs` restano interi. Gli altri file restano sotto le 900 righe; oggi la superano di poco `db\auth.rs`, `db\services\mod.rs` e `install\web.rs` (sotto, «Opportunità»).
+Folder rules:
+- a module named after its area is the folder's `mod.rs` (`editor\mod.rs`, not `editor\editor.rs`: clippy rejects it), so `crate::editor::Editor` and `crate::versions::*` stay short; folders without logic of their own (`db\`, `setup\`, `os\`) hold only the description of the area in `mod.rs`;
+- every `mod.rs` starts with a `//!` that names the area and its submodules;
+- paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`;
+- a module split into files (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) re-exports in `mod.rs` only what is used from outside; its files call each other with `pub(super)` and are imported by name (`use super::pools::load_store;`), never with `use super::*`; the methods of a type can also live in several files, with one `impl` per file (`servers\`: `WebServers`);
+- a file is split when it has parts that read on their own; `env.rs` (a single algorithm, `KitEnv::build`), `projects\run.rs` (a state machine, 1143 lines) and `editor\ext.rs` stay whole. The other files stay under 900 lines; today `db\auth.rs`, `db\services\mod.rs` and `install\web.rs` go slightly over (below, "Opportunities").
 
-### Comandi Tauri (`commands\`)
+### Tauri commands (`commands\`)
 
-Un file per pagina o area dell'interfaccia, con gli stessi nomi dei file di `ui\src\api\`:
+One file per page or area of the interface, with the same names as the files in `ui\src\api\`:
 
-| File | Comandi |
+| File | Commands |
 | --- | --- |
-| `mod.rs` | `AppState`, i controlli comuni (`ensure_main`, `project_dir`, `tr`), `ensure` (installa ciò che manca prima di un'azione), il macro `command_handler!` |
-| `error.rs` | `CmdError`, `CmdResult`, `fail` e `OrFail` (sotto, «Errori») |
-| `app.rs` | informazioni, impostazioni, aggiornamenti, apertura di indirizzi e cartelle |
-| `window.rs` | cosa è aperto, «Rimuovi l'unità», chiusura e conferma |
-| `editing.rs` | editor, console, impostazioni dell'editor ed estensioni di un progetto |
-| `setup.rs` | scelta dei componenti, installazione in corso, download a mano |
-| `versions.rs` | versioni salvate, versioni dei progetti, matrice delle relazioni |
-| `agents.rs` | stato, consumi, avvio e uscita degli agenti |
-| `projects.rs` | elenco, creazione, clone, eliminazione, azioni, sito, stato, MCP |
-| `orphans.rs` | dati senza progetto: elenco e «Collega a…» (D-89) |
-| `frameworks.rs` | nuovo progetto da framework |
-| `github.rs` | account e repository GitHub |
-| `databases.rs` | database dei progetti, copie, `.env`, contenuto, phpMyAdmin |
-| `services.rs` | server di database del kit |
-| `servers.rs` | pool di server web: elenco, profili, avvio, arresto, ricarica, progetto collegato |
-| `terminals.rs` | pagina Terminali: elenco, salvataggio, rimozione, apertura, scelta della cartella |
-| `runs.rs` | azioni avviate: avvio, arresto, output, porte |
+| `mod.rs` | `AppState`, the shared checks (`ensure_main`, `project_dir`, `tr`), `ensure` (installs what is missing before an action), the `command_handler!` macro |
+| `error.rs` | `CmdError`, `CmdResult`, `fail` and `OrFail` (below, "Errors") |
+| `app.rs` | information, settings, updates, opening addresses and folders |
+| `window.rs` | what is open, "Remove drive", shutdown and confirmation |
+| `editing.rs` | editor, console, editor settings and extensions of a project |
+| `setup.rs` | choice of components, installation in progress, downloads by hand |
+| `versions.rs` | saved versions, project versions, relations matrix |
+| `agents.rs` | status, consumption, launch and exit of the agents |
+| `projects.rs` | list, creation, clone, deletion, actions, site, status, MCP |
+| `orphans.rs` | data without a project: list and "Link to…" (D-89) |
+| `frameworks.rs` | new project from a framework |
+| `github.rs` | GitHub account and repositories |
+| `databases.rs` | project databases, copies, `.env`, content, phpMyAdmin |
+| `services.rs` | the kit's database servers |
+| `servers.rs` | web server pools: list, profiles, start, stop, reload, linked project |
+| `terminals.rs` | Terminals page: list, saving, removal, opening, folder choice |
+| `runs.rs` | started actions: start, stop, output, ports |
 
-Per aggiungere un comando:
-1. la funzione `#[tauri::command]` nel file della sua area, che risponde `CmdResult<_>`, comincia con `ensure_main(&webview)?` e chiama il modulo di dominio (la logica resta lì, il comando la traduce per l'interfaccia);
-2. il suo percorso in `command_handler!` (`commands\mod.rs`);
-3. il suo nome in `COMMANDS` (`build.rs`): la build genera `permissions\autogenerated\<nome>.toml`;
-4. `allow-<nome>` in `capabilities\main.json`;
-5. la funzione TypeScript in `ui\src\api\<area>.ts`, con l'anteprima per il browser;
-6. i testi nuovi nei cataloghi delle quattro lingue (`tauri\i18n\catalog.json`, `ui\src\locales\*.json`).
+To add a command:
+1. the `#[tauri::command]` function in the file of its area, which returns `CmdResult<_>`, starts with `ensure_main(&webview)?` and calls the domain module (the logic stays there, the command translates it for the interface);
+2. its path in `command_handler!` (`commands\mod.rs`);
+3. its name in `COMMANDS` (`build.rs`): the build generates `permissions\autogenerated\<name>.toml`;
+4. `allow-<name>` in `capabilities\main.json`;
+5. the TypeScript function in `ui\src\api\<area>.ts`, with the browser preview;
+6. the new texts in the catalogs of the four languages (`tauri\i18n\catalog.json`, `ui\src\locales\*.json`).
 
-Un aiuto usato da più aree (per esempio `apply_env`, `open_in_browser`) resta nel file della sua area con visibilità `pub(super)` ed è importato per nome in `mod.rs`.
+A helper used by several areas (for example `apply_env`, `open_in_browser`) stays in the file of its area with `pub(super)` visibility and is imported by name in `mod.rs`.
 
-### File del kit (`fsx.rs` e `Kit`)
+### Kit files (`fsx.rs` and `Kit`)
 
-Ogni modulo segue le stesse regole per i suoi file in `data\`:
+Every module follows the same rules for its files in `data\`:
 
-- **percorsi** dai metodi di `Kit` (`data()`, `apps()`, `app_dir()`, `settings_file()`, `versions_dir()`, `versions_root()`, `old_root_file()`, `project_data()`, `system_temp()`…; i file di un progetto da `projects::state::ProjectState`) o da una funzione del modulo che possiede il file (`db::services::settings_path`, `versions::offered_file`); mai lo stesso nome di file scritto in due moduli;
-- **lettura**: `fsx::read_text` (UTF-8 con sostituzione dei byte non validi, senza BOM); per il JSON `fsx::read_json` (mancante o danneggiato: `None`, per lo stato che il kit ricostruisce), `fsx::load_json` (il valore predefinito più il problema da mostrare, per le impostazioni dell'utente) o `fsx::try_read_json` (errore con il percorso). Un file vuoto vale come mancante;
-- **scrittura**: `fsx::write_json` (crea la cartella, JSON indentato, atomico) o `fsx::write_atomic` per il testo; mai `fs::write` su un file che il kit rilegge;
-- **file di altri programmi** (impostazioni dell'editor, file degli agenti, `.mcp.json`) come `serde_json::Value`, con le regole del loro modulo: un file con commenti o non valido non si sovrascrive;
-- **dentro un progetto** solo con `os::safe_path` (nessun collegamento seguito, D-77).
+- **paths** from the methods of `Kit` (`data()`, `apps()`, `app_dir()`, `settings_file()`, `versions_dir()`, `versions_root()`, `old_root_file()`, `project_data()`, `system_temp()`…; the files of a project from `projects::state::ProjectState`) or from a function of the module that owns the file (`db::services::settings_path`, `versions::offered_file`); never the same file name written in two modules;
+- **reading**: `fsx::read_text` (UTF-8 with replacement of invalid bytes, without BOM); for JSON `fsx::read_json` (missing or damaged: `None`, for state the kit rebuilds), `fsx::load_json` (the default value plus the problem to show, for the user's settings) or `fsx::try_read_json` (error with the path). An empty file counts as missing;
+- **writing**: `fsx::write_json` (creates the folder, indented JSON, atomic) or `fsx::write_atomic` for text; never `fs::write` on a file the kit reads back;
+- **files of other programs** (editor settings, agent files, `.mcp.json`) as `serde_json::Value`, with the rules of their module: a file with comments or an invalid one is not overwritten;
+- **inside a project** only with `os::safe_path` (no link followed, D-77).
 
-### Processi
+### Processes
 
-Tutti i programmi del kit partono nel Job Object dell'app con l'ambiente del kit (`os\jobs.rs`, D-07). Fuori dal job solo browser ed Esplora risorse: `jobs::open_with_explorer` apre un indirizzo o una cartella, `jobs::system_root` dà la cartella di Windows. Nessun `Command::new` con una riga di comando unita: argomenti sempre a vettore.
+All the kit's programs start in the app's Job Object with the kit's environment (`os\jobs.rs`, D-07). Only the browser and File Explorer run outside the job: `jobs::open_with_explorer` opens an address or a folder, `jobs::system_root` gives the Windows folder. No `Command::new` with a joined command line: arguments always as a vector.
 
-### Errori
+### Errors
 
-Nei moduli `anyhow::Result`, con il contesto che serve al log. I comandi rispondono `CmdResult<_>` (`commands\error.rs`): `CmdError` è il testo breve che l'interfaccia mostra e arriva come una stringa JSON, uguale a quella di `Result<_, String>`. Un comando segnala un errore in quattro modi:
-- `.or_fail(contesto)?` scrive `contesto: errore` nel log e manda all'interfaccia `errore` (`{e}`); `.or_fail_chain(contesto)?` fa lo stesso con tutta la catena di un `anyhow::Error` (`{e:#}`);
-- `?` su un `anyhow::Error` manda tutta la catena senza scrivere nel log;
-- `Err(testo.into())` per un rifiuto con un testo per l'utente, che passa da `tr`/`i18n::t` con la frase italiana come chiave;
-- `return Err(fail(contesto, errore))` quando serve il log senza un `Result` da cui partire.
+In the modules `anyhow::Result`, with the context the log needs. Commands return `CmdResult<_>` (`commands\error.rs`): `CmdError` is the short text the interface shows and arrives as a JSON string, the same as that of `Result<_, String>`. A command reports an error in four ways:
+- `.or_fail(context)?` writes `context: error` to the log and sends `error` to the interface (`{e}`); `.or_fail_chain(context)?` does the same with the whole chain of an `anyhow::Error` (`{e:#}`);
+- `?` on an `anyhow::Error` sends the whole chain without writing to the log;
+- `Err(text.into())` for a refusal with a text for the user, which goes through `tr`/`i18n::t` with the Italian sentence as the key;
+- `return Err(fail(context, error))` when the log is needed without a `Result` to start from.
 
-## Interfaccia (`ui\src`)
+## Interface (`ui\src`)
 
-| Parte | File | Cosa contiene |
+| Part | Files | What it holds |
 | --- | --- | --- |
-| Ingresso | `main.tsx`, `App.tsx` | finestra in stile VSCodium: barra delle attività, pagina, pannello Attività, barra di stato |
-| Verso Rust | `api\` | un file per area, come `commands\` (sopra); `index.ts` li riesporta, le pagine importano da `./api` |
-| Hook comuni | `hooks.ts` | `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (sotto) |
-| Pezzi comuni | `common.tsx` | `ActionButton`, `ErrorLine`, `editorHint` |
-| Componenti di base | `workbench\` | i controlli di VSCodium (`@vscode-elements/elements`) e le parti del workbench (sotto); dal resto dell'app importa solo `i18n` |
-| Tema | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css` | font e note del brand; `--vsc-*` per Tailwind; tutte le variabili `--vscode-*` di VS Code, generate (sotto) |
-| Pagine grandi | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `guide\` | una cartella per pagina, con `index.ts` che esporta solo ciò che usano le altre pagine |
-| Altre pagine | `wizard.tsx`, `servers.tsx`, `terminals.tsx`, `relations.tsx`, `extensions.tsx`, `eject.tsx`, `setup.tsx`, … | una pagina o una sezione per file |
-| Pezzi della finestra e del brand | `titlebar.tsx`, `activity.tsx`, `brand.tsx`, `logos.tsx`, `tags.tsx`, `byhand.tsx` | usati da più cartelle, quindi nella radice di `ui\src` |
-| Testi | `i18n.ts`, `locales\*.json` | `t("frase italiana")`; il test controlla le quattro lingue |
+| Entry point | `main.tsx`, `App.tsx` | VSCodium-style window: activity bar, page, Activity panel, status bar |
+| Toward Rust | `api\` | one file per area, like `commands\` (above); `index.ts` re-exports them, pages import from `./api` |
+| Shared hooks | `hooks.ts` | `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (below) |
+| Shared pieces | `common.tsx` | `ActionButton`, `ErrorLine`, `editorHint` |
+| Base components | `workbench\` | the VSCodium controls (`@vscode-elements/elements`) and the workbench parts (below); from the rest of the app it imports only `i18n` |
+| Theme | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css` | fonts and brand touches; `--vsc-*` for Tailwind; all the VS Code `--vscode-*` variables, generated (below) |
+| Large pages | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `guide\` | one folder per page, with an `index.ts` that exports only what the other pages use |
+| Other pages | `wizard.tsx`, `servers.tsx`, `terminals.tsx`, `relations.tsx`, `extensions.tsx`, `eject.tsx`, `setup.tsx`, … | one page or one section per file |
+| Window and brand pieces | `titlebar.tsx`, `activity.tsx`, `brand.tsx`, `logos.tsx`, `tags.tsx`, `byhand.tsx` | used by several folders, so in the root of `ui\src` |
+| Texts | `i18n.ts`, `locales\*.json` | `t("Italian sentence")`; the test checks the four languages |
 
-Le cartelle delle pagine:
+The page folders:
 
-| Cartella | File |
+| Folder | Files |
 | --- | --- |
-| `projects\` | `explorer.tsx` (pagina Progetti), `page.tsx` (pagina del progetto), `runs.ts` (`useRuns` e stato delle azioni), `kind.tsx` (tipo e linguaggi), `new.tsx` (nuovo e clone), `site.tsx`, `delete.tsx`, `orphans.tsx`; le schede della pagina in `run.tsx`, `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (server MCP del progetto), `editorsettings.tsx` |
-| `databases\` | `page.tsx` (pagina Database, `SecretField`), `browser.tsx` (contenuto in sola lettura), `backups.tsx` (copie dei database di un progetto) |
-| `agents\` | `page.tsx` (pagina Agenti, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limiti e consumi) |
-| `frameworks\` | `model.ts` (dati e hook), `fields.tsx` (campi delle istruzioni), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
-| `versions\` | `model.ts`, `kit.tsx` (versioni del kit), `project.tsx` (versioni di un progetto), `lines.tsx` (scelta della riga) |
+| `projects\` | `explorer.tsx` (Projects page), `page.tsx` (project page), `runs.ts` (`useRuns` and the state of the actions), `kind.tsx` (type and languages), `new.tsx` (new and clone), `site.tsx`, `delete.tsx`, `orphans.tsx`; the page's tabs in `run.tsx`, `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (the project's MCP servers), `editorsettings.tsx` |
+| `databases\` | `page.tsx` (Databases page, `SecretField`), `browser.tsx` (read-only content), `backups.tsx` (copies of a project's databases) |
+| `agents\` | `page.tsx` (Agents page, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limits and consumption) |
+| `frameworks\` | `model.ts` (data and hooks), `fields.tsx` (instruction fields), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
+| `versions\` | `model.ts`, `kit.tsx` (kit versions), `project.tsx` (versions of a project), `lines.tsx` (line choice) |
 | `github\` | `account.tsx`, `repos.tsx`, `details.tsx` |
-| `settings\` | `page.tsx`, `sections.tsx` (Generali, Rete, Agenti, Versioni), `about.tsx` (kit e aggiornamenti) |
+| `settings\` | `page.tsx`, `sections.tsx` (General, Network, Agents, Versions), `about.tsx` (kit and updates) |
 | `components\` | `page.tsx`, `explorer.tsx`, `table.tsx`, `rows.tsx`, `tool.tsx`, `applybar.tsx`, `model.ts`, `state.ts` |
 
-Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pezzo usato da due pagine va in un file suo dentro la cartella (`projects\runs.ts`), o in `common.tsx` se lo usano più cartelle.
+A module does not import whoever imports it: no cycle among the files of `ui\src`. A piece used by two pages goes in a file of its own inside the folder (`projects\runs.ts`), or in `common.tsx` if several folders use it.
 
 ### `api\`
 
-- `core.ts` ha i tre aiuti con cui si scrive ogni comando: `query(cmd, anteprima, args)` per un comando che risponde con dati, `act(cmd, args)` per uno che agisce e basta, `subscribe(evento, handler)` per gli eventi. Fuori da Tauri (`npm run dev` aperto nel browser) rispondono con l'anteprima e la pagina mostra il banner «anteprima»: così le pagine si disegnano nel browser. Restano dentro `api\`: le pagine non chiamano comandi per nome.
-- Un'anteprima calcolata (`sampleStats()`, `sampleRows()`) si scrive con `browserPreview ? … : invoke(…)`, per non calcolarla quando gira l'app.
-- I tipi rispecchiano le strutture Rust con `serde(rename_all = "camelCase")`.
+- `core.ts` has the three helpers every command is written with: `query(cmd, preview, args)` for a command that answers with data, `act(cmd, args)` for one that just acts, `subscribe(event, handler)` for events. Outside Tauri (`npm run dev` opened in the browser) they answer with the preview and the page shows the "preview" banner: this way the pages render in the browser. They stay inside `api\`: pages do not call commands by name.
+- A computed preview (`sampleStats()`, `sampleRows()`) is written as `browserPreview ? … : invoke(…)`, so that it is not computed when the app is running.
+- The types mirror the Rust structs with `serde(rename_all = "camelCase")`.
 
-### Hook (`hooks.ts`)
+### Hooks (`hooks.ts`)
 
-- `useSubscription(onRun, handler)` registra un ascoltatore una volta sola, passa ogni evento all'ultimo `handler` e lo toglie allo smontaggio anche se la registrazione finisce dopo.
-- `useEvery(read, ms)` legge subito e poi ogni `ms`; `read` va tenuta stabile con `useCallback`.
-- `useLoad(load, iniziale, { onError, every, enabled, key })` dà `{ data, error, reload, setData }`: legge al montaggio, quando cambia `load` (stabile con `useCallback`) o `key`, ogni `every` ms, e a ogni `reload`. Con `enabled: false` non legge. `onError` dice cosa fa una lettura non riuscita: `"keep"` lascia il valore com'era, `"show"` lo lascia e mette il testo in `error` (cancellato dalla prossima lettura riuscita), `{ fallback }` mette il valore di ripiego. Dopo lo smontaggio non scrive nulla.
-- `useAction(onDone)` esegue un'azione con l'attesa e l'ultimo errore.
-- `useCopy(resetMs)` copia negli appunti; `copied` torna falso dopo `resetMs`, se c'è.
+- `useSubscription(onRun, handler)` registers a listener only once, passes every event to the latest `handler` and removes it on unmount even if the registration finishes later.
+- `useEvery(read, ms)` reads right away and then every `ms`; `read` must be kept stable with `useCallback`.
+- `useLoad(load, initial, { onError, every, enabled, key })` gives `{ data, error, reload, setData }`: it reads on mount, when `load` (stable with `useCallback`) or `key` changes, every `every` ms, and on every `reload`. With `enabled: false` it does not read. `onError` says what a failed read does: `"keep"` leaves the value as it was, `"show"` leaves it and puts the text in `error` (cleared by the next successful read), `{ fallback }` sets the fallback value. After unmount it writes nothing.
+- `useAction(onDone)` runs an action with the wait state and the last error.
+- `useCopy(resetMs)` copies to the clipboard; `copied` goes back to false after `resetMs`, if given.
 
-Letture ancora scritte a mano, perché `useLoad` cambierebbe ciò che l'utente vede: un errore che resta anche dopo una lettura riuscita (`App.tsx` per le informazioni, `eject.tsx`, `settings\page.tsx`, `databases\page.tsx`, dove lo stesso errore vale anche per avvio e arresto); letture in catena o che riempiono un modulo (`components\page.tsx`, `projects\editorsettings.tsx`); letture con argomenti o con richieste e attesa proprie (`frameworks\model.ts`, `github\repos.tsx`, `relations.tsx`, `databases\browser.tsx`, `agents\stats.tsx`, `setup.tsx`).
+Reads still written by hand, because `useLoad` would change what the user sees: an error that stays even after a successful read (`App.tsx` for the information, `eject.tsx`, `settings\page.tsx`, `databases\page.tsx`, where the same error also covers start and stop); chained reads or reads that fill a form (`components\page.tsx`, `projects\editorsettings.tsx`); reads with arguments or with their own requests and wait state (`frameworks\model.ts`, `github\repos.tsx`, `relations.tsx`, `databases\browser.tsx`, `agents\stats.tsx`, `setup.tsx`).
 
 ### `workbench\`
 
-I controlli sono quelli di VSCodium: `@vscode-elements/elements` (D-88), registrati una volta in `elements.ts` con i loro moduli ES, mai con `dist/bundled.js` (i wrapper React importano gli stessi moduli). Le pagine usano solo i componenti di `workbench\`, con le stesse props di prima.
+The controls are VSCodium's: `@vscode-elements/elements` (D-88), registered once in `elements.ts` with their ES modules, never with `dist/bundled.js` (the React wrappers import the same modules). Pages use only the components of `workbench\`, with the same props as before.
 
-| Componente | Disegnato con |
+| Component | Drawn with |
 | --- | --- |
-| `Button` | `vscode-button` (secondario, largo, piccolo); con `submit` un `<button type=submit>` nascosto accanto resta il pulsante predefinito del modulo, così Invio in un campo invia |
-| `TextField`, `TextArea`, `SearchBox` | `VscodeTextfield`, `VscodeTextarea` (wrapper di `@vscode-elements/react-elements`); valore controllato con `useControlled` |
-| `Select` | `VscodeSingleSelect` + `VscodeOption`; i gruppi diventano un'opzione d'intestazione spenta |
+| `Button` | `vscode-button` (secondary, wide, small); with `submit` a hidden `<button type=submit>` next to it remains the form's default button, so Enter in a field submits |
+| `TextField`, `TextArea`, `SearchBox` | `VscodeTextfield`, `VscodeTextarea` (wrappers from `@vscode-elements/react-elements`); value controlled with `useControlled` |
+| `Select` | `VscodeSingleSelect` + `VscodeOption`; groups become a disabled header option |
 | `CountBadge`, `ProgressBar`, `Divider`, `Icon` | `vscode-badge`, `vscode-progress-bar`, `vscode-divider`, `vscode-icon` (codicon) |
-| `SettingItem` | `vscode-form-group` con la variante «settings-group» |
-| `IconButton`, `Checkbox`, `CheckboxLabel`, `Radio` | nativi, disegnati come `vscode-toolbar-button`, `vscode-checkbox`, `vscode-radio` con le loro variabili: nei componenti il pulsante o la casella stanno nello shadow root, dove `<label for>`, il clic sull'etichetta e i ruoli cercati dai test non arrivano, e `vscode-toolbar-button` non ha lo stato spento |
-| `DataTable` | `<table>` nativa, disegnata come `vscode-table`: il componente non ha didascalia né intestazioni di riga e divide le colonne in parti uguali |
-| `ConfirmDialog`, `InlineConfirm` | dialogo proprio, pulsanti `vscode-button` |
-| parti (`layout.tsx`: riquadri, schede, barra dei dettagli, pannello) | proprie: `vscode-collapsible` e `vscode-tabs` disegnano le intestazioni classiche, non quelle moderne di VSCodium 1.140, e tengono ruoli e `tablist` nello shadow root |
+| `SettingItem` | `vscode-form-group` with the "settings-group" variant |
+| `IconButton`, `Checkbox`, `CheckboxLabel`, `Radio` | native, drawn like `vscode-toolbar-button`, `vscode-checkbox`, `vscode-radio` with their variables: in the components the button or the box sits in the shadow root, where `<label for>`, the click on the label and the roles the tests look for do not reach, and `vscode-toolbar-button` has no disabled state |
+| `DataTable` | native `<table>`, drawn like `vscode-table`: the component has no caption or row headers and splits the columns into equal parts |
+| `ConfirmDialog`, `InlineConfirm` | own dialog, `vscode-button` buttons |
+| parts (`layout.tsx`: panes, tabs, details bar, panel) | own: `vscode-collapsible` and `vscode-tabs` draw the classic headers, not the modern ones of VSCodium 1.140, and keep roles and `tablist` in the shadow root |
 
-Regole per chi aggiunge un controllo:
-- campi e select mandano un `change` che non risale: `onChange` di React su un tag `<vscode-*>` scritto a mano non scatta mai. Si usano i wrapper (`VscodeTextfield`…) o un primitivo di `workbench\`;
-- su un tag `<vscode-*>` scritto a mano si scrive `class` e `for`, non `className` e `htmlFor`; i tipi JSX sono in `elements.ts`;
-- `vscode-icon` vuole il CSS dei codicon con l'id `vscode-codicon-stylesheet` (lo aggiunge `elements.ts`) e prende il colore da `--vscode-icon-foreground`: per il colore del testo intorno, `[--vscode-icon-foreground:currentColor]`;
-- un colore viene sempre da una variabile del tema (`--vscode-*` o un token `vsc-*`), mai scritto a mano; fanno eccezione i valori fissi di VSCodium (il rosso del pulsante Chiudi) e i colori dei loghi.
+Rules for whoever adds a control:
+- fields and selects send a `change` that does not bubble: React's `onChange` on a hand-written `<vscode-*>` tag never fires. Use the wrappers (`VscodeTextfield`…) or a `workbench\` primitive;
+- on a hand-written `<vscode-*>` tag write `class` and `for`, not `className` and `htmlFor`; the JSX types are in `elements.ts`;
+- `vscode-icon` needs the codicon CSS with the id `vscode-codicon-stylesheet` (`elements.ts` adds it) and takes its color from `--vscode-icon-foreground`: for the color of the surrounding text, `[--vscode-icon-foreground:currentColor]`;
+- a color always comes from a theme variable (`--vscode-*` or a `vsc-*` token), never written by hand; the exceptions are VSCodium's fixed values (the red of the Close button) and the logo colors.
 
-Restano nativi, con il perché nel file: i pulsanti della finestra (`titlebar.tsx`), barra delle attività e barra di stato (`App.tsx`), la scelta dell'agente con i loghi (`agents.tsx`, ruolo `radio`), il misuratore dei limiti (`stats.tsx`, ruolo `meter`), il campo con suggerimenti di `extensions.tsx` (`<datalist>`, che non attraversa lo shadow root), il pulsante del menu bloccato di `versions\kit.tsx`, le scelte a pulsante della procedura guidata (`wizard.tsx`, `aria-pressed`).
+These stay native, with the reason in the file: the window buttons (`titlebar.tsx`), activity bar and status bar (`App.tsx`), the agent choice with the logos (`agents.tsx`, `radio` role), the limits meter (`stats.tsx`, `meter` role), the field with suggestions in `extensions.tsx` (`<datalist>`, which does not cross the shadow root), the locked menu button in `versions\kit.tsx`, the button choices of the wizard (`wizard.tsx`, `aria-pressed`).
 
-Prove: `test\ui\workbench\controls.test.tsx` (eventi che scattano davvero, valori controllati, Invio, nomi accessibili), `test\ui\workbench\elements.test.tsx` (registrazione, codicon). jsdom non ha `adoptedStyleSheets`: `test\ui\setup.ts` ne dà una versione vuota, che non disegna nulla.
+Tests: `test\ui\workbench\controls.test.tsx` (events that really fire, controlled values, Enter, accessible names), `test\ui\workbench\elements.test.tsx` (registration, codicon). jsdom has no `adoptedStyleSheets`: `test\ui\setup.ts` provides an empty version of it, which draws nothing.
 
-### Tema
+### Theme
 
-Una sola fonte: `docs\brand\themes.py` risolve Dark Modern e Light Modern di VSCodium con l'enfasi Atollo e scrive tre file.
+A single source: `docs\brand\themes.py` resolves VSCodium's Dark Modern and Light Modern with the Atollo accent and writes three files.
 
-- `tauri\editor-theme\`: i temi «Atollo Dark» e «Atollo Light» dell'editor;
-- `ui\src\theme-vscode.css`: per ciascun tema circa 800 variabili `--vscode-*`, come VS Code le dà alle sue webview, con i font di Windows. I valori, dal più debole al più forte: le tabelle di `docs\brand\vscode-defaults\` (da `@vscode-elements/webview-playground` 1.9.0, licenza MIT), `BUILTIN`, `DERIVED` (i colori che VS Code calcola da una chiave cambiata dal brand, controllati sulle tabelle), il tema dell'editor intero. Nome come nelle webview: solo il primo punto diventa `-`;
-- `ui\src\theme-colors.css`: i token `--vsc-*` per Tailwind, ciascuno un `var(--vscode-…)`.
+- `tauri\editor-theme\`: the editor's "Atollo Dark" and "Atollo Light" themes;
+- `ui\src\theme-vscode.css`: for each theme about 800 `--vscode-*` variables, as VS Code gives them to its webviews, with the Windows fonts. The values, from weakest to strongest: the tables in `docs\brand\vscode-defaults\` (from `@vscode-elements/webview-playground` 1.9.0, MIT license), `BUILTIN`, `DERIVED` (the colors VS Code computes from a key changed by the brand, checked against the tables), the whole editor theme. Names as in the webviews: only the first dot becomes `-`;
+- `ui\src\theme-colors.css`: the `--vsc-*` tokens for Tailwind, each one a `var(--vscode-…)`.
 
-Così app ed editor hanno gli stessi colori, chiave per chiave. Un colore si cambia in `themes.py` (in `BRAND`), poi `python docs/brand/themes.py`. Un test controlla che ogni variabile letta dai componenti di `@vscode-elements/elements` sia definita in tutti e due i temi.
+This way the app and the editor have the same colors, key by key. A color is changed in `themes.py` (in `BRAND`), then `python docs/brand/themes.py`. A test checks that every variable read by the `@vscode-elements/elements` components is defined in both themes.
 
-## Opportunità individuate, non ancora fatte
+## Opportunities found, not yet done
 
-Dall'analisi del 15/10/2026. Fatte: comandi per area e regole dei file (D-86); cartelle per area, file grandi divisi, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, ciclo fra le pagine dei progetti (D-87); controlli e tema di VSCodium (D-88). Restano:
+From the analysis of October 15, 2026. Done: commands per area and file rules (D-86); folders per area, large files split, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, cycle among the project pages (D-87); VSCodium controls and theme (D-88). Remaining:
 
-1. **Errore di lettura che resta sullo schermo**: in `App.tsx` (informazioni), `eject.tsx`, `settings\page.tsx` e `databases\page.tsx` un errore di lettura resta anche dopo una lettura riuscita. Va deciso se è voluto; se no, quelle letture passano a `useLoad` con `"show"`.
-2. ~~**Conferme nella pagina senza `alertdialog`**~~: fatto il 17/10/2026 (D-106), le quattro conferme usano `InlineConfirm`.
-3. **Anteprima riusata dai test**: `App.test.tsx` ricostruisce a mano progetti e risposte che `api\` ha già come anteprima.
-4. **`versions\relations\mod.rs`** include ancora `data\app\tool-versions.json` nell'impronta della matrice, file che dal 15/10/2026 nessuno scrive più (D-80): innocuo, da togliere. Insieme si può aggiornare il `_doc` di `tauri\catalog\relations.json` («Read by relations.rs»): il file entra nell'impronta, che cambierebbe una volta.
-5. **Pacchetto dell'interfaccia**: la build avvisa che il file principale supera 500 kB (circa 1 MB, 300 kB compresso, da quando registra tutti i componenti di `vscode-elements`); si possono registrare solo i componenti usati e caricare quando servono le pagine meno usate (Impostazioni, procedura guidata, matrice).
-6. **Controlli ancora nativi** (sopra, «Restano nativi»): servirebbero un `TextField` con suggerimenti, un pulsante con `aria-pressed` e testo, un misuratore con valore.
-7. ~~**`projectmcp.tsx`** non importato~~: era già usato dalla pagina del progetto; dal 17/10/2026 è `projects\mcp.tsx`.
-8. **File sopra le 900 righe**: `install\web.rs` (959), `db\services\mod.rs` (956), `db\auth.rs` (925). Si dividono come `servers\` (un `impl` per file).
-9. **`ui\src\guide\`**: `sections.tsx` (3062 righe) e `model.ts` (1731) sono testi della Guida più che codice; si possono dividere per sezione.
+1. **Read error that stays on screen**: in `App.tsx` (information), `eject.tsx`, `settings\page.tsx` and `databases\page.tsx` a read error stays even after a successful read. It needs deciding whether this is intended; if not, those reads move to `useLoad` with `"show"`.
+2. ~~**In-page confirmations without `alertdialog`**~~: done on October 17, 2026 (D-106), the four confirmations use `InlineConfirm`.
+3. **Preview reused by the tests**: `App.test.tsx` rebuilds by hand projects and responses that `api\` already has as a preview.
+4. **`versions\relations\mod.rs`** still includes `data\app\tool-versions.json` in the matrix fingerprint, a file nobody has written since October 15, 2026 (D-80): harmless, to be removed. Along with it the `_doc` of `tauri\catalog\relations.json` ("Read by relations.rs") can be updated: the file is part of the fingerprint, which would change once.
+5. **Interface bundle**: the build warns that the main file exceeds 500 kB (about 1 MB, 300 kB compressed, since it registers all the `vscode-elements` components); it is possible to register only the components in use and to load the less used pages (Settings, wizard, matrix) when needed.
+6. **Controls still native** (above, "These stay native"): they would need a `TextField` with suggestions, a button with `aria-pressed` and text, a meter with a value.
+7. ~~**`projectmcp.tsx`** not imported~~: it was already used by the project page; since October 17, 2026 it is `projects\mcp.tsx`.
+8. **Files over 900 lines**: `install\web.rs` (959), `db\services\mod.rs` (956), `db\auth.rs` (925). They are split like `servers\` (one `impl` per file).
+9. **`ui\src\guide\`**: `sections.tsx` (3062 lines) and `model.ts` (1731) are Guide texts more than code; they can be split by section.
