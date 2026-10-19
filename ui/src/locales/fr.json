@@ -872,8 +872,8 @@
   "Riduci": "Réduire",
   "Mostra solo lo stato sulla piattaforma scelta": "Afficher seulement l'état sur la plateforme choisie",
   "Mostra lo stato anche sulle altre piattaforme": "Afficher aussi l'état sur les autres plateformes",
-  "da reinstallare": "à réinstaller",
-  "incompleto": "incomplet",
-  "scelto, non scaricato": "choisi, non téléchargé",
+  "da aggiornare": "à mettre à jour",
+  "pre-installato": "pré-installé",
+  "non esiste": "absent",
   "nessun file in data/apps/{0}": "aucun fichier dans data/apps/{0}"
 }
