@@ -51,6 +51,7 @@
   "toolsTitle": "Strumenti per sistema",
   "toolsLead": "Tutti i componenti del catalogo di Atollo, per genere, su ognuno dei sei sistemi. Si scaricano solo quelli che scegli, o quando un progetto ne ha bisogno. La tabella si genera dal catalogo dell'app a ogni pubblicazione del sito.",
   "mxComponent": "Componente",
+  "mxHere": "questo PC",
   "mxLegendOk": "nativo",
   "mxLegendEmu": "build x64 in emulazione",
   "mxLegendNo": "non disponibile (passa sopra la casella per il motivo)",
