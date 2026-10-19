@@ -2,7 +2,7 @@
 // tauri/catalog/components.json for what exists where, tauri/i18n/catalog.json
 // for the descriptions and reasons in en/fr/de. Availability follows
 // Component::is_available_on (tauri/src/setup/catalog.rs), as
-// scripts/matrix/gen_matrix.py does for docs/app/MATRICE-STRUMENTI.html.
+// scripts/matrix/gen_matrix.py does for docs/app/TOOLS-MATRIX.html.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 

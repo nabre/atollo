@@ -1,11 +1,13 @@
 """Tool x system x architecture matrix of the catalog, as one HTML page.
 
 python -I scripts/matrix/gen_matrix.py [<repo> [<out>]]
-(default: this repository and docs/app/MATRICE-STRUMENTI.html)
+(default: this repository and docs/app/TOOLS-MATRIX.html)
 
-Everything comes from the code: availability, emulation, needs and sizes
-from tauri/catalog/components.json with the logic of
-Component::is_available_on (tauri/src/setup/catalog.rs); the retired
+The page is in English, as the documentation. Everything comes from the
+code: availability, emulation, needs and sizes from
+tauri/catalog/components.json with the logic of
+Component::is_available_on (tauri/src/setup/catalog.rs), its Italian
+reasons in English from tauri/i18n/catalog.json (as site/matrix.mjs); the retired
 components from RETIRED in tauri/src/versions/disk.rs; sources and the
 targets where a component is a conda environment that does not follow the
 kit from scripts/matrix/sources.json, which test/rust/install/mod.rs checks
@@ -20,7 +22,7 @@ import sys
 
 here = os.path.dirname(os.path.abspath(__file__))
 repo = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(here))
-out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(repo, "docs", "app", "MATRICE-STRUMENTI.html")
+out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(repo, "docs", "app", "TOOLS-MATRIX.html")
 
 
 def read(*parts):
@@ -30,6 +32,14 @@ def read(*parts):
 
 cat = json.loads(read("tauri", "catalog", "components.json"))["components"]
 SRC = json.loads(read("scripts", "matrix", "sources.json"))["components"]
+I18N = json.loads(read("tauri", "i18n", "catalog.json"))
+
+
+def en(it):
+    """The catalog's English for an Italian string of components.json."""
+    return I18N.get(it, {}).get("en", it)
+
+
 missing = sorted({c["id"] for c in cat} ^ set(SRC))
 if missing:
     sys.exit(f"scripts/matrix/sources.json and the catalog differ: {', '.join(missing)}")
@@ -44,12 +54,13 @@ TARGETS = [
     ("linux-x64", "Linux", "x64"),
     ("linux-arm64", "Linux", "ARM64"),
 ]
+# The app's own English names of the groups (ui/src/locales/en.json).
 GROUPS = {
-    "required": "Obbligatori",
+    "required": "Required",
     "app": "App",
-    "agents": "Agenti",
-    "languages": "Linguaggi e strumenti",
-    "databases": "Database",
+    "agents": "Agents",
+    "languages": "Languages and tools",
+    "databases": "Databases",
 }
 
 byid = {c["id"]: c for c in cat}
@@ -57,16 +68,16 @@ byid = {c["id"]: c for c in cat}
 
 def base_status(c, t):
     if c.get("targets") and t not in c["targets"]:
-        return ("no", SRC[c["id"]].get("notOffered", "il catalogo non lo offre su questo sistema"))
+        return ("no", SRC[c["id"]].get("notOffered", "the catalog does not offer it on this system"))
     if t in c.get("unavailable", {}):
-        return ("no", c["unavailable"][t])
+        return ("no", en(c["unavailable"][t]))
     if t == "win32-arm64" and c.get("noArm64"):
-        return ("no", "nessuna build per Windows ARM64, nemmeno in emulazione")
+        return ("no", "no build for Windows ARM64, not even under emulation")
     if t == "win32-arm64" and c.get("x64Only"):
-        return ("emu", "build x64 in emulazione (Prism)")
+        return ("emu", "x64 build under emulation (Prism)")
     if t == "darwin-arm64" and c.get("rosetta"):
-        return ("emu", "build x64 con Rosetta 2")
-    return ("ok", "build nativa")
+        return ("emu", "x64 build with Rosetta 2")
+    return ("ok", "native build")
 
 
 def needs_on(c, t):
@@ -79,7 +90,7 @@ def status(c, t):
         return s
     for n in needs_on(c, t):
         if n in byid and base_status(byid[n], t)[0] == "no":
-            return ("dep", f"richiede {byid[n]['name']}, non disponibile qui")
+            return ("dep", f"needs {byid[n]['name']}, not available here")
     return s
 
 
@@ -99,7 +110,7 @@ def where(ts):
         if both <= ts:
             out.append(os_)
             ts -= both
-    out = [" e ".join(out)] if out else []
+    out = [" and ".join(out)] if out else []
     out += [f"{os_} {ar}" for t, os_, ar in TARGETS if t in ts]
     return ", ".join(out)
 
@@ -109,50 +120,50 @@ notes = []
 emu = [c["id"] for c in cat if c.get("x64Only")]
 noarm = [c["id"] for c in cat if c.get("noArm64")]
 arm_needs = [(c["id"], c["needsByTarget"]["win32-arm64"]) for c in cat if "win32-arm64" in c.get("needsByTarget", {})]
-line = f"<b>Windows ARM64</b>: {html.escape(names(emu))} usano la build x64 in emulazione"
+line = f"<b>Windows ARM64</b>: {html.escape(names(emu))} use the x64 build under emulation"
 if noarm:
-    line += f"; {html.escape(names(noarm))} non ha build"
+    line += f"; {html.escape(names(noarm))} has no build"
 for cid, deps in arm_needs:
-    line += f"; {html.escape(byid[cid]['name'])} richiede anche {html.escape(names(deps))}"
+    line += f"; {html.escape(byid[cid]['name'])} also needs {html.escape(names(deps))}"
 notes.append(line + ".")
 rosetta = [c["id"] for c in cat if c.get("rosetta")]
 notes.append(
     "<b>macOS Apple Silicon</b>: "
-    + (f"{html.escape(names(rosetta))} con Rosetta 2." if rosetta else "tutto nativo, nessun componente richiede Rosetta 2.")
+    + (f"{html.escape(names(rosetta))} with Rosetta 2." if rosetta else "all native, no component needs Rosetta 2.")
 )
 for c in cat:
     for t, why in c.get("unavailable", {}).items():
-        notes.append(f"<b>{html.escape(c['name'])}</b> su {where([t])}: {html.escape(why)}.")
+        notes.append(f"<b>{html.escape(c['name'])}</b> on {where([t])}: {html.escape(en(why))}.")
     if c.get("targets"):
         off = [t for t, _, _ in TARGETS if t not in c["targets"]]
-        why = SRC[c["id"]].get("notOffered", "il catalogo non lo offre")
-        notes.append(f"<b>{html.escape(c['name'])}</b> non c'è su {where(off)}: {html.escape(why)}.")
+        why = SRC[c["id"]].get("notOffered", "the catalog does not offer it")
+        notes.append(f"<b>{html.escape(c['name'])}</b> is missing on {where(off)}: {html.escape(why)}.")
 for c in cat:
     extra = {t: d for t, d in c.get("needsByTarget", {}).items() if t != "win32-arm64"}
     if extra:
         ts = sorted(extra, key=[t for t, _, _ in TARGETS].index)
         deps = sorted({d for v in extra.values() for d in v})
-        notes.append(f"<b>{html.escape(c['name'])}</b> su {where(ts)} richiede anche {html.escape(names(deps))}.")
+        notes.append(f"<b>{html.escape(c['name'])}</b> on {where(ts)} also needs {html.escape(names(deps))}.")
 conda = [(cid, s["notRelocatable"]) for cid, s in SRC.items() if s.get("notRelocatable")]
 notes.append(
-    "<b>Non rilocabili</b> (ambienti conda, <i class=\"tag\">conda</i>): "
-    + "; ".join(f"{html.escape(byid[cid]['name'])} su {where(ts)}" for cid, ts in conda)
-    + ". Quando il kit cambia cartella si ricreano dai pacchetti conservati nel kit, senza rete (D-92, D-118); tutto il resto segue il kit."
+    "<b>Not relocatable</b> (conda environments, <i class=\"tag\">conda</i>): "
+    + "; ".join(f"{html.escape(byid[cid]['name'])} on {where(ts)}" for cid, ts in conda)
+    + ". When the kit changes folder they are created again from the packages kept in the kit, without the network (D-92, D-118); everything else follows the kit."
 )
 if RETIRED:
     notes.append(
-        f"<b>Tolti dal catalogo</b> (<code>RETIRED</code>, cartelle rimosse all'avvio): {html.escape(', '.join(RETIRED))}."
-        " MySQL è l'unico server SQL (D-117), Caddy il server web predefinito (D-120)."
+        f"<b>Removed from the catalog</b> (<code>RETIRED</code>, folders removed at startup): {html.escape(', '.join(RETIRED))}."
+        " MySQL is the only SQL server (D-117), Caddy the default web server (D-120)."
     )
 notes.append(
-    "Fonte dei dati: <code>tauri/catalog/components.json</code> (<code>targets</code>, <code>unavailable</code>, "
+    "Source of the data: <code>tauri/catalog/components.json</code> (<code>targets</code>, <code>unavailable</code>, "
     "<code>noArm64</code>, <code>x64Only</code>, <code>rosetta</code>, <code>needs</code>, <code>needsByTarget</code>, "
-    "<code>mb</code>) con la logica di <code>Component::is_available_on</code>; fonti e componenti non rilocabili da "
-    "<code>scripts/matrix/sources.json</code>, controllato contro gli installatori da <code>cargo test</code>."
+    "<code>mb</code>) with the logic of <code>Component::is_available_on</code>; sources and non-relocatable components from "
+    "<code>scripts/matrix/sources.json</code>, checked against the installers by <code>cargo test</code>."
 )
 NOTES = "\n".join(f"  <li>{n}</li>" for n in notes)
 
-LABEL = {"ok": "Nativo", "emu": "x64 emulato", "no": "Non disponibile", "dep": "Bloccato"}
+LABEL = {"ok": "Native", "emu": "x64 emulated", "no": "Not available", "dep": "Blocked"}
 ICON = {"ok": "●", "emu": "◐", "no": "○", "dep": "◌"}
 
 rows = []
@@ -171,10 +182,10 @@ for g in order:
             tips = [why]
             ndeps = c.get("needsByTarget", {}).get(t)
             if ndeps and k != "no":
-                tips.append("qui serve anche " + names(ndeps))
-                extra += '<i class="tag">+dip</i>'
+                tips.append("here it also needs " + names(ndeps))
+                extra += '<i class="tag">+dep</i>'
             if k in ("ok", "emu") and nonreloc(cid, t):
-                tips.append("ambiente conda, non rilocabile: ricreato dai pacchetti conservati se il kit cambia cartella (D-92, D-118)")
+                tips.append("conda environment, not relocatable: created again from the kept packages if the kit changes folder (D-92, D-118)")
                 extra += '<i class="tag">conda</i>'
             tip = html.escape("; ".join(tips))
             cells.append(f'<td class="s-{k}" title="{tip}"><span class="pill"><b>{ICON[k]}</b>{LABEL[k]}</span>{extra}</td>')
@@ -196,18 +207,20 @@ summary = "".join(
     f'<div class="card"><div class="cos">{os_} <em>{ar}</em></div><code>{t}</code>'
     f'<div class="bar">'
     + "".join(f'<span class="b-{k}" style="flex:{counts[t][k]}"></span>' for k in ("ok", "emu", "dep", "no") if counts[t][k])
-    + f'</div><div class="nums"><span class="c-ok">{counts[t]["ok"]} nativi</span>'
-    f'<span class="c-emu">{counts[t]["emu"]} emulati</span>'
-    f'<span class="c-no">{counts[t]["no"] + counts[t]["dep"]} assenti</span></div></div>'
+    + f'</div><div class="nums"><span class="c-ok">{counts[t]["ok"]} native</span>'
+    f'<span class="c-emu">{counts[t]["emu"]} emulated</span>'
+    f'<span class="c-no">{counts[t]["no"] + counts[t]["dep"]} missing</span></div></div>'
     for t, os_, ar in TARGETS
 )
 
 page = f"""<!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matrice strumenti per sistema</title>
+<title>Atollo tools matrix by system</title>
+<meta name="description" content="Every component of Atollo's catalog on Windows, macOS and Linux, x64 and ARM64: native, emulated or not available, with its source.">
+<link rel="canonical" href="https://nabre.github.io/atollo/#tools">
 <style>
 :root {{
   --bg:#f7f7f5; --panel:#fff; --ink:#1d1f23; --mute:#6b7079; --line:#e3e3df; --head:#efefeb;
@@ -265,26 +278,26 @@ tr.hide {{ display:none; }}
 </head>
 <body>
 <main>
-<h1>Matrice strumenti × sistema operativo × architettura</h1>
-<p class="sub">{len(cat)} componenti di <code>tauri/catalog/components.json</code> · 6 target · generata da <code>scripts/matrix/gen_matrix.py</code></p>
+<h1>Tools × operating system × architecture matrix</h1>
+<p class="sub">{len(cat)} components of <code>tauri/catalog/components.json</code> · 6 targets · generated by <code>scripts/matrix/gen_matrix.py</code></p>
 <div class="cards">{summary}</div>
 <div class="tools">
-  <input id="q" type="search" placeholder="Cerca componente o fonte…" aria-label="Cerca">
-  <button data-f="all" aria-pressed="true">Tutti</button>
+  <input id="q" type="search" placeholder="Search a component or source…" aria-label="Search">
+  <button data-f="all" aria-pressed="true">All</button>
   {''.join(f'<button data-f="{g}" aria-pressed="false">{GROUPS[g]}</button>' for g in order)}
 </div>
 <div class="legend">
-  <span>● <b style="color:var(--ok)">Nativo</b>: build per l'architettura</span>
-  <span>◐ <b style="color:var(--emu)">x64 emulato</b>: build x64 su Windows ARM64 (Prism)</span>
-  <span>◌ <b style="color:var(--dep)">Bloccato</b>: manca una dipendenza su quel target</span>
-  <span>○ Non disponibile</span>
-  <span><i class="tag">+dip</i> dipendenza in più su quel target</span>
-  <span><i class="tag">conda</i> non rilocabile, ricreato dai pacchetti conservati (D-92, D-118)</span>
-  <span>Passa il mouse su una cella per il motivo.</span>
+  <span>● <b style="color:var(--ok)">Native</b>: a build for the architecture</span>
+  <span>◐ <b style="color:var(--emu)">x64 emulated</b>: x64 build on Windows ARM64 (Prism)</span>
+  <span>◌ <b style="color:var(--dep)">Blocked</b>: a dependency is missing on that target</span>
+  <span>○ Not available</span>
+  <span><i class="tag">+dep</i> one more dependency on that target</span>
+  <span><i class="tag">conda</i> not relocatable, created again from the kept packages (D-92, D-118)</span>
+  <span>Hover a cell for the reason.</span>
 </div>
 <div class="wrap">
 <table>
-<thead><tr><th>Componente</th><th>MB<br>(x64)</th>{head_cells}<th>Dipende da</th><th>Fonte</th></tr></thead>
+<thead><tr><th>Component</th><th>MB<br>(x64)</th>{head_cells}<th>Depends on</th><th>Source</th></tr></thead>
 <tbody>
 {chr(10).join(rows)}
 </tbody>

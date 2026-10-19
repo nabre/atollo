@@ -1,6 +1,6 @@
 //! Atollo: portable development environment for Windows in one exe.
 //!
-//! Start order (docs/app/ARCHITECTURE.md, Avvio): kit root → folders and settings →
+//! Start order (docs/app/ARCHITECTURE.md, Startup): kit root → folders and settings →
 //! environment of this process inside `data\` → command line or window →
 //! one instance per kit → WebView2 → Job Object → main window.
 #![cfg_attr(not(test), windows_subsystem = "windows")]

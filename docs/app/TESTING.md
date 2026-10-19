@@ -1,6 +1,8 @@
-# Prove
+# Testing
 
-Le prove automatiche girano nella CI (`.github/workflows/app.yml`) e in locale, dalla radice del repository:
+English · [Italiano](TESTING.it.md)
+
+The automated tests run in CI (`.github/workflows/app.yml`) and locally, from the repository root:
 
 ```
 npm run lint
@@ -8,93 +10,93 @@ npm test
 npm -w ui run build
 ```
 
-`npm run lint` controlla `cargo fmt`, `cargo clippy -D warnings`, ESLint e Prettier (anche sui test, con i tipi di `test\ui\tsconfig.json`); `npm test` esegue `cargo test` e i test dell'interfaccia (Vitest); `npm -w ui run build` controlla i tipi (`tsc -b`) e compila l'interfaccia.
+`npm run lint` checks `cargo fmt`, `cargo clippy -D warnings`, ESLint and Prettier (on the tests too, with the types from `test\ui\tsconfig.json`); `npm test` runs `cargo test` and the interface tests (Vitest); `npm -w ui run build` checks the types (`tsc -b`) and builds the interface.
 
-Tutte le prove stanno in `test\`, con la struttura dei sorgenti:
-- `test\rust\<percorso>.rs`: le prove di `tauri\src\<percorso>.rs`. Restano un modulo figlio di quel file, che le dichiara in fondo con `#[cfg(test)] #[path = "…/test/rust/<percorso>.rs"] mod tests;`: vedono le sue funzioni private (`use super::*`), come prima. Una prova nuova va nel file di `test\rust` del modulo; un modulo che non ne ha ancora aggiunge le tre righe.
-- `test\ui\<percorso>.test.ts(x)`: le prove di `ui\src\<percorso>`, che importano da `../../ui/src/…`; `test\ui\setup.ts` prepara jsdom (Vitest, `ui\vite.config.ts`).
+All the tests live in `test\`, with the same structure as the sources:
+- `test\rust\<path>.rs`: the tests of `tauri\src\<path>.rs`. They remain a child module of that file, which declares them at the bottom with `#[cfg(test)] #[path = "…/test/rust/<path>.rs"] mod tests;`: they see its private functions (`use super::*`), as before. A new test goes in the module's file in `test\rust`; a module that does not have one yet adds the three lines.
+- `test\ui\<path>.test.ts(x)`: the tests of `ui\src\<path>`, which import from `../../ui/src/…`; `test\ui\setup.ts` sets up jsdom (Vitest, `ui\vite.config.ts`).
 
-Le prove dal vivo sulle fonti delle versioni (rete, ignorate di solito): `cargo test live_lines -- --ignored --nocapture` (con `GITHUB_TOKEN`), vedi CATALOG.md §2.
+The live tests on the version sources (network, usually ignored): `cargo test live_lines -- --ignored --nocapture` (with `GITHUB_TOKEN`), see CATALOG.md §2.
 
-Coprono, fra l'altro:
-- radice del kit, ambiente e PATH;
-- file del kit (`fsx.rs`): BOM, byte non UTF-8, file mancante, vuoto o danneggiato, scrittura atomica senza file temporanei rimasti;
-- errore dei comandi (`commands\error.rs`): Tauri manda per `CmdError` lo stesso valore di una stringa, `or_fail` manda il testo breve e `or_fail_chain` tutta la catena;
-- catalogo, dipendenze, parti (`keys`), limiti ARM64 e componenti che servono a comandi e agenti (`setup\needs.rs`);
-- righe di versione lette dalle fonti di ogni linguaggio (Go, Java, .NET, Zig: prove in `test\rust\install\lang\`);
-- editor alla versione fissata del rilascio;
-- download con checksum e firme;
-- editor e server web reale (con il token e senza);
-- finestre dell'editor che non possono chiamare i comandi dell'app;
-- una console reale in `conhost.exe`, in una cartella con spazi;
-- allineamento degli agenti e accesso di Antigravity con Gestione credenziali reale;
-- rilevamento dei progetti su esempi (Node, Next, Tauri, Electron, PHP, Laravel, Django, FastAPI, Flask, Streamlit, Rust, statico, progetti composti, `panel.json` e `pannello.json`);
-- porte ricordate e bloccate, avvio e arresto di un'azione attraverso il suo job;
-- server di file: host, file nascosti, `..`, collegamenti;
-- scambio dell'exe in aggiornamento;
-- DPAPI di `keyring-before.json`;
-- cataloghi delle quattro lingue (Rust e interfaccia), completi e con gli stessi segnaposto;
-- `useLoad` (`test\ui\hooks.test.ts`): prima lettura, le tre politiche d'errore, nuova lettura quando cambiano `load` o `key` ma non la politica, `enabled`, lettura periodica fermata allo smontaggio, `setData`;
-- controlli dell'interfaccia su `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): eventi che scattano davvero, valori controllati, Invio nei moduli, nomi accessibili, codicon; ogni variabile `--vscode-*` letta dai componenti definita nei due temi (`test\ui\theme.test.ts`).
+They cover, among other things:
+- kit root, environment and PATH;
+- kit files (`fsx.rs`): BOM, non-UTF-8 bytes, missing, empty or corrupted file, atomic write with no temporary files left behind;
+- command errors (`commands\error.rs`): for `CmdError` Tauri sends the same value as for a string, `or_fail` sends the short text and `or_fail_chain` the whole chain;
+- catalog, dependencies, parts (`keys`), ARM64 limits and components needed by commands and agents (`setup\needs.rs`);
+- version lines read from the sources of each language (Go, Java, .NET, Zig: tests in `test\rust\install\lang\`);
+- editor at the version pinned by the release;
+- downloads with checksums and signatures;
+- editor and real web server (with the token and without);
+- editor windows that cannot call the app's commands;
+- a real console in `conhost.exe`, in a folder with spaces;
+- agent alignment and Antigravity sign-in with the real Credential Manager;
+- project detection on samples (Node, Next, Tauri, Electron, PHP, Laravel, Django, FastAPI, Flask, Streamlit, Rust, static, composite projects, `panel.json` and `pannello.json`);
+- remembered and locked ports, starting and stopping an action through its job;
+- file server: host, hidden files, `..`, links;
+- exe swap during an update;
+- DPAPI of `keyring-before.json`;
+- catalogs of the four languages (Rust and interface), complete and with the same placeholders;
+- `useLoad` (`test\ui\hooks.test.ts`): first load, the three error policies, a new load when `load` or `key` change but not the policy, `enabled`, periodic loading stopped on unmount, `setData`;
+- interface controls on `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): events that really fire, controlled values, Enter in forms, accessible names, codicons; every `--vscode-*` variable read by the components defined in both themes (`test\ui\theme.test.ts`).
 
-## Linux, macOS e Windows ARM64
+## Linux, macOS and Windows ARM64
 
-**CI** (`.github/workflows/app.yml`, WP-0.6). Su ogni push di `main` e `feature/platforms` e su ogni pull request, solo i job che la modifica richiede (D-134). Il job `Changes` assegna a ogni file cambiato i livelli dei job che possono vederlo rompersi. L'elenco è nel passo `Levels`, e ogni livello comprende quelli sotto:
+**CI** (`.github/workflows/app.yml`, WP-0.6). On every push to `main` and `feature/platforms` and on every pull request, only the jobs the change requires (D-134). The `Changes` job assigns each changed file the levels of the jobs that can see it break. The list is in the `Levels` step, and each level includes the ones below it:
 
-- **bundle**: il pacchetto e il codice che avvia l'app (`tauri/Cargo.toml`, `build.rs`, `tauri.conf.json`, `Info.plist`, `entitlements.plist`, `windows-app.manifest`, `icons/`; in `tauri/src`: `main.rs`, `cli.rs`, `kit.rs`, `log.rs`, `env.rs`, `settings.rs`, `fsx.rs`, `i18n.rs`, `os/`, `setup/`). Partono `Bundle *` e `Release smoke *`, più tutto quello sotto.
-- **kit**: ciò che `prepare` e le prove `real_` usano su un kit vero (`tauri/src/install/`, `net/`, `editor/`, `runtime/`, `tauri/catalog/components.json`). Partono `Build …` con l'exe, l'installazione reale e le prove reali, più tutto quello sotto.
-- **rust**: il resto del codice e dei dati dell'app (`tauri/src` negli altri moduli, gli altri cataloghi, `i18n/`, `editor-theme/`, `capabilities/`, `permissions/`, `site/assets/fonts/`) e i test Rust (`test/rust/`, `scripts/matrix/sources.json`, `scripts/test-linux.sh`, `rustfmt.toml`). Partono `Lint and test`, `Test *` e `Test win32-arm64` con `clippy` e `cargo test` su ogni sistema.
-- **ui**: l'interfaccia (`ui/`, `test/ui/`, `eslint.config.mjs`, `.prettierrc.json`, anche `components.json`, che i test dell'interfaccia importano). Partono lint, Vitest e build in `Lint and test` (più `cargo fmt`) e il solo Vitest in `Test linux-x64`.
+- **bundle**: the package and the code that starts the app (`tauri/Cargo.toml`, `build.rs`, `tauri.conf.json`, `Info.plist`, `entitlements.plist`, `windows-app.manifest`, `icons/`; in `tauri/src`: `main.rs`, `cli.rs`, `kit.rs`, `log.rs`, `env.rs`, `settings.rs`, `fsx.rs`, `i18n.rs`, `os/`, `setup/`). `Bundle *` and `Release smoke *` run, plus everything below.
+- **kit**: what `prepare` and the `real_` tests use on a real kit (`tauri/src/install/`, `net/`, `editor/`, `runtime/`, `tauri/catalog/components.json`). `Build …` runs with the exe, the real installation and the real tests, plus everything below.
+- **rust**: the rest of the app's code and data (`tauri/src` in the other modules, the other catalogs, `i18n/`, `editor-theme/`, `capabilities/`, `permissions/`, `site/assets/fonts/`) and the Rust tests (`test/rust/`, `scripts/matrix/sources.json`, `scripts/test-linux.sh`, `rustfmt.toml`). `Lint and test`, `Test *` and `Test win32-arm64` run, with `clippy` and `cargo test` on every system.
+- **ui**: the interface (`ui/`, `test/ui/`, `eslint.config.mjs`, `.prettierrc.json`, and also `components.json`, which the interface tests import). Lint, Vitest and build run in `Lint and test` (plus `cargo fmt`), and Vitest alone in `Test linux-x64`.
 
-`Cargo.toml`, `Cargo.lock`, `package*.json`, `.gitattributes` e `app.yml` avviano tutto. Non avviano altro che `Changes` i file generati (`tauri/gen/`), i documenti, il sito, gli script di Apache e PHP (con i loro workflow) e `scripts/cross-check/`. Un percorso che l'elenco non conosce avvia tutto, e il riepilogo lo nomina: va aggiunto all'elenco. Il giro completo parte sempre anche con un tag `app-v*`, con un avvio a mano (`gh workflow run app.yml`) e quando il confronto non riesce (per esempio dopo un force push). Il riepilogo del job `Changes` mostra i livelli scelti.
+`Cargo.toml`, `Cargo.lock`, `package*.json`, `.gitattributes` and `app.yml` start everything. Generated files (`tauri/gen/`), documents, the site, the Apache and PHP scripts (with their workflows) and `scripts/cross-check/` start nothing but `Changes`. A path the list does not know starts everything, and the summary names it: it must be added to the list. The full run also always starts with an `app-v*` tag, with a manual start (`gh workflow run app.yml`) and when the comparison fails (for example after a force push). The summary of the `Changes` job shows the chosen levels.
 
-| Job | Runner | Cosa |
+| Job | Runner | What |
 | --- | --- | --- |
-| `Lint and test` | `windows-latest` | lint, Vitest, build dell'interfaccia, `cargo fmt`, `clippy`, `cargo test` |
-| `Test linux-x64` | `ubuntu-latest` | librerie di Tauri, build e Vitest dell'interfaccia, `clippy --all-targets -D warnings`, `cargo test` |
-| `Test linux-arm64` | `ubuntu-24.04-arm` | come sopra, senza Vitest |
-| `Test darwin-arm64` | `macos-latest` | build dell'interfaccia, `clippy`, `cargo test` |
-| `Test darwin-x64` | `macos-15-intel` | come sopra (`macos-13` non c'è più) |
-| `Test win32-arm64` | `windows-11-arm` | build dell'interfaccia, `cargo test` nativo |
-| `Build …` | `windows-latest` | exe x64 e arm64, prove reali (x64) |
-| `Bundle darwin-*` | `macos-latest`, `macos-15-intel` | `Atollo.app` con firma ad hoc verificata, `Info.plist`, zip, avvio di prova (D-113) |
-| `Bundle linux-*` | `ubuntu-24.04`, `ubuntu-24.04-arm`, contenitore `ubuntu:22.04` | AppImage e `tar.gz`, minimo di glibc con `objdump`, `--version` e `check` sotto `xvfb-run` |
-| `Release smoke *` | `macos-latest`, `macos-15-intel`, `ubuntu-24.04`, `ubuntu-24.04-arm` (senza contenitore) | gli artefatti `bundle-<target>` che il rilascio pubblica: nomi di `self_update.rs` e `.sha256`; macOS: quarantena messa e tolta con `xattr -dr`, firma, `--version`, `check`, kit accanto al `.app`; Linux: AppImage col nome del rilascio con `--appimage-extract-and-run`, `tar.gz` con il solo `libwebkit2gtk-4.1-0` (`ldd` senza «not found»), `--version` e `check` sotto `xvfb-run` (D-119) |
-| `Release` | `windows-latest` | solo sui tag `app-v*`, dopo `Build …` e `Release smoke *`: exe, `.app.zip`, AppImage e `tar.gz` con i `.sha256` ricontrollati, note del rilascio |
+| `Lint and test` | `windows-latest` | lint, Vitest, interface build, `cargo fmt`, `clippy`, `cargo test` |
+| `Test linux-x64` | `ubuntu-latest` | Tauri libraries, interface build and Vitest, `clippy --all-targets -D warnings`, `cargo test` |
+| `Test linux-arm64` | `ubuntu-24.04-arm` | as above, without Vitest |
+| `Test darwin-arm64` | `macos-latest` | interface build, `clippy`, `cargo test` |
+| `Test darwin-x64` | `macos-15-intel` | as above (`macos-13` no longer exists) |
+| `Test win32-arm64` | `windows-11-arm` | interface build, native `cargo test` |
+| `Build …` | `windows-latest` | x64 and arm64 exe, real tests (x64) |
+| `Bundle darwin-*` | `macos-latest`, `macos-15-intel` | `Atollo.app` with verified ad hoc signature, `Info.plist`, zip, trial start (D-113) |
+| `Bundle linux-*` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `ubuntu:22.04` container | AppImage and `tar.gz`, glibc minimum with `objdump`, `--version` and `check` under `xvfb-run` |
+| `Release smoke *` | `macos-latest`, `macos-15-intel`, `ubuntu-24.04`, `ubuntu-24.04-arm` (no container) | the `bundle-<target>` artifacts the release publishes: names from `self_update.rs` and `.sha256`; macOS: quarantine set and removed with `xattr -dr`, signature, `--version`, `check`, kit next to the `.app`; Linux: AppImage with the release name with `--appimage-extract-and-run`, `tar.gz` with only `libwebkit2gtk-4.1-0` (`ldd` with no “not found”), `--version` and `check` under `xvfb-run` (D-119) |
+| `Release` | `windows-latest` | only on `app-v*` tags, after `Build …` and `Release smoke *`: exe, `.app.zip`, AppImage and `tar.gz` with the `.sha256` checked again, release notes |
 
-**Build di Apache** (`.github/workflows/httpd.yml`, D-116), solo sulle pull request che toccano `scripts/build-httpd/**`, a mano (`gh workflow run httpd.yml --ref <branch>`) e sul tag `httpd-v<versione>-<build>`, che pubblica il rilascio: `httpd <target>` per i quattro target Unix (Linux nel contenitore `ubuntu:22.04`), `build.sh` e poi `test.sh`, che avvia Apache da una cartella con spazio e parentesi e dopo averla spostata, controlla i moduli che il kit carica, il minimo di glibc e le librerie (Linux), il minimo macOS 12 e le firme (macOS). In locale per Linux x64: `docker run ubuntu:22.04` con i pacchetti del job, `WORK=/w bash scripts/build-httpd/build.sh linux-x64 0 /out`, poi `test.sh /out/httpd-*.tar.gz`.
+**Apache build** (`.github/workflows/httpd.yml`, D-116), only on pull requests that touch `scripts/build-httpd/**`, by hand (`gh workflow run httpd.yml --ref <branch>`) and on the `httpd-v<version>-<build>` tag, which publishes the release: `httpd <target>` for the four Unix targets (Linux in the `ubuntu:22.04` container), `build.sh` and then `test.sh`, which starts Apache from a folder with a space and parentheses and after moving it, and checks the modules the kit loads, the glibc minimum and the libraries (Linux), the macOS 12 minimum and the signatures (macOS). Locally for Linux x64: `docker run ubuntu:22.04` with the job's packages, `WORK=/w bash scripts/build-httpd/build.sh linux-x64 0 /out`, then `test.sh /out/httpd-*.tar.gz`.
 
-Ogni job di test scrive nel riepilogo della run le prove passate, fallite e ignorate, con i nomi di quelle fallite. Su macOS gira tutto `cargo test`: con tauri 2.12.1 il feature `test` (il runtime finto di `test\rust\main.rs`) compila anche lì, quindi non serve un feature a parte (con 2.12.0 mancava `transparent`). In un repository senza runner ARM64 (privato) la variabile del repository `ARM64_RUNNERS=off` toglie i job `linux-arm64` e `win32-arm64`, che altrimenti resterebbero in coda: `linux-arm64` esce dalla lista dei target della matrice (il runner si ricava dal target, senza `include`, che GitHub applica dopo `exclude` e rimetterebbe il target tolto). Il job `win32-arm64` installa la toolchain `stable-aarch64-pc-windows-msvc` e fallisce se `rustc -vV` non riporta `host: aarch64-pc-windows-msvc`: le prove non girano mai in emulazione x64 senza dirlo.
+Each test job writes the passed, failed and ignored tests to the run summary, with the names of the failed ones. On macOS all of `cargo test` runs: with tauri 2.12.1 the `test` feature (the fake runtime of `test\rust\main.rs`) compiles there too, so no separate feature is needed (with 2.12.0 `transparent` was missing). In a repository without ARM64 runners (private) the repository variable `ARM64_RUNNERS=off` removes the `linux-arm64` and `win32-arm64` jobs, which would otherwise stay queued: `linux-arm64` drops out of the matrix's target list (the runner is derived from the target, without `include`, which GitHub applies after `exclude` and would put the removed target back). The `win32-arm64` job installs the `stable-aarch64-pc-windows-msvc` toolchain and fails if `rustc -vV` does not report `host: aarch64-pc-windows-msvc`: the tests never run in x64 emulation without saying so.
 
-Una prova che vale solo su Windows (percorsi con `\`, `cmd.exe`, `ping.exe`, junction con `mklink /J`, layout `.exe` del kit) porta `#[cfg_attr(not(windows), ignore = "<motivo>")]`: su Windows gira, altrove conta fra le ignorate con il motivo. Una prova nuova usa invece, quando può, funzioni pure con il target come parametro (`Kit::at_target`, `fsx::join_rel` con `/`), così vale per tutti e sei i target.
+A test that only holds on Windows (paths with `\`, `cmd.exe`, `ping.exe`, junctions with `mklink /J`, the kit's `.exe` layout) carries `#[cfg_attr(not(windows), ignore = "<reason>")]`: on Windows it runs, elsewhere it counts among the ignored ones with the reason. A new test instead uses, when it can, pure functions with the target as a parameter (`Kit::at_target`, `fsx::join_rel` with `/`), so it holds for all six targets.
 
-**WSL2 in locale.** `scripts/test-linux.sh` copia il repository nel file system di Linux (una copia per checkout o worktree in `~/atollo-copies/<cartella>-<hash>`, o `ATOLLO_LINUX_DIR`; due esecuzioni sulla stessa copia si danno il turno con `flock`; con `rsync`, senza `target*`, `node_modules`, `.claude/worktrees`, `.git` e le cartelle del kit `data` e `projects`), controlla Rust e le librerie di Tauri (lo stato `install ok installed` di `dpkg-query`), poi esegue `cargo test` e stampa il riepilogo:
+**WSL2 locally.** `scripts/test-linux.sh` copies the repository into the Linux file system (one copy per checkout or worktree in `~/atollo-copies/<folder>-<hash>`, or `ATOLLO_LINUX_DIR`; two runs on the same copy take turns with `flock`; with `rsync`, without `target*`, `node_modules`, `.claude/worktrees`, `.git` and the kit folders `data` and `projects`), checks Rust and the Tauri libraries (the `install ok installed` state from `dpkg-query`), then runs `cargo test` and prints the summary:
 
 ```
-wsl -d Ubuntu -- bash scripts/test-linux.sh            # da Windows, nella radice del repository
-bash scripts/test-linux.sh                             # dentro WSL o su Linux
-bash scripts/test-linux.sh --clippy -- servers::       # anche clippy; filtro e opzioni dopo --
+wsl -d Ubuntu -- bash scripts/test-linux.sh            # from Windows, in the repository root
+bash scripts/test-linux.sh                             # inside WSL or on Linux
+bash scripts/test-linux.sh --clippy -- servers::       # clippy too; filter and options after --
 ```
 
-Se manca qualcosa stampa il comando da eseguire (`sudo apt-get install -y …`, o `rustup` per l'utente) ed esce con 2; con prove fallite esce con 1. `target/` resta nella copia, quindi le esecuzioni dopo la prima compilano solo ciò che è cambiato. La copia usa `rsync --delete`: lo script copia solo in una cartella vuota o in una copia fatta da lui (file `.atollo-linux-copy`); altrimenti esce con 2 senza toccare nulla. Anche un clone del repository senza quel file (con il suo `.git` e lavoro non salvato) viene rifiutato: scegliere un'altra cartella con `ATOLLO_LINUX_DIR`. `bash scripts/test-linux.sh --check-dest` dice soltanto se la cartella va bene (0 sì, 2 no) e gira ovunque, anche in Git Bash. `cargo` gira dentro la copia, così valgono i suoi `.cargo/config.toml` e `rust-toolchain.toml`, non quelli sopra la cartella di Windows. L'interfaccia compilata (`dist\`) viene dalla copia di Windows (`npm -w ui run build`); senza, lo script la compila in Linux con Node.js. WSL2 richiede la virtualizzazione attiva nel BIOS e la «Piattaforma macchina virtuale» di Windows (`wsl.exe --install --no-distribution`, da amministratore). Prima dello script, in un worktree, `npm -w ui run build` da Windows: dentro WSL l'`npm` trovato può essere quello di Windows.
+If something is missing it prints the command to run (`sudo apt-get install -y …`, or `rustup` for the user) and exits with 2; with failed tests it exits with 1. `target/` stays in the copy, so the runs after the first one compile only what changed. The copy uses `rsync --delete`: the script copies only into an empty folder or into a copy it made itself (file `.atollo-linux-copy`); otherwise it exits with 2 without touching anything. A clone of the repository without that file (with its own `.git` and unsaved work) is refused too: choose another folder with `ATOLLO_LINUX_DIR`. `bash scripts/test-linux.sh --check-dest` only says whether the folder is fine (0 yes, 2 no) and runs anywhere, Git Bash included. `cargo` runs inside the copy, so its `.cargo/config.toml` and `rust-toolchain.toml` apply, not the ones above the Windows folder. The built interface (`dist\`) comes from the Windows copy (`npm -w ui run build`); without it, the script builds it in Linux with Node.js. WSL2 requires virtualization enabled in the BIOS and the Windows “Virtual Machine Platform” (`wsl.exe --install --no-distribution`, as administrator). Before the script, in a worktree, run `npm -w ui run build` from Windows: inside WSL the `npm` that is found may be the Windows one.
 
-**Controllo incrociato da Windows.** `bash scripts/cross-check/xcheck.sh <target> clippy --all-targets -- -D warnings` (target `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-apple-darwin`) compila il codice Unix con strumenti finti, senza linker: trova gli errori di tipo e di `cfg`, non quelli di link (un `_EMBED_INFO_PLIST` doppio su macOS l'ha visto solo la CI).
+**Cross-check from Windows.** `bash scripts/cross-check/xcheck.sh <target> clippy --all-targets -- -D warnings` (targets `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-apple-darwin`) compiles the Unix code with fake tools, without a linker: it finds type and `cfg` errors, not link errors (a duplicate `_EMBED_INFO_PLIST` on macOS was seen only by CI).
 
-**CI su un altro branch.** I push di `main` e `feature/platforms` avviano la CI da soli; per un altro branch: `git push -u origin <branch>`, poi `gh workflow run app.yml --ref <branch>`.
+**CI on another branch.** Pushes to `main` and `feature/platforms` start CI on their own; for another branch: `git push -u origin <branch>`, then `gh workflow run app.yml --ref <branch>`.
 
-**Prove con programmi veri** (`ATOLLO_TEST_KIT=<kit con i componenti>`, ignorate senza):
-- `real_databases_start_and_stop`: MySQL e MongoDB del kit su porte libere: avvio, database e utente di un progetto (accesso TCP come quell'utente), copia e ripristino, eliminazione, arresto senza resti (D-110); su Windows e in WSL;
-- `caddy_pool_two_php_sites_alias_and_reload`: un pool Caddy con due siti PHP e un alias, `caddy reload` dopo l'aggiunta di un sito senza fermare l'altro (D-111);
-- `apache_pool_two_php_sites_alias_and_reload` (con `start_reports_syntax_error` e `apache_pool_reload_twice`): un pool Apache con due siti PHP (modulo su Windows, `php-fpm` su macOS e Linux), un alias, `.env` e host estranei 403, uno script e un `.htaccess` ostile nella cartella dell'alias neutralizzati, la cartella `files` di Drupal senza PHP, un terzo sito dopo la ricarica (D-116, SEC-V4-01); su Windows e in WSL. In WSL, finché la build non è fissata nel catalogo, Apache si mette a mano: l'archivio in `data/apps/linux-x64/apache/2.4/`, `httpd.conf` riscritto come fa `httpd_conf`, `data/app/versions/linux-x64/apache.txt`;
-- `a_new_kit_needs_mysql_for_every_sql_need` (`db::services::data`, senza kit): ogni bisogno SQL del catalogo e dei framework è MySQL; `a_new_kit_installs_mysql_for_phpmyadmin_wordpress_and_laravel` (`commands::frameworks`): phpMyAdmin, WordPress e Laravel installano MySQL, sui sei target.
-- `real_offline_reinstall_after_a_move` (`install::conda`, D-118, macOS e Linux): con gli ambienti conda installati in `ATOLLO_TEST_KIT` da questa versione dell'app (`Atollo prepare --only r,ruby,mongodb,sqlite,cc`, che conserva archivi ed elenchi), la cartella del kit si rinomina accanto (`<nome>-moved-d118`; senza spazi: il `bin/R` di conda-forge scrive `SED=` senza virgolette e si rompe in ogni cartella con uno spazio), `Kit::prepare` segna i componenti, una preparazione con un proxy che non esiste li ricrea dagli archivi conservati; ogni programma risponde dalla cartella nuova (`R RHOME` sotto di essa), gem e dati di MongoDB invariati; poi lo stesso all'indietro. Per provarla davvero senza rete si esegue il binario dei test sotto `unshare -rn` (in WSL funziona senza root):
+**Tests with real programs** (`ATOLLO_TEST_KIT=<kit with the components>`, ignored without it):
+- `real_databases_start_and_stop`: the kit's MySQL and MongoDB on free ports: start, a project's database and user (TCP access as that user), backup and restore, deletion, stop with nothing left behind (D-110); on Windows and in WSL;
+- `caddy_pool_two_php_sites_alias_and_reload`: a Caddy pool with two PHP sites and an alias, `caddy reload` after adding a site without stopping the other one (D-111);
+- `apache_pool_two_php_sites_alias_and_reload` (with `start_reports_syntax_error` and `apache_pool_reload_twice`): an Apache pool with two PHP sites (module on Windows, `php-fpm` on macOS and Linux), an alias, `.env` and foreign hosts 403, a script and a hostile `.htaccess` in the alias folder neutralized, Drupal's `files` folder without PHP, a third site after the reload (D-116, SEC-V4-01); on Windows and in WSL. In WSL, until the build is pinned in the catalog, Apache is set up by hand: the archive in `data/apps/linux-x64/apache/2.4/`, `httpd.conf` rewritten as `httpd_conf` does, `data/app/versions/linux-x64/apache.txt`;
+- `a_new_kit_needs_mysql_for_every_sql_need` (`db::services::data`, no kit): every SQL need of the catalog and of the frameworks is MySQL; `a_new_kit_installs_mysql_for_phpmyadmin_wordpress_and_laravel` (`commands::frameworks`): phpMyAdmin, WordPress and Laravel install MySQL, on the six targets.
+- `real_offline_reinstall_after_a_move` (`install::conda`, D-118, macOS and Linux): with the conda environments installed in `ATOLLO_TEST_KIT` by this version of the app (`Atollo prepare --only r,ruby,mongodb,sqlite,cc`, which keeps archives and lists), the kit folder is renamed alongside (`<name>-moved-d118`; no spaces: conda-forge's `bin/R` writes `SED=` without quotes and breaks in any folder with a space), `Kit::prepare` flags the components, a preparation with a proxy that does not exist recreates them from the kept archives; each program answers from the new folder (`R RHOME` under it), gems and MongoDB data unchanged; then the same in reverse. To really test it without a network, run the test binary under `unshare -rn` (in WSL it works without root):
 
   ```
-  cargo test --no-run   # stampa il percorso del binario dei test
+  cargo test --no-run   # prints the path of the test binary
   ATOLLO_TEST_KIT=~/d118/kit unshare -rn target/debug/deps/Atollo-<hash> real_offline_reinstall_after_a_move --nocapture
   ```
 
-**Secret Service in WSL senza root** (D-115). Per provare Antigravity con un Secret Service vero:
+**Secret Service in WSL without root** (D-115). To test Antigravity with a real Secret Service:
 
 ```
 mkdir -p ~/gk && cd ~/gk
@@ -104,188 +106,188 @@ export LD_LIBRARY_PATH=~/gk/root/usr/lib/x86_64-linux-gnu PATH=~/gk/root/usr/bin
 dbus-run-session -- sh -c 'echo | gnome-keyring-daemon --unlock --components=secrets; cargo test keyring'
 ```
 
-Con `keyring.json` che contiene `gemini:antigravity` e un nome di Windows (`jetski:other`), dopo `restore` e `save` il Secret Service è vuoto e `keyring.json` ha tutte e due le voci. Senza Secret Service la copia in chiaro si scrive solo sul disco di Linux (600), mai su `/mnt/<lettera>`.
+With a `keyring.json` that contains `gemini:antigravity` and a Windows name (`jetski:other`), after `restore` and `save` the Secret Service is empty and `keyring.json` has both entries. Without a Secret Service the plaintext copy is written only to the Linux disk (600), never to `/mnt/<letter>`.
 
-La collezione `login` (D-115, issue #6) con la prova ignorata `real_secret_service_login_collection`, due volte, ognuna con un `XDG_DATA_HOME` vuoto: con `echo | gnome-keyring-daemon --unlock --components=secrets` (c'è `login`) la voce di `agy` va in `/org/freedesktop/secrets/collection/login`, si rilegge e si cancella; con `gnome-keyring-daemon --start --components=secrets` (nessun portachiavi `login`) la scrittura fallisce con `NO_LOGIN_COLLECTION` e non resta nulla.
+The `login` collection (D-115, issue #6) with the ignored test `real_secret_service_login_collection`, twice, each time with an empty `XDG_DATA_HOME`: with `echo | gnome-keyring-daemon --unlock --components=secrets` (`login` exists) the `agy` entry goes to `/org/freedesktop/secrets/collection/login`, is read back and deleted; with `gnome-keyring-daemon --start --components=secrets` (no `login` keyring) the write fails with `NO_LOGIN_COLLECTION` and nothing is left behind.
 
 ```
 XDG_DATA_HOME=$(mktemp -d) dbus-run-session -- sh -c 'echo | gnome-keyring-daemon --unlock --components=secrets; cargo test real_secret_service_login_collection -- --ignored --nocapture'
 ```
 
-**Kit condiviso fra Windows e WSL.** PHP 8.5 installato da Windows e da WSL nella stessa cartella del kit, nei due ordini: `data/php/8.5/php.ini` con le 12 righe `extension=` e `data/php/linux-x64/8.5/php.ini` senza nessuna; `php -v` su Linux senza «Unable to load». phpMyAdmin 5.2.3 sul PHP 8.5.8 di static-php-cli: `index.php` 200, nessun avviso con `E_ALL`.
+**Kit shared between Windows and WSL.** PHP 8.5 installed from Windows and from WSL in the same kit folder, in both orders: `data/php/8.5/php.ini` with the 12 `extension=` lines and `data/php/linux-x64/8.5/php.ini` with none; `php -v` on Linux with no “Unable to load”. phpMyAdmin 5.2.3 on the static-php-cli PHP 8.5.8: `index.php` 200, no warning with `E_ALL`.
 
-**Preparazione da Windows** (D-114). `Atollo.exe prepare --target linux-x64 --only git` dice `(bootstrap linux-x64)`; sul target il primo avvio, o `prepare --only git`, scrive «bootstrap pre-downloaded» e `git clone https://…` funziona. In WSL: `prepare --only cc` senza Zig non mette `CC`/`CXX` né `cc/bin` nel PATH; `prepare --only zig,cc` dà `CC=…/cc/bin/cc` e un hello in C si compila con `make` ed esegue.
+**Preparation from Windows** (D-114). `Atollo.exe prepare --target linux-x64 --only git` says `(bootstrap linux-x64)`; on the target the first start, or `prepare --only git`, writes “bootstrap pre-downloaded” and `git clone https://…` works. In WSL: `prepare --only cc` without Zig does not set `CC`/`CXX` or put `cc/bin` in the PATH; `prepare --only zig,cc` gives `CC=…/cc/bin/cc` and a hello in C compiles with `make` and runs.
 
-**Bundle Linux in locale.** `docker run ubuntu:22.04` con i pacchetti del job `Bundle linux-*`, `tauri build --bundles appimage`, minimo di glibc con `objdump -T`, poi `--version` e `check` sotto `xvfb-run` per l'AppImage (`--appimage-extract-and-run`) e per il `tar.gz`.
+**Linux bundle locally.** `docker run ubuntu:22.04` with the packages of the `Bundle linux-*` job, `tauri build --bundles appimage`, glibc minimum with `objdump -T`, then `--version` and `check` under `xvfb-run` for the AppImage (`--appimage-extract-and-run`) and for the `tar.gz`.
 
-## Prove sull'interfaccia reale
+## Tests on the real interface
 
-Per le prove senza mani sull'exe di release (fase 6) si usa un kit di prova fuori dal repository, con tutti i componenti, in una cartella con spazi:
-- **Avvio fuori dalla sessione dello strumento:** l'app si avvia con WMI (`Win32_Process.Create`). Lo strumento chiude i processi che lancia direttamente, quindi l'app non sopravviverebbe al comando.
-- **Clic:** con UI Automation, sui nomi accessibili dei pulsanti. Gli stessi nomi servono anche all'Assistente vocale.
-- **Schermate:** con `PrintWindow` sulla finestra «Atollo».
-- **Controllo dei processi:** dopo «Ferma», «Chiudi tutto» e «Rimuovi l'unità», nessun processo deve avere l'eseguibile nel kit di prova (`Win32_Process.ExecutablePath`).
-- **Arresto delle prove:** i processi di prova si fermano **per PID**, mai per nome. Un `taskkill /IM Atollo.exe` chiude anche le altre copie dell'app aperte sul PC (successo durante la fase 6).
+For the hands-off tests on the release exe (phase 6) a test kit outside the repository is used, with all the components, in a folder with spaces:
+- **Starting outside the tool's session:** the app is started with WMI (`Win32_Process.Create`). The tool closes the processes it launches directly, so the app would not survive the command.
+- **Clicks:** with UI Automation, on the accessible names of the buttons. The same names also serve Narrator.
+- **Screenshots:** with `PrintWindow` on the “Atollo” window.
+- **Process check:** after “Stop”, “Close everything” and “Remove drive”, no process may have its executable in the test kit (`Win32_Process.ExecutablePath`).
+- **Stopping the tests:** the test processes are stopped **by PID**, never by name. A `taskkill /IM Atollo.exe` also closes the other copies of the app open on the PC (it happened during phase 6).
 
-## Checklist manuale
+## Manual checklist
 
-Rispetto alla checklist del prompt iniziale (i requisiti sono in ARCHITECTURE.md, «Requisiti»):
-- la voce sulla rete usa la pagina Impostazioni al posto di `data\proxy.cmd` (D-54);
-- la voce sul menu `setup\Windows.cmd` non si applica, perché questo è un prodotto separato, senza gli script del kit (Q1 del piano).
+Compared with the checklist in the initial prompt (the requirements are in ARCHITECTURE.md, “Requirements”):
+- the network item uses the Settings page instead of `data\proxy.cmd` (D-54);
+- the item about the `setup\Windows.cmd` menu does not apply, because this is a separate product, without the kit's scripts (Q1 of the plan).
 
-Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un PC che non ha mai visto il kit, quando la voce lo richiede.
+To be run before every release, with the release exe (`npm run build`), on a PC that has never seen the kit, when the item requires it.
 
-### Installazione e portabilità
-- [ ] **Kit nuovo su chiavetta.** Doppio clic, primo avvio: PowerShell 7, GitHub CLI (con Git) e l'editor si installano da soli; poi installazione dei predefiniti, editor aperto su un progetto.
-- [ ] **Editor alla versione del rilascio.** Con un kit preparato da un'altra versione dell'app (o con un numero diverso in `data\app\versions\vscodium-server.txt`), all'avvio l'editor viene installato di nuovo alla versione fissata, anche se era rimasto aperto, senza «Aggiorna tutto». Se un programma del PC tiene aperta la cartella dell'editor, l'aggiornamento finisce «in uso», ma Editor, Terminale e gli agenti si aprono lo stesso con l'editor già presente. In Linguaggi e strumenti l'editor è tra gli obbligatori, spuntato e non modificabile.
-- [ ] **Nessuna traccia fuori dal kit.** Dopo una sessione completa (editor, terminale, un agente, un progetto avviato) non c'è nessun file nuovo in `%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%` e nel registro. Confronto prima/dopo con Process Monitor o con un'istantanea delle cartelle. Eccezioni documentate: le credenziali di Antigravity, che restano in Windows solo per la durata di `agy` e con persistenza di sessione (D-41); i file di passaggio in `%TEMP%\Atollo\<id>\`, che a fine sessione sono spariti (D-90).
-- [ ] **Kit spostato.** Su un'altra lettera di unità e in una cartella con spazi tutto funziona, lo stato dell'editor resta e Claude ritrova la cronologia.
-- [ ] **PC senza WebView2** (Windows 10 LTSC o macchina virtuale). Il messaggio è chiaro e l'app funziona con il runtime fisso nel kit.
-- [ ] **Utente standard** senza diritti di amministratore: nessuna richiesta UAC in nessun passo.
-- [ ] **Proxy autenticato e ispezione SSL.** Impostazioni › Rete con proxy e file PEM: installazione, estensioni dell'editor e agenti funzionano.
-- [ ] **Senza rete.** L'app e l'editor partono, gli errori di download si leggono, il controllo degli aggiornamenti fallisce senza bloccare nulla.
-- [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, console del kit (`conhost.exe`, `pwsh.exe`) o server di progetto.
-- [ ] **ARM64.** L'exe è nativo, l'editor gira in emulazione e l'avviso si vede.
-- [ ] **R spostato** (D-104). Kit con R su `D:`, poi su `E:`: dopo l'avvio `lib\R\etc\x64\Makeconf` ha `LOCAL_SOFT` sulla cartella nuova e `install.packages(..., type="source")` compila.
-- [ ] **macOS e Linux**: la sezione «macOS, Linux e Windows ARM64» qui sotto.
+### Installation and portability
+- [ ] **New kit on a USB stick.** Double-click, first start: PowerShell 7, GitHub CLI (with Git) and the editor install on their own; then installation of the defaults, editor open on a project.
+- [ ] **Editor at the release version.** With a kit prepared by another version of the app (or with a different number in `data\app\versions\vscodium-server.txt`), at startup the editor is installed again at the pinned version, even if it had been left open, without “Update all”. If a program on the PC keeps the editor folder open, the update ends “in use”, but Editor, Terminal and the agents open anyway with the editor already present. In Languages and tools the editor is among the required ones, checked and not editable.
+- [ ] **No trace outside the kit.** After a full session (editor, terminal, an agent, a started project) there is no new file in `%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%` or in the registry. Before/after comparison with Process Monitor or with a snapshot of the folders. Documented exceptions: Antigravity's credentials, which stay in Windows only for the lifetime of `agy` and with session persistence (D-41); the transit files in `%TEMP%\Atollo\<id>\`, which are gone at the end of the session (D-90).
+- [ ] **Moved kit.** On another drive letter and in a folder with spaces everything works, the editor's state remains and Claude finds its history again.
+- [ ] **PC without WebView2** (Windows 10 LTSC or a virtual machine). The message is clear and the app works with the fixed runtime in the kit.
+- [ ] **Standard user** without administrator rights: no UAC prompt at any step.
+- [ ] **Authenticated proxy and SSL inspection.** Settings › Network with a proxy and a PEM file: installation, editor extensions and agents work.
+- [ ] **No network.** The app and the editor start, download errors are readable, the update check fails without blocking anything.
+- [ ] **Forced close from Task Manager.** No `node.exe`, editor server, kit console (`conhost.exe`, `pwsh.exe`) or project server is left.
+- [ ] **ARM64.** The exe is native, the editor runs in emulation and the warning is shown.
+- [ ] **Moved R** (D-104). Kit with R on `D:`, then on `E:`: after startup `lib\R\etc\x64\Makeconf` has `LOCAL_SOFT` on the new folder and `install.packages(..., type="source")` compiles.
+- [ ] **macOS and Linux**: the “macOS, Linux and Windows ARM64” section below.
 
-### Progetti
-- [ ] **Nuovo progetto** «prova 1»: la cartella compare, ha il pulsante «Elimina la cartella vuota» e l'eliminazione funziona.
-- [ ] **Clona** `nabre/atollo` (o un repository privato con `gh auth login` fatto nel terminale del kit): la cartella ha il nome giusto. Su un kit senza Git, Git si installa prima del clone. Con un indirizzo non valido (`-x/y`, `ssh://…`) l'errore si legge.
-- [ ] **Progetto Vite.** «Avvia», poi la porta 7100-7999 compare nell'output. Lo stato passa a «in ascolto» e il pulsante con l'indirizzo apre il browser del PC. Un secondo avvio riusa la stessa porta. Su un kit senza Node.js, «Avvia» installa prima Node.js (avanzamento in Home e nella barra di stato) e poi parte; Node.js risulta scelto in Linguaggi e strumenti.
-- [ ] **Rete locale.** Con «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete», un altro PC apre il progetto avviato con l'indirizzo IP di questo PC; senza, no.
-- [ ] **Porta occupata.** Scelta a mano una porta già usata da un altro programma, l'avvio dà un errore chiaro e la porta non cambia da sola.
-- [ ] **Sito statico.** Una cartella con solo `index.html`: il server di file del kit lo serve. Un file `.env` non è raggiungibile (403).
-- [ ] **«Servi come sito web».** Con la cartella `public` e PHP: `panel.json` contiene l'azione `site` e le altre chiavi del file restano.
-- [ ] **«Ferma»** su `npm run dev`: in Gestione attività non resta nessun `node.exe`/`esbuild.exe` del progetto.
-- [ ] **Electron o Tauri.** L'app apre la sua finestra e l'output arriva nella pagina.
+### Projects
+- [ ] **New project** “test 1”: the folder appears, has the “Delete the empty folder” button and the deletion works.
+- [ ] **Clone** `nabre/atollo` (or a private repository with `gh auth login` done in the kit's terminal): the folder has the right name. On a kit without Git, Git is installed before the clone. With an invalid address (`-x/y`, `ssh://…`) the error is readable.
+- [ ] **Vite project.** “Start”, then the port 7100-7999 appears in the output. The state changes to “listening” and the button with the address opens the PC's browser. A second start reuses the same port. On a kit without Node.js, “Start” first installs Node.js (progress in Home and in the status bar) and then starts; Node.js shows as chosen in Languages and tools.
+- [ ] **Local network.** With “Let other PCs on the network reach the project servers”, another PC opens the started project with this PC's IP address; without it, it does not.
+- [ ] **Port in use.** With a port chosen by hand that is already used by another program, the start gives a clear error and the port does not change on its own.
+- [ ] **Static site.** A folder with only `index.html`: the kit's file server serves it. A `.env` file is not reachable (403).
+- [ ] **“Serve as a website”.** With the `public` folder and PHP: `panel.json` contains the `site` action and the other keys of the file remain.
+- [ ] **“Stop”** on `npm run dev`: in Task Manager no `node.exe`/`esbuild.exe` of the project is left.
+- [ ] **Electron or Tauri.** The app opens its window and the output reaches the page.
 
-### Server web e database (sciame v3, D-96…D-102)
-- [ ] **Configurazioni valide.** Con un progetto PHP avviato su Apache e su Caddy dedicati, in un pool e con il sito del kit: `httpd -t -f <conf>` e `caddy validate --config <Caddyfile>` sulle configurazioni scritte dal kit non danno errori. Un `kit.conf` di un kit precedente, dopo l'avvio, ha i blocchi nuovi una volta sola.
-- [ ] **Estensioni PHP** (D-96). Con PHP: `a.phtml` si esegue; `a.inc`, `a.php5` e `.env` danno 403. Senza PHP (Apache senza modulo, Caddy senza php-cgi) `index.php` dà 403/503, mai il sorgente.
-- [ ] **`php -S`** (D-97). Progetto PHP semplice avviato con «Avvia»: `/.env`, `/a.inc`, `/index.php.` danno 403; `curl -H "Host: evil.com"` dà 421; `/` e un file statico 200. Con un `router.php` nel progetto vale il suo.
-- [ ] **Host estraneo sul server dedicato** (D-98). Senza «Rete locale»: `curl -H "Host: evil.com" http://127.0.0.1:<porta>/` dà 403 (Apache) o 421 (Caddy); `localhost`, `127.0.0.1`, `<progetto>.localhost` e i domini del progetto rispondono. Con «Rete locale» l'IP del PC da un altro PC apre il sito.
-- [ ] **php-cgi che muore** (D-99). Progetto PHP su Caddy dedicato avviato (Windows): chiudere `php-cgi.exe` dal Task Manager ferma anche `caddy.exe`; l'esecuzione va in errore e il log ha «php-cgi terminato».
-- [ ] **Pool che seguono i progetti** (D-101). Due progetti assegnati allo stesso profilo: «Avvia» sul primo avvia il pool, sul secondo lo ricarica; «Ferma» sul primo lo toglie (il suo indirizzo non risponde più) e il secondo resta servito. Con «Mantieni attivo» spento, fermare anche il secondo spegne il pool; acceso, il pool resta. Un pool avviato dalla pagina Server Web resta acceso comunque.
-- [ ] **Avvia con Atollo** (D-101). Profilo con «Avvia con Atollo»: chiusa e riaperta l'app, il pool è acceso senza nessun progetto avviato. Un `servers.json` di prima (senza i due campi) si legge con «Mantieni attivo» spuntato.
-- [ ] **Due azioni web di un progetto nello stesso pool** (BUG-V3-02). `http://<progetto>.localhost:<porta>` e `http://<azione>.<progetto>.localhost:<porta>` servono le due cartelle.
-- [ ] **Due versioni di MySQL insieme** (D-102). Con 8.4 e 9.7 installati: Database › «Altre versioni» avvia 8.4 su una porta sua mentre 9.7 resta sulla 3306; `mysql -uroot -h127.0.0.1 -P<porta> -e "select version()"` dà le due versioni. Progetto con «Versione del server» 8.4: «Crea» crea database e utente su 8.4; un programma del progetto vede `DB_PORT` di 8.4; con un `.env` che ha `DB_PORT=3310` vale quello. Cambiare la versione principale mentre 8.4 gira è rifiutato; chiusa l'app, nessun `mysqld` resta.
-- [ ] **Prove con kit reale.** `ATOLLO_TEST_KIT=<kit con Apache e PHP> cargo test -- start_reports_syntax_error apache_pool_reload_twice apache_pool_two_php_sites_alias_and_reload --test-threads=1` passa.
+### Web servers and databases (v3 swarm, D-96…D-102)
+- [ ] **Valid configurations.** With a PHP project started on dedicated Apache and Caddy, in a pool and with the kit's site: `httpd -t -f <conf>` and `caddy validate --config <Caddyfile>` on the configurations written by the kit give no errors. A `kit.conf` from an earlier kit, after startup, has the new blocks only once.
+- [ ] **PHP extensions** (D-96). With PHP: `a.phtml` runs; `a.inc`, `a.php5` and `.env` give 403. Without PHP (Apache without the module, Caddy without php-cgi) `index.php` gives 403/503, never the source.
+- [ ] **`php -S`** (D-97). Simple PHP project started with “Start”: `/.env`, `/a.inc`, `/index.php.` give 403; `curl -H "Host: evil.com"` gives 421; `/` and a static file 200. With a `router.php` in the project, that one applies.
+- [ ] **Foreign host on the dedicated server** (D-98). Without “Local network”: `curl -H "Host: evil.com" http://127.0.0.1:<port>/` gives 403 (Apache) or 421 (Caddy); `localhost`, `127.0.0.1`, `<project>.localhost` and the project's domains answer. With “Local network” the PC's IP from another PC opens the site.
+- [ ] **php-cgi dying** (D-99). PHP project on dedicated Caddy started (Windows): closing `php-cgi.exe` from Task Manager also stops `caddy.exe`; the run goes into error and the log has “php-cgi exited”.
+- [ ] **Pools that follow the projects** (D-101). Two projects assigned to the same profile: “Start” on the first starts the pool, on the second reloads it; “Stop” on the first removes it (its address no longer answers) and the second stays served. With “Keep running” off, stopping the second too shuts down the pool; on, the pool stays. A pool started from the Web Servers page stays on regardless.
+- [ ] **Start with Atollo** (D-101). Profile with “Start with Atollo”: with the app closed and reopened, the pool is on with no project started. A `servers.json` from before (without the two fields) is read with “Keep running” checked.
+- [ ] **Two web actions of a project in the same pool** (BUG-V3-02). `http://<project>.localhost:<port>` and `http://<action>.<project>.localhost:<port>` serve the two folders.
+- [ ] **Two MySQL versions together** (D-102). With 8.4 and 9.7 installed: Databases › “Other versions” starts 8.4 on its own port while 9.7 stays on 3306; `mysql -uroot -h127.0.0.1 -P<port> -e "select version()"` gives the two versions. Project with “Server version” 8.4: “Create” creates database and user on 8.4; a program of the project sees the `DB_PORT` of 8.4; with a `.env` that has `DB_PORT=3310`, that one applies. Changing the main version while 8.4 is running is refused; with the app closed, no `mysqld` is left.
+- [ ] **Tests with a real kit.** `ATOLLO_TEST_KIT=<kit with Apache and PHP> cargo test -- start_reports_syntax_error apache_pool_reload_twice apache_pool_two_php_sites_alias_and_reload --test-threads=1` passes.
 
-### macOS, Linux e Windows ARM64 (D-105, D-108…D-115)
-Su macOS Apple Silicon e Intel, Linux x64 e ARM64 (un PC o una VM con desktop: WSL2 non ha chiavette né `noexec` veri), con il bundle della CI o `tauri build --debug --no-bundle`.
+### macOS, Linux and Windows ARM64 (D-105, D-108…D-115)
+On macOS Apple Silicon and Intel, Linux x64 and ARM64 (a PC or a VM with a desktop: WSL2 has no real USB sticks or `noexec`), with the CI bundle or `tauri build --debug --no-bundle`.
 
-Primo avvio:
-- [ ] **Kit su disco interno e su chiavetta exFAT.** Avvio, `projects/` e `data/` accanto a `Atollo.app` o all'AppImage, niente dentro il bundle. Un `.app` scaricato con il browser e non spostato (App Translocation) ferma l'avvio con il comando `xattr`.
-- [ ] **Seconda apertura** porta in primo piano la prima.
-- [ ] **Componenti obbligatori** (PowerShell 7, GitHub CLI, Git, editor) installati e verificati; `Atollo check` verde.
-- [ ] **Progetti.** Nuovo progetto vuoto e clone di un repository privato.
-- [ ] **Editor**: apertura, terminale integrato con l'ambiente del kit (`echo $CP_DATA`), estensioni installate.
-- [ ] **Terminale del kit e Claude Code** da un progetto: si aprono in una scheda dell'app, rispondono ai tasti, chiudendo la scheda non resta nessun processo.
-- [ ] **Chiusura dell'app** con un terminale e un database aperti: nessun processo resta. `kill -9` dell'app: nessun processo del kit entro 6 s (`pgrep -f <kit>`).
-- [ ] **Kit spostato** in un'altra cartella: tutto riparte, Git senza reinstallare.
-- [ ] **Kit spostato senza rete** (D-118), con R, Ruby e (su Linux) MongoDB installati: al riavvio offline si ricreano dai pacchetti conservati («created again from the kept packages» nel pannello Attività), `R --version`, `ruby -v`, `mongod --version` rispondono; Impostazioni → Generale mostra «Copia per reinstallare senza rete: N MB»; dopo «Libera» lo spostamento successivo chiede la rete.
-- [ ] **Chiavetta montata `noexec`** (Linux): messaggio con il comando per rimontare, nessuna installazione.
-- [ ] **«Rimuovi l'unità»**: chiude tutto e lascia espellere.
+First start:
+- [ ] **Kit on an internal disk and on an exFAT USB stick.** Startup, `projects/` and `data/` next to `Atollo.app` or the AppImage, nothing inside the bundle. A `.app` downloaded with the browser and not moved (App Translocation) stops the startup with the `xattr` command.
+- [ ] **Opening a second time** brings the first one to the front.
+- [ ] **Required components** (PowerShell 7, GitHub CLI, Git, editor) installed and verified; `Atollo check` green.
+- [ ] **Projects.** New empty project and clone of a private repository.
+- [ ] **Editor**: opening, integrated terminal with the kit's environment (`echo $CP_DATA`), extensions installed.
+- [ ] **Kit terminal and Claude Code** from a project: they open in a tab of the app, respond to keys, and closing the tab leaves no process behind.
+- [ ] **Closing the app** with a terminal and a database open: no process is left. `kill -9` of the app: no kit process within 6 s (`pgrep -f <kit>`).
+- [ ] **Kit moved** to another folder: everything starts again, Git without reinstalling.
+- [ ] **Kit moved without a network** (D-118), with R, Ruby and (on Linux) MongoDB installed: on the offline restart they are recreated from the kept packages (“created again from the kept packages” in the Activity panel), `R --version`, `ruby -v`, `mongod --version` answer; Settings → General shows “Copy to reinstall without the network: N MB”; after “Free” the next move asks for the network.
+- [ ] **USB stick mounted `noexec`** (Linux): message with the command to remount, no installation.
+- [ ] **“Remove drive”**: closes everything and lets you eject.
 
-Componenti:
-- [ ] Ogni componente disponibile per il sistema: installazione, `check`, rimozione senza resti. Android su Linux ARM64 si mostra non disponibile con il motivo.
-- [ ] **C/C++** su Linux senza `build-essential` e su macOS senza Xcode CLT: `cc hello.c && ./a.out`, `cargo build` di un crate con `cc-rs`. Su macOS senza CLT la pagina del componente avvisa per i framework Apple.
-- [ ] **Rust su Windows 11 ARM64** senza Visual Studio: `cargo new x && cargo run`.
-- [ ] **Ruby**: `ruby -v`, `gem install json` (nativa); dopo uno spostamento del kit i comandi delle gem partono.
+Components:
+- [ ] Every component available for the system: installation, `check`, removal with nothing left behind. Android on Linux ARM64 shows as not available with the reason.
+- [ ] **C/C++** on Linux without `build-essential` and on macOS without Xcode CLT: `cc hello.c && ./a.out`, `cargo build` of a crate with `cc-rs`. On macOS without CLT the component's page warns about the Apple frameworks.
+- [ ] **Rust on Windows 11 ARM64** without Visual Studio: `cargo new x && cargo run`.
+- [ ] **Ruby**: `ruby -v`, `gem install json` (native); after a kit move the gems' commands start.
 
-Stack web e database:
-- [ ] **Laravel con MySQL** su macOS e Linux: `composer create-project`, migrazioni, sito su Caddy, phpMyAdmin.
-- [ ] **WordPress con Caddy**: permalink funzionanti senza `.htaccess`. Drupal propone Apache, che il catalogo offre su ogni sistema (su macOS e Linux la build del kit, D-116).
-- [ ] **Apache su macOS e Linux** (D-116). Un progetto Laravel con un `.htaccess` proprio, sito Apache: `php-fpm` parte con Apache (`data/projects/<p>/apache/fpm.conf`), le rotte rispondono, `httpd` gira con `-DFOREGROUND`; fermando il sito si fermano entrambi.
-- [ ] **Pool Caddy** con due siti e un alias verso un altro progetto; aggiungere un sito ricarica il pool senza fermare l'altro.
-- [ ] **Stessa cartella dati MySQL** letta da Windows e da Linux con la stessa linea.
-- [ ] **MySQL su Ubuntu 24.04** senza `libaio1` (solo `libaio1t64`): il server parte; senza `libnuma1` l'errore dice `sudo apt install libaio1t64 libnuma1`.
+Web stack and databases:
+- [ ] **Laravel with MySQL** on macOS and Linux: `composer create-project`, migrations, site on Caddy, phpMyAdmin.
+- [ ] **WordPress with Caddy**: permalinks working without `.htaccess`. Drupal suggests Apache, which the catalog offers on every system (on macOS and Linux the kit's build, D-116).
+- [ ] **Apache on macOS and Linux** (D-116). A Laravel project with its own `.htaccess`, Apache site: `php-fpm` starts with Apache (`data/projects/<p>/apache/fpm.conf`), the routes answer, `httpd` runs with `-DFOREGROUND`; stopping the site stops both.
+- [ ] **Caddy pool** with two sites and an alias to another project; adding a site reloads the pool without stopping the other one.
+- [ ] **Same MySQL data folder** read from Windows and from Linux with the same line.
+- [ ] **MySQL on Ubuntu 24.04** without `libaio1` (only `libaio1t64`): the server starts; without `libnuma1` the error says `sudo apt install libaio1t64 libnuma1`.
 
-Accessi e pacchetto:
-- [ ] **Antigravity e Claude Code** collegati su un Mac (Claude con «Collega con un token»), kit portato su un altro Mac: già collegati; nel Portachiavi del primo non resta nulla. Con il token, `claude` parte collegato anche da un terminale e dall'editor del kit, e `Atollo env` mostra `CLAUDE_CODE_OAUTH_TOKEN=***`; dopo «Esci» un terminale nuovo non ha più la variabile.
-- [ ] **Antigravity su Linux con KeePassXC o KWallet** senza una collezione `login`: nessuna voce spostata, avviso «no "login" collection»; con GNOME `agy` trova l'accesso.
-- [ ] **Antigravity su Linux** con un Secret Service bloccato: nessuna voce spostata, avviso; senza Secret Service e kit su exFAT: rifiutato.
-- [ ] **Rilasci** (D-119, #5): su un Mac pulito `Atollo-<versione>-darwin-<arch>.app.zip` scaricato con il browser, estratto su una chiavetta exFAT, aperto seguendo il README (`xattr -dr com.apple.quarantine`); senza quel passo l'avvio si ferma con il comando. AppImage avviata da exFAT su Ubuntu 24.04, Fedora 42 e Debian 13; senza FUSE `./Atollo-<versione>-linux-<arch>.AppImage --appimage-extract-and-run`; il `tar.gz` con WebKitGTK 4.1. Aggiornamento dell'app da una versione di prova a un'altra su macOS e Linux: l'AppImage prende il nome della versione nuova e la vecchia sparisce all'avvio dopo (il `tar.gz` dice che la versione nuova va scaricata a mano).
+Sign-ins and package:
+- [ ] **Antigravity and Claude Code** connected on a Mac (Claude with “Connect with a token”), kit taken to another Mac: already connected; nothing is left in the first one's Keychain. With the token, `claude` starts connected also from a terminal and from the kit's editor, and `Atollo env` shows `CLAUDE_CODE_OAUTH_TOKEN=***`; after “Sign out” a new terminal no longer has the variable.
+- [ ] **Antigravity on Linux with KeePassXC or KWallet** without a `login` collection: no entry moved, warning “no "login" collection”; with GNOME `agy` finds the sign-in.
+- [ ] **Antigravity on Linux** with a locked Secret Service: no entry moved, warning; without a Secret Service and with the kit on exFAT: refused.
+- [ ] **Releases** (D-119, #5): on a clean Mac `Atollo-<version>-darwin-<arch>.app.zip` downloaded with the browser, extracted to an exFAT USB stick, opened following the README (`xattr -dr com.apple.quarantine`); without that step the startup stops with the command. AppImage started from exFAT on Ubuntu 24.04, Fedora 42 and Debian 13; without FUSE `./Atollo-<version>-linux-<arch>.AppImage --appimage-extract-and-run`; the `tar.gz` with WebKitGTK 4.1. App update from one test version to another on macOS and Linux: the AppImage takes the new version's name and the old one disappears at the next startup (the `tar.gz` says that the new version must be downloaded by hand).
 
-Kit preparato su Windows per un altro sistema (a ogni rilascio):
-- [ ] Su Windows `Atollo.exe prepare --target linux-x64` (poi `darwin-arm64`, `linux-arm64`) su una chiavetta exFAT, con l'app per quel sistema copiata accanto.
-- [ ] Il selettore «Piattaforma» mostra per quel target cosa è pre-scaricato, cosa si completa al primo avvio e cosa non è disponibile.
-- [ ] «Strumenti» › Panoramica › «Matrice» (D-121): le sei colonne con i nomi leggibili e «questo PC», «in emulazione» o «non eseguibile qui»; sulla chiavetta preparata le caselle del target dicono «pre-scaricato» o «si completa al primo avvio», quelle non disponibili il motivo; un clic apre il dettaglio e «Mostra questo sistema» cambia «Piattaforma». Chiusa e riaperta l'app, «Piattaforma» è ancora quel sistema; scelto quello di questo PC, sull'altro sistema la pagina si apre sul suo.
-- [ ] Sull'altro sistema: primo avvio dalla chiavetta, installazioni da `.bootstrap` completate (Rust, Git di dugite-native, R e i componenti conda, Android, pnpm), nessun nuovo download per ciò che era già scaricato.
-- [ ] Di nuovo su Windows: il kit si apre come prima; `data/apps/win32-x64` e le impostazioni di Windows sono intatti, la scelta dei componenti non è cambiata.
-- [ ] Stesso progetto aperto sui due sistemi: impostazioni, porte e database del progetto condivisi (`data/projects/<p>`).
+Kit prepared on Windows for another system (at every release):
+- [ ] On Windows `Atollo.exe prepare --target linux-x64` (then `darwin-arm64`, `linux-arm64`) on an exFAT USB stick, with the app for that system copied next to it.
+- [ ] The “Platform” selector shows for that target what is pre-downloaded, what completes on first start and what is not available.
+- [ ] “Tools” › Overview › “Grid” (D-121): the six columns with readable names and “this PC”, “in emulation” or “cannot run here”; on the prepared USB stick the target's cells say “pre-downloaded” or “completes on first start”, the unavailable ones the reason; a click opens the detail and “Show this system” changes “Platform”. With the app closed and reopened, “Platform” is still that system; once this PC's one is chosen, on the other system the page opens on its own.
+- [ ] On the other system: first start from the USB stick, installations from `.bootstrap` completed (Rust, Git from dugite-native, R and the conda components, Android, pnpm), no new download for what was already downloaded.
+- [ ] Back on Windows: the kit opens as before; `data/apps/win32-x64` and the Windows settings are intact, the choice of components has not changed.
+- [ ] Same project opened on the two systems: the project's settings, ports and databases are shared (`data/projects/<p>`).
 
-### Dati per progetto e file di passaggio (D-89, D-90)
-- [ ] **Migrazione da un kit della versione 1.** Con la copia di un kit reale (dati in `data\app\projects`, `ports.json`, `secrets.json`, `data\db\backup`): al primo avvio compaiono `data\projects\<progetto>\`, `data\app\layout.txt` vale `2`, `data\app\pre-v2\` ha le due copie. Progetti, porte (anche quelle bloccate), password e copie dei database intatti; `.env` dei progetti ancora validi; un secondo avvio non cambia nulla.
-- [ ] **Chiavetta exFAT.** Installazione di Node, Python e Java: l'avanzamento non dà errori di spazio o di rename fra dischi; «Temporanei dei programmi: Automatico» usa il sistema; dopo la chiusura dell'app non resta nessun file in `data\tmp` e `%TEMP%\Atollo\<id>\system` non esiste più.
-- [ ] **Chiavetta FAT32.** Un componente con un file oltre 4 GiB è rifiutato con un errore che dice quale file, la versione già installata resta intatta e non resta `.atollo-new`.
+### Per-project data and transit files (D-89, D-90)
+- [ ] **Migration from a version 1 kit.** With the copy of a real kit (data in `data\app\projects`, `ports.json`, `secrets.json`, `data\db\backup`): at the first start `data\projects\<project>\` appears, `data\app\layout.txt` is `2`, `data\app\pre-v2\` has the two copies. Projects, ports (locked ones too), passwords and database backups intact; the projects' `.env` still valid; a second start changes nothing.
+- [ ] **exFAT USB stick.** Installation of Node, Python and Java: the progress gives no errors about space or about renames across disks; “Temporary files of programs: Automatic” uses the system; after the app closes no file is left in `data\tmp` and `%TEMP%\Atollo\<id>\system` no longer exists.
+- [ ] **FAT32 USB stick.** A component with a file over 4 GiB is refused with an error that says which file, the version already installed stays intact and no `.atollo-new` is left.
 - [ ] **Rust** (`695c177`).
-  - Kit NTFS senza Rust: installazione, `cargo --version` da `rust\cargo\bin`.
-  - Kit NTFS con Rust: aggiornamento sul posto («rustup update» nel registro), uno strumento di `cargo install` resta.
-  - Kit FAT32/exFAT senza Rust: nessun errore sui collegamenti fisici, `rustup-init` nel temp e copia sulla chiavetta; `cargo`, `rustc` e `rustup show` funzionano dalle copie dei proxy.
-  - Kit FAT32/exFAT con Rust: aggiornamento («rustup update (copy in the temp folder)»), strumenti di `cargo install` presenti, nessun `rust.atollo-new` rimasto.
-  - `TEMP` su un disco FAT/exFAT: errore chiaro sul temp senza collegamenti fisici, kit intatto.
-- [ ] **Eliminazione di un progetto con MySQL e MongoDB.** Server fermo: la conferma elenca cartella, motori e copie; dopo «Elimina» i server si avviano, database e utente sono tolti (`SHOW DATABASES`, `SHOW GRANTS`) e `data\projects\<progetto>\` non esiste. Con un server che non parte non si cancella nulla; «Elimina senza i database» cancella le cartelle e il log dice quali database restano.
-- [ ] **Ripristino di una copia fatta altrove.** Una copia `.sql` ottenuta con `mysqldump --databases altro` è rifiutata dal server (accesso negato) e il database `altro` resta intatto; una copia del database del progetto si ripristina.
-- [ ] **Nomi simili.** Progetto `my-app` (database `my_app`) e progetto `my2app`: l'utente `my_app` non vede `my2app` (`SHOW GRANTS`). Un progetto chiamato `mysql` o `admin` non può cancellare né cambiare i database dei server.
-- [ ] **Progetto rinominato in Esplora file.** Compare in «Dati senza progetto» nella pagina Progetti; «Collega a…» lo riporta con password e copie, e la `.env` continua a funzionare. Un orfano con database si elimina con la stessa conferma.
-- [ ] **C: quasi pieno.** Le installazioni ripiegano su `data\tmp` e il log ha l'avviso.
-- [ ] **Alias dei siti.** Un sito con `/media` → `storage/uploads` e `/shared` → `@common/assets`, con Apache, con Caddy e in un pool: i file si aprono nel browser.
-- [ ] **Alias e giunzione.** `storage` sostituito da una giunzione verso `C:\Users`: l'alias non è servito e la pagina del sito lo dice.
-- [ ] **Impostazioni › Temporanei dei programmi.** La pagina mostra file system e tipo di disco del kit; Automatico, Nel kit e Nel sistema cambiano `$env:TEMP` in una console nuova del kit (`data\tmp\system` o `%TEMP%\Atollo\<id>\system`).
-- [ ] **Alias e `.htaccess`** (D-100, SEC-V4-01). In una cartella di alias servita da Apache, un collegamento simbolico non si apre; un `.htaccess` con `Options +FollowSymLinks`, `RewriteRule`, `AddHandler` o `Require all granted` non cambia nulla (avviso nel log di Apache, la cartella resta servita); un `.php` o `.phtml` lì dà 403 con Apache, 404 con Caddy.
-- [ ] **File scaricati a mano** (D-82). Un file messo a mano nel riquadro finisce in `%TEMP%\Atollo\<id>\downloads`; uno lasciato in `data\downloads` si usa lo stesso e si sposta.
+  - NTFS kit without Rust: installation, `cargo --version` from `rust\cargo\bin`.
+  - NTFS kit with Rust: in-place update (“rustup update” in the log), a `cargo install` tool remains.
+  - FAT32/exFAT kit without Rust: no error about hard links, `rustup-init` in the temp folder and copy to the USB stick; `cargo`, `rustc` and `rustup show` work from the copies of the proxies.
+  - FAT32/exFAT kit with Rust: update (“rustup update (copy in the temp folder)”), `cargo install` tools present, no `rust.atollo-new` left.
+  - `TEMP` on a FAT/exFAT disk: clear error about the temp folder without hard links, kit intact.
+- [ ] **Deleting a project with MySQL and MongoDB.** Server stopped: the confirmation lists folder, engines and backups; after “Delete” the servers start, database and user are removed (`SHOW DATABASES`, `SHOW GRANTS`) and `data\projects\<project>\` does not exist. With a server that does not start nothing is deleted; “Delete without the databases” deletes the folders and the log says which databases remain.
+- [ ] **Restoring a backup made elsewhere.** A `.sql` backup obtained with `mysqldump --databases altro` is refused by the server (access denied) and the `altro` database stays intact; a backup of the project's database is restored.
+- [ ] **Similar names.** Project `my-app` (database `my_app`) and project `my2app`: the user `my_app` does not see `my2app` (`SHOW GRANTS`). A project called `mysql` or `admin` cannot delete or change the servers' databases.
+- [ ] **Project renamed in File Explorer.** It appears in “Data without a project” on the Projects page; “Link to…” brings it back with passwords and backups, and the `.env` keeps working. An orphan with databases is deleted with the same confirmation.
+- [ ] **C: almost full.** The installations fall back to `data\tmp` and the log has the warning.
+- [ ] **Site aliases.** A site with `/media` → `storage/uploads` and `/shared` → `@common/assets`, with Apache, with Caddy and in a pool: the files open in the browser.
+- [ ] **Alias and junction.** `storage` replaced by a junction to `C:\Users`: the alias is not served and the site's page says so.
+- [ ] **Settings › Temporary files of programs.** The page shows the kit's file system and disk type; Automatic, In the kit and In the system change `$env:TEMP` in a new kit console (`data\tmp\system` or `%TEMP%\Atollo\<id>\system`).
+- [ ] **Aliases and `.htaccess`** (D-100, SEC-V4-01). In an alias folder served by Apache, a symbolic link does not open; an `.htaccess` with `Options +FollowSymLinks`, `RewriteRule`, `AddHandler` or `Require all granted` changes nothing (warning in Apache's log, the folder stays served); a `.php` or `.phtml` there gives 403 with Apache, 404 with Caddy.
+- [ ] **Files downloaded by hand** (D-82). A file put by hand in the box ends up in `%TEMP%\Atollo\<id>\downloads`; one left in `data\downloads` is used anyway and moved.
 
 ### GitHub
-- [ ] **Accesso.** GitHub › «Accedi a GitHub»: si apre github.com/login/device nel browser del PC e la pagina mostra il codice. Dopo l'autorizzazione compare «Accesso fatto come @…» senza ricaricare, `data\gh\hosts.yml` contiene l'account e nella Gestione credenziali di Windows non c'è nessuna voce `gh:github.com`. «Annulla» durante l'attesa non lascia nessun `gh.exe`.
-- [ ] **Un solo accesso.** Dopo l'accesso, `git config --global --get-all credential.https://github.com.helper` in una console del kit dà una riga vuota e `!gh auth git-credential`. Push di un repository privato dall'editor (Controllo del codice sorgente) e da una console senza nessuna finestra di Git Credential Manager. Claude Code usa `gh` con lo stesso account. Dopo «Esci» il helper sparisce. Dopo aver spostato il kit su un'altra lettera di unità, il push funziona ancora.
-- [ ] **Repository.** Elenco con i repository propri e delle organizzazioni (gruppi separati), ricerca, «Clona» su un repository privato: la cartella è in `projects\` e `.git\config` non contiene il token. Con il nome già preso la cartella diventa `<proprietario>-<nome>`. Sul repository clonato c'è «Editor».
-- [ ] **Rinomina ed elimina** su un repository di prova: dopo «Rinomina» il remote del clone punta al nuovo nome. «Elimina da GitHub» chiede conferma; la prima volta offre «Concedi il permesso», poi con un nuovo accesso l'eliminazione riesce e il clone resta in `projects\`.
+- [ ] **Sign-in.** GitHub › “Sign in to GitHub”: github.com/login/device opens in the PC's browser and the page shows the code. After the authorization “Signed in as @…” appears without reloading, `data\gh\hosts.yml` contains the account and in the Windows Credential Manager there is no `gh:github.com` entry. “Cancel” during the wait leaves no `gh.exe`.
+- [ ] **A single sign-in.** After signing in, `git config --global --get-all credential.https://github.com.helper` in a kit console gives an empty line and `!gh auth git-credential`. Push of a private repository from the editor (Source Control) and from a console without any Git Credential Manager window. Claude Code uses `gh` with the same account. After “Sign out” the helper disappears. After moving the kit to another drive letter, the push still works.
+- [ ] **Repositories.** List with your own and your organizations' repositories (separate groups), search, “Clone” on a private repository: the folder is in `projects\` and `.git\config` does not contain the token. With the name already taken the folder becomes `<owner>-<name>`. On the cloned repository there is “Editor”.
+- [ ] **Rename and delete** on a test repository: after “Rename” the clone's remote points to the new name. “Delete from GitHub” asks for confirmation; the first time it offers “Grant the permission”, then with a new sign-in the deletion succeeds and the clone stays in `projects\`.
 
-### Agenti
-- [ ] **Claude Code, Codex e Antigravity.** Accesso, avvio dall'app e dall'editor, allineamento di istruzioni e skill fra i tre.
-- [ ] **Console di un agente.** Home o Progetti › Agente con Claude Code: si apre la console classica di Windows, anche se il terminale predefinito del PC è Windows Terminal o un altro. Claude Code riceve Invio, frecce e Ctrl+C. Chiudendo la console non resta nessun `claude.exe`.
-- [ ] **Git quando serve.** Su un kit senza Git, all'avvio si installano solo i componenti di sistema: GitHub CLI funziona senza Git (D-81). Scegliere Claude Code, clonare un progetto o avviare un'azione con `git` installa Git; togliere la spunta a Git toglie anche Claude Code.
-- [ ] **Editor aggiornato con una cartella aperta.** Con Esplora file aperto su `data\apps\win32-x64\vscodium-server\extensions`, l'editor di un'altra versione viene comunque sostituito all'avvio (D-60).
+### Agents
+- [ ] **Claude Code, Codex and Antigravity.** Sign-in, start from the app and from the editor, alignment of instructions and skills among the three.
+- [ ] **An agent's console.** Home or Projects › Agent with Claude Code: the classic Windows console opens, even if the PC's default terminal is Windows Terminal or another one. Claude Code receives Enter, arrows and Ctrl+C. Closing the console leaves no `claude.exe`.
+- [ ] **Git when needed.** On a kit without Git, at startup only the system components are installed: GitHub CLI works without Git (D-81). Choosing Claude Code, cloning a project or starting an action with `git` installs Git; unchecking Git also removes Claude Code.
+- [ ] **Editor updated with a folder open.** With File Explorer open on `data\apps\win32-x64\vscodium-server\extensions`, the editor of another version is still replaced at startup (D-60).
 
-- [ ] **Limiti d'uso.** Con l'accesso fatto in Claude Code e Codex, Agenti mostra gli stessi valori di `/usage` e `/status`, con l'ora in cui si azzerano. Senza accesso compare «accesso non fatto». Senza rete l'errore si legge e la pagina resta usabile. «Aggiorna i consumi» premuto più volte di fila non fa più di una richiesta ogni 20 s.
-- [ ] **Solo nel progetto.** In Home e Progetti, Editor, Terminale e agente si aprono nella cartella del progetto; non c'è nessun pulsante per `projects\`. Nell'editor, File › Apri cartella su un'altra cartella, «Nuova finestra» e «Chiudi cartella» non escono dal progetto.
-- [ ] **Fiducia nell'editor.** Alla prima apertura di un progetto l'editor chiede se fidarsi. Con «No» compare la barra «Restricted Mode» e le attività non partono; con «Sì» non chiede più alla riapertura, anche dopo aver riavviato l'app (D-67).
-- [ ] **dev-settings.json.** Dopo aver aperto Codex in un progetto, `data\projects\<progetto>\dev-settings.json` ha `"agent": "codex"` e la scelta dell'agente propone Codex. Eliminando dall'app un progetto vuoto la sua cartella in `data\projects\` sparisce (D-89).
+- [ ] **Usage limits.** Signed in to Claude Code and Codex, Agents shows the same values as `/usage` and `/status`, with the time they reset. Without a sign-in “not signed in” appears. Without a network the error is readable and the page stays usable. “Refresh usage” pressed several times in a row makes no more than one request every 20 s.
+- [ ] **Only in the project.** In Home and Projects, Editor, Terminal and agent open in the project folder; there is no button for `projects\`. In the editor, File › Open Folder on another folder, “New Window” and “Close Folder” do not leave the project.
+- [ ] **Trust in the editor.** The first time a project is opened, the editor asks whether to trust it. With “No” the “Restricted Mode” bar appears and tasks do not start; with “Yes” it no longer asks when reopening, even after restarting the app (D-67).
+- [ ] **dev-settings.json.** After opening Codex in a project, `data\projects\<project>\dev-settings.json` has `"agent": "codex"` and the agent choice suggests Codex. Deleting an empty project from the app makes its folder in `data\projects\` disappear (D-89).
 
-### Linguaggi e strumenti
-- [ ] **Loghi.** Ogni componente ha il suo logo, leggibile nel tema chiaro e in quello scuro; i progetti mostrano le etichette dei linguaggi.
-- [ ] **Dipendenze.** Apache mostra la dipendenza «PHP»; con Claude Code scelto, Git mostra «per Claude Code». Togliendo PHP si toglie anche Apache.
-- [ ] **PATH dopo un'installazione.** Dopo l'installazione di un linguaggio da questa pagina, Home › Terminale apre la console del kit con PowerShell 7 del kit e il programma nuovo è nel PATH, senza riavviare l'app.
+### Languages and tools
+- [ ] **Logos.** Every component has its logo, readable in the light theme and in the dark one; the projects show the language labels.
+- [ ] **Dependencies.** Apache shows the “PHP” dependency; with Claude Code chosen, Git shows “for Claude Code”. Removing PHP also removes Apache.
+- [ ] **PATH after an installation.** After installing a language from this page, Home › Terminal opens the kit console with the kit's PowerShell 7 and the new program is in the PATH, without restarting the app.
 
-### Impostazioni
-- [ ] **Lingua.** Passando a English, Français e Deutsch, tutta l'interfaccia cambia subito. Con «Lingua di Windows» vale quella del sistema.
-- [ ] **Chiave di Gemini.** Salvata, il campo mostra «salvata». Non compare mai in chiaro (né nell'interfaccia, né in `data\app\logs`). «Togli la chiave» la rimuove.
-- [ ] **Valore non valido** (proxy `proxy:8080`, Python `3.x`): l'errore si legge e il file non cambia.
-- [ ] **Editor in esecuzione.** Dopo il salvataggio l'app chiede di riavviare l'editor, e dopo il riavvio i terminali dell'editor vedono le variabili nuove.
-- [ ] **Aggiornamento.** Con una release `app-v*` più recente pubblicata, «Cerca aggiornamenti» scarica l'exe. Alla chiusura `Atollo.exe` è quello nuovo e `Atollo.old.exe` sparisce al riavvio. Con `ATOLLO_NO_UPDATE=1` all'avvio non parte nessun controllo.
+### Settings
+- [ ] **Language.** Switching to English, Français and Deutsch, the whole interface changes immediately. With “Windows language” the system's language applies.
+- [ ] **Gemini key.** Once saved, the field shows “saved”. It never appears in plain text (neither in the interface nor in `data\app\logs`). “Remove the key” removes it.
+- [ ] **Invalid value** (proxy `proxy:8080`, Python `3.x`): the error is readable and the file does not change.
+- [ ] **Editor running.** After saving, the app asks to restart the editor, and after the restart the editor's terminals see the new variables.
+- [ ] **Update.** With a newer `app-v*` release published, “Check for updates” downloads the exe. On closing, `Atollo.exe` is the new one and `Atollo.old.exe` disappears on restart. With `ATOLLO_NO_UPDATE=1` no check runs at startup.
 
-### Chiusura, altre copie, rimozione dell'unità
-- [ ] **Chiusura con qualcosa aperto.** Con editor, console o un progetto avviato, chiudere la finestra chiede conferma ed elenca cosa si chiude. «Annulla» (anche con Esc) lascia tutto aperto.
-- [ ] **Due copie del kit aperte.** La Home della seconda mostra l'avviso con la cartella dell'altra.
-- [ ] **Rimuovi l'unità.** Tutto si chiude e l'accesso di Antigravity torna nel kit. Dopo «Chiudi Atollo» la chiavetta si espelle senza «dispositivo in uso».
+### Closing, other copies, removing the drive
+- [ ] **Closing with something open.** With the editor, a console or a started project, closing the window asks for confirmation and lists what will close. “Cancel” (Esc too) leaves everything open.
+- [ ] **Two copies of the kit open.** The second one's Home shows the warning with the other one's folder.
+- [ ] **Remove drive.** Everything closes and the Antigravity sign-in goes back into the kit. After “Close Atollo” the USB stick ejects without “device in use”.
 
-### Barra del titolo
-- [ ] **Finestra principale senza cornice di Windows.** Trascinamento dalla barra, doppio clic per ingrandire, Riduci, Ingrandisci/Ripristina, Chiudi (con la conferma se qualcosa è aperto); ridimensionamento dai bordi; Win+frecce funzionano. I pulsanti si raggiungono con Tab e hanno un nome per l'Assistente vocale.
-- [ ] **Database** (D-73). Pagina Database: «Avvia» su MySQL non installato lo installa e lo avvia; `mysql -uroot -h127.0.0.1` e `mongosh` rispondono; porta occupata: messaggio e cambio porta; «Avvia con Atollo» lo fa partire al riavvio dell'app; chiusura dell'app: la conferma conta i database e i log finiscono con «Shutdown complete» / «Now exiting». Un progetto Laravel con `DB_CONNECTION=mysql` riceve SQLTools.
-- [ ] **Contenuto dei database** (D-79). Pagina Database con MongoDB avviato (MySQL si vede in phpMyAdmin, D-85): «Contenuto» mostra il database di un progetto e le sue tabelle; una tabella con più di 100 righe va avanti e indietro; colonne BLOB come «n byte binari». MongoDB: collezioni e documenti con `ObjectId(…)`. Server fermo: «Avvia il server per vederne il contenuto.». SQLite non è nella lista.
-- [ ] **Password dei database** (D-74). Pagina Database: password di root/admin nascosta, «Mostra» e «Copia». `mysql --no-defaults -uroot -h127.0.0.1` rifiutato; `mysql` nel terminale del kit entra. Pagina del progetto › Database: «Crea» e poi «Scrivi in .env» mostra prima le righe che cambiano.
-- [ ] **Impostazioni del progetto** (D-78). Avanzate: «Nuova azione» con una variabile `NOME=valore` compare in tabella e in `panel.json`; «Predefinita» la mette sul pulsante Avvia; «Togli» la toglie. Editor: formatta al salvataggio e rientro scritti in `.vscode\settings.json`, aperti nell'editor valgono. MCP: un server aggiunto compare in `.mcp.json` e in `.codex\config.toml`; `codex mcp list` nel progetto lo elenca. Risorse › database: «Esporta» crea la copia, «Ripristina…» chiede conferma e riporta i dati.
-- [ ] **Struttura a sei pagine** (D-76). Progetti è la prima pagina; «Nuovo progetto» con le tre strade (il clone dai repository chiede l'accesso a GitHub nelle Impostazioni); pagina del progetto con Riepilogo, Risorse, Avanzate; pannello Attività: avviare un progetto, aprire il pannello, vedere l'output, Apri nel browser, Ferma; installazione in corso nel pannello; database con errore (porta occupata) nel pannello.
-- [ ] **Pagina del progetto** (D-75). Dal nome in Progetti e nella Home; le sei schede si scelgono anche con le frecce; Avvio avvia e ferma come prima; Database crea il database e scrive il `.env` dopo l'anteprima; Git mostra ramo e remoto di un progetto clonato da GitHub.
-- [ ] **Branding** (D-72). App: logo nella barra del titolo e nella Home, accento verd'Atollo in tema scuro e chiaro, testo dei pulsanti leggibile. Editor: titolo «<progetto> - Atollo», logo nella barra, benvenuto con logo e progetto nell'editor vuoto, anche in tema chiaro.
-- [ ] **Estensioni mentre si lavora** (D-71). Editor aperto su un progetto senza Ruby: si crea `app.rb`; entro circa 20 s (più il download) compare l'avviso con Ruby LSP e Ruby Debugger; «Riavvia le estensioni» ricarica l'editor sul progetto, «Più tardi» chiude l'avviso.
-- [ ] **Finestra dell'editor con la barra di VSCodium** (D-69). Menu File…Help nella barra; trascinamento dalle zone vuote, doppio clic per ingrandire, Aero Snap; Riduci, Ingrandisci/Ripristina (l'icona cambia anche con Win+frecce), Chiudi; ridimensionamento dai bordi; tema chiaro e scuro. Con il server dell'editor fermo compare la barra di ripiego, che sposta e chiude la finestra.
+### Title bar
+- [ ] **Main window without the Windows frame.** Dragging from the bar, double-click to maximize, Minimize, Maximize/Restore, Close (with the confirmation if something is open); resizing from the edges; Win+arrows work. The buttons are reachable with Tab and have a name for Narrator.
+- [ ] **Databases** (D-73). Databases page: “Start” on a MySQL that is not installed installs and starts it; `mysql -uroot -h127.0.0.1` and `mongosh` answer; port in use: message and port change; “Start with Atollo” makes it start when the app restarts; closing the app: the confirmation counts the databases and the logs end with “Shutdown complete” / “Now exiting”. A Laravel project with `DB_CONNECTION=mysql` gets SQLTools.
+- [ ] **Database content** (D-79). Databases page with MongoDB started (MySQL is viewed in phpMyAdmin, D-85): “Content” shows a project's database and its tables; a table with more than 100 rows pages forward and back; BLOB columns as “n bytes of binary data”. MongoDB: collections and documents with `ObjectId(…)`. Server stopped: “Start the server to see what is in it.”. SQLite is not in the list.
+- [ ] **Database passwords** (D-74). Databases page: root/admin password hidden, “Show” and “Copy”. `mysql --no-defaults -uroot -h127.0.0.1` refused; `mysql` in the kit's terminal gets in. Project page › Databases: “Create” and then “Write to .env” first shows the lines that change.
+- [ ] **Project settings** (D-78). Advanced: “New action” with a `NOME=valore` variable appears in the table and in `panel.json`; “Default” puts it on the Start button; “Remove” removes it. Editor: format on save and indentation written in `.vscode\settings.json`, apply when opened in the editor. MCP: an added server appears in `.mcp.json` and in `.codex\config.toml`; `codex mcp list` in the project lists it. Resources › database: “Export” creates the backup, “Restore…” asks for confirmation and brings the data back.
+- [ ] **Six-page structure** (D-76). Projects is the first page; “New project” with the three paths (the clone from the repositories asks for the GitHub sign-in in Settings); project page with Summary, Resources, Advanced; Activity panel: start a project, open the panel, see the output, Open in the browser, Stop; installation in progress in the panel; database with an error (port in use) in the panel.
+- [ ] **Project page** (D-75). From the name in Projects and in Home; the six tabs can also be chosen with the arrows; Run starts and stops as before; Databases creates the database and writes the `.env` after the preview; Git shows branch and remote of a project cloned from GitHub.
+- [ ] **Branding** (D-72). App: logo in the title bar and in Home, Atollo green accent in the dark and light themes, button text readable. Editor: title “<project> - Atollo”, logo in the bar, welcome with logo and project in the empty editor, in the light theme too.
+- [ ] **Extensions while working** (D-71). Editor open on a project without Ruby: `app.rb` is created; within about 20 s (plus the download) the notice with Ruby LSP and Ruby Debugger appears; “Restart extensions” reloads the editor on the project, “Later” closes the notice.
+- [ ] **Editor window with the VSCodium bar** (D-69). File…Help menu in the bar; dragging from the empty areas, double-click to maximize, Aero Snap; Minimize, Maximize/Restore (the icon changes with Win+arrows too), Close; resizing from the edges; light and dark theme. With the editor server stopped the fallback bar appears, which moves and closes the window.
 
-### Accessibilità
-- [ ] **Solo tastiera.** Tutte le pagine si usano: Tab mostra sempre il contorno di focus, «Vai al contenuto» è il primo elemento, il dialogo di chiusura riceve il focus.
-- [ ] **Conferme nella pagina** (D-106). Uscita da un agente, da GitHub, ripristino di un database e «Applica» in Linguaggi e strumenti: l'Assistente vocale legge la domanda, il focus è su «Annulla», Esc chiude e il focus torna al pulsante di partenza. Lo zoom di una schermata della Guida tiene Tab dentro e si chiude con Esc.
-- [ ] **Assistente vocale.** Le pagine hanno titoli e le icone hanno un nome. Errori e stati sono annunciati (`role="alert"` e `role="status"`).
-- [ ] **Stesso aspetto dell'editor** (D-88). App ed editor affiancati, in tema scuro e in chiaro: stessi colori di sfondo, testo, focus, pulsanti, campi e menu a tendina; select, campi e caselle si usano con mouse e tastiera; le icone codicon si vedono (nessun quadratino).
-- [ ] **Tema e animazioni.** Il tema chiaro e quello scuro seguono Windows. Con «Effetti di animazione» spenti in Windows, nessuna icona gira.
+### Accessibility
+- [ ] **Keyboard only.** Every page can be used: Tab always shows the focus outline, “Skip to content” is the first element, the closing dialog receives the focus.
+- [ ] **In-page confirmations** (D-106). Signing out of an agent, of GitHub, restoring a database and “Apply” in Languages and tools: Narrator reads the question, the focus is on “Cancel”, Esc closes and the focus goes back to the button you started from. The zoom of a Guide screenshot keeps Tab inside and closes with Esc.
+- [ ] **Narrator.** The pages have headings and the icons have a name. Errors and states are announced (`role="alert"` and `role="status"`).
+- [ ] **Same look as the editor** (D-88). App and editor side by side, in the dark and in the light theme: same colors for background, text, focus, buttons, fields and drop-down menus; selects, fields and checkboxes can be used with mouse and keyboard; the codicon icons show (no little squares).
+- [ ] **Theme and animations.** The light and dark themes follow Windows. With “Animation effects” turned off in Windows, no icon spins.
