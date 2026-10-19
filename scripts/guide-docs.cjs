@@ -3,11 +3,13 @@
 // It runs the topic files with React and the widgets replaced by stand-ins
 // and turns each widget into Markdown.
 //
-//   node scripts/guide-docs.cjs        (both languages)
-//   node scripts/guide-docs.cjs it     (one of them)
+//   node scripts/guide-docs.cjs           (both languages)
+//   node scripts/guide-docs.cjs it        (one of them)
+//   node scripts/guide-docs.cjs --check   (fails if a document is behind)
 //
 // Needs the repository's node_modules (TypeScript). Run it after any change
-// to the Guide's text; the screenshots are ui/public/guide/<lang>/.
+// to the Guide's text; the CI runs --check. The screenshots are
+// ui/public/guide/<lang>/.
 const fs = require("fs");
 const path = require("path");
 
@@ -402,12 +404,38 @@ function render(lang) {
     if (prev !== undefined && kind(b) && kind(prev) === kind(b)) out.push("<!-- -->");
     out.push(b);
   }
-  const file = path.join(ROOT, "docs", "app", W.file);
-  fs.writeFileSync(file, out.join("\n\n") + "\n");
-  console.log(`${W.file}: ${out.length} blocks`);
+  return out.join("\n\n") + "\n";
 }
 
-for (const lang of process.argv[2] ? [process.argv[2]] : Object.keys(WORDS)) {
+// --check compares instead of writing: it fails when a document is not what
+// the Guide gives today (the CI runs it).
+const check = process.argv.includes("--check");
+const asked = process.argv.slice(2).filter((a) => a !== "--check");
+let stale = 0;
+for (const lang of asked.length ? asked : Object.keys(WORDS)) {
   if (!WORDS[lang]) throw new Error(`unknown language: ${lang} (en, it)`);
-  render(lang);
+  const file = path.join(ROOT, "docs", "app", WORDS[lang].file);
+  const text = render(lang);
+  if (!check) {
+    fs.writeFileSync(file, text);
+    console.log(`${WORDS[lang].file}: written`);
+    continue;
+  }
+  const now = fs.existsSync(file) ? fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n") : "";
+  if (now === text) {
+    console.log(`${WORDS[lang].file}: up to date`);
+    continue;
+  }
+  stale += 1;
+  const a = now.split("\n");
+  const b = text.split("\n");
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i += 1;
+  console.error(`${WORDS[lang].file}: not the Guide's text from line ${String(i + 1)}`);
+  console.error(`  in the file:  ${a[i] ?? "(end)"}`);
+  console.error(`  from the app: ${b[i] ?? "(end)"}`);
+}
+if (stale) {
+  console.error("Run `node scripts/guide-docs.cjs` and commit the documents.");
+  process.exit(1);
 }
