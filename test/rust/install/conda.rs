@@ -311,6 +311,39 @@ fn a_list_of_a_component_that_follows_the_kit_goes() {
     assert!(!status(&kit).applies);
 }
 
+/// A component (or one line of it) removed: its lists go at once, also
+/// while its environment is still on disk, and those of another component
+/// stay; the archives are left to the sweep.
+#[test]
+fn forget_removes_the_lists_of_a_component() {
+    let tmp = TempDir::new("conda-forget");
+    let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
+    let pkgs = pkgs_dir(&kit);
+    let (list45, rec45) = kept(
+        &pkgs,
+        "linux-64",
+        &[("shared-1-0.conda", b"s"), ("r45-1-0.conda", b"r")],
+    );
+    let (list44, rec44) = kept(&pkgs, "linux-64", &[("r44-1-0.conda", b"q")]);
+    let (rr, recrr) = kept(&pkgs, "linux-64", &[("shared-1-0.conda", b"s")]);
+    r_line(&kit, "4.5");
+    write_lock(&kit, "r@4.5", &list45, Some(&rec45));
+    write_lock(&kit, "r@4.4", &list44, Some(&rec44));
+    // A component whose id starts the same: not R's.
+    write_lock(&kit, "rr@1.0", &rr, Some(&recrr));
+
+    forget(&kit, "r", Some("4.4"));
+    assert!(!locks_dir(&kit).join("r@4.4.txt").exists());
+    assert!(!locks_dir(&kit).join("r@4.4.json").exists());
+    assert!(locks_dir(&kit).join("r@4.5.txt").is_file());
+
+    forget(&kit, "r", None);
+    assert!(!locks_dir(&kit).join("r@4.5.txt").exists());
+    assert!(!locks_dir(&kit).join("r@4.5.json").exists());
+    assert!(locks_dir(&kit).join("rr@1.0.txt").is_file());
+    assert!(locks_dir(&kit).join("rr@1.0.json").is_file());
+}
+
 #[test]
 fn kept_packages_off_frees_everything() {
     let tmp = TempDir::new("conda-off");

@@ -8,6 +8,11 @@
 - **Sito**: l'inglese alla radice, l'italiano in `it/`, `en/` rimanda alla radice; `sitemap.xml` con le alternative, JSON-LD `SoftwareApplication`, Open Graph e Twitter card completi, parole chiave in inglese.
 - **Metadati**: `keywords`, `homepage` e `repository` in `package.json` e `tauri/Cargo.toml`; descrizione e topic del repository su GitHub.
 
+## Rimuovere uno strumento toglie anche i file scaricati in anticipo (19/10/2026)
+
+- **Rimozione** (D-114): togliendo uno strumento dalla scelta, su ogni sistema del kit vanno anche i file scaricati in anticipo per il primo avvio su un altro sistema (`.bootstrap`, ora una cartella per strumento), gli elenchi e gli archivi dei suoi pacchetti conda conservati e i file aggiunti a mano per lui; un file che serve ancora a un altro strumento resta. Si toglie anche uno strumento di cui c'era solo quanto scaricato in anticipo.
+- **Versioni**: rimuovere una linea dalla pagina Strumenti toglie anche i suoi file scaricati in anticipo e il suo elenco conda.
+
 ## Testi al passo con il rilascio 0.2.0 (19/10/2026)
 
 - **«C'è ancora da fare»** (README e sito, nelle quattro lingue): la 0.2.0 alpha è su GitHub per i sei sistemi e va provata su macchine pulite; su Windows esce senza firma, SignPath è ancora da attivare.
