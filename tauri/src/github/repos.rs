@@ -201,17 +201,20 @@ pub fn repos(kit: &Kit, net: &Net, token: &str) -> std::result::Result<Repos, Ap
 
 /// Clones a repository of the account into `projects\<name>`, or
 /// `projects\<owner>-<name>` when `<name>` is taken; an existing clone is
-/// returned as it is. Returns the project id.
+/// returned as it is.
 pub fn clone_repo(
     kit: &Kit,
     env: &KitEnv,
     full_name: &str,
     token: Option<&str>,
     lang: &str,
-) -> Result<String> {
+) -> Result<Cloned> {
     api_url(full_name)?;
     if let Some(id) = clones(kit).get(&full_name.to_ascii_lowercase()) {
-        return Ok(id.clone());
+        return Ok(Cloned {
+            project: id.clone(),
+            new: false,
+        });
     }
     let (owner, name) = full_name.split_once('/').unwrap_or_default();
     let candidates = [name.to_owned(), format!("{owner}-{name}")];
@@ -229,7 +232,18 @@ pub fn clone_repo(
         );
     };
     projects::clone(kit, env, full_name, Some(target), lang, token)?;
-    Ok(target.clone())
+    Ok(Cloned {
+        project: target.clone(),
+        new: true,
+    })
+}
+
+/// The project of a repository cloned by [`clone_repo`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Cloned {
+    pub project: String,
+    /// Copied now; `false`: a clone that was already there.
+    pub new: bool,
 }
 
 /// A repository name GitHub accepts.

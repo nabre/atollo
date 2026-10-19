@@ -432,10 +432,10 @@ Se hai collegato l'account GitHub, il riquadro «Dai tuoi repository GitHub» de
 - «GitHub» apre il repository nel browser.
 - Con un clic sulla riga si aprono i dettagli: privato o pubblico, linguaggio, stelle, ultimo push, dove è clonato, «Copia l'indirizzo per Git» e, per i repository che amministri, «Rinomina» ed «Elimina da GitHub».
 
-> [!WARNING]
-> **Attenzione**
+> [!NOTE]
+> **Da sapere**
 >
-> Diversamente da «Da un indirizzo Git», «Clona» da questo elenco non installa i componenti e non sceglie le versioni: apri il progetto e, in «Componenti», premi «Installa ciò che manca». Tutto sull'account in [6.1 L'account GitHub del kit](#61-laccount-github-del-kit).
+> Come «Da un indirizzo Git», dopo la copia il kit installa i componenti che servono e sceglie le versioni che il progetto dichiara. Tutto sull'account in [6.1 L'account GitHub del kit](#61-laccount-github-del-kit).
 
 Argomenti collegati: [1.4 Il primo progetto, passo per passo](#14-il-primo-progetto-passo-per-passo), [2.2 La pagina Progetti e il «Pannello rapido»](#22-la-pagina-progetti-e-il-pannello-rapido), [6.4 Le istruzioni dei framework](#64-le-istruzioni-dei-framework), [6.1 L'account GitHub del kit](#61-laccount-github-del-kit)
 
@@ -523,7 +523,7 @@ Argomenti collegati: [2.3 Avviare un progetto: azioni e porte](#23-avviare-un-pr
 > - Un'azione è un comando del progetto con un nome: «npm run dev», «php artisan serve», il sito web…
 > - Le azioni web ricevono una porta dal kit, che aspetta che rispondano e ti dà l'indirizzo da aprire.
 > - La stella «Predefinita» sceglie l'azione del pulsante «Avvia».
-> - Le azioni si riconoscono da sole; quelle tue si scrivono nel file panel.json del progetto.
+> - Le azioni si riconoscono da sole; le tue si aggiungono con «Nuova azione» e finiscono nel file panel.json del progetto.
 
 ![La pagina di un progetto, sezione «Avvio»](../../ui/public/guide/it/project-run.webp)
 
@@ -569,9 +569,19 @@ Ogni azione web ha una porta tutta sua, scelta dal kit tra 7100 e 7999 la prima 
 
 È quella che parte con il pulsante «Avvia» della pagina, con ▶ nella riga del progetto e con Maiusc+Invio in «Apri un progetto». Per cambiarla scegli l'azione nell'elenco e premi la stella «Predefinita». Quando servi il progetto come sito web, il sito diventa da solo l'azione predefinita.
 
-#### Le tue azioni: il file panel.json
+#### Aggiungere, modificare e togliere azioni
 
-Le azioni riconosciute bastano quasi sempre. Se ne vuoi altre, o vuoi cambiarne una, scrivile nel file panel.json nella cartella del progetto (lo crei tu, se non c'è) e premi «Aggiorna». Il file sta nel progetto, quindi va in Git e vale per chiunque usi il progetto con Atollo.
+1. Nella sezione «Avvio» premi «Nuova azione», accanto al titolo «Azioni».
+2. Compila «Nome», «Tipo» («Sito o server web», «App con finestra» o «Comando») e «Comando»; se serve, «Cartella» (relativa al progetto), «Indirizzo» (solo per un sito) e «Variabili», una NOME=valore per riga. Nel comando, {port} diventa la porta dell'azione.
+3. Premi «Salva». L'azione compare nell'elenco; l'identificativo si ricava dal nome.
+
+- «Modifica», sull'azione scelta, riapre lo stesso modulo. Su un'azione riconosciuta salva una tua versione con lo stesso identificativo, che prende il suo posto.
+- «Togli» c'è solo per le azioni tue e chiede conferma; se esiste un'azione riconosciuta con lo stesso identificativo, torna quella.
+- Il sito web si modifica nella sezione «Sito web», non qui.
+
+#### Il file panel.json
+
+Le azioni tue, la stella e il sito web stanno nel file panel.json nella cartella del progetto. Puoi anche scriverlo a mano e premere «Aggiorna». Il file sta nel progetto, quindi va in Git e vale per chiunque usi il progetto con Atollo.
 
 **Esempio di panel.json** `projects\gestionale\panel.json`
 
@@ -612,7 +622,7 @@ Le azioni riconosciute bastano quasi sempre. Se ne vuoi altre, o vuoi cambiarne 
 > [!NOTE]
 > **Da sapere**
 >
-> Un'azione con lo stesso id di una riconosciuta la sostituisce. Se il file non è un JSON valido, il kit lo ignora e lo dice in «Componenti» › «Come è stato riconosciuto»; correggilo prima di usare stella o sito web, che scrivono nello stesso file. Nell'app non c'è un modulo per aggiungere o modificare le azioni: si fa nel file.
+> Un'azione con lo stesso id di una riconosciuta la sostituisce. Se il file non è un JSON valido, il kit lo ignora e lo dice in «Componenti» › «Come è stato riconosciuto»; correggilo prima di usare stella, sito web o «Nuova azione», che scrivono nello stesso file.
 
 <details>
 <summary>Sotto il cofano</summary>
@@ -831,12 +841,12 @@ Se rinomini o cancelli la cartella di un progetto fuori dall'app, il kit si ritr
 > [!NOTE]
 > **Quando «Collega a…» non si può usare**
 >
-> Il progetto di destinazione non deve avere ancora dati nel kit. Un progetto creato, clonato o aperto almeno una volta dall'app ne ha già, quindi il collegamento viene rifiutato. Funziona per il caso tipico: hai rinominato la cartella in Esplora file e non l'hai ancora aperta in Atollo.
+> Il progetto di destinazione può avere al massimo le sue impostazioni (versioni, preferito, ultimo agente): quelle dei dati collegati prendono il loro posto. Se ha già porte scelte, server, un database o delle copie, il collegamento viene rifiutato, per non mescolare i dati di due progetti.
 
 > [!TIP]
 > **Consiglio**
 >
-> Per rinominare un progetto senza perdere niente: rinomina la cartella in Esplora file, torna su Atollo, premi «Aggiorna» e, prima di aprire il progetto rinominato, usa «Collega a…» sui suoi vecchi dati.
+> Per rinominare un progetto senza perdere niente: rinomina la cartella in Esplora file, torna su Atollo, premi «Aggiorna» e usa «Collega a…» sui suoi vecchi dati, scegliendo il progetto con il nome nuovo.
 
 Argomenti collegati: [3.2 Il database di un progetto](#32-il-database-di-un-progetto), [8.2 Le cartelle del kit su disco](#82-le-cartelle-del-kit-su-disco), [7.3 Aggiornamenti e copie di sicurezza](#73-aggiornamenti-e-copie-di-sicurezza)
 
@@ -1571,7 +1581,7 @@ Argomenti collegati: [2.4 Componenti e versioni di un progetto](#24-componenti-e
 
 #### Matrice
 
-Una tabella con un componente per riga e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-scaricato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».
+Una tabella con un componente per riga e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».
 
 > [!NOTE]
 > **Da sapere**
