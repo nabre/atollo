@@ -29,6 +29,7 @@
     <nav class="nav" aria-label="Atollo">
       <a href="#features">{{navFeatures}}</a>
       <a href="#how">{{navHow}}</a>
+      <a href="#tools">{{navTools}}</a>
       <a href="#platforms">{{navPlatforms}}</a>
       <a href="https://github.com/nabre/atollo">GitHub</a>
     </nav>
@@ -110,7 +111,15 @@
     </div>
   </section>
 
-  <section id="platforms">
+  <section id="tools">
+    <div class="wrap">
+      <h2>{{toolsTitle}}</h2>
+      <p class="muted">{{toolsLead}}</p>
+      {{toolsMatrix}}
+    </div>
+  </section>
+
+  <section id="platforms" class="band">
     <div class="wrap">
       <h2>{{platformsTitle}}</h2>
       <p class="muted">{{platformsLead}}</p>
@@ -127,7 +136,7 @@
     </div>
   </section>
 
-  <section class="band">
+  <section>
     <div class="wrap narrow">
       <h2>{{privacyTitle}}</h2>
       <p>{{privacyText}}</p>
