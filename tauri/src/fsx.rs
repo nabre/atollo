@@ -82,9 +82,24 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
     let tmp = path.with_file_name(format!("{name}.tmp-{}-{seq}", std::process::id()));
     fs::write(&tmp, bytes)?;
+    // Two threads of the kit never rename over the same file at once: on
+    // Windows one of them would wait for the other's "access denied", and
+    // many at once outlast `rename_over`'s second (seen under the whole
+    // test suite). The retry stays for other programs holding the file.
+    let _turn = rename_lock(path).lock().unwrap_or_else(|e| e.into_inner());
     rename_over(&tmp, path).inspect_err(|_| {
         let _ = fs::remove_file(&tmp);
     })
+}
+
+/// One of a few locks, picked by the path: the same file always gets the
+/// same lock, different files seldom share one.
+fn rename_lock(path: &Path) -> &'static std::sync::Mutex<()> {
+    use std::hash::{Hash, Hasher};
+    static LOCKS: [std::sync::Mutex<()>; 64] = [const { std::sync::Mutex::new(()) }; 64];
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    path.hash(&mut h);
+    &LOCKS[(h.finish() % 64) as usize]
 }
 
 /// `fs::rename`, again for up to a second while Windows answers "access
