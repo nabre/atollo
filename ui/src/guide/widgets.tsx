@@ -20,12 +20,12 @@ import {
 } from "react-icons/vsc";
 import { folderOpen, type AppInfo, type ComponentInfo } from "../api";
 import { useCopy } from "../hooks";
-import { t } from "../i18n";
+import { lang, t } from "../i18n";
 import { Tag } from "../tags";
 import { Button, DataTable, EditorSection, IconButton, Link, useModalFocus } from "../workbench";
 import { sectionCode, topicOf, tr, type AppPageTarget, type GuideTopicId } from "./model";
 
-/** A screenshot of the app from /guide/*.webp (taken in the browser preview,
+/** A screenshot of the app from /guide/<lang>/*.webp (taken in the browser preview,
  * on its sample data) with a caption, an optional example and a zoom. */
 export function GuideShot({
   src,
@@ -77,7 +77,7 @@ export function GuideShot({
           className="group relative block w-full cursor-zoom-in overflow-hidden bg-black/20 text-left focus-visible:outline-1 focus-visible:outline-vsc-focus"
         >
           <img
-            src={`/guide/${src}`}
+            src={`/guide/${lang()}/${src}`}
             alt={title}
             loading="lazy"
             className="block max-h-[420px] w-full object-contain object-top transition-transform duration-150 group-hover:scale-[1.005]"
@@ -161,7 +161,7 @@ function ZoomDialog({
           <IconButton icon={VscClose} label={t("Chiudi")} onClick={onClose} />
         </div>
         <div className="min-h-0 flex-1 overflow-auto bg-black/40 p-2">
-          <img src={`/guide/${src}`} alt={title} className="mx-auto block max-w-full rounded" />
+          <img src={`/guide/${lang()}/${src}`} alt={title} className="mx-auto block max-w-full rounded" />
         </div>
         <div className="border-t border-vsc-border px-4 py-2 text-[12px] text-vsc-desc">{caption}</div>
       </div>

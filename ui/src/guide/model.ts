@@ -184,7 +184,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Che cos'è Atollo, che cosa trovi dentro e come è organizzata questa guida. Il punto da cui partire se è la prima volta.",
         "What Atollo is, what you find inside and how this guide is organized. The place to start if it is your first time.",
         "Ce qu'est Atollo, ce que vous y trouvez et comment ce guide est organisé. Le point de départ si c'est votre première fois.",
-        "Was Atollo ist, was Sie darin finden und wie diese Anleitung aufgebaut ist. Der Ausgangspunkt, wenn Sie zum ersten Mal hier sind.",
+        "Was Atollo ist, was du darin findest und wie diese Anleitung aufgebaut ist. Der Ausgangspunkt, wenn du zum ersten Mal hier bist.",
       ),
     icon: VscHome,
     keywords:
@@ -199,7 +199,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Dove mettere il kit, la pagina «Benvenuto», quali componenti scegliere e che cosa succede mentre si scaricano.",
         "Where to put the kit, the “Welcome” page, which components to choose and what happens while they download.",
         "Où placer le kit, la page « Bienvenue », quels composants choisir et ce qui se passe pendant leur téléchargement.",
-        "Wohin das Kit gehört, die Seite „Willkommen“, welche Komponenten Sie wählen und was passiert, während sie heruntergeladen werden.",
+        "Wohin das Kit gehört, die Seite „Willkommen“, welche Komponenten du wählst und was passiert, während sie heruntergeladen werden.",
       ),
     icon: VscRocket,
     keywords:
@@ -255,7 +255,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Le tre strade: una cartella vuota, un repository Git, o una base di framework o CMS con le sue aggiunte. Più i tuoi repository GitHub.",
         "The three ways: an empty folder, a Git repository, or a framework or CMS base with its additions. Plus your GitHub repositories.",
         "Les trois voies : un dossier vide, un dépôt Git, ou une base de framework ou de CMS avec ses ajouts. Plus vos dépôts GitHub.",
-        "Die drei Wege: ein leerer Ordner, ein Git-Repository oder eine Framework- oder CMS-Basis mit ihren Ergänzungen. Dazu Ihre GitHub-Repositorys.",
+        "Die drei Wege: ein leerer Ordner, ein Git-Repository oder eine Framework- oder CMS-Basis mit ihren Ergänzungen. Dazu deine GitHub-Repositorys.",
       ),
     icon: VscNewFolder,
     keywords:
@@ -299,7 +299,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Che cos'è un'azione, come si avvia e si ferma, l'output, la porta, l'azione predefinita e come aggiungerne di tue nel file panel.json.",
         "What an action is, how to start and stop it, the output, the port, the default action and how to add your own in the panel.json file.",
         "Ce qu'est une action, comment la démarrer et l'arrêter, la sortie, le port, l'action par défaut et comment ajouter les vôtres dans le fichier panel.json.",
-        "Was eine Aktion ist, wie man sie startet und beendet, die Ausgabe, der Port, die Standardaktion und wie Sie eigene in der Datei panel.json hinzufügen.",
+        "Was eine Aktion ist, wie man sie startet und beendet, die Ausgabe, der Port, die Standardaktion und wie du eigene in der Datei panel.json hinzufügst.",
       ),
     icon: VscDebugStart,
     keywords:
@@ -381,7 +381,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Che cosa si elimina e che cosa resta, e come ricollegare o pulire i dati di un progetto rinominato o cancellato fuori dall'app.",
         "What gets deleted and what stays, and how to relink or clean up the data of a project renamed or deleted outside the app.",
         "Ce qui est supprimé et ce qui reste, et comment relier ou nettoyer les données d'un projet renommé ou supprimé en dehors de l'application.",
-        "Was gelöscht wird und was bleibt, und wie Sie die Daten eines außerhalb der App umbenannten oder gelöschten Projekts wieder verknüpfen oder aufräumen.",
+        "Was gelöscht wird und was bleibt, und wie du die Daten eines außerhalb der App umbenannten oder gelöschten Projekts wieder verknüpfst oder aufräumst.",
       ),
     icon: VscTrash,
     keywords:
@@ -460,7 +460,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Console con gli strumenti del kit in qualsiasi cartella del PC, e terminali tuoi con strumenti e versioni scelti.",
         "Consoles with the kit's tools in any folder on the PC, and terminals of your own with the tools and versions you choose.",
         "Des consoles avec les outils du kit dans n'importe quel dossier du PC, et vos propres terminaux avec les outils et versions de votre choix.",
-        "Konsolen mit den Werkzeugen des Kits in jedem Ordner des PCs und eigene Terminals mit Werkzeugen und Versionen Ihrer Wahl.",
+        "Konsolen mit den Werkzeugen des Kits in jedem Ordner des PCs und eigene Terminals mit Werkzeugen und Versionen deiner Wahl.",
       ),
     icon: VscTerminal,
     keywords:
@@ -484,7 +484,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Che cosa sono, come si installano, come si aprono in un progetto, l'accesso al proprio account e l'uscita.",
         "What they are, how to install them, how to open them in a project, signing in to your account and signing out.",
         "Ce qu'ils sont, comment les installer, comment les ouvrir dans un projet, la connexion à votre compte et la déconnexion.",
-        "Was sie sind, wie man sie installiert, wie man sie in einem Projekt öffnet, die Anmeldung bei Ihrem Konto und die Abmeldung.",
+        "Was sie sind, wie man sie installiert, wie man sie in einem Projekt öffnet, die Anmeldung bei deinem Konto und die Abmeldung.",
       ),
     icon: VscHubot,
     keywords:
@@ -528,7 +528,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Quanto del piano hai usato, quando si azzera, e i token e le sessioni di oggi e degli ultimi sette giorni.",
         "How much of your plan you have used, when it resets, and the tokens and sessions of today and the last seven days.",
         "Quelle part de votre forfait vous avez utilisée, quand elle se réinitialise, et les tokens et sessions d'aujourd'hui et des sept derniers jours.",
-        "Wie viel Ihres Plans Sie verbraucht haben, wann er zurückgesetzt wird, und die Tokens und Sitzungen von heute und den letzten sieben Tagen.",
+        "Wie viel deines Plans du verbraucht hast, wann er zurückgesetzt wird, und die Tokens und Sitzungen von heute und den letzten sieben Tagen.",
       ),
     icon: VscGraph,
     keywords:
@@ -614,7 +614,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Perché collegarlo, come si accede, che cosa sblocca (repository, Git, GitHub CLI) e che cosa funziona anche senza.",
         "Why to connect it, how to sign in, what it unlocks (repositories, Git, GitHub CLI) and what works without it too.",
         "Pourquoi le connecter, comment se connecter, ce qu'il débloque (dépôts, Git, GitHub CLI) et ce qui fonctionne aussi sans lui.",
-        "Warum Sie es verbinden sollten, wie Sie sich anmelden, was es freischaltet (Repositorys, Git, GitHub CLI) und was auch ohne es funktioniert.",
+        "Warum du es verbinden solltest, wie du dich anmeldest, was es freischaltet (Repositorys, Git, GitHub CLI) und was auch ohne es funktioniert.",
       ),
     icon: VscGithub,
     keywords:
@@ -658,7 +658,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Quando servono, come compilarli e a che cosa si applicano. Più come far vedere i tuoi siti agli altri PC della rete.",
         "When you need them, how to fill them in and what they apply to. Plus how to let the other PCs on the network see your websites.",
         "Quand ils sont nécessaires, comment les remplir et à quoi ils s'appliquent. Plus comment rendre vos sites visibles aux autres PC du réseau.",
-        "Wann Sie sie brauchen, wie Sie sie ausfüllen und wofür sie gelten. Dazu, wie andere PCs im Netzwerk Ihre Websites sehen können.",
+        "Wann du sie brauchst, wie du sie ausfüllst und wofür sie gelten. Dazu, wie andere PCs im Netzwerk deine Websites sehen können.",
       ),
     icon: VscRemote,
     keywords:
@@ -680,7 +680,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Modificare le ricette di «Nuovo progetto»: basi, aggiunte, comandi, variabili .env, azioni. E provare una combinazione prima di usarla.",
         "Editing the recipes of “New project”: bases, additions, commands, .env variables, actions. And trying a combination before using it.",
         "Modifier les recettes de « Nouveau projet » : bases, ajouts, commandes, variables .env, actions. Et essayer une combinaison avant de l'utiliser.",
-        "Die Rezepte von „Neues Projekt“ bearbeiten: Basen, Ergänzungen, Befehle, .env-Variablen, Aktionen. Und eine Kombination ausprobieren, bevor Sie sie verwenden.",
+        "Die Rezepte von „Neues Projekt“ bearbeiten: Basen, Ergänzungen, Befehle, .env-Variablen, Aktionen. Und eine Kombination ausprobieren, bevor du sie verwendest.",
       ),
     icon: VscWand,
     keywords:
@@ -704,7 +704,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Chiudere tutto quello che il kit ha aperto prima di staccare la chiavetta o il disco, senza perdere dati.",
         "Closing everything the kit has opened before unplugging the USB stick or the disk, without losing data.",
         "Fermer tout ce que le kit a ouvert avant de débrancher la clé ou le disque, sans perdre de données.",
-        "Alles schließen, was das Kit geöffnet hat, bevor Sie den USB-Stick oder die Festplatte abziehen, ohne Daten zu verlieren.",
+        "Alles schließen, was das Kit geöffnet hat, bevor du den USB-Stick oder die Festplatte abziehst, ohne Daten zu verlieren.",
       ),
     icon: VscDebugDisconnect,
     keywords:
@@ -747,7 +747,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Aggiornare Atollo e i suoi strumenti, e che cosa copiare per avere un backup completo del tuo lavoro.",
         "Updating Atollo and its tools, and what to copy to have a complete backup of your work.",
         "Mettre à jour Atollo et ses outils, et ce qu'il faut copier pour avoir une sauvegarde complète de votre travail.",
-        "Atollo und seine Werkzeuge aktualisieren, und was Sie kopieren müssen, um eine vollständige Sicherung Ihrer Arbeit zu haben.",
+        "Atollo und seine Werkzeuge aktualisieren, und was du kopieren musst, um eine vollständige Sicherung deiner Arbeit zu haben.",
       ),
     icon: VscCloudDownload,
     keywords:
@@ -792,7 +792,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "projects e data: che cosa c'è in ogni cartella, quali file sono tuoi, quali del kit e quali sono protetti.",
         "projects and data: what is in each folder, which files are yours, which belong to the kit and which are protected.",
         "projects et data : ce qu'il y a dans chaque dossier, quels fichiers sont à vous, lesquels sont au kit et lesquels sont protégés.",
-        "projects und data: was in jedem Ordner liegt, welche Dateien Ihnen gehören, welche dem Kit und welche geschützt sind.",
+        "projects und data: was in jedem Ordner liegt, welche Dateien dir gehören, welche dem Kit und welche geschützt sind.",
       ),
     icon: VscFolderLibrary,
     keywords:
@@ -808,7 +808,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Che cosa parte con l'app, che cosa si ferma quando la chiudi, e perché non restano programmi accesi a tua insaputa.",
         "What starts with the app, what stops when you close it, and why no programs stay running without your knowledge.",
         "Ce qui démarre avec l'application, ce qui s'arrête quand vous la fermez, et pourquoi aucun programme ne reste allumé à votre insu.",
-        "Was mit der App startet, was beim Schließen beendet wird und warum keine Programme ohne Ihr Wissen weiterlaufen.",
+        "Was mit der App startet, was beim Schließen beendet wird und warum keine Programme ohne dein Wissen weiterlaufen.",
       ),
     icon: VscPulse,
     keywords:
@@ -868,7 +868,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "I problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti.",
         "The most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins.",
         "Les problèmes les plus courants, le message que vous voyez et quoi faire : téléchargements, ports occupés, serveurs qui ne démarrent pas, connexions expirées.",
-        "Die häufigsten Probleme, die Meldung, die Sie sehen, und was zu tun ist: Downloads, belegte Ports, Server, die nicht starten, abgelaufene Anmeldungen.",
+        "Die häufigsten Probleme, die Meldung, die du siehst, und was zu tun ist: Downloads, belegte Ports, Server, die nicht starten, abgelaufene Anmeldungen.",
       ),
     icon: VscWarning,
     keywords:

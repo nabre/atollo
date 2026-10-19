@@ -60,7 +60,7 @@ export const AGENTS: TopicTexts = {
             "L'accesso al tuo account si fa al primo avvio dell'agente e resta nel kit, anche su un altro PC.",
             "You sign in to your account the first time the agent starts, and the sign-in stays in the kit, even on another PC.",
             "La connexion à votre compte se fait au premier lancement de l'agent et reste dans le kit, même sur un autre PC.",
-            "Die Anmeldung bei Ihrem Konto erfolgt beim ersten Start des Agenten und bleibt im Kit, auch auf einem anderen PC.",
+            "Die Anmeldung bei deinem Konto erfolgt beim ersten Start des Agenten und bleibt im Kit, auch auf einem anderen PC.",
           ),
         ]}
       />
@@ -81,7 +81,7 @@ export const AGENTS: TopicTexts = {
           "Che cosa sono e che cosa serve",
           "What they are and what you need",
           "Ce qu'ils sont et ce qu'il faut",
-          "Was sie sind und was Sie brauchen",
+          "Was sie sind und was du brauchst",
         )}
       >
         <P>
@@ -89,7 +89,7 @@ export const AGENTS: TopicTexts = {
             "Un agente è un programma a riga di comando che dialoga con un modello di intelligenza artificiale del fornitore. Gli chiedi in italiano che cosa fare («aggiungi una pagina di contatto», «perché questo test fallisce?») e lui legge i file, propone modifiche, esegue comandi e ti mostra i risultati. Per usarlo serve un account del fornitore con un piano che lo comprenda, oppure una chiave API.",
             "An agent is a command-line program that talks with an artificial intelligence model from its provider. You tell it in plain English what to do (“add a contact page”, “why does this test fail?”) and it reads the files, proposes changes, runs commands and shows you the results. To use it you need an account with the provider and a plan that includes it, or an API key.",
             "Un agent est un programme en ligne de commande qui dialogue avec un modèle d'intelligence artificielle du fournisseur. Vous lui demandez en français ce qu'il doit faire (« ajoute une page de contact », « pourquoi ce test échoue-t-il ? ») et il lit les fichiers, propose des modifications, exécute des commandes et vous montre les résultats. Pour l'utiliser, il faut un compte chez le fournisseur avec un abonnement qui l'inclut, ou une clé API.",
-            "Ein Agent ist ein Kommandozeilenprogramm, das mit einem KI-Modell des Anbieters kommuniziert. Sie sagen ihm auf Deutsch, was es tun soll („füge eine Kontaktseite hinzu“, „warum schlägt dieser Test fehl?“), und es liest die Dateien, schlägt Änderungen vor, führt Befehle aus und zeigt Ihnen die Ergebnisse. Dafür brauchen Sie ein Konto beim Anbieter mit einem Tarif, der ihn enthält, oder einen API-Schlüssel.",
+            "Ein Agent ist ein Kommandozeilenprogramm, das mit einem KI-Modell des Anbieters kommuniziert. Du sagst ihm auf Deutsch, was es tun soll („füge eine Kontaktseite hinzu“, „warum schlägt dieser Test fehl?“), und es liest die Dateien, schlägt Änderungen vor, führt Befehle aus und zeigt dir die Ergebnisse. Dafür brauchst du ein Konto beim Anbieter mit einem Tarif, der ihn enthält, oder einen API-Schlüssel.",
           )}
         </P>
         <Table
@@ -159,18 +159,18 @@ export const AGENTS: TopicTexts = {
         </P>
         <Steps
           steps={[
-            tr("Apri il progetto.", "Open the project.", "Ouvrez le projet.", "Öffnen Sie das Projekt."),
+            tr("Apri il progetto.", "Open the project.", "Ouvrez le projet.", "Öffne das Projekt."),
             tr(
               "In alto, accanto a «Editor» e «Terminale», fai clic sul logo dell'agente che vuoi usare.",
               "At the top, next to “Editor” and “Terminal”, click the logo of the agent you want to use.",
               "En haut, à côté de « Éditeur » et « Terminal », cliquez sur le logo de l'agent que vous voulez utiliser.",
-              "Klicken Sie oben neben „Editor“ und „Terminal“ auf das Logo des Agenten, den Sie verwenden möchten.",
+              "Klicke oben neben „Editor“ und „Terminal“ auf das Logo des Agenten, den du verwenden möchtest.",
             ),
             tr(
               "Premi «Agente». Su Windows si apre una console del kit nella cartella del progetto con l'agente avviato; su macOS e Linux una scheda del pannello dei terminali.",
               "Press “Agent”. On Windows a kit console opens in the project folder with the agent started; on macOS and Linux, a tab in the terminal panel.",
               "Appuyez sur « Agent ». Sur Windows, une console du kit s'ouvre dans le dossier du projet avec l'agent lancé ; sur macOS et Linux, un onglet du panneau des terminaux.",
-              "Drücken Sie „Agent“. Unter Windows öffnet sich eine Konsole des Kits im Projektordner mit dem gestarteten Agenten; unter macOS und Linux eine Registerkarte im Terminalbereich.",
+              "Drück „Agent“. Unter Windows öffnet sich eine Konsole des Kits im Projektordner mit dem gestarteten Agenten; unter macOS und Linux eine Registerkarte im Terminalbereich.",
             ),
           ]}
         />
@@ -201,7 +201,7 @@ export const AGENTS: TopicTexts = {
                 "Antigravity parte attraverso un piccolo programma del kit (agy) che rimette il tuo accesso nel sistema prima dell'avvio e lo riporta nel kit alla fine.",
                 "Antigravity starts through a small kit program (agy) that puts your sign-in back into the system before the start and brings it back into the kit at the end.",
                 "Antigravity démarre via un petit programme du kit (agy) qui remet votre connexion dans le système avant le lancement et la rapporte dans le kit à la fin.",
-                "Antigravity startet über ein kleines Programm des Kits (agy), das Ihre Anmeldung vor dem Start ins System zurücklegt und sie am Ende wieder ins Kit holt.",
+                "Antigravity startet über ein kleines Programm des Kits (agy), das deine Anmeldung vor dem Start ins System zurücklegt und sie am Ende wieder ins Kit holt.",
               ),
             ]}
           />
@@ -265,7 +265,7 @@ export const AGENTS: TopicTexts = {
           "L'accesso al tuo account",
           "Signing in to your account",
           "La connexion à votre compte",
-          "Die Anmeldung bei Ihrem Konto",
+          "Die Anmeldung bei deinem Konto",
         )}
       >
         <Table
@@ -282,7 +282,7 @@ export const AGENTS: TopicTexts = {
                 "Apri l'agente in un progetto e segui le sue istruzioni (di solito una pagina nel browser).",
                 "Open the agent in a project and follow its instructions (usually a page in the browser).",
                 "Ouvrez l'agent dans un projet et suivez ses instructions (en général une page dans le navigateur).",
-                "Öffnen Sie den Agenten in einem Projekt und folgen Sie seinen Anweisungen (meist eine Seite im Browser).",
+                "Öffne den Agenten in einem Projekt und folge seinen Anweisungen (meist eine Seite im Browser).",
               ),
             ],
             [
@@ -291,7 +291,7 @@ export const AGENTS: TopicTexts = {
                 "L'agente ha un accesso con il tuo account, salvato nel kit.",
                 "The agent is signed in with your account, saved in the kit.",
                 "L'agent est connecté avec votre compte, enregistré dans le kit.",
-                "Der Agent ist mit Ihrem Konto angemeldet, gespeichert im Kit.",
+                "Der Agent ist mit deinem Konto angemeldet, gespeichert im Kit.",
               ),
             ],
             [
@@ -305,7 +305,7 @@ export const AGENTS: TopicTexts = {
                 "L'agente usa una chiave API: niente limiti di piano, paghi a consumo.",
                 "The agent uses an API key: no plan limits, you pay for what you use.",
                 "L'agent utilise une clé API : pas de limites d'abonnement, vous payez à la consommation.",
-                "Der Agent verwendet einen API-Schlüssel: keine Tariflimits, Sie zahlen nach Verbrauch.",
+                "Der Agent verwendet einen API-Schlüssel: keine Tariflimits, du zahlst nach Verbrauch.",
               ),
             ],
             [
@@ -329,7 +329,7 @@ export const AGENTS: TopicTexts = {
             "L'accesso resta nella cartella del kit: portando il kit su un altro PC non devi rifarlo. «Esci» toglie l'accesso salvato nel kit (con l'agente chiuso: mentre è aperto il pulsante dice «Chiudi prima l'agente»).",
             "The sign-in stays in the kit folder: when you take the kit to another PC you do not have to sign in again. “Sign out” removes the sign-in saved in the kit (with the agent closed: while it is open the button says “Close the agent first”).",
             "La connexion reste dans le dossier du kit : en emportant le kit sur un autre PC, vous n'avez pas à la refaire. « Se déconnecter » retire la connexion enregistrée dans le kit (avec l'agent fermé : tant qu'il est ouvert, le bouton indique « Fermez d'abord l'agent »).",
-            "Die Anmeldung bleibt im Ordner des Kits: Wenn Sie das Kit auf einen anderen PC mitnehmen, müssen Sie sich nicht erneut anmelden. „Abmelden“ entfernt die im Kit gespeicherte Anmeldung (bei geschlossenem Agenten: Solange er geöffnet ist, zeigt die Schaltfläche „Schließen Sie zuerst den Agenten“).",
+            "Die Anmeldung bleibt im Ordner des Kits: Wenn du das Kit auf einen anderen PC mitnimmst, musst du dich nicht erneut anmelden. „Abmelden“ entfernt die im Kit gespeicherte Anmeldung (bei geschlossenem Agenten: Solange er geöffnet ist, zeigt die Schaltfläche „Schließe zuerst den Agenten“).",
           )}
         </P>
         <Callout
@@ -338,14 +338,14 @@ export const AGENTS: TopicTexts = {
             "Se perdi la chiavetta",
             "If you lose the USB stick",
             "Si vous perdez la clé USB",
-            "Wenn Sie den USB-Stick verlieren",
+            "Wenn du den USB-Stick verlierst",
           )}
         >
           {tr(
             "Gli accessi degli agenti e di GitHub sono salvati nel kit, in chiaro. «Esci» non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account di Anthropic, OpenAI, Google e GitHub.",
             "The sign-ins of the agents and of GitHub are saved in the kit, unencrypted. “Sign out” does not revoke the sessions on the provider's site: if you lose the USB stick, revoke them from your account settings at Anthropic, OpenAI, Google and GitHub.",
             "Les connexions des agents et de GitHub sont enregistrées dans le kit, en clair. « Se déconnecter » ne révoque pas les sessions sur le site du fournisseur : si vous perdez la clé USB, révoquez-les depuis les paramètres de votre compte chez Anthropic, OpenAI, Google et GitHub.",
-            "Die Anmeldungen der Agenten und von GitHub sind im Kit gespeichert, unverschlüsselt. „Abmelden“ widerruft die Sitzungen auf der Website des Anbieters nicht: Wenn Sie den USB-Stick verlieren, widerrufen Sie sie in den Einstellungen Ihres Kontos bei Anthropic, OpenAI, Google und GitHub.",
+            "Die Anmeldungen der Agenten und von GitHub sind im Kit gespeichert, unverschlüsselt. „Abmelden“ widerruft die Sitzungen auf der Website des Anbieters nicht: Wenn du den USB-Stick verlierst, widerrufe sie in den Einstellungen deines Kontos bei Anthropic, OpenAI, Google und GitHub.",
           )}
         </Callout>
         <Callout
@@ -356,7 +356,7 @@ export const AGENTS: TopicTexts = {
             "Su macOS Claude Code salverebbe l'accesso nel Portachiavi, che resta su quel Mac. «Collega con un token» apre claude setup-token nel terminale dell'app: completi l'accesso nel browser e il token (valido un anno) viene salvato nel kit, così funziona su ogni Mac. Se non viene riconosciuto, incollalo nel campo «Token di Claude Code» e premi «Salva il token».",
             "On macOS Claude Code would save the sign-in in the Keychain, which stays on that Mac. “Connect with a token” opens claude setup-token in the app's terminal: you complete the sign-in in the browser and the token (valid for one year) is saved in the kit, so it works on every Mac. If it is not recognized, paste it into the “Claude Code token” field and press “Save the token”.",
             "Sur macOS, Claude Code enregistrerait la connexion dans le Trousseau, qui reste sur ce Mac. « Connecter avec un jeton » ouvre claude setup-token dans le terminal de l'application : vous terminez la connexion dans le navigateur et le jeton (valable un an) est enregistré dans le kit, il fonctionne ainsi sur chaque Mac. S'il n'est pas reconnu, collez-le dans le champ « Jeton de Claude Code » et appuyez sur « Enregistrer le jeton ».",
-            "Unter macOS würde Claude Code die Anmeldung im Schlüsselbund speichern, der auf diesem Mac bleibt. „Mit einem Token verbinden“ öffnet claude setup-token im Terminal der App: Sie schließen die Anmeldung im Browser ab, und das Token (ein Jahr gültig) wird im Kit gespeichert, sodass es auf jedem Mac funktioniert. Wird es nicht erkannt, fügen Sie es in das Feld „Token von Claude Code“ ein und drücken Sie „Token speichern“.",
+            "Unter macOS würde Claude Code die Anmeldung im Schlüsselbund speichern, der auf diesem Mac bleibt. „Mit einem Token verbinden“ öffnet claude setup-token im Terminal der App: Du schließt die Anmeldung im Browser ab, und das Token (ein Jahr gültig) wird im Kit gespeichert, sodass es auf jedem Mac funktioniert. Wird es nicht erkannt, füge es in das Feld „Token von Claude Code“ ein und drück „Token speichern“.",
           )}
         </Callout>
         <Under>
@@ -426,7 +426,7 @@ export const AGENTS: TopicTexts = {
             "Puoi modificare anche i file di un agente: la modifica passa agli altri.",
             "You can also edit an agent's files: the change passes to the others.",
             "Vous pouvez aussi modifier les fichiers d'un agent : la modification passe aux autres.",
-            "Sie können auch die Dateien eines Agenten ändern: Die Änderung geht an die anderen über.",
+            "Du kannst auch die Dateien eines Agenten ändern: Die Änderung geht an die anderen über.",
           ),
           tr(
             "I server MCP di un solo progetto si aggiungono nella sezione «Editor» del progetto.",
@@ -451,7 +451,7 @@ export const AGENTS: TopicTexts = {
                 "Regole e preferenze che valgono in ogni progetto («rispondi in italiano», «usa pnpm», il tuo stile di codice).",
                 "Rules and preferences that apply in every project (“reply in English”, “use pnpm”, your coding style).",
                 "Règles et préférences valables dans chaque projet (« réponds en français », « utilise pnpm », votre style de code).",
-                "Regeln und Vorlieben, die in jedem Projekt gelten („antworte auf Deutsch“, „verwende pnpm“, Ihr Codestil).",
+                "Regeln und Vorlieben, die in jedem Projekt gelten („antworte auf Deutsch“, „verwende pnpm“, dein Codestil).",
               ),
               <Code key="i">data\agents\AGENTS.md</Code>,
             ],
@@ -463,7 +463,9 @@ export const AGENTS: TopicTexts = {
                 "Procédures réutilisables que l'agent charge quand il en a besoin, un dossier par skill avec un fichier SKILL.md.",
                 "Wiederverwendbare Abläufe, die der Agent bei Bedarf lädt, ein Ordner pro Skill mit einer Datei SKILL.md.",
               ),
-              <Code key="s">data\agents\skills\&lt;nome&gt;\SKILL.md</Code>,
+              <Code key="s">
+                {"data\\agents\\skills\\" + tr("<nome>", "<name>", "<nom>", "<Name>") + "\\SKILL.md"}
+              </Code>,
             ],
             [
               tr("Server MCP", "MCP servers", "Serveurs MCP", "MCP-Server"),
@@ -483,25 +485,25 @@ export const AGENTS: TopicTexts = {
               "Nella pagina Agenti premi «Apri la cartella condivisa».",
               "On the Agents page, press “Open shared folder”.",
               "Dans la page Agents, appuyez sur « Ouvrir le dossier partagé ».",
-              "Drücken Sie auf der Seite Agenten „Gemeinsamen Ordner öffnen“.",
+              "Drück auf der Seite Agenten „Gemeinsamen Ordner öffnen“.",
             ),
             tr(
               "Modifica AGENTS.md con un editor di testo, aggiungi cartelle in skills o server in mcp.json.",
               "Edit AGENTS.md with a text editor, add folders in skills or servers in mcp.json.",
               "Modifiez AGENTS.md avec un éditeur de texte, ajoutez des dossiers dans skills ou des serveurs dans mcp.json.",
-              "Bearbeiten Sie AGENTS.md mit einem Texteditor, fügen Sie Ordner in skills oder Server in mcp.json hinzu.",
+              "Bearbeite AGENTS.md mit einem Texteditor, füge Ordner in skills oder Server in mcp.json hinzu.",
             ),
             tr(
               "La modifica arriva agli agenti al loro prossimo avvio (o subito, se riavvii l'app).",
               "The change reaches the agents at their next start (or right away, if you restart the app).",
               "La modification arrive aux agents à leur prochain lancement (ou tout de suite, si vous redémarrez l'application).",
-              "Die Änderung erreicht die Agenten bei ihrem nächsten Start (oder sofort, wenn Sie die App neu starten).",
+              "Die Änderung erreicht die Agenten bei ihrem nächsten Start (oder sofort, wenn du die App neu startest).",
             ),
           ]}
         />
         <GuideCode
           title={tr("Esempio di mcp.json", "Example mcp.json", "Exemple de mcp.json", "Beispiel für mcp.json")}
-          path="data\\agents\\mcp.json"
+          path={"data\\agents\\mcp.json"}
           code={MCP_EXAMPLE}
         />
         <Callout tone="tip">
@@ -528,7 +530,7 @@ export const AGENTS: TopicTexts = {
               "Istruzioni: AGENTS.md viene copiato come CLAUDE.md per Claude Code, AGENTS.md per Codex e AGENTS.md per Antigravity. Se modifichi uno di quei file, la modifica torna in AGENTS.md e passa agli altri. Se cambiano entrambe le parti, vince la più recente e l'altra viene conservata nella cartella dei conflitti.",
               "Instructions: AGENTS.md is copied as CLAUDE.md for Claude Code, AGENTS.md for Codex and AGENTS.md for Antigravity. If you edit one of those files, the change goes back into AGENTS.md and on to the others. If both sides change, the most recent wins and the other is kept in the conflicts folder.",
               "Instructions : AGENTS.md est copié en CLAUDE.md pour Claude Code, AGENTS.md pour Codex et AGENTS.md pour Antigravity. Si vous modifiez l'un de ces fichiers, la modification revient dans AGENTS.md et passe aux autres. Si les deux côtés changent, le plus récent l'emporte et l'autre est conservé dans le dossier des conflits.",
-              "Anweisungen: AGENTS.md wird als CLAUDE.md für Claude Code, AGENTS.md für Codex und AGENTS.md für Antigravity kopiert. Wenn Sie eine dieser Dateien ändern, geht die Änderung zurück in AGENTS.md und an die anderen. Ändern sich beide Seiten, gewinnt die neuere, und die andere wird im Konfliktordner aufbewahrt.",
+              "Anweisungen: AGENTS.md wird als CLAUDE.md für Claude Code, AGENTS.md für Codex und AGENTS.md für Antigravity kopiert. Wenn du eine dieser Dateien änderst, geht die Änderung zurück in AGENTS.md und an die anderen. Ändern sich beide Seiten, gewinnt die neuere, und die andere wird im Konfliktordner aufbewahrt.",
             ),
             tr(
               "Skill: ogni agente vede la cartella skills attraverso un collegamento (copie sui dischi FAT32 ed exFAT). Una skill creata dentro un agente viene spostata in data\\agents\\skills e diventa di tutti; una skill cancellata in un agente viene messa da parte e si può recuperare.",
@@ -540,7 +542,7 @@ export const AGENTS: TopicTexts = {
               "Server MCP: mcp.json viene tradotto nel formato di ciascun agente. Con Claude Code vale in entrambe le direzioni: un server aggiunto con claude mcp add -s user torna in mcp.json. Codex e Antigravity ricevono i server del kit e lasciano stare quelli che hai aggiunto a mano nelle loro configurazioni.",
               "MCP servers: mcp.json is translated into each agent's format. With Claude Code it works in both directions: a server added with claude mcp add -s user goes back into mcp.json. Codex and Antigravity receive the kit's servers and leave alone the ones you added by hand in their configurations.",
               "Serveurs MCP : mcp.json est traduit dans le format de chaque agent. Avec Claude Code, cela vaut dans les deux sens : un serveur ajouté avec claude mcp add -s user revient dans mcp.json. Codex et Antigravity reçoivent les serveurs du kit et ne touchent pas à ceux que vous avez ajoutés à la main dans leurs configurations.",
-              "MCP-Server: mcp.json wird in das Format jedes Agenten übersetzt. Bei Claude Code gilt das in beide Richtungen: Ein mit claude mcp add -s user hinzugefügter Server kommt zurück in mcp.json. Codex und Antigravity erhalten die Server des Kits und lassen die, die Sie von Hand in ihren Konfigurationen hinzugefügt haben, unangetastet.",
+              "MCP-Server: mcp.json wird in das Format jedes Agenten übersetzt. Bei Claude Code gilt das in beide Richtungen: Ein mit claude mcp add -s user hinzugefügter Server kommt zurück in mcp.json. Codex und Antigravity erhalten die Server des Kits und lassen die, die du von Hand in ihren Konfigurationen hinzugefügt hast, unangetastet.",
             ),
           ]}
         />
@@ -568,25 +570,25 @@ export const AGENTS: TopicTexts = {
               "Apri il progetto, sezione «Editor», riquadro «Server MCP del progetto».",
               "Open the project, “Editor” section, “Project MCP servers” box.",
               "Ouvrez le projet, section « Éditeur », panneau « Serveurs MCP du projet ».",
-              "Öffnen Sie das Projekt, Abschnitt „Editor“, Bereich „MCP-Server des Projekts“.",
+              "Öffne das Projekt, Abschnitt „Editor“, Bereich „MCP-Server des Projekts“.",
             ),
             tr(
               "Premi «Aggiungi un server».",
               "Press “Add a server”.",
               "Appuyez sur « Ajouter un serveur ».",
-              "Drücken Sie „Server hinzufügen“.",
+              "Drück „Server hinzufügen“.",
             ),
             tr(
               "Scrivi il «Nome» (lettere, cifre, - e _) e scegli il «Tipo»: «programma» (con «Programma», per esempio npx, e gli «Argomenti, uno per riga») oppure «indirizzo (http)» (con l'«Indirizzo»).",
               "Write the “Name” (letters, digits, - and _) and choose the “Type”: “program” (with “Program”, for example npx, and the “Arguments, one per line”) or “address (http)” (with the “Address”).",
               "Écrivez le « Nom » (lettres, chiffres, - et _) et choisissez le « Type » : « programme » (avec « Programme », par exemple npx, et les « Arguments, un par ligne ») ou « adresse (http) » (avec l'« Adresse »).",
-              "Geben Sie den „Name“ ein (Buchstaben, Ziffern, - und _) und wählen Sie den „Typ“: „Programm“ (mit „Programm“, zum Beispiel npx, und den „Argumente, eines pro Zeile“) oder „Adresse (http)“ (mit der „Adresse“).",
+              "Gib den „Name“ ein (Buchstaben, Ziffern, - und _) und wähle den „Typ“: „Programm“ (mit „Programm“, zum Beispiel npx, und den „Argumente, eines pro Zeile“) oder „Adresse (http)“ (mit der „Adresse“).",
             ),
             tr(
               "Premi «Aggiungi». «Togli» su una riga lo rimuove.",
               "Press “Add”. “Remove” on a row removes it.",
               "Appuyez sur « Ajouter ». « Retirer » sur une ligne le supprime.",
-              "Drücken Sie „Hinzufügen“. „Entfernen“ in einer Zeile entfernt ihn.",
+              "Drück „Hinzufügen“. „Entfernen“ in einer Zeile entfernt ihn.",
             ),
           ]}
         />
@@ -648,7 +650,7 @@ export const AGENTS: TopicTexts = {
                 "La synchronisation peut aussi se lancer depuis la ligne de commande : {0}.",
                 "Der Abgleich lässt sich auch über die Kommandozeile starten: {0}.",
               ),
-              <Code key="s">Atollo.exe sync [--project &lt;cartella&gt;] [--verbose]</Code>,
+              <Code key="s">{`Atollo.exe sync [--project ${tr("<cartella>", "<folder>", "<dossier>", "<Ordner>")}] [--verbose]`}</Code>,
             ),
             tr(
               "Claude Code e Codex considerano attendibili projects e le sue sottocartelle: possono eseguire comandi lì senza chiedere la fiducia ogni volta.",
@@ -678,7 +680,7 @@ export const AGENTS: TopicTexts = {
             "«Limiti del piano» mostra quanta parte del tuo piano hai usato in ogni finestra e quando si azzera.",
             "“Plan limits” shows how much of your plan you have used in each window and when it resets.",
             "« Limites de l'abonnement » montre quelle part de votre abonnement vous avez utilisée dans chaque fenêtre et quand elle se réinitialise.",
-            "„Tariflimits“ zeigt, wie viel Ihres Tarifs Sie in jedem Zeitfenster verbraucht haben und wann es zurückgesetzt wird.",
+            "„Tariflimits“ zeigt, wie viel deines Tarifs du in jedem Zeitfenster verbraucht hast und wann es zurückgesetzt wird.",
           ),
           tr(
             "«Consumi» mostra token e sessioni di oggi e degli ultimi sette giorni, con un grafico per giorno.",
@@ -731,13 +733,13 @@ export const AGENTS: TopicTexts = {
                 "accesso non fatto: apri … per vedere limiti e consumi",
                 "not signed in: open … to see limits and usage",
                 "non connecté : ouvrez … pour voir les limites et la consommation",
-                "nicht angemeldet: Öffnen Sie …, um Limits und Verbrauch zu sehen",
+                "nicht angemeldet: Öffne …, um Limits und Verbrauch zu sehen",
               ),
               tr(
                 "Apri l'agente in un progetto e fai l'accesso.",
                 "Open the agent in a project and sign in.",
                 "Ouvrez l'agent dans un projet et connectez-vous.",
-                "Öffnen Sie den Agenten in einem Projekt und melden Sie sich an.",
+                "Öffne den Agenten in einem Projekt und melde dich an.",
               ),
             ],
             [
@@ -745,13 +747,13 @@ export const AGENTS: TopicTexts = {
                 "accesso scaduto: apri Claude Code per rinnovarlo",
                 "sign-in expired: open Claude Code to renew it",
                 "connexion expirée : ouvrez Claude Code pour la renouveler",
-                "Anmeldung abgelaufen: Öffnen Sie Claude Code, um sie zu erneuern",
+                "Anmeldung abgelaufen: Öffne Claude Code, um sie zu erneuern",
               ),
               tr(
                 "Apri l'agente: rinnova l'accesso da solo.",
                 "Open the agent: it renews the sign-in by itself.",
                 "Ouvrez l'agent : il renouvelle la connexion tout seul.",
-                "Öffnen Sie den Agenten: Er erneuert die Anmeldung von selbst.",
+                "Öffne den Agenten: Er erneuert die Anmeldung von selbst.",
               ),
             ],
             [
@@ -779,7 +781,7 @@ export const AGENTS: TopicTexts = {
                 "Usa Codex una volta: i limiti arrivano con la risposta.",
                 "Use Codex once: the limits arrive with the response.",
                 "Utilisez Codex une fois : les limites arrivent avec la réponse.",
-                "Verwenden Sie Codex einmal: Die Limits kommen mit der Antwort.",
+                "Verwende Codex einmal: Die Limits kommen mit der Antwort.",
               ),
             ],
             [
@@ -807,7 +809,7 @@ export const AGENTS: TopicTexts = {
               "«Token · Oggi» con i token di oggi e degli ultimi 7 giorni; passandoci sopra, quanti sono nuovi, quanti presi dalla cache e quanti in uscita.",
               "“Tokens · Today” with the tokens of today and the last 7 days; hovering over it shows how many are new, how many come from the cache and how many are output.",
               "« Jetons · Aujourd'hui » avec les jetons d'aujourd'hui et des 7 derniers jours ; en passant dessus, combien sont nouveaux, combien viennent du cache et combien sont en sortie.",
-              "„Tokens · Heute“ mit den Tokens von heute und den letzten 7 Tagen; beim Darüberfahren sehen Sie, wie viele neu sind, wie viele aus dem Cache kommen und wie viele ausgegeben wurden.",
+              "„Tokens · Heute“ mit den Tokens von heute und den letzten 7 Tagen; beim Darüberfahren siehst du, wie viele neu sind, wie viele aus dem Cache kommen und wie viele ausgegeben wurden.",
             ),
             tr(
               "«Sessioni · Oggi» con le sessioni di oggi e degli ultimi 7 giorni.",

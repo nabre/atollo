@@ -87,7 +87,7 @@ function PageMap() {
         "Gli agenti IA installati: accesso al tuo account, limiti del piano e consumi, cartella condivisa.",
         "The installed AI agents: signing in to your account, plan limits and usage, shared folder.",
         "Les agents IA installés : connexion à votre compte, limites du forfait et consommation, dossier partagé.",
-        "Die installierten KI-Agenten: Anmeldung bei Ihrem Konto, Limits des Plans und Verbrauch, gemeinsamer Ordner.",
+        "Die installierten KI-Agenten: Anmeldung bei deinem Konto, Limits des Plans und Verbrauch, gemeinsamer Ordner.",
       ),
       page: "agents",
       topic: "agents",
@@ -170,7 +170,7 @@ function PageMap() {
         "Chiude tutto ciò che il kit ha aperto, prima di staccare la chiavetta.",
         "Closes everything the kit has opened, before you unplug the USB stick.",
         "Ferme tout ce que le kit a ouvert, avant de débrancher la clé.",
-        "Schließt alles, was das Kit geöffnet hat, bevor Sie den USB-Stick abziehen.",
+        "Schließt alles, was das Kit geöffnet hat, bevor du den USB-Stick abziehst.",
       ),
       page: "eject",
       topic: "eject",
@@ -216,19 +216,19 @@ export const START: TopicTexts = {
             "Non si installa e non chiede diritti di amministratore: copi la cartella su un altro PC e ritrovi tutto, progetti compresi.",
             "It does not install and does not ask for administrator rights: copy the folder to another PC and you find everything again, projects included.",
             "Il ne s'installe pas et ne demande pas de droits d'administrateur : copiez le dossier sur un autre PC et vous retrouvez tout, projets compris.",
-            "Es wird nicht installiert und verlangt keine Administratorrechte: Kopieren Sie den Ordner auf einen anderen PC und Sie finden alles wieder, einschließlich der Projekte.",
+            "Es wird nicht installiert und verlangt keine Administratorrechte: Kopiere den Ordner auf einen anderen PC und du findest alles wieder, einschließlich der Projekte.",
           ),
           tr(
             "Dentro trovi linguaggi in più versioni, database, server web, un editor, console, Git e GitHub, e tre agenti IA.",
             "Inside you find languages in several versions, databases, web servers, an editor, consoles, Git and GitHub, and three AI agents.",
             "À l'intérieur, vous trouvez des langages en plusieurs versions, des bases de données, des serveurs web, un éditeur, des consoles, Git et GitHub, et trois agents IA.",
-            "Darin finden Sie Sprachen in mehreren Versionen, Datenbanken, Webserver, einen Editor, Konsolen, Git und GitHub sowie drei KI-Agenten.",
+            "Darin findest du Sprachen in mehreren Versionen, Datenbanken, Webserver, einen Editor, Konsolen, Git und GitHub sowie drei KI-Agenten.",
           ),
           tr(
             "Questa guida va dalle cose più semplici a quelle più tecniche: puoi leggerla in ordine o saltare dove ti serve.",
             "This guide goes from the simplest things to the most technical ones: you can read it in order or jump to what you need.",
             "Ce guide va des choses les plus simples aux plus techniques : vous pouvez le lire dans l'ordre ou aller directement à ce qui vous intéresse.",
-            "Diese Anleitung reicht von den einfachsten bis zu den technischsten Dingen: Sie können sie der Reihe nach lesen oder direkt zu dem springen, was Sie brauchen.",
+            "Diese Anleitung reicht von den einfachsten bis zu den technischsten Dingen: Du kannst sie der Reihe nach lesen oder direkt zu dem springen, was du brauchst.",
           ),
         ]}
       />
@@ -246,7 +246,7 @@ export const START: TopicTexts = {
             "Immagina uno zaino da lavoro già pronto: dentro c'è tutto ciò che serve per scrivere programmi e siti, ordinato e funzionante. Lo porti con te, lo apri su qualsiasi computer e lavori, senza installare niente e senza lasciare disordine sul PC che ti ospita. Quando hai finito, lo chiudi e lo porti via.",
             "Picture a work backpack that is already packed: inside is everything you need to write programs and websites, tidy and working. You carry it with you, open it on any computer and work, without installing anything and without leaving a mess on the PC that hosts you. When you are done, you close it and take it away.",
             "Imaginez un sac de travail déjà prêt : à l'intérieur, il y a tout ce qu'il faut pour écrire des programmes et des sites, bien rangé et fonctionnel. Vous l'emportez avec vous, vous l'ouvrez sur n'importe quel ordinateur et vous travaillez, sans rien installer et sans laisser de désordre sur le PC qui vous accueille. Quand vous avez fini, vous le fermez et vous l'emportez.",
-            "Stellen Sie sich einen fertig gepackten Arbeitsrucksack vor: Darin ist alles, was Sie zum Schreiben von Programmen und Websites brauchen, ordentlich und funktionsfähig. Sie nehmen ihn mit, öffnen ihn auf einem beliebigen Computer und arbeiten, ohne etwas zu installieren und ohne Unordnung auf dem PC zu hinterlassen, der Sie beherbergt. Wenn Sie fertig sind, schließen Sie ihn und nehmen ihn mit.",
+            "Stell dir einen fertig gepackten Arbeitsrucksack vor: Darin ist alles, was du zum Schreiben von Programmen und Websites brauchst, ordentlich und funktionsfähig. Du nimmst ihn mit, öffnest ihn auf einem beliebigen Computer und arbeitest, ohne etwas zu installieren und ohne Unordnung auf dem PC zu hinterlassen, der dich beherbergt. Wenn du fertig bist, schließt du ihn und nimmst ihn mit.",
           )}
         </P>
         <P>
@@ -254,7 +254,7 @@ export const START: TopicTexts = {
             "Atollo è quello zaino. È un unico programma che sta in una cartella insieme a due sottocartelle: projects, dove vivono i tuoi progetti, e data, dove il kit tiene i suoi programmi, le impostazioni e i dati dei database. Funziona su Windows 10 e 11, macOS e Linux, con processori x64 e ARM64.",
             "Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors.",
             "Atollo est ce sac. C'est un seul programme qui se trouve dans un dossier avec deux sous-dossiers : projects, où vivent vos projets, et data, où le kit garde ses programmes, ses paramètres et les données des bases de données. Il fonctionne sous Windows 10 et 11, macOS et Linux, avec des processeurs x64 et ARM64.",
-            "Atollo ist dieser Rucksack. Es ist ein einziges Programm, das in einem Ordner zusammen mit zwei Unterordnern liegt: projects, wo Ihre Projekte leben, und data, wo das Kit seine Programme, Einstellungen und die Daten der Datenbanken aufbewahrt. Es läuft unter Windows 10 und 11, macOS und Linux, mit x64- und ARM64-Prozessoren.",
+            "Atollo ist dieser Rucksack. Es ist ein einziges Programm, das in einem Ordner zusammen mit zwei Unterordnern liegt: projects, wo deine Projekte leben, und data, wo das Kit seine Programme, Einstellungen und die Daten der Datenbanken aufbewahrt. Es läuft unter Windows 10 und 11, macOS und Linux, mit x64- und ARM64-Prozessoren.",
           )}
         </P>
         <Callout tone="info" title={tr("A chi serve", "Who it is for", "À qui il s'adresse", "Für wen es gedacht ist")}>
@@ -272,7 +272,7 @@ export const START: TopicTexts = {
           "Che cosa trovi dentro",
           "What you find inside",
           "Ce que vous trouvez à l'intérieur",
-          "Was Sie darin finden",
+          "Was du darin findest",
         )}
       >
         <Table
@@ -293,7 +293,7 @@ export const START: TopicTexts = {
                 "Le tue cartelle di lavoro, ognuna con le sue azioni, versioni, database e sito.",
                 "Your working folders, each with its own actions, versions, database and website.",
                 "Vos dossiers de travail, chacun avec ses actions, versions, base de données et site.",
-                "Ihre Arbeitsordner, jeder mit eigenen Aktionen, Versionen, Datenbank und Website.",
+                "Deine Arbeitsordner, jeder mit eigenen Aktionen, Versionen, Datenbank und Website.",
               ),
               tr("Progetti", "Projects", "Projets", "Projekte"),
             ],
@@ -323,7 +323,7 @@ export const START: TopicTexts = {
                 "Caddy e Apache per vedere i tuoi siti su indirizzi come mio-sito.localhost.",
                 "Caddy and Apache, to see your websites at addresses like mio-sito.localhost.",
                 "Caddy et Apache pour voir vos sites à des adresses comme mio-sito.localhost.",
-                "Caddy und Apache, um Ihre Websites unter Adressen wie mio-sito.localhost zu sehen.",
+                "Caddy und Apache, um deine Websites unter Adressen wie mio-sito.localhost zu sehen.",
               ),
               tr("Server Web", "Web Servers", "Serveurs Web", "Webserver"),
             ],
@@ -353,7 +353,7 @@ export const START: TopicTexts = {
                 "Git e GitHub CLI con un solo accesso al tuo account per tutto il kit.",
                 "Git and GitHub CLI with a single sign-in to your account for the whole kit.",
                 "Git et GitHub CLI avec une seule connexion à votre compte pour tout le kit.",
-                "Git und GitHub CLI mit einer einzigen Anmeldung bei Ihrem Konto für das ganze Kit.",
+                "Git und GitHub CLI mit einer einzigen Anmeldung bei deinem Konto für das ganze Kit.",
               ),
               tr(
                 "Impostazioni › Account GitHub",
@@ -381,7 +381,7 @@ export const START: TopicTexts = {
           "Tre idee da tenere a mente",
           "Three ideas to keep in mind",
           "Trois idées à garder en tête",
-          "Drei Ideen, die Sie im Kopf behalten sollten",
+          "Drei Ideen, die du im Kopf behalten solltest",
         )}
       >
         <Cards>
@@ -398,7 +398,7 @@ export const START: TopicTexts = {
               "Il kit scrive solo dentro la sua cartella (con poche eccezioni dichiarate). Per fare una copia di tutto basta copiare la cartella; per toglierlo basta cancellarla.",
               "The kit writes only inside its own folder (with a few declared exceptions). To make a copy of everything, just copy the folder; to remove it, just delete it.",
               "Le kit n'écrit que dans son propre dossier (à quelques exceptions déclarées près). Pour faire une copie de tout, il suffit de copier le dossier ; pour l'enlever, il suffit de le supprimer.",
-              "Das Kit schreibt nur in seinen eigenen Ordner (mit wenigen angegebenen Ausnahmen). Um alles zu sichern, kopieren Sie einfach den Ordner; um es zu entfernen, löschen Sie ihn einfach.",
+              "Das Kit schreibt nur in seinen eigenen Ordner (mit wenigen angegebenen Ausnahmen). Um alles zu sichern, kopierst du einfach den Ordner; um es zu entfernen, löschst du ihn einfach.",
             )}
           </GuideCard>
           <GuideCard
@@ -414,7 +414,7 @@ export const START: TopicTexts = {
               "Quando un progetto o un agente ha bisogno di un programma che manca, il kit lo scarica dalla fonte ufficiale, lo verifica e lo mette al suo posto. Tu scegli, lui installa.",
               "When a project or an agent needs a program that is missing, the kit downloads it from the official source, checks it and puts it in its place. You choose, it installs.",
               "Quand un projet ou un agent a besoin d'un programme qui manque, le kit le télécharge depuis la source officielle, le vérifie et le met à sa place. Vous choisissez, il installe.",
-              "Wenn ein Projekt oder ein Agent ein fehlendes Programm braucht, lädt das Kit es von der offiziellen Quelle herunter, prüft es und legt es an seinen Platz. Sie wählen, das Kit installiert.",
+              "Wenn ein Projekt oder ein Agent ein fehlendes Programm braucht, lädt das Kit es von der offiziellen Quelle herunter, prüft es und legt es an seinen Platz. Du wählst, das Kit installiert.",
             )}
           </GuideCard>
           <GuideCard
@@ -425,7 +425,7 @@ export const START: TopicTexts = {
               "Database e siti rispondono solo al computer su cui stai lavorando (indirizzo 127.0.0.1), con password generate dal kit. Nessuno dalla rete li vede, a meno che tu non lo chieda.",
               "Databases and websites answer only the computer you are working on (address 127.0.0.1), with passwords generated by the kit. Nobody on the network sees them, unless you ask for it.",
               "Les bases de données et les sites ne répondent qu'à l'ordinateur sur lequel vous travaillez (adresse 127.0.0.1), avec des mots de passe générés par le kit. Personne sur le réseau ne les voit, sauf si vous le demandez.",
-              "Datenbanken und Websites antworten nur dem Computer, an dem Sie arbeiten (Adresse 127.0.0.1), mit vom Kit erzeugten Passwörtern. Niemand im Netzwerk sieht sie, es sei denn, Sie wünschen es.",
+              "Datenbanken und Websites antworten nur dem Computer, an dem du arbeitest (Adresse 127.0.0.1), mit vom Kit erzeugten Passwörtern. Niemand im Netzwerk sieht sie, es sei denn, du wünschst es.",
             )}
           </GuideCard>
         </Cards>
@@ -452,14 +452,14 @@ export const START: TopicTexts = {
             "In ogni argomento trovi: un riquadro «In breve» all'inizio, i passaggi da seguire, consigli e avvertenze, e una parte ripiegata «Sotto il cofano» con i dettagli tecnici (file, cartelle, comandi). Il pulsante in alto a destra apre la pagina dell'app di cui l'argomento parla. La casella di ricerca a sinistra cerca nei titoli, nelle descrizioni e nelle parole chiave.",
             "In every topic you find: an “In short” box at the start, the steps to follow, tips and warnings, and a collapsed “Under the hood” part with the technical details (files, folders, commands). The button at the top right opens the app page the topic is about. The search box on the left searches titles, descriptions and keywords.",
             "Dans chaque sujet, vous trouvez : un encadré « En bref » au début, les étapes à suivre, des conseils et des avertissements, et une partie repliée « Sous le capot » avec les détails techniques (fichiers, dossiers, commandes). Le bouton en haut à droite ouvre la page de l'application dont parle le sujet. Le champ de recherche à gauche cherche dans les titres, les descriptions et les mots-clés.",
-            "In jedem Thema finden Sie: einen Kasten „Kurz gesagt“ am Anfang, die Schritte, die Sie befolgen, Tipps und Warnungen, und einen eingeklappten Teil „Unter der Haube“ mit den technischen Details (Dateien, Ordner, Befehle). Die Schaltfläche oben rechts öffnet die Seite der App, um die es im Thema geht. Das Suchfeld links durchsucht Titel, Beschreibungen und Stichwörter.",
+            "In jedem Thema findest du: einen Kasten „Kurz gesagt“ am Anfang, die Schritte, die du befolgst, Tipps und Warnungen, und einen eingeklappten Teil „Unter der Haube“ mit den technischen Details (Dateien, Ordner, Befehle). Die Schaltfläche oben rechts öffnet die Seite der App, um die es im Thema geht. Das Suchfeld links durchsucht Titel, Beschreibungen und Stichwörter.",
           )}
         </P>
         <ChapterMap />
       </Section>
 
       {info && (
-        <Section title={tr("Il tuo kit", "Your kit", "Votre kit", "Ihr Kit")}>
+        <Section title={tr("Il tuo kit", "Your kit", "Votre kit", "Dein Kit")}>
           <Properties
             rows={[
               [tr("Versione", "Version", "Version", "Version"), <Tag key="v" tone="focus">{`v${info.version}`}</Tag>],
@@ -501,19 +501,19 @@ export const START: TopicTexts = {
             "Metti il programma di Atollo in una cartella vuota, dove vuoi tenere il kit, e aprilo.",
             "Put the Atollo program in an empty folder, where you want to keep the kit, and open it.",
             "Placez le programme d'Atollo dans un dossier vide, là où vous voulez garder le kit, et ouvrez-le.",
-            "Legen Sie das Atollo-Programm in einen leeren Ordner, in dem Sie das Kit aufbewahren möchten, und öffnen Sie es.",
+            "Leg das Atollo-Programm in einen leeren Ordner, in dem du das Kit aufbewahren möchtest, und öffne es.",
           ),
           tr(
             "La prima volta compare la pagina «Benvenuto»: scegli agenti e linguaggi e premi «Installa».",
             "The first time, the “Welcome” page appears: choose agents and languages and press “Install”.",
             "La première fois, la page « Bienvenue » apparaît : choisissez les agents et les langages et appuyez sur « Installer ».",
-            "Beim ersten Mal erscheint die Seite „Willkommen“: Wählen Sie Agenten und Sprachen und klicken Sie auf „Installieren“.",
+            "Beim ersten Mal erscheint die Seite „Willkommen“: Wähle Agenten und Sprachen und klicke auf „Installieren“.",
           ),
           tr(
             "I componenti si scaricano in sottofondo dalle fonti ufficiali: puoi già usare l'app mentre arrivano.",
             "The components download in the background from the official sources: you can already use the app while they arrive.",
             "Les composants se téléchargent en arrière-plan depuis les sources officielles : vous pouvez déjà utiliser l'application pendant qu'ils arrivent.",
-            "Die Komponenten werden im Hintergrund von den offiziellen Quellen heruntergeladen: Sie können die App bereits nutzen, während sie ankommen.",
+            "Die Komponenten werden im Hintergrund von den offiziellen Quellen heruntergeladen: Du kannst die App bereits nutzen, während sie ankommen.",
           ),
           tr(
             "Niente è definitivo: tutto si aggiunge o si toglie più tardi dalla pagina Strumenti.",
@@ -537,7 +537,7 @@ export const START: TopicTexts = {
             "Il kit sta dove sta il suo eseguibile: la cartella che lo contiene diventa la «cartella del kit» e lì nasceranno projects e data. Scegli quindi una cartella vuota e con un nome semplice, per esempio D:\\Atollo su una chiavetta o un disco esterno, oppure C:\\Atollo sul disco del PC.",
             "The kit lives where its executable is: the folder that contains it becomes the “kit folder”, and that is where projects and data will be created. So choose an empty folder with a simple name, for example D:\\Atollo on a USB stick or an external disk, or C:\\Atollo on the PC's disk.",
             "Le kit se trouve là où se trouve son exécutable : le dossier qui le contient devient le « dossier du kit » et c'est là que naîtront projects et data. Choisissez donc un dossier vide au nom simple, par exemple D:\\Atollo sur une clé ou un disque externe, ou C:\\Atollo sur le disque du PC.",
-            "Das Kit befindet sich dort, wo seine Programmdatei liegt: Der Ordner, der sie enthält, wird zum „Ordner des Kits“, und dort entstehen projects und data. Wählen Sie also einen leeren Ordner mit einem einfachen Namen, zum Beispiel D:\\Atollo auf einem USB-Stick oder einer externen Festplatte oder C:\\Atollo auf der Festplatte des PCs.",
+            "Das Kit befindet sich dort, wo seine Programmdatei liegt: Der Ordner, der sie enthält, wird zum „Ordner des Kits“, und dort entstehen projects und data. Wähle also einen leeren Ordner mit einem einfachen Namen, zum Beispiel D:\\Atollo auf einem USB-Stick oder einer externen Festplatte oder C:\\Atollo auf der Festplatte des PCs.",
           )}
         </P>
         <Bullets
@@ -546,7 +546,7 @@ export const START: TopicTexts = {
               "Su Windows l'eseguibile si chiama Atollo.exe, oppure Atollo-<versione>-win32-x64.exe come lo scarichi dalla pagina delle release. Su macOS è Atollo.app, su Linux un file AppImage.",
               "On Windows the executable is called Atollo.exe, or Atollo-<version>-win32-x64.exe as you download it from the releases page. On macOS it is Atollo.app, on Linux an AppImage file.",
               "Sous Windows, l'exécutable s'appelle Atollo.exe, ou Atollo-<version>-win32-x64.exe tel que vous le téléchargez depuis la page des releases. Sous macOS, c'est Atollo.app, sous Linux un fichier AppImage.",
-              "Unter Windows heißt die Programmdatei Atollo.exe oder Atollo-<Version>-win32-x64.exe, so wie Sie sie von der Release-Seite herunterladen. Unter macOS ist es Atollo.app, unter Linux eine AppImage-Datei.",
+              "Unter Windows heißt die Programmdatei Atollo.exe oder Atollo-<Version>-win32-x64.exe, so wie du sie von der Release-Seite herunterlädst. Unter macOS ist es Atollo.app, unter Linux eine AppImage-Datei.",
             ),
             tr(
               "Spazio: la scelta proposta al primo avvio occupa circa 1,8 GB. Ogni linguaggio o versione in più aggiunge spazio, e i progetti con le loro dipendenze crescono nel tempo: su una chiavetta conviene avere almeno 16 GB liberi.",
@@ -568,7 +568,7 @@ export const START: TopicTexts = {
             "Due cose da evitare nel percorso",
             "Two things to avoid in the path",
             "Deux choses à éviter dans le chemin",
-            "Zwei Dinge, die Sie im Pfad vermeiden sollten",
+            "Zwei Dinge, die du im Pfad vermeiden solltest",
           )}
         >
           <Bullets
@@ -577,7 +577,7 @@ export const START: TopicTexts = {
                 "Su Windows, una cartella del percorso il cui nome comincia con una cifra, con la lettera x o con la lettera u (per esempio D:\\2024\\Atollo o D:\\utenti\\Atollo) impedisce all'editor di accorgersi dei file cambiati. Se succede, l'app lo segnala con un avviso: sposta il kit in un percorso diverso.",
                 "On Windows, a folder in the path whose name starts with a digit, with the letter x or with the letter u (for example D:\\2024\\Atollo or D:\\utenti\\Atollo) stops the editor from noticing changed files. If that happens, the app warns you: move the kit to a different path.",
                 "Sous Windows, un dossier du chemin dont le nom commence par un chiffre, par la lettre x ou par la lettre u (par exemple D:\\2024\\Atollo ou D:\\utenti\\Atollo) empêche l'éditeur de remarquer les fichiers modifiés. Si cela arrive, l'application l'indique par un avertissement : déplacez le kit vers un autre chemin.",
-                "Unter Windows verhindert ein Ordner im Pfad, dessen Name mit einer Ziffer, mit dem Buchstaben x oder mit dem Buchstaben u beginnt (zum Beispiel D:\\2024\\Atollo oder D:\\utenti\\Atollo), dass der Editor geänderte Dateien bemerkt. Wenn das passiert, zeigt die App eine Warnung: Verschieben Sie das Kit in einen anderen Pfad.",
+                "Unter Windows verhindert ein Ordner im Pfad, dessen Name mit einer Ziffer, mit dem Buchstaben x oder mit dem Buchstaben u beginnt (zum Beispiel D:\\2024\\Atollo oder D:\\utenti\\Atollo), dass der Editor geänderte Dateien bemerkt. Wenn das passiert, zeigt die App eine Warnung: Verschiebe das Kit in einen anderen Pfad.",
               ),
               tr(
                 "Su macOS e Linux un disco montato senza permesso di esecuzione (noexec) ferma l'app: il kit deve poter avviare i suoi programmi.",
@@ -593,7 +593,7 @@ export const START: TopicTexts = {
             "Quale file system scegliere",
             "Which file system to choose",
             "Quel système de fichiers choisir",
-            "Welches Dateisystem Sie wählen sollten",
+            "Welches Dateisystem du wählen solltest",
           )}
         >
           <P>
@@ -601,7 +601,7 @@ export const START: TopicTexts = {
               "Su Windows il formato migliore è NTFS: è l'unico che permette al kit di proteggere le cartelle con le password (database, accessi) in modo che le legga solo il tuo utente, e di usare collegamenti al posto delle copie. Su exFAT e FAT32 il kit funziona, ma senza quella protezione; FAT32 inoltre non accetta file più grandi di 4 GB. Se usi la stessa chiavetta su Windows, macOS e Linux, exFAT è il formato che tutti leggono e scrivono: in quel caso tieni presente che i collegamenti diventano copie.",
               "On Windows the best format is NTFS: it is the only one that lets the kit protect the folders holding passwords (databases, sign-ins) so that only your user can read them, and use links instead of copies. On exFAT and FAT32 the kit works, but without that protection; FAT32 also does not accept files larger than 4 GB. If you use the same USB stick on Windows, macOS and Linux, exFAT is the format all of them can read and write: in that case keep in mind that links become copies.",
               "Sous Windows, le meilleur format est NTFS : c'est le seul qui permet au kit de protéger les dossiers contenant des mots de passe (bases de données, connexions) pour que seul votre utilisateur puisse les lire, et d'utiliser des liens au lieu de copies. Sur exFAT et FAT32, le kit fonctionne, mais sans cette protection ; FAT32 n'accepte pas non plus les fichiers de plus de 4 Go. Si vous utilisez la même clé sous Windows, macOS et Linux, exFAT est le format que tous lisent et écrivent : dans ce cas, gardez à l'esprit que les liens deviennent des copies.",
-              "Unter Windows ist NTFS das beste Format: Es ist das einzige, mit dem das Kit die Ordner mit Passwörtern (Datenbanken, Anmeldungen) so schützen kann, dass nur Ihr Benutzer sie lesen kann, und Verknüpfungen statt Kopien verwenden kann. Auf exFAT und FAT32 funktioniert das Kit, aber ohne diesen Schutz; FAT32 akzeptiert außerdem keine Dateien über 4 GB. Wenn Sie denselben USB-Stick unter Windows, macOS und Linux verwenden, ist exFAT das Format, das alle lesen und schreiben können: Denken Sie in diesem Fall daran, dass Verknüpfungen zu Kopien werden.",
+              "Unter Windows ist NTFS das beste Format: Es ist das einzige, mit dem das Kit die Ordner mit Passwörtern (Datenbanken, Anmeldungen) so schützen kann, dass nur dein Benutzer sie lesen kann, und Verknüpfungen statt Kopien verwenden kann. Auf exFAT und FAT32 funktioniert das Kit, aber ohne diesen Schutz; FAT32 akzeptiert außerdem keine Dateien über 4 GB. Wenn du denselben USB-Stick unter Windows, macOS und Linux verwendest, ist exFAT das Format, das alle lesen und schreiben können: Denk in diesem Fall daran, dass Verknüpfungen zu Kopien werden.",
             )}
           </P>
           <P>
@@ -643,7 +643,7 @@ export const START: TopicTexts = {
           columns={[
             tr("Gruppo", "Group", "Groupe", "Gruppe"),
             tr("Che cosa contiene", "What it contains", "Ce qu'il contient", "Was es enthält"),
-            tr("Cosa scegliere", "What to choose", "Quoi choisir", "Was Sie wählen sollten"),
+            tr("Cosa scegliere", "What to choose", "Quoi choisir", "Was du wählen solltest"),
           ]}
           rows={[
             [
@@ -673,7 +673,7 @@ export const START: TopicTexts = {
                 "Facoltativi. Tieni quelli di cui hai un account; servono un abbonamento o una chiave API del fornitore.",
                 "Optional. Keep the ones you have an account for; they require a subscription or an API key from the provider.",
                 "Facultatifs. Gardez ceux pour lesquels vous avez un compte ; il faut un abonnement ou une clé API du fournisseur.",
-                "Optional. Behalten Sie die, für die Sie ein Konto haben; sie erfordern ein Abonnement oder einen API-Schlüssel des Anbieters.",
+                "Optional. Behalte die, für die du ein Konto hast; sie erfordern ein Abonnement oder einen API-Schlüssel des Anbieters.",
               ),
             ],
             [
@@ -688,7 +688,7 @@ export const START: TopicTexts = {
                 "Quelli che usi. Altri si aggiungono quando servono.",
                 "The ones you use. Others can be added when needed.",
                 "Ceux que vous utilisez. Les autres s'ajoutent quand il le faut.",
-                "Die, die Sie verwenden. Weitere kommen hinzu, wenn sie gebraucht werden.",
+                "Die, die du verwendest. Weitere kommen hinzu, wenn sie gebraucht werden.",
               ),
             ],
             [
@@ -718,7 +718,7 @@ export const START: TopicTexts = {
                 "Solo se ti servono. MySQL si installa anche al primo avvio del server.",
                 "Only if you need them. MySQL is also installed the first time the server starts.",
                 "Seulement si vous en avez besoin. MySQL s'installe aussi au premier démarrage du serveur.",
-                "Nur wenn Sie sie brauchen. MySQL wird auch beim ersten Start des Servers installiert.",
+                "Nur wenn du sie brauchst. MySQL wird auch beim ersten Start des Servers installiert.",
               ),
             ],
           ]}
@@ -728,7 +728,7 @@ export const START: TopicTexts = {
             "La scelta proposta comprende i tre agenti, Python, PHP con Apache e i componenti obbligatori; Git arriva insieme a Claude Code. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).",
             "The suggested choice includes the three agents, Python, PHP with Apache and the required components; Git comes along with Claude Code. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).",
             "Le choix proposé comprend les trois agents, Python, PHP avec Apache et les composants obligatoires ; Git arrive avec Claude Code. En tout, environ 1,8 Go. Quand vous cochez un composant, le kit coche aussi ceux dont il a besoin (par exemple Kotlin apporte Java, phpMyAdmin apporte PHP et MySQL).",
-            "Die vorgeschlagene Auswahl umfasst die drei Agenten, Python, PHP mit Apache und die erforderlichen Komponenten; Git kommt zusammen mit Claude Code. Insgesamt etwa 1,8 GB. Wenn Sie eine Komponente ankreuzen, kreuzt das Kit auch die an, die sie braucht (zum Beispiel bringt Kotlin Java mit, phpMyAdmin bringt PHP und MySQL mit).",
+            "Die vorgeschlagene Auswahl umfasst die drei Agenten, Python, PHP mit Apache und die erforderlichen Komponenten; Git kommt zusammen mit Claude Code. Insgesamt etwa 1,8 GB. Wenn du eine Komponente ankreuzt, kreuzt das Kit auch die an, die sie braucht (zum Beispiel bringt Kotlin Java mit, phpMyAdmin bringt PHP und MySQL mit).",
           )}
         </P>
         <Steps
@@ -737,19 +737,19 @@ export const START: TopicTexts = {
               "Togli la spunta a ciò che non ti interessa e aggiungi ciò che usi.",
               "Untick what does not interest you and add what you use.",
               "Décochez ce qui ne vous intéresse pas et ajoutez ce que vous utilisez.",
-              "Entfernen Sie das Häkchen bei allem, was Sie nicht interessiert, und fügen Sie hinzu, was Sie verwenden.",
+              "Entferne das Häkchen bei allem, was dich nicht interessiert, und füge hinzu, was du verwendest.",
             ),
             tr(
               "Premi «Installa» in basso. Non c'è una conferma: la scelta viene salvata e lo scaricamento parte subito.",
               "Press “Install” at the bottom. There is no confirmation: the choice is saved and the download starts right away.",
               "Appuyez sur « Installer » en bas. Il n'y a pas de confirmation : le choix est enregistré et le téléchargement commence aussitôt.",
-              "Klicken Sie unten auf „Installieren“. Es gibt keine Bestätigung: Die Auswahl wird gespeichert und der Download beginnt sofort.",
+              "Klicke unten auf „Installieren“. Es gibt keine Bestätigung: Die Auswahl wird gespeichert und der Download beginnt sofort.",
             ),
             tr(
               "L'app lascia la pagina «Benvenuto» e mostra le pagine normali. Lo scaricamento continua in sottofondo: lo vedi nella barra di stato in basso e nel pannello «Attività».",
               "The app leaves the “Welcome” page and shows the normal pages. The download continues in the background: you see it in the status bar at the bottom and in the “Activity” panel.",
               "L'application quitte la page « Bienvenue » et affiche les pages normales. Le téléchargement continue en arrière-plan : vous le voyez dans la barre d'état en bas et dans le panneau « Activité ».",
-              "Die App verlässt die Seite „Willkommen“ und zeigt die normalen Seiten. Der Download läuft im Hintergrund weiter: Sie sehen ihn in der Statusleiste unten und im Bereich „Aktivität“.",
+              "Die App verlässt die Seite „Willkommen“ und zeigt die normalen Seiten. Der Download läuft im Hintergrund weiter: Du siehst ihn in der Statusleiste unten und im Bereich „Aktivität“.",
             ),
           ]}
         />
@@ -769,7 +769,7 @@ export const START: TopicTexts = {
             "Le cartelle in projects sono considerate attendibili da Claude Code e Codex, che possono quindi eseguirvi comandi senza chiedere ogni volta. Metti in projects solo codice di cui ti fidi.",
             "The folders in projects are considered trusted by Claude Code and Codex, which can therefore run commands in them without asking every time. Put in projects only code you trust.",
             "Les dossiers dans projects sont considérés comme fiables par Claude Code et Codex, qui peuvent donc y exécuter des commandes sans demander à chaque fois. Ne mettez dans projects que du code en lequel vous avez confiance.",
-            "Die Ordner in projects gelten für Claude Code und Codex als vertrauenswürdig, die darin also Befehle ausführen können, ohne jedes Mal zu fragen. Legen Sie in projects nur Code ab, dem Sie vertrauen.",
+            "Die Ordner in projects gelten für Claude Code und Codex als vertrauenswürdig, die darin also Befehle ausführen können, ohne jedes Mal zu fragen. Leg in projects nur Code ab, dem du vertraust.",
           )}
         </Callout>
       </Section>
@@ -836,7 +836,7 @@ export const START: TopicTexts = {
               "I dettagli su fonti e verifiche sono in {0}; se sei dietro un proxy aziendale leggi prima {1}.",
               "The details on sources and checks are in {0}; if you are behind a company proxy, read {1} first.",
               "Les détails sur les sources et les vérifications sont dans {0} ; si vous êtes derrière un proxy d'entreprise, lisez d'abord {1}.",
-              "Die Details zu Quellen und Prüfungen stehen in {0}; wenn Sie hinter einem Firmen-Proxy sind, lesen Sie zuerst {1}.",
+              "Die Details zu Quellen und Prüfungen stehen in {0}; wenn du hinter einem Firmen-Proxy bist, lies zuerst {1}.",
             ),
             <See key="s" id="sources" />,
             <See key="n" id="network" />,
@@ -861,7 +861,7 @@ export const START: TopicTexts = {
                 "Se il primo avvio viene interrotto, alla riapertura la pagina «Benvenuto» non ricompare se la scelta è già stata salvata: si riprende da Strumenti, dove le righe non scaricate mostrano lo stato «non esiste» o «errore».",
                 "If the first start is interrupted, the “Welcome” page does not come back on reopening if the choice has already been saved: you pick up from Tools, where the rows not downloaded show the state “not present” or “error”.",
                 "Si le premier lancement est interrompu, la page « Bienvenue » ne réapparaît pas à la réouverture si le choix a déjà été enregistré : on reprend depuis Outils, où les lignes non téléchargées affichent l'état « absent » ou « erreur ».",
-                "Wird der erste Start unterbrochen, erscheint die Seite „Willkommen“ beim erneuten Öffnen nicht wieder, wenn die Auswahl bereits gespeichert ist: Sie machen unter Werkzeuge weiter, wo nicht heruntergeladene Zeilen den Zustand „nicht vorhanden“ oder „Fehler“ zeigen.",
+                "Wird der erste Start unterbrochen, erscheint die Seite „Willkommen“ beim erneuten Öffnen nicht wieder, wenn die Auswahl bereits gespeichert ist: Du machst unter Werkzeuge weiter, wo nicht heruntergeladene Zeilen den Zustand „nicht vorhanden“ oder „Fehler“ zeigen.",
               ),
             ]}
           />
@@ -953,7 +953,7 @@ export const START: TopicTexts = {
                 "Il nome Atollo e la pagina aperta; a destra riduci, ingrandisci e chiudi. Trascinala per spostare la finestra, doppio clic per ingrandirla.",
                 "The name Atollo and the open page; on the right minimize, maximize and close. Drag it to move the window, double-click to maximize it.",
                 "Le nom Atollo et la page ouverte ; à droite, réduire, agrandir et fermer. Faites-la glisser pour déplacer la fenêtre, double-cliquez pour l'agrandir.",
-                "Der Name Atollo und die geöffnete Seite; rechts Minimieren, Maximieren und Schließen. Ziehen Sie sie, um das Fenster zu verschieben, ein Doppelklick maximiert es.",
+                "Der Name Atollo und die geöffnete Seite; rechts Minimieren, Maximieren und Schließen. Zieh sie, um das Fenster zu verschieben, ein Doppelklick maximiert es.",
               ),
             ],
             [
@@ -980,7 +980,7 @@ export const START: TopicTexts = {
                 "Ciò che hai scelto nella barra laterale si apre in una scheda. La prima scheda di alcune pagine è fissa: il «Pannello rapido» in Progetti, «Tutti gli strumenti» in Strumenti.",
                 "What you choose in the sidebar opens in a tab. The first tab of some pages is fixed: the “Quick panel” in Projects, “All tools” in Tools.",
                 "Ce que vous choisissez dans la barre latérale s'ouvre dans un onglet. Le premier onglet de certaines pages est fixe : le « Panneau rapide » dans Projets, « Tous les outils » dans Outils.",
-                "Was Sie in der Seitenleiste auswählen, öffnet sich in einem Tab. Der erste Tab mancher Seiten ist fest: die „Schnellübersicht“ in Projekte, „Alle Werkzeuge“ in Werkzeuge.",
+                "Was du in der Seitenleiste auswählst, öffnet sich in einem Tab. Der erste Tab mancher Seiten ist fest: die „Schnellübersicht“ in Projekte, „Alle Werkzeuge“ in Werkzeuge.",
               ),
             ],
             [
@@ -1121,7 +1121,7 @@ export const START: TopicTexts = {
             "Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma». Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.",
             "In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.",
             "Dans le panneau « Activité », chaque entrée se sélectionne pour en voir les détails : pour une action de projet, l'état, l'adresse et la sortie en direct, avec « Ouvrir dans le navigateur », « Arrêter » ou, si elle est terminée, « Retirer » ; pour une base de données, le nom, l'adresse, les éventuelles erreurs, le fichier de log et « Arrêter ». S'il n'y a rien, « rien en cours » s'affiche. Le panneau se redimensionne en faisant glisser son bord ; un double-clic sur le bord le ramène à sa hauteur initiale.",
-            "Im Bereich „Aktivität“ wählen Sie jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs ändern Sie, indem Sie seinen Rand ziehen; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
+            "Im Bereich „Aktivität“ wählst du jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs änderst du, indem du seinen Rand ziehst; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
           )}
         </P>
       </Section>
@@ -1146,7 +1146,7 @@ export const START: TopicTexts = {
                 "Apre «Apri un progetto» (⌘P su macOS): scrivi parte del nome, della piattaforma o del linguaggio. Invio apre la pagina del progetto, Maiusc+Invio avvia la sua azione predefinita, Esc chiude.",
                 "Opens “Open a project” (⌘P on macOS): type part of the name, the platform or the language. Enter opens the project's page, Shift+Enter starts its default action, Esc closes.",
                 "Ouvre « Ouvrir un projet » (⌘P sur macOS) : tapez une partie du nom, de la plateforme ou du langage. Entrée ouvre la page du projet, Maj+Entrée démarre son action par défaut, Échap ferme.",
-                "Öffnet „Projekt öffnen“ (⌘P unter macOS): Geben Sie einen Teil des Namens, der Plattform oder der Sprache ein. Eingabe öffnet die Seite des Projekts, Umschalt+Eingabe startet seine Standardaktion, Esc schließt.",
+                "Öffnet „Projekt öffnen“ (⌘P unter macOS): Gib einen Teil des Namens, der Plattform oder der Sprache ein. Eingabe öffnet die Seite des Projekts, Umschalt+Eingabe startet seine Standardaktion, Esc schließt.",
               ),
             ],
             [
@@ -1166,13 +1166,13 @@ export const START: TopicTexts = {
               "Passa il mouse sopra icone, pallini e etichette: quasi tutto ha un suggerimento che spiega che cosa è o che cosa fa.",
               "Hover the mouse over icons, dots and tags: almost everything has a tooltip that explains what it is or what it does.",
               "Passez la souris sur les icônes, les pastilles et les étiquettes : presque tout a une info-bulle qui explique ce que c'est ou ce que ça fait.",
-              "Fahren Sie mit der Maus über Symbole, Punkte und Etiketten: Fast alles hat einen Hinweis, der erklärt, was es ist oder was es tut.",
+              "Fahr mit der Maus über Symbole, Punkte und Etiketten: Fast alles hat einen Hinweis, der erklärt, was es ist oder was es tut.",
             ),
             tr(
               "Il tema chiaro o scuro segue quello del sistema operativo. La lingua si cambia in Impostazioni › Generale › «Lingua».",
               "The light or dark theme follows the operating system's. The language is changed in Settings › General › “Language”.",
               "Le thème clair ou sombre suit celui du système d'exploitation. La langue se change dans Paramètres › Général › « Langue ».",
-              "Das helle oder dunkle Design folgt dem des Betriebssystems. Die Sprache ändern Sie unter Einstellungen › Allgemein › „Sprache“.",
+              "Das helle oder dunkle Design folgt dem des Betriebssystems. Die Sprache änderst du unter Einstellungen › Allgemein › „Sprache“.",
             ),
             tr(
               "L'icona a forma di libro nella barra laterale di ogni pagina apre l'argomento della guida che la spiega.",
@@ -1202,19 +1202,19 @@ export const START: TopicTexts = {
             "Servono solo il componente Node.js, che il kit installa da solo se manca, e una connessione a Internet.",
             "All you need is the Node.js component, which the kit installs by itself if it is missing, and an Internet connection.",
             "Il suffit du composant Node.js, que le kit installe tout seul s'il manque, et d'une connexion à Internet.",
-            "Sie brauchen nur die Komponente Node.js, die das Kit selbst installiert, wenn sie fehlt, und eine Internetverbindung.",
+            "Du brauchst nur die Komponente Node.js, die das Kit selbst installiert, wenn sie fehlt, und eine Internetverbindung.",
           ),
           tr(
             "Alla fine saprai creare un progetto, avviarlo, aprirlo nel browser e modificarlo nell'editor.",
             "By the end you will know how to create a project, start it, open it in the browser and edit it in the editor.",
             "À la fin, vous saurez créer un projet, le démarrer, l'ouvrir dans le navigateur et le modifier dans l'éditeur.",
-            "Am Ende wissen Sie, wie Sie ein Projekt erstellen, starten, im Browser öffnen und im Editor bearbeiten.",
+            "Am Ende weißt du, wie du ein Projekt erstellst, startest, im Browser öffnest und im Editor bearbeitest.",
           ),
         ]}
       />
 
       <Section
-        title={tr("1. Crea il progetto", "1. Create the project", "1. Créez le projet", "1. Erstellen Sie das Projekt")}
+        title={tr("1. Crea il progetto", "1. Create the project", "1. Créez le projet", "1. Erstelle das Projekt")}
       >
         <Steps
           steps={[
@@ -1222,49 +1222,49 @@ export const START: TopicTexts = {
               "Apri la pagina «Progetti» dalla barra delle attività.",
               "Open the “Projects” page from the activity bar.",
               "Ouvrez la page « Projets » depuis la barre d'activité.",
-              "Öffnen Sie die Seite „Projekte“ über die Aktivitätsleiste.",
+              "Öffne die Seite „Projekte“ über die Aktivitätsleiste.",
             ),
             tr(
               "Nel «Pannello rapido», sotto «Nuovo progetto», fai clic su «Da framework o CMS». Si apre la scheda «Nuovo progetto».",
               "In the “Quick panel”, under “New project”, click “From a framework or CMS”. The “New project” tab opens.",
               "Dans le « Panneau rapide », sous « Nouveau projet », cliquez sur « À partir d'un framework ou d'un CMS ». L'onglet « Nouveau projet » s'ouvre.",
-              "Klicken Sie in der „Schnellübersicht“ unter „Neues Projekt“ auf „Aus Framework oder CMS“. Der Tab „Neues Projekt“ öffnet sich.",
+              "Klicke in der „Schnellübersicht“ unter „Neues Projekt“ auf „Aus Framework oder CMS“. Der Tab „Neues Projekt“ öffnet sich.",
             ),
             tr(
               "In «1. Base» scegli il gruppo «Web con JavaScript e TypeScript» e la scheda «Vite» («Sito o applicazione web in TypeScript»).",
               "In “1. Base” choose the “Web with JavaScript and TypeScript” group and the “Vite” card (“Website or web application in TypeScript”).",
               "Dans « 1. Base », choisissez le groupe « Web avec JavaScript et TypeScript » et la carte « Vite » (« Site ou application web en TypeScript »).",
-              "Wählen Sie in „1. Basis“ die Gruppe „Web mit JavaScript und TypeScript“ und die Karte „Vite“ („Website oder Webanwendung in TypeScript“).",
+              "Wähle in „1. Basis“ die Gruppe „Web mit JavaScript und TypeScript“ und die Karte „Vite“ („Website oder Webanwendung in TypeScript“).",
             ),
             tr(
               "In «2. Aggiunte» non serve niente per questa prova.",
               "In “2. Additions” nothing is needed for this test.",
               "Dans « 2. Ajouts », rien n'est nécessaire pour cet essai.",
-              "In „2. Ergänzungen“ brauchen Sie für diesen Versuch nichts.",
+              "In „2. Ergänzungen“ brauchst du für diesen Versuch nichts.",
             ),
             tr(
               "In «3. Nome» scrivi primo-sito. Il nome diventa la cartella projects\\primo-sito.",
               "In “3. Name” type primo-sito. The name becomes the projects\\primo-sito folder.",
               "Dans « 3. Nom », tapez primo-sito. Le nom devient le dossier projects\\primo-sito.",
-              "Geben Sie in „3. Name“ primo-sito ein. Der Name wird zum Ordner projects\\primo-sito.",
+              "Gib in „3. Name“ primo-sito ein. Der Name wird zum Ordner projects\\primo-sito.",
             ),
             tr(
               "Guarda il «Riepilogo»: vedrai che il kit userà Node.js, eseguirà npm create vite nella cartella projects e poi npm install nel progetto, e salverà le azioni «Avvia» e «Build».",
               "Look at the “Summary”: you will see that the kit will use Node.js, run npm create vite in the projects folder and then npm install in the project, and save the “Start” and “Build” actions.",
               "Regardez le « Récapitulatif » : vous verrez que le kit utilisera Node.js, exécutera npm create vite dans le dossier projects puis npm install dans le projet, et enregistrera les actions « Démarrer » et « Build ».",
-              "Sehen Sie sich die „Zusammenfassung“ an: Sie sehen, dass das Kit Node.js verwendet, npm create vite im Ordner projects und dann npm install im Projekt ausführt und die Aktionen „Starten“ und „Build“ speichert.",
+              "Sieh dir die „Zusammenfassung“ an: Du siehst, dass das Kit Node.js verwendet, npm create vite im Ordner projects und dann npm install im Projekt ausführt und die Aktionen „Starten“ und „Build“ speichert.",
             ),
             tr(
               "Premi «Crea il progetto». Nella parte «Avanzamento» scorrono i comandi e il loro output.",
               "Press “Create the project”. In the “Progress” part the commands and their output scroll by.",
               "Appuyez sur « Créer le projet ». Dans la partie « Progression », les commandes et leur sortie défilent.",
-              "Klicken Sie auf „Projekt erstellen“. Im Teil „Fortschritt“ laufen die Befehle und ihre Ausgabe durch.",
+              "Klicke auf „Projekt erstellen“. Im Teil „Fortschritt“ laufen die Befehle und ihre Ausgabe durch.",
             ),
             tr(
               "Quando compare «Progetto primo-sito creato.» premi «Apri il progetto».",
               "When “Project primo-sito created.” appears, press “Open the project”.",
               "Quand « Projet primo-sito créé. » apparaît, appuyez sur « Ouvrir le projet ».",
-              "Wenn „Projekt primo-sito erstellt.“ erscheint, klicken Sie auf „Projekt öffnen“.",
+              "Wenn „Projekt primo-sito erstellt.“ erscheint, klicke auf „Projekt öffnen“.",
             ),
           ]}
         />
@@ -1273,7 +1273,7 @@ export const START: TopicTexts = {
             "Se Node.js non era installato, il kit lo scarica prima di eseguire i comandi: lo vedi nelle prime righe dell'avanzamento («Installo gli strumenti del kit che servono…»).",
             "If Node.js was not installed, the kit downloads it before running the commands: you see it in the first lines of the progress (“Installing the kit tools needed…”).",
             "Si Node.js n'était pas installé, le kit le télécharge avant d'exécuter les commandes : vous le voyez dans les premières lignes de la progression (« Installation des outils du kit nécessaires… »).",
-            "Wenn Node.js nicht installiert war, lädt das Kit es herunter, bevor es die Befehle ausführt: Sie sehen es in den ersten Zeilen des Fortschritts („Benötigte Werkzeuge des Kits werden installiert…“).",
+            "Wenn Node.js nicht installiert war, lädt das Kit es herunter, bevor es die Befehle ausführt: Du siehst es in den ersten Zeilen des Fortschritts („Benötigte Werkzeuge des Kits werden installiert…“).",
           )}
         </Callout>
       </Section>
@@ -1283,7 +1283,7 @@ export const START: TopicTexts = {
           "2. Avvialo e aprilo nel browser",
           "2. Start it and open it in the browser",
           "2. Démarrez-le et ouvrez-le dans le navigateur",
-          "2. Starten Sie es und öffnen Sie es im Browser",
+          "2. Starte es und öffne es im Browser",
         )}
       >
         <Steps
@@ -1298,19 +1298,19 @@ export const START: TopicTexts = {
               "Premi ▶ accanto a «npm run dev». È un'azione web: il kit le assegna una porta, la avvia e aspetta che risponda. Lo stato passa da «in avvio» a «in ascolto».",
               "Press ▶ next to “npm run dev”. It is a web action: the kit assigns it a port, starts it and waits for it to respond. The status goes from “starting” to “listening”.",
               "Appuyez sur ▶ à côté de « npm run dev ». C'est une action web : le kit lui attribue un port, la démarre et attend qu'elle réponde. L'état passe de « démarrage » à « en écoute ».",
-              "Klicken Sie auf ▶ neben „npm run dev“. Es ist eine Web-Aktion: Das Kit weist ihr einen Port zu, startet sie und wartet, bis sie antwortet. Der Status wechselt von „startet“ zu „lauscht“.",
+              "Klicke auf ▶ neben „npm run dev“. Es ist eine Web-Aktion: Das Kit weist ihr einen Port zu, startet sie und wartet, bis sie antwortet. Der Status wechselt von „startet“ zu „lauscht“.",
             ),
             tr(
               "Premi «Apri nel browser»: si apre il sito di prova di Vite all'indirizzo http://localhost:<porta>/, dove la porta è un numero tra 7100 e 7999 scelto dal kit e tenuto uguale a ogni avvio.",
               "Press “Open in the browser”: Vite's sample site opens at http://localhost:<port>/, where the port is a number between 7100 and 7999 chosen by the kit and kept the same at every start.",
               "Appuyez sur « Ouvrir dans le navigateur » : le site d'exemple de Vite s'ouvre à l'adresse http://localhost:<port>/, où le port est un nombre entre 7100 et 7999 choisi par le kit et conservé à chaque démarrage.",
-              "Klicken Sie auf „Im Browser öffnen“: Die Beispielseite von Vite öffnet sich unter http://localhost:<port>/, wobei der Port eine Zahl zwischen 7100 und 7999 ist, die das Kit wählt und bei jedem Start beibehält.",
+              "Klicke auf „Im Browser öffnen“: Die Beispielseite von Vite öffnet sich unter http://localhost:<port>/, wobei der Port eine Zahl zwischen 7100 und 7999 ist, die das Kit wählt und bei jedem Start beibehält.",
             ),
             tr(
               "Vuoi che il grande pulsante «Avvia» in alto avvii sempre questa azione? Selezionala e premi la stella «Predefinita».",
               "Do you want the big “Start” button at the top to always start this action? Select it and press the “Default” star.",
               "Vous voulez que le grand bouton « Démarrer » en haut démarre toujours cette action ? Sélectionnez-la et appuyez sur l'étoile « Par défaut ».",
-              "Soll die große Schaltfläche „Starten“ oben immer diese Aktion starten? Wählen Sie sie aus und klicken Sie auf den Stern „Standard“.",
+              "Soll die große Schaltfläche „Starten“ oben immer diese Aktion starten? Wähle sie aus und klicke auf den Stern „Standard“.",
             ),
           ]}
         />
@@ -1321,7 +1321,7 @@ export const START: TopicTexts = {
           "3. Modificalo nell'editor",
           "3. Edit it in the editor",
           "3. Modifiez-le dans l'éditeur",
-          "3. Bearbeiten Sie es im Editor",
+          "3. Bearbeite es im Editor",
         )}
       >
         <Steps
@@ -1330,25 +1330,25 @@ export const START: TopicTexts = {
               "Premi «Editor» in alto nella pagina del progetto. Il kit avvia l'editor (la prima volta può richiedere qualche secondo) e apre una finestra di Atollo con la cartella del progetto.",
               "Press “Editor” at the top of the project page. The kit starts the editor (the first time it may take a few seconds) and opens an Atollo window with the project folder.",
               "Appuyez sur « Éditeur » en haut de la page du projet. Le kit démarre l'éditeur (la première fois, cela peut prendre quelques secondes) et ouvre une fenêtre d'Atollo avec le dossier du projet.",
-              "Klicken Sie oben auf der Seite des Projekts auf „Editor“. Das Kit startet den Editor (beim ersten Mal kann das einige Sekunden dauern) und öffnet ein Atollo-Fenster mit dem Projektordner.",
+              "Klicke oben auf der Seite des Projekts auf „Editor“. Das Kit startet den Editor (beim ersten Mal kann das einige Sekunden dauern) und öffnet ein Atollo-Fenster mit dem Projektordner.",
             ),
             tr(
               "Apri src/main.ts, cambia un testo e salva con Ctrl+S.",
               "Open src/main.ts, change some text and save with Ctrl+S.",
               "Ouvrez src/main.ts, changez un texte et enregistrez avec Ctrl+S.",
-              "Öffnen Sie src/main.ts, ändern Sie einen Text und speichern Sie mit Ctrl+S.",
+              "Öffne src/main.ts, ändere einen Text und speichere mit Ctrl+S.",
             ),
             tr(
               "Torna al browser: Vite aggiorna la pagina da solo.",
               "Go back to the browser: Vite updates the page by itself.",
               "Revenez au navigateur : Vite met la page à jour tout seul.",
-              "Wechseln Sie zurück zum Browser: Vite aktualisiert die Seite von selbst.",
+              "Wechsle zurück zum Browser: Vite aktualisiert die Seite von selbst.",
             ),
             tr(
               "Per fermare il sito torna su Atollo e premi «Ferma» (o ■ accanto all'azione). Chiudendo Atollo si ferma comunque tutto.",
               "To stop the website go back to Atollo and press “Stop” (or ■ next to the action). Closing Atollo stops everything anyway.",
               "Pour arrêter le site, revenez sur Atollo et appuyez sur « Arrêter » (ou ■ à côté de l'action). Fermer Atollo arrête de toute façon tout.",
-              "Um die Website zu beenden, wechseln Sie zurück zu Atollo und klicken Sie auf „Beenden“ (oder ■ neben der Aktion). Wenn Sie Atollo schließen, wird ohnehin alles beendet.",
+              "Um die Website zu beenden, wechsle zurück zu Atollo und klicke auf „Beenden“ (oder ■ neben der Aktion). Wenn du Atollo schließt, wird ohnehin alles beendet.",
             ),
           ]}
         />
