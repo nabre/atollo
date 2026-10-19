@@ -2,7 +2,7 @@
 // (tauri/src/stats), launch. Rust: tauri/src/commands/agents.rs.
 
 import { invoke } from "@tauri-apps/api/core";
-import { act, browserPreview, query } from "./core";
+import { act, browserPreview, engineText, query } from "./core";
 
 export type AgentId = "claude" | "codex" | "antigravity";
 
@@ -120,6 +120,8 @@ export interface StatsReport {
 
 function sampleStats(): StatsReport {
   const day = 24 * 3600 * 1000;
+  const fiveHours = engineText("5 ore", { en: "5 hours", fr: "5 heures", de: "5 Stunden" });
+  const week = engineText("Settimana", { en: "Week", fr: "Semaine", de: "Woche" });
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tokens = (n: number): Tokens => ({ input: n, cached: n * 8, output: n / 4, total: n * 9.25 });
@@ -143,7 +145,11 @@ function sampleStats(): StatsReport {
     plan: "max",
     windows,
     credits: null,
-    source: "server di Anthropic",
+    source: engineText("server di Anthropic", {
+      en: "Anthropic's server",
+      fr: "serveur d'Anthropic",
+      de: "Server von Anthropic",
+    }),
     note: null,
     error: null,
     updated: Date.now(),
@@ -160,12 +166,12 @@ function sampleStats(): StatsReport {
         name: "Claude Code",
         account: "ok",
         limits: limits([
-          { label: "5 ore", percent: 34, resetsAt: Date.now() + 2 * 3600000, level: "ok" },
-          { label: "Settimana", percent: 76, resetsAt: Date.now() + 3 * day, level: "warning" },
+          { label: fiveHours, percent: 34, resetsAt: Date.now() + 2 * 3600000, level: "ok" },
+          { label: week, percent: 76, resetsAt: Date.now() + 3 * day, level: "warning" },
         ]),
         usage,
         peak: 76,
-        peakLabel: "Settimana",
+        peakLabel: week,
         level: "warning",
       },
     ],
