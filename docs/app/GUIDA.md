@@ -28,7 +28,7 @@ Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi*
    - [3.3 Passaggi per Configurare l'Account GitHub e i Permessi (`workflow`, `delete_repo`)](#33-passaggi-per-configurare-laccount-github-e-i-permessi-workflow-delete_repo)
 4. [Esplorazione Minuziosa delle Funzionalità dell'Applicazione (con Immagini ed Esempi)](#4-esplorazione-minuziosa-delle-funzionalità-dellapplicazione-con-immagini-ed-esempi)
    - [4.1 Finestra Principale, Barra di Stato e Pannello Attività](#41-finestra-principale-barra-di-stato-e-pannello-attività)
-   - [4.2 Pagina «Nuovo progetto» (Wizard Framework e Combinazioni)](#42-pagina-nuovo-progetto-wizard-framework-e-combinazioni)
+   - [4.2 Scheda «Nuovo progetto» (Wizard Framework e Combinazioni)](#42-scheda-nuovo-progetto-wizard-framework-e-combinazioni)
    - [4.3 Pagina «Progetti» e Scheda Dettaglio del Singolo Progetto](#43-pagina-progetti-e-scheda-dettaglio-del-singolo-progetto)
    - [4.4 Editor Integrato (VSCodium Web) e Terminale Esclusivo del Kit](#44-editor-integrato-vscodium-web-e-terminale-esclusivo-del-kit)
    - [4.5 Pagina «Agenti» (Claude Code, Codex, Antigravity e Sincronizzazione)](#45-pagina-agenti-claude-code-codex-antigravity-e-sincronizzazione)
@@ -226,7 +226,7 @@ Oltre ai componenti principali, l'applicazione comunica con i seguenti indirizzi
    - **Antigravity**: `https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels` (autenticato con `data\antigravity\keyring.json`).
    - *Nota di sicurezza*: i token vengono solo letti e inviati esclusivamente al rispettivo fornitore (con parsimonia: cache minima di 2 minuti e rispetto di `Retry-After` in caso di HTTP 429).
 3. **Auto-aggiornamento di `Atollo.exe` (`tauri/src/setup/self_update.rs`)**:
-   - Interroga le release con tag `app-vX.Y.Z` del repository `https://api.github.com/repos/nabre/atollo/releases` cercando l'asset `Atollo-x64.exe` o `Atollo-arm64.exe`, verificato con SHA-256.
+   - Interroga le release con tag `app-vX.Y.Z` del repository `https://api.github.com/repos/nabre/atollo/releases` cercando l'asset del sistema con la versione nel nome (`Atollo-X.Y.Z-win32-x64.exe`, `-win32-arm64.exe`, `-darwin-<arch>.app.zip`, `-linux-<arch>.AppImage`), verificato con SHA-256.
 4. **Template Android e Pacchetti dei Framework (`tauri/catalog/frameworks.json`)**:
    - I comandi del wizard scaricano pacchetti dai registri ufficiali tramite gli strumenti del kit: **Packagist** (`composer`), **npm Registry** (`npm`/`npx`), **Google Android Repository** (`sdkmanager` per `ndk;30.0.16248370`) e clonano il template ufficiale Android da `https://github.com/android/architecture-templates.git`.
 
@@ -325,7 +325,7 @@ L'interfaccia di Atollo utilizza i componenti ufficiali e il sistema di design d
   - che sullo stesso PC sono in esecuzione programmi di **un'altra copia del kit** (ricordando che le due copie sono completamente separate);
   - che una cartella nel percorso del kit inizia con una **cifra (`0-9`), `x` o `u` minuscole** (`watcherUnsafeFolder`, limite noto di `@parcel/watcher` in VSCodium che impedisce all'editor di rilevare modifiche esterne ai file).
 - **Barra delle Attività (Activity Bar a sinistra)**: contiene le 8 viste principali con navigazione anche da tastiera (`Freccia Su/Giù`, `Home`, `End`):
-  - In alto: **Nuovo progetto** (bacchetta magica), **Progetti** (con badge numerico dei progetti avviati), **Agenti**, **Database**, **Server Web**, **Strumenti**.
+  - In alto: **Progetti** (con badge numerico dei progetti avviati), **Agenti**, **Database**, **Server Web**, **Strumenti**.
   - In basso: **Impostazioni**, **Rimuovi l'unità**.
 - **Barra di Stato (in basso)**:
   - A sinistra: badge **Atollo** (con percorso della radice al passaggio del mouse), contatore dei **progetti avviati** e degli **errori** (cliccabile per aprire il pannello Attività) e indicatore animato delle **installazioni in corso**.
@@ -336,9 +336,9 @@ L'interfaccia di Atollo utilizza i componenti ufficiali e il sistema di design d
 
 ---
 
-### 4.2 Pagina «Nuovo progetto» (Wizard Framework e Combinazioni)
+### 4.2 Scheda «Nuovo progetto» (Wizard Framework e Combinazioni)
 
-La pagina **Nuovo progetto** (`ui/src/wizard.tsx` e `tauri/src/projects/frameworks/`) permette di generare l'armatura completa di un'applicazione moderna combinando blocchi ufficiali:
+La scheda **Nuovo progetto** della pagina Progetti (`ui/src/projects/wizard.tsx` e `tauri/src/projects/frameworks/`) si apre dall'albero «Nuovo progetto» della barra laterale (Progetto vuoto, Da un indirizzo Git, Da framework o CMS e le sue basi) o dalla bacchetta magica in alto; permette di generare l'armatura completa di un'applicazione moderna combinando blocchi ufficiali:
 
 1. **Scelta della Base (`kind: "base"`)**:
    - **Laravel** (PHP 8.x + Node.js, Laravel 13, azioni *Avvia* `composer run dev` e *Prove* `php artisan test`).
