@@ -1,5 +1,7 @@
 # Guida Completa di Atollo: Struttura, Funzionalità, Fonti, Configurazione ed Esempi Illustrati
 
+[English](GUIDE.md) · Italiano
+
 Questo documento definisce la **struttura editoriale**, i **contenuti minuziosi**, le **schermate reali dell'interfaccia** (`images/*.png`) e gli **esempi pratici guidati** della guida ufficiale di **Atollo** (`Atollo.exe`, brand **Atollo**). Esplora nel dettaglio l'architettura portabile, il funzionamento di tutte le viste dell'applicazione, l'organizzazione completa dei link e delle fonti da cui il kit attinge gli strumenti, il ruolo centrale dell'account GitHub e le procedure passo-passo per configurare ogni singolo elemento con la spiegazione dello scopo tecnico e pratico di ciascuna operazione.
 
 > [!NOTE]
@@ -292,7 +294,7 @@ In Atollo l'account GitHub non è un semplice accessorio per un singolo programm
 5. Nel browser, accedi al tuo account GitHub (se non sei già autenticato), incolla il codice `XXXX-XXXX` e autorizza **GitHub CLI**.
 6. La pagina dell'app rileva automaticamente il completamento, mostra il tuo nome utente GitHub e configura il Git del kit.
 
-![Configurazione dell'Account GitHub nelle Impostazioni di Atollo](images/14-impostazioni-github-rete.png)
+![Configurazione dell'Account GitHub nelle Impostazioni di Atollo](images/14-settings-github-network.png)
 
 > [!TIP]
 > **Esempio pratico — Accesso unificato come `@mario-rossi`:**
@@ -306,7 +308,7 @@ In Atollo l'account GitHub non è un semplice accessorio per un singolo programm
 - Quando nella pagina **Progetti** selezioni un tuo repository GitHub e clicchi su **«Elimina da GitHub»**, se il token attuale non possiede lo scope `delete_repo`, l'app mostra il pulsante **«Concedi il permesso»** che avvia un rapido riaccesso con `--scopes workflow,delete_repo`.
 - *Nota*: eliminare un repository su GitHub tramite l'app non cancella mai l'eventuale cartella già clonata in `projects\`.
 
-![Esplorazione e gestione dei repository GitHub personali e aziendali](images/04-nuovo-progetto-github.png)
+![Esplorazione e gestione dei repository GitHub personali e aziendali](images/04-new-project-github.png)
 
 > **Esempio pratico — Clonazione da `@mario-rossi` e `studio-rossi`:**
 > Aprendo il riquadro **Clona o crea** nella barra laterale di **Progetti**, l'app elenca automaticamente sia i repository personali (`mario-rossi/gestionale-fatture`, `portale-clienti`, `api-magazzino`, `preventivi-pdf`) sia quelli dell'organizzazione (`studio-rossi/design-system`). Per i repository già presenti in `projects\` compare il badge **«Clonato»** con il pulsante rapido **«Apri»**, mentre per quelli remoti basta un clic su **«Clona»** per scaricarli in `projects\<nome>` e auto-configurarne le versioni dei linguaggi.
@@ -332,7 +334,7 @@ L'interfaccia di Atollo utilizza i componenti ufficiali e il sistema di design d
   - A destra: indicatore **«Editor attivo»** (con la porta `127.0.0.1:70xx` del server VSCodium), architettura (`win32-x64` o `win32-arm64`), versione dell'app (`vX.Y.Z`) e pulsante per mostrare/nascondere il pannello **Attività**.
 - **Pannello Attività (`ui/src/activity.tsx`)**: pannello ridimensionabile in basso (trascinando il divisore o facendo doppio clic per riportarlo a `240px`) presente su tutte le pagine. Raccoglie in un unico posto l'output in tempo reale delle azioni dei progetti (con pulsanti *Apri nel browser*, *Ferma*, *Dimentica*), lo stato e i log dei database e l'avanzamento dettagliato delle installazioni dei componenti.
 
-![Finestra principale nella vista Progetti con barra di stato attiva](images/02-progetti-elenco.png)
+![Finestra principale nella vista Progetti con barra di stato attiva](images/02-projects-list.png)
 
 ---
 
@@ -367,7 +369,7 @@ La scheda **Nuovo progetto** della pagina Progetti (`ui/src/projects/wizard.tsx`
 4. **Variabili `.env` e Riepilogo**:
    - Mostra le variabili predefinite (es. `APP_NAME={name}`, `NATIVEPHP_APP_ID={package}` dove `{package}` diventa `com.example.<nome>`) permettendo di modificarle o aggiungerne di nuove, elenca gli strumenti del kit che verranno installati automaticamente e mostra tutti i comandi PowerShell che verranno eseguiti con output in tempo reale.
 
-![Wizard Nuovo progetto con combinazione Laravel + React + Tailwind CSS + MySQL](images/03-nuovo-progetto-template.png)
+![Wizard Nuovo progetto con combinazione Laravel + React + Tailwind CSS + MySQL](images/03-new-project-template.png)
 
 > [!TIP]
 > **Esempio pratico — Creazione di `gestionale-fatture` con un solo clic:**
@@ -391,7 +393,7 @@ Cliccando su un progetto si apre nella parte centrale la **Scheda del Progetto**
 
 1. **Avvio (`run`)**: mostra il dettaglio dell'azione selezionata (stato, porta assegnata nell'intervallo `7100-7999`, casella per bloccare/cambiare la porta, pulsante *Apri nel browser*, output della console in tempo reale) e la tabella di tutte le azioni del progetto (rilevate automaticamente da `package.json`, `composer.json`, `Cargo.toml`, `pyproject.toml`, ecc., o definite in `panel.json`) con possibilità di aggiungere, modificare o rimuovere azioni e variabili d'ambiente. Se la cartella del progetto è vuota, offre anche il pulsante per eliminarla.
 
-![Scheda Avvio del progetto gestionale-fatture con console live e pannello Attività aperto](images/05-progetto-avvio-log.png)
+![Scheda Avvio del progetto gestionale-fatture con console live e pannello Attività aperto](images/05-project-run-log.png)
 
 > **Esempio pratico — Esecuzione di `gestionale-fatture` e controllo dal pannello Attività:**
 > Nella schermata sopra, l'azione predefinita **Avvia** (`composer run dev`) di `gestionale-fatture` è in esecuzione sulla porta bloccata `8000` (`http://127.0.0.1:8000/`). La console mostra l'output combinato di Laravel Server, Queue listener e Vite v6.2.1, mentre in basso il pannello **Attività** permette di controllare contemporaneamente tutti i progetti attivi (`gestionale-fatture :8000` e `portale-clienti :5173`), i database (`MySQL :3306`, `MongoDB :27017`) e le installazioni.
@@ -403,21 +405,21 @@ Cliccando su un progetto si apre nella parte centrale la **Scheda del Progetto**
    - *Apache dedicato* (per i progetti con regole proprie nel `.htaccess`: istanza Apache esclusiva del progetto sulla sua porta, oppure associata a un pool condiviso).
    Permette inoltre di dichiarare **domini `.localhost` aggiuntivi** e **alias di percorso portabili** (anche verso altri progetti con `@altro-progetto/cartella`).
 
-![Scheda Sito web del progetto con configurazione Apache, domini .localhost e alias](images/06-progetto-sito-web.png)
+![Scheda Sito web del progetto con configurazione Apache, domini .localhost e alias](images/06-project-website.png)
 
 3. **Componenti (`components`)**: elenca gli strumenti del kit richiesti dal progetto (con il pulsante **«Installa ciò che manca»** se qualche dipendenza non è installata) e permette di fissare la **versione specifica di ciascun linguaggio** (es. Python, Node.js, PHP, Java, .NET, Go, Ruby, ecc.) per questo singolo progetto, mostrando eventuali avvisi di compatibilità rilevati dai file del progetto (`package.json`, `composer.json`, `.nvmrc`, `pyproject.toml`, ecc.).
 
-![Scheda Componenti del progetto con versioni di Node.js 22.21 e PHP 8.4 fissate](images/07-progetto-componenti-versioni.png)
+![Scheda Componenti del progetto con versioni di Node.js 22.21 e PHP 8.4 fissate](images/07-project-components-versions.png)
 
 4. **Database (`databases`)**: gestisce i database dedicati al progetto su **MySQL** e **MongoDB** (e mostra i file SQLite rilevati). Con un clic su **«Crea database e utente»**, il kit avvia il server, genera un database e un utente dedicati con password casuale a 32 cifre esadecimali (salvata in `data\projects\<progetto>\private\db.json`), mostra l'anteprima delle righe `.env` e permette di **scriverle nel file `.env`** del progetto con un clic, oltre a gestire **Esportazione (backup)** e **Ripristino** in `private\backups\`.
 
-![Scheda Database del progetto con credenziali isolate, anteprima .env e copie di backup SQL](images/08-progetto-database-env.png)
+![Scheda Database del progetto con credenziali isolate, anteprima .env e copie di backup SQL](images/08-project-database-env.png)
 
 5. **Estensioni (`extensions`)**: mostra le estensioni di VSCodium attive per questo progetto (predefinite in base ai linguaggi rilevati + aggiunte manualmente) e permette di disattivarne alcune o aggiungerne di nuove dalla matrice o da Open VSX.
 6. **Editor (`editor`)**: modifica visualmente `.vscode\settings.json` del progetto (formattazione al salvataggio, misura del rientro a 2 o 4 spazi o tabulazione, cartelle nascoste in `files.exclude`).
 7. **Git (`git`)**: mostra in modo sicuro (leggendo `.git/HEAD` e `.git/config` senza eseguire hook Git) il ramo locale, il ramo remoto, lo stato di sincronizzazione e l'URL del repository remoto con pulsante per aprirlo nel browser.
 
-![Scheda Git del progetto con stato di sincronizzazione origin/main](images/09-progetto-git-mcp.png)
+![Scheda Git del progetto con stato di sincronizzazione origin/main](images/09-project-git-mcp.png)
 
 ---
 
@@ -447,7 +449,7 @@ La pagina **Agenti** (`ui/src/agents.tsx` e `tauri/src/agents/`) gestisce i tre 
   - i **server MCP** definiti in `data\agents\mcp.json` verso le configurazioni di Claude, Codex e Antigravity;
   - le **cartelle attendibili** (`projects\`).
 
-![Pagina Agenti con quote del piano, grafico token 7 giorni e risorse sincronizzate](images/10-agenti-quote-statistiche.png)
+![Pagina Agenti con quote del piano, grafico token 7 giorni e risorse sincronizzate](images/10-agents-limits-usage.png)
 
 > **Esempio pratico — Controllo delle quote di Claude Code, Codex e Antigravity:**
 > Nella schermata sopra, tutti e tre gli agenti risultano installati e con **Accesso attivo**. Per **Claude Code** la finestra di 5 ore è al **38%** mentre la quota settimanale ha raggiunto il **74%** (evidenziata in ambra perché supera la soglia di attenzione del 70%), con **138,4k token** usati oggi in 3 sessioni e **804,6k token** negli ultimi 7 giorni. In alto a destra il riquadro **Cartella condivisa (`data\agents\`)** permette di aprire con un clic la cartella dove risiedono `AGENTS.md`, `skills\` e `mcp.json` condivisi tra tutti e tre gli assistenti.
@@ -465,9 +467,9 @@ La pagina **Database** (`ui/src/databases.tsx` e `tauri/src/db/`) gestisce i ser
 - **Dati multi-versione (`D-81`)**: a server fermo è possibile cambiare la versione del motore (es. MySQL `9.7` o `8.4`; MongoDB `9.0` o `8.0`). Ogni versione mantiene la propria cartella dati in `data\db\<motore>\<linea>\` e, al primo avvio di una versione più recente, copia automaticamente in avanti i dati dalla versione precedente più vicina.
 
 ````carousel
-![Pagina Database — il server SQL con phpMyAdmin integrato e credenziali root](images/11-database-mysql-phpmyadmin.png)
+![Pagina Database — il server SQL con phpMyAdmin integrato e credenziali root](images/11-databases-mysql-phpmyadmin.png)
 <!-- slide -->
-![Pagina Database — MongoDB 8.0 con esploratore Contenuto delle collezioni in sola lettura](images/11b-database-mongodb-esploratore.png)
+![Pagina Database — MongoDB 8.0 con esploratore Contenuto delle collezioni in sola lettura](images/11b-databases-mongodb-explorer.png)
 ````
 
 > **Esempio pratico — Gestione relazionale (MySQL + phpMyAdmin) e documentale (MongoDB Contenuto):**
@@ -484,7 +486,7 @@ La pagina **Server Web** (`ui/src/servers.tsx` e `tauri/src/servers/mod.rs`) per
 - **VirtualHost `.localhost` (RFC 6761)**: ogni progetto associato a un pool riceve automaticamente un proprio file `data\servers\<pool>\vhosts\<progetto>.conf` con `ServerName <progetto>.localhost` (più eventuali domini `.localhost` aggiuntivi) e risponde all'indirizzo `http://<progetto>.localhost:<porta>`.
 - **Ricarica a caldo**: il pulsante **«Ricarica configurazione»** rigenera tutti i file dei VirtualHost e ricarica Caddy (`caddy reload`, sul socket privato del pool) o riavvia pulitamente Apache. Nginx non c'è più (D-120): i suoi pool e siti passano a Caddy all'avvio, con una copia dei file in `data\app\pre-caddy\`.
 
-![Pagina Server Web con il pool Apache 2.4 · PHP 8.4 attivo sulla porta 8081](images/12-server-web-pool.png)
+![Pagina Server Web con il pool Apache 2.4 · PHP 8.4 attivo sulla porta 8081](images/12-web-server-pool.png)
 
 > **Esempio pratico — Pool condiviso `Apache 2.4 · PHP 8.4` sulla porta `8081`:**
 > Nella schermata sopra, il pool automatico `apache-2.4-php-8.4` serve il progetto `gestionale-fatture` (cartella `public`) sia sul dominio primario `http://gestionale-fatture.localhost:8081` sia sul dominio aggiuntivo `http://fatture.studio.localhost:8081`, mappando inoltre l'alias `/allegati` verso `storage/app/public/allegati`. Accanto, nella barra laterale, è pronto anche un secondo pool `Caddy 2.10 · PHP 8.3` sulla porta `8082`.
@@ -505,7 +507,7 @@ La pagina **Strumenti** (`ui/src/components/page.tsx`) è il centro di controllo
 4. **Sezione «Matrice delle estensioni» (`ui/src/extensions.tsx`)**: mostra in sola lettura la tabella completa degli abbinamenti tra linguaggi/strumenti ed estensioni di VSCodium.
 5. **Vista «Matrice» (`ui/src/components/matrix.tsx`, D-121)**: una riga per componente e una colonna per ognuno dei sei sistemi (Windows x64 e ARM64, macOS Apple Silicon e Intel, Linux x64 e ARM64), con «questo PC», «in emulazione» o «non eseguibile qui». Ogni casella dice se il componente è disponibile, in emulazione, pre-scaricato, se si completa al primo avvio su quel sistema o se non è disponibile, con il motivo; un clic apre il dettaglio e «Mostra questo sistema». Il sistema scelto con «Piattaforma» resta fra le sessioni, e relazioni ed estensioni lo seguono.
 
-![Pagina Strumenti con catalogo componenti, versioni affiancate e schede Relazioni/Requisiti](images/13-strumenti-catalogo-matrice.png)
+![Pagina Strumenti con catalogo componenti, versioni affiancate e schede Relazioni/Requisiti](images/13-tools-catalog-matrix.png)
 
 ---
 
@@ -538,7 +540,7 @@ La pagina **Rimuovi l'unità** (`ui/src/eject.tsx` e `tauri/src/os/sessions.rs`)
   6. salva nel kit (`data\antigravity\keyring.json`) le credenziali di Antigravity rimuovendole dalla Gestione credenziali di Windows;
   7. invita infine a chiudere la finestra di `Atollo.exe` stessa per rilasciare l'ultimo file sul disco ed espellere l'unità da Windows.
 
-![Pagina Rimuovi l'unità con elenco completo dei processi e servizi attivi sull'unità portabile](images/15-rimuovi-unita.png)
+![Pagina Rimuovi l'unità con elenco completo dei processi e servizi attivi sull'unità portabile](images/15-remove-drive.png)
 
 > [!IMPORTANT]
 > **Esempio pratico — Rimozione sicura della chiavetta a fine giornata:**
@@ -581,7 +583,7 @@ Questa sezione documenta nel dettaglio **come configurare ogni singolo elemento*
   2. Copia `Atollo.exe` dentro la cartella e avvialo con doppio clic.
   3. Nella schermata di **Primo Avvio**, verifica i componenti preselezionati (di default: *PowerShell 7*, *GitHub CLI*, *Editor*, i tre *Agenti*, *Python*, *PHP*, *Apache*, più *Git* che arriva con GitHub CLI — circa 1,8 GB) oppure spunta subito altri linguaggi o database che usi abitualmente, quindi clicca su **«Installa»**.
 
-![Schermata di Primo Avvio (Benvenuto in Atollo) con selezione iniziale degli strumenti](images/01-wizard-benvenuto.png)
+![Schermata di Primo Avvio (Benvenuto in Atollo) con selezione iniziale degli strumenti](images/01-welcome-wizard.png)
 
 - **Scopo**:
   - Evitare cartelle che iniziano con cifre, `x` o `u` impedisce il bug delle espressioni regolari di `@parcel/watcher` in VSCodium (D-33), garantendo che l'editor aggiorni istantaneamente l'albero dei file quando gli agenti AI o il terminale creano o modificano file nel progetto.

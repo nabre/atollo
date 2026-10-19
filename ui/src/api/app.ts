@@ -33,13 +33,20 @@ export interface AppInfo {
   systemTemp: string | null;
 }
 
+/** The browser preview's language: `?lang=en` (the site's screenshots,
+ * site/shots/make.mjs), Italian otherwise. */
+function previewLang(): AppInfo["lang"] {
+  const asked = new URLSearchParams(globalThis.location?.search ?? "").get("lang");
+  return asked === "en" || asked === "fr" || asked === "de" ? asked : "it";
+}
+
 const SAMPLE_INFO: AppInfo = {
   version: "0.1.0",
   root: "E:\\Atollo",
   data: "E:\\Atollo\\data",
   projects: "E:\\Atollo\\projects",
   platform: "win32-x64",
-  lang: "it",
+  lang: previewLang(),
   movedFrom: null,
   webview: "anteprima nel browser",
   pathEntries: 0,

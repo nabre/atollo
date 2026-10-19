@@ -1,7 +1,39 @@
 {
   "name": "atollo",
   "private": true,
-  "description": "Universal Portable Dev & AI Workspace",
+  "description": "Universal Portable Dev & AI Workspace: a zero-install development environment for Windows, macOS and Linux with an editor, 20+ languages, local databases and the Claude Code, Codex and Antigravity AI agents in one portable folder.",
+  "keywords": [
+    "portable",
+    "portable-apps",
+    "development-environment",
+    "dev-environment",
+    "zero-install",
+    "usb",
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "antigravity",
+    "mcp",
+    "vscodium",
+    "toolchain",
+    "version-manager",
+    "mysql",
+    "mongodb",
+    "arm64",
+    "tauri",
+    "rust",
+    "cross-platform"
+  ],
+  "homepage": "https://nabre.github.io/atollo/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nabre/atollo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nabre/atollo/issues"
+  },
+  "license": "MIT",
+  "author": "nabre",
   "workspaces": [
     "ui"
   ],
