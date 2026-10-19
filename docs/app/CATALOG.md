@@ -80,7 +80,7 @@ Un componente non disponibile per il sistema si mostra «non disponibile per `<t
 | SQLite | sqlite.org | sqlite.org su x64, conda-forge `sqlite` su ARM64 | SHA3-256; micromamba |
 | MySQL | `cdn.mysql.com`, `mysql-<v>-macos15-{arm64,x86_64}.tar.gz` | `mysql-<v>-linux-glibc2.28-x86_64-minimal.tar.xz`, `-aarch64.tar.xz` | SHA-256 fissato (`sha256ByLine`) dopo la firma GPG di Oracle |
 | Caddy | GitHub `caddyserver/caddy`, `caddy_<v>_mac_{arm64,amd64}.tar.gz` | `caddy_<v>_linux_{arm64,amd64}.tar.gz` | `digest`, o SHA-512 di `checksums.txt` |
-| Apache | build del kit (`scripts/build-httpd`, D-116), rilascio `httpd-v<v>` di questo repository, `httpd-<v>-darwin-{arm64,x64}.tar.gz` | `httpd-<v>-linux-{x64,arm64}.tar.gz` (glibc 2.35) | SHA-256 fissato (`sha256ByLine`) dopo la verifica GPG dei sorgenti; rilocabile; disponibile quando il primo rilascio è fissato |
+| Apache | build del kit (`scripts/build-httpd`, D-116), rilascio `httpd-v<v>` di questo repository, `httpd-<v>-darwin-{arm64,x64}.tar.gz` | `httpd-<v>-linux-{x64,arm64}.tar.gz` (glibc 2.35) | SHA-256 fissato (`sha256ByLine`) dopo la verifica GPG dei sorgenti; rilocabile; fissato su `2.4.69-1` |
 | Antigravity | manifesto di Google, `.tar.gz` (dalla 1.4) | come macOS | SHA-512 del manifesto |
 | R | conda-forge `r-base` | come macOS | micromamba; non rilocabile (D-92) |
 

@@ -161,7 +161,7 @@ section { padding: 96px 0; position: relative; }
 @media (max-width: 820px) { .nav { display: none; } .langs { margin-left: auto; } }
 
 /* Hero */
-.hero { min-height: 100svh; display: flex; align-items: center; padding: 120px 0 80px; overflow: hidden; background: var(--bg-deep); }
+.hero { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: min(104px, 10vh) 0 min(40px, 2vh); overflow: hidden; background: var(--bg-deep); }
 .hero-bg {
   position: absolute; inset: -4%;
   background: var(--hero) center right / cover no-repeat;
@@ -179,7 +179,7 @@ section { padding: 96px 0; position: relative; }
 .kicker { font: 500 0.78rem var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); }
 /* Geist runs wider and darker than Segoe UI: 700 and a tighter track keep
    the display lines on the same measure. */
-.hero h1 { font-size: clamp(2.2rem, 4.5vw, 3.75rem); letter-spacing: -0.045em; font-weight: 700; line-height: 1.04; margin-bottom: 0.4em; }
+.hero h1 { font-size: clamp(2.2rem, min(4.5vw, 5.6vh), 3.75rem); letter-spacing: -0.045em; font-weight: 700; line-height: 1.04; margin-bottom: 0.4em; }
 .hero h1 em {
   font-style: normal;
   background: linear-gradient(100deg, var(--accent) 0%, var(--amber) 60%, var(--warm) 100%);
@@ -187,7 +187,7 @@ section { padding: 96px 0; position: relative; }
 }
 .lead { font-size: clamp(1.1rem, 2vw, 1.35rem); color: var(--title); max-width: 34ch; }
 .zero { color: var(--desc); max-width: 46ch; }
-.cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 32px 0 14px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin: min(32px, 3.5vh) 0 14px; }
 .btn {
   display: inline-flex; align-items: center; min-height: 48px; padding: 0 24px;
   border-radius: 8px; font-weight: 600; font-size: 0.98rem; text-decoration: none;
@@ -202,7 +202,7 @@ section { padding: 96px 0; position: relative; }
 .release-note { font-size: 0.875rem; color: var(--desc); }
 
 /* The app icon floating over the kit folder card */
-.hero-side { position: relative; justify-self: end; width: 100%; max-width: 480px; padding-top: 148px; }
+.hero-side { position: relative; justify-self: end; width: 100%; max-width: 480px; padding-top: min(148px, 12vh); }
 .app-icon {
   position: absolute; top: 0; right: 32px; z-index: 2; width: 132px; height: 132px;
   filter: drop-shadow(0 18px 36px rgb(0 0 0 / 0.45)) drop-shadow(0 0 40px color-mix(in srgb, var(--accent) 30%, transparent));
@@ -269,6 +269,8 @@ section { padding: 96px 0; position: relative; }
 .kit-targets li.here { border-color: var(--accent); color: var(--title); background: color-mix(in srgb, var(--accent) 18%, transparent); }
 .kit-targets li.here::before { content: "● "; color: var(--accent); }
 
+/* Narrow desktops: the text column keeps both buttons on one line. */
+@media (min-width: 861px) and (max-width: 1100px) { .hero-grid { grid-template-columns: 1.6fr 1fr; gap: 32px; } }
 @media (max-width: 860px) {
   .hero { min-height: auto; padding-top: 110px; }
   .hero-grid { grid-template-columns: 1fr; gap: 40px; }
@@ -290,26 +292,18 @@ section { padding: 96px 0; position: relative; }
 }
 
 /* Stats */
-.stats { padding: 0; margin-top: -1px; }
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--border); border-radius: 14px; background: var(--panel); transform: translateY(-40px); position: relative; z-index: 2; box-shadow: var(--shadow); }
-.stat { padding: 26px 24px; border-left: 1px solid var(--border); }
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; margin-top: min(48px, 3vh); border: 1px solid var(--border); border-radius: 14px; background: var(--panel); position: relative; z-index: 2; box-shadow: var(--shadow); }
+.stat { padding: min(26px, 2.4vh) 24px; border-left: 1px solid var(--border); }
 .stat:first-child { border-left: 0; }
 .stat b { display: block; font: 700 clamp(2rem, 4vw, 2.75rem)/1 var(--ui); color: var(--title); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
 .stat:nth-child(1) b { color: var(--accent); }
 .stat:nth-child(4) b { color: var(--warm); }
-.stat span { display: block; margin-top: 8px; color: var(--desc); font-size: 0.9rem; line-height: 1.35; }
+.stat span { display: block; margin-top: 8px; color: var(--desc); font-size: 0.875rem; line-height: 1.35; }
 @media (max-width: 760px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .stat:nth-child(3) { border-left: 0; }
   .stat:nth-child(n + 3) { border-top: 1px solid var(--border); }
 }
-
-/* Lagoon (the metaphor) */
-.lagoon { padding-top: 56px; }
-.lagoon-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 48px; align-items: start; }
-.lagoon-text { font-size: clamp(1.1rem, 2.1vw, 1.4rem); line-height: 1.6; color: var(--title); font-weight: 300; }
-.lagoon-text code { font-size: 0.8em; }
-@media (max-width: 760px) { .lagoon-grid { grid-template-columns: 1fr; gap: 8px; } }
 
 /* Features bento */
 .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 40px; }
