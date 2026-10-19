@@ -10,11 +10,11 @@ Au premier démarrage, l'application télécharge d'elle-même les composants sy
 
 ## Utilisation
 
-1. Copiez `Atollo.exe` dans un dossier vide : une clé USB, un disque externe ou un dossier de votre profil (espaces, parenthèses ou `&` dans le nom sont acceptés).
+1. Copiez l'exe d'Atollo (par exemple `Atollo-0.2.0-win32-x64.exe`) dans un dossier vide : une clé USB, un disque externe ou un dossier de votre profil (espaces, parenthèses ou `&` dans le nom sont acceptés).
 2. Double-cliquez : l'application crée `projects\` et `data\`. Au premier démarrage, choisissez agents, langages et outils : l'application les télécharge et les vérifie (somme de contrôle ou signature).
 3. Créez ou clonez un projet dans la page **Projets**. L'éditeur, le terminal et les agents s'ouvrent toujours dans le dossier d'un projet, jamais ailleurs.
 
-Depuis la [page des versions publiées](https://github.com/nabre/atollo/releases) : `Atollo-x64.exe` ou `Atollo-arm64.exe` pour Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) ou `Atollo-darwin-x64.app.zip` (Intel) pour macOS, `Atollo-linux-x64` ou `Atollo-linux-arm64` (`.AppImage` et `.tar.gz`) pour Linux ; chaque fichier a son `.sha256`.
+Depuis la [page des versions publiées](https://github.com/nabre/atollo/releases) : `Atollo-<version>-win32-x64.exe` ou `Atollo-<version>-win32-arm64.exe` pour Windows, `Atollo-<version>-darwin-arm64.app.zip` (Apple Silicon) ou `Atollo-<version>-darwin-x64.app.zip` (Intel) pour macOS, `Atollo-<version>-linux-x64` ou `Atollo-<version>-linux-arm64` (`.AppImage` et `.tar.gz`) pour Linux ; chaque fichier a son `.sha256`. Le nom indique la version : quand l'app se met à jour seule, l'exe et l'AppImage prennent le nom de la nouvelle version. Dans les exemples ci-dessous, `Atollo.exe` désigne votre exe.
 
 **macOS** (12 ou ultérieur). L'application n'a qu'une signature ad hoc, sans notarisation d'Apple :
 1. Décompressez le zip et déplacez `Atollo.app` avec le Finder dans le dossier du kit (par exemple `/Volumes/KIT/Atollo/`).
@@ -23,7 +23,7 @@ Depuis la [page des versions publiées](https://github.com/nabre/atollo/releases
 
 Sans l'étape 2, macOS lance l'application depuis une copie temporaire (App Translocation) et Atollo s'arrête en affichant la même commande, au lieu de créer le kit dans un dossier qui disparaît.
 
-**Linux** (x64 et ARM64, glibc 2.35 ou ultérieure : Ubuntu 22.04, Debian 12 et plus récentes). Copiez `Atollo-linux-<arch>.AppImage` dans le dossier du kit, `chmod +x Atollo-linux-<arch>.AppImage` et lancez-la : le kit est le dossier de l'AppImage. Sans FUSE (conteneurs, certaines distributions minimales) : `./Atollo-linux-<arch>.AppImage --appimage-extract-and-run`, ou bien `Atollo-linux-<arch>.tar.gz` avec WebKitGTK 4.1 installé (sur Ubuntu et Debian `sudo apt install libwebkit2gtk-4.1-0`) : extrayez `Atollo` dans le dossier du kit et lancez `./Atollo`. L'AppImage se met à jour seule ; le `tar.gz` signale qu'une nouvelle version est à télécharger.
+**Linux** (x64 et ARM64, glibc 2.35 ou ultérieure : Ubuntu 22.04, Debian 12 et plus récentes). Copiez `Atollo-<version>-linux-<arch>.AppImage` dans le dossier du kit, `chmod +x Atollo-<version>-linux-<arch>.AppImage` et lancez-la : le kit est le dossier de l'AppImage. Sans FUSE (conteneurs, certaines distributions minimales) : `./Atollo-<version>-linux-<arch>.AppImage --appimage-extract-and-run`, ou bien `Atollo-<version>-linux-<arch>.tar.gz` avec WebKitGTK 4.1 installé (sur Ubuntu et Debian `sudo apt install libwebkit2gtk-4.1-0`) : extrayez `Atollo` dans le dossier du kit et lancez `./Atollo`. L'AppImage se met à jour seule ; le `tar.gz` signale qu'une nouvelle version est à télécharger.
 
 ## Pages
 

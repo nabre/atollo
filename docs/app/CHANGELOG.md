@@ -1,5 +1,17 @@
 # Novità
 
+## Nuovo progetto dentro Progetti (19/10/2026)
+
+- **Il wizard è una scheda di Progetti** (D-83): «Nuovo progetto» non è più una voce della barra delle attività, si apre nell'editor accanto ai progetti e tiene scelte e avanzamento quando passi a un'altra scheda.
+- **Un albero per i modi di creare un progetto**: nella barra laterale, il riquadro «Nuovo progetto» elenca «Progetto vuoto», «Da un indirizzo Git» e «Da framework o CMS» con le sue basi (Laravel, Vite, Electron…); ogni voce apre la sua procedura, una base apre il wizard già su quella base.
+- **Inizia** e la barra del titolo di Progetti portano alle stesse procedure.
+
+## La versione nel nome del file (19/10/2026)
+
+- **I file dei rilasci dicono la versione** (D-129): `Atollo-0.2.0-win32-x64.exe`, `Atollo-0.2.0-darwin-arm64.app.zip`, `Atollo-0.2.0-linux-x64.AppImage` e così per gli altri sistemi; anche Windows usa il target intero (`win32-x64`, prima `Atollo-x64.exe`).
+- **Il nome segue gli aggiornamenti**: quando l'app si aggiorna da sola, l'exe e l'AppImage prendono il nome della versione nuova; la copia vecchia si cancella all'avvio dopo. Un file rinominato a mano tiene il suo nome.
+- **Sito, README, note del rilascio e prove della CI** usano i nomi nuovi; l'aiuto della riga di comando mostra il nome vero del file anche su Windows.
+
 ## Il simbolo è un atollo (19/10/2026)
 
 - **Icona dell'app, favicon e simbolo** mostrano un atollo visto dall'alto al posto della «A»: barriera ad anello, tre isolotti (smeraldo, smeraldo che passa ad ambra e arancio, un isolotto arancio), laguna turchese e due onde stilizzate. Restano il fondo verde foresta, i colori e la scritta «ATOLLO».

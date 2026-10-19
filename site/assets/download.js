@@ -1,7 +1,7 @@
 // The download button points at the visitor's system, and the file links at
 // the latest release's assets (names as in .github/workflows/app.yml, «Release
-// assets»). Without JavaScript, or before the first release, every link opens
-// the releases page.
+// assets»: Atollo-<version>-<data-asset>). Without JavaScript, or before the
+// first release, every link opens the releases page.
 (function () {
   "use strict";
   const repo = "nabre/atollo";
@@ -14,14 +14,14 @@
     "linux-x64": "Linux x64",
     "linux-arm64": "Linux ARM64",
   };
-  // The file the main button downloads for each target.
+  // The file the main button downloads for each target, after the version.
   const main = {
-    "win32-x64": "Atollo-x64.exe",
-    "win32-arm64": "Atollo-arm64.exe",
-    "darwin-arm64": "Atollo-darwin-arm64.app.zip",
-    "darwin-x64": "Atollo-darwin-x64.app.zip",
-    "linux-x64": "Atollo-linux-x64.AppImage",
-    "linux-arm64": "Atollo-linux-arm64.AppImage",
+    "win32-x64": "win32-x64.exe",
+    "win32-arm64": "win32-arm64.exe",
+    "darwin-arm64": "darwin-arm64.app.zip",
+    "darwin-x64": "darwin-x64.app.zip",
+    "linux-x64": "linux-x64.AppImage",
+    "linux-arm64": "linux-arm64.AppImage",
   };
 
   async function detect() {
@@ -80,16 +80,23 @@
       return;
     }
 
+    const version = String(rel.tag_name || "").replace(/^app-v/, "");
     const assets = new Map((rel.assets || []).map((a) => [a.name, a.browser_download_url]));
+    const file = (rest) => "Atollo-" + version + "-" + rest;
     document.querySelectorAll("[data-asset]").forEach((a) => {
-      const url = assets.get(a.dataset.asset);
-      if (url) a.href = url;
-      else a.classList.add("missing");
+      const name = file(a.dataset.asset);
+      const url = assets.get(name);
+      if (!url) {
+        a.classList.add("missing");
+        return;
+      }
+      a.href = url;
+      // A full name shown (not ".AppImage") follows the release's version.
+      if (a.textContent.startsWith("Atollo-")) a.textContent = name;
     });
-    if (target && assets.has(main[target])) button.href = assets.get(main[target]);
+    if (target && assets.has(file(main[target]))) button.href = assets.get(file(main[target]));
     else button.href = rel.html_url || latest;
 
-    const version = String(rel.tag_name || "").replace(/^app-v/, "");
     if (version) {
       const link = document.createElement("a");
       link.href = rel.html_url || latest;
