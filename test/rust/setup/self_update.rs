@@ -21,45 +21,97 @@ fn versions_and_choice() {
     assert_eq!(parse_version("1.10.0"), Some((1, 10, 0)));
     assert_eq!(parse_version("app-v1.2"), None);
     assert_eq!(parse_version("v1.2.3.4"), None);
-    let mut pre = release("app-v9.0.0", "Atollo-x64.exe");
+    let mut pre = release("app-v9.0.0", "Atollo-9.0.0-win32-x64.exe");
     pre.prerelease = true;
     let list = vec![
-        release("app-v1.0.1", "Atollo-x64.exe"),
-        release("app-v1.2.0", "Atollo-x64.exe"),
-        release("app-v1.3.0", "Atollo-arm64.exe"),
-        release("node-v1", "Atollo-x64.exe"),
+        release("app-v1.0.1", "Atollo-1.0.1-win32-x64.exe"),
+        release("app-v1.2.0", "Atollo-1.2.0-win32-x64.exe"),
+        release("app-v1.3.0", "Atollo-1.3.0-win32-arm64.exe"),
+        // Another version's name: not this release's asset.
+        release("app-v1.4.0", "Atollo-1.3.0-win32-x64.exe"),
+        release("node-v1", "Atollo-1.0.0-win32-x64.exe"),
         pre,
     ];
+    let x64 = |v: &str| format!("Atollo-{v}-win32-x64.exe");
+    let arm64 = |v: &str| format!("Atollo-{v}-win32-arm64.exe");
     assert_eq!(
-        newest(&list, "1.0.0", "Atollo-x64.exe").map(|r| r.tag_name.as_str()),
+        newest(&list, "1.0.0", x64).map(|r| r.tag_name.as_str()),
         Some("app-v1.2.0")
     );
-    assert!(newest(&list, "1.2.0", "Atollo-x64.exe").is_none());
+    assert!(newest(&list, "1.2.0", x64).is_none());
     assert_eq!(
-        newest(&list, "1.0.0", "Atollo-arm64.exe").map(|r| r.tag_name.as_str()),
+        newest(&list, "1.0.0", arm64).map(|r| r.tag_name.as_str()),
         Some("app-v1.3.0")
     );
 }
 
-/// The release asset of each of the six targets: no `.exe` off Windows.
+/// The release asset of each of the six targets, with the version: no
+/// `.exe` off Windows.
 #[test]
 fn asset_names_per_target() {
     let names: Vec<String> = Target::ALL
         .iter()
-        .map(|t| asset_name(&Kit::at_target(PathBuf::from("kit"), *t)))
+        .map(|t| asset_name(&Kit::at_target(PathBuf::from("kit"), *t), "1.2.3"))
         .collect();
     for (target, name) in Target::ALL.iter().zip(&names) {
         let expected = match target.as_str() {
-            "win32-x64" => "Atollo-x64.exe",
-            "win32-arm64" => "Atollo-arm64.exe",
-            "darwin-arm64" => "Atollo-darwin-arm64.app.zip",
-            "darwin-x64" => "Atollo-darwin-x64.app.zip",
-            "linux-x64" => "Atollo-linux-x64.AppImage",
-            _ => "Atollo-linux-arm64.AppImage",
+            "win32-x64" => "Atollo-1.2.3-win32-x64.exe",
+            "win32-arm64" => "Atollo-1.2.3-win32-arm64.exe",
+            "darwin-arm64" => "Atollo-1.2.3-darwin-arm64.app.zip",
+            "darwin-x64" => "Atollo-1.2.3-darwin-x64.app.zip",
+            "linux-x64" => "Atollo-1.2.3-linux-x64.AppImage",
+            _ => "Atollo-1.2.3-linux-arm64.AppImage",
         };
         assert_eq!(name, expected);
         assert_eq!(name.ends_with(".exe"), target.is_windows());
+        assert!(is_release_name(name), "{name}");
     }
+}
+
+/// Release names and the version-less form of the `old` copy.
+#[test]
+fn release_names() {
+    for name in [
+        "Atollo-0.2.0-win32-x64.exe",
+        "Atollo-10.0.1-linux-arm64.AppImage",
+    ] {
+        assert!(is_release_name(name), "{name}");
+    }
+    for name in [
+        "Atollo.exe",
+        "Atollo",
+        "Atollo.AppImage",
+        "Atollo-win32-x64.exe",
+        "Atollo-0.2-win32-x64.exe",
+        "Atollo-app-v0.2.0-win32-x64.exe",
+        "Atollo-0.2.0-",
+        "Other-0.2.0-win32-x64.exe",
+    ] {
+        assert!(!is_release_name(name), "{name}");
+    }
+    assert_eq!(
+        unversioned("Atollo-0.2.0-linux-x64.AppImage"),
+        "Atollo-linux-x64.AppImage"
+    );
+    assert_eq!(unversioned("Atollo.AppImage"), "Atollo.AppImage");
+}
+
+/// A release name follows the new version at the swap; any other name,
+/// or a name already taken, stays.
+#[test]
+fn destination_follows_the_version() {
+    let tmp = TempDir::new("self-update-dest");
+    let exe = tmp.0.join("Atollo-0.2.0-win32-x64.exe");
+    assert_eq!(
+        destination(&exe, "0.3.0"),
+        tmp.0.join("Atollo-0.3.0-win32-x64.exe")
+    );
+    assert_eq!(
+        destination(&tmp.0.join("Atollo.exe"), "0.3.0"),
+        tmp.0.join("Atollo.exe")
+    );
+    fs::write(tmp.0.join("Atollo-0.3.0-win32-x64.exe"), b"someone's").unwrap();
+    assert_eq!(destination(&exe, "0.3.0"), exe);
 }
 
 /// The swap plan of the three systems, from any of them.
@@ -120,6 +172,14 @@ fn swap_plan_per_system() {
             old: root.join("Atollo.AppImage.old"),
         })
     );
+    // A release name: the old copy's name has no version.
+    let versioned = root.join("Atollo-0.2.0-linux-x64.AppImage");
+    let plan = swap_plan(Os::Linux, &mounted, Some(&versioned), &update).unwrap();
+    assert_eq!(
+        plan.staged,
+        root.join("Atollo-0.2.0-linux-x64.AppImage.new")
+    );
+    assert_eq!(plan.old, root.join("Atollo-linux-x64.AppImage.old"));
     // The tar.gz binary, or a relative $APPIMAGE: nothing to swap.
     assert_eq!(
         swap_plan(Os::Linux, &root.join("Atollo"), None, &update),
@@ -214,6 +274,64 @@ fn swap_and_cleanup_windows() {
     assert!(apply_plan(&kit, &plan).is_err());
     assert_eq!(fs::read(&exe).unwrap(), b"new");
     assert!(!staged_exe(&kit).exists());
+}
+
+/// Windows with a release name: the new exe takes the new version's name,
+/// and the next start (from it) removes `Atollo.old.exe`.
+#[test]
+fn swap_renames_a_release_name_windows() {
+    let tmp = TempDir::new("self-update-versioned");
+    let kit = Kit::at_target(tmp.0.clone(), Target::new(Os::Win32, Arch::X64));
+    let exe = tmp.0.join("Atollo-0.2.0-win32-x64.exe");
+    fs::write(&exe, b"old").unwrap();
+    let plan = swap_plan(Os::Win32, &exe, None, &update_dir(&kit)).unwrap();
+    fs::create_dir_all(update_dir(&kit)).unwrap();
+    fs::write(staged_exe(&kit), b"new").unwrap();
+    let hash = verify::sha256_hex(&staged_exe(&kit)).unwrap();
+    write_info(&kit, "999.0.0", hash, None);
+    assert!(apply_plan(&kit, &plan).unwrap());
+    let renamed = tmp.0.join("Atollo-999.0.0-win32-x64.exe");
+    assert_eq!(fs::read(&renamed).unwrap(), b"new");
+    assert!(!exe.exists());
+    assert_eq!(fs::read(tmp.0.join("Atollo.old.exe")).unwrap(), b"old");
+    let next = swap_plan(Os::Win32, &renamed, None, &update_dir(&kit)).unwrap();
+    remove_old_of(&next);
+    assert!(!tmp.0.join("Atollo.old.exe").exists() && renamed.is_file());
+}
+
+/// Linux with a release name: the same, the new AppImage with mode 755.
+#[test]
+fn swap_renames_a_release_name_linux() {
+    let tmp = TempDir::new("self-update-versioned-linux");
+    let kit = Kit::at_target(tmp.0.clone(), Target::new(Os::Linux, Arch::X64));
+    let image = tmp.0.join("Atollo-0.2.0-linux-x64.AppImage");
+    fs::write(&image, b"old").unwrap();
+    let mounted = PathBuf::from("/tmp/.mount_Atollo/usr/bin/Atollo");
+    let plan = swap_plan(Os::Linux, &mounted, Some(&image), &update_dir(&kit)).unwrap();
+    fs::create_dir_all(update_dir(&kit)).unwrap();
+    let download = update_dir(&kit).join("Atollo-999.0.0-linux-x64.AppImage");
+    fs::write(&download, b"new").unwrap();
+    let digest = stage(&plan, &download, &update_dir(&kit).join("unpacked")).unwrap();
+    write_info(
+        &kit,
+        "999.0.0",
+        digest,
+        Some("Atollo-0.2.0-linux-x64.AppImage.new"),
+    );
+    assert!(apply_plan(&kit, &plan).unwrap());
+    let renamed = tmp.0.join("Atollo-999.0.0-linux-x64.AppImage");
+    assert_eq!(fs::read(&renamed).unwrap(), b"new");
+    assert!(!image.exists());
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = fs::metadata(&renamed).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o755, "{mode:o}");
+    }
+    let next = swap_plan(Os::Linux, &mounted, Some(&renamed), &update_dir(&kit)).unwrap();
+    assert_eq!(next.old, plan.old);
+    remove_old_of(&next);
+    assert!(!plan.old.exists() && renamed.is_file());
 }
 
 /// The same flow through `apply_staged` on the system running the tests,

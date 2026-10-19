@@ -80,6 +80,16 @@ fn other_kit_roots_on_every_system() {
         kit_root_of(Path::new(r"E:\kit\Atollo.exe"), "ATOLLO.EXE", yes),
         Some(PathBuf::from(r"E:\kit"))
     );
+    // A release name, as downloaded and kept by the updates.
+    #[cfg(windows)]
+    assert_eq!(
+        kit_root_of(
+            Path::new(r"E:\kit\Atollo-0.2.0-win32-x64.exe"),
+            "Atollo-0.2.0-win32-x64.exe",
+            yes
+        ),
+        Some(PathBuf::from(r"E:\kit"))
+    );
     assert_eq!(
         kit_root_of(Path::new("/usr/bin/atollo"), "atollo", yes),
         None

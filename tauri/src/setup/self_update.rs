@@ -19,7 +19,11 @@
 //! - Linux: the AppImage as `Atollo.AppImage.new` (mode 755) next to the
 //!   running one; `Atollo.AppImage` → `Atollo.AppImage.old`.
 //!
-//! The names follow the running copy, so a renamed bundle or AppImage
+//! The release names carry the version (`Atollo-0.3.0-win32-x64.exe`,
+//! [`asset_name`]). A running copy with such a name takes the new
+//! version's name at the swap (`Atollo-0.2.0-…` → `Atollo-0.3.0-…`); its
+//! `old` name has no version (`Atollo-linux-x64.AppImage.old`), so the
+//! next start finds it. Any other name stays: a renamed bundle or AppImage
 //! keeps its name. A plain binary on macOS or Linux (`cargo run`, the
 //! tar.gz) does not replace itself: the check says so.
 //!
@@ -122,11 +126,51 @@ pub fn parse_version(text: &str) -> Option<(u64, u64, u64)> {
     parts.next().is_none().then_some(out)
 }
 
-pub fn asset_name(kit: &Kit) -> String {
-    match kit.os() {
-        Os::Win32 => format!("Atollo-{}.exe", kit.arch().as_str()),
-        Os::Darwin => format!("Atollo-{}.app.zip", kit.target().as_str()),
-        Os::Linux => format!("Atollo-{}.AppImage", kit.target().as_str()),
+/// The release asset of this kit's system for `version`:
+/// `Atollo-<version>-<target>.exe` (Windows), `.app.zip` (macOS),
+/// `.AppImage` (Linux). The `.tar.gz` of Linux, named the same way, is
+/// downloaded by hand.
+pub fn asset_name(kit: &Kit, version: &str) -> String {
+    let ext = match kit.os() {
+        Os::Win32 => "exe",
+        Os::Darwin => "app.zip",
+        Os::Linux => "AppImage",
+    };
+    format!("Atollo-{version}-{}.{ext}", kit.target().as_str())
+}
+
+/// What follows the version in a release name (`win32-x64.exe` of
+/// `Atollo-0.3.0-win32-x64.exe`); `None` for any other name.
+fn release_rest(name: &str) -> Option<&str> {
+    let (version, rest) = name.strip_prefix("Atollo-")?.split_once('-')?;
+    let numbers =
+        version.starts_with(|c: char| c.is_ascii_digit()) && parse_version(version).is_some();
+    (numbers && !rest.is_empty()).then_some(rest)
+}
+
+/// A release name, as the app keeps it on disk (`Atollo-0.3.0-win32-x64.exe`).
+pub fn is_release_name(name: &str) -> bool {
+    release_rest(name).is_some()
+}
+
+/// `name` without its version (`Atollo-linux-x64.AppImage`); any other
+/// name as it is.
+fn unversioned(name: &str) -> String {
+    release_rest(name).map_or_else(|| name.to_owned(), |rest| format!("Atollo-{rest}"))
+}
+
+/// Where the new copy goes at the swap: the running copy's place, under
+/// `version`'s name when the running copy has a release name, unless a
+/// file of that name is already there.
+fn destination(current: &Path, version: &str) -> PathBuf {
+    let renamed = current
+        .file_name()
+        .and_then(|n| n.to_str())
+        .and_then(release_rest)
+        .map(|rest| current.with_file_name(format!("Atollo-{version}-{rest}")));
+    match renamed {
+        Some(p) if p != current && fs::symlink_metadata(&p).is_err() => p,
+        _ => current.to_path_buf(),
     }
 }
 
@@ -165,7 +209,7 @@ pub fn swap_plan(os: Os, exe: &Path, image: Option<&Path>, update_dir: &Path) ->
             form,
             current: current.to_path_buf(),
             staged: current.with_file_name(format!("{name}.new")),
-            old: current.with_file_name(format!("{name}.old")),
+            old: current.with_file_name(format!("{}.old", unversioned(name))),
         })
     };
     match os {
@@ -250,14 +294,22 @@ fn read_staged(kit: &Kit) -> Option<(Staged, PathBuf)> {
     there.then_some((info, path))
 }
 
-/// The newest release newer than `current`, with this kit's asset.
-fn newest<'a>(releases: &'a [Release], current: &str, asset: &str) -> Option<&'a Release> {
+/// The newest release newer than `current`, with this kit's asset
+/// (`asset` names it for a release's version).
+fn newest<'a>(
+    releases: &'a [Release],
+    current: &str,
+    asset: impl Fn(&str) -> String,
+) -> Option<&'a Release> {
     let now = parse_version(current)?;
     releases
         .iter()
         .filter(|r| !r.draft && !r.prerelease && r.tag_name.starts_with(TAG_PREFIX))
         .filter_map(|r| parse_version(&r.tag_name).map(|v| (v, r)))
-        .filter(|(v, r)| *v > now && r.assets.iter().any(|a| a.name == asset))
+        .filter(|(v, r)| {
+            let name = asset(r.tag_name.trim_start_matches(TAG_PREFIX));
+            *v > now && r.assets.iter().any(|a| a.name == name)
+        })
         .max_by_key(|(v, _)| *v)
         .map(|(_, r)| r)
 }
@@ -470,11 +522,11 @@ impl Updater {
             "https://api.github.com/repos/{REPO}/releases?per_page=30"
         ))?;
         let current = env!("CARGO_PKG_VERSION");
-        let asset_name = asset_name(&self.kit);
-        let Some(release) = newest(&releases, current, &asset_name) else {
+        let Some(release) = newest(&releases, current, |v| asset_name(&self.kit, v)) else {
             return Ok(Found::UpToDate(current.to_owned()));
         };
         let version = release.tag_name.trim_start_matches(TAG_PREFIX).to_owned();
+        let asset_name = asset_name(&self.kit, &version);
         if read_staged(&self.kit).is_some_and(|(s, _)| s.version == version) {
             return Ok(Found::Staged(version));
         }
@@ -562,24 +614,25 @@ fn apply_plan(kit: &Kit, plan: &SwapPlan) -> Result<bool> {
         bail!("staged update changed on disk: discarded");
     }
     let (current, old) = (&plan.current, &plan.old);
+    let dest = destination(current, &info.version);
     let _ = remove_any(old);
     fs::rename(current, old)
         .with_context(|| format!("{} → {}", current.display(), old.display()))?;
-    let moved = fs::rename(&staged, current).or_else(|e| match plan.form {
+    let moved = fs::rename(&staged, &dest).or_else(|e| match plan.form {
         Form::Bundle => Err(e),
-        Form::Exe | Form::AppImage => fs::copy(&staged, current).map(|_| ()),
+        Form::Exe | Form::AppImage => fs::copy(&staged, &dest).map(|_| ()),
     });
     if let Err(e) = moved {
         // Never leave the kit without its app.
-        let _ = remove_any(current);
+        let _ = remove_any(&dest);
         let _ = fs::rename(old, current);
-        return Err(e).with_context(|| current.display().to_string());
+        return Err(e).with_context(|| dest.display().to_string());
     }
     if plan.form == Form::AppImage {
-        set_mode_755(current)?;
+        set_mode_755(&dest)?;
     }
     discard(kit);
-    crate::log::info(&format!("updated to {}", info.version));
+    crate::log::info(&format!("updated to {} ({})", info.version, dest.display()));
     Ok(true)
 }
 
