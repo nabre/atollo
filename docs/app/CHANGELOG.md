@@ -1,5 +1,13 @@
 # Novità
 
+## Testi al passo con il rilascio 0.2.0 (19/10/2026)
+
+- **«C'è ancora da fare»** (README e sito, nelle quattro lingue): la 0.2.0 alpha è su GitHub per i sei sistemi e va provata su macchine pulite; su Windows esce senza firma, SignPath è ancora da attivare.
+- **Sistemi**: la hero e la statistica del sito nominano Windows, macOS e Linux, ognuno su x64 e ARM64; «Limiti noti» non parla più del «prossimo tag».
+- **GUIDA.md** e **CATALOG.md**: su macOS e Linux c'è anche Apache, build del kit con `php-fpm` (D-116), fissata su `2.4.69-1`; per Linux anche il `tar.gz`.
+- **Sito**: il titolo è «Sviluppo, tutto in una cartella, su qualsiasi computer.», il sottotitolo nomina Windows, macOS e Linux; le statistiche fanno parte della hero e restano sullo schermo con il titolo anche su finestre basse; tolta la sezione «Perché «Atollo»».
+- **Scarica**: il sito prende l'ultimo rilascio `app-v*`, mai quelli di Apache o PHP dello stesso repository; senza rilascio dell'app il pulsante porta all'elenco dei rilasci.
+
 ## Il sito al passo con l'app (19/10/2026)
 
 - **«Dentro l'app»**: le tre schermate stanno in una finestra vestita come il sistema di chi visita, la stessa della cartella nella hero (Windows 11, macOS, Linux con GNOME); senza JavaScript restano i puntini del brand. Barra e controlli sono un componente solo del sito, `.win`.

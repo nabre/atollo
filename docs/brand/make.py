@@ -414,7 +414,7 @@ def brand_board_svg():
   <rect x="16" y="16" width="590" height="348" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
   <text x="42" y="48" font-family="{font}" font-size="12" font-weight="700" letter-spacing="2" fill="#64748B">BRAND OVERVIEW</text>
   <g transform="translate(42 70) scale(0.76)">{wm_forest}</g>
-  <text x="42" y="198" font-family="{font}" font-size="27" font-weight="600" fill="#0F172A">Your dev &amp; AI workspace, all in one folder.</text>
+  <text x="42" y="198" font-family="{font}" font-size="27" font-weight="600" fill="#0F172A">Dev &amp; AI, all in one folder.</text>
   <text x="42" y="236" font-family="{font}" font-size="16" fill="#475569">Atollo is a Universal Portable Dev &amp; AI Workspace that unifies</text>
   <text x="42" y="258" font-family="{font}" font-size="16" fill="#475569">editor, toolchains, databases, and AI agents into one portable folder.</text>
   <g font-family="{font}" font-size="14" font-weight="600" fill="#1E293B">
