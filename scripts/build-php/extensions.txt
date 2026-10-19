@@ -2,5 +2,6 @@
 # comma separated: static-php-cli's "bulk" set (dl.static-php.dev,
 # bulk/README.txt) with swoole-hook-sqlite and swoole-hook-pgsql left out,
 # since they take the place of pdo_sqlite and pdo_pgsql, which come in.
-# Swoole stays, with its MySQL hook.
+# Swoole stays, with its MySQL hook, on Linux: build.sh leaves it out on
+# macOS, where Swoole 6.2.3 does not build.
 apcu,bcmath,bz2,calendar,ctype,curl,dba,dom,event,exif,fileinfo,filter,ftp,gd,gmp,iconv,imagick,imap,intl,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,opentelemetry,pcntl,pdo,pdo_mysql,pdo_pgsql,pdo_sqlite,pgsql,phar,posix,protobuf,readline,redis,session,shmop,simplexml,soap,sockets,sodium,sqlite3,swoole,swoole-hook-mysql,sysvmsg,sysvsem,sysvshm,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib

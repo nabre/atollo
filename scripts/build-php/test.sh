@@ -16,7 +16,10 @@ cd /
 "$php" -v
 mods=$("$php" -n -m | tr 'A-Z' 'a-z')
 missing=""
-for m in pdo_sqlite pdo_pgsql pdo_mysql sqlite3 mysqli intl sodium mbstring openssl curl zip gd swoole opcache; do
+want="pdo_sqlite pdo_pgsql pdo_mysql sqlite3 mysqli intl sodium mbstring openssl curl zip gd opcache"
+# Swoole on Linux only (build.sh: it does not build on macOS today).
+[ "$(uname -s)" = Linux ] && want="$want swoole"
+for m in $want; do
   name=$m
   [ "$m" = opcache ] && name="zend opcache"
   printf '%s\n' "$mods" | grep -qx "$name" || missing="$missing $m"

@@ -148,7 +148,7 @@ fn laravel_and_plain() {
     assert!(p.requires.contains(&"caddy".to_owned()));
     assert!(!p.requires.contains(&"apache".to_owned()));
 
-    // With rules of its own: Apache first on Windows, Caddy elsewhere.
+    // With rules of its own: Apache first, on every system since D-116.
     let own = project(
         "php-apache",
         &[
@@ -157,16 +157,10 @@ fn laravel_and_plain() {
         ],
     );
     let p = detect(&own.0, "it");
-    if cfg!(windows) {
-        assert_eq!(p.default.as_deref(), Some("apache"));
-        assert_eq!(p.actions[0].apache_dir.as_deref(), Some("public"));
-        assert_eq!(p.actions[1].caddy_dir.as_deref(), Some("public"));
-        assert!(p.requires.contains(&"apache".to_owned()));
-    } else {
-        assert_eq!(p.default.as_deref(), Some("caddy"));
-        assert!(!ids(&p).contains(&"apache"));
-        assert!(!p.requires.contains(&"apache".to_owned()));
-    }
+    assert_eq!(p.default.as_deref(), Some("apache"));
+    assert_eq!(p.actions[0].apache_dir.as_deref(), Some("public"));
+    assert_eq!(p.actions[1].caddy_dir.as_deref(), Some("public"));
+    assert!(p.requires.contains(&"apache".to_owned()));
 
     let wp = project(
         "php-wp",
