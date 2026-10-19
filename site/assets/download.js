@@ -64,7 +64,7 @@
   }
 
   // The hero's kit folder as it looks on the visitor's system: the window
-  // bar (site.css, html[data-os]), the app's file under its release name
+  // bars (site.css, html[data-os]: the kit's and the gallery's), the app's file under its release name
   // (the macOS bundle keeps its name), the folder on a stick.
   function kit(target, version) {
     const card = document.querySelector(".kit");
