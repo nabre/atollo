@@ -13,6 +13,8 @@ on:
       # The tool matrix (site/matrix.mjs) follows the app's catalog.
       - 'tauri/catalog/components.json'
       - 'tauri/i18n/catalog.json'
+      # The app's version, in the download names (site/build.mjs).
+      - 'tauri/Cargo.toml'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 
