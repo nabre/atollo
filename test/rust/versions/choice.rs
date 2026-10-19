@@ -119,8 +119,19 @@ fn choices_rewrite_the_environment() {
     // Locked by the project that uses it; free once it chooses another.
     assert!(remove(&kit, "node", "24.1").is_err());
     set_project_choice(&kit, "fresh", "node", None).unwrap();
+    // What was kept for the line goes with it, not what another line has.
+    let staged = crate::router::bootstrap::staged_dir(&kit, "node", Some("24.1"));
+    fs::create_dir_all(&staged).unwrap();
+    fs::write(staged.join("node.tar.xz"), b"node").unwrap();
+    let locks = crate::install::conda::root(&kit).join("locks");
+    fs::create_dir_all(&locks).unwrap();
+    fs::write(locks.join("node@24.1.txt"), b"").unwrap();
+    fs::write(locks.join("node@20.18.txt"), b"").unwrap();
     remove(&kit, "node", "24.1").unwrap();
     assert!(kit_choice(&kit).is_empty());
+    assert!(!kit.apps().join(".bootstrap").exists());
+    assert!(!locks.join("node@24.1.txt").exists());
+    assert!(locks.join("node@20.18.txt").is_file());
 
     assert!(check("claude", Some("1.0")).is_err());
     assert!(check("node", Some(r"..\x")).is_err());

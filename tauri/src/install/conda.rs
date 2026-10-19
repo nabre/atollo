@@ -802,6 +802,31 @@ pub fn sweep(kit: &Kit) -> Swept {
     swept
 }
 
+/// The lists of component `id` on this target removed, those of every line
+/// or of `line` only: the component (or the line) was removed, so nothing is
+/// left to create again. The archives they named go with the next `sweep`,
+/// which keeps those another list still names.
+pub fn forget(kit: &Kit, id: &str, line: Option<&str>) {
+    let stem = line.map(|l| lock_name(id, l));
+    let prefix = format!("{id}@");
+    for entry in fs::read_dir(locks_dir(kit)).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let Some(own) = name
+            .strip_suffix(".txt")
+            .or_else(|| name.strip_suffix(".json"))
+        else {
+            continue;
+        };
+        let mine = match &stem {
+            Some(stem) => own == stem,
+            None => own.starts_with(&prefix),
+        };
+        if mine {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
+}
+
 /// Everything kept for this target removed («Libera»): the next move
 /// downloads again. Returns the bytes freed.
 pub fn free(kit: &Kit) -> Result<u64> {
