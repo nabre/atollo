@@ -6,6 +6,7 @@
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadCatalog, matrixHtml } from "./matrix.mjs";
 
 const site = dirname(fileURLToPath(import.meta.url));
 const repo = dirname(site);
@@ -26,6 +27,8 @@ for (const l of langs) {
 // The strings may hold <code>; & and " are escaped so they fit in attributes too.
 const escape = (s) => s.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
 
+const catalog = loadCatalog(repo);
+
 rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, "assets"), { recursive: true });
 
@@ -38,7 +41,7 @@ for (const lang of langs) {
   const langLinks = langs
     .map((l) => (l === lang ? `<span aria-current="page" lang="${l}">${l.toUpperCase()}</span>` : `<a href="${root}${pathOf(l)}" hreflang="${l}" lang="${l}" title="${strings[l].langName}">${l.toUpperCase()}</a>`))
     .join("");
-  const values = { ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])), lang, root, base, path: pathOf(lang), langPath: pathOf(lang), alternates, langLinks };
+  const values = { ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])), lang, root, base, path: pathOf(lang), langPath: pathOf(lang), alternates, langLinks, toolsMatrix: matrixHtml(catalog, lang, strings[lang]) };
   const html = template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     if (!(key in values)) throw new Error(`template.html: no value for {{${key}}}`);
     return values[key];
