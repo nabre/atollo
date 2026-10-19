@@ -108,7 +108,13 @@ fn files_added_for_a_component_go_with_it() {
     let host = tmp.0.join("host");
     let kit = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&host));
     kit.prepare().unwrap();
-    let linux = kit.for_target(crate::kit::Target::LINUX_X64);
+    // Another system than the kit's own, which is the host's: on Linux
+    // runners linux-x64 is the kit itself.
+    let other = [crate::kit::Target::LINUX_X64, crate::kit::Target::WIN32_X64]
+        .into_iter()
+        .find(|t| *t != kit.target())
+        .unwrap();
+    let elsewhere = kit.for_target(other);
     let dir = dir(&kit);
     fs::create_dir_all(&dir).unwrap();
     for (name, bytes) in [
@@ -124,13 +130,16 @@ fn files_added_for_a_component_go_with_it() {
     want(&kit, "zig", &sha256(b"both"));
     want(&kit, "zig", &sha256(b"elsewhere"));
     want(&kit, "uv", &sha256(b"both"));
-    want(&linux, "zig", &sha256(b"elsewhere"));
+    want(&elsewhere, "zig", &sha256(b"elsewhere"));
     assert_eq!(read_wanted(&dir).len(), 5, "noted once");
 
     forget(&kit, "zig");
     assert!(!dir.join("zig.zip").exists());
     assert!(dir.join("both.zip").is_file(), "uv waits for it");
-    assert!(dir.join("elsewhere.zip").is_file(), "Linux waits for it");
+    assert!(
+        dir.join("elsewhere.zip").is_file(),
+        "the other system waits for it"
+    );
     assert!(dir.join("other.zip").is_file(), "never noted");
     assert_eq!(read_wanted(&dir).len(), 2);
     assert!(read_wanted(&dir).iter().all(|w| !w.is_for(&kit, "zig")));
