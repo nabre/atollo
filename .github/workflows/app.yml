@@ -750,10 +750,17 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          # The stage in the release's title and notes ("alpha", "beta"; empty
+          # for a stable one). Never a GitHub pre-release: the self-updater
+          # skips those, and the version stays X.Y.Z.
+          RELEASE_STAGE: alpha
         run: |
           $tag = $env:GITHUB_REF_NAME
           $version = $tag.Substring('app-v'.Length)
-          $notes = @'
+          $stage = "$env:RELEASE_STAGE".Trim()
+          $title = if ($stage) { "Atollo $version $stage" } else { "Atollo $version" }
+          $intro = if ($stage) { "**This is an $stage version**: still being tried on every system, it may have rough edges. Problems and ideas: https://github.com/nabre/atollo/issues`n`n" } else { '' }
+          $notes = $intro + @'
           Atollo {0}. Put the app in an empty folder (a USB stick, an external drive, a folder of yours): `projects` and `data` are created next to it. A kit that already has the app updates itself.
 
           **Windows** (x64, ARM64): `Atollo-{0}-win32-x64.exe` or `Atollo-{0}-win32-arm64.exe`: double-click it, or put it in place of your old Atollo exe. An update gives the file the new version's name.
@@ -766,5 +773,6 @@ jobs:
           '@ -f $version
           $file = Join-Path $env:RUNNER_TEMP 'notes.md'
           Set-Content $file $notes -Encoding utf8
-          gh release create $tag (Get-ChildItem dist).FullName --verify-tag --title "Atollo $version" --notes-file $file
+          # The app's release is the repository's latest, never httpd's or PHP's.
+          gh release create $tag (Get-ChildItem dist).FullName --verify-tag --title $title --notes-file $file --latest
           if ($LASTEXITCODE -ne 0) { throw "gh release create failed ($LASTEXITCODE)" }

@@ -99,5 +99,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           tag=$GITHUB_REF_NAME
-          gh release create "$tag" artifacts/* --verify-tag --title "Apache httpd ${tag#httpd-v}" \
+          # Never the repository's latest release: that is the app's (app.yml).
+          gh release create "$tag" artifacts/* --verify-tag --latest=false --title "Apache httpd ${tag#httpd-v}" \
             --notes "Relocatable Apache httpd for the kit on macOS (arm64, x64) and Linux (x64, arm64), built by scripts/build-httpd from signed upstream sources (see BUILDINFO.txt in each tarball)."
