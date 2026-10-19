@@ -6,10 +6,21 @@ import { runSetPort, type Ports, type ProjectAction, type ProjectInfo, type RunI
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { CheckboxLabel, Dot, IconButton, Link, List, ListRow, Notice, TextField } from "../workbench";
-import { VscDebugStart, VscDebugStop, VscStarEmpty, VscStarFull, VscTrash } from "react-icons/vsc";
-import { projectActionDefault, urlOpen } from "../api";
+import { CheckboxLabel, Dot, IconButton, InlineConfirm, Link, List, ListRow, Notice, TextField } from "../workbench";
+import {
+  VscClose,
+  VscDebugStart,
+  VscDebugStop,
+  VscEdit,
+  VscRemove,
+  VscStarEmpty,
+  VscStarFull,
+  VscTrash,
+} from "react-icons/vsc";
+import { projectActionDefault, projectActionRemove, urlOpen } from "../api";
+import { ActionButton } from "../common";
 import { ActionBar, EditorSection, Properties } from "../workbench";
+import { ActionForm } from "./actionform";
 import { alive, stateText } from "./runs";
 import { KIND_ICON, kindText } from "./kind";
 
@@ -105,6 +116,7 @@ export function ActionDetail({
   onPorts,
   onForget,
   onChanged,
+  onSaved,
 }: {
   p: ProjectInfo;
   action: ProjectAction;
@@ -114,9 +126,21 @@ export function ActionDetail({
   onPorts: (p: Ports) => void;
   onForget: (key: string) => void;
   onChanged: () => void;
+  /** The action was saved or removed in panel.json: the project is read again. */
+  onSaved: (id: string) => void;
 }) {
   const { busy: working, error, run } = useAction(onChanged);
+  /** The id of the action whose form or removal question is open (the
+   * component stays when another action is chosen). */
+  const [editing, setEditing] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const removal = useAction(() => {
+    setRemoving(null);
+    onSaved(a.id);
+  });
   const key = `${p.id}|${a.id}`;
+  // A site is changed in «Sito web»: its folder and server are not a command.
+  const editable = a.id !== "site" && a.static === null && a.apache === null && !a.caddy;
   const r = runs[key];
   const isDefault = p.default === a.id;
   const rows: [string, React.ReactNode][] = [
@@ -190,10 +214,81 @@ export function ActionDetail({
               }}
             />
           )}
+          {editable && (
+            <IconButton
+              icon={VscEdit}
+              label={t("Modifica")}
+              title={a.custom ? undefined : t("Modifica: la tua versione va in panel.json")}
+              checked={editing === a.id}
+              onClick={() => {
+                setRemoving(null);
+                setEditing(editing === a.id ? null : a.id);
+              }}
+            />
+          )}
+          {a.custom && (
+            <IconButton
+              icon={VscRemove}
+              label={t("Togli")}
+              title={t("Togli da panel.json")}
+              busy={removal.busy === "remove"}
+              onClick={() => {
+                setEditing(null);
+                setRemoving(a.id);
+              }}
+            />
+          )}
         </ActionBar>
       }
     >
-      <Properties rows={rows} />
+      {removing === a.id && (
+        <InlineConfirm
+          row
+          question={t("Togliere {0} da panel.json?", a.label)}
+          textClassName="text-vsc-warning"
+          onCancel={() => {
+            setRemoving(null);
+          }}
+          actions={
+            <>
+              <ActionButton
+                icon={VscRemove}
+                label={t("Togli")}
+                primary
+                busy={removal.busy === "remove"}
+                onClick={() => {
+                  removal.run("remove", () => projectActionRemove(p.id, a.id));
+                }}
+              />
+              <ActionButton
+                icon={VscClose}
+                label={t("Annulla")}
+                onClick={() => {
+                  setRemoving(null);
+                }}
+              />
+            </>
+          }
+        >
+          {t("Se Atollo rileva un'azione con lo stesso id, torna quella rilevata.")}
+        </InlineConfirm>
+      )}
+      <ErrorLine error={removal.error} />
+      {editable && editing === a.id ? (
+        <ActionForm
+          p={p}
+          action={a}
+          onSaved={(id) => {
+            setEditing(null);
+            onSaved(id);
+          }}
+          onCancel={() => {
+            setEditing(null);
+          }}
+        />
+      ) : (
+        <Properties rows={rows} />
+      )}
       <ErrorLine error={error} />
       {r?.skippedAliases.map((url) => (
         <Notice key={url} tone="warning">
