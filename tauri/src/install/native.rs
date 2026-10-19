@@ -543,7 +543,8 @@ impl Installer for Pnpm {
 
 /// R from conda-forge (OpenBLAS), installed by micromamba in the work
 /// folder and moved into the kit; launchers `bin/R(.cmd)`, `bin/Rscript(.cmd)`
-/// put R's libraries on the PATH of R only. Unavailable on `win32-arm64`.
+/// put R's libraries on the PATH of R only. conda-forge has no `win-arm64`
+/// R: on Windows ARM64 the `win-64` one runs in emulation (`x64Only`).
 pub struct R;
 
 /// The description of the conda-forge package `pkg`: every file of every
@@ -598,7 +599,14 @@ pub(super) fn micromamba_release(ctx: &Ctx, version: &str) -> Result<Release> {
 
 /// The arguments of `micromamba create` for an environment at `prefix` with
 /// `specs` (`git=2.51.0`), from conda-forge only and without any `.condarc`.
-pub fn micromamba_create_args(prefix: &Path, specs: &[&str]) -> Vec<String> {
+/// `platform` is the conda platform of an environment that is not
+/// micromamba's own (`win-64` from the native micromamba of Windows ARM64,
+/// for a component in emulation); `None` for its own.
+pub fn micromamba_create_args(
+    prefix: &Path,
+    specs: &[&str],
+    platform: Option<&str>,
+) -> Vec<String> {
     let mut args: Vec<String> = vec![
         "create".to_owned(),
         "--no-rc".to_owned(),
@@ -610,6 +618,9 @@ pub fn micromamba_create_args(prefix: &Path, specs: &[&str]) -> Vec<String> {
         "conda-forge".to_owned(),
         "--override-channels".to_owned(),
     ];
+    if let Some(platform) = platform {
+        args.extend(["--platform".to_owned(), platform.to_owned()]);
+    }
     args.extend(specs.iter().map(|s| (*s).to_owned()));
     args
 }
@@ -689,7 +700,9 @@ pub(super) fn micromamba_create(
         let envs = mamba_envs(work);
         let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
         progress.note(&format!("micromamba: {}", specs.join(" ")));
-        let args = micromamba_create_args(prefix, specs);
+        let platform = target_of(ctx, component).conda_subdir();
+        let own = ctx.kit.target().conda_subdir();
+        let args = micromamba_create_args(prefix, specs, (platform != own).then_some(platform));
         let args: Vec<&str> = args.iter().map(String::as_str).collect();
         run(ctx, &mm, &args, &envs, progress)?;
         // The package cache is in the work folder; a `pkgs` left in the
@@ -770,8 +783,8 @@ pub(crate) fn plain_r_sed(text: &str) -> Option<String> {
 /// Packages compiled for one minor version of R do not load in another:
 /// one folder per line (versioned, D-81), `renv.lock` declares R's version.
 impl Installer for R {
-    fn latest(&self, ctx: &Ctx, _component: &Component) -> Result<Release> {
-        let subdir = ctx.kit.target().conda_subdir();
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let subdir = target_of(ctx, component).conda_subdir();
         let versions = conda_versions(&conda_info(ctx, "r-base")?, subdir);
         let version = versions
             .first()
@@ -783,8 +796,8 @@ impl Installer for R {
         true
     }
 
-    fn lines(&self, ctx: &Ctx, _component: &Component) -> Result<Vec<String>> {
-        let subdir = ctx.kit.target().conda_subdir();
+    fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
+        let subdir = target_of(ctx, component).conda_subdir();
         let mut lines: Vec<String> = Vec::new();
         for v in conda_versions(&conda_info(ctx, "r-base")?, subdir) {
             if let Some(line) = crate::versions::line_of(&v) {
@@ -796,8 +809,8 @@ impl Installer for R {
         Ok(lines)
     }
 
-    fn release_line(&self, ctx: &Ctx, _component: &Component, line: &str) -> Result<Release> {
-        let subdir = ctx.kit.target().conda_subdir();
+    fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
+        let subdir = target_of(ctx, component).conda_subdir();
         let versions = conda_versions(&conda_info(ctx, "r-base")?, subdir);
         let version = versions
             .iter()
@@ -866,9 +879,6 @@ impl Installer for R {
         target: &Path,
         progress: &mut dyn Progress,
     ) -> Result<()> {
-        if ctx.kit.target() == Target::WIN32_ARM64 {
-            bail!("conda-forge has no R for Windows ARM64");
-        }
         let spec = format!("r-base={}", release.version);
         micromamba_create(
             ctx,

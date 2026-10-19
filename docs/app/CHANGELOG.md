@@ -1,5 +1,9 @@
 # Novità
 
+## R su Windows ARM64 (19/10/2026)
+
+- **R** c'è anche sui PC Windows ARM64 (D-132): la stessa build `win-64` di conda-forge di Windows x64, con il compilatore per i pacchetti, in emulazione x64 come PHP, Apache e MySQL. conda-forge non ha R per `win-arm64` e l'R nativo ARM64 di CRAN è ancora sperimentale. Ora ogni componente del catalogo c'è su Windows ARM64.
+
 ## Apache su ogni sistema (19/10/2026)
 
 - **Apache** c'è su Windows, macOS e Linux, x64 e ARM64 (D-116): su macOS e Linux arriva dal primo rilascio della build del kit, `httpd-v2.4.69-1`, con gli SHA-256 dei quattro archivi fissati nel catalogo; PHP passa da `php-fpm`. Su Windows niente cambia: Apache Lounge con il modulo PHP, x64 in emulazione su ARM64.

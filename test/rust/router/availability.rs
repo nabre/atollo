@@ -16,13 +16,23 @@ fn windows_only() -> crate::setup::catalog::Component {
     .unwrap()
 }
 
+/// A `noArm64` component: none in the catalog is since R runs emulated on
+/// Windows ARM64 (`x64Only`).
+fn no_arm64() -> crate::setup::catalog::Component {
+    serde_json::from_value(serde_json::json!({
+        "id": "n", "name": "N", "group": "languages", "def": false, "mb": 1,
+        "desc": "n", "home": "https://n", "key": "n/n.exe", "noArm64": true
+    }))
+    .unwrap()
+}
+
 /// From a PC that is not Windows ARM64 the component without an ARM64
 /// build is "not available for win32-arm64", like any other system; the
 /// other reasons do not depend on the host.
 #[test]
 fn seen_from_another_pc_windows_arm64_is_named() {
     let catalog = Catalog::get();
-    let r = catalog.find("r").unwrap();
+    let r = &no_arm64();
     for host in Target::ALL.into_iter().filter(|h| *h != HOST) {
         assert_eq!(
             unavailable_reason(r, Target::WIN32_ARM64, host, false, "en").as_deref(),
@@ -31,7 +41,7 @@ fn seen_from_another_pc_windows_arm64_is_named() {
         );
         assert_eq!(
             unavailable_message(r, Target::WIN32_ARM64, host, false, "en").as_deref(),
-            Some("R is not available for win32-arm64."),
+            Some("N is not available for win32-arm64."),
             "{host}"
         );
         assert!(!on_arm64_pc(Target::WIN32_ARM64, host));
@@ -68,7 +78,7 @@ fn rosetta_reason() {
         Some("not available for darwin-arm64")
     );
     // Windows ARM64 without a build: the page's own "no ARM64" text.
-    let r = catalog.find("r").unwrap();
+    let r = &no_arm64();
     assert_eq!(
         unavailable_reason(r, Target::WIN32_ARM64, HOST, false, "en"),
         None
@@ -109,11 +119,11 @@ fn linux_arm64_messages_give_the_catalog_reason() {
 #[test]
 fn messages_without_a_catalog_reason() {
     let catalog = Catalog::get();
-    let r = catalog.find("r").unwrap();
+    let r = &no_arm64();
     let python = catalog.find("python").unwrap();
     assert_eq!(
         unavailable_message(r, Target::WIN32_ARM64, HOST, false, "en").as_deref(),
-        Some("R is not available on ARM64 PCs.")
+        Some("N is not available on ARM64 PCs.")
     );
     assert_eq!(
         unavailable_message(&windows_only(), Target::LINUX_X64, HOST, false, "en").as_deref(),

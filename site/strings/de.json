@@ -79,7 +79,7 @@
   "platformsTitle": "Systeme",
   "platformsLead": "Windows 10 und 11, macOS 12 oder neuer, Linux mit glibc 2.35 oder neuer (Ubuntu 22.04, Debian 12 und neuer).",
   "pWinX64": "nativ",
-  "pWinArm": "einige Komponenten als emulierte x64-Builds, kein R: Details in der Werkzeugtabelle",
+  "pWinArm": "einige Komponenten als emulierte x64-Builds: Details in der Werkzeugtabelle",
   "pMacArm": "Apple Silicon",
   "pMacX64": "Intel",
   "pLinX64": "AppImage oder tar.gz",

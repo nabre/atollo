@@ -39,7 +39,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `cmake` | CMake, Ninja | no | 100 | | |
 | | `cc` | C, C++ | no | 720 | `zig` su macOS e Linux | llvm-mingw su Windows; `zig cc` e GNU make su macOS e Linux (D-112); MB di Windows, su Unix circa 20 |
 | | `ruby` | Ruby | no | 270 | | RubyInstaller su Windows (nativo anche su ARM64), conda-forge su macOS e Linux (D-112), non rilocabile lì |
-| | `r` | R (conda-forge) | no | 1100 | | non disponibile su Windows ARM64 (`noArm64`: conda-forge non ha `win-arm64`); nativo su macOS e Linux, ARM64 compreso, non rilocabile lì |
+| | `r` | R (conda-forge) | no | 1100 | | Windows ARM64: build `win-64` in emulazione (`x64Only`, conda-forge non ha `win-arm64`; micromamba nativo con `--platform win-64`, D-132); nativo su macOS e Linux, ARM64 compreso, non rilocabile lì |
 | database (`databases`) | `mysql` | MySQL | no | 520 | | **nuovo** (D-110); l'unico server SQL del kit (D-117), linee 8.4 e 9.7 LTS; x64 in emulazione su Windows ARM64; su Linux ARM64 il download è di circa 940 MB |
 | | `mongodb` | MongoDB, mongosh, Database Tools | no | 570 | | **nuovo** (D-73); Database Tools per le copie (D-78); x64 in emulazione su Windows ARM64; su Linux il server viene da conda-forge e non è rilocabile |
 | | `phpmyadmin` | phpMyAdmin | no | 60 | `php`, `mysql` | **nuovo** (D-107, al posto di Adminer di D-85); MySQL nel browser, sui sei target (D-117) |
@@ -57,8 +57,8 @@ Campi del catalogo oltre a quelli di Atollo: `keys` (le altre parti di un compon
 | --- | --- | --- |
 | `targets` | i soli target dove il componente c'è; vuoto = tutti | nessuno oggi (Apache fino a D-116: `["win32-x64", "win32-arm64"]`) |
 | `unavailable` | target → motivo (in italiano, tradotto dai cataloghi), mostrato al posto di «non disponibile per `<target>`» | Android: `linux-arm64` |
-| `noArm64` | nessuna build gira su Windows ARM64, nemmeno in emulazione | R |
-| `x64Only` | build x64 in emulazione solo su Windows ARM64 | PHP, Apache, Android SDK, Julia, TinyTeX, MySQL, MongoDB, editor |
+| `noArm64` | nessuna build gira su Windows ARM64, nemmeno in emulazione | nessuno oggi (R fino a D-132) |
+| `x64Only` | build x64 in emulazione solo su Windows ARM64 | PHP, Apache, Android SDK, Julia, TinyTeX, R, MySQL, MongoDB, editor |
 | `rosetta` | build x64 su `darwin-arm64` con Rosetta 2; senza Rosetta il componente non è disponibile | nessuno oggi |
 | `needsByTarget` | bisogni in più su un target, oltre a `needs`; `components.txt` salva solo quelli validi ovunque | `cc`: `zig` su macOS e Linux; `rust`: `cc` su `win32-arm64` |
 | `removeUnix` | i file posseduti su macOS e Linux, al posto di `remove` | pnpm: `bin/pnpm`, `lib/node_modules/corepack` |
