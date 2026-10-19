@@ -474,13 +474,13 @@ export const PROJECTS: TopicTexts = {
             ),
           ]}
         />
-        <Callout tone="warn">
+        <Callout tone="info">
           {rich(
             tr(
-              "Diversamente da «Da un indirizzo Git», «Clona» da questo elenco non installa i componenti e non sceglie le versioni: apri il progetto e, in «Componenti», premi «Installa ciò che manca». Tutto sull'account in {0}.",
-              "Unlike “From a Git address”, “Clone” from this list does not install the components and does not pick the versions: open the project and, in “Components”, press “Install what is missing”. All about the account in {0}.",
-              "Contrairement à « Depuis une adresse Git », « Cloner » depuis cette liste n'installe pas les composants et ne choisit pas les versions : ouvrez le projet et, dans « Composants », appuyez sur « Installer ce qui manque ». Tout sur le compte dans {0}.",
-              "Anders als „Von einer Git-Adresse“ installiert „Klonen“ aus dieser Liste die Komponenten nicht und wählt keine Versionen: Öffne das Projekt und klicke in „Komponenten“ auf „Fehlendes installieren“. Alles zum Konto in {0}.",
+              "Come «Da un indirizzo Git», dopo la copia il kit installa i componenti che servono e sceglie le versioni che il progetto dichiara. Tutto sull'account in {0}.",
+              "As with “From a Git address”, after the copy the kit installs the components needed and picks the versions the project declares. All about the account in {0}.",
+              "Comme pour « Depuis une adresse Git », après la copie le kit installe les composants nécessaires et choisit les versions que le projet déclare. Tout sur le compte dans {0}.",
+              "Wie bei „Von einer Git-Adresse“ installiert das Kit nach dem Kopieren die nötigen Komponenten und wählt die Versionen, die das Projekt angibt. Alles zum Konto in {0}.",
             ),
             <See key="g" id="github" />,
           )}
@@ -1189,14 +1189,7 @@ export const PROJECTS: TopicTexts = {
         />
       </Section>
 
-      <Section
-        title={tr(
-          "Il file panel.json",
-          "The panel.json file",
-          "Le fichier panel.json",
-          "Die Datei panel.json",
-        )}
-      >
+      <Section title={tr("Il file panel.json", "The panel.json file", "Le fichier panel.json", "Die Datei panel.json")}>
         <P>
           {tr(
             "Le azioni tue, la stella e il sito web stanno nel file panel.json nella cartella del progetto. Puoi anche scriverlo a mano e premere «Aggiorna». Il file sta nel progetto, quindi va in Git e vale per chiunque usi il progetto con Atollo.",
@@ -2103,18 +2096,18 @@ export const PROJECTS: TopicTexts = {
           )}
         >
           {tr(
-            "Il progetto di destinazione non deve avere ancora dati nel kit. Un progetto creato, clonato o aperto almeno una volta dall'app ne ha già, quindi il collegamento viene rifiutato. Funziona per il caso tipico: hai rinominato la cartella in Esplora file e non l'hai ancora aperta in Atollo.",
-            "The target project must not have any data in the kit yet. A project created, cloned or opened at least once from the app already has some, so the link is refused. It works for the typical case: you renamed the folder in File Explorer and have not opened it in Atollo yet.",
-            "Le projet de destination ne doit pas encore avoir de données dans le kit. Un projet créé, cloné ou ouvert au moins une fois depuis l'application en a déjà, donc la liaison est refusée. Cela fonctionne pour le cas typique : vous avez renommé le dossier dans l'Explorateur de fichiers et ne l'avez pas encore ouvert dans Atollo.",
-            "Das Zielprojekt darf noch keine Daten im Kit haben. Ein Projekt, das mindestens einmal in der App erstellt, geklont oder geöffnet wurde, hat bereits welche, deshalb wird die Verknüpfung abgelehnt. Es funktioniert für den typischen Fall: Du hast den Ordner im Datei-Explorer umbenannt und ihn noch nicht in Atollo geöffnet.",
+            "Il progetto di destinazione può avere al massimo le sue impostazioni (versioni, preferito, ultimo agente): quelle dei dati collegati prendono il loro posto. Se ha già porte scelte, server, un database o delle copie, il collegamento viene rifiutato, per non mescolare i dati di due progetti.",
+            "The target project may have at most its settings (versions, favorite, last agent): those of the linked data take their place. If it already has chosen ports, servers, a database or copies, the link is refused, so the data of two projects never mix.",
+            "Le projet de destination peut avoir au plus ses paramètres (versions, favori, dernier agent) : ceux des données liées prennent leur place. S'il a déjà des ports choisis, des serveurs, une base de données ou des copies, la liaison est refusée, pour ne pas mélanger les données de deux projets.",
+            "Das Zielprojekt darf höchstens seine Einstellungen haben (Versionen, Favorit, letzter Agent): Die der verknüpften Daten treten an ihre Stelle. Hat es schon gewählte Ports, Server, eine Datenbank oder Kopien, wird die Verknüpfung abgelehnt, damit sich die Daten zweier Projekte nie mischen.",
           )}
         </Callout>
         <Callout tone="tip">
           {tr(
-            "Per rinominare un progetto senza perdere niente: rinomina la cartella in Esplora file, torna su Atollo, premi «Aggiorna» e, prima di aprire il progetto rinominato, usa «Collega a…» sui suoi vecchi dati.",
-            "To rename a project without losing anything: rename the folder in File Explorer, go back to Atollo, press “Refresh” and, before opening the renamed project, use “Link to…” on its old data.",
-            "Pour renommer un projet sans rien perdre : renommez le dossier dans l'Explorateur de fichiers, revenez sur Atollo, appuyez sur « Actualiser » et, avant d'ouvrir le projet renommé, utilisez « Lier à… » sur ses anciennes données.",
-            "Um ein Projekt umzubenennen, ohne etwas zu verlieren: Benenne den Ordner im Datei-Explorer um, wechsle zurück zu Atollo, klicke auf „Aktualisieren“ und verwende vor dem Öffnen des umbenannten Projekts „Verknüpfen mit…“ für seine alten Daten.",
+            "Per rinominare un progetto senza perdere niente: rinomina la cartella in Esplora file, torna su Atollo, premi «Aggiorna» e usa «Collega a…» sui suoi vecchi dati, scegliendo il progetto con il nome nuovo.",
+            "To rename a project without losing anything: rename the folder in File Explorer, go back to Atollo, press “Refresh” and use “Link to…” on its old data, choosing the project with the new name.",
+            "Pour renommer un projet sans rien perdre : renommez le dossier dans l'Explorateur de fichiers, revenez sur Atollo, appuyez sur « Actualiser » et utilisez « Lier à… » sur ses anciennes données, en choisissant le projet au nouveau nom.",
+            "Um ein Projekt umzubenennen, ohne etwas zu verlieren: Benenne den Ordner im Datei-Explorer um, wechsle zurück zu Atollo, klicke auf „Aktualisieren“ und verwende „Verknüpfen mit…“ für seine alten Daten, mit dem Projekt unter dem neuen Namen als Ziel.",
           )}
         </Callout>
       </Section>

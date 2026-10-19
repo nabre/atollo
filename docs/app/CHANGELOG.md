@@ -1,5 +1,13 @@
 # Novità
 
+## Azioni dall'app, dati senza progetto, clone da GitHub (19/10/2026)
+
+- **Azioni**: in Progetti › «Avvio» si aggiungono, modificano e tolgono le azioni del progetto con un modulo, senza scrivere `panel.json` a mano (D-136).
+- **«Collega a…»** dei dati senza progetto funziona anche con un progetto già aperto, se ha solo le sue impostazioni.
+- **«Clona»** dall'elenco dei repository GitHub installa i componenti e sceglie le versioni, come «Da un indirizzo Git».
+- **«pre-installato»** è l'unica etichetta per i componenti già nel kit che si completano al primo avvio.
+- **Guida nei documenti**: `node scripts/guide-docs.cjs` rigenera `GUIDE.md` e `GUIDE.it.md`.
+
 ## Guida nei documenti, schermate per lingua, tedesco con il «du» (19/10/2026)
 
 - **GUIDE.md e GUIDE.it.md** (D-136) riscritte dalla Guida dell'app: nove capitoli, 36 argomenti, le stesse schermate.

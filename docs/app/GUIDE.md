@@ -432,10 +432,10 @@ If you have connected the GitHub account, the “From your GitHub repositories�
 - “GitHub” opens the repository in the browser.
 - A click on the row opens the details: private or public, language, stars, last push, where it is cloned, “Copy the Git address” and, for the repositories you administer, “Rename” and “Delete from GitHub”.
 
-> [!WARNING]
-> **Watch out**
+> [!NOTE]
+> **Good to know**
 >
-> Unlike “From a Git address”, “Clone” from this list does not install the components and does not pick the versions: open the project and, in “Components”, press “Install what is missing”. All about the account in [6.1 The kit's GitHub account](#61-the-kits-github-account).
+> As with “From a Git address”, after the copy the kit installs the components needed and picks the versions the project declares. All about the account in [6.1 The kit's GitHub account](#61-the-kits-github-account).
 
 Related topics: [1.4 The first project, step by step](#14-the-first-project-step-by-step), [2.2 The Projects page and the “Quick panel”](#22-the-projects-page-and-the-quick-panel), [6.4 The framework instructions](#64-the-framework-instructions), [6.1 The kit's GitHub account](#61-the-kits-github-account)
 
@@ -523,7 +523,7 @@ Related topics: [2.3 Starting a project: actions and ports](#23-starting-a-proje
 > - An action is a project command with a name: “npm run dev”, “php artisan serve”, the website…
 > - Web actions get a port from the kit, which waits for them to respond and gives you the address to open.
 > - The “Default” star picks the action of the “Start” button.
-> - Actions are recognized by themselves; your own are written in the project's panel.json file.
+> - Actions are recognized by themselves; you add your own with “New action” and they end up in the project's panel.json file.
 
 ![A project's page, “Run” section](../../ui/public/guide/en/project-run.webp)
 
@@ -569,9 +569,19 @@ Each web action has a port of its own, chosen by the kit between 7100 and 7999 t
 
 It is the one that starts with the page's “Start” button, with ▶ in the project row and with Shift+Enter in “Open a project”. To change it, choose the action in the list and press the “Default” star. When you serve the project as a website, the website becomes the default action by itself.
 
-#### Your own actions: the panel.json file
+#### Adding, editing and removing actions
 
-The recognized actions are almost always enough. If you want others, or want to change one, write them in the panel.json file in the project folder (you create it if it is not there) and press “Refresh”. The file lives in the project, so it goes into Git and applies to anyone who uses the project with Atollo.
+1. In the “Run” section press “New action”, next to the “Actions” heading.
+2. Fill in “Name”, “Type” (“Website or web server”, “Windowed app” or “Command”) and “Command”; if needed, “Folder” (relative to the project), “Address” (websites only) and “Variables”, one NAME=value per line. In the command, {port} becomes the action's port.
+3. Press “Save”. The action appears in the list; its id comes from the name.
+
+- “Edit”, on the chosen action, opens the same form again. On a recognized action it saves your own version with the same id, which takes its place.
+- “Remove” exists only for your own actions and asks for confirmation; if a recognized action has the same id, that one comes back.
+- The website is edited in the “Website” section, not here.
+
+#### The panel.json file
+
+Your own actions, the star and the website live in the panel.json file in the project folder. You can also write it by hand and press “Refresh”. The file lives in the project, so it goes into Git and applies to anyone who uses the project with Atollo.
 
 **Example panel.json** `projects\gestionale\panel.json`
 
@@ -612,7 +622,7 @@ The recognized actions are almost always enough. If you want others, or want to 
 > [!NOTE]
 > **Good to know**
 >
-> An action with the same id as a recognized one replaces it. If the file is not valid JSON, the kit ignores it and says so in “Components” › “How it was recognised”; fix it before using the star or the website, which write to the same file. There is no form in the app to add or edit actions: it is done in the file.
+> An action with the same id as a recognized one replaces it. If the file is not valid JSON, the kit ignores it and says so in “Components” › “How it was recognised”; fix it before using the star, the website or “New action”, which write to the same file.
 
 <details>
 <summary>Under the hood</summary>
@@ -831,12 +841,12 @@ If you rename or delete a project's folder outside the app, the kit ends up with
 > [!NOTE]
 > **When “Link to…” cannot be used**
 >
-> The target project must not have any data in the kit yet. A project created, cloned or opened at least once from the app already has some, so the link is refused. It works for the typical case: you renamed the folder in File Explorer and have not opened it in Atollo yet.
+> The target project may have at most its settings (versions, favorite, last agent): those of the linked data take their place. If it already has chosen ports, servers, a database or copies, the link is refused, so the data of two projects never mix.
 
 > [!TIP]
 > **Tip**
 >
-> To rename a project without losing anything: rename the folder in File Explorer, go back to Atollo, press “Refresh” and, before opening the renamed project, use “Link to…” on its old data.
+> To rename a project without losing anything: rename the folder in File Explorer, go back to Atollo, press “Refresh” and use “Link to…” on its old data, choosing the project with the new name.
 
 Related topics: [3.2 A project's database](#32-a-projects-database), [8.2 The kit's folders on disk](#82-the-kits-folders-on-disk), [7.3 Updates and backups](#73-updates-and-backups)
 
