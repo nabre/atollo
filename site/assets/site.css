@@ -182,6 +182,12 @@ section { padding: 72px 0; }
 .mx-emu { color: var(--emu); }
 .mx-no, .mx-dep { color: var(--no); }
 .mx tbody tr:hover > * { background: var(--hover); }
+/* The visitor's system (assets/download.js adds .here) */
+.mx .here { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.mx tbody tr:hover > td.here { background: color-mix(in srgb, var(--accent) 20%, var(--hover)); }
+.mx thead th.here { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+.mx-here { display: none; font: 600 0.65rem var(--ui); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+.mx th.here .mx-here { display: block; }
 .mx-legend { font-size: 0.875rem; color: var(--desc); margin-top: 12px; }
 .mx-legend span { font-weight: 700; margin-left: 12px; }
 .mx-legend span:first-child { margin-left: 0; }
