@@ -233,7 +233,7 @@ Quando un agente prepara materiali per il lancio pubblico, deve dare priorità a
 Se all'agente viene chiesto di applicare o aggiornare il brand **Atollo** nel codice sorgente, questi sono i punti esatti di intervento:
 
 1. **Generatori del Brand e dei Temi (Fonte primaria):**
-   * [`docs/brand/make.py`](make.py): genera i file SVG (`symbol*.svg`, `wordmark-*.svg`, `lockup-*.svg`, `hero-*.svg`), i PNG (`logo-32.png`, `logo-256.png`, `symbol-512.png`) e l'icona `tauri/icons/icon.ico`.
+   * [`docs/brand/make.py`](make.py): genera i file SVG (`symbol*.svg`, `wordmark-*.svg`, `lockup-*.svg`, `hero-*.svg`), i PNG (`logo-32.png`, `logo-256.png`, `symbol-512.png`, `ui/public/favicon.png`) e tutte le icone di `tauri/icons/` (`icon.ico`, `icon.icns`, `icon.png`, `32x32.png`, `128x128*.png`). Fino a 48 px si usa `symbol-small.svg`: isolotti più grossi, niente barriera sommersa, un'onda sola e spessa, perché a quelle dimensioni i dettagli si impastano. Gli sfondi `hero-*.svg` riprendono il simbolo: l'atollo in alto a destra e file di onde che sfumano verso sinistra, dove sta il contenuto.
    * [`docs/brand/themes.py`](themes.py): legge [`docs/brand/vscode-defaults/dark.json`](vscode-defaults/dark.json) e [`docs/brand/vscode-defaults/light.json`](vscode-defaults/light.json) insieme a `vscodium-themes/`, applica la mappa colori `BRAND` e genera:
      * [`tauri/editor-theme/package.json`](../../tauri/editor-theme/package.json) e `themes/{dark,light}.json` (il tema installato in VSCodium);
      * [`ui/src/theme/theme-vscode.css`](../../ui/src/theme/theme-vscode.css) e [`ui/src/theme/theme-colors.css`](../../ui/src/theme/theme-colors.css).

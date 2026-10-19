@@ -59,6 +59,10 @@
         <p class="release-note rise" style="--d:5" id="dl-note"><a href="https://github.com/nabre/atollo">{{sourceCode}}</a> · MIT</p>
       </div>
 
+      <div class="hero-side">
+      <!-- The app icon (docs/brand/symbol.svg, the same as tauri/icons), on its
+           own: never beside the wordmark. -->
+      <img class="app-icon rise" style="--d:2" src="{{root}}assets/symbol.svg" alt="" width="132" height="132">
       <!-- The kit's real layout (README, «Struttura»), not a mock of the app. -->
       <figure class="kit rise" style="--d:3" aria-label="{{folderTitle}}">
         <div class="kit-bar"><i></i><i></i><i></i><span>{{folderTitle}}</span></div>
@@ -72,6 +76,7 @@
           <li data-target="linux-x64">linux-x64</li><li data-target="linux-arm64">linux-arm64</li>
         </ul>
       </figure>
+      </div>
     </div>
   </section>
 
@@ -188,6 +193,7 @@
   <section class="finale">
     <div class="finale-bg" aria-hidden="true"></div>
     <div class="wrap finale-inner reveal">
+      <img class="finale-icon" src="{{root}}assets/symbol.svg" alt="" width="96" height="96">
       <h2>{{ctaTitle}}</h2>
       <p>{{ctaText}}</p>
       <div class="cta">

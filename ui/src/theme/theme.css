@@ -127,7 +127,7 @@ body {
 }
 
 /* The brand cover, behind welcome and empty pages: content stays on the
-   left, the strokes rise on the right. */
+   left, the atoll and its waves sit on the right. */
 .font-brand {
   font-family: var(--brand-font);
 }

@@ -1,4 +1,4 @@
-"""Atollo brand assets, geometric monogram A + wordmark ATOLLO.
+"""Atollo brand assets, atoll ring symbol + wordmark ATOLLO.
 
 One source for every mark: run `python docs/brand/make.py` to rewrite the
 SVGs in docs/brand/ and ui/src/assets/brand/, the PNG logos in ui/src/assets/,
@@ -23,38 +23,115 @@ AMBER = "#FBBF24"
 CHARCOAL = "#111827"
 CLOUD = "#F8FAFC"
 
-# --- Symbol: the geometric A on a 512 grid ---------------------------------
-# Folded ribbon A (116..396 x 112..384): left leg rising to the apex in
-# emerald, right leg folding over the apex turning from emerald through amber
-# to coral orange, and the inner delta triangle at the base.
-LEFT = "116,384 224,112 288,112 188,384"
-RIGHT = "224,112 288,112 396,384 324,384"
-FOLD_TOP = "256,199 224,112 204,166 236,253"
-DELTA = "256,256 298,384 214,384"
+# --- Symbol: the atoll seen from above on a 512 grid ------------------------
+# A sunken reef ring (120..392 x 120..392) around a turquoise lagoon, with
+# three crescent islets on it, thick in the middle and tapering at the passes:
+# the western islet in emerald, the northern one turning from emerald through
+# amber to coral orange, and a small coral orange islet to the south-east.
+# Angles run clockwise from east, as SVG draws them.
+import math
+
+LAGOON = "#5EEAD4"  # shallow turquoise water, only inside the lagoon
+ISLETS = {"west": (108, 238, 1.0), "north": (256, 384, 1.0), "south": (48, 90, 0.7)}
 
 
-def glyph(fill=None, defs_id="a"):
-    """The Atollo A strokes; fill=None gives the brand gradients."""
-    if fill:
-        return (
-            f'<polygon points="{LEFT}" fill="{fill}"/>'
-            f'<polygon points="{RIGHT}" fill="{fill}"/>'
-            f'<polygon points="{DELTA}" fill="{fill}"/>'
+class Atoll:
+    """One drawing of the atoll: ring center and radius, islet and reef widths,
+    and the waves below as (y, first x, crests) with wavelength, amplitude and
+    stroke. The full symbol and the small-size one differ only here."""
+
+    def __init__(self, cx, cy, r, islet_w, reef_w, waves, wave_l, wave_a, wave_w):
+        self.cx, self.cy, self.r = cx, cy, r
+        self.islet_w, self.reef_w = islet_w, reef_w
+        self.waves, self.wave_l, self.wave_a, self.wave_w = waves, wave_l, wave_a, wave_w
+
+    def box(self):
+        """x0, y0, x1, y1 around the islets and the waves."""
+        half = self.r + self.islet_w / 2 + 3
+        bottom = max(y for y, _, _ in self.waves) + self.wave_a / 2 + self.wave_w / 2
+        return self.cx - half, self.cy - half, self.cx + half, bottom
+
+
+# The full symbol, on the 512 grid of the app icon, and the one drawn for
+# 16..48 pixels: bigger islets, no sunken reef (it blurs into the lagoon) and a
+# single thick wave.
+FULL = Atoll(256, 236, 112, 52, 12, [(410, 172, 3.5), (442, 208, 2)], 48, 10, 11)
+SMALL = Atoll(256, 222, 124, 72, 0, [(438, 160, 3)], 64, 16, 24)
+
+
+def islet_path(cx, cy, r, a0, a1, w_max, w_min):
+    """Closed crescent along a ring, round-tipped by its width profile."""
+    n = 48
+    outer, inner = [], []
+    for k in range(n + 1):
+        t = k / n
+        w = w_min + (w_max - w_min) * math.sin(math.pi * t) ** 0.6
+        a = math.radians(a0 + (a1 - a0) * t)
+        c, s = math.cos(a), math.sin(a)
+        outer.append(f"{cx + (r + w / 2) * c:.1f} {cy + (r + w / 2) * s:.1f}")
+        inner.append(f"{cx + (r - w / 2) * c:.1f} {cy + (r - w / 2) * s:.1f}")
+    return "M" + "L".join(outer + inner[::-1]) + "Z"
+
+
+def wave_path(x0, y, crests, length, amp):
+    """A stylized wave from x0 along y, `crests` wavelengths long."""
+    d = f"M{x0:g} {y:g}Q{x0 + length / 4:g} {y - amp:g} {x0 + length / 2:g} {y:g}"
+    return d + "".join(f"T{x0 + length * k / 2:g} {y:g}" for k in range(2, round(crests * 2) + 1))
+
+
+def stroked(d, paint, width, opacity=1):
+    op = f' opacity="{opacity}"' if opacity != 1 else ""
+    return (
+        f'<path d="{d}" fill="none" stroke="{paint}" stroke-width="{width:g}" '
+        f'stroke-linecap="round" stroke-linejoin="round"{op}/>'
+    )
+
+
+def atoll(a, paints, reef_paint, reef_op, wave_paint, wave_ops, lagoon=None):
+    """Lagoon, sunken reef, islets (paints by name) and waves of the Atoll `a`."""
+    out = ""
+    if lagoon:
+        out += f'<circle cx="{a.cx}" cy="{a.cy}" r="{a.r - a.reef_w / 2 - 2:g}" fill="{lagoon}"/>'
+    if a.reef_w:
+        out += (
+            f'<circle cx="{a.cx}" cy="{a.cy}" r="{a.r}" fill="none" stroke="{reef_paint}" '
+            f'stroke-width="{a.reef_w}" opacity="{reef_op}"/>'
         )
-    i = defs_id
+    for name, (a0, a1, scale) in ISLETS.items():
+        p = paints[name]
+        d = islet_path(a.cx, a.cy, a.r, a0, a1, a.islet_w * scale, max(a.reef_w, a.islet_w * 0.2))
+        out += f'<path d="{d}" fill="{p}" stroke="{p}" stroke-width="6" stroke-linejoin="round"/>'
+    for (y, x0, crests), op in zip(a.waves, wave_ops):
+        out += stroked(wave_path(x0, y, crests, a.wave_l, a.wave_a), wave_paint, a.wave_w, op)
+    return out
+
+
+def glyph_defs(i):
+    """Lagoon and islet gradients, ids prefixed by `i`."""
     return (
         "<defs>"
+        f'<radialGradient id="{i}g" cx=".5" cy=".5" r=".5">'
+        f'<stop offset="0" stop-color="{LAGOON}" stop-opacity=".42"/>'
+        f'<stop offset="1" stop-color="{EMERALD}" stop-opacity=".16"/></radialGradient>'
         f'<linearGradient id="{i}l" x1="0" y1="1" x2="0.4" y2="0">'
         f'<stop offset="0" stop-color="#0B8A60"/><stop offset="1" stop-color="#34D399"/></linearGradient>'
-        f'<linearGradient id="{i}r" x1="0.5" y1="1" x2="0" y2="0">'
+        f'<linearGradient id="{i}r" x1="0" y1="0" x2="1" y2="1">'
         f'<stop offset="0" stop-color="{EMERALD}"/><stop offset=".45" stop-color="{AMBER}"/>'
         f'<stop offset="1" stop-color="{ORANGE}"/></linearGradient>'
         "</defs>"
-        f'<polygon points="{LEFT}" fill="url(#{i}l)"/>'
-        f'<polygon points="{FOLD_TOP}" fill="#000" opacity=".26"/>'
-        f'<polygon points="{RIGHT}" fill="url(#{i}r)"/>'
-        f'<polygon points="{DELTA}" fill="{ORANGE}"/>'
     )
+
+
+def glyph(fill=None, defs_id="a", a=FULL, wave=MINT):
+    """The Atollo atoll; fill=None gives the brand gradients, with the waves
+    in `wave` (mint on dark grounds, emerald on light ones)."""
+    if fill:
+        return atoll(a, dict.fromkeys(ISLETS, fill), fill, ".45", fill, (".8", ".55"))
+    i = defs_id
+    paints = {"west": f"url(#{i}l)", "north": f"url(#{i}r)", "south": ORANGE}
+    # Mint waves fade on dark grounds, emerald ones need more weight on light ones.
+    ops = ("1",) if a is SMALL else (".7", ".4") if wave == MINT else (".9", ".55")
+    return glyph_defs(i) + atoll(a, paints, MINT, ".38", wave, ops, f"url(#{i}g)")
 
 
 def svg(w, h, body, title):
@@ -74,9 +151,11 @@ APP_TILE_DEFS = (
 )
 
 SYMBOLS = {
-    # The app icon: colored A on the deep forest tile.
+    # The app icon: colored atoll on the deep forest tile.
     "symbol": svg(512, 512, tile("url(#bg)", glyph(), APP_TILE_DEFS), "Atollo"),
-    # The colored A alone, for any background.
+    # The same drawn for 16..48 pixels: favicons, small icon sizes.
+    "symbol-small": svg(512, 512, tile("url(#bg)", glyph(a=SMALL), APP_TILE_DEFS), "Atollo"),
+    # The colored atoll alone, for any background.
     "symbol-glyph": svg(512, 512, glyph(), "Atollo"),
     # One-color variations.
     "symbol-mono-dark": svg(512, 512, glyph(CHARCOAL), "Atollo"),
@@ -125,13 +204,14 @@ def wordmark_svg(ink):
     return svg(WM_W, 100, body, "Atollo")
 
 
-def lockup_svg(ink):
-    """Horizontal lockup: the colored A, then the wordmark."""
+def lockup_svg(ink, wave):
+    """Horizontal lockup: the colored atoll, then the wordmark."""
     _, body = wordmark(ink)
-    # Glyph box 116..396 x 112..384 (280 x 272) scaled to height 100.
-    k = 100 / 272
-    gw = 280 * k
-    sym = f'<g transform="translate({-116 * k:.3f} {-112 * k:.3f}) scale({k:.5f})">{glyph(defs_id="lk")}</g>'
+    # Glyph box: the islets' outer edge down to the lower wave, scaled to height 100.
+    x0, y0, x1, y1 = FULL.box()
+    k = 100 / (y1 - y0)
+    gw = (x1 - x0) * k
+    sym = f'<g transform="translate({-x0 * k:.3f} {-y0 * k:.3f}) scale({k:.5f})">{glyph(defs_id="lk", wave=wave)}</g>'
     w = gw + 40 + WM_W
     return svg(round(w), 100, sym + f'<g transform="translate({gw + 40:.3f} 0)">{body}</g>', "Atollo")
 
@@ -139,38 +219,46 @@ def lockup_svg(ink):
 WORDMARKS = {
     "wordmark-light": wordmark_svg(FOREST),  # on light backgrounds
     "wordmark-dark": wordmark_svg(CLOUD),  # on dark backgrounds
-    "lockup-light": lockup_svg(FOREST),
-    "lockup-dark": lockup_svg(CLOUD),
+    "lockup-light": lockup_svg(FOREST, EMERALD),
+    "lockup-dark": lockup_svg(CLOUD, MINT),
 }
 
 
-# --- Backgrounds: nested folded strokes -------------------------------------
-# 1600x900, drawn to be cut (preserveAspectRatio slice) by any window shape.
+# --- Backgrounds: the atoll in its ocean ------------------------------------
+# 1600x900, drawn to be cut (preserveAspectRatio slice) by any window shape:
+# the left half stays calm for the content, the atoll sits up right, rows of
+# the symbol's waves roll in below it and fade out toward the left.
+HERO_ATOLL = Atoll(1300, 300, 200, 92, 16, [], 0, 0, 0)
+HERO_WAVE_L, HERO_WAVE_A, HERO_WAVE_W = 96, 18, 12
 
 
-def hero(base0, base1, band_opacity, glow):
-    bands = []
-    # Nested chevrons rising to the right, as the board's cover.
-    for i, (o, w) in enumerate([(0, 150), (190, 120), (350, 90), (480, 60)]):
-        x = 820 + o
-        pts = f"{x},900 {x + 380},{180 + o * 0.6:.0f} {x + 380 + w},{180 + o * 0.6:.0f} {x + w},900"
-        bands.append(f'<polygon points="{pts}" fill="url(#hb)" opacity="{band_opacity * (1 - i * 0.18):.2f}"/>')
-        rise = f"{x + 380 + w},{180 + o * 0.6:.0f} {1600},{-120 + o * 0.6:.0f} {1600},{-120 + o * 0.6 + w * 1.4:.0f} {x + 380 + w},{180 + o * 0.6 + w * 1.4:.0f}"
-        bands.append(f'<polygon points="{rise}" fill="url(#hw)" opacity="{band_opacity * (1 - i * 0.18):.2f}"/>')
+def hero_waves(paint):
+    rows = []
+    for j, y in enumerate(range(660, 900, 52)):
+        x0 = 560 + (j % 2) * HERO_WAVE_L / 2 - j * 20
+        crests = (1700 - x0) / HERO_WAVE_L
+        rows.append(stroked(wave_path(x0, y, crests, HERO_WAVE_L, HERO_WAVE_A), paint, HERO_WAVE_W))
+    return "".join(rows)
+
+
+def hero(base0, base1, band_opacity, glow, wave):
+    i = "ha"
+    paints = {"west": f"url(#{i}l)", "north": f"url(#{i}r)", "south": ORANGE}
     defs = (
         "<defs>"
         f'<linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{base0}"/>'
         f'<stop offset="1" stop-color="{base1}"/></linearGradient>'
-        f'<linearGradient id="hb" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="{EMERALD}" stop-opacity=".2"/>'
-        f'<stop offset="1" stop-color="{EMERALD}"/></linearGradient>'
-        f'<linearGradient id="hw" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="{AMBER}"/>'
-        f'<stop offset="1" stop-color="{ORANGE}"/></linearGradient>'
+        f'<linearGradient id="hf" gradientUnits="userSpaceOnUse" x1="560" y1="0" x2="1400" y2="0">'
+        f'<stop offset="0" stop-color="{wave}" stop-opacity="0"/><stop offset="1" stop-color="{wave}"/></linearGradient>'
         f'<radialGradient id="hl" cx=".85" cy=".2" r=".6"><stop offset="0" stop-color="{ORANGE}" stop-opacity="{glow}"/>'
         f'<stop offset="1" stop-color="{ORANGE}" stop-opacity="0"/></radialGradient>'
         "</defs>"
     )
-    body = defs + '<rect width="1600" height="900" fill="url(#hg)"/>' + "".join(bands)
+    body = defs + glyph_defs(i) + '<rect width="1600" height="900" fill="url(#hg)"/>'
     body += '<rect width="1600" height="900" fill="url(#hl)"/>'
+    body += f'<g opacity="{band_opacity}">'
+    body += atoll(HERO_ATOLL, paints, wave, ".5", wave, (), f"url(#{i}g)")
+    body += f'<g opacity=".8">{hero_waves("url(#hf)")}</g></g>'
     return (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" '
         f'preserveAspectRatio="xMidYMid slice">{body}</svg>\n'
@@ -179,8 +267,8 @@ def hero(base0, base1, band_opacity, glow):
 
 BACKGROUNDS = {
     # On the classic grays of the app (theme.css).
-    "hero-dark": hero("#1F1F1F", "#141414", 0.55, 0.2),
-    "hero-light": hero("#FFFFFF", "#F2F2F2", 0.28, 0.12),
+    "hero-dark": hero("#1F1F1F", "#141414", 0.45, 0.2, MINT),
+    "hero-light": hero("#FFFFFF", "#F2F2F2", 0.32, 0.12, EMERALD),
 }
 
 
@@ -310,9 +398,8 @@ def brand_board_svg():
   <!-- 2. HERO BANNER (Top Center) -->
   <g clip-path="url(#hero-clip)">
     <rect x="622" y="16" width="490" height="348" fill="url(#hero-bg)"/>
-    <polygon points="740,364 920,70 985,70 805,364" fill="url(#hero-rib1)" opacity="0.55"/>
-    <polygon points="835,364 1015,40 1085,40 905,364" fill="url(#hero-rib2)" opacity="0.85"/>
-    <polygon points="945,364 1085,120 1135,120 995,364" fill="{ORANGE}" opacity="0.75"/>
+    <g transform="translate(830 40) scale(0.62)" opacity="0.9">{glyph(defs_id="hb")}</g>
+    <g opacity="0.35">{"".join(stroked(wave_path(800 + (j % 2) * 24, 326 + j * 18, 6, 48, 8), "url(#hero-rib1)", 6) for j in range(2))}</g>
     <text x="650" y="52" font-family="{font}" font-size="11" font-weight="700" letter-spacing="2.2" fill="#D1F0E0">UNIVERSAL PORTABLE</text>
     <text x="650" y="70" font-family="{font}" font-size="11" font-weight="700" letter-spacing="2.2" fill="#D1F0E0">DEV &amp; AI WORKSPACE</text>
     <text x="650" y="282" font-family="{font}" font-size="11" font-weight="700" letter-spacing="2" fill="#E2E8F0">CODE</text>
@@ -355,8 +442,8 @@ def brand_board_svg():
 
   <!-- Variant A -->
   <text x="42" y="446" font-family="{font}" font-size="13" font-weight="700" fill="#0F172A">VARIANT A</text>
-  <text x="42" y="466" font-family="{font}" font-size="12.5" fill="#64748B">Geometric monogram A</text>
-  <text x="42" y="483" font-family="{font}" font-size="12.5" fill="#64748B">Minimal and angular.</text>
+  <text x="42" y="466" font-family="{font}" font-size="12.5" fill="#64748B">Atoll reef ring</text>
+  <text x="42" y="483" font-family="{font}" font-size="12.5" fill="#64748B">Lagoon, islets and waves.</text>
   <g transform="translate(50 502) scale(0.305)">{tile("url(#bg-tile)", glyph(defs_id="va"))}</g>
   <g transform="translate(44 694) scale(0.095)">{glyph(CHARCOAL)}</g>
   <g transform="translate(106 694) scale(0.095)">{tile(CHARCOAL, glyph("#FFFFFF"))}</g>
@@ -393,12 +480,12 @@ def brand_board_svg():
 
   <line x1="766" y1="538" x2="1088" y2="538" stroke="#F1F5F9" stroke-width="1.5"/>
   <text x="766" y="562" font-family="{font}" font-size="12.5" fill="#64748B">Horizontal Lockup</text>
-  <g transform="translate(760 578) scale(0.115)">{glyph(defs_id="hlk")}</g>
+  <g transform="translate(760 578) scale(0.115)">{glyph(defs_id="hlk", wave=EMERALD)}</g>
   <g transform="translate(830 584) scale(0.44)">{wm_forest}</g>
 
   <line x1="766" y1="652" x2="1088" y2="652" stroke="#F1F5F9" stroke-width="1.5"/>
   <text x="766" y="676" font-family="{font}" font-size="12.5" fill="#64748B">Stacked Lockup</text>
-  <g transform="translate(812 686) scale(0.155)">{glyph(defs_id="slk")}</g>
+  <g transform="translate(812 686) scale(0.155)">{glyph(defs_id="slk", wave=EMERALD)}</g>
   <g transform="translate(766 772) scale(0.32)">{wm_forest}</g>
 
   <line x1="968" y1="652" x2="968" y2="818" stroke="#F1F5F9" stroke-width="1.5"/>
@@ -494,20 +581,29 @@ def brand_board_svg():
 """
 
 
+def icon(size):
+    """The app icon at `size` pixels: the small-size drawing up to 48."""
+    return render(SYMBOLS["symbol-small" if size <= 48 else "symbol"], size)
+
+
 def write_rasters():
-    sym = SYMBOLS["symbol"]
+    icons = ROOT / "tauri" / "icons"
     for size in (32, 256):
-        render(sym, size).save(ROOT / "ui" / "src" / "assets" / f"logo-{size}.png")
-    render(sym, 256).save(ROOT / "tauri" / "icons" / "icon.png")
-    render(sym, 512).save(OUT_DOCS / "symbol-512.png")
+        icon(size).save(ROOT / "ui" / "src" / "assets" / f"logo-{size}.png")
+    icon(32).save(ROOT / "ui" / "public" / "favicon.png")
+    icon(256).save(icons / "icon.png")
+    icon(512).save(OUT_DOCS / "symbol-512.png")
     render_wh(brand_board_svg(), 1600, 1200).save(OUT_DOCS / "brand.png")
     sizes = [16, 20, 24, 32, 40, 48, 64, 128, 256]
-    big = render(sym, 256)
-    big.save(
-        ROOT / "tauri" / "icons" / "icon.ico",
+    icon(256).save(
+        icons / "icon.ico",
         sizes=[(s, s) for s in sizes],
-        append_images=[render(sym, s) for s in sizes[:-1]],
+        append_images=[icon(s) for s in sizes[:-1]],
     )
+    icon(32).save(icons / "32x32.png")
+    icon(128).save(icons / "128x128.png")
+    icon(256).save(icons / "128x128@2x.png")
+    icon(1024).save(icons / "icon.icns")
 
 
 if __name__ == "__main__":
