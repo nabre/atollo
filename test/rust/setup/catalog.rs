@@ -660,6 +660,14 @@ fn remove_unix_on_macos_and_linux() {
         let c = catalog.find(id).unwrap();
         assert!(c.remove_unix.iter().any(|r| r == part), "{id}: {part}");
     }
+    // corepack comes with pnpm and yarn on Windows too: it goes with them.
+    let pnpm_win = &catalog.find("pnpm").unwrap().remove;
+    for part in [
+        "@data/npm-global/corepack.cmd",
+        "@data/npm-global/node_modules/corepack",
+    ] {
+        assert!(pnpm_win.iter().any(|r| r == part), "pnpm: {part}");
+    }
     // Git is dugite-native off Windows (D-112): micromamba is not its own.
     let git_unix = &catalog.find("git").unwrap().remove_unix;
     assert!(!git_unix.iter().any(|r| r == "tools/micromamba"));
