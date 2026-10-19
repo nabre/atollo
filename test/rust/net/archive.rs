@@ -390,6 +390,41 @@ fn tar_relative_symlinks_inside_are_created() {
     assert!(fs::symlink_metadata(out.join("pkg/through")).is_err());
 }
 
+/// The archive of another system unpacked on Windows: its links become
+/// copies of their targets, so `python/bin/python3 -> python3.13` and a
+/// hard link are real files the installer's key check finds.
+#[cfg(windows)]
+#[test]
+fn tar_links_become_copies_on_windows() {
+    let tmp = TempDir::new("tarwinlinks");
+    for kind in [Kind::TarGz, Kind::TarXz] {
+        let archive = tmp.0.join(format!("python-{kind:?}.tar"));
+        make_tar(
+            &archive,
+            kind,
+            &[
+                Ent::File("python/bin/python3.13", "elf"),
+                Ent::Sym("python/bin/python3", "python3.13"),
+                Ent::Sym("python/lib/current", "../bin"),
+                Ent::Hard("python/bin/pip3", "python/bin/python3.13"),
+                Ent::Sym("python/outside", "../../etc/passwd"),
+            ],
+        );
+        let out = tmp.0.join(format!("out-{kind:?}"));
+        extract(&archive, kind, &out).unwrap();
+        let bin = out.join("python/bin");
+        let python3 = fs::symlink_metadata(bin.join("python3")).unwrap();
+        assert!(python3.is_file(), "{kind:?}: a copy, not a link");
+        assert_eq!(fs::read_to_string(bin.join("python3")).unwrap(), "elf");
+        assert_eq!(fs::read_to_string(bin.join("pip3")).unwrap(), "elf");
+        assert_eq!(
+            fs::read_to_string(out.join("python/lib/current/python3.13")).unwrap(),
+            "elf"
+        );
+        assert!(fs::symlink_metadata(out.join("python/outside")).is_err());
+    }
+}
+
 #[test]
 fn seven_z_signature_search_spans_buffers() {
     let tmp = TempDir::new("7zsig");
