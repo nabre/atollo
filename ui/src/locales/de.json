@@ -867,5 +867,13 @@
   "{0} con {1}": "{0} mit {1}",
   "Aggiunte": "Ergänzungen",
   "I comandi di {0} quando si sceglie con {1}: dopo quelli della base; se crea il progetto, la sua creazione prende il posto di quella della base.": "Die Befehle von {0}, wenn es mit {1} gewählt wird: nach denen der Basis; erstellt es das Projekt, ersetzt seine Erstellung die der Basis.",
-  "{0} con tutte le basi": "{0} mit allen Basen"
+  "{0} con tutte le basi": "{0} mit allen Basen",
+  "Espandi": "Erweitern",
+  "Riduci": "Reduzieren",
+  "Mostra solo lo stato sulla piattaforma scelta": "Nur den Status auf der gewählten Plattform zeigen",
+  "Mostra lo stato anche sulle altre piattaforme": "Den Status auch auf den anderen Plattformen zeigen",
+  "da reinstallare": "neu zu installieren",
+  "incompleto": "unvollständig",
+  "scelto, non scaricato": "gewählt, nicht heruntergeladen",
+  "nessun file in data/apps/{0}": "keine Dateien in data/apps/{0}"
 }
