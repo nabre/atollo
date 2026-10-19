@@ -106,7 +106,18 @@ export const SAMPLE_PROJECTS: ProjectInfo[] = [
     reason: "index.html",
     languages: ["HTML", "CSS"],
     requires: [],
-    actions: [sampleAction("static", "sito statico (cartella del progetto)", "", ".")],
+    actions: [
+      sampleAction(
+        "static",
+        engineText("sito statico (cartella del progetto)", {
+          en: "static site (project folder)",
+          fr: "site statique (dossier du projet)",
+          de: "statische Website (Projektordner)",
+        }),
+        "",
+        ".",
+      ),
+    ],
     warnings: [],
     custom: false,
     default: "static",
@@ -125,7 +136,11 @@ export const SAMPLE_PROJECTS: ProjectInfo[] = [
     missing: ["python"],
     platform: "FastAPI",
     type: "web",
-    reason: "Rilevato da: main.py crea FastAPI()",
+    reason: engineText("Rilevato da: main.py crea FastAPI()", {
+      en: "Detected from: main.py creates FastAPI()",
+      fr: "Détecté à partir de : main.py crée FastAPI()",
+      de: "Erkannt anhand von: main.py erstellt FastAPI()",
+    }),
     languages: ["Python"],
     requires: ["python"],
     actions: [
@@ -136,7 +151,16 @@ export const SAMPLE_PROJECTS: ProjectInfo[] = [
         null,
       ),
     ],
-    warnings: ["Nessun ambiente virtuale (.venv)."],
+    warnings: [
+      engineText(
+        "Nessun ambiente virtuale (.venv): le dipendenze devono essere installate nel Python del kit, oppure crea .venv.",
+        {
+          en: "No virtual environment (.venv): the dependencies must be installed in the kit's Python, or create .venv.",
+          fr: "Aucun environnement virtuel (.venv) : les dépendances doivent être installées dans le Python du kit, ou créez .venv.",
+          de: "Keine virtuelle Umgebung (.venv): Die Abhängigkeiten müssen im Python des Kits installiert sein, oder erstelle .venv.",
+        },
+      ),
+    ],
     custom: false,
     default: "py:uvicorn",
     settings: { agent: "codex" },

@@ -2,7 +2,7 @@
 // Rust: tauri/src/commands/frameworks.rs.
 
 import { invoke } from "@tauri-apps/api/core";
-import { act, browserPreview, query, subscribe } from "./core";
+import { act, browserPreview, engineText, query, subscribe } from "./core";
 
 export interface FrameworkAction {
   name: string;
@@ -96,7 +96,11 @@ const SAMPLE_PIECES: FrameworkPiece[] = [
     kind: "base",
     name: "Laravel",
     category: "web-php",
-    desc: "Framework PHP per applicazioni web",
+    desc: engineText("Framework PHP per applicazioni web", {
+      en: "PHP framework for web applications",
+      fr: "Framework PHP pour applications web",
+      de: "PHP-Framework für Webanwendungen",
+    }),
     home: "https://laravel.com/docs/13.x/installation",
     needs: ["php", "node"],
     create: ["composer create-project laravel/laravel:^13.0 {name} --prefer-dist"],
@@ -108,7 +112,11 @@ const SAMPLE_PIECES: FrameworkPiece[] = [
     kind: "base",
     name: "Vite",
     category: "web-js",
-    desc: "Sito o applicazione web in TypeScript",
+    desc: engineText("Sito o applicazione web in TypeScript", {
+      en: "Website or web application in TypeScript",
+      fr: "Site ou application web en TypeScript",
+      de: "Website oder Webanwendung in TypeScript",
+    }),
     home: "https://vite.dev/guide/",
     needs: ["node"],
     create: ["npm create vite@9 {name} -- --template vanilla-ts --no-interactive"],
@@ -120,7 +128,11 @@ const SAMPLE_PIECES: FrameworkPiece[] = [
     kind: "addon",
     slot: "frontend",
     name: "React",
-    desc: "Interfaccia in React con TypeScript",
+    desc: engineText("Interfaccia in React con TypeScript", {
+      en: "React interface with TypeScript",
+      fr: "Interface en React avec TypeScript",
+      de: "Oberfläche in React mit TypeScript",
+    }),
     home: "https://react.dev/learn/creating-a-react-app",
     on: {
       laravel: { create: ["composer create-project laravel/react-starter-kit {name} --prefer-dist --stability=dev"] },
@@ -132,10 +144,20 @@ const SAMPLE_PIECES: FrameworkPiece[] = [
     kind: "addon",
     slot: "css",
     name: "Tailwind CSS",
-    desc: "Stili con le classi di utilità di Tailwind CSS 4",
+    desc: engineText("Stili con le classi di utilità di Tailwind CSS 4", {
+      en: "Styles with Tailwind CSS 4 utility classes",
+      fr: "Styles avec les classes utilitaires de Tailwind CSS 4",
+      de: "Stile mit den Utility-Klassen von Tailwind CSS 4",
+    }),
     home: "https://tailwindcss.com/docs/installation/using-vite",
     on: {
-      laravel: { note: "Già incluso in Laravel e nei suoi starter kit." },
+      laravel: {
+        note: engineText("Già incluso in Laravel e nei suoi starter kit.", {
+          en: "Already included in Laravel and its starter kits.",
+          fr: "Déjà inclus dans Laravel et ses starter kits.",
+          de: "Bereits in Laravel und seinen Starter-Kits enthalten.",
+        }),
+      },
       vite: { steps: ["npm install -D tailwindcss@4 @tailwindcss/vite@4"] },
     },
   },
