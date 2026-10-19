@@ -98,6 +98,22 @@ fn title_bar_buttons() {
         "{js}"
     );
     assert!(js.contains("data:image/png;base64,iVBOR"), "logo embedded");
+    // Geist and Geist Mono built from their bytes (wOF2 is d09GMg in base64).
+    assert_eq!(js.matches(r#"["Geist","d09GMg"#).count(), 2, "Geist faces");
+    assert_eq!(
+        js.matches(r#"["Geist Mono","d09GMg"#).count(),
+        3,
+        "Geist Mono faces"
+    );
+    assert!(
+        js.contains("new FontFace(family, bytes"),
+        "fonts registered"
+    );
+    assert!(
+        js.contains(r#"const mono = "'Geist Mono', ui-monospace"#),
+        "workbench monospace"
+    );
+    assert!(!js.contains("Segoe UI',sans-serif"), "no Segoe-only stack");
     assert!(
         js.contains(r#"{"window.menuBarVisibility":"classic"}"#),
         "{js}"
