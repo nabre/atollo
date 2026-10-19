@@ -101,11 +101,19 @@ fn help_is_translated() {
 /// with every target id, in every language.
 #[test]
 fn help_program_name_and_target_on_every_system() {
-    // `/` separates on every system the tests run on.
-    let release = Path::new("/media/usb/Kit/Atollo-0.2.0-win32-x64.exe");
+    // A Windows path, read on any system the tests run on.
+    for release in [
+        "/media/usb/Kit/Atollo-0.2.0-win32-x64.exe",
+        r"D:\Kit\Atollo-0.2.0-win32-x64.exe",
+    ] {
+        assert_eq!(
+            program_name(kit::Os::Win32, Some(Path::new(release))),
+            "Atollo-0.2.0-win32-x64.exe"
+        );
+    }
     assert_eq!(
-        program_name(kit::Os::Win32, Some(release)),
-        "Atollo-0.2.0-win32-x64.exe"
+        program_name(kit::Os::Win32, Some(Path::new(r"D:\Kit\Atollo.exe"))),
+        "Atollo.exe"
     );
     let exe = Path::new("/media/usb/Kit/Atollo");
     for target in kit::Target::ALL {
