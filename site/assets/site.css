@@ -154,9 +154,18 @@ section { padding: 96px 0; position: relative; }
 .btn:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .release-note { font-size: 0.875rem; color: var(--desc); }
 
+/* The app icon floating over the kit folder card */
+.hero-side { position: relative; justify-self: end; width: 100%; max-width: 480px; padding-top: 84px; }
+.app-icon {
+  position: absolute; top: 0; right: 32px; z-index: 2; width: 132px; height: 132px;
+  filter: drop-shadow(0 18px 36px rgb(0 0 0 / 0.45)) drop-shadow(0 0 40px color-mix(in srgb, var(--accent) 30%, transparent));
+}
+.js .app-icon.rise { animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards, bob 6s ease-in-out 1.2s infinite; animation-delay: calc(var(--d) * 110ms + 120ms), 1.4s; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
 /* The kit folder card */
 .kit {
-  margin: 0; justify-self: end; width: 100%; max-width: 480px;
+  margin: 0; width: 100%;
   background: var(--glass); backdrop-filter: blur(14px);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
   border-radius: 14px; box-shadow: var(--shadow); overflow: hidden;
@@ -181,7 +190,8 @@ section { padding: 96px 0; position: relative; }
   .hero { min-height: auto; padding-top: 110px; }
   .hero-grid { grid-template-columns: 1fr; gap: 40px; }
   .hero::after { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-deep) 55%, transparent), var(--bg-deep) 70%), linear-gradient(0deg, var(--bg) 0%, transparent 18%); }
-  .kit { justify-self: stretch; max-width: none; }
+  .hero-side { justify-self: stretch; max-width: none; padding-top: 60px; }
+  .app-icon { width: 96px; height: 96px; right: 20px; }
 }
 
 /* Entrance and reveals: only with JavaScript, never with reduced motion */
@@ -191,6 +201,7 @@ section { padding: 96px 0; position: relative; }
 .js .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .hero-bg { animation: none; }
+  .js .app-icon.rise { animation: none; opacity: 1; transform: none; }
   .js .rise, .js .reveal { opacity: 1; transform: none; animation: none; transition: none; }
   html { scroll-behavior: auto; }
 }
@@ -338,6 +349,7 @@ section { padding: 96px 0; position: relative; }
 .finale-bg { position: absolute; inset: 0; background: var(--hero) center / cover no-repeat; transform: scaleX(-1); opacity: 0.9; }
 .finale::after { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 70% at 50% 50%, color-mix(in srgb, var(--bg-deep) 80%, transparent), transparent); pointer-events: none; }
 .finale-inner { position: relative; z-index: 1; max-width: 760px; }
+.finale-icon { display: block; width: 96px; height: 96px; margin: 0 auto 28px; filter: drop-shadow(0 16px 32px rgb(0 0 0 / 0.4)); }
 .finale h2 { font-size: clamp(2.25rem, 5.5vw, 4rem); letter-spacing: -0.035em; font-weight: 800; }
 .finale p { color: var(--title); font-size: 1.15rem; }
 .finale .cta { justify-content: center; }
