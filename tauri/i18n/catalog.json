@@ -1,4 +1,9 @@
 {
+  "{0} ha già dati suoi nel kit (porte, server, database o copie): i dati si collegano solo a un progetto che ha al massimo le impostazioni.": {
+    "en": "{0} already has data of its own in the kit (ports, servers, databases or copies): data can only be linked to a project that has at most its settings.",
+    "fr": "{0} a déjà ses propres données dans le kit (ports, serveurs, bases de données ou copies) : les données ne se lient qu'à un projet qui n'a au plus que ses paramètres.",
+    "de": "{0} hat schon eigene Daten im Kit (Ports, Server, Datenbanken oder Kopien): Daten lassen sich nur mit einem Projekt verknüpfen, das höchstens seine Einstellungen hat."
+  },
   "Scegli il file scaricato": {
     "en": "Choose the downloaded file",
     "fr": "Choisissez le fichier téléchargé",

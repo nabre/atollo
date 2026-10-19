@@ -695,7 +695,7 @@
   "Collega a…": "Verknüpfen mit…",
   "Collegare {0} a un progetto?": "{0} mit einem Projekt verknüpfen?",
   "Collega": "Verknüpfen",
-  "Impostazioni, porte, database e copie passano al progetto scelto, che non deve averne già.": "Einstellungen, Ports, Datenbanken und Kopien gehen an das gewählte Projekt, das noch keine haben darf.",
+  "Impostazioni, porte, database e copie passano al progetto scelto, le cui impostazioni lasciano il posto a queste; non deve avere porte, server, database o copie suoi.": "Einstellungen, Ports, Datenbanken und Kopien gehen an das gewählte Projekt, dessen Einstellungen ihnen Platz machen; es darf keine eigenen Ports, Server, Datenbanken oder Kopien haben.",
   "Nessun progetto a cui collegare i dati.": "Kein Projekt, mit dem die Daten verknüpft werden können.",
   "Requisiti del PC": "PC-Voraussetzungen",
   "Rimuovi {0}": "{0} entfernen",

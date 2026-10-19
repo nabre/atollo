@@ -695,7 +695,7 @@
   "Collega a…": "Link to…",
   "Collegare {0} a un progetto?": "Link {0} to a project?",
   "Collega": "Link",
-  "Impostazioni, porte, database e copie passano al progetto scelto, che non deve averne già.": "Settings, ports, databases and copies go to the chosen project, which must not have any yet.",
+  "Impostazioni, porte, database e copie passano al progetto scelto, le cui impostazioni lasciano il posto a queste; non deve avere porte, server, database o copie suoi.": "Settings, ports, databases and copies go to the chosen project, whose settings give way to these; it must not have ports, servers, databases or copies of its own.",
   "Nessun progetto a cui collegare i dati.": "No project to link the data to.",
   "Requisiti del PC": "PC requirements",
   "Rimuovi {0}": "Remove {0}",

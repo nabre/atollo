@@ -21,7 +21,8 @@ pub fn projects_orphans<R: Runtime>(
 }
 
 /// Gives the files of `orphan` to `project` (renamed outside the app);
-/// refused when `project` already has files of the kit.
+/// refused when `project` has data of the kit of its own besides its
+/// settings (ports, servers, databases, copies).
 #[tauri::command]
 pub fn project_orphan_adopt<R: Runtime>(
     webview: Webview<R>,
@@ -32,7 +33,7 @@ pub fn project_orphan_adopt<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     project_dir(&state.kit, Some(&project), state.lang())?;
-    project_state::adopt(&state.kit, &orphan, &project).or_fail("adopt")?;
+    project_state::adopt(&state.kit, state.lang(), &orphan, &project).or_fail("adopt")?;
     runner.rename_project(&orphan, &project);
     crate::log::info(&format!("data of {orphan} given to {project}"));
     Ok(())

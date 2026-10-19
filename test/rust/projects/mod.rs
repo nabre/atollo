@@ -265,7 +265,7 @@ fn delete_drops_the_names_in_use() {
     fs::create_dir_all(old.parent().unwrap()).unwrap();
     fs::write(&old, r#"{"mysql":"pw","mongodb":"pw2"}"#).unwrap();
     create(&kit, "Nuovo", "it").unwrap();
-    state::adopt(&kit, "Vecchio-Nome", "Nuovo").unwrap();
+    state::adopt(&kit, "it", "Vecchio-Nome", "Nuovo").unwrap();
     let plan = delete_plan(&kit, "Nuovo", "it").unwrap();
     assert!(plan.databases.iter().all(|d| d.database == "vecchio_nome"));
     let dbs = FakeDbs::new(&["mysql", "mongodb"]);
