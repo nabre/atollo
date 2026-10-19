@@ -42,6 +42,7 @@ spc_version=$(src "spc-$target" "" 2)
 exts=$(grep -v '^#' "$here/extensions.txt" | tr -d ' \n')
 
 work=${WORK:-$(mktemp -d)}
+mkdir -p "$work"
 cd "$work"
 
 # spc, checked.

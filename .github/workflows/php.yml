@@ -73,7 +73,17 @@ jobs:
           # spc looks up each library's release on api.github.com: without
           # a token the runner's shared address hits the rate limit (403).
           GITHUB_TOKEN: ${{ github.token }}
+          # A known work folder: spc writes the compiler's output to its
+          # logs only, kept below when the build fails.
+          WORK: ${{ runner.temp }}/php-work
         run: bash scripts/build-php/build.sh ${{ matrix.target }} ${{ steps.v.outputs.version }} ${{ steps.v.outputs.build }} out
+      - name: Build logs
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: php-logs-${{ matrix.target }}
+          path: ${{ runner.temp }}/php-work/log/
+          if-no-files-found: ignore
       - name: Test
         run: bash scripts/build-php/test.sh out/php-*-${{ matrix.target }}.tar.gz
       - uses: actions/upload-artifact@v6
