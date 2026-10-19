@@ -1,7 +1,7 @@
 // Builds the landing page into _site/: one page per language (Italian at the
 // root, the others in en/, fr/, de/, as the READMEs), the brand files from
-// docs/brand (the wordmark, never the lockup: MARKETING.md, «Logo nelle
-// intestazioni») and three screenshots from docs/app/images. No dependencies:
+// docs/brand (the wordmark, whose last O is the symbol: MARKETING.md, «Logo
+// nelle intestazioni») and three screenshots from docs/app/images. No dependencies:
 // node site/build.mjs. Published by .github/workflows/site.yml.
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

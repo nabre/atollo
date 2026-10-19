@@ -112,7 +112,7 @@ I colori del brand riflettono naturalmente gli elementi fisici di un **Atollo oc
 | **Surf Glow (Highlight)** | — (`make.py` / `themes.py`) | `#34D399` | Link e testo evidenziato su tema scuro (`textLink.foreground`, `list.highlightForeground`), bordo tab selezionato su tema chiaro. |
 | **Crest Mint** | — (`themes.py`) | `#6EE7B7` | Bordo superiore del tab selezionato in tema scuro (`tab.selectedBorderTop`). |
 | **Shallow Mint (Soft Surface)** | `MINT` | `#D1F0E0` | Superficie morbida di accento, `inputOption.activeBackground` e `modernActivityBarItem.activeBackground` in tema chiaro, testo su `FOREST`. |
-| **Coral Orange (Dark Action)** | `ORANGE` | `#F97316` | **Accento secondario / Attenzione (Tema Scuro):** `charts.orange`, `statusBar.debuggingBackground`, triangolo interno della lettera `A` nel wordmark e vertice caldo del simbolo. |
+| **Coral Orange (Dark Action)** | `ORANGE` | `#F97316` | **Accento secondario / Attenzione (Tema Scuro):** `charts.orange`, `statusBar.debuggingBackground`, isolotto a sud-est del simbolo e della `O` finale del wordmark, vertice caldo del simbolo. |
 | **Deep Coral (Light Action)** | — (`themes.py`) | `#C2410C` | **Accento secondario / Attenzione (Tema Chiaro):** `charts.orange`, `statusBar.debuggingBackground` (contrasto pieno con `#FFFFFF`). |
 | **Sun Amber** | `AMBER` | `#FBBF24` | Transizione centrale del gradiente caldo nel simbolo e negli sfondi hero (`#10B981` → `#FBBF24` → `#F97316`). |
 
@@ -165,7 +165,9 @@ Per garantire che il sito web, la documentazione HTML, i componenti UI React (`-
    * Sito: `site/assets/fonts/` (latin, latin-ext e, per Geist Mono, i caratteri di riquadro degli alberi di cartelle), `@font-face` con `font-display: swap`, preload del solo Geist latin.
    * Editor integrato (VSCodium): gli stessi file del sito, inclusi nell'eseguibile e registrati dallo script della finestra con l'API `FontFace` (`tauri/src/editor/window.rs`); `editor.fontFamily` e `terminal.integrated.fontFamily` in `Machine\settings.json` (`tauri/src/editor/cfg.rs`), solo se l'utente non ne ha già scelto uno.
 3. **Logo nelle intestazioni:**
-   * In header, barre di navigazione e firme si usa il solo wordmark (`wordmark-dark.svg` / `wordmark-light.svg`), mai il lockup simbolo + scritta. Il simbolo (l'atollo visto dall'alto: barriera ad anello, tre isolotti, laguna turchese e due onde stilizzate) resta da solo per favicon, icona dell'app e immagini hero.
+   * In header, barre di navigazione e firme si usa il wordmark (`wordmark-dark.svg` / `wordmark-light.svg`). Non esiste un lockup separato: la `O` finale di ATOLLO **è** il simbolo intero (l'atollo visto dall'alto: barriera ad anello, tre isolotti, laguna turchese e le due onde, che scendono sotto la linea di base), quindi il wordmark non va mai affiancato al simbolo. La `A` resta una lettera piena, senza accenti.
+   * Su sfondo chiaro barriera e onde della `O` sono smeraldo, su sfondo scuro menta. Il file è 514 × 129: le maiuscole occupano 100, le O sporgono di 1,5 sopra e sotto come ogni lettera tonda, le onde scendono sotto la linea di base per i restanti 27,5. La O finale è disegnata nelle unità delle lettere, non rimpicciolita dall'icona: isolotti spessi quanto un'asta, barriera a un terzo d'asta perché la O si legga chiusa.
+   * Il simbolo da solo resta per favicon, icona dell'app e immagini hero.
 4. **Uso dei Tag Tecnici:**
    * Tutti i nomi di target (`win32-x64`, `darwin-arm64`, `linux-x64`…), i percorsi (`projects/`, `data/apps/`), i comandi CLI (`atollo check`, `atollo sync`) e i formati di archivio (`.tar.gz`, `.zip`, `.AppImage`) vanno sempre resi in **monospace** con bordo sottile `1px solid var(--vsc-border)`.
 
@@ -239,7 +241,7 @@ Quando un agente prepara materiali per il lancio pubblico, deve dare priorità a
 Se all'agente viene chiesto di applicare o aggiornare il brand **Atollo** nel codice sorgente, questi sono i punti esatti di intervento:
 
 1. **Generatori del Brand e dei Temi (Fonte primaria):**
-   * [`docs/brand/make.py`](make.py): genera i file SVG (`symbol*.svg`, `wordmark-*.svg`, `lockup-*.svg`, `hero-*.svg`), i PNG (`logo-32.png`, `logo-256.png`, `symbol-512.png`, `ui/public/favicon.png`) e tutte le icone di `tauri/icons/` (`icon.ico`, `icon.icns`, `icon.png`, `32x32.png`, `128x128*.png`). Fino a 48 px si usa `symbol-small.svg`: isolotti più grossi, niente barriera sommersa, un'onda sola e spessa, perché a quelle dimensioni i dettagli si impastano. Gli sfondi `hero-*.svg` riprendono il simbolo: l'atollo in alto a destra e file di onde che sfumano verso sinistra, dove sta il contenuto.
+   * [`docs/brand/make.py`](make.py): genera i file SVG (`symbol*.svg`, `wordmark-*.svg`, `hero-*.svg`), i PNG (`logo-32.png`, `logo-256.png`, `symbol-512.png`, `ui/public/favicon.png`) e tutte le icone di `tauri/icons/` (`icon.ico`, `icon.icns`, `icon.png`, `32x32.png`, `128x128*.png`). Fino a 48 px si usa `symbol-small.svg`: isolotti più grossi, niente barriera sommersa, un'onda sola e spessa, perché a quelle dimensioni i dettagli si impastano. Gli sfondi `hero-*.svg` riprendono il simbolo: l'atollo in alto a destra e file di onde che sfumano verso sinistra, dove sta il contenuto.
    * [`docs/brand/themes.py`](themes.py): legge [`docs/brand/vscode-defaults/dark.json`](vscode-defaults/dark.json) e [`docs/brand/vscode-defaults/light.json`](vscode-defaults/light.json) insieme a `vscodium-themes/`, applica la mappa colori `BRAND` e genera:
      * [`tauri/editor-theme/package.json`](../../tauri/editor-theme/package.json) e `themes/{dark,light}.json` (il tema installato in VSCodium);
      * [`ui/src/theme/theme-vscode.css`](../../ui/src/theme/theme-vscode.css) e [`ui/src/theme/theme-colors.css`](../../ui/src/theme/theme-colors.css).
