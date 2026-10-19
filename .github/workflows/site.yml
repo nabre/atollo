@@ -15,6 +15,8 @@ on:
       - 'tauri/i18n/catalog.json'
       # The app's version, in the download names (site/build.mjs).
       - 'tauri/Cargo.toml'
+      # The icons: react-icons, drawn into SVG at build time.
+      - 'package-lock.json'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 
@@ -34,6 +36,10 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: lts/*
+          cache: npm
+      # react, react-dom and react-icons (the ui workspace), for the icons.
+      - name: Install the dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Build the site
         run: node site/build.mjs
       - uses: actions/configure-pages@v5
