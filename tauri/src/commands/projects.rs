@@ -175,6 +175,20 @@ pub fn project_action_default<R: Runtime>(
     Ok(crate::detect::set_default_action(&dir, &id, state.lang())?)
 }
 
+/// The project among the favorites of the Projects home, or not.
+#[tauri::command]
+pub fn project_pin<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    pinned: bool,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    crate::projects::settings::update(&state.kit, &project, |s| s.pinned = pinned);
+    Ok(())
+}
+
 /// "Servi come sito web": a folder of the project served by the file server
 /// (`static`), PHP (`php`), Apache (`apache`) or Caddy (`caddy`), or the site removed (`none`).
 #[tauri::command]

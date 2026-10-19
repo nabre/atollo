@@ -1493,5 +1493,435 @@
     "en": "Install your distribution's WebKitGTK 4.1 package ({0}), then restart Atollo. Or use the Atollo AppImage, which includes it.",
     "fr": "Installez le paquet WebKitGTK 4.1 de votre distribution ({0}), puis redémarrez Atollo. Ou utilisez l'AppImage d'Atollo, qui le contient.",
     "de": "Installiere das WebKitGTK-4.1-Paket deiner Distribution ({0}) und starte Atollo dann neu. Oder verwende das AppImage von Atollo, das es enthält."
+  },
+  "Categoria non valida: {0}": {
+    "en": "Invalid category: {0}",
+    "fr": "Catégorie non valide : {0}",
+    "de": "Ungültige Kategorie: {0}"
+  },
+  "Applicazione web Vue con server": {
+    "en": "Vue web application with a server",
+    "fr": "Application web Vue avec serveur",
+    "de": "Vue-Webanwendung mit Server"
+  },
+  "Applicazione web Svelte con server": {
+    "en": "Svelte web application with a server",
+    "fr": "Application web Svelte avec serveur",
+    "de": "Svelte-Webanwendung mit Server"
+  },
+  "Sito veloce basato sui contenuti, con isole interattive": {
+    "en": "Fast content-driven site, with interactive islands",
+    "fr": "Site rapide axé sur le contenu, avec des îlots interactifs",
+    "de": "Schnelle inhaltsorientierte Website mit interaktiven Inseln"
+  },
+  "Applicazione web Angular in TypeScript": {
+    "en": "Angular web application in TypeScript",
+    "fr": "Application web Angular en TypeScript",
+    "de": "Angular-Webanwendung in TypeScript"
+  },
+  "Applicazione web React con server (ex Remix), già con Tailwind CSS": {
+    "en": "React web application with a server (formerly Remix), Tailwind CSS included",
+    "fr": "Application web React avec serveur (ex-Remix), Tailwind CSS inclus",
+    "de": "React-Webanwendung mit Server (früher Remix), mit Tailwind CSS"
+  },
+  "Server e API in TypeScript con Node.js": {
+    "en": "Servers and APIs in TypeScript with Node.js",
+    "fr": "Serveurs et API en TypeScript avec Node.js",
+    "de": "Server und APIs in TypeScript mit Node.js"
+  },
+  "API web leggere in TypeScript con Node.js": {
+    "en": "Lightweight web APIs in TypeScript with Node.js",
+    "fr": "API web légères en TypeScript avec Node.js",
+    "de": "Schlanke Web-APIs in TypeScript mit Node.js"
+  },
+  "Applicazione web in TypeScript con Deno e Preact": {
+    "en": "TypeScript web application with Deno and Preact",
+    "fr": "Application web en TypeScript avec Deno et Preact",
+    "de": "Webanwendung in TypeScript mit Deno und Preact"
+  },
+  "API web veloci in TypeScript con Bun": {
+    "en": "Fast web APIs in TypeScript with Bun",
+    "fr": "API web rapides en TypeScript avec Bun",
+    "de": "Schnelle Web-APIs in TypeScript mit Bun"
+  },
+  "Senza terminale le domande del generatore valgono no: niente Tailwind né impostazioni di VS Code, se non scelti come aggiunte.": {
+    "en": "Without a terminal the generator's questions count as no: no Tailwind and no VS Code settings unless chosen as additions.",
+    "fr": "Sans terminal, les questions du générateur valent non : ni Tailwind ni réglages VS Code, sauf s'ils sont choisis comme ajouts.",
+    "de": "Ohne Terminal gelten die Fragen des Generators als Nein: kein Tailwind und keine VS-Code-Einstellungen, außer als Ergänzung gewählt."
+  },
+  "Modello minimo di create-elysia: il server è in main.ts.": {
+    "en": "Minimal create-elysia template: the server is in main.ts.",
+    "fr": "Modèle minimal de create-elysia : le serveur est dans main.ts.",
+    "de": "Minimale create-elysia-Vorlage: Der Server steht in main.ts."
+  },
+  "Già incluso nel modello di React Router.": {
+    "en": "Already included in the React Router template.",
+    "fr": "Déjà inclus dans le modèle React Router.",
+    "de": "Bereits in der React-Router-Vorlage enthalten."
+  },
+  "Tailwind CSS resta: fa parte del modello di React Router.": {
+    "en": "Tailwind CSS stays: it is part of the React Router template.",
+    "fr": "Tailwind CSS reste : il fait partie du modèle React Router.",
+    "de": "Tailwind CSS bleibt: Es gehört zur React-Router-Vorlage."
+  },
+  "Componenti React nelle pagine Astro.": {
+    "en": "React components in Astro pages.",
+    "fr": "Composants React dans les pages Astro.",
+    "de": "React-Komponenten in Astro-Seiten."
+  },
+  "Componenti Vue nelle pagine Astro.": {
+    "en": "Vue components in Astro pages.",
+    "fr": "Composants Vue dans les pages Astro.",
+    "de": "Vue-Komponenten in Astro-Seiten."
+  },
+  "Componenti Svelte nelle pagine Astro.": {
+    "en": "Svelte components in Astro pages.",
+    "fr": "Composants Svelte dans les pages Astro.",
+    "de": "Svelte-Komponenten in Astro-Seiten."
+  },
+  "Già incluso: ng test usa Vitest.": {
+    "en": "Already included: ng test uses Vitest.",
+    "fr": "Déjà inclus : ng test utilise Vitest.",
+    "de": "Bereits enthalten: ng test verwendet Vitest."
+  },
+  "Già incluso nel progetto NestJS.": {
+    "en": "Already included in the NestJS project.",
+    "fr": "Déjà inclus dans le projet NestJS.",
+    "de": "Bereits im NestJS-Projekt enthalten."
+  },
+  "Prettier c'è già nel progetto Angular: si aggiunge il comando format.": {
+    "en": "Prettier is already in the Angular project: the format command is added.",
+    "fr": "Prettier est déjà dans le projet Angular : la commande format est ajoutée.",
+    "de": "Prettier ist bereits im Angular-Projekt: Der Befehl format wird ergänzt."
+  },
+  "Già incluso nel progetto NestJS (npm run format).": {
+    "en": "Already included in the NestJS project (npm run format).",
+    "fr": "Déjà inclus dans le projet NestJS (npm run format).",
+    "de": "Bereits im NestJS-Projekt enthalten (npm run format)."
+  },
+  "Framework Python per applicazioni web, con pannello di amministrazione": {
+    "en": "Python framework for web applications, with an admin panel",
+    "fr": "Framework Python pour applications web, avec panneau d'administration",
+    "de": "Python-Framework für Webanwendungen, mit Admin-Oberfläche"
+  },
+  "Pannello in /admin, con DJANGO_SUPERUSER_USERNAME e DJANGO_SUPERUSER_PASSWORD del file .env.": {
+    "en": "Admin panel at /admin, with DJANGO_SUPERUSER_USERNAME and DJANGO_SUPERUSER_PASSWORD from the .env file.",
+    "fr": "Panneau dans /admin, avec DJANGO_SUPERUSER_USERNAME et DJANGO_SUPERUSER_PASSWORD du fichier .env.",
+    "de": "Admin-Oberfläche unter /admin, mit DJANGO_SUPERUSER_USERNAME und DJANGO_SUPERUSER_PASSWORD aus der .env-Datei."
+  },
+  "API web in Python, con la documentazione generata da sola": {
+    "en": "Python web API, with documentation generated automatically",
+    "fr": "API web en Python, avec une documentation générée automatiquement",
+    "de": "Web-API in Python, mit automatisch erzeugter Dokumentation"
+  },
+  "Documentazione delle API in /docs.": {
+    "en": "API documentation at /docs.",
+    "fr": "Documentation de l'API dans /docs.",
+    "de": "API-Dokumentation unter /docs."
+  },
+  "Framework Python leggero per siti e API": {
+    "en": "Lightweight Python framework for sites and APIs",
+    "fr": "Framework Python léger pour sites et API",
+    "de": "Schlankes Python-Framework für Websites und APIs"
+  },
+  "API web in C# con ASP.NET Core": {
+    "en": "C# web API with ASP.NET Core",
+    "fr": "API web en C# avec ASP.NET Core",
+    "de": "Web-API in C# mit ASP.NET Core"
+  },
+  "Applicazione web in C# con Blazor e ASP.NET Core": {
+    "en": "C# web application with Blazor and ASP.NET Core",
+    "fr": "Application web en C# avec Blazor et ASP.NET Core",
+    "de": "Webanwendung in C# mit Blazor und ASP.NET Core"
+  },
+  "API web in Java con Spring Boot e Maven": {
+    "en": "Java web API with Spring Boot and Maven",
+    "fr": "API web en Java avec Spring Boot et Maven",
+    "de": "Web-API in Java mit Spring Boot und Maven"
+  },
+  "Scaricato da start.spring.io con Spring Web e DevTools, per Java 21.": {
+    "en": "Downloaded from start.spring.io with Spring Web and DevTools, for Java 21.",
+    "fr": "Téléchargé depuis start.spring.io avec Spring Web et DevTools, pour Java 21.",
+    "de": "Von start.spring.io geladen, mit Spring Web und DevTools, für Java 21."
+  },
+  "Server web in Kotlin con Ktor e Gradle": {
+    "en": "Kotlin web server with Ktor and Gradle",
+    "fr": "Serveur web en Kotlin avec Ktor et Gradle",
+    "de": "Webserver in Kotlin mit Ktor und Gradle"
+  },
+  "Lo crea la riga di comando ufficiale di Ktor, avviata con Go.": {
+    "en": "Created by Ktor's official command line, run with Go.",
+    "fr": "Créé par la ligne de commande officielle de Ktor, lancée avec Go.",
+    "de": "Erstellt mit der offiziellen Kommandozeile von Ktor, gestartet mit Go."
+  },
+  "Server web in Go con Gin": {
+    "en": "Go web server with Gin",
+    "fr": "Serveur web en Go avec Gin",
+    "de": "Webserver in Go mit Gin"
+  },
+  "Server web in Rust con Axum e Tokio": {
+    "en": "Rust web server with Axum and Tokio",
+    "fr": "Serveur web en Rust avec Axum et Tokio",
+    "de": "Webserver in Rust mit Axum und Tokio"
+  },
+  "La prima build scarica e compila le dipendenze: qualche minuto.": {
+    "en": "The first build downloads and compiles the dependencies: a few minutes.",
+    "fr": "La première compilation télécharge et compile les dépendances : quelques minutes.",
+    "de": "Der erste Build lädt und kompiliert die Abhängigkeiten: einige Minuten."
+  },
+  "Server web in Dart con shelf (modello ufficiale)": {
+    "en": "Dart web server with shelf (official template)",
+    "fr": "Serveur web en Dart avec shelf (modèle officiel)",
+    "de": "Webserver in Dart mit shelf (offizielle Vorlage)"
+  },
+  "Il nome del progetto fa da nome del pacchetto Dart: lettere, cifre, spazi e trattini, senza una cifra all'inizio. Il server ascolta su tutta la rete: Windows può chiedere il permesso del firewall.": {
+    "en": "The project name becomes the Dart package name: letters, digits, spaces and hyphens, not starting with a digit. The server listens on the whole network: Windows may ask for firewall permission.",
+    "fr": "Le nom du projet sert de nom de paquet Dart : lettres, chiffres, espaces et tirets, sans chiffre au début. Le serveur écoute sur tout le réseau : Windows peut demander l'autorisation du pare-feu.",
+    "de": "Der Projektname wird zum Namen des Dart-Pakets: Buchstaben, Ziffern, Leerzeichen und Bindestriche, nicht mit einer Ziffer am Anfang. Der Server lauscht im ganzen Netzwerk: Windows kann nach der Firewall-Erlaubnis fragen."
+  },
+  "Predefinito di Django: db.sqlite3 c'è già, fatto dalla prima migrazione.": {
+    "en": "Django's default: db.sqlite3 is already there, made by the first migration.",
+    "fr": "Par défaut dans Django : db.sqlite3 existe déjà, créé par la première migration.",
+    "de": "Standard in Django: db.sqlite3 ist schon da, von der ersten Migration angelegt."
+  },
+  "Il kit crea il database del progetto e scrive DATABASE_URL nel file .env, che Django legge con dj-database-url.": {
+    "en": "The kit creates the project's database and writes DATABASE_URL in the .env file, which Django reads with dj-database-url.",
+    "fr": "Le kit crée la base de données du projet et écrit DATABASE_URL dans le fichier .env, que Django lit avec dj-database-url.",
+    "de": "Das Kit legt die Datenbank des Projekts an und schreibt DATABASE_URL in die .env-Datei, die Django mit dj-database-url liest."
+  },
+  "Già incluso nel modello Blazor.": {
+    "en": "Already included in the Blazor template.",
+    "fr": "Déjà inclus dans le modèle Blazor.",
+    "de": "Bereits in der Blazor-Vorlage enthalten."
+  },
+  "CMS Craft con contenuti su misura e modelli Twig": {
+    "en": "Craft CMS with custom content models and Twig templates",
+    "fr": "CMS Craft avec des contenus sur mesure et des modèles Twig",
+    "de": "Craft CMS mit maßgeschneiderten Inhalten und Twig-Vorlagen"
+  },
+  "Pannello in /admin, con ADMIN_USER e ADMIN_PASSWORD del file .env. Edizione Solo, gratuita, per un solo utente.": {
+    "en": "Control panel at /admin, with ADMIN_USER and ADMIN_PASSWORD from the .env file. Solo edition, free, for a single user.",
+    "fr": "Panneau dans /admin, avec ADMIN_USER et ADMIN_PASSWORD du fichier .env. Édition Solo, gratuite, pour un seul utilisateur.",
+    "de": "Verwaltung unter /admin, mit ADMIN_USER und ADMIN_PASSWORD aus der Datei .env. Solo-Edition, kostenlos, für einen einzigen Benutzer."
+  },
+  "CMS Kirby con i contenuti in file, senza database": {
+    "en": "Kirby CMS with content in files, no database",
+    "fr": "CMS Kirby avec les contenus dans des fichiers, sans base de données",
+    "de": "Kirby CMS mit Inhalten in Dateien, ohne Datenbank"
+  },
+  "Pannello in /panel, con ADMIN_EMAIL e ADMIN_PASSWORD del file .env. Gratis in locale: un sito pubblico vuole una licenza.": {
+    "en": "Panel at /panel, with ADMIN_EMAIL and ADMIN_PASSWORD from the .env file. Free locally: a public site needs a license.",
+    "fr": "Panneau dans /panel, avec ADMIN_EMAIL et ADMIN_PASSWORD du fichier .env. Gratuit en local : un site public demande une licence.",
+    "de": "Panel unter /panel, mit ADMIN_EMAIL und ADMIN_PASSWORD aus der Datei .env. Lokal kostenlos: eine öffentliche Website braucht eine Lizenz."
+  },
+  "CMS Grav con le pagine in Markdown, senza database": {
+    "en": "Grav CMS with pages in Markdown, no database",
+    "fr": "CMS Grav avec les pages en Markdown, sans base de données",
+    "de": "Grav CMS mit Seiten in Markdown, ohne Datenbank"
+  },
+  "Pannello in /admin, con ADMIN_USER e ADMIN_PASSWORD del file .env.": {
+    "en": "Control panel at /admin, with ADMIN_USER and ADMIN_PASSWORD from the .env file.",
+    "fr": "Panneau dans /admin, avec ADMIN_USER et ADMIN_PASSWORD du fichier .env.",
+    "de": "Verwaltung unter /admin, mit ADMIN_USER und ADMIN_PASSWORD aus der Datei .env."
+  },
+  "CMS Joomla per siti e portali, con estensioni": {
+    "en": "Joomla CMS for sites and portals, with extensions",
+    "fr": "CMS Joomla pour sites et portails, avec extensions",
+    "de": "Joomla CMS für Websites und Portale, mit Erweiterungen"
+  },
+  "Pannello in /administrator, con ADMIN_USER e ADMIN_PASSWORD del file .env. Gli aggiornamenti dopo la 6.2.0 si fanno dal pannello.": {
+    "en": "Control panel at /administrator, with ADMIN_USER and ADMIN_PASSWORD from the .env file. Updates after 6.2.0 are installed from the panel.",
+    "fr": "Panneau dans /administrator, avec ADMIN_USER et ADMIN_PASSWORD du fichier .env. Les mises à jour après la 6.2.0 se font depuis le panneau.",
+    "de": "Verwaltung unter /administrator, mit ADMIN_USER und ADMIN_PASSWORD aus der Datei .env. Updates nach 6.2.0 werden in der Verwaltung installiert."
+  },
+  "CMS headless in Node.js: contenuti via API, database SQLite": {
+    "en": "Headless CMS in Node.js: content through an API, SQLite database",
+    "fr": "CMS headless en Node.js : contenus via API, base de données SQLite",
+    "de": "Headless-CMS in Node.js: Inhalte über eine API, SQLite-Datenbank"
+  },
+  "Pannello in /admin sulla porta 1337, con ADMIN_EMAIL e ADMIN_PASSWORD del file .env. Database in .tmp/data.db.": {
+    "en": "Admin panel at /admin on port 1337, with ADMIN_EMAIL and ADMIN_PASSWORD from the .env file. Database in .tmp/data.db.",
+    "fr": "Panneau dans /admin sur le port 1337, avec ADMIN_EMAIL et ADMIN_PASSWORD du fichier .env. Base de données dans .tmp/data.db.",
+    "de": "Verwaltung unter /admin auf Port 1337, mit ADMIN_EMAIL und ADMIN_PASSWORD aus der Datei .env. Datenbank in .tmp/data.db."
+  },
+  "CMS headless in TypeScript dentro un'app Next.js, database SQLite": {
+    "en": "Headless CMS in TypeScript inside a Next.js app, SQLite database",
+    "fr": "CMS headless en TypeScript dans une application Next.js, base de données SQLite",
+    "de": "Headless-CMS in TypeScript in einer Next.js-App, SQLite-Datenbank"
+  },
+  "Pannello in /admin sulla porta 3000: al primo accesso crei l'utente amministratore. Database in payload.db.": {
+    "en": "Admin panel at /admin on port 3000: on the first visit you create the administrator. Database in payload.db.",
+    "fr": "Panneau dans /admin sur le port 3000 : au premier accès, vous créez l'administrateur. Base de données dans payload.db.",
+    "de": "Verwaltung unter /admin auf Port 3000: beim ersten Aufruf legen Sie den Administrator an. Datenbank in payload.db."
+  },
+  "Sito di documentazione in React, pagine in Markdown e MDX": {
+    "en": "Documentation site in React, pages in Markdown and MDX",
+    "fr": "Site de documentation en React, pages en Markdown et MDX",
+    "de": "Dokumentationsseite in React, Seiten in Markdown und MDX"
+  },
+  "Sito di documentazione con Astro Starlight, pagine in Markdown": {
+    "en": "Documentation site with Astro Starlight, pages in Markdown",
+    "fr": "Site de documentation avec Astro Starlight, pages en Markdown",
+    "de": "Dokumentationsseite mit Astro Starlight, Seiten in Markdown"
+  },
+  "Sito di documentazione veloce con Vue e Vite, pagine in Markdown": {
+    "en": "Fast documentation site with Vue and Vite, pages in Markdown",
+    "fr": "Site de documentation rapide avec Vue et Vite, pages en Markdown",
+    "de": "Schnelle Dokumentationsseite mit Vue und Vite, Seiten in Markdown"
+  },
+  "Generatore di siti statici semplice, da Markdown e modelli": {
+    "en": "Simple static site generator, from Markdown and templates",
+    "fr": "Générateur de sites statiques simple, à partir de Markdown et de modèles",
+    "de": "Einfacher Generator für statische Websites, aus Markdown und Vorlagen"
+  },
+  "Documentazione in Markdown con MkDocs e il tema Material (Python)": {
+    "en": "Documentation in Markdown with MkDocs and the Material theme (Python)",
+    "fr": "Documentation en Markdown avec MkDocs et le thème Material (Python)",
+    "de": "Dokumentation in Markdown mit MkDocs und dem Material-Theme (Python)"
+  },
+  "MkDocs 1 non ha più novità: chi cura Material ora sviluppa Zensical, che legge lo stesso mkdocs.yml.": {
+    "en": "MkDocs 1 gets no new features: the Material team now develops Zensical, which reads the same mkdocs.yml.",
+    "fr": "MkDocs 1 n'évolue plus : l'équipe de Material développe désormais Zensical, qui lit le même mkdocs.yml.",
+    "de": "MkDocs 1 bekommt keine Neuerungen mehr: das Material-Team entwickelt jetzt Zensical, das dieselbe mkdocs.yml liest."
+  },
+  "App desktop multipiattaforma in C# con Avalonia": {
+    "en": "Cross-platform desktop app in C# with Avalonia",
+    "fr": "Application de bureau multiplateforme en C# avec Avalonia",
+    "de": "Plattformübergreifende Desktop-App in C# mit Avalonia"
+  },
+  "Installa nel .NET del kit i modelli di Avalonia 12.": {
+    "en": "Installs the Avalonia 12 templates into the kit's .NET.",
+    "fr": "Installe les modèles d'Avalonia 12 dans le .NET du kit.",
+    "de": "Installiert die Vorlagen von Avalonia 12 im .NET des Kits."
+  },
+  "App desktop con interfaccia web e motore in Go": {
+    "en": "Desktop app with a web interface and a Go engine",
+    "fr": "Application de bureau avec interface web et moteur en Go",
+    "de": "Desktop-App mit Weboberfläche und Go-Kern"
+  },
+  "Su Windows usa WebView2, già presente in Windows 11; su Linux servono GTK e WebKitGTK del sistema, su macOS gli Xcode Command Line Tools.": {
+    "en": "On Windows it uses WebView2, already in Windows 11; Linux needs the system's GTK and WebKitGTK, macOS the Xcode Command Line Tools.",
+    "fr": "Sous Windows, il utilise WebView2, déjà présent dans Windows 11 ; Linux demande GTK et WebKitGTK du système, macOS les Xcode Command Line Tools.",
+    "de": "Unter Windows nutzt es WebView2, in Windows 11 schon vorhanden; Linux braucht GTK und WebKitGTK des Systems, macOS die Xcode Command Line Tools."
+  },
+  "App desktop leggerissima in HTML, CSS e JavaScript": {
+    "en": "Very lightweight desktop app in HTML, CSS and JavaScript",
+    "fr": "Application de bureau très légère en HTML, CSS et JavaScript",
+    "de": "Sehr schlanke Desktop-App in HTML, CSS und JavaScript"
+  },
+  "App di dati in Python con Streamlit": {
+    "en": "Data app in Python with Streamlit",
+    "fr": "Application de données en Python avec Streamlit",
+    "de": "Daten-App in Python mit Streamlit"
+  },
+  "Ad app avviata, aprila su http://localhost:8501.": {
+    "en": "Once the app is running, open it at http://localhost:8501.",
+    "fr": "Une fois l'application lancée, ouvrez-la sur http://localhost:8501.",
+    "de": "Wenn die App läuft, öffne sie unter http://localhost:8501."
+  },
+  "Quaderni Jupyter in Python con JupyterLab": {
+    "en": "Jupyter notebooks in Python with JupyterLab",
+    "fr": "Notebooks Jupyter en Python avec JupyterLab",
+    "de": "Jupyter-Notebooks in Python mit JupyterLab"
+  },
+  "Quaderni Python reattivi, salvati come file .py": {
+    "en": "Reactive Python notebooks, saved as .py files",
+    "fr": "Notebooks Python réactifs, enregistrés en fichiers .py",
+    "de": "Reaktive Python-Notebooks, als .py-Dateien gespeichert"
+  },
+  "App di dati interattiva in Python con Shiny": {
+    "en": "Interactive data app in Python with Shiny",
+    "fr": "Application de données interactive en Python avec Shiny",
+    "de": "Interaktive Daten-App in Python mit Shiny"
+  },
+  "App di dati interattiva in R con Shiny": {
+    "en": "Interactive data app in R with Shiny",
+    "fr": "Application de données interactive en R avec Shiny",
+    "de": "Interaktive Daten-App in R mit Shiny"
+  },
+  "Scarica Shiny da CRAN durante la creazione.": {
+    "en": "Downloads Shiny from CRAN while creating the project.",
+    "fr": "Télécharge Shiny depuis CRAN pendant la création.",
+    "de": "Lädt Shiny beim Erstellen von CRAN herunter."
+  },
+  "Quaderni reattivi in Julia con Pluto": {
+    "en": "Reactive Julia notebooks with Pluto",
+    "fr": "Notebooks réactifs en Julia avec Pluto",
+    "de": "Reaktive Julia-Notebooks mit Pluto"
+  },
+  "Documento Typst, con il PDF aggiornato a ogni modifica": {
+    "en": "Typst document, with the PDF updated on every change",
+    "fr": "Document Typst, avec le PDF mis à jour à chaque modification",
+    "de": "Typst-Dokument, das PDF wird bei jeder Änderung aktualisiert"
+  },
+  "Documento LaTeX compilato con latexmk": {
+    "en": "LaTeX document built with latexmk",
+    "fr": "Document LaTeX compilé avec latexmk",
+    "de": "LaTeX-Dokument, mit latexmk übersetzt"
+  },
+  "I pacchetti LaTeX che mancano si aggiungono con tlmgr install <nome>.": {
+    "en": "Add missing LaTeX packages with tlmgr install <name>.",
+    "fr": "Les paquets LaTeX manquants s'ajoutent avec tlmgr install <nom>.",
+    "de": "Fehlende LaTeX-Pakete fügst du mit tlmgr install <Name> hinzu."
+  },
+  "Programma o libreria in Rust con Cargo": {
+    "en": "Rust program or library with Cargo",
+    "fr": "Programme ou bibliothèque en Rust avec Cargo",
+    "de": "Programm oder Bibliothek in Rust mit Cargo"
+  },
+  "Programma da riga di comando in Go": {
+    "en": "Command-line program in Go",
+    "fr": "Programme en ligne de commande en Go",
+    "de": "Kommandozeilenprogramm in Go"
+  },
+  "Programma in Zig con zig build": {
+    "en": "Zig program with zig build",
+    "fr": "Programme en Zig avec zig build",
+    "de": "Zig-Programm mit zig build"
+  },
+  "Programma in C++ con CMake e Ninja": {
+    "en": "C++ program with CMake and Ninja",
+    "fr": "Programme en C++ avec CMake et Ninja",
+    "de": "C++-Programm mit CMake und Ninja"
+  },
+  "Programma da riga di comando in C# con .NET": {
+    "en": "Command-line program in C# with .NET",
+    "fr": "Programme en ligne de commande en C# avec .NET",
+    "de": "Kommandozeilenprogramm in C# mit .NET"
+  },
+  "Pacchetto Python con un comando eseguibile, gestito da uv": {
+    "en": "Python package with a runnable command, managed by uv",
+    "fr": "Paquet Python avec une commande exécutable, géré par uv",
+    "de": "Python-Paket mit ausführbarem Befehl, von uv verwaltet"
+  },
+  "Programma in TypeScript con Deno": {
+    "en": "TypeScript program with Deno",
+    "fr": "Programme en TypeScript avec Deno",
+    "de": "TypeScript-Programm mit Deno"
+  },
+  "Programma da riga di comando in Dart": {
+    "en": "Command-line program in Dart",
+    "fr": "Programme en ligne de commande en Dart",
+    "de": "Kommandozeilenprogramm in Dart"
+  },
+  "Applicazione Kotlin con Gradle": {
+    "en": "Kotlin application with Gradle",
+    "fr": "Application Kotlin avec Gradle",
+    "de": "Kotlin-Anwendung mit Gradle"
+  },
+  "Applicazione Java con Gradle": {
+    "en": "Java application with Gradle",
+    "fr": "Application Java avec Gradle",
+    "de": "Java-Anwendung mit Gradle"
+  },
+  "Pacchetto Julia": {
+    "en": "Julia package",
+    "fr": "Paquet Julia",
+    "de": "Julia-Paket"
+  },
+  "Il nome del progetto deve essere un nome Julia valido: lettere, cifre e _, senza trattini né spazi.": {
+    "en": "The project name must be a valid Julia name: letters, digits and _, no hyphens or spaces.",
+    "fr": "Le nom du projet doit être un nom Julia valide : lettres, chiffres et _, sans tirets ni espaces.",
+    "de": "Der Projektname muss ein gültiger Julia-Name sein: Buchstaben, Ziffern und _, ohne Bindestriche oder Leerzeichen."
   }
 }

@@ -1,9 +1,10 @@
 {
-  "about": "Framework of the new-project wizard (DECISIONS.md D-83): a base and the additions combined with it. Official instructions, versions checked on npm, Packagist and GitHub on 15/10/2026. Every base with a web interface but the CMS has the CSS frameworks (slot css); development goes through Vite or its equivalent (Turbopack for Next.js). env: variables written in .env before the steps ({name}, {package} filled in). database (of a base or of an addition): a server of the kit (mysql, mongodb) where the project gets its database, its connection written in .env, before the steps; the steps get it as $env:ATOLLO_DB_HOST, _PORT, _NAME, _USER, _PASSWORD, _URL, and the variables of .env too ({password} = a new password, DECISIONS.md D-93). Each line is one command run with the kit's PowerShell and environment: 'create' in projects\\ (it makes the folder {name}), 'steps' inside projects\\{name}. {name} = project name, {package} = com.example.<name in lower case letters and digits>. needs: components of the kit, installed first. actions: name and command, saved as the project's actions. An addition has one entry in 'on' per base it works with: its 'create' replaces the base's (a starter kit, a template), its steps come after the base's, its actions replace those of the base with the same name. Two additions of the same 'slot' do not go together. desc and note: Italian, translated by i18n/catalog.json.",
+  "about": "Framework of the new-project wizard (DECISIONS.md D-83): a base and the additions combined with it. Official instructions, versions checked on npm, Packagist and GitHub on 15/10/2026, those added on 19/10/2026 (D-131) also on PyPI, crates.io, proxy.golang.org, NuGet, JSR and CRAN. category: the group of a base in the wizard's tree (web-php, web-js, web-python, web-other, cms, docs, desktop, mobile, data, cli). Every web base with an interface of its own but the CMS and the documentation sites has the CSS frameworks (slot css); development goes through Vite or its equivalent (Turbopack for Next.js). env: variables written in .env before the steps ({name}, {package} filled in). database (of a base or of an addition): a server of the kit (mysql, mongodb) where the project gets its database, its connection written in .env, before the steps; the steps get it as $env:ATOLLO_DB_HOST, _PORT, _NAME, _USER, _PASSWORD, _URL, and the variables of .env too ({password} = a new password, DECISIONS.md D-93). Each line is one command run with the kit's PowerShell and environment: 'create' in projects\\ (it makes the folder {name}), 'steps' inside projects\\{name}. {name} = project name, as a PowerShell string in single quotes (never inside the code of another language), {package} = com.example.<name in lower case letters and digits>. needs: components of the kit, installed first. actions: name and command, saved as the project's actions as they are ({name} and {package} not filled in; cmd.exe on Windows, /bin/sh elsewhere: no PowerShell). No generator may init Git: a folder with .git is never used. An addition has one entry in 'on' per base it works with: its 'create' replaces the base's (a starter kit, a template), its steps come after the base's, its actions replace those of the base with the same name. Two additions of the same 'slot' do not go together. desc and note: Italian, translated by i18n/catalog.json.",
   "pieces": [
     {
       "id": "laravel",
       "kind": "base",
+      "category": "web-php",
       "name": "Laravel",
       "desc": "Framework PHP per applicazioni web",
       "home": "https://laravel.com/docs/13.x/installation",
@@ -37,6 +38,7 @@
     {
       "id": "symfony",
       "kind": "base",
+      "category": "web-php",
       "name": "Symfony",
       "desc": "Framework PHP per applicazioni web",
       "home": "https://symfony.com/doc/current/setup.html",
@@ -59,6 +61,7 @@
     {
       "id": "vite",
       "kind": "base",
+      "category": "web-js",
       "name": "Vite",
       "desc": "Sito o applicazione web in TypeScript",
       "home": "https://vite.dev/guide/",
@@ -85,6 +88,7 @@
     {
       "id": "nextjs",
       "kind": "base",
+      "category": "web-js",
       "name": "Next.js",
       "desc": "Applicazione web React con server, già con Tailwind CSS",
       "home": "https://nextjs.org/docs/app/getting-started/installation",
@@ -107,41 +111,17 @@
       ]
     },
     {
-      "id": "electron",
+      "id": "nuxt",
       "kind": "base",
-      "name": "Electron",
-      "desc": "App desktop con tecnologie web (Electron Forge)",
-      "home": "https://www.electronforge.io/",
+      "category": "web-js",
+      "name": "Nuxt",
+      "desc": "Applicazione web Vue con server",
+      "home": "https://nuxt.com/docs/4.x/getting-started/installation",
       "needs": [
         "node"
       ],
       "create": [
-        "npx --yes create-electron-app@8 {name} --template=vite --typescript"
-      ],
-      "steps": [],
-      "actions": [
-        {
-          "name": "Avvia",
-          "command": "npm start"
-        },
-        {
-          "name": "Pacchetto",
-          "command": "npm run make"
-        }
-      ]
-    },
-    {
-      "id": "tauri",
-      "kind": "base",
-      "name": "Tauri",
-      "desc": "App desktop leggera: interfaccia web, motore in Rust",
-      "home": "https://v2.tauri.app/start/create-project/",
-      "needs": [
-        "rust",
-        "node"
-      ],
-      "create": [
-        "npm create tauri-app@4 {name} -- --template vanilla-ts --manager npm --identifier {package} --yes"
+        "npm create nuxt@4 {name} -- --template minimal --packageManager npm --no-install --no-gitInit"
       ],
       "steps": [
         "npm install"
@@ -149,44 +129,539 @@
       "actions": [
         {
           "name": "Avvia",
-          "command": "npm run tauri dev"
+          "command": "npm run dev"
         },
         {
           "name": "Build",
-          "command": "npm run tauri build"
-        }
-      ],
-      "note": "Da provare con il compilatore GNU del kit: la guida di Tauri chiede MSVC."
-    },
-    {
-      "id": "android",
-      "kind": "base",
-      "name": "Android",
-      "desc": "App Android in Kotlin con Jetpack Compose (modello ufficiale di Google)",
-      "home": "https://github.com/android/architecture-templates",
-      "needs": [
-        "git",
-        "java",
-        "android"
-      ],
-      "create": [
-        "git clone --depth 1 --branch base https://github.com/android/architecture-templates.git {name}"
-      ],
-      "steps": [
-        "Remove-Item -Recurse -Force .git",
-        "bash customizer.sh {package} Item {name}",
-        "git init"
-      ],
-      "actions": [
-        {
-          "name": "Build",
-          "command": ".\\gradlew.bat assembleDebug"
+          "command": "npm run build"
         }
       ]
     },
     {
+      "id": "sveltekit",
+      "kind": "base",
+      "category": "web-js",
+      "name": "SvelteKit",
+      "desc": "Applicazione web Svelte con server",
+      "home": "https://svelte.dev/docs/kit/creating-a-project",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes sv@1 create {name} --template minimal --types ts --no-add-ons --no-install"
+      ],
+      "steps": [
+        "npm install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ]
+    },
+    {
+      "id": "astro",
+      "kind": "base",
+      "category": "web-js",
+      "name": "Astro",
+      "desc": "Sito veloce basato sui contenuti, con isole interattive",
+      "home": "https://docs.astro.build/en/install-and-setup/",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npm create astro@5 {name} -- --template minimal --no-install --no-git --no-ai --skip-houston --yes"
+      ],
+      "steps": [
+        "npm install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ]
+    },
+    {
+      "id": "angular",
+      "kind": "base",
+      "category": "web-js",
+      "name": "Angular",
+      "desc": "Applicazione web Angular in TypeScript",
+      "home": "https://angular.dev/tools/cli/setup-local",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes -p @angular/cli@22 ng new {name} --defaults --skip-git --skip-install --package-manager npm --ai-config none"
+      ],
+      "steps": [
+        "npm install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm start"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        },
+        {
+          "name": "Prove",
+          "command": "npm test"
+        }
+      ]
+    },
+    {
+      "id": "react-router",
+      "kind": "base",
+      "category": "web-js",
+      "name": "React Router",
+      "desc": "Applicazione web React con server (ex Remix), già con Tailwind CSS",
+      "home": "https://reactrouter.com/start/framework/installation",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes create-react-router@8 {name} --yes --no-install --no-git-init --no-agent-skills"
+      ],
+      "steps": [
+        "npm install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ]
+    },
+    {
+      "id": "nestjs",
+      "kind": "base",
+      "category": "web-js",
+      "name": "NestJS",
+      "desc": "Server e API in TypeScript con Node.js",
+      "home": "https://docs.nestjs.com/first-steps",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes @nestjs/cli@12 new {name} --skip-git --skip-install --package-manager npm --no-observe"
+      ],
+      "steps": [
+        "npm install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run start:dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        },
+        {
+          "name": "Prove",
+          "command": "npm test"
+        }
+      ]
+    },
+    {
+      "id": "hono",
+      "kind": "base",
+      "category": "web-js",
+      "name": "Hono",
+      "desc": "API web leggere in TypeScript con Node.js",
+      "home": "https://hono.dev/docs/getting-started/nodejs",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npm create hono@0.19 {name} -- --template nodejs --pm npm --install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ]
+    },
+    {
+      "id": "fresh",
+      "kind": "base",
+      "category": "web-js",
+      "name": "Fresh",
+      "desc": "Applicazione web in TypeScript con Deno e Preact",
+      "home": "https://fresh.deno.dev/docs/getting-started",
+      "needs": [
+        "deno"
+      ],
+      "create": [
+        "deno run -Ar jsr:@fresh/init@2 {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "deno task dev"
+        },
+        {
+          "name": "Build",
+          "command": "deno task build"
+        }
+      ],
+      "note": "Senza terminale le domande del generatore valgono no: niente Tailwind né impostazioni di VS Code, se non scelti come aggiunte."
+    },
+    {
+      "id": "elysia",
+      "kind": "base",
+      "category": "web-js",
+      "name": "Elysia",
+      "desc": "API web veloci in TypeScript con Bun",
+      "home": "https://elysiajs.com/quick-start.html",
+      "needs": [
+        "bun"
+      ],
+      "create": [
+        "bunx create-elysia@0.1 {name} --template bun"
+      ],
+      "steps": [
+        "bun install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "bun --watch main.ts"
+        }
+      ],
+      "note": "Modello minimo di create-elysia: il server è in main.ts."
+    },
+    {
+      "id": "django",
+      "kind": "base",
+      "category": "web-python",
+      "name": "Django",
+      "desc": "Framework Python per applicazioni web, con pannello di amministrazione",
+      "home": "https://docs.djangoproject.com/en/6.1/intro/tutorial01/",
+      "needs": [
+        "uv"
+      ],
+      "create": [
+        "uv init {name} --python 3.14"
+      ],
+      "steps": [
+        "uv add 'django~=6.1'",
+        "uv run django-admin startproject config .",
+        "Remove-Item main.py",
+        "uv run manage.py migrate",
+        "uv run manage.py createsuperuser --noinput"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "uv run manage.py runserver"
+        },
+        {
+          "name": "Prove",
+          "command": "uv run manage.py test"
+        }
+      ],
+      "env": [
+        {
+          "key": "DJANGO_SUPERUSER_USERNAME",
+          "value": "admin"
+        },
+        {
+          "key": "DJANGO_SUPERUSER_EMAIL",
+          "value": "admin@example.com"
+        },
+        {
+          "key": "DJANGO_SUPERUSER_PASSWORD",
+          "value": "{password}"
+        }
+      ],
+      "note": "Pannello in /admin, con DJANGO_SUPERUSER_USERNAME e DJANGO_SUPERUSER_PASSWORD del file .env."
+    },
+    {
+      "id": "fastapi",
+      "kind": "base",
+      "category": "web-python",
+      "name": "FastAPI",
+      "desc": "API web in Python, con la documentazione generata da sola",
+      "home": "https://fastapi.tiangolo.com/tutorial/first-steps/",
+      "needs": [
+        "uv"
+      ],
+      "create": [
+        "uv init {name} --python 3.14"
+      ],
+      "steps": [
+        "uv add 'fastapi[standard]~=0.146'",
+        "Set-Content main.py (@('from fastapi import FastAPI', '', 'app = FastAPI()', '', '', '@app.get(\"/\")', 'def read_root():', '    return {\"message\": \"Ciao da FastAPI\"}') -join \"`n\")"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "uv run fastapi dev main.py"
+        }
+      ],
+      "note": "Documentazione delle API in /docs."
+    },
+    {
+      "id": "flask",
+      "kind": "base",
+      "category": "web-python",
+      "name": "Flask",
+      "desc": "Framework Python leggero per siti e API",
+      "home": "https://flask.palletsprojects.com/en/stable/quickstart/",
+      "needs": [
+        "uv"
+      ],
+      "create": [
+        "uv init {name} --python 3.14"
+      ],
+      "steps": [
+        "uv add 'flask~=3.1'",
+        "Remove-Item main.py",
+        "Set-Content app.py (@('from flask import Flask', '', 'app = Flask(__name__)', '', '', '@app.route(\"/\")', 'def index():', '    return \"<p>Ciao da Flask</p>\"') -join \"`n\")"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "uv run flask --app app run --debug"
+        }
+      ]
+    },
+    {
+      "id": "aspnet-webapi",
+      "kind": "base",
+      "category": "web-other",
+      "name": "ASP.NET Core Web API",
+      "desc": "API web in C# con ASP.NET Core",
+      "home": "https://learn.microsoft.com/aspnet/core/tutorials/min-web-api",
+      "needs": [
+        "dotnet"
+      ],
+      "create": [
+        "dotnet new webapi -o {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "dotnet run"
+        },
+        {
+          "name": "Pacchetto",
+          "command": "dotnet publish -c Release"
+        }
+      ]
+    },
+    {
+      "id": "blazor",
+      "kind": "base",
+      "category": "web-other",
+      "name": "Blazor",
+      "desc": "Applicazione web in C# con Blazor e ASP.NET Core",
+      "home": "https://learn.microsoft.com/aspnet/core/blazor/tooling",
+      "needs": [
+        "dotnet"
+      ],
+      "create": [
+        "dotnet new blazor -o {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "dotnet run"
+        },
+        {
+          "name": "Pacchetto",
+          "command": "dotnet publish -c Release"
+        }
+      ]
+    },
+    {
+      "id": "spring-boot",
+      "kind": "base",
+      "category": "web-other",
+      "name": "Spring Boot",
+      "desc": "API web in Java con Spring Boot e Maven",
+      "home": "https://docs.spring.io/spring-boot/tutorial/first-application/index.html",
+      "needs": [
+        "java"
+      ],
+      "create": [
+        "$a = '{package}'.Split('.')[-1]; $z = Join-Path ([IO.Path]::GetTempPath()) \"atollo-spring-$a.zip\"; Invoke-WebRequest \"https://start.spring.io/starter.zip?type=maven-project&language=java&javaVersion=21&groupId=com.example&artifactId=$a&name=$a&packageName={package}&dependencies=web,devtools\" -OutFile $z; Expand-Archive $z -DestinationPath {name}; Remove-Item $z"
+      ],
+      "steps": [
+        "$p = '{package}'; Set-Content ('src/main/java/' + $p.Replace('.', '/') + '/HelloController.java') (@(\"package $p;\", '', 'import org.springframework.web.bind.annotation.GetMapping;', 'import org.springframework.web.bind.annotation.RestController;', '', '@RestController', 'public class HelloController {', '', '    @GetMapping(\"/\")', '    public String hello() {', '        return \"Ciao da Spring Boot\";', '    }', '}') -join \"`n\")"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "mvn spring-boot:run"
+        },
+        {
+          "name": "Prove",
+          "command": "mvn test"
+        },
+        {
+          "name": "Pacchetto",
+          "command": "mvn package"
+        }
+      ],
+      "note": "Scaricato da start.spring.io con Spring Web e DevTools, per Java 21."
+    },
+    {
+      "id": "ktor",
+      "kind": "base",
+      "category": "web-other",
+      "name": "Ktor",
+      "desc": "Server web in Kotlin con Ktor e Gradle",
+      "home": "https://ktor.io/docs/server-create-a-new-project.html",
+      "needs": [
+        "go",
+        "java"
+      ],
+      "create": [
+        "go run github.com/ktorio/ktor-cli/cmd/ktor@v0.0.0-20260210135116-08324ac9a579 new {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "gradle run"
+        },
+        {
+          "name": "Prove",
+          "command": "gradle test"
+        },
+        {
+          "name": "Build",
+          "command": "gradle build"
+        }
+      ],
+      "note": "Lo crea la riga di comando ufficiale di Ktor, avviata con Go."
+    },
+    {
+      "id": "go-gin",
+      "kind": "base",
+      "category": "web-other",
+      "name": "Gin",
+      "desc": "Server web in Go con Gin",
+      "home": "https://gin-gonic.com/en/docs/quickstart/",
+      "needs": [
+        "go"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "go mod init ('example.com/' + '{package}'.Split('.')[-1])",
+        "Set-Content main.go (@('package main', '', 'import (', '    \"net/http\"', '', '    \"github.com/gin-gonic/gin\"', ')', '', 'func main() {', '    r := gin.Default()', '    r.GET(\"/\", func(c *gin.Context) {', '        c.JSON(http.StatusOK, gin.H{\"message\": \"Ciao da Gin\"})', '    })', '    r.Run(\"127.0.0.1:8080\")', '}') -join \"`n\")",
+        "go get github.com/gin-gonic/gin@v1",
+        "go mod tidy",
+        "go fmt ./..."
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "go run ."
+        },
+        {
+          "name": "Prove",
+          "command": "go test ./..."
+        },
+        {
+          "name": "Build",
+          "command": "go build"
+        }
+      ]
+    },
+    {
+      "id": "axum",
+      "kind": "base",
+      "category": "web-other",
+      "name": "Axum",
+      "desc": "Server web in Rust con Axum e Tokio",
+      "home": "https://docs.rs/axum/0.8/axum/",
+      "needs": [
+        "rust"
+      ],
+      "create": [
+        "cargo new {name} --name ('{package}'.Split('.')[-1])"
+      ],
+      "steps": [
+        "cargo add axum@0.8",
+        "cargo add tokio@1 --features full",
+        "Set-Content src/main.rs (@('use axum::{routing::get, Router};', '', '#[tokio::main]', 'async fn main() {', '    let app = Router::new().route(\"/\", get(|| async { \"Ciao da Axum\" }));', '    let listener = tokio::net::TcpListener::bind(\"127.0.0.1:3000\").await.unwrap();', '    println!(\"http://127.0.0.1:3000\");', '    axum::serve(listener, app).await.unwrap();', '}') -join \"`n\")",
+        "cargo build"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "cargo run"
+        },
+        {
+          "name": "Prove",
+          "command": "cargo test"
+        },
+        {
+          "name": "Build",
+          "command": "cargo build --release"
+        }
+      ],
+      "note": "La prima build scarica e compila le dipendenze: qualche minuto."
+    },
+    {
+      "id": "dart-shelf",
+      "kind": "base",
+      "category": "web-other",
+      "name": "Dart (shelf)",
+      "desc": "Server web in Dart con shelf (modello ufficiale)",
+      "home": "https://dart.dev/tools/dart-create",
+      "needs": [
+        "dart"
+      ],
+      "create": [
+        "dart create -t server-shelf {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "dart run bin/server.dart"
+        },
+        {
+          "name": "Prove",
+          "command": "dart test"
+        },
+        {
+          "name": "Pacchetto",
+          "command": "dart compile exe bin/server.dart"
+        }
+      ],
+      "note": "Il nome del progetto fa da nome del pacchetto Dart: lettere, cifre, spazi e trattini, senza una cifra all'inizio. Il server ascolta su tutta la rete: Windows può chiedere il permesso del firewall."
+    },
+    {
       "id": "wordpress",
       "kind": "base",
+      "category": "cms",
       "name": "WordPress",
       "desc": "Sito WordPress con Composer (Bedrock), plugin e temi come pacchetti",
       "home": "https://roots.io/bedrock/docs/installation/",
@@ -232,6 +707,7 @@
     {
       "id": "typo3",
       "kind": "base",
+      "category": "cms",
       "name": "TYPO3",
       "desc": "CMS TYPO3 per siti grandi e multilingua",
       "home": "https://docs.typo3.org/m/typo3/tutorial-getting-started/main/en-us/Installation/Install.html",
@@ -272,6 +748,7 @@
     {
       "id": "drupal",
       "kind": "base",
+      "category": "cms",
       "name": "Drupal",
       "desc": "CMS Drupal con Drush, per siti e portali strutturati",
       "home": "https://www.drupal.org/docs/getting-started/installing-drupal",
@@ -315,6 +792,7 @@
     {
       "id": "statamic",
       "kind": "base",
+      "category": "cms",
       "name": "Statamic",
       "desc": "CMS su Laravel con i contenuti in file, senza database",
       "home": "https://statamic.dev/getting-started/installing/local",
@@ -355,6 +833,1013 @@
         }
       ],
       "note": "Pannello in /cp: si entra con ADMIN_EMAIL e ADMIN_PASSWORD del file .env."
+    },
+    {
+      "id": "craft",
+      "kind": "base",
+      "category": "cms",
+      "name": "Craft CMS",
+      "desc": "CMS Craft con contenuti su misura e modelli Twig",
+      "home": "https://craftcms.com/docs/5.x/install.html",
+      "needs": [
+        "php"
+      ],
+      "create": [
+        "composer create-project craftcms/craft:^5.8 {name}"
+      ],
+      "steps": [
+        "php craft setup/db-creds --interactive=0 --driver=mysql --server=$env:ATOLLO_DB_HOST --port=$env:ATOLLO_DB_PORT --database=$env:ATOLLO_DB_NAME --user=$env:ATOLLO_DB_USER --password=$env:ATOLLO_DB_PASSWORD",
+        "php craft install --interactive=0 --username=$env:ADMIN_USER --email=$env:ADMIN_EMAIL --password=$env:ADMIN_PASSWORD --site-name={name} --site-url=/ --language=en"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "php craft serve 127.0.0.1:8000"
+        }
+      ],
+      "env": [
+        {
+          "key": "ADMIN_USER",
+          "value": "admin"
+        },
+        {
+          "key": "ADMIN_PASSWORD",
+          "value": "{password}"
+        },
+        {
+          "key": "ADMIN_EMAIL",
+          "value": "admin@example.com"
+        }
+      ],
+      "database": "mysql",
+      "note": "Pannello in /admin, con ADMIN_USER e ADMIN_PASSWORD del file .env. Edizione Solo, gratuita, per un solo utente."
+    },
+    {
+      "id": "kirby",
+      "kind": "base",
+      "category": "cms",
+      "name": "Kirby",
+      "desc": "CMS Kirby con i contenuti in file, senza database",
+      "home": "https://getkirby.com/docs/guide/quickstart",
+      "needs": [
+        "php"
+      ],
+      "create": [
+        "composer create-project getkirby/starterkit:^5.6 {name}"
+      ],
+      "steps": [
+        "Set-Content atollo-admin.php \"<?php require 'kirby/bootstrap.php'; `$kirby = new Kirby(); `$kirby->impersonate('kirby'); Kirby\\Cms\\User::create(['email' => getenv('ADMIN_EMAIL'), 'password' => getenv('ADMIN_PASSWORD'), 'role' => 'admin']);\"; php atollo-admin.php; Remove-Item atollo-admin.php"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "php -S 127.0.0.1:8000 kirby/router.php"
+        }
+      ],
+      "env": [
+        {
+          "key": "ADMIN_EMAIL",
+          "value": "admin@example.com"
+        },
+        {
+          "key": "ADMIN_PASSWORD",
+          "value": "{password}"
+        }
+      ],
+      "note": "Pannello in /panel, con ADMIN_EMAIL e ADMIN_PASSWORD del file .env. Gratis in locale: un sito pubblico vuole una licenza."
+    },
+    {
+      "id": "grav",
+      "kind": "base",
+      "category": "cms",
+      "name": "Grav",
+      "desc": "CMS Grav con le pagine in Markdown, senza database",
+      "home": "https://learn.getgrav.org/17/basics/installation",
+      "needs": [
+        "php",
+        "git"
+      ],
+      "create": [
+        "composer create-project getgrav/grav:^2.2 {name} --no-scripts"
+      ],
+      "steps": [
+        "php bin/grav install",
+        "php bin/gpm install admin2 -y",
+        "New-Item -ItemType Directory -Force user/config/plugins | Out-Null; Set-Content user/config/plugins/admin2.yaml \"enabled: true`nroute: /admin\"",
+        "php bin/plugin login new-user -u $env:ADMIN_USER -p $env:ADMIN_PASSWORD -e $env:ADMIN_EMAIL -P b --admin-type=api -N Admin -t Admin -s enabled"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "php -S 127.0.0.1:8000 system/router.php"
+        }
+      ],
+      "env": [
+        {
+          "key": "ADMIN_USER",
+          "value": "admin"
+        },
+        {
+          "key": "ADMIN_PASSWORD",
+          "value": "{password}"
+        },
+        {
+          "key": "ADMIN_EMAIL",
+          "value": "admin@example.com"
+        }
+      ],
+      "note": "Pannello in /admin, con ADMIN_USER e ADMIN_PASSWORD del file .env."
+    },
+    {
+      "id": "joomla",
+      "kind": "base",
+      "category": "cms",
+      "name": "Joomla",
+      "desc": "CMS Joomla per siti e portali, con estensioni",
+      "home": "https://docs.joomla.org/J4.x:Joomla_CLI_Installation",
+      "needs": [
+        "php"
+      ],
+      "create": [
+        "$z = Join-Path ([IO.Path]::GetTempPath()) 'Joomla_6.2.0-Stable-Full_Package.zip'; Invoke-WebRequest https://github.com/joomla/joomla-cms/releases/download/6.2.0/Joomla_6.2.0-Stable-Full_Package.zip -OutFile $z; Expand-Archive $z -DestinationPath {name}; Remove-Item $z"
+      ],
+      "steps": [
+        "php installation/joomla.php install -n --site-name={name} --admin-user=Administrator --admin-username=$env:ADMIN_USER --admin-password=$env:ADMIN_PASSWORD --admin-email=$env:ADMIN_EMAIL --db-type=mysqli \"--db-host=$($env:ATOLLO_DB_HOST):$($env:ATOLLO_DB_PORT)\" --db-user=$env:ATOLLO_DB_USER --db-pass=$env:ATOLLO_DB_PASSWORD --db-name=$env:ATOLLO_DB_NAME --db-prefix=jos_ --db-encryption=0"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "php -S 127.0.0.1:8000"
+        }
+      ],
+      "env": [
+        {
+          "key": "ADMIN_USER",
+          "value": "admin"
+        },
+        {
+          "key": "ADMIN_PASSWORD",
+          "value": "{password}"
+        },
+        {
+          "key": "ADMIN_EMAIL",
+          "value": "admin@example.com"
+        }
+      ],
+      "database": "mysql",
+      "note": "Pannello in /administrator, con ADMIN_USER e ADMIN_PASSWORD del file .env. Gli aggiornamenti dopo la 6.2.0 si fanno dal pannello."
+    },
+    {
+      "id": "strapi",
+      "kind": "base",
+      "category": "cms",
+      "name": "Strapi",
+      "desc": "CMS headless in Node.js: contenuti via API, database SQLite",
+      "home": "https://docs.strapi.io/cms/installation/cli",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes create-strapi@5 {name} --non-interactive --skip-cloud --no-run --use-npm --typescript --no-example --no-git-init --install"
+      ],
+      "steps": [
+        "npx strapi admin:create-user --firstname=Admin --email=$env:ADMIN_EMAIL --password=$env:ADMIN_PASSWORD"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run develop"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ],
+      "env": [
+        {
+          "key": "ADMIN_EMAIL",
+          "value": "admin@example.com"
+        },
+        {
+          "key": "ADMIN_PASSWORD",
+          "value": "{password}"
+        }
+      ],
+      "note": "Pannello in /admin sulla porta 1337, con ADMIN_EMAIL e ADMIN_PASSWORD del file .env. Database in .tmp/data.db."
+    },
+    {
+      "id": "payload",
+      "kind": "base",
+      "category": "cms",
+      "name": "Payload",
+      "desc": "CMS headless in TypeScript dentro un'app Next.js, database SQLite",
+      "home": "https://payloadcms.com/docs/getting-started/installation",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes create-payload-app@3 --name atollo-payload-new --template blank --db sqlite --db-connection-string file:./payload.db --use-npm --no-agent --no-git; Move-Item atollo-payload-new {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ],
+      "note": "Pannello in /admin sulla porta 3000: al primo accesso crei l'utente amministratore. Database in payload.db."
+    },
+    {
+      "id": "docusaurus",
+      "kind": "base",
+      "category": "docs",
+      "name": "Docusaurus",
+      "desc": "Sito di documentazione in React, pagine in Markdown e MDX",
+      "home": "https://docusaurus.io/docs/installation",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes create-docusaurus@3 {name} classic --typescript --package-manager npm"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm start"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ]
+    },
+    {
+      "id": "starlight",
+      "kind": "base",
+      "category": "docs",
+      "name": "Starlight",
+      "desc": "Sito di documentazione con Astro Starlight, pagine in Markdown",
+      "home": "https://starlight.astro.build/getting-started/",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npm create astro@5 {name} -- --template starlight --install --no-git --no-ai --yes"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ]
+    },
+    {
+      "id": "vitepress",
+      "kind": "base",
+      "category": "docs",
+      "name": "VitePress",
+      "desc": "Sito di documentazione veloce con Vue e Vite, pagine in Markdown",
+      "home": "https://vitepress.dev/guide/getting-started",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "Set-Content package.json '{ \"private\": true, \"type\": \"module\", \"scripts\": { \"docs:dev\": \"vitepress dev docs\", \"docs:build\": \"vitepress build docs\", \"docs:preview\": \"vitepress preview docs\" } }'",
+        "npm install -D vitepress@1",
+        "New-Item -ItemType Directory -Force docs/.vitepress | Out-Null; Set-Content docs/.vitepress/config.mts (\"import { defineConfig } from 'vitepress'`n`nexport default defineConfig({ title: \" + ({name} | ConvertTo-Json) + \" })\")",
+        "Set-Content docs/index.md ('# ' + {name})",
+        "Set-Content .gitignore \"node_modules/`ndocs/.vitepress/cache/`ndocs/.vitepress/dist/\""
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run docs:dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run docs:build"
+        }
+      ]
+    },
+    {
+      "id": "eleventy",
+      "kind": "base",
+      "category": "docs",
+      "name": "Eleventy",
+      "desc": "Generatore di siti statici semplice, da Markdown e modelli",
+      "home": "https://www.11ty.dev/docs/",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "Set-Content package.json '{ \"private\": true, \"type\": \"module\", \"scripts\": { \"start\": \"eleventy --serve\", \"build\": \"eleventy\" } }'",
+        "npm install -D @11ty/eleventy@3",
+        "Set-Content index.md ('# ' + {name})",
+        "Set-Content .gitignore \"node_modules/`n_site/\""
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm start"
+        },
+        {
+          "name": "Build",
+          "command": "npm run build"
+        }
+      ]
+    },
+    {
+      "id": "mkdocs",
+      "kind": "base",
+      "category": "docs",
+      "name": "MkDocs Material",
+      "desc": "Documentazione in Markdown con MkDocs e il tema Material (Python)",
+      "home": "https://squidfunk.github.io/mkdocs-material/getting-started/",
+      "needs": [
+        "uv"
+      ],
+      "create": [
+        "uv init --bare --no-workspace --name docs {name}"
+      ],
+      "steps": [
+        "uv add 'mkdocs-material>=9.7,<10'",
+        "Set-Content mkdocs.yml ('site_name: ' + ({name} | ConvertTo-Json) + \"`ntheme:`n  name: material\")",
+        "New-Item -ItemType Directory -Force docs | Out-Null; Set-Content docs/index.md ('# ' + {name})",
+        "Set-Content .gitignore \".venv/`nsite/\""
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "uv run mkdocs serve"
+        },
+        {
+          "name": "Build",
+          "command": "uv run mkdocs build"
+        }
+      ],
+      "note": "MkDocs 1 non ha più novità: chi cura Material ora sviluppa Zensical, che legge lo stesso mkdocs.yml."
+    },
+    {
+      "id": "electron",
+      "kind": "base",
+      "category": "desktop",
+      "name": "Electron",
+      "desc": "App desktop con tecnologie web (Electron Forge)",
+      "home": "https://www.electronforge.io/",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes create-electron-app@8 {name} --template=vite --typescript"
+      ],
+      "steps": [],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm start"
+        },
+        {
+          "name": "Pacchetto",
+          "command": "npm run make"
+        }
+      ]
+    },
+    {
+      "id": "tauri",
+      "kind": "base",
+      "category": "desktop",
+      "name": "Tauri",
+      "desc": "App desktop leggera: interfaccia web, motore in Rust",
+      "home": "https://v2.tauri.app/start/create-project/",
+      "needs": [
+        "rust",
+        "node"
+      ],
+      "create": [
+        "npm create tauri-app@4 {name} -- --template vanilla-ts --manager npm --identifier {package} --yes"
+      ],
+      "steps": [
+        "npm install"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npm run tauri dev"
+        },
+        {
+          "name": "Build",
+          "command": "npm run tauri build"
+        }
+      ],
+      "note": "Da provare con il compilatore GNU del kit: la guida di Tauri chiede MSVC."
+    },
+    {
+      "id": "avalonia",
+      "kind": "base",
+      "category": "desktop",
+      "name": "Avalonia",
+      "desc": "App desktop multipiattaforma in C# con Avalonia",
+      "home": "https://docs.avaloniaui.net/docs/get-started/install",
+      "needs": [
+        "dotnet"
+      ],
+      "create": [
+        "dotnet new install Avalonia.Templates::12.*; dotnet new avalonia.mvvm -o {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "dotnet run"
+        },
+        {
+          "name": "Pacchetto",
+          "command": "dotnet publish -c Release"
+        }
+      ],
+      "note": "Installa nel .NET del kit i modelli di Avalonia 12."
+    },
+    {
+      "id": "wails",
+      "kind": "base",
+      "category": "desktop",
+      "name": "Wails",
+      "desc": "App desktop con interfaccia web e motore in Go",
+      "home": "https://wails.io/docs/gettingstarted/firstproject",
+      "needs": [
+        "go",
+        "node"
+      ],
+      "create": [
+        "go install github.com/wailsapp/wails/v2/cmd/wails@v2; wails init -n {name} -t vanilla-ts"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "wails dev"
+        },
+        {
+          "name": "Build",
+          "command": "wails build"
+        }
+      ],
+      "note": "Su Windows usa WebView2, già presente in Windows 11; su Linux servono GTK e WebKitGTK del sistema, su macOS gli Xcode Command Line Tools."
+    },
+    {
+      "id": "neutralino",
+      "kind": "base",
+      "category": "desktop",
+      "name": "Neutralinojs",
+      "desc": "App desktop leggerissima in HTML, CSS e JavaScript",
+      "home": "https://neutralino.js.org/docs/getting-started/your-first-neutralinojs-app",
+      "needs": [
+        "node"
+      ],
+      "create": [
+        "npx --yes @neutralinojs/neu@11 create {name}"
+      ],
+      "steps": [
+        "$c = Get-Content neutralino.config.json -Raw; Set-Content neutralino.config.json ($c -replace 'js\\.neutralino\\.sample', '{package}') -NoNewline"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "npx --yes @neutralinojs/neu@11 run"
+        },
+        {
+          "name": "Pacchetto",
+          "command": "npx --yes @neutralinojs/neu@11 build --release"
+        }
+      ]
+    },
+    {
+      "id": "android",
+      "kind": "base",
+      "category": "mobile",
+      "name": "Android",
+      "desc": "App Android in Kotlin con Jetpack Compose (modello ufficiale di Google)",
+      "home": "https://github.com/android/architecture-templates",
+      "needs": [
+        "git",
+        "java",
+        "android"
+      ],
+      "create": [
+        "git clone --depth 1 --branch base https://github.com/android/architecture-templates.git {name}"
+      ],
+      "steps": [
+        "Remove-Item -Recurse -Force .git",
+        "bash customizer.sh {package} Item {name}",
+        "git init"
+      ],
+      "actions": [
+        {
+          "name": "Build",
+          "command": ".\\gradlew.bat assembleDebug"
+        }
+      ]
+    },
+    {
+      "id": "streamlit",
+      "kind": "base",
+      "category": "data",
+      "name": "Streamlit",
+      "desc": "App di dati in Python con Streamlit",
+      "home": "https://docs.streamlit.io/get-started/installation/command-line",
+      "needs": [
+        "uv"
+      ],
+      "create": [
+        "uv init --bare {name}"
+      ],
+      "steps": [
+        "uv add \"streamlit>=1.66,<2\"",
+        "Set-Content app.py @('import streamlit as st', '', 'st.title(\"Ciao da Streamlit\")', 'n = st.slider(\"Numero\", 1, 100, 50)', 'st.write(\"Il doppio:\", n * 2)')",
+        "New-Item -ItemType Directory -Force .streamlit | Out-Null; Set-Content .streamlit/config.toml @('[server]', 'headless = true', '', '[browser]', 'gatherUsageStats = false')"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "uv run streamlit run app.py"
+        }
+      ],
+      "note": "Ad app avviata, aprila su http://localhost:8501."
+    },
+    {
+      "id": "jupyter",
+      "kind": "base",
+      "category": "data",
+      "name": "JupyterLab",
+      "desc": "Quaderni Jupyter in Python con JupyterLab",
+      "home": "https://docs.astral.sh/uv/guides/integration/jupyter/",
+      "needs": [
+        "uv"
+      ],
+      "create": [
+        "uv init --bare {name}"
+      ],
+      "steps": [
+        "uv add \"jupyterlab>=4.6,<5\""
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "uv run jupyter lab"
+        }
+      ]
+    },
+    {
+      "id": "marimo",
+      "kind": "base",
+      "category": "data",
+      "name": "marimo",
+      "desc": "Quaderni Python reattivi, salvati come file .py",
+      "home": "https://docs.marimo.io/getting_started/installation/",
+      "needs": [
+        "uv"
+      ],
+      "create": [
+        "uv init --bare {name}"
+      ],
+      "steps": [
+        "uv add \"marimo>=0.25,<1\""
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "uv run marimo edit notebook.py"
+        }
+      ]
+    },
+    {
+      "id": "shiny-python",
+      "kind": "base",
+      "category": "data",
+      "name": "Shiny (Python)",
+      "desc": "App di dati interattiva in Python con Shiny",
+      "home": "https://shiny.posit.co/py/docs/install-create-run.html",
+      "needs": [
+        "uv"
+      ],
+      "create": [
+        "uv init --bare {name}"
+      ],
+      "steps": [
+        "uv add \"shiny>=1.8,<2\"",
+        "uv run shiny create -t basic-app -m core -d ."
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "uv run shiny run --reload --launch-browser app.py"
+        }
+      ]
+    },
+    {
+      "id": "shiny-r",
+      "kind": "base",
+      "category": "data",
+      "name": "Shiny (R)",
+      "desc": "App di dati interattiva in R con Shiny",
+      "home": "https://shiny.posit.co/r/getstarted/",
+      "needs": [
+        "r"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "Rscript -e \"install.packages('shiny', repos = 'https://cloud.r-project.org')\"",
+        "Set-Content app.R @('library(shiny)', '', 'ui <- fluidPage(', '  titlePanel(\"Ciao da Shiny\"),', '  sliderInput(\"n\", \"Numero\", min = 1, max = 100, value = 50),', '  textOutput(\"doppio\")', ')', '', 'server <- function(input, output, session) {', '  output$doppio <- renderText(paste(\"Il doppio:\", input$n * 2))', '}', '', 'shinyApp(ui, server)')"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "Rscript -e \"shiny::runApp(launch.browser = TRUE)\""
+        }
+      ],
+      "note": "Scarica Shiny da CRAN durante la creazione."
+    },
+    {
+      "id": "pluto",
+      "kind": "base",
+      "category": "data",
+      "name": "Pluto",
+      "desc": "Quaderni reattivi in Julia con Pluto",
+      "home": "https://plutojl.org/",
+      "needs": [
+        "julia"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "julia --project=. --startup-file=no -e 'using Pkg; Pkg.add(\"Pluto\"); Pkg.compat(\"Pluto\", \"1\")'"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "julia --project=. -e \"using Pluto; Pluto.run()\""
+        }
+      ]
+    },
+    {
+      "id": "typst",
+      "kind": "base",
+      "category": "data",
+      "name": "Typst",
+      "desc": "Documento Typst, con il PDF aggiornato a ogni modifica",
+      "home": "https://typst.app/docs/",
+      "needs": [
+        "typst"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "Set-Content main.typ @('#set page(paper: \"a4\")', '#set text(lang: \"it\")', '', '= Titolo', '', 'Scrivi qui il documento.')"
+      ],
+      "actions": [
+        {
+          "name": "Anteprima",
+          "command": "typst watch main.typ --open"
+        },
+        {
+          "name": "PDF",
+          "command": "typst compile main.typ"
+        }
+      ]
+    },
+    {
+      "id": "latex",
+      "kind": "base",
+      "category": "data",
+      "name": "LaTeX",
+      "desc": "Documento LaTeX compilato con latexmk",
+      "home": "https://yihui.org/tinytex/",
+      "needs": [
+        "tinytex"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "Set-Content main.tex @('\\documentclass{article}', '\\title{Titolo}', '\\author{}', '\\date{\\today}', '', '\\begin{document}', '\\maketitle', '', 'Scrivi qui il documento.', '', '\\end{document}')"
+      ],
+      "actions": [
+        {
+          "name": "PDF",
+          "command": "latexmk -pdf main.tex"
+        },
+        {
+          "name": "Anteprima",
+          "command": "latexmk -pdf -pvc main.tex"
+        }
+      ],
+      "note": "I pacchetti LaTeX che mancano si aggiungono con tlmgr install <nome>."
+    },
+    {
+      "id": "rust-cli",
+      "kind": "base",
+      "category": "cli",
+      "name": "Rust",
+      "desc": "Programma o libreria in Rust con Cargo",
+      "home": "https://doc.rust-lang.org/cargo/commands/cargo-new.html",
+      "needs": [
+        "rust"
+      ],
+      "create": [
+        "cargo new {name} --name ('{package}'.Split('.')[-1])"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "cargo run"
+        },
+        {
+          "name": "Prove",
+          "command": "cargo test"
+        },
+        {
+          "name": "Build",
+          "command": "cargo build --release"
+        }
+      ]
+    },
+    {
+      "id": "go-cli",
+      "kind": "base",
+      "category": "cli",
+      "name": "Go",
+      "desc": "Programma da riga di comando in Go",
+      "home": "https://go.dev/doc/tutorial/getting-started",
+      "needs": [
+        "go"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "go mod init ('example.com/' + '{package}'.Split('.')[-1])",
+        "Set-Content main.go @('package main', '', 'import \"fmt\"', '', 'func main() {', \"`tfmt.Println(`\"Ciao!`\")\", '}')"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "go run ."
+        },
+        {
+          "name": "Prove",
+          "command": "go test ./..."
+        },
+        {
+          "name": "Build",
+          "command": "go build"
+        }
+      ]
+    },
+    {
+      "id": "zig-cli",
+      "kind": "base",
+      "category": "cli",
+      "name": "Zig",
+      "desc": "Programma in Zig con zig build",
+      "home": "https://ziglang.org/learn/getting-started/",
+      "needs": [
+        "zig"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "zig init"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "zig build run"
+        },
+        {
+          "name": "Prove",
+          "command": "zig build test"
+        }
+      ]
+    },
+    {
+      "id": "cmake-cpp",
+      "kind": "base",
+      "category": "cli",
+      "name": "C++ (CMake)",
+      "desc": "Programma in C++ con CMake e Ninja",
+      "home": "https://cmake.org/cmake/help/latest/guide/tutorial/index.html",
+      "needs": [
+        "cc",
+        "cmake"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "New-Item -ItemType Directory -Force src | Out-Null",
+        "Set-Content CMakeLists.txt @('cmake_minimum_required(VERSION 3.28)', 'project(app LANGUAGES CXX)', '', 'set(CMAKE_CXX_STANDARD 20)', 'set(CMAKE_CXX_STANDARD_REQUIRED ON)', 'set(CMAKE_EXPORT_COMPILE_COMMANDS ON)', '', 'add_executable(app src/main.cpp)', 'add_custom_target(run COMMAND app DEPENDS app USES_TERMINAL)')",
+        "Set-Content src/main.cpp @('#include <iostream>', '', 'int main() {', '    std::cout << \"Ciao!\\n\";', '}')"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "cmake -S . -B build && cmake --build build --target run"
+        },
+        {
+          "name": "Build",
+          "command": "cmake -S . -B build && cmake --build build"
+        }
+      ]
+    },
+    {
+      "id": "dotnet-console",
+      "kind": "base",
+      "category": "cli",
+      "name": ".NET",
+      "desc": "Programma da riga di comando in C# con .NET",
+      "home": "https://learn.microsoft.com/dotnet/core/tools/dotnet-new",
+      "needs": [
+        "dotnet"
+      ],
+      "create": [
+        "dotnet new console -o {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "dotnet run"
+        },
+        {
+          "name": "Build",
+          "command": "dotnet build"
+        }
+      ]
+    },
+    {
+      "id": "python-package",
+      "kind": "base",
+      "category": "cli",
+      "name": "Python (uv)",
+      "desc": "Pacchetto Python con un comando eseguibile, gestito da uv",
+      "home": "https://docs.astral.sh/uv/concepts/projects/init/",
+      "needs": [
+        "uv"
+      ],
+      "create": [
+        "uv init --package {name}"
+      ],
+      "steps": [
+        "uv add --dev \"pytest>=9,<10\""
+      ],
+      "actions": [
+        {
+          "name": "Prove",
+          "command": "uv run pytest"
+        },
+        {
+          "name": "Build",
+          "command": "uv build"
+        }
+      ]
+    },
+    {
+      "id": "deno-cli",
+      "kind": "base",
+      "category": "cli",
+      "name": "Deno",
+      "desc": "Programma in TypeScript con Deno",
+      "home": "https://docs.deno.com/runtime/reference/cli/init/",
+      "needs": [
+        "deno"
+      ],
+      "create": [
+        "deno init {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "deno task dev"
+        },
+        {
+          "name": "Prove",
+          "command": "deno test"
+        }
+      ]
+    },
+    {
+      "id": "dart-cli",
+      "kind": "base",
+      "category": "cli",
+      "name": "Dart",
+      "desc": "Programma da riga di comando in Dart",
+      "home": "https://dart.dev/tools/dart-create",
+      "needs": [
+        "dart"
+      ],
+      "create": [
+        "dart create -t console {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "dart run"
+        },
+        {
+          "name": "Prove",
+          "command": "dart test"
+        }
+      ]
+    },
+    {
+      "id": "kotlin-app",
+      "kind": "base",
+      "category": "cli",
+      "name": "Kotlin (Gradle)",
+      "desc": "Applicazione Kotlin con Gradle",
+      "home": "https://docs.gradle.org/current/userguide/build_init_plugin.html",
+      "needs": [
+        "java"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "gradle init --type kotlin-application --dsl kotlin --package {package} --no-split-project --use-defaults --no-comments"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "gradle run"
+        },
+        {
+          "name": "Prove",
+          "command": "gradle test"
+        }
+      ]
+    },
+    {
+      "id": "java-app",
+      "kind": "base",
+      "category": "cli",
+      "name": "Java (Gradle)",
+      "desc": "Applicazione Java con Gradle",
+      "home": "https://docs.gradle.org/current/userguide/build_init_plugin.html",
+      "needs": [
+        "java"
+      ],
+      "create": [
+        "New-Item -ItemType Directory {name} | Out-Null"
+      ],
+      "steps": [
+        "gradle init --type java-application --dsl kotlin --package {package} --no-split-project --use-defaults --no-comments"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "gradle run"
+        },
+        {
+          "name": "Prove",
+          "command": "gradle test"
+        }
+      ]
+    },
+    {
+      "id": "julia-package",
+      "kind": "base",
+      "category": "cli",
+      "name": "Julia",
+      "desc": "Pacchetto Julia",
+      "home": "https://pkgdocs.julialang.org/v1/creating-packages/",
+      "needs": [
+        "julia"
+      ],
+      "create": [
+        "julia --startup-file=no -e 'using Pkg; Pkg.generate(ARGS[1])' {name}"
+      ],
+      "actions": [
+        {
+          "name": "Avvia",
+          "command": "julia --project=."
+        }
+      ],
+      "note": "Il nome del progetto deve essere un nome Julia valido: lettere, cifre e _, senza trattini né spazi."
     },
     {
       "id": "vite-bundle",
@@ -429,6 +1914,12 @@
           "create": [
             "npm create tauri-app@4 {name} -- --template react-ts --manager npm --identifier {package} --yes"
           ]
+        },
+        "astro": {
+          "steps": [
+            "npx astro add react --yes"
+          ],
+          "note": "Componenti React nelle pagine Astro."
         }
       }
     },
@@ -474,6 +1965,12 @@
           "create": [
             "npm create tauri-app@4 {name} -- --template vue-ts --manager npm --identifier {package} --yes"
           ]
+        },
+        "astro": {
+          "steps": [
+            "npx astro add vue --yes"
+          ],
+          "note": "Componenti Vue nelle pagine Astro."
         }
       }
     },
@@ -513,6 +2010,12 @@
           "create": [
             "npm create tauri-app@4 {name} -- --template svelte-ts --manager npm --identifier {package} --yes"
           ]
+        },
+        "astro": {
+          "steps": [
+            "npx astro add svelte --yes"
+          ],
+          "note": "Componenti Svelte nelle pagine Astro."
         }
       }
     },
@@ -578,6 +2081,37 @@
             "$f = 'vite.config.ts'; if (Test-Path $f) { $c = Get-Content $f -Raw; if ($c -match 'plugins:\\s*\\[') { $c = $c -replace 'plugins:\\s*\\[', 'plugins: [tailwindcss(), ' } else { $c = $c -replace 'defineConfig\\((\\s*async\\s*\\(\\)\\s*=>\\s*\\()?\\s*\\{', '$0 plugins: [tailwindcss()],' }; Set-Content $f (\"import tailwindcss from '@tailwindcss/vite'`n\" + $c) } else { Set-Content $f \"import { defineConfig } from 'vite'`nimport tailwindcss from '@tailwindcss/vite'`n`nexport default defineConfig({ plugins: [tailwindcss()] })\" }",
             "foreach ($f in 'src/styles.css', 'src/style.css', 'src/index.css', 'src/app.css', 'src/App.css') { if (Test-Path $f) { Set-Content $f (\"@import `\"tailwindcss`\";`n\" + (Get-Content $f -Raw)); break } }"
           ]
+        },
+        "nuxt": {
+          "steps": [
+            "npm install -D tailwindcss@4 @tailwindcss/vite@4",
+            "New-Item -ItemType Directory -Force app/assets/css | Out-Null; Set-Content app/assets/css/main.css '@import \"tailwindcss\";'",
+            "$c = Get-Content nuxt.config.ts -Raw; Set-Content nuxt.config.ts (\"import tailwindcss from '@tailwindcss/vite'`n\" + ($c -replace 'defineNuxtConfig\\(\\{', \"defineNuxtConfig({`n  css: ['./app/assets/css/main.css'],`n  vite: { plugins: [tailwindcss()] },\"))"
+          ]
+        },
+        "sveltekit": {
+          "steps": [
+            "npx --yes sv@1 add tailwindcss=plugins:none --install npm"
+          ]
+        },
+        "astro": {
+          "steps": [
+            "npx astro add tailwind --yes",
+            "$f = 'src/pages/index.astro'; $c = Get-Content $f -Raw; Set-Content $f ($c -replace '^---', \"---`nimport '../styles/global.css';\") -NoNewline"
+          ]
+        },
+        "angular": {
+          "create": [
+            "npx --yes -p @angular/cli@22 ng new {name} --defaults --style tailwind --skip-git --skip-install --package-manager npm --ai-config none"
+          ]
+        },
+        "react-router": {
+          "note": "Già incluso nel modello di React Router."
+        },
+        "fresh": {
+          "create": [
+            "deno run -Ar jsr:@fresh/init@2 {name} --tailwind"
+          ]
         }
       }
     },
@@ -626,6 +2160,40 @@
             "npm install bootstrap@5",
             "foreach ($f in 'src/main.ts', 'src/main.tsx', 'src/main.js', 'src/renderer.ts', 'src/renderer/src/main.ts', 'src/renderer/src/main.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bootstrap/dist/css/bootstrap.min.css';`n\" + (Get-Content $f -Raw)); break } }"
           ]
+        },
+        "nuxt": {
+          "steps": [
+            "npm install bootstrap@5",
+            "$c = Get-Content nuxt.config.ts -Raw; Set-Content nuxt.config.ts ($c -replace 'defineNuxtConfig\\(\\{', \"defineNuxtConfig({`n  css: ['bootstrap/dist/css/bootstrap.min.css'],\")"
+          ]
+        },
+        "sveltekit": {
+          "steps": [
+            "npm install bootstrap@5",
+            "$f = 'src/routes/+layout.svelte'; $c = Get-Content $f -Raw; Set-Content $f ($c.Replace('<script lang=\"ts\">', \"<script lang=`\"ts`\">`n`timport 'bootstrap/dist/css/bootstrap.min.css';\")) -NoNewline"
+          ]
+        },
+        "astro": {
+          "steps": [
+            "npm install bootstrap@5",
+            "$f = 'src/pages/index.astro'; $c = Get-Content $f -Raw; Set-Content $f ($c -replace '^---', \"---`nimport 'bootstrap/dist/css/bootstrap.min.css';\") -NoNewline"
+          ]
+        },
+        "angular": {
+          "steps": [
+            "npm install bootstrap@5",
+            "Set-Content src/styles.css (\"@import 'bootstrap/dist/css/bootstrap.min.css';`n\" + (Get-Content src/styles.css -Raw))"
+          ]
+        },
+        "react-router": {
+          "steps": [
+            "npm install bootstrap@5",
+            "Set-Content app/root.tsx (\"import 'bootstrap/dist/css/bootstrap.min.css';`n\" + (Get-Content app/root.tsx -Raw))"
+          ],
+          "note": "Tailwind CSS resta: fa parte del modello di React Router."
+        },
+        "blazor": {
+          "note": "Già incluso nel modello Blazor."
         }
       }
     },
@@ -674,6 +2242,37 @@
             "npm install bulma@1",
             "foreach ($f in 'src/main.ts', 'src/main.tsx', 'src/main.js', 'src/renderer.ts', 'src/renderer/src/main.ts', 'src/renderer/src/main.tsx') { if (Test-Path $f) { Set-Content $f (\"import 'bulma/css/bulma.min.css';`n\" + (Get-Content $f -Raw)); break } }"
           ]
+        },
+        "nuxt": {
+          "steps": [
+            "npm install bulma@1",
+            "$c = Get-Content nuxt.config.ts -Raw; Set-Content nuxt.config.ts ($c -replace 'defineNuxtConfig\\(\\{', \"defineNuxtConfig({`n  css: ['bulma/css/bulma.min.css'],\")"
+          ]
+        },
+        "sveltekit": {
+          "steps": [
+            "npm install bulma@1",
+            "$f = 'src/routes/+layout.svelte'; $c = Get-Content $f -Raw; Set-Content $f ($c.Replace('<script lang=\"ts\">', \"<script lang=`\"ts`\">`n`timport 'bulma/css/bulma.min.css';\")) -NoNewline"
+          ]
+        },
+        "astro": {
+          "steps": [
+            "npm install bulma@1",
+            "$f = 'src/pages/index.astro'; $c = Get-Content $f -Raw; Set-Content $f ($c -replace '^---', \"---`nimport 'bulma/css/bulma.min.css';\") -NoNewline"
+          ]
+        },
+        "angular": {
+          "steps": [
+            "npm install bulma@1",
+            "Set-Content src/styles.css (\"@import 'bulma/css/bulma.min.css';`n\" + (Get-Content src/styles.css -Raw))"
+          ]
+        },
+        "react-router": {
+          "steps": [
+            "npm install bulma@1",
+            "Set-Content app/root.tsx (\"import 'bulma/css/bulma.min.css';`n\" + (Get-Content app/root.tsx -Raw))"
+          ],
+          "note": "Tailwind CSS resta: fa parte del modello di React Router."
         }
       }
     },
@@ -690,6 +2289,12 @@
             "sqlite"
           ],
           "note": "Predefinito di Laravel: database/database.sqlite c'è già."
+        },
+        "django": {
+          "needs": [
+            "sqlite"
+          ],
+          "note": "Predefinito di Django: db.sqlite3 c'è già, fatto dalla prima migrazione."
         }
       }
     },
@@ -707,6 +2312,16 @@
             "php artisan migrate --force"
           ],
           "note": "Il kit crea il database del progetto e scrive la connessione nel file .env."
+        },
+        "django": {
+          "steps": [
+            "uv add 'mysqlclient~=2.2' 'dj-database-url~=3.1' 'python-dotenv~=1.2'",
+            "Add-Content config/settings.py (@('', 'import dj_database_url', 'from dotenv import load_dotenv', '', \"load_dotenv(BASE_DIR / '.env')\", \"DATABASES = {'default': dj_database_url.config(conn_max_age=600)}\") -join \"`n\")",
+            "uv run manage.py migrate",
+            "uv run manage.py createsuperuser --noinput"
+          ],
+          "database": "mysql",
+          "note": "Il kit crea il database del progetto e scrive DATABASE_URL nel file .env, che Django legge con dj-database-url."
         }
       }
     },
@@ -918,6 +2533,71 @@
               "command": "npm test"
             }
           ]
+        },
+        "nuxt": {
+          "steps": [
+            "npm install -D vitest@5",
+            "npm pkg set scripts.test=vitest"
+          ],
+          "actions": [
+            {
+              "name": "Prove",
+              "command": "npm test"
+            }
+          ]
+        },
+        "sveltekit": {
+          "steps": [
+            "npx --yes sv@1 add 'vitest=usages:unit,component' --install npm"
+          ],
+          "actions": [
+            {
+              "name": "Prove",
+              "command": "npm test"
+            }
+          ]
+        },
+        "astro": {
+          "steps": [
+            "npm install -D vitest@5",
+            "npm pkg set scripts.test=vitest"
+          ],
+          "actions": [
+            {
+              "name": "Prove",
+              "command": "npm test"
+            }
+          ]
+        },
+        "react-router": {
+          "steps": [
+            "npm install -D vitest@5",
+            "npm pkg set scripts.test=vitest"
+          ],
+          "actions": [
+            {
+              "name": "Prove",
+              "command": "npm test"
+            }
+          ]
+        },
+        "hono": {
+          "steps": [
+            "npm install -D vitest@5",
+            "npm pkg set scripts.test=vitest"
+          ],
+          "actions": [
+            {
+              "name": "Prove",
+              "command": "npm test"
+            }
+          ]
+        },
+        "angular": {
+          "note": "Già incluso: ng test usa Vitest."
+        },
+        "nestjs": {
+          "note": "Già incluso nel progetto NestJS."
         }
       }
     },
@@ -948,6 +2628,74 @@
           ]
         },
         "tauri": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "nuxt": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "sveltekit": {
+          "steps": [
+            "npx --yes sv@1 add prettier --install npm"
+          ]
+        },
+        "astro": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "react-router": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "hono": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "angular": {
+          "steps": [
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ],
+          "note": "Prettier c'è già nel progetto Angular: si aggiunge il comando format."
+        },
+        "nestjs": {
+          "note": "Già incluso nel progetto NestJS (npm run format)."
+        },
+        "docusaurus": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "starlight": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "vitepress": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "eleventy": {
+          "steps": [
+            "npm install -D prettier@3",
+            "npm pkg set \"scripts.format=prettier --write .\""
+          ]
+        },
+        "strapi": {
           "steps": [
             "npm install -D prettier@3",
             "npm pkg set \"scripts.format=prettier --write .\""

@@ -1557,10 +1557,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     metaSource: "api.anaconda.org/package/conda-forge/r-base + mamba-org/micromamba-releases",
     unix: () =>
       tr(
-        "Windows ARM64: non disponibile. macOS e Linux: gli stessi pacchetti per osx-* e linux-*, lanciatori in kit-bin, non rilocabile",
-        "Windows ARM64: not available. macOS and Linux: the same packages for osx-* and linux-*, launchers in kit-bin, not relocatable",
-        "Windows ARM64 : non disponible. macOS et Linux : mêmes paquets pour osx-* et linux-*, lanceurs dans kit-bin, non relocalisable",
-        "Windows ARM64: nicht verfügbar. macOS und Linux: dieselben Pakete für osx-* und linux-*, Starter in kit-bin, nicht verschiebbar",
+        "Windows ARM64: i pacchetti win-64 in emulazione x64, da micromamba nativo (--platform win-64). macOS e Linux: gli stessi pacchetti per osx-* e linux-*, lanciatori in kit-bin, non rilocabile",
+        "Windows ARM64: the win-64 packages under x64 emulation, from the native micromamba (--platform win-64). macOS and Linux: the same packages for osx-* and linux-*, launchers in kit-bin, not relocatable",
+        "Windows ARM64 : les paquets win-64 en émulation x64, par le micromamba natif (--platform win-64). macOS et Linux : mêmes paquets pour osx-* et linux-*, lanceurs dans kit-bin, non relocalisable",
+        "Windows ARM64: die win-64-Pakete in x64-Emulation, vom nativen micromamba (--platform win-64). macOS und Linux: dieselben Pakete für osx-* und linux-*, Starter in kit-bin, nicht verschiebbar",
       ),
     binarySource: () =>
       tr(

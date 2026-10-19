@@ -80,6 +80,7 @@ const COMMANDS: &[&str] = &[
     "project_action_save",
     "project_action_remove",
     "project_action_default",
+    "project_pin",
     "project_status",
     "project_databases",
     "project_db_create",

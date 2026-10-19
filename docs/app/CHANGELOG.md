@@ -1,5 +1,43 @@
 # Novità
 
+## Il sito al passo con l'app (19/10/2026)
+
+- **«Dentro l'app»**: le tre schermate stanno in una finestra vestita come il sistema di chi visita, la stessa della cartella nella hero (Windows 11, macOS, Linux con GNOME); senza JavaScript restano i puntini del brand. Barra e controlli sono un componente solo del sito, `.win`.
+- **Testi**: «Come si usa» nomina le oltre 60 basi dei progetti, «Tutto da una finestra» il pannello rapido e Ctrl+P, i server web dicono «su ogni sistema». In «C'è ancora da fare» Apache fuori da Windows non è più in arrivo (D-116): resta da provare su macchine vere, con il PHP del kit con `pdo_sqlite` che arriva con il suo primo rilascio (D-133).
+- **README**: la riga Progetti descrive pannello rapido, ▶ nella lista, Ctrl+P e la scheda Nuovo progetto con le 63 basi in gruppi; la voce da fare su Apache come nel sito. **CATALOG.md** e **TESTING.md** non dicono più R assente su Windows ARM64 (D-132) né Apache solo su Windows.
+
+## PHP del kit per macOS e Linux, con pdo_sqlite (19/10/2026)
+
+- **Build propria di PHP** (D-133, issue #4): `scripts/build-php` e il workflow `php.yml` compilano PHP 8.4.26 e 8.5.11 con static-php-cli sui quattro sistemi, con le estensioni del set «bulk» e in più `pdo_sqlite` e `pdo_pgsql` veri: `ext-pdo_sqlite` nei `composer.json` e `extension_loaded('pdo_sqlite')` funzionano.
+- **Installazione**: una linea con la build del kit fissata nel catalogo viene dalle release del repository; le altre restano su static-php-cli fino alla prima release.
+
+## R su Windows ARM64 (19/10/2026)
+
+- **R** c'è anche sui PC Windows ARM64 (D-132): la stessa build `win-64` di conda-forge di Windows x64, con il compilatore per i pacchetti, in emulazione x64 come PHP, Apache e MySQL. conda-forge non ha R per `win-arm64` e l'R nativo ARM64 di CRAN è ancora sperimentale. Ora ogni componente del catalogo c'è su Windows ARM64.
+
+## Apache su ogni sistema (19/10/2026)
+
+- **Apache** c'è su Windows, macOS e Linux, x64 e ARM64 (D-116): su macOS e Linux arriva dal primo rilascio della build del kit, `httpd-v2.4.69-1`, con gli SHA-256 dei quattro archivi fissati nel catalogo; PHP passa da `php-fpm`. Su Windows niente cambia: Apache Lounge con il modulo PHP, x64 in emulazione su ARM64.
+
+## 52 nuove basi per i progetti, in gruppi (19/10/2026)
+
+- **Gruppi** (D-131): il wizard e gli alberi dei progetti e delle Impostazioni dividono le basi in Web con PHP, Web con JavaScript e TypeScript, Web con Python, Web con altri linguaggi, CMS, Siti statici e documentazione, App desktop, App mobile, Dati e documenti, Riga di comando e librerie.
+- **Basi nuove**: Nuxt, SvelteKit, Astro, Angular, React Router, NestJS, Hono, Fresh, Elysia; Django, FastAPI, Flask; ASP.NET Core, Blazor, Spring Boot, Ktor, Gin, Axum, Dart; Craft CMS, Kirby, Grav, Joomla, Strapi, Payload; Docusaurus, Starlight, VitePress, Eleventy, MkDocs Material; Avalonia, Wails, Neutralinojs; Streamlit, JupyterLab, marimo, Shiny, Pluto, Typst, LaTeX; programmi in Rust, Go, Zig, C++, .NET, Python, Deno, Dart, Kotlin, Java e Julia.
+- **Aggiunte** su più basi: Tailwind CSS, Bootstrap e Bulma, Vitest, Prettier, i componenti React, Vue e Svelte in Astro, MySQL per Django.
+- Ogni base ha il suo logo.
+
+## Arretrato delle piattaforme (19/10/2026, issue #8)
+
+- **pnpm su Windows**: rimuovendo il componente «pnpm, yarn» va via anche il corepack che aveva installato, come già su macOS e Linux.
+- **exFAT e FAT su macOS e Linux**: il README dice che lì i link diventano copie (per esempio i 142 link interni di Git) e consiglia APFS o ext4 per una chiavetta usata solo con un Mac o con Linux.
+- **Pool automatici** (D-101): la decisione ora dice che i siti senza server scelto entrano già nel pool automatico delle loro linee.
+
+## Pannello rapido dei progetti (19/10/2026)
+
+- **Pannello rapido** (D-130): la prima scheda di Progetti mostra cosa è in esecuzione (con indirizzo, output e «Ferma»), i progetti preferiti e recenti con Avvia, Editor, Terminale e agente, cosa c'è da sistemare (avvii falliti, componenti mancanti) e i modi di creare un progetto.
+- **Preferiti**: la stella su una scheda del pannello porta il progetto tra i preferiti; resta nelle impostazioni del progetto nel kit.
+- **▶ nella lista dei progetti**: ogni riga avvia e ferma l'azione predefinita senza aprire la pagina.
+- **Ctrl+P** apre un progetto per nome da qualsiasi pagina; Maiusc+Invio lo avvia.
 ## La cartella della home del sito come la vede il tuo sistema (19/10/2026)
 
 - **La finestra della cartella** nella hero del sito prende la barra del sistema di chi visita: Windows 11 (titolo a sinistra, riduci, ingrandisci e chiudi a destra), macOS (i tre semafori, titolo al centro), Linux con GNOME (titolo al centro, chiusura tonda).

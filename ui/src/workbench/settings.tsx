@@ -60,13 +60,7 @@ export function SettingsEditor({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-2 px-5 pt-3 pb-2.5">
-        <SearchBox
-          value={search}
-          onChange={onSearch}
-          placeholder={placeholder}
-          large
-          className="max-w-[880px] flex-1"
-        />
+        <SearchBox value={search} onChange={onSearch} placeholder={placeholder} large className="flex-1" />
         {actions}
       </div>
       <div className="flex min-h-0 flex-1 border-t border-vsc-border">
@@ -130,7 +124,7 @@ export function SettingsGroup({
       >
         {title}
       </h2>
-      {description && <p className="max-w-[880px] px-[14px] pb-1 text-vsc-desc">{description}</p>}
+      {description && <p className="px-[14px] pb-1 text-vsc-desc">{description}</p>}
       {children}
     </section>
   );
@@ -165,7 +159,7 @@ export function SettingItem({
   return (
     <div
       data-setting
-      className={`relative max-w-[880px] rounded-md border-l-2 hover:bg-(--vscode-settings-rowHoverBackground) ${
+      className={`relative rounded-md border-l-2 hover:bg-(--vscode-settings-rowHoverBackground) ${
         modified ? "border-l-vsc-settings-modified" : "border-l-transparent"
       }`}
     >

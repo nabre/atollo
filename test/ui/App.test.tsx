@@ -46,6 +46,7 @@ const PIECES: FrameworkPiece[] = [
     id: "laravel",
     kind: "base",
     name: "Laravel",
+    category: "web-php",
     desc: "Framework PHP per applicazioni web",
     home: "https://laravel.com/docs/13.x/installation",
     needs: ["php", "node"],
@@ -56,6 +57,7 @@ const PIECES: FrameworkPiece[] = [
     id: "vite",
     kind: "base",
     name: "Vite",
+    category: "web-js",
     desc: "Sito o applicazione web in TypeScript",
     home: "https://vite.dev/guide/",
     needs: ["node"],
@@ -344,17 +346,18 @@ describe("App", () => {
       }),
     );
     render(<App />);
-    expect(await screen.findByText("app & co")).toBeTruthy();
+    const list = within(await screen.findByRole("list", { name: "Progetti" }));
+    expect(await list.findByText("app & co")).toBeTruthy();
     // the list shows no language logos (the project's page does)
-    expect(screen.queryByRole("img", { name: "TypeScript" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Terminale" }));
+    expect(list.queryByRole("img", { name: "TypeScript" })).toBeNull();
+    fireEvent.click(list.getByRole("button", { name: "Terminale" }));
     expect(invoke).toHaveBeenCalledWith("terminal_open", { project: "app & co" });
     // the row's agent is the one last used in the project
-    fireEvent.click(await screen.findByTitle("Apre Codex nel progetto app & co"));
+    fireEvent.click(await list.findByTitle("Apre Codex nel progetto app & co"));
     expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "codex", project: "app & co" });
     expect(invoke).not.toHaveBeenCalledWith("terminal_open", { project: null });
     // on the project's page, the same agent is the one chosen
-    fireEvent.click(screen.getByTitle("Apre la pagina di app & co"));
+    fireEvent.click(list.getByTitle("Apre la pagina di app & co"));
     await waitFor(() => {
       expect(screen.getByRole("radio", { name: "Codex" }).getAttribute("aria-checked")).toBe("true");
     });
@@ -385,7 +388,8 @@ describe("App", () => {
       }),
     );
     render(<App />);
-    fireEvent.click(await screen.findByTitle("Apre la pagina di negozio"));
+    const list = within(await screen.findByRole("list", { name: "Progetti" }));
+    fireEvent.click(await list.findByTitle("Apre la pagina di negozio"));
     const nav = screen.getByRole("navigation", { name: "Sezioni del progetto" });
     expect(
       within(nav)
@@ -410,7 +414,7 @@ describe("App", () => {
     });
     // The activity bar's Projects again: back to the list
     fireEvent.click(screen.getAllByRole("button", { name: "Progetti" })[0] as HTMLElement);
-    expect(await screen.findByRole("heading", { name: "Nuovo progetto" })).toBeTruthy();
+    expect((await screen.findAllByRole("heading", { name: "Nuovo progetto" })).length).toBeGreaterThan(0);
   });
 
   it("reports a failed command", async () => {
@@ -444,13 +448,15 @@ describe("App", () => {
       }),
     );
     render(<App />);
-    expect(await screen.findByText("sito (1) & co")).toBeTruthy();
-    fireEvent.click(screen.getByTitle("Apre sito (1) & co nell'editor"));
+    const list = within(await screen.findByRole("list", { name: "Progetti" }));
+    expect(await list.findByText("sito (1) & co")).toBeTruthy();
+    fireEvent.click(list.getByTitle("Apre sito (1) & co nell'editor"));
     expect(invoke).toHaveBeenCalledWith("editor_open", { project: "sito (1) & co" });
-    // No Avvia in the list: the project's page starts it
-    expect(screen.queryByRole("button", { name: "Avvia" })).toBeNull();
-    fireEvent.click(screen.getByTitle("Apre la pagina di sito (1) & co"));
-    fireEvent.click((await screen.findAllByRole("button", { name: "Avvia" }))[0] as HTMLElement);
+    // The row starts its default action too (▶)
+    expect(list.getByRole("button", { name: "Avvia" })).toBeTruthy();
+    fireEvent.click(list.getByTitle("Apre la pagina di sito (1) & co"));
+    const main = within(screen.getByRole("main"));
+    fireEvent.click((await main.findAllByRole("button", { name: "Avvia" }))[0] as HTMLElement);
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("run_start", { project: "sito (1) & co", action: "static" });
     });
@@ -492,6 +498,28 @@ describe("App", () => {
     expect(screen.queryByLabelText("Lingua")).toBeNull();
   });
 
+  it("edits what an addition does with one base, from under the base in the tree", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    const tree = within(await screen.findByRole("list", { name: "Framework" }));
+    // Group → base → slot → addition
+    fireEvent.click(await tree.findByRole("button", { name: /^Vite/ }));
+    const under = within(await tree.findByRole("list", { name: "Aggiunte con Vite" }));
+    expect(under.getByRole("button", { name: /Interfaccia/ })).toBeTruthy();
+    fireEvent.click(under.getByRole("button", { name: /React/ }));
+    expect(await screen.findByRole("heading", { name: "React con Vite" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /React/, selected: true })).toBeTruthy();
+    const create = screen.getByLabelText("Crea il progetto al posto della base (facoltativo)");
+    fireEvent.change(create, { target: { value: "npm create vite@9 {name} -- --template react-swc-ts" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("frameworks_set", expect.anything());
+    });
+    const call = invoke.mock.calls.find((c) => c[0] === "frameworks_set");
+    expect(JSON.stringify(call?.[1])).toContain("react-swc-ts");
+  });
+
   it("edits the instructions of a framework and saves only them", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
@@ -511,7 +539,9 @@ describe("App", () => {
   it("creates a project with the wizard", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Nuovo progetto" })[0] as HTMLElement);
+    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto da framework o CMS" }));
+    const groups = within(await screen.findByRole("group", { name: "Gruppi di basi" }));
+    fireEvent.click(groups.getByRole("button", { name: /JavaScript/ }));
     fireEvent.click(await screen.findByRole("radio", { name: /Vite/ }));
     fireEvent.click(await screen.findByRole("checkbox", { name: /React/ }));
     fireEvent.change(screen.getByLabelText("Nome del progetto"), { target: { value: " app " } });
@@ -528,10 +558,71 @@ describe("App", () => {
     expect(await screen.findByText(/Progetto app creato/)).toBeTruthy();
   });
 
+  it("starts, pins and finds the projects from the home", async () => {
+    invoke.mockImplementation(
+      answers({
+        projects_list: [
+          project("sito (1) & co"),
+          { ...project("negozio"), requires: ["php", "mysql"], missing: ["mysql"] },
+        ],
+        run_start: { ...running, state: "starting" },
+        run_log: [],
+        project_pin: null,
+      }),
+    );
+    render(<App />);
+    expect(await screen.findByRole("tab", { name: "Pannello rapido", selected: true })).toBeTruthy();
+    const recent = within(await screen.findByRole("region", { name: "Recenti" }));
+    // The card starts the default action, the star makes it a favorite
+    fireEvent.click(recent.getAllByRole("button", { name: "Avvia" })[0] as HTMLElement);
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("run_start", expect.objectContaining({ action: "static" }));
+    });
+    fireEvent.click(recent.getByRole("button", { name: "Aggiungi negozio ai preferiti" }));
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("project_pin", { project: "negozio", pinned: true });
+    });
+    // What runs, with its stop; what is missing, with the way to its page
+    act(() => {
+      runListener?.({ payload: { kind: "state", ...running } });
+    });
+    const live = within(await screen.findByRole("region", { name: "In esecuzione" }));
+    expect(live.getByText("sito (1) & co")).toBeTruthy();
+    expect(screen.getByText(/negozio: mancano/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Installa" }));
+    expect(await screen.findByText("da installare")).toBeTruthy();
+    // Ctrl+P: a project by its name, Enter opens its page
+    fireEvent.keyDown(window, { key: "p", ctrlKey: true });
+    const box = within(await screen.findByRole("dialog", { name: "Apri un progetto" }));
+    fireEvent.change(box.getByLabelText("Apri un progetto"), { target: { value: "(1)" } });
+    expect(box.getAllByRole("option")).toHaveLength(1);
+    fireEvent.keyDown(box.getByRole("option"), { key: "Enter" });
+    expect(await screen.findByRole("tab", { name: "sito (1) & co", selected: true })).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: "Apri un progetto" })).toBeNull();
+  });
+
+  it("opens each way of making a project from the side bar's tree", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto", expanded: false }));
+    const tree = await screen.findByRole("list", { name: "Nuovo progetto" });
+    fireEvent.click(within(tree).getByRole("button", { name: /Progetto vuoto/ }));
+    expect(await screen.findByRole("button", { name: "Crea" })).toBeTruthy();
+    fireEvent.click(within(tree).getByRole("button", { name: /Da un indirizzo Git/ }));
+    expect(await screen.findByRole("button", { name: /Clona/ })).toBeTruthy();
+    // A base under the frameworks: the wizard opens with it chosen.
+    fireEvent.click(await within(tree).findByRole("button", { name: /Web con JavaScript e TypeScript/ }));
+    fireEvent.click(await within(tree).findByRole("button", { name: /Vite/ }));
+    await waitFor(() => {
+      expect(screen.getByRole<HTMLInputElement>("radio", { name: /Vite/ }).checked).toBe(true);
+    });
+    expect(screen.getAllByRole("tab", { name: /Nuovo progetto/ })).toHaveLength(1);
+  });
+
   it("offers the empty projects and those without Git, never a repository", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Nuovo progetto" })[0] as HTMLElement);
+    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto da framework o CMS" }));
     fireEvent.click(await screen.findByRole("button", { name: /appunti/ }));
     expect(await screen.findByText(/contiene già dei file/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^repo/ })).toBeNull();
@@ -596,7 +687,7 @@ describe("App", () => {
   it("shows the progress of an automatic installation", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
-    await screen.findByRole("heading", { name: "Nuovo progetto" });
+    await screen.findAllByRole("heading", { name: "Nuovo progetto" });
     act(() => {
       setupListener?.({
         payload: {

@@ -59,7 +59,7 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "lifecycle") => void 
   if (done) {
     return (
       <SingleEditor title={title} icon={icon}>
-        <EditorBody narrow>
+        <EditorBody>
           <Notice tone="success">{t("Programmi del kit chiusi e accesso di Antigravity salvato nel kit.")}</Notice>
           {open && !nothingOpen(open) && (
             <>
@@ -84,7 +84,7 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "lifecycle") => void 
 
   return (
     <SingleEditor title={title} icon={icon}>
-      <EditorBody narrow>
+      <EditorBody>
         <p>
           {t(
             "Prima di togliere la chiavetta o il disco del kit: chiude i programmi del kit ancora aperti e salva nel kit l'accesso di Antigravity, così non resta nulla in questo PC.",

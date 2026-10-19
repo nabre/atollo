@@ -132,7 +132,7 @@ fn conda_versions_per_subdir() {
 #[test]
 fn micromamba_create_args_git() {
     let prefix = Path::new("/kit/data/apps/linux-x64/git/2.51");
-    let args = micromamba_create_args(prefix, &["git=2.51.0"]);
+    let args = micromamba_create_args(prefix, &["git=2.51.0"], None);
     assert_eq!(
         args,
         [
@@ -153,8 +153,29 @@ fn micromamba_create_args_git() {
     assert_eq!(args[p + 1], prefix.display().to_string());
     assert_eq!(args.last().map(String::as_str), Some("git=2.51.0"));
     // R: several specs, in order.
-    let r = micromamba_create_args(prefix, &["r-base=4.5.1", "libblas=*=*openblas"]);
+    let r = micromamba_create_args(prefix, &["r-base=4.5.1", "libblas=*=*openblas"], None);
     assert_eq!(&r[r.len() - 2..], ["r-base=4.5.1", "libblas=*=*openblas"]);
+    assert!(!r.iter().any(|a| a == "--platform"));
+}
+
+/// R on Windows ARM64: the native micromamba makes a `win-64` environment
+/// (`--platform` before the specs), run in emulation; its own platform
+/// needs no flag.
+#[test]
+fn micromamba_create_args_for_another_platform() {
+    let prefix = Path::new(r"D:\kit\data\apps\win32-arm64\r\4.6");
+    let specs = ["r-base=4.6.1", "libblas=*=*openblas"];
+    let args = micromamba_create_args(prefix, &specs, Some("win-64"));
+    let p = args.iter().position(|a| a == "--platform").unwrap();
+    assert_eq!(args[p + 1], "win-64");
+    assert_eq!(&args[p + 2..], specs);
+    // conda-forge's R exists for win-64, not for win-arm64.
+    assert_eq!(
+        Target::WIN32_ARM64
+            .with_arch(crate::kit::Arch::X64)
+            .conda_subdir(),
+        "win-64"
+    );
 }
 
 #[test]

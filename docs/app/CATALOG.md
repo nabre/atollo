@@ -20,7 +20,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `node` | Node.js LTS + npm | no | 110 | | quando serve: azioni con `npm`, server MCP con `npx` (D-59) |
 | | `uv` | uv, uvx | no | 35 | | quando serve: azioni con `uv`, server MCP con `uvx` (D-59) |
 | | `php` | PHP + Composer | sì | 100 | | Windows: con VC++ locale, x64 in emulazione su Windows ARM64; macOS e Linux: static-php-cli (D-112) |
-| | `apache` | Apache | sì | 45 | `php` | oggi solo su Windows (`targets`): Apache Lounge con il modulo PHP, x64 in emulazione su Windows ARM64; su macOS e Linux l'installatore della build del kit con `php-fpm` è pronto (D-116), ma il catalogo lo offre lì solo quando il primo rilascio è fissato in `sha256ByLine` |
+| | `apache` | Apache | sì | 45 | `php` | Windows: Apache Lounge con il modulo PHP, x64 in emulazione su Windows ARM64; macOS e Linux: build del kit (`httpd-v<versione>`, SHA-256 fissati in `sha256ByLine`) con `php-fpm` (D-116) |
 | | `caddy` | Caddy | no | 45 | | **nuovo** (D-111); server web dei pool e dei siti su tutti i sistemi; al posto di Nginx, tolto con la migrazione dei suoi pool e siti all'avvio (D-120) |
 | | `rust` | Rust | no | 920 | `cc` su Windows ARM64 | host `gnu` su Windows x64, `gnullvm` su Windows ARM64 (collegato da llvm-mingw di `cc`), `msvc` dalle Impostazioni; nativo su macOS e Linux |
 | | `go` | Go | no | 250 | | |
@@ -39,7 +39,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `cmake` | CMake, Ninja | no | 100 | | |
 | | `cc` | C, C++ | no | 720 | `zig` su macOS e Linux | llvm-mingw su Windows; `zig cc` e GNU make su macOS e Linux (D-112); MB di Windows, su Unix circa 20 |
 | | `ruby` | Ruby | no | 270 | | RubyInstaller su Windows (nativo anche su ARM64), conda-forge su macOS e Linux (D-112), non rilocabile lì |
-| | `r` | R (conda-forge) | no | 1100 | | non disponibile su Windows ARM64 (`noArm64`: conda-forge non ha `win-arm64`); nativo su macOS e Linux, ARM64 compreso, non rilocabile lì |
+| | `r` | R (conda-forge) | no | 1100 | | Windows ARM64: build `win-64` in emulazione (`x64Only`, conda-forge non ha `win-arm64`; micromamba nativo con `--platform win-64`, D-132); nativo su macOS e Linux, ARM64 compreso, non rilocabile lì |
 | database (`databases`) | `mysql` | MySQL | no | 520 | | **nuovo** (D-110); l'unico server SQL del kit (D-117), linee 8.4 e 9.7 LTS; x64 in emulazione su Windows ARM64; su Linux ARM64 il download è di circa 940 MB |
 | | `mongodb` | MongoDB, mongosh, Database Tools | no | 570 | | **nuovo** (D-73); Database Tools per le copie (D-78); x64 in emulazione su Windows ARM64; su Linux il server viene da conda-forge e non è rilocabile |
 | | `phpmyadmin` | phpMyAdmin | no | 60 | `php`, `mysql` | **nuovo** (D-107, al posto di Adminer di D-85); MySQL nel browser, sui sei target (D-117) |
@@ -55,16 +55,16 @@ Campi del catalogo oltre a quelli di Atollo: `keys` (le altre parti di un compon
 
 | Campo | Cosa dice | Esempio |
 | --- | --- | --- |
-| `targets` | i soli target dove il componente c'è; vuoto = tutti | Apache: `["win32-x64", "win32-arm64"]` |
+| `targets` | i soli target dove il componente c'è; vuoto = tutti | nessuno oggi (Apache fino a D-116: `["win32-x64", "win32-arm64"]`) |
 | `unavailable` | target → motivo (in italiano, tradotto dai cataloghi), mostrato al posto di «non disponibile per `<target>`» | Android: `linux-arm64` |
-| `noArm64` | nessuna build gira su Windows ARM64, nemmeno in emulazione | R |
-| `x64Only` | build x64 in emulazione solo su Windows ARM64 | PHP, Apache, Android SDK, Julia, TinyTeX, MySQL, MongoDB, editor |
+| `noArm64` | nessuna build gira su Windows ARM64, nemmeno in emulazione | nessuno oggi (R fino a D-132) |
+| `x64Only` | build x64 in emulazione solo su Windows ARM64 | PHP, Apache, Android SDK, Julia, TinyTeX, R, MySQL, MongoDB, editor |
 | `rosetta` | build x64 su `darwin-arm64` con Rosetta 2; senza Rosetta il componente non è disponibile | nessuno oggi |
 | `needsByTarget` | bisogni in più su un target, oltre a `needs`; `components.txt` salva solo quelli validi ovunque | `cc`: `zig` su macOS e Linux; `rust`: `cc` su `win32-arm64` |
 | `removeUnix` | i file posseduti su macOS e Linux, al posto di `remove` | pnpm: `bin/pnpm`, `lib/node_modules/corepack` |
 | `sha256ByTarget` | SHA-256 per target, con `version`, dove il fornitore non pubblica un hash | editor |
 | `sha256ByFile` | SHA-256 per nome di file | PHP: gli archivi di static-php-cli |
-| `sha256ByLine` | linea → `{ version, sha256ByTarget }`: si offrono solo le linee fissate | MySQL 8.4 e 9.7 |
+| `sha256ByLine` | linea → `{ version, sha256ByTarget }`: si offrono solo le linee fissate | MySQL 8.4 e 9.7, Apache 2.4 su macOS e Linux |
 
 Un componente non disponibile per il sistema si mostra «non disponibile per `<target>`» con il motivo, mai con un binario di un'altra architettura; «non disponibile su PC ARM64» resta solo per Windows ARM64 (BUG-24c). `Atollo components --target <id>` mostra il catalogo di un altro target.
 
@@ -134,7 +134,7 @@ Abbreviazioni:
 | cc | GHA `mstorsjo/llvm-mingw`, `llvm-mingw-*-ucrt-(x86_64\|aarch64).zip`; macOS/Linux: shim `cc`, `c++`, `gcc`, `g++`, `clang`, `clang++`, `ar`, `ranlib` sullo Zig del kit e GNU make da conda-forge (D-112; i framework Apple vogliono Xcode CLT) | | `digest`; micromamba | IA `*`; **eliminare** `bin\*-w64-mingw32-gcc.exe` e `-g++.exe` (romperebbero il linker di Rust `gnu`) | `cc/bin/clang.exe` | `_languages.ps1:308-317` |
 | ruby | `api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=30`, esclusi prerelease/bozze, versione e build più alte | `rubyinstaller-X.Y.Z-N-(x64\|arm).7z` | `digest` | IA `*`; versione `X.Y.Z-N`; senza MSYS2 | `ruby/bin/ruby.exe` | `_languages.ps1:321-340` |
 | micromamba (per r; su macOS e Linux per ruby e make; su Linux per il server di mongodb; su Linux ARM64 per sqlite) | tag dell'ultima release di `mamba-org/micromamba-releases` (API di GitHub) | `micromamba-win-64`, `micromamba-win-arm64` (`micromamba-osx-*`, `micromamba-linux-*` fuori da Windows) | SHA-256 da `micromamba-win-64.sha256` della release | exe → `A\tools\micromamba.exe`; anche la reinstallazione senza rete usa questo (`create --offline -f <elenco>`, D-118) | `tools/micromamba.exe` | `_languages.ps1:344-358` |
-| r | `api.anaconda.org/package/conda-forge/r-base` → `latest_version` | solo `win-64` (Windows ARM64: non disponibile) | SHA-256 di ogni pacchetto (micromamba) | `micromamba create --no-rc -y -q -p <lavoro>\r -c conda-forge --override-channels r-base=<v> "libblas=*=*openblas"` con profilo, `MAMBA_ROOT_PREFIX` e `CONDA_PKGS_DIRS` nell'area di lavoro; per i componenti che non seguono il kit (fuori da Windows) archivi ed elenco esplicito della linea in `data/app/conda/<target>/`, per reinstallare senza rete (D-118); lanciatori `bin\R.cmd`, `bin\Rscript.cmd`; CRAN `cloud.r-project.org` in `Rprofile.site`; via `pkgs\` | `r/bin/R.cmd` | `_languages.ps1:368-429` |
+| r | `api.anaconda.org/package/conda-forge/r-base` → `latest_version` | solo `win-64` (anche su Windows ARM64, in emulazione x64, D-132) | SHA-256 di ogni pacchetto (micromamba) | `micromamba create --no-rc -y -q -p <lavoro>\r -c conda-forge --override-channels r-base=<v> "libblas=*=*openblas"` con profilo, `MAMBA_ROOT_PREFIX` e `CONDA_PKGS_DIRS` nell'area di lavoro; per i componenti che non seguono il kit (fuori da Windows) archivi ed elenco esplicito della linea in `data/app/conda/<target>/`, per reinstallare senza rete (D-118); lanciatori `bin\R.cmd`, `bin\Rscript.cmd`; CRAN `cloud.r-project.org` in `Rprofile.site`; via `pkgs\` | `r/bin/R.cmd` | `_languages.ps1:368-429` |
 | mysql | linee e versioni fissate nel catalogo (`sha256ByLine`: 8.4.11, 9.7.2) | `cdn.mysql.com/Downloads/MySQL-<linea>/mysql-<v>-winx64.zip` (x64 anche su ARM64) | SHA-256 fissato, calcolato dopo la firma GPG di Oracle | IA; via `mysql-test`, simboli e build di debug; su Linux `lib/private/libaio.so.1` verso `libaio.so.1t64` se serve | `mysql/bin/mysqld.exe` + `mysql.exe`, `mysqldump.exe`, `mysqladmin.exe` | nuovo (D-110) |
 | caddy | GHA `caddyserver/caddy` | `caddy_<v>_windows_(amd64\|arm64).zip` | `digest`, o SHA-512 di `caddy_<v>_checksums.txt` | `caddy.exe` → `A\caddy\<linea>\` | `caddy/caddy.exe` | nuovo (D-111) |
 | mongodb | `downloads.mongodb.org/current.json`, produzione `x.0.y`; mongosh da GHA `mongodb-js/mongosh` | `mongodb-windows-x86_64-<v>.zip`, `mongosh-<v>-win32-x64.zip` in `mongosh\`, Database Tools da `release.json` in `mongodb-tools\` | SHA-256 dell'elenco; `digest` | IA singola; via `.pdb` e `vc_redist`, VC++ del kit | `mongodb/bin/mongod.exe` + `mongosh/bin/mongosh.exe` + `mongodb-tools/bin/mongodump.exe` | nuovo (D-73) |

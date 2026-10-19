@@ -43,16 +43,17 @@ ISLETS = {"west": (108, 238, 1.0), "north": (256, 384, 1.0), "south": (48, 90, 0
 class Atoll:
     """One drawing of the atoll: ring center and radius, islet and reef widths,
     and the waves below as (y, first x, crests) with wavelength, amplitude and
-    stroke. The full symbol and the small-size one differ only here."""
+    stroke, and the round edge stroked around the islets. The full symbol, the
+    small-size one and the wordmark's O differ only here."""
 
-    def __init__(self, cx, cy, r, islet_w, reef_w, waves, wave_l, wave_a, wave_w):
+    def __init__(self, cx, cy, r, islet_w, reef_w, waves, wave_l, wave_a, wave_w, edge=6):
         self.cx, self.cy, self.r = cx, cy, r
-        self.islet_w, self.reef_w = islet_w, reef_w
+        self.islet_w, self.reef_w, self.edge = islet_w, reef_w, edge
         self.waves, self.wave_l, self.wave_a, self.wave_w = waves, wave_l, wave_a, wave_w
 
     def box(self):
         """x0, y0, x1, y1 around the islets and the waves."""
-        half = self.r + self.islet_w / 2 + 3
+        half = self.r + self.islet_w / 2 + self.edge / 2
         bottom = max(y for y, _, _ in self.waves) + self.wave_a / 2 + self.wave_w / 2
         return self.cx - half, self.cy - half, self.cx + half, bottom
 
@@ -105,7 +106,7 @@ def atoll(a, paints, reef_paint, reef_op, wave_paint, wave_ops, lagoon=None):
     for name, (a0, a1, scale) in ISLETS.items():
         p = paints[name]
         d = islet_path(a.cx, a.cy, a.r, a0, a1, a.islet_w * scale, max(a.reef_w, a.islet_w * 0.2))
-        out += f'<path d="{d}" fill="{p}" stroke="{p}" stroke-width="6" stroke-linejoin="round"/>'
+        out += f'<path d="{d}" fill="{p}" stroke="{p}" stroke-width="{a.edge:g}" stroke-linejoin="round"/>'
     for (y, x0, crests), op in zip(a.waves, wave_ops):
         out += stroked(wave_path(x0, y, crests, a.wave_l, a.wave_a), wave_paint, a.wave_w, op)
     return out
@@ -141,7 +142,7 @@ def glyph(fill=None, defs_id="a", a=FULL, wave=MINT):
 
 def svg(w, h, body, title):
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">'
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w:g} {h:g}" width="{w:g}" height="{h:g}">'
         f"<title>{title}</title>{body}</svg>\n"
     )
 
@@ -177,55 +178,84 @@ def rect(x0, y0, x1, y1):
     return f"{x0},{y0} {x1},{y0} {x1},{y1} {x0},{y1}"
 
 
+# Round letters overshoot the cap height and the baseline, or they look
+# smaller than the straight ones.
+OVERSHOOT = 1.5
+O_OUT = 50 + OVERSHOOT  # the O's outer radius, its inner one a stroke less
+
+
+def ring(r_out, r_in, c=50):
+    """A full ring around (c, c), evenodd."""
+    return "".join(
+        f"M{c} {c - r}A{r} {r} 0 1 {s} {c} {c + r}A{r} {r} 0 1 {s} {c} {c - r}Z"
+        for r, s in ((r_out, 1), (r_in, 0))
+    )
+
+
 LETTERS = {
-    "A": (94, ["0,100 35,0 59,0 94,100 69,100 47,36 25,100"], []),
+    "A": (94, ["0,100 35,0 59,0 94,100 69,100 47,36 25,100", rect(30, 66, 64, 83)], []),
     "T": (76, [rect(0, 0, 76, 21), rect(27, 0, 49, 100)], []),
-    "O": (100, [], ["M50 0A50 50 0 1 1 50 100A50 50 0 1 1 50 0ZM50 22A28 28 0 1 0 50 78A28 28 0 1 0 50 22Z"]),
-    "L": (64, [rect(0, 0, S, 100), rect(0, 79, 64, 100)], []),
+    "O": (100, [], [ring(O_OUT, O_OUT - S)]),
+    "L": (60, [rect(0, 0, S, 100), rect(0, 79, 60, 100)], []),
 }
-A_TRIANGLE = "47,62 61,100 33,100"  # the orange accent inside the A
-GAP = 12
+# Space between the letters' boxes, pair by pair, so the white between them
+# looks even: a stem beside a stem gets the most, the A's slope tucks under the
+# T's bar and the T's bar over the O, the L's open top leaves the next letter
+# room, and the round O's overshoot is taken back from its neighbours.
+KERN = {"AT": -4, "TO": -1, "OL": 11.5, "LL": 10, "LO": 7.5}
+
+# The last O is the symbol itself, so the wordmark is also the lockup. It is
+# drawn in the letters' units, not shrunk from the icon: the islets are as
+# thick as a stem and their ring overshoots like the other O, the reef that
+# joins them is a third of a stem so the O reads closed, and the two waves
+# hang below the baseline as a descender, a fifth of a stem thick, spaced
+# and centered like the icon's.
+O_ATOLL = Atoll(
+    50, 50, O_OUT - S / 2, S - 2, 8,
+    [(111, 20, 3), (123, 30, 2)], 20, 4, 4.5, edge=2,
+)  # fmt: skip
+WM_H = math.ceil(O_ATOLL.box()[3] + OVERSHOOT)
 
 
-def wordmark(ink, accent=ORANGE):
+def atoll_o(ink):
+    """The atoll as the last O: reef and waves in mint on dark grounds and in
+    emerald on light ones, where mint fades into white."""
+    dark = ink == CLOUD
+    i = "wd" if dark else "wl"
+    sea = MINT if dark else EMERALD
+    paints = {"west": f"url(#{i}l)", "north": f"url(#{i}r)", "south": ORANGE}
+    ops = (".8", ".5") if dark else (".9", ".55")
+    return glyph_defs(i) + atoll(O_ATOLL, paints, sea, ".5", sea, ops, f"url(#{i}g)")
+
+
+def wordmark(ink):
+    name = "ATOLLO"
     x = 0
     parts = []
-    for ch in "ATOLLO":
+    for k, ch in enumerate(name):
         w, polys, paths = LETTERS[ch]
-        g = [f'<polygon points="{p}"/>' for p in polys]
-        g += [f'<path d="{d}" fill-rule="evenodd"/>' for d in paths]
-        if ch == "A":
-            g.append(f'<polygon points="{A_TRIANGLE}" fill="{accent}"/>')
+        if k == len(name) - 1:  # the last O
+            g = [atoll_o(ink)]
+        else:
+            g = [f'<polygon points="{p}"/>' for p in polys]
+            g += [f'<path d="{d}" fill-rule="evenodd"/>' for d in paths]
         parts.append(f'<g transform="translate({x} 0)">{"".join(g)}</g>')
-        x += w + GAP
-    return x - GAP, f'<g fill="{ink}">{"".join(parts)}</g>'
+        x += w + KERN.get(name[k : k + 2], 0)
+    return x, f'<g fill="{ink}">{"".join(parts)}</g>'
 
 
 WM_W, _ = wordmark(FOREST)
 
 
 def wordmark_svg(ink):
+    """The wordmark on its own canvas, moved down by the O's overshoot."""
     _, body = wordmark(ink)
-    return svg(WM_W, 100, body, "Atollo")
-
-
-def lockup_svg(ink, wave):
-    """Horizontal lockup: the colored atoll, then the wordmark."""
-    _, body = wordmark(ink)
-    # Glyph box: the islets' outer edge down to the lower wave, scaled to height 100.
-    x0, y0, x1, y1 = FULL.box()
-    k = 100 / (y1 - y0)
-    gw = (x1 - x0) * k
-    sym = f'<g transform="translate({-x0 * k:.3f} {-y0 * k:.3f}) scale({k:.5f})">{glyph(defs_id="lk", wave=wave)}</g>'
-    w = gw + 40 + WM_W
-    return svg(round(w), 100, sym + f'<g transform="translate({gw + 40:.3f} 0)">{body}</g>', "Atollo")
+    return svg(WM_W, WM_H, f'<g transform="translate(0 {OVERSHOOT})">{body}</g>', "Atollo")
 
 
 WORDMARKS = {
     "wordmark-light": wordmark_svg(FOREST),  # on light backgrounds
     "wordmark-dark": wordmark_svg(CLOUD),  # on dark backgrounds
-    "lockup-light": lockup_svg(FOREST, EMERALD),
-    "lockup-dark": lockup_svg(CLOUD, MINT),
 }
 
 
@@ -383,7 +413,7 @@ def brand_board_svg():
   <!-- 1. BRAND OVERVIEW (Top Left) -->
   <rect x="16" y="16" width="590" height="348" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
   <text x="42" y="48" font-family="{font}" font-size="12" font-weight="700" letter-spacing="2" fill="#64748B">BRAND OVERVIEW</text>
-  <g transform="translate(42 72) scale(0.84)">{wm_forest}</g>
+  <g transform="translate(42 70) scale(0.76)">{wm_forest}</g>
   <text x="42" y="198" font-family="{font}" font-size="27" font-weight="600" fill="#0F172A">Your sovereign dev &amp; AI workspace.</text>
   <text x="42" y="236" font-family="{font}" font-size="16" fill="#475569">Atollo is a Universal Portable Dev &amp; AI Workspace that unifies</text>
   <text x="42" y="258" font-family="{font}" font-size="16" fill="#475569">editor, toolchains, databases, and AI agents into one portable folder.</text>
@@ -482,25 +512,23 @@ def brand_board_svg():
   <g transform="translate(632 694) scale(0.095)">{tile(MINT, var_c)}</g>
   <text x="506" y="792" font-family="{font}" font-size="11.5" fill="#64748B">Primary Icon · Symbol Variations</text>
 
-  <!-- 5. WORDMARK & LOCKUPS (Middle Center) -->
+  <!-- 5. WORDMARK (Middle Center): the last O is the symbol, so it is the lockup too -->
   <rect x="742" y="380" width="370" height="456" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
   <text x="766" y="412" font-family="{font}" font-size="12" font-weight="700" letter-spacing="2" fill="#64748B">WORDMARK</text>
-  <text x="766" y="444" font-family="{font}" font-size="12.5" fill="#64748B">Standalone Wordmark</text>
-  <g transform="translate(766 462) scale(0.56)">{wm_forest}</g>
+  <text x="766" y="444" font-family="{font}" font-size="12.5" fill="#64748B">On Light</text>
+  <g transform="translate(766 460) scale(0.56)">{wm_forest}</g>
 
-  <line x1="766" y1="538" x2="1088" y2="538" stroke="#F1F5F9" stroke-width="1.5"/>
-  <text x="766" y="562" font-family="{font}" font-size="12.5" fill="#64748B">Horizontal Lockup</text>
-  <g transform="translate(760 578) scale(0.115)">{glyph(defs_id="hlk", wave=EMERALD)}</g>
-  <g transform="translate(830 584) scale(0.44)">{wm_forest}</g>
+  <line x1="766" y1="550" x2="1088" y2="550" stroke="#F1F5F9" stroke-width="1.5"/>
+  <text x="766" y="574" font-family="{font}" font-size="12.5" fill="#64748B">On Dark</text>
+  <rect x="766" y="586" width="322" height="96" rx="12" fill="#1F1F1F"/>
+  <g transform="translate(782 600) scale(0.52)">{wm_cloud}</g>
 
-  <line x1="766" y1="652" x2="1088" y2="652" stroke="#F1F5F9" stroke-width="1.5"/>
-  <text x="766" y="676" font-family="{font}" font-size="12.5" fill="#64748B">Stacked Lockup</text>
-  <g transform="translate(812 686) scale(0.155)">{glyph(defs_id="slk", wave=EMERALD)}</g>
-  <g transform="translate(766 772) scale(0.32)">{wm_forest}</g>
-
-  <line x1="968" y1="652" x2="968" y2="818" stroke="#F1F5F9" stroke-width="1.5"/>
-  <text x="984" y="676" font-family="{font}" font-size="12.5" fill="#64748B">Symbol Only</text>
-  <g transform="translate(984 696) scale(0.18)">{tile("url(#bg-tile)", glyph(defs_id="so"))}</g>
+  <line x1="766" y1="702" x2="1088" y2="702" stroke="#F1F5F9" stroke-width="1.5"/>
+  <text x="766" y="726" font-family="{font}" font-size="12.5" fill="#64748B">Small Sizes</text>
+  <g transform="translate(766 744) scale(0.22)">{wm_forest}</g>
+  <rect x="910" y="736" width="150" height="44" rx="8" fill="#1F1F1F"/>
+  <g transform="translate(922 744) scale(0.22)">{wm_cloud}</g>
+  <g transform="translate(766 790) scale(0.14)">{wm_forest}</g>
 
   <!-- 6. COLOR PALETTE & TYPOGRAPHY (Middle Right) -->
   <rect x="1128" y="380" width="456" height="456" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
@@ -547,9 +575,8 @@ def brand_board_svg():
   <circle cx="614" cy="914" r="5" fill="#F14C4C"/>
   <circle cx="630" cy="914" r="5" fill="#CCA700"/>
   <circle cx="646" cy="914" r="5" fill="#10B981"/>
-  <g transform="translate(664 906) scale(0.032)">{tile("url(#bg-tile)", glyph(defs_id="pw"))}</g>
-  <g transform="translate(686 907) scale(0.13)">{wm_cloud}</g>
-  <text x="774" y="918" font-family="{font}" font-size="12" fill="#9D9D9D">— Universal Portable Dev &amp; AI Workspace</text>
+  <g transform="translate(666 906) scale(0.13)">{wm_cloud}</g>
+  <text x="750" y="918" font-family="{font}" font-size="12" fill="#9D9D9D">— Universal Portable Dev &amp; AI Workspace</text>
 
   <!-- Sidebar -->
   <rect x="594" y="930" width="176" height="218" fill="#181818"/>

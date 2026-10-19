@@ -324,11 +324,11 @@ export function ToolsPage({
             }}
           />
         ) : overview === "overview:extensions" ? (
-          <EditorBody narrow>
+          <EditorBody>
             <ExtensionsMatrixSection projects={projects} components={list ?? []} target={state.target} />
           </EditorBody>
         ) : overview === "overview:relations" ? (
-          <EditorBody narrow>
+          <EditorBody>
             {relations.matrix ? (
               <RelationsSection matrix={relations.matrix} setup={setup} onReload={relations.load} />
             ) : (
@@ -336,7 +336,7 @@ export function ToolsPage({
             )}
           </EditorBody>
         ) : overview === "overview:system" ? (
-          <EditorBody narrow>
+          <EditorBody>
             <div data-setting>
               <RuntimeRows runtimes={relations.matrix?.runtimes ?? []} />
             </div>

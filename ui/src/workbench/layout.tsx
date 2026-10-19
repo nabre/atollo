@@ -587,23 +587,13 @@ export function Panel({
   );
 }
 
-/** Scrolls the content of an editor; `narrow` keeps text readable. `fill`
+/** Scrolls the content of an editor across the editor's full width. `fill`
  * fits it to the editor's height, so a `fill` EditorSection scrolls inside
  * and the rest stays in view. */
-export function EditorBody({
-  children,
-  narrow = false,
-  fill = false,
-}: {
-  children: ReactNode;
-  narrow?: boolean;
-  fill?: boolean;
-}) {
+export function EditorBody({ children, fill = false }: { children: ReactNode; fill?: boolean }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className={`px-5 py-4 ${fill ? "flex h-full flex-col gap-6" : "space-y-6"} ${narrow ? "max-w-4xl" : ""}`}>
-        {children}
-      </div>
+      <div className={`px-5 py-4 ${fill ? "flex h-full flex-col gap-6" : "space-y-6"}`}>{children}</div>
     </div>
   );
 }

@@ -55,6 +55,62 @@ export function bases(pieces: FrameworkPiece[]): FrameworkPiece[] {
   return pieces.filter((p) => p.kind === "base");
 }
 
+/** The groups of the bases, in the order of the trees (CATEGORIES in
+ * tauri/src/projects/frameworks/mod.rs). */
+export const CATEGORIES = [
+  "web-php",
+  "web-js",
+  "web-python",
+  "web-other",
+  "cms",
+  "docs",
+  "desktop",
+  "mobile",
+  "data",
+  "cli",
+] as const;
+
+/** The name of a group of bases; one made in Settings without a group is «Altro». */
+export function categoryLabel(category: string | undefined): string {
+  switch (category) {
+    case "web-php":
+      return t("Web con PHP");
+    case "web-js":
+      return t("Web con JavaScript e TypeScript");
+    case "web-python":
+      return t("Web con Python");
+    case "web-other":
+      return t("Web con altri linguaggi");
+    case "cms":
+      return t("CMS");
+    case "docs":
+      return t("Siti statici e documentazione");
+    case "desktop":
+      return t("App desktop");
+    case "mobile":
+      return t("App mobile");
+    case "data":
+      return t("Dati e documenti");
+    case "cli":
+      return t("Riga di comando e librerie");
+    default:
+      return t("Altro");
+  }
+}
+
+/** The bases by group, in the trees' order, the empty groups left out. */
+export function basesByCategory(pieces: FrameworkPiece[]): { id: string; label: string; bases: FrameworkPiece[] }[] {
+  const all = bases(pieces);
+  const known = (c: string | undefined) => (CATEGORIES as readonly string[]).includes(c ?? "");
+  return [...CATEGORIES, "other"]
+    .map((id) => ({
+      id,
+      label: categoryLabel(id),
+      bases: all.filter((b) => (id === "other" ? !known(b.category) : b.category === id)),
+    }))
+    .filter((g) => g.bases.length > 0);
+}
+
 /** The additions that work with `base`. */
 export function addonsFor(pieces: FrameworkPiece[], base: string): FrameworkPiece[] {
   return pieces.filter((p) => p.kind === "addon" && p.on?.[base] !== undefined);
@@ -170,6 +226,24 @@ export function addPiece(fw: Frameworks, kind: FrameworkPiece["kind"]): string {
 
 /** The tab id of a piece in the Settings page. */
 export const pieceTab = (id: string) => `fw:${id}`;
+
+/** The tab of what addition `addon` does with base `base` (its `on` entry):
+ * `@` is never in an id. */
+export const integrationTab = (addon: string, base: string) => `fw:${addon}@${base}`;
+
+export function parseIntegrationTab(tab: string): { addon: string; base: string } | null {
+  const m = /^fw:([^@]+)@(.+)$/.exec(tab);
+  return m?.[1] && m[2] ? { addon: m[1], base: m[2] } : null;
+}
+
+/** The additions that go with `base`, by slot in the order of the catalog. */
+export function integrationsOf(pieces: FrameworkPiece[], base: string): { slot: string; addons: FrameworkPiece[] }[] {
+  const list = addonsFor(pieces, base);
+  return [...new Set(list.map((p) => p.slot ?? ""))].map((slot) => ({
+    slot,
+    addons: list.filter((p) => (p.slot ?? "") === slot),
+  }));
+}
 export const TRY_TAB = "fw-try";
 
 /** Chooses a base and its additions (one per slot). */

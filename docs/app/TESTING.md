@@ -189,7 +189,7 @@ Componenti:
 
 Stack web e database:
 - [ ] **Laravel con MySQL** su macOS e Linux: `composer create-project`, migrazioni, sito su Caddy, phpMyAdmin.
-- [ ] **WordPress con Caddy**: permalink funzionanti senza `.htaccess`. Drupal propone Apache dove il catalogo lo offre (Windows; macOS e Linux dopo il primo rilascio della build, D-116).
+- [ ] **WordPress con Caddy**: permalink funzionanti senza `.htaccess`. Drupal propone Apache, che il catalogo offre su ogni sistema (su macOS e Linux la build del kit, D-116).
 - [ ] **Apache su macOS e Linux** (D-116). Un progetto Laravel con un `.htaccess` proprio, sito Apache: `php-fpm` parte con Apache (`data/projects/<p>/apache/fpm.conf`), le rotte rispondono, `httpd` gira con `-DFOREGROUND`; fermando il sito si fermano entrambi.
 - [ ] **Pool Caddy** con due siti e un alias verso un altro progetto; aggiungere un sito ricarica il pool senza fermare l'altro.
 - [ ] **Stessa cartella dati MySQL** letta da Windows e da Linux con la stessa linea.

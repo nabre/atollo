@@ -224,7 +224,7 @@ export function AgentUsage({ stats: s }: { stats: AgentStats }) {
           </p>
         )}
         {l.windows.length > 0 && (
-          <ul className="m-0 grid max-w-2xl list-none grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2 p-0">
+          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2 p-0">
             {l.windows.map((w) => (
               <LimitBar key={w.label} w={w} />
             ))}
