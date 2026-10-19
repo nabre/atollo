@@ -539,10 +539,10 @@
     "fr": "agent de Google",
     "de": "Agent von Google"
   },
-  "Git e Git Bash, la shell dei comandi degli agenti": {
-    "en": "Git and Git Bash, the command shell of the agents",
-    "fr": "Git et Git Bash, le shell de commandes des agents",
-    "de": "Git und Git Bash, die Befehlsshell der Agenten"
+  "Git; su Windows anche Git Bash, la shell dei comandi degli agenti": {
+    "en": "Git; on Windows also Git Bash, the command shell of the agents",
+    "fr": "Git ; sur Windows aussi Git Bash, le shell de commandes des agents",
+    "de": "Git; unter Windows auch Git Bash, die Befehlsshell der Agenten"
   },
   "Python e pip": {
     "en": "Python and pip",
