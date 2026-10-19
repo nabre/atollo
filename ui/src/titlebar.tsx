@@ -9,7 +9,7 @@ import { VscChromeClose, VscChromeMaximize, VscChromeMinimize, VscChromeRestore 
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { browserPreview } from "./api";
 import { t } from "./i18n";
-import { BrandSymbol, BrandWordmark } from "./brand";
+import { BrandWordmark } from "./brand";
 import { Badge } from "./tags";
 
 /** The window, or null in the browser preview and in the tests. */
@@ -63,8 +63,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
       className="flex h-[35px] shrink-0 items-center border-b border-vsc-titlebar-border bg-vsc-titlebar text-vsc-titlebar-fg select-none"
     >
       <span data-tauri-drag-region className="flex items-center gap-2 pl-3 text-[12px]">
-        <BrandSymbol size={16} />
-        <BrandWordmark height={11} />
+        <BrandWordmark height={14} />
         {title && (
           <span data-tauri-drag-region className="text-vsc-desc">
             — {title}

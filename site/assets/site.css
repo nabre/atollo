@@ -149,7 +149,7 @@ section { padding: 96px 0; position: relative; }
 .top.scrolled { background: var(--glass); backdrop-filter: blur(12px); border-color: var(--border); }
 .top-row { display: flex; align-items: center; gap: 24px; height: 60px; }
 .brand { display: flex; }
-.logo { height: 20px; width: auto; }
+.logo { height: 25px; width: auto; }
 .logo-light { display: none; }
 @media (prefers-color-scheme: light) { .logo-dark { display: none; } .logo-light { display: block; } }
 .nav { display: flex; gap: 22px; margin-left: auto; font-size: 0.9rem; }
