@@ -3,7 +3,7 @@
 ## Social card, Search Console (20/10/2026)
 
 - **Social card** `docs/brand/social.png` (1280×640): l'immagine del sito quando si condivide un link e l'anteprima del repository su GitHub (D-135).
-- **Ricerca**: il sito è verificato in Google Search Console, con la sitemap inviata.
+- **Ricerca**: il sito pubblica il file che verifica la proprietà in Google Search Console (`site/root/`).
 
 ## Schermate della guida nella lingua giusta (19/10/2026)
 
