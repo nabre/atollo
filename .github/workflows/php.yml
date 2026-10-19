@@ -1,0 +1,108 @@
+name: PHP
+
+# The kit's PHP for macOS and Linux (issue #4), built by scripts/build-php
+# with static-php-cli from the sources pinned in sources.txt: the
+# extensions of static-php-cli's "bulk" set with the real pdo_sqlite and
+# pdo_pgsql. Pull requests that touch the build only build and test it (the
+# newest PHP of sources.txt); a tag php-v<version>-<build> (php-v8.4.26-1)
+# builds that version and publishes the four tarballs and their .sha256
+# files as a GitHub release, whose digests the catalog pins (sha256ByLine of
+# php in components.json).
+on:
+  push:
+    tags: ['php-v*']
+  pull_request:
+    paths:
+      - scripts/build-php/**
+      - .github/workflows/php.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: php-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    name: php ${{ matrix.target }}
+    # Native runners only: build.sh refuses a host of another architecture.
+    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-24.04","linux-arm64":"ubuntu-24.04-arm","darwin-arm64":"macos-latest","darwin-x64":"macos-15-intel"}')[matrix.target] }}
+    # On Linux static-php-cli links PHP statically against musl (its doctor
+    # installs the musl toolchain on the Ubuntu runner), so the binaries run
+    # on any Linux. No Alpine container: GitHub's JavaScript actions do not
+    # run in one on ARM64.
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        # Without ARM64 runners (ARM64_RUNNERS=off) linux-arm64 is left out,
+        # as in app.yml. A release needs all four.
+        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64","darwin-x64"]' || '["linux-x64","linux-arm64","darwin-arm64","darwin-x64"]') }}
+    steps:
+      - name: System packages (Linux)
+        if: startsWith(matrix.target, 'linux')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential autoconf automake libtool pkg-config cmake curl git xz-utils bzip2 patch
+      - uses: actions/checkout@v5
+      # Version and build number from the tag on a release; otherwise the
+      # newest PHP of sources.txt and build 0 (a test build never mistaken
+      # for a published one).
+      - name: Version
+        id: v
+        run: |
+          build=0
+          version=$(awk '$1 == "php" { print $2 }' scripts/build-php/sources.txt | sort -V | tail -n 1)
+          if [[ "$GITHUB_REF" == refs/tags/php-v* ]]; then
+            tag=${GITHUB_REF#refs/tags/php-v}
+            [[ "$tag" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)$ ]] || { echo "tag php-v$tag is not php-v<version>-<build>" >&2; exit 1; }
+            version=${BASH_REMATCH[1]}
+            build=${BASH_REMATCH[2]}
+            awk -v v="$version" '$1 == "php" && $2 == v { found = 1 } END { exit !found }' scripts/build-php/sources.txt \
+              || { echo "PHP $version is not in scripts/build-php/sources.txt" >&2; exit 1; }
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+      - name: Build
+        run: bash scripts/build-php/build.sh ${{ matrix.target }} ${{ steps.v.outputs.version }} ${{ steps.v.outputs.build }} out
+      - name: Test
+        run: bash scripts/build-php/test.sh out/php-*-${{ matrix.target }}.tar.gz
+      - uses: actions/upload-artifact@v6
+        with:
+          name: php-${{ matrix.target }}
+          path: out/*
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/php-v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: php-*
+          path: artifacts
+          merge-multiple: true
+      - name: Four targets
+        run: |
+          ls -l artifacts
+          for t in linux-x64 linux-arm64 darwin-arm64 darwin-x64; do
+            ls artifacts/php-*-"$t".tar.gz >/dev/null || { echo "no tarball for $t" >&2; exit 1; }
+          done
+          (cd artifacts && sha256sum -c *.sha256)
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag=$GITHUB_REF_NAME
+          gh release create "$tag" artifacts/* --verify-tag --title "PHP ${tag#php-v}" \
+            --notes "Static PHP (CLI and FPM) for the kit on macOS (arm64, x64) and Linux (x64, arm64), built by scripts/build-php with static-php-cli: the extensions of its bulk set with pdo_sqlite and pdo_pgsql (see BUILDINFO.txt in each tarball)."

@@ -1,5 +1,10 @@
 # Novità
 
+## PHP del kit per macOS e Linux, con pdo_sqlite (19/10/2026)
+
+- **Build propria di PHP** (D-133, issue #4): `scripts/build-php` e il workflow `php.yml` compilano PHP 8.4.26 e 8.5.11 con static-php-cli sui quattro sistemi, con le estensioni del set «bulk» e in più `pdo_sqlite` e `pdo_pgsql` veri: `ext-pdo_sqlite` nei `composer.json` e `extension_loaded('pdo_sqlite')` funzionano.
+- **Installazione**: una linea con la build del kit fissata nel catalogo viene dalle release del repository; le altre restano su static-php-cli fino alla prima release.
+
 ## R su Windows ARM64 (19/10/2026)
 
 - **R** c'è anche sui PC Windows ARM64 (D-132): la stessa build `win-64` di conda-forge di Windows x64, con il compilatore per i pacchetti, in emulazione x64 come PHP, Apache e MySQL. conda-forge non ha R per `win-arm64` e l'R nativo ARM64 di CRAN è ancora sperimentale. Ora ogni componente del catalogo c'è su Windows ARM64.
