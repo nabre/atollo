@@ -40,6 +40,12 @@ src() { awk -v n="$1" -v v="$2" -v c="$3" '$1 == n && (v == "" || $2 == v) { pri
 php_sha=$(src php "$version" 3) || { echo "PHP $version is not in sources.txt" >&2; exit 2; }
 spc_version=$(src "spc-$target" "" 2)
 exts=$(grep -v '^#' "$here/extensions.txt" | tr -d ' \n')
+# Swoole 6.2.3 does not build on macOS (src/core/misc.cc: undeclared
+# sw_usleep): the macOS builds leave it and its MySQL hook out, until a
+# release of Swoole fixes it.
+case "$target" in
+  darwin-*) exts=$(printf '%s' "$exts" | tr ',' '\n' | grep -v '^swoole' | paste -sd, -) ;;
+esac
 
 work=${WORK:-$(mktemp -d)}
 mkdir -p "$work"
