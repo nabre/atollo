@@ -39,7 +39,14 @@ Coprono, fra l'altro:
 
 ## Linux, macOS e Windows ARM64
 
-**CI** (`.github/workflows/app.yml`, WP-0.6). Su ogni push di `main` e `feature/platforms` e su ogni pull request:
+**CI** (`.github/workflows/app.yml`, WP-0.6). Su ogni push di `main` e `feature/platforms` e su ogni pull request, solo i job che la modifica richiede (D-134). Il job `Changes` assegna a ogni file cambiato i livelli dei job che possono vederlo rompersi. L'elenco è nel passo `Levels`, e ogni livello comprende quelli sotto:
+
+- **bundle**: il pacchetto e il codice che avvia l'app (`tauri/Cargo.toml`, `build.rs`, `tauri.conf.json`, `Info.plist`, `entitlements.plist`, `windows-app.manifest`, `icons/`; in `tauri/src`: `main.rs`, `cli.rs`, `kit.rs`, `log.rs`, `env.rs`, `settings.rs`, `fsx.rs`, `i18n.rs`, `os/`, `setup/`). Partono `Bundle *` e `Release smoke *`, più tutto quello sotto.
+- **kit**: ciò che `prepare` e le prove `real_` usano su un kit vero (`tauri/src/install/`, `net/`, `editor/`, `runtime/`, `tauri/catalog/components.json`). Partono `Build …` con l'exe, l'installazione reale e le prove reali, più tutto quello sotto.
+- **rust**: il resto del codice e dei dati dell'app (`tauri/src` negli altri moduli, gli altri cataloghi, `i18n/`, `editor-theme/`, `capabilities/`, `permissions/`, `site/assets/fonts/`) e i test Rust (`test/rust/`, `scripts/matrix/sources.json`, `scripts/test-linux.sh`, `rustfmt.toml`). Partono `Lint and test`, `Test *` e `Test win32-arm64` con `clippy` e `cargo test` su ogni sistema.
+- **ui**: l'interfaccia (`ui/`, `test/ui/`, `eslint.config.mjs`, `.prettierrc.json`, anche `components.json`, che i test dell'interfaccia importano). Partono lint, Vitest e build in `Lint and test` (più `cargo fmt`) e il solo Vitest in `Test linux-x64`.
+
+`Cargo.toml`, `Cargo.lock`, `package*.json`, `.gitattributes` e `app.yml` avviano tutto. Non avviano altro che `Changes` i file generati (`tauri/gen/`), i documenti, il sito, gli script di Apache e PHP (con i loro workflow) e `scripts/cross-check/`. Un percorso che l'elenco non conosce avvia tutto, e il riepilogo lo nomina: va aggiunto all'elenco. Il giro completo parte sempre anche con un tag `app-v*`, con un avvio a mano (`gh workflow run app.yml`) e quando il confronto non riesce (per esempio dopo un force push). Il riepilogo del job `Changes` mostra i livelli scelti.
 
 | Job | Runner | Cosa |
 | --- | --- | --- |
