@@ -6,7 +6,7 @@
 // data\projects\<id>\dev-settings.json, never in it. Deleting an empty
 // project asks first, with what goes with it (./delete.tsx).
 import { useCallback, useState } from "react";
-import { VscFolderOpened, VscRefresh, VscWarning } from "react-icons/vsc";
+import { VscAdd, VscFolderOpened, VscRefresh, VscWarning } from "react-icons/vsc";
 import {
   editorOpen,
   folderOpen,
@@ -33,6 +33,7 @@ import { ActionBar, EditorBody, EditorHeader, EditorSection, NavBar, type NavIte
 import { alive } from "./runs";
 import { KIND_ICON, kindText, LanguageIcons } from "./kind";
 import { ActionDetail, ActionsList } from "./run";
+import { ActionForm } from "./actionform";
 import { SiteForm } from "./site";
 import { COMPONENT_NAMES, Needs } from "./needs";
 import { Databases } from "./databases";
@@ -101,6 +102,14 @@ export function ProjectPage({
   const changed = () => {
     onChanged();
     reload();
+  };
+  /** «Nuova azione» is open in Azioni. */
+  const [adding, setAdding] = useState(false);
+  /** An action saved (or removed) in panel.json: the project is read again,
+   * with that action chosen (gone, the default one). */
+  const saved = (id: string) => {
+    setChosen(id);
+    changed();
   };
   const Icon = KIND_ICON[p.type];
   const items: NavItem<Section>[] = [
@@ -230,9 +239,40 @@ export function ProjectPage({
                 onPorts={onPorts}
                 onForget={onForget}
                 onChanged={onChanged}
+                onSaved={saved}
               />
             )}
-            <EditorSection id="actions" title={t("Azioni")} fill>
+            <EditorSection
+              id="actions"
+              title={t("Azioni")}
+              fill
+              actions={
+                !adding && (
+                  <ActionButton
+                    icon={VscAdd}
+                    label={t("Nuova azione")}
+                    small
+                    onClick={() => {
+                      setAdding(true);
+                    }}
+                  />
+                )
+              }
+            >
+              {adding && (
+                <div className="px-2 pb-2">
+                  <ActionForm
+                    p={p}
+                    onSaved={(id) => {
+                      setAdding(false);
+                      saved(id);
+                    }}
+                    onCancel={() => {
+                      setAdding(false);
+                    }}
+                  />
+                </div>
+              )}
               <ActionsList
                 p={p}
                 runs={runs}
