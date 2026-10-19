@@ -21,6 +21,7 @@ use crate::kit::{Kit, Target};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
 use crate::os::jobs;
+use crate::router::target::can_execute_on_host;
 use crate::settings::Settings;
 use crate::setup::catalog::Component;
 
@@ -574,10 +575,29 @@ pub fn conda_versions(info: &Value, subdir: &str) -> Vec<String> {
     out
 }
 
+/// The micromamba that creates an environment for a kit of `target` on
+/// this PC: the kit's own where this PC runs it, else this PC's of the same
+/// system. A component in emulation is installed here for a kit this PC
+/// cannot run (R x64 for Windows ARM64, prepared from Windows x64): the
+/// native micromamba of that kit would not start (os error 216).
+pub fn micromamba_runner(target: Target) -> Target {
+    micromamba_runner_on(target, Target::detect(), can_execute_on_host(target))
+}
+
+/// [`micromamba_runner`] from `host`; `runs` whether `host` runs `target`.
+pub fn micromamba_runner_on(target: Target, host: Target, runs: bool) -> Target {
+    if runs || host.os != target.os {
+        target
+    } else {
+        host
+    }
+}
+
 /// `version` of a conda package with the newest micromamba that installs
-/// it: the release's one part is micromamba itself (`micromamba_create`).
+/// it: the release's one part is micromamba itself (`micromamba_create`),
+/// the one of [`micromamba_runner`].
 pub(super) fn micromamba_release(ctx: &Ctx, version: &str) -> Result<Release> {
-    let target = ctx.kit.target();
+    let target = micromamba_runner(ctx.kit.target());
     let asset = target.micromamba_asset();
     let mm = ctx.net.github_latest("mamba-org/micromamba-releases")?;
     let base = format!(
@@ -679,11 +699,18 @@ pub(super) fn micromamba_create(
             work,
             progress,
         )?;
-        let mm = micromamba_path(ctx.kit);
-        if let Some(tools) = mm.parent() {
-            fs::create_dir_all(tools)?;
-        }
-        crate::net::archive::replace_file(&mm_new, &mm)?;
+        // The kit's own micromamba goes into its `tools`; one for this PC
+        // (`micromamba_runner`) is run from the work folder and left there.
+        let mm = if micromamba_runner(ctx.kit.target()) == ctx.kit.target() {
+            let mm = micromamba_path(ctx.kit);
+            if let Some(tools) = mm.parent() {
+                fs::create_dir_all(tools)?;
+            }
+            crate::net::archive::replace_file(&mm_new, &mm)?;
+            mm
+        } else {
+            mm_new
+        };
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -701,7 +728,7 @@ pub(super) fn micromamba_create(
         let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
         progress.note(&format!("micromamba: {}", specs.join(" ")));
         let platform = target_of(ctx, component).conda_subdir();
-        let own = ctx.kit.target().conda_subdir();
+        let own = micromamba_runner(ctx.kit.target()).conda_subdir();
         let args = micromamba_create_args(prefix, specs, (platform != own).then_some(platform));
         let args: Vec<&str> = args.iter().map(String::as_str).collect();
         run(ctx, &mm, &args, &envs, progress)?;
