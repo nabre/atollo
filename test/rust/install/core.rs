@@ -265,11 +265,11 @@ fn git_is_staged_where_its_target_cannot_run() {
 }
 
 /// Review of D-112: dugite's links (`git-remote-https` → `git-remote-http`,
-/// `git-upload-pack` → `git`) are lost when its tarball is unpacked on
-/// Windows; the Git left behind answers `--version` but cannot clone, so
-/// `finish` refuses it (`missing_git_links`).
+/// `git-upload-pack` → `git`) missing from a tree leave a Git that answers
+/// `--version` but cannot clone, so `finish` refuses it
+/// (`missing_git_links`); unpacked on Windows they are copies.
 #[test]
-fn dugite_links_lost_on_windows_are_noticed() {
+fn dugite_links_missing_are_noticed() {
     let tmp = crate::kit::tests::TempDir::new("git-links");
     let archive = tmp.0.join("dugite.tar.gz");
     {
@@ -305,15 +305,15 @@ fn dugite_links_lost_on_windows_are_noticed() {
     let out = tmp.0.join("out");
     crate::net::archive::extract(&archive, Kind::TarGz, &out).unwrap();
     assert!(out.join("libexec").join("git-core").join("git").is_file());
+    // On Windows the links are now copies of their targets (the
+    // extraction's `finish_links_here`), so nothing is missing either.
     let missing = missing_git_links(&out);
-    if cfg!(windows) {
-        assert_eq!(
-            missing,
-            ["git-remote-https", "git-upload-pack", "git-receive-pack"]
-        );
-    } else {
-        assert!(missing.is_empty(), "{missing:?}");
-    }
+    assert!(missing.is_empty(), "{missing:?}");
+    let missing = missing_git_links(&tmp.0.join("none"));
+    assert_eq!(
+        missing,
+        ["git-remote-https", "git-upload-pack", "git-receive-pack"]
+    );
     // A complete tree (regular files are as good as links).
     let full = tmp.0.join("full").join("libexec").join("git-core");
     fs::create_dir_all(&full).unwrap();

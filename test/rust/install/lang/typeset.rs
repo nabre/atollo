@@ -145,3 +145,28 @@ fn tlmgr_in_the_binary_folder_of_each_system() {
         assert_eq!(tlmgr_rel(target), rel, "{target}");
     }
 }
+
+/// TinyTeX for macOS or Linux prepared from a host that cannot run it
+/// (Windows above all) is staged: its programs are symbolic links that
+/// copies made there would break. Windows' 7z installs anywhere.
+#[test]
+fn tinytex_is_staged_where_its_target_cannot_run() {
+    for host in Target::ALL {
+        for target in Target::ALL {
+            let runs = crate::router::target::can_execute_between(host, target, false);
+            let staged = tinytex_staged(target, runs);
+            if target.is_windows() || host == target {
+                assert!(!staged, "{host} -> {target}");
+            } else if host.is_windows() {
+                assert!(staged, "{host} -> {target}: no links on Windows");
+            }
+        }
+    }
+    for t in Target::ALL {
+        assert_eq!(
+            TinyTex.custom(t),
+            !t.is_windows() && !crate::router::target::can_execute_on_host(t),
+            "tinytex on {t}"
+        );
+    }
+}
