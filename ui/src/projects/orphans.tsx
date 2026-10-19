@@ -1,7 +1,7 @@
 // Data of the kit without a project (D-89): a closed section of
 // the Projects side bar, shown only when there is something. Each entry
-// can be given to an existing project ("Collega a…", which must have no data
-// of the kit yet) or deleted with the confirmation of a project's deletion
+// can be given to an existing project ("Collega a…", which may have its
+// settings but no other data of the kit yet) or deleted with the confirmation of a project's deletion
 // (./delete.tsx). Nothing is deleted by itself.
 import { useCallback, useState } from "react";
 import { VscLink, VscTrash } from "react-icons/vsc";
@@ -132,7 +132,11 @@ function AdoptDialog({
       }
       footer={<ErrorLine error={error} />}
     >
-      <p>{t("Impostazioni, porte, database e copie passano al progetto scelto, che non deve averne già.")}</p>
+      <p>
+        {t(
+          "Impostazioni, porte, database e copie passano al progetto scelto, le cui impostazioni lasciano il posto a queste; non deve avere porte, server, database o copie suoi.",
+        )}
+      </p>
       {projects.length === 0 ? (
         <p className="text-vsc-desc">{t("Nessun progetto a cui collegare i dati.")}</p>
       ) : (
