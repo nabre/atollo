@@ -28,7 +28,7 @@ API verificate il 13-14/10/2026 su docs.rs (`tauri 2.12.0`), v2.tauri.app e le r
 ## D-27 Tema VSCodium ovunque
 
 - **Scelta dell'utente** (14/10/2026): il tema di VSCodium per tutto.
-- **Interfaccia dell'app**: colori dei temi predefiniti "Dark Modern" e "Light Modern" come variabili CSS (`ui\src\theme.css`), scelti da `prefers-color-scheme` (tema di Windows); struttura a barra delle attività, area di contenuto e barra di stato come VSCodium; carattere Segoe WPC/Segoe UI 13 px; focus visibile con il colore di VSCodium.
+- **Interfaccia dell'app**: colori dei temi predefiniti "Dark Modern" e "Light Modern" come variabili CSS (`ui\src\theme.css`), scelti da `prefers-color-scheme` (tema di Windows); struttura a barra delle attività, area di contenuto e barra di stato come VSCodium; carattere a 13 px (Segoe WPC/Segoe UI, poi Geist: D-128); focus visibile con il colore di VSCodium.
 - **Editor**: `window.autoDetectColorScheme` attivo, con Dark Modern / Light Modern come temi preferiti (fase 3).
 - **Icone**: Codicons (`react-icons/vsc`).
 - **Terminali**: i colori di PSReadLine ricavati da `terminal.ansi*` previsti per la fase 3 non si fanno (scelta dell'utente del 14/10/2026): bastano gli schemi del terminale. Le console dell'app usavano i colori del terminale di VSCodium in xterm.js (D-44, D-46); poi Windows Terminal del kit gli schemi «VSCodium Dark Modern» / «VSCodium Light Modern» scritti dall'app (D-68, tolto con D-95); oggi la console classica (D-57) usa i colori della console di Windows.
@@ -1176,6 +1176,15 @@ Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le consol
 - **Tolto.** Gli id dei temi dell'editor del nome di prima in `editor/cfg.rs` (D-124): un `settings.json` che li avesse ancora resta col tema scelto dall'utente.
 - **Conseguenze.** Un kit fatto prima di questa versione perde ciò che dipende dai nomi vecchi: i blocchi del kit in `config.toml` di Codex e i profili del terminale si riscrivono accanto ai vecchi, che restano come testo dell'utente; la vecchia regola degli agenti resta accanto a `rules/atollo.md`; le variabili d'ambiente vecchie impostate a mano non valgono più; le credenziali di Antigravity già sigillate nel kit non si leggono più, perché le costanti da cui si derivano le chiavi (`atollo-agy-enc`, `atollo-agy-mac`) hanno cambiato nome: va rifatto l'accesso ad Antigravity una volta. Accettato: non c'è un kit pubblico da conservare.
 - **Restano** con il nome di prima solo i riferimenti al repository da cui l'app è nata, che è un altro progetto (`nabre/atollo` e il suo `Prepare-Atollo.ps1`, citati come origine dei porting), e `w64devkit`, un programma di terzi.
+
+## D-128 Geist e Geist Mono, sempre in locale
+
+- **Richiesta dell'utente** (19/10/2026). I caratteri di prima (Segoe UI, Inter per i titoli dell'app, Consolas) non piacevano; uno solo per sito, app, terminale ed editor.
+- **Scelta.** Geist per testi e titoli, Geist Mono per codice, terminale ed editor (OFL-1.1, variabili 100–900). Le pile con il ripiego del sistema (`system-ui`, `ui-monospace`) sono in [MARKETING.md](../brand/MARKETING.md), sezione 6. Inter tolto. Legature spente come prima.
+- **App.** `@fontsource-variable/geist` e `geist-mono` (versioni esatte), dentro il bundle: la CSP `'self'` li accetta. `docs/brand/themes.py` scrive le famiglie in `--vscode-font-family` / `--vscode-editor-font-family` (dimensioni e pesi restano quelli di VS Code). `main.tsx` attende i due caratteri (al massimo 500 ms) prima del primo disegno: xterm misura le celle una volta sola, all'apertura.
+- **Sito.** I file woff2 (latin, latin-ext, e per Geist Mono i caratteri di riquadro degli alberi) in `site/assets/fonts/`, `@font-face` con `font-display: swap`, preload di Geist latin. Nessun Google Fonts né CDN. Titoli a peso 700 (non 800) e più stretti: Geist è più largo di Segoe UI.
+- **Editor.** La pagina del server di VSCodium accetta caratteri solo dalla sua origine o da `blob:` (la sua CSP), e il server non serve i file del kit. Lo script della finestra (`editor/window.rs`) contiene gli stessi file del sito e li registra con `new FontFace(nome, byte)`, che non carica URL e non passa dalla CSP, prima che il workbench misuri il testo. `editor.fontFamily` e `terminal.integrated.fontFamily` (`'Geist Mono', ui-monospace, Consolas, 'Courier New', monospace`) ed `editor.fontLigatures: false` vanno in `Machine\settings.json` solo se mancano (`editor/cfg.rs`): la scelta dell'utente resta. L'interfaccia del workbench prende Geist da una regola CSS sullo stesso script, come l'app.
+- **Scartati.** Google Fonts o un CDN: l'app è portabile e senza rete, e il sito non deve dipendere da terzi. Copiare i file nell'estensione del tema dell'editor e caricarli per URL: dipenderebbe dal percorso interno con cui il server serve le risorse delle estensioni, che cambia tra le versioni.
 
 ## D-129 La versione nel nome del file dell'app
 

@@ -4,6 +4,11 @@ One source for every mark: run `python docs/brand/make.py` to rewrite the
 SVGs in docs/brand/ and ui/src/assets/brand/, the PNG logos in ui/src/assets/,
 the window icons in tauri/icons/ and docs/brand/brand.png. The PNGs need
 resvg-py (`pip install resvg-py`) and Pillow.
+
+brand.png is set in Geist and Geist Mono (MARKETING.md, section 6): pass
+`--fonts DIR`, a folder with their static TTFs (npm package `geist`,
+dist/fonts/geist-sans and geist-mono, without the variable and italic
+files). Without it resvg takes the system's fonts.
 """
 
 import io
@@ -291,16 +296,21 @@ def render_wh(text, w, h):
     import resvg_py
     from PIL import Image
 
-    png = bytes(resvg_py.svg_to_bytes(svg_string=text, width=w, height=h))
+    fonts = {"font_dirs": [FONTS_DIR]} if FONTS_DIR else {}
+    png = bytes(resvg_py.svg_to_bytes(svg_string=text, width=w, height=h, **fonts))
     return Image.open(io.BytesIO(png)).convert("RGBA")
+
+
+# `--fonts DIR`: the Geist TTFs for brand.png (see the docstring).
+FONTS_DIR = sys.argv[sys.argv.index("--fonts") + 1] if "--fonts" in sys.argv[:-1] else None
 
 
 def brand_board_svg():
     """1600x1200 Brand Overview board for Atollo (docs/brand/brand.png)."""
     _, wm_forest = wordmark(FOREST)
     _, wm_cloud = wordmark(CLOUD)
-    font = "Segoe UI, Inter, system-ui, sans-serif"
-    mono = "Consolas, JetBrains Mono, monospace"
+    font = "Geist, system-ui, sans-serif"
+    mono = "Geist Mono, monospace"
 
     # Variant B (Hexagonal Atoll Ring) and Variant C (Connected Nodes) on 512 grid
     var_b = (
@@ -500,14 +510,14 @@ def brand_board_svg():
   <line x1="1146" y1="654" x2="1564" y2="654" stroke="#F1F5F9" stroke-width="1.5"/>
   <text x="1146" y="680" font-family="{font}" font-size="12" font-weight="700" letter-spacing="2" fill="#64748B">TYPOGRAPHY</text>
   <text x="1146" y="704" font-family="{font}" font-size="12.5" fill="#64748B">Primary Typeface</text>
-  <text x="1146" y="736" font-family="{font}" font-size="25" font-weight="700" fill="#0F172A">Segoe UI</text>
+  <text x="1146" y="736" font-family="{font}" font-size="25" font-weight="700" fill="#0F172A">Geist</text>
   <text x="1146" y="764" font-family="{font}" font-size="12.5" fill="#475569">Aa Bb Cc Dd Ee Ff Gg</text>
   <text x="1146" y="782" font-family="{font}" font-size="12.5" fill="#475569">Hh Ii Jj Kk Ll Mm Nn</text>
   <text x="1146" y="800" font-family="{font}" font-size="12.5" fill="#475569">0123456789</text>
 
   <line x1="1356" y1="690" x2="1356" y2="818" stroke="#F1F5F9" stroke-width="1.5"/>
   <text x="1372" y="704" font-family="{font}" font-size="12.5" fill="#64748B">Monospace</text>
-  <text x="1372" y="736" font-family="{mono}" font-size="22" font-weight="600" fill="#0F172A">Consolas</text>
+  <text x="1372" y="736" font-family="{mono}" font-size="22" font-weight="600" fill="#0F172A">Geist Mono</text>
   <text x="1372" y="764" font-family="{mono}" font-size="12.5" fill="#475569">Aa Bb Cc Dd Ee Ff Gg</text>
   <text x="1372" y="782" font-family="{mono}" font-size="12.5" fill="#475569">win32-x64 darwin-arm64</text>
   <text x="1372" y="800" font-family="{mono}" font-size="12.5" fill="#475569">0123456789</text>

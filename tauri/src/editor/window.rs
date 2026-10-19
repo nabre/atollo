@@ -95,6 +95,62 @@ const LOGO_256: &[u8] = include_bytes!("../../../ui/src/assets/logo-256.png");
 /// (D-72). Merged by the workbench over its product, as `productConfiguration`.
 const PRODUCT: &str = r#"{"nameShort":"Atollo","nameLong":"Atollo"}"#;
 
+/// Atollo's typefaces in the editor (MARKETING.md, section 6): Geist for the
+/// workbench, Geist Mono for the text and the terminal (`cfg.rs` names it in
+/// `editor.fontFamily`). The same files as the site's (site/assets/fonts,
+/// OFL-1.1, from @fontsource-variable 5.3.0): latin, latin-ext and, for
+/// Geist Mono, the box-drawing block of the terminal's TUIs. The server's
+/// page takes fonts only from its own origin or `blob:` (VSCodium's CSP),
+/// and the server cannot serve the kit's files: the script builds them from
+/// their bytes with the FontFace API, which loads no URL and no CSP limits.
+const LATIN: &str = "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD";
+const LATIN_EXT: &str = "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF";
+const SYMBOLS: &str = "U+2000-2001,U+2004-2008,U+200A,U+23B8-23BD,U+2500-259F";
+const FONT_FILES: &[(&str, &[u8], &str)] = &[
+    (
+        "Geist",
+        include_bytes!("../../../site/assets/fonts/geist-latin-wght-normal.woff2"),
+        LATIN,
+    ),
+    (
+        "Geist",
+        include_bytes!("../../../site/assets/fonts/geist-latin-ext-wght-normal.woff2"),
+        LATIN_EXT,
+    ),
+    (
+        "Geist Mono",
+        include_bytes!("../../../site/assets/fonts/geist-mono-latin-wght-normal.woff2"),
+        LATIN,
+    ),
+    (
+        "Geist Mono",
+        include_bytes!("../../../site/assets/fonts/geist-mono-latin-ext-wght-normal.woff2"),
+        LATIN_EXT,
+    ),
+    (
+        "Geist Mono",
+        include_bytes!("../../../site/assets/fonts/geist-mono-symbols2-wght-normal.woff2"),
+        SYMBOLS,
+    ),
+];
+
+/// The workbench's font, with the system's behind it (CJK, a font that
+/// failed to load).
+const WORKBENCH_FONT: &str = "'Geist', system-ui, 'Segoe UI', sans-serif";
+
+/// `[[family, base64, unicode-range], ...]` for the script.
+fn font_faces() -> String {
+    use base64::Engine;
+    let faces: Vec<(&str, String, &str)> = FONT_FILES
+        .iter()
+        .map(|(family, bytes, range)| {
+            let data = base64::engine::general_purpose::STANDARD.encode(bytes);
+            (*family, data, *range)
+        })
+        .collect();
+    serde_json::to_string(&faces).unwrap_or_else(|_| "[]".into())
+}
+
 fn data_uri(png: &[u8]) -> String {
     use base64::Engine;
     format!(
@@ -114,9 +170,25 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
     let project = serde_json::to_string(project).unwrap_or_default();
     let hidden = serde_json::to_string(hidden).unwrap_or_else(|_| "[]".into());
     let stamp = now_ms();
+    let fonts = font_faces();
+    let (sans, mono) = (
+        serde_json::to_string(WORKBENCH_FONT).unwrap_or_default(),
+        serde_json::to_string(crate::editor::cfg::EDITOR_FONT).unwrap_or_default(),
+    );
     format!(
         r##"(() => {{
   if (window.top !== window) return;
+  // Geist and Geist Mono, before the workbench measures any text.
+  if (document.fonts && window.FontFace) {{
+    for (const [family, data, range] of {fonts}) {{
+      try {{
+        const bytes = Uint8Array.from(atob(data), (ch) => ch.charCodeAt(0));
+        document.fonts.add(new FontFace(family, bytes, {{ weight: "100 900", unicodeRange: range }}));
+      }} catch (e) {{}}
+    }}
+  }}
+  const sans = {sans};
+  const mono = {mono};
   // Before the workbench reads its configuration: module scripts run after
   // the document turns "interactive".
   const defaults = {TITLE_BAR_DEFAULTS};
@@ -305,10 +377,15 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
   }};
   const start = () => {{
     const style = document.createElement("style");
-    style.textContent = ".monaco-workbench.web .part.titlebar .titlebar-right "
+    // The workbench's own font is per system (.windows, .mac, .linux, also
+    // by :lang): Geist over all of them, as the app; the text and the
+    // terminal take theirs from the settings (cfg.rs).
+    style.textContent = ".monaco-workbench{{font-family:" + sans + "!important;"
+      + "--monaco-monospace-font:" + mono + "}}"
+      + ".monaco-workbench.web .part.titlebar .titlebar-right "
       + ".window-controls-container{{width:138px}}"
       + "#atollo-titlebar{{position:fixed;top:0;left:0;right:0;height:30px;z-index:2147483647;"
-      + "display:flex;font:12px 'Segoe UI',sans-serif;user-select:none;"
+      + "display:flex;font:12px " + sans + ";user-select:none;"
       + "background:var(--vscode-titleBar-activeBackground,#1f1f1f);"
       + "color:var(--vscode-titleBar-activeForeground,#ccc)}}"
       + "#atollo-titlebar .drag{{flex:1;padding-left:12px;line-height:30px;overflow:hidden;"

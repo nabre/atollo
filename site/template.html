@@ -16,6 +16,8 @@
 <meta property="og:url" content="{{base}}{{path}}">
 <meta property="og:image" content="{{base}}assets/brand.png">
 <link rel="icon" type="image/svg+xml" href="{{root}}assets/symbol.svg">
+<!-- Geist, self-hosted (assets/fonts): the text font is on every first screen. -->
+<link rel="preload" href="{{root}}assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{root}}assets/site.css">
 <!-- Without JavaScript nothing waits for a reveal: .js gates the animations. -->
 <script>document.documentElement.classList.add("js")</script>
@@ -35,6 +37,7 @@
       <a href="#how">{{navHow}}</a>
       <a href="#tools">{{navTools}}</a>
       <a href="#platforms">{{navPlatforms}}</a>
+      <a href="#todo">{{navTodo}}</a>
       <a href="https://github.com/nabre/atollo">GitHub</a>
     </nav>
     <nav class="langs" aria-label="Language">{{langLinks}}</nav>
@@ -63,13 +66,18 @@
       <!-- The app icon (docs/brand/symbol.svg, the same as tauri/icons), on its
            own: never beside the wordmark. -->
       <img class="app-icon rise" style="--d:2" src="{{root}}assets/symbol.svg" alt="" width="132" height="132">
-      <!-- The kit's real layout (README, «Struttura»), not a mock of the app. -->
-      <figure class="kit rise" style="--d:3" aria-label="{{folderTitle}}">
-        <div class="kit-bar"><i></i><i></i><i></i><span>{{folderTitle}}</span></div>
-        <pre class="kit-tree"><span class="t-dir">Atollo/</span>
-<span class="t-l">├─</span> <span class="t-exe">Atollo</span>     <span class="t-c">{{folderExe}}</span>
-<span class="t-l">├─</span> <span class="t-dir">projects/</span>  <span class="t-c">{{folderProjects}}</span>
-<span class="t-l">└─</span> <span class="t-dir">data/</span>      <span class="t-c">{{folderData}}</span></pre>
+      <!-- The kit's real layout (README, «Struttura»), not a mock of the app.
+           download.js dresses it as the visitor's system (html[data-os]):
+           the window's bar, the app's file, the path on a stick. -->
+      <figure class="kit rise" style="--d:3" aria-label="{{folderTitle}}" data-version="{{version}}">
+        <div class="kit-bar"><span class="kit-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="kit-title">{{folderTitle}}</span><span class="kit-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
+        <pre class="kit-tree"><span class="t-dir" data-kit="root">Atollo/</span>
+<span class="t-l">├─</span> <span class="t-exe" data-kit="app">Atollo</span>
+<span class="t-l">│</span>  <span class="t-c">{{folderExe}}</span>
+<span class="t-l">├─</span> <span class="t-dir" data-kit="projects">projects/</span>
+<span class="t-l">│</span>  <span class="t-c">{{folderProjects}}</span>
+<span class="t-l">└─</span> <span class="t-dir" data-kit="data">data/</span>
+   <span class="t-c">{{folderData}}</span></pre>
         <ul class="kit-targets" aria-label="{{navPlatforms}}">
           <li data-target="win32-x64">win32-x64</li><li data-target="win32-arm64">win32-arm64</li>
           <li data-target="darwin-arm64">darwin-arm64</li><li data-target="darwin-x64">darwin-x64</li>
@@ -187,6 +195,25 @@
       </ul>
       <p class="muted small">{{checksum}}. {{platformsNote}}</p>
       <p><a class="link" href="{{readmeHref}}">{{readGuide}} →</a></p>
+    </div>
+  </section>
+
+  <!-- Honest state of the project: kept in step with the READMEs'
+       «C'è ancora da fare» and with docs/app/TESTING.md. -->
+  <section id="todo">
+    <div class="wrap">
+      <p class="eyebrow reveal">07</p>
+      <h2 class="reveal">{{todoTitle}}</h2>
+      <p class="muted reveal">{{todoLead}}</p>
+      <div class="aspects">
+        <article class="reveal"><h3>{{t1Title}}</h3><p>{{t1Text}}</p></article>
+        <article class="reveal"><h3>{{t2Title}}</h3><p>{{t2Text}}</p></article>
+        <article class="reveal"><h3>{{t3Title}}</h3><p>{{t3Text}}</p></article>
+        <article class="reveal"><h3>{{t4Title}}</h3><p>{{t4Text}}</p></article>
+        <article class="reveal"><h3>{{t5Title}}</h3><p>{{t5Text}}</p></article>
+        <article class="reveal"><h3>{{t6Title}}</h3><p>{{t6Text}}</p></article>
+      </div>
+      <p class="todo-help reveal">{{todoHelp}} <a class="link" href="https://github.com/nabre/atollo/issues">{{todoHelpLink}} →</a></p>
     </div>
   </section>
 

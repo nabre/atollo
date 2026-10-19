@@ -37,19 +37,22 @@ pub fn kit_processes(kit: &Kit) -> Vec<KitProcess> {
         .into_iter()
         .filter(|p| Some(p.pid) != super::guard::pid())
         .collect();
+    let roots = kit_roots(kit);
     let ours: Vec<&Proc> = {
-        let prefix = format!(
-            "{}{}",
-            kit.root().display().to_string().to_lowercase(),
-            std::path::MAIN_SEPARATOR
-        );
+        let prefixes: Vec<String> = roots
+            .iter()
+            .map(|r| {
+                format!(
+                    "{}{}",
+                    r.display().to_string().to_lowercase(),
+                    std::path::MAIN_SEPARATOR
+                )
+            })
+            .collect();
         all.iter()
             .filter(|p| {
-                p.path
-                    .display()
-                    .to_string()
-                    .to_lowercase()
-                    .starts_with(&prefix)
+                let path = p.path.display().to_string().to_lowercase();
+                prefixes.iter().any(|prefix| path.starts_with(prefix))
             })
             .collect()
     };
@@ -59,20 +62,40 @@ pub fn kit_processes(kit: &Kit) -> Vec<KitProcess> {
         .map(|p| p.pid)
         .filter(|&pid| pid != me)
         .collect();
-    let server = crate::editor::server_dir(kit);
-    let webview = crate::os::webview::fixed_folder(kit);
+    // Compared inside the kit, whichever spelling of its root a path has.
+    let inside = |path: &Path| -> Option<PathBuf> {
+        roots
+            .iter()
+            .find_map(|r| path.strip_prefix(r).ok())
+            .map(Path::to_path_buf)
+    };
+    let server = inside(&crate::editor::server_dir(kit));
+    let webview = inside(&crate::os::webview::fixed_folder(kit));
+    let under = |rel: &Option<PathBuf>, dir: &Option<PathBuf>| matches!((rel, dir), (Some(r), Some(d)) if r.starts_with(d));
     ours.iter()
         .filter(|p| p.pid != me && !pids.contains(&p.parent))
-        .filter(|p| !p.path.starts_with(&server) && !p.path.starts_with(&webview))
-        .map(|p| KitProcess {
+        .map(|p| (p, inside(&p.path)))
+        .filter(|(_, rel)| !under(rel, &server) && !under(rel, &webview))
+        .map(|(p, rel)| KitProcess {
             pid: p.pid,
             name: p.name.clone(),
-            program: p.path.strip_prefix(kit.root()).map_or_else(
-                |_| p.path.display().to_string(),
-                |r| r.display().to_string(),
-            ),
+            program: rel.map_or_else(|| p.path.display().to_string(), |r| r.display().to_string()),
         })
         .collect()
+}
+
+/// The kit root as the app names it and, when a link leads there, its real
+/// path: the system names a process by the real one (on macOS
+/// `/var/folders/…` is `/private/var/folders/…`).
+fn kit_roots(kit: &Kit) -> Vec<PathBuf> {
+    let mut roots = vec![kit.root().to_path_buf()];
+    if let Ok(real) = std::fs::canonicalize(kit.root()) {
+        let real = crate::kit::strip_verbatim(&real);
+        if !roots.contains(&real) {
+            roots.push(real);
+        }
+    }
+    roots
 }
 
 /// The kit's programs not started by this app (from another tool, or left
@@ -300,12 +323,15 @@ fn kit_root_of(path: &Path, name: &str, is_kit: impl Fn(&Path) -> bool) -> Optio
 
 /// Roots of other kits with programs running now.
 pub fn other_kits(kit: &Kit) -> Vec<PathBuf> {
-    let mine = kit.root().display().to_string().to_lowercase();
+    let mine: Vec<String> = kit_roots(kit)
+        .iter()
+        .map(|r| r.display().to_string().to_lowercase())
+        .collect();
     let mut out = BTreeSet::new();
     for p in processes::all() {
         let root = kit_root_of(&p.path, &p.name, |d| d.join("data").join("app").is_dir());
         if let Some(root) = root {
-            if root.display().to_string().to_lowercase() != mine {
+            if !mine.contains(&root.display().to_string().to_lowercase()) {
                 out.insert(root);
             }
         }
