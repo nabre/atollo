@@ -77,12 +77,26 @@ jobs:
           # logs only, kept below when the build fails.
           WORK: ${{ runner.temp }}/php-work
         run: bash scripts/build-php/build.sh ${{ matrix.target }} ${{ steps.v.outputs.version }} ${{ steps.v.outputs.build }} out
+      # Masking covers the job's output, not files: the token's value is
+      # taken out of the logs before they are kept. Their name never matches
+      # the release's pattern (php-*).
+      - name: Redact the logs
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          dir="$RUNNER_TEMP/php-work/log"
+          [ -d "$dir" ] || exit 0
+          find "$dir" -type f | while read -r f; do
+            perl -pi -e 'BEGIN { $t = $ENV{GITHUB_TOKEN} } s/\Q$t\E/***/g if length $t' "$f"
+          done
       - name: Build logs
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: php-logs-${{ matrix.target }}
+          name: build-logs-php-${{ matrix.target }}
           path: ${{ runner.temp }}/php-work/log/
+          retention-days: 7
           if-no-files-found: ignore
       - name: Test
         run: bash scripts/build-php/test.sh out/php-*-${{ matrix.target }}.tar.gz
@@ -111,6 +125,9 @@ jobs:
           for t in linux-x64 linux-arm64 darwin-arm64 darwin-x64; do
             ls artifacts/php-*-"$t".tar.gz >/dev/null || { echo "no tarball for $t" >&2; exit 1; }
           done
+          # Only the tarballs and their .sha256 go in the release.
+          extra=$(find artifacts -type f ! -name 'php-*.tar.gz' ! -name 'php-*.tar.gz.sha256')
+          [ -z "$extra" ] || { echo "unexpected files: $extra" >&2; exit 1; }
           (cd artifacts && sha256sum -c *.sha256)
       - name: GitHub release
         env:
