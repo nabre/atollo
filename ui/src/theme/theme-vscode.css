@@ -6,10 +6,10 @@
    @vscode-elements/webview-playground 1.9.0 (MIT, docs/brand/vscode-defaults/LICENSE). */
 
 :root {
-  --vscode-font-family: "Segoe WPC", "Segoe UI", sans-serif;
+  --vscode-font-family: "Geist Variable", "Geist", system-ui, "Segoe UI", sans-serif;
   --vscode-font-weight: normal;
   --vscode-font-size: 13px;
-  --vscode-editor-font-family: Consolas, "Courier New", monospace;
+  --vscode-editor-font-family: "Geist Mono Variable", "Geist Mono", ui-monospace, Consolas, monospace;
   --vscode-editor-font-weight: normal;
   --vscode-editor-font-size: 14px;
   --vscode-editor-font-feature-settings: "liga" off, "calt" off;

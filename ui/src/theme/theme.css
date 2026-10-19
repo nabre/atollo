@@ -18,11 +18,12 @@
 
 :root {
   color-scheme: light dark;
-  /* VSCodium's fonts on Windows (theme-vscode.css), so sizes match the
-     editor's; Inter only for the brand's display text (.font-brand). */
+  /* Geist and Geist Mono at VSCodium's sizes (theme-vscode.css), the same
+     fonts the editor gets; the brand's display text (.font-brand) is Geist
+     too, only bolder and tighter. */
   --vsc-font: var(--vscode-font-family);
   --vsc-mono: var(--vscode-editor-font-family);
-  --brand-font: "Inter Variable", "Segoe UI", sans-serif;
+  --brand-font: var(--vscode-font-family);
   --brand-forest: #0f3d2e;
   --brand-emerald: #10b981;
   --brand-mint: #d1f0e0;

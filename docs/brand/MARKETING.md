@@ -152,12 +152,18 @@ Per garantire che il sito web, la documentazione HTML, i componenti UI React (`-
 
 ## 6. Tipografia e Geometria Visiva
 
-1. **Font UI (Interfaccia e Titoli):**
-   * Stack: `"Segoe WPC", "Segoe UI", "Inter", system-ui, -apple-system, sans-serif`
+1. **Font UI (Interfaccia e Titoli): Geist** (variabile, pesi 100–900, licenza OFL-1.1).
+   * Stack: `"Geist", system-ui, -apple-system, "Segoe UI", sans-serif` (nell'app il nome del pacchetto viene prima: `"Geist Variable", "Geist", system-ui, "Segoe UI", sans-serif`).
    * Dimensione base UI: `13px` (nell'app desktop, come da `vscode-defaults`) · `14px–16px` (nei documenti web e landing page).
-2. **Font Monospace (Codice, CLI, Percorsi, Versioni, Badge):**
-   * Stack: `Consolas, "JetBrains Mono", "SF Mono", "Courier New", ui-monospace, monospace`
-   * Dimensione base Editor/Code: `14px` (`11px–12px` per badge tecnici, SHA, identificatori di target come `win32-x64` o `darwin-arm64`).
+   * Pesi: `400` testo, `600` titoletti e voci attive, `700` titoli grandi (mai `800`: Geist è più largo e più scuro di Segoe UI). Titoli grandi con spaziatura stretta: da `-0.035em` (H2) a `-0.045em` (H1 della hero).
+2. **Font Monospace (Codice, CLI, Percorsi, Versioni, Badge, Terminale, Editor): Geist Mono** (variabile, pesi 100–900, OFL-1.1).
+   * Stack: `"Geist Mono", ui-monospace, "SF Mono", Consolas, monospace` (nell'app: `"Geist Mono Variable", "Geist Mono", ui-monospace, Consolas, monospace`; nell'editor integrato: `'Geist Mono', ui-monospace, Consolas, 'Courier New', monospace`).
+   * Dimensione base Editor/Code: `14px` (`11px–12px` per badge tecnici, SHA, identificatori di target come `win32-x64` o `darwin-arm64`). Legature spente.
+   * Etichette in maiuscolo (kicker, eyebrow): peso `500`, spaziatura `0.06em–0.1em`.
+3. **Sempre in locale, mai da CDN:** l'app è portabile e offline (CSP `'self'`), il sito non carica Google Fonts né altri servizi.
+   * App: pacchetti npm `@fontsource-variable/geist` e `@fontsource-variable/geist-mono` (`ui/src/main.tsx`).
+   * Sito: `site/assets/fonts/` (latin, latin-ext e, per Geist Mono, i caratteri di riquadro degli alberi di cartelle), `@font-face` con `font-display: swap`, preload del solo Geist latin.
+   * Editor integrato (VSCodium): gli stessi file del sito, inclusi nell'eseguibile e registrati dallo script della finestra con l'API `FontFace` (`tauri/src/editor/window.rs`); `editor.fontFamily` e `terminal.integrated.fontFamily` in `Machine\settings.json` (`tauri/src/editor/cfg.rs`), solo se l'utente non ne ha già scelto uno.
 3. **Logo nelle intestazioni:**
    * In header, barre di navigazione e firme si usa il solo wordmark (`wordmark-dark.svg` / `wordmark-light.svg`), mai il lockup simbolo + scritta. Il simbolo (l'atollo visto dall'alto: barriera ad anello, tre isolotti, laguna turchese e due onde stilizzate) resta da solo per favicon, icona dell'app e immagini hero.
 4. **Uso dei Tag Tecnici:**

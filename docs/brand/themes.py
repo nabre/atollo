@@ -313,6 +313,15 @@ FONTS = {
     "--vscode-editor-font-feature-settings": '"liga" off, "calt" off',
 }
 
+# Atollo's typefaces over VS Code's (MARKETING.md, section 6): Geist and
+# Geist Mono, self-hosted by the app (@fontsource-variable, ui/src/main.tsx)
+# and by the editor (tauri/src/editor/window.rs), with the system's fonts
+# behind them. Sizes and weights stay VS Code's.
+FONT_FAMILIES = {
+    "--vscode-font-family": '"Geist Variable", "Geist", system-ui, "Segoe UI", sans-serif',
+    "--vscode-editor-font-family": '"Geist Mono Variable", "Geist Mono", ui-monospace, Consolas, monospace',
+}
+
 # App token -> theme key. Names kept short; each token is the color VSCodium
 # gives that element, so a component styled as VSCodium's picks the key.
 TOKENS = {
@@ -657,7 +666,7 @@ def write_vscode_css():
    {PLAYGROUND} (MIT, docs/brand/vscode-defaults/LICENSE). */
 
 :root {{
-{var_lines(FONTS, "  ")}
+{var_lines(FONTS | FONT_FAMILIES, "  ")}
 }}
 
 :root,
