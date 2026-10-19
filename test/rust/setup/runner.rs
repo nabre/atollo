@@ -194,18 +194,25 @@ fn half_installed_components_are_removed() {
     });
 }
 
+/// R is planned on Windows ARM64 too, its x64 build in emulation (it was
+/// `noArm64`, never planned there); no component of the catalog is
+/// `noArm64` any more.
 #[test]
-fn no_arm64_components_are_never_planned_on_arm64() {
+fn r_is_planned_on_arm64() {
     let catalog = Catalog::get();
-    assert!(catalog.find("r").unwrap().no_arm64);
+    assert!(catalog.all().iter().all(|c| !c.no_arm64));
+    assert!(catalog
+        .find("r")
+        .unwrap()
+        .is_emulated_on(crate::kit::Target::WIN32_ARM64));
     let mut choice = Choice::defaults(catalog);
     choice.set(catalog, "r", true);
     with_arch_ctx("plan-arm64", Arch::Arm64, |ctx| {
         let p = plan_with(ctx, &choice, &[], &[]).unwrap();
-        assert!(!p.handle.contains(&"r".into()), "not from the choice");
+        assert!(p.handle.contains(&"r".into()), "ARM64: planned");
         assert!(p.handle.contains(&"git".into()));
-        let e = plan_with(ctx, &choice, &["r"], &[]).unwrap_err();
-        assert_eq!(e.to_string(), "r is not available on ARM64");
+        let p = plan_with(ctx, &choice, &["r"], &[]).unwrap();
+        assert_eq!(p.handle, ["r"]);
     });
     with_ctx("plan-x64", |ctx| {
         let p = plan_with(ctx, &choice, &[], &[]).unwrap();

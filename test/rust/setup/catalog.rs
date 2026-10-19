@@ -512,8 +512,10 @@ fn multi_platform_availability_and_paths_across_targets() {
     );
 
     let r = catalog.find("r").unwrap();
-    assert!(!r.is_available_on(Target::WIN32_ARM64));
+    assert!(r.is_available_on(Target::WIN32_ARM64));
+    assert!(r.is_emulated_on(Target::WIN32_ARM64));
     assert!(r.is_available_on(Target::DARWIN_ARM64));
+    assert!(!r.is_emulated_on(Target::DARWIN_ARM64));
     assert_eq!(r.key_for(Target::LINUX_X64), "r/bin/R");
 
     let php = catalog.find("php").unwrap();
@@ -580,9 +582,14 @@ fn unavailable_targets_have_a_reason() {
     assert!(!windows.is_available_on(Target::LINUX_X64));
     assert!(windows.is_available_on(Target::WIN32_ARM64));
     assert_eq!(windows.unavailable_reason(Target::LINUX_X64), None);
-    let r = catalog.find("r").unwrap();
-    assert!(!r.is_available_on(Target::WIN32_ARM64));
-    assert_eq!(r.unavailable_reason(Target::WIN32_ARM64), None);
+    let no_arm64: Component = serde_json::from_value(serde_json::json!({
+        "id": "n", "name": "N", "group": "languages", "def": false, "mb": 1,
+        "desc": "n", "home": "https://n", "key": "n/n.exe", "noArm64": true
+    }))
+    .unwrap();
+    assert!(!no_arm64.is_available_on(Target::WIN32_ARM64));
+    assert!(no_arm64.is_available_on(Target::LINUX_ARM64));
+    assert_eq!(no_arm64.unavailable_reason(Target::WIN32_ARM64), None);
 
     // Every key a target, every reason translated.
     let i18n: BTreeMap<String, BTreeMap<String, String>> =

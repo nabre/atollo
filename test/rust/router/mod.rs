@@ -243,17 +243,10 @@ fn grid_cells_say_chosen_reason_and_first_start() {
             assert!(rust.first_start, "{t}");
         }
         if t == Target::WIN32_ARM64 {
+            // R's x64 build in emulation (it was `noArm64`).
             let r = tool("r");
-            assert!(!r.available);
-            if host == Target::WIN32_ARM64 {
-                assert!(r.no_arm64 && r.unavailable_reason.is_none());
-            } else {
-                assert!(!r.no_arm64);
-                assert_eq!(
-                    r.unavailable_reason.as_deref(),
-                    Some("not available for win32-arm64")
-                );
-            }
+            assert!(r.available && r.emulated && !r.no_arm64);
+            assert_eq!(r.unavailable_reason, None);
         }
         if t == Target::LINUX_ARM64 {
             assert_eq!(
