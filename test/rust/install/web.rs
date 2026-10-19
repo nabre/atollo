@@ -452,6 +452,32 @@ fn httpd_catalog_pins_cover_unix() {
     }
 }
 
+/// The catalog pins the kit's own PHP builds (issue #4, D-133) for each
+/// line it offers, with a SHA-256 for the four macOS and Linux targets.
+#[test]
+fn php_catalog_pins_cover_unix() {
+    assert!(!php_build_pins().is_empty(), "no pinned PHP line");
+    for (line, pin) in php_build_pins() {
+        assert_eq!(
+            crate::versions::line_of(&pin.version).as_deref(),
+            Some(line.as_str())
+        );
+        let mut targets: Vec<&str> = pin.sha256_by_target.keys().map(String::as_str).collect();
+        targets.sort_unstable();
+        assert_eq!(
+            targets,
+            ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"],
+            "{line}"
+        );
+        for t in [Target::LINUX_X64, Target::DARWIN_ARM64] {
+            assert!(
+                php_build_part(php_build_pins(), t, line).is_some(),
+                "{line} {t}"
+            );
+        }
+    }
+}
+
 #[test]
 fn apache_builds_of_the_pages() {
     let page = r#"<a href="/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip">x</a>
