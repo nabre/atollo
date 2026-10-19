@@ -125,22 +125,23 @@
       <p class="eyebrow reveal">02</p>
       <h2 class="reveal">{{shotsTitle}}</h2>
       <div class="shots">
-        <!-- The screenshots' own title and status bars are cropped (.crop):
+        <!-- The screenshots' own title and status bars are cropped (.crop),
+             each in the theme of the visitor's system (<picture>):
              a window of the site stands in for them, dressed as the visitor's
              system like the hero's kit (.win, html[data-os]). -->
         <figure class="shot shot-main reveal">
           <div class="frame win"><div class="win-bar"><span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win-title">Atollo — {{shot1}}</span><span class="win-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
-            <div class="crop"><img src="{{root}}assets/shot-projects.png" alt="{{shot1}}" loading="lazy" width="2560" height="1640"></div></div>
+            <div class="crop"><picture><source media="(prefers-color-scheme: light)" srcset="{{root}}assets/shot-projects-light.png"><img src="{{root}}assets/shot-projects-dark.png" alt="{{shot1}}" loading="lazy" width="2560" height="1640"></picture></div></div>
           <figcaption>{{shot1}}</figcaption>
         </figure>
         <figure class="shot shot-side reveal">
           <div class="frame win"><div class="win-bar"><span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win-title">Atollo — {{shot2}}</span><span class="win-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
-            <div class="crop"><img src="{{root}}assets/shot-agents.png" alt="{{shot2}}" loading="lazy" width="2560" height="1640"></div></div>
+            <div class="crop"><picture><source media="(prefers-color-scheme: light)" srcset="{{root}}assets/shot-agents-light.png"><img src="{{root}}assets/shot-agents-dark.png" alt="{{shot2}}" loading="lazy" width="2560" height="1640"></picture></div></div>
           <figcaption>{{shot2}}</figcaption>
         </figure>
         <figure class="shot shot-side reveal">
           <div class="frame win"><div class="win-bar"><span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win-title">Atollo — {{shot3}}</span><span class="win-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
-            <div class="crop"><img src="{{root}}assets/shot-tools.png" alt="{{shot3}}" loading="lazy" width="2560" height="1640"></div></div>
+            <div class="crop"><picture><source media="(prefers-color-scheme: light)" srcset="{{root}}assets/shot-tools-light.png"><img src="{{root}}assets/shot-tools-dark.png" alt="{{shot3}}" loading="lazy" width="2560" height="1640"></picture></div></div>
           <figcaption>{{shot3}}</figcaption>
         </figure>
       </div>

@@ -46,7 +46,7 @@
   "how2": "Start it: it creates <code>projects/</code> and <code>data/</code>. On first start choose agents, languages and tools; Atollo downloads and verifies them.",
   "how3": "Create a project from one of 60+ bases (Laravel, Next.js, Django, WordPress, Astro, Tauri…), clone it from GitHub or start from an empty folder. The editor, terminal and agents always open in the project's folder.",
   "shotsTitle": "Inside the app",
-  "shot1": "Projects: run, output and activity",
+  "shot1": "Projects: quick panel and activity",
   "shot2": "Agents: limits and usage",
   "shot3": "Tools: components × systems",
   "aspectsTitle": "How it works",
