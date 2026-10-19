@@ -1,5 +1,9 @@
 # Novità
 
+## Apache su ogni sistema (19/10/2026)
+
+- **Apache** c'è su Windows, macOS e Linux, x64 e ARM64 (D-116): su macOS e Linux arriva dal primo rilascio della build del kit, `httpd-v2.4.69-1`, con gli SHA-256 dei quattro archivi fissati nel catalogo; PHP passa da `php-fpm`. Su Windows niente cambia: Apache Lounge con il modulo PHP, x64 in emulazione su ARM64.
+
 ## 52 nuove basi per i progetti, in gruppi (19/10/2026)
 
 - **Gruppi** (D-131): il wizard e gli alberi dei progetti e delle Impostazioni dividono le basi in Web con PHP, Web con JavaScript e TypeScript, Web con Python, Web con altri linguaggi, CMS, Siti statici e documentazione, App desktop, App mobile, Dati e documenti, Riga di comando e librerie.
