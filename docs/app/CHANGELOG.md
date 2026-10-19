@@ -1,5 +1,9 @@
 # Novità
 
+## Schermate della guida nella lingua giusta (19/10/2026)
+
+- **Guida**: le 13 schermate in inglese, francese e tedesco non mostrano più testi italiani dei dati di esempio (ricette, terminale predefinito, sito statico, limiti degli agenti); rifatte tutte e 52 da `node scripts/guide-shots/make.mjs` (D-136).
+
 ## Azioni dall'app, dati senza progetto, clone da GitHub (19/10/2026)
 
 - **Azioni**: in Progetti › «Avvio» si aggiungono, modificano e tolgono le azioni del progetto con un modulo, senza scrivere `panel.json` a mano (D-136).

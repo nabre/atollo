@@ -2,7 +2,7 @@
 // at its newest version, and the user's, with their own tools and versions,
 // opened in any folder of the PC. Rust: tauri/src/commands/terminals.rs.
 
-import { act, query } from "./core";
+import { act, engineText, query } from "./core";
 
 export type TerminalToolGroup = "agents" | "languages" | "databases";
 
@@ -78,7 +78,7 @@ const SAMPLE_TERMINALS: TerminalsView = {
   terminals: [
     {
       id: "default",
-      name: "Tutti gli strumenti",
+      name: engineText("Tutti gli strumenti", { en: "All tools", fr: "Tous les outils", de: "Alle Werkzeuge" }),
       dir: null,
       tools: Object.fromEntries(SAMPLE_TOOLS.map((x) => [x.id, null])),
       builtin: true,
