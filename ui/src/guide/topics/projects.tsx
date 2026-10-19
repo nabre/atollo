@@ -57,7 +57,7 @@ export const PROJECTS: TopicTexts = {
             "Per crearne uno ci sono tre strade: «Progetto vuoto», «Da un indirizzo Git» e «Da framework o CMS». Più l'elenco dei tuoi repository GitHub.",
             "There are three ways to create one: “Empty project”, “From a Git address” and “From a framework or CMS”. Plus the list of your GitHub repositories.",
             "Il y a trois voies pour en créer un : « Projet vide », « Depuis une adresse Git » et « À partir d'un framework ou d'un CMS ». Plus la liste de vos dépôts GitHub.",
-            "Es gibt drei Wege, eines zu erstellen: „Leeres Projekt“, „Von einer Git-Adresse“ und „Aus Framework oder CMS“. Dazu die Liste Ihrer GitHub-Repositorys.",
+            "Es gibt drei Wege, eines zu erstellen: „Leeres Projekt“, „Von einer Git-Adresse“ und „Aus Framework oder CMS“. Dazu die Liste deiner GitHub-Repositorys.",
           ),
           tr(
             "Con un framework, il kit installa gli strumenti che servono ed esegue i comandi ufficiali del framework.",
@@ -69,7 +69,7 @@ export const PROJECTS: TopicTexts = {
             "Puoi anche copiare a mano una cartella in projects: compare nell'elenco dopo «Aggiorna».",
             "You can also copy a folder into projects by hand: it appears in the list after “Refresh”.",
             "Vous pouvez aussi copier un dossier à la main dans projects : il apparaît dans la liste après « Actualiser ».",
-            "Sie können auch einen Ordner von Hand nach projects kopieren: Er erscheint nach „Aktualisieren“ in der Liste.",
+            "Du kannst auch einen Ordner von Hand nach projects kopieren: Er erscheint nach „Aktualisieren“ in der Liste.",
           ),
         ]}
       />
@@ -95,7 +95,7 @@ export const PROJECTS: TopicTexts = {
           "Dove si crea un progetto",
           "Where you create a project",
           "Où créer un projet",
-          "Wo Sie ein Projekt erstellen",
+          "Wo du ein Projekt erstellst",
         )}
       >
         <P>
@@ -155,7 +155,7 @@ export const PROJECTS: TopicTexts = {
             "Una cartella nuova e vuota in projects, da riempire come vuoi (anche copiandoci dei file).",
             "A new, empty folder in projects, to fill as you like (even by copying files into it).",
             "Un nouveau dossier vide dans projects, à remplir comme vous voulez (y compris en y copiant des fichiers).",
-            "Ein neuer, leerer Ordner in projects, den Sie nach Belieben füllen (auch durch Hineinkopieren von Dateien).",
+            "Ein neuer, leerer Ordner in projects, den du nach Belieben füllst (auch durch Hineinkopieren von Dateien).",
           )}
         </P>
         <Steps
@@ -164,13 +164,13 @@ export const PROJECTS: TopicTexts = {
               "Scrivi il nome della cartella nel campo «Vuoto».",
               "Type the folder name in the “Empty” field.",
               "Tapez le nom du dossier dans le champ « Vide ».",
-              "Geben Sie den Namen des Ordners in das Feld „Leer“ ein.",
+              "Gib den Namen des Ordners in das Feld „Leer“ ein.",
             ),
             tr(
               "Premi «Crea». Si apre la pagina del nuovo progetto.",
               "Press “Create”. The new project's page opens.",
               "Appuyez sur « Créer ». La page du nouveau projet s'ouvre.",
-              "Klicken Sie auf „Erstellen“. Die Seite des neuen Projekts öffnet sich.",
+              "Klicke auf „Erstellen“. Die Seite des neuen Projekts öffnet sich.",
             ),
           ]}
         />
@@ -179,7 +179,7 @@ export const PROJECTS: TopicTexts = {
             'Il nome non può contenere \\ / : * ? " < > |, non può iniziare o finire con un punto e non può essere un nome riservato di Windows (come CON o NUL). Se esiste già una cartella con quel nome, il kit lo dice.',
             'The name cannot contain \\ / : * ? " < > |, cannot start or end with a dot and cannot be a reserved Windows name (like CON or NUL). If a folder with that name already exists, the kit tells you.',
             'Le nom ne peut pas contenir \\ / : * ? " < > |, ne peut pas commencer ni finir par un point et ne peut pas être un nom réservé de Windows (comme CON ou NUL). Si un dossier de ce nom existe déjà, le kit vous le dit.',
-            'Der Name darf \\ / : * ? " < > | nicht enthalten, nicht mit einem Punkt beginnen oder enden und kein reservierter Windows-Name sein (wie CON oder NUL). Wenn bereits ein Ordner mit diesem Namen existiert, sagt Ihnen das Kit das.',
+            'Der Name darf \\ / : * ? " < > | nicht enthalten, nicht mit einem Punkt beginnen oder enden und kein reservierter Windows-Name sein (wie CON oder NUL). Wenn bereits ein Ordner mit diesem Namen existiert, sagt dir das Kit das.',
           )}
         </P>
       </Section>
@@ -206,15 +206,15 @@ export const PROJECTS: TopicTexts = {
               "Nel primo campo scrivi owner/repository per un repository GitHub (per esempio laravel/laravel), oppure l'indirizzo completo https:// di qualsiasi server Git.",
               "In the first field type owner/repository for a GitHub repository (for example laravel/laravel), or the full https:// address of any Git server.",
               "Dans le premier champ, tapez owner/repository pour un dépôt GitHub (par exemple laravel/laravel), ou l'adresse complète https:// de n'importe quel serveur Git.",
-              "Geben Sie im ersten Feld owner/repository für ein GitHub-Repository ein (zum Beispiel laravel/laravel) oder die vollständige https://-Adresse eines beliebigen Git-Servers.",
+              "Gib im ersten Feld owner/repository für ein GitHub-Repository ein (zum Beispiel laravel/laravel) oder die vollständige https://-Adresse eines beliebigen Git-Servers.",
             ),
             tr(
               "Nel secondo campo, facoltativo, il nome della cartella; se lo lasci vuoto è l'ultima parte dell'indirizzo.",
               "In the second field, optional, the folder name; if you leave it empty it is the last part of the address.",
               "Dans le second champ, facultatif, le nom du dossier ; si vous le laissez vide, c'est la dernière partie de l'adresse.",
-              "Im zweiten Feld, optional, der Name des Ordners; wenn Sie es leer lassen, ist es der letzte Teil der Adresse.",
+              "Im zweiten Feld, optional, der Name des Ordners; wenn du es leer lässt, ist es der letzte Teil der Adresse.",
             ),
-            tr("Premi «Clona».", "Press “Clone”.", "Appuyez sur « Cloner ».", "Klicken Sie auf „Klonen“."),
+            tr("Premi «Clona».", "Press “Clone”.", "Appuyez sur « Cloner ».", "Klicke auf „Klonen“."),
           ]}
         />
         <P>
@@ -230,7 +230,7 @@ export const PROJECTS: TopicTexts = {
             "Sono accettati solo indirizzi https://, non ssh. Per un repository privato di GitHub serve l'accesso con l'account GitHub del kit; per i repository pubblici no. Se la copia non riesce, la cartella viene tolta e compare l'ultima riga dell'errore di Git.",
             "Only https:// addresses are accepted, not ssh. A private GitHub repository needs you to be signed in with the kit's GitHub account; public repositories do not. If the copy fails, the folder is removed and the last line of Git's error appears.",
             "Seules les adresses https:// sont acceptées, pas ssh. Pour un dépôt GitHub privé, il faut être connecté avec le compte GitHub du kit ; pour les dépôts publics, non. Si la copie échoue, le dossier est retiré et la dernière ligne de l'erreur de Git s'affiche.",
-            "Nur https://-Adressen werden akzeptiert, kein ssh. Für ein privates GitHub-Repository müssen Sie mit dem GitHub-Konto des Kits angemeldet sein; für öffentliche Repositorys nicht. Wenn das Kopieren fehlschlägt, wird der Ordner entfernt und die letzte Zeile des Git-Fehlers erscheint.",
+            "Nur https://-Adressen werden akzeptiert, kein ssh. Für ein privates GitHub-Repository musst du mit dem GitHub-Konto des Kits angemeldet sein; für öffentliche Repositorys nicht. Wenn das Kopieren fehlschlägt, wird der Ordner entfernt und die letzte Zeile des Git-Fehlers erscheint.",
           )}
         </Callout>
       </Section>
@@ -248,13 +248,13 @@ export const PROJECTS: TopicTexts = {
             "Una procedura guidata che crea un progetto partendo da una base (un framework come Laravel, Django o Vite, un CMS come WordPress, un generatore di siti, un'app desktop o mobile…) e da eventuali aggiunte (Tailwind, React, un database, gli strumenti di prova…). Il kit installa gli strumenti che servono ed esegue i comandi ufficiali del framework, gli stessi che troveresti nella sua documentazione.",
             "A wizard that creates a project starting from a base (a framework like Laravel, Django or Vite, a CMS like WordPress, a site generator, a desktop or mobile app…) and from optional additions (Tailwind, React, a database, testing tools…). The kit installs the tools needed and runs the framework's official commands, the same ones you would find in its documentation.",
             "Un assistant qui crée un projet à partir d'une base (un framework comme Laravel, Django ou Vite, un CMS comme WordPress, un générateur de sites, une application de bureau ou mobile…) et d'éventuels ajouts (Tailwind, React, une base de données, les outils de test…). Le kit installe les outils nécessaires et exécute les commandes officielles du framework, les mêmes que vous trouveriez dans sa documentation.",
-            "Ein Assistent, der ein Projekt ausgehend von einer Basis (einem Framework wie Laravel, Django oder Vite, einem CMS wie WordPress, einem Website-Generator, einer Desktop- oder Mobil-App…) und von eventuellen Ergänzungen (Tailwind, React, eine Datenbank, Testwerkzeuge…) erstellt. Das Kit installiert die benötigten Werkzeuge und führt die offiziellen Befehle des Frameworks aus, dieselben, die Sie in seiner Dokumentation finden würden.",
+            "Ein Assistent, der ein Projekt ausgehend von einer Basis (einem Framework wie Laravel, Django oder Vite, einem CMS wie WordPress, einem Website-Generator, einer Desktop- oder Mobil-App…) und von eventuellen Ergänzungen (Tailwind, React, eine Datenbank, Testwerkzeuge…) erstellt. Das Kit installiert die benötigten Werkzeuge und führt die offiziellen Befehle des Frameworks aus, dieselben, die du in seiner Dokumentation finden würdest.",
           )}
         </P>
         <Table
           columns={[
             tr("Passo", "Step", "Étape", "Schritt"),
-            tr("Che cosa fai", "What you do", "Ce que vous faites", "Was Sie tun"),
+            tr("Che cosa fai", "What you do", "Ce que vous faites", "Was du tust"),
           ]}
           rows={[
             [
@@ -263,7 +263,7 @@ export const PROJECTS: TopicTexts = {
                 "Scegli un gruppo con le etichette in alto (Web con PHP, Web con JavaScript e TypeScript, Web con Python, Web con altri linguaggi, CMS, Siti statici e documentazione, App desktop, App mobile, Dati e documenti, Riga di comando e librerie) e poi la scheda della base.",
                 "Choose a group with the tags at the top (Web with PHP, Web with JavaScript and TypeScript, Web with Python, Web with other languages, CMS, Static sites and documentation, Desktop app, Mobile app, Data and documents, Command line and libraries) and then the base's card.",
                 "Choisissez un groupe avec les étiquettes en haut (Web avec PHP, Web avec JavaScript et TypeScript, Web avec Python, Web avec d'autres langages, CMS, Sites statiques et documentation, Application de bureau, Application mobile, Données et documents, Ligne de commande et bibliothèques) puis la carte de la base.",
-                "Wählen Sie eine Gruppe mit den Etiketten oben (Web mit PHP, Web mit JavaScript und TypeScript, Web mit Python, Web mit anderen Sprachen, CMS, Statische Websites und Dokumentation, Desktop-App, Mobile App, Daten und Dokumente, Kommandozeile und Bibliotheken) und dann die Karte der Basis.",
+                "Wähle eine Gruppe mit den Etiketten oben (Web mit PHP, Web mit JavaScript und TypeScript, Web mit Python, Web mit anderen Sprachen, CMS, Statische Websites und Dokumentation, Desktop-App, Mobile App, Daten und Dokumente, Kommandozeile und Bibliotheken) und dann die Karte der Basis.",
               ),
             ],
             [
@@ -272,7 +272,7 @@ export const PROJECTS: TopicTexts = {
                 "Spunta le aggiunte che vuoi. Sono divise per tipo (Interfaccia, Stili, Prove, Database…): di ogni tipo se ne sceglie una sola, e sceglierne un'altra sostituisce la prima.",
                 "Tick the additions you want. They are divided by type (Interface, Styles, Tests, Databases…): you choose only one of each type, and choosing another replaces the first.",
                 "Cochez les ajouts que vous voulez. Ils sont classés par type (Interface, Styles, Tests, Bases de données…) : on en choisit un seul par type, et en choisir un autre remplace le premier.",
-                "Kreuzen Sie die gewünschten Ergänzungen an. Sie sind nach Typ unterteilt (Oberfläche, Stile, Tests, Datenbanken…): Von jedem Typ wählen Sie nur eine, und die Wahl einer anderen ersetzt die erste.",
+                "Kreuze die gewünschten Ergänzungen an. Sie sind nach Typ unterteilt (Oberfläche, Stile, Tests, Datenbanken…): Von jedem Typ wählst du nur eine, und die Wahl einer anderen ersetzt die erste.",
               ),
             ],
             [
@@ -281,7 +281,7 @@ export const PROJECTS: TopicTexts = {
                 "Scrivi il nome del progetto. In alternativa usa un progetto esistente vuoto («vuoto») o con dei file ma senza Git («con file»): i file del framework si aggiungono e quelli che ci sono restano come sono. Un repository Git non si può usare.",
                 "Type the project name. Alternatively use an existing project that is empty (“empty”) or has files but no Git (“with files”): the framework's files are added and the ones already there stay as they are. A Git repository cannot be used.",
                 "Tapez le nom du projet. Vous pouvez aussi utiliser un projet existant vide (« vide ») ou avec des fichiers mais sans Git (« avec des fichiers ») : les fichiers du framework s'ajoutent et ceux qui y sont restent tels quels. Un dépôt Git ne peut pas être utilisé.",
-                "Geben Sie den Namen des Projekts ein. Alternativ verwenden Sie ein bestehendes Projekt, das leer ist („leer“) oder Dateien, aber kein Git hat („mit Dateien“): Die Dateien des Frameworks kommen hinzu, und die vorhandenen bleiben, wie sie sind. Ein Git-Repository kann nicht verwendet werden.",
+                "Gib den Namen des Projekts ein. Alternativ verwendest du ein bestehendes Projekt, das leer ist („leer“) oder Dateien, aber kein Git hat („mit Dateien“): Die Dateien des Frameworks kommen hinzu, und die vorhandenen bleiben, wie sie sind. Ein Git-Repository kann nicht verwendet werden.",
               ),
             ],
             [
@@ -290,7 +290,7 @@ export const PROJECTS: TopicTexts = {
                 "Le variabili che il kit scriverà nel file .env del progetto. {name} diventa il nome del progetto, {package} un identificativo come com.example.nome, {password} una password nuova. Puoi cambiare i valori, togliere righe o aggiungerne con «Aggiungi una variabile».",
                 "The variables the kit will write in the project's .env file. {name} becomes the project name, {package} an identifier like com.example.nome, {password} a new password. You can change the values, remove lines or add some with “Add a variable”.",
                 "Les variables que le kit écrira dans le fichier .env du projet. {name} devient le nom du projet, {package} un identifiant comme com.example.nome, {password} un nouveau mot de passe. Vous pouvez changer les valeurs, retirer des lignes ou en ajouter avec « Ajouter une variable ».",
-                "Die Variablen, die das Kit in die Datei .env des Projekts schreibt. {name} wird zum Namen des Projekts, {package} zu einer Kennung wie com.example.nome, {password} zu einem neuen Passwort. Sie können die Werte ändern, Zeilen entfernen oder mit „Variable hinzufügen“ welche hinzufügen.",
+                "Die Variablen, die das Kit in die Datei .env des Projekts schreibt. {name} wird zum Namen des Projekts, {package} zu einer Kennung wie com.example.nome, {password} zu einem neuen Passwort. Du kannst die Werte ändern, Zeilen entfernen oder mit „Variable hinzufügen“ welche hinzufügen.",
               ),
             ],
             [
@@ -310,13 +310,13 @@ export const PROJECTS: TopicTexts = {
               "Controlla il «Riepilogo» e premi «Crea il progetto».",
               "Check the “Summary” and press “Create the project”.",
               "Vérifiez le « Récapitulatif » et appuyez sur « Créer le projet ».",
-              "Prüfen Sie die „Zusammenfassung“ und klicken Sie auf „Projekt erstellen“.",
+              "Prüfe die „Zusammenfassung“ und klicke auf „Projekt erstellen“.",
             ),
             tr(
               "Nella parte «Avanzamento» vedi «Installo gli strumenti del kit che servono…», poi «Comando 1 di N» con l'output di ogni comando.",
               "In the “Progress” part you see “Installing the kit tools needed…”, then “Command 1 of N” with the output of each command.",
               "Dans la partie « Progression », vous voyez « Installation des outils du kit nécessaires… », puis « Commande 1 sur N » avec la sortie de chaque commande.",
-              "Im Teil „Fortschritt“ sehen Sie „Benötigte Werkzeuge des Kits werden installiert…“, dann „Befehl 1 von N“ mit der Ausgabe jedes Befehls.",
+              "Im Teil „Fortschritt“ siehst du „Benötigte Werkzeuge des Kits werden installiert…“, dann „Befehl 1 von N“ mit der Ausgabe jedes Befehls.",
             ),
             tr(
               "Alla fine compare «Progetto … creato.» con «Apri il progetto». Se un comando fallisce, la procedura si ferma e mostra l'errore.",
@@ -381,7 +381,7 @@ export const PROJECTS: TopicTexts = {
               "Le ricette si possono modificare o se ne possono aggiungere di tue: {0}.",
               "The recipes can be edited, or you can add your own: {0}.",
               "Les recettes peuvent être modifiées, ou vous pouvez ajouter les vôtres : {0}.",
-              "Die Rezepte lassen sich bearbeiten, oder Sie fügen eigene hinzu: {0}.",
+              "Die Rezepte lassen sich bearbeiten, oder du fügst eigene hinzu: {0}.",
             ),
             <See key="f" id="frameworks" />,
           )}
@@ -405,7 +405,7 @@ export const PROJECTS: TopicTexts = {
                 "Se usi un progetto esistente con dei file, il framework viene generato in una cartella temporanea del sistema e poi spostato nel progetto: i file che ci sono già restano, e nell'avanzamento compare «Già nel progetto, lasciato com'è».",
                 "If you use an existing project with files, the framework is generated in a temporary system folder and then moved into the project: the files already there stay, and the progress shows “Already in the project, left as is”.",
                 "Si vous utilisez un projet existant avec des fichiers, le framework est généré dans un dossier temporaire du système puis déplacé dans le projet : les fichiers déjà présents restent, et la progression affiche « Déjà dans le projet, laissé tel quel ».",
-                "Wenn Sie ein bestehendes Projekt mit Dateien verwenden, wird das Framework in einem temporären Ordner des Systems erzeugt und dann ins Projekt verschoben: Die vorhandenen Dateien bleiben, und im Fortschritt erscheint „Bereits im Projekt, unverändert gelassen“.",
+                "Wenn du ein bestehendes Projekt mit Dateien verwendest, wird das Framework in einem temporären Ordner des Systems erzeugt und dann ins Projekt verschoben: Die vorhandenen Dateien bleiben, und im Fortschritt erscheint „Bereits im Projekt, unverändert gelassen“.",
               ),
               tr(
                 "Se il piano prevede MySQL o MongoDB, il kit avvia il server, crea database e utente del progetto e passa ai comandi le variabili ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD e ATOLLO_DB_URL.",
@@ -441,7 +441,7 @@ export const PROJECTS: TopicTexts = {
           "I tuoi repository GitHub",
           "Your GitHub repositories",
           "Vos dépôts GitHub",
-          "Ihre GitHub-Repositorys",
+          "Deine GitHub-Repositorys",
         )}
       >
         <P>
@@ -449,7 +449,7 @@ export const PROJECTS: TopicTexts = {
             "Se hai collegato l'account GitHub, il riquadro «Dai tuoi repository GitHub» della barra laterale elenca i tuoi repository e quelli delle organizzazioni di cui fai parte, raggruppati per proprietario, con una casella «Cerca nei repository».",
             "If you have connected the GitHub account, the “From your GitHub repositories” pane of the sidebar lists your repositories and those of the organizations you belong to, grouped by owner, with a “Search the repositories” box.",
             "Si vous avez connecté le compte GitHub, le volet « Depuis vos dépôts GitHub » de la barre latérale liste vos dépôts et ceux des organisations dont vous faites partie, regroupés par propriétaire, avec un champ « Rechercher dans les dépôts ».",
-            "Wenn Sie das GitHub-Konto verbunden haben, listet der Bereich „Aus deinen GitHub-Repositories“ der Seitenleiste Ihre Repositorys und die der Organisationen auf, denen Sie angehören, nach Eigentümer gruppiert, mit einem Feld „Repositorys durchsuchen“.",
+            "Wenn du das GitHub-Konto verbunden hast, listet der Bereich „Aus deinen GitHub-Repositories“ der Seitenleiste deine Repositorys und die der Organisationen auf, denen du angehörst, nach Eigentümer gruppiert, mit einem Feld „Repositorys durchsuchen“.",
           )}
         </P>
         <Bullets
@@ -470,7 +470,7 @@ export const PROJECTS: TopicTexts = {
               "Con un clic sulla riga si aprono i dettagli: privato o pubblico, linguaggio, stelle, ultimo push, dove è clonato, «Copia l'indirizzo per Git» e, per i repository che amministri, «Rinomina» ed «Elimina da GitHub».",
               "A click on the row opens the details: private or public, language, stars, last push, where it is cloned, “Copy the Git address” and, for the repositories you administer, “Rename” and “Delete from GitHub”.",
               "Un clic sur la ligne ouvre les détails : privé ou public, langage, étoiles, dernier push, où il est cloné, « Copier l'adresse pour Git » et, pour les dépôts que vous administrez, « Renommer » et « Supprimer de GitHub ».",
-              "Ein Klick auf die Zeile öffnet die Details: privat oder öffentlich, Sprache, Sterne, letzter Push, wo es geklont ist, „Git-Adresse kopieren“ und, für Repositorys, die Sie verwalten, „Umbenennen“ und „Von GitHub löschen“.",
+              "Ein Klick auf die Zeile öffnet die Details: privat oder öffentlich, Sprache, Sterne, letzter Push, wo es geklont ist, „Git-Adresse kopieren“ und, für Repositorys, die du verwaltest, „Umbenennen“ und „Von GitHub löschen“.",
             ),
           ]}
         />
@@ -480,7 +480,7 @@ export const PROJECTS: TopicTexts = {
               "Diversamente da «Da un indirizzo Git», «Clona» da questo elenco non installa i componenti e non sceglie le versioni: apri il progetto e, in «Componenti», premi «Installa ciò che manca». Tutto sull'account in {0}.",
               "Unlike “From a Git address”, “Clone” from this list does not install the components and does not pick the versions: open the project and, in “Components”, press “Install what is missing”. All about the account in {0}.",
               "Contrairement à « Depuis une adresse Git », « Cloner » depuis cette liste n'installe pas les composants et ne choisit pas les versions : ouvrez le projet et, dans « Composants », appuyez sur « Installer ce qui manque ». Tout sur le compte dans {0}.",
-              "Anders als „Von einer Git-Adresse“ installiert „Klonen“ aus dieser Liste die Komponenten nicht und wählt keine Versionen: Öffnen Sie das Projekt und klicken Sie in „Komponenten“ auf „Fehlendes installieren“. Alles zum Konto in {0}.",
+              "Anders als „Von einer Git-Adresse“ installiert „Klonen“ aus dieser Liste die Komponenten nicht und wählt keine Versionen: Öffne das Projekt und klicke in „Komponenten“ auf „Fehlendes installieren“. Alles zum Konto in {0}.",
             ),
             <See key="g" id="github" />,
           )}
@@ -499,7 +499,7 @@ export const PROJECTS: TopicTexts = {
             "Nella barra laterale trovi l'elenco dei progetti; con un clic se ne apre la pagina in una scheda.",
             "In the sidebar you find the list of projects; a click opens a project's page in a tab.",
             "Dans la barre latérale se trouve la liste des projets ; un clic ouvre la page d'un projet dans un onglet.",
-            "In der Seitenleiste finden Sie die Liste der Projekte; ein Klick öffnet die Seite eines Projekts in einem Tab.",
+            "In der Seitenleiste findest du die Liste der Projekte; ein Klick öffnet die Seite eines Projekts in einem Tab.",
           ),
           tr(
             "Il «Pannello rapido» raccoglie ciò che è avviato, i preferiti, i recenti e ciò che va sistemato.",
@@ -583,7 +583,7 @@ export const PROJECTS: TopicTexts = {
                 "I repository del tuo account, da clonare.",
                 "The repositories of your account, ready to clone.",
                 "Les dépôts de votre compte, à cloner.",
-                "Die Repositorys Ihres Kontos, zum Klonen.",
+                "Die Repositorys deines Kontos, zum Klonen.",
               ),
             ],
           ]}
@@ -630,7 +630,7 @@ export const PROJECTS: TopicTexts = {
                 "I progetti che hai segnato con la stella («Aggiungi … ai preferiti»), come schede con i loro linguaggi e pulsanti.",
                 "The projects you have marked with the star (“Add … to favorites”), as cards with their languages and buttons.",
                 "Les projets que vous avez marqués d'une étoile (« Ajouter … aux favoris »), sous forme de cartes avec leurs langages et leurs boutons.",
-                "Die Projekte, die Sie mit dem Stern markiert haben („… zu den Favoriten hinzufügen“), als Karten mit ihren Sprachen und Schaltflächen.",
+                "Die Projekte, die du mit dem Stern markiert hast („… zu den Favoriten hinzufügen“), als Karten mit ihren Sprachen und Schaltflächen.",
               ),
             ],
             [
@@ -678,11 +678,11 @@ export const PROJECTS: TopicTexts = {
               "Da qualsiasi pagina premi {0} (⌘P su macOS): compare «Apri un progetto». Scrivi parte del nome, della piattaforma o di un linguaggio; i progetti sono in ordine di uso recente. {1} apre la pagina, {2} avvia subito l'azione predefinita.",
               "From any page press {0} (⌘P on macOS): “Open a project” appears. Type part of the name, the platform or a language; projects are sorted by recent use. {1} opens the page, {2} immediately starts the default action.",
               "Depuis n'importe quelle page, appuyez sur {0} (⌘P sur macOS) : « Ouvrir un projet » apparaît. Tapez une partie du nom, de la plateforme ou d'un langage ; les projets sont triés par utilisation récente. {1} ouvre la page, {2} démarre aussitôt l'action par défaut.",
-              "Drücken Sie auf jeder Seite {0} (⌘P unter macOS): „Projekt öffnen“ erscheint. Geben Sie einen Teil des Namens, der Plattform oder einer Sprache ein; die Projekte sind nach letzter Verwendung sortiert. {1} öffnet die Seite, {2} startet sofort die Standardaktion.",
+              "Drück auf jeder Seite {0} (⌘P unter macOS): „Projekt öffnen“ erscheint. Gib einen Teil des Namens, der Plattform oder einer Sprache ein; die Projekte sind nach letzter Verwendung sortiert. {1} öffnet die Seite, {2} startet sofort die Standardaktion.",
             ),
             <Key key="p">Ctrl+P</Key>,
-            <Key key="i">Invio</Key>,
-            <Key key="s">Maiusc+Invio</Key>,
+            <Key key="i">{tr("Invio", "Enter", "Entrée", "Enter")}</Key>,
+            <Key key="s">{tr("Maiusc+Invio", "Shift+Enter", "Maj+Entrée", "Umschalt+Enter")}</Key>,
           )}
         </P>
       </Section>
@@ -742,7 +742,7 @@ export const PROJECTS: TopicTexts = {
                 "Scegli un agente con il suo logo e aprilo nel progetto.",
                 "Choose an agent by its logo and open it in the project.",
                 "Choisissez un agent par son logo et ouvrez-le dans le projet.",
-                "Wählen Sie einen Agenten über sein Logo und öffnen Sie ihn im Projekt.",
+                "Wähle einen Agenten über sein Logo und öffne ihn im Projekt.",
               ),
             ],
             [
@@ -760,7 +760,7 @@ export const PROJECTS: TopicTexts = {
                 "Rilegge il progetto: utile dopo aver cambiato a mano panel.json o i file del progetto.",
                 "Rereads the project: useful after changing panel.json or the project's files by hand.",
                 "Relit le projet : utile après avoir modifié à la main panel.json ou les fichiers du projet.",
-                "Liest das Projekt neu ein: nützlich, nachdem Sie panel.json oder die Dateien des Projekts von Hand geändert haben.",
+                "Liest das Projekt neu ein: nützlich, nachdem du panel.json oder die Dateien des Projekts von Hand geändert hast.",
               ),
             ],
           ]}
@@ -888,7 +888,7 @@ export const PROJECTS: TopicTexts = {
             "Le azioni web ricevono una porta dal kit, che aspetta che rispondano e ti dà l'indirizzo da aprire.",
             "Web actions get a port from the kit, which waits for them to respond and gives you the address to open.",
             "Les actions web reçoivent un port du kit, qui attend qu'elles répondent et vous donne l'adresse à ouvrir.",
-            "Web-Aktionen erhalten vom Kit einen Port; das Kit wartet, bis sie antworten, und gibt Ihnen die Adresse zum Öffnen.",
+            "Web-Aktionen erhalten vom Kit einen Port; das Kit wartet, bis sie antworten, und gibt dir die Adresse zum Öffnen.",
           ),
           tr(
             "La stella «Predefinita» sceglie l'azione del pulsante «Avvia».",
@@ -900,7 +900,7 @@ export const PROJECTS: TopicTexts = {
             "Le azioni si riconoscono da sole; quelle tue si scrivono nel file panel.json del progetto.",
             "Actions are recognized by themselves; your own are written in the project's panel.json file.",
             "Les actions se reconnaissent toutes seules ; les vôtres s'écrivent dans le fichier panel.json du projet.",
-            "Aktionen werden von selbst erkannt; Ihre eigenen schreiben Sie in die Datei panel.json des Projekts.",
+            "Aktionen werden von selbst erkannt; deine eigenen schreibst du in die Datei panel.json des Projekts.",
           ),
         ]}
       />
@@ -971,7 +971,7 @@ export const PROJECTS: TopicTexts = {
                 "Solo per le azioni web: «automatica» o un numero scelto da te.",
                 "Only for web actions: “automatic” or a number you choose.",
                 "Seulement pour les actions web : « automatique » ou un numéro choisi par vous.",
-                "Nur für Web-Aktionen: „automatisch“ oder eine von Ihnen gewählte Zahl.",
+                "Nur für Web-Aktionen: „automatisch“ oder eine von dir gewählte Zahl.",
               ),
             ],
             [
@@ -1009,7 +1009,7 @@ export const PROJECTS: TopicTexts = {
           "Che cosa succede quando premi «Avvia»",
           "What happens when you press “Start”",
           "Ce qui se passe quand vous appuyez sur « Démarrer »",
-          "Was passiert, wenn Sie auf „Starten“ klicken",
+          "Was passiert, wenn du auf „Starten“ klickst",
         )}
       >
         <Flow
@@ -1067,7 +1067,7 @@ export const PROJECTS: TopicTexts = {
               "Il browser non si apre da solo: usa «Apri nel browser» (qui, nel «Pannello rapido» o nel pannello «Attività»). L'indirizzo è di solito http://localhost:<porta>/.",
               "The browser does not open by itself: use “Open in the browser” (here, in the “Quick panel” or in the “Activity” panel). The address is usually http://localhost:<port>/.",
               "Le navigateur ne s'ouvre pas tout seul : utilisez « Ouvrir dans le navigateur » (ici, dans le « Panneau rapide » ou dans le panneau « Activité »). L'adresse est en général http://localhost:<port>/.",
-              "Der Browser öffnet sich nicht von selbst: Verwenden Sie „Im Browser öffnen“ (hier, in der „Schnellübersicht“ oder im Bereich „Aktivität“). Die Adresse ist meist http://localhost:<Port>/.",
+              "Der Browser öffnet sich nicht von selbst: Verwende „Im Browser öffnen“ (hier, in der „Schnellübersicht“ oder im Bereich „Aktivität“). Die Adresse ist meist http://localhost:<Port>/.",
             ),
             tr(
               "Se il programma ignora la porta assegnata e ne stampa un'altra nell'output, il kit segue quella.",
@@ -1079,7 +1079,7 @@ export const PROJECTS: TopicTexts = {
               "«Ferma» chiude l'intero albero di processi dell'azione. Chiudendo Atollo si fermano tutte le azioni.",
               "“Stop” closes the action's whole process tree. Closing Atollo stops all actions.",
               "« Arrêter » ferme toute l'arborescence de processus de l'action. Fermer Atollo arrête toutes les actions.",
-              "„Beenden“ schließt den gesamten Prozessbaum der Aktion. Wenn Sie Atollo schließen, werden alle Aktionen beendet.",
+              "„Beenden“ schließt den gesamten Prozessbaum der Aktion. Wenn du Atollo schließt, werden alle Aktionen beendet.",
             ),
             tr(
               "Le azioni avviate compaiono anche nel pannello «Attività» e nel contatore della barra di stato.",
@@ -1097,7 +1097,7 @@ export const PROJECTS: TopicTexts = {
             "Ogni azione web ha una porta tutta sua, scelta dal kit tra 7100 e 7999 la prima volta e poi tenuta uguale a ogni avvio: così l'indirizzo non cambia. Se ti serve un numero preciso, scrivilo nel campo «Porta» e premi Invio (o esci dal campo); svuotandolo torni alla porta automatica.",
             "Each web action has a port of its own, chosen by the kit between 7100 and 7999 the first time and then kept the same at every start: that way the address does not change. If you need a specific number, type it in the “Port” field and press Enter (or leave the field); emptying it takes you back to the automatic port.",
             "Chaque action web a son propre port, choisi par le kit entre 7100 et 7999 la première fois puis conservé à chaque démarrage : ainsi l'adresse ne change pas. Si vous avez besoin d'un numéro précis, tapez-le dans le champ « Port » et appuyez sur Entrée (ou quittez le champ) ; en le vidant, vous revenez au port automatique.",
-            "Jede Web-Aktion hat ihren eigenen Port, den das Kit beim ersten Mal zwischen 7100 und 7999 wählt und dann bei jedem Start beibehält: So ändert sich die Adresse nicht. Wenn Sie eine bestimmte Nummer brauchen, geben Sie sie in das Feld „Port“ ein und drücken Sie Eingabe (oder verlassen Sie das Feld); wenn Sie es leeren, kehren Sie zum automatischen Port zurück.",
+            "Jede Web-Aktion hat ihren eigenen Port, den das Kit beim ersten Mal zwischen 7100 und 7999 wählt und dann bei jedem Start beibehält: So ändert sich die Adresse nicht. Wenn du eine bestimmte Nummer brauchst, gib sie in das Feld „Port“ ein und drück Eingabe (oder verlass das Feld); wenn du es leerst, kehrst du zum automatischen Port zurück.",
           )}
         </P>
         <Bullets
@@ -1130,7 +1130,7 @@ export const PROJECTS: TopicTexts = {
             "È quella che parte con il pulsante «Avvia» della pagina, con ▶ nella riga del progetto e con Maiusc+Invio in «Apri un progetto». Per cambiarla scegli l'azione nell'elenco e premi la stella «Predefinita». Quando servi il progetto come sito web, il sito diventa da solo l'azione predefinita.",
             "It is the one that starts with the page's “Start” button, with ▶ in the project row and with Shift+Enter in “Open a project”. To change it, choose the action in the list and press the “Default” star. When you serve the project as a website, the website becomes the default action by itself.",
             "C'est celle qui démarre avec le bouton « Démarrer » de la page, avec ▶ dans la ligne du projet et avec Maj+Entrée dans « Ouvrir un projet ». Pour la changer, choisissez l'action dans la liste et appuyez sur l'étoile « Par défaut ». Quand vous servez le projet comme site web, le site devient tout seul l'action par défaut.",
-            "Es ist die Aktion, die mit der Schaltfläche „Starten“ der Seite, mit ▶ in der Projektzeile und mit Umschalt+Eingabe in „Projekt öffnen“ startet. Um sie zu ändern, wählen Sie die Aktion in der Liste und klicken Sie auf den Stern „Standard“. Wenn Sie das Projekt als Website bereitstellen, wird die Website von selbst zur Standardaktion.",
+            "Es ist die Aktion, die mit der Schaltfläche „Starten“ der Seite, mit ▶ in der Projektzeile und mit Umschalt+Eingabe in „Projekt öffnen“ startet. Um sie zu ändern, wähle die Aktion in der Liste und klicke auf den Stern „Standard“. Wenn du das Projekt als Website bereitstellst, wird die Website von selbst zur Standardaktion.",
           )}
         </P>
       </Section>
@@ -1140,7 +1140,7 @@ export const PROJECTS: TopicTexts = {
           "Le tue azioni: il file panel.json",
           "Your own actions: the panel.json file",
           "Vos actions : le fichier panel.json",
-          "Ihre eigenen Aktionen: die Datei panel.json",
+          "Deine eigenen Aktionen: die Datei panel.json",
         )}
       >
         <P>
@@ -1148,12 +1148,12 @@ export const PROJECTS: TopicTexts = {
             "Le azioni riconosciute bastano quasi sempre. Se ne vuoi altre, o vuoi cambiarne una, scrivile nel file panel.json nella cartella del progetto (lo crei tu, se non c'è) e premi «Aggiorna». Il file sta nel progetto, quindi va in Git e vale per chiunque usi il progetto con Atollo.",
             "The recognized actions are almost always enough. If you want others, or want to change one, write them in the panel.json file in the project folder (you create it if it is not there) and press “Refresh”. The file lives in the project, so it goes into Git and applies to anyone who uses the project with Atollo.",
             "Les actions reconnues suffisent presque toujours. Si vous en voulez d'autres, ou voulez en changer une, écrivez-les dans le fichier panel.json dans le dossier du projet (créez-le s'il n'existe pas) et appuyez sur « Actualiser ». Le fichier est dans le projet, donc il va dans Git et vaut pour quiconque utilise le projet avec Atollo.",
-            "Die erkannten Aktionen reichen fast immer. Wenn Sie weitere möchten oder eine ändern wollen, schreiben Sie sie in die Datei panel.json im Projektordner (Sie legen sie an, falls sie fehlt) und klicken Sie auf „Aktualisieren“. Die Datei liegt im Projekt, kommt also in Git und gilt für alle, die das Projekt mit Atollo verwenden.",
+            "Die erkannten Aktionen reichen fast immer. Wenn du weitere möchtest oder eine ändern willst, schreib sie in die Datei panel.json im Projektordner (du legst sie an, falls sie fehlt) und klicke auf „Aktualisieren“. Die Datei liegt im Projekt, kommt also in Git und gilt für alle, die das Projekt mit Atollo verwenden.",
           )}
         </P>
         <GuideCode
           title={tr("Esempio di panel.json", "Example panel.json", "Exemple de panel.json", "Beispiel für panel.json")}
-          path="projects\\gestionale\\panel.json"
+          path={"projects\\gestionale\\panel.json"}
           code={PANEL_EXAMPLE}
         />
         <Table
@@ -1177,7 +1177,7 @@ export const PROJECTS: TopicTexts = {
                 "Il nome che vedi nell'elenco.",
                 "The name you see in the list.",
                 "Le nom que vous voyez dans la liste.",
-                "Der Name, den Sie in der Liste sehen.",
+                "Der Name, den du in der Liste siehst.",
               ),
             ],
             [
@@ -1240,7 +1240,7 @@ export const PROJECTS: TopicTexts = {
                 "In cima al file: true per togliere tutte le azioni riconosciute e tenere solo le tue.",
                 "At the top of the file: true to remove all the recognized actions and keep only yours.",
                 "En tête du fichier : true pour retirer toutes les actions reconnues et ne garder que les vôtres.",
-                "Oben in der Datei: true, um alle erkannten Aktionen zu entfernen und nur Ihre zu behalten.",
+                "Oben in der Datei: true, um alle erkannten Aktionen zu entfernen und nur deine zu behalten.",
               ),
             ],
           ]}
@@ -1250,7 +1250,7 @@ export const PROJECTS: TopicTexts = {
             "Un'azione con lo stesso id di una riconosciuta la sostituisce. Se il file non è un JSON valido, il kit lo ignora e lo dice in «Componenti» › «Come è stato riconosciuto»; correggilo prima di usare stella o sito web, che scrivono nello stesso file. Nell'app non c'è un modulo per aggiungere o modificare le azioni: si fa nel file.",
             "An action with the same id as a recognized one replaces it. If the file is not valid JSON, the kit ignores it and says so in “Components” › “How it was recognised”; fix it before using the star or the website, which write to the same file. There is no form in the app to add or edit actions: it is done in the file.",
             "Une action avec le même id qu'une action reconnue la remplace. Si le fichier n'est pas un JSON valide, le kit l'ignore et le signale dans « Composants » › « Comment il a été reconnu » ; corrigez-le avant d'utiliser l'étoile ou le site web, qui écrivent dans le même fichier. Il n'y a pas de formulaire dans l'application pour ajouter ou modifier les actions : cela se fait dans le fichier.",
-            "Eine Aktion mit derselben id wie eine erkannte ersetzt diese. Ist die Datei kein gültiges JSON, ignoriert das Kit sie und meldet das unter „Komponenten“ › „Wie es erkannt wurde“; korrigieren Sie sie, bevor Sie Stern oder Website verwenden, die in dieselbe Datei schreiben. In der App gibt es kein Formular zum Hinzufügen oder Bearbeiten von Aktionen: Das geschieht in der Datei.",
+            "Eine Aktion mit derselben id wie eine erkannte ersetzt diese. Ist die Datei kein gültiges JSON, ignoriert das Kit sie und meldet das unter „Komponenten“ › „Wie es erkannt wurde“; korrigiere sie, bevor du Stern oder Website verwendest, die in dieselbe Datei schreiben. In der App gibt es kein Formular zum Hinzufügen oder Bearbeiten von Aktionen: Das geschieht in der Datei.",
           )}
         </Callout>
         <Under>
@@ -1272,7 +1272,7 @@ export const PROJECTS: TopicTexts = {
                 "Le porte assegnate e quelle scelte da te sono in data\\projects\\<progetto>\\ports.json, fuori dal progetto.",
                 "The assigned ports and the ones you chose are in data\\projects\\<project>\\ports.json, outside the project.",
                 "Les ports attribués et ceux que vous avez choisis sont dans data\\projects\\<projet>\\ports.json, en dehors du projet.",
-                "Die zugewiesenen und die von Ihnen gewählten Ports stehen in data\\projects\\<Projekt>\\ports.json, außerhalb des Projekts.",
+                "Die zugewiesenen und die von dir gewählten Ports stehen in data\\projects\\<Projekt>\\ports.json, außerhalb des Projekts.",
               ),
               tr(
                 "Ogni azione gira in un suo gruppo di processi (un Job Object su Windows): «Ferma» chiude anche i processi figli, per esempio il server avviato da npm.",
@@ -1309,13 +1309,13 @@ export const PROJECTS: TopicTexts = {
             "In «Versioni» scegli, solo per questo progetto, la versione di ogni linguaggio: per esempio Node 20 qui e Node 24 altrove.",
             "In “Versions” you choose, for this project only, the version of each language: for example Node 20 here and Node 24 elsewhere.",
             "Dans « Versions », vous choisissez, pour ce projet seulement, la version de chaque langage : par exemple Node 20 ici et Node 24 ailleurs.",
-            "Unter „Versionen“ wählen Sie nur für dieses Projekt die Version jeder Sprache: zum Beispiel Node 20 hier und Node 24 anderswo.",
+            "Unter „Versionen“ wählst du nur für dieses Projekt die Version jeder Sprache: zum Beispiel Node 20 hier und Node 24 anderswo.",
           ),
           tr(
             "Un progetto nuovo tiene le versioni più recenti che c'erano quando è stato creato, finché non le cambi.",
             "A new project keeps the latest versions that were there when it was created, until you change them.",
             "Un nouveau projet garde les versions les plus récentes présentes au moment de sa création, jusqu'à ce que vous les changiez.",
-            "Ein neues Projekt behält die neuesten Versionen, die bei seiner Erstellung vorhanden waren, bis Sie sie ändern.",
+            "Ein neues Projekt behält die neuesten Versionen, die bei seiner Erstellung vorhanden waren, bis du sie änderst.",
           ),
           tr(
             "La scelta vale per azioni, terminale, agenti, editor e server web del progetto.",
@@ -1350,7 +1350,7 @@ export const PROJECTS: TopicTexts = {
             "La parte «Componenti» elenca gli strumenti del kit di cui il progetto ha bisogno, ciascuno «installato» o «da installare». Se manca qualcosa, «Installa ciò che manca» li installa e aspetta che abbiano finito. La parte «Come è stato riconosciuto» spiega da quali file il kit ha capito il tipo di progetto, con eventuali avvisi (per esempio «Dipendenze non installate: esegui prima npm install»).",
             "The “Components” part lists the kit tools the project needs, each “installed” or “to install”. If something is missing, “Install what is missing” installs them and waits for them to finish. The “How it was recognised” part explains from which files the kit worked out the project type, with any warnings (for example “Dependencies not installed: run npm install first”).",
             "La partie « Composants » liste les outils du kit dont le projet a besoin, chacun « installé » ou « à installer ». S'il manque quelque chose, « Installer ce qui manque » les installe et attend qu'ils aient terminé. La partie « Comment il a été reconnu » explique à partir de quels fichiers le kit a compris le type de projet, avec d'éventuels avertissements (par exemple « Dépendances non installées : exécutez d'abord npm install »).",
-            "Der Teil „Komponenten“ listet die Werkzeuge des Kits auf, die das Projekt braucht, jedes „installiert“ oder „zu installieren“. Fehlt etwas, installiert „Fehlendes installieren“ sie und wartet, bis sie fertig sind. Der Teil „Wie es erkannt wurde“ erklärt, aus welchen Dateien das Kit den Projekttyp abgeleitet hat, mit eventuellen Warnungen (zum Beispiel „Abhängigkeiten nicht installiert: Führen Sie zuerst npm install aus“).",
+            "Der Teil „Komponenten“ listet die Werkzeuge des Kits auf, die das Projekt braucht, jedes „installiert“ oder „zu installieren“. Fehlt etwas, installiert „Fehlendes installieren“ sie und wartet, bis sie fertig sind. Der Teil „Wie es erkannt wurde“ erklärt, aus welchen Dateien das Kit den Projekttyp abgeleitet hat, mit eventuellen Warnungen (zum Beispiel „Abhängigkeiten nicht installiert: Führe zuerst npm install aus“).",
           )}
         </P>
         <Callout tone="info">
@@ -1358,7 +1358,7 @@ export const PROJECTS: TopicTexts = {
             "«Installa ciò che manca» installa i componenti del kit (Node.js, PHP, Python…), non le dipendenze del progetto: per quelle esegui npm install, composer install o simili, con un'azione o nel terminale del progetto.",
             "“Install what is missing” installs the kit's components (Node.js, PHP, Python…), not the project's dependencies: for those run npm install, composer install or similar, with an action or in the project terminal.",
             "« Installer ce qui manque » installe les composants du kit (Node.js, PHP, Python…), pas les dépendances du projet : pour celles-ci, exécutez npm install, composer install ou équivalent, avec une action ou dans le terminal du projet.",
-            "„Fehlendes installieren“ installiert die Komponenten des Kits (Node.js, PHP, Python…), nicht die Abhängigkeiten des Projekts: Für diese führen Sie npm install, composer install oder Ähnliches aus, mit einer Aktion oder im Terminal des Projekts.",
+            "„Fehlendes installieren“ installiert die Komponenten des Kits (Node.js, PHP, Python…), nicht die Abhängigkeiten des Projekts: Für diese führst du npm install, composer install oder Ähnliches aus, mit einer Aktion oder im Terminal des Projekts.",
           )}
         </Callout>
       </Section>
@@ -1385,7 +1385,7 @@ export const PROJECTS: TopicTexts = {
               "Apri il menu accanto al linguaggio.",
               "Open the menu next to the language.",
               "Ouvrez le menu à côté du langage.",
-              "Öffnen Sie das Menü neben der Sprache.",
+              "Öffne das Menü neben der Sprache.",
             ),
             tr(
               "La prima voce, «La più recente (…)», lascia decidere al kit: userà sempre la versione più recente presente su disco.",
@@ -1403,7 +1403,7 @@ export const PROJECTS: TopicTexts = {
               "Scegli una versione: se non è scaricata parte subito il download («Download di … in corso…»). Finché non è pronta il progetto usa la più recente («… non è scaricata: per ora si usa la …», con «Scarica» o «Riprova»).",
               "Choose a version: if it is not downloaded, the download starts right away (“Downloading …”). Until it is ready the project uses the newest one (“… is not downloaded: … is used for now”, with “Download” or “Retry”).",
               "Choisissez une version : si elle n'est pas téléchargée, le téléchargement démarre aussitôt (« Téléchargement de … en cours… »). Tant qu'elle n'est pas prête, le projet utilise la plus récente (« … n'est pas téléchargée : … est utilisée pour l'instant », avec « Télécharger » ou « Réessayer »).",
-              "Wählen Sie eine Version: Ist sie nicht heruntergeladen, startet der Download sofort („… wird heruntergeladen…“). Bis sie bereit ist, verwendet das Projekt die neueste („… ist nicht heruntergeladen: vorerst wird … verwendet“, mit „Herunterladen“ oder „Erneut versuchen“).",
+              "Wähle eine Version: Ist sie nicht heruntergeladen, startet der Download sofort („… wird heruntergeladen…“). Bis sie bereit ist, verwendet das Projekt die neueste („… ist nicht heruntergeladen: vorerst wird … verwendet“, mit „Herunterladen“ oder „Erneut versuchen“).",
             ),
             tr(
               "Il pulsante con le frecce, «Cerca altre versioni di …», chiede di nuovo alla fonte l'elenco delle versioni.",
@@ -1497,7 +1497,7 @@ export const PROJECTS: TopicTexts = {
                 "La versione del server di database del progetto si sceglie nella sezione «Database», non qui.",
                 "The version of the project's database server is chosen in the “Databases” section, not here.",
                 "La version du serveur de bases de données du projet se choisit dans la section « Bases de données », pas ici.",
-                "Die Version des Datenbankservers des Projekts wählen Sie im Abschnitt „Datenbanken“, nicht hier.",
+                "Die Version des Datenbankservers des Projekts wählst du im Abschnitt „Datenbanken“, nicht hier.",
               ),
             ]}
           />
@@ -1534,7 +1534,7 @@ export const PROJECTS: TopicTexts = {
             "Nella sezione «Editor» imposti rientro, formattazione, cartelle nascoste e server MCP del progetto.",
             "In the “Editor” section you set indentation, formatting, hidden folders and the project's MCP servers.",
             "Dans la section « Éditeur », vous réglez l'indentation, la mise en forme, les dossiers masqués et les serveurs MCP du projet.",
-            "Im Abschnitt „Editor“ stellen Sie Einrückung, Formatierung, ausgeblendete Ordner und die MCP-Server des Projekts ein.",
+            "Im Abschnitt „Editor“ stellst du Einrückung, Formatierung, ausgeblendete Ordner und die MCP-Server des Projekts ein.",
           ),
         ]}
       />
@@ -1566,7 +1566,7 @@ export const PROJECTS: TopicTexts = {
               "Il menu «Account» dell'editor e le sue funzioni «Pubblica su GitHub» e «Clona da GitHub» non vedono l'account del kit: usa Git, la pagina Progetti o GitHub CLI.",
               "The editor's “Accounts” menu and its “Publish to GitHub” and “Clone from GitHub” functions do not see the kit's account: use Git, the Projects page or GitHub CLI.",
               "Le menu « Comptes » de l'éditeur et ses fonctions « Publier sur GitHub » et « Cloner depuis GitHub » ne voient pas le compte du kit : utilisez Git, la page Projets ou GitHub CLI.",
-              "Das Menü „Konten“ des Editors und seine Funktionen „In GitHub veröffentlichen“ und „Aus GitHub klonen“ sehen das Konto des Kits nicht: Verwenden Sie Git, die Seite Projekte oder GitHub CLI.",
+              "Das Menü „Konten“ des Editors und seine Funktionen „In GitHub veröffentlichen“ und „Aus GitHub klonen“ sehen das Konto des Kits nicht: Verwende Git, die Seite Projekte oder GitHub CLI.",
             ),
           ]}
         />
@@ -1602,7 +1602,7 @@ export const PROJECTS: TopicTexts = {
               "Per console in altre cartelle o con strumenti scelti da te c'è la pagina Terminali: {0}.",
               "For consoles in other folders or with tools you choose there is the Terminals page: {0}.",
               "Pour des consoles dans d'autres dossiers ou avec des outils de votre choix, il y a la page Terminaux : {0}.",
-              "Für Konsolen in anderen Ordnern oder mit Werkzeugen Ihrer Wahl gibt es die Seite Terminals: {0}.",
+              "Für Konsolen in anderen Ordnern oder mit Werkzeugen deiner Wahl gibt es die Seite Terminals: {0}.",
             ),
             <See key="t" id="terminals" />,
           )}
@@ -1631,13 +1631,13 @@ export const PROJECTS: TopicTexts = {
               "Togli la spunta a un'estensione per disattivarla in questo progetto, o rimettila.",
               "Untick an extension to turn it off in this project, or tick it again.",
               "Décochez une extension pour la désactiver dans ce projet, ou recochez-la.",
-              "Entfernen Sie das Häkchen bei einer Erweiterung, um sie in diesem Projekt zu deaktivieren, oder setzen Sie es wieder.",
+              "Entferne das Häkchen bei einer Erweiterung, um sie in diesem Projekt zu deaktivieren, oder setz es wieder.",
             ),
             tr(
               "Per aggiungerne una che non c'è, scrivi il suo identificativo editore.nome (per esempio ms-python.python) nel campo «Aggiungi un'estensione» e premi «Aggiungi».",
               "To add one that is not there, type its publisher.name identifier (for example ms-python.python) in the “Add an extension” field and press “Add”.",
               "Pour en ajouter une qui n'y est pas, tapez son identifiant editeur.nom (par exemple ms-python.python) dans le champ « Ajouter une extension » et appuyez sur « Ajouter ».",
-              "Um eine hinzuzufügen, die fehlt, geben Sie ihre Kennung herausgeber.name (zum Beispiel ms-python.python) in das Feld „Erweiterung hinzufügen“ ein und klicken Sie auf „Hinzufügen“.",
+              "Um eine hinzuzufügen, die fehlt, gib ihre Kennung herausgeber.name (zum Beispiel ms-python.python) in das Feld „Erweiterung hinzufügen“ ein und klicke auf „Hinzufügen“.",
             ),
           ]}
         />
@@ -1705,7 +1705,7 @@ export const PROJECTS: TopicTexts = {
             "«Salva» le scrive nel file .vscode\\settings.json del progetto; le altre impostazioni del file restano. Se il file contiene commenti o non è JSON semplice, Atollo non lo riscrive e ti chiede di modificarlo nell'editor.",
             "“Save” writes them in the project's .vscode\\settings.json file; the other settings in the file stay. If the file contains comments or is not plain JSON, Atollo does not rewrite it and asks you to edit it in the editor.",
             "« Enregistrer » les écrit dans le fichier .vscode\\settings.json du projet ; les autres paramètres du fichier restent. Si le fichier contient des commentaires ou n'est pas du JSON simple, Atollo ne le réécrit pas et vous demande de le modifier dans l'éditeur.",
-            "„Speichern“ schreibt sie in die Datei .vscode\\settings.json des Projekts; die anderen Einstellungen der Datei bleiben. Enthält die Datei Kommentare oder ist sie kein einfaches JSON, schreibt Atollo sie nicht neu und bittet Sie, sie im Editor zu bearbeiten.",
+            "„Speichern“ schreibt sie in die Datei .vscode\\settings.json des Projekts; die anderen Einstellungen der Datei bleiben. Enthält die Datei Kommentare oder ist sie kein einfaches JSON, schreibt Atollo sie nicht neu und bittet dich, sie im Editor zu bearbeiten.",
           )}
         </P>
         <P>
@@ -1739,7 +1739,7 @@ export const PROJECTS: TopicTexts = {
             "È in sola lettura: commit, push e l'elenco delle modifiche si fanno nell'editor, in un terminale o con un agente.",
             "It is read-only: commits, pushes and the list of changes are done in the editor, in a terminal or with an agent.",
             "Elle est en lecture seule : les commits, les push et la liste des modifications se font dans l'éditeur, dans un terminal ou avec un agent.",
-            "Er ist schreibgeschützt: Commits, Pushes und die Liste der Änderungen erledigen Sie im Editor, in einem Terminal oder mit einem Agenten.",
+            "Er ist schreibgeschützt: Commits, Pushes und die Liste der Änderungen erledigst du im Editor, in einem Terminal oder mit einem Agenten.",
           ),
           tr(
             "Git usa l'account GitHub del kit senza chiedere password.",
@@ -1772,7 +1772,7 @@ export const PROJECTS: TopicTexts = {
                 "Il ramo corrente; «nessun ramo» se sei su un commit preciso.",
                 "The current branch; “no branch” if you are on a specific commit.",
                 "La branche courante ; « aucune branche » si vous êtes sur un commit précis.",
-                "Der aktuelle Branch; „kein Branch“, wenn Sie auf einem bestimmten Commit sind.",
+                "Der aktuelle Branch; „kein Branch“, wenn du auf einem bestimmten Commit bist.",
               ),
             ],
             [
@@ -1810,7 +1810,7 @@ export const PROJECTS: TopicTexts = {
           "Dove si lavora con Git",
           "Where you work with Git",
           "Où travailler avec Git",
-          "Wo Sie mit Git arbeiten",
+          "Wo du mit Git arbeitest",
         )}
       >
         <Bullets
@@ -1848,7 +1848,7 @@ export const PROJECTS: TopicTexts = {
             'Il kit non imposta il tuo nome e la tua email per i commit. Una volta sola, in un terminale del kit, scrivi: git config --global user.name "Nome Cognome" e git config --global user.email "tu@esempio.it". Vengono salvati nel file .gitconfig del kit e ti seguono su ogni PC.',
             'The kit does not set your name and email for commits. Once only, in a kit terminal, type: git config --global user.name "Jane Doe" and git config --global user.email "you@example.com". They are saved in the kit\'s .gitconfig file and follow you on every PC.',
             'Le kit ne règle pas votre nom et votre e-mail pour les commits. Une seule fois, dans un terminal du kit, tapez : git config --global user.name "Prénom Nom" et git config --global user.email "vous@exemple.fr". Ils sont enregistrés dans le fichier .gitconfig du kit et vous suivent sur chaque PC.',
-            'Das Kit legt Ihren Namen und Ihre E-Mail für Commits nicht fest. Geben Sie einmalig in einem Terminal des Kits ein: git config --global user.name "Vorname Nachname" und git config --global user.email "sie@beispiel.de". Sie werden in der Datei .gitconfig des Kits gespeichert und begleiten Sie auf jeden PC.',
+            'Das Kit legt deinen Namen und deine E-Mail für Commits nicht fest. Gib einmalig in einem Terminal des Kits ein: git config --global user.name "Vorname Nachname" und git config --global user.email "sie@beispiel.de". Sie werden in der Datei .gitconfig des Kits gespeichert und begleiten dich auf jeden PC.',
           )}
         </Callout>
         <Under>
@@ -1857,7 +1857,7 @@ export const PROJECTS: TopicTexts = {
               "Atollo legge lo stato direttamente dai file della cartella .git (HEAD, config, riferimenti), senza eseguire Git nel progetto: così non può far partire hook o programmi del repository solo perché hai aperto la pagina.",
               "Atollo reads the status directly from the files in the .git folder (HEAD, config, refs), without running Git in the project: that way it cannot start the repository's hooks or programs just because you opened the page.",
               "Atollo lit l'état directement dans les fichiers du dossier .git (HEAD, config, références), sans exécuter Git dans le projet : ainsi, il ne peut pas lancer des hooks ou des programmes du dépôt simplement parce que vous avez ouvert la page.",
-              "Atollo liest den Status direkt aus den Dateien des Ordners .git (HEAD, config, Referenzen), ohne Git im Projekt auszuführen: So kann es keine Hooks oder Programme des Repositorys starten, nur weil Sie die Seite geöffnet haben.",
+              "Atollo liest den Status direkt aus den Dateien des Ordners .git (HEAD, config, Referenzen), ohne Git im Projekt auszuführen: So kann es keine Hooks oder Programme des Repositorys starten, nur weil du die Seite geöffnet hast.",
             )}
           </P>
         </Under>
@@ -1881,13 +1881,13 @@ export const PROJECTS: TopicTexts = {
             "Dall'app si elimina solo un progetto con la cartella vuota; per gli altri cancelli la cartella tu.",
             "From the app you can only delete a project with an empty folder; for the others you delete the folder yourself.",
             "Depuis l'application, on ne supprime qu'un projet dont le dossier est vide ; pour les autres, c'est vous qui supprimez le dossier.",
-            "In der App lässt sich nur ein Projekt mit leerem Ordner löschen; bei den anderen löschen Sie den Ordner selbst.",
+            "In der App lässt sich nur ein Projekt mit leerem Ordner löschen; bei den anderen löschst du den Ordner selbst.",
           ),
           tr(
             "Quando la cartella sparisce, i suoi dati diventano «Dati senza progetto»: li ricolleghi o li elimini.",
             "When the folder disappears, its data becomes “Data without a project”: you relink it or delete it.",
             "Quand le dossier disparaît, ses données deviennent des « Données sans projet » : vous les reliez ou les supprimez.",
-            "Wenn der Ordner verschwindet, werden seine Daten zu „Daten ohne Projekt“: Sie verknüpfen sie neu oder löschen sie.",
+            "Wenn der Ordner verschwindet, werden seine Daten zu „Daten ohne Projekt“: Du verknüpfst sie neu oder löschst sie.",
           ),
           tr(
             "I dati senza progetto non vengono mai eliminati da soli.",
@@ -1927,7 +1927,7 @@ export const PROJECTS: TopicTexts = {
                 "Il tuo codice, panel.json, .env, .vscode\\settings.json, .mcp.json",
                 "Your code, panel.json, .env, .vscode\\settings.json, .mcp.json",
                 "Votre code, panel.json, .env, .vscode\\settings.json, .mcp.json",
-                "Ihr Code, panel.json, .env, .vscode\\settings.json, .mcp.json",
+                "Dein Code, panel.json, .env, .vscode\\settings.json, .mcp.json",
               ),
               tr(
                 "Versioni scelte, estensioni, preferiti (dev-settings.json), porte (ports.json), configurazioni di Apache e Caddy, password e nomi dei database (private), copie dei database (private\\backups)",
@@ -1946,7 +1946,7 @@ export const PROJECTS: TopicTexts = {
             "Se la cartella del progetto è vuota, la sezione «Avvio» mostra «Elimina la cartella vuota». Per un progetto con dei file, il kit non elimina niente al posto tuo: cancella o sposta la cartella in Esplora file, poi premi «Aggiorna»; i suoi dati compaiono in «Dati senza progetto».",
             "If the project folder is empty, the “Run” section shows “Delete the empty folder”. For a project with files, the kit does not delete anything for you: delete or move the folder in File Explorer, then press “Refresh”; its data appears in “Data without a project”.",
             "Si le dossier du projet est vide, la section « Lancement » affiche « Supprimer le dossier vide ». Pour un projet avec des fichiers, le kit ne supprime rien à votre place : supprimez ou déplacez le dossier dans l'Explorateur de fichiers, puis appuyez sur « Actualiser » ; ses données apparaissent dans « Données sans projet ».",
-            "Ist der Projektordner leer, zeigt der Abschnitt „Start“ „Leeren Ordner löschen“. Bei einem Projekt mit Dateien löscht das Kit nichts für Sie: Löschen oder verschieben Sie den Ordner im Datei-Explorer und klicken Sie dann auf „Aktualisieren“; seine Daten erscheinen in „Daten ohne Projekt“.",
+            "Ist der Projektordner leer, zeigt der Abschnitt „Start“ „Leeren Ordner löschen“. Bei einem Projekt mit Dateien löscht das Kit nichts für dich: Lösche oder verschiebe den Ordner im Datei-Explorer und klicke dann auf „Aktualisieren“; seine Daten erscheinen in „Daten ohne Projekt“.",
           )}
         </P>
         <P>
@@ -1992,7 +1992,7 @@ export const PROJECTS: TopicTexts = {
             "Le copie dei database vengono eliminate insieme al progetto. Se ti servono, copiale prima fuori dal kit.",
             "The database copies are deleted together with the project. If you need them, copy them outside the kit first.",
             "Les copies des bases de données sont supprimées avec le projet. Si vous en avez besoin, copiez-les d'abord hors du kit.",
-            "Die Kopien der Datenbanken werden zusammen mit dem Projekt gelöscht. Wenn Sie sie brauchen, kopieren Sie sie vorher aus dem Kit heraus.",
+            "Die Kopien der Datenbanken werden zusammen mit dem Projekt gelöscht. Wenn du sie brauchst, kopiere sie vorher aus dem Kit heraus.",
           )}
         </Callout>
       </Section>
@@ -2010,7 +2010,7 @@ export const PROJECTS: TopicTexts = {
             "Se rinomini o cancelli la cartella di un progetto fuori dall'app, il kit si ritrova dei dati senza progetto. Il riquadro «Dati senza progetto (N)» li elenca, con che cosa contengono: impostazioni, porte, database, copie.",
             "If you rename or delete a project's folder outside the app, the kit ends up with data without a project. The “Data without a project (N)” pane lists it, with what it contains: settings, ports, databases, copies.",
             "Si vous renommez ou supprimez le dossier d'un projet en dehors de l'application, le kit se retrouve avec des données sans projet. Le volet « Données sans projet (N) » les liste, avec ce qu'elles contiennent : paramètres, ports, bases de données, copies.",
-            "Wenn Sie den Ordner eines Projekts außerhalb der App umbenennen oder löschen, hat das Kit Daten ohne Projekt. Der Bereich „Daten ohne Projekt (N)“ listet sie auf, mit ihrem Inhalt: Einstellungen, Ports, Datenbanken, Kopien.",
+            "Wenn du den Ordner eines Projekts außerhalb der App umbenennst oder löschst, hat das Kit Daten ohne Projekt. Der Bereich „Daten ohne Projekt (N)“ listet sie auf, mit ihrem Inhalt: Einstellungen, Ports, Datenbanken, Kopien.",
           )}
         </P>
         <Table
@@ -2025,7 +2025,7 @@ export const PROJECTS: TopicTexts = {
                 "Sposta impostazioni, porte, database e copie a un progetto che scegli nel menu «Progetto». Database e utente mantengono il vecchio nome, così il file .env continua a funzionare.",
                 "Moves settings, ports, databases and copies to a project you choose in the “Project” menu. Database and user keep the old name, so the .env file keeps working.",
                 "Déplace paramètres, ports, bases de données et copies vers un projet que vous choisissez dans le menu « Projet ». La base de données et l'utilisateur gardent l'ancien nom, ainsi le fichier .env continue de fonctionner.",
-                "Verschiebt Einstellungen, Ports, Datenbanken und Kopien zu einem Projekt, das Sie im Menü „Projekt“ wählen. Datenbank und Benutzer behalten den alten Namen, sodass die Datei .env weiter funktioniert.",
+                "Verschiebt Einstellungen, Ports, Datenbanken und Kopien zu einem Projekt, das du im Menü „Projekt“ wählst. Datenbank und Benutzer behalten den alten Namen, sodass die Datei .env weiter funktioniert.",
               ),
             ],
             [
@@ -2052,7 +2052,7 @@ export const PROJECTS: TopicTexts = {
             "Il progetto di destinazione non deve avere ancora dati nel kit. Un progetto creato, clonato o aperto almeno una volta dall'app ne ha già, quindi il collegamento viene rifiutato. Funziona per il caso tipico: hai rinominato la cartella in Esplora file e non l'hai ancora aperta in Atollo.",
             "The target project must not have any data in the kit yet. A project created, cloned or opened at least once from the app already has some, so the link is refused. It works for the typical case: you renamed the folder in File Explorer and have not opened it in Atollo yet.",
             "Le projet de destination ne doit pas encore avoir de données dans le kit. Un projet créé, cloné ou ouvert au moins une fois depuis l'application en a déjà, donc la liaison est refusée. Cela fonctionne pour le cas typique : vous avez renommé le dossier dans l'Explorateur de fichiers et ne l'avez pas encore ouvert dans Atollo.",
-            "Das Zielprojekt darf noch keine Daten im Kit haben. Ein Projekt, das mindestens einmal in der App erstellt, geklont oder geöffnet wurde, hat bereits welche, deshalb wird die Verknüpfung abgelehnt. Es funktioniert für den typischen Fall: Sie haben den Ordner im Datei-Explorer umbenannt und ihn noch nicht in Atollo geöffnet.",
+            "Das Zielprojekt darf noch keine Daten im Kit haben. Ein Projekt, das mindestens einmal in der App erstellt, geklont oder geöffnet wurde, hat bereits welche, deshalb wird die Verknüpfung abgelehnt. Es funktioniert für den typischen Fall: Du hast den Ordner im Datei-Explorer umbenannt und ihn noch nicht in Atollo geöffnet.",
           )}
         </Callout>
         <Callout tone="tip">
@@ -2060,7 +2060,7 @@ export const PROJECTS: TopicTexts = {
             "Per rinominare un progetto senza perdere niente: rinomina la cartella in Esplora file, torna su Atollo, premi «Aggiorna» e, prima di aprire il progetto rinominato, usa «Collega a…» sui suoi vecchi dati.",
             "To rename a project without losing anything: rename the folder in File Explorer, go back to Atollo, press “Refresh” and, before opening the renamed project, use “Link to…” on its old data.",
             "Pour renommer un projet sans rien perdre : renommez le dossier dans l'Explorateur de fichiers, revenez sur Atollo, appuyez sur « Actualiser » et, avant d'ouvrir le projet renommé, utilisez « Lier à… » sur ses anciennes données.",
-            "Um ein Projekt umzubenennen, ohne etwas zu verlieren: Benennen Sie den Ordner im Datei-Explorer um, wechseln Sie zurück zu Atollo, klicken Sie auf „Aktualisieren“ und verwenden Sie vor dem Öffnen des umbenannten Projekts „Verknüpfen mit…“ für seine alten Daten.",
+            "Um ein Projekt umzubenennen, ohne etwas zu verlieren: Benenne den Ordner im Datei-Explorer um, wechsle zurück zu Atollo, klicke auf „Aktualisieren“ und verwende vor dem Öffnen des umbenannten Projekts „Verknüpfen mit…“ für seine alten Daten.",
           )}
         </Callout>
       </Section>

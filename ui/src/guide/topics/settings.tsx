@@ -36,19 +36,19 @@ export const SETTINGS: TopicTexts = {
             "Si fa in Impostazioni › «Account GitHub» con «Accedi a GitHub» e un codice da scrivere nel browser.",
             "You do it in Settings › “GitHub account” with “Sign in to GitHub” and a code to type in the browser.",
             "Elle se fait dans Paramètres › « Compte GitHub » avec « Se connecter à GitHub » et un code à saisir dans le navigateur.",
-            "Sie erfolgt unter Einstellungen › „GitHub-Konto“ mit „Bei GitHub anmelden“ und einem Code, den Sie im Browser eingeben.",
+            "Sie erfolgt unter Einstellungen › „GitHub-Konto“ mit „Bei GitHub anmelden“ und einem Code, den du im Browser eingibst.",
           ),
           tr(
             "Senza account il kit funziona lo stesso: cloni i repository pubblici e lavori in locale.",
             "Without an account the kit works all the same: you clone public repositories and work locally.",
             "Sans compte, le kit fonctionne quand même : vous clonez les dépôts publics et travaillez en local.",
-            "Ohne Konto funktioniert das Kit trotzdem: Sie klonen öffentliche Repositorys und arbeiten lokal.",
+            "Ohne Konto funktioniert das Kit trotzdem: Du klonst öffentliche Repositorys und arbeitest lokal.",
           ),
           tr(
             "L'accesso resta nel kit: su un altro PC sei già collegato.",
             "The sign-in stays in the kit: on another PC you are already signed in.",
             "La connexion reste dans le kit : sur un autre PC, vous êtes déjà connecté.",
-            "Die Anmeldung bleibt im Kit: Auf einem anderen PC sind Sie bereits angemeldet.",
+            "Die Anmeldung bleibt im Kit: Auf einem anderen PC bist du bereits angemeldet.",
           ),
         ]}
       />
@@ -65,7 +65,7 @@ export const SETTINGS: TopicTexts = {
                 "L'elenco dei tuoi repository in Progetti, con clona, rinomina ed elimina",
                 "The list of your repositories in Projects, with clone, rename and delete",
                 "La liste de vos dépôts dans Projets, avec cloner, renommer et supprimer",
-                "Die Liste Ihrer Repositorys unter Projekte, mit Klonen, Umbenennen und Löschen",
+                "Die Liste deiner Repositorys unter Projekte, mit Klonen, Umbenennen und Löschen",
               ),
               tr(
                 "Clonare repository pubblici con «Da un indirizzo Git»",
@@ -136,25 +136,25 @@ export const SETTINGS: TopicTexts = {
               "Apri Impostazioni › «Account GitHub».",
               "Open Settings › “GitHub account”.",
               "Ouvrez Paramètres › « Compte GitHub ».",
-              "Öffnen Sie Einstellungen › „GitHub-Konto“.",
+              "Öffne Einstellungen › „GitHub-Konto“.",
             ),
             tr(
               "Premi «Accedi a GitHub». Dopo «Accesso in preparazione…» compare un codice di otto caratteri (XXXX-XXXX) e si apre github.com nel browser.",
               "Press “Sign in to GitHub”. After “Preparing the sign-in…” an eight-character code appears (XXXX-XXXX) and github.com opens in the browser.",
               "Appuyez sur « Se connecter à GitHub ». Après « Préparation de la connexion… », un code de huit caractères apparaît (XXXX-XXXX) et github.com s'ouvre dans le navigateur.",
-              "Klicken Sie auf „Bei GitHub anmelden“. Nach „Anmeldung wird vorbereitet…“ erscheint ein achtstelliger Code (XXXX-XXXX) und github.com öffnet sich im Browser.",
+              "Klicke auf „Bei GitHub anmelden“. Nach „Anmeldung wird vorbereitet…“ erscheint ein achtstelliger Code (XXXX-XXXX) und github.com öffnet sich im Browser.",
             ),
             tr(
               "Premi «Copia il codice», incollalo nella pagina di GitHub e autorizza GitHub CLI. Se la pagina non si è aperta, «Apri la pagina di GitHub».",
               "Press “Copy the code”, paste it into the GitHub page and authorize GitHub CLI. If the page did not open, use “Open the GitHub page”.",
               "Appuyez sur « Copier le code », collez-le dans la page de GitHub et autorisez GitHub CLI. Si la page ne s'est pas ouverte, utilisez « Ouvrir la page de GitHub ».",
-              "Klicken Sie auf „Code kopieren“, fügen Sie ihn auf der GitHub-Seite ein und autorisieren Sie GitHub CLI. Wenn sich die Seite nicht geöffnet hat, verwenden Sie „GitHub-Seite öffnen“.",
+              "Klicke auf „Code kopieren“, füge ihn auf der GitHub-Seite ein und autorisiere GitHub CLI. Wenn sich die Seite nicht geöffnet hat, verwende „GitHub-Seite öffnen“.",
             ),
             tr(
               "Torna su Atollo: compare «Accesso fatto come @tuo-nome».",
               "Go back to Atollo: “Signed in as @your-name” appears.",
               "Revenez sur Atollo : « Connecté en tant que @votre-nom » apparaît.",
-              "Kehren Sie zu Atollo zurück: „Angemeldet als @ihr-name“ erscheint.",
+              "Kehre zu Atollo zurück: „Angemeldet als @dein-name“ erscheint.",
             ),
           ]}
         />
@@ -171,7 +171,7 @@ export const SETTINGS: TopicTexts = {
             "Il token di GitHub è salvato nel kit, in chiaro, perché ti segua su ogni PC. «Esci» non revoca la sessione su github.com: se perdi la chiavetta, revoca l'autorizzazione di GitHub CLI dalle impostazioni del tuo account GitHub (Applications).",
             "The GitHub token is saved in the kit, in plain text, so that it follows you to every PC. “Sign out” does not revoke the session on github.com: if you lose the USB stick, revoke the GitHub CLI authorization from your GitHub account settings (Applications).",
             "Le jeton GitHub est enregistré dans le kit, en clair, pour vous suivre sur chaque PC. « Se déconnecter » ne révoque pas la session sur github.com : si vous perdez la clé USB, révoquez l'autorisation de GitHub CLI depuis les paramètres de votre compte GitHub (Applications).",
-            "Das GitHub-Token ist im Kit gespeichert, im Klartext, damit es Ihnen auf jeden PC folgt. „Abmelden“ widerruft die Sitzung auf github.com nicht: Wenn Sie den USB-Stick verlieren, widerrufen Sie die Autorisierung von GitHub CLI in den Einstellungen Ihres GitHub-Kontos (Applications).",
+            "Das GitHub-Token ist im Kit gespeichert, im Klartext, damit es dir auf jeden PC folgt. „Abmelden“ widerruft die Sitzung auf github.com nicht: Wenn du den USB-Stick verlierst, widerrufe die Autorisierung von GitHub CLI in den Einstellungen deines GitHub-Kontos (Applications).",
           )}
         </Callout>
         <Go page="settings">
@@ -192,7 +192,7 @@ export const SETTINGS: TopicTexts = {
             "L'accesso normale non comprende il permesso di eliminare repository. La prima volta che premi «Elimina da GitHub» su un tuo repository, il riquadro dice che manca il permesso e mostra «Concedi il permesso»: il kit rifà l'accesso chiedendo anche quello. Il codice da scrivere compare in Impostazioni › «Account GitHub». Poi premi di nuovo «Elimina da GitHub».",
             "The normal sign-in does not include the permission to delete repositories. The first time you press “Delete from GitHub” on one of your repositories, the panel says the permission is missing and shows “Grant the permission”: the kit signs in again, asking for that too. The code to type appears in Settings › “GitHub account”. Then press “Delete from GitHub” again.",
             "La connexion normale ne comprend pas l'autorisation de supprimer des dépôts. La première fois que vous appuyez sur « Supprimer de GitHub » sur l'un de vos dépôts, le panneau indique que l'autorisation manque et affiche « Accorder l'autorisation » : le kit refait la connexion en la demandant aussi. Le code à saisir apparaît dans Paramètres › « Compte GitHub ». Appuyez ensuite de nouveau sur « Supprimer de GitHub ».",
-            "Die normale Anmeldung umfasst nicht die Berechtigung, Repositorys zu löschen. Wenn Sie zum ersten Mal bei einem Ihrer Repositorys auf „Von GitHub löschen“ klicken, meldet der Bereich, dass die Berechtigung fehlt, und zeigt „Berechtigung erteilen“: Das Kit meldet sich erneut an und fragt dabei auch danach. Der einzugebende Code erscheint unter Einstellungen › „GitHub-Konto“. Klicken Sie dann erneut auf „Von GitHub löschen“.",
+            "Die normale Anmeldung umfasst nicht die Berechtigung, Repositorys zu löschen. Wenn du zum ersten Mal bei einem deiner Repositorys auf „Von GitHub löschen“ klickst, meldet der Bereich, dass die Berechtigung fehlt, und zeigt „Berechtigung erteilen“: Das Kit meldet sich erneut an und fragt dabei auch danach. Der einzugebende Code erscheint unter Einstellungen › „GitHub-Konto“. Klicke dann erneut auf „Von GitHub löschen“.",
           )}
         </P>
         <Callout tone="warn">
@@ -210,7 +210,7 @@ export const SETTINGS: TopicTexts = {
           "Il tuo nome nei commit",
           "Your name in commits",
           "Votre nom dans les commits",
-          "Ihr Name in den Commits",
+          "Dein Name in den Commits",
         )}
       >
         <P>
@@ -218,7 +218,7 @@ export const SETTINGS: TopicTexts = {
             "L'accesso serve per leggere e scrivere su GitHub, non dice a Git chi firma i commit. Imposta nome ed email una volta, in un terminale del kit:",
             "The sign-in is for reading and writing on GitHub; it does not tell Git who signs the commits. Set your name and email once, in a kit terminal:",
             "La connexion sert à lire et écrire sur GitHub ; elle ne dit pas à Git qui signe les commits. Définissez votre nom et votre e-mail une fois, dans un terminal du kit :",
-            "Die Anmeldung dient zum Lesen und Schreiben auf GitHub; sie sagt Git nicht, wer die Commits signiert. Legen Sie Name und E-Mail einmal fest, in einem Terminal des Kits:",
+            "Die Anmeldung dient zum Lesen und Schreiben auf GitHub; sie sagt Git nicht, wer die Commits signiert. Leg Name und E-Mail einmal fest, in einem Terminal des Kits:",
           )}
         </P>
         <GuideCode
@@ -235,7 +235,7 @@ export const SETTINGS: TopicTexts = {
             "Per non pubblicare la tua email puoi usare l'indirizzo noreply che GitHub ti assegna (lo trovi nelle impostazioni Email del tuo account).",
             "To keep your email private you can use the noreply address GitHub gives you (you find it in the Email settings of your account).",
             "Pour ne pas publier votre e-mail, vous pouvez utiliser l'adresse noreply que GitHub vous attribue (vous la trouvez dans les paramètres Email de votre compte).",
-            "Um Ihre E-Mail nicht zu veröffentlichen, können Sie die noreply-Adresse verwenden, die GitHub Ihnen zuweist (Sie finden sie in den Email-Einstellungen Ihres Kontos).",
+            "Um deine E-Mail nicht zu veröffentlichen, kannst du die noreply-Adresse verwenden, die GitHub dir zuweist (du findest sie in den Email-Einstellungen deines Kontos).",
           )}
         </P>
       </Section>
@@ -259,7 +259,7 @@ export const SETTINGS: TopicTexts = {
               "Git usa lo stesso account attraverso un credential helper (gh auth git-credential) scritto nel file data\\home\\.gitconfig per github.com e gist.github.com, senza percorsi assoluti: sopravvive allo spostamento del kit. A ogni avvio il kit lo allinea allo stato di gh; un helper scritto da te per quegli indirizzi resta com'è.",
               "Git uses the same account through a credential helper (gh auth git-credential) written in the file data\\home\\.gitconfig for github.com and gist.github.com, without absolute paths: it survives moving the kit. At every start the kit aligns it with the state of gh; a helper you wrote yourself for those addresses stays as it is.",
               "Git utilise le même compte grâce à un credential helper (gh auth git-credential) écrit dans le fichier data\\home\\.gitconfig pour github.com et gist.github.com, sans chemins absolus : il survit au déplacement du kit. À chaque démarrage, le kit l'aligne sur l'état de gh ; un helper que vous avez écrit vous-même pour ces adresses reste tel quel.",
-              "Git verwendet dasselbe Konto über einen Credential Helper (gh auth git-credential), der in die Datei data\\home\\.gitconfig für github.com und gist.github.com geschrieben wird, ohne absolute Pfade: Er übersteht das Verschieben des Kits. Bei jedem Start gleicht das Kit ihn an den Zustand von gh an; ein Helper, den Sie selbst für diese Adressen geschrieben haben, bleibt unverändert.",
+              "Git verwendet dasselbe Konto über einen Credential Helper (gh auth git-credential), der in die Datei data\\home\\.gitconfig für github.com und gist.github.com geschrieben wird, ohne absolute Pfade: Er übersteht das Verschieben des Kits. Bei jedem Start gleicht das Kit ihn an den Zustand von gh an; ein Helper, den du selbst für diese Adressen geschrieben hast, bleibt unverändert.",
             ),
             tr(
               "Per clonare un repository privato il token viene passato a Git solo per quella operazione, mai sulla riga di comando né nel file .git\\config.",
@@ -350,7 +350,7 @@ export const SETTINGS: TopicTexts = {
                 "Dove i programmi del kit mettono i loro file temporanei. «Automatico» usa la cartella temporanea del sistema se il kit è su una chiavetta, un disco di rete o un disco FAT32/exFAT, altrimenti data\\tmp. «Nel kit» sempre data\\tmp; «Nel sistema» sempre la cartella del sistema (i file restano sul PC finché chiudi l'app).",
                 "Where the kit's programs put their temporary files. “Automatic” uses the system's temporary folder if the kit is on a USB stick, a network drive or a FAT32/exFAT drive, otherwise data\\tmp. “In the kit” always data\\tmp; “In the system” always the system's folder (the files stay on the PC until you close the app).",
                 "L'endroit où les programmes du kit mettent leurs fichiers temporaires. « Automatique » utilise le dossier temporaire du système si le kit est sur une clé USB, un disque réseau ou un disque FAT32/exFAT, sinon data\\tmp. « Dans le kit » toujours data\\tmp ; « Dans le système » toujours le dossier du système (les fichiers restent sur le PC jusqu'à la fermeture de l'application).",
-                "Wo die Programme des Kits ihre temporären Dateien ablegen. „Automatisch“ verwendet den temporären Ordner des Systems, wenn das Kit auf einem USB-Stick, einem Netzlaufwerk oder einem FAT32/exFAT-Laufwerk liegt, sonst data\\tmp. „Im Kit“ immer data\\tmp; „Im System“ immer den Ordner des Systems (die Dateien bleiben auf dem PC, bis Sie die App schließen).",
+                "Wo die Programme des Kits ihre temporären Dateien ablegen. „Automatisch“ verwendet den temporären Ordner des Systems, wenn das Kit auf einem USB-Stick, einem Netzlaufwerk oder einem FAT32/exFAT-Laufwerk liegt, sonst data\\tmp. „Im Kit“ immer data\\tmp; „Im System“ immer den Ordner des Systems (die Dateien bleiben auf dem PC, bis du die App schließt).",
               ),
             ],
             [
@@ -359,7 +359,7 @@ export const SETTINGS: TopicTexts = {
                 "«Scarica da solo le nuove versioni di Atollo»: la nuova versione sostituisce quella attuale quando chiudi l'app. Attivo di base.",
                 "“Download new versions of Atollo automatically”: the new version replaces the current one when you close the app. On by default.",
                 "« Télécharger automatiquement les nouvelles versions d'Atollo » : la nouvelle version remplace l'actuelle quand vous fermez l'application. Activé par défaut.",
-                "„Neue Versionen von Atollo automatisch herunterladen“: Die neue Version ersetzt die aktuelle, wenn Sie die App schließen. Standardmäßig aktiv.",
+                "„Neue Versionen von Atollo automatisch herunterladen“: Die neue Version ersetzt die aktuelle, wenn du die App schließt. Standardmäßig aktiv.",
               ),
             ],
             [
@@ -391,7 +391,7 @@ export const SETTINGS: TopicTexts = {
             "I programmi scrivono e cancellano continuamente file temporanei: su una chiavetta questo rallenta tutto e la consuma. Sul disco del PC vanno molto più veloci, e il kit li cancella quando chiudi l'app.",
             "Programs constantly write and delete temporary files: on a USB stick this slows everything down and wears it out. On the PC's disk they are much faster, and the kit deletes them when you close the app.",
             "Les programmes écrivent et effacent sans cesse des fichiers temporaires : sur une clé USB, cela ralentit tout et l'use. Sur le disque du PC, ils vont beaucoup plus vite, et le kit les supprime quand vous fermez l'application.",
-            "Programme schreiben und löschen ständig temporäre Dateien: Auf einem USB-Stick verlangsamt das alles und nutzt ihn ab. Auf der Festplatte des PCs geht das viel schneller, und das Kit löscht sie, wenn Sie die App schließen.",
+            "Programme schreiben und löschen ständig temporäre Dateien: Auf einem USB-Stick verlangsamt das alles und nutzt ihn ab. Auf der Festplatte des PCs geht das viel schneller, und das Kit löscht sie, wenn du die App schließt.",
           )}
         </Callout>
       </Section>
@@ -416,7 +416,7 @@ export const SETTINGS: TopicTexts = {
             "«Chiave API di Gemini (Antigravity senza account Google)»: incolla la chiave e premi «Salva». Il campo poi mostra «salvata: scrivi per sostituirla» e la chiave non viene più mostrata; «Togli la chiave» la cancella al prossimo salvataggio. Antigravity mostrerà «accesso con chiave API». La chiave è salvata in chiaro in data\\app\\settings.json e passata ai programmi del kit come GEMINI_API_KEY.",
             "“Gemini API key (Antigravity without a Google account)”: paste the key and press “Save”. The field then shows “saved: type to replace it” and the key is no longer shown; “Remove the key” deletes it at the next save. Antigravity will show “signed in with an API key”. The key is saved in plain text in data\\app\\settings.json and passed to the kit's programs as GEMINI_API_KEY.",
             "« Clé API Gemini (Antigravity sans compte Google) » : collez la clé et appuyez sur « Enregistrer ». Le champ affiche ensuite « enregistrée : saisissez-en une autre pour la remplacer » et la clé n'est plus affichée ; « Supprimer la clé » l'efface au prochain enregistrement. Antigravity affichera « connecté avec une clé API ». La clé est enregistrée en clair dans data\\app\\settings.json et transmise aux programmes du kit comme GEMINI_API_KEY.",
-            "„Gemini-API-Schlüssel (Antigravity ohne Google-Konto)“: Fügen Sie den Schlüssel ein und klicken Sie auf „Speichern“. Das Feld zeigt dann „gespeichert: zum Ersetzen neu eingeben“ und der Schlüssel wird nicht mehr angezeigt; „Schlüssel entfernen“ löscht ihn beim nächsten Speichern. Antigravity zeigt dann „mit API-Schlüssel angemeldet“. Der Schlüssel wird im Klartext in data\\app\\settings.json gespeichert und den Programmen des Kits als GEMINI_API_KEY übergeben.",
+            "„Gemini-API-Schlüssel (Antigravity ohne Google-Konto)“: Füge den Schlüssel ein und klicke auf „Speichern“. Das Feld zeigt dann „gespeichert: zum Ersetzen neu eingeben“ und der Schlüssel wird nicht mehr angezeigt; „Schlüssel entfernen“ löscht ihn beim nächsten Speichern. Antigravity zeigt dann „mit API-Schlüssel angemeldet“. Der Schlüssel wird im Klartext in data\\app\\settings.json gespeichert und den Programmen des Kits als GEMINI_API_KEY übergeben.",
           )}
         </P>
       </Section>
@@ -583,7 +583,7 @@ export const SETTINGS: TopicTexts = {
           "Capire se ti servono",
           "Working out whether you need them",
           "Savoir si vous en avez besoin",
-          "Herausfinden, ob Sie sie brauchen",
+          "Herausfinden, ob du sie brauchst",
         )}
       >
         <P>
@@ -591,7 +591,7 @@ export const SETTINGS: TopicTexts = {
             "Se a casa tutto si scarica e in ufficio i download falliscono con errori di connessione o di certificato, probabilmente la rete aziendale usa un proxy, oppure ispeziona il traffico HTTPS con un suo certificato. I valori giusti te li dà l'assistenza informatica; spesso sono gli stessi impostati nel browser aziendale.",
             "If everything downloads at home but at the office downloads fail with connection or certificate errors, the company network probably uses a proxy, or inspects HTTPS traffic with its own certificate. Your IT support can give you the right values; often they are the same as those set in the company browser.",
             "Si tout se télécharge à la maison mais qu'au bureau les téléchargements échouent avec des erreurs de connexion ou de certificat, le réseau de l'entreprise utilise probablement un proxy, ou inspecte le trafic HTTPS avec son propre certificat. Le support informatique vous donnera les bonnes valeurs ; ce sont souvent les mêmes que celles du navigateur de l'entreprise.",
-            "Wenn zu Hause alles heruntergeladen wird, im Büro die Downloads aber mit Verbindungs- oder Zertifikatsfehlern scheitern, verwendet das Firmennetzwerk wahrscheinlich einen Proxy oder untersucht den HTTPS-Verkehr mit einem eigenen Zertifikat. Die richtigen Werte erhalten Sie von der IT-Abteilung; oft sind es dieselben wie im Browser der Firma.",
+            "Wenn zu Hause alles heruntergeladen wird, im Büro die Downloads aber mit Verbindungs- oder Zertifikatsfehlern scheitern, verwendet das Firmennetzwerk wahrscheinlich einen Proxy oder untersucht den HTTPS-Verkehr mit einem eigenen Zertifikat. Die richtigen Werte erhältst du von der IT-Abteilung; oft sind es dieselben wie im Browser der Firma.",
           )}
         </P>
       </Section>
@@ -657,19 +657,19 @@ export const SETTINGS: TopicTexts = {
               "Apri Impostazioni › «Rete» e compila i campi che ti servono.",
               "Open Settings › “Network” and fill in the fields you need.",
               "Ouvrez Paramètres › « Réseau » et remplissez les champs dont vous avez besoin.",
-              "Öffnen Sie Einstellungen › „Netzwerk“ und füllen Sie die Felder aus, die Sie brauchen.",
+              "Öffne Einstellungen › „Netzwerk“ und fülle die Felder aus, die du brauchst.",
             ),
             tr(
               "Premi «Salva». Se l'editor è aperto, premi anche «Riavvia l'editor».",
               "Press “Save”. If the editor is open, also press “Restart the editor”.",
               "Appuyez sur « Enregistrer ». Si l'éditeur est ouvert, appuyez aussi sur « Redémarrer l'éditeur ».",
-              "Klicken Sie auf „Speichern“. Wenn der Editor geöffnet ist, klicken Sie auch auf „Editor neu starten“.",
+              "Klicke auf „Speichern“. Wenn der Editor geöffnet ist, klicke auch auf „Editor neu starten“.",
             ),
             tr(
               "Torna in Strumenti e riprova il download che non riusciva.",
               "Go back to Tools and retry the download that was failing.",
               "Revenez dans Outils et relancez le téléchargement qui échouait.",
-              "Kehren Sie zu Werkzeuge zurück und versuchen Sie den fehlgeschlagenen Download erneut.",
+              "Kehre zu Werkzeuge zurück und versuche den fehlgeschlagenen Download erneut.",
             ),
           ]}
         />
@@ -697,7 +697,7 @@ export const SETTINGS: TopicTexts = {
             "La casella «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» apre i siti dei progetti alla rete: utile per provare un sito dal telefono. Dagli altri dispositivi si usa l'indirizzo IP di questo PC con la porta del sito. Database e phpMyAdmin restano raggiungibili solo da questo PC.",
             "The “Let other PCs on the network reach the project servers” checkbox opens the projects' sites to the network: useful to try a site from your phone. From the other devices you use this PC's IP address with the site's port. Databases and phpMyAdmin stay reachable only from this PC.",
             "La case « Permettre aux autres PC du réseau d'accéder aux serveurs des projets » ouvre les sites des projets au réseau : pratique pour essayer un site depuis le téléphone. Depuis les autres appareils, on utilise l'adresse IP de ce PC avec le port du site. Les bases de données et phpMyAdmin restent accessibles uniquement depuis ce PC.",
-            "Das Kästchen „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ öffnet die Websites der Projekte für das Netzwerk: praktisch, um eine Website auf dem Telefon auszuprobieren. Von den anderen Geräten aus verwenden Sie die IP-Adresse dieses PCs mit dem Port der Website. Datenbanken und phpMyAdmin bleiben nur von diesem PC aus erreichbar.",
+            "Das Kästchen „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ öffnet die Websites der Projekte für das Netzwerk: praktisch, um eine Website auf dem Telefon auszuprobieren. Von den anderen Geräten aus verwendest du die IP-Adresse dieses PCs mit dem Port der Website. Datenbanken und phpMyAdmin bleiben nur von diesem PC aus erreichbar.",
           )}
         </P>
         <Callout tone="warn">
@@ -705,7 +705,7 @@ export const SETTINGS: TopicTexts = {
             "Chiunque sia sulla stessa rete potrà vedere i tuoi siti di prova. Attivala su reti di cui ti fidi e spegnila quando hai finito. Windows può chiedere il permesso del firewall la prima volta.",
             "Anyone on the same network will be able to see your test sites. Turn it on only on networks you trust and turn it off when you are done. Windows may ask for the firewall permission the first time.",
             "Toute personne sur le même réseau pourra voir vos sites de test. Activez-la sur des réseaux de confiance et désactivez-la quand vous avez fini. Windows peut demander l'autorisation du pare-feu la première fois.",
-            "Jeder im selben Netzwerk kann Ihre Testseiten sehen. Aktivieren Sie die Option in Netzwerken, denen Sie vertrauen, und schalten Sie sie aus, wenn Sie fertig sind. Windows kann beim ersten Mal nach der Erlaubnis der Firewall fragen.",
+            "Jeder im selben Netzwerk kann deine Testseiten sehen. Aktiviere die Option in Netzwerken, denen du vertraust, und schalte sie aus, wenn du fertig bist. Windows kann beim ersten Mal nach der Erlaubnis der Firewall fragen.",
           )}
         </Callout>
       </Section>
@@ -729,7 +729,7 @@ export const SETTINGS: TopicTexts = {
               "I file PAC (configurazione automatica del proxy) non sono supportati: chiedi l'indirizzo del proxy.",
               "PAC files (automatic proxy configuration) are not supported: ask for the proxy address.",
               "Les fichiers PAC (configuration automatique du proxy) ne sont pas pris en charge : demandez l'adresse du proxy.",
-              "PAC-Dateien (automatische Proxy-Konfiguration) werden nicht unterstützt: Fragen Sie nach der Adresse des Proxys.",
+              "PAC-Dateien (automatische Proxy-Konfiguration) werden nicht unterstützt: Frag nach der Adresse des Proxys.",
             ),
             tr(
               "«Rete locale» imposta ATOLLO_ALLOW_LAN=1: i comandi dei progetti ascoltano su tutte le interfacce, e così il server di file e i pool di Caddy e Apache.",
@@ -753,25 +753,25 @@ export const SETTINGS: TopicTexts = {
             "Le basi e le aggiunte di «Nuovo progetto» sono ricette: elenchi di comandi che puoi leggere e modificare.",
             "The bases and additions of “New project” are recipes: lists of commands you can read and change.",
             "Les bases et les ajouts de « Nouveau projet » sont des recettes : des listes de commandes que vous pouvez lire et modifier.",
-            "Die Basen und Ergänzungen von „Neues Projekt“ sind Rezepte: Listen von Befehlen, die Sie lesen und ändern können.",
+            "Die Basen und Ergänzungen von „Neues Projekt“ sind Rezepte: Listen von Befehlen, die du lesen und ändern kannst.",
           ),
           tr(
             "Le trovi in Impostazioni, nel riquadro «Framework».",
             "You find them in Settings, in the “Frameworks” panel.",
             "Vous les trouvez dans Paramètres, dans le panneau « Frameworks ».",
-            "Sie finden sie unter Einstellungen, im Bereich „Frameworks“.",
+            "Du findest sie unter Einstellungen, im Bereich „Frameworks“.",
           ),
           tr(
             "Puoi cambiare una ricetta ufficiale (e ripristinarla) o crearne di tue.",
             "You can change an official recipe (and restore it) or create your own.",
             "Vous pouvez modifier une recette officielle (et la rétablir) ou créer les vôtres.",
-            "Sie können ein offizielles Rezept ändern (und wiederherstellen) oder eigene erstellen.",
+            "Du kannst ein offizielles Rezept ändern (und wiederherstellen) oder eigene erstellen.",
           ),
           tr(
             "«Prova una combinazione» mostra che cosa farebbe una base con delle aggiunte, prima di usarla.",
             "“Try a combination” shows what a base with some additions would do, before you use it.",
             "« Essayer une combinaison » montre ce que ferait une base avec des ajouts, avant de l'utiliser.",
-            "„Kombination ausprobieren“ zeigt, was eine Basis mit Ergänzungen tun würde, bevor Sie sie verwenden.",
+            "„Kombination ausprobieren“ zeigt, was eine Basis mit Ergänzungen tun würde, bevor du sie verwendest.",
           ),
         ]}
       />
@@ -965,19 +965,19 @@ export const SETTINGS: TopicTexts = {
               "Scegli una base o un'aggiunta nell'albero e modifica i campi.",
               "Choose a base or an addition in the tree and edit the fields.",
               "Choisissez une base ou un ajout dans l'arbre et modifiez les champs.",
-              "Wählen Sie im Baum eine Basis oder eine Ergänzung und bearbeiten Sie die Felder.",
+              "Wähle im Baum eine Basis oder eine Ergänzung und bearbeite die Felder.",
             ),
             tr(
               "Premi «Salva» sulla barra delle schede. Una ricetta ufficiale cambiata mostra «Modificata».",
               "Press “Save” on the tab bar. A changed official recipe shows “Modified”.",
               "Appuyez sur « Enregistrer » dans la barre des onglets. Une recette officielle modifiée affiche « Modifiée ».",
-              "Klicken Sie in der Registerkartenleiste auf „Speichern“. Ein geändertes offizielles Rezept zeigt „Geändert“.",
+              "Klicke in der Registerkartenleiste auf „Speichern“. Ein geändertes offizielles Rezept zeigt „Geändert“.",
             ),
             tr(
               "Per tornare alla versione originale usa «Ripristina le istruzioni ufficiali»; una ricetta tua si toglie con «Togli».",
               "To go back to the original version use “Restore the official instructions”; a recipe of your own is removed with “Remove”.",
               "Pour revenir à la version d'origine, utilisez « Rétablir les instructions officielles » ; une recette à vous se retire avec « Retirer ».",
-              "Um zur ursprünglichen Version zurückzukehren, verwenden Sie „Offizielle Anweisungen wiederherstellen“; ein eigenes Rezept entfernen Sie mit „Entfernen“.",
+              "Um zur ursprünglichen Version zurückzukehren, verwende „Offizielle Anweisungen wiederherstellen“; ein eigenes Rezept entfernst du mit „Entfernen“.",
             ),
           ]}
         />
@@ -991,7 +991,7 @@ export const SETTINGS: TopicTexts = {
             "Scegli una base e delle aggiunte: la scheda mostra il piano completo che la procedura eseguirebbe (strumenti, comandi, database, .env, azioni), con le istruzioni come sono adesso, anche se non le hai ancora salvate. Non esegue niente.",
             "Choose a base and some additions: the tab shows the complete plan the wizard would run (tools, commands, database, .env, actions), with the instructions as they are now, even if you have not saved them yet. It runs nothing.",
             "Choisissez une base et des ajouts : l'onglet montre le plan complet que l'assistant exécuterait (outils, commandes, base de données, .env, actions), avec les instructions telles qu'elles sont maintenant, même si vous ne les avez pas encore enregistrées. Il n'exécute rien.",
-            "Wählen Sie eine Basis und Ergänzungen: Die Registerkarte zeigt den vollständigen Plan, den der Assistent ausführen würde (Werkzeuge, Befehle, Datenbank, .env, Aktionen), mit den Anweisungen, wie sie jetzt sind, auch wenn Sie sie noch nicht gespeichert haben. Sie führt nichts aus.",
+            "Wähle eine Basis und Ergänzungen: Die Registerkarte zeigt den vollständigen Plan, den der Assistent ausführen würde (Werkzeuge, Befehle, Datenbank, .env, Aktionen), mit den Anweisungen, wie sie jetzt sind, auch wenn du sie noch nicht gespeichert hast. Sie führt nichts aus.",
           )}
         </P>
       </Section>
@@ -1009,7 +1009,7 @@ export const SETTINGS: TopicTexts = {
               "Le tue modifiche sono in data\\app\\frameworks.json, che contiene solo le differenze dalle ricette ufficiali.",
               "Your changes are in data\\app\\frameworks.json, which contains only the differences from the official recipes.",
               "Vos modifications sont dans data\\app\\frameworks.json, qui ne contient que les différences par rapport aux recettes officielles.",
-              "Ihre Änderungen liegen in data\\app\\frameworks.json, die nur die Unterschiede zu den offiziellen Rezepten enthält.",
+              "Deine Änderungen liegen in data\\app\\frameworks.json, die nur die Unterschiede zu den offiziellen Rezepten enthält.",
             ),
             tr(
               "Se quel file non si può leggere, il kit usa le ricette ufficiali e non lo tocca: «Le istruzioni in … non sono leggibili: uso quelle ufficiali e non modifico il file.»",

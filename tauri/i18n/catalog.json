@@ -137,7 +137,7 @@
   "Sposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.": {
     "en": "Move Atollo.exe to a folder you can write to (for example a USB stick or a folder in your profile) and start it again.",
     "fr": "Déplacez Atollo.exe dans un dossier où vous pouvez écrire (par exemple une clé USB ou un dossier de votre profil) et relancez-le.",
-    "de": "Verschieben Sie Atollo.exe in einen Ordner, in den Sie schreiben können (zum Beispiel einen USB-Stick oder einen Ordner in Ihrem Profil), und starten Sie es erneut."
+    "de": "Verschiebe Atollo.exe in einen Ordner, in den du schreiben kannst (zum Beispiel einen USB-Stick oder einen Ordner in deinem Profil), und starte es erneut."
   },
   "Manca Microsoft Edge WebView2, che serve per mostrare le finestre di Atollo.": {
     "en": "Microsoft Edge WebView2 is missing: Atollo needs it to show its windows.",
@@ -147,7 +147,7 @@
   "Scarica la versione \"Fixed Version\" per {0} da {1} ed estraila in {2}, poi riavvia Atollo. Non serve installare nulla.": {
     "en": "Download the \"Fixed Version\" for {0} from {1} and extract it to {2}, then start Atollo again. Nothing needs to be installed.",
     "fr": "Téléchargez la « Fixed Version » pour {0} depuis {1} et extrayez-la dans {2}, puis relancez Atollo. Rien n'est à installer.",
-    "de": "Laden Sie die „Fixed Version“ für {0} von {1} herunter und entpacken Sie sie nach {2}, dann starten Sie Atollo erneut. Es muss nichts installiert werden."
+    "de": "Lade die „Fixed Version“ für {0} von {1} herunter und entpacke sie nach {2}, dann starte Atollo erneut. Es muss nichts installiert werden."
   },
   "Errore imprevisto: {0}": {
     "en": "Unexpected error: {0}",
@@ -187,7 +187,7 @@
   "{0}: in uso, chiudi i programmi del kit e riprova": {
     "en": "{0}: in use, close the kit programs and try again",
     "fr": "{0} : en cours d'utilisation, fermez les programmes du kit et réessayez",
-    "de": "{0}: in Verwendung, schließen Sie die Programme des Kits und versuchen Sie es erneut"
+    "de": "{0}: in Verwendung, schließe die Programme des Kits und versuche es erneut"
   },
   "{0}: non ancora disponibile in questa versione di Atollo": {
     "en": "{0}: not yet available in this version of Atollo",
@@ -222,12 +222,12 @@
   "Ferma prima il sito web: la modifica vale dal prossimo avvio.": {
     "en": "Stop the website first: the change applies from the next start.",
     "fr": "Arrêtez d'abord le site web : la modification s'applique au prochain démarrage.",
-    "de": "Beenden Sie zuerst die Website: Die Änderung gilt ab dem nächsten Start."
+    "de": "Beende zuerst die Website: Die Änderung gilt ab dem nächsten Start."
   },
   "Azione non trovata: premi Aggiorna": {
     "en": "Action not found: press Refresh",
     "fr": "Action introuvable : cliquez sur Actualiser",
-    "de": "Aktion nicht gefunden: Klicken Sie auf Aktualisieren"
+    "de": "Aktion nicht gefunden: Klicke auf Aktualisieren"
   },
   "Nome non valido: niente {0}, punto iniziale o finale, nomi riservati di Windows.": {
     "en": "Invalid name: no {0}, no leading or trailing dot, no Windows reserved names.",
@@ -252,7 +252,7 @@
   "Scrivi owner/repository di GitHub o un indirizzo https:// di Git.": {
     "en": "Enter a GitHub owner/repository or a Git https:// address.",
     "fr": "Saisissez un owner/repository GitHub ou une adresse Git https://.",
-    "de": "Geben Sie ein GitHub-owner/repository oder eine Git-Adresse mit https:// ein."
+    "de": "Gib ein GitHub-owner/repository oder eine Git-Adresse mit https:// ein."
   },
   "Git del kit non è installato.": {
     "en": "The kit's Git is not installed.",
@@ -262,7 +262,7 @@
   "La porta {0} è occupata da un altro programma. Chiudilo o cambia la porta.": {
     "en": "Port {0} is in use by another program. Close it or change the port.",
     "fr": "Le port {0} est utilisé par un autre programme. Fermez-le ou changez de port.",
-    "de": "Port {0} wird von einem anderen Programm verwendet. Schließen Sie es oder ändern Sie den Port."
+    "de": "Port {0} wird von einem anderen Programm verwendet. Schließe es oder ändere den Port."
   },
   "Nessuna porta libera tra {0} e {1}": {
     "en": "No free port between {0} and {1}",
@@ -382,12 +382,12 @@
   "Tauri apre la sua finestra (WebView2) e usa la porta fissa di tauri.conf.json ({0}): qui vedi solo i log.": {
     "en": "Tauri opens its own window (WebView2) and uses the fixed port from tauri.conf.json ({0}): here you only see the logs.",
     "fr": "Tauri ouvre sa propre fenêtre (WebView2) et utilise le port fixe de tauri.conf.json ({0}) : ici, vous ne voyez que les journaux.",
-    "de": "Tauri öffnet ein eigenes Fenster (WebView2) und verwendet den festen Port aus tauri.conf.json ({0}): Hier sehen Sie nur die Logs."
+    "de": "Tauri öffnet ein eigenes Fenster (WebView2) und verwendet den festen Port aus tauri.conf.json ({0}): Hier siehst du nur die Logs."
   },
   "Tauri apre la sua finestra (WebView2): qui vedi solo i log.": {
     "en": "Tauri opens its own window (WebView2): here you only see the logs.",
     "fr": "Tauri ouvre sa propre fenêtre (WebView2) : ici, vous ne voyez que les journaux.",
-    "de": "Tauri öffnet ein eigenes Fenster (WebView2): Hier sehen Sie nur die Logs."
+    "de": "Tauri öffnet ein eigenes Fenster (WebView2): Hier siehst du nur die Logs."
   },
   "{0} con {1}": {
     "en": "{0} with {1}",
@@ -402,17 +402,17 @@
   "Dipendenze non installate: esegui prima \"npm install\".": {
     "en": "Dependencies not installed: run \"npm install\" first.",
     "fr": "Dépendances non installées : exécutez d'abord « npm install ».",
-    "de": "Abhängigkeiten nicht installiert: Führen Sie zuerst „npm install“ aus."
+    "de": "Abhängigkeiten nicht installiert: Führe zuerst „npm install“ aus."
   },
   "Il progetto usa pnpm, yarn o bun: il pannello usa npm. Se serve, cambia i comandi in panel.json.": {
     "en": "The project uses pnpm, yarn or bun: the panel uses npm. If needed, change the commands in panel.json.",
     "fr": "Le projet utilise pnpm, yarn ou bun : le panneau utilise npm. Si nécessaire, modifiez les commandes dans panel.json.",
-    "de": "Das Projekt verwendet pnpm, yarn oder bun: Das Panel verwendet npm. Ändern Sie bei Bedarf die Befehle in panel.json."
+    "de": "Das Projekt verwendet pnpm, yarn oder bun: Das Panel verwendet npm. Ändere bei Bedarf die Befehle in panel.json."
   },
   "Electron apre la sua finestra: qui vedi solo i log.": {
     "en": "Electron opens its own window: here you only see the logs.",
     "fr": "Electron ouvre sa propre fenêtre : ici, vous ne voyez que les journaux.",
-    "de": "Electron öffnet ein eigenes Fenster: Hier sehen Sie nur die Logs."
+    "de": "Electron öffnet ein eigenes Fenster: Hier siehst du nur die Logs."
   },
   "{0} non è un JSON valido: ignorato.": {
     "en": "{0} is not valid JSON: ignored.",
@@ -427,7 +427,7 @@
   "{0} non è un JSON valido: correggilo prima.": {
     "en": "{0} is not valid JSON: fix it first.",
     "fr": "{0} n'est pas un JSON valide : corrigez-le d'abord.",
-    "de": "{0} ist kein gültiges JSON: Korrigieren Sie es zuerst."
+    "de": "{0} ist kein gültiges JSON: Korrigiere es zuerst."
   },
   "cartella del progetto": {
     "en": "project folder",
@@ -457,7 +457,7 @@
   "Dipendenze PHP non installate: esegui prima \"composer install\".": {
     "en": "PHP dependencies not installed: run \"composer install\" first.",
     "fr": "Dépendances PHP non installées : exécutez d'abord « composer install ».",
-    "de": "PHP-Abhängigkeiten nicht installiert: Führen Sie zuerst „composer install“ aus."
+    "de": "PHP-Abhängigkeiten nicht installiert: Führe zuerst „composer install“ aus."
   },
   "dipendenze Python": {
     "en": "Python dependencies",
@@ -482,7 +482,7 @@
   "Nessun ambiente virtuale (.venv): le dipendenze devono essere installate nel Python del kit, oppure crea .venv.": {
     "en": "No virtual environment (.venv): the dependencies must be installed in the kit's Python, or create .venv.",
     "fr": "Aucun environnement virtuel (.venv) : les dépendances doivent être installées dans le Python du kit, ou créez .venv.",
-    "de": "Keine virtuelle Umgebung (.venv): Die Abhängigkeiten müssen im Python des Kits installiert sein, oder erstellen Sie .venv."
+    "de": "Keine virtuelle Umgebung (.venv): Die Abhängigkeiten müssen im Python des Kits installiert sein, oder erstelle .venv."
   },
   "Serve Trunk: cargo install trunk  e  rustup target add wasm32-unknown-unknown": {
     "en": "Trunk is needed: cargo install trunk  and  rustup target add wasm32-unknown-unknown",
@@ -687,7 +687,7 @@
   "Componenti del kit non installati: {0}{1}. Riprova da Linguaggi e strumenti.": {
     "en": "Kit components not installed: {0}{1}. Try again from Languages and tools.",
     "fr": "Composants du kit non installés : {0}{1}. Réessayez depuis Langages et outils.",
-    "de": "Nicht installierte Komponenten des Kits: {0}{1}. Versuchen Sie es erneut unter Sprachen und Werkzeuge."
+    "de": "Nicht installierte Komponenten des Kits: {0}{1}. Versuche es erneut unter Sprachen und Werkzeuge."
   },
   "{0} non è disponibile sui PC ARM64.": {
     "en": "{0} is not available on ARM64 PCs.",
@@ -837,7 +837,7 @@
   "GitHub ha rifiutato l'accesso: accedi di nuovo.": {
     "en": "GitHub refused the sign-in: sign in again.",
     "fr": "GitHub a refusé la connexion : connectez-vous de nouveau.",
-    "de": "GitHub hat die Anmeldung abgelehnt: Melden Sie sich erneut an."
+    "de": "GitHub hat die Anmeldung abgelehnt: Melde dich erneut an."
   },
   "GitHub non risponde: {0}": {
     "en": "GitHub does not answer: {0}",
@@ -852,7 +852,7 @@
   "Accedi prima a GitHub.": {
     "en": "Sign in to GitHub first.",
     "fr": "Connectez-vous d'abord à GitHub.",
-    "de": "Melden Sie sich zuerst bei GitHub an."
+    "de": "Melde dich zuerst bei GitHub an."
   },
   "Nome non valido: solo lettere, cifre, «.», «-» e «_».": {
     "en": "Invalid name: only letters, digits, “.”, “-” and “_”.",
@@ -1752,7 +1752,7 @@
   "Pannello in /admin sulla porta 3000: al primo accesso crei l'utente amministratore. Database in payload.db.": {
     "en": "Admin panel at /admin on port 3000: on the first visit you create the administrator. Database in payload.db.",
     "fr": "Panneau dans /admin sur le port 3000 : au premier accès, vous créez l'administrateur. Base de données dans payload.db.",
-    "de": "Verwaltung unter /admin auf Port 3000: beim ersten Aufruf legen Sie den Administrator an. Datenbank in payload.db."
+    "de": "Verwaltung unter /admin auf Port 3000: beim ersten Aufruf legst du den Administrator an. Datenbank in payload.db."
   },
   "Sito di documentazione in React, pagine in Markdown e MDX": {
     "en": "Documentation site in React, pages in Markdown and MDX",
