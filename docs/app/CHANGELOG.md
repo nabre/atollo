@@ -1,5 +1,12 @@
 # Novità
 
+## Il simbolo è un atollo (19/10/2026)
+
+- **Icona dell'app, favicon e simbolo** mostrano un atollo visto dall'alto al posto della «A»: barriera ad anello, tre isolotti (smeraldo, smeraldo che passa ad ambra e arancio, un isolotto arancio), laguna turchese e due onde stilizzate. Restano il fondo verde foresta, i colori e la scritta «ATOLLO».
+- **Taglie piccole** (fino a 48 px: barra delle applicazioni, favicon, icone piccole di `icon.ico`) con un disegno apposta, `symbol-small.svg`, che resta leggibile.
+- **Sfondi** della Home, delle pagine vuote e del sito: l'atollo e le sue onde al posto delle bande diagonali della «A».
+- **Tutte le icone** di `tauri/icons/` (anche `icon.icns` e i PNG per macOS e Linux) e `ui/public/favicon.png` escono da `docs/brand/make.py`; prima alcune erano rimaste fuori e avevano un disegno vecchio.
+
 ## Strumenti descritti come li installa il codice (19/10/2026)
 
 - **Windows ARM64**: README, sito e catalogo elencano tutti i componenti che lì usano la build x64 in emulazione (editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX); prima mancavano MongoDB, Android SDK e Julia. L'etichetta «x64» della pagina Strumenti dice «Su Windows ARM64 gira in emulazione x64», non «sui PC ARM64»: su un Mac o un Linux ARM64 quei componenti sono nativi. L'etichetta compare solo nel kit Windows ARM64 (prima su ogni sistema), e l'editor non si dice più «in emulazione x64» su macOS e Linux ARM64, dove è nativo.
