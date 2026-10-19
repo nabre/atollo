@@ -7,6 +7,7 @@
 - **«Clona»** dall'elenco dei repository GitHub installa i componenti e sceglie le versioni, come «Da un indirizzo Git».
 - **«pre-installato»** è l'unica etichetta per i componenti già nel kit che si completano al primo avvio.
 - **Guida nei documenti**: `node scripts/guide-docs.cjs` rigenera `GUIDE.md` e `GUIDE.it.md`.
+- **CI**: `node scripts/guide-docs.cjs --check` fallisce se `GUIDE.md` o `GUIDE.it.md` non corrispondono alla Guida dell'app.
 
 ## Guida nei documenti, schermate per lingua, tedesco con il «du» (19/10/2026)
 

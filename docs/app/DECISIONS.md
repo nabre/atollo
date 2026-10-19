@@ -1289,3 +1289,4 @@ Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le consol
   - **«Clona» dai repository GitHub** fa ciò che fa «Da un indirizzo Git»: installa i componenti e sceglie le versioni (`settle_project`).
   - **«pre-installato»** in tabella, albero, scheda e Matrice (prima albero, scheda e Matrice dicevano «pre-scaricato»).
   - **Documenti generati.** `scripts/guide-docs.cjs` scrive `GUIDE.md` e `GUIDE.it.md` dalla Guida dell'app; `test/ui/guide/docs.test.ts` fallisce se restano indietro.
+  - **Controllo in CI.** `node scripts/guide-docs.cjs --check` rigenera i due documenti in memoria e fallisce, con la prima riga diversa, se non sono quelli nel repository; il job «Lint and test» lo esegue al livello `ui` (D-134), a cui ora appartengono anche `docs/app/GUIDE.md`, `GUIDE.it.md` e lo script: un documento corretto a mano senza la Guida non passa.
