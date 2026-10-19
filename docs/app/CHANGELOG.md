@@ -1,5 +1,11 @@
 # Novità
 
+## Rilascio 0.3.0 alpha (20/10/2026)
+
+- **Versione 0.3.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.3.0` pubblica i file per i sei sistemi.
+- **PHP del kit**: su macOS e Linux le linee 8.4 e 8.5 vengono dalle release `php-v8.4.26-1` e `php-v8.5.11-1` (D-133), non più da static-php-cli.
+- **«C'è ancora da fare»** (README e sito, nelle quattro lingue) parla della 0.3.0.
+
 ## Social card, Search Console (20/10/2026)
 
 - **Social card** `docs/brand/social.png` (1280×640): l'immagine del sito quando si condivide un link e l'anteprima del repository su GitHub (D-135).
