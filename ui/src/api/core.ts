@@ -20,13 +20,30 @@ export function act(cmd: string, args?: InvokeArgs): Promise<void> {
   return browserPreview ? Promise.resolve() : invoke<undefined>(cmd, args);
 }
 
+/** The handlers of the browser preview's events, by event (`previewEmit`). */
+const previewHandlers = new Map<string, Set<(payload: unknown) => void>>();
+
 /** Every `event` from Rust to `handler`; resolves to the function that stops
- * listening. Nothing arrives in the browser. `T` is what Rust sends with
- * that event: the caller names it, as with `invoke<T>`. */
+ * listening. In the browser only what the preview sends (`previewEmit`)
+ * arrives. `T` is what Rust sends with that event: the caller names it, as
+ * with `invoke<T>`. */
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 export function subscribe<T>(event: string, handler: (payload: T) => void): Promise<() => void> {
-  if (browserPreview) return Promise.resolve(() => undefined);
+  if (browserPreview) {
+    const set = previewHandlers.get(event) ?? new Set();
+    previewHandlers.set(event, set);
+    const h = handler as (payload: unknown) => void;
+    set.add(h);
+    return Promise.resolve(() => {
+      set.delete(h);
+    });
+  }
   return listen<T>(event, (e) => {
     handler(e.payload);
   });
+}
+
+/** The browser preview's stand-in for an event Rust would send. */
+export function previewEmit(event: string, payload: unknown): void {
+  for (const h of previewHandlers.get(event) ?? []) h(payload);
 }

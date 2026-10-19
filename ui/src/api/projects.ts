@@ -92,7 +92,9 @@ function sampleAction(id: string, label: string, command: string, staticDir: str
   };
 }
 
-const SAMPLE_PROJECTS: ProjectInfo[] = [
+/** The projects of the browser preview (core.ts); their actions start there
+ * too (preview-runs.ts). */
+export const SAMPLE_PROJECTS: ProjectInfo[] = [
   {
     id: "sito-vetrina",
     name: "sito-vetrina",
